@@ -17,7 +17,12 @@ so real providers can be added without touching gameplay code.
     every 4 runs, at least 4 minutes apart, and at most 3 per session. A `no_ads` entitlement disables them.
 - Production builds cannot construct the mock (it is tree-shaken out). Mock impressions are not revenue.
 
-### Adding a real ad network
+### Google H5 Games Ads (implemented)
+
+`src/monetization/adsense.ts` integrates Google's Ad Placement API (`adBreak` / `adConfig`), following the official docs.
+It activates only when `VITE_ADSENSE_CLIENT` is set at build time. See [LAUNCH-GUIDE.md](LAUNCH-GUIDE.md#3-ads-what-to-use-and-how).
+
+### Adding another ad network
 
 1. Pick a provider whose policies allow your distribution channel (web portals often require their own
    SDK; native apps typically use AdMob via a Capacitor plugin).

@@ -1,10 +1,11 @@
 import { defineConfig, type Plugin } from 'vitest/config';
+import { loadEnv } from 'vite';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import pkg from './package.json' with { type: 'json' };
 
 /** Emit sw.js with every built file precached, so the game works offline after the very first visit. */
-function serviceWorker(): Plugin {
+function serviceWorker(adsenseClient: string): Plugin {
   return {
     name: 'neon-rush-sw',
     apply: 'build',
@@ -17,13 +18,18 @@ function serviceWorker(): Plugin {
         .replace('__VERSION__', version)
         .replace('__PRECACHE__', JSON.stringify(files.map((f) => `./${f}`)));
       this.emitFile({ type: 'asset', fileName: 'sw.js', source });
+      // ads.txt authorizes Google to sell ads on this domain (only when a publisher id is configured).
+      const client = adsenseClient;
+      if (/^ca-pub-\d{10,20}$/.test(client)) {
+        this.emitFile({ type: 'asset', fileName: 'ads.txt', source: `google.com, ${client.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n` });
+      }
     },
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base: './',
-  plugins: [serviceWorker()],
+  plugins: [serviceWorker(loadEnv(mode, process.cwd(), 'VITE_').VITE_ADSENSE_CLIENT ?? '')],
   build: {
     target: 'es2022',
     outDir: 'dist',
@@ -38,4 +44,4 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
   },
-});
+}));

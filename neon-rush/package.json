@@ -11,7 +11,7 @@
     "dev": "vite",
     "build": "npm run typecheck && vite build && node scripts/size-report.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.functions.json",
     "lint": "eslint .",
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
@@ -30,5 +30,8 @@
     "vite": "^8.3.4",
     "vitest": "^5.0.5",
     "wrangler": "^4.151.1"
+  },
+  "allowScripts": {
+    "workerd@1.20261012.1": true
   }
 }

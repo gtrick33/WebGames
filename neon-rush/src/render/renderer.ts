@@ -1,18 +1,24 @@
 import { Application, Container, Graphics, Sprite, Text, TilingSprite, Texture } from 'pixi.js';
-import { ArtLibrary } from './art';
+import { ArtLibrary, TRAFFIC_COLORS } from './art';
+import { CarFxFilter } from './carfx';
 import { ParticleSystem } from './particles';
 import { LANE_WIDTH, PLAYER, ROAD_WIDTH, VIEW_MIN_HEIGHT, VIEW_MIN_WIDTH, type PowerUpKind } from '../game/config';
 import type { World, WorldEvent } from '../game/world';
 import { getSkin, type SkinDef } from '../cosmetics/skins';
 import { clamp, damp, lerp } from '../core/math';
 
-/** Colour zones that cycle as the run goes on. */
-const ZONES: { edgeA: number; edgeB: number; grid: number; sky: number }[] = [
-  { edgeA: 0x22e4ff, edgeB: 0xff3fd2, grid: 0x7a2bff, sky: 0x07041a },
-  { edgeA: 0xff3fd2, edgeB: 0xffb020, grid: 0xff2f7d, sky: 0x12041a },
-  { edgeA: 0x3dffc4, edgeB: 0x2a8cff, grid: 0x1fb8a8, sky: 0x02121a },
-  { edgeA: 0xffe14a, edgeB: 0xff4ad8, grid: 0xb84aff, sky: 0x0e0620 },
+type Theme = 'city' | 'palms' | 'signs';
+
+/** Colour zones that cycle as the run goes on, each with its own roadside scenery. */
+const ZONES: { name: string; edgeA: number; edgeB: number; grid: number; sky: number; theme: Theme }[] = [
+  { name: 'NEON CITY', edgeA: 0x22e4ff, edgeB: 0xff3fd2, grid: 0x8a3bff, sky: 0x0a0624, theme: 'city' },
+  { name: 'SUNSET STRIP', edgeA: 0xff8a3d, edgeB: 0xff3fd2, grid: 0xff3f8a, sky: 0x1c0620, theme: 'palms' },
+  { name: 'CYBER GRID', edgeA: 0x3dffa8, edgeB: 0x22e4ff, grid: 0x1fe0b8, sky: 0x02161c, theme: 'signs' },
+  { name: 'AURORA DRIVE', edgeA: 0x8a5cff, edgeB: 0x3dffc4, grid: 0x5a6bff, sky: 0x060a26, theme: 'palms' },
+  { name: 'ULTRAVIOLET', edgeA: 0xffe14a, edgeB: 0xc84dff, grid: 0xc84dff, sky: 0x14041f, theme: 'signs' },
 ];
+/** Music tempo (matches the synth loop), used to pulse the lights on the beat. */
+const BEAT = 60 / 112;
 const ZONE_METERS = 1500;
 
 const POWERUP_TINT: Record<PowerUpKind, number> = { magnet: 0xff3fd2, shield: 0x22e4ff, double: 0xffc21a };
@@ -68,6 +74,17 @@ export class GameRenderer {
   private popups: Popup[] = [];
   private streaks: Sprite[] = [];
   private flash: Sprite;
+  private carFx: CarFxFilter | null = null;
+  private lasers: Sprite[] = [];
+  private laneGlow: TilingSprite;
+  private overheadLayer = new Container();
+  private arches: Sprite[] = [];
+  private archGlows: Sprite[] = [];
+  private motes: Sprite[] = [];
+  private trafficGlows: Sprite[] = [];
+  private trailAcc = 0;
+  private boltTimer = 0;
+  private lastZone = 0;
 
   private skin: SkinDef = getSkin('neon_cyan');
   private scale = 1;
@@ -89,6 +106,31 @@ export class GameRenderer {
     this.road.anchor.set(0.5, 0);
     this.edgeGlowL = this.makeGlow(art.streak, 0x22e4ff);
     this.edgeGlowR = this.makeGlow(art.streak, 0xff3fd2);
+    this.laneGlow = new TilingSprite({ texture: art.laneGlow, width: ROAD_WIDTH, height: 100 });
+    this.laneGlow.anchor.set(0.5, 0);
+    this.laneGlow.blendMode = 'add';
+    for (let i = 0; i < 2; i++) {
+      const l = this.makeGlow(art.streak, 0xffffff);
+      l.anchor.set(0.5, 0);
+      this.lasers.push(l);
+    }
+    for (let i = 0; i < 2; i++) {
+      const a = new Sprite(art.arch);
+      a.anchor.set(0.5);
+      a.blendMode = 'add';
+      this.arches.push(a);
+      const g = this.makeGlow(art.glow, 0xffffff);
+      this.archGlows.push(g);
+    }
+    for (let i = 0; i < 26; i++) {
+      const m = this.makeGlow(i % 3 === 0 ? art.star : art.spark, 0xffffff);
+      m.position.set((Math.random() - 0.5) * VIEW_MIN_WIDTH * 1.6, Math.random() * VIEW_MIN_HEIGHT);
+      m.scale.set(0.2 + Math.random() * 0.35);
+      m.alpha = 0.25 + Math.random() * 0.4;
+      this.motes.push(m);
+    }
+    // Animated paint shaders need WebGL; without it the car simply keeps its base paint.
+    if (app.renderer.name === 'webgl') this.carFx = new CarFxFilter();
 
     this.player = new Sprite(art.skinTexture(this.skin));
     this.player.anchor.set(0.5);
@@ -102,7 +144,7 @@ export class GameRenderer {
       this.trailX.push(0);
     }
 
-    this.particles = new ParticleSystem(art.spark, settings.lowQuality ? 120 : 260);
+    this.particles = new ParticleSystem(art.spark, settings.lowQuality ? 160 : 400);
     this.flash = new Sprite(Texture.WHITE);
     this.flash.alpha = 0;
     for (let i = 0; i < 14; i++) {
@@ -144,14 +186,15 @@ export class GameRenderer {
     const stage = this.app.stage;
     stage.addChild(this.root);
     this.root.addChild(this.worldLayer, this.screenLayer);
-    this.worldLayer.addChild(this.ground, this.propLayer, this.road, this.edges, this.edgeGlowL, this.edgeGlowR);
-    this.worldLayer.addChild(this.pickupLayer, this.lightLayer, this.hazardLayer, this.playerLayer, this.particles.container, this.fxLayer);
-    this.playerLayer.addChild(...this.trail, this.underglow, this.headBeam, this.player, this.shieldRing, this.magnetRing);
+    this.worldLayer.addChild(this.ground, ...this.motes, this.propLayer, this.road, this.laneGlow, this.edges, this.edgeGlowL, this.edgeGlowR);
+    this.worldLayer.addChild(this.pickupLayer, this.lightLayer, this.hazardLayer, this.playerLayer, this.particles.container, this.overheadLayer, this.fxLayer);
+    this.playerLayer.addChild(...this.trail, ...this.lasers, this.underglow, this.headBeam, this.player, this.shieldRing, this.magnetRing);
+    this.overheadLayer.addChild(...this.archGlows, ...this.arches);
     this.screenLayer.addChild(...this.streaks, this.flash);
 
     // Scenery props on both sides: rooftops and light posts.
     const art = this.art;
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 16; i++) {
       const side: -1 | 1 = i % 2 === 0 ? -1 : 1;
       const isPost = i < 8;
       const sprite = new Sprite(isPost ? art.post : art.buildings[i % art.buildings.length]);
@@ -181,13 +224,21 @@ export class GameRenderer {
 
   setSettings(settings: RenderSettings): void {
     this.settings = settings;
-    this.particles.setBudget(settings.lowQuality ? 120 : 260);
+    this.particles.setBudget(settings.lowQuality ? 160 : 400);
   }
 
   setSkin(skinId: string): void {
     this.skin = getSkin(skinId);
     this.player.texture = this.art.skinTexture(this.skin);
     this.underglow.tint = this.skin.glow;
+    this.lasers[0]!.tint = this.skin.trail[0];
+    this.lasers[1]!.tint = this.skin.trail[1];
+    if (this.carFx && this.skin.shader !== 'none') {
+      this.carFx.setFx(this.skin.shader, this.skin.glow);
+      this.player.filters = [this.carFx];
+    } else {
+      this.player.filters = [];
+    }
   }
 
   /** Fit the logical view into the canvas. Returns the logical view height for the simulation. */
@@ -205,13 +256,15 @@ export class GameRenderer {
     this.ground.position.set(-this.viewWidth / 2 - 64, -64);
     this.road.height = this.viewHeight;
     this.road.position.set(0, 0);
+    this.laneGlow.height = this.viewHeight;
+    this.arches.forEach((a, k) => (a.y = -200 - k * (this.viewHeight + 500)));
     this.drawEdges();
 
     this.flash.width = w;
     this.flash.height = h;
     let i = 0;
     for (const p of this.props) {
-      p.sprite.y = (i * this.viewHeight) / 7;
+      p.sprite.y = (i * this.viewHeight) / 8;
       i++;
     }
     return this.viewHeight;
@@ -278,19 +331,62 @@ export class GameRenderer {
     const zt = clamp((this.zoneT - zi) * 4 - 3, 0, 1); // blend in the last quarter of a zone
     const za = ZONES[zi % ZONES.length] ?? ZONES[0]!;
     const zb = ZONES[(zi + 1) % ZONES.length] ?? ZONES[0]!;
+    const edgeA = mix(za.edgeA, zb.edgeA, zt);
+    const edgeB = mix(za.edgeB, zb.edgeB, zt);
     this.ground.tint = mix(za.grid, zb.grid, zt);
-    this.edgeGlowL.tint = mix(za.edgeA, zb.edgeA, zt);
-    this.edgeGlowR.tint = mix(za.edgeB, zb.edgeB, zt);
+    this.edgeGlowL.tint = edgeA;
+    this.edgeGlowR.tint = edgeB;
+    this.laneGlow.tint = mix(edgeA, edgeB, 0.5);
     this.app.renderer.background.color = mix(za.sky, zb.sky, zt);
-    this.ground.alpha = 0.32;
+    // Lights pulse on the music's beat.
+    const beat = Math.exp(-((this.time % BEAT) / 0.11));
+    this.ground.alpha = 0.5 + beat * 0.15;
+    this.road.tint = mix(0xffffff, mix(edgeA, edgeB, 0.5), 0.18);
+    const zoneNow = Math.floor(zf);
+    if (zoneNow !== this.lastZone) {
+      this.lastZone = zoneNow;
+      if (zoneNow > 0) this.popup(0, vh * 0.3, ZONES[zoneNow % ZONES.length]!.name, edgeA, 1.8);
+    }
+    const theme = za.theme;
 
     // --- scrolling
     const scroll = scrollSpeed * dt;
     this.road.tilePosition.y += scroll;
     this.ground.tilePosition.y += scroll;
-    const pulse = 0.65 + Math.sin(this.time * 3) * 0.1;
+    this.laneGlow.tilePosition.y = this.road.tilePosition.y;
+    this.laneGlow.alpha = 0.85 + beat * 0.15;
+    const pulse = 0.7 + beat * 0.3;
     this.edgeGlowL.alpha = pulse;
     this.edgeGlowR.alpha = pulse;
+    this.edgeGlowL.width = this.edgeGlowR.width = 46 + beat * 16;
+
+    // Ambient light motes drift slower than the road (depth).
+    const lq = this.settings.lowQuality;
+    for (let i = 0; i < this.motes.length; i++) {
+      const m = this.motes[i]!;
+      m.visible = !lq;
+      m.y += scroll * 0.35 + dt * 12;
+      m.x += Math.sin(this.time * 0.7 + i) * dt * 8;
+      if (m.y > vh + 20) {
+        m.y = -20;
+        m.x = (Math.random() - 0.5) * this.viewWidth;
+      }
+      m.tint = i % 2 ? edgeA : edgeB;
+    }
+
+    // Overhead neon arches, spaced far apart.
+    for (let k = 0; k < this.arches.length; k++) {
+      const a = this.arches[k]!;
+      const g = this.archGlows[k]!;
+      a.y += scroll;
+      if (a.y > vh + 120) a.y -= vh + 900 + Math.random() * 600;
+      a.tint = k % 2 ? edgeA : edgeB;
+      a.alpha = 0.85 + beat * 0.15;
+      g.position.set(0, a.y);
+      g.tint = a.tint;
+      g.scale.set(4.2, 0.6);
+      g.alpha = lq ? 0 : 0.35 + beat * 0.2;
+    }
 
     const half = ROAD_WIDTH / 2;
     const vw = this.viewWidth;
@@ -299,7 +395,13 @@ export class GameRenderer {
       const isPost = p.glow !== null;
       if (p.sprite.y > vh + 120) {
         p.sprite.y -= vh + 240 + Math.random() * 120;
-        if (!isPost) p.sprite.texture = art.buildings[Math.floor(Math.random() * art.buildings.length)] ?? art.buildings[0]!;
+        if (!isPost) {
+          // Scenery follows the zone theme.
+          const pickFrom = theme === 'city' ? art.buildings : theme === 'palms' ? art.palms : art.signs;
+          p.sprite.texture = pickFrom[Math.floor(Math.random() * pickFrom.length)] ?? art.buildings[0]!;
+          p.sprite.tint = theme === 'city' ? 0xffffff : Math.random() < 0.5 ? edgeA : edgeB;
+          p.sprite.rotation = theme === 'palms' ? Math.random() * Math.PI * 2 : 0;
+        }
       }
       if (isPost) {
         p.sprite.x = p.side * (half + 22);
@@ -357,6 +459,13 @@ export class GameRenderer {
       const bob = h.kind === 'drone' ? Math.sin(h.phase * 5) * 3 : 0;
       s.position.set(h.x, h.y + bob);
       s.rotation = h.kind === 'drone' ? h.phase * 1.5 : h.changeTo >= 0 && h.telegraph <= 0 ? Math.sign(laneX(h.changeTo) - laneX(h.lane)) * 0.08 : 0;
+      // Neon underglow on traffic (one slot per hazard keeps the pool aligned).
+      const ug = this.poolSprite(this.trafficGlows, this.lightLayer, art.glow, hi, true);
+      ug.visible = !lq && h.kind !== 'drone';
+      ug.position.set(h.x, h.y);
+      ug.tint = TRAFFIC_COLORS[h.variant % TRAFFIC_COLORS.length] ?? 0xffffff;
+      ug.scale.set(h.w / 70, h.h / 64);
+      ug.alpha = 0.55;
       hi++;
       if (h.kind === 'drone') continue;
       // Tail lights glow toward the player.
@@ -380,6 +489,7 @@ export class GameRenderer {
     }
     hideFrom(this.hazardSprites, hi);
     hideFrom(this.hazardLights, li);
+    hideFrom(this.trafficGlows, hi);
 
     // --- player
     const p = world.player;
@@ -394,20 +504,12 @@ export class GameRenderer {
     this.headBeam.scale.set(0.7, 0.9);
     this.headBeam.alpha = world.crashed ? 0 : 0.22;
 
-    // Trail: history of x positions, drawn behind the car moving with the road.
-    this.trailX.unshift(p.x);
-    this.trailX.length = this.trail.length;
-    const speedT = clamp((world.speed - 560) / 600, 0, 1);
-    for (let i = 0; i < this.trail.length; i++) {
-      const s = this.trail[i]!;
-      const x = this.trailX[i] ?? p.x;
-      s.visible = !world.crashed && scrollSpeed > 0;
-      const k = i / this.trail.length;
-      s.position.set(x, p.y + PLAYER.height / 2 - 4 + i * (6 + speedT * 4));
-      s.tint = i % 2 ? this.skin.trail[1] : this.skin.trail[0];
-      s.scale.set(0.9 * (1 - k * 0.7), 1.4);
-      s.alpha = (1 - k) * 0.55;
+    if (this.carFx) this.carFx.tick(this.time);
+    if (this.skin.shape === 'hover') {
+      this.underglow.scale.set(1.2, 1.45);
+      this.underglow.alpha = world.crashed ? 0 : 0.75 + Math.sin(this.time * 9) * 0.1;
     }
+    this.updateTrail(world, dt, scrollSpeed);
 
     const shieldOn = world.active.shield > 0;
     this.shieldRing.visible = shieldOn && !world.crashed;
@@ -429,7 +531,7 @@ export class GameRenderer {
     // --- speed streaks (screen space)
     const sw = this.app.screen.width;
     const sh = this.app.screen.height;
-    const streakOn = scrollSpeed > 0 ? speedT : 0;
+    const streakOn = scrollSpeed > 0 ? clamp((world.speed - 560) / 600, 0, 1) : 0;
     for (const s of this.streaks) {
       if (s.alpha <= 0.01 && Math.random() < 0.05 * streakOn) {
         const side = Math.random() < 0.5 ? -1 : 1;
@@ -464,6 +566,89 @@ export class GameRenderer {
       this.shakeAmt = 0;
     }
     if (this.flash.alpha > 0) this.flash.alpha = Math.max(0, this.flash.alpha - dt * 2.8);
+  }
+
+  /** Per-skin trail: ribbon/rainbow sprites, twin lasers, or a particle emitter. */
+  private updateTrail(world: World, dt: number, scrollSpeed: number): void {
+    const p = world.player;
+    const skin = this.skin;
+    const style = skin.trailStyle;
+    const running = !world.crashed && scrollSpeed > 0;
+    const speedT = clamp((world.speed - 560) / 600, 0, 1);
+    const rearY = p.y + PLAYER.height / 2 - 4;
+
+    // Ribbon history (also used to bend lasers).
+    this.trailX.unshift(p.x);
+    this.trailX.length = this.trail.length;
+    const ribbon = style === 'ribbon' || style === 'rainbow';
+    for (let i = 0; i < this.trail.length; i++) {
+      const s = this.trail[i]!;
+      s.visible = ribbon && running;
+      if (!s.visible) continue;
+      const k = i / this.trail.length;
+      s.position.set(this.trailX[i] ?? p.x, rearY + i * (6 + speedT * 4));
+      s.tint = style === 'rainbow' ? hsv((this.time * 0.6 + i * 0.07) % 1, 0.85, 1) : i % 2 ? skin.trail[1] : skin.trail[0];
+      s.scale.set(0.9 * (1 - k * 0.7), 1.4);
+      s.alpha = (1 - k) * 0.6;
+    }
+
+    const lasers = style === 'laser' && running;
+    for (let i = 0; i < this.lasers.length; i++) {
+      const l = this.lasers[i]!;
+      l.visible = lasers;
+      if (!lasers) continue;
+      const side = i === 0 ? -1 : 1;
+      const lag = (this.trailX[6] ?? p.x) - p.x;
+      l.position.set(p.x + side * 9 + lag * 0.3, rearY - 4);
+      l.rotation = -lag * 0.004;
+      l.width = 4;
+      l.height = 90 + speedT * 110;
+      l.alpha = 0.8 + Math.sin(this.time * 30 + i) * 0.15;
+    }
+
+    if (!running || ribbon || lasers) return;
+    const rates: Record<string, number> = { flame: 70, spark: 45, smoke: 26, stardust: 30, pixel: 42, lightning: 30 };
+    const rate = (rates[style] ?? 30) * (this.settings.lowQuality ? 0.5 : 1);
+    this.trailAcc += dt * rate;
+    const art = this.art;
+    const drift = scrollSpeed * 0.45;
+    while (this.trailAcc >= 1) {
+      this.trailAcc -= 1;
+      const x = p.x + (Math.random() - 0.5) * 16;
+      const tint = Math.random() < 0.5 ? skin.trail[0] : skin.trail[1];
+      switch (style) {
+        case 'flame':
+          this.particles.emit({ x, y: rearY, vx: (Math.random() - 0.5) * 40, vy: drift + 40 + Math.random() * 60, life: 0.32, size: 0.24 + Math.random() * 0.12, tint, tex: art.glow });
+          break;
+        case 'spark':
+          this.particles.emit({ x, y: rearY, vx: (Math.random() - 0.5) * 140, vy: drift + Math.random() * 90, life: 0.4, size: 0.4, tint });
+          break;
+        case 'smoke':
+          this.particles.emit({ x, y: rearY + 4, vx: (Math.random() - 0.5) * 30, vy: drift * 0.9, life: 0.9, size: 0.12, tint: shadeColor(tint, 0.6), tex: art.glow, additive: false, grow: 2.2, alpha: 0.4 });
+          break;
+        case 'stardust':
+          this.particles.emit({ x, y: rearY, vx: (Math.random() - 0.5) * 60, vy: drift * 0.7 + Math.random() * 30, life: 1.0, size: 0.35 + Math.random() * 0.25, tint, tex: art.star, spin: 4 });
+          break;
+        case 'pixel':
+          this.particles.emit({ x: Math.round(x / 5) * 5, y: rearY, vx: (Math.random() - 0.5) * 50, vy: drift, life: 0.55, size: 0.9, tint, tex: art.square });
+          break;
+        case 'lightning':
+          this.particles.emit({ x, y: rearY, vx: (Math.random() - 0.5) * 220, vy: drift + Math.random() * 120, life: 0.22, size: 0.35, tint });
+          break;
+      }
+    }
+    if (style === 'lightning') {
+      this.boltTimer -= dt;
+      if (this.boltTimer <= 0) {
+        this.boltTimer = 0.18 + Math.random() * 0.3;
+        // A short jagged arc behind the car.
+        let bx = p.x + (Math.random() - 0.5) * 10;
+        for (let k = 0; k < 7; k++) {
+          bx += (Math.random() - 0.5) * 18;
+          this.particles.emit({ x: bx, y: rearY + 6 + k * 9, vx: 0, vy: drift, life: 0.14, size: 0.32, tint: k % 2 ? 0xffffff : skin.trail[0] });
+        }
+      }
+    }
   }
 
   /** React to simulation events with particles, popups and shakes. */
@@ -507,15 +692,15 @@ export class GameRenderer {
     }
   }
 
-  private popup(x: number, y: number, text: string, color: number): void {
+  private popup(x: number, y: number, text: string, color: number, life = 0.9): void {
     const p = this.popups.find((pp) => pp.life <= 0) ?? this.popups[0]!;
     p.text.text = text;
     p.text.style.fill = color;
     p.text.position.set(clamp(x, -ROAD_WIDTH / 2 + 80, ROAD_WIDTH / 2 - 80), y);
     p.text.alpha = 1;
     p.text.visible = true;
-    p.life = 0.9;
-    p.vy = -70;
+    p.life = life;
+    p.vy = life > 1 ? -12 : -70;
   }
 
   private poolSprite(pool: Sprite[], layer: Container, tex: Texture, i: number, additive = false): Sprite {
@@ -552,6 +737,20 @@ function hideFrom(pool: Sprite[], from: number): void {
     const s = pool[i];
     if (s) s.visible = false;
   }
+}
+
+function hsv(h: number, s: number, v: number): number {
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  const [r, g, b] = [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6] as [number, number, number];
+  return (Math.round(r * 255) << 16) | (Math.round(g * 255) << 8) | Math.round(b * 255);
+}
+
+function shadeColor(c: number, f: number): number {
+  return (Math.round(((c >> 16) & 255) * f) << 16) | (Math.round(((c >> 8) & 255) * f) << 8) | Math.round((c & 255) * f);
 }
 
 function laneX(lane: number): number {

@@ -1,7 +1,7 @@
 import { DEFAULT_SKIN_ID, isKnownSkin } from '../cosmetics/skins';
 
 /** Bump when the shape changes and add a migration in `migrate`. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface Settings {
   sfxVolume: number;
@@ -38,7 +38,26 @@ export interface Profile {
   grantedRewardIds: string[];
   processedTransactions: string[];
   settings: Settings;
+  /** Random anonymous id for the online leaderboard (not linked to any account). */
+  playerId: string;
+  /** Public racer name; empty until the player chooses one. */
+  playerName: string;
 }
+
+/** RFC 4122 v4 UUID, with a fallback for non-secure contexts. */
+export function newPlayerId(): string {
+  const c = globalThis.crypto;
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+  const b = new Uint8Array(16);
+  if (c && typeof c.getRandomValues === 'function') c.getRandomValues(b);
+  else for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
+  b[6] = ((b[6] ?? 0) & 0x0f) | 0x40;
+  b[8] = ((b[8] ?? 0) & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const DEFAULT_SETTINGS: Settings = {
   sfxVolume: 0.8,
@@ -73,6 +92,8 @@ export function createProfile(now = Date.now()): Profile {
     grantedRewardIds: [],
     processedTransactions: [],
     settings: { ...DEFAULT_SETTINGS },
+    playerId: newPlayerId(),
+    playerName: '',
   };
 }
 
@@ -101,6 +122,7 @@ export function migrate(raw: Raw): Raw {
       version: 2,
     };
   }
+  // v3 added playerId / playerName; sanitizeProfile fills them in.
   return data;
 }
 
@@ -165,6 +187,8 @@ export function sanitizeProfile(input: unknown, now = Date.now()): Profile {
       screenShake: bool(s.screenShake, DEFAULT_SETTINGS.screenShake),
       lowQuality: bool(s.lowQuality, DEFAULT_SETTINGS.lowQuality),
     },
+    playerId: typeof raw.playerId === 'string' && UUID.test(raw.playerId) ? raw.playerId : base.playerId,
+    playerName: typeof raw.playerName === 'string' ? raw.playerName.slice(0, 14) : '',
   };
 }
 

@@ -63,6 +63,10 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8" /></svg>
               Missions <span class="dot" data-bind="missionDot" hidden></span>
             </button>
+            <button class="btn btn-ghost" data-action="leaderboard">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12h5v8M9 20V6h6v14M15 20v-6h5v6M3 20h18" /></svg>
+              Ranks
+            </button>
             <button class="btn btn-ghost" data-action="settings">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" /></svg>
               Settings
@@ -132,6 +136,7 @@
             </div>
           </div>
           <ul class="go-unlocks" data-bind="goUnlocks"></ul>
+          <div class="go-rank" data-bind="goRank" hidden></div>
           <div class="ad-offer" data-bind="adOffer" hidden>
             <p>Optional: watch a short ad to <b>double the coins you collected</b> this run (+<span data-bind="adAmount">0</span>).</p>
             <button class="btn btn-reward" data-action="watchAd">
@@ -164,12 +169,14 @@
             <div class="showcase-info">
               <h3 data-bind="showcaseName"></h3>
               <p data-bind="showcaseTag"></p>
+              <div class="showcase-meta" data-bind="showcaseMeta"></div>
               <div class="showcase-status" data-bind="showcaseStatus"></div>
               <button class="btn btn-primary" data-action="skinPrimary" data-bind="showcaseBtn">Equip</button>
             </div>
           </div>
+          <div class="garage-bar"><div class="chip-row" data-bind="garageFilters"></div><span class="muted" data-bind="garageCount"></span></div>
           <div class="skin-grid" data-bind="skinGrid"></div>
-          <p class="fineprint">Skins are cosmetic only. Every car drives exactly the same.</p>
+          <p class="fineprint">Cars are cosmetic only. Every car has the same speed, handling and hitbox.</p>
         </div>
         <div class="tab-panel" data-panel="store" hidden>
           <div class="mock-banner" data-bind="storeMock" hidden>DEVELOPMENT MOCK STORE · no real payments are made</div>
@@ -208,6 +215,30 @@
         </div>
       </section>
 
+      <!-- LEADERBOARD -->
+      <section class="screen page-screen" id="screen-leaderboard" aria-label="Leaderboard">
+        <header class="page-head">
+          <button class="icon-btn" data-action="back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
+          <h2>LEADERBOARD</h2>
+          <span></span>
+        </header>
+        <form class="name-card" data-bind="nameForm" autocomplete="off">
+          <label for="racer-name">Your racer name</label>
+          <div class="name-row">
+            <input id="racer-name" data-bind="nameInput" maxlength="14" placeholder="e.g. NightRider" spellcheck="false" />
+            <button class="btn btn-primary" type="submit">Save</button>
+          </div>
+          <p class="muted small" data-bind="nameMsg">Shown publicly next to your best scores. No account needed.</p>
+        </form>
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" data-tab="daily" data-action="boardTab" data-period="daily">Today</button>
+          <button class="tab" role="tab" data-tab="all" data-action="boardTab" data-period="all">All time</button>
+        </div>
+        <p class="muted board-status" data-bind="boardStatus"></p>
+        <ol class="board-list" data-bind="boardList"></ol>
+        <div class="board-me" data-bind="boardMe" hidden></div>
+      </section>
+
       <!-- SETTINGS -->
       <section class="screen page-screen" id="screen-settings" aria-label="Settings">
         <header class="page-head">
@@ -227,7 +258,7 @@
           </div>
           <div class="settings-section">
             <h3>Privacy</h3>
-            <p class="muted">No account needed. Progress is saved only on this device. No ads or trackers are active in this version.</p>
+            <p class="muted">No account needed. Progress is saved on this device. If you set a racer name, that name, a random player id and your best scores are stored on the leaderboard server. No trackers are used.</p>
           </div>
           <button class="btn btn-danger" data-action="resetProgress">Reset progress</button>
           <p class="fineprint">NEON RUSH v<span data-bind="version"></span> · original game, art and music</p>

@@ -18,6 +18,8 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  // Live data (leaderboard API) always goes to the network and is never cached.
+  if (url.pathname.includes('/api/')) return;
 
   // Pages: network first so updates arrive, cached copy when offline.
   if (req.mode === 'navigate') {

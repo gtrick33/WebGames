@@ -8,6 +8,26 @@ interface Particle {
   maxLife: number;
   size: number;
   ring: boolean;
+  gravity: number;
+  /** Scale multiplier reached at the end of life (smoke grows, sparks shrink). */
+  grow: number;
+  spin: number;
+}
+
+export interface EmitOptions {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  size: number;
+  tint: number;
+  tex?: Texture;
+  additive?: boolean;
+  gravity?: number;
+  grow?: number;
+  spin?: number;
+  alpha?: number;
 }
 
 /** Fixed-size particle pool: no allocations during gameplay. */
@@ -19,18 +39,19 @@ export class ParticleSystem {
 
   constructor(private readonly tex: Texture, budget: number) {
     this.budget = budget;
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 420; i++) {
       const sprite = new Sprite(tex);
       sprite.anchor.set(0.5);
       sprite.blendMode = 'add';
       sprite.visible = false;
       this.container.addChild(sprite);
-      this.pool.push({ sprite, vx: 0, vy: 0, life: 0, maxLife: 1, size: 1, ring: false });
+      this.pool.push({ sprite, vx: 0, vy: 0, life: 0, maxLife: 1, size: 1, ring: false, gravity: 120, grow: 0, spin: 0 });
     }
   }
 
   setBudget(n: number): void {
     this.budget = Math.min(n, this.pool.length);
+    this.cursor %= this.budget;
   }
 
   private next(): Particle {
@@ -54,6 +75,11 @@ export class ParticleSystem {
       p.maxLife = p.life = life * (0.6 + Math.random() * 0.4);
       p.size = size * (0.5 + Math.random() * 0.8);
       p.ring = false;
+      p.gravity = 120;
+      p.grow = 0;
+      p.spin = 0;
+      p.sprite.blendMode = 'add';
+      p.sprite.rotation = 0;
       p.sprite.texture = this.tex;
       p.sprite.position.set(x, y);
       p.sprite.tint = tint;
@@ -68,9 +94,30 @@ export class ParticleSystem {
     p.maxLife = p.life = life;
     p.size = 0.2;
     p.ring = true;
+    p.sprite.blendMode = 'add';
     p.sprite.texture = tex;
     p.sprite.position.set(x, y);
     p.sprite.tint = tint;
+    p.sprite.visible = true;
+  }
+
+  /** Emit one configured particle (trails, exhaust, ambient effects). */
+  emit(o: EmitOptions): void {
+    const p = this.next();
+    p.vx = o.vx;
+    p.vy = o.vy;
+    p.maxLife = p.life = o.life;
+    p.size = o.size;
+    p.ring = false;
+    p.gravity = o.gravity ?? 0;
+    p.grow = o.grow ?? 0;
+    p.spin = o.spin ?? 0;
+    p.sprite.texture = o.tex ?? this.tex;
+    p.sprite.blendMode = o.additive === false ? 'normal' : 'add';
+    p.sprite.position.set(o.x, o.y);
+    p.sprite.rotation = 0;
+    p.sprite.tint = o.tint;
+    p.sprite.alpha = o.alpha ?? 1;
     p.sprite.visible = true;
   }
 
@@ -91,8 +138,10 @@ export class ParticleSystem {
         p.vx *= drag;
         p.vy *= drag;
         p.sprite.x += p.vx * dt;
-        p.sprite.y += p.vy * dt + 120 * dt;
-        p.sprite.scale.set(p.size * t);
+        p.vy += p.gravity * dt;
+        p.sprite.y += p.vy * dt;
+        p.sprite.rotation += p.spin * dt;
+        p.sprite.scale.set(p.size * (p.grow > 0 ? 1 + (1 - t) * p.grow : t));
         p.sprite.alpha = Math.min(1, t * 1.5);
       }
     }

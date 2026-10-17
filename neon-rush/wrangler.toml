@@ -1,0 +1,10 @@
+# Cloudflare Pages configuration for NEON RUSH (static site + /api Functions + D1 leaderboard).
+name = "neon-rush"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "neon-rush-leaderboard"
+database_id = "9182c9bc-62a0-4568-88c8-4874bcda05db"
+migrations_dir = "migrations"

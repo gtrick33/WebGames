@@ -1,4 +1,4 @@
-import { SKINS, DEFAULT_SKIN_ID, describeUnlock, getSkin, type SkinDef } from '../cosmetics/skins';
+import { SKINS, DEFAULT_SKIN_ID, RARITY_LABEL, SHADER_LABEL, SHAPE_LABEL, TRAIL_LABEL, describeUnlock, getSkin, type CarShape, type Rarity, type SkinDef } from '../cosmetics/skins';
 import { owns } from '../cosmetics/shop';
 import { ACHIEVEMENTS, getAchievement } from '../progression/achievements';
 import { challengesForDay, challengeProgress } from '../progression/challenges';
@@ -30,49 +30,95 @@ export interface GarageDeps {
   preview: (skin: SkinDef) => Promise<string>;
 }
 
+const RARITY_ORDER: Rarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+const priceOf = (s: SkinDef): number => (s.unlock.type === 'coins' ? s.unlock.price : s.unlock.type === 'level' ? s.unlock.level * 400 : s.unlock.type === 'starter' ? 0 : 3000);
+/** Garage order: by rarity, then by cost. */
+const ORDERED: SkinDef[] = [...SKINS].sort((a, b) => RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity) || priceOf(a) - priceOf(b));
+const SHAPES: CarShape[] = [...new Set(SKINS.map((s) => s.shape))];
+
 export class GarageView {
   selected = DEFAULT_SKIN_ID;
+  private filter: CarShape | 'all' | 'owned' = 'all';
   private previews = new Map<string, string>();
+  private queue: SkinDef[] = [];
+  private loading = false;
   private built = false;
+  private observer: IntersectionObserver | null = null;
 
   constructor(private readonly ui: UI, private readonly deps: GarageDeps) {}
 
+  setFilter(f: string): void {
+    this.filter = f === 'all' || f === 'owned' || (SHAPES as string[]).includes(f) ? (f as GarageView['filter']) : 'all';
+  }
+
   private build(): void {
+    const filters = this.ui.el('garageFilters');
+    filters.innerHTML = [['all', 'All'], ['owned', 'Owned'], ...SHAPES.map((sh) => [sh, SHAPE_LABEL[sh]])]
+      .map(([k, label]) => `<button class="filter-chip" data-action="garageFilter" data-filter="${k}">${esc(label as string)}</button>`)
+      .join('');
     const grid = this.ui.el('skinGrid');
-    grid.innerHTML = SKINS.map(
-      (s) => `<button class="skin-card" data-action="selectSkin" data-skin="${s.id}" style="--glow:${hex(s.glow)}" aria-label="${esc(s.name)}">
-        <span class="skeleton"></span>
+    grid.innerHTML = ORDERED.map(
+      (s) => `<button class="skin-card r-${s.rarity} fx-${s.shader}" data-action="selectSkin" data-skin="${s.id}" style="--glow:${hex(s.glow)}" aria-label="${esc(s.name)}">
+        <span class="rarity-pip">${RARITY_LABEL[s.rarity]}</span>
+        <span class="car-img"><span class="skeleton"></span></span>
         <span class="name">${esc(s.name)}</span>
         <span class="tag"></span>
       </button>`,
     ).join('');
     this.built = true;
-    // Lazily render previews one by one so opening the garage never janks.
-    void (async () => {
-      for (const s of SKINS) {
-        const url = await this.deps.preview(s);
-        this.previews.set(s.id, url);
-        const card = grid.querySelector(`[data-skin="${s.id}"]`);
-        const skel = card?.querySelector('.skeleton');
-        if (skel) {
-          const img = document.createElement('img');
-          img.alt = '';
-          img.src = url;
-          skel.replaceWith(img);
+    // Render previews only when a card scrolls into view, one per frame.
+    if ('IntersectionObserver' in window) {
+      this.observer = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const id = (e.target as HTMLElement).dataset.skin ?? '';
+          this.observer?.unobserve(e.target);
+          this.enqueue(getSkin(id));
         }
-        if (s.id === this.selected) this.ui.el('showcaseImg').setAttribute('src', url);
-        await new Promise((r) => requestAnimationFrame(r));
+      }, { rootMargin: '200px' });
+      for (const card of grid.querySelectorAll('.skin-card')) this.observer.observe(card);
+    } else {
+      ORDERED.forEach((s) => this.enqueue(s));
+    }
+  }
+
+  private enqueue(s: SkinDef): void {
+    if (this.previews.has(s.id) || this.queue.includes(s)) return;
+    this.queue.push(s);
+    void this.pump();
+  }
+
+  private async pump(): Promise<void> {
+    if (this.loading) return;
+    this.loading = true;
+    const grid = this.ui.el('skinGrid');
+    while (this.queue.length > 0) {
+      const s = this.queue.shift() as SkinDef;
+      const url = await this.deps.preview(s);
+      this.previews.set(s.id, url);
+      const skel = grid.querySelector(`[data-skin="${s.id}"] .skeleton`);
+      if (skel) {
+        const img = document.createElement('img');
+        img.alt = '';
+        img.src = url;
+        skel.replaceWith(img);
       }
-    })();
+      if (s.id === this.selected) this.ui.el('showcaseImg').setAttribute('src', url);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    this.loading = false;
   }
 
   render(p: Profile): void {
     if (!this.built) this.build();
     const grid = this.ui.el('skinGrid');
+    for (const chip of this.ui.el('garageFilters').querySelectorAll<HTMLElement>('.filter-chip')) chip.classList.toggle('active', chip.dataset.filter === this.filter);
+    this.ui.text('garageCount', `${p.ownedSkins.length} / ${SKINS.length} owned`);
     for (const s of SKINS) {
       const card = grid.querySelector<HTMLElement>(`[data-skin="${s.id}"]`);
       if (!card) continue;
       const owned = owns(p, s.id);
+      card.hidden = this.filter === 'owned' ? !owned : this.filter !== 'all' && s.shape !== this.filter;
       const equipped = p.equippedSkin === s.id;
       card.classList.toggle('locked', !owned);
       card.classList.toggle('selected', this.selected === s.id);
@@ -97,9 +143,17 @@ export class GarageView {
     const ui = this.ui;
     ui.text('showcaseName', s.name);
     ui.text('showcaseTag', s.tagline);
+    ui.el('showcaseMeta').innerHTML = [
+      `<span class="pill r-${s.rarity}">${RARITY_LABEL[s.rarity]}</span>`,
+      `<span class="pill">${SHAPE_LABEL[s.shape]}</span>`,
+      s.shader !== 'none' ? `<span class="pill fx">${SHADER_LABEL[s.shader]}</span>` : '',
+      `<span class="pill fx">${TRAIL_LABEL[s.trailStyle]}</span>`,
+    ].join('');
     const img = ui.el('showcaseImg');
+    img.className = `fx-${s.shader}`;
     const url = this.previews.get(s.id);
     if (url) img.setAttribute('src', url);
+    else this.enqueue(s);
     (img.parentElement as HTMLElement).style.setProperty('--glow', hex(s.glow));
     const status = ui.el('showcaseStatus');
     const btn = ui.el('showcaseBtn') as HTMLButtonElement;

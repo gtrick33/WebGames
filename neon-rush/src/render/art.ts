@@ -1,5 +1,8 @@
-import { FillGradient, Graphics, Texture, type Renderer } from 'pixi.js';
-import type { SkinDef, StripeStyle } from '../cosmetics/skins';
+import { Graphics, Texture, type Renderer } from 'pixi.js';
+import type { SkinDef } from '../cosmetics/skins';
+import { drawCar, drawSportsCar, linear, shade } from './cars';
+
+export { shade };
 import { LANES, LANE_WIDTH, ROAD_WIDTH, type HazardKind, type PowerUpKind } from '../game/config';
 
 /**
@@ -8,172 +11,6 @@ import { LANES, LANE_WIDTH, ROAD_WIDTH, type HazardKind, type PowerUpKind } from
  */
 
 const TEX_RES = 2;
-
-function linear(c0: number, c1: number, vertical = true): FillGradient {
-  return new FillGradient({
-    type: 'linear',
-    start: { x: 0, y: 0 },
-    end: vertical ? { x: 0, y: 1 } : { x: 1, y: 0 },
-    colorStops: [
-      { offset: 0, color: c0 },
-      { offset: 1, color: c1 },
-    ],
-    textureSpace: 'local',
-  });
-}
-
-export function shade(color: number, f: number): number {
-  const r = Math.min(255, Math.max(0, Math.round(((color >> 16) & 255) * f)));
-  const g = Math.min(255, Math.max(0, Math.round(((color >> 8) & 255) * f)));
-  const b = Math.min(255, Math.max(0, Math.round((color & 255) * f)));
-  return (r << 16) | (g << 8) | b;
-}
-
-// ------------------------------------------------------------------ cars
-
-interface CarPaint {
-  body: [number, number];
-  accent: number;
-  glass: number;
-  stripe: StripeStyle;
-  stripeColor: number;
-  finish: 'gloss' | 'matte' | 'metal';
-  tail: number;
-  head: number;
-}
-
-/** Sporty top-down car body path, facing up, centered at 0,0, sized w x h. */
-function carBodyPath(g: Graphics, w: number, h: number): Graphics {
-  const sx = w / 46;
-  const sy = h / 84;
-  const P = (x: number, y: number): [number, number] => [x * sx, y * sy];
-  g.moveTo(...P(-13, -42));
-  g.quadraticCurveTo(...P(0, -45), ...P(13, -42));
-  g.quadraticCurveTo(...P(20, -40), ...P(20.5, -30));
-  g.lineTo(...P(21.5, -14));
-  g.quadraticCurveTo(...P(23, -4), ...P(21.5, 8));
-  g.lineTo(...P(21, 33));
-  g.quadraticCurveTo(...P(20, 42), ...P(11, 43));
-  g.lineTo(...P(-11, 43));
-  g.quadraticCurveTo(...P(-20, 42), ...P(-21, 33));
-  g.lineTo(...P(-21.5, 8));
-  g.quadraticCurveTo(...P(-23, -4), ...P(-21.5, -14));
-  g.lineTo(...P(-20.5, -30));
-  g.quadraticCurveTo(...P(-20, -40), ...P(-13, -42));
-  g.closePath();
-  return g;
-}
-
-function drawStripes(g: Graphics, style: StripeStyle, color: number, sx: number, sy: number): void {
-  const R = (x: number, y: number, w: number, h: number, a = 0.92) => g.rect(x * sx, y * sy, w * sx, h * sy).fill({ color, alpha: a });
-  switch (style) {
-    case 'none':
-      break;
-    case 'center':
-      R(-3.5, -43, 7, 86);
-      break;
-    case 'dual':
-      R(-8, -43, 4, 86);
-      R(4, -43, 4, 86);
-      break;
-    case 'side':
-      R(-19, -30, 2, 62, 1);
-      R(17, -30, 2, 62, 1);
-      R(-12, -40, 24, 1.5, 0.8);
-      break;
-    case 'circuit': {
-      const lines: [number, number][][] = [
-        [[-9, -41], [-9, -28], [-4, -23]],
-        [[9, -41], [9, -31], [14, -26]],
-        [[0, -41], [0, -20]],
-        [[-10, 40], [-10, 31], [-5, 27]],
-        [[10, 40], [10, 33]],
-      ];
-      for (const pts of lines) {
-        const first = pts[0] as [number, number];
-        g.moveTo(first[0] * sx, first[1] * sy);
-        for (let i = 1; i < pts.length; i++) {
-          const p = pts[i] as [number, number];
-          g.lineTo(p[0] * sx, p[1] * sy);
-        }
-        g.stroke({ width: 1.6 * sx, color, alpha: 0.95 });
-        const last = pts[pts.length - 1] as [number, number];
-        g.circle(last[0] * sx, last[1] * sy, 1.8 * sx).fill({ color });
-      }
-      break;
-    }
-    case 'checker':
-      for (let i = 0; i < 6; i++) {
-        R(-15 + i * 5, -36, 5, 4, i % 2 ? 0.9 : 0);
-        R(-15 + i * 5, -32, 5, 4, i % 2 ? 0 : 0.9);
-        R(-15 + i * 5, 33, 5, 4, i % 2 ? 0.9 : 0);
-      }
-      break;
-    case 'pixel': {
-      const pattern = ['0110110', '1011101', '0101010', '1110111'];
-      pattern.forEach((row, r) => {
-        for (let c = 0; c < row.length; c++) if (row[c] === '1') R(-14 + c * 4, -38 + r * 4, 3.4, 3.4, 1);
-      });
-      R(-14, 30, 28, 3, 1);
-      R(-10, 35, 20, 2.5, 1);
-      break;
-    }
-    case 'chevron':
-      for (let i = 0; i < 3; i++) {
-        g.moveTo(-13 * sx, (-26 + i * 6) * sy).lineTo(0, (-35 + i * 6) * sy).lineTo(13 * sx, (-26 + i * 6) * sy);
-        g.stroke({ width: 2.2 * sx, color, alpha: 0.9 - i * 0.2 });
-      }
-      break;
-  }
-}
-
-function drawSportsCar(g: Graphics, p: CarPaint, w: number, h: number): void {
-  const sx = w / 46;
-  const sy = h / 84;
-  // Soft drop shadow.
-  carBodyPath(g, w * 1.04, h * 1.02);
-  g.fill({ color: 0x000000, alpha: 0.35 });
-  // Wheels.
-  for (const [x, y] of [[-21, -26], [21, -26], [-21, 27], [21, 27]] as const) {
-    g.roundRect((x - 4) * sx, (y - 8) * sy, 8 * sx, 16 * sy, 2.5 * sx).fill({ color: 0x07070c });
-  }
-  // Body.
-  carBodyPath(g, w, h).fill(linear(p.body[0], p.body[1]));
-  if (p.finish === 'metal') {
-    carBodyPath(g, w, h).fill(
-      new FillGradient({
-        type: 'linear', start: { x: 0, y: 0 }, end: { x: 1, y: 0 }, textureSpace: 'local',
-        colorStops: [
-          { offset: 0, color: 'rgba(255,255,255,0)' },
-          { offset: 0.3, color: 'rgba(255,255,255,0.45)' },
-          { offset: 0.42, color: 'rgba(255,255,255,0)' },
-          { offset: 0.8, color: 'rgba(255,255,255,0.15)' },
-          { offset: 1, color: 'rgba(255,255,255,0)' },
-        ],
-      }),
-    );
-  }
-  drawStripes(g, p.stripe, p.stripeColor, sx, sy);
-  // Hood crease / gloss highlight.
-  if (p.finish !== 'matte') {
-    g.ellipse(-7 * sx, -28 * sy, 5 * sx, 9 * sy).fill({ color: 0xffffff, alpha: 0.22 });
-  }
-  // Windshield, roof, rear window.
-  g.poly([-15 * sx, -16 * sy, 15 * sx, -16 * sy, 12.5 * sx, -3 * sy, -12.5 * sx, -3 * sy]).fill({ color: p.glass });
-  g.poly([-11 * sx, -14.5 * sy, -4 * sx, -14.5 * sy, -9 * sx, -5 * sy, -11 * sx, -5 * sy]).fill({ color: 0xffffff, alpha: 0.18 });
-  g.roundRect(-12.5 * sx, -3 * sy, 25 * sx, 20 * sy, 4 * sx).fill(linear(shade(p.body[0], 0.8), shade(p.body[1], 0.75)));
-  g.poly([-12.5 * sx, 17 * sy, 12.5 * sx, 17 * sy, 14 * sx, 25 * sy, -14 * sx, 25 * sy]).fill({ color: p.glass });
-  // Side mirrors.
-  g.roundRect(-25 * sx, -11 * sy, 4 * sx, 3.5 * sy, 1).fill({ color: shade(p.body[0], 0.7) });
-  g.roundRect(21 * sx, -11 * sy, 4 * sx, 3.5 * sy, 1).fill({ color: shade(p.body[0], 0.7) });
-  // Lights.
-  g.roundRect(-15 * sx, -42 * sy, 8 * sx, 3.5 * sy, 1.5).fill({ color: p.head });
-  g.roundRect(7 * sx, -42 * sy, 8 * sx, 3.5 * sy, 1.5).fill({ color: p.head });
-  g.roundRect(-16 * sx, 39.5 * sy, 9 * sx, 3 * sy, 1.2).fill({ color: p.tail });
-  g.roundRect(7 * sx, 39.5 * sy, 9 * sx, 3 * sy, 1.2).fill({ color: p.tail });
-  // Accent outline.
-  carBodyPath(g, w, h).stroke({ width: 1.2, color: p.accent, alpha: 0.55 });
-}
 
 function drawSedan(g: Graphics, body: number, w: number, h: number): void {
   const hw = w / 2;
@@ -277,6 +114,12 @@ export class ArtLibrary {
   readonly powerups: Record<PowerUpKind, Texture>;
   readonly buildings: Texture[];
   readonly post: Texture;
+  readonly star: Texture;
+  readonly square: Texture;
+  readonly palms: Texture[];
+  readonly signs: Texture[];
+  readonly arch: Texture;
+  readonly laneGlow: Texture;
   private readonly skinCache = new Map<string, Texture>();
 
   constructor(private readonly renderer: Renderer) {
@@ -345,6 +188,49 @@ export class ArtLibrary {
       g.rect(-2, 0, 16, 3).fill({ color: 0x2b2545 });
       g.circle(14, 1.5, 3).fill({ color: 0xffffff });
     });
+    this.star = canvasTexture(32, 32, (ctx) => {
+      const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.3, 'rgba(255,255,255,0.5)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 32, 32);
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.moveTo(16, 1); ctx.lineTo(18, 14); ctx.lineTo(31, 16); ctx.lineTo(18, 18);
+      ctx.lineTo(16, 31); ctx.lineTo(14, 18); ctx.lineTo(1, 16); ctx.lineTo(14, 14);
+      ctx.closePath();
+      ctx.fill();
+    }, 1);
+    this.square = canvasTexture(10, 10, (ctx) => {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(1, 1, 8, 8);
+    }, 1);
+    this.palms = [0, 1].map((v) => this.gen((g) => drawPalm(g, v)));
+    this.signs = [0, 1, 2, 3].map((v) => this.gen((g) => drawSign(g, v)));
+    this.arch = this.gen((g) => {
+      const w = ROAD_WIDTH + 70;
+      g.roundRect(-w / 2, -6, w, 12, 6).fill({ color: 0x1a1430 });
+      g.roundRect(-w / 2, -6, w, 12, 6).stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
+      g.rect(-w / 2 + 14, -1.5, w - 28, 3).fill({ color: 0xffffff });
+      for (const side of [-1, 1]) {
+        g.roundRect(side * (w / 2) - 14, -16, 28, 32, 6).fill({ color: 0x1a1430 });
+        g.roundRect(side * (w / 2) - 14, -16, 28, 32, 6).stroke({ width: 2, color: 0xffffff });
+        g.circle(side * (w / 2), 0, 6).fill({ color: 0xffffff });
+      }
+      for (let x = -w / 2 + 40; x < w / 2 - 30; x += 34) g.circle(x, 0, 2.6).fill({ color: 0xffffff });
+    }, 1.5);
+    this.laneGlow = canvasTexture(ROAD_WIDTH, 128, (ctx) => {
+      ctx.filter = 'blur(4px)';
+      for (let l = 1; l < LANES; l++) {
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillRect(l * LANE_WIDTH - 3, 22, 6, 60);
+      }
+      ctx.filter = 'none';
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillRect(1, 0, 4, 128);
+      ctx.fillRect(ROAD_WIDTH - 5, 0, 4, 128);
+    }, 1);
   }
 
   private gen(draw: (g: Graphics) => void, res = TEX_RES): Texture {
@@ -362,12 +248,10 @@ export class ArtLibrary {
     if (cached) return cached;
     const tex = this.gen(
       (g) =>
-        drawSportsCar(
-          g,
-          { body: skin.body, accent: skin.accent, glass: skin.glass, stripe: skin.stripe, stripeColor: skin.stripeColor, finish: skin.finish, tail: 0xff2a4a, head: 0xf4fdff },
-          46,
-          84,
-        ),
+        drawCar(g, skin.shape, {
+          body: skin.body, accent: skin.accent, glass: skin.glass, stripe: skin.stripe, stripeColor: skin.stripeColor,
+          finish: skin.finish, tail: 0xff2a4a, head: 0xf4fdff, glow: skin.glow, number: skin.number,
+        }),
       res,
     );
     this.skinCache.set(key, tex);
@@ -379,9 +263,9 @@ export class ArtLibrary {
     const h = 128;
     return canvasTexture(w, h, (ctx) => {
       const grad = ctx.createLinearGradient(0, 0, w, 0);
-      grad.addColorStop(0, '#120d24');
-      grad.addColorStop(0.5, '#0d0a1c');
-      grad.addColorStop(1, '#120d24');
+      grad.addColorStop(0, '#1d1438');
+      grad.addColorStop(0.5, '#151030');
+      grad.addColorStop(1, '#1d1438');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
       // Subtle asphalt speckle (deterministic).
@@ -444,6 +328,53 @@ export class ArtLibrary {
   /** PNG data URL of a skin, for garage cards. */
   async skinPreview(skin: SkinDef): Promise<string> {
     return this.renderer.extract.base64({ target: this.skinTexture(skin, 3), format: 'png' });
+  }
+}
+
+/** Top-down palm tree, drawn in white so zones can tint it. */
+function drawPalm(g: Graphics, variant: number): void {
+  g.ellipse(6, 8, 30, 26).fill({ color: 0x000000, alpha: 0.35 });
+  const fronds = variant === 0 ? 7 : 9;
+  for (let i = 0; i < fronds; i++) {
+    const a = (i / fronds) * Math.PI * 2 + variant * 0.3;
+    const len = 30 + ((i * 7) % 5) * 2;
+    const tipX = Math.cos(a) * len;
+    const tipY = Math.sin(a) * len;
+    const nx = -Math.sin(a) * 6;
+    const ny = Math.cos(a) * 6;
+    g.moveTo(0, 0).quadraticCurveTo(tipX * 0.5 + nx, tipY * 0.5 + ny, tipX, tipY).quadraticCurveTo(tipX * 0.5 - nx * 0.3, tipY * 0.5 - ny * 0.3, 0, 0).fill({ color: 0xffffff, alpha: 0.85 });
+    g.moveTo(0, 0).lineTo(tipX * 0.92, tipY * 0.92).stroke({ width: 1, color: 0x000000, alpha: 0.35 });
+  }
+  g.circle(0, 0, 5).fill({ color: 0x3a2a1a });
+  g.circle(0, 0, 3).fill({ color: 0xffffff, alpha: 0.6 });
+}
+
+/** Original neon sign shapes (white, tinted per zone). */
+function drawSign(g: Graphics, variant: number): void {
+  const w = 54;
+  const h = 86;
+  g.roundRect(-w / 2 + 4, -h / 2 + 5, w, h, 8).fill({ color: 0x000000, alpha: 0.4 });
+  g.roundRect(-w / 2, -h / 2, w, h, 8).fill({ color: 0x120c26 });
+  g.roundRect(-w / 2, -h / 2, w, h, 8).stroke({ width: 2.5, color: 0xffffff, alpha: 0.9 });
+  const s = { width: 3.5, color: 0xffffff };
+  switch (variant) {
+    case 0: // chevrons
+      for (let i = 0; i < 3; i++) g.moveTo(-14, -18 + i * 14).lineTo(0, -28 + i * 14).lineTo(14, -18 + i * 14).stroke(s);
+      break;
+    case 1: // ringed planet
+      g.circle(0, 0, 13).stroke(s);
+      g.ellipse(0, 0, 22, 6).stroke({ width: 2.5, color: 0xffffff });
+      break;
+    case 2: // lightning bolt
+      g.poly([4, -30, -12, 4, -1, 4, -6, 30, 12, -6, 1, -6]).stroke(s);
+      break;
+    default: // seven-segment "88"
+      for (const y of [-22, 6]) {
+        g.rect(-12, y, 24, 3).fill({ color: 0xffffff });
+        g.rect(-12, y + 14, 24, 3).fill({ color: 0xffffff });
+        g.rect(-12, y, 3, 17).fill({ color: 0xffffff });
+        g.rect(9, y, 3, 17).fill({ color: 0xffffff });
+      }
   }
 }
 

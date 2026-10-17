@@ -4,14 +4,15 @@ import { buySkin, equipSkin, syncSkinUnlocks, unequipSkin } from '../src/cosmeti
 import { DEFAULT_SKIN_ID, SKINS } from '../src/cosmetics/skins';
 
 describe('skins catalogue', () => {
-  it('has at least 8 unique skins and 3+ gameplay unlocks', () => {
-    expect(SKINS.length).toBeGreaterThanOrEqual(8);
+  it('has 50+ unique cars across many body types, with gameplay unlocks', () => {
+    expect(SKINS.length).toBeGreaterThanOrEqual(50);
+    expect(new Set(SKINS.map((s) => s.shape)).size).toBeGreaterThanOrEqual(10);
     expect(new Set(SKINS.map((s) => s.id)).size).toBe(SKINS.length);
     expect(SKINS.filter((s) => s.unlock.type === 'level' || s.unlock.type === 'achievement').length).toBeGreaterThanOrEqual(3);
   });
 
   it('skins are visually distinct', () => {
-    const looks = new Set(SKINS.map((s) => `${s.body.join()}|${s.stripe}`));
+    const looks = new Set(SKINS.map((s) => `${s.shape}|${s.body.join()}|${s.stripe}`));
     expect(looks.size).toBe(SKINS.length);
   });
 });
@@ -55,5 +56,19 @@ describe('shop', () => {
     const got = syncSkinUnlocks(p).map((s) => s.id).sort();
     expect(got).toEqual(['aurora', 'lime_circuit', 'phantom']);
     expect(syncSkinUnlocks(p)).toEqual([]);
+  });
+});
+
+describe('catalogue integrity', () => {
+  it('every unlock references something real and prices scale with rarity', async () => {
+    const { ACHIEVEMENTS } = await import('../src/progression/achievements');
+    const ids = new Set(ACHIEVEMENTS.map((a) => a.id));
+    const maxPrice: Record<string, number> = { common: 600, rare: 1600, epic: 3500, legendary: 8000, mythic: 20000 };
+    for (const s of SKINS) {
+      if (s.unlock.type === 'achievement') expect(ids.has(s.unlock.achievementId), s.id).toBe(true);
+      if (s.unlock.type === 'coins') expect(s.unlock.price, s.id).toBeLessThanOrEqual(maxPrice[s.rarity]!);
+    }
+    expect(SKINS.filter((s) => s.shader !== 'none').length).toBeGreaterThanOrEqual(15);
+    expect(new Set(SKINS.map((s) => s.trailStyle)).size).toBe(9);
   });
 });

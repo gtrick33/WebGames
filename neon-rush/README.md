@@ -1,7 +1,11 @@
 # NEON RUSH
 
 An original, lightweight 2D endless arcade racer for the browser. Weave through neon traffic,
-grab coins and power-ups, chain near misses, and unlock cosmetic cars.
+grab coins and power-ups, chain near misses, climb the online leaderboard, and collect 65 cosmetic cars
+across 10 body classes (formula, stock car, hypercar, grand tourer, muscle, cyber, hover, rally, prototype, street)
+with animated GPU paint shaders and 9 trail styles.
+
+**Live:** https://neon-rush-8aj.pages.dev · **Launch steps (token, domain, ads, billing):** [docs/LAUNCH-GUIDE.md](docs/LAUNCH-GUIDE.md)
 
 Built with **TypeScript (strict)**, **PixiJS 8** and **Vite**. Menus are plain HTML and CSS.
 All art and music are generated in code: there are no image or audio downloads.
@@ -21,6 +25,7 @@ All commands run from this folder (`neon-rush/`). Requires Node 20+ (developed o
 | Serve the production build | `npm run preview` |
 | Everything above | `npm run check` |
 | Deploy to Cloudflare Pages | `npm run deploy` (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)) |
+| Local site + API + local D1 | `npm run build && npx wrangler d1 migrations apply neon-rush-leaderboard --local && npx wrangler pages dev` |
 
 ## How to play
 
@@ -41,7 +46,9 @@ src/
   progression/   Versioned save schema, storage, levels, achievements, daily rewards, challenges, run results
   cosmetics/     Skin catalogue and shop logic (cosmetic only)
   monetization/  AdProvider / PurchaseProvider interfaces, frequency caps, dev mocks
-  backend/       Optional online-services interface (local-only in v1)
+  backend/       Leaderboard client + shared validation rules
+functions/       Cloudflare Pages Functions: /api/run, /api/score, /api/leaderboard (D1)
+migrations/      D1 schema
   analytics/     In-memory analytics seam (sends nothing)
   audio/         Web Audio synthesized SFX + music (lazy-loaded)
   ui/            Screen controller, views, styles
@@ -74,9 +81,9 @@ docs/            Deployment, monetization, backend and mobile notes
 | Daily challenges | 3 per day, about 60 to 150 each |
 | Daily login streak | 50, 75, 100, 125, 150, 200, 300 (repeats) |
 
-New players start with 100 coins. There are 10 cars: one starter, six bought with earned coins
-(300 to 2,500), and **four unlocked only through play**: Lime Circuit (level 3), Aurora Gradient (level 8),
-Retro Arcade (3,000 m in one run) and Phantom Chrome (100 lifetime near misses). Cars are purely cosmetic.
+New players start with 100 coins. There are **65 cars** in five rarities (common to mythic, 300 to 20,000 coins),
+and **17 are unlocked only through play** (levels 3 to 30 and achievements such as 5,000 m in one run or 100 km in total).
+Cars are purely cosmetic: same speed, handling and hitbox.
 
 ## Status of monetization and online features
 

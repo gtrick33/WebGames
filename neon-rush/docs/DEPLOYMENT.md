@@ -3,7 +3,11 @@
 NEON RUSH is a static site. The production build in `dist/` can be hosted anywhere. The project
 targets **Cloudflare Pages** on the free plan.
 
-## One-time setup
+Live project: `neon-rush` at https://neon-rush-8aj.pages.dev (classic Pages, created once with
+`--force` because new wrangler versions otherwise redirect Pages commands to Workers). It includes Pages
+Functions and the D1 database `neon-rush-leaderboard` (see `wrangler.toml`).
+
+## One-time setup (already done for this project)
 
 1. Log in to Cloudflare from this machine (opens a browser for OAuth):
    ```bash

@@ -1,7 +1,14 @@
-# Optional backend (future)
+# Backend
 
-v1 is fully local: `LocalOnlyBackend` in `src/backend/backend.ts` returns "not configured" for everything,
-and all gameplay, progression and cosmetics work offline.
+**Live:** the online leaderboard runs on Cloudflare Pages Functions (`functions/api/*`) with a D1 database
+(`migrations/0001_leaderboard.sql`, binding `DB` in `wrangler.toml`). Shared validation lives in
+`src/backend/leaderboard-rules.ts`. See [LAUNCH-GUIDE.md](LAUNCH-GUIDE.md#5-online-leaderboard-how-it-works-and-its-limits).
+Everything else (progress, cars, achievements) stays local, and the game works fully offline.
+
+## Future: cloud saves and accounts
+
+The notes below describe an optional Supabase design. The same features could also be built on the existing
+Cloudflare Functions + D1 setup.
 
 ## Suggested Supabase design
 

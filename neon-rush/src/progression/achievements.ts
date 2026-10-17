@@ -25,6 +25,13 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: 'regular', name: 'Regular', description: 'Play 25 runs.', reward: 200, target: 25, progress: (p) => p.gamesPlayed },
   { id: 'new_paint', name: 'New Paint', description: 'Own 2 car skins.', reward: 50, target: 2, progress: (p) => p.ownedSkins.length },
   { id: 'level_5', name: 'Rising Star', description: 'Reach level 5.', reward: 250, target: 5, progress: (p) => p.level },
+  { id: 'dist_5000', name: 'Escape Velocity', description: 'Drive 5,000 m in a single run. Unlocks Noir Velvet.', reward: 500, target: 5000, progress: (p) => p.bestDistance },
+  { id: 'coins_100_run', name: 'Jackpot', description: 'Collect 100 coins in a single run. Unlocks Hyper Proto.', reward: 250, target: 100, perRun: true, progress: (_p, r) => r?.coins ?? 0 },
+  { id: 'near_25_run', name: 'Untouchable', description: 'Get 25 near misses in a single run.', reward: 300, target: 25, perRun: true, progress: (_p, r) => r?.nearMisses ?? 0 },
+  { id: 'combo_8', name: 'Maximum Combo', description: 'Reach a x8 near miss combo. Unlocks Solar Sail.', reward: 300, target: 8, perRun: true, progress: (_p, r) => r?.bestCombo ?? 0 },
+  { id: 'games_100', name: 'Road Warrior', description: 'Play 100 runs. Unlocks Oval King #3.', reward: 400, target: 100, progress: (p) => p.gamesPlayed },
+  { id: 'lifetime_100km', name: 'Long Haul', description: 'Drive 100 km in total. Unlocks Void Walker.', reward: 800, target: 100_000, progress: (p) => p.lifetimeDistance },
+  { id: 'garage_10', name: 'Collector Edition', description: 'Own 10 cars.', reward: 500, target: 10, progress: (p) => p.ownedSkins.length },
   { id: 'near_100_total', name: 'Phantom Driver', description: '100 near misses in total. Unlocks Phantom Chrome.', reward: 300, target: 100, progress: (p) => p.totalNearMisses },
 ];
 

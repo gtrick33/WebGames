@@ -1,7 +1,7 @@
 import type { MockAdOutcome } from '../monetization/ads';
 import type { MockPurchaseOutcome, Product } from '../monetization/purchases';
 
-export type ScreenId = 'title' | 'hud' | 'pause' | 'gameover' | 'garage' | 'missions' | 'settings' | 'daily' | 'confirm' | 'mock';
+export type ScreenId = 'title' | 'hud' | 'pause' | 'gameover' | 'garage' | 'missions' | 'settings' | 'leaderboard' | 'daily' | 'confirm' | 'mock';
 
 const OVERLAYS: ScreenId[] = ['confirm', 'mock'];
 
