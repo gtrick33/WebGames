@@ -104,9 +104,8 @@ function ColorRecall({ host }: { host: GameHost }) {
     sfx().reveal(result.points);
     if (result.points >= 900) navigator.vibrate?.(30);
     if (next.results.length >= next.rounds.length) {
-      const end = endStats(next.results);
+      const end = reportEnd(host, next.results, game.mode === 'daily');
       if (game.mode === 'practice') s = recordPracticeGame(s, end.score);
-      host.report({ type: 'end', ...end });
     }
     commit(s);
   };
@@ -145,6 +144,17 @@ function ColorRecall({ host }: { host: GameHost }) {
       )}
     </div>
   );
+}
+
+/**
+ * The one place a finished 5-colour game is reported to the arcade. `isDaily` marks today's
+ * shared daily run (never practice); when the arcade's `daily: true` end flag lands, pass it here.
+ */
+function reportEnd(host: GameHost, results: RoundResult[], isDaily: boolean): ReturnType<typeof endStats> {
+  const end = endStats(results);
+  void isDaily;
+  host.report({ type: 'end', ...end });
+  return end;
 }
 
 /* ------------------------------------------------------------------ menu */
