@@ -47,7 +47,13 @@ export interface DailyTemplate {
  * - `module`: the game is a React component inside this repo, lazy-loaded from src/catalog/modules.ts.
  */
 export type GameRuntime =
-  | { kind: 'embed'; url: string; /** Allowed postMessage origins. */ origins: string[] }
+  | {
+      kind: 'embed';
+      /** Path under this site (e.g. /play/<slug>/, built by scripts/build-games.mjs) or an absolute URL. */
+      url: string;
+      /** Allowed postMessage origins; 'self' means this site's own origin. */
+      origins: string[];
+    }
   | { kind: 'module' };
 
 export interface GameEntry {

@@ -25,3 +25,23 @@ export function runEndMessage(stats: RunStats): HostMessage {
     stats: { meters: Math.floor(stats.meters), coins: stats.coins, nearMisses: stats.nearMisses },
   };
 }
+
+/** Messages the host page may send to the game. */
+export type HostCommand = { type: 'identity'; name: string } | { type: 'pause' };
+
+/**
+ * Listens for commands from the host page (only from our direct parent window). Returns an
+ * unsubscribe function. Does nothing when the game is not embedded.
+ */
+export function listenToHost(onCommand: (c: HostCommand) => void, win: Window | undefined = globalThis.window): () => void {
+  if (!win || win.parent === win) return () => undefined;
+  const handler = (e: MessageEvent): void => {
+    if (e.source !== win.parent) return;
+    const d = e.data as Record<string, unknown> | null;
+    if (!d || typeof d !== 'object' || d.source !== 'glitchbound-host' || d.version !== 1) return;
+    if (d.type === 'identity' && typeof d.name === 'string') onCommand({ type: 'identity', name: d.name.slice(0, 40) });
+    else if (d.type === 'pause') onCommand({ type: 'pause' });
+  };
+  win.addEventListener('message', handler);
+  return () => win.removeEventListener('message', handler);
+}

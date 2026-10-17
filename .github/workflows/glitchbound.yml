@@ -3,9 +3,9 @@ name: GlitchBound CI/CD
 on:
   push:
     branches: [pre-release]
-    paths: ['glitchbound/**', '.github/workflows/glitchbound.yml']
+    paths: ['glitchbound/**', 'neon-rush/**', '.github/workflows/glitchbound.yml']
   pull_request:
-    paths: ['glitchbound/**']
+    paths: ['glitchbound/**', 'neon-rush/**']
   workflow_dispatch:
 
 concurrency:
@@ -29,12 +29,14 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: glitchbound/package-lock.json
+          cache-dependency-path: |
+            glitchbound/package-lock.json
+            neon-rush/package-lock.json
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-      - run: npx vite build && node scripts/size-report.mjs
+      - run: npx vite build && node scripts/build-games.mjs && node scripts/size-report.mjs
       - name: Apply database migrations (D1)
         if: github.event_name != 'pull_request' && env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         run: npx wrangler d1 migrations apply glitchbound --remote

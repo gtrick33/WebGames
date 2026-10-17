@@ -69,16 +69,36 @@ const BLOCKED = ['admin', 'moderator', 'glitchbound', 'fuck', 'shit', 'cunt', 'n
 export function validateNickname(raw: unknown): string | null {
   if (typeof raw !== 'string') return 'Pick a nickname.';
   const name = raw.trim();
-  if (name.length < 3 || name.length > 16) return 'Use 3 to 16 characters.';
+  if (name.length < 3 || name.length > 14) return 'Use 3 to 14 characters.';
   if (!/^[A-Za-z0-9 _.-]+$/.test(name)) return 'Letters, numbers, spaces, dot, dash and underscore only.';
   const low = name.toLowerCase().replace(/[^a-z]/g, '');
   if (BLOCKED.some((b) => low.includes(b))) return 'Please pick a different nickname.';
   return null;
 }
 
-export function defaultNickname(givenName: string, seed: string): string {
-  const base = (givenName || 'Player').replace(/[^A-Za-z0-9]/g, '').slice(0, 11) || 'Player';
+const ADJ = ['Brave', 'Swift', 'Neon', 'Lucky', 'Pixel', 'Cosmic', 'Turbo', 'Silent', 'Fuzzy', 'Mighty', 'Sly', 'Jolly', 'Rapid', 'Quiet', 'Witty', 'Bold', 'Zesty', 'Hyper', 'Mellow', 'Sunny'];
+const NOUN = ['Fox', 'Otter', 'Comet', 'Panda', 'Falcon', 'Badger', 'Koala', 'Raven', 'Lynx', 'Gecko', 'Moose', 'Orca', 'Wolf', 'Tiger', 'Owl', 'Yak', 'Crab', 'Bison', 'Squid', 'Robin'];
+
+/** Reddit-style random name, e.g. "BraveFox527" (always valid, at most 14 characters). */
+export function randomName(rand: () => number = Math.random): string {
+  const pick = <T,>(a: T[]): T => a[Math.floor(rand() * a.length)]!;
+  for (let i = 0; i < 10; i++) {
+    const name = `${pick(ADJ)}${pick(NOUN)}${Math.floor(rand() * 900) + 100}`;
+    if (name.length <= 14) return name;
+  }
+  return `Player${Math.floor(rand() * 9000) + 1000}`;
+}
+
+/**
+ * Starting nickname candidates for a new member, best first: their Google name when it fits
+ * (e.g. "Sava Hristov"), their first name, first name + digits, then a random name.
+ */
+export function nicknameCandidates(fullName: string, givenName: string, seed: string): string[] {
+  const clean = (s: string): string => s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 _.-]/g, '').replace(/\s+/g, ' ').trim();
   const n = (hashString(seed) % 900) + 100;
-  const nick = `${base}${n}`;
-  return validateNickname(nick) ? `Player${n}` : nick;
+  const first = clean(givenName) || clean(fullName).split(' ')[0] || '';
+  let x = hashString(`${seed}:r`);
+  const rand = (): number => ((x = Math.imul(x ^ (x >>> 15), 2246822507) >>> 0) % 10000) / 10000;
+  const list = [clean(fullName), first, first ? `${first.replace(/ /g, '').slice(0, 11)}${n}` : '', randomName(rand), randomName(rand), `Player${n}`];
+  return [...new Set(list.filter((c) => c && !validateNickname(c)))];
 }

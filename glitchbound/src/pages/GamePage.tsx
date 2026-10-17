@@ -13,6 +13,8 @@ import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { MiniLeaderboard } from '../components/Leaderboard';
 import { openSignIn } from '../components/SignIn';
+import { setGuestName, usePlayerName } from '../platform/playerName';
+import { music } from '../platform/music';
 import type { EndEvent, GameEvent } from '../platform/contract';
 import { challengeForDay, fmt } from '../platform/daily';
 import { dayKey } from '../platform/dates';
@@ -33,19 +35,71 @@ interface LastRound {
   server?: RunEndResult | null;
 }
 
-function useFullscreen(ref: RefObject<HTMLElement | null>): { supported: boolean; active: boolean; toggle: () => void } {
-  const [active, setActive] = useState(false);
-  const supported = typeof document !== 'undefined' && !!document.fullscreenEnabled;
+/** Stops pinch/double-tap zoom while a game fills the screen (restored afterwards). */
+function lockZoom(on: boolean): void {
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (!meta) return;
+  const base = 'width=device-width, initial-scale=1, viewport-fit=cover';
+  meta.setAttribute('content', on ? `${base}, maximum-scale=1, user-scalable=no` : base);
+}
+
+/**
+ * Real fullscreen where the browser allows it on an element; otherwise (iPhone Safari) an
+ * "immersive" mode that pins the stage over the whole screen. Either way the page stops scrolling
+ * and zooming while playing.
+ */
+function usePlayMode(ref: RefObject<HTMLElement | null>): { active: boolean; enter: () => void; exit: () => void } {
+  const [mode, setMode] = useState<'none' | 'fullscreen' | 'immersive'>('none');
+
+  const apply = useCallback(
+    (next: 'none' | 'fullscreen' | 'immersive') => {
+      const el = ref.current;
+      el?.classList.toggle('stage-immersive', next === 'immersive');
+      document.documentElement.classList.toggle('game-focus', next !== 'none');
+      lockZoom(next !== 'none');
+      setMode(next);
+    },
+    [ref],
+  );
+
   useEffect(() => {
-    const on = (): void => setActive(document.fullscreenElement === ref.current && !!ref.current);
-    document.addEventListener('fullscreenchange', on);
-    return () => document.removeEventListener('fullscreenchange', on);
-  }, [ref]);
-  const toggle = (): void => {
-    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
-    else void ref.current?.requestFullscreen().catch(() => undefined);
+    const onChange = (): void => {
+      if (document.fullscreenElement === ref.current && ref.current) apply('fullscreen');
+      else if (!document.fullscreenElement) apply('none');
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      document.documentElement.classList.remove('game-focus');
+      lockZoom(false);
+    };
+  }, [ref, apply]);
+
+  const enter = (): void => {
+    const el = ref.current;
+    if (!el) return;
+    // Must run inside the click handler: browsers only allow fullscreen from a user gesture.
+    if (document.fullscreenEnabled && el.requestFullscreen) {
+      el.requestFullscreen({ navigationUI: 'hide' }).catch(() => apply('immersive'));
+    } else {
+      apply('immersive');
+    }
   };
-  return { supported, active, toggle };
+  const exit = (): void => {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    apply('none');
+  };
+
+  useEffect(() => {
+    if (mode !== 'immersive') return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') apply('none');
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mode, apply]);
+
+  return { active: mode !== 'none', enter, exit };
 }
 
 export function GamePage({ game }: { game: GameEntry }) {
@@ -54,7 +108,11 @@ export function GamePage({ game }: { game: GameEntry }) {
   const save = useSave();
   const record = save.games[game.slug];
   const stageRef = useRef<HTMLDivElement>(null);
-  const fs = useFullscreen(stageRef);
+  const play = usePlayMode(stageRef);
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const player = usePlayerName();
+  const [renaming, setRenaming] = useState(false);
+  const [renameMsg, setRenameMsg] = useState('');
   const [restartKey, setRestartKey] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [last, setLast] = useState<LastRound | null>(null);
@@ -71,6 +129,12 @@ export function GamePage({ game }: { game: GameEntry }) {
   useEffect(() => {
     track('game_view', { game: game.slug });
   }, [game.slug]);
+
+  // The lobby music steps aside while a game is loaded on this page.
+  useEffect(() => {
+    music.setGameActive(playing);
+    return () => music.setGameActive(false);
+  }, [playing]);
 
   const onEvent = useCallback(
     (e: GameEvent) => {
@@ -151,9 +215,9 @@ export function GamePage({ game }: { game: GameEntry }) {
               <Icon name="restart" size={18} /> <span className="hide-sm">Restart</span>
             </button>
           )}
-          {fs.supported && (
-            <button className="btn btn-sm btn-icon" onClick={fs.toggle} aria-label={fs.active ? 'Exit fullscreen' : 'Fullscreen'} title="Fullscreen">
-              <Icon name={fs.active ? 'shrink' : 'expand'} size={18} />
+          {playing && (
+            <button className="btn btn-sm btn-icon" onClick={play.enter} aria-label="Fullscreen" title="Fullscreen">
+              <Icon name="expand" size={18} />
             </button>
           )}
           <button className="btn btn-sm btn-icon" onClick={() => void share('game')} aria-label={`Share ${game.title}`} title="Share">
@@ -170,6 +234,16 @@ export function GamePage({ game }: { game: GameEntry }) {
             game={game}
             onEvent={onEvent}
             stageRef={stageRef}
+            frameRef={frameRef}
+            playerName={player.name}
+            onPlayClick={play.enter}
+            overlay={
+              play.active ? (
+                <button className="stage-exit" onClick={play.exit} aria-label="Exit full screen">
+                  <Icon name="shrink" size={16} /> Exit
+                </button>
+              ) : null
+            }
             onPhase={(p) => {
               setPlaying(p === 'loading' || p === 'ready');
               if (p === 'error') {
@@ -185,6 +259,44 @@ export function GamePage({ game }: { game: GameEntry }) {
           <p className="game-share-msg" role="status">
             {shareMsg}
           </p>
+
+          <div className="panel player-name">
+            <span className="mono">Playing as</span>
+            {renaming && !player.member ? (
+              <form
+                className="rename-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const err = setGuestName(String(new FormData(e.currentTarget).get('name') ?? ''));
+                  setRenameMsg(err ?? '');
+                  if (!err) setRenaming(false);
+                }}
+              >
+                <input className="field" name="name" defaultValue={player.name} maxLength={14} aria-label="Player name" autoFocus />
+                <button className="btn btn-primary btn-sm">Save</button>
+              </form>
+            ) : (
+              <div className="player-row">
+                <strong>{player.name}</strong>
+                {player.member ? (
+                  <Link href="/me" className="link-btn">
+                    Change
+                  </Link>
+                ) : (
+                  <button className="link-btn" onClick={() => setRenaming(true)}>
+                    Change
+                  </button>
+                )}
+              </div>
+            )}
+            {renameMsg && <p className="side-muted">{renameMsg}</p>}
+            {!player.member && (
+              <p className="side-muted">
+                Guest name. <button className="link-btn" onClick={() => openSignIn('Sign in to keep your name and scores on every device.')}>Sign in</button> to keep it
+                on every device.
+              </p>
+            )}
+          </div>
 
           {beat !== null && (
             <div className={`panel friend ${last && last.event.score > beat ? 'is-beaten' : ''}`}>
@@ -303,11 +415,6 @@ export function GamePage({ game }: { game: GameEntry }) {
           <p className="eyebrow">About the game</p>
           <h2 id="about-title">{game.title}</h2>
           <p>{game.description}</p>
-          {game.homepage && (
-            <a href={game.homepage} className="ext-link" target="_blank" rel="noopener">
-              Also playable at {new URL(game.homepage).host} <Icon name="external" size={16} />
-            </a>
-          )}
         </div>
         {game.highlights && (
           <ul className="latest-list game-highlights">

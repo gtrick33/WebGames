@@ -64,7 +64,7 @@ describe('game page', () => {
     expect(document.querySelector('iframe')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Play NEON RUSH/ }));
     const iframe = document.querySelector('iframe')!;
-    expect(iframe.getAttribute('src')).toBe('https://neonrushgame.com/');
+    expect(iframe.getAttribute('src')).toBe('/play/neon-rush/');
 
     const end = { source: 'glitchbound-game', version: 1, type: 'end', score: 321, stats: { meters: 250, coins: 7, nearMisses: 1 } };
     // Wrong origin: ignored.
@@ -74,12 +74,12 @@ describe('game page', () => {
     expect(screen.queryByText('Last round')).toBeNull();
     // Right origin but not from our iframe: ignored.
     act(() => {
-      window.dispatchEvent(new MessageEvent('message', { data: end, origin: 'https://neonrushgame.com', source: window }));
+      window.dispatchEvent(new MessageEvent('message', { data: end, origin: window.location.origin, source: window }));
     });
     expect(screen.queryByText('Last round')).toBeNull();
     // The real game frame: recorded.
     act(() => {
-      window.dispatchEvent(new MessageEvent('message', { data: end, origin: 'https://neonrushgame.com', source: iframe.contentWindow }));
+      window.dispatchEvent(new MessageEvent('message', { data: end, origin: window.location.origin, source: iframe.contentWindow }));
     });
     expect(screen.getByText('Last round')).toBeTruthy();
     expect(screen.getByText(/You beat/)).toBeTruthy();

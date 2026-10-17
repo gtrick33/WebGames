@@ -16,7 +16,10 @@ describe('the real registry', () => {
   it('contains NEON RUSH as an embedded game with its own origin allowed', () => {
     const g = getGame('neon-rush');
     expect(g?.runtime.kind).toBe('embed');
-    if (g?.runtime.kind === 'embed') expect(g.runtime.origins).toContain(new URL(g.runtime.url).origin);
+    if (g?.runtime.kind === 'embed') {
+      expect(g.runtime.url).toBe('/play/neon-rush/');
+      expect(g.runtime.origins).toContain('self');
+    }
   });
 });
 

@@ -20,3 +20,10 @@ binding = "DB"
 database_name = "glitchbound"
 database_id = "5f30a89b-47e8-4e58-b387-bed20fd65af2"
 migrations_dir = "migrations"
+
+# NEON RUSH's in-game leaderboard (its schema lives in neon-rush/migrations).
+[[d1_databases]]
+binding = "NR_DB"
+database_name = "neon-rush-leaderboard"
+database_id = "9182c9bc-62a0-4568-88c8-4874bcda05db"
+migrations_dir = "../neon-rush/migrations"

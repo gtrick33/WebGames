@@ -32,3 +32,30 @@ describe('host embed bridge', () => {
     expect(() => notifyHost({ type: 'start' }, win)).not.toThrow();
   });
 });
+
+describe('host commands', () => {
+  function host() {
+    const listeners: ((e: MessageEvent) => void)[] = [];
+    const parent = {};
+    const win = {
+      parent,
+      addEventListener: (_: string, fn: (e: MessageEvent) => void) => listeners.push(fn),
+      removeEventListener: () => undefined,
+    } as unknown as Window;
+    const send = (data: unknown, source: unknown = parent) => listeners.forEach((fn) => fn({ data, source } as MessageEvent));
+    return { win, send };
+  }
+
+  it('accepts identity and pause from the parent window only', async () => {
+    const { listenToHost } = await import('../src/analytics/embed');
+    const { win, send } = host();
+    const got: unknown[] = [];
+    listenToHost((c) => got.push(c), win);
+    send({ source: 'glitchbound-host', version: 1, type: 'identity', name: 'BraveFox27' });
+    send({ source: 'glitchbound-host', version: 1, type: 'pause' });
+    send({ source: 'glitchbound-host', version: 1, type: 'pause' }, {}); // not the parent
+    send({ source: 'other', version: 1, type: 'pause' });
+    send({ source: 'glitchbound-host', version: 2, type: 'pause' });
+    expect(got).toEqual([{ type: 'identity', name: 'BraveFox27' }, { type: 'pause' }]);
+  });
+});

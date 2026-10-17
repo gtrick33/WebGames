@@ -123,6 +123,16 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       body: `<section class="ssr"><h1>Your profile</h1><p>Sign in to see your quests, level, badges and bests.</p></section>`,
     },
     {
+      path: '/signin',
+      file: 'signin.html',
+      title: `Sign in or create an account · ${SITE}`,
+      description: 'Join GlitchBound for free with Google or your email: daily quests, levels and leaderboards.',
+      image: '/og.png',
+      imageAlt: SITE,
+      noindex: true,
+      body: `<section class="ssr"><h1>Join the arcade</h1><p>Sign in with Google or with an email code.</p></section>`,
+    },
+    {
       path: '/admin',
       file: 'admin.html',
       title: `Admin · ${SITE}`,

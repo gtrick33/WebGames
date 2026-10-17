@@ -17,10 +17,10 @@ import { AdManager } from './monetization/ads';
 import { grantPurchase, type PurchaseProvider } from './monetization/purchases';
 import { selectProviders } from './monetization/providers';
 import { LocalAnalytics } from './analytics/analytics';
-import { notifyHost, runEndMessage } from './analytics/embed';
+import { listenToHost, notifyHost, runEndMessage, type HostCommand } from './analytics/embed';
 import { createBackend, type BackendService } from './backend/backend';
 import { LeaderboardClient, type BoardResult } from './backend/leaderboard';
-import { normalizeName, validateName } from './backend/leaderboard-rules';
+import { NAME_MAX, normalizeName, validateName } from './backend/leaderboard-rules';
 import { esc } from './ui/ui';
 import { dayKey } from './core/dates';
 import type { AudioEngine, Sfx } from './audio/audio';
@@ -147,6 +147,7 @@ export class App {
     this.ui.onClickSound = () => this.sfx('click');
 
     document.addEventListener('visibilitychange', this.onVisibility);
+    listenToHost((c) => this.onHostCommand(c));
     window.addEventListener('blur', this.onBlur);
     window.addEventListener('pagehide', () => this.saves.save(this.profile));
 
@@ -705,6 +706,21 @@ export class App {
   private onBlur = (): void => {
     if (this.state === 'playing') this.pause();
   };
+
+  /** Commands from the GlitchBound arcade when the game is embedded there. */
+  private onHostCommand(c: HostCommand): void {
+    if (c.type === 'pause') {
+      if (this.state === 'playing') this.pause();
+      return;
+    }
+    // The arcade's player name (account nickname or guest name) becomes the racer name.
+    const name = normalizeName(c.name).slice(0, NAME_MAX).trim();
+    if (validateName(name) || name === this.profile.playerName) return;
+    this.profile.playerName = name;
+    const input = this.ui.el('nameInput') as HTMLInputElement | null;
+    if (input) input.value = name;
+    this.save();
+  }
 
   // ------------------------------------------------------------------ frame
 

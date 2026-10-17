@@ -38,6 +38,7 @@ html, body {
   -webkit-touch-callout: none;
 }
 
+html, body { touch-action: manipulation; }
 #game { position: fixed; inset: 0; touch-action: none; }
 #game canvas { display: block; width: 100%; height: 100%; }
 

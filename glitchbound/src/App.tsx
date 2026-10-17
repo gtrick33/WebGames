@@ -11,7 +11,9 @@ import { PrivacyPage } from './pages/PrivacyPage';
 import { AdminPage } from './pages/AdminPage';
 import { LeaderboardsPage } from './pages/LeaderboardsPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { SignInPage } from './pages/SignInPage';
 import { ArcadeEntrance } from './components/Entrance';
+import { MusicControl } from './components/MusicControl';
 import { track } from './platform/analytics';
 import { Link, matchRoute, useLocation } from './router/router';
 
@@ -31,6 +33,8 @@ function Page() {
       return <ProfilePage />;
     case 'admin':
       return <AdminPage />;
+    case 'signin':
+      return <SignInPage />;
     case 'game': {
       const game = getGame(route.slug);
       return game ? <GamePage key={game.slug} game={game} /> : <NotFound />;
@@ -74,6 +78,7 @@ export function App() {
         </ErrorBoundary>
       </main>
       <Footer />
+      <MusicControl />
     </>
   );
 }

@@ -273,3 +273,34 @@
   width: 40px;
   height: 40px;
 }
+
+.player-name {
+  display: grid;
+  gap: 6px;
+  padding: 14px 18px;
+}
+.player-name > .mono {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.player-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.player-row strong {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+.rename-form {
+  display: flex;
+  gap: 8px;
+}
+.rename-form .field {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+}

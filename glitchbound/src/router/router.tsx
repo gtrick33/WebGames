@@ -14,6 +14,7 @@ export type Route =
   | { name: 'leaderboards' }
   | { name: 'me' }
   | { name: 'admin' }
+  | { name: 'signin' }
   | { name: 'notfound' };
 
 export function matchRoute(pathname: string): Route {
@@ -24,6 +25,7 @@ export function matchRoute(pathname: string): Route {
   if (path === '/leaderboards') return { name: 'leaderboards' };
   if (path === '/me') return { name: 'me' };
   if (path === '/admin') return { name: 'admin' };
+  if (path === '/signin') return { name: 'signin' };
   const m = /^\/games\/([a-z0-9-]+)$/.exec(path);
   if (m?.[1]) return { name: 'game', slug: m[1] };
   return { name: 'notfound' };

@@ -25,13 +25,48 @@ export default function Preview({ playing = true }: GamePreviewProps) {
     let t = 0;
     const resize = (): void => {
       const rect = canvas.getBoundingClientRect();
-      dpr = Math.min(2, window.devicePixelRatio || 1);
+      // 1.5x is sharp enough for a small looping preview and much cheaper than full Retina.
+      dpr = Math.min(1.5, window.devicePixelRatio || 1);
       w = Math.max(1, rect.width);
       h = Math.max(1, rect.height);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       const carH = layout(w, h).ch / h;
       if (!sim || Math.abs(sim.carH - carH) > 0.01) sim = new PreviewSim(carH);
+      backdrop = null;
+    };
+
+    // Everything that never moves (sky, road, glowing edges) is drawn once into an offscreen canvas.
+    let backdrop: HTMLCanvasElement | null = null;
+    const makeBackdrop = (): HTMLCanvasElement => {
+      const c = document.createElement('canvas');
+      c.width = canvas.width;
+      c.height = canvas.height;
+      const b = c.getContext('2d')!;
+      b.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const { laneW, roadL } = layout(w, h);
+      const roadW = laneW * LANES;
+      const g = b.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, '#160733');
+      g.addColorStop(1, '#2a0f52');
+      b.fillStyle = g;
+      b.fillRect(0, 0, w, h);
+      b.fillStyle = 'rgba(255,255,255,0.04)';
+      b.fillRect(roadL, 0, roadW, h);
+      b.lineWidth = 3;
+      b.shadowBlur = 16;
+      for (const [x, col] of [
+        [roadL, '#22e4ff'],
+        [roadL + roadW, '#ff3fd2'],
+      ] as const) {
+        b.shadowColor = col;
+        b.strokeStyle = col;
+        b.beginPath();
+        b.moveTo(x, 0);
+        b.lineTo(x, h);
+        b.stroke();
+      }
+      return c;
     };
     resize();
 
@@ -42,12 +77,15 @@ export default function Preview({ playing = true }: GamePreviewProps) {
 
     const drawCar = (x: number, y: number, cw: number, ch: number, body: string, player: boolean): void => {
       ctx.save();
-      ctx.shadowColor = body;
-      ctx.shadowBlur = player ? 22 : 12;
+      // Cheap glow: a translucent halo instead of canvas shadowBlur (which is slow every frame).
+      const halo = player ? 7 : 4;
+      ctx.globalAlpha = 0.28;
       ctx.fillStyle = body;
+      roundRect(x - cw / 2 - halo, y - ch / 2 - halo, cw + halo * 2, ch + halo * 2, cw * 0.45);
+      ctx.fill();
+      ctx.globalAlpha = 1;
       roundRect(x - cw / 2, y - ch / 2, cw, ch, cw * 0.32);
       ctx.fill();
-      ctx.shadowBlur = 0;
       ctx.lineWidth = 2;
       ctx.strokeStyle = 'rgba(255,255,255,0.85)';
       ctx.stroke();
@@ -68,15 +106,10 @@ export default function Preview({ playing = true }: GamePreviewProps) {
     const draw = (): void => {
       if (!sim) return;
       const { cw, ch, laneW, roadL } = layout(w, h);
-      const roadW = laneW * LANES;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      backdrop ??= makeBackdrop();
+      ctx.drawImage(backdrop, 0, 0);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, '#160733');
-      g.addColorStop(1, '#2a0f52');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = 'rgba(255,255,255,0.04)';
-      ctx.fillRect(roadL, 0, roadW, h);
 
       ctx.strokeStyle = 'rgba(255,255,255,0.28)';
       ctx.lineWidth = 3;
@@ -90,35 +123,20 @@ export default function Preview({ playing = true }: GamePreviewProps) {
       }
       ctx.setLineDash([]);
 
-      ctx.save();
-      ctx.lineWidth = 3;
-      ctx.shadowBlur = 16;
-      for (const [x, c] of [
-        [roadL, '#22e4ff'],
-        [roadL + roadW, '#ff3fd2'],
-      ] as const) {
-        ctx.shadowColor = c;
-        ctx.strokeStyle = c;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
-      }
-      ctx.restore();
-
       for (const r of sim.rows) {
         if (r.collected) continue;
         for (const lane of r.free) {
           if (!r.coins[lane]) continue;
           const pulse = 1 + Math.sin(t * 8 + r.y * 20) * 0.08;
-          ctx.save();
-          ctx.shadowColor = '#ffd12e';
-          ctx.shadowBlur = 12;
+          const cx = roadL + laneW * (lane + 0.5);
+          ctx.fillStyle = 'rgba(255,209,46,0.3)';
+          ctx.beginPath();
+          ctx.arc(cx, r.y * h, laneW * 0.16 * pulse, 0, Math.PI * 2);
+          ctx.fill();
           ctx.fillStyle = '#ffd12e';
           ctx.beginPath();
-          ctx.arc(roadL + laneW * (lane + 0.5), r.y * h, laneW * 0.1 * pulse, 0, Math.PI * 2);
+          ctx.arc(cx, r.y * h, laneW * 0.1 * pulse, 0, Math.PI * 2);
           ctx.fill();
-          ctx.restore();
         }
       }
       for (const r of sim.rows) r.blocked.forEach((lane, i) => drawCar(roadL + laneW * (lane + 0.5), r.y * h, cw, ch, r.colors[i]!, false));
@@ -128,14 +146,16 @@ export default function Preview({ playing = true }: GamePreviewProps) {
     let raf = 0;
     let last = performance.now();
     let visible = true;
+    // 30 fps is plenty for a preview and halves its cost.
     const loop = (now: number): void => {
-      const dt = Math.min(0.05, (now - last) / 1000);
+      raf = requestAnimationFrame(loop);
+      if (now - last < 1000 / 31) return;
+      const dt = Math.min(0.06, (now - last) / 1000);
       last = now;
       t += dt;
       sim?.step(dt);
       scroll = (scroll + dt * ROW_SPEED * h * 1.5) % 60;
       draw();
-      raf = requestAnimationFrame(loop);
     };
     const start = (): void => {
       if (raf || reduced || !visible || document.hidden || !playingRef.current) return;

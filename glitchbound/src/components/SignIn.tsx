@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { account, useAccount } from '../platform/account';
+import { account, ApiError, useAccount } from '../platform/account';
 import { track } from '../platform/analytics';
+import { navigate } from '../router/router';
 import { Icon } from './Icon';
 import './SignIn.css';
 
+interface TokenResponse {
+  access_token?: string;
+  error?: string;
+}
 declare global {
   interface Window {
     google?: {
       accounts: {
-        id: {
-          initialize(opts: { client_id: string; callback: (r: { credential: string }) => void; ux_mode?: string; auto_select?: boolean; itp_support?: boolean }): void;
-          renderButton(el: HTMLElement, opts: Record<string, unknown>): void;
+        oauth2: {
+          initTokenClient(opts: {
+            client_id: string;
+            scope: string;
+            callback: (r: TokenResponse) => void;
+            error_callback?: (e: { type: string }) => void;
+          }): { requestAccessToken(o?: { prompt?: string }): void };
         };
       };
     };
@@ -33,7 +42,7 @@ function loadGoogle(): Promise<void> {
   return gisPromise;
 }
 
-/** Opens from anywhere: `openSignIn()`; the dialog lives once in the header. */
+/** Opens the sign-in dialog from anywhere. */
 const openers = new Set<(reason?: string) => void>();
 export function openSignIn(reason?: string): void {
   openers.forEach((fn) => fn(reason));
@@ -46,19 +55,247 @@ const PERKS: { icon: 'bolt' | 'crown' | 'heart' | 'mail'; text: string }[] = [
   { icon: 'mail', text: 'Optional email when a new game launches' },
 ];
 
+/** Google's "G" mark, as required next to "Continue with Google". */
+function GoogleG() {
+  return (
+    <svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
+
+/**
+ * The whole sign-in / sign-up flow: Google (our own styled button, Google's token popup), or
+ * email with a one-time code. New and returning players use the same steps.
+ */
+export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void; showPerks?: boolean }) {
+  const { config } = useAccount();
+  const [step, setStep] = useState<'start' | 'code'>('start');
+  const [email, setEmail] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState<'' | 'google' | 'email'>('');
+  const [error, setError] = useState('');
+  const [note, setNote] = useState('');
+  const codeRef = useRef<HTMLInputElement>(null);
+
+  const finish = (method: string): void => {
+    track('sign_in', { method });
+    onDone?.();
+  };
+  const message = (err: unknown, fallback: string): string => (err instanceof ApiError && err.message !== err.code ? err.message : fallback);
+
+  // Load Google's script ahead of time: the popup must open in the same tick as the click,
+  // or browsers block it.
+  useEffect(() => {
+    if (config?.googleClientId) void loadGoogle().catch(() => undefined);
+  }, [config?.googleClientId]);
+
+  const google = (): void => {
+    if (!config?.googleClientId) return;
+    setError('');
+    if (!window.google?.accounts?.oauth2) {
+      setBusy('google');
+      loadGoogle()
+        .then(() => setBusy(''))
+        .then(() => setError('Google is ready now. Tap the button again.'))
+        .catch(() => {
+          setBusy('');
+          setError('Google sign-in could not load. Check your connection or content blocker.');
+        });
+      return;
+    }
+    setBusy('google');
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: config.googleClientId,
+      scope: 'openid email profile',
+      callback: (r) => {
+        if (!r.access_token) {
+          setBusy('');
+          if (r.error) setError('Google sign-in was cancelled.');
+          return;
+        }
+        account
+          .signInWithGoogleToken(r.access_token)
+          .then(() => finish('google'))
+          .catch((e: unknown) => setError(message(e, 'Sign-in failed. Please try again.')))
+          .finally(() => setBusy(''));
+      },
+      error_callback: (e) => {
+        setBusy('');
+        setError(e.type === 'popup_closed' ? '' : 'The Google window could not open. Allow pop-ups for this site and try again.');
+      },
+    });
+    client.requestAccessToken({ prompt: 'select_account' });
+  };
+
+  const sendCode = async (e?: FormEvent): Promise<void> => {
+    e?.preventDefault();
+    setError('');
+    setBusy('email');
+    try {
+      await account.emailStart(email.trim(), nickname.trim());
+      setStep('code');
+      setNote(`We sent a 6-digit code to ${email.trim()}. It works for 15 minutes.`);
+      requestAnimationFrame(() => codeRef.current?.focus());
+    } catch (err) {
+      setError(message(err, 'Could not send the code. Please try again.'));
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const verify = async (e: FormEvent): Promise<void> => {
+    e.preventDefault();
+    setError('');
+    setBusy('email');
+    try {
+      await account.emailVerify(email.trim(), code);
+      finish('email');
+    } catch (err) {
+      setError(message(err, 'That code did not work.'));
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const devSubmit = (e: FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    account
+      .devSignIn(String(data.get('email')), String(data.get('name')))
+      .then(() => finish('dev'))
+      .catch(() => setError('Dev sign-in failed.'));
+  };
+
+  return (
+    <div className="signin-panel">
+      {showPerks && (
+        <ul className="signin-perks">
+          {PERKS.map((p) => (
+            <li key={p.text}>
+              <span className="signin-perk-icon">
+                <Icon name={p.icon} size={18} />
+              </span>
+              {p.text}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {step === 'start' && (
+        <>
+          <button className="google-btn" onClick={google} disabled={!config?.googleClientId || busy !== ''} aria-busy={busy === 'google'}>
+            <span className="google-btn-g">
+              <GoogleG />
+            </span>
+            <span>{busy === 'google' ? 'Waiting for Google…' : 'Continue with Google'}</span>
+          </button>
+
+          <div className="signin-or" role="separator">
+            <span>or use your email</span>
+          </div>
+
+          <form className="signin-email" onSubmit={(e) => void sendCode(e)}>
+            <label className="sr-only" htmlFor="signin-email">
+              Email address
+            </label>
+            <input id="signin-email" className="field" type="email" required autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <label className="sr-only" htmlFor="signin-nick">
+              Nickname (new players, optional)
+            </label>
+            <input
+              id="signin-nick"
+              className="field"
+              maxLength={14}
+              autoComplete="nickname"
+              placeholder="Nickname (new players, optional)"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+            />
+            <button className="btn btn-primary" disabled={busy !== '' || !config?.emailEnabled}>
+              <Icon name="mail" size={18} /> {busy === 'email' ? 'Sending…' : 'Email me a sign-in code'}
+            </button>
+            {config && !config.emailEnabled && <p className="signin-fine">Email sign-in opens as soon as our mailer is switched on. Google works now.</p>}
+          </form>
+        </>
+      )}
+
+      {step === 'code' && (
+        <form className="signin-email" onSubmit={(e) => void verify(e)}>
+          <p className="signin-note-ok">{note}</p>
+          <label className="sr-only" htmlFor="signin-code">
+            6-digit code
+          </label>
+          <input
+            ref={codeRef}
+            id="signin-code"
+            className="field signin-code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            placeholder="000000"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            required
+          />
+          <button className="btn btn-lime" disabled={busy !== '' || code.length !== 6}>
+            {busy === 'email' ? 'Checking…' : 'Sign in'}
+          </button>
+          <div className="signin-row">
+            <button type="button" className="link-btn" onClick={() => void sendCode()} disabled={busy !== ''}>
+              Send a new code
+            </button>
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => {
+                setStep('start');
+                setCode('');
+                setNote('');
+              }}
+            >
+              Use a different email
+            </button>
+          </div>
+          <p className="signin-fine">You can also tap the button in the email; it signs you in on that device.</p>
+        </form>
+      )}
+
+      {config?.devLogin && step === 'start' && (
+        <form className="signin-dev" onSubmit={devSubmit}>
+          <p className="mono">Local dev sign-in (never in production)</p>
+          <input className="field" name="email" type="email" defaultValue="tester@example.com" aria-label="Dev email" required />
+          <input className="field" name="name" defaultValue="Tester" aria-label="Dev name" />
+          <button className="btn btn-yellow">Sign in (dev)</button>
+        </form>
+      )}
+
+      {error && (
+        <p className="signin-error" role="alert">
+          {error}
+        </p>
+      )}
+      <p className="signin-fine">
+        New here? Either option creates your free account. Leaderboards show your nickname (it starts as your Google name and you can change it), never your
+        email. <a href="/privacy">Privacy</a>
+      </p>
+    </div>
+  );
+}
+
 export function SignInDialog() {
   const ref = useRef<HTMLDialogElement>(null);
-  const buttonRef = useRef<HTMLDivElement>(null);
   const [reason, setReason] = useState<string | undefined>();
   const [open, setOpen] = useState(false);
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  const { config } = useAccount();
 
   useEffect(() => {
     const fn = (r?: string): void => {
       setReason(r);
-      setError('');
       setOpen(true);
     };
     openers.add(fn);
@@ -75,50 +312,6 @@ export function SignInDialog() {
       else d.setAttribute('open', '');
     } else if (!open && d.open) d.close();
   }, [open]);
-
-  // Render Google's own button once the dialog is open (Google requires its button UI).
-  useEffect(() => {
-    const clientId = config?.googleClientId;
-    if (!open || !clientId) return;
-    let cancelled = false;
-    loadGoogle()
-      .then(() => {
-        if (cancelled || !buttonRef.current || !window.google) return;
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          ux_mode: 'popup',
-          itp_support: true,
-          callback: ({ credential }) => {
-            setBusy(true);
-            account
-              .signInWithGoogle(credential)
-              .then(() => {
-                track('sign_in', { method: 'google' });
-                setOpen(false);
-              })
-              .catch(() => setError('Sign-in failed. Please try again.'))
-              .finally(() => setBusy(false));
-          },
-        });
-        buttonRef.current.innerHTML = '';
-        window.google.accounts.id.renderButton(buttonRef.current, { theme: 'filled_black', size: 'large', shape: 'pill', text: 'continue_with', width: 300 });
-      })
-      .catch(() => setError('Google sign-in could not load. Check your connection or content blocker.'));
-    return () => {
-      cancelled = true;
-    };
-  }, [open, config?.googleClientId]);
-
-  const devSubmit = (e: FormEvent<HTMLFormElement>): void => {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    setBusy(true);
-    account
-      .devSignIn(String(data.get('email')), String(data.get('name')))
-      .then(() => setOpen(false))
-      .catch(() => setError('Dev sign-in failed.'))
-      .finally(() => setBusy(false));
-  };
 
   return (
     <dialog
@@ -139,43 +332,16 @@ export function SignInDialog() {
           Join the arcade
         </h2>
         {reason && <p className="signin-reason">{reason}</p>}
-        <ul className="signin-perks">
-          {PERKS.map((p) => (
-            <li key={p.text}>
-              <span className="signin-perk-icon">
-                <Icon name={p.icon} size={18} />
-              </span>
-              {p.text}
-            </li>
-          ))}
-        </ul>
-
-        {config?.googleClientId ? (
-          <div className="signin-google" ref={buttonRef} aria-busy={busy} />
-        ) : config?.devLogin ? null : (
-          <p className="signin-note">Sign-in is being switched on. Check back soon; you can keep playing as a guest meanwhile.</p>
-        )}
-
-        {config?.devLogin && (
-          <form className="signin-dev" onSubmit={devSubmit}>
-            <p className="mono">Local dev sign-in (never in production)</p>
-            <input className="field" name="email" type="email" defaultValue="tester@example.com" aria-label="Email" required />
-            <input className="field" name="name" defaultValue="Tester" aria-label="Name" />
-            <button className="btn btn-lime" disabled={busy}>
-              Sign in (dev)
-            </button>
-          </form>
-        )}
-
-        {error && (
-          <p className="signin-error" role="alert">
-            {error}
-          </p>
-        )}
-        <p className="signin-fine">
-          We only use your Google name and email to create your account. Leaderboards show your nickname, never your email.{' '}
-          <a href="/privacy">Privacy</a>
-        </p>
+        {open && <SignInPanel onDone={() => setOpen(false)} />}
+        <button
+          className="link-btn signin-page-link"
+          onClick={() => {
+            setOpen(false);
+            navigate('/signin');
+          }}
+        >
+          Open the full sign-up page
+        </button>
       </div>
     </dialog>
   );

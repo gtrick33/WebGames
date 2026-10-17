@@ -16,6 +16,8 @@ export interface D1Database {
 
 export interface Env {
   DB: D1Database;
+  /** NEON RUSH's own leaderboard database (served under /play/neon-rush/api). */
+  NR_DB: D1Database;
   SITE_URL?: string;
   GOOGLE_CLIENT_ID?: string;
   ADMIN_EMAILS?: string;

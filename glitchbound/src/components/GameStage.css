@@ -211,3 +211,51 @@
     border-radius: 20px;
   }
 }
+
+/* No double-tap zoom on the game. */
+.stage,
+.stage * {
+  touch-action: manipulation;
+}
+
+/* Immersive mode (phones without element fullscreen, e.g. iPhone Safari): pin over everything. */
+.stage.stage-immersive {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  width: 100vw;
+  height: 100dvh;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+html.game-focus,
+html.game-focus body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.stage-exit {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 999px;
+  background: rgb(7 2 26 / 0.65);
+  color: #fff;
+  font: 700 12px/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transform: translateX(-50%);
+  opacity: 0.75;
+}
+.stage-exit:hover {
+  opacity: 1;
+}

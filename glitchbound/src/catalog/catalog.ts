@@ -105,11 +105,15 @@ export function validateCatalog(games: GameEntry[] = GAMES): string[] {
       if (!d.label.includes('{n}')) errors.push(`${at}: daily label must contain {n}`);
     }
     if (g.runtime.kind === 'embed') {
-      try {
-        const origin = new URL(g.runtime.url).origin;
-        if (!g.runtime.origins.includes(origin)) errors.push(`${at}: embed origins must include ${origin}`);
-      } catch {
-        errors.push(`${at}: embed url is not a valid URL`);
+      if (g.runtime.url.startsWith('/')) {
+        if (!g.runtime.origins.includes('self')) errors.push(`${at}: a same-site embed must list 'self' in origins`);
+      } else {
+        try {
+          const origin = new URL(g.runtime.url).origin;
+          if (!g.runtime.origins.includes(origin)) errors.push(`${at}: embed origins must include ${origin}`);
+        } catch {
+          errors.push(`${at}: embed url is not a valid URL`);
+        }
       }
     }
     for (const p of [g.art.tile, g.art.wide]) if (!p.startsWith('/')) errors.push(`${at}: art paths must start with /`);

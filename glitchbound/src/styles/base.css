@@ -19,25 +19,23 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: clip;
-  background:
-    radial-gradient(1100px 620px at 8% -8%, rgb(255 63 210 / 0.2), transparent 60%),
-    radial-gradient(900px 600px at 100% 12%, rgb(34 228 255 / 0.14), transparent 60%),
-    radial-gradient(1000px 700px at 50% 120%, rgb(139 92 255 / 0.22), transparent 65%),
-    var(--bg);
-  background-attachment: fixed;
+  background: var(--bg);
 }
-/* A faint arcade grid over everything. */
+/* Neon glow + a faint arcade grid on one fixed, composited layer (painted once, never on scroll). */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgb(139 92 255 / 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(139 92 255 / 0.07) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+  background:
+    linear-gradient(rgb(139 92 255 / 0.05) 1px, transparent 1px) 0 0 / 44px 44px,
+    linear-gradient(90deg, rgb(139 92 255 / 0.05) 1px, transparent 1px) 0 0 / 44px 44px,
+    radial-gradient(1100px 620px at 8% -8%, rgb(255 63 210 / 0.2), transparent 60%),
+    radial-gradient(900px 600px at 100% 12%, rgb(34 228 255 / 0.14), transparent 60%),
+    radial-gradient(1000px 700px at 50% 120%, rgb(139 92 255 / 0.22), transparent 65%);
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 img,

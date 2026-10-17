@@ -73,6 +73,32 @@ export async function verifyGoogleIdToken(token: string, clientId: string, now =
   };
 }
 
+/**
+ * Verifies an OAuth access token from Google's token client (used by our own styled button).
+ * Google's tokeninfo endpoint confirms the token was issued to OUR client id; userinfo returns the
+ * verified profile. https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow
+ */
+export async function verifyGoogleAccessToken(accessToken: string, clientId: string, fetcher: typeof fetch = fetch): Promise<GoogleIdentity> {
+  const infoRes = await fetcher(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(accessToken)}`);
+  if (!infoRes.ok) throw new Error('invalid_token');
+  const info = (await infoRes.json()) as Record<string, unknown>;
+  if (info.aud !== clientId && info.azp !== clientId) throw new Error('bad_audience');
+  if (Number(info.expires_in ?? 0) <= 0) throw new Error('expired');
+  const userRes = await fetcher('https://openidconnect.googleapis.com/v1/userinfo', { headers: { authorization: `Bearer ${accessToken}` } });
+  if (!userRes.ok) throw new Error('userinfo_failed');
+  const u = (await userRes.json()) as Record<string, unknown>;
+  if (typeof u.sub !== 'string' || typeof u.email !== 'string') throw new Error('missing_claims');
+  if (info.sub !== undefined && info.sub !== u.sub) throw new Error('subject_mismatch');
+  if (u.email_verified !== true && u.email_verified !== 'true') throw new Error('email_not_verified');
+  return {
+    sub: u.sub,
+    email: u.email.toLowerCase(),
+    name: typeof u.name === 'string' ? u.name.slice(0, 80) : '',
+    givenName: typeof u.given_name === 'string' ? u.given_name : '',
+    picture: typeof u.picture === 'string' && u.picture.startsWith('https://') ? u.picture.slice(0, 300) : '',
+  };
+}
+
 /** For tests. */
 export function resetGoogleKeyCache(): void {
   cache = null;

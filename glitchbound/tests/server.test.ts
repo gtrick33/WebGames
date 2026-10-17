@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { GAMES } from '../src/catalog/games';
-import { defaultNickname, levelForXp, questsForDay, validateNickname, xpForLevel } from '../src/platform/progression';
+import { nicknameCandidates, levelForXp, questsForDay, validateNickname, xpForLevel } from '../src/platform/progression';
 import { resetGoogleKeyCache, verifyGoogleIdToken } from '../server/google';
 import { clientDay, longestStreak } from '../server/members';
 
@@ -105,9 +105,9 @@ describe('nicknames', () => {
     expect(validateNickname(42)).not.toBeNull();
   });
   it('generates a valid default', () => {
-    expect(validateNickname(defaultNickname('Sava', 'seed'))).toBeNull();
-    expect(validateNickname(defaultNickname('', 'seed'))).toBeNull();
-    expect(validateNickname(defaultNickname('Ünïcødé Name!!', 'x'))).toBeNull();
+    expect(nicknameCandidates('Sava Hristov', 'Sava', 'seed')[0]).toBe('Sava Hristov');
+    for (const c of [...nicknameCandidates('', '', 'seed'), ...nicknameCandidates('Ünïcødé Name!!', '', 'x')]) expect(validateNickname(c)).toBeNull();
+    expect(nicknameCandidates('', '', 'seed').length).toBeGreaterThan(1);
   });
 });
 

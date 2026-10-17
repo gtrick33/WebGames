@@ -113,6 +113,22 @@ class AccountStore {
     return res.user;
   }
 
+  async signInWithGoogleToken(accessToken: string): Promise<Me> {
+    const res = await api<{ user: Me }>('/api/auth/google', { body: { accessToken, day: dayKey() } });
+    await this.signedIn(res.user);
+    return res.user;
+  }
+
+  async emailStart(email: string, nickname?: string): Promise<void> {
+    await api('/api/auth/email/start', { body: { email, nickname: nickname || undefined } });
+  }
+
+  async emailVerify(email: string, code: string): Promise<Me> {
+    const res = await api<{ user: Me }>('/api/auth/email/verify', { body: { email, code, day: dayKey() } });
+    await this.signedIn(res.user);
+    return res.user;
+  }
+
   async devSignIn(email: string, name: string): Promise<Me> {
     const res = await api<{ user: Me }>('/api/auth/dev', { body: { email, name, day: dayKey() } });
     await this.signedIn(res.user);

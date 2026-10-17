@@ -22,11 +22,8 @@ export const GAMES: GameEntry[] = [
       alt: 'A blue race car between a cyan and a magenta neon lane line, with the NEON RUSH logo',
       bg: '#1d0b3a',
     },
-    runtime: {
-      kind: 'embed',
-      url: 'https://neonrushgame.com/',
-      origins: ['https://neonrushgame.com', 'https://www.neonrushgame.com', 'https://neon-rush-8aj.pages.dev'],
-    },
+    // Built from ../neon-rush into dist/play/neon-rush/ (scripts/build-games.mjs) and served by GlitchBound.
+    runtime: { kind: 'embed', url: '/play/neon-rush/', origins: ['self'] },
     aspect: 'portrait',
     controls: {
       keyboard: ['Left / Right arrows or A / D: switch lanes', 'P or Esc: pause', 'Enter: start a run'],
@@ -50,7 +47,6 @@ export const GAMES: GameEntry[] = [
       { metric: 'nearMisses', targets: [5, 7, 9, 12], label: 'Pull off {n} near misses in a single run' },
       { metric: 'score', targets: [1500, 2000, 2500, 3200], label: 'Score {n} points in a single run' },
     ],
-    homepage: 'https://neonrushgame.com/',
     // Top speed is about 20 m/s plus coins and near-miss combos; this is a generous ceiling.
     limits: { scorePerSecond: 250, minSeconds: 2 },
   },

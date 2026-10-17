@@ -59,21 +59,107 @@
   background: color-mix(in srgb, var(--cyan) 16%, transparent);
   color: var(--cyan);
 }
-.signin-google {
+.signin-panel {
+  display: grid;
+  gap: 14px;
+}
+/* Google sign-in button, dark theme per Google's branding guidelines, in our pill shape. */
+.google-btn {
   display: flex;
+  align-items: center;
   justify-content: center;
-  min-height: 44px;
-  margin-top: 6px;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 20px;
+  border: 1.5px solid #8e918f;
+  border-radius: 999px;
+  background: #131314;
+  color: #e3e3e3;
+  font-weight: 700;
+  font-size: 16.5px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.25s, transform 0.25s var(--spring);
 }
-.signin-google[aria-busy='true'] {
+.google-btn:hover:not(:disabled) {
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+  transform: translateY(-1px);
+}
+.google-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.google-btn-g {
+  display: grid;
+  place-items: center;
+}
+.signin-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--fg-3);
+  font: 700 11.5px/1 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.signin-or::before,
+.signin-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.signin-email {
+  display: grid;
+  gap: 10px;
+}
+.signin-code {
+  height: 60px;
+  font: 700 28px/1 var(--mono);
+  letter-spacing: 0.4em;
+  text-align: center;
+}
+.signin-note-ok {
+  color: var(--lime);
+  font-weight: 700;
+}
+.signin-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+.link-btn {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--cyan);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.link-btn:disabled {
   opacity: 0.5;
-  pointer-events: none;
 }
-.signin-note {
-  padding: 12px 14px;
-  border: 1.5px dashed var(--line);
-  border-radius: 14px;
-  color: var(--fg-2);
+.signin-page-link {
+  justify-self: center;
+  font-size: 14px;
+}
+.signin-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
+  gap: clamp(24px, 5vw, 64px);
+  align-items: start;
+}
+.signin-page .signin-box {
+  padding: 28px;
+}
+@media (max-width: 860px) {
+  .signin-page {
+    grid-template-columns: 1fr;
+  }
 }
 .signin-dev {
   display: grid;

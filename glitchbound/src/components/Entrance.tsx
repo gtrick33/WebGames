@@ -17,6 +17,11 @@ function shouldPlay(): boolean {
 export function ArcadeEntrance() {
   const [show, setShow] = useState(shouldPlay);
 
+  // The inline script in index.html covered the first paint; hand over once we have rendered.
+  useEffect(() => {
+    document.documentElement.classList.remove('entrance-pending');
+  }, []);
+
   useEffect(() => {
     if (!show) return;
     const done = (): void => setShow(false);
