@@ -50,4 +50,45 @@ export const GAMES: GameEntry[] = [
     // Top speed is about 20 m/s plus coins and near-miss combos; this is a generous ceiling.
     limits: { scorePerSecond: 250, minSeconds: 2 },
   },
+  {
+    slug: 'letter-pinch',
+    title: 'Letter Pinch',
+    tagline: 'A daily word puzzle where every tile points the way through the alphabet.',
+    description:
+      'Find the secret five-letter word in six guesses. Each tile says whether the hidden letter comes earlier or later ' +
+      'in the alphabet, and the windows above the board squeeze shut as you close in. One shared daily word, unlimited practice.',
+    categories: ['word', 'puzzle'],
+    tags: ['words', 'letters', 'daily', 'alphabet', 'deduction', 'brain', 'streak', 'five letters'],
+    released: '2026-10-18',
+    accent: 'violet',
+    art: {
+      tile: '/games/letter-pinch/tile.webp',
+      wide: '/games/letter-pinch/wide.webp',
+      alt: 'Rows of blue, coral and lime letter tiles with up and down arrows closing in on the word PINCH',
+      bg: '#ffe7c2',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'portrait',
+    controls: {
+      keyboard: ['Type letters', 'Enter: submit a guess', 'Backspace: delete', 'Esc: close a panel'],
+      touch: ['Tap the on-screen keys'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'spare', label: 'Most guesses to spare' },
+      { key: 'guesses', label: 'Fewest guesses', lowerIsBetter: true },
+      { key: 'seconds', label: 'Fastest solve', unit: 's', lowerIsBetter: true },
+      { key: 'streak', label: 'Longest daily streak' },
+    ],
+    highlights: [
+      'A new word every day, the same for everyone',
+      'Unlimited practice puzzles',
+      'Daily streaks, win rate and guess distribution',
+      'Spoiler-free arrow grid to share',
+    ],
+    daily: [
+      { metric: 'spare', targets: [1, 2, 2, 3], label: 'Solve a Letter Pinch with {n} or more guesses left' },
+      { metric: 'score', targets: [450, 500, 550], label: 'Score {n} points in one Letter Pinch puzzle' },
+    ],
+  },
 ];
