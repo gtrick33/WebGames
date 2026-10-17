@@ -26,6 +26,8 @@ export interface Env {
   MAIL_REPLY_TO?: string;
   /** Secret. */
   RESEND_API_KEY?: string;
+  /** Secret: enables POST /api/admin/test-email (admin addresses only). */
+  ADMIN_TEST_TOKEN?: string;
   /** Local development only (set in .dev.vars). */
   DEV_LOGIN?: string;
 }
