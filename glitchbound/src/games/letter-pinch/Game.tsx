@@ -19,6 +19,7 @@ import {
   WORD_LEN,
   type Mark,
   type Row,
+  type RoundSummary,
   type Window,
 } from './logic';
 import { createSfx, type Sfx } from './sfx';
@@ -96,6 +97,15 @@ export default function Game({ host }: GameModuleProps) {
     return next;
   };
 
+  /**
+   * The one place a round's end is reported to the arcade. `isDaily` marks the shared daily puzzle (never
+   * practice) so the arcade can flag it as this game's own daily round once the contract supports it.
+   */
+  const reportEnd = (isDaily: boolean, summary: RoundSummary, streak?: number): void => {
+    const { score, stats } = roundStats(summary, isDaily ? streak : undefined);
+    host.report({ type: 'end', score, stats });
+  };
+
   const flash = (text: string): void => setToast({ text, id: Date.now() });
 
   const typeLetter = (ch: string): void => {
@@ -144,7 +154,7 @@ export default function Game({ host }: GameModuleProps) {
     } else if (done) commit((s) => finishPractice(s, solved, rows.length));
 
     if (done) {
-      host.report({ type: 'end', ...roundStats({ solved, guesses: rows.length, seconds: secondsOf(next) }, streak) });
+      reportEnd(next.mode === 'daily', { solved, guesses: rows.length, seconds: secondsOf(next) }, streak);
       if (solved) sfx.win();
       else sfx.lose();
       later(() => setPanel('stats'), REVEAL_MS + 500);
