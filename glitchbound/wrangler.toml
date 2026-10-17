@@ -7,9 +7,9 @@ compatibility_date = "2026-10-01"
 # Public values. Secrets (RESEND_API_KEY) are set with `wrangler pages secret put`, never here.
 SITE_URL = "https://glitchboundstudio.com"
 # Google OAuth Web Client ID (public). Sign-in stays off until this is filled in.
-GOOGLE_CLIENT_ID = ""
+GOOGLE_CLIENT_ID = "808378746013-u4ljh1p7q3juh3iri13p3rvje40m8o52.apps.googleusercontent.com"
 # Comma-separated Google account emails that can open /admin.
-ADMIN_EMAILS = "savawow99@gmail.com"
+ADMIN_EMAILS = "savawow99@gmail.com,sava.hristov@glitchboundstudio.com"
 # Sender for announcement emails; the domain must be verified in Resend.
 MAIL_FROM = "GlitchBound <hello@glitchboundstudio.com>"
 # Replies to site emails land in the Google Workspace inbox.
