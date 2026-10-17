@@ -1,0 +1,77 @@
+/* GlitchBound design tokens. Light, warm paper surfaces + saturated toy-box accents + ink outlines. */
+@font-face {
+  font-family: 'Bricolage';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+25A0-25A1;
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('@fontsource/space-mono/files/space-mono-latin-700-normal.woff2') format('woff2');
+}
+
+:root {
+  /* Surfaces */
+  --paper: #fff6e8;
+  --paper-2: #ffecd0;
+  --card: #ffffff;
+
+  /* Ink (text + outlines). Never pure black. */
+  --ink: #170f30;
+  --ink-2: #453e62;
+  --ink-3: #635c7d;
+
+  /* Accents */
+  --blue: #2c45ff;
+  --blue-deep: #1c2fc4;
+  --orange: #ff6a1a;
+  --lime: #c4f034;
+  --coral: #ff5a6c;
+  --yellow: #ffd12e;
+  --teal: #12c6b3;
+  --violet: #7a4cff;
+
+  /* Type */
+  --font: 'Bricolage', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Space Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Shape */
+  --r-sm: 10px;
+  --r-md: 18px;
+  --r-lg: 26px;
+  --r-xl: 38px;
+  --bw: 2.5px;
+  --outline: var(--bw) solid var(--ink);
+
+  /* Depth: hard offset shadows are the brand's "sticker" look; soft ones add air. */
+  --hard: 5px 5px 0 var(--ink);
+  --hard-sm: 3px 3px 0 var(--ink);
+  --hard-lg: 9px 9px 0 var(--ink);
+  --soft: 0 22px 50px -24px rgb(23 15 48 / 0.45);
+
+  /* Motion */
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Layout */
+  --gutter: clamp(16px, 3.6vw, 44px);
+  --maxw: 1320px;
+  --header-h: 68px;
+
+  color-scheme: light;
+}
+
+/* Accent scopes: set data-accent on any element to recolour its children. */
+[data-accent='blue'] { --accent: var(--blue); --on-accent: #fff; }
+[data-accent='orange'] { --accent: var(--orange); --on-accent: var(--ink); }
+[data-accent='lime'] { --accent: var(--lime); --on-accent: var(--ink); }
+[data-accent='coral'] { --accent: var(--coral); --on-accent: var(--ink); }
+[data-accent='yellow'] { --accent: var(--yellow); --on-accent: var(--ink); }
+[data-accent='teal'] { --accent: var(--teal); --on-accent: var(--ink); }
+[data-accent='violet'] { --accent: var(--violet); --on-accent: #fff; }

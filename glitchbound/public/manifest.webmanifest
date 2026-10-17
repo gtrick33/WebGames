@@ -1,0 +1,15 @@
+{
+  "name": "GlitchBound",
+  "short_name": "GlitchBound",
+  "description": "An independent browser arcade. One more round. Then another.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fff6e8",
+  "theme_color": "#fff6e8",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

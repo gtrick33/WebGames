@@ -1,0 +1,4 @@
+# Cloudflare Pages configuration for GlitchBound (static site, no Functions, no database).
+name = "glitchbound"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-10-01"

@@ -1,0 +1,9 @@
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+!.env.production
+.wrangler
+dist
+node_modules

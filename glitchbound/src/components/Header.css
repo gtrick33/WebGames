@@ -1,0 +1,244 @@
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--paper) 86%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  border-bottom: var(--bw) solid transparent;
+  transition: border-color 0.2s;
+}
+.site-header.is-scrolled {
+  border-bottom-color: var(--ink);
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: var(--header-h);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  border-radius: 12px;
+  flex: none;
+}
+.brand .logo-mark {
+  transition: transform 0.4s var(--spring);
+}
+.brand:hover .logo-mark {
+  transform: rotate(-8deg) scale(1.06);
+}
+.brand:hover .logo-g-a {
+  transform: translate(-3px, 0);
+}
+.brand:hover .logo-g-b {
+  transform: translate(3px, 0);
+}
+.logo-g {
+  transition: transform 0.25s steps(3, end);
+}
+
+.wordmark {
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+.wordmark-b {
+  position: relative;
+  color: var(--blue);
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 18px;
+}
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+  padding: 0 14px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: none;
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.nav-link:hover,
+.nav-link[aria-expanded='true'] {
+  background: var(--card);
+  border-color: var(--ink);
+}
+.nav-link[aria-current='page'] {
+  background: var(--lime);
+  border-color: var(--ink);
+}
+
+.nav-cats {
+  position: relative;
+}
+.cats-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  min-width: 230px;
+  padding: 8px;
+  display: grid;
+  gap: 2px;
+  transform-origin: top left;
+  animation: menu-pop 0.28s var(--spring);
+}
+.cats-menu[hidden] {
+  display: none;
+}
+@keyframes menu-pop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+}
+.cats-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.cats-item:hover {
+  background: var(--paper-2);
+}
+.cats-item .mono {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.search-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 10px 0 16px;
+  border: var(--outline);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink-2);
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 230px;
+  transition: box-shadow 0.2s var(--spring), transform 0.2s var(--spring);
+}
+.search-trigger:hover {
+  box-shadow: var(--hard-sm);
+  transform: translate(-1px, -1px);
+}
+.search-trigger .kbd {
+  margin-left: auto;
+  color: var(--ink-3);
+}
+
+.menu-toggle {
+  display: none;
+}
+
+.mobile-menu {
+  position: fixed;
+  z-index: 49;
+  inset: var(--header-h) 0 0 0;
+  background: var(--paper);
+  border-top: var(--outline);
+  overflow-y: auto;
+  padding-block: 24px 40px;
+  animation: sheet-in 0.35s var(--out);
+}
+.mobile-menu[hidden] {
+  display: none;
+}
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(-12px); }
+}
+.mobile-menu nav {
+  display: grid;
+  gap: 12px;
+}
+.mobile-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 4px;
+  border-bottom: var(--outline);
+  font-size: clamp(30px, 9vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+  animation: pop-in 0.5s var(--spring) both;
+  animation-delay: calc(var(--i) * 70ms);
+}
+.mobile-link svg {
+  width: 30px;
+  height: 30px;
+}
+.mobile-sub {
+  margin-top: 14px;
+  color: var(--ink-3);
+}
+.mobile-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mobile-cats .chip {
+  height: 36px;
+  font-size: 13px;
+  text-decoration: none;
+}
+.mobile-search {
+  margin-top: 18px;
+}
+
+html.menu-open {
+  overflow: hidden;
+}
+
+@media (max-width: 920px) {
+  .main-nav {
+    display: none;
+  }
+  .search-trigger {
+    min-width: 0;
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .search-trigger-text,
+  .search-trigger .kbd {
+    display: none;
+  }
+  .menu-toggle {
+    display: inline-flex;
+    width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 380px) {
+  .wordmark {
+    font-size: 21px;
+  }
+}
