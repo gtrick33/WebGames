@@ -26,6 +26,16 @@ const CLEARED_MS = 620;
 const MISSED_MS = 760;
 const OVER_MS = 1100;
 
+/**
+ * The one place a round's end is reported. `isDaily` is true only for the official (first) Daily Challenge
+ * attempt of the day, never for practice replays or other modes. When the arcade's own-daily contract lands
+ * (EndEvent `daily?: boolean`), pass it here: host.report({ type: 'end', score, stats, daily: isDaily }).
+ */
+function reportEnd(host: GameModuleProps['host'], score: number, stats: Record<string, number>, isDaily: boolean): void {
+  void isDaily;
+  host.report({ type: 'end', score, stats });
+}
+
 type Screen = 'menu' | 'play' | 'result' | 'records';
 type Flash = { tile: number; kind: 'hit' | 'miss'; id: number } | null;
 
@@ -90,7 +100,7 @@ function MemoryGrid({ host }: Pick<GameModuleProps, 'host'>) {
       saveRecords(out.records);
       setOutcome({ ...out, summary });
       setShareNote('');
-      host.report({ type: 'end', score: s.score, stats: reportStats(summary) });
+      reportEnd(host, s.score, reportStats(summary), out.officialDaily);
       if (s.end === 'complete') sfxRef.current?.complete();
     },
     [host, today],
