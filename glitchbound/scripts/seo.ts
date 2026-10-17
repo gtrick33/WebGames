@@ -23,7 +23,7 @@ export interface PageSpec {
 }
 
 const SITE = 'GlitchBound';
-const TAGLINE = 'One more round. Then another.';
+const TAGLINE = 'Small Games. Big Obsessions.';
 const HOME_DESC =
   'GlitchBound is an independent browser arcade: small, sharp games that start in a second. No installs, no accounts. Just press play.';
 
@@ -54,7 +54,7 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       title: `${SITE} · ${TAGLINE}`,
       description: HOME_DESC,
       image: '/og.png',
-      imageAlt: 'GlitchBound: One more round. Then another.',
+      imageAlt: 'GlitchBound: Small Games. Big Obsessions.',
       jsonLd: { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE, url: `${siteUrl}/`, description: HOME_DESC },
       body: `<section class="ssr"><h1>${SITE}: ${TAGLINE}</h1><p>${esc(HOME_DESC)}</p><h2>Games</h2><ul>${gameLinks}</ul><p><a href="/daily">Today's Daily Challenge</a></p></section>`,
     },

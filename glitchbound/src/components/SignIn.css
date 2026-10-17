@@ -35,7 +35,7 @@
   letter-spacing: -0.04em;
 }
 .signin-reason {
-  color: var(--yellow);
+  color: var(--yellow-text);
   font-weight: 700;
 }
 .signin-perks {
@@ -57,7 +57,7 @@
   flex: none;
   border-radius: 10px;
   background: color-mix(in srgb, var(--cyan) 16%, transparent);
-  color: var(--cyan);
+  color: var(--cyan-text);
 }
 .signin-panel {
   display: grid;
@@ -121,7 +121,7 @@
   text-align: center;
 }
 .signin-note-ok {
-  color: var(--lime);
+  color: var(--lime-text);
   font-weight: 700;
 }
 .signin-row {
@@ -134,7 +134,7 @@
   padding: 4px 0;
   border: 0;
   background: none;
-  color: var(--cyan);
+  color: var(--cyan-text);
   font-weight: 700;
   cursor: pointer;
   text-decoration: underline;
@@ -170,7 +170,7 @@
 }
 .signin-dev .mono {
   font-size: 11px;
-  color: var(--yellow);
+  color: var(--yellow-text);
 }
 .signin-error {
   color: var(--coral);
@@ -191,7 +191,7 @@
   background: linear-gradient(135deg, var(--magenta), var(--violet));
   color: #fff;
   font-weight: 800;
-  box-shadow: 0 0 12px rgb(34 228 255 / 0.4);
+  box-shadow: var(--hard-sm);
 }
 .avatar img {
   width: 100%;

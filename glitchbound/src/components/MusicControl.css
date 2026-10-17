@@ -7,8 +7,8 @@
   align-items: center;
   border: 1.5px solid var(--line);
   border-radius: 999px;
-  background: rgb(21 10 51 / 0.95);
-  box-shadow: 0 8px 24px -10px rgb(0 0 0 / 0.6);
+  background: var(--surface);
+  box-shadow: var(--hard-sm);
 }
 .music-btn,
 .music-more {
@@ -17,7 +17,7 @@
   height: 42px;
   border: 0;
   background: none;
-  color: var(--cyan);
+  color: var(--cyan-text);
   cursor: pointer;
 }
 .music-btn {
@@ -35,7 +35,7 @@
 }
 .music-btn:hover,
 .music-more:hover {
-  color: var(--magenta);
+  color: var(--magenta-text);
 }
 .eq {
   display: flex;
@@ -74,7 +74,7 @@
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--cyan);
+  color: var(--cyan-text);
 }
 .music-pop input[type='range'] {
   width: 100%;

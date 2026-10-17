@@ -4,7 +4,7 @@
   gap: 20px;
   padding: clamp(20px, 3vw, 32px);
   border-color: var(--violet);
-  box-shadow: 0 0 0 1px rgb(139 92 255 / 0.4), 0 0 40px -10px rgb(139 92 255 / 0.6), var(--hard);
+  box-shadow: var(--hard);
 }
 .quests-head {
   display: flex;
@@ -36,9 +36,9 @@
   border: 2px solid var(--lime);
   border-radius: 18px;
   background: rgb(196 240 52 / 0.1);
-  color: var(--lime);
+  color: var(--lime-text);
   line-height: 1;
-  box-shadow: 0 0 18px rgb(196 240 52 / 0.35);
+  box-shadow: var(--hard-sm);
 }
 .quests-lvl .mono {
   font-size: 10px;
@@ -73,13 +73,13 @@
   padding: 14px 16px;
   border: 1.5px solid var(--line);
   border-radius: 16px;
-  background: rgb(7 2 26 / 0.35);
+  background: var(--well);
   transition: border-color 0.3s, background-color 0.3s;
 }
 .quest.is-done:not(.is-claimed) {
   border-color: var(--lime);
-  background: rgb(196 240 52 / 0.07);
-  box-shadow: 0 0 18px -6px rgb(196 240 52 / 0.6);
+  background: var(--surface-2);
+  box-shadow: var(--hard-sm);
 }
 .quest.is-claimed {
   opacity: 0.65;
@@ -92,7 +92,7 @@
   flex: none;
   border-radius: 13px;
   background: var(--surface-2);
-  color: var(--cyan);
+  color: var(--cyan-text);
 }
 .quest.is-done .quest-icon {
   background: var(--lime);
@@ -148,7 +148,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--cyan);
+  color: var(--cyan-text);
   font-weight: 700;
   text-decoration: none;
 }
@@ -162,7 +162,7 @@
   background: var(--lime);
   color: var(--ink);
   font-weight: 800;
-  box-shadow: 0 0 24px rgb(196 240 52 / 0.6);
+  box-shadow: var(--hard-sm);
   animation: toast-in 0.4s var(--spring);
   pointer-events: none;
 }

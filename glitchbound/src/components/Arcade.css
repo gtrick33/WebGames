@@ -18,8 +18,8 @@
   padding: 0 18px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
-  background: rgb(7 2 26 / 0.5);
-  color: var(--cyan);
+  background: var(--well);
+  color: var(--cyan-text);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .arcade-search:focus-within {
@@ -80,19 +80,19 @@
   background: var(--cyan);
   border-color: var(--cyan);
   color: var(--ink);
-  box-shadow: 0 0 18px rgb(34 228 255 / 0.5);
+  box-shadow: var(--hard-sm);
 }
 .cat-btn.is-on .mono {
   background: var(--ink);
-  color: var(--cyan);
+  color: var(--cyan-text);
 }
 .cat-fav.is-on {
   background: var(--magenta);
   border-color: var(--magenta);
-  box-shadow: 0 0 18px rgb(255 63 210 / 0.5);
+  box-shadow: var(--hard-sm);
 }
 .cat-fav svg {
-  color: var(--magenta);
+  color: var(--magenta-text);
 }
 .cat-fav.is-on svg {
   color: var(--ink);
@@ -146,7 +146,7 @@
   padding: 24px;
   border: 2px dashed var(--line);
   border-radius: var(--r-lg);
-  background: rgb(7 2 26 / 0.35);
+  background: var(--well);
 }
 .workshop-shapes {
   display: flex;

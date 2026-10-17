@@ -2,13 +2,13 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgb(13 5 34 / 0.94);
+  background: var(--bar);
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .site-header.is-scrolled {
   border-bottom-color: var(--line);
-  box-shadow: 0 10px 30px -18px rgb(255 63 210 / 0.5);
+  box-shadow: 0 2px 0 var(--ink);
 }
 
 .header-row {
@@ -28,7 +28,7 @@
 }
 .brand .logo-mark {
   transition: transform 0.4s var(--spring);
-  filter: drop-shadow(0 0 10px rgb(34 228 255 / 0.45));
+  filter: none;
 }
 .brand:hover .logo-mark {
   transform: rotate(-8deg) scale(1.06);
@@ -49,8 +49,8 @@
   line-height: 1;
 }
 .wordmark-b {
-  color: var(--cyan);
-  text-shadow: 0 0 14px rgb(34 228 255 / 0.55);
+  color: var(--cyan-text);
+  text-shadow: none;
 }
 
 .tabs {
@@ -61,7 +61,7 @@
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgb(7 2 26 / 0.4);
+  background: var(--well);
 }
 .tab {
   display: inline-flex;
@@ -83,7 +83,7 @@
 .tab[aria-current='page'] {
   color: var(--ink);
   background: var(--cyan);
-  box-shadow: 0 0 18px rgb(34 228 255 / 0.55);
+  box-shadow: var(--hard-sm);
 }
 
 .header-actions {
@@ -100,7 +100,7 @@
   padding: 0 10px 0 16px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
-  background: rgb(7 2 26 / 0.4);
+  background: var(--well);
   color: var(--fg-2);
   font-weight: 600;
   cursor: pointer;
@@ -129,7 +129,7 @@
   padding: 3px 12px 3px 3px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
-  background: rgb(7 2 26 / 0.4);
+  background: var(--well);
   cursor: pointer;
 }
 .account-btn:hover {
@@ -137,7 +137,7 @@
 }
 .account-lvl {
   font-size: 12px;
-  color: var(--lime);
+  color: var(--lime-text);
 }
 .account-dot {
   position: absolute;
@@ -267,8 +267,8 @@
     padding: 6px;
     border: 1.5px solid var(--line);
     border-radius: 22px;
-    background: rgb(21 10 51 / 0.96);
-    box-shadow: 0 12px 30px -10px rgb(0 0 0 / 0.6);
+    background: var(--surface);
+    box-shadow: var(--hard);
   }
   .bottom-tab {
     display: grid;
@@ -284,7 +284,7 @@
   .bottom-tab[aria-current='page'] {
     color: var(--ink);
     background: var(--cyan);
-    box-shadow: 0 0 16px rgb(34 228 255 / 0.5);
+    box-shadow: var(--hard-sm);
   }
   body {
     padding-bottom: calc(88px + env(safe-area-inset-bottom));

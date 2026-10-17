@@ -255,7 +255,7 @@
   padding: 10px 12px;
   border: 1.5px dashed var(--magenta);
   border-radius: 12px;
-  background: rgb(255 63 210 / 0.08);
+  background: var(--surface-2);
   color: var(--fg);
   font-weight: 700;
   text-align: left;
@@ -263,7 +263,7 @@
 }
 .last-signin svg {
   flex: none;
-  color: var(--yellow);
+  color: var(--yellow-text);
 }
 .last-saving {
   font-size: 12px;
@@ -283,7 +283,7 @@
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--cyan);
+  color: var(--cyan-text);
 }
 .player-row {
   display: flex;

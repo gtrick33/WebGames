@@ -21,7 +21,7 @@ body {
   overflow-x: clip;
   background: var(--bg);
 }
-/* Neon glow + a faint arcade grid on one fixed, composited layer (painted once, never on scroll). */
+/* Soft colour blobs + a faint dot grid on one fixed, composited layer (painted once, never on scroll). */
 body::before {
   content: '';
   position: fixed;
@@ -29,11 +29,10 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    linear-gradient(rgb(139 92 255 / 0.05) 1px, transparent 1px) 0 0 / 44px 44px,
-    linear-gradient(90deg, rgb(139 92 255 / 0.05) 1px, transparent 1px) 0 0 / 44px 44px,
-    radial-gradient(1100px 620px at 8% -8%, rgb(255 63 210 / 0.2), transparent 60%),
-    radial-gradient(900px 600px at 100% 12%, rgb(34 228 255 / 0.14), transparent 60%),
-    radial-gradient(1000px 700px at 50% 120%, rgb(139 92 255 / 0.22), transparent 65%);
+    radial-gradient(rgb(29 18 56 / 0.08) 1.2px, transparent 1.4px) 0 0 / 26px 26px,
+    radial-gradient(900px 560px at 6% -10%, rgb(255 201 40 / 0.32), transparent 62%),
+    radial-gradient(800px 560px at 102% 8%, rgb(42 209 240 / 0.22), transparent 60%),
+    radial-gradient(1000px 700px at 50% 125%, rgb(255 79 200 / 0.18), transparent 65%);
   will-change: transform;
   transform: translateZ(0);
 }
@@ -143,7 +142,7 @@ ol {
   font: 700 12.5px/1 var(--mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--cyan);
+  color: var(--cyan-text);
 }
 
 .section {
@@ -252,7 +251,7 @@ ol {
 }
 .btn-ink {
   --btn-bg: var(--ink);
-  --btn-fg: var(--fg);
+  --btn-fg: #fff6ea;
   --btn-line: var(--cyan);
   --btn-shadow: var(--cyan);
 }
@@ -357,12 +356,12 @@ ol {
   opacity: 0;
 }
 .glitch::before {
-  color: var(--magenta);
+  color: var(--magenta-text);
   transform: translate(-0.05em, 0);
   clip-path: inset(10% 0 55% 0);
 }
 .glitch::after {
-  color: var(--cyan);
+  color: var(--cyan-text);
   transform: translate(0.05em, 0);
   clip-path: inset(58% 0 8% 0);
 }

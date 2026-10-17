@@ -10,7 +10,7 @@
   border: 2px solid var(--ink);
   border-radius: var(--r-xl);
   background: var(--orange);
-  box-shadow: 0 0 40px -8px rgb(255 106 26 / 0.55), var(--hard-lg);
+  box-shadow: var(--hard-lg);
   overflow: hidden;
 }
 .daily::before {
@@ -25,7 +25,7 @@
 }
 .daily.is-done {
   background: var(--lime);
-  box-shadow: 0 0 40px -8px rgb(196 240 52 / 0.55), var(--hard-lg);
+  box-shadow: var(--hard-lg);
 }
 .daily .eyebrow {
   color: var(--ink);
@@ -120,7 +120,7 @@
 }
 .daily-state-done {
   background: var(--ink);
-  color: var(--lime);
+  color: var(--lime-text);
   animation: stamp 0.5s var(--spring);
 }
 @keyframes stamp {
@@ -152,7 +152,7 @@
 }
 .daily-day.on {
   background: var(--ink);
-  color: var(--lime);
+  color: var(--lime-text);
 }
 .daily-day.today {
   outline: 2px dashed var(--ink);

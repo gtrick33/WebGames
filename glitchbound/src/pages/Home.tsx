@@ -27,7 +27,7 @@ export function Home() {
         <DailyCard variant="band" />
       </div>
       <LatestRelease game={featured} />
-      <Marquee words={['One more round', 'Then another', 'No installs', 'Beat your best', 'New daily at midnight']} />
+      <Marquee words={['Small games', 'Big obsessions', 'One more run', 'Beat your best', 'Your daily challenge starts here', 'No installs']} />
       <NotifyForm />
       <div className="wrap">
         <AdSlot placement="home" />

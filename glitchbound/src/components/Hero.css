@@ -26,15 +26,15 @@
   font-size: clamp(42px, 6vw, 84px);
   line-height: 0.92;
   letter-spacing: -0.045em;
-  text-shadow: 0 0 28px rgb(255 63 210 / 0.35);
+  text-shadow: none;
   animation: title-in 0.8s var(--out) both;
 }
 @keyframes title-in {
   from { opacity: 0; transform: translateY(0.3em); }
 }
 .intro-hl {
-  color: var(--cyan);
-  text-shadow: 0 0 22px rgb(34 228 255 / 0.65);
+  color: var(--cyan-text);
+  text-shadow: none;
 }
 .intro-hl::before,
 .intro-hl::after {
@@ -106,7 +106,7 @@
   font-size: 11.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--cyan);
+  color: var(--cyan-text);
 }
 .intro-card-text strong {
   font-size: 17px;

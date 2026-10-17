@@ -42,7 +42,7 @@
 }
 .notify-msg {
   grid-column: 2 / -1;
-  color: var(--lime);
+  color: var(--lime-text);
   font-weight: 700;
 }
 .notify-msg:empty {
@@ -86,7 +86,7 @@
 .notify-toggle input:checked + .notify-switch {
   background: var(--cyan);
   border-color: var(--cyan);
-  box-shadow: 0 0 16px rgb(34 228 255 / 0.5);
+  box-shadow: var(--hard-sm);
 }
 .notify-toggle input:checked + .notify-switch::after {
   transform: translateX(24px);

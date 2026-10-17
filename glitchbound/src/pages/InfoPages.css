@@ -108,7 +108,7 @@
 }
 .cal-done {
   background: var(--ink);
-  color: var(--lime);
+  color: var(--lime-text);
 }
 .cal-today {
   outline: 3px dashed var(--orange);
@@ -127,7 +127,7 @@
   font-weight: 800;
   letter-spacing: -0.07em;
   line-height: 0.8;
-  color: var(--cyan);
+  color: var(--cyan-text);
   -webkit-text-stroke: 3px var(--ink);
   paint-order: stroke fill;
   text-shadow: 0.04em 0.04em 0 var(--ink);
@@ -173,7 +173,7 @@
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgb(7 2 26 / 0.4);
+  background: var(--well);
 }
 .seg button {
   height: 36px;
@@ -191,7 +191,7 @@
 .seg button.is-on {
   background: var(--cyan);
   color: var(--ink);
-  box-shadow: 0 0 14px rgb(34 228 255 / 0.5);
+  box-shadow: var(--hard-sm);
 }
 .seg-lg button {
   height: 42px;
@@ -211,7 +211,7 @@
   gap: 10px;
 }
 .board-head h2 svg {
-  color: var(--yellow);
+  color: var(--yellow-text);
 }
 
 /* ---------------------------------------------------------------- profile */
@@ -273,9 +273,9 @@
 }
 .badge.is-earned {
   border: 1.5px solid var(--yellow);
-  background: rgb(255 209 46 / 0.07);
+  background: var(--surface-2);
   color: var(--fg);
-  box-shadow: 0 0 20px -6px rgb(255 209 46 / 0.55);
+  box-shadow: var(--hard-sm);
 }
 .badge-icon {
   display: grid;

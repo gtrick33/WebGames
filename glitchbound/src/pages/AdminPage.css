@@ -114,7 +114,7 @@
 }
 .data-table td {
   padding: 9px 10px;
-  border-bottom: 1px solid rgb(59 38 120 / 0.5);
+  border-bottom: 1px solid rgb(29 18 56 / 0.15);
   font-variant-numeric: tabular-nums;
 }
 .data-table .is-bad {
@@ -134,7 +134,7 @@
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgb(7 2 26 / 0.35);
+  background: var(--well);
 }
 .err-kind {
   font-size: 11px;
@@ -163,7 +163,7 @@
   padding: 10px 14px;
   border: 1.5px solid var(--yellow);
   border-radius: 12px;
-  color: var(--yellow) !important;
+  color: var(--yellow-text) !important;
 }
 .admin-h3 {
   margin-top: 10px;

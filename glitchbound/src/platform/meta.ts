@@ -3,10 +3,10 @@ import { SITE_URL } from './env';
 
 export const SITE_NAME = 'GlitchBound';
 export const DEFAULT_DESCRIPTION =
-  'GlitchBound is an independent browser arcade: small, sharp games that start in a second. No installs, no accounts. Just press play.';
+  'GlitchBound is an independent browser arcade. Small games, big obsessions: polished games that start in a second, daily challenges and personal bests to beat. No installs.';
 
 export function pageTitle(title?: string): string {
-  return title ? `${title} · ${SITE_NAME}` : `${SITE_NAME} · One more round. Then another.`;
+  return title ? `${title} · ${SITE_NAME}` : `${SITE_NAME} · Small Games. Big Obsessions.`;
 }
 
 function setMeta(selector: string, attr: 'content' | 'href', value: string): void {

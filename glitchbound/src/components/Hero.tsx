@@ -45,12 +45,12 @@ export function Hero() {
           <span className="live-dot" /> Independent browser arcade · {GAMES.length} {GAMES.length === 1 ? 'game' : 'games'}
         </p>
         <h1 id="hero-title" className="intro-title">
-          One more round.{' '}
-          <span className={`glitch intro-hl${glitching ? ' is-glitching' : ''}`} data-text="Then another.">
-            Then another.
+          Small games.{' '}
+          <span className={`glitch intro-hl${glitching ? ' is-glitching' : ''}`} data-text="Big obsessions.">
+            Big obsessions.
           </span>
         </h1>
-        <p className="intro-sub">Small, sharp games that start in a second. No installs. Pick a cabinet and press play.</p>
+        <p className="intro-sub">Five minutes, endless replayability. Every game starts in a second, no installs. Beat your best, then come back for tomorrow&rsquo;s challenge.</p>
       </div>
 
       <div className="intro-side">
@@ -93,9 +93,9 @@ export function Hero() {
       </div>
 
       <div className="intro-deco" aria-hidden="true">
-        <Tri className="deco d1" fill="#c4f034" />
-        <Dot className="deco d2" fill="#ff3fd2" />
-        <Star className="deco d3" fill="#22e4ff" />
+        <Tri className="deco d1" fill="#b6e62c" />
+        <Dot className="deco d2" fill="#ff4fc8" />
+        <Star className="deco d3" fill="#ffc928" />
       </div>
     </section>
   );

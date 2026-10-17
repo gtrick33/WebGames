@@ -28,7 +28,7 @@
   gap: 12px;
   padding: 12px 12px 12px 18px;
   border-bottom: 1px solid var(--line);
-  color: var(--cyan);
+  color: var(--cyan-text);
 }
 .search-field input {
   flex: 1;

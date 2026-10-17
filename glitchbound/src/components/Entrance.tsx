@@ -11,7 +11,7 @@ function shouldPlay(): boolean {
 }
 
 /**
- * The arcade entrance: a neon cabinet rises, a coin drops, the screen flashes READY and the
+ * The arcade entrance: a toy-box cabinet rises, a coin drops, the screen flashes READY and the
  * camera dives into the screen to reveal the site. About 1.9 s; any click, key or scroll skips it.
  */
 export function ArcadeEntrance() {
