@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07041a" />
+    <meta name="description" content="NEON RUSH - an endless neon arcade racer. Dodge traffic, grab coins, beat your best." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <title>NEON RUSH</title>
+    <style>
+      /* Critical loading styles, inline so the first paint is instant. */
+      html,body{margin:0;height:100%;background:#07041a;overflow:hidden}
+      #loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;z-index:100;
+        background:radial-gradient(ellipse at 50% 60%,#2a0b4d 0%,#07041a 70%);color:#fff;font:700 14px system-ui,sans-serif;letter-spacing:.3em;transition:opacity .4s}
+      #loading .logo{font:italic 900 clamp(34px,9vw,64px)/1 system-ui,sans-serif;letter-spacing:.06em;color:#fff;
+        text-shadow:0 0 12px #ff3fd2,0 0 32px #ff3fd2,0 0 60px #7a2bff}
+      #loading .bar{width:180px;height:4px;border-radius:4px;background:#ffffff1a;overflow:hidden}
+      #loading .bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,#22e4ff,#ff3fd2);animation:ld 1s ease-in-out infinite}
+      #loading.hidden{opacity:0;pointer-events:none}
+      @keyframes ld{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+    </style>
+  </head>
+  <body>
+    <div id="loading" role="status" aria-live="polite">
+      <div class="logo">NEON RUSH</div>
+      <div class="bar"><i></i></div>
+      <div id="loading-text">LOADING</div>
+    </div>
+
+    <div id="game" aria-hidden="true"></div>
+
+    <div id="ui">
+      <!-- TITLE -->
+      <section class="screen" id="screen-title" aria-label="Main menu">
+        <header class="topbar">
+          <button class="chip level-chip" data-action="missions" aria-label="Level and missions">
+            <span class="lvl-badge">LV <b data-bind="level">1</b></span>
+            <span class="xpbar"><i data-bind="xpbar"></i></span>
+          </button>
+          <div class="topbar-right">
+            <button class="chip icon-btn daily-btn" data-action="daily" aria-label="Daily reward">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11h16v10H4zM2 7h20v4H2zM12 7v14M12 7c-2-4-7-4-6 0M12 7c2-4 7-4 6 0" /></svg>
+              <span class="dot" data-bind="dailyDot" hidden></span>
+            </button>
+            <div class="chip coin-chip"><span class="coin-ico"></span><b data-bind="coins">0</b></div>
+          </div>
+        </header>
+        <div class="title-center">
+          <h1 class="logo"><span>NEON</span><span>RUSH</span></h1>
+          <p class="best">BEST <b data-bind="bestScore">0</b> · <b data-bind="bestDistance">0</b> m</p>
+          <button class="btn btn-primary btn-xl" data-action="play">PLAY</button>
+          <nav class="menu-row">
+            <button class="btn btn-ghost" data-action="garage">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l2-5h10l2 5M4 13h16v5H4zM7 18v2M17 18v2" /><circle cx="8" cy="15.5" r="1" /><circle cx="16" cy="15.5" r="1" /></svg>
+              Garage
+            </button>
+            <button class="btn btn-ghost" data-action="missions">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8" /></svg>
+              Missions <span class="dot" data-bind="missionDot" hidden></span>
+            </button>
+            <button class="btn btn-ghost" data-action="settings">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" /></svg>
+              Settings
+            </button>
+          </nav>
+        </div>
+        <p class="hint" data-bind="controlsHint">Tap left / right side to switch lanes</p>
+      </section>
+
+      <!-- HUD -->
+      <section class="screen" id="screen-hud" aria-label="Game HUD">
+        <div class="hud-top">
+          <div class="hud-block">
+            <div class="hud-score" data-bind="hudScore">0</div>
+            <div class="hud-sub"><span data-bind="hudDistance">0</span> m</div>
+          </div>
+          <div class="hud-right">
+            <div class="chip coin-chip hud-coins"><span class="coin-ico"></span><b data-bind="hudCoins">0</b></div>
+            <button class="icon-btn pause-btn" data-action="pause" aria-label="Pause">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" /></svg>
+            </button>
+          </div>
+        </div>
+        <div class="hud-combo" data-bind="hudCombo" hidden></div>
+        <div class="hud-powers" data-bind="hudPowers"></div>
+        <div class="hud-go" data-bind="hudGo" hidden>GO!</div>
+        <div class="hud-tutorial" data-bind="hudTutorial" hidden>
+          <div><kbd>◀</kbd> TAP LEFT</div><div>TAP RIGHT <kbd>▶</kbd></div>
+        </div>
+      </section>
+
+      <!-- PAUSE -->
+      <section class="screen modal-screen" id="screen-pause" aria-label="Paused">
+        <div class="panel panel-sm">
+          <h2>PAUSED</h2>
+          <button class="btn btn-primary" data-action="resume">Resume</button>
+          <button class="btn btn-ghost" data-action="restart">Restart</button>
+          <button class="btn btn-ghost" data-action="home">Main menu</button>
+          <div class="quick-toggles">
+            <label class="toggle"><input type="checkbox" data-setting="sfx" /><span>Sound</span></label>
+            <label class="toggle"><input type="checkbox" data-setting="music" /><span>Music</span></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME OVER -->
+      <section class="screen modal-screen" id="screen-gameover" aria-label="Run summary">
+        <div class="panel">
+          <div class="go-head">
+            <h2>CRASHED</h2>
+            <div class="new-best" data-bind="goNewBest" hidden>NEW BEST!</div>
+          </div>
+          <div class="go-score" data-bind="goScore">0</div>
+          <div class="go-stats">
+            <div><span>Distance</span><b data-bind="goDistance">0 m</b></div>
+            <div><span>Coins</span><b data-bind="goCoins">0</b></div>
+            <div><span>Near misses</span><b data-bind="goNear">0</b></div>
+            <div><span>Best combo</span><b data-bind="goCombo">-</b></div>
+          </div>
+          <div class="go-rewards">
+            <div class="reward-line"><span>Coins earned</span><b class="coin-text">+<span data-bind="goEarned">0</span></b></div>
+            <div class="reward-sub" data-bind="goBreakdown"></div>
+            <div class="xp-line">
+              <span>LV <b data-bind="goLevel">1</b></span>
+              <span class="xpbar big"><i data-bind="goXpBar"></i></span>
+              <span class="xp-gain">+<b data-bind="goXp">0</b> XP</span>
+            </div>
+          </div>
+          <ul class="go-unlocks" data-bind="goUnlocks"></ul>
+          <div class="ad-offer" data-bind="adOffer" hidden>
+            <p>Optional: watch a short ad to <b>double the coins you collected</b> this run (+<span data-bind="adAmount">0</span>).</p>
+            <button class="btn btn-reward" data-action="watchAd">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z" /></svg>
+              Double coins
+            </button>
+          </div>
+          <button class="btn btn-primary btn-lg" data-action="restart">Play again</button>
+          <div class="row">
+            <button class="btn btn-ghost" data-action="garage">Garage</button>
+            <button class="btn btn-ghost" data-action="home">Menu</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- GARAGE -->
+      <section class="screen page-screen" id="screen-garage" aria-label="Garage">
+        <header class="page-head">
+          <button class="icon-btn" data-action="back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
+          <h2>GARAGE</h2>
+          <div class="chip coin-chip"><span class="coin-ico"></span><b data-bind="coins">0</b></div>
+        </header>
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" data-tab="skins">Skins</button>
+          <button class="tab" role="tab" data-tab="store" data-bind="storeTab" hidden>Store</button>
+        </div>
+        <div class="tab-panel" data-panel="skins">
+          <div class="showcase">
+            <div class="podium"><img data-bind="showcaseImg" alt="" /></div>
+            <div class="showcase-info">
+              <h3 data-bind="showcaseName"></h3>
+              <p data-bind="showcaseTag"></p>
+              <div class="showcase-status" data-bind="showcaseStatus"></div>
+              <button class="btn btn-primary" data-action="skinPrimary" data-bind="showcaseBtn">Equip</button>
+            </div>
+          </div>
+          <div class="skin-grid" data-bind="skinGrid"></div>
+          <p class="fineprint">Skins are cosmetic only. Every car drives exactly the same.</p>
+        </div>
+        <div class="tab-panel" data-panel="store" hidden>
+          <div class="mock-banner" data-bind="storeMock" hidden>DEVELOPMENT MOCK STORE · no real payments are made</div>
+          <div class="store-grid" data-bind="storeGrid"></div>
+        </div>
+      </section>
+
+      <!-- MISSIONS -->
+      <section class="screen page-screen" id="screen-missions" aria-label="Missions">
+        <header class="page-head">
+          <button class="icon-btn" data-action="back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
+          <h2>MISSIONS</h2>
+          <div class="chip coin-chip"><span class="coin-ico"></span><b data-bind="coins">0</b></div>
+        </header>
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" data-tab="daily">Daily</button>
+          <button class="tab" role="tab" data-tab="achievements">Achievements</button>
+          <button class="tab" role="tab" data-tab="stats">Stats</button>
+        </div>
+        <div class="tab-panel" data-panel="daily">
+          <p class="muted">New challenges in <b data-bind="resetIn">--</b></p>
+          <ul class="mission-list" data-bind="challengeList"></ul>
+          <div class="level-card">
+            <div class="lvl-badge big">LV <b data-bind="level">1</b></div>
+            <div class="grow">
+              <div class="xpbar big"><i data-bind="xpbar"></i></div>
+              <p class="muted"><span data-bind="xpText"></span> · level ups pay coins and unlock cars</p>
+            </div>
+          </div>
+        </div>
+        <div class="tab-panel" data-panel="achievements" hidden>
+          <ul class="mission-list" data-bind="achievementList"></ul>
+        </div>
+        <div class="tab-panel" data-panel="stats" hidden>
+          <dl class="stats-grid" data-bind="statsGrid"></dl>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="screen page-screen" id="screen-settings" aria-label="Settings">
+        <header class="page-head">
+          <button class="icon-btn" data-action="back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
+          <h2>SETTINGS</h2>
+          <span></span>
+        </header>
+        <div class="settings-list">
+          <label class="slider"><span>Sound effects</span><input type="range" min="0" max="100" data-setting="sfxVolume" /></label>
+          <label class="slider"><span>Music</span><input type="range" min="0" max="100" data-setting="musicVolume" /></label>
+          <label class="toggle row-toggle"><span>Vibration</span><input type="checkbox" data-setting="vibration" /></label>
+          <label class="toggle row-toggle"><span>Screen shake</span><input type="checkbox" data-setting="screenShake" /></label>
+          <label class="toggle row-toggle"><span>Battery saver (fewer effects)</span><input type="checkbox" data-setting="lowQuality" /></label>
+          <div class="settings-section">
+            <h3>Controls</h3>
+            <p class="muted">Keyboard: ← → or A / D to switch lanes, P or Esc to pause.<br />Touch / mouse: tap the left or right half of the screen.</p>
+          </div>
+          <div class="settings-section">
+            <h3>Privacy</h3>
+            <p class="muted">No account needed. Progress is saved only on this device. No ads or trackers are active in this version.</p>
+          </div>
+          <button class="btn btn-danger" data-action="resetProgress">Reset progress</button>
+          <p class="fineprint">NEON RUSH v<span data-bind="version"></span> · original game, art and music</p>
+        </div>
+      </section>
+
+      <!-- DAILY REWARD -->
+      <section class="screen modal-screen" id="screen-daily" aria-label="Daily reward">
+        <div class="panel">
+          <h2>DAILY REWARD</h2>
+          <p class="muted">Come back every day to grow your streak.</p>
+          <ol class="daily-strip" data-bind="dailyStrip"></ol>
+          <button class="btn btn-primary btn-lg" data-action="claimDaily" data-bind="dailyClaimBtn">Claim</button>
+          <button class="btn btn-ghost" data-action="closeModal">Later</button>
+        </div>
+      </section>
+
+      <!-- CONFIRM DIALOG -->
+      <section class="screen modal-screen" id="screen-confirm" aria-label="Confirm" role="dialog" aria-modal="true">
+        <div class="panel panel-sm">
+          <h2 data-bind="confirmTitle"></h2>
+          <p data-bind="confirmText"></p>
+          <div class="row">
+            <button class="btn btn-ghost" data-action="confirmNo">Cancel</button>
+            <button class="btn btn-primary" data-action="confirmYes" data-bind="confirmYes">OK</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- DEV MOCK AD / PURCHASE -->
+      <section class="screen modal-screen mock-screen" id="screen-mock" aria-label="Development mock">
+        <div class="panel panel-sm mock-panel">
+          <div class="mock-banner">DEVELOPMENT MOCK · NOT A REAL <span data-bind="mockKind">AD</span></div>
+          <h2 data-bind="mockTitle"></h2>
+          <p data-bind="mockText"></p>
+          <div class="mock-progress"><i data-bind="mockBar"></i></div>
+          <div class="mock-actions">
+            <button class="btn btn-primary" data-action="mockComplete" data-bind="mockComplete">Complete</button>
+            <button class="btn btn-ghost" data-action="mockCancel">Cancel</button>
+            <button class="btn btn-ghost" data-action="mockFail">Simulate failure</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="toasts" aria-live="polite"></div>
+    </div>
+
+    <noscript><p style="color:#fff;text-align:center;padding:40px;font-family:system-ui">NEON RUSH needs JavaScript to run.</p></noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
