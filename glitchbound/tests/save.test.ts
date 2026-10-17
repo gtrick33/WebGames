@@ -108,6 +108,23 @@ describe('recording rounds', () => {
     expect(doneDays(save).has(dayKey(now))).toBe(true);
   });
 
+  it('records a game’s own daily once per day and counts it toward the streak', () => {
+    const now = new Date(2026, 9, 20, 12);
+    const own = fakeGame({ slug: 'own', daily: undefined, ownDaily: { label: 'Today’s grid' } });
+    const save = emptySave();
+    expect(applyRound(save, own, { type: 'end', score: 5 }, [own], now).gameDailyCompleted).toBe(false);
+    expect(applyRound(save, own, { type: 'end', score: 5, daily: true }, [own], now).gameDailyCompleted).toBe(true);
+    expect(applyRound(save, own, { type: 'end', score: 9, daily: true }, [own], now).gameDailyCompleted).toBe(false);
+    expect(save.gameDailies[dayKey(now)]).toEqual(['own']);
+    expect(doneDays(save).has(dayKey(now))).toBe(true);
+    // A game without ownDaily cannot claim a daily.
+    const plain = fakeGame({ slug: 'plain', daily: undefined });
+    expect(applyRound(save, plain, { type: 'end', score: 1, daily: true }, [plain], now).gameDailyCompleted).toBe(false);
+    // Survives a save round-trip; junk is dropped.
+    expect(sanitizeSave(JSON.parse(JSON.stringify(save))).gameDailies).toEqual({ [dayKey(now)]: ['own'] });
+    expect(sanitizeSave({ v: 1, gameDailies: { bad: ['x'], '2026-10-20': ['ok', 3, 'NO PE'] } }).gameDailies).toEqual({ '2026-10-20': ['ok'] });
+  });
+
   it('does not count rounds of other games toward the daily', () => {
     const other = fakeGame({ slug: 'other', daily: undefined });
     const save = emptySave();

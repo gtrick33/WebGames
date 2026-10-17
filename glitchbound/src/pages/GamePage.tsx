@@ -175,7 +175,8 @@ export function GamePage({ game }: { game: GameEntry }) {
       }
       track('game_end', { game: game.slug, score: e.score });
       if (result.dailyCompleted) track('daily_complete', { game: game.slug, day: dayKey() });
-      if (result.dailyCompleted || result.newBests.includes('score') || (beat !== null && e.score > beat)) setBurst((b) => b + 1);
+      if (result.gameDailyCompleted) track('daily_complete', { game: game.slug, day: dayKey(), kind: 'game' });
+      if (result.dailyCompleted || result.gameDailyCompleted || result.newBests.includes('score') || (beat !== null && e.score > beat)) setBurst((b) => b + 1);
     },
     [game, beat],
   );
@@ -348,6 +349,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                 {last.result.newBests.includes('score') && <li className="sticker" data-tone="lime">New best</li>}
                 {last.result.firstPlay && <li className="sticker">First record</li>}
                 {last.result.dailyCompleted && <li className="sticker" data-tone="orange">Daily cleared</li>}
+                {last.result.gameDailyCompleted && <li className="sticker" data-tone="orange">{game.ownDaily?.label ?? 'Daily'} done</li>}
               </ul>
               {!me && (
                 <button className="last-signin" onClick={() => openSignIn('Sign in to put your scores on the leaderboard.')}>

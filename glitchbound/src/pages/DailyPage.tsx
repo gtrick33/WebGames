@@ -1,7 +1,8 @@
 import { DailyCard } from '../components/DailyCard';
 import { Icon } from '../components/Icon';
 import { addDays } from '../platform/dates';
-import { DAILY_HISTORY_DAYS } from '../platform/save';
+import { DAILY_HISTORY_DAYS, doneDays } from '../platform/save';
+import { TodaysDailies } from '../components/TodaysDailies';
 import { useDaily, useNow } from '../platform/hooks';
 import { usePageMeta } from '../platform/meta';
 import { useSave } from '../platform/store';
@@ -31,6 +32,7 @@ export function DailyPage() {
   }
 
   const days = Array.from({ length: 28 }, (_, i) => addDays(daily.today, i - 27));
+  const done = doneDays(save);
 
   return (
     <div className="wrap info-page">
@@ -42,13 +44,16 @@ export function DailyPage() {
 
       <DailyCard variant="page" headingLevel={2} />
 
+      <TodaysDailies headingLevel={2} />
+
       <div className="info-cols">
         <section className="panel info-block" aria-labelledby="how-daily">
           <h2 id="how-daily">How it works</h2>
           <ol className="info-steps">
             <li>A new challenge unlocks at midnight in your time zone. Everyone on the same date gets the same one.</li>
             <li>Play the game here on GlitchBound. Every finished round counts toward today&rsquo;s target.</li>
-            <li>Clear it on consecutive days to build a streak. Miss a day and the streak starts over.</li>
+            <li>Games with their own daily puzzle are listed under Today&rsquo;s dailies. Finishing any of them, or clearing the challenge, keeps your streak going.</li>
+            <li>Play on consecutive days to build a streak. Miss a day and the streak starts over.</li>
             <li>Progress is saved in this browser only. There are no accounts and nothing is uploaded.</li>
           </ol>
         </section>
@@ -57,7 +62,7 @@ export function DailyPage() {
           <ol className="calendar" aria-label="Daily challenge history">
             {days.map((d) => {
               const rec = save.daily[d];
-              const state = rec?.done ? 'done' : rec ? 'tried' : 'none';
+              const state = done.has(d) ? 'done' : rec ? 'tried' : 'none';
               const label = `${new Date(`${d}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: ${state === 'done' ? 'cleared' : state === 'tried' ? 'attempted' : 'not played'}`;
               return (
                 <li key={d} className={`cal-day cal-${state}${d === daily.today ? ' cal-today' : ''}`} aria-label={label} title={label}>

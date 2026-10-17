@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { App } from '../src/App';
 import { SAVE_KEY } from '../src/platform/save';
 import { saveStore } from '../src/platform/store';
+import { TodaysDailies } from '../src/components/TodaysDailies';
+import { fakeGame } from './fixtures';
 
 function renderAt(path: string) {
   saveStore.reload(); // the store is a singleton; pick up whatever this test put in localStorage
@@ -144,5 +146,18 @@ describe('members features as a guest (API unreachable in tests)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Your profile' })).toBeTruthy();
     renderAt('/admin');
     expect((await screen.findAllByRole('heading', { level: 1, name: 'Admin' })).length).toBeGreaterThan(0);
+  });
+});
+
+describe('today’s dailies', () => {
+  it('lists games with their own daily and hides when there are none', () => {
+    const own = fakeGame({ slug: 'grid-game', title: 'Grid Game', released: '2026-01-01', ownDaily: { label: 'Today’s grid' } });
+    const { unmount } = render(<TodaysDailies games={[own]} />);
+    expect(screen.getByRole('heading', { name: 'Today’s dailies' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Grid Game.*Today’s grid.*Play/ }).getAttribute('href')).toBe('/games/grid-game');
+    expect(screen.getByText(/0 of 1 done/)).toBeTruthy();
+    unmount();
+    const { container } = render(<TodaysDailies games={[fakeGame({ ownDaily: undefined })]} />);
+    expect(container.innerHTML).toBe('');
   });
 });

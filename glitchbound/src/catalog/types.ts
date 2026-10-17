@@ -90,6 +90,14 @@ export interface GameEntry {
   /** Factual feature bullets for the game page. */
   highlights?: string[];
   daily?: DailyTemplate[];
+  /**
+   * The game has its own daily puzzle (same for everyone on a date). It is listed in "Today's dailies"
+   * and counts toward the arcade streak when the game reports `{ type: 'end', daily: true, ... }`.
+   */
+  ownDaily?: {
+    /** Short name of the daily round, e.g. "Today's grid". */
+    label: string;
+  };
   /** Optional link to play the game on its own site. */
   homepage?: string;
   /** Server-side plausibility limits for leaderboard submissions. */

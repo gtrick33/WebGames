@@ -14,6 +14,8 @@ export interface EndEvent {
   type: 'end';
   score: number;
   stats?: Record<string, number>;
+  /** True when this round was the game's own daily puzzle (games with `ownDaily` in the registry). */
+  daily?: boolean;
 }
 
 /** The game is listening for host commands (identity, pause). */
@@ -69,5 +71,5 @@ export function parseGameMessage(data: unknown): GameEvent | null {
       if (n !== null && /^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(k)) stats[k] = n;
     }
   }
-  return { type: 'end', score, stats };
+  return m.daily === true ? { type: 'end', score, stats, daily: true } : { type: 'end', score, stats };
 }

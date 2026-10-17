@@ -5,6 +5,7 @@ import { Arcade } from '../components/Arcade';
 import { DailyCard } from '../components/DailyCard';
 import { Hero } from '../components/Hero';
 import { NotifyForm } from '../components/Notify';
+import { TodaysDailies } from '../components/TodaysDailies';
 import { QuestBoard } from '../components/Quests';
 import { LatestRelease, Marquee, YourArcade } from '../components/Sections';
 import { usePageMeta } from '../platform/meta';
@@ -25,6 +26,7 @@ export function Home() {
       </div>
       <div className="wrap section home-daily" id="daily">
         <DailyCard variant="band" />
+        <TodaysDailies headingLevel={2} />
       </div>
       <LatestRelease game={featured} />
       <Marquee words={['Small games', 'Big obsessions', 'One more run', 'Beat your best', 'Your daily challenge starts here', 'No installs']} />

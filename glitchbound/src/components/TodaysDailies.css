@@ -1,0 +1,99 @@
+.dailies {
+  margin-top: 28px;
+}
+.dailies-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-bottom: 14px;
+}
+.dailies-title {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 28px);
+  letter-spacing: -0.02em;
+}
+.dailies-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.dailies-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.daily-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 10px;
+  border: var(--bw) solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--hard-sm);
+  color: var(--fg);
+  text-decoration: none;
+  transition: transform 0.15s var(--out), box-shadow 0.15s var(--out);
+}
+.daily-chip:hover,
+.daily-chip:focus-visible {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--hard);
+}
+.daily-chip img {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border: var(--bw) solid var(--line);
+  border-radius: var(--r-sm);
+  object-fit: cover;
+}
+.daily-chip-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.daily-chip-text strong {
+  overflow: hidden;
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.daily-chip-text span {
+  font-size: 14px;
+  color: var(--fg-2);
+}
+.daily-chip-state {
+  flex: none;
+  padding: 6px 10px;
+  border: var(--bw) solid var(--line);
+  border-radius: 999px;
+  background: var(--accent, var(--yellow));
+  color: var(--on-accent, var(--ink));
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.daily-chip.is-done {
+  background: var(--surface-2);
+}
+.daily-chip.is-done .daily-chip-state {
+  background: var(--lime);
+  color: var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .daily-chip {
+    transition: none;
+  }
+}

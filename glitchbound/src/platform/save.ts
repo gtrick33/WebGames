@@ -25,12 +25,14 @@ export interface Save {
   v: 1;
   games: Record<string, GameRecord>;
   daily: Record<string, DailyRecord>;
+  /** Per day, the games whose own daily puzzle was finished (see GameEntry.ownDaily). */
+  gameDailies: Record<string, string[]>;
 }
 
 export const SAVE_KEY = 'glitchbound.save';
 export const DAILY_HISTORY_DAYS = 60;
 
-export const emptySave = (): Save => ({ v: 1, games: {}, daily: {} });
+export const emptySave = (): Save => ({ v: 1, games: {}, daily: {}, gameDailies: {} });
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -53,6 +55,13 @@ export function sanitizeSave(raw: unknown): Save {
       save.daily[day] = { best: isNum(rec.best) ? rec.best : 0, done: rec.done === true };
     }
   }
+  if (isObj(raw.gameDailies)) {
+    for (const [day, slugs] of Object.entries(raw.gameDailies)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Array.isArray(slugs)) continue;
+      const valid = slugs.filter((s): s is string => typeof s === 'string' && /^[a-z0-9-]{1,64}$/.test(s));
+      if (valid.length) save.gameDailies[day] = [...new Set(valid)].slice(0, 64);
+    }
+  }
   return save;
 }
 
@@ -62,6 +71,8 @@ export interface RoundResult {
   firstPlay: boolean;
   /** True when this round completed today's daily challenge for the first time. */
   dailyCompleted: boolean;
+  /** True when this round finished the game's own daily puzzle for the first time today. */
+  gameDailyCompleted: boolean;
 }
 
 /** Applies a finished round to the save (mutates it) and reports what changed. */
@@ -95,17 +106,29 @@ export function applyRound(save: Save, game: GameEntry, event: EndEvent, games: 
       dailyCompleted = true;
     }
   }
+  let gameDailyCompleted = false;
+  if (event.daily && game.ownDaily) {
+    const list = (save.gameDailies[today] ??= []);
+    if (!list.includes(game.slug)) {
+      list.push(game.slug);
+      gameDailyCompleted = true;
+    }
+  }
   pruneDaily(save, today);
-  return { newBests, firstPlay, dailyCompleted };
+  return { newBests, firstPlay, dailyCompleted, gameDailyCompleted };
 }
 
 export function pruneDaily(save: Save, today: string): void {
   const oldest = addDays(today, -DAILY_HISTORY_DAYS);
   for (const day of Object.keys(save.daily)) if (day < oldest) delete save.daily[day];
+  for (const day of Object.keys(save.gameDailies)) if (day < oldest) delete save.gameDailies[day];
 }
 
+/** Days that keep the streak alive: the arcade challenge was cleared or any game's own daily was finished. */
 export function doneDays(save: Save): Set<string> {
-  return new Set(Object.entries(save.daily).filter(([, d]) => d.done).map(([day]) => day));
+  const days = new Set(Object.entries(save.daily).filter(([, d]) => d.done).map(([day]) => day));
+  for (const [day, slugs] of Object.entries(save.gameDailies)) if (slugs.length) days.add(day);
+  return days;
 }
 
 /** Games played on this device, most recent first. */

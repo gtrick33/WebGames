@@ -9,6 +9,8 @@ describe('game messages (untrusted postMessage input)', () => {
   const base = { source: 'glitchbound-game', version: 1 };
   it('accepts start and end events', () => {
     expect(parseGameMessage({ ...base, type: 'start' })).toEqual({ type: 'start' });
+    expect(parseGameMessage({ ...base, type: 'end', score: 3, daily: true })).toEqual({ type: 'end', score: 3, stats: {}, daily: true });
+    expect(parseGameMessage({ ...base, type: 'end', score: 3, daily: 'yes' })).toEqual({ type: 'end', score: 3, stats: {} });
     expect(parseGameMessage({ ...base, type: 'end', score: 12.7, stats: { meters: 300.9, coins: 4 } })).toEqual({
       type: 'end',
       score: 12,

@@ -104,6 +104,7 @@ export function validateCatalog(games: GameEntry[] = GAMES): string[] {
       if (d.targets.length === 0 || d.targets.some((t) => !(t > 0))) errors.push(`${at}: daily targets must be positive`);
       if (!d.label.includes('{n}')) errors.push(`${at}: daily label must contain {n}`);
     }
+    if (g.ownDaily && !g.ownDaily.label.trim()) errors.push(`${at}: ownDaily needs a label`);
     if (g.runtime.kind === 'embed') {
       if (g.runtime.url.startsWith('/')) {
         if (!g.runtime.origins.includes('self')) errors.push(`${at}: a same-site embed must list 'self' in origins`);

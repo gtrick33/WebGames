@@ -98,6 +98,18 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
 };
 ```
 
+### Optional: the game's own daily puzzle
+
+If the game has its own daily round (the same puzzle for everyone on a date), add
+`ownDaily: { label: 'Today’s grid' }` to its registry entry and report that round's end with `daily: true`:
+
+```ts
+host.report({ type: 'end', score, stats, daily: true });
+```
+
+The game then appears in **Today's dailies** (homepage and `/daily`), and finishing it keeps the player's arcade streak
+alive. Only report `daily: true` for the real daily puzzle, never for practice rounds.
+
 Adding `daily` templates puts the game into the daily rotation from its release date onward (the daily challenge
 picks one daily-capable game per day). Leave `daily` out if the game has no fair single-round target.
 
@@ -141,7 +153,7 @@ Commit and push to `pre-release`; CI deploys. The new page is live at `/games/<s
 
 ## Checklist
 
-- [ ] Game reports `start` and `end` with `score`
+- [ ] Game reports `start` and `end` with `score` (and `daily: true` for its own daily round, if it has `ownDaily`)
 - [ ] Registry entry added; slug final
 - [ ] (module) loader added to `modules.ts`
 - [ ] Three artwork files, original
