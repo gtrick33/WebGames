@@ -50,4 +50,46 @@ export const GAMES: GameEntry[] = [
     // Top speed is about 20 m/s plus coins and near-miss combos; this is a generous ceiling.
     limits: { scorePerSecond: 250, minSeconds: 2 },
   },
+  {
+    slug: 'memory-grid',
+    title: 'Memory Grid',
+    tagline: 'Watch the tiles light up, then tap them back in order. How long can your streak go?',
+    description:
+      'A bright sequence-memory game: tiles flash in order and you repeat the pattern. Sequences grow, playback speeds up ' +
+      'and the grid expands from 3×3 to 5×5. Play Classic, a 60-second Speed Run, the Daily Challenge or the no-mistakes Perfect Recall ladder.',
+    categories: ['puzzle', 'arcade'],
+    tags: ['memory', 'sequence', 'simon', 'brain', 'grid', 'tiles', 'daily', 'pattern', 'focus'],
+    released: '2026-10-18',
+    accent: 'yellow',
+    art: {
+      tile: '/games/memory-grid/tile.webp',
+      wide: '/games/memory-grid/wide.webp',
+      alt: 'A 3 by 3 grid of candy-coloured tiles on cream paper, three of them glowing in sequence, with the Memory Grid logo',
+      bg: '#fff4e2',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'square',
+    controls: {
+      keyboard: ['Arrow keys: move between tiles', 'Enter or Space: tap a tile', '1 to 9: tap a 3×3 tile (number-pad layout)', 'M: mute', 'R: retry'],
+      touch: ['Tap the tiles in the order they lit up'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'longest', label: 'Longest sequence' },
+      { key: 'patterns', label: 'Most patterns in a run' },
+      { key: 'accuracy', label: 'Best accuracy', unit: '%' },
+      { key: 'time', label: 'Fastest Perfect Recall', unit: 's', lowerIsBetter: true },
+    ],
+    highlights: [
+      'Four modes: Classic, Speed Run, Daily Challenge and Perfect Recall',
+      'The Daily Challenge plays the same patterns for everyone on the same date',
+      'Grids grow from 3×3 to 5×5 with gentle difficulty steps',
+      'Spoiler-free share text, local top-5 records and daily streaks',
+    ],
+    daily: [
+      { metric: 'longest', targets: [6, 7, 8, 9], label: 'Repeat a {n}-step sequence' },
+      { metric: 'score', targets: [150, 250, 350], label: 'Score {n} points in one run' },
+      { metric: 'patterns', targets: [5, 6, 7, 8], label: 'Clear {n} patterns in one run' },
+    ],
+  },
 ];
