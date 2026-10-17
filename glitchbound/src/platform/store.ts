@@ -62,6 +62,7 @@ class SaveStore {
     try {
       this.kv?.removeItem(SAVE_KEY);
       this.kv?.removeItem(`${SAVE_KEY}.corrupt`);
+      this.kv?.removeItem('glitchbound.lastVisit');
     } catch {
       /* ignore */
     }

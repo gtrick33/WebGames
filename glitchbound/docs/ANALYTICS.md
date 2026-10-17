@@ -8,8 +8,10 @@ dashboard (`/admin`) reads it. Nothing is sent to third parties unless you also 
 - `src/platform/analytics.ts`: `track(event, props)` queues events and sends them in batches to `POST /api/events`
   (every few seconds, and with `sendBeacon` when the page is hidden).
 - `functions/api/events.ts` keeps only known event names and simple props, and stores them with a **visitor key** that
-  is `sha256(UTC day + IP + user agent)`, cut to 16 characters. The IP is never stored, the key changes every day, and
-  nothing is written to the visitor's browser. Signed-in members' events also carry their user id.
+  is `sha256(UTC day + IP + user agent)`, cut to 16 characters. The IP is never stored, the key changes every day, so
+  visitors cannot be followed across days. For retention, the first `page_view` of a tab session carries
+  `visit: 'new' | 'returning'` and `gap_days` (days since the last visit), worked out in the browser from a
+  `glitchbound.lastVisit` date in local storage (src/platform/visit.ts); no identifier leaves the device. Signed-in members' events also carry their user id.
 - Events older than 180 days are deleted automatically.
 - Crash reports: uncaught errors, unhandled promise rejections and games that fail to load go to `POST /api/errors`
   (max 8 per page view; third-party "Script error." noise is ignored). Kept 90 days.
@@ -35,7 +37,7 @@ The last 100 events are also visible in the browser console as `__glitchbound.ev
 ## The admin dashboard shows
 
 Members (total, new, active), email list (confirmed, pending, unsubscribed), per game: views, rounds started and
-finished, distinct players, member rounds, average and top score, load errors; unique visitors and rounds per day
+finished, distinct players, member rounds, average and top score, load errors; unique visitors, returning visitors, daily finishers and rounds per day
 (14 days); top searches including ones with no results (ideas for new games); the latest crash reports with browser
 family; newest members; past announcements.
 

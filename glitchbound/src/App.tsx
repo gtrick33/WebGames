@@ -9,6 +9,7 @@ import { NotFound } from './pages/NotFound';
 import { ArcadeEntrance } from './components/Entrance';
 import { MusicControl } from './components/MusicControl';
 import { track } from './platform/analytics';
+import { visitInfo } from './platform/visit';
 import { Link, matchRoute, useLocation } from './router/router';
 
 // Pages most visitors never open are separate chunks, so the first load stays small on any phone.
@@ -49,7 +50,7 @@ function Page() {
 export function App() {
   const { pathname } = useLocation();
   useEffect(() => {
-    track('page_view', { path: matchRoute(pathname).name });
+    track('page_view', { path: matchRoute(pathname).name, ...visitInfo() });
   }, [pathname]);
   return (
     <>

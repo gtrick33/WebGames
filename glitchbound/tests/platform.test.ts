@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseGameMessage } from '../src/platform/contract';
+import { visitInfo } from '../src/platform/visit';
 import { parseBeatParam } from '../src/platform/share';
 import { matchRoute } from '../src/router/router';
 import { pageSpecs, renderPage, robots, sitemap } from '../scripts/seo';
@@ -81,5 +82,19 @@ describe('build-time SEO', () => {
     expect(sitemap(site)).not.toContain('404');
     expect(sitemap(site)).toContain('<loc>https://example.test/games/neon-rush</loc>');
     expect(robots(site)).toContain('Sitemap: https://example.test/sitemap.xml');
+  });
+});
+
+describe('visitInfo', () => {
+  const mem = (): Storage => {
+    const m = new Map<string, string>();
+    return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k), clear: () => m.clear(), key: () => null, get length() { return m.size; } };
+  };
+  it('reports new, then returning with the day gap, once per tab session', () => {
+    const local = mem();
+    expect(visitInfo(new Date(2026, 9, 18, 10), local, mem())).toEqual({ visit: 'new', gap_days: 0 });
+    const session = mem();
+    expect(visitInfo(new Date(2026, 9, 21, 10), local, session)).toEqual({ visit: 'returning', gap_days: 3 });
+    expect(visitInfo(new Date(2026, 9, 21, 11), local, session)).toBeNull();
   });
 });

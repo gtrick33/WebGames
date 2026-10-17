@@ -90,7 +90,8 @@ export interface AdminStats {
   users: { total: number; new7d: number; active7d: number; recent: { nickname: string; email: string; createdAt: number }[] };
   subscribers: { confirmed: number; pending: number; unsubscribed: number };
   games: { slug: string; title: string; views: number; starts: number; ends: number; visitors: number; players: number; signedInRounds: number; avgScore: number | null; bestScore: number | null; loadErrors: number }[];
-  daily: { day: string; visitors: number; starts: number; rounds: number }[];
+  /** Per UTC day. returning = visitors whose browser had visited before; dailyPlayers = visitors who finished a daily. */
+  daily: { day: string; visitors: number; starts: number; rounds: number; returning: number; dailyPlayers: number }[];
   searches: { q: string; n: number; zeroResults: number }[];
   errors: { kinds: { kind: string; n: number }[]; latest: { ts: number; kind: string; game: string; message: string; path: string; browser: string }[] };
   announcements: { game: string; subject: string; sentAt: number; recipients: number }[];

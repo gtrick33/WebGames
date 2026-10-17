@@ -15,7 +15,7 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   const q = <T>(sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...args).all<T>().then((r) => r.results);
   const one = <T>(sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...args).first<T>();
 
-  const [totals, newUsers, active, recent, subs, gameEvents, gameVisitors, gameRuns, gameErrors, daily, dailyRounds, searches, errorKinds, latestErrors, announcements] = await Promise.all([
+  const [totals, newUsers, active, recent, subs, gameEvents, gameVisitors, gameRuns, gameErrors, daily, dailyRounds, retention, searches, errorKinds, latestErrors, announcements] = await Promise.all([
     one<{ n: number }>('SELECT COUNT(*) AS n FROM users'),
     one<{ n: number }>('SELECT COUNT(*) AS n FROM users WHERE created_at > ?', d7),
     one<{ n: number }>('SELECT COUNT(*) AS n FROM users WHERE last_seen > ?', d7),
@@ -33,6 +33,13 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
       since14,
     ),
     q<{ day: string; n: number }>(`SELECT day, COUNT(*) AS n FROM events WHERE day >= ? AND name = 'game_end' GROUP BY day`, since14),
+    q<{ day: string; returning_visitors: number; daily_players: number }>(
+      `SELECT day,
+         COUNT(DISTINCT CASE WHEN name = 'page_view' AND json_extract(props, '$.visit') = 'returning' THEN visitor END) AS returning_visitors,
+         COUNT(DISTINCT CASE WHEN name = 'daily_complete' THEN visitor END) AS daily_players
+       FROM events WHERE day >= ? AND name IN ('page_view', 'daily_complete') GROUP BY day`,
+      since14,
+    ),
     q<{ q: string; n: number; zero: number }>(
       `SELECT json_extract(props, '$.q') AS q, COUNT(*) AS n, SUM(json_extract(props, '$.results') = 0) AS zero FROM events
        WHERE name = 'search' AND ts > ? GROUP BY q ORDER BY n DESC LIMIT 15`,
@@ -48,7 +55,15 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   for (let i = 13; i >= 0; i--) {
     const day = utcDay(now - i * 86400_000);
     const d = daily.find((x) => x.day === day);
-    days.push({ day, visitors: d?.visitors ?? 0, starts: d?.starts ?? 0, rounds: dailyRounds.find((x) => x.day === day)?.n ?? 0 });
+    const r = retention.find((x) => x.day === day);
+    days.push({
+      day,
+      visitors: d?.visitors ?? 0,
+      starts: d?.starts ?? 0,
+      rounds: dailyRounds.find((x) => x.day === day)?.n ?? 0,
+      returning: r?.returning_visitors ?? 0,
+      dailyPlayers: r?.daily_players ?? 0,
+    });
   }
   const sub = (s: string) => subs.find((x) => x.status === s)?.n ?? 0;
   const stats: AdminStats = {

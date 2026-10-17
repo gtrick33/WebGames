@@ -29,7 +29,8 @@ export function PrivacyPage() {
           <h2 id="p-device">Saved on this device</h2>
           <p>
             As a guest, your bests, rounds played, favorites and Daily Challenge history are stored in this browser&rsquo;s local storage. They never
-            leave your device.
+            leave your device. The date of your last visit is kept there too; our anonymous statistics only learn whether you have visited before and
+            how many days ago, never who you are.
           </p>
           <p className="info-small mono">
             Right now: {rounds} {rounds === 1 ? 'round' : 'rounds'} recorded · {dailies} daily {dailies === 1 ? 'challenge' : 'challenges'} cleared

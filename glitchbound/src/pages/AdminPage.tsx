@@ -22,7 +22,7 @@ function Tile({ label, value, sub }: { label: string; value: string; sub?: strin
 }
 
 /** Single-series bars (one measure, one axis), with exact values on hover and in the table below. */
-function DailyBars({ data, metric, label }: { data: AdminStats['daily']; metric: 'visitors' | 'starts' | 'rounds'; label: string }) {
+function DailyBars({ data, metric, label }: { data: AdminStats['daily']; metric: 'visitors' | 'starts' | 'rounds' | 'returning' | 'dailyPlayers'; label: string }) {
   const max = Math.max(1, ...data.map((d) => d[metric]));
   return (
     <figure className="bars">
@@ -164,6 +164,9 @@ export function AdminPage() {
   }
   if (!stats) return <div className="wrap info-page"><p className="info-lead">{error ? 'Could not load stats.' : 'Loading stats…'}</p></div>;
 
+  const week = stats.daily.slice(-7);
+  const sum = (k: 'visitors' | 'returning' | 'dailyPlayers'): number => week.reduce((n, d) => n + d[k], 0);
+  const pct = (n: number, of: number): string | undefined => (of ? `${Math.round((n / of) * 100)}% of visitors` : undefined);
   const totals = stats.games.reduce((a, g) => ({ views: a.views + g.views, starts: a.starts + g.starts, ends: a.ends + g.ends }), { views: 0, starts: 0, ends: 0 });
   return (
     <div className="wrap info-page admin">
@@ -189,6 +192,8 @@ export function AdminPage() {
         <Tile label="Game views (30d)" value={fmt(totals.views)} />
         <Tile label="Rounds started (30d)" value={fmt(totals.starts)} sub={totals.views ? `${Math.round((totals.starts / totals.views) * 100)}% of views` : undefined} />
         <Tile label="Email list" value={fmt(stats.subscribers.confirmed)} sub={`${stats.subscribers.pending} pending · ${stats.subscribers.unsubscribed} left`} />
+        <Tile label="Returning visitors (7d)" value={fmt(sum('returning'))} sub={pct(sum('returning'), sum('visitors'))} />
+        <Tile label="Finished a daily (7d)" value={fmt(sum('dailyPlayers'))} sub={pct(sum('dailyPlayers'), sum('visitors'))} />
         <Tile label="Errors (7d)" value={fmt(stats.errors.kinds.reduce((n, k) => n + k.n, 0))} />
       </div>
 
@@ -198,6 +203,12 @@ export function AdminPage() {
         </div>
         <div className="panel info-block">
           <DailyBars data={stats.daily} metric="starts" label="Rounds started" />
+        </div>
+        <div className="panel info-block">
+          <DailyBars data={stats.daily} metric="returning" label="Returning visitors" />
+        </div>
+        <div className="panel info-block">
+          <DailyBars data={stats.daily} metric="dailyPlayers" label="Visitors who finished a daily" />
         </div>
       </div>
 
@@ -329,7 +340,7 @@ export function AdminPage() {
         </section>
       </div>
       <p className="info-small">
-        Privacy: visitor counts use a daily-rotating anonymous key (no cookies, no stored IPs). Only members' rounds are tied to an account.
+        Privacy: visitor counts use a daily-rotating anonymous key (no cookies, no stored IPs). &ldquo;Returning&rdquo; comes from the visitor&rsquo;s own browser (it only reports new/returning and days since the last visit). Only members' rounds are tied to an account.
       </p>
     </div>
   );
