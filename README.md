@@ -4,7 +4,7 @@ Browser games and the arcade that hosts them.
 
 | Project | Folder | Live | Status |
 | --- | --- | --- | --- |
-| **GlitchBound**, an independent browser arcade | [`glitchbound/`](glitchbound/) | https://glitchbound-d8m.pages.dev | Live (`pre-release` branch) |
+| **GlitchBound**, an independent browser arcade | [`glitchbound/`](glitchbound/) | https://glitchboundstudio.com | Live (`pre-release` branch) |
 | **NEON RUSH**, an endless neon arcade racer | [`neon-rush/`](neon-rush/) | https://neonrushgame.com | Playable web release, also embedded in GlitchBound |
 
 Each project has its own README, CI workflow (`.github/workflows/`) and Cloudflare Pages project. Pushing to

@@ -3,7 +3,7 @@
 GlitchBound is a static site. The production build in `dist/` can be hosted anywhere. It runs on
 **Cloudflare Pages** on the free plan, set up the same way as NEON RUSH.
 
-Live project: `glitchbound` at https://glitchbound-d8m.pages.dev (classic Pages, created once with
+Live project: `glitchbound` at https://glitchboundstudio.com (custom domain; `www.` too) and https://glitchbound-d8m.pages.dev (classic Pages, created once with
 `--force` because new wrangler versions otherwise redirect Pages commands to Workers). Production branch:
 `pre-release`. Unlike NEON RUSH it has **no Pages Functions and no database**, so `wrangler.toml` only names the
 output folder.
@@ -73,7 +73,7 @@ All are build-time and **public** (they end up in the browser bundle). Productio
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `VITE_SITE_URL` | `https://glitchbound-d8m.pages.dev` | Canonical URLs, Open Graph, share links, sitemap. Change when a custom domain is live. |
+| `VITE_SITE_URL` | `https://glitchboundstudio.com` | Canonical URLs, Open Graph, share links, sitemap. Change when a custom domain is live. |
 | `VITE_ANALYTICS` | `none` (`console` in dev) | `none`, `console` or `umami` ([ANALYTICS.md](ANALYTICS.md)) |
 | `VITE_UMAMI_WEBSITE_ID`, `VITE_UMAMI_SRC` | empty, Umami Cloud script | Umami settings |
 | `VITE_ADSENSE_CLIENT` | `ca-pub-9356777861178613` | Publisher id. Alone, it only writes `ads.txt`. |

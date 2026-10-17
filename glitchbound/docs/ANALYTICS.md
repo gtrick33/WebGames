@@ -33,7 +33,7 @@ Both can run together.
 
 ## Switching on Umami
 
-1. Sign up at https://cloud.umami.is, click **Add website**, name it GlitchBound, domain `glitchbound-d8m.pages.dev`
+1. Sign up at https://cloud.umami.is, click **Add website**, name it GlitchBound, domain `glitchboundstudio.com`
    (or your custom domain).
 2. Copy the **Website ID** (a UUID; it is public, it appears in the page source).
 3. In `glitchbound/.env.production` set:

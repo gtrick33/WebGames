@@ -47,7 +47,7 @@ function seoPages(siteUrl: string, adsenseClient: string): Plugin {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
-  const siteUrl = (env.VITE_SITE_URL || 'https://glitchbound-d8m.pages.dev').replace(/\/+$/, '');
+  const siteUrl = (env.VITE_SITE_URL || 'https://glitchboundstudio.com').replace(/\/+$/, '');
   return {
     base: '/',
     plugins: [react(), seoPages(siteUrl, env.VITE_ADSENSE_CLIENT ?? '')],

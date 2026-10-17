@@ -2,7 +2,7 @@
 
 What is live today, and the exact steps for the parts that need your accounts, money or approval.
 
-**Live now:** https://glitchbound-d8m.pages.dev (Cloudflare Pages, free plan). Ads and analytics are built in but off.
+**Live now:** https://glitchboundstudio.com (custom domain, bought 2026-10-17) and https://glitchbound-d8m.pages.dev (Cloudflare Pages, free plan). Ads and analytics are built in but off.
 NEON RUSH is embedded from https://neonrushgame.com and reports scores back to GlitchBound.
 
 ---
@@ -25,6 +25,10 @@ If the deploy step ever fails with an authentication error, the token was delete
 ---
 
 ## 2. Your own domain
+
+**Done:** `glitchboundstudio.com` was bought on Cloudflare and attached to the `glitchbound` Pages project
+(apex + `www`), and `VITE_SITE_URL` points at it. The options below are kept for reference. For ads, follow
+section 4 with "Option B".
 
 GlitchBound works on `glitchbound-d8m.pages.dev` forever for free. A real domain matters for three things:
 a name people remember, **AdSense** (Google does not accept `*.pages.dev` addresses you don't own as an ad site), and

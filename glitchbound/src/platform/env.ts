@@ -3,7 +3,7 @@ const env = import.meta.env;
 
 const clean = (v: string | undefined): string => (v ?? '').trim();
 
-export const SITE_URL = clean(env.VITE_SITE_URL).replace(/\/+$/, '') || 'https://glitchbound-d8m.pages.dev';
+export const SITE_URL = clean(env.VITE_SITE_URL).replace(/\/+$/, '') || 'https://glitchboundstudio.com';
 
 export const ANALYTICS = {
   provider: (clean(env.VITE_ANALYTICS) || (env.DEV ? 'console' : 'none')) as 'none' | 'console' | 'umami',

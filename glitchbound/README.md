@@ -2,7 +2,7 @@
 
 An independent browser arcade. *One more round. Then another.*
 
-**Live:** https://glitchbound-d8m.pages.dev · **Launch steps (domain, analytics, ads):** [docs/LAUNCH-GUIDE.md](docs/LAUNCH-GUIDE.md)
+**Live:** https://glitchboundstudio.com (also https://glitchbound-d8m.pages.dev) · **Launch steps (domain, analytics, ads):** [docs/LAUNCH-GUIDE.md](docs/LAUNCH-GUIDE.md)
 · **Add a game:** [docs/ADDING-A-GAME.md](docs/ADDING-A-GAME.md)
 
 Built with **TypeScript (strict)**, **React 19** and **Vite**. No backend, no accounts, no database: it is a static
