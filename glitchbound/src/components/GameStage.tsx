@@ -82,7 +82,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [game.runtime, onEvent, iframeRef]);
+  }, [game, onEvent, iframeRef]);
 
   // Keep the game's racer name in sync with the arcade (sent again whenever it changes).
   useEffect(() => {
