@@ -584,3 +584,5 @@ button.chip { cursor: pointer; }
 .skin-card canvas { width: 40px; height: 74px; object-fit: contain; filter: drop-shadow(0 0 8px var(--glow, transparent)); }
 .car-hero { display: grid; place-items: center; position: relative; }
 .car-hero canvas { width: 100px; height: auto; filter: drop-shadow(0 0 16px var(--glow, #22e4ff)); animation: hover 3s ease-in-out infinite; }
+
+a.link { color: var(--pink); }

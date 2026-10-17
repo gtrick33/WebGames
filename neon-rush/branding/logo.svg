@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a0b4d"/><stop offset="1" stop-color="#07041a"/></linearGradient>
+    <linearGradient id="car" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10e6ff"/><stop offset="1" stop-color="#0a6bd6"/></linearGradient>
+    <linearGradient id="rush" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.45" stop-color="#22e4ff"/><stop offset="1" stop-color="#1a5cff"/></linearGradient>
+    <filter id="glowPink" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="glowCyan" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="under" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#19f0ff" stop-opacity="0.45"/><stop offset="1" stop-color="#19f0ff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- road -->
+  <path d="M340 1024 L470 80 M684 1024 L554 80" stroke="#22e4ff" stroke-width="12" opacity="0.85" filter="url(#glowCyan)"/>
+  <path d="M684 1024 L554 80" stroke="#ff3fd2" stroke-width="12" opacity="0.9" filter="url(#glowPink)"/>
+  <path d="M512 110 v60 M512 230 v60 M512 350 v60" stroke="#cdc3ff" stroke-width="10" opacity="0.5"/>
+  <!-- car -->
+  <ellipse cx="512" cy="330" rx="120" ry="170" fill="url(#under)"/>
+  <g transform="translate(512 330) scale(3.1)">
+    <path d="M-13 -42 Q0 -45 13 -42 Q20 -40 20.5 -30 L21.5 -14 Q23 -4 21.5 8 L21 33 Q20 42 11 43 L-11 43 Q-20 42 -21 33 L-21.5 8 Q-23 -4 -21.5 -14 L-20.5 -30 Q-20 -40 -13 -42 Z" fill="url(#car)" stroke="#e8fdff" stroke-width="1.2"/>
+    <rect x="-3.5" y="-43" width="7" height="86" fill="#e8fdff" opacity="0.9"/>
+    <path d="M-15 -16 L15 -16 L12.5 -3 L-12.5 -3 Z" fill="#0b1b33"/>
+    <path d="M-12.5 17 L12.5 17 L14 25 L-14 25 Z" fill="#0b1b33"/>
+    <rect x="-15" y="-42" width="8" height="3.5" rx="1.5" fill="#f4fdff"/><rect x="7" y="-42" width="8" height="3.5" rx="1.5" fill="#f4fdff"/>
+    <rect x="-16" y="39.5" width="9" height="3" rx="1.2" fill="#ff2a4a"/><rect x="7" y="39.5" width="9" height="3" rx="1.2" fill="#ff2a4a"/>
+  </g>
+  <!-- wordmark -->
+  <g transform="skewX(-8)" font-family="Avenir Next, Futura, Helvetica Neue, Arial, sans-serif" font-weight="900" font-style="italic" text-anchor="middle">
+    <text x="610" y="720" font-size="210" fill="#ffffff" stroke="#ffffff" stroke-width="3" filter="url(#glowPink)" letter-spacing="6">NEON</text>
+    <text x="625" y="905" font-size="190" fill="url(#rush)" filter="url(#glowCyan)" letter-spacing="22">RUSH</text>
+  </g>
+</svg>

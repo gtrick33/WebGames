@@ -130,6 +130,13 @@ export class App {
       if (privacy) {
         privacy.textContent =
           'No account needed. Progress is saved on this device. If you set a racer name, that name, a random player id and your best scores are stored on the leaderboard server. Ads are provided by Google, which may use cookies to serve and measure ads; see policies.google.com/technologies/ads.';
+        const link = document.createElement('a');
+        link.className = 'link';
+        link.href = './privacy.html';
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = ' Privacy policy';
+        privacy.append(link);
       }
     }
     this.ui.text(
