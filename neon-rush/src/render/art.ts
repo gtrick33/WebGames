@@ -325,9 +325,16 @@ export class ArtLibrary {
     });
   }
 
-  /** PNG data URL of a skin, for garage cards. */
-  async skinPreview(skin: SkinDef): Promise<string> {
-    return this.renderer.extract.base64({ target: this.skinTexture(skin, 3), format: 'png' });
+  private previewCache = new Map<string, HTMLCanvasElement>();
+
+  /** A canvas snapshot of a car for the garage (synchronous, no PNG encoding). Cached per car. */
+  skinPreview(skin: SkinDef): HTMLCanvasElement {
+    let c = this.previewCache.get(skin.id);
+    if (!c) {
+      c = this.renderer.extract.canvas({ target: this.skinTexture(skin, 3) }) as HTMLCanvasElement;
+      this.previewCache.set(skin.id, c);
+    }
+    return c;
   }
 }
 

@@ -72,7 +72,6 @@ export class GameRenderer {
   private magnetRing: Sprite;
   private particles: ParticleSystem;
   private popups: Popup[] = [];
-  private streaks: Sprite[] = [];
   private flash: Sprite;
   private carFx: CarFxFilter | null = null;
   private lasers: Sprite[] = [];
@@ -147,11 +146,6 @@ export class GameRenderer {
     this.particles = new ParticleSystem(art.spark, settings.lowQuality ? 160 : 400);
     this.flash = new Sprite(Texture.WHITE);
     this.flash.alpha = 0;
-    for (let i = 0; i < 14; i++) {
-      const s = this.makeGlow(art.streak, 0xffffff);
-      s.alpha = 0;
-      this.streaks.push(s);
-    }
 
     this.buildScene();
   }
@@ -190,7 +184,7 @@ export class GameRenderer {
     this.worldLayer.addChild(this.pickupLayer, this.lightLayer, this.hazardLayer, this.playerLayer, this.particles.container, this.overheadLayer, this.fxLayer);
     this.playerLayer.addChild(...this.trail, ...this.lasers, this.underglow, this.headBeam, this.player, this.shieldRing, this.magnetRing);
     this.overheadLayer.addChild(...this.archGlows, ...this.arches);
-    this.screenLayer.addChild(...this.streaks, this.flash);
+    this.screenLayer.addChild(this.flash);
 
     // Scenery props on both sides: rooftops and light posts.
     const art = this.art;
@@ -526,25 +520,6 @@ export class GameRenderer {
       const t = (this.time * 1.4) % 1;
       this.magnetRing.scale.set(1.4 + t * 2.2);
       this.magnetRing.alpha = (1 - t) * 0.5;
-    }
-
-    // --- speed streaks (screen space)
-    const sw = this.app.screen.width;
-    const sh = this.app.screen.height;
-    const streakOn = scrollSpeed > 0 ? clamp((world.speed - 560) / 600, 0, 1) : 0;
-    for (const s of this.streaks) {
-      if (s.alpha <= 0.01 && Math.random() < 0.05 * streakOn) {
-        const side = Math.random() < 0.5 ? -1 : 1;
-        s.x = sw / 2 + side * (sw * 0.3 + Math.random() * sw * 0.2);
-        s.y = -60;
-        s.alpha = 0.25 + streakOn * 0.35;
-        s.height = 120 + streakOn * 160;
-        s.width = 3;
-      }
-      if (s.alpha > 0.01) {
-        s.y += (scrollSpeed * 1.6 + 400) * this.scale * dt;
-        if (s.y > sh + 200) s.alpha = 0;
-      }
     }
 
     // --- particles & popups

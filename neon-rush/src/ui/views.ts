@@ -9,6 +9,15 @@ import type { RunSummary } from '../progression/run';
 import type { Product } from '../monetization/purchases';
 import { CHECK_SVG, LOCK_SVG, esc, fmt, type UI } from './ui';
 
+function copyCanvas(src: HTMLCanvasElement): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = src.width;
+  c.height = src.height;
+  c.getContext('2d')?.drawImage(src, 0, 0);
+  c.setAttribute('aria-hidden', 'true');
+  return c;
+}
+
 const hex = (c: number): string => `#${c.toString(16).padStart(6, '0')}`;
 
 /** Shared header bits: coins, level, XP and notification dots. */
@@ -27,7 +36,7 @@ export function renderProfileChrome(ui: UI, p: Profile, today: string): void {
 // ------------------------------------------------------------------ garage
 
 export interface GarageDeps {
-  preview: (skin: SkinDef) => Promise<string>;
+  preview: (skin: SkinDef) => HTMLCanvasElement;
 }
 
 const RARITY_ORDER: Rarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];
@@ -39,7 +48,7 @@ const SHAPES: CarShape[] = [...new Set(SKINS.map((s) => s.shape))];
 export class GarageView {
   selected = DEFAULT_SKIN_ID;
   private filter: CarShape | 'all' | 'owned' = 'all';
-  private previews = new Map<string, string>();
+  private previews = new Map<string, HTMLCanvasElement>();
   private queue: SkinDef[] = [];
   private loading = false;
   private built = false;
@@ -93,20 +102,26 @@ export class GarageView {
     this.loading = true;
     const grid = this.ui.el('skinGrid');
     while (this.queue.length > 0) {
-      const s = this.queue.shift() as SkinDef;
-      const url = await this.deps.preview(s);
-      this.previews.set(s.id, url);
-      const skel = grid.querySelector(`[data-skin="${s.id}"] .skeleton`);
-      if (skel) {
-        const img = document.createElement('img');
-        img.alt = '';
-        img.src = url;
-        skel.replaceWith(img);
+      // Draw as many thumbnails as fit in ~8 ms, then yield a frame so scrolling stays smooth.
+      const start = performance.now();
+      while (this.queue.length > 0 && performance.now() - start < 8) {
+        const s = this.queue.shift() as SkinDef;
+        const canvas = this.deps.preview(s);
+        this.previews.set(s.id, canvas);
+        grid.querySelector(`[data-skin="${s.id}"] .skeleton`)?.replaceWith(copyCanvas(canvas));
+        if (s.id === this.selected) this.showHero(s);
       }
-      if (s.id === this.selected) this.ui.el('showcaseImg').setAttribute('src', url);
       await new Promise((r) => requestAnimationFrame(r));
     }
     this.loading = false;
+  }
+
+  private showHero(s: SkinDef): void {
+    const hero = this.ui.el('showcaseImg');
+    const canvas = this.previews.get(s.id);
+    hero.replaceChildren(...(canvas ? [copyCanvas(canvas)] : []));
+    // Only the popup animates its paint effect; the grid stays still.
+    hero.className = `car-hero fx-${s.shader}`;
   }
 
   render(p: Profile): void {
@@ -150,10 +165,11 @@ export class GarageView {
       `<span class="pill fx">${TRAIL_LABEL[s.trailStyle]}</span>`,
     ].join('');
     const img = ui.el('showcaseImg');
-    img.className = `fx-${s.shader}`;
-    const url = this.previews.get(s.id);
-    if (url) img.setAttribute('src', url);
-    else this.enqueue(s);
+    if (this.previews.has(s.id)) this.showHero(s);
+    else {
+      img.replaceChildren();
+      this.enqueue(s);
+    }
     (img.parentElement as HTMLElement).style.setProperty('--glow', hex(s.glow));
     const status = ui.el('showcaseStatus');
     const btn = ui.el('showcaseBtn') as HTMLButtonElement;
@@ -161,6 +177,7 @@ export class GarageView {
     status.classList.toggle('locked', !owned);
     btn.hidden = false;
     btn.disabled = false;
+    ui.text('carBalance', `You have ${fmt(p.coins)} coins`);
     if (owned) {
       const equipped = p.equippedSkin === s.id;
       status.textContent = equipped ? 'EQUIPPED' : 'OWNED';
@@ -169,8 +186,8 @@ export class GarageView {
       btn.dataset.mode = equipped ? 'unequip' : 'equip';
     } else if (s.unlock.type === 'coins') {
       const short = s.unlock.price - p.coins;
-      status.textContent = short > 0 ? `NEED ${fmt(short)} MORE COINS` : 'AVAILABLE';
-      btn.textContent = `Buy · ${fmt(s.unlock.price)}`;
+      status.textContent = short > 0 ? `You need ${fmt(short)} more coins` : `Price: ${fmt(s.unlock.price)} coins`;
+      btn.textContent = short > 0 ? `Need ${fmt(short)} more coins` : `Buy for ${fmt(s.unlock.price)} coins`;
       btn.dataset.mode = 'buy';
       btn.disabled = short > 0;
     } else {

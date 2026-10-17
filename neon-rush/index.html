@@ -164,16 +164,6 @@
           <button class="tab" role="tab" data-tab="store" data-bind="storeTab" hidden>Store</button>
         </div>
         <div class="tab-panel" data-panel="skins">
-          <div class="showcase">
-            <div class="podium"><img data-bind="showcaseImg" alt="" /></div>
-            <div class="showcase-info">
-              <h3 data-bind="showcaseName"></h3>
-              <p data-bind="showcaseTag"></p>
-              <div class="showcase-meta" data-bind="showcaseMeta"></div>
-              <div class="showcase-status" data-bind="showcaseStatus"></div>
-              <button class="btn btn-primary" data-action="skinPrimary" data-bind="showcaseBtn">Equip</button>
-            </div>
-          </div>
           <div class="garage-bar"><div class="chip-row" data-bind="garageFilters"></div><span class="muted" data-bind="garageCount"></span></div>
           <div class="skin-grid" data-bind="skinGrid"></div>
           <p class="fineprint">Cars are cosmetic only. Every car has the same speed, handling and hitbox.</p>
@@ -273,6 +263,22 @@
           <ol class="daily-strip" data-bind="dailyStrip"></ol>
           <button class="btn btn-primary btn-lg" data-action="claimDaily" data-bind="dailyClaimBtn">Claim</button>
           <button class="btn btn-ghost" data-action="closeModal">Later</button>
+        </div>
+      </section>
+
+      <!-- CAR DETAILS POPUP -->
+      <section class="screen modal-screen" id="screen-car" aria-label="Car details" role="dialog" aria-modal="true">
+        <div class="panel car-panel">
+          <button class="icon-btn close-x" data-action="closeCar" aria-label="Close">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+          <div class="podium"><div class="car-hero" data-bind="showcaseImg"></div></div>
+          <h2 data-bind="showcaseName"></h2>
+          <p class="muted" data-bind="showcaseTag"></p>
+          <div class="showcase-meta" data-bind="showcaseMeta"></div>
+          <div class="showcase-status" data-bind="showcaseStatus"></div>
+          <button class="btn btn-primary btn-lg" data-action="skinPrimary" data-bind="showcaseBtn">Equip</button>
+          <p class="muted small" data-bind="carBalance"></p>
         </div>
       </section>
 

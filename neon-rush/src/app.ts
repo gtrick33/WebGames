@@ -34,6 +34,8 @@ export class App {
   private state: GameState = 'menu';
   private page: Page | null = null;
   private dailyOpen = false;
+  /** Car details popup over the garage. */
+  private carOpen = false;
   private world!: World;
   private attract = true;
   private pilot = new Autopilot(0.06);
@@ -106,7 +108,8 @@ export class App {
         if (this.state === 'playing') this.world.steer(dir);
       },
       pause: () => {
-        if (this.state === 'playing') this.pause();
+        if (this.carOpen) this.closeCar();
+        else if (this.state === 'playing') this.pause();
         else if (this.state === 'paused') this.resume();
       },
       confirm: () => {
@@ -205,7 +208,7 @@ export class App {
 
   private updateScreens(): void {
     if (this.page) {
-      this.ui.setScreens([this.page]);
+      this.ui.setScreens(this.page === 'garage' && this.carOpen ? ['garage', 'car'] : [this.page]);
       return;
     }
     switch (this.state) {
@@ -404,6 +407,7 @@ export class App {
 
   private openPage(page: Page): void {
     this.page = page;
+    this.carOpen = false;
     if (page === 'garage') {
       this.garage.selected = this.profile.equippedSkin;
       this.garage.render(this.profile);
@@ -426,7 +430,20 @@ export class App {
     this.updateScreens();
   }
 
+  private openCar(skinId: string): void {
+    this.garage.selected = skinId;
+    this.garage.render(this.profile);
+    this.carOpen = true;
+    this.updateScreens();
+  }
+
+  private closeCar(): void {
+    this.carOpen = false;
+    this.updateScreens();
+  }
+
   private closePage(): void {
+    this.carOpen = false;
     this.page = null;
     if (this.state === 'gameover' && this.lastSummary) renderGameOver(this.ui, this.lastSummary, this.profile);
     this.refreshChrome();
@@ -509,9 +526,11 @@ export class App {
     ui.on('watchAd', (el) => void this.watchRewardedAd(el as HTMLButtonElement));
 
     // Garage
-    ui.on('selectSkin', (el) => {
-      this.garage.selected = el.dataset.skin ?? this.garage.selected;
-      this.garage.render(this.profile);
+    ui.on('selectSkin', (el) => this.openCar(el.dataset.skin ?? this.garage.selected));
+    ui.on('closeCar', () => this.closeCar());
+    // Tapping the dimmed backdrop closes the popup too.
+    ui.screen('car').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) this.closeCar();
     });
     ui.on('garageFilter', (el) => {
       this.garage.setFilter(el.dataset.filter ?? 'all');
@@ -571,8 +590,7 @@ export class App {
       unequipSkin(this.profile);
       this.renderer.setSkin(this.profile.equippedSkin);
     } else if (mode === 'buy' && skin.unlock.type === 'coins') {
-      const ok = await this.ui.confirm('Buy car?', `Buy ${skin.name} for ${fmt(skin.unlock.price)} coins?`, 'Buy');
-      if (!ok) return;
+      // The popup itself is the confirmation step: it shows the car, the price and your balance.
       const r = buySkin(this.profile, skin.id);
       if (r === 'ok') {
         equipSkin(this.profile, skin.id);
