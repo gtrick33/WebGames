@@ -235,12 +235,18 @@ html.game-focus body {
   overflow: hidden;
   overscroll-behavior: none;
 }
-.stage-exit {
+.stage-exit-group {
   position: absolute;
   top: max(10px, env(safe-area-inset-top));
   left: 50%;
   z-index: 5;
+  display: flex;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+.stage-exit {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   gap: 6px;
   height: 32px;
@@ -253,7 +259,6 @@ html.game-focus body {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  transform: translateX(-50%);
   opacity: 0.75;
 }
 .stage-exit:hover {

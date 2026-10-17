@@ -1,21 +1,23 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { getGame } from './catalog/catalog';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
-import { DailyPage } from './pages/DailyPage';
 import { GamePage } from './pages/GamePage';
 import { Home } from './pages/Home';
 import { NotFound } from './pages/NotFound';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { AdminPage } from './pages/AdminPage';
-import { LeaderboardsPage } from './pages/LeaderboardsPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { SignInPage } from './pages/SignInPage';
 import { ArcadeEntrance } from './components/Entrance';
 import { MusicControl } from './components/MusicControl';
 import { track } from './platform/analytics';
 import { Link, matchRoute, useLocation } from './router/router';
+
+// Pages most visitors never open are separate chunks, so the first load stays small on any phone.
+const DailyPage = lazy(() => import('./pages/DailyPage').then((m) => ({ default: m.DailyPage })));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
+const LeaderboardsPage = lazy(() => import('./pages/LeaderboardsPage').then((m) => ({ default: m.LeaderboardsPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const SignInPage = lazy(() => import('./pages/SignInPage').then((m) => ({ default: m.SignInPage })));
 
 function Page() {
   const { pathname } = useLocation();
@@ -74,7 +76,9 @@ export function App() {
             </div>
           )}
         >
-          <Page />
+          <Suspense fallback={<div className="wrap page-loading" role="status" aria-label="Loading" />}>
+            <Page />
+          </Suspense>
         </ErrorBoundary>
       </main>
       <Footer />

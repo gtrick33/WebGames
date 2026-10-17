@@ -113,7 +113,8 @@ export function GamePage({ game }: { game: GameEntry }) {
   const player = usePlayerName();
   const [renaming, setRenaming] = useState(false);
   const [renameMsg, setRenameMsg] = useState('');
-  const [restartKey, setRestartKey] = useState(0);
+  // Remounting the stage resets the game: autoStart restarts it, otherwise it closes back to the poster.
+  const [stageRun, setStageRun] = useState({ key: 0, autoStart: false });
   const [playing, setPlaying] = useState(false);
   const [last, setLast] = useState<LastRound | null>(null);
   const [burst, setBurst] = useState(0);
@@ -181,7 +182,15 @@ export function GamePage({ game }: { game: GameEntry }) {
 
   const restart = (): void => {
     track('replay_click', { game: game.slug, where: 'toolbar' });
-    setRestartKey((k) => k + 1);
+    setStageRun((r) => ({ key: r.key + 1, autoStart: true }));
+  };
+
+  /** Closes the game and unloads everything it loaded (iframe or module chunk state, canvases, sounds). */
+  const close = (): void => {
+    track('game_close', { game: game.slug });
+    play.exit();
+    setPlaying(false);
+    setStageRun((r) => ({ key: r.key + 1, autoStart: false }));
   };
 
   const share = async (kind: 'game' | 'score' | 'challenge'): Promise<void> => {
@@ -221,6 +230,11 @@ export function GamePage({ game }: { game: GameEntry }) {
               <Icon name="expand" size={18} />
             </button>
           )}
+          {playing && (
+            <button className="btn btn-sm" onClick={close} title="Close the game and free its memory">
+              <Icon name="close" size={18} /> <span className="hide-sm">Exit game</span>
+            </button>
+          )}
           <button className="btn btn-sm btn-icon" onClick={() => void share('game')} aria-label={`Share ${game.title}`} title="Share">
             <Icon name="share" size={18} />
           </button>
@@ -230,8 +244,8 @@ export function GamePage({ game }: { game: GameEntry }) {
       <div className="wrap game-layout">
         <div className="game-stage-col">
           <GameStage
-            key={restartKey}
-            autoStart={restartKey > 0}
+            key={stageRun.key}
+            autoStart={stageRun.autoStart}
             game={game}
             onEvent={onEvent}
             stageRef={stageRef}
@@ -240,9 +254,14 @@ export function GamePage({ game }: { game: GameEntry }) {
             onPlayClick={play.enter}
             overlay={
               play.active ? (
-                <button className="stage-exit" onClick={play.exit} aria-label="Exit full screen">
-                  <Icon name="shrink" size={16} /> Exit
-                </button>
+                <div className="stage-exit-group">
+                  <button className="stage-exit" onClick={play.exit} aria-label="Exit full screen">
+                    <Icon name="shrink" size={16} /> Exit full screen
+                  </button>
+                  <button className="stage-exit" onClick={close} aria-label="Exit game">
+                    <Icon name="close" size={16} /> Exit game
+                  </button>
+                </div>
               ) : null
             }
             onPhase={(p) => {

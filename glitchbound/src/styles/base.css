@@ -421,3 +421,8 @@ ol {
     scroll-behavior: auto !important;
   }
 }
+
+/* Placeholder while a lazily loaded page chunk arrives (keeps the footer from jumping up). */
+.page-loading {
+  min-height: 60vh;
+}

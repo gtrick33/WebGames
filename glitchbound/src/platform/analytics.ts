@@ -12,6 +12,7 @@ export type AnalyticsEvent =
   | 'game_start'
   | 'game_end'
   | 'replay_click'
+  | 'game_close'
   | 'share_click'
   | 'daily_complete'
   | 'search'

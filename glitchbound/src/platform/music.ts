@@ -194,8 +194,23 @@ class Music {
     if (!ctx || !this.master) return;
     this.master.gain.setTargetAtTime(0, ctx.currentTime, 0.25);
     window.setTimeout(() => {
-      if (!this.shouldPlay() && ctx.state === 'running') void ctx.suspend().then(() => this.publish());
+      if (this.shouldPlay() || this.ctx !== ctx) return;
+      // While a game runs, free the whole audio graph (reverb buffers included) so low-memory
+      // phones have it for the game; it is rebuilt when the player leaves the game.
+      if (this.gameActive) this.release();
+      else if (ctx.state === 'running') void ctx.suspend().then(() => this.publish());
     }, 1200);
+  }
+
+  private release(): void {
+    const ctx = this.ctx;
+    this.ctx = null;
+    this.master = null;
+    this.reverb = null;
+    this.noise = null;
+    this.nextBar = 0;
+    void ctx?.close().catch(() => undefined);
+    this.publish();
   }
 
   /** Schedules whole bars a little ahead of time (lookahead scheduler). */

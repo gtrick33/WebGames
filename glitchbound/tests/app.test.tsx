@@ -50,11 +50,11 @@ describe('routing', () => {
     expect(screen.getAllByRole('heading', { level: 1, name: /This level doesn.t exist/ }).length).toBeGreaterThan(0);
   });
 
-  it('navigates client-side through links', () => {
+  it('navigates client-side through links', async () => {
     renderAt('/');
     fireEvent.click(screen.getAllByRole('link', { name: 'Daily Challenge' })[0]!);
     expect(window.location.pathname).toBe('/daily');
-    expect(screen.getByRole('heading', { level: 1, name: 'Daily Challenge' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Daily Challenge' })).toBeTruthy();
   });
 });
 
@@ -99,10 +99,10 @@ describe('game page', () => {
 });
 
 describe('privacy page', () => {
-  it('deletes local data after confirmation', () => {
+  it('deletes local data after confirmation', async () => {
     localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, games: { 'neon-rush': { plays: 2, best: { score: 5 }, last: 1 } }, daily: {} }));
     renderAt('/privacy');
-    expect(screen.getByText(/2 rounds recorded/)).toBeTruthy();
+    expect(await screen.findByText(/2 rounds recorded/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Delete my GlitchBound data' }));
     fireEvent.click(screen.getByRole('button', { name: 'Yes, delete everything' }));
     expect(localStorage.getItem(SAVE_KEY)).toBeNull();
@@ -135,7 +135,7 @@ describe('members features as a guest (API unreachable in tests)', () => {
 
   it('shows a friendly offline state on the leaderboards page', async () => {
     renderAt('/leaderboards');
-    expect(screen.getByRole('heading', { level: 1, name: 'Leaderboards' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Leaderboards' })).toBeTruthy();
     expect(await screen.findByText(/offline right now/)).toBeTruthy();
   });
 
