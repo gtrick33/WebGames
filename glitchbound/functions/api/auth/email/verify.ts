@@ -2,6 +2,7 @@ import { normalizeEmail, verifyEmailCode } from '../../../../server/emailLogin';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../../server/http';
 import { buildMe, clientDay } from '../../../../server/members';
 import { signIn } from '../../../../server/signin';
+import { sendWelcome } from '../../../../server/welcome';
 
 const MESSAGES: Record<string, string> = {
   invalid: 'That code is not right. Check the latest email.',
@@ -10,7 +11,7 @@ const MESSAGES: Record<string, string> = {
 };
 
 /** POST /api/auth/email/verify { email, code }: signs in (or signs up) with the emailed code. */
-export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
+export async function onRequestPost({ request, env, waitUntil }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('bad_origin', 403);
   const body = await readJson(request);
   const email = normalizeEmail(body?.email);
@@ -19,5 +20,6 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   const result = await verifyEmailCode(env, email, code);
   if (typeof result === 'string') return bad(result, 401, { message: MESSAGES[result] });
   const { user, cookie, created } = await signIn(env, request, result);
+  if (created) waitUntil?.(sendWelcome(env, request, user, clientDay(body?.day)));
   return json({ user: await buildMe(env, user, clientDay(body?.day)), created }, 200, { 'set-cookie': cookie });
 }

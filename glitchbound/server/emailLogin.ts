@@ -1,4 +1,5 @@
-import { emailEnabled, esc, layoutEmail, sendBatch } from './email';
+import { arcadeEmail } from './arcadeMail';
+import { emailEnabled, sendBatch } from './email';
 import { randomToken, sha256, siteUrl, type Env } from './http';
 import { EMAIL_RE } from './newsletter';
 import type { Identity } from './signin';
@@ -48,20 +49,16 @@ export async function startEmailLogin(env: Env, request: Request, email: string,
     ),
   ]);
   const url = `${siteUrl(env, request)}/api/auth/email/link?token=${encodeURIComponent(link)}`;
-  await sendBatch(env, [
-    {
-      to: email,
-      subject: `${code} is your GlitchBound sign-in code`,
-      html: layoutEmail({
-        heading: 'Your sign-in code',
-        body: `<p style="margin:0 0 14px">Enter this code on GlitchBound, or use the button below. It works once, for 15 minutes.</p>
-<p style="margin:0;font:700 34px/1 monospace;letter-spacing:8px;color:#22e4ff">${esc(code)}</p>`,
-        cta: { label: 'Sign in to GlitchBound', url },
-        footer: 'If you did not try to sign in, ignore this email. Nobody can sign in without this code.',
-      }),
-      text: `Your GlitchBound sign-in code: ${code}\nOr open: ${url}\nIt works once, for 15 minutes. If you did not try to sign in, ignore this email.`,
-    },
-  ]);
+  const { html, text } = arcadeEmail({
+    kicker: 'SIGN-IN CODE',
+    title: 'Your code is ready',
+    intro: ['Type this code on GlitchBound to sign in. It works once, for 15 minutes.'],
+    code,
+    link: { label: 'OR SIGN IN WITH ONE TAP', url },
+    signoff: 'The GlitchBound team',
+    footer: 'If you did not try to sign in, ignore this email. Nobody can sign in without this code.',
+  });
+  await sendBatch(env, [{ to: email, subject: `${code} is your GlitchBound sign-in code`, html, text }]);
   return 'sent';
 }
 

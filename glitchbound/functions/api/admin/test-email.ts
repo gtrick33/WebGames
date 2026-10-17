@@ -1,12 +1,13 @@
-import { emailEnabled, esc, layoutEmail, sendBatch } from '../../../server/email';
-import { bad, json, readJson, sha256, siteUrl, type Ctx } from '../../../server/http';
+import { announcementMail } from '../../../server/announcement';
+import { emailEnabled, sendBatch } from '../../../server/email';
+import { bad, json, readJson, sha256, siteUrl, utcDay, type Ctx } from '../../../server/http';
+import { welcomeMail } from '../../../server/welcome';
 
 /**
- * POST /api/admin/test-email { to }  with header  x-admin-token: <ADMIN_TEST_TOKEN>
+ * POST /api/admin/test-email { to, kind: 'announce' | 'welcome' }  with header  x-admin-token: <ADMIN_TEST_TOKEN>
  *
- * Sends a clearly-marked TEST announcement for a made-up game, to check how announcements look and
- * whether they land in the inbox. Can only send to the addresses in ADMIN_EMAILS, and only with the
- * ADMIN_TEST_TOKEN secret, so it cannot be used to email anyone else.
+ * Sends a preview of a real email template (a made-up game for announcements), marked as a test.
+ * Only to the addresses in ADMIN_EMAILS, and only with the ADMIN_TEST_TOKEN secret.
  */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   const expected = env.ADMIN_TEST_TOKEN;
@@ -20,48 +21,22 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
   if (!admins.includes(to)) return bad('not_an_admin_address', 400);
-
   const base = siteUrl(env, request);
-  const plain = body?.style === 'plain';
-  if (plain) {
-    // Plain style from the studio: no banner, no button, no bulk-mail headers. Gmail tends to file
-    // short, simple mail like this in Primary rather than Promotions.
-    const text = [
-      'Hi there,',
-      '',
-      'A new game just went live on GlitchBound: Pixel Drift. (This is a test email; the game is made up.)',
-      'You tap to drift a little pixel car around neon corners and chain perfect turns for a combo. It also has its own Daily Challenge.',
-      '',
-      `Try it here: ${base}`,
-      '',
-      'Thanks for playing,',
-      'The GlitchBound team',
-    ].join('\n');
-    const html = text
-      .split('\n')
-      .map((l) => (l ? `<p style="margin:0 0 4px">${esc(l).replace(esc(base), `<a href="${esc(base)}">${esc(base)}</a>`)}</p>` : '<br>'))
-      .join('');
-    const sentPlain = await sendBatch(env, [{ to, subject: 'Pixel Drift is live on GlitchBound (test)', text, html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222">${html}</div>` }]);
-    return json({ ok: true, sent: sentPlain, to, style: 'plain' });
+
+  if (body?.kind === 'welcome') {
+    const mail = welcomeMail(base, { id: `preview-${utcDay()}`, email: to, nickname: typeof body.nickname === 'string' ? body.nickname.slice(0, 14) : 'Sava' }, utcDay());
+    const sent = await sendBatch(env, [{ ...mail, subject: `${mail.subject} (test)` }]);
+    return json({ ok: true, sent, to, kind: 'welcome' });
   }
-  const game = { title: 'Pixel Drift', tagline: 'Drift a glowing pixel car around ever-tighter neon corners. One button. Endless corners.' };
-  const message =
-    'A brand-new game just landed in the arcade: Pixel Drift. Tap to drift, release to straighten, and chain perfect corners for a combo. ' +
-    'There is a new Daily Challenge for it too.';
-  const sent = await sendBatch(env, [
-    {
-      to,
-      subject: '[TEST] New on GlitchBound: Pixel Drift',
-      unsubscribeUrl: `${base}/api/unsubscribe?token=test-preview-token-not-valid`,
-      html: layoutEmail({
-        heading: game.title,
-        body: `<p style="margin:0 0 12px;color:#ffd12e;font:700 12px monospace;letter-spacing:1px">TEST EMAIL · MOCK GAME · NOT A REAL RELEASE</p>
-<p style="margin:0 0 12px">${esc(message)}</p><p style="margin:0;color:#a193cf">${esc(game.tagline)}</p>`,
-        cta: { label: 'Open the arcade', url: base },
-        footer: `This is a test of GlitchBound new-game announcements, sent only to admins. Real announcements include a one-click unsubscribe link.`,
-      }),
-      text: `[TEST] ${game.title}\n\n${message}\n\n${game.tagline}\n\nOpen the arcade: ${base}\n\nThis is a test email sent only to admins.`,
-    },
-  ]);
-  return json({ ok: true, sent, to });
+
+  const mail = announcementMail(
+    base,
+    to,
+    'test-preview-token-not-valid',
+    { title: 'Pixel Drift', tagline: 'One button. Endless neon corners. How long can you hold the line?', categories: ['racing'] },
+    'Pixel Drift is live on GlitchBound (test)',
+    'A new game just landed in the arcade (this is a test, the game is made up).\nTap to drift a little pixel car around neon corners and chain perfect turns into a combo. It has its own Daily Challenge too.',
+  );
+  const sent = await sendBatch(env, [mail]);
+  return json({ ok: true, sent, to, kind: 'announce' });
 }
