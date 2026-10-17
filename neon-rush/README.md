@@ -49,7 +49,8 @@ src/
   backend/       Leaderboard client + shared validation rules
 functions/       Cloudflare Pages Functions: /api/run, /api/score, /api/leaderboard (D1)
 migrations/      D1 schema
-  analytics/     In-memory analytics seam (sends nothing)
+  analytics/     In-memory analytics seam (sends nothing) + embed.ts, which tells a host page (the GlitchBound
+                 arcade) when a run starts and ends, only when the game runs inside an iframe
   audio/         Web Audio synthesized SFX + music (lazy-loaded)
   ui/            Screen controller, views, styles
 tests/           Vitest unit tests (simulation, fairness, progression, economy, shop, ads, purchases, saves)

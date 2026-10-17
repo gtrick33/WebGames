@@ -17,6 +17,7 @@ import { AdManager } from './monetization/ads';
 import { grantPurchase, type PurchaseProvider } from './monetization/purchases';
 import { selectProviders } from './monetization/providers';
 import { LocalAnalytics } from './analytics/analytics';
+import { notifyHost, runEndMessage } from './analytics/embed';
 import { createBackend, type BackendService } from './backend/backend';
 import { LeaderboardClient, type BoardResult } from './backend/leaderboard';
 import { normalizeName, validateName } from './backend/leaderboard-rules';
@@ -278,6 +279,7 @@ export class App {
     this.audio?.setIntensity(1);
     void this.unlockAudio();
     this.analytics.track('run_start', { games: this.profile.gamesPlayed });
+    notifyHost({ type: 'start' });
     // Ask the server for a run token in the background; gameplay never waits for it.
     this.serverRun = null;
     const localRun = this.runId;
@@ -321,6 +323,7 @@ export class App {
     this.lastSummary = summary;
     this.ads.onRunCompleted();
     this.analytics.track('run_end', { score: summary.stats.score, meters: Math.floor(summary.stats.meters), coins: summary.stats.coins });
+    notifyHost(runEndMessage(summary.stats));
     void this.submitScore(summary, show);
     if (show) {
       this.state = 'gameover';
