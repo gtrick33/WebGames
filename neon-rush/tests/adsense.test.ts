@@ -80,7 +80,9 @@ describe('Google H5 Games Ads provider', () => {
 
   it('is selected in production only with a valid publisher id', () => {
     const ui = { presentMockAd: async () => 'complete' as const, confirmMockPurchase: async () => 'success' as const };
-    expect(selectProviders({ DEV: false, VITE_ADSENSE_CLIENT: 'ca-pub-1234567890123456' }, ui).ads.name).toBe('adsense-h5');
+    expect(selectProviders({ DEV: false, VITE_ADSENSE_CLIENT: 'ca-pub-1234567890123456', VITE_ADS_ENABLED: 'on' }, ui).ads.name).toBe('adsense-h5');
+    // The publisher id alone (used for ads.txt verification) must not switch ads on.
+    expect(selectProviders({ DEV: false, VITE_ADSENSE_CLIENT: 'ca-pub-1234567890123456' }, ui).ads.name).toBe('none');
     expect(selectProviders({ DEV: false, VITE_ADSENSE_CLIENT: 'garbage' }, ui).ads.name).toBe('none');
     expect(selectProviders({ DEV: false }, ui).ads.name).toBe('none');
   });

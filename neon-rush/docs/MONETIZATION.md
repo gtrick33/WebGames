@@ -20,7 +20,7 @@ so real providers can be added without touching gameplay code.
 ### Google H5 Games Ads (implemented)
 
 `src/monetization/adsense.ts` integrates Google's Ad Placement API (`adBreak` / `adConfig`), following the official docs.
-It activates only when `VITE_ADSENSE_CLIENT` is set at build time. See [LAUNCH-GUIDE.md](LAUNCH-GUIDE.md#3-ads-what-to-use-and-how).
+It activates only when `VITE_ADSENSE_CLIENT` is set **and** `VITE_ADS_ENABLED=on` at build time (the id alone just writes ads.txt). See [LAUNCH-GUIDE.md](LAUNCH-GUIDE.md#3-ads-what-to-use-and-how).
 
 ### Adding another ad network
 

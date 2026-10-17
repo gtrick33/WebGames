@@ -77,6 +77,7 @@ export class App {
         VITE_PURCHASE_PROVIDER: env.VITE_PURCHASE_PROVIDER,
         VITE_ADSENSE_CLIENT: env.VITE_ADSENSE_CLIENT,
         VITE_ADSENSE_TEST: env.VITE_ADSENSE_TEST,
+        VITE_ADS_ENABLED: env.VITE_ADS_ENABLED,
       },
       { presentMockAd: this.ui.presentMockAd, confirmMockPurchase: this.ui.confirmMockPurchase },
       {

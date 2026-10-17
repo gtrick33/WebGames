@@ -13,7 +13,7 @@ export interface MonetizationConfig {
  * a production build always gets the "none"/"disabled" providers until real ones are integrated.
  */
 export function selectProviders(
-  env: { DEV: boolean; VITE_AD_PROVIDER?: string; VITE_PURCHASE_PROVIDER?: string; VITE_ADSENSE_CLIENT?: string; VITE_ADSENSE_TEST?: string },
+  env: { DEV: boolean; VITE_AD_PROVIDER?: string; VITE_PURCHASE_PROVIDER?: string; VITE_ADSENSE_CLIENT?: string; VITE_ADSENSE_TEST?: string; VITE_ADS_ENABLED?: string },
   ui: { presentMockAd: MockAdPresenter; confirmMockPurchase: (p: Product) => Promise<MockPurchaseOutcome> },
   adHooks?: Omit<AdSenseOptions, 'client' | 'testMode'>,
 ): MonetizationConfig {
@@ -21,8 +21,10 @@ export function selectProviders(
   const dev = import.meta.env.DEV && env.DEV;
   const adChoice = env.VITE_AD_PROVIDER ?? (dev ? 'mock' : 'none');
   const purchaseChoice = env.VITE_PURCHASE_PROVIDER ?? (dev ? 'mock' : 'disabled');
-  // Real Google ads only when a valid publisher id is configured (and, in dev, only when explicitly chosen).
-  const wantAdSense = isValidAdSenseClient(env.VITE_ADSENSE_CLIENT) && (!dev || adChoice === 'adsense');
+  // Real Google ads need a valid publisher id AND the explicit VITE_ADS_ENABLED=on switch
+  // (the id alone only publishes ads.txt, e.g. for AdSense site verification before approval).
+  const wantAdSense =
+    isValidAdSenseClient(env.VITE_ADSENSE_CLIENT) && env.VITE_ADS_ENABLED === 'on' && (!dev || adChoice === 'adsense');
   const ads: AdProvider = wantAdSense
     ? new AdSenseH5Provider({
         client: env.VITE_ADSENSE_CLIENT as string,

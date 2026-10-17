@@ -155,7 +155,8 @@ You must be the one to sign up: it's tied to your identity, your bank and your t
    The number after `pub-` is your **publisher id**. Your game uses it as `ca-pub-1234567890123456`.
 3. **Send me that publisher id** (it's public, not a secret). I'll rebuild the game with it, and the build automatically
    publishes `https://neonrushgame.com/ads.txt` containing exactly that line, with ads still switched off for players.
-   (Or do it yourself: `VITE_ADSENSE_CLIENT=ca-pub-YOURNUMBER npm run deploy` inside `neon-rush/`.)
+   (Or do it yourself: `VITE_ADSENSE_CLIENT=ca-pub-YOURNUMBER npm run deploy` inside `neon-rush/`. The id alone only
+   publishes ads.txt. Ads stay off until `VITE_ADS_ENABLED=on` is also set in Part E.)
 4. Open https://neonrushgame.com/ads.txt in your browser and check you see that one line.
 5. Back in AdSense, tick **I've placed the code**, then click **Verify**.
 6. Click **Request review**. Google says this usually takes a few days, sometimes 2-4 weeks. You'll get an email.
@@ -184,9 +185,10 @@ Normal AdSense alone isn't enough for full-screen game ads. You need this extra 
 
 ### Part E: switch ads on
 
-1. When the H5 Games Ads approval email arrives, tell me. I'll do a **test build** first (Google's test ads, which
-   earn nothing) so we can check rewarded and between-run ads behave correctly.
-2. Then I'll do the real build. From that moment Google serves real ads, and AdSense shows earnings within a day or two.
+1. When the H5 Games Ads approval email arrives, tell me. I'll do a **test build** first (Google's test ads, which earn nothing):
+   `VITE_ADSENSE_CLIENT=ca-pub-YOURNUMBER VITE_ADS_ENABLED=on VITE_ADSENSE_TEST=on npm run deploy`
+   so we can check rewarded and between-run ads behave correctly.
+2. Then the real build, the same command without `VITE_ADSENSE_TEST=on`. From then on Google serves real ads, and AdSense shows earnings within a day or two.
 3. Google pays out once your balance reaches the payment threshold, after you add bank details under **Payments**.
 
 Rules the game already follows (in code and tests): ads never appear during a race, rewarded ads only start when the
