@@ -6,7 +6,7 @@ import type { RunStats } from '../game/world';
  * never the player id or name. Does nothing when the game is not embedded.
  * Protocol: glitchbound/src/platform/contract.ts (source "glitchbound-game", version 1).
  */
-type HostMessage = { type: 'start' } | { type: 'end'; score: number; stats: Record<string, number> };
+type HostMessage = { type: 'ready' } | { type: 'start' } | { type: 'end'; score: number; stats: Record<string, number> };
 
 export function notifyHost(message: HostMessage, win: Pick<Window, 'parent'> | undefined = globalThis.window): void {
   if (!win || win.parent === win) return;
@@ -43,5 +43,7 @@ export function listenToHost(onCommand: (c: HostCommand) => void, win: Window | 
     else if (d.type === 'pause') onCommand({ type: 'pause' });
   };
   win.addEventListener('message', handler);
+  // Tell the host we are listening, so it can send the player's name now.
+  notifyHost({ type: 'ready' }, win);
   return () => win.removeEventListener('message', handler);
 }

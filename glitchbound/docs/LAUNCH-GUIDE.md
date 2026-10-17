@@ -8,10 +8,12 @@ Pages Functions (`/api`) and the D1 database `glitchbound`.
 | Feature | Status | Needs from you |
 | --- | --- | --- |
 | Arcade, NEON RUSH, Daily Challenge, guest favorites and bests | Live | Nothing |
-| Leaderboards, Hall of Fame, member quests, XP and badges, profile | Live, waiting for sign-in | **Section 1**: Google Client ID |
-| Admin dashboard (`/admin`) | Live for `savawow99@gmail.com` once sign-in works | Section 1 |
+| Sign-in: Google, or any email with a one-time code (`/signin`) | Live | Nothing |
+| Leaderboards, Hall of Fame, member quests, XP and badges, profile | Live | Nothing |
+| Admin dashboard (`/admin`) | Live for `savawow99@gmail.com` and `sava.hristov@glitchboundstudio.com` | Nothing |
+| NEON RUSH hosted at `/play/neon-rush/` with its own leaderboard API | Live | Nothing (neonrushgame.com is no longer used) |
 | First-party analytics + crash reports (feed the admin dashboard) | Live | Nothing |
-| "Notify me" email list | Collecting signups | **Section 2**: Resend, to send |
+| "Notify me" email list, email sign-in codes | Live (Resend key set 2026-10-17) | Optional DMARC record (section 2) |
 | Your own mailbox `sava.hristov@glitchboundstudio.com` | Google Workspace | **Section 3** if mail does not arrive |
 | Ads | Built, off | Section 5 |
 

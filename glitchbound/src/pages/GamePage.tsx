@@ -139,6 +139,7 @@ export function GamePage({ game }: { game: GameEntry }) {
   const onEvent = useCallback(
     (e: GameEvent) => {
       const signedIn = !!account.state.me;
+      if (e.type === 'ready') return;
       if (e.type === 'start') {
         track('game_start', { game: game.slug });
         // Members: the server timestamps the start so the finished score can be checked.

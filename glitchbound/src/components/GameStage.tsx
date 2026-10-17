@@ -55,6 +55,10 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
   const [phase, setPhaseState] = useState<Phase>(() => (!autoStart ? 'poster' : game.runtime.kind === 'embed' ? 'loading' : 'ready'));
   const [attempt, setAttempt] = useState(0);
   const ownFrame = useRef<HTMLIFrameElement>(null);
+  const nameRef = useRef(playerName);
+  useEffect(() => {
+    nameRef.current = playerName;
+  }, [playerName]);
   const iframeRef = frameRef ?? ownFrame;
   const onPhaseRef = useRef(onPhase);
   useEffect(() => {
@@ -72,7 +76,9 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
     const onMessage = (e: MessageEvent): void => {
       if (e.source !== iframeRef.current?.contentWindow || !origins.includes(e.origin)) return;
       const ev = parseGameMessage(e.data);
-      if (ev) onEvent(ev);
+      if (ev?.type === 'ready') {
+        if (nameRef.current) postToGame(iframeRef.current, game, { type: 'identity', name: nameRef.current });
+      } else if (ev) onEvent(ev);
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);

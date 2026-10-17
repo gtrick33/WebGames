@@ -8,9 +8,9 @@ card meta, related games and daily challenge pick it up automatically.
 
 | | `embed` | `module` |
 | --- | --- | --- |
-| What | The game is its own deployed site (like NEON RUSH), shown in an iframe | A React component inside `glitchbound/src/games/<slug>/` |
-| Good for | Big games with their own stack, backend, or domain | Small and medium games built quickly with Claude Code |
-| Deploys | Separately (its own workflow) | With GlitchBound |
+| What | The game is its own Vite project in this repo (like `neon-rush/`), built into `dist/play/<slug>/` and shown in a same-site iframe | A React component inside `glitchbound/src/games/<slug>/` |
+| Good for | Bigger games with their own stack or their own API | Small and medium games built quickly with Claude Code |
+| Deploys | With GlitchBound (`scripts/build-games.mjs` builds it; the GlitchBound workflow also runs on changes to its folder) | With GlitchBound |
 | Loads | When the player presses Play | As its own lazy JS chunk when the player presses Play |
 
 ## 2. Report rounds (the contract)
@@ -40,7 +40,10 @@ export default function Game({ host, restartKey }: GameModuleProps) {
 }
 ```
 
-**Embedded games** post to their parent (see `neon-rush/src/analytics/embed.ts` for a 20-line example):
+**Embedded games** post to their parent (see `neon-rush/src/analytics/embed.ts` for a short, tested example).
+They should also send `{ type: 'ready' }` once they listen for host commands, and handle these commands from the
+parent (`source: 'glitchbound-host'`, `version: 1`): `identity` (`{ name }`, the player's arcade name; use it instead of
+asking for one) and `pause` (sent when the game is scrolled out of view):
 
 ```ts
 if (window.parent !== window) {
@@ -51,6 +54,11 @@ if (window.parent !== window) {
 The arcade only accepts messages from the game's iframe *and* from the origins listed in the registry.
 
 ## 3. Add the registry entry
+
+For an embedded in-repo game: give the project a relative Vite `base: './'`, add it to `GAME_BUILDS` in
+`scripts/build-games.mjs`, use `runtime: { kind: 'embed', url: '/play/<slug>/', origins: ['self'] }`, and add its
+folder to the `paths` of `.github/workflows/glitchbound.yml`. If it has its own API, call it with relative URLs and
+add Functions under `functions/play/<slug>/api/` (see the NEON RUSH wrappers).
 
 Append to `src/catalog/games.ts` (schema and comments in `src/catalog/types.ts`):
 

@@ -16,7 +16,12 @@ export interface EndEvent {
   stats?: Record<string, number>;
 }
 
-export type GameEvent = StartEvent | EndEvent;
+/** The game is listening for host commands (identity, pause). */
+export interface ReadyEvent {
+  type: 'ready';
+}
+
+export type GameEvent = ReadyEvent | StartEvent | EndEvent;
 
 export interface GameHost {
   report(event: GameEvent): void;
@@ -53,6 +58,7 @@ export function parseGameMessage(data: unknown): GameEvent | null {
   const m = data as Record<string, unknown>;
   if (m.source !== MESSAGE_SOURCE || m.version !== PROTOCOL_VERSION) return null;
   if (m.type === 'start') return { type: 'start' };
+  if (m.type === 'ready') return { type: 'ready' };
   if (m.type !== 'end') return null;
   const score = cleanNumber(m.score);
   if (score === null) return null;

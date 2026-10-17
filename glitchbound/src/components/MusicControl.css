@@ -85,10 +85,20 @@
   color: var(--fg-3);
 }
 /* Out of the way of the phone tab bar, and hidden while a game fills the screen. */
+/* On phones it docks at the right end of the bottom tab bar instead of floating over content. */
 @media (max-width: 900px) {
   .music {
-    bottom: calc(96px + env(safe-area-inset-bottom));
-    left: 12px;
+    left: auto;
+    right: 16px;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+  .music-pop {
+    left: auto;
+    right: 0;
+    transform-origin: bottom right;
   }
 }
 html.game-focus .music {

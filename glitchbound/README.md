@@ -34,6 +34,8 @@ All commands run from this folder (`glitchbound/`). Requires Node 20+ (developed
 | `/games/<slug>` | Game page: the game viewport first, then your bests, how to play, today's challenge, share and friend challenge links (`?beat=<score>`), related games |
 | `/daily` | Today's challenge, how it works, the last 4 weeks |
 | `/leaderboards` | Hall of Fame (crowns, podiums, records) and per-game boards (all time, last 24 h) |
+| `/signin` | Sign in or sign up: Google, or any email with a 6-digit code / magic link |
+| `/play/<slug>/` | In-repo games built into the site (NEON RUSH), shown inside the game page |
 | `/me` | Profile: level, quests, badges, bests, favorites, email notifications, delete account |
 | `/admin` | Admin dashboard (ADMIN_EMAILS only): members, plays per game, funnel, searches, crashes, email announcements |
 | `/privacy` | What is stored and a button to delete it |
@@ -101,6 +103,15 @@ templates, so everyone gets the same challenge on the same date and nothing chan
 on GlitchBound counts. A streak is consecutive cleared days. The share text shows the result, a 7-day ■□ row and a
 link to `/daily`, with no personal data. If no game had daily templates, the feature would hide itself instead of
 showing a fake countdown.
+
+### Player names, music and play mode
+
+- Players race under their account nickname (it starts as their Google name) or, as guests, a random name such as
+  `BraveFox527` (`src/platform/playerName.ts`), changeable on the game page. Games receive it via the host bridge.
+- Lobby music (`src/platform/music.ts`) is generated with Web Audio: original, no files. It starts on the first click,
+  can be muted or turned down (bottom-left, or in the phone tab bar) and pauses while a game is loaded.
+- Pressing Play enters fullscreen, or an immersive full-viewport mode where browsers do not allow element fullscreen
+  (iPhone); zoom is locked while playing and the game pauses when scrolled out of view.
 
 ### Members, leaderboards and admin
 

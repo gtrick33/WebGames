@@ -262,6 +262,7 @@
     z-index: 55;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    padding-right: 82px !important; /* room for the music control docked inside the bar */
     gap: 4px;
     padding: 6px;
     border: 1.5px solid var(--line);
