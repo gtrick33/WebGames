@@ -24,25 +24,24 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   const base = siteUrl(env, request);
   const plain = body?.style === 'plain';
   if (plain) {
-    // Personal, plain style: no banner, no button, no bulk-mail headers. Gmail usually files
-    // one-to-one looking mail like this in Primary rather than Promotions.
-    const sender = (env.MAIL_FROM ?? '').replace(/^[^<]*/, 'Sava at GlitchBound ');
+    // Plain style from the studio: no banner, no button, no bulk-mail headers. Gmail tends to file
+    // short, simple mail like this in Primary rather than Promotions.
     const text = [
-      'Hi,',
+      'Hi there,',
       '',
-      'Quick note (this is a test, the game is made up): a new game called Pixel Drift just went live on GlitchBound.',
+      'A new game just went live on GlitchBound: Pixel Drift. (This is a test email; the game is made up.)',
       'You tap to drift a little pixel car around neon corners and chain perfect turns for a combo. It also has its own Daily Challenge.',
       '',
       `Try it here: ${base}`,
       '',
       'Thanks for playing,',
-      'Sava',
+      'The GlitchBound team',
     ].join('\n');
     const html = text
       .split('\n')
       .map((l) => (l ? `<p style="margin:0 0 4px">${esc(l).replace(esc(base), `<a href="${esc(base)}">${esc(base)}</a>`)}</p>` : '<br>'))
       .join('');
-    const sentPlain = await sendBatch(env, [{ to, subject: 'Pixel Drift is live (test)', from: sender, text, html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222">${html}</div>` }]);
+    const sentPlain = await sendBatch(env, [{ to, subject: 'Pixel Drift is live on GlitchBound (test)', text, html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222">${html}</div>` }]);
     return json({ ok: true, sent: sentPlain, to, style: 'plain' });
   }
   const game = { title: 'Pixel Drift', tagline: 'Drift a glowing pixel car around ever-tighter neon corners. One button. Endless corners.' };
