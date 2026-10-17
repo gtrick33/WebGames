@@ -2,7 +2,7 @@ import { Application, Container, Graphics, Sprite, Text, TilingSprite, Texture }
 import { ArtLibrary, TRAFFIC_COLORS } from './art';
 import { CarFxFilter } from './carfx';
 import { ParticleSystem } from './particles';
-import { LANE_WIDTH, PLAYER, ROAD_WIDTH, VIEW_MIN_HEIGHT, VIEW_MIN_WIDTH, type PowerUpKind } from '../game/config';
+import { APPROACH_FACTOR, LANE_WIDTH, PLAYER, ROAD_WIDTH, VIEW_MIN_HEIGHT, VIEW_MIN_WIDTH, type PowerUpKind } from '../game/config';
 import type { World, WorldEvent } from '../game/world';
 import { getSkin, type SkinDef } from '../cosmetics/skins';
 import { clamp, damp, lerp } from '../core/math';
@@ -76,9 +76,6 @@ export class GameRenderer {
   private carFx: CarFxFilter | null = null;
   private lasers: Sprite[] = [];
   private laneGlow: TilingSprite;
-  private overheadLayer = new Container();
-  private arches: Sprite[] = [];
-  private archGlows: Sprite[] = [];
   private motes: Sprite[] = [];
   private trafficGlows: Sprite[] = [];
   private trailAcc = 0;
@@ -112,14 +109,6 @@ export class GameRenderer {
       const l = this.makeGlow(art.streak, 0xffffff);
       l.anchor.set(0.5, 0);
       this.lasers.push(l);
-    }
-    for (let i = 0; i < 2; i++) {
-      const a = new Sprite(art.arch);
-      a.anchor.set(0.5);
-      a.blendMode = 'add';
-      this.arches.push(a);
-      const g = this.makeGlow(art.glow, 0xffffff);
-      this.archGlows.push(g);
     }
     for (let i = 0; i < 26; i++) {
       const m = this.makeGlow(i % 3 === 0 ? art.star : art.spark, 0xffffff);
@@ -181,9 +170,8 @@ export class GameRenderer {
     stage.addChild(this.root);
     this.root.addChild(this.worldLayer, this.screenLayer);
     this.worldLayer.addChild(this.ground, ...this.motes, this.propLayer, this.road, this.laneGlow, this.edges, this.edgeGlowL, this.edgeGlowR);
-    this.worldLayer.addChild(this.pickupLayer, this.lightLayer, this.hazardLayer, this.playerLayer, this.particles.container, this.overheadLayer, this.fxLayer);
+    this.worldLayer.addChild(this.pickupLayer, this.lightLayer, this.hazardLayer, this.playerLayer, this.particles.container, this.fxLayer);
     this.playerLayer.addChild(...this.trail, ...this.lasers, this.underglow, this.headBeam, this.player, this.shieldRing, this.magnetRing);
-    this.overheadLayer.addChild(...this.archGlows, ...this.arches);
     this.screenLayer.addChild(this.flash);
 
     // Scenery props on both sides: rooftops and light posts.
@@ -251,7 +239,6 @@ export class GameRenderer {
     this.road.height = this.viewHeight;
     this.road.position.set(0, 0);
     this.laneGlow.height = this.viewHeight;
-    this.arches.forEach((a, k) => (a.y = -200 - k * (this.viewHeight + 500)));
     this.drawEdges();
 
     this.flash.width = w;
@@ -313,7 +300,19 @@ export class GameRenderer {
   }
 
   /** Per-frame draw. `scrollSpeed` is the road speed in units/s (0 when paused). */
-  render(world: World, dt: number, scrollSpeed: number): void {
+  private lastWorld: World | null = null;
+  private lastDist = 0;
+
+  /**
+   * Per-frame draw. `scrollSpeed` is 0 when the world is frozen (paused, crashed).
+   * `lead` is simulation time not yet stepped (the fixed-step accumulator): everything is drawn that far
+   * ahead so motion stays perfectly even even when a frame runs 1, 2 or 3 simulation steps.
+   */
+  render(world: World, dt: number, scrollSpeed: number, lead = 0): void {
+    const moving = scrollSpeed > 0 && !world.crashed;
+    const ahead = moving ? lead : 0;
+    // Traffic/pickup offset for the not-yet-simulated time (they all share one traffic frame).
+    const hazLead = world.speed * APPROACH_FACTOR * ahead;
     this.time += dt;
     const art = this.art;
     const vh = this.viewHeight;
@@ -344,7 +343,12 @@ export class GameRenderer {
     const theme = za.theme;
 
     // --- scrolling
-    const scroll = scrollSpeed * dt;
+    // Scroll the road by the distance the simulation actually covered, so road and traffic move in lockstep.
+    const simDist = world.distanceUnits + world.speed * ahead;
+    let scroll = simDist - this.lastDist;
+    if (this.lastWorld !== world || scroll < 0 || scroll > 4000) scroll = 0;
+    this.lastWorld = world;
+    this.lastDist = simDist;
     this.road.tilePosition.y += scroll;
     this.ground.tilePosition.y += scroll;
     this.laneGlow.tilePosition.y = this.road.tilePosition.y;
@@ -368,19 +372,6 @@ export class GameRenderer {
       m.tint = i % 2 ? edgeA : edgeB;
     }
 
-    // Overhead neon arches, spaced far apart.
-    for (let k = 0; k < this.arches.length; k++) {
-      const a = this.arches[k]!;
-      const g = this.archGlows[k]!;
-      a.y += scroll;
-      if (a.y > vh + 120) a.y -= vh + 900 + Math.random() * 600;
-      a.tint = k % 2 ? edgeA : edgeB;
-      a.alpha = 0.85 + beat * 0.15;
-      g.position.set(0, a.y);
-      g.tint = a.tint;
-      g.scale.set(4.2, 0.6);
-      g.alpha = lq ? 0 : 0.35 + beat * 0.2;
-    }
 
     const half = ROAD_WIDTH / 2;
     const vw = this.viewWidth;
@@ -417,10 +408,10 @@ export class GameRenderer {
       if (!c.active) continue;
       const s = this.poolSprite(this.coinSprites, this.pickupLayer, art.coin, ci);
       const g = this.poolSprite(this.coinGlows, this.lightLayer, art.glow, ci, true);
-      s.position.set(c.x, c.y);
+      s.position.set(c.x, c.y + (c.magnetized ? 0 : hazLead));
       s.scale.x = Math.max(0.15, Math.abs(Math.cos(c.phase)));
       s.scale.y = 1;
-      g.position.set(c.x, c.y);
+      g.position.set(s.x, s.y);
       g.tint = 0xffc21a;
       g.scale.set(0.55);
       g.alpha = 0.55;
@@ -436,7 +427,7 @@ export class GameRenderer {
       if (!p.active) continue;
       const s = this.poolSprite(this.powerSprites, this.pickupLayer, art.powerups[p.kind], pi);
       s.texture = art.powerups[p.kind];
-      s.position.set(p.x, p.y + Math.sin(p.phase * 4) * 4);
+      s.position.set(p.x, p.y + hazLead + Math.sin(p.phase * 4) * 4);
       s.scale.set(1 + Math.sin(p.phase * 6) * 0.06);
       pi++;
     }
@@ -451,12 +442,13 @@ export class GameRenderer {
       const s = this.poolSprite(this.hazardSprites, this.hazardLayer, tex, hi);
       s.texture = tex;
       const bob = h.kind === 'drone' ? Math.sin(h.phase * 5) * 3 : 0;
-      s.position.set(h.x, h.y + bob);
+      const hy = h.y + hazLead;
+      s.position.set(h.x, hy + bob);
       s.rotation = h.kind === 'drone' ? h.phase * 1.5 : h.changeTo >= 0 && h.telegraph <= 0 ? Math.sign(laneX(h.changeTo) - laneX(h.lane)) * 0.08 : 0;
       // Neon underglow on traffic (one slot per hazard keeps the pool aligned).
       const ug = this.poolSprite(this.trafficGlows, this.lightLayer, art.glow, hi, true);
       ug.visible = !lq && h.kind !== 'drone';
-      ug.position.set(h.x, h.y);
+      ug.position.set(h.x, hy);
       ug.tint = TRAFFIC_COLORS[h.variant % TRAFFIC_COLORS.length] ?? 0xffffff;
       ug.scale.set(h.w / 70, h.h / 64);
       ug.alpha = 0.55;
@@ -464,7 +456,7 @@ export class GameRenderer {
       if (h.kind === 'drone') continue;
       // Tail lights glow toward the player.
       const tl = this.poolSprite(this.hazardLights, this.lightLayer, art.glow, li++, true);
-      tl.position.set(h.x, h.y + h.h / 2 - 2);
+      tl.position.set(h.x, hy + h.h / 2 - 2);
       tl.tint = 0xff2440;
       tl.scale.set(0.55, 0.25);
       tl.alpha = 0.8;
@@ -474,7 +466,7 @@ export class GameRenderer {
         const on = Math.floor(this.time * 7) % 2 === 0;
         const b = this.poolSprite(this.hazardLights, this.lightLayer, art.glow, li++, true);
         const dir = Math.sign(laneX(h.changeTo) - laneX(h.lane));
-        b.position.set(h.x + dir * (h.w / 2 - 2), h.y + h.h / 2 - 6);
+        b.position.set(h.x + dir * (h.w / 2 - 2), hy + h.h / 2 - 6);
         b.tint = 0xffa21a;
         b.scale.set(0.35);
         b.alpha = on ? 1 : 0.1;

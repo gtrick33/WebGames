@@ -237,6 +237,7 @@ export class App {
 
   private toMenu(): void {
     this.state = 'menu';
+    this.acc = 0;
     this.page = null;
     this.input.enabled = false;
     if (!this.attract || this.world.crashed) this.newAttractWorld();
@@ -703,16 +704,17 @@ export class App {
 
     switch (this.state) {
       case 'menu': {
-        // Attract mode: the autopilot drives behind the menu.
-        const steps = Math.round(dt / SIM_DT);
-        for (let i = 0; i < steps; i++) {
+        // Attract mode: the autopilot drives behind the menu (same fixed-step accumulator as gameplay).
+        this.acc += dt;
+        while (this.acc >= SIM_DT) {
+          this.acc -= SIM_DT;
           this.pilot.update(this.world, SIM_DT);
           this.world.update(SIM_DT);
           r.handleEvents(this.world.events, this.world);
           if (this.world.crashed) break;
         }
         if (this.world.crashed || this.world.meters > 6000) this.newAttractWorld();
-        r.render(this.world, dt, this.world.speed);
+        r.render(this.world, dt, this.world.speed, this.acc);
         break;
       }
       case 'playing': {
@@ -726,7 +728,7 @@ export class App {
         }
         this.onEvents(this.events);
         r.handleEvents(this.events, this.world);
-        r.render(this.world, dt, this.world.speed);
+        r.render(this.world, dt, this.world.speed, this.acc);
         if (this.world.crashed) this.onCrash();
         this.updateHud();
         break;

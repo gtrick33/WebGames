@@ -118,7 +118,6 @@ export class ArtLibrary {
   readonly square: Texture;
   readonly palms: Texture[];
   readonly signs: Texture[];
-  readonly arch: Texture;
   readonly laneGlow: Texture;
   private readonly skinCache = new Map<string, Texture>();
 
@@ -208,18 +207,6 @@ export class ArtLibrary {
     }, 1);
     this.palms = [0, 1].map((v) => this.gen((g) => drawPalm(g, v)));
     this.signs = [0, 1, 2, 3].map((v) => this.gen((g) => drawSign(g, v)));
-    this.arch = this.gen((g) => {
-      const w = ROAD_WIDTH + 70;
-      g.roundRect(-w / 2, -6, w, 12, 6).fill({ color: 0x1a1430 });
-      g.roundRect(-w / 2, -6, w, 12, 6).stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
-      g.rect(-w / 2 + 14, -1.5, w - 28, 3).fill({ color: 0xffffff });
-      for (const side of [-1, 1]) {
-        g.roundRect(side * (w / 2) - 14, -16, 28, 32, 6).fill({ color: 0x1a1430 });
-        g.roundRect(side * (w / 2) - 14, -16, 28, 32, 6).stroke({ width: 2, color: 0xffffff });
-        g.circle(side * (w / 2), 0, 6).fill({ color: 0xffffff });
-      }
-      for (let x = -w / 2 + 40; x < w / 2 - 30; x += 34) g.circle(x, 0, 2.6).fill({ color: 0xffffff });
-    }, 1.5);
     this.laneGlow = canvasTexture(ROAD_WIDTH, 128, (ctx) => {
       ctx.filter = 'blur(4px)';
       for (let l = 1; l < LANES; l++) {
