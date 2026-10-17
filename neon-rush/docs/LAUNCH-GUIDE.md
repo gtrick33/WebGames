@@ -7,22 +7,55 @@ What is live today, and the exact steps for the parts that need your accounts, m
 
 ---
 
-## 1. Automatic deploys: create the Cloudflare API token (about 5 minutes)
+## 1. Automatic deploys: create the Cloudflare API token (about 10 minutes)
 
-1. Open https://dash.cloudflare.com/profile/api-tokens and click **Create Token**.
-2. Choose **Create Custom Token** and name it `neon-rush-ci`.
-3. Permissions (all under **Account**):
-   - `Cloudflare Pages` : `Edit`
-   - `D1` : `Edit` (only needed if CI should run database migrations later)
-4. Account resources: **Include** your account. Optionally set an expiry date.
-5. Click **Continue to summary**, then **Create Token**, and copy the token. It is shown only once.
-6. Find your **Account ID**: dash.cloudflare.com > Workers & Pages > right sidebar.
-7. In GitHub, go to https://github.com/gtrick33/WebGames/settings/secrets/actions and click **New repository secret** twice:
-   - `CLOUDFLARE_API_TOKEN` = the token
-   - `CLOUDFLARE_ACCOUNT_ID` = the account id
-8. Push any change to `pre-release`. The "NEON RUSH CI/CD" workflow tests, builds and deploys automatically.
+Goal: every time code is pushed to `pre-release`, GitHub builds the game and puts it online by itself.
+GitHub needs two things from Cloudflare: a **token** (a password that can only deploy this site) and your **Account ID**.
 
-Never paste the token into code, chat or commits.
+### Part A: make the token on Cloudflare
+
+1. Go to https://dash.cloudflare.com/profile/api-tokens (log in if asked).
+2. Click the blue **Create Token** button.
+3. Scroll down to **Custom token** ("Create Custom Token") and click **Get started**. Do NOT pick a template.
+4. **Token name**: type `neon-rush-github`.
+5. **Permissions**: there is one row with three dropdowns. Set it to:
+   `Account` | `Cloudflare Pages` | `Edit`
+6. Click **+ Add more** to get a second row, and set it to:
+   `Account` | `D1` | `Edit`
+   (This lets the deploy keep the leaderboard database connected.)
+7. **Account Resources**: two dropdowns. Set them to `Include` | `Savawow99@gmail.com's Account`.
+8. **Zone Resources**: if this section appears, leave it alone. Your permissions are account-level, so it doesn't matter.
+9. **Client IP Address Filtering**: leave it **empty**. GitHub's computers change IP addresses every run;
+   if you fill this in, deploys will fail.
+10. **TTL**: leave it **empty**, so the token never expires. If you set an end date, deploys stop on that date until you make a new token.
+11. Click **Continue to summary**. The summary must say: *Account - Cloudflare Pages: Edit, D1: Edit* for your account.
+12. Click **Create Token**.
+13. You now see a long secret that starts with `cfut_`. Click **Copy**. **It is shown only once.** Keep the tab open until Part B is done.
+    If you lose it, delete the token and make a new one. Never paste it in chat, email or code.
+
+### Part B: give GitHub the token and the Account ID
+
+1. Go to https://github.com/gtrick33/WebGames/settings/secrets/actions
+   (or: repo page > **Settings** tab at the top > left sidebar **Secrets and variables** > **Actions**).
+2. Click the green **New repository secret** button.
+3. **Name**: `CLOUDFLARE_API_TOKEN` (exactly like that, capital letters and underscores).
+   **Secret**: paste the `cfut_...` token. Click **Add secret**.
+4. Click **New repository secret** again.
+5. **Name**: `CLOUDFLARE_ACCOUNT_ID`
+   **Secret**: `fb3fbf1e569389f5a43c4c57be68d8e1` (your Account ID, from Cloudflare). Click **Add secret**.
+6. You should now see both names in the list. GitHub hides the values, which is normal.
+
+### Part C: check that it works
+
+1. Go to https://github.com/gtrick33/WebGames/actions
+2. On the left, click **NEON RUSH CI/CD**.
+3. On the right, click **Run workflow**, make sure the branch says `pre-release`, then click the green **Run workflow**.
+4. Wait about 2 minutes. A green check means it worked. Click the run, then the job, and the step
+   **Deploy to Cloudflare Pages** should show "Deployment complete!".
+   A red X means something is wrong: open the failed step, and the error message says why
+   (usually a typo in a secret name, or a missing permission row).
+
+From now on, every push to `pre-release` deploys automatically.
 
 ---
 
