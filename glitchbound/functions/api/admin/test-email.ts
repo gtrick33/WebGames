@@ -22,6 +22,29 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!admins.includes(to)) return bad('not_an_admin_address', 400);
 
   const base = siteUrl(env, request);
+  const plain = body?.style === 'plain';
+  if (plain) {
+    // Personal, plain style: no banner, no button, no bulk-mail headers. Gmail usually files
+    // one-to-one looking mail like this in Primary rather than Promotions.
+    const sender = (env.MAIL_FROM ?? '').replace(/^[^<]*/, 'Sava at GlitchBound ');
+    const text = [
+      'Hi,',
+      '',
+      'Quick note (this is a test, the game is made up): a new game called Pixel Drift just went live on GlitchBound.',
+      'You tap to drift a little pixel car around neon corners and chain perfect turns for a combo. It also has its own Daily Challenge.',
+      '',
+      `Try it here: ${base}`,
+      '',
+      'Thanks for playing,',
+      'Sava',
+    ].join('\n');
+    const html = text
+      .split('\n')
+      .map((l) => (l ? `<p style="margin:0 0 4px">${esc(l).replace(esc(base), `<a href="${esc(base)}">${esc(base)}</a>`)}</p>` : '<br>'))
+      .join('');
+    const sentPlain = await sendBatch(env, [{ to, subject: 'Pixel Drift is live (test)', from: sender, text, html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222">${html}</div>` }]);
+    return json({ ok: true, sent: sentPlain, to, style: 'plain' });
+  }
   const game = { title: 'Pixel Drift', tagline: 'Drift a glowing pixel car around ever-tighter neon corners. One button. Endless corners.' };
   const message =
     'A brand-new game just landed in the arcade: Pixel Drift. Tap to drift, release to straighten, and chain perfect corners for a combo. ' +

@@ -10,6 +10,8 @@ export interface Mail {
   html: string;
   text: string;
   unsubscribeUrl?: string;
+  /** Override the sender display, e.g. "Sava at GlitchBound <hello@glitchboundstudio.com>". */
+  from?: string;
 }
 
 export function emailEnabled(env: Env): boolean {
@@ -18,7 +20,7 @@ export function emailEnabled(env: Env): boolean {
 
 function payload(env: Env, m: Mail): Record<string, unknown> {
   return {
-    from: env.MAIL_FROM,
+    from: m.from ?? env.MAIL_FROM,
     ...(env.MAIL_REPLY_TO ? { reply_to: env.MAIL_REPLY_TO } : {}),
     to: [m.to],
     subject: m.subject,
