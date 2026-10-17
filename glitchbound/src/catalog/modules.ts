@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { GameModuleProps } from '../platform/contract';
+import type { GameModuleProps, GamePreviewProps } from '../platform/contract';
 
 /**
  * Loaders for games with `runtime: { kind: 'module' }`. Each game is a separate lazy chunk, so the
@@ -12,3 +12,14 @@ import type { GameModuleProps } from '../platform/contract';
 export type GameModuleLoader = () => Promise<{ default: ComponentType<GameModuleProps> }>;
 
 export const GAME_MODULES: Record<string, GameModuleLoader> = {};
+
+/**
+ * Optional looping previews shown on catalogue tiles and in the featured card (a small canvas
+ * "attract mode", not the game itself). Lazy-loaded when the tile scrolls into view. Games without
+ * one show their tile artwork.
+ */
+export type GamePreviewLoader = () => Promise<{ default: ComponentType<GamePreviewProps> }>;
+
+export const GAME_PREVIEWS: Record<string, GamePreviewLoader> = {
+  'neon-rush': () => import('../games/neon-rush/Preview'),
+};

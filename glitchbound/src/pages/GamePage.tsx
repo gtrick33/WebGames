@@ -7,7 +7,12 @@ import { DailyCard } from '../components/DailyCard';
 import { GameStage } from '../components/GameStage';
 import { GameTile } from '../components/GameTile';
 import { Icon } from '../components/Icon';
-import { track } from '../platform/analytics';
+import { reportError, track } from '../platform/analytics';
+import { account, api, useAccount } from '../platform/account';
+import type { RunEndResult } from '../platform/apiTypes';
+import { FavoriteButton } from '../components/FavoriteButton';
+import { MiniLeaderboard } from '../components/Leaderboard';
+import { openSignIn } from '../components/SignIn';
 import type { EndEvent, GameEvent } from '../platform/contract';
 import { challengeForDay, fmt } from '../platform/daily';
 import { dayKey } from '../platform/dates';
@@ -24,6 +29,8 @@ interface LastRound {
   event: EndEvent;
   result: RoundResult;
   n: number;
+  /** Server result for signed-in players (rank, verified new best). */
+  server?: RunEndResult | null;
 }
 
 function useFullscreen(ref: RefObject<HTMLElement | null>): { supported: boolean; active: boolean; toggle: () => void } {
@@ -55,6 +62,9 @@ export function GamePage({ game }: { game: GameEntry }) {
   const [shareMsg, setShareMsg] = useState('');
   const related = relatedGames(game);
   const isDailyGame = challengeForDay(dayKey(), GAMES)?.game.slug === game.slug;
+  const { me } = useAccount();
+  const runRef = useRef<Promise<string | null> | null>(null);
+  const [boardKey, setBoardKey] = useState(0);
 
   usePageMeta({ title: `Play ${game.title}`, description: `${game.tagline} Free to play in your browser on GlitchBound.`, path: `/games/${game.slug}`, image: `/games/${game.slug}/og.jpg` });
 
@@ -64,12 +74,39 @@ export function GamePage({ game }: { game: GameEntry }) {
 
   const onEvent = useCallback(
     (e: GameEvent) => {
+      const signedIn = !!account.state.me;
       if (e.type === 'start') {
         track('game_start', { game: game.slug });
+        // Members: the server timestamps the start so the finished score can be checked.
+        runRef.current = signedIn
+          ? api<{ runId: string }>('/api/runs/start', { body: { game: game.slug } })
+              .then((r) => r.runId)
+              .catch(() => null)
+          : null;
         return;
       }
       const result = saveStore.record(game, e);
-      setLast((prev) => ({ event: e, result, n: (prev?.n ?? 0) + 1 }));
+      let n = 0;
+      setLast((prev) => {
+        n = (prev?.n ?? 0) + 1;
+        return { event: e, result, n, server: signedIn ? undefined : null };
+      });
+      const pending = runRef.current;
+      runRef.current = null;
+      if (pending) {
+        void pending.then(async (runId) => {
+          if (!runId) return;
+          try {
+            const server = await api<RunEndResult>('/api/runs/end', { body: { runId, score: e.score, stats: e.stats ?? {}, day: dayKey() } });
+            account.setQuests(server.quests);
+            setLast((prev) => (prev && prev.n === n ? { ...prev, server } : prev));
+            setBoardKey((k) => k + 1);
+            if (server.newBest) setBurst((b) => b + 1);
+          } catch {
+            setLast((prev) => (prev && prev.n === n ? { ...prev, server: null } : prev));
+          }
+        });
+      }
       track('game_end', { game: game.slug, score: e.score });
       if (result.dailyCompleted) track('daily_complete', { game: game.slug, day: dayKey() });
       if (result.dailyCompleted || result.newBests.includes('score') || (beat !== null && e.score > beat)) setBurst((b) => b + 1);
@@ -108,6 +145,7 @@ export function GamePage({ game }: { game: GameEntry }) {
           <span className="chip">{CATEGORIES[game.categories[0]].label}</span>
         </div>
         <div className="game-actions">
+          <FavoriteButton slug={game.slug} title={game.title} />
           {playing && (
             <button className="btn btn-sm" onClick={restart} title="Reload the game">
               <Icon name="restart" size={18} /> <span className="hide-sm">Restart</span>
@@ -126,7 +164,20 @@ export function GamePage({ game }: { game: GameEntry }) {
 
       <div className="wrap game-layout">
         <div className="game-stage-col">
-          <GameStage key={restartKey} autoStart={restartKey > 0} game={game} onEvent={onEvent} stageRef={stageRef} onPhase={(p) => setPlaying(p === 'loading' || p === 'ready')} />
+          <GameStage
+            key={restartKey}
+            autoStart={restartKey > 0}
+            game={game}
+            onEvent={onEvent}
+            stageRef={stageRef}
+            onPhase={(p) => {
+              setPlaying(p === 'loading' || p === 'ready');
+              if (p === 'error') {
+                track('game_error', { game: game.slug });
+                reportError('game_load_failed', `${game.title} did not load`, game.slug);
+              }
+            }}
+          />
           {burst > 0 && <Burst key={burst} />}
         </div>
 
@@ -157,10 +208,22 @@ export function GamePage({ game }: { game: GameEntry }) {
                 {fmt(last.event.score)} <span>points</span>
               </p>
               <ul className="last-tags">
+                {last.server?.rank && (
+                  <li className="sticker" data-tone="cyan">
+                    Rank #{last.server.rank}
+                  </li>
+                )}
                 {last.result.newBests.includes('score') && <li className="sticker" data-tone="lime">New best</li>}
                 {last.result.firstPlay && <li className="sticker">First record</li>}
                 {last.result.dailyCompleted && <li className="sticker" data-tone="orange">Daily cleared</li>}
               </ul>
+              {!me && (
+                <button className="last-signin" onClick={() => openSignIn('Sign in to put your scores on the leaderboard.')}>
+                  <Icon name="crown" size={16} /> Sign in to put scores like this on the leaderboard
+                </button>
+              )}
+              {me && last.server === undefined && <p className="mono last-saving">Saving to the leaderboard…</p>}
+              {me && last.server && !last.server.ok && <p className="mono last-saving">This round was not ranked ({last.server.error}).</p>}
               <div className="last-actions">
                 <button className="btn btn-primary btn-sm" onClick={() => void share('challenge')}>
                   <Icon name="link" size={18} /> Challenge a friend
@@ -173,6 +236,8 @@ export function GamePage({ game }: { game: GameEntry }) {
           )}
 
           {isDailyGame && <DailyCard variant="compact" headingLevel={2} />}
+
+          <MiniLeaderboard game={game} refreshKey={boardKey} />
 
           <section className="panel side-block" aria-labelledby="bests-title">
             <h2 id="bests-title" className="side-title">

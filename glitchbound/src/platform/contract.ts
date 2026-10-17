@@ -22,6 +22,12 @@ export interface GameHost {
   report(event: GameEvent): void;
 }
 
+/** Props for a game's looping catalogue preview (src/games/<slug>/Preview.tsx). */
+export interface GamePreviewProps {
+  /** Pause when false (e.g. tile not hovered on desktop). The preview also pauses offscreen. */
+  playing?: boolean;
+}
+
 export interface GameModuleProps {
   host: GameHost;
   /** Changes whenever the player presses Restart; reset the game when it does. */

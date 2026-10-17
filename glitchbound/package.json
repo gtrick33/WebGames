@@ -11,11 +11,13 @@
     "dev": "vite",
     "build": "npm run typecheck && vite build && node scripts/size-report.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.functions.json",
     "lint": "eslint .",
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name=glitchbound --branch=pre-release"
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=glitchbound --branch=pre-release",
+    "dev:api": "wrangler d1 migrations apply glitchbound --local && wrangler pages dev dist --port 8788",
+    "db:migrate": "wrangler d1 migrations apply glitchbound --remote"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",

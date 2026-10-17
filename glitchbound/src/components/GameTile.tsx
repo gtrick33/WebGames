@@ -2,6 +2,8 @@ import type { CSSProperties } from 'react';
 import { isNew } from '../catalog/catalog';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
 import { Link } from '../router/router';
+import { FavoriteButton } from './FavoriteButton';
+import { GamePreview, hasPreview } from './GamePreview';
 import { Icon } from './Icon';
 import './GameTile.css';
 
@@ -10,16 +12,33 @@ export type TileSize = 'xl' | 'tall' | 'md' | 'wide';
 /** Shape rhythm for the arcade grid, so the library never looks like rows of identical boxes. */
 export const TILE_RHYTHM: TileSize[] = ['xl', 'tall', 'md', 'md', 'wide', 'md', 'tall', 'md'];
 
+/**
+ * A game "cabinet" in the catalogue: artwork with a live looping preview (it runs only while the
+ * tile is on screen), title, categories, favorite heart and play action.
+ */
 export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEntry; size?: TileSize; index?: number; best?: number }) {
   const style = { '--i': index, viewTransitionName: `tile-${game.slug}` } as CSSProperties;
-  const art = size === 'xl' || size === 'wide' ? game.art.wide : game.art.tile;
+  const preview = hasPreview(game.slug);
+  // Wide tiles with a preview split into artwork + live screen, so neither covers the other.
+  const art = (size === 'xl' || size === 'wide') && !preview ? game.art.wide : game.art.tile;
   return (
-    <article className={`tile tile-${size} pop-in`} data-accent={game.accent} style={style}>
+    <article
+      className={`tile tile-${size} pop-in${preview ? ' has-preview' : ''}`}
+      data-accent={game.accent}
+      style={style}
+    >
       <div className="tile-art" style={{ background: game.art.bg }}>
         <picture>
           {art !== game.art.tile && <source media="(max-width: 640px)" srcSet={game.art.tile} />}
           <img src={art} alt={game.art.alt} loading="lazy" decoding="async" />
         </picture>
+        {preview && <GamePreview slug={game.slug} className="tile-preview" />}
+        {preview && (
+          <span className="tile-live mono" aria-hidden="true">
+            <i /> Live preview
+          </span>
+        )}
+        <span className="tile-scan" aria-hidden="true" />
       </div>
       <div className="tile-body">
         <div className="tile-meta">
@@ -38,10 +57,11 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
         <div className="tile-foot">
           {best !== undefined ? <span className="mono tile-best">Your best {best.toLocaleString('en-US')}</span> : <span />}
           <span className="tile-play" aria-hidden="true">
-            Play <Icon name="arrowRight" size={18} />
+            <Icon name="play" size={16} /> Play
           </span>
         </div>
       </div>
+      <FavoriteButton slug={game.slug} title={game.title} className="tile-fav" />
       {isNew(game) && (
         <span className="sticker tile-sticker" data-tone="yellow">
           New

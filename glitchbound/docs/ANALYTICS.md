@@ -1,54 +1,46 @@
-# Analytics
+# Analytics and crash reports
 
-GlitchBound has a small analytics seam (`src/platform/analytics.ts`). Code calls `track(event, props)`; the configured
-sink decides what happens. **It is switched off in production today**, so no analytics data exists yet.
+GlitchBound measures itself with **first-party, cookieless analytics** stored in its own D1 database. The admin
+dashboard (`/admin`) reads it. Nothing is sent to third parties unless you also switch on Umami.
+
+## How it works
+
+- `src/platform/analytics.ts`: `track(event, props)` queues events and sends them in batches to `POST /api/events`
+  (every few seconds, and with `sendBeacon` when the page is hidden).
+- `functions/api/events.ts` keeps only known event names and simple props, and stores them with a **visitor key** that
+  is `sha256(UTC day + IP + user agent)`, cut to 16 characters. The IP is never stored, the key changes every day, and
+  nothing is written to the visitor's browser. Signed-in members' events also carry their user id.
+- Events older than 180 days are deleted automatically.
+- Crash reports: uncaught errors, unhandled promise rejections and games that fail to load go to `POST /api/errors`
+  (max 8 per page view; third-party "Script error." noise is ignored). Kept 90 days.
 
 ## Events
 
 | Event | When | Props |
 | --- | --- | --- |
+| `page_view` | Route change | `path` (route name) |
 | `game_view` | A game page is opened | `game` |
-| `game_start` | The game reports a round started | `game` |
-| `game_end` | The game reports a round ended | `game`, `score` |
-| `replay_click` | Restart pressed in the toolbar | `game`, `where` |
-| `share_click` | Any share button | `game` or `day`, `what` (`game`, `score`, `challenge`, `daily`) |
+| `game_start` / `game_end` | The game reports a round started / ended | `game`, `score` |
+| `replay_click` | Restart pressed | `game` |
+| `share_click` | Any share button | `game` or `day`, `what` |
 | `daily_complete` | Today's challenge cleared | `game`, `day` |
-| `search` | Search settles for 0.5 to 0.8 s | `q` (lowercased, max 40 chars), `results`, `where` |
-| `category_select` | A category filter is chosen | `category` |
+| `search` | Search settles | `q` (lowercased, max 40 chars), `results`, `where` |
+| `category_select` | Category filter chosen | `category` |
+| `favorite` | Heart toggled | `game`, `on` |
+| `sign_in`, `subscribe` | Account / email list | `method` / `via` |
+| `game_error` | A game did not load | `game` |
 
-No names, emails, IDs, cookies or IP handling in our code. Search text is the only free text; it is truncated.
+The last 100 events are also visible in the browser console as `__glitchbound.events`.
 
-In any build, the last 100 events are visible in the browser console as `__glitchbound.events`, which is handy
-for checking that instrumentation fires. In `npm run dev` they are also logged with `console.info`.
+## The admin dashboard shows
 
-## Simplest free options
+Members (total, new, active), email list (confirmed, pending, unsubscribed), per game: views, rounds started and
+finished, distinct players, member rounds, average and top score, load errors; unique visitors and rounds per day
+(14 days); top searches including ones with no results (ideas for new games); the latest crash reports with browser
+family; newest members; past announcements.
 
-1. **Cloudflare Web Analytics (page views only, no code).** Cloudflare dashboard > Workers & Pages > glitchbound >
-   **Metrics** > enable Web Analytics. Cloudflare injects its cookieless beacon on the next deploy. It answers
-   "which pages, from where", including `/games/neon-rush` views, but not custom events.
-2. **Umami (custom events, cookieless).** Supported in code. Umami Cloud has a free tier; check
-   https://umami.is/pricing for its current limits. You can also self-host it.
+## Optional: Umami as well
 
-Both can run together.
-
-## Switching on Umami
-
-1. Sign up at https://cloud.umami.is, click **Add website**, name it GlitchBound, domain `glitchboundstudio.com`
-   (or your custom domain).
-2. Copy the **Website ID** (a UUID; it is public, it appears in the page source).
-3. In `glitchbound/.env.production` set:
-   ```
-   VITE_ANALYTICS=umami
-   VITE_UMAMI_WEBSITE_ID=<the id>
-   ```
-4. Commit and push to `pre-release` (CI deploys), then open the site and check that Umami's realtime view shows
-   the visit. Custom events appear under **Events**.
-5. `/privacy` updates its "Analytics" section automatically.
-
-Umami's script records page views (including client-side navigation) by itself; our sink only adds
-`umami.track(event, props)` for the events above.
-
-## Adding another provider
-
-Implement the `Sink` interface in `analytics.ts`, select it from `ANALYTICS.provider` in `env.ts`, keep it
-cookieless or put it behind consent, and update the `/privacy` text.
+Set `VITE_ANALYTICS=umami` and `VITE_UMAMI_WEBSITE_ID` in `.env.production` to also send events to Umami
+(https://umami.is, cookieless). Cloudflare Web Analytics (Workers & Pages > glitchbound > Metrics) can also be enabled
+with one click for page views.

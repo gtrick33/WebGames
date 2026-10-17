@@ -51,6 +51,8 @@ export default defineConfig(({ mode }) => {
   return {
     base: '/',
     plugins: [react(), seoPages(siteUrl, env.VITE_ADSENSE_CLIENT ?? '')],
+    // `npm run dev` proxies /api to the Pages Functions (`npm run dev:api`, port 8788).
+    server: { proxy: { '/api': 'http://127.0.0.1:8788' } },
     build: {
       target: 'es2022',
       outDir: 'dist',

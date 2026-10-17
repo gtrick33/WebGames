@@ -28,7 +28,7 @@
 
 .game-layout {
   display: grid;
-  grid-template-columns: auto minmax(300px, 380px);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
   justify-content: center;
   align-items: start;
   gap: clamp(20px, 3vw, 40px);
@@ -37,7 +37,7 @@
   position: relative;
   display: flex;
   justify-content: center;
-  min-width: 0;
+  min-width: min(100%, 320px);
 }
 .game-side {
   display: grid;
@@ -246,4 +246,30 @@
   .back-link {
     padding: 0 10px;
   }
+}
+
+.last-signin {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1.5px dashed var(--magenta);
+  border-radius: 12px;
+  background: rgb(255 63 210 / 0.08);
+  color: var(--fg);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.last-signin svg {
+  flex: none;
+  color: var(--yellow);
+}
+.last-saving {
+  font-size: 12px;
+  color: var(--fg-3);
+}
+.game-actions .fav-btn {
+  width: 40px;
+  height: 40px;
 }

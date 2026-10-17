@@ -17,7 +17,7 @@ export const CATEGORIES = {
 export type CategoryId = keyof typeof CATEGORIES;
 
 /** Brand accent used for the game's tile, stickers and page highlights. */
-export type Accent = 'blue' | 'orange' | 'lime' | 'coral' | 'yellow' | 'teal' | 'violet';
+export type Accent = 'cyan' | 'magenta' | 'blue' | 'orange' | 'lime' | 'coral' | 'yellow' | 'teal' | 'violet';
 
 /** A number the game reports at the end of a round, e.g. score or distance. */
 export interface StatDef {
@@ -86,6 +86,13 @@ export interface GameEntry {
   daily?: DailyTemplate[];
   /** Optional link to play the game on its own site. */
   homepage?: string;
+  /** Server-side plausibility limits for leaderboard submissions. */
+  limits?: {
+    /** Highest score a legitimate player can gain per second of play. */
+    scorePerSecond: number;
+    /** Shortest real round, in seconds. */
+    minSeconds?: number;
+  };
   /** Free-form game-specific data. */
   meta?: Record<string, unknown>;
 }

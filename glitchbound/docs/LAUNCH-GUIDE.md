@@ -1,145 +1,144 @@
 # GlitchBound launch guide
 
-What is live today, and the exact steps for the parts that need your accounts, money or approval.
+What is live, and the exact steps for the parts that need your accounts.
 
-**Live now:** https://glitchboundstudio.com (custom domain, bought 2026-10-17) and https://glitchbound-d8m.pages.dev (Cloudflare Pages, free plan). Ads and analytics are built in but off.
-NEON RUSH is embedded from https://neonrushgame.com and reports scores back to GlitchBound.
+**Live:** https://glitchboundstudio.com (also https://glitchbound-d8m.pages.dev), Cloudflare Pages free plan, with
+Pages Functions (`/api`) and the D1 database `glitchbound`.
 
----
-
-## 1. Automatic deploys (already working, nothing to do)
-
-GlitchBound reuses NEON RUSH's GitHub secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`). The token's
-"Cloudflare Pages: Edit" permission is account-wide, so it can deploy the `glitchbound` project too.
-
-To check it:
-
-1. Go to https://github.com/gtrick33/WebGames/actions
-2. On the left, click **GlitchBound CI/CD**.
-3. The latest run should have a green check, and its **Deploy to Cloudflare Pages** step says "Deployment complete!".
-4. To redeploy by hand: **Run workflow** > branch `pre-release` > **Run workflow**.
-
-If the deploy step ever fails with an authentication error, the token was deleted or expired: follow
-`neon-rush/docs/LAUNCH-GUIDE.md`, section 1, to make a new one; both games use it.
+| Feature | Status | Needs from you |
+| --- | --- | --- |
+| Arcade, NEON RUSH, Daily Challenge, guest favorites and bests | Live | Nothing |
+| Leaderboards, Hall of Fame, member quests, XP and badges, profile | Live, waiting for sign-in | **Section 1**: Google Client ID |
+| Admin dashboard (`/admin`) | Live for `savawow99@gmail.com` once sign-in works | Section 1 |
+| First-party analytics + crash reports (feed the admin dashboard) | Live | Nothing |
+| "Notify me" email list | Collecting signups | **Section 2**: Resend, to send |
+| Your own mailbox `sava.hristov@glitchboundstudio.com` | Google Workspace | **Section 3** if mail does not arrive |
+| Ads | Built, off | Section 5 |
 
 ---
 
-## 2. Your own domain
+## 1. Switch on Google sign-in (about 10 minutes)
 
-**Done:** `glitchboundstudio.com` was bought on Cloudflare and attached to the `glitchbound` Pages project
-(apex + `www`), and `VITE_SITE_URL` points at it. The options below are kept for reference. For ads, follow
-section 4 with "Option B".
+Google proves each player owns their email, so nobody can pretend to be the admin, and we never store passwords.
+You need a free **OAuth Client ID**. It is public (it appears in the page), so you can send it to me in chat.
 
-GlitchBound works on `glitchbound-d8m.pages.dev` forever for free. A real domain matters for three things:
-a name people remember, **AdSense** (Google does not accept `*.pages.dev` addresses you don't own as an ad site), and
-**sharing NEON RUSH progress** (see "Option A").
+1. Go to https://console.cloud.google.com and sign in with `savawow99@gmail.com`.
+2. Top bar, project picker > **New project**. Name: `GlitchBound`. Click **Create**, then make sure it is selected.
+3. Left menu (or search bar): **Google Auth Platform**. Click **Get started**.
+   - **App name**: `GlitchBound`. **User support email**: your address. **Next**.
+   - **Audience**: **External**. **Next**.
+   - **Contact information**: your address. **Next**, tick the policy box, **Create**.
+4. Left menu **Branding** (optional but nicer): add the logo (`glitchbound/public/icon-512.png`), app home page
+   `https://glitchboundstudio.com`, privacy policy `https://glitchboundstudio.com/privacy`, and under **Authorized
+   domains** add `glitchboundstudio.com`. **Save**.
+5. Left menu **Clients** > **Create client**.
+   - **Application type**: **Web application**. **Name**: `GlitchBound web`.
+   - **Authorized JavaScript origins**, click **Add URI** for each:
+     - `https://glitchboundstudio.com`
+     - `https://www.glitchboundstudio.com`
+     - `https://glitchbound-d8m.pages.dev`
+     - `http://localhost` and `http://localhost:8788` (local testing)
+   - **Authorized redirect URIs**: leave empty (the site uses Google's popup).
+   - Click **Create**. Copy the **Client ID** (it ends in `.apps.googleusercontent.com`).
+6. Left menu **Audience** > **Publish app** > **Confirm**, so anyone with a Google account can sign in (otherwise only
+   listed test users can). The site only asks for name, email and picture, which needs no Google review.
+7. Send me the Client ID, or set it yourself: in `glitchbound/wrangler.toml` set `GOOGLE_CLIENT_ID = "<the id>"`, commit
+   and push to `pre-release` (CI deploys). The "Sign in" button then shows Google's button. No rebuild of the game needed.
 
-### Pick one
-
-| Option | Cost | Pros | Cons |
-| --- | --- | --- | --- |
-| **A. A subdomain of the domain you already own**, e.g. `arcade.neonrushgame.com` | Free | Instant. Same site as NEON RUSH, so browsers don't partition NEON RUSH's storage inside the arcade: coins and cars match playing directly. Covered by the `neonrushgame.com` AdSense site. | The address says "neonrush", not "GlitchBound". |
-| **B. A GlitchBound domain** | About the .com price per year at Cloudflare Registrar (sold at cost) | The brand in the address bar. | Costs money; NEON RUSH progress inside the arcade stays separate from neonrushgame.com; needs its own AdSense site review. |
-
-Domain status checked on 2026-10-17 through the public registries (RDAP):
-
-| Domain | Status |
-| --- | --- |
-| glitchbound.com | Taken by someone else |
-| **glitchboundgames.com**, **playglitchbound.com**, glitchbound.net | Free at the registry (Verisign) |
-| glitchbound.gg, glitchbound.io, glitchbound.games | No record found; the search in step B2 gives the final answer |
-
-### Option A: connect `arcade.neonrushgame.com` (about 5 minutes)
-
-1. https://dash.cloudflare.com > left menu **Workers & Pages** > click **glitchbound**.
-2. **Custom domains** tab > **Set up a domain**.
-3. Type `arcade.neonrushgame.com` and click **Continue**, then confirm. Cloudflare creates the DNS record itself,
-   because the domain is already on your account. **Don't add DNS records by hand first** (that causes a 522 error).
-4. Wait for **Active** (usually minutes, up to an hour while the HTTPS certificate is issued).
-5. Tell me, and I'll set `VITE_SITE_URL=https://arcade.neonrushgame.com` so canonical URLs, share links and the sitemap
-   use the new address, and redeploy. (Or: edit `glitchbound/.env.production` and push to `pre-release`.)
-
-### Option B: buy a GlitchBound domain (about 15 minutes + waiting)
-
-1. Check your Cloudflare email is verified (no yellow banner in the dashboard).
-2. Left menu > **Domain Registration** > **Register Domains**, search `glitchboundgames` (or your pick), click **Purchase**.
-3. Choose 1 year, fill in your real contact details (plain English letters), add payment, click **Complete purchase**.
-4. Then follow Option A steps 1-5 with your new domain, and repeat step 3 for the `www.` version.
-5. Optional: redirect `www` to the bare domain (Websites > your domain > Rules > Redirect Rule
-   "Redirect from WWW to root"), exactly as in NEON RUSH's guide.
-
-Buying a domain charges your card, so I won't do this step for you.
-
-### After either option
-
-- In Google Search Console (https://search.google.com/search-console), add the domain, verify it (Cloudflare can do
-  the DNS verification automatically), and submit `https://<your domain>/sitemap.xml`. This helps Google find the
-  pages. It does not guarantee rankings.
+Check: open the site, click **Sign in** > **Continue with Google**. Signed in as `savawow99@gmail.com`, the account
+menu shows **Admin dashboard**. Other admins: add their Google emails to `ADMIN_EMAILS` (comma separated).
 
 ---
 
-## 3. Analytics (about 10 minutes, free)
+## 2. Send emails from the site with Resend (about 15 minutes)
 
-See [ANALYTICS.md](ANALYTICS.md). Short version:
+Your Workspace mailbox is for you to read and write mail by hand. For the website to email players automatically
+(confirmation emails and "a new game is out" announcements) it needs a sending service. Resend has a free tier
+(check https://resend.com/pricing for current limits).
 
-1. **Page views, no code:** Cloudflare > Workers & Pages > glitchbound > **Metrics** > enable **Web Analytics**.
-2. **Which games people start, finish, replay and share:** create a free Umami Cloud website, send me the Website ID
-   (it's public), and I'll switch `VITE_ANALYTICS=umami` on.
+The site sends from `hello@glitchboundstudio.com`, and replies go to `sava.hristov@glitchboundstudio.com`
+(`MAIL_REPLY_TO` in `wrangler.toml`). Resend's DNS records live on their own names (`send.` and `resend._domainkey`), so
+they do **not** touch your Google Workspace MX record.
 
----
+### Part A: verify the domain in Resend
 
-## 4. Ads on GlitchBound pages
+1. Sign up at https://resend.com (your Workspace or Gmail address is fine).
+2. Left menu **Domains** > **Add domain**. Domain: `glitchboundstudio.com`. Region: **EU (Ireland)** or nearest. **Add**.
+3. Resend shows 3-4 DNS records (an `MX` and a `TXT` on `send`, and a `TXT` named `resend._domainkey`).
+   - If Resend offers **Auto configure / Sign in to Cloudflare**, use it and approve.
+   - Otherwise open Cloudflare > `glitchboundstudio.com` > **DNS** > **Records** and add each record exactly as shown.
+     Set **Proxy status** to **DNS only** (grey cloud) for all of them. Do **not** change or delete your existing
+     `MX smtp.google.com` record.
+4. Back in Resend click **Verify DNS records**. It turns **Verified**, usually within minutes.
 
-Do this only after a real domain is live (section 2). Ads stay off until you explicitly switch them on.
+### Part B: give the site the API key (keep it secret)
 
-### Part A: add the site to AdSense
+1. Resend > **API Keys** > **Create API key**. Name `glitchbound-site`, permission **Sending access**, domain
+   `glitchboundstudio.com`. **Add**. Copy the key (starts with `re_`). It is shown once. **Do not paste it in chat.**
+2. Store it as an encrypted secret on Cloudflare, either way:
+   - Dashboard: **Workers & Pages** > **glitchbound** > **Settings** > **Variables and Secrets** > **Add** >
+     Type **Secret**, Name `RESEND_API_KEY`, Value: paste > **Save** (for **Production**).
+   - Or terminal, from `glitchbound/`: `npx wrangler pages secret put RESEND_API_KEY --project-name=glitchbound` and paste
+     when asked.
+3. Secrets apply to new deployments: GitHub > Actions > **GlitchBound CI/CD** > **Run workflow** (`pre-release`).
 
-You already have an AdSense account for NEON RUSH (publisher id `ca-pub-9356777861178613`).
+### Part C: send
 
-- **With Option A (`arcade.neonrushgame.com`):** nothing to add. AdSense sites are root domains, and subdomains are
-  covered by `neonrushgame.com` once that site is approved. The GlitchBound build already publishes
-  `/ads.txt` with your publisher line.
-- **With Option B (your own domain):** AdSense > **Sites** > **+ New site** > your domain > verification method
-  **Ads.txt snippet**. Every GlitchBound build already publishes `https://<domain>/ads.txt` with the right line. Open it
-  to check, tick **I've placed the code**, **Verify**, then **Request review**. Google says reviews take days to a few
-  weeks.
+- `/admin` > **Announce a game**: pick the game, write a subject and a message, **Send test to me** first, then
+  **Send to N subscribers**. Every email has a one-click unsubscribe link.
+- People who signed up before Resend was on are "pending": click **Email N pending confirmations** once, so they get
+  their confirm link. Members who switch on notifications while signed in are confirmed already (Google verified them).
+- `/admin` > **Export subscribers (CSV)** downloads the list at any time.
 
-### Part B: consent message for Europe
-
-AdSense > **Privacy & messaging** > **European regulations** > **Create message** > select the site > keep
-**Consent**, **Do not consent**, **Manage options** > **Publish**. No code change needed.
-
-### Part C: create two ad units
-
-1. AdSense > **Ads** > **By ad unit** > **Display ads**.
-2. Name it `glitchbound-home`, keep **Responsive**, click **Create**. In the code it shows, copy only the number in
-   `data-ad-slot="1234567890"`.
-3. Repeat with `glitchbound-game`.
-4. Send me both numbers (they are public).
-
-### Part D: switch on
-
-1. I'll do a **test build** first with Google's test ads (no earnings):
-   `VITE_ADS_ENABLED=on VITE_ADSENSE_TEST=on VITE_ADSENSE_SLOT_HOME=... VITE_ADSENSE_SLOT_GAME=... npm run deploy`
-2. Then the real build, with the same values in `.env.production` and without `VITE_ADSENSE_TEST`.
-
-Where ads appear: one unit between the homepage marquee and the arcade, one at the bottom of the game page side
-column. Never on or around the game itself. See [MONETIZATION.md](MONETIZATION.md).
-
-Honest expectations: display ad income depends on visitors, countries and season. Getting players matters most.
-
-### Ads inside NEON RUSH
-
-Those are NEON RUSH's H5 Games Ads and follow `neon-rush/docs/LAUNCH-GUIDE.md`, section 3. Note that Google's
-H5 Games Ads approval is for the game's own URL; when NEON RUSH is played inside GlitchBound's iframe, check with
-Google's current H5 policy before relying on in-game ads there.
+Recommended: add a DMARC record (Cloudflare DNS > Add record): Type `TXT`, Name `_dmarc`,
+Content `v=DMARC1; p=none; rua=mailto:sava.hristov@glitchboundstudio.com`. It improves deliverability for both
+Google Workspace and Resend.
 
 ---
 
-## 5. Things that would need a backend (not built)
+## 3. "I can't receive mail" at sava.hristov@glitchboundstudio.com
 
-- A cross-game leaderboard or accounts that sync between devices. NEON RUSH's own online leaderboard keeps working
-  inside the iframe. A GlitchBound-wide one could reuse the same pattern (Pages Functions + D1), with the arcade
-  submitting from `GamePage`'s `onEvent`.
-- Real player counts or "popular" sorting. Today "Newest" and "A to Z" are the only sorts because there is no
-  honest popularity data yet. Once analytics run, popular games can be reflected in the registry by hand.
+Checked on 2026-10-17 with public DNS: the domain already has the right Google Workspace records (MX
+`smtp.google.com`, SPF `include:_spf.google.com`, Google DKIM, Google site verification). So DNS is not the problem.
+
+1. Open https://admin.google.com. If the home page shows a **Set up Gmail** or **Activate Gmail** card, click it and
+   then **Activate** (or **Verify**). Google only starts delivering after this step.
+2. Wait. For a brand-new domain Google says it can take up to an hour or two (sometimes longer) to detect the MX.
+3. In Cloudflare DNS make sure there is exactly **one** MX record for `glitchboundstudio.com` (`smtp.google.com`) and
+   that **Email Routing** is not also turned on for the domain (Cloudflare > the domain > **Email** > **Email Routing**:
+   it should be disabled; it would compete for incoming mail).
+4. Test from a different account (for example your Gmail) and check Spam.
+
+---
+
+## 4. Domain (done)
+
+`glitchboundstudio.com` and `www.glitchboundstudio.com` are attached to the Pages project, and `VITE_SITE_URL` /
+`SITE_URL` point at it. Optional: redirect `www` to the bare domain (Cloudflare > the domain > **Rules** > **Redirect
+Rules** > template "Redirect from WWW to root"). Optional: add the domain in Google Search Console and submit
+`https://glitchboundstudio.com/sitemap.xml`.
+
+---
+
+## 5. Ads (later)
+
+Unchanged: see [MONETIZATION.md](MONETIZATION.md). Add `glitchboundstudio.com` as a site in AdSense (the site already
+publishes `/ads.txt`), request review, set up the EU consent message, create two display ad units, then set
+`VITE_ADS_ENABLED=on` and the slot ids. Ads never appear inside or around a game.
+
+---
+
+## 6. How the member features work (for reference)
+
+- **Rounds**: when a signed-in player starts a round, the server notes the time (`/api/runs/start`). When it ends
+  (`/api/runs/end`), the score must be possible in the real time that passed (`limits` in the game registry) or it
+  is not ranked. Each round can be submitted once. A determined cheater can still fake a plausible browser score; the
+  admin can remove rows with
+  `npx wrangler d1 execute glitchbound --remote --command "DELETE FROM bests WHERE user_id = '...'"`.
+- **Quests**: three per member per day, picked from the date and the member id. Progress comes from the rounds the
+  server recorded. Claiming gives XP once; levels follow 100, 300, 600, 1000 XP...
+- **Hall of Fame**: crowns (#1 in a game), podiums (top 3), records (personal bests beaten).
+- **Guests** keep bests, favorites and the daily streak in the browser; favorites move to the account on sign-in.
+- **Deleting an account** (profile page) removes the user, sessions, rounds, bests, quests and favorites.
+- **Free-plan limits** (Cloudflare docs, Oct 2026): D1 5M row reads and 100k row writes per day; Functions share the
+  Workers free quota of 100k requests per day. A ranked round is about 5 writes; analytics are batched.

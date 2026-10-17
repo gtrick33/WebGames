@@ -1,4 +1,22 @@
-# Cloudflare Pages configuration for GlitchBound (static site, no Functions, no database).
+# Cloudflare Pages configuration for GlitchBound: static site + /api Pages Functions + D1.
 name = "glitchbound"
 pages_build_output_dir = "./dist"
 compatibility_date = "2026-10-01"
+
+[vars]
+# Public values. Secrets (RESEND_API_KEY) are set with `wrangler pages secret put`, never here.
+SITE_URL = "https://glitchboundstudio.com"
+# Google OAuth Web Client ID (public). Sign-in stays off until this is filled in.
+GOOGLE_CLIENT_ID = ""
+# Comma-separated Google account emails that can open /admin.
+ADMIN_EMAILS = "savawow99@gmail.com"
+# Sender for announcement emails; the domain must be verified in Resend.
+MAIL_FROM = "GlitchBound <hello@glitchboundstudio.com>"
+# Replies to site emails land in the Google Workspace inbox.
+MAIL_REPLY_TO = "sava.hristov@glitchboundstudio.com"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "glitchbound"
+database_id = "5f30a89b-47e8-4e58-b387-bed20fd65af2"
+migrations_dir = "migrations"

@@ -5,6 +5,7 @@ import { categoryCounts, isCategory, queryGames, SORTS, type SortId } from '../c
 import type { CategoryId } from '../catalog/types';
 import { track } from '../platform/analytics';
 import { useSave } from '../platform/store';
+import { useAccount } from '../platform/account';
 import { navigate, useLocation } from '../router/router';
 import { GameTile, TILE_RHYTHM } from './GameTile';
 import { Icon } from './Icon';
@@ -25,11 +26,15 @@ export function Arcade() {
   const urlCat = params.get('category');
   const category: CategoryId | null = isCategory(urlCat) ? urlCat : null;
   const sort: SortId = params.get('sort') === 'az' ? 'az' : 'newest';
+  const favOnly = params.get('fav') === '1';
+  const acct = useAccount();
+  const favorites = acct.me ? acct.me.favorites : acct.guestFavorites;
   const [q, setQ] = useState(params.get('q') ?? '');
   const save = useSave();
   const cats = categoryCounts();
-  const results = useMemo(() => queryGames({ q, category, sort }), [q, category, sort]);
-  const filtered = q.trim() !== '' || category !== null;
+  const all = useMemo(() => queryGames({ q, category, sort }), [q, category, sort]);
+  const results = favOnly ? all.filter((g) => favorites.includes(g.slug)) : all;
+  const filtered = q.trim() !== '' || category !== null || favOnly;
   const firstRender = useRef(true);
 
   const setParam = (key: string, value: string | null): void => {
@@ -57,7 +62,17 @@ export function Arcade() {
 
   const pickCategory = (id: CategoryId | null): void => {
     if (id) track('category_select', { category: id });
-    withTransition(() => setParam('category', id));
+    withTransition(() => {
+      setParam('fav', null);
+      setParam('category', id);
+    });
+  };
+
+  const pickFavorites = (): void => {
+    withTransition(() => {
+      setParam('category', null);
+      setParam('fav', favOnly ? null : '1');
+    });
   };
 
   const clear = (): void => {
@@ -90,7 +105,7 @@ export function Arcade() {
           </label>
 
           <div className="arcade-cats" role="group" aria-label="Filter by category">
-            <button className={`cat-btn${category === null ? ' is-on' : ''}`} aria-pressed={category === null} onClick={() => pickCategory(null)}>
+            <button className={`cat-btn${category === null && !favOnly ? ' is-on' : ''}`} aria-pressed={category === null && !favOnly} onClick={() => pickCategory(null)}>
               All <span className="mono">{GAMES.length}</span>
             </button>
             {cats.map((c) => (
@@ -98,6 +113,9 @@ export function Arcade() {
                 {c.label} <span className="mono">{c.count}</span>
               </button>
             ))}
+            <button className={`cat-btn cat-fav${favOnly ? ' is-on' : ''}`} aria-pressed={favOnly} onClick={pickFavorites}>
+              <Icon name="heart" size={16} /> Favorites <span className="mono">{favorites.length}</span>
+            </button>
           </div>
 
           <label className="arcade-sort">
@@ -126,7 +144,7 @@ export function Arcade() {
                 <div className="workshop-shapes" aria-hidden="true">
                   <Tri className="ws ws-1" />
                   <Dot className="ws ws-2" fill="#12c6b3" />
-                  <Ring className="ws ws-3" fill="#ff6a1a" />
+                  <Ring className="ws ws-3" fill="#ff3fd2" />
                 </div>
                 <p className="eyebrow">In the workshop</p>
                 <p className="workshop-text">The next games are being built. New releases land here first, and the daily challenge grows with them.</p>
@@ -139,10 +157,16 @@ export function Arcade() {
               <Tri className="es es-1" fill="#ff5a6c" />
               <Dot className="es es-2" fill="#ffd12e" />
             </div>
-            <h3>Nothing here. Yet.</h3>
+            <h3>{favOnly && !q.trim() ? 'No favorites yet.' : 'Nothing here. Yet.'}</h3>
             <p>
-              No game matches {q.trim() ? <strong>“{q.trim()}”</strong> : 'that filter'}
-              {category ? ' in this category' : ''}. Try another word or browse everything.
+              {favOnly && !q.trim() ? (
+                <>Tap the heart on any game to keep it here.</>
+              ) : (
+                <>
+                  No game matches {q.trim() ? <strong>“{q.trim()}”</strong> : 'that filter'}
+                  {category ? ' in this category' : ''}. Try another word or browse everything.
+                </>
+              )}
             </p>
             <button className="btn btn-primary" onClick={clear}>
               Show all games

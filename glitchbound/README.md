@@ -5,9 +5,10 @@ An independent browser arcade. *One more round. Then another.*
 **Live:** https://glitchboundstudio.com (also https://glitchbound-d8m.pages.dev) · **Launch steps (domain, analytics, ads):** [docs/LAUNCH-GUIDE.md](docs/LAUNCH-GUIDE.md)
 · **Add a game:** [docs/ADDING-A-GAME.md](docs/ADDING-A-GAME.md)
 
-Built with **TypeScript (strict)**, **React 19** and **Vite**. No backend, no accounts, no database: it is a static
-site on Cloudflare Pages (free plan). The first and only game is [NEON RUSH](../neon-rush/), embedded from
-https://neonrushgame.com.
+Built with **TypeScript (strict)**, **React 19** and **Vite**, on Cloudflare Pages (free plan) with Pages Functions and
+a D1 database for accounts. Guests can play everything without signing in; members (Google sign-in) get daily quests,
+XP and levels, badges, synced favorites and bests, leaderboards and the Hall of Fame. The first and only game is
+[NEON RUSH](../neon-rush/), embedded from https://neonrushgame.com.
 
 ## Commands
 
@@ -32,6 +33,9 @@ All commands run from this folder (`glitchbound/`). Requires Node 20+ (developed
 | `/` | Hero with a live NEON RUSH preview, the daily challenge, "Continue playing" (only after you have played), the latest release, and the arcade (search, category filters, sort; state lives in the URL, e.g. `/?category=racing`) |
 | `/games/<slug>` | Game page: the game viewport first, then your bests, how to play, today's challenge, share and friend challenge links (`?beat=<score>`), related games |
 | `/daily` | Today's challenge, how it works, the last 4 weeks |
+| `/leaderboards` | Hall of Fame (crowns, podiums, records) and per-game boards (all time, last 24 h) |
+| `/me` | Profile: level, quests, badges, bests, favorites, email notifications, delete account |
+| `/admin` | Admin dashboard (ADMIN_EMAILS only): members, plays per game, funnel, searches, crashes, email announcements |
 | `/privacy` | What is stored and a button to delete it |
 | anything else | A real 404 page (HTTP 404) |
 
@@ -51,6 +55,11 @@ src/
                 Sections (latest release, continue playing, marquee), Footer, AdSlot, ErrorBoundary, Burst
   pages/        Home, GamePage, DailyPage, PrivacyPage, NotFound
   styles/       Design tokens, base styles, buttons, chips, stickers, glitch text
+games/          (src/games) per-game code: NEON RUSH's catalogue preview + its tested simulation
+functions/api/  Pages Functions: auth (Google, dev), me, favorites, runs, quests, leaderboard, hall, events, errors,
+                subscribe/unsubscribe, admin (stats, CSV, announce)
+server/         Shared server code: D1 helpers, sessions, Google ID-token verification, quests, email (Resend)
+migrations/     D1 schema
 scripts/        seo.ts (per-route HTML, sitemap.xml, robots.txt), size-report.mjs
 tests/          Vitest: registry, search, daily challenge, saves, message parsing, SEO, routing, pages, game stage
 public/         Favicon, app icons, social card (og.png), per-game artwork under games/<slug>/
@@ -93,29 +102,28 @@ on GlitchBound counts. A streak is consecutive cleared days. The share text show
 link to `/daily`, with no personal data. If no game had daily templates, the feature would hide itself instead of
 showing a fake countdown.
 
-### What is deliberately not here
+### Members, leaderboards and admin
 
-No accounts, no global leaderboard, no player counts, no ratings, no fake popularity. NEON RUSH has its own online
-leaderboard on its own site. A cross-game leaderboard would need a backend (for example Cloudflare D1 + Pages
-Functions, like NEON RUSH's), and `platform/contract.ts` + `save.ts` are the integration points for it.
+See [docs/LAUNCH-GUIDE.md](docs/LAUNCH-GUIDE.md) (sections 1, 2 and 6) and [docs/ANALYTICS.md](docs/ANALYTICS.md).
+No fake data anywhere: leaderboards only show real members' verified-in-time rounds, and nothing invents player counts.
 
 ## Design system
 
-- **Palette:** warm paper (`#fff6e8`) surfaces, ink (`#170f30`) outlines and text, and saturated accents: electric
-  blue `#2c45ff` (primary), orange `#ff6a1a` (daily), acid lime `#c4f034` (success, highlights), plus coral, yellow,
-  teal and violet in small doses. Each game picks one accent (`accent` in the registry).
-- **Type:** Bricolage Grotesque (variable, self-hosted, 41 KB) for everything; Space Mono for labels and numbers.
-- **Shape:** 2.5 px ink outlines, hard offset "sticker" shadows, rounded pills, rotated stickers, geometric toys
-  (pill, dot, triangle, star, ring, cube, squiggle) in `components/Shapes.tsx`.
-- **Motion:** spring easing on hover/press, pointer parallax and a CSS-3D orbit in the hero, a canvas "attract mode"
-  preview, a timed RGB-split glitch on the headline, View Transitions between pages and filter states, a 0.7 s
-  branded wipe once per session, confetti for bests. Everything respects `prefers-reduced-motion`; the canvas pauses
-  offscreen and in background tabs. No WebGL is needed, so there is nothing to fall back from.
+- **Palette:** night-purple surfaces (`#0d0522` to `#26145a`) with a faint arcade grid, neon **cyan** `#22e4ff`
+  (primary actions, focus) and **magenta** `#ff3fd2` (members, hard shadows on buttons), plus toy-box accents (lime,
+  yellow, orange, coral, teal, violet) in small doses. Each game picks one accent (`accent` in the registry).
+- **Type:** Bricolage Grotesque (variable, self-hosted) for everything; Space Mono for labels and numbers.
+- **Shape:** rounded panels with thin purple outlines, ink hard shadows, neon glows on focus/hover, rotated stickers,
+  geometric toys in `components/Shapes.tsx` (kept away from text).
+- **Motion:** arcade-cabinet entrance on every home load or reload (coin drop, PLAYER 1 READY, camera dives into the
+  screen; click/key/scroll skips; reduced-motion users never see it), live canvas previews on catalogue tiles, a timed
+  RGB-split glitch on the headline, View Transitions between pages and filters, quest-claim and new-best bursts.
+  Everything respects `prefers-reduced-motion`; previews pause offscreen and in background tabs.
 
 ## Performance budget
 
-`npm run build` fails if the JavaScript loaded at startup exceeds 120 KB gzip. Today: about 87 KB (React is most of
-it), 10 KB CSS, two font files (41 KB + 16 KB), and lazy-loaded artwork.
+`npm run build` fails if the JavaScript loaded at startup exceeds 120 KB gzip. Today: about 96 KB (React is most of
+it); game previews load as separate chunks only when their tile is on screen.
 
 ## Credits
 

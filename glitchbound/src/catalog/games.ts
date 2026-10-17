@@ -15,7 +15,7 @@ export const GAMES: GameEntry[] = [
     categories: ['racing', 'arcade'],
     tags: ['car', 'driving', 'endless', 'runner', 'traffic', 'neon', 'reflex', 'high score', 'leaderboard'],
     released: '2026-10-17',
-    accent: 'blue',
+    accent: 'cyan',
     art: {
       tile: '/games/neon-rush/tile.webp',
       wide: '/games/neon-rush/wide.webp',
@@ -51,5 +51,7 @@ export const GAMES: GameEntry[] = [
       { metric: 'score', targets: [1500, 2000, 2500, 3200], label: 'Score {n} points in a single run' },
     ],
     homepage: 'https://neonrushgame.com/',
+    // Top speed is about 20 m/s plus coins and near-miss combos; this is a generous ceiling.
+    limits: { scorePerSecond: 250, minSeconds: 2 },
   },
 ];

@@ -109,3 +109,40 @@ describe('privacy page', () => {
     expect(screen.getByText(/0 rounds recorded/)).toBeTruthy();
   });
 });
+
+describe('members features as a guest (API unreachable in tests)', () => {
+  it('keeps favorites on the device and filters the arcade by them', () => {
+    renderAt('/');
+    const arcade = screen.getByRole('region', { name: 'The arcade' });
+    fireEvent.click(within(arcade).getByRole('button', { name: 'Add NEON RUSH to favorites' }));
+    expect(within(arcade).getByRole('button', { name: 'Remove NEON RUSH from favorites' }).getAttribute('aria-pressed')).toBe('true');
+    expect(JSON.parse(localStorage.getItem('glitchbound.favorites')!)).toEqual(['neon-rush']);
+    fireEvent.click(within(arcade).getByRole('button', { name: /Favorites/ }));
+    expect(window.location.search).toBe('?fav=1');
+    expect(within(arcade).getByRole('link', { name: 'NEON RUSH' })).toBeTruthy();
+    fireEvent.click(within(arcade).getByRole('button', { name: 'Remove NEON RUSH from favorites' }));
+    expect(screen.getByText('No favorites yet.')).toBeTruthy();
+  });
+
+  it('invites guests to unlock quests and opens the sign-in dialog', () => {
+    renderAt('/');
+    fireEvent.click(screen.getByRole('button', { name: /Unlock quests/ }));
+    const dialog = document.querySelector('dialog.signin-dialog') as HTMLDialogElement;
+    expect(dialog.open).toBe(true);
+    expect(within(dialog).getByRole('heading', { name: 'Join the arcade' })).toBeTruthy();
+    expect(within(dialog).getByText('Sign in to unlock daily quests.')).toBeTruthy();
+  });
+
+  it('shows a friendly offline state on the leaderboards page', async () => {
+    renderAt('/leaderboards');
+    expect(screen.getByRole('heading', { level: 1, name: 'Leaderboards' })).toBeTruthy();
+    expect(await screen.findByText(/offline right now/)).toBeTruthy();
+  });
+
+  it('asks guests to sign in on the profile and admin pages', async () => {
+    renderAt('/me');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Your profile' })).toBeTruthy();
+    renderAt('/admin');
+    expect((await screen.findAllByRole('heading', { level: 1, name: 'Admin' })).length).toBeGreaterThan(0);
+  });
+});

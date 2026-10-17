@@ -2,31 +2,35 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  border: var(--outline);
+  border: 1.5px solid var(--line);
   border-radius: var(--r-lg);
-  background: var(--card);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
   box-shadow: var(--hard);
   transition:
     transform 0.35s var(--spring),
-    box-shadow 0.35s var(--spring);
+    box-shadow 0.35s var(--spring),
+    border-color 0.25s;
 }
 .tile:hover,
 .tile:focus-within {
-  transform: translate(-3px, -4px) rotate(-0.6deg);
-  box-shadow: 9px 10px 0 var(--ink);
+  transform: translate(-3px, -4px);
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 30px color-mix(in srgb, var(--accent) 35%, transparent),
+    9px 10px 0 var(--ink);
 }
 .tile:active {
   transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 var(--ink);
   transition-duration: 0.08s;
 }
 
 .tile-art {
   position: relative;
   aspect-ratio: 4 / 3;
-  border-bottom: var(--outline);
-  border-radius: calc(var(--r-lg) - 3px) calc(var(--r-lg) - 3px) 0 0;
+  border-radius: calc(var(--r-lg) - 2px) calc(var(--r-lg) - 2px) 0 0;
   overflow: hidden;
+  border-bottom: 1.5px solid var(--line);
 }
 .tile-art picture {
   display: contents;
@@ -40,14 +44,62 @@
 .tile:hover .tile-art img {
   transform: scale(1.05);
 }
-.tile-art::after {
-  /* A strip of accent colour along the art edge ties the tile to its game. */
-  content: '';
+
+/* The live preview fills square/tall art, and sits like a cabinet screen on wide art. */
+.game-preview {
   position: absolute;
-  inset: auto 0 0 0;
-  height: 8px;
-  background: var(--accent);
-  border-top: var(--bw) solid var(--ink);
+  inset: 0;
+}
+.game-preview-canvas {
+  width: 100%;
+  height: 100%;
+  animation: preview-in 0.6s var(--out) both;
+}
+@keyframes preview-in {
+  from { opacity: 0; }
+}
+.tile-xl.has-preview .tile-art,
+.tile-wide.has-preview .tile-art {
+  aspect-ratio: 16 / 7;
+}
+.tile-xl.has-preview .tile-art img,
+.tile-wide.has-preview .tile-art img {
+  width: 50%;
+}
+.tile-xl .tile-preview,
+.tile-wide .tile-preview {
+  left: 50%;
+  border-left: 2px solid var(--accent);
+  box-shadow: inset 12px 0 24px -12px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.tile-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.035) 0 2px, transparent 2px 4px);
+}
+.tile-live {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: rgb(7 2 26 / 0.72);
+  color: #fff;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.tile-live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--coral);
+  box-shadow: 0 0 8px var(--coral);
+  animation: blink 1.2s steps(2, end) infinite;
 }
 
 .tile-body {
@@ -55,7 +107,7 @@
   flex-direction: column;
   gap: 10px;
   flex: 1;
-  padding: 18px 20px 18px;
+  padding: 18px 20px;
 }
 .tile-meta {
   display: flex;
@@ -63,8 +115,7 @@
   gap: 6px;
 }
 .tile-meta .chip:not(:first-child) {
-  --accent: var(--card);
-  --on-accent: var(--ink);
+  --accent: var(--fg-3);
 }
 .tile-title {
   font-size: 28px;
@@ -72,7 +123,6 @@
 .tile-link {
   text-decoration: none;
 }
-/* The whole tile is clickable through the title link. */
 .tile-link::after {
   content: '';
   position: absolute;
@@ -81,14 +131,13 @@
 }
 .tile-link:focus-visible {
   outline: none;
-  box-shadow: none;
 }
 .tile:has(.tile-link:focus-visible) {
-  outline: 3px solid var(--ink);
+  outline: 3px solid var(--cyan);
   outline-offset: 4px;
 }
 .tile-tagline {
-  color: var(--ink-2);
+  color: var(--fg-2);
   font-size: 16px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -104,47 +153,118 @@
 }
 .tile-best {
   font-size: 12.5px;
-  color: var(--ink-2);
+  color: var(--lime);
 }
 .tile-play {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   height: 40px;
-  padding: 0 16px;
+  padding: 0 18px;
   border: 2px solid var(--ink);
   border-radius: 999px;
   background: var(--accent);
   color: var(--on-accent);
   font-weight: 800;
-  transition: transform 0.3s var(--spring), gap 0.3s var(--spring);
+  box-shadow: 3px 3px 0 var(--magenta);
+  transition: transform 0.3s var(--spring), box-shadow 0.3s var(--spring);
 }
 .tile:hover .tile-play {
-  gap: 12px;
-  transform: rotate(-3deg);
+  transform: translate(-2px, -2px) rotate(-3deg);
+  box-shadow: 5px 5px 0 var(--magenta);
 }
 .tile-sticker {
   position: absolute;
   top: -12px;
-  right: 18px;
-  z-index: 1;
-  transform: rotate(8deg);
+  left: 18px;
+  z-index: 2;
+  transform: rotate(-8deg);
+}
+
+/* Favorite heart sits above the stretched title link. */
+.fav-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  background: rgb(7 2 26 / 0.7);
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: transform 0.3s var(--spring), color 0.2s, border-color 0.2s;
+}
+.fav-btn:hover {
+  transform: scale(1.1);
+  color: var(--magenta);
+  border-color: var(--magenta);
+}
+.fav-btn.is-on {
+  color: var(--magenta);
+  border-color: var(--magenta);
+  box-shadow: 0 0 14px rgb(255 63 210 / 0.5);
+}
+.fav-btn.is-on svg {
+  fill: currentColor;
+  animation: heart-pop 0.45s var(--spring);
+}
+@keyframes heart-pop {
+  40% { transform: scale(1.45); }
+}
+.fav-burst {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--magenta);
+  animation: fav-ring 0.6s var(--out) forwards;
+  pointer-events: none;
+}
+@keyframes fav-ring {
+  from { transform: scale(0.6); opacity: 1; }
+  to { transform: scale(1.6); opacity: 0; }
+}
+.tile-fav {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
 }
 
 /* ---------------------------------------------------------------- sizes */
-.tile-xl .tile-art {
+.tile-xl .tile-art,
+.tile-wide .tile-art {
   aspect-ratio: 5 / 2;
 }
 .tile-xl .tile-title {
-  font-size: clamp(32px, 3.4vw, 48px);
+  font-size: clamp(32px, 3.4vw, 46px);
 }
 .tile-xl .tile-tagline {
   font-size: 18px;
   max-width: 52ch;
 }
-.tile-wide .tile-art {
-  aspect-ratio: 5 / 2;
-}
 .tile-tall .tile-art {
   aspect-ratio: 3 / 4;
+}
+
+@media (max-width: 640px) {
+  .tile-xl .tile-art,
+  .tile-wide .tile-art,
+  .tile-tall .tile-art {
+    aspect-ratio: 4 / 3;
+  }
+  .tile-xl.has-preview .tile-art,
+  .tile-wide.has-preview .tile-art {
+    aspect-ratio: 4 / 3;
+  }
+  .tile-xl.has-preview .tile-art img,
+  .tile-wide.has-preview .tile-art img {
+    width: 100%;
+  }
+  .tile-xl .tile-preview,
+  .tile-wide .tile-preview {
+    left: 0;
+    border: 0;
+    box-shadow: none;
+  }
 }

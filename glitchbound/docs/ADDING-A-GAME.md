@@ -93,6 +93,19 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
 Adding `daily` templates puts the game into the daily rotation from its release date onward (the daily challenge
 picks one daily-capable game per day). Leave `daily` out if the game has no fair single-round target.
 
+### Optional: a live catalogue preview
+
+Catalogue tiles can play a tiny looping "attract mode" (NEON RUSH has one). Write a component in
+`src/games/<slug>/Preview.tsx` that draws on a canvas, takes `GamePreviewProps` (`playing`), pauses when offscreen, and
+draws one still frame for reduced motion; then register it in `GAME_PREVIEWS` in `src/catalog/modules.ts`. It loads only
+when its tile scrolls near the screen. Keep the simulation in a separate pure file so it can be tested (see
+`src/games/neon-rush/previewSim.ts` and `tests/preview.test.ts`).
+
+### Optional: leaderboard limits
+
+Add `limits: { scorePerSecond, minSeconds }` to the registry entry. The server rejects ranked rounds whose score is
+impossible for the real time between `start` and `end`. Without limits, any score is accepted.
+
 ## 4. Add artwork
 
 Put three files in `public/games/<slug>/`:

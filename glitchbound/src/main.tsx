@@ -1,10 +1,12 @@
 // Global styles first, so component styles (imported by App) can override them.
 import './styles/tokens.css';
 import './styles/base.css';
-import './styles/intro.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { installErrorReporting } from './platform/analytics';
+
+installErrorReporting();
 
 const root = document.getElementById('root');
 if (root) {

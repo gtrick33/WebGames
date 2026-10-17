@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { getGame } from './catalog/catalog';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Footer } from './components/Footer';
@@ -8,35 +8,12 @@ import { GamePage } from './pages/GamePage';
 import { Home } from './pages/Home';
 import { NotFound } from './pages/NotFound';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { AdminPage } from './pages/AdminPage';
+import { LeaderboardsPage } from './pages/LeaderboardsPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { ArcadeEntrance } from './components/Entrance';
+import { track } from './platform/analytics';
 import { Link, matchRoute, useLocation } from './router/router';
-
-/** A 0.7 s branded wipe on the first page view of a session. Never blocks input. */
-function Intro() {
-  const [show] = useState(() => {
-    try {
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches || sessionStorage.getItem('gb.intro')) return false;
-      sessionStorage.setItem('gb.intro', '1');
-      return true;
-    } catch {
-      return false;
-    }
-  });
-  const [done, setDone] = useState(false);
-  useEffect(() => {
-    if (!show) return;
-    const t = window.setTimeout(() => setDone(true), 1100);
-    return () => window.clearTimeout(t);
-  }, [show]);
-  if (!show || done) return null;
-  return (
-    <div className="intro" aria-hidden="true">
-      <i />
-      <i />
-      <i />
-      <i />
-    </div>
-  );
-}
 
 function Page() {
   const { pathname } = useLocation();
@@ -48,6 +25,12 @@ function Page() {
       return <DailyPage />;
     case 'privacy':
       return <PrivacyPage />;
+    case 'leaderboards':
+      return <LeaderboardsPage />;
+    case 'me':
+      return <ProfilePage />;
+    case 'admin':
+      return <AdminPage />;
     case 'game': {
       const game = getGame(route.slug);
       return game ? <GamePage key={game.slug} game={game} /> : <NotFound />;
@@ -59,12 +42,15 @@ function Page() {
 
 export function App() {
   const { pathname } = useLocation();
+  useEffect(() => {
+    track('page_view', { path: matchRoute(pathname).name });
+  }, [pathname]);
   return (
     <>
       <a href="#main" className="skip-link">
         Skip to content
       </a>
-      <Intro />
+      <ArcadeEntrance />
       <Header />
       <main id="main" tabIndex={-1}>
         <ErrorBoundary

@@ -1,12 +1,13 @@
 # Deployment (Cloudflare Pages)
 
-GlitchBound is a static site. The production build in `dist/` can be hosted anywhere. It runs on
-**Cloudflare Pages** on the free plan, set up the same way as NEON RUSH.
+GlitchBound is a static site plus a small API (Cloudflare Pages Functions in `functions/api/`, shared server code in
+`server/`) and a D1 database `glitchbound` (schema in `migrations/`). It runs on **Cloudflare Pages** on the free plan,
+set up the same way as NEON RUSH.
 
 Live project: `glitchbound` at https://glitchboundstudio.com (custom domain; `www.` too) and https://glitchbound-d8m.pages.dev (classic Pages, created once with
 `--force` because new wrangler versions otherwise redirect Pages commands to Workers). Production branch:
-`pre-release`. Unlike NEON RUSH it has **no Pages Functions and no database**, so `wrangler.toml` only names the
-output folder.
+`pre-release`. `wrangler.toml` holds the D1 binding (`DB`) and the public settings (`SITE_URL`, `GOOGLE_CLIENT_ID`,
+`ADMIN_EMAILS`, `MAIL_FROM`, `MAIL_REPLY_TO`). The only secret is `RESEND_API_KEY` (see LAUNCH-GUIDE.md, section 2).
 
 ## One-time setup (already done for this project)
 
@@ -20,6 +21,20 @@ output folder.
    ```
    `--force` is needed only for this create step. Never pass it again.
 
+## Local development
+
+```bash
+npm run build && npm run dev:api   # applies migrations to a local D1 and serves dist/ + /api on :8788
+npm run dev                        # Vite on :5173 with hot reload; /api is proxied to :8788
+```
+Create `glitchbound/.dev.vars` (git-ignored) with `DEV_LOGIN=1` to get a fake "Sign in (dev)" form on localhost.
+It is ignored in production (the endpoint also refuses any non-localhost request).
+
+## Database changes
+
+Add `migrations/0002_<name>.sql` (never edit an applied one). CI applies new migrations on every deploy
+(`wrangler d1 migrations apply glitchbound --remote`); to do it by hand: `npm run db:migrate`.
+
 ## Manual deploy
 
 ```bash
@@ -30,13 +45,14 @@ This runs the full build (type check, Vite build, size budget) and then
 
 ## Automatic deploys from GitHub (CI/CD)
 
-`.github/workflows/glitchbound.yml` (at the repository root) runs the type check, lint, tests and build on every
-push to `pre-release` that touches `glitchbound/`, and on pull requests (without deploying). It deploys with the
+`.github/workflows/glitchbound.yml` (at the repository root) runs the type checks (app, tests, build config,
+Functions), lint, tests and build on every push to `pre-release` that touches `glitchbound/`, and on pull requests
+(without deploying). On `pre-release` it then applies D1 migrations and deploys. It deploys with the
 **same two repository secrets as NEON RUSH**, which are already set:
 
 | Secret | Where it came from |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | The `neon-rush-github` token. Its "Account > Cloudflare Pages > Edit" permission covers every Pages project in the account, including `glitchbound`. |
+| `CLOUDFLARE_API_TOKEN` | The `neon-rush-github` token. Its "Cloudflare Pages: Edit" and "D1: Edit" permissions are account-wide, so they cover `glitchbound` and its database. |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard > Workers & Pages > Account ID |
 
 Without them CI still verifies the build and prints a notice that deployment was skipped. Never commit tokens.

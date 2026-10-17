@@ -1,4 +1,4 @@
-/* GlitchBound design tokens. Light, warm paper surfaces + saturated toy-box accents + ink outlines. */
+/* GlitchBound design tokens: night-purple arcade, neon cyan + magenta light, toy-box accents. */
 @font-face {
   font-family: 'Bricolage';
   font-style: normal;
@@ -17,25 +17,40 @@
 }
 
 :root {
-  /* Surfaces */
-  --paper: #fff6e8;
-  --paper-2: #ffecd0;
-  --card: #ffffff;
+  /* Surfaces (dark, purple) */
+  --bg: #0d0522;
+  --bg-2: #150a33;
+  --surface: #1c0e42;
+  --surface-2: #26145a;
+  --line: #3b2678;
 
-  /* Ink (text + outlines). Never pure black. */
-  --ink: #170f30;
-  --ink-2: #453e62;
-  --ink-3: #635c7d;
+  /* Foreground */
+  --fg: #f6f1ff;
+  --fg-2: #cfc3f2;
+  --fg-3: #a193cf;
 
-  /* Accents */
-  --blue: #2c45ff;
-  --blue-deep: #1c2fc4;
-  --orange: #ff6a1a;
+  /* Ink: near-black, for text on bright buttons and for deep hard shadows */
+  --ink: #07021a;
+
+  /* Older names kept as aliases */
+  --paper: var(--bg);
+  --paper-2: var(--surface-2);
+  --card: var(--surface);
+  --ink-2: var(--fg-2);
+  --ink-3: var(--fg-3);
+
+  /* Neon light */
+  --cyan: #22e4ff;
+  --magenta: #ff3fd2;
+  --violet: #8b5cff;
+
+  /* Toy-box accents */
   --lime: #c4f034;
-  --coral: #ff5a6c;
   --yellow: #ffd12e;
+  --orange: #ff6a1a;
+  --coral: #ff5a6c;
   --teal: #12c6b3;
-  --violet: #7a4cff;
+  --blue: #3d5bff;
 
   /* Type */
   --font: 'Bricolage', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
@@ -44,16 +59,17 @@
   /* Shape */
   --r-sm: 10px;
   --r-md: 18px;
-  --r-lg: 26px;
-  --r-xl: 38px;
-  --bw: 2.5px;
-  --outline: var(--bw) solid var(--ink);
+  --r-lg: 24px;
+  --r-xl: 34px;
+  --bw: 2px;
+  --outline: var(--bw) solid var(--line);
 
-  /* Depth: hard offset shadows are the brand's "sticker" look; soft ones add air. */
-  --hard: 5px 5px 0 var(--ink);
+  /* Depth: hard offset shadows in ink, plus neon glows */
+  --hard: 6px 6px 0 var(--ink);
   --hard-sm: 3px 3px 0 var(--ink);
-  --hard-lg: 9px 9px 0 var(--ink);
-  --soft: 0 22px 50px -24px rgb(23 15 48 / 0.45);
+  --hard-lg: 10px 10px 0 var(--ink);
+  --glow-cyan: 0 0 0 1px rgb(34 228 255 / 0.7), 0 0 22px rgb(34 228 255 / 0.35);
+  --glow-magenta: 0 0 0 1px rgb(255 63 210 / 0.7), 0 0 22px rgb(255 63 210 / 0.35);
 
   /* Motion */
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -64,11 +80,13 @@
   --maxw: 1320px;
   --header-h: 68px;
 
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 /* Accent scopes: set data-accent on any element to recolour its children. */
-[data-accent='blue'] { --accent: var(--blue); --on-accent: #fff; }
+[data-accent='blue'] { --accent: var(--cyan); --on-accent: var(--ink); }
+[data-accent='cyan'] { --accent: var(--cyan); --on-accent: var(--ink); }
+[data-accent='magenta'] { --accent: var(--magenta); --on-accent: var(--ink); }
 [data-accent='orange'] { --accent: var(--orange); --on-accent: var(--ink); }
 [data-accent='lime'] { --accent: var(--lime); --on-accent: var(--ink); }
 [data-accent='coral'] { --accent: var(--coral); --on-accent: var(--ink); }

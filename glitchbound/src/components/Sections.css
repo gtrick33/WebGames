@@ -160,7 +160,9 @@
   margin-top: clamp(56px, 8vw, 112px);
   border-block: var(--outline);
   background: var(--ink);
-  color: var(--paper);
+  color: var(--fg);
+  border-color: var(--magenta);
+  box-shadow: 0 0 30px -6px rgb(255 63 210 / 0.55);
   overflow: hidden;
   transform: rotate(-1.2deg);
   margin-inline: -20px;

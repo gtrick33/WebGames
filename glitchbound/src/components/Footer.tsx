@@ -1,7 +1,6 @@
 import { GAMES } from '../catalog/games';
 import { Link } from '../router/router';
 import { LogoMark } from './Logo';
-import { Dot, Pill, Tri } from './Shapes';
 import './Footer.css';
 
 export function Footer() {
@@ -13,8 +12,8 @@ export function Footer() {
           <div className="footer-pitch">
             <LogoMark size={56} />
             <p>
-              An independent studio making small, original browser games. No installs, no accounts, nothing to buy. Your scores stay on your
-              device.
+              An independent studio making small, original browser games. No installs and nothing to buy. Play as a guest, or sign in for
+              quests and leaderboards.
             </p>
           </div>
           <nav className="footer-cols" aria-label="Footer">
@@ -22,6 +21,7 @@ export function Footer() {
               <p className="eyebrow">Play</p>
               <Link href="/#arcade">The arcade</Link>
               <Link href="/daily">Daily Challenge</Link>
+              <Link href="/leaderboards">Leaderboards</Link>
               {GAMES.slice(0, 4).map((g) => (
                 <Link key={g.slug} href={`/games/${g.slug}`}>
                   {g.title}
@@ -38,11 +38,6 @@ export function Footer() {
         <p className="footer-word glitch" data-text="GlitchBound" aria-hidden="true">
           GlitchBound
         </p>
-        <div className="footer-shapes" aria-hidden="true">
-          <Pill className="fs fs-1" fill="#c4f034" />
-          <Dot className="fs fs-2" fill="#ff6a1a" />
-          <Tri className="fs fs-3" fill="#12c6b3" />
-        </div>
         <p className="footer-legal mono">© {new Date().getFullYear()} GlitchBound · All games are original works.</p>
       </div>
     </footer>

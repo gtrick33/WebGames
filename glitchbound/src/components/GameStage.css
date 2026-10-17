@@ -1,16 +1,17 @@
 .stage {
+  --stage-h: clamp(520px, calc(100svh - var(--header-h) - 120px), 940px);
   position: relative;
-  border: var(--outline);
+  border: 2px solid var(--cyan);
   border-radius: var(--r-lg);
   overflow: hidden;
-  box-shadow: var(--hard-lg);
+  box-shadow: var(--glow-cyan), var(--hard-lg);
   color: #fff;
   isolation: isolate;
 }
+/* Explicit widths (not only aspect-ratio): Safari gives aspect-ratio boxes zero width in auto grid tracks. */
 .stage-portrait {
-  height: clamp(520px, calc(100svh - var(--header-h) - 120px), 940px);
-  aspect-ratio: 10 / 16;
-  max-width: 100%;
+  height: var(--stage-h);
+  width: min(100%, calc(var(--stage-h) * 0.625));
 }
 .stage-landscape {
   width: 100%;
@@ -18,9 +19,8 @@
   max-height: calc(100svh - var(--header-h) - 120px);
 }
 .stage-square {
-  height: clamp(420px, calc(100svh - var(--header-h) - 120px), 820px);
-  aspect-ratio: 1;
-  max-width: 100%;
+  height: var(--stage-h);
+  width: min(100%, var(--stage-h));
 }
 .stage:fullscreen {
   width: 100vw;
@@ -201,17 +201,13 @@
   gap: 12px;
   margin-top: 6px;
 }
-.stage-error .btn:not(.btn-lime) {
-  color: var(--ink);
-}
 
 @media (max-width: 760px) {
   .stage-portrait,
   .stage-square {
     width: 100%;
-    height: calc(100svh - var(--header-h) - 76px);
+    height: calc(100svh - var(--header-h) - 76px - 90px);
     min-height: 460px;
-    aspect-ratio: auto;
     border-radius: 20px;
   }
 }

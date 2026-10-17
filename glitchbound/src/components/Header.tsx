@@ -1,19 +1,97 @@
 import { useEffect, useRef, useState } from 'react';
-import { categoryCounts } from '../catalog/catalog';
+import { account, useAccount } from '../platform/account';
 import { Link, useLocation } from '../router/router';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 import { LogoMark, Wordmark } from './Logo';
 import { SearchDialog } from './SearchDialog';
+import { Avatar, openSignIn, SignInDialog } from './SignIn';
 import './Header.css';
+
+const TABS: { href: string; label: string; icon: IconName }[] = [
+  { href: '/', label: 'Arcade', icon: 'gamepad' },
+  { href: '/daily', label: 'Daily', icon: 'calendar' },
+  { href: '/leaderboards', label: 'Leaderboards', icon: 'crown' },
+];
+
+function AccountMenu() {
+  const { me, status } = useAccount();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent): void => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  if (!me) {
+    return (
+      <button className="btn btn-magenta btn-sm signin-btn" onClick={() => openSignIn()} disabled={status === 'loading'}>
+        <Icon name="user" size={18} /> <span className="hide-xs">Sign in</span>
+      </button>
+    );
+  }
+  const pct = Math.round(((me.xp - me.levelFloor) / Math.max(1, me.levelNext - me.levelFloor)) * 100);
+  const ready = me.quests.filter((q) => q.done && !q.claimed).length;
+  return (
+    <div className="account" ref={ref}>
+      <button className="account-btn" aria-expanded={open} aria-controls="account-menu" onClick={() => setOpen((v) => !v)} aria-label={`Account menu for ${me.nickname}`}>
+        <Avatar name={me.nickname} src={me.avatar} size={36} />
+        <span className="account-lvl mono">LV {me.level}</span>
+        {ready > 0 && <span className="account-dot" />}
+      </button>
+      <div id="account-menu" className="account-menu panel" hidden={!open}>
+        <div className="account-head">
+          <Avatar name={me.nickname} src={me.avatar} size={44} />
+          <div>
+            <strong>{me.nickname}</strong>
+            <span className="mono">
+              Level {me.level} · {me.xp} XP
+            </span>
+          </div>
+        </div>
+        <div className="xpbar" aria-hidden="true">
+          <i style={{ width: `${pct}%` }} />
+        </div>
+        <Link href="/me" className="account-item" onClick={() => setOpen(false)}>
+          <Icon name="user" size={18} /> Profile &amp; quests {ready > 0 && <span className="pill-count">{ready}</span>}
+        </Link>
+        <Link href="/leaderboards" className="account-item" onClick={() => setOpen(false)}>
+          <Icon name="crown" size={18} /> Leaderboards
+        </Link>
+        {me.isAdmin && (
+          <Link href="/admin" className="account-item" onClick={() => setOpen(false)}>
+            <Icon name="chart" size={18} /> Admin dashboard
+          </Link>
+        )}
+        <button
+          className="account-item"
+          onClick={() => {
+            setOpen(false);
+            void account.signOut();
+          }}
+        >
+          <Icon name="logout" size={18} /> Sign out
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function Header() {
   const { pathname } = useLocation();
   const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [catsOpen, setCatsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const catsRef = useRef<HTMLDivElement>(null);
-  const cats = categoryCounts();
 
   useEffect(() => {
     const onScroll = (): void => setScrolled(window.scrollY > 8);
@@ -21,14 +99,6 @@ export function Header() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  // Close menus on navigation (adjusting state during render, not in an effect).
-  const [lastPath, setLastPath] = useState(pathname);
-  if (pathname !== lastPath) {
-    setLastPath(pathname);
-    setMenuOpen(false);
-    setCatsOpen(false);
-  }
 
   // "/" opens search from anywhere (unless typing in a field).
   useEffect(() => {
@@ -43,27 +113,7 @@ export function Header() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  useEffect(() => {
-    if (!catsOpen) return;
-    const onDown = (e: PointerEvent): void => {
-      if (!catsRef.current?.contains(e.target as Node)) setCatsOpen(false);
-    };
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setCatsOpen(false);
-    };
-    document.addEventListener('pointerdown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [catsOpen]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('menu-open', menuOpen);
-  }, [menuOpen]);
-
-  const current = (path: string): 'page' | undefined => (pathname === path ? 'page' : undefined);
+  const active = (href: string): boolean => (href === '/' ? pathname === '/' || pathname.startsWith('/games/') : pathname.startsWith(href));
 
   return (
     <>
@@ -74,70 +124,38 @@ export function Header() {
             <Wordmark />
           </Link>
 
-          <nav className="main-nav" aria-label="Main">
-            <Link href="/#arcade" className="nav-link">
-              Explore
-            </Link>
-            <div className="nav-cats" ref={catsRef}>
-              <button className="nav-link" aria-expanded={catsOpen} aria-controls="cats-menu" onClick={() => setCatsOpen((v) => !v)}>
-                Categories <Icon name="chevronDown" size={16} />
-              </button>
-              <div id="cats-menu" className="cats-menu panel" hidden={!catsOpen}>
-                {cats.map((c) => (
-                  <Link key={c.id} href={`/?category=${c.id}#arcade`} className="cats-item" onClick={() => setCatsOpen(false)}>
-                    <span>{c.label}</span>
-                    <span className="mono">{c.count}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-            <Link href="/daily" className="nav-link" aria-current={current('/daily')}>
-              Daily Challenge
-            </Link>
+          <nav className="tabs" aria-label="Main">
+            {TABS.map((t) => (
+              <Link key={t.href} href={t.href} className="tab" aria-current={active(t.href) ? 'page' : undefined}>
+                <Icon name={t.icon} size={18} />
+                <span>{t.label}</span>
+              </Link>
+            ))}
           </nav>
 
           <div className="header-actions">
             <button className="search-trigger" onClick={() => setSearchOpen(true)} aria-label="Search games">
               <Icon name="search" size={19} />
-              <span className="search-trigger-text">Search games</span>
+              <span className="search-trigger-text">Search</span>
               <span className="kbd" aria-hidden="true">
                 /
               </span>
             </button>
-            <button className="btn btn-icon btn-sm menu-toggle" aria-expanded={menuOpen} aria-controls="mobile-menu" aria-label={menuOpen ? 'Close menu' : 'Open menu'} onClick={() => setMenuOpen((v) => !v)}>
-              <Icon name={menuOpen ? 'close' : 'menu'} />
-            </button>
+            <AccountMenu />
           </div>
         </div>
       </header>
-      <div id="mobile-menu" className="mobile-menu" hidden={!menuOpen}>
-        <nav className="wrap" aria-label="Mobile">
-          <Link href="/#arcade" className="mobile-link" style={{ ['--i' as string]: 0 }} onClick={() => setMenuOpen(false)}>
-            Explore the arcade <Icon name="arrowRight" />
+      {/* Bottom tab bar on phones: thumb-reachable, always visible. */}
+      <nav className="bottom-tabs" aria-label="Main (mobile)">
+        {TABS.map((t) => (
+          <Link key={t.href} href={t.href} className="bottom-tab" aria-current={active(t.href) ? 'page' : undefined}>
+            <Icon name={t.icon} size={22} />
+            <span>{t.label}</span>
           </Link>
-          <Link href="/daily" className="mobile-link" style={{ ['--i' as string]: 1 }} onClick={() => setMenuOpen(false)}>
-            Daily Challenge <Icon name="arrowRight" />
-          </Link>
-          <p className="eyebrow mobile-sub">Categories</p>
-          <div className="mobile-cats">
-            {cats.map((c) => (
-              <Link key={c.id} href={`/?category=${c.id}#arcade`} className="chip" data-accent="yellow" onClick={() => setMenuOpen(false)}>
-                {c.label} · {c.count}
-              </Link>
-            ))}
-          </div>
-          <button
-            className="btn btn-primary btn-lg mobile-search"
-            onClick={() => {
-              setMenuOpen(false);
-              setSearchOpen(true);
-            }}
-          >
-            <Icon name="search" /> Search games
-          </button>
-        </nav>
-      </div>
+        ))}
+      </nav>
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <SignInDialog />
     </>
   );
 }

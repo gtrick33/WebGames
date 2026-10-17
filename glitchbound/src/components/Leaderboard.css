@@ -1,0 +1,125 @@
+.board {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+}
+.board-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgb(7 2 26 / 0.35);
+  animation: pop-in 0.45s var(--spring) both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+.board-compact .board-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 8px 10px;
+}
+.board-row.is-you {
+  border-color: var(--cyan);
+  background: rgb(34 228 255 / 0.08);
+  box-shadow: 0 0 16px -4px rgb(34 228 255 / 0.5);
+}
+.board-mine {
+  margin-top: 6px;
+  border-style: dashed;
+}
+.medal {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--fg-2);
+  font: 700 13px/1 var(--mono);
+}
+.medal-1 { background: var(--yellow); color: var(--ink); box-shadow: 0 0 14px rgb(255 209 46 / 0.6); }
+.medal-2 { background: #d9d4ee; color: var(--ink); }
+.medal-3 { background: var(--orange); color: var(--ink); }
+.board-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.board-you {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--cyan);
+  color: var(--ink);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.board-lvl {
+  font-size: 11.5px;
+  color: var(--lime);
+}
+.board-score {
+  font-size: 15px;
+  color: var(--fg);
+}
+.board-empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 20px 10px;
+  text-align: center;
+  color: var(--fg-2);
+}
+.board-empty svg {
+  color: var(--yellow);
+}
+
+.hall-wrap {
+  overflow-x: auto;
+}
+.hall {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+.hall th {
+  padding: 6px 12px;
+  color: var(--fg-3);
+  font: 700 11.5px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.hall th svg {
+  display: inline;
+  vertical-align: -3px;
+  color: var(--yellow);
+}
+.hall td {
+  padding: 10px 12px;
+  background: rgb(7 2 26 / 0.35);
+  border-block: 1px solid var(--line);
+}
+.hall td:first-child {
+  border-left: 1px solid var(--line);
+  border-radius: 14px 0 0 14px;
+}
+.hall td:last-child {
+  border-right: 1px solid var(--line);
+  border-radius: 0 14px 14px 0;
+}
+.hall tr.is-you td {
+  border-color: var(--cyan);
+  background: rgb(34 228 255 / 0.08);
+}
+.hall-crowns {
+  color: var(--yellow);
+  font-size: 16px;
+}

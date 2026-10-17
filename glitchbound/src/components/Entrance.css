@@ -1,0 +1,218 @@
+/* Arcade entrance timeline (1.9 s):
+   0.00-0.40 cabinet rises · 0.40-0.85 coin drops · 0.90 READY · 1.05-1.65 dive into the screen · 1.45-1.9 fade */
+.entrance {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  background: radial-gradient(ellipse at 50% 35%, #2a0b56 0%, #0b031f 60%, #05010f 100%);
+  animation: ent-fade 0.45s ease-in 1.45s forwards;
+  perspective: 900px;
+}
+html.entrance-on {
+  overflow: hidden;
+}
+@keyframes ent-fade {
+  to { opacity: 0; visibility: hidden; }
+}
+
+/* Synthwave floor */
+.ent-floor {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: -10%;
+  height: 60%;
+  background-image:
+    linear-gradient(rgb(255 63 210 / 0.55) 2px, transparent 2px),
+    linear-gradient(90deg, rgb(34 228 255 / 0.45) 2px, transparent 2px);
+  background-size: 70px 70px;
+  transform: rotateX(72deg);
+  transform-origin: top;
+  animation: ent-floor 0.6s linear infinite;
+  mask-image: linear-gradient(to bottom, transparent, #000 40%);
+}
+@keyframes ent-floor {
+  to { background-position: 0 70px, 0 0; }
+}
+
+/* Cabinet */
+.ent-cabinet {
+  --w: min(300px, 62vw);
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: var(--w);
+  padding: 14px 16px 26px;
+  border: 3px solid #22e4ff;
+  border-radius: 26px 26px 10px 10px;
+  background: linear-gradient(180deg, #2b1263, #170838);
+  box-shadow:
+    0 0 0 2px #07021a,
+    0 0 50px rgb(34 228 255 / 0.45),
+    inset 0 0 40px rgb(255 63 210 / 0.25);
+  transform-origin: 50% 38%;
+  animation:
+    ent-rise 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    ent-dive 0.6s cubic-bezier(0.7, 0, 0.84, 0) 1.05s forwards;
+}
+@keyframes ent-rise {
+  from { transform: translateY(70px) scale(0.85); opacity: 0; }
+}
+@keyframes ent-dive {
+  to { transform: scale(9); }
+}
+.ent-marquee {
+  width: 100%;
+  padding: 8px 0 7px;
+  border-radius: 12px;
+  background: #07021a;
+  border: 2px solid #ff3fd2;
+  text-align: center;
+  font: 800 clamp(20px, 6vw, 28px) / 1 var(--font);
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-shadow: 0 0 10px #ff3fd2, 0 0 22px #ff3fd2;
+  animation: ent-flicker 0.5s steps(1) 0.1s both;
+}
+.ent-marquee-b {
+  color: #22e4ff;
+  text-shadow: 0 0 10px #22e4ff, 0 0 22px #22e4ff;
+}
+@keyframes ent-flicker {
+  0% { opacity: 0.2; }
+  20% { opacity: 1; }
+  30% { opacity: 0.3; }
+  45%, 100% { opacity: 1; }
+}
+.ent-screen {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  margin-top: 12px;
+  border-radius: 14px;
+  border: 3px solid #07021a;
+  background: radial-gradient(ellipse at center, #3b1a8a, #12062e 75%);
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgb(34 228 255 / 0.4);
+  animation: ent-glow 0.6s ease-in 1.05s forwards;
+}
+@keyframes ent-glow {
+  to { background: radial-gradient(ellipse at center, #ffffff, #22e4ff 60%, #ff3fd2); }
+}
+.ent-insert,
+.ent-ready {
+  position: absolute;
+  font: 700 clamp(11px, 3.4vw, 15px) / 1 var(--mono);
+  letter-spacing: 0.12em;
+}
+.ent-insert {
+  color: #ffd12e;
+  text-shadow: 0 0 8px #ffd12e;
+  animation: ent-blink 0.3s steps(2) 3, ent-out 0s linear 0.88s forwards;
+}
+.ent-ready {
+  opacity: 0;
+  color: #c4f034;
+  text-shadow: 0 0 10px #c4f034;
+  animation: ent-in 0.2s steps(2) 0.9s forwards;
+}
+@keyframes ent-blink {
+  50% { opacity: 0; }
+}
+@keyframes ent-out {
+  to { opacity: 0; }
+}
+@keyframes ent-in {
+  to { opacity: 1; }
+}
+.ent-scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.06) 0 2px, transparent 2px 4px);
+}
+.ent-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 112%;
+  height: 46px;
+  margin-top: 14px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #3b1a8a, #22104f);
+  border: 2px solid #07021a;
+}
+.ent-stick {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ff5a6c;
+  box-shadow: 0 0 10px #ff5a6c;
+  margin-right: 18px;
+}
+.ent-btn {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #07021a;
+}
+.b1 { background: #22e4ff; box-shadow: 0 0 8px #22e4ff; }
+.b2 { background: #ffd12e; box-shadow: 0 0 8px #ffd12e; }
+.b3 { background: #ff3fd2; box-shadow: 0 0 8px #ff3fd2; animation: ent-press 0.12s steps(1) 0.9s 2; }
+@keyframes ent-press {
+  50% { transform: scale(0.75); }
+}
+.ent-slot {
+  position: relative;
+  width: 40px;
+  height: 10px;
+  margin-top: 14px;
+  border-radius: 4px;
+  background: #07021a;
+  box-shadow: 0 0 0 2px #ffd12e, 0 0 14px #ffd12e;
+  animation: ent-slot 0.3s ease-out 0.75s;
+}
+@keyframes ent-slot {
+  50% { box-shadow: 0 0 0 2px #fff, 0 0 30px #ffd12e; }
+}
+.ent-coin {
+  position: absolute;
+  left: 50%;
+  top: -150px;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff6b0, #ffd12e 45%, #c99a00);
+  box-shadow: 0 0 16px #ffd12e;
+  animation: ent-coin 0.45s cubic-bezier(0.55, 0, 1, 0.45) 0.4s both;
+}
+@keyframes ent-coin {
+  from { transform: translateY(-40px) rotateY(0deg); opacity: 0; }
+  20% { opacity: 1; }
+  85% { transform: translateY(140px) rotateY(540deg) scaleX(0.4); opacity: 1; }
+  to { transform: translateY(150px) rotateY(600deg) scaleX(0.1); opacity: 0; }
+}
+.ent-skip {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.5);
+}
+
+/* Catalogue tiles wait for the entrance, then pop in as the camera arrives. */
+html.entrance-on .pop-in,
+html.entrance-on .intro-title,
+html.entrance-on .intro-card {
+  animation-play-state: paused;
+}

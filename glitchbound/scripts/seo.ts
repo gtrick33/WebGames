@@ -104,6 +104,35 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       body: `<section class="ssr"><h1>Privacy &amp; your data</h1><p>${SITE} has no accounts. Personal bests and daily challenge history are kept in your browser's local storage and never uploaded.</p></section>`,
     },
     {
+      path: '/leaderboards',
+      file: 'leaderboards.html',
+      title: `Leaderboards · ${SITE}`,
+      description: 'GlitchBound leaderboards: top scores for every game and the Hall of Fame of record holders.',
+      image: '/og.png',
+      imageAlt: 'GlitchBound leaderboards',
+      body: `<section class="ssr"><h1>Leaderboards</h1><p>Top scores for every GlitchBound game, plus the Hall of Fame: members with the most #1 spots, podiums and personal records.</p><p><a href="/">Back to the arcade</a></p></section>`,
+    },
+    {
+      path: '/me',
+      file: 'me.html',
+      title: `Your profile · ${SITE}`,
+      description: HOME_DESC,
+      image: '/og.png',
+      imageAlt: SITE,
+      noindex: true,
+      body: `<section class="ssr"><h1>Your profile</h1><p>Sign in to see your quests, level, badges and bests.</p></section>`,
+    },
+    {
+      path: '/admin',
+      file: 'admin.html',
+      title: `Admin · ${SITE}`,
+      description: HOME_DESC,
+      image: '/og.png',
+      imageAlt: SITE,
+      noindex: true,
+      body: `<section class="ssr"><h1>Admin</h1></section>`,
+    },
+    {
       path: '/404',
       file: '404.html',
       title: `Page not found · ${SITE}`,
@@ -153,6 +182,7 @@ export function sitemap(siteUrl: string): string {
     { loc: '/', lastmod: latest, priority: '1.0' },
     ...GAMES.map((g) => ({ loc: `/games/${g.slug}`, lastmod: g.released, priority: '0.9' })),
     { loc: '/daily', lastmod: '', priority: '0.6' },
+    { loc: '/leaderboards', lastmod: '', priority: '0.5' },
     { loc: '/privacy', lastmod: '', priority: '0.2' },
   ];
   const body = urls
