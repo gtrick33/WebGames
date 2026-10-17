@@ -11,7 +11,9 @@ import type { GameModuleProps, GamePreviewProps } from '../platform/contract';
  */
 export type GameModuleLoader = () => Promise<{ default: ComponentType<GameModuleProps> }>;
 
-export const GAME_MODULES: Record<string, GameModuleLoader> = {};
+export const GAME_MODULES: Record<string, GameModuleLoader> = {
+  'color-recall': () => import('../games/color-recall/Game'),
+};
 
 /**
  * Optional looping previews shown on catalogue tiles and in the featured card (a small canvas
