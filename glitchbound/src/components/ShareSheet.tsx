@@ -204,52 +204,54 @@ export default function ShareSheet({ data }: { data: ShareData }) {
           </button>
         </div>
         <div className="ss-card">{card ? <img src={card.url} alt={lines.join('. ')} /> : <div className="ss-card-loading">Drawing your card…</div>}</div>
-        {canSendPicture && (
-          <button className="ss-primary" onClick={() => void sendPicture()}>
-            Send picture + link
-          </button>
-        )}
-        <div className="ss-grid" role="list">
-          {TARGETS.filter((t) => !t.mobileOnly || mobile).map((t) => (
-            <button key={t.id} role="listitem" className="ss-target" onClick={() => open(t)} disabled={!link}>
-              <span className="ss-icon" style={{ background: t.color }}>
-                {t.icon}
-              </span>
-              <span>{t.label}</span>
-            </button>
-          ))}
-          <button role="listitem" className="ss-target" disabled={!link} onClick={() => void copyText(`${message}\n${url}`).then((ok) => done(ok ? 'copied' : 'failed', ok ? 'Copied!' : 'Could not copy'))}>
-            <span className="ss-icon" style={{ background: '#1d1238' }}>
-              {svg(<path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0Zm-2.1 5.7a4 4 0 0 1-2.9-6.8l2.2-2.2a1 1 0 1 1 1.4 1.4L7 13.7a2 2 0 0 0 2.8 2.8l2.2-2.2a1 1 0 1 1 1.4 1.4l-2.2 2.2a4 4 0 0 1-2.7 1.2Zm7-6.4a1 1 0 0 1-.7-1.7l2.2-2.2A2 2 0 0 0 14.2 6L12 8.1a1 1 0 1 1-1.4-1.4l2.2-2.2a4 4 0 1 1 5.7 5.7l-2.2 2.2a1 1 0 0 1-.8.3Z" />)}
-            </span>
-            <span>Copy</span>
-          </button>
-          {card && (
-            <a role="listitem" className="ss-target" href={card.url} download={`${game?.slug ?? 'glitchbound'}-result.png`} onClick={() => done('shared')}>
-              <span className="ss-icon" style={{ background: '#ff6a1a' }}>
-                {svg(<path d="M12 3a1 1 0 0 1 1 1v8.6l2.3-2.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.4l2.3 2.3V4a1 1 0 0 1 1-1ZM5 19h14a1 1 0 1 1 0 2H5a1 1 0 1 1 0-2Z" />)}
-              </span>
-              <span>Save picture</span>
-            </a>
-          )}
-          {typeof navigator.share === 'function' && (
-            <button
-              role="listitem"
-              className="ss-target"
-              disabled={!link}
-              onClick={() =>
-                void navigator.share({ title: data.title, text: message, url }).then(
-                  () => done('shared'),
-                  () => undefined,
-                )
-              }
-            >
-              <span className="ss-icon" style={{ background: '#9a9aa6' }}>
-                {svg(<path d="M6 10.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />)}
-              </span>
-              <span>More</span>
+        <div className="ss-side">
+          {canSendPicture && (
+            <button className="ss-primary" onClick={() => void sendPicture()}>
+              Send picture + link
             </button>
           )}
+          <div className="ss-grid" role="list">
+            {TARGETS.filter((t) => !t.mobileOnly || mobile).map((t) => (
+              <button key={t.id} role="listitem" className="ss-target" onClick={() => open(t)} disabled={!link}>
+                <span className="ss-icon" style={{ background: t.color }}>
+                  {t.icon}
+                </span>
+                <span>{t.label}</span>
+              </button>
+            ))}
+            <button role="listitem" className="ss-target" disabled={!link} onClick={() => void copyText(`${message}\n${url}`).then((ok) => done(ok ? 'copied' : 'failed', ok ? 'Copied!' : 'Could not copy'))}>
+              <span className="ss-icon" style={{ background: '#1d1238' }}>
+                {svg(<path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0Zm-2.1 5.7a4 4 0 0 1-2.9-6.8l2.2-2.2a1 1 0 1 1 1.4 1.4L7 13.7a2 2 0 0 0 2.8 2.8l2.2-2.2a1 1 0 1 1 1.4 1.4l-2.2 2.2a4 4 0 0 1-2.7 1.2Zm7-6.4a1 1 0 0 1-.7-1.7l2.2-2.2A2 2 0 0 0 14.2 6L12 8.1a1 1 0 1 1-1.4-1.4l2.2-2.2a4 4 0 1 1 5.7 5.7l-2.2 2.2a1 1 0 0 1-.8.3Z" />)}
+              </span>
+              <span>Copy</span>
+            </button>
+            {card && (
+              <a role="listitem" className="ss-target" href={card.url} download={`${game?.slug ?? 'glitchbound'}-result.png`} onClick={() => done('shared')}>
+                <span className="ss-icon" style={{ background: '#ff6a1a' }}>
+                  {svg(<path d="M12 3a1 1 0 0 1 1 1v8.6l2.3-2.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.4l2.3 2.3V4a1 1 0 0 1 1-1ZM5 19h14a1 1 0 1 1 0 2H5a1 1 0 1 1 0-2Z" />)}
+                </span>
+                <span>Save</span>
+              </a>
+            )}
+            {typeof navigator.share === 'function' && (
+              <button
+                role="listitem"
+                className="ss-target"
+                disabled={!link}
+                onClick={() =>
+                  void navigator.share({ title: data.title, text: message, url }).then(
+                    () => done('shared'),
+                    () => undefined,
+                  )
+                }
+              >
+                <span className="ss-icon" style={{ background: '#9a9aa6' }}>
+                  {svg(<path d="M6 10.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />)}
+                </span>
+                <span>More</span>
+              </button>
+            )}
+          </div>
         </div>
         <p className="ss-note" role="status">
           {note || (link ? link.replace(/^https?:\/\//, '') : 'Making your link…')}

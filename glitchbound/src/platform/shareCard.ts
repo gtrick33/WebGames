@@ -141,20 +141,33 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
   const maxW = pw - 90;
   type Row = { text: string; font: string; color: string; h: number };
   const rows: Row[] = [];
-  const wrap = (text: string, font: string, maxLines: number): string[] => {
-    ctx.font = font;
-    const words = text.split(/\s+/);
+  const wrapAt = (words: string[], width: number): string[] => {
     const out: string[] = [];
     let cur = '';
     for (const w of words) {
       const next = cur ? `${cur} ${w}` : w;
-      if (ctx.measureText(next).width <= maxW || !cur) cur = next;
+      if (ctx.measureText(next).width <= width || !cur) cur = next;
       else {
         out.push(cur);
         cur = w;
       }
     }
     if (cur) out.push(cur);
+    return out;
+  };
+  const wrap = (text: string, font: string, maxLines: number): string[] => {
+    ctx.font = font;
+    const words = text.split(/\s+/);
+    let out = wrapAt(words, maxW);
+    // Balance the lines (no single word left alone on the last one): narrow the width while the
+    // line count stays the same.
+    if (out.length > 1 && out.length <= maxLines) {
+      for (let w = maxW - 10; w > maxW * 0.5; w -= 10) {
+        const tried = wrapAt(words, w);
+        if (tried.length !== out.length || tried.some((l) => ctx.measureText(l).width > maxW)) break;
+        out = tried;
+      }
+    }
     if (out.length > maxLines) {
       const kept = out.slice(0, maxLines);
       kept[maxLines - 1] = `${kept[maxLines - 1]!.replace(/\s+\S*$/, '')}…`;
