@@ -8,6 +8,17 @@ export interface ShareData {
   title: string;
   text: string;
   url?: string;
+  /** What the picture card shows, when it should differ from the text. */
+  card?: ShareCard;
+}
+
+export interface ShareCard {
+  /** Lines for the card instead of the text's own. */
+  lines?: string[];
+  /** Game tiles drawn on the card, each with a done (✓) or not yet (✗) badge: the Daily Sweep. */
+  tiles?: { src: string; bg: string; done: boolean }[];
+  /** The button text at the bottom of the card. */
+  cta?: string;
 }
 
 /* The share sheet (components/ShareSheet.tsx) is mounted once by the app and opened from here. */
@@ -72,7 +83,7 @@ export async function shareDirect(data: ShareData): Promise<ShareOutcome> {
   const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
   if (nav?.share && coarse) {
     try {
-      await nav.share(data);
+      await nav.share({ title: data.title, text: data.text, url: data.url });
       return 'shared';
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';

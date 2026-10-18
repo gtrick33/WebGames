@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makePuzzle, wordCells, type Puzzle } from '../src/games/crosswire/grid';
-import { backspace, dailyPuzzle, key, mysteryTiles, score, solved, toggleDir, typeLetter, wrongCells, type Entries } from '../src/games/crosswire/logic';
+import { backspace, dailyPuzzle, key, mysteryTiles, resultLine, score, solved, toggleDir, typeLetter, withHint, wrongCells, type Entries } from '../src/games/crosswire/logic';
 import { WORDS } from '../src/games/crosswire/words';
 
 /** Every horizontal and vertical run of 2+ letters must be one of the placed words. */
@@ -91,5 +91,20 @@ describe('Crosswire play', () => {
     expect(score({ ...base, mystery: true })).toBe(1250);
     expect(score({ ...base, seconds: 360, letterHints: 2, wordHints: 1 })).toBe(1000 - 100 - 60 - 100);
     expect(score({ ...base, seconds: 99999 })).toBe(100);
+  });
+});
+
+describe('crosswire share line', () => {
+  it('shows a square per word, 8 to a row, with hinted and revealed words and the mystery star', () => {
+    const p = dailyPuzzle('2026-10-20');
+    let t = { seconds: 100, checks: 0, letterHints: 0, wordHints: 0, mystery: false };
+    t = withHint(withHint(withHint(t, 1, 'letter'), 1, 'letter'), 3, 'word');
+    expect(t.letterHints).toBe(2);
+    expect(t.wordHints).toBe(1);
+    const rows = resultLine(p, t).split('\n');
+    expect(rows.length).toBe(Math.ceil(p.words.length / 8));
+    expect([...rows[0]!].slice(0, 4).join('')).toBe('🟩🟨🟩🟥');
+    expect(rows.join('')).not.toMatch(/[A-Z]/);
+    if (p.mystery) expect(resultLine(p, { ...t, mystery: true }).endsWith(' ⭐')).toBe(true);
   });
 });

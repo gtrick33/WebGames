@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, formatCountdown, msUntilMidnight, parseDayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
+import { ResultLine } from '../../components/ResultLine';
 import {
   ENDLESS_SLACK,
   endStats,
@@ -9,6 +10,7 @@ import {
   LIVES,
   MAX_POINTS,
   reduceLevel,
+  resultLine,
   resultOf,
   shareText,
   startLevel,
@@ -873,6 +875,7 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
         {run.mode === 'daily' && !run.challenge && streak > 0 ? ` · 🔥 ${streak}` : ''}
         {run.mode === 'endless' ? ` · best ${save.endless.bestLevels}` : run.mode === 'precision' ? ` · best ${save.precision.bestLevels}` : ''}
       </p>
+      {(run.mode === 'daily' || run.challenge) && <ResultLine line={resultLine(run.results)} label={`${totalStars(run.results)} of ${run.results.length * 3} stars`} />}
       <ul className="cl-summary-list">
         {run.results.map((r, i) => (
           <li key={i}>

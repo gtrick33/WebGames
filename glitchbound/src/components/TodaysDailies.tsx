@@ -4,7 +4,7 @@ import { useLiveCatalog } from '../platform/liveCatalog';
 import type { GameEntry } from '../catalog/types';
 import { track } from '../platform/analytics';
 import { dayKey, formatCountdown, msUntilMidnight } from '../platform/dates';
-import { streakState, sweepShareText } from '../platform/engage';
+import { streakState, sweepShare } from '../platform/engage';
 import { SITE_URL } from '../platform/env';
 import { useNow } from '../platform/hooks';
 import { shareOrCopy } from '../platform/share';
@@ -35,10 +35,12 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
   const { streak, atRisk } = streakState(doneDays(save), today);
   const H = `h${headingLevel}` as const;
   const all = doneCount === list.length;
-  const share = async (): Promise<void> => {
-    track('daily_share', { done: doneCount });
-    const text = sweepShareText({ day: today, games: list.map((g) => ({ title: g.title, done: finished.has(g.slug) })), streak, url: `${SITE_URL}/daily` });
-    const outcome = await shareOrCopy({ title: 'GlitchBound dailies', text });
+  // The Daily Sweep: an emoji row for chats, and a picture card with every game's tile ticked or not.
+  const share = async (where: string): Promise<void> => {
+    track('daily_share', { done: doneCount, where });
+    const sweep = sweepShare({ day: today, games: list.map((g) => ({ emoji: g.emoji, done: finished.has(g.slug) })), streak, url: `${SITE_URL}/daily` });
+    const tiles = list.map((g) => ({ src: g.art.tile, bg: g.art.bg, done: finished.has(g.slug) }));
+    const outcome = await shareOrCopy({ title: sweep.title, text: sweep.text, url: `${SITE_URL}/daily`, card: { lines: sweep.cardLines, tiles, cta: t('Can you sweep them all?') } });
     setShareMsg(outcome === 'copied' ? t('Copied! Paste it anywhere.') : outcome === 'failed' ? t('Could not share from this browser.') : '');
   };
 
@@ -59,10 +61,22 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
               </>
             )}
           </span>
-          <Link href="/daily" className="today-all">
-            {t('All dailies')} <Icon name="arrowRight" size={16} />
-          </Link>
+          <span className="today-links">
+            {doneCount > 0 && (
+              <button className="today-share" onClick={() => void share('home')}>
+                <Icon name="share" size={15} /> {t('Share today')}
+              </button>
+            )}
+            <Link href="/daily" className="today-all">
+              {t('All dailies')} <Icon name="arrowRight" size={16} />
+            </Link>
+          </span>
         </div>
+        {shareMsg && (
+          <p className="today-msg" role="status">
+            {shareMsg}
+          </p>
+        )}
         <div className={`dailies-progress${all ? ' is-sweep' : ''}`} aria-hidden="true">
           <i style={{ width: `${(doneCount / list.length) * 100}%` }} />
         </div>
@@ -124,7 +138,7 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
               </>
             )}
           </p>
-          <button className="btn btn-sm btn-primary" onClick={() => void share()}>
+          <button className="btn btn-sm btn-primary" onClick={() => void share('daily')}>
             <Icon name="share" size={16} /> {t('Share today')}
           </button>
           {shareMsg && (

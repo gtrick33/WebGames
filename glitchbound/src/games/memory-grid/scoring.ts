@@ -34,12 +34,18 @@ export function reportStats(r: RunSummary): Record<string, number> {
 
 export const MODE_NAMES: Record<Mode, string> = { classic: 'Classic', speed: 'Speed Run', daily: 'Daily Challenge', perfect: 'Perfect Recall' };
 
+/** The run as a streak of squares: one 🟩 per pattern, then how it ended (never which tiles were lit). */
+export function resultLine(r: Pick<RunSummary, 'mode' | 'cleared' | 'complete'>, ladder = 10): string {
+  if (r.mode === 'perfect') return '🟩'.repeat(r.cleared) + (r.complete ? '' : '🟥' + '⬜'.repeat(Math.max(0, ladder - r.cleared - 1)));
+  return '🟩'.repeat(Math.min(r.cleared, 20)) + (r.cleared > 20 ? '+' : '') + (r.complete ? '' : r.mode === 'speed' ? '⏱️' : '🟥');
+}
+
 /**
  * Spoiler-free share text: how far the run got (one square per pattern), never which tiles were lit.
  * Daily results name the date so friends compare the same puzzle.
  */
 export function shareText(r: RunSummary & { day: string; streak: number; ladder?: number }): string {
-  const squares = r.mode === 'perfect' ? '🟩'.repeat(r.cleared) + (r.complete ? '' : '🟥' + '⬜'.repeat(Math.max(0, (r.ladder ?? 10) - r.cleared - 1))) : '🟩'.repeat(Math.min(r.cleared, 20)) + (r.cleared > 20 ? '+' : '') + (r.complete ? '' : r.mode === 'speed' ? '⏱️' : '🟥');
+  const squares = resultLine(r, r.ladder);
   const head = r.mode === 'daily' ? `Memory Grid · Daily ${r.day}` : `Memory Grid · ${MODE_NAMES[r.mode]}`;
   const facts = [`${r.score} pts`, `longest ${r.longest}`, `${r.accuracy}% accuracy`];
   if (r.mode === 'daily' && r.streak > 1) facts.push(`🔥 ${r.streak}-day streak`);

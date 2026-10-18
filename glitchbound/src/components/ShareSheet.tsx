@@ -111,13 +111,14 @@ async function shortLink(data: ShareData, lines: string[]): Promise<string | nul
 export default function ShareSheet({ data }: { data: ShareData }) {
   useT();
   const lines = useMemo(() => cardLines(data.text), [data.text]);
+  const card = data.card;
   const game = useMemo(() => {
     const path = new URL(data.url ?? location.href, location.origin).pathname;
     const slug = /^\/games\/([a-z0-9-]+)/.exec(path)?.[1] ?? /^\/games\/([a-z0-9-]+)/.exec(location.pathname)?.[1];
     return slug ? getGame(slug, getLiveCatalog().all) : undefined;
   }, [data.url]);
   const [link, setLink] = useState<string | null>(null);
-  const [card, setCard] = useState<{ blob: Blob; url: string } | null>(null);
+  const [picture, setPicture] = useState<{ blob: Blob; url: string } | null>(null);
   const [note, setNote] = useState('');
   const closeRef = useRef<HTMLButtonElement>(null);
   const mobile = coarse();
@@ -129,10 +130,10 @@ export default function ShareSheet({ data }: { data: ShareData }) {
     const t = window.setTimeout(() => live && setLink((l) => l ?? fallback), 2500);
     void shortLink(data, lines).then((s) => live && setLink(s ?? fallback));
     let objectUrl = '';
-    void renderShareCard({ game, lines, site: location.host }).then((blob) => {
+    void renderShareCard({ game, lines: card?.lines ?? lines, cta: card?.cta, tiles: card?.tiles, site: location.host }).then((blob) => {
       if (!live || !blob) return;
       objectUrl = URL.createObjectURL(blob);
-      setCard({ blob, url: objectUrl });
+      setPicture({ blob, url: objectUrl });
     });
     closeRef.current?.focus();
     return () => {
@@ -140,7 +141,7 @@ export default function ShareSheet({ data }: { data: ShareData }) {
       window.clearTimeout(t);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [data, lines, game]);
+  }, [data, lines, game, card]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -168,7 +169,8 @@ export default function ShareSheet({ data }: { data: ShareData }) {
     } else shareRequests.finish(o);
   };
 
-  const file = card ? new File([card.blob], `${(game?.slug ?? 'glitchbound')}-result.png`, { type: 'image/png' }) : null;
+  const fileName = game ? `${game.slug}-result.png` : card?.tiles ? 'glitchbound-daily-sweep.png' : 'glitchbound-result.png';
+  const file = picture ? new File([picture.blob], fileName, { type: 'image/png' }) : null;
   const canSendPicture = !!file && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] });
 
   const sendPicture = async (): Promise<void> => {
@@ -205,7 +207,7 @@ export default function ShareSheet({ data }: { data: ShareData }) {
             ✕
           </button>
         </div>
-        <div className="ss-card">{card ? <img src={card.url} alt={lines.join('. ')} /> : <div className="ss-card-loading">{tr('Drawing your card…')}</div>}</div>
+        <div className="ss-card">{picture ? <img src={picture.url} alt={(card?.lines ?? lines).join('. ')} /> : <div className="ss-card-loading">{tr('Drawing your card…')}</div>}</div>
         <div className="ss-side">
           {canSendPicture && (
             <button className="ss-primary" onClick={() => void sendPicture()}>
@@ -227,8 +229,8 @@ export default function ShareSheet({ data }: { data: ShareData }) {
               </span>
               <span>{tr('Copy')}</span>
             </button>
-            {card && (
-              <a role="listitem" className="ss-target" href={card.url} download={`${game?.slug ?? 'glitchbound'}-result.png`} onClick={() => done('shared')}>
+            {picture && (
+              <a role="listitem" className="ss-target" href={picture.url} download={fileName} onClick={() => done('shared')}>
                 <span className="ss-icon" style={{ background: '#ff6a1a' }}>
                   {svg(<path d="M12 3a1 1 0 0 1 1 1v8.6l2.3-2.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.4l2.3 2.3V4a1 1 0 0 1 1-1ZM5 19h14a1 1 0 1 1 0 2H5a1 1 0 1 1 0-2Z" />)}
                 </span>

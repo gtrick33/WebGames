@@ -13,7 +13,7 @@ import { account, api, useAccount } from '../platform/account';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { SCORES_EVENT } from '../platform/challenge';
 import { challengeSpecOf, useChallengeRun } from '../platform/useChallengeRun';
-import { ChallengeFriends } from '../components/ChallengeFriends';
+import { ChallengeFriends, inviteToChallenge, startChallenge } from '../components/ChallengeFriends';
 
 // The challenge dock and scoreboard load only on challenge links (/games/<slug>?challenge=<id>).
 const ChallengeDock = lazy(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeDock })));
@@ -30,7 +30,7 @@ import { challengeForDay, fmt } from '../platform/daily';
 import { dayKey } from '../platform/dates';
 import { SITE_URL } from '../platform/env';
 import { usePageMeta } from '../platform/meta';
-import type { RoundResult } from '../platform/save';
+import type { GameRecord, RoundResult } from '../platform/save';
 import { saveStore, useSave } from '../platform/store';
 import { parseBeatParam, shareOrCopy } from '../platform/share';
 import { GAMES } from '../catalog/games';
@@ -314,8 +314,31 @@ export function GamePage({ game }: { game: GameEntry }) {
           ? t('I scored {score} in {game} on GlitchBound.', { score: fmt(score), game: game.title })
           : t('I scored {score} in {game}. Can you beat it?', { score: fmt(score), game: game.title });
     const outcome = await shareOrCopy({ title: game.title, text, url });
-    setShareMsg(outcome === 'copied' ? t('Link copied to your clipboard.') : outcome === 'shared' ? t('Shared!') : outcome === 'failed' ? t('Could not share from this browser.') : '');
+    flashShare(outcome === 'copied' ? t('Link copied to your clipboard.') : outcome === 'shared' ? t('Shared!') : outcome === 'failed' ? t('Could not share from this browser.') : '');
+  };
+  const flashShare = (msg: string): void => {
+    setShareMsg(msg);
     window.setTimeout(() => setShareMsg(''), 4000);
+  };
+
+  /**
+   * After a round: a real friends' challenge (a fresh round for everyone, played right here) and its
+   * invite sheet. In an open challenge it invites to that one; games without challenges keep the
+   * old ?beat=<score> link.
+   */
+  const [challenging, setChallenging] = useState(false);
+  const challengeFriend = async (): Promise<void> => {
+    if (!game.challenge) return share('challenge');
+    const view = 'view' in chal.state ? chal.state.view : undefined;
+    if (challengeId && view && !view.closed) {
+      track('share_click', { game: game.slug, what: 'challenge_invite' });
+      return inviteToChallenge(game, view, t);
+    }
+    track('share_click', { game: game.slug, what: 'challenge_new' });
+    setChallenging(true);
+    const err = await startChallenge(game, 'fresh', player.name, t);
+    setChallenging(false);
+    if (err) flashShare(err);
   };
 
   return (
@@ -414,48 +437,6 @@ export function GamePage({ game }: { game: GameEntry }) {
             {shareMsg}
           </p>
 
-          {game.challenge && !challengeId && <ChallengeFriends game={game} />}
-
-          <div className="panel player-name">
-            <span className="mono">{t('Playing as')}</span>
-            {renaming && !player.member ? (
-              <form
-                className="rename-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const err = setGuestName(String(new FormData(e.currentTarget).get('name') ?? ''));
-                  setRenameMsg(err ?? '');
-                  if (!err) setRenaming(false);
-                }}
-              >
-                <input className="field" name="name" defaultValue={player.name} maxLength={14} aria-label={t('Player name')} autoFocus />
-                <button className="btn btn-primary btn-sm">{t('Save')}</button>
-              </form>
-            ) : (
-              <div className="player-row">
-                <strong>{player.name}</strong>
-                {player.member ? (
-                  <Link href="/me" className="link-btn">
-                    {t('Change')}
-                  </Link>
-                ) : (
-                  <button className="link-btn" onClick={() => setRenaming(true)}>
-                    {t('Change')}
-                  </button>
-                )}
-              </div>
-            )}
-            {renameMsg && <p className="side-muted">{renameMsg}</p>}
-            {!player.member && (
-              <p className="side-muted">
-                {t('Guest name.')}{' '}
-                <button className="link-btn" onClick={() => openSignIn(t('Sign in to keep your name and scores on every device.'))}>
-                  {t('Sign in to keep it on every device.')}
-                </button>
-              </p>
-            )}
-          </div>
-
           {beat !== null && (
             <div className={`panel friend ${last && last.event.score > beat ? 'is-beaten' : ''}`}>
               <p className="eyebrow">{t('Friend challenge')}</p>
@@ -492,8 +473,8 @@ export function GamePage({ game }: { game: GameEntry }) {
               {me && last.server === undefined && <p className="mono last-saving">{t('Saving to the leaderboard…')}</p>}
               {me && last.server && !last.server.ok && <p className="mono last-saving">{t('This round was not ranked ({reason}).', { reason: last.server.error ?? '' })}</p>}
               <div className="last-actions">
-                <button className="btn btn-primary btn-sm" onClick={() => void share('challenge')}>
-                  <Icon name="link" size={18} /> {t('Challenge a friend')}
+                <button className="btn btn-primary btn-sm" onClick={() => void challengeFriend()} disabled={challenging}>
+                  <Icon name={game.challenge ? 'bolt' : 'link'} size={18} /> {t('Challenge a friend')}
                 </button>
                 <button className="btn btn-sm" onClick={() => void share('score')}>
                   <Icon name="share" size={18} /> {t('Share score')}
@@ -502,64 +483,48 @@ export function GamePage({ game }: { game: GameEntry }) {
             </div>
           )}
 
+          {game.challenge && !challengeId && <ChallengeFriends game={game} />}
+
           {isDailyGame && <DailyCard variant="compact" headingLevel={2} />}
 
-          <MiniLeaderboard game={game} refreshKey={boardKey} />
+          <GameInfo game={game} record={record} boardKey={boardKey} />
 
-          <section className="panel side-block" aria-labelledby="bests-title">
-            <h2 id="bests-title" className="side-title">
-              <Icon name="trophy" /> {t('Your bests')}
-            </h2>
-            {record ? (
-              <dl className="bests">
-                {game.stats.map((s) => (
-                  <div key={s.key}>
-                    <dt>{t(s.label)}</dt>
-                    <dd className="mono">
-                      {record.best[s.key] !== undefined ? fmt(record.best[s.key]!) : '–'}
-                      {s.unit && record.best[s.key] !== undefined ? ` ${s.unit}` : ''}
-                    </dd>
-                  </div>
-                ))}
-                <div>
-                  <dt>{t('Rounds played here')}</dt>
-                  <dd className="mono">{fmt(record.plays)}</dd>
-                </div>
-              </dl>
+          <div className="player-line">
+            <span className="mono">{t('Playing as')}</span>
+            {renaming && !player.member ? (
+              <form
+                className="rename-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const err = setGuestName(String(new FormData(e.currentTarget).get('name') ?? ''));
+                  setRenameMsg(err ?? '');
+                  if (!err) setRenaming(false);
+                }}
+              >
+                <input className="field" name="name" defaultValue={player.name} maxLength={14} aria-label={t('Player name')} autoFocus />
+                <button className="btn btn-primary btn-sm">{t('Save')}</button>
+              </form>
             ) : (
-              <p className="side-muted">{t('Finish a round to set your first record. Bests are saved on this device only.')}</p>
+              <>
+                <strong>{player.name}</strong>
+                {player.member ? (
+                  <Link href="/me" className="link-btn">
+                    {t('Change')}
+                  </Link>
+                ) : (
+                  <button className="link-btn" onClick={() => setRenaming(true)}>
+                    {t('Change')}
+                  </button>
+                )}
+                {!player.member && (
+                  <button className="link-btn player-keep" onClick={() => openSignIn(t('Sign in to keep your name and scores on every device.'))}>
+                    {t('Sign in to keep it on every device.')}
+                  </button>
+                )}
+              </>
             )}
-          </section>
-
-          <section className="panel side-block" aria-labelledby="how-title">
-            <h2 id="how-title" className="side-title">
-              {t('How to play')}
-            </h2>
-            {game.controls.keyboard && (
-              <div className="controls">
-                <p className="controls-head">
-                  <Icon name="keyboard" /> {t('Keyboard')}
-                </p>
-                <ul>
-                  {game.controls.keyboard.map((c) => (
-                    <li key={c}>{tGame(c)}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {game.controls.touch && (
-              <div className="controls">
-                <p className="controls-head">
-                  <Icon name="touch" /> {t('Touch')}
-                </p>
-                <ul>
-                  {game.controls.touch.map((c) => (
-                    <li key={c}>{tGame(c)}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </section>
+            {renameMsg && <p className="side-muted">{renameMsg}</p>}
+          </div>
 
           <div className="game-help">
             <button className="game-help-btn" onClick={() => openFeedback(game.slug)}>
@@ -602,5 +567,84 @@ export function GamePage({ game }: { game: GameEntry }) {
         </section>
       )}
     </div>
+  );
+}
+
+type InfoTab = 'how' | 'board' | 'bests';
+
+/**
+ * How to play, the leaderboard and your bests share one panel with tabs, so the column next to the
+ * game stays short: newcomers start on How to play, returning players on the leaderboard.
+ */
+function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRecord | undefined; boardKey: number }) {
+  const t = useT();
+  const [tab, setTab] = useState<InfoTab>(record ? 'board' : 'how');
+  const tabs: { id: InfoTab; icon: 'keyboard' | 'crown' | 'trophy'; label: string }[] = [
+    { id: 'how', icon: 'keyboard', label: t('How to play') },
+    { id: 'board', icon: 'crown', label: t('Leaderboard') },
+    { id: 'bests', icon: 'trophy', label: t('Your bests') },
+  ];
+  return (
+    <section className="panel side-block game-info" aria-labelledby={`gi-${tab}`}>
+      <div className="gi-tabs" role="tablist" aria-label={t('{game} details', { game: game.title })}>
+        {tabs.map((x) => (
+          <button key={x.id} id={`gi-${x.id}`} role="tab" aria-selected={tab === x.id} aria-controls="gi-panel" className={`gi-tab${tab === x.id ? ' is-on' : ''}`} onClick={() => setTab(x.id)}>
+            <Icon name={x.icon} size={16} /> {x.label}
+          </button>
+        ))}
+      </div>
+      <div key={tab} id="gi-panel" role="tabpanel" className="gi-panel">
+        {tab === 'how' && (
+          <>
+            <h2 className="sr-only">{t('How to play')}</h2>
+            {game.controls.keyboard && (
+              <div className="controls">
+                <p className="controls-head">
+                  <Icon name="keyboard" /> {t('Keyboard')}
+                </p>
+                <ul>
+                  {game.controls.keyboard.map((c) => (
+                    <li key={c}>{tGame(c)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {game.controls.touch && (
+              <div className="controls">
+                <p className="controls-head">
+                  <Icon name="touch" /> {t('Touch')}
+                </p>
+                <ul>
+                  {game.controls.touch.map((c) => (
+                    <li key={c}>{tGame(c)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+        {tab === 'board' && <MiniLeaderboard game={game} refreshKey={boardKey} embedded />}
+        {tab === 'bests' &&
+          (record ? (
+            <dl className="bests">
+              {game.stats.map((st) => (
+                <div key={st.key}>
+                  <dt>{t(st.label)}</dt>
+                  <dd className="mono">
+                    {record.best[st.key] !== undefined ? fmt(record.best[st.key]!) : '–'}
+                    {st.unit && record.best[st.key] !== undefined ? ` ${st.unit}` : ''}
+                  </dd>
+                </div>
+              ))}
+              <div>
+                <dt>{t('Rounds played here')}</dt>
+                <dd className="mono">{fmt(record.plays)}</dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="side-muted">{t('Finish a round to set your first record. Bests are saved on this device only.')}</p>
+          ))}
+      </div>
+    </section>
   );
 }

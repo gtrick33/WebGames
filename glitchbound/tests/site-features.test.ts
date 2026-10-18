@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GAMES } from '../src/catalog/games';
-import { streakState, sweepShareText } from '../src/platform/engage';
+import { streakState, sweepShare } from '../src/platform/engage';
 import { ASK_EVERY_DAYS, emptyFeedback, MAX_DISMISSALS, MIN_ROUNDS, QUIET_AFTER_SENT_DAYS, shouldAsk } from '../src/platform/feedback';
 import { rankBests, topLabel } from '../src/platform/profile';
 import { nextTheme } from '../src/platform/theme';
@@ -77,13 +77,19 @@ describe('streaks and the daily share', () => {
     expect(streakState(new Set(['2026-10-17', '2026-10-18']), '2026-10-18')).toEqual({ streak: 2, doneToday: true, atRisk: false });
     expect(streakState(new Set(), '2026-10-18')).toEqual({ streak: 0, doneToday: false, atRisk: false });
   });
-  it('shares done/undone per game, and celebrates a full sweep', () => {
-    const part = sweepShareText({ day: '2026-10-18', games: [{ title: 'A', done: true }, { title: 'B', done: false }], streak: 4, url: 'https://x.test/daily' });
-    expect(part).toContain('1/2 dailies');
-    expect(part).toContain('✅ A');
-    expect(part).toContain('⬜ B');
-    expect(part).toContain('🔥 4-day streak');
-    expect(sweepShareText({ day: '2026-10-18', games: [{ title: 'A', done: true }], streak: 0, url: 'u' })).toContain('daily sweep');
+  it('shares one emoji row with ✓/✗ per game, the count and the streak, and celebrates a full sweep', () => {
+    const part = sweepShare({ day: '2026-10-18', games: [{ emoji: '🧠', done: true }, { emoji: '🎨', done: false }], streak: 4, url: 'https://x.test/daily' });
+    expect(part.text.split('\n')).toEqual(['GlitchBound · Today’s dailies Oct 18', '🧠✓ 🎨✗', '1 of 2 done · 🔥 4 day streak', 'https://x.test/daily']);
+    expect(part.cardLines).toEqual(['Today’s dailies', 'Oct 18 · 1 of 2 done', '🔥 4 day streak']);
+    const all = sweepShare({ day: '2026-10-18', games: [{ emoji: '🧠', done: true }, { done: true }], streak: 0, url: 'u' });
+    expect(all.text).toContain('Daily sweep! 🧹');
+    expect(all.text).toContain('🧠✓ 🎮✓');
+    expect(all.text).not.toContain('🔥');
+  });
+  it('gives every game with a daily its own emoji', () => {
+    const daily = GAMES.filter((g) => g.ownDaily);
+    expect(daily.every((g) => !!g.emoji)).toBe(true);
+    expect(new Set(daily.map((g) => g.emoji)).size).toBe(daily.length);
   });
 });
 

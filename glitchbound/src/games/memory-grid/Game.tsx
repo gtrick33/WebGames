@@ -6,11 +6,12 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import type { GameModuleProps } from '../../platform/contract';
 import { dayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
+import { ResultLine } from '../../components/ResultLine';
 import { createSfx, type Sfx } from './audio';
 import { accuracy, createRun, next, playbackDone, tap, tick, type RunState } from './engine';
 import { dailySeed, levelFor, MODES, PERFECT_LADDER, perfectSeed, randomSeed, SPEED_PENALTY_SECONDS, type Mode } from './pattern';
 import { liveStreak, loadRecords, playedDailyToday, recordRun, saveRecords, type RecordOutcome, type Records } from './records';
-import { MODE_NAMES, reportStats, shareText, type RunSummary } from './scoring';
+import { MODE_NAMES, reportStats, resultLine, shareText, type RunSummary } from './scoring';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
 
@@ -601,6 +602,7 @@ function Result({
         {outcome.place && outcome.place > 1 && <span className="mg-badge mg-badge-soft">#{outcome.place} in your top 5</span>}
         {s.mode === 'daily' && (outcome.officialDaily ? <span className="mg-badge mg-badge-soft">🔥 {streak}-day streak</span> : <span className="mg-badge mg-badge-soft">Practice run</span>)}
       </div>
+      <ResultLine line={resultLine(s, PERFECT_LADDER.length)} label={`${s.cleared} ${s.cleared === 1 ? 'pattern' : 'patterns'} in a row`} />
       <dl className="mg-result-stats">
         <div>
           <dt>{s.mode === 'perfect' ? 'Cleared' : 'Patterns'}</dt>

@@ -88,6 +88,8 @@ export interface GameEntry {
   /** ISO date (YYYY-MM-DD) of public release. Drives "Newest" sort and the NEW badge. */
   released: string;
   accent: Accent;
+  /** One emoji that stands for the game in share texts (the Daily Sweep row). */
+  emoji?: string;
   art: {
     /** Square-ish artwork (used in tiles), path under /public. */
     tile: string;

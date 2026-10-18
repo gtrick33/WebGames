@@ -91,8 +91,79 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.roundRect(x, y, w, h, r);
 }
 
-/** Draws the card; returns a PNG blob (or null if the browser can't). */
-export async function renderShareCard(opts: { game?: GameEntry; lines: string[]; cta?: string; site: string }): Promise<Blob | null> {
+type Tile = { src: string; bg: string; done: boolean };
+
+/** Columns and size of a grid of game tiles that fits `w` × `h` (rows kept balanced: 10 → 5 + 5). */
+export function tileGrid(n: number, w: number, h: number, gap: number): { cols: number; rows: number; size: number } {
+  const rows = Math.max(1, Math.ceil(n / 5));
+  const cols = Math.max(1, Math.ceil(n / rows));
+  const size = Math.floor(Math.min(170, (w - (cols - 1) * gap) / cols, (h - (rows - 1) * gap) / rows));
+  return { cols, rows, size: Math.max(40, size) };
+}
+
+/** Game tiles in rows, centred on `cx`: done ones bright with a green ✓, the rest faded with a ✗. */
+function drawTiles(ctx: CanvasRenderingContext2D, tiles: Tile[], imgs: (HTMLImageElement | null)[], cx: number, top: number, grid: { cols: number; size: number }, gap: number): void {
+  const { cols, size } = grid;
+  const r = size * 0.22;
+  ctx.save();
+  tiles.forEach((tile, i) => {
+    const row = Math.floor(i / cols);
+    const inRow = Math.min(cols, tiles.length - row * cols);
+    const x = cx - (inRow * size + (inRow - 1) * gap) / 2 + (i % cols) * (size + gap);
+    const y = top + row * (size + gap);
+    ctx.save();
+    roundRect(ctx, x, y, size, size, r);
+    ctx.clip();
+    ctx.fillStyle = tile.bg;
+    ctx.fillRect(x, y, size, size);
+    const img = imgs[i];
+    if (img) ctx.drawImage(img, x, y, size, size);
+    if (!tile.done) {
+      ctx.fillStyle = 'rgba(255,250,242,0.68)';
+      ctx.fillRect(x, y, size, size);
+    }
+    ctx.restore();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = tile.done ? INK : 'rgba(29,18,56,0.35)';
+    roundRect(ctx, x, y, size, size, r);
+    ctx.stroke();
+    // The badge, drawn as paths (a ✓ glyph is missing from some phone fonts).
+    const br = size * 0.2;
+    const bx = x + size - br * 0.7;
+    const by = y + size - br * 0.7;
+    ctx.beginPath();
+    ctx.arc(bx, by, br, 0, Math.PI * 2);
+    ctx.fillStyle = tile.done ? '#22b35e' : '#9a93ad';
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    ctx.beginPath();
+    const k = br * 0.45;
+    if (tile.done) {
+      ctx.moveTo(bx - k, by + k * 0.05);
+      ctx.lineTo(bx - k * 0.25, by + k * 0.75);
+      ctx.lineTo(bx + k, by - k * 0.65);
+    } else {
+      ctx.moveTo(bx - k * 0.7, by - k * 0.7);
+      ctx.lineTo(bx + k * 0.7, by + k * 0.7);
+      ctx.moveTo(bx + k * 0.7, by - k * 0.7);
+      ctx.lineTo(bx - k * 0.7, by + k * 0.7);
+    }
+    ctx.lineWidth = Math.max(4, br * 0.28);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+/**
+ * Draws the card; returns a PNG blob (or null if the browser can't). With `tiles` (the Daily Sweep)
+ * the panel grows upwards and shows the game tiles under the headline.
+ */
+export async function renderShareCard(opts: { game?: GameEntry; lines: string[]; cta?: string; site: string; tiles?: Tile[] }): Promise<Blob | null> {
   if (typeof document === 'undefined') return null;
   const S = CARD_SIZE;
   const c = document.createElement('canvas');
@@ -114,7 +185,11 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
   bg.addColorStop(1, a2);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, S, S);
-  const [wide, tile] = opts.game ? await Promise.all([loadImage(opts.game.art.wide), loadImage(opts.game.art.tile)]) : [null, null];
+  const tiles = opts.tiles?.length ? opts.tiles : null;
+  const [[wide, tile], tileImgs] = await Promise.all([
+    opts.game ? Promise.all([loadImage(opts.game.art.wide), loadImage(opts.game.art.tile)]) : Promise.resolve([null, null]),
+    Promise.all((tiles ?? []).map((x) => loadImage(x.src))),
+  ]);
   if (wide) {
     ctx.save();
     ctx.globalAlpha = 0.28;
@@ -127,7 +202,7 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
 
   // White result panel.
   const px = 64;
-  const py = 300;
+  const py = tiles ? 140 : 300;
   const pw = S - px * 2;
   const ph = S - py - 200;
   ctx.fillStyle = 'rgba(29,18,56,0.25)';
@@ -174,7 +249,7 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
   // Text: the first line as the headline, emoji grids large, the rest as wrapped details; the block
   // is measured first and centred in the panel.
   const maxW = pw - 90;
-  type Row = { text: string; font: string; color: string; h: number };
+  type Row = { text: string; font: string; color: string; h: number; tiles?: true };
   const rows: Row[] = [];
   const wrapAt = (words: string[], width: number): string[] => {
     const out: string[] = [];
@@ -226,12 +301,20 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
   });
   const textTop = py + (tile ? 105 : 50);
   const room = py + ph - 40 - textTop;
+  // The tile grid goes under the headline and takes the room the text leaves.
+  const GAP = 22;
+  const grid = tiles ? tileGrid(tiles.length, maxW, room - rows.reduce((n, r) => n + r.h, 0) - 50, GAP) : null;
+  if (tiles && grid) {
+    const at = rows.findIndex((r) => r.text === '') + 1 || 1;
+    rows.splice(at, 0, { text: '', font: '', color: INK, h: grid.rows * grid.size + (grid.rows - 1) * GAP + 40, tiles: true });
+  }
   let used = rows.reduce((n, r) => n + r.h, 0);
   while (used > room && rows.length > 1) used -= rows.pop()!.h;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   let y = textTop + Math.max(0, (room - used) / 2);
   for (const r of rows) {
+    if (r.tiles && tiles && grid) drawTiles(ctx, tiles, tileImgs, S / 2, y + 8, grid, GAP);
     ctx.font = r.font;
     ctx.fillStyle = r.color;
     if (r.text) drawLine(ctx, r.text, S / 2, y);

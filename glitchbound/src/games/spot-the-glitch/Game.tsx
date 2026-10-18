@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Pointer
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, formatCountdown, hashString, msUntilMidnight, parseDayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
+import { ResultLine } from '../../components/ResultLine';
 import { DIFFS, makePuzzle, type Puzzle } from './diffs';
 import { drawScene } from './draw';
 import {
@@ -22,6 +23,7 @@ import {
   RUSH_START_S,
   rushDifficulty,
   seconds,
+  resultGrid,
   shareText,
   startPicture,
   tap,
@@ -584,6 +586,7 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
       <span className="sg-kicker">{run.challenge ? '⚔️ Challenge round complete' : `Daily #${dailyNumber(today)} complete`}</span>
       <p className="sg-big sg-mono">{fmt(totalScore(run.results))}</p>
       <p className="sg-muted">/ {fmt(DAILY_PICTURES * MAX_PICTURE)}{streak > 0 && !run.challenge ? ` · 🔥 ${streak}` : ''}</p>
+      <ResultLine line={resultGrid(run.results)} label={`${run.results.reduce((n, r) => n + r.found, 0)} of ${run.results.length * DIFFS} glitches found`} />
       <ul className="sg-summary">
         {run.results.map((r, i) => (
           <li key={i}>

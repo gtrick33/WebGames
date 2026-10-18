@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BIRD_X, HIT_R, biomeFor, flap, gapCentre, GROUND, H, medalFor, newSim, PILLAR_W, runPoints, step, type Sim } from '../src/games/wing-it/sim';
+import { BIRD_X, HIT_R, biomeFor, flap, flightLine, gapCentre, GROUND, H, medalFor, newSim, PILLAR_W, runPoints, step, type Sim } from '../src/games/wing-it/sim';
 
 /** A simple autopilot: flap when falling near the bottom of the next gap (a flap rises ~88 units). */
 function autopilot(s: Sim): void {
@@ -95,5 +95,13 @@ describe('Wing It smooth drawing', () => {
     const w = canvas.width;
     drawFrame(canvas, view, s, 0, 1);
     expect(canvas.width).toBe(w);
+  });
+});
+
+describe('wing it share line', () => {
+  it('fills a square per 10 gaps, marks the crash, and adds the medal and feathers', () => {
+    expect(flightLine(0, 0)).toBe('💥⬛⬛⬛⬛⬛⬛⬛⬛⬛');
+    expect(flightLine(37, 2)).toBe('🟩🟩🟩💥⬛⬛⬛⬛⬛⬛ 🥈 🪶2');
+    expect(flightLine(140, 0)).toBe('🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩 💎');
   });
 });

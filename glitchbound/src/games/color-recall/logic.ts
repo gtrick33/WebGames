@@ -187,9 +187,12 @@ export function endStats(results: RoundResult[]): { score: number; stats: Record
   };
 }
 
+/** Spoiler-free result line: how close each colour was, never which colours they were. */
+export const resultLine = (results: RoundResult[]): string => results.map((r) => VERDICT_EMOJI[verdictFor(r.points)]).join('');
+
 /** Spoiler-free: shows how close each colour was, never which colours they were. */
 export function shareText(day: string, results: RoundResult[], streak: number, url: string): string {
-  const squares = results.map((r) => VERDICT_EMOJI[verdictFor(r.points)]).join('');
+  const squares = resultLine(results);
   const lines = [`Color Recall #${dailyNumber(day)} 🎨`, `${squares}  ${totalScore(results).toLocaleString('en-US')} / ${MAX_SCORE.toLocaleString('en-US')}`];
   if (streak > 1) lines.push(`🔥 ${streak}-day streak`);
   lines.push(url);

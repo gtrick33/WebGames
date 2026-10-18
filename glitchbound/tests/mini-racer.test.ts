@@ -10,6 +10,7 @@ import { bestSectors, chooseReference, SECTORS, SectorTimer, sectorGates, sector
 import { buildTrack, bypassed, cellAt, decorRadius, groundAt, KERB, SURFACES, TRACK_TYPES, validateTrack, WALL_HALF, wallOffset, type Checkpoint, type Gate } from '../src/games/mini-racer/track';
 import { TRACKS } from '../src/games/mini-racer/tracks';
 import { CARS, raceCoins, specFor, statBars } from '../src/games/mini-racer/cars';
+import { lapLine, raceMedal, shareText } from '../src/games/mini-racer/medals';
 import { getGame } from '../src/catalog/catalog';
 
 /** A gate across the x axis at x = gx, driven in +x. */
@@ -804,5 +805,26 @@ describe('view culling', () => {
     const line = new PolyCull([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 30, y: 0 }], false, 1);
     expect(line.offsetOf(2)).toBeCloseTo(30);
     expect(line.ranges({ minX: 25, maxX: 40, minY: -5, maxY: 5 }, 0)).toEqual([[1, 2]]);
+  });
+});
+
+describe('mini racer share line', () => {
+  const lap = (time: number, valid = true) => ({ time, valid, clean: valid });
+  it('gives each lap a medal against par (the first lap allows for the standing start)', () => {
+    // par 20 s: gold ≤ 20, silver ≤ 22, bronze ≤ 25; lap 1 gets 0.9 s more.
+    expect(lapLine(20_000, [lap(20.8), lap(21.5), lap(24.9), lap(30), lap(19, false)])).toBe('🥇🥈🥉🟩🟥');
+    expect(raceMedal(20_000, 60.8)).toBe('gold');
+    expect(raceMedal(20_000, null)).toBeNull();
+  });
+  it('shares the lap medals, time and place without the track layout', () => {
+    const text = shareText({
+      result: { laps: [lap(20), lap(20), lap(20)], raceTime: 60, position: 1, standings: [{}, {}, {}, {}] as never, score: 2950 },
+      par: 20_000,
+      trackName: 'Lagoon Loop',
+      day: '2026-10-20',
+      time: (s) => `${s}s`,
+      url: 'https://x.test/games/mini-racer',
+    });
+    expect(text.split('\n')).toEqual(['Mini Racer #3 🏎️ Lagoon Loop', '🥇🥇🥇', '60s · 🏆 1st of 4', '2,950 race points', 'https://x.test/games/mini-racer']);
   });
 });

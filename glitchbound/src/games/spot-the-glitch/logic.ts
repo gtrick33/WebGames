@@ -128,9 +128,13 @@ export function endStats(rs: readonly PictureResult[], extra: Record<string, num
   return { score: totalScore(rs), stats: { found, clean, ...extra } };
 }
 
+/** One row per picture: a 🟩 per glitch found, ⬛ per glitch missed. Never where they are. */
+export const pictureSquares = (r: PictureResult): string => `${'🟩'.repeat(r.found)}${'⬛'.repeat(Math.max(0, DIFFS - r.found))}`;
+export const resultGrid = (rs: readonly PictureResult[]): string => rs.map(pictureSquares).join('\n');
+
 /** Spoiler-free share text: found counts and times, never where the glitches are. */
 export function shareText(day: string, rs: readonly PictureResult[], streak: number, url: string): string {
-  const rows = rs.map((r) => `${'🟩'.repeat(r.found)}${'⬛'.repeat(DIFFS - r.found)} ${r.seconds}s${r.misses ? ` ·${r.misses}✗` : ''}`);
+  const rows = rs.map((r) => `${pictureSquares(r)} ${r.seconds}s${r.misses ? ` ·${r.misses}✗` : ''}`);
   const lines = [`Spot the Glitch #${dailyNumber(day)} 👾`, ...rows, `${totalScore(rs).toLocaleString('en-US')} / ${(DAILY_PICTURES * MAX_PICTURE).toLocaleString('en-US')}`];
   if (streak > 1) lines.push(`🔥 ${streak}-day streak`);
   lines.push(url);

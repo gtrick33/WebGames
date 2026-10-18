@@ -3,6 +3,7 @@ import type { GameModuleProps } from '../../platform/contract';
 import { dayKey, formatCountdown, msUntilMidnight } from '../../platform/dates';
 import { SITE_URL } from '../../platform/env';
 import { shareOrCopy } from '../../platform/share';
+import { ResultLine } from '../../components/ResultLine';
 import {
   checkGuess,
   dailySecret,
@@ -15,6 +16,7 @@ import {
   rng,
   roundStats,
   scoreRound,
+  resultGrid,
   shareText,
   windowsFor,
   WORD_LEN,
@@ -500,6 +502,7 @@ function StatsPanel(props: { puzzle: Puzzle; challengeId?: string; save: PinchSa
               </span>
             )}
           </p>
+          <ResultLine line={resultGrid(puzzle.rows)} label={solved ? `Solved in ${puzzle.rows.length} of ${MAX_GUESSES} guesses` : `Not solved in ${MAX_GUESSES} guesses`} />
           <div className="lp-actions">
             <button className="lp-cta" onClick={props.onShare}>
               <ShareIcon /> Share result

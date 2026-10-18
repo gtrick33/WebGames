@@ -147,9 +147,12 @@ export function endStats(mode: Mode, rs: readonly LevelResult[]): { score: numbe
 
 const STAR_EMOJI = ['⬛', '🟧', '🟨', '🟩'];
 
+/** Spoiler-free result line: one square per puzzle, coloured by its stars. */
+export const resultLine = (results: readonly LevelResult[]): string => results.map((r) => STAR_EMOJI[r.stars] ?? '⬛').join('');
+
 /** Spoiler-free result: one square per level and the move counts against par. */
 export function shareText(opts: { label: string; results: readonly LevelResult[]; streak?: number; url: string }): string {
-  const squares = opts.results.map((r) => STAR_EMOJI[r.stars] ?? '⬛').join('');
+  const squares = resultLine(opts.results);
   const moves = opts.results.map((r) => (r.solved ? `${r.moves}/${r.par}` : 'x')).join(' ');
   const lines = [`Color Lab ${opts.label} 🧪`, `${squares}  ${totalPoints(opts.results)}/${opts.results.length * MAX_POINTS}`, `Moves vs par: ${moves}`];
   if (opts.streak && opts.streak > 1) lines.push(`🔥 ${opts.streak}-day streak`);

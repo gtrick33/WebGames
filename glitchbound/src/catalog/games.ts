@@ -17,6 +17,7 @@ export const GAMES: GameEntry[] = [
     tags: ['car', 'driving', 'endless', 'runner', 'traffic', 'neon', 'reflex', 'high score', 'leaderboard'],
     released: '2026-10-17',
     accent: 'cyan',
+    emoji: '🌃',
     art: {
       tile: '/games/neon-rush/tile.webp',
       wide: '/games/neon-rush/wide.webp',
@@ -64,6 +65,7 @@ export const GAMES: GameEntry[] = [
     tags: ['memory', 'sequence', 'simon', 'brain', 'grid', 'tiles', 'daily', 'pattern', 'focus'],
     released: '2026-10-18',
     accent: 'yellow',
+    emoji: '🧠',
     art: {
       tile: '/games/memory-grid/tile.webp',
       wide: '/games/memory-grid/wide.webp',
@@ -109,6 +111,7 @@ export const GAMES: GameEntry[] = [
     tags: ['color', 'colour', 'memory', 'daily', 'perception', 'hue', 'rgb', 'palette', 'design', 'eye test'],
     released: '2026-10-18',
     accent: 'coral',
+    emoji: '🎨',
     art: {
       tile: '/games/color-recall/tile.webp',
       wide: '/games/color-recall/wide.webp',
@@ -153,6 +156,7 @@ export const GAMES: GameEntry[] = [
     tags: ['words', 'letters', 'daily', 'alphabet', 'deduction', 'brain', 'streak', 'five letters'],
     released: '2026-10-18',
     accent: 'violet',
+    emoji: '🔤',
     art: {
       tile: '/games/letter-pinch/tile.webp',
       wide: '/games/letter-pinch/wide.webp',
@@ -197,6 +201,7 @@ export const GAMES: GameEntry[] = [
     tags: ['car', 'driving', 'drift', 'time trial', 'top-down', 'ghost', 'daily', 'laps', 'kart', 'one-touch', 'cars'],
     released: '2026-10-18',
     accent: 'coral',
+    emoji: '🏎️',
     art: {
       tile: '/games/mini-racer/tile.webp',
       wide: '/games/mini-racer/wide.webp',
@@ -250,6 +255,7 @@ export const GAMES: GameEntry[] = [
     tags: ['color', 'colour', 'sort', 'water sort', 'tubes', 'bottles', 'liquid', 'daily', 'moves', 'logic', 'designer eye'],
     released: '2026-10-18',
     accent: 'teal',
+    emoji: '🧪',
     art: {
       tile: '/games/color-lab/tile.webp',
       wide: '/games/color-lab/wide.webp',
@@ -297,6 +303,7 @@ export const GAMES: GameEntry[] = [
     tags: ['spot the difference', 'differences', 'observation', 'find', 'hidden', 'daily', 'pictures', 'eye test', 'glitch'],
     released: '2026-10-18',
     accent: 'violet',
+    emoji: '👾',
     art: {
       tile: '/games/spot-the-glitch/tile.webp',
       wide: '/games/spot-the-glitch/wide.webp',
@@ -342,6 +349,7 @@ export const GAMES: GameEntry[] = [
     tags: ['tennis', 'ball', 'hidden object', 'find', 'search', 'seek', 'observation', 'daily', 'eye test', 'zoom'],
     released: '2026-10-18',
     accent: 'lime',
+    emoji: '🎾',
     art: {
       tile: '/games/wheres-the-ball/tile.webp',
       wide: '/games/wheres-the-ball/wide.webp',
@@ -386,6 +394,7 @@ export const GAMES: GameEntry[] = [
     tags: ['one tap', 'bird', 'flap', 'endless', 'reflex', 'daily', 'casual', 'arcade', 'tap'],
     released: '2026-10-19',
     accent: 'yellow',
+    emoji: '🐤',
     art: {
       tile: '/games/wing-it/tile.webp',
       wide: '/games/wing-it/wide.webp',
@@ -430,6 +439,7 @@ export const GAMES: GameEntry[] = [
     tags: ['crossword', 'arrowword', 'scandinavian crossword', 'krastoslovitsa', 'words', 'clues', 'daily', 'vocabulary', 'brain'],
     released: '2026-10-19',
     accent: 'yellow',
+    emoji: '✏️',
     art: {
       tile: '/games/crosswire/tile.webp',
       wide: '/games/crosswire/wide.webp',
@@ -470,6 +480,7 @@ export const GAMES: GameEntry[] = [
     tags: ['trivia', 'quiz', 'facts', 'questions', 'general knowledge', 'pub quiz', 'daily', 'friends', 'challenge', 'multiplayer', 'history', 'science'],
     released: '2026-10-19',
     accent: 'magenta',
+    emoji: '🤯',
     art: {
       tile: '/games/wait-what/tile.webp',
       wide: '/games/wait-what/wide.webp',
@@ -514,6 +525,7 @@ export const GAMES: GameEntry[] = [
     tags: ['18+', 'adult', 'party', 'cards', 'card game', 'multiplayer', 'online', 'friends', 'rude', 'dark humour', 'funny'],
     released: '2026-10-19',
     accent: 'coral',
+    emoji: '😈',
     art: {
       tile: '/games/unhinged/tile.webp',
       wide: '/games/unhinged/wide.webp',

@@ -196,9 +196,11 @@ export function roundStats(r: RoundSummary, streak?: number): { score: number; s
 
 const EMOJI: Record<Mark, string> = { up: '🔼', down: '🔽', hit: '🟩' };
 
+/** Spoiler-free guess rows: arrows only, never letters. */
+export const resultGrid = (rows: readonly Row[]): string => rows.map((r) => r.marks.map((m) => EMOJI[m]).join('')).join('\n');
+
 /** Spoiler-free result: arrows only, never letters. */
 export function shareText(opts: { rows: readonly Row[]; solved: boolean; daily?: number; url: string }): string {
   const head = `Letter Pinch ${opts.daily ? `#${opts.daily}` : 'practice'} ${opts.solved ? opts.rows.length : 'X'}/${MAX_GUESSES}`;
-  const grid = opts.rows.map((r) => r.marks.map((m) => EMOJI[m]).join(''));
-  return [head, ...grid, opts.url].join('\n');
+  return [head, resultGrid(opts.rows), opts.url].join('\n');
 }

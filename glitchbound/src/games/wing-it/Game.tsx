@@ -3,8 +3,9 @@ import type { ChallengeSpec } from '../../platform/challenge';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
+import { ResultLine } from '../../components/ResultLine';
 import { drawBird, drawFrame, newView } from './render';
-import { biomeFor, flap, medalFor, newSim, runPoints, step, STEP, type Medal, type Sim } from './sim';
+import { biomeFor, flap, flightLine, MEDAL_ICON, medalFor, newSim, runPoints, step, STEP, type Medal, type Sim } from './sim';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
@@ -18,7 +19,8 @@ interface Save {
   bestPillars: number;
   feathers: number;
   runs: number;
-  daily: Record<string, { best: number; tries: number }>;
+  /** Today's best flight (its gaps and feathers draw the share line) and how many tries. */
+  daily: Record<string, { best: number; tries: number; pillars?: number; feathers?: number }>;
   medals: Record<string, number>;
   muted: boolean;
 }
@@ -36,7 +38,11 @@ function loadSave(): Save {
     s.runs = n(o.runs);
     s.muted = o.muted === true;
     if (o.daily && typeof o.daily === 'object') {
-      for (const [d, v] of Object.entries(o.daily).slice(-60)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = { best: n((v as { best?: number }).best), tries: n((v as { tries?: number }).tries) };
+      for (const [d, v] of Object.entries(o.daily).slice(-60)) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !v || typeof v !== 'object') continue;
+        const e = v as { best?: number; tries?: number; pillars?: number; feathers?: number };
+        s.daily[d] = { best: n(e.best), tries: n(e.tries), ...(e.pillars !== undefined ? { pillars: n(e.pillars), feathers: n(e.feathers) } : {}) };
+      }
     }
     if (o.medals && typeof o.medals === 'object') for (const [m, v] of Object.entries(o.medals)) s.medals[m] = n(v);
     return s;
@@ -53,8 +59,16 @@ const writeSave = (s: Save): void => {
   }
 };
 
-const MEDAL_ICON: Record<Exclude<Medal, null>, string> = { bronze: '🥉', silver: '🥈', gold: '🥇', platinum: '💎' };
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
+
+/** Today's daily record after a flight: one more try, and the flight kept if it is the new best. */
+function dailyAfter(prev: Save['daily'][string] | undefined, points: number, pillars: number, feathers: number): Save['daily'][string] {
+  const tries = (prev?.tries ?? 0) + 1;
+  return prev && prev.best >= points ? { ...prev, tries } : { best: points, tries, pillars, feathers };
+}
+
+/** The share line of today's best flight (older saves only kept its points). */
+const dailyLine = (d: Save['daily'][string]): string => flightLine(d.pillars ?? d.best, d.feathers ?? 0);
 
 export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
   return <WingIt key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} />;
@@ -117,7 +131,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
         feathers: cur.feathers + s.feathers,
         runs: cur.runs + 1,
         medals: medal ? { ...cur.medals, [medal]: (cur.medals[medal] ?? 0) + 1 } : cur.medals,
-        daily: m === 'daily' ? { ...cur.daily, [today]: { best: Math.max(cur.daily[today]?.best ?? 0, points), tries: (cur.daily[today]?.tries ?? 0) + 1 } } : cur.daily,
+        daily: m === 'daily' ? { ...cur.daily, [today]: dailyAfter(cur.daily[today], points, s.score, s.feathers) } : cur.daily,
       };
       commit(next);
       const end = { type: 'end' as const, score: points, stats: { pillars: s.score, feathers: s.feathers } };
@@ -255,6 +269,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
           <p className="wi-muted">
             {result.pillars} gaps · {result.feathers} feather{result.feathers === 1 ? '' : 's'} (+{result.feathers * 3}) {result.newBest ? '· New best!' : `· best ${save.best}`}
           </p>
+          <ResultLine line={flightLine(result.pillars, result.feathers)} label={`${result.pillars} gaps${result.medal ? `, ${result.medal} medal` : ''}`} />
           {mode === 'daily' && daily && (
             <p className="wi-muted">
               Today’s best {daily.best} · try {daily.tries}
@@ -270,7 +285,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
                 Fly again
               </button>
             )}
-            {mode === 'daily' && daily && <ShareButton text={`Wing It #${dailyNumber(today)} 🐤\nBest today: ${daily.best} (${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'})\n${medalFor(daily.best) ? MEDAL_ICON[medalFor(daily.best)!] : '🪶'}\n${window.location.origin}/games/wing-it`} />}
+            {mode === 'daily' && daily && <ShareButton text={`Wing It #${dailyNumber(today)} 🐤\n${dailyLine(daily)}\nBest today: ${daily.best} (${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'})\n${window.location.origin}/games/wing-it`} />}
             <button className="wi-btn" onClick={() => setScreen('menu')}>
               Menu
             </button>

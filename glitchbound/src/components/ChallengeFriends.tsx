@@ -27,6 +27,21 @@ export function inviteToChallenge(game: GameEntry, view: Pick<ChallengeView, 'id
   });
 }
 
+/**
+ * Starts a challenge on this game, opens it here on the game page and opens the invite sheet.
+ * Resolves with an error to show, or '' when it worked.
+ */
+export async function startChallenge(game: GameEntry, mode: ChallengeMode, name: string, tr: ReturnType<typeof useT>): Promise<string> {
+  try {
+    const v = await createChallenge(game.slug, mode, name, dayKey());
+    navigate(`/games/${game.slug}?challenge=${v.id}`, { scroll: false });
+    inviteToChallenge(game, v, tr);
+    return '';
+  } catch (e) {
+    return e instanceof ApiError ? (e.message !== e.code ? e.message : tr('Could not start a challenge.')) : tr('Network error. Try again.');
+  }
+}
+
 /** Game page panel: start a challenge for up to 6 friends, right here in the game. */
 export function ChallengeFriends({ game }: { game: GameEntry }) {
   const t = useT();
@@ -36,15 +51,8 @@ export function ChallengeFriends({ game }: { game: GameEntry }) {
   const start = async (mode: ChallengeMode): Promise<void> => {
     setBusy(true);
     setMsg('');
-    try {
-      const v = await createChallenge(game.slug, mode, player.name, dayKey());
-      navigate(`/games/${game.slug}?challenge=${v.id}`, { scroll: false });
-      inviteToChallenge(game, v, t);
-    } catch (e) {
-      setMsg(e instanceof ApiError ? (e.message !== e.code ? e.message : t('Could not start a challenge.')) : t('Network error. Try again.'));
-    } finally {
-      setBusy(false);
-    }
+    setMsg(await startChallenge(game, mode, player.name, t));
+    setBusy(false);
   };
   return (
     <div className="panel cfriends" data-accent={game.accent}>

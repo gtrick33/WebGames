@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
+import { ResultLine } from '../../components/ResultLine';
 import { ARROW, makePuzzle, wordCells, type Puzzle, type Size } from './grid';
 import {
   backspace,
@@ -12,11 +13,13 @@ import {
   mysteryTiles,
   MYSTERY_BONUS,
   practicePuzzle,
+  resultLine,
   score,
   solved,
   toggleDir,
   typeLetter,
   WORD_HINT,
+  withHint,
   wordFor,
   wrongCells,
   type Cursor,
@@ -268,13 +271,13 @@ function Play(props: {
     const cells = wordCells(w);
     const i = cells.findIndex(([a, b], k) => entries[key(a, b)] !== w.word[k]);
     if (i < 0) return;
-    setTally((t) => ({ ...t, letterHints: t.letterHints + 1 }));
+    setTally((t) => withHint(t, cursor.word, 'letter'));
     after({ ...entries, [key(...cells[i]!)]: w.word[i]! });
   };
   const hintWord = (): void => {
     const e = { ...entries };
     wordCells(w).forEach(([a, b], k) => (e[key(a, b)] = w.word[k]!));
-    setTally((t) => ({ ...t, wordHints: t.wordHints + 1 }));
+    setTally((t) => withHint(t, cursor.word, 'word'));
     after(e);
   };
   const check = (): void => {
@@ -419,6 +422,7 @@ function Play(props: {
             {Math.floor(tally.seconds / 60)}m {tally.seconds % 60}s · {tally.letterHints + tally.wordHints} hints · {tally.checks} checks
             {p.mystery ? ` · mystery: ${tally.mystery ? p.mystery.word : 'skipped'}` : ''}
           </p>
+          <ResultLine line={resultLine(p, tally)} label={`${p.words.length - (tally.revealed?.length ?? 0)} of ${p.words.length} words solved without a reveal`} />
           <div className="xw-row">
             {daily ? (
               <button
@@ -426,7 +430,7 @@ function Play(props: {
                 onClick={() =>
                   void shareOrCopy({
                     title: 'Crosswire',
-                    text: `Crosswire #${dailyNumber(today)} ✏️\n${Math.floor(tally.seconds / 60)}m ${tally.seconds % 60}s · ${tally.letterHints + tally.wordHints === 0 ? 'no hints 🧠' : `${tally.letterHints + tally.wordHints} hints`}${tally.mystery ? ' · mystery ⭐' : ''}\n${score(tally)} points\n${window.location.origin}/games/crosswire`,
+                    text: `Crosswire #${dailyNumber(today)} ✏️\n${resultLine(p, tally)}\n${Math.floor(tally.seconds / 60)}m ${tally.seconds % 60}s · ${tally.letterHints + tally.wordHints === 0 ? 'no hints 🧠' : `${tally.letterHints + tally.wordHints} hints`}${tally.mystery ? ' · mystery ⭐' : ''}\n${score(tally)} points\n${window.location.origin}/games/crosswire`,
                   }).then((o) => setMsg(o === 'copied' ? 'Copied!' : ''))
                 }
               >

@@ -4,17 +4,19 @@ import { CARS, getCar, raceCoins, specFor, statBars, unlockText, type CarDef } f
 import { dailyTrack, RANDOM_ID, randomTrack, todayKey } from './daily';
 import { Engine, type UiKey } from './engine';
 import { drawCarPreview, fmtTime, THEMES } from './render';
-import { AI_PRESETS, RACE_LAPS, type RaceMode, type RaceSim, type Result } from './sim';
+import { AI_PRESETS, type RaceMode, type RaceSim, type Result } from './sim';
 import { sectorTimes } from './sectors';
 import { decodeReplay, encodeReplay } from './ghost';
 import { clearGhost, loadGhost, loadSave, saveGhost, writeSave, type Bests, type SaveData } from './storage';
-import { buildTrack, medalTimes, TRACK_TYPES, type Surface, type Track, type TrackDef } from './track';
+import { lapLine, raceMedal, raceMedalTimes, shareText, type Medal } from './medals';
+import { buildTrack, TRACK_TYPES, type Surface, type Track, type TrackDef } from './track';
 import { TRACKS } from './tracks';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
+import { shareOrCopy } from '../../platform/share';
+import { ResultLine } from '../../components/ResultLine';
 
 type Screen = 'menu' | 'garage' | 'race' | 'paused' | 'result';
-type Medal = 'gold' | 'silver' | 'bronze' | null;
 
 interface Finish {
   result: Result;
@@ -38,18 +40,6 @@ const SURFACE_LABEL: Record<Surface, string> = {
   snow: 'Snow',
   mud: 'Mud',
 };
-
-/** Medal times for a 3-lap race: three gold laps plus a little for the standing start. */
-function raceMedalTimes(par: number): { gold: number; silver: number; bronze: number } {
-  return medalTimes(par * RACE_LAPS + 900);
-}
-
-function raceMedal(par: number, race: number | null | undefined): Medal {
-  if (!race) return null;
-  const m = raceMedalTimes(par);
-  const ms = race * 1000;
-  return ms <= m.gold ? 'gold' : ms <= m.silver ? 'silver' : ms <= m.bronze ? 'bronze' : null;
-}
 
 /** Gold medals on the handmade tracks (some cars unlock with these). */
 function goldCount(save: SaveData): number {
@@ -517,7 +507,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
         <p className="mr-chal">⚔️ Challenge{rival ? ` · racing ${rival.name}’s ghost` : ' · you set the pace'}</p>
       )}
       {screen === 'result' && finish && (
-        <ResultCard finish={finish} bests={save.bests[finish.track.id] ?? {}} onAgain={startRace} onMenu={toMenu} touch={touch} challengeId={finish.track.id === CHALLENGE_ID ? challenge?.id : undefined} />
+        <ResultCard finish={finish} bests={save.bests[finish.track.id] ?? {}} onAgain={startRace} onMenu={toMenu} touch={touch} challengeId={finish.track.id === CHALLENGE_ID ? challenge?.id : undefined} day={finish.track.id === daily.id ? today : undefined} />
       )}
     </div>
   );
@@ -584,8 +574,14 @@ function Garage({ save, onPick, onBack, golds }: { save: SaveData; onPick: (c: C
   );
 }
 
-function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId }: { finish: Finish; bests: Bests; onAgain: () => void; onMenu: () => void; touch: boolean; challengeId?: string }) {
+function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId, day }: { finish: Finish; bests: Bests; onAgain: () => void; onMenu: () => void; touch: boolean; challengeId?: string; day?: string }) {
   const { result, track, medal, newRecord, coins, newCars } = finish;
+  const [shareMsg, setShareMsg] = useState('');
+  const share = async (): Promise<void> => {
+    const text = shareText({ result, par: track.par, trackName: track.name, day, time: fmtTime, url: `${window.location.origin}/games/mini-racer` });
+    const outcome = await shareOrCopy({ title: 'Mini Racer', text });
+    setShareMsg(outcome === 'copied' ? 'Copied!' : outcome === 'failed' ? 'Could not copy' : '');
+  };
   return (
     <div className="mr-sheet mr-result">
       <div className="mr-result-top">
@@ -601,6 +597,7 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId }: { fi
           <strong className="mono">{result.raceTime !== null ? fmtTime(result.raceTime) : 'Not counted'}</strong>
         </div>
       </div>
+      {result.laps.length > 0 && <ResultLine line={lapLine(track.par, result.laps)} label={`Lap medals: ${result.laps.map((l, i) => (l.valid ? `lap ${i + 1} ${fmtTime(l.time)}` : `lap ${i + 1} missed`)).join(', ')}`} />}
       {result.position !== null && (
         <ol className="mr-standings mono" aria-label="Finishing order">
           {result.standings.map((s, i) => (
@@ -646,6 +643,11 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId }: { fi
         ) : (
           <button className="mr-go" onClick={onAgain} autoFocus>
             Again{touch ? '' : ' (R)'}
+          </button>
+        )}
+        {!challengeId && result.laps.length > 0 && (
+          <button className="mr-btn" onClick={() => void share()}>
+            {shareMsg || 'Share'}
           </button>
         )}
         <button className="mr-btn" onClick={onMenu}>

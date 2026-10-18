@@ -177,13 +177,35 @@
   font-size: 13px;
   color: var(--fg-2);
 }
-.today-all {
+.today-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+.today-all,
+.today-share {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
   font-weight: 800;
   font-size: 14px;
+}
+.today-share {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+.today-share:hover {
+  text-decoration: underline;
+}
+.today-msg {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--fg-2);
 }
 .today-list {
   display: flex;
@@ -195,6 +217,8 @@
   scrollbar-width: none;
 }
 .today-chip {
+  /* Keeps the chip's screen-reader text inside the scrolling row (else the page pans sideways). */
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 6px;

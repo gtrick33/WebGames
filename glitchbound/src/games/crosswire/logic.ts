@@ -94,6 +94,27 @@ export interface Tally {
   letterHints: number;
   wordHints: number;
   mystery: boolean;
+  /** Words (indexes into the puzzle's words) that got a letter hint, and words revealed whole. */
+  hinted?: number[];
+  revealed?: number[];
+}
+
+/** Notes a hint on word `wi` in the tally. */
+export function withHint(t: Tally, wi: number, kind: 'letter' | 'word'): Tally {
+  if (kind === 'word') return { ...t, wordHints: t.wordHints + 1, revealed: [...new Set([...(t.revealed ?? []), wi])] };
+  return { ...t, letterHints: t.letterHints + 1, hinted: [...new Set([...(t.hinted ?? []), wi])] };
+}
+
+/**
+ * Spoiler-free result: a square per word, 8 to a row (🟩 solved alone, 🟨 with a letter hint, 🟥
+ * revealed), and ⭐ when the mystery word was solved too.
+ */
+export function resultLine(p: Pick<Puzzle, 'words' | 'mystery'>, t: Tally): string {
+  const squares = p.words.map((_, i) => (t.revealed?.includes(i) ? '🟥' : t.hinted?.includes(i) ? '🟨' : '🟩'));
+  const rows: string[] = [];
+  for (let i = 0; i < squares.length; i += 8) rows.push(squares.slice(i, i + 8).join(''));
+  if (p.mystery && t.mystery) rows[rows.length - 1] += ' ⭐';
+  return rows.join('\n');
 }
 
 export const LETTER_HINT = 30;

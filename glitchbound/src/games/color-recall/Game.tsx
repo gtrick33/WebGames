@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, formatCountdown, msUntilMidnight, parseDayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
+import { ResultLine } from '../../components/ResultLine';
 import { feedback, hexToRgb, hsbToRgb, inkOn, MAX_POINTS, rgbToHex, rgbToHsb, VERDICT_TEXT, verdictFor, type Hsb, type Rgb } from './color';
 import { Glyph } from './Glyph';
 import {
@@ -15,6 +16,7 @@ import {
   practiceRounds,
   reduce,
   rng,
+  resultLine,
   resultTarget,
   ROUNDS,
   shareText,
@@ -673,6 +675,7 @@ function Summary({ game, today, save, onMenu, onAgain, challengeId }: { game: Ga
         {Math.round((score / (game.results.length * MAX_POINTS)) * 100)}% accuracy · best color {fmt(best)}
         {game.mode === 'daily' && streak > 0 ? ` · 🔥 ${streak}` : ''}
       </p>
+      <ResultLine line={resultLine(game.results)} label={`${game.results.filter((r) => verdictFor(r.points) === 'perfect').length} perfect of ${game.results.length} colours`} />
       <ul className="cr-summary-list">
         {game.results.map((r, i) => {
           const t = resultTarget(r);

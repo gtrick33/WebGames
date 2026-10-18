@@ -184,6 +184,18 @@ export const MEDALS: [Exclude<Medal, null>, number][] = [
   ['bronze', 10],
 ];
 export const medalFor = (score: number): Medal => MEDALS.find(([, n]) => score >= n)?.[0] ?? null;
+export const MEDAL_ICON: Record<Exclude<Medal, null>, string> = { bronze: '🥉', silver: '🥈', gold: '🥇', platinum: '💎' };
+
+/**
+ * Spoiler-free flight bar: a 🟩 per 10 gaps (up to platinum's 100), 💥 where the bird hit, then the
+ * medal and the golden feathers. e.g. "🟩🟩🟩🟩💥⬛⬛⬛⬛⬛ 🥈 🪶2"
+ */
+export function flightLine(pillars: number, feathers: number): string {
+  const full = Math.min(10, Math.floor(pillars / 10));
+  const bar = '🟩'.repeat(full) + (full < 10 ? `💥${'⬛'.repeat(9 - full)}` : '');
+  const medal = medalFor(pillars);
+  return `${bar}${medal ? ` ${MEDAL_ICON[medal]}` : ''}${feathers > 0 ? ` 🪶${feathers}` : ''}`;
+}
 
 /** Biome by score: the world changes every 15 points. */
 export const BIOMES = ['meadow', 'sunset', 'night', 'space'] as const;
