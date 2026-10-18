@@ -4,6 +4,7 @@ import { useLiveCatalog } from '../platform/liveCatalog';
 import { AdSlot } from '../components/AdSlot';
 import { Arcade } from '../components/Arcade';
 import { DailyCard } from '../components/DailyCard';
+import { FreeBanner } from '../components/FreeBanner';
 import { Hero } from '../components/Hero';
 import { PartyBanner } from '../components/PartyBanner';
 import { NotifyForm } from '../components/Notify';
@@ -23,6 +24,7 @@ export function Home() {
   return (
     <>
       <Hero />
+      <FreeBanner />
       <Arcade />
       <YourArcade />
       <PartyBanner />

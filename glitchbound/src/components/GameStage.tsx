@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode, type RefObject } from 'react';
+import { t, useT } from '../i18n';
 import { GAME_MODULES } from '../catalog/modules';
 import type { GameEntry } from '../catalog/types';
 import { parseGameMessage, type GameEvent, type GameModuleProps } from '../platform/contract';
@@ -59,6 +60,7 @@ interface Props {
  * stays fast. Each game is isolated: an iframe for embedded games, an error boundary for modules.
  */
 export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef, playerName, onPlayClick, frameRef, overlay, pauseSignal = 0, challenge }: Props) {
+  useT();
   const [phase, setPhaseState] = useState<Phase>(() => (!autoStart ? 'poster' : game.runtime.kind === 'embed' ? 'loading' : 'ready'));
   const [attempt, setAttempt] = useState(0);
   const ownFrame = useRef<HTMLIFrameElement>(null);
@@ -207,9 +209,9 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
             <span className="stage-play-disc" aria-hidden="true">
               <Icon name="play" size={40} />
             </span>
-            <span className="stage-play-text">Play {game.title}</span>
+            <span className="stage-play-text">{t('Play {game}', { game: game.title })}</span>
           </button>
-          {game.runtime.kind === 'embed' && !game.runtime.url.startsWith('/') && <p className="stage-note mono">Loads from {new URL(game.runtime.url).host}</p>}
+          {game.runtime.kind === 'embed' && !game.runtime.url.startsWith('/') && <p className="stage-note mono">{t('Loads from {host}', { host: new URL(game.runtime.url).host })}</p>}
         </div>
       )}
 
@@ -218,16 +220,16 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
 
       {phase === 'error' && (
         <div className="stage-error" role="alert">
-          <p className="stage-error-code mono">Signal lost</p>
-          <h2>{game.title} didn&rsquo;t load.</h2>
-          <p>Check your connection and try again. The rest of GlitchBound still works.</p>
+          <p className="stage-error-code mono">{t('Signal lost')}</p>
+          <h2>{t('{game} didn’t load.', { game: game.title })}</h2>
+          <p>{t('Check your connection and try again. The rest of GlitchBound still works.')}</p>
           <div className="stage-error-actions">
             <button className="btn btn-lime" onClick={retry}>
-              <Icon name="restart" /> Try again
+              <Icon name="restart" /> {t('Try again')}
             </button>
             {game.homepage && (
               <a className="btn" href={game.homepage} target="_blank" rel="noopener">
-                Open on its own site <Icon name="external" />
+                {t('Open on its own site')} <Icon name="external" />
               </a>
             )}
           </div>
@@ -245,7 +247,7 @@ function StageLoading({ title }: { title: string }) {
         <i />
         <i />
       </span>
-      <span className="mono">Loading {title}</span>
+      <span className="mono">{t('Loading {game}', { game: title })}</span>
     </div>
   );
 }

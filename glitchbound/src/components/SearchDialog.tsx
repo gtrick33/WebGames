@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { t as tr, tGame, useT } from '../i18n';
 import { queryGames } from '../catalog/catalog';
 import { CATEGORIES } from '../catalog/types';
 import { track } from '../platform/analytics';
@@ -8,6 +9,7 @@ import './SearchDialog.css';
 
 /** Command-palette style search over the registry. Opens with "/" or the header button. */
 export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  useT();
   const ref = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState('');
@@ -69,7 +71,7 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
     <dialog
       ref={ref}
       className="search-dialog"
-      aria-label="Search games"
+      aria-label={tr('Search games')}
       onClose={close}
       onCancel={close}
       onClick={(e) => {
@@ -83,8 +85,8 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
             ref={inputRef}
             type="search"
             value={q}
-            placeholder="Search by name, category or vibe"
-            aria-label="Search games"
+            placeholder={tr('Search by name, category or vibe')}
+            aria-label={tr('Search games')}
             role="combobox"
             aria-expanded="true"
             aria-controls={listId}
@@ -97,11 +99,11 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
             }}
             onKeyDown={onKeyDown}
           />
-          <button className="btn btn-icon btn-sm" onClick={close} aria-label="Close search">
+          <button className="btn btn-icon btn-sm" onClick={close} aria-label={tr('Close search')}>
             <Icon name="close" />
           </button>
         </div>
-        <ul id={listId} role="listbox" className="search-results" aria-label="Results">
+        <ul id={listId} role="listbox" className="search-results" aria-label={tr('Results')}>
           {results.map((g, i) => (
             <li
               key={g.slug}
@@ -116,20 +118,20 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
               <img src={g.art.tile} alt="" width={56} height={56} style={{ background: g.art.bg }} />
               <span className="search-hit-text">
                 <strong>{g.title}</strong>
-                <span>{g.tagline}</span>
+                <span>{tGame(g.tagline)}</span>
               </span>
-              <span className="chip">{CATEGORIES[g.categories[0]].label}</span>
+              <span className="chip">{tr(CATEGORIES[g.categories[0]].label)}</span>
             </li>
           ))}
         </ul>
         {results.length === 0 && (
           <p className="search-empty">
-            No game matches <strong>“{q.trim()}”</strong>. Try a category like <em>racing</em> or <em>arcade</em>.
+            {tr('No game matches “{q}”. Try a category like racing or arcade.', { q: q.trim() })}
           </p>
         )}
         <p className="search-foot mono" aria-hidden="true">
           <span className="kbd">↑</span>
-          <span className="kbd">↓</span> to move · <span className="kbd">Enter</span> to play · <span className="kbd">Esc</span> to close
+          <span className="kbd">↓</span> {tr('to move')} · <span className="kbd">Enter</span> {tr('to play')} · <span className="kbd">Esc</span> {tr('to close')}
         </p>
       </div>
     </dialog>

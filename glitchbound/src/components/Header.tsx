@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useT } from '../i18n';
+import { LangPicker } from './LangPicker';
 import { account, useAccount } from '../platform/account';
 import { nextTheme, setTheme, useTheme } from '../platform/theme';
 import { dayKey } from '../platform/dates';
@@ -22,11 +24,12 @@ const TABS: { href: string; label: string; short?: string; icon: IconName }[] = 
 
 /** The daily streak, always in view (like a flame you don't want to go out). Pulses when today is not done yet. */
 function StreakChip() {
+  const t = useT();
   const save = useSave();
   const today = dayKey(useNow(60_000));
   const { streak, atRisk } = streakState(doneDays(save), today);
   if (streak === 0) return null;
-  const label = atRisk ? `${streak}-day streak. Finish a daily today to keep it` : `${streak}-day streak. Today's daily is done`;
+  const label = atRisk ? t('{n}-day streak. Finish a daily today to keep it', { n: streak }) : t("{n}-day streak. Today's daily is done", { n: streak });
   return (
     <Link href="/daily" className={`streak-chip${atRisk ? ' is-risk' : ''}`} aria-label={label} title={label}>
       <Icon name="flame" size={18} />
@@ -37,8 +40,9 @@ function StreakChip() {
 
 /** One button: follows the system until tapped, then flips between the neon night and toy-box day looks. */
 function ThemeToggle() {
+  const t = useT();
   const [choice, dark] = useTheme();
-  const label = choice === 'auto' ? `Theme: automatic (${dark ? 'night' : 'day'}). Switch to ${dark ? 'day' : 'night'}` : `Theme: ${dark ? 'night' : 'day'}. Switch back to automatic`;
+  const label = choice === 'auto' ? (dark ? t('Theme: automatic (night). Switch to day') : t('Theme: automatic (day). Switch to night')) : dark ? t('Theme: night. Switch back to automatic') : t('Theme: day. Switch back to automatic');
   return (
     <button className="theme-toggle" onClick={() => setTheme(nextTheme(choice))} aria-label={label} title={label}>
       <Icon name={dark ? 'moon' : 'sun'} size={19} />
@@ -48,6 +52,7 @@ function ThemeToggle() {
 }
 
 function AccountMenu() {
+  const t = useT();
   const { me, status } = useAccount();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -71,7 +76,7 @@ function AccountMenu() {
   if (!me) {
     return (
       <button className="btn btn-magenta btn-sm signin-btn" onClick={() => openSignIn()} disabled={status === 'loading'}>
-        <Icon name="user" size={18} /> <span className="hide-xs">Sign in</span>
+        <Icon name="user" size={18} /> <span className="hide-xs">{t('Sign in')}</span>
       </button>
     );
   }
@@ -79,7 +84,7 @@ function AccountMenu() {
   const ready = me.quests.filter((q) => q.done && !q.claimed).length;
   return (
     <div className="account" ref={ref}>
-      <button className="account-btn" aria-expanded={open} aria-controls="account-menu" onClick={() => setOpen((v) => !v)} aria-label={`Account menu for ${me.nickname}`}>
+      <button className="account-btn" aria-expanded={open} aria-controls="account-menu" onClick={() => setOpen((v) => !v)} aria-label={t('Account menu for {name}', { name: me.nickname })}>
         <Avatar name={me.nickname} src={me.avatar} size={36} />
         <span className="account-lvl mono">LV {me.level}</span>
         {ready > 0 && <span className="account-dot" />}
@@ -90,7 +95,7 @@ function AccountMenu() {
           <div>
             <strong>{me.nickname}</strong>
             <span className="mono">
-              Level {me.level} · {me.xp} XP
+              {t('Level {n}', { n: me.level })} · {me.xp} XP
             </span>
           </div>
         </div>
@@ -98,17 +103,17 @@ function AccountMenu() {
           <i style={{ width: `${pct}%` }} />
         </div>
         <Link href="/me" className="account-item" onClick={() => setOpen(false)}>
-          <Icon name="user" size={18} /> Profile &amp; quests {ready > 0 && <span className="pill-count">{ready}</span>}
+          <Icon name="user" size={18} /> {t('Profile & quests')} {ready > 0 && <span className="pill-count">{ready}</span>}
         </Link>
         <Link href="/leaderboards" className="account-item" onClick={() => setOpen(false)}>
-          <Icon name="crown" size={18} /> Leaderboards
+          <Icon name="crown" size={18} /> {t('Leaderboards')}
         </Link>
         <Link href="/me/bugs" className="account-item" onClick={() => setOpen(false)}>
-          <Icon name="bug" size={18} /> Report a bug
+          <Icon name="bug" size={18} /> {t('Report a bug')}
         </Link>
         {me.isAdmin && (
           <Link href="/admin" className="account-item" onClick={() => setOpen(false)}>
-            <Icon name="chart" size={18} /> Admin dashboard
+            <Icon name="chart" size={18} /> {t('Admin dashboard')}
           </Link>
         )}
         <button
@@ -118,7 +123,7 @@ function AccountMenu() {
             void account.signOut();
           }}
         >
-          <Icon name="logout" size={18} /> Sign out
+          <Icon name="logout" size={18} /> {t('Sign out')}
         </button>
       </div>
     </div>
@@ -126,6 +131,7 @@ function AccountMenu() {
 }
 
 export function Header() {
+  const t = useT();
   const { pathname } = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -156,40 +162,41 @@ export function Header() {
     <>
       <header className={`site-header${scrolled ? ' is-scrolled' : ''}`}>
         <div className="wrap header-row">
-          <Link href="/" className="brand" aria-label="GlitchBound home">
+          <Link href="/" className="brand" aria-label={t('GlitchBound home')}>
             <LogoMark size={38} />
             <Wordmark />
           </Link>
 
-          <nav className="tabs" aria-label="Main">
-            {TABS.map((t) => (
-              <Link key={t.href} href={t.href} className="tab" aria-current={active(t.href) ? 'page' : undefined}>
-                <Icon name={t.icon} size={18} />
-                <span>{t.label}</span>
+          <nav className="tabs" aria-label={t('Main')}>
+            {TABS.map((tab) => (
+              <Link key={tab.href} href={tab.href} className="tab" aria-current={active(tab.href) ? 'page' : undefined}>
+                <Icon name={tab.icon} size={18} />
+                <span>{t(tab.label)}</span>
               </Link>
             ))}
           </nav>
 
           <div className="header-actions">
-            <button className="search-trigger" onClick={() => setSearchOpen(true)} aria-label="Search games">
+            <button className="search-trigger" onClick={() => setSearchOpen(true)} aria-label={t('Search games')}>
               <Icon name="search" size={19} />
-              <span className="search-trigger-text">Search</span>
+              <span className="search-trigger-text">{t('Search')}</span>
               <span className="kbd" aria-hidden="true">
                 /
               </span>
             </button>
             <StreakChip />
+            <LangPicker />
             <ThemeToggle />
             <AccountMenu />
           </div>
         </div>
       </header>
       {/* Bottom tab bar on phones: thumb-reachable, always visible. */}
-      <nav className="bottom-tabs" aria-label="Main (mobile)">
-        {TABS.map((t) => (
-          <Link key={t.href} href={t.href} className="bottom-tab" aria-current={active(t.href) ? 'page' : undefined} aria-label={t.label}>
-            <Icon name={t.icon} size={22} />
-            <span>{t.short ?? t.label}</span>
+      <nav className="bottom-tabs" aria-label={t('Main (mobile)')}>
+        {TABS.map((tab) => (
+          <Link key={tab.href} href={tab.href} className="bottom-tab" aria-current={active(tab.href) ? 'page' : undefined} aria-label={t(tab.label)}>
+            <Icon name={tab.icon} size={22} />
+            <span>{t(tab.short ?? tab.label)}</span>
           </Link>
         ))}
       </nav>

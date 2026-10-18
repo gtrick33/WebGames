@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { t, useT } from '../i18n';
 import type { GameEntry } from '../catalog/types';
 import type { HallRow, LeaderRow } from '../platform/apiTypes';
 import { api, useAccount } from '../platform/account';
@@ -58,7 +59,7 @@ export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: 
           <Medal rank={r.rank} />
           <span className="board-name">
             <span className="board-nick">{r.nickname}</span>
-            {r.you && <span className="board-you mono">you</span>}
+            {r.you && <span className="board-you mono">{t('you')}</span>}
           </span>
           {!compact && <span className="board-lvl mono">LV {r.level}</span>}
           <span className="board-score mono">
@@ -71,7 +72,7 @@ export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: 
         <li className="board-row is-you board-mine">
           <Medal rank={mine.rank} />
           <span className="board-name">
-            <span className="board-nick">{mine.nickname}</span> <span className="board-you mono">you</span>
+            <span className="board-nick">{mine.nickname}</span> <span className="board-you mono">{t('you')}</span>
           </span>
           {!compact && <span className="board-lvl mono">LV {mine.level}</span>}
           <span className="board-score mono">{fmt(mine.score)}</span>
@@ -106,7 +107,7 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
               <td>
                 <span className="board-name">
                   <span className="board-nick">{r.nickname}</span> <span className="board-lvl mono">LV {r.level}</span>
-                  {r.you && <span className="board-you mono">you</span>}
+                  {r.you && <span className="board-you mono">{t('you')}</span>}
                 </span>
               </td>
               <td className="mono hall-crowns hall-stat" data-label="Crowns">{r.crowns}</td>
@@ -122,14 +123,15 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
 }
 
 export function BoardEmpty({ text }: { text: string }) {
+  const t = useT();
   const { me } = useAccount();
   return (
     <div className="board-empty">
       <Icon name="crown" size={28} />
-      <p>{text}</p>
+      <p>{t(text)}</p>
       {!me && (
-        <button className="btn btn-magenta btn-sm" onClick={() => openSignIn('Sign in to claim a spot on the leaderboard.')}>
-          Sign in to compete
+        <button className="btn btn-magenta btn-sm" onClick={() => openSignIn(t('Sign in to claim a spot on the leaderboard.'))}>
+          {t('Sign in to compete')}
         </button>
       )}
     </div>
@@ -138,14 +140,15 @@ export function BoardEmpty({ text }: { text: string }) {
 
 /** Top 5 for a game page side panel. */
 export function MiniLeaderboard({ game, refreshKey }: { game: GameEntry; refreshKey: number }) {
+  const t = useT();
   const board = useBoard(game.slug, 'all', refreshKey);
   return (
     <section className="panel side-block mini-board" aria-labelledby="mini-board-title">
       <h2 id="mini-board-title" className="side-title">
-        <Icon name="crown" /> Leaderboard
+        <Icon name="crown" /> {t('Leaderboard')}
       </h2>
-      {board.status === 'loading' && <p className="side-muted">Loading…</p>}
-      {board.status === 'error' && <p className="side-muted">The leaderboard is offline right now. Your game still works.</p>}
+      {board.status === 'loading' && <p className="side-muted">{t('Loading…')}</p>}
+      {board.status === 'error' && <p className="side-muted">{t('The leaderboard is offline right now. Your game still works.')}</p>}
       {board.status === 'ok' &&
         (board.rows.length ? (
           <LeaderTable rows={board.rows.slice(0, 5)} mine={board.rows.slice(0, 5).some((r) => r.you) ? null : (board.rows.find((r) => r.you) ?? board.mine)} compact />
@@ -153,7 +156,7 @@ export function MiniLeaderboard({ game, refreshKey }: { game: GameEntry; refresh
           <BoardEmpty text="No ranked scores yet. The first one takes the crown." />
         ))}
       <Link href={`/leaderboards?game=${game.slug}`} className="quests-link">
-        Full leaderboard <Icon name="arrowRight" size={16} />
+        {t('Full leaderboard')} <Icon name="arrowRight" size={16} />
       </Link>
     </section>
   );

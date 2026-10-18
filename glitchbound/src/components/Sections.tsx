@@ -1,4 +1,5 @@
 import { isNewLive, useLiveCatalog } from '../platform/liveCatalog';
+import { t, tGame, useLang, useT } from '../i18n';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
 import { fmt } from '../platform/daily';
 import { recentSlugs } from '../platform/save';
@@ -10,37 +11,39 @@ import './Sections.css';
 
 /** Editorial spread for the most recent release. */
 export function LatestRelease({ game }: { game: GameEntry }) {
+  const t = useT();
+  const lang = useLang();
   const fresh = isNewLive(useLiveCatalog(), game);
-  const released = new Date(`${game.released}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const released = new Date(`${game.released}T12:00:00Z`).toLocaleDateString(lang, { month: 'long', day: 'numeric', year: 'numeric' });
   return (
     <section className="section latest" aria-labelledby="latest-title" data-accent={game.accent}>
       <div className="wrap latest-grid">
         <Link href={`/games/${game.slug}`} className="latest-art" tabIndex={-1} aria-hidden="true">
           <img src={game.art.wide} alt="" loading="lazy" decoding="async" width={1000} height={400} style={{ background: game.art.bg }} />
           <img src={game.art.tile} alt="" loading="lazy" decoding="async" className="latest-art-tile" width={512} height={512} />
-          {fresh && <span className="sticker latest-sticker">New release</span>}
+          {fresh && <span className="sticker latest-sticker">{t('New release')}</span>}
         </Link>
         <div className="latest-copy">
           <p className="eyebrow">
-            Latest release · <time dateTime={game.released}>{released}</time>
+            {t('Latest release')} · <time dateTime={game.released}>{released}</time>
           </p>
           <h2 id="latest-title" className="latest-title">
             {game.title}
           </h2>
-          <p className="latest-desc">{game.description}</p>
+          <p className="latest-desc">{tGame(game.description)}</p>
           {game.highlights && (
             <ul className="latest-list">
               {game.highlights.map((h) => (
-                <li key={h}>{h}</li>
+                <li key={h}>{tGame(h)}</li>
               ))}
             </ul>
           )}
           <div className="latest-ctas">
             <Link href={`/games/${game.slug}`} className="btn btn-primary btn-lg">
-              <Icon name="play" /> Play now
+              <Icon name="play" /> {t('Play now')}
             </Link>
             <span className="chip" data-accent="yellow">
-              {CATEGORIES[game.categories[0]].label}
+              {t(CATEGORIES[game.categories[0]].label)}
             </span>
           </div>
         </div>
@@ -51,6 +54,7 @@ export function LatestRelease({ game }: { game: GameEntry }) {
 
 /** "Your arcade": only rendered when this device has actually played something. */
 export function YourArcade() {
+  const t = useT();
   const save = useSave();
   const { games } = useLiveCatalog();
   const recent = recentSlugs(save)
@@ -63,8 +67,8 @@ export function YourArcade() {
       <div className="wrap">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Saved on this device</p>
-            <h2 id="yours-title">Continue playing</h2>
+            <p className="eyebrow">{t('Saved on this device')}</p>
+            <h2 id="yours-title">{t('Continue playing')}</h2>
           </div>
         </div>
         <div className="yours-row">
@@ -76,9 +80,9 @@ export function YourArcade() {
                 <span className="yours-text">
                   <strong>{g.title}</strong>
                   <span className="mono">
-                    Best {fmt(rec.best.score ?? 0)} · {rec.plays} {rec.plays === 1 ? 'round' : 'rounds'}
+                    {t('Best {n}', { n: fmt(rec.best.score ?? 0) })} · {rec.plays === 1 ? t('1 round') : t('{n} rounds', { n: rec.plays })}
                   </span>
-                  <span className="mono yours-when">Last played {timeAgo(rec.last)}</span>
+                  <span className="mono yours-when">{t('Last played {when}', { when: timeAgo(rec.last) })}</span>
                 </span>
                 <span className="yours-go" aria-hidden="true">
                   <Icon name="play" size={22} />
@@ -94,15 +98,16 @@ export function YourArcade() {
 
 function timeAgo(ms: number): string {
   const s = Math.max(0, (Date.now() - ms) / 1000);
-  if (s < 90) return 'just now';
-  if (s < 3600) return `${Math.round(s / 60)} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  if (s < 90) return t('just now');
+  if (s < 3600) return t('{n} min ago', { n: Math.round(s / 60) });
+  if (s < 86400) return t('{n} h ago', { n: Math.round(s / 3600) });
   const d = Math.round(s / 86400);
-  return d === 1 ? 'yesterday' : `${d} days ago`;
+  return d === 1 ? t('yesterday') : t('{n} days ago', { n: d });
 }
 
 /** An energetic ticker between sections. Decorative; the words are repeated for the loop. */
 export function Marquee({ words }: { words: string[] }) {
+  useT();
   const items = [...words, ...words];
   return (
     <div className="marquee" aria-hidden="true">
@@ -111,7 +116,7 @@ export function Marquee({ words }: { words: string[] }) {
           <span key={k} className="marquee-group">
             {items.map((w, i) => (
               <span key={i} className="marquee-item">
-                {w}
+                {t(w)}
                 <Star className="marquee-star" fill={['#ffd12e', '#c4f034', '#ff5a6c', '#12c6b3'][i % 4]} />
               </span>
             ))}

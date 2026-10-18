@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { tGame, useT } from '../i18n';
 import { isNewLive, useLiveCatalog } from '../platform/liveCatalog';
 import type { TileSize } from '../catalog/settings';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
@@ -14,6 +15,7 @@ import './GameTile.css';
  */
 export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEntry; size?: TileSize; index?: number; best?: number }) {
   const live = useLiveCatalog();
+  const t = useT();
   const style = { '--i': index, viewTransitionName: `tile-${game.slug}` } as CSSProperties;
   const preview = hasPreview(game.slug);
   // Wide tiles with a preview split into artwork + live screen, so neither covers the other.
@@ -35,7 +37,7 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
         {preview && <GamePreview slug={game.slug} className="tile-preview" />}
         {preview && (
           <span className="tile-live mono" aria-hidden="true">
-            <i /> Live preview
+            <i /> {t('Live preview')}
           </span>
         )}
         <span className="tile-scan" aria-hidden="true" />
@@ -44,7 +46,7 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
         <div className="tile-meta">
           {game.categories.map((c) => (
             <span key={c} className="chip">
-              {CATEGORIES[c].label}
+              {t(CATEGORIES[c].label)}
             </span>
           ))}
         </div>
@@ -53,11 +55,11 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
             {game.title}
           </Link>
         </h3>
-        <p className="tile-tagline">{game.tagline}</p>
+        <p className="tile-tagline">{tGame(game.tagline)}</p>
         <div className="tile-foot">
-          {best !== undefined ? <span className="mono tile-best">Your best {best.toLocaleString('en-US')}</span> : <span />}
+          {best !== undefined ? <span className="mono tile-best">{t('Your best {n}', { n: best.toLocaleString('en-US') })}</span> : <span />}
           <span className="tile-play" aria-hidden="true">
-            <Icon name="play" size={16} /> Play
+            <Icon name="play" size={16} /> {t('Play')}
           </span>
         </div>
       </div>
@@ -69,7 +71,7 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
       ) : (
         isNewLive(live, game) && (
           <span className="sticker tile-sticker" data-tone="yellow">
-            New
+            {t('New')}
           </span>
         )
       )}

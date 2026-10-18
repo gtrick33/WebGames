@@ -15,6 +15,8 @@ export interface DailyChallenge {
   unit: string;
   /** e.g. "Drive 1,800 m in a single run". */
   label: string;
+  /** The label before the target was filled in ("Drive {n} m in a single run"), for translations. */
+  template: string;
 }
 
 export const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
@@ -61,6 +63,7 @@ export function challengeForDay(day: string, games: GameEntry[], rules: DailyRul
     target,
     unit,
     label: tpl.label.replace('{n}', fmt(target)),
+    template: tpl.label,
   };
 }
 

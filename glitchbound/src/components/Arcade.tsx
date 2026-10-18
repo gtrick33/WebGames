@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useT } from '../i18n';
 import { flushSync } from 'react-dom';
 import { categoryCounts, isCategory, queryGames, SORTS, type SortId } from '../catalog/catalog';
 import { orderByLayout, tileSizeFor } from '../catalog/settings';
@@ -22,6 +23,7 @@ function withTransition(update: () => void): void {
 
 /** The library: search, category filter and sort. State lives in the URL so filtered views are shareable. */
 export function Arcade() {
+  const t = useT();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const urlCat = params.get('category');
@@ -101,43 +103,43 @@ export function Arcade() {
         <div className="section-head">
           <div>
             <p className="eyebrow">
-              <Icon name="bolt" size={16} /> Explore
+              <Icon name="bolt" size={16} /> {t('Explore')}
             </p>
-            <h2 id="arcade-title">The arcade</h2>
+            <h2 id="arcade-title">{t('The arcade')}</h2>
           </div>
           <p>
-            Every game is original and plays right here in the browser. {games.length === 1 ? 'One game so far, with more on the way.' : `${games.length} games and counting.`}
+            {t('Every game is original and plays right here in the browser.')} {games.length === 1 ? t('One game so far, with more on the way.') : t('{n} games and counting.', { n: games.length })}
           </p>
         </div>
 
         <div className="arcade-controls">
           <label className="arcade-search">
             <Icon name="search" size={20} />
-            <span className="sr-only">Search the arcade</span>
-            <input type="search" value={q} placeholder="Search games, e.g. racing" onChange={(e) => setQ(e.target.value)} autoComplete="off" />
+            <span className="sr-only">{t('Search the arcade')}</span>
+            <input type="search" value={q} placeholder={t('Search games, e.g. racing')} onChange={(e) => setQ(e.target.value)} autoComplete="off" />
           </label>
 
-          <div className="arcade-cats" role="group" aria-label="Filter by category">
+          <div className="arcade-cats" role="group" aria-label={t('Filter by category')}>
             <button className={`cat-btn${category === null && !favOnly ? ' is-on' : ''}`} aria-pressed={category === null && !favOnly} onClick={() => pickCategory(null)}>
-              All <span className="mono">{games.length}</span>
+              {t('All')} <span className="mono">{games.length}</span>
             </button>
             {cats.map((c) => (
               <button key={c.id} className={`cat-btn${category === c.id ? ' is-on' : ''}`} aria-pressed={category === c.id} onClick={() => pickCategory(c.id)}>
-                {c.label} <span className="mono">{c.count}</span>
+                {t(c.label)} <span className="mono">{c.count}</span>
               </button>
             ))}
             <button className={`cat-btn cat-fav${favOnly ? ' is-on' : ''}`} aria-pressed={favOnly} onClick={pickFavorites}>
-              <Icon name="heart" size={16} /> Favorites <span className="mono">{favorites.length}</span>
+              <Icon name="heart" size={16} /> {t('Favorites')} <span className="mono">{favorites.length}</span>
             </button>
           </div>
 
           <label className="arcade-sort">
-            <span className="mono">Sort</span>
+            <span className="mono">{t('Sort')}</span>
             <select value={sort} onChange={(e) => withTransition(() => setParam('sort', e.target.value === defaultSort ? null : e.target.value))}>
-              {featuredOn && <option value="featured">Featured</option>}
+              {featuredOn && <option value="featured">{t('Featured')}</option>}
               {(Object.keys(SORTS) as SortId[]).map((s) => (
                 <option key={s} value={s}>
-                  {SORTS[s]}
+                  {t(SORTS[s])}
                 </option>
               ))}
             </select>
@@ -145,7 +147,7 @@ export function Arcade() {
         </div>
 
         <p className="sr-only" role="status" aria-live="polite">
-          {results.length === 1 ? '1 game' : `${results.length} games`} shown
+          {results.length === 1 ? t('1 game shown') : t('{n} games shown', { n: results.length })}
         </p>
 
         {results.length > 0 ? (
@@ -160,8 +162,8 @@ export function Arcade() {
                   <Dot className="ws ws-2" fill="#12c6b3" />
                   <Ring className="ws ws-3" fill="#ff3fd2" />
                 </div>
-                <p className="eyebrow">In the workshop</p>
-                <p className="workshop-text">The next games are being built. New releases land here first, and the daily challenge grows with them.</p>
+                <p className="eyebrow">{t('In the workshop')}</p>
+                <p className="workshop-text">{t('The next games are being built. New releases land here first, and the daily challenge grows with them.')}</p>
               </aside>
             )}
           </div>
@@ -171,19 +173,16 @@ export function Arcade() {
               <Tri className="es es-1" fill="#ff5a6c" />
               <Dot className="es es-2" fill="#ffd12e" />
             </div>
-            <h3>{favOnly && !q.trim() ? 'No favorites yet.' : 'Nothing here. Yet.'}</h3>
+            <h3>{favOnly && !q.trim() ? t('No favorites yet.') : t('Nothing here. Yet.')}</h3>
             <p>
-              {favOnly && !q.trim() ? (
-                <>Tap the heart on any game to keep it here.</>
-              ) : (
-                <>
-                  No game matches {q.trim() ? <strong>“{q.trim()}”</strong> : 'that filter'}
-                  {category ? ' in this category' : ''}. Try another word or browse everything.
-                </>
-              )}
+              {favOnly && !q.trim()
+                ? t('Tap the heart on any game to keep it here.')
+                : q.trim()
+                  ? t('No game matches “{q}”. Try another word or browse everything.', { q: q.trim() })
+                  : t('No game matches that filter. Try another or browse everything.')}
             </p>
             <button className="btn btn-primary" onClick={clear}>
-              Show all games
+              {t('Show all games')}
             </button>
           </div>
         )}

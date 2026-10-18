@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t as tr, useT } from '../i18n';
 import type { QuestView } from '../platform/apiTypes';
 import { account, useAccount } from '../platform/account';
 import { formatCountdown, msUntilMidnight } from '../platform/dates';
@@ -42,6 +43,7 @@ function QuestCard({ q, onClaim, busy }: { q: QuestView; onClaim: () => void; bu
 
 /** Member daily quests with claimable XP. Guests see what they would get. */
 export function QuestBoard({ compact = false }: { compact?: boolean }) {
+  useT();
   const { me, status } = useAccount();
   const now = useNow(1000);
   const [busy, setBusy] = useState(false);
@@ -52,11 +54,11 @@ export function QuestBoard({ compact = false }: { compact?: boolean }) {
     return (
       <section className="quests quests-guest panel" aria-labelledby="quests-title">
         <div>
-          <p className="eyebrow">Members only · free</p>
+          <p className="eyebrow">{tr('Members only · free')}</p>
           <h2 id="quests-title" className="quests-title">
-            Daily quests
+            {tr('Daily quests')}
           </h2>
-          <p className="quests-sub">Sign in to get three new quests every day. Earn XP, level up, collect badges and get your nickname onto the leaderboards.</p>
+          <p className="quests-sub">{tr('Sign in to get three new quests every day. Earn XP, level up, collect badges and get your nickname onto the leaderboards.')}</p>
         </div>
         <ul className="quests-ghost" aria-hidden="true">
           {['Play 3 rounds', 'Beat one of your personal bests', 'Clear today’s Daily Challenge'].map((l, i) => (
@@ -65,7 +67,7 @@ export function QuestBoard({ compact = false }: { compact?: boolean }) {
                 <Icon name={(['play', 'trophy', 'calendar'] as const)[i]!} size={22} />
               </span>
               <div className="quest-main">
-                <p className="quest-label">{l}</p>
+                <p className="quest-label">{tr(l)}</p>
                 <div className="quest-bar">
                   <i style={{ width: `${[60, 0, 30][i]}%` }} />
                 </div>
@@ -74,8 +76,8 @@ export function QuestBoard({ compact = false }: { compact?: boolean }) {
             </li>
           ))}
         </ul>
-        <button className="btn btn-magenta btn-lg" onClick={() => openSignIn('Sign in to unlock daily quests.')} disabled={status === 'loading'}>
-          <Icon name="star" /> Unlock quests
+        <button className="btn btn-magenta btn-lg" onClick={() => openSignIn(tr('Sign in to unlock daily quests.'))} disabled={status === 'loading'}>
+          <Icon name="star" /> {tr('Unlock quests')}
         </button>
       </section>
     );
@@ -102,9 +104,9 @@ export function QuestBoard({ compact = false }: { compact?: boolean }) {
       {burst > 0 && <Burst key={burst} />}
       <div className="quests-head">
         <div>
-          <p className="eyebrow">Your quests · {doneCount}/{me.quests.length} claimed</p>
+          <p className="eyebrow">{tr('Your quests · {a}/{b} claimed', { a: doneCount, b: me.quests.length })}</p>
           <h2 id="quests-title" className="quests-title">
-            Daily quests
+            {tr('Daily quests')}
           </h2>
         </div>
         <div className="quests-level">
@@ -128,14 +130,14 @@ export function QuestBoard({ compact = false }: { compact?: boolean }) {
         ))}
       </ul>
       <div className="quests-foot">
-        <span className="mono">New quests in {formatCountdown(msUntilMidnight(now))}</span>
+        <span className="mono">{tr('New quests in {time}', { time: formatCountdown(msUntilMidnight(now)) })}</span>
         {compact ? (
           <Link href="/me" className="quests-link">
-            Profile, badges &amp; bests <Icon name="arrowRight" size={16} />
+            {tr('Profile, badges & bests')} <Icon name="arrowRight" size={16} />
           </Link>
         ) : (
           <Link href="/" className="quests-link">
-            Find a game <Icon name="arrowRight" size={16} />
+            {tr('Find a game')} <Icon name="arrowRight" size={16} />
           </Link>
         )}
       </div>

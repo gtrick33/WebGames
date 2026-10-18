@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { t as tr, useT } from '../i18n';
 import { getGame } from '../catalog/catalog';
 import { getLiveCatalog } from '../platform/liveCatalog';
 import { copyText, shareRequests, type ShareData, type ShareOutcome } from '../platform/share';
@@ -108,6 +109,7 @@ async function shortLink(data: ShareData, lines: string[]): Promise<string | nul
 }
 
 export default function ShareSheet({ data }: { data: ShareData }) {
+  useT();
   const lines = useMemo(() => cardLines(data.text), [data.text]);
   const game = useMemo(() => {
     const path = new URL(data.url ?? location.href, location.origin).pathname;
@@ -175,7 +177,7 @@ export default function ShareSheet({ data }: { data: ShareData }) {
       await navigator.share({ files: [file], text: `${message}\n${url}`, title: data.title });
       done('shared');
     } catch (e) {
-      if (!(e instanceof DOMException && e.name === 'AbortError')) setNote('Could not send the picture. Try Save picture.');
+      if (!(e instanceof DOMException && e.name === 'AbortError')) setNote(tr('Could not send the picture. Try Save.'));
     }
   };
   const open = (t: Target): void => {
@@ -184,7 +186,7 @@ export default function ShareSheet({ data }: { data: ShareData }) {
       // Messenger has no web share link without a Facebook app: copy, then open Messenger.
       void copyText(`${message}\n${url}`).then(() => {
         window.open('https://www.messenger.com/', '_blank', 'noopener');
-        done('copied', 'Copied: paste it in Messenger');
+        done('copied', tr('Copied: paste it in Messenger'));
       });
       return;
     }
@@ -198,16 +200,16 @@ export default function ShareSheet({ data }: { data: ShareData }) {
     <div className="ss-backdrop" onClick={(e) => e.target === e.currentTarget && shareRequests.finish('cancelled')}>
       <div className="ss" role="dialog" aria-modal="true" aria-labelledby="ss-title">
         <div className="ss-head">
-          <h2 id="ss-title">Share{game ? ` ${game.title}` : ''}</h2>
-          <button ref={closeRef} className="ss-close" onClick={() => shareRequests.finish('cancelled')} aria-label="Close">
+          <h2 id="ss-title">{game ? tr('Share {game}', { game: game.title }) : tr('Share')}</h2>
+          <button ref={closeRef} className="ss-close" onClick={() => shareRequests.finish('cancelled')} aria-label={tr('Close')}>
             ✕
           </button>
         </div>
-        <div className="ss-card">{card ? <img src={card.url} alt={lines.join('. ')} /> : <div className="ss-card-loading">Drawing your card…</div>}</div>
+        <div className="ss-card">{card ? <img src={card.url} alt={lines.join('. ')} /> : <div className="ss-card-loading">{tr('Drawing your card…')}</div>}</div>
         <div className="ss-side">
           {canSendPicture && (
             <button className="ss-primary" onClick={() => void sendPicture()}>
-              Send picture + link
+              {tr('Send picture + link')}
             </button>
           )}
           <div className="ss-grid" role="list">
@@ -216,21 +218,21 @@ export default function ShareSheet({ data }: { data: ShareData }) {
                 <span className="ss-icon" style={{ background: t.color }}>
                   {t.icon}
                 </span>
-                <span>{t.label}</span>
+                <span>{tr(t.label)}</span>
               </button>
             ))}
-            <button role="listitem" className="ss-target" disabled={!link} onClick={() => void copyText(`${message}\n${url}`).then((ok) => done(ok ? 'copied' : 'failed', ok ? 'Copied!' : 'Could not copy'))}>
+            <button role="listitem" className="ss-target" disabled={!link} onClick={() => void copyText(`${message}\n${url}`).then((ok) => done(ok ? 'copied' : 'failed', ok ? tr('Copied!') : tr('Could not copy')))}>
               <span className="ss-icon" style={{ background: '#1d1238' }}>
                 {svg(<path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0Zm-2.1 5.7a4 4 0 0 1-2.9-6.8l2.2-2.2a1 1 0 1 1 1.4 1.4L7 13.7a2 2 0 0 0 2.8 2.8l2.2-2.2a1 1 0 1 1 1.4 1.4l-2.2 2.2a4 4 0 0 1-2.7 1.2Zm7-6.4a1 1 0 0 1-.7-1.7l2.2-2.2A2 2 0 0 0 14.2 6L12 8.1a1 1 0 1 1-1.4-1.4l2.2-2.2a4 4 0 1 1 5.7 5.7l-2.2 2.2a1 1 0 0 1-.8.3Z" />)}
               </span>
-              <span>Copy</span>
+              <span>{tr('Copy')}</span>
             </button>
             {card && (
               <a role="listitem" className="ss-target" href={card.url} download={`${game?.slug ?? 'glitchbound'}-result.png`} onClick={() => done('shared')}>
                 <span className="ss-icon" style={{ background: '#ff6a1a' }}>
                   {svg(<path d="M12 3a1 1 0 0 1 1 1v8.6l2.3-2.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.4l2.3 2.3V4a1 1 0 0 1 1-1ZM5 19h14a1 1 0 1 1 0 2H5a1 1 0 1 1 0-2Z" />)}
                 </span>
-                <span>Save</span>
+                <span>{tr('Save')}</span>
               </a>
             )}
             {typeof navigator.share === 'function' && (
@@ -248,13 +250,13 @@ export default function ShareSheet({ data }: { data: ShareData }) {
                 <span className="ss-icon" style={{ background: '#9a9aa6' }}>
                   {svg(<path d="M6 10.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />)}
                 </span>
-                <span>More</span>
+                <span>{tr('More')}</span>
               </button>
             )}
           </div>
         </div>
         <p className="ss-note" role="status">
-          {note || (link ? link.replace(/^https?:\/\//, '') : 'Making your link…')}
+          {note || (link ? link.replace(/^https?:\/\//, '') : tr('Making your link…'))}
         </p>
       </div>
     </div>

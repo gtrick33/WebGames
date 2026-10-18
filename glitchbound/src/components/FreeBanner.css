@@ -1,0 +1,103 @@
+/* "100% free. No sign-up. No downloads." in big stamped words, with the optional-account perks beside. */
+.free-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  align-items: center;
+  gap: 18px 36px;
+  margin-top: clamp(10px, 2vw, 22px);
+  padding: clamp(20px, 3vw, 34px) clamp(18px, 3vw, 38px);
+  border: var(--outline);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(circle at 12% 20%, rgb(255 255 255 / 0.45) 0 2px, transparent 3px) 0 0 / 22px 22px,
+    linear-gradient(120deg, var(--lime) 0%, var(--yellow) 55%, var(--orange) 100%);
+  box-shadow: var(--hard);
+  color: #1d1238;
+}
+.free-words {
+  display: grid;
+  gap: 10px;
+}
+.free-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: clamp(30px, 5.2vw, 64px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+}
+.free-w {
+  display: inline-block;
+  color: #fff;
+  -webkit-text-stroke: 2.5px #1d1238;
+  paint-order: stroke fill;
+  text-shadow: 4px 5px 0 #1d1238;
+}
+.free-w1 {
+  transform: rotate(-2deg);
+}
+.free-w2 {
+  transform: rotate(1.5deg);
+  color: var(--magenta);
+}
+.free-w3 {
+  transform: rotate(-1deg);
+  color: var(--cyan);
+}
+.free-sub {
+  max-width: 52ch;
+  margin: 0;
+  font-size: clamp(15px, 1.3vw, 18px);
+  font-weight: 700;
+}
+.free-extra {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 2px solid #1d1238;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.85);
+  box-shadow: 4px 5px 0 #1d1238;
+}
+.free-kicker {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.free-perks {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.free-perks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.free-check {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 2px solid #1d1238;
+  border-radius: 50%;
+  background: var(--lime);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+@media (max-width: 860px) {
+  .free-band {
+    grid-template-columns: 1fr;
+  }
+}

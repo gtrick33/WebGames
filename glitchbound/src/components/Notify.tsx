@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useT } from '../i18n';
 import { account, api, ApiError, useAccount } from '../platform/account';
 import { track } from '../platform/analytics';
 import { Icon } from './Icon';
@@ -12,12 +13,13 @@ const NOTICE: Record<string, string> = {
 
 /** "Email me when a new game drops." Members toggle it; guests confirm by email (double opt-in). */
 export function NotifyForm() {
+  const t = useT();
   const { me, config } = useAccount();
   const [email, setEmail] = useState('');
   // Result of the confirm/unsubscribe links in emails: /?notify=confirmed
   const [msg, setMsg] = useState(() => {
     const p = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('notify');
-    return p && NOTICE[p] ? NOTICE[p] : '';
+    return p && NOTICE[p] ? t(NOTICE[p]) : '';
   });
   const [busy, setBusy] = useState(false);
 
@@ -29,14 +31,14 @@ export function NotifyForm() {
       track('subscribe', { via: 'form' });
       setMsg(
         res.status === 'check_inbox'
-          ? 'Almost done: check your inbox and click the confirmation link.'
+          ? t('Almost done: check your inbox and click the confirmation link.')
           : res.status === 'confirmed'
-            ? 'You were already on the list.'
-            : 'Saved. We will send you one confirmation email shortly.',
+            ? t('You were already on the list.')
+            : t('Saved. We will send you one confirmation email shortly.'),
       );
       setEmail('');
     } catch (err) {
-      setMsg(err instanceof ApiError && err.message !== err.code ? err.message : 'Could not sign you up right now. Please try again.');
+      setMsg(err instanceof ApiError && err.message !== err.code ? err.message : t('Could not sign you up right now. Please try again.'));
     } finally {
       setBusy(false);
     }
@@ -49,8 +51,8 @@ export function NotifyForm() {
           <Icon name="mail" size={30} />
         </span>
         <div className="notify-copy">
-          <h2 id="notify-title">New game drops, straight to your inbox</h2>
-          <p>One short email when a new game launches. Nothing else. Unsubscribe in one click.</p>
+          <h2 id="notify-title">{t('New game drops, straight to your inbox')}</h2>
+          <p>{t('One short email when a new game launches. Nothing else. Unsubscribe in one click.')}</p>
         </div>
         {me ? (
           <label className="notify-toggle">
@@ -64,23 +66,23 @@ export function NotifyForm() {
                   .update({ notify: e.target.checked })
                   .then((u) => {
                     if (u.notify) track('subscribe', { via: 'member' });
-                    setMsg(u.notify ? `We will email ${u.email} when a new game launches.` : 'Turned off. No emails.');
+                    setMsg(u.notify ? t('We will email {email} when a new game launches.', { email: u.email }) : t('Turned off. No emails.'));
                   })
-                  .catch(() => setMsg('Could not save that right now.'))
+                  .catch(() => setMsg(t('Could not save that right now.')))
                   .finally(() => setBusy(false));
               }}
             />
             <span className="notify-switch" aria-hidden="true" />
-            <span>Email me about new games</span>
+            <span>{t('Email me about new games')}</span>
           </label>
         ) : (
           <form className="notify-form" onSubmit={(e) => void submit(e)}>
             <label className="sr-only" htmlFor="notify-email">
-              Email address
+              {t('Email address')}
             </label>
             <input id="notify-email" className="field" type="email" required placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
             <button className="btn btn-primary" disabled={busy || config === null}>
-              Notify me
+              {t('Notify me')}
             </button>
           </form>
         )}

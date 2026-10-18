@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { tGame, useT } from '../i18n';
 import { relatedGames } from '../catalog/catalog';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
 import { AdSlot } from '../components/AdSlot';
@@ -118,24 +119,25 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
  * Exit full screen / Exit game; it folds away again after a few seconds.
  */
 function StageMenu({ slug, onExitFullscreen, onExitGame }: { slug: string; onExitFullscreen: () => void; onExitGame: () => void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
-    const t = window.setTimeout(() => setOpen(false), 4000);
-    return () => window.clearTimeout(t);
+    const id = window.setTimeout(() => setOpen(false), 4000);
+    return () => window.clearTimeout(id);
   }, [open]);
   return (
     <div className={`stage-menu${open ? ' is-open' : ''}`}>
-      <button className="stage-menu-tab" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Game menu">
+      <button className="stage-menu-tab" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={t('Game menu')}>
         <Icon name="menu" size={16} />
       </button>
       {open && (
         <div className="stage-menu-items">
           <button className="stage-exit" onClick={onExitFullscreen}>
-            <Icon name="shrink" size={16} /> Exit full screen
+            <Icon name="shrink" size={16} /> {t('Exit full screen')}
           </button>
           <button className="stage-exit" onClick={onExitGame}>
-            <Icon name="close" size={16} /> Exit game
+            <Icon name="close" size={16} /> {t('Exit game')}
           </button>
           <button
             className="stage-exit"
@@ -144,7 +146,7 @@ function StageMenu({ slug, onExitFullscreen, onExitGame }: { slug: string; onExi
               navigate(`/me/bugs?game=${slug}`);
             }}
           >
-            <Icon name="bug" size={16} /> Report a bug
+            <Icon name="bug" size={16} /> {t('Report a bug')}
           </button>
         </div>
       )}
@@ -153,6 +155,7 @@ function StageMenu({ slug, onExitFullscreen, onExitGame }: { slug: string; onExi
 }
 
 export function GamePage({ game }: { game: GameEntry }) {
+  const t = useT();
   const { search } = useLocation();
   const beat = parseBeatParam(search);
   const challengeId = game.challenge ? new URLSearchParams(search).get('challenge') : null;
@@ -272,43 +275,43 @@ export function GamePage({ game }: { game: GameEntry }) {
     const url = kind === 'challenge' ? `${SITE_URL}/games/${game.slug}?beat=${score}` : `${SITE_URL}/games/${game.slug}`;
     const text =
       kind === 'game'
-        ? `${game.title}: ${game.tagline}`
+        ? `${game.title}: ${tGame(game.tagline)}`
         : kind === 'score'
-          ? `I scored ${fmt(score)} in ${game.title} on GlitchBound.`
-          : `I scored ${fmt(score)} in ${game.title}. Can you beat it?`;
+          ? t('I scored {score} in {game} on GlitchBound.', { score: fmt(score), game: game.title })
+          : t('I scored {score} in {game}. Can you beat it?', { score: fmt(score), game: game.title });
     const outcome = await shareOrCopy({ title: game.title, text, url });
-    setShareMsg(outcome === 'copied' ? 'Link copied to your clipboard.' : outcome === 'shared' ? 'Shared!' : outcome === 'failed' ? 'Could not share from this browser.' : '');
+    setShareMsg(outcome === 'copied' ? t('Link copied to your clipboard.') : outcome === 'shared' ? t('Shared!') : outcome === 'failed' ? t('Could not share from this browser.') : '');
     window.setTimeout(() => setShareMsg(''), 4000);
   };
 
   return (
     <div className="game-page" data-accent={game.accent}>
       <div className="wrap game-toolbar">
-        <Link href="/#arcade" className="btn btn-sm btn-ghost back-link" aria-label="Back to the arcade">
-          <Icon name="arrowLeft" size={18} /> <span className="hide-sm">Arcade</span>
+        <Link href="/#arcade" className="btn btn-sm btn-ghost back-link" aria-label={t('Back to the arcade')}>
+          <Icon name="arrowLeft" size={18} /> <span className="hide-sm">{t('Arcade')}</span>
         </Link>
         <div className="game-heading">
           <h1>{game.title}</h1>
-          <span className="chip">{CATEGORIES[game.categories[0]].label}</span>
+          <span className="chip">{t(CATEGORIES[game.categories[0]].label)}</span>
         </div>
         <div className="game-actions">
           <FavoriteButton slug={game.slug} title={game.title} />
           {playing && (
-            <button className="btn btn-sm" onClick={restart} title="Reload the game">
-              <Icon name="restart" size={18} /> <span className="hide-sm">Restart</span>
+            <button className="btn btn-sm" onClick={restart} title={t('Reload the game')}>
+              <Icon name="restart" size={18} /> <span className="hide-sm">{t('Restart')}</span>
             </button>
           )}
           {playing && (
-            <button className="btn btn-sm btn-icon" onClick={play.enter} aria-label="Fullscreen" title="Fullscreen">
+            <button className="btn btn-sm btn-icon" onClick={play.enter} aria-label={t('Fullscreen')} title={t('Fullscreen')}>
               <Icon name="expand" size={18} />
             </button>
           )}
           {playing && (
-            <button className="btn btn-sm" onClick={close} title="Close the game and free its memory">
-              <Icon name="close" size={18} /> <span className="hide-sm">Exit game</span>
+            <button className="btn btn-sm" onClick={close} title={t('Close the game and free its memory')}>
+              <Icon name="close" size={18} /> <span className="hide-sm">{t('Exit game')}</span>
             </button>
           )}
-          <button className="btn btn-sm btn-icon" onClick={() => void share('game')} aria-label={`Share ${game.title}`} title="Share">
+          <button className="btn btn-sm btn-icon" onClick={() => void share('game')} aria-label={t('Share {game}', { game: game.title })} title={t('Share')}>
             <Icon name="share" size={18} />
           </button>
         </div>
@@ -327,10 +330,10 @@ export function GamePage({ game }: { game: GameEntry }) {
             <div className="stage stage-paused" style={{ background: game.art.bg }}>
               <img src={game.art.tile} alt="" className="stage-poster-art" />
               <div className="stage-paused-msg">
-                <strong>Taking a short break</strong>
+                <strong>{t('Taking a short break')}</strong>
                 <span>{settings.maintenance}</span>
                 <Link href="/" className="btn btn-primary">
-                  Play something else
+                  {t('Play something else')}
                 </Link>
               </div>
             </div>
@@ -363,7 +366,7 @@ export function GamePage({ game }: { game: GameEntry }) {
           {burst > 0 && <Burst key={burst} />}
         </div>
 
-        <aside className="game-side" aria-label={`${game.title} details`}>
+        <aside className="game-side" aria-label={t('{game} details', { game: game.title })}>
           <p className="game-share-msg" role="status">
             {shareMsg}
           </p>
@@ -371,7 +374,7 @@ export function GamePage({ game }: { game: GameEntry }) {
           {game.challenge && !challengeId && <ChallengeFriends game={game} />}
 
           <div className="panel player-name">
-            <span className="mono">Playing as</span>
+            <span className="mono">{t('Playing as')}</span>
             {renaming && !player.member ? (
               <form
                 className="rename-form"
@@ -382,19 +385,19 @@ export function GamePage({ game }: { game: GameEntry }) {
                   if (!err) setRenaming(false);
                 }}
               >
-                <input className="field" name="name" defaultValue={player.name} maxLength={14} aria-label="Player name" autoFocus />
-                <button className="btn btn-primary btn-sm">Save</button>
+                <input className="field" name="name" defaultValue={player.name} maxLength={14} aria-label={t('Player name')} autoFocus />
+                <button className="btn btn-primary btn-sm">{t('Save')}</button>
               </form>
             ) : (
               <div className="player-row">
                 <strong>{player.name}</strong>
                 {player.member ? (
                   <Link href="/me" className="link-btn">
-                    Change
+                    {t('Change')}
                   </Link>
                 ) : (
                   <button className="link-btn" onClick={() => setRenaming(true)}>
-                    Change
+                    {t('Change')}
                   </button>
                 )}
               </div>
@@ -402,57 +405,55 @@ export function GamePage({ game }: { game: GameEntry }) {
             {renameMsg && <p className="side-muted">{renameMsg}</p>}
             {!player.member && (
               <p className="side-muted">
-                Guest name. <button className="link-btn" onClick={() => openSignIn('Sign in to keep your name and scores on every device.')}>Sign in</button> to keep it
-                on every device.
+                {t('Guest name.')}{' '}
+                <button className="link-btn" onClick={() => openSignIn(t('Sign in to keep your name and scores on every device.'))}>
+                  {t('Sign in to keep it on every device.')}
+                </button>
               </p>
             )}
           </div>
 
           {beat !== null && (
             <div className={`panel friend ${last && last.event.score > beat ? 'is-beaten' : ''}`}>
-              <p className="eyebrow">Friend challenge</p>
+              <p className="eyebrow">{t('Friend challenge')}</p>
               {last && last.event.score > beat ? (
-                <p className="friend-text">
-                  You beat <b>{fmt(beat)}</b> with <b>{fmt(last.event.score)}</b>. Send it back!
-                </p>
+                <p className="friend-text">{t('You beat {a} with {b}. Send it back!', { a: fmt(beat), b: fmt(last.event.score) })}</p>
               ) : (
-                <p className="friend-text">
-                  A friend scored <b>{fmt(beat)}</b>. Beat it.
-                </p>
+                <p className="friend-text">{t('A friend scored {n}. Beat it.', { n: fmt(beat) })}</p>
               )}
             </div>
           )}
 
           {last && (
             <div key={last.n} className="panel last-round">
-              <p className="eyebrow">Last round</p>
+              <p className="eyebrow">{t('Last round')}</p>
               <p className="last-score">
-                {fmt(last.event.score)} <span>points</span>
+                {fmt(last.event.score)} <span>{t('points')}</span>
               </p>
               <ul className="last-tags">
                 {last.server?.rank && (
                   <li className="sticker" data-tone="cyan">
-                    Rank #{last.server.rank}
+                    {t('Rank #{n}', { n: last.server.rank })}
                   </li>
                 )}
-                {last.result.newBests.includes('score') && <li className="sticker" data-tone="lime">New best</li>}
-                {last.result.firstPlay && <li className="sticker">First record</li>}
-                {last.result.dailyCompleted && <li className="sticker" data-tone="orange">Daily cleared</li>}
-                {last.result.gameDailyCompleted && <li className="sticker" data-tone="orange">{game.ownDaily?.label ?? 'Daily'} done</li>}
+                {last.result.newBests.includes('score') && <li className="sticker" data-tone="lime">{t('New best')}</li>}
+                {last.result.firstPlay && <li className="sticker">{t('First record')}</li>}
+                {last.result.dailyCompleted && <li className="sticker" data-tone="orange">{t('Daily cleared')}</li>}
+                {last.result.gameDailyCompleted && <li className="sticker" data-tone="orange">{t('{label} done', { label: t(game.ownDaily?.label ?? 'Daily') })}</li>}
               </ul>
               {!me && (
-                <button className="last-signin" onClick={() => openSignIn('Sign in to put your scores on the leaderboard.')}>
-                  <Icon name="crown" size={16} /> Sign in to put scores like this on the leaderboard
+                <button className="last-signin" onClick={() => openSignIn(t('Sign in to put your scores on the leaderboard.'))}>
+                  <Icon name="crown" size={16} /> {t('Sign in to put scores like this on the leaderboard')}
                 </button>
               )}
-              {me && last.server === undefined && <p className="mono last-saving">Saving to the leaderboard…</p>}
-              {me && last.server && !last.server.ok && <p className="mono last-saving">This round was not ranked ({last.server.error}).</p>}
+              {me && last.server === undefined && <p className="mono last-saving">{t('Saving to the leaderboard…')}</p>}
+              {me && last.server && !last.server.ok && <p className="mono last-saving">{t('This round was not ranked ({reason}).', { reason: last.server.error ?? '' })}</p>}
               <div className="last-actions">
                 <button className="btn btn-primary btn-sm" onClick={() => void share('challenge')}>
-                  <Icon name="link" size={18} /> Challenge a friend
+                  <Icon name="link" size={18} /> {t('Challenge a friend')}
                 </button>
                 <button className="btn btn-sm" onClick={() => void share('score')}>
-                  <Icon name="share" size={18} /> Share score
+                  <Icon name="share" size={18} /> {t('Share score')}
                 </button>
               </div>
             </div>
@@ -464,13 +465,13 @@ export function GamePage({ game }: { game: GameEntry }) {
 
           <section className="panel side-block" aria-labelledby="bests-title">
             <h2 id="bests-title" className="side-title">
-              <Icon name="trophy" /> Your bests
+              <Icon name="trophy" /> {t('Your bests')}
             </h2>
             {record ? (
               <dl className="bests">
                 {game.stats.map((s) => (
                   <div key={s.key}>
-                    <dt>{s.label}</dt>
+                    <dt>{t(s.label)}</dt>
                     <dd className="mono">
                       {record.best[s.key] !== undefined ? fmt(record.best[s.key]!) : '–'}
                       {s.unit && record.best[s.key] !== undefined ? ` ${s.unit}` : ''}
@@ -478,27 +479,27 @@ export function GamePage({ game }: { game: GameEntry }) {
                   </div>
                 ))}
                 <div>
-                  <dt>Rounds played here</dt>
+                  <dt>{t('Rounds played here')}</dt>
                   <dd className="mono">{fmt(record.plays)}</dd>
                 </div>
               </dl>
             ) : (
-              <p className="side-muted">Finish a round to set your first record. Bests are saved on this device only.</p>
+              <p className="side-muted">{t('Finish a round to set your first record. Bests are saved on this device only.')}</p>
             )}
           </section>
 
           <section className="panel side-block" aria-labelledby="how-title">
             <h2 id="how-title" className="side-title">
-              How to play
+              {t('How to play')}
             </h2>
             {game.controls.keyboard && (
               <div className="controls">
                 <p className="controls-head">
-                  <Icon name="keyboard" /> Keyboard
+                  <Icon name="keyboard" /> {t('Keyboard')}
                 </p>
                 <ul>
                   {game.controls.keyboard.map((c) => (
-                    <li key={c}>{c}</li>
+                    <li key={c}>{tGame(c)}</li>
                   ))}
                 </ul>
               </div>
@@ -506,11 +507,11 @@ export function GamePage({ game }: { game: GameEntry }) {
             {game.controls.touch && (
               <div className="controls">
                 <p className="controls-head">
-                  <Icon name="touch" /> Touch
+                  <Icon name="touch" /> {t('Touch')}
                 </p>
                 <ul>
                   {game.controls.touch.map((c) => (
-                    <li key={c}>{c}</li>
+                    <li key={c}>{tGame(c)}</li>
                   ))}
                 </ul>
               </div>
@@ -519,10 +520,10 @@ export function GamePage({ game }: { game: GameEntry }) {
 
           <div className="game-help">
             <button className="game-help-btn" onClick={() => openFeedback(game.slug)}>
-              <Icon name="star" size={16} /> Rate this game
+              <Icon name="star" size={16} /> {t('Rate this game')}
             </button>
             <Link href={`/me/bugs?game=${game.slug}`} className="game-help-btn">
-              <Icon name="bug" size={16} /> Report a bug
+              <Icon name="bug" size={16} /> {t('Report a bug')}
             </Link>
           </div>
 
@@ -532,14 +533,14 @@ export function GamePage({ game }: { game: GameEntry }) {
 
       <section className="wrap game-about" aria-labelledby="about-title">
         <div className="game-about-copy">
-          <p className="eyebrow">About the game</p>
+          <p className="eyebrow">{t('About the game')}</p>
           <h2 id="about-title">{game.title}</h2>
-          <p>{game.description}</p>
+          <p>{tGame(game.description)}</p>
         </div>
         {game.highlights && (
           <ul className="latest-list game-highlights">
             {game.highlights.map((h) => (
-              <li key={h}>{h}</li>
+              <li key={h}>{tGame(h)}</li>
             ))}
           </ul>
         )}
@@ -548,7 +549,7 @@ export function GamePage({ game }: { game: GameEntry }) {
       {related.length > 0 && (
         <section className="wrap section" aria-labelledby="related-title">
           <div className="section-head">
-            <h2 id="related-title">Play next</h2>
+            <h2 id="related-title">{t('Play next')}</h2>
           </div>
           <div className="related-grid">
             {related.map((g, i) => (

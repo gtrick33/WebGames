@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { t as tr, useT } from '../i18n';
 import { account, useAccount } from '../platform/account';
 import { track } from '../platform/analytics';
 import { Icon } from './Icon';
 
 /** Heart toggle. Guests keep favorites on this device; members keep them on their account. */
 export function FavoriteButton({ slug, title, className = '' }: { slug: string; title: string; className?: string }) {
+  useT();
   const state = useAccount();
   const on = state.me ? state.me.favorites.includes(slug) : state.guestFavorites.includes(slug);
   const [pop, setPop] = useState(0);
@@ -13,8 +15,8 @@ export function FavoriteButton({ slug, title, className = '' }: { slug: string; 
       type="button"
       className={`fav-btn ${on ? 'is-on' : ''} ${className}`}
       aria-pressed={on}
-      aria-label={on ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
-      title={on ? 'Favorite' : 'Add to favorites'}
+      aria-label={on ? tr('Remove {game} from favorites', { game: title }) : tr('Add {game} to favorites', { game: title })}
+      title={on ? tr('Favorite') : tr('Add to favorites')}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();

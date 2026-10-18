@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { t as tr, useT } from '../i18n';
 import { account, ApiError, useAccount } from '../platform/account';
 import { track } from '../platform/analytics';
 import { navigate } from '../router/router';
@@ -72,6 +73,7 @@ function GoogleG() {
  * email with a one-time code. New and returning players use the same steps.
  */
 export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void; showPerks?: boolean }) {
+  useT();
   const { config } = useAccount();
   const [step, setStep] = useState<'start' | 'code'>('start');
   const [email, setEmail] = useState('');
@@ -101,10 +103,10 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
       setBusy('google');
       loadGoogle()
         .then(() => setBusy(''))
-        .then(() => setError('Google is ready now. Tap the button again.'))
+        .then(() => setError(tr('Google is ready now. Tap the button again.')))
         .catch(() => {
           setBusy('');
-          setError('Google sign-in could not load. Check your connection or content blocker.');
+          setError(tr('Google sign-in could not load. Check your connection or content blocker.'));
         });
       return;
     }
@@ -115,18 +117,18 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
       callback: (r) => {
         if (!r.access_token) {
           setBusy('');
-          if (r.error) setError('Google sign-in was cancelled.');
+          if (r.error) setError(tr('Google sign-in was cancelled.'));
           return;
         }
         account
           .signInWithGoogleToken(r.access_token)
           .then(() => finish('google'))
-          .catch((e: unknown) => setError(message(e, 'Sign-in failed. Please try again.')))
+          .catch((e: unknown) => setError(message(e, tr('Sign-in failed. Please try again.'))))
           .finally(() => setBusy(''));
       },
       error_callback: (e) => {
         setBusy('');
-        setError(e.type === 'popup_closed' ? '' : 'The Google window could not open. Allow pop-ups for this site and try again.');
+        setError(e.type === 'popup_closed' ? '' : tr('The Google window could not open. Allow pop-ups for this site and try again.'));
       },
     });
     client.requestAccessToken({ prompt: 'select_account' });
@@ -139,10 +141,10 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
     try {
       await account.emailStart(email.trim(), nickname.trim());
       setStep('code');
-      setNote(`We sent a 6-digit code to ${email.trim()}. It works for 15 minutes.`);
+      setNote(tr('We sent a 6-digit code to {email}. It works for 15 minutes.', { email: email.trim() }));
       requestAnimationFrame(() => codeRef.current?.focus());
     } catch (err) {
-      setError(message(err, 'Could not send the code. Please try again.'));
+      setError(message(err, tr('Could not send the code. Please try again.')));
     } finally {
       setBusy('');
     }
@@ -156,7 +158,7 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
       await account.emailVerify(email.trim(), code);
       finish('email');
     } catch (err) {
-      setError(message(err, 'That code did not work.'));
+      setError(message(err, tr('That code did not work.')));
     } finally {
       setBusy('');
     }
@@ -180,7 +182,7 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
               <span className="signin-perk-icon">
                 <Icon name={p.icon} size={18} />
               </span>
-              {p.text}
+              {tr(p.text)}
             </li>
           ))}
         </ul>
@@ -192,34 +194,34 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
             <span className="google-btn-g">
               <GoogleG />
             </span>
-            <span>{busy === 'google' ? 'Waiting for Google…' : 'Continue with Google'}</span>
+            <span>{busy === 'google' ? tr('Waiting for Google…') : tr('Continue with Google')}</span>
           </button>
 
           <div className="signin-or" role="separator">
-            <span>or use your email</span>
+            <span>{tr('or use your email')}</span>
           </div>
 
           <form className="signin-email" onSubmit={(e) => void sendCode(e)}>
             <label className="sr-only" htmlFor="signin-email">
-              Email address
+              {tr('Email address')}
             </label>
             <input id="signin-email" className="field" type="email" required autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
             <label className="sr-only" htmlFor="signin-nick">
-              Nickname (new players, optional)
+              {tr('Nickname (new players, optional)')}
             </label>
             <input
               id="signin-nick"
               className="field"
               maxLength={14}
               autoComplete="nickname"
-              placeholder="Nickname (new players, optional)"
+              placeholder={tr('Nickname (new players, optional)')}
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
             />
             <button className="btn btn-primary" disabled={busy !== '' || !config?.emailEnabled}>
-              <Icon name="mail" size={18} /> {busy === 'email' ? 'Sending…' : 'Email me a sign-in code'}
+              <Icon name="mail" size={18} /> {busy === 'email' ? tr('Sending…') : tr('Email me a sign-in code')}
             </button>
-            {config && !config.emailEnabled && <p className="signin-fine">Email sign-in opens as soon as our mailer is switched on. Google works now.</p>}
+            {config && !config.emailEnabled && <p className="signin-fine">{tr('Email sign-in opens as soon as our mailer is switched on. Google works now.')}</p>}
           </form>
         </>
       )}
@@ -228,7 +230,7 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
         <form className="signin-email" onSubmit={(e) => void verify(e)}>
           <p className="signin-note-ok">{note}</p>
           <label className="sr-only" htmlFor="signin-code">
-            6-digit code
+            {tr('6-digit code')}
           </label>
           <input
             ref={codeRef}
@@ -244,11 +246,11 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
             required
           />
           <button className="btn btn-lime" disabled={busy !== '' || code.length !== 6}>
-            {busy === 'email' ? 'Checking…' : 'Sign in'}
+            {busy === 'email' ? tr('Checking…') : tr('Sign in')}
           </button>
           <div className="signin-row">
             <button type="button" className="link-btn" onClick={() => void sendCode()} disabled={busy !== ''}>
-              Send a new code
+              {tr('Send a new code')}
             </button>
             <button
               type="button"
@@ -259,10 +261,10 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
                 setNote('');
               }}
             >
-              Use a different email
+              {tr('Use a different email')}
             </button>
           </div>
-          <p className="signin-fine">You can also tap the button in the email; it signs you in on that device.</p>
+          <p className="signin-fine">{tr('You can also tap the button in the email; it signs you in on that device.')}</p>
         </form>
       )}
 
@@ -281,14 +283,15 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
         </p>
       )}
       <p className="signin-fine">
-        New here? Either option creates your free account. Leaderboards show your nickname (it starts as your Google name and you can change it), never your
-        email. <a href="/privacy">Privacy</a>
+        {tr('New here? Either option creates your free account. Leaderboards show your nickname (it starts as your Google name and you can change it), never your email.')}{' '}
+        <a href="/privacy">{tr('Privacy')}</a>
       </p>
     </div>
   );
 }
 
 export function SignInDialog() {
+  useT();
   const ref = useRef<HTMLDialogElement>(null);
   const [reason, setReason] = useState<string | undefined>();
   const [open, setOpen] = useState(false);
@@ -324,12 +327,12 @@ export function SignInDialog() {
       }}
     >
       <div className="signin-box panel">
-        <button className="btn btn-icon btn-sm signin-close" onClick={() => setOpen(false)} aria-label="Close">
+        <button className="btn btn-icon btn-sm signin-close" onClick={() => setOpen(false)} aria-label={tr('Close')}>
           <Icon name="close" />
         </button>
-        <p className="eyebrow">Free membership</p>
+        <p className="eyebrow">{tr('Free membership')}</p>
         <h2 id="signin-title" className="signin-title">
-          Join the arcade
+          {tr('Join the arcade')}
         </h2>
         {reason && <p className="signin-reason">{reason}</p>}
         {open && <SignInPanel onDone={() => setOpen(false)} />}
@@ -340,7 +343,7 @@ export function SignInDialog() {
             navigate('/signin');
           }}
         >
-          Open the full sign-up page
+          {tr('Open the full sign-up page')}
         </button>
       </div>
     </dialog>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { tDaily, useT } from '../i18n';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { useAccount } from '../platform/account';
 import { useDaily, useNow } from '../platform/hooks';
@@ -32,6 +33,7 @@ function useGlitchPulse(): boolean {
  * (daily challenge + member level or a sign-in invite). Short on purpose: the games come first.
  */
 export function Hero() {
+  const t = useT();
   const gameCount = useLiveCatalog().games.length;
   const glitching = useGlitchPulse();
   const now = useNow(1000);
@@ -43,15 +45,15 @@ export function Hero() {
     <section className="intro-band wrap" aria-labelledby="hero-title">
       <div className="intro-copy">
         <p className="eyebrow">
-          <span className="live-dot" /> Independent browser arcade · {gameCount} {gameCount === 1 ? 'game' : 'games'}
+          <span className="live-dot" /> {t('Independent browser arcade')} · {gameCount === 1 ? t('1 game') : t('{n} games', { n: gameCount })}
         </p>
         <h1 id="hero-title" className="intro-title">
-          Small games.{' '}
-          <span className={`glitch intro-hl${glitching ? ' is-glitching' : ''}`} data-text="Big obsessions.">
-            Big obsessions.
+          {t('Small games.')}{' '}
+          <span className={`glitch intro-hl${glitching ? ' is-glitching' : ''}`} data-text={t('Big obsessions.')}>
+            {t('Big obsessions.')}
           </span>
         </h1>
-        <p className="intro-sub">Five minutes, endless replayability. Every game starts in a second, no installs. Beat your best, then come back for tomorrow&rsquo;s challenge.</p>
+        <p className="intro-sub">{t('Five minutes, endless replayability. Every game starts in a second, no installs. Beat your best, then come back for tomorrow’s challenge.')}</p>
       </div>
 
       <div className="intro-side">
@@ -61,9 +63,12 @@ export function Hero() {
               <Icon name="calendar" size={20} />
             </span>
             <span className="intro-card-text">
-              <span className="mono">Daily #{daily.challenge.number}{daily.done ? ' · cleared' : ''}</span>
-              <strong>{daily.challenge.label}</strong>
-              <span className="mono intro-count">Resets in {formatCountdown(msUntilMidnight(now))}</span>
+              <span className="mono">
+                {t('Daily #{n}', { n: daily.challenge.number })}
+                {daily.done ? ` · ${t('cleared')}` : ''}
+              </span>
+              <strong>{tDaily(daily.challenge)}</strong>
+              <span className="mono intro-count">{t('Resets in {time}', { time: formatCountdown(msUntilMidnight(now)) })}</span>
             </span>
             <Icon name="arrowRight" />
           </Link>
@@ -74,8 +79,10 @@ export function Hero() {
               <Icon name="bolt" size={20} />
             </span>
             <span className="intro-card-text">
-              <span className="mono">Level {me.level} · {me.nickname}</span>
-              <strong>{ready > 0 ? `${ready} quest ${ready === 1 ? 'reward' : 'rewards'} ready` : `${me.quests.filter((q) => !q.done).length} member quests today`}</strong>
+              <span className="mono">
+                {t('Level {n}', { n: me.level })} · {me.nickname}
+              </span>
+              <strong>{ready > 0 ? t('{n} quest rewards ready', { n: ready }) : t('{n} member quests today', { n: me.quests.filter((q) => !q.done).length })}</strong>
             </span>
             <Icon name="arrowRight" />
           </Link>
@@ -85,8 +92,8 @@ export function Hero() {
               <Icon name="star" size={20} />
             </span>
             <span className="intro-card-text">
-              <span className="mono">Free membership</span>
-              <strong>Daily quests, levels and leaderboards</strong>
+              <span className="mono">{t('Free membership')}</span>
+              <strong>{t('Daily quests, levels and leaderboards')}</strong>
             </span>
             <Icon name="arrowRight" />
           </button>

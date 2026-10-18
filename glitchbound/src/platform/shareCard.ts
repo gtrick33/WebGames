@@ -3,6 +3,7 @@
  * lines, emoji grids) and the site, drawn on a canvas in the player's browser. No server work.
  */
 import type { Accent, GameEntry } from '../catalog/types';
+import { t } from '../i18n';
 
 export const CARD_SIZE = 1080;
 
@@ -239,7 +240,7 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
 
   // Call to action and address.
   ctx.textAlign = 'center';
-  const cta = opts.cta ?? 'Can you beat it?';
+  const cta = opts.cta ?? t('Can you beat it?');
   ctx.font = `800 40px ${family}`;
   const cw = ctx.measureText(cta).width + 90;
   const cx = (S - cw) / 2;

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { tDaily, useT } from '../i18n';
 import { track } from '../platform/analytics';
 import { dailyShareText, fmt } from '../platform/daily';
 import { formatCountdown, msUntilMidnight } from '../platform/dates';
@@ -10,13 +11,14 @@ import { Icon } from './Icon';
 import { Star } from './Shapes';
 import './DailyCard.css';
 
-const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /**
  * The daily challenge, in three densities: `band` (homepage), `page` (/daily) and `compact` (game page).
  * Renders nothing if no game in the catalog supports daily challenges.
  */
 export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'band' | 'page' | 'compact'; headingLevel?: 2 | 3 }) {
+  const t = useT();
   const now = useNow(1000);
   const daily = useDaily(now);
   const [shareMsg, setShareMsg] = useState('');
@@ -28,7 +30,7 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
   const weekLabels = week.map((_, i) => {
     const d = new Date(now);
     d.setDate(d.getDate() - (6 - i));
-    return WEEKDAYS[(d.getDay() + 6) % 7]!;
+    return t(WEEKDAYS[(d.getDay() + 6) % 7]!).slice(0, 1);
   });
 
   const share = async (): Promise<void> => {
@@ -37,7 +39,7 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
       title: `GlitchBound Daily #${c.number}`,
       text: dailyShareText(c, best, streak, week, `${SITE_URL}/daily`),
     });
-    setShareMsg(outcome === 'copied' ? 'Result copied. Paste it anywhere.' : outcome === 'shared' ? 'Shared!' : outcome === 'failed' ? 'Could not share from this browser.' : '');
+    setShareMsg(outcome === 'copied' ? t('Result copied. Paste it anywhere.') : outcome === 'shared' ? t('Shared!') : outcome === 'failed' ? t('Could not share from this browser.') : '');
   };
 
   return (
@@ -45,32 +47,26 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
       <div className="daily-badge" aria-hidden="true">
         <Star className="daily-star" fill={done ? '#ffffff' : '#ffd12e'} />
         <span className="daily-badge-text">
-          <span className="mono">Daily</span>
+          <span className="mono">{t('Daily')}</span>
           <b>#{c.number}</b>
         </span>
       </div>
 
       <div className="daily-main">
         <p className="eyebrow">
-          <Icon name="calendar" size={16} /> Today&rsquo;s challenge · {c.game.title}
+          <Icon name="calendar" size={16} /> {t('Today’s challenge')} · {c.game.title}
         </p>
         <H id={`daily-title-${variant}`} className="daily-title">
-          {c.label}.
+          {tDaily(c)}.
         </H>
-        <div className="daily-progress" role="group" aria-label="Your progress today">
+        <div className="daily-progress" role="group" aria-label={t('Your progress today')}>
           <div className="daily-bar" aria-hidden="true">
             <i style={{ width: `${progress * 100}%` }} />
           </div>
           <p className="mono daily-numbers">
-            {best > 0 ? (
-              <>
-                Best today {fmt(best)}
-                {unit} / {fmt(c.target)}
-                {unit}
-              </>
-            ) : (
-              <>Not attempted yet · target {fmt(c.target)}{unit}</>
-            )}
+            {best > 0
+              ? t('Best today {best} / {target}', { best: `${fmt(best)}${unit}`, target: `${fmt(c.target)}${unit}` })
+              : t('Not attempted yet · target {target}', { target: `${fmt(c.target)}${unit}` })}
           </p>
         </div>
       </div>
@@ -78,14 +74,14 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
       <div className="daily-side">
         {done ? (
           <p className="daily-state daily-state-done">
-            <Icon name="check" size={22} /> Cleared
+            <Icon name="check" size={22} /> {t('Cleared')}
           </p>
         ) : (
-          <p className="daily-state">{best > 0 ? 'Keep going' : 'Up for grabs'}</p>
+          <p className="daily-state">{best > 0 ? t('Keep going') : t('Up for grabs')}</p>
         )}
-        <div className="daily-streak" aria-label={`Streak: ${streak} ${streak === 1 ? 'day' : 'days'}. Last 7 days: ${week.filter(Boolean).length} cleared.`}>
+        <div className="daily-streak" aria-label={t('Streak: {n} days. Last 7 days: {c} cleared.', { n: streak, c: week.filter(Boolean).length })}>
           <span className="daily-streak-n">
-            <Icon name="flame" size={18} /> {streak} day streak
+            <Icon name="flame" size={18} /> {t('{n} day streak', { n: streak })}
           </span>
           <span className="daily-week" aria-hidden="true">
             {week.map((d, i) => (
@@ -96,17 +92,17 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
           </span>
         </div>
         <p className="daily-countdown mono" aria-live="off">
-          Next challenge in <time>{formatCountdown(msUntilMidnight(now))}</time>
+          {t('Next challenge in')} <time>{formatCountdown(msUntilMidnight(now))}</time>
         </p>
         <div className="daily-actions">
           {variant !== 'compact' && (
             <Link href={`/games/${c.game.slug}`} className={`btn ${done ? '' : 'btn-ink'}`}>
-              <Icon name="play" /> {done ? 'Play again' : 'Play today’s challenge'}
+              <Icon name="play" /> {done ? t('Play again') : t('Play today’s challenge')}
             </Link>
           )}
           {done && (
             <button className="btn btn-lime" onClick={() => void share()}>
-              <Icon name="share" /> Share result
+              <Icon name="share" /> {t('Share result')}
             </button>
           )}
         </div>

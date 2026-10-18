@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useT } from '../i18n';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import type { GameEntry } from '../catalog/types';
 import { track } from '../platform/analytics';
@@ -22,6 +23,7 @@ export function TodaysDailies({ headingLevel = 2, games: given }: { headingLevel
   const live = useLiveCatalog();
   // Games an admin paused are left out of today's list.
   const games = (given ?? live.games).filter((g) => !live.settings(g.slug).maintenance);
+  const t = useT();
   const save = useSave();
   const now = useNow(1000);
   const today = dayKey(now);
@@ -37,27 +39,27 @@ export function TodaysDailies({ headingLevel = 2, games: given }: { headingLevel
     track('daily_share', { done: doneCount });
     const text = sweepShareText({ day: today, games: list.map((g) => ({ title: g.title, done: finished.has(g.slug) })), streak, url: `${SITE_URL}/daily` });
     const outcome = await shareOrCopy({ title: 'GlitchBound dailies', text });
-    setShareMsg(outcome === 'copied' ? 'Copied! Paste it anywhere.' : outcome === 'failed' ? 'Could not share from this browser.' : '');
+    setShareMsg(outcome === 'copied' ? t('Copied! Paste it anywhere.') : outcome === 'failed' ? t('Could not share from this browser.') : '');
   };
 
   return (
     <section className="dailies" aria-labelledby="dailies-title">
       <div className="dailies-head">
         <H id="dailies-title" className="dailies-title">
-          Today&rsquo;s dailies
+          {t('Today’s dailies')}
         </H>
         <p className="dailies-meta mono">
-          {doneCount} of {list.length} done · <Icon name="flame" size={14} /> {streak} day streak
+          {t('{a} of {b} done', { a: doneCount, b: list.length })} · <Icon name="flame" size={14} /> {t('{n} day streak', { n: streak })}
         </p>
       </div>
-      <div className={`dailies-progress${all ? ' is-sweep' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={list.length} aria-valuenow={doneCount} aria-label="Today's dailies done">
+      <div className={`dailies-progress${all ? ' is-sweep' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={list.length} aria-valuenow={doneCount} aria-label={t('Today’s dailies done')}>
         <i style={{ width: `${(doneCount / list.length) * 100}%` }} />
       </div>
       {atRisk && (
         <p className="dailies-risk">
           <Icon name="flame" size={20} />
           <span>
-            Keep your {streak}-day streak alive: finish any daily before midnight. <span className="mono">{formatCountdown(msUntilMidnight(now))}</span>
+            {t('Keep your {n}-day streak alive: finish any daily before midnight.', { n: streak })} <span className="mono">{formatCountdown(msUntilMidnight(now))}</span>
           </span>
         </p>
       )}
@@ -66,16 +68,16 @@ export function TodaysDailies({ headingLevel = 2, games: given }: { headingLevel
           <p>
             {all ? (
               <>
-                <b>Daily sweep!</b> Every daily done. New puzzles in <span className="mono">{formatCountdown(msUntilMidnight(now))}</span>
+                <b>{t('Daily sweep!')}</b> {t('Every daily done. New puzzles in')} <span className="mono">{formatCountdown(msUntilMidnight(now))}</span>
               </>
             ) : (
               <>
-                {list.length - doneCount} still waiting for you today.
+                {t('{n} still waiting for you today.', { n: list.length - doneCount })}
               </>
             )}
           </p>
           <button className="btn btn-sm btn-primary" onClick={() => void share()}>
-            <Icon name="share" size={16} /> Share today
+            <Icon name="share" size={16} /> {t('Share today')}
           </button>
           {shareMsg && (
             <span className="info-small" role="status">
@@ -93,9 +95,9 @@ export function TodaysDailies({ headingLevel = 2, games: given }: { headingLevel
                 <img src={g.art.tile} alt="" width={56} height={56} loading="lazy" style={{ background: g.art.bg }} />
                 <span className="daily-chip-text">
                   <strong>{g.title}</strong>
-                  <span>{g.ownDaily!.label}</span>
+                  <span>{t(g.ownDaily!.label)}</span>
                 </span>
-                <span className="daily-chip-state mono">{done ? 'Done' : 'Play'}</span>
+                <span className="daily-chip-state mono">{done ? t('Done') : t('Play')}</span>
               </Link>
             </li>
           );
