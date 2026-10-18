@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
-import { dayKey, formatCountdown, msUntilMidnight, parseDayKey } from '../../platform/dates';
+import { dayKey, formatCountdown, hashString, msUntilMidnight, parseDayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { DIFFS, makePuzzle, type Puzzle } from './diffs';
 import { drawScene } from './draw';
@@ -41,8 +41,8 @@ const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
 const LEVELS = ['Easy', 'Medium', 'Hard'];
 const randomSeed = (): number => Math.floor(Math.random() * 2 ** 32);
 
-export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
-  return <SpotTheGlitch key={restartKey} host={host} pauseKey={pauseKey} />;
+export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
+  return <SpotTheGlitch key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} />;
 }
 
 interface Run {
@@ -53,9 +53,12 @@ interface Run {
   /** Glitch Rush: clock ms left, total differences found. */
   clock: number;
   rushFound: number;
+  /** A friends' challenge: three daily-style pictures from the challenge's seed (mode stays 'daily'). */
+  challenge?: { id: string; round: number; seed: number };
 }
 
 function puzzleFor(run: Run, today: string, relaxLevel: number): Puzzle {
+  if (run.challenge) return makePuzzle(hashString(`spot-the-glitch:challenge:${run.challenge.seed}:${run.index}`), Math.min(2, run.index));
   if (run.mode === 'daily') return dailyPuzzle(today, run.index);
   if (run.mode === 'rush') return makePuzzle(randomSeed(), rushDifficulty(run.index));
   return makePuzzle(randomSeed(), relaxLevel);
@@ -79,12 +82,19 @@ function useClock(running: boolean): [number, () => number] {
   return [ms, now];
 }
 
-function SpotTheGlitch({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
+function SpotTheGlitch({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: number; challenge?: GameModuleProps['challenge'] }) {
   const [today] = useState(() => dayKey());
   const [save, setSave] = useState<SgSave>(loadSg);
-  const [screen, setScreen] = useState<Screen>('menu');
-  const [run, setRun] = useState<Run | null>(null);
-  const [pic, setPic] = useState<PictureState | null>(null);
+  const [firstRun] = useState<Run | null>(() =>
+    challenge ? { mode: 'daily', index: 0, results: [], over: false, clock: RUSH_START_S * 1000, rushFound: 0, challenge: { id: challenge.id, round: challenge.round, seed: challenge.seed } } : null,
+  );
+  const [screen, setScreen] = useState<Screen>(challenge ? 'play' : 'menu');
+  const [run, setRun] = useState<Run | null>(firstRun);
+  const [pic, setPic] = useState<PictureState | null>(() => (firstRun ? startPicture(puzzleFor(firstRun, today, 0), 0) : null));
+  useEffect(() => {
+    if (challenge) host.report({ type: 'start' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [paused, setPaused] = useState(false);
   const [hidden, setHidden] = useState(false);
   const saveRef = useRef(save);
@@ -165,12 +175,12 @@ function SpotTheGlitch({ host, pauseKey }: { host: GameHost; pauseKey?: number }
     if (!run) return;
     const res = resultOf(state);
     if (run.mode === 'daily') {
-      commit(recordPicture(saveRef.current, res, today));
+      if (!run.challenge) commit(recordPicture(saveRef.current, res, today));
       const results = [...run.results, res];
       const over = results.length >= DAILY_PICTURES;
       if (over) {
         const end = endStats(results);
-        host.report({ type: 'end', ...end, daily: true });
+        host.report(run.challenge ? { type: 'end', ...end, challenge: { id: run.challenge.id, round: run.challenge.round } } : { type: 'end', ...end, daily: true });
       }
       setRun({ ...run, results, over });
     } else if (run.mode === 'relax') {
@@ -456,7 +466,7 @@ function Play(props: {
   const done = isDone(pic);
   const secs = Math.floor(seconds(pic, props.clockMs));
   const locked = props.clockMs < pic.lockedUntil;
-  const label = run.mode === 'daily' ? `Daily #${dailyNumber(props.today)} · ${run.index + 1}/${DAILY_PICTURES}` : run.mode === 'rush' ? `Rush · picture ${run.index + 1}` : `Relax · ${LEVELS[pic.puzzle.difficulty]}`;
+  const label = run.challenge ? `⚔️ Challenge · ${run.index + 1}/${DAILY_PICTURES}` : run.mode === 'daily' ? `Daily #${dailyNumber(props.today)} · ${run.index + 1}/${DAILY_PICTURES}` : run.mode === 'rush' ? `Rush · picture ${run.index + 1}` : `Relax · ${LEVELS[pic.puzzle.difficulty]}`;
   return (
     <div className="sg-play">
       <div className="sg-top">
@@ -570,9 +580,9 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
   }
   return (
     <div className="sg-menu">
-      <span className="sg-kicker">Daily #{dailyNumber(today)} complete</span>
+      <span className="sg-kicker">{run.challenge ? '⚔️ Challenge round complete' : `Daily #${dailyNumber(today)} complete`}</span>
       <p className="sg-big sg-mono">{fmt(totalScore(run.results))}</p>
-      <p className="sg-muted">/ {fmt(DAILY_PICTURES * MAX_PICTURE)}{streak > 0 ? ` · 🔥 ${streak}` : ''}</p>
+      <p className="sg-muted">/ {fmt(DAILY_PICTURES * MAX_PICTURE)}{streak > 0 && !run.challenge ? ` · 🔥 ${streak}` : ''}</p>
       <ul className="sg-summary">
         {run.results.map((r, i) => (
           <li key={i}>
@@ -584,7 +594,13 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
         ))}
       </ul>
       <div className="sg-row">
-        <ShareButton today={today} results={run.results} streak={streak} />
+        {run.challenge ? (
+          <a className="sg-btn sg-btn-go" href={`/c/${run.challenge.id}`}>
+            See the scoreboard
+          </a>
+        ) : (
+          <ShareButton today={today} results={run.results} streak={streak} />
+        )}
         <button className="sg-btn sg-btn-ghost" onClick={onMenu}>
           Menu
         </button>

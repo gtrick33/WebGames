@@ -768,3 +768,26 @@
   font-size: 13px;
   cursor: pointer;
 }
+a.mr-go {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.mr-chal {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  z-index: 3;
+  margin: 0;
+  padding: 4px 12px;
+  border: 2px solid #1d1238;
+  border-radius: 999px;
+  background: #fff;
+  color: #1d1238;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}

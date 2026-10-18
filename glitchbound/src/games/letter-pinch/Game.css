@@ -624,3 +624,16 @@
     transition-delay: 0ms !important;
   }
 }
+a.lp-cta {
+  text-decoration: none;
+}
+.lp-chal {
+  margin: 0 auto 6px;
+  padding: 4px 12px;
+  border: 2px solid var(--lp-ink);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}

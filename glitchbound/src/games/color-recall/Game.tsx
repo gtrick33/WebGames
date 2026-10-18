@@ -14,6 +14,7 @@ import {
   PEEK_MS,
   practiceRounds,
   reduce,
+  rng,
   resultTarget,
   ROUNDS,
   shareText,
@@ -35,18 +36,23 @@ const DIFFICULTIES: { id: Difficulty; label: string; note: string }[] = [
 ];
 const isDifficulty = (v: string): v is Difficulty => v in PEEK_MS;
 
-export default function Game({ host, restartKey }: GameModuleProps) {
+export default function Game({ host, restartKey, challenge }: GameModuleProps) {
   // Restart = a fresh mount: back to the menu, all timers and sounds released.
-  return <ColorRecall key={restartKey} host={host} />;
+  return <ColorRecall key={restartKey} host={host} challenge={challenge} />;
 }
 
 type Screen = 'menu' | 'play' | 'stats';
 
-function ColorRecall({ host }: { host: GameHost }) {
+function ColorRecall({ host, challenge }: { host: GameHost; challenge?: GameModuleProps['challenge'] }) {
   const [today] = useState(() => dayKey());
   const [save, setSave] = useState<CrSave>(loadCr);
-  const [screen, setScreen] = useState<Screen>('menu');
-  const [game, setGame] = useState<GameState | null>(null);
+  const [screen, setScreen] = useState<Screen>(challenge ? 'play' : 'menu');
+  // A friends' challenge starts straight away: five colours from the challenge's seed, daily peek time.
+  const [game, setGame] = useState<GameState | null>(() => (challenge ? newGame('challenge', practiceRounds(rng(challenge.seed)), PEEK_MS[DAILY_DIFFICULTY]) : null));
+  useEffect(() => {
+    if (challenge) host.report({ type: 'start' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const rootRef = useRef<HTMLDivElement>(null);
   // Each new screen and colour starts at the top of the (scrollable) stage.
   const view = `${screen}:${game?.mode ?? ''}:${game?.index ?? ''}:${game?.phase === 'done'}`;
@@ -113,7 +119,7 @@ function ColorRecall({ host }: { host: GameHost }) {
     sfx().reveal(result.points);
     if (result.points >= 900) navigator.vibrate?.(30);
     if (next.results.length >= next.rounds.length) {
-      const end = reportEnd(host, next.results, game.mode === 'daily');
+      const end = reportEnd(host, next.results, game.mode === 'daily', game.mode === 'challenge' ? challenge : undefined);
       if (game.mode === 'practice') s = recordPracticeGame(s, end.score);
     }
     commit(s);
@@ -149,6 +155,7 @@ function ColorRecall({ host }: { host: GameHost }) {
             setScreen('menu');
           }}
           onAgain={startPractice}
+          challengeId={challenge?.id}
         />
       )}
     </div>
@@ -159,9 +166,9 @@ function ColorRecall({ host }: { host: GameHost }) {
  * The one place a finished 5-colour game is reported to the arcade. `isDaily` marks today's
  * shared daily run (never practice); the arcade counts it as this game's own daily.
  */
-function reportEnd(host: GameHost, results: RoundResult[], isDaily: boolean): ReturnType<typeof endStats> {
+function reportEnd(host: GameHost, results: RoundResult[], isDaily: boolean, challenge?: GameModuleProps['challenge']): ReturnType<typeof endStats> {
   const end = endStats(results);
-  host.report(isDaily ? { type: 'end', ...end, daily: true } : { type: 'end', ...end });
+  host.report(isDaily ? { type: 'end', ...end, daily: true } : challenge ? { type: 'end', ...end, challenge: { id: challenge.id, round: challenge.round } } : { type: 'end', ...end });
   return end;
 }
 
@@ -394,6 +401,7 @@ function Play(props: {
   onSliders: (m: SliderMode) => void;
   onMenu: () => void;
   onAgain: () => void;
+  challengeId?: string;
 }) {
   const { game, onHide } = props;
   const round = game.rounds[game.index];
@@ -443,7 +451,7 @@ function Play(props: {
         <button className="cr-icon-btn" onClick={props.onMenu} aria-label="Back to menu">
           ←
         </button>
-        <span className="cr-kicker">{game.mode === 'daily' ? `Daily #${dailyNumber(props.today)}` : 'Practice'}</span>
+        <span className="cr-kicker">{game.mode === 'daily' ? `Daily #${dailyNumber(props.today)}` : game.mode === 'challenge' ? '⚔️ Challenge round' : 'Practice'}</span>
         <ol className="cr-pips" aria-label={`Color ${game.index + 1} of ${game.rounds.length}`}>
           {game.rounds.map((_, i) => {
             const r = game.results[i];
@@ -649,13 +657,13 @@ function Mixer({ mix, mode, onChange, onMode, target, readOnly }: { mix: Mix; mo
 
 /* --------------------------------------------------------------- summary */
 
-function Summary({ game, today, save, onMenu, onAgain }: { game: GameState; today: string; save: CrSave; onMenu: () => void; onAgain: () => void }) {
+function Summary({ game, today, save, onMenu, onAgain, challengeId }: { game: GameState; today: string; save: CrSave; onMenu: () => void; onAgain: () => void; challengeId?: string }) {
   const score = totalScore(game.results);
   const streak = crStats(save, today).streak;
   const best = game.results.reduce((a, r) => Math.max(a, r.points), 0);
   return (
     <div className="cr-summary">
-      <span className="cr-kicker">{game.mode === 'daily' ? `Daily #${dailyNumber(today)} complete` : 'Practice complete'}</span>
+      <span className="cr-kicker">{game.mode === 'daily' ? `Daily #${dailyNumber(today)} complete` : game.mode === 'challenge' ? '⚔️ Challenge round complete' : 'Practice complete'}</span>
       <p className="cr-summary-score">
         <b className="cr-mono">{fmt(score)}</b>
         <span>/ {fmt(MAX_SCORE)}</span>
@@ -683,6 +691,10 @@ function Summary({ game, today, save, onMenu, onAgain }: { game: GameState; toda
       <div className="cr-row">
         {game.mode === 'daily' ? (
           <ShareButton today={today} results={game.results} streak={streak} />
+        ) : game.mode === 'challenge' && challengeId ? (
+          <a className="cr-btn cr-btn-go" href={`/c/${challengeId}`}>
+            See the scoreboard
+          </a>
         ) : (
           <button className="cr-btn cr-btn-go" onClick={onAgain}>
             Play again

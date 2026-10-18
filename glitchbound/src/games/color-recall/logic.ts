@@ -136,7 +136,8 @@ export function scoreGuess(target: ColorTarget, guess: Rgb): RoundResult {
 export type Phase = 'peek' | 'guess' | 'reveal' | 'done';
 
 export interface GameState {
-  mode: 'daily' | 'practice';
+  /** A challenge round is five seeded practice colours, the same for every player. */
+  mode: 'daily' | 'practice' | 'challenge';
   peekMs: number;
   rounds: RoundSpec[];
   index: number;

@@ -661,3 +661,7 @@
     transform: none;
   }
 }
+a.mg-btn {
+  color: var(--mg-ink);
+  text-decoration: none;
+}

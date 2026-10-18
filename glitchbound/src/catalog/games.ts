@@ -87,6 +87,7 @@ export const GAMES: GameEntry[] = [
       'Spoiler-free share text, local top-5 records and daily streaks',
     ],
     ownDaily: { label: 'Today’s grid' },
+    challenge: { label: 'A Classic run on the same patterns for everyone: one slip ends it. Highest score wins.' },
     daily: [
       { metric: 'longest', targets: [6, 7, 8, 9], label: 'Repeat a {n}-step sequence' },
       { metric: 'score', targets: [150, 250, 350], label: 'Score {n} points in one run' },
@@ -129,6 +130,7 @@ export const GAMES: GameEntry[] = [
       'HSB or RGB sliders with fine-tune buttons, built for phones',
     ],
     ownDaily: { label: 'Today’s 5 colors' },
+    challenge: { label: 'The same five colours for everyone, with a 3-second peek. The closest mixes win.' },
     daily: [
       { metric: 'score', targets: [3000, 3300, 3600, 3900], label: 'Score {n} points in one 5-color game' },
       { metric: 'bestColor', targets: [850, 900, 950], label: 'Mix a single color worth {n} points' },
@@ -172,6 +174,7 @@ export const GAMES: GameEntry[] = [
       'Spoiler-free arrow grid to share',
     ],
     ownDaily: { label: 'Today’s word' },
+    challenge: { label: 'The same secret word for everyone. Fewer guesses and a faster solve score more.' },
     daily: [
       { metric: 'spare', targets: [1, 2, 2, 3], label: 'Solve a Letter Pinch with {n} or more guesses left' },
       { metric: 'score', targets: [450, 500, 550], label: 'Score {n} points in one Letter Pinch puzzle' },
@@ -220,6 +223,7 @@ export const GAMES: GameEntry[] = [
       'Tyre walls and solid scenery: no cutting across the sand',
     ],
     ownDaily: { label: 'Today’s track' },
+    challenge: { label: 'A 3-lap Time Trial on the same new track, against the best ghost so far. Most race points wins.' },
     daily: [
       { metric: 'score', targets: [2400, 2700, 2900], label: 'Score {n} race points in one race' },
       { metric: 'drift', targets: [1500, 2500, 3500], label: 'Rack up {n} drift points in one race' },
@@ -267,6 +271,7 @@ export const GAMES: GameEntry[] = [
       'Undo, restart, hints and a spare tube when you are stuck',
     ],
     ownDaily: { label: 'Today’s 5 puzzles' },
+    challenge: { label: 'Five puzzles, the same for everyone. Solve them in as few moves as you can.' },
     daily: [
       { metric: 'underPar', targets: [2, 3, 4], label: 'Solve {n} Color Lab puzzles at or under par in one run' },
       { metric: 'levels', targets: [5, 8, 10], label: 'Reach level {n} in Color Lab Endless' },
@@ -310,6 +315,7 @@ export const GAMES: GameEntry[] = [
       'Hints, a tap-spam lock and a score for speed and accuracy',
     ],
     ownDaily: { label: 'Today’s 3 pictures' },
+    challenge: { label: 'The same three pictures for everyone. Find every difference fast, with few misses.' },
     daily: [
       { metric: 'score', targets: [2000, 2300, 2500], label: 'Score {n} points in one Spot the Glitch daily' },
       { metric: 'found', targets: [12, 15, 20], label: 'Find {n} glitches in one Spot the Glitch game' },
@@ -353,6 +359,7 @@ export const GAMES: GameEntry[] = [
       'Zoom up to 3.2×, two hints per shot, streaks and spoiler-free sharing',
     ],
     ownDaily: { label: 'Today’s 5 shots' },
+    challenge: { label: 'The same three scenes for everyone. Find the ball fast, with few wrong taps.' },
     daily: [
       { metric: 'score', targets: [3000, 3500, 4000], label: 'Score {n} points in one Where’s the Ball? daily' },
       { metric: 'found', targets: [5, 8, 12], label: 'Find {n} balls in one Where’s the Ball? game' },
@@ -437,6 +444,7 @@ export const GAMES: GameEntry[] = [
       'Check, letter and word hints when you are stuck',
     ],
     ownDaily: { label: 'Today’s grid' },
+    challenge: { label: 'The same grid for everyone. A fast solve without hints scores most.' },
     daily: [{ metric: 'score', targets: [900, 1000, 1100], label: 'Score {n} points in one Crosswire grid' }],
   },
   {

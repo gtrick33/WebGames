@@ -39,8 +39,8 @@ const reducedMotion = (): boolean => typeof matchMedia !== 'undefined' && matchM
 const TILT_MS = 240;
 const POUR_MS = 300;
 
-export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
-  return <ColorLab key={restartKey} host={host} pauseKey={pauseKey} />;
+export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
+  return <ColorLab key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} />;
 }
 
 type Screen = 'menu' | 'play' | 'stats';
@@ -54,9 +54,12 @@ interface Run {
   seed: number;
   practiceStep: number;
   over: boolean;
+  /** A friends' challenge: five daily-style levels from the challenge's seed (mode stays 'daily'). */
+  challenge?: { id: string; round: number };
 }
 
 function levelFor(run: Run, today: string): Level {
+  if (run.challenge) return dailyLevel(`challenge-${run.seed}`, run.step);
   if (run.mode === 'daily') return dailyLevel(today, run.step);
   if (run.mode === 'practice') {
     const r = rng(run.seed + run.step * 7919);
@@ -65,12 +68,19 @@ function levelFor(run: Run, today: string): Level {
   return ladderLevel(run.seed + run.step * 7919, run.step);
 }
 
-function ColorLab({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
+function ColorLab({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: number; challenge?: GameModuleProps['challenge'] }) {
   const [today] = useState(() => dayKey());
   const [save, setSave] = useState<ClSave>(loadCl);
-  const [screen, setScreen] = useState<Screen>('menu');
-  const [run, setRun] = useState<Run | null>(null);
-  const [level, setLevel] = useState<LevelState | null>(null);
+  const [firstRun] = useState<Run | null>(() =>
+    challenge ? { mode: 'daily', step: 0, results: [], lives: LIVES, seed: challenge.seed, practiceStep: 3, over: false, challenge: { id: challenge.id, round: challenge.round } } : null,
+  );
+  const [screen, setScreen] = useState<Screen>(challenge ? 'play' : 'menu');
+  const [run, setRun] = useState<Run | null>(firstRun);
+  const [level, setLevel] = useState<LevelState | null>(() => (firstRun ? startLevel(levelFor(firstRun, today), 'daily') : null));
+  useEffect(() => {
+    if (challenge) host.report({ type: 'start' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const saveRef = useRef(save);
@@ -122,13 +132,13 @@ function ColorLab({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
   const finishLevel = (lv: LevelState): void => {
     if (!run) return;
     const result = resultOf(lv);
-    let s = recordLevel(saveRef.current, result, run.mode === 'daily' ? today : null, run.mode === 'practice');
+    let s = recordLevel(saveRef.current, result, run.mode === 'daily' && !run.challenge ? today : null, run.mode === 'practice');
     let next: Run;
     if (run.mode === 'daily') {
       next = { ...run, results: [...run.results, result] };
       if (next.results.length >= DAILY_LEVELS) {
         next = { ...next, over: true };
-        reportEnd(host, 'daily', next.results);
+        reportEnd(host, 'daily', next.results, run.challenge);
       }
     } else if (run.mode === 'endless') {
       const lost = result.moves > result.par + ENDLESS_SLACK ? 1 : 0;
@@ -209,9 +219,9 @@ function ColorLab({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
 }
 
 /** The one place a finished run is reported (`daily: true` only for today's daily). */
-function reportEnd(host: GameHost, mode: Mode, rs: readonly LevelResult[]): void {
+function reportEnd(host: GameHost, mode: Mode, rs: readonly LevelResult[], challenge?: Run['challenge']): void {
   const end = endStats(mode, rs);
-  host.report(mode === 'daily' ? { type: 'end', ...end, daily: true } : { type: 'end', ...end });
+  host.report(challenge ? { type: 'end', ...end, challenge } : mode === 'daily' ? { type: 'end', ...end, daily: true } : { type: 'end', ...end });
 }
 
 /* ------------------------------------------------------------------ menu */
@@ -465,6 +475,7 @@ function Stats({ save, today, onBack }: { save: ClSave; today: string; onBack: (
 /* ------------------------------------------------------------------ play */
 
 function runLabel(run: Run, today: string): string {
+  if (run.challenge) return `⚔️ Challenge · ${run.step + 1}/${DAILY_LEVELS}`;
   if (run.mode === 'daily') return `Daily #${dailyNumber(today)} · ${run.step + 1}/${DAILY_LEVELS}`;
   if (run.mode === 'endless') return `Endless · level ${run.step + 1}`;
   if (run.mode === 'precision') return `Par Challenge · level ${run.step + 1}`;
@@ -841,7 +852,7 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
   const streak = clStats(save, today).streak;
   const solved = run.results.filter((r) => r.solved).length;
   const title =
-    run.mode === 'daily' ? `Daily #${dailyNumber(today)} complete` : run.mode === 'endless' ? 'Endless run over' : run.mode === 'precision' ? 'Par Challenge over' : 'Practice';
+    run.challenge ? '⚔️ Challenge round complete' : run.mode === 'daily' ? `Daily #${dailyNumber(today)} complete` : run.mode === 'endless' ? 'Endless run over' : run.mode === 'precision' ? 'Par Challenge over' : 'Practice';
   return (
     <div className="cl-summary">
       <span className="cl-kicker">{title}</span>
@@ -858,7 +869,7 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
       )}
       <p className="cl-muted">
         {totalStars(run.results)} ★ · {total} points
-        {run.mode === 'daily' && streak > 0 ? ` · 🔥 ${streak}` : ''}
+        {run.mode === 'daily' && !run.challenge && streak > 0 ? ` · 🔥 ${streak}` : ''}
         {run.mode === 'endless' ? ` · best ${save.endless.bestLevels}` : run.mode === 'precision' ? ` · best ${save.precision.bestLevels}` : ''}
       </p>
       <ul className="cl-summary-list">
@@ -874,7 +885,11 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
         ))}
       </ul>
       <div className="cl-row">
-        {run.mode === 'daily' ? (
+        {run.challenge ? (
+          <a className="cl-btn cl-btn-go" href={`/c/${run.challenge.id}`}>
+            See the scoreboard
+          </a>
+        ) : run.mode === 'daily' ? (
           <ShareButton label={`#${dailyNumber(today)}`} results={run.results} streak={streak} />
         ) : (
           <button className="cl-btn cl-btn-go" onClick={onAgain}>

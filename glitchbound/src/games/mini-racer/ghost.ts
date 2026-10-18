@@ -87,3 +87,35 @@ export function decodeGhost(text: string | null): Ghost | null {
     return null;
   }
 }
+
+/**
+ * Compact text form for sharing a ghost (friends' challenges): base64url of 32-bit integers
+ * [time ms, t0 ms, x·10, y·10, a·1000, ...]. About 8 KB for a 25-second lap.
+ */
+export function encodeReplay(g: Ghost): string {
+  const ints = new Int32Array(2 + g.frames.length);
+  ints[0] = Math.round(g.time * 1000);
+  ints[1] = Math.round(g.t0 * 1000);
+  g.frames.forEach((v, i) => (ints[2 + i] = Math.round(v * (i % 3 === 2 ? 1000 : 10))));
+  const bytes = new Uint8Array(ints.buffer);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]!);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export function decodeReplay(text: string | null | undefined): Ghost | null {
+  if (!text || !/^[A-Za-z0-9_-]+$/.test(text)) return null;
+  try {
+    const bin = atob(text.replace(/-/g, '+').replace(/_/g, '/'));
+    if (bin.length % 4 !== 0) return null;
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const ints = new Int32Array(bytes.buffer);
+    const frames = Array.from(ints.subarray(2), (v, i) => v / (i % 3 === 2 ? 1000 : 10));
+    const time = ints[0]! / 1000;
+    if (frames.length < 6 || frames.length % 3 !== 0 || !(time > 0 && time < 600)) return null;
+    return { time, t0: Math.max(0, ints[1]! / 1000), frames };
+  } catch {
+    return null;
+  }
+}

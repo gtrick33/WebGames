@@ -873,3 +873,9 @@
     opacity: 0;
   }
 }
+a.cl-btn {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}

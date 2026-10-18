@@ -37,14 +37,18 @@ function reportEnd(host: GameModuleProps['host'], score: number, stats: Record<s
 type Screen = 'menu' | 'play' | 'result' | 'records';
 type Flash = { tile: number; kind: 'hit' | 'miss'; id: number } | null;
 
-export default function Game({ host, restartKey }: GameModuleProps) {
-  return <MemoryGrid key={restartKey} host={host} />;
+export default function Game({ host, restartKey, challenge }: GameModuleProps) {
+  return <MemoryGrid key={restartKey} host={host} challenge={challenge} />;
 }
 
-function MemoryGrid({ host }: Pick<GameModuleProps, 'host'>) {
+/** A friends' challenge is a Classic run on patterns from the challenge's seed. */
+const challengeRun = (c: NonNullable<GameModuleProps['challenge']>): RunState => createRun('classic', `challenge:${c.seed}`);
+
+function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challenge'>) {
   const [records, setRecords] = useState<Records>(loadRecords);
-  const [screen, setScreen] = useState<Screen>('menu');
-  const [run, setRun] = useState<RunState | null>(null);
+  const [screen, setScreen] = useState<Screen>(challenge ? 'play' : 'menu');
+  const [firstRun] = useState(() => (challenge ? challengeRun(challenge) : null));
+  const [run, setRun] = useState<RunState | null>(firstRun);
   const [lit, setLit] = useState<number | null>(null);
   const [flash, setFlash] = useState<Flash>(null);
   const [cursor, setCursor] = useState(0);
@@ -55,7 +59,9 @@ function MemoryGrid({ host }: Pick<GameModuleProps, 'host'>) {
   const [replay, setReplay] = useState(0);
   const [today] = useState(() => dayKey());
 
-  const runRef = useRef<RunState | null>(null);
+  const runRef = useRef<RunState | null>(firstRun);
+  const inChallenge = useRef(!!challenge);
+  const [challengeShown, setChallengeShown] = useState(!!challenge);
   const sfxRef = useRef<Sfx | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const recordsRef = useRef(records);
@@ -98,14 +104,23 @@ function MemoryGrid({ host }: Pick<GameModuleProps, 'host'>) {
       saveRecords(out.records);
       setOutcome({ ...out, summary });
       setShareNote('');
-      reportEnd(host, s.score, reportStats(summary), out.officialDaily);
+      if (inChallenge.current && challenge) host.report({ type: 'end', score: s.score, stats: reportStats(summary), challenge: { id: challenge.id, round: challenge.round } });
+      else reportEnd(host, s.score, reportStats(summary), out.officialDaily);
       if (s.end === 'complete') sfxRef.current?.complete();
     },
-    [host, today],
+    [host, today, challenge],
   );
+
+  // A challenge round starts straight away.
+  useEffect(() => {
+    if (challenge) host.report({ type: 'start' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const start = useCallback(
     (mode: Mode) => {
+      inChallenge.current = false;
+      setChallengeShown(false);
       sfxRef.current?.unlock();
       const seed = mode === 'daily' ? dailySeed(today) : mode === 'perfect' ? perfectSeed(today) : randomSeed();
       commit(createRun(mode, seed));
@@ -246,7 +261,7 @@ function MemoryGrid({ host }: Pick<GameModuleProps, 'host'>) {
       }
       const s = runRef.current;
       if (screen === 'result') {
-        if (s && (e.key === 'r' || e.key === 'R' || (e.key === 'Enter' && !(target instanceof HTMLButtonElement)))) {
+        if (s && !inChallenge.current && (e.key === 'r' || e.key === 'R' || (e.key === 'Enter' && !(target instanceof HTMLButtonElement)))) {
           e.preventDefault();
           start(s.mode);
         }
@@ -341,6 +356,7 @@ function MemoryGrid({ host }: Pick<GameModuleProps, 'host'>) {
       {screen === 'result' && run && outcome && (
         <Result
           run={run}
+          challengeId={challengeShown ? challenge?.id : undefined}
           outcome={outcome}
           streak={streak}
           shareNote={shareNote}
@@ -549,6 +565,7 @@ function Stat({ label, value, hot }: { label: string; value: string | number; ho
 
 function Result({
   run,
+  challengeId,
   outcome,
   streak,
   shareNote,
@@ -557,6 +574,8 @@ function Result({
   onShare,
 }: {
   run: RunState;
+  /** Set for a friends' challenge round: one attempt, then the scoreboard. */
+  challengeId?: string;
   outcome: RecordOutcome & { summary: RunSummary };
   streak: number;
   shareNote: string;
@@ -569,7 +588,7 @@ function Result({
   const best = outcome.records.best[s.mode];
   return (
     <div className="mg-result">
-      <p className="mg-result-mode">{MODE_NAMES[s.mode]}</p>
+      <p className="mg-result-mode">{challengeId ? '⚔️ Challenge round' : MODE_NAMES[s.mode]}</p>
       <h2 className="mg-result-head">{headline}</h2>
       <p className="mg-result-score">
         <span>{s.score}</span> pts
@@ -600,9 +619,15 @@ function Result({
         </div>
       </dl>
       <div className="mg-result-actions">
-        <button className="mg-btn mg-btn-go" onClick={onRetry} autoFocus>
-          {s.mode === 'daily' ? 'Play again' : 'Retry'} <kbd>Enter</kbd>
-        </button>
+        {challengeId ? (
+          <a className="mg-btn mg-btn-go" href={`/c/${challengeId}`} autoFocus>
+            See the scoreboard
+          </a>
+        ) : (
+          <button className="mg-btn mg-btn-go" onClick={onRetry} autoFocus>
+            {s.mode === 'daily' ? 'Play again' : 'Retry'} <kbd>Enter</kbd>
+          </button>
+        )}
         <button className="mg-btn" onClick={onShare}>
           Share
         </button>

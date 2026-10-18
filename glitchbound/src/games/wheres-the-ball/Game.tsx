@@ -39,8 +39,8 @@ type Mode = 'daily' | 'endless';
 const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
 const ZOOMS = [1, 1.6, 2.4, 3.2];
 
-export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
-  return <WheresTheBall key={restartKey} host={host} pauseKey={pauseKey} />;
+export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
+  return <WheresTheBall key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} />;
 }
 
 interface Run {
@@ -50,6 +50,8 @@ interface Run {
   lives: number;
   over: boolean;
   seed: number;
+  /** A friends' challenge: the first daily-length levels of a seeded run (mode stays 'daily'). */
+  challenge?: { id: string; round: number };
 }
 
 /** A game clock that only runs while a level is on screen and not paused. */
@@ -71,9 +73,10 @@ function useClock(running: boolean): [number, () => number] {
 }
 
 function sceneFor(run: Run, today: string): Scene {
-  const scene = run.mode === 'daily' ? dailyScene(today, run.index) : endlessScene(run.seed, run.index);
+  const pick = (i: number): Scene => (run.mode === 'daily' && !run.challenge ? dailyScene(today, i) : endlessScene(run.seed, i));
+  const scene = pick(run.index);
   // Fetch the next level's photo in the background so it opens instantly.
-  const next = run.mode === 'daily' ? (run.index + 1 < DAILY_LEVELS ? dailyScene(today, run.index + 1) : null) : endlessScene(run.seed, run.index + 1);
+  const next = run.mode !== 'daily' || run.index + 1 < DAILY_LEVELS ? pick(run.index + 1) : null;
   if (next?.photo) void loadPhoto(next.photo.id).catch(() => undefined);
   return scene;
 }
@@ -103,11 +106,18 @@ function usePicture(scene: Scene | null): Picture {
 
 const placeName = (s: Scene): string => (s.photo ? s.photo.title : ENV_NAMES[s.env]);
 
-function WheresTheBall({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
+function WheresTheBall({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: number; challenge?: GameModuleProps['challenge'] }) {
   const [today] = useState(() => dayKey());
   const [save, setSave] = useState<WbSave>(loadWb);
-  const [run, setRun] = useState<Run | null>(null);
-  const [level, setLevel] = useState<LevelState | null>(null);
+  const [firstRun] = useState<Run | null>(() =>
+    challenge ? { mode: 'daily', index: 0, results: [], lives: LIVES, over: false, seed: challenge.seed, challenge: { id: challenge.id, round: challenge.round } } : null,
+  );
+  const [run, setRun] = useState<Run | null>(firstRun);
+  const [level, setLevel] = useState<LevelState | null>(() => (firstRun ? startLevel(sceneFor(firstRun, today), 0) : null));
+  useEffect(() => {
+    if (challenge) host.report({ type: 'start' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [paused, setPaused] = useState(false);
   const [hidden, setHidden] = useState(false);
   const saveRef = useRef(save);
@@ -158,12 +168,12 @@ function WheresTheBall({ host, pauseKey }: { host: GameHost; pauseKey?: number }
   const finish = (s: LevelState): void => {
     if (!run) return;
     const res = resultOf(s);
-    let sv = recordLevel(saveRef.current, res, run.mode === 'daily' ? today : null);
+    let sv = recordLevel(saveRef.current, res, run.mode === 'daily' && !run.challenge ? today : null);
     const results = [...run.results, res];
     let next: Run = { ...run, results };
     if (run.mode === 'daily' && results.length >= DAILY_LEVELS) {
       next.over = true;
-      host.report({ type: 'end', ...endStats(results), daily: true });
+      host.report(run.challenge ? { type: 'end', ...endStats(results), challenge: run.challenge } : { type: 'end', ...endStats(results), daily: true });
     }
     if (run.mode === 'endless') {
       next = { ...next, lives: run.lives - (res.found ? 0 : 1) };
@@ -449,7 +459,7 @@ function Play(props: {
   const secs = secondsOf(level, props.clockMs);
   const hints = Array.from({ length: level.hints }, (_, i) => hintBox(scene, i + 1, rng(scene.seed + i)));
   const done = level.outcome !== 'play';
-  const label = run.mode === 'daily' ? `Daily #${dailyNumber(props.today)} · ${run.index + 1}/${DAILY_LEVELS}` : `Endless · level ${run.index + 1}`;
+  const label = run.challenge ? `⚔️ Challenge · ${run.index + 1}/${DAILY_LEVELS}` : run.mode === 'daily' ? `Daily #${dailyNumber(props.today)} · ${run.index + 1}/${DAILY_LEVELS}` : `Endless · level ${run.index + 1}`;
   const res = done ? resultOf(level) : null;
 
   return (
@@ -572,16 +582,20 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
   const found = run.results.filter((r) => r.found).length;
   return (
     <div className="wb-menu">
-      <span className="wb-kicker">{run.mode === 'daily' ? `Daily #${dailyNumber(today)} complete` : 'Endless run over'}</span>
+      <span className="wb-kicker">{run.challenge ? '⚔️ Challenge round complete' : run.mode === 'daily' ? `Daily #${dailyNumber(today)} complete` : 'Endless run over'}</span>
       <BallIcon />
       <p className="wb-big wb-mono">{fmt(totalScore(run.results))}</p>
       <p className="wb-muted">
         {found} found{run.mode === 'daily' ? ` of ${DAILY_LEVELS}` : ` · best ${save.endless.bestLevels}`}
-        {run.mode === 'daily' && streak > 0 ? ` · 🔥 ${streak}` : ''}
+        {run.mode === 'daily' && !run.challenge && streak > 0 ? ` · 🔥 ${streak}` : ''}
       </p>
       <p className="wb-squares">{run.results.map(squareFor).join(' ')}</p>
       <div className="wb-row">
-        {run.mode === 'daily' ? (
+        {run.challenge ? (
+          <a className="wb-btn wb-btn-go" href={`/c/${run.challenge.id}`}>
+            See the scoreboard
+          </a>
+        ) : run.mode === 'daily' ? (
           <ShareButton today={today} results={run.results} streak={streak} />
         ) : (
           <button className="wb-btn wb-btn-go" onClick={onAgain}>

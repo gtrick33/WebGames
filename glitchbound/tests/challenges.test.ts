@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GAMES } from '../src/catalog/games';
 import { cleanName, dailySeed, NAME_MAX, roundSeed, roundWinners } from '../src/platform/challenge';
+import { decodeReplay, encodeReplay } from '../src/games/mini-racer/ghost';
 import { challengeSpecOf } from '../src/platform/useChallengeRun';
 
 describe('friends challenges', () => {
@@ -38,8 +39,21 @@ describe('friends challenges', () => {
     expect(challengeSpecOf({ status: 'error', message: 'x' })).toBeUndefined();
   });
 
-  it('only offers challenges in games that support them, never NEON RUSH', () => {
-    expect(GAMES.find((g) => g.slug === 'neon-rush')?.challenge).toBeUndefined();
+  it('sends Mini Racer ghosts as compact text the server accepts', () => {
+    const ghost = { time: 23.456, t0: 0.05, frames: Array.from({ length: 3 * 470 }, (_, i) => (i % 3 === 2 ? Math.round(Math.sin(i) * 3000) / 1000 : Math.round(i * 37.3) / 10)) };
+    const text = encodeReplay(ghost);
+    expect(text).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(text.length).toBeLessThan(20_000);
+    const back = decodeReplay(text)!;
+    expect(back.time).toBeCloseTo(ghost.time, 3);
+    expect(back.frames).toHaveLength(ghost.frames.length);
+    back.frames.forEach((v, i) => expect(v).toBeCloseTo(ghost.frames[i]!, 2));
+    expect(decodeReplay('not base64!')).toBeNull();
+    expect(decodeReplay('')).toBeNull();
+  });
+
+  it('offers challenges in every game but NEON RUSH and the live card game', () => {
+    expect(GAMES.filter((g) => !g.challenge).map((g) => g.slug).sort()).toEqual(['neon-rush', 'unhinged']);
     for (const g of GAMES.filter((x) => x.challenge)) expect(g.challenge!.label.length).toBeGreaterThan(10);
   });
 });

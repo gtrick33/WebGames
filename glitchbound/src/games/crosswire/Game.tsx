@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
-import { ARROW, wordCells, type Puzzle, type Size } from './grid';
+import { ARROW, makePuzzle, wordCells, type Puzzle, type Size } from './grid';
 import {
   backspace,
   dailyNumber,
@@ -52,16 +52,19 @@ const writeSave = (s: Save): void => {
 
 const ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
-export default function Game({ host, restartKey }: GameModuleProps) {
-  return <Crosswire key={restartKey} host={host} />;
+export default function Game({ host, restartKey, challenge }: GameModuleProps) {
+  return <Crosswire key={restartKey} host={host} challenge={challenge} />;
 }
 
-type Screen = { kind: 'menu' } | { kind: 'play'; daily: boolean; puzzle: Puzzle };
+type Screen = { kind: 'menu' } | { kind: 'play'; daily: boolean; puzzle: Puzzle; challenge?: { id: string; round: number } };
 
-function Crosswire({ host }: { host: GameHost }) {
+function Crosswire({ host, challenge }: { host: GameHost; challenge?: GameModuleProps['challenge'] }) {
   const [today] = useState(() => dayKey());
   const [save, setSave] = useState<Save>(loadSave);
-  const [screen, setScreen] = useState<Screen>({ kind: 'menu' });
+  // A friends' challenge is a medium grid from the challenge's seed.
+  const [screen, setScreen] = useState<Screen>(() =>
+    challenge ? { kind: 'play', daily: false, puzzle: makePuzzle(challenge.seed, 'medium'), challenge: { id: challenge.id, round: challenge.round } } : { kind: 'menu' },
+  );
   const commit = useCallback((s: Save) => {
     setSave(s);
     writeSave(s);
@@ -73,6 +76,7 @@ function Crosswire({ host }: { host: GameHost }) {
         key={screen.puzzle.seed}
         puzzle={screen.puzzle}
         daily={screen.daily}
+        challenge={screen.challenge}
         today={today}
         save={save}
         host={host}
@@ -131,7 +135,17 @@ function Crosswire({ host }: { host: GameHost }) {
   );
 }
 
-function Play(props: { puzzle: Puzzle; daily: boolean; today: string; save: Save; host: GameHost; commit: (s: Save) => void; onMenu: () => void; onAgain: (s: Size) => void }) {
+function Play(props: {
+  puzzle: Puzzle;
+  daily: boolean;
+  challenge?: { id: string; round: number };
+  today: string;
+  save: Save;
+  host: GameHost;
+  commit: (s: Save) => void;
+  onMenu: () => void;
+  onAgain: (s: Size) => void;
+}) {
   const { puzzle: p, daily, today, save, host, commit } = props;
   const stored = daily ? save.daily[today] : undefined;
   const [entries, setEntries] = useState<Entries>(stored?.entries ?? {});
@@ -175,7 +189,7 @@ function Play(props: { puzzle: Puzzle; daily: boolean; today: string; save: Save
     if (daily) next.daily = { ...save.daily, [today]: { entries, tally: t, done: true, score: pts } };
     commit(next);
     const end = { type: 'end' as const, score: pts, stats: { seconds: Math.max(1, t.seconds), clean: t.letterHints + t.wordHints === 0 ? 1 : 0 } };
-    host.report(daily ? { ...end, daily: true } : end);
+    host.report(daily ? { ...end, daily: true } : props.challenge ? { ...end, challenge: props.challenge } : end);
   };
 
   const after = (e: Entries): void => {
@@ -277,7 +291,7 @@ function Play(props: { puzzle: Puzzle; daily: boolean; today: string; save: Save
         <button className="xw-icon" onClick={props.onMenu} aria-label="Back to menu">
           ←
         </button>
-        <span className="xw-kicker">{daily ? `Daily #${dailyNumber(today)}` : 'Practice'}</span>
+        <span className="xw-kicker">{daily ? `Daily #${dailyNumber(today)}` : props.challenge ? '⚔️ Challenge grid' : 'Practice'}</span>
         <span className="xw-time">
           {Math.floor(tally.seconds / 60)}:{String(tally.seconds % 60).padStart(2, '0')}
         </span>
@@ -417,6 +431,10 @@ function Play(props: { puzzle: Puzzle; daily: boolean; today: string; save: Save
               >
                 {msg || 'Share'}
               </button>
+            ) : props.challenge ? (
+              <a className="xw-btn xw-btn-go" href={`/c/${props.challenge.id}`}>
+                See the scoreboard
+              </a>
             ) : (
               <button className="xw-btn xw-btn-go" onClick={() => props.onAgain(p.rows <= 7 ? 'small' : p.rows <= 9 ? 'medium' : 'large')}>
                 Next grid

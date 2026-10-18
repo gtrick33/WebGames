@@ -6,6 +6,7 @@ import { Engine, type UiKey } from './engine';
 import { drawCarPreview, fmtTime, THEMES } from './render';
 import { AI_PRESETS, RACE_LAPS, type RaceMode, type RaceSim, type Result } from './sim';
 import { sectorTimes } from './sectors';
+import { decodeReplay, encodeReplay } from './ghost';
 import { clearGhost, loadGhost, loadSave, saveGhost, writeSave, type Bests, type SaveData } from './storage';
 import { buildTrack, medalTimes, TRACK_TYPES, type Surface, type Track, type TrackDef } from './track';
 import { TRACKS } from './tracks';
@@ -69,7 +70,9 @@ function surfacesOf(def: TrackDef): Surface[] {
   return [...set];
 }
 
-export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
+const CHALLENGE_ID = 'challenge';
+
+export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Engine | null>(null);
@@ -93,6 +96,15 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
     return t;
   }, []);
   const defFor = useCallback((id: string) => allDefs.find((d) => d.id === id) ?? allDefs[1]!, [allDefs]);
+  // A friends' challenge: a Time Trial on a track from the challenge's seed, against the best ghost so far.
+  const challengeDef = useMemo<TrackDef | null>(() => (challenge ? { ...dailyTrack(`challenge-${challenge.seed >>> 0}`), id: CHALLENGE_ID, blurb: 'A friends’ challenge track.' } : null), [challenge]);
+  const rival = useMemo(() => {
+    const r = challenge?.replays?.[0];
+    const ghost = decodeReplay(r?.replay);
+    return r && ghost ? { name: r.name, ghost } : null;
+  }, [challenge]);
+  const inChallenge = useRef(!!challenge);
+  const [challengeShown, setChallengeShown] = useState(!!challenge);
   const selected = defFor(save.track);
   const car = getCar(save.car);
 
@@ -112,11 +124,12 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
     const engine = engineRef.current;
     if (!engine) return;
     const s = saveRef.current;
-    const def = defFor(s.track);
+    const chal = inChallenge.current && challengeDef;
+    const def = chal ? challengeDef : defFor(s.track);
     engine.releaseInput();
-    const b = s.bests[def.id] ?? {};
-    engine.race(trackFor(def), specFor(getCar(s.car)), loadGhost(def.id), b.lap ?? null, {
-      mode: s.mode,
+    const b: Bests = chal ? {} : (s.bests[def.id] ?? {});
+    engine.race(trackFor(def), specFor(getCar(s.car)), chal ? (rival?.ghost ?? null) : loadGhost(def.id), b.lap ?? null, {
+      mode: chal ? 'trial' : s.mode,
       aiLevel: s.aiLevel,
       playerCar: s.car,
       bestSplits: b.splits ?? null,
@@ -124,11 +137,13 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
     setFinish(null);
     go('race');
     host.report({ type: 'start' });
-  }, [defFor, trackFor, go, host]);
+  }, [defFor, trackFor, go, host, challengeDef, rival]);
 
   const toMenu = useCallback(() => {
     const engine = engineRef.current;
     if (!engine) return;
+    inChallenge.current = false;
+    setChallengeShown(false);
     engine.attract(trackFor(defFor(saveRef.current.track)));
     go('menu');
   }, [defFor, trackFor, go]);
@@ -138,6 +153,16 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
       const result = sim.result();
       const def = sim.track.def;
       const s0 = saveRef.current;
+      if (def.id === CHALLENGE_ID && challenge) {
+        // Challenge laps don't touch your bests, ghosts or coins; the best lap goes to the others as a ghost.
+        const stats: Record<string, number> = { drift: result.drift, cleanLaps: result.cleanLaps };
+        if (result.best !== null) stats.lapMs = Math.round(result.best * 1000);
+        if (result.raceTime !== null) stats.raceMs = Math.round(result.raceTime * 1000);
+        host.report({ type: 'end', score: result.score, stats, challenge: { id: challenge.id, round: challenge.round, replay: sim.newGhost ? encodeReplay(sim.newGhost) : undefined } });
+        setFinish({ result, track: def, newRecord: false, medal: raceMedal(def.par, result.raceTime), coins: 0, newCars: [] });
+        go('result');
+        return;
+      }
       const prev: Bests = { ...(s0.bests[def.id] ?? {}) };
       const next: Bests = { ...prev };
       let newRecord = false;
@@ -187,7 +212,7 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
       setFinish({ result, track: def, newRecord, medal, coins, newCars });
       go('result');
     },
-    [update, host, go, daily, today],
+    [update, host, go, daily, today, challenge],
   );
 
   const pause = useCallback(() => {
@@ -234,7 +259,8 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
     engine.touchMode = touch;
     engine.setMuted(saveRef.current.muted);
     engine.setCar(getCar(saveRef.current.car));
-    handlers.current.toMenu();
+    if (inChallenge.current) handlers.current.startRace();
+    else handlers.current.toMenu();
     return () => {
       engine.dispose();
       engineRef.current = null;
@@ -484,7 +510,12 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
         </div>
       )}
 
-      {screen === 'result' && finish && <ResultCard finish={finish} bests={save.bests[finish.track.id] ?? {}} onAgain={startRace} onMenu={toMenu} touch={touch} />}
+      {screen === 'race' && finish === null && challengeShown && (
+        <p className="mr-chal">⚔️ Challenge{rival ? ` · racing ${rival.name}’s ghost` : ' · you set the pace'}</p>
+      )}
+      {screen === 'result' && finish && (
+        <ResultCard finish={finish} bests={save.bests[finish.track.id] ?? {}} onAgain={startRace} onMenu={toMenu} touch={touch} challengeId={finish.track.id === CHALLENGE_ID ? challenge?.id : undefined} />
+      )}
     </div>
   );
 }
@@ -550,13 +581,13 @@ function Garage({ save, onPick, onBack, golds }: { save: SaveData; onPick: (c: C
   );
 }
 
-function ResultCard({ finish, bests, onAgain, onMenu, touch }: { finish: Finish; bests: Bests; onAgain: () => void; onMenu: () => void; touch: boolean }) {
+function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId }: { finish: Finish; bests: Bests; onAgain: () => void; onMenu: () => void; touch: boolean; challengeId?: string }) {
   const { result, track, medal, newRecord, coins, newCars } = finish;
   return (
     <div className="mr-sheet mr-result">
       <div className="mr-result-top">
         <span className="mr-kicker mono">
-          {track.name} · {result.mode === 'race' ? `Race vs AI ${result.aiLevel}` : 'Time Trial'}
+          {challengeId ? '⚔️ Challenge' : track.name} · {result.mode === 'race' ? `Race vs AI ${result.aiLevel}` : 'Time Trial'}
         </span>
         {newRecord && <span className="mr-record">New record!</span>}
       </div>
@@ -605,9 +636,15 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch }: { finish: Finish;
       </p>
       {newCars.length > 0 && <p className="mr-unlock">Unlocked: {newCars.map((c) => c.name).join(', ')}!</p>}
       <div className="mr-actions">
-        <button className="mr-go" onClick={onAgain} autoFocus>
-          Again{touch ? '' : ' (R)'}
-        </button>
+        {challengeId ? (
+          <a className="mr-go" href={`/c/${challengeId}`} autoFocus>
+            See the scoreboard
+          </a>
+        ) : (
+          <button className="mr-go" onClick={onAgain} autoFocus>
+            Again{touch ? '' : ' (R)'}
+          </button>
+        )}
         <button className="mr-btn" onClick={onMenu}>
           Menu
         </button>

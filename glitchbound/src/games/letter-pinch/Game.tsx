@@ -12,6 +12,7 @@ import {
   MAX_GUESSES,
   practiceSecret,
   puzzleNumber,
+  rng,
   roundStats,
   scoreRound,
   shareText,
@@ -31,6 +32,8 @@ type Panel = 'none' | 'help' | 'stats';
 
 interface Puzzle {
   mode: Mode;
+  /** A friends' challenge word: the same for everyone in the challenge. */
+  challenge?: true;
   secret: string;
   /** Daily only. */
   day?: string;
@@ -66,11 +69,14 @@ const isOver = (p: Puzzle): boolean => isSolved(p) || p.rows.length >= MAX_GUESS
 const secondsOf = (p: Puzzle): number => (p.startedAt && p.endedAt ? (p.endedAt - p.startedAt) / 1000 : 0);
 
 /** Letter Pinch: each tile points the way through the alphabet to the secret letter. */
-export default function Game({ host }: GameModuleProps) {
+export default function Game({ host, challenge }: GameModuleProps) {
   const [save, setSave] = useState<PinchSave>(loadSave);
-  const [mode, setMode] = useState<Mode>('daily');
+  const [mode, setMode] = useState<Mode>(challenge ? 'practice' : 'daily');
   const [daily, setDaily] = useState<Puzzle>(() => dailyPuzzle(save, dayKey()));
-  const [practice, setPractice] = useState<Puzzle | null>(null);
+  // A friends' challenge is a practice word picked from the challenge's seed.
+  const [practice, setPractice] = useState<Puzzle | null>(() =>
+    challenge ? { mode: 'practice', challenge: true, secret: practiceSecret(rng(challenge.seed ^ 0x9e3779b9)), rows: [], startedAt: null, endedAt: null } : null,
+  );
   const [typed, setTyped] = useState('');
   const [panel, setPanel] = useState<Panel>(() => (!save.seenHelp ? 'help' : isOver(daily) ? 'stats' : 'none'));
   const [toast, setToast] = useState<{ text: string; id: number } | null>(null);
@@ -103,7 +109,7 @@ export default function Game({ host }: GameModuleProps) {
    */
   const reportEnd = (isDaily: boolean, summary: RoundSummary, streak?: number): void => {
     const { score, stats } = roundStats(summary, isDaily ? streak : undefined);
-    host.report(isDaily ? { type: 'end', score, stats, daily: true } : { type: 'end', score, stats });
+    host.report(isDaily ? { type: 'end', score, stats, daily: true } : challenge && puzzle.challenge ? { type: 'end', score, stats, challenge: { id: challenge.id, round: challenge.round } } : { type: 'end', score, stats });
   };
 
   const flash = (text: string): void => setToast({ text, id: Date.now() });
@@ -289,6 +295,7 @@ export default function Game({ host }: GameModuleProps) {
         </div>
       </header>
 
+      {puzzle.challenge && <p className="lp-chal">⚔️ Challenge round: the same word for everyone, one try</p>}
       <main className="lp-board" aria-label="Guesses">
         <Windows windows={windows} />
         {Array.from({ length: MAX_GUESSES }, (_, r) => {
@@ -337,7 +344,7 @@ export default function Game({ host }: GameModuleProps) {
       )}
       {panel === 'help' && <HelpPanel onClose={closePanel} />}
       {panel === 'stats' && (
-        <StatsPanel puzzle={puzzle} save={save} streak={streak} onClose={closePanel} onShare={() => void share()} onPractice={newPractice} onDaily={() => {
+        <StatsPanel puzzle={puzzle} challengeId={puzzle.challenge ? challenge?.id : undefined} save={save} streak={streak} onClose={closePanel} onShare={() => void share()} onPractice={newPractice} onDaily={() => {
           goDaily();
           setPanel('none');
         }} />
@@ -463,7 +470,7 @@ function Dist({ tally, highlight }: { tally: Tally; highlight?: number }) {
   );
 }
 
-function StatsPanel(props: { puzzle: Puzzle; save: PinchSave; streak: number; onClose: () => void; onShare: () => void; onPractice: () => void; onDaily: () => void }) {
+function StatsPanel(props: { puzzle: Puzzle; challengeId?: string; save: PinchSave; streak: number; onClose: () => void; onShare: () => void; onPractice: () => void; onDaily: () => void }) {
   const { puzzle, save, streak } = props;
   const over = isOver(puzzle);
   const solved = isSolved(puzzle);
@@ -474,7 +481,7 @@ function StatsPanel(props: { puzzle: Puzzle; save: PinchSave; streak: number; on
     <Sheet title="Statistics" onClose={props.onClose}>
       {over && (
         <div className="lp-result">
-          <p className="lp-kicker">{isDaily ? `Daily #${puzzleNumber(puzzle.day!)}` : 'Practice'}</p>
+          <p className="lp-kicker">{isDaily ? `Daily #${puzzleNumber(puzzle.day!)}` : puzzle.challenge ? '⚔️ Challenge round' : 'Practice'}</p>
           <h2 className="lp-h">{solved ? (puzzle.rows.length <= 2 ? 'Unreal!' : puzzle.rows.length <= 4 ? 'Pinched it!' : 'Got there!') : 'So close'}</h2>
           <div className="lp-row lp-answer" aria-label={`The word was ${puzzle.secret}`}>
             {[...puzzle.secret].map((ch, i) => (
@@ -495,7 +502,11 @@ function StatsPanel(props: { puzzle: Puzzle; save: PinchSave; streak: number; on
             <button className="lp-cta" onClick={props.onShare}>
               <ShareIcon /> Share result
             </button>
-            {isDaily ? (
+            {props.challengeId ? (
+              <a className="lp-cta is-alt" href={`/c/${props.challengeId}`}>
+                See the scoreboard
+              </a>
+            ) : isDaily ? (
               <button className="lp-cta is-alt" onClick={props.onPractice}>
                 Practice puzzle
               </button>
