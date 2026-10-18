@@ -1,0 +1,106 @@
+/* Theme of the day: a bright band between the hero and today's dailies. */
+.theme-strip {
+  --t1: #ffc928;
+  --t2: #ff4fc8;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  margin-top: 4px;
+  margin-bottom: 22px;
+  padding: 14px 18px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-lg);
+  background: linear-gradient(110deg, var(--t1), var(--t2));
+  color: #1d1238;
+  box-shadow: var(--hard);
+}
+.theme-strip[data-theme-day='chill'] { --t1: #b6e62c; --t2: #12c6b3; }
+.theme-strip[data-theme-day='rush'] { --t1: #ffd12e; --t2: #ff6a1a; }
+.theme-strip[data-theme-day='trivia'] { --t1: #ffe066; --t2: #ff8fc8; }
+.theme-strip[data-theme-day='words'] { --t1: #c9b6ff; --t2: #2ad1f0; }
+.theme-strip[data-theme-day='throwdown'] { --t1: #ff5a6c; --t2: #ffc928; }
+.theme-strip[data-theme-day='party'] { --t1: #ff4fc8; --t2: #7b4dff; }
+.theme-strip[data-theme-day='throttle'] { --t1: #2ad1f0; --t2: #3d5bff; }
+.theme-emoji {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  background: #fffaf2;
+  font-size: 32px;
+  box-shadow: var(--hard-sm);
+  animation: theme-bob 3.2s ease-in-out infinite;
+}
+@keyframes theme-bob {
+  50% { transform: translateY(-4px) rotate(-6deg); }
+}
+.theme-copy {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.theme-kicker {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.theme-name {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.05;
+}
+.theme-tag {
+  margin: 2px 0 0;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.theme-games {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.theme-games img {
+  display: block;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  transition: transform 0.25s var(--spring);
+}
+.theme-games a:hover img {
+  transform: translateY(-3px) rotate(-4deg);
+}
+.theme-cta {
+  flex: none;
+}
+@media (max-width: 640px) {
+  .theme-strip {
+    padding: 12px 14px;
+  }
+  .theme-emoji {
+    width: 48px;
+    height: 48px;
+    font-size: 26px;
+  }
+  .theme-copy {
+    flex-basis: calc(100% - 70px);
+  }
+  .theme-games img {
+    width: 44px;
+    height: 44px;
+  }
+  .theme-cta {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-emoji {
+    animation: none;
+  }
+}

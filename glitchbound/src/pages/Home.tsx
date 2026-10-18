@@ -5,6 +5,7 @@ import { FreeBanner } from '../components/FreeBanner';
 import { Hero } from '../components/Hero';
 import { PartyBanner } from '../components/PartyBanner';
 import { NotifyForm } from '../components/Notify';
+import { ThemeStrip } from '../components/ThemeStrip';
 import { TodaysDailies } from '../components/TodaysDailies';
 import { QuestBoard } from '../components/Quests';
 import { YourArcade } from '../components/Sections';
@@ -12,7 +13,7 @@ import { usePageMeta } from '../platform/meta';
 import { useInitialHashScroll } from '../router/router';
 
 /**
- * Kept short on purpose: what to play now (today's pick, Surprise me, today's dailies), then the
+ * Kept short on purpose: what to play now (today's pick, Surprise me, the theme of the day, today's dailies), then the
  * games by mood. Newcomers see the free-and-no-sign-up promise first; members see their quests.
  * The daily challenge in full lives on /daily.
  */
@@ -24,6 +25,7 @@ export function Home() {
     <>
       <Hero />
       {!me && <FreeBanner />}
+      <ThemeStrip />
       <TodaysDailies variant="row" headingLevel={2} />
       <Arcade />
       <YourArcade />

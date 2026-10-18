@@ -2,6 +2,7 @@ import type { DailyRules } from '../catalog/settings';
 import type { GameEntry } from '../catalog/types';
 import type { EndEvent } from './contract';
 import { addDays, daysBetween, hashString } from './dates';
+import { themeGames, themeOf, THEMES_SINCE } from './themes';
 
 /** Day #1 of the GlitchBound daily challenge. */
 export const DAILY_EPOCH = '2026-10-17';
@@ -42,6 +43,15 @@ export function challengeForDay(day: string, games: GameEntry[], rules: DailyRul
   // took out (only the days that would have landed on them change).
   const pick = rules?.picks[day];
   let game = pick ? games.find((g) => g.slug === pick.slug && (g.daily?.length ?? 0) > 0) : undefined;
+  // From THEMES_SINCE, the day's theme narrows the rotation to the games that fit it (when any can).
+  // Like the rotation, it steps past excluded games, so excluding one only changes its own days.
+  if (!game && day >= THEMES_SINCE) {
+    const fits = themeGames(themeOf(day), pool).sort((a, b) => a.slug.localeCompare(b.slug));
+    for (let i = 0; i < fits.length && !game; i++) {
+      const g = fits[(h + i) % fits.length]!;
+      if (!rules?.exclude.has(g.slug)) game = g;
+    }
+  }
   if (!game) {
     const start = h % pool.length;
     for (let i = 0; i < pool.length && !game; i++) {

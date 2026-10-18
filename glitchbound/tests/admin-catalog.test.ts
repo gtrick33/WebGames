@@ -136,3 +136,19 @@ describe('home page banner layout', () => {
     expect(tileSizeFor(null, a!.slug, 9)).toBe(TILE_RHYTHM[9 % TILE_RHYTHM.length]);
   });
 });
+
+describe('theme days', () => {
+  it('gives every day of the week a theme, and the daily challenge follows it from THEMES_SINCE', async () => {
+    const { themeOf, themeGames, THEMES_SINCE, WEEK } = await import('../src/platform/themes');
+    expect(WEEK).toHaveLength(7);
+    expect(themeOf('2026-10-20').name).toBe('Trivia Tuesday');
+    expect(themeOf('2026-10-24').name).toBe('Full-Throttle Saturday');
+    // Tuesdays: the trivia game; Wednesdays: a word game (when they have daily goals).
+    const tuesday = challengeForDay('2026-10-20', GAMES, null)!;
+    expect(themeGames(themeOf('2026-10-20'), GAMES).map((g) => g.slug)).toContain(tuesday.game.slug);
+    const wednesday = challengeForDay('2026-10-21', GAMES, null)!;
+    expect(['letter-pinch', 'crosswire']).toContain(wednesday.game.slug);
+    // Before the themes started, days keep their original pick.
+    expect(THEMES_SINCE > '2026-10-18').toBe(true);
+  });
+});
