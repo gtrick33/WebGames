@@ -14,6 +14,7 @@ export type GameModuleLoader = () => Promise<{ default: ComponentType<GameModule
 export const GAME_MODULES: Record<string, GameModuleLoader> = {
   'memory-grid': () => import('../games/memory-grid/Game'),
   'color-recall': () => import('../games/color-recall/Game'),
+  'letter-pinch': () => import('../games/letter-pinch/Game'),
 };
 
 /**

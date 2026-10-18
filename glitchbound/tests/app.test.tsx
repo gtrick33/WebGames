@@ -38,8 +38,8 @@ describe('homepage', () => {
   });
 
   it('opens a category from a deep link', () => {
-    renderAt('/?category=word#arcade');
-    // "word" has no games yet: invalid filters fall back to an empty, explained state rather than a crash.
+    renderAt('/?category=trivia#arcade');
+    // "trivia" has no games yet: invalid filters fall back to an empty, explained state rather than a crash.
     expect(screen.getByText('Nothing here. Yet.')).toBeTruthy();
   });
 });
