@@ -35,3 +35,45 @@
   gap: 6px;
 }
 
+
+/* Kept compact next to the game: two lines of explanation, then the buttons in one row. */
+.cfriends {
+  min-width: 0;
+  gap: 8px;
+  padding: 14px 16px;
+  container-type: inline-size;
+}
+.cfriends-label {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 13.5px;
+  color: var(--fg-2);
+}
+.cfriends-row {
+  flex-wrap: nowrap;
+}
+.cfriends-row .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+.cfriends-row .btn-ghost {
+  flex: none;
+}
+/* Narrow box (phones, or the side column next to a game): smaller buttons, no icons. */
+@container (max-width: 420px) {
+  .cfriends-row {
+    gap: 5px;
+  }
+  .cfriends-row .btn {
+    padding-inline: 8px;
+    font-size: 13.5px;
+  }
+  .cfriends-row .btn svg {
+    display: none;
+  }
+}

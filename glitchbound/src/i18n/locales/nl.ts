@@ -565,6 +565,20 @@ const nl: string[] = [
   'Je score is niet opgeslagen.',
   'Je score is niet opgeslagen (netwerk).',
   'Er ging iets mis.',
+  'Kun jij ze allemaal halen?',
+  'Instellingen',
+  'Geluid',
+  'Muziek aan',
+  'Muziek uit',
+  'De muziek start bij je eerste klik',
+  'Muziek gepauzeerd',
+  // 520
+  'Muziekvolume',
+  'Ze pauzeert terwijl je speelt.',
+  'Thema',
+  'Auto',
+  'Dag',
+  'Nacht',
 ];
 
 export default nl;

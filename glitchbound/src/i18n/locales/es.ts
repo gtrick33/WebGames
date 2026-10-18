@@ -565,6 +565,20 @@ const es: string[] = [
   'Tu puntuación no se guardó.',
   'Tu puntuación no se guardó (red).',
   'Algo ha salido mal.',
+  '¿Puedes con todos?',
+  'Ajustes',
+  'Sonido',
+  'Música activada',
+  'Música desactivada',
+  'La música empieza con tu primer clic',
+  'Música en pausa',
+  // 520
+  'Volumen de la música',
+  'Se pausa mientras juegas.',
+  'Tema',
+  'Auto',
+  'Día',
+  'Noche',
 ];
 
 export default es;

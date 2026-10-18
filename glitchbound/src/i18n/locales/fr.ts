@@ -565,6 +565,20 @@ const fr: string[] = [
   'Ton score n’a pas été enregistré.',
   'Ton score n’a pas été enregistré (réseau).',
   'Une erreur s’est produite.',
+  'Tu peux tous les faire ?',
+  'Réglages',
+  'Son',
+  'Musique activée',
+  'Musique coupée',
+  'La musique démarre à ton premier clic',
+  'Musique en pause',
+  // 520
+  'Volume de la musique',
+  'Elle se met en pause pendant que tu joues.',
+  'Thème',
+  'Auto',
+  'Jour',
+  'Nuit',
 ];
 
 export default fr;

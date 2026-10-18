@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePageMeta } from '../../platform/meta';
 import { TAGS } from '../content/challenges';
 import { CONSEQUENCE_LABEL, freshRng, makePlayer, MAX_PLAYERS, playersProblem, SESSION_CARDS } from '../engine';
@@ -14,12 +14,12 @@ import { Avatar, ModeBar, PlayerPicker } from './shared';
 import './Party.css';
 
 const MODES: { id: ModeId; title: string; emoji: string; blurb: string; time: string; players: string; color: string }[] = [
-  { id: 'prompts', title: 'Party Prompts', emoji: '🃏', blurb: 'Truths, dares, “most likely to”, duels and new rules, with your names in every card.', time: '15–45 min', players: '2–16', color: '#ff5a6c' },
-  { id: 'nhie', title: 'Never Have I Ever', emoji: '🙊', blurb: 'Five fingers up. Reveal together. Last one standing has the cleanest record.', time: '10–30 min', players: '3–16', color: '#a45cff' },
-  { id: 'charades', title: 'Charades', emoji: '🎭', blurb: 'Act, describe or draw it before the clock runs out. Solo or in teams.', time: '10–30 min', players: '3–16', color: '#ff8a1f' },
-  { id: 'board', title: 'Dice Adventure', emoji: '🎲', blurb: 'A party board game: roll, race, land on challenges, shortcuts and nasty slides.', time: '10–35 min', players: '2–8', color: '#2fd1a0' },
-  { id: 'auction', title: 'Name Your Price', emoji: '🔨', blurb: 'Bid play money on heroes, villains and dream cars. Build the best collection.', time: '15–30 min', players: '2–8', color: '#ffb020' },
-  { id: 'mini', title: 'Mini-games', emoji: '⚡', blurb: 'Reaction duels, rock-paper-scissors, hot potato, trivia and memory.', time: '1–3 min each', players: '1–16', color: '#3d7bff' },
+  { id: 'prompts', title: 'Party Prompts', emoji: '🃏', blurb: 'Truths, dares and “most likely to”, with your names on every card.', time: '15–45 min', players: '2–16', color: '#ff5a6c' },
+  { id: 'nhie', title: 'Never Have I Ever', emoji: '🙊', blurb: 'Five fingers up, reveal together. Last one standing wins.', time: '10–30 min', players: '3–16', color: '#a45cff' },
+  { id: 'charades', title: 'Charades', emoji: '🎭', blurb: 'Act, describe or draw it before time runs out.', time: '10–30 min', players: '3–16', color: '#ff8a1f' },
+  { id: 'board', title: 'Dice Adventure', emoji: '🎲', blurb: 'Roll, race and dodge the nasty slides.', time: '10–35 min', players: '2–8', color: '#2fd1a0' },
+  { id: 'auction', title: 'Name Your Price', emoji: '🔨', blurb: 'Bid play money and build the best collection.', time: '15–30 min', players: '2–8', color: '#ffb020' },
+  { id: 'mini', title: 'Mini-games', emoji: '⚡', blurb: 'Reaction duels, hot potato, quick trivia and more.', time: '1–3 min each', players: '1–16', color: '#3d7bff' },
 ];
 
 const INTENSITIES: { id: Intensity; label: string; note: string }[] = [
@@ -51,7 +51,8 @@ export function PartyPage() {
     top.current?.scrollIntoView({ block: 'start' });
   }, [mode]);
 
-  const problem = playersProblem(session.players);
+  // Empty name slots are just unused seats: they never block a game and are dropped when one starts.
+  const problem = playersProblem(session.players.filter((p) => p.name.trim()));
   const exit = (): void => {
     update((s) => ({ ...s, active: null }));
     setMode(null);
@@ -59,21 +60,15 @@ export function PartyPage() {
   };
   const open = (id: ModeId): void => {
     if (problem) return;
-    if (id === 'prompts') update((s) => dealPrompt({ ...s, active: { mode: 'prompts', count: 0, limit: SESSION_CARDS[s.settings.length] } }, freshRng()));
+    update((s) => {
+      const ready = { ...s, players: s.players.filter((p) => p.name.trim()) };
+      return id === 'prompts' ? dealPrompt({ ...ready, active: { mode: 'prompts', count: 0, limit: SESSION_CARDS[s.settings.length] } }, freshRng()) : ready;
+    });
     setMode(id);
   };
 
   return (
     <div className="party" ref={top}>
-      {adultAsk && (
-        <AdultGate
-          onYes={() => {
-            update((s) => ({ ...s, settings: { ...s.settings, adultConfirmed: true, intensities: [...new Set([...s.settings.intensities, 'afterdark' as const])] } }));
-            setAdultAsk(false);
-          }}
-          onNo={() => setAdultAsk(false)}
-        />
-      )}
       {mode === 'prompts' && <PromptsMode session={session} update={update} onExit={exit} />}
       {mode === 'nhie' && <NeverMode session={session} update={update} onExit={exit} onNeedAdult={() => setAdultAsk(true)} />}
       {mode === 'charades' && <CharadesMode session={session} update={update} onExit={exit} />}
@@ -98,34 +93,67 @@ export function PartyPage() {
         </div>
       )}
       {!mode && <Lobby session={session} update={update} problem={problem} onOpen={open} onAdult={() => setAdultAsk(true)} />}
+      {/* Last, so it opens above the house-rules sheet. */}
+      {adultAsk && (
+        <AdultGate
+          onYes={() => {
+            update((s) => ({ ...s, settings: { ...s.settings, adultConfirmed: true, intensities: [...new Set([...s.settings.intensities, 'afterdark' as const])] } }));
+            setAdultAsk(false);
+          }}
+          onNo={() => setAdultAsk(false)}
+        />
+      )}
     </div>
   );
 }
 
+/**
+ * The lobby, kept to two steps: who's playing (name chips), then pick a game. House rules and your
+ * own prompts open in a sheet, so they never stand between the group and the first card.
+ */
 function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; problem: string | null; onOpen: (m: ModeId) => void; onAdult: () => void }) {
   const [newName, setNewName] = useState('');
-  const [showRules, setShowRules] = useState(false);
-  const [showCustom, setShowCustom] = useState(false);
+  const [sheet, setSheet] = useState<'rules' | 'custom' | null>(null);
+  const [nudge, setNudge] = useState(0);
+  const whoRef = useRef<HTMLElement>(null);
   const s = session.settings;
   const setSettings = (patch: Partial<PartySession['settings']>): void => update((cur) => ({ ...cur, settings: { ...cur.settings, ...patch } }));
   const players = session.players;
+  const named = players.filter((p) => p.name.trim());
   const setPlayers = (list: PartySession['players']): void => update((cur) => ({ ...cur, players: list }));
   const add = (): void => {
     const name = newName.trim();
-    if (!name || players.length >= MAX_PLAYERS) return;
+    if (!name || players.length >= MAX_PLAYERS && !players.some((p) => !p.name)) return;
     // Fill an empty slot first.
     const empty = players.findIndex((p) => !p.name);
     if (empty >= 0) setPlayers(players.map((p, i) => (i === empty ? { ...p, name: name.slice(0, 18) } : p)));
     else setPlayers([...players, makePlayer(name, players.length)]);
     setNewName('');
   };
-  const move = (i: number, d: -1 | 1): void => {
-    const j = i + d;
-    if (j < 0 || j >= players.length) return;
+  const remove = (id: string): void => {
+    const rest = players.filter((x) => x.id !== id);
+    setPlayers(rest.length ? rest : [makePlayer('', 0)]);
+  };
+  // Turn order matters in some games: one tap to shuffle it.
+  const shuffle = (): void => {
     const list = [...players];
-    [list[i], list[j]] = [list[j]!, list[i]!];
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [list[i], list[j]] = [list[j]!, list[i]!];
+    }
     setPlayers(list);
   };
+  // Tapping a game without enough players points at the names instead of doing nothing.
+  const pick = (id: ModeId): void => {
+    if (!problem) return onOpen(id);
+    setNudge((n) => n + 1);
+    whoRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  };
+  const rulesSummary = [
+    ...INTENSITIES.filter((x) => s.intensities.includes(x.id) && (x.id !== 'afterdark' || s.adultConfirmed)).map((x) => x.label),
+    CONSEQUENCE_LABEL[s.consequence],
+  ].join(' · ');
+  const customCount = session.custom.challenges.length + session.custom.nhie.length;
 
   return (
     <div className="pt-lobby">
@@ -134,38 +162,33 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
         <h1 className="pt-title">
           Party <span>Mode</span>
         </h1>
-        <p className="pt-sub">One phone. Your friends. Six ways to make the night louder.</p>
+        <p className="pt-sub">One phone. Your friends. Add names, pick a game, go.</p>
       </header>
 
-      <section className="pt-panel" aria-labelledby="pt-players">
+      <section ref={whoRef} key={nudge} className={`pt-panel pt-who${problem && nudge ? ' is-nudged' : ''}`} aria-labelledby="pt-players">
         <div className="pt-panel-head">
-          <h2 id="pt-players">Who’s playing?</h2>
-          <span className="pt-pill">{players.filter((p) => p.name).length} players</span>
+          <h2 id="pt-players">
+            <span className="pt-step">1</span> Who’s playing?
+          </h2>
+          {named.length > 1 && (
+            <button className="pt-link" onClick={shuffle}>
+              🔀 Shuffle order
+            </button>
+          )}
         </div>
-        <ol className="pt-players">
-          {players.map((p, i) => (
-            <li key={p.id}>
-              <Avatar player={p} size={36} />
-              <input
-                className="pt-input"
-                value={p.name}
-                maxLength={18}
-                placeholder={`Player ${i + 1}`}
-                aria-label={`Player ${i + 1} name`}
-                onChange={(e) => setPlayers(players.map((x) => (x.id === p.id ? { ...x, name: e.target.value.slice(0, 18) } : x)))}
-              />
-              <button className="pt-icon" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${p.name || 'player'} up`}>
-                ↑
-              </button>
-              <button className="pt-icon" onClick={() => move(i, 1)} disabled={i === players.length - 1} aria-label={`Move ${p.name || 'player'} down`}>
-                ↓
-              </button>
-              <button className="pt-icon" onClick={() => setPlayers(players.filter((x) => x.id !== p.id))} disabled={players.length <= 1} aria-label={`Remove ${p.name || 'player'}`}>
-                ✕
-              </button>
-            </li>
-          ))}
-        </ol>
+        {named.length > 0 && (
+          <ul className="pt-names">
+            {named.map((p) => (
+              <li key={p.id} className="pt-name-chip" style={{ ['--pc' as string]: p.color }}>
+                <Avatar player={p} size={26} />
+                <span>{p.name}</span>
+                <button onClick={() => remove(p.id)} aria-label={`Remove ${p.name}`}>
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         <form
           className="pt-add"
           onSubmit={(e) => {
@@ -173,94 +196,20 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
             add();
           }}
         >
-          <input className="pt-input" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Add a name and press Enter" maxLength={18} aria-label="New player name" />
-          <button className="pt-btn" disabled={!newName.trim() || players.length >= MAX_PLAYERS}>
+          <input className="pt-input" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={named.length ? 'Add another name' : 'Type a name, then Enter'} maxLength={18} aria-label="New player name" enterKeyHint="done" />
+          <button className="pt-btn" disabled={!newName.trim() || named.length >= MAX_PLAYERS}>
             + Add
           </button>
         </form>
         {problem && <p className="pt-warn">{problem}</p>}
       </section>
 
-      <section className="pt-panel" aria-labelledby="pt-rules">
-        <button className="pt-panel-head pt-toggle" onClick={() => setShowRules((v) => !v)} aria-expanded={showRules}>
-          <h2 id="pt-rules">House rules</h2>
-          <span className="pt-muted">
-            {INTENSITIES.filter((x) => s.intensities.includes(x.id) && (x.id !== 'afterdark' || s.adultConfirmed))
-              .map((x) => x.label)
-              .join(' · ')}{' '}
-            · {CONSEQUENCE_LABEL[s.consequence]} {showRules ? '▴' : '▾'}
-          </span>
-        </button>
-        {showRules && (
-          <div className="pt-rules">
-            <p className="pt-label">Content</p>
-            <div className="pt-picker">
-              {INTENSITIES.map((it) => {
-                const on = s.intensities.includes(it.id) && (it.id !== 'afterdark' || s.adultConfirmed);
-                return (
-                  <button
-                    key={it.id}
-                    className={`pt-chip${on ? ' is-on' : ''}`}
-                    aria-pressed={on}
-                    onClick={() => {
-                      if (it.id === 'afterdark' && !s.adultConfirmed) return onAdult();
-                      const next = on ? s.intensities.filter((x) => x !== it.id) : [...s.intensities, it.id];
-                      setSettings({ intensities: next.length ? next : ['casual'] });
-                    }}
-                  >
-                    {it.label} <small>{it.note}</small>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="pt-label">When someone skips or loses</p>
-            <div className="pt-seg" role="radiogroup">
-              {(Object.keys(CONSEQUENCE_LABEL) as Consequence[]).map((c) => (
-                <button key={c} role="radio" aria-checked={s.consequence === c} onClick={() => setSettings({ consequence: c })}>
-                  {CONSEQUENCE_LABEL[c]}
-                </button>
-              ))}
-            </div>
-            {s.consequence === 'sips' && <p className="pt-muted">Sips are always optional: water or a silly task counts the same. Never drink and drive, and know your limits.</p>}
-            <p className="pt-label">Skip these topics</p>
-            <div className="pt-picker">
-              {TAGS.map((t) => {
-                const off = s.excludedTags.includes(t.id);
-                return (
-                  <button key={t.id} className={`pt-chip pt-chip-off${off ? ' is-on' : ''}`} aria-pressed={off} onClick={() => setSettings({ excludedTags: off ? s.excludedTags.filter((x) => x !== t.id) : [...s.excludedTags, t.id] })}>
-                    {off ? '🚫 ' : ''}
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="pt-label">Session length</p>
-            <div className="pt-seg" role="radiogroup">
-              {(['quick', 'standard', 'long'] as const).map((l) => (
-                <button key={l} role="radio" aria-checked={s.length === l} onClick={() => setSettings({ length: l })}>
-                  {l === 'quick' ? 'Quick' : l === 'standard' ? 'Standard' : 'Long'} <small>{SESSION_CARDS[l]} cards</small>
-                </button>
-              ))}
-            </div>
-            <p className="pt-muted">Anyone can skip any card, any time. Nobody has to do anything they’re not comfortable with.</p>
-          </div>
-        )}
-      </section>
-
-      <section className="pt-panel" aria-labelledby="pt-custom">
-        <button className="pt-panel-head pt-toggle" onClick={() => setShowCustom((v) => !v)} aria-expanded={showCustom}>
-          <h2 id="pt-custom">Your own prompts</h2>
-          <span className="pt-muted">
-            {session.custom.challenges.length + session.custom.nhie.length} saved {showCustom ? '▴' : '▾'}
-          </span>
-        </button>
-        {showCustom && <CustomPrompts session={session} update={update} />}
-      </section>
-
-      <h2 className="pt-h2">Pick a game</h2>
-      <div className="pt-modes">
+      <h2 className="pt-h2">
+        <span className="pt-step">2</span> Pick a game
+      </h2>
+      <div className="pt-modes pt-modes-lobby">
         {MODES.map((m) => (
-          <button key={m.id} className="pt-mode" style={{ ['--mc' as string]: m.color }} onClick={() => onOpen(m.id)} disabled={!!problem}>
+          <button key={m.id} className={`pt-mode${problem ? ' is-waiting' : ''}`} style={{ ['--mc' as string]: m.color }} onClick={() => pick(m.id)}>
             <span className="pt-mode-art" aria-hidden="true">
               {m.emoji}
             </span>
@@ -268,18 +217,118 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
               <b>{m.title}</b>
               <span>{m.blurb}</span>
               <small>
-                ⏱ {m.time} · 👥 {m.players}
+                👥 {m.players} · ⏱ {m.time}
               </small>
             </span>
           </button>
         ))}
       </div>
+
+      <div className="pt-extras">
+        <button className="pt-extra" onClick={() => setSheet('rules')}>
+          <b>⚙️ House rules</b>
+          <span>{rulesSummary}</span>
+        </button>
+        <button className="pt-extra" onClick={() => setSheet('custom')}>
+          <b>✍️ Your own prompts</b>
+          <span>{customCount ? `${customCount} saved` : 'Add inside jokes'}</span>
+        </button>
+      </div>
       <p className="pt-muted pt-center">Everything stays on this phone. Refreshing is safe: your game picks up where you left off.</p>
+
+      {sheet === 'rules' && (
+        <Sheet title="House rules" onClose={() => setSheet(null)}>
+            <div className="pt-rules">
+              <p className="pt-label">Content</p>
+              <div className="pt-picker">
+                {INTENSITIES.map((it) => {
+                  const on = s.intensities.includes(it.id) && (it.id !== 'afterdark' || s.adultConfirmed);
+                  return (
+                    <button
+                      key={it.id}
+                      className={`pt-chip${on ? ' is-on' : ''}`}
+                      aria-pressed={on}
+                      onClick={() => {
+                        if (it.id === 'afterdark' && !s.adultConfirmed) return onAdult();
+                        const next = on ? s.intensities.filter((x) => x !== it.id) : [...s.intensities, it.id];
+                        setSettings({ intensities: next.length ? next : ['casual'] });
+                      }}
+                    >
+                      {it.label} <small>{it.note}</small>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="pt-label">When someone skips or loses</p>
+              <div className="pt-seg" role="radiogroup">
+                {(Object.keys(CONSEQUENCE_LABEL) as Consequence[]).map((c) => (
+                  <button key={c} role="radio" aria-checked={s.consequence === c} onClick={() => setSettings({ consequence: c })}>
+                    {CONSEQUENCE_LABEL[c]}
+                  </button>
+                ))}
+              </div>
+              {s.consequence === 'sips' && <p className="pt-muted">Sips are always optional: water or a silly task counts the same. Never drink and drive, and know your limits.</p>}
+              <p className="pt-label">Skip these topics</p>
+              <div className="pt-picker">
+                {TAGS.map((t) => {
+                  const off = s.excludedTags.includes(t.id);
+                  return (
+                    <button key={t.id} className={`pt-chip pt-chip-off${off ? ' is-on' : ''}`} aria-pressed={off} onClick={() => setSettings({ excludedTags: off ? s.excludedTags.filter((x) => x !== t.id) : [...s.excludedTags, t.id] })}>
+                      {off ? '🚫 ' : ''}
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="pt-label">Session length</p>
+              <div className="pt-seg" role="radiogroup">
+                {(['quick', 'standard', 'long'] as const).map((l) => (
+                  <button key={l} role="radio" aria-checked={s.length === l} onClick={() => setSettings({ length: l })}>
+                    {l === 'quick' ? 'Quick' : l === 'standard' ? 'Standard' : 'Long'} <small>{SESSION_CARDS[l]} cards</small>
+                  </button>
+                ))}
+              </div>
+              <p className="pt-muted">Anyone can skip any card, any time. Nobody has to do anything they’re not comfortable with.</p>
+            </div>
+        </Sheet>
+      )}
+      {sheet === 'custom' && (
+        <Sheet title="Your own prompts" onClose={() => setSheet(null)}>
+          <CustomPrompts session={session} update={update} onSaved={() => setSheet(null)} />
+        </Sheet>
+      )}
     </div>
   );
 }
 
-function CustomPrompts({ session, update }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void }) {
+/** A bottom sheet over the lobby (tap outside, Escape or Done to close). */
+function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="pt-modal pt-sheet-wrap" role="dialog" aria-modal="true" aria-labelledby="pt-sheet-title" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="pt-modal-card pt-sheet">
+        <div className="pt-sheet-head">
+          <h2 id="pt-sheet-title">{title}</h2>
+          <button className="pt-icon" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </div>
+        {children}
+        <button className="pt-btn pt-btn-go" onClick={onClose}>
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CustomPrompts({ session, update, onSaved }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onSaved?: () => void }) {
   const [c, setC] = useState(session.custom.challenges.join('\n'));
   const [n, setN] = useState(session.custom.nhie.join('\n'));
   const lines = (t: string): string[] =>
@@ -298,7 +347,13 @@ function CustomPrompts({ session, update }: { session: PartySession; update: (fn
         Never Have I Ever statements (one per line)
       </label>
       <textarea id="pt-cn" className="pt-input pt-textarea" rows={3} value={n} onChange={(e) => setN(e.target.value)} placeholder="been to Sava’s legendary barbecue" />
-      <button className="pt-btn pt-btn-go" onClick={() => update((s) => ({ ...s, custom: { challenges: lines(c), nhie: lines(n) } }))}>
+      <button
+        className="pt-btn"
+        onClick={() => {
+          update((s) => ({ ...s, custom: { challenges: lines(c), nhie: lines(n) } }));
+          onSaved?.();
+        }}
+      >
         Save prompts
       </button>
     </div>

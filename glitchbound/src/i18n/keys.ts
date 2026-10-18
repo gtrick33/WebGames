@@ -569,6 +569,20 @@ export const KEYS: string[] = [
   "Your score was not saved.",
   "Your score was not saved (network).",
   "Something went wrong.",
+  "Can you sweep them all?",
+  "Settings",
+  "Sound",
+  "Music on",
+  "Music off",
+  "Music starts on your first click",
+  "Music paused",
+  // 520
+  "Music volume",
+  "It pauses while you play a game.",
+  "Theme",
+  "Auto",
+  "Day",
+  "Night",
 ];
 
 export const UI_COUNT = 311;

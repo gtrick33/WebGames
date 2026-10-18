@@ -82,7 +82,18 @@
   color: var(--fg);
   font: 700 12px/1 var(--mono);
   white-space: nowrap;
-  z-index: 2;
+  z-index: 5;
+  pointer-events: none;
+}
+/* Labels near the edges hang inward, so the panel never cuts them off. */
+.bar-col:nth-child(-n + 3)::after {
+  left: 0;
+  transform: none;
+}
+.bar-col:nth-last-child(-n + 3)::after {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 .bar-x {
   position: absolute;

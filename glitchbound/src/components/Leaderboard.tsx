@@ -139,14 +139,11 @@ export function BoardEmpty({ text }: { text: string }) {
 }
 
 /** Top 5 for a game page side panel. */
-export function MiniLeaderboard({ game, refreshKey }: { game: GameEntry; refreshKey: number }) {
+export function MiniLeaderboard({ game, refreshKey, embedded = false }: { game: GameEntry; refreshKey: number; embedded?: boolean }) {
   const t = useT();
   const board = useBoard(game.slug, 'all', refreshKey);
-  return (
-    <section className="panel side-block mini-board" aria-labelledby="mini-board-title">
-      <h2 id="mini-board-title" className="side-title">
-        <Icon name="crown" /> {t('Leaderboard')}
-      </h2>
+  const body = (
+    <>
       {board.status === 'loading' && <p className="side-muted">{t('Loading…')}</p>}
       {board.status === 'error' && <p className="side-muted">{t('The leaderboard is offline right now. Your game still works.')}</p>}
       {board.status === 'ok' &&
@@ -158,6 +155,16 @@ export function MiniLeaderboard({ game, refreshKey }: { game: GameEntry; refresh
       <Link href={`/leaderboards?game=${game.slug}`} className="quests-link">
         {t('Full leaderboard')} <Icon name="arrowRight" size={16} />
       </Link>
+    </>
+  );
+  // Inside the game page's tabs the tab itself is the heading.
+  if (embedded) return <div className="mini-board">{body}</div>;
+  return (
+    <section className="panel side-block mini-board" aria-labelledby="mini-board-title">
+      <h2 id="mini-board-title" className="side-title">
+        <Icon name="crown" /> {t('Leaderboard')}
+      </h2>
+      {body}
     </section>
   );
 }

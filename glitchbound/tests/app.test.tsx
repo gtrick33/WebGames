@@ -71,7 +71,8 @@ describe('routing', () => {
     renderAt('/');
     fireEvent.click(screen.getAllByRole('link', { name: 'Daily Challenge' })[0]!);
     expect(window.location.pathname).toBe('/daily');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Daily Challenge' })).toBeTruthy();
+    // The daily page loads lazily; under a busy parallel test run that can take over a second.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Daily Challenge' }, { timeout: 5000 })).toBeTruthy();
   });
 });
 

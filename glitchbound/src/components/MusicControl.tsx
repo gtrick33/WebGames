@@ -1,10 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
+import { LANGS, setLang, useLang, useT } from '../i18n';
 import { music, useMusic } from '../platform/music';
+import { setTheme, useTheme, type ThemeChoice } from '../platform/theme';
+import { Icon } from './Icon';
 import './MusicControl.css';
 
-/** Floating lobby-music control: tap to mute/unmute, open to change the volume. */
+const THEMES: { id: ThemeChoice; icon: 'sun' | 'moon' | null; label: string }[] = [
+  { id: 'auto', icon: null, label: 'Auto' },
+  { id: 'light', icon: 'sun', label: 'Day' },
+  { id: 'dark', icon: 'moon', label: 'Night' },
+];
+
+/**
+ * The settings button: sound, language and theme in one place. It sits at the end of the phone tab
+ * bar (where the header has no room for the language and theme buttons) and bottom-left on desktop.
+ */
 export function MusicControl() {
+  const t = useT();
   const m = useMusic();
+  const lang = useLang();
+  const [theme] = useTheme();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -15,50 +30,64 @@ export function MusicControl() {
     const onDown = (e: PointerEvent): void => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
-  const label = !m.on ? 'Music off' : m.playing ? 'Music on' : m.waiting ? 'Music starts on your first click' : 'Music paused';
+  const status = !m.on ? t('Music off') : m.playing ? t('Music on') : m.waiting ? t('Music starts on your first click') : t('Music paused');
   return (
     <div className={`music${open ? ' is-open' : ''}`} ref={ref}>
-      <button
-        className={`music-btn${m.playing ? ' is-playing' : ''}${!m.on ? ' is-off' : ''}`}
-        onClick={() => music.toggle()}
-        aria-pressed={m.on}
-        aria-label={m.on ? 'Mute music' : 'Play music'}
-        title={label}
-      >
-        {m.on ? (
+      <button className={`music-btn${m.playing ? ' is-playing' : ''}`} onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls="settings-pop" aria-label={t('Settings')} title={t('Settings')}>
+        <Icon name="menu" size={20} />
+        {m.playing && (
           <span className="eq" aria-hidden="true">
             <i />
             <i />
             <i />
-            <i />
           </span>
-        ) : (
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-            <path d="M9 18V6l10-2v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM19 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM3 3l18 18" />
-          </svg>
         )}
       </button>
-      <button className="music-more" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label="Music volume">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-          <path d={open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} />
-        </svg>
-      </button>
       {open && (
-        <div className="music-pop panel">
-          <p className="mono">Lobby music</p>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={Math.round(m.volume * 100)}
-            onChange={(e) => music.setVolume(Number(e.target.value) / 100)}
-            aria-label="Music volume"
-          />
-          <p className="music-note">{label}. It pauses while you play a game.</p>
+        <div id="settings-pop" className="music-pop panel" role="dialog" aria-label={t('Settings')}>
+          <section className="set-block">
+            <p className="set-head mono">{t('Sound')}</p>
+            <div className="set-row">
+              <button className={`set-toggle${m.on ? ' is-on' : ''}`} onClick={() => music.toggle()} aria-pressed={m.on}>
+                {m.on ? '🔊' : '🔇'} {m.on ? t('Music on') : t('Music off')}
+              </button>
+              <input type="range" min={0} max={100} value={Math.round(m.volume * 100)} onChange={(e) => music.setVolume(Number(e.target.value) / 100)} aria-label={t('Music volume')} disabled={!m.on} />
+            </div>
+            <p className="set-note">
+              {status}. {t('It pauses while you play a game.')}
+            </p>
+          </section>
+          <section className="set-block">
+            <p className="set-head mono">{t('Language')}</p>
+            <div className="set-langs" role="radiogroup" aria-label={t('Language')}>
+              {LANGS.map((l) => (
+                <button key={l.code} role="radio" aria-checked={l.code === lang} className={`set-lang${l.code === lang ? ' is-on' : ''}`} onClick={() => void setLang(l.code)}>
+                  <span aria-hidden="true">{l.flag}</span> {l.name}
+                </button>
+              ))}
+            </div>
+          </section>
+          <section className="set-block">
+            <p className="set-head mono">{t('Theme')}</p>
+            <div className="set-seg" role="radiogroup" aria-label={t('Theme')}>
+              {THEMES.map((th) => (
+                <button key={th.id} role="radio" aria-checked={theme === th.id} className={theme === th.id ? 'is-on' : ''} onClick={() => setTheme(th.id)}>
+                  {th.icon ? <Icon name={th.icon} size={16} /> : <span className="mono">A</span>} {t(th.label)}
+                </button>
+              ))}
+            </div>
+          </section>
         </div>
       )}
     </div>

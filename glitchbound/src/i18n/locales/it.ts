@@ -565,6 +565,20 @@ const it: string[] = [
   'Il tuo punteggio non è stato salvato.',
   'Il tuo punteggio non è stato salvato (rete).',
   'Qualcosa è andato storto.',
+  'Riesci a farli tutti?',
+  'Impostazioni',
+  'Audio',
+  'Musica attiva',
+  'Musica disattivata',
+  'La musica parte al tuo primo clic',
+  'Musica in pausa',
+  // 520
+  'Volume della musica',
+  'Si mette in pausa mentre giochi.',
+  'Tema',
+  'Auto',
+  'Giorno',
+  'Notte',
 ];
 
 export default it;

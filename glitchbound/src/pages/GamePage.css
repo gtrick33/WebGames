@@ -283,26 +283,81 @@
   height: 40px;
 }
 
-.player-name {
-  display: grid;
-  gap: 6px;
-  padding: 14px 18px;
+/* "Playing as" is one quiet line under the info tabs. */
+.player-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 0 4px;
+  font-size: 14.5px;
 }
-.player-name > .mono {
+.player-line > .mono {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--cyan-text);
 }
-.player-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+.player-line strong {
+  font-size: 16px;
 }
-.player-row strong {
-  font-size: 22px;
-  letter-spacing: -0.02em;
+.player-line .rename-form {
+  flex: 1 1 100%;
+}
+.player-keep {
+  flex-basis: 100%;
+  color: var(--fg-3);
+  font-size: 13px;
+  text-align: left;
+}
+
+/* How to play / Leaderboard / Your bests: one panel, three tabs. */
+.game-info {
+  gap: 12px;
+  padding: 10px 16px 18px;
+}
+.gi-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--well);
+}
+.gi-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--fg-2);
+  font: 700 13.5px var(--font);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.gi-tab:hover {
+  color: var(--fg);
+}
+.gi-tab.is-on {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: var(--hard-sm);
+}
+.gi-panel {
+  display: grid;
+  gap: 12px;
+  min-height: 120px;
+  animation: pop-in 0.25s var(--out) both;
+}
+@media (max-width: 380px) {
+  .gi-tab svg {
+    display: none;
+  }
 }
 .rename-form {
   display: flex;

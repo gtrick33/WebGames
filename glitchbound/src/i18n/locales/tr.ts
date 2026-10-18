@@ -565,6 +565,20 @@ const tr: string[] = [
   'Skorun kaydedilmedi.',
   'Skorun kaydedilmedi (ağ).',
   'Bir şeyler ters gitti.',
+  'Hepsini bitirebilir misin?',
+  'Ayarlar',
+  'Ses',
+  'Müzik açık',
+  'Müzik kapalı',
+  'Müzik ilk tıklamanda başlar',
+  'Müzik duraklatıldı',
+  // 520
+  'Müzik sesi',
+  'Oyun oynarken durur.',
+  'Tema',
+  'Otomatik',
+  'Gündüz',
+  'Gece',
 ];
 
 export default tr;

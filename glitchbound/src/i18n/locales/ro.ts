@@ -565,6 +565,20 @@ const ro: string[] = [
   'Scorul tău nu a fost salvat.',
   'Scorul tău nu a fost salvat (rețea).',
   'Ceva n-a mers bine.',
+  'Le poți termina pe toate?',
+  'Setări',
+  'Sunet',
+  'Muzica e pornită',
+  'Muzica e oprită',
+  'Muzica pornește la primul tău clic',
+  'Muzica e pe pauză',
+  // 520
+  'Volumul muzicii',
+  'Se oprește cât timp joci.',
+  'Temă',
+  'Auto',
+  'Zi',
+  'Noapte',
 ];
 
 export default ro;

@@ -2,14 +2,15 @@
 .season-decor {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  /* Behind the page: decorations show in the open background, never over text or cards. */
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
 }
 .season-decor span {
   position: absolute;
   top: -8%;
-  opacity: 0.38;
+  opacity: 0.5;
   animation: season-fall linear infinite;
   will-change: transform;
 }

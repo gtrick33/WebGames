@@ -424,6 +424,180 @@
   font-size: 28px;
 }
 
+/* Lobby: two steps (names, then a game); rules and own prompts open in a sheet. */
+.pt-step {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 6px;
+  border: 2.5px solid var(--pt-ink);
+  border-radius: 50%;
+  background: var(--pt-yellow);
+  font-size: 15px;
+  vertical-align: 3px;
+}
+.pt-link {
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--pt-ink-2);
+  font: 700 14px var(--font);
+  cursor: pointer;
+}
+.pt-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pt-name-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 4px 3px 4px;
+  border: 2.5px solid var(--pt-ink);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pc, var(--pt-pink)) 22%, #fff);
+  font-weight: 800;
+  animation: pt-chip-in 0.3s var(--spring);
+}
+@keyframes pt-chip-in {
+  from { transform: scale(0.6); opacity: 0; }
+}
+.pt-name-chip .pt-avatar {
+  border-width: 2px;
+}
+.pt-name-chip button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(29 18 56 / 0.08);
+  color: var(--pt-ink-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+.pt-name-chip button:hover {
+  background: var(--pt-ink);
+  color: #fff;
+}
+.pt-who.is-nudged {
+  animation: pt-nudge 0.45s ease-out;
+  box-shadow: 0 0 0 4px var(--pt-yellow), 0 6px 0 var(--pt-ink);
+}
+@keyframes pt-nudge {
+  20%, 60% { transform: translateX(-7px); }
+  40%, 80% { transform: translateX(7px); }
+}
+
+/* Game cards in the lobby: artwork on top, two per row on phones, three on wider screens. */
+.pt-modes-lobby {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (min-width: 560px) {
+  .pt-modes-lobby {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.pt-modes-lobby .pt-mode {
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 10px 12px;
+}
+.pt-modes-lobby .pt-mode-art {
+  width: 100%;
+  height: 84px;
+  font-size: 46px;
+}
+.pt-modes-lobby .pt-mode:hover .pt-mode-art {
+  animation: pt-wiggle 0.5s ease-in-out;
+}
+@keyframes pt-wiggle {
+  30% { transform: rotate(-3deg) scale(1.03); }
+  60% { transform: rotate(2deg); }
+}
+.pt-modes-lobby .pt-mode-body b {
+  font-size: 17px;
+  line-height: 1.15;
+}
+.pt-modes-lobby .pt-mode-body span {
+  font-size: 13px;
+  line-height: 1.3;
+}
+.pt-mode.is-waiting {
+  opacity: 0.85;
+}
+
+.pt-extras {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.pt-extra {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 2px dashed var(--pt-ink-3);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.55);
+  color: var(--pt-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.pt-extra:hover {
+  border-style: solid;
+  border-color: var(--pt-ink);
+}
+.pt-extra b {
+  font-size: 15px;
+}
+.pt-extra span {
+  overflow: hidden;
+  color: var(--pt-ink-3);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The sheet: centred on wide screens, sliding up from the bottom on phones. */
+.pt-sheet {
+  max-height: min(86vh, 720px);
+  overflow-y: auto;
+  text-align: left;
+  width: min(100%, 520px);
+}
+.pt-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pt-sheet-head h2 {
+  font-size: 22px;
+  font-weight: 850;
+}
+@media (max-width: 560px) {
+  .pt-sheet-wrap {
+    place-items: end stretch;
+    padding: 0;
+  }
+  .pt-sheet {
+    width: 100%;
+    border-radius: 26px 26px 0 0;
+    padding-bottom: calc(22px + env(safe-area-inset-bottom));
+    animation: pt-sheet-up 0.3s var(--out);
+  }
+}
+@keyframes pt-sheet-up {
+  from { transform: translateY(40%); opacity: 0.5; }
+}
+
 /* Mode bar */
 .pt-modebar {
   display: flex;
@@ -1106,6 +1280,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pt-name-chip,
+  .pt-who.is-nudged,
+  .pt-modes-lobby .pt-mode:hover .pt-mode-art,
+  .pt-sheet,
   .pt-card,
   .pt-pass,
   .pt-event,

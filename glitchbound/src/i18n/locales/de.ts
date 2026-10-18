@@ -565,6 +565,20 @@ const de: string[] = [
   'Dein Ergebnis wurde nicht gespeichert.',
   'Dein Ergebnis wurde nicht gespeichert (Netzwerk).',
   'Etwas ist schiefgelaufen.',
+  'Schaffst du sie alle?',
+  'Einstellungen',
+  'Ton',
+  'Musik an',
+  'Musik aus',
+  'Die Musik startet bei deinem ersten Klick',
+  'Musik pausiert',
+  // 520
+  'Musiklautstärke',
+  'Sie pausiert, während du spielst.',
+  'Design',
+  'Auto',
+  'Tag',
+  'Nacht',
 ];
 
 export default de;

@@ -565,6 +565,20 @@ const pl: string[] = [
   'Twój wynik nie został zapisany.',
   'Twój wynik nie został zapisany (sieć).',
   'Coś poszło nie tak.',
+  'Dasz radę zaliczyć wszystkie?',
+  'Ustawienia',
+  'Dźwięk',
+  'Muzyka włączona',
+  'Muzyka wyłączona',
+  'Muzyka zacznie grać po pierwszym kliknięciu',
+  'Muzyka wstrzymana',
+  // 520
+  'Głośność muzyki',
+  'Zatrzymuje się, gdy grasz.',
+  'Motyw',
+  'Auto',
+  'Dzień',
+  'Noc',
 ];
 
 export default pl;
