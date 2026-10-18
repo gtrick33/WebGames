@@ -21,7 +21,7 @@ const ChallengeScores = lazy(() => import('../components/Challenge').then((m) =>
 import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { MiniLeaderboard } from '../components/Leaderboard';
-import { openSignIn } from '../components/SignIn';
+import { openSignIn } from '../components/openSignIn';
 import { setGuestName, usePlayerName } from '../platform/playerName';
 import { music } from '../platform/music';
 import { openFeedback } from '../platform/feedback';

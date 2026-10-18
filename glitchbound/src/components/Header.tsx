@@ -11,10 +11,12 @@ import { useSave } from '../platform/store';
 import { Link, useLocation } from '../router/router';
 import { Icon, type IconName } from './Icon';
 import { LogoMark, Wordmark } from './Logo';
-import { Avatar, openSignIn, SignInDialog } from './SignIn';
+import { Avatar } from './Avatar';
+import { openSignIn, setSignInLoader } from './openSignIn';
 import './Header.css';
 
-// The search dialog loads the first time it is opened.
+// The search and sign-in dialogs load the first time they are opened.
+const SignInDialog = lazy(() => import('./SignIn').then((m) => ({ default: m.SignInDialog })));
 const SearchDialog = lazy(() => import('./SearchDialog').then((m) => ({ default: m.SearchDialog })));
 
 const TABS: { href: string; label: string; short?: string; icon: IconName }[] = [
@@ -138,6 +140,11 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchUsed, setSearchUsed] = useState(false);
+  const [signInUsed, setSignInUsed] = useState(false);
+  useEffect(() => {
+    setSignInLoader(() => setSignInUsed(true));
+    return () => setSignInLoader(null);
+  }, []);
   if (searchOpen && !searchUsed) setSearchUsed(true);
 
   useEffect(() => {
@@ -209,7 +216,11 @@ export function Header() {
           <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
         </Suspense>
       )}
-      <SignInDialog />
+      {signInUsed && (
+        <Suspense fallback={null}>
+          <SignInDialog />
+        </Suspense>
+      )}
     </>
   );
 }

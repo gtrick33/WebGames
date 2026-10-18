@@ -4,6 +4,7 @@ import { account, ApiError, useAccount } from '../platform/account';
 import { track } from '../platform/analytics';
 import { navigate } from '../router/router';
 import { Icon } from './Icon';
+import { onSignInOpen } from './openSignIn';
 import './SignIn.css';
 
 interface TokenResponse {
@@ -43,11 +44,6 @@ function loadGoogle(): Promise<void> {
   return gisPromise;
 }
 
-/** Opens the sign-in dialog from anywhere. */
-const openers = new Set<(reason?: string) => void>();
-export function openSignIn(reason?: string): void {
-  openers.forEach((fn) => fn(reason));
-}
 
 const PERKS: { icon: 'bolt' | 'crown' | 'heart' | 'mail'; text: string }[] = [
   { icon: 'bolt', text: 'Three member quests every day, with XP and levels' },
@@ -296,16 +292,14 @@ export function SignInDialog() {
   const [reason, setReason] = useState<string | undefined>();
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    const fn = (r?: string): void => {
-      setReason(r);
-      setOpen(true);
-    };
-    openers.add(fn);
-    return () => {
-      openers.delete(fn);
-    };
-  }, []);
+  useEffect(
+    () =>
+      onSignInOpen((r) => {
+        setReason(r);
+        setOpen(true);
+      }),
+    [],
+  );
 
   useEffect(() => {
     const d = ref.current;
@@ -347,15 +341,5 @@ export function SignInDialog() {
         </button>
       </div>
     </dialog>
-  );
-}
-
-export function Avatar({ name, src, size = 36 }: { name: string; src?: string; size?: number }) {
-  const [failed, setFailed] = useState(false);
-  const initial = (name.trim()[0] ?? '?').toUpperCase();
-  return (
-    <span className="avatar" style={{ width: size, height: size, fontSize: size * 0.45 }} aria-hidden="true">
-      {src && !failed ? <img src={src} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} /> : initial}
-    </span>
   );
 }

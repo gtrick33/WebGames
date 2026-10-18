@@ -9,6 +9,7 @@ import { NotFound } from './pages/NotFound';
 import { ArcadeEntrance } from './components/Entrance';
 import { MusicControl } from './components/MusicControl';
 import { NoticeBanner } from './components/NoticeBanner';
+import { SeasonLayer } from './components/SeasonLayer';
 import { ShareHost } from './components/ShareHost';
 import { track } from './platform/analytics';
 import { useAccount } from './platform/account';
@@ -111,6 +112,7 @@ export function App() {
       <Suspense fallback={null}>
         <FeedbackPrompt />
       </Suspense>
+      <SeasonLayer />
     </>
   );
 }

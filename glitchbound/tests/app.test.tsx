@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App';
 import { SAVE_KEY } from '../src/platform/save';
@@ -168,13 +168,13 @@ describe('members features as a guest (API unreachable in tests)', () => {
     expect(screen.getByText('No favorites yet.')).toBeTruthy();
   });
 
-  it('tells guests it is free with no sign-up, and opens the sign-in dialog when they want more', () => {
+  it('tells guests it is free with no sign-up, and opens the sign-in dialog when they want more', async () => {
     renderAt('/');
     expect(screen.getByRole('heading', { level: 2, name: /100% free\.\s*No sign-up\.\s*No downloads\./ })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Sign in free/ }));
-    const dialog = document.querySelector('dialog.signin-dialog') as HTMLDialogElement;
-    expect(dialog.open).toBe(true);
-    expect(within(dialog).getByRole('heading', { name: 'Join the arcade' })).toBeTruthy();
+    // The dialog loads on first use, then opens.
+    const dialog = (await screen.findByRole('heading', { name: 'Join the arcade' }, { timeout: 3000 })).closest('dialog') as HTMLDialogElement;
+    await waitFor(() => expect(dialog.open).toBe(true));
   });
 
   it('shows a friendly offline state on the leaderboards page', async () => {

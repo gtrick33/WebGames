@@ -6,7 +6,7 @@ import { api, useAccount } from '../platform/account';
 import { fmt } from '../platform/daily';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
-import { openSignIn } from './SignIn';
+import { openSignIn } from './openSignIn';
 import './Leaderboard.css';
 
 type Period = 'all' | '24h';

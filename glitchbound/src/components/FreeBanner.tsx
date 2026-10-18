@@ -1,7 +1,7 @@
 import { useT } from '../i18n';
 import { useAccount } from '../platform/account';
 import { Icon } from './Icon';
-import { openSignIn } from './SignIn';
+import { openSignIn } from './openSignIn';
 import './FreeBanner.css';
 
 /**

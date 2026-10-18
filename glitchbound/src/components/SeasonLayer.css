@@ -1,0 +1,62 @@
+/* Holiday look: a few decorations drifting down behind the content, plus small colour touches. */
+.season-decor {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.season-decor span {
+  position: absolute;
+  top: -8%;
+  opacity: 0.38;
+  animation: season-fall linear infinite;
+  will-change: transform;
+}
+@keyframes season-fall {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(24px, 55vh, 0) rotate(160deg); }
+  100% { transform: translate3d(-12px, 112vh, 0) rotate(320deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .season-decor {
+    display: none;
+  }
+}
+
+/* The logo wears the season's sticker. */
+html[data-season] .brand {
+  position: relative;
+}
+html[data-season] .brand::after {
+  content: var(--season-emoji);
+  position: absolute;
+  top: -9px;
+  left: 24px;
+  font-size: 17px;
+  transform: rotate(14deg);
+  filter: drop-shadow(1px 1px 0 rgb(0 0 0 / 0.35));
+  pointer-events: none;
+}
+
+/* Highlight colours: the hero's second line and the greeting. */
+html[data-season] .intro-hl {
+  background: linear-gradient(90deg, var(--season-1), var(--season-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.season-greeting {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 6px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--season-1, #ffc928), var(--season-2, #ff4fc8));
+  color: #1d1238;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: var(--hard-sm);
+}

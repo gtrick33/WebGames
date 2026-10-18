@@ -7,7 +7,7 @@ import { useNow } from '../platform/hooks';
 import { Link } from '../router/router';
 import { Burst } from './Burst';
 import { Icon } from './Icon';
-import { openSignIn } from './SignIn';
+import { openSignIn } from './openSignIn';
 import './Quests.css';
 
 function QuestCard({ q, onClaim, busy }: { q: QuestView; onClaim: () => void; busy: boolean }) {

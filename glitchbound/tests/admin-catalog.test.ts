@@ -152,3 +152,24 @@ describe('theme days', () => {
     expect(THEMES_SINCE > '2026-10-18').toBe(true);
   });
 });
+
+describe('holiday looks', () => {
+  it('follows the calendar in automatic mode, and admins can force or switch it off', async () => {
+    const { activeHoliday, autoHoliday, easterDay, isSeasonSetting } = await import('../src/platform/seasons');
+    expect(easterDay(2027)).toBe('2027-03-28');
+    expect(easterDay(2028)).toBe('2028-04-16');
+    expect(autoHoliday('2026-10-18')).toBe('halloween');
+    expect(autoHoliday('2026-11-08')).toBe('diwali');
+    expect(autoHoliday('2026-12-24')).toBe('winter');
+    expect(autoHoliday('2027-01-03')).toBe('winter');
+    expect(autoHoliday('2027-02-08')).toBe('lunar');
+    expect(autoHoliday('2027-02-14')).toBe('valentine');
+    expect(autoHoliday('2027-03-27')).toBe('easter');
+    expect(autoHoliday('2027-06-15')).toBeNull();
+    expect(activeHoliday(undefined, '2026-10-31')?.id).toBe('halloween');
+    expect(activeHoliday('off', '2026-10-31')).toBeNull();
+    expect(activeHoliday('summer', '2026-10-31')?.id).toBe('summer');
+    expect(isSeasonSetting('easter')).toBe(true);
+    expect(isSeasonSetting('christmas')).toBe(false);
+  });
+});

@@ -59,17 +59,17 @@
     0 0 22px color-mix(in srgb, var(--acc) 60%, transparent);
 }
 .al-md {
-  grid-column: span 4;
+  grid-column: span 3;
 }
 .al-wide {
   grid-column: span 6;
 }
 .al-tall {
-  grid-column: span 4;
+  grid-column: span 3;
   grid-row: span 2;
 }
 .al-xl {
-  grid-column: span 8;
+  grid-column: span 6;
   grid-row: span 2;
 }
 .al-name {
@@ -204,4 +204,41 @@
   .al-name {
     font-size: 10.5px;
   }
+}
+
+/* ------------------------------------------------------------ holiday look */
+.as-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.as-card {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c1) 30%, var(--surface)), color-mix(in srgb, var(--c2) 30%, var(--surface)));
+  color: var(--fg);
+  font: 700 13px var(--font);
+  cursor: pointer;
+  transition: transform 0.2s var(--spring);
+}
+.as-card:hover {
+  transform: translateY(-2px);
+}
+.as-card.is-on {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px var(--cyan), var(--hard-sm);
+}
+.as-emoji {
+  font-size: 30px;
+  line-height: 1;
+}
+.as-note {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.75;
 }

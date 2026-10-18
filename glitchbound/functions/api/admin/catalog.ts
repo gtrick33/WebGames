@@ -5,6 +5,7 @@ import { getGame } from '../../../src/catalog/catalog';
 import { GAMES } from '../../../src/catalog/games';
 import { compactSettings, isDay, sanitizeLayout, sanitizeNotice, sanitizePatch, sanitizePick, settingsFor, type GameSettings } from '../../../src/catalog/settings';
 import type { AdminCatalog } from '../../../src/platform/apiTypes';
+import { HOLIDAYS, isSeasonSetting } from '../../../src/platform/seasons';
 import { addDays } from '../../../src/platform/dates';
 
 const today = (): string => new Date().toISOString().slice(0, 10);
@@ -32,6 +33,7 @@ const who = (u: { nickname: string; email: string }): string => u.nickname || u.
  *   { action: 'daily', day, pick | null }  hand-pick (or clear) the daily challenge for a date
  *   { action: 'notice', notice | null }    set or remove the site banner
  *   { action: 'layout', layout | null }    home page banner order, sizes, colours and stickers (null = automatic)
+ *   { action: 'season', season }           holiday look: 'auto' (by the calendar), 'off' or a holiday id
  */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('forbidden', 403);
@@ -120,6 +122,17 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
       const first = layout.order.slice(0, 3).map((slug) => getGame(slug)?.title ?? slug);
       await logAdmin(env, by, 'layout', `Home page banners updated${first.length ? `: ${first.join(', ')} first` : ''}`);
       return json({ ok: true, layout });
+    }
+    case 'season': {
+      if (!isSeasonSetting(body.season)) return bad('invalid_season');
+      if (body.season === 'auto') await env.DB.prepare("DELETE FROM site_settings WHERE key = 'season'").run();
+      else
+        await env.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('season', ?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by")
+          .bind(body.season, now, by)
+          .run();
+      const name = body.season === 'auto' ? 'automatic (by the calendar)' : body.season === 'off' ? 'off' : (HOLIDAYS.find((h) => h.id === body.season)?.name ?? body.season);
+      await logAdmin(env, by, 'season', `Holiday look: ${name}`);
+      return json({ ok: true, season: body.season });
     }
     default:
       return bad('unknown_action');

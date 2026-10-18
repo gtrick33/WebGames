@@ -4,6 +4,7 @@
  * Games themselves still come from games.ts; these settings live in D1 and are applied at runtime,
  * so admins can change them without a rebuild. Pure: shared by the browser and the server.
  */
+import type { SeasonSetting } from '../platform/seasons';
 import type { Accent, GameEntry } from './types';
 
 export type NewBadge = 'auto' | 'on' | 'off';
@@ -90,6 +91,8 @@ export interface PublicCatalog {
   notice: Notice | null;
   /** Older cached copies may not have it. */
   layout?: HomeLayout | null;
+  /** The holiday look (missing = automatic, by the calendar). */
+  season?: SeasonSetting;
 }
 
 export const EMPTY_CATALOG: PublicCatalog = { settings: {}, picks: {}, notice: null, layout: null };

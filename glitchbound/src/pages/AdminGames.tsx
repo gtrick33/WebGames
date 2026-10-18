@@ -10,7 +10,7 @@ import { challengeForDay, fmt } from '../platform/daily';
 import { addDays, dayKey } from '../platform/dates';
 import { setCatalog } from '../platform/liveCatalog';
 import { Link } from '../router/router';
-import { LayoutEditor } from './AdminLayout';
+import { LayoutEditor, SeasonPicker } from './AdminLayout';
 
 /**
  * Admin › Games: what players see, without a rebuild. Show or hide games, pin them, choose the home
@@ -80,6 +80,7 @@ export function AdminGames() {
       </p>
       <NoticeEditor data={data} send={send} busy={busy} />
       <DailyPlanner data={data} send={send} busy={busy} />
+      <SeasonPicker data={data} send={send} busy={busy} />
       <LayoutEditor key={JSON.stringify(data.layout ?? null)} data={data} send={send} busy={busy} />
       <GamesList data={data} send={send} busy={busy} />
       <ChangeLog log={data.log} />

@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { GAMES } from '../catalog/games';
 import { Icon } from '../components/Icon';
-import { openSignIn } from '../components/SignIn';
+import { openSignIn } from '../components/openSignIn';
 import { api, ApiError, useAccount } from '../platform/account';
 import { track } from '../platform/analytics';
 import type { BugReportView } from '../platform/apiTypes';

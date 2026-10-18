@@ -3,13 +3,14 @@ import { tDaily, useT } from '../i18n';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { useAccount } from '../platform/account';
 import { useDaily, useNow } from '../platform/hooks';
-import { formatCountdown, msUntilMidnight } from '../platform/dates';
+import { dayKey, formatCountdown, msUntilMidnight } from '../platform/dates';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
 import { Dot, Star, Tri } from './Shapes';
-import { openSignIn } from './SignIn';
+import { openSignIn } from './openSignIn';
 import { SurpriseButton } from './Surprise';
 import { latestGame } from '../catalog/catalog';
+import { activeHoliday } from '../platform/seasons';
 import './Hero.css';
 
 /** Re-triggers the glitch class every few seconds. */
@@ -42,6 +43,7 @@ export function Hero() {
   const pick = live.spotlight ?? latestGame(live.games);
   const glitching = useGlitchPulse();
   const now = useNow(1000);
+  const holiday = activeHoliday(live.raw.season, dayKey(now));
   const daily = useDaily(now);
   const { me, status } = useAccount();
   const ready = me?.quests.filter((q) => q.done && !q.claimed).length ?? 0;
@@ -49,6 +51,11 @@ export function Hero() {
   return (
     <section className="intro-band wrap" aria-labelledby="hero-title">
       <div className="intro-copy">
+        {holiday && (
+          <p className="season-greeting">
+            <span aria-hidden="true">{holiday.emoji}</span> {t(holiday.greeting)}
+          </p>
+        )}
         <p className="eyebrow">
           <span className="live-dot" /> {t('Independent browser arcade')} · {gameCount === 1 ? t('1 game') : t('{n} games', { n: gameCount })}
         </p>

@@ -4,6 +4,9 @@ import { GAMES } from '../catalog/games';
 import { ACCENTS, applySettings, orderByLayout, settingsFor, STICKER_MAX, tileSizeFor, type HomeLayout, type TileSize } from '../catalog/settings';
 import type { Accent, GameEntry } from '../catalog/types';
 import type { AdminCatalog } from '../platform/apiTypes';
+import { dayKey } from '../platform/dates';
+import { refreshCatalog } from '../platform/liveCatalog';
+import { activeHoliday, autoHoliday, HOLIDAYS, type SeasonSetting } from '../platform/seasons';
 import './AdminLayout.css';
 
 /**
@@ -83,7 +86,7 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
         <h2 id="ag-layout">Home page banners</h2>
         <span className="mono info-small">{saved ? 'Custom layout live' : 'Automatic'}</span>
       </div>
-      <p className="info-small">Click a banner to move, resize, recolour or label it. Players see it after you publish. On phones every banner is full width, in this order.</p>
+      <p className="info-small">Click a banner to move, resize, recolour or label it. Players see it after you publish. On phones banners show two per row in this order; big and wide ones take the whole row.</p>
 
       <div className="al-presets">
         <span className="al-label">Look</span>
@@ -275,5 +278,52 @@ function TileTools(props: {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Admin › Games › Holiday look: one click switches the site's holiday touches (greeting, logo
+ * sticker, floating decorations, highlight colours). Automatic follows the calendar.
+ */
+export function SeasonPicker({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
+  const current: SeasonSetting = data.season ?? 'auto';
+  const today = dayKey();
+  const now = activeHoliday(current, today);
+  const auto = autoHoliday(today);
+  const pick = (season: SeasonSetting): void => {
+    if (season === current) return;
+    const label = season === 'auto' ? 'Holiday look: automatic' : season === 'off' ? 'Holiday look: off' : `Holiday look: ${HOLIDAYS.find((h) => h.id === season)?.name}`;
+    // Show the new look in this browser straight away too.
+    void send({ action: 'season', season }, label).then(async (ok) => {
+      if (ok) await refreshCatalog();
+    });
+  };
+  return (
+    <section className="panel info-block" aria-labelledby="ag-season">
+      <div className="admin-row">
+        <h2 id="ag-season">Holiday look</h2>
+        <span className="mono info-small">{now ? `Live now: ${now.emoji} ${now.name}` : 'No holiday look live'}</span>
+      </div>
+      <p className="info-small">A greeting on the home page, a sticker on the logo, a few floating decorations and festive colours. Automatic switches them on around Halloween, Diwali, the winter holidays, Lunar New Year, Valentine’s Day and Easter.</p>
+      <div className="as-grid" role="radiogroup" aria-label="Holiday look">
+        <button role="radio" aria-checked={current === 'auto'} className={`as-card${current === 'auto' ? ' is-on' : ''}`} style={{ ['--c1' as string]: '#2ad1f0', ['--c2' as string]: '#b6e62c' }} onClick={() => pick('auto')} disabled={busy}>
+          <span className="as-emoji">🗓️</span>
+          Automatic
+          <span className="as-note">{auto ? `today: ${HOLIDAYS.find((h) => h.id === auto)?.name}` : 'today: none'}</span>
+        </button>
+        {HOLIDAYS.map((h) => (
+          <button key={h.id} role="radio" aria-checked={current === h.id} className={`as-card${current === h.id ? ' is-on' : ''}`} style={{ ['--c1' as string]: h.colors[0], ['--c2' as string]: h.colors[1] }} onClick={() => pick(h.id)} disabled={busy}>
+            <span className="as-emoji">{h.emoji}</span>
+            {h.name}
+            <span className="as-note">{h.decor.slice(0, 3).join(' ')}</span>
+          </button>
+        ))}
+        <button role="radio" aria-checked={current === 'off'} className={`as-card${current === 'off' ? ' is-on' : ''}`} style={{ ['--c1' as string]: '#888', ['--c2' as string]: '#555' }} onClick={() => pick('off')} disabled={busy}>
+          <span className="as-emoji">🚫</span>
+          Off
+          <span className="as-note">never</span>
+        </button>
+      </div>
+    </section>
   );
 }
