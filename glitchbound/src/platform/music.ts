@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import type { Song, SongId, SongSynth } from './songs';
 
 /**
  * GlitchBound lobby music: an original, upbeat chiptune-style arcade loop synthesized with Web Audio
@@ -8,7 +9,8 @@ import { useSyncExternalStore } from 'react';
  *
  * Browsers only allow audio after a user gesture, so it starts on the first click/tap/key if the
  * visitor has it switched on (default on, low volume). It pauses while a game is active, and when
- * the tab is hidden. Settings persist in localStorage.
+ * the tab is hidden. Settings persist in localStorage. During a holiday look the lobby plays that
+ * holiday's loop instead (platform/songs.ts).
  */
 
 const KEY = 'glitchbound.music';
@@ -79,6 +81,19 @@ class Music {
   private nextBar = 0;
   private bar = 0;
   private gameActive = false;
+  /** A holiday loop, or null for the everyday tune. */
+  private song: Song | null = null;
+  private player: ((synth: SongSynth, t: number, n: number, song: Song) => void) | null = null;
+  /** What a holiday loop plays with (see songs.ts). */
+  private readonly synth: SongSynth = {
+    tone: (f, t, dur, opts) => this.tone(f, t, dur, opts),
+    drum: (t, from, to, gain, len, wet) => this.drum(t, from, to, gain, len, wet),
+    noiseHit: (t, f, gain, len, type, wet) => this.noiseHit(t, f, gain, len, type, wet),
+    hat: (t, gain) => this.hat(t, gain),
+    kick: (t) => this.kick(t),
+    snare: (t) => this.snare(t),
+  };
+  private songId: SongId = 'default';
   private unlocked = false;
   private listeners = new Set<() => void>();
   state: MusicState = { on: true, volume: 0.35, playing: false, waiting: true };
@@ -138,6 +153,25 @@ class Music {
     this.save();
     if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.settings.volume * 0.5, this.ctx.currentTime, 0.1);
     this.sync();
+  }
+
+  /** Switches to a holiday's loop ('default' = the everyday tune), from the next bar on. */
+  setSong(id: SongId): void {
+    if (id === this.songId) return;
+    this.songId = id;
+    if (id === 'default') {
+      this.song = null;
+      this.player = null;
+      this.bar = 0;
+      return;
+    }
+    // Holiday loops load on demand, so the first visit only downloads the everyday tune.
+    void import('./songs').then((m) => {
+      if (this.songId !== id) return;
+      this.song = m.SONGS[id];
+      this.player = m.playSongBar;
+      this.bar = 0;
+    });
   }
 
   /** Games bring their own sound: the lobby music steps aside while one is running. */
@@ -229,8 +263,10 @@ class Music {
     const ctx = this.ctx;
     if (!ctx) return;
     while (this.nextBar < ctx.currentTime + 1.2) {
-      this.playBar(this.nextBar, this.bar);
-      this.nextBar += BAR;
+      const song = this.song;
+      if (song && this.player) this.player(this.synth, this.nextBar, this.bar, song);
+      else this.playBar(this.nextBar, this.bar);
+      this.nextBar += song && this.player ? (60 / song.bpm) * 4 : BAR;
       this.bar++;
     }
   }
@@ -245,11 +281,16 @@ class Music {
     node.connect(w).connect(this.reverb!);
   }
 
-  private tone(freq: number, t: number, dur: number, opts: { type?: OscillatorType; gain: number; attack: number; release: number; cutoff?: number; detune?: number; wet?: number }): void {
+  private tone(freq: number, t: number, dur: number, opts: { type?: OscillatorType; gain: number; attack: number; release: number; cutoff?: number; detune?: number; wet?: number; glide?: number }): void {
     const ctx = this.ctx!;
     const osc = ctx.createOscillator();
     osc.type = opts.type ?? 'sine';
     osc.frequency.value = freq;
+    // A short slide into the note (sitar, plucked strings).
+    if (opts.glide) {
+      osc.frequency.setValueAtTime(freq * opts.glide, t);
+      osc.frequency.exponentialRampToValueAtTime(freq, t + 0.07);
+    }
     if (opts.detune) osc.detune.value = opts.detune;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, t);
@@ -344,6 +385,39 @@ class Music {
     this.snare(t + BEAT * 3);
     for (let i = 0; i < 8; i++) this.hat(t + i * EIGHTH, i % 2 ? 0.012 : 0.022);
   }
+
+  /** A pitched drum hit that drops in pitch (kick, toms, tabla). */
+  private drum(t: number, from: number, to: number, gain: number, len: number, wet = 0.05): void {
+    const ctx = this.ctx!;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.frequency.setValueAtTime(from, t);
+    osc.frequency.exponentialRampToValueAtTime(to, t + len * 0.7);
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    osc.connect(g);
+    this.out(g, 1, wet);
+    osc.start(t);
+    osc.stop(t + len + 0.02);
+  }
+
+  /** A burst of filtered noise (shakers, sleigh bells, rim clicks). */
+  private noiseHit(t: number, freq: number, gain: number, len: number, type: BiquadFilterType = 'bandpass', wet = 0.1): void {
+    const ctx = this.ctx!;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noise;
+    const f = ctx.createBiquadFilter();
+    f.type = type;
+    f.frequency.value = freq;
+    f.Q.value = type === 'bandpass' ? 3 : 0.7;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    src.connect(f).connect(g);
+    this.out(g, 1, wet);
+    src.start(t, Math.random() * 0.5, len + 0.05);
+  }
+
 }
 
 export const music = new Music();
