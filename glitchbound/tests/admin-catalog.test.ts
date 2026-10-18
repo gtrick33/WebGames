@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { GAMES } from '../src/catalog/games';
-import { applySettings, compactSettings, dailyRules, DEFAULT_SETTINGS, EMPTY_CATALOG, sanitizeNotice, sanitizePatch, sanitizePick, settingsFor, spotlightGame, type PublicCatalog } from '../src/catalog/settings';
+import {
+  applySettings,
+  compactSettings,
+  dailyRules,
+  DEFAULT_SETTINGS,
+  EMPTY_CATALOG,
+  orderByLayout,
+  sanitizeLayout,
+  sanitizeNotice,
+  sanitizePatch,
+  sanitizePick,
+  settingsFor,
+  spotlightGame,
+  TILE_RHYTHM,
+  tileSizeFor,
+  type PublicCatalog,
+} from '../src/catalog/settings';
 import { challengeForDay } from '../src/platform/daily';
 import { addDays } from '../src/platform/dates';
 
@@ -80,5 +96,43 @@ describe('daily challenge with admin rules', () => {
     expect(c.target).toBe(4321);
     expect(c.label).toContain('4,321');
     expect(challengeForDay(days[11]!, GAMES, rules)).toEqual(challengeForDay(days[11]!, GAMES, null));
+  });
+});
+
+describe('home page banner layout', () => {
+  const [a, b, c] = GAMES;
+
+  it('keeps only known games, sizes, colours and short stickers', () => {
+    const l = sanitizeLayout(
+      {
+        order: [c!.slug, 'nope', a!.slug, c!.slug],
+        sizes: { [a!.slug]: 'xl', [b!.slug]: 'huge', nope: 'md' },
+        accents: { [a!.slug]: 'violet', [b!.slug]: 'gold' },
+        stickers: { [c!.slug]: '  🔥 Hot  ', [a!.slug]: 'x'.repeat(40), [b!.slug]: '   ' },
+      },
+      GAMES,
+    )!;
+    expect(l.order).toEqual([c!.slug, a!.slug]);
+    expect(l.sizes).toEqual({ [a!.slug]: 'xl' });
+    expect(l.accents).toEqual({ [a!.slug]: 'violet' });
+    expect(l.stickers[c!.slug]).toBe('🔥 Hot');
+    expect(l.stickers[a!.slug]).toHaveLength(14);
+    expect(l.stickers[b!.slug]).toBeUndefined();
+    expect(sanitizeLayout({ order: ['nope'] }, GAMES)).toBeNull();
+  });
+
+  it('orders the arcade by the layout, unlisted games after in their usual order', () => {
+    const layout = { order: [c!.slug, a!.slug], sizes: {}, accents: {}, stickers: {} };
+    const out = orderByLayout(GAMES, layout).map((g) => g.slug);
+    expect(out.slice(0, 2)).toEqual([c!.slug, a!.slug]);
+    expect(out.slice(2)).toEqual(GAMES.map((g) => g.slug).filter((s) => s !== a!.slug && s !== c!.slug));
+    expect(orderByLayout(GAMES, null)).toEqual(GAMES);
+  });
+
+  it('uses the chosen banner size, else the automatic rhythm', () => {
+    const layout = { order: [], sizes: { [b!.slug]: 'wide' as const }, accents: {}, stickers: {} };
+    expect(tileSizeFor(layout, b!.slug, 0)).toBe('wide');
+    expect(tileSizeFor(layout, a!.slug, 1)).toBe(TILE_RHYTHM[1]);
+    expect(tileSizeFor(null, a!.slug, 9)).toBe(TILE_RHYTHM[9 % TILE_RHYTHM.length]);
   });
 });

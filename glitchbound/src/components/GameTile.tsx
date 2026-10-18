@@ -1,16 +1,12 @@
 import type { CSSProperties } from 'react';
 import { isNewLive, useLiveCatalog } from '../platform/liveCatalog';
+import type { TileSize } from '../catalog/settings';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
 import { Link } from '../router/router';
 import { FavoriteButton } from './FavoriteButton';
 import { GamePreview, hasPreview } from './GamePreview';
 import { Icon } from './Icon';
 import './GameTile.css';
-
-export type TileSize = 'xl' | 'tall' | 'md' | 'wide';
-
-/** Shape rhythm for the arcade grid, so the library never looks like rows of identical boxes. */
-export const TILE_RHYTHM: TileSize[] = ['xl', 'tall', 'md', 'md', 'wide', 'md', 'tall', 'md'];
 
 /**
  * A game "cabinet" in the catalogue: artwork with a live looping preview (it runs only while the
@@ -22,10 +18,13 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
   const preview = hasPreview(game.slug);
   // Wide tiles with a preview split into artwork + live screen, so neither covers the other.
   const art = (size === 'xl' || size === 'wide') && !preview ? game.art.wide : game.art.tile;
+  // Admins can recolour a banner and give it a sticker (which takes the place of NEW).
+  const accent = live.layout?.accents[game.slug] ?? game.accent;
+  const sticker = live.layout?.stickers[game.slug];
   return (
     <article
       className={`tile tile-${size} pop-in${preview ? ' has-preview' : ''}`}
-      data-accent={game.accent}
+      data-accent={accent}
       style={style}
     >
       <div className="tile-art" style={{ background: game.art.bg }}>
@@ -63,10 +62,16 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
         </div>
       </div>
       <FavoriteButton slug={game.slug} title={game.title} className="tile-fav" />
-      {isNewLive(live, game) && (
-        <span className="sticker tile-sticker" data-tone="yellow">
-          New
+      {sticker ? (
+        <span className="sticker tile-sticker" data-tone="magenta">
+          {sticker}
         </span>
+      ) : (
+        isNewLive(live, game) && (
+          <span className="sticker tile-sticker" data-tone="yellow">
+            New
+          </span>
+        )
       )}
     </article>
   );

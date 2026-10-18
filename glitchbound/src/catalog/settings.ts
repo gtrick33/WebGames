@@ -4,7 +4,7 @@
  * Games themselves still come from games.ts; these settings live in D1 and are applied at runtime,
  * so admins can change them without a rebuild. Pure: shared by the browser and the server.
  */
-import type { GameEntry } from './types';
+import type { Accent, GameEntry } from './types';
 
 export type NewBadge = 'auto' | 'on' | 'off';
 
@@ -60,14 +60,52 @@ export interface Notice {
   tone: NoticeTone;
 }
 
+/** Banner sizes in the arcade grid (12 columns): small 1/3, wide 1/2, tall 1/3 double height, big 2/3 double height. */
+export type TileSize = 'md' | 'wide' | 'tall' | 'xl';
+export const TILE_SIZES: TileSize[] = ['md', 'wide', 'tall', 'xl'];
+
+/** Shape rhythm used for games without a chosen size, so the grid never looks like identical boxes. */
+export const TILE_RHYTHM: TileSize[] = ['xl', 'tall', 'md', 'md', 'wide', 'md', 'tall', 'md'];
+
+export const ACCENTS: Accent[] = ['cyan', 'magenta', 'blue', 'orange', 'lime', 'coral', 'yellow', 'teal', 'violet'];
+
+/** How the arcade on the home page lays out its banners (set in the admin Games tab). */
+export interface HomeLayout {
+  /** Game slugs in display order; games not listed follow, newest first. */
+  order: string[];
+  /** Banner size per game (missing = the automatic rhythm). */
+  sizes: Record<string, TileSize>;
+  /** Banner colour per game (missing = the game's own). */
+  accents: Record<string, Accent>;
+  /** Short sticker on the banner, e.g. "Hot" (missing = none, or NEW when due). */
+  stickers: Record<string, string>;
+}
+
+export const STICKER_MAX = 14;
+
 /** What GET /api/catalog returns. */
 export interface PublicCatalog {
   settings: Record<string, Partial<GameSettings>>;
   picks: Record<string, DailyPick>;
   notice: Notice | null;
+  /** Older cached copies may not have it. */
+  layout?: HomeLayout | null;
 }
 
-export const EMPTY_CATALOG: PublicCatalog = { settings: {}, picks: {}, notice: null };
+export const EMPTY_CATALOG: PublicCatalog = { settings: {}, picks: {}, notice: null, layout: null };
+
+/** Orders games for the arcade's default view: the admins' order first, then the rest as given. */
+export function orderByLayout<T extends { slug: string }>(games: readonly T[], layout: HomeLayout | null | undefined): T[] {
+  if (!layout?.order.length) return [...games];
+  const at = new Map(layout.order.map((slug, i) => [slug, i]));
+  return games
+    .map((g, i) => ({ g, i, k: at.get(g.slug) }))
+    .sort((a, b) => (a.k ?? Infinity) - (b.k ?? Infinity) || a.i - b.i)
+    .map((x) => x.g);
+}
+
+/** The banner size for the game at position `index` of the grid. */
+export const tileSizeFor = (layout: HomeLayout | null | undefined, slug: string, index: number): TileSize => layout?.sizes[slug] ?? TILE_RHYTHM[index % TILE_RHYTHM.length]!;
 
 /** Rules for the daily challenge rotation. */
 export interface DailyRules {
@@ -153,6 +191,27 @@ export function sanitizeNotice(body: unknown, now: number): Notice | null {
   const link = /^\/[a-z0-9/_\-?=&#.]*$/i.test(rawLink) || /^https:\/\/[^\s"'<>]+$/i.test(rawLink) ? rawLink : '';
   const tone: NoticeTone = b.tone === 'warning' || b.tone === 'party' ? b.tone : 'info';
   return { id: now.toString(36), text, link, tone };
+}
+
+/** A valid layout for known games (unknown slugs, sizes and colours are dropped), or null when empty. */
+export function sanitizeLayout(body: unknown, games: readonly GameEntry[]): HomeLayout | null {
+  const b = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
+  const known = new Set(games.map((g) => g.slug));
+  const order = Array.isArray(b.order) ? [...new Set(b.order.filter((x): x is string => typeof x === 'string' && known.has(x)))] : [];
+  const pickMap = <T>(v: unknown, ok: (x: unknown) => x is T): Record<string, T> => {
+    const out: Record<string, T> = {};
+    if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (known.has(k) && ok(x)) out[k] = x;
+    return out;
+  };
+  const sizes = pickMap(b.sizes, (x): x is TileSize => TILE_SIZES.includes(x as TileSize));
+  const accents = pickMap(b.accents, (x): x is Accent => ACCENTS.includes(x as Accent));
+  const stickers: Record<string, string> = {};
+  for (const [k, v] of Object.entries(pickMap(b.stickers, (x): x is string => typeof x === 'string'))) {
+    const t = clean(v, STICKER_MAX).replace(/\n+/g, ' ');
+    if (t) stickers[k] = t;
+  }
+  const empty = !order.length && !Object.keys(sizes).length && !Object.keys(accents).length && !Object.keys(stickers).length;
+  return empty ? null : { order, sizes, accents, stickers };
 }
 
 export const isDay = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));

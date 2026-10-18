@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { categoryCounts, isCategory, queryGames, SORTS, type SortId } from '../catalog/catalog';
+import { orderByLayout, tileSizeFor } from '../catalog/settings';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import type { CategoryId } from '../catalog/types';
 import { track } from '../platform/analytics';
 import { useSave } from '../platform/store';
 import { useAccount } from '../platform/account';
 import { navigate, useLocation } from '../router/router';
-import { GameTile, TILE_RHYTHM } from './GameTile';
+import { GameTile } from './GameTile';
 import { Icon } from './Icon';
 import { Dot, Ring, Tri } from './Shapes';
 import './Arcade.css';
@@ -25,20 +26,25 @@ export function Arcade() {
   const params = new URLSearchParams(search);
   const urlCat = params.get('category');
   const category: CategoryId | null = isCategory(urlCat) ? urlCat : null;
-  const sort: SortId = params.get('sort') === 'az' ? 'az' : 'newest';
+  const live = useLiveCatalog();
+  // With an admin layout the default view is "Featured" (their order); Newest and A to Z stay one click away.
+  const featuredOn = !!live.layout?.order.length;
+  const sortParam = params.get('sort');
+  const sort: SortId | 'featured' = sortParam === 'az' ? 'az' : sortParam === 'newest' || !featuredOn ? 'newest' : 'featured';
+  const defaultSort = featuredOn ? 'featured' : 'newest';
   const favOnly = params.get('fav') === '1';
   const acct = useAccount();
   const favorites = acct.me ? acct.me.favorites : acct.guestFavorites;
   const [q, setQ] = useState(params.get('q') ?? '');
   const save = useSave();
-  const live = useLiveCatalog();
   const games = live.games;
   const cats = categoryCounts(games);
   const all = useMemo(() => {
-    const hits = queryGames({ q, category, sort }, live.games);
+    const hits = queryGames({ q, category, sort: sort === 'featured' ? 'newest' : sort }, live.games);
     // Games an admin pinned come first (unless the player is searching).
     if (q.trim()) return hits;
-    return [...hits.filter((g) => live.settings(g.slug).pinned), ...hits.filter((g) => !live.settings(g.slug).pinned)];
+    const ordered = sort === 'featured' ? orderByLayout(hits, live.layout) : hits;
+    return [...ordered.filter((g) => live.settings(g.slug).pinned), ...ordered.filter((g) => !live.settings(g.slug).pinned)];
   }, [q, category, sort, live]);
   const results = favOnly ? all.filter((g) => favorites.includes(g.slug)) : all;
   const filtered = q.trim() !== '' || category !== null || favOnly;
@@ -127,7 +133,8 @@ export function Arcade() {
 
           <label className="arcade-sort">
             <span className="mono">Sort</span>
-            <select value={sort} onChange={(e) => withTransition(() => setParam('sort', e.target.value === 'az' ? 'az' : null))}>
+            <select value={sort} onChange={(e) => withTransition(() => setParam('sort', e.target.value === defaultSort ? null : e.target.value))}>
+              {featuredOn && <option value="featured">Featured</option>}
               {(Object.keys(SORTS) as SortId[]).map((s) => (
                 <option key={s} value={s}>
                   {SORTS[s]}
@@ -144,7 +151,7 @@ export function Arcade() {
         {results.length > 0 ? (
           <div className="arcade-grid">
             {results.map((g, i) => (
-              <GameTile key={g.slug} game={g} index={i} size={TILE_RHYTHM[i % TILE_RHYTHM.length]} best={save.games[g.slug]?.best.score} />
+              <GameTile key={g.slug} game={g} index={i} size={tileSizeFor(live.layout, g.slug, i)} best={save.games[g.slug]?.best.score} />
             ))}
             {!filtered && games.length < 4 && (
               <aside className="workshop pop-in" style={{ ['--i' as string]: results.length }} aria-label="About upcoming games">

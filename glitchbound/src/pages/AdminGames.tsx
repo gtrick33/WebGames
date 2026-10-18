@@ -10,11 +10,12 @@ import { challengeForDay, fmt } from '../platform/daily';
 import { addDays, dayKey } from '../platform/dates';
 import { setCatalog } from '../platform/liveCatalog';
 import { Link } from '../router/router';
+import { LayoutEditor } from './AdminLayout';
 
 /**
  * Admin › Games: what players see, without a rebuild. Show or hide games, pin them, choose the home
- * spotlight and NEW badges, pause a broken game, edit texts, hand-pick daily challenges and post a
- * site notice. Every change is saved at once and written to the change log.
+ * spotlight and NEW badges, pause a broken game, edit texts, hand-pick daily challenges, lay out the
+ * home page banners and post a site notice. Every change is written to the change log.
  */
 
 type Send = (body: Record<string, unknown>, done?: string) => Promise<boolean>;
@@ -36,7 +37,7 @@ export function AdminGames() {
           setData(d);
           setError('');
           // The rest of the site (open in this tab) follows the change right away.
-          setCatalog({ settings: d.settings, picks: d.picks, notice: d.notice });
+          setCatalog({ settings: d.settings, picks: d.picks, notice: d.notice, layout: d.layout ?? null });
         })
         .catch((e: unknown) => setError(e instanceof ApiError && e.status === 403 ? 'Only admins can change games.' : 'Could not load the game settings.')),
     [],
@@ -79,6 +80,7 @@ export function AdminGames() {
       </p>
       <NoticeEditor data={data} send={send} busy={busy} />
       <DailyPlanner data={data} send={send} busy={busy} />
+      <LayoutEditor key={JSON.stringify(data.layout ?? null)} data={data} send={send} busy={busy} />
       <GamesList data={data} send={send} busy={busy} />
       <ChangeLog log={data.log} />
     </div>

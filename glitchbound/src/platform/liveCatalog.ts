@@ -7,7 +7,7 @@
 import { useSyncExternalStore } from 'react';
 import { isNew as baseIsNew } from '../catalog/catalog';
 import { GAMES } from '../catalog/games';
-import { applySettings, dailyRules, EMPTY_CATALOG, settingsFor, spotlightGame, type GameSettings, type PublicCatalog } from '../catalog/settings';
+import { applySettings, dailyRules, EMPTY_CATALOG, settingsFor, spotlightGame, type GameSettings, type HomeLayout, type PublicCatalog } from '../catalog/settings';
 import type { GameEntry } from '../catalog/types';
 import { setDefaultDailyRules } from './daily';
 
@@ -21,11 +21,20 @@ export interface LiveCatalog {
   all: GameEntry[];
   settings: (slug: string) => GameSettings;
   spotlight: GameEntry | undefined;
+  /** The admins' home page banner layout, or null for the automatic one. */
+  layout: HomeLayout | null;
 }
 
 function derive(raw: PublicCatalog): LiveCatalog {
   setDefaultDailyRules(dailyRules(raw));
-  return { raw, games: applySettings(GAMES, raw), all: applySettings(GAMES, raw, true), settings: (slug) => settingsFor(raw, slug), spotlight: spotlightGame(applySettings(GAMES, raw), raw) };
+  return {
+    raw,
+    games: applySettings(GAMES, raw),
+    all: applySettings(GAMES, raw, true),
+    settings: (slug) => settingsFor(raw, slug),
+    spotlight: spotlightGame(applySettings(GAMES, raw), raw),
+    layout: raw.layout ?? null,
+  };
 }
 
 function readCache(): PublicCatalog {

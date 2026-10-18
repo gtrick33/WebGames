@@ -3,7 +3,7 @@ import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http'
 import { requireAdmin } from '../../../server/session';
 import { getGame } from '../../../src/catalog/catalog';
 import { GAMES } from '../../../src/catalog/games';
-import { compactSettings, isDay, sanitizeNotice, sanitizePatch, sanitizePick, settingsFor, type GameSettings } from '../../../src/catalog/settings';
+import { compactSettings, isDay, sanitizeLayout, sanitizeNotice, sanitizePatch, sanitizePick, settingsFor, type GameSettings } from '../../../src/catalog/settings';
 import type { AdminCatalog } from '../../../src/platform/apiTypes';
 import { addDays } from '../../../src/platform/dates';
 
@@ -31,12 +31,13 @@ const who = (u: { nickname: string; email: string }): string => u.nickname || u.
  *   { action: 'reset', slug }              back to the defaults
  *   { action: 'daily', day, pick | null }  hand-pick (or clear) the daily challenge for a date
  *   { action: 'notice', notice | null }    set or remove the site banner
+ *   { action: 'layout', layout | null }    home page banner order, sizes, colours and stickers (null = automatic)
  */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('forbidden', 403);
   const admin = await requireAdmin(env, request);
   if (admin instanceof Response) return admin;
-  const body = await readJson(request, 8192);
+  const body = await readJson(request, 16384);
   const now = Date.now();
   const by = who(admin);
   switch (body?.action) {
@@ -105,6 +106,20 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
         .run();
       await logAdmin(env, by, 'notice', `Banner: ${notice.text}`);
       return json({ ok: true, notice });
+    }
+    case 'layout': {
+      const layout = body.layout === null ? null : sanitizeLayout(body.layout, GAMES);
+      if (!layout) {
+        await env.DB.prepare("DELETE FROM site_settings WHERE key = 'layout'").run();
+        await logAdmin(env, by, 'layout', 'Home page banners: back to automatic');
+        return json({ ok: true, layout: null });
+      }
+      await env.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('layout', ?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by")
+        .bind(JSON.stringify(layout), now, by)
+        .run();
+      const first = layout.order.slice(0, 3).map((slug) => getGame(slug)?.title ?? slug);
+      await logAdmin(env, by, 'layout', `Home page banners updated${first.length ? `: ${first.join(', ')} first` : ''}`);
+      return json({ ok: true, layout });
     }
     default:
       return bad('unknown_action');

@@ -1,5 +1,5 @@
 import { GAMES } from '../src/catalog/games';
-import { applySettings, dailyRules, EMPTY_CATALOG, type DailyPick, type DailyRules, type GameSettings, type Notice, type PublicCatalog } from '../src/catalog/settings';
+import { applySettings, dailyRules, EMPTY_CATALOG, type DailyPick, type DailyRules, type GameSettings, type HomeLayout, type Notice, type PublicCatalog } from '../src/catalog/settings';
 import type { GameEntry } from '../src/catalog/types';
 import { addDays } from '../src/platform/dates';
 import type { Env } from './http';
@@ -11,12 +11,13 @@ import type { Env } from './http';
 
 export async function loadCatalog(env: Env, from: string, to: string): Promise<PublicCatalog> {
   try {
-    const [settings, picks, notice] = await Promise.all([
+    const [settings, picks, notice, layout] = await Promise.all([
       env.DB.prepare('SELECT slug, data FROM game_settings').all<{ slug: string; data: string }>(),
       env.DB.prepare('SELECT day, slug, template, target FROM daily_picks WHERE day >= ? AND day <= ?').bind(from, to).all<{ day: string; slug: string; template: number | null; target: number | null }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'notice'").first<{ value: string }>(),
+      env.DB.prepare("SELECT value FROM site_settings WHERE key = 'layout'").first<{ value: string }>(),
     ]);
-    const out: PublicCatalog = { settings: {}, picks: {}, notice: null };
+    const out: PublicCatalog = { settings: {}, picks: {}, notice: null, layout: null };
     for (const r of settings.results) {
       try {
         out.settings[r.slug] = JSON.parse(r.data) as Partial<GameSettings>;
@@ -31,6 +32,13 @@ export async function loadCatalog(env: Env, from: string, to: string): Promise<P
         out.notice = JSON.parse(n) as Notice;
       } catch {
         /* no notice */
+      }
+    }
+    if (layout?.value) {
+      try {
+        out.layout = JSON.parse(layout.value) as HomeLayout;
+      } catch {
+        /* automatic layout */
       }
     }
     return out;
