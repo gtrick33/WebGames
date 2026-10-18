@@ -194,3 +194,18 @@ describe('hints', () => {
     }
   });
 });
+
+describe('odd-sized tubes', () => {
+  it('gives every colour exactly enough layers to fill a tube, and only counts full tubes as solved', () => {
+    for (let seed = 1; seed < 40; seed++) {
+      const lv = makeLevel(rng(seed), { colors: 4 + (seed % 3), cap: 4, empty: 2, odd: true });
+      const counts = new Map<number, number>();
+      for (const t of lv.board) for (const c of t.layers) counts.set(c, (counts.get(c) ?? 0) + 1);
+      for (const n of counts.values()) expect(lv.board.some((t) => t.cap === n)).toBe(true);
+    }
+    // Two blues in a three-high tube is not done.
+    expect(isSolved(b([3, [1, 1]], [3, [0, 0, 0]], [3, [1]]))).toBe(false);
+    expect(isSolved(b([3, [1, 1, 1]], [3, [0, 0, 0]], [3, []]))).toBe(true);
+    expect(doneTubes(b([3, [1, 1]], [2, [1]]))).toEqual([false, false]);
+  }, 30_000);
+});

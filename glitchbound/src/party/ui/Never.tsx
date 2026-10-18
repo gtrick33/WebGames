@@ -1,0 +1,180 @@
+import { useEffect, useMemo, useState } from 'react';
+import { NHIE, NHIE_CATEGORIES } from '../content/nhie';
+import { consequenceText, draw, freshRng } from '../engine';
+import type { PartySession } from '../session';
+import type { NhieCategory, NhieStatement } from '../types';
+import { Avatar, ModeBar, PlayerPicker, Results } from './shared';
+
+export const FINGERS = 5;
+
+type Nhie = Extract<NonNullable<PartySession['active']>, { mode: 'nhie' }>;
+
+export function NeverMode({ session, update, onExit, onNeedAdult }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void; onNeedAdult: () => void }) {
+  const [r] = useState(freshRng);
+  const active = session.active?.mode === 'nhie' ? session.active : null;
+  const [setup, setSetup] = useState(!active || active.count === 0);
+  const [cats, setCats] = useState<string[]>(active?.categories.length ? active.categories : ['casual', 'funny', 'embarrassing']);
+  const [reveal, setReveal] = useState(active?.reveal ?? true);
+  const [card, setCard] = useState<NhieStatement | null>(null);
+  const [stage, setStage] = useState<'think' | 'count' | 'pick'>('think');
+  const [count, setCount] = useState(3);
+  const [haves, setHaves] = useState<string[]>([]);
+
+  const deck = useMemo(
+    () => [
+      ...NHIE.filter((s) => cats.includes(s.category) && (s.category !== 'adults' || session.settings.adultConfirmed)),
+      ...(cats.includes('custom') ? session.custom.nhie.map((text, i) => ({ id: `cn-${i}`, text: text.replace(/^never have i ever\s*/i, ''), category: 'casual' as NhieCategory })) : []),
+    ],
+    [cats, session.settings.adultConfirmed, session.custom.nhie],
+  );
+
+  useEffect(() => {
+    if (stage !== 'count') return;
+    const t = window.setTimeout(() => {
+      if (count <= 0) setStage('pick');
+      else setCount((c) => c - 1);
+    }, 700);
+    return () => window.clearTimeout(t);
+  }, [stage, count]);
+
+  const deal = (st: Nhie): void => {
+    const d = draw(deck, session.used.nhie ?? [], r);
+    setCard(d.item);
+    setHaves([]);
+    setStage(reveal ? 'think' : 'pick');
+    setCount(3);
+    update((s) => ({ ...s, used: { ...s.used, nhie: d.used }, active: { ...st, count: st.count + 1 } }));
+  };
+
+  const start = (): void => {
+    const limit = { quick: 15, standard: 30, long: 60 }[session.settings.length];
+    const st: Nhie = { mode: 'nhie', count: 0, limit, reveal, categories: cats, have: {} };
+    setSetup(false);
+    deal(st);
+  };
+
+  if (setup || !active) {
+    return (
+      <div className="pt-screen">
+        <ModeBar title="Never Have I Ever" onExit={onExit} />
+        <div className="pt-panel">
+          <h3>Pick your categories</h3>
+          <div className="pt-picker">
+            {[...NHIE_CATEGORIES, { id: 'custom' as const, label: `Your own (${session.custom.nhie.length})`, emoji: '✍️', adult: false }].map((c) => {
+              const on = cats.includes(c.id);
+              const locked = c.adult && !session.settings.adultConfirmed;
+              return (
+                <button
+                  key={c.id}
+                  className={`pt-chip${on ? ' is-on' : ''}`}
+                  aria-pressed={on}
+                  disabled={c.id === 'custom' && session.custom.nhie.length === 0}
+                  onClick={() => (locked ? onNeedAdult() : setCats(on ? cats.filter((x) => x !== c.id) : [...cats, c.id]))}
+                >
+                  {c.emoji} {c.label} {locked ? '🔒' : ''}
+                </button>
+              );
+            })}
+          </div>
+          <label className="pt-switch">
+            <input type="checkbox" checked={reveal} onChange={(e) => setReveal(e.target.checked)} />
+            <span>
+              <b>Reveal together</b> · everyone thinks, then on “3, 2, 1” all hands go up at once
+            </span>
+          </label>
+          <p className="pt-muted">Everyone starts with {FINGERS} fingers up. Each time you have done it, one goes down. Last one standing wins.</p>
+          <button className="pt-btn pt-btn-go pt-btn-big" disabled={!deck.length} onClick={start}>
+            {deck.length ? 'Start' : 'Pick at least one category'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const fingers = (id: string): number => Math.max(0, FINGERS - (active.have[id] ?? 0));
+  const standing = session.players.filter((p) => fingers(p.id) > 0);
+  const over = active.count > active.limit || standing.length <= 1;
+  if (over || !card) {
+    if (!over && !card && deck.length) {
+      return (
+        <div className="pt-screen">
+          <ModeBar title="Never Have I Ever" onExit={onExit} />
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => deal(active)}>
+            Continue
+          </button>
+        </div>
+      );
+    }
+    const scores = Object.fromEntries(session.players.map((p) => [p.id, fingers(p.id)]));
+    const wild = [...session.players].sort((a, b) => (active.have[b.id] ?? 0) - (active.have[a.id] ?? 0))[0];
+    return (
+      <Results
+        title={standing.length === 1 ? `${standing[0]!.name} has done the least!` : 'Out of statements!'}
+        players={session.players}
+        scores={scores}
+        awards={wild && (active.have[wild.id] ?? 0) > 0 ? [{ title: 'Most Experienced', playerId: wild.id, why: `has done ${active.have[wild.id]} of them` }] : []}
+        onAgain={() => {
+          setCard(null);
+          setSetup(true);
+          update((s) => ({ ...s, active: { mode: 'nhie', count: 0, limit: active.limit, reveal, categories: cats, have: {} } }));
+        }}
+        onMenu={onExit}
+      />
+    );
+  }
+
+  const cons = consequenceText(session.settings.consequence, 1, r);
+  const confirm = (): void => {
+    const have = { ...active.have };
+    for (const id of haves) have[id] = (have[id] ?? 0) + 1;
+    const st = { ...active, have };
+    update((s) => ({ ...s, active: st }));
+    deal(st);
+  };
+
+  return (
+    <div className="pt-screen">
+      <ModeBar title="Never Have I Ever" progress={`${active.count}/${active.limit}`} onExit={onExit} />
+      <div className="pt-fingers">
+        {session.players.map((p) => (
+          <span key={p.id} className={`pt-finger${fingers(p.id) === 0 ? ' is-out' : ''}`} title={`${p.name}: ${fingers(p.id)} fingers`}>
+            <Avatar player={p} size={28} />
+            ✋{fingers(p.id)}
+          </span>
+        ))}
+      </div>
+      <article className="pt-card pt-card-nhie" key={card.id}>
+        <span className="pt-kind">{NHIE_CATEGORIES.find((c) => c.id === card.category)?.emoji} Never have I ever…</span>
+        <p className="pt-card-text">…{card.text}.</p>
+        <p className="pt-cons">
+          If you have: finger down{session.settings.consequence !== 'points' && session.settings.consequence !== 'none' ? ` and ${cons}` : ''}.
+        </p>
+      </article>
+      {stage === 'think' && (
+        <div className="pt-actions">
+          <p className="pt-muted">Everyone decides in secret…</p>
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('count')}>
+            Ready: count down
+          </button>
+        </div>
+      )}
+      {stage === 'count' && (
+        <div className="pt-countdown" aria-live="assertive">
+          {count > 0 ? count : 'Reveal!'}
+        </div>
+      )}
+      {stage === 'pick' && (
+        <div className="pt-actions">
+          <p className="pt-muted">Tap everyone who HAS done it:</p>
+          <PlayerPicker players={session.players} selected={haves} label="Players who have" onToggle={(id) => setHaves(haves.includes(id) ? haves.filter((x) => x !== id) : [...haves, id])} />
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={confirm}>
+            {haves.length ? `${haves.length} finger${haves.length > 1 ? 's' : ''} down · next` : 'Nobody! Next'}
+          </button>
+          <button className="pt-btn pt-btn-ghost" onClick={() => deal(active)}>
+            Skip this one
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

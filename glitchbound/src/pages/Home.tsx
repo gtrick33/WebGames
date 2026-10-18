@@ -4,6 +4,7 @@ import { AdSlot } from '../components/AdSlot';
 import { Arcade } from '../components/Arcade';
 import { DailyCard } from '../components/DailyCard';
 import { Hero } from '../components/Hero';
+import { PartyBanner } from '../components/PartyBanner';
 import { NotifyForm } from '../components/Notify';
 import { TodaysDailies } from '../components/TodaysDailies';
 import { QuestBoard } from '../components/Quests';
@@ -21,6 +22,7 @@ export function Home() {
       <Hero />
       <Arcade />
       <YourArcade />
+      <PartyBanner />
       <div className="wrap section">
         <QuestBoard compact />
       </div>

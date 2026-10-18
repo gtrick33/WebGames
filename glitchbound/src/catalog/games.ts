@@ -358,4 +358,84 @@ export const GAMES: GameEntry[] = [
       { metric: 'found', targets: [5, 8, 12], label: 'Find {n} balls in one Where’s the Ball? game' },
     ],
   },
+  {
+    slug: 'wing-it',
+    title: 'Wing It',
+    tagline: 'One tap to flap. Thread the gaps, grab golden feathers, and see how far you get.',
+    description:
+      'Tap to keep a chubby little bird in the air and squeeze through the gaps. The world changes every 15 points, gaps start to drift, and golden feathers pay extra. ' +
+      'A daily course that is the same for everyone, plus endless random skies.',
+    categories: ['arcade'],
+    tags: ['one tap', 'bird', 'flap', 'endless', 'reflex', 'daily', 'casual', 'arcade', 'tap'],
+    released: '2026-10-19',
+    accent: 'yellow',
+    art: {
+      tile: '/games/wing-it/tile.webp',
+      wide: '/games/wing-it/wide.webp',
+      alt: 'A round yellow cartoon bird flapping between green pillars in a bright blue sky',
+      bg: '#8fdcff',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'portrait',
+    controls: {
+      keyboard: ['Space, W or Up: flap', 'P or Esc: pause'],
+      touch: ['Tap anywhere to flap'],
+    },
+    stats: [
+      { key: 'score', label: 'Best run' },
+      { key: 'pillars', label: 'Most gaps cleared' },
+      { key: 'feathers', label: 'Most feathers in a run' },
+    ],
+    highlights: [
+      'Tap to flap: easy to learn, hard to put down',
+      'Four worlds (meadow, sunset, night, space) that change every 15 points',
+      'Drifting gaps and golden feathers (+3) as you go further',
+      'A daily course that is the same for everyone, plus endless random skies',
+      'Bronze, silver, gold and platinum medals',
+    ],
+    ownDaily: { label: 'Today’s course' },
+    daily: [
+      { metric: 'pillars', targets: [10, 20, 30], label: 'Clear {n} gaps in one Wing It flight' },
+      { metric: 'feathers', targets: [2, 3, 5], label: 'Grab {n} golden feathers in one Wing It flight' },
+    ],
+    limits: { scorePerSecond: 4, minSeconds: 2 },
+  },
+  {
+    slug: 'crosswire',
+    title: 'Crosswire',
+    tagline: 'The crossword where clues live inside the grid. Follow the arrows, crack the mystery word.',
+    description:
+      'An English arrowword, the newspaper puzzle loved across Bulgaria and Scandinavia: clue squares sit inside the grid with arrows pointing to their answers. ' +
+      'Every grid is freshly generated, the circled letters hide a bonus mystery word, and the daily grid is the same for everyone.',
+    categories: ['word', 'puzzle'],
+    tags: ['crossword', 'arrowword', 'scandinavian crossword', 'krastoslovitsa', 'words', 'clues', 'daily', 'vocabulary', 'brain'],
+    released: '2026-10-19',
+    accent: 'yellow',
+    art: {
+      tile: '/games/crosswire/tile.webp',
+      wide: '/games/crosswire/wide.webp',
+      alt: 'A crossword grid with yellow clue squares and arrows, letters filled in white squares',
+      bg: '#fbf6ec',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'portrait',
+    controls: {
+      keyboard: ['Type letters, Backspace to delete', 'Space: switch direction, Tab: next clue'],
+      touch: ['Tap a clue or a square, then use the on-screen keys', 'Tap the same square again to switch direction'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'seconds', label: 'Fastest solve', unit: 's', lowerIsBetter: true },
+      { key: 'clean', label: 'Solved without hints' },
+    ],
+    highlights: [
+      'Arrowword style: every clue sits in its own square with an arrow (→ ↓ ↳ ↴)',
+      'Generated grids from nearly a thousand original clues, so puzzles never run out',
+      'A bonus mystery word hidden in the circled letters',
+      'Daily grid for everyone, plus practice in three sizes',
+      'Check, letter and word hints when you are stuck',
+    ],
+    ownDaily: { label: 'Today’s grid' },
+    daily: [{ metric: 'score', targets: [900, 1000, 1100], label: 'Score {n} points in one Crosswire grid' }],
+  },
 ];

@@ -62,7 +62,7 @@ export interface Scene {
   objects: Obj[];
 }
 
-export const PALETTE = ['#ff5a6c', '#ff9f1c', '#ffd21f', '#8ad13b', '#12c6b3', '#3d7bff', '#a45cff', '#ff7eb6', '#ffffff', '#8b5a3c'];
+export const PALETTE = ['#d1544f', '#e0913d', '#e3c04d', '#8cae4f', '#3f9c94', '#4a72b0', '#8a6db5', '#d99aae', '#f6f3ec', '#8b5a3c'];
 
 /** Natural radius of each kind at s = 1 (used for spacing and hit circles). */
 export const RADIUS: Record<Kind, number> = {
@@ -128,51 +128,51 @@ interface Slot {
   colors?: readonly string[];
 }
 
-const SKY = ['#ffffff'];
-const WARM = ['#ff5a6c', '#ff9f1c', '#ffd21f', '#ff7eb6', '#a45cff', '#ffffff'];
+const SKY = ['#f6f3ec'];
+const WARM = ['#d1544f', '#e0913d', '#e3c04d', '#d99aae', '#8a6db5', '#f6f3ec'];
 const ALL = PALETTE.slice(0, 8);
 
 const THEMES: Record<ThemeId, Slot[]> = {
   meadow: [
-    { kind: 'sun', y: [34, 50], count: [1, 1], colors: ['#ffd21f'] },
+    { kind: 'sun', y: [34, 50], count: [1, 1], colors: ['#e3c04d'] },
     { kind: 'cloud', y: [26, 80], count: [2, 4], colors: SKY },
-    { kind: 'bird', y: [40, 100], count: [2, 4], colors: ['#3d7bff', '#ff5a6c', '#14102a', '#a45cff'] },
+    { kind: 'bird', y: [40, 100], count: [2, 4], colors: ['#4a72b0', '#d1544f', '#2e2d35', '#8a6db5'] },
     { kind: 'kite', y: [40, 90], count: [0, 1], colors: ALL },
     { kind: 'balloon', y: [60, 120], count: [1, 3], colors: ALL },
-    { kind: 'house', y: [150, 175], count: [1, 2], colors: ['#ff5a6c', '#ffd21f', '#12c6b3', '#ff9f1c', '#a45cff'] },
-    { kind: 'tree', y: [150, 200], count: [2, 4], colors: ['#46b04a', '#8ad13b', '#2f9e6a'] },
-    { kind: 'mushroom', y: [230, 285], count: [1, 3], colors: ['#ff5a6c', '#ff9f1c', '#a45cff'] },
+    { kind: 'house', y: [150, 175], count: [1, 2], colors: ['#d1544f', '#e3c04d', '#3f9c94', '#e0913d', '#8a6db5'] },
+    { kind: 'tree', y: [150, 200], count: [2, 4], colors: ['#4f8a3c', '#8cae4f', '#3e7a4f'] },
+    { kind: 'mushroom', y: [230, 285], count: [1, 3], colors: ['#d1544f', '#e0913d', '#8a6db5'] },
     { kind: 'flower', y: [215, 290], count: [6, 10], colors: WARM },
   ],
   reef: [
     { kind: 'bubbles', y: [30, 160], count: [2, 4], colors: SKY },
     { kind: 'fish', y: [50, 200], count: [5, 8], colors: ALL },
-    { kind: 'weed', y: [235, 270], count: [3, 5], colors: ['#2f9e6a', '#8ad13b', '#12c6b3'] },
-    { kind: 'coral', y: [235, 275], count: [3, 4], colors: ['#ff5a6c', '#ff9f1c', '#ff7eb6', '#a45cff'] },
-    { kind: 'shell', y: [262, 292], count: [2, 4], colors: ['#ffe2c4', '#ff7eb6', '#ffd21f', '#ffffff'] },
-    { kind: 'starfish', y: [255, 292], count: [1, 3], colors: ['#ff9f1c', '#ff5a6c', '#ffd21f'] },
+    { kind: 'weed', y: [235, 270], count: [3, 5], colors: ['#3e7a4f', '#8cae4f', '#3f9c94'] },
+    { kind: 'coral', y: [235, 275], count: [3, 4], colors: ['#d1544f', '#e0913d', '#d99aae', '#8a6db5'] },
+    { kind: 'shell', y: [262, 292], count: [2, 4], colors: ['#ead6bd', '#d99aae', '#e3c04d', '#f6f3ec'] },
+    { kind: 'starfish', y: [255, 292], count: [1, 3], colors: ['#e0913d', '#d1544f', '#e3c04d'] },
   ],
   street: [
-    { kind: 'sun', y: [30, 44], count: [0, 1], colors: ['#ffd21f'] },
+    { kind: 'sun', y: [30, 44], count: [0, 1], colors: ['#e3c04d'] },
     { kind: 'cloud', y: [24, 60], count: [1, 3], colors: SKY },
-    { kind: 'building', y: [176, 182], count: [4, 5], colors: ['#ff9f1c', '#12c6b3', '#ff7eb6', '#3d7bff', '#ffd21f', '#a45cff'] },
-    { kind: 'bird', y: [30, 80], count: [1, 3], colors: ['#14102a', '#3d7bff'] },
-    { kind: 'sign', y: [212, 222], count: [1, 2], colors: ['#3d7bff', '#ff5a6c', '#8ad13b'] },
-    { kind: 'lamp', y: [222, 230], count: [1, 2], colors: ['#14102a', '#3d7bff'] },
+    { kind: 'building', y: [176, 182], count: [4, 5], colors: ['#e0913d', '#3f9c94', '#d99aae', '#4a72b0', '#e3c04d', '#8a6db5'] },
+    { kind: 'bird', y: [30, 80], count: [1, 3], colors: ['#2e2d35', '#4a72b0'] },
+    { kind: 'sign', y: [212, 222], count: [1, 2], colors: ['#4a72b0', '#d1544f', '#8cae4f'] },
+    { kind: 'lamp', y: [222, 230], count: [1, 2], colors: ['#2e2d35', '#4a72b0'] },
     { kind: 'car', y: [252, 280], count: [2, 4], colors: ALL },
   ],
   space: [
-    { kind: 'star', y: [16, 290], count: [8, 13], colors: ['#ffd21f', '#ffffff', '#ff7eb6'] },
-    { kind: 'planet', y: [40, 250], count: [2, 3], colors: ['#ff9f1c', '#12c6b3', '#ff5a6c', '#a45cff', '#8ad13b'] },
-    { kind: 'rocket', y: [60, 230], count: [1, 2], colors: ['#ffffff', '#ff5a6c', '#ffd21f'] },
-    { kind: 'ufo', y: [50, 200], count: [1, 2], colors: ['#8ad13b', '#12c6b3', '#ff7eb6'] },
+    { kind: 'star', y: [16, 290], count: [8, 13], colors: ['#e3c04d', '#f6f3ec', '#d99aae'] },
+    { kind: 'planet', y: [40, 250], count: [2, 3], colors: ['#e0913d', '#3f9c94', '#d1544f', '#8a6db5', '#8cae4f'] },
+    { kind: 'rocket', y: [60, 230], count: [1, 2], colors: ['#f6f3ec', '#d1544f', '#e3c04d'] },
+    { kind: 'ufo', y: [50, 200], count: [1, 2], colors: ['#8cae4f', '#3f9c94', '#d99aae'] },
   ],
   snow: [
     { kind: 'cloud', y: [24, 70], count: [2, 3], colors: SKY },
-    { kind: 'bird', y: [40, 100], count: [1, 3], colors: ['#ff5a6c', '#3d7bff', '#14102a'] },
-    { kind: 'house', y: [150, 170], count: [1, 2], colors: ['#ff5a6c', '#3d7bff', '#ffd21f', '#12c6b3'] },
-    { kind: 'pine', y: [150, 205], count: [3, 5], colors: ['#2f9e6a', '#1f7a5c', '#46b04a'] },
-    { kind: 'snowman', y: [220, 260], count: [1, 2], colors: ['#ff5a6c', '#3d7bff', '#ff9f1c', '#a45cff'] },
+    { kind: 'bird', y: [40, 100], count: [1, 3], colors: ['#d1544f', '#4a72b0', '#2e2d35'] },
+    { kind: 'house', y: [150, 170], count: [1, 2], colors: ['#d1544f', '#4a72b0', '#e3c04d', '#3f9c94'] },
+    { kind: 'pine', y: [150, 205], count: [3, 5], colors: ['#3e7a4f', '#2f5e46', '#4f8a3c'] },
+    { kind: 'snowman', y: [220, 260], count: [1, 2], colors: ['#d1544f', '#4a72b0', '#e0913d', '#8a6db5'] },
     { kind: 'present', y: [255, 290], count: [2, 4], colors: ALL },
   ],
 };

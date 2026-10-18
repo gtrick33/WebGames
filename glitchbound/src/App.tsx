@@ -20,6 +20,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default:
 const LeaderboardsPage = lazy(() => import('./pages/LeaderboardsPage').then((m) => ({ default: m.LeaderboardsPage })));
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 const BugReportPage = lazy(() => import('./pages/BugReportPage').then((m) => ({ default: m.BugReportPage })));
+const PartyPage = lazy(() => import('./party/ui/PartyPage').then((m) => ({ default: m.PartyPage })));
 const SignInPage = lazy(() => import('./pages/SignInPage').then((m) => ({ default: m.SignInPage })));
 
 function Page() {
@@ -36,6 +37,8 @@ function Page() {
       return <LeaderboardsPage />;
     case 'me':
       return <ProfilePage />;
+    case 'party':
+      return <PartyPage />;
     case 'bugs':
       return <BugReportPage />;
     case 'admin':

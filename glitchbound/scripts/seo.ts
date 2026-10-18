@@ -123,6 +123,15 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       body: `<section class="ssr"><h1>Your profile</h1><p>Sign in to see your quests, level, badges and bests.</p></section>`,
     },
     {
+      path: '/party',
+      file: 'party.html',
+      title: `Party Mode: party games for one phone · ${SITE}`,
+      description: 'Free pass-the-phone party games: truth or dare, Never Have I Ever, charades, a dice board game and a bidding game. Add your friends’ names and play in seconds.',
+      image: '/og.png',
+      imageAlt: 'GlitchBound Party Mode',
+      body: `<section class="ssr"><h1>Party Mode</h1><p>Pass-the-phone party games for groups: Party Prompts (truth, dare, most likely to), Never Have I Ever, Charades, Dice Adventure and Name Your Price. No app, no account.</p><p><a href="/">Back to the arcade</a></p></section>`,
+    },
+    {
       path: '/me/bugs',
       file: 'me/bugs.html',
       title: `Report a bug · ${SITE}`,

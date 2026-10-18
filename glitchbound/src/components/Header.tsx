@@ -13,10 +13,11 @@ import { SearchDialog } from './SearchDialog';
 import { Avatar, openSignIn, SignInDialog } from './SignIn';
 import './Header.css';
 
-const TABS: { href: string; label: string; icon: IconName }[] = [
+const TABS: { href: string; label: string; short?: string; icon: IconName }[] = [
   { href: '/', label: 'Arcade', icon: 'gamepad' },
   { href: '/daily', label: 'Daily', icon: 'calendar' },
-  { href: '/leaderboards', label: 'Leaderboards', icon: 'crown' },
+  { href: '/party', label: 'Party', icon: 'party' },
+  { href: '/leaderboards', label: 'Leaderboards', short: 'Ranks', icon: 'crown' },
 ];
 
 /** The daily streak, always in view (like a flame you don't want to go out). Pulses when today is not done yet. */
@@ -186,9 +187,9 @@ export function Header() {
       {/* Bottom tab bar on phones: thumb-reachable, always visible. */}
       <nav className="bottom-tabs" aria-label="Main (mobile)">
         {TABS.map((t) => (
-          <Link key={t.href} href={t.href} className="bottom-tab" aria-current={active(t.href) ? 'page' : undefined}>
+          <Link key={t.href} href={t.href} className="bottom-tab" aria-current={active(t.href) ? 'page' : undefined} aria-label={t.label}>
             <Icon name={t.icon} size={22} />
-            <span>{t.label}</span>
+            <span>{t.short ?? t.label}</span>
           </Link>
         ))}
       </nav>

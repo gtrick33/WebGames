@@ -1,0 +1,372 @@
+/* Crosswire: newspaper-puzzle warmth with GlitchBound punch. Clue squares are tinted, letter squares white. */
+.xw {
+  --xw-ink: #1d1238;
+  --xw-paper: #fbf6ec;
+  --xw-clue: #ffe08a;
+  --xw-word: #d9f0ff;
+  --xw-cur: #7fd6ff;
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--xw-paper);
+  color: var(--xw-ink);
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+}
+.xw button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.xw h1,
+.xw h2,
+.xw p {
+  margin: 0;
+}
+.xw-muted {
+  color: #6d6189;
+  font-size: 14px;
+}
+.xw-small {
+  font-size: 13px;
+  max-width: 46ch;
+}
+.xw-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.xw-btn {
+  min-height: 46px;
+  padding: 0 16px;
+  border: 2px solid var(--xw-ink);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 3px 0 var(--xw-ink);
+  font-weight: 750;
+}
+.xw-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--xw-ink);
+}
+.xw-btn-go {
+  background: linear-gradient(135deg, #ffe08a, #ff9f1c);
+}
+.xw-btn-sm {
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+.xw-btn-ghost {
+  border-color: transparent;
+  background: none;
+  box-shadow: none;
+  text-decoration: underline;
+}
+.xw-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border: 2px solid #e6dcc8;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* Menu */
+.xw-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 16px;
+  text-align: center;
+}
+.xw-title {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+}
+.xw-title-cell {
+  display: grid;
+  place-items: center;
+  width: clamp(30px, 9vw, 42px);
+  aspect-ratio: 1;
+  border: 2.5px solid var(--xw-ink);
+  background: #fff;
+  font-size: clamp(20px, 6vw, 28px);
+  font-weight: 900;
+}
+.xw-title-cell.is-alt {
+  background: var(--xw-word);
+}
+.xw-title-clue {
+  display: grid;
+  place-items: center;
+  width: clamp(30px, 9vw, 42px);
+  aspect-ratio: 1;
+  border: 2.5px solid var(--xw-ink);
+  background: var(--xw-clue);
+  font-size: 22px;
+  font-weight: 900;
+}
+.xw-tag {
+  max-width: 34ch;
+  font-weight: 600;
+}
+.xw-card {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 420px);
+  padding: 14px;
+  border: 2.5px solid var(--xw-ink);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 0 var(--xw-ink);
+}
+.xw-card-head {
+  display: grid;
+  gap: 2px;
+}
+.xw-card-head span {
+  font-size: 14px;
+  color: #6d6189;
+}
+
+/* Play */
+.xw-play {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 10px 14px;
+  container-type: inline-size;
+}
+.xw-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.xw-kicker {
+  flex: 1;
+  font: 700 12px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.xw-time {
+  font: 700 15px/1 var(--mono);
+}
+.xw-grid {
+  display: grid;
+  gap: 2px;
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding: 2px;
+  border: 2.5px solid var(--xw-ink);
+  background: var(--xw-ink);
+}
+.xw-block {
+  aspect-ratio: 1;
+  background: repeating-linear-gradient(135deg, #3b2f5c 0 3px, #2a2148 3px 7px);
+}
+.xw-cell,
+.xw-clue {
+  position: relative;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.xw-cell {
+  display: grid;
+  place-items: center;
+  background: #fff;
+  font-size: clamp(14px, 4.6cqw, 26px);
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.xw-cell.is-word {
+  background: var(--xw-word);
+}
+.xw-cell.is-cur {
+  background: var(--xw-cur);
+  box-shadow: inset 0 0 0 3px var(--xw-ink);
+}
+.xw-cell.is-wrong {
+  color: #d0213f;
+  background: #ffe1e6;
+}
+.xw-ring {
+  position: absolute;
+  inset: 12%;
+  border: 2px solid #ff5a6c;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.xw-cell.is-mystery-done {
+  background: #ffe1ef;
+}
+.xw-clue {
+  display: grid;
+  align-content: stretch;
+  overflow: hidden;
+  background: var(--xw-clue);
+  font-size: 9px;
+  line-height: 1.05;
+  text-align: left;
+}
+.xw-clue.is-on {
+  background: #ffc02e;
+  box-shadow: inset 0 0 0 2px var(--xw-ink);
+}
+.xw-clue-part {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 0;
+  padding: 1px;
+}
+.xw-clue.is-two .xw-clue-part + .xw-clue-part {
+  border-top: 1px solid rgb(29 18 56 / 0.35);
+}
+.xw-clue-part b {
+  font: 800 clamp(8px, 2.4cqw, 12px) / 1 var(--mono);
+}
+.xw-clue-part i {
+  font-style: normal;
+  font-weight: 900;
+  font-size: clamp(11px, 3.4cqw, 18px);
+}
+.xw-clue-part small {
+  display: none;
+}
+/* Wide grids: show the clue text inside its square, like a printed arrowword. */
+@container (min-width: 620px) {
+  .xw-clue-part {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    padding: 2px 3px;
+  }
+  .xw-clue-part small {
+    display: block;
+    overflow: hidden;
+    font-size: 8.5px;
+    line-height: 1.1;
+    max-height: 3.4em;
+  }
+  .xw-clue-part b,
+  .xw-clue-part i {
+    display: inline;
+  }
+}
+.xw-cluebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding: 6px;
+  border: 2px solid var(--xw-ink);
+  border-radius: 14px;
+  background: #fff;
+}
+.xw-cluebar p {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 650;
+  text-align: center;
+}
+.xw-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.xw-keys {
+  display: grid;
+  gap: 5px;
+  width: min(100%, 560px);
+  margin: 0 auto;
+}
+.xw-keyrow {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+.xw-key {
+  flex: 1;
+  max-width: 44px;
+  height: 46px;
+  border: 2px solid var(--xw-ink);
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 2px 0 var(--xw-ink);
+  font-weight: 800;
+  touch-action: manipulation;
+}
+.xw-key:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+.xw-key-wide {
+  max-width: 64px;
+  flex: 1.5;
+}
+.xw-panel {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(100%, 460px);
+  margin: 0 auto;
+  padding: 16px;
+  border: 2.5px solid var(--xw-ink);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 0 var(--xw-ink);
+  text-align: center;
+}
+.xw-panel h2 {
+  font-size: 22px;
+}
+.xw-big {
+  font: 900 48px/1 var(--mono);
+}
+.xw-tiles {
+  display: flex;
+  gap: 6px;
+}
+.xw-tile {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2.5px solid var(--xw-ink);
+  border-radius: 50%;
+  background: #ffe1ef;
+  font-size: 20px;
+  font-weight: 900;
+}
+.xw-input {
+  width: 160px;
+  height: 46px;
+  padding: 0 12px;
+  border: 2px solid var(--xw-ink);
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.xw-wrong {
+  color: #d0213f;
+  font-weight: 700;
+}

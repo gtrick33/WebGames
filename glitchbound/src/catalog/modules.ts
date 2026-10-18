@@ -19,6 +19,8 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
   'color-lab': () => import('../games/color-lab/Game'),
   'spot-the-glitch': () => import('../games/spot-the-glitch/Game'),
   'wheres-the-ball': () => import('../games/wheres-the-ball/Game'),
+  'wing-it': () => import('../games/wing-it/Game'),
+  crosswire: () => import('../games/crosswire/Game'),
 };
 
 /**

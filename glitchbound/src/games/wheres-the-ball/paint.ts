@@ -237,9 +237,19 @@ function drawItem(ctx: C, it: Item): void {
       ctx.strokeStyle = 'rgba(90,50,10,0.5)';
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(-13, 0);
+      ctx.moveTo(-15, 0);
       ctx.lineTo(13, 0);
+      for (let k = -8; k <= 8; k += 4) {
+        ctx.moveTo(k, 0);
+        ctx.lineTo(k + 4, -5 + Math.abs(k) * 0.2);
+        ctx.moveTo(k, 0);
+        ctx.lineTo(k + 4, 5 - Math.abs(k) * 0.2);
+      }
       ctx.stroke();
+      ctx.fillStyle = 'rgba(80,40,0,0.18)';
+      ctx.beginPath();
+      ctx.ellipse(4, 3, 5, 2.5, 0.3, 0, TAU);
+      ctx.fill();
       break;
     }
     case 'lemon': {
@@ -252,6 +262,19 @@ function drawItem(ctx: C, it: Item): void {
       ctx.fillStyle = '#d9b310';
       ctx.beginPath();
       ctx.arc(14, 0, 2.5, 0, TAU);
+      ctx.fill();
+      // Peel dimples and a highlight.
+      ctx.fillStyle = 'rgba(150,110,0,0.22)';
+      for (let i = 0; i < 14; i++) {
+        const a = i * 2.39996;
+        const rr = 3 + (i % 5) * 1.8;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr * 0.75, 0.7, 0, TAU);
+        ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.beginPath();
+      ctx.ellipse(-5, -5, 4, 2, -0.5, 0, TAU);
       ctx.fill();
       break;
     }
@@ -343,8 +366,25 @@ function drawItem(ctx: C, it: Item): void {
       ctx.arc(0, 0, 3, 0, TAU);
       ctx.fill();
       break;
-    case 'towel':
+    case 'towel': {
       fillShape(c, () => ctx.roundRect(-40, -24, 80, 48, 4));
+      // Terry-cloth weave and a soft fold.
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(-40, -24, 80, 48, 4);
+      ctx.clip();
+      ctx.globalAlpha = 0.1;
+      ctx.fillStyle = '#000';
+      for (let y = -24; y < 24; y += 2) ctx.fillRect(-40, y, 80, 0.7);
+      const fold = ctx.createLinearGradient(-40, 0, 40, 0);
+      fold.addColorStop(0, 'rgba(0,0,0,0)');
+      fold.addColorStop(0.45, 'rgba(0,0,0,0.25)');
+      fold.addColorStop(0.55, 'rgba(255,255,255,0.4)');
+      fold.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = fold;
+      ctx.fillRect(-40, -24, 80, 48);
+      ctx.restore();
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
       ctx.fillRect(-40, -18, 80, 4);
       ctx.fillRect(-40, 14, 80, 4);
@@ -355,6 +395,7 @@ function drawItem(ctx: C, it: Item): void {
       ctx.quadraticCurveTo(-4, 0, -12, 24);
       ctx.stroke();
       break;
+    }
     case 'blanket': {
       fillShape(c, () => ctx.roundRect(-90, -60, 180, 120, 6));
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
@@ -486,12 +527,24 @@ export function drawBall(ctx: C, b: Ball): void {
   ctx.beginPath();
   ctx.arc(0, 0, b.r, 0, TAU);
   ctx.fill();
-  // Felt fuzz.
-  ctx.strokeStyle = 'rgba(240,255,170,0.5)';
-  ctx.lineWidth = Math.max(0.6, b.r * 0.08);
-  ctx.beginPath();
-  ctx.arc(0, 0, b.r * 0.98, 0, TAU);
-  ctx.stroke();
+  // Felt fuzz: tiny fibres around the edge and speckle across the felt.
+  ctx.strokeStyle = 'rgba(235,250,160,0.55)';
+  ctx.lineWidth = Math.max(0.5, b.r * 0.05);
+  for (let i = 0; i < 40; i++) {
+    const a = (i / 40) * TAU + b.rot;
+    const r0 = b.r * 0.94;
+    const r1 = b.r * (1.05 + ((i * 7) % 5) * 0.02);
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+    ctx.lineTo(Math.cos(a + 0.05) * r1, Math.sin(a + 0.05) * r1);
+    ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(120,140,20,0.18)';
+  for (let i = 0; i < 18; i++) {
+    const a = i * 2.39996 + b.rot;
+    const rr = b.r * 0.15 + ((i * 13) % 10) * b.r * 0.075;
+    ctx.fillRect(Math.cos(a) * rr, Math.sin(a) * rr, Math.max(0.6, b.r * 0.07), Math.max(0.6, b.r * 0.07));
+  }
   // The seam.
   ctx.save();
   ctx.beginPath();
@@ -571,7 +624,7 @@ export function paintScene(canvas: HTMLCanvasElement, s: Scene, cssWidth: number
   const pat = grainPattern(ctx);
   if (pat) {
     ctx.save();
-    ctx.globalAlpha = 0.06;
+    ctx.globalAlpha = 0.09;
     ctx.globalCompositeOperation = 'overlay';
     ctx.fillStyle = pat;
     ctx.fillRect(0, 0, W, H);

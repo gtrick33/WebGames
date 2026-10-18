@@ -1,0 +1,230 @@
+/* Wing It: a sunny sky toy. The canvas fills the stage; menus are chunky and bright. */
+.wi {
+  --wi-ink: #1d1238;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(#8fdcff, #e8f9ff);
+  color: var(--wi-ink);
+  font-family: var(--font);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.wi button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.wi-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.wi-hud {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.wi-score {
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  -webkit-text-stroke: 3px var(--wi-ink);
+  paint-order: stroke;
+  text-shadow: 0 4px 0 var(--wi-ink);
+}
+.wi-feathers {
+  padding: 2px 10px;
+  border: 2px solid var(--wi-ink);
+  border-radius: 999px;
+  background: #fff7d1;
+  font-weight: 800;
+}
+.wi-pause {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  border: 2.5px solid var(--wi-ink);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 0 var(--wi-ink);
+  font-weight: 900;
+}
+.wi-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border: 2.5px solid var(--wi-ink);
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.92);
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  animation: wi-bob 1.2s ease-in-out infinite;
+}
+@keyframes wi-bob {
+  50% {
+    transform: translate(-50%, -6px);
+  }
+}
+.wi-overlay {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(29 18 56 / 0.5);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+}
+.wi-over {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(calc(100% - 32px), 340px);
+  padding: 20px;
+  border: 3px solid var(--wi-ink);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 6px 0 var(--wi-ink);
+  transform: translate(-50%, -50%);
+  text-align: center;
+  animation: wi-pop 0.4s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+@keyframes wi-pop {
+  from {
+    transform: translate(-50%, -40%) scale(0.85);
+    opacity: 0;
+  }
+}
+.wi-over h2 {
+  margin: 0;
+  font-size: 28px;
+}
+.wi-big {
+  margin: 0;
+  font: 900 64px/1 var(--mono);
+}
+.wi-muted {
+  margin: 0;
+  color: #5a4f7a;
+  font-size: 14px;
+}
+.wi-small {
+  font-size: 12px;
+}
+.wi-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.wi-btn {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 2.5px solid var(--wi-ink);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 0 var(--wi-ink);
+  font-weight: 800;
+}
+.wi-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--wi-ink);
+}
+.wi-btn-go {
+  background: linear-gradient(135deg, #ffe066, #ff9f1c);
+}
+.wi-btn-big {
+  width: 100%;
+  min-height: 56px;
+  font-size: 18px;
+}
+.wi-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 80% 10%, #fff7b0 0 40px, transparent 41px),
+    linear-gradient(#8fdcff, #e8f9ff 70%, #9ed97a 70%, #76c45c);
+  text-align: center;
+}
+.wi-menu-top {
+  align-self: stretch;
+  display: flex;
+  justify-content: flex-start;
+}
+.wi-icon {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--wi-ink);
+  border-radius: 12px;
+  background: #fff;
+}
+.wi-mascot {
+  width: 140px;
+  height: 110px;
+}
+.wi-title {
+  margin: -6px 0 0;
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #fff;
+  -webkit-text-stroke: 3px var(--wi-ink);
+  paint-order: stroke;
+  text-shadow: 0 5px 0 var(--wi-ink);
+}
+.wi-title span {
+  color: #ffcf3a;
+}
+.wi-tag {
+  margin: 0;
+  max-width: 30ch;
+  font-weight: 700;
+}
+.wi-card {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 380px);
+  padding: 14px;
+  border: 2.5px solid var(--wi-ink);
+  border-radius: 20px;
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 5px 0 var(--wi-ink);
+}
+.wi-card-head {
+  display: grid;
+  gap: 2px;
+}
+.wi-card-head span {
+  font-size: 14px;
+  color: #5a4f7a;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wi-hint,
+  .wi-over {
+    animation: none;
+  }
+}

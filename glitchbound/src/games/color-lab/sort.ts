@@ -3,7 +3,7 @@
  *
  * Tubes hold stacked layers of colour (bottom first). A pour moves the top run of one colour from
  * one tube to another that is empty or has the same colour on top, as much as fits. The puzzle is
- * solved when every colour is gathered into a single tube holding nothing else.
+ * solved when every colour fills exactly one tube, holding nothing else.
  */
 
 export interface Tube {
@@ -58,22 +58,22 @@ export function pour(b: Board, from: number, to: number): Board {
   return next;
 }
 
-/** Solved: every non-empty tube is a single colour and no colour is split over two tubes. */
+/** Solved: every non-empty tube is full of a single colour, and no colour is split over two tubes. */
 export function isSolved(b: Board): boolean {
   const seen = new Set<number>();
   for (const t of b) {
     if (!t.layers.length) continue;
-    if (!isMono(t) || seen.has(t.layers[0]!)) return false;
+    if (!isMono(t) || t.layers.length !== t.cap || seen.has(t.layers[0]!)) return false;
     seen.add(t.layers[0]!);
   }
   return true;
 }
 
-/** Tubes that are finished: one colour, holding every unit of that colour. */
+/** Tubes that are finished: full of one colour, holding every unit of that colour. */
 export function doneTubes(b: Board): boolean[] {
   const total = new Map<number, number>();
   for (const t of b) for (const c of t.layers) total.set(c, (total.get(c) ?? 0) + 1);
-  return b.map((t) => t.layers.length > 0 && isMono(t) && total.get(t.layers[0]!) === t.layers.length);
+  return b.map((t) => t.layers.length === t.cap && isMono(t) && total.get(t.layers[0]!) === t.layers.length);
 }
 
 /** Moves worth considering: legal, and not pointless shuffles of a whole single-colour tube into an empty one. */

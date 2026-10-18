@@ -83,31 +83,25 @@ function classicBoard(spec: LevelSpec, r: R): Board {
 }
 
 /**
- * Odd layout: tubes of different heights and colours in different amounts. Each colour gets a
- * "home" tube tall enough for all of it, so the puzzle is always fair.
+ * Odd layout: tubes of different heights. Each colour has exactly as many layers as its home tube
+ * holds, so every colour ends up filling a tube to the brim. Spare tubes reuse those heights.
  */
 function oddBoard(spec: LevelSpec, r: R): Board {
-  const amounts = Array.from({ length: spec.colors }, () => Math.max(2, spec.cap - 1 + Math.floor(r() * 4) - 1));
-  const caps = amounts.map((a) => Math.max(a, spec.cap - 1 + Math.floor(r() * 3)));
-  for (let e = 0; e < spec.empty; e++) caps.push(spec.cap - 1 + Math.floor(r() * 3));
+  const caps = Array.from({ length: spec.colors }, () => Math.max(3, spec.cap - 1 + Math.floor(r() * 3)));
   const units: number[] = [];
-  amounts.forEach((a, c) => {
-    for (let i = 0; i < a; i++) units.push(c);
+  caps.forEach((cap, c) => {
+    for (let i = 0; i < cap; i++) units.push(c);
   });
   shuffle(units, r);
-  const board: Board = caps.map((cap) => ({ cap, layers: [] }));
-  // Fill the colour tubes (not the spares) with the shuffled units, as evenly as their sizes allow.
-  let t = 0;
-  for (const u of units) {
-    for (let tries = 0; tries < spec.colors; tries++) {
-      const tube = board[t % spec.colors]!;
-      t++;
-      if (tube.layers.length < tube.cap) {
-        tube.layers.push(u);
-        break;
-      }
-    }
+  const board: Board = [];
+  let at = 0;
+  for (const cap of caps) {
+    board.push({ cap, layers: units.slice(at, at + cap) });
+    at += cap;
   }
+  // Spares come in the tallest height, so any colour can be parked while you dig.
+  const tallest = Math.max(...caps);
+  for (let e = 0; e < spec.empty; e++) board.push({ cap: e === 0 ? tallest : caps[Math.floor(r() * caps.length)]!, layers: [] });
   return shuffle(board, r);
 }
 
