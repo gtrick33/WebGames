@@ -92,4 +92,45 @@ export const GAMES: GameEntry[] = [
       { metric: 'patterns', targets: [5, 6, 7, 8], label: 'Clear {n} patterns in one run' },
     ],
   },
+  {
+    slug: 'color-recall',
+    title: 'Color Recall',
+    tagline: 'One look at an everyday color, then mix it from memory. Five colors a day.',
+    description:
+      'Glance at a famous everyday color like Stop Sign Red or School Bus Yellow, then recreate it with HSB or RGB sliders. ' +
+      'Every guess is scored for perceptual accuracy with tips on what to fix. Five new colors daily, the same for everyone, plus unlimited practice.',
+    categories: ['puzzle', 'arcade'],
+    tags: ['color', 'colour', 'memory', 'daily', 'perception', 'hue', 'rgb', 'palette', 'design', 'eye test'],
+    released: '2026-10-18',
+    accent: 'coral',
+    art: {
+      tile: '/games/color-recall/tile.webp',
+      wide: '/games/color-recall/wide.webp',
+      alt: 'Colorful paint swatches fanning out beside a slider with a round color knob',
+      bg: '#2b1650',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'portrait',
+    controls: {
+      keyboard: ['Tab to a slider, then Left / Right arrows to adjust', 'Enter: lock in your color, then next color'],
+      touch: ['Drag the sliders; tap − / + to fine-tune', 'Tap Lock it in'],
+    },
+    stats: [
+      { key: 'score', label: 'Best 5-color score' },
+      { key: 'accuracy', label: 'Best accuracy', unit: '%' },
+      { key: 'bestColor', label: 'Best single color' },
+      { key: 'perfects', label: 'Most perfect colors in a game' },
+    ],
+    highlights: [
+      '70 hand-picked everyday colors with original illustrations',
+      'Five daily colors, identical for every player, with streaks and spoiler-free sharing',
+      'Perceptual CIEDE2000 scoring with plain-language tips',
+      'HSB or RGB sliders with fine-tune buttons, built for phones',
+    ],
+    daily: [
+      { metric: 'score', targets: [3000, 3300, 3600, 3900], label: 'Score {n} points in one 5-color game' },
+      { metric: 'bestColor', targets: [850, 900, 950], label: 'Mix a single color worth {n} points' },
+      { metric: 'accuracy', targets: [65, 70, 75], label: 'Finish a 5-color game with {n}% accuracy' },
+    ],
+  },
 ];
