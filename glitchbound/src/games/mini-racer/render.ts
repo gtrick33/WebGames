@@ -181,6 +181,24 @@ export function fmtTime(t: number | null): string {
 export const KMH = 160 / CAR.maxSpeed;
 
 const SKID_MAX = 700;
+
+/** Pop-up rows in the HUD lane. */
+const TOAST_H = 28;
+const TOAST_GAP = 6;
+
+/**
+ * The fixed HUD lane for pop-ups (just below the lap timer and sector chips), and the band the car
+ * must stay inside so neither the lane nor the speedometer ever covers it.
+ */
+export function hudLane(w: number, h: number): { top: number; height: number; carMinY: number; carMaxY: number } {
+  const small = w < 520;
+  const pad = small ? 10 : 16;
+  const top = pad + (small ? 52 : 62) + 22;
+  const height = TOAST_H * 2 + TOAST_GAP;
+  const carHalf = 30; // half the car's on-screen size plus a margin
+  const speedo = (small ? 44 : 54) + 8 + pad;
+  return { top, height, carMinY: top + height + carHalf, carMaxY: h - speedo - carHalf };
+}
 const PART_MAX = 140;
 
 export class Renderer {
@@ -327,8 +345,8 @@ export class Renderer {
     const base = Math.max(0.5, Math.min(1.35, minDim / (hud.attract ? 760 : 520)));
     const zTarget = base * (1 - Math.min(0.14, speed / 3200));
     const lx = pose.x + car.vx * 0.32;
-    // Touch: sit the car a bit higher, above the thumbs. Menu: keep it in the top third, above the sheet.
-    const ly = pose.y + car.vy * 0.32 + (hud.attract ? (this.h * 0.3) / zTarget : hud.touch ? 40 : 0);
+    // Menu: keep the car in the top third, above the sheet.
+    const ly = pose.y + car.vy * 0.32 + (hud.attract ? (this.h * 0.3) / zTarget : 0);
     if (!this.camInit) {
       this.cam = { x: lx, y: ly, z: zTarget };
       this.camInit = true;
@@ -338,6 +356,15 @@ export class Renderer {
     this.cam.y += (ly - this.cam.y) * k;
     this.cam.z += (zTarget - this.cam.z) * (1 - Math.exp(-dt * 2));
     const z = this.cam.z;
+    if (!hud.attract) {
+      // Keep the car between the pop-up lane and the speedometer, whatever the camera lead does.
+      const band = hudLane(this.w, this.h);
+      const carY = this.h / 2 + (pose.y - this.cam.y) * z;
+      if (band.carMaxY > band.carMinY) {
+        if (carY < band.carMinY) this.cam.y = pose.y - (band.carMinY - this.h / 2) / z;
+        else if (carY > band.carMaxY) this.cam.y = pose.y - (band.carMaxY - this.h / 2) / z;
+      }
+    }
     const d = this.dpr;
     ctx.setTransform(d * z, 0, 0, d * z, d * (this.w / 2 - this.cam.x * z), d * (this.h / 2 - this.cam.y * z));
     const view = {
@@ -930,7 +957,7 @@ export class Renderer {
       ctx.globalAlpha = 1;
     }
 
-    // Sector chips under the timer, and the latest split vs the reference.
+    // Sector chips under the timer.
     const sy = pad + (small ? 52 : 62);
     const cw = small ? 36 : 44;
     for (let i = 0; i < 3; i++) {
@@ -948,96 +975,79 @@ export class Renderer {
       ctx.textBaseline = 'middle';
       ctx.fillText(`S${i + 1}`, x + cw / 2, sy + 8.5);
     }
-    ctx.textBaseline = 'top';
-    const sp = hud.split;
-    if (sp && this.time < sp.until) {
-      const txt = sp.delta === null ? `S${sp.sector + 1} ${sp.time.toFixed(2)}` : `S${sp.sector + 1} ${sp.delta <= 0 ? '−' : '+'}${Math.abs(sp.delta).toFixed(2)}`;
-      const fill = sp.delta === null ? '#ffffff' : sp.delta <= 0 ? '#2fcf72' : '#ff5a6c';
-      const bw4 = small ? 120 : 140;
-      pill(ctx, cx - bw4 / 2, sy + 22, bw4, 28, fill);
-      ctx.textAlign = 'center';
-      ctx.font = mono(small ? 14 : 16);
+
+    // The pop-up lane: a fixed spot under the sector chips, centred, two rows. Nothing pops up over
+    // the car (the camera keeps the car below this lane and above the speedometer).
+    const lane = hudLane(this.w, this.h);
+    const now = this.time;
+    const fade = (until: number): number => (until === Infinity ? 1 : Math.max(0, Math.min(1, (until - now) / 0.2)));
+    const toast = (row: number, text: string, fill: string, alpha: number, sub?: string, useMono = false): void => {
+      if (alpha <= 0) return;
+      const y = lane.top + row * (TOAST_H + TOAST_GAP);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = useMono ? mono(small ? 13 : 15) : font(small ? 14 : 16);
+      const main = ctx.measureText(text).width;
+      ctx.font = font(small ? 10 : 11, 600);
+      const extra = sub ? ctx.measureText(sub).width + 10 : 0;
+      const w = Math.min(this.w - pad * 2, Math.max(small ? 110 : 130, main + extra + 28));
+      pill(ctx, cx - w / 2, y, w, TOAST_H, fill);
       ctx.fillStyle = '#1b1035';
-      ctx.fillText(txt, cx, sy + 28);
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      let x = cx - (main + extra) / 2;
+      ctx.font = useMono ? mono(small ? 13 : 15) : font(small ? 14 : 16);
+      ctx.fillText(text, x, y + TOAST_H / 2 + 1);
+      if (sub) {
+        x += main + 10;
+        ctx.font = font(small ? 10 : 11, 600);
+        ctx.fillText(sub, x, y + TOAST_H / 2 + 1);
+      }
+      ctx.restore();
+    };
+
+    // Row 0: banners (finish, wrong way, missed checkpoint, best lap...) win over the sector split.
+    const banner = sim.finished
+      ? { text: 'FINISH!', color: '#c4f034', until: Infinity }
+      : sim.wrongWay > 0.8
+        ? { text: 'WRONG WAY', sub: 'Turn around', color: '#ff5a6c', until: Infinity }
+        : hud.banner;
+    const sp = hud.split;
+    if (banner && now < banner.until) toast(0, banner.text, banner.color, fade(banner.until), banner.sub);
+    else if (sp && now < sp.until) {
+      const txt = sp.delta === null ? `S${sp.sector + 1} ${sp.time.toFixed(2)}` : `S${sp.sector + 1} ${sp.delta <= 0 ? '−' : '+'}${Math.abs(sp.delta).toFixed(2)}`;
+      toast(0, txt, sp.delta === null ? '#ffffff' : sp.delta <= 0 ? '#2fcf72' : '#ff5a6c', fade(sp.until), undefined, true);
     }
 
-    // Drift chain
+    // Row 1: the live drift chain, else the latest pop-up (lap time, drift banked, turbo...).
     const d = sim.drift;
     if (d.chain > 1) {
       const mult = 1 + Math.min(3, Math.floor(d.chainTime / 1.5));
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const y = H * (hud.touch ? 0.36 : 0.32);
-      ctx.font = font(small ? 26 : 34);
-      ctx.lineWidth = 6;
-      ctx.strokeStyle = '#1b1035';
-      const txt = `DRIFT ${Math.round(d.chain)}`;
-      ctx.strokeText(txt, cx, y);
-      ctx.fillStyle = '#ffd12e';
-      ctx.fillText(txt, cx, y);
-      if (mult > 1) {
-        ctx.font = font(small ? 16 : 20);
-        ctx.strokeText(`x${mult}`, cx, y + (small ? 24 : 30));
-        ctx.fillStyle = '#ff5fa2';
-        ctx.fillText(`x${mult}`, cx, y + (small ? 24 : 30));
-      }
-      ctx.textBaseline = 'top';
-    } else if (hud.popup && this.time < hud.popup.until) {
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const y = H * (hud.touch ? 0.36 : 0.32);
-      ctx.font = font(small ? 22 : 28);
-      ctx.lineWidth = 6;
-      ctx.strokeStyle = '#1b1035';
-      ctx.strokeText(hud.popup.text, cx, y);
-      ctx.fillStyle = '#c4f034';
-      ctx.fillText(hud.popup.text, cx, y);
-      ctx.textBaseline = 'top';
-    }
+      toast(1, `DRIFT ${Math.round(d.chain)}`, '#ffd12e', 1, mult > 1 ? `x${mult}` : undefined);
+    } else if (hud.popup && now < hud.popup.until) toast(1, hud.popup.text, '#c4f034', fade(hud.popup.until));
 
-    // Countdown
+    // Countdown, in the lane too (small and short, so the grid stays visible).
     if (sim.time < 0.6) {
       const left = -sim.time;
       const step = COUNTDOWN / 3;
       const txt = sim.time >= 0 ? 'GO!' : String(Math.ceil(left / step));
       const frac = sim.time >= 0 ? sim.time / 0.6 : 1 - ((left / step) % 1);
       ctx.save();
-      ctx.translate(cx, H * 0.42);
-      const s = 1 + 0.4 * (1 - Math.min(1, frac * 3));
+      ctx.translate(cx, lane.top + lane.height / 2);
+      const s = 1 + 0.25 * (1 - Math.min(1, frac * 4));
       ctx.scale(s, s);
       ctx.globalAlpha = sim.time >= 0 ? 1 - frac : 1;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = font(small ? 72 : 96);
-      ctx.lineWidth = 10;
+      ctx.font = font(small ? 44 : 56);
+      ctx.lineWidth = 8;
       ctx.strokeStyle = '#1b1035';
       ctx.strokeText(txt, 0, 0);
       ctx.fillStyle = sim.time >= 0 ? '#c4f034' : '#ffffff';
       ctx.fillText(txt, 0, 0);
       ctx.restore();
     }
-
-    // Banners (missed checkpoint, wrong way, new best...)
-    const banner = sim.finished
-      ? { text: 'FINISH!', color: '#c4f034', until: Infinity }
-      : sim.wrongWay > 0.8
-        ? { text: 'WRONG WAY', sub: 'Turn around', color: '#ff5a6c', until: Infinity }
-        : hud.banner;
-    if (banner && this.time < banner.until) {
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const y = H * (hud.touch ? 0.48 : 0.44);
-      const bw2 = small ? 230 : 300;
-      pill(ctx, cx - bw2 / 2, y - 26, bw2, banner.sub ? 62 : 48, banner.color);
-      ctx.fillStyle = '#1b1035';
-      ctx.font = font(small ? 20 : 24);
-      ctx.fillText(banner.text, cx, y - 2);
-      if (banner.sub) {
-        ctx.font = font(small ? 12 : 13, 600);
-        ctx.fillText(banner.sub, cx, y + 21);
-      }
-      ctx.textBaseline = 'top';
-    }
+    ctx.textBaseline = 'top';
   }
 
   /** km/h gauge at the bottom centre. Top speed on asphalt reads about 160 km/h. */
