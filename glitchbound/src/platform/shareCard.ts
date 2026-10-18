@@ -41,11 +41,45 @@ export function cardLines(text: string): string[] {
 /** A line made only of emoji and spaces (a result grid). */
 const isGrid = (l: string): boolean => /\p{Extended_Pictographic}/u.test(l) && l.replace(/\p{Extended_Pictographic}|\p{Emoji_Component}|\u200d|\ufe0f|\s|·/gu, '') === '';
 
+/*
+ * Emoji are laid out in fixed boxes: phones often measure an emoji narrower than they draw it,
+ * which pushed centred lines off the card. Text runs are measured as usual.
+ */
+const EMOJI = /(\p{Extended_Pictographic}(?:\ufe0f|\p{Emoji_Modifier}|\u200d\p{Extended_Pictographic}\ufe0f?)*)/u;
+const EMOJI_BOX = 1.2;
+const fontSize = (ctx: CanvasRenderingContext2D): number => Number(/(\d+(?:\.\d+)?)px/.exec(ctx.font)?.[1] ?? 16);
+
+/** Width of a line in the current font, with every emoji counted as a fixed box. */
+export function lineWidth(ctx: CanvasRenderingContext2D, text: string): number {
+  const box = fontSize(ctx) * EMOJI_BOX;
+  return text
+    .split(EMOJI)
+    .filter(Boolean)
+    .reduce((w, part) => w + (EMOJI.test(part) ? box : ctx.measureText(part).width), 0);
+}
+
+/** Draws a line centred on `cx`, emoji in their fixed boxes. */
+function drawLine(ctx: CanvasRenderingContext2D, text: string, cx: number, y: number): void {
+  const box = fontSize(ctx) * EMOJI_BOX;
+  let x = cx - lineWidth(ctx, text) / 2;
+  for (const part of text.split(EMOJI).filter(Boolean)) {
+    if (EMOJI.test(part)) {
+      ctx.textAlign = 'center';
+      ctx.fillText(part, x + box / 2, y, box);
+      x += box;
+    } else {
+      ctx.textAlign = 'left';
+      ctx.fillText(part, x, y);
+      x += ctx.measureText(part).width;
+    }
+  }
+}
+
 function fitFont(ctx: CanvasRenderingContext2D, text: string, weight: number, size: number, family: string, maxW: number, min = 22): number {
   let s = size;
   for (; s > min; s -= 2) {
     ctx.font = `${weight} ${s}px ${family}`;
-    if (ctx.measureText(text).width <= maxW) break;
+    if (lineWidth(ctx, text) <= maxW) break;
   }
   ctx.font = `${weight} ${s}px ${family}`;
   return s;
@@ -146,7 +180,7 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
     let cur = '';
     for (const w of words) {
       const next = cur ? `${cur} ${w}` : w;
-      if (ctx.measureText(next).width <= width || !cur) cur = next;
+      if (lineWidth(ctx, next) <= width || !cur) cur = next;
       else {
         out.push(cur);
         cur = w;
@@ -164,7 +198,7 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
     if (out.length > 1 && out.length <= maxLines) {
       for (let w = maxW - 10; w > maxW * 0.5; w -= 10) {
         const tried = wrapAt(words, w);
-        if (tried.length !== out.length || tried.some((l) => ctx.measureText(l).width > maxW)) break;
+        if (tried.length !== out.length || tried.some((l) => lineWidth(ctx, l) > maxW)) break;
         out = tried;
       }
     }
@@ -199,11 +233,12 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
   for (const r of rows) {
     ctx.font = r.font;
     ctx.fillStyle = r.color;
-    if (r.text) ctx.fillText(r.text, S / 2, y);
+    if (r.text) drawLine(ctx, r.text, S / 2, y);
     y += r.h;
   }
 
   // Call to action and address.
+  ctx.textAlign = 'center';
   const cta = opts.cta ?? 'Can you beat it?';
   ctx.font = `800 40px ${family}`;
   const cw = ctx.measureText(cta).width + 90;

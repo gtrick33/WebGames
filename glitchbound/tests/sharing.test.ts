@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newCode, sharePath, shareText } from '../server/shares';
-import { cardLines } from '../src/platform/shareCard';
+import { cardLines, lineWidth } from '../src/platform/shareCard';
 
 describe('share links', () => {
   it('only points at pages of this site', () => {
@@ -32,3 +32,15 @@ describe('share links', () => {
     expect(cardLines('Wing It #2 🐤\n\nBest today: 34\nhttps://glitchboundstudio.com/games/wing-it')).toEqual(['Wing It #2 🐤', 'Best today: 34']);
   });
 });
+
+describe('picture card text', () => {
+  // A canvas that measures 10 px per character, and (like many phones) emoji far too narrow.
+  const ctx = { font: '800 50px Bricolage', measureText: (t: string) => ({ width: t.replace(/\p{Extended_Pictographic}|\ufe0f/gu, '').length * 10 }) } as unknown as CanvasRenderingContext2D;
+
+  it('gives every emoji a full box, so centred lines stay on the card', () => {
+    expect(lineWidth(ctx, 'abc')).toBe(30);
+    expect(lineWidth(ctx, '⚔️ abc')).toBe(60 + 40);
+    expect(lineWidth(ctx, '🟩🟩🟥')).toBe(180);
+  });
+});
+
