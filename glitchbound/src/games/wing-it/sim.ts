@@ -52,6 +52,9 @@ export interface Sim {
   spawned: number;
   /** Wing animation timer. */
   flapT: number;
+  /** Bird height and how far the world scrolled in the last step, for drawing between steps. */
+  prevY: number;
+  lastDx: number;
 }
 
 /** Deterministic PRNG step (mulberry32): returns [value 0..1, next state]. */
@@ -68,7 +71,7 @@ export const gapFor = (n: number): number => Math.max(132, 178 - n * 0.8);
 export const speedFor = (score: number): number => Math.min(215, 150 + score * 1.3);
 
 export function newSim(seed: number): Sim {
-  const s: Sim = { seed, rand: seed >>> 0, t: 0, y: H * 0.42, vy: 0, started: false, dead: false, score: 0, feathers: 0, pillars: [], dist: 0, spawned: 0, flapT: 0 };
+  const s: Sim = { seed, rand: seed >>> 0, t: 0, y: H * 0.42, vy: 0, started: false, dead: false, score: 0, feathers: 0, pillars: [], dist: 0, spawned: 0, flapT: 0, prevY: H * 0.42, lastDx: 0 };
   // The first pillar starts a comfortable distance away.
   for (let i = 0; i < 4; i++) spawn(s, W + 140 + i * SPACING);
   return s;
@@ -114,6 +117,8 @@ export type SimEvent = 'score' | 'feather' | 'crash';
 /** Advances one fixed step. Before the first flap the bird hovers in place. */
 export function step(s: Sim): SimEvent[] {
   const ev: SimEvent[] = [];
+  s.prevY = s.y;
+  s.lastDx = 0;
   if (s.dead) {
     // Fall to the ground after a crash.
     if (s.y < GROUND - BIRD_R) {
@@ -130,6 +135,7 @@ export function step(s: Sim): SimEvent[] {
   }
   const v = speedFor(s.score);
   s.dist += v * STEP;
+  s.lastDx = v * STEP;
   s.vy = Math.min(MAX_FALL, s.vy + GRAVITY * STEP);
   s.y += s.vy * STEP;
   if (s.y < BIRD_R) {

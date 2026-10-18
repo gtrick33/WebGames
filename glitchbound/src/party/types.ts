@@ -70,7 +70,7 @@ export interface NhieStatement {
 
 export type NhieCategory = 'casual' | 'funny' | 'embarrassing' | 'relationships' | 'spicy' | 'adults';
 
-export type CharadesCategory = 'movies' | 'heroes' | 'animals' | 'jobs' | 'famous' | 'games' | 'internet' | 'cartoons' | 'random';
+export type CharadesCategory = 'movies' | 'heroes' | 'animals' | 'jobs' | 'famous' | 'games' | 'internet' | 'cartoons' | 'random' | 'food' | 'sports' | 'music' | 'places' | 'afterdark';
 
 export interface CharadesCard {
   id: string;
@@ -101,7 +101,13 @@ export type AuctionTheme =
   | 'internet'
   | 'food'
   | 'cars'
-  | 'fantasy';
+  | 'fantasy'
+  | 'music'
+  | 'history'
+  | 'myths'
+  | 'powers'
+  | 'trips'
+  | 'pets';
 
 export interface TriviaQuestion {
   id: string;

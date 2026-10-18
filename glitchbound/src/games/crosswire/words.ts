@@ -944,6 +944,1351 @@ wagon:Cart
 watch:Wristwatch
 wheat:Bread grain
 young:Not old
+bud:Flower before it opens
+cue:Snooker stick
+dye:Hair colouring
+elk:Large deer
+ewe:Female sheep
+fad:Short-lived craze
+fib:Small lie
+gnu:Wildebeest
+hem:Bottom edge of a skirt
+hue:Shade of colour
+jab:Quick punch
+kin:Relatives
+lob:High tennis shot
+mow:Cut the grass
+nib:Pen tip
+oaf:Clumsy person
+orb:Sphere
+pew:Church bench
+pod:Pea case
+pry:Be nosy
+pun:Play on words
+rye:Bread grain
+sow:Plant seeds
+spa:Place for a massage
+sty:Pig's home
+tot:Small child
+urn:Large vase
+vow:Solemn promise
+wag:Move a tail
+wok:Stir-fry pan
+yap:Small dog's bark
+yew:Evergreen tree
+zen:Calm and relaxed
+apt:Fitting
+bog:Marsh
+cog:Gear tooth
+dab:Light touch
+gal:Girl, informally
+hog:Pig
+imp:Little devil
+jot:Write quickly
+keg:Beer barrel
+lag:Fall behind
+nun:Convent sister
+opt:Choose
+pep:Energy
+rap:Spoken-word music
+sag:Droop
+vat:Large tank
+wry:Dryly humorous
+yum:Delicious!
+ache:Dull pain
+acne:Teenage spots
+aloe:Soothing plant
+amid:In the middle of
+apex:Highest point
+arch:Curved doorway
+avid:Keen
+axis:Line of rotation
+bait:Fishing lure
+bang:Loud noise
+bead:Necklace bauble
+beak:Bird's bill
+beet:Red root vegetable
+bias:Unfair leaning
+bite:Use teeth
+blob:Shapeless lump
+blow:Puff of air
+blur:Fuzzy shape
+boil:Heat to bubbling
+bolt:Lightning flash
+bomb:Explosive
+brag:Boast
+brew:Make tea
+buzz:Bee sound
+cage:Bird's prison
+cane:Walking stick
+chop:Cut with an axe
+cite:Quote
+clam:Shellfish
+claw:Crab's pincer
+comb:Hair tidier
+cone:Ice-cream holder
+cosy:Snug
+crib:Baby's bed
+cult:Devoted group
+curl:Ringlet
+dash:Sprint
+daze:Stunned state
+debt:Money owed
+dent:Small hollow
+dial:Clock face
+dime:Ten-cent coin
+dine:Eat dinner
+doze:Light sleep
+drag:Pull along
+dual:Twofold
+dull:Boring
+dumb:Silly
+dunk:Dip a biscuit
+fake:Not real
+fang:Snake's tooth
+fawn:Baby deer
+feud:Long quarrel
+fizz:Bubbles
+flaw:Defect
+flex:Bend a muscle
+foal:Baby horse
+fond:Affectionate
+font:Typeface
+fowl:Poultry
+fury:Rage
+fuss:Commotion
+gasp:Sharp breath
+gaze:Steady look
+germ:Microbe
+glow:Soft light
+glum:Gloomy
+goat:Bearded farm animal
+gone:Departed
+gull:Seabird
+gust:Burst of wind
+hack:Break into a computer
+haze:Light mist
+heal:Get better
+heap:Pile
+heir:Inheritor
+helm:Ship's wheel
+hiss:Snake sound
+hive:Bee home
+hoax:Prank
+hoop:Basketball ring
+howl:Wolf's cry
+hush:Quiet!
+hymn:Church song
+icon:Desktop symbol
+idle:Not working
+isle:Small island
+jade:Green gemstone
+jest:Joke
+jive:Lively dance
+junk:Rubbish
+kale:Leafy green
+keel:Ship's backbone
+kiln:Pottery oven
+knit:Make a scarf
+lark:Songbird
+lash:Eyelid hair
+lawn:Grassy garden
+leak:Drip
+lean:Tilt
+leap:Big jump
+liar:Fibber
+limb:Arm or leg
+limp:Walk unevenly
+lure:Tempt
+lush:Green and leafy
+mane:Lion's hair
+mare:Female horse
+mash:Crush potatoes
+maze:Puzzle of paths
+meek:Timid
+menu:List of dishes
+mesh:Netting
+mice:More than one mouse
+mile:Distance unit
+mole:Digging mammal
+monk:Monastery man
+moss:Green growth on stones
+much:A lot
+mule:Donkey cross
+muse:Inspiration
+mute:Silent
+neat:Tidy
+nerd:Geek
+noon:Midday
+oval:Egg shape
+pace:Speed of walking
+pact:Agreement
+pale:Light in colour
+pane:Window glass
+pant:Breathe hard
+pave:Lay a road
+peel:Banana skin
+pest:Nuisance
+pier:Seaside jetty
+pill:Tablet
+plug:Socket fitter
+plus:Addition sign
+poke:Prod
+polo:Sport on horseback
+pony:Small horse
+pose:Model's stance
+pour:Tip out liquid
+pray:Talk to a god
+prey:Hunted animal
+puck:Hockey disc
+puff:Short breath
+pulp:Mushy mass
+pupa:Insect stage
+raft:Floating platform
+rage:Fury
+raid:Surprise attack
+rake:Leaf gatherer
+ramp:Slope
+rash:Skin spots
+reed:Riverside grass
+reef:Coral ridge
+rein:Horse's strap
+rind:Lemon peel
+roam:Wander
+robe:Dressing gown
+rude:Impolite
+ruin:Wreck
+rust:Iron's red coat
+sack:Large bag
+sage:Wise herb
+scam:Swindle
+seam:Stitched join
+shed:Garden hut
+shin:Front of the leg
+sigh:Long breath out
+silo:Grain tower
+sink:Kitchen basin
+siren:Alarm
+slab:Thick slice
+sled:Snow vehicle
+slim:Thin
+slug:Shell-less snail
+smog:Polluted air
+snap:Break suddenly
+snug:Cosy
+soar:Fly high
+sofa:Couch
+sole:Bottom of a shoe
+spade:Digging tool
+spur:Cowboy's heel spike
+stab:Pierce
+stem:Flower stalk
+sting:Bee's weapon
+stir:Mix with a spoon
+stool:Seat with no back
+surf:Ride the waves
+swap:Exchange
+tack:Small nail
+tame:Not wild
+tart:Fruit pastry
+taxi:Cab
+tease:Make fun of
+temp:Short-term worker
+thaw:Melt
+thin:Slim
+tick:Clock sound
+tidy:Neat
+toad:Warty amphibian
+toil:Hard work
+toll:Road charge
+tomb:Grave
+tool:Hammer or spanner
+tram:Street railcar
+trap:Snare
+tray:Serving board
+trim:Cut a little
+tube:London underground
+tusk:Elephant's tooth
+twig:Small branch
+undo:Reverse
+upon:On top of
+urge:Strong desire
+vain:Conceited
+veil:Bride's face cover
+vein:Blood vessel
+vent:Air outlet
+veto:Block a decision
+vine:Grape plant
+visa:Travel permit
+void:Empty space
+wade:Walk through water
+wage:Pay
+wand:Magician's stick
+ward:Hospital room
+warp:Bend out of shape
+weed:Unwanted plant
+weld:Join metal
+whip:Lash
+whisk:Egg beater
+wick:Candle string
+wink:Close one eye
+wipe:Clean with a cloth
+wool:Sheep's coat
+worm:Earth wriggler
+wrap:Cover in paper
+yarn:Knitting thread
+yawn:Sign of tiredness
+zest:Lemon rind
+zoom:Move fast
+abbey:Monks' church
+acorn:Oak seed
+adult:Grown-up
+alley:Narrow lane
+alpha:First Greek letter
+amber:Orange-yellow
+ample:Plenty
+ankle:Foot joint
+apron:Kitchen cover-up
+arena:Sports stadium
+aroma:Pleasant smell
+atlas:Book of maps
+attic:Room in the roof
+bacon:Breakfast rasher
+bagel:Ring-shaped bread
+baker:Bread maker
+basil:Pesto herb
+batch:Group of cookies
+bathe:Have a bath
+beard:Chin hair
+beast:Wild animal
+being:Creature
+belly:Tummy
+birch:Silver-barked tree
+blaze:Big fire
+blend:Mix together
+blind:Window shade
+blink:Quick eye close
+bliss:Perfect happiness
+blond:Fair-haired
+bluff:Fake a poker hand
+blush:Go red
+bonus:Extra reward
+booth:Phone box
+boots:Wellies
+bored:Not interested
+bound:Leap
+boxer:Fighter in gloves
+brake:Car stopper
+brand:Company name
+brass:Trumpet metal
+bride:Woman at a wedding
+brief:Short
+brook:Small stream
+broom:Witch's ride
+brown:Chocolate colour
+budge:Move slightly
+buggy:Pushchair
+build:Construct
+bunch:Bouquet
+burst:Pop
+cacao:Chocolate bean
+cadet:Military trainee
+canal:Waterway
+canoe:Paddle boat
+cargo:Ship's load
+carve:Cut a turkey
+catch:Grab a ball
+cause:Reason
+cedar:Fragrant tree
+chant:Football song
+chart:Graph
+cheap:Low-priced
+cheer:Shout of support
+chick:Baby bird
+chief:Leader
+chill:Cold feeling
+chimp:Ape
+chirp:Bird sound
+chord:Musical notes together
+chunk:Thick piece
+cider:Apple drink
+cigar:Cuban smoke
+cinch:Easy task
+civic:Of a city
+claim:Assert
+clamp:Gripping tool
+clash:Conflict
+class:School group
+clean:Not dirty
+clerk:Office worker
+cliff:Sea rock face
+climb:Go up
+cloak:Wizard's cape
+close:Near
+cobra:Hooded snake
+cocoa:Hot chocolate
+comet:Icy space traveller
+comic:Funny book
+craft:Handiwork
+crane:Building-site lifter
+crash:Collision
+crate:Wooden box
+crawl:Baby's movement
+crisp:Potato snack
+crumb:Bread bit
+crust:Pie edge
+cubic:Like a box
+curry:Spicy dish
+curve:Bend
+cycle:Ride a bike
+dairy:Milk products
+dealt:Handed out cards
+decay:Rot
+decoy:Lure
+demon:Devil
+denim:Jeans fabric
+depth:How deep
+devil:Horned villain
+digit:Finger or number
+diner:Roadside café
+dingo:Wild dog of Australia
+disco:Dance club
+ditch:Trench
+diver:Underwater swimmer
+dizzy:Light-headed
+dodge:Avoid
+donor:Giver
+donut:Ring cake
+dough:Bread mix
+dozen:Twelve
+draft:First version
+drain:Plughole
+drama:Theatre
+drawn:Sketched
+dress:Frock
+drift:Float along
+drink:Beverage
+drive:Steer a car
+drone:Flying camera
+duvet:Quilt
+dwarf:Snow White friend
+easel:Painter's stand
+elder:Older
+elect:Vote in
+elite:Best of the best
+email:Electronic letter
+ember:Glowing coal
+emoji:Smiley icon
+entry:Way in
+equal:The same
+error:Mistake
+essay:School writing
+ethic:Moral rule
+exact:Precise
+extra:Additional
+fancy:Posh
+fault:Blame
+feral:Wild
+ferry:Passenger boat
+fiber:Dietary roughage
+fiery:Hot-tempered
+final:Last
+flair:Talent
+flake:Snow piece
+flash:Camera light
+flask:Thermos
+fleet:Navy ships
+flesh:Body tissue
+flint:Spark stone
+flirt:Make eyes at
+flora:Plant life
+flour:Baking powder
+flown:Gone by air
+fluid:Liquid
+flush:Toilet action
+foggy:Misty
+force:Strength
+forge:Blacksmith's fire
+forty:Four tens
+forum:Discussion board
+found:Discovered
+frame:Picture border
+fraud:Swindle
+freak:Oddball
+fried:Cooked in oil
+fudge:Soft sweet
+fungi:Mushrooms
+funny:Amusing
+gamer:Video-game fan
+gauge:Meter
+gecko:Little lizard
+genie:Lamp granter of wishes
+genre:Category of art
+gland:Body organ
+glare:Angry stare
+gleam:Shine
+glide:Move smoothly
+gloom:Darkness
+glory:Fame
+glove:Hand warmer
+goose:Honking bird
+gorge:Canyon
+grace:Elegance
+grade:Mark
+grand:Magnificent
+graph:Chart
+grasp:Grip
+gravy:Roast sauce
+greed:Selfish want
+grill:Barbecue rack
+groom:Man at a wedding
+group:Gathering
+growl:Dog's warning
+guard:Protector
+guess:Estimate
+guide:Leader
+habit:Routine
+hatch:Break out of an egg
+haunt:Ghost's pastime
+haven:Safe place
+hazel:Nut tree
+heavy:Weighty
+hedge:Garden bush wall
+hello:Greeting
+heron:Wading bird
+hippo:River horse
+hobby:Pastime
+hoist:Lift up
+hollow:Empty inside
+honor:Respect
+hound:Hunting dog
+humid:Muggy
+humor:Comedy
+hurry:Rush
+husky:Sled dog
+icing:Cake topping
+ideal:Perfect
+idiom:Saying
+index:List at the back
+inner:Inside
+irony:Opposite meaning
+ivory:Tusk material
+jeans:Denim trousers
+joint:Knee or elbow
+jolly:Cheerful
+judge:Court official
+juicy:Full of juice
+kayak:Paddle boat
+kebab:Skewered meat
+kneel:Go down on knees
+knock:Rap on a door
+label:Tag
+lance:Knight's spear
+large:Big
+latte:Milky coffee
+layer:Tier
+leash:Dog lead
+ledge:Shelf
+lemur:Madagascar primate
+lever:Bar for lifting
+limit:Maximum
+linen:Bed sheets
+liver:Body organ
+llama:Andean animal
+lobby:Hotel entrance
+local:Nearby
+lotus:Water flower
+lover:Sweetheart
+loyal:Faithful
+lucky:Fortunate
+lyric:Song words
+macho:Manly
+major:Important
+maker:Creator
+manor:Country house
+marsh:Wetland
+match:Fire starter
+mayor:Town leader
+meant:Intended
+medic:Doctor
+mercy:Compassion
+merit:Worth
+messy:Untidy
+miner:Coal worker
+minor:Small
+minus:Take away
+mirth:Laughter
+moist:Damp
+moose:Large deer
+moral:Ethical
+motel:Roadside hotel
+motor:Engine
+mould:Fungus
+muddy:Dirty with soil
+mummy:Wrapped pharaoh
+nacho:Cheesy chip
+nanny:Child minder
+nasty:Horrible
+nerve:Courage
+never:Not ever
+niece:Sister's daughter
+ninja:Japanese warrior
+noise:Sound
+north:Up on a map
+nurse:Hospital carer
+nutty:Crazy
+oasis:Desert spring
+occur:Happen
+offer:Proposal
+often:Frequently
+opera:Sung drama
+order:Command
+organ:Church instrument
+outer:Outside
+owner:Possessor
+oxide:Rust compound
+ozone:Protective layer
+paddle:Canoe oar
+palace:Royal home
+patch:Repair piece
+pause:Short stop
+peace:Calm
+pecan:Pie nut
+perch:Bird's rest
+petal:Flower leaf
+phone:Mobile
+photo:Picture
+pinch:Squeeze
+pinky:Little finger
+pitch:Football field
+pixel:Screen dot
+plaid:Tartan
+plain:Simple
+plaza:Town square
+plump:Chubby
+poker:Card game
+polar:Arctic
+porch:Front step area
+poser:Show-off
+pouch:Kangaroo pocket
+pound:British money
+prank:Practical joke
+press:Push
+price:Cost
+prime:Best
+print:Publish
+prism:Rainbow maker
+proof:Evidence
+proud:Pleased with oneself
+prune:Dried plum
+psalm:Sacred song
+puppy:Young dog
+purse:Wallet
+quack:Duck sound
+quake:Tremble
+quest:Search
+queue:Line of people
+quota:Allowance
+quote:Repeat words
+radar:Detection system
+radish:Red root
+rainy:Wet weather
+ranch:Cattle farm
+rapid:Fast
+ratio:Proportion
+razor:Shaver
+react:Respond
+realm:Kingdom
+rebel:Rule breaker
+relax:Chill out
+relay:Team race
+remix:New version of a song
+reply:Answer
+rhino:Horned beast
+rhyme:Poetry match
+rider:Horse person
+ridge:Mountain crest
+rifle:Long gun
+rigid:Stiff
+rinse:Wash out
+risky:Dangerous
+rival:Competitor
+roast:Sunday dinner
+robin:Red-breasted bird
+rocky:Stony
+rodeo:Cowboy show
+rogue:Scoundrel
+rouge:Blusher
+rough:Not smooth
+round:Circular
+route:Way
+royal:Kingly
+rugby:Oval-ball game
+rumor:Gossip
+rural:Countryside
+rusty:Corroded
+sadly:Unfortunately
+saint:Holy person
+salsa:Spicy dip
+sauce:Ketchup, say
+sauna:Steam room
+scale:Weighing device
+scare:Frighten
+scene:Part of a play
+scent:Perfume
+score:Points
+screw:Twisting nail
+scrub:Clean hard
+seize:Grab
+sense:Feeling
+serve:Wait on
+seven:Days in a week
+shade:Shadow
+shake:Tremble
+sharp:Pointed
+shave:Remove stubble
+shine:Gleam
+shock:Surprise
+short:Not tall
+shout:Yell
+shrub:Bush
+sight:Vision
+since:From then
+sixty:Six tens
+skill:Ability
+skull:Head bone
+slate:Roof tile
+slice:Piece of cake
+slope:Hill side
+sloth:Slow tree mammal
+smart:Clever
+smell:Sniff
+smoke:Fire fumes
+snack:Small bite
+sneak:Creep
+sneer:Scornful smile
+snore:Sleep noise
+sober:Not drunk
+solid:Firm
+solve:Figure out
+sonic:Of sound
+sound:Noise
+south:Down on a map
+spare:Extra
+spark:Tiny flash
+spear:Throwing weapon
+speed:Velocity
+spell:Wizard's words
+spend:Pay out
+spicy:Hot food
+spike:Sharp point
+spill:Knock over
+spine:Backbone
+spoil:Ruin
+spook:Ghost
+spray:Mist
+squad:Team
+squid:Inky sea creature
+stack:Pile
+staff:Employees
+stain:Mark
+stair:Step
+stake:Wooden post
+stalk:Plant stem
+stamp:Postage sticker
+stand:Get up
+stare:Gaze
+start:Begin
+steak:Grilled beef
+steal:Rob
+steel:Strong metal
+steep:Sharply sloping
+stick:Twig
+still:Motionless
+stink:Bad smell
+stork:Baby-delivering bird
+stove:Cooker
+straw:Drinking tube
+stray:Lost pet
+strip:Narrow piece
+stuck:Jammed
+study:Learn
+stuff:Things
+style:Fashion
+suite:Hotel rooms
+sunny:Bright
+super:Excellent
+surge:Rush
+sushi:Raw-fish dish
+swamp:Bog
+swarm:Bee crowd
+swear:Curse
+sweat:Perspire
+sweep:Use a broom
+swift:Fast
+sword:Knight's blade
+syrup:Pancake topping
+taboo:Forbidden
+taken:Occupied
+tango:Argentine dance
+taper:Narrow
+teach:Instruct
+tempo:Pace of music
+tenor:Singing voice
+tense:Nervous
+thief:Robber
+thing:Object
+think:Ponder
+thorn:Rose spike
+three:Trio
+throw:Toss
+tidal:Of the sea
+title:Name of a book
+toddler:Small child
+token:Coin substitute
+topic:Subject
+total:Sum
+touch:Feel
+tough:Hard
+toxic:Poisonous
+trace:Sketch over
+track:Running circuit
+trade:Exchange
+treat:Reward
+trend:Fashion
+trial:Court case
+tribe:Clan
+trick:Magic act
+troll:Bridge monster
+troop:Group of soldiers
+trout:River fish
+truce:Ceasefire
+trunk:Elephant's nose
+trust:Faith
+truth:Fact
+tutor:Private teacher
+twist:Turn
+udder:Cow's milk bag
+ultra:Extreme
+unity:Togetherness
+until:Up to
+upper:Higher
+upset:Unhappy
+urban:Of a city
+usher:Cinema guide
+usual:Normal
+valid:Sound
+value:Worth
+valve:Tap part
+venue:Location
+verse:Poem part
+viper:Venomous snake
+visit:Call on
+vital:Essential
+vivid:Bright
+vocal:Of the voice
+vodka:Russian spirit
+vowel:A, E, I, O or U
+waist:Belt line
+waltz:Ballroom dance
+waste:Rubbish
+weary:Tired
+weave:Make cloth
+wedge:Doorstop shape
+weird:Strange
+whirl:Spin
+whole:Entire
+widow:Woman whose spouse died
+width:Breadth
+witch:Broom rider
+woman:Lady
+worry:Fret
+worth:Value
+wound:Injury
+wrath:Anger
+wrist:Watch spot
+write:Pen words
+yacht:Luxury boat
+yearn:Long for
+yeast:Bread riser
+yield:Give way
+yummy:Tasty
+zesty:Lively
+action:Deed
+advice:Guidance
+alpaca:Woolly llama cousin
+amount:Quantity
+ankles:Foot joints
+answer:Reply
+apology:Saying sorry
+archer:Bow user
+arctic:Very cold
+arrive:Get there
+attack:Charge
+avocado:Guacamole fruit
+badger:Black-and-white digger
+ballet:Tutu dance
+bamboo:Panda food
+bandit:Robber
+banner:Flag sign
+barber:Hair cutter
+barrel:Wine cask
+beaver:Dam builder
+beetle:Hard-shelled bug
+bishop:Chess piece
+blanket:Bed cover
+bonnet:Old-style hat
+border:Frontier
+bottle:Wine container
+bounce:Spring back
+breeze:Light wind
+bubble:Soapy sphere
+bucket:Pail
+budget:Spending plan
+bundle:Package
+burger:Fast-food patty
+butler:Head servant
+cactus:Desert plant
+camera:Photo taker
+canyon:Deep valley
+carpet:Floor covering
+cashew:Curved nut
+casino:Gambling house
+cattle:Cows
+celery:Crunchy stalk
+cereal:Breakfast flakes
+chapel:Small church
+cheeky:Impudent
+cheetah:Fastest cat
+chorus:Song refrain
+cinema:Movie theatre
+clever:Smart
+closet:Wardrobe
+cobweb:Spider's work
+coffee:Morning brew
+collar:Shirt neck
+comedy:Funny show
+copper:Reddish metal
+cotton:Soft fabric
+cousin:Aunt's child
+coyote:Desert dog
+crayon:Wax pencil
+credit:Buy now, pay later
+crunch:Bite sound
+cuddle:Hug
+cymbal:Crashing drum part
+dancer:Ballerina
+danger:Peril
+dazzle:Blind with light
+decade:Ten years
+desert:Sandy waste
+detail:Small point
+dinner:Evening meal
+doctor:Physician
+donkey:Braying animal
+double:Twice
+drawer:Desk compartment
+driver:Motorist
+effort:Hard work
+eleven:Football team size
+empire:Large realm
+energy:Power
+engine:Motor
+escape:Get away
+expert:Specialist
+fabric:Cloth
+falcon:Hunting bird
+family:Relatives
+farmer:Crop grower
+father:Dad
+fiddle:Violin
+figure:Number
+finger:Hand digit
+flight:Plane trip
+folder:File holder
+fossil:Ancient remains
+frozen:Icy
+funnel:Pouring cone
+gadget:Device
+galaxy:Star system
+garlic:Vampire repellent
+geyser:Hot spring spout
+ginger:Spicy root
+glider:Engineless plane
+goblin:Mischievous creature
+gopher:Burrowing rodent
+gossip:Idle talk
+grumpy:Bad-tempered
+gutter:Roof drain
+hamper:Picnic basket
+harbor:Port
+helmet:Head protector
+hermit:Loner
+hiccup:Spasm sound
+hockey:Ice sport
+honest:Truthful
+hoodie:Hooded top
+hunger:Need for food
+hurdle:Obstacle
+iceberg:Floating ice mountain
+insect:Bug
+invite:Ask along
+jaguar:Spotted big cat
+jigsaw:Puzzle
+jockey:Horse rider
+joyful:Happy
+kennel:Dog house
+kettle:Tea boiler
+kidney:Body organ
+kitten:Baby cat
+knight:Armoured soldier
+lagoon:Shallow lake
+laptop:Portable computer
+lawyer:Attorney
+leader:Boss
+legend:Myth
+lentil:Soup pulse
+lesson:Class
+lettuce:Salad leaf
+locket:Pendant
+lounge:Living room
+lumber:Timber
+magnet:Iron attractor
+mammal:Warm-blooded animal
+mantle:Fireplace shelf
+marble:Glass ball
+meadow:Grassy field
+medium:Middle size
+melody:Tune
+menace:Threat
+mentor:Guide
+meteor:Shooting star
+method:Way
+mitten:Glove without fingers
+modern:Up to date
+moment:Instant
+mosaic:Tile picture
+mother:Mum
+muffin:Small cake
+museum:Exhibit hall
+muscle:Biceps, say
+mussel:Shellfish
+narrow:Thin
+nature:The outdoors
+needle:Sewing tool
+nephew:Sister's son
+noodle:Ramen strand
+number:Digit
+nutmeg:Spice
+office:Workplace
+orchid:Exotic flower
+oyster:Pearl maker
+parade:Procession
+pastry:Pie crust
+peanut:Ground nut
+pebble:Small stone
+person:Human
+pickle:Gherkin
+pigeon:City bird
+pirate:Sea robber
+plenty:Lots
+pocket:Trouser pouch
+poetry:Verse
+poodle:Curly dog
+powder:Fine dust
+prince:King's son
+puddle:Rain pool
+puppet:Hand doll
+purple:Violet
+puzzle:Brain teaser
+python:Big snake
+quarry:Stone pit
+rattle:Baby's toy
+record:Vinyl disc
+reindeer:Santa's puller
+remote:TV clicker
+rescue:Save
+ribbon:Bow material
+riddle:Brain teaser
+safari:Wildlife trip
+salmon:Pink fish
+sandal:Summer shoe
+scream:Shriek
+season:Spring or autumn
+secret:Hidden thing
+shadow:Dark shape
+shower:Quick wash
+signal:Sign
+singer:Vocalist
+sister:Female sibling
+sketch:Drawing
+sleeve:Arm cover
+slogan:Catchphrase
+smooth:Not rough
+sneeze:Atchoo!
+soccer:Football
+spinach:Popeye's food
+sponge:Bath absorber
+statue:Sculpture
+stereo:Sound system
+sticky:Gluey
+string:Kite cord
+studio:Art room
+sudden:Unexpected
+sugary:Sweet
+supper:Evening meal
+symbol:Sign
+tablet:Pill or screen
+talent:Gift
+target:Bullseye
+temple:Place of worship
+tennis:Racket sport
+thirst:Need for water
+thread:Sewing line
+throne:King's chair
+thunder:Storm rumble
+toffee:Chewy sweet
+tongue:Taste organ
+travel:Journey
+trophy:Prize cup
+tunnel:Underground passage
+turkey:Christmas bird
+umpire:Referee
+unicorn:Horned horse
+useful:Handy
+valley:Low land
+velvet:Plush fabric
+voyage:Sea journey
+waffle:Grid pancake
+walrus:Tusked sea mammal
+weasel:Sly animal
+wealth:Riches
+weekend:Saturday and Sunday
+whisper:Speak softly
+wonder:Marvel
+yellow:Banana colour
+yogurt:Dairy dessert
+zipper:Jacket fastener
+academy:School
+balloon:Party float
+battery:Power cell
+bedroom:Sleeping room
+biscuit:Cookie
+blossom:Flowers on a tree
+bracelet:Wrist jewellery
+brother:Male sibling
+cabbage:Leafy vegetable
+captain:Ship's leader
+caravan:Holiday trailer
+cartoon:Animated show
+chicken:Farm bird
+chimney:Smoke outlet
+compass:Direction finder
+concert:Live music show
+costume:Fancy dress
+cottage:Small country house
+counter:Shop desk
+courage:Bravery
+cowboy:Ranch rider
+crystal:Clear gem
+cupcake:Small iced cake
+curtain:Window drape
+cushion:Sofa pillow
+dentist:Tooth doctor
+diamond:Hard gem
+dolphin:Clever sea mammal
+dungeon:Castle prison
+emerald:Green gem
+example:Sample
+factory:Plant
+fantasy:Make-believe
+feather:Bird's plume
+fiction:Made-up story
+firefly:Glowing bug
+flannel:Face cloth
+florist:Flower seller
+freedom:Liberty
+gallery:Art space
+garbage:Rubbish
+giraffe:Long-necked animal
+glasses:Spectacles
+gorilla:Biggest ape
+granite:Hard rock
+harvest:Crop gathering
+healthy:Well
+hedgehog:Spiny animal
+history:The past
+holiday:Vacation
+horizon:Sky line
+hostage:Captive
+hunting:Chasing prey
+husband:Married man
+journey:Trip
+justice:Fairness
+kitchen:Cooking room
+lantern:Portable lamp
+laundry:Washing
+leopard:Spotted cat
+library:Book place
+lobster:Red crustacean
+machine:Device
+mailbox:Letter slot
+mansion:Huge house
+message:Note
+million:Big number
+mineral:Rock substance
+miracle:Wonder
+mission:Task
+monster:Beast
+morning:Start of the day
+mustard:Hot dog topping
+mystery:Puzzle
+natural:Not artificial
+network:Connected system
+octopus:Eight-armed creature
+orchard:Fruit garden
+ostrich:Big flightless bird
+outside:Outdoors
+pancake:Flat breakfast
+panther:Black big cat
+partner:Other half
+passion:Strong feeling
+peacock:Showy bird
+pelican:Pouched bird
+penguin:Tuxedo bird
+picture:Image
+pilgrim:Religious traveller
+plastic:Synthetic material
+popcorn:Cinema snack
+problem:Trouble
+pudding:Dessert
+pumpkin:Halloween gourd
+pyramid:Egyptian tomb
+quarter:One fourth
+rainbow:Arc of colours
+raccoon:Masked animal
+recipe:Cooking guide
+reptile:Cold-blooded animal
+roadway:Street
+rooster:Male chicken
+sausage:Banger
+seaweed:Ocean plant
+serpent:Snake
+shelter:Refuge
+shuttle:Space vehicle
+skeleton:Bones
+soldier:Army member
+stadium:Sports ground
+station:Train stop
+stomach:Belly
+student:Pupil
+sunrise:Dawn
+surgeon:Operating doctor
+teacher:Educator
+texture:Feel of a surface
+theatre:Play house
+tornado:Twister
+tourist:Holidaymaker
+traffic:Road jam
+trouble:Problem
+trumpet:Brass instrument
+uniform:School outfit
+vampire:Bloodsucker
+vanilla:Ice-cream flavour
+village:Small town
+volcano:Lava mountain
+waiting:Queueing
+warrior:Fighter
+weather:Rain or shine
+whistle:Referee's toy
+wrestle:Grapple
+airplane:Flying machine
+alphabet:ABC
+aquarium:Fish tank
+backpack:School bag
+baseball:Bat-and-ball game
+bathroom:Washroom
+birthday:Annual celebration
+blizzard:Snowstorm
+bookcase:Shelf unit
+building:Structure
+calendar:Date chart
+campfire:Outdoor blaze
+carnival:Street festival
+champion:Winner
+children:Kids
+chipmunk:Striped squirrel
+cinnamon:Spice
+climbing:Going up
+cocktail:Mixed drink
+coconut:Tropical nut
+computer:PC
+cucumber:Salad vegetable
+daughter:Female child
+dinosaur:T. rex, say
+doughnut:Ring cake
+elephant:Trunked giant
+envelope:Letter cover
+exercise:Workout
+festival:Celebration
+flamingo:Pink bird
+football:Soccer
+fountain:Water feature
+friendly:Kind
+gardener:Plant tender
+goldfish:Bowl pet
+gorgeous:Stunning
+graduate:Degree holder
+hamster:Wheel-running pet
+handbag:Purse
+headache:Sore head
+hospital:Medical centre
+kangaroo:Hopping marsupial
+keyboard:Typing board
+ladybird:Spotted beetle
+landmark:Famous site
+language:Tongue
+lemonade:Citrus drink
+lollipop:Sweet on a stick
+magazine:Glossy read
+marathon:Long race
+mattress:Bed base
+midnight:Twelve at night
+mosquito:Biting insect
+mountain:Big hill
+mushroom:Fungus
+necklace:Neck jewellery
+notebook:Jotter
+ointment:Healing cream
+painting:Artwork
+password:Secret word
+peaceful:Calm
+platypus:Duck-billed mammal
+princess:King's daughter
+question:Query
+raincoat:Mac
+sandwich:Lunch snack
+scorpion:Stinging arachnid
+seashell:Beach find
+shoulder:Upper arm joint
+sidewalk:Pavement
+snowball:Winter missile
+snowman:Frosty figure
+squirrel:Nut hoarder
+stingray:Flat sea fish
+strength:Power
+surprise:Unexpected thing
+sweater:Jumper
+swimming:Pool activity
+teaspoon:Small spoon
+treasure:Pirate's chest
+triangle:Three-sided shape
+umbrella:Rain shield
+vacation:Holiday
+vineyard:Grape farm
+wardrobe:Clothes cupboard
+whiskers:Cat hairs
+woodland:Forest
 `;
 
 export interface Entry {

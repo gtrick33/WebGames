@@ -4,7 +4,7 @@
  */
 import { addDays, daysBetween, hashString } from '../../platform/dates';
 import { deltaE, hexToRgb, MAX_POINTS, pointsFor, rgbToHex, VERDICT_EMOJI, verdictFor, type Hsb, type Rgb } from './color';
-import { randomWild, TARGETS, targetById, type ColorTarget } from './targets';
+import { ORIGINAL_TARGETS, randomWild, TARGETS, targetById, type ColorTarget } from './targets';
 
 export const ROUNDS = 5;
 /** Daily puzzle #1. */
@@ -66,7 +66,7 @@ const dailyCache = new Map<string, RoundSpec[]>();
 
 /** Today's five rounds: identical for every player on the same calendar day. */
 export function dailyRounds(day: string): RoundSpec[] {
-  if (day < WILD_FROM) return pickRounds(rng(hashString(`color-recall:${day}`)));
+  if (day < WILD_FROM) return pickRounds(rng(hashString(`color-recall:${day}`)), ROUNDS, TARGETS.slice(0, ORIGINAL_TARGETS));
   // Each day avoids the curated colors of the previous 7 days, so days are built in order (and cached).
   if (!dailyCache.has(day)) {
     let d = day;

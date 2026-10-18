@@ -4,6 +4,7 @@
  * stray tap can never ruin a run. Time comes in as `now` (ms).
  */
 import { daysBetween, hashString } from '../../platform/dates';
+import { dailyVariant, hasPhotos, makePhotoScene, PHOTO_FROM, runVariant } from './photo';
 import { isHit, makeScene, warmth, type Scene } from './scene';
 
 export const EPOCH = '2026-10-18';
@@ -78,7 +79,20 @@ export function resultOf(s: LevelState): LevelResult {
 }
 
 export function dailyScene(day: string, index: number): Scene {
-  return makeScene(hashString(`wheres-the-ball:${day}:${index}`), index);
+  const seed = hashString(`wheres-the-ball:${day}:${index}`);
+  // From PHOTO_FROM the daily uses real photos, each library photo once before any repeats.
+  if (day >= PHOTO_FROM && hasPhotos()) {
+    const v = dailyVariant(daysBetween(PHOTO_FROM, day), index);
+    if (v) return makePhotoScene(seed, index, v.photo, v.zoom);
+  }
+  return makeScene(seed, index);
+}
+
+/** Endless level `index` of a run (photos when the library has them). */
+export function endlessScene(runSeed: number, index: number): Scene {
+  const seed = (runSeed + index * 7919) >>> 0;
+  const v = hasPhotos() ? runVariant(runSeed, index) : null;
+  return v ? makePhotoScene(seed, index, v.photo, v.zoom) : makeScene(seed, index);
 }
 
 export function dailyNumber(day: string): number {

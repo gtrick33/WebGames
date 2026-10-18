@@ -25,7 +25,7 @@ import type { RoundResult } from '../platform/save';
 import { saveStore, useSave } from '../platform/store';
 import { parseBeatParam, shareOrCopy } from '../platform/share';
 import { GAMES } from '../catalog/games';
-import { Link, useLocation } from '../router/router';
+import { Link, navigate, useLocation } from '../router/router';
 import './GamePage.css';
 
 interface LastRound {
@@ -114,7 +114,7 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
  * Full-screen controls as a small tab on the left edge, where game HUDs rarely sit: tap to open
  * Exit full screen / Exit game; it folds away again after a few seconds.
  */
-function StageMenu({ onExitFullscreen, onExitGame }: { onExitFullscreen: () => void; onExitGame: () => void }) {
+function StageMenu({ slug, onExitFullscreen, onExitGame }: { slug: string; onExitFullscreen: () => void; onExitGame: () => void }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
@@ -133,6 +133,15 @@ function StageMenu({ onExitFullscreen, onExitGame }: { onExitFullscreen: () => v
           </button>
           <button className="stage-exit" onClick={onExitGame}>
             <Icon name="close" size={16} /> Exit game
+          </button>
+          <button
+            className="stage-exit"
+            onClick={() => {
+              onExitFullscreen();
+              navigate(`/me/bugs?game=${slug}`);
+            }}
+          >
+            <Icon name="bug" size={16} /> Report a bug
           </button>
         </div>
       )}
@@ -297,7 +306,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             onPlayClick={play.enter}
             overlay={
               play.active ? (
-                <StageMenu onExitFullscreen={play.exit} onExitGame={close} />
+                <StageMenu slug={game.slug} onExitFullscreen={play.exit} onExitGame={close} />
               ) : null
             }
             onPhase={(p) => {

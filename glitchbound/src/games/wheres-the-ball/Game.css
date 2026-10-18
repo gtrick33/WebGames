@@ -456,3 +456,41 @@
   font-weight: 700;
   text-align: center;
 }
+
+/* Photo levels: shown over the picture while its photo loads. */
+.wb-developing {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 16px;
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(110deg, #2b3a2e 30%, #3b4c3e 50%, #2b3a2e 70%) 0 0 / 300% 100%;
+  animation: wb-develop 1.4s linear infinite;
+  z-index: 2;
+}
+.wb-developing p {
+  margin: 0;
+}
+@keyframes wb-develop {
+  to {
+    background-position: -300% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-developing {
+    animation: none;
+  }
+}
+.wb-credit {
+  margin: 4px 0 8px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+.wb-credit a {
+  color: inherit;
+}

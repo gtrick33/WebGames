@@ -209,3 +209,29 @@ describe('odd-sized tubes', () => {
     expect(doneTubes(b([3, [1, 1]], [2, [1]]))).toEqual([false, false]);
   }, 30_000);
 });
+
+describe('more variety', () => {
+  it('keeps the first published daily on the original 12 colours', () => {
+    for (let i = 0; i < DAILY_LEVELS; i++) expect(Math.max(...dailyLevel('2026-10-18', i).palette)).toBeLessThan(12);
+  });
+
+  it('changes the last two daily recipes from day to day, and every one is solvable', () => {
+    const recipes = new Set<string>();
+    let colors = 0;
+    for (let d = 19; d <= 31; d++) {
+      for (const i of [3, 4]) {
+        const lv = dailyLevel(`2026-10-${d}`, i);
+        expect(lv.par).toBeGreaterThan(0);
+        recipes.add(JSON.stringify(lv.spec));
+        colors = Math.max(colors, ...lv.palette);
+      }
+    }
+    expect(recipes.size).toBeGreaterThanOrEqual(4);
+    expect(colors).toBeGreaterThanOrEqual(12);
+  }, 60_000);
+
+  it('varies tube height past the ladder in Endless', () => {
+    const caps = new Set(Array.from({ length: 10 }, (_, k) => specFor(9 + k, rng(k)).cap));
+    expect(caps.size).toBeGreaterThanOrEqual(3);
+  });
+});

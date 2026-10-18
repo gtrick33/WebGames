@@ -9,7 +9,7 @@
 export const W = 400;
 export const H = 300;
 
-export type ThemeId = 'meadow' | 'reef' | 'street' | 'space' | 'snow';
+export type ThemeId = 'meadow' | 'reef' | 'street' | 'space' | 'snow' | 'beach' | 'farm' | 'kitchen' | 'night' | 'jungle' | 'camp' | 'harbor' | 'party';
 
 export type Kind =
   | 'tree'
@@ -37,7 +37,51 @@ export type Kind =
   | 'snowman'
   | 'present'
   | 'kite'
-  | 'mushroom';
+  | 'mushroom'
+  // Beach
+  | 'umbrella'
+  | 'towel'
+  | 'sandcastle'
+  | 'bucket'
+  | 'crab'
+  | 'beachball'
+  | 'boat'
+  // Farm
+  | 'barn'
+  | 'tractor'
+  | 'cow'
+  | 'sheep'
+  | 'chicken'
+  | 'hay'
+  | 'fence'
+  | 'pumpkin'
+  // Kitchen
+  | 'clock'
+  | 'frame'
+  | 'jar'
+  | 'mug'
+  | 'plant'
+  | 'teapot'
+  | 'pot'
+  | 'apple'
+  | 'bread'
+  // Night, jungle, camp, harbor, party
+  | 'moon'
+  | 'cat'
+  | 'palm'
+  | 'parrot'
+  | 'butterfly'
+  | 'monkey'
+  | 'frog'
+  | 'tent'
+  | 'campfire'
+  | 'lantern'
+  | 'owl'
+  | 'log'
+  | 'lighthouse'
+  | 'buoy'
+  | 'cake'
+  | 'partyhat';
 
 export interface Obj {
   id: number;
@@ -92,16 +136,123 @@ export const RADIUS: Record<Kind, number> = {
   present: 12,
   kite: 14,
   mushroom: 11,
+  umbrella: 26,
+  towel: 18,
+  sandcastle: 22,
+  bucket: 12,
+  crab: 12,
+  beachball: 11,
+  boat: 24,
+  barn: 36,
+  tractor: 24,
+  cow: 22,
+  sheep: 16,
+  chicken: 10,
+  hay: 16,
+  fence: 34,
+  pumpkin: 12,
+  clock: 14,
+  frame: 16,
+  jar: 11,
+  mug: 10,
+  plant: 16,
+  teapot: 16,
+  pot: 16,
+  apple: 9,
+  bread: 14,
+  moon: 20,
+  cat: 14,
+  palm: 30,
+  parrot: 12,
+  butterfly: 10,
+  monkey: 16,
+  frog: 11,
+  tent: 26,
+  campfire: 16,
+  lantern: 11,
+  owl: 16,
+  log: 18,
+  lighthouse: 34,
+  buoy: 11,
+  cake: 22,
+  partyhat: 11,
 };
 
 /** Kinds that look different when mirrored (so a flip is a fair difference). */
-export const ASYMMETRIC: ReadonlySet<Kind> = new Set(['bird', 'fish', 'car', 'house', 'rocket', 'sign', 'kite', 'lamp', 'snowman']);
+export const ASYMMETRIC: ReadonlySet<Kind> = new Set([
+  'bird',
+  'fish',
+  'car',
+  'house',
+  'rocket',
+  'sign',
+  'kite',
+  'lamp',
+  'snowman',
+  'sandcastle',
+  'boat',
+  'tractor',
+  'cow',
+  'sheep',
+  'chicken',
+  'mug',
+  'teapot',
+  'cat',
+  'palm',
+  'parrot',
+  'monkey',
+  'log',
+  'lighthouse',
+]);
 
 /** Kinds whose `v` changes something visible. */
-export const DETAILED: ReadonlySet<Kind> = new Set(['house', 'flower', 'fish', 'building', 'car', 'balloon', 'planet', 'present', 'shell', 'snowman', 'mushroom', 'ufo', 'kite', 'tree']);
+export const DETAILED: ReadonlySet<Kind> = new Set([
+  'house',
+  'flower',
+  'fish',
+  'building',
+  'car',
+  'balloon',
+  'planet',
+  'present',
+  'shell',
+  'snowman',
+  'mushroom',
+  'ufo',
+  'kite',
+  'tree',
+  'umbrella',
+  'towel',
+  'sandcastle',
+  'beachball',
+  'boat',
+  'barn',
+  'cow',
+  'hay',
+  'fence',
+  'pumpkin',
+  'clock',
+  'frame',
+  'jar',
+  'mug',
+  'plant',
+  'apple',
+  'bread',
+  'moon',
+  'cat',
+  'palm',
+  'butterfly',
+  'tent',
+  'lantern',
+  'owl',
+  'lighthouse',
+  'buoy',
+  'cake',
+  'partyhat',
+]);
 
 /** Kinds that are scenery and too big or too structural to remove or add. */
-export const FIXED: ReadonlySet<Kind> = new Set(['sun', 'building']);
+export const FIXED: ReadonlySet<Kind> = new Set(['sun', 'building', 'barn', 'lighthouse', 'moon']);
 
 /** Small, fast, seedable PRNG (mulberry32). Floats in [0, 1). */
 export function rng(seed: number): () => number {
@@ -175,7 +326,100 @@ const THEMES: Record<ThemeId, Slot[]> = {
     { kind: 'snowman', y: [220, 260], count: [1, 2], colors: ['#d1544f', '#4a72b0', '#e0913d', '#8a6db5'] },
     { kind: 'present', y: [255, 290], count: [2, 4], colors: ALL },
   ],
+  beach: [
+    { kind: 'sun', y: [30, 46], count: [1, 1], colors: ['#e3c04d'] },
+    { kind: 'cloud', y: [24, 70], count: [1, 3], colors: SKY },
+    { kind: 'bird', y: [40, 115], count: [2, 3], colors: ['#f6f3ec', '#9a9aa6'] },
+    { kind: 'boat', y: [158, 176], count: [1, 2], colors: ['#d1544f', '#4a72b0', '#e3c04d', '#3f9c94'] },
+    { kind: 'umbrella', y: [208, 230], count: [1, 2], colors: WARM.slice(0, 5) },
+    { kind: 'towel', y: [238, 282], count: [1, 3], colors: ALL },
+    { kind: 'sandcastle', y: [226, 270], count: [1, 2], colors: ['#d1544f', '#4a72b0', '#e3c04d'] },
+    { kind: 'bucket', y: [246, 288], count: [1, 3], colors: ['#d1544f', '#4a72b0', '#8cae4f', '#e0913d'] },
+    { kind: 'beachball', y: [232, 288], count: [1, 2], colors: ['#d1544f', '#4a72b0', '#8cae4f'] },
+    { kind: 'crab', y: [256, 290], count: [1, 2], colors: ['#d1544f', '#e0913d'] },
+    { kind: 'shell', y: [256, 292], count: [2, 3], colors: ['#ead6bd', '#d99aae', '#f6f3ec'] },
+    { kind: 'starfish', y: [258, 292], count: [1, 2], colors: ['#e0913d', '#d1544f', '#e3c04d'] },
+  ],
+  farm: [
+    { kind: 'sun', y: [30, 46], count: [0, 1], colors: ['#e3c04d'] },
+    { kind: 'cloud', y: [24, 70], count: [2, 3], colors: SKY },
+    { kind: 'bird', y: [40, 100], count: [1, 3], colors: ['#2e2d35', '#8b5a3c'] },
+    { kind: 'barn', y: [146, 152], count: [1, 1], colors: ['#c0473f', '#b5573f', '#8a6db5', '#4a72b0'] },
+    { kind: 'tree', y: [150, 180], count: [1, 2], colors: ['#4f8a3c', '#8cae4f', '#3e7a4f'] },
+    { kind: 'fence', y: [192, 200], count: [1, 2], colors: ['#f6f3ec', '#8b5a3c', '#c9b48a'] },
+    { kind: 'tractor', y: [214, 236], count: [0, 1], colors: ['#d1544f', '#8cae4f', '#4a72b0', '#e3c04d'] },
+    { kind: 'cow', y: [210, 250], count: [1, 2], colors: ['#2e2d35', '#8b5a3c'] },
+    { kind: 'sheep', y: [214, 258], count: [2, 3], colors: ['#f6f3ec', '#ead6bd', '#c9c3b8'] },
+    { kind: 'hay', y: [212, 250], count: [1, 2], colors: ['#e3c04d', '#d9b65a'] },
+    { kind: 'chicken', y: [252, 286], count: [2, 3], colors: ['#f6f3ec', '#b5573f', '#e0913d'] },
+    { kind: 'pumpkin', y: [262, 290], count: [1, 3], colors: ['#e0913d', '#e3c04d', '#d1544f'] },
+  ],
+  kitchen: [
+    { kind: 'clock', y: [30, 40], count: [1, 1], colors: ['#d1544f', '#4a72b0', '#3f9c94', '#2e2d35'] },
+    { kind: 'frame', y: [30, 42], count: [1, 2], colors: ['#8b5a3c', '#e3c04d', '#2e2d35', '#f6f3ec'] },
+    { kind: 'jar', y: [82, 84], count: [2, 3], colors: ['#d1544f', '#e0913d', '#8a6db5', '#8cae4f'] },
+    { kind: 'plant', y: [78, 80], count: [1, 1], colors: ['#c9714f', '#4a72b0', '#f6f3ec'] },
+    { kind: 'mug', y: [86, 88], count: [1, 2], colors: ALL },
+    { kind: 'teapot', y: [168, 205], count: [1, 1], colors: ['#4a72b0', '#d99aae', '#3f9c94', '#f6f3ec'] },
+    { kind: 'pot', y: [170, 210], count: [0, 1], colors: ['#d1544f', '#9a9aa6', '#3f9c94'] },
+    { kind: 'bread', y: [200, 260], count: [1, 2], colors: ['#c98a4a', '#b5733c'] },
+    { kind: 'apple', y: [205, 285], count: [3, 5], colors: ['#d1544f', '#8cae4f', '#e3c04d'] },
+    { kind: 'mug', y: [215, 285], count: [1, 2], colors: ALL },
+    { kind: 'jar', y: [220, 285], count: [0, 1], colors: ['#d1544f', '#e0913d', '#8a6db5'] },
+  ],
+  night: [
+    { kind: 'moon', y: [36, 60], count: [1, 1], colors: ['#f2e6b8'] },
+    { kind: 'star', y: [14, 120], count: [6, 9], colors: ['#f2e6b8', '#f6f3ec'] },
+    { kind: 'building', y: [176, 182], count: [4, 5], colors: ['#3b3f6b', '#4a3f63', '#2f4a5c', '#5a4a6b'] },
+    { kind: 'cat', y: [212, 222], count: [1, 1], colors: ['#2e2d35', '#e0913d', '#9a9aa6', '#f6f3ec'] },
+    { kind: 'lamp', y: [222, 230], count: [1, 2], colors: ['#2e2d35', '#4a72b0'] },
+    { kind: 'car', y: [254, 282], count: [2, 3], colors: ALL },
+  ],
+  jungle: [
+    { kind: 'parrot', y: [40, 130], count: [2, 3], colors: ['#d1544f', '#4a72b0', '#8cae4f', '#e3c04d'] },
+    { kind: 'monkey', y: [70, 140], count: [1, 1], colors: ['#8b5a3c', '#6b4a35'] },
+    { kind: 'palm', y: [150, 196], count: [2, 3], colors: ['#3e7a4f', '#4f8a3c', '#2f5e46'] },
+    { kind: 'butterfly', y: [60, 210], count: [2, 3], colors: ['#e0913d', '#4a72b0', '#d99aae', '#e3c04d'] },
+    { kind: 'weed', y: [232, 262], count: [2, 3], colors: ['#3e7a4f', '#4f8a3c'] },
+    { kind: 'flower', y: [240, 292], count: [3, 5], colors: ['#d1544f', '#d99aae', '#e0913d', '#8a6db5'] },
+    { kind: 'frog', y: [258, 290], count: [1, 2], colors: ['#8cae4f', '#3f9c94', '#e0913d'] },
+    { kind: 'mushroom', y: [258, 290], count: [1, 2], colors: ['#d1544f', '#e0913d'] },
+  ],
+  camp: [
+    { kind: 'moon', y: [28, 50], count: [0, 1], colors: ['#f2e6b8'] },
+    { kind: 'star', y: [12, 70], count: [2, 4], colors: ['#f2e6b8', '#f6f3ec'] },
+    { kind: 'owl', y: [222, 262], count: [1, 1], colors: ['#8b5a3c', '#9a9aa6', '#c98a4a'] },
+    { kind: 'pine', y: [150, 200], count: [2, 4], colors: ['#3e7a4f', '#2f5e46', '#4f8a3c'] },
+    { kind: 'tree', y: [150, 190], count: [1, 2], colors: ['#e0913d', '#d1544f', '#e3c04d'] },
+    { kind: 'tent', y: [206, 228], count: [1, 2], colors: ['#e0913d', '#4a72b0', '#8cae4f', '#d1544f'] },
+    { kind: 'campfire', y: [244, 266], count: [1, 1], colors: ['#e0913d', '#d1544f'] },
+    { kind: 'lantern', y: [228, 284], count: [1, 2], colors: ['#2e2d35', '#4a72b0', '#d1544f'] },
+    { kind: 'log', y: [258, 288], count: [1, 2], colors: ['#8b5a3c', '#a06a45'] },
+    { kind: 'mushroom', y: [262, 292], count: [1, 2], colors: ['#d1544f', '#e0913d', '#8a6db5'] },
+  ],
+  harbor: [
+    { kind: 'sun', y: [30, 46], count: [0, 1], colors: ['#e3c04d'] },
+    { kind: 'cloud', y: [24, 80], count: [1, 3], colors: SKY },
+    { kind: 'bird', y: [34, 120], count: [2, 4], colors: ['#f6f3ec', '#9a9aa6'] },
+    { kind: 'lighthouse', y: [118, 126], count: [1, 1], colors: ['#d1544f', '#4a72b0', '#2e2d35'] },
+    { kind: 'boat', y: [168, 280], count: [3, 5], colors: ALL },
+    { kind: 'buoy', y: [180, 290], count: [2, 3], colors: ['#d1544f', '#e3c04d', '#e0913d'] },
+    { kind: 'fish', y: [250, 290], count: [0, 1], colors: ['#9a9aa6', '#e0913d'] },
+  ],
+  party: [
+    { kind: 'frame', y: [36, 48], count: [0, 1], colors: ['#e3c04d', '#8b5a3c'] },
+    { kind: 'balloon', y: [40, 150], count: [3, 5], colors: ALL },
+    { kind: 'star', y: [20, 160], count: [2, 3], colors: ['#e3c04d', '#d99aae', '#8a6db5'] },
+    { kind: 'cake', y: [214, 222], count: [1, 1], colors: ['#d99aae', '#8b5a3c', '#f6f3ec', '#3f9c94'] },
+    { kind: 'present', y: [240, 290], count: [2, 4], colors: ALL },
+    { kind: 'partyhat', y: [236, 286], count: [2, 3], colors: ALL },
+    { kind: 'mug', y: [240, 286], count: [1, 2], colors: ALL },
+    { kind: 'apple', y: [250, 290], count: [0, 1], colors: ['#d1544f', '#8cae4f'] },
+  ],
 };
+
+/** The five themes of the first published dailies (their pictures must stay exactly as they were). */
+export const CLASSIC_THEMES: ThemeId[] = ['meadow', 'reef', 'street', 'space', 'snow'];
 
 export const THEME_IDS = Object.keys(THEMES) as ThemeId[];
 export const THEME_NAMES: Record<ThemeId, string> = {
@@ -184,6 +428,14 @@ export const THEME_NAMES: Record<ThemeId, string> = {
   street: 'Main Street',
   space: 'Pastel Space',
   snow: 'Snow Day',
+  beach: 'Beach Day',
+  farm: 'Country Farm',
+  kitchen: 'Cozy Kitchen',
+  night: 'City Night',
+  jungle: 'Jungle',
+  camp: 'Campsite',
+  harbor: 'Harbor',
+  party: 'Birthday Party',
 };
 
 /** Detail variants per kind (v is drawn modulo this). */
@@ -202,6 +454,34 @@ export const VARIANTS: Partial<Record<Kind, number>> = {
   ufo: 3,
   kite: 3,
   tree: 2,
+  umbrella: 3,
+  towel: 3,
+  sandcastle: 3,
+  beachball: 3,
+  boat: 3,
+  barn: 3,
+  cow: 3,
+  hay: 2,
+  fence: 3,
+  pumpkin: 3,
+  clock: 3,
+  frame: 3,
+  jar: 3,
+  mug: 3,
+  plant: 3,
+  apple: 2,
+  bread: 3,
+  moon: 2,
+  cat: 2,
+  palm: 3,
+  butterfly: 2,
+  tent: 2,
+  lantern: 2,
+  owl: 2,
+  lighthouse: 2,
+  buoy: 2,
+  cake: 3,
+  partyhat: 2,
 };
 
 /** Builds a picture. `crowd` (0-1) adds objects for harder pictures. */

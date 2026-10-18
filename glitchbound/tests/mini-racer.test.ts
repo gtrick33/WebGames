@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PolyCull } from '../src/games/mini-racer/cull';
 import { dailyTrack, hashDay, todayKey } from '../src/games/mini-racer/daily';
 import { leftOf, nearest, pointAt } from '../src/games/mini-racer/geometry';
 import { decodeGhost, encodeGhost, GhostRecorder, ghostPose } from '../src/games/mini-racer/ghost';
@@ -773,5 +774,35 @@ describe('full-speed tracks', () => {
         }
       }
     }
+  });
+});
+
+describe('view culling', () => {
+  // A 100-point circle of radius 1000 around the origin.
+  const ring = Array.from({ length: 100 }, (_, i) => ({ x: Math.cos((i / 100) * Math.PI * 2) * 1000, y: Math.sin((i / 100) * Math.PI * 2) * 1000 }));
+  const cull = new PolyCull(ring, true, 10);
+
+  it('draws everything when the whole line is on screen', () => {
+    expect(cull.ranges({ minX: -2000, maxX: 2000, minY: -2000, maxY: 2000 }, 10)).toEqual([[0, 100]]);
+  });
+
+  it('keeps only the stretch near the camera, wrapping past the start of a closed line', () => {
+    // Around point 0 (x = 1000, y = 0): the visible stretch runs from the end of the loop into its start.
+    const rs = cull.ranges({ minX: 900, maxX: 1100, minY: -150, maxY: 150 }, 10);
+    expect(rs).toHaveLength(1);
+    const [from, to] = rs[0]!;
+    expect(from).toBeGreaterThan(50);
+    expect(to).toBeGreaterThan(100);
+    expect(cull.offsetOf(from)).toBeGreaterThan(0);
+  });
+
+  it('finds nothing far away from the line', () => {
+    expect(cull.ranges({ minX: -100, maxX: 100, minY: -100, maxY: 100 }, 10)).toEqual([]);
+  });
+
+  it('measures dash offsets along the line', () => {
+    const line = new PolyCull([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 30, y: 0 }], false, 1);
+    expect(line.offsetOf(2)).toBeCloseTo(30);
+    expect(line.ranges({ minX: 25, maxX: 40, minY: -5, maxY: 5 }, 0)).toEqual([[1, 2]]);
   });
 });

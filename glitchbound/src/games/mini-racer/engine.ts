@@ -50,6 +50,8 @@ export class Engine {
   private hud: HudState = { banner: null, popup: null, best: null, split: null, sectors: [], attract: true, touch: false };
   private frameAvg = 16;
   private dprCap = 2;
+  /** Last time the engine sound was retuned (seconds); audio params change ~20x/s, not every frame. */
+  private audioAt = 0;
   private cleanups: (() => void)[] = [];
 
   constructor(canvas: HTMLCanvasElement, root: HTMLElement, cb: EngineCallbacks) {
@@ -236,9 +238,10 @@ export class Engine {
     this.last = now;
     const sim = this.sim;
     if (!sim) return;
-    // Adaptive resolution: if frames are slow, draw fewer pixels.
+    // Adaptive resolution: if frames are slow, draw fewer pixels. Only decided on the menu's demo
+    // lap: resizing the canvas mid-race clears it and costs a hitch of its own.
     this.frameAvg += (dt * 1000 - this.frameAvg) * 0.05;
-    if (this.frameAvg > 21 && this.dprCap > 1 && !this.paused) {
+    if (this.attractMode && this.frameAvg > 21 && this.dprCap > 1 && !this.paused && !document.hidden) {
       this.dprCap = Math.max(1, this.dprCap - 0.25);
       this.frameAvg = 16;
       this.resize();
@@ -262,8 +265,11 @@ export class Engine {
             this.audio.blip('count');
           }
         }
-        const { side } = localVelocity(sim.car);
-        this.audio.update(speedOf(sim.car) / CAR.maxSpeed, sim.drift.active ? Math.min(1, Math.abs(side) / 200) : 0, !sim.finished || speedOf(sim.car) > 20);
+        if (now - this.audioAt >= 50) {
+          this.audioAt = now;
+          const { side } = localVelocity(sim.car);
+          this.audio.update(speedOf(sim.car) / CAR.maxSpeed, sim.drift.active ? Math.min(1, Math.abs(side) / 200) : 0, !sim.finished || speedOf(sim.car) > 20);
+        }
         if (this.finishAt > 0 && sim.time >= 0 && performance.now() >= this.finishAt) {
           this.finishAt = -1;
           this.cb.onFinish(sim);

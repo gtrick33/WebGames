@@ -123,6 +123,12 @@ export function rng(seed: number): () => number {
 const orders = new Map<number, string[]>();
 
 /**
+ * Dailies already published before the answer list grew. They stay first in the first pass, so
+ * growing the list never changes a puzzle someone may already have played.
+ */
+const PUBLISHED = ['aware'];
+
+/**
  * The answer list in a fixed shuffled order, so dailies do not repeat for ANSWER_LIST.length days.
  * Each later pass through the list uses a fresh shuffle, so the sequence never repeats either.
  */
@@ -135,6 +141,7 @@ function dailyOrder(cycle = 0): string[] {
       const j = Math.floor(r() * (i + 1));
       [order[i], order[j]] = [order[j]!, order[i]!];
     }
+    if (cycle === 0) order = [...PUBLISHED, ...order.filter((w) => !PUBLISHED.includes(w))];
     orders.set(cycle, order);
   }
   return order;

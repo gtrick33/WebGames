@@ -303,7 +303,7 @@ export const GAMES: GameEntry[] = [
       { key: 'pictures', label: 'Most Rush pictures cleared' },
     ],
     highlights: [
-      'Pictures are generated from a seed: a practically endless library across five themes',
+      'Hand-drawn pictures generated from a seed across 13 themes (beach, farm, kitchen, city night, jungle, campsite, harbor, party and more): a practically endless library',
       'Exactly five fair differences per picture: color, missing or extra objects, size, mirror, detail and position',
       'Three daily pictures (easy to sneaky), the same for everyone, with streaks and spoiler-free sharing',
       'Glitch Rush: 60 seconds, +8 s per glitch; Relax: endless pictures with free hints',
@@ -321,8 +321,8 @@ export const GAMES: GameEntry[] = [
     title: 'Where’s the Ball?',
     tagline: 'One tennis ball is hiding in every shot. Zoom in, aim, and lock it in.',
     description:
-      'Scan top-down shots of courts, lawns, locker rooms and garden parties for one cleverly hidden tennis ball among lemons, limes, leaves and cans. ' +
-      'Five new shots daily, each harder than the last, with hints, three tries per shot and a score for speed. Endless mode never runs out of new shots.',
+      'Scan real photos of lawns, leaf-covered paths, pebble beaches, flower beds and market stalls for one tennis ball, sized and lit to match the scene. ' +
+      'Five new shots daily, each harder than the last, with hints, three tries per shot and a score for speed. Endless mode keeps the shots coming.',
     categories: ['puzzle', 'arcade'],
     tags: ['tennis', 'ball', 'hidden object', 'find', 'search', 'seek', 'observation', 'daily', 'eye test', 'zoom'],
     released: '2026-10-18',
@@ -346,7 +346,7 @@ export const GAMES: GameEntry[] = [
       { key: 'levels', label: 'Most Endless shots found' },
     ],
     highlights: [
-      'Shots are generated from a seed with exact ball coordinates: a practically endless supply',
+      'Real photos (public domain and CC0) with a fresh ball placement, crop and zoom every time, and an exact hitbox',
       'Six places: hard court, clay, grass lawn, locker room, garden party and autumn park',
       'Five daily shots, the same for everyone: smaller balls, busier scenes and sneakier camouflage as you go',
       'Taps only aim; nothing counts until you lock it in. Three tries with hot / warm / cold feedback',

@@ -1,3 +1,4 @@
+import { bboxOf, overlaps, PolyCull, type Rect } from './cull';
 import { leftOf, pointAt, type Path, type Vec } from './geometry';
 import type { Pose } from './ghost';
 import { CAR, localVelocity, speedOf } from './physics';
@@ -117,8 +118,8 @@ function pathFrom(pts: Vec[], closed: boolean): Path2D {
   return p;
 }
 
-/** Sub-path of a closed path between two lap fractions. */
-function slice(path: Path, from: number, to: number): Path2D {
+/** Sub-path of a closed path between two lap fractions, with its bounding box. */
+function slice(path: Path, from: number, to: number): { p: Path2D; box: Rect } {
   const L = path.length;
   const a = from * L;
   let b = to * L;
@@ -126,7 +127,7 @@ function slice(path: Path, from: number, to: number): Path2D {
   const pts: Vec[] = [];
   for (let s = a; s <= b; s += 10) pts.push(pointAt(path, s).p);
   pts.push(pointAt(path, b).p);
-  return pathFrom(pts, false);
+  return { p: pathFrom(pts, false), box: bboxOf(pts) };
 }
 
 interface Skid {
@@ -209,11 +210,12 @@ export class Renderer {
   dpr = 1;
   private track: Track | null = null;
   private theme: Theme = THEMES.bay;
-  private road: Path2D | null = null;
-  private kerbs: Path2D | null = null;
-  private walls: Path2D | null = null;
-  private zones: { p: Path2D; surface: Surface }[] = [];
-  private shortcut: Path2D | null = null;
+  /** The road and walls are cut into chunks; only the stretches near the camera are stroked. */
+  private road: PolyCull | null = null;
+  private kerbs: { p: Path2D; box: Rect }[] = [];
+  private walls: PolyCull[] = [];
+  private zones: { p: Path2D; box: Rect; surface: Surface }[] = [];
+  private shortcut: { p: Path2D; box: Rect } | null = null;
   private mini: { path: Path2D; scale: number; ox: number; oy: number; w: number; h: number } | null = null;
   private pattern: CanvasPattern | null = null;
   private skids: Skid[] = [];
@@ -246,8 +248,12 @@ export class Renderer {
     this.w = Math.max(1, w);
     this.h = Math.max(1, h);
     this.dpr = dpr;
-    this.canvas.width = Math.round(this.w * dpr);
-    this.canvas.height = Math.round(this.h * dpr);
+    // Assigning a canvas size reallocates and clears it even when it doesn't change, so skip no-ops
+    // (iOS fires resize observers as the toolbar slides).
+    const cw = Math.round(this.w * dpr);
+    const ch = Math.round(this.h * dpr);
+    if (this.canvas.width !== cw) this.canvas.width = cw;
+    if (this.canvas.height !== ch) this.canvas.height = ch;
   }
 
   setTrack(track: Track): void {
@@ -255,15 +261,11 @@ export class Renderer {
     this.track = track;
     this.theme = THEMES[track.def.theme];
     if (!this.ok) return;
-    this.road = pathFrom(track.path.pts, true);
-    this.zones = track.zones.map((z) => ({ p: slice(track.path, z.from, z.to), surface: z.surface }));
-    this.shortcut = track.shortcut ? pathFrom(track.shortcut.path.pts, false) : null;
+    this.road = new PolyCull(track.path.pts, true);
+    this.zones = track.zones.map((z) => ({ ...slice(track.path, z.from, z.to), surface: z.surface }));
+    this.shortcut = track.shortcut ? { p: pathFrom(track.shortcut.path.pts, false), box: bboxOf(track.shortcut.path.pts) } : null;
     this.kerbs = this.buildKerbs(track.path);
-    this.walls = new Path2D();
-    for (const run of track.walls) {
-      this.walls.moveTo(run[0]!.x, run[0]!.y);
-      for (let i = 1; i < run.length; i++) this.walls.lineTo(run[i]!.x, run[i]!.y);
-    }
+    this.walls = track.walls.filter((run) => run.length > 1).map((run) => new PolyCull(run, false));
     this.pattern = this.buildPattern();
     this.skids = [];
     this.skidHead = 0;
@@ -278,26 +280,26 @@ export class Renderer {
     this.mini = { path: pathFrom(track.path.pts, true), scale, ox: minX, oy: minY, w: bw * scale, h: bh * scale };
   }
 
-  /** Kerbs only where the road bends, like a real circuit. */
-  private buildKerbs(path: Path): Path2D {
-    const p = new Path2D();
+  /** Kerbs only where the road bends, like a real circuit: one path per bend, so each can be culled. */
+  private buildKerbs(path: Path): { p: Path2D; box: Rect }[] {
     const n = path.pts.length;
     const curv = path.tan.map((_, i) => {
       const u = path.tan[(i + 3) % n]!;
       const v = path.tan[(i - 3 + n) % n]!;
       return Math.abs(v.x * u.y - v.y * u.x);
     });
-    let open = false;
+    const out: { p: Path2D; box: Rect }[] = [];
+    let run: Vec[] = [];
+    const flush = (): void => {
+      if (run.length > 1) out.push({ p: pathFrom(run, false), box: bboxOf(run) });
+      run = [];
+    };
     for (let i = 0; i <= n; i++) {
-      const bend = curv[i % n]! > 0.22;
-      const pt = path.pts[i % n]!;
-      if (bend && !open) {
-        p.moveTo(pt.x, pt.y);
-        open = true;
-      } else if (bend) p.lineTo(pt.x, pt.y);
-      else open = false;
+      if (curv[i % n]! > 0.22) run.push(path.pts[i % n]!);
+      else flush();
     }
-    return p;
+    flush();
+    return out;
   }
 
   private buildPattern(): CanvasPattern | null {
@@ -377,10 +379,10 @@ export class Renderer {
     // Ground
     ctx.fillStyle = this.pattern ?? this.theme.ground;
     ctx.fillRect(view.minX, view.minY, view.maxX - view.minX, view.maxY - view.minY);
-    this.drawRoad(track, sim);
+    this.drawRoad(track, sim, view);
     this.updateSkids(sim, pose);
     this.drawSkids(view);
-    this.drawWalls();
+    this.drawWalls(view);
     this.drawObstacles(track.obstacles, view);
     this.drawDecor(track, view);
 
@@ -403,29 +405,35 @@ export class Renderer {
   }
 
   /** Tyre walls: a shadow, a dark base and alternating coloured tyre stacks. */
-  private drawWalls(): void {
+  private drawWalls(view: Rect): void {
     const ctx = this.ctx;
-    const w = this.walls;
-    if (!w) return;
     const t = this.theme;
+    const pad = WALL_HALF + 8;
+    const vis = this.walls.map((w) => w.visible(view, pad)).filter((v) => !v.empty);
+    if (!vis.length) return;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.save();
     ctx.translate(3, 4);
     ctx.strokeStyle = 'rgba(30,15,50,0.22)';
     ctx.lineWidth = WALL_HALF * 2 + 2;
-    ctx.stroke(w);
+    for (const v of vis) ctx.stroke(v.union);
     ctx.restore();
     ctx.strokeStyle = '#1b1035';
     ctx.lineWidth = WALL_HALF * 2 + 2;
-    ctx.stroke(w);
+    for (const v of vis) ctx.stroke(v.union);
     ctx.lineCap = 'butt';
     ctx.strokeStyle = t.kerbB;
     ctx.lineWidth = WALL_HALF * 2 - 3;
-    ctx.stroke(w);
+    for (const v of vis) ctx.stroke(v.union);
     ctx.setLineDash([14, 14]);
     ctx.strokeStyle = t.kerbA;
-    ctx.stroke(w);
+    for (const v of vis)
+      for (const part of v.parts) {
+        ctx.lineDashOffset = part.offset;
+        ctx.stroke(part.path);
+      }
+    ctx.lineDashOffset = 0;
     ctx.setLineDash([]);
     ctx.lineCap = 'round';
   }
@@ -497,65 +505,78 @@ export class Renderer {
     return style;
   }
 
-  private drawRoad(track: Track, sim: RaceSim): void {
+  private drawRoad(track: Track, sim: RaceSim, view: Rect): void {
     const ctx = this.ctx;
     const t = this.theme;
     const W = track.def.width;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     // Shortcut under the main road so the join looks tidy.
-    if (this.shortcut && track.shortcut) {
+    if (this.shortcut && track.shortcut && overlaps(this.shortcut.box, view, track.shortcut.half + 20)) {
+      const sc = this.shortcut.p;
       ctx.strokeStyle = 'rgba(60,40,70,0.25)';
       ctx.lineWidth = track.shortcut.half * 2 + 14;
-      ctx.stroke(this.shortcut);
+      ctx.stroke(sc);
       ctx.strokeStyle = this.surfaceStyle(track.shortcut.surface);
       ctx.lineWidth = track.shortcut.half * 2;
-      ctx.stroke(this.shortcut);
+      ctx.stroke(sc);
       ctx.setLineDash([6, 22]);
       ctx.strokeStyle = 'rgba(255,255,255,0.45)';
       ctx.lineWidth = 3;
-      ctx.stroke(this.shortcut);
+      ctx.stroke(sc);
       ctx.setLineDash([]);
     }
-    const road = this.road!;
-    // Soft shadow + dark edge
-    ctx.strokeStyle = 'rgba(40,20,60,0.18)';
-    ctx.lineWidth = W + KERB * 2 + 26;
-    ctx.stroke(road);
-    ctx.strokeStyle = t.edge;
-    ctx.lineWidth = W + KERB * 2 + 4;
-    ctx.stroke(road);
-    // White edge line, kerbs on bends
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = W + KERB * 2;
-    ctx.stroke(road);
-    ctx.lineCap = 'butt';
-    ctx.strokeStyle = t.kerbA;
-    ctx.stroke(this.kerbs!);
-    ctx.setLineDash([22, 22]);
-    ctx.strokeStyle = t.kerbB;
-    ctx.stroke(this.kerbs!);
-    ctx.setLineDash([]);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = t.road;
-    ctx.lineWidth = W;
-    ctx.stroke(road);
-    for (const z of this.zones) {
-      ctx.strokeStyle = this.surfaceStyle(z.surface);
-      ctx.lineWidth = W;
+    const vis = this.road!.visible(view, W / 2 + KERB + 16);
+    if (!vis.empty) {
+      const road = vis.union;
+      // Soft shadow + dark edge
+      ctx.strokeStyle = 'rgba(40,20,60,0.18)';
+      ctx.lineWidth = W + KERB * 2 + 26;
+      ctx.stroke(road);
+      ctx.strokeStyle = t.edge;
+      ctx.lineWidth = W + KERB * 2 + 4;
+      ctx.stroke(road);
+      // White edge line, kerbs on bends
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = W + KERB * 2;
+      ctx.stroke(road);
       ctx.lineCap = 'butt';
-      ctx.stroke(z.p);
+      const kerbPad = W / 2 + KERB + 8;
+      for (const k of this.kerbs) {
+        if (!overlaps(k.box, view, kerbPad)) continue;
+        ctx.strokeStyle = t.kerbA;
+        ctx.stroke(k.p);
+        ctx.setLineDash([22, 22]);
+        ctx.strokeStyle = t.kerbB;
+        ctx.stroke(k.p);
+        ctx.setLineDash([]);
+      }
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = t.road;
+      ctx.lineWidth = W;
+      ctx.stroke(road);
+      ctx.lineCap = 'butt';
+      for (const z of this.zones) {
+        if (!overlaps(z.box, view, W / 2 + 8)) continue;
+        ctx.strokeStyle = this.surfaceStyle(z.surface);
+        ctx.stroke(z.p);
+      }
+      ctx.lineCap = 'round';
+      // Centre dashes (each stretch keeps its place in the dash pattern).
+      ctx.setLineDash([26, 38]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.32)';
+      ctx.lineWidth = 3;
+      for (const part of vis.parts) {
+        ctx.lineDashOffset = part.offset;
+        ctx.stroke(part.path);
+      }
+      ctx.lineDashOffset = 0;
+      ctx.setLineDash([]);
     }
-    ctx.lineCap = 'round';
-    // Centre dashes
-    ctx.setLineDash([26, 38]);
-    ctx.strokeStyle = 'rgba(255,255,255,0.32)';
-    ctx.lineWidth = 3;
-    ctx.stroke(road);
-    ctx.setLineDash([]);
 
     // Patches
     for (const p of track.patches) {
+      if (p.c.x < view.minX - p.len || p.c.x > view.maxX + p.len || p.c.y < view.minY - p.len || p.c.y > view.maxY + p.len) continue;
       ctx.save();
       ctx.translate(p.c.x, p.c.y);
       ctx.rotate(Math.atan2(p.t.y, p.t.x));
@@ -609,6 +630,7 @@ export class Renderer {
       const passed = lap.started && k < lap.next;
       for (const g of cp.gates) {
         for (const e of [g.a, g.b]) {
+          if (e.x < view.minX || e.x > view.maxX || e.y < view.minY || e.y > view.maxY) continue;
           ctx.fillStyle = 'rgba(30,15,50,0.25)';
           ctx.beginPath();
           ctx.arc(e.x + 3, e.y + 4, 7, 0, Math.PI * 2);
@@ -690,13 +712,16 @@ export class Renderer {
       emit(color, 6 + Math.random() * 6, 0.6, 60);
     }
     if (car.boost > 0 && Math.random() < dt * 50) emit(Math.random() < 0.5 ? '#ffd12e' : '#ff6a1a', 4 + Math.random() * 3, 0.3, 30);
+    // Update and drop dead puffs in place (no new array every frame).
+    let keep = 0;
     for (const p of this.parts) {
       p.life -= dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.r += dt * 10;
+      if (p.life > 0) this.parts[keep++] = p;
     }
-    this.parts = this.parts.filter((p) => p.life > 0);
+    this.parts.length = keep;
   }
 
   private drawParticles(): void {
@@ -1113,7 +1138,7 @@ export class Renderer {
     if (this.shortcut) {
       ctx.lineWidth = 2.5 / m.scale;
       ctx.strokeStyle = '#c88a50';
-      ctx.stroke(this.shortcut);
+      ctx.stroke(this.shortcut.p);
     }
     const g = sim.ghostPose();
     if (g) {

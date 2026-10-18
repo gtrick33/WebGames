@@ -7,6 +7,8 @@
  * Coordinates are scene units: W x H (4:3), y down.
  */
 
+import type { PhotoScene } from './photo';
+
 export const W = 800;
 export const H = 600;
 
@@ -81,6 +83,8 @@ export interface Scene {
   over: Item[];
   ball: Ball;
   difficulty: number;
+  /** Photo levels: the photograph the ball is hidden in (environment and items are then unused). */
+  photo?: PhotoScene;
 }
 
 /** Small, fast, seedable PRNG (mulberry32). Floats in [0, 1). */

@@ -5,11 +5,30 @@ import { addDays, dayKey } from './dates';
 import { doneDays } from './save';
 import { useSave } from './store';
 
-/** Current time, refreshed every `ms` (only while mounted). */
+/** Games running on the page right now: clocks around the stage hold still meanwhile. */
+let playing = 0;
+
+/** Marks a game as running; returns the function that unmarks it. */
+export function markPlaying(): () => void {
+  playing++;
+  let done = false;
+  return () => {
+    if (done) return;
+    done = true;
+    playing = Math.max(0, playing - 1);
+  };
+}
+
+/**
+ * Current time, refreshed every `ms` (only while mounted). Ticks are skipped while a game is being
+ * played, so page re-renders never compete with the game's frames; it catches up on the next tick.
+ */
 export function useNow(ms = 1000): Date {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), ms);
+    const id = window.setInterval(() => {
+      if (!playing) setNow(new Date());
+    }, ms);
     return () => window.clearInterval(id);
   }, [ms]);
   return now;

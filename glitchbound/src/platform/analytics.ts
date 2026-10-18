@@ -116,15 +116,45 @@ export function setSink(s: Sink | null): void {
 /* ------------------------------------------------------------------ crash + bug reports */
 
 let reported = 0;
+const seen = new Set<string>();
+/** The game being played right now ('' = none), so script errors mid-game are tied to it. */
+let activeGame = '';
 
-export function reportError(kind: string, message: string, game = ''): void {
+/** Called by the game stage while a game is running. Returns the function that clears it. */
+export function setActiveGame(slug: string): () => void {
+  activeGame = slug;
+  return () => {
+    if (activeGame === slug) activeGame = '';
+  };
+}
+
+/** A short stack: our own frames first, with the site origin stripped. */
+export function shortStack(stack: string | undefined): string {
+  if (!stack) return '';
+  const origin = typeof location === 'undefined' ? '' : location.origin;
+  return stack
+    .split('\n')
+    .slice(0, 10)
+    .map((l) => (origin ? l.split(origin).join('') : l).trim())
+    .join('\n')
+    .slice(0, 2000);
+}
+
+/**
+ * Sends a crash to /api/errors (production only). Errors while a game runs are filed on the GitHub
+ * issues board by the server (issue #7); the same message is only sent once per page load.
+ */
+export function reportError(kind: string, message: string, game = activeGame, stack = ''): void {
   if (typeof window === 'undefined' || !import.meta.env.PROD || reported >= 8) return;
+  const key = `${kind}|${game}|${message}`;
+  if (seen.has(key)) return;
+  seen.add(key);
   reported++;
   try {
     void fetch('/api/errors', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind, message: message.slice(0, 300), game, path: location.pathname }),
+      body: JSON.stringify({ kind, message: message.slice(0, 300), game, path: location.pathname, stack: shortStack(stack) }),
       keepalive: true,
     }).catch(() => undefined);
   } catch {
@@ -136,10 +166,11 @@ export function installErrorReporting(): void {
   window.addEventListener('error', (e) => {
     // Ignore errors from third-party scripts (opaque "Script error.").
     if (!e.message || e.message === 'Script error.') return;
-    reportError('js_error', `${e.message} @ ${(e.filename ?? '').split('/').pop()}:${e.lineno}`);
+    const err: unknown = e.error;
+    reportError('js_error', `${e.message} @ ${(e.filename ?? '').split('/').pop()}:${e.lineno}`, activeGame, err instanceof Error ? err.stack : '');
   });
   window.addEventListener('unhandledrejection', (e) => {
     const r: unknown = e.reason;
-    reportError('unhandled_rejection', r instanceof Error ? r.message : String(r));
+    reportError('unhandled_rejection', r instanceof Error ? r.message : String(r), activeGame, r instanceof Error ? r.stack : '');
   });
 }

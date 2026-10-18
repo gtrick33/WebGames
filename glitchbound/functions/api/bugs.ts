@@ -1,5 +1,8 @@
+import { getGame } from '../../src/catalog/catalog';
 import type { BugReportView } from '../../src/platform/apiTypes';
-import { bad, json, readJson, sameOrigin, type Ctx } from '../../server/http';
+import { bugIssue, createIssue, DAILY_BUG_ISSUES, githubEnabled, later } from '../../server/github';
+import { bad, json, readJson, sameOrigin, type Ctx, type Env } from '../../server/http';
+import type { BugInput } from '../../server/reports';
 import { countToday, parseBug } from '../../server/reports';
 import { currentUser, requireUser } from '../../server/session';
 import { browserFamily, visitorKey } from '../../server/visitor';
@@ -11,7 +14,7 @@ const MESSAGES = {
 };
 
 /** POST /api/bugs: file a bug report (guests too; members see theirs on /me/bugs). */
-export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
+export async function onRequestPost({ request, env, waitUntil }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('forbidden', 403);
   const input = parseBug(await readJson(request, 12_000));
   if (typeof input === 'string') return bad(input, 400, { message: MESSAGES[input] });
@@ -24,7 +27,19 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   )
     .bind(now, input.title, input.description, input.game, input.category, input.severity, device, input.page, input.contact || user?.email || '', visitor, user?.id ?? null, 'open', now)
     .first<{ id: number }>();
-  return json({ ok: true, id: res?.id ?? 0 });
+  const id = res?.id ?? 0;
+  if (id && githubEnabled(env)) await later(waitUntil, fileOnGithub(env, id, input, device, !!user, now));
+  return json({ ok: true, id });
+}
+
+/** Mirrors a new report to the GitHub issues board with the "bug" label (issue #7). */
+async function fileOnGithub(env: Env, id: number, input: BugInput, device: string, member: boolean, now: number): Promise<void> {
+  const filed = await env.DB.prepare('SELECT COUNT(*) AS n FROM bug_reports WHERE github_issue IS NOT NULL AND ts > ?').bind(now - 86400_000).first<{ n: number }>();
+  if ((filed?.n ?? 0) >= DAILY_BUG_ISSUES) return;
+  const site = (env.SITE_URL ?? '').replace(/\/$/, '');
+  const issue = bugIssue({ id, title: input.title, description: input.description, game: input.game, gameTitle: input.game ? (getGame(input.game)?.title ?? input.game) : '', category: input.category, severity: input.severity, device, page: input.page, member }, site);
+  const n = await createIssue(env, issue);
+  if (n) await env.DB.prepare('UPDATE bug_reports SET github_issue = ? WHERE id = ?').bind(n, id).run();
 }
 
 /** GET /api/bugs: the signed-in member's own reports, newest first. */

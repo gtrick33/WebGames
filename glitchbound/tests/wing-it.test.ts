@@ -60,3 +60,40 @@ describe('Wing It', () => {
     expect(biomeFor(61)).toBe('meadow');
   });
 });
+
+describe('Wing It smooth drawing', () => {
+  /** A canvas whose 2D context records bird positions and ignores everything else. */
+  function fakeCanvas() {
+    const calls: { translate: number[][] } = { translate: [] };
+    const ctx = new Proxy({} as Record<string, unknown>, {
+      get: (_, k) => (k === 'createLinearGradient' ? () => ({ addColorStop: () => undefined }) : k === 'translate' ? (x: number, y: number) => calls.translate.push([x, y]) : () => undefined),
+      set: () => true,
+    });
+    const canvas = { width: 0, height: 0, clientWidth: 400, clientHeight: 640, getContext: () => ctx } as unknown as HTMLCanvasElement;
+    return { canvas, calls };
+  }
+
+  it('remembers the last step so frames can be drawn between steps', () => {
+    const s = newSim(7);
+    flap(s);
+    step(s);
+    expect(s.prevY).not.toBe(s.y);
+    expect(s.lastDx).toBeGreaterThan(0);
+  });
+
+  it('draws the bird between its last two positions', async () => {
+    const { drawFrame, newView } = await import('../src/games/wing-it/render');
+    const s = newSim(7);
+    flap(s);
+    for (let i = 0; i < 5; i++) step(s);
+    const { canvas, calls } = fakeCanvas();
+    const view = { ...newView(), cw: 400, ch: 640 };
+    drawFrame(canvas, view, s, 0, 0.5);
+    const bird = calls.translate.find(([x]) => x === BIRD_X)!;
+    expect(bird[1]).toBeCloseTo((s.prevY + s.y) / 2, 5);
+    // The canvas is sized once and keeps its size between frames.
+    const w = canvas.width;
+    drawFrame(canvas, view, s, 0, 1);
+    expect(canvas.width).toBe(w);
+  });
+});

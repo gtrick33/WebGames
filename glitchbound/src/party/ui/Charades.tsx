@@ -33,7 +33,11 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
   const [skipped, setSkipped] = useState<string[]>([]);
   const [peek, setPeek] = useState(true);
 
-  const deck = useMemo(() => CHARADES.filter((c) => cfg.categories.includes(c.category) && (cfg.difficulty === 0 || c.difficulty === cfg.difficulty)), [cfg.categories, cfg.difficulty]);
+  const adult = session.settings.adultConfirmed;
+  const deck = useMemo(
+    () => CHARADES.filter((c) => cfg.categories.includes(c.category) && (adult || c.category !== 'afterdark') && (cfg.difficulty === 0 || c.difficulty === cfg.difficulty)),
+    [cfg.categories, cfg.difficulty, adult],
+  );
   // Actors alternate teams (A1, B1, A2, B2...) or go round the circle.
   const actors = useMemo(() => {
     if (!cfg.teams) return session.players;
@@ -99,7 +103,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
           </div>
           <h3>Categories</h3>
           <div className="pt-picker">
-            {CHARADES_CATEGORIES.map((c) => {
+            {CHARADES_CATEGORIES.filter((c) => !c.adult || adult).map((c) => {
               const on = cfg.categories.includes(c.id);
               return (
                 <button key={c.id} className={`pt-chip${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => set('categories', on ? cfg.categories.filter((x) => x !== c.id) : [...cfg.categories, c.id])}>

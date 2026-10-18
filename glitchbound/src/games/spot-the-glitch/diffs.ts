@@ -7,6 +7,7 @@ import { deltaE, hexToRgb } from '../color-recall/color';
 import {
   ASYMMETRIC,
   bandFor,
+  CLASSIC_THEMES,
   colorsFor,
   DETAILED,
   FIXED,
@@ -80,7 +81,8 @@ function typesFor(o: Obj): DiffType[] {
   if (!FIXED.has(o.kind)) t.push('remove');
   if (ASYMMETRIC.has(o.kind)) t.push('flip');
   if (DETAILED.has(o.kind)) t.push('detail');
-  if (o.kind === 'building' || o.kind === 'sun') return t.filter((x) => x === 'color' || x === 'detail' || (o.kind === 'sun' && x === 'scale'));
+  // Big fixed scenery (buildings, barns, the lighthouse) only changes colour or detail; the sun and moon may also change size.
+  if (FIXED.has(o.kind)) return t.filter((x) => x === 'color' || x === 'detail' || ((o.kind === 'sun' || o.kind === 'moon') && x === 'scale'));
   return t;
 }
 
@@ -90,22 +92,36 @@ function otherColor(r: R, theme: ThemeId, o: Obj): string {
   return pool[Math.floor(r() * pool.length)] ?? (o.c === '#ff5a6c' ? '#3d7bff' : '#ff5a6c');
 }
 
-/** A puzzle with exactly DIFFS differences (rare crowded pictures are regenerated from a derived seed). */
-export function makePuzzle(seed: number, difficulty: number, theme?: ThemeId): Puzzle {
-  let p = buildPuzzle(seed, difficulty, theme);
-  for (let k = 1; p.diffs.length < DIFFS && k < 20; k++) p = buildPuzzle((seed + k * 0x9e3779b9) >>> 0, difficulty, theme);
+/**
+ * A puzzle with exactly DIFFS differences (rare crowded pictures are regenerated from a derived seed).
+ * `classic` rebuilds a puzzle exactly as the first published dailies made it (five themes, old shuffle).
+ */
+export function makePuzzle(seed: number, difficulty: number, theme?: ThemeId, classic = false): Puzzle {
+  let p = buildPuzzle(seed, difficulty, theme, classic);
+  for (let k = 1; p.diffs.length < DIFFS && k < 20; k++) p = buildPuzzle((seed + k * 0x9e3779b9) >>> 0, difficulty, theme, classic);
   return { ...p, seed };
 }
 
-function buildPuzzle(seed: number, difficulty: number, theme?: ThemeId): Puzzle {
+/** Fisher-Yates (a random sort comparator shuffles differently in each browser, which would split the daily). */
+function shuffled<T>(list: readonly T[], r: () => number): T[] {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(r() * (i + 1));
+    [a[i], a[j]] = [a[j]!, a[i]!];
+  }
+  return a;
+}
+
+function buildPuzzle(seed: number, difficulty: number, theme?: ThemeId, classic = false): Puzzle {
   const r = rng(seed);
-  const th = theme ?? THEME_IDS[Math.floor(r() * THEME_IDS.length)]!;
+  const pool = classic ? CLASSIC_THEMES : THEME_IDS;
+  const th = theme ?? pool[Math.floor(r() * pool.length)]!;
   const left = makeScene(Math.floor(r() * 2 ** 32), th, difficulty / 2);
   const right: Scene = { ...left, objects: left.objects.map((o) => ({ ...o })) };
   const diffs: Diff[] = [];
   const used: Spot[] = [];
   const far = (x: number, y: number, rad: number): boolean => used.every((u) => Math.hypot(u.x - x, u.y - y) > u.r + rad + 8) && x > 8 && x < W - 8 && y > 8 && y < H - 8;
-  const candidates = [...right.objects].sort(() => r() - 0.5);
+  const candidates = classic ? [...right.objects].sort(() => r() - 0.5) : shuffled(right.objects, r);
   let nextId = Math.max(...left.objects.map((o) => o.id)) + 1;
 
   // Usually one difference is an object that only exists in one picture.

@@ -31,6 +31,10 @@ export interface Env {
   /** Secrets for the admin usage panel: an API token with Account Analytics Read, and the account id. */
   CF_API_TOKEN?: string;
   CF_ACCOUNT_ID?: string;
+  /** Secret: a GitHub token with Issues read/write, so bug reports and crashes open issues (#7). */
+  GITHUB_TOKEN?: string;
+  /** owner/name of the issues board (default gtrick33/WebGames). */
+  GITHUB_REPO?: string;
   /** Local development only (set in .dev.vars). */
   DEV_LOGIN?: string;
 }

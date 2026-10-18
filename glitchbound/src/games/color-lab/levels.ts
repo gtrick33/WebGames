@@ -9,7 +9,10 @@ import { doneTubes, isSolved, solveBest, type Board } from './sort';
 export const EPOCH = '2026-10-18';
 export const DAILY_LEVELS = 5;
 /** Colours available (see Game.css for their swatches and patterns). */
-export const COLOR_COUNT = 12;
+export const COLOR_COUNT = 16;
+/** Dailies up to this day were published with the first 12 colours and one fixed recipe; they stay as they were. */
+export const CLASSIC_UNTIL = '2026-10-18';
+const CLASSIC_COLORS = 12;
 
 /** Small, fast, seedable PRNG (mulberry32). Floats in [0, 1). */
 export function rng(seed: number): () => number {
@@ -60,8 +63,31 @@ export function specFor(step: number, r: R): LevelSpec {
     { colors: 9, cap: 4, empty: 2, odd: false },
   ];
   if (step < ladder.length) return ladder[step]!;
-  return { colors: Math.min(COLOR_COUNT, 9 + Math.floor((step - ladder.length) / 3)), cap: 4 + (step % 4 === 3 ? 1 : 0), empty: 2, odd: false };
+  // Past the ladder: more colours every few levels, with the tube height and shapes varying so the
+  // long run never settles into one pattern.
+  const k = step - ladder.length;
+  const shape = k % 5;
+  return {
+    colors: Math.min(COLOR_COUNT, 9 + Math.floor(k / 3) - (shape === 2 ? 2 : 0)),
+    cap: shape === 2 ? 5 : shape === 4 ? 3 : 4,
+    empty: 2,
+    odd: shape === 1 || (shape === 3 && r() < 0.5),
+  };
 }
+
+/**
+ * The daily's last two levels change recipe from day to day (after CLASSIC_UNTIL): short tall tubes,
+ * odd shapes, many colours in short tubes... The first three stay a gentle warm-up.
+ */
+const DAILY_TWISTS: LevelSpec[] = [
+  { colors: 6, cap: 4, empty: 2, odd: false },
+  { colors: 5, cap: 5, empty: 2, odd: false },
+  { colors: 6, cap: 4, empty: 2, odd: true },
+  { colors: 8, cap: 3, empty: 2, odd: false },
+  { colors: 7, cap: 4, empty: 2, odd: false },
+  { colors: 5, cap: 4, empty: 2, odd: true },
+  { colors: 6, cap: 5, empty: 2, odd: false },
+];
 
 const shuffle = <T>(a: T[], r: R): T[] => {
   for (let i = a.length - 1; i > 0; i--) {
@@ -110,11 +136,11 @@ function boring(b: Board): boolean {
   return isSolved(b) || doneTubes(b).some(Boolean) || b.some((t) => t.layers.length > 1 && t.layers.every((c) => c === t.layers[0]) && t.layers.length >= t.cap - 1);
 }
 
-export function makeLevel(r: R, spec: LevelSpec, mystery = false): Level {
+export function makeLevel(r: R, spec: LevelSpec, mystery = false, colorCount = COLOR_COUNT): Level {
   let fallback: Level | null = null;
   for (let attempt = 0; attempt < 12; attempt++) {
     const board = spec.odd ? oddBoard(spec, r) : classicBoard(spec, r);
-    const palette = shuffle(Array.from({ length: COLOR_COUNT }, (_, i) => i), r).slice(0, spec.colors);
+    const palette = shuffle(Array.from({ length: colorCount }, (_, i) => i), r).slice(0, spec.colors);
     if (boring(board)) continue;
     const sol = solveBest(board, spec.colors <= 4 ? 40_000 : 12_000);
     if (!sol || sol.moves.length < spec.colors) continue;
@@ -125,14 +151,17 @@ export function makeLevel(r: R, spec: LevelSpec, mystery = false): Level {
   }
   if (fallback) return fallback;
   // Practically unreachable: retry with an extra spare tube, which always makes it solvable.
-  return makeLevel(r, { ...spec, empty: spec.empty + 1, odd: false }, mystery);
+  return makeLevel(r, { ...spec, empty: spec.empty + 1, odd: false }, mystery, colorCount);
 }
 
 /** Daily level `index` (0-4). Every third day the last level is a mystery level. */
 export function dailyLevel(day: string, index: number): Level {
   const r = rng(hashString(`color-lab:${day}:${index}`));
   const mystery = index === DAILY_LEVELS - 1 && hashString(`color-lab:${day}`) % 3 === 0;
-  return makeLevel(r, specFor([0, 1, 2, 4, 5][index] ?? index, r), mystery);
+  if (day <= CLASSIC_UNTIL) return makeLevel(r, specFor([0, 1, 2, 4, 5][index] ?? index, r), mystery, CLASSIC_COLORS);
+  const twist = (k: number): LevelSpec => DAILY_TWISTS[(hashString(`color-lab:twist:${day}`) + k * 3) % DAILY_TWISTS.length]!;
+  const spec = index >= 3 ? twist(index - 3) : specFor([0, 1, 2][index] ?? index, r);
+  return makeLevel(r, spec, mystery);
 }
 
 /** Endless / Precision level at a step of the ladder; from step 6, every fourth level is a mystery. */

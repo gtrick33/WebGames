@@ -788,7 +788,7 @@ function tubeLabel(s: LevelState, i: number, done: boolean): string {
   return `Tube ${i + 1}${done ? ', complete' : ''}: ${shown.join(', ')} (bottom to top), ${t.layers.length} of ${t.cap}`;
 }
 
-const COLOR_NAMES = ['red', 'yellow', 'green', 'blue', 'pink', 'purple', 'orange', 'sky blue', 'lime', 'brown', 'teal', 'white'];
+const COLOR_NAMES = ['red', 'yellow', 'green', 'blue', 'pink', 'purple', 'orange', 'sky blue', 'lime', 'brown', 'teal', 'white', 'charcoal', 'maroon', 'lavender', 'gold'];
 
 function LevelDone({ run, state, onNext }: { run: Run; state: LevelState; onNext: () => void }) {
   const r = resultOf(state);

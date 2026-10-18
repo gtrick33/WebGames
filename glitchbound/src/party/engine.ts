@@ -169,21 +169,48 @@ export function filterContent<T extends { intensity?: Intensity; tags?: string[]
 }
 
 /**
- * Draws the next item that has not been used this session. When everything was used, the deck
- * reshuffles, still avoiding the most recent quarter so repeats are never back to back.
+ * How often each intensity comes up. Choosing a hotter level means the deck is mostly that level:
+ * milder cards still appear now and then for pacing, but rarely.
  */
-export function draw<T extends { id: string }>(items: readonly T[], used: readonly string[], r: Rng): { item: T | null; used: string[] } {
+export function intensityWeights(s: Pick<PartySettings, 'intensities' | 'adultConfirmed'>): Record<Intensity, number> {
+  const ok = allowedIntensities(s);
+  const top = ok.includes('afterdark') ? 'afterdark' : ok.includes('spicy') ? 'spicy' : 'casual';
+  if (top === 'afterdark') return { afterdark: 1, spicy: 0.2, casual: 0.04 };
+  if (top === 'spicy') return { afterdark: 0, spicy: 1, casual: 0.07 };
+  return { afterdark: 0, spicy: 0, casual: 1 };
+}
+
+/**
+ * Draws the next item that has not been used this session. When everything was used, the deck
+ * reshuffles, still avoiding the most recent quarter so repeats are never back to back. An optional
+ * weight makes some items come up more often (weights <= 0 count as tiny, never impossible).
+ */
+export function draw<T extends { id: string }>(items: readonly T[], used: readonly string[], r: Rng, weight?: (it: T) => number): { item: T | null; used: string[] } {
   if (!items.length) return { item: null, used: [...used] };
   const usedSet = new Set(used);
   let pool = items.filter((it) => !usedSet.has(it.id));
   let base = [...used];
-  if (!pool.length) {
+  // Weighted decks reshuffle once most of their weight is used up, so a long After Dark session
+  // doesn't end up dealing only the milder leftovers.
+  const mass = (list: readonly T[]): number => (weight ? list.reduce((a, it) => a + Math.max(1e-4, weight(it)), 0) : list.length);
+  if (!pool.length || (weight && mass(pool) < mass(items) * 0.2)) {
     const recent = new Set(used.slice(-Math.max(1, Math.floor(items.length / 4))));
     pool = items.filter((it) => !recent.has(it.id));
     base = used.slice(-Math.max(1, Math.floor(items.length / 4)));
     if (!pool.length) pool = [...items];
   }
-  const item = pool[Math.floor(r() * pool.length)]!;
+  let item = pool[Math.floor(r() * pool.length)]!;
+  if (weight) {
+    const ws = pool.map((it) => Math.max(1e-4, weight(it)));
+    let x = r() * ws.reduce((a, w) => a + w, 0);
+    for (let i = 0; i < pool.length; i++) {
+      x -= ws[i]!;
+      if (x <= 0) {
+        item = pool[i]!;
+        break;
+      }
+    }
+  }
   return { item, used: [...base, item.id] };
 }
 

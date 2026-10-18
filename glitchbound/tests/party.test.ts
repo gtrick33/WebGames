@@ -3,10 +3,10 @@ import { canBid, minBid, reduceAuction, startAuction, summaries, auctionAwards, 
 import { boardAwards, currentPlayer, makeBoard, reduceBoard, standings, startBoard, BOARD_LENGTH, type Tile } from '../src/party/board';
 import { AUCTION_ITEMS } from '../src/party/content/auction';
 import { CHALLENGES } from '../src/party/content/challenges';
-import { CHARADES } from '../src/party/content/charades';
+import { CHARADES, CHARADES_CATEGORIES } from '../src/party/content/charades';
 import { NHIE } from '../src/party/content/nhie';
 import { TRIVIA } from '../src/party/content/trivia';
-import { allowedIntensities, consequenceText, draw, fillChallenge, filterContent, makePlayer, pickPlayers, playersProblem, rng } from '../src/party/engine';
+import { allowedIntensities, consequenceText, draw, fillChallenge, filterContent, intensityWeights, makePlayer, pickPlayers, playersProblem, rng } from '../src/party/engine';
 import { emptySession, sanitizeSession } from '../src/party/session';
 
 const players = ['Ana', 'Bo', 'Cy', 'Di'].map((n, i) => makePlayer(n, i, `id${i}`));
@@ -214,5 +214,48 @@ describe('session recovery', () => {
     expect(s.settings.intensities).toEqual(['afterdark']);
     expect(s.settings.adultConfirmed).toBe(false);
     expect(s.scores).toEqual({ x: 3 });
+  });
+});
+
+describe('hotter levels mostly deal their own cards', () => {
+  const share = (intensities: ('casual' | 'spicy' | 'afterdark')[], level: string): number => {
+    const settings = { intensities, adultConfirmed: true, excludedTags: [] as string[] };
+    const deck = filterContent(CHALLENGES, settings);
+    const w = intensityWeights(settings);
+    const r = rng(11);
+    let used: string[] = [];
+    let hits = 0;
+    const N = 400;
+    for (let i = 0; i < N; i++) {
+      const d = draw(deck, used, r, (c) => w[c.intensity]);
+      used = d.used;
+      if (d.item!.intensity === level) hits++;
+    }
+    return hits / N;
+  };
+
+  it('After Dark is mostly After Dark, with only a sprinkle of casual cards', () => {
+    expect(share(['casual', 'spicy', 'afterdark'], 'afterdark')).toBeGreaterThan(0.65);
+    expect(share(['casual', 'spicy', 'afterdark'], 'casual')).toBeLessThan(0.08);
+  });
+
+  it('Spicy is mostly Spicy', () => {
+    expect(share(['casual', 'spicy'], 'spicy')).toBeGreaterThan(0.8);
+  });
+
+  it('casual-only stays casual and After Dark needs the adult confirmation', () => {
+    expect(share(['casual'], 'casual')).toBe(1);
+    expect(intensityWeights({ intensities: ['casual', 'afterdark'], adultConfirmed: false }).afterdark).toBe(0);
+  });
+
+  it('has plenty of new cards per level and 18+ charades are marked adult', () => {
+    const by = (lvl: string) => CHALLENGES.filter((c) => c.intensity === lvl).length;
+    expect(by('spicy')).toBeGreaterThan(120);
+    expect(by('afterdark')).toBeGreaterThan(150);
+    expect(NHIE.filter((n) => n.category === 'adults').length).toBeGreaterThan(80);
+    expect(CHARADES_CATEGORIES.find((c) => c.id === 'afterdark')?.adult).toBe(true);
+    expect(CHARADES.length).toBeGreaterThan(700);
+    // Every touch/kiss dare can be switched off and says skipping is fine.
+    for (const c of CHALLENGES.filter((x) => x.tags?.includes('contact'))) expect(c.note).toMatch(/skip/i);
   });
 });

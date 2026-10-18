@@ -203,6 +203,7 @@ export function BugsPanel({ data, onChange }: { data: AdminReports['bugs']; onCh
         <h2 id="bugs-admin-title">
           Bug reports · {data.open} open · {data.fixed} fixed
         </h2>
+        <span className="mono info-small">{data.github ? 'Mirrored to GitHub issues (label: bug)' : 'GitHub mirroring off (set the GITHUB_TOKEN secret)'}</span>
         <div className="seg" role="group" aria-label="Filter">
           <button className={filter === 'open' ? 'is-on' : ''} onClick={() => setFilter('open')}>
             Open
@@ -235,6 +236,13 @@ export function BugsPanel({ data, onChange }: { data: AdminReports['bugs']; onCh
                   {b.contact ? ` · ${b.contact}` : ''}
                 </p>
                 {b.note && <p className="info-small">Note: {b.note}</p>}
+                {b.issueUrl && (
+                  <p className="info-small">
+                    <a href={b.issueUrl} target="_blank" rel="noreferrer">
+                      Open the GitHub issue
+                    </a>
+                  </p>
+                )}
                 <div className="reset-row">
                   {b.status !== 'fixed' && (
                     <button className="btn btn-sm btn-primary" disabled={busy === b.id} onClick={() => void set(b.id, 'fixed', b.note)}>

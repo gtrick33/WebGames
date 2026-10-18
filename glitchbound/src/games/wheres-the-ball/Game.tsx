@@ -8,6 +8,7 @@ import {
   DAILY_LEVELS,
   dailyNumber,
   dailyScene,
+  endlessScene,
   endStats,
   giveUp,
   hint,
@@ -27,7 +28,9 @@ import {
   type LevelState,
 } from './logic';
 import { paintScene } from './paint';
-import { ENV_NAMES, H, hintBox, makeScene, rng, W } from './scene';
+import { photoCredit } from './photo';
+import { buildComposite, loadPhoto, paintComposite } from './photoPaint';
+import { ENV_NAMES, H, hintBox, rng, W, type Scene } from './scene';
 import { createSfx, type Sfx } from './sound';
 import { isComplete, loadWb, recordEndless, recordLevel, saveWb, wbStats, type WbSave } from './store';
 import './Game.css';
@@ -67,9 +70,38 @@ function useClock(running: boolean): [number, () => number] {
   return [ms, now];
 }
 
-function sceneFor(run: Run, today: string) {
-  return run.mode === 'daily' ? dailyScene(today, run.index) : makeScene((run.seed + run.index * 7919) >>> 0, run.index);
+function sceneFor(run: Run, today: string): Scene {
+  const scene = run.mode === 'daily' ? dailyScene(today, run.index) : endlessScene(run.seed, run.index);
+  // Fetch the next level's photo in the background so it opens instantly.
+  const next = run.mode === 'daily' ? (run.index + 1 < DAILY_LEVELS ? dailyScene(today, run.index + 1) : null) : endlessScene(run.seed, run.index + 1);
+  if (next?.photo) void loadPhoto(next.photo.id).catch(() => undefined);
+  return scene;
 }
+
+type Picture = { state: 'none' } | { state: 'loading' } | { state: 'error'; retry: () => void } | { state: 'ready'; composite: HTMLCanvasElement };
+
+/** The prepared photo (with its ball) for a photo level; drawn levels need none. */
+function usePicture(scene: Scene | null): Picture {
+  const photo = scene?.photo ? scene : null;
+  const [attempt, setAttempt] = useState(0);
+  const [built, setBuilt] = useState<{ scene: Scene; composite: HTMLCanvasElement } | { scene: Scene; failed: true } | null>(null);
+  useEffect(() => {
+    if (!photo) return;
+    let live = true;
+    loadPhoto(photo.photo!.id)
+      .then((img) => live && setBuilt({ scene: photo, composite: buildComposite(img, photo) }))
+      .catch(() => live && setBuilt({ scene: photo, failed: true }));
+    return () => {
+      live = false;
+    };
+  }, [photo, attempt]);
+  if (!photo) return { state: 'none' };
+  if (!built || built.scene !== photo) return { state: 'loading' };
+  if ('failed' in built) return { state: 'error', retry: () => { setBuilt(null); setAttempt((a) => a + 1); } };
+  return { state: 'ready', composite: built.composite };
+}
+
+const placeName = (s: Scene): string => (s.photo ? s.photo.title : ENV_NAMES[s.env]);
 
 function WheresTheBall({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
   const [today] = useState(() => dayKey());
@@ -106,7 +138,10 @@ function WheresTheBall({ host, pauseKey }: { host: GameHost; pauseKey?: number }
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
-  const [clockMs, now] = useClock(!!level && level.outcome === 'play' && !paused && !hidden);
+  const picture = usePicture(level?.scene ?? null);
+  const pictureReady = picture.state === 'none' || picture.state === 'ready';
+  // The clock never runs while a photo is still loading.
+  const [clockMs, now] = useClock(!!level && level.outcome === 'play' && !paused && !hidden && pictureReady);
 
   const start = (mode: Mode): void => {
     let r: Run = { mode, index: 0, results: [], lives: LIVES, over: false, seed: Math.floor(Math.random() * 2 ** 32) };
@@ -170,6 +205,7 @@ function WheresTheBall({ host, pauseKey }: { host: GameHost; pauseKey?: number }
           today={today}
           clockMs={clockMs}
           paused={paused}
+          picture={picture}
           onResume={() => setPaused(false)}
           onAim={(x, y) => {
             setLevel(aim(level, x, y));
@@ -326,6 +362,7 @@ function Play(props: {
   today: string;
   clockMs: number;
   paused: boolean;
+  picture: Picture;
   onResume: () => void;
   onAim: (x: number, y: number) => void;
   onConfirm: (slop: number) => void;
@@ -348,12 +385,14 @@ function Play(props: {
     const el = wrap.current;
     const c = canvas.current;
     if (!el || !c) return;
-    const paint = (): void => paintScene(c, scene, el.clientWidth);
+    const composite = props.picture.state === 'ready' ? props.picture.composite : null;
+    if (scene.photo && !composite) return;
+    const paint = (): void => (composite ? paintComposite(c, composite, el.clientWidth) : paintScene(c, scene, el.clientWidth));
     paint();
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(paint) : null;
     ro?.observe(el);
     return () => ro?.disconnect();
-  }, [scene, zoom]);
+  }, [scene, zoom, props.picture]);
 
   // Zooming keeps the aim (or the middle) in view.
   const setZoomKeep = (z: number): void => {
@@ -376,6 +415,7 @@ function Play(props: {
     const d = down.current;
     down.current = null;
     if (!d || d.id !== e.pointerId || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10 || level.outcome !== 'play' || props.paused) return;
+    if (props.picture.state === 'loading' || props.picture.state === 'error') return;
     const rect = wrap.current!.getBoundingClientRect();
     lastType.current = d.type;
     props.onAim(((e.clientX - rect.left) / rect.width) * W, ((e.clientY - rect.top) / rect.height) * H);
@@ -419,7 +459,7 @@ function Play(props: {
           ←
         </button>
         <span className="wb-kicker">
-          {label} · {ENV_NAMES[scene.env]}
+          {label} · {placeName(scene)}
         </span>
         <span className="wb-tries" aria-label={`${TRIES - level.wrong.length} tries left`}>
           {Array.from({ length: TRIES }, (_, i) => (
@@ -432,7 +472,16 @@ function Play(props: {
 
       <div className="wb-view" ref={view}>
         <div className="wb-wrap" ref={wrap} style={{ width: `${ZOOMS[zoom]! * 100}%` }} onPointerDown={onDown} onPointerUp={onUp} onPointerCancel={() => (down.current = null)}>
-          <canvas ref={canvas} role="img" aria-label={`${ENV_NAMES[scene.env]}: find the tennis ball`} />
+          <canvas ref={canvas} role="img" aria-label={`${placeName(scene)}: find the tennis ball`} />
+          {props.picture.state === 'loading' && <div className="wb-developing">Developing the photo…</div>}
+          {props.picture.state === 'error' && (
+            <div className="wb-developing">
+              <p>The photo didn’t load. Check your connection.</p>
+              <button className="wb-btn" onClick={props.picture.retry}>
+                Try again
+              </button>
+            </div>
+          )}
           <svg viewBox={`0 0 ${W} ${H}`} className="wb-overlay" aria-hidden="true">
             {hints.map((b, i) => (
               <rect key={i} className="wb-hint" x={b.x} y={b.y} width={b.w} height={b.h} rx={18} />
@@ -499,6 +548,7 @@ function Play(props: {
           <p className="wb-done-score">
             <b className="wb-mono">+{fmt(res!.score)}</b>
           </p>
+          {scene.photo && <PhotoCredit id={scene.photo.id} />}
           <button className="wb-btn wb-btn-go wb-btn-big" onClick={props.onNext} autoFocus>
             {run.over ? 'See results' : 'Next shot →'}
           </button>
@@ -543,5 +593,17 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
         </button>
       </div>
     </div>
+  );
+}
+
+function PhotoCredit({ id }: { id: string }) {
+  const c = photoCredit(id);
+  if (!c) return null;
+  return (
+    <p className="wb-credit">
+      <a href={c.source} target="_blank" rel="noreferrer">
+        {c.text}
+      </a>
+    </p>
   );
 }

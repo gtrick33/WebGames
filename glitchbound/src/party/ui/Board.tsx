@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { boardAwards, currentPlayer, makeBoard, reduceBoard, rollDie, standings, startBoard, TILE_INFO, type BoardAction, type BoardSize, type BoardState } from '../board';
 import { CHALLENGES } from '../content/challenges';
 import { TRIVIA } from '../content/trivia';
-import { draw, filterContent, freshRng, shuffle } from '../engine';
+import { draw, filterContent, freshRng, intensityWeights, shuffle } from '../engine';
 import type { PartySession } from '../session';
 import type { Challenge, Player } from '../types';
 import { MiniGame, MINIS, type MiniId } from './minis';
@@ -199,7 +199,8 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
     const kinds = tile.kind === 'card' ? ['truth', 'dare', 'challenge'] : tile.kind === 'group' ? ['group', 'vote'] : tile.kind === 'duel' ? ['duel'] : [];
     if (!kinds.length) return null;
     const pool = filterContent(CHALLENGES, session.settings).filter((c) => kinds.includes(c.kind) && c.target !== 'teams');
-    return draw(pool, [], r).item;
+    const w = intensityWeights(session.settings);
+    return draw(pool, [], r, (c) => w[c.intensity]).item;
   }, [tile.kind, session.settings, r]);
   const text = card?.text.replace(/\{A\}/g, me.name).replace(/\{B\}/g, opponent.name).replace(/\{TEAM1\}|\{TEAM2\}/g, 'everyone');
   const trivia = useMemo(() => (tile.kind === 'trivia' ? TRIVIA[Math.floor(r() * TRIVIA.length)]! : null), [tile.kind, r]);

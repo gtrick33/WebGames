@@ -1,4 +1,5 @@
 import type { AdminReports } from '../../../src/platform/apiTypes';
+import { githubEnabled, issueUrl } from '../../../server/github';
 import { json, type Ctx } from '../../../server/http';
 import { requireAdmin } from '../../../server/session';
 
@@ -16,8 +17,8 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
       `SELECT f.ts, f.stars, f.message, f.game, f.wish, f.browser, u.nickname FROM feedback f LEFT JOIN users u ON u.id = f.user_id
        WHERE f.message != '' ORDER BY f.ts DESC LIMIT 40`,
     ),
-    q<{ id: number; ts: number; title: string; description: string; game: string; category: string; severity: string; device: string; page: string; contact: string; status: string; admin_note: string; nickname: string | null }>(
-      `SELECT b.id, b.ts, b.title, b.description, b.game, b.category, b.severity, b.device, b.page, b.contact, b.status, b.admin_note, u.nickname
+    q<{ id: number; ts: number; title: string; description: string; game: string; category: string; severity: string; device: string; page: string; contact: string; status: string; admin_note: string; github_issue: number | null; nickname: string | null }>(
+      `SELECT b.id, b.ts, b.title, b.description, b.game, b.category, b.severity, b.device, b.page, b.contact, b.status, b.admin_note, b.github_issue, u.nickname
        FROM bug_reports b LEFT JOIN users u ON u.id = b.user_id
        ORDER BY CASE b.status WHEN 'open' THEN 0 ELSE 1 END, CASE b.severity WHEN 'blocker' THEN 0 WHEN 'annoying' THEN 1 ELSE 2 END, b.ts DESC LIMIT 100`,
     ),
@@ -37,7 +38,8 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
       open: counts.find((c) => c.status === 'open')?.n ?? 0,
       fixed: counts.find((c) => c.status === 'fixed')?.n ?? 0,
       wontfix: counts.find((c) => c.status === 'wontfix')?.n ?? 0,
-      list: bugs.map((b) => ({ ...b, note: b.admin_note })),
+      github: githubEnabled(env),
+      list: bugs.map(({ admin_note, github_issue, ...b }) => ({ ...b, note: admin_note, issueUrl: github_issue ? issueUrl(env, github_issue) : null })),
     },
   };
   return json(out);

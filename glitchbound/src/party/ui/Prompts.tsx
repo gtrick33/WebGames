@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CHALLENGES } from '../content/challenges';
-import { consequenceText, draw, fillChallenge, filterContent, freshRng, noteParticipation, type Rng } from '../engine';
+import { consequenceText, draw, fillChallenge, filterContent, freshRng, intensityWeights, noteParticipation, type Rng } from '../engine';
 import type { PartySession } from '../session';
 import type { Challenge, ChallengeKind, Player } from '../types';
 import { ModeBar, Name, PlayerPicker, Results, Timer } from './shared';
@@ -34,7 +34,9 @@ export function promptDeck(s: PartySession): Challenge[] {
 /** Deals the next card into the session (pure apart from the random source). */
 export function dealPrompt(s: PartySession, r: Rng): PartySession {
   const st = s.active?.mode === 'prompts' ? s.active : { mode: 'prompts' as const, count: 0, limit: 30 };
-  const d = draw(promptDeck(s), s.used.challenges ?? [], r);
+  const w = intensityWeights(s.settings);
+  // The group's own cards always come up at full rate.
+  const d = draw(promptDeck(s), s.used.challenges ?? [], r, (c) => (c.id.startsWith('custom-') ? 1 : w[c.intensity]));
   if (!d.item) return { ...s, active: { ...st, card: undefined } };
   const f = fillChallenge(d.item, s.players, { part: s.part, scores: s.scores, r, avoid: st.card?.players[0] });
   const card = { c: d.item, text: f.text, players: f.players.map((p) => p.id), teams: f.teams ? ([f.teams[0].map((p) => p.id), f.teams[1].map((p) => p.id)] as [string[], string[]]) : undefined };

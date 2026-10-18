@@ -105,8 +105,11 @@ export function resultOf(s: PictureState): PictureResult {
 
 /* ------------------------------------------------------------------ daily */
 
+/** Dailies up to this day were published with the first five themes; they are rebuilt exactly. */
+export const CLASSIC_UNTIL = '2026-10-18';
+
 export function dailyPuzzle(day: string, index: number): Puzzle {
-  return makePuzzle(hashString(`spot-the-glitch:${day}:${index}`), Math.min(2, index));
+  return makePuzzle(hashString(`spot-the-glitch:${day}:${index}`), Math.min(2, index), undefined, day <= CLASSIC_UNTIL);
 }
 
 export function dailyNumber(day: string): number {

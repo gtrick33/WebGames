@@ -13,8 +13,9 @@ import {
   tap,
   timePenalty,
 } from '../src/games/spot-the-glitch/logic';
-import { H, makeScene, THEME_IDS, W } from '../src/games/spot-the-glitch/scene';
+import { CLASSIC_THEMES, H, makeScene, THEME_IDS, W } from '../src/games/spot-the-glitch/scene';
 import { emptySgSave, recordPicture, sanitizeSg, sgStats } from '../src/games/spot-the-glitch/store';
+import { addDays } from '../src/platform/dates';
 
 describe('pictures and differences', () => {
   it('generates the same picture from the same seed', () => {
@@ -44,6 +45,35 @@ describe('pictures and differences', () => {
         }),
       );
     }
+  });
+
+  it('gives every theme, at every difficulty, five separate differences', () => {
+    for (const th of THEME_IDS)
+      for (let seed = 1; seed < 40; seed++) {
+        const p = makePuzzle(seed * 7919, seed % 3, th);
+        expect(p.diffs.length, th).toBe(DIFFS);
+        expect(p.left.theme).toBe(th);
+        const spots = p.diffs.flatMap((d) => d.spots);
+        for (const s of spots) {
+          expect(s.x).toBeGreaterThan(0);
+          expect(s.x).toBeLessThan(W);
+          expect(s.y).toBeGreaterThan(0);
+          expect(s.y).toBeLessThan(H);
+        }
+        p.diffs.forEach((a, i) =>
+          p.diffs.forEach((b, j) => {
+            if (i >= j) return;
+            for (const s of a.spots) for (const t of b.spots) expect(Math.hypot(s.x - t.x, s.y - t.y)).toBeGreaterThan(s.r + t.r);
+          }),
+        );
+      }
+    expect(THEME_IDS.length).toBeGreaterThanOrEqual(13);
+  });
+
+  it('keeps the first published dailies on the classic themes', () => {
+    for (let i = 0; i < 3; i++) expect(CLASSIC_THEMES).toContain(dailyPuzzle('2026-10-18', i).left.theme);
+    const later = new Set(Array.from({ length: 90 }, (_, d) => dailyPuzzle(addDays('2026-10-19', Math.floor(d / 3)), d % 3).left.theme));
+    expect(later.size).toBeGreaterThan(8);
   });
 
   it('really changes the picture', () => {

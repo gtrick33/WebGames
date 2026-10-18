@@ -2,6 +2,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import { GAME_MODULES } from '../catalog/modules';
 import type { GameEntry } from '../catalog/types';
 import { parseGameMessage, type GameEvent, type GameModuleProps } from '../platform/contract';
+import { reportError, setActiveGame } from '../platform/analytics';
+import { markPlaying } from '../platform/hooks';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Icon } from './Icon';
 import './GameStage.css';
@@ -104,6 +106,18 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
     if (pauseSignal > 0) postToGame(iframeRef.current, game, { type: 'pause' });
   }, [pauseSignal, game, iframeRef]);
 
+  // While a game runs, page clocks (countdowns, quest timers) stop re-rendering around it.
+  // Script errors meanwhile are reported against this game.
+  useEffect(() => {
+    if (phase !== 'ready') return;
+    const unmark = markPlaying();
+    const unset = setActiveGame(game.slug);
+    return () => {
+      unmark();
+      unset();
+    };
+  }, [phase, game.slug]);
+
   // Pause the game (and its sound) when it is scrolled mostly out of view.
   useEffect(() => {
     const el = stageRef.current;
@@ -166,7 +180,15 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
       )}
 
       {game.runtime.kind === 'module' && phase === 'ready' && Module && (
-        <ErrorBoundary key={attempt} onError={() => setPhase('error')} fallback={() => null}>
+        <ErrorBoundary
+          key={attempt}
+          onError={(e) => {
+            // A crash mid-game goes to the issues board with its stack (issue #7).
+            reportError('game_crash', e.message || String(e), game.slug, e.stack);
+            setPhase('error');
+          }}
+          fallback={() => null}
+        >
           <Suspense fallback={<StageLoading title={game.title} />}>
             <div className="stage-module">
               <Module host={host} restartKey={attempt} pauseKey={pauseKey} />

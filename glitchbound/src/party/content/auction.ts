@@ -70,6 +70,42 @@ const THEMES: Record<AuctionTheme, Row[]> = {
     ['Mini Cooper', 1, '🚙', 'city'], ['VW Camper van', 1, '🚐', 'classic'], ['Aston Martin', 2, '🚗', 'classic'], ['McLaren', 2, '🏎️', 'supercar'], ['Ford Mustang', 2, '🐎', 'muscle'],
     ['Jeep', 1, '🚙', 'offroad'], ['Batmobile', 3, '🦇', 'fiction'], ['DeLorean', 2, '⏱️', 'fiction'], ['Monster truck', 1, '🛻', 'offroad'], ['Vespa', 1, '🛵', 'city'],
   ],
+  music: [
+    ['Michael Jackson', 3, '🕺', 'pop'], ['Beyoncé', 3, '🐝', 'pop'], ['Freddie Mercury', 3, '👑', 'rock'], ['Taylor Swift', 3, '🎤', 'pop'], ['Elvis Presley', 2, '🎸', 'rock'],
+    ['Madonna', 2, '💃', 'pop'], ['Bob Marley', 2, '🌿', 'reggae'], ['Eminem', 2, '🎙️', 'rap'], ['Rihanna', 2, '☂️', 'pop'], ['Ed Sheeran', 1, '🎸', 'pop'],
+    ['Billie Eilish', 2, '🖤', 'pop'], ['Bruno Mars', 2, '🎶', 'pop'], ['The Beatles', 3, '🪲', 'rock'], ['Adele', 2, '🎹', 'ballad'], ['Snoop Dogg', 1, '🐶', 'rap'],
+    ['Lady Gaga', 2, '⚡', 'pop'], ['Bad Bunny', 2, '🐰', 'latin'], ['Daft Punk', 2, '🤖', 'electronic'], ['Mozart', 1, '🎼', 'classical'], ['BTS', 2, '💜', 'pop'],
+  ],
+  history: [
+    ['Cleopatra', 3, '👑', 'ruler'], ['Julius Caesar', 2, '🏛️', 'ruler'], ['Napoleon', 2, '🎩', 'ruler'], ['Leonardo da Vinci', 3, '🎨', 'genius'], ['Albert Einstein', 3, '🧠', 'genius'],
+    ['Marie Curie', 2, '⚗️', 'genius'], ['Genghis Khan', 2, '🏹', 'ruler'], ['Joan of Arc', 2, '⚔️', 'warrior'], ['Nikola Tesla', 2, '⚡', 'genius'], ['Alexander the Great', 2, '🐎', 'ruler'],
+    ['Shakespeare', 1, '🪶', 'artist'], ['Isaac Newton', 2, '🍎', 'genius'], ['Amelia Earhart', 1, '✈️', 'explorer'], ['Christopher Columbus', 1, '⛵', 'explorer'], ['Queen Elizabeth I', 1, '👸', 'ruler'],
+    ['Spartacus', 1, '🛡️', 'warrior'], ['Houdini', 1, '🔗', 'artist'], ['Frida Kahlo', 1, '🌺', 'artist'], ['Neil Armstrong', 2, '🚀', 'explorer'], ['Ada Lovelace', 1, '💻', 'genius'],
+  ],
+  myths: [
+    ['Zeus', 3, '⚡', 'god'], ['Thor (the god)', 2, '🔨', 'god'], ['Odin', 2, '👁️', 'god'], ['Poseidon', 2, '🔱', 'god'], ['Hades', 2, '💀', 'god'],
+    ['Athena', 2, '🦉', 'god'], ['Medusa', 2, '🐍', 'monster'], ['Hercules', 2, '💪', 'hero'], ['Anubis', 2, '🐺', 'god'], ['Ra', 1, '☀️', 'god'],
+    ['The Phoenix', 3, '🔥', 'creature'], ['Kraken', 2, '🐙', 'monster'], ['Minotaur', 1, '🐂', 'monster'], ['Pegasus', 2, '🦄', 'creature'], ['Cerberus', 1, '🐕', 'monster'],
+    ['Achilles', 1, '🛡️', 'hero'], ['King Arthur', 1, '🗡️', 'hero'], ['Merlin', 2, '🧙', 'magic'], ['Loki (the god)', 2, '🃏', 'trickster'], ['Aphrodite', 2, '💘', 'god'],
+  ],
+  powers: [
+    ['Teleportation', 3, '🌀', 'travel'], ['Flight', 3, '🕊️', 'travel'], ['Invisibility', 2, '👻', 'stealth'], ['Mind reading', 3, '🧠', 'mind'], ['Time travel', 3, '⏳', 'time'],
+    ['Super strength', 2, '💪', 'body'], ['Healing touch', 2, '💖', 'body'], ['Talking to animals', 1, '🐾', 'mind'], ['Shape-shifting', 2, '🦎', 'body'], ['Stopping time', 3, '⏸️', 'time'],
+    ['Never needing sleep', 2, '😴', 'body'], ['Perfect memory', 1, '📚', 'mind'], ['Breathing underwater', 1, '🫧', 'body'], ['Super speed', 2, '⚡', 'travel'], ['Controlling the weather', 2, '🌦️', 'nature'],
+    ['Speaking every language', 2, '🗣️', 'mind'], ['Luck that never runs out', 2, '🍀', 'fate'], ['X-ray vision', 1, '👀', 'stealth'], ['Making anyone laugh', 1, '😂', 'mind'], ['Infinite snacks', 1, '🍿', 'fate'],
+  ],
+  trips: [
+    ['A month in Japan', 3, '🗾', 'city'], ['Safari in Kenya', 2, '🦁', 'nature'], ['Northern Lights in Iceland', 3, '🌌', 'nature'], ['Road trip on Route 66', 2, '🛣️', 'road'], ['Maldives overwater villa', 3, '🏝️', 'beach'],
+    ['New York for a weekend', 2, '🗽', 'city'], ['Paris with a view of the tower', 2, '🗼', 'city'], ['Space hotel night', 3, '🛰️', 'space'], ['Backpacking South America', 2, '🎒', 'adventure'], ['Ski chalet in the Alps', 2, '⛷️', 'snow'],
+    ['Greek island hopping', 2, '⛵', 'beach'], ['Machu Picchu trek', 2, '⛰️', 'adventure'], ['Las Vegas weekend', 1, '🎰', 'city'], ['Bali yoga retreat', 1, '🧘', 'beach'], ['Disney World with no queues', 2, '🏰', 'fun'],
+    ['Interrail across Europe', 1, '🚆', 'road'], ['Hot-air balloon over Cappadocia', 2, '🎈', 'adventure'], ['Camping under the stars', 1, '⛺', 'nature'], ['World Cup final ticket', 3, '🏆', 'fun'], ['Antarctica expedition', 2, '🐧', 'snow'],
+  ],
+  pets: [
+    ['Golden retriever', 2, '🦮', 'dog'], ['Corgi', 2, '🐕', 'dog'], ['Fluffy cat', 2, '🐈', 'cat'], ['Red panda', 3, '🐼', 'exotic'], ['Baby otter', 3, '🦦', 'exotic'],
+    ['Capybara', 2, '🦫', 'exotic'], ['Pygmy goat', 1, '🐐', 'farm'], ['Talking parrot', 2, '🦜', 'bird'], ['Bunny', 1, '🐇', 'small'], ['Hedgehog', 1, '🦔', 'small'],
+    ['Pet dragon', 3, '🐉', 'fiction'], ['Penguin', 2, '🐧', 'exotic'], ['Miniature pig', 1, '🐖', 'farm'], ['Husky', 2, '🐺', 'dog'], ['Axolotl', 1, '🦎', 'exotic'],
+    ['A loyal unicorn', 3, '🦄', 'fiction'], ['Hamster', 1, '🐹', 'small'], ['Sloth', 1, '🦥', 'exotic'], ['Owl', 2, '🦉', 'bird'], ['Lazy bulldog', 1, '🐶', 'dog'],
+  ],
   fantasy: [
     ['Wizard', 2, '🧙', 'magic'], ['Elf archer', 2, '🏹', 'agile'], ['Dwarf warrior', 1, '⛏️', 'strong'], ['Knight', 1, '🛡️', 'strong'], ['Mermaid', 2, '🧜', 'water'],
     ['Fairy', 1, '🧚', 'magic'], ['Vampire', 2, '🧛', 'creature'], ['Genie', 3, '🧞', 'magic'], ['Centaur', 2, '🐎', 'creature'], ['Witch', 1, '🧹', 'magic'],
@@ -94,4 +130,10 @@ export const AUCTION_THEMES: { id: AuctionTheme; label: string; emoji: string }[
   { id: 'food', label: 'Food & stuff', emoji: '🍕' },
   { id: 'cars', label: 'Dream garage', emoji: '🏎️' },
   { id: 'fantasy', label: 'Fantasy', emoji: '🧙' },
+  { id: 'music', label: 'Music legends', emoji: '🎤' },
+  { id: 'history', label: 'History icons', emoji: '🏛️' },
+  { id: 'myths', label: 'Gods & myths', emoji: '⚡' },
+  { id: 'powers', label: 'Superpowers', emoji: '🌀' },
+  { id: 'trips', label: 'Dream trips', emoji: '✈️' },
+  { id: 'pets', label: 'Dream pets', emoji: '🐶' },
 ];

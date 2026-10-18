@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
-import { drawBird, drawFrame } from './render';
+import { drawBird, drawFrame, newView } from './render';
 import { biomeFor, flap, medalFor, newSim, runPoints, step, STEP, type Medal, type Sim } from './sim';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
@@ -70,6 +70,7 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
   const [screen, setScreen] = useState<'menu' | 'play'>('menu');
   const [mode, setMode] = useState<Mode>('daily');
   const [hud, setHud] = useState({ score: 0, feathers: 0, dead: false, started: false, biome: 'meadow' });
+  const hudRef = useRef(hud);
   const [paused, setPaused] = useState(false);
   const [result, setResult] = useState<{ points: number; pillars: number; feathers: number; medal: Medal; newBest: boolean } | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -92,7 +93,9 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
     sim.current = newSim(m === 'daily' ? hashString(`wing-it:${today}`) : (Math.random() * 2 ** 32) >>> 0);
     setResult(null);
     setPaused(false);
-    setHud({ score: 0, feathers: 0, dead: false, started: false, biome: 'meadow' });
+    const fresh = { score: 0, feathers: 0, dead: false, started: false, biome: 'meadow' };
+    hudRef.current = fresh;
+    setHud(fresh);
     setScreen('play');
   };
 
@@ -120,9 +123,19 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
     [commit, host, today],
   );
 
-  // Game loop: fixed steps, drawn every frame.
+  // Game loop: fixed steps, drawn every frame between the last two steps.
   useEffect(() => {
     if (screen !== 'play') return;
+    const c0 = canvas.current;
+    if (!c0) return;
+    const view = newView();
+    // Size from a ResizeObserver: reading clientWidth in the loop would force a layout every frame.
+    const ro = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      view.cw = entry.contentRect.width;
+      view.ch = entry.contentRect.height;
+    });
+    ro.observe(c0);
     let raf = 0;
     let last = performance.now();
     let acc = 0;
@@ -130,11 +143,12 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
       const s = sim.current;
       const c = canvas.current;
       if (!s || !c) return;
-      const dt = Math.min(0.1, (now - last) / 1000);
+      const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
       if (!paused && !document.hidden) {
         acc += dt;
-        while (acc >= STEP) {
+        let steps = 0;
+        while (acc >= STEP && steps++ < 24) {
           acc -= STEP;
           const wasDead = s.dead;
           for (const e of step(s)) {
@@ -149,12 +163,22 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
           }
         }
       }
-      drawFrame(c, s, now / 1000);
-      setHud((h) => (h.score !== s.score || h.feathers !== s.feathers || h.dead !== s.dead || h.started !== s.started ? { score: s.score, feathers: s.feathers, dead: s.dead, started: s.started, biome: biomeFor(s.score) } : h));
+      if (acc > STEP) acc %= STEP;
+      drawFrame(c, view, s, now / 1000, paused ? 1 : acc / STEP);
+      // React only hears about the HUD when it changes (a score), never once per frame.
+      const h = hudRef.current;
+      if (h.score !== s.score || h.feathers !== s.feathers || h.dead !== s.dead || h.started !== s.started) {
+        const next = { score: s.score, feathers: s.feathers, dead: s.dead, started: s.started, biome: biomeFor(s.score) };
+        hudRef.current = next;
+        setHud(next);
+      }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
   }, [screen, paused, finish, sfx]);
 
   // The arcade asks for a pause (left full screen / scrolled away).

@@ -17,7 +17,7 @@ export const FREE_LIMITS = {
 };
 
 const TABLES: Record<'DB' | 'NR_DB', string[]> = {
-  DB: ['users', 'sessions', 'runs', 'bests', 'dailies', 'favorites', 'quest_claims', 'events', 'errors', 'subscribers', 'announcements', 'login_codes', 'feedback', 'bug_reports'],
+  DB: ['users', 'sessions', 'runs', 'bests', 'dailies', 'favorites', 'quest_claims', 'events', 'errors', 'subscribers', 'announcements', 'login_codes', 'feedback', 'bug_reports', 'error_issues'],
   NR_DB: ['scores', 'runs'],
 };
 

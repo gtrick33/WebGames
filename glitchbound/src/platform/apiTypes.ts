@@ -128,6 +128,8 @@ export interface AdminReports {
     open: number;
     fixed: number;
     wontfix: number;
+    /** Whether new reports and crashes are mirrored to GitHub issues (the GITHUB_TOKEN secret is set). */
+    github: boolean;
     list: {
       id: number;
       ts: number;
@@ -142,6 +144,8 @@ export interface AdminReports {
       status: string;
       note: string;
       nickname: string | null;
+      /** The GitHub issue it was filed as. */
+      issueUrl: string | null;
     }[];
   };
 }

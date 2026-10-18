@@ -1,5 +1,5 @@
 /** Canvas drawing for Wing It. Rendering only; positions come from sim.ts. */
-import { biomeFor, BIRD_R, BIRD_X, gapCentre, GROUND, H, PILLAR_W, W, type Biome, type Sim } from './sim';
+import { biomeFor, BIRD_R, BIRD_X, gapCentre, GROUND, H, PILLAR_W, STEP, W, type Biome, type Sim } from './sim';
 
 type C = CanvasRenderingContext2D;
 const INK = '#1d1238';
@@ -125,17 +125,41 @@ export function drawBird(ctx: C, x: number, y: number, vy: number, flapT: number
   ctx.restore();
 }
 
-/** Draws a frame. `t` is wall time in seconds (for idle animation). */
-export function drawFrame(canvas: HTMLCanvasElement, s: Sim, t: number): void {
-  const dpr = Math.min(2.5, window.devicePixelRatio || 1);
-  const cw = canvas.clientWidth;
-  const ch = canvas.clientHeight;
+/** Canvas size in CSS pixels, kept by a ResizeObserver so frames never read layout. */
+export interface View {
+  cw: number;
+  ch: number;
+  ctx: CanvasRenderingContext2D | null;
+  /** Sky gradient, rebuilt only when the biome or size changes. */
+  sky: CanvasGradient | null;
+  skyKey: string;
+}
+
+export const newView = (): View => ({ cw: 0, ch: 0, ctx: null, sky: null, skyKey: '' });
+
+/**
+ * Draws a frame. `t` is wall time in seconds (for idle animation); `alpha` (0-1) places the frame
+ * between the last two physics steps, so motion stays smooth whatever the display's refresh rate.
+ */
+export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: number, alpha = 1): void {
+  // A cartoon look needs no more than 2x pixels; 3x screens would triple the fill work for nothing.
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const cw = view.cw || canvas.clientWidth;
+  const ch = view.ch || canvas.clientHeight;
+  if (!cw || !ch) return;
   if (canvas.width !== Math.round(cw * dpr) || canvas.height !== Math.round(ch * dpr)) {
     canvas.width = Math.round(cw * dpr);
     canvas.height = Math.round(ch * dpr);
+    view.skyKey = '';
   }
-  const ctx = canvas.getContext('2d');
+  const ctx = (view.ctx ??= canvas.getContext('2d'));
   if (!ctx) return;
+  // Step back from the latest physics state to where the world was at this moment.
+  const back = 1 - Math.max(0, Math.min(1, alpha));
+  const dx = s.lastDx * back;
+  const dist = s.dist - dx;
+  const y = s.y - (s.y - s.prevY) * back;
+  const st = s.lastDx ? s.t - back * STEP : s.t;
   // Fit the world (W x H) to the canvas, centred; extra space shows more sky above and ground below.
   const k = Math.min((cw * dpr) / W, (ch * dpr) / H);
   const ox = (cw * dpr - W * k) / 2;
@@ -151,15 +175,20 @@ export function drawFrame(canvas: HTMLCanvasElement, s: Sim, t: number): void {
   ctx.setTransform(k, 0, 0, k, ox, oy);
   ctx.save();
 
-  const sky = ctx.createLinearGradient(0, top, 0, GROUND);
-  sky.addColorStop(0, look.sky[0]);
-  sky.addColorStop(1, look.sky[1]);
-  ctx.fillStyle = sky;
+  const skyKey = `${look.sky[0]}:${top}`;
+  if (view.skyKey !== skyKey || !view.sky) {
+    const sky = ctx.createLinearGradient(0, top, 0, GROUND);
+    sky.addColorStop(0, look.sky[0]);
+    sky.addColorStop(1, look.sky[1]);
+    view.sky = sky;
+    view.skyKey = skyKey;
+  }
+  ctx.fillStyle = view.sky;
   ctx.fillRect(left, top, fullW, GROUND - top);
   if (look.stars) {
     ctx.fillStyle = 'rgba(255,255,255,0.8)';
     for (let i = 0; i < 40; i++) {
-      const x = (((i * 97 - s.dist * 0.05) % (W + 40)) + W + 40) % (W + 40) - 20;
+      const x = (((i * 97 - dist * 0.05) % (W + 40)) + W + 40) % (W + 40) - 20;
       ctx.fillRect(x, (i * 53) % (GROUND - 120), 2, 2);
     }
   }
@@ -172,7 +201,7 @@ export function drawFrame(canvas: HTMLCanvasElement, s: Sim, t: number): void {
   // Clouds
   ctx.fillStyle = look.stars ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.85)';
   for (let i = 0; i < 4; i++) {
-    const x = ((((i * 160 - s.dist * 0.2) % (W + 160)) + W + 160) % (W + 160)) - 80;
+    const x = ((((i * 160 - dist * 0.2) % (W + 160)) + W + 160) % (W + 160)) - 80;
     const y = 70 + i * 55;
     ctx.beginPath();
     ctx.arc(x, y, 22, 0, Math.PI * 2);
@@ -180,14 +209,16 @@ export function drawFrame(canvas: HTMLCanvasElement, s: Sim, t: number): void {
     ctx.arc(x + 50, y, 20, 0, Math.PI * 2);
     ctx.fill();
   }
-  hills(ctx, s.dist * 0.25, GROUND - 90, 26, look.hills[0], 70);
-  hills(ctx, s.dist * 0.5 + 300, GROUND - 40, 18, look.hills[1], 50);
+  hills(ctx, dist * 0.25, GROUND - 90, 26, look.hills[0], 70);
+  hills(ctx, dist * 0.5 + 300, GROUND - 40, 18, look.hills[1], 50);
 
   for (const p of s.pillars) {
-    const cy = gapCentre(p, s.t);
-    pillar(ctx, p.x, top - 10, cy - p.gapH / 2 - top + 10, look.pillar, 'top');
-    pillar(ctx, p.x, cy + p.gapH / 2, GROUND - (cy + p.gapH / 2), look.pillar, 'bottom');
-    if (p.feather) feather(ctx, p.x + PILLAR_W / 2, cy, t);
+    const px = p.x + dx;
+    if (px > left + fullW || px + PILLAR_W < left) continue;
+    const cy = gapCentre(p, st);
+    pillar(ctx, px, top - 10, cy - p.gapH / 2 - top + 10, look.pillar, 'top');
+    pillar(ctx, px, cy + p.gapH / 2, GROUND - (cy + p.gapH / 2), look.pillar, 'bottom');
+    if (p.feather) feather(ctx, px + PILLAR_W / 2, cy, t);
   }
 
   // Ground with scrolling stripes.
@@ -202,7 +233,7 @@ export function drawFrame(canvas: HTMLCanvasElement, s: Sim, t: number): void {
   ctx.lineTo(left + fullW, GROUND);
   ctx.stroke();
   ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  for (let x = left - (s.dist % 28) - 28; x < left + fullW + 28; x += 28) {
+  for (let x = left - (dist % 28) - 28; x < left + fullW + 28; x += 28) {
     ctx.beginPath();
     ctx.moveTo(x, GROUND + 16);
     ctx.lineTo(x + 14, GROUND + 16);
@@ -211,6 +242,6 @@ export function drawFrame(canvas: HTMLCanvasElement, s: Sim, t: number): void {
     ctx.fill();
   }
 
-  drawBird(ctx, BIRD_X, s.y, s.started ? s.vy : 0, s.flapT, t, s.dead);
+  drawBird(ctx, BIRD_X, y, s.started ? s.vy : 0, s.flapT, t, s.dead);
   ctx.restore();
 }
