@@ -9,7 +9,10 @@ import { NotFound } from './pages/NotFound';
 import { ArcadeEntrance } from './components/Entrance';
 import { MusicControl } from './components/MusicControl';
 import { FeedbackPrompt } from './components/FeedbackPrompt';
+import { NoticeBanner } from './components/NoticeBanner';
 import { track } from './platform/analytics';
+import { useAccount } from './platform/account';
+import { useLiveCatalog } from './platform/liveCatalog';
 import { visitInfo } from './platform/visit';
 import { Link, matchRoute, useLocation } from './router/router';
 
@@ -26,6 +29,8 @@ const SignInPage = lazy(() => import('./pages/SignInPage').then((m) => ({ defaul
 function Page() {
   const { pathname } = useLocation();
   const route = matchRoute(pathname);
+  const live = useLiveCatalog();
+  const { me } = useAccount();
   switch (route.name) {
     case 'home':
       return <Home />;
@@ -46,8 +51,9 @@ function Page() {
     case 'signin':
       return <SignInPage />;
     case 'game': {
-      const game = getGame(route.slug);
-      return game ? <GamePage key={game.slug} game={game} /> : <NotFound />;
+      // Hidden games are closed to players; admins can still open them to preview.
+      const game = getGame(route.slug, live.all);
+      return game && (!live.settings(game.slug).hidden || me?.isAdmin) ? <GamePage key={game.slug} game={game} /> : <NotFound />;
     }
     default:
       return <NotFound />;
@@ -66,6 +72,7 @@ export function App() {
       </a>
       <ArcadeEntrance />
       <Header />
+      <NoticeBanner />
       <main id="main" tabIndex={-1}>
         <ErrorBoundary
           key={pathname}

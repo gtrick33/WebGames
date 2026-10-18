@@ -1,4 +1,4 @@
-import { GAMES } from '../src/catalog/games';
+import { liveRules } from './catalogSettings';
 import type { Badge, BestView, Me, QuestView } from '../src/platform/apiTypes';
 import { currentStreak } from '../src/platform/daily';
 import { levelForXp, questsForDay, xpForLevel, type QuestDef } from '../src/platform/progression';
@@ -43,7 +43,8 @@ export async function questViews(env: Env, user: UserRow, day: string): Promise<
   const claimed = new Set(claims.results.map((c) => c.quest_id));
   const hasFavorite = (fav?.n ?? 0) > 0;
   // A favorite quest stays on the board once it was picked for today, even after it is done.
-  const defs = questsForDay(user.id, day, GAMES, hasFavorite && !claimed.has('favorite'));
+  const live = await liveRules(env, day);
+  const defs = questsForDay(user.id, day, live.games, hasFavorite && !claimed.has('favorite'), live.rules);
   return defs.map((q) => {
     const progress = Math.min(q.target, questProgress(q, rounds, !!daily?.done, hasFavorite));
     return { id: q.id, label: q.label, icon: q.icon, xp: q.xp, target: q.target, progress, done: progress >= q.target, claimed: claimed.has(q.id) };

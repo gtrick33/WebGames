@@ -2,6 +2,7 @@ import { GAMES } from '../../../src/catalog/games';
 import { getGame } from '../../../src/catalog/catalog';
 import type { RunEndResult } from '../../../src/platform/apiTypes';
 import { challengeForDay, metricValue } from '../../../src/platform/daily';
+import { liveRules } from '../../../server/catalogSettings';
 import { bad, int, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { clientDay, questViews } from '../../../server/members';
 import { requireUser } from '../../../server/session';
@@ -71,7 +72,8 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
 
   // The Daily Challenge is shared with guests; members get it synced across devices.
   let dailyCompleted = false;
-  const challenge = challengeForDay(day, GAMES);
+  const { rules } = await liveRules(env, day);
+  const challenge = challengeForDay(day, GAMES, rules);
   if (challenge && challenge.game.slug === game.slug) {
     const value = metricValue(challenge.metric, { type: 'end', score, stats });
     const before = await env.DB.prepare('SELECT done FROM dailies WHERE user_id = ? AND day = ?').bind(user.id, day).first<{ done: number }>();

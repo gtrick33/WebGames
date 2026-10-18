@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GAMES } from '../catalog/games';
+import { useLiveCatalog } from '../platform/liveCatalog';
 import type { GameEntry } from '../catalog/types';
 import { track } from '../platform/analytics';
 import { dayKey, formatCountdown, msUntilMidnight } from '../platform/dates';
@@ -18,7 +18,10 @@ import './TodaysDailies.css';
  * any of them (or the arcade challenge) keeps the shared streak alive. Hidden when no released game
  * has its own daily.
  */
-export function TodaysDailies({ headingLevel = 2, games = GAMES }: { headingLevel?: 2 | 3; games?: GameEntry[] }) {
+export function TodaysDailies({ headingLevel = 2, games: given }: { headingLevel?: 2 | 3; games?: GameEntry[] }) {
+  const live = useLiveCatalog();
+  // Games an admin paused are left out of today's list.
+  const games = (given ?? live.games).filter((g) => !live.settings(g.slug).maintenance);
   const save = useSave();
   const now = useNow(1000);
   const today = dayKey(now);

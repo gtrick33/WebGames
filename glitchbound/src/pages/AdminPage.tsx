@@ -7,7 +7,9 @@ import type { AdminStats } from '../platform/apiTypes';
 import { fmt } from '../platform/daily';
 import { usePageMeta } from '../platform/meta';
 import './InfoPages.css';
+import { AdminGames } from './AdminGames';
 import { CloudPanel, ReportsPanels } from './AdminReports';
+import { Link, useLocation } from '../router/router';
 import './AdminPage.css';
 
 const when = (ms: number): string => new Date(ms).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -122,9 +124,25 @@ function Announce({ stats, onSent }: { stats: AdminStats; onSent: () => void }) 
   );
 }
 
+/** Dashboard (stats) or Games (what players see), switched with ?tab=games. */
+function AdminTabs({ tab }: { tab: 'dashboard' | 'games' }) {
+  return (
+    <nav className="seg seg-lg admin-tabs" aria-label="Admin sections">
+      <Link href="/admin" className={tab === 'dashboard' ? 'is-on' : ''} aria-current={tab === 'dashboard' ? 'page' : undefined}>
+        <Icon name="chart" size={16} /> Dashboard
+      </Link>
+      <Link href="/admin?tab=games" className={tab === 'games' ? 'is-on' : ''} aria-current={tab === 'games' ? 'page' : undefined}>
+        <Icon name="gamepad" size={16} /> Games
+      </Link>
+    </nav>
+  );
+}
+
 export function AdminPage() {
   usePageMeta({ title: 'Admin', path: '/admin' });
   const { me, status } = useAccount();
+  const { search } = useLocation();
+  const tab = new URLSearchParams(search).get('tab') === 'games' ? 'games' : 'dashboard';
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState('');
 
@@ -138,8 +156,8 @@ export function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (me?.isAdmin) load();
-  }, [me?.isAdmin, load]);
+    if (me?.isAdmin && tab === 'dashboard') load();
+  }, [me?.isAdmin, load, tab]);
 
   if (status === 'loading') return <div className="wrap info-page"><p className="info-lead">Loading…</p></div>;
   if (!me) {
@@ -163,7 +181,23 @@ export function AdminPage() {
       </div>
     );
   }
-  if (!stats) return <div className="wrap info-page"><p className="info-lead">{error ? 'Could not load stats.' : 'Loading stats…'}</p></div>;
+  if (tab === 'games') {
+    return (
+      <div className="wrap info-page admin">
+        <div className="admin-head">
+          <div>
+            <p className="eyebrow">
+              <Icon name="gamepad" size={16} /> Admin
+            </p>
+            <h1 className="info-title">Games</h1>
+          </div>
+          <AdminTabs tab="games" />
+        </div>
+        <AdminGames />
+      </div>
+    );
+  }
+  if (!stats) return <div className="wrap info-page"><AdminTabs tab="dashboard" /><p className="info-lead">{error ? 'Could not load stats.' : 'Loading stats…'}</p></div>;
 
   const week = stats.daily.slice(-7);
   const sum = (k: 'visitors' | 'returning' | 'dailyPlayers'): number => week.reduce((n, d) => n + d[k], 0);
@@ -178,6 +212,7 @@ export function AdminPage() {
           </p>
           <h1 className="info-title">Dashboard</h1>
         </div>
+        <AdminTabs tab="dashboard" />
         <div className="reset-row">
           <button className="btn btn-sm" onClick={load}>
             <Icon name="restart" size={16} /> Refresh

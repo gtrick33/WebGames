@@ -5,8 +5,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { installErrorReporting } from './platform/analytics';
+import { startLiveCatalog } from './platform/liveCatalog';
 
 installErrorReporting();
+startLiveCatalog();
 
 const root = document.getElementById('root');
 if (root) {

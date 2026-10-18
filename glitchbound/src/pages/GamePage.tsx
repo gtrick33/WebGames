@@ -9,6 +9,7 @@ import { GameTile } from '../components/GameTile';
 import { Icon } from '../components/Icon';
 import { reportError, track } from '../platform/analytics';
 import { account, api, useAccount } from '../platform/account';
+import { useLiveCatalog } from '../platform/liveCatalog';
 import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { MiniLeaderboard } from '../components/Leaderboard';
@@ -169,9 +170,13 @@ export function GamePage({ game }: { game: GameEntry }) {
   const [burst, setBurst] = useState(0);
 
   const [shareMsg, setShareMsg] = useState('');
-  const related = relatedGames(game);
+  const live = useLiveCatalog();
+  const related = relatedGames(game, 4, live.games);
   const isDailyGame = challengeForDay(dayKey(), GAMES)?.game.slug === game.slug;
   const { me } = useAccount();
+  const settings = live.settings(game.slug);
+  // An admin paused the game: players see the message instead of the stage (admins can still test it).
+  const paused = !!settings.maintenance && !me?.isAdmin;
   const runRef = useRef<Promise<string | null> | null>(null);
   const [boardKey, setBoardKey] = useState(0);
 
@@ -294,6 +299,24 @@ export function GamePage({ game }: { game: GameEntry }) {
 
       <div className="wrap game-layout">
         <div className="game-stage-col">
+          {me?.isAdmin && (settings.hidden || settings.maintenance) && (
+            <p className="admin-preview" role="note">
+              <Icon name="crown" size={16} /> Admin preview: {settings.hidden ? 'this game is hidden from players.' : `players see "${settings.maintenance}" instead of the game.`}{' '}
+              <Link href="/admin?tab=games">Edit in Admin</Link>
+            </p>
+          )}
+          {paused ? (
+            <div className="stage stage-paused" style={{ background: game.art.bg }}>
+              <img src={game.art.tile} alt="" className="stage-poster-art" />
+              <div className="stage-paused-msg">
+                <strong>Taking a short break</strong>
+                <span>{settings.maintenance}</span>
+                <Link href="/" className="btn btn-primary">
+                  Play something else
+                </Link>
+              </div>
+            </div>
+          ) : (
           <GameStage
             key={stageRun.key}
             autoStart={stageRun.autoStart}
@@ -317,6 +340,7 @@ export function GamePage({ game }: { game: GameEntry }) {
               }
             }}
           />
+          )}
           {burst > 0 && <Burst key={burst} />}
         </div>
 

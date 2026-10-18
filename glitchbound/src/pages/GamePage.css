@@ -333,3 +333,39 @@
   border-color: var(--magenta);
   color: var(--fg);
 }
+
+/* Admin settings: preview note and the paused-game panel. */
+.admin-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fff4b8;
+  color: #1d1238;
+  font-size: 14px;
+  font-weight: 700;
+}
+.stage-paused {
+  display: grid;
+  place-items: center;
+  min-height: 360px;
+}
+.stage-paused-msg {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 22px 24px;
+  border-radius: 18px;
+  background: rgb(20 16 42 / 0.78);
+  color: #fff;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.stage-paused-msg strong {
+  font-size: 24px;
+}

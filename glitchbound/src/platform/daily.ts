@@ -1,3 +1,4 @@
+import type { DailyRules } from '../catalog/settings';
 import type { GameEntry } from '../catalog/types';
 import type { EndEvent } from './contract';
 import { addDays, daysBetween, hashString } from './dates';
@@ -22,16 +23,35 @@ export const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
  * Today's challenge, identical for every player on the same calendar day. Returns null when no game
  * in the catalog offers daily templates (then the arcade hides the daily feature instead of faking it).
  */
-export function challengeForDay(day: string, games: GameEntry[]): DailyChallenge | null {
+let defaultRules: DailyRules | null = null;
+
+/** The browser's current admin rules (from /api/catalog). The server always passes rules explicitly. */
+export function setDefaultDailyRules(rules: DailyRules | null): void {
+  defaultRules = rules;
+}
+
+export function challengeForDay(day: string, games: GameEntry[], rules: DailyRules | null = defaultRules): DailyChallenge | null {
   const pool = games
     .filter((g) => (g.daily?.length ?? 0) > 0 && g.released <= day)
     .sort((a, b) => a.slug.localeCompare(b.slug));
   if (pool.length === 0) return null;
   const h = hashString(`glitchbound-daily-${day}`);
-  const game = pool[h % pool.length]!;
+  // An admin's pick for the date wins. Otherwise the usual rotation, stepping past games the admins
+  // took out (only the days that would have landed on them change).
+  const pick = rules?.picks[day];
+  let game = pick ? games.find((g) => g.slug === pick.slug && (g.daily?.length ?? 0) > 0) : undefined;
+  if (!game) {
+    const start = h % pool.length;
+    for (let i = 0; i < pool.length && !game; i++) {
+      const g = pool[(start + i) % pool.length]!;
+      if (!rules?.exclude.has(g.slug)) game = g;
+    }
+    if (!game) return null;
+  }
+  const picked = pick && pick.slug === game.slug ? pick : null;
   const templates = game.daily!;
-  const tpl = templates[(h >>> 8) % templates.length]!;
-  const target = tpl.targets[(h >>> 16) % tpl.targets.length]!;
+  const tpl = (picked?.template !== null && picked?.template !== undefined ? templates[picked.template] : undefined) ?? templates[(h >>> 8) % templates.length]!;
+  const target = picked?.target ?? tpl.targets[(h >>> 16) % tpl.targets.length]!;
   const unit = game.stats.find((s) => s.key === tpl.metric)?.unit ?? '';
   return {
     day,

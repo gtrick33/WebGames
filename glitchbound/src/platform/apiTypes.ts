@@ -1,3 +1,4 @@
+import type { PublicCatalog } from '../catalog/settings';
 /** Shapes exchanged between the site and /api (Pages Functions). Shared by both sides. */
 
 export interface PublicConfig {
@@ -159,4 +160,9 @@ export interface CloudUsage {
     days: { day: string; requests: number | null; errors: number | null; rowsRead: number; rowsWritten: number; queries: number }[];
     error: string;
   };
+}
+
+/** GET /api/admin/catalog: the Games tab's data. */
+export interface AdminCatalog extends PublicCatalog {
+  log: { ts: number; admin: string; action: string; detail: string }[];
 }

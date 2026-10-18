@@ -1,0 +1,84 @@
+import { describe, expect, it } from 'vitest';
+import { GAMES } from '../src/catalog/games';
+import { applySettings, compactSettings, dailyRules, DEFAULT_SETTINGS, EMPTY_CATALOG, sanitizeNotice, sanitizePatch, sanitizePick, settingsFor, spotlightGame, type PublicCatalog } from '../src/catalog/settings';
+import { challengeForDay } from '../src/platform/daily';
+import { addDays } from '../src/platform/dates';
+
+const cat = (settings: PublicCatalog['settings'], picks: PublicCatalog['picks'] = {}): PublicCatalog => ({ settings, picks, notice: null });
+const dailyGames = GAMES.filter((g) => g.daily?.length);
+
+describe('admin game settings', () => {
+  it('changes nothing without settings', () => {
+    expect(applySettings(GAMES, EMPTY_CATALOG)).toEqual(GAMES);
+    expect(settingsFor(EMPTY_CATALOG, GAMES[0]!.slug)).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('hides games from players (admins still get them), pins games first and applies text', () => {
+    const [a, b, c] = GAMES;
+    const c1 = cat({ [a!.slug]: { hidden: true }, [c!.slug]: { pinned: true, title: 'Renamed', tagline: 'New line' } });
+    const seen = applySettings(GAMES, c1);
+    expect(seen.some((g) => g.slug === a!.slug)).toBe(false);
+    expect(seen[0]!.slug).toBe(c!.slug);
+    expect(seen[0]!.title).toBe('Renamed');
+    expect(seen[0]!.tagline).toBe('New line');
+    expect(seen[0]!.description).toBe(c!.description);
+    expect(seen.find((g) => g.slug === b!.slug)).toBe(b);
+    expect(applySettings(GAMES, c1, true).some((g) => g.slug === a!.slug)).toBe(true);
+  });
+
+  it('has one spotlight game, and never a hidden one', () => {
+    const g = GAMES[2]!;
+    expect(spotlightGame(applySettings(GAMES, cat({ [g.slug]: { spotlight: true } })), cat({ [g.slug]: { spotlight: true } }))?.slug).toBe(g.slug);
+    const hidden = cat({ [g.slug]: { spotlight: true, hidden: true } });
+    expect(spotlightGame(applySettings(GAMES, hidden), hidden)).toBeUndefined();
+  });
+
+  it('only accepts valid patches and stores just the differences', () => {
+    expect(sanitizePatch({ hidden: 'yes', newBadge: 'sometimes', pinned: true, title: '  Hi\u0000  ', bogus: 1 })).toEqual({ pinned: true, title: 'Hi' });
+    expect(sanitizePatch({ tagline: 'x'.repeat(500) }).tagline).toHaveLength(110);
+    expect(compactSettings({ ...DEFAULT_SETTINGS, hidden: true, newBadge: 'off' })).toEqual({ hidden: true, newBadge: 'off' });
+  });
+
+  it('validates daily picks and notices', () => {
+    const g = dailyGames[0]!;
+    expect(sanitizePick({ slug: g.slug, template: 0, target: 1234.567 }, GAMES)).toEqual({ slug: g.slug, template: 0, target: 1234.57 });
+    expect(sanitizePick({ slug: g.slug, template: 99, target: -3 }, GAMES)).toEqual({ slug: g.slug, template: null, target: null });
+    expect(sanitizePick({ slug: 'no-such-game' }, GAMES)).toBeNull();
+    expect(sanitizeNotice({ text: '  ', link: '/x' }, 1)).toBeNull();
+    expect(sanitizeNotice({ text: 'Hello', link: 'javascript:alert(1)', tone: 'party' }, 1)).toMatchObject({ text: 'Hello', link: '', tone: 'party' });
+    expect(sanitizeNotice({ text: 'Hello', link: '/games/wing-it' }, 1)?.link).toBe('/games/wing-it');
+  });
+});
+
+describe('daily challenge with admin rules', () => {
+  const days = Array.from({ length: 120 }, (_, i) => addDays('2026-11-01', i));
+
+  it('is unchanged when there are no rules', () => {
+    for (const d of days) expect(challengeForDay(d, GAMES, dailyRules(EMPTY_CATALOG))).toEqual(challengeForDay(d, GAMES, null));
+  });
+
+  it('skips an excluded game and only changes the days that would have used it', () => {
+    const out = dailyGames[0]!.slug;
+    const rules = dailyRules(cat({ [out]: { inDaily: false } }));
+    for (const d of days) {
+      const before = challengeForDay(d, GAMES, null)!;
+      const after = challengeForDay(d, GAMES, rules)!;
+      expect(after.game.slug).not.toBe(out);
+      if (before.game.slug !== out) expect(after).toEqual(before);
+    }
+    // Hidden or paused games are skipped too.
+    expect(dailyRules(cat({ a: { hidden: true }, b: { maintenance: 'Fixing' }, c: { pinned: true } })).exclude).toEqual(new Set(['a', 'b']));
+  });
+
+  it('uses a hand-picked game, goal and target for that day only', () => {
+    const g = dailyGames[dailyGames.length - 1]!;
+    const day = days[10]!;
+    const rules = dailyRules(cat({}, { [day]: { slug: g.slug, template: 0, target: 4321 } }));
+    const c = challengeForDay(day, GAMES, rules)!;
+    expect(c.game.slug).toBe(g.slug);
+    expect(c.metric).toBe(g.daily![0]!.metric);
+    expect(c.target).toBe(4321);
+    expect(c.label).toContain('4,321');
+    expect(challengeForDay(days[11]!, GAMES, rules)).toEqual(challengeForDay(days[11]!, GAMES, null));
+  });
+});

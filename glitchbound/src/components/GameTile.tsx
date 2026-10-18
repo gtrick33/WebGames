@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { isNew } from '../catalog/catalog';
+import { isNewLive, useLiveCatalog } from '../platform/liveCatalog';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
 import { Link } from '../router/router';
 import { FavoriteButton } from './FavoriteButton';
@@ -17,6 +17,7 @@ export const TILE_RHYTHM: TileSize[] = ['xl', 'tall', 'md', 'md', 'wide', 'md', 
  * tile is on screen), title, categories, favorite heart and play action.
  */
 export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEntry; size?: TileSize; index?: number; best?: number }) {
+  const live = useLiveCatalog();
   const style = { '--i': index, viewTransitionName: `tile-${game.slug}` } as CSSProperties;
   const preview = hasPreview(game.slug);
   // Wide tiles with a preview split into artwork + live screen, so neither covers the other.
@@ -62,7 +63,7 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
         </div>
       </div>
       <FavoriteButton slug={game.slug} title={game.title} className="tile-fav" />
-      {isNew(game) && (
+      {isNewLive(live, game) && (
         <span className="sticker tile-sticker" data-tone="yellow">
           New
         </span>

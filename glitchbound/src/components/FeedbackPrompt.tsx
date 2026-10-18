@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { GAMES } from '../catalog/games';
+import { getLiveCatalog } from '../platform/liveCatalog';
 import { api } from '../platform/account';
 import { track } from '../platform/analytics';
 import { LOBBY_DELAY_S, readFeedback, registerFeedbackOpener, shouldAsk, writeFeedback } from '../platform/feedback';
@@ -189,7 +190,7 @@ export function FeedbackPrompt() {
               </label>
               <select id="fb-game" className="field fb-select" value={game} onChange={(e) => setGame(e.target.value)}>
                 <option value="">The arcade in general</option>
-                {GAMES.map((g) => (
+                {GAMES.filter((g) => !getLiveCatalog().settings(g.slug).hidden).map((g) => (
                   <option key={g.slug} value={g.slug}>
                     {g.title}
                   </option>

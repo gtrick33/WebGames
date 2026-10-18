@@ -1,5 +1,6 @@
 import { GAMES } from '../catalog/games';
 import { latestGame } from '../catalog/catalog';
+import { useLiveCatalog } from '../platform/liveCatalog';
 import { AdSlot } from '../components/AdSlot';
 import { Arcade } from '../components/Arcade';
 import { DailyCard } from '../components/DailyCard';
@@ -16,7 +17,9 @@ import { useInitialHashScroll } from '../router/router';
 export function Home() {
   usePageMeta({ path: '/' });
   useInitialHashScroll();
-  const featured = latestGame() ?? GAMES[0]!;
+  const live = useLiveCatalog();
+  // An admin's spotlight pick, else the newest game players can see.
+  const featured = live.spotlight ?? latestGame(live.games) ?? GAMES[0]!;
   return (
     <>
       <Hero />

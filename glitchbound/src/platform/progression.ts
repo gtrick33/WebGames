@@ -4,6 +4,7 @@
  */
 import type { GameEntry } from '../catalog/types';
 import type { QuestIcon } from './apiTypes';
+import type { DailyRules } from '../catalog/settings';
 import { challengeForDay, fmt } from './daily';
 import { hashString } from './dates';
 
@@ -33,13 +34,13 @@ export interface QuestDef {
  * Three quests per member per day, deterministic from the member id and the date, so they don't
  * change on refresh and differ between players.
  */
-export function questsForDay(userId: string, day: string, games: GameEntry[], hasFavorite: boolean): QuestDef[] {
+export function questsForDay(userId: string, day: string, games: GameEntry[], hasFavorite: boolean, rules: DailyRules | null = null): QuestDef[] {
   const h = hashString(`quests:${userId}:${day}`);
   const pool: QuestDef[] = [];
   const rounds = [2, 3, 5][h % 3]!;
   pool.push({ id: `rounds-${rounds}`, kind: 'rounds', label: `Play ${rounds} rounds`, icon: 'play', xp: 30 + rounds * 12, target: rounds });
   pool.push({ id: 'best', kind: 'best', label: 'Beat one of your personal bests', icon: 'trophy', xp: 120, target: 1 });
-  const daily = challengeForDay(day, games);
+  const daily = challengeForDay(day, games, rules);
   if (daily) pool.push({ id: 'daily', kind: 'daily', label: 'Clear today’s Daily Challenge', icon: 'calendar', xp: 150, target: 1 });
   const metricGames = games.filter((g) => g.released <= day && (g.daily?.length ?? 0) > 0);
   if (metricGames.length) {

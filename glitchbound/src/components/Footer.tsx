@@ -1,10 +1,11 @@
-import { GAMES } from '../catalog/games';
+import { useGames } from '../platform/liveCatalog';
 import { openFeedback } from '../platform/feedback';
 import { Link } from '../router/router';
 import { LogoMark } from './Logo';
 import './Footer.css';
 
 export function Footer() {
+  const games = useGames();
   return (
     <footer className="site-footer">
       <div className="footer-edge" aria-hidden="true" />
@@ -23,7 +24,7 @@ export function Footer() {
               <Link href="/#arcade">The arcade</Link>
               <Link href="/daily">Daily Challenge</Link>
               <Link href="/leaderboards">Leaderboards</Link>
-              {GAMES.slice(0, 4).map((g) => (
+              {games.slice(0, 4).map((g) => (
                 <Link key={g.slug} href={`/games/${g.slug}`}>
                   {g.title}
                 </Link>

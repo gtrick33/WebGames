@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { GAMES } from '../catalog/games';
+import { useGames } from '../platform/liveCatalog';
 import { GameTile } from '../components/GameTile';
 import { Icon } from '../components/Icon';
 import { NotifyForm } from '../components/Notify';
@@ -21,6 +21,7 @@ export function ProfilePage() {
   const [nickMsg, setNickMsg] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [allFavs, setAllFavs] = useState(false);
+  const games = useGames();
 
   if (status === 'loading') {
     return (
@@ -55,7 +56,7 @@ export function ProfilePage() {
     }
   };
 
-  const favorites = GAMES.filter((g) => me.favorites.includes(g.slug));
+  const favorites = games.filter((g) => me.favorites.includes(g.slug));
   const pct = Math.round(((me.xp - me.levelFloor) / Math.max(1, me.levelNext - me.levelFloor)) * 100);
 
   return (
@@ -172,10 +173,11 @@ const HIGHLIGHTS = 4;
  */
 function BestResults({ me }: { me: Me }) {
   const [query, setQuery] = useState('');
-  const ranked = rankBests(me.bests, GAMES);
+  const games = useGames();
+  const ranked = rankBests(me.bests, games);
   const top = ranked.slice(0, HIGHLIGHTS);
   const rest = ranked.slice(HIGHLIGHTS).filter((e) => e.game.title.toLowerCase().includes(query.trim().toLowerCase()));
-  const untried = GAMES.filter((g) => !me.bests[g.slug]);
+  const untried = games.filter((g) => !me.bests[g.slug]);
   return (
     <section aria-labelledby="bests-title">
       <h2 id="bests-title" className="profile-h2">

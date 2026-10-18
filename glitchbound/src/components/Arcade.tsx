@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { GAMES } from '../catalog/games';
 import { categoryCounts, isCategory, queryGames, SORTS, type SortId } from '../catalog/catalog';
+import { useLiveCatalog } from '../platform/liveCatalog';
 import type { CategoryId } from '../catalog/types';
 import { track } from '../platform/analytics';
 import { useSave } from '../platform/store';
@@ -31,8 +31,15 @@ export function Arcade() {
   const favorites = acct.me ? acct.me.favorites : acct.guestFavorites;
   const [q, setQ] = useState(params.get('q') ?? '');
   const save = useSave();
-  const cats = categoryCounts();
-  const all = useMemo(() => queryGames({ q, category, sort }), [q, category, sort]);
+  const live = useLiveCatalog();
+  const games = live.games;
+  const cats = categoryCounts(games);
+  const all = useMemo(() => {
+    const hits = queryGames({ q, category, sort }, live.games);
+    // Games an admin pinned come first (unless the player is searching).
+    if (q.trim()) return hits;
+    return [...hits.filter((g) => live.settings(g.slug).pinned), ...hits.filter((g) => !live.settings(g.slug).pinned)];
+  }, [q, category, sort, live]);
   const results = favOnly ? all.filter((g) => favorites.includes(g.slug)) : all;
   const filtered = q.trim() !== '' || category !== null || favOnly;
   const firstRender = useRef(true);
@@ -93,7 +100,7 @@ export function Arcade() {
             <h2 id="arcade-title">The arcade</h2>
           </div>
           <p>
-            Every game is original and plays right here in the browser. {GAMES.length === 1 ? 'One game so far, with more on the way.' : `${GAMES.length} games and counting.`}
+            Every game is original and plays right here in the browser. {games.length === 1 ? 'One game so far, with more on the way.' : `${games.length} games and counting.`}
           </p>
         </div>
 
@@ -106,7 +113,7 @@ export function Arcade() {
 
           <div className="arcade-cats" role="group" aria-label="Filter by category">
             <button className={`cat-btn${category === null && !favOnly ? ' is-on' : ''}`} aria-pressed={category === null && !favOnly} onClick={() => pickCategory(null)}>
-              All <span className="mono">{GAMES.length}</span>
+              All <span className="mono">{games.length}</span>
             </button>
             {cats.map((c) => (
               <button key={c.id} className={`cat-btn${category === c.id ? ' is-on' : ''}`} aria-pressed={category === c.id} onClick={() => pickCategory(c.id)}>
@@ -139,7 +146,7 @@ export function Arcade() {
             {results.map((g, i) => (
               <GameTile key={g.slug} game={g} index={i} size={TILE_RHYTHM[i % TILE_RHYTHM.length]} best={save.games[g.slug]?.best.score} />
             ))}
-            {!filtered && GAMES.length < 4 && (
+            {!filtered && games.length < 4 && (
               <aside className="workshop pop-in" style={{ ['--i' as string]: results.length }} aria-label="About upcoming games">
                 <div className="workshop-shapes" aria-hidden="true">
                   <Tri className="ws ws-1" />

@@ -1,5 +1,4 @@
-import { GAMES } from '../catalog/games';
-import { isNew } from '../catalog/catalog';
+import { isNewLive, useLiveCatalog } from '../platform/liveCatalog';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
 import { fmt } from '../platform/daily';
 import { recentSlugs } from '../platform/save';
@@ -11,7 +10,7 @@ import './Sections.css';
 
 /** Editorial spread for the most recent release. */
 export function LatestRelease({ game }: { game: GameEntry }) {
-  const fresh = isNew(game);
+  const fresh = isNewLive(useLiveCatalog(), game);
   const released = new Date(`${game.released}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   return (
     <section className="section latest" aria-labelledby="latest-title" data-accent={game.accent}>
@@ -53,8 +52,9 @@ export function LatestRelease({ game }: { game: GameEntry }) {
 /** "Your arcade": only rendered when this device has actually played something. */
 export function YourArcade() {
   const save = useSave();
+  const { games } = useLiveCatalog();
   const recent = recentSlugs(save)
-    .map((slug) => GAMES.find((g) => g.slug === slug))
+    .map((slug) => games.find((g) => g.slug === slug))
     .filter((g): g is GameEntry => !!g)
     .slice(0, 3);
   if (recent.length === 0) return null;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GAMES } from '../catalog/games';
+import { useLiveCatalog } from '../platform/liveCatalog';
 import { getGame } from '../catalog/catalog';
 import { BoardEmpty, HallTable, LeaderTable, useBoard, useHall } from '../components/Leaderboard';
 import { Icon } from '../components/Icon';
@@ -12,7 +12,7 @@ type Tab = 'hall' | string;
 function GameBoard({ slug }: { slug: string }) {
   const [period, setPeriod] = useState<'all' | '24h'>('all');
   const board = useBoard(slug, period);
-  const game = getGame(slug)!;
+  const game = getGame(slug, useLiveCatalog().all)!;
   return (
     <div className="panel info-block">
       <div className="board-head">
@@ -57,6 +57,7 @@ function Hall() {
 }
 
 export function LeaderboardsPage() {
+  const live = useLiveCatalog();
   usePageMeta({ title: 'Leaderboards', description: 'GlitchBound leaderboards: top scores for every game and the Hall of Fame of record holders.', path: '/leaderboards' });
   const { search } = useLocation();
   const param = new URLSearchParams(search).get('game');
@@ -78,7 +79,7 @@ export function LeaderboardsPage() {
           <span className="mono">Game</span>
           <select value={tab === 'hall' ? '' : tab} onChange={(e) => setTab(e.target.value || 'hall')} aria-label="Game leaderboard">
             <option value="">Choose a game…</option>
-            {[...GAMES]
+            {[...live.games]
               .sort((a, b) => a.title.localeCompare(b.title))
               .map((g) => (
                 <option key={g.slug} value={g.slug}>

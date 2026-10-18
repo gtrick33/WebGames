@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { GAMES } from '../catalog/games';
+import { dailyRules } from '../catalog/settings';
+import { useLiveCatalog } from './liveCatalog';
 import { challengeForDay, currentStreak, type DailyChallenge } from './daily';
 import { addDays, dayKey } from './dates';
 import { doneDays } from './save';
@@ -48,8 +50,10 @@ export interface DailyState {
 export function useDaily(now: Date): DailyState | null {
   const save = useSave();
   const today = dayKey(now);
+  // The admins' daily picks and exclusions come in through the live catalog.
+  const live = useLiveCatalog();
   return useMemo(() => {
-    const challenge = challengeForDay(today, GAMES);
+    const challenge = challengeForDay(today, GAMES, dailyRules(live.raw));
     if (!challenge) return null;
     const done = doneDays(save);
     const rec = save.daily[today];
@@ -61,5 +65,5 @@ export function useDaily(now: Date): DailyState | null {
       streak: currentStreak(done, today),
       week: Array.from({ length: 7 }, (_, i) => done.has(addDays(today, i - 6))),
     };
-  }, [save, today]);
+  }, [save, today, live]);
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { GAMES } from '../catalog/games';
+import { useLiveCatalog } from '../platform/liveCatalog';
 import { useAccount } from '../platform/account';
 import { useDaily, useNow } from '../platform/hooks';
 import { formatCountdown, msUntilMidnight } from '../platform/dates';
@@ -32,6 +32,7 @@ function useGlitchPulse(): boolean {
  * (daily challenge + member level or a sign-in invite). Short on purpose: the games come first.
  */
 export function Hero() {
+  const gameCount = useLiveCatalog().games.length;
   const glitching = useGlitchPulse();
   const now = useNow(1000);
   const daily = useDaily(now);
@@ -42,7 +43,7 @@ export function Hero() {
     <section className="intro-band wrap" aria-labelledby="hero-title">
       <div className="intro-copy">
         <p className="eyebrow">
-          <span className="live-dot" /> Independent browser arcade · {GAMES.length} {GAMES.length === 1 ? 'game' : 'games'}
+          <span className="live-dot" /> Independent browser arcade · {gameCount} {gameCount === 1 ? 'game' : 'games'}
         </p>
         <h1 id="hero-title" className="intro-title">
           Small games.{' '}
