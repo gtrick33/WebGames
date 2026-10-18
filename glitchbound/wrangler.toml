@@ -14,6 +14,9 @@ ADMIN_EMAILS = "savawow99@gmail.com,sava.hristov@glitchboundstudio.com"
 MAIL_FROM = "GlitchBound <hello@glitchboundstudio.com>"
 # Replies to site emails land in the Google Workspace inbox.
 MAIL_REPLY_TO = "sava.hristov@glitchboundstudio.com"
+# Discord Activity client ID (public; docs/discord-activity.md). Off until this and the
+# DISCORD_CLIENT_SECRET Pages secret are set.
+DISCORD_CLIENT_ID = ""
 
 [[d1_databases]]
 binding = "DB"

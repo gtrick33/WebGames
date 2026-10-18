@@ -23,3 +23,11 @@ export const ADS = {
     game: clean(env.VITE_ADSENSE_SLOT_GAME),
   },
 };
+
+const discordClientId = clean(env.VITE_DISCORD_CLIENT_ID);
+
+/** The Discord Activity (docs/discord-activity.md): off until the Discord application's client ID is set. */
+export const DISCORD = {
+  clientId: discordClientId,
+  enabled: /^\d{15,25}$/.test(discordClientId),
+};

@@ -1,0 +1,105 @@
+/* The Discord Activity's start page (/discord): who is in the call, and the two games to pick from. */
+.dsc-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+.dsc-people li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 10px 4px 4px;
+  border: var(--outline);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 700;
+}
+.dsc-dot {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #1d1238;
+  font-size: 13px;
+  font-weight: 800;
+}
+.dsc-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dsc-games {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+.dsc-game {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dsc-game:hover:not(:disabled) {
+  box-shadow: var(--hard);
+}
+.dsc-game:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+.dsc-game img {
+  flex: none;
+  border-radius: var(--r-md);
+}
+.dsc-game-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.dsc-game-main b {
+  font-size: 20px;
+}
+.dsc-live {
+  justify-self: start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #c4f034;
+  color: #1d1238;
+  font-size: 12px;
+  font-weight: 800;
+}
+.dsc-go {
+  flex: none;
+}
+.dsc-msg {
+  margin: 0 0 14px;
+  font-weight: 700;
+  color: var(--coral);
+}
+@media (max-width: 520px) {
+  .dsc-game {
+    flex-wrap: wrap;
+  }
+  .dsc-game img {
+    width: 64px;
+    height: 64px;
+  }
+  .dsc-go {
+    width: 100%;
+    justify-content: center;
+  }
+}

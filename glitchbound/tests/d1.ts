@@ -16,21 +16,27 @@ export function memoryD1(): D1Database & { sqlite: DatabaseSync } {
     all: async <T>() => ({ results: db.prepare(sql).all(...values) as T[] }),
     run: async () => db.prepare(sql).run(...values),
   });
+  // Like D1, a batch is one transaction, and batches from requests running at once never interleave.
+  let queue: Promise<unknown> = Promise.resolve();
+  const batch = async (list: D1PreparedStatement[]): Promise<unknown[]> => {
+    db.exec('BEGIN');
+    try {
+      const out: unknown[] = [];
+      for (const s of list) out.push(await s.run());
+      db.exec('COMMIT');
+      return out;
+    } catch (err) {
+      db.exec('ROLLBACK');
+      throw err;
+    }
+  };
   return {
     sqlite: db,
     prepare: (sql) => statement(sql),
-    // Like D1, a batch is one transaction.
-    batch: async (list) => {
-      db.exec('BEGIN');
-      try {
-        const out: unknown[] = [];
-        for (const s of list) out.push(await s.run());
-        db.exec('COMMIT');
-        return out;
-      } catch (err) {
-        db.exec('ROLLBACK');
-        throw err;
-      }
+    batch: (list) => {
+      const run = queue.then(() => batch(list));
+      queue = run.catch(() => undefined);
+      return run;
     },
   };
 }

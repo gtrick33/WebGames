@@ -15,3 +15,30 @@ export function roomStub(env: Env, code: string): ReturnType<NonNullable<Env['RO
   if (!env.ROOMS) return null;
   return env.ROOMS.get(env.ROOMS.idFromName(code));
 }
+
+export interface RoomSummary {
+  code: string;
+  phase: string;
+  players: number;
+  host: string;
+  full: boolean;
+}
+
+/** Opens a new room (a fresh code; retried on the rare clash). Null when rooms are unavailable. */
+export async function openRoom(env: Env): Promise<RoomSummary | null> {
+  if (!env.ROOMS) return null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = newRoomCode();
+    const res = await roomStub(env, code)!.fetch(`https://room/init?code=${code}`, { method: 'POST' });
+    if (res.ok) return (await res.json()) as RoomSummary;
+    if (res.status !== 409) return null;
+  }
+  return null;
+}
+
+/** A room's summary, or null when it does not exist (or has closed). */
+export async function roomSummary(env: Env, code: string): Promise<RoomSummary | null> {
+  const stub = validCode(code) ? roomStub(env, code) : null;
+  const res = await stub?.fetch('https://room/info');
+  return res?.ok ? ((await res.json()) as RoomSummary) : null;
+}

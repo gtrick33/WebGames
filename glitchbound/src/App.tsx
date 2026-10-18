@@ -11,8 +11,11 @@ import { MusicControl } from './components/MusicControl';
 import { NoticeBanner } from './components/NoticeBanner';
 import { SeasonLayer } from './components/SeasonLayer';
 import { ShareHost } from './components/ShareHost';
+import { DiscordBar } from './discord/DiscordBar';
 import { track } from './platform/analytics';
 import { useAccount } from './platform/account';
+import { useEmbedHost } from './platform/embed';
+import { DISCORD } from './platform/env';
 import { useLiveCatalog } from './platform/liveCatalog';
 import { visitInfo } from './platform/visit';
 import { Link, matchRoute, useLocation } from './router/router';
@@ -30,6 +33,7 @@ const PartyPage = lazy(() => import('./party/ui/PartyPage').then((m) => ({ defau
 const SignInPage = lazy(() => import('./pages/SignInPage').then((m) => ({ default: m.SignInPage })));
 const ChallengePage = lazy(() => import('./pages/ChallengePage').then((m) => ({ default: m.ChallengePage })));
 const ChallengesPage = lazy(() => import('./pages/ChallengePage').then((m) => ({ default: m.ChallengesPage })));
+const DiscordPage = lazy(() => import('./pages/DiscordPage').then((m) => ({ default: m.DiscordPage })));
 
 function Page() {
   const { pathname, search } = useLocation();
@@ -60,6 +64,9 @@ function Page() {
       return <ChallengesPage />;
     case 'challenge':
       return <ChallengePage key={route.id} id={route.id} />;
+    case 'discord':
+      // The Discord Activity stays a 404 until its client ID is configured.
+      return DISCORD.enabled ? <DiscordPage /> : <NotFound />;
     case 'game': {
       // Hidden games are closed to players; admins can still open them to preview.
       const game = getGame(route.slug, live.all);
@@ -72,6 +79,8 @@ function Page() {
 
 export function App() {
   const { pathname } = useLocation();
+  // Inside the Discord Activity the arcade's header and footer give way to a slim bar.
+  const embedded = !!useEmbedHost();
   useEffect(() => {
     track('page_view', { path: matchRoute(pathname).name, ...visitInfo() });
   }, [pathname]);
@@ -80,8 +89,8 @@ export function App() {
       <a href="#main" className="skip-link">
         Skip to content
       </a>
-      <ArcadeEntrance />
-      <Header />
+      {!embedded && <ArcadeEntrance />}
+      {embedded ? <DiscordBar /> : <Header />}
       <NoticeBanner />
       <ShareHost />
       <main id="main" tabIndex={-1}>
@@ -107,7 +116,7 @@ export function App() {
           </Suspense>
         </ErrorBoundary>
       </main>
-      <Footer />
+      {!embedded && <Footer />}
       <MusicControl />
       <Suspense fallback={null}>
         <FeedbackPrompt />

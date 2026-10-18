@@ -19,6 +19,7 @@ export type Route =
   | { name: 'signin' }
   | { name: 'challenges' }
   | { name: 'challenge'; id: string }
+  | { name: 'discord' }
   | { name: 'notfound' };
 
 export function matchRoute(pathname: string): Route {
@@ -33,6 +34,7 @@ export function matchRoute(pathname: string): Route {
   if (path === '/admin') return { name: 'admin' };
   if (path === '/signin') return { name: 'signin' };
   if (path === '/c') return { name: 'challenges' };
+  if (path === '/discord') return { name: 'discord' };
   const c = /^\/c\/([A-Za-z0-9]{5,12})$/.exec(path);
   if (c?.[1]) return { name: 'challenge', id: c[1] };
   const m = /^\/games\/([a-z0-9-]+)$/.exec(path);

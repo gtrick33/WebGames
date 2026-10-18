@@ -172,6 +172,17 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       body: `<section class="ssr"><h1>Join the arcade</h1><p>Sign in with Google or with an email code.</p></section>`,
     },
     {
+      // The Discord Activity's start page (docs/discord-activity.md).
+      path: '/discord',
+      file: 'discord.html',
+      title: `GlitchBound on Discord · ${SITE}`,
+      description: 'Play Wait, What? and Unhinged together in a Discord call: open the Activities menu in a voice channel and pick GlitchBound.',
+      image: '/og.png',
+      imageAlt: SITE,
+      noindex: true,
+      body: `<section class="ssr"><h1>GlitchBound on Discord</h1><p>Join a voice channel, open the Activities menu and pick GlitchBound.</p><p><a href="/">Back to the arcade</a></p></section>`,
+    },
+    {
       path: '/admin',
       file: 'admin.html',
       title: `Admin · ${SITE}`,

@@ -1,7 +1,8 @@
 import { getGame } from '../src/catalog/catalog';
-import { CHALLENGE_IDLE_MS, CHALLENGE_KEEP_MS, CHALLENGE_LOBBY_MS, closesAt, MAX_PLAYERS, roundWinners, type ChallengeListItem, type ChallengeView } from '../src/platform/challenge';
-import type { Env } from './http';
+import { CHALLENGE_IDLE_MS, CHALLENGE_KEEP_MS, CHALLENGE_LOBBY_MS, closesAt, dailySeed, MAX_PLAYERS, roundWinners, type ChallengeListItem, type ChallengeMode, type ChallengeView } from '../src/platform/challenge';
+import type { D1PreparedStatement, Env } from './http';
 import { currentUser } from './session';
+import { newCode } from './shares';
 
 /**
  * The requesting player: a member's account, else the device key the browser sends. A member who
@@ -49,7 +50,7 @@ export async function claimGuest(env: Env, userId: string, key: string): Promise
   ]);
 }
 
-interface Row {
+export interface Row {
   id: string;
   game: string;
   mode: 'daily' | 'fresh';
@@ -65,6 +66,65 @@ interface Row {
 export async function challengeRow(env: Env, id: string): Promise<Row | null> {
   if (!/^[A-Za-z0-9]{5,12}$/.test(id)) return null;
   return env.DB.prepare('SELECT id, game, mode, day, seed, round, host, created_at, updated_at, closed_at FROM challenges WHERE id = ?').bind(id).first<Row>();
+}
+
+/** A challenge about to start: its host is its first player. */
+export interface NewChallenge {
+  id: string;
+  game: string;
+  mode: ChallengeMode;
+  day: string;
+  seed: number;
+  host: string;
+  name: string;
+  now: number;
+}
+
+/** A new challenge's id, day and seed (a daily uses the day's seed, so it matches the game's daily). */
+export function newChallenge(game: string, mode: ChallengeMode, day: unknown, host: string, name: string, now = Date.now()): NewChallenge {
+  const d = typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : new Date(now).toISOString().slice(0, 10);
+  const seed = mode === 'daily' ? dailySeed(game, d) : crypto.getRandomValues(new Uint32Array(1))[0]!;
+  return { id: newCode(7), game, mode, day: d, seed, host, name, now };
+}
+
+/** Whether a player already started 60 challenges in the last day. */
+export async function tooManyToday(env: Env, player: string, now = Date.now()): Promise<boolean> {
+  const mine = await env.DB.prepare('SELECT COUNT(*) AS n FROM challenges WHERE host = ? AND created_at > ?').bind(player, now - 86400_000).first<{ n: number }>();
+  return (mine?.n ?? 0) >= 60;
+}
+
+/**
+ * The inserts that start a challenge with its host seated. With `onlyIf` (an SQL condition and its
+ * values) nothing is inserted unless it holds when the batch runs (see server/discord.ts).
+ */
+export function startStatements(env: Env, c: NewChallenge, onlyIf: { sql: string; values: unknown[] } = { sql: '1', values: [] }): D1PreparedStatement[] {
+  return [
+    env.DB.prepare(`INSERT INTO challenges (id, game, mode, day, seed, round, host, created_at, updated_at) SELECT ?, ?, ?, ?, ?, 1, ?, ?, ? WHERE ${onlyIf.sql}`).bind(c.id, c.game, c.mode, c.day, c.seed, c.host, c.now, c.now, ...onlyIf.values),
+    env.DB.prepare(`INSERT INTO challenge_players (challenge_id, player, name, joined_at) SELECT ?, ?, ?, ? WHERE ${onlyIf.sql}`).bind(c.id, c.host, c.name, c.now, ...onlyIf.values),
+  ];
+}
+
+export const SEAT_ERRORS = { closed: 'This challenge has ended.', full: `This challenge already has ${MAX_PLAYERS} players.` } as const;
+
+/**
+ * Takes a seat (up to 6 players; joining again just renames). Players who left free their seat, but
+ * their names stay taken (their scores are still on the board): names are unique within a challenge
+ * so the scoreboard stays readable.
+ */
+export async function takeSeat(env: Env, row: Row, player: string, name: string): Promise<{ error: keyof typeof SEAT_ERRORS } | { view: ChallengeView }> {
+  if (await isClosed(env, row)) return { error: 'closed' };
+  const { results: all } = await env.DB.prepare('SELECT player, name, left_at FROM challenge_players WHERE challenge_id = ?').bind(row.id).all<{ player: string; name: string; left_at: number | null }>();
+  const seated = all.some((p) => p.left_at === null && p.player === player);
+  if (!seated && all.filter((p) => p.left_at === null).length >= MAX_PLAYERS) return { error: 'full' };
+  let unique = name;
+  for (let i = 2; all.some((p) => p.player !== player && p.name.toLowerCase() === unique.toLowerCase()); i++) unique = `${name.slice(0, 17)} ${i}`;
+  const now = Date.now();
+  // A new face counts as activity (the others' screens update, and the challenge stays open).
+  await env.DB.batch([
+    env.DB.prepare('INSERT INTO challenge_players (challenge_id, player, name, joined_at) VALUES (?, ?, ?, ?) ON CONFLICT (challenge_id, player) DO UPDATE SET name = excluded.name, left_at = NULL').bind(row.id, player, unique, now),
+    env.DB.prepare('UPDATE challenges SET updated_at = ? WHERE id = ?').bind(now, row.id),
+  ]);
+  return { view: await viewOf(env, { ...row, updated_at: now }, player) };
 }
 
 /** Players still in a challenge (not left), and whether anyone has played yet. */

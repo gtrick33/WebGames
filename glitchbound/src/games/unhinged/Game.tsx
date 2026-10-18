@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
+import { embedHost } from '../../platform/embed';
 import { shareOrCopy } from '../../platform/share';
 import { fill, MAX_PLAYERS, MIN_PLAYERS, TARGETS, TIMERS, type RoomView } from './engine';
 import { createRoom, roomInfo, useRoom } from './net';
@@ -42,8 +43,9 @@ export default function Game({ host, restartKey, playerName }: GameModuleProps) 
 
 function Unhinged({ host, playerName }: { host: GameHost; playerName?: string }) {
   const [adult, setAdult] = useState(() => read(ADULT) === '1');
-  const [name, setName] = useState(() => read(NAME) || playerName || '');
-  const [code, setCode] = useState<string | null>(null);
+  // Inside the Discord Activity: the player's Discord name, and straight into the call's room.
+  const [name, setName] = useState(() => (embedHost() && playerName) || read(NAME) || playerName || '');
+  const [code, setCode] = useState<string | null>(() => (embedHost() && linkedRoom()) || null);
   const [invite] = useState(linkedRoom);
 
   if (!adult)
@@ -273,6 +275,8 @@ function Room({ code, name, host, onLeave }: { code: string; name: string; host:
 type Send = ReturnType<typeof useRoom>['send'];
 
 function invite(code: string): void {
+  const app = embedHost()?.invite;
+  if (app) return app();
   void shareOrCopy({ title: 'Unhinged', text: `Join my Unhinged room 😈\nRoom code: ${code}\nThe card game for terrible people (18+)`, url: `${location.origin}/r/${code}` });
 }
 

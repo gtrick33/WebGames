@@ -52,9 +52,21 @@ export function setGuestName(raw: string): string | null {
   return null;
 }
 
+let given: string | null = null;
+
+/**
+ * The name another sign-in gives this visit (the Discord Activity: the player's Discord name, already
+ * cleaned by the server). It wins over the guest name and the account nickname until the page reloads.
+ */
+export function setSessionName(name: string): void {
+  given = [...name.trim()].slice(0, NAME_MAX).join('') || null;
+  listeners.forEach((fn) => fn());
+}
+
 /** For tests. */
 export function resetGuestName(): void {
   cached = null;
+  given = null;
 }
 
 function subscribe(fn: () => void): () => void {
@@ -64,7 +76,8 @@ function subscribe(fn: () => void): () => void {
 
 /** The current player name, plus whether it belongs to an account. */
 export function usePlayerName(): { name: string; member: boolean } {
-  const guest = useSyncExternalStore(subscribe, read, () => '');
+  const guest = useSyncExternalStore(subscribe, () => given ?? read(), () => '');
   const { me } = useAccount();
+  if (given) return { name: given, member: !!me };
   return me ? { name: me.nickname.slice(0, NAME_MAX), member: true } : { name: guest, member: false };
 }

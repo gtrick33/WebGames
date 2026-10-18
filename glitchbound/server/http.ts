@@ -44,6 +44,9 @@ export interface Env {
   GITHUB_TOKEN?: string;
   /** owner/name of the issues board (default gtrick33/WebGames). */
   GITHUB_REPO?: string;
+  /** The Discord Activity (docs/discord-activity.md): the application's client ID (public) and, as a secret, its client secret. */
+  DISCORD_CLIENT_ID?: string;
+  DISCORD_CLIENT_SECRET?: string;
   /** Local development only (set in .dev.vars). */
   DEV_LOGIN?: string;
 }

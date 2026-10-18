@@ -5,6 +5,7 @@ import { ApiError } from '../platform/account';
 import { MAX_PLAYERS, type ChallengeMode, type ChallengeView } from '../platform/challenge';
 import { createChallenge } from '../platform/challenges';
 import { dayKey } from '../platform/dates';
+import { embedHost } from '../platform/embed';
 import { usePlayerName } from '../platform/playerName';
 import { shareOrCopy } from '../platform/share';
 import { Link, navigate } from '../router/router';
@@ -15,6 +16,9 @@ const fmt = (n: number): string => n.toLocaleString('en-US');
 
 /** Opens the share sheet with the challenge link (the picture card says who challenged whom). */
 export function inviteToChallenge(game: GameEntry, view: Pick<ChallengeView, 'id' | 'round' | 'players' | 'rounds'>, tr: ReturnType<typeof useT>): void {
+  // Inside the Discord Activity everyone in the call lands in this challenge: invite to the call.
+  const app = embedHost()?.invite;
+  if (app) return app();
   const mine = view.rounds.find((r) => r.round === view.round)?.scores.find((s) => s.you);
   void shareOrCopy({
     title: tr('{game} challenge', { game: game.title }),

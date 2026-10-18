@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ADS } from '../platform/env';
+import { embedHost } from '../platform/embed';
 
 /**
  * Optional display ad (Google AdSense). Renders NOTHING unless VITE_ADSENSE_CLIENT is a valid
@@ -25,7 +26,8 @@ function loadAdSense(client: string): void {
 }
 
 export function AdSlot({ placement }: { placement: keyof typeof ADS.slots }) {
-  const slot = ADS.slots[placement];
+  // No ads inside the Discord Activity (Discord's sandbox blocks the ad script anyway).
+  const slot = embedHost() ? '' : ADS.slots[placement];
   const ref = useRef<HTMLModElement>(null);
 
   useEffect(() => {

@@ -7,8 +7,25 @@ import type { ChallengeListItem, ChallengeMode, ChallengeView } from './challeng
 
 const KEY = 'glitchbound.playerKey';
 
+let given: string | null = null;
+
+/**
+ * Uses a key handed out by the server for this visit (the Discord Activity: one per Discord account,
+ * see server/discord.ts) for challenges and rooms. Also kept as this frame's device key.
+ */
+export function setPlayerKey(key: string): void {
+  if (!/^[A-Za-z0-9_-]{16,64}$/.test(key)) return;
+  given = key;
+  try {
+    localStorage.setItem(KEY, key);
+  } catch {
+    /* kept for this visit */
+  }
+}
+
 /** A stable random id for this device (guests' identity in challenges). */
 export function playerKey(): string {
+  if (given) return given;
   try {
     let k = localStorage.getItem(KEY);
     if (!k || !/^[A-Za-z0-9_-]{16,64}$/.test(k)) {
