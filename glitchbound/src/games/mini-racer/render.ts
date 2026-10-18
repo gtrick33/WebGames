@@ -3,7 +3,7 @@ import type { Pose } from './ghost';
 import { CAR, localVelocity, speedOf } from './physics';
 import type { CarDef, CarShape } from './cars';
 import { COUNTDOWN, RACE_LAPS, type RaceSim } from './sim';
-import { KERB, type Obstacle, type Surface, type ThemeId, type Track } from './track';
+import { KERB, WALL_HALF, type Obstacle, type Surface, type ThemeId, type Track } from './track';
 
 /** Canvas 2D drawing for the racer: road from cached Path2Ds, low-poly cars, skids, particles, HUD. */
 
@@ -162,8 +162,10 @@ export interface HudState {
   popup: { text: string; until: number } | null;
   /** Previous best lap (for the HUD), seconds. */
   best: number | null;
-  /** Last lap delta vs best, seconds (negative = faster). */
-  delta: { value: number; until: number } | null;
+  /** The latest sector split vs the reference (negative = faster), or a sector time with no reference. */
+  split: { sector: number; delta: number | null; time: number; until: number } | null;
+  /** Colour of each sector this lap: 'green' faster than the reference, 'red' slower, 'done' no reference. */
+  sectors: ('green' | 'red' | 'done' | null)[];
   attract: boolean;
   touch: boolean;
 }
@@ -191,6 +193,7 @@ export class Renderer {
   private theme: Theme = THEMES.bay;
   private road: Path2D | null = null;
   private kerbs: Path2D | null = null;
+  private walls: Path2D | null = null;
   private zones: { p: Path2D; surface: Surface }[] = [];
   private shortcut: Path2D | null = null;
   private mini: { path: Path2D; scale: number; ox: number; oy: number; w: number; h: number } | null = null;
@@ -232,6 +235,11 @@ export class Renderer {
     this.zones = track.zones.map((z) => ({ p: slice(track.path, z.from, z.to), surface: z.surface }));
     this.shortcut = track.shortcut ? pathFrom(track.shortcut.path.pts, false) : null;
     this.kerbs = this.buildKerbs(track.path);
+    this.walls = new Path2D();
+    for (const run of track.walls) {
+      this.walls.moveTo(run[0]!.x, run[0]!.y);
+      for (let i = 1; i < run.length; i++) this.walls.lineTo(run[i]!.x, run[i]!.y);
+    }
     this.pattern = this.buildPattern();
     this.skids = [];
     this.skidHead = 0;
@@ -335,21 +343,22 @@ export class Renderer {
     // Ground
     ctx.fillStyle = this.pattern ?? this.theme.ground;
     ctx.fillRect(view.minX, view.minY, view.maxX - view.minX, view.maxY - view.minY);
-    // World edge fence
-    const b = track.bounds;
-    ctx.lineWidth = 10;
-    ctx.strokeStyle = this.theme.edge;
-    ctx.strokeRect(b.minX, b.minY, b.maxX - b.minX, b.maxY - b.minY);
-
     this.drawRoad(track, sim);
     this.updateSkids(sim, pose);
     this.drawSkids(view);
+    this.drawWalls();
     this.drawObstacles(track.obstacles, view);
     this.drawDecor(track, view);
 
-    // Ghost, then player.
+    // Ghost, rivals, then player.
     const gp = sim.ghostPose();
     if (gp) this.drawCar(gp, { shape: this.car.shape, body: '#ffffff', accent: '#ffffff' }, 0, 0.42, true);
+    for (const rv of sim.rivals) {
+      const c = rv.car;
+      if (c.x < view.minX || c.x > view.maxX || c.y < view.minY || c.y > view.maxY) continue;
+      const rp = { x: rv.prev.x + (c.x - rv.prev.x) * alpha, y: rv.prev.y + (c.y - rv.prev.y) * alpha, a: rv.prev.a + (c.a - rv.prev.a) * alpha };
+      this.drawCar(rp, rv.look, Math.max(-1, Math.min(1, c.av / 3)), 1, false, c.boost > 0);
+    }
     this.updateParticles(sim, pose, dt);
     this.drawParticles();
     const steerVis = Math.max(-1, Math.min(1, car.av / 3));
@@ -357,6 +366,34 @@ export class Renderer {
 
     ctx.setTransform(d, 0, 0, d, 0, 0);
     if (!hud.attract) this.drawHud(sim, hud);
+  }
+
+  /** Tyre walls: a shadow, a dark base and alternating coloured tyre stacks. */
+  private drawWalls(): void {
+    const ctx = this.ctx;
+    const w = this.walls;
+    if (!w) return;
+    const t = this.theme;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.save();
+    ctx.translate(3, 4);
+    ctx.strokeStyle = 'rgba(30,15,50,0.22)';
+    ctx.lineWidth = WALL_HALF * 2 + 2;
+    ctx.stroke(w);
+    ctx.restore();
+    ctx.strokeStyle = '#1b1035';
+    ctx.lineWidth = WALL_HALF * 2 + 2;
+    ctx.stroke(w);
+    ctx.lineCap = 'butt';
+    ctx.strokeStyle = t.kerbB;
+    ctx.lineWidth = WALL_HALF * 2 - 3;
+    ctx.stroke(w);
+    ctx.setLineDash([14, 14]);
+    ctx.strokeStyle = t.kerbA;
+    ctx.stroke(w);
+    ctx.setLineDash([]);
+    ctx.lineCap = 'round';
   }
 
   /** A textured fill per surface so each one reads at a glance (pebbles, ripples, glaze...). */
@@ -823,8 +860,10 @@ export class Renderer {
 
     // Top-left: lap counter
     const lap = sim.lap;
-    const label = 'LAP';
-    const value = `${Math.min(RACE_LAPS, lap.laps.length + 1)}/${RACE_LAPS}`;
+    const lapText = `${Math.min(RACE_LAPS, lap.laps.length + 1)}/${RACE_LAPS}`;
+    const race = sim.mode === 'race';
+    const label = race ? `LAP ${lapText}` : 'LAP';
+    const value = race ? `P${sim.position}/${sim.racers.length}` : lapText;
     pill(ctx, pad, pad, small ? 78 : 96, small ? 46 : 54, '#ffffff');
     ctx.fillStyle = '#6b5b95';
     ctx.font = mono(small ? 9 : 10);
@@ -884,16 +923,35 @@ export class Renderer {
       ctx.globalAlpha = 1;
     }
 
-    // Delta vs best after a lap
-    if (hud.delta && this.time < hud.delta.until) {
-      const v = hud.delta.value;
-      const txt = `${v <= 0 ? '−' : '+'}${Math.abs(v).toFixed(2)}`;
-      pill(ctx, cx - 50, pad + (small ? 52 : 62), 100, 28, '#ffffff');
+    // Sector chips under the timer, and the latest split vs the reference.
+    const sy = pad + (small ? 52 : 62);
+    const cw = small ? 36 : 44;
+    for (let i = 0; i < 3; i++) {
+      const st = hud.sectors[i];
+      const x = cx - (cw * 3 + 8) / 2 + i * (cw + 4);
+      ctx.fillStyle = st === 'green' ? '#2fcf72' : st === 'red' ? '#ff5a6c' : st === 'done' ? '#ffffff' : 'rgba(255,255,255,0.55)';
+      roundRect(ctx, x, sy, cw, 16, 6);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#1b1035';
+      ctx.stroke();
+      ctx.fillStyle = '#1b1035';
+      ctx.font = mono(9);
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.font = mono(small ? 15 : 18);
-      ctx.fillStyle = v <= 0 ? '#1aa35a' : '#e8344e';
-      ctx.fillText(txt, cx, pad + (small ? 57 : 67));
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`S${i + 1}`, x + cw / 2, sy + 8.5);
+    }
+    ctx.textBaseline = 'top';
+    const sp = hud.split;
+    if (sp && this.time < sp.until) {
+      const txt = sp.delta === null ? `S${sp.sector + 1} ${sp.time.toFixed(2)}` : `S${sp.sector + 1} ${sp.delta <= 0 ? '−' : '+'}${Math.abs(sp.delta).toFixed(2)}`;
+      const fill = sp.delta === null ? '#ffffff' : sp.delta <= 0 ? '#2fcf72' : '#ff5a6c';
+      const bw4 = small ? 120 : 140;
+      pill(ctx, cx - bw4 / 2, sy + 22, bw4, 28, fill);
+      ctx.textAlign = 'center';
+      ctx.font = mono(small ? 14 : 16);
+      ctx.fillStyle = '#1b1035';
+      ctx.fillText(txt, cx, sy + 28);
     }
 
     // Drift chain
@@ -902,7 +960,7 @@ export class Renderer {
       const mult = 1 + Math.min(3, Math.floor(d.chainTime / 1.5));
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const y = H * (hud.touch ? 0.3 : 0.24);
+      const y = H * (hud.touch ? 0.36 : 0.32);
       ctx.font = font(small ? 26 : 34);
       ctx.lineWidth = 6;
       ctx.strokeStyle = '#1b1035';
@@ -920,7 +978,7 @@ export class Renderer {
     } else if (hud.popup && this.time < hud.popup.until) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const y = H * (hud.touch ? 0.3 : 0.24);
+      const y = H * (hud.touch ? 0.36 : 0.32);
       ctx.font = font(small ? 22 : 28);
       ctx.lineWidth = 6;
       ctx.strokeStyle = '#1b1035';
@@ -961,7 +1019,7 @@ export class Renderer {
     if (banner && this.time < banner.until) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const y = H * (hud.touch ? 0.42 : 0.36);
+      const y = H * (hud.touch ? 0.48 : 0.44);
       const bw2 = small ? 230 : 300;
       pill(ctx, cx - bw2 / 2, y - 26, bw2, banner.sub ? 62 : 48, banner.color);
       ctx.fillStyle = '#1b1035';
@@ -1047,6 +1105,15 @@ export class Renderer {
       ctx.arc(g.x, g.y, 4.5 / m.scale, 0, Math.PI * 2);
       ctx.fill();
       ctx.lineWidth = 1.5 / m.scale;
+      ctx.strokeStyle = '#1b1035';
+      ctx.stroke();
+    }
+    for (const rv of sim.rivals) {
+      ctx.fillStyle = rv.look.body;
+      ctx.beginPath();
+      ctx.arc(rv.car.x, rv.car.y, 4 / m.scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 1.2 / m.scale;
       ctx.strokeStyle = '#1b1035';
       ctx.stroke();
     }

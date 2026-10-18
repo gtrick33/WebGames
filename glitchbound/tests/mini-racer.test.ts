@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { dailyTrack, hashDay, todayKey } from '../src/games/mini-racer/daily';
-import { leftOf, pointAt } from '../src/games/mini-racer/geometry';
+import { leftOf, nearest, pointAt } from '../src/games/mini-racer/geometry';
 import { decodeGhost, encodeGhost, GhostRecorder, ghostPose } from '../src/games/mini-racer/ghost';
 import { advanceLaps, bestLap, crossGate, newLapState } from '../src/games/mini-racer/laps';
-import { newCar, onLoose, speedOf, stepCar } from '../src/games/mini-racer/physics';
-import { autopilot, DT, RaceSim, scoreFor } from '../src/games/mini-racer/sim';
-import { buildTrack, bypassed, groundAt, SURFACES, validateTrack, type Checkpoint, type Gate } from '../src/games/mini-racer/track';
+import { CAR, CAR_RADIUS, collideCircle, collideSegment, newCar, onLoose, speedOf, stepCar } from '../src/games/mini-racer/physics';
+import { autopilot, DT, RaceSim, scoreFor, type Difficulty } from '../src/games/mini-racer/sim';
+import { bestSectors, chooseReference, SECTORS, SectorTimer, sectorGates, sectorTimes } from '../src/games/mini-racer/sectors';
+import { buildTrack, bypassed, cellAt, decorRadius, groundAt, KERB, SURFACES, validateTrack, WALL_HALF, wallOffset, type Checkpoint, type Gate } from '../src/games/mini-racer/track';
 import { TRACKS } from '../src/games/mini-racer/tracks';
 import { CARS, raceCoins, specFor, statBars } from '../src/games/mini-racer/cars';
 import { getGame } from '../src/catalog/catalog';
@@ -347,5 +348,219 @@ describe('race start (regression: car stuck at the start)', () => {
     for (let i = 0; i < 120 * 4 && !rescued; i++) rescued = sim.step(0).some((e) => e.type === 'rescue');
     expect(rescued).toBe(true);
     expect(sim.ground.onRoad).toBe(true);
+  });
+});
+
+describe('barriers and solid scenery', () => {
+  const tracks = [...TRACKS, dailyTrack('2026-10-18')].map(buildTrack);
+
+  it('tyre walls stay off the road and leave every shortcut open', () => {
+    for (const t of tracks) {
+      expect(t.walls.length, t.def.id).toBeGreaterThan(0);
+      for (const run of t.walls) {
+        for (const q of run) {
+          expect(nearest(t.path, q).d, t.def.id).toBeGreaterThan(t.half + KERB + 20);
+          if (t.shortcut) expect(nearest(t.shortcut.path, q).d, t.def.id).toBeGreaterThan(t.shortcut.half + WALL_HALF);
+        }
+      }
+    }
+  });
+
+  it('a car driven straight at the wall slides along it and never passes through', () => {
+    for (const t of tracks) {
+      const { p, t: tan } = pointAt(t.path, t.path.length * 0.3);
+      const n = leftOf(tan);
+      for (const side of [1, -1]) {
+        const car = newCar(p.x, p.y, Math.atan2(n.y * side + tan.y * 0.3, n.x * side + tan.x * 0.3));
+        car.vx = Math.cos(car.a) * 420;
+        car.vy = Math.sin(car.a) * 420;
+        let maxD = 0;
+        for (let i = 0; i < 120; i++) {
+          stepCar(car, { steer: 0, throttle: 1, brake: 0 }, SURFACES.asphalt, DT);
+          const cell = cellAt(t, car.x, car.y);
+          for (const k of cell.segs) {
+            const s = t.segs[k]!;
+            collideSegment(car, s.ax, s.ay, s.bx, s.by, WALL_HALF);
+          }
+          maxD = Math.max(maxD, nearest(t.path, car).d);
+        }
+        expect(maxD, `${t.def.id} side ${side}`).toBeLessThan(wallOffset(t.half) - WALL_HALF + 2);
+      }
+    }
+  });
+
+  it('cutting straight across the infield is stopped by the barrier, and the lap would not count anyway', () => {
+    const t = tracks[0]!;
+    const sim = new RaceSim(t);
+    for (let i = 0; i < 120 * 2.3; i++) sim.step(0); // just after GO
+    const target = pointAt(t.path, t.path.length / 2).p;
+    let maxD = 0;
+    for (let i = 0; i < 120 * 3; i++) {
+      // Always aim straight at the far side of the lap.
+      let want = Math.atan2(target.y - sim.car.y, target.x - sim.car.x) - sim.car.a;
+      while (want > Math.PI) want -= Math.PI * 2;
+      while (want < -Math.PI) want += Math.PI * 2;
+      sim.step(Math.max(-1, Math.min(1, want * 3)));
+      maxD = Math.max(maxD, sim.ground.d);
+    }
+    expect(maxD).toBeLessThan(wallOffset(t.half));
+    expect(sim.lap.laps.filter((l) => l.valid)).toHaveLength(0);
+  });
+
+  it('scenery props are solid: a car driven into one bounces off and loses speed', () => {
+    const t = tracks[0]!;
+    const prop = t.decor[Math.floor(t.decor.length / 2)]!;
+    const r = decorRadius(prop);
+    expect(t.solids.some((s) => s.x === prop.x && s.y === prop.y)).toBe(true);
+    const car = newCar(prop.x - 120, prop.y, 0);
+    car.vx = 380;
+    let minDist = Infinity;
+    for (let i = 0; i < 90; i++) {
+      stepCar(car, { steer: 0, throttle: 1, brake: 0 }, SURFACES.sand, DT);
+      for (const k of cellAt(t, car.x, car.y).solids) {
+        const s = t.solids[k]!;
+        collideCircle(car, s.x, s.y, s.r);
+      }
+      minDist = Math.min(minDist, Math.hypot(car.x - prop.x, car.y - prop.y));
+    }
+    expect(minDist).toBeGreaterThan(r + CAR_RADIUS - 0.5);
+    expect(car.x).toBeLessThan(prop.x);
+  });
+
+  it('a car stopped against a prop can steer away (no getting stuck with automatic gas)', () => {
+    const t = tracks[0]!;
+    const sim = new RaceSim(t);
+    for (let i = 0; i < 120 * 2.5; i++) sim.step(0);
+    const prop = t.decor[3]!;
+    sim.car.x = prop.x - decorRadius(prop) - CAR_RADIUS - 1;
+    sim.car.y = prop.y;
+    sim.car.a = 0;
+    sim.car.vx = sim.car.vy = 0;
+    let rescued = false;
+    for (let i = 0; i < 120 * 4 && !rescued; i++) rescued = sim.step(1).some((e) => e.type === 'rescue');
+    // Either it turned away and drove off, or it was put back on track: never pinned for good.
+    expect(rescued || Math.hypot(sim.car.x - prop.x, sim.car.y - prop.y) > 60).toBe(true);
+  });
+});
+
+describe('AI race', () => {
+  const runRace = (def: (typeof TRACKS)[number], difficulty: Difficulty, playerSpeed = 1) => {
+    const sim = new RaceSim(buildTrack(def), null, { ...CAR, maxSpeed: CAR.maxSpeed * playerSpeed }, { mode: 'race', difficulty });
+    for (let i = 0; i < 120 * 200 && !sim.finished; i++) sim.step(autopilot(sim));
+    return sim;
+  };
+
+  it('starts four cars on a grid, all on the road, with the player at the back', () => {
+    const sim = new RaceSim(buildTrack(TRACKS[0]!), null, CAR, { mode: 'race' });
+    expect(sim.racers).toHaveLength(4);
+    for (const r of sim.racers) expect(r.ground.onRoad).toBe(true);
+    expect(sim.position).toBe(4);
+  });
+
+  it('reports a finishing position that matches the results order', () => {
+    const sim = runRace(TRACKS[0]!, 'medium');
+    const r = sim.result();
+    expect(r.position).toBeGreaterThanOrEqual(1);
+    expect(r.standings).toHaveLength(4);
+    expect(r.standings[r.position! - 1]!.player).toBe(true);
+    // Finished cars come first, in finish-time order.
+    const times = r.standings.map((s) => s.time).filter((x): x is number => x !== null);
+    expect(times).toEqual([...times].sort((a, b) => a - b));
+    expect(new Set(r.standings.map((s) => s.name)).size).toBe(4);
+  });
+
+  it('harder AI is faster: Easy > Medium > Hard average finish times', () => {
+    const avg: Record<string, number> = {};
+    for (const d of ['easy', 'medium', 'hard'] as Difficulty[]) {
+      let sum = 0;
+      let n = 0;
+      for (const def of [TRACKS[0]!, TRACKS[3]!]) {
+        // A slow player so every rival finishes and the result reflects the AI's own pace.
+        const sim = runRace(def, d, 0.55);
+        for (const rv of sim.rivals) {
+          expect(rv.finishTime, `${d} ${def.id}`).not.toBeNull();
+          sum += rv.finishTime!;
+          n++;
+        }
+      }
+      avg[d] = sum / n;
+    }
+    expect(avg.easy!).toBeGreaterThan(avg.medium!);
+    expect(avg.medium!).toBeGreaterThan(avg.hard!);
+  });
+
+  it('AI rivals lap cleanly (no missed checkpoints)', () => {
+    const sim = runRace(TRACKS[1]!, 'hard', 0.6);
+    for (const rv of sim.rivals) expect(rv.lap.laps.every((l) => l.valid), rv.name).toBe(true);
+  });
+
+  it('cars bump apart instead of overlapping', () => {
+    const sim = new RaceSim(buildTrack(TRACKS[0]!), null, CAR, { mode: 'race' });
+    for (let i = 0; i < 120 * 2.3; i++) sim.step(0);
+    const [me, rival] = [sim.racers[0]!, sim.racers[1]!];
+    rival.car.x = me.car.x + 10;
+    rival.car.y = me.car.y;
+    rival.car.vx = 0;
+    rival.car.vy = 0;
+    me.car.vx = 300;
+    me.car.vy = 0;
+    sim.step(0);
+    expect(Math.hypot(rival.car.x - me.car.x, rival.car.y - me.car.y)).toBeGreaterThan(CAR_RADIUS * 2 - 0.5);
+    expect(rival.car.vx).toBeGreaterThan(0);
+  });
+});
+
+describe('sectors', () => {
+  it('splits the lap into three sectors at checkpoint gates', () => {
+    expect(sectorGates(9)).toEqual([3, 6]);
+    expect(sectorGates(8)).toEqual([3, 5]);
+    expect(SECTORS).toBe(3);
+  });
+
+  it('times sectors and compares them with a reference', () => {
+    const t = new SectorTimer(9);
+    t.begin();
+    expect(t.checkpoint(1, 2, null)).toBeNull();
+    expect(t.checkpoint(3, 5, [6, 12, 18])).toMatchObject({ sector: 0, time: 5, delta: -1, sectorTime: 5, refSector: 6 });
+    expect(t.checkpoint(6, 13, [6, 12, 18])).toMatchObject({ sector: 1, delta: 1, sectorTime: 8, refSector: 6 });
+    expect(t.lap(17.5, true, [6, 12, 18])).toMatchObject({ sector: 2, delta: -0.5, sectorTime: 4.5 });
+    expect(t.previous).toEqual([5, 13, 17.5]);
+    expect(sectorTimes([5, 13, 17.5])).toEqual([5, 8, 4.5]);
+  });
+
+  it('gives no splits for a lap that missed a checkpoint', () => {
+    const t = new SectorTimer(9);
+    t.begin();
+    t.checkpoint(3, 5, null);
+    t.miss();
+    expect(t.lap(20, true, null)).toBeNull();
+    expect(t.laps).toHaveLength(0);
+  });
+
+  it('uses your best-ever lap in Time Trial and your previous lap in a race', () => {
+    const best = [5, 10, 15];
+    const prev = [6, 12, 18];
+    expect(chooseReference('trial', best, prev)).toEqual({ kind: 'best', splits: best });
+    expect(chooseReference('race', best, prev)).toEqual({ kind: 'previous', splits: prev });
+    expect(bestSectors([[5, 13, 17.5], [6, 11, 17]])).toEqual([5, 5, 4.5]);
+  });
+
+  it('a Time Trial compares against the stored best; a race against the previous lap', () => {
+    const track = buildTrack(TRACKS[0]!);
+    const ref = [4, 8, 12];
+    const trial = new RaceSim(track, null, CAR, { mode: 'trial', bestSplits: ref });
+    for (let i = 0; i < 120 * 60 && !trial.finished; i++) trial.step(autopilot(trial));
+    const firstLap = trial.result().splitLog.filter((e) => e.lap === 1);
+    expect(firstLap).toHaveLength(3);
+    // The stored reference is impossibly fast, so every split of lap 1 is slower (red).
+    for (const e of firstLap) expect(e.delta!).toBeGreaterThan(0);
+
+    const race = new RaceSim(track, null, CAR, { mode: 'race', difficulty: 'easy' });
+    for (let i = 0; i < 120 * 90 && !race.finished; i++) race.step(autopilot(race));
+    const r = race.result();
+    expect(r.splitLog.filter((e) => e.lap === 1).every((e) => e.delta === null)).toBe(true);
+    const lap2 = r.splitLog.filter((e) => e.lap === 2);
+    const [l1, l2] = [r.splits[0]!, r.splits[1]!];
+    lap2.forEach((e) => expect(e.delta!).toBeCloseTo(l2[e.sector]! - l1[e.sector]!, 5));
   });
 });

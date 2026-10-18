@@ -600,3 +600,119 @@
     justify-content: flex-start;
   }
 }
+
+/* --------------------------------------------------------- modes, AI results, sectors */
+.mr-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 4px;
+  background: #efe3cf;
+  border: 2px solid var(--mr-ink);
+  border-radius: 14px;
+}
+.mr-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  line-height: 1.15;
+  text-align: center;
+}
+.mr-mode strong {
+  font-size: 14px;
+}
+.mr-mode span {
+  font-size: 10.5px;
+  opacity: 0.75;
+}
+.mr-mode.is-on {
+  background: var(--mr-ink);
+  color: #fff;
+}
+.mr-diffs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+.mr-diff {
+  border: 2px solid var(--mr-ink);
+  border-radius: 999px;
+  background: #fff;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.mr-diff.is-on {
+  background: var(--mr-yellow);
+  box-shadow: 2px 2px 0 var(--mr-ink);
+}
+.mr-diffs .mr-note-soft {
+  margin: 0 0 0 auto;
+}
+.mr-standings {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  font-size: 13px;
+}
+.mr-standings li {
+  display: grid;
+  grid-template-columns: 34px 14px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 8px;
+}
+.mr-standings li.is-me {
+  background: #ecffc2;
+  font-weight: 700;
+}
+.mr-standings i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--mr-ink);
+}
+.mr-pos {
+  font-weight: 700;
+}
+.mr-sectors {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.mr-sectors th,
+.mr-sectors td {
+  padding: 3px 4px;
+  text-align: right;
+  border-bottom: 2px dashed #d9cbb2;
+}
+.mr-sectors th:first-child {
+  text-align: left;
+  font-weight: 400;
+  color: #6b5b95;
+}
+.mr-sectors td small {
+  display: block;
+  font-size: 10px;
+}
+.mr-sectors td.is-green small {
+  color: #138a4a;
+}
+.mr-sectors td.is-red small {
+  color: #c4283f;
+}
+.mr-sectors td.is-best {
+  background: #ecffc2;
+}
+.mr-sectors tr.is-bad td:last-child {
+  color: #b2283e;
+}

@@ -168,8 +168,9 @@ export function unlockText(u: CarUnlock): string {
   return 'Starter';
 }
 
-/** Coins for a finished race. */
-export function raceCoins(r: { validLaps: number; medal: 'gold' | 'silver' | 'bronze' | null; newBest: boolean; firstDaily: boolean }): number {
+/** Coins for a finished race (a podium against AI pays extra). */
+export function raceCoins(r: { validLaps: number; medal: 'gold' | 'silver' | 'bronze' | null; newBest: boolean; firstDaily: boolean; position?: number | null }): number {
   const medal = r.medal === 'gold' ? 25 : r.medal === 'silver' ? 15 : r.medal === 'bronze' ? 8 : 0;
-  return 10 + r.validLaps * 3 + medal + (r.newBest ? 10 : 0) + (r.firstDaily ? 30 : 0);
+  const podium = r.position === 1 ? 20 : r.position === 2 ? 10 : r.position === 3 ? 5 : 0;
+  return 10 + r.validLaps * 3 + medal + podium + (r.newBest ? 10 : 0) + (r.firstDaily ? 30 : 0);
 }

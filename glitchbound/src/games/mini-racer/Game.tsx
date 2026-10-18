@@ -4,7 +4,8 @@ import { CARS, getCar, raceCoins, specFor, statBars, unlockText, type CarDef } f
 import { dailyTrack, todayKey } from './daily';
 import { Engine, type UiKey } from './engine';
 import { drawCarPreview, fmtTime, THEMES } from './render';
-import { RACE_LAPS, type RaceSim, type Result } from './sim';
+import { DIFFICULTY, RACE_LAPS, type Difficulty, type RaceMode, type RaceSim, type Result } from './sim';
+import { sectorTimes } from './sectors';
 import { loadGhost, loadSave, saveGhost, writeSave, type Bests, type SaveData } from './storage';
 import { buildTrack, medalTimes, type Surface, type Track, type TrackDef } from './track';
 import { TRACKS } from './tracks';
@@ -112,7 +113,13 @@ export default function Game({ host, restartKey }: GameModuleProps) {
     const s = saveRef.current;
     const def = defFor(s.track);
     engine.releaseInput();
-    engine.race(trackFor(def), specFor(getCar(s.car)), loadGhost(def.id), s.bests[def.id]?.lap ?? null);
+    const b = s.bests[def.id] ?? {};
+    engine.race(trackFor(def), specFor(getCar(s.car)), loadGhost(def.id), b.lap ?? null, {
+      mode: s.mode,
+      difficulty: s.difficulty,
+      playerCar: s.car,
+      bestSplits: b.splits ?? null,
+    });
     setFinish(null);
     go('race');
     host.report({ type: 'start' });
@@ -134,6 +141,10 @@ export default function Game({ host, restartKey }: GameModuleProps) {
       const next: Bests = { ...prev };
       let newRecord = false;
       if (result.best !== null && (!prev.lap || result.best < prev.lap)) next.lap = result.best;
+      // The Time Trial sector reference: the best lap that has splits.
+      const bs = result.bestSplits;
+      if (bs && (!prev.splits || bs[bs.length - 1]! < prev.splits[prev.splits.length - 1]!)) next.splits = bs;
+      if (result.position !== null && result.raceTime !== null && (!prev.position || result.position < prev.position)) next.position = result.position;
       if (result.raceTime !== null && (!prev.race || result.raceTime < prev.race)) {
         next.race = result.raceTime;
         newRecord = prev.race !== undefined;
@@ -144,7 +155,7 @@ export default function Game({ host, restartKey }: GameModuleProps) {
       const isDaily = def.id === daily.id;
       const medal = raceMedal(def.par, result.raceTime);
       const firstDaily = isDaily && result.raceTime !== null && !s0.dailyPaid.includes(today);
-      const coins = raceCoins({ validLaps: result.laps.filter((l) => l.valid).length, medal, newBest: newRecord, firstDaily });
+      const coins = raceCoins({ validLaps: result.laps.filter((l) => l.valid).length, medal, newBest: newRecord, firstDaily, position: result.raceTime !== null ? result.position : null });
       const before = medalUnlocks(s0);
       let after: SaveData = {
         ...s0,
@@ -160,6 +171,7 @@ export default function Game({ host, restartKey }: GameModuleProps) {
       const stats: Record<string, number> = { drift: result.drift, cleanLaps: result.cleanLaps };
       if (result.best !== null) stats.lapMs = Math.round(result.best * 1000);
       if (result.raceTime !== null) stats.raceMs = Math.round(result.raceTime * 1000);
+      if (result.position !== null) stats.position = result.position;
       /**
        * The one place a round's end is reported. `isDaily` is true for rounds on today's generated
        * track; the arcade counts those as this game's own daily. `score` is the leaderboard value
@@ -335,6 +347,25 @@ export default function Game({ host, restartKey }: GameModuleProps) {
             ))}
           </div>
 
+          <div className="mr-modes" role="radiogroup" aria-label="Mode">
+            {(['trial', 'race'] as RaceMode[]).map((m) => (
+              <button key={m} role="radio" aria-checked={save.mode === m} className={`mr-mode${save.mode === m ? ' is-on' : ''}`} onClick={() => update((s) => ({ ...s, mode: m }))}>
+                <strong>{m === 'trial' ? 'Time Trial' : 'Race'}</strong>
+                <span>{m === 'trial' ? 'You vs the clock and your ghost' : '3 AI rivals, start from the back'}</span>
+              </button>
+            ))}
+          </div>
+          {save.mode === 'race' && (
+            <div className="mr-diffs" role="radiogroup" aria-label="AI difficulty">
+              {(Object.keys(DIFFICULTY) as Difficulty[]).map((d) => (
+                <button key={d} role="radio" aria-checked={save.difficulty === d} className={`mr-diff${save.difficulty === d ? ' is-on' : ''}`} onClick={() => update((s) => ({ ...s, difficulty: d }))}>
+                  {DIFFICULTY[d].name}
+                </button>
+              ))}
+              {bests.position !== undefined && <span className="mr-note-soft mono">Best finish P{bests.position}</span>}
+            </div>
+          )}
+
           <div className="mr-records mono">
             <div>
               <span className="mr-label">Your best race</span>
@@ -465,7 +496,9 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch }: { finish: Finish;
   return (
     <div className="mr-sheet mr-result">
       <div className="mr-result-top">
-        <span className="mr-kicker mono">{track.name} · 3 laps</span>
+        <span className="mr-kicker mono">
+          {track.name} · {result.mode === 'race' ? `Race vs AI` : 'Time Trial'}
+        </span>
         {newRecord && <span className="mr-record">New record!</span>}
       </div>
       <div className="mr-headline">
@@ -475,8 +508,21 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch }: { finish: Finish;
           <strong className="mono">{result.raceTime !== null ? fmtTime(result.raceTime) : 'Not counted'}</strong>
         </div>
       </div>
+      {result.position !== null && (
+        <ol className="mr-standings mono" aria-label="Finishing order">
+          {result.standings.map((s, i) => (
+            <li key={s.name} className={s.player ? 'is-me' : ''}>
+              <span className="mr-pos">{ordinal(i + 1)}</span>
+              <i style={{ background: s.look.body }} aria-hidden="true" />
+              <span>{s.player ? 'You' : s.name}</span>
+              <span>{s.time !== null ? fmtTime(s.time) : 'racing'}</span>
+            </li>
+          ))}
+        </ol>
+      )}
       {result.raceTime === null && <p className="mr-note">A lap missed a checkpoint, so the race time doesn&rsquo;t count. Stay on the road between the posts.</p>}
-      {result.laps.length > 0 && (
+      <SectorSummary result={result} />
+      {result.laps.length > 0 && result.splitLog.length === 0 && (
         <ol className="mr-laps mono">
           {result.laps.map((l, i) => (
             <li key={i} className={l.time === result.best && l.valid ? 'is-best' : l.valid ? '' : 'is-bad'}>
@@ -506,5 +552,51 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch }: { finish: Finish;
         </button>
       </div>
     </div>
+  );
+}
+
+function ordinal(n: number): string {
+  return n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
+}
+
+/** Sector times of each lap, coloured by the delta shown during the race (vs that lap's reference). */
+function SectorSummary({ result }: { result: Result }) {
+  if (result.splitLog.length === 0) return null;
+  const best = result.splits.length ? result.splits.map(sectorTimes) : [];
+  const bestPer = best.length ? best[0]!.map((_, i) => Math.min(...best.map((b) => b[i]!))) : [];
+  return (
+    <table className="mr-sectors mono" aria-label="Sector times">
+      <thead>
+        <tr>
+          <th scope="col">{result.mode === 'trial' ? 'vs best' : 'vs prev lap'}</th>
+          <th scope="col">S1</th>
+          <th scope="col">S2</th>
+          <th scope="col">S3</th>
+          <th scope="col">Lap</th>
+        </tr>
+      </thead>
+      <tbody>
+        {result.laps.map((_, li) => li + 1).map((lap) => (
+          <tr key={lap} className={result.laps[lap - 1]?.valid ? '' : 'is-bad'}>
+            <th scope="row">Lap {lap}</th>
+            {[0, 1, 2].map((s) => {
+              const e = result.splitLog.find((x) => x.lap === lap && x.sector === s);
+              if (!e) return <td key={s}>–</td>;
+              const cls = e.delta === null ? '' : e.delta <= 0 ? 'is-green' : 'is-red';
+              return (
+                <td key={s} className={`${cls}${bestPer[s] !== undefined && Math.abs(e.sectorTime - bestPer[s]!) < 1e-6 ? ' is-best' : ''}`}>
+                  {e.sectorTime.toFixed(2)}
+                  {e.delta !== null && <small>{`${e.delta <= 0 ? '−' : '+'}${Math.abs(e.delta).toFixed(2)}`}</small>}
+                </td>
+              );
+            })}
+            <td className={result.laps[lap - 1]?.time === result.best ? 'is-best' : ''}>
+              {fmtTime(result.laps[lap - 1]?.time ?? null)}
+              <small>{result.laps[lap - 1]?.valid ? (result.laps[lap - 1]?.clean ? 'clean' : 'bumped') : 'missed'}</small>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
