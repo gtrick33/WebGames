@@ -649,6 +649,20 @@
   color: #fff;
   box-shadow: 0 7px 0 var(--pt-shadow);
 }
+.pt-mode-sticker {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border: 2px solid var(--pt-edge);
+  border-radius: 999px;
+  background: var(--pt-yellow);
+  color: #1d1238;
+  font: 800 11px/1.4 var(--mono);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
 .pt-stars {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
@@ -1240,6 +1254,18 @@ img.pt-feature-art {
 .pt-btn-skip {
   background: color-mix(in srgb, var(--pt-pink) 18%, var(--pt-card));
 }
+/* Places people tap fast: never select text or open the iPhone's Copy / Look Up menu. */
+.pt-heads,
+.pt-rps,
+.pt-room-answer,
+.pt-die,
+.pt-charade-btns {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
 /* Charades: get ready + heads up */
 .pt-getready {
   gap: 10px;
@@ -1275,7 +1301,7 @@ img.pt-feature-art {
 .pt-heads.is-pass {
   background: color-mix(in srgb, var(--pt-pink) 55%, var(--pt-card));
 }
-.pt-heads-zone {
+.party .pt-heads-zone {
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1469,7 +1495,6 @@ img.pt-feature-art {
 /* Trivia */
 .pt-trivia,
 .pt-rps,
-.pt-memory,
 .pt-potato,
 .pt-mini-result {
   display: grid;
@@ -1547,6 +1572,10 @@ img.pt-feature-art {
   box-shadow: 0 5px 0 var(--pt-shadow);
   font-size: 48px;
 }
+.party .pt-rps-hand {
+  font-size: 48px;
+  line-height: 1;
+}
 .pt-rps-reveal {
   display: flex;
   align-items: center;
@@ -1561,6 +1590,90 @@ img.pt-feature-art {
   font-size: 14px;
   font-weight: 800;
 }
+/* Live rooms (each player on their own phone) */
+.pt-imp-clock.is-low {
+  color: var(--pt-pink);
+}
+.pt-finger.is-you {
+  border-color: var(--pt-edge);
+  font-weight: 800;
+}
+.pt-room-answer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+.pt-room-answer .pt-btn {
+  min-height: 84px;
+  font-size: 22px;
+}
+.pt-room-answer .pt-btn.is-on,
+.pt-rps-hand.is-on {
+  background: var(--pt-yellow);
+  color: #1d1238;
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--pt-shadow);
+}
+.pt-room-reveal h2 {
+  font-size: clamp(22px, 6vw, 30px);
+}
+.pt-rps-chant {
+  font-size: clamp(34px, 11vw, 56px);
+  font-weight: 900;
+  animation: pt-shake 0.32s ease-in-out;
+}
+@keyframes pt-shake {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px) rotate(-6deg);
+  }
+}
+.pt-rps-all {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.pt-rps-throw {
+  display: grid;
+  justify-items: center;
+  min-width: 78px;
+  padding: 8px 10px;
+  border: 2.5px solid var(--pc, var(--pt-edge));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--pc, var(--pt-card)) 14%, var(--pt-card));
+  animation: pt-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+.pt-rps-throw b {
+  font-size: 46px;
+  line-height: 1.1;
+}
+.pt-rps-throw small {
+  font-weight: 800;
+}
+.pt-rps-throw.is-out {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+}
+.pt-collection.is-voted {
+  border-color: var(--pt-edge);
+  box-shadow: 0 4px 0 var(--pt-shadow);
+}
+.pt-room-board {
+  display: grid;
+  gap: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pt-rps-chant,
+  .pt-rps-throw {
+    animation: none;
+  }
+}
+
 .pt-potato-topic {
   font-size: 34px;
   font-weight: 900;
@@ -1587,24 +1700,6 @@ img.pt-feature-art {
 .pt-boom {
   font-size: 90px;
   animation: pt-pop 0.5s var(--spring);
-}
-.pt-pads {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  width: min(100%, 320px);
-}
-.pt-pad {
-  aspect-ratio: 1;
-  border: 3px solid var(--pt-edge);
-  border-radius: 22px;
-  opacity: 0.55;
-  transition: opacity 0.1s, transform 0.1s;
-}
-.pt-pad.is-lit,
-.pt-pad:active:not(:disabled) {
-  opacity: 1;
-  transform: scale(1.05);
 }
 
 /* Auction */
@@ -1774,11 +1869,11 @@ img.pt-feature-art {
   }
 }
 /* Bright buttons and badges keep dark text at night too. */
-:root[data-theme='dark'] .party :is(.pt-btn-go, .pt-pill, .pt-step, .pt-btn-yes, .pt-trivia-opt.is-right, .pt-trivia-opt.is-wrong, .pt-duel.is-go .pt-duel-half) {
+:root[data-theme='dark'] .party :is(.pt-btn-go, .pt-pill, .pt-step, .pt-btn-yes, .pt-trivia-opt.is-right, .pt-trivia-opt.is-wrong, .pt-duel.is-go .pt-duel-half, .pt-lot.pt-rarity-3) {
   color: #1d1238;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .party :is(.pt-btn-go, .pt-pill, .pt-step, .pt-btn-yes, .pt-trivia-opt.is-right, .pt-trivia-opt.is-wrong, .pt-duel.is-go .pt-duel-half) {
+  :root:not([data-theme='light']) .party :is(.pt-btn-go, .pt-pill, .pt-step, .pt-btn-yes, .pt-trivia-opt.is-right, .pt-trivia-opt.is-wrong, .pt-duel.is-go .pt-duel-half, .pt-lot.pt-rarity-3) {
     color: #1d1238;
   }
 }

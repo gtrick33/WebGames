@@ -151,14 +151,49 @@ export interface AdminReports {
   };
 }
 
+export interface CloudUsageDay {
+  day: string;
+  /** Pages Functions requests (the site's API). */
+  requests: number | null;
+  errors: number | null;
+  /** Requests to the rooms worker itself (count toward the same daily Workers limit). */
+  workerRequests: number | null;
+  rowsRead: number;
+  rowsWritten: number;
+  queries: number;
+  /** Live rooms (Durable Objects). Null when that metric could not be read. */
+  doRequests: number | null;
+  doGbSeconds: number | null;
+  doRowsRead: number | null;
+  doRowsWritten: number | null;
+  wsMessages: number | null;
+  doStoredBytes: number | null;
+}
+
 export interface CloudUsage {
   generatedAt: number;
-  limits: { requestsPerDay: number; d1RowsReadPerDay: number; d1RowsWrittenPerDay: number; d1StorageBytesPerDb: number; d1StorageBytesTotal: number };
+  limits: {
+    requestsPerDay: number;
+    d1RowsReadPerDay: number;
+    d1RowsWrittenPerDay: number;
+    d1StorageBytesPerDb: number;
+    d1StorageBytesTotal: number;
+    doRequestsPerDay: number;
+    doGbSecondsPerDay: number;
+    doRowsReadPerDay: number;
+    doRowsWrittenPerDay: number;
+    doStorageBytes: number;
+  };
   databases: { name: string; sizeBytes: number | null; tables: { name: string; rows: number }[] }[];
   analytics: {
     status: 'ok' | 'not_configured' | 'error';
-    days: { day: string; requests: number | null; errors: number | null; rowsRead: number; rowsWritten: number; queries: number }[];
+    days: CloudUsageDay[];
     error: string;
+  };
+  /** Live rooms from the site's own analytics (works without the API token). */
+  rooms: {
+    games: { game: string; opened: number; joins: number; players: number; openedToday: number }[];
+    days: { day: string; opened: number; joins: number }[];
   };
 }
 

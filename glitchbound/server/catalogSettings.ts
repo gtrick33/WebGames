@@ -12,12 +12,13 @@ import type { Env } from './http';
 
 export async function loadCatalog(env: Env, from: string, to: string): Promise<PublicCatalog> {
   try {
-    const [settings, picks, notice, layout, season] = await Promise.all([
+    const [settings, picks, notice, layout, season, party] = await Promise.all([
       env.DB.prepare('SELECT slug, data FROM game_settings').all<{ slug: string; data: string }>(),
       env.DB.prepare('SELECT day, slug, template, target FROM daily_picks WHERE day >= ? AND day <= ?').bind(from, to).all<{ day: string; slug: string; template: number | null; target: number | null }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'notice'").first<{ value: string }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'layout'").first<{ value: string }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'season'").first<{ value: string }>(),
+      env.DB.prepare("SELECT value FROM site_settings WHERE key = 'party'").first<{ value: string }>(),
     ]);
     const out: PublicCatalog = { settings: {}, picks: {}, notice: null, layout: null };
     if (isSeasonSetting(season?.value)) out.season = season.value;
@@ -35,6 +36,13 @@ export async function loadCatalog(env: Env, from: string, to: string): Promise<P
         out.notice = JSON.parse(n) as Notice;
       } catch {
         /* no notice */
+      }
+    }
+    if (party?.value) {
+      try {
+        out.party = JSON.parse(party.value) as PublicCatalog['party'];
+      } catch {
+        /* defaults */
       }
     }
     if (layout?.value) {

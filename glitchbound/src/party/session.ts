@@ -17,7 +17,8 @@ export interface DealtCard {
 
 export const PARTY_KEY = 'glitchbound.party';
 
-export type ModeId = 'impostor' | 'prompts' | 'nhie' | 'charades' | 'board' | 'auction' | 'mini';
+export const MODE_IDS = ['impostor', 'prompts', 'nhie', 'charades', 'board', 'auction'] as const;
+export type ModeId = (typeof MODE_IDS)[number];
 
 export type ModeState =
   | { mode: 'prompts'; count: number; limit: number; card?: DealtCard }
@@ -25,7 +26,6 @@ export type ModeState =
   | { mode: 'charades'; data: unknown }
   | { mode: 'board'; state: BoardState }
   | { mode: 'auction'; state: AuctionState }
-  | { mode: 'mini' }
   /** Impostor on one phone (ui/Impostor.tsx ImpostorLocal). */
   | { mode: 'impostor'; state: unknown };
 
@@ -96,7 +96,8 @@ export function sanitizeSession(raw: unknown): PartySession {
   if (isObj(raw.used)) for (const [k, v] of Object.entries(raw.used)) s.used[k] = strings(v, 2000);
   if (isObj(raw.custom)) s.custom = { challenges: strings(raw.custom.challenges, 100), nhie: strings(raw.custom.nhie, 100) };
   // Running modes are stored whole; a broken one is simply dropped (the players and scores survive).
-  if (isObj(raw.active) && typeof raw.active.mode === 'string') s.active = raw.active as unknown as ModeState;
+  // Modes that no longer exist (the old Mini-games) are dropped: the lobby opens instead.
+  if (isObj(raw.active) && (MODE_IDS as readonly unknown[]).includes(raw.active.mode)) s.active = raw.active as unknown as ModeState;
   s.updatedAt = typeof raw.updatedAt === 'number' ? raw.updatedAt : 0;
   return s;
 }

@@ -8,11 +8,11 @@ import type { Challenge, Player } from '../types';
 import { MiniGame, MINIS, type MiniId } from './minis';
 import { Avatar, byId, ModeBar, Name, PlayerPicker, Results } from './shared';
 
-const COLS = 6;
+export const COLS = 6;
 /** Pip positions (3x3 grid cells) for faces 1-6. */
 const PIPS: number[][] = [[4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]];
 
-function DieFace({ value }: { value: number }) {
+export function DieFace({ value }: { value: number }) {
   return (
     <svg viewBox="0 0 30 30" width="100%" height="100%" aria-hidden="true">
       {PIPS[value - 1]!.map((c) => (
@@ -23,7 +23,7 @@ function DieFace({ value }: { value: number }) {
 }
 
 /** Grid cell of tile i on a snaking board (left-to-right, then right-to-left). */
-function cell(i: number): { row: number; col: number } {
+export function cell(i: number): { row: number; col: number } {
   const row = Math.floor(i / COLS);
   const k = i % COLS;
   return { row, col: row % 2 === 0 ? k : COLS - 1 - k };

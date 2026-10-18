@@ -3,8 +3,7 @@
  * draw / group result), so any mode can launch them without knowing how they work.
  */
 import { useEffect, useRef, useState } from 'react';
-import { TRIVIA } from '../content/trivia';
-import { randomOf, shuffle } from '../engine';
+import { randomOf } from '../engine';
 import type { Player } from '../types';
 import { Avatar, PassPhone } from './shared';
 
@@ -14,14 +13,12 @@ export interface MiniProps {
   onDone: (winnerId: string | null, loserId?: string) => void;
 }
 
-export type MiniId = 'reaction' | 'rps' | 'potato' | 'trivia' | 'memory';
+export type MiniId = 'reaction' | 'rps' | 'potato';
 
 export const MINIS: { id: MiniId; title: string; emoji: string; blurb: string; players: 1 | 2 | 'all' }[] = [
   { id: 'reaction', title: 'Reaction Duel', emoji: '⚡', blurb: 'Two thumbs, one phone. Tap the moment it turns green.', players: 2 },
   { id: 'rps', title: 'Rock Paper Scissors', emoji: '✊', blurb: 'Secret picks, dramatic reveal. Best of three.', players: 2 },
   { id: 'potato', title: 'Hot Potato', emoji: '🥔', blurb: 'Name one, pass the phone. Don’t hold it when it pops.', players: 'all' },
-  { id: 'trivia', title: 'Quick Trivia', emoji: '❓', blurb: 'One question, four answers, five seconds of panic.', players: 1 },
-  { id: 'memory', title: 'Memory Flash', emoji: '🧠', blurb: 'Watch the sequence, repeat it. It grows every round.', players: 1 },
 ];
 
 export function MiniGame({ id, players, onDone }: MiniProps & { id: MiniId }) {
@@ -31,11 +28,8 @@ export function MiniGame({ id, players, onDone }: MiniProps & { id: MiniId }) {
     case 'rps':
       return <Rps players={players} onDone={onDone} />;
     case 'potato':
-      return <HotPotato players={players} onDone={onDone} />;
-    case 'trivia':
-      return <QuickTrivia players={players} onDone={onDone} />;
     default:
-      return <MemoryFlash players={players} onDone={onDone} />;
+      return <HotPotato players={players} onDone={onDone} />;
   }
 }
 
@@ -224,117 +218,6 @@ function HotPotato({ players, onDone }: MiniProps) {
           🥔
           <small>Tap, say one, pass!</small>
         </button>
-      )}
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------- quick trivia */
-
-function QuickTrivia({ players, onDone }: MiniProps) {
-  const player = players[0]!;
-  const [q] = useState(() => randomOf(TRIVIA));
-  const [options] = useState(() => shuffle(q.options, Math.random));
-  const [chosen, setChosen] = useState<string | null>(null);
-  const right = chosen === q.options[0];
-  return (
-    <div className="pt-trivia">
-      <p className="pt-kicker">{player.name}, answer this</p>
-      <h3>{q.q}</h3>
-      <div className="pt-trivia-opts">
-        {options.map((o) => (
-          <button
-            key={o}
-            className={`pt-trivia-opt${chosen ? (o === q.options[0] ? ' is-right' : o === chosen ? ' is-wrong' : '') : ''}`}
-            disabled={!!chosen}
-            onClick={() => setChosen(o)}
-          >
-            {o}
-          </button>
-        ))}
-      </div>
-      {chosen && (
-        <>
-          <h3>{right ? 'Correct! 🎉' : `Nope, it was ${q.options[0]}`}</h3>
-          <button className="pt-btn pt-btn-go" onClick={() => onDone(right ? player.id : null)}>
-            Continue
-          </button>
-        </>
-      )}
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------- memory flash */
-
-const PADS = ['#ff5a6c', '#ffd21f', '#2fd1a0', '#3d7bff'];
-
-function MemoryFlash({ players, onDone }: MiniProps) {
-  const player = players[0]!;
-  const [seq, setSeq] = useState<number[]>(() => Array.from({ length: 3 }, () => randomOf([0, 1, 2, 3])));
-  const [lit, setLit] = useState<number | null>(null);
-  const [phase, setPhase] = useState<'ready' | 'show' | 'input' | 'over'>('ready');
-  const [input, setInput] = useState<number[]>([]);
-  const [best, setBest] = useState(0);
-  useEffect(() => {
-    if (phase !== 'show') return;
-    let i = 0;
-    const step = (): void => {
-      if (i >= seq.length) {
-        setLit(null);
-        setPhase('input');
-        return;
-      }
-      setLit(seq[i]!);
-      window.setTimeout(() => setLit(null), 380);
-      i++;
-      timer = window.setTimeout(step, 600);
-    };
-    let timer = window.setTimeout(step, 400);
-    return () => window.clearTimeout(timer);
-  }, [phase, seq]);
-  const press = (k: number): void => {
-    if (phase !== 'input') return;
-    const next = [...input, k];
-    if (seq[next.length - 1] !== k) {
-      setPhase('over');
-      return;
-    }
-    if (next.length === seq.length) {
-      setBest(seq.length);
-      setInput([]);
-      setSeq([...seq, randomOf([0, 1, 2, 3])]);
-      setPhase('show');
-      return;
-    }
-    setInput(next);
-  };
-  if (phase === 'over') {
-    const won = best >= 5;
-    return (
-      <div className="pt-mini-result">
-        <h3>{best ? `You remembered ${best} in a row` : 'Missed the first one!'}</h3>
-        <p className="pt-muted">5 or more wins the challenge.</p>
-        <button className="pt-btn pt-btn-go" onClick={() => onDone(won ? player.id : null)}>
-          {won ? 'Winner! Continue' : 'Continue'}
-        </button>
-      </div>
-    );
-  }
-  return (
-    <div className="pt-memory">
-      <p className="pt-kicker">{player.name}: watch, then repeat</p>
-      <div className="pt-pads">
-        {PADS.map((c, i) => (
-          <button key={c} className={`pt-pad${lit === i ? ' is-lit' : ''}`} style={{ background: c }} onClick={() => press(i)} disabled={phase !== 'input'} aria-label={`Pad ${i + 1}`} />
-        ))}
-      </div>
-      {phase === 'ready' ? (
-        <button className="pt-btn pt-btn-go" onClick={() => setPhase('show')}>
-          Start
-        </button>
-      ) : (
-        <p className="pt-muted">{phase === 'show' ? 'Watch…' : `Your turn: ${input.length}/${seq.length}`}</p>
       )}
     </div>
   );

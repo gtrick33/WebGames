@@ -3,7 +3,7 @@ import { json, readJson, sameOrigin, utcDay, type Ctx } from '../../server/http'
 import { currentUser } from '../../server/session';
 import { visitorKey } from '../../server/visitor';
 
-const NAMES = new Set(['page_view', 'game_view', 'game_start', 'game_end', 'replay_click', 'game_close', 'share_click', 'daily_complete', 'search', 'category_select', 'mood_select', 'surprise_me', 'game_error', 'favorite', 'sign_in', 'subscribe', 'feedback_prompt', 'feedback_sent', 'bug_report', 'daily_share']);
+const NAMES = new Set(['page_view', 'game_view', 'game_start', 'game_end', 'replay_click', 'game_close', 'share_click', 'daily_complete', 'search', 'category_select', 'mood_select', 'surprise_me', 'game_error', 'favorite', 'sign_in', 'subscribe', 'feedback_prompt', 'feedback_sent', 'bug_report', 'daily_share', 'room_open', 'room_join']);
 
 /** POST /api/events { events: [{ name, props }] }: first-party, cookieless product analytics. */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {

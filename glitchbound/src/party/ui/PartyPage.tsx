@@ -8,24 +8,36 @@ import { getGame } from '../../catalog/catalog';
 import { Link, navigate, useLocation } from '../../router/router';
 import { AuctionMode } from './Auction';
 import { ImpostorMode, newImpostor } from './Impostor';
-import { ImpostorRoomPage, openImpostorRoom } from './ImpostorRoom';
+import { openImpostorRoom } from './ImpostorRoom';
 import { BoardMode } from './Board';
 import { CharadesMode } from './Charades';
-import { MiniGame, MINIS, type MiniId } from './minis';
 import { NeverMode } from './Never';
 import { dealPrompt, PromptsMode } from './Prompts';
-import { Avatar, ModeBar, PlayerPicker } from './shared';
+import { openPartyRoom, PartyRoomPage } from './room/PartyRoom';
+import { Avatar } from './shared';
+import type { RoomGame } from '../../platform/rooms';
+import { partySettingsFor } from '../../catalog/settings';
+import { useLiveCatalog } from '../../platform/liveCatalog';
+import { DEFAULT_FEATURED, PARTY_GAMES } from '../catalog';
 import './Party.css';
 
-const MODES: { id: ModeId; title: string; emoji: string; blurb: string; time: string; players: string; color: string }[] = [
-  { id: 'impostor', title: 'Impostor', emoji: '🕵️', blurb: 'Everyone gets the secret word but one. Find them.', time: '10–40 min', players: '3–16', color: '#7b4dff' },
-  { id: 'prompts', title: 'Party Prompts', emoji: '🃏', blurb: 'Truths, dares and “most likely to”, with your names on every card.', time: '15–45 min', players: '2–16', color: '#ff5a6c' },
-  { id: 'nhie', title: 'Never Have I Ever', emoji: '🙊', blurb: 'Five fingers up, reveal together. Last one standing wins.', time: '10–30 min', players: '3–16', color: '#a45cff' },
-  { id: 'charades', title: 'Charades', emoji: '🎭', blurb: 'Act, describe or draw it before time runs out.', time: '10–30 min', players: '3–16', color: '#ff8a1f' },
-  { id: 'board', title: 'Dice Adventure', emoji: '🎲', blurb: 'Roll, race and dodge the nasty slides.', time: '10–35 min', players: '2–8', color: '#2fd1a0' },
-  { id: 'auction', title: 'Name Your Price', emoji: '🔨', blurb: 'Bid play money and build the best collection.', time: '15–30 min', players: '2–8', color: '#ffb020' },
-  { id: 'mini', title: 'Mini-games', emoji: '⚡', blurb: 'Reaction duels, hot potato, quick trivia and more.', time: '1–3 min each', players: '1–16', color: '#3d7bff' },
-];
+/** The party line-up as players see it: the admins' Party settings applied (hidden, featured, texts, rooms). */
+function usePartyLineup() {
+  const live = useLiveCatalog();
+  const games = PARTY_GAMES.filter((g) => !partySettingsFor(live.raw, g.id).hidden && (g.id !== 'unhinged' || !live.settings('unhinged').hidden)).map((g) => {
+    const s = partySettingsFor(live.raw, g.id);
+    return { ...g, title: s.title || g.title, blurb: s.blurb || g.blurb, room: s.room ? g.room : null, label: s.sticker, featured: s.featured };
+  });
+  const chosen = games.filter((g) => g.featured);
+  return {
+    modes: games.filter((g) => g.onePhone),
+    rooms: games.filter((g) => g.room),
+    featured: chosen.length ? chosen : games.filter((g) => DEFAULT_FEATURED.includes(g.id)),
+  };
+}
+type Lineup = ReturnType<typeof usePartyLineup>;
+const anyOf = <T,>(list: T[]): T | undefined => list[Math.floor(Math.random() * list.length)];
+type ShownGame = Lineup['modes'][number];
 
 const INTENSITIES: { id: Intensity; label: string; note: string }[] = [
   { id: 'casual', label: '😊 Casual', note: 'Everyone' },
@@ -56,7 +68,6 @@ export function PartyPage() {
   const [session, update] = useSession();
   const [mode, setMode] = useState<ModeId | null>(session.active?.mode ?? null);
   const [adultAsk, setAdultAsk] = useState(false);
-  const [mini, setMini] = useState<{ id: MiniId; players: string[] } | null>(null);
   const top = useRef<HTMLDivElement>(null);
   useEffect(() => {
     top.current?.scrollIntoView({ block: 'start' });
@@ -67,7 +78,6 @@ export function PartyPage() {
   const exit = (): void => {
     update((s) => ({ ...s, active: null }));
     setMode(null);
-    setMini(null);
   };
   const open = (id: ModeId): void => {
     if (problem) return;
@@ -81,31 +91,13 @@ export function PartyPage() {
 
   return (
     <div className="party" ref={top}>
-      {inRoom && <ImpostorRoomPage key={room} code={room} onLeave={() => navigate('/party')} />}
+      {inRoom && <PartyRoomPage key={room} code={room} onLeave={() => navigate('/party')} />}
       {!inRoom && mode === 'impostor' && <ImpostorMode session={session} update={update} onExit={exit} onRoom={() => void openImpostorRoom()} />}
       {!inRoom && mode === 'prompts' && <PromptsMode session={session} update={update} onExit={exit} />}
       {!inRoom && mode === 'nhie' && <NeverMode session={session} update={update} onExit={exit} onNeedAdult={() => setAdultAsk(true)} />}
       {!inRoom && mode === 'charades' && <CharadesMode session={session} update={update} onExit={exit} />}
       {!inRoom && mode === 'board' && <BoardMode session={session} update={update} onExit={exit} />}
       {!inRoom && mode === 'auction' && <AuctionMode session={session} update={update} onExit={exit} />}
-      {!inRoom && mode === 'mini' && (
-        <div className="pt-screen">
-          <ModeBar title="Mini-games" onExit={exit} />
-          {mini ? (
-            <MiniGame
-              key={mini.id + mini.players.join()}
-              id={mini.id}
-              players={mini.players.map((id) => session.players.find((p) => p.id === id)!).filter(Boolean)}
-              onDone={(winner) => {
-                if (winner) update((s) => ({ ...s, scores: { ...s.scores, [winner]: (s.scores[winner] ?? 0) + 1 } }));
-                setMini(null);
-              }}
-            />
-          ) : (
-            <MiniPicker session={session} onPlay={setMini} />
-          )}
-        </div>
-      )}
       {!mode && !inRoom && <Lobby session={session} update={update} problem={problem} onOpen={open} onAdult={() => setAdultAsk(true)} />}
       {/* Last, so it opens above the house-rules sheet. */}
       {adultAsk && (
@@ -172,14 +164,17 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
   ].join(' · ');
   const customCount = session.custom.challenges.length + session.custom.nhie.length;
   const unhinged = getGame('unhinged');
-  const openRoom = (): void => {
+  const { modes, rooms, featured } = usePartyLineup();
+  const openRoom = (game: RoomGame = 'impostor'): void => {
+    if (game === 'unhinged') return navigate('/games/unhinged');
     setRoomMsg('Opening a room…');
-    openImpostorRoom().catch((e: unknown) => setRoomMsg(e instanceof Error ? e.message : 'Could not open a room. Try again.'));
+    (game === 'impostor' ? openImpostorRoom() : openPartyRoom(game)).catch((e: unknown) => setRoomMsg(e instanceof Error ? e.message : 'Could not open a room. Try again.'));
   };
   // "Pick for us": a random game that suits the group's size.
   const surprise = (): void => {
-    const fits = MODES.filter((m) => m.id !== 'mini' && (named.length >= 3 || m.id !== 'impostor'));
-    pick(fits[Math.floor(Math.random() * fits.length)]!.id);
+    const fits = modes.filter((m) => named.length >= 3 || m.id !== 'impostor');
+    const choice = anyOf(fits);
+    if (choice) pick(choice.id as ModeId);
   };
 
   return (
@@ -189,7 +184,7 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
         <h1 className="pt-title">
           Party <span>Mode</span>
         </h1>
-        <p className="pt-sub">Friends over, or on a call? Eight games, no sign-up.</p>
+        <p className="pt-sub">Friends over, or on a call? {modes.length + rooms.filter((r) => !r.onePhone).length} games, no sign-up.</p>
         <div className="pt-where" role="tablist" aria-label="How you play">
           <button role="tab" aria-selected={where === 'one'} className={where === 'one' ? 'is-on' : ''} onClick={() => setWhere('one')}>
             📱 Pass one phone
@@ -200,41 +195,13 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
         </div>
       </header>
 
-      <div className="pt-stars">
-        <section className="pt-feature" aria-labelledby="pt-feature-impostor">
-          <span className="pt-feature-sticker">New</span>
-          <span className="pt-feature-art" aria-hidden="true">
-            🕵️
-          </span>
-          <div className="pt-feature-copy">
-            <h2 id="pt-feature-impostor">Impostor</h2>
-            <p>Everyone gets the secret word, except one. Say one word each, then vote out the faker.</p>
-            <div className="pt-row pt-feature-ctas">
-              <button className="pt-btn pt-btn-go" onClick={() => (where === 'one' ? pick('impostor') : openRoom())}>
-                {where === 'one' ? 'Play on this phone' : 'Open a room'}
-              </button>
-              <button className="pt-btn" onClick={() => (where === 'one' ? openRoom() : pick('impostor'))}>
-                {where === 'one' ? '🌐 Own phones' : '📱 One phone'}
-              </button>
-            </div>
-          </div>
-        </section>
-        {unhinged && (
-          <section className="pt-feature is-unhinged" aria-labelledby="pt-feature-unhinged">
-            <span className="pt-feature-sticker">18+</span>
-            <img className="pt-feature-art" src={unhinged.art.tile} alt="" width={88} height={88} style={{ background: unhinged.art.bg }} />
-            <div className="pt-feature-copy">
-              <h2 id="pt-feature-unhinged">Unhinged</h2>
-              <p>The card game for terrible people. Play the most horrible answer, win the round. 3–10 players.</p>
-              <div className="pt-row pt-feature-ctas">
-                <Link className="pt-btn pt-btn-go" href="/games/unhinged">
-                  Play on your phones
-                </Link>
-              </div>
-            </div>
-          </section>
-        )}
-      </div>
+      {featured.length > 0 && (
+        <div className="pt-stars">
+          {featured.map((g) => (
+            <Feature key={g.id} g={g} where={where} art={g.id === 'unhinged' ? unhinged?.art : undefined} onPlay={() => pick(g.id as ModeId)} onRoom={() => g.room && openRoom(g.room)} />
+          ))}
+        </div>
+      )}
 
       {where === 'online' && (
         <>
@@ -242,27 +209,37 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
             <h2>Play on everyone’s own phone</h2>
             <p className="pt-muted">Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.</p>
             <div className="pt-online-games">
-              <div className="pt-online-game" style={{ ['--mc' as string]: '#7b4dff' }}>
-                <span className="pt-mode-art" aria-hidden="true">
-                  🕵️
-                </span>
-                <div>
-                  <b>Impostor</b>
-                  <span>3–12 players · secret cards on each phone</span>
-                  <button className="pt-btn pt-btn-go pt-btn-sm" onClick={openRoom}>
-                    Open a room
-                  </button>
-                </div>
-              </div>
-              {unhinged && (
-                <Link href="/games/unhinged" className="pt-online-game" style={{ ['--mc' as string]: '#ff5a6c' }}>
-                  <img src={unhinged.art.tile} alt="" width={84} height={84} style={{ background: unhinged.art.bg }} />
-                  <div>
-                    <b>Unhinged 🔞</b>
-                    <span>3–10 players · the card game for terrible people</span>
-                    <span className="pt-btn pt-btn-sm">Play</span>
+              {rooms.map((r) =>
+                r.id === 'unhinged' ? (
+                  <Link key={r.id} href="/games/unhinged" className="pt-online-game" style={{ ['--mc' as string]: r.color }}>
+                    {unhinged ? <img src={unhinged.art.tile} alt="" width={84} height={84} style={{ background: unhinged.art.bg }} /> : <span className="pt-mode-art">{r.emoji}</span>}
+                    <div>
+                      <b>{r.title} 🔞</b>
+                      <span>
+                        {r.roomPlayers} players · {r.roomBlurb}
+                      </span>
+                      <span className="pt-btn pt-btn-sm">Play</span>
+                    </div>
+                  </Link>
+                ) : (
+                  <div key={r.id} className="pt-online-game" style={{ ['--mc' as string]: r.color }}>
+                    <span className="pt-mode-art" aria-hidden="true">
+                      {r.emoji}
+                    </span>
+                    <div>
+                      <b>
+                        {r.title}
+                        {r.label && <em className="pt-mode-sticker">{r.label}</em>}
+                      </b>
+                      <span>
+                        {r.roomPlayers} players · {r.roomBlurb}
+                      </span>
+                      <button className="pt-btn pt-btn-go pt-btn-sm" onClick={() => openRoom(r.room!)}>
+                        Open a room
+                      </button>
+                    </div>
                   </div>
-                </Link>
+                ),
               )}
             </div>
             {roomMsg && <p className="pt-muted">{roomMsg}</p>}
@@ -337,16 +314,20 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
         </button>
       </div>
       <div className="pt-modes pt-modes-lobby">
-        {MODES.map((m) => (
-          <button key={m.id} className={`pt-mode${problem ? ' is-waiting' : ''}`} style={{ ['--mc' as string]: m.color }} onClick={() => pick(m.id)}>
+        {modes.map((m) => (
+          <button key={m.id} className={`pt-mode${problem ? ' is-waiting' : ''}`} style={{ ['--mc' as string]: m.color }} onClick={() => pick(m.id as ModeId)}>
             <span className="pt-mode-art" aria-hidden="true">
               {m.emoji}
             </span>
             <span className="pt-mode-body">
-              <b>{m.title}</b>
+              <b>
+                {m.title}
+                {m.label && <em className="pt-mode-sticker">{m.label}</em>}
+              </b>
               <span>{m.blurb}</span>
               <small>
                 👥 {m.players} · ⏱ {m.time}
+                {m.room ? ' · 🌐 own phones too' : ''}
               </small>
             </span>
           </button>
@@ -491,37 +472,49 @@ function CustomPrompts({ session, update, onSaved }: { session: PartySession; up
   );
 }
 
-function MiniPicker({ session, onPlay }: { session: PartySession; onPlay: (m: { id: MiniId; players: string[] }) => void }) {
-  const [sel, setSel] = useState<string[]>([]);
+/** A big featured card at the top of the lobby. */
+function Feature({ g, where, art, onPlay, onRoom }: { g: ShownGame; where: 'one' | 'online'; art?: { tile: string; bg: string }; onPlay: () => void; onRoom: () => void }) {
+  const sticker = g.label || g.sticker;
+  const both = g.onePhone && !!g.room;
   return (
-    <div className="pt-panel">
-      <h3>Who’s playing?</h3>
-      <PlayerPicker players={session.players} selected={sel} label="Players" onToggle={(id) => setSel(sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id])} />
-      <div className="pt-modes">
-        {MINIS.map((m) => {
-          const need = m.players === 'all' ? 2 : m.players;
-          const ok = m.players === 'all' ? sel.length >= 2 : sel.length === need;
-          return (
-            <button
-              key={m.id}
-              className="pt-mode pt-mode-sm"
-              disabled={!ok}
-              onClick={() => onPlay({ id: m.id, players: m.players === 'all' ? sel : sel.slice(0, need) })}
-            >
-              <span className="pt-mode-art" aria-hidden="true">
-                {m.emoji}
-              </span>
-              <span className="pt-mode-body">
-                <b>{m.title}</b>
-                <span>{m.blurb}</span>
-                <small>{m.players === 'all' ? 'Pick 2+ players' : `Pick exactly ${m.players}`}</small>
-              </span>
+    <section className={`pt-feature${g.id === 'unhinged' ? ' is-unhinged' : ''}`} style={g.id === 'unhinged' || g.id === 'impostor' ? undefined : { background: `linear-gradient(130deg, ${g.color}, #ff4fa3 75%)` }} aria-labelledby={`pt-feature-${g.id}`}>
+      {sticker && <span className="pt-feature-sticker">{sticker}</span>}
+      {art ? (
+        <img className="pt-feature-art" src={art.tile} alt="" width={88} height={88} style={{ background: art.bg }} />
+      ) : (
+        <span className="pt-feature-art" aria-hidden="true">
+          {g.emoji}
+        </span>
+      )}
+      <div className="pt-feature-copy">
+        <h2 id={`pt-feature-${g.id}`}>{g.title}</h2>
+        <p>{g.blurb}</p>
+        <div className="pt-row pt-feature-ctas">
+          {g.id === 'unhinged' ? (
+            <Link className="pt-btn pt-btn-go" href="/games/unhinged">
+              Play on your phones
+            </Link>
+          ) : both ? (
+            <>
+              <button className="pt-btn pt-btn-go" onClick={where === 'one' ? onPlay : onRoom}>
+                {where === 'one' ? 'Play on this phone' : 'Open a room'}
+              </button>
+              <button className="pt-btn" onClick={where === 'one' ? onRoom : onPlay}>
+                {where === 'one' ? '🌐 Own phones' : '📱 One phone'}
+              </button>
+            </>
+          ) : g.room ? (
+            <button className="pt-btn pt-btn-go" onClick={onRoom}>
+              Open a room
             </button>
-          );
-        })}
+          ) : (
+            <button className="pt-btn pt-btn-go" onClick={onPlay}>
+              Play on this phone
+            </button>
+          )}
+        </div>
       </div>
-      <p className="pt-muted">Wins: {session.players.map((p) => `${p.name} ${session.scores[p.id] ?? 0}`).join(' · ')}</p>
-    </div>
+    </section>
   );
 }
 

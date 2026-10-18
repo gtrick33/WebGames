@@ -16,7 +16,9 @@ export function roomStub(env: Env, code: string): ReturnType<NonNullable<Env['RO
   return env.ROOMS.get(env.ROOMS.idFromName(code));
 }
 
-export type RoomGame = 'unhinged' | 'impostor';
+export const ROOM_GAMES = ['unhinged', 'impostor', 'nhie', 'auction', 'board', 'rps'] as const;
+export type RoomGame = (typeof ROOM_GAMES)[number];
+export const isRoomGame = (v: unknown): v is RoomGame => (ROOM_GAMES as readonly unknown[]).includes(v);
 
 export interface RoomSummary {
   /** Missing on Unhinged rooms. */

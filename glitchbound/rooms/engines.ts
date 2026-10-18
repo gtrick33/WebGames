@@ -5,8 +5,12 @@
  */
 import * as unhinged from '../src/games/unhinged/engine';
 import * as impostor from '../src/party/impostorRoom';
+import * as auction from '../src/party/rooms/auctionRoom';
+import * as board from '../src/party/rooms/boardRoom';
+import * as nhie from '../src/party/rooms/nhieRoom';
+import * as rps from '../src/party/rooms/rpsRoom';
 
-export type GameId = 'unhinged' | 'impostor';
+export type GameId = 'unhinged' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps';
 
 /** What every room engine provides (`State` stays opaque to the server). */
 export interface Engine {
@@ -30,8 +34,12 @@ export interface RoomState {
 export const ENGINES: Record<GameId, Engine> = {
   unhinged: unhinged as unknown as Engine,
   impostor: impostor as unknown as Engine,
+  nhie: nhie as unknown as Engine,
+  auction: auction as unknown as Engine,
+  board: board as unknown as Engine,
+  rps: rps as unknown as Engine,
 };
 
-export const isGameId = (v: unknown): v is GameId => v === 'unhinged' || v === 'impostor';
+export const isGameId = (v: unknown): v is GameId => typeof v === 'string' && Object.hasOwn(ENGINES, v);
 
-export const engineFor = (s: RoomState): Engine => ENGINES[s.game === 'impostor' ? 'impostor' : 'unhinged'];
+export const engineFor = (s: RoomState): Engine => ENGINES[isGameId(s.game) ? s.game : 'unhinged'];

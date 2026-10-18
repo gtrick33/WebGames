@@ -42,6 +42,8 @@ function Meter({ label, value, limit, format = fmt }: { label: string; value: nu
   );
 }
 
+const ROOM_NAMES: Record<string, string> = { unhinged: 'Unhinged', impostor: 'Impostor', nhie: 'Never Have I Ever', auction: 'Name Your Price', board: 'Dice Adventure', rps: 'Rock Paper Scissors' };
+
 export function CloudPanel() {
   const [data, setData] = useState<CloudUsage | null>(null);
   const [error, setError] = useState('');
@@ -52,61 +54,136 @@ export function CloudPanel() {
   }, []);
   if (error) return <section className="panel info-block"><h2>Cloudflare</h2><p>{error}</p></section>;
   if (!data) return <section className="panel info-block"><h2>Cloudflare</h2><p className="info-small">Loading usage…</p></section>;
+  const L = data.limits;
   const today = data.analytics.days[data.analytics.days.length - 1];
-  const peak = data.analytics.days.reduce((m, d) => Math.max(m, d.requests ?? 0), 0);
+  const peak = data.analytics.days.reduce((m, d) => Math.max(m, (d.requests ?? 0) + (d.workerRequests ?? 0)), 0);
   const totalBytes = data.databases.reduce((n, d) => n + (d.sizeBytes ?? 0), 0);
+  const live = data.analytics.status === 'ok' && today;
+  const serverRequests = live ? (today.requests === null && today.workerRequests === null ? null : (today.requests ?? 0) + (today.workerRequests ?? 0)) : null;
+  // Every free-plan limit with today's use, so the tightest one is easy to spot.
+  const meters: { group: string; label: string; value: number | null; limit: number; format?: (n: number) => string }[] = [
+    { group: 'Site server', label: 'Requests today (Pages Functions + rooms worker)', value: serverRequests, limit: L.requestsPerDay },
+    { group: 'Database (D1)', label: 'Rows read today', value: live ? today.rowsRead : null, limit: L.d1RowsReadPerDay },
+    { group: 'Database (D1)', label: 'Rows written today', value: live ? today.rowsWritten : null, limit: L.d1RowsWrittenPerDay },
+    { group: 'Database (D1)', label: 'Storage (all databases)', value: totalBytes, limit: L.d1StorageBytesTotal, format: bytes },
+    ...data.databases.map((d) => ({ group: 'Database (D1)', label: `${d.name} size`, value: d.sizeBytes, limit: L.d1StorageBytesPerDb, format: bytes })),
+    { group: 'Live rooms (Durable Objects)', label: 'Room requests today', value: live ? today.doRequests : null, limit: L.doRequestsPerDay },
+    { group: 'Live rooms (Durable Objects)', label: 'Room compute today (GB-s)', value: live && today.doGbSeconds !== null ? Math.round(today.doGbSeconds) : null, limit: L.doGbSecondsPerDay },
+    { group: 'Live rooms (Durable Objects)', label: 'Room rows read today', value: live ? today.doRowsRead : null, limit: L.doRowsReadPerDay },
+    { group: 'Live rooms (Durable Objects)', label: 'Room rows written today', value: live ? today.doRowsWritten : null, limit: L.doRowsWrittenPerDay },
+    { group: 'Live rooms (Durable Objects)', label: 'Room storage', value: live ? today.doStoredBytes : null, limit: L.doStorageBytes, format: bytes },
+  ];
+  const known = meters.filter((m) => m.value !== null);
+  const top = known.reduce<(typeof meters)[number] | null>((best, m) => (!best || m.value! / m.limit > best.value! / best.limit ? m : best), null);
+  const topPct = top ? (top.value! / top.limit) * 100 : 0;
+  const groups = [...new Set(meters.map((m) => m.group))];
+  const n = (v: number | null): string => (v === null ? '–' : fmt(Math.round(v)));
   return (
     <section className="panel info-block cloud" aria-labelledby="cloud-title">
       <h2 id="cloud-title">Cloudflare usage · free plan</h2>
-      <div className="cloud-meters">
-        {data.analytics.status === 'ok' && today && (
-          <>
-            <Meter label="Function requests today" value={today.requests} limit={data.limits.requestsPerDay} />
-            <Meter label="D1 rows read today" value={today.rowsRead} limit={data.limits.d1RowsReadPerDay} />
-            <Meter label="D1 rows written today" value={today.rowsWritten} limit={data.limits.d1RowsWrittenPerDay} />
-          </>
-        )}
-        <Meter label="D1 storage (all databases)" value={totalBytes} limit={data.limits.d1StorageBytesTotal} format={(n) => bytes(n)} />
-        {data.databases.map((d) => (
-          <Meter key={d.name} label={`${d.name} size`} value={d.sizeBytes} limit={data.limits.d1StorageBytesPerDb} format={(n) => bytes(n)} />
-        ))}
-      </div>
+      {top && (
+        <p className={`cloud-headline is-${topPct >= 80 ? 'bad' : topPct >= 50 ? 'warn' : 'ok'}`}>
+          Tightest limit today: <b>{topPct < 1 && topPct > 0 ? '<1' : Math.round(topPct)}%</b> of the free plan ({top.group}: {top.label.toLowerCase()}).
+          {data.analytics.status !== 'ok' && ' Request and room numbers need the API token below.'}
+        </p>
+      )}
+      {groups.map((g) => (
+        <div key={g} className="cloud-group">
+          <h3>{g}</h3>
+          <div className="cloud-meters">
+            {meters
+              .filter((m) => m.group === g)
+              .map((m) => (
+                <Meter key={m.label} label={m.label} value={m.value} limit={m.limit} format={m.format} />
+              ))}
+          </div>
+        </div>
+      ))}
 
       {data.analytics.status === 'not_configured' && (
         <p className="info-small cloud-note">
-          Daily requests and row reads need a read-only API token. In the Cloudflare dashboard create a token with <b>Account Analytics: Read</b>, then run{' '}
-          <code>wrangler pages secret put CF_API_TOKEN --project-name glitchbound</code> and the same for <code>CF_ACCOUNT_ID</code>.
+          Requests, row reads and every room number need a read-only API token. In the Cloudflare dashboard (My Profile → API Tokens) create a token with <b>Account → Account Analytics → Read</b>, then run{' '}
+          <code>wrangler pages secret put CF_API_TOKEN --project-name glitchbound</code> and the same for <code>CF_ACCOUNT_ID</code> (the account ID on the dashboard’s right sidebar).
         </p>
       )}
       {data.analytics.error && <p className="info-small cloud-note">Some analytics could not load: {data.analytics.error}</p>}
 
-      {data.analytics.status === 'ok' && (
+      <h3>Live rooms · 30 days</h3>
+      {data.rooms.games.length ? (
         <div className="hall-wrap">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Day (UTC)</th>
-                <th>Requests</th>
-                <th>Errors</th>
-                <th>D1 queries</th>
-                <th>Rows read</th>
-                <th>Rows written</th>
+                <th>Game</th>
+                <th>Rooms opened</th>
+                <th>Today</th>
+                <th>Players</th>
+                <th>Joins</th>
               </tr>
             </thead>
             <tbody>
-              {[...data.analytics.days].reverse().map((d) => (
-                <tr key={d.day}>
-                  <td className="mono">{d.day.slice(5)}</td>
-                  <td className={d.requests === peak && peak > 0 ? 'is-peak' : ''}>{d.requests === null ? '–' : fmt(d.requests)}</td>
-                  <td className={d.errors ? 'is-bad' : ''}>{d.errors === null ? '–' : fmt(d.errors)}</td>
-                  <td>{fmt(d.queries)}</td>
-                  <td>{fmt(d.rowsRead)}</td>
-                  <td>{fmt(d.rowsWritten)}</td>
+              {data.rooms.games.map((g) => (
+                <tr key={g.game}>
+                  <td>{ROOM_NAMES[g.game] ?? g.game}</td>
+                  <td>{fmt(g.opened)}</td>
+                  <td>{fmt(g.openedToday)}</td>
+                  <td>{fmt(g.players)}</td>
+                  <td>{fmt(g.joins)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      ) : (
+        <p className="info-small">No rooms opened yet (counted since the room stats were added).</p>
+      )}
+      {data.rooms.days.length > 0 && (
+        <p className="info-small">
+          Last 14 days: {data.rooms.days.map((d) => `${d.day.slice(5)} ${d.opened} rooms / ${d.joins} joins`).join(' · ')}
+        </p>
+      )}
+
+      {data.analytics.status === 'ok' && (
+        <>
+          <h3>Day by day</h3>
+          <div className="hall-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Day (UTC)</th>
+                  <th>Requests</th>
+                  <th>Errors</th>
+                  <th>D1 queries</th>
+                  <th>D1 rows read</th>
+                  <th>D1 rows written</th>
+                  <th>Room requests</th>
+                  <th>Room messages</th>
+                  <th>Room GB-s</th>
+                  <th>Room rows written</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...data.analytics.days].reverse().map((d) => {
+                  const req = d.requests === null && d.workerRequests === null ? null : (d.requests ?? 0) + (d.workerRequests ?? 0);
+                  return (
+                    <tr key={d.day}>
+                      <td className="mono">{d.day.slice(5)}</td>
+                      <td className={req === peak && peak > 0 ? 'is-peak' : ''}>{n(req)}</td>
+                      <td className={d.errors ? 'is-bad' : ''}>{n(d.errors)}</td>
+                      <td>{fmt(d.queries)}</td>
+                      <td>{fmt(d.rowsRead)}</td>
+                      <td>{fmt(d.rowsWritten)}</td>
+                      <td>{n(d.doRequests)}</td>
+                      <td>{n(d.wsMessages)}</td>
+                      <td>{d.doGbSeconds === null ? '–' : d.doGbSeconds.toFixed(1)}</td>
+                      <td>{n(d.doRowsWritten)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <details className="cloud-tables">
@@ -132,7 +209,11 @@ export function CloudPanel() {
           ))}
         </div>
       </details>
-      <p className="info-small">Free-plan limits: 100,000 function requests a day, 5M D1 rows read and 100k written a day, 500 MB per database, 5 GB in total. Daily limits reset at 00:00 UTC.</p>
+      <p className="info-small">
+        Free-plan limits: 100,000 requests a day (Pages Functions and Workers together); D1: 5M rows read and 100k written a day, 500 MB per database, 5 GB in total; live rooms (Durable Objects): 100,000 requests and 13,000 GB-s
+        of compute a day, 5M rows read and 100k written a day, 5 GB stored. Room WebSocket messages count as 1 request per 20. Daily limits reset at 00:00 UTC; past a limit, that part stops working until the reset. The $5/month Workers Paid plan
+        removes the daily cut-offs.
+      </p>
     </section>
   );
 }

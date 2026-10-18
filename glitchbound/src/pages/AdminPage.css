@@ -294,6 +294,25 @@
 .meter-pct.is-bad {
   color: var(--magenta-text);
 }
+.cloud-headline {
+  margin: 4px 0 12px;
+  padding: 10px 14px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--well);
+  font-weight: 650;
+}
+.cloud-headline.is-warn {
+  border-color: var(--yellow);
+}
+.cloud-headline.is-bad {
+  border-color: var(--coral);
+}
+.cloud-group h3,
+.cloud > h3 {
+  margin: 14px 0 4px;
+  font-size: 15px;
+}
 .cloud-note code {
   font-size: 12px;
   word-break: break-word;
@@ -440,6 +459,19 @@
   flex: none;
   border-radius: 10px;
   object-fit: cover;
+}
+.ag-party-art {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 28px;
+}
+.ag-views {
+  justify-self: start;
+  margin: 4px 0;
 }
 .ag-game-title {
   flex: 1;

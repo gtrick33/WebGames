@@ -84,8 +84,27 @@ export interface HomeLayout {
 
 export const STICKER_MAX = 14;
 
+/** How a Party Mode game is shown on the party page (set in the admin's Party view). */
+export interface PartySettings {
+  /** Left out of Party Mode entirely. */
+  hidden: boolean;
+  /** One of the big cards at the top (none chosen = Impostor and Unhinged). */
+  featured: boolean;
+  /** Its live room can be opened (games that have one). */
+  room: boolean;
+  /** Short sticker on its cards, e.g. "Hot" ('' = none, or the game's own on a featured card). */
+  sticker: string;
+  /** Text overrides ('' = the text from src/party/catalog.ts). */
+  title: string;
+  blurb: string;
+}
+
+export const DEFAULT_PARTY_SETTINGS: PartySettings = { hidden: false, featured: false, room: true, sticker: '', title: '', blurb: '' };
+
 /** What GET /api/catalog returns. */
 export interface PublicCatalog {
+  /** Party Mode games by id (older cached copies may not have it). */
+  party?: Record<string, Partial<PartySettings>>;
   settings: Record<string, Partial<GameSettings>>;
   picks: Record<string, DailyPick>;
   notice: Notice | null;
@@ -120,6 +139,10 @@ export interface DailyRules {
 
 export function settingsFor(cat: PublicCatalog, slug: string): GameSettings {
   return { ...DEFAULT_SETTINGS, ...cat.settings[slug] };
+}
+
+export function partySettingsFor(cat: PublicCatalog, id: string): PartySettings {
+  return { ...DEFAULT_PARTY_SETTINGS, ...cat.party?.[id] };
 }
 
 /**
@@ -169,6 +192,24 @@ export function sanitizePatch(body: unknown): Partial<GameSettings> {
   for (const k of ['hidden', 'pinned', 'spotlight', 'inDaily'] as const) if (typeof b[k] === 'boolean') out[k] = b[k];
   if (b.newBadge === 'auto' || b.newBadge === 'on' || b.newBadge === 'off') out.newBadge = b.newBadge;
   for (const k of ['maintenance', 'title', 'tagline', 'description'] as const) if (typeof b[k] === 'string') out[k] = clean(b[k], TEXT_LIMITS[k]);
+  return out;
+}
+
+/** Keeps only valid fields of a Party Mode settings patch. */
+export function sanitizePartyPatch(body: unknown): Partial<PartySettings> {
+  const b = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
+  const out: Partial<PartySettings> = {};
+  for (const k of ['hidden', 'featured', 'room'] as const) if (typeof b[k] === 'boolean') out[k] = b[k];
+  if (typeof b.sticker === 'string') out.sticker = clean(b.sticker, STICKER_MAX).replace(/\n+/g, ' ');
+  if (typeof b.title === 'string') out.title = clean(b.title, TEXT_LIMITS.title).replace(/\n+/g, ' ');
+  if (typeof b.blurb === 'string') out.blurb = clean(b.blurb, TEXT_LIMITS.tagline).replace(/\n+/g, ' ');
+  return out;
+}
+
+/** Stored form of Party Mode settings: only what differs from the defaults. */
+export function compactParty(s: PartySettings): Partial<PartySettings> {
+  const out: Partial<PartySettings> = {};
+  for (const k of Object.keys(DEFAULT_PARTY_SETTINGS) as (keyof PartySettings)[]) if (s[k] !== DEFAULT_PARTY_SETTINGS[k]) (out as Record<string, unknown>)[k] = s[k];
   return out;
 }
 

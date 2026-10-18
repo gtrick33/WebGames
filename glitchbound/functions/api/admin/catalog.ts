@@ -3,7 +3,8 @@ import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http'
 import { requireAdmin } from '../../../server/session';
 import { getGame } from '../../../src/catalog/catalog';
 import { GAMES } from '../../../src/catalog/games';
-import { compactSettings, isDay, sanitizeLayout, sanitizeNotice, sanitizePatch, sanitizePick, settingsFor, type GameSettings } from '../../../src/catalog/settings';
+import { compactParty, compactSettings, isDay, partySettingsFor, sanitizeLayout, sanitizeNotice, sanitizePartyPatch, sanitizePatch, sanitizePick, settingsFor, type GameSettings, type PartySettings } from '../../../src/catalog/settings';
+import { isPartyId, PARTY_GAMES } from '../../../src/party/catalog';
 import type { AdminCatalog } from '../../../src/platform/apiTypes';
 import { HOLIDAYS, isSeasonSetting } from '../../../src/platform/seasons';
 import { addDays } from '../../../src/platform/dates';
@@ -34,6 +35,7 @@ const who = (u: { nickname: string; email: string }): string => u.nickname || u.
  *   { action: 'notice', notice | null }    set or remove the site banner
  *   { action: 'layout', layout | null }    home page banner order, sizes, colours and stickers (null = automatic)
  *   { action: 'season', season }           holiday look: 'auto' (by the calendar), 'off' or a holiday id
+ *   { action: 'party', id, patch | null }  a Party Mode game's settings (null = back to the defaults)
  */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('forbidden', 403);
@@ -133,6 +135,26 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
       const name = body.season === 'auto' ? 'automatic (by the calendar)' : body.season === 'off' ? 'off' : (HOLIDAYS.find((h) => h.id === body.season)?.name ?? body.season);
       await logAdmin(env, by, 'season', `Holiday look: ${name}`);
       return json({ ok: true, season: body.season });
+    }
+    case 'party': {
+      if (!isPartyId(body.id)) return bad('unknown_game', 404);
+      const cat = await loadCatalog(env, today(), today());
+      const all: Record<string, Partial<PartySettings>> = { ...cat.party };
+      const name = PARTY_GAMES.find((g) => g.id === body.id)?.title ?? body.id;
+      let detail = 'back to defaults';
+      if (body.patch === null) delete all[body.id];
+      else {
+        const patch = sanitizePartyPatch(body.patch);
+        if (!Object.keys(patch).length) return bad('nothing_to_change');
+        all[body.id] = compactParty({ ...partySettingsFor(cat, body.id), ...patch });
+        detail = (Object.entries(patch) as [string, unknown][]).map(([k, v]) => `${k}: ${typeof v === 'boolean' ? (v ? 'on' : 'off') : v === '' ? '(default)' : String(v).slice(0, 60)}`).join(', ');
+      }
+      for (const k of Object.keys(all)) if (!Object.keys(all[k]!).length) delete all[k];
+      await env.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('party', ?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by")
+        .bind(JSON.stringify(all), now, by)
+        .run();
+      await logAdmin(env, by, 'party', `Party · ${name}: ${detail}`);
+      return json({ ok: true });
     }
     default:
       return bad('unknown_action');

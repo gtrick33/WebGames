@@ -1,8 +1,7 @@
 /**
- * glitchbound-rooms: live rooms for Unhinged and Impostor (see engines.ts). One Durable Object per
- * room code holds the game state
- * and every player's WebSocket. Sockets hibernate between messages, so idle rooms cost nothing; a
- * room deletes itself after 3 hours without activity. The site reaches it through the ROOMS binding
+ * glitchbound-rooms: live rooms for Unhinged and the Party Mode games (see engines.ts). One Durable
+ * Object per room code holds the game state and every player's WebSocket. Sockets hibernate between
+ * messages, so idle rooms cost nothing; a room deletes itself after 3 hours without activity. The site reaches it through the ROOMS binding
  * (functions/api/rooms/*); this worker has no public URL.
  */
 import { engineFor, ENGINES, isGameId, type RoomState as State } from './engines';
@@ -30,6 +29,8 @@ declare const WebSocketPair: new () => { 0: Socket; 1: Socket };
 declare const WebSocketRequestResponsePair: new (request: string, response: string) => unknown;
 
 const IDLE_MS = 3 * 60 * 60 * 1000;
+/** The idle-close alarm is rounded up to this, so it only needs rewriting every few minutes (each write is billed). */
+const IDLE_STEP = 10 * 60 * 1000;
 const MAX_MESSAGE = 2048;
 
 const json = (data: unknown, status = 200): Response => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
@@ -54,9 +55,16 @@ export class Room {
     return this.state;
   }
 
+  /** The alarm this object last set (forgotten when it hibernates or the alarm fires; then it is set again). */
+  private alarmAt: number | null = null;
+
   private async save(s: State): Promise<void> {
     await this.ctx.storage.put('state', s);
-    await this.ctx.storage.setAlarm(Math.min(s.deadline ?? Infinity, s.updated + IDLE_MS));
+    const at = Math.min(s.deadline ?? Infinity, Math.ceil((s.updated + IDLE_MS) / IDLE_STEP) * IDLE_STEP);
+    if (at !== this.alarmAt) {
+      await this.ctx.storage.setAlarm(at);
+      this.alarmAt = at;
+    }
   }
 
   private broadcast(s: State): void {
@@ -155,6 +163,7 @@ export class Room {
   }
 
   async alarm(): Promise<void> {
+    this.alarmAt = null;
     const s = await this.load();
     if (!s) return;
     const now = Date.now();
