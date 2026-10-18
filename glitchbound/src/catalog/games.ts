@@ -180,12 +180,12 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'mini-racer',
     title: 'Mini Racer',
-    tagline: 'Top-down toy-car time trials. Drift the bends, find the shortcut, beat your ghost.',
+    tagline: 'Hold left or right to steer a toy car through drifty little races. Gas is automatic.',
     description:
-      'Throw a chunky little car around three handmade tracks of asphalt, ice, dirt and mud, plus a brand-new circuit every day. ' +
-      'Hold drift through the bends for a turbo, gamble on the shortcuts and race the ghost of your best lap.',
+      'Hold the left or right side of the screen to throw a chunky toy car around six handmade tracks of tarmac, gravel, dirt, sand and ice, plus a new circuit every day. ' +
+      'Slide through the bends for a turbo, race the ghost of your best lap, earn coins and collect ten cars.',
     categories: ['racing', 'arcade'],
-    tags: ['car', 'driving', 'drift', 'time trial', 'top-down', 'ghost', 'daily', 'laps', 'kart'],
+    tags: ['car', 'driving', 'drift', 'time trial', 'top-down', 'ghost', 'daily', 'laps', 'kart', 'one-touch', 'cars'],
     released: '2026-10-18',
     accent: 'coral',
     art: {
@@ -197,27 +197,30 @@ export const GAMES: GameEntry[] = [
     runtime: { kind: 'module' },
     aspect: 'square',
     controls: {
-      keyboard: ['Up / W: gas, Down / S: brake and reverse', 'Left / Right or A / D: steer', 'Space or Shift: drift', 'R: restart, Esc or P: pause'],
-      touch: ['Gas is automatic', 'Left and right buttons steer', 'Hold DRIFT through bends, BRAKE to slow down'],
+      keyboard: ['Left / Right or A / D: steer (gas is automatic)', 'Hold a turn at speed to drift', 'R: restart, Esc or P: pause'],
+      touch: ['Hold the left half of the screen to turn left, the right half to turn right', 'Gas is automatic; hold a turn at speed to drift'],
     },
     stats: [
-      { key: 'score', label: 'Best score' },
-      { key: 'lapMs', label: 'Fastest lap', unit: 'ms', lowerIsBetter: true },
+      { key: 'score', label: 'Race points' },
       { key: 'raceMs', label: 'Fastest 3-lap race', unit: 'ms', lowerIsBetter: true },
-      { key: 'drift', label: 'Most drift points in a round' },
-      { key: 'cleanLaps', label: 'Most clean laps in a round' },
+      { key: 'lapMs', label: 'Fastest lap', unit: 'ms', lowerIsBetter: true },
+      { key: 'drift', label: 'Most drift points in a race' },
+      { key: 'cleanLaps', label: 'Most clean laps in a race' },
     ],
     highlights: [
-      'Three handmade tracks plus a new generated track every day',
-      'Time Trial, Hot Lap and Drift Zone modes',
+      'One-touch steering: hold left or right, gas is automatic',
+      'Six handmade tracks plus a new generated track every day',
+      'Tarmac, gravel, dirt, sand, ice, mud and boost strips, each with its own grip and speed',
+      'Ten collectible cars with small, balanced handling differences',
       'Ghost replay of your best lap on every track',
-      'Asphalt, ice, dirt, mud, boost pads and risky shortcuts',
     ],
     ownDaily: { label: 'Today’s track' },
     daily: [
-      { metric: 'score', targets: [2400, 2700, 3000], label: 'Score {n} points in one round' },
-      { metric: 'drift', targets: [1500, 2500, 3500], label: 'Rack up {n} drift points in one round' },
-      { metric: 'cleanLaps', targets: [2, 3, 4], label: 'Drive {n} clean laps in one round' },
+      { metric: 'score', targets: [2400, 2700, 2900], label: 'Score {n} race points in one race' },
+      { metric: 'drift', targets: [1500, 2500, 3500], label: 'Rack up {n} drift points in one race' },
+      { metric: 'cleanLaps', targets: [2, 3], label: 'Drive {n} clean laps in one race' },
     ],
+    // Race points are ~1000 per lap at gold pace, i.e. under 130 per second of real play even far beyond gold.
+    limits: { scorePerSecond: 160, minSeconds: 15 },
   },
 ];

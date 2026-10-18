@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { GameModuleProps } from '../../platform/contract';
+import { CARS, getCar, raceCoins, specFor, statBars, unlockText, type CarDef } from './cars';
 import { dailyTrack, todayKey } from './daily';
-import { Engine, type TouchInput, type UiKey } from './engine';
-import { fmtTime, PAINTS, THEMES } from './render';
-import { MODES, RACE_LAPS, type Mode, type RaceSim, type Result } from './sim';
+import { Engine, type UiKey } from './engine';
+import { drawCarPreview, fmtTime, THEMES } from './render';
+import { RACE_LAPS, type RaceSim, type Result } from './sim';
 import { loadGhost, loadSave, saveGhost, writeSave, type Bests, type SaveData } from './storage';
-import { buildTrack, medalTimes, type Track, type TrackDef } from './track';
+import { buildTrack, medalTimes, type Surface, type Track, type TrackDef } from './track';
 import { TRACKS } from './tracks';
 import './Game.css';
 
-type Screen = 'menu' | 'race' | 'paused' | 'result';
+type Screen = 'menu' | 'garage' | 'race' | 'paused' | 'result';
 type Medal = 'gold' | 'silver' | 'bronze' | null;
 
 interface Finish {
@@ -17,48 +18,55 @@ interface Finish {
   track: TrackDef;
   newRecord: boolean;
   medal: Medal;
-  prev: Bests;
+  coins: number;
+  newCars: CarDef[];
 }
 
 const MEDAL_LABEL = { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' } as const;
-/** Drift Zone medal thresholds (points in 60 s). */
-const DRIFT_MEDALS = { gold: 7000, silver: 4500, bronze: 2500 };
 
-function lapMedal(par: number, lap: number | undefined): Medal {
-  if (!lap) return null;
-  const m = medalTimes(par);
-  const ms = lap * 1000;
+const SURFACE_LABEL: Record<Surface, string> = {
+  asphalt: 'Tarmac',
+  boost: 'Boost strips',
+  dirt: 'Dirt',
+  gravel: 'Gravel',
+  ice: 'Ice',
+  grass: 'Grass',
+  sand: 'Sand',
+  snow: 'Snow',
+  mud: 'Mud',
+};
+
+/** Medal times for a 3-lap race: three gold laps plus a little for the standing start. */
+function raceMedalTimes(par: number): { gold: number; silver: number; bronze: number } {
+  return medalTimes(par * RACE_LAPS + 900);
+}
+
+function raceMedal(par: number, race: number | null | undefined): Medal {
+  if (!race) return null;
+  const m = raceMedalTimes(par);
+  const ms = race * 1000;
   return ms <= m.gold ? 'gold' : ms <= m.silver ? 'silver' : ms <= m.bronze ? 'bronze' : null;
 }
 
-/** A 3-lap race medal: three gold laps plus a little for the standing start. */
-function raceMedal(par: number, race: number | undefined): Medal {
-  if (!race) return null;
-  return lapMedal(par * RACE_LAPS + 900, race);
+/** Gold medals on the handmade tracks (some cars unlock with these). */
+function goldCount(save: SaveData): number {
+  return TRACKS.filter((d) => raceMedal(d.par, save.bests[d.id]?.race) === 'gold').length;
 }
 
-function driftMedal(points: number | undefined): Medal {
-  if (!points) return null;
-  return points >= DRIFT_MEDALS.gold ? 'gold' : points >= DRIFT_MEDALS.silver ? 'silver' : points >= DRIFT_MEDALS.bronze ? 'bronze' : null;
+/** Cars earned by medals that the player doesn't own yet. */
+function medalUnlocks(save: SaveData): CarDef[] {
+  const golds = goldCount(save);
+  return CARS.filter((c) => c.unlock.type === 'golds' && golds >= c.unlock.count && !save.cars.includes(c.id));
 }
 
-function medalFor(mode: Mode, def: TrackDef, b: Bests): Medal {
-  return mode === 'race' ? raceMedal(def.par, b.race) : mode === 'hotlap' ? lapMedal(def.par, b.lap) : driftMedal(b.drift);
+function surfacesOf(def: TrackDef): Surface[] {
+  const set = new Set<Surface>(['asphalt']);
+  for (const z of def.zones ?? []) set.add(z.surface);
+  if (def.shortcut) set.add(def.shortcut.surface);
+  for (const p of def.patches ?? []) set.add(p.surface);
+  set.add(def.offroad);
+  return [...set];
 }
-
-const RANK = { gold: 3, silver: 2, bronze: 1 } as const;
-
-/** Paint unlocks: the first three are free, the rest are earned. */
-function unlocked(save: SaveData, daily: TrackDef): boolean[] {
-  let best = 0;
-  for (const def of TRACKS) {
-    const b = save.bests[def.id] ?? {};
-    for (const m of [lapMedal(def.par, b.lap), raceMedal(def.par, b.race), driftMedal(b.drift)]) if (m) best = Math.max(best, RANK[m]);
-  }
-  const dailyDone = save.bests[daily.id]?.lap !== undefined;
-  return [true, true, true, best >= 2, best >= 3, dailyDone];
-}
-const UNLOCK_HINT = ['', '', '', 'Earn a silver medal', 'Earn a gold medal', "Set a lap on today's track"];
 
 export default function Game({ host, restartKey }: GameModuleProps) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -82,9 +90,9 @@ export default function Game({ host, restartKey }: GameModuleProps) {
     }
     return t;
   }, []);
-  const selected = allDefs.find((d) => d.id === save.track) ?? allDefs[1]!;
-  const paints = unlocked(save, daily);
-  const paintIdx = paints[save.paint] ? save.paint : 0;
+  const defFor = useCallback((id: string) => allDefs.find((d) => d.id === id) ?? allDefs[1]!, [allDefs]);
+  const selected = defFor(save.track);
+  const car = getCar(save.car);
 
   const update = useCallback((fn: (s: SaveData) => SaveData) => {
     const next = fn(saveRef.current);
@@ -102,61 +110,69 @@ export default function Game({ host, restartKey }: GameModuleProps) {
     const engine = engineRef.current;
     if (!engine) return;
     const s = saveRef.current;
-    const def = allDefs.find((d) => d.id === s.track) ?? allDefs[1]!;
-    const best = s.bests[def.id]?.lap ?? null;
+    const def = defFor(s.track);
     engine.releaseInput();
-    engine.race(trackFor(def), s.mode, s.mode === 'drift' ? null : loadGhost(def.id), best);
+    engine.race(trackFor(def), specFor(getCar(s.car)), loadGhost(def.id), s.bests[def.id]?.lap ?? null);
     setFinish(null);
     go('race');
     host.report({ type: 'start' });
-  }, [allDefs, trackFor, go, host]);
+  }, [defFor, trackFor, go, host]);
 
   const toMenu = useCallback(() => {
     const engine = engineRef.current;
     if (!engine) return;
-    const s = saveRef.current;
-    engine.attract(trackFor(allDefs.find((d) => d.id === s.track) ?? allDefs[1]!));
+    engine.attract(trackFor(defFor(saveRef.current.track)));
     go('menu');
-  }, [allDefs, trackFor, go]);
+  }, [defFor, trackFor, go]);
 
   const onFinish = useCallback(
     (sim: RaceSim) => {
       const result = sim.result();
       const def = sim.track.def;
-      const prev: Bests = { ...(saveRef.current.bests[def.id] ?? {}) };
+      const s0 = saveRef.current;
+      const prev: Bests = { ...(s0.bests[def.id] ?? {}) };
       const next: Bests = { ...prev };
       let newRecord = false;
-      if (result.best !== null && (!prev.lap || result.best < prev.lap)) {
-        next.lap = result.best;
-        newRecord = newRecord || sim.mode === 'hotlap' || prev.lap !== undefined;
-      }
+      if (result.best !== null && (!prev.lap || result.best < prev.lap)) next.lap = result.best;
       if (result.raceTime !== null && (!prev.race || result.raceTime < prev.race)) {
         next.race = result.raceTime;
-        newRecord = newRecord || sim.mode === 'race';
-      }
-      if (sim.mode === 'drift' && result.drift > 0 && (!prev.drift || result.drift > prev.drift)) {
-        next.drift = result.drift;
-        newRecord = true;
+        newRecord = prev.race !== undefined;
       }
       const stored = loadGhost(def.id);
       if (sim.newGhost && (!stored || sim.newGhost.time < stored.time)) saveGhost(def.id, sim.newGhost);
-      update((s) => ({ ...s, bests: { ...s.bests, [def.id]: next } }));
+
+      const isDaily = def.id === daily.id;
+      const medal = raceMedal(def.par, result.raceTime);
+      const firstDaily = isDaily && result.raceTime !== null && !s0.dailyPaid.includes(today);
+      const coins = raceCoins({ validLaps: result.laps.filter((l) => l.valid).length, medal, newBest: newRecord, firstDaily });
+      const before = medalUnlocks(s0);
+      let after: SaveData = {
+        ...s0,
+        bests: { ...s0.bests, [def.id]: next },
+        coins: s0.coins + coins,
+        earned: s0.earned + coins,
+        dailyPaid: firstDaily ? [...s0.dailyPaid, today].slice(-7) : s0.dailyPaid,
+      };
+      const newCars = medalUnlocks(after).filter((c) => !before.includes(c));
+      if (newCars.length) after = { ...after, cars: [...after.cars, ...newCars.map((c) => c.id)] };
+      update(() => after);
+
       const stats: Record<string, number> = { drift: result.drift, cleanLaps: result.cleanLaps };
       if (result.best !== null) stats.lapMs = Math.round(result.best * 1000);
       if (result.raceTime !== null) stats.raceMs = Math.round(result.raceTime * 1000);
       /**
        * The one place a round's end is reported. `isDaily` is true for rounds on today's generated
-       * track; the arcade counts those as this game's own daily.
+       * track; the arcade counts those as this game's own daily. `score` is the leaderboard value
+       * (race points: higher is better, ~1000 per lap at gold pace, comparable across tracks).
        */
-      const reportEnd = (isDaily: boolean): void => {
-        host.report(isDaily ? { type: 'end', score: result.score, stats, daily: true } : { type: 'end', score: result.score, stats });
+      const reportEnd = (isDailyRound: boolean): void => {
+        host.report(isDailyRound ? { type: 'end', score: result.score, stats, daily: true } : { type: 'end', score: result.score, stats });
       };
-      reportEnd(def.id === daily.id);
-      const medal = sim.mode === 'race' ? raceMedal(def.par, result.raceTime ?? undefined) : sim.mode === 'hotlap' ? lapMedal(def.par, result.best ?? undefined) : driftMedal(result.drift);
-      setFinish({ result, track: def, newRecord: newRecord && (prev.lap !== undefined || prev.race !== undefined || prev.drift !== undefined), medal, prev });
+      reportEnd(isDaily);
+      setFinish({ result, track: def, newRecord, medal, coins, newCars });
       go('result');
     },
-    [update, host, go, daily],
+    [update, host, go, daily, today],
   );
 
   const pause = useCallback(() => {
@@ -193,21 +209,22 @@ export default function Game({ host, restartKey }: GameModuleProps) {
         const s = screenRef.current;
         if (key === 'confirm' && (s === 'menu' || s === 'result')) handlers.current.startRace();
         else if (key === 'confirm' && s === 'paused') handlers.current.resume();
-        else if (key === 'restart' && s !== 'menu') handlers.current.startRace();
+        else if (key === 'restart' && s !== 'menu' && s !== 'garage') handlers.current.startRace();
         else if (key === 'pause' && s === 'race') handlers.current.pause();
         else if (key === 'pause' && s === 'paused') handlers.current.resume();
-        else if (key === 'pause' && s === 'result') handlers.current.toMenu();
+        else if (key === 'pause' && (s === 'result' || s === 'garage')) handlers.current.toMenu();
       },
     });
     engineRef.current = engine;
     engine.touchMode = touch;
     engine.setMuted(saveRef.current.muted);
+    engine.setCar(getCar(saveRef.current.car));
     handlers.current.toMenu();
     return () => {
       engine.dispose();
       engineRef.current = null;
     };
-    // The engine is created once; touch mode is synced below.
+    // The engine is created once; touch mode and the car are synced below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -216,8 +233,8 @@ export default function Game({ host, restartKey }: GameModuleProps) {
   }, [touch]);
 
   useEffect(() => {
-    engineRef.current?.setPaint(PAINTS[paintIdx]!.body);
-  }, [paintIdx]);
+    engineRef.current?.setCar(car);
+  }, [car]);
 
   // The arcade's Restart button.
   const firstRestart = useRef(restartKey);
@@ -227,27 +244,21 @@ export default function Game({ host, restartKey }: GameModuleProps) {
 
   const selectTrack = (id: string): void => {
     update((s) => ({ ...s, track: id }));
-    const def = allDefs.find((d) => d.id === id);
-    if (def) engineRef.current?.attract(trackFor(def));
+    engineRef.current?.attract(trackFor(defFor(id)));
   };
 
-  const setTouchKey = (key: keyof TouchInput, on: boolean) => (e: ReactPointerEvent) => {
-    e.preventDefault();
-    const engine = engineRef.current;
-    if (!engine) return;
-    if (on) (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-    engine.touch[key] = on;
+  const buyOrSelect = (c: CarDef): void => {
+    const s = saveRef.current;
+    if (s.cars.includes(c.id)) {
+      update((x) => ({ ...x, car: c.id }));
+    } else if (c.unlock.type === 'coins' && s.coins >= c.unlock.price) {
+      const price = c.unlock.price;
+      update((x) => ({ ...x, coins: x.coins - price, cars: [...x.cars, c.id], car: c.id }));
+    }
   };
-  const touchProps = (key: keyof TouchInput) => ({
-    onPointerDown: setTouchKey(key, true),
-    onPointerUp: setTouchKey(key, false),
-    onPointerCancel: setTouchKey(key, false),
-    onLostPointerCapture: setTouchKey(key, false),
-    onContextMenu: (e: { preventDefault(): void }) => e.preventDefault(),
-  });
 
   const bests = save.bests[selected.id] ?? {};
-  const medals = medalTimes(selected.par);
+  const medals = raceMedalTimes(selected.par);
 
   return (
     <div
@@ -257,7 +268,7 @@ export default function Game({ host, restartKey }: GameModuleProps) {
         if (e.pointerType === 'touch' && !touch) setTouch(true);
       }}
     >
-      <canvas ref={canvasRef} className="mr-canvas" aria-label="Mini Racer track" />
+      <canvas ref={canvasRef} className="mr-canvas" aria-label="Mini Racer track. Hold the left or right half to steer." />
 
       {screen === 'race' && (
         <button className="mr-pause" onClick={pause} aria-label="Pause">
@@ -266,50 +277,36 @@ export default function Game({ host, restartKey }: GameModuleProps) {
         </button>
       )}
 
-      {screen === 'race' && touch && (
-        <div className="mr-touch" aria-hidden="true">
-          <div className="mr-touch-steer">
-            <button className="mr-tbtn" {...touchProps('left')}>
-              <svg viewBox="0 0 24 24" width="30" height="30"><path d="M15 4 7 12l8 8" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            </button>
-            <button className="mr-tbtn" {...touchProps('right')}>
-              <svg viewBox="0 0 24 24" width="30" height="30"><path d="m9 4 8 8-8 8" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            </button>
-          </div>
-          <div className="mr-touch-act">
-            <button className="mr-tbtn mr-tbtn-brake" {...touchProps('brake')}>
-              BRAKE
-            </button>
-            <button className="mr-tbtn mr-tbtn-drift" {...touchProps('drift')}>
-              DRIFT
-            </button>
-          </div>
-        </div>
-      )}
-
       {screen === 'menu' && (
         <div className="mr-sheet mr-menu">
           <div className="mr-menu-head">
             <h2 className="mr-logo">
               Mini <span>Racer</span>
             </h2>
-            <button
-              className="mr-chip"
-              onClick={() => {
-                const m = !save.muted;
-                update((s) => ({ ...s, muted: m }));
-                engineRef.current?.setMuted(m);
-              }}
-              aria-pressed={!save.muted}
-            >
-              {save.muted ? 'Sound off' : 'Sound on'}
-            </button>
+            <div className="mr-head-right">
+              <span className="mr-coins mono" aria-label={`${save.coins} coins`}>
+                <i aria-hidden="true" />
+                {save.coins}
+              </span>
+              <button
+                className="mr-chip"
+                onClick={() => {
+                  const m = !save.muted;
+                  update((s) => ({ ...s, muted: m }));
+                  engineRef.current?.setMuted(m);
+                }}
+                aria-pressed={!save.muted}
+                aria-label="Sound"
+              >
+                {save.muted ? 'Muted' : 'Sound'}
+              </button>
+            </div>
           </div>
 
           <div className="mr-tracks" role="radiogroup" aria-label="Track">
             {allDefs.map((def) => {
               const b = save.bests[def.id] ?? {};
-              const m = medalFor(save.mode, def, b);
+              const m = raceMedal(def.par, b.race);
               const isDaily = def.id === daily.id;
               return (
                 <button
@@ -322,9 +319,7 @@ export default function Game({ host, restartKey }: GameModuleProps) {
                 >
                   {isDaily && <span className="mr-badge">Daily · {today.slice(5).replace('-', '/')}</span>}
                   <span className="mr-track-name">{def.name}</span>
-                  <span className="mr-track-best mono">
-                    {save.mode === 'drift' ? (b.drift ? `${b.drift} pts` : 'No score yet') : fmtTime((save.mode === 'race' ? b.race : b.lap) ?? null)}
-                  </span>
+                  <span className="mr-track-best mono">{fmtTime(b.race ?? null)}</span>
                   {m && <span className={`mr-medal mr-medal-${m}`} title={`${MEDAL_LABEL[m]} medal`} />}
                 </button>
               );
@@ -332,58 +327,55 @@ export default function Game({ host, restartKey }: GameModuleProps) {
           </div>
 
           <p className="mr-blurb">{selected.blurb}</p>
-
-          <div className="mr-modes" role="radiogroup" aria-label="Mode">
-            {(Object.keys(MODES) as Mode[]).map((m) => (
-              <button key={m} role="radio" aria-checked={save.mode === m} className={`mr-mode${save.mode === m ? ' is-on' : ''}`} onClick={() => update((s) => ({ ...s, mode: m }))}>
-                <strong>{MODES[m].name}</strong>
-                <span>{MODES[m].short}</span>
-              </button>
+          <div className="mr-surfaces">
+            {surfacesOf(selected).map((s) => (
+              <span key={s} className={`mr-surface mr-surface-${s}`}>
+                {SURFACE_LABEL[s]}
+              </span>
             ))}
           </div>
 
-          <div className="mr-targets mono">
-            {save.mode === 'drift' ? (
-              <>
-                <span className="mr-medal mr-medal-gold" /> {DRIFT_MEDALS.gold}
-                <span className="mr-medal mr-medal-silver" /> {DRIFT_MEDALS.silver}
-                <span className="mr-medal mr-medal-bronze" /> {DRIFT_MEDALS.bronze}
-              </>
-            ) : (
-              <>
-                <span className="mr-medal mr-medal-gold" /> {fmtTime((save.mode === 'race' ? medals.gold * RACE_LAPS + 900 : medals.gold) / 1000)}
-                <span className="mr-medal mr-medal-silver" /> {fmtTime((save.mode === 'race' ? (medals.gold * RACE_LAPS + 900) * 1.1 : medals.silver) / 1000)}
-                <span className="mr-medal mr-medal-bronze" /> {fmtTime((save.mode === 'race' ? (medals.gold * RACE_LAPS + 900) * 1.25 : medals.bronze) / 1000)}
-              </>
-            )}
-            {bests.lap !== undefined && save.mode !== 'drift' && <span className="mr-ghost-note">Ghost ready</span>}
+          <div className="mr-records mono">
+            <div>
+              <span className="mr-label">Your best race</span>
+              <strong>{fmtTime(bests.race ?? null)}</strong>
+            </div>
+            <div>
+              <span className="mr-label">Best lap</span>
+              <strong>{fmtTime(bests.lap ?? null)}</strong>
+            </div>
+            <div className="mr-targets">
+              <span>
+                <span className="mr-medal mr-medal-gold" /> {fmtTime(medals.gold / 1000)}
+              </span>
+              <span>
+                <span className="mr-medal mr-medal-silver" /> {fmtTime(medals.silver / 1000)}
+              </span>
+              <span>
+                <span className="mr-medal mr-medal-bronze" /> {fmtTime(medals.bronze / 1000)}
+              </span>
+            </div>
           </div>
 
           <div className="mr-menu-foot">
-            <div className="mr-paints" role="radiogroup" aria-label="Car paint">
-              {PAINTS.map((p, i) => (
-                <button
-                  key={p.name}
-                  role="radio"
-                  aria-checked={i === paintIdx}
-                  aria-label={paints[i] ? p.name : `${p.name} (locked: ${UNLOCK_HINT[i]})`}
-                  title={paints[i] ? p.name : `Locked: ${UNLOCK_HINT[i]}`}
-                  disabled={!paints[i]}
-                  className={`mr-paint${i === paintIdx ? ' is-on' : ''}${paints[i] ? '' : ' is-locked'}`}
-                  style={{ background: p.body }}
-                  onClick={() => update((s) => ({ ...s, paint: i }))}
-                />
-              ))}
-            </div>
+            <button className="mr-carpick" onClick={() => go('garage')}>
+              <CarThumb car={car} />
+              <span>
+                <strong>{car.name}</strong>
+                <small>Garage</small>
+              </span>
+            </button>
             <button className="mr-go" onClick={startRace}>
               Race!
             </button>
           </div>
           <p className="mr-keys">
-            {touch ? 'Gas is automatic. Hold DRIFT through bends for a turbo.' : 'Arrows / WASD to drive · Space to drift · R restart · Esc pause'}
+            {touch ? 'Hold the left or right side of the screen to steer. Gas is automatic.' : 'Left / Right or A / D to steer · gas is automatic · R restart · Esc pause'}
           </p>
         </div>
       )}
+
+      {screen === 'garage' && <Garage save={save} onPick={buyOrSelect} onBack={() => go('menu')} golds={goldCount(save)} />}
 
       {screen === 'paused' && (
         <div className="mr-sheet mr-small">
@@ -402,33 +394,88 @@ export default function Game({ host, restartKey }: GameModuleProps) {
         </div>
       )}
 
-      {screen === 'result' && finish && <ResultCard finish={finish} onAgain={startRace} onMenu={toMenu} touch={touch} />}
+      {screen === 'result' && finish && <ResultCard finish={finish} bests={save.bests[finish.track.id] ?? {}} onAgain={startRace} onMenu={toMenu} touch={touch} />}
     </div>
   );
 }
 
-function ResultCard({ finish, onAgain, onMenu, touch }: { finish: Finish; onAgain: () => void; onMenu: () => void; touch: boolean }) {
-  const { result, track, medal, newRecord } = finish;
-  const mode = result.mode;
-  const headline =
-    mode === 'race' ? (result.raceTime !== null ? fmtTime(result.raceTime) : 'Not counted') : mode === 'hotlap' ? fmtTime(result.best) : `${result.drift} pts`;
-  const label = mode === 'race' ? 'Race time' : mode === 'hotlap' ? 'Best lap' : 'Drift score';
+function CarThumb({ car }: { car: CarDef }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (ref.current) drawCarPreview(ref.current, car);
+  }, [car]);
+  return <canvas ref={ref} className="mr-thumb" aria-hidden="true" />;
+}
+
+function Garage({ save, onPick, onBack, golds }: { save: SaveData; onPick: (c: CarDef) => void; onBack: () => void; golds: number }) {
+  return (
+    <div className="mr-sheet mr-garage">
+      <div className="mr-menu-head">
+        <h2 className="mr-title">Garage</h2>
+        <div className="mr-head-right">
+          <span className="mr-coins mono" aria-label={`${save.coins} coins`}>
+            <i aria-hidden="true" />
+            {save.coins}
+          </span>
+          <button className="mr-btn" onClick={onBack}>
+            Done
+          </button>
+        </div>
+      </div>
+      <p className="mr-note-soft">Earn coins every race, with extra for medals, records and today&rsquo;s track. Cars differ a little; none is faster everywhere.</p>
+      <div className="mr-cars">
+        {CARS.map((c) => {
+          const owned = save.cars.includes(c.id);
+          const on = save.car === c.id;
+          const affordable = c.unlock.type === 'coins' && save.coins >= c.unlock.price;
+          const progress = c.unlock.type === 'golds' ? ` (${Math.min(golds, c.unlock.count)}/${c.unlock.count})` : '';
+          return (
+            <div key={c.id} className={`mr-car${on ? ' is-on' : ''}${owned ? '' : ' is-locked'}`}>
+              <CarThumb car={c} />
+              <div className="mr-car-info">
+                <strong>{c.name}</strong>
+                <small>{c.tagline}</small>
+                <div className="mr-bars">
+                  {statBars(c).map((s) => (
+                    <span key={s.label} title={`${s.label} ${s.value}/5`}>
+                      <em>{s.label}</em>
+                      <b style={{ '--v': s.value } as CSSProperties} />
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <button
+                className={owned ? 'mr-btn' : 'mr-go mr-buy'}
+                disabled={on || (!owned && !affordable)}
+                onClick={() => onPick(c)}
+                aria-label={owned ? (on ? `${c.name} selected` : `Drive ${c.name}`) : `Unlock ${c.name} for ${unlockText(c.unlock)}`}
+              >
+                {owned ? (on ? 'Driving' : 'Drive') : c.unlock.type === 'coins' ? `${c.unlock.price} coins` : `${unlockText(c.unlock)}${progress}`}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ResultCard({ finish, bests, onAgain, onMenu, touch }: { finish: Finish; bests: Bests; onAgain: () => void; onMenu: () => void; touch: boolean }) {
+  const { result, track, medal, newRecord, coins, newCars } = finish;
   return (
     <div className="mr-sheet mr-result">
       <div className="mr-result-top">
-        <span className="mr-kicker mono">
-          {track.name} · {MODES[mode].name}
-        </span>
+        <span className="mr-kicker mono">{track.name} · 3 laps</span>
         {newRecord && <span className="mr-record">New record!</span>}
       </div>
       <div className="mr-headline">
         {medal && <span className={`mr-medal mr-medal-big mr-medal-${medal}`} aria-label={`${MEDAL_LABEL[medal]} medal`} />}
         <div>
-          <span className="mr-label mono">{label}</span>
-          <strong className="mono">{headline}</strong>
+          <span className="mr-label mono">Race time</span>
+          <strong className="mono">{result.raceTime !== null ? fmtTime(result.raceTime) : 'Not counted'}</strong>
         </div>
       </div>
-      {mode === 'race' && result.raceTime === null && <p className="mr-note">A lap missed a checkpoint, so the race time doesn&rsquo;t count. Stay on the road between the posts.</p>}
+      {result.raceTime === null && <p className="mr-note">A lap missed a checkpoint, so the race time doesn&rsquo;t count. Stay on the road between the posts.</p>}
       {result.laps.length > 0 && (
         <ol className="mr-laps mono">
           {result.laps.map((l, i) => (
@@ -441,9 +488,15 @@ function ResultCard({ finish, onAgain, onMenu, touch }: { finish: Finish; onAgai
         </ol>
       )}
       <div className="mr-score mono">
-        <span>Score {result.score}</span>
-        <span>Drift {result.drift}</span>
+        <span>{result.score} race points</span>
+        <span className="mr-coins">
+          <i aria-hidden="true" />+{coins}
+        </span>
       </div>
+      <p className="mr-note-soft mono">
+        Best {fmtTime(bests.race ?? null)} · lap {fmtTime(bests.lap ?? null)}
+      </p>
+      {newCars.length > 0 && <p className="mr-unlock">Unlocked: {newCars.map((c) => c.name).join(', ')}!</p>}
       <div className="mr-actions">
         <button className="mr-go" onClick={onAgain} autoFocus>
           Again{touch ? '' : ' (R)'}

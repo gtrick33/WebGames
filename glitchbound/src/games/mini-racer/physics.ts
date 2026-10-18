@@ -12,8 +12,10 @@ export interface CarSpec {
   turnRate: number;
   /** Lateral grip (how fast sideways slip decays, 1/s). */
   grip: number;
-  /** Lateral grip while the drift button is held. */
+  /** Lateral grip at full slide (steering hard at speed lets the tail out). */
   driftGrip: number;
+  /** Skill on loose ground (dirt, gravel, sand, grass...): above 1 loses less speed and grip there. */
+  loose: number;
 }
 
 export const CAR: CarSpec = {
@@ -24,7 +26,19 @@ export const CAR: CarSpec = {
   turnRate: 3.3,
   grip: 9,
   driftGrip: 1.6,
+  loose: 1,
 };
+
+/** A loose surface as felt by a car with the given loose-ground skill. */
+export function onLoose(surf: SurfaceProps, loose: number): SurfaceProps {
+  if (loose === 1) return surf;
+  return {
+    speed: Math.min(1, 1 - (1 - surf.speed) / loose),
+    accel: Math.min(1, 1 - (1 - surf.accel) / loose),
+    grip: Math.min(1, surf.grip * loose),
+    drag: surf.drag / loose,
+  };
+}
 
 export interface CarState {
   x: number;
@@ -37,24 +51,26 @@ export interface CarState {
   av: number;
   /** Seconds of boost left. */
   boost: number;
+  /** 0..1: how far the tail is out. Builds while steering hard at speed, fades when you straighten up. */
+  slide: number;
 }
 
 export interface Input {
   /** -1 (left) .. 1 (right). */
   steer: number;
+  /** Automatic during a race (1); 0 while coasting after the finish. */
   throttle: number;
   brake: number;
-  drift: boolean;
 }
 
-export const NO_INPUT: Input = { steer: 0, throttle: 0, brake: 0, drift: false };
+export const NO_INPUT: Input = { steer: 0, throttle: 0, brake: 0 };
 
 export const CAR_RADIUS = 16;
 /** Speed multiplier while boosting. */
 export const BOOST_SPEED = 1.32;
 
 export function newCar(x: number, y: number, a: number): CarState {
-  return { x, y, a, vx: 0, vy: 0, av: 0, boost: 0 };
+  return { x, y, a, vx: 0, vy: 0, av: 0, boost: 0, slide: 0 };
 }
 
 /** Forward and sideways speed in the car's frame (sideways positive = sliding to the car's right). */
@@ -68,17 +84,24 @@ export function speedOf(car: CarState): number {
   return Math.hypot(car.vx, car.vy);
 }
 
-/** Advances the car by dt seconds. Steering turns the body; grip then pulls the velocity in line, and what's left is drift. */
+/**
+ * Advances the car by dt seconds. Steering turns the body; grip then pulls the velocity in line,
+ * and what's left is drift. There is no drift button: holding a hard turn at speed lets the tail
+ * step out (`slide`), which rotates the car faster and scrubs a little speed, like a toy RC car.
+ */
 export function stepCar(car: CarState, input: Input, surf: SurfaceProps, dt: number, spec: CarSpec = CAR): void {
   const fwd0 = localVelocity(car).fwd;
   const top = spec.maxSpeed * surf.speed * (car.boost > 0 ? BOOST_SPEED : 1);
-  const drifting = input.drift && Math.abs(fwd0) > 90;
 
-  // Yaw: needs some speed to turn, reverses when backing up, a touch sharper while drifting.
+  const wantSlide = Math.abs(input.steer) > 0.55 && fwd0 > spec.maxSpeed * 0.42;
+  car.slide = Math.max(0, Math.min(1, car.slide + (wantSlide ? 2.6 : -3.5) * dt));
+  const sl = car.slide;
+
+  // Yaw: needs some speed to turn, reverses when backing up, sharper while sliding.
   const grip01 = Math.min(1, Math.abs(fwd0) / 130);
-  const highSpeedDamp = 1 - 0.28 * Math.min(1, Math.abs(fwd0) / spec.maxSpeed);
-  const targetAv = input.steer * spec.turnRate * grip01 * highSpeedDamp * Math.sign(fwd0 || 1) * (drifting ? 1.3 : 1);
-  car.av += (targetAv - car.av) * Math.min(1, (drifting ? 9 : 16) * dt);
+  const highSpeedDamp = 1 - 0.3 * Math.min(1, Math.abs(fwd0) / spec.maxSpeed);
+  const targetAv = input.steer * spec.turnRate * grip01 * highSpeedDamp * Math.sign(fwd0 || 1) * (1 + 0.4 * sl);
+  car.av += (targetAv - car.av) * Math.min(1, (16 - 6 * sl) * dt);
   car.a += car.av * dt;
 
   // Re-express the (unchanged) world velocity in the turned frame: the difference is slip.
@@ -96,13 +119,13 @@ export function stepCar(car: CarState, input: Input, surf: SurfaceProps, dt: num
     if (fwd > 8) fwd = Math.max(0, fwd - spec.brake * input.brake * dt);
     else fwd = Math.max(-spec.reverseMax, fwd - spec.accel * 0.6 * input.brake * dt);
   }
-  // Rolling resistance (stronger when coasting) and surface drag.
+  // Rolling resistance (stronger when coasting), surface drag, and a little scrub while sliding.
   const roll = (input.throttle > 0 ? 0.12 : 0.55) + surf.drag;
   fwd -= fwd * roll * dt;
-  if (drifting) fwd -= Math.sign(fwd) * 30 * dt;
+  fwd -= Math.sign(fwd) * 60 * sl * dt;
 
   // Sliding converts a little sideways speed back into forward speed: drifts keep their momentum.
-  const grip = (drifting ? spec.driftGrip : spec.grip) * surf.grip;
+  const grip = (spec.grip + (spec.driftGrip - spec.grip) * sl * 0.9) * surf.grip;
   const keep = Math.exp(-grip * dt);
   const lost = Math.abs(side) * (1 - keep);
   side *= keep;

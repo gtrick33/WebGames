@@ -1,22 +1,14 @@
 import { leftOf, pointAt } from './geometry';
 import { GhostRecorder, ghostPose, type Ghost, type Pose } from './ghost';
 import { advanceLaps, bestLap, newLapState, type LapEvent, type LapState } from './laps';
-import { CAR, collideBounds, collideCircle, localVelocity, newCar, speedOf, stepCar, type CarSpec, type CarState, type Input } from './physics';
+import { LOOSE } from './cars';
+import { CAR, collideBounds, collideCircle, localVelocity, newCar, onLoose, speedOf, stepCar, type CarSpec, type CarState } from './physics';
 import { groundAt, SURFACES, type Ground, type Track } from './track';
 
 /** One race: car + track + timing + drift scoring + ghost. Pure (no DOM); the view polls it. */
 
-export type Mode = 'race' | 'hotlap' | 'drift';
-
-export const MODES: Record<Mode, { name: string; short: string; blurb: string }> = {
-  race: { name: 'Time Trial', short: '3 laps', blurb: 'Three laps against the clock.' },
-  hotlap: { name: 'Hot Lap', short: 'Best of 5', blurb: 'Five flying laps; your best one counts. Race your ghost.' },
-  drift: { name: 'Drift Zone', short: '60 s', blurb: 'Sixty seconds. Hold Drift through the bends and chain it.' },
-};
-
+/** Every round is a short 3-lap race against the clock (and your ghost). */
 export const RACE_LAPS = 3;
-export const HOTLAP_LAPS = 5;
-export const DRIFT_SECONDS = 60;
 export const COUNTDOWN = 2.1;
 export const DT = 1 / 120;
 
@@ -43,9 +35,8 @@ export interface DriftState {
 }
 
 export interface Result {
-  mode: Mode;
   laps: LapState['laps'];
-  /** Total race time (race mode, all laps valid), seconds. */
+  /** Total race time (all laps valid), seconds. */
   raceTime: number | null;
   best: number | null;
   drift: number;
@@ -55,7 +46,6 @@ export interface Result {
 
 export class RaceSim {
   readonly track: Track;
-  readonly mode: Mode;
   readonly spec: CarSpec;
   car: CarState;
   prev: Pose;
@@ -75,9 +65,8 @@ export class RaceSim {
   wrongWay = 0;
   private lastS = 0;
 
-  constructor(track: Track, mode: Mode, ghost: Ghost | null = null, spec: CarSpec = CAR) {
+  constructor(track: Track, ghost: Ghost | null = null, spec: CarSpec = CAR) {
     this.track = track;
-    this.mode = mode;
     this.spec = spec;
     this.ghost = ghost;
     const { x, y, a } = track.start;
@@ -97,17 +86,17 @@ export class RaceSim {
   }
 
   ghostPose(): Pose | null {
-    if (!this.ghost || !this.lap.started || this.mode === 'drift') return null;
+    if (!this.ghost || !this.lap.started) return null;
     return ghostPose(this.ghost, this.lapTime);
   }
 
-  /** Advances one fixed step (DT) and returns what happened. */
-  step(input: Input): SimEvent[] {
+  /** Advances one fixed step (DT) with the player's steering (-1..1); gas is automatic. */
+  step(steer: number): SimEvent[] {
     const events: SimEvent[] = [];
     const car = this.car;
     this.prev = { x: car.x, y: car.y, a: car.a };
     if (this.finished) {
-      stepCar(car, { steer: 0, throttle: 0, brake: 0.4, drift: false }, SURFACES[this.ground.surface], DT, this.spec);
+      stepCar(car, { steer: 0, throttle: 0, brake: 0.4 }, SURFACES[this.ground.surface], DT, this.spec);
       this.ground = groundAt(this.track, car);
       return events;
     }
@@ -120,7 +109,7 @@ export class RaceSim {
     const counting = this.time < 0;
     const p0 = { x: car.x, y: car.y };
     // The grid holds the car during the countdown, but let it rev (throttle ignored).
-    if (!counting) stepCar(car, input, SURFACES[this.ground.surface], DT, this.spec);
+    if (!counting) stepCar(car, { steer, throttle: 1, brake: 0 }, this.surface(), DT, this.spec);
 
     // Obstacles and the world edge.
     let impact = collideBounds(car, this.track.bounds);
@@ -160,6 +149,12 @@ export class RaceSim {
     return events;
   }
 
+  /** The surface under the car, adjusted for this car's tyres. */
+  private surface() {
+    const s = this.ground.surface;
+    return LOOSE.has(s) ? onLoose(SURFACES[s], this.spec.loose) : SURFACES[s];
+  }
+
   private onLap(time: number, valid: boolean, events: SimEvent[]): void {
     const ghost = this.recorder.finish(time);
     this.recorder.begin(this.lap.lapStart);
@@ -175,9 +170,7 @@ export class RaceSim {
   }
 
   private isOver(): boolean {
-    if (this.mode === 'race') return this.lap.laps.length >= RACE_LAPS;
-    if (this.mode === 'hotlap') return this.lap.laps.length >= HOTLAP_LAPS;
-    return this.time >= DRIFT_SECONDS;
+    return this.lap.laps.length >= RACE_LAPS;
   }
 
   private scoreDrift(events: SimEvent[]): void {
@@ -229,24 +222,28 @@ export class RaceSim {
     const laps = this.lap.laps;
     const best = bestLap(laps);
     const allValid = laps.length >= RACE_LAPS && laps.every((l) => l.valid);
-    const raceTime = this.mode === 'race' && allValid ? laps.reduce((s, l) => s + l.time, 0) : null;
+    const raceTime = allValid ? laps.reduce((s, l) => s + l.time, 0) : null;
     const cleanLaps = laps.filter((l) => l.clean).length;
-    return { mode: this.mode, laps, raceTime, best, drift: this.drift.total, cleanLaps, score: scoreFor(this.track.def.par, laps, this.drift.total) };
+    return { laps, raceTime, best, drift: this.drift.total, cleanLaps, score: scoreFor(this.track.def.par, laps) };
   }
 }
 
-/** Points: up to ~1000 per valid lap (more when faster than gold), plus a tenth of the drift points. */
-export function scoreFor(parMs: number, laps: { time: number; valid: boolean }[], drift: number): number {
+/**
+ * The ranking value sent to the arcade leaderboard (higher is better, comparable across tracks):
+ * for each valid lap, 1000 x gold time / lap time. A 3-lap race at gold pace scores about 3000;
+ * a lap that missed a checkpoint scores 0.
+ */
+export function scoreFor(parMs: number, laps: { time: number; valid: boolean }[]): number {
   let s = 0;
   for (const l of laps) if (l.valid && l.time > 0) s += Math.round(parMs / l.time);
-  return s + Math.floor(drift / 10);
+  return s;
 }
 
 /**
  * A simple driver that follows the racing line ahead. Used by tests (it must complete valid laps on
  * every track) and to compute fair gold times for generated daily tracks.
  */
-export function autopilot(sim: RaceSim, lookahead = 150): Input {
+export function autopilot(sim: RaceSim, lookahead = 150): number {
   const { car, track } = sim;
   const g = sim.ground;
   const ahead = Math.min(320, lookahead + speedOf(car) * 0.25);
@@ -276,8 +273,5 @@ export function autopilot(sim: RaceSim, lookahead = 150): Input {
   let want = Math.atan2(ty - car.y, tx - car.x) - car.a;
   while (want > Math.PI) want -= Math.PI * 2;
   while (want < -Math.PI) want += Math.PI * 2;
-  const steer = Math.max(-1, Math.min(1, want * 2.4));
-  const fwd = localVelocity(car).fwd;
-  const sharp = Math.abs(want) > 0.55 && fwd > 300;
-  return { steer, throttle: sharp ? 0 : 1, brake: sharp && fwd > 340 ? 0.6 : 0, drift: false };
+  return Math.max(-1, Math.min(1, want * 2.4));
 }

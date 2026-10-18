@@ -75,7 +75,7 @@ function attempt(day: string, seed: number): TrackDef {
 
 /** Gold time for a generated track: the autopilot's best flying lap, a touch faster, rounded to 0.1 s. */
 function parFor(def: TrackDef): number {
-  const sim = new RaceSim(buildTrack(def), 'hotlap');
+  const sim = new RaceSim(buildTrack(def));
   for (let i = 0; i < 120 * 90 && sim.lap.laps.length < 2; i++) sim.step(autopilot(sim));
   const lap = sim.lap.laps[1] ?? sim.lap.laps[0];
   const t = lap?.valid ? lap.time : sim.track.path.length / 330;
