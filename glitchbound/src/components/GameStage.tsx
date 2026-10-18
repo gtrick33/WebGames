@@ -45,13 +45,15 @@ interface Props {
   onPhase?: (p: Phase) => void;
   /** Exposes the stage element (for fullscreen). */
   stageRef: RefObject<HTMLDivElement | null>;
+  /** Increments when the page wants the game paused (e.g. the player left full screen). */
+  pauseSignal?: number;
 }
 
 /**
  * The game viewport. Nothing game-related loads until the player presses Play, so the page itself
  * stays fast. Each game is isolated: an iframe for embedded games, an error boundary for modules.
  */
-export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef, playerName, onPlayClick, frameRef, overlay }: Props) {
+export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef, playerName, onPlayClick, frameRef, overlay, pauseSignal = 0 }: Props) {
   const [phase, setPhaseState] = useState<Phase>(() => (!autoStart ? 'poster' : game.runtime.kind === 'embed' ? 'loading' : 'ready'));
   const [attempt, setAttempt] = useState(0);
   const ownFrame = useRef<HTMLIFrameElement>(null);
@@ -89,19 +91,32 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
     if (phase === 'ready' && playerName) postToGame(iframeRef.current, game, { type: 'identity', name: playerName });
   }, [phase, playerName, game, iframeRef]);
 
+  // Pause requests reach both runtimes: embedded games get a 'pause' command, module games a new pauseKey.
+  const [scrollPauses, setScrollPauses] = useState(0);
+  const pauseKey = pauseSignal + scrollPauses;
+  const requestPause = useCallback(() => {
+    postToGame(iframeRef.current, game, { type: 'pause' });
+    setScrollPauses((k) => k + 1);
+  }, [game, iframeRef]);
+
+  // The page asks for a pause (the player left full screen, e.g. with Escape).
+  useEffect(() => {
+    if (pauseSignal > 0) postToGame(iframeRef.current, game, { type: 'pause' });
+  }, [pauseSignal, game, iframeRef]);
+
   // Pause the game (and its sound) when it is scrolled mostly out of view.
   useEffect(() => {
     const el = stageRef.current;
     if (!el || phase !== 'ready') return;
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry && entry.intersectionRatio < 0.4) postToGame(iframeRef.current, game, { type: 'pause' });
+        if (entry && entry.intersectionRatio < 0.4) requestPause();
       },
       { threshold: [0, 0.4] },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [phase, game, stageRef, iframeRef]);
+  }, [phase, stageRef, requestPause]);
 
   // Embedded games: give up waiting after a while and offer a retry.
   useEffect(() => {
@@ -154,7 +169,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
         <ErrorBoundary key={attempt} onError={() => setPhase('error')} fallback={() => null}>
           <Suspense fallback={<StageLoading title={game.title} />}>
             <div className="stage-module">
-              <Module host={host} restartKey={attempt} />
+              <Module host={host} restartKey={attempt} pauseKey={pauseKey} />
             </div>
           </Suspense>
         </ErrorBoundary>

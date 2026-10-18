@@ -39,6 +39,11 @@ export interface GameModuleProps {
   host: GameHost;
   /** Changes whenever the player presses Restart; reset the game when it does. */
   restartKey: number;
+  /**
+   * Increments whenever the arcade wants the game paused: the player left full screen (Escape or the
+   * menu) or scrolled the game mostly out of view. Pause play, timers and music when it changes.
+   */
+  pauseKey?: number;
 }
 
 export const MESSAGE_SOURCE = 'glitchbound-game';

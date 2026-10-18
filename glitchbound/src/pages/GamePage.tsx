@@ -48,11 +48,18 @@ function lockZoom(on: boolean): void {
  * "immersive" mode that pins the stage over the whole screen. Either way the page stops scrolling
  * and zooming while playing.
  */
-function usePlayMode(ref: RefObject<HTMLElement | null>): { active: boolean; enter: () => void; exit: () => void } {
+function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): { active: boolean; enter: () => void; exit: () => void } {
   const [mode, setMode] = useState<'none' | 'fullscreen' | 'immersive'>('none');
+  const modeRef = useRef(mode);
+  const onLeaveRef = useRef(onLeave);
+  useEffect(() => {
+    onLeaveRef.current = onLeave;
+  });
 
   const apply = useCallback(
     (next: 'none' | 'fullscreen' | 'immersive') => {
+      if (next === 'none' && modeRef.current !== 'none') onLeaveRef.current?.();
+      modeRef.current = next;
       const el = ref.current;
       el?.classList.toggle('stage-immersive', next === 'immersive');
       document.documentElement.classList.toggle('game-focus', next !== 'none');
@@ -138,7 +145,9 @@ export function GamePage({ game }: { game: GameEntry }) {
   const save = useSave();
   const record = save.games[game.slug];
   const stageRef = useRef<HTMLDivElement>(null);
-  const play = usePlayMode(stageRef);
+  // Leaving full screen (Escape, the browser's own exit, or the menu) pauses the game and its music.
+  const [pauseSignal, setPauseSignal] = useState(0);
+  const play = usePlayMode(stageRef, () => setPauseSignal((n) => n + 1));
   const frameRef = useRef<HTMLIFrameElement>(null);
   const player = usePlayerName();
   const [renaming, setRenaming] = useState(false);
@@ -148,6 +157,7 @@ export function GamePage({ game }: { game: GameEntry }) {
   const [playing, setPlaying] = useState(false);
   const [last, setLast] = useState<LastRound | null>(null);
   const [burst, setBurst] = useState(0);
+
   const [shareMsg, setShareMsg] = useState('');
   const related = relatedGames(game);
   const isDailyGame = challengeForDay(dayKey(), GAMES)?.game.slug === game.slug;
@@ -277,6 +287,7 @@ export function GamePage({ game }: { game: GameEntry }) {
           <GameStage
             key={stageRun.key}
             autoStart={stageRun.autoStart}
+            pauseSignal={pauseSignal}
             game={game}
             onEvent={onEvent}
             stageRef={stageRef}

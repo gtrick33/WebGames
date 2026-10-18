@@ -710,7 +710,10 @@ export class App {
   /** Commands from the GlitchBound arcade when the game is embedded there. */
   private onHostCommand(c: HostCommand): void {
     if (c.type === 'pause') {
+      // The arcade asks for a pause when the player leaves full screen or scrolls away: go fully
+      // silent (not just the calm pause loop). Resume, or the next tap on a menu, brings sound back.
       if (this.state === 'playing') this.pause();
+      void this.audio?.suspend();
       return;
     }
     // The arcade's player name (account nickname or guest name) becomes the racer name.

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App';
 import { SAVE_KEY } from '../src/platform/save';
 import { saveStore } from '../src/platform/store';
@@ -103,6 +103,16 @@ describe('game page', () => {
     expect(document.querySelector('iframe')).toBeNull();
     expect(screen.getByRole('button', { name: /Play NEON RUSH/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Game menu' })).toBeNull();
+  });
+
+  it('pauses the game when the player leaves full screen with Escape', () => {
+    renderAt('/games/neon-rush');
+    fireEvent.click(screen.getByRole('button', { name: /Play NEON RUSH/ }));
+    const frame = document.querySelector('iframe')!;
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: 'Game menu' })).toBeNull();
+    expect(post).toHaveBeenCalledWith(expect.objectContaining({ source: 'glitchbound-host', type: 'pause' }), window.location.origin);
   });
 
   it('shows how to play and the restart action once playing', () => {
