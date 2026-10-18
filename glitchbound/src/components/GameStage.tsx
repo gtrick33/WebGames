@@ -3,6 +3,7 @@ import { GAME_MODULES } from '../catalog/modules';
 import type { GameEntry } from '../catalog/types';
 import { parseGameMessage, type GameEvent, type GameModuleProps } from '../platform/contract';
 import { reportError, setActiveGame } from '../platform/analytics';
+import type { ChallengeSpec } from '../platform/challenge';
 import { markPlaying } from '../platform/hooks';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Icon } from './Icon';
@@ -49,13 +50,15 @@ interface Props {
   stageRef: RefObject<HTMLDivElement | null>;
   /** Increments when the page wants the game paused (e.g. the player left full screen). */
   pauseSignal?: number;
+  /** A friends' challenge round to play (module games). */
+  challenge?: ChallengeSpec;
 }
 
 /**
  * The game viewport. Nothing game-related loads until the player presses Play, so the page itself
  * stays fast. Each game is isolated: an iframe for embedded games, an error boundary for modules.
  */
-export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef, playerName, onPlayClick, frameRef, overlay, pauseSignal = 0 }: Props) {
+export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef, playerName, onPlayClick, frameRef, overlay, pauseSignal = 0, challenge }: Props) {
   const [phase, setPhaseState] = useState<Phase>(() => (!autoStart ? 'poster' : game.runtime.kind === 'embed' ? 'loading' : 'ready'));
   const [attempt, setAttempt] = useState(0);
   const ownFrame = useRef<HTMLIFrameElement>(null);
@@ -191,7 +194,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
         >
           <Suspense fallback={<StageLoading title={game.title} />}>
             <div className="stage-module">
-              <Module host={host} restartKey={attempt} pauseKey={pauseKey} />
+              <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} />
             </div>
           </Suspense>
         </ErrorBoundary>

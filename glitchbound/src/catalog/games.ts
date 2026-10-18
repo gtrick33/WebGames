@@ -394,6 +394,7 @@ export const GAMES: GameEntry[] = [
       'Bronze, silver, gold and platinum medals',
     ],
     ownDaily: { label: 'Today’s course' },
+    challenge: { label: 'One flight on the same course: most points wins (gaps, +3 per feather).' },
     daily: [
       { metric: 'pillars', targets: [10, 20, 30], label: 'Clear {n} gaps in one Wing It flight' },
       { metric: 'feathers', targets: [2, 3, 5], label: 'Grab {n} golden feathers in one Wing It flight' },

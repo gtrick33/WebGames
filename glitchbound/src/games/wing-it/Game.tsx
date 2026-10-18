@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ChallengeSpec } from '../../platform/challenge';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
@@ -9,7 +10,7 @@ import './Game.css';
 
 const KEY = 'glitchbound.wing-it';
 const EPOCH = '2026-10-19';
-type Mode = 'daily' | 'endless';
+type Mode = 'daily' | 'endless' | 'challenge';
 
 interface Save {
   best: number;
@@ -54,11 +55,11 @@ const writeSave = (s: Save): void => {
 const MEDAL_ICON: Record<Exclude<Medal, null>, string> = { bronze: '🥉', silver: '🥈', gold: '🥇', platinum: '💎' };
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
 
-export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
-  return <WingIt key={restartKey} host={host} pauseKey={pauseKey} />;
+export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
+  return <WingIt key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} />;
 }
 
-function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
+function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: number; challenge?: ChallengeSpec }) {
   const [today] = useState(() => dayKey());
   const [save, setSave] = useState<Save>(loadSave);
   const saveRef = useRef(save);
@@ -67,18 +68,20 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
     setSave(s);
     writeSave(s);
   }, []);
-  const [screen, setScreen] = useState<'menu' | 'play'>('menu');
-  const [mode, setMode] = useState<Mode>('daily');
+  const [screen, setScreen] = useState<'menu' | 'play'>(challenge ? 'play' : 'menu');
+  const [mode, setMode] = useState<Mode>(challenge ? 'challenge' : 'daily');
   const [hud, setHud] = useState({ score: 0, feathers: 0, dead: false, started: false, biome: 'meadow' });
   const hudRef = useRef(hud);
   const [paused, setPaused] = useState(false);
   const [result, setResult] = useState<{ points: number; pillars: number; feathers: number; medal: Medal; newBest: boolean } | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const sim = useRef<Sim | null>(null);
+  // A friends' challenge starts straight away: one flight on the challenge's seed.
+  const [firstSim] = useState(() => (challenge ? newSim(challenge.seed) : null));
+  const sim = useRef<Sim | null>(firstSim);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
   const deadAt = useRef(0);
-  const modeRef = useRef<Mode>('daily');
+  const modeRef = useRef<Mode>(challenge ? 'challenge' : 'daily');
   useEffect(
     () => () => {
       sfxRef.current?.dispose();
@@ -90,7 +93,7 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
   const begin = (m: Mode): void => {
     modeRef.current = m;
     setMode(m);
-    sim.current = newSim(m === 'daily' ? hashString(`wing-it:${today}`) : (Math.random() * 2 ** 32) >>> 0);
+    sim.current = newSim(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`wing-it:${today}`) : (Math.random() * 2 ** 32) >>> 0);
     setResult(null);
     setPaused(false);
     const fresh = { score: 0, feathers: 0, dead: false, started: false, biome: 'meadow' };
@@ -117,10 +120,10 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
       };
       commit(next);
       const end = { type: 'end' as const, score: points, stats: { pillars: s.score, feathers: s.feathers } };
-      host.report(m === 'daily' ? { ...end, daily: true } : end);
+      host.report(m === 'daily' ? { ...end, daily: true } : m === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
       setResult({ points, pillars: s.score, feathers: s.feathers, medal, newBest });
     },
-    [commit, host, today],
+    [commit, host, today, challenge],
   );
 
   // Game loop: fixed steps, drawn every frame between the last two steps.
@@ -208,7 +211,8 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
       if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
         e.preventDefault();
         if (sim.current?.dead) {
-          if (performance.now() - deadAt.current > 700) begin(modeRef.current);
+          // A challenge is one flight; outside one, Space flies again.
+          if (performance.now() - deadAt.current > 700 && modeRef.current !== 'challenge') begin(modeRef.current);
         } else tap();
       } else if (e.key === 'p' || e.key === 'Escape') {
         if (sim.current?.started && !sim.current.dead) setPaused((p) => !p);
@@ -234,7 +238,7 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
       </button>
       {!hud.started && !hud.dead && (
         <div className="wi-hint" aria-hidden="true">
-          <b>{mode === 'daily' ? `Daily course #${dailyNumber(today)}` : 'Endless'}</b>
+          <b>{mode === 'challenge' ? `⚔️ Challenge · round ${challenge?.round ?? 1} · one flight` : mode === 'daily' ? `Daily course #${dailyNumber(today)}` : 'Endless'}</b>
           <span>Tap or press Space to flap</span>
         </div>
       )}
@@ -256,9 +260,15 @@ function WingIt({ host, pauseKey }: { host: GameHost; pauseKey?: number }) {
             </p>
           )}
           <div className="wi-row">
-            <button className="wi-btn wi-btn-go" onClick={() => begin(mode)} autoFocus>
-              Fly again
-            </button>
+            {mode === 'challenge' && challenge ? (
+              <a className="wi-btn wi-btn-go" href={`/c/${challenge.id}`} autoFocus>
+                See the scoreboard
+              </a>
+            ) : (
+              <button className="wi-btn wi-btn-go" onClick={() => begin(mode)} autoFocus>
+                Fly again
+              </button>
+            )}
             {mode === 'daily' && daily && <ShareButton text={`Wing It #${dailyNumber(today)} 🐤\nBest today: ${daily.best} (${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'})\n${medalFor(daily.best) ? MEDAL_ICON[medalFor(daily.best)!] : '🪶'}\n${window.location.origin}/games/wing-it`} />}
             <button className="wi-btn" onClick={() => setScreen('menu')}>
               Menu

@@ -137,13 +137,18 @@
   gap: 8px;
 }
 .wi-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 48px;
   padding: 0 18px;
   border: 2.5px solid var(--wi-ink);
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 4px 0 var(--wi-ink);
+  color: var(--wi-ink);
   font-weight: 800;
+  text-decoration: none;
 }
 .wi-btn:active {
   transform: translateY(3px);

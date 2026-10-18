@@ -26,11 +26,14 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ defa
 const BugReportPage = lazy(() => import('./pages/BugReportPage').then((m) => ({ default: m.BugReportPage })));
 const PartyPage = lazy(() => import('./party/ui/PartyPage').then((m) => ({ default: m.PartyPage })));
 const SignInPage = lazy(() => import('./pages/SignInPage').then((m) => ({ default: m.SignInPage })));
+const ChallengePage = lazy(() => import('./pages/ChallengePage').then((m) => ({ default: m.ChallengePage })));
+const ChallengesPage = lazy(() => import('./pages/ChallengePage').then((m) => ({ default: m.ChallengesPage })));
 
 function Page() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const route = matchRoute(pathname);
   const live = useLiveCatalog();
+  const challengeParam = new URLSearchParams(search).get('challenge') ?? '';
   const { me } = useAccount();
   switch (route.name) {
     case 'home':
@@ -51,10 +54,14 @@ function Page() {
       return <AdminPage />;
     case 'signin':
       return <SignInPage />;
+    case 'challenges':
+      return <ChallengesPage />;
+    case 'challenge':
+      return <ChallengePage key={route.id} id={route.id} />;
     case 'game': {
       // Hidden games are closed to players; admins can still open them to preview.
       const game = getGame(route.slug, live.all);
-      return game && (!live.settings(game.slug).hidden || me?.isAdmin) ? <GamePage key={game.slug} game={game} /> : <NotFound />;
+      return game && (!live.settings(game.slug).hidden || me?.isAdmin) ? <GamePage key={`${game.slug}:${challengeParam}`} game={game} /> : <NotFound />;
     }
     default:
       return <NotFound />;

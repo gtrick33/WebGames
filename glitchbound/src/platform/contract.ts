@@ -16,6 +16,8 @@ export interface EndEvent {
   stats?: Record<string, number>;
   /** True when this round was the game's own daily puzzle (games with `ownDaily` in the registry). */
   daily?: boolean;
+  /** Set when this round was a friends' challenge round (the game got a `challenge` prop). */
+  challenge?: { id: string; round: number; replay?: string };
 }
 
 /** The game is listening for host commands (identity, pause). */
@@ -44,7 +46,11 @@ export interface GameModuleProps {
    * menu) or scrolled the game mostly out of view. Pause play, timers and music when it changes.
    */
   pauseKey?: number;
+  /** Play this friends' challenge round (same seed for every player, one attempt). */
+  challenge?: ChallengeSpec;
 }
+
+import type { ChallengeSpec } from './challenge';
 
 export const MESSAGE_SOURCE = 'glitchbound-game';
 export const PROTOCOL_VERSION = 1;

@@ -60,7 +60,8 @@ export async function previewPage(env: Env, request: Request, path: string, meta
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${esc(meta.title)}</title>`);
   // The app should see the real address (its router does not know /s/ and /c/).
   html = html.replace('<head>', `<head>\n    <script>history.replaceState(null, '', ${JSON.stringify(meta.replaceUrl).replace(/</g, '\\u003c')});</script>`);
-  return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' } });
+  // Not cached: the page names this deploy's script files, which the next deploy replaces.
+  return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
 }
 
 export async function readShare(env: Env, code: string): Promise<{ path: string; title: string; description: string; image: string } | null> {

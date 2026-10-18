@@ -95,6 +95,26 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       body: `<section class="ssr"><h1>Daily Challenge</h1><p>A new challenge unlocks every day at local midnight. Clear it in a single round on ${SITE} to build your streak.</p><p><a href="/">Back to the arcade</a></p></section>`,
     },
     {
+      path: '/c',
+      file: 'c.html',
+      title: `Challenge your friends · ${SITE}`,
+      description: 'Challenge up to 5 friends on GlitchBound: same game, same round, one try each. Send the link in any chat, no sign-up.',
+      image: '/og.png',
+      imageAlt: SITE,
+      body: `<section class="ssr"><h1>Challenge your friends</h1><p>Pick a game, play your round and send the link. Up to 6 players get the same round, one try each, and the scoreboard keeps count across rematches.</p><p><a href="/">Back to the arcade</a></p></section>`,
+    },
+    {
+      // Template for challenge invites (/c/<id>): the server fills in who challenged you.
+      path: '/challenge',
+      file: 'challenge.html',
+      title: `You've been challenged · ${SITE}`,
+      description: 'A friend challenged you on GlitchBound. Same game, same seed: tap to play, free in your browser.',
+      image: '/og.png',
+      imageAlt: SITE,
+      noindex: true,
+      body: `<section class="ssr"><h1>You've been challenged!</h1><p><a href="/">Open GlitchBound</a></p></section>`,
+    },
+    {
       path: '/privacy',
       file: 'privacy.html',
       title: `Privacy & your data · ${SITE}`,
@@ -212,6 +232,7 @@ export function sitemap(siteUrl: string): string {
     ...GAMES.map((g) => ({ loc: `/games/${g.slug}`, lastmod: g.released, priority: '0.9' })),
     { loc: '/daily', lastmod: '', priority: '0.6' },
     { loc: '/leaderboards', lastmod: '', priority: '0.5' },
+    { loc: '/c', lastmod: '', priority: '0.4' },
     { loc: '/privacy', lastmod: '', priority: '0.2' },
   ];
   const body = urls

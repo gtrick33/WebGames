@@ -36,8 +36,14 @@
 .game-stage-col {
   position: relative;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  align-content: flex-start;
   min-width: min(100%, 320px);
+}
+.game-stage-col > .cstrip,
+.game-stage-col > .admin-preview {
+  flex: 1 0 100%;
 }
 .game-side {
   display: grid;

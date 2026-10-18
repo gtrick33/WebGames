@@ -10,6 +10,8 @@ import { Icon } from '../components/Icon';
 import { reportError, track } from '../platform/analytics';
 import { account, api, useAccount } from '../platform/account';
 import { useLiveCatalog } from '../platform/liveCatalog';
+import { challengeSpecOf, useChallengeRun } from '../platform/useChallengeRun';
+import { ChallengeStrip, ChallengeFriends } from '../components/ChallengeStrip';
 import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { MiniLeaderboard } from '../components/Leaderboard';
@@ -153,6 +155,7 @@ function StageMenu({ slug, onExitFullscreen, onExitGame }: { slug: string; onExi
 export function GamePage({ game }: { game: GameEntry }) {
   const { search } = useLocation();
   const beat = parseBeatParam(search);
+  const challengeId = game.challenge ? new URLSearchParams(search).get('challenge') : null;
   const save = useSave();
   const record = save.games[game.slug];
   const stageRef = useRef<HTMLDivElement>(null);
@@ -161,6 +164,11 @@ export function GamePage({ game }: { game: GameEntry }) {
   const play = usePlayMode(stageRef, () => setPauseSignal((n) => n + 1));
   const frameRef = useRef<HTMLIFrameElement>(null);
   const player = usePlayerName();
+  const chal = useChallengeRun(challengeId, game, player.name);
+  const finishChallenge = useRef(chal.finish);
+  useEffect(() => {
+    finishChallenge.current = chal.finish;
+  });
   const [renaming, setRenaming] = useState(false);
   const [renameMsg, setRenameMsg] = useState('');
   // Remounting the stage resets the game: autoStart restarts it, otherwise it closes back to the poster.
@@ -206,6 +214,8 @@ export function GamePage({ game }: { game: GameEntry }) {
           : null;
         return;
       }
+      // A friends' challenge round: send the score to the challenge too.
+      if (e.challenge) finishChallenge.current(e);
       const result = saveStore.record(game, e);
       let n = 0;
       setLast((prev) => {
@@ -305,6 +315,7 @@ export function GamePage({ game }: { game: GameEntry }) {
               <Link href="/admin?tab=games">Edit in Admin</Link>
             </p>
           )}
+          {challengeId && <ChallengeStrip state={chal.state} game={game} />}
           {paused ? (
             <div className="stage stage-paused" style={{ background: game.art.bg }}>
               <img src={game.art.tile} alt="" className="stage-poster-art" />
@@ -322,6 +333,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             autoStart={stageRun.autoStart}
             pauseSignal={pauseSignal}
             game={game}
+            challenge={challengeSpecOf(chal.state)}
             onEvent={onEvent}
             stageRef={stageRef}
             frameRef={frameRef}
@@ -348,6 +360,8 @@ export function GamePage({ game }: { game: GameEntry }) {
           <p className="game-share-msg" role="status">
             {shareMsg}
           </p>
+
+          {game.challenge && !challengeId && <ChallengeFriends game={game} />}
 
           <div className="panel player-name">
             <span className="mono">Playing as</span>

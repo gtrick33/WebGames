@@ -98,6 +98,16 @@ export interface GameEntry {
     /** Short name of the daily round, e.g. "Today's grid". */
     label: string;
   };
+  /**
+   * Friends' challenges (up to 6 players, same seed, one attempt each per round). The game plays the
+   * round when it gets a `challenge` prop and reports its end with the challenge id.
+   */
+  challenge?: {
+    /** What a round is, e.g. "One flight: most gaps wins". */
+    label: string;
+    /** Lower scores win (e.g. times). */
+    lowerIsBetter?: boolean;
+  };
   /** Optional link to play the game on its own site. */
   homepage?: string;
   /** Server-side plausibility limits for leaderboard submissions. */
