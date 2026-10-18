@@ -16,7 +16,11 @@ export function roomStub(env: Env, code: string): ReturnType<NonNullable<Env['RO
   return env.ROOMS.get(env.ROOMS.idFromName(code));
 }
 
+export type RoomGame = 'unhinged' | 'impostor';
+
 export interface RoomSummary {
+  /** Missing on Unhinged rooms. */
+  game?: RoomGame;
   code: string;
   phase: string;
   players: number;
@@ -24,12 +28,12 @@ export interface RoomSummary {
   full: boolean;
 }
 
-/** Opens a new room (a fresh code; retried on the rare clash). Null when rooms are unavailable. */
-export async function openRoom(env: Env): Promise<RoomSummary | null> {
+/** Opens a new room for a game (a fresh code; retried on the rare clash). Null when rooms are unavailable. */
+export async function openRoom(env: Env, game: RoomGame = 'unhinged'): Promise<RoomSummary | null> {
   if (!env.ROOMS) return null;
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = newRoomCode();
-    const res = await roomStub(env, code)!.fetch(`https://room/init?code=${code}`, { method: 'POST' });
+    const res = await roomStub(env, code)!.fetch(`https://room/init?code=${code}&game=${game}`, { method: 'POST' });
     if (res.ok) return (await res.json()) as RoomSummary;
     if (res.status !== 409) return null;
   }

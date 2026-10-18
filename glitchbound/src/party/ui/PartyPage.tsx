@@ -4,7 +4,11 @@ import { TAGS } from '../content/challenges';
 import { CONSEQUENCE_LABEL, freshRng, makePlayer, MAX_PLAYERS, playersProblem, SESSION_CARDS } from '../engine';
 import { loadSession, saveSession, type ModeId, type PartySession } from '../session';
 import type { Consequence, Intensity } from '../types';
+import { getGame } from '../../catalog/catalog';
+import { Link, navigate, useLocation } from '../../router/router';
 import { AuctionMode } from './Auction';
+import { ImpostorMode, newImpostor } from './Impostor';
+import { ImpostorRoomPage, openImpostorRoom } from './ImpostorRoom';
 import { BoardMode } from './Board';
 import { CharadesMode } from './Charades';
 import { MiniGame, MINIS, type MiniId } from './minis';
@@ -14,6 +18,7 @@ import { Avatar, ModeBar, PlayerPicker } from './shared';
 import './Party.css';
 
 const MODES: { id: ModeId; title: string; emoji: string; blurb: string; time: string; players: string; color: string }[] = [
+  { id: 'impostor', title: 'Impostor', emoji: '🕵️', blurb: 'Everyone gets the secret word but one. Find them.', time: '10–40 min', players: '3–16', color: '#7b4dff' },
   { id: 'prompts', title: 'Party Prompts', emoji: '🃏', blurb: 'Truths, dares and “most likely to”, with your names on every card.', time: '15–45 min', players: '2–16', color: '#ff5a6c' },
   { id: 'nhie', title: 'Never Have I Ever', emoji: '🙊', blurb: 'Five fingers up, reveal together. Last one standing wins.', time: '10–30 min', players: '3–16', color: '#a45cff' },
   { id: 'charades', title: 'Charades', emoji: '🎭', blurb: 'Act, describe or draw it before time runs out.', time: '10–30 min', players: '3–16', color: '#ff8a1f' },
@@ -40,8 +45,14 @@ function useSession(): [PartySession, (fn: (s: PartySession) => PartySession) =>
   return [s, update];
 }
 
+/** Room codes from invite links (/r/CODE lands on /party?room=CODE). */
+const ROOM_CODE = /^[A-HJKMNP-Z]{5}$/;
+
 export function PartyPage() {
   usePageMeta({ title: 'Party Mode', path: '/party' });
+  const { search } = useLocation();
+  const room = new URLSearchParams(search).get('room')?.toUpperCase() ?? '';
+  const inRoom = ROOM_CODE.test(room);
   const [session, update] = useSession();
   const [mode, setMode] = useState<ModeId | null>(session.active?.mode ?? null);
   const [adultAsk, setAdultAsk] = useState(false);
@@ -62,6 +73,7 @@ export function PartyPage() {
     if (problem) return;
     update((s) => {
       const ready = { ...s, players: s.players.filter((p) => p.name.trim()) };
+      if (id === 'impostor') return { ...ready, active: s.active?.mode === 'impostor' ? s.active : { mode: 'impostor', state: newImpostor() } };
       return id === 'prompts' ? dealPrompt({ ...ready, active: { mode: 'prompts', count: 0, limit: SESSION_CARDS[s.settings.length] } }, freshRng()) : ready;
     });
     setMode(id);
@@ -69,12 +81,14 @@ export function PartyPage() {
 
   return (
     <div className="party" ref={top}>
-      {mode === 'prompts' && <PromptsMode session={session} update={update} onExit={exit} />}
-      {mode === 'nhie' && <NeverMode session={session} update={update} onExit={exit} onNeedAdult={() => setAdultAsk(true)} />}
-      {mode === 'charades' && <CharadesMode session={session} update={update} onExit={exit} />}
-      {mode === 'board' && <BoardMode session={session} update={update} onExit={exit} />}
-      {mode === 'auction' && <AuctionMode session={session} update={update} onExit={exit} />}
-      {mode === 'mini' && (
+      {inRoom && <ImpostorRoomPage key={room} code={room} onLeave={() => navigate('/party')} />}
+      {!inRoom && mode === 'impostor' && <ImpostorMode session={session} update={update} onExit={exit} onRoom={() => void openImpostorRoom()} />}
+      {!inRoom && mode === 'prompts' && <PromptsMode session={session} update={update} onExit={exit} />}
+      {!inRoom && mode === 'nhie' && <NeverMode session={session} update={update} onExit={exit} onNeedAdult={() => setAdultAsk(true)} />}
+      {!inRoom && mode === 'charades' && <CharadesMode session={session} update={update} onExit={exit} />}
+      {!inRoom && mode === 'board' && <BoardMode session={session} update={update} onExit={exit} />}
+      {!inRoom && mode === 'auction' && <AuctionMode session={session} update={update} onExit={exit} />}
+      {!inRoom && mode === 'mini' && (
         <div className="pt-screen">
           <ModeBar title="Mini-games" onExit={exit} />
           {mini ? (
@@ -92,7 +106,7 @@ export function PartyPage() {
           )}
         </div>
       )}
-      {!mode && <Lobby session={session} update={update} problem={problem} onOpen={open} onAdult={() => setAdultAsk(true)} />}
+      {!mode && !inRoom && <Lobby session={session} update={update} problem={problem} onOpen={open} onAdult={() => setAdultAsk(true)} />}
       {/* Last, so it opens above the house-rules sheet. */}
       {adultAsk && (
         <AdultGate
@@ -114,6 +128,9 @@ export function PartyPage() {
 function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; problem: string | null; onOpen: (m: ModeId) => void; onAdult: () => void }) {
   const [newName, setNewName] = useState('');
   const [sheet, setSheet] = useState<'rules' | 'custom' | null>(null);
+  const [where, setWhere] = useState<'one' | 'online'>('one');
+  const [joinCode, setJoinCode] = useState('');
+  const [roomMsg, setRoomMsg] = useState('');
   const [nudge, setNudge] = useState(0);
   const whoRef = useRef<HTMLElement>(null);
   const s = session.settings;
@@ -154,6 +171,16 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
     CONSEQUENCE_LABEL[s.consequence],
   ].join(' · ');
   const customCount = session.custom.challenges.length + session.custom.nhie.length;
+  const unhinged = getGame('unhinged');
+  const openRoom = (): void => {
+    setRoomMsg('Opening a room…');
+    openImpostorRoom().catch((e: unknown) => setRoomMsg(e instanceof Error ? e.message : 'Could not open a room. Try again.'));
+  };
+  // "Pick for us": a random game that suits the group's size.
+  const surprise = (): void => {
+    const fits = MODES.filter((m) => m.id !== 'mini' && (named.length >= 3 || m.id !== 'impostor'));
+    pick(fits[Math.floor(Math.random() * fits.length)]!.id);
+  };
 
   return (
     <div className="pt-lobby">
@@ -162,9 +189,89 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
         <h1 className="pt-title">
           Party <span>Mode</span>
         </h1>
-        <p className="pt-sub">One phone. Your friends. Add names, pick a game, go.</p>
+        <p className="pt-sub">Friends over, or on a call? Seven games, no sign-up.</p>
+        <div className="pt-where" role="tablist" aria-label="How you play">
+          <button role="tab" aria-selected={where === 'one'} className={where === 'one' ? 'is-on' : ''} onClick={() => setWhere('one')}>
+            📱 Pass one phone
+          </button>
+          <button role="tab" aria-selected={where === 'online'} className={where === 'online' ? 'is-on' : ''} onClick={() => setWhere('online')}>
+            🌐 Everyone’s phone
+          </button>
+        </div>
       </header>
 
+      <section className="pt-feature" aria-labelledby="pt-feature-title">
+        <span className="pt-feature-sticker">New</span>
+        <span className="pt-feature-art" aria-hidden="true">
+          🕵️
+        </span>
+        <div className="pt-feature-copy">
+          <h2 id="pt-feature-title">Impostor</h2>
+          <p>Everyone gets the secret word, except one. Say one word each, then vote out the faker.</p>
+          <div className="pt-row pt-feature-ctas">
+            <button className="pt-btn pt-btn-go" onClick={() => (where === 'one' ? pick('impostor') : openRoom())}>
+              {where === 'one' ? 'Play on this phone' : 'Open a room'}
+            </button>
+            <button className="pt-btn" onClick={() => (where === 'one' ? openRoom() : pick('impostor'))}>
+              {where === 'one' ? '🌐 Own phones' : '📱 One phone'}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {where === 'online' && (
+        <>
+          <section className="pt-panel pt-online">
+            <h2>Play on everyone’s own phone</h2>
+            <p className="pt-muted">Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.</p>
+            <div className="pt-online-games">
+              <div className="pt-online-game" style={{ ['--mc' as string]: '#7b4dff' }}>
+                <span className="pt-mode-art" aria-hidden="true">
+                  🕵️
+                </span>
+                <div>
+                  <b>Impostor</b>
+                  <span>3–12 players · secret cards on each phone</span>
+                  <button className="pt-btn pt-btn-go pt-btn-sm" onClick={openRoom}>
+                    Open a room
+                  </button>
+                </div>
+              </div>
+              {unhinged && (
+                <Link href="/games/unhinged" className="pt-online-game" style={{ ['--mc' as string]: '#ff5a6c' }}>
+                  <img src={unhinged.art.tile} alt="" width={84} height={84} style={{ background: unhinged.art.bg }} />
+                  <div>
+                    <b>Unhinged 🔞</b>
+                    <span>3–10 players · the card game for terrible people</span>
+                    <span className="pt-btn pt-btn-sm">Play</span>
+                  </div>
+                </Link>
+              )}
+            </div>
+            {roomMsg && <p className="pt-muted">{roomMsg}</p>}
+          </section>
+          <form
+            className="pt-panel pt-join"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const code = joinCode.trim().toUpperCase();
+              if (/^[A-HJKMNP-Z]{5}$/.test(code)) navigate(`/r/${code}`);
+              else setRoomMsg('Room codes are five letters, like KQTRA.');
+            }}
+          >
+            <h2>Got a code?</h2>
+            <div className="pt-add">
+              <input className="pt-input pt-code" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="ABCDE" maxLength={5} aria-label="Room code" autoCapitalize="characters" />
+              <button className="pt-btn pt-btn-go" disabled={joinCode.trim().length !== 5}>
+                Join
+              </button>
+            </div>
+          </form>
+        </>
+      )}
+
+      {where === 'one' && (
+      <>
       <section ref={whoRef} key={nudge} className={`pt-panel pt-who${problem && nudge ? ' is-nudged' : ''}`} aria-labelledby="pt-players">
         <div className="pt-panel-head">
           <h2 id="pt-players">
@@ -204,9 +311,14 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
         {problem && <p className="pt-warn">{problem}</p>}
       </section>
 
-      <h2 className="pt-h2">
-        <span className="pt-step">2</span> Pick a game
-      </h2>
+      <div className="pt-h2-row">
+        <h2 className="pt-h2">
+          <span className="pt-step">2</span> Pick a game
+        </h2>
+        <button className="pt-btn pt-btn-sm pt-surprise" onClick={surprise}>
+          🎲 Pick for us
+        </button>
+      </div>
       <div className="pt-modes pt-modes-lobby">
         {MODES.map((m) => (
           <button key={m.id} className={`pt-mode${problem ? ' is-waiting' : ''}`} style={{ ['--mc' as string]: m.color }} onClick={() => pick(m.id)}>
@@ -235,6 +347,8 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
         </button>
       </div>
       <p className="pt-muted pt-center">Everything stays on this phone. Refreshing is safe: your game picks up where you left off.</p>
+      </>
+      )}
 
       {sheet === 'rules' && (
         <Sheet title="House rules" onClose={() => setSheet(null)}>

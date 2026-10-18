@@ -17,7 +17,7 @@ export interface DealtCard {
 
 export const PARTY_KEY = 'glitchbound.party';
 
-export type ModeId = 'prompts' | 'nhie' | 'charades' | 'board' | 'auction' | 'mini';
+export type ModeId = 'impostor' | 'prompts' | 'nhie' | 'charades' | 'board' | 'auction' | 'mini';
 
 export type ModeState =
   | { mode: 'prompts'; count: number; limit: number; card?: DealtCard }
@@ -25,7 +25,9 @@ export type ModeState =
   | { mode: 'charades'; data: unknown }
   | { mode: 'board'; state: BoardState }
   | { mode: 'auction'; state: AuctionState }
-  | { mode: 'mini' };
+  | { mode: 'mini' }
+  /** Impostor on one phone (ui/Impostor.tsx ImpostorLocal). */
+  | { mode: 'impostor'; state: unknown };
 
 export interface PartySession {
   v: 1;

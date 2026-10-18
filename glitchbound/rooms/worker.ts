@@ -1,10 +1,11 @@
 /**
- * glitchbound-rooms: live rooms for Unhinged. One Durable Object per room code holds the game state
+ * glitchbound-rooms: live rooms for Unhinged and Impostor (see engines.ts). One Durable Object per
+ * room code holds the game state
  * and every player's WebSocket. Sockets hibernate between messages, so idle rooms cost nothing; a
  * room deletes itself after 3 hours without activity. The site reaches it through the ROOMS binding
  * (functions/api/rooms/*); this worker has no public URL.
  */
-import { act, join, leave, newRoom, summary, tick, validKey, viewFor, type Action, type State } from '../src/games/unhinged/engine';
+import { engineFor, ENGINES, isGameId, type RoomState as State } from './engines';
 
 interface Socket {
   send(message: string): void;
@@ -59,9 +60,10 @@ export class Room {
   }
 
   private broadcast(s: State): void {
+    const engine = engineFor(s);
     for (const ws of this.ctx.getWebSockets()) {
       const key = (ws.deserializeAttachment() as { key?: string } | null)?.key;
-      const view = key ? viewFor(s, key) : null;
+      const view = key ? engine.viewFor(s, key) : null;
       try {
         if (view) ws.send(JSON.stringify({ t: 'state', state: view, now: Date.now() }));
         else {
@@ -80,26 +82,27 @@ export class Room {
     if (url.pathname === '/init' && request.method === 'POST') {
       if (await this.load()) return json({ error: 'exists' }, 409);
       const code = url.searchParams.get('code') ?? '';
-      const s = newRoom(code, now, crypto.getRandomValues(new Uint32Array(1))[0]!);
+      const game = url.searchParams.get('game');
+      const s = ENGINES[isGameId(game) ? game : 'unhinged'].newRoom(code, now, crypto.getRandomValues(new Uint32Array(1))[0]!);
       this.state = s;
       await this.save(s);
-      return json(summary(s));
+      return json(engineFor(s).summary(s));
     }
     if (url.pathname === '/info') {
       const s = await this.load();
-      return s ? json(summary(s)) : json({ error: 'not_found' }, 404);
+      return s ? json(engineFor(s).summary(s)) : json({ error: 'not_found' }, 404);
     }
     if (url.pathname === '/ws') {
       if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'websocket_required' }, 426);
       const key = url.searchParams.get('key');
-      if (!validKey(key)) return json({ error: 'bad_key' }, 400);
+      if (!ENGINES.unhinged.validKey(key)) return json({ error: 'bad_key' }, 400);
       const pair = new WebSocketPair();
       const client = pair[0];
       const server = pair[1];
       this.ctx.acceptWebSocket(server, [key]);
       server.serializeAttachment({ key });
       const s = await this.load();
-      const err = s ? join(s, key, url.searchParams.get('name') ?? '', now) : 'not_found';
+      const err = s ? engineFor(s).join(s, key, url.searchParams.get('name') ?? '', now) : 'not_found';
       if (!s || err) {
         server.send(JSON.stringify({ t: 'gone', reason: err === 'full' ? 'This room is full.' : 'This room has closed.' }));
         server.close(4004, err ?? 'gone');
@@ -117,15 +120,16 @@ export class Room {
     const s = await this.load();
     const key = (ws.deserializeAttachment() as { key?: string } | null)?.key;
     if (!s || !key) return ws.close(4004, 'gone');
-    let action: Action;
+    let action: never;
     try {
-      action = JSON.parse(message) as Action;
+      action = JSON.parse(message) as never;
     } catch {
       return;
     }
     const now = Date.now();
-    tick(s, now);
-    const err = act(s, key, action, now);
+    const engine = engineFor(s);
+    engine.tick(s, now);
+    const err = engine.act(s, key, action, now);
     if (err) ws.send(JSON.stringify({ t: 'error', message: err }));
     await this.save(s);
     this.broadcast(s);
@@ -145,7 +149,7 @@ export class Room {
     if (!s || !key) return;
     const others = this.ctx.getWebSockets(key).filter((x) => x !== ws);
     if (others.length > 0) return;
-    leave(s, key, Date.now());
+    engineFor(s).leave(s, key, Date.now());
     await this.save(s);
     this.broadcast(s);
   }
@@ -160,7 +164,7 @@ export class Room {
       this.state = null;
       return;
     }
-    tick(s, now);
+    engineFor(s).tick(s, now);
     await this.save(s);
     this.broadcast(s);
   }

@@ -1,0 +1,300 @@
+import { IMPOSTOR_THEMES } from '../content/impostor';
+import { freshRng } from '../engine';
+import { dealImpostor, impostorCount, scoreImpostor, themeById, type ImpostorDeal, type ImpostorOutcome } from '../impostor';
+import type { PartySession } from '../session';
+import type { Player } from '../types';
+import { Avatar, byId, ModeBar, PassPhone, Timer } from './shared';
+
+/** Impostor on one phone: the settings and where the round is (kept in the session, so a refresh resumes). */
+export interface ImpostorLocal {
+  settings: { themes: string[]; impostors: 1 | 2; hint: boolean; talk: number };
+  deal: ImpostorDeal | null;
+  stage: 'setup' | 'pass' | 'card' | 'talk' | 'vote' | 'guess' | 'result';
+  /** Whose card is next (index into the players). */
+  turn: number;
+  voted: string | null;
+  guess: string | null;
+  outcome: ImpostorOutcome | null;
+  gained: Record<string, number>;
+  round: number;
+}
+
+export const newImpostor = (): ImpostorLocal => ({ settings: { themes: [], impostors: 1, hint: true, talk: 0 }, deal: null, stage: 'setup', turn: 0, voted: null, guess: null, outcome: null, gained: {}, round: 0 });
+
+const TALK = [
+  [0, 'No timer'],
+  [120, '2 min'],
+  [180, '3 min'],
+  [300, '5 min'],
+] as const;
+
+/** Pass-the-phone Impostor: everyone peeks at their card in turn, talks, votes, and the impostor gets one guess. */
+export function ImpostorMode({ session, update, onExit, onRoom }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void; onRoom: () => void }) {
+  const st = session.active?.mode === 'impostor' ? (session.active.state as ImpostorLocal) : newImpostor();
+  const players = session.players;
+  const set = (patch: Partial<ImpostorLocal>): void => update((s) => ({ ...s, active: { mode: 'impostor', state: { ...st, ...patch } } }));
+  const ids = players.map((p) => p.id);
+  const d = st.deal;
+  const themeName = d ? (themeById(d.theme)?.name ?? '') : '';
+
+  const start = (): void => {
+    const dealt = dealImpostor(ids, st.settings.themes, session.used.impostor ?? [], freshRng(), st.settings.impostors);
+    update((s) => ({ ...s, used: { ...s.used, impostor: dealt.used.slice(-400) }, active: { mode: 'impostor', state: { ...st, deal: dealt.deal, stage: 'pass', turn: 0, voted: null, guess: null, outcome: null, gained: {}, round: st.round + 1 } } }));
+  };
+
+  const finish = (voted: string | null, guess: string | null): void => {
+    if (!d) return;
+    const { outcome, points } = scoreImpostor(d, ids, voted, guess);
+    update((s) => {
+      const scores = { ...s.scores };
+      for (const [id, n] of Object.entries(points)) scores[id] = (scores[id] ?? 0) + n;
+      return { ...s, scores, active: { mode: 'impostor', state: { ...st, voted, guess, outcome, gained: points, stage: 'result' } } };
+    });
+  };
+
+  const bar = <ModeBar title="Impostor" progress={st.round ? `Round ${st.round}` : undefined} onExit={onExit} />;
+
+  if (st.stage === 'setup' || !d) {
+    const s = st.settings;
+    const setS = (patch: Partial<ImpostorLocal['settings']>): void => set({ settings: { ...s, ...patch } });
+    const all = s.themes.length === 0;
+    return (
+      <div className="pt-screen">
+        {bar}
+        <section className="pt-panel pt-imp-intro">
+          <p className="pt-imp-badge">🕵️</p>
+          <h2>Find the impostor</h2>
+          <p className="pt-muted">Everyone gets the secret word, except the impostor, who only gets a hint. Go round saying one word about it. Too obvious and the impostor catches on; too vague and you look guilty. Then vote.</p>
+          <button className="pt-link" onClick={onRoom}>
+            🌐 Rather play on everyone’s own phone? Open a room
+          </button>
+        </section>
+        <section className="pt-panel">
+          <h3>Themes</h3>
+          <div className="pt-picker">
+            <button className={`pt-chip${all ? ' is-on' : ''}`} aria-pressed={all} onClick={() => setS({ themes: [] })}>
+              🎲 Mix them all
+            </button>
+            {IMPOSTOR_THEMES.map((t) => {
+              const on = s.themes.includes(t.id);
+              return (
+                <button key={t.id} className={`pt-chip${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => setS({ themes: on ? s.themes.filter((x) => x !== t.id) : [...s.themes, t.id] })}>
+                  {t.emoji} {t.name}
+                </button>
+              );
+            })}
+          </div>
+          <p className="pt-label">Impostors</p>
+          <div className="pt-seg" role="radiogroup">
+            <button role="radio" aria-checked={s.impostors === 1} onClick={() => setS({ impostors: 1 })}>
+              One
+            </button>
+            <button role="radio" aria-checked={s.impostors === 2} onClick={() => setS({ impostors: 2 })}>
+              Two <small>7+ players</small>
+            </button>
+          </div>
+          <p className="pt-label">The impostor gets</p>
+          <div className="pt-seg" role="radiogroup">
+            <button role="radio" aria-checked={s.hint} onClick={() => setS({ hint: true })}>
+              A hint word
+            </button>
+            <button role="radio" aria-checked={!s.hint} onClick={() => setS({ hint: false })}>
+              Only the theme <small>harder</small>
+            </button>
+          </div>
+          <p className="pt-label">Talking time</p>
+          <div className="pt-seg" role="radiogroup">
+            {TALK.map(([secs, label]) => (
+              <button key={secs} role="radio" aria-checked={s.talk === secs} onClick={() => setS({ talk: secs })}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={start} disabled={players.length < 3}>
+            Deal the cards
+          </button>
+          {players.length < 3 && <p className="pt-warn">Impostor needs at least 3 players.</p>}
+        </section>
+      </div>
+    );
+  }
+
+  const current = players[st.turn];
+
+  if (st.stage === 'pass' && current) {
+    return (
+      <div className="pt-screen">
+        {bar}
+        <PassPhone player={current} note={`${st.turn + 1} of ${players.length}. Nobody else looks!`} onReady={() => set({ stage: 'card' })} />
+      </div>
+    );
+  }
+
+  if (st.stage === 'card' && current) {
+    const impostor = d.impostors.includes(current.id);
+    const next = (): void => (st.turn + 1 < players.length ? set({ stage: 'pass', turn: st.turn + 1 }) : set({ stage: 'talk' }));
+    return (
+      <div className="pt-screen">
+        {bar}
+        <SecretCard impostor={impostor} theme={themeName} word={d.word} hint={st.settings.hint ? d.hint : null} />
+        <button className="pt-btn pt-btn-big" onClick={next}>
+          {st.turn + 1 < players.length ? 'Hide it, pass the phone' : 'Hide it: everyone has seen'}
+        </button>
+      </div>
+    );
+  }
+
+  if (st.stage === 'talk') {
+    const starter = byId(players, d.starter);
+    return (
+      <div className="pt-screen">
+        {bar}
+        <section className="pt-panel pt-imp-talk">
+          <p className="pt-kicker">Theme</p>
+          <h2 className="pt-imp-theme">
+            {themeById(d.theme)?.emoji} {themeName}
+          </h2>
+          {starter && (
+            <p className="pt-imp-starter">
+              <Avatar player={starter} size={34} /> <b>{starter.name}</b> starts. Go round, one word each. Never say the word!
+            </p>
+          )}
+          {st.settings.talk > 0 && <Timer seconds={st.settings.talk} onEnd={() => set({ stage: 'vote' })} />}
+          <p className="pt-muted">Two or three rounds of words is usually enough. When you’re ready, vote: point at your suspect on three.</p>
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => set({ stage: 'vote' })}>
+            🗳️ Time to vote
+          </button>
+        </section>
+      </div>
+    );
+  }
+
+  if (st.stage === 'vote') {
+    return (
+      <div className="pt-screen">
+        {bar}
+        <section className="pt-panel">
+          <h2>Who did the group vote out?</h2>
+          <p className="pt-muted">Everyone points at their suspect on three. Tap the player with the most fingers.</p>
+          <div className="pt-imp-vote">
+            {players.map((p) => (
+              <button key={p.id} className="pt-imp-suspect" style={{ ['--pc' as string]: p.color }} onClick={() => (d.impostors.includes(p.id) ? set({ stage: 'guess', voted: p.id }) : finish(p.id, null))}>
+                <Avatar player={p} size={44} />
+                <span>{p.name}</span>
+              </button>
+            ))}
+          </div>
+          <button className="pt-btn" onClick={() => finish(null, null)}>
+            It’s a tie: nobody goes
+          </button>
+        </section>
+      </div>
+    );
+  }
+
+  if (st.stage === 'guess' && st.voted) {
+    const caught = byId(players, st.voted);
+    return (
+      <div className="pt-screen">
+        {bar}
+        <section className="pt-panel pt-imp-guess">
+          <p className="pt-imp-badge">🚨</p>
+          <h2>{caught?.name} was the impostor!</h2>
+          <p>
+            Hand {caught?.name} the phone. One guess at the secret word {d.impostors.length > 1 ? 'steals the round for them' : 'steals the round'}:
+          </p>
+          <div className="pt-imp-options">
+            {d.options.map((w) => (
+              <button key={w} className="pt-btn" onClick={() => finish(st.voted, w)}>
+                {w}
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  // Result.
+  const impostors = d.impostors.map((id) => byId(players, id)).filter((p): p is Player => !!p);
+  const headline = st.outcome === 'escaped' ? `🕵️ The impostor${impostors.length > 1 ? 's' : ''} got away!` : st.outcome === 'stole' ? '😈 Caught, but they guessed the word!' : '🎉 Impostor caught!';
+  const ranked = [...players].sort((a, b) => (session.scores[b.id] ?? 0) - (session.scores[a.id] ?? 0));
+  return (
+    <div className="pt-screen">
+      {bar}
+      <section className="pt-panel pt-imp-result">
+        <h2>{headline}</h2>
+        <p className="pt-imp-word">
+          The word was <b>{d.word}</b>
+          <small>
+            {themeById(d.theme)?.emoji} {themeName} · hint “{d.hint}”
+          </small>
+        </p>
+        <div className="pt-imp-reveal">
+          {impostors.map((p) => (
+            <span key={p.id} className="pt-name-chip" style={{ ['--pc' as string]: p.color }}>
+              <Avatar player={p} size={26} /> {p.name} 🕵️
+            </span>
+          ))}
+        </div>
+        {st.guess && (
+          <p className="pt-muted">
+            Their guess: “{st.guess}” {st.outcome === 'stole' ? '✅' : '❌'}
+          </p>
+        )}
+        <ol className="pt-imp-scores">
+          {ranked.map((p) => (
+            <li key={p.id}>
+              <Avatar player={p} size={26} />
+              <span>{p.name}</span>
+              {st.gained[p.id] ? <em>+{st.gained[p.id]}</em> : null}
+              <b>{session.scores[p.id] ?? 0}</b>
+            </li>
+          ))}
+        </ol>
+        <div className="pt-row">
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={start}>
+            Next round
+          </button>
+          <button className="pt-btn" onClick={() => set({ stage: 'setup' })}>
+            Change settings
+          </button>
+        </div>
+        <p className="pt-muted">
+          Scoring: an impostor nobody catches gets 2 points. Caught? Everyone else gets 1, unless the impostor guesses the word ({impostorCount(players.length, st.settings.impostors) > 1 ? 'each' : 'and'} steals 1).
+        </p>
+      </section>
+    </div>
+  );
+}
+
+/** A player's private card: the word, or the impostor's hint. */
+export function SecretCard({ impostor, theme, word, hint }: { impostor: boolean; theme: string; word: string | null; hint: string | null }) {
+  return (
+    <div className={`pt-imp-card${impostor ? ' is-impostor' : ''}`}>
+      <p className="pt-kicker">Theme: {theme}</p>
+      {impostor ? (
+        <>
+          <p className="pt-imp-role">🕵️ You are the impostor</p>
+          {hint ? (
+            <p className="pt-imp-secret">
+              <small>Your hint</small>
+              {hint}
+            </p>
+          ) : (
+            <p className="pt-imp-secret">
+              <small>No hint this time</small>Blend in!
+            </p>
+          )}
+          <p className="pt-muted">Everyone else knows the word. Listen, then say something vague enough to pass.</p>
+        </>
+      ) : (
+        <>
+          <p className="pt-imp-role">The secret word</p>
+          <p className="pt-imp-secret">{word}</p>
+          <p className="pt-muted">One of you doesn’t know it. Hint at it without giving it away.</p>
+        </>
+      )}
+    </div>
+  );
+}
