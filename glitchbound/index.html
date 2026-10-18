@@ -12,6 +12,15 @@
     <title>GlitchBound</title>
     <!--/gb:head-->
     <script>
+      // Theme before first paint: the player's choice, else the system setting (no flash of the wrong theme).
+      (function () {
+        try {
+          var t = localStorage.getItem('glitchbound.theme');
+          if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+          var dark = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0522');
+        } catch (e) {}
+      })();
       // Arcade entrance: cover the page from the very first paint, so the landing page never flashes
       // before the cabinet animation (the app removes this as soon as the entrance is on screen).
       (function () {
@@ -28,6 +37,10 @@
       html.entrance-pending::after { content: ''; position: fixed; inset: 0; z-index: 299; background: #fff6ea; }
       /* Fallback content for crawlers and no-JS visitors; replaced by the app on load. */
       html { background: #fff6ea; color: #1d1238; }
+      html[data-theme='dark'], html[data-theme='dark'].entrance-pending::after { background: #0d0522; color: #f6f1ff; }
+      @media (prefers-color-scheme: dark) {
+        html:not([data-theme='light']), html:not([data-theme='light']).entrance-pending::after { background: #0d0522; color: #f6f1ff; }
+      }
       body { margin: 0; font: 17px/1.55 system-ui, sans-serif; }
       .ssr { max-width: 760px; margin: 0 auto; padding: 120px 20px 60px; }
       .ssr h1 { font-size: 44px; line-height: 1; letter-spacing: -0.03em; }

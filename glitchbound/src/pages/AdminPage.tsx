@@ -7,6 +7,7 @@ import type { AdminStats } from '../platform/apiTypes';
 import { fmt } from '../platform/daily';
 import { usePageMeta } from '../platform/meta';
 import './InfoPages.css';
+import { CloudPanel, ReportsPanels } from './AdminReports';
 import './AdminPage.css';
 
 const when = (ms: number): string => new Date(ms).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -211,6 +212,9 @@ export function AdminPage() {
           <DailyBars data={stats.daily} metric="dailyPlayers" label="Visitors who finished a daily" />
         </div>
       </div>
+
+      <ReportsPanels />
+      <CloudPanel />
 
       <section className="panel info-block" aria-labelledby="games-title">
         <h2 id="games-title">Games · last 30 days</h2>

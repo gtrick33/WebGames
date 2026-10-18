@@ -851,3 +851,21 @@
     transition: none;
   }
 }
+
+.cl-coach {
+  align-self: center;
+  padding: 8px 14px;
+  border: 2px solid var(--cl-ink);
+  border-radius: 999px;
+  background: #fff7d1;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  animation: cl-coach 0.3s var(--out);
+}
+@keyframes cl-coach {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+}

@@ -504,6 +504,9 @@ function Play(props: {
           </button>
         </div>
       )}
+      {!done && !level.aim && level.wrong.length === 0 && run.index === 0 && (
+        <p className="wb-coach">Tap where you think the ball is, then lock it in. Tiny? Zoom with +.</p>
+      )}
       {!done && level.wrong.length > 0 && (
         <p className="wb-note">
           {level.wrong[level.wrong.length - 1]!.heat === 'hot' ? '🔥 Hot! It’s close.' : level.wrong[level.wrong.length - 1]!.heat === 'warm' ? '🌤 Warm. Somewhere around there.' : '🧊 Cold. Look elsewhere.'}{' '}

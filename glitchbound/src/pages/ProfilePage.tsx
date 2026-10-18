@@ -8,7 +8,10 @@ import { Avatar, openSignIn } from '../components/SignIn';
 import { account, ApiError, useAccount } from '../platform/account';
 import { fmt } from '../platform/daily';
 import { usePageMeta } from '../platform/meta';
+import type { Me } from '../platform/apiTypes';
+import { rankBests, topLabel } from '../platform/profile';
 import { Link } from '../router/router';
+import { ProfileTabs } from './BugReportPage';
 import './InfoPages.css';
 
 export function ProfilePage() {
@@ -17,6 +20,7 @@ export function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [nickMsg, setNickMsg] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [allFavs, setAllFavs] = useState(false);
 
   if (status === 'loading') {
     return (
@@ -56,6 +60,7 @@ export function ProfilePage() {
 
   return (
     <div className="wrap info-page profile">
+      <ProfileTabs current="me" />
       <section className="profile-card panel" aria-label="Player card">
         <Avatar name={me.nickname} src={me.avatar} size={84} />
         <div className="profile-id">
@@ -104,61 +109,25 @@ export function ProfilePage() {
         </ul>
       </section>
 
-      <section aria-labelledby="bests-title">
-        <h2 id="bests-title" className="profile-h2">
-          Personal bests
-        </h2>
-        <div className="best-cards">
-          {GAMES.map((g) => {
-            const b = me.bests[g.slug];
-            return (
-              <div key={g.slug} className="panel best-card" data-accent={g.accent}>
-                <Link href={`/games/${g.slug}`} className="best-card-art" style={{ background: g.art.bg }} tabIndex={-1} aria-hidden="true">
-                  <img src={g.art.wide} alt="" loading="lazy" decoding="async" />
-                </Link>
-                <div className="best-card-body">
-                  <h3>{g.title}</h3>
-                  {b ? (
-                    <dl className="bests">
-                      <div>
-                        <dt>Best score</dt>
-                        <dd className="mono">{fmt(b.score)}</dd>
-                      </div>
-                      {g.stats
-                        .filter((s) => s.key !== 'score' && b.stats[s.key] !== undefined)
-                        .map((s) => (
-                          <div key={s.key}>
-                            <dt>{s.label}</dt>
-                            <dd className="mono">
-                              {fmt(b.stats[s.key]!)}
-                              {s.unit ? ` ${s.unit}` : ''}
-                            </dd>
-                          </div>
-                        ))}
-                    </dl>
-                  ) : (
-                    <p>No ranked round yet.</p>
-                  )}
-                  <Link href={`/games/${g.slug}`} className="quests-link">
-                    Play {g.title} <Icon name="arrowRight" size={16} />
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      <BestResults me={me} />
 
       <section aria-labelledby="favs-title">
         <h2 id="favs-title" className="profile-h2">
           Favorites
         </h2>
         {favorites.length ? (
-          <div className="related-grid">
-            {favorites.map((g, i) => (
-              <GameTile key={g.slug} game={g} index={i} best={me.bests[g.slug]?.score} />
-            ))}
-          </div>
+          <>
+            <div className="related-grid">
+              {(allFavs ? favorites : favorites.slice(0, 6)).map((g, i) => (
+                <GameTile key={g.slug} game={g} index={i} best={me.bests[g.slug]?.score} />
+              ))}
+            </div>
+            {favorites.length > 6 && (
+              <button className="btn btn-ghost show-more" onClick={() => setAllFavs((v) => !v)}>
+                {allFavs ? 'Show fewer' : `Show all ${favorites.length} favorites`}
+              </button>
+            )}
+          </>
         ) : (
           <p className="info-lead">Tap the heart on any game to keep it here.</p>
         )}
@@ -192,5 +161,94 @@ export function ProfilePage() {
         </div>
       </section>
     </div>
+  );
+}
+
+const HIGHLIGHTS = 4;
+
+/**
+ * Personal bests that scale to any number of games: the four most impressive results as cards, then
+ * every other best in a compact, searchable list, and a nudge towards games not tried yet.
+ */
+function BestResults({ me }: { me: Me }) {
+  const [query, setQuery] = useState('');
+  const ranked = rankBests(me.bests, GAMES);
+  const top = ranked.slice(0, HIGHLIGHTS);
+  const rest = ranked.slice(HIGHLIGHTS).filter((e) => e.game.title.toLowerCase().includes(query.trim().toLowerCase()));
+  const untried = GAMES.filter((g) => !me.bests[g.slug]);
+  return (
+    <section aria-labelledby="bests-title">
+      <h2 id="bests-title" className="profile-h2">
+        Your best results
+      </h2>
+      {top.length === 0 ? (
+        <p className="info-lead">Finish a round while signed in and your records show up here.</p>
+      ) : (
+        <div className="best-cards">
+          {top.map((e) => {
+            const tag = topLabel(e);
+            return (
+              <Link key={e.game.slug} href={`/games/${e.game.slug}`} className="panel best-card best-card-link" data-accent={e.game.accent}>
+                <span className="best-card-art" style={{ background: e.game.art.bg }} aria-hidden="true">
+                  <img src={e.game.art.wide} alt="" loading="lazy" decoding="async" />
+                  {tag && <span className={`best-tag mono${e.best.rank === 1 ? ' is-crown' : ''}`}>{e.best.rank === 1 ? '👑 #1' : tag}</span>}
+                </span>
+                <span className="best-card-body">
+                  <strong className="best-card-title">{e.game.title}</strong>
+                  <span className="best-score mono">{fmt(e.best.score)}</span>
+                  <span className="info-small mono">
+                    {e.best.rank && e.best.players ? `Rank ${e.best.rank} of ${fmt(e.best.players)}` : 'Personal best'} · {new Date(e.best.at).toLocaleDateString()}
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {ranked.length > HIGHLIGHTS && (
+        <details className="panel all-bests">
+          <summary>
+            All personal bests <span className="mono">({ranked.length} games)</span>
+          </summary>
+          {ranked.length > 10 && (
+            <input className="field all-bests-search" type="search" placeholder="Filter games" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Filter games" />
+          )}
+          <table className="bests-table">
+            <thead>
+              <tr>
+                <th scope="col">Game</th>
+                <th scope="col">Best</th>
+                <th scope="col">Rank</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rest.map((e) => (
+                <tr key={e.game.slug}>
+                  <td>
+                    <Link href={`/games/${e.game.slug}`}>{e.game.title}</Link>
+                  </td>
+                  <td className="mono">{fmt(e.best.score)}</td>
+                  <td className="mono">{e.best.rank ? `#${e.best.rank}${e.best.players ? ` / ${fmt(e.best.players)}` : ''}` : '–'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      )}
+
+      {untried.length > 0 && (
+        <div className="untried">
+          <p className="info-small">Not tried yet:</p>
+          {untried.slice(0, 6).map((g) => (
+            <Link key={g.slug} href={`/games/${g.slug}`} className="untried-chip" data-accent={g.accent}>
+              <img src={g.art.tile} alt="" width={28} height={28} style={{ background: g.art.bg }} />
+              {g.title}
+            </Link>
+          ))}
+          {untried.length > 6 && <span className="info-small">+{untried.length - 6} more</span>}
+        </div>
+      )}
+    </section>
   );
 }

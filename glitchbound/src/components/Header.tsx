@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { account, useAccount } from '../platform/account';
+import { nextTheme, setTheme, useTheme } from '../platform/theme';
+import { dayKey } from '../platform/dates';
+import { streakState } from '../platform/engage';
+import { useNow } from '../platform/hooks';
+import { doneDays } from '../platform/save';
+import { useSave } from '../platform/store';
 import { Link, useLocation } from '../router/router';
 import { Icon, type IconName } from './Icon';
 import { LogoMark, Wordmark } from './Logo';
@@ -12,6 +18,33 @@ const TABS: { href: string; label: string; icon: IconName }[] = [
   { href: '/daily', label: 'Daily', icon: 'calendar' },
   { href: '/leaderboards', label: 'Leaderboards', icon: 'crown' },
 ];
+
+/** The daily streak, always in view (like a flame you don't want to go out). Pulses when today is not done yet. */
+function StreakChip() {
+  const save = useSave();
+  const today = dayKey(useNow(60_000));
+  const { streak, atRisk } = streakState(doneDays(save), today);
+  if (streak === 0) return null;
+  const label = atRisk ? `${streak}-day streak. Finish a daily today to keep it` : `${streak}-day streak. Today's daily is done`;
+  return (
+    <Link href="/daily" className={`streak-chip${atRisk ? ' is-risk' : ''}`} aria-label={label} title={label}>
+      <Icon name="flame" size={18} />
+      <span className="mono">{streak}</span>
+    </Link>
+  );
+}
+
+/** One button: follows the system until tapped, then flips between the neon night and toy-box day looks. */
+function ThemeToggle() {
+  const [choice, dark] = useTheme();
+  const label = choice === 'auto' ? `Theme: automatic (${dark ? 'night' : 'day'}). Switch to ${dark ? 'day' : 'night'}` : `Theme: ${dark ? 'night' : 'day'}. Switch back to automatic`;
+  return (
+    <button className="theme-toggle" onClick={() => setTheme(nextTheme(choice))} aria-label={label} title={label}>
+      <Icon name={dark ? 'moon' : 'sun'} size={19} />
+      {choice === 'auto' && <span className="theme-auto mono" aria-hidden="true">A</span>}
+    </button>
+  );
+}
 
 function AccountMenu() {
   const { me, status } = useAccount();
@@ -68,6 +101,9 @@ function AccountMenu() {
         </Link>
         <Link href="/leaderboards" className="account-item" onClick={() => setOpen(false)}>
           <Icon name="crown" size={18} /> Leaderboards
+        </Link>
+        <Link href="/me/bugs" className="account-item" onClick={() => setOpen(false)}>
+          <Icon name="bug" size={18} /> Report a bug
         </Link>
         {me.isAdmin && (
           <Link href="/admin" className="account-item" onClick={() => setOpen(false)}>
@@ -141,6 +177,8 @@ export function Header() {
                 /
               </span>
             </button>
+            <StreakChip />
+            <ThemeToggle />
             <AccountMenu />
           </div>
         </div>

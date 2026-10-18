@@ -214,3 +214,29 @@ html.entrance-on .intro-title,
 html.entrance-on .intro-card {
   animation-play-state: paused;
 }
+
+/* Night mode: the same cabinet in a neon arcade hall. */
+:root[data-theme='dark'] .entrance {
+  background:
+    radial-gradient(700px 480px at 12% 0%, rgb(139 92 255 / 0.45), transparent 62%),
+    radial-gradient(640px 480px at 95% 20%, rgb(34 228 255 / 0.25), transparent 60%),
+    #0d0522;
+}
+:root[data-theme='dark'] .ent-floor {
+  background-image:
+    linear-gradient(rgb(34 228 255 / 0.35) 2px, transparent 2px),
+    linear-gradient(90deg, rgb(255 63 210 / 0.35) 2px, transparent 2px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .entrance {
+    background:
+      radial-gradient(700px 480px at 12% 0%, rgb(139 92 255 / 0.45), transparent 62%),
+      radial-gradient(640px 480px at 95% 20%, rgb(34 228 255 / 0.25), transparent 60%),
+      #0d0522;
+  }
+  :root:not([data-theme='light']) .ent-floor {
+    background-image:
+      linear-gradient(rgb(34 228 255 / 0.35) 2px, transparent 2px),
+      linear-gradient(90deg, rgb(255 63 210 / 0.35) 2px, transparent 2px);
+  }
+}

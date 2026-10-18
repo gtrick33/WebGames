@@ -302,3 +302,97 @@
     padding: 0;
   }
 }
+
+/* ------------------------------------------------------------------ theme */
+.theme-toggle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--well);
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.25s var(--spring);
+}
+.theme-toggle:hover {
+  border-color: var(--violet);
+  box-shadow: var(--glow-magenta);
+}
+.theme-toggle:active {
+  transform: rotate(-25deg) scale(0.92);
+}
+.theme-auto {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: var(--ink);
+  font-size: 9px;
+}
+
+/* ----------------------------------------------------------------- streak */
+.streak-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 42px;
+  padding: 0 12px 0 9px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--orange);
+  color: var(--ink);
+  font-size: 15px;
+  text-decoration: none;
+  box-shadow: var(--hard-sm);
+}
+.streak-chip.is-risk {
+  background: var(--yellow);
+  animation: streak-pulse 1.6s ease-in-out infinite;
+}
+@keyframes streak-pulse {
+  50% {
+    transform: scale(1.07);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .streak-chip.is-risk {
+    animation: none;
+  }
+}
+
+/* Small phones: the logo mark alone, slimmer buttons, so streak, theme and account all fit. */
+@media (max-width: 440px) {
+  .header-actions {
+    gap: 6px;
+  }
+  .search-trigger,
+  .theme-toggle {
+    width: 38px;
+    height: 38px;
+  }
+  .streak-chip {
+    height: 38px;
+    padding: 0 9px 0 7px;
+  }
+  .account-btn {
+    height: 40px;
+    padding-right: 3px;
+  }
+  .account-lvl {
+    display: none;
+  }
+}
+@media (max-width: 380px) {
+  .brand .wordmark {
+    display: none;
+  }
+}

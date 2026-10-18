@@ -445,3 +445,14 @@
     animation: none;
   }
 }
+
+.wb-coach {
+  align-self: center;
+  padding: 8px 14px;
+  border: 2px solid var(--wb-ink);
+  border-radius: 999px;
+  background: #f4ffc2;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}

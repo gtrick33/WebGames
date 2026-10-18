@@ -8,6 +8,7 @@ import { Home } from './pages/Home';
 import { NotFound } from './pages/NotFound';
 import { ArcadeEntrance } from './components/Entrance';
 import { MusicControl } from './components/MusicControl';
+import { FeedbackPrompt } from './components/FeedbackPrompt';
 import { track } from './platform/analytics';
 import { visitInfo } from './platform/visit';
 import { Link, matchRoute, useLocation } from './router/router';
@@ -18,6 +19,7 @@ const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((m) => ({ defa
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
 const LeaderboardsPage = lazy(() => import('./pages/LeaderboardsPage').then((m) => ({ default: m.LeaderboardsPage })));
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const BugReportPage = lazy(() => import('./pages/BugReportPage').then((m) => ({ default: m.BugReportPage })));
 const SignInPage = lazy(() => import('./pages/SignInPage').then((m) => ({ default: m.SignInPage })));
 
 function Page() {
@@ -34,6 +36,8 @@ function Page() {
       return <LeaderboardsPage />;
     case 'me':
       return <ProfilePage />;
+    case 'bugs':
+      return <BugReportPage />;
     case 'admin':
       return <AdminPage />;
     case 'signin':
@@ -84,6 +88,7 @@ export function App() {
       </main>
       <Footer />
       <MusicControl />
+      <FeedbackPrompt />
     </>
   );
 }

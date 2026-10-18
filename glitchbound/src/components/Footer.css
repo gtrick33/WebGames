@@ -43,14 +43,16 @@
   color: var(--lime-text);
   margin-bottom: 4px;
 }
-.footer-cols a {
+.footer-cols a,
+.footer-cols .footer-link-btn {
   text-decoration: none;
   font-weight: 700;
   width: fit-content;
   background: linear-gradient(var(--yellow), var(--yellow)) no-repeat 0 100% / 0 3px;
   transition: background-size 0.3s var(--out);
 }
-.footer-cols a:hover {
+.footer-cols a:hover,
+.footer-cols .footer-link-btn:hover {
   background-size: 100% 3px;
 }
 .footer-word {
@@ -86,4 +88,14 @@
   .fs-3 {
     display: none;
   }
+}
+
+.footer-link-btn {
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }

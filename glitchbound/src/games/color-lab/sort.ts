@@ -229,5 +229,11 @@ export function solveBest(b: Board, budget = 40_000): Solution | null {
 
 /** Next move towards a solution from here (for hints), or null when the board is a dead end. */
 export function hint(b: Board): Move | null {
-  return solve(b, { weight: 2, maxNodes: 30_000 })?.moves[0] ?? solve(b, { weight: 6, maxNodes: 80_000 })?.moves[0] ?? null;
+  // Prefer a move on a shortest route (so following hints reaches par), then settle for any solution.
+  return (
+    solve(b, { maxNodes: 25_000 })?.moves[0] ??
+    solve(b, { weight: 1.6, maxNodes: 40_000 })?.moves[0] ??
+    solve(b, { weight: 6, maxNodes: 80_000 })?.moves[0] ??
+    null
+  );
 }

@@ -1,4 +1,5 @@
 import { GAMES } from '../catalog/games';
+import { openFeedback } from '../platform/feedback';
 import { Link } from '../router/router';
 import { LogoMark } from './Logo';
 import './Footer.css';
@@ -30,6 +31,10 @@ export function Footer() {
             </div>
             <div>
               <p className="eyebrow">Info</p>
+              <button className="footer-link-btn" onClick={() => openFeedback()}>
+                Give feedback
+              </button>
+              <Link href="/me/bugs">Report a bug</Link>
               <Link href="/privacy">Privacy &amp; your data</Link>
               <a href="/sitemap.xml">Sitemap</a>
             </div>

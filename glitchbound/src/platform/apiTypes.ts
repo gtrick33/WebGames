@@ -33,6 +33,9 @@ export interface BestView {
   score: number;
   stats: Record<string, number>;
   at: number;
+  /** Leaderboard position of this best (1 = top) and how many members have a best in the game. */
+  rank?: number;
+  players?: number;
 }
 
 export interface Me {
@@ -96,4 +99,60 @@ export interface AdminStats {
   errors: { kinds: { kind: string; n: number }[]; latest: { ts: number; kind: string; game: string; message: string; path: string; browser: string }[] };
   announcements: { game: string; subject: string; sentAt: number; recipients: number }[];
   emailEnabled: boolean;
+}
+
+/** A member's own bug report, as listed on /me/bugs. */
+export interface BugReportView {
+  id: number;
+  ts: number;
+  title: string;
+  game: string;
+  category: string;
+  severity: string;
+  status: string;
+  note: string;
+  updatedAt: number;
+}
+
+export interface AdminReports {
+  feedback: {
+    total30d: number;
+    average: number;
+    /** Counts for 1 to 5 stars. */
+    distribution: number[];
+    byGame: { game: string; n: number; average: number }[];
+    wishes: { wish: string; n: number }[];
+    latest: { ts: number; stars: number; message: string; game: string; wish: string; browser: string; nickname: string | null }[];
+  };
+  bugs: {
+    open: number;
+    fixed: number;
+    wontfix: number;
+    list: {
+      id: number;
+      ts: number;
+      title: string;
+      description: string;
+      game: string;
+      category: string;
+      severity: string;
+      device: string;
+      page: string;
+      contact: string;
+      status: string;
+      note: string;
+      nickname: string | null;
+    }[];
+  };
+}
+
+export interface CloudUsage {
+  generatedAt: number;
+  limits: { requestsPerDay: number; d1RowsReadPerDay: number; d1RowsWrittenPerDay: number; d1StorageBytesPerDb: number; d1StorageBytesTotal: number };
+  databases: { name: string; sizeBytes: number | null; tables: { name: string; rows: number }[] }[];
+  analytics: {
+    status: 'ok' | 'not_configured' | 'error';
+    days: { day: string; requests: number | null; errors: number | null; rowsRead: number; rowsWritten: number; queries: number }[];
+    error: string;
+  };
 }

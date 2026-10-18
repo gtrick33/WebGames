@@ -34,10 +34,10 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(rgb(29 18 56 / 0.08) 1.2px, transparent 1.4px) 0 0 / 26px 26px,
-    radial-gradient(900px 560px at 6% -10%, rgb(255 201 40 / 0.32), transparent 62%),
-    radial-gradient(800px 560px at 102% 8%, rgb(42 209 240 / 0.22), transparent 60%),
-    radial-gradient(1000px 700px at 50% 125%, rgb(255 79 200 / 0.18), transparent 65%);
+    radial-gradient(var(--page-dots, rgb(29 18 56 / 0.08)) 1.2px, transparent 1.4px) 0 0 / 26px 26px,
+    radial-gradient(900px 560px at 6% -10%, var(--blob-1, rgb(255 201 40 / 0.32)), transparent 62%),
+    radial-gradient(800px 560px at 102% 8%, var(--blob-2, rgb(42 209 240 / 0.22)), transparent 60%),
+    radial-gradient(1000px 700px at 50% 125%, var(--blob-3, rgb(255 79 200 / 0.18)), transparent 65%);
   will-change: transform;
   transform: translateZ(0);
 }

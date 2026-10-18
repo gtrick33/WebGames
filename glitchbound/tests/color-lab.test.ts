@@ -177,3 +177,20 @@ describe('scoring and saves', () => {
     expect(sanitizeCl('nope')).toEqual(emptyClSave());
   });
 });
+
+describe('hints', () => {
+  it('following hints from the start solves a daily level in par', () => {
+    for (const i of [0, 1, 2, 3]) {
+      const lv = dailyLevel('2026-10-18', i);
+      let board = lv.board;
+      let moves = 0;
+      while (!isSolved(board) && moves < 60) {
+        const m = hint(board)!;
+        board = pour(board, m.from, m.to);
+        moves++;
+      }
+      expect(isSolved(board)).toBe(true);
+      if (lv.parOptimal) expect(moves).toBe(lv.par);
+    }
+  });
+});

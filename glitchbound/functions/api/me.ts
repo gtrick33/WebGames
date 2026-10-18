@@ -53,6 +53,8 @@ export async function onRequestDelete({ request, env }: Ctx): Promise<Response> 
     ['sessions', 'favorites', 'runs', 'bests', 'dailies', 'quest_claims'].map((t) => env.DB.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(user.id)).concat([
       env.DB.prepare('UPDATE events SET user_id = NULL WHERE user_id = ?').bind(user.id),
       env.DB.prepare('DELETE FROM subscribers WHERE user_id = ? OR email = ?').bind(user.id, user.email),
+      env.DB.prepare('UPDATE feedback SET user_id = NULL WHERE user_id = ?').bind(user.id),
+      env.DB.prepare("UPDATE bug_reports SET user_id = NULL, contact = '' WHERE user_id = ?").bind(user.id),
       env.DB.prepare('DELETE FROM users WHERE id = ?').bind(user.id),
     ]),
   );

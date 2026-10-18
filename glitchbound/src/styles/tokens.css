@@ -93,6 +93,71 @@
   color-scheme: light;
 }
 
+/*
+ * Night mode: the original neon arcade (night purple, cyan and magenta light). Follows the system
+ * setting unless the player picked a theme (html[data-theme], set before first paint in index.html).
+ */
+:root[data-theme='dark'] {
+  --bg: #0d0522;
+  --bg-2: #150a33;
+  --surface: #1c0e42;
+  --surface-2: #26145a;
+  --line: #4b3494;
+  --well: #241252;
+  --bar: rgb(13 5 34 / 0.92);
+  --fg: #f6f1ff;
+  --fg-2: #cfc3f2;
+  --fg-3: #a193cf;
+  --ink: #07021a;
+  --cyan: #22e4ff;
+  --magenta: #ff3fd2;
+  --violet: #8b5cff;
+  --lime: #c4f034;
+  --yellow: #ffd12e;
+  --cyan-text: #22e4ff;
+  --magenta-text: #ff6be0;
+  --lime-text: #c4f034;
+  --yellow-text: #ffd12e;
+  --glow-cyan: 0 0 0 1px rgb(34 228 255 / 0.7), 0 0 22px rgb(34 228 255 / 0.35);
+  --glow-magenta: 0 0 0 1px rgb(255 63 210 / 0.7), 0 0 22px rgb(255 63 210 / 0.35);
+  --page-dots: rgb(255 255 255 / 0.06);
+  --blob-1: rgb(139 92 255 / 0.32);
+  --blob-2: rgb(34 228 255 / 0.18);
+  --blob-3: rgb(255 63 210 / 0.2);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0d0522;
+    --bg-2: #150a33;
+    --surface: #1c0e42;
+    --surface-2: #26145a;
+    --line: #4b3494;
+    --well: #241252;
+    --bar: rgb(13 5 34 / 0.92);
+    --fg: #f6f1ff;
+    --fg-2: #cfc3f2;
+    --fg-3: #a193cf;
+    --ink: #07021a;
+    --cyan: #22e4ff;
+    --magenta: #ff3fd2;
+    --violet: #8b5cff;
+    --lime: #c4f034;
+    --yellow: #ffd12e;
+    --cyan-text: #22e4ff;
+    --magenta-text: #ff6be0;
+    --lime-text: #c4f034;
+    --yellow-text: #ffd12e;
+    --glow-cyan: 0 0 0 1px rgb(34 228 255 / 0.7), 0 0 22px rgb(34 228 255 / 0.35);
+    --glow-magenta: 0 0 0 1px rgb(255 63 210 / 0.7), 0 0 22px rgb(255 63 210 / 0.35);
+    --page-dots: rgb(255 255 255 / 0.06);
+    --blob-1: rgb(139 92 255 / 0.32);
+    --blob-2: rgb(34 228 255 / 0.18);
+    --blob-3: rgb(255 63 210 / 0.2);
+    color-scheme: dark;
+  }
+}
+
 /* Accent scopes: set data-accent on any element to recolour its children. */
 [data-accent='blue'] { --accent: var(--cyan); --on-accent: var(--ink); }
 [data-accent='cyan'] { --accent: var(--cyan); --on-accent: var(--ink); }

@@ -15,6 +15,7 @@ import { MiniLeaderboard } from '../components/Leaderboard';
 import { openSignIn } from '../components/SignIn';
 import { setGuestName, usePlayerName } from '../platform/playerName';
 import { music } from '../platform/music';
+import { openFeedback } from '../platform/feedback';
 import type { EndEvent, GameEvent } from '../platform/contract';
 import { challengeForDay, fmt } from '../platform/daily';
 import { dayKey } from '../platform/dates';
@@ -461,6 +462,15 @@ export function GamePage({ game }: { game: GameEntry }) {
               </div>
             )}
           </section>
+
+          <div className="game-help">
+            <button className="game-help-btn" onClick={() => openFeedback(game.slug)}>
+              <Icon name="star" size={16} /> Rate this game
+            </button>
+            <Link href={`/me/bugs?game=${game.slug}`} className="game-help-btn">
+              <Icon name="bug" size={16} /> Report a bug
+            </Link>
+          </div>
 
           <AdSlot placement="game" />
         </aside>

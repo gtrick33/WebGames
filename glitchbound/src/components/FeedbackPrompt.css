@@ -1,0 +1,177 @@
+/* "Enjoying GlitchBound?" card: slides up from the bottom corner, never covers a game. */
+.fb {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 150;
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100svh - var(--header-h) - 40px);
+  overflow-y: auto;
+  padding: 20px 20px 18px;
+  border: 2px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--hard), var(--glow-magenta);
+  animation: fb-in 0.45s var(--spring);
+}
+@keyframes fb-in {
+  from {
+    transform: translateY(30px) scale(0.96);
+    opacity: 0;
+  }
+}
+@media (max-width: 900px) {
+  .fb {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    /* Above the bottom tab bar. */
+    bottom: calc(86px + env(safe-area-inset-bottom));
+  }
+}
+.fb h2 {
+  padding-right: 32px;
+  font-size: 24px;
+}
+.fb-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--well);
+  color: var(--fg-2);
+  cursor: pointer;
+}
+.fb-stars {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+}
+.fb-star {
+  flex: 1;
+  max-width: 58px;
+  aspect-ratio: 1;
+  padding: 4px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.2s var(--spring);
+}
+.fb-star svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--well);
+  stroke: var(--line);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  transition: fill 0.15s;
+}
+.fb-star.is-on svg {
+  fill: var(--yellow);
+  stroke: var(--ink);
+}
+.fb-star:hover,
+.fb-star:focus-visible {
+  transform: scale(1.15) rotate(-6deg);
+}
+.fb-star[aria-checked='true'] {
+  animation: fb-pop 0.35s var(--spring);
+}
+@keyframes fb-pop {
+  50% {
+    transform: scale(1.3);
+  }
+}
+.fb-word {
+  min-height: 20px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--fg-3);
+}
+.fb-details {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  animation: fb-in 0.3s var(--out);
+}
+.fb-label {
+  font-weight: 700;
+  font-size: 14px;
+}
+.fb-label span {
+  font-weight: 500;
+  color: var(--fg-3);
+}
+.fb-text {
+  height: auto;
+  min-height: 84px;
+  padding: 10px 14px;
+  resize: vertical;
+  font-size: 15px;
+}
+.fb-select {
+  height: 44px;
+  padding: 0 12px;
+}
+.fb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fb-chip {
+  height: 32px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--well);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.fb-chip.is-on {
+  border-color: var(--ink);
+  background: var(--cyan);
+  color: var(--ink);
+}
+.fb-send {
+  margin-top: 4px;
+}
+.fb-error {
+  color: var(--magenta-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+.fb-thanks {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.fb-burst {
+  font-size: 48px;
+  line-height: 1;
+  color: var(--yellow);
+  -webkit-text-stroke: 2px var(--ink);
+  animation: fb-pop 0.6s var(--spring);
+}
+.fb-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-weight: 700;
+  color: var(--magenta-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fb,
+  .fb-details,
+  .fb-burst,
+  .fb-star[aria-checked='true'] {
+    animation: none;
+  }
+}

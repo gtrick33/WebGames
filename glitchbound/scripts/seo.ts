@@ -123,6 +123,16 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       body: `<section class="ssr"><h1>Your profile</h1><p>Sign in to see your quests, level, badges and bests.</p></section>`,
     },
     {
+      path: '/me/bugs',
+      file: 'me/bugs.html',
+      title: `Report a bug · ${SITE}`,
+      description: 'Found something broken in a GlitchBound game? Tell us what happened and we will fix it.',
+      image: '/og.png',
+      imageAlt: SITE,
+      noindex: true,
+      body: `<section class="ssr"><h1>Report a bug</h1><p>Tell us what went wrong, in which game, and how to make it happen again.</p></section>`,
+    },
+    {
       path: '/signin',
       file: 'signin.html',
       title: `Sign in or create an account · ${SITE}`,

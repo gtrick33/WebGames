@@ -169,3 +169,141 @@
   margin-top: 10px;
   font-size: 20px;
 }
+
+/* ---------------------------------------------------------------- feedback, bugs, Cloudflare */
+.admin-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.fb-avg b {
+  font-size: 32px;
+}
+.fb-dist {
+  display: grid;
+  gap: 4px;
+  max-width: 420px;
+}
+.fb-dist-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.fb-dist-bar {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--well);
+  overflow: hidden;
+}
+.fb-dist-bar i {
+  display: block;
+  height: 100%;
+  background: var(--yellow);
+}
+.bug-admin {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bug-admin-item {
+  padding: 10px 14px;
+  border: 1.5px solid var(--line);
+  border-left-width: 6px;
+  border-radius: 12px;
+  background: var(--well);
+}
+.bug-admin-item.sev-blocker {
+  border-left-color: var(--coral);
+}
+.bug-admin-item.sev-annoying {
+  border-left-color: var(--yellow);
+}
+.bug-admin-item.sev-minor {
+  border-left-color: var(--teal);
+}
+.bug-admin-item summary {
+  display: grid;
+  gap: 2px;
+  cursor: pointer;
+}
+.bug-desc {
+  margin: 10px 0 6px;
+  white-space: pre-wrap;
+}
+.cloud-meters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 14px 24px;
+  margin: 8px 0 14px;
+}
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 650;
+}
+.meter-track {
+  height: 12px;
+  margin-top: 6px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--well);
+  overflow: hidden;
+}
+.meter-track i {
+  display: block;
+  height: 100%;
+}
+.meter-track i.is-ok,
+.meter-pct.is-ok {
+  background: var(--lime);
+  color: var(--lime-text);
+}
+.meter-pct.is-ok,
+.meter-pct.is-warn,
+.meter-pct.is-bad {
+  background: none;
+}
+.meter-track i.is-warn {
+  background: var(--yellow);
+}
+.meter-pct.is-warn {
+  color: var(--yellow-text);
+}
+.meter-track i.is-bad {
+  background: var(--coral);
+}
+.meter-pct.is-bad {
+  color: var(--magenta-text);
+}
+.cloud-note code {
+  font-size: 12px;
+  word-break: break-word;
+}
+.cloud-tables summary {
+  margin: 10px 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+.data-table td.is-peak {
+  font-weight: 800;
+}
+
+/* Wide tables scroll inside their panel instead of stretching the page on phones. */
+.admin {
+  grid-template-columns: minmax(0, 1fr);
+}
+.admin .info-cols > *,
+.admin .info-block {
+  min-width: 0;
+}
+.admin .info-block {
+  overflow-x: auto;
+}

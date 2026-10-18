@@ -28,6 +28,9 @@ export interface Env {
   RESEND_API_KEY?: string;
   /** Secret: enables POST /api/admin/test-email (admin addresses only). */
   ADMIN_TEST_TOKEN?: string;
+  /** Secrets for the admin usage panel: an API token with Account Analytics Read, and the account id. */
+  CF_API_TOKEN?: string;
+  CF_ACCOUNT_ID?: string;
   /** Local development only (set in .dev.vars). */
   DEV_LOGIN?: string;
 }

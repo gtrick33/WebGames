@@ -20,7 +20,11 @@ export type AnalyticsEvent =
   | 'game_error'
   | 'favorite'
   | 'sign_in'
-  | 'subscribe';
+  | 'subscribe'
+  | 'feedback_prompt'
+  | 'feedback_sent'
+  | 'bug_report'
+  | 'daily_share';
 
 export type Props = Record<string, string | number | boolean>;
 

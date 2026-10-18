@@ -765,6 +765,13 @@ function Play(props: {
         })}
       </div>
 
+      {props.save.solved < 3 && state.status === 'play' && !hinted && !isStuck && (
+        <p className="cl-coach" aria-live="polite">
+          {selected === null
+            ? 'Tap a tube to pick up its top color.'
+            : 'Now tap where to pour: onto the same color, or into an empty tube.'}
+        </p>
+      )}
       {hinted && hinted.from < 0 && <p className="cl-note">No way forward from here. Undo a few moves or restart.</p>}
       {isStuck && !hinted && <p className="cl-note">No moves left. Undo or restart.</p>}
       {state.level.mystery && state.status === 'play' && <p className="cl-note cl-note-soft">Mystery puzzle: hidden layers show once they reach the top.</p>}
