@@ -1,52 +1,18 @@
-.cstrip {
-  --acc: var(--cyan);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-  margin: 0 0 10px;
-  padding: 10px 12px;
-  border: 2px solid var(--ink, #1d1238);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--acc) 28%, var(--paper, #fffaf2));
-  color: var(--ink, #1d1238);
-  box-shadow: 3px 4px 0 var(--ink, #1d1238);
-  font-size: 14px;
-}
-.cstrip[data-accent='magenta'],
-.cfriends[data-accent='magenta'] { --acc: var(--magenta); }
-.cstrip[data-accent='violet'],
-.cfriends[data-accent='violet'] { --acc: var(--violet); }
-.cstrip[data-accent='lime'],
-.cfriends[data-accent='lime'] { --acc: var(--lime); }
-.cstrip[data-accent='yellow'],
-.cfriends[data-accent='yellow'] { --acc: var(--yellow); }
-.cstrip[data-accent='orange'],
-.cfriends[data-accent='orange'] { --acc: var(--orange); }
-.cstrip[data-accent='coral'],
-.cfriends[data-accent='coral'] { --acc: var(--coral); }
-.cstrip[data-accent='teal'],
-.cfriends[data-accent='teal'] { --acc: var(--teal); }
-.cstrip[data-accent='blue'],
-.cfriends[data-accent='blue'] { --acc: var(--blue); }
-.cstrip.is-error {
-  background: #ffd9cf;
-}
-.cstrip.is-sent {
-  background: #e8ffc2;
-}
-.cstrip-icon {
-  font-size: 20px;
-}
-.cstrip-text {
-  flex: 1;
-  min-width: 200px;
-}
-.cstrip-btn {
-  flex: none;
-}
+/* Starting a friends' challenge from the game page side panel. */
 .cfriends {
   --acc: var(--cyan);
+}
+.cfriends[data-accent='magenta'] { --acc: var(--magenta); }
+.cfriends[data-accent='violet'] { --acc: var(--violet); }
+.cfriends[data-accent='lime'] { --acc: var(--lime); }
+.cfriends[data-accent='yellow'] { --acc: var(--yellow); }
+.cfriends[data-accent='orange'] { --acc: var(--orange); }
+.cfriends[data-accent='coral'] { --acc: var(--coral); }
+.cfriends[data-accent='teal'] { --acc: var(--teal); }
+.cfriends[data-accent='blue'] { --acc: var(--blue); }
+
+
+.cfriends {
   display: grid;
   gap: 10px;
   /* Same inner spacing as the other side panels (.player-name, .side-block). */
@@ -68,3 +34,4 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+

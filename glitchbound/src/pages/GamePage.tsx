@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { tGame, useT } from '../i18n';
 import { relatedGames } from '../catalog/catalog';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
@@ -11,8 +11,13 @@ import { Icon } from '../components/Icon';
 import { reportError, track } from '../platform/analytics';
 import { account, api, useAccount } from '../platform/account';
 import { useLiveCatalog } from '../platform/liveCatalog';
+import { SCORES_EVENT } from '../platform/challenge';
 import { challengeSpecOf, useChallengeRun } from '../platform/useChallengeRun';
-import { ChallengeStrip, ChallengeFriends } from '../components/ChallengeStrip';
+import { ChallengeFriends } from '../components/ChallengeFriends';
+
+// The challenge dock and scoreboard load only on challenge links (/games/<slug>?challenge=<id>).
+const ChallengeDock = lazy(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeDock })));
+const ChallengeScores = lazy(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeScores })));
 import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { MiniLeaderboard } from '../components/Leaderboard';
@@ -172,6 +177,21 @@ export function GamePage({ game }: { game: GameEntry }) {
   useEffect(() => {
     finishChallenge.current = chal.finish;
   });
+  // The challenge scoreboard on the stage: opens by itself when your score is in, or from the dock.
+  const [scoresOpen, setScoresOpen] = useState(false);
+  // The games' own "See the scoreboard" buttons open it too.
+  useEffect(() => {
+    const open = (): void => setScoresOpen(true);
+    window.addEventListener(SCORES_EVENT, open);
+    return () => window.removeEventListener(SCORES_EVENT, open);
+  }, []);
+  const chalStatus = chal.state.status;
+  const [lastStatus, setLastStatus] = useState(chalStatus);
+  if (lastStatus !== chalStatus) {
+    setLastStatus(chalStatus);
+    if (chalStatus === 'sent' || chalStatus === 'closed' || chalStatus === 'gone') setScoresOpen(true);
+    if (chalStatus === 'ready') setScoresOpen(false);
+  }
   const [renaming, setRenaming] = useState(false);
   const [renameMsg, setRenameMsg] = useState('');
   // Remounting the stage resets the game: autoStart restarts it, otherwise it closes back to the poster.
@@ -179,13 +199,24 @@ export function GamePage({ game }: { game: GameEntry }) {
   const [playing, setPlaying] = useState(false);
   const [last, setLast] = useState<LastRound | null>(null);
   const [burst, setBurst] = useState(0);
-  // Play was pressed before the challenge loaded: restart the game straight in the challenge round.
-  const hasRound = !!challengeSpecOf(chal.state);
-  const [hadRound, setHadRound] = useState(hasRound);
-  if (hadRound !== hasRound) {
-    setHadRound(hasRound);
-    if (hasRound && playing) setStageRun((r) => ({ key: r.key + 1, autoStart: true }));
+  // The round the stage plays. Before Play it follows the challenge; a running game keeps its round
+  // (a rematch shows "Play round N" in the dock instead of yanking the game away).
+  const liveSpec = challengeSpecOf(chal.state);
+  const [stageSpec, setStageSpec] = useState(liveSpec);
+  if (stageSpec !== liveSpec && liveSpec && (!playing || !stageSpec)) {
+    setStageSpec(liveSpec);
+    // Play was pressed before the challenge loaded: restart the game straight in the challenge round.
+    if (playing) setStageRun((r) => ({ key: r.key + 1, autoStart: true }));
   }
+  const stageSpecRef = useRef(stageSpec);
+  useEffect(() => {
+    stageSpecRef.current = stageSpec;
+  }, [stageSpec]);
+  const playRound = (): void => {
+    setStageSpec(liveSpec);
+    setScoresOpen(false);
+    setStageRun((r) => ({ key: r.key + 1, autoStart: true }));
+  };
 
   const [shareMsg, setShareMsg] = useState('');
   const live = useLiveCatalog();
@@ -224,8 +255,11 @@ export function GamePage({ game }: { game: GameEntry }) {
           : null;
         return;
       }
-      // A friends' challenge round: send the score to the challenge too.
-      if (e.challenge) finishChallenge.current(e);
+      // A friends' challenge round: send the score to the challenge too. Embedded games (NEON RUSH)
+      // only know the seed, so the page names the round for them.
+      const round = stageSpecRef.current;
+      const ended = !e.challenge && round && game.runtime.kind === 'embed' ? { ...e, challenge: { id: round.id, round: round.round } } : e;
+      if (ended.challenge) finishChallenge.current(ended);
       const result = saveStore.record(game, e);
       let n = 0;
       setLast((prev) => {
@@ -325,7 +359,11 @@ export function GamePage({ game }: { game: GameEntry }) {
               <Link href="/admin?tab=games">Edit in Admin</Link>
             </p>
           )}
-          {challengeId && <ChallengeStrip state={chal.state} game={game} />}
+          {challengeId && (
+            <Suspense fallback={null}>
+              <ChallengeDock run={chal} game={game} stageRound={playing ? (stageSpec?.round ?? null) : null} onPlayRound={playRound} onScores={() => setScoresOpen((o) => !o)} scoresOpen={scoresOpen} />
+            </Suspense>
+          )}
           {paused ? (
             <div className="stage stage-paused" style={{ background: game.art.bg }}>
               <img src={game.art.tile} alt="" className="stage-poster-art" />
@@ -343,16 +381,21 @@ export function GamePage({ game }: { game: GameEntry }) {
             autoStart={stageRun.autoStart}
             pauseSignal={pauseSignal}
             game={game}
-            challenge={challengeSpecOf(chal.state)}
+            challenge={stageSpec}
             onEvent={onEvent}
             stageRef={stageRef}
             frameRef={frameRef}
             playerName={player.name}
             onPlayClick={play.enter}
             overlay={
-              play.active ? (
-                <StageMenu slug={game.slug} onExitFullscreen={play.exit} onExitGame={close} />
-              ) : null
+              <>
+                {challengeId && scoresOpen && (
+                  <Suspense fallback={null}>
+                    <ChallengeScores run={chal} game={game} onClose={() => setScoresOpen(false)} />
+                  </Suspense>
+                )}
+                {play.active && <StageMenu slug={game.slug} onExitFullscreen={play.exit} onExitGame={close} />}
+              </>
             }
             onPhase={(p) => {
               setPlaying(p === 'loading' || p === 'ready');

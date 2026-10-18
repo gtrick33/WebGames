@@ -1,0 +1,404 @@
+/* Friends' challenges inside the game: the dock on top of the stage, the scoreboard on the stage. */
+.chd,
+.chs {
+  --acc: var(--cyan);
+}
+[data-accent='magenta'] :is(.chd, .chs),
+.chd[data-accent='magenta'] { --acc: var(--magenta); }
+[data-accent='violet'] :is(.chd, .chs),
+.chd[data-accent='violet'] { --acc: var(--violet); }
+[data-accent='lime'] :is(.chd, .chs),
+.chd[data-accent='lime'] { --acc: var(--lime); }
+[data-accent='yellow'] :is(.chd, .chs),
+.chd[data-accent='yellow'] { --acc: var(--yellow); }
+[data-accent='orange'] :is(.chd, .chs),
+.chd[data-accent='orange'] { --acc: var(--orange); }
+[data-accent='coral'] :is(.chd, .chs),
+.chd[data-accent='coral'] { --acc: var(--coral); }
+[data-accent='teal'] :is(.chd, .chs),
+.chd[data-accent='teal'] { --acc: var(--teal); }
+[data-accent='blue'] :is(.chd, .chs),
+.chd[data-accent='blue'] { --acc: var(--blue); }
+
+/* ------------------------------------------------------------------ dock */
+
+/* Sits on the stage like a tab: same border, joined to the stage's top edge. */
+.chd {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  flex-basis: 100%;
+  margin: 0 0 -2px;
+  padding: 10px 12px 12px;
+  border: 2px solid var(--acc);
+  border-bottom: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--acc) 26%, transparent), color-mix(in srgb, var(--acc) 8%, transparent)),
+    var(--surface);
+  color: var(--fg);
+}
+.chd-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.chd-badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--acc);
+  box-shadow: var(--hard-sm);
+  font-size: 20px;
+}
+.chd-text {
+  flex: 1;
+  min-width: 0;
+}
+.chd-title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chd-status {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.chd-title {
+  font-size: 15px;
+}
+.chd-round {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+.chd-status {
+  font-size: 13px;
+  opacity: 0.85;
+}
+.chd-ttl {
+  opacity: 0.8;
+}
+.chd-toast {
+  display: inline-block;
+  font-weight: 800;
+  opacity: 1;
+  animation: chd-toast 0.45s var(--spring) both;
+}
+@keyframes chd-toast {
+  from { transform: translateY(8px) scale(0.92); opacity: 0; }
+}
+.chd.is-error,
+.chd.is-gone {
+  --acc: var(--coral);
+}
+
+.chd-seats {
+  display: flex;
+  flex: none;
+  margin: 0;
+  padding: 0 4px 0 0;
+  list-style: none;
+}
+.chd-seat {
+  position: relative;
+  margin-left: -6px;
+  animation: chd-pop 0.5s var(--spring) both;
+}
+.chd-seat:first-child {
+  margin-left: 0;
+}
+@keyframes chd-pop {
+  from { transform: scale(0.3); opacity: 0; }
+}
+.chd-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  color: #1d1238;
+  font: 800 15px/1 var(--font);
+}
+.chd-seat.is-you .chd-avatar {
+  outline: 2px solid var(--fg);
+  outline-offset: 1px;
+}
+.chd-seat:not(.is-played):not(.is-open) .chd-avatar {
+  animation: chd-wait 1.8s ease-in-out infinite;
+}
+@keyframes chd-wait {
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--acc) 55%, transparent); }
+}
+.chd-mark {
+  position: absolute;
+  right: -3px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 10px;
+  font-weight: 800;
+}
+.chd-seat.is-played .chd-mark {
+  background: var(--lime);
+  color: #1d1238;
+}
+.chd-seat.is-open .chd-avatar {
+  border-style: dashed;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+}
+.chd-seat.is-open .chd-avatar:hover {
+  background: var(--acc);
+  color: #1d1238;
+}
+
+.chd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.chd-actions .btn.is-on {
+  background: var(--acc);
+  color: #1d1238;
+}
+.chd-go {
+  animation: chd-toast 0.45s var(--spring) both;
+}
+.chd-more {
+  position: relative;
+}
+.chd-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 200px;
+  padding: 6px;
+  border: 2px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--hard-sm);
+}
+.chd-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--fg);
+  font: 700 14px var(--font);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.chd-menu-item:hover {
+  background: var(--well);
+}
+.chd-menu-item.is-danger {
+  color: var(--coral);
+}
+
+/* The stage below the dock loses its top corners so the two read as one piece. */
+.chd + .stage,
+.chd + .stage-paused {
+  border-color: var(--acc, var(--cyan));
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.chd + .stage.stage-portrait {
+  border-top-left-radius: var(--r-lg);
+  border-top-right-radius: var(--r-lg);
+}
+/* Portrait stages are narrower than the dock: there the dock is a card of its own above the stage. */
+.chd:has(+ .stage-portrait) {
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--acc);
+  border-radius: var(--r-lg);
+}
+
+@media (max-width: 640px) {
+  .chd {
+    padding: 8px 10px 10px;
+  }
+  .chd-badge {
+    display: none;
+  }
+  .chd-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .chd-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .chd-actions .chd-more {
+    flex: none;
+  }
+}
+
+/* ------------------------------------------------------------- scoreboard */
+
+.chs {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: end center;
+  padding: 14px;
+  background: linear-gradient(to top, rgb(13 5 34 / 0.75), rgb(13 5 34 / 0.15) 70%);
+  animation: chs-in 0.25s var(--out) both;
+}
+@keyframes chs-in {
+  from { opacity: 0; }
+}
+.chs-card {
+  position: relative;
+  width: min(100%, 460px);
+  max-height: 100%;
+  overflow: auto;
+  padding: 18px 18px 14px;
+  border: 2px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 0 0 3px var(--acc), var(--hard);
+  animation: chs-up 0.4s var(--spring) both;
+}
+@keyframes chs-up {
+  from { transform: translateY(30px); }
+}
+.chs-x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+}
+.chs-kicker {
+  margin: 0 40px 4px 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.chs-title {
+  margin: 0 40px 12px 0;
+  font-size: clamp(22px, 5vw, 28px);
+  line-height: 1.1;
+}
+.chs-board {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.chs-board li {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--well);
+  font-weight: 700;
+}
+.chs-board li.is-you {
+  background: color-mix(in srgb, var(--acc) 30%, var(--surface));
+}
+.chs-board li.is-waiting {
+  border-style: dashed;
+  background: transparent;
+  font-weight: 600;
+}
+.chs-board li.is-waiting .chs-score {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.chs-rank {
+  font-size: 20px;
+  text-align: center;
+}
+.chs-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chs-history {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+.chs-history summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.chs-past {
+  margin: 6px 0 0;
+}
+.chs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chs-actions .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+.chs-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chd-toast,
+  .chd-seat,
+  .chd-go,
+  .chs,
+  .chs-card,
+  .chd-seat:not(.is-played):not(.is-open) .chd-avatar {
+    animation: none;
+  }
+}

@@ -1,4 +1,4 @@
-import { challengeRow, playerOf, viewOf } from '../../../../server/challenges';
+import { challengeRow, isClosed, playerOf, viewOf } from '../../../../server/challenges';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../../server/http';
 import { REPLAY_MAX } from '../../../../src/platform/challenge';
 
@@ -10,8 +10,9 @@ export async function onRequestPost({ request, env, params }: Ctx): Promise<Resp
   const body = await readJson(request, 24_000);
   const player = await playerOf(env, request, body);
   if (!player) return bad('name_required');
-  const seated = await env.DB.prepare('SELECT 1 AS ok FROM challenge_players WHERE challenge_id = ? AND player = ?').bind(row.id, player).first();
+  const seated = await env.DB.prepare('SELECT 1 AS ok FROM challenge_players WHERE challenge_id = ? AND player = ? AND left_at IS NULL').bind(row.id, player).first();
   if (!seated) return bad('join_first', 403);
+  if (await isClosed(env, row)) return bad('closed', 409, { message: 'This challenge has ended, so the score was not added.' });
   if (body?.round !== row.round) return bad('wrong_round', 409, { message: 'A new round has started. Open the challenge again.' });
   const score = typeof body?.score === 'number' && Number.isFinite(body.score) ? Math.max(0, Math.min(1e8, Math.round(body.score))) : null;
   if (score === null) return bad('invalid');

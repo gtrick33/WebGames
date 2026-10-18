@@ -12,6 +12,7 @@ import { dailySeed, levelFor, MODES, PERFECT_LADDER, perfectSeed, randomSeed, SP
 import { liveStreak, loadRecords, playedDailyToday, recordRun, saveRecords, type RecordOutcome, type Records } from './records';
 import { MODE_NAMES, reportStats, shareText, type RunSummary } from './scoring';
 import './Game.css';
+import { openChallengeScores } from '../../platform/challenge';
 
 const MODE_BLURB: Record<Mode, string> = {
   classic: 'One more step every round. One slip ends it.',
@@ -620,7 +621,7 @@ function Result({
       </dl>
       <div className="mg-result-actions">
         {challengeId ? (
-          <a className="mg-btn mg-btn-go" href={`/c/${challengeId}`} autoFocus>
+          <a className="mg-btn mg-btn-go" href={`/c/${challengeId}`} onClick={openChallengeScores} autoFocus>
             See the scoreboard
           </a>
         ) : (

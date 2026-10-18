@@ -25,6 +25,7 @@ import { doneTubes, hint, pourAmount, type Move } from './sort';
 import { createSfx, type Sfx } from './sound';
 import { clStats, isComplete, loadCl, recordEndless, recordLevel, recordPrecision, saveCl, type ClSave, type PracticeSize } from './store';
 import './Game.css';
+import { openChallengeScores } from '../../platform/challenge';
 
 const PRACTICE: { id: PracticeSize; label: string; note: string; step: number }[] = [
   { id: 'small', label: 'Small', note: '4 colors', step: 1 },
@@ -886,7 +887,7 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
       </ul>
       <div className="cl-row">
         {run.challenge ? (
-          <a className="cl-btn cl-btn-go" href={`/c/${run.challenge.id}`}>
+          <a className="cl-btn cl-btn-go" href={`/c/${run.challenge.id}`} onClick={openChallengeScores}>
             See the scoreboard
           </a>
         ) : run.mode === 'daily' ? (

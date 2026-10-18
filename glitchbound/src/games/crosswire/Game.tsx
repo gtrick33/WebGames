@@ -24,6 +24,7 @@ import {
   type Tally,
 } from './logic';
 import './Game.css';
+import { openChallengeScores } from '../../platform/challenge';
 
 const STORE = 'glitchbound.crosswire';
 interface Save {
@@ -432,7 +433,7 @@ function Play(props: {
                 {msg || 'Share'}
               </button>
             ) : props.challenge ? (
-              <a className="xw-btn xw-btn-go" href={`/c/${props.challenge.id}`}>
+              <a className="xw-btn xw-btn-go" href={`/c/${props.challenge.id}`} onClick={openChallengeScores}>
                 See the scoreboard
               </a>
             ) : (

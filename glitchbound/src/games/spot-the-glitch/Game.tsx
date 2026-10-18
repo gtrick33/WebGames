@@ -34,6 +34,7 @@ import { H, THEME_NAMES, W, type Scene } from './scene';
 import { createSfx, type Sfx } from './sound';
 import { isComplete, loadSg, recordPicture, recordRush, saveSg, sgStats, type SgSave } from './store';
 import './Game.css';
+import { openChallengeScores } from '../../platform/challenge';
 
 type Mode = 'daily' | 'rush' | 'relax';
 type Screen = 'menu' | 'play';
@@ -595,7 +596,7 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
       </ul>
       <div className="sg-row">
         {run.challenge ? (
-          <a className="sg-btn sg-btn-go" href={`/c/${run.challenge.id}`}>
+          <a className="sg-btn sg-btn-go" href={`/c/${run.challenge.id}`} onClick={openChallengeScores}>
             See the scoreboard
           </a>
         ) : (

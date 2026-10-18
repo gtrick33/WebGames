@@ -5,6 +5,7 @@ import { dayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { bankSize, CATS, challengeQuiz, dailyNumber, dailyQuiz, EndlessDealer, MAX_POINTS, points, QUIZ_LENGTH, timeLimit, type Question } from './deck';
 import './Game.css';
+import { openChallengeScores } from '../../platform/challenge';
 
 const STORE = 'glitchbound.wait-what';
 const STRIKES = 3;
@@ -433,7 +434,7 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
       {mode !== 'endless' && <p className="ww-grid">{grid(qs, run)}</p>}
       <div className="ww-row">
         {mode === 'challenge' && challenge ? (
-          <a className="ww-btn ww-btn-go" href={`/c/${challenge.id}`}>
+          <a className="ww-btn ww-btn-go" href={`/c/${challenge.id}`} onClick={openChallengeScores}>
             See the scoreboard
           </a>
         ) : mode === 'endless' ? (

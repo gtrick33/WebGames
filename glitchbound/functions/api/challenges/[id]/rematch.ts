@@ -1,4 +1,4 @@
-import { challengeRow, playerOf, viewOf } from '../../../../server/challenges';
+import { challengeRow, isClosed, playerOf, viewOf } from '../../../../server/challenges';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../../server/http';
 import { MAX_ROUNDS, roundSeed } from '../../../../src/platform/challenge';
 
@@ -10,6 +10,7 @@ export async function onRequestPost({ request, env, params }: Ctx): Promise<Resp
   const body = await readJson(request, 1024);
   const player = await playerOf(env, request, body);
   if (!player) return bad('name_required');
+  if (await isClosed(env, row)) return bad('closed', 409, { message: 'This challenge has ended. Start a new one!' });
   // Two players pressing Rematch at once must not skip a round.
   if (body?.round !== row.round) return json(await viewOf(env, row, player));
   const played = await env.DB.prepare('SELECT 1 AS ok FROM challenge_scores WHERE challenge_id = ? AND round = ? AND player = ?').bind(row.id, row.round, player).first();

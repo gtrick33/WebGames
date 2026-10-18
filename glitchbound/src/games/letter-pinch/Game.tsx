@@ -26,6 +26,7 @@ import {
 import { createSfx, type Sfx } from './sfx';
 import { finishDaily, finishPractice, loadSave, shownStreak, storeSave, type PinchSave, type Tally } from './storage';
 import './Game.css';
+import { openChallengeScores } from '../../platform/challenge';
 
 type Mode = 'daily' | 'practice';
 type Panel = 'none' | 'help' | 'stats';
@@ -504,7 +505,7 @@ function StatsPanel(props: { puzzle: Puzzle; challengeId?: string; save: PinchSa
               <ShareIcon /> Share result
             </button>
             {props.challengeId ? (
-              <a className="lp-cta is-alt" href={`/c/${props.challengeId}`}>
+              <a className="lp-cta is-alt" href={`/c/${props.challengeId}`} onClick={openChallengeScores}>
                 See the scoreboard
               </a>
             ) : isDaily ? (

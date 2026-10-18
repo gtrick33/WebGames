@@ -34,6 +34,7 @@ import { ENV_NAMES, H, hintBox, rng, W, type Scene } from './scene';
 import { createSfx, type Sfx } from './sound';
 import { isComplete, loadWb, recordEndless, recordLevel, saveWb, wbStats, type WbSave } from './store';
 import './Game.css';
+import { openChallengeScores } from '../../platform/challenge';
 
 type Mode = 'daily' | 'endless';
 const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
@@ -592,7 +593,7 @@ function Summary({ run, today, save, onMenu, onAgain }: { run: Run; today: strin
       <p className="wb-squares">{run.results.map(squareFor).join(' ')}</p>
       <div className="wb-row">
         {run.challenge ? (
-          <a className="wb-btn wb-btn-go" href={`/c/${run.challenge.id}`}>
+          <a className="wb-btn wb-btn-go" href={`/c/${run.challenge.id}`} onClick={openChallengeScores}>
             See the scoreboard
           </a>
         ) : run.mode === 'daily' ? (

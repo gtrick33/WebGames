@@ -23,7 +23,7 @@ export function allowedOrigins(origins: string[]): string[] {
 }
 
 /** Sends a command to an embedded game (see neon-rush/src/analytics/embed.ts listenToHost). */
-export function postToGame(frame: HTMLIFrameElement | null, game: GameEntry, message: { type: 'identity'; name: string } | { type: 'pause' }): void {
+export function postToGame(frame: HTMLIFrameElement | null, game: GameEntry, message: { type: 'identity'; name: string } | { type: 'pause' } | { type: 'challenge'; seed: number | null }): void {
   if (!frame?.contentWindow || game.runtime.kind !== 'embed') return;
   const target = game.runtime.url.startsWith('/') ? window.location.origin : new URL(game.runtime.url).origin;
   try {
@@ -68,6 +68,12 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
   useEffect(() => {
     nameRef.current = playerName;
   }, [playerName]);
+  // Embedded games play a challenge round from its seed (sent when the game says it is listening).
+  const challengeSeed = challenge ? challenge.seed : null;
+  const seedRef = useRef(challengeSeed);
+  useEffect(() => {
+    seedRef.current = challengeSeed;
+  }, [challengeSeed]);
   const iframeRef = frameRef ?? ownFrame;
   const onPhaseRef = useRef(onPhase);
   useEffect(() => {
@@ -87,6 +93,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
       const ev = parseGameMessage(e.data);
       if (ev?.type === 'ready') {
         if (nameRef.current) postToGame(iframeRef.current, game, { type: 'identity', name: nameRef.current });
+        if (seedRef.current !== null) postToGame(iframeRef.current, game, { type: 'challenge', seed: seedRef.current });
       } else if (ev) onEvent(ev);
     };
     window.addEventListener('message', onMessage);

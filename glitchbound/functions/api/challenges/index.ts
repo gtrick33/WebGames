@@ -1,4 +1,4 @@
-import { challengeRow, listFor, playerOf, viewOf } from '../../../server/challenges';
+import { challengeRow, listFor, playerOf, sweep, viewOf } from '../../../server/challenges';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { newCode } from '../../../server/shares';
 import { getGame } from '../../../src/catalog/catalog';
@@ -23,8 +23,8 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   await env.DB.batch([
     env.DB.prepare('INSERT INTO challenges (id, game, mode, day, seed, round, host, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)').bind(id, game.slug, mode, day, seed, player, now, now),
     env.DB.prepare('INSERT INTO challenge_players (challenge_id, player, name, joined_at) VALUES (?, ?, ?, ?)').bind(id, player, name, now),
-    env.DB.prepare('DELETE FROM challenges WHERE updated_at < ?').bind(now - 60 * 86400_000),
   ]);
+  await sweep(env, now);
   const row = await challengeRow(env, id);
   return json(await viewOf(env, row!, player));
 }
@@ -33,5 +33,6 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
 export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   const player = await playerOf(env, request, null);
   if (!player) return json({ challenges: [] });
-  return json({ challenges: await listFor(env, player) });
+  await sweep(env);
+  return json({ challenges: await listFor(env, player) }, 200, { 'cache-control': 'no-store' });
 }

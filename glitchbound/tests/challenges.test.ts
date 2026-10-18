@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { onRequestGet as getView } from '../functions/api/challenges/[id]';
+import { onRequestPost as closeIt } from '../functions/api/challenges/[id]/close';
 import { onRequestPost as join } from '../functions/api/challenges/[id]/join';
 import { onRequestPost as rematch } from '../functions/api/challenges/[id]/rematch';
 import { onRequestPost as score } from '../functions/api/challenges/[id]/score';
@@ -7,7 +8,8 @@ import { onRequestGet as list, onRequestPost as create } from '../functions/api/
 import type { Ctx, Env } from '../server/http';
 import { signIn } from '../server/signin';
 import { GAMES } from '../src/catalog/games';
-import { cleanName, dailySeed, NAME_MAX, roundSeed, roundWinners, type ChallengeListItem, type ChallengeView } from '../src/platform/challenge';
+import { CHALLENGE_IDLE_MS, CHALLENGE_LOBBY_MS, cleanName, dailySeed, NAME_MAX, roundSeed, roundWinners, type ChallengeListItem, type ChallengeView } from '../src/platform/challenge';
+import { newsBetween } from '../src/platform/useChallengeRun';
 import { decodeReplay, encodeReplay } from '../src/games/mini-racer/ghost';
 import { challengeSpecOf } from '../src/platform/useChallengeRun';
 import { memoryD1 } from './d1';
@@ -60,8 +62,8 @@ describe('friends challenges', () => {
     expect(decodeReplay('')).toBeNull();
   });
 
-  it('offers challenges in every game but NEON RUSH and the live card game', () => {
-    expect(GAMES.filter((g) => !g.challenge).map((g) => g.slug).sort()).toEqual(['neon-rush', 'unhinged']);
+  it('offers challenges in every game but the live card game (it has rooms of its own)', () => {
+    expect(GAMES.filter((g) => !g.challenge).map((g) => g.slug)).toEqual(['unhinged']);
     for (const g of GAMES.filter((x) => x.challenge)) expect(g.challenge!.label.length).toBeGreaterThan(10);
   });
 });
@@ -72,12 +74,13 @@ describe('a guest who signs in keeps their challenges', () => {
   const BO = 'bo-device-key-00000000002';
   let db: ReturnType<typeof memoryD1>;
   let env: Env;
+  let now = 0;
 
   beforeEach(() => {
     db = memoryD1();
     env = { DB: db, NR_DB: {} as Env['NR_DB'] };
     // A clock that moves on every reading, so join and score times never tie.
-    let now = Date.UTC(2026, 9, 18, 12);
+    now = Date.UTC(2026, 9, 18, 12);
     vi.spyOn(Date, 'now').mockImplementation(() => (now += 1000));
   });
   afterEach(() => vi.restoreAllMocks());
@@ -176,5 +179,71 @@ describe('a guest who signs in keeps their challenges', () => {
     const text = JSON.stringify((await view(id, BO)).data);
     expect(text).not.toContain(ANA);
     expect(text).not.toContain(BO);
+  });
+
+  /* ------------------------------------------------ live updates and ending */
+
+  const start = async (key = ANA, name = 'Ana'): Promise<string> => (await call<ChallengeView>(create, '/api/challenges', { key, body: { game: 'wing-it', mode: 'fresh', name } })).data.id;
+  const poll = async (id: string, key: string, since: number): Promise<number> =>
+    (await getView({ request: new Request(`${ORIGIN}/api/challenges/${id}?key=${key}&since=${since}`, { headers: { origin: ORIGIN } }), env, params: { id } })).status;
+  const mine = async (key: string) => (await call<{ challenges: ChallengeListItem[] }>(list, '/api/challenges', { key })).data.challenges;
+
+  it('answers an unchanged challenge with an empty 204, and a join changes it', async () => {
+    const id = await start();
+    const first = (await view(id, ANA)).data;
+    expect(await poll(id, ANA, first.updatedAt)).toBe(204);
+    await call(join, `/api/challenges/${id}/join`, { id, key: BO, body: { name: 'Bo' } });
+    expect(await poll(id, ANA, first.updatedAt)).toBe(200);
+    const next = (await view(id, ANA)).data;
+    expect(next.players.map((p) => [p.name, p.played])).toEqual([['Ana', false], ['Bo', false]]);
+    expect(newsBetween(first, next)).toBe('Bo joined');
+  });
+
+  it('lets the host delete a challenge nobody else joined', async () => {
+    const id = await start();
+    expect((await call<{ gone?: boolean }>(closeIt, `/api/challenges/${id}/close`, { id, key: ANA, body: {} })).data).toEqual({ gone: true });
+    expect((await view(id, ANA)).status).toBe(404);
+    expect(await mine(ANA)).toEqual([]);
+  });
+
+  it('lets the host end a challenge for everyone: results stay, play stops', async () => {
+    const id = await playedAsGuests();
+    const ended = (await call<ChallengeView>(closeIt, `/api/challenges/${id}/close`, { id, key: ANA, body: {} })).data;
+    expect(ended).toMatchObject({ closed: true, closesAt: 0, yourTurn: false, host: true });
+    expect(ended.rounds[0]!.scores.map((s) => s.score)).toEqual([40, 30]);
+    expect((await call(rematch, `/api/challenges/${id}/rematch`, { id, key: BO, body: { round: 1 } })).status).toBe(409);
+    expect((await call(join, `/api/challenges/${id}/join`, { id, key: 'cy-device-key-00000000003', body: { name: 'Cy' } })).status).toBe(409);
+    expect(await mine(BO)).toEqual([]);
+  });
+
+  it('lets a player leave: the seat frees up, the score stays, the last one out ends it', async () => {
+    const id = await playedAsGuests();
+    const left = (await call<ChallengeView>(closeIt, `/api/challenges/${id}/close`, { id, key: BO, body: {} })).data;
+    expect(left).toMatchObject({ joined: false, closed: false, host: false });
+    expect(left.players.map((p) => p.name)).toEqual(['Ana']);
+    expect(left.rounds[0]!.scores.map((s) => s.name)).toEqual(['Ana', 'Bo']);
+    expect(await mine(BO)).toEqual([]);
+    // Coming back takes a seat again.
+    expect((await call<ChallengeView>(join, `/api/challenges/${id}/join`, { id, key: BO, body: { name: 'Bo' } })).data.joined).toBe(true);
+    await call(closeIt, `/api/challenges/${id}/close`, { id, key: BO, body: {} });
+    // The host is a player too: when the host is the only one left, ending works as usual.
+    expect((await call<ChallengeView>(closeIt, `/api/challenges/${id}/close`, { id, key: ANA, body: {} })).data.closed).toBe(true);
+  });
+
+  it('closes a lobby nobody joined after a day, and a quiet challenge after a week', async () => {
+    const lobby = await start();
+    const busy = await playedAsGuests();
+    const before = (await mine(ANA)).find((c) => c.id === lobby)!;
+    expect(before).toMatchObject({ lobby: true, host: true });
+    expect(before.closesAt - before.updatedAt).toBe(CHALLENGE_LOBBY_MS);
+    now += CHALLENGE_LOBBY_MS + 60_000;
+    // The lobby is swept away; the played one is still open.
+    expect((await mine(ANA)).map((c) => c.id)).toEqual([busy]);
+    expect((await view(lobby, ANA)).status).toBe(404);
+    now += CHALLENGE_IDLE_MS;
+    const quiet = (await view(busy, ANA)).data;
+    expect(quiet.closed).toBe(true);
+    expect(await mine(ANA)).toEqual([]);
+    expect((await call(score, `/api/challenges/${busy}/score`, { id: busy, key: ANA, body: { round: 1, score: 99 } })).status).toBe(409);
   });
 });

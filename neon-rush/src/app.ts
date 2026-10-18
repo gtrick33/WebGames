@@ -35,6 +35,8 @@ export class App {
   private state: GameState = 'menu';
   private page: Page | null = null;
   private dailyOpen = false;
+  /** A friends' challenge round from the arcade: every run uses this seed while it is set. */
+  private challengeSeed: number | null = null;
   /** Car details popup over the garage. */
   private carOpen = false;
   private world!: World;
@@ -260,7 +262,7 @@ export class App {
     if (this.ui.isActive('mock')) return;
     this.page = null;
     this.dailyOpen = false;
-    this.world = new World({ seed: (Math.random() * 2 ** 31) | 0, viewHeight: this.renderer.viewHeight });
+    this.world = new World({ seed: this.challengeSeed ?? (Math.random() * 2 ** 31) | 0, viewHeight: this.renderer.viewHeight });
     this.attract = false;
     this.runId = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
     this.acc = 0;
@@ -709,6 +711,10 @@ export class App {
 
   /** Commands from the GlitchBound arcade when the game is embedded there. */
   private onHostCommand(c: HostCommand): void {
+    if (c.type === 'challenge') {
+      this.challengeSeed = c.seed;
+      return;
+    }
     if (c.type === 'pause') {
       // The arcade asks for a pause when the player leaves full screen or scrolls away: go fully
       // silent (not just the calm pause loop). Resume, or the next tap on a menu, brings sound back.

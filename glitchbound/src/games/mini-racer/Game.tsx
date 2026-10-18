@@ -11,6 +11,7 @@ import { clearGhost, loadGhost, loadSave, saveGhost, writeSave, type Bests, type
 import { buildTrack, medalTimes, TRACK_TYPES, type Surface, type Track, type TrackDef } from './track';
 import { TRACKS } from './tracks';
 import './Game.css';
+import { openChallengeScores } from '../../platform/challenge';
 
 type Screen = 'menu' | 'garage' | 'race' | 'paused' | 'result';
 type Medal = 'gold' | 'silver' | 'bronze' | null;
@@ -639,7 +640,7 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId }: { fi
       {newCars.length > 0 && <p className="mr-unlock">Unlocked: {newCars.map((c) => c.name).join(', ')}!</p>}
       <div className="mr-actions">
         {challengeId ? (
-          <a className="mr-go" href={`/c/${challengeId}`} autoFocus>
+          <a className="mr-go" href={`/c/${challengeId}`} onClick={openChallengeScores} autoFocus>
             See the scoreboard
           </a>
         ) : (

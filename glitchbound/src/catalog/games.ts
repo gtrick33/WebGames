@@ -25,6 +25,7 @@ export const GAMES: GameEntry[] = [
     // Built from ../neon-rush into dist/play/neon-rush/ (scripts/build-games.mjs) and served by GlitchBound.
     runtime: { kind: 'embed', url: '/play/neon-rush/', origins: ['self'] },
     aspect: 'portrait',
+    challenge: { label: 'The same traffic for everyone: one run each. Highest score wins.' },
     controls: {
       keyboard: ['Left / Right arrows or A / D: switch lanes', 'P or Esc: pause', 'Enter: start a run'],
       touch: ['Tap the left or right half of the screen to switch lanes'],

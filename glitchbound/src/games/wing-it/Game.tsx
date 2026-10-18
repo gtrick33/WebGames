@@ -7,6 +7,7 @@ import { drawBird, drawFrame, newView } from './render';
 import { biomeFor, flap, medalFor, newSim, runPoints, step, STEP, type Medal, type Sim } from './sim';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
+import { openChallengeScores } from '../../platform/challenge';
 
 const KEY = 'glitchbound.wing-it';
 const EPOCH = '2026-10-19';
@@ -261,7 +262,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
           )}
           <div className="wi-row">
             {mode === 'challenge' && challenge ? (
-              <a className="wi-btn wi-btn-go" href={`/c/${challenge.id}`} autoFocus>
+              <a className="wi-btn wi-btn-go" href={`/c/${challenge.id}`} onClick={openChallengeScores} autoFocus>
                 See the scoreboard
               </a>
             ) : (

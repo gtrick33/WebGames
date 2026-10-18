@@ -26,6 +26,7 @@ import {
 import { createSfx, type Sfx } from './sound';
 import { crStats, isComplete, loadCr, markDailySeen, recordColor, recordPracticeGame, saveCr, seenDailyRound, type CrSave } from './store';
 import './Game.css';
+import { openChallengeScores } from '../../platform/challenge';
 
 const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
 const DIFFICULTIES: { id: Difficulty; label: string; note: string }[] = [
@@ -692,7 +693,7 @@ function Summary({ game, today, save, onMenu, onAgain, challengeId }: { game: Ga
         {game.mode === 'daily' ? (
           <ShareButton today={today} results={game.results} streak={streak} />
         ) : game.mode === 'challenge' && challengeId ? (
-          <a className="cr-btn cr-btn-go" href={`/c/${challengeId}`}>
+          <a className="cr-btn cr-btn-go" href={`/c/${challengeId}`} onClick={openChallengeScores}>
             See the scoreboard
           </a>
         ) : (

@@ -58,4 +58,16 @@ describe('host commands', () => {
     send({ source: 'glitchbound-host', version: 2, type: 'pause' });
     expect(got).toEqual([{ type: 'identity', name: 'BraveFox27' }, { type: 'pause' }]);
   });
+
+  it('accepts a challenge seed (whole numbers only) and its end', async () => {
+    const { listenToHost } = await import('../src/analytics/embed');
+    const { win, send } = host();
+    const got: unknown[] = [];
+    listenToHost((c) => got.push(c), win);
+    send({ source: 'glitchbound-host', version: 1, type: 'challenge', seed: 123456 });
+    send({ source: 'glitchbound-host', version: 1, type: 'challenge', seed: 1.5 });
+    send({ source: 'glitchbound-host', version: 1, type: 'challenge', seed: 'x' });
+    send({ source: 'glitchbound-host', version: 1, type: 'challenge', seed: null });
+    expect(got).toEqual([{ type: 'challenge', seed: 123456 }, { type: 'challenge', seed: null }]);
+  });
 });

@@ -41,7 +41,7 @@
   align-content: flex-start;
   min-width: min(100%, 320px);
 }
-.game-stage-col > .cstrip,
+.game-stage-col > .chd,
 .game-stage-col > .admin-preview {
   flex: 1 0 100%;
 }

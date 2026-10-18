@@ -1,235 +1,21 @@
-/* Friends' challenges: each page takes the game's accent and art. */
-.chal {
-  --acc: var(--cyan);
-}
-.chal[data-accent='magenta'] { --acc: var(--magenta); }
-.chal[data-accent='violet'] { --acc: var(--violet); }
-.chal[data-accent='lime'] { --acc: var(--lime); }
-.chal[data-accent='yellow'] { --acc: var(--yellow); }
-.chal[data-accent='orange'] { --acc: var(--orange); }
-.chal[data-accent='coral'] { --acc: var(--coral); }
-.chal[data-accent='teal'] { --acc: var(--teal); }
-.chal[data-accent='blue'] { --acc: var(--blue); }
-
-.chal-hero {
-  position: relative;
-  overflow: hidden;
-  border: 2px solid var(--ink, #1d1238);
-  border-radius: var(--r-lg, 24px);
-  background-size: cover;
-  background-position: center;
-  box-shadow: var(--hard-lg, 6px 8px 0 #1d1238);
-  isolation: isolate;
-}
-.chal-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(120deg, color-mix(in srgb, var(--acc) 92%, transparent), rgb(29 18 56 / 0.82));
-}
-.chal-hero-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px 20px;
-  padding: 22px;
-  color: #fff;
-}
-.chal-tile {
-  flex: none;
-  border: 3px solid #fff;
-  border-radius: 22px;
-  box-shadow: 4px 5px 0 rgb(29 18 56 / 0.5);
-  transform: rotate(-4deg);
-}
-.chal-eyebrow {
-  color: #fff;
-  opacity: 0.9;
-}
-.chal-title {
-  margin: 2px 0 4px;
-  font-size: clamp(28px, 6vw, 44px);
-  line-height: 1.05;
-  text-shadow: 3px 3px 0 rgb(29 18 56 / 0.45);
-}
-.chal-sub {
-  margin: 0 0 10px;
-  font-weight: 700;
-  opacity: 0.95;
-}
-.chal-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.chal-chip {
-  padding: 3px 10px;
-  border: 2px solid #fff;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.16);
-  font-weight: 800;
-  font-size: 13px;
-}
-.chal-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin: 18px 0 8px;
-}
-.chal-play {
-  animation: chal-pulse 1.6s ease-in-out infinite;
-}
-@keyframes chal-pulse {
-  50% {
-    transform: scale(1.04);
-  }
-}
-.chal-join {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 10px;
-}
-.chal-name {
-  display: grid;
-  gap: 4px;
-  font-size: 13px;
-}
-.chal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.chal-msg {
-  margin: 0 0 12px;
-  font-weight: 700;
-  color: var(--coral-text, #b3261e);
-}
-.chal-seats {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.chal-seat {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-areas: 'av name score' 'av wins wins';
-  align-content: center;
-  align-items: center;
-  gap: 2px 10px;
-  min-height: 64px;
-  padding: 10px 12px;
-  border: 2px solid var(--line);
-  border-radius: 16px;
-  background: var(--well);
-}
-.chal-seat.is-you {
-  border-color: var(--acc);
-  box-shadow: 3px 4px 0 var(--acc);
-}
-.chal-seat > .chal-avatar {
-  grid-area: av;
-}
-.chal-avatar {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 2px solid var(--ink, #1d1238);
-  border-radius: 50%;
-  color: #1d1238;
-  font-weight: 900;
-  font-size: 18px;
-}
-.chal-seat-name {
-  grid-area: name;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 800;
-}
-.chal-you {
-  margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--acc);
-  color: #1d1238;
-  font-size: 11px;
-}
-.chal-seat-score {
-  grid-area: score;
-  font-weight: 700;
-}
-.chal-wins {
-  grid-area: wins;
-  font-size: 13px;
-}
-.chal-seat.is-open {
-  display: block;
-  padding: 0;
-  border-style: dashed;
-  background: none;
-}
-.chal-open {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  height: 100%;
-  min-height: 64px;
-  padding: 10px 12px;
-  border: 0;
-  background: none;
-  color: var(--fg-2);
-  font: inherit;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-}
-.chal-open .chal-avatar {
-  border-style: dashed;
-  color: var(--fg-2);
-}
-.chal-rounds,
-.chal-board,
+/* Your challenges (/c): the open ones, and starting a new one. Each challenge itself lives in its game. */
 .chal-list,
 .chal-games {
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.chal-rounds {
-  display: grid;
-  gap: 14px;
-}
-.chal-round-head {
-  margin: 0 0 6px;
-  font-size: 13px;
-}
-.chal-board li {
-  display: grid;
-  grid-template-columns: 2.2em 1fr auto auto;
+.chal-item {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  border-radius: 10px;
+  gap: 8px;
 }
-.chal-board li.is-you {
-  background: color-mix(in srgb, var(--acc) 22%, transparent);
+.chal-item .chal-row {
+  flex: 1;
+  min-width: 0;
 }
-.chal-board-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 700;
+.chal-end {
+  flex: none;
 }
 .chal-list {
   display: grid;
@@ -308,8 +94,8 @@
 .chal-modes p {
   margin: 0 0 10px;
 }
-@media (prefers-reduced-motion: reduce) {
-  .chal-play {
-    animation: none;
-  }
+.chal-msg {
+  margin: 0 0 12px;
+  font-weight: 700;
+  color: var(--coral-text, #b3261e);
 }

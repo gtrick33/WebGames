@@ -9,6 +9,15 @@ export const MAX_ROUNDS = 25;
 export const NAME_MAX = 20;
 /** Longest replay a score may carry (Mini Racer: a lap of about a minute). Longer ones are not sent. */
 export const REPLAY_MAX = 20_000;
+/** A challenge nobody else joined (and nobody played) closes after a day. */
+export const CHALLENGE_LOBBY_MS = 24 * 3600_000;
+/** Any other challenge closes after a week without a join, a score or a rematch. */
+export const CHALLENGE_IDLE_MS = 7 * 86400_000;
+/** Ended challenges stay readable (the final results) for this long, then they are deleted. */
+export const CHALLENGE_KEEP_MS = 30 * 86400_000;
+
+/** When a challenge closes by itself if nothing more happens. */
+export const closesAt = (updatedAt: number, lobby: boolean): number => updatedAt + (lobby ? CHALLENGE_LOBBY_MS : CHALLENGE_IDLE_MS);
 
 export type ChallengeMode = 'daily' | 'fresh';
 
@@ -37,6 +46,8 @@ export interface PlayerView {
   /** Rounds this player won (ties share the win). */
   wins: number;
   total: number;
+  /** Whether they have played the current round. */
+  played: boolean;
 }
 
 export interface RoundView {
@@ -59,6 +70,12 @@ export interface ChallengeView {
   joined: boolean;
   yourTurn: boolean;
   full: boolean;
+  /** You started it (and may end it for everyone); the others may leave it. */
+  host: boolean;
+  /** Ended by the host, by everyone leaving, or by being quiet too long: results only, no more play. */
+  closed: boolean;
+  /** When it closes by itself if nothing more happens (0 once closed). */
+  closesAt: number;
 }
 
 export interface ChallengeListItem {
@@ -71,6 +88,10 @@ export interface ChallengeListItem {
   waitingFor: string[];
   leader: string;
   updatedAt: number;
+  host: boolean;
+  /** Nobody else has joined yet (it closes sooner: see CHALLENGE_LOBBY_MS). */
+  lobby: boolean;
+  closesAt: number;
 }
 
 /** Ranks a round's scores (higher first, or lower first for games where lower is better); returns winners. */
@@ -89,3 +110,12 @@ export const cleanName = (v: unknown): string =>
         .trim()
         .slice(0, NAME_MAX)
     : '';
+
+/** Asked by a game's "See the scoreboard" button: the game page shows the challenge scoreboard on the stage. */
+export const SCORES_EVENT = 'glitchbound:challenge-scores';
+
+/** Click handler for in-game scoreboard links (the link itself still works without the arcade around it). */
+export function openChallengeScores(e?: { preventDefault: () => void }): void {
+  e?.preventDefault();
+  window.dispatchEvent(new Event(SCORES_EVENT));
+}
