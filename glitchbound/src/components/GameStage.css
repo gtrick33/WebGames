@@ -7,6 +7,14 @@
   box-shadow: var(--glow-cyan), var(--hard-lg);
   color: #fff;
   isolation: isolate;
+  /* Fast taps in a game must never select text or open the iPhone's Copy / Look Up menu. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.stage :is(input, textarea, [contenteditable='true']) {
+  -webkit-user-select: text;
+  user-select: text;
 }
 /* Explicit widths (not only aspect-ratio): Safari gives aspect-ratio boxes zero width in auto grid tracks. */
 .stage-portrait {

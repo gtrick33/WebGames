@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { shareRequests } from '../platform/share';
+import { fresh } from '../platform/freshBuild';
 
-const ShareSheet = lazy(() => import('./ShareSheet'));
+const ShareSheet = lazy(fresh(() => import('./ShareSheet')));
 
 /**
  * Mounted once by the app: shows the share sheet when anything asks to share. It renders into the

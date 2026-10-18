@@ -6,8 +6,9 @@ import { useLiveCatalog } from '../platform/liveCatalog';
 import { activeHoliday } from '../platform/seasons';
 import { matchRoute, useLocation } from '../router/router';
 import './SeasonLayer.css';
+import { fresh } from '../platform/freshBuild';
 
-const SeasonDecor = lazy(() => import('./SeasonDecor'));
+const SeasonDecor = lazy(fresh(() => import('./SeasonDecor')));
 
 /**
  * The holiday look (see platform/seasons.ts): sets the season's colours and logo sticker on the page,

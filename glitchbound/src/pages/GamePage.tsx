@@ -16,8 +16,8 @@ import { challengeSpecOf, useChallengeRun } from '../platform/useChallengeRun';
 import { ChallengeFriends, inviteToChallenge, startChallenge } from '../components/ChallengeFriends';
 
 // The challenge dock and scoreboard load only on challenge links (/games/<slug>?challenge=<id>).
-const ChallengeDock = lazy(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeDock })));
-const ChallengeScores = lazy(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeScores })));
+const ChallengeDock = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeDock }))));
+const ChallengeScores = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeScores }))));
 import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { MiniLeaderboard } from '../components/Leaderboard';
@@ -36,6 +36,7 @@ import { parseBeatParam, shareOrCopy } from '../platform/share';
 import { GAMES } from '../catalog/games';
 import { Link, navigate, useLocation } from '../router/router';
 import './GamePage.css';
+import { fresh } from '../platform/freshBuild';
 
 interface LastRound {
   event: EndEvent;

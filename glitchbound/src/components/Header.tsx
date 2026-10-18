@@ -14,10 +14,11 @@ import { LogoMark, Wordmark } from './Logo';
 import { Avatar } from './Avatar';
 import { openSignIn, setSignInLoader } from './openSignIn';
 import './Header.css';
+import { fresh } from '../platform/freshBuild';
 
 // The search and sign-in dialogs load the first time they are opened.
-const SignInDialog = lazy(() => import('./SignIn').then((m) => ({ default: m.SignInDialog })));
-const SearchDialog = lazy(() => import('./SearchDialog').then((m) => ({ default: m.SearchDialog })));
+const SignInDialog = lazy(fresh(() => import('./SignIn').then((m) => ({ default: m.SignInDialog }))));
+const SearchDialog = lazy(fresh(() => import('./SearchDialog').then((m) => ({ default: m.SearchDialog }))));
 
 const TABS: { href: string; label: string; short?: string; icon: IconName }[] = [
   { href: '/', label: 'Arcade', icon: 'gamepad' },

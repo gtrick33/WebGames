@@ -4,6 +4,7 @@ import { GAME_MODULES } from '../catalog/modules';
 import type { GameEntry } from '../catalog/types';
 import { parseGameMessage, type GameEvent, type GameModuleProps } from '../platform/contract';
 import { reportError, setActiveGame } from '../platform/analytics';
+import { fresh, isStaleBuildError, reloadForNewBuild } from '../platform/freshBuild';
 import type { ChallengeSpec } from '../platform/challenge';
 import { markPlaying } from '../platform/hooks';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -15,7 +16,7 @@ type Phase = 'poster' | 'loading' | 'ready' | 'error';
 const LOAD_TIMEOUT_MS = 20_000;
 
 /** One lazy component per module game, created once (a failed import is replaced on retry). */
-const LAZY_GAMES: Record<string, ComponentType<GameModuleProps>> = Object.fromEntries(Object.entries(GAME_MODULES).map(([slug, load]) => [slug, lazy(load)]));
+const LAZY_GAMES: Record<string, ComponentType<GameModuleProps>> = Object.fromEntries(Object.entries(GAME_MODULES).map(([slug, load]) => [slug, lazy(fresh(load))]));
 
 /** Resolves registry origins ('self' = this site) to concrete origins. */
 export function allowedOrigins(origins: string[]): string[] {
@@ -165,7 +166,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
 
   const retry = (): void => {
     const loader = GAME_MODULES[game.slug];
-    if (loader) LAZY_GAMES[game.slug] = lazy(loader); // a failed lazy() import stays failed; make a fresh one
+    if (loader) LAZY_GAMES[game.slug] = lazy(fresh(loader)); // a failed lazy() import stays failed; make a fresh one
     setAttempt((a) => a + 1);
     start();
   };
@@ -195,6 +196,11 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
         <ErrorBoundary
           key={attempt}
           onError={(e) => {
+            // An old tab after a deploy: load the new build instead of reporting a crash (#15-#18).
+            if (isStaleBuildError(e)) {
+              if (!reloadForNewBuild()) setPhase('error');
+              return;
+            }
             // A crash mid-game goes to the issues board with its stack (issue #7).
             reportError('game_crash', e.message || String(e), game.slug, e.stack);
             setPhase('error');

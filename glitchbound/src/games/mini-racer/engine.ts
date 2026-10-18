@@ -108,6 +108,14 @@ export class Engine {
     canvas.addEventListener('lostpointercapture', pup);
     const noMenu = (e: Event): void => e.preventDefault();
     canvas.addEventListener('contextmenu', noMenu);
+    // iPhone: quick repeated taps on the track start Safari's double/triple-tap text selection, which
+    // pops up the "Copy / Look Up / More" menu. Cancelling the touches' default stops it; steering
+    // uses pointer events, which still arrive.
+    const noGesture = (e: TouchEvent): void => {
+      if (e.cancelable) e.preventDefault();
+    };
+    canvas.addEventListener('touchstart', noGesture, { passive: false });
+    canvas.addEventListener('touchend', noGesture, { passive: false });
     this.cleanups.push(() => {
       canvas.removeEventListener('pointerdown', pdown);
       canvas.removeEventListener('pointermove', pmove);
@@ -115,6 +123,8 @@ export class Engine {
       canvas.removeEventListener('pointercancel', pup);
       canvas.removeEventListener('lostpointercapture', pup);
       canvas.removeEventListener('contextmenu', noMenu);
+      canvas.removeEventListener('touchstart', noGesture);
+      canvas.removeEventListener('touchend', noGesture);
     });
 
     const io = new IntersectionObserver(([entry]) => {

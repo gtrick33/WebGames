@@ -19,21 +19,22 @@ import { DISCORD } from './platform/env';
 import { useLiveCatalog } from './platform/liveCatalog';
 import { visitInfo } from './platform/visit';
 import { Link, matchRoute, useLocation } from './router/router';
+import { fresh } from './platform/freshBuild';
 
 // Pages most visitors never open are separate chunks, so the first load stays small on any phone.
 // Not needed for the first paint: loads right after it (it registers the "Rate this game" opener).
-const FeedbackPrompt = lazy(() => import('./components/FeedbackPrompt').then((m) => ({ default: m.FeedbackPrompt })));
-const DailyPage = lazy(() => import('./pages/DailyPage').then((m) => ({ default: m.DailyPage })));
-const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })));
-const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
-const LeaderboardsPage = lazy(() => import('./pages/LeaderboardsPage').then((m) => ({ default: m.LeaderboardsPage })));
-const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
-const BugReportPage = lazy(() => import('./pages/BugReportPage').then((m) => ({ default: m.BugReportPage })));
-const PartyPage = lazy(() => import('./party/ui/PartyPage').then((m) => ({ default: m.PartyPage })));
-const SignInPage = lazy(() => import('./pages/SignInPage').then((m) => ({ default: m.SignInPage })));
-const ChallengePage = lazy(() => import('./pages/ChallengePage').then((m) => ({ default: m.ChallengePage })));
-const ChallengesPage = lazy(() => import('./pages/ChallengePage').then((m) => ({ default: m.ChallengesPage })));
-const DiscordPage = lazy(() => import('./pages/DiscordPage').then((m) => ({ default: m.DiscordPage })));
+const FeedbackPrompt = lazy(fresh(() => import('./components/FeedbackPrompt').then((m) => ({ default: m.FeedbackPrompt }))));
+const DailyPage = lazy(fresh(() => import('./pages/DailyPage').then((m) => ({ default: m.DailyPage }))));
+const PrivacyPage = lazy(fresh(() => import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage }))));
+const AdminPage = lazy(fresh(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage }))));
+const LeaderboardsPage = lazy(fresh(() => import('./pages/LeaderboardsPage').then((m) => ({ default: m.LeaderboardsPage }))));
+const ProfilePage = lazy(fresh(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage }))));
+const BugReportPage = lazy(fresh(() => import('./pages/BugReportPage').then((m) => ({ default: m.BugReportPage }))));
+const PartyPage = lazy(fresh(() => import('./party/ui/PartyPage').then((m) => ({ default: m.PartyPage }))));
+const SignInPage = lazy(fresh(() => import('./pages/SignInPage').then((m) => ({ default: m.SignInPage }))));
+const ChallengePage = lazy(fresh(() => import('./pages/ChallengePage').then((m) => ({ default: m.ChallengePage }))));
+const ChallengesPage = lazy(fresh(() => import('./pages/ChallengePage').then((m) => ({ default: m.ChallengesPage }))));
+const DiscordPage = lazy(fresh(() => import('./pages/DiscordPage').then((m) => ({ default: m.DiscordPage }))));
 
 function Page() {
   const { pathname, search } = useLocation();

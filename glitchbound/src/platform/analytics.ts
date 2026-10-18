@@ -1,4 +1,5 @@
 import { ANALYTICS } from './env';
+import { isStaleBuildError } from './freshBuild';
 
 /**
  * Privacy-friendly analytics. Call `track()` from anywhere. Events go to our own /api/events
@@ -26,7 +27,9 @@ export type AnalyticsEvent =
   | 'feedback_prompt'
   | 'feedback_sent'
   | 'bug_report'
-  | 'daily_share';
+  | 'daily_share'
+  | 'room_open'
+  | 'room_join';
 
 export type Props = Record<string, string | number | boolean>;
 
@@ -148,6 +151,8 @@ export function shortStack(stack: string | undefined): string {
  */
 export function reportError(kind: string, message: string, game = activeGame, stack = ''): void {
   if (typeof window === 'undefined' || !import.meta.env.PROD || reported >= 8) return;
+  // A stale tab after a deploy is not a bug (the page reloads into the new build).
+  if (isStaleBuildError(message)) return;
   const key = `${kind}|${game}|${message}`;
   if (seen.has(key)) return;
   seen.add(key);

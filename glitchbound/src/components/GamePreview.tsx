@@ -2,8 +2,9 @@ import { lazy, Suspense, useEffect, useRef, useState, type ComponentType } from 
 import { GAME_PREVIEWS } from '../catalog/modules';
 import type { GamePreviewProps } from '../platform/contract';
 import { ErrorBoundary } from './ErrorBoundary';
+import { fresh } from '../platform/freshBuild';
 
-const LAZY: Record<string, ComponentType<GamePreviewProps>> = Object.fromEntries(Object.entries(GAME_PREVIEWS).map(([slug, load]) => [slug, lazy(load)]));
+const LAZY: Record<string, ComponentType<GamePreviewProps>> = Object.fromEntries(Object.entries(GAME_PREVIEWS).map(([slug, load]) => [slug, lazy(fresh(load))]));
 
 export function hasPreview(slug: string): boolean {
   return !!LAZY[slug];

@@ -5,12 +5,17 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { installErrorReporting } from './platform/analytics';
+import { reloadForNewBuild } from './platform/freshBuild';
 import { isDiscordLaunch, setEmbedHost } from './platform/embed';
 import { DISCORD } from './platform/env';
 import { startLiveCatalog } from './platform/liveCatalog';
 import { startI18n } from './i18n';
 
 installErrorReporting();
+// A code file from an older deploy is gone: reload into the new build (see platform/freshBuild.ts).
+window.addEventListener('vite:preloadError', (e) => {
+  if (reloadForNewBuild()) e.preventDefault();
+});
 startLiveCatalog();
 
 // Launched as a Discord Activity: Discord opens "/" with its own query (frame_id, instance_id, …);
