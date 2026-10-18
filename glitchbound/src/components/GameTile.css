@@ -155,7 +155,10 @@
   font-size: 12.5px;
   color: var(--lime-text);
 }
+/* Decorative: the whole card is the link (.tile-link::after). The hover tilt lifts this pill above
+   that overlay, so it must let clicks and taps through or it swallows them. */
 .tile-play {
+  pointer-events: none;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -174,6 +177,7 @@
   box-shadow: 5px 5px 0 var(--magenta);
 }
 .tile-sticker {
+  pointer-events: none;
   position: absolute;
   top: -12px;
   left: 18px;
