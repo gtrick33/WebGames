@@ -548,4 +548,47 @@ export const GAMES: GameEntry[] = [
     ],
     limits: { scorePerSecond: 0.1, minSeconds: 60 },
   },
+  {
+    slug: 'to-scale',
+    title: 'To Scale',
+    tagline: 'How big is a bus next to a horse? Drag the silhouette to its real size.',
+    description:
+      'Two things stand side by side on blueprint paper: one you know, and one silhouette at the wrong size. Drag its corner until it is the right size, lock it in and watch the real thing pop up over your guess. ' +
+      'From ants and dice to jumbo jets and the Moon, with a fact after every shot. Five shots a day, the same for everyone, an endless mode with three lives, and challenges for up to 6 friends.',
+    categories: ['puzzle', 'trivia'],
+    moods: ['brainy', 'quick'],
+    tags: ['size', 'scale', 'estimate', 'guess', 'how big', 'compare', 'daily', 'trivia', 'size it up', 'proportion', 'friends', 'challenge'],
+    released: '2026-10-19',
+    accent: 'blue',
+    emoji: '📏',
+    art: {
+      tile: '/games/to-scale/tile.webp',
+      wide: '/games/to-scale/wide.webp',
+      alt: 'A small bus and a horse on blueprint paper, with a yellow silhouette being stretched by its corner handle and a ruler below',
+      bg: '#123a7a',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'portrait',
+    controls: {
+      keyboard: ['Up / Down or + / −: resize (Shift for big steps)', 'Mouse wheel or drag the corner handle', 'Enter: lock it in, then next shot'],
+      touch: ['Drag the yellow corner handle or the slider', 'Tap − / + to fine-tune, then Lock it in'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'bullseyes', label: 'Most spot-on guesses in a game' },
+    ],
+    highlights: [
+      '57 things from an ant to the Earth, with a real-world fact after every shot',
+      'Five daily shots, the same for everyone, shared as a spoiler-free emoji line',
+      'Scored on a log scale: half the size and double the size are equally wrong',
+      'Endless mode with three lives, and challenges for up to 6 friends',
+    ],
+    ownDaily: { label: 'Today’s 5 shots' },
+    challenge: { label: 'The same five pairs for everyone. Closest sizes win, up to 1,000 points a shot.' },
+    daily: [
+      { metric: 'score', targets: [2500, 3000, 3500], label: 'Score {n} points in one To Scale game' },
+      { metric: 'bullseyes', targets: [1, 2], label: 'Land {n} spot-on guesses (within 10%) in one To Scale game' },
+    ],
+    limits: { scorePerSecond: 1000, minSeconds: 3 },
+  },
 ];

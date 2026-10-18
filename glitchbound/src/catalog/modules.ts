@@ -23,6 +23,7 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
   crosswire: () => import('../games/crosswire/Game'),
   'wait-what': () => import('../games/wait-what/Game'),
   unhinged: () => import('../games/unhinged/Game'),
+  'to-scale': () => import('../games/to-scale/Game'),
 };
 
 /**

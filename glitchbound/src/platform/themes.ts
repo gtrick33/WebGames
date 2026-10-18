@@ -26,7 +26,7 @@ export interface DayTheme {
 export const WEEK: DayTheme[] = [
   { id: 'chill', emoji: '🌿', name: 'Chill Sunday', tagline: 'Slow down: colours, pictures and puzzles, no rush.', moods: ['chill'] },
   { id: 'rush', emoji: '⚡', name: 'Monday Rush', tagline: 'Quick rounds to wake your brain up.', moods: ['quick'] },
-  { id: 'trivia', emoji: '🤯', name: 'Trivia Tuesday', tagline: 'Facts that sound made up, but aren’t.', games: ['wait-what'], moods: ['brainy'] },
+  { id: 'trivia', emoji: '🤯', name: 'Trivia Tuesday', tagline: 'Facts that sound made up, but aren’t.', games: ['wait-what', 'to-scale'], moods: ['brainy'] },
   { id: 'words', emoji: '🔤', name: 'Word Wednesday', tagline: 'Letters, clues and one mystery word.', games: ['letter-pinch', 'crosswire'] },
   { id: 'throwdown', emoji: '⚔️', name: 'Throwdown Thursday', tagline: 'Send a friend a challenge: same round, one shot each.', cta: 'challenge' },
   { id: 'party', emoji: '🎉', name: 'Party Friday', tagline: 'Friends over? Pass the phone or open a room.', games: ['unhinged'], moods: ['friends'], cta: 'party' },
