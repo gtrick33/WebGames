@@ -13,9 +13,10 @@ chunk when the player presses Play, and everything is released on unmount (rAF, 
 | `cars.ts` | Car collection: looks, small handling trade-offs, unlocks, coin rewards | yes |
 | `physics.ts` | Arcade car model (yaw, slip/grip, steering-driven slide, boost, loose-ground tyres), collisions | yes |
 | `laps.ts` | Lap timing and checkpoint validation | yes |
+| `sectors.ts` | Sector splits (3 per lap), deltas vs a reference lap, reference selection | yes |
 | `ghost.ts` | Ghost recording (20 Hz), playback, storage encoding | yes |
 | `daily.ts` | Date-seeded daily track generator with its own gold time | yes |
-| `sim.ts` | One race: car + track + laps + drift scoring + ghost, plus the autopilot | yes |
+| `sim.ts` | One race: player + AI racers, collisions, laps, sectors, positions, drift, ghost; the driver/autopilot | yes |
 | `render.ts` | Canvas drawing (cached Path2D road, textured surfaces, five car bodies, skids, particles, HUD, km/h gauge, minimap) | DOM |
 | `engine.ts` | Fixed 120 Hz loop, half-screen touch + keyboard steering, adaptive resolution, auto-pause | DOM |
 | `audio.ts` | Synthesized lo-fi race music loop, soft engine hum, tyre squeal and blips (WebAudio, no files) | DOM |
@@ -39,6 +40,20 @@ Tests: `tests/mini-racer.test.ts`.
   stretch), so the grid and line sit on a straight and a car with automatic gas leaves the grid on the road.
 - **Rescue**: a car crawling for 1.5 s or off the road for 3 s is put back on the nearest road (or shortcut), facing forward.
   The car can also pivot slowly at low speed, so it can never be pinned nose-first against a wall.
+- **Barriers**: tyre walls run WALL_GAP (40) past the kerb on both sides of every track (`buildWalls`). A wall point is dropped
+  where it would sit closer to another stretch of road (hairpins) or on a shortcut, so shortcuts stay open. Cars slide along walls:
+  the push-out removes the speed into the wall, a real impact scrubs 14%, resting contact costs a little each step. Checkpoint
+  validation still applies to anything that gets past.
+- **Solid scenery**: every prop (trees, umbrellas, rocks...) and obstacle is a circle collider (`decorRadius`). Props are placed
+  outside the walls. Walls, props and obstacles are bucketed in a 160-unit grid, so each car checks one cell per step.
+- **Modes**: Time Trial (alone, with your ghost; sectors vs your best-ever lap) and Race (3 AI rivals on a staggered grid, you start
+  at the back; sectors vs your previous lap). AI rivals use `drive()` with a difficulty style: pace (top speed and accel x0.93/0.97/1.0
+  of the starter car), how much of the inside line they use, steering wobble and steering speed. Mild catch-up only: plus or minus 3% pace
+  when more than 700 units from the player. Cars bump as equal-mass circles. Position = finished first by time, then by distance driven.
+  Measured: Hard about 5-8% off gold, Medium about 10-13%, Easy about 15-20% (tests keep Easy > Medium > Hard).
+- **Sectors**: 3 per lap, split at checkpoint gates (`sectorGates`). A split = lap time at the line; delta vs the reference's split
+  at the same line (green faster, red slower). The best lap's splits are saved with your bests (`bests[track].splits`) as the Time
+  Trial reference. Laps that missed a checkpoint get no splits.
 - **Races** are always 3 laps. Lap 1 is timed from GO, and race medals allow 0.9 s for that start.
 - **Drift**: sliding sideways at speed builds a chain (a multiplier every 1.5 s, up to x4). It banks after 0.45 s of grip,
   and a chain longer than 0.7 s pays out a turbo. A hard bump loses the chain and marks the lap "bumped" (not clean).
@@ -72,10 +87,11 @@ Tests: `tests/mini-racer.test.ts`.
 
 ## Deferred (not built yet)
 
-- Circuit racing against AI cars (the autopilot in `sim.ts` is a starting point for AI drivers)
+- AI overtaking intelligence (rivals dodge cars ahead but don't plan passes or defend); more than 3 rivals; AI on the daily track uses the same styles
 - Drift challenges (the Hot Lap and Drift Zone modes were removed for the one-touch rework; drift points are still a stat)
 - A catalogue attract preview (`Preview.tsx` + `GAME_PREVIEWS`); the in-game menu already has an autopilot attract view
 - Leaderboards per track (the arcade ranks one score per game), plus share and download for ghosts
 - Shortcuts on the three newer tracks
+- Walls along the shortcuts themselves (the infield is closed off by the main walls, so a shortcut can't be used to cut further)
 - More handmade tracks; jumps, bridges or crossover tracks (the nearest-point lookup assumes the road never crosses itself)
 - Gamepad support

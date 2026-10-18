@@ -129,6 +129,43 @@ export function nearest(path: Path, p: Vec): Nearest {
   return best;
 }
 
+/**
+ * Like `nearest`, but only searches segments within `window` of a previous answer (`hint`), falling
+ * back to a full search if the point has moved far (e.g. after a rescue). Cars call this every
+ * physics step, so it matters on phones.
+ */
+export function nearestNear(path: Path, p: Vec, hint: number, window = 24, far = 260): Nearest {
+  const { pts, closed, cum } = path;
+  const n = pts.length;
+  const segs = closed ? n : n - 1;
+  let best: Nearest = { d: Infinity, s: 0, i: 0, side: 0 };
+  let bestD2 = Infinity;
+  for (let k = -window; k <= window; k++) {
+    let i = hint + k;
+    if (closed) i = ((i % n) + n) % n;
+    else if (i < 0 || i >= segs) continue;
+    const a = pts[i]!;
+    const b = pts[(i + 1) % n]!;
+    const ex = b.x - a.x;
+    const ey = b.y - a.y;
+    const l2 = ex * ex + ey * ey || 1;
+    let u = ((p.x - a.x) * ex + (p.y - a.y) * ey) / l2;
+    u = u < 0 ? 0 : u > 1 ? 1 : u;
+    const qx = a.x + ex * u - p.x;
+    const qy = a.y + ey * u - p.y;
+    const d2 = qx * qx + qy * qy;
+    if (d2 < bestD2) {
+      bestD2 = d2;
+      const cross = ex * (p.y - a.y) - ey * (p.x - a.x);
+      best = { d: 0, s: cum[i]! + (cum[i + 1]! - cum[i]!) * u, i, side: cross > 0 ? -1 : 1 };
+    }
+  }
+  best.d = Math.sqrt(bestD2);
+  if (best.d > far) return nearest(path, p);
+  best.side *= best.d;
+  return best;
+}
+
 /** Point and unit tangent at arc length s (wraps on closed paths). */
 export function pointAt(path: Path, s: number): { p: Vec; t: Vec } {
   const { pts, cum, length, closed } = path;

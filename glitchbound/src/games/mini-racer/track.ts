@@ -1,4 +1,4 @@
-import { buildPath, leftOf, minSelfClearance, nearest, pointAt, resample, spline, type Path, type Vec } from './geometry';
+import { buildPath, leftOf, minSelfClearance, nearest, nearestNear, pointAt, resample, spline, type Path, type Vec } from './geometry';
 
 /** Ground types. Each changes top speed, acceleration and how much the tyres grip. */
 export type Surface = 'asphalt' | 'grass' | 'sand' | 'dirt' | 'gravel' | 'ice' | 'snow' | 'mud' | 'boost';
@@ -121,11 +121,51 @@ export interface Track {
   checkpoints: Checkpoint[];
   decor: Decor[];
   bounds: { minX: number; minY: number; maxX: number; maxY: number };
+  /** Trackside tyre walls: polylines beside the road, open where a shortcut leaves or joins. */
+  walls: Vec[][];
+  /** Everything solid (obstacles and scenery) and the wall segments, bucketed for cheap lookups. */
+  solids: Solid[];
+  segs: Seg[];
+  grid: Map<number, Cell>;
   /** Where cars line up, facing the driving direction. */
   start: { x: number; y: number; a: number };
 }
 
 export const KERB = 9;
+/** Run-off between the kerb and the tyre wall. */
+export const WALL_GAP = 40;
+/** Half-thickness of a tyre wall. */
+export const WALL_HALF = 7;
+const CELL = 160;
+
+export interface Solid {
+  x: number;
+  y: number;
+  r: number;
+}
+export interface Seg {
+  ax: number;
+  ay: number;
+  bx: number;
+  by: number;
+}
+export interface Cell {
+  solids: number[];
+  segs: number[];
+}
+const EMPTY_CELL: Cell = { solids: [], segs: [] };
+
+/** Distance from the road centreline to the centre of the tyre walls. */
+export function wallOffset(half: number): number {
+  return half + KERB + WALL_GAP;
+}
+
+const cellKey = (cx: number, cy: number): number => (cx + 2048) * 4096 + (cy + 2048);
+
+/** The solids and wall segments that could touch a car at (x, y). */
+export function cellAt(track: Track, x: number, y: number): Cell {
+  return track.grid.get(cellKey(Math.floor(x / CELL), Math.floor(y / CELL))) ?? EMPTY_CELL;
+}
 
 /** Deterministic PRNG (mulberry32). */
 export function rng(seed: number): () => number {
@@ -311,10 +351,93 @@ export function buildTrack(def: TrackDef): Track {
     checkpoints,
     decor: [],
     bounds,
+    walls: [],
+    solids: [],
+    segs: [],
+    grid: new Map(),
     start: { x: startPt.p.x, y: startPt.p.y, a: Math.atan2(startPt.t.y, startPt.t.x) },
   };
+  track.walls = buildWalls(track);
   track.decor = scatterDecor(track);
+  buildGrid(track);
   return track;
+}
+
+/**
+ * Tyre walls on both sides of the road, WALL_GAP past the kerb. A wall point is dropped where it would
+ * sit closer to another stretch of road (tight hairpins) or on a shortcut, so walls never block a
+ * legal route; the remaining runs become the barriers.
+ */
+function buildWalls(track: Track): Vec[][] {
+  const { path, half } = track;
+  const n = path.pts.length;
+  const L = path.length;
+  const off = wallOffset(half);
+  const runs: Vec[][] = [];
+  for (const side of [1, -1]) {
+    const keep: (Vec | null)[] = path.pts.map((p, i) => {
+      const nn = leftOf(path.tan[i]!);
+      const q = { x: p.x + nn.x * off * side, y: p.y + nn.y * off * side };
+      const near = nearest(path, q);
+      const along = Math.abs(near.s - path.cum[i]!);
+      if (Math.min(along, L - along) > half * 2.2 || near.d < off - 4) return null;
+      if (track.shortcut && nearest(track.shortcut.path, q).d < track.shortcut.half + WALL_HALF + 26) return null;
+      return q;
+    });
+    // Split into runs of kept points, joining across the loop's seam.
+    const start = keep.findIndex((q) => q === null);
+    if (start < 0) {
+      runs.push([...(keep as Vec[]), keep[0]!]);
+      continue;
+    }
+    let run: Vec[] = [];
+    for (let k = 1; k <= n; k++) {
+      const q = keep[(start + k) % n];
+      if (q) run.push(q);
+      else {
+        if (run.length >= 3) runs.push(run);
+        run = [];
+      }
+    }
+    if (run.length >= 3) runs.push(run);
+  }
+  return runs;
+}
+
+function buildGrid(track: Track): void {
+  const grid = track.grid;
+  const add = (minX: number, minY: number, maxX: number, maxY: number, put: (c: Cell) => void): void => {
+    // Pad by a car's reach so a single cell lookup at the car's centre finds everything it can touch.
+    const pad = 24;
+    for (let cx = Math.floor((minX - pad) / CELL); cx <= Math.floor((maxX + pad) / CELL); cx++) {
+      for (let cy = Math.floor((minY - pad) / CELL); cy <= Math.floor((maxY + pad) / CELL); cy++) {
+        const key = cellKey(cx, cy);
+        let c = grid.get(key);
+        if (!c) grid.set(key, (c = { solids: [], segs: [] }));
+        put(c);
+      }
+    }
+  };
+  track.solids = [
+    ...track.obstacles.map((o) => ({ x: o.x, y: o.y, r: o.r })),
+    // Scenery is solid too: a trunk-sized core of each prop.
+    ...track.decor.map((d) => ({ x: d.x, y: d.y, r: decorRadius(d) })),
+  ];
+  track.solids.forEach((s, i) => add(s.x - s.r, s.y - s.r, s.x + s.r, s.y + s.r, (c) => c.solids.push(i)));
+  track.segs = [];
+  for (const run of track.walls) {
+    for (let i = 1; i < run.length; i++) {
+      const a = run[i - 1]!;
+      const b = run[i]!;
+      const idx = track.segs.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y }) - 1;
+      add(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.max(a.x, b.x), Math.max(a.y, b.y), (c) => c.segs.push(idx));
+    }
+  }
+}
+
+/** Collision radius of a scenery prop: most of its drawn canopy (drawn at 26 x scale), so contact looks right. */
+export function decorRadius(d: Decor): number {
+  return 19 * d.s;
 }
 
 /** Scenery off the road (trees, rocks...). Purely visual; deterministic per track. */
@@ -328,7 +451,8 @@ function scatterDecor(track: Track): Decor[] {
     const p = { x: minX + r() * (maxX - minX), y: minY + r() * (maxY - minY) };
     const s = 0.7 + r() * 0.7;
     const clear = 34 * s + KERB + 10;
-    if (nearest(track.path, p).d < track.half + clear) continue;
+    // Outside the tyre walls (where there is one), clear of the road everywhere.
+    if (nearest(track.path, p).d < Math.max(track.half + clear, wallOffset(track.half) + WALL_HALF + 18 * s + 8)) continue;
     if (track.shortcut && nearest(track.shortcut.path, p).d < track.shortcut.half + clear) continue;
     if (out.some((d) => Math.hypot(d.x - p.x, d.y - p.y) < 48 * Math.max(d.s, s))) continue;
     out.push({ x: p.x, y: p.y, s, kind: Math.floor(r() * 3), rot: r() * Math.PI * 2 });
@@ -346,6 +470,8 @@ function inPatch(p: Vec, pt: Patch): boolean {
 }
 
 export interface Ground {
+  /** Segment index of the closest point on the main road (a hint for the next lookup). */
+  i: number;
   surface: Surface;
   /** On the main road or shortcut (including kerbs). */
   onRoad: boolean;
@@ -358,21 +484,22 @@ export interface Ground {
 }
 
 /** What is under point p. */
-export function groundAt(track: Track, p: Vec): Ground {
-  const near = nearest(track.path, p);
+export function groundAt(track: Track, p: Vec, hint?: number): Ground {
+  const near = hint === undefined ? nearest(track.path, p) : nearestNear(track.path, p, hint);
+  const base = { s: near.s, d: near.d, i: near.i };
   for (const pt of track.patches) {
-    if (inPatch(p, pt)) return { surface: pt.surface, onRoad: true, kerb: false, s: near.s, d: near.d };
+    if (inPatch(p, pt)) return { surface: pt.surface, onRoad: true, kerb: false, ...base };
   }
   if (near.d <= track.half + KERB) {
     const f = near.s / track.path.length;
     const zone = track.zones.find((z) => inRange(f, z.from, z.to));
-    return { surface: near.d > track.half ? 'asphalt' : (zone?.surface ?? 'asphalt'), onRoad: true, kerb: near.d > track.half, s: near.s, d: near.d };
+    return { surface: near.d > track.half ? 'asphalt' : (zone?.surface ?? 'asphalt'), onRoad: true, kerb: near.d > track.half, ...base };
   }
   if (track.shortcut) {
     const sc = nearest(track.shortcut.path, p);
-    if (sc.d <= track.shortcut.half) return { surface: track.shortcut.surface, onRoad: true, kerb: false, s: near.s, d: near.d };
+    if (sc.d <= track.shortcut.half) return { surface: track.shortcut.surface, onRoad: true, kerb: false, ...base };
   }
-  return { surface: track.def.offroad, onRoad: false, kerb: false, s: near.s, d: near.d };
+  return { surface: track.def.offroad, onRoad: false, kerb: false, ...base };
 }
 
 export interface TrackIssue {

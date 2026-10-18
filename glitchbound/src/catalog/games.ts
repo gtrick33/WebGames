@@ -183,7 +183,7 @@ export const GAMES: GameEntry[] = [
     tagline: 'Hold left or right to steer a toy car through drifty little races. Gas is automatic.',
     description:
       'Hold the left or right side of the screen to throw a chunky toy car around six handmade tracks of tarmac, gravel, dirt, sand and ice, plus a new circuit every day. ' +
-      'Slide through the bends for a turbo, race the ghost of your best lap, earn coins and collect ten cars.',
+      'Race three AI rivals on Easy, Medium or Hard, or chase your ghost and sector times in Time Trial. Earn coins and collect ten cars.',
     categories: ['racing', 'arcade'],
     tags: ['car', 'driving', 'drift', 'time trial', 'top-down', 'ghost', 'daily', 'laps', 'kart', 'one-touch', 'cars'],
     released: '2026-10-18',
@@ -206,13 +206,16 @@ export const GAMES: GameEntry[] = [
       { key: 'lapMs', label: 'Fastest lap', unit: 'ms', lowerIsBetter: true },
       { key: 'drift', label: 'Most drift points in a race' },
       { key: 'cleanLaps', label: 'Most clean laps in a race' },
+      { key: 'position', label: 'Best finish against AI', lowerIsBetter: true },
     ],
     highlights: [
       'One-touch steering: hold left or right, gas is automatic',
       'Six handmade tracks plus a new generated track every day',
       'Tarmac, gravel, dirt, sand, ice, mud and boost strips, each with its own grip and speed',
       'Ten collectible cars with small, balanced handling differences',
-      'Ghost replay of your best lap on every track',
+      'Race three AI rivals on Easy, Medium or Hard, or run a Time Trial against your ghost',
+      'Live sector splits, green or red against your best or previous lap',
+      'Tyre walls and solid scenery: no cutting across the sand',
     ],
     ownDaily: { label: 'Today’s track' },
     daily: [

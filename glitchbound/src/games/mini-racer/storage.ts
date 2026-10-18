@@ -1,5 +1,6 @@
 import { decodeGhost, encodeGhost, type Ghost } from './ghost';
 import { CARS, DEFAULT_CAR } from './cars';
+import type { Difficulty, RaceMode } from './sim';
 
 /** Local-only saves (bests, ghosts, settings). Every access is guarded: storage can be missing or full. */
 
@@ -11,6 +12,10 @@ export interface Bests {
   lap?: number;
   /** Best 3-lap race, seconds. */
   race?: number;
+  /** Cumulative sector splits of the best lap with sector data (Time Trial reference). */
+  splits?: number[];
+  /** Best finishing position against AI. */
+  position?: number;
 }
 
 export interface SaveData {
@@ -24,10 +29,12 @@ export interface SaveData {
   track: string;
   /** Days whose daily-track coin bonus was already paid. Only the latest few are kept. */
   dailyPaid: string[];
+  mode: RaceMode;
+  difficulty: Difficulty;
 }
 
 function defaults(): SaveData {
-  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [] };
+  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [], mode: 'trial', difficulty: 'medium' };
 }
 
 function store(): Storage | null {
@@ -50,10 +57,12 @@ export function loadSave(): SaveData {
       for (const [k, v] of Object.entries(o.bests as Record<string, unknown>)) {
         if (!v || typeof v !== 'object') continue;
         const b: Bests = {};
-        for (const f of ['lap', 'race'] as const) {
+        for (const f of ['lap', 'race', 'position'] as const) {
           const n = (v as Bests)[f];
           if (typeof n === 'number' && Number.isFinite(n) && n > 0) b[f] = n;
         }
+        const sp = (v as Bests).splits;
+        if (Array.isArray(sp) && sp.length === 3 && sp.every((x) => typeof x === 'number' && Number.isFinite(x) && x > 0)) b.splits = sp;
         d.bests[k] = b;
       }
     }
@@ -64,6 +73,8 @@ export function loadSave(): SaveData {
     d.car = typeof o.car === 'string' && d.cars.includes(o.car) ? o.car : DEFAULT_CAR;
     d.muted = o.muted === true;
     if (typeof o.track === 'string') d.track = o.track;
+    if (o.mode === 'race') d.mode = 'race';
+    if (o.difficulty === 'easy' || o.difficulty === 'hard') d.difficulty = o.difficulty;
     if (Array.isArray(o.dailyPaid)) d.dailyPaid = o.dailyPaid.filter((x): x is string => typeof x === 'string').slice(-7);
     return d;
   } catch {

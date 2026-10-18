@@ -3,7 +3,7 @@ import { speedOf, CAR, localVelocity, type CarSpec } from './physics';
 import type { CarDef } from './cars';
 import { Renderer, fmtTime, type HudState } from './render';
 import { RaceAudio } from './audio';
-import { autopilot, COUNTDOWN, DT, RaceSim, scoreFor } from './sim';
+import { autopilot, COUNTDOWN, DT, RaceSim, scoreFor, type RaceOptions } from './sim';
 import type { Track } from './track';
 
 /**
@@ -47,7 +47,7 @@ export class Engine {
   private steer = 0;
   private finishAt = -1;
   private lastCount = 99;
-  private hud: HudState = { banner: null, popup: null, best: null, delta: null, attract: true, touch: false };
+  private hud: HudState = { banner: null, popup: null, best: null, split: null, sectors: [], attract: true, touch: false };
   private frameAvg = 16;
   private dprCap = 2;
   private cleanups: (() => void)[] = [];
@@ -171,21 +171,21 @@ export class Engine {
     const sim = new RaceSim(track);
     sim.time = 0;
     this.sim = sim;
-    this.hud = { banner: null, popup: null, best: null, delta: null, attract: true, touch: this.touchMode };
+    this.hud = { banner: null, popup: null, best: null, split: null, sectors: [], attract: true, touch: this.touchMode };
     this.audio.update(0, 0, false);
     this.audio.music(false);
   }
 
-  race(track: Track, spec: CarSpec, ghost: Ghost | null, best: number | null): void {
+  race(track: Track, spec: CarSpec, ghost: Ghost | null, best: number | null, opts: RaceOptions = {}): void {
     this.attractMode = false;
     this.paused = false;
     this.finishAt = -1;
     this.lastCount = 99;
     this.steer = 0;
     this.renderer.setTrack(track);
-    this.sim = new RaceSim(track, ghost, spec);
+    this.sim = new RaceSim(track, ghost, spec, opts);
     this.pointers.clear();
-    this.hud = { banner: null, popup: null, best, delta: null, attract: false, touch: this.touchMode };
+    this.hud = { banner: null, popup: null, best, split: null, sectors: [], attract: false, touch: this.touchMode };
     this.audio.start();
     this.audio.music(true);
     this.acc = 0;
@@ -286,7 +286,6 @@ export class Engine {
           hud.banner = { text: "LAP DIDN'T COUNT", sub: 'Pass every checkpoint post', color: '#ff8a7a', until: now + 2 };
           break;
         }
-        if (hud.best !== null) hud.delta = { value: lap.time - hud.best, until: now + 2.5 };
         if (hud.best === null || lap.time < hud.best) hud.best = lap.time;
         hud.popup = { text: `LAP ${fmtTime(lap.time)}  +${scoreFor(sim.track.def.par, [lap])}`, until: now + 1.8 };
         this.audio.blip('lap');
@@ -306,6 +305,13 @@ export class Engine {
       case 'driftLost':
         hud.banner = { text: 'DRIFT LOST', sub: `${e.points} drift points gone`, color: '#ff8a7a', until: now + 1.4 };
         break;
+      case 'split': {
+        const sp = e.split;
+        if (sp.sector === 0) hud.sectors = [];
+        hud.sectors[sp.sector] = sp.delta === null ? 'done' : sp.delta <= 0 ? 'green' : 'red';
+        hud.split = { sector: sp.sector, delta: sp.delta, time: sp.time, until: now + 2.2 };
+        break;
+      }
       case 'rescue':
         hud.banner = { text: 'BACK ON TRACK', sub: 'Steer to stay on the road', color: '#ffd12e', until: now + 1.6 };
         this.audio.blip('miss');

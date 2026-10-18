@@ -177,6 +177,44 @@ export function collideBounds(car: CarState, b: { minX: number; minY: number; ma
   return hit;
 }
 
+/**
+ * Keeps the car off a tyre-wall segment. The car slides along the wall: the push-out removes the
+ * speed into it, a real impact scrubs some speed, and resting contact costs a little each step.
+ * Returns the impact speed.
+ */
+export function collideSegment(car: CarState, ax: number, ay: number, bx: number, by: number, half: number): number {
+  const ex = bx - ax;
+  const ey = by - ay;
+  const l2 = ex * ex + ey * ey || 1;
+  let u = ((car.x - ax) * ex + (car.y - ay) * ey) / l2;
+  u = u < 0 ? 0 : u > 1 ? 1 : u;
+  const qx = ax + ex * u;
+  const qy = ay + ey * u;
+  const dx = car.x - qx;
+  const dy = car.y - qy;
+  const min = CAR_RADIUS + half;
+  const d2 = dx * dx + dy * dy;
+  if (d2 >= min * min) return 0;
+  const d = Math.sqrt(d2) || 0.001;
+  const nx = dx / d;
+  const ny = dy / d;
+  car.x = qx + nx * min;
+  car.y = qy + ny * min;
+  const vn = car.vx * nx + car.vy * ny;
+  if (vn >= 0) return 0;
+  car.vx -= 1.2 * vn * nx;
+  car.vy -= 1.2 * vn * ny;
+  if (-vn > 60) {
+    car.vx *= 0.86;
+    car.vy *= 0.86;
+    car.av *= 0.5;
+  } else {
+    car.vx *= 0.993;
+    car.vy *= 0.993;
+  }
+  return -vn;
+}
+
 function bounce(car: CarState, nx: number, ny: number, e: number): number {
   const vn = car.vx * nx + car.vy * ny;
   if (vn >= 0) return 0;
