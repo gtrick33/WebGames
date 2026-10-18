@@ -37,11 +37,6 @@ export interface ChallengeRun {
   close: () => Promise<'ended' | 'left' | 'deleted' | 'failed'>;
 }
 
-/** Live updates: every few seconds while the page is visible, slower after two quiet minutes. */
-const POLL_MS = 3000;
-const SLOW_POLL_MS = 10_000;
-const SLOW_AFTER_MS = 120_000;
-
 const fmt = (n: number): string => n.toLocaleString('en-US');
 
 /** What changed between two views of a challenge, as toast text (newest first wins). */
@@ -110,44 +105,36 @@ export function useChallengeRun(id: string | null, game: GameEntry, name: string
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, game.slug]);
 
-  // Live updates while the challenge is open.
-  const updatedAt = view?.updatedAt ?? 0;
-  const closed = view?.closed ?? true;
+  // Live updates while the challenge is open (the code loads only now; see challengeLive.ts).
+  const live = !!view && !view.closed;
   useEffect(() => {
-    if (!id || !updatedAt || closed) return;
-    let stop = false;
-    let timer = 0;
-    const quietSince = Date.now();
-    const tick = async (): Promise<void> => {
-      if (stop) return;
-      if (!document.hidden) {
-        const current = viewRef.current;
-        // Past its closing time, ask for the whole view: it comes back closed.
-        const since = current && current.closesAt && Date.now() > current.closesAt ? 0 : updatedAt;
-        try {
-          const v = await pollChallenge(id, since);
-          if (stop) return;
-          if (v) return take(v);
-        } catch (e) {
-          if (stop) return;
-          if (e instanceof ApiError && e.status === 404) return setProblem('gone');
-        }
-      }
-      timer = window.setTimeout(() => void tick(), Date.now() - quietSince > SLOW_AFTER_MS ? SLOW_POLL_MS : POLL_MS);
-    };
-    timer = window.setTimeout(() => void tick(), POLL_MS);
-    const onVisible = (): void => {
-      if (document.hidden) return;
-      window.clearTimeout(timer);
-      void tick();
-    };
-    document.addEventListener('visibilitychange', onVisible);
+    if (!id || !live) return;
+    let stopped = false;
+    let stopWatching: (() => void) | null = null;
+    void import('./challengeLive').then((m) => {
+      if (stopped) return;
+      stopWatching = m.watchChallenge(id, { current: () => viewRef.current, onView: (v) => take(v), onGone: () => setProblem('gone') });
+    });
     return () => {
-      stop = true;
-      window.clearTimeout(timer);
-      document.removeEventListener('visibilitychange', onVisible);
+      stopped = true;
+      stopWatching?.();
     };
-  }, [id, updatedAt, closed, take]);
+  }, [id, live, take]);
+
+  // When its closing time passes with no change at all, look once: it comes back closed.
+  const closesAt = view?.closesAt ?? 0;
+  useEffect(() => {
+    if (!id || !live || !closesAt) return;
+    const wait = closesAt - Date.now() + 1000;
+    if (wait > 2 ** 31 - 1) return;
+    const t = window.setTimeout(() => {
+      pollChallenge(id, 0).then(
+        (v) => v && take(v),
+        () => undefined,
+      );
+    }, Math.max(1000, wait));
+    return () => window.clearTimeout(t);
+  }, [id, live, closesAt, take]);
 
   // Mini Racer races the others' ghosts: fetch them when it is your turn.
   const needsReplays = game.slug === 'mini-racer' && !!view?.yourTurn && replays?.round !== view.round;

@@ -3,6 +3,11 @@
  * Object per room code holds the game state and every player's WebSocket. Sockets hibernate between
  * messages, so idle rooms cost nothing; a room deletes itself after 3 hours without activity. The site reaches it through the ROOMS binding
  * (functions/api/rooms/*); this worker has no public URL.
+ *
+ * The same objects also carry friends' challenge updates (one object per challenge, named
+ * "challenge:<id>"): pages watch it over a socket (/watch) and the site pokes it whenever the
+ * challenge changes (/notify), instead of every open page asking the database every few seconds.
+ * Watching keeps nothing in storage.
  */
 import { engineFor, ENGINES, isGameId, type RoomState as State } from './engines';
 
@@ -32,6 +37,9 @@ const IDLE_MS = 3 * 60 * 60 * 1000;
 /** The idle-close alarm is rounded up to this, so it only needs rewriting every few minutes (each write is billed). */
 const IDLE_STEP = 10 * 60 * 1000;
 const MAX_MESSAGE = 2048;
+
+/** A page watching a challenge (not a player in a room). */
+const isWatcher = (ws: Socket): boolean => (ws.deserializeAttachment() as { watch?: boolean } | null)?.watch === true;
 
 const json = (data: unknown, status = 200): Response => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 
@@ -100,6 +108,25 @@ export class Room {
       const s = await this.load();
       return s ? json(engineFor(s).summary(s)) : json({ error: 'not_found' }, 404);
     }
+    if (url.pathname === '/watch') {
+      if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'websocket_required' }, 426);
+      const pair = new WebSocketPair();
+      this.ctx.acceptWebSocket(pair[1], ['watch']);
+      pair[1].serializeAttachment({ watch: true });
+      return new Response(null, { status: 101, webSocket: pair[0] } as ResponseInit);
+    }
+    if (url.pathname === '/notify' && request.method === 'POST') {
+      const v = Number(url.searchParams.get('v')) || now;
+      const watchers = this.ctx.getWebSockets('watch');
+      for (const ws of watchers) {
+        try {
+          ws.send(JSON.stringify({ t: 'changed', v }));
+        } catch {
+          /* closing */
+        }
+      }
+      return json({ ok: true, watchers: watchers.length });
+    }
     if (url.pathname === '/ws') {
       if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'websocket_required' }, 426);
       const key = url.searchParams.get('key');
@@ -124,7 +151,7 @@ export class Room {
   }
 
   async webSocketMessage(ws: Socket, message: string | ArrayBuffer): Promise<void> {
-    if (typeof message !== 'string' || message.length > MAX_MESSAGE) return;
+    if (typeof message !== 'string' || message.length > MAX_MESSAGE || isWatcher(ws)) return;
     const s = await this.load();
     const key = (ws.deserializeAttachment() as { key?: string } | null)?.key;
     if (!s || !key) return ws.close(4004, 'gone');
@@ -152,6 +179,7 @@ export class Room {
   }
 
   private async disconnect(ws: Socket): Promise<void> {
+    if (isWatcher(ws)) return;
     const s = await this.load();
     const key = (ws.deserializeAttachment() as { key?: string } | null)?.key;
     if (!s || !key) return;

@@ -1,6 +1,6 @@
 import { getGame } from '../src/catalog/catalog';
 import { CHALLENGE_IDLE_MS, CHALLENGE_KEEP_MS, CHALLENGE_LOBBY_MS, closesAt, dailySeed, MAX_PLAYERS, roundWinners, type ChallengeListItem, type ChallengeMode, type ChallengeView } from '../src/platform/challenge';
-import type { D1PreparedStatement, Env } from './http';
+import type { Ctx, D1PreparedStatement, Env } from './http';
 import { currentUser } from './session';
 import { newCode } from './shares';
 
@@ -160,6 +160,20 @@ export async function sweep(env: Env, now = Date.now()): Promise<void> {
     env.DB.prepare('DELETE FROM challenge_players WHERE challenge_id NOT IN (SELECT id FROM challenges)'),
     env.DB.prepare('DELETE FROM challenge_scores WHERE challenge_id NOT IN (SELECT id FROM challenges)'),
   ]);
+}
+
+/**
+ * Tells the pages watching this challenge that it changed (rooms/worker.ts, "challenge:<id>"), so
+ * they fetch it once instead of asking every few seconds. In the background: never delays the answer.
+ */
+export function notifyChallenge(env: Env, waitUntil: Ctx['waitUntil'], id: string, v: number): void {
+  if (!env.ROOMS) return;
+  const stub = env.ROOMS.get(env.ROOMS.idFromName(`challenge:${id}`));
+  const done = stub.fetch(`https://room/notify?v=${v}`, { method: 'POST' }).then(
+    () => undefined,
+    () => undefined,
+  );
+  waitUntil?.(done);
 }
 
 /**

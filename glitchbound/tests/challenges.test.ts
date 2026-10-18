@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { onRequestGet as getView } from '../functions/api/challenges/[id]';
 import { onRequestPost as closeIt } from '../functions/api/challenges/[id]/close';
 import { onRequestPost as join } from '../functions/api/challenges/[id]/join';
+import { onRequestGet as liveSocket } from '../functions/api/challenges/[id]/live';
 import { onRequestPost as rematch } from '../functions/api/challenges/[id]/rematch';
 import { onRequestPost as score } from '../functions/api/challenges/[id]/score';
 import { onRequestGet as list, onRequestPost as create } from '../functions/api/challenges/index';
@@ -197,6 +198,28 @@ describe('a guest who signs in keeps their challenges', () => {
     const next = (await view(id, ANA)).data;
     expect(next.players.map((p) => [p.name, p.played])).toEqual([['Ana', false], ['Bo', false]]);
     expect(newsBetween(first, next)).toBe('Bo joined');
+  });
+
+  it('pokes the challenge channel on every change, so open pages fetch once instead of polling', async () => {
+    const pokes: string[] = [];
+    env.ROOMS = {
+      idFromName: (name: string) => name,
+      get: (name: unknown) => ({ fetch: async (input: Request | string) => (pokes.push(`${String(name)} ${new URL(typeof input === 'string' ? input : input.url).pathname}`), new Response('{}')) }),
+    };
+    const id = await start();
+    await call(join, `/api/challenges/${id}/join`, { id, key: BO, body: { name: 'Bo' } });
+    await call(join, `/api/challenges/${id}/join`, { id, key: BO, body: { name: 'Bo' } });
+    await call(score, `/api/challenges/${id}/score`, { id, key: ANA, body: { round: 1, score: 40 } });
+    await call(rematch, `/api/challenges/${id}/rematch`, { id, key: ANA, body: { round: 1 } });
+    await call(closeIt, `/api/challenges/${id}/close`, { id, key: BO, body: {} });
+    // Join, score, rematch and leave each poke it once; joining again with the same name changes nothing.
+    expect(pokes.filter((p) => p.endsWith('/notify')).length).toBeGreaterThanOrEqual(4);
+    expect(new Set(pokes.map((p) => p.split(' ')[0]))).toEqual(new Set([`challenge:${id}`]));
+    // Pages watch the same channel over a socket.
+    const res = await liveSocket({ request: new Request(`${ORIGIN}/api/challenges/${id}/live`, { headers: { origin: ORIGIN, upgrade: 'websocket' } }), env, params: { id } });
+    expect(res.status).toBe(200);
+    expect(pokes.at(-1)).toBe(`challenge:${id} /watch`);
+    expect((await liveSocket({ request: new Request(`${ORIGIN}/api/challenges/nope/live`, { headers: { upgrade: 'websocket' } }), env, params: { id: 'nope' } })).status).toBe(404);
   });
 
   it('lets the host delete a challenge nobody else joined', async () => {

@@ -1,9 +1,9 @@
-import { challengeRow, playerOf, SEAT_ERRORS, takeSeat } from '../../../../server/challenges';
+import { challengeRow, notifyChallenge, playerOf, SEAT_ERRORS, takeSeat } from '../../../../server/challenges';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../../server/http';
 import { cleanName } from '../../../../src/platform/challenge';
 
 /** POST /api/challenges/<id>/join { name, key? }: take a seat (up to 6 players; joining again just renames). */
-export async function onRequestPost({ request, env, params }: Ctx): Promise<Response> {
+export async function onRequestPost({ request, env, params, waitUntil }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('forbidden', 403);
   const row = await challengeRow(env, String(params?.id ?? ''));
   if (!row) return bad('not_found', 404);
@@ -13,5 +13,6 @@ export async function onRequestPost({ request, env, params }: Ctx): Promise<Resp
   if (!player || !name) return bad('name_required');
   const seat = await takeSeat(env, row, player, name);
   if ('error' in seat) return bad(seat.error, 409, { message: SEAT_ERRORS[seat.error] });
+  if (seat.view.updatedAt !== row.updated_at) notifyChallenge(env, waitUntil, row.id, seat.view.updatedAt);
   return json(seat.view);
 }

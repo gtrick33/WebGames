@@ -1,9 +1,9 @@
-import { challengeRow, isClosed, playerOf, viewOf } from '../../../../server/challenges';
+import { challengeRow, isClosed, notifyChallenge, playerOf, viewOf } from '../../../../server/challenges';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../../server/http';
 import { MAX_ROUNDS, roundSeed } from '../../../../src/platform/challenge';
 
 /** POST /api/challenges/<id>/rematch { round, key? }: start the next round (a player who has played the current one). */
-export async function onRequestPost({ request, env, params }: Ctx): Promise<Response> {
+export async function onRequestPost({ request, env, params, waitUntil }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('forbidden', 403);
   const row = await challengeRow(env, String(params?.id ?? ''));
   if (!row) return bad('not_found', 404);
@@ -21,5 +21,6 @@ export async function onRequestPost({ request, env, params }: Ctx): Promise<Resp
   // Rematches are always fresh content, even for a daily challenge.
   await env.DB.prepare('UPDATE challenges SET round = ?, seed = ?, mode = ?, updated_at = ? WHERE id = ? AND round = ?').bind(next, roundSeed(row.seed, next), 'fresh', now, row.id, row.round).run();
   const fresh = await challengeRow(env, row.id);
+  if (fresh && fresh.round !== row.round) notifyChallenge(env, waitUntil, row.id, fresh.updated_at);
   return json(await viewOf(env, fresh!, player));
 }

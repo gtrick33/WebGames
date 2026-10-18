@@ -1,9 +1,9 @@
-import { challengeRow, isClosed, playerOf, viewOf } from '../../../../server/challenges';
+import { challengeRow, isClosed, notifyChallenge, playerOf, viewOf } from '../../../../server/challenges';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../../server/http';
 import { REPLAY_MAX } from '../../../../src/platform/challenge';
 
 /** POST /api/challenges/<id>/score { round, score, stats?, replay?, key? }: the first finished score of a round counts. */
-export async function onRequestPost({ request, env, params }: Ctx): Promise<Response> {
+export async function onRequestPost({ request, env, params, waitUntil }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('forbidden', 403);
   const row = await challengeRow(env, String(params?.id ?? ''));
   if (!row) return bad('not_found', 404);
@@ -25,5 +25,6 @@ export async function onRequestPost({ request, env, params }: Ctx): Promise<Resp
     env.DB.prepare('INSERT INTO challenge_scores (challenge_id, round, player, score, stats, replay, at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (challenge_id, round, player) DO NOTHING').bind(row.id, row.round, player, score, JSON.stringify(stats), replay, now),
     env.DB.prepare('UPDATE challenges SET updated_at = ? WHERE id = ?').bind(now, row.id),
   ]);
+  notifyChallenge(env, waitUntil, row.id, now);
   return json(await viewOf(env, { ...row, updated_at: now }, player));
 }
