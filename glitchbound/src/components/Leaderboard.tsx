@@ -57,7 +57,7 @@ export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: 
         <li key={r.rank} className={`board-row${r.you ? ' is-you' : ''}`} style={{ ['--i' as string]: r.rank }}>
           <Medal rank={r.rank} />
           <span className="board-name">
-            {r.nickname}
+            <span className="board-nick">{r.nickname}</span>
             {r.you && <span className="board-you mono">you</span>}
           </span>
           {!compact && <span className="board-lvl mono">LV {r.level}</span>}
@@ -71,7 +71,7 @@ export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: 
         <li className="board-row is-you board-mine">
           <Medal rank={mine.rank} />
           <span className="board-name">
-            {mine.nickname} <span className="board-you mono">you</span>
+            <span className="board-nick">{mine.nickname}</span> <span className="board-you mono">you</span>
           </span>
           {!compact && <span className="board-lvl mono">LV {mine.level}</span>}
           <span className="board-score mono">{fmt(mine.score)}</span>
@@ -105,14 +105,14 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
               </td>
               <td>
                 <span className="board-name">
-                  {r.nickname} <span className="board-lvl mono">LV {r.level}</span>
+                  <span className="board-nick">{r.nickname}</span> <span className="board-lvl mono">LV {r.level}</span>
                   {r.you && <span className="board-you mono">you</span>}
                 </span>
               </td>
-              <td className="mono hall-crowns">{r.crowns}</td>
-              <td className="mono">{r.podiums}</td>
-              <td className="mono">{r.records}</td>
-              <td className="mono">{r.games}</td>
+              <td className="mono hall-crowns hall-stat" data-label="Crowns">{r.crowns}</td>
+              <td className="mono hall-stat" data-label="Podiums">{r.podiums}</td>
+              <td className="mono hall-stat" data-label="Records">{r.records}</td>
+              <td className="mono hall-stat" data-label="Games">{r.games}</td>
             </tr>
           ))}
         </tbody>

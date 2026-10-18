@@ -108,36 +108,41 @@ export function ProfilePage() {
         <h2 id="bests-title" className="profile-h2">
           Personal bests
         </h2>
-        <div className="info-cols">
+        <div className="best-cards">
           {GAMES.map((g) => {
             const b = me.bests[g.slug];
             return (
-              <div key={g.slug} className="panel info-block">
-                <h3>{g.title}</h3>
-                {b ? (
-                  <dl className="bests">
-                    <div>
-                      <dt>Best score</dt>
-                      <dd className="mono">{fmt(b.score)}</dd>
-                    </div>
-                    {g.stats
-                      .filter((s) => s.key !== 'score' && b.stats[s.key] !== undefined)
-                      .map((s) => (
-                        <div key={s.key}>
-                          <dt>{s.label}</dt>
-                          <dd className="mono">
-                            {fmt(b.stats[s.key]!)}
-                            {s.unit ? ` ${s.unit}` : ''}
-                          </dd>
-                        </div>
-                      ))}
-                  </dl>
-                ) : (
-                  <p>No ranked round yet.</p>
-                )}
-                <Link href={`/games/${g.slug}`} className="quests-link">
-                  Play {g.title} <Icon name="arrowRight" size={16} />
+              <div key={g.slug} className="panel best-card" data-accent={g.accent}>
+                <Link href={`/games/${g.slug}`} className="best-card-art" style={{ background: g.art.bg }} tabIndex={-1} aria-hidden="true">
+                  <img src={g.art.wide} alt="" loading="lazy" decoding="async" />
                 </Link>
+                <div className="best-card-body">
+                  <h3>{g.title}</h3>
+                  {b ? (
+                    <dl className="bests">
+                      <div>
+                        <dt>Best score</dt>
+                        <dd className="mono">{fmt(b.score)}</dd>
+                      </div>
+                      {g.stats
+                        .filter((s) => s.key !== 'score' && b.stats[s.key] !== undefined)
+                        .map((s) => (
+                          <div key={s.key}>
+                            <dt>{s.label}</dt>
+                            <dd className="mono">
+                              {fmt(b.stats[s.key]!)}
+                              {s.unit ? ` ${s.unit}` : ''}
+                            </dd>
+                          </div>
+                        ))}
+                    </dl>
+                  ) : (
+                    <p>No ranked round yet.</p>
+                  )}
+                  <Link href={`/games/${g.slug}`} className="quests-link">
+                    Play {g.title} <Icon name="arrowRight" size={16} />
+                  </Link>
+                </div>
               </div>
             );
           })}

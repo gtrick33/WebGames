@@ -16,7 +16,10 @@ function GameBoard({ slug }: { slug: string }) {
   return (
     <div className="panel info-block">
       <div className="board-head">
-        <h2>{game.title}</h2>
+        <h2 className="board-game-title">
+          <img src={game.art.tile} alt="" width={44} height={44} style={{ background: game.art.bg }} />
+          {game.title}
+        </h2>
         <div className="seg" role="group" aria-label="Period">
           <button className={period === 'all' ? 'is-on' : ''} aria-pressed={period === 'all'} onClick={() => setPeriod('all')}>
             All time
@@ -66,15 +69,24 @@ export function LeaderboardsPage() {
         <Icon name="crown" size={16} /> Members compete, everyone can look
       </p>
       <h1 className="info-title">Leaderboards</h1>
-      <div className="seg seg-lg" role="tablist" aria-label="Leaderboard">
-        <button role="tab" aria-selected={tab === 'hall'} className={tab === 'hall' ? 'is-on' : ''} onClick={() => setTab('hall')}>
-          Hall of Fame
+      {/* Hall of Fame is the home board; single games are picked from a dropdown, which scales to any number of games. */}
+      <div className="board-picker">
+        <button className={`board-hall-btn${tab === 'hall' ? ' is-on' : ''}`} aria-pressed={tab === 'hall'} onClick={() => setTab('hall')}>
+          <Icon name="crown" size={18} /> Hall of Fame
         </button>
-        {GAMES.map((g) => (
-          <button key={g.slug} role="tab" aria-selected={tab === g.slug} className={tab === g.slug ? 'is-on' : ''} onClick={() => setTab(g.slug)}>
-            {g.title}
-          </button>
-        ))}
+        <label className={`board-select${tab !== 'hall' ? ' is-on' : ''}`}>
+          <span className="mono">Game</span>
+          <select value={tab === 'hall' ? '' : tab} onChange={(e) => setTab(e.target.value || 'hall')} aria-label="Game leaderboard">
+            <option value="">Choose a game…</option>
+            {[...GAMES]
+              .sort((a, b) => a.title.localeCompare(b.title))
+              .map((g) => (
+                <option key={g.slug} value={g.slug}>
+                  {g.title}
+                </option>
+              ))}
+          </select>
+        </label>
       </div>
       {tab === 'hall' ? <Hall /> : <GameBoard key={tab} slug={tab} />}
     </div>

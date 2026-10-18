@@ -48,9 +48,17 @@
   gap: 8px;
   min-width: 0;
   font-weight: 700;
+  white-space: nowrap;
+}
+/* Long nicknames shorten with an ellipsis; the "you" and level tags never get cut. */
+.board-nick {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+.board-name > .board-you,
+.board-name > .board-lvl {
+  flex: none;
 }
 .board-you {
   padding: 2px 6px;
@@ -122,4 +130,61 @@
 .hall-crowns {
   color: var(--yellow-text);
   font-size: 16px;
+}
+
+/* Phones: each Hall of Fame row becomes a small card (rank + name, then the four counts labelled
+   on a second line), instead of a table that runs off the right edge. */
+@media (max-width: 640px) {
+  .hall-wrap {
+    overflow: visible;
+  }
+  .hall,
+  .hall tbody {
+    display: block;
+  }
+  .hall thead {
+    display: none;
+  }
+  .hall tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--well);
+  }
+  .hall tr.is-you {
+    border-color: var(--cyan);
+    background: var(--surface-2);
+    box-shadow: var(--hard-sm);
+  }
+  .hall td,
+  .hall td:first-child,
+  .hall td:last-child,
+  .hall tr.is-you td {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .hall td:nth-child(2) {
+    flex: 1 1 calc(100% - 60px);
+    min-width: 0;
+  }
+  .hall .hall-stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 14px;
+  }
+  .hall .hall-stat::before {
+    content: attr(data-label);
+    color: var(--fg-3);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
 }
