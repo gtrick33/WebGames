@@ -3,7 +3,7 @@ import { dailyTrack, hashDay, todayKey } from '../src/games/mini-racer/daily';
 import { leftOf, nearest, pointAt } from '../src/games/mini-racer/geometry';
 import { decodeGhost, encodeGhost, GhostRecorder, ghostPose } from '../src/games/mini-racer/ghost';
 import { advanceLaps, bestLap, crossGate, newLapState } from '../src/games/mini-racer/laps';
-import { CAR, CAR_RADIUS, collideCircle, collideSegment, localVelocity, newCar, onLoose, speedOf, stepCar } from '../src/games/mini-racer/physics';
+import { CAR, CAR_RADIUS, collideCircle, collideSegment, localVelocity, newCar, onLoose, speedOf, stepCar, type Handling } from '../src/games/mini-racer/physics';
 import { aiStyle, autopilot, DT, RaceSim, scoreFor } from '../src/games/mini-racer/sim';
 import { bestSectors, chooseReference, SECTORS, SectorTimer, sectorGates, sectorTimes } from '../src/games/mini-racer/sectors';
 import { buildTrack, bypassed, cellAt, decorRadius, groundAt, KERB, SURFACES, TRACK_TYPES, validateTrack, WALL_HALF, wallOffset, type Checkpoint, type Gate } from '../src/games/mini-racer/track';
@@ -336,8 +336,11 @@ describe('race start (regression: car stuck at the start)', () => {
     const track = buildTrack(TRACKS[0]!);
     const sim = new RaceSim(track);
     for (let i = 0; i < 120 * 2.5; i++) sim.step(0); // past GO
-    // Park it at the top fence, facing straight into it, stopped.
-    sim.car.x = (track.bounds.minX + track.bounds.maxX) / 2;
+    // Park it at the top fence, facing straight into it, stopped (at a spot clear of scenery).
+    let x = (track.bounds.minX + track.bounds.maxX) / 2;
+    const clear = (px: number): boolean => track.solids.every((s) => Math.hypot(s.x - px, s.y - (track.bounds.minY + 20)) > s.r + 60);
+    while (!clear(x)) x += 40;
+    sim.car.x = x;
     sim.car.y = track.bounds.minY + 20;
     sim.car.a = -Math.PI / 2;
     sim.car.vx = sim.car.vy = 0;
@@ -592,12 +595,12 @@ describe('sectors', () => {
 });
 
 describe('track types and drift', () => {
-  /** Forward speed after holding a hard turn at speed for 0.8 s (a full slide) with the type's scrub. */
-  const afterSlide = (scrub: number): number => {
+  /** Forward and total speed after a typical drift (60% steering at speed for 0.5 s) with a type's handling. */
+  const afterSlide = (h: Handling): { fwd: number; speed: number } => {
     const car = newCar(0, 0, 0);
     car.vx = 400;
-    for (let i = 0; i < 96; i++) stepCar(car, { steer: 1, throttle: 1, brake: 0 }, SURFACES.asphalt, DT, CAR, scrub);
-    return localVelocity(car).fwd;
+    for (let i = 0; i < 60; i++) stepCar(car, { steer: 0.6, throttle: 1, brake: 0 }, SURFACES.asphalt, DT, CAR, h);
+    return { fwd: localVelocity(car).fwd, speed: speedOf(car) };
   };
 
   it('every track has a type, and the set covers circuit, rally, snow and oval', () => {
@@ -605,11 +608,29 @@ describe('track types and drift', () => {
     expect([...types].sort()).toEqual(['circuit', 'oval', 'rally', 'snow']);
   });
 
-  it('drifting costs speed on circuits and ovals (oval most), is neutral-ish on snow and keeps speed on rally', () => {
-    const v = Object.fromEntries((Object.keys(TRACK_TYPES) as (keyof typeof TRACK_TYPES)[]).map((k) => [k, afterSlide(TRACK_TYPES[k].scrub)]));
-    expect(v.oval!).toBeLessThan(v.circuit!);
-    expect(v.circuit!).toBeLessThan(v.snow!);
-    expect(v.snow!).toBeLessThan(v.rally!);
+  it('a slide costs most on ovals, then circuits, little on snow, and rally keeps the most speed', () => {
+    const v = Object.fromEntries((Object.keys(TRACK_TYPES) as (keyof typeof TRACK_TYPES)[]).map((k) => [k, afterSlide(TRACK_TYPES[k])]));
+    expect(v.oval!.fwd).toBeLessThan(v.circuit!.fwd);
+    expect(v.circuit!.fwd).toBeLessThan(v.snow!.fwd);
+    expect(v.rally!.speed).toBeGreaterThan(v.circuit!.speed);
+    expect(v.rally!.speed).toBeGreaterThan(v.oval!.speed);
+  });
+
+  it('rally lets the tail out more readily, with a sharper turn-in', () => {
+    const r = TRACK_TYPES.rally;
+    const c = TRACK_TYPES.circuit;
+    expect(r.slideSteer).toBeLessThan(c.slideSteer);
+    expect(r.slideRate).toBeGreaterThan(c.slideRate);
+    expect(r.turnIn).toBeGreaterThan(c.turnIn);
+    // A moderate turn at speed: the rally car slides, the circuit car grips.
+    const slideOf = (h: Handling): number => {
+      const car = newCar(0, 0, 0);
+      car.vx = 380;
+      for (let i = 0; i < 40; i++) stepCar(car, { steer: 0.45, throttle: 1, brake: 0 }, SURFACES.asphalt, DT, CAR, h);
+      return car.slide;
+    };
+    expect(slideOf(r)).toBeGreaterThan(0.5);
+    expect(slideOf(c)).toBe(0);
   });
 
   it('a banked drift pays a turbo only on rally tracks', () => {
@@ -658,6 +679,49 @@ describe('track types and drift', () => {
       const lap = (def.par / 1000) * 0.75;
       const score = scoreFor(def.par, [lap, lap, lap].map((time) => ({ time, valid: true }))) + 300;
       expect(score, def.id).toBeLessThanOrEqual(limits.scorePerSecond * (lap * 3 + 3) + 50);
+    }
+  });
+});
+
+describe('full-speed tracks', () => {
+  it('on every circuit, rally and oval track an autopilot lap averages a high fraction of top speed', () => {
+    for (const def of TRACKS.filter((t) => t.type !== 'snow')) {
+      const sim = new RaceSim(buildTrack(def));
+      let sum = 0;
+      let n = 0;
+      for (let i = 0; i < 120 * 120 && !sim.finished; i++) {
+        sim.step(autopilot(sim));
+        // Flying laps only; boost above top speed doesn't count extra.
+        if (sim.lap.laps.length >= 1) {
+          sum += Math.min(speedOf(sim.car), sim.spec.maxSpeed) / sim.spec.maxSpeed;
+          n++;
+        }
+      }
+      expect(sum / n, def.id).toBeGreaterThan(0.88);
+    }
+  });
+
+  it('no slow surface sits across the racing line: sand and mud only as edge strips', () => {
+    for (const def of TRACKS.filter((t) => t.type !== 'snow')) {
+      for (const z of def.zones ?? []) expect(['sand', 'mud', 'snow', 'grass'], def.id).not.toContain(z.surface);
+      for (const p of def.patches ?? []) {
+        if (p.surface === 'boost') continue;
+        // A slow patch must hug one edge (the centre of the road stays clear).
+        expect(Math.abs(p.off) - p.wide / 2, `${def.id} ${p.surface}`).toBeGreaterThan(20);
+      }
+    }
+  });
+
+  it('AI at levels 20 and 100 completes clean laps on every track', () => {
+    for (const def of TRACKS) {
+      for (const level of [20, 100]) {
+        const sim = new RaceSim(buildTrack(def), null, { ...CAR, maxSpeed: CAR.maxSpeed * 0.5 }, { mode: 'race', aiLevel: level });
+        for (let i = 0; i < 120 * 220 && !sim.finished; i++) sim.step(autopilot(sim));
+        for (const r of sim.rivals) {
+          expect(r.finishTime, `${def.id} L${level} ${r.name}`).not.toBeNull();
+          expect(r.lap.laps.every((l) => l.valid), `${def.id} L${level} ${r.name}`).toBe(true);
+        }
+      }
     }
   });
 });

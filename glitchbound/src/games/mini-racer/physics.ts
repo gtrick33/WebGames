@@ -63,6 +63,23 @@ export interface Input {
   brake: number;
 }
 
+/** How the car slides on a kind of track (see TRACK_TYPES). */
+export interface Handling {
+  /** Speed lost per second at full slide (units/s²). */
+  scrub: number;
+  /** Steering beyond this lets the tail out... */
+  slideSteer: number;
+  /** ...above this fraction of top speed. */
+  slideSpeed: number;
+  /** How fast the slide builds (1/s). */
+  slideRate: number;
+  /** Turn-in sharpness (yaw rate multiplier). */
+  turnIn: number;
+}
+
+/** Grippy handling: hard steering at speed is needed before the tail steps out. */
+export const GRIP_HANDLING: Handling = { scrub: 60, slideSteer: 0.55, slideSpeed: 0.42, slideRate: 2.6, turnIn: 1 };
+
 export const NO_INPUT: Input = { steer: 0, throttle: 0, brake: 0 };
 
 export const CAR_RADIUS = 16;
@@ -87,14 +104,15 @@ export function speedOf(car: CarState): number {
 /**
  * Advances the car by dt seconds. Steering turns the body; grip then pulls the velocity in line,
  * and what's left is drift. There is no drift button: holding a hard turn at speed lets the tail
- * step out (`slide`), which rotates the car faster and scrubs speed (`scrub`, set by the track type).
+ * step out (`slide`), which rotates the car faster and scrubs speed. How readily it slides, how sharp the
+ * turn-in is and what a slide costs come from the track type (`Handling`).
  */
-export function stepCar(car: CarState, input: Input, surf: SurfaceProps, dt: number, spec: CarSpec = CAR, scrub = 60): void {
+export function stepCar(car: CarState, input: Input, surf: SurfaceProps, dt: number, spec: CarSpec = CAR, h: Handling = GRIP_HANDLING): void {
   const fwd0 = localVelocity(car).fwd;
   const top = spec.maxSpeed * surf.speed * (car.boost > 0 ? BOOST_SPEED : 1);
 
-  const wantSlide = Math.abs(input.steer) > 0.55 && fwd0 > spec.maxSpeed * 0.42;
-  car.slide = Math.max(0, Math.min(1, car.slide + (wantSlide ? 2.6 : -3.5) * dt));
+  const wantSlide = Math.abs(input.steer) > h.slideSteer && fwd0 > spec.maxSpeed * h.slideSpeed;
+  car.slide = Math.max(0, Math.min(1, car.slide + (wantSlide ? h.slideRate : -3.5) * dt));
   const sl = car.slide;
 
   // Yaw: needs some speed to turn, reverses when backing up, sharper while sliding.
@@ -102,7 +120,7 @@ export function stepCar(car: CarState, input: Input, surf: SurfaceProps, dt: num
   // nose-first against a wall with automatic gas.
   const grip01 = Math.max(0.45, Math.min(1, Math.abs(fwd0) / 130));
   const highSpeedDamp = 1 - 0.3 * Math.min(1, Math.abs(fwd0) / spec.maxSpeed);
-  const targetAv = input.steer * spec.turnRate * grip01 * highSpeedDamp * Math.sign(fwd0 || 1) * (1 + 0.4 * sl);
+  const targetAv = input.steer * spec.turnRate * h.turnIn * grip01 * highSpeedDamp * Math.sign(fwd0 || 1) * (1 + 0.4 * sl);
   car.av += (targetAv - car.av) * Math.min(1, (16 - 6 * sl) * dt);
   car.a += car.av * dt;
 
@@ -125,7 +143,7 @@ export function stepCar(car: CarState, input: Input, surf: SurfaceProps, dt: num
   const roll = (input.throttle > 0 ? 0.12 : 0.55) + surf.drag;
   fwd -= fwd * roll * dt;
   // How much a slide costs depends on the track type (see TRACK_TYPES): cheap on rally, dear on circuits.
-  fwd -= Math.sign(fwd) * scrub * sl * dt;
+  fwd -= Math.sign(fwd) * h.scrub * sl * dt;
 
   // Sliding converts a little sideways speed back into forward speed: drifts keep their momentum.
   const grip = (spec.grip + (spec.driftGrip - spec.grip) * sl * 0.9) * surf.grip;

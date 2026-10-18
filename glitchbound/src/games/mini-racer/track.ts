@@ -1,3 +1,4 @@
+import { GRIP_HANDLING, type Handling } from './physics';
 import { buildPath, leftOf, minSelfClearance, nearest, nearestNear, pointAt, resample, spline, type Path, type Vec } from './geometry';
 
 /** Ground types. Each changes top speed, acceleration and how much the tyres grip. */
@@ -17,8 +18,9 @@ export interface SurfaceProps {
 export const SURFACES: Record<Surface, SurfaceProps> = {
   asphalt: { speed: 1, accel: 1, grip: 1, drag: 0 },
   boost: { speed: 1, accel: 1, grip: 1, drag: 0 },
-  dirt: { speed: 0.9, accel: 0.85, grip: 0.62, drag: 0.1 },
-  gravel: { speed: 0.82, accel: 0.75, grip: 0.5, drag: 0.25 },
+  // Rally surfaces are fast but loose: full speed, low grip.
+  dirt: { speed: 0.98, accel: 0.95, grip: 0.62, drag: 0.02 },
+  gravel: { speed: 0.96, accel: 0.9, grip: 0.52, drag: 0.04 },
   ice: { speed: 1, accel: 0.55, grip: 0.22, drag: 0 },
   grass: { speed: 0.56, accel: 0.7, grip: 0.7, drag: 0.6 },
   sand: { speed: 0.5, accel: 0.6, grip: 0.55, drag: 0.8 },
@@ -31,12 +33,10 @@ export type ThemeId = 'bay' | 'frost' | 'canyon' | 'park' | 'candy';
 /** What kind of track it is: decides what drifting does. */
 export type TrackType = 'circuit' | 'rally' | 'snow' | 'oval';
 
-export interface TrackTypeRules {
+export interface TrackTypeRules extends Handling {
   name: string;
   /** One line for the menu. */
   hint: string;
-  /** Speed lost per second at full slide (units/s²). */
-  scrub: number;
   /** Turbo paid for a banked drift chain (x the base payout); 0 = none. */
   turbo: number;
   /** AI drivers keep the car tidy (no sliding) on this type. */
@@ -44,10 +44,21 @@ export interface TrackTypeRules {
 }
 
 export const TRACK_TYPES: Record<TrackType, TrackTypeRules> = {
-  circuit: { name: 'Circuit', hint: 'Grippy tarmac. Drifting costs speed; clean lines win.', scrub: 170, turbo: 0, noDrift: true },
-  oval: { name: 'Oval', hint: 'Flat out. Any slide scrubs a lot of speed; keep it smooth.', scrub: 240, turbo: 0, noDrift: true },
-  snow: { name: 'Snow', hint: 'Low grip and long slides. Drifting is neutral; control is everything.', scrub: 55, turbo: 0, noDrift: false },
-  rally: { name: 'Rally', hint: 'Loose dirt and gravel. Drift it: slides keep speed and pay a turbo.', scrub: 15, turbo: 1.25, noDrift: false },
+  circuit: { name: 'Circuit', hint: 'Grippy tarmac. Drifting costs speed; clean lines win.', ...GRIP_HANDLING, scrub: 170, turbo: 0, noDrift: true },
+  oval: { name: 'Oval', hint: 'Flat out. Any slide scrubs a lot of speed; keep it smooth.', ...GRIP_HANDLING, scrub: 240, turbo: 0, noDrift: true },
+  snow: { name: 'Snow', hint: 'Low grip and long slides. Drifting is neutral; control is everything.', ...GRIP_HANDLING, scrub: 55, turbo: 0, noDrift: false },
+  // Rally: the tail steps out readily at speed with a sharper turn-in, so drifting is the fun way round.
+  rally: {
+    name: 'Rally',
+    hint: 'Loose and fast. Turn in hard and the car drifts: slides keep speed and pay a turbo.',
+    scrub: 15,
+    slideSteer: 0.32,
+    slideSpeed: 0.3,
+    slideRate: 5,
+    turnIn: 1.15,
+    turbo: 1.25,
+    noDrift: false,
+  },
 };
 export type ObstacleKind = 'tires' | 'rock' | 'crate' | 'cone';
 

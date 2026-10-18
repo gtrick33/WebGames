@@ -61,7 +61,7 @@ export const CARS: CarDef[] = [
     shape: 'formula',
     body: '#2eb8ff',
     accent: '#ffffff',
-    tune: { speed: 1.035, accel: 1.02, grip: 0.88, turn: 0.97, loose: 0.95 },
+    tune: { speed: 1.035, accel: 1.02, grip: 0.91, turn: 0.97, loose: 1 },
     unlock: { type: 'coins', price: 400 },
   },
   {
@@ -101,7 +101,7 @@ export const CARS: CarDef[] = [
     shape: 'formula',
     body: '#9a6bff',
     accent: '#ffd12e',
-    tune: { speed: 1.035, accel: 0.97, grip: 0.88, turn: 0.98, loose: 0.94 },
+    tune: { speed: 1.035, accel: 0.97, grip: 0.91, turn: 0.98, loose: 1.02 },
     unlock: { type: 'coins', price: 1200 },
   },
   {

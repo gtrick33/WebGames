@@ -361,7 +361,7 @@ export class RaceSim {
       // Everyone coasts to a stop behind the line.
       for (const r of this.racers) {
         r.prev = { x: r.car.x, y: r.car.y, a: r.car.a };
-        stepCar(r.car, { steer: 0, throttle: 0, brake: 0.4 }, SURFACES[r.ground.surface], DT, r.spec, this.rules.scrub);
+        stepCar(r.car, { steer: 0, throttle: 0, brake: 0.4 }, SURFACES[r.ground.surface], DT, r.spec, this.rules);
         this.collideWorld(r);
         r.ground = groundAt(this.track, r.car, r.ground.i);
       }
@@ -388,7 +388,7 @@ export class RaceSim {
         r.throttle = ctl.throttle;
         r.brake = ctl.brake;
       } else r.steer = steer;
-      stepCar(r.car, { steer: r.steer, throttle: r.style ? r.throttle : 1, brake: r.style ? r.brake : 0 }, this.surfaceFor(r), DT, r.stepSpec, this.rules.scrub);
+      stepCar(r.car, { steer: r.steer, throttle: r.style ? r.throttle : 1, brake: r.style ? r.brake : 0 }, this.surfaceFor(r), DT, r.stepSpec, this.rules);
       const impact = this.collideWorld(r);
       if (r === this.player && impact > 70) this.onPlayerBump(impact, events);
     }
@@ -751,12 +751,13 @@ export function drive(track: Track, r: Racer, style: DriverStyle, others: Racer[
   const fast = fwd > r.spec.maxSpeed * 0.42;
   // Where sliding is punished (circuits, ovals), AI drivers keep the car tidy: steer short of the
   // slide threshold and lift off for the rest, instead of drifting.
-  if (r.style && TRACK_TYPES[track.def.type].noDrift && fast && Math.abs(steer) > 0.54) {
+  const tidy = TRACK_TYPES[track.def.type].slideSteer - 0.01;
+  if (r.style && TRACK_TYPES[track.def.type].noDrift && fast && Math.abs(steer) > tidy) {
     // Only a tight bend needs a lift; a skilled driver lifts just enough, a weak one too much.
     // Instead of sliding, brake into a bend that's too tight to take flat: skilled drivers brake
     // precisely, weak ones lift late and run wide.
-    const over = Math.abs(steer) - 0.54;
-    steer = Math.sign(steer) * 0.54;
+    const over = Math.abs(steer) - tidy;
+    steer = Math.sign(steer) * tidy;
     if (over > 0.12) {
       throttle = 0;
       brake = Math.min(1, (over - 0.12) * (0.6 + 2.4 * style.lift));

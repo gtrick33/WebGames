@@ -47,7 +47,9 @@ Tests: `tests/mini-racer.test.ts`.
 - **Solid scenery**: every prop (trees, umbrellas, rocks...) and obstacle is a circle collider (`decorRadius`). Props are placed
   outside the walls. Walls, props and obstacles are bucketed in a 160-unit grid, so each car checks one cell per step.
 - **Track types** (`TRACK_TYPES` in `track.ts`) decide what drifting does. The slide scrub (speed lost per second at full slide) is
-  circuit 170, oval 240, snow 55 and rally 15, and only rally pays a turbo for a banked drift chain. Measured on one layout with the
+  circuit 170, oval 240, snow 55 and rally 15, and only rally pays a turbo for a banked drift chain. Rally also changes the
+  handling (`Handling` in `physics.ts`): the tail steps out at 32% steering above 30% of top speed (grip types need 55% above
+  42%), the slide builds twice as fast and turn-in is 15% sharper, so turning in hard at speed drifts naturally. Measured on one layout with the
   same 0.6 s weave at top speed: oval -17 km/h, circuit -10, snow 0, rally +3. Tracks: Sunny Bay and Meadow Mile are circuits,
   Frost Peak is snow (mostly ice), Canyon Run, Sugar Rush and Dune Dash are rally, Speed Bowl is the oval; daily tracks get a type
   from their theme (bay = circuit, frost = snow, canyon = rally). AI rivals never slide on circuits and ovals: they steer short of
@@ -70,6 +72,10 @@ Tests: `tests/mini-racer.test.ts`.
 - **Cars**: 10 cars (coupe, buggy, formula, van and bubble bodies). Seven unlock with coins and two with gold medals on the handmade
   tracks; Pip is the starter. Coins per race: 10 + 3 per valid lap + medal (8/15/25) + new record 10 + first daily finish 30.
   Handling trade-offs are small; tests keep every car within 6% of Pip on every track and within 2.5% on average.
+- **Full speed**: circuits, rally tracks and the oval have no slow surface across the racing line. Dirt and gravel are fast but
+  loose (96-98% speed); sand and mud only appear as edge strips or off the road, to punish running wide. Layouts are twisty
+  (esses on the old straights, 136-150 wide roads) but taken flat out by steering: an autopilot lap averages 92-100% of top speed
+  (tested above 88%). Frost Peak (snow) is unchanged.
 - **Gold times**: hand-set `par` per track, which tests keep within 15% of a tidy autopilot lap. Daily tracks get the autopilot's
   flying lap minus 1.5%; a generated layout the autopilot can't lap cleanly at full speed (a bend too tight with no brake) is
   rejected and the next seed is tried.
