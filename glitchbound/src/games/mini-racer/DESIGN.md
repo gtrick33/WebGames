@@ -59,7 +59,7 @@ Tests: `tests/mini-racer.test.ts`.
   below level 40 (up to +4% pace when far behind). Level 100's best lap lands within about 5% of the optimal autopilot lap (tested).
   Beating rivals adds level x (rivals behind you) race points, at most 300, only for a counted race.
 - **Modes**: Time Trial (alone, with your ghost; sectors vs your best-ever lap) and Race (3 AI rivals on a staggered grid, you start
-  at the back; sectors vs your previous lap). AI rivals use `drive()` with the style for the chosen AI level (see above). Cars bump as equal-mass circles. Position = finished first by time, then by distance driven.
+  at the back; sectors vs your previous lap). AI rivals use `drive()` with the style for the chosen AI level (see above). Cars bump as equal-mass bodies, each made of two circles (front and rear, about 50 x 26, matching the drawing), so nose-to-tail and side contacts happen where the cars visibly meet; off-centre hits add a little spin. Position = finished first by time, then by distance driven.
 - **Sectors**: 3 per lap, split at checkpoint gates (`sectorGates`). A split = lap time at the line; delta vs the reference's split
   at the same line (green faster, red slower). The best lap's splits are saved with your bests (`bests[track].splits`) as the Time
   Trial reference. Laps that missed a checkpoint get no splits.

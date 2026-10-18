@@ -234,6 +234,75 @@ export function collideSegment(car: CarState, ax: number, ay: number, bx: number
   return -vn;
 }
 
+/**
+ * Car shape for car-to-car contact: two circles along the body (front and rear), sized to the drawn
+ * car (about 50 long, 26 wide), so cars meet nose-to-tail and side-to-side where they look like they do.
+ */
+export const BODY_OFFSET = 12;
+export const BODY_RADIUS = 13;
+/** Rotational inertia of a car body (unit mass): resists spin from off-centre hits. */
+const BODY_INERTIA = 225;
+
+function bodyCircles(car: CarState): [number, number, number, number] {
+  const c = Math.cos(car.a) * BODY_OFFSET;
+  const s = Math.sin(car.a) * BODY_OFFSET;
+  return [car.x + c, car.y + s, car.x - c, car.y - s];
+}
+
+/**
+ * Resolves contact between two cars of equal mass: separates every overlapping pair of body circles
+ * and bounces their velocities (with a little spin from off-centre hits). Returns the impact speed.
+ */
+export function collideCarPair(a: CarState, b: CarState, restitution = 0.3): number {
+  const min = BODY_RADIUS * 2;
+  // Quick reject: the bodies are too far apart to touch.
+  const reach = (BODY_OFFSET + BODY_RADIUS) * 2;
+  if ((b.x - a.x) ** 2 + (b.y - a.y) ** 2 >= reach * reach) return 0;
+  let impact = 0;
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 0; i < 2; i++) {
+      for (let j = 0; j < 2; j++) {
+        // Fresh positions every time: an earlier pair may already have moved the cars.
+        const ca = bodyCircles(a);
+        const cb = bodyCircles(b);
+        const ax = ca[i * 2]!;
+        const ay = ca[i * 2 + 1]!;
+        const bx = cb[j * 2]!;
+        const by = cb[j * 2 + 1]!;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const d2 = dx * dx + dy * dy;
+        if (d2 >= min * min) continue;
+        const d = Math.sqrt(d2) || 0.001;
+        const nx = d2 > 1e-6 ? dx / d : Math.cos(a.a + Math.PI / 2);
+        const ny = d2 > 1e-6 ? dy / d : Math.sin(a.a + Math.PI / 2);
+        const push = (min - d) / 2;
+        a.x -= nx * push;
+        a.y -= ny * push;
+        b.x += nx * push;
+        b.y += ny * push;
+        if (pass > 0) continue;
+        const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+        if (vn >= 0) continue;
+        const j2 = (-(1 + restitution) * vn) / 2;
+        a.vx -= j2 * nx;
+        a.vy -= j2 * ny;
+        b.vx += j2 * nx;
+        b.vy += j2 * ny;
+        // Contact point is between the two circles; an off-centre hit turns the cars a little.
+        const px = (ax + bx) / 2;
+        const py = (ay + by) / 2;
+        const spinA = ((px - a.x) * -ny * j2 - (py - a.y) * -nx * j2) / BODY_INERTIA;
+        const spinB = ((px - b.x) * ny * j2 - (py - b.y) * nx * j2) / BODY_INERTIA;
+        a.av = Math.max(-4, Math.min(4, a.av + spinA));
+        b.av = Math.max(-4, Math.min(4, b.av + spinB));
+        impact = Math.max(impact, -vn);
+      }
+    }
+  }
+  return impact;
+}
+
 function bounce(car: CarState, nx: number, ny: number, e: number): number {
   const vn = car.vx * nx + car.vy * ny;
   if (vn >= 0) return 0;

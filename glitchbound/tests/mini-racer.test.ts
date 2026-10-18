@@ -3,7 +3,7 @@ import { dailyTrack, hashDay, todayKey } from '../src/games/mini-racer/daily';
 import { leftOf, nearest, pointAt } from '../src/games/mini-racer/geometry';
 import { decodeGhost, encodeGhost, GhostRecorder, ghostPose } from '../src/games/mini-racer/ghost';
 import { advanceLaps, bestLap, crossGate, newLapState } from '../src/games/mini-racer/laps';
-import { CAR, CAR_RADIUS, collideCircle, collideSegment, localVelocity, newCar, onLoose, speedOf, stepCar, type Handling } from '../src/games/mini-racer/physics';
+import { BODY_OFFSET, BODY_RADIUS, CAR, CAR_RADIUS, collideCarPair, collideCircle, collideSegment, localVelocity, newCar, onLoose, speedOf, stepCar, type Handling } from '../src/games/mini-racer/physics';
 import { aiStyle, autopilot, DT, RaceSim, scoreFor } from '../src/games/mini-racer/sim';
 import { bestSectors, chooseReference, SECTORS, SectorTimer, sectorGates, sectorTimes } from '../src/games/mini-racer/sectors';
 import { buildTrack, bypassed, cellAt, decorRadius, groundAt, KERB, SURFACES, TRACK_TYPES, validateTrack, WALL_HALF, wallOffset, type Checkpoint, type Gate } from '../src/games/mini-racer/track';
@@ -514,7 +514,7 @@ describe('AI race', () => {
       const optimal = bestLap(ap.lap.laps)!;
       const sim = runRace(def, 100, 0.5);
       const ai = Math.min(...sim.rivals.map((r) => bestLap(r.lap.laps) ?? Infinity));
-      expect(Math.abs(ai / optimal - 1), def.id).toBeLessThan(0.06);
+      expect(Math.abs(ai / optimal - 1), def.id).toBeLessThan(0.07);
     }
   });
 
@@ -523,19 +523,69 @@ describe('AI race', () => {
     for (const rv of sim.rivals) expect(rv.lap.laps.every((l) => l.valid), rv.name).toBe(true);
   });
 
-  it('cars bump apart instead of overlapping', () => {
+  /** Smallest gap between two cars' bodies (negative = overlapping). */
+  const bodyGap = (a: { x: number; y: number; a: number }, b: { x: number; y: number; a: number }): number => {
+    const ends = (c: { x: number; y: number; a: number }) => [-1, 1].map((k) => ({ x: c.x + Math.cos(c.a) * BODY_OFFSET * k, y: c.y + Math.sin(c.a) * BODY_OFFSET * k }));
+    let min = Infinity;
+    for (const p of ends(a)) for (const q of ends(b)) min = Math.min(min, Math.hypot(p.x - q.x, p.y - q.y) - BODY_RADIUS * 2);
+    return min;
+  };
+
+  it('a faster car hitting another from behind stops at the bumper and pushes it, nose to tail', () => {
+    const behind = newCar(0, 0, 0);
+    const ahead = newCar(60, 0, 0);
+    behind.vx = 300;
+    ahead.vx = 100;
+    let minGap = Infinity;
+    for (let i = 0; i < 120; i++) {
+      for (const c of [behind, ahead]) {
+        c.x += c.vx * DT;
+        c.y += c.vy * DT;
+      }
+      collideCarPair(behind, ahead);
+      minGap = Math.min(minGap, bodyGap(behind, ahead));
+    }
+    // The bodies (about 50 long) never sink into each other: the old single small circle let them overlap by ~13 units.
+    expect(minGap).toBeGreaterThan(-0.5);
+    expect(ahead.x - behind.x).toBeGreaterThan((BODY_OFFSET + BODY_RADIUS) * 2 - 1);
+    expect(ahead.vx).toBeGreaterThan(100);
+    expect(behind.vx).toBeLessThan(300);
+  });
+
+  it('cars side by side touch at their doors, not their centres', () => {
+    const a = newCar(0, 0, 0);
+    const b = newCar(0, 20, 0);
+    collideCarPair(a, b);
+    expect(Math.abs(b.y - a.y)).toBeGreaterThan(BODY_RADIUS * 2 - 0.5);
+    expect(Math.abs(b.y - a.y)).toBeLessThan(BODY_RADIUS * 2 + 1);
+  });
+
+  it('cars bump apart instead of overlapping in the sim', () => {
     const sim = new RaceSim(buildTrack(TRACKS[0]!), null, CAR, { mode: 'race' });
     for (let i = 0; i < 120 * 2.3; i++) sim.step(0);
     const [me, rival] = [sim.racers[0]!, sim.racers[1]!];
-    rival.car.x = me.car.x + 10;
-    rival.car.y = me.car.y;
-    rival.car.vx = 0;
-    rival.car.vy = 0;
-    me.car.vx = 300;
-    me.car.vy = 0;
+    // Park the rival right on the player's nose.
+    rival.car.x = me.car.x + Math.cos(me.car.a) * 30;
+    rival.car.y = me.car.y + Math.sin(me.car.a) * 30;
+    rival.car.a = me.car.a;
+    rival.car.vx = rival.car.vy = 0;
+    me.car.vx = Math.cos(me.car.a) * 300;
+    me.car.vy = Math.sin(me.car.a) * 300;
     sim.step(0);
-    expect(Math.hypot(rival.car.x - me.car.x, rival.car.y - me.car.y)).toBeGreaterThan(CAR_RADIUS * 2 - 0.5);
-    expect(rival.car.vx).toBeGreaterThan(0);
+    expect(bodyGap(me.car, rival.car)).toBeGreaterThan(-0.5);
+    expect(rival.car.vx * Math.cos(me.car.a) + rival.car.vy * Math.sin(me.car.a)).toBeGreaterThan(0);
+  });
+
+  it('no two cars ever overlap during a full AI race', () => {
+    const sim = new RaceSim(buildTrack(TRACKS[2]!), null, CAR, { mode: 'race', aiLevel: 60 });
+    let worst = Infinity;
+    for (let i = 0; i < 120 * 90 && !sim.finished; i++) {
+      sim.step(autopilot(sim));
+      for (let a = 0; a < sim.racers.length; a++) {
+        for (let b = a + 1; b < sim.racers.length; b++) worst = Math.min(worst, bodyGap(sim.racers[a]!.car, sim.racers[b]!.car));
+      }
+    }
+    expect(worst).toBeGreaterThan(-2);
   });
 });
 

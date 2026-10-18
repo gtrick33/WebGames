@@ -2,7 +2,7 @@ import { leftOf, nearest, pointAt } from './geometry';
 import { GhostRecorder, ghostPose, type Ghost, type Pose } from './ghost';
 import { advanceLaps, bestLap, newLapState, type LapEvent, type LapState } from './laps';
 import { CARS, LOOSE, specFor, type CarDef } from './cars';
-import { CAR, CAR_RADIUS, collideBounds, collideCircle, collideSegment, localVelocity, newCar, onLoose, speedOf, stepCar, type CarSpec, type CarState } from './physics';
+import { CAR, CAR_RADIUS, collideBounds, collideCarPair, collideCircle, collideSegment, localVelocity, newCar, onLoose, speedOf, stepCar, type CarSpec, type CarState } from './physics';
 import { SECTORS, SectorTimer, type SplitEvent, type Splits } from './sectors';
 import { cellAt, groundAt, SURFACES, TRACK_TYPES, WALL_HALF, type Ground, type Track, type TrackTypeRules } from './track';
 
@@ -484,35 +484,17 @@ export class RaceSim {
     return impact;
   }
 
-  /** Car-to-car contact: equal masses, a soft bounce. Returns the player's hardest impact. */
+  /** Car-to-car contact (front and rear of each body, equal masses, a soft bounce). Returns the player's hardest impact. */
   private collideCars(): number {
     let playerImpact = 0;
     const rs = this.racers;
-    const min = CAR_RADIUS * 2;
-    for (let i = 0; i < rs.length; i++) {
-      for (let j = i + 1; j < rs.length; j++) {
-        const a = rs[i]!.car;
-        const b = rs[j]!.car;
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 >= min * min) continue;
-        const d = Math.sqrt(d2) || 0.001;
-        const nx = dx / d;
-        const ny = dy / d;
-        const push = (min - d) / 2;
-        a.x -= nx * push;
-        a.y -= ny * push;
-        b.x += nx * push;
-        b.y += ny * push;
-        const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-        if (vn >= 0) continue;
-        const imp = (-(1 + 0.3) * vn) / 2;
-        a.vx -= imp * nx;
-        a.vy -= imp * ny;
-        b.vx += imp * nx;
-        b.vy += imp * ny;
-        if (i === 0) playerImpact = Math.max(playerImpact, -vn);
+    // A few sweeps so a pile-up of three or four cars settles (bounces only apply while cars close in).
+    for (let sweep = 0; sweep < 3; sweep++) {
+      for (let i = 0; i < rs.length; i++) {
+        for (let j = i + 1; j < rs.length; j++) {
+          const impact = collideCarPair(rs[i]!.car, rs[j]!.car);
+          if (i === 0) playerImpact = Math.max(playerImpact, impact);
+        }
       }
     }
     return playerImpact;
