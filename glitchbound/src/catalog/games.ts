@@ -86,6 +86,7 @@ export const GAMES: GameEntry[] = [
       'Grids grow from 3×3 to 5×5 with gentle difficulty steps',
       'Spoiler-free share text, local top-5 records and daily streaks',
     ],
+    ownDaily: { label: 'Today’s grid' },
     daily: [
       { metric: 'longest', targets: [6, 7, 8, 9], label: 'Repeat a {n}-step sequence' },
       { metric: 'score', targets: [150, 250, 350], label: 'Score {n} points in one run' },
@@ -127,6 +128,7 @@ export const GAMES: GameEntry[] = [
       'Perceptual CIEDE2000 scoring with plain-language tips',
       'HSB or RGB sliders with fine-tune buttons, built for phones',
     ],
+    ownDaily: { label: 'Today’s 5 colors' },
     daily: [
       { metric: 'score', targets: [3000, 3300, 3600, 3900], label: 'Score {n} points in one 5-color game' },
       { metric: 'bestColor', targets: [850, 900, 950], label: 'Mix a single color worth {n} points' },
@@ -169,6 +171,7 @@ export const GAMES: GameEntry[] = [
       'Daily streaks, win rate and guess distribution',
       'Spoiler-free arrow grid to share',
     ],
+    ownDaily: { label: 'Today’s word' },
     daily: [
       { metric: 'spare', targets: [1, 2, 2, 3], label: 'Solve a Letter Pinch with {n} or more guesses left' },
       { metric: 'score', targets: [450, 500, 550], label: 'Score {n} points in one Letter Pinch puzzle' },

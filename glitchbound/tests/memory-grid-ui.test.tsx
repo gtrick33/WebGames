@@ -42,7 +42,7 @@ describe('Memory Grid UI', () => {
     });
     const seq2 = patternFor(dailySeed(dayKey()), 2, levelFor('daily', 2));
     fireEvent.pointerDown(tiles()[(seq2[0]! + 1) % 9]!);
-    expect(report).toHaveBeenLastCalledWith({ type: 'end', score: 30, stats: { longest: 3, patterns: 1, accuracy: 75 } });
+    expect(report).toHaveBeenLastCalledWith({ type: 'end', score: 30, stats: { longest: 3, patterns: 1, accuracy: 75 }, daily: true });
 
     act(() => {
       vi.advanceTimersByTime(1500);

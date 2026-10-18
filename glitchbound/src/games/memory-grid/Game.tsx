@@ -28,12 +28,10 @@ const OVER_MS = 1100;
 
 /**
  * The one place a round's end is reported. `isDaily` is true only for the official (first) Daily Challenge
- * attempt of the day, never for practice replays or other modes. When the arcade's own-daily contract lands
- * (EndEvent `daily?: boolean`), pass it here: host.report({ type: 'end', score, stats, daily: isDaily }).
+ * attempt of the day, never for practice replays or other modes; the arcade counts it as this game's own daily.
  */
 function reportEnd(host: GameModuleProps['host'], score: number, stats: Record<string, number>, isDaily: boolean): void {
-  void isDaily;
-  host.report({ type: 'end', score, stats });
+  host.report(isDaily ? { type: 'end', score, stats, daily: true } : { type: 'end', score, stats });
 }
 
 type Screen = 'menu' | 'play' | 'result' | 'records';

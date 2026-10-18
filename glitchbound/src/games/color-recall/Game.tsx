@@ -148,12 +148,11 @@ function ColorRecall({ host }: { host: GameHost }) {
 
 /**
  * The one place a finished 5-colour game is reported to the arcade. `isDaily` marks today's
- * shared daily run (never practice); when the arcade's `daily: true` end flag lands, pass it here.
+ * shared daily run (never practice); the arcade counts it as this game's own daily.
  */
 function reportEnd(host: GameHost, results: RoundResult[], isDaily: boolean): ReturnType<typeof endStats> {
   const end = endStats(results);
-  void isDaily;
-  host.report({ type: 'end', ...end });
+  host.report(isDaily ? { type: 'end', ...end, daily: true } : { type: 'end', ...end });
   return end;
 }
 
