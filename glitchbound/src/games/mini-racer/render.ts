@@ -214,9 +214,14 @@ export class Renderer {
     return this.time;
   }
 
+  /** False when the browser gives no 2D context (then nothing is drawn, but the game still runs). */
+  private readonly ok: boolean;
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d', { alpha: false })!;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    this.ok = ctx !== null;
+    this.ctx = ctx as CanvasRenderingContext2D;
   }
 
   resize(w: number, h: number, dpr: number): void {
@@ -231,6 +236,7 @@ export class Renderer {
     if (this.track === track) return;
     this.track = track;
     this.theme = THEMES[track.def.theme];
+    if (!this.ok) return;
     this.road = pathFrom(track.path.pts, true);
     this.zones = track.zones.map((z) => ({ p: slice(track.path, z.from, z.to), surface: z.surface }));
     this.shortcut = track.shortcut ? pathFrom(track.shortcut.path.pts, false) : null;
@@ -277,6 +283,7 @@ export class Renderer {
   }
 
   private buildPattern(): CanvasPattern | null {
+    if (!this.ok) return null;
     const c = document.createElement('canvas');
     c.width = c.height = 160;
     const g = c.getContext('2d');
@@ -305,7 +312,7 @@ export class Renderer {
   draw(sim: RaceSim, alpha: number, dt: number, hud: HudState): void {
     const ctx = this.ctx;
     const track = this.track;
-    if (!track) return;
+    if (!track || !this.ok) return;
     this.time += dt;
     const car = sim.car;
     const pose: Pose = {

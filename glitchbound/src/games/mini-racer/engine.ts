@@ -197,6 +197,11 @@ export class Engine {
     this.audio.pause();
   }
 
+  /** Fade the race music out (e.g. the arcade asked for a pause while a menu is showing). */
+  quiet(): void {
+    this.audio.music(false);
+  }
+
   resume(): void {
     this.paused = false;
     this.last = performance.now();

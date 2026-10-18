@@ -3,10 +3,10 @@ import { dailyTrack, hashDay, todayKey } from '../src/games/mini-racer/daily';
 import { leftOf, nearest, pointAt } from '../src/games/mini-racer/geometry';
 import { decodeGhost, encodeGhost, GhostRecorder, ghostPose } from '../src/games/mini-racer/ghost';
 import { advanceLaps, bestLap, crossGate, newLapState } from '../src/games/mini-racer/laps';
-import { CAR, CAR_RADIUS, collideCircle, collideSegment, newCar, onLoose, speedOf, stepCar } from '../src/games/mini-racer/physics';
-import { autopilot, DT, RaceSim, scoreFor, type Difficulty } from '../src/games/mini-racer/sim';
+import { CAR, CAR_RADIUS, collideCircle, collideSegment, localVelocity, newCar, onLoose, speedOf, stepCar } from '../src/games/mini-racer/physics';
+import { aiStyle, autopilot, DT, RaceSim, scoreFor } from '../src/games/mini-racer/sim';
 import { bestSectors, chooseReference, SECTORS, SectorTimer, sectorGates, sectorTimes } from '../src/games/mini-racer/sectors';
-import { buildTrack, bypassed, cellAt, decorRadius, groundAt, KERB, SURFACES, validateTrack, WALL_HALF, wallOffset, type Checkpoint, type Gate } from '../src/games/mini-racer/track';
+import { buildTrack, bypassed, cellAt, decorRadius, groundAt, KERB, SURFACES, TRACK_TYPES, validateTrack, WALL_HALF, wallOffset, type Checkpoint, type Gate } from '../src/games/mini-racer/track';
 import { TRACKS } from '../src/games/mini-racer/tracks';
 import { CARS, raceCoins, specFor, statBars } from '../src/games/mini-racer/cars';
 import { getGame } from '../src/catalog/catalog';
@@ -444,8 +444,8 @@ describe('barriers and solid scenery', () => {
 });
 
 describe('AI race', () => {
-  const runRace = (def: (typeof TRACKS)[number], difficulty: Difficulty, playerSpeed = 1) => {
-    const sim = new RaceSim(buildTrack(def), null, { ...CAR, maxSpeed: CAR.maxSpeed * playerSpeed }, { mode: 'race', difficulty });
+  const runRace = (def: (typeof TRACKS)[number], aiLevel: number, playerSpeed = 1) => {
+    const sim = new RaceSim(buildTrack(def), null, { ...CAR, maxSpeed: CAR.maxSpeed * playerSpeed }, { mode: 'race', aiLevel });
     for (let i = 0; i < 120 * 200 && !sim.finished; i++) sim.step(autopilot(sim));
     return sim;
   };
@@ -458,7 +458,7 @@ describe('AI race', () => {
   });
 
   it('reports a finishing position that matches the results order', () => {
-    const sim = runRace(TRACKS[0]!, 'medium');
+    const sim = runRace(TRACKS[0]!, 50);
     const r = sim.result();
     expect(r.position).toBeGreaterThanOrEqual(1);
     expect(r.standings).toHaveLength(4);
@@ -469,28 +469,54 @@ describe('AI race', () => {
     expect(new Set(r.standings.map((s) => s.name)).size).toBe(4);
   });
 
-  it('harder AI is faster: Easy > Medium > Hard average finish times', () => {
-    const avg: Record<string, number> = {};
-    for (const d of ['easy', 'medium', 'hard'] as Difficulty[]) {
+  it('every AI quality rises smoothly with the level (0-100)', () => {
+    for (let l = 1; l <= 100; l++) {
+      const a = aiStyle(l - 1);
+      const b = aiStyle(l);
+      expect(b.pace).toBeGreaterThanOrEqual(a.pace);
+      expect(b.inside).toBeGreaterThanOrEqual(a.inside);
+      expect(b.steerRate).toBeGreaterThanOrEqual(a.steerRate);
+      expect(b.lift).toBeGreaterThanOrEqual(a.lift);
+      expect(b.wobble).toBeLessThanOrEqual(a.wobble);
+      expect(b.band).toBeLessThanOrEqual(a.band);
+    }
+    // Catch-up only at low levels.
+    expect(aiStyle(60).band).toBe(0);
+  });
+
+  it('measured pace is monotonic in the AI level', () => {
+    const avg = (level: number): number => {
       let sum = 0;
       let n = 0;
-      for (const def of [TRACKS[0]!, TRACKS[3]!]) {
+      for (const def of [TRACKS[0]!, TRACKS[2]!]) {
         // A slow player so every rival finishes and the result reflects the AI's own pace.
-        const sim = runRace(def, d, 0.55);
+        const sim = runRace(def, level, 0.5);
         for (const rv of sim.rivals) {
-          expect(rv.finishTime, `${d} ${def.id}`).not.toBeNull();
+          expect(rv.finishTime, `level ${level} ${def.id}`).not.toBeNull();
           sum += rv.finishTime!;
           n++;
         }
       }
-      avg[d] = sum / n;
+      return sum / n;
+    };
+    const times = [0, 25, 50, 75, 100].map(avg);
+    for (let i = 1; i < times.length; i++) expect(times[i]!, `level step ${i}`).toBeLessThan(times[i - 1]!);
+  });
+
+  it('level 100 laps within a few percent of the optimal autopilot lap on every track', () => {
+    for (const def of TRACKS) {
+      const track = buildTrack(def);
+      const ap = new RaceSim(track);
+      for (let i = 0; i < 120 * 120 && !ap.finished; i++) ap.step(autopilot(ap));
+      const optimal = bestLap(ap.lap.laps)!;
+      const sim = runRace(def, 100, 0.5);
+      const ai = Math.min(...sim.rivals.map((r) => bestLap(r.lap.laps) ?? Infinity));
+      expect(Math.abs(ai / optimal - 1), def.id).toBeLessThan(0.06);
     }
-    expect(avg.easy!).toBeGreaterThan(avg.medium!);
-    expect(avg.medium!).toBeGreaterThan(avg.hard!);
   });
 
   it('AI rivals lap cleanly (no missed checkpoints)', () => {
-    const sim = runRace(TRACKS[1]!, 'hard', 0.6);
+    const sim = runRace(TRACKS[1]!, 90, 0.6);
     for (const rv of sim.rivals) expect(rv.lap.laps.every((l) => l.valid), rv.name).toBe(true);
   });
 
@@ -555,12 +581,83 @@ describe('sectors', () => {
     // The stored reference is impossibly fast, so every split of lap 1 is slower (red).
     for (const e of firstLap) expect(e.delta!).toBeGreaterThan(0);
 
-    const race = new RaceSim(track, null, CAR, { mode: 'race', difficulty: 'easy' });
+    const race = new RaceSim(track, null, CAR, { mode: 'race', aiLevel: 20 });
     for (let i = 0; i < 120 * 90 && !race.finished; i++) race.step(autopilot(race));
     const r = race.result();
     expect(r.splitLog.filter((e) => e.lap === 1).every((e) => e.delta === null)).toBe(true);
     const lap2 = r.splitLog.filter((e) => e.lap === 2);
     const [l1, l2] = [r.splits[0]!, r.splits[1]!];
     lap2.forEach((e) => expect(e.delta!).toBeCloseTo(l2[e.sector]! - l1[e.sector]!, 5));
+  });
+});
+
+describe('track types and drift', () => {
+  /** Forward speed after holding a hard turn at speed for 0.8 s (a full slide) with the type's scrub. */
+  const afterSlide = (scrub: number): number => {
+    const car = newCar(0, 0, 0);
+    car.vx = 400;
+    for (let i = 0; i < 96; i++) stepCar(car, { steer: 1, throttle: 1, brake: 0 }, SURFACES.asphalt, DT, CAR, scrub);
+    return localVelocity(car).fwd;
+  };
+
+  it('every track has a type, and the set covers circuit, rally, snow and oval', () => {
+    const types = new Set(TRACKS.map((t) => t.type));
+    expect([...types].sort()).toEqual(['circuit', 'oval', 'rally', 'snow']);
+  });
+
+  it('drifting costs speed on circuits and ovals (oval most), is neutral-ish on snow and keeps speed on rally', () => {
+    const v = Object.fromEntries((Object.keys(TRACK_TYPES) as (keyof typeof TRACK_TYPES)[]).map((k) => [k, afterSlide(TRACK_TYPES[k].scrub)]));
+    expect(v.oval!).toBeLessThan(v.circuit!);
+    expect(v.circuit!).toBeLessThan(v.snow!);
+    expect(v.snow!).toBeLessThan(v.rally!);
+  });
+
+  it('a banked drift pays a turbo only on rally tracks', () => {
+    expect(TRACK_TYPES.rally.turbo).toBeGreaterThan(0);
+    for (const k of ['circuit', 'oval', 'snow'] as const) expect(TRACK_TYPES[k].turbo).toBe(0);
+    const turboOn = (def: (typeof TRACKS)[number]): boolean => {
+      const sim = new RaceSim(buildTrack(def));
+      for (let i = 0; i < 120 * 60 && !sim.finished; i++) {
+        // Weave hard to force long slides.
+        const s = autopilot(sim);
+        for (const e of sim.step(Math.sign(s || 1))) if (e.type === 'driftBank' && e.boost) return true;
+      }
+      return false;
+    };
+    expect(turboOn(TRACKS.find((t) => t.type === 'rally')!)).toBe(true);
+    expect(turboOn(TRACKS.find((t) => t.type === 'circuit')!)).toBe(false);
+  });
+
+  it('AI rivals keep it tidy on circuits and ovals (no sliding at speed)', () => {
+    for (const def of TRACKS.filter((t) => TRACK_TYPES[t.type].noDrift)) {
+      const sim = new RaceSim(buildTrack(def), null, { ...CAR, maxSpeed: CAR.maxSpeed * 0.5 }, { mode: 'race', aiLevel: 80 });
+      let slideSteps = 0;
+      let steps = 0;
+      for (let i = 0; i < 120 * 40 && !sim.finished; i++) {
+        sim.step(autopilot(sim));
+        for (const r of sim.rivals) {
+          steps++;
+          if (r.car.slide > 0.5) slideSteps++;
+        }
+      }
+      expect(slideSteps / steps, def.id).toBeLessThan(0.02);
+    }
+  });
+
+  it('the AI-level bonus rewards beating higher levels and stays inside the leaderboard limits', () => {
+    const track = buildTrack(TRACKS[0]!);
+    const low = new RaceSim(track, null, CAR, { mode: 'race', aiLevel: 10 });
+    const high = new RaceSim(track, null, CAR, { mode: 'race', aiLevel: 90 });
+    low.position = 1;
+    high.position = 1;
+    expect(high.levelBonus(true)).toBeGreaterThan(low.levelBonus(true));
+    expect(high.levelBonus(true)).toBeLessThanOrEqual(300);
+    expect(high.levelBonus(false)).toBe(0);
+    const limits = getGame('mini-racer')!.limits!;
+    for (const def of TRACKS) {
+      const lap = (def.par / 1000) * 0.75;
+      const score = scoreFor(def.par, [lap, lap, lap].map((time) => ({ time, valid: true }))) + 300;
+      expect(score, def.id).toBeLessThanOrEqual(limits.scorePerSecond * (lap * 3 + 3) + 50);
+    }
   });
 });

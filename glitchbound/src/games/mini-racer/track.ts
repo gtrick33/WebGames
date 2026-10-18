@@ -27,6 +27,28 @@ export const SURFACES: Record<Surface, SurfaceProps> = {
 };
 
 export type ThemeId = 'bay' | 'frost' | 'canyon' | 'park' | 'candy';
+
+/** What kind of track it is: decides what drifting does. */
+export type TrackType = 'circuit' | 'rally' | 'snow' | 'oval';
+
+export interface TrackTypeRules {
+  name: string;
+  /** One line for the menu. */
+  hint: string;
+  /** Speed lost per second at full slide (units/s²). */
+  scrub: number;
+  /** Turbo paid for a banked drift chain (x the base payout); 0 = none. */
+  turbo: number;
+  /** AI drivers keep the car tidy (no sliding) on this type. */
+  noDrift: boolean;
+}
+
+export const TRACK_TYPES: Record<TrackType, TrackTypeRules> = {
+  circuit: { name: 'Circuit', hint: 'Grippy tarmac. Drifting costs speed; clean lines win.', scrub: 170, turbo: 0, noDrift: true },
+  oval: { name: 'Oval', hint: 'Flat out. Any slide scrubs a lot of speed; keep it smooth.', scrub: 240, turbo: 0, noDrift: true },
+  snow: { name: 'Snow', hint: 'Low grip and long slides. Drifting is neutral; control is everything.', scrub: 55, turbo: 0, noDrift: false },
+  rally: { name: 'Rally', hint: 'Loose dirt and gravel. Drift it: slides keep speed and pay a turbo.', scrub: 15, turbo: 1.25, noDrift: false },
+};
 export type ObstacleKind = 'tires' | 'rock' | 'crate' | 'cone';
 
 /**
@@ -42,6 +64,7 @@ export interface TrackDef {
   name: string;
   blurb: string;
   theme: ThemeId;
+  type: TrackType;
   /** Road width in world units (the car is about 34 long). */
   width: number;
   /** Closed centreline control points, driven in this order. */

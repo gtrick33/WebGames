@@ -8,8 +8,9 @@ export const TRACKS: TrackDef[] = [
   {
     id: 'sunny-bay',
     name: 'Sunny Bay',
-    blurb: 'Fast seaside sweepers with a dusty dune shortcut around the headland.',
+    blurb: 'Fast seaside sweepers on grippy tarmac, with a dusty dune shortcut around the headland.',
     theme: 'bay',
+    type: 'circuit',
     width: 156,
     offroad: 'sand',
     points: [
@@ -43,14 +44,15 @@ export const TRACKS: TrackDef[] = [
       { at: [500, 1260], off: 40, r: 15, kind: 'cone' },
     ],
     checkpoints: 8,
-    par: 12500,
+    par: 12900,
     seed: 11,
   },
   {
     id: 'frost-peak',
     name: 'Frost Peak',
-    blurb: 'Icy hairpins, slick bridges and a frozen-lake gamble. Feather the throttle.',
+    blurb: 'Packed snow and sheet ice nearly all the way round, plus a frozen-lake gamble.',
     theme: 'frost',
+    type: 'snow',
     width: 150,
     offroad: 'snow',
     points: [
@@ -73,7 +75,8 @@ export const TRACKS: TrackDef[] = [
     ],
     zones: [
       { from: [1500, 300], to: [1650, 900], surface: 'ice' },
-      { from: [1300, 1450], to: [1700, 1420], surface: 'ice' },
+      { from: [820, 1040], to: [1700, 1420], surface: 'ice' },
+      { from: [1000, 1960], to: [150, 720], surface: 'ice' },
     ],
     shortcut: { from: [1700, 1420], to: [1700, 1955], via: [[1760, 1600], [1760, 1780]], width: 100, surface: 'ice' },
     patches: [
@@ -89,14 +92,15 @@ export const TRACKS: TrackDef[] = [
       { at: [1000, 1960], off: -45, r: 14, kind: 'cone' },
     ],
     checkpoints: 10,
-    par: 17300,
+    par: 18900,
     seed: 23,
   },
   {
     id: 'canyon-run',
     name: 'Canyon Run',
-    blurb: 'A rally loop of dirt, mud and boulders, with a tight gap through the rocks.',
+    blurb: 'A rally loop of dirt, gravel, mud and boulders, with a tight gap through the rocks.',
     theme: 'canyon',
+    type: 'rally',
     width: 160,
     offroad: 'sand',
     points: [
@@ -118,6 +122,7 @@ export const TRACKS: TrackDef[] = [
     zones: [
       { from: [1300, 350], to: [2300, 600], surface: 'dirt' },
       { from: [700, 1580], to: [200, 850], surface: 'dirt' },
+      { from: [2620, 800], to: [2100, 1480], surface: 'gravel' },
     ],
     shortcut: { from: [2050, 1460], to: [1250, 1490], via: [[1800, 1560], [1500, 1580]], width: 88, surface: 'dirt' },
     patches: [
@@ -135,14 +140,15 @@ export const TRACKS: TrackDef[] = [
       { at: [200, 850], off: -62, r: 18, kind: 'rock' },
     ],
     checkpoints: 9,
-    par: 16300,
+    par: 15300,
     seed: 37,
   },
   {
     id: 'meadow-mile',
     name: 'Meadow Mile',
-    blurb: 'Parkland flowing bends on grippy tarmac, crunchy gravel and long boost strips.',
+    blurb: 'Flowing parkland bends on perfect tarmac, with long boost strips. Precision pays.',
     theme: 'park',
+    type: 'circuit',
     width: 150,
     offroad: 'grass',
     points: [
@@ -160,15 +166,10 @@ export const TRACKS: TrackDef[] = [
       [400, 1550],
       [200, 1000],
     ],
-    zones: [
-      { from: [2100, 250], to: [2450, 950], surface: 'gravel' },
-      { from: [1300, 1400], to: [400, 1550], surface: 'gravel' },
-    ],
     patches: [
       { at: [1200, 270], off: 0, len: 150, wide: 40, surface: 'boost' },
       { at: [1800, 990], off: 0, len: 150, wide: 40, surface: 'boost' },
       { at: [230, 1200], off: 0, len: 150, wide: 40, surface: 'boost' },
-      { at: [1600, 880], off: -30, len: 120, wide: 70, surface: 'mud' },
     ],
     obstacles: [
       { at: [2500, 500], off: 60, r: 18, kind: 'tires' },
@@ -176,14 +177,15 @@ export const TRACKS: TrackDef[] = [
       { at: [900, 1650], off: -55, r: 18, kind: 'crate' },
     ],
     checkpoints: 9,
-    par: 15800,
+    par: 14200,
     seed: 41,
   },
   {
     id: 'sugar-rush',
     name: 'Sugar Rush',
-    blurb: 'A sweet-shop circuit: glassy icing, sprinkle gravel and a sticky toffee hairpin.',
+    blurb: 'A sweet-shop rally: sprinkle gravel, cocoa dirt and a sticky toffee hairpin.',
     theme: 'candy',
+    type: 'rally',
     width: 146,
     offroad: 'grass',
     points: [
@@ -203,7 +205,7 @@ export const TRACKS: TrackDef[] = [
       [300, 700],
     ],
     zones: [
-      { from: [1200, 300], to: [1650, 900], surface: 'ice' },
+      { from: [1200, 300], to: [1650, 900], surface: 'gravel' },
       { from: [1700, 1300], to: [1900, 1900], surface: 'gravel' },
       { from: [500, 1800], to: [250, 1200], surface: 'dirt' },
     ],
@@ -218,14 +220,15 @@ export const TRACKS: TrackDef[] = [
       { at: [300, 700], off: -50, r: 16, kind: 'crate' },
     ],
     checkpoints: 10,
-    par: 17200,
+    par: 16800,
     seed: 53,
   },
   {
     id: 'dune-dash',
     name: 'Dune Dash',
-    blurb: 'Flat-out along the shore: deep sand stretches, washboard dirt and boost strips.',
+    blurb: 'Rally along the shore: deep sand stretches, washboard dirt and boost strips.',
     theme: 'bay',
+    type: 'rally',
     width: 160,
     offroad: 'sand',
     points: [
@@ -256,7 +259,33 @@ export const TRACKS: TrackDef[] = [
       { at: [900, 1150], off: -50, r: 16, kind: 'cone' },
     ],
     checkpoints: 8,
-    par: 15800,
+    par: 15500,
     seed: 67,
+  },
+  {
+    id: 'speed-bowl',
+    name: 'Speed Bowl',
+    blurb: 'A flat-out oval. Two long straights, two huge bends: slides cost dearly here.',
+    theme: 'park',
+    type: 'oval',
+    width: 176,
+    offroad: 'grass',
+    points: [
+      [700, 400],
+      [1500, 380],
+      [2300, 400],
+      [2780, 900],
+      [2300, 1400],
+      [1500, 1420],
+      [700, 1400],
+      [220, 900],
+    ],
+    patches: [
+      { at: [1500, 380], off: 0, len: 170, wide: 42, surface: 'boost' },
+      { at: [1500, 1420], off: 0, len: 170, wide: 42, surface: 'boost' },
+    ],
+    checkpoints: 8,
+    par: 13200,
+    seed: 79,
   },
 ];

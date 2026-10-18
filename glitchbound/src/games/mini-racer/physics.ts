@@ -87,9 +87,9 @@ export function speedOf(car: CarState): number {
 /**
  * Advances the car by dt seconds. Steering turns the body; grip then pulls the velocity in line,
  * and what's left is drift. There is no drift button: holding a hard turn at speed lets the tail
- * step out (`slide`), which rotates the car faster and scrubs a little speed, like a toy RC car.
+ * step out (`slide`), which rotates the car faster and scrubs speed (`scrub`, set by the track type).
  */
-export function stepCar(car: CarState, input: Input, surf: SurfaceProps, dt: number, spec: CarSpec = CAR): void {
+export function stepCar(car: CarState, input: Input, surf: SurfaceProps, dt: number, spec: CarSpec = CAR, scrub = 60): void {
   const fwd0 = localVelocity(car).fwd;
   const top = spec.maxSpeed * surf.speed * (car.boost > 0 ? BOOST_SPEED : 1);
 
@@ -124,7 +124,8 @@ export function stepCar(car: CarState, input: Input, surf: SurfaceProps, dt: num
   // Rolling resistance (stronger when coasting), surface drag, and a little scrub while sliding.
   const roll = (input.throttle > 0 ? 0.12 : 0.55) + surf.drag;
   fwd -= fwd * roll * dt;
-  fwd -= Math.sign(fwd) * 60 * sl * dt;
+  // How much a slide costs depends on the track type (see TRACK_TYPES): cheap on rally, dear on circuits.
+  fwd -= Math.sign(fwd) * scrub * sl * dt;
 
   // Sliding converts a little sideways speed back into forward speed: drifts keep their momentum.
   const grip = (spec.grip + (spec.driftGrip - spec.grip) * sl * 0.9) * surf.grip;

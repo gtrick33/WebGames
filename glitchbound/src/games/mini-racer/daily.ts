@@ -1,5 +1,5 @@
 import { autopilot, RaceSim } from './sim';
-import { buildTrack, rng, validateTrack, type Surface, type ThemeId, type TrackDef } from './track';
+import { buildTrack, rng, validateTrack, type Surface, type ThemeId, type TrackDef, type TrackType } from './track';
 
 /**
  * The daily track: a fresh circuit generated from the date, the same for everyone on that day.
@@ -23,10 +23,10 @@ export function todayKey(now: Date = new Date()): string {
   return `${now.getFullYear()}-${m}-${d}`;
 }
 
-const THEMES: { theme: ThemeId; offroad: Surface; zone: Surface; names: string[] }[] = [
-  { theme: 'bay', offroad: 'sand', zone: 'dirt', names: ['Coral Coast', 'Lagoon Loop', 'Palm Parade', 'Seashell Sprint'] },
-  { theme: 'frost', offroad: 'snow', zone: 'ice', names: ['Glacier Glide', 'Sleet Street', 'Polar Pretzel', 'Igloo Ring'] },
-  { theme: 'canyon', offroad: 'sand', zone: 'dirt', names: ['Mesa Rush', 'Dusty Twist', 'Cactus Corner', 'Red Rock Ring'] },
+const THEMES: { theme: ThemeId; type: TrackType; offroad: Surface; names: string[] }[] = [
+  { theme: 'bay', type: 'circuit', offroad: 'sand', names: ['Coral Coast', 'Lagoon Loop', 'Palm Parade', 'Seashell Sprint'] },
+  { theme: 'frost', type: 'snow', offroad: 'snow', names: ['Glacier Glide', 'Sleet Street', 'Polar Pretzel', 'Igloo Ring'] },
+  { theme: 'canyon', type: 'rally', offroad: 'sand', names: ['Mesa Rush', 'Dusty Twist', 'Cactus Corner', 'Red Rock Ring'] },
 ];
 
 function attempt(day: string, seed: number): TrackDef {
@@ -52,10 +52,20 @@ function attempt(day: string, seed: number): TrackDef {
     name: style.names[Math.floor(r() * style.names.length)]!,
     blurb: 'A brand-new circuit every day. Same track for everyone until midnight.',
     theme: style.theme,
+    type: style.type,
     width: 150 + Math.floor(r() * 3) * 6,
     offroad: style.offroad,
     points,
-    zones: [{ from: zoneStart, to: zoneStart + 0.1 + r() * 0.08, surface: style.zone }],
+    // The track type shapes the surfaces: tarmac circuits, long icy stretches on snow, dirt and gravel on rally.
+    zones:
+      style.type === 'circuit'
+        ? []
+        : style.type === 'snow'
+          ? [{ from: zoneStart, to: zoneStart + 0.3 + r() * 0.1, surface: 'ice' }]
+          : [
+              { from: zoneStart, to: zoneStart + 0.15 + r() * 0.08, surface: 'dirt' },
+              { from: (zoneStart + 0.45) % 1, to: (zoneStart + 0.57) % 1, surface: 'gravel' },
+            ],
     patches: [
       { at: 0.08 + z1 * 0.2, off: 0, len: 70, wide: 60, surface: 'boost' },
       { at: 0.55 + r() * 0.3, off: (r() - 0.5) * 50, len: 70, wide: 60, surface: 'boost' },

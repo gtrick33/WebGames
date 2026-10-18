@@ -9,7 +9,7 @@ chunk when the player presses Play, and everything is released on unmount (rAF, 
 | --- | --- | --- |
 | `geometry.ts` | Catmull-Rom splines, resampling, nearest point, segment crossing | yes |
 | `track.ts` | Track model, surfaces, `buildTrack`, `groundAt`, `validateTrack`, PRNG | yes |
-| `tracks.ts` | The six handmade tracks (data) | yes |
+| `tracks.ts` | The seven handmade tracks (data), each with a type | yes |
 | `cars.ts` | Car collection: looks, small handling trade-offs, unlocks, coin rewards | yes |
 | `physics.ts` | Arcade car model (yaw, slip/grip, steering-driven slide, boost, loose-ground tyres), collisions | yes |
 | `laps.ts` | Lap timing and checkpoint validation | yes |
@@ -46,11 +46,18 @@ Tests: `tests/mini-racer.test.ts`.
   validation still applies to anything that gets past.
 - **Solid scenery**: every prop (trees, umbrellas, rocks...) and obstacle is a circle collider (`decorRadius`). Props are placed
   outside the walls. Walls, props and obstacles are bucketed in a 160-unit grid, so each car checks one cell per step.
+- **Track types** (`TRACK_TYPES` in `track.ts`) decide what drifting does. The slide scrub (speed lost per second at full slide) is
+  circuit 170, oval 240, snow 55 and rally 15, and only rally pays a turbo for a banked drift chain. Measured on one layout with the
+  same 0.6 s weave at top speed: oval -17 km/h, circuit -10, snow 0, rally +3. Tracks: Sunny Bay and Meadow Mile are circuits,
+  Frost Peak is snow (mostly ice), Canyon Run, Sugar Rush and Dune Dash are rally, Speed Bowl is the oval; daily tracks get a type
+  from their theme (bay = circuit, frost = snow, canyon = rally). AI rivals never slide on circuits and ovals: they steer short of
+  the slide threshold and brake into tight bends instead.
+- **AI level** 0-100 (`aiStyle`): pace (0.84 at 0, 0.96 at 50, 1.01 at 90, 1.045 at 100 of the starter car), line (inside use),
+  steering wobble, steering speed, braking skill (`lift`) and, at 100 only, 4% more grip all rise smoothly. Catch-up applies only
+  below level 40 (up to +4% pace when far behind). Level 100's best lap lands within about 5% of the optimal autopilot lap (tested).
+  Beating rivals adds level x (rivals behind you) race points, at most 300, only for a counted race.
 - **Modes**: Time Trial (alone, with your ghost; sectors vs your best-ever lap) and Race (3 AI rivals on a staggered grid, you start
-  at the back; sectors vs your previous lap). AI rivals use `drive()` with a difficulty style: pace (top speed and accel x0.93/0.97/1.0
-  of the starter car), how much of the inside line they use, steering wobble and steering speed. Mild catch-up only: plus or minus 3% pace
-  when more than 700 units from the player. Cars bump as equal-mass circles. Position = finished first by time, then by distance driven.
-  Measured: Hard about 5-8% off gold, Medium about 10-13%, Easy about 15-20% (tests keep Easy > Medium > Hard).
+  at the back; sectors vs your previous lap). AI rivals use `drive()` with the style for the chosen AI level (see above). Cars bump as equal-mass circles. Position = finished first by time, then by distance driven.
 - **Sectors**: 3 per lap, split at checkpoint gates (`sectorGates`). A split = lap time at the line; delta vs the reference's split
   at the same line (green faster, red slower). The best lap's splits are saved with your bests (`bests[track].splits`) as the Time
   Trial reference. Laps that missed a checkpoint get no splits.

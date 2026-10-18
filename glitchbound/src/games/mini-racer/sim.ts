@@ -4,7 +4,7 @@ import { advanceLaps, bestLap, newLapState, type LapEvent, type LapState } from 
 import { CARS, LOOSE, specFor, type CarDef } from './cars';
 import { CAR, CAR_RADIUS, collideBounds, collideCircle, collideSegment, localVelocity, newCar, onLoose, speedOf, stepCar, type CarSpec, type CarState } from './physics';
 import { SECTORS, SectorTimer, type SplitEvent, type Splits } from './sectors';
-import { cellAt, groundAt, SURFACES, WALL_HALF, type Ground, type Track } from './track';
+import { cellAt, groundAt, SURFACES, TRACK_TYPES, WALL_HALF, type Ground, type Track, type TrackTypeRules } from './track';
 
 /**
  * One race: the player's car (and, in a race, AI rivals) on a track, with timing, sectors, drift
@@ -20,7 +20,6 @@ export const COUNTDOWN = 2.1;
 export const DT = 1 / 120;
 
 export type RaceMode = 'trial' | 'race';
-export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export interface DriverStyle {
   /** Top speed / acceleration multiplier vs the car's own spec. */
@@ -31,18 +30,90 @@ export interface DriverStyle {
   wobble: number;
   /** How quickly the driver turns the wheel (1/s). */
   steerRate: number;
+  /** 0..1: how well the driver lifts off before a bend it can't take flat (the AI's "braking"). */
+  lift: number;
+  /** Extra grip (1 = the car's own). */
+  grip: number;
+  /** Mild catch-up strength (0 = none): only at low AI levels. */
+  band: number;
 }
 
-/** The player's autopilot line (tests, gold times) and the three AI difficulties. */
-export const AUTOPILOT: DriverStyle = { pace: 1, inside: 0.3, wobble: 0, steerRate: 60 };
-export const DIFFICULTY: Record<Difficulty, DriverStyle & { name: string }> = {
-  easy: { name: 'Easy', pace: 0.93, inside: 0.15, wobble: 0.16, steerRate: 10 },
-  medium: { name: 'Medium', pace: 0.97, inside: 0.25, wobble: 0.07, steerRate: 16 },
-  hard: { name: 'Hard', pace: 1, inside: 0.3, wobble: 0, steerRate: 30 },
-};
-/** Mild catch-up: AI more than this far behind/ahead of the player gets this much more/less pace. */
+/** The player's autopilot line (tests, gold times): auto gas like the player, no lifting. */
+export const AUTOPILOT: DriverStyle = { pace: 1, inside: 0.3, wobble: 0, steerRate: 60, lift: 0, grip: 1, band: 0 };
+
+/** Presets shown as quick taps next to the AI level slider. */
+export const AI_PRESETS = [
+  { level: 20, name: 'Rookie' },
+  { level: 50, name: 'Racer' },
+  { level: 80, name: 'Pro' },
+  { level: 100, name: 'Legend' },
+];
+export const DEFAULT_AI_LEVEL = 50;
+
+/** Piecewise-linear lookup over (level, value) knots. */
+function knots(level: number, pts: [number, number][]): number {
+  const l = Math.max(0, Math.min(100, level));
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, y1] = pts[i]!;
+    const [x0, y0] = pts[i - 1]!;
+    if (l <= x1) return y0 + ((y1 - y0) * (l - x0)) / (x1 - x0);
+  }
+  return pts[pts.length - 1]![1];
+}
+
+/**
+ * The AI driver for a level from 0 to 100 (like the F1 games' AI slider). Every quality rises smoothly:
+ * 0 is slow and wobbly, ~50 is a decent player, 90+ is very fast, and 100 drives a near-perfect line
+ * with early lifts, crisp steering and a little extra pace and grip, so very few players can match it.
+ */
+export function aiStyle(level: number): DriverStyle {
+  return {
+    pace: knots(level, [
+      [0, 0.84],
+      [50, 0.96],
+      [90, 1.01],
+      [100, 1.045],
+    ]),
+    inside: knots(level, [
+      [0, 0.06],
+      [50, 0.22],
+      [90, 0.3],
+      [100, 0.32],
+    ]),
+    wobble: knots(level, [
+      [0, 0.34],
+      [50, 0.08],
+      [90, 0.01],
+      [100, 0],
+    ]),
+    steerRate: knots(level, [
+      [0, 5],
+      [50, 15],
+      [90, 36],
+      [100, 60],
+    ]),
+    lift: knots(level, [
+      [0, 0],
+      [40, 0.2],
+      [90, 0.85],
+      [100, 1],
+    ]),
+    grip: knots(level, [
+      [0, 1],
+      [90, 1],
+      [100, 1.04],
+    ]),
+    // Only weak AI gets a little help when far behind; no slowing down when ahead.
+    band: knots(level, [
+      [0, 0.04],
+      [40, 0],
+      [100, 0],
+    ]),
+  };
+}
+
+/** Mild catch-up distance: weak AI more than this far behind the player gets `band` more pace. */
 const BAND_DIST = 700;
-const BAND = 0.03;
 
 export const RIVAL_NAMES = ['Rosa Rally', 'Turbo Tam', 'Mo Mudflap', 'Kiki Kerb', 'Dash Delgado', 'Pip Junior'];
 
@@ -86,12 +157,14 @@ export class Racer {
   /** Race time when the car finished its last lap, or null. */
   finishTime: number | null = null;
   steer = 0;
+  throttle = 1;
+  brake = 0;
   wrongWay = 0;
   lastS = 0;
   stuckTime = 0;
   offTime = 0;
   onBoostPad = false;
-  /** Pace adjustment from the mild catch-up (-1, 0, 1). */
+  /** Pace adjustment from the mild catch-up (1 = boosted, 0 = normal). */
   band = 0;
   readonly phase: number;
 
@@ -100,8 +173,16 @@ export class Racer {
     this.look = look;
     this.style = style;
     const pace = style?.pace ?? 1;
-    const scaled = (m: number): CarSpec => ({ ...spec, maxSpeed: spec.maxSpeed * pace * m, accel: spec.accel * Math.sqrt(pace) * m });
-    this.specs = { base: scaled(1), fast: scaled(1 + BAND), slow: scaled(1 - BAND) };
+    const grip = style?.grip ?? 1;
+    const scaled = (m: number): CarSpec => ({
+      ...spec,
+      maxSpeed: spec.maxSpeed * pace * m,
+      accel: spec.accel * Math.sqrt(pace) * m,
+      grip: spec.grip * grip,
+      driftGrip: spec.driftGrip * grip,
+    });
+    const band = style?.band ?? 0;
+    this.specs = { base: scaled(1), fast: scaled(1 + band), slow: scaled(1) };
     this.spec = this.specs.base;
     this.car = newCar(x, y, a);
     this.prev = { x, y, a };
@@ -140,6 +221,10 @@ export interface Result {
   score: number;
   /** Finishing position (1-based) in a race against AI; null in Time Trial. */
   position: number | null;
+  /** AI level raced (0-100); null in Time Trial. */
+  aiLevel: number | null;
+  /** Score bonus for finishing ahead of AI rivals (included in `score`). */
+  levelBonus: number;
   standings: Standing[];
   /** Cumulative splits of each valid lap, and of the best lap. */
   splits: Splits[];
@@ -157,7 +242,8 @@ export interface SplitLogEntry {
 
 export interface RaceOptions {
   mode?: RaceMode;
-  difficulty?: Difficulty;
+  /** AI level 0-100 (races only). */
+  aiLevel?: number;
   /** Number of AI rivals in a race (default 3). */
   rivals?: number;
   /** The player's car id (rivals get other cars). */
@@ -169,7 +255,7 @@ export interface RaceOptions {
 export class RaceSim {
   readonly track: Track;
   readonly mode: RaceMode;
-  readonly difficulty: Difficulty;
+  readonly aiLevel: number;
   readonly racers: Racer[];
   /** Race clock in seconds; negative during the countdown. */
   time = -COUNTDOWN;
@@ -192,7 +278,7 @@ export class RaceSim {
   constructor(track: Track, ghost: Ghost | null = null, spec: CarSpec = CAR, opts: RaceOptions = {}) {
     this.track = track;
     this.mode = opts.mode ?? 'trial';
-    this.difficulty = opts.difficulty ?? 'medium';
+    this.aiLevel = Math.max(0, Math.min(100, Math.round(opts.aiLevel ?? DEFAULT_AI_LEVEL)));
     this.ghost = this.mode === 'trial' ? ghost : null;
     this.bestSplitsRef = opts.bestSplits ?? null;
     this.sectors = new SectorTimer(track.checkpoints.length);
@@ -203,7 +289,7 @@ export class RaceSim {
     } else {
       // A 2-wide grid behind the line; the player starts at the back.
       const rivals = opts.rivals ?? 3;
-      const style = DIFFICULTY[this.difficulty];
+      const style = aiStyle(this.aiLevel);
       const looks = CARS.filter((c) => c.id !== playerLook.id && c.unlock.type !== 'golds');
       const slots = Array.from({ length: rivals + 1 }, (_, i) => gridSlot(track, i));
       const me = slots[rivals]!;
@@ -215,6 +301,11 @@ export class RaceSim {
       }
     }
     this.updateOrder();
+  }
+
+  /** What drifting does on this track (its type). */
+  get rules(): TrackTypeRules {
+    return TRACK_TYPES[this.track.def.type];
   }
 
   // --- Player shortcuts (the HUD, the engine and most tests talk about the player's car). ---
@@ -270,7 +361,7 @@ export class RaceSim {
       // Everyone coasts to a stop behind the line.
       for (const r of this.racers) {
         r.prev = { x: r.car.x, y: r.car.y, a: r.car.a };
-        stepCar(r.car, { steer: 0, throttle: 0, brake: 0.4 }, SURFACES[r.ground.surface], DT, r.spec);
+        stepCar(r.car, { steer: 0, throttle: 0, brake: 0.4 }, SURFACES[r.ground.surface], DT, r.spec, this.rules.scrub);
         this.collideWorld(r);
         r.ground = groundAt(this.track, r.car, r.ground.i);
       }
@@ -291,11 +382,13 @@ export class RaceSim {
       if (counting) continue;
       if (r.style) {
         const d = r.progress(L) - playerProgress;
-        r.band = d < -BAND_DIST ? 1 : d > BAND_DIST ? -1 : 0;
-        const target = drive(this.track, r, r.style, this.racers, this.time);
-        r.steer += (target - r.steer) * Math.min(1, r.style.steerRate * DT);
+        r.band = d < -BAND_DIST ? 1 : 0;
+        const ctl = drive(this.track, r, r.style, this.racers, this.time);
+        r.steer += (ctl.steer - r.steer) * Math.min(1, r.style.steerRate * DT);
+        r.throttle = ctl.throttle;
+        r.brake = ctl.brake;
       } else r.steer = steer;
-      stepCar(r.car, { steer: r.steer, throttle: 1, brake: 0 }, this.surfaceFor(r), DT, r.stepSpec);
+      stepCar(r.car, { steer: r.steer, throttle: r.style ? r.throttle : 1, brake: r.style ? r.brake : 0 }, this.surfaceFor(r), DT, r.stepSpec, this.rules.scrub);
       const impact = this.collideWorld(r);
       if (r === this.player && impact > 70) this.onPlayerBump(impact, events);
     }
@@ -483,9 +576,10 @@ export class RaceSim {
     if (d.chain <= 0) return;
     const points = Math.round(d.chain);
     d.total += points;
-    // A good slide pays out a mini-turbo.
-    const boost = d.chainTime > 0.7 && !this.finished;
-    if (boost) this.car.boost = Math.max(this.car.boost, Math.min(1.4, 0.35 + d.chainTime * 0.3));
+    // A good slide pays out a mini-turbo, but only where the track type rewards drifting (rally).
+    const turbo = this.rules.turbo;
+    const boost = turbo > 0 && d.chainTime > 0.7 && !this.finished;
+    if (boost) this.car.boost = Math.max(this.car.boost, Math.min(1.6, (0.35 + d.chainTime * 0.3) * turbo));
     events.push({ type: 'driftBank', points, boost });
     d.chain = 0;
     d.chainTime = 0;
@@ -506,6 +600,16 @@ export class RaceSim {
     else if (ds > 0 || v < 20) r.wrongWay = Math.max(0, r.wrongWay - DT * 3);
   }
 
+  /**
+   * Race points bonus for beating AI rivals: (level / 100) x 100 points per rival finishing behind you,
+   * so at most 300 on top of ~3000. Only for a counted race (all laps valid).
+   */
+  levelBonus(counted: boolean): number {
+    if (this.mode !== 'race' || !counted) return 0;
+    const beaten = this.racers.length - this.position;
+    return Math.round(this.aiLevel * beaten);
+  }
+
   result(): Result {
     const laps = this.lap.laps;
     const best = bestLap(laps);
@@ -522,8 +626,10 @@ export class RaceSim {
       best,
       drift: this.drift.total,
       cleanLaps,
-      score: scoreFor(this.track.def.par, laps),
+      score: scoreFor(this.track.def.par, laps) + this.levelBonus(raceTime !== null),
       position: this.mode === 'race' ? this.position : null,
+      aiLevel: this.mode === 'race' ? this.aiLevel : null,
+      levelBonus: this.levelBonus(raceTime !== null),
       standings: this.standings.length ? this.standings : this.order.map((r) => ({ name: r.name, player: r === this.player, time: r.finishTime, look: r.look })),
       splits,
       bestSplits,
@@ -598,7 +704,7 @@ export function scoreFor(parMs: number, laps: { time: number; valid: boolean }[]
  * A driver that follows the racing line ahead, dodging obstacles and other cars. AI rivals use it
  * with their difficulty's style; the player's autopilot (tests, gold times) uses AUTOPILOT.
  */
-export function drive(track: Track, r: Racer, style: DriverStyle, others: Racer[] = [], time = 0, lookahead = 150): number {
+export function drive(track: Track, r: Racer, style: DriverStyle, others: Racer[] = [], time = 0, lookahead = 150): { steer: number; throttle: number; brake: number } {
   const car = r.car;
   const g = r.ground;
   const ahead = Math.min(320, lookahead + speedOf(car) * 0.25);
@@ -638,10 +744,34 @@ export function drive(track: Track, r: Racer, style: DriverStyle, others: Racer[
   while (want > Math.PI) want -= Math.PI * 2;
   while (want < -Math.PI) want += Math.PI * 2;
   const wobble = style.wobble * Math.sin(time * 1.7 + r.phase) * Math.sin(time * 0.6 + r.phase * 2);
-  return Math.max(-1, Math.min(1, want * 2.4 + wobble));
+  let steer = Math.max(-1, Math.min(1, want * 2.4 + wobble));
+  let throttle = 1;
+  let brake = 0;
+  const fwd = localVelocity(car).fwd;
+  const fast = fwd > r.spec.maxSpeed * 0.42;
+  // Where sliding is punished (circuits, ovals), AI drivers keep the car tidy: steer short of the
+  // slide threshold and lift off for the rest, instead of drifting.
+  if (r.style && TRACK_TYPES[track.def.type].noDrift && fast && Math.abs(steer) > 0.54) {
+    // Only a tight bend needs a lift; a skilled driver lifts just enough, a weak one too much.
+    // Instead of sliding, brake into a bend that's too tight to take flat: skilled drivers brake
+    // precisely, weak ones lift late and run wide.
+    const over = Math.abs(steer) - 0.54;
+    steer = Math.sign(steer) * 0.54;
+    if (over > 0.12) {
+      throttle = 0;
+      brake = Math.min(1, (over - 0.12) * (0.6 + 2.4 * style.lift));
+    }
+  }
+  // Skilled drivers also ease off a little before a very sharp bend (their "braking").
+  if (r.style && style.lift > 0 && fast) {
+    const far = pointAt(track.path, g.s + ahead + 160).t;
+    const sharp = Math.abs(Math.atan2(t.x * far.y - t.y * far.x, t.x * far.x + t.y * far.y));
+    if (sharp > 1.1 && fwd > r.spec.maxSpeed * 0.9) throttle = Math.min(throttle, 1 - style.lift * 0.4);
+  }
+  return { steer, throttle, brake };
 }
 
 /** The player's autopilot: used by tests (it must complete valid laps on every track) and for daily gold times. */
 export function autopilot(sim: RaceSim, lookahead = 150): number {
-  return drive(sim.track, sim.player, AUTOPILOT, sim.racers, sim.time, lookahead);
+  return drive(sim.track, sim.player, AUTOPILOT, sim.racers, sim.time, lookahead).steer;
 }

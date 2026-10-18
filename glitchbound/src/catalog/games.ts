@@ -182,8 +182,8 @@ export const GAMES: GameEntry[] = [
     title: 'Mini Racer',
     tagline: 'Hold left or right to steer a toy car through drifty little races. Gas is automatic.',
     description:
-      'Hold the left or right side of the screen to throw a chunky toy car around six handmade tracks of tarmac, gravel, dirt, sand and ice, plus a new circuit every day. ' +
-      'Race three AI rivals on Easy, Medium or Hard, or chase your ghost and sector times in Time Trial. Earn coins and collect ten cars.',
+      'Hold the left or right side of the screen to throw a chunky toy car around seven handmade tracks, plus a new one every day. ' +
+      'Circuits punish slides, rally tracks reward them, snow tests your control and the oval is flat out. Race three AI rivals at any level from 0 to 100, or chase your ghost and sector times in Time Trial.',
     categories: ['racing', 'arcade'],
     tags: ['car', 'driving', 'drift', 'time trial', 'top-down', 'ghost', 'daily', 'laps', 'kart', 'one-touch', 'cars'],
     released: '2026-10-18',
@@ -207,13 +207,15 @@ export const GAMES: GameEntry[] = [
       { key: 'drift', label: 'Most drift points in a race' },
       { key: 'cleanLaps', label: 'Most clean laps in a race' },
       { key: 'position', label: 'Best finish against AI', lowerIsBetter: true },
+      { key: 'aiLevel', label: 'Highest AI level raced' },
     ],
     highlights: [
       'One-touch steering: hold left or right, gas is automatic',
-      'Six handmade tracks plus a new generated track every day',
+      'Seven handmade tracks (circuit, rally, snow and oval) plus a new generated track every day',
+      'Drifting depends on the track: it costs speed on circuits and ovals, pays a turbo on rally',
       'Tarmac, gravel, dirt, sand, ice, mud and boost strips, each with its own grip and speed',
       'Ten collectible cars with small, balanced handling differences',
-      'Race three AI rivals on Easy, Medium or Hard, or run a Time Trial against your ghost',
+      'Race three AI rivals at any level from 0 to 100 (100 is near-perfect), or run a Time Trial against your ghost',
       'Live sector splits, green or red against your best or previous lap',
       'Tyre walls and solid scenery: no cutting across the sand',
     ],

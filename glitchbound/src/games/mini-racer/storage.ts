@@ -1,6 +1,6 @@
 import { decodeGhost, encodeGhost, type Ghost } from './ghost';
 import { CARS, DEFAULT_CAR } from './cars';
-import type { Difficulty, RaceMode } from './sim';
+import { DEFAULT_AI_LEVEL, type RaceMode } from './sim';
 
 /** Local-only saves (bests, ghosts, settings). Every access is guarded: storage can be missing or full. */
 
@@ -16,6 +16,8 @@ export interface Bests {
   splits?: number[];
   /** Best finishing position against AI. */
   position?: number;
+  /** Highest AI level you have won a race against. */
+  wonLevel?: number;
 }
 
 export interface SaveData {
@@ -30,11 +32,12 @@ export interface SaveData {
   /** Days whose daily-track coin bonus was already paid. Only the latest few are kept. */
   dailyPaid: string[];
   mode: RaceMode;
-  difficulty: Difficulty;
+  /** AI level 0-100 for races. */
+  aiLevel: number;
 }
 
 function defaults(): SaveData {
-  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [], mode: 'trial', difficulty: 'medium' };
+  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [], mode: 'trial', aiLevel: DEFAULT_AI_LEVEL };
 }
 
 function store(): Storage | null {
@@ -57,7 +60,7 @@ export function loadSave(): SaveData {
       for (const [k, v] of Object.entries(o.bests as Record<string, unknown>)) {
         if (!v || typeof v !== 'object') continue;
         const b: Bests = {};
-        for (const f of ['lap', 'race', 'position'] as const) {
+        for (const f of ['lap', 'race', 'position', 'wonLevel'] as const) {
           const n = (v as Bests)[f];
           if (typeof n === 'number' && Number.isFinite(n) && n > 0) b[f] = n;
         }
@@ -74,7 +77,9 @@ export function loadSave(): SaveData {
     d.muted = o.muted === true;
     if (typeof o.track === 'string') d.track = o.track;
     if (o.mode === 'race') d.mode = 'race';
-    if (o.difficulty === 'easy' || o.difficulty === 'hard') d.difficulty = o.difficulty;
+    if (typeof o.aiLevel === 'number' && Number.isFinite(o.aiLevel)) d.aiLevel = Math.max(0, Math.min(100, Math.round(o.aiLevel)));
+    // Older saves stored a named difficulty.
+    else if (o.difficulty === 'easy' || o.difficulty === 'medium' || o.difficulty === 'hard') d.aiLevel = { easy: 25, medium: 50, hard: 75 }[o.difficulty];
     if (Array.isArray(o.dailyPaid)) d.dailyPaid = o.dailyPaid.filter((x): x is string => typeof x === 'string').slice(-7);
     return d;
   } catch {

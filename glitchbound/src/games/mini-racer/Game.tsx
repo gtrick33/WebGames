@@ -4,10 +4,10 @@ import { CARS, getCar, raceCoins, specFor, statBars, unlockText, type CarDef } f
 import { dailyTrack, todayKey } from './daily';
 import { Engine, type UiKey } from './engine';
 import { drawCarPreview, fmtTime, THEMES } from './render';
-import { DIFFICULTY, RACE_LAPS, type Difficulty, type RaceMode, type RaceSim, type Result } from './sim';
+import { AI_PRESETS, RACE_LAPS, type RaceMode, type RaceSim, type Result } from './sim';
 import { sectorTimes } from './sectors';
 import { loadGhost, loadSave, saveGhost, writeSave, type Bests, type SaveData } from './storage';
-import { buildTrack, medalTimes, type Surface, type Track, type TrackDef } from './track';
+import { buildTrack, medalTimes, TRACK_TYPES, type Surface, type Track, type TrackDef } from './track';
 import { TRACKS } from './tracks';
 import './Game.css';
 
@@ -69,7 +69,7 @@ function surfacesOf(def: TrackDef): Surface[] {
   return [...set];
 }
 
-export default function Game({ host, restartKey }: GameModuleProps) {
+export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Engine | null>(null);
@@ -116,7 +116,7 @@ export default function Game({ host, restartKey }: GameModuleProps) {
     const b = s.bests[def.id] ?? {};
     engine.race(trackFor(def), specFor(getCar(s.car)), loadGhost(def.id), b.lap ?? null, {
       mode: s.mode,
-      difficulty: s.difficulty,
+      aiLevel: s.aiLevel,
       playerCar: s.car,
       bestSplits: b.splits ?? null,
     });
@@ -145,6 +145,7 @@ export default function Game({ host, restartKey }: GameModuleProps) {
       const bs = result.bestSplits;
       if (bs && (!prev.splits || bs[bs.length - 1]! < prev.splits[prev.splits.length - 1]!)) next.splits = bs;
       if (result.position !== null && result.raceTime !== null && (!prev.position || result.position < prev.position)) next.position = result.position;
+      if (result.position === 1 && result.raceTime !== null && result.aiLevel !== null && (prev.wonLevel === undefined || result.aiLevel > prev.wonLevel)) next.wonLevel = result.aiLevel;
       if (result.raceTime !== null && (!prev.race || result.raceTime < prev.race)) {
         next.race = result.raceTime;
         newRecord = prev.race !== undefined;
@@ -172,6 +173,7 @@ export default function Game({ host, restartKey }: GameModuleProps) {
       if (result.best !== null) stats.lapMs = Math.round(result.best * 1000);
       if (result.raceTime !== null) stats.raceMs = Math.round(result.raceTime * 1000);
       if (result.position !== null) stats.position = result.position;
+      if (result.aiLevel !== null) stats.aiLevel = result.aiLevel;
       /**
        * The one place a round's end is reported. `isDaily` is true for rounds on today's generated
        * track; the arcade counts those as this game's own daily. `score` is the leaderboard value
@@ -254,6 +256,16 @@ export default function Game({ host, restartKey }: GameModuleProps) {
     if (restartKey !== firstRestart.current) handlers.current.startRace();
   }, [restartKey]);
 
+  // The arcade asks for a pause (left full screen with Escape, which the browser swallows, or
+  // scrolled away). A race pauses exactly like P/Esc; on any other screen the music fades out.
+  const firstPause = useRef(pauseKey);
+  useEffect(() => {
+    if (pauseKey === firstPause.current) return;
+    firstPause.current = pauseKey;
+    if (screenRef.current === 'race') handlers.current.pause();
+    else engineRef.current?.quiet();
+  }, [pauseKey]);
+
   const selectTrack = (id: string): void => {
     update((s) => ({ ...s, track: id }));
     engineRef.current?.attract(trackFor(defFor(id)));
@@ -330,6 +342,7 @@ export default function Game({ host, restartKey }: GameModuleProps) {
                   onClick={() => selectTrack(def.id)}
                 >
                   {isDaily && <span className="mr-badge">Daily · {today.slice(5).replace('-', '/')}</span>}
+                  <span className={`mr-type mr-type-${def.type}`}>{TRACK_TYPES[def.type].name}</span>
                   <span className="mr-track-name">{def.name}</span>
                   <span className="mr-track-best mono">{fmtTime(b.race ?? null)}</span>
                   {m && <span className={`mr-medal mr-medal-${m}`} title={`${MEDAL_LABEL[m]} medal`} />}
@@ -339,6 +352,9 @@ export default function Game({ host, restartKey }: GameModuleProps) {
           </div>
 
           <p className="mr-blurb">{selected.blurb}</p>
+          <p className="mr-typehint">
+            <span className={`mr-type mr-type-${selected.type}`}>{TRACK_TYPES[selected.type].name}</span> {TRACK_TYPES[selected.type].hint}
+          </p>
           <div className="mr-surfaces">
             {surfacesOf(selected).map((s) => (
               <span key={s} className={`mr-surface mr-surface-${s}`}>
@@ -356,13 +372,36 @@ export default function Game({ host, restartKey }: GameModuleProps) {
             ))}
           </div>
           {save.mode === 'race' && (
-            <div className="mr-diffs" role="radiogroup" aria-label="AI difficulty">
-              {(Object.keys(DIFFICULTY) as Difficulty[]).map((d) => (
-                <button key={d} role="radio" aria-checked={save.difficulty === d} className={`mr-diff${save.difficulty === d ? ' is-on' : ''}`} onClick={() => update((s) => ({ ...s, difficulty: d }))}>
-                  {DIFFICULTY[d].name}
-                </button>
-              ))}
-              {bests.position !== undefined && <span className="mr-note-soft mono">Best finish P{bests.position}</span>}
+            <div className="mr-ai">
+              <label className="mr-ai-row">
+                <span className="mr-label mono">AI level</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={save.aiLevel}
+                  onChange={(e) => {
+                    const v = Number(e.currentTarget.value);
+                    update((s) => ({ ...s, aiLevel: v }));
+                  }}
+                  aria-valuetext={`AI level ${save.aiLevel} of 100`}
+                />
+                <strong className="mono mr-ai-value">{save.aiLevel}</strong>
+              </label>
+              <div className="mr-diffs">
+                {AI_PRESETS.map((p) => (
+                  <button key={p.level} className={`mr-diff${save.aiLevel === p.level ? ' is-on' : ''}`} onClick={() => update((s) => ({ ...s, aiLevel: p.level }))}>
+                    {p.name} {p.level}
+                  </button>
+                ))}
+              </div>
+              {(bests.position !== undefined || bests.wonLevel !== undefined) && (
+                <span className="mr-note-soft mono">
+                  {bests.position !== undefined && `Best finish P${bests.position}`}
+                  {bests.wonLevel !== undefined && ` · won at AI ${bests.wonLevel}`}
+                </span>
+              )}
             </div>
           )}
 
@@ -497,7 +536,7 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch }: { finish: Finish;
     <div className="mr-sheet mr-result">
       <div className="mr-result-top">
         <span className="mr-kicker mono">
-          {track.name} · {result.mode === 'race' ? `Race vs AI` : 'Time Trial'}
+          {track.name} · {result.mode === 'race' ? `Race vs AI ${result.aiLevel}` : 'Time Trial'}
         </span>
         {newRecord && <span className="mr-record">New record!</span>}
       </div>
@@ -534,7 +573,9 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch }: { finish: Finish;
         </ol>
       )}
       <div className="mr-score mono">
-        <span>{result.score} race points</span>
+        <span>
+          {result.score} race points{result.levelBonus > 0 ? ` (+${result.levelBonus} AI bonus)` : ''}
+        </span>
         <span className="mr-coins">
           <i aria-hidden="true" />+{coins}
         </span>
@@ -548,7 +589,7 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch }: { finish: Finish;
           Again{touch ? '' : ' (R)'}
         </button>
         <button className="mr-btn" onClick={onMenu}>
-          Tracks
+          Menu
         </button>
       </div>
     </div>
