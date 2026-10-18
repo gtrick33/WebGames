@@ -649,6 +649,24 @@
   color: #fff;
   box-shadow: 0 7px 0 var(--pt-shadow);
 }
+.pt-stars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 18px 14px;
+}
+.pt-feature.is-unhinged {
+  background:
+    radial-gradient(circle at 12% 30%, rgb(255 255 255 / 0.18), transparent 40%),
+    linear-gradient(130deg, #e5383b, #8c1239 55%, #241032);
+}
+.pt-feature.is-unhinged .pt-feature-sticker {
+  background: #1d1238;
+  color: #fff;
+}
+img.pt-feature-art {
+  object-fit: cover;
+  animation: none;
+}
 .pt-feature-sticker {
   position: absolute;
   top: -12px;
@@ -1222,6 +1240,75 @@
 .pt-btn-skip {
   background: color-mix(in srgb, var(--pt-pink) 18%, var(--pt-card));
 }
+/* Charades: get ready + heads up */
+.pt-getready {
+  gap: 10px;
+}
+.pt-getready-n {
+  display: grid;
+  place-items: center;
+  width: 140px;
+  height: 140px;
+  border: 4px solid var(--pt-edge);
+  border-radius: 50%;
+  background: var(--pt-yellow);
+  color: #1d1238;
+  font: 900 76px/1 var(--font);
+  box-shadow: 0 6px 0 var(--pt-shadow);
+  animation: pt-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+.pt-heads {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: min(62vh, 520px);
+  border: 3px solid var(--pt-edge);
+  border-radius: 26px;
+  overflow: hidden;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--pt-yellow) 22%, var(--pt-card)), var(--pt-card));
+  box-shadow: 0 8px 0 var(--pt-shadow);
+  transition: background 0.2s ease;
+}
+.pt-heads.is-got {
+  background: var(--pt-mint);
+}
+.pt-heads.is-pass {
+  background: color-mix(in srgb, var(--pt-pink) 55%, var(--pt-card));
+}
+.pt-heads-zone {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 14px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: 800 15px/1 var(--font);
+  opacity: 0.55;
+}
+.pt-heads-zone.is-pass {
+  border-right: 2px dashed color-mix(in srgb, var(--pt-edge) 30%, transparent);
+}
+.pt-heads-word {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  margin: 0;
+  font-size: clamp(40px, 12vw, 76px);
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-align: center;
+  pointer-events: none;
+}
+.pt-heads.is-got .pt-heads-word,
+.pt-heads.is-pass .pt-heads-word {
+  color: #1d1238;
+  animation: pt-pop 0.3s ease;
+}
+
 .pt-score-line {
   text-align: center;
   font: 700 16px/1 var(--mono);

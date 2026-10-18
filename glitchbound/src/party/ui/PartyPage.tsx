@@ -189,7 +189,7 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
         <h1 className="pt-title">
           Party <span>Mode</span>
         </h1>
-        <p className="pt-sub">Friends over, or on a call? Seven games, no sign-up.</p>
+        <p className="pt-sub">Friends over, or on a call? Eight games, no sign-up.</p>
         <div className="pt-where" role="tablist" aria-label="How you play">
           <button role="tab" aria-selected={where === 'one'} className={where === 'one' ? 'is-on' : ''} onClick={() => setWhere('one')}>
             📱 Pass one phone
@@ -200,24 +200,41 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
         </div>
       </header>
 
-      <section className="pt-feature" aria-labelledby="pt-feature-title">
-        <span className="pt-feature-sticker">New</span>
-        <span className="pt-feature-art" aria-hidden="true">
-          🕵️
-        </span>
-        <div className="pt-feature-copy">
-          <h2 id="pt-feature-title">Impostor</h2>
-          <p>Everyone gets the secret word, except one. Say one word each, then vote out the faker.</p>
-          <div className="pt-row pt-feature-ctas">
-            <button className="pt-btn pt-btn-go" onClick={() => (where === 'one' ? pick('impostor') : openRoom())}>
-              {where === 'one' ? 'Play on this phone' : 'Open a room'}
-            </button>
-            <button className="pt-btn" onClick={() => (where === 'one' ? openRoom() : pick('impostor'))}>
-              {where === 'one' ? '🌐 Own phones' : '📱 One phone'}
-            </button>
+      <div className="pt-stars">
+        <section className="pt-feature" aria-labelledby="pt-feature-impostor">
+          <span className="pt-feature-sticker">New</span>
+          <span className="pt-feature-art" aria-hidden="true">
+            🕵️
+          </span>
+          <div className="pt-feature-copy">
+            <h2 id="pt-feature-impostor">Impostor</h2>
+            <p>Everyone gets the secret word, except one. Say one word each, then vote out the faker.</p>
+            <div className="pt-row pt-feature-ctas">
+              <button className="pt-btn pt-btn-go" onClick={() => (where === 'one' ? pick('impostor') : openRoom())}>
+                {where === 'one' ? 'Play on this phone' : 'Open a room'}
+              </button>
+              <button className="pt-btn" onClick={() => (where === 'one' ? openRoom() : pick('impostor'))}>
+                {where === 'one' ? '🌐 Own phones' : '📱 One phone'}
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+        {unhinged && (
+          <section className="pt-feature is-unhinged" aria-labelledby="pt-feature-unhinged">
+            <span className="pt-feature-sticker">18+</span>
+            <img className="pt-feature-art" src={unhinged.art.tile} alt="" width={88} height={88} style={{ background: unhinged.art.bg }} />
+            <div className="pt-feature-copy">
+              <h2 id="pt-feature-unhinged">Unhinged</h2>
+              <p>The card game for terrible people. Play the most horrible answer, win the round. 3–10 players.</p>
+              <div className="pt-row pt-feature-ctas">
+                <Link className="pt-btn pt-btn-go" href="/games/unhinged">
+                  Play on your phones
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
 
       {where === 'online' && (
         <>

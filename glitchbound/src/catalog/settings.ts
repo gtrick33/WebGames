@@ -122,12 +122,15 @@ export function settingsFor(cat: PublicCatalog, slug: string): GameSettings {
   return { ...DEFAULT_SETTINGS, ...cat.settings[slug] };
 }
 
-/** The games players see: text overrides applied, hidden games removed, pinned games first. */
+/**
+ * The games players see in the arcade: text overrides applied, hidden and party-only games removed,
+ * pinned games first. `includeHidden` keeps them all (game pages, admin views).
+ */
 export function applySettings(games: readonly GameEntry[], cat: PublicCatalog, includeHidden = false): GameEntry[] {
   const out: { g: GameEntry; pinned: boolean; i: number }[] = [];
   games.forEach((g, i) => {
     const s = settingsFor(cat, g.slug);
-    if (s.hidden && !includeHidden) return;
+    if ((s.hidden || g.partyOnly) && !includeHidden) return;
     const merged = s.title || s.tagline || s.description ? { ...g, title: s.title || g.title, tagline: s.tagline || g.tagline, description: s.description || g.description } : g;
     out.push({ g: merged, pinned: s.pinned, i });
   });

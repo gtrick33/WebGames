@@ -532,6 +532,7 @@ export const GAMES: GameEntry[] = [
       alt: 'The word UNHINGED in wobbly cartoon letters over a black prompt card and a fan of white answer cards on a red table',
       bg: '#e5383b',
     },
+    partyOnly: true,
     runtime: { kind: 'module' },
     aspect: 'portrait',
     controls: {

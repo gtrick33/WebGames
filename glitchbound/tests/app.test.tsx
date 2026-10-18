@@ -29,9 +29,11 @@ describe('homepage', () => {
     fireEvent.click(within(arcade).getByRole('button', { name: /Quick rounds/ }));
     expect(window.location.search).toBe('?mood=quick');
     expect(within(arcade).getByRole('link', { name: 'NEON RUSH' })).toBeTruthy();
-    expect(within(arcade).queryByRole('link', { name: 'Unhinged' })).toBeNull();
+    expect(within(arcade).queryByRole('link', { name: 'Letter Pinch' })).toBeNull();
     fireEvent.click(within(arcade).getByRole('button', { name: /Everything/ }));
-    expect(within(arcade).getByRole('link', { name: 'Unhinged' })).toBeTruthy();
+    expect(within(arcade).getByRole('link', { name: 'Letter Pinch' })).toBeTruthy();
+    // Unhinged lives in Party Mode, not the arcade.
+    expect(within(arcade).queryByRole('link', { name: 'Unhinged' })).toBeNull();
   });
 
   it('filters by category and keeps the filter in the URL', () => {

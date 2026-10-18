@@ -25,8 +25,15 @@ const dailyGames = GAMES.filter((g) => g.daily?.length);
 
 describe('admin game settings', () => {
   it('changes nothing without settings', () => {
-    expect(applySettings(GAMES, EMPTY_CATALOG)).toEqual(GAMES);
+    expect(applySettings(GAMES, EMPTY_CATALOG, true)).toEqual(GAMES);
     expect(settingsFor(EMPTY_CATALOG, GAMES[0]!.slug)).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('keeps party-only games out of the arcade, but not off their own pages', () => {
+    const party = GAMES.filter((g) => g.partyOnly).map((g) => g.slug);
+    expect(party).toContain('unhinged');
+    expect(applySettings(GAMES, EMPTY_CATALOG).map((g) => g.slug)).toEqual(GAMES.filter((g) => !g.partyOnly).map((g) => g.slug));
+    expect(applySettings(GAMES, EMPTY_CATALOG, true).map((g) => g.slug)).toEqual(expect.arrayContaining(party));
   });
 
   it('hides games from players (admins still get them), pins games first and applies text', () => {
