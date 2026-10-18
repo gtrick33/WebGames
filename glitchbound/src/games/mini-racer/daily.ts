@@ -73,23 +73,28 @@ function attempt(day: string, seed: number): TrackDef {
   };
 }
 
-/** Gold time for a generated track: the autopilot's best flying lap, a touch faster, rounded to 0.1 s. */
-function parFor(def: TrackDef): number {
+/**
+ * Gold time for a generated track: the autopilot's flying lap, a touch faster, rounded to 0.1 s. Returns
+ * null if the autopilot can't lap it cleanly at full (automatic) speed: a bend is too tight.
+ */
+function parFor(def: TrackDef): number | null {
   const sim = new RaceSim(buildTrack(def));
-  for (let i = 0; i < 120 * 90 && sim.lap.laps.length < 2; i++) sim.step(autopilot(sim));
-  const lap = sim.lap.laps[1] ?? sim.lap.laps[0];
-  const t = lap?.valid ? lap.time : sim.track.path.length / 330;
-  return Math.round(t * 0.985 * 10) * 100;
+  for (let i = 0; i < 120 * 90 && sim.lap.laps.length < 2; i++) {
+    for (const e of sim.step(autopilot(sim))) if (e.type === 'missed' || e.type === 'rescue') return null;
+  }
+  const lap = sim.lap.laps[1];
+  return lap?.valid ? Math.round(lap.time * 0.985 * 10) * 100 : null;
 }
 
 export function dailyTrack(day: string): TrackDef {
   const base = hashDay(`mini-racer-${day}`);
   for (let i = 0; i < 40; i++) {
     const def = attempt(day, (base + Math.imul(i, 0x9e3779b1)) >>> 0);
-    if (validateTrack(buildTrack(def)).length === 0) {
-      def.par = parFor(def);
-      return def;
-    }
+    if (validateTrack(buildTrack(def)).length > 0) continue;
+    const par = parFor(def);
+    if (par === null) continue;
+    def.par = par;
+    return def;
   }
   // Practically unreachable; a safe oval keeps the day playable.
   const def = attempt(day, base);
@@ -101,6 +106,6 @@ export function dailyTrack(day: string): TrackDef {
     [1200, 1450],
     [300, 1100],
   ];
-  def.par = parFor(def);
+  def.par = parFor(def) ?? Math.round((buildTrack(def).path.length / 330) * 10) * 100;
   return def;
 }

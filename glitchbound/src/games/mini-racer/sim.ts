@@ -1,4 +1,4 @@
-import { leftOf, pointAt } from './geometry';
+import { leftOf, nearest, pointAt } from './geometry';
 import { GhostRecorder, ghostPose, type Ghost, type Pose } from './ghost';
 import { advanceLaps, bestLap, newLapState, type LapEvent, type LapState } from './laps';
 import { LOOSE } from './cars';
@@ -9,6 +9,9 @@ import { groundAt, SURFACES, type Ground, type Track } from './track';
 
 /** Every round is a short 3-lap race against the clock (and your ghost). */
 export const RACE_LAPS = 3;
+/** Seconds crawling, or off the road, before the car is put back on track. */
+export const RESCUE_STUCK = 1.5;
+export const RESCUE_OFFROAD = 3;
 export const COUNTDOWN = 2.1;
 export const DT = 1 / 120;
 
@@ -20,7 +23,8 @@ export type SimEvent =
   | { type: 'driftLost'; points: number }
   | { type: 'boostPad' }
   | { type: 'finish' }
-  | { type: 'bestLap'; time: number };
+  | { type: 'bestLap'; time: number }
+  | { type: 'rescue' };
 
 export interface DriftState {
   /** Points in the current unbroken drift chain. */
@@ -64,6 +68,9 @@ export class RaceSim {
   /** Seconds the car has been heading the wrong way. */
   wrongWay = 0;
   private lastS = 0;
+  /** Seconds crawling (stuck) and seconds off the road, for the automatic rescue. */
+  private stuckTime = 0;
+  private offTime = 0;
 
   constructor(track: Track, ghost: Ghost | null = null, spec: CarSpec = CAR) {
     this.track = track;
@@ -140,6 +147,10 @@ export class RaceSim {
         if (e.type === 'lap') this.onLap(e.lap.time, e.lap.valid, events);
       }
       this.recorder.sample(this.time, this.lap.lapStart, car);
+      if (this.needsRescue()) {
+        this.rescue();
+        events.push({ type: 'rescue' });
+      }
       if (this.isOver()) {
         this.finished = true;
         this.bankDrift(events);
@@ -147,6 +158,51 @@ export class RaceSim {
       }
     }
     return events;
+  }
+
+  /**
+   * Gas is automatic, so a car that is pinned (crawling for a while) or lost off the road needs a
+   * way back: it is put back on the road, facing the right way, like a marshal's tow.
+   */
+  private needsRescue(): boolean {
+    const v = speedOf(this.car);
+    this.stuckTime = v < 70 && this.time > 1 ? this.stuckTime + DT : 0;
+    this.offTime = !this.ground.onRoad ? this.offTime + DT : 0;
+    return this.stuckTime > RESCUE_STUCK || this.offTime > RESCUE_OFFROAD;
+  }
+
+  private rescue(): void {
+    const t = this.track;
+    // Back onto whichever road is closer (the shortcut too), so no checkpoint is skipped.
+    let path = t.path;
+    let s = this.ground.s;
+    if (t.shortcut) {
+      const sc = nearest(t.shortcut.path, this.car);
+      if (sc.d < this.ground.d) {
+        path = t.shortcut.path;
+        s = sc.s;
+      }
+    }
+    const { p, t: tan } = pointAt(path, s);
+    const car = this.car;
+    car.x = p.x;
+    car.y = p.y;
+    car.a = Math.atan2(tan.y, tan.x);
+    car.vx = tan.x * 120;
+    car.vy = tan.y * 120;
+    car.av = 0;
+    car.slide = 0;
+    this.prev = { x: car.x, y: car.y, a: car.a };
+    this.ground = groundAt(t, car);
+    this.lastS = this.ground.s;
+    this.stuckTime = 0;
+    this.offTime = 0;
+    this.wrongWay = 0;
+    this.lap.bumped = true;
+    if (this.drift.chain > 0) {
+      this.drift.chain = 0;
+      this.drift.chainTime = 0;
+    }
   }
 
   /** The surface under the car, adjusted for this car's tyres. */
@@ -269,6 +325,14 @@ export function autopilot(sim: RaceSim, lookahead = 150): number {
     const push = (need - Math.abs(side) + 10) * (side >= 0 ? -1 : 1);
     tx += (-dy / len) * push;
     ty += (dx / len) * push;
+  }
+  // Keep the aim point on the road even after dodging.
+  const lat = (tx - p.x) * n.x + (ty - p.y) * n.y;
+  const maxLat = track.half - 24;
+  if (Math.abs(lat) > maxLat) {
+    const fix = Math.sign(lat) * maxLat - lat;
+    tx += n.x * fix;
+    ty += n.y * fix;
   }
   let want = Math.atan2(ty - car.y, tx - car.x) - car.a;
   while (want > Math.PI) want -= Math.PI * 2;

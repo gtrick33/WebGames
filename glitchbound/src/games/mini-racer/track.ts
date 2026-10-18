@@ -139,11 +139,28 @@ export function rng(seed: number): () => number {
   };
 }
 
-function gateAt(path: Path, s: number, half: number): Gate {
+/** How far a gate reaches past the kerb: forgiving when you run wide, short of the infield. */
+const GATE_SLACK = 45;
+
+/**
+ * A gate across `path` at arc length s. Each half reaches up to GATE_SLACK past the kerb, but stops
+ * short wherever it would reach another stretch of road (`blocked`), e.g. across a hairpin, so a
+ * gate can never be crossed from the neighbouring piece of track.
+ */
+function gateAt(path: Path, s: number, half: number, blocked: (q: Vec) => boolean): Gate {
   const { p, t } = pointAt(path, s);
   const n = leftOf(t);
-  const r = half + KERB + 45;
-  return { a: { x: p.x + n.x * r, y: p.y + n.y * r }, b: { x: p.x - n.x * r, y: p.y - n.y * r }, dir: t };
+  const reach = (side: number): number => {
+    let r = half + KERB;
+    for (let next = r + 5; next <= half + KERB + GATE_SLACK; next += 5) {
+      if (blocked({ x: p.x + n.x * next * side, y: p.y + n.y * next * side })) break;
+      r = next;
+    }
+    return r;
+  };
+  const ra = reach(1);
+  const rb = reach(-1);
+  return { a: { x: p.x + n.x * ra, y: p.y + n.y * ra }, b: { x: p.x - n.x * rb, y: p.y - n.y * rb }, dir: t };
 }
 
 /** Is fraction f inside the lap interval [from, to) (which may wrap past the start line)? */
@@ -160,9 +177,56 @@ export function bypassed(count: number, range: { from: number; to: number }): nu
   return out.sort((a, b) => ahead(a) - ahead(b));
 }
 
+/**
+ * Rotates a closed, evenly sampled loop so it begins a little way into its longest straight. The
+ * start/finish line and the grid then sit on a straight, so a car with automatic gas leaves the grid
+ * on the road even before the player steers.
+ */
+export function startOnStraight(pts: Vec[], avoid: (i: number) => boolean = () => false): Vec[] {
+  const n = pts.length;
+  const heading = (i: number): number => {
+    const a = pts[i % n]!;
+    const b = pts[(i + 1) % n]!;
+    return Math.atan2(b.y - a.y, b.x - a.x);
+  };
+  const turn = (a: number, b: number): number => Math.abs(Math.atan2(Math.sin(b - a), Math.cos(b - a)));
+  let best = 0;
+  let bestRun = -1;
+  for (let i = 0; i < n; i++) {
+    if (avoid(i)) continue;
+    const h0 = heading(i);
+    let run = 0;
+    while (run < n && turn(h0, heading(i + run)) < 0.12) run++;
+    if (run > bestRun) {
+      bestRun = run;
+      best = i;
+    }
+  }
+  // Leave room behind the line for the grid (samples are ~10 units apart).
+  const offset = Math.min(8, Math.floor(bestRun / 3));
+  const start = (best + offset) % n;
+  return [...pts.slice(start), ...pts.slice(0, start)];
+}
+
 export function buildTrack(def: TrackDef): Track {
   const ctrl = def.points.map(([x, y]) => ({ x, y }));
-  const path = buildPath(resample(spline(ctrl, true, 24), 10, true), true);
+  // The start line goes on the longest straight, but never inside the stretch a shortcut skips
+  // (a car taking the shortcut would miss the line).
+  const loop = resample(spline(ctrl, true, 24), 10, true);
+  let avoid: (i: number) => boolean = () => false;
+  if (def.shortcut && typeof def.shortcut.from !== 'number' && typeof def.shortcut.to !== 'number') {
+    const raw = buildPath(loop, true);
+    const idx = (pt: [number, number]): number => nearest(raw, { x: pt[0], y: pt[1] }).i;
+    const from = idx(def.shortcut.from);
+    const to = idx(def.shortcut.to);
+    const n = loop.length;
+    // Skip the stretch plus a margin of ~25 samples either side (grid behind, gates around).
+    avoid = (i: number): boolean => {
+      const rel = (i - from + 25 + n) % n;
+      return rel <= (to - from + n) % n + 50;
+    };
+  }
+  const path = buildPath(startOnStraight(loop, avoid), true);
   const half = def.width / 2;
   const L = path.length;
   const frac = (at: At): number => (typeof at === 'number' ? at : nearest(path, { x: at[0], y: at[1] }).s / L);
@@ -187,12 +251,22 @@ export function buildTrack(def: TrackDef): Track {
   }
 
   const checkpoints: Checkpoint[] = [];
-  for (let k = 0; k < def.checkpoints; k++) checkpoints.push({ gates: [gateAt(path, (k / def.checkpoints) * L, half)] });
+  // A main-road gate is blocked where its end is closer to a different stretch of the main road.
+  const otherStretch = (s: number) => (q: Vec): boolean => {
+    const near = nearest(path, q);
+    const along = Math.abs(near.s - s);
+    return Math.min(along, L - along) > half * 3;
+  };
+  for (let k = 0; k < def.checkpoints; k++) {
+    const s = (k / def.checkpoints) * L;
+    checkpoints.push({ gates: [gateAt(path, s, half, otherStretch(s))] });
+  }
   if (shortcut && scRange) {
     // Checkpoints the shortcut skips get matching gates spread along the shortcut, in the same order.
     const skipped = bypassed(def.checkpoints, scRange);
     skipped.forEach((k, i) => {
-      checkpoints[k]!.gates.push(gateAt(shortcut.path, (shortcut.path.length * (i + 1)) / (skipped.length + 1), shortcut.half));
+      const onMain = (q: Vec): boolean => nearest(path, q).d < half + KERB;
+      checkpoints[k]!.gates.push(gateAt(shortcut.path, (shortcut.path.length * (i + 1)) / (skipped.length + 1), shortcut.half, onMain));
     });
   }
 

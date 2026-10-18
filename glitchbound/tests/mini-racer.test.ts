@@ -3,7 +3,7 @@ import { dailyTrack, hashDay, todayKey } from '../src/games/mini-racer/daily';
 import { leftOf, pointAt } from '../src/games/mini-racer/geometry';
 import { decodeGhost, encodeGhost, GhostRecorder, ghostPose } from '../src/games/mini-racer/ghost';
 import { advanceLaps, bestLap, crossGate, newLapState } from '../src/games/mini-racer/laps';
-import { newCar, onLoose, stepCar } from '../src/games/mini-racer/physics';
+import { newCar, onLoose, speedOf, stepCar } from '../src/games/mini-racer/physics';
 import { autopilot, DT, RaceSim, scoreFor } from '../src/games/mini-racer/sim';
 import { buildTrack, bypassed, groundAt, SURFACES, validateTrack, type Checkpoint, type Gate } from '../src/games/mini-racer/track';
 import { TRACKS } from '../src/games/mini-racer/tracks';
@@ -309,5 +309,43 @@ describe('leaderboard score', () => {
       expect(seconds).toBeGreaterThanOrEqual(limits.minSeconds ?? 1);
     }
     expect(100000).toBeGreaterThan(limits.scorePerSecond * 30 + 50);
+  });
+});
+
+describe('race start (regression: car stuck at the start)', () => {
+  const defs = [...TRACKS, ...['2026-10-18', '2026-11-04', '2026-11-22', '2027-02-14'].map(dailyTrack)];
+
+  for (const def of defs) {
+    it(`${def.id}: with zero input the car leaves the grid on the road and gets up to speed`, () => {
+      const sim = new RaceSim(buildTrack(def));
+      expect(sim.ground.onRoad).toBe(true);
+      let fastOnRoad = false;
+      for (let i = 0; i < 120 * 4 && !fastOnRoad; i++) {
+        sim.step(0);
+        expect(sim.ground.onRoad, `left the road at t=${sim.time.toFixed(2)}`).toBe(sim.time < 1.5 ? true : sim.ground.onRoad);
+        if (sim.time > 0 && sim.ground.onRoad && speedOf(sim.car) > 250) fastOnRoad = true;
+      }
+      // 250 units/s is about 90 km/h on the speedometer, reached well within 2 s of GO.
+      expect(fastOnRoad).toBe(true);
+      expect(sim.time).toBeLessThan(2);
+    });
+  }
+
+  it('a car pinned nose-first against the world edge can steer away and is put back on track', () => {
+    const track = buildTrack(TRACKS[0]!);
+    const sim = new RaceSim(track);
+    for (let i = 0; i < 120 * 2.5; i++) sim.step(0); // past GO
+    // Park it at the top fence, facing straight into it, stopped.
+    sim.car.x = (track.bounds.minX + track.bounds.maxX) / 2;
+    sim.car.y = track.bounds.minY + 20;
+    sim.car.a = -Math.PI / 2;
+    sim.car.vx = sim.car.vy = 0;
+    const a0 = sim.car.a;
+    for (let i = 0; i < 60; i++) sim.step(1);
+    expect(Math.abs(sim.car.a - a0)).toBeGreaterThan(0.3);
+    let rescued = false;
+    for (let i = 0; i < 120 * 4 && !rescued; i++) rescued = sim.step(0).some((e) => e.type === 'rescue');
+    expect(rescued).toBe(true);
+    expect(sim.ground.onRoad).toBe(true);
   });
 });

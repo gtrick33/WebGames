@@ -35,6 +35,10 @@ Tests: `tests/mini-racer.test.ts`.
 - **Checkpoints**: each track has N evenly spaced gates (gate 0 is the line). A lap counts only if every gate was crossed
   in order, in the driving direction. Gates reach about 45 units past the kerb, which forgives running wide in a bend but still
   catches a cut across the infield (tested). A shortcut gets its own matching gates for the checkpoints it skips.
+- **Start line**: `startOnStraight` moves each loop's origin a little way into its longest straight (never inside a shortcut's
+  stretch), so the grid and line sit on a straight and a car with automatic gas leaves the grid on the road.
+- **Rescue**: a car crawling for 1.5 s or off the road for 3 s is put back on the nearest road (or shortcut), facing forward.
+  The car can also pivot slowly at low speed, so it can never be pinned nose-first against a wall.
 - **Races** are always 3 laps. Lap 1 is timed from GO, and race medals allow 0.9 s for that start.
 - **Drift**: sliding sideways at speed builds a chain (a multiplier every 1.5 s, up to x4). It banks after 0.45 s of grip,
   and a chain longer than 0.7 s pays out a turbo. A hard bump loses the chain and marks the lap "bumped" (not clean).
@@ -45,7 +49,8 @@ Tests: `tests/mini-racer.test.ts`.
   tracks; Pip is the starter. Coins per race: 10 + 3 per valid lap + medal (8/15/25) + new record 10 + first daily finish 30.
   Handling trade-offs are small; tests keep every car within 6% of Pip on every track and within 2.5% on average.
 - **Gold times**: hand-set `par` per track, which tests keep within 15% of a tidy autopilot lap. Daily tracks get the autopilot's
-  flying lap minus 1.5%.
+  flying lap minus 1.5%; a generated layout the autopilot can't lap cleanly at full speed (a bend too tight with no brake) is
+  rejected and the next seed is tried.
 - **Ghost**: the best valid lap on each track (`gb.mini-racer.ghost.<trackId>`); old daily ghosts are pruned.
 - **Arcade reporting**: `start` when a race begins (including restarts). Every `end` goes through `reportEnd(isDaily)` in `Game.tsx`
   with `score` (race points), `raceMs`, `lapMs`, `drift` and `cleanLaps`. `daily: true` is sent for races on today's generated track.
