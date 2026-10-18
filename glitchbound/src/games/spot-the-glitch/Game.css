@@ -1,0 +1,521 @@
+/* Spot the Glitch. Bright toy-box arcade with a playful RGB-split "glitch" accent. */
+.sg {
+  --sg-paper: #fff8ec;
+  --sg-card: #ffffff;
+  --sg-ink: #14102a;
+  --sg-ink-2: #4a4466;
+  --sg-ink-3: #7d7797;
+  --sg-line: #ece3d2;
+  --sg-hot: #ff3d8b;
+  --sg-cool: #19c6e6;
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  container-type: size;
+  background:
+    radial-gradient(circle at 8% 6%, rgb(255 61 139 / 0.14), transparent 30%),
+    radial-gradient(circle at 96% 20%, rgb(25 198 230 / 0.16), transparent 30%),
+    var(--sg-paper);
+  color: var(--sg-ink);
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+}
+.sg *,
+.sg *::before,
+.sg *::after {
+  box-sizing: border-box;
+}
+.sg button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.sg button:focus-visible {
+  outline: 3px solid #3d5bff;
+  outline-offset: 2px;
+}
+.sg h1,
+.sg h2,
+.sg p {
+  margin: 0;
+}
+.sg-mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.sg-muted {
+  color: var(--sg-ink-3);
+}
+.sg-small {
+  font-size: 13px;
+}
+.sg-kicker {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sg-ink-2);
+}
+.sg-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.sg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 2px solid var(--sg-ink);
+  border-radius: 14px;
+  background: var(--sg-card);
+  box-shadow: 3px 3px 0 var(--sg-ink);
+  font-weight: 750;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.sg-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--sg-ink);
+}
+.sg-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sg-btn-go {
+  background: linear-gradient(135deg, #ffd21f, #ff8fc8);
+}
+.sg-btn-warn {
+  background: #ffd6de;
+}
+.sg-btn-ghost {
+  background: transparent;
+  box-shadow: none;
+}
+.sg-btn-big {
+  width: 100%;
+  min-height: 52px;
+  font-size: 17px;
+}
+.sg-icon-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--sg-line);
+  border-radius: 12px;
+  background: var(--sg-card);
+  font-size: 18px;
+}
+.sg-chip {
+  padding: 4px 12px;
+  border: 2px solid #ffb020;
+  border-radius: 999px;
+  background: #fff4d6;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+/* ------------------------------------------------------------------ menu */
+.sg-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 18px 16px 24px;
+  text-align: center;
+}
+.sg-menu-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+}
+.sg-wordmark {
+  display: grid;
+  justify-items: center;
+  line-height: 1;
+}
+.sg-wordmark-small {
+  font-size: 20px;
+  font-weight: 750;
+  color: var(--sg-ink-2);
+}
+.sg-glitch {
+  position: relative;
+  font-size: clamp(44px, 14cqw, 66px);
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+.sg-glitch::before,
+.sg-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: multiply;
+  animation: sg-jitter 3.2s steps(1) infinite;
+}
+.sg-glitch::before {
+  color: var(--sg-hot);
+  transform: translate(-3px, 1px);
+  clip-path: inset(0 0 55% 0);
+}
+.sg-glitch::after {
+  color: var(--sg-cool);
+  transform: translate(3px, -1px);
+  clip-path: inset(50% 0 0 0);
+  animation-delay: -1.6s;
+}
+@keyframes sg-jitter {
+  0%,
+  86%,
+  100% {
+    translate: 0 0;
+  }
+  88% {
+    translate: 4px 0;
+  }
+  92% {
+    translate: -3px 1px;
+  }
+}
+.sg-tagline {
+  color: var(--sg-ink-2);
+  font-weight: 550;
+}
+.sg-card {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 16px;
+  border: 2px solid var(--sg-ink);
+  border-radius: 20px;
+  background: var(--sg-card);
+  box-shadow: 4px 4px 0 var(--sg-ink);
+  text-align: left;
+}
+.sg-card-daily {
+  text-align: center;
+  background:
+    linear-gradient(var(--sg-card), var(--sg-card)) padding-box,
+    linear-gradient(120deg, var(--sg-hot), #ffd21f, var(--sg-cool)) border-box;
+  border: 3px solid transparent;
+}
+.sg-card-head {
+  display: flex;
+  justify-content: space-between;
+}
+.sg-card-text {
+  color: var(--sg-ink-2);
+  font-size: 15px;
+}
+.sg-daily-score b {
+  font-size: 32px;
+}
+.sg-mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+@container (max-width: 380px) {
+  .sg-mode-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.sg-seg {
+  display: flex;
+  gap: 4px;
+}
+.sg-seg button {
+  flex: 1;
+  padding: 6px 0;
+  border: 2px solid var(--sg-line);
+  border-radius: 10px;
+  background: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+.sg-seg button[aria-checked='true'] {
+  border-color: var(--sg-ink);
+  background: #e7fbff;
+}
+.sg-big {
+  font-size: 56px;
+  font-weight: 850;
+  line-height: 1;
+}
+.sg-summary {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sg-summary li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 2px solid var(--sg-line);
+  border-radius: 14px;
+  background: var(--sg-card);
+}
+.sg-dots {
+  color: var(--sg-hot);
+  letter-spacing: 2px;
+}
+
+/* ------------------------------------------------------------------ play */
+.sg-play {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(100%, 1100px);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 12px 14px 16px;
+}
+.sg-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sg-top .sg-kicker {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sg-clock {
+  min-width: 4ch;
+  padding: 4px 10px;
+  border: 2px solid var(--sg-ink);
+  border-radius: 10px;
+  background: var(--sg-card);
+  font-weight: 700;
+  text-align: center;
+}
+.sg-clock.is-low {
+  background: #ffd6de;
+  animation: sg-throb 0.6s ease-in-out infinite alternate;
+}
+@keyframes sg-throb {
+  to {
+    transform: scale(1.08);
+  }
+}
+.sg-found {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sg-found i {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--sg-ink);
+  border-radius: 5px;
+  background: var(--sg-card);
+  transition: background 0.2s;
+}
+.sg-found i.is-on {
+  background: linear-gradient(135deg, var(--sg-hot), var(--sg-cool));
+  animation: sg-pop 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+@keyframes sg-pop {
+  from {
+    transform: scale(0.4);
+  }
+}
+.sg-theme {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sg-ink-3);
+}
+.sg-pair {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  justify-items: center;
+}
+/* Side by side when there is room (landscape stage). */
+@container (min-aspect-ratio: 5 / 4) {
+  .sg-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sg-pic {
+    width: min(100%, calc((100cqh - 150px) * 4 / 3));
+  }
+}
+@container (max-aspect-ratio: 5 / 4) {
+  .sg-pic {
+    width: min(100%, calc((100cqh - 210px) * 2 / 3));
+    min-width: 260px;
+  }
+}
+.sg-pic {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border: 3px solid var(--sg-ink);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #eee;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+}
+.sg-pic canvas,
+.sg-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.sg-overlay {
+  pointer-events: none;
+}
+.sg-ring {
+  fill: none;
+  stroke: var(--sg-hot);
+  stroke-width: 4;
+  filter: drop-shadow(2px 0 0 var(--sg-cool));
+  animation: sg-ring 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.sg-ring.is-missed {
+  stroke: #ff9f1c;
+  stroke-dasharray: 6 5;
+  filter: none;
+}
+@keyframes sg-ring {
+  from {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+.sg-hint {
+  fill: rgb(255 210 31 / 0.18);
+  stroke: #ffb020;
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+  animation: sg-spin 6s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes sg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sg-miss path {
+  stroke: #e02c46;
+  stroke-width: 4;
+  stroke-linecap: round;
+  opacity: 0.35;
+}
+.sg-miss.is-new path {
+  animation: sg-miss 0.6s ease-out forwards;
+}
+@keyframes sg-miss {
+  from {
+    opacity: 1;
+    stroke-width: 6;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+.sg-lock,
+.sg-paused {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  background: rgb(20 16 42 / 0.55);
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  text-align: center;
+  z-index: 3;
+}
+.sg-lock {
+  animation: sg-shake 0.4s;
+}
+@keyframes sg-shake {
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+}
+.sg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.sg-help {
+  text-align: center;
+}
+.sg-done {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(100%, 420px);
+  margin: 0 auto;
+  padding: 16px;
+  border: 3px solid var(--sg-ink);
+  border-radius: 20px;
+  background: var(--sg-card);
+  box-shadow: 4px 4px 0 var(--sg-ink);
+  text-align: center;
+  animation: sg-pop 0.3s ease-out;
+}
+.sg-done h2 {
+  font-size: 24px;
+}
+.sg-breakdown {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.sg-breakdown li {
+  display: flex;
+  justify-content: space-between;
+}
+.sg-breakdown span {
+  color: #e02c46;
+}
+.sg-total {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 2px dashed var(--sg-line);
+  font-size: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sg-glitch::before,
+  .sg-glitch::after,
+  .sg-hint,
+  .sg-ring,
+  .sg-clock.is-low {
+    animation: none;
+  }
+}

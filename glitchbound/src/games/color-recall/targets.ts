@@ -5,6 +5,8 @@
  * published reference values for each colour (e.g. the standard sign or paint shade).
  */
 
+import { hexToRgb, hsbToRgb, hueName, rgbToHex, rgbToHsb } from './color';
+
 export type GlyphId =
   | 'octagon'
   | 'bus'
@@ -120,6 +122,39 @@ export const TARGETS: ColorTarget[] = [
   { id: 'coral', name: 'Coral', hint: 'Reef life, warm and pink-orange.', hex: '#FF7F50', glyph: 'bubble' },
 ];
 
+const WILD_GLYPHS: GlyphId[] = ['drop', 'canvas', 'gem', 'star', 'bubble', 'cloud', 'leaf', 'wave', 'moon', 'flower'];
+const WILD_NOUNS = ['Mist', 'Glow', 'Dream', 'Splash', 'Haze', 'Pop', 'Wave', 'Fizz', 'Bloom', 'Echo', 'Spark', 'Velvet'];
+
+/**
+ * A "wild card": any colour at all, named from its hue, brightness and vividness ("Dusty Teal Haze").
+ * Wild cards have no famous reference, so the curated list never runs dry. The id carries the hex, so
+ * a saved result always resolves back to the same target.
+ */
+export function wildTarget(hex: string): ColorTarget {
+  const H = hex.toUpperCase();
+  const hsb = rgbToHsb(hexToRgb(H));
+  const n = parseInt(H.slice(1), 16);
+  const mood = hsb.b < 38 ? 'Deep' : hsb.s < 22 ? 'Dusty' : hsb.b > 85 && hsb.s < 40 ? 'Pale' : hsb.s > 80 && hsb.b > 80 ? 'Electric' : hsb.s > 60 ? 'Bold' : 'Soft';
+  const hue = hsb.s < 10 ? 'Grey' : hueName(hsb.h).replace(/^./, (c) => c.toUpperCase());
+  return {
+    id: `wild-${H.slice(1)}`,
+    name: `${mood} ${hue} ${WILD_NOUNS[n % WILD_NOUNS.length]}`,
+    hint: 'Wild card: a one-off color with no famous reference.',
+    hex: H,
+    glyph: WILD_GLYPHS[(n >> 4) % WILD_GLYPHS.length]!,
+  };
+}
+
+/** A random wild card that is pleasant to look at (not near-black or near-grey mud). */
+export function randomWild(random: () => number): ColorTarget {
+  const h = Math.floor(random() * 360);
+  const s = 25 + Math.floor(random() * 70);
+  const b = 40 + Math.floor(random() * 58);
+  return wildTarget(rgbToHex(hsbToRgb({ h, s, b })));
+}
+
 export function targetById(id: string): ColorTarget | undefined {
+  const m = /^wild-([0-9A-F]{6})$/i.exec(id);
+  if (m) return wildTarget(`#${m[1]}`);
   return TARGETS.find((t) => t.id === id);
 }

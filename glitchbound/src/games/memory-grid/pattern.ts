@@ -87,8 +87,20 @@ export function dailySeed(day: string): string {
   return `memory-grid:daily:v1:${day}`;
 }
 
-/** Seed for Perfect Recall's predefined patterns. */
+/** Seed for Perfect Recall's original predefined patterns (kept for tests and old records). */
 export const PERFECT_SEED = 'memory-grid:perfect:v1';
+
+/**
+ * Perfect Recall's patterns rotate weekly: the same ten for everyone from Monday to Sunday, then a
+ * fresh set, so the ladder never goes stale once learned. `day` is a local YYYY-MM-DD date.
+ */
+export function perfectSeed(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  const date = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1, 12);
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  const monday = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return `memory-grid:perfect:week:${monday}`;
+}
 
 /** A fresh random seed for Classic and Speed Run. */
 export function randomSeed(): string {

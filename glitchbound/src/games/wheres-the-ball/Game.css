@@ -1,0 +1,447 @@
+/* Where's the Ball? Sunny clubhouse colours; the scene itself is the star. */
+.wb {
+  --wb-paper: #f6f8ec;
+  --wb-card: #ffffff;
+  --wb-ink: #14102a;
+  --wb-ink-2: #4a4466;
+  --wb-ink-3: #7d7797;
+  --wb-line: #e2e6d4;
+  --wb-ball: #d4ee32;
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  container-type: size;
+  background:
+    radial-gradient(circle at 10% 6%, rgb(212 238 50 / 0.25), transparent 30%),
+    radial-gradient(circle at 92% 18%, rgb(61 123 255 / 0.12), transparent 30%),
+    var(--wb-paper);
+  color: var(--wb-ink);
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+}
+.wb *,
+.wb *::before,
+.wb *::after {
+  box-sizing: border-box;
+}
+.wb button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.wb button:focus-visible {
+  outline: 3px solid #3d5bff;
+  outline-offset: 2px;
+}
+.wb h1,
+.wb h2,
+.wb p {
+  margin: 0;
+}
+.wb-mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.wb-muted {
+  color: var(--wb-ink-3);
+}
+.wb-small {
+  font-size: 13px;
+}
+.wb-kicker {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wb-ink-2);
+}
+.wb-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.wb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 2px solid var(--wb-ink);
+  border-radius: 14px;
+  background: var(--wb-card);
+  box-shadow: 3px 3px 0 var(--wb-ink);
+  font-weight: 750;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.wb-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--wb-ink);
+}
+.wb-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.wb-btn-go {
+  background: linear-gradient(135deg, #e6ff5a, #8be0a4);
+}
+.wb-btn-ghost {
+  background: transparent;
+  box-shadow: none;
+}
+.wb-btn-big {
+  width: 100%;
+  min-height: 52px;
+  font-size: 17px;
+}
+.wb-icon-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--wb-line);
+  border-radius: 12px;
+  background: var(--wb-card);
+  font-size: 18px;
+}
+.wb-chip {
+  padding: 4px 12px;
+  border: 2px solid #ffb020;
+  border-radius: 999px;
+  background: #fff4d6;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+/* ------------------------------------------------------------------ menu */
+.wb-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(100%, 500px);
+  margin: 0 auto;
+  padding: 18px 16px 24px;
+  text-align: center;
+}
+.wb-menu-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+}
+.wb-wordmark {
+  display: grid;
+  justify-items: center;
+  line-height: 1;
+}
+.wb-wordmark > span:first-child {
+  font-size: 22px;
+  font-weight: 750;
+  color: var(--wb-ink-2);
+}
+.wb-wordmark-ball {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(48px, 15cqw, 70px);
+  font-weight: 850;
+  letter-spacing: -0.03em;
+}
+.wb-wordmark-ball svg {
+  animation: wb-bounce 1.6s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+@keyframes wb-bounce {
+  50% {
+    transform: translateY(-12px) rotate(90deg);
+  }
+}
+.wb-tagline {
+  color: var(--wb-ink-2);
+  font-weight: 550;
+  max-width: 34ch;
+}
+.wb-card {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 16px;
+  border: 2px solid var(--wb-ink);
+  border-radius: 20px;
+  background: var(--wb-card);
+  box-shadow: 4px 4px 0 var(--wb-ink);
+}
+.wb-card-daily {
+  background:
+    linear-gradient(var(--wb-card), var(--wb-card)) padding-box,
+    linear-gradient(120deg, #d4ee32, #2fd1a0, #3d7bff) border-box;
+  border: 3px solid transparent;
+}
+.wb-card-head {
+  display: flex;
+  justify-content: space-between;
+}
+.wb-card-text {
+  color: var(--wb-ink-2);
+  font-size: 15px;
+}
+.wb-squares {
+  font-size: 22px;
+  letter-spacing: 2px;
+}
+.wb-daily-score b,
+.wb-done-score b {
+  font-size: 30px;
+}
+.wb-big {
+  font-size: 54px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+/* ------------------------------------------------------------------ play */
+.wb-play {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(100%, 1000px);
+  height: 100%;
+  min-height: 420px;
+  margin: 0 auto;
+  padding: 10px 12px 14px;
+}
+.wb-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wb-top .wb-kicker {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-tries {
+  display: flex;
+  gap: 3px;
+}
+.wb-tries i {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--wb-ink);
+  border-radius: 50%;
+  background: #ddd;
+}
+.wb-tries i.is-on {
+  background: var(--wb-ball);
+}
+.wb-lives {
+  color: #ff3b5c;
+  letter-spacing: 1px;
+}
+.wb-clock {
+  min-width: 4ch;
+  padding: 3px 8px;
+  border: 2px solid var(--wb-ink);
+  border-radius: 10px;
+  background: var(--wb-card);
+  font-weight: 700;
+  text-align: center;
+}
+.wb-view {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  max-height: calc((100cqw - 24px) * 3 / 4);
+  border: 3px solid var(--wb-ink);
+  border-radius: 16px;
+  overflow: auto;
+  background: #333;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.wb-wrap {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  min-width: 100%;
+  touch-action: pan-x pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+}
+@container (min-aspect-ratio: 1 / 1) {
+  /* Wide stages: fit the whole picture by height. */
+  .wb-view {
+    align-self: center;
+    width: min(100%, calc((100cqh - 150px) * 4 / 3));
+    flex: none;
+    height: auto;
+    max-height: calc(100cqh - 150px);
+  }
+}
+.wb-wrap canvas,
+.wb-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.wb-overlay {
+  pointer-events: none;
+  overflow: visible;
+}
+.wb-aim circle {
+  fill: rgb(255 255 255 / 0.12);
+  stroke: #fff;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 2px rgb(0 0 0 / 0.8));
+  animation: wb-aim 0.25s ease-out;
+}
+.wb-aim path {
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 2px rgb(0 0 0 / 0.8));
+}
+@keyframes wb-aim {
+  from {
+    r: 40px;
+    opacity: 0;
+  }
+}
+.wb-wrong path {
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.wb-wrong text {
+  font: 800 18px var(--font);
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: #14102a;
+  stroke-width: 4px;
+  text-transform: uppercase;
+}
+.wb-hot path,
+.wb-hot text {
+  stroke: #ff3b5c;
+  fill: #ff7a8f;
+}
+.wb-hot text {
+  stroke: #14102a;
+}
+.wb-warm path {
+  stroke: #ffb020;
+}
+.wb-warm text {
+  fill: #ffd27a;
+}
+.wb-cold path {
+  stroke: #4fd4f5;
+}
+.wb-cold text {
+  fill: #a8ecfb;
+}
+.wb-hint {
+  fill: rgb(255 255 255 / 0.12);
+  stroke: #ffd21f;
+  stroke-width: 4;
+  stroke-dasharray: 14 8;
+}
+.wb-found,
+.wb-reveal {
+  fill: none;
+  stroke-width: 5;
+  animation: wb-ring 0.6s cubic-bezier(0.3, 1.5, 0.5, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.wb-found {
+  stroke: #2fd1a0;
+  filter: drop-shadow(0 0 4px #fff);
+}
+.wb-reveal {
+  stroke: #ff3b5c;
+  stroke-dasharray: 10 6;
+}
+@keyframes wb-ring {
+  from {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+.wb-paused {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(20 16 42 / 0.6);
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+}
+.wb-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.wb-btn-lock {
+  flex: 1 1 180px;
+}
+.wb-zoom {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid var(--wb-ink);
+  border-radius: 14px;
+  background: var(--wb-card);
+  overflow: hidden;
+}
+.wb-zoom button {
+  width: 44px;
+  height: 42px;
+  border: 0;
+  background: none;
+  font-size: 22px;
+  font-weight: 800;
+}
+.wb-zoom button:disabled {
+  opacity: 0.3;
+}
+.wb-zoom span {
+  min-width: 3.5ch;
+  font-size: 13px;
+  text-align: center;
+}
+.wb-note {
+  text-align: center;
+  font-weight: 700;
+}
+.wb-done {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: min(100%, 420px);
+  margin: 0 auto;
+  padding: 14px 16px;
+  border: 3px solid var(--wb-ink);
+  border-radius: 20px;
+  background: var(--wb-card);
+  box-shadow: 4px 4px 0 var(--wb-ink);
+  text-align: center;
+}
+.wb-done h2 {
+  font-size: 24px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-wordmark-ball svg,
+  .wb-found,
+  .wb-reveal,
+  .wb-aim circle {
+    animation: none;
+  }
+}

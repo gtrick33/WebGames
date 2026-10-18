@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { GameModuleProps } from '../../platform/contract';
 import { CARS, getCar, raceCoins, specFor, statBars, unlockText, type CarDef } from './cars';
-import { dailyTrack, todayKey } from './daily';
+import { dailyTrack, RANDOM_ID, randomTrack, todayKey } from './daily';
 import { Engine, type UiKey } from './engine';
 import { drawCarPreview, fmtTime, THEMES } from './render';
 import { AI_PRESETS, RACE_LAPS, type RaceMode, type RaceSim, type Result } from './sim';
 import { sectorTimes } from './sectors';
-import { loadGhost, loadSave, saveGhost, writeSave, type Bests, type SaveData } from './storage';
+import { clearGhost, loadGhost, loadSave, saveGhost, writeSave, type Bests, type SaveData } from './storage';
 import { buildTrack, medalTimes, TRACK_TYPES, type Surface, type Track, type TrackDef } from './track';
 import { TRACKS } from './tracks';
 import './Game.css';
@@ -81,7 +81,8 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
   const [touch, setTouch] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
   const today = useMemo(() => todayKey(), []);
   const daily = useMemo(() => dailyTrack(today), [today]);
-  const allDefs = useMemo(() => [daily, ...TRACKS], [daily]);
+  const random = useMemo(() => randomTrack(save.randomSeed), [save.randomSeed]);
+  const allDefs = useMemo(() => [daily, ...TRACKS, random], [daily, random]);
   const built = useRef(new Map<string, Track>());
   const trackFor = useCallback((def: TrackDef): Track => {
     let t = built.current.get(def.id);
@@ -266,6 +267,19 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
     else engineRef.current?.quiet();
   }, [pauseKey]);
 
+  /** Rolls a brand-new random track; its old bests and ghost go with the old track. */
+  const rollRandom = (): void => {
+    const seed = Math.floor(Math.random() * 2 ** 32);
+    clearGhost(RANDOM_ID);
+    built.current.delete(RANDOM_ID);
+    update((s) => {
+      const bests = { ...s.bests };
+      delete bests[RANDOM_ID];
+      return { ...s, randomSeed: seed, track: RANDOM_ID, bests };
+    });
+    engineRef.current?.attract(trackFor(randomTrack(seed)));
+  };
+
   const selectTrack = (id: string): void => {
     update((s) => ({ ...s, track: id }));
     engineRef.current?.attract(trackFor(defFor(id)));
@@ -342,6 +356,7 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
                   onClick={() => selectTrack(def.id)}
                 >
                   {isDaily && <span className="mr-badge">Daily · {today.slice(5).replace('-', '/')}</span>}
+                  {def.id === RANDOM_ID && <span className="mr-badge">Random</span>}
                   <span className={`mr-type mr-type-${def.type}`}>{TRACK_TYPES[def.type].name}</span>
                   <span className="mr-track-name">{def.name}</span>
                   <span className="mr-track-best mono">{fmtTime(b.race ?? null)}</span>
@@ -352,6 +367,11 @@ export default function Game({ host, restartKey, pauseKey }: GameModuleProps) {
           </div>
 
           <p className="mr-blurb">{selected.blurb}</p>
+          {selected.id === RANDOM_ID && (
+            <button className="mr-chip mr-roll" onClick={rollRandom}>
+              🎲 Roll a new random track
+            </button>
+          )}
           <p className="mr-typehint">
             <span className={`mr-type mr-type-${selected.type}`}>{TRACK_TYPES[selected.type].name}</span> {TRACK_TYPES[selected.type].hint}
           </p>

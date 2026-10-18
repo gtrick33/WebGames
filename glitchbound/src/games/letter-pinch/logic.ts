@@ -120,17 +120,22 @@ export function rng(seed: number): () => number {
   };
 }
 
-let order: string[] | null = null;
+const orders = new Map<number, string[]>();
 
-/** The answer list in a fixed shuffled order, so dailies do not repeat for ANSWER_LIST.length days. */
-function dailyOrder(): string[] {
+/**
+ * The answer list in a fixed shuffled order, so dailies do not repeat for ANSWER_LIST.length days.
+ * Each later pass through the list uses a fresh shuffle, so the sequence never repeats either.
+ */
+function dailyOrder(cycle = 0): string[] {
+  let order = orders.get(cycle);
   if (!order) {
-    const r = rng(hashString(SHUFFLE_SEED));
+    const r = rng(hashString(cycle === 0 ? SHUFFLE_SEED : `${SHUFFLE_SEED}:cycle:${cycle}`));
     order = [...ANSWER_LIST];
     for (let i = order.length - 1; i > 0; i--) {
       const j = Math.floor(r() * (i + 1));
       [order[i], order[j]] = [order[j]!, order[i]!];
     }
+    orders.set(cycle, order);
   }
   return order;
 }
@@ -141,8 +146,9 @@ export function puzzleNumber(day: string): number {
 }
 
 export function dailySecret(day: string): string {
-  const list = dailyOrder();
-  return list[(puzzleNumber(day) - 1) % list.length]!;
+  const n = puzzleNumber(day) - 1;
+  const cycle = Math.floor(n / ANSWER_LIST.length);
+  return dailyOrder(cycle)[n % ANSWER_LIST.length]!;
 }
 
 /** A random practice secret that is never `avoid` (today's daily). */

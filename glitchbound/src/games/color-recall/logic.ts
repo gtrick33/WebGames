@@ -2,9 +2,9 @@
  * Game rules for Color Recall, kept free of React and the DOM so they are unit tested:
  * seeded daily picks, the round state machine, totals and the spoiler-free share text.
  */
-import { daysBetween, hashString } from '../../platform/dates';
+import { addDays, daysBetween, hashString } from '../../platform/dates';
 import { deltaE, hexToRgb, MAX_POINTS, pointsFor, rgbToHex, VERDICT_EMOJI, verdictFor, type Hsb, type Rgb } from './color';
-import { TARGETS, targetById, type ColorTarget } from './targets';
+import { randomWild, TARGETS, targetById, type ColorTarget } from './targets';
 
 export const ROUNDS = 5;
 /** Daily puzzle #1. */
@@ -59,10 +59,63 @@ export function pickRounds(random: () => number, count = ROUNDS, pool: ColorTarg
   }));
 }
 
+/** First day whose daily mixes in a wild card and avoids last week's colors. */
+export const WILD_FROM = '2026-10-19';
+
+const dailyCache = new Map<string, RoundSpec[]>();
+
 /** Today's five rounds: identical for every player on the same calendar day. */
 export function dailyRounds(day: string): RoundSpec[] {
-  return pickRounds(rng(hashString(`color-recall:${day}`)));
+  if (day < WILD_FROM) return pickRounds(rng(hashString(`color-recall:${day}`)));
+  // Each day avoids the curated colors of the previous 7 days, so days are built in order (and cached).
+  if (!dailyCache.has(day)) {
+    let d = day;
+    const todo: string[] = [];
+    while (d >= WILD_FROM && !dailyCache.has(d)) {
+      todo.push(d);
+      d = addDays(d, -1);
+    }
+    for (const x of todo.reverse()) dailyCache.set(x, buildDaily(x));
+  }
+  return dailyCache.get(day)!;
 }
+
+function buildDaily(day: string): RoundSpec[] {
+  const random = rng(hashString(`color-recall:${day}`));
+  const recent = new Set<string>();
+  for (let i = 1; i <= 7; i++) for (const r of dailyRounds(addDays(day, -i))) recent.add(r.target.id);
+  const pool = TARGETS.filter((t) => !recent.has(t.id));
+  const rounds = pickRounds(random, ROUNDS - 1, pool.length >= 20 ? pool : TARGETS);
+  return [...rounds, withStart(random, distinctWild(random, rounds))];
+}
+
+/** Practice: three curated colors and two wild cards, in a random order. */
+export function practiceRounds(random: () => number): RoundSpec[] {
+  const rounds = pickRounds(random, ROUNDS - 2);
+  rounds.push(withStart(random, distinctWild(random, rounds)));
+  rounds.push(withStart(random, distinctWild(random, rounds)));
+  for (let i = rounds.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [rounds[i], rounds[j]] = [rounds[j]!, rounds[i]!];
+  }
+  return rounds;
+}
+
+/** A wild card with its own shape and a clearly different colour from the other rounds. */
+function distinctWild(random: () => number, others: RoundSpec[]): ColorTarget {
+  let t = randomWild(random);
+  for (let i = 0; i < 50; i++) {
+    const rgb = hexToRgb(t.hex);
+    if (others.every((o) => o.target.glyph !== t.glyph && deltaE(hexToRgb(o.target.hex), rgb) >= 15)) break;
+    t = randomWild(random);
+  }
+  return t;
+}
+
+const withStart = (random: () => number, target: ColorTarget): RoundSpec => ({
+  target,
+  start: { h: Math.floor(random() * 360), s: 25 + Math.floor(random() * 50), b: 35 + Math.floor(random() * 50) },
+});
 
 export function dailyNumber(day: string): number {
   return Math.max(1, daysBetween(EPOCH, day) + 1);

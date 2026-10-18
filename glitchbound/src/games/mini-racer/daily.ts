@@ -119,3 +119,11 @@ export function dailyTrack(day: string): TrackDef {
   def.par = parFor(def) ?? Math.round((buildTrack(def).path.length / 330) * 10) * 100;
   return def;
 }
+
+/** Id of the reroll-able random track (one slot, so bests and ghosts never pile up). */
+export const RANDOM_ID = 'random';
+
+/** A freshly generated track from any seed, for endless variety beyond the daily. */
+export function randomTrack(seed: number): TrackDef {
+  return { ...dailyTrack(`free-${seed >>> 0}`), id: RANDOM_ID, blurb: 'A freshly generated track. Roll a new one whenever you like.' };
+}

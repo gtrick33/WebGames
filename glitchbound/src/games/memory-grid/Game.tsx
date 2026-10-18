@@ -8,7 +8,7 @@ import { dayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { createSfx, type Sfx } from './audio';
 import { accuracy, createRun, next, playbackDone, tap, tick, type RunState } from './engine';
-import { dailySeed, levelFor, MODES, PERFECT_LADDER, PERFECT_SEED, randomSeed, SPEED_PENALTY_SECONDS, type Mode } from './pattern';
+import { dailySeed, levelFor, MODES, PERFECT_LADDER, perfectSeed, randomSeed, SPEED_PENALTY_SECONDS, type Mode } from './pattern';
 import { liveStreak, loadRecords, playedDailyToday, recordRun, saveRecords, type RecordOutcome, type Records } from './records';
 import { MODE_NAMES, reportStats, shareText, type RunSummary } from './scoring';
 import './Game.css';
@@ -17,7 +17,7 @@ const MODE_BLURB: Record<Mode, string> = {
   classic: 'One more step every round. One slip ends it.',
   speed: '60 seconds on your turns. Misses cost 5 s.',
   daily: 'Same patterns for everyone today.',
-  perfect: '10 set patterns. Zero mistakes.',
+  perfect: '10 set patterns, new every week. Zero mistakes.',
 };
 
 /** Feedback beats, in ms. */
@@ -107,7 +107,7 @@ function MemoryGrid({ host }: Pick<GameModuleProps, 'host'>) {
   const start = useCallback(
     (mode: Mode) => {
       sfxRef.current?.unlock();
-      const seed = mode === 'daily' ? dailySeed(today) : mode === 'perfect' ? PERFECT_SEED : randomSeed();
+      const seed = mode === 'daily' ? dailySeed(today) : mode === 'perfect' ? perfectSeed(today) : randomSeed();
       commit(createRun(mode, seed));
       setCursor(0);
       setFlash(null);

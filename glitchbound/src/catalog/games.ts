@@ -228,4 +228,134 @@ export const GAMES: GameEntry[] = [
     // Race points are ~1000 per lap at gold pace, i.e. under 130 per second of real play even far beyond gold.
     limits: { scorePerSecond: 160, minSeconds: 15 },
   },
+  {
+    slug: 'color-lab',
+    title: 'Color Lab',
+    tagline: 'Pour colors between glass tubes until each holds one color. Beat par for full points.',
+    description:
+      'A color-sort puzzle: pour the top color of one tube onto the same color or into an empty tube, until every color sits in a tube of its own. ' +
+      'Every puzzle has a par worked out by a solver, and moves are counted. Five new puzzles daily, plus Endless, a Par Challenge and unlimited practice.',
+    categories: ['puzzle', 'strategy'],
+    tags: ['color', 'colour', 'sort', 'water sort', 'tubes', 'bottles', 'liquid', 'daily', 'moves', 'logic', 'designer eye'],
+    released: '2026-10-18',
+    accent: 'teal',
+    art: {
+      tile: '/games/color-lab/tile.webp',
+      wide: '/games/color-lab/wide.webp',
+      alt: 'Glass test tubes with stacked layers of pink, yellow, green and blue liquid, one tube pouring into another',
+      bg: '#e6f6ef',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'portrait',
+    controls: {
+      keyboard: ['1-9, 0, Q-R: pick up a tube, then pick where to pour', 'U or Backspace: undo, Shift+R: restart, H: hint', 'Enter: next puzzle'],
+      touch: ['Tap a tube to pick it up, tap another to pour', 'Undo, restart, hint and spare tube buttons on top'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'stars', label: 'Most stars in a run' },
+      { key: 'underPar', label: 'Most puzzles at or under par' },
+      { key: 'levels', label: 'Most Endless levels' },
+      { key: 'parLevels', label: 'Most Par Challenge levels' },
+    ],
+    highlights: [
+      'Every puzzle is checked by a solver, which also sets its par (the fewest moves it found)',
+      'Five daily puzzles, the same for everyone, from warm-up to brain-bender, with streaks and spoiler-free sharing',
+      'Endless climb, a Par Challenge with a move limit, and unlimited practice in four sizes',
+      'Odd-sized tubes and mystery puzzles with hidden layers keep it fresh',
+      'Each color also has its own pattern, for color-blind players',
+      'Undo, restart, hints and a spare tube when you are stuck',
+    ],
+    ownDaily: { label: 'Today’s 5 puzzles' },
+    daily: [
+      { metric: 'underPar', targets: [2, 3, 4], label: 'Solve {n} Color Lab puzzles at or under par in one run' },
+      { metric: 'levels', targets: [5, 8, 10], label: 'Reach level {n} in Color Lab Endless' },
+      { metric: 'stars', targets: [10, 12, 14], label: 'Collect {n} stars in one Color Lab run' },
+    ],
+  },
+  {
+    slug: 'spot-the-glitch',
+    title: 'Spot the Glitch',
+    tagline: 'Two pictures, five sneaky differences. Find every glitch before the clock runs away.',
+    description:
+      'Compare two bright, nearly identical pictures and tap the five differences: a swapped color, a missing bird, a flipped car. ' +
+      'Pictures are generated fresh, so they never run out. Three new pictures daily, the same for everyone, plus Glitch Rush against the clock and an endless Relax mode.',
+    categories: ['puzzle', 'arcade'],
+    tags: ['spot the difference', 'differences', 'observation', 'find', 'hidden', 'daily', 'pictures', 'eye test', 'glitch'],
+    released: '2026-10-18',
+    accent: 'violet',
+    art: {
+      tile: '/games/spot-the-glitch/tile.webp',
+      wide: '/games/spot-the-glitch/wide.webp',
+      alt: 'Two side-by-side cartoon meadow pictures with a house, trees and balloons, one balloon circled as a difference',
+      bg: '#fff1d6',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'square',
+    controls: {
+      keyboard: ['Click a difference in either picture', 'Hint and Give up buttons below the pictures'],
+      touch: ['Tap a difference in either picture', 'Drag to scroll; only taps count'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'found', label: 'Most glitches found' },
+      { key: 'clean', label: 'Most flawless pictures' },
+      { key: 'pictures', label: 'Most Rush pictures cleared' },
+    ],
+    highlights: [
+      'Pictures are generated from a seed: a practically endless library across five themes',
+      'Exactly five fair differences per picture: color, missing or extra objects, size, mirror, detail and position',
+      'Three daily pictures (easy to sneaky), the same for everyone, with streaks and spoiler-free sharing',
+      'Glitch Rush: 60 seconds, +8 s per glitch; Relax: endless pictures with free hints',
+      'Hints, a tap-spam lock and a score for speed and accuracy',
+    ],
+    ownDaily: { label: 'Today’s 3 pictures' },
+    daily: [
+      { metric: 'score', targets: [2000, 2300, 2500], label: 'Score {n} points in one Spot the Glitch daily' },
+      { metric: 'found', targets: [12, 15, 20], label: 'Find {n} glitches in one Spot the Glitch game' },
+      { metric: 'clean', targets: [1, 2], label: 'Clear {n} pictures without a miss or hint' },
+    ],
+  },
+  {
+    slug: 'wheres-the-ball',
+    title: 'Where’s the Ball?',
+    tagline: 'One tennis ball is hiding in every shot. Zoom in, aim, and lock it in.',
+    description:
+      'Scan top-down shots of courts, lawns, locker rooms and garden parties for one cleverly hidden tennis ball among lemons, limes, leaves and cans. ' +
+      'Five new shots daily, each harder than the last, with hints, three tries per shot and a score for speed. Endless mode never runs out of new shots.',
+    categories: ['puzzle', 'arcade'],
+    tags: ['tennis', 'ball', 'hidden object', 'find', 'search', 'seek', 'observation', 'daily', 'eye test', 'zoom'],
+    released: '2026-10-18',
+    accent: 'lime',
+    art: {
+      tile: '/games/wheres-the-ball/tile.webp',
+      wide: '/games/wheres-the-ball/wide.webp',
+      alt: 'Top-down view of a blue tennis court with towels, a racquet and lemons, and a magnifying ring around a tennis ball',
+      bg: '#e9f5c8',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'square',
+    controls: {
+      keyboard: ['Click to aim, Enter to lock it in', '+ / -: zoom', 'Scroll to pan when zoomed'],
+      touch: ['Tap to aim, then Lock it in', 'Zoom buttons, drag to pan; only taps aim'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'found', label: 'Most balls found' },
+      { key: 'fastest', label: 'Fastest find', unit: 's', lowerIsBetter: true },
+      { key: 'levels', label: 'Most Endless shots found' },
+    ],
+    highlights: [
+      'Shots are generated from a seed with exact ball coordinates: a practically endless supply',
+      'Six places: hard court, clay, grass lawn, locker room, garden party and autumn park',
+      'Five daily shots, the same for everyone: smaller balls, busier scenes and sneakier camouflage as you go',
+      'Taps only aim; nothing counts until you lock it in. Three tries with hot / warm / cold feedback',
+      'Zoom up to 3.2×, two hints per shot, streaks and spoiler-free sharing',
+    ],
+    ownDaily: { label: 'Today’s 5 shots' },
+    daily: [
+      { metric: 'score', targets: [3000, 3500, 4000], label: 'Score {n} points in one Where’s the Ball? daily' },
+      { metric: 'found', targets: [5, 8, 12], label: 'Find {n} balls in one Where’s the Ball? game' },
+    ],
+  },
 ];

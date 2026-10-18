@@ -12,7 +12,7 @@ import {
   MAX_SCORE,
   newGame,
   PEEK_MS,
-  pickRounds,
+  practiceRounds,
   reduce,
   resultTarget,
   ROUNDS,
@@ -86,7 +86,7 @@ function ColorRecall({ host }: { host: GameHost }) {
     if (!isComplete(done)) host.report({ type: 'start' });
   };
   const startPractice = (): void => {
-    setGame(newGame('practice', pickRounds(Math.random), PEEK_MS[difficulty]));
+    setGame(newGame('practice', practiceRounds(Math.random), PEEK_MS[difficulty]));
     setScreen('play');
     host.report({ type: 'start' });
   };

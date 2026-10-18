@@ -761,3 +761,10 @@
 .mr-ai .mr-note-soft {
   display: block;
 }
+.mr-roll {
+  display: block;
+  margin: 8px 2px 2px;
+  padding: 7px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}

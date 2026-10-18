@@ -34,10 +34,12 @@ export interface SaveData {
   mode: RaceMode;
   /** AI level 0-100 for races. */
   aiLevel: number;
+  /** Seed of the current random track (see randomTrack). */
+  randomSeed: number;
 }
 
 function defaults(): SaveData {
-  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [], mode: 'trial', aiLevel: DEFAULT_AI_LEVEL };
+  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [], mode: 'trial', aiLevel: DEFAULT_AI_LEVEL, randomSeed: 1 };
 }
 
 function store(): Storage | null {
@@ -80,6 +82,7 @@ export function loadSave(): SaveData {
     if (typeof o.aiLevel === 'number' && Number.isFinite(o.aiLevel)) d.aiLevel = Math.max(0, Math.min(100, Math.round(o.aiLevel)));
     // Older saves stored a named difficulty.
     else if (o.difficulty === 'easy' || o.difficulty === 'medium' || o.difficulty === 'hard') d.aiLevel = { easy: 25, medium: 50, hard: 75 }[o.difficulty];
+    if (typeof o.randomSeed === 'number' && Number.isFinite(o.randomSeed)) d.randomSeed = Math.abs(Math.floor(o.randomSeed)) % 2 ** 32;
     if (Array.isArray(o.dailyPaid)) d.dailyPaid = o.dailyPaid.filter((x): x is string => typeof x === 'string').slice(-7);
     return d;
   } catch {
@@ -100,6 +103,14 @@ export function loadGhost(trackId: string): Ghost | null {
     return decodeGhost(store()?.getItem(GHOST_PREFIX + trackId) ?? null);
   } catch {
     return null;
+  }
+}
+
+export function clearGhost(trackId: string): void {
+  try {
+    store()?.removeItem(GHOST_PREFIX + trackId);
+  } catch {
+    /* blocked */
   }
 }
 
