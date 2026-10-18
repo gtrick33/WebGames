@@ -225,8 +225,8 @@ export function GamePage({ game }: { game: GameEntry }) {
   const isDailyGame = challengeForDay(dayKey(), GAMES)?.game.slug === game.slug;
   const { me } = useAccount();
   const settings = live.settings(game.slug);
-  // An admin paused the game: players see the message instead of the stage (admins can still test it).
-  const paused = !!settings.maintenance && !me?.isAdmin;
+  // An admin paused the game: players see the message instead of the stage (admins and QA can still test it).
+  const paused = !!settings.maintenance && !me?.role;
   const runRef = useRef<Promise<string | null> | null>(null);
   const [boardKey, setBoardKey] = useState(0);
 
@@ -245,7 +245,11 @@ export function GamePage({ game }: { game: GameEntry }) {
   const onEvent = useCallback(
     (e: GameEvent) => {
       const signedIn = !!account.state.me;
-      if (e.type === 'ready') return;
+      if (e.type === 'ready') {
+        // Coins from GlitchBound (QA or an admin) for an embedded game's wallet: handed over once it listens.
+        if (signedIn && game.wallet) void import('../platform/coins').then((m) => m.handOver(game, frameRef.current));
+        return;
+      }
       if (e.type === 'start') {
         track('game_start', { game: game.slug });
         // Members: the server timestamps the start so the finished score can be checked.
@@ -377,10 +381,10 @@ export function GamePage({ game }: { game: GameEntry }) {
 
       <div className="wrap game-layout">
         <div className="game-stage-col">
-          {me?.isAdmin && (settings.hidden || settings.maintenance) && (
+          {me?.role && (settings.hidden || settings.maintenance) && (
             <p className="admin-preview" role="note">
-              <Icon name="crown" size={16} /> Admin preview: {settings.hidden ? 'this game is hidden from players.' : `players see "${settings.maintenance}" instead of the game.`}{' '}
-              <Link href="/admin?tab=games">Edit in Admin</Link>
+              <Icon name="crown" size={16} /> Preview: {settings.hidden ? 'this game is hidden from players.' : `players see "${settings.maintenance}" instead of the game.`}{' '}
+              {me.isAdmin && <Link href="/admin?tab=games">Edit in Admin</Link>}
             </p>
           )}
           {challengeId && (

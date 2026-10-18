@@ -22,8 +22,8 @@ const SearchDialog = lazy(fresh(() => import('./SearchDialog').then((m) => ({ de
 
 const TABS: { href: string; label: string; short?: string; icon: IconName }[] = [
   { href: '/', label: 'Arcade', icon: 'gamepad' },
-  { href: '/daily', label: 'Daily', icon: 'calendar' },
   { href: '/party', label: 'Party', icon: 'party' },
+  { href: '/daily', label: 'Daily', icon: 'calendar' },
   { href: '/leaderboards', label: 'Leaderboards', short: 'Ranks', icon: 'crown' },
 ];
 
@@ -116,9 +116,9 @@ function AccountMenu() {
         <Link href="/me/bugs" className="account-item" onClick={() => setOpen(false)}>
           <Icon name="bug" size={18} /> {t('Report a bug')}
         </Link>
-        {me.isAdmin && (
+        {me.role && (
           <Link href="/admin" className="account-item" onClick={() => setOpen(false)}>
-            <Icon name="chart" size={18} /> {t('Admin dashboard')}
+            <Icon name="chart" size={18} /> {me.isAdmin ? t('Admin dashboard') : 'QA panel'}
           </Link>
         )}
         <button

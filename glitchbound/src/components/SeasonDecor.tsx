@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { Holiday } from '../platform/seasons';
+import { matchRoute, useLocation } from '../router/router';
+import { SKINS } from './seasonSkins';
 import './SeasonDecor.css';
+import './SeasonSkins.css';
 
 /** Where each floating decoration starts: [left %, delay s, duration s, size px]. */
 const SPOTS: [number, number, number, number][] = [
@@ -14,8 +17,25 @@ const SPOTS: [number, number, number, number][] = [
   [93, 9, 26, 22],
 ];
 
-/** The holiday's floating decorations (and Halloween's bats). Loaded only while a holiday is on. */
+/**
+ * The holiday's floating decorations (and Halloween's bats). Loaded only while a holiday is on.
+ * On the arcade and party pages, cards and buttons get the holiday's art too (seasonSkins.ts).
+ */
 export default function SeasonDecor({ holiday }: { holiday: Holiday }) {
+  const route = matchRoute(useLocation().pathname).name;
+  const skin = route === 'home' || route === 'party';
+  useEffect(() => {
+    if (!skin) return;
+    const root = document.documentElement;
+    root.dataset.skin = holiday.id;
+    root.style.setProperty('--skin-card', SKINS[holiday.id].card);
+    root.style.setProperty('--skin-button', SKINS[holiday.id].button);
+    return () => {
+      delete root.dataset.skin;
+      root.style.removeProperty('--skin-card');
+      root.style.removeProperty('--skin-button');
+    };
+  }, [holiday.id, skin]);
   return (
     <>
       <div className="season-decor" aria-hidden="true">

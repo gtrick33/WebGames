@@ -5,7 +5,7 @@ import { CONSEQUENCE_LABEL, freshRng, makePlayer, MAX_PLAYERS, playersProblem, S
 import { loadSession, saveSession, type ModeId, type PartySession } from '../session';
 import type { Consequence, Intensity } from '../types';
 import { getGame } from '../../catalog/catalog';
-import { Link, navigate, useLocation } from '../../router/router';
+import { navigate, useLocation } from '../../router/router';
 import { AuctionMode } from './Auction';
 import { ImpostorMode, newImpostor } from './Impostor';
 import { openImpostorRoom } from './ImpostorRoom';
@@ -209,27 +209,23 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
             <h2>Play on everyone’s own phone</h2>
             <p className="pt-muted">Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.</p>
             <div className="pt-online-games">
-              {rooms.map((r) =>
-                r.id === 'unhinged' ? (
-                  <Link key={r.id} href="/games/unhinged" className="pt-online-game" style={{ ['--mc' as string]: r.color }}>
-                    {unhinged ? <img src={unhinged.art.tile} alt="" width={84} height={84} style={{ background: unhinged.art.bg }} /> : <span className="pt-mode-art">{r.emoji}</span>}
-                    <div>
-                      <b>{r.title} 🔞</b>
-                      <span>
-                        {r.roomPlayers} players · {r.roomBlurb}
-                      </span>
-                      <span className="pt-btn pt-btn-sm">Play</span>
-                    </div>
-                  </Link>
-                ) : (
+              {rooms.map((r) => {
+                // Unhinged keeps its own art and 18+ sticker; its room opens on its own page (name and age check first).
+                const art = r.id === 'unhinged' ? unhinged?.art : undefined;
+                const sticker = r.label || (r.id === 'unhinged' ? r.sticker : '');
+                return (
                   <div key={r.id} className="pt-online-game" style={{ ['--mc' as string]: r.color }}>
-                    <span className="pt-mode-art" aria-hidden="true">
-                      {r.emoji}
-                    </span>
+                    {art ? (
+                      <img src={art.tile} alt="" width={84} height={84} style={{ background: art.bg }} />
+                    ) : (
+                      <span className="pt-mode-art" aria-hidden="true">
+                        {r.emoji}
+                      </span>
+                    )}
                     <div>
                       <b>
                         {r.title}
-                        {r.label && <em className="pt-mode-sticker">{r.label}</em>}
+                        {sticker && <em className="pt-mode-sticker">{sticker}</em>}
                       </b>
                       <span>
                         {r.roomPlayers} players · {r.roomBlurb}
@@ -239,8 +235,8 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
                       </button>
                     </div>
                   </div>
-                ),
-              )}
+                );
+              })}
             </div>
             {roomMsg && <p className="pt-muted">{roomMsg}</p>}
           </section>
@@ -490,11 +486,7 @@ function Feature({ g, where, art, onPlay, onRoom }: { g: ShownGame; where: 'one'
         <h2 id={`pt-feature-${g.id}`}>{g.title}</h2>
         <p>{g.blurb}</p>
         <div className="pt-row pt-feature-ctas">
-          {g.id === 'unhinged' ? (
-            <Link className="pt-btn pt-btn-go" href="/games/unhinged">
-              Play on your phones
-            </Link>
-          ) : both ? (
+          {both ? (
             <>
               <button className="pt-btn pt-btn-go" onClick={where === 'one' ? onPlay : onRoom}>
                 {where === 'one' ? 'Play on this phone' : 'Open a room'}

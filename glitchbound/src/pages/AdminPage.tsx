@@ -9,6 +9,9 @@ import { usePageMeta } from '../platform/meta';
 import './InfoPages.css';
 import { AdminGames } from './AdminGames';
 import { CloudPanel, ReportsPanels } from './AdminReports';
+import { QaJoinPage } from './QaJoinPage';
+import { QaPanel } from './QaPanel';
+import { QaTeam } from './QaTeam';
 import { Link, useLocation } from '../router/router';
 import './AdminPage.css';
 
@@ -124,25 +127,37 @@ function Announce({ stats, onSent }: { stats: AdminStats; onSent: () => void }) 
   );
 }
 
-/** Dashboard (stats) or Games (what players see), switched with ?tab=games. */
-function AdminTabs({ tab }: { tab: 'dashboard' | 'games' }) {
+type AdminTab = 'dashboard' | 'games' | 'qa' | 'team';
+
+const TABS: { id: AdminTab; label: string; icon: 'chart' | 'gamepad' | 'bug' | 'user'; href: string }[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'chart', href: '/admin' },
+  { id: 'games', label: 'Games', icon: 'gamepad', href: '/admin?tab=games' },
+  { id: 'qa', label: 'QA', icon: 'bug', href: '/admin?tab=qa' },
+  { id: 'team', label: 'QA team', icon: 'user', href: '/admin?tab=team' },
+];
+
+/** Admins switch between Dashboard, Games, QA and the QA team (?tab=…). QA testers only have the QA tab. */
+function AdminTabs({ tab }: { tab: AdminTab }) {
   return (
     <nav className="seg seg-lg admin-tabs" aria-label="Admin sections">
-      <Link href="/admin" className={tab === 'dashboard' ? 'is-on' : ''} aria-current={tab === 'dashboard' ? 'page' : undefined}>
-        <Icon name="chart" size={16} /> Dashboard
-      </Link>
-      <Link href="/admin?tab=games" className={tab === 'games' ? 'is-on' : ''} aria-current={tab === 'games' ? 'page' : undefined}>
-        <Icon name="gamepad" size={16} /> Games
-      </Link>
+      {TABS.map((t) => (
+        <Link key={t.id} href={t.href} className={tab === t.id ? 'is-on' : ''} aria-current={tab === t.id ? 'page' : undefined}>
+          <Icon name={t.icon} size={16} /> {t.label}
+        </Link>
+      ))}
     </nav>
   );
 }
 
 export function AdminPage() {
-  usePageMeta({ title: 'Admin', path: '/admin' });
-  const { me, status } = useAccount();
   const { search } = useLocation();
-  const tab = new URLSearchParams(search).get('tab') === 'games' ? 'games' : 'dashboard';
+  const query = new URLSearchParams(search);
+  // A QA invitation link (/admin?join=<token>).
+  const join = query.get('join');
+  usePageMeta({ title: join === null ? 'Admin' : 'Join the QA team', path: '/admin' });
+  const { me, status } = useAccount();
+  const asked = query.get('tab');
+  const tab: AdminTab = me?.role === 'qa' ? 'qa' : TABS.find((t) => t.id === asked)?.id ?? 'dashboard';
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState('');
 
@@ -159,12 +174,14 @@ export function AdminPage() {
     if (me?.isAdmin && tab === 'dashboard') load();
   }, [me?.isAdmin, load, tab]);
 
+  if (join !== null) return <QaJoinPage token={join} />;
+
   if (status === 'loading') return <div className="wrap info-page"><p className="info-lead">Loading…</p></div>;
   if (!me) {
     return (
       <div className="wrap info-page">
         <h1 className="info-title">Admin</h1>
-        <p className="info-lead">Sign in with the admin Google account.</p>
+        <p className="info-lead">Sign in with your admin or QA account.</p>
         <div>
           <button className="btn btn-magenta" onClick={() => openSignIn()}>
             Sign in
@@ -173,27 +190,43 @@ export function AdminPage() {
       </div>
     );
   }
-  if (!me.isAdmin || error === 'forbidden') {
+  if (!me.role || error === 'forbidden') {
     return (
       <div className="wrap info-page">
         <h1 className="info-title">Admin</h1>
-        <p className="info-lead">This page is only for GlitchBound admins.</p>
+        <p className="info-lead">This page is only for the GlitchBound team.</p>
       </div>
     );
   }
-  if (tab === 'games') {
+  if (me.role === 'qa') {
     return (
       <div className="wrap info-page admin">
         <div className="admin-head">
           <div>
             <p className="eyebrow">
-              <Icon name="gamepad" size={16} /> Admin
+              <Icon name="bug" size={16} /> QA · signed in as {me.email}
             </p>
-            <h1 className="info-title">Games</h1>
+            <h1 className="info-title">QA panel</h1>
           </div>
-          <AdminTabs tab="games" />
         </div>
-        <AdminGames />
+        <QaPanel me={me} />
+      </div>
+    );
+  }
+  if (tab !== 'dashboard') {
+    const current = TABS.find((t) => t.id === tab)!;
+    return (
+      <div className="wrap info-page admin">
+        <div className="admin-head">
+          <div>
+            <p className="eyebrow">
+              <Icon name={current.icon} size={16} /> Admin
+            </p>
+            <h1 className="info-title">{current.label}</h1>
+          </div>
+          <AdminTabs tab={tab} />
+        </div>
+        {tab === 'games' ? <AdminGames /> : tab === 'qa' ? <QaPanel me={me} /> : <QaTeam />}
       </div>
     );
   }

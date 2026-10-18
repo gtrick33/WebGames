@@ -13,6 +13,8 @@ import { buildTrack, TRACK_TYPES, type Surface, type Track, type TrackDef } from
 import { TRACKS } from './tracks';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
+import { useAccount } from '../../platform/account';
+import { claimCoins } from '../../platform/coins';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 
@@ -105,6 +107,23 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     setSave(next);
     writeSave(next);
   }, []);
+
+  // Coins from GlitchBound (QA or an admin) land in the wallet when a signed-in player opens the game.
+  const signedIn = useAccount().status === 'member';
+  const [gift, setGift] = useState(0);
+  useEffect(() => {
+    if (!signedIn) return;
+    void claimCoins('mini-racer').then(({ amount }) => {
+      if (amount <= 0) return;
+      update((s) => ({ ...s, coins: s.coins + amount }));
+      setGift(amount);
+    });
+  }, [signedIn, update]);
+  useEffect(() => {
+    if (!gift) return;
+    const id = window.setTimeout(() => setGift(0), 8000);
+    return () => window.clearTimeout(id);
+  }, [gift]);
 
   const go = useCallback((s: Screen) => {
     screenRef.current = s;
@@ -341,6 +360,11 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
               Mini <span>Racer</span>
             </h2>
             <div className="mr-head-right">
+              {gift > 0 && (
+                <span className="mr-gift" role="status">
+                  +{gift} from GlitchBound
+                </span>
+              )}
               <span className="mr-coins mono" aria-label={`${save.coins} coins`}>
                 <i aria-hidden="true" />
                 {save.coins}

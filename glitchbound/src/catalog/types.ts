@@ -141,6 +141,11 @@ export interface GameEntry {
    * the arcade's lists, search, home page and rotations. Its own page and room links still work.
    */
   partyOnly?: boolean;
+  /**
+   * The game keeps a coin wallet, so QA and admins can give a player coins for it. The game collects
+   * them with claimCoins() (src/platform/coins.ts) when a signed-in player opens it.
+   */
+  wallet?: boolean;
   /** Free-form game-specific data. */
   meta?: Record<string, unknown>;
 }

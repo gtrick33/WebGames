@@ -13,6 +13,7 @@ const SeasonDecor = lazy(fresh(() => import('./SeasonDecor')));
 /**
  * The holiday look (see platform/seasons.ts): sets the season's colours and logo sticker on the page,
  * and lets a few decorations drift down lobby pages (never over a game, never with reduced motion).
+ * On the arcade and party pages the holiday also dresses up every card and button (seasonSkins.ts).
  */
 export function SeasonLayer() {
   const live = useLiveCatalog();

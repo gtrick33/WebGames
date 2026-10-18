@@ -10,7 +10,7 @@ import './InfoPages.css';
 export function SignInPage() {
   usePageMeta({ title: 'Sign in or create an account', description: 'Join GlitchBound for free with Google or your email: daily quests, levels and leaderboards.', path: '/signin' });
   const { me } = useAccount();
-  const linkError = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('error') === 'link';
+  const errorParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('error') : null;
 
   useEffect(() => {
     if (me) navigate('/me', { replace: true });
@@ -40,7 +40,8 @@ export function SignInPage() {
         </div>
         <div className="signin-box panel">
           <h2 className="signin-title">Sign in or sign up</h2>
-          {linkError && <p className="signin-error">That sign-in link has expired or was already used. Ask for a new code below.</p>}
+          {errorParam === 'link' && <p className="signin-error">That sign-in link has expired or was already used. Ask for a new code below.</p>}
+          {errorParam === 'banned' && <p className="signin-error">This account has been suspended. If you think this is a mistake, write to hello@glitchboundstudio.com.</p>}
           <SignInPanel showPerks={false} onDone={() => navigate('/me')} />
         </div>
       </div>

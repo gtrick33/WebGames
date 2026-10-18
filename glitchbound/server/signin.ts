@@ -1,7 +1,28 @@
 import { nicknameCandidates } from '../src/platform/progression';
+import { audit } from './audit';
 import type { GoogleIdentity } from './google';
-import type { Env } from './http';
-import { createSession, sessionCookie, type UserRow } from './session';
+import { bad, type Env } from './http';
+import { createSession, isAdmin, sessionCookie, type UserRow } from './session';
+
+/** Thrown by signIn for a banned account. */
+export class AccountBanned extends Error {
+  constructor() {
+    super('banned');
+  }
+}
+
+export const BANNED_MESSAGE = 'This account has been suspended. If you think this is a mistake, write to hello@glitchboundstudio.com.';
+export const bannedResponse = (): Response => bad('banned', 403, { message: BANNED_MESSAGE });
+
+/** signIn, with a banned account turned into null (the caller answers with bannedResponse). */
+export async function signInUnlessBanned(env: Env, request: Request, id: Identity): Promise<Awaited<ReturnType<typeof signIn>> | null> {
+  try {
+    return await signIn(env, request, id);
+  } catch (err) {
+    if (err instanceof AccountBanned) return null;
+    throw err;
+  }
+}
 
 /** A verified identity: from Google, or an email address proven with a one-time code. */
 export type Identity = GoogleIdentity & { provider: 'google' | 'email'; nickname?: string };
@@ -39,6 +60,7 @@ export async function signIn(env: Env, request: Request, id: Identity): Promise<
     created = true;
     user = (await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first<UserRow>())!;
   } else {
+    if (user.banned_at) throw new AccountBanned();
     // An email-code account that later signs in with Google is upgraded to the Google identity.
     const sub = id.provider === 'google' && user.google_sub.startsWith('email:') ? id.sub : user.google_sub;
     await env.DB.prepare('UPDATE users SET google_sub = ?, name = ?, avatar = ?, last_seen = ? WHERE id = ?')
@@ -47,5 +69,10 @@ export async function signIn(env: Env, request: Request, id: Identity): Promise<
   }
   await env.DB.prepare(`UPDATE subscribers SET user_id = ? WHERE email = ? AND user_id IS NULL`).bind(user.id, id.email).run();
   const token = await createSession(env, user.id);
+  // QA testers' sign-ins go into the audit trail (admins' do not).
+  if (!created && !isAdmin(env, user)) {
+    const staff = await env.DB.prepare('SELECT status FROM staff WHERE user_id = ?').bind(user.id).first<{ status: string }>();
+    if (staff) await audit(env, request, user, { kind: 'auth', action: 'auth.sign_in', detail: { provider: id.provider, staffStatus: staff.status } });
+  }
   return { user, cookie: sessionCookie(token, request), created };
 }

@@ -69,9 +69,9 @@ function Page() {
       // The Discord Activity stays a 404 until its client ID is configured.
       return DISCORD.enabled ? <DiscordPage /> : <NotFound />;
     case 'game': {
-      // Hidden games are closed to players; admins can still open them to preview.
+      // Hidden games are closed to players; admins and QA testers can still open them to preview and test.
       const game = getGame(route.slug, live.all);
-      return game && (!live.settings(game.slug).hidden || me?.isAdmin) ? <GamePage key={`${game.slug}:${challengeParam}`} game={game} /> : <NotFound />;
+      return game && (!live.settings(game.slug).hidden || me?.role) ? <GamePage key={`${game.slug}:${challengeParam}`} game={game} /> : <NotFound />;
     }
     default:
       return <NotFound />;

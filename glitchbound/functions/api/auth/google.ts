@@ -1,7 +1,7 @@
 import { verifyGoogleAccessToken, verifyGoogleIdToken } from '../../../server/google';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { buildMe, clientDay } from '../../../server/members';
-import { signIn } from '../../../server/signin';
+import { bannedResponse, signInUnlessBanned } from '../../../server/signin';
 import { sendWelcome } from '../../../server/welcome';
 
 /**
@@ -21,7 +21,9 @@ export async function onRequestPost({ request, env, waitUntil }: Ctx): Promise<R
   } catch (err) {
     return bad('invalid_credential', 401, { reason: err instanceof Error ? err.message : 'unknown' });
   }
-  const { user, cookie, created } = await signIn(env, request, { ...identity, provider: 'google' });
+  const signed = await signInUnlessBanned(env, request, { ...identity, provider: 'google' });
+  if (!signed) return bannedResponse();
+  const { user, cookie, created } = signed;
   if (created) waitUntil?.(sendWelcome(env, request, user, clientDay(body?.day)));
   return json({ user: await buildMe(env, user, clientDay(body?.day)), created }, 200, { 'set-cookie': cookie });
 }

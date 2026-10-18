@@ -3,7 +3,8 @@ import type { Badge, BestView, Me, QuestView } from '../src/platform/apiTypes';
 import { currentStreak } from '../src/platform/daily';
 import { levelForXp, questsForDay, xpForLevel, type QuestDef } from '../src/platform/progression';
 import type { Env } from './http';
-import { isAdmin, type UserRow } from './session';
+import { isAdmin, roleOf, type UserRow } from './session';
+import { LISTED } from './staff';
 
 /** Accepts the player's local calendar day if it is within a day of UTC (time zones), else UTC today. */
 export function clientDay(raw: unknown, now = Date.now()): string {
@@ -71,8 +72,8 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
     env.DB.prepare('SELECT game FROM favorites WHERE user_id = ? ORDER BY created_at').bind(user.id).all<{ game: string }>(),
     env.DB.prepare(
       `SELECT b.game, b.score, b.stats, b.at,
-         (SELECT COUNT(*) FROM bests o WHERE o.game = b.game AND o.score > b.score) + 1 AS rank,
-         (SELECT COUNT(*) FROM bests o WHERE o.game = b.game) AS players
+         (SELECT COUNT(*) FROM bests o JOIN users u ON u.id = o.user_id WHERE o.game = b.game AND o.score > b.score AND ${LISTED}) + 1 AS rank,
+         (SELECT COUNT(*) FROM bests o JOIN users u ON u.id = o.user_id WHERE o.game = b.game AND ${LISTED}) AS players
        FROM bests b WHERE b.user_id = ?`,
     )
       .bind(user.id)
@@ -81,7 +82,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
     env.DB.prepare('SELECT day FROM dailies WHERE user_id = ? AND done = 1 ORDER BY day DESC LIMIT 400').bind(user.id).all<{ day: string }>(),
     env.DB.prepare('SELECT COUNT(*) AS n FROM quest_claims WHERE user_id = ?').bind(user.id).first<{ n: number }>(),
     env.DB.prepare(
-      `SELECT COUNT(*) AS n FROM bests b WHERE b.user_id = ? AND NOT EXISTS (SELECT 1 FROM bests o WHERE o.game = b.game AND o.score > b.score)`,
+      `SELECT COUNT(*) AS n FROM bests b WHERE b.user_id = ? AND NOT EXISTS (SELECT 1 FROM bests o JOIN users u ON u.id = o.user_id WHERE o.game = b.game AND o.score > b.score AND ${LISTED})`,
     )
       .bind(user.id)
       .first<{ n: number }>(),
@@ -109,6 +110,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
     email: user.email,
     avatar: user.avatar,
     isAdmin: isAdmin(env, user),
+    role: roleOf(env, user),
     xp: user.xp,
     level,
     levelFloor: xpForLevel(level),

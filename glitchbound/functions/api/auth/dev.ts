@@ -1,6 +1,6 @@
 import { bad, isLocal, json, readJson, type Ctx } from '../../../server/http';
 import { buildMe, clientDay } from '../../../server/members';
-import { signIn } from '../../../server/signin';
+import { bannedResponse, signInUnlessBanned } from '../../../server/signin';
 
 /**
  * POST /api/auth/dev { email, name }: LOCAL TESTING ONLY. Works only when DEV_LOGIN=1 is set in
@@ -12,6 +12,8 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return bad('bad_email');
   const name = typeof body?.name === 'string' ? body.name.slice(0, 40) : 'Tester';
-  const { user, cookie } = await signIn(env, request, { sub: `dev:${email}`, email, name, givenName: name, picture: '', provider: 'google' });
+  const signed = await signInUnlessBanned(env, request, { sub: `dev:${email}`, email, name, givenName: name, picture: '', provider: 'google' });
+  if (!signed) return bannedResponse();
+  const { user, cookie } = signed;
   return json({ user: await buildMe(env, user, clientDay(body?.day)) }, 200, { 'set-cookie': cookie });
 }

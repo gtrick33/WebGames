@@ -45,6 +45,8 @@ export interface Me {
   email: string;
   avatar: string;
   isAdmin: boolean;
+  /** Staff role: admins see the whole admin panel, QA testers only its QA tab. */
+  role: StaffRole | null;
   xp: number;
   level: number;
   levelFloor: number;
@@ -200,4 +202,80 @@ export interface CloudUsage {
 /** GET /api/admin/catalog: the Games tab's data. */
 export interface AdminCatalog extends PublicCatalog {
   log: { ts: number; admin: string; action: string; detail: string }[];
+}
+
+/* ------------------------------------------------------------------ QA tools and the QA team */
+
+export type StaffRole = 'admin' | 'qa';
+
+/** A player in the QA tab's search results. */
+export interface QaPlayerRow {
+  id: string;
+  nickname: string;
+  email: string;
+  level: number;
+  createdAt: number;
+  lastSeen: number;
+  banned: boolean;
+  role: StaffRole | null;
+}
+
+export interface QaGrant {
+  id: string;
+  game: string;
+  amount: number;
+  note: string;
+  by: string;
+  at: number;
+  /** When the game collected it (null while it waits for the player to open the game). */
+  claimedAt: number | null;
+}
+
+export interface QaEmail {
+  subject: string;
+  body: string;
+  by: string;
+  at: number;
+  ok: boolean;
+}
+
+/** One player, opened in the QA tab. */
+export interface QaPlayer extends QaPlayerRow {
+  xp: number;
+  rounds: number;
+  ban: { at: number; reason: string; by: string } | null;
+  bests: { game: string; score: number; at: number }[];
+  runs: { game: string; score: number | null; status: string; at: number }[];
+  grants: QaGrant[];
+  emails: QaEmail[];
+}
+
+/** A QA team member in the admin's QA team tab. `expired`: invited, but the link ran out. */
+export interface StaffRow {
+  email: string;
+  status: 'invited' | 'active' | 'blocked' | 'expired';
+  userId: string | null;
+  nickname: string | null;
+  invitedBy: string;
+  invitedAt: number;
+  acceptedAt: number | null;
+  updatedBy: string;
+  updatedAt: number;
+  lastActivity: number | null;
+  actions30d: number;
+}
+
+/** One row of the QA audit trail. */
+export interface AuditRow {
+  id: number;
+  ts: number;
+  actor: string;
+  kind: 'request' | 'action' | 'auth';
+  action: string;
+  targetId: string | null;
+  targetEmail: string | null;
+  detail: string;
+  status: number | null;
+  ip: string;
+  userAgent: string;
 }

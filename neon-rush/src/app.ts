@@ -711,6 +711,14 @@ export class App {
 
   /** Commands from the GlitchBound arcade when the game is embedded there. */
   private onHostCommand(c: HostCommand): void {
+    if (c.type === 'coins') {
+      // A gift from the arcade (its QA team or an admin): straight into the wallet.
+      this.profile.coins += c.amount;
+      this.save();
+      this.refreshChrome();
+      this.ui.toast(`+${fmt(c.amount)} coins from GlitchBound`, 'good');
+      return;
+    }
     if (c.type === 'challenge') {
       this.challengeSeed = c.seed;
       return;

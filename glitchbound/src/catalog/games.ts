@@ -7,6 +7,7 @@ import type { GameEntry } from './types.ts';
 export const GAMES: GameEntry[] = [
   {
     slug: 'neon-rush',
+    wallet: true,
     title: 'NEON RUSH',
     tagline: 'An endless neon racer. Weave through traffic, chain near misses, beat your best.',
     description:
@@ -191,6 +192,7 @@ export const GAMES: GameEntry[] = [
   },
   {
     slug: 'mini-racer',
+    wallet: true,
     title: 'Mini Racer',
     tagline: 'Hold left or right to steer a toy car through drifty little races. Gas is automatic.',
     description:

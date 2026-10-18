@@ -95,7 +95,9 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
       if (ev?.type === 'ready') {
         if (nameRef.current) postToGame(iframeRef.current, game, { type: 'identity', name: nameRef.current });
         if (seedRef.current !== null) postToGame(iframeRef.current, game, { type: 'challenge', seed: seedRef.current });
-      } else if (ev) onEvent(ev);
+      }
+      // The page hears 'ready' too (it hands over coin gifts then).
+      if (ev) onEvent(ev);
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);

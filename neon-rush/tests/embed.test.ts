@@ -70,4 +70,18 @@ describe('host commands', () => {
     send({ source: 'glitchbound-host', version: 1, type: 'challenge', seed: null });
     expect(got).toEqual([{ type: 'challenge', seed: 123456 }, { type: 'challenge', seed: null }]);
   });
+
+  it('accepts coin gifts (positive whole numbers only)', async () => {
+    const { listenToHost } = await import('../src/analytics/embed');
+    const { win, send } = host();
+    const got: unknown[] = [];
+    listenToHost((c) => got.push(c), win);
+    send({ source: 'glitchbound-host', version: 1, type: 'coins', amount: 500 });
+    send({ source: 'glitchbound-host', version: 1, type: 'coins', amount: -5 });
+    send({ source: 'glitchbound-host', version: 1, type: 'coins', amount: 2.5 });
+    send({ source: 'glitchbound-host', version: 1, type: 'coins', amount: '100' });
+    send({ source: 'glitchbound-host', version: 1, type: 'coins', amount: 1e12 });
+    send({ source: 'glitchbound-host', version: 1, type: 'coins', amount: 50 }, {}); // not the parent
+    expect(got).toEqual([{ type: 'coins', amount: 500 }]);
+  });
 });

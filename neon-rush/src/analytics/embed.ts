@@ -28,9 +28,13 @@ export function runEndMessage(stats: RunStats): HostMessage {
 
 /**
  * Messages the host page may send to the game. `challenge`: a friends' challenge round is on, so
- * every run uses this seed (the same traffic for every player); null ends it.
+ * every run uses this seed (the same traffic for every player); null ends it. `coins`: coins the
+ * arcade's QA team or an admin gave this player; add them to the wallet.
  */
-export type HostCommand = { type: 'identity'; name: string } | { type: 'pause' } | { type: 'challenge'; seed: number | null };
+export type HostCommand = { type: 'identity'; name: string } | { type: 'pause' } | { type: 'challenge'; seed: number | null } | { type: 'coins'; amount: number };
+
+/** The most coins one gift may carry (the arcade allows up to 100,000 per grant, several at once). */
+const MAX_GIFT = 10_000_000;
 
 /**
  * Listens for commands from the host page (only from our direct parent window). Returns an
@@ -45,6 +49,7 @@ export function listenToHost(onCommand: (c: HostCommand) => void, win: Window | 
     if (d.type === 'identity' && typeof d.name === 'string') onCommand({ type: 'identity', name: d.name.slice(0, 40) });
     else if (d.type === 'pause') onCommand({ type: 'pause' });
     else if (d.type === 'challenge' && (d.seed === null || (typeof d.seed === 'number' && Number.isInteger(d.seed)))) onCommand({ type: 'challenge', seed: d.seed === null ? null : d.seed | 0 });
+    else if (d.type === 'coins' && typeof d.amount === 'number' && Number.isInteger(d.amount) && d.amount > 0 && d.amount <= MAX_GIFT) onCommand({ type: 'coins', amount: d.amount });
   };
   win.addEventListener('message', handler);
   // Tell the host we are listening, so it can send the player's name now.

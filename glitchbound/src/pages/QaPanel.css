@@ -1,0 +1,234 @@
+/* Admin › QA and Admin › QA team (QaPanel.tsx, QaTeam.tsx). Builds on the admin page styles. */
+.qa h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.qa-recorded {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: var(--hard-sm);
+}
+.qa-recorded svg {
+  flex: none;
+}
+.qa-search,
+.qa-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.qa-search .field {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.qa-inline .field {
+  flex: 1 1 160px;
+  min-width: 0;
+  height: 40px;
+}
+.qa-table td {
+  vertical-align: middle;
+}
+/* Small, quiet table text (not .info-small: that one hides itself when empty, which shifts cells). */
+.qa-dim {
+  color: var(--fg-2);
+  font-size: 13px;
+}
+.qa-table tr.is-banned td {
+  opacity: 0.7;
+}
+.qa-pill {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--well);
+  color: var(--fg-2);
+  font: 700 11px/1.5 var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.qa-pill.is-bad {
+  border-color: var(--coral);
+  background: color-mix(in srgb, var(--coral) 18%, transparent);
+  color: var(--fg);
+}
+.qa-pill.is-good {
+  border-color: var(--lime);
+  background: color-mix(in srgb, var(--lime) 28%, transparent);
+  color: var(--fg);
+}
+.qa-card-anchor {
+  scroll-margin-top: calc(var(--header-h, 64px) + 12px);
+}
+.qa-card-anchor:empty {
+  display: none;
+}
+.qa-player.is-banned {
+  border-color: var(--coral);
+}
+.qa-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 8px;
+  margin: 6px 0 14px;
+}
+.qa-fact {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--well);
+}
+.qa-fact span {
+  color: var(--fg-2);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.qa-fact b {
+  overflow-wrap: anywhere;
+}
+.qa-id {
+  font-size: 12px;
+  font-weight: 600;
+}
+.qa-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.qa-tool {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  background: var(--well);
+}
+.qa-tool h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.qa-tool .info-small,
+.qa-tool p {
+  margin: 0;
+}
+.qa-tool .seg {
+  justify-self: start;
+}
+.qa-tool > .btn,
+.qa-tool > a.btn {
+  justify-self: start;
+}
+.qa-tool-wide {
+  grid-column: 1 / -1;
+}
+.qa-textarea {
+  height: auto;
+  min-height: 64px;
+  padding: 10px 14px;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.45;
+}
+.qa-ban-note {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-left: 4px solid var(--coral);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--coral) 12%, transparent);
+  font-weight: 700;
+}
+.btn.qa-danger {
+  --btn-bg: var(--coral);
+  --btn-fg: var(--ink);
+  --btn-line: var(--ink);
+}
+.qa-danger-text {
+  color: var(--coral);
+}
+.qa-history {
+  margin-top: 14px;
+}
+.qa-history > div {
+  min-width: 0;
+  overflow-x: auto;
+}
+.qa-mail-body {
+  margin: 4px 0;
+  white-space: pre-wrap;
+  font-size: 14px;
+}
+.qa-links {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-weight: 700;
+}
+.qa-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.qa-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0 12px;
+}
+.qa-filters > .field {
+  flex: 0 1 240px;
+  height: 40px;
+}
+.qa-filters .qa-inline {
+  flex: 1 1 260px;
+}
+.qa-audit-row {
+  cursor: pointer;
+}
+.qa-audit-row:hover td,
+.qa-audit-row.is-open td {
+  background: var(--well);
+}
+.qa-audit-detail pre {
+  max-height: 320px;
+  margin: 0 0 6px;
+  padding: 10px;
+  overflow: auto;
+  border-radius: 10px;
+  background: var(--well);
+  font: 500 12px/1.5 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.qa-kind-action {
+  border-color: var(--cyan);
+}
+.qa-kind-auth {
+  border-color: var(--yellow);
+}

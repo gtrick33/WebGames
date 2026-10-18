@@ -1,6 +1,6 @@
 import { getGame } from '../../src/catalog/catalog';
 import { json, readJson, sameOrigin, utcDay, type Ctx } from '../../server/http';
-import { currentUser } from '../../server/session';
+import { currentUser, isAudited } from '../../server/session';
 import { visitorKey } from '../../server/visitor';
 
 const NAMES = new Set(['page_view', 'game_view', 'game_start', 'game_end', 'replay_click', 'game_close', 'share_click', 'daily_complete', 'search', 'category_select', 'mood_select', 'surprise_me', 'game_error', 'favorite', 'sign_in', 'subscribe', 'feedback_prompt', 'feedback_sent', 'bug_report', 'daily_share', 'room_open', 'room_join']);
@@ -14,6 +14,8 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   const now = Date.now();
   const day = utcDay(now);
   const [visitor, user] = await Promise.all([visitorKey(request, now), currentUser(env, request)]);
+  // QA testers' visits and rounds are test traffic: left out of the stats.
+  if (isAudited(env, user)) return json({ ok: true, n: 0 });
   const stmts = [];
   for (const raw of list) {
     if (!raw || typeof raw !== 'object') continue;

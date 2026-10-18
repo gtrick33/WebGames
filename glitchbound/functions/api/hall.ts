@@ -2,17 +2,19 @@ import type { HallRow } from '../../src/platform/apiTypes';
 import { levelForXp } from '../../src/platform/progression';
 import { json, type Ctx } from '../../server/http';
 import { currentUser } from '../../server/session';
+import { LISTED } from '../../server/staff';
 
 /**
  * GET /api/hall: the Hall of Fame across all games. Crowns = #1 spots, podiums = top-3 spots,
  * records = personal bests beaten. Ranked by crowns, then podiums, then records, then level.
+ * Banned players and QA testers are left off.
  */
 export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   const me = await currentUser(env, request);
   const [ranked, records, users] = await Promise.all([
-    env.DB.prepare(`SELECT user_id, game, RANK() OVER (PARTITION BY game ORDER BY score DESC) AS r FROM bests`).all<{ user_id: string; game: string; r: number }>(),
+    env.DB.prepare(`SELECT b.user_id, b.game, RANK() OVER (PARTITION BY b.game ORDER BY b.score DESC) AS r FROM bests b JOIN users u ON u.id = b.user_id WHERE ${LISTED}`).all<{ user_id: string; game: string; r: number }>(),
     env.DB.prepare(`SELECT user_id, COUNT(*) AS n FROM runs WHERE new_best = 1 AND status = 'ok' GROUP BY user_id`).all<{ user_id: string; n: number }>(),
-    env.DB.prepare(`SELECT id, nickname, xp FROM users WHERE id IN (SELECT DISTINCT user_id FROM bests)`).all<{ id: string; nickname: string; xp: number }>(),
+    env.DB.prepare(`SELECT u.id, u.nickname, u.xp FROM users u WHERE u.id IN (SELECT DISTINCT user_id FROM bests) AND ${LISTED}`).all<{ id: string; nickname: string; xp: number }>(),
   ]);
   const agg = new Map<string, { crowns: number; podiums: number; games: number }>();
   for (const row of ranked.results) {

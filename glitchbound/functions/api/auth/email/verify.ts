@@ -1,7 +1,7 @@
 import { normalizeEmail, verifyEmailCode } from '../../../../server/emailLogin';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../../server/http';
 import { buildMe, clientDay } from '../../../../server/members';
-import { signIn } from '../../../../server/signin';
+import { bannedResponse, signInUnlessBanned } from '../../../../server/signin';
 import { sendWelcome } from '../../../../server/welcome';
 
 const MESSAGES: Record<string, string> = {
@@ -19,7 +19,9 @@ export async function onRequestPost({ request, env, waitUntil }: Ctx): Promise<R
   if (!email || code.length !== 6) return bad('bad_request', 400, { message: 'Enter the 6-digit code from the email.' });
   const result = await verifyEmailCode(env, email, code);
   if (typeof result === 'string') return bad(result, 401, { message: MESSAGES[result] });
-  const { user, cookie, created } = await signIn(env, request, result);
+  const signed = await signInUnlessBanned(env, request, result);
+  if (!signed) return bannedResponse();
+  const { user, cookie, created } = signed;
   if (created) waitUntil?.(sendWelcome(env, request, user, clientDay(body?.day)));
   return json({ user: await buildMe(env, user, clientDay(body?.day)), created }, 200, { 'set-cookie': cookie });
 }

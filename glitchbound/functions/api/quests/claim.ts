@@ -23,6 +23,6 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   } catch {
     return bad('already_claimed', 409); // a double click raced us; the batch is atomic
   }
-  const fresh = (await currentUser(env, request))!;
+  const fresh = (await currentUser(env, request, true))!;
   return json({ xp: quest.xp, levelUp: levelForXp(fresh.xp) > before, user: await buildMe(env, fresh, day) });
 }

@@ -40,7 +40,7 @@ export async function onRequestPatch({ request, env }: Ctx): Promise<Response> {
       await env.DB.prepare(`UPDATE subscribers SET status = 'unsubscribed' WHERE email = ?`).bind(user.email).run();
     }
   }
-  const fresh = await currentUser(env, request);
+  const fresh = await currentUser(env, request, true);
   return json({ user: await buildMe(env, fresh!, clientDay(body.day)) });
 }
 
