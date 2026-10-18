@@ -192,21 +192,24 @@
   place-items: center;
   width: 42px;
   height: 42px;
-  border: 1.5px solid var(--line);
+  /* Two looks only: pink outline when not a favorite, filled pink when it is. Hover never changes
+     colours (touch screens keep :hover after a tap, which used to leave a third look behind). */
+  border: 2px solid var(--magenta);
   border-radius: 50%;
-  background: rgb(7 2 26 / 0.7);
-  color: var(--fg-2);
-  cursor: pointer;
-  transition: transform 0.3s var(--spring), color 0.2s, border-color 0.2s;
-}
-.fav-btn:hover {
-  transform: scale(1.1);
+  background: var(--surface);
   color: var(--magenta-text);
-  border-color: var(--magenta);
+  cursor: pointer;
+  transition: transform 0.3s var(--spring), color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+@media (hover: hover) {
+  .fav-btn:hover {
+    transform: scale(1.1);
+  }
 }
 .fav-btn.is-on {
-  color: var(--magenta-text);
-  border-color: var(--magenta);
+  border-color: var(--ink);
+  background: var(--magenta);
+  color: #fff;
   box-shadow: var(--hard-sm);
 }
 .fav-btn.is-on svg {
