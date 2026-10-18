@@ -6,7 +6,8 @@ import { lerpAngle } from './geometry';
  */
 
 export const GHOST_HZ = 20;
-const VERSION = 1;
+/** v2: tracks start on their longest straight, so v1 ghosts (other lap origin) no longer line up. */
+const VERSION = 2;
 
 export interface Ghost {
   /** Lap time in seconds. */

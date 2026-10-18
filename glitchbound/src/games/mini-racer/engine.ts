@@ -306,6 +306,10 @@ export class Engine {
       case 'driftLost':
         hud.banner = { text: 'DRIFT LOST', sub: `${e.points} drift points gone`, color: '#ff8a7a', until: now + 1.4 };
         break;
+      case 'rescue':
+        hud.banner = { text: 'BACK ON TRACK', sub: 'Steer to stay on the road', color: '#ffd12e', until: now + 1.6 };
+        this.audio.blip('miss');
+        break;
       case 'boostPad':
         this.audio.blip('boost');
         break;

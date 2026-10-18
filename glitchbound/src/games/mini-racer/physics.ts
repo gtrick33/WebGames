@@ -98,7 +98,9 @@ export function stepCar(car: CarState, input: Input, surf: SurfaceProps, dt: num
   const sl = car.slide;
 
   // Yaw: needs some speed to turn, reverses when backing up, sharper while sliding.
-  const grip01 = Math.min(1, Math.abs(fwd0) / 130);
+  // Turning needs some speed, but a toy car can always pivot a little, so it can never get pinned
+  // nose-first against a wall with automatic gas.
+  const grip01 = Math.max(0.45, Math.min(1, Math.abs(fwd0) / 130));
   const highSpeedDamp = 1 - 0.3 * Math.min(1, Math.abs(fwd0) / spec.maxSpeed);
   const targetAv = input.steer * spec.turnRate * grip01 * highSpeedDamp * Math.sign(fwd0 || 1) * (1 + 0.4 * sl);
   car.av += (targetAv - car.av) * Math.min(1, (16 - 6 * sl) * dt);
@@ -180,9 +182,12 @@ function bounce(car: CarState, nx: number, ny: number, e: number): number {
   if (vn >= 0) return 0;
   car.vx -= (1 + e) * vn * nx;
   car.vy -= (1 + e) * vn * ny;
-  // Scrub some tangential speed too, and kick the nose a little for feel.
-  car.vx *= 0.82;
-  car.vy *= 0.82;
-  car.av *= 0.4;
+  // A real impact scrubs speed and spin. Resting contact (pushing into a wall at a crawl) must not:
+  // the car has to be able to turn away from it.
+  if (-vn > 40) {
+    car.vx *= 0.82;
+    car.vy *= 0.82;
+    car.av *= 0.4;
+  }
   return -vn;
 }
