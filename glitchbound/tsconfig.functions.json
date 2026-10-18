@@ -12,5 +12,5 @@
     "allowImportingTsExtensions": true,
     "types": []
   },
-  "include": ["functions", "server"]
+  "include": ["functions", "server", "rooms"]
 }

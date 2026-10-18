@@ -40,6 +40,11 @@ jobs:
       - name: Apply database migrations (D1)
         if: github.event_name != 'pull_request' && env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         run: npx wrangler d1 migrations apply glitchbound --remote
+      - name: Deploy live rooms worker (Unhinged)
+        if: github.event_name != 'pull_request' && env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        # Needs "Workers Scripts: Edit" on the token; if it is missing the site still deploys and keeps the last worker.
+        continue-on-error: true
+        run: npx wrangler deploy --config rooms/wrangler.toml
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request' && env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         run: npx wrangler pages deploy dist --project-name=glitchbound --branch=pre-release --commit-dirty=true

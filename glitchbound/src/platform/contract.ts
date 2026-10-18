@@ -48,6 +48,8 @@ export interface GameModuleProps {
   pauseKey?: number;
   /** Play this friends' challenge round (same seed for every player, one attempt). */
   challenge?: ChallengeSpec;
+  /** The player's name on the site (member or guest), for games that show it to others. */
+  playerName?: string;
 }
 
 import type { ChallengeSpec } from './challenge';

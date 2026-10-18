@@ -194,7 +194,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
         >
           <Suspense fallback={<StageLoading title={game.title} />}>
             <div className="stage-module">
-              <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} />
+              <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} />
             </div>
           </Suspense>
         </ErrorBoundary>

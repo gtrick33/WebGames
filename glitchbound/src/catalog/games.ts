@@ -482,4 +482,37 @@ export const GAMES: GameEntry[] = [
     ],
     limits: { scorePerSecond: 160, minSeconds: 10 },
   },
+  {
+    slug: 'unhinged',
+    title: 'Unhinged',
+    tagline: 'The online card game for terrible people. Play the most horrible answer and win. 18+.',
+    description:
+      'An online party card game for 3 to 10 players, each on their own phone. Every round a judge reads a black card and everyone else plays the funniest, darkest white card from their hand. ' +
+      'Hundreds of original, brutally rude cards that never repeat in a session, a vote mode with no judge, and rooms you share with a link. Adults only.',
+    categories: ['party', 'word'],
+    tags: ['18+', 'adult', 'party', 'cards', 'card game', 'multiplayer', 'online', 'friends', 'rude', 'dark humour', 'funny'],
+    released: '2026-10-19',
+    accent: 'coral',
+    art: {
+      tile: '/games/unhinged/tile.webp',
+      wide: '/games/unhinged/wide.webp',
+      alt: 'The word UNHINGED in wobbly cartoon letters over a black prompt card and a fan of white answer cards on a red table',
+      bg: '#e5383b',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'portrait',
+    controls: {
+      touch: ['Tap a card to choose it, then play it', 'The judge taps the winning card'],
+      keyboard: ['Works with mouse or touch'],
+    },
+    stats: [{ key: 'score', label: 'Most points in one game' }],
+    highlights: [
+      'Online rooms for 3 to 10 players: share a link or a five-letter code',
+      'Hundreds of original, horribly funny cards that never repeat in a session',
+      'Rotating judge, or vote mode where everyone plays and votes',
+      'Pick-two cards, one free hand swap per game and a greatest-hits reel at the end',
+      'Rejoin with the same cards if your connection drops',
+    ],
+    limits: { scorePerSecond: 0.1, minSeconds: 60 },
+  },
 ];

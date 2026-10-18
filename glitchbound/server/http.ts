@@ -14,10 +14,17 @@ export interface D1Database {
   batch(statements: D1PreparedStatement[]): Promise<unknown[]>;
 }
 
+export interface RoomNamespace {
+  idFromName(name: string): unknown;
+  get(id: unknown): { fetch(input: Request | string, init?: RequestInit): Promise<Response> };
+}
+
 export interface Env {
   DB: D1Database;
   /** The site's static files (Pages); used to send a page with rewritten link-preview tags. */
   ASSETS?: { fetch: (input: Request | string | URL, init?: RequestInit) => Promise<Response> };
+  /** Live Unhinged rooms (Durable Objects in the glitchbound-rooms worker). */
+  ROOMS?: RoomNamespace;
   /** NEON RUSH's own leaderboard database (served under /play/neon-rush/api). */
   NR_DB: D1Database;
   SITE_URL?: string;

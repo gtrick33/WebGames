@@ -11,6 +11,7 @@ export const CATEGORIES = {
   word: { label: 'Word', blurb: 'Letters, guesses and daily words.' },
   trivia: { label: 'Trivia', blurb: 'Facts, flags and geography.' },
   strategy: { label: 'Strategy', blurb: 'Plan a few moves ahead.' },
+  party: { label: 'Party', blurb: 'Play together with friends, online.' },
   experimental: { label: 'Experimental', blurb: 'Odd ideas that turned out fun.' },
 } as const;
 

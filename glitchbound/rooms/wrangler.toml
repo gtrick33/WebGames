@@ -1,0 +1,16 @@
+# Live rooms for Unhinged (Durable Objects). Deployed separately from the Pages site:
+#   npx wrangler deploy --config rooms/wrangler.toml
+# The site binds to it as ROOMS (see ../wrangler.toml). It has no public URL of its own.
+name = "glitchbound-rooms"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+workers_dev = false
+preview_urls = false
+
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
