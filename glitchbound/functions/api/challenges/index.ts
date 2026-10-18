@@ -21,7 +21,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   const seed = mode === 'daily' ? dailySeed(game.slug, day) : crypto.getRandomValues(new Uint32Array(1))[0]!;
   const id = newCode(7);
   await env.DB.batch([
-    env.DB.prepare('INSERT INTO challenges (id, game, mode, day, seed, round, host, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)').bind(id, game.slug, mode, mode === 'daily' ? day : '', seed, player, now, now),
+    env.DB.prepare('INSERT INTO challenges (id, game, mode, day, seed, round, host, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)').bind(id, game.slug, mode, day, seed, player, now, now),
     env.DB.prepare('INSERT INTO challenge_players (challenge_id, player, name, joined_at) VALUES (?, ?, ?, ?)').bind(id, player, name, now),
     env.DB.prepare('DELETE FROM challenges WHERE updated_at < ?').bind(now - 60 * 86400_000),
   ]);

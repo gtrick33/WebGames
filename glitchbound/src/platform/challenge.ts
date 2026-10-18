@@ -17,7 +17,7 @@ export interface ChallengeSpec {
   /** The round's seed: every player gets the same content from it. */
   seed: number;
   mode: ChallengeMode;
-  /** The day of a daily challenge (YYYY-MM-DD). */
+  /** The challenge's day (YYYY-MM-DD): the daily's date, or the day a fresh challenge started (empty for older ones). */
   day: string;
   /** Replays from the other players this round (e.g. Mini Racer ghosts), when the game uses them. */
   replays?: { name: string; replay: string }[];

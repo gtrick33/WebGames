@@ -102,7 +102,7 @@ export function ChallengePage({ id }: { id: string }) {
             <h1 className="chal-title">{you && view.players[0]?.you ? 'Your challenge' : `${host}'s challenge`}</h1>
             <p className="chal-sub">{game.challenge?.label}</p>
             <div className="chal-chips">
-              <span className="chal-chip">{view.mode === 'daily' ? `Today’s daily · ${view.day}` : 'Fresh round'}</span>
+              <span className="chal-chip">{view.mode === 'daily' ? `Daily · ${view.day}` : 'Fresh round'}</span>
               <span className="chal-chip">Round {view.round}</span>
               <span className="chal-chip">
                 {view.players.length}/{MAX_PLAYERS} players

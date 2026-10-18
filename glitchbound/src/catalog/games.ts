@@ -439,4 +439,47 @@ export const GAMES: GameEntry[] = [
     ownDaily: { label: 'Today’s grid' },
     daily: [{ metric: 'score', targets: [900, 1000, 1100], label: 'Score {n} points in one Crosswire grid' }],
   },
+  {
+    slug: 'wait-what',
+    title: 'Wait, What?',
+    tagline: 'Trivia that sounds made up but isn’t. Weird history, odd animals, words you won’t believe.',
+    description:
+      'A quiz full of facts that make you say "wait, what?": the army that lost a war to emus, the jockey who won a race after he died, the cheese that comes with live maggots. ' +
+      'Hundreds of hand-written questions across twelve categories, plus real words that sound fake and "which came first?" puzzles. A daily quiz for everyone, an endless mode with no repeats, and 10-question challenges for up to 6 friends.',
+    categories: ['trivia', 'word'],
+    tags: ['trivia', 'quiz', 'facts', 'questions', 'general knowledge', 'pub quiz', 'daily', 'friends', 'challenge', 'multiplayer', 'history', 'science'],
+    released: '2026-10-19',
+    accent: 'magenta',
+    art: {
+      tile: '/games/wait-what/tile.webp',
+      wide: '/games/wait-what/wide.webp',
+      alt: 'Big cartoon letters reading WAIT, WHAT?! in front of two quiz cards, each with the right answer marked in green',
+      bg: '#ffd166',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'portrait',
+    controls: {
+      keyboard: ['1–4 or A–D: answer', 'Enter: next question'],
+      touch: ['Tap an answer'],
+    },
+    stats: [
+      { key: 'score', label: 'Best quiz score' },
+      { key: 'correct', label: 'Most right answers in one go' },
+      { key: 'streak', label: 'Longest streak' },
+    ],
+    highlights: [
+      'Hundreds of hand-written questions with a surprising fact after every answer',
+      'Generated questions too: real words that sound fake, words from other languages, "which came first?"',
+      'Daily quiz of 10, the same for everyone, with a shareable result grid',
+      'Endless mode: three strikes, and no question repeats until you have seen them all',
+      'Challenge up to 5 friends: same 10 questions, 20 seconds each, faster answers score more',
+    ],
+    ownDaily: { label: 'Today’s quiz' },
+    challenge: { label: '10 questions, 20 seconds each, the same for everyone. Right answers score 100, plus up to 50 for speed.' },
+    daily: [
+      { metric: 'correct', targets: [6, 7, 8], label: 'Get {n} questions right in one Wait, What? quiz' },
+      { metric: 'streak', targets: [4, 5, 6], label: 'Answer {n} Wait, What? questions in a row correctly' },
+    ],
+    limits: { scorePerSecond: 160, minSeconds: 10 },
+  },
 ];
