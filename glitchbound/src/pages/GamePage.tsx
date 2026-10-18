@@ -176,6 +176,13 @@ export function GamePage({ game }: { game: GameEntry }) {
   const [playing, setPlaying] = useState(false);
   const [last, setLast] = useState<LastRound | null>(null);
   const [burst, setBurst] = useState(0);
+  // Play was pressed before the challenge loaded: restart the game straight in the challenge round.
+  const hasRound = !!challengeSpecOf(chal.state);
+  const [hadRound, setHadRound] = useState(hasRound);
+  if (hadRound !== hasRound) {
+    setHadRound(hasRound);
+    if (hasRound && playing) setStageRun((r) => ({ key: r.key + 1, autoStart: true }));
+  }
 
   const [shareMsg, setShareMsg] = useState('');
   const live = useLiveCatalog();

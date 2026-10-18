@@ -171,7 +171,10 @@ function Play(props: {
 }) {
   const { mode, today, challenge, host, saveRef, commit } = props;
   const runKey = mode === 'daily' ? today : mode === 'challenge' && challenge ? `${challenge.id}:${challenge.round}` : null;
-  const stored = runKey ? (mode === 'daily' ? props.save.daily[runKey] : props.save.runs[runKey]) : undefined;
+  const kept = runKey ? (mode === 'daily' ? props.save.daily[runKey] : props.save.runs[runKey]) : undefined;
+  // A finished challenge round is not resumed: when its score never reached the scoreboard (lost on the
+  // way, or another player on this device), the round is played again instead of sitting on its results.
+  const stored = mode === 'challenge' && kept?.done ? undefined : kept;
 
   const [dealer] = useState(() => (mode === 'endless' ? new EndlessDealer(props.save.seen) : null));
   const [qs, setQs] = useState<Question[]>(() => (mode === 'daily' ? dailyQuiz(today) : mode === 'challenge' && challenge ? challengeQuiz(challenge.seed, challenge.day) : [dealer!.next()]));

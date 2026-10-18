@@ -73,7 +73,7 @@ export function ChallengePage({ id }: { id: string }) {
     try {
       setView(await fn());
     } catch (e) {
-      setMsg(e instanceof ApiError ? (e.message ?? 'Something went wrong.') : 'Network error. Try again.');
+      setMsg(e instanceof ApiError ? (e.message !== e.code ? e.message : 'Something went wrong.') : 'Network error. Try again.');
     } finally {
       setBusy(false);
     }
@@ -247,7 +247,7 @@ export function ChallengesPage() {
       const v = await createChallenge(game.slug, mode, player.name, dayKey());
       navigate(`/c/${v.id}`);
     } catch (e) {
-      setMsg(e instanceof ApiError ? (e.message ?? 'Could not start the challenge.') : 'Network error. Try again.');
+      setMsg(e instanceof ApiError ? (e.message !== e.code ? e.message : 'Could not start the challenge.') : 'Network error. Try again.');
       setBusy(false);
     }
   };

@@ -247,6 +247,8 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
       },
       onUiKey: (key: UiKey) => {
         const s = screenRef.current;
+        // A challenge is one race: Enter and R don't race it again from the result screen.
+        if (s === 'result' && inChallenge.current && key !== 'pause') return;
         if (key === 'confirm' && (s === 'menu' || s === 'result')) handlers.current.startRace();
         else if (key === 'confirm' && s === 'paused') handlers.current.resume();
         else if (key === 'restart' && s !== 'menu' && s !== 'garage') handlers.current.startRace();

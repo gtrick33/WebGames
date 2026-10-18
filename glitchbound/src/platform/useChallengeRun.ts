@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameEntry } from '../catalog/types';
 import { ApiError } from './account';
-import type { ChallengeSpec, ChallengeView } from './challenge';
+import { REPLAY_MAX, type ChallengeSpec, type ChallengeView } from './challenge';
 import { challengeReplays, getChallenge, joinChallenge, submitChallengeScore } from './challenges';
 import type { EndEvent } from './contract';
 
@@ -40,7 +40,7 @@ export function useChallengeRun(id: string | null, game: GameEntry, name: string
         const replays = game.slug === 'mini-racer' ? (await challengeReplays(id).catch(() => ({ replays: [] }))).replays : undefined;
         if (live) setState({ status: 'ready', view: v, spec: { id, round: v.round, seed: v.seed, mode: v.mode, day: v.day, replays } });
       })
-      .catch((e: unknown) => live && setState({ status: 'error', message: e instanceof ApiError ? (e.message ?? 'Could not load the challenge.') : e instanceof Error ? e.message : 'Could not load the challenge.' }));
+      .catch((e: unknown) => live && setState({ status: 'error', message: e instanceof ApiError ? (e.message !== e.code ? e.message : 'Could not load the challenge.') : e instanceof Error ? e.message : 'Could not load the challenge.' }));
     return () => {
       live = false;
     };
@@ -51,9 +51,11 @@ export function useChallengeRun(id: string | null, game: GameEntry, name: string
   const finish = (e: EndEvent): void => {
     const s = ref.current;
     if (s.status !== 'ready' || !e.challenge || e.challenge.id !== s.spec.id) return;
-    submitChallengeScore(s.spec.id, s.spec.round, e.score, e.stats, e.challenge.replay).then(
+    // A replay over the server's limit would sink the whole score, so it stays behind.
+    const replay = e.challenge.replay && e.challenge.replay.length <= REPLAY_MAX ? e.challenge.replay : undefined;
+    submitChallengeScore(s.spec.id, s.spec.round, e.score, e.stats, replay).then(
       (view) => setState({ status: 'sent', view, score: e.score, spec: s.spec }),
-      (err: unknown) => setState({ status: 'error', spec: s.spec, message: err instanceof ApiError ? (err.message ?? 'Your score was not saved.') : 'Your score was not saved (network).' }),
+      (err: unknown) => setState({ status: 'error', spec: s.spec, message: err instanceof ApiError ? (err.message !== err.code ? err.message : 'Your score was not saved.') : 'Your score was not saved (network).' }),
     );
   };
   return { state, finish };

@@ -359,7 +359,7 @@ export const GAMES: GameEntry[] = [
       'Zoom up to 3.2×, two hints per shot, streaks and spoiler-free sharing',
     ],
     ownDaily: { label: 'Today’s 5 shots' },
-    challenge: { label: 'The same three scenes for everyone. Find the ball fast, with few wrong taps.' },
+    challenge: { label: 'The same five shots for everyone. Find the ball fast, with few wrong taps.' },
     daily: [
       { metric: 'score', targets: [3000, 3500, 4000], label: 'Score {n} points in one Where’s the Ball? daily' },
       { metric: 'found', targets: [5, 8, 12], label: 'Find {n} balls in one Where’s the Ball? game' },

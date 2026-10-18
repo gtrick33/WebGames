@@ -66,7 +66,7 @@ export function ChallengeFriends({ game }: { game: GameEntry }) {
       const v = await createChallenge(game.slug, mode, player.name, dayKey());
       navigate(`/c/${v.id}`);
     } catch (e) {
-      setMsg(e instanceof ApiError ? (e.message ?? 'Could not start a challenge.') : 'Network error. Try again.');
+      setMsg(e instanceof ApiError ? (e.message !== e.code ? e.message : 'Could not start a challenge.') : 'Network error. Try again.');
       setBusy(false);
     }
   };

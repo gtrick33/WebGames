@@ -7,6 +7,8 @@ import { hashString } from './dates';
 export const MAX_PLAYERS = 6;
 export const MAX_ROUNDS = 25;
 export const NAME_MAX = 20;
+/** Longest replay a score may carry (Mini Racer: a lap of about a minute). Longer ones are not sent. */
+export const REPLAY_MAX = 20_000;
 
 export type ChallengeMode = 'daily' | 'fresh';
 

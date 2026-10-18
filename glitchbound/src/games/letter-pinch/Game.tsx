@@ -78,7 +78,8 @@ export default function Game({ host, challenge }: GameModuleProps) {
     challenge ? { mode: 'practice', challenge: true, secret: practiceSecret(rng(challenge.seed ^ 0x9e3779b9)), rows: [], startedAt: null, endedAt: null } : null,
   );
   const [typed, setTyped] = useState('');
-  const [panel, setPanel] = useState<Panel>(() => (!save.seenHelp ? 'help' : isOver(daily) ? 'stats' : 'none'));
+  // A challenge opens on its own board, even when today's daily is already done.
+  const [panel, setPanel] = useState<Panel>(() => (!save.seenHelp ? 'help' : isOver(daily) && !challenge ? 'stats' : 'none'));
   const [toast, setToast] = useState<{ text: string; id: number } | null>(null);
   const [shake, setShake] = useState(0);
   const [, setTick] = useState(0);
