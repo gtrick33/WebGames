@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n';
 import { flushSync } from 'react-dom';
 import { categoryCounts, isCategory, queryGames, SORTS, type SortId } from '../catalog/catalog';
 import { orderByLayout, tileSizeFor } from '../catalog/settings';
 import { useLiveCatalog } from '../platform/liveCatalog';
-import type { CategoryId } from '../catalog/types';
+import { MOODS, type CategoryId, type MoodId } from '../catalog/types';
 import { track } from '../platform/analytics';
 import { useSave } from '../platform/store';
 import { useAccount } from '../platform/account';
@@ -12,6 +12,7 @@ import { navigate, useLocation } from '../router/router';
 import { GameTile } from './GameTile';
 import { Icon } from './Icon';
 import { Dot, Ring, Tri } from './Shapes';
+import { SurpriseButton } from './Surprise';
 import './Arcade.css';
 
 /** Wraps a state change in a View Transition so tiles glide to their new spots (where supported). */
@@ -21,13 +22,21 @@ function withTransition(update: () => void): void {
   else update();
 }
 
-/** The library: search, category filter and sort. State lives in the URL so filtered views are shareable. */
+const MOOD_IDS = Object.keys(MOODS) as MoodId[];
+const isMood = (v: string | null): v is MoodId => !!v && v in MOODS;
+
+/**
+ * The library. Up front: moods ("what do you feel like?") and Surprise me; search, categories and
+ * sort sit behind one button. State lives in the URL so filtered views are shareable.
+ */
 export function Arcade() {
   const t = useT();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const urlCat = params.get('category');
   const category: CategoryId | null = isCategory(urlCat) ? urlCat : null;
+  const urlMood = params.get('mood');
+  const mood: MoodId | null = isMood(urlMood) ? urlMood : null;
   const live = useLiveCatalog();
   // With an admin layout the default view is "Featured" (their order); Newest and A to Z stay one click away.
   const featuredOn = !!live.layout?.order.length;
@@ -38,18 +47,20 @@ export function Arcade() {
   const acct = useAccount();
   const favorites = acct.me ? acct.me.favorites : acct.guestFavorites;
   const [q, setQ] = useState(params.get('q') ?? '');
+  const [moreOpen, setMoreOpen] = useState(false);
   const save = useSave();
   const games = live.games;
   const cats = categoryCounts(games);
-  const all = useMemo(() => {
-    const hits = queryGames({ q, category, sort: sort === 'featured' ? 'newest' : sort }, live.games);
-    // Games an admin pinned come first (unless the player is searching).
-    if (q.trim()) return hits;
-    const ordered = sort === 'featured' ? orderByLayout(hits, live.layout) : hits;
-    return [...ordered.filter((g) => live.settings(g.slug).pinned), ...ordered.filter((g) => !live.settings(g.slug).pinned)];
-  }, [q, category, sort, live]);
-  const results = favOnly ? all.filter((g) => favorites.includes(g.slug)) : all;
-  const filtered = q.trim() !== '' || category !== null || favOnly;
+  // A dozen or so games: cheap enough to work out on every render (the compiler memoizes it).
+  const hits = queryGames({ q, category, sort: sort === 'featured' ? 'newest' : sort }, live.games);
+  const ordered = sort === 'featured' ? orderByLayout(hits, live.layout) : hits;
+  // Games an admin pinned come first (unless the player is searching).
+  const all = q.trim() ? hits : [...ordered.filter((g) => live.settings(g.slug).pinned), ...ordered.filter((g) => !live.settings(g.slug).pinned)];
+  const results = (favOnly ? all.filter((g) => favorites.includes(g.slug)) : all).filter((g) => !mood || g.moods?.includes(mood));
+  const filtered = q.trim() !== '' || category !== null || favOnly || mood !== null;
+  // Search, categories and sort open by themselves when a link (or the player) is using them.
+  const showMore = moreOpen || q.trim() !== '' || category !== null || favOnly || sortParam !== null;
+  const moods = MOOD_IDS.filter((m) => games.some((g) => g.moods?.includes(m)));
   const firstRender = useRef(true);
 
   const setParam = (key: string, value: string | null): void => {
@@ -79,13 +90,24 @@ export function Arcade() {
     if (id) track('category_select', { category: id });
     withTransition(() => {
       setParam('fav', null);
+      setParam('mood', null);
       setParam('category', id);
+    });
+  };
+
+  const pickMood = (id: MoodId | null): void => {
+    if (id) track('mood_select', { mood: id });
+    withTransition(() => {
+      setParam('fav', null);
+      setParam('category', null);
+      setParam('mood', id === mood ? null : id);
     });
   };
 
   const pickFavorites = (): void => {
     withTransition(() => {
       setParam('category', null);
+      setParam('mood', null);
       setParam('fav', favOnly ? null : '1');
     });
   };
@@ -112,6 +134,28 @@ export function Arcade() {
           </p>
         </div>
 
+        <div className="arcade-moods" role="group" aria-label={t('What do you feel like?')}>
+          <button className={`mood-btn${!filtered ? ' is-on' : ''}`} aria-pressed={!filtered} onClick={clear}>
+            <span className="mood-emoji" aria-hidden="true">
+              ✨
+            </span>{' '}
+            {t('Everything')}
+          </button>
+          {moods.map((m) => (
+            <button key={m} className={`mood-btn${mood === m ? ' is-on' : ''}`} aria-pressed={mood === m} onClick={() => pickMood(m)}>
+              <span className="mood-emoji" aria-hidden="true">
+                {MOODS[m].emoji}
+              </span>{' '}
+              {t(MOODS[m].label)}
+            </button>
+          ))}
+          <SurpriseButton className="mood-btn mood-surprise" />
+          <button className={`mood-btn mood-more${showMore ? ' is-on' : ''}`} aria-expanded={showMore} onClick={() => setMoreOpen((o) => !o)}>
+            <Icon name="search" size={16} /> {t('Search & sort')}
+          </button>
+        </div>
+
+        {showMore && (
         <div className="arcade-controls">
           <label className="arcade-search">
             <Icon name="search" size={20} />
@@ -145,6 +189,7 @@ export function Arcade() {
             </select>
           </label>
         </div>
+        )}
 
         <p className="sr-only" role="status" aria-live="polite">
           {results.length === 1 ? t('1 game shown') : t('{n} games shown', { n: results.length })}

@@ -45,6 +45,38 @@
   font-size: clamp(16px, 1.4vw, 19px);
   color: var(--fg-2);
 }
+.intro-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.intro-pick {
+  gap: 12px;
+  padding-left: 10px;
+}
+.intro-pick img {
+  flex: none;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+}
+.intro-pick span {
+  display: grid;
+  line-height: 1.1;
+  text-align: left;
+}
+.intro-pick small {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.intro-surprise {
+  background: var(--yellow);
+  color: #1d1238;
+  border-color: var(--ink);
+}
 
 .intro-side {
   position: relative;
@@ -144,6 +176,13 @@
   }
   .intro-sub {
     display: none;
+  }
+  .intro-ctas {
+    margin-top: 12px;
+  }
+  .intro-ctas .btn {
+    flex: 1 1 auto;
+    justify-content: center;
   }
   /* Status cards become a swipeable row so the catalogue starts right below. */
   .intro-side {

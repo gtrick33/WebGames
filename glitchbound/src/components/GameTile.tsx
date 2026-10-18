@@ -31,7 +31,8 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
     >
       <div className="tile-art" style={{ background: game.art.bg }}>
         <picture>
-          {art !== game.art.tile && <source media="(max-width: 640px)" srcSet={game.art.tile} />}
+          {/* On wide screens a big banner is two rows tall: the square artwork fills it best. */}
+          {size === 'xl' && art !== game.art.tile && <source media="(min-width: 1021px)" srcSet={game.art.tile} />}
           <img src={art} alt={game.art.alt} loading="lazy" decoding="async" />
         </picture>
         {preview && <GamePreview slug={game.slug} className="tile-preview" />}

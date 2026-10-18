@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n';
 import { LangPicker } from './LangPicker';
 import { account, useAccount } from '../platform/account';
@@ -11,9 +11,11 @@ import { useSave } from '../platform/store';
 import { Link, useLocation } from '../router/router';
 import { Icon, type IconName } from './Icon';
 import { LogoMark, Wordmark } from './Logo';
-import { SearchDialog } from './SearchDialog';
 import { Avatar, openSignIn, SignInDialog } from './SignIn';
 import './Header.css';
+
+// The search dialog loads the first time it is opened.
+const SearchDialog = lazy(() => import('./SearchDialog').then((m) => ({ default: m.SearchDialog })));
 
 const TABS: { href: string; label: string; short?: string; icon: IconName }[] = [
   { href: '/', label: 'Arcade', icon: 'gamepad' },
@@ -135,6 +137,8 @@ export function Header() {
   const { pathname } = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchUsed, setSearchUsed] = useState(false);
+  if (searchOpen && !searchUsed) setSearchUsed(true);
 
   useEffect(() => {
     const onScroll = (): void => setScrolled(window.scrollY > 8);
@@ -200,7 +204,11 @@ export function Header() {
           </Link>
         ))}
       </nav>
-      <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+      {searchUsed && (
+        <Suspense fallback={null}>
+          <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+        </Suspense>
+      )}
       <SignInDialog />
     </>
   );

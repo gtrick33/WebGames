@@ -17,6 +17,8 @@ export type AnalyticsEvent =
   | 'daily_complete'
   | 'search'
   | 'category_select'
+  | 'mood_select'
+  | 'surprise_me'
   | 'game_error'
   | 'favorite'
   | 'sign_in'

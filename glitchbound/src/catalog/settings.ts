@@ -60,12 +60,12 @@ export interface Notice {
   tone: NoticeTone;
 }
 
-/** Banner sizes in the arcade grid (12 columns): small 1/3, wide 1/2, tall 1/3 double height, big 2/3 double height. */
+/** Banner sizes in the arcade grid (12 columns): small 1/4, wide 1/2, tall 1/4 double height, big 1/2 double height (a third, half, third and two thirds on mid-size screens). */
 export type TileSize = 'md' | 'wide' | 'tall' | 'xl';
 export const TILE_SIZES: TileSize[] = ['md', 'wide', 'tall', 'xl'];
 
 /** Shape rhythm used for games without a chosen size, so the grid never looks like identical boxes. */
-export const TILE_RHYTHM: TileSize[] = ['xl', 'tall', 'md', 'md', 'wide', 'md', 'tall', 'md'];
+export const TILE_RHYTHM: TileSize[] = ['xl', 'md', 'md', 'md', 'md', 'wide', 'md', 'md', 'md', 'md', 'md', 'tall', 'md', 'md'];
 
 export const ACCENTS: Accent[] = ['cyan', 'magenta', 'blue', 'orange', 'lime', 'coral', 'yellow', 'teal', 'violet'];
 

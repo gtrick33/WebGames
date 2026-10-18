@@ -13,6 +13,7 @@ export const GAMES: GameEntry[] = [
       'Switch lanes at the last possible moment, grab coins and power-ups, and chain near misses into an x8 combo. ' +
       'Unlock 65 cosmetic cars, take on three new missions every day and climb the online leaderboard.',
     categories: ['racing', 'arcade'],
+    moods: ['action', 'quick'],
     tags: ['car', 'driving', 'endless', 'runner', 'traffic', 'neon', 'reflex', 'high score', 'leaderboard'],
     released: '2026-10-17',
     accent: 'cyan',
@@ -59,6 +60,7 @@ export const GAMES: GameEntry[] = [
       'A bright sequence-memory game: tiles flash in order and you repeat the pattern. Sequences grow, playback speeds up ' +
       'and the grid expands from 3×3 to 5×5. Play Classic, a 60-second Speed Run, the Daily Challenge or the no-mistakes Perfect Recall ladder.',
     categories: ['puzzle', 'arcade'],
+    moods: ['brainy', 'quick'],
     tags: ['memory', 'sequence', 'simon', 'brain', 'grid', 'tiles', 'daily', 'pattern', 'focus'],
     released: '2026-10-18',
     accent: 'yellow',
@@ -103,6 +105,7 @@ export const GAMES: GameEntry[] = [
       'Glance at a famous everyday color like Stop Sign Red or School Bus Yellow, then recreate it with HSB or RGB sliders. ' +
       'Every guess is scored for perceptual accuracy with tips on what to fix. Five new colors daily, the same for everyone, plus unlimited practice.',
     categories: ['puzzle', 'arcade'],
+    moods: ['chill', 'quick'],
     tags: ['color', 'colour', 'memory', 'daily', 'perception', 'hue', 'rgb', 'palette', 'design', 'eye test'],
     released: '2026-10-18',
     accent: 'coral',
@@ -146,6 +149,7 @@ export const GAMES: GameEntry[] = [
       'Find the secret five-letter word in six guesses. Each tile says whether the hidden letter comes earlier or later ' +
       'in the alphabet, and the windows above the board squeeze shut as you close in. One shared daily word, unlimited practice.',
     categories: ['word', 'puzzle'],
+    moods: ['brainy'],
     tags: ['words', 'letters', 'daily', 'alphabet', 'deduction', 'brain', 'streak', 'five letters'],
     released: '2026-10-18',
     accent: 'violet',
@@ -189,6 +193,7 @@ export const GAMES: GameEntry[] = [
       'Hold the left or right side of the screen to throw a chunky toy car around seven handmade tracks, plus a new one every day. ' +
       'Circuits punish slides, rally tracks reward them, snow tests your control and the oval is flat out. Race three AI rivals at any level from 0 to 100, or chase your ghost and sector times in Time Trial.',
     categories: ['racing', 'arcade'],
+    moods: ['action'],
     tags: ['car', 'driving', 'drift', 'time trial', 'top-down', 'ghost', 'daily', 'laps', 'kart', 'one-touch', 'cars'],
     released: '2026-10-18',
     accent: 'coral',
@@ -241,6 +246,7 @@ export const GAMES: GameEntry[] = [
       'A color-sort puzzle: pour the top color of one tube onto the same color or into an empty tube, until every color sits in a tube of its own. ' +
       'Every puzzle has a par worked out by a solver, and moves are counted. Five new puzzles daily, plus Endless, a Par Challenge and unlimited practice.',
     categories: ['puzzle', 'strategy'],
+    moods: ['brainy', 'chill'],
     tags: ['color', 'colour', 'sort', 'water sort', 'tubes', 'bottles', 'liquid', 'daily', 'moves', 'logic', 'designer eye'],
     released: '2026-10-18',
     accent: 'teal',
@@ -287,6 +293,7 @@ export const GAMES: GameEntry[] = [
       'Compare two bright, nearly identical pictures and tap the five differences: a swapped color, a missing bird, a flipped car. ' +
       'Pictures are generated fresh, so they never run out. Three new pictures daily, the same for everyone, plus Glitch Rush against the clock and an endless Relax mode.',
     categories: ['puzzle', 'arcade'],
+    moods: ['chill', 'quick'],
     tags: ['spot the difference', 'differences', 'observation', 'find', 'hidden', 'daily', 'pictures', 'eye test', 'glitch'],
     released: '2026-10-18',
     accent: 'violet',
@@ -331,6 +338,7 @@ export const GAMES: GameEntry[] = [
       'Scan real photos of lawns, leaf-covered paths, pebble beaches, flower beds and market stalls for one tennis ball, sized and lit to match the scene. ' +
       'Five new shots daily, each harder than the last, with hints, three tries per shot and a score for speed. Endless mode keeps the shots coming.',
     categories: ['puzzle', 'arcade'],
+    moods: ['chill', 'quick'],
     tags: ['tennis', 'ball', 'hidden object', 'find', 'search', 'seek', 'observation', 'daily', 'eye test', 'zoom'],
     released: '2026-10-18',
     accent: 'lime',
@@ -374,6 +382,7 @@ export const GAMES: GameEntry[] = [
       'Tap to keep a chubby little bird in the air and squeeze through the gaps. The world changes every 15 points, gaps start to drift, and golden feathers pay extra. ' +
       'A daily course that is the same for everyone, plus endless random skies.',
     categories: ['arcade'],
+    moods: ['action', 'quick'],
     tags: ['one tap', 'bird', 'flap', 'endless', 'reflex', 'daily', 'casual', 'arcade', 'tap'],
     released: '2026-10-19',
     accent: 'yellow',
@@ -417,6 +426,7 @@ export const GAMES: GameEntry[] = [
       'An English arrowword, the newspaper puzzle loved across Bulgaria and Scandinavia: clue squares sit inside the grid with arrows pointing to their answers. ' +
       'Every grid is freshly generated, the circled letters hide a bonus mystery word, and the daily grid is the same for everyone.',
     categories: ['word', 'puzzle'],
+    moods: ['brainy'],
     tags: ['crossword', 'arrowword', 'scandinavian crossword', 'krastoslovitsa', 'words', 'clues', 'daily', 'vocabulary', 'brain'],
     released: '2026-10-19',
     accent: 'yellow',
@@ -456,6 +466,7 @@ export const GAMES: GameEntry[] = [
       'A quiz full of facts that make you say "wait, what?": the army that lost a war to emus, the jockey who won a race after he died, the cheese that comes with live maggots. ' +
       'Hundreds of hand-written questions across twelve categories, plus real words that sound fake and "which came first?" puzzles. A daily quiz for everyone, an endless mode with no repeats, and 10-question challenges for up to 6 friends.',
     categories: ['trivia', 'word'],
+    moods: ['brainy', 'friends'],
     tags: ['trivia', 'quiz', 'facts', 'questions', 'general knowledge', 'pub quiz', 'daily', 'friends', 'challenge', 'multiplayer', 'history', 'science'],
     released: '2026-10-19',
     accent: 'magenta',
@@ -499,6 +510,7 @@ export const GAMES: GameEntry[] = [
       'An online party card game for 3 to 10 players, each on their own phone. Every round a judge reads a black card and everyone else plays the funniest, darkest white card from their hand. ' +
       'Hundreds of original, brutally rude cards that never repeat in a session, a vote mode with no judge, and rooms you share with a link. Adults only.',
     categories: ['party', 'word'],
+    moods: ['friends'],
     tags: ['18+', 'adult', 'party', 'cards', 'card game', 'multiplayer', 'online', 'friends', 'rude', 'dark humour', 'funny'],
     released: '2026-10-19',
     accent: 'coral',

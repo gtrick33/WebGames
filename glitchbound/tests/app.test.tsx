@@ -13,16 +13,30 @@ function renderAt(path: string) {
 }
 
 describe('homepage', () => {
-  it('renders the hero, the daily challenge and the arcade', () => {
+  it('renders the hero, today’s pick, today’s dailies and the arcade', () => {
     renderAt('/');
     expect(screen.getByRole('heading', { level: 1, name: /Small games\.\s*Big obsessions\./ })).toBeTruthy();
-    expect(screen.getByText(/Today’s challenge · \S/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Today’s pick/ }).getAttribute('href')).toMatch(/^\/games\//);
+    expect(screen.getAllByRole('button', { name: /Surprise me/ }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { level: 2, name: 'Today’s dailies' })).toBeTruthy();
     const arcade = screen.getByRole('region', { name: 'The arcade' });
     expect(within(arcade).getByRole('link', { name: 'NEON RUSH' }).getAttribute('href')).toBe('/games/neon-rush');
   });
 
+  it('picks games by mood, keeping the mood in the URL', () => {
+    renderAt('/');
+    const arcade = screen.getByRole('region', { name: 'The arcade' });
+    fireEvent.click(within(arcade).getByRole('button', { name: /Quick rounds/ }));
+    expect(window.location.search).toBe('?mood=quick');
+    expect(within(arcade).getByRole('link', { name: 'NEON RUSH' })).toBeTruthy();
+    expect(within(arcade).queryByRole('link', { name: 'Unhinged' })).toBeNull();
+    fireEvent.click(within(arcade).getByRole('button', { name: /Everything/ }));
+    expect(within(arcade).getByRole('link', { name: 'Unhinged' })).toBeTruthy();
+  });
+
   it('filters by category and keeps the filter in the URL', () => {
     renderAt('/');
+    fireEvent.click(screen.getByRole('button', { name: /Search & sort/ }));
     const group = screen.getByRole('group', { name: 'Filter by category' });
     fireEvent.click(within(group).getByRole('button', { name: /Racing/ }));
     expect(window.location.search).toBe('?category=racing');
@@ -31,6 +45,7 @@ describe('homepage', () => {
 
   it('shows an empty state for searches with no results, and recovers', () => {
     renderAt('/');
+    fireEvent.click(screen.getByRole('button', { name: /Search & sort/ }));
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search the arcade' }), { target: { value: 'zzzz' } });
     expect(screen.getByText('Nothing here. Yet.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Show all games' }));
@@ -145,6 +160,7 @@ describe('members features as a guest (API unreachable in tests)', () => {
     fireEvent.click(within(arcade).getByRole('button', { name: 'Add NEON RUSH to favorites' }));
     expect(within(arcade).getByRole('button', { name: 'Remove NEON RUSH from favorites' }).getAttribute('aria-pressed')).toBe('true');
     expect(JSON.parse(localStorage.getItem('glitchbound.favorites')!)).toEqual(['neon-rush']);
+    fireEvent.click(within(arcade).getByRole('button', { name: /Search & sort/ }));
     fireEvent.click(within(arcade).getByRole('button', { name: /Favorites/ }));
     expect(window.location.search).toBe('?fav=1');
     expect(within(arcade).getByRole('link', { name: 'NEON RUSH' })).toBeTruthy();
@@ -152,13 +168,13 @@ describe('members features as a guest (API unreachable in tests)', () => {
     expect(screen.getByText('No favorites yet.')).toBeTruthy();
   });
 
-  it('invites guests to unlock quests and opens the sign-in dialog', () => {
+  it('tells guests it is free with no sign-up, and opens the sign-in dialog when they want more', () => {
     renderAt('/');
-    fireEvent.click(screen.getByRole('button', { name: /Unlock quests/ }));
+    expect(screen.getByRole('heading', { level: 2, name: /100% free\.\s*No sign-up\.\s*No downloads\./ })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Sign in free/ }));
     const dialog = document.querySelector('dialog.signin-dialog') as HTMLDialogElement;
     expect(dialog.open).toBe(true);
     expect(within(dialog).getByRole('heading', { name: 'Join the arcade' })).toBeTruthy();
-    expect(within(dialog).getByText('Sign in to unlock daily quests.')).toBeTruthy();
   });
 
   it('shows a friendly offline state on the leaderboards page', async () => {

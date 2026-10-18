@@ -1,0 +1,82 @@
+/* "Surprise me": a slot-machine reel that lands on a random game. */
+.surprise {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(7 2 26 / 0.72);
+  backdrop-filter: blur(4px);
+  animation: surprise-in 0.2s var(--out) both;
+}
+@keyframes surprise-in {
+  from { opacity: 0; }
+}
+.surprise-card {
+  --acc: var(--cyan);
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: min(100%, 320px);
+  padding: 22px 22px 18px;
+  border: 3px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 0 0 4px var(--acc), var(--hard-lg);
+  transition: box-shadow 0.2s;
+}
+.surprise-card[data-accent='magenta'] { --acc: var(--magenta); }
+.surprise-card[data-accent='violet'] { --acc: var(--violet); }
+.surprise-card[data-accent='lime'] { --acc: var(--lime); }
+.surprise-card[data-accent='yellow'] { --acc: var(--yellow); }
+.surprise-card[data-accent='orange'] { --acc: var(--orange); }
+.surprise-card[data-accent='coral'] { --acc: var(--coral); }
+.surprise-card[data-accent='teal'] { --acc: var(--teal); }
+.surprise-card[data-accent='blue'] { --acc: var(--blue); }
+.surprise-card.is-landed {
+  animation: surprise-land 0.5s var(--spring);
+}
+@keyframes surprise-land {
+  40% { transform: scale(1.08) rotate(-2deg); }
+}
+.surprise-kicker {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.surprise-window {
+  width: 200px;
+  height: 200px;
+  overflow: hidden;
+  border: 3px solid var(--line);
+  border-radius: 28px;
+  box-shadow: inset 0 0 0 3px var(--acc);
+}
+.surprise-window img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: surprise-roll 0.09s linear;
+}
+.is-landed .surprise-window img {
+  animation: none;
+}
+@keyframes surprise-roll {
+  from { transform: translateY(-40%); filter: blur(2px); }
+}
+.surprise-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 850;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .surprise,
+  .surprise-card.is-landed,
+  .surprise-window img {
+    animation: none;
+  }
+}

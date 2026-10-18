@@ -1,42 +1,39 @@
-import { GAMES } from '../catalog/games';
-import { latestGame } from '../catalog/catalog';
-import { useLiveCatalog } from '../platform/liveCatalog';
+import { useAccount } from '../platform/account';
 import { AdSlot } from '../components/AdSlot';
 import { Arcade } from '../components/Arcade';
-import { DailyCard } from '../components/DailyCard';
 import { FreeBanner } from '../components/FreeBanner';
 import { Hero } from '../components/Hero';
 import { PartyBanner } from '../components/PartyBanner';
 import { NotifyForm } from '../components/Notify';
 import { TodaysDailies } from '../components/TodaysDailies';
 import { QuestBoard } from '../components/Quests';
-import { LatestRelease, Marquee, YourArcade } from '../components/Sections';
+import { YourArcade } from '../components/Sections';
 import { usePageMeta } from '../platform/meta';
 import { useInitialHashScroll } from '../router/router';
 
-/** Games first: a short intro, the catalogue, then quests, the daily challenge and the rest. */
+/**
+ * Kept short on purpose: what to play now (today's pick, Surprise me, today's dailies), then the
+ * games by mood. Newcomers see the free-and-no-sign-up promise first; members see their quests.
+ * The daily challenge in full lives on /daily.
+ */
 export function Home() {
   usePageMeta({ path: '/' });
   useInitialHashScroll();
-  const live = useLiveCatalog();
-  // An admin's spotlight pick, else the newest game players can see.
-  const featured = live.spotlight ?? latestGame(live.games) ?? GAMES[0]!;
+  const { me } = useAccount();
   return (
     <>
       <Hero />
-      <FreeBanner />
+      {!me && <FreeBanner />}
+      <TodaysDailies variant="row" headingLevel={2} />
       <Arcade />
       <YourArcade />
       <PartyBanner />
-      <div className="wrap section">
-        <QuestBoard compact />
-      </div>
-      <div className="wrap section home-daily" id="daily">
-        <DailyCard variant="band" />
-        <TodaysDailies headingLevel={2} />
-      </div>
-      <LatestRelease game={featured} />
-      <Marquee words={['Small games', 'Big obsessions', 'One more run', 'Beat your best', 'Your daily challenge starts here', 'No installs']} />
+      {me && (
+        <div className="wrap section">
+          <QuestBoard compact />
+        </div>
+      )}
+      {me && <FreeBanner />}
       <NotifyForm />
       <div className="wrap">
         <AdSlot placement="home" />

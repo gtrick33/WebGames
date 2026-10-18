@@ -17,6 +17,20 @@ export const CATEGORIES = {
 
 export type CategoryId = keyof typeof CATEGORIES;
 
+/**
+ * Moods: the simple way into the arcade on the home page ("what do you feel like?"), wider than
+ * categories and written for players, not librarians. A game can have several.
+ */
+export const MOODS = {
+  quick: { emoji: '⚡', label: 'Quick rounds' },
+  brainy: { emoji: '🧠', label: 'Brain teasers' },
+  chill: { emoji: '🌿', label: 'Chill' },
+  action: { emoji: '🔥', label: 'Action' },
+  friends: { emoji: '🎉', label: 'With friends' },
+} as const;
+
+export type MoodId = keyof typeof MOODS;
+
 /** Brand accent used for the game's tile, stickers and page highlights. */
 export type Accent = 'cyan' | 'magenta' | 'blue' | 'orange' | 'lime' | 'coral' | 'yellow' | 'teal' | 'violet';
 
@@ -67,6 +81,8 @@ export interface GameEntry {
   description: string;
   /** First category is the primary one. */
   categories: [CategoryId, ...CategoryId[]];
+  /** Moods this game fits (see MOODS), for the home page's quick picker. */
+  moods?: MoodId[];
   /** Extra search keywords. */
   tags: string[];
   /** ISO date (YYYY-MM-DD) of public release. Drives "Newest" sort and the NEW badge. */

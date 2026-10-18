@@ -101,3 +101,19 @@
     grid-template-columns: 1fr;
   }
 }
+/* Members: just the promise, on one band. */
+.free-band.is-member {
+  grid-template-columns: 1fr;
+}
+.free-member {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--lime);
+  color: #1d1238;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}

@@ -20,7 +20,7 @@ const STICKERS = ['🔥 Hot', '✨ Updated', '⭐ Staff pick', '🎉 Event', '�
 /** Whole-grid looks, applied to the games in their current order. */
 const PRESETS: { id: string; label: string; hint: string; sizes: (i: number) => TileSize | null }[] = [
   { id: 'mosaic', label: 'Mosaic', hint: 'The automatic mix of big, tall and small banners', sizes: () => null },
-  { id: 'even', label: 'Even grid', hint: 'Every banner the same size, three per row', sizes: () => 'md' },
+  { id: 'even', label: 'Even grid', hint: 'Every banner the same size, four per row', sizes: () => 'md' },
   { id: 'hero', label: 'Big first', hint: 'One big banner, then even rows', sizes: (i) => (i === 0 ? 'xl' : 'md') },
   { id: 'wide', label: 'Wide rows', hint: 'Two wide banners per row', sizes: () => 'wide' },
 ];

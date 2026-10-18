@@ -8,6 +8,8 @@ import { Link } from '../router/router';
 import { Icon } from './Icon';
 import { Dot, Star, Tri } from './Shapes';
 import { openSignIn } from './SignIn';
+import { SurpriseButton } from './Surprise';
+import { latestGame } from '../catalog/catalog';
 import './Hero.css';
 
 /** Re-triggers the glitch class every few seconds. */
@@ -34,7 +36,10 @@ function useGlitchPulse(): boolean {
  */
 export function Hero() {
   const t = useT();
-  const gameCount = useLiveCatalog().games.length;
+  const live = useLiveCatalog();
+  const gameCount = live.games.length;
+  // Today's pick: an admin's spotlight, else the newest game.
+  const pick = live.spotlight ?? latestGame(live.games);
   const glitching = useGlitchPulse();
   const now = useNow(1000);
   const daily = useDaily(now);
@@ -54,6 +59,19 @@ export function Hero() {
           </span>
         </h1>
         <p className="intro-sub">{t('Five minutes, endless replayability. Every game starts in a second, no installs. Beat your best, then come back for tomorrow’s challenge.')}</p>
+        <div className="intro-ctas">
+          {pick && (
+            <Link href={`/games/${pick.slug}`} className="btn btn-primary btn-lg intro-pick" data-accent={pick.accent}>
+              <img src={pick.art.tile} alt="" width={34} height={34} style={{ background: pick.art.bg }} />
+              <span>
+                <small className="mono">{t('Today’s pick')}</small>
+                {pick.title}
+              </span>
+              <Icon name="play" />
+            </Link>
+          )}
+          <SurpriseButton className="btn btn-lg intro-surprise" />
+        </div>
       </div>
 
       <div className="intro-side">

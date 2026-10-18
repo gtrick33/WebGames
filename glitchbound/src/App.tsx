@@ -8,7 +8,6 @@ import { Home } from './pages/Home';
 import { NotFound } from './pages/NotFound';
 import { ArcadeEntrance } from './components/Entrance';
 import { MusicControl } from './components/MusicControl';
-import { FeedbackPrompt } from './components/FeedbackPrompt';
 import { NoticeBanner } from './components/NoticeBanner';
 import { ShareHost } from './components/ShareHost';
 import { track } from './platform/analytics';
@@ -18,6 +17,8 @@ import { visitInfo } from './platform/visit';
 import { Link, matchRoute, useLocation } from './router/router';
 
 // Pages most visitors never open are separate chunks, so the first load stays small on any phone.
+// Not needed for the first paint: loads right after it (it registers the "Rate this game" opener).
+const FeedbackPrompt = lazy(() => import('./components/FeedbackPrompt').then((m) => ({ default: m.FeedbackPrompt })));
 const DailyPage = lazy(() => import('./pages/DailyPage').then((m) => ({ default: m.DailyPage })));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
@@ -107,7 +108,9 @@ export function App() {
       </main>
       <Footer />
       <MusicControl />
-      <FeedbackPrompt />
+      <Suspense fallback={null}>
+        <FeedbackPrompt />
+      </Suspense>
     </>
   );
 }

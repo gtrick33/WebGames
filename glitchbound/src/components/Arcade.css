@@ -128,12 +128,18 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-auto-flow: row dense;
-  gap: clamp(18px, 2.2vw, 30px);
+  gap: clamp(16px, 1.8vw, 24px);
 }
-.arcade-grid > .tile-xl { grid-column: span 8; grid-row: span 2; }
+/* Four across on wide screens: small 1/4, wide 1/2, tall 1/4 at double height, big 1/2 at double height. */
+.arcade-grid > .tile-xl { grid-column: span 6; grid-row: span 2; }
 .arcade-grid > .tile-wide { grid-column: span 6; }
-.arcade-grid > .tile-tall { grid-column: span 4; grid-row: span 2; }
-.arcade-grid > .tile-md { grid-column: span 4; }
+.arcade-grid > .tile-tall { grid-column: span 3; grid-row: span 2; }
+.arcade-grid > .tile-md { grid-column: span 3; }
+@media (max-width: 1240px) {
+  .arcade-grid > .tile-xl { grid-column: span 8; }
+  .arcade-grid > .tile-tall,
+  .arcade-grid > .tile-md { grid-column: span 4; }
+}
 
 /* Workshop note: shapes live in their own band at the top; the text never sits under them. */
 .workshop {
@@ -209,8 +215,22 @@
   }
 }
 @media (max-width: 640px) {
-  .arcade-grid > * {
-    grid-column: 1 / -1 !important;
+  .arcade .section-head p {
+    display: none;
+  }
+  /* Phones: two games side by side; big banners take the whole row. */
+  .arcade-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 12px;
+  }
+  .arcade-grid > .tile-md,
+  .arcade-grid > .tile-tall {
+    grid-column: span 1;
+  }
+  .arcade-grid > .tile-xl,
+  .arcade-grid > .tile-wide,
+  .arcade-grid > .workshop {
+    grid-column: 1 / -1;
   }
   .workshop {
     min-height: 0;
@@ -230,5 +250,93 @@
   }
   .cat-btn {
     flex: none;
+  }
+}
+
+/* ------------------------------------------------------------- moods */
+
+.arcade-moods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.mood-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--fg);
+  font: 750 15px var(--font);
+  cursor: pointer;
+  transition:
+    transform 0.25s var(--spring),
+    background 0.2s,
+    box-shadow 0.25s var(--spring);
+}
+.mood-btn:hover {
+  transform: translateY(-2px) rotate(-1.5deg);
+}
+.mood-btn:active {
+  transform: translateY(1px);
+}
+.mood-btn.is-on {
+  border-color: var(--ink);
+  background: var(--cyan);
+  color: #1d1238;
+  box-shadow: var(--hard-sm);
+}
+.mood-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+.mood-btn:hover .mood-emoji {
+  animation: mood-wiggle 0.5s ease-in-out;
+}
+@keyframes mood-wiggle {
+  30% { transform: rotate(-14deg) scale(1.2); }
+  60% { transform: rotate(10deg) scale(1.1); }
+}
+.mood-surprise {
+  border-color: var(--ink);
+  background: var(--yellow);
+  color: #1d1238;
+  box-shadow: var(--hard-sm);
+}
+.mood-more {
+  margin-left: auto;
+}
+.arcade-moods + .arcade-controls {
+  margin-top: -4px;
+  animation: pop-in 0.3s var(--out) both;
+}
+@media (max-width: 640px) {
+  /* One swipeable row instead of a wall of buttons. */
+  .arcade-moods {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 4px var(--gutter) 8px;
+    scrollbar-width: none;
+  }
+  .mood-btn {
+    flex: none;
+    min-height: 42px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+  .mood-more {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mood-btn,
+  .mood-btn:hover .mood-emoji {
+    animation: none;
+    transition: none;
   }
 }

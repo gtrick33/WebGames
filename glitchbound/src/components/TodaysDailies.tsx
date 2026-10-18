@@ -19,7 +19,7 @@ import './TodaysDailies.css';
  * any of them (or the arcade challenge) keeps the shared streak alive. Hidden when no released game
  * has its own daily.
  */
-export function TodaysDailies({ headingLevel = 2, games: given }: { headingLevel?: 2 | 3; games?: GameEntry[] }) {
+export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full' }: { headingLevel?: 2 | 3; games?: GameEntry[]; variant?: 'full' | 'row' }) {
   const live = useLiveCatalog();
   // Games an admin paused are left out of today's list.
   const games = (given ?? live.games).filter((g) => !live.settings(g.slug).maintenance);
@@ -41,6 +41,54 @@ export function TodaysDailies({ headingLevel = 2, games: given }: { headingLevel
     const outcome = await shareOrCopy({ title: 'GlitchBound dailies', text });
     setShareMsg(outcome === 'copied' ? t('Copied! Paste it anywhere.') : outcome === 'failed' ? t('Could not share from this browser.') : '');
   };
+
+  // The home page's one-line version: progress, streak, and every game's daily as a tappable icon.
+  if (variant === 'row')
+    return (
+      <section className="wrap today-row" aria-labelledby="today-title">
+        <div className="today-head">
+          <H id="today-title" className="today-title">
+            {t('Today’s dailies')}
+          </H>
+          <span className="mono today-meta">
+            {t('{a} of {b} done', { a: doneCount, b: list.length })}
+            {streak > 0 && (
+              <>
+                {' · '}
+                <Icon name="flame" size={14} /> {streak}
+              </>
+            )}
+          </span>
+          <Link href="/daily" className="today-all">
+            {t('All dailies')} <Icon name="arrowRight" size={16} />
+          </Link>
+        </div>
+        <div className={`dailies-progress${all ? ' is-sweep' : ''}`} aria-hidden="true">
+          <i style={{ width: `${(doneCount / list.length) * 100}%` }} />
+        </div>
+        <ul className="today-list">
+          {list.map((g) => {
+            const done = finished.has(g.slug);
+            return (
+              <li key={g.slug}>
+                <Link href={`/games/${g.slug}`} className={`today-chip${done ? ' is-done' : ''}`} data-accent={g.accent} title={`${g.title}: ${t(g.ownDaily!.label)}`}>
+                  <span className="today-icon">
+                    <img src={g.art.tile} alt="" width={60} height={60} loading="lazy" style={{ background: g.art.bg }} />
+                    {done && (
+                      <span className="today-check" aria-hidden="true">
+                        ✓
+                      </span>
+                    )}
+                  </span>
+                  <span className="today-name">{g.title}</span>
+                  <span className="sr-only">{done ? t('Done') : t('Play')}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
 
   return (
     <section className="dailies" aria-labelledby="dailies-title">
