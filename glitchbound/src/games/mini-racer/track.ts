@@ -1,7 +1,7 @@
 import { buildPath, leftOf, minSelfClearance, nearest, pointAt, resample, spline, type Path, type Vec } from './geometry';
 
 /** Ground types. Each changes top speed, acceleration and how much the tyres grip. */
-export type Surface = 'asphalt' | 'grass' | 'sand' | 'dirt' | 'ice' | 'snow' | 'mud' | 'boost';
+export type Surface = 'asphalt' | 'grass' | 'sand' | 'dirt' | 'gravel' | 'ice' | 'snow' | 'mud' | 'boost';
 
 export interface SurfaceProps {
   /** Multiplier on top speed. */
@@ -18,6 +18,7 @@ export const SURFACES: Record<Surface, SurfaceProps> = {
   asphalt: { speed: 1, accel: 1, grip: 1, drag: 0 },
   boost: { speed: 1, accel: 1, grip: 1, drag: 0 },
   dirt: { speed: 0.9, accel: 0.85, grip: 0.62, drag: 0.1 },
+  gravel: { speed: 0.82, accel: 0.75, grip: 0.5, drag: 0.25 },
   ice: { speed: 1, accel: 0.55, grip: 0.22, drag: 0 },
   grass: { speed: 0.56, accel: 0.7, grip: 0.7, drag: 0.6 },
   sand: { speed: 0.5, accel: 0.6, grip: 0.55, drag: 0.8 },
@@ -25,7 +26,7 @@ export const SURFACES: Record<Surface, SurfaceProps> = {
   mud: { speed: 0.45, accel: 0.5, grip: 0.45, drag: 1.4 },
 };
 
-export type ThemeId = 'bay' | 'frost' | 'canyon';
+export type ThemeId = 'bay' | 'frost' | 'canyon' | 'park' | 'candy';
 export type ObstacleKind = 'tires' | 'rock' | 'crate' | 'cone';
 
 /**
@@ -141,7 +142,7 @@ export function rng(seed: number): () => number {
 function gateAt(path: Path, s: number, half: number): Gate {
   const { p, t } = pointAt(path, s);
   const n = leftOf(t);
-  const r = half + KERB + 14;
+  const r = half + KERB + 45;
   return { a: { x: p.x + n.x * r, y: p.y + n.y * r }, b: { x: p.x - n.x * r, y: p.y - n.y * r }, dir: t };
 }
 

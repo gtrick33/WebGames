@@ -1,8 +1,9 @@
 import type { Ghost } from './ghost';
-import { speedOf, CAR, localVelocity, type Input } from './physics';
+import { speedOf, CAR, localVelocity, type CarSpec } from './physics';
+import type { CarDef } from './cars';
 import { Renderer, fmtTime, type HudState } from './render';
 import { RaceAudio } from './audio';
-import { autopilot, COUNTDOWN, DT, RaceSim, scoreFor, type Mode } from './sim';
+import { autopilot, COUNTDOWN, DT, RaceSim, scoreFor } from './sim';
 import type { Track } from './track';
 
 /**
@@ -19,27 +20,13 @@ export interface EngineCallbacks {
   onAutoPause(): void;
 }
 
-export interface TouchInput {
-  left: boolean;
-  right: boolean;
-  brake: boolean;
-  drift: boolean;
-}
-
 const KEYMAP: Record<string, keyof typeof EMPTY_KEYS> = {
   ArrowLeft: 'left',
   KeyA: 'left',
   ArrowRight: 'right',
   KeyD: 'right',
-  ArrowUp: 'up',
-  KeyW: 'up',
-  ArrowDown: 'down',
-  KeyS: 'down',
-  Space: 'drift',
-  ShiftLeft: 'drift',
-  ShiftRight: 'drift',
 };
-const EMPTY_KEYS = { left: false, right: false, up: false, down: false, drift: false };
+const EMPTY_KEYS = { left: false, right: false };
 
 export class Engine {
   private root: HTMLElement;
@@ -54,7 +41,8 @@ export class Engine {
   paused = false;
   private disposed = false;
   private keys = { ...EMPTY_KEYS };
-  touch: TouchInput = { left: false, right: false, brake: false, drift: false };
+  /** Pointers held on the track: id -> side (-1 left half, 1 right half). */
+  private pointers = new Map<number, number>();
   touchMode = false;
   private steer = 0;
   private finishAt = -1;
@@ -92,6 +80,41 @@ export class Engine {
       window.removeEventListener('blur', blur);
       document.removeEventListener('visibilitychange', vis);
     });
+    // Hold the left or right half of the screen to steer (touch, pen or mouse). Buttons and
+    // overlays stop their own pointer events, so only presses on the track itself steer.
+    const sideOf = (e: PointerEvent): number => {
+      const r = root.getBoundingClientRect();
+      return e.clientX < r.left + r.width / 2 ? -1 : 1;
+    };
+    const pdown = (e: PointerEvent): void => {
+      if (this.attractMode || this.paused || e.target !== canvas) return;
+      if (e.pointerType === 'touch') this.touchMode = true;
+      this.pointers.set(e.pointerId, sideOf(e));
+      canvas.setPointerCapture?.(e.pointerId);
+      e.preventDefault();
+    };
+    const pmove = (e: PointerEvent): void => {
+      if (this.pointers.has(e.pointerId)) this.pointers.set(e.pointerId, sideOf(e));
+    };
+    const pup = (e: PointerEvent): void => {
+      this.pointers.delete(e.pointerId);
+    };
+    canvas.addEventListener('pointerdown', pdown);
+    canvas.addEventListener('pointermove', pmove);
+    canvas.addEventListener('pointerup', pup);
+    canvas.addEventListener('pointercancel', pup);
+    canvas.addEventListener('lostpointercapture', pup);
+    const noMenu = (e: Event): void => e.preventDefault();
+    canvas.addEventListener('contextmenu', noMenu);
+    this.cleanups.push(() => {
+      canvas.removeEventListener('pointerdown', pdown);
+      canvas.removeEventListener('pointermove', pmove);
+      canvas.removeEventListener('pointerup', pup);
+      canvas.removeEventListener('pointercancel', pup);
+      canvas.removeEventListener('lostpointercapture', pup);
+      canvas.removeEventListener('contextmenu', noMenu);
+    });
+
     const io = new IntersectionObserver(([entry]) => {
       if (entry && entry.intersectionRatio < 0.4) this.autoPause();
     }, { threshold: [0, 0.4] });
@@ -136,8 +159,8 @@ export class Engine {
     }
   }
 
-  setPaint(color: string): void {
-    this.renderer.paint = color;
+  setCar(car: Pick<CarDef, 'shape' | 'body' | 'accent'>): void {
+    this.renderer.car = car;
   }
 
   /** Menu background: the autopilot laps the selected track. */
@@ -145,23 +168,26 @@ export class Engine {
     this.attractMode = true;
     this.paused = false;
     this.renderer.setTrack(track);
-    const sim = new RaceSim(track, 'hotlap');
+    const sim = new RaceSim(track);
     sim.time = 0;
     this.sim = sim;
     this.hud = { banner: null, popup: null, best: null, delta: null, attract: true, touch: this.touchMode };
     this.audio.update(0, 0, false);
+    this.audio.music(false);
   }
 
-  race(track: Track, mode: Mode, ghost: Ghost | null, best: number | null): void {
+  race(track: Track, spec: CarSpec, ghost: Ghost | null, best: number | null): void {
     this.attractMode = false;
     this.paused = false;
     this.finishAt = -1;
     this.lastCount = 99;
     this.steer = 0;
     this.renderer.setTrack(track);
-    this.sim = new RaceSim(track, mode, ghost);
+    this.sim = new RaceSim(track, ghost, spec);
+    this.pointers.clear();
     this.hud = { banner: null, popup: null, best, delta: null, attract: false, touch: this.touchMode };
     this.audio.start();
+    this.audio.music(true);
     this.acc = 0;
   }
 
@@ -181,19 +207,21 @@ export class Engine {
     this.audio.setMuted(m);
   }
 
-  private readInput(dt: number): Input {
-    const t = this.touch;
+  /** Steering from held keys and held screen halves (both halves held = straight). */
+  private readSteer(dt: number): number {
     const k = this.keys;
-    const left = k.left || t.left;
-    const right = k.right || t.right;
+    let left = k.left;
+    let right = k.right;
+    for (const side of this.pointers.values()) {
+      if (side < 0) left = true;
+      else right = true;
+    }
     const target = (right ? 1 : 0) - (left ? 1 : 0);
     // Ramp steering so taps are gentle and holds are full lock.
     const rate = target === 0 ? 10 : Math.sign(target) !== Math.sign(this.steer) ? 12 : 6;
     const dlt = target - this.steer;
     this.steer += Math.sign(dlt) * Math.min(Math.abs(dlt), rate * dt);
-    const brake = k.down || t.brake ? 1 : 0;
-    const throttle = k.up || (this.touchMode && !t.brake) ? 1 : 0;
-    return { steer: this.steer, throttle, brake, drift: k.drift || t.drift };
+    return this.steer;
   }
 
   private frame = (now: number): void => {
@@ -212,12 +240,12 @@ export class Engine {
     }
     if (!this.paused) {
       this.acc += dt;
-      const input = this.attractMode ? autopilot(sim) : this.readInput(dt);
+      const steer = this.attractMode ? 0 : this.readSteer(dt);
       let steps = 0;
       while (this.acc >= DT && steps < 24) {
         this.acc -= DT;
         steps++;
-        const events = sim.step(this.attractMode ? autopilot(sim) : input);
+        const events = sim.step(this.attractMode ? autopilot(sim) : steer);
         if (!this.attractMode) for (const e of events) this.handle(e, sim);
       }
       if (this.attractMode && sim.lap.laps.length >= 5) this.attract(sim.track);
@@ -260,7 +288,7 @@ export class Engine {
         }
         if (hud.best !== null) hud.delta = { value: lap.time - hud.best, until: now + 2.5 };
         if (hud.best === null || lap.time < hud.best) hud.best = lap.time;
-        hud.popup = { text: `LAP ${fmtTime(lap.time)}  +${scoreFor(sim.track.def.par, [lap], 0)}`, until: now + 1.8 };
+        hud.popup = { text: `LAP ${fmtTime(lap.time)}  +${scoreFor(sim.track.def.par, [lap])}`, until: now + 1.8 };
         this.audio.blip('lap');
         break;
       }
@@ -276,7 +304,7 @@ export class Engine {
         if (e.boost) this.audio.blip('boost');
         break;
       case 'driftLost':
-        hud.banner = { text: 'DRIFT LOST', sub: `${e.points} points crashed away`, color: '#ff8a7a', until: now + 1.4 };
+        hud.banner = { text: 'DRIFT LOST', sub: `${e.points} drift points gone`, color: '#ff8a7a', until: now + 1.4 };
         break;
       case 'boostPad':
         this.audio.blip('boost');
@@ -290,7 +318,7 @@ export class Engine {
   /** Clears held keys/touches (e.g. when an overlay opens). */
   releaseInput(): void {
     this.keys = { ...EMPTY_KEYS };
-    this.touch = { left: false, right: false, brake: false, drift: false };
+    this.pointers.clear();
   }
 
   dispose(): void {

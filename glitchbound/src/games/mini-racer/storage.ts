@@ -1,5 +1,5 @@
 import { decodeGhost, encodeGhost, type Ghost } from './ghost';
-import type { Mode } from './sim';
+import { CARS, DEFAULT_CAR } from './cars';
 
 /** Local-only saves (bests, ghosts, settings). Every access is guarded: storage can be missing or full. */
 
@@ -11,19 +11,24 @@ export interface Bests {
   lap?: number;
   /** Best 3-lap race, seconds. */
   race?: number;
-  /** Best Drift Zone score. */
-  drift?: number;
 }
 
 export interface SaveData {
   bests: Record<string, Bests>;
-  paint: number;
+  coins: number;
+  /** Lifetime coins earned (for stats). */
+  earned: number;
+  cars: string[];
+  car: string;
   muted: boolean;
   track: string;
-  mode: Mode;
+  /** Days whose daily-track coin bonus was already paid. Only the latest few are kept. */
+  dailyPaid: string[];
 }
 
-const DEFAULTS: SaveData = { bests: {}, paint: 0, muted: false, track: 'sunny-bay', mode: 'race' };
+function defaults(): SaveData {
+  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [] };
+}
 
 function store(): Storage | null {
   try {
@@ -33,32 +38,36 @@ function store(): Storage | null {
   }
 }
 
+const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+
 export function loadSave(): SaveData {
+  const d = defaults();
   try {
     const raw = store()?.getItem(KEY);
-    if (!raw) return { ...DEFAULTS, bests: {} };
-    const o = JSON.parse(raw) as Partial<SaveData>;
-    const bests: Record<string, Bests> = {};
+    if (!raw) return d;
+    const o = JSON.parse(raw) as Record<string, unknown>;
     if (o.bests && typeof o.bests === 'object') {
-      for (const [k, v] of Object.entries(o.bests)) {
+      for (const [k, v] of Object.entries(o.bests as Record<string, unknown>)) {
         if (!v || typeof v !== 'object') continue;
         const b: Bests = {};
-        for (const f of ['lap', 'race', 'drift'] as const) {
+        for (const f of ['lap', 'race'] as const) {
           const n = (v as Bests)[f];
           if (typeof n === 'number' && Number.isFinite(n) && n > 0) b[f] = n;
         }
-        bests[k] = b;
+        d.bests[k] = b;
       }
     }
-    return {
-      bests,
-      paint: typeof o.paint === 'number' ? o.paint : 0,
-      muted: o.muted === true,
-      track: typeof o.track === 'string' ? o.track : DEFAULTS.track,
-      mode: o.mode === 'hotlap' || o.mode === 'drift' ? o.mode : 'race',
-    };
+    d.coins = num(o.coins);
+    d.earned = num(o.earned);
+    const known = new Set(CARS.map((c) => c.id));
+    if (Array.isArray(o.cars)) d.cars = [...new Set([DEFAULT_CAR, ...o.cars.filter((c): c is string => typeof c === 'string' && known.has(c))])];
+    d.car = typeof o.car === 'string' && d.cars.includes(o.car) ? o.car : DEFAULT_CAR;
+    d.muted = o.muted === true;
+    if (typeof o.track === 'string') d.track = o.track;
+    if (Array.isArray(o.dailyPaid)) d.dailyPaid = o.dailyPaid.filter((x): x is string => typeof x === 'string').slice(-7);
+    return d;
   } catch {
-    return { ...DEFAULTS, bests: {} };
+    return d;
   }
 }
 

@@ -1,7 +1,8 @@
 import { leftOf, pointAt, type Path, type Vec } from './geometry';
 import type { Pose } from './ghost';
-import { localVelocity, speedOf } from './physics';
-import { COUNTDOWN, DRIFT_SECONDS, HOTLAP_LAPS, RACE_LAPS, type RaceSim } from './sim';
+import { CAR, localVelocity, speedOf } from './physics';
+import type { CarDef, CarShape } from './cars';
+import { COUNTDOWN, RACE_LAPS, type RaceSim } from './sim';
 import { KERB, type Obstacle, type Surface, type ThemeId, type Track } from './track';
 
 /** Canvas 2D drawing for the racer: road from cached Path2Ds, low-poly cars, skids, particles, HUD. */
@@ -59,12 +60,41 @@ export const THEMES: Record<ThemeId, Theme> = {
       ['#c9b25c', '#a8923e', '#e3cf7c'],
     ],
   },
+  park: {
+    ground: '#8fd46b',
+    speck: ['#7cc65a', '#a5e083', '#6fb84e'],
+    road: '#5d5f88',
+    edge: '#3d3f66',
+    kerbA: '#ff5a6c',
+    kerbB: '#ffffff',
+    // round tree, flower bed, hedge
+    decor: [
+      ['#2fa35a', '#1e8a48', '#7a5230'],
+      ['#ff8fc4', '#ffd12e', '#ffffff'],
+      ['#3cb36a', '#2a9555', '#5fcf86'],
+    ],
+  },
+  candy: {
+    ground: '#c9f2e3',
+    speck: ['#ffd6ea', '#fff3b0', '#b8e9ff'],
+    road: '#7a63b8',
+    edge: '#563f94',
+    kerbA: '#ff5fa2',
+    kerbB: '#ffffff',
+    // lollipop, gumdrop, candy rock
+    decor: [
+      ['#ff5fa2', '#ffffff', '#ffd12e'],
+      ['#ff8a3d', '#ffd12e', '#ffffff'],
+      ['#9a6bff', '#7a4fe0', '#c9b3ff'],
+    ],
+  },
 };
 
 const SURFACE_FILL: Record<Surface, string> = {
   asphalt: '#5b5a8f',
   boost: '#ffd12e',
   dirt: '#c88a50',
+  gravel: '#b9b2a8',
   ice: '#c4ecff',
   grass: '#8fd46b',
   sand: '#f0c77a',
@@ -72,14 +102,6 @@ const SURFACE_FILL: Record<Surface, string> = {
   mud: '#7b5233',
 };
 
-export const PAINTS = [
-  { name: 'Coral', body: '#ff5a6c' },
-  { name: 'Sky', body: '#2eb8ff' },
-  { name: 'Lime', body: '#b8e82a' },
-  { name: 'Sunny', body: '#ffc51f' },
-  { name: 'Violet', body: '#9a6bff' },
-  { name: 'Mint', body: '#22d3b4' },
-];
 
 function shade(hex: string, amt: number): string {
   const n = parseInt(hex.slice(1), 16);
@@ -153,6 +175,9 @@ export function fmtTime(t: number | null): string {
   return `${m}:${s < 10 ? '0' : ''}${s.toFixed(2)}`;
 }
 
+/** World units per second to km/h for the speedometer (toy scale: top speed ~160 km/h). */
+export const KMH = 160 / CAR.maxSpeed;
+
 const SKID_MAX = 700;
 const PART_MAX = 140;
 
@@ -176,7 +201,9 @@ export class Renderer {
   private cam = { x: 0, y: 0, z: 1 };
   private camInit = false;
   private wheelPrev: Vec[] | null = null;
-  paint = PAINTS[0]!.body;
+  /** The player's car (shape and colours). */
+  car: Pick<CarDef, 'shape' | 'body' | 'accent'> = { shape: 'coupe', body: '#ff5a6c', accent: '#fff6e6' };
+  private surfacePatterns = new Map<Surface, CanvasPattern | string>();
   private time = 0;
 
   /** Seconds of drawing so far (banner timers use it). */
@@ -322,14 +349,81 @@ export class Renderer {
 
     // Ghost, then player.
     const gp = sim.ghostPose();
-    if (gp) this.drawCar(gp, '#ffffff', 0, 0.42, true);
+    if (gp) this.drawCar(gp, { shape: this.car.shape, body: '#ffffff', accent: '#ffffff' }, 0, 0.42, true);
     this.updateParticles(sim, pose, dt);
     this.drawParticles();
     const steerVis = Math.max(-1, Math.min(1, car.av / 3));
-    this.drawCar(pose, this.paint, steerVis, 1, false, car.boost > 0);
+    this.drawCar(pose, this.car, steerVis, 1, false, car.boost > 0);
 
     ctx.setTransform(d, 0, 0, d, 0, 0);
     if (!hud.attract) this.drawHud(sim, hud);
+  }
+
+  /** A textured fill per surface so each one reads at a glance (pebbles, ripples, glaze...). */
+  private surfaceStyle(s: Surface): CanvasPattern | string {
+    const cached = this.surfacePatterns.get(s);
+    if (cached) return cached;
+    const base = SURFACE_FILL[s];
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    let style: CanvasPattern | string = base;
+    if (g) {
+      g.fillStyle = base;
+      g.fillRect(0, 0, 64, 64);
+      let seed = s.length * 977;
+      const r = (): number => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      if (s === 'gravel' || s === 'dirt') {
+        // pebbles
+        for (let i = 0; i < (s === 'gravel' ? 46 : 22); i++) {
+          g.fillStyle = r() < 0.5 ? shade(base, -0.22) : shade(base, 0.25);
+          g.beginPath();
+          g.arc(r() * 64, r() * 64, s === 'gravel' ? 1.4 + r() * 2.2 : 1 + r() * 1.5, 0, Math.PI * 2);
+          g.fill();
+        }
+      } else if (s === 'sand' || s === 'snow') {
+        // wind ripples
+        g.strokeStyle = shade(base, s === 'snow' ? -0.06 : -0.12);
+        g.lineWidth = 2;
+        for (let y = 6; y < 64; y += 12) {
+          g.beginPath();
+          g.moveTo(0, y);
+          g.quadraticCurveTo(16, y - 4, 32, y);
+          g.quadraticCurveTo(48, y + 4, 64, y);
+          g.stroke();
+        }
+      } else if (s === 'mud') {
+        for (let i = 0; i < 8; i++) {
+          g.fillStyle = shade(base, -0.2);
+          g.beginPath();
+          g.ellipse(r() * 64, r() * 64, 4 + r() * 5, 2 + r() * 3, r() * 3, 0, Math.PI * 2);
+          g.fill();
+        }
+      } else if (s === 'grass') {
+        g.strokeStyle = shade(base, -0.18);
+        g.lineWidth = 1.5;
+        for (let i = 0; i < 30; i++) {
+          const x = r() * 64;
+          const y = r() * 64;
+          g.beginPath();
+          g.moveTo(x, y);
+          g.lineTo(x + 1.5, y - 4);
+          g.stroke();
+        }
+      } else if (s === 'ice') {
+        g.strokeStyle = 'rgba(255,255,255,0.75)';
+        g.lineWidth = 3;
+        g.beginPath();
+        g.moveTo(-10, 54);
+        g.lineTo(54, -10);
+        g.moveTo(22, 74);
+        g.lineTo(74, 22);
+        g.stroke();
+      }
+      style = this.ctx.createPattern(c, 'repeat') ?? base;
+    }
+    this.surfacePatterns.set(s, style);
+    return style;
   }
 
   private drawRoad(track: Track, sim: RaceSim): void {
@@ -343,7 +437,7 @@ export class Renderer {
       ctx.strokeStyle = 'rgba(60,40,70,0.25)';
       ctx.lineWidth = track.shortcut.half * 2 + 14;
       ctx.stroke(this.shortcut);
-      ctx.strokeStyle = SURFACE_FILL[track.shortcut.surface];
+      ctx.strokeStyle = this.surfaceStyle(track.shortcut.surface);
       ctx.lineWidth = track.shortcut.half * 2;
       ctx.stroke(this.shortcut);
       ctx.setLineDash([6, 22]);
@@ -376,17 +470,10 @@ export class Renderer {
     ctx.lineWidth = W;
     ctx.stroke(road);
     for (const z of this.zones) {
-      ctx.strokeStyle = SURFACE_FILL[z.surface];
+      ctx.strokeStyle = this.surfaceStyle(z.surface);
       ctx.lineWidth = W;
       ctx.lineCap = 'butt';
       ctx.stroke(z.p);
-      if (z.surface === 'ice') {
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = W * 0.5;
-        ctx.setLineDash([60, 90]);
-        ctx.stroke(z.p);
-        ctx.setLineDash([]);
-      }
     }
     ctx.lineCap = 'round';
     // Centre dashes
@@ -638,7 +725,39 @@ export class Renderer {
       ctx.ellipse(r * 0.35, r * 0.45, r, r * 0.8, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.rotate(dcr.rot);
-      if (dcr.kind === 0) {
+      if (dcr.kind === 0 && theme === 'park') {
+        // round, faceted tree canopy
+        for (const [dx, dy, rr, col] of [
+          [r * 0.25, r * 0.2, r * 0.75, pal[1]!],
+          [-r * 0.2, r * 0.1, r * 0.7, pal[1]!],
+          [0, -r * 0.15, r * 0.72, pal[0]!],
+        ] as const) {
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          ctx.arc(dx, dy, rr, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.beginPath();
+        ctx.arc(-r * 0.2, -r * 0.35, r * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (dcr.kind === 0 && theme === 'candy') {
+        // lollipop swirl
+        ctx.fillStyle = pal[1]!;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = pal[0]!;
+        ctx.lineWidth = r * 0.16;
+        ctx.beginPath();
+        for (let k = 0; k < 40; k++) {
+          const ang = k * 0.45;
+          const rr = (k / 40) * r * 0.72;
+          if (k === 0) ctx.moveTo(0, 0);
+          else ctx.lineTo(Math.cos(ang) * rr, Math.sin(ang) * rr);
+        }
+        ctx.stroke();
+      } else if (dcr.kind === 0) {
         // star-shaped canopy (palm / pine / cactus)
         const spikes = theme === 'canyon' ? 4 : theme === 'frost' ? 7 : 6;
         ctx.fillStyle = pal[1]!;
@@ -672,115 +791,15 @@ export class Renderer {
     }
   }
 
-  /** A cute low-poly car: faceted body, glass cabin, chunky wheels, ink outline. */
-  drawCar(p: Pose, color: string, steer: number, alpha: number, ghost: boolean, boosting = false): void {
+  /** A cute low-poly car: faceted body, glass, chunky wheels, ink outline. Five body shapes. */
+  drawCar(p: Pose, look: Pick<CarDef, 'shape' | 'body' | 'accent'>, steer: number, alpha: number, ghost: boolean, boosting = false): void {
     const ctx = this.ctx;
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(p.a);
     ctx.scale(1.25, 1.25);
     ctx.globalAlpha = alpha;
-    if (!ghost) {
-      ctx.fillStyle = 'rgba(30,15,50,0.3)';
-      ctx.beginPath();
-      roundRect(ctx, -16, -8, 36, 22, 7);
-      ctx.fill();
-    }
-    // wheels
-    ctx.fillStyle = '#1b1035';
-    for (const [x, y, front] of [
-      [10, -10, true],
-      [10, 10, true],
-      [-10, -10, false],
-      [-10, 10, false],
-    ] as const) {
-      ctx.save();
-      ctx.translate(x, y);
-      if (front) ctx.rotate(steer * 0.45);
-      roundRect(ctx, -5, -3, 10, 6, 2);
-      ctx.fill();
-      ctx.restore();
-    }
-    const dark = shade(color, -0.32);
-    const light = shade(color, 0.35);
-    // body base (sides)
-    ctx.fillStyle = dark;
-    ctx.beginPath();
-    ctx.moveTo(18, -6);
-    ctx.lineTo(15, -10);
-    ctx.lineTo(-14, -10);
-    ctx.lineTo(-18, -7);
-    ctx.lineTo(-18, 7);
-    ctx.lineTo(-14, 10);
-    ctx.lineTo(15, 10);
-    ctx.lineTo(18, 6);
-    ctx.closePath();
-    ctx.fill();
-    if (!ghost) {
-      ctx.lineWidth = 1.6;
-      ctx.strokeStyle = '#1b1035';
-      ctx.stroke();
-    }
-    // top facets
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(16, -5.5);
-    ctx.lineTo(13.5, -8);
-    ctx.lineTo(-13, -8);
-    ctx.lineTo(-16, -5.5);
-    ctx.lineTo(-16, 5.5);
-    ctx.lineTo(-13, 8);
-    ctx.lineTo(13.5, 8);
-    ctx.lineTo(16, 5.5);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = light;
-    ctx.beginPath();
-    ctx.moveTo(16, -5.5);
-    ctx.lineTo(13.5, -8);
-    ctx.lineTo(-13, -8);
-    ctx.lineTo(-4, 0);
-    ctx.closePath();
-    ctx.fill();
-    // cabin
-    ctx.fillStyle = ghost ? 'rgba(40,30,80,0.6)' : '#2b2257';
-    ctx.beginPath();
-    ctx.moveTo(7, -6);
-    ctx.lineTo(-6, -6.5);
-    ctx.lineTo(-9, -4.5);
-    ctx.lineTo(-9, 4.5);
-    ctx.lineTo(-6, 6.5);
-    ctx.lineTo(7, 6);
-    ctx.lineTo(9, 0);
-    ctx.closePath();
-    ctx.fill();
-    // windscreen glint + roof
-    ctx.fillStyle = '#8ff0ff';
-    ctx.beginPath();
-    ctx.moveTo(7, -5.5);
-    ctx.lineTo(9, 0);
-    ctx.lineTo(7, 5.5);
-    ctx.lineTo(4.5, 4.5);
-    ctx.lineTo(4.5, -4.5);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = light;
-    ctx.beginPath();
-    ctx.moveTo(3, -4.5);
-    ctx.lineTo(-5, -4.8);
-    ctx.lineTo(-5, 4.8);
-    ctx.lineTo(3, 4.5);
-    ctx.closePath();
-    ctx.fill();
-    // lights and spoiler
-    ctx.fillStyle = '#fff3b0';
-    ctx.fillRect(15.5, -7, 2.5, 3);
-    ctx.fillRect(15.5, 4, 2.5, 3);
-    ctx.fillStyle = '#ff3d6e';
-    ctx.fillRect(-18, -7, 2, 3);
-    ctx.fillRect(-18, 4, 2, 3);
-    ctx.fillStyle = dark;
-    ctx.fillRect(-20, -9, 3, 18);
+    drawCarBody(ctx, look.shape, look.body, look.accent, steer, ghost);
     if (boosting) {
       ctx.fillStyle = '#ffd12e';
       ctx.beginPath();
@@ -802,18 +821,10 @@ export class Renderer {
     const font = (size: number, weight = 800): string => `${weight} ${size}px Bricolage, "Avenir Next", system-ui, sans-serif`;
     const mono = (size: number): string => `700 ${size}px "Space Mono", ui-monospace, monospace`;
 
-    // Top-left: lap counter / drift timer
+    // Top-left: lap counter
     const lap = sim.lap;
-    let label: string;
-    let value: string;
-    if (sim.mode === 'drift') {
-      label = 'TIME LEFT';
-      value = `${Math.max(0, Math.ceil(DRIFT_SECONDS - Math.max(0, sim.time)))}s`;
-    } else {
-      const total = sim.mode === 'race' ? RACE_LAPS : HOTLAP_LAPS;
-      label = 'LAP';
-      value = `${Math.min(total, lap.laps.length + 1)}/${total}`;
-    }
+    const label = 'LAP';
+    const value = `${Math.min(RACE_LAPS, lap.laps.length + 1)}/${RACE_LAPS}`;
     pill(ctx, pad, pad, small ? 78 : 96, small ? 46 : 54, '#ffffff');
     ctx.fillStyle = '#6b5b95';
     ctx.font = mono(small ? 9 : 10);
@@ -831,15 +842,15 @@ export class Renderer {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#c4f034';
     ctx.font = mono(small ? 9 : 10);
-    ctx.fillText(sim.mode === 'drift' ? 'DRIFT POINTS' : 'LAP TIME', cx, pad + 7);
+    ctx.fillText('LAP TIME', cx, pad + 7);
     ctx.fillStyle = '#ffffff';
     ctx.font = mono(small ? 19 : 24);
     const lastLap = lap.laps[lap.laps.length - 1];
     const shown = sim.finished && lastLap ? lastLap.time : sim.time < 0 ? 0 : sim.lapTime;
-    ctx.fillText(sim.mode === 'drift' ? String(Math.round(sim.drift.total)) : fmtTime(shown), cx, pad + (small ? 19 : 21));
+    ctx.fillText(fmtTime(shown), cx, pad + (small ? 19 : 21));
 
     // Top-right: best lap + minimap
-    if (sim.mode !== 'drift') {
+    {
       const rw = small ? 86 : 108;
       pill(ctx, W - pad - rw, pad, rw, small ? 46 : 54, '#ffffff');
       ctx.textAlign = 'right';
@@ -851,6 +862,27 @@ export class Renderer {
       ctx.fillText(fmtTime(hud.best), W - pad - 10, pad + (small ? 22 : 25));
     }
     this.drawMinimap(sim, W - pad - (this.mini?.w ?? 0), pad + (small ? 54 : 64));
+
+    this.drawSpeedo(sim, cx, H - pad);
+
+    // How to steer, shown through the countdown and the first moments of the race.
+    if (sim.time < 2.5) {
+      const fade = sim.time < 1.5 ? 1 : Math.max(0, (2.5 - sim.time) / 1);
+      ctx.globalAlpha = fade;
+      const bw3 = small ? 104 : 124;
+      const y = H - pad - 40;
+      const [l, rt] = hud.touch ? ['◀  HOLD', 'HOLD  ▶'] : ['◀  A', 'D  ▶'];
+      pill(ctx, pad, y, bw3, 34, '#ffffff');
+      pill(ctx, W - pad - bw3, y, bw3, 34, '#ffffff');
+      ctx.fillStyle = '#1b1035';
+      ctx.font = font(small ? 14 : 16);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(l, pad + bw3 / 2, y + 17);
+      ctx.fillText(rt, W - pad - bw3 / 2, y + 17);
+      ctx.textBaseline = 'top';
+      ctx.globalAlpha = 1;
+    }
 
     // Delta vs best after a lap
     if (hud.delta && this.time < hud.delta.until) {
@@ -943,6 +975,52 @@ export class Renderer {
     }
   }
 
+  /** km/h gauge at the bottom centre. Top speed on asphalt reads about 160 km/h. */
+  private drawSpeedo(sim: RaceSim, cx: number, bottom: number): void {
+    const ctx = this.ctx;
+    const kmh = Math.round(speedOf(sim.car) * KMH);
+    const max = Math.round(CAR.maxSpeed * 1.4 * KMH);
+    const r = this.w < 520 ? 44 : 54;
+    const cy = bottom - r * 0.32;
+    const a0 = Math.PI * 1.08;
+    const a1 = Math.PI * 1.92;
+    // dial
+    ctx.fillStyle = '#1b1035';
+    ctx.beginPath();
+    ctx.arc(cx + 3, cy + 3, r + 8, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 8, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#1b1035';
+    ctx.stroke();
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = '#e9e1ff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 4, a0, a1);
+    ctx.stroke();
+    const f = Math.min(1, kmh / max);
+    ctx.strokeStyle = sim.car.boost > 0 ? '#ffd12e' : f > 0.8 ? '#ff5a6c' : '#c4f034';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 4, a0, a0 + (a1 - a0) * Math.max(0.001, f));
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = '#1b1035';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = `700 ${this.w < 520 ? 20 : 24}px "Space Mono", ui-monospace, monospace`;
+    ctx.fillText(String(kmh), cx, cy - 13);
+    ctx.font = '700 9px "Space Mono", ui-monospace, monospace';
+    ctx.fillStyle = '#6b5b95';
+    ctx.fillText('KM/H', cx, cy - 2);
+    ctx.textBaseline = 'top';
+  }
+
   private drawMinimap(sim: RaceSim, x: number, y: number): void {
     const m = this.mini;
     if (!m) return;
@@ -972,7 +1050,7 @@ export class Renderer {
       ctx.strokeStyle = '#1b1035';
       ctx.stroke();
     }
-    ctx.fillStyle = this.paint;
+    ctx.fillStyle = this.car.body;
     ctx.beginPath();
     ctx.arc(sim.car.x, sim.car.y, 5.5 / m.scale, 0, Math.PI * 2);
     ctx.fill();
@@ -1040,5 +1118,177 @@ function lowPolyBlob(ctx: CanvasRenderingContext2D, r: number, seed: number, pal
     ctx.lineTo(q.x, q.y);
     ctx.closePath();
     ctx.fill();
+  }
+}
+
+/** Draws a car into a small canvas for the garage (facing up-right, slightly angled). */
+export function drawCarPreview(canvas: HTMLCanvasElement, car: Pick<CarDef, 'shape' | 'body' | 'accent'>): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = canvas.clientWidth || 96;
+  const h = canvas.clientHeight || 64;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate(-0.5);
+  const s = Math.min(w / 48, h / 30);
+  ctx.scale(s, s);
+  drawCarBody(ctx, car.shape, car.body, car.accent, 0.4, false);
+}
+
+/** Draws a car body facing +x in local units (about 40 x 22). */
+function drawCarBody(ctx: CanvasRenderingContext2D, shape: CarShape, color: string, accent: string, steer: number, ghost: boolean): void {
+  const dark = shade(color, -0.32);
+  const light = shade(color, 0.35);
+  const ink = '#1b1035';
+  const poly = (pts: number[], fill: string, stroke = false): void => {
+    ctx.beginPath();
+    ctx.moveTo(pts[0]!, pts[1]!);
+    for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i]!, pts[i + 1]!);
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    if (stroke && !ghost) {
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = ink;
+      ctx.stroke();
+    }
+  };
+  const wheels = (xs: [number, number], y: number, w: number, h: number): void => {
+    ctx.fillStyle = ink;
+    for (const [x, front] of [
+      [xs[0], true],
+      [xs[1], false],
+    ] as const) {
+      for (const sy of [-1, 1]) {
+        ctx.save();
+        ctx.translate(x, y * sy);
+        if (front) ctx.rotate(steer * 0.45);
+        roundRect(ctx, -w / 2, -h / 2, w, h, 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  };
+  if (!ghost) {
+    ctx.fillStyle = 'rgba(30,15,50,0.3)';
+    roundRect(ctx, -17, -8, 38, 22, 8);
+    ctx.fill();
+  }
+  const glass = ghost ? 'rgba(40,30,80,0.6)' : '#2b2257';
+  switch (shape) {
+    case 'buggy': {
+      wheels([11, -11], 11, 12, 7);
+      poly([15, -6, 12, -8, -12, -8, -16, -5, -16, 5, -12, 8, 12, 8, 15, 6], dark, true);
+      poly([13, -5, -12, -6, -14, -3, -14, 3, -12, 6, 13, 5], color);
+      poly([13, -5, -12, -6, -3, 0], light);
+      // roll cage and driver
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-7, -6, 10, 12);
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.arc(-2, 0, 3.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#8ff0ff';
+      ctx.fillRect(0, -2, 2, 4);
+      break;
+    }
+    case 'formula': {
+      wheels([12, -12], 10, 9, 6);
+      // wings
+      poly([22, -11, 18, -11, 18, 11, 22, 11], accent, true);
+      poly([-17, -10, -21, -10, -21, 10, -17, 10], dark, true);
+      // body: long nose
+      poly([22, -2.5, 6, -5, -8, -7, -17, -5, -17, 5, -8, 7, 6, 5, 22, 2.5], dark, true);
+      poly([20, -1.8, 6, -3.8, -8, -5.5, -15, -4, -15, 4, -8, 5.5, 6, 3.8, 20, 1.8], color);
+      poly([20, -1.8, 6, -3.8, -8, -5.5, 0, 0], light);
+      ctx.fillStyle = glass;
+      ctx.beginPath();
+      ctx.ellipse(-2, 0, 5, 3.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.arc(-3, 0, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'van': {
+      wheels([11, -11], 10, 10, 6);
+      poly([19, -8, 17, -11, -18, -11, -19, -9, -19, 9, -18, 11, 17, 11, 19, 8], dark, true);
+      poly([17, -7.5, 15.5, -9, -17, -9, -17, 9, 15.5, 9, 17, 7.5], color);
+      poly([17, -7.5, 15.5, -9, -17, -9, -6, 0], light);
+      // windscreen at the front, roof rack
+      poly([17, -7, 13, -8, 13, 8, 17, 7], '#8ff0ff');
+      ctx.strokeStyle = shade(color, -0.45);
+      ctx.lineWidth = 1.4;
+      for (const x of [-12, -6, 0, 6]) {
+        ctx.beginPath();
+        ctx.moveTo(x, -6.5);
+        ctx.lineTo(x, 6.5);
+        ctx.stroke();
+      }
+      ctx.fillStyle = accent;
+      ctx.fillRect(-17, -9, 30, 2.2);
+      break;
+    }
+    case 'bubble': {
+      wheels([9, -9], 9.5, 8, 5);
+      ctx.fillStyle = dark;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 16, 11.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      if (!ghost) {
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = ink;
+        ctx.stroke();
+      }
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 14, 9.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = light;
+      ctx.beginPath();
+      ctx.ellipse(-2, -4, 9, 3.6, -0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = glass;
+      ctx.beginPath();
+      ctx.ellipse(1, 0, 7, 6.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#8ff0ff';
+      ctx.beginPath();
+      ctx.ellipse(4.5, 0, 2.6, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = accent;
+      ctx.fillRect(12.5, -5, 2, 2.5);
+      ctx.fillRect(12.5, 2.5, 2, 2.5);
+      break;
+    }
+    default: {
+      // coupe
+      wheels([10, -10], 10, 10, 6);
+      poly([18, -6, 15, -10, -14, -10, -18, -7, -18, 7, -14, 10, 15, 10, 18, 6], dark, true);
+      poly([16, -5.5, 13.5, -8, -13, -8, -16, -5.5, -16, 5.5, -13, 8, 13.5, 8, 16, 5.5], color);
+      poly([16, -5.5, 13.5, -8, -13, -8, -4, 0], light);
+      // racing stripe
+      ctx.fillStyle = accent;
+      ctx.globalAlpha *= 0.85;
+      ctx.fillRect(-16, -1.6, 32, 3.2);
+      ctx.globalAlpha /= 0.85;
+      poly([7, -6, -6, -6.5, -9, -4.5, -9, 4.5, -6, 6.5, 7, 6, 9, 0], glass);
+      poly([7, -5.5, 9, 0, 7, 5.5, 4.5, 4.5, 4.5, -4.5], '#8ff0ff');
+      poly([3, -4.5, -5, -4.8, -5, 4.8, 3, 4.5], light);
+      ctx.fillStyle = '#fff3b0';
+      ctx.fillRect(15.5, -7, 2.5, 3);
+      ctx.fillRect(15.5, 4, 2.5, 3);
+      ctx.fillStyle = '#ff3d6e';
+      ctx.fillRect(-18, -7, 2, 3);
+      ctx.fillRect(-18, 4, 2, 3);
+      ctx.fillStyle = dark;
+      ctx.fillRect(-20, -9, 3, 18);
+    }
   }
 }

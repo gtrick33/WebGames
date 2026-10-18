@@ -3,10 +3,12 @@ import { dailyTrack, hashDay, todayKey } from '../src/games/mini-racer/daily';
 import { leftOf, pointAt } from '../src/games/mini-racer/geometry';
 import { decodeGhost, encodeGhost, GhostRecorder, ghostPose } from '../src/games/mini-racer/ghost';
 import { advanceLaps, bestLap, crossGate, newLapState } from '../src/games/mini-racer/laps';
-import { newCar, stepCar } from '../src/games/mini-racer/physics';
+import { newCar, onLoose, stepCar } from '../src/games/mini-racer/physics';
 import { autopilot, DT, RaceSim, scoreFor } from '../src/games/mini-racer/sim';
 import { buildTrack, bypassed, groundAt, SURFACES, validateTrack, type Checkpoint, type Gate } from '../src/games/mini-racer/track';
 import { TRACKS } from '../src/games/mini-racer/tracks';
+import { CARS, raceCoins, specFor, statBars } from '../src/games/mini-racer/cars';
+import { getGame } from '../src/catalog/catalog';
 
 /** A gate across the x axis at x = gx, driven in +x. */
 const gateX = (gx: number): Gate => ({ a: { x: gx, y: -100 }, b: { x: gx, y: 100 }, dir: { x: 1, y: 0 } });
@@ -85,14 +87,13 @@ describe('tracks', () => {
   for (const def of TRACKS) {
     const track = buildTrack(def);
 
-    it(`${def.name}: road never overlaps itself and has a usable shortcut`, () => {
+    it(`${def.name}: road never overlaps itself`, () => {
       expect(validateTrack(track)).toEqual([]);
-      expect(track.shortcut).not.toBeNull();
-      expect(bypassed(def.checkpoints, track.shortcutRange!).length).toBeGreaterThan(0);
+      if (track.shortcutRange) expect(bypassed(def.checkpoints, track.shortcutRange).length).toBeGreaterThan(0);
     });
 
     it(`${def.name}: the autopilot completes valid laps near the gold time`, () => {
-      const sim = new RaceSim(track, 'hotlap');
+      const sim = new RaceSim(track);
       for (let i = 0; i < 120 * 60 && sim.lap.laps.length < 2; i++) sim.step(autopilot(sim));
       expect(sim.lap.laps).toHaveLength(2);
       expect(sim.lap.laps.every((l) => l.valid)).toBe(true);
@@ -102,7 +103,7 @@ describe('tracks', () => {
       expect(t).toBeLessThan(def.par * 1.15);
     });
 
-    it(`${def.name}: driving the shortcut counts as a valid lap`, () => {
+    it.runIf(!!def.shortcut)(`${def.name}: driving the shortcut counts as a valid lap`, () => {
       // Drive the main road up to the shortcut, follow the shortcut, then the road again.
       const sc = track.shortcut!;
       const L = track.path.length;
@@ -157,26 +158,38 @@ describe('physics', () => {
   it('accelerates towards top speed and grass is slower than asphalt', () => {
     const run = (surface: keyof typeof SURFACES): number => {
       const car = newCar(0, 0, 0);
-      for (let i = 0; i < 120 * 6; i++) stepCar(car, { steer: 0, throttle: 1, brake: 0, drift: false }, SURFACES[surface], DT);
+      for (let i = 0; i < 120 * 6; i++) stepCar(car, { steer: 0, throttle: 1, brake: 0 }, SURFACES[surface], DT);
       return car.vx;
     };
     expect(run('asphalt')).toBeGreaterThan(380);
     expect(run('grass')).toBeLessThan(run('asphalt') * 0.65);
   });
 
-  it('holding drift through a turn slides more than gripping', () => {
-    const slide = (drift: boolean): number => {
+  it('holding a hard turn at speed lets the tail out; a gentle turn or low speed does not', () => {
+    const slide = (steer: number, speed: number, throttle = 1): { slide: number; side: number } => {
       const car = newCar(0, 0, 0);
-      car.vx = 380;
+      car.vx = speed;
       let max = 0;
       for (let i = 0; i < 60; i++) {
-        stepCar(car, { steer: 1, throttle: 1, brake: 0, drift }, SURFACES.asphalt, DT);
+        stepCar(car, { steer, throttle, brake: 0 }, SURFACES.asphalt, DT);
         const side = -car.vx * Math.sin(car.a) + car.vy * Math.cos(car.a);
         max = Math.max(max, Math.abs(side));
       }
-      return max;
+      return { slide: car.slide, side: max };
     };
-    expect(slide(true)).toBeGreaterThan(slide(false) * 2);
+    const hard = slide(1, 380);
+    expect(hard.slide).toBeGreaterThan(0.9);
+    expect(slide(0.4, 380).slide).toBe(0);
+    expect(slide(1, 120, 0).slide).toBe(0);
+    expect(hard.side).toBeGreaterThan(slide(0.4, 380).side * 2);
+  });
+
+  it('loose-ground tyres lose less on dirt but change nothing on tarmac', () => {
+    expect(onLoose(SURFACES.asphalt, 1.2)).toEqual({ speed: 1, accel: 1, grip: 1, drag: 0 });
+    const dirt = onLoose(SURFACES.gravel, 1.15);
+    expect(dirt.speed).toBeGreaterThan(SURFACES.gravel.speed);
+    expect(dirt.grip).toBeGreaterThan(SURFACES.gravel.grip);
+    expect(onLoose(SURFACES.gravel, 1)).toBe(SURFACES.gravel);
   });
 });
 
@@ -225,13 +238,76 @@ describe('ghost', () => {
   });
 
   it('a race saves the best valid lap as the new ghost', () => {
-    const sim = new RaceSim(buildTrack(TRACKS[0]!), 'race');
+    const sim = new RaceSim(buildTrack(TRACKS[0]!));
     for (let i = 0; i < 120 * 90 && !sim.finished; i++) sim.step(autopilot(sim));
     expect(sim.finished).toBe(true);
     const r = sim.result();
     expect(r.laps).toHaveLength(3);
     expect(sim.newGhost?.time).toBeCloseTo(r.best!, 5);
     expect(r.raceTime).toBeCloseTo(r.laps.reduce((s, l) => s + l.time, 0), 5);
-    expect(r.score).toBe(scoreFor(TRACKS[0]!.par, r.laps, r.drift));
+    expect(r.score).toBe(scoreFor(TRACKS[0]!.par, r.laps));
+  });
+});
+
+describe('cars', () => {
+  // Race time for each car relative to the starter, per track (autopilot driving, same line).
+  const results = TRACKS.map((def) => {
+    const track = buildTrack(def);
+    const time = (spec = specFor(CARS[0]!)): number => {
+      const sim = new RaceSim(track, null, spec);
+      for (let i = 0; i < 120 * 120 && !sim.finished; i++) sim.step(autopilot(sim));
+      return sim.result().raceTime ?? Infinity;
+    };
+    const base = time();
+    return { def, rel: CARS.map((c) => time(specFor(c)) / base - 1) };
+  });
+
+  it('every car finishes every track within 6% of the starter car', () => {
+    for (const { def, rel } of results) {
+      rel.forEach((r, i) => expect(Math.abs(r), `${CARS[i]!.id} on ${def.id}`).toBeLessThan(0.06));
+    }
+  });
+
+  it('no car is faster than the starter on average by more than 2.5% (fair leaderboard)', () => {
+    CARS.forEach((c, i) => {
+      const mean = results.reduce((s, r) => s + r.rel[i]!, 0) / results.length;
+      expect(Math.abs(mean), c.id).toBeLessThan(0.025);
+    });
+  });
+
+  it('has unique ids, a free starter and sensible stat bars', () => {
+    expect(new Set(CARS.map((c) => c.id)).size).toBe(CARS.length);
+    expect(CARS[0]!.unlock.type).toBe('starter');
+    for (const c of CARS) for (const b of statBars(c)) expect(b.value).toBeGreaterThanOrEqual(1);
+  });
+
+  it('pays more coins for medals, records and the first daily finish', () => {
+    const base = raceCoins({ validLaps: 3, medal: null, newBest: false, firstDaily: false });
+    expect(raceCoins({ validLaps: 3, medal: 'gold', newBest: false, firstDaily: false })).toBeGreaterThan(raceCoins({ validLaps: 3, medal: 'bronze', newBest: false, firstDaily: false }));
+    expect(raceCoins({ validLaps: 3, medal: null, newBest: true, firstDaily: true })).toBeGreaterThan(base);
+    expect(raceCoins({ validLaps: 0, medal: null, newBest: false, firstDaily: false })).toBeGreaterThan(0);
+  });
+});
+
+describe('leaderboard score', () => {
+  it('is higher for faster races and zero for laps that missed a checkpoint', () => {
+    const par = 15000;
+    expect(scoreFor(par, [{ time: 15, valid: true }])).toBe(1000);
+    expect(scoreFor(par, [{ time: 12, valid: true }])).toBeGreaterThan(scoreFor(par, [{ time: 15, valid: true }]));
+    expect(scoreFor(par, [{ time: 10, valid: false }])).toBe(0);
+  });
+
+  it('a very fast real race stays under the registry limits, while a forged score does not', () => {
+    const limits = getGame('mini-racer')!.limits!;
+    for (const def of [...TRACKS, dailyTrack('2026-10-18')]) {
+      // 25% faster than gold on every lap is beyond any human run.
+      const lap = (def.par / 1000) * 0.75;
+      const score = scoreFor(def.par, [lap, lap, lap].map((time) => ({ time, valid: true })));
+      // Real elapsed time also includes the countdown and the finish pause.
+      const seconds = lap * 3 + 3;
+      expect(score, def.id).toBeLessThanOrEqual(limits.scorePerSecond * seconds + 50);
+      expect(seconds).toBeGreaterThanOrEqual(limits.minSeconds ?? 1);
+    }
+    expect(100000).toBeGreaterThan(limits.scorePerSecond * 30 + 50);
   });
 });

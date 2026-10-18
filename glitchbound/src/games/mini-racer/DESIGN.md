@@ -1,6 +1,6 @@
 # Mini Racer: design notes
 
-Top-down toy-car time trials (GitHub issue #5). Plain Canvas 2D with no extra dependencies. The game loads as its own lazy
+Top-down toy-car races with one-touch steering (GitHub issue #5). Plain Canvas 2D with no extra dependencies. The game loads as its own lazy
 chunk when the player presses Play, and everything is released on unmount (rAF, listeners, observers, AudioContext).
 
 ## Files
@@ -9,15 +9,16 @@ chunk when the player presses Play, and everything is released on unmount (rAF, 
 | --- | --- | --- |
 | `geometry.ts` | Catmull-Rom splines, resampling, nearest point, segment crossing | yes |
 | `track.ts` | Track model, surfaces, `buildTrack`, `groundAt`, `validateTrack`, PRNG | yes |
-| `tracks.ts` | The three handmade tracks (data) | yes |
-| `physics.ts` | Arcade car model (yaw, slip/grip, drift, boost), circle/bounds collisions | yes |
+| `tracks.ts` | The six handmade tracks (data) | yes |
+| `cars.ts` | Car collection: looks, small handling trade-offs, unlocks, coin rewards | yes |
+| `physics.ts` | Arcade car model (yaw, slip/grip, steering-driven slide, boost, loose-ground tyres), collisions | yes |
 | `laps.ts` | Lap timing and checkpoint validation | yes |
 | `ghost.ts` | Ghost recording (20 Hz), playback, storage encoding | yes |
 | `daily.ts` | Date-seeded daily track generator with its own gold time | yes |
 | `sim.ts` | One race: car + track + laps + drift scoring + ghost, plus the autopilot | yes |
-| `render.ts` | Canvas drawing (cached Path2D road, low-poly cars, skids, particles, HUD, minimap) | DOM |
-| `engine.ts` | Fixed 120 Hz loop, input, adaptive resolution, auto-pause | DOM |
-| `audio.ts` | Synthesized engine, tyre squeal and blips (WebAudio) | DOM |
+| `render.ts` | Canvas drawing (cached Path2D road, textured surfaces, five car bodies, skids, particles, HUD, km/h gauge, minimap) | DOM |
+| `engine.ts` | Fixed 120 Hz loop, half-screen touch + keyboard steering, adaptive resolution, auto-pause | DOM |
+| `audio.ts` | Synthesized lo-fi race music loop, soft engine hum, tyre squeal and blips (WebAudio, no files) | DOM |
 | `storage.ts` | localStorage bests, ghosts, settings (all guarded) | DOM |
 | `Game.tsx` / `Game.css` | Menu, pause, results, touch controls, arcade reporting | React |
 
@@ -25,38 +26,51 @@ Tests: `tests/mini-racer.test.ts`.
 
 ## Rules worth knowing
 
+- **Controls**: gas is always on. Hold the left or right half of the track (touch, pen or mouse) or Left/Right or A/D to
+  steer; holding both halves goes straight. There is no brake or drift button. Holding a hard turn above ~42% of top speed
+  builds `slide` (0..1): the tail steps out, the car rotates faster and scrubs a little speed. Straightening up regrips.
+- **Surfaces** (`SURFACES` in `track.ts`): tarmac, gravel, dirt, sand, snow, grass, mud, ice and boost strips, each with its
+  own speed, acceleration, grip and drag. Loose ones (dirt, gravel, sand, grass, mud, snow) are softened by a car's `loose`
+  stat (`onLoose`). Each surface has its own texture and a chip in the menu.
 - **Checkpoints**: each track has N evenly spaced gates (gate 0 is the line). A lap counts only if every gate was crossed
-  in order, in the driving direction. Gates are as wide as the road plus kerbs plus a little more, so cutting across the infield
-  misses one and the lap shows as "missed". A shortcut gets its own matching gates for the checkpoints it skips, so
-  taking it is legal. Crossing times are interpolated within the physics step.
-- **Lap 1** is timed from GO (standing start). Race medals allow 0.9 s for that.
-- **Drift**: sliding sideways at speed on the road builds a chain (a multiplier every 1.5 s, up to x4). It banks after
-  0.45 s of grip; a chain longer than 0.7 s pays out a turbo. A hard bump loses the chain and marks the lap "bumped" (not clean).
-- **Score** (reported to the arcade): `par / lapTime` per valid lap (about 1000 at gold pace), plus drift / 10.
-- **Gold times**: handmade tracks have a hand-set `par` that the tests keep within 15% of a tidy autopilot lap. Daily tracks
-  get the autopilot's flying lap minus 1.5%.
-- **Ghost**: the best valid lap on each track is stored (`gb.mini-racer.ghost.<trackId>`). Hot Lap and Time Trial race against it,
-  and a new best replaces it mid-session. Old daily ghosts are pruned.
-- **Arcade reporting**: `start` when a race begins (including restarts); `end` when a round finishes, with `lapMs`,
-  `raceMs` (valid 3-lap races only), `drift` and `cleanLaps`. Every end goes through `reportEnd(isDaily)` in `Game.tsx`, where
-  `isDaily` is true for rounds on today's generated track, reported with the arcade's own-daily flag (`daily: true`).
+  in order, in the driving direction. Gates reach about 45 units past the kerb, which forgives running wide in a bend but still
+  catches a cut across the infield (tested). A shortcut gets its own matching gates for the checkpoints it skips.
+- **Races** are always 3 laps. Lap 1 is timed from GO, and race medals allow 0.9 s for that start.
+- **Drift**: sliding sideways at speed builds a chain (a multiplier every 1.5 s, up to x4). It banks after 0.45 s of grip,
+  and a chain longer than 0.7 s pays out a turbo. A hard bump loses the chain and marks the lap "bumped" (not clean).
+- **Leaderboard score** (`scoreFor`): race points = `1000 x gold lap / lap time` per valid lap (about 3000 for a gold-pace race).
+  Higher is better, it can be compared across tracks, and a lap that missed a checkpoint scores 0. The registry
+  `limits` (160 points per second, at least 15 s) reject forged scores; a test checks that even a race 25% faster than gold fits.
+- **Cars**: 10 cars (coupe, buggy, formula, van and bubble bodies). Seven unlock with coins and two with gold medals on the handmade
+  tracks; Pip is the starter. Coins per race: 10 + 3 per valid lap + medal (8/15/25) + new record 10 + first daily finish 30.
+  Handling trade-offs are small; tests keep every car within 6% of Pip on every track and within 2.5% on average.
+- **Gold times**: hand-set `par` per track, which tests keep within 15% of a tidy autopilot lap. Daily tracks get the autopilot's
+  flying lap minus 1.5%.
+- **Ghost**: the best valid lap on each track (`gb.mini-racer.ghost.<trackId>`); old daily ghosts are pruned.
+- **Arcade reporting**: `start` when a race begins (including restarts). Every `end` goes through `reportEnd(isDaily)` in `Game.tsx`
+  with `score` (race points), `raceMs`, `lapMs`, `drift` and `cleanLaps`. `daily: true` is sent for races on today's generated track.
 
-## Built in this pass
+## Built so far
 
-- 3 handmade tracks (Sunny Bay, Frost Peak, Canyon Run), each with a shortcut, obstacles, and different surfaces
-  (asphalt, ice, dirt, mud, sand/snow off-road, boost pads)
-- A daily generated track (same for everyone on a calendar day, local best and ghost per day)
-- Modes: Time Trial (3 laps), Hot Lap (best of 5, race your ghost), Drift Zone (60 s of drift points)
-- Local bests and medals (gold/silver/bronze) per track and mode; 6 car paints, 3 of them unlocked with medals and the daily
-- Keyboard and touch controls (automatic gas on touch), instant restart (R / arcade Restart), pause on Esc, tab hide or scroll-away
-- Adaptive canvas resolution to hold 60 fps on slower phones; synthesized sound with a mute toggle
+- One-touch controls (hold a screen half, or Left/Right / A/D), automatic gas, drift that comes from steering
+- 6 handmade tracks (Sunny Bay, Frost Peak, Canyon Run, Meadow Mile, Sugar Rush, Dune Dash) plus a daily generated track;
+  the first three have shortcuts
+- Distinct, textured surfaces with their own grip and speed, listed per track in the menu
+- km/h speedometer, lap/time/best HUD, minimap, ghost of your best lap
+- 3-lap races with local bests (race and lap) and medals per track, shown on the track cards and the menu
+- Car collection with coins, medal unlocks and balanced handling; garage screen
+- Leaderboard-ready score with registry `limits`
+- Adaptive canvas resolution; synthesized sound with a mute toggle
+- Race music: an 88 BPM lo-fi loop (Fmaj7-Em7-Dm7-Cmaj7 pad, sine bass, swung pluck arpeggio, soft kick/snare/hats) scheduled on
+  the audio clock; it fades in when a race starts, out on the menu, freezes on pause, follows the sound toggle and stops on unmount.
+  The engine is a quiet low hum under it.
 
 ## Deferred (not built yet)
 
 - Circuit racing against AI cars (the autopilot in `sim.ts` is a starting point for AI drivers)
-- Unlockable cars with different handling (today the unlocks are cosmetic paints; `CarSpec` already supports per-car stats)
-- Dedicated drift-challenge tracks or scripted drift zones (today Drift Zone is a 60 s mode on any track)
+- Drift challenges (the Hot Lap and Drift Zone modes were removed for the one-touch rework; drift points are still a stat)
 - A catalogue attract preview (`Preview.tsx` + `GAME_PREVIEWS`); the in-game menu already has an autopilot attract view
-- Online leaderboards per track, plus share and download for ghosts
+- Leaderboards per track (the arcade ranks one score per game), plus share and download for ghosts
+- Shortcuts on the three newer tracks
 - More handmade tracks; jumps, bridges or crossover tracks (the nearest-point lookup assumes the road never crosses itself)
 - Gamepad support
