@@ -48,7 +48,9 @@
 .cfriends {
   --acc: var(--cyan);
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  /* Same inner spacing as the other side panels (.player-name, .side-block). */
+  padding: 18px 20px;
   border-color: var(--acc) !important;
   background: color-mix(in srgb, var(--acc) 14%, transparent);
 }
