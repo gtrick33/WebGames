@@ -4,7 +4,69 @@
  */
 export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
 
-export async function shareOrCopy(data: { title: string; text: string; url?: string }): Promise<ShareOutcome> {
+export interface ShareData {
+  title: string;
+  text: string;
+  url?: string;
+}
+
+/* The share sheet (components/ShareSheet.tsx) is mounted once by the app and opened from here. */
+interface Pending {
+  data: ShareData;
+  resolve: (o: ShareOutcome) => void;
+}
+let pending: Pending | null = null;
+let hosts = 0;
+const listeners = new Set<() => void>();
+const emit = (): void => listeners.forEach((fn) => fn());
+
+export const shareRequests = {
+  subscribe(fn: () => void): () => void {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  },
+  get: (): Pending | null => pending,
+  /** The sheet host announces itself; without one (tests, embeds) sharing falls back to copying. */
+  attach(): () => void {
+    hosts++;
+    return () => {
+      hosts--;
+    };
+  },
+  finish(outcome: ShareOutcome): void {
+    const p = pending;
+    pending = null;
+    emit();
+    p?.resolve(outcome);
+  },
+};
+
+/**
+ * Opens the share sheet (picture card, platform picker, rich link). Resolves with what the player
+ * did. Falls back to the device's own share sheet or the clipboard when the sheet isn't available.
+ */
+export function shareOrCopy(data: ShareData): Promise<ShareOutcome> {
+  if (hosts > 0) {
+    pending?.resolve('cancelled');
+    return new Promise((resolve) => {
+      pending = { data, resolve };
+      emit();
+    });
+  }
+  return shareDirect(data);
+}
+
+/** Copies text to the clipboard (with an old-browser fallback). */
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return legacyCopy(text);
+  }
+}
+
+export async function shareDirect(data: ShareData): Promise<ShareOutcome> {
   const nav = typeof navigator !== 'undefined' ? navigator : undefined;
   // Native sheets are best on touch devices; desktop share dialogs are clumsy, so copy there.
   const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;

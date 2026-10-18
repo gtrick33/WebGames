@@ -16,6 +16,8 @@ export interface D1Database {
 
 export interface Env {
   DB: D1Database;
+  /** The site's static files (Pages); used to send a page with rewritten link-preview tags. */
+  ASSETS?: { fetch: (input: Request | string | URL, init?: RequestInit) => Promise<Response> };
   /** NEON RUSH's own leaderboard database (served under /play/neon-rush/api). */
   NR_DB: D1Database;
   SITE_URL?: string;

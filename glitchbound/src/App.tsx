@@ -10,6 +10,7 @@ import { ArcadeEntrance } from './components/Entrance';
 import { MusicControl } from './components/MusicControl';
 import { FeedbackPrompt } from './components/FeedbackPrompt';
 import { NoticeBanner } from './components/NoticeBanner';
+import { ShareHost } from './components/ShareHost';
 import { track } from './platform/analytics';
 import { useAccount } from './platform/account';
 import { useLiveCatalog } from './platform/liveCatalog';
@@ -73,6 +74,7 @@ export function App() {
       <ArcadeEntrance />
       <Header />
       <NoticeBanner />
+      <ShareHost />
       <main id="main" tabIndex={-1}>
         <ErrorBoundary
           key={pathname}
