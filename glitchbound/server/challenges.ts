@@ -3,12 +3,50 @@ import { MAX_PLAYERS, roundWinners, type ChallengeListItem, type ChallengeView }
 import type { Env } from './http';
 import { currentUser } from './session';
 
-/** The requesting player: a member's account, else the device key the browser sends. */
+/**
+ * The requesting player: a member's account, else the device key the browser sends. A member who
+ * still sends this device's key first takes over what they did here as a guest (see claimGuest).
+ */
 export async function playerOf(env: Env, request: Request, body: Record<string, unknown> | null): Promise<string | null> {
+  const raw = typeof body?.key === 'string' ? body.key : new URL(request.url).searchParams.get('key');
+  const key = raw && /^[A-Za-z0-9_-]{16,64}$/.test(raw) ? raw : null;
   const user = await currentUser(env, request);
-  if (user) return `u:${user.id}`;
-  const key = typeof body?.key === 'string' ? body.key : new URL(request.url).searchParams.get('key');
-  return key && /^[A-Za-z0-9_-]{16,64}$/.test(key) ? `g:${key}` : null;
+  if (user) {
+    if (key) await claimGuest(env, user.id, key);
+    return `u:${user.id}`;
+  }
+  return key ? `g:${key}` : null;
+}
+
+/**
+ * A guest who signs in keeps their challenges: the device key's seats, scores and hosted challenges
+ * move to the member's account. This runs on the first signed-in challenge request from the device,
+ * so it covers every way of signing in (the emailed link cannot carry the key). Where the member
+ * already has a seat too (they joined again after signing in, or on another device), the two
+ * become one: the earlier seat's name and place stay, and in each round the first finished score
+ * counts, as it does for everyone.
+ */
+export async function claimGuest(env: Env, userId: string, key: string): Promise<void> {
+  const guest = `g:${key}`;
+  const member = `u:${userId}`;
+  if (!(await env.DB.prepare('SELECT 1 AS ok FROM challenge_players WHERE player = ? LIMIT 1').bind(guest).first())) return;
+  // "The other identity also has a score in this round / a seat in this challenge" (closed by the caller).
+  const scoreIn = 'EXISTS (SELECT 1 FROM challenge_scores o WHERE o.challenge_id = challenge_scores.challenge_id AND o.round = challenge_scores.round AND o.player = ?';
+  const seatIn = 'EXISTS (SELECT 1 FROM challenge_players o WHERE o.challenge_id = challenge_players.challenge_id AND o.player = ?';
+  await env.DB.batch([
+    // Scores: in a round both played, keep the earlier one; then the guest's rest become the member's.
+    env.DB.prepare(`DELETE FROM challenge_scores WHERE player = ? AND ${scoreIn} AND o.at < challenge_scores.at)`).bind(member, guest),
+    env.DB.prepare(`DELETE FROM challenge_scores WHERE player = ? AND ${scoreIn})`).bind(guest, member),
+    env.DB.prepare('UPDATE challenge_scores SET player = ? WHERE player = ?').bind(member, guest),
+    // Seats: where both sit, the member's seat takes the earlier seat's name and place.
+    env.DB.prepare(
+      `UPDATE challenge_players SET (name, joined_at) = (SELECT o.name, o.joined_at FROM challenge_players o WHERE o.challenge_id = challenge_players.challenge_id AND o.player = ?)
+       WHERE player = ? AND ${seatIn} AND o.joined_at < challenge_players.joined_at)`,
+    ).bind(guest, member, guest),
+    env.DB.prepare(`DELETE FROM challenge_players WHERE player = ? AND ${seatIn})`).bind(guest, member),
+    env.DB.prepare('UPDATE challenge_players SET player = ? WHERE player = ?').bind(member, guest),
+    env.DB.prepare('UPDATE challenges SET host = ? WHERE host = ?').bind(member, guest),
+  ]);
 }
 
 interface Row {
@@ -63,7 +101,6 @@ export async function viewOf(env: Env, row: Row, player: string | null): Promise
     day: row.day,
     round: row.round,
     seed: row.seed,
-    host: row.host,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     players: players.results.map((p) => ({ name: p.name, you: p.player === player, wins: wins.get(p.name) ?? 0, total: totals.get(p.name) ?? 0 })),

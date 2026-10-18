@@ -51,7 +51,6 @@ export interface ChallengeView {
   day: string;
   round: number;
   seed: number;
-  host: string;
   createdAt: number;
   updatedAt: number;
   players: PlayerView[];

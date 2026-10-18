@@ -1,8 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { onRequestGet as getView } from '../functions/api/challenges/[id]';
+import { onRequestPost as join } from '../functions/api/challenges/[id]/join';
+import { onRequestPost as rematch } from '../functions/api/challenges/[id]/rematch';
+import { onRequestPost as score } from '../functions/api/challenges/[id]/score';
+import { onRequestGet as list, onRequestPost as create } from '../functions/api/challenges/index';
+import type { Ctx, Env } from '../server/http';
+import { signIn } from '../server/signin';
 import { GAMES } from '../src/catalog/games';
-import { cleanName, dailySeed, NAME_MAX, roundSeed, roundWinners } from '../src/platform/challenge';
+import { cleanName, dailySeed, NAME_MAX, roundSeed, roundWinners, type ChallengeListItem, type ChallengeView } from '../src/platform/challenge';
 import { decodeReplay, encodeReplay } from '../src/games/mini-racer/ghost';
 import { challengeSpecOf } from '../src/platform/useChallengeRun';
+import { memoryD1 } from './d1';
 
 describe('friends challenges', () => {
   it('gives every round its own seed, the same for every player', () => {
@@ -55,5 +63,118 @@ describe('friends challenges', () => {
   it('offers challenges in every game but NEON RUSH and the live card game', () => {
     expect(GAMES.filter((g) => !g.challenge).map((g) => g.slug).sort()).toEqual(['neon-rush', 'unhinged']);
     for (const g of GAMES.filter((x) => x.challenge)) expect(g.challenge!.label.length).toBeGreaterThan(10);
+  });
+});
+
+describe('a guest who signs in keeps their challenges', () => {
+  const ORIGIN = 'https://glitchbound.test';
+  const ANA = 'ana-device-key-0000000001';
+  const BO = 'bo-device-key-00000000002';
+  let db: ReturnType<typeof memoryD1>;
+  let env: Env;
+
+  beforeEach(() => {
+    db = memoryD1();
+    env = { DB: db, NR_DB: {} as Env['NR_DB'] };
+    // A clock that moves on every reading, so join and score times never tie.
+    let now = Date.UTC(2026, 9, 18, 12);
+    vi.spyOn(Date, 'now').mockImplementation(() => (now += 1000));
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  type Handler = (ctx: Ctx) => Promise<Response>;
+  async function call<T>(handler: Handler, path: string, opts: { id?: string; key?: string; cookie?: string; body?: Record<string, unknown> } = {}): Promise<{ status: number; data: T }> {
+    const headers: Record<string, string> = { origin: ORIGIN };
+    if (opts.cookie) headers.cookie = opts.cookie;
+    const url = opts.body ? `${ORIGIN}${path}` : `${ORIGIN}${path}?key=${opts.key ?? ''}`;
+    const init: RequestInit = opts.body ? { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify({ ...opts.body, key: opts.key }) } : { headers };
+    const res = await handler({ request: new Request(url, init), env, params: opts.id ? { id: opts.id } : {} });
+    return { status: res.status, data: (await res.json()) as T };
+  }
+  const view = (id: string, key: string, cookie?: string) => call<ChallengeView>(getView, `/api/challenges/${id}`, { id, key, cookie });
+  const signInAs = async (email: string): Promise<{ cookie: string; player: string }> => {
+    const { user, cookie } = await signIn(env, new Request(ORIGIN), { sub: `dev:${email}`, email, name: 'Ana', givenName: 'Ana', picture: '', provider: 'email' });
+    return { cookie: cookie.split(';')[0]!, player: `u:${user.id}` };
+  };
+  const rows = (sql: string, ...v: string[]) => db.sqlite.prepare(sql).all(...v).map((r) => ({ ...r }));
+
+  /** Ana (guest) starts a challenge, Bo (guest) joins, and both play round 1. */
+  async function playedAsGuests(): Promise<string> {
+    const { data } = await call<ChallengeView>(create, '/api/challenges', { key: ANA, body: { game: 'wing-it', mode: 'fresh', name: 'Ana' } });
+    await call(join, `/api/challenges/${data.id}/join`, { id: data.id, key: BO, body: { name: 'Bo' } });
+    await call(score, `/api/challenges/${data.id}/score`, { id: data.id, key: ANA, body: { round: 1, score: 40 } });
+    await call(score, `/api/challenges/${data.id}/score`, { id: data.id, key: BO, body: { round: 1, score: 30 } });
+    return data.id;
+  }
+
+  it('keeps the seat, the scores and the hosting after signing in', async () => {
+    const id = await playedAsGuests();
+    const ana = await signInAs('ana@example.com');
+    const { data } = await view(id, ANA, ana.cookie);
+    expect(data.joined).toBe(true);
+    expect(data.yourTurn).toBe(false);
+    expect(data.players.map((p) => [p.name, p.you])).toEqual([['Ana', true], ['Bo', false]]);
+    expect(data.rounds[0]!.scores.map((s) => [s.name, s.score, s.you])).toEqual([['Ana', 40, true], ['Bo', 30, false]]);
+    const mine = await call<{ challenges: ChallengeListItem[] }>(list, '/api/challenges', { key: ANA, cookie: ana.cookie });
+    expect(mine.data.challenges.map((c) => [c.id, c.yourTurn])).toEqual([[id, false]]);
+    // Everything of the device key moved to the account; the friend's guest seat is untouched.
+    expect(rows('SELECT player FROM challenge_players ORDER BY joined_at')).toEqual([{ player: ana.player }, { player: `g:${BO}` }]);
+    expect(rows('SELECT player FROM challenge_scores WHERE player LIKE ?', `g:${ANA}`)).toEqual([]);
+    expect(rows('SELECT host FROM challenges')).toEqual([{ host: ana.player }]);
+    // Signed in on any device (no guest key of their own), the challenge is still theirs.
+    expect((await view(id, '', ana.cookie)).data.players[0]!.you).toBe(true);
+    // As the host they can start the rematch.
+    expect((await call<ChallengeView>(rematch, `/api/challenges/${id}/rematch`, { id, key: ANA, cookie: ana.cookie, body: { round: 1 } })).data.round).toBe(2);
+  });
+
+  it('counts a round that was started as a guest and finished signed in', async () => {
+    const { data } = await call<ChallengeView>(create, '/api/challenges', { key: ANA, body: { game: 'wing-it', mode: 'fresh', name: 'Ana' } });
+    const ana = await signInAs('ana@example.com');
+    const sent = await call<ChallengeView>(score, `/api/challenges/${data.id}/score`, { id: data.id, key: ANA, cookie: ana.cookie, body: { round: 1, score: 55 } });
+    expect(sent.status).toBe(200);
+    expect(sent.data.rounds[0]!.scores).toMatchObject([{ name: 'Ana', score: 55, you: true }]);
+  });
+
+  it('does not give a second seat when they join again after signing in', async () => {
+    const id = await playedAsGuests();
+    const ana = await signInAs('ana@example.com');
+    const { data } = await call<ChallengeView>(join, `/api/challenges/${id}/join`, { id, key: ANA, cookie: ana.cookie, body: { name: 'Ana' } });
+    expect(data.players.map((p) => p.name)).toEqual(['Ana', 'Bo']);
+    expect(data.yourTurn).toBe(false);
+  });
+
+  it('merges a second seat taken before signing in was recognised, keeping the first score of each round', async () => {
+    const id = await playedAsGuests();
+    const ana = await signInAs('ana@example.com');
+    // What happened before this fix: signed in, Ana was a stranger, so she joined as "Ana 2" and
+    // played round 1 again; then round 2 was played only by the account.
+    const ins = (sql: string, ...v: (string | number)[]) => db.sqlite.prepare(sql).run(...v);
+    ins('INSERT INTO challenge_players (challenge_id, player, name, joined_at) VALUES (?, ?, ?, ?)', id, ana.player, 'Ana 2', Date.now());
+    ins('INSERT INTO challenge_scores (challenge_id, round, player, score, at) VALUES (?, 1, ?, 90, ?)', id, ana.player, Date.now());
+    ins('UPDATE challenges SET round = 2');
+    ins('INSERT INTO challenge_scores (challenge_id, round, player, score, at) VALUES (?, 2, ?, 70, ?)', id, ana.player, Date.now());
+    const { data } = await view(id, ANA, ana.cookie);
+    expect(data.players.map((p) => [p.name, p.you])).toEqual([['Ana', true], ['Bo', false]]);
+    const byRound = Object.fromEntries(data.rounds.map((r) => [r.round, r.scores.filter((s) => s.you).map((s) => s.score)]));
+    expect(byRound).toEqual({ 1: [40], 2: [70] });
+    expect(rows('SELECT COUNT(*) AS n FROM challenge_players WHERE challenge_id = ?', id)).toEqual([{ n: 2 }]);
+  });
+
+  it("keeps the account's own seat when it joined first", async () => {
+    const ana = await signInAs('ana@example.com');
+    const { data } = await call<ChallengeView>(create, '/api/challenges', { key: 'ana-laptop-key-0000000003', cookie: ana.cookie, body: { game: 'wing-it', mode: 'fresh', name: 'Ana' } });
+    // Later, signed out on another device, she joined the same challenge as a guest.
+    await call(join, `/api/challenges/${data.id}/join`, { id: data.id, key: ANA, body: { name: 'Annie' } });
+    await call(score, `/api/challenges/${data.id}/score`, { id: data.id, key: ANA, body: { round: 1, score: 12 } });
+    const after = (await view(data.id, ANA, ana.cookie)).data;
+    expect(after.players.map((p) => [p.name, p.you])).toEqual([['Ana', true]]);
+    expect(after.rounds[0]!.scores).toMatchObject([{ name: 'Ana', score: 12, you: true }]);
+  });
+
+  it("never shows anyone's device key", async () => {
+    const id = await playedAsGuests();
+    const text = JSON.stringify((await view(id, BO)).data);
+    expect(text).not.toContain(ANA);
+    expect(text).not.toContain(BO);
   });
 });
