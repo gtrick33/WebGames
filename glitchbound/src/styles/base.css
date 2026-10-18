@@ -9,6 +9,10 @@ html {
   text-size-adjust: 100%;
   scroll-padding-top: calc(var(--header-h) + 16px);
   background: var(--bg);
+  /* Phones scroll the root element: never let a slanted band or wide row pan the page sideways.
+     clip (unlike hidden) keeps position: sticky working; hidden is the fallback for old browsers. */
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -18,6 +22,7 @@ body {
   font: 400 17px/1.55 var(--font);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
   overflow-x: clip;
   background: var(--bg);
 }

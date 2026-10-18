@@ -89,6 +89,22 @@ describe('game page', () => {
     expect(save.games['neon-rush']).toMatchObject({ plays: 1, best: { score: 321, meters: 250, coins: 7, nearMisses: 1 } });
   });
 
+  it('tucks the full-screen controls into a side tab, and Exit game unloads the game', () => {
+    renderAt('/games/neon-rush');
+    // jsdom has no Fullscreen API, so Play falls back to the immersive mode.
+    fireEvent.click(screen.getByRole('button', { name: /Play NEON RUSH/ }));
+    expect(document.querySelector('iframe')).not.toBeNull();
+    const tab = screen.getByRole('button', { name: 'Game menu' });
+    expect(screen.queryByRole('button', { name: /Exit full screen/ })).toBeNull();
+    fireEvent.click(tab);
+    expect(tab.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: /Exit full screen/ })).toBeTruthy();
+    fireEvent.click(within(document.querySelector('.stage-menu')!).getByRole('button', { name: /Exit game/ }));
+    expect(document.querySelector('iframe')).toBeNull();
+    expect(screen.getByRole('button', { name: /Play NEON RUSH/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Game menu' })).toBeNull();
+  });
+
   it('shows how to play and the restart action once playing', () => {
     renderAt('/games/neon-rush');
     expect(screen.getByRole('heading', { name: 'How to play' })).toBeTruthy();

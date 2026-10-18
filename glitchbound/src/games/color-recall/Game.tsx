@@ -23,7 +23,7 @@ import {
   type RoundResult,
 } from './logic';
 import { createSfx, type Sfx } from './sound';
-import { crStats, isComplete, loadCr, recordColor, recordPracticeGame, saveCr, type CrSave } from './store';
+import { crStats, isComplete, loadCr, markDailySeen, recordColor, recordPracticeGame, saveCr, seenDailyRound, type CrSave } from './store';
 import './Game.css';
 
 const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
@@ -79,7 +79,9 @@ function ColorRecall({ host }: { host: GameHost }) {
 
   const startDaily = (): void => {
     const done = save.daily[today] ?? [];
-    setGame(newGame('daily', dailyRounds(today), PEEK_MS[DAILY_DIFFICULTY], done));
+    const g = newGame('daily', dailyRounds(today), PEEK_MS[DAILY_DIFFICULTY], done);
+    // One look per daily colour: a colour already shown (then left mid-guess) resumes straight at mixing.
+    setGame(g.phase === 'peek' && seenDailyRound(save, today) >= g.index ? { ...g, phase: 'guess' } : g);
     setScreen('play');
     if (!isComplete(done)) host.report({ type: 'start' });
   };
@@ -88,6 +90,13 @@ function ColorRecall({ host }: { host: GameHost }) {
     setScreen('play');
     host.report({ type: 'start' });
   };
+
+  // Remember each daily colour as soon as it is shown, so leaving and resuming can't show it again.
+  useEffect(() => {
+    if (game?.mode === 'daily' && game.phase === 'peek' && seenDailyRound(saveRef.current, today) < game.index) {
+      commit(markDailySeen(saveRef.current, today, game.index));
+    }
+  }, [game, today, commit]);
 
   const onHide = useCallback(() => setGame((g) => (g ? reduce(g, { type: 'hide' }) : g)), []);
   const onNext = useCallback(() => {

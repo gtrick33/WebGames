@@ -246,6 +246,9 @@
   .back-link {
     padding: 0 10px;
   }
+  .game-actions {
+    gap: 6px;
+  }
 }
 
 .last-signin {

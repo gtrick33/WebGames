@@ -235,14 +235,41 @@ html.game-focus body {
   overflow: hidden;
   overscroll-behavior: none;
 }
-.stage-exit-group {
+/* Full-screen menu: a slim tab on the left edge, below the top HUD row, opening sideways. */
+.stage-menu {
   position: absolute;
-  top: max(10px, env(safe-area-inset-top));
-  left: 50%;
+  top: 38%;
+  left: 0;
   z-index: 5;
   display: flex;
+  align-items: center;
   gap: 8px;
-  transform: translateX(-50%);
+}
+.stage-menu-tab {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 44px;
+  padding: 0;
+  padding-left: env(safe-area-inset-left);
+  box-sizing: content-box;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-left: 0;
+  border-radius: 0 10px 10px 0;
+  background: rgb(7 2 26 / 0.45);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.stage-menu.is-open .stage-menu-tab,
+.stage-menu-tab:hover,
+.stage-menu-tab:focus-visible {
+  opacity: 1;
+}
+.stage-menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .stage-exit {
   display: inline-flex;
@@ -253,14 +280,10 @@ html.game-focus body {
   padding: 0 12px;
   border: 1px solid rgb(255 255 255 / 0.3);
   border-radius: 999px;
-  background: rgb(7 2 26 / 0.65);
+  background: rgb(7 2 26 / 0.8);
   color: #fff;
   font: 700 12px/1 var(--mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  opacity: 0.75;
-}
-.stage-exit:hover {
-  opacity: 1;
 }

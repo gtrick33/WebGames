@@ -102,6 +102,36 @@ function usePlayMode(ref: RefObject<HTMLElement | null>): { active: boolean; ent
   return { active: mode !== 'none', enter, exit };
 }
 
+/**
+ * Full-screen controls as a small tab on the left edge, where game HUDs rarely sit: tap to open
+ * Exit full screen / Exit game; it folds away again after a few seconds.
+ */
+function StageMenu({ onExitFullscreen, onExitGame }: { onExitFullscreen: () => void; onExitGame: () => void }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => setOpen(false), 4000);
+    return () => window.clearTimeout(t);
+  }, [open]);
+  return (
+    <div className={`stage-menu${open ? ' is-open' : ''}`}>
+      <button className="stage-menu-tab" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Game menu">
+        <Icon name="menu" size={16} />
+      </button>
+      {open && (
+        <div className="stage-menu-items">
+          <button className="stage-exit" onClick={onExitFullscreen}>
+            <Icon name="shrink" size={16} /> Exit full screen
+          </button>
+          <button className="stage-exit" onClick={onExitGame}>
+            <Icon name="close" size={16} /> Exit game
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function GamePage({ game }: { game: GameEntry }) {
   const { search } = useLocation();
   const beat = parseBeatParam(search);
@@ -212,8 +242,8 @@ export function GamePage({ game }: { game: GameEntry }) {
   return (
     <div className="game-page" data-accent={game.accent}>
       <div className="wrap game-toolbar">
-        <Link href="/#arcade" className="btn btn-sm btn-ghost back-link">
-          <Icon name="arrowLeft" size={18} /> Arcade
+        <Link href="/#arcade" className="btn btn-sm btn-ghost back-link" aria-label="Back to the arcade">
+          <Icon name="arrowLeft" size={18} /> <span className="hide-sm">Arcade</span>
         </Link>
         <div className="game-heading">
           <h1>{game.title}</h1>
@@ -255,14 +285,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             onPlayClick={play.enter}
             overlay={
               play.active ? (
-                <div className="stage-exit-group">
-                  <button className="stage-exit" onClick={play.exit} aria-label="Exit full screen">
-                    <Icon name="shrink" size={16} /> Exit full screen
-                  </button>
-                  <button className="stage-exit" onClick={close} aria-label="Exit game">
-                    <Icon name="close" size={16} /> Exit game
-                  </button>
-                </div>
+                <StageMenu onExitFullscreen={play.exit} onExitGame={close} />
               ) : null
             }
             onPhase={(p) => {

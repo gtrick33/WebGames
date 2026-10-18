@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * GlitchBound lobby music: an original, endlessly varying chill "elevator" loop synthesized with
- * Web Audio (no downloads). Soft Rhodes-like keys, warm pads, a round bass and brushed hats over
- * a jazzy ii-V-I-style progression at 78 bpm.
+ * GlitchBound lobby music: an original, upbeat chiptune-style arcade loop synthesized with Web Audio
+ * (no downloads). Bouncy square-wave bass, sparkly 16th-note arpeggios, a catchy lead and a light
+ * drum kit over a bright I-V-vi-IV style progression at 116 bpm. Kept quiet and dry so it sits
+ * behind the page rather than on top of it.
  *
  * Browsers only allow audio after a user gesture, so it starts on the first click/tap/key if the
  * visitor has it switched on (default on, low volume). It pauses while a game is active, and when
@@ -11,26 +12,36 @@ import { useSyncExternalStore } from 'react';
  */
 
 const KEY = 'glitchbound.music';
-const BPM = 78;
+const BPM = 116;
 const BEAT = 60 / BPM;
 const BAR = BEAT * 4;
+const EIGHTH = BEAT / 2;
+const SIXTEENTH = BEAT / 4;
 
-// [bass MIDI, chord voicing MIDI[]] per bar.
+// [bass MIDI, chord tones MIDI[]] per bar.
 const PROGRESSIONS: [number, number[]][][] = [
   [
-    [41, [57, 60, 64, 67]], // Fmaj9
-    [40, [55, 59, 62, 64]], // Em7
-    [38, [53, 57, 60, 64]], // Dm9
-    [36, [52, 55, 59, 62]], // Cmaj9
+    [36, [60, 64, 67]], // C
+    [43, [59, 62, 67]], // G
+    [45, [60, 64, 69]], // Am
+    [41, [60, 65, 69]], // F
   ],
   [
-    [38, [53, 57, 60, 65]], // Dm7
-    [43, [53, 57, 59, 64]], // G13
-    [36, [52, 55, 59, 62]], // Cmaj9
-    [45, [55, 60, 64, 67]], // Am9
+    [41, [60, 65, 69]], // F
+    [43, [59, 62, 67]], // G
+    [40, [59, 64, 67]], // Em
+    [45, [60, 64, 69]], // Am
   ],
 ];
-const MELODY = [72, 74, 76, 79, 81, 84]; // C major pentatonic, upper register
+
+// Lead phrases: eighth-note offsets into the bar's chord tones an octave up (null = rest, +n = scale step above).
+const SCALE = [72, 74, 76, 79, 81, 84, 86, 88]; // C major pentatonic, two octaves
+const PHRASES: (number | null)[][] = [
+  [2, null, 3, 4, 3, null, 2, 0],
+  [4, 4, null, 3, 2, 3, null, null],
+  [0, 2, 3, null, 5, null, 4, 3],
+  [5, null, 4, 3, 2, null, 1, null],
+];
 
 const hz = (m: number): number => 440 * 2 ** ((m - 69) / 12);
 
@@ -165,7 +176,7 @@ class Music {
     this.reverb = ctx.createConvolver();
     this.reverb.buffer = ir;
     const wet = ctx.createGain();
-    wet.gain.value = 0.35;
+    wet.gain.value = 0.18;
     this.reverb.connect(wet).connect(this.master);
 
     const n = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -271,37 +282,67 @@ class Music {
     src.start(t, Math.random() * 0.5, 0.12);
   }
 
+  private kick(t: number): void {
+    const ctx = this.ctx!;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+    g.gain.setValueAtTime(0.32, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    osc.connect(g);
+    this.out(g, 1, 0);
+    osc.start(t);
+    osc.stop(t + 0.2);
+  }
+
+  private snare(t: number): void {
+    const ctx = this.ctx!;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noise;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1900;
+    bp.Q.value = 0.8;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.11, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+    src.connect(bp).connect(g);
+    this.out(g, 1, 0.15);
+    src.start(t, Math.random() * 0.5, 0.16);
+  }
+
   private playBar(t: number, n: number): void {
     const prog = PROGRESSIONS[Math.floor(n / 8) % PROGRESSIONS.length]!;
     const [bass, chord] = prog[n % prog.length]!;
-    // Pad: two soft detuned triangles per note.
-    for (const m of chord) {
-      this.tone(hz(m), t, BAR * 0.95, { type: 'triangle', gain: 0.022, attack: 0.9, release: 1.4, cutoff: 1100, detune: -6, wet: 0.5 });
-      this.tone(hz(m), t, BAR * 0.95, { type: 'triangle', gain: 0.018, attack: 1.1, release: 1.4, cutoff: 1100, detune: 7, wet: 0.5 });
+    // Bass: bouncing octaves on eighths (classic arcade drive).
+    for (let i = 0; i < 8; i++) {
+      const m = bass + (i % 2 ? 12 : 0);
+      this.tone(hz(m), t + i * EIGHTH, EIGHTH * 0.7, { type: 'square', gain: 0.035, attack: 0.005, release: 0.05, cutoff: 900, wet: 0 });
     }
-    // Bass: beat 1, and a pickup on the "and" of 3 every other bar.
-    this.tone(hz(bass), t, BEAT * 1.6, { gain: 0.16, attack: 0.02, release: 0.4, cutoff: 500, wet: 0.05 });
-    this.tone(hz(bass + 7), t + BEAT * 2, BEAT * 0.9, { gain: 0.11, attack: 0.02, release: 0.3, cutoff: 500, wet: 0.05 });
-    if (n % 2) this.tone(hz(bass + 12), t + BEAT * 3.5, BEAT * 0.4, { gain: 0.08, attack: 0.02, release: 0.2, cutoff: 500, wet: 0.05 });
-    // Keys: a lazy swung arpeggio (Rhodes-ish: sine + a quiet octave).
-    const swing = BEAT * 0.58;
-    const pattern = n % 4 === 3 ? [0, 2, 3, 1] : [0, 1, 2, 3, 2, 1];
-    pattern.forEach((idx, i) => {
-      const at = t + Math.floor(i / 2) * BEAT + (i % 2 ? swing : 0) + BEAT * 0.5;
-      const m = chord[idx % chord.length]! + 12;
-      this.tone(hz(m), at, 0.25, { gain: 0.045, attack: 0.008, release: 1.2, wet: 0.45 });
-      this.tone(hz(m * 1) * 2, at, 0.1, { gain: 0.008, attack: 0.005, release: 0.4, wet: 0.45 });
-    });
-    // A sparse melody note now and then.
-    if (Math.random() < 0.45) {
-      const m = MELODY[Math.floor(Math.random() * MELODY.length)]!;
-      this.tone(hz(m), t + BEAT * (2 + Math.floor(Math.random() * 2)), BEAT * 0.8, { gain: 0.03, attack: 0.01, release: 1.6, wet: 0.6 });
+    // Arpeggio: quick 16ths up and down the chord, an octave up, very soft.
+    const arp = [...chord, chord[0]! + 12, ...chord.slice().reverse()].map((m) => m + 12);
+    for (let i = 0; i < 16; i++) {
+      const m = arp[i % arp.length]!;
+      this.tone(hz(m), t + i * SIXTEENTH, SIXTEENTH * 0.6, { type: 'square', gain: 0.009, attack: 0.003, release: 0.04, cutoff: 3200, wet: 0.2 });
     }
-    // Brushed hats on swung eighths, accent on 2 and 4.
-    for (let b = 0; b < 4; b++) {
-      this.hat(t + b * BEAT, b % 2 ? 0.035 : 0.02);
-      this.hat(t + b * BEAT + swing, 0.012);
+    // Lead: a phrase every other bar, alternating so it doesn't loop too obviously.
+    if (n % 2 === 0 || n % 8 === 7) {
+      const phrase = PHRASES[(Math.floor(n / 2) + Math.floor(n / 8)) % PHRASES.length]!;
+      phrase.forEach((step, i) => {
+        if (step === null) return;
+        const m = SCALE[step]!;
+        this.tone(hz(m), t + i * EIGHTH, EIGHTH * 0.85, { type: 'triangle', gain: 0.05, attack: 0.008, release: 0.12, wet: 0.25 });
+        this.tone(hz(m), t + i * EIGHTH, EIGHTH * 0.5, { type: 'square', gain: 0.008, attack: 0.005, release: 0.08, cutoff: 2600, wet: 0.2 });
+      });
     }
+    // Drums: kick on 1 and 3 (plus a pickup), snare on 2 and 4, hats on eighths.
+    this.kick(t);
+    this.kick(t + BEAT * 2);
+    if (n % 4 === 3) this.kick(t + BEAT * 3.5);
+    this.snare(t + BEAT);
+    this.snare(t + BEAT * 3);
+    for (let i = 0; i < 8; i++) this.hat(t + i * EIGHTH, i % 2 ? 0.012 : 0.022);
   }
 }
 

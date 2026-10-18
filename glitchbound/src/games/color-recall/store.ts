@@ -21,9 +21,30 @@ export interface CrSave {
   difficulty: string;
   sliders: 'hsb' | 'rgb';
   muted: boolean;
+  /** The last daily colour whose peek was shown, so leaving and resuming never shows it twice. */
+  dailySeen: { day: string; round: number } | null;
 }
 
-export const emptyCrSave = (): CrSave => ({ v: 1, daily: {}, practice: { games: 0, best: 0, total: 0 }, bestColor: 0, perfects: 0, difficulty: 'normal', sliders: 'hsb', muted: false });
+export const emptyCrSave = (): CrSave => ({
+  v: 1,
+  daily: {},
+  practice: { games: 0, best: 0, total: 0 },
+  bestColor: 0,
+  perfects: 0,
+  difficulty: 'normal',
+  sliders: 'hsb',
+  muted: false,
+  dailySeen: null,
+});
+
+/** Index of the last daily colour already shown today, or -1. */
+export function seenDailyRound(s: CrSave, day: string): number {
+  return s.dailySeen?.day === day ? s.dailySeen.round : -1;
+}
+
+export function markDailySeen(s: CrSave, day: string, round: number): CrSave {
+  return { ...s, dailySeen: { day, round: Math.max(round, seenDailyRound(s, day)) } };
+}
 
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0);
 
@@ -53,6 +74,8 @@ export function sanitizeCr(raw: unknown): CrSave {
   if (typeof o.difficulty === 'string') s.difficulty = o.difficulty;
   if (o.sliders === 'rgb') s.sliders = 'rgb';
   s.muted = o.muted === true;
+  const seen = o.dailySeen as Record<string, unknown> | null | undefined;
+  if (seen && typeof seen.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(seen.day)) s.dailySeen = { day: seen.day, round: Math.min(ROUNDS - 1, Math.floor(num(seen.round))) };
   return s;
 }
 

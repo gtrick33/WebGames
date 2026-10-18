@@ -209,4 +209,31 @@ describe('<Game />', () => {
       vi.useRealTimers();
     }
   });
+
+  it('shows each daily colour only once, even after leaving and resuming', () => {
+    vi.useFakeTimers();
+    localStorage.removeItem(STORE_KEY);
+    try {
+      const events: GameEvent[] = [];
+      const first = render(<Game host={{ report: (e) => events.push(e) }} restartKey={0} />);
+      fireEvent.click(screen.getByRole('button', { name: /play today/i }));
+      expect(screen.getByRole('button', { name: /look closely/i })).toBeTruthy();
+      // Leave during the peek and come back: straight to mixing, no second look.
+      fireEvent.click(screen.getByRole('button', { name: 'Back to menu' }));
+      fireEvent.click(screen.getByRole('button', { name: /resume|play today/i }));
+      expect(screen.queryByRole('button', { name: /look closely/i })).toBeNull();
+      expect(screen.getByRole('button', { name: /lock it in/i })).toBeTruthy();
+      // Same after closing the game entirely.
+      first.unmount();
+      render(<Game host={{ report: (e) => events.push(e) }} restartKey={1} />);
+      fireEvent.click(screen.getByRole('button', { name: /resume|play today/i }));
+      expect(screen.queryByRole('button', { name: /look closely/i })).toBeNull();
+      // The next colour still gets its one look.
+      fireEvent.click(screen.getByRole('button', { name: /lock it in/i }));
+      fireEvent.click(screen.getByRole('button', { name: /next color/i }));
+      expect(screen.getByRole('button', { name: /look closely/i })).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
