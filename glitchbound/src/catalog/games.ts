@@ -50,4 +50,46 @@ export const GAMES: GameEntry[] = [
     // Top speed is about 20 m/s plus coins and near-miss combos; this is a generous ceiling.
     limits: { scorePerSecond: 250, minSeconds: 2 },
   },
+  {
+    slug: 'mini-racer',
+    title: 'Mini Racer',
+    tagline: 'Top-down toy-car time trials. Drift the bends, find the shortcut, beat your ghost.',
+    description:
+      'Throw a chunky little car around three handmade tracks of asphalt, ice, dirt and mud, plus a brand-new circuit every day. ' +
+      'Hold drift through the bends for a turbo, gamble on the shortcuts and race the ghost of your best lap.',
+    categories: ['racing', 'arcade'],
+    tags: ['car', 'driving', 'drift', 'time trial', 'top-down', 'ghost', 'daily', 'laps', 'kart'],
+    released: '2026-10-18',
+    accent: 'coral',
+    art: {
+      tile: '/games/mini-racer/tile.webp',
+      wide: '/games/mini-racer/wide.webp',
+      alt: 'A coral toy race car drifting around a bend on a sunny seaside track, with the Mini Racer logo',
+      bg: '#f6d896',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'square',
+    controls: {
+      keyboard: ['Up / W: gas, Down / S: brake and reverse', 'Left / Right or A / D: steer', 'Space or Shift: drift', 'R: restart, Esc or P: pause'],
+      touch: ['Gas is automatic', 'Left and right buttons steer', 'Hold DRIFT through bends, BRAKE to slow down'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'lapMs', label: 'Fastest lap', unit: 'ms', lowerIsBetter: true },
+      { key: 'raceMs', label: 'Fastest 3-lap race', unit: 'ms', lowerIsBetter: true },
+      { key: 'drift', label: 'Most drift points in a round' },
+      { key: 'cleanLaps', label: 'Most clean laps in a round' },
+    ],
+    highlights: [
+      'Three handmade tracks plus a new generated track every day',
+      'Time Trial, Hot Lap and Drift Zone modes',
+      'Ghost replay of your best lap on every track',
+      'Asphalt, ice, dirt, mud, boost pads and risky shortcuts',
+    ],
+    daily: [
+      { metric: 'score', targets: [2400, 2700, 3000], label: 'Score {n} points in one round' },
+      { metric: 'drift', targets: [1500, 2500, 3500], label: 'Rack up {n} drift points in one round' },
+      { metric: 'cleanLaps', targets: [2, 3, 4], label: 'Drive {n} clean laps in one round' },
+    ],
+  },
 ];
