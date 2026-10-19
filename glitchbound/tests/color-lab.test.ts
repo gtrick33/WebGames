@@ -167,6 +167,15 @@ describe('scoring and saves', () => {
     expect(text).toContain('9/8');
   });
 
+  it('keeps help paid on an unfinished daily puzzle until it is recorded', () => {
+    const s = sanitizeCl({ v: 2, help: { day: '2026-10-18', index: 9, hints: 2, spare: true } });
+    expect(s.help).toEqual({ day: '2026-10-18', index: DAILY_LEVELS - 1, hints: 2, spare: true });
+    expect(sanitizeCl({ v: 2, help: { day: 'x' } }).help).toBeNull();
+    const r = { solved: true, moves: 8, par: 8, hints: 2, spare: true, points: 3, stars: 2 };
+    expect(recordLevel(s, r, '2026-10-18').help).toBeNull();
+    expect(recordLevel(s, r, null).help).toEqual(s.help);
+  });
+
   it('records dailies, streaks and repairs bad saves', () => {
     const r = { solved: true, moves: 8, par: 8, hints: 0, spare: false, points: 10, stars: 3 };
     let s = emptyClSave();

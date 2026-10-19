@@ -111,9 +111,24 @@ function ColorLab({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
 
   const begin = (r: Run): void => {
     setRun(r);
-    setLevel(r.over ? null : startLevel(levelFor(r, today), r.mode));
+    let lv = r.over ? null : startLevel(levelFor(r, today), r.mode);
+    // Today's daily puzzle left halfway starts over, but hints and the spare tube stay paid for.
+    const help = saveRef.current.help;
+    if (lv && r.mode === 'daily' && !r.challenge && help?.day === today && help.index === r.step) {
+      if (help.spare) lv = reduceLevel(lv, { type: 'spare' });
+      lv = { ...lv, hints: help.hints };
+    }
+    setLevel(lv);
     setScreen('play');
   };
+
+  // Remember help used on today's daily puzzle (see begin).
+  useEffect(() => {
+    if (!run || run.mode !== 'daily' || run.challenge || !level || level.status !== 'play' || (!level.hints && !level.spare)) return;
+    const h = saveRef.current.help;
+    if (h?.day === today && h.index === run.step && h.hints === level.hints && h.spare === level.spare) return;
+    commit({ ...saveRef.current, help: { day: today, index: run.step, hints: level.hints, spare: level.spare } });
+  }, [run, level, today, commit]);
 
   const start = (mode: Mode): void => {
     const base: Run = { mode, step: 0, results: [], lives: LIVES, seed: randomSeed(), practiceStep: 3, over: false };
