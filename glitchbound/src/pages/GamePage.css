@@ -255,6 +255,16 @@
   .game-actions {
     gap: 6px;
   }
+  /* While a game runs (Restart, Fullscreen and Exit join the toolbar), the heart and Share step
+     aside so the game's name isn't cut down to its first letter. */
+  .game-actions:has(> :nth-child(3)) > :is(.fav-btn, :last-child) {
+    display: none;
+  }
+  /* Restart and Exit show only their icons here: make them as narrow as the icon buttons. */
+  .game-actions .btn-sm:not(.btn-icon) {
+    width: 40px;
+    padding: 0;
+  }
 }
 
 .last-signin {
