@@ -20,8 +20,11 @@ interface Save {
   bestPillars: number;
   feathers: number;
   runs: number;
-  /** Today's best flight (its gaps and feathers draw the share line) and how many tries. */
-  daily: Record<string, { best: number; tries: number; pillars?: number; feathers?: number }>;
+  /**
+   * Today's flight (its gaps and feathers draw the share line). `open` while it is in the air (set at
+   * take-off, cleared when it ends); `left` when it ended because the player left mid-flight.
+   */
+  daily: Record<string, { best: number; tries: number; pillars?: number; feathers?: number; open?: boolean; left?: boolean }>;
   medals: Record<string, number>;
   muted: boolean;
 }
@@ -41,8 +44,14 @@ function loadSave(): Save {
     if (o.daily && typeof o.daily === 'object') {
       for (const [d, v] of Object.entries(o.daily).slice(-60)) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !v || typeof v !== 'object') continue;
-        const e = v as { best?: number; tries?: number; pillars?: number; feathers?: number };
-        s.daily[d] = { best: n(e.best), tries: n(e.tries), ...(e.pillars !== undefined ? { pillars: n(e.pillars), feathers: n(e.feathers) } : {}) };
+        const e = v as { best?: number; tries?: number; pillars?: number; feathers?: number; open?: unknown; left?: unknown };
+        s.daily[d] = {
+          best: n(e.best),
+          tries: n(e.tries),
+          ...(e.pillars !== undefined ? { pillars: n(e.pillars), feathers: n(e.feathers) } : {}),
+          ...(e.open === true ? { open: true } : {}),
+          ...(e.left === true ? { left: true } : {}),
+        };
       }
     }
     if (o.medals && typeof o.medals === 'object') for (const [m, v] of Object.entries(o.medals)) s.medals[m] = n(v);
@@ -138,6 +147,35 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
     [commit, host, today, challenge],
   );
 
+  /**
+   * A daily flight can't be resumed. One left mid-air (the arcade's Restart or Exit, leaving the page,
+   * or a reload) still ends, once, with the points it had (none after a reload), so the day counts for
+   * the arcade streak; the menu then says it was left unfinished.
+   */
+  const settleDaily = useCallback(
+    (s: Sim | null) => {
+      const d = saveRef.current.daily[today];
+      if (!d?.open) return;
+      const points = s ? runPoints(s) : d.best;
+      const pillars = s ? s.score : (d.pillars ?? 0);
+      const feathers = s ? s.feathers : (d.feathers ?? 0);
+      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: points, tries: 1, pillars, feathers, left: true } } });
+      host.report({ type: 'end', score: points, stats: { pillars, feathers }, daily: true });
+    },
+    [commit, host, today],
+  );
+  const settleRef = useRef(settleDaily);
+  useEffect(() => {
+    settleRef.current = settleDaily;
+  });
+  useEffect(() => {
+    // Left mid-air before a reload: settle it now. On the way out: settle the flight in the air.
+    settleRef.current(null);
+    return () => {
+      if (modeRef.current === 'daily' && sim.current?.started && !sim.current.dead) settleRef.current(sim.current);
+    };
+  }, []);
+
   // Game loop: fixed steps, drawn every frame between the last two steps.
   useEffect(() => {
     if (screen !== 'play') return;
@@ -215,7 +253,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
       host.report({ type: 'start' });
       // Taking off on the daily course uses up the day's flight, even if it is abandoned. Backing out
       // to the menu before the first flap doesn't.
-      if (modeRef.current === 'daily') commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, pillars: 0, feathers: 0 } } });
+      if (modeRef.current === 'daily') commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, pillars: 0, feathers: 0, open: true } } });
     }
     flap(s);
     sfx().flap();
@@ -349,7 +387,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="wi-card">
         <div className="wi-card-head">
           <b>Daily course #{dailyNumber(today)}</b>
-          <span>{daily ? `Today: ${daily.best} · ${dailyLine(daily)}` : 'Same course for everyone · one flight a day'}</span>
+          <span>{daily?.left ? `Left unfinished · ${daily.best}` : daily ? `Today: ${daily.best} · ${dailyLine(daily)}` : 'Same course for everyone · one flight a day'}</span>
         </div>
         {daily ? (
           <div className="wi-done">
