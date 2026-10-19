@@ -89,9 +89,10 @@ export function FeedbackPrompt() {
     if (open && !manual && step === 'stars' && !LOBBY.has(route)) setOpen(false);
   }
 
+  // A card that slid in by itself doesn't take the focus (the player may be typing somewhere); one they opened does.
   useEffect(() => {
-    if (open) panel.current?.querySelector<HTMLElement>('button, textarea')?.focus({ preventScroll: true });
-  }, [open, step]);
+    if (open && (manual || step !== 'stars')) panel.current?.querySelector<HTMLElement>('button, textarea')?.focus({ preventScroll: true });
+  }, [open, step, manual]);
 
   const close = (): void => {
     if (step !== 'thanks' && !manual) {
@@ -117,20 +118,22 @@ export function FeedbackPrompt() {
     }
   };
 
+  // Escape closes the card wherever the focus is, unless a dialog in front of it takes the key.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && !document.querySelector('dialog[open], [aria-modal="true"]')) close();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   if (!open) return null;
   const shown = hover || stars;
   const aboutTitle = GAMES.find((g) => g.slug === about)?.title;
 
   return (
-    <div
-      className="fb"
-      role="dialog"
-      aria-labelledby="fb-title"
-      ref={panel}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') close();
-      }}
-    >
+    <div className="fb" role="dialog" aria-labelledby="fb-title" ref={panel}>
       <button className="fb-close" onClick={close} aria-label="Close">
         <Icon name="close" size={18} />
       </button>
