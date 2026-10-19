@@ -243,7 +243,8 @@ html.game-focus body {
   overflow: hidden;
   overscroll-behavior: none;
 }
-/* Full-screen menu: a slim tab on the left edge, below the top HUD row, opening sideways. */
+/* Full-screen menu: a slim tab on the left edge, below the top HUD row, opening sideways. It sits over
+   the game, so it stays narrow and faint (the game shows through) until it is hovered, focused or open. */
 .stage-menu {
   position: absolute;
   top: 38%;
@@ -256,22 +257,28 @@ html.game-focus body {
 .stage-menu-tab {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 44px;
+  width: 14px;
+  height: 40px;
   padding: 0;
   padding-left: env(safe-area-inset-left);
   box-sizing: content-box;
   border: 1px solid rgb(255 255 255 / 0.3);
   border-left: 0;
-  border-radius: 0 10px 10px 0;
-  background: rgb(7 2 26 / 0.45);
+  border-radius: 0 8px 8px 0;
+  background: rgb(7 2 26 / 0.35);
   color: #fff;
   cursor: pointer;
-  opacity: 0.55;
+  opacity: 0.3;
+  transition: opacity 0.15s, width 0.15s;
+}
+.stage-menu-tab svg {
+  width: 11px;
+  height: 11px;
 }
 .stage-menu.is-open .stage-menu-tab,
 .stage-menu-tab:hover,
 .stage-menu-tab:focus-visible {
+  width: 22px;
   opacity: 1;
 }
 .stage-menu-items {
