@@ -85,17 +85,21 @@ export function PlayerPicker({ players, selected, onToggle, label }: { players: 
   );
 }
 
+/** A player's place on the podium: equal scores share a place (two crowns for a tie at the top). */
+export const podiumPlace = (scores: Scores, players: readonly Player[], id: string): number => 1 + players.filter((p) => (scores[p.id] ?? 0) > (scores[id] ?? 0)).length;
+
 /** Scoreboard + awards + actions, shared by every mode. */
 export function Results({ title, players, scores, awards, children, onAgain, onMenu }: { title: string; players: readonly Player[]; scores: Scores; awards?: { title: string; playerId: string; why: string }[]; children?: ReactNode; onAgain: () => void; onMenu: () => void }) {
   const ranked = [...players].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0));
+  const place = (p: Player): number => podiumPlace(scores, players, p.id);
   return (
     <div className="pt-results">
       <p className="pt-kicker">Game over</p>
       <h2 className="pt-h2">{title}</h2>
       <ol className="pt-podium">
-        {ranked.map((p, i) => (
-          <li key={p.id} className={i === 0 ? 'is-first' : ''}>
-            <span className="pt-rank">{i === 0 ? '👑' : i + 1}</span>
+        {ranked.map((p) => (
+          <li key={p.id} className={place(p) === 1 ? 'is-first' : ''}>
+            <span className="pt-rank">{place(p) === 1 ? '👑' : place(p)}</span>
             <Avatar player={p} size={36} />
             <b>{p.name}</b>
             <span className="pt-score">{scores[p.id] ?? 0}</span>

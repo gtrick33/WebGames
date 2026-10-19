@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CHALLENGES } from '../content/challenges';
-import { consequenceText, draw, fillChallenge, filterContent, freshRng, intensityWeights, noteParticipation, type Rng } from '../engine';
+import { cardConsequence, draw, fillChallenge, filterContent, freshRng, intensityWeights, noteParticipation, type Rng } from '../engine';
 import type { PartySession } from '../session';
 import type { Challenge, ChallengeKind, Player } from '../types';
 import { ModeBar, Name, PlayerPicker, Results, Timer } from './shared';
@@ -101,7 +101,8 @@ export function PromptsMode({ session, update, onExit }: { session: PartySession
   const f = { text: card.text, players: pl(card.players), teams: card.teams ? ([pl(card.teams[0]), pl(card.teams[1])] as [Player[], Player[]]) : undefined };
   const kind = KIND_LABEL[c.kind];
   const stakes = c.stakes ?? 1;
-  const cons = consequenceText(session.settings.consequence, stakes, r);
+  // Seeded by the card, so the task named on the card is the one the outcome asks for.
+  const cons = cardConsequence(session.settings.consequence, stakes, `${c.id}:${active.count}`);
   const paidPlayer = session.players.find((p) => p.id === paid);
 
   return (

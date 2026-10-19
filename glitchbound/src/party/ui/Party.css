@@ -1162,6 +1162,7 @@ img.pt-feature-art {
   border: 3px solid var(--pt-edge);
   background: linear-gradient(120deg, #fff3c2, #ffe0ef);
   box-shadow: 0 5px 0 var(--pt-shadow);
+  color: #1d1238; /* the pale gold stays pale at night */
   font-size: 20px;
 }
 .pt-rank {
@@ -1699,6 +1700,7 @@ img.pt-feature-art {
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #ffe7a8, #e0a04a);
   box-shadow: 0 8px 0 var(--pt-shadow);
+  color: #1d1238;
   font-size: 90px;
   line-height: 1.6;
   animation: pt-shake 0.5s linear infinite;

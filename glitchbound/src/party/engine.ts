@@ -246,6 +246,16 @@ export function consequenceText(kind: Consequence, n: number, r: Rng): string {
   }
 }
 
+/** A number from a string (FNV-1a), to seed things that must stay the same for one card. */
+export function hashSeed(key: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+/** The consequence shown with one card: the same silly task every time that card is on screen. */
+export const cardConsequence = (kind: Consequence, n: number, cardKey: string): string => consequenceText(kind, n, rng(hashSeed(cardKey)));
+
 export const CONSEQUENCE_LABEL: Record<Consequence, string> = {
   points: 'Points',
   tasks: 'Silly tasks',

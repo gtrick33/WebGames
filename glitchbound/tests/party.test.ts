@@ -6,8 +6,10 @@ import { CHALLENGES } from '../src/party/content/challenges';
 import { CHARADES, CHARADES_CATEGORIES } from '../src/party/content/charades';
 import { NHIE } from '../src/party/content/nhie';
 import { TRIVIA } from '../src/party/content/trivia';
-import { allowedIntensities, consequenceText, draw, fillChallenge, filterContent, intensityWeights, makePlayer, pickPlayers, playersProblem, rng } from '../src/party/engine';
+import { allowedIntensities, cardConsequence, consequenceText, draw, fillChallenge, filterContent, intensityWeights, makePlayer, pickPlayers, playersProblem, rng } from '../src/party/engine';
 import { emptySession, sanitizeSession } from '../src/party/session';
+import { statement } from '../src/party/ui/Never';
+import { podiumPlace } from '../src/party/ui/shared';
 
 const players = ['Ana', 'Bo', 'Cy', 'Di'].map((n, i) => makePlayer(n, i, `id${i}`));
 
@@ -92,6 +94,26 @@ describe('content and filters', () => {
     expect(consequenceText('points', 2, r)).toBe('lose 2 points');
     expect(consequenceText('tasks', 1, r)).not.toMatch(/sip|drink/);
     expect(consequenceText('sips', 1, r)).toMatch(/water counts/);
+  });
+
+  it('keeps the same silly task for a card however often the screen redraws', () => {
+    expect(cardConsequence('tasks', 1, 'c12:4')).toBe(cardConsequence('tasks', 1, 'c12:4'));
+    const tasks = new Set(Array.from({ length: 30 }, (_, i) => cardConsequence('tasks', 1, `c${i}:${i}`)));
+    expect(tasks.size).toBeGreaterThan(5);
+    expect(cardConsequence('points', 2, 'c1:1')).toBe('lose 2 points');
+  });
+
+  it('ends every Never Have I Ever statement with exactly one full stop', () => {
+    expect(statement('texted an ex at 2 a.m.')).toBe('texted an ex at 2 a.m.');
+    expect(statement('been to Paris')).toBe('been to Paris.');
+    expect(statement('lied about my age! ')).toBe('lied about my age!');
+    for (const n of NHIE) expect(statement(n.text)).not.toMatch(/\.\.$/);
+  });
+
+  it('gives tied players the same place on the podium', () => {
+    const scores = { id0: 3, id1: 5, id2: 5, id3: 0 };
+    expect(players.map((p) => podiumPlace(scores, players, p.id))).toEqual([3, 1, 1, 4]);
+    expect(players.map((p) => podiumPlace({}, players, p.id))).toEqual([1, 1, 1, 1]);
   });
 });
 

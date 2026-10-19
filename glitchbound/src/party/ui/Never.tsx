@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NHIE, NHIE_CATEGORIES } from '../content/nhie';
-import { consequenceText, draw, freshRng } from '../engine';
+import { cardConsequence, draw, freshRng } from '../engine';
 import type { PartySession } from '../session';
 import type { NhieCategory, NhieStatement } from '../types';
 import { Avatar, ModeBar, PlayerPicker, Results } from './shared';
 
 export const FINGERS = 5;
+
+/** A statement as shown after "Never have I ever…": one full stop, even when it ends in "a.m." or a typed one. */
+export const statement = (text: string): string => (/[.!?]$/.test(text.trim()) ? text.trim() : `${text.trim()}.`);
 
 type Nhie = Extract<NonNullable<PartySession['active']>, { mode: 'nhie' }>;
 
@@ -109,7 +112,7 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
     const wild = [...session.players].sort((a, b) => (active.have[b.id] ?? 0) - (active.have[a.id] ?? 0))[0];
     return (
       <Results
-        title={standing.length === 1 ? `${standing[0]!.name} has done the least!` : 'Out of statements!'}
+        title={standing.length === 1 ? `${standing[0]!.name} has done the least!` : standing.length === 0 ? 'Everyone is out!' : 'Out of statements!'}
         players={session.players}
         scores={scores}
         awards={wild && (active.have[wild.id] ?? 0) > 0 ? [{ title: 'Most Experienced', playerId: wild.id, why: `has done ${active.have[wild.id]} of them` }] : []}
@@ -123,7 +126,7 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
     );
   }
 
-  const cons = consequenceText(session.settings.consequence, 1, r);
+  const cons = cardConsequence(session.settings.consequence, 1, `${card.id}:${active.count}`);
   const confirm = (): void => {
     const have = { ...active.have };
     for (const id of haves) have[id] = (have[id] ?? 0) + 1;
@@ -145,7 +148,7 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
       </div>
       <article className="pt-card pt-card-nhie" key={card.id}>
         <span className="pt-kind">{NHIE_CATEGORIES.find((c) => c.id === card.category)?.emoji} Never have I ever…</span>
-        <p className="pt-card-text">…{card.text}.</p>
+        <p className="pt-card-text">…{statement(card.text)}</p>
         <p className="pt-cons">
           If you have: finger down{session.settings.consequence !== 'points' && session.settings.consequence !== 'none' ? ` and ${cons}` : ''}.
         </p>

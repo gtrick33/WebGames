@@ -88,7 +88,8 @@ export function PartyPage() {
   const open = (id: ModeId): void => {
     if (problem) return;
     update((s) => {
-      const ready = { ...s, players: s.players.filter((p) => p.name.trim()) };
+      // A new game starts a new scoreboard (Impostor points must not carry into Party Prompts).
+      const ready = { ...s, players: s.players.filter((p) => p.name.trim()), scores: {} };
       if (id === 'impostor') return { ...ready, active: s.active?.mode === 'impostor' ? s.active : { mode: 'impostor', state: newImpostor() } };
       return id === 'prompts' ? dealPrompt({ ...ready, active: { mode: 'prompts', count: 0, limit: SESSION_CARDS[s.settings.length] } }, freshRng()) : ready;
     });
