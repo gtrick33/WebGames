@@ -519,7 +519,8 @@ function Play(props: {
       {!done ? (
         <div className="sg-actions">
           <button className="sg-btn" onClick={props.onHint} disabled={pic.hinted !== null}>
-            💡 Hint{run.mode === 'relax' ? '' : ` (−${HINT_COST})`}
+            {/* Only the daily (and a challenge) scores hints and misses; Rush counts glitches found. */}
+            💡 Hint{run.mode === 'daily' ? ` (−${HINT_COST})` : ''}
           </button>
           {confirm ? (
             <>
@@ -539,7 +540,11 @@ function Play(props: {
       ) : (
         <PictureDone run={run} pic={pic} onNext={props.onNext} />
       )}
-      {!done && <p className="sg-muted sg-small sg-help">Tap a difference in either picture. Wrong taps cost {MISS_COST}; three quick misses lock taps for {LOCK_MS / 1000}s.</p>}
+      {!done && (
+        <p className="sg-muted sg-small sg-help">
+          Tap a difference in either picture. {run.mode === 'daily' ? `Wrong taps cost ${MISS_COST}; three` : 'Three'} quick misses lock taps for {LOCK_MS / 1000}s.
+        </p>
+      )}
     </div>
   );
 }
