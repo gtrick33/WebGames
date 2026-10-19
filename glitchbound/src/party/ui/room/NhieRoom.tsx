@@ -164,7 +164,9 @@ function Game({ view, send, left, me, byN }: Ctx) {
               ) : null;
             })}
           </div>
-          {view.myAnswer === true && <p className="pt-muted">{mineLeft > 0 ? `One finger down: ${mineLeft} left.` : 'That was your last finger!'}</p>}
+          {view.myAnswer === true && (
+            <p className="pt-muted">{mineLeft > 0 ? `One finger down: ${mineLeft} left.` : view.wasIn ? 'That was your last finger!' : 'You’re already out: that one was just for fun.'}</p>
+          )}
           <Clock left={left} />
           {view.host && (
             <button className="pt-btn pt-btn-go" onClick={() => send({ t: 'next' })}>

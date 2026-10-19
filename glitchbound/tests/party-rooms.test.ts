@@ -105,6 +105,19 @@ describe('Never Have I Ever room', () => {
     expect(s.winners).toEqual([1, 2, 3]);
     expect(s.seats.find((x) => x.n === 4)!.score).toBe(0);
   });
+
+  it('tells a player who is already out that their "I have" was just for fun', () => {
+    const s = room(3);
+    nhie.act(s, KEYS[0]!, { t: 'settings', settings: { fingers: 3, length: 60 } }, T0);
+    nhie.act(s, KEYS[0]!, { t: 'start' }, T0);
+    for (let i = 0; i < 4; i++) {
+      KEYS.slice(0, 3).forEach((k, j) => nhie.act(s, k, { t: 'answer', have: j === 2 }, T0));
+      expect(s.phase).toBe('reveal');
+      // Their third "I have" took the last finger; the fourth was just for fun.
+      expect(nhie.viewFor(s, KEYS[2]!)!.wasIn).toBe(i < 3);
+      nhie.tick(s, s.deadline! + 1);
+    }
+  });
 });
 
 describe('room seats', () => {
@@ -301,6 +314,47 @@ describe('Rock Paper Scissors room', () => {
     rps.act(s, KEYS[1]!, { t: 'throw', hand: 'scissors' }, T0);
     rps.act(s, KEYS[2]!, { t: 'throw', hand: 'scissors' }, T0);
     expect(s.points).toEqual({ 1: 2, 2: 0, 3: 0 });
+  });
+
+  it('keeps a player whose phone drops out for a moment in the game, throwing for them', () => {
+    const s = room(3);
+    rps.leave(s, KEYS[2]!, T0);
+    expect(s.phase).toBe('throw');
+    expect(s.alive).toEqual([1, 2, 3]);
+    // The two still here throw: no waiting out the clock for the one who dropped out.
+    rps.act(s, KEYS[0]!, { t: 'throw', hand: 'rock' }, T0 + 1000);
+    rps.act(s, KEYS[1]!, { t: 'throw', hand: 'rock' }, T0 + 1000);
+    expect(s.phase).toBe('reveal');
+    expect(s.auto).toEqual([3]);
+    // Only their (random) hand can knock them out, not being away.
+    expect(s.alive.includes(3)).toBe(!s.last!.out.includes(3));
+    // Back within the grace period (a reload): the seat is theirs again.
+    rps.join(s, KEYS[2]!, 'P3', T0 + 5000);
+    expect(s.away).toEqual({});
+    expect(rps.viewFor(s, KEYS[2]!)!.players.find((p) => p.you)!.online).toBe(true);
+  });
+
+  it('counts a player gone longer than the grace period as out, so nobody plays as a ghost', () => {
+    const s = room(3);
+    rps.leave(s, KEYS[2]!, T0);
+    // Nobody throws; the clock is only looked at again once the grace period is over.
+    const now = T0 + rps.AWAY_GRACE_MS + 1;
+    rps.tick(s, now);
+    expect(s.alive).not.toContain(3);
+    expect(s.last!.throws[3]).toBeUndefined();
+    // Coming back after that does not put them back in.
+    rps.join(s, KEYS[2]!, 'P3', now);
+    expect(s.alive).not.toContain(3);
+  });
+
+  it('goes back to the lobby only once a 2-player game has lost someone for good', () => {
+    const s = room(2, 'points');
+    rps.leave(s, KEYS[1]!, T0);
+    expect(s.phase).toBe('throw');
+    rps.tick(s, s.deadline! + 1);
+    expect(s.phase).toBe('reveal');
+    rps.tick(s, T0 + rps.AWAY_GRACE_MS + 1);
+    expect(s.phase).toBe('lobby');
   });
 });
 

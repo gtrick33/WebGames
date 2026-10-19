@@ -213,6 +213,30 @@ describe('Crass Act rooms', () => {
     expect(() => tick(s, now)).not.toThrow();
   });
 
+  it('plays a tie-breaker when players reach the target together, until exactly one leads', () => {
+    const s = room(4, true);
+    playAll(s);
+    // Two players reach the target in the same round (vote mode can have joint winners).
+    s.seats[0]!.score = s.settings.target;
+    s.seats[1]!.score = s.settings.target;
+    s.phase = 'reveal';
+    s.deadline = now;
+    expect(viewFor(s, KEYS[2]!)!.tiebreak).toBe(true);
+    now += 10_000;
+    tick(s, now);
+    expect(s.phase).toBe('picking');
+    expect(s.champion).toBeNull();
+    expect(viewFor(s, KEYS[3]!)!.tiebreak).toBe(true);
+    // One of them pulls ahead: game over, and they are the champion.
+    s.seats[1]!.score++;
+    s.phase = 'reveal';
+    s.deadline = now;
+    expect(viewFor(s, KEYS[0]!)!.tiebreak).toBe(false);
+    tick(s, now + 1);
+    expect(s.phase).toBe('over');
+    expect(s.champion).toBe(s.seats[1]!.n);
+  });
+
   it('lets only players in this round vote', () => {
     const s = room(3, true);
     const late = 'eeeeeeeeeeeeeeeeeeeeeeee';

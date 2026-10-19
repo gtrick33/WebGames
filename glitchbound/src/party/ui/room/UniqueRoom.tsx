@@ -229,6 +229,8 @@ function WriteClue({ view, send, byN }: Ctx) {
 function MakeGuess({ view, send }: Ctx) {
   const [guess, setGuess] = useState('');
   const shown = view.clues ?? [];
+  const twins = view.cancelled?.twins ?? 0;
+  const other = view.cancelled?.other ?? 0;
   const submit = (): void => {
     if (guess.trim()) send({ t: 'guess', text: guess });
   };
@@ -243,6 +245,13 @@ function MakeGuess({ view, send }: Ctx) {
         </ul>
       ) : (
         <p className="pt-muted">No clues survived. Take a wild guess, or pass.</p>
+      )}
+      {(twins > 0 || other > 0) && (
+        <p className="pt-muted">
+          {twins > 0 && `${twins} matching clue${twins === 1 ? '' : 's'} cancelled out.`}
+          {twins > 0 && other > 0 && ' '}
+          {other > 0 && `${other} ${other === 1 ? 'was' : 'were'} removed (empty, or too close to the word).`}
+        </p>
       )}
       <input
         className="pt-input"

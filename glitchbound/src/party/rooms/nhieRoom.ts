@@ -231,6 +231,8 @@ export interface RoomView {
   /** Seat → fingers left. */
   fingers: Record<string, number>;
   myAnswer: boolean | null;
+  /** Reveal: you still had a finger up before this one (else your answer was just for fun). */
+  wasIn: boolean;
   /** Reveal: who has done it (everyone's answers are shown together). */
   haves: number[] | null;
   /** Result: winners, and how many statements each player had done. */
@@ -254,6 +256,7 @@ export function viewFor(s: State, key: string): RoomView | null {
     count: s.count,
     fingers: s.fingers,
     myAnswer: s.phase === 'answer' || s.phase === 'reveal' ? (s.answers[me.n] ?? null) : null,
+    wasIn: s.phase === 'reveal' && (s.lastIn ?? []).includes(me.n),
     haves: s.phase === 'reveal' ? s.playing.filter((n) => s.answers[n] === true) : null,
     result: s.phase === 'result' ? { winners: s.winners, have: s.have } : null,
   };

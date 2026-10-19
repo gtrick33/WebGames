@@ -285,9 +285,15 @@ function win(s: State, seats: number[], now: number): void {
   s.deadline = now + REVEAL_SECONDS * 1000;
 }
 
+/** Two or more players share the lead at (or past) the target: play on until exactly one leads. */
+export function tieBreak(s: Pick<State, 'seats' | 'settings'>): boolean {
+  const [a, b] = [...s.seats].sort((x, y) => y.score - x.score);
+  return !!a && !!b && a.score >= s.settings.target && a.score === b.score;
+}
+
 function afterReveal(s: State, now: number): void {
   const top = [...s.seats].sort((a, b) => b.score - a.score)[0];
-  if (top && top.score >= s.settings.target) {
+  if (top && top.score >= s.settings.target && !tieBreak(s)) {
     s.phase = 'over';
     s.champion = top.n;
     s.deadline = null;
@@ -469,6 +475,8 @@ export interface RoomView {
   deadline: number | null;
   winners: number[];
   champion: number | null;
+  /** Players are tied for the lead at the target: this is a tie-breaker round. */
+  tiebreak: boolean;
   history: { prompt: string; cards: string[]; name: string }[];
 }
 
@@ -513,6 +521,7 @@ export function viewFor(s: State, key: string): RoomView | null {
     deadline: s.deadline,
     winners: s.winners,
     champion: s.champion,
+    tiebreak: s.phase !== 'lobby' && s.phase !== 'over' && tieBreak(s),
     history: s.phase === 'over' ? s.history.map((h) => ({ prompt: PROMPTS[h.prompt]!, cards: h.cards.map((c) => ANSWERS[c]!), name: h.name })) : [],
   };
 }

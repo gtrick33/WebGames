@@ -56,6 +56,8 @@ describe('One of a Kind room', () => {
     expect(s.phase).toBe('guess');
     const g = unique.viewFor(s, KEYS[0]!)!;
     expect(g.clues).toEqual([{ n: 4, clue: 'spiky', out: null }]);
+    // The guesser is told how many clues cancelled out (not what they were).
+    expect(g.cancelled).toEqual({ twins: 2, other: 0 });
     expect(g.word).toBeNull();
     expect(JSON.stringify(g)).not.toMatch(/pineapple|fruit/i);
     const o = unique.viewFor(s, KEYS[1]!)!;
