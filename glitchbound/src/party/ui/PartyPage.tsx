@@ -428,7 +428,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
       )}
       {sheet === 'custom' && (
         <Sheet title="Your own prompts" onClose={() => setSheet(null)}>
-          <CustomPrompts session={session} update={update} onSaved={() => setSheet(null)} />
+          <CustomPrompts session={session} update={update} />
         </Sheet>
       )}
     </div>
@@ -462,7 +462,8 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-function CustomPrompts({ session, update, onSaved }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onSaved?: () => void }) {
+/** The group's own prompts, saved as they type: Done, ✕ or a tap outside never loses them. */
+function CustomPrompts({ session, update }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void }) {
   const [c, setC] = useState(session.custom.challenges.join('\n'));
   const [n, setN] = useState(session.custom.nhie.join('\n'));
   const lines = (t: string): string[] =>
@@ -471,25 +472,38 @@ function CustomPrompts({ session, update, onSaved }: { session: PartySession; up
       .map((x) => x.trim())
       .filter(Boolean)
       .slice(0, 100);
+  const save = (challenges: string, nhie: string): void => update((s) => ({ ...s, custom: { challenges: lines(challenges), nhie: lines(nhie) } }));
   return (
     <div className="pt-rules">
       <label className="pt-label" htmlFor="pt-cc">
         Challenges (one per line). Use {'{A}'} and {'{B}'} for random players.
       </label>
-      <textarea id="pt-cc" className="pt-input pt-textarea" rows={4} value={c} onChange={(e) => setC(e.target.value)} placeholder={'{A}, tell the story of how you met {B}\nEveryone does their best evil laugh'} />
+      <textarea
+        id="pt-cc"
+        className="pt-input pt-textarea"
+        rows={4}
+        value={c}
+        onChange={(e) => {
+          setC(e.target.value);
+          save(e.target.value, n);
+        }}
+        placeholder={'{A}, tell the story of how you met {B}\nEveryone does their best evil laugh'}
+      />
       <label className="pt-label" htmlFor="pt-cn">
         Never Have I Ever statements (one per line)
       </label>
-      <textarea id="pt-cn" className="pt-input pt-textarea" rows={3} value={n} onChange={(e) => setN(e.target.value)} placeholder="been to Sava’s legendary barbecue" />
-      <button
-        className="pt-btn"
-        onClick={() => {
-          update((s) => ({ ...s, custom: { challenges: lines(c), nhie: lines(n) } }));
-          onSaved?.();
+      <textarea
+        id="pt-cn"
+        className="pt-input pt-textarea"
+        rows={3}
+        value={n}
+        onChange={(e) => {
+          setN(e.target.value);
+          save(c, e.target.value);
         }}
-      >
-        Save prompts
-      </button>
+        placeholder="been to Sava’s legendary barbecue"
+      />
+      <p className="pt-muted">Saved as you type. Challenges show up in Party Prompts; statements under “Your own” in Never Have I Ever.</p>
     </div>
   );
 }
