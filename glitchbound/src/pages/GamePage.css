@@ -318,7 +318,8 @@
 }
 .gi-tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Sized to the labels, so a long one ("Leaderboard") doesn't squash its icon. */
+  grid-template-columns: repeat(3, auto);
   gap: 4px;
   padding: 4px;
   border: 1.5px solid var(--line);
@@ -329,16 +330,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   min-height: 38px;
-  padding: 0 6px;
+  padding: 0 4px;
   border: 0;
   border-radius: 10px;
   background: none;
   color: var(--fg-2);
-  font: 700 13.5px var(--font);
-  white-space: nowrap;
+  font: 700 13.5px/1.15 var(--font);
+  text-align: center;
   cursor: pointer;
+}
+.gi-tab svg {
+  flex: none;
 }
 .gi-tab:hover {
   color: var(--fg);
