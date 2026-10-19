@@ -51,19 +51,19 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'sports',
     name: 'Sports',
     emoji: '⚽',
-    words: ['Football|Goal', 'Basketball|Hoop', 'Tennis|Racket', 'Swimming|Pool', 'Boxing|Gloves', 'Golf|Hole', 'Skiing|Snow', 'Volleyball|Net', 'Cycling|Pedals', 'Surfing|Waves', 'Chess|Board', 'Bowling|Pins', 'Darts|Bullseye', 'Baseball|Bat', 'Ice hockey|Puck', 'Karate|Black belt', 'Formula 1|Pit stop', 'Marathon|Running', 'Table tennis|Paddle', 'Skateboarding|Tricks'],
+    words: ['Football|Goal', 'Basketball|Hoop', 'Tennis|Racket', 'Swimming|Pool', 'Boxing|Gloves', 'Golf|Hole', 'Skiing|Snow', 'Volleyball|Net', 'Cycling|Pedals', 'Surfing|Waves', 'Chess|Board', 'Bowling|Pins', 'Darts|Bullseye', 'Baseball|Bat', 'Ice hockey|Puck', 'Karate|Black belt', 'Motor racing|Pit stop', 'Marathon|Running', 'Table tennis|Paddle', 'Skateboarding|Tricks'],
   },
   {
     id: 'movies',
     name: 'Movies',
     emoji: '🎬',
-    words: ['Titanic|Iceberg', 'Jurassic Park|Dinosaurs', 'Frozen|Snow queen', 'The Lion King|Africa', 'Harry Potter|Wizards', 'Star Wars|Space', 'Toy Story|Toys', 'Shrek|Swamp', 'Finding Nemo|Ocean', 'Jaws|Beach', 'Home Alone|Christmas', 'The Matrix|Pills', 'Ghostbusters|Ghosts', 'Back to the Future|Time travel', 'Spider-Man|Superhero', 'Batman|Gotham', 'Up|Balloons', 'The Wizard of Oz|Yellow road', 'Barbie|Pink', 'Avatar|Blue'],
+    words: ['Horror film|Scream', 'Romantic comedy|Kiss', 'Western|Cowboys', 'Musical|Songs', 'Cartoon|Drawings', 'Documentary|Facts', 'Science fiction|Future', 'Heist|Vault', 'Zombie film|Undead', 'Disaster movie|Flood', 'Car chase|Speed', 'Superhero film|Cape', 'Trailer|Preview', 'Popcorn|Butter', 'Red carpet|Stars', 'Sequel|Part two', 'Stunt double|Danger', 'Subtitles|Reading', 'Movie director|Action!', 'Cinema ticket|Seat'],
   },
   {
     id: 'characters',
-    name: 'Famous characters',
-    emoji: '🦸',
-    words: ['Mickey Mouse|Ears', 'SpongeBob|Pineapple', 'Mario|Plumber', 'Pikachu|Electric', 'Sherlock Holmes|Detective', 'Santa Claus|Reindeer', 'Batman|Cape', 'Dracula|Blood', 'Cinderella|Shoe', 'Homer Simpson|Donuts', 'Superman|Krypton', 'Darth Vader|Breathing', 'Peter Pan|Neverland', 'Pinocchio|Nose', 'Shrek|Ogre', 'James Bond|Spy', 'Elsa|Ice', 'Yoda|Green', 'Winnie the Pooh|Honey', 'Sonic|Fast'],
+    name: 'Storybook characters',
+    emoji: '📖',
+    words: ['Little Red Riding Hood|Grandma', 'Robin Hood|Arrows', 'Snow White|Apple', 'Rapunzel|Long hair', 'Sherlock Holmes|Detective', 'Santa Claus|Reindeer', 'Tooth Fairy|Pillow', 'Dracula|Blood', 'Cinderella|Shoe', 'Sleeping Beauty|Spindle', 'King Arthur|Round table', 'Captain Hook|Crocodile', 'Peter Pan|Neverland', 'Pinocchio|Nose', 'Goldilocks|Porridge', 'Aladdin|Lamp', 'Hansel and Gretel|Breadcrumbs', 'Easter Bunny|Eggs', 'Jack and the Beanstalk|Giant', 'The Big Bad Wolf|Huff and puff'],
   },
   {
     id: 'home',
@@ -147,7 +147,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'tech',
     name: 'Tech',
     emoji: '📱',
-    words: ['Smartphone|Pocket', 'Laptop|Keyboard', 'Wi-Fi|Password', 'Selfie stick|Pole', 'Robot|Metal', 'Drone|Flying', 'Video call|Camera', 'Password|Secret', 'Charger|Battery', 'Emoji|Face', 'Virtual reality|Headset', 'Printer|Paper', 'Smartwatch|Wrist', 'Podcast|Listen', 'Hashtag|Social', 'Bluetooth|Wireless', 'Game console|Controller', 'Email|Inbox', 'Spam|Junk', 'Artificial intelligence|Chatbot'],
+    words: ['Smartphone|Pocket', 'Laptop|Keyboard', 'Router|Internet', 'Selfie stick|Pole', 'Robot|Metal', 'Drone|Flying', 'Video call|Camera', 'Password|Secret', 'Charger|Battery', 'Emoji|Face', 'Virtual reality|Headset', 'Printer|Paper', 'Smartwatch|Wrist', 'Podcast|Listen', 'Hashtag|Social', 'Wireless earbuds|Music', 'Game console|Controller', 'Email|Inbox', 'Spam|Junk', 'Artificial intelligence|Chatbot'],
   },
   {
     id: 'fantasy',
@@ -171,7 +171,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'drinks',
     name: 'Drinks',
     emoji: '🥤',
-    words: ['Coffee|Morning', 'Tea|Kettle', 'Orange juice|Breakfast', 'Lemonade|Lemons', 'Hot chocolate|Marshmallows', 'Milk|Cow', 'Smoothie|Blender', 'Cola|Fizzy', 'Water|Tap', 'Beer|Foam', 'Wine|Grapes', 'Champagne|Toast', 'Cocktail|Umbrella', 'Iced tea|Summer', 'Energy drink|Wings', 'Coconut water|Tropical', 'Bubble tea|Pearls', 'Ayran|Yoghurt', 'Espresso|Tiny cup', 'Kombucha|Fermented'],
+    words: ['Coffee|Morning', 'Tea|Kettle', 'Orange juice|Breakfast', 'Lemonade|Lemons', 'Hot chocolate|Marshmallows', 'Milk|Cow', 'Smoothie|Blender', 'Cola|Fizzy', 'Water|Tap', 'Beer|Foam', 'Wine|Grapes', 'Champagne|Toast', 'Cocktail|Umbrella', 'Iced tea|Summer', 'Energy drink|Buzz', 'Coconut water|Tropical', 'Bubble tea|Pearls', 'Ayran|Yoghurt', 'Espresso|Tiny cup', 'Kombucha|Fermented'],
   },
   {
     id: 'fruitveg',
@@ -183,7 +183,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'toys',
     name: 'Games & toys',
     emoji: '🧸',
-    words: ['Teddy bear|Cuddle', 'Lego|Bricks', 'Yo-yo|String', 'Kite|Wind', 'Rubik’s cube|Colours', 'Doll|Hair', 'Hide and seek|Counting', 'Monopoly|Property', 'Jigsaw puzzle|Pieces', 'Trampoline|Bounce', 'Frisbee|Throw', 'Water balloon|Splash', 'Board game|Dice', 'Skipping rope|Jump', 'Marbles|Glass', 'Video game|Screen', 'Rocking horse|Wooden', 'Slide|Playground', 'Card game|Deck', 'Tag|Chase'],
+    words: ['Teddy bear|Cuddle', 'Building blocks|Stack', 'Yo-yo|String', 'Kite|Wind', 'Puzzle cube|Twist', 'Doll|Hair', 'Hide and seek|Counting', 'Dominoes|Tiles', 'Jigsaw puzzle|Pieces', 'Trampoline|Bounce', 'Flying disc|Throw', 'Water balloon|Splash', 'Board game|Dice', 'Skipping rope|Jump', 'Marbles|Glass', 'Video game|Screen', 'Rocking horse|Wooden', 'Slide|Playground', 'Card game|Deck', 'Tag|Chase'],
   },
   {
     id: 'feelings',

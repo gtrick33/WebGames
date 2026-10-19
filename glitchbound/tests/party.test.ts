@@ -4,7 +4,10 @@ import { boardAwards, currentPlayer, makeBoard, reduceBoard, standings, startBoa
 import { AUCTION_ITEMS } from '../src/party/content/auction';
 import { CHALLENGES } from '../src/party/content/challenges';
 import { CHARADES, CHARADES_CATEGORIES } from '../src/party/content/charades';
+import { IMPOSTOR_THEMES } from '../src/party/content/impostor';
+import { MYSTERY_WORDS } from '../src/party/content/mystery';
 import { NHIE } from '../src/party/content/nhie';
+import { SPECTRUMS } from '../src/party/content/spectrums';
 import { TRIVIA } from '../src/party/content/trivia';
 import { allowedIntensities, cardConsequence, consequenceText, draw, fillChallenge, filterContent, intensityWeights, makePlayer, pickPlayers, playersProblem, rng } from '../src/party/engine';
 import { emptySession, sanitizeSession } from '../src/party/session';
@@ -63,6 +66,22 @@ describe('content and filters', () => {
     expect(NHIE.length).toBeGreaterThan(130);
     expect(CHARADES.length).toBeGreaterThan(250);
     expect(AUCTION_ITEMS.length).toBeGreaterThan(180);
+  });
+
+  it('names no other company’s characters, titles or brands (real people, places and myths are fine)', () => {
+    const banned =
+      /\b(spider-man|batman|superman|wonder woman|iron man|hulk|wolverine|joker|thanos|darth|vader|yoda|jedi|lightsaber|star wars|harry potter|hogwarts|voldemort|hermione|gandalf|mario|luigi|zelda|pok[eé]mon|pikachu|sonic|minecraft|fortnite|roblox|pac-man|among us|playstation|nintendo|xbox|disney|mickey|pixar|marvel|shrek|spongebob|simpsons|scooby|garfield|snoopy|peppa|bluey|barbie|lego|ikea|netflix|tinder|google|googled|instagram|tiktok|zoom call|ted talk|monopoly|jenga|frisbee|rubik|bluetooth|ferrari|lamborghini|porsche|bugatti|mclaren|godzilla|king kong|mothra|toy story|jurassic park|fifty shades|magic mike|rickroll|gangnam|macarena|despacito)\b/i;
+    const texts = [
+      ...CHALLENGES.map((c) => c.text),
+      ...NHIE.map((n) => n.text),
+      ...CHARADES.map((c) => c.text),
+      ...AUCTION_ITEMS.map((a) => a.name),
+      ...TRIVIA.flatMap((t) => [t.q, ...t.options]),
+      ...IMPOSTOR_THEMES.flatMap((t) => [t.name, ...t.words]),
+      ...MYSTERY_WORDS,
+      ...SPECTRUMS.flat(),
+    ];
+    expect(texts.filter((t) => banned.test(t))).toEqual([]);
   });
 
   it('keeps After Dark out unless the group confirmed they are adults, and honours excluded topics', () => {

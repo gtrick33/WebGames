@@ -40,7 +40,7 @@ const CASUAL: Row[] = [
   ['truth', 'one', '{A}, what is the weirdest food combo you actually enjoy?'],
   ['truth', 'one', '{A}, which app do you open way too often?'],
   ['truth', 'one', '{A}, what is a hill you would happily die on?'],
-  ['truth', 'one', '{A}, what is the last thing you googled? Read it out (or skip).'],
+  ['truth', 'one', '{A}, what is the last thing you searched for online? Read it out (or skip).'],
   ['truth', 'one', '{A}, who in this room would you call to help you hide a (fictional) crime?'],
   ['truth', 'one', '{A}, what is your most irrational fear?'],
   ['truth', 'one', '{A}, what is the strangest dream you remember?'],
@@ -63,7 +63,7 @@ const CASUAL: Row[] = [
   ['dare', 'one', '{A}, make the group laugh in 15 seconds. If nobody laughs, pay up.', { seconds: 15 }],
   ['dare', 'one', '{A}, speak in rhymes until your next turn.'],
   ['dare', 'one', '{A}, do your best runway walk across the room.'],
-  ['dare', 'one', '{A}, give a 20-second TED talk on why socks go missing.', { seconds: 20 }],
+  ['dare', 'one', '{A}, give a 20-second expert talk on why socks go missing.', { seconds: 20 }],
   ['dare', 'two', '{A}, swap seats with {B} and copy their posture for one round.'],
   ['dare', 'one', '{A}, describe your day using only movie titles.'],
   // Who knows whom
