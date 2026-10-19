@@ -19,21 +19,29 @@ export async function onRequestGet({ request, env, params }: Ctx): Promise<Respo
   const code = String(params?.code ?? '').toUpperCase();
   let host = '';
   let players = 0;
-  let game = 'crass-act';
+  let game: string | null = null;
   if (validCode(code)) {
     const res = await roomStub(env, code)
       ?.fetch('https://room/info')
       .catch(() => null);
     if (res?.ok) ({ host, players, game = 'crass-act' } = (await res.json()) as { host: string; players: number; game?: string });
   }
+  // No such room (rooms close after three quiet hours): the party page says so. Never the 18+ game by default.
+  if (game === null)
+    return previewPage(env, request, '/party', {
+      title: 'Join my party room 🎉',
+      description: `${validCode(code) ? `Room ${code} · ` : ''}Party games on everyone’s own phone. Free, no sign-up.`,
+      image: '/og.png',
+      replaceUrl: validCode(code) ? `/party?room=${code}` : '/party',
+    });
   const party = Object.hasOwn(PARTY, game) ? PARTY[game] : undefined;
   if (party) {
     const title = host ? `${host} wants you in a ${party.name} room ${party.emoji}` : `Join my ${party.name} room ${party.emoji}`;
     const description = `Room ${code} · ${players ? `${players} player${players === 1 ? '' : 's'} waiting · ` : ''}${party.pitch} Free, on your own phone.`;
-    return previewPage(env, request, '/party', { title, description, image: '/og.png', replaceUrl: validCode(code) ? `/party?room=${code}` : '/party' });
+    return previewPage(env, request, '/party', { title, description, image: '/og.png', replaceUrl: `/party?room=${code}` });
   }
-  const target = validCode(code) ? `/games/crass-act?room=${code}` : '/games/crass-act';
-  const title = host ? `${host} wants you in an Crass Act room 😈` : 'Join my Crass Act room 😈';
+  const target = `/games/crass-act?room=${code}`;
+  const title = host ? `${host} wants you in a Crass Act room 😈` : 'Join my Crass Act room 😈';
   const description = `Room ${code} · ${players ? `${players} player${players === 1 ? '' : 's'} waiting · ` : ''}Fill-in-the-blank party cards for adults. 18+, free in your browser.`;
   return previewPage(env, request, '/games/crass-act', { title, description, image: '/games/crass-act/og.jpg', replaceUrl: target });
 }

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { onRequestGet as invite } from '../functions/r/[code]';
 import { ENGINES, engineFor, isGameId } from '../rooms/engines';
+import type { Env } from '../server/http';
 import * as auction from '../src/party/rooms/auctionRoom';
 import * as board from '../src/party/rooms/boardRoom';
 import * as nhie from '../src/party/rooms/nhieRoom';
@@ -299,5 +301,30 @@ describe('Rock Paper Scissors room', () => {
     rps.act(s, KEYS[1]!, { t: 'throw', hand: 'scissors' }, T0);
     rps.act(s, KEYS[2]!, { t: 'throw', hand: 'scissors' }, T0);
     expect(s.points).toEqual({ 1: 2, 2: 0, 3: 0 });
+  });
+});
+
+describe('room invite links (/r/CODE)', () => {
+  const page = '<html><head><title>GlitchBound</title></head><body></body></html>';
+  const env = (rooms: Record<string, object>) =>
+    ({
+      DB: {},
+      NR_DB: {},
+      ASSETS: { fetch: async () => new Response(page) },
+      ROOMS: { idFromName: (code: string) => code, get: (code: unknown) => ({ fetch: async () => (rooms[String(code)] ? Response.json(rooms[String(code)]) : new Response('{}', { status: 404 })) }) },
+    }) as unknown as Env;
+  const open = async (code: string, rooms: Record<string, object> = {}): Promise<{ title: string; to: string }> => {
+    const html = await (await invite({ request: new Request(`https://glitchboundstudio.com/r/${code}`), env: env(rooms), params: { code } })).text();
+    return { title: /<title>([^<]*)<\/title>/.exec(html)![1]!, to: /replaceState\(null, '', "([^"]*)"/.exec(html)![1]! };
+  };
+
+  it('sends each room to its own page, with who is waiting', async () => {
+    expect(await open('KQTRA', { KQTRA: { game: 'nhie', host: 'Ann', players: 3 } })).toEqual({ title: 'Ann wants you in a Never Have I Ever room 🙊', to: '/party?room=KQTRA' });
+    expect(await open('KQTRA', { KQTRA: { host: 'Bo', players: 3 } })).toEqual({ title: 'Bo wants you in a Crass Act room 😈', to: '/games/crass-act?room=KQTRA' });
+  });
+
+  it('never sends a closed or mistyped room to the 18+ game', async () => {
+    expect(await open('KQTRA')).toEqual({ title: 'Join my party room 🎉', to: '/party?room=KQTRA' });
+    expect(await open('nope!')).toEqual({ title: 'Join my party room 🎉', to: '/party' });
   });
 });
