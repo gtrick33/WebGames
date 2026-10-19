@@ -31,6 +31,18 @@ export interface DailyResult {
   accuracy: number;
 }
 
+/** Where an unfinished Daily Challenge stands: the next pattern to play and the totals so far. */
+export interface DailyProgress {
+  day: string;
+  round: number;
+  cleared: number;
+  longest: number;
+  score: number;
+  taps: number;
+  correctTaps: number;
+  inputMs: number;
+}
+
 export interface Records {
   best: Partial<Record<Mode, ModeBest>>;
   board: Partial<Record<Mode, BoardRow[]>>;
@@ -38,6 +50,8 @@ export interface Records {
   daily: DailyResult | null;
   /** The day a Daily Challenge was last started: starting it uses up the day's one try. */
   dailyStarted?: string;
+  /** Today's unfinished Daily Challenge, saved after every cleared pattern so leaving or reloading resumes it. */
+  dailyRun?: DailyProgress;
   streak: { last: string | null; count: number; best: number };
   muted: boolean;
 }
@@ -65,6 +79,9 @@ export function playedDailyToday(r: Records, today: string): boolean {
 
 /** The daily is one try a day: finished, or started and left. */
 export const dailyUsedToday = (r: Records, today: string): boolean => playedDailyToday(r, today) || r.dailyStarted === today;
+
+/** Today's unfinished Daily Challenge to pick up again, if any (the try is used, the run isn't over). */
+export const dailyToResume = (r: Records, today: string): DailyProgress | null => (!playedDailyToday(r, today) && r.dailyRun?.day === today ? r.dailyRun : null);
 
 export interface RecordOutcome {
   records: Records;
@@ -108,6 +125,7 @@ export function recordRun(prev: Records, run: RunSummary, today: string): Record
 
   const officialDaily = run.mode === 'daily' && !playedDailyToday(prev, today);
   if (officialDaily) {
+    delete records.dailyRun;
     records.daily = { day: today, cleared: run.cleared, score: run.score, accuracy: run.accuracy };
     const count = liveStreak(prev, today) + 1;
     records.streak = { last: today, count, best: Math.max(prev.streak.best, count) };
@@ -151,6 +169,11 @@ export function parseRecords(raw: string | null): Records {
   const s = data.streak as Record<string, unknown> | undefined;
   if (s && isNum(s.count) && isNum(s.best) && (s.last === null || isDay(s.last))) r.streak = { last: s.last as string | null, count: s.count, best: s.best };
   if (isDay(data.dailyStarted)) r.dailyStarted = data.dailyStarted;
+  const dr = data.dailyRun as Record<string, unknown> | undefined;
+  if (dr && isDay(dr.day) && [dr.round, dr.cleared, dr.longest, dr.score, dr.taps, dr.correctTaps, dr.inputMs].every(isNum) && (dr.round as number) >= 1) {
+    const n = (k: string): number => Math.floor(dr[k] as number);
+    r.dailyRun = { day: dr.day, round: n('round'), cleared: n('cleared'), longest: n('longest'), score: n('score'), taps: n('taps'), correctTaps: Math.min(n('correctTaps'), n('taps')), inputMs: n('inputMs') };
+  }
   r.muted = data.muted === true;
   return r;
 }

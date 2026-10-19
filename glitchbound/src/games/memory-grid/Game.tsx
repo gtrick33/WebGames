@@ -8,9 +8,9 @@ import { dayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { createSfx, type Sfx } from './audio';
-import { accuracy, createRun, next, playbackDone, tap, tick, type RunState } from './engine';
+import { accuracy, createRun, next, playbackDone, resumeRun, tap, tick, type RunState } from './engine';
 import { dailySeed, levelFor, MODES, PERFECT_LADDER, perfectSeed, randomSeed, SPEED_PENALTY_SECONDS, type Mode } from './pattern';
-import { dailyUsedToday, liveStreak, loadRecords, playedDailyToday, recordRun, saveRecords, type RecordOutcome, type Records } from './records';
+import { dailyToResume, dailyUsedToday, liveStreak, loadRecords, playedDailyToday, recordRun, saveRecords, type RecordOutcome, type Records } from './records';
 import { NextDaily } from '../../components/NextDaily';
 import { MODE_NAMES, reportStats, resultLine, shareText, type RunSummary } from './scoring';
 import './Game.css';
@@ -114,27 +114,51 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
     [host, today, challenge],
   );
 
+  const keepRecords = useCallback((r: Records) => {
+    recordsRef.current = r;
+    setRecords(r);
+    saveRecords(r);
+  }, []);
+
   // A challenge round starts straight away.
   useEffect(() => {
     if (challenge) host.report({ type: 'start' });
+    // A Daily Challenge started (and left) before unfinished runs were saved can't be resumed: it ends
+    // here, once, with nothing scored, so the arcade streak still counts the day.
+    const r = recordsRef.current;
+    if (r.dailyStarted === today && !playedDailyToday(r, today) && !r.dailyRun) {
+      const summary: RunSummary = { mode: 'daily', score: 0, cleared: 0, longest: 0, accuracy: 0, taps: 0, inputMs: 0, complete: false };
+      keepRecords(recordRun(r, summary, today).records);
+      reportEnd(host, 0, reportStats(summary), true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Saves where today's Daily Challenge stands (after each cleared pattern), so it can be resumed. */
+  const keepDaily = useCallback(
+    (s: RunState, round: number) => {
+      const { cleared, longest, score, taps, correctTaps, inputMs } = s;
+      keepRecords({ ...recordsRef.current, dailyStarted: today, dailyRun: { day: today, round, cleared, longest, score, taps, correctTaps, inputMs } });
+    },
+    [keepRecords, today],
+  );
+
   const start = useCallback(
     (mode: Mode) => {
-      // The Daily Challenge is one try a day; starting it uses the try up.
+      // The Daily Challenge is one try a day: starting it uses the try up, but a run left halfway
+      // (back to the menu, a reload) picks up again at the pattern it had reached.
+      let first: RunState | null = null;
       if (mode === 'daily') {
-        if (dailyUsedToday(recordsRef.current, today)) return;
-        const used = { ...recordsRef.current, dailyStarted: today };
-        recordsRef.current = used;
-        setRecords(used);
-        saveRecords(used);
+        if (playedDailyToday(recordsRef.current, today)) return;
+        const resume = dailyToResume(recordsRef.current, today);
+        first = resume ? resumeRun('daily', dailySeed(today), resume) : createRun('daily', dailySeed(today));
+        keepDaily(first, first.round);
       }
       inChallenge.current = false;
       setChallengeShown(false);
       sfxRef.current?.unlock();
       const seed = mode === 'daily' ? dailySeed(today) : mode === 'perfect' ? perfectSeed(today) : randomSeed();
-      commit(createRun(mode, seed));
+      commit(first ?? createRun(mode, seed));
       setCursor(0);
       setFlash(null);
       setLit(null);
@@ -143,7 +167,7 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
       setScreen('play');
       host.report({ type: 'start' });
     },
-    [commit, host, today],
+    [commit, host, today, keepDaily],
   );
 
   const onTap = useCallback(
@@ -159,9 +183,10 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
         sfxRef.current?.tile(tile);
         if (n.phase === 'cleared') sfxRef.current?.cleared();
       } else sfxRef.current?.wrong();
+      if (n.phase === 'cleared' && n.mode === 'daily') keepDaily(n, n.round + 1);
       if (n.phase === 'over') finish(n);
     },
-    [commit, finish],
+    [commit, finish, keepDaily],
   );
 
   const toggleMute = useCallback(() => {
@@ -387,7 +412,8 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
 
 function Menu({ records, today, streak, onStart, onRecords }: { records: Records; today: string; streak: number; onStart: (m: Mode) => void; onRecords: () => void }) {
   const doneToday = playedDailyToday(records, today);
-  const usedToday = dailyUsedToday(records, today);
+  const resume = dailyToResume(records, today);
+  const usedToday = dailyUsedToday(records, today) && !resume;
   return (
     <div className="mg-menu">
       <div className="mg-hero">
@@ -405,7 +431,9 @@ function Menu({ records, today, streak, onStart, onRecords }: { records: Records
               <span className="mg-mode-name">{MODE_NAMES[m]}</span>
               <span className="mg-mode-blurb">{MODE_BLURB[m]}</span>
               <span className="mg-mode-best">
-                {isDaily && usedToday ? (
+                {isDaily && resume ? (
+                  `Unfinished · resume at round ${resume.round} · ${resume.score} pts`
+                ) : isDaily && usedToday ? (
                   <>
                     {doneToday && records.daily ? `Today: ${records.daily.score} pts · ` : 'Played today · '}
                     <NextDaily />
