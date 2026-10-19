@@ -518,6 +518,12 @@
   height: 84px;
   font-size: 46px;
 }
+/* A party game's logo strip (750 x 300) fills the box; it keeps its art inside the middle. */
+img.pt-mode-art {
+  display: block;
+  object-fit: cover;
+  background: var(--mc, var(--pt-pink));
+}
 .pt-modes-lobby .pt-mode:hover .pt-mode-art {
   animation: pt-wiggle 0.5s ease-in-out;
 }

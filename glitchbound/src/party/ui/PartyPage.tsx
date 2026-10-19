@@ -220,7 +220,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
       {featured.length > 0 && (
         <div className="pt-stars">
           {featured.map((g) => (
-            <Feature key={g.id} g={g} where={where} art={g.id === 'crass-act' ? crassAct?.art : undefined} onPlay={() => pick(g.id as ModeId)} onRoom={() => g.room && openRoom(g.room)} />
+            <Feature key={g.id} g={g} where={where} art={g.id === 'crass-act' ? crassAct?.art : g.art && { tile: g.art.tile, bg: g.color }} onPlay={() => pick(g.id as ModeId)} onRoom={() => g.room && openRoom(g.room)} />
           ))}
         </div>
       )}
@@ -232,8 +232,8 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
             <p className="pt-muted">Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.</p>
             <div className="pt-online-games">
               {rooms.map((r) => {
-                // Crass Act keeps its own art and adults-only label; its room opens on its own page (name and age check first).
-                const art = r.id === 'crass-act' ? crassAct?.art : undefined;
+                // Crass Act keeps its arcade art and adults-only label; its room opens on its own page (name and age check first).
+                const art = r.id === 'crass-act' ? crassAct?.art : r.art && { tile: r.art.tile, bg: r.color };
                 const sticker = r.label;
                 return (
                   <div key={r.id} data-party-game={r.id} className={`pt-online-game${focus === r.id ? ' is-found' : ''}`} style={{ ['--mc' as string]: r.color }}>
@@ -353,9 +353,13 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
       <div className="pt-modes pt-modes-lobby">
         {modes.map((m) => (
           <button key={m.id} data-party-game={m.id} className={`pt-mode${problem ? ' is-waiting' : ''}${focus === m.id ? ' is-found' : ''}`} style={{ ['--mc' as string]: m.color }} onClick={() => pick(m.id as ModeId)}>
-            <span className="pt-mode-art" aria-hidden="true">
-              {m.emoji}
-            </span>
+            {m.art ? (
+              <img className="pt-mode-art" src={m.art.wide} alt="" width={750} height={300} loading="lazy" decoding="async" />
+            ) : (
+              <span className="pt-mode-art" aria-hidden="true">
+                {m.emoji}
+              </span>
+            )}
             <span className="pt-mode-body">
               <b>
                 {m.title}

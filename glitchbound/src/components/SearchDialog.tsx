@@ -95,9 +95,13 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
           run: () => go(partyHref(g)),
           view: (
             <>
-              <span className="search-hit-art" style={{ ['--mc' as string]: g.color }} aria-hidden="true">
-                {g.emoji}
-              </span>
+              {g.art ? (
+                <img src={g.art.tile} alt="" width={56} height={56} style={{ background: g.color }} />
+              ) : (
+                <span className="search-hit-art" style={{ ['--mc' as string]: g.color }} aria-hidden="true">
+                  {g.emoji}
+                </span>
+              )}
               <span className="search-hit-text">
                 <strong>{g.title}</strong>
                 <span>{g.blurb}</span>
