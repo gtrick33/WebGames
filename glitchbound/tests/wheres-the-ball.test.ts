@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aim, confirm, dailyScene, endStats, giveUp, hint, levelScore, MAX_HINTS, resultOf, shareText, squareFor, startLevel, TRIES } from '../src/games/wheres-the-ball/logic';
+import { aim, confirm, dailyScene, endStats, giveUp, hint, levelScore, MAX_HINTS, progressOf, resultOf, resumeLevel, shareText, squareFor, startLevel, TRIES } from '../src/games/wheres-the-ball/logic';
 import { ballRadius, ENV_IDS, H, hintBox, isHit, ITEM_R, makeScene, rng, W, warmth } from '../src/games/wheres-the-ball/scene';
 import { emptyWbSave, recordLevel, sanitizeWb, wbStats } from '../src/games/wheres-the-ball/store';
 
@@ -91,6 +91,20 @@ describe('aiming and confirming', () => {
     expect(resultOf(giveUp(startLevel(scene, 0), 5))).toMatchObject({ found: false, score: 0 });
   });
 
+  it('resumes an unfinished shot with its wrong guesses, hints and clock (no fresh tries)', () => {
+    let s = startLevel(scene, 1000);
+    for (let i = 0; i < 2; i++) s = confirm(aim(s, scene.ball.x > 400 ? 20 : 780, 20 + i), 0, 2000);
+    s = hint(s);
+    const saved = progressOf(s, 9000);
+    expect(saved).toMatchObject({ hints: 1, ms: 8000 });
+    expect(saved.wrong.length).toBe(2);
+    let back = resumeLevel(scene, 50_000, saved);
+    expect(back).toMatchObject({ hints: 1, startedAt: 42_000, outcome: 'play', aim: null });
+    // One try left, not three.
+    back = confirm(aim(back, scene.ball.x > 400 ? 20 : 780, 30), 0, 51_000);
+    expect(back.outcome).toBe('missed');
+  });
+
   it('shares only emoji squares and totals', () => {
     const quick = { found: true, score: 950, seconds: 5, wrong: 0, hints: 0 };
     const helped = { found: true, score: 500, seconds: 30, wrong: 1, hints: 0 };
@@ -111,5 +125,15 @@ describe('saves', () => {
     expect(sanitizeWb({ v: 1, daily: { '2026-10-18': [{ found: 'yes' }, { found: true, score: 99999 }] } }).daily['2026-10-18']).toEqual([
       { found: true, score: 1000, seconds: 0, wrong: 0, hints: 0 },
     ]);
+  });
+
+  it('keeps an unfinished daily shot until it is recorded', () => {
+    const progress = { day: '2026-10-18', index: 2, wrong: [{ x: 1, y: 2, heat: 'warm' }, { x: 3, y: 4, heat: 'lava' }], hints: 1, ms: 4321.9 };
+    const s = sanitizeWb({ v: 1, progress });
+    expect(s.progress).toEqual({ day: '2026-10-18', index: 2, wrong: [{ x: 1, y: 2, heat: 'warm' }], hints: 1, ms: 4321 });
+    expect(sanitizeWb({ v: 1, progress: { day: '2026-10-18' } }).progress).toBeNull();
+    const r = { found: true, score: 800, seconds: 12.5, wrong: 0, hints: 0 };
+    expect(recordLevel(s, r, '2026-10-18').progress).toBeNull();
+    expect(recordLevel(s, r, null).progress).toEqual(s.progress);
   });
 });

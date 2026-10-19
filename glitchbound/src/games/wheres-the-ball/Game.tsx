@@ -16,7 +16,9 @@ import {
   LIVES,
   MAX_HINTS,
   MAX_LEVEL,
+  progressOf,
   resultOf,
+  resumeLevel,
   secondsOf,
   shareText,
   squareFor,
@@ -163,8 +165,20 @@ function WheresTheBall({ host, pauseKey, challenge }: { host: GameHost; pauseKey
     } else host.report({ type: 'start' });
     setRun(r);
     setPaused(false);
-    setLevel(r.over ? null : startLevel(sceneFor(r, today), now()));
+    // Today's daily shot left halfway carries on where it was (wrong guesses, hints, time).
+    const p = saveRef.current.progress;
+    const resume = r.mode === 'daily' && p?.day === today && p.index === r.index ? p : null;
+    setLevel(r.over ? null : resume ? resumeLevel(sceneFor(r, today), now(), resume) : startLevel(sceneFor(r, today), now()));
   };
+
+  // The daily is one try a day: its unfinished shot is saved as it goes (about once a second and on
+  // every guess), so leaving or reloading resumes it instead of starting it over with fresh tries.
+  const tick = Math.floor(clockMs / 1000);
+  useEffect(() => {
+    if (!run || run.mode !== 'daily' || run.challenge || !level || level.outcome !== 'play') return;
+    saveRef.current = { ...saveRef.current, progress: { day: today, index: run.index, ...progressOf(level, now()) } };
+    saveWb(saveRef.current, today);
+  }, [run, level, tick, now, today]);
 
   const finish = (s: LevelState): void => {
     if (!run) return;
@@ -234,6 +248,7 @@ function WheresTheBall({ host, pauseKey, challenge }: { host: GameHost; pauseKey
           onGiveUp={() => update(giveUp(level, now()), level)}
           onNext={nextLevel}
           onMenu={() => {
+            setSave(saveRef.current); // the menu shows "Resume" for a daily shot left halfway
             setRun(null);
             setLevel(null);
           }}
@@ -281,6 +296,7 @@ function Countdown() {
 
 function Menu({ today, save, onStart, onMute }: { today: string; save: WbSave; onStart: (m: Mode) => void; onMute: () => void }) {
   const todays = save.daily[today];
+  const started = !!todays?.length || save.progress?.day === today;
   const stats = wbStats(save, today);
   const done = isComplete(todays);
   const date = parseDayKey(today).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -321,7 +337,7 @@ function Menu({ today, save, onStart, onMute }: { today: string; save: WbSave; o
           <>
             <p className="wb-card-text">Five shots for everyone today, each harder: smaller balls, busier scenes, sneakier hiding spots.</p>
             <button className="wb-btn wb-btn-go" onClick={() => onStart('daily')}>
-              {todays?.length ? `Resume (${todays.length}/${DAILY_LEVELS})` : 'Find today’s balls'}
+              {started ? `Resume (${todays?.length ?? 0}/${DAILY_LEVELS})` : 'Find today’s balls'}
             </button>
           </>
         )}
@@ -565,7 +581,8 @@ function Play(props: {
           </button>
         </div>
       )}
-      {!done && !level.aim && level.wrong.length === 0 && run.index === 0 && (
+      {/* The tip stays up while aiming: if it vanished on the first tap, the photo would grow and push the Lock button away. */}
+      {!done && level.wrong.length === 0 && run.index === 0 && (
         <p className="wb-coach">Tap where you think the ball is, then lock it in. Tiny? Zoom with +.</p>
       )}
       {!done && level.wrong.length > 0 && (

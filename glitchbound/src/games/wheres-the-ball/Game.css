@@ -418,6 +418,9 @@
   text-align: center;
 }
 .wb-note {
+  display: grid;
+  place-items: center;
+  min-height: 40px; /* as tall as the first shot's tip it replaces, so the photo doesn't jump */
   text-align: center;
   font-weight: 700;
 }

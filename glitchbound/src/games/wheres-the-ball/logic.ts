@@ -36,6 +36,20 @@ export function startLevel(scene: Scene, now: number): LevelState {
   return { scene, aim: null, wrong: [], hints: 0, startedAt: now, finishedAt: null, outcome: 'play' };
 }
 
+/** What is kept of an unfinished level: wrong guesses, hints and game-clock ms spent so far. */
+export interface LevelProgress {
+  wrong: Guess[];
+  hints: number;
+  ms: number;
+}
+
+export const progressOf = (s: LevelState, now: number): LevelProgress => ({ wrong: s.wrong, hints: s.hints, ms: Math.max(0, Math.round(now - s.startedAt)) });
+
+/** Picks an unfinished level up again: its wrong guesses and hints stay, and its clock goes on. */
+export function resumeLevel(scene: Scene, now: number, p: LevelProgress): LevelState {
+  return { ...startLevel(scene, now - p.ms), wrong: p.wrong.slice(0, TRIES - 1), hints: Math.min(MAX_HINTS, p.hints) };
+}
+
 export function aim(s: LevelState, x: number, y: number): LevelState {
   return s.outcome === 'play' ? { ...s, aim: { x, y } } : s;
 }
