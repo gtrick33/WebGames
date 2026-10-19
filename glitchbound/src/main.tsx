@@ -10,6 +10,8 @@ import { isDiscordLaunch, setEmbedHost } from './platform/embed';
 import { DISCORD } from './platform/env';
 import { startLiveCatalog } from './platform/liveCatalog';
 import { startI18n } from './i18n';
+import { loadGamePage } from './pages/loadGamePage';
+import { matchRoute } from './router/router';
 
 installErrorReporting();
 // A code file from an older deploy is gone: reload into the new build (see platform/freshBuild.ts).
@@ -27,7 +29,9 @@ if (DISCORD.enabled && isDiscordLaunch(location.search)) {
 
 const root = document.getElementById('root');
 // The chosen language's words load first (English needs none), so the page never flashes English.
-void startI18n().then(() => {
+// A game page waits for its own code too (its HTML preloads it), so it renders in one go.
+const pageCode = matchRoute(location.pathname).name === 'game' ? loadGamePage().catch(() => undefined) : undefined;
+void Promise.all([startI18n(), pageCode]).then(() => {
   if (!root) return;
   // The prerendered HTML inside #root is for crawlers and no-JS visitors; React replaces it.
   createRoot(root).render(

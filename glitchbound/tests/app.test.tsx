@@ -1,10 +1,16 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App';
 import { SAVE_KEY } from '../src/platform/save';
 import { saveStore } from '../src/platform/store';
 import { TodaysDailies } from '../src/components/TodaysDailies';
 import { fakeGame } from './fixtures';
+import { loadGamePage } from '../src/pages/loadGamePage';
+
+// The game page's code is a chunk of its own; like main.tsx on a game page, render once it is here.
+beforeAll(async () => {
+  await loadGamePage();
+});
 
 function renderAt(path: string) {
   saveStore.reload(); // the store is a singleton; pick up whatever this test put in localStorage

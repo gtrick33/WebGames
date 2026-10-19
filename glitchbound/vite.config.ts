@@ -5,16 +5,37 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { pageSpecs, renderPage, robots, sitemap } from './scripts/seo.ts';
 
+/** Adds modulepreload links for the given build files (paths under the site root) that the page doesn't load yet. */
+function preload(html: string, files: string[]): string {
+  const links = files.filter((f) => !html.includes(`"/${f}"`)).map((f) => `  <link rel="modulepreload" crossorigin href="/${f}">\n  `);
+  return html.replace('</head>', `${links.join('')}</head>`);
+}
+
 /**
  * Writes the home page head in dev and, after a production build, one HTML file per route plus
  * sitemap.xml, robots.txt, 404.html and (when a publisher id is configured) ads.txt.
  */
 function seoPages(siteUrl: string, adsenseClient: string): Plugin {
   let outDir = 'dist';
+  // The game page's code is a chunk of its own (src/pages/loadGamePage.ts): its file and the chunks it needs.
+  let gamePageCode: string[] = [];
   return {
     name: 'glitchbound-seo',
     configResolved(config) {
       outDir = config.build.outDir;
+    },
+    generateBundle(_, bundle) {
+      const files = new Set<string>();
+      const add = (file: string): void => {
+        const chunk = bundle[file];
+        if (files.has(file) || chunk?.type !== 'chunk') return;
+        files.add(file);
+        chunk.imports.forEach(add);
+      };
+      const page = Object.values(bundle).find((c) => c.type === 'chunk' && c.isDynamicEntry && c.facadeModuleId?.endsWith('/src/pages/GamePage.tsx'));
+      if (page) add(page.fileName);
+      else this.warn('the game page chunk was not found: game pages will not preload it');
+      gamePageCode = [...files];
     },
     transformIndexHtml: {
       order: 'post',
@@ -33,7 +54,9 @@ function seoPages(siteUrl: string, adsenseClient: string): Plugin {
       for (const page of pageSpecs(siteUrl)) {
         const file = join(outDir, page.file);
         mkdirSync(dirname(file), { recursive: true });
-        writeFileSync(file, renderPage(template, page, siteUrl));
+        const html = renderPage(template, page, siteUrl);
+        // A game page fetches the game page's code alongside the app's, so it renders in one go (src/main.tsx).
+        writeFileSync(file, page.path.startsWith('/games/') ? preload(html, gamePageCode) : html);
       }
       writeFileSync(join(outDir, 'sitemap.xml'), sitemap(siteUrl));
       writeFileSync(join(outDir, 'robots.txt'), robots(siteUrl));

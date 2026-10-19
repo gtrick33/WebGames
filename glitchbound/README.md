@@ -133,8 +133,9 @@ No fake data anywhere: leaderboards only show real members' verified-in-time rou
 
 ## Performance budget
 
-`npm run build` fails if the JavaScript loaded at startup exceeds 120 KB gzip. Today: about 96 KB (React is most of
-it); game previews load as separate chunks only when their tile is on screen.
+`npm run build` fails if the JavaScript loaded at startup exceeds 120 KB gzip. Today: about 109 KB (React is most of
+it); game previews load as separate chunks only when their tile is on screen. The game page is a chunk of its own
+(`src/pages/loadGamePage.ts`): game pages preload it in their HTML, and everywhere else it loads once the page is idle.
 
 ## Credits
 

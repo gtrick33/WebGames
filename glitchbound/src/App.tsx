@@ -3,7 +3,15 @@ import { getGame } from './catalog/catalog';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
-import { GamePage } from './pages/GamePage';
+// The game page's code loads on its own (pages/loadGamePage.ts); its styles stay in the main sheet, in their usual order.
+import './components/Burst.css';
+import './components/DailyCard.css';
+import './components/GameStage.css';
+import './components/GameTile.css';
+import './components/ChallengeFriends.css';
+import './components/Leaderboard.css';
+import './pages/GamePage.css';
+import { gamePageModule, loadGamePage } from './pages/loadGamePage';
 import { Home } from './pages/Home';
 import { NotFound } from './pages/NotFound';
 import { ArcadeEntrance } from './components/Entrance';
@@ -24,6 +32,8 @@ import { fresh } from './platform/freshBuild';
 // Pages most visitors never open are separate chunks, so the first load stays small on any phone.
 // Not needed for the first paint: loads right after it (it registers the "Rate this game" opener).
 const FeedbackPrompt = lazy(fresh(() => import('./components/FeedbackPrompt').then((m) => ({ default: m.FeedbackPrompt }))));
+// Preloaded wherever it is likely next, so a game page doesn't wait for it (pages/loadGamePage.ts).
+const GamePage = lazy(gamePageModule);
 const DailyPage = lazy(fresh(() => import('./pages/DailyPage').then((m) => ({ default: m.DailyPage }))));
 const PrivacyPage = lazy(fresh(() => import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage }))));
 const TermsPage = lazy(fresh(() => import('./pages/TermsPage').then((m) => ({ default: m.TermsPage }))));
@@ -94,6 +104,11 @@ export function App() {
   useEffect(() => {
     track('page_view', { path: matchRoute(pathname).name, ...visitInfo() });
   }, [pathname]);
+  // The game page's code comes while the page is idle, so opening a game from a tile doesn't wait for it.
+  useEffect(() => {
+    const idle = window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 2000));
+    idle(() => void loadGamePage().catch(() => undefined));
+  }, []);
   return (
     <>
       <a href="#main" className="skip-link">
