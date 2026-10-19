@@ -51,7 +51,10 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
 
   const day = clientDay(body.day, now);
   const prev = await env.DB.prepare('SELECT score FROM bests WHERE user_id = ? AND game = ?').bind(user.id, game.slug).first<{ score: number }>();
-  const newBest = !prev || score > prev.score;
+  // A round that scored nothing still counts as played (quests, the daily), but it is no best and gets no rank:
+  // on an empty board a 0 would take the crown. (A game's score is always higher-is-better; times are other stats.)
+  const ranked = score > 0;
+  const newBest = ranked && (!prev || score > prev.score);
   const statements = [
     env.DB.prepare(`UPDATE runs SET status = 'ok', ended_at = ?, score = ?, stats = ?, day = ?, new_best = ? WHERE id = ?`).bind(
       now,
@@ -89,13 +92,15 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   }
   await env.DB.batch(statements);
 
-  const rankRow = await env.DB.prepare(`SELECT COUNT(*) AS n FROM bests b JOIN users u ON u.id = b.user_id WHERE b.game = ? AND ${LISTED} AND b.score > (SELECT score FROM bests WHERE user_id = ? AND game = ?)`)
-    .bind(game.slug, user.id, game.slug)
-    .first<{ n: number }>();
+  const rankRow = ranked
+    ? await env.DB.prepare(`SELECT COUNT(*) AS n FROM bests b JOIN users u ON u.id = b.user_id WHERE b.game = ? AND ${LISTED} AND b.score > (SELECT score FROM bests WHERE user_id = ? AND game = ?)`)
+        .bind(game.slug, user.id, game.slug)
+        .first<{ n: number }>()
+    : null;
   const result: RunEndResult = {
     ok: true,
     newBest: newBest && !!prev,
-    rank: (rankRow?.n ?? 0) + 1,
+    rank: rankRow ? rankRow.n + 1 : null,
     dailyCompleted,
     quests: await questViews(env, user, day),
   };

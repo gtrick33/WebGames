@@ -73,8 +73,8 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
     env.DB.prepare(
       `SELECT b.game, b.score, b.stats, b.at,
          (SELECT COUNT(*) FROM bests o JOIN users u ON u.id = o.user_id WHERE o.game = b.game AND o.score > b.score AND ${LISTED}) + 1 AS rank,
-         (SELECT COUNT(*) FROM bests o JOIN users u ON u.id = o.user_id WHERE o.game = b.game AND ${LISTED}) AS players
-       FROM bests b WHERE b.user_id = ?`,
+         (SELECT COUNT(*) FROM bests o JOIN users u ON u.id = o.user_id WHERE o.game = b.game AND o.score > 0 AND ${LISTED}) AS players
+       FROM bests b WHERE b.user_id = ? AND b.score > 0`,
     )
       .bind(user.id)
       .all<{ game: string; score: number; stats: string; at: number; rank: number; players: number }>(),
@@ -82,7 +82,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
     env.DB.prepare('SELECT day FROM dailies WHERE user_id = ? AND done = 1 ORDER BY day DESC LIMIT 400').bind(user.id).all<{ day: string }>(),
     env.DB.prepare('SELECT COUNT(*) AS n FROM quest_claims WHERE user_id = ?').bind(user.id).first<{ n: number }>(),
     env.DB.prepare(
-      `SELECT COUNT(*) AS n FROM bests b WHERE b.user_id = ? AND NOT EXISTS (SELECT 1 FROM bests o JOIN users u ON u.id = o.user_id WHERE o.game = b.game AND o.score > b.score AND ${LISTED})`,
+      `SELECT COUNT(*) AS n FROM bests b WHERE b.user_id = ? AND b.score > 0 AND NOT EXISTS (SELECT 1 FROM bests o JOIN users u ON u.id = o.user_id WHERE o.game = b.game AND o.score > b.score AND ${LISTED})`,
     )
       .bind(user.id)
       .first<{ n: number }>(),
