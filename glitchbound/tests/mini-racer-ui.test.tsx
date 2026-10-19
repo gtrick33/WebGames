@@ -49,3 +49,37 @@ describe('Mini Racer: the arcade pause signal (pauseKey)', () => {
     expect(screen.queryByRole('heading', { name: 'Paused' })).toBeNull();
   });
 });
+
+describe('Mini Racer: today’s daily track is one race a day', () => {
+  it('R does not throw the daily race away, but restarts any other race', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    fireEvent.click(screen.getByRole('radio', { name: /Daily/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Race!' }));
+    expect(host.report).toHaveBeenCalledTimes(1);
+    act(() => {
+      fireEvent.keyDown(window, { key: 'r', code: 'KeyR' });
+    });
+    // Still racing: no menu, no second start.
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
+    expect(host.report).toHaveBeenCalledTimes(1);
+
+    // The paused screen offers no Restart for it either, and R is ignored there too.
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+    expect(screen.queryByRole('button', { name: 'Restart' })).toBeNull();
+    act(() => {
+      fireEvent.keyDown(window, { key: 'r', code: 'KeyR' });
+    });
+    expect(screen.getByRole('heading', { name: 'Paused' })).toBeTruthy();
+
+    // Back on the menu the daily is used up; another track restarts with R as before.
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    expect(screen.queryByRole('button', { name: 'Race!' })).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: /Sunny Bay/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Race!' }));
+    act(() => {
+      fireEvent.keyDown(window, { key: 'r', code: 'KeyR' });
+    });
+    expect(host.report).toHaveBeenCalledTimes(3);
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
+  });
+});

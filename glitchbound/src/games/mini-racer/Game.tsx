@@ -268,6 +268,8 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
         if (s === 'result' && inChallenge.current && key !== 'pause') return;
         if (key === 'confirm' && (s === 'menu' || s === 'result')) handlers.current.startRace();
         else if (key === 'confirm' && s === 'paused') handlers.current.resume();
+        // Today's daily is one race a day: R must not throw the race away halfway (it has no Restart button either).
+        else if (key === 'restart' && (s === 'race' || s === 'paused') && !inChallenge.current && saveRef.current.track === daily.id) return;
         else if (key === 'restart' && s !== 'menu' && s !== 'garage' && !handlers.current.startRace()) handlers.current.toMenu();
         else if (key === 'pause' && s === 'race') handlers.current.pause();
         else if (key === 'pause' && s === 'paused') handlers.current.resume();
