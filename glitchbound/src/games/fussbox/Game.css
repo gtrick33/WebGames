@@ -1,5 +1,8 @@
 /* Fussbox: a cheerful lab bench in mint and cream, with a little robot that lights up green or red. */
-.fbx {
+/* The game's colors, also for what is drawn over it (sheets, the walkthrough) outside .fbx. */
+.fbx,
+.fbx-sheet,
+.fbx-layer {
   --fbx-ink: #1d1238;
   --fbx-paper: #fffaf0;
   --fbx-mint: #d9f7ee;
@@ -7,6 +10,11 @@
   --fbx-yes: #2fbf71;
   --fbx-no: #ef4a5a;
   --fbx-gold: #ffc93c;
+}
+.fbx-layer {
+  display: contents;
+}
+.fbx {
   position: absolute;
   inset: 0;
   container-type: size;
@@ -335,7 +343,7 @@
 }
 .fbx-trays {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 6px;
   width: 100%;
 }
@@ -351,39 +359,69 @@
   border: 2.5px solid var(--fbx-ink);
   border-radius: 14px;
 }
-.fbx-tray.is-yes {
+.fbx-tray.is-yes,
+.fbx-all-side.is-yes {
   background: #e3fbec;
 }
-.fbx-tray.is-no {
+.fbx-tray.is-no,
+.fbx-all-side.is-no {
   background: #ffe6e9;
 }
-.fbx-tray h2 {
+.fbx-tray h2,
+.fbx-all-side h3 {
+  margin: 0;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
 }
-.fbx-tray.is-yes h2 {
+.fbx-tray h2 small,
+.fbx-all-side h3 small {
+  display: inline-block;
+  min-width: 18px;
+  margin-left: 2px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.8);
+  font-size: 11px;
+  text-align: center;
+}
+.fbx-tray.is-yes h2,
+.fbx-all-side.is-yes h3 {
   color: #13804a;
 }
-.fbx-tray.is-no h2 {
+.fbx-tray.is-no h2,
+.fbx-all-side.is-no h3 {
   color: #c22536;
 }
-/* One row, newest card first; older ones scroll sideways. */
+/* One row, newest card first; when they do not all fit, the last spot is "+N" (opens every card). */
 .fbx-tray-cards {
   display: flex;
-  flex: 1;
   gap: 5px;
   min-width: 0;
   padding: 5px 2px 2px;
-  overflow-x: auto;
-  scrollbar-width: thin;
+  overflow: hidden;
 }
 .fbx-tray-card {
+  position: relative;
   flex: none;
   width: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  transition: transform 0.1s;
 }
-.fbx-tray-card.is-example {
-  position: relative;
+.fbx-tray-card:hover {
+  transform: translateY(-2px);
+}
+.fbx-tray-card:focus-visible {
+  outline: 3px solid var(--fbx-teal);
+  outline-offset: 1px;
+}
+/* The card just fed: a teal ring, so it is easy to find among the rest. */
+.fbx-tray-card.is-new {
+  box-shadow: 0 0 0 3px var(--fbx-teal);
 }
 .fbx-tray-card.is-example::after {
   content: '★';
@@ -393,30 +431,69 @@
   font-size: 11px;
   color: var(--fbx-ink);
 }
+.fbx-more {
+  flex: none;
+  width: 34px;
+  height: 45px;
+  border: 2px dashed var(--fbx-ink);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.75);
+  font-size: 13px;
+  font-weight: 900;
+}
+.fbx-more:hover {
+  background: #fff;
+}
 .fbx-builder {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   padding: 8px 10px;
   border: 2.5px solid var(--fbx-ink);
   border-radius: 16px;
   background: var(--fbx-mint);
 }
-.fbx-preview {
-  width: 72px;
+.fbx-preview-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  width: 74px;
   flex: none;
+}
+.fbx-preview {
+  width: 60px;
   filter: drop-shadow(0 3px 0 var(--fbx-ink));
 }
+/* The card in words, so the four traits read the same way as the pickers. */
+.fbx-caption {
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  color: #24524a;
+}
+/* Rows of [trait name] [3 choices]; the names share one column. */
 .fbx-pickers {
   display: grid;
   flex: 1;
-  gap: 6px;
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  gap: 5px 5px;
+  min-width: 0;
 }
 .fbx-picker {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+.fbx-picker-name {
+  padding-right: 2px;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #24524a;
 }
 .fbx-pick {
   display: grid;
@@ -458,6 +535,147 @@
   background: var(--fbx-ink);
   color: #fff !important;
   box-shadow: 0 3px 0 #000;
+}
+
+/* ---------------------------------------------------------------- sheets (pause, every card) */
+.fbx-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgb(20 12 40 / 0.5);
+  backdrop-filter: blur(2px);
+  font-family: var(--font);
+  color: #1d1238;
+  animation: fbx-fade 0.2s ease both;
+}
+@keyframes fbx-fade {
+  from {
+    opacity: 0;
+  }
+}
+.fbx-sheet-card {
+  display: grid;
+  gap: 8px;
+  width: min(100%, 340px);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 14px;
+  border: 2.5px solid #1d1238;
+  border-radius: 20px;
+  background: #fffaf0;
+  box-shadow: 0 5px 0 #1d1238;
+}
+.fbx-sheet-card h2,
+.fbx-sheet-card h3,
+.fbx-sheet-card p {
+  margin: 0;
+}
+.fbx-sheet .fbx-btn {
+  color: #1d1238;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.fbx-pause {
+  justify-items: center;
+  width: min(100%, 280px);
+}
+.fbx-pause h2 {
+  font-size: 22px;
+  font-weight: 900;
+}
+.fbx-all {
+  width: min(100%, 420px);
+}
+.fbx-all-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fbx-all-head h2 {
+  font-size: 18px;
+  font-weight: 900;
+}
+.fbx-all .fbx-icon {
+  font: inherit;
+  font-weight: 900;
+  color: #1d1238;
+  cursor: pointer;
+}
+.fbx-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border: 2px solid #1d1238;
+  border-radius: 12px;
+  background: #fff;
+}
+.fbx-seg button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #1d1238;
+  cursor: pointer;
+}
+.fbx-seg button.is-on {
+  background: var(--fbx-mint, #d9f7ee);
+  box-shadow: inset 0 0 0 2px #14b8a6;
+}
+.fbx-all-side {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 2.5px solid #1d1238;
+  border-radius: 14px;
+}
+.fbx-all-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 7px;
+  padding-top: 4px;
+}
+.fbx-all-grid .fbx-tray-card {
+  width: 100%;
+  cursor: pointer;
+}
+
+/* The walkthrough's "four traits" picture: like the card builder's rows. */
+.fbx-coach-traits {
+  display: grid;
+  gap: 5px;
+}
+.fbx-coach-traits > div {
+  display: grid;
+  grid-template-columns: 70px repeat(3, 34px);
+  align-items: center;
+  justify-items: center;
+  gap: 6px;
+}
+.fbx-coach-traits b {
+  justify-self: start;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #24524a;
+}
+.fbx-coach-sym {
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+}
+.fbx-coach-num {
+  font-size: 17px;
+  font-weight: 900;
+  color: #1d1238;
 }
 
 /* ---------------------------------------------------------------- exam */

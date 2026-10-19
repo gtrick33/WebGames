@@ -1,7 +1,8 @@
 import type { CoachStep } from '../../components/Coach';
 import type { ContentLang } from '../../platform/contentLang';
-import { CardArt, Robot } from './art';
-import { cardId } from './logic';
+import { CardArt, Robot, SymbolIcon } from './art';
+import { cardId, type Attr } from './logic';
+import { UI } from './words';
 
 const card = (count: number, shape: number, colour: number, fill: number): number => cardId({ count, shape, colour, fill });
 
@@ -19,11 +20,44 @@ function Cards({ ids, tones, marks }: { ids: number[]; tones: ('yes' | 'no')[]; 
   );
 }
 
+/** The four traits, each with its three looks, laid out like the card builder's pickers. */
+function Traits({ lang }: { lang: ContentLang }) {
+  const u = UI[lang];
+  const rows: [Attr, string][] = [
+    ['count', u.count],
+    ['shape', u.shape],
+    ['colour', u.colour],
+    ['fill', u.fill],
+  ];
+  return (
+    <div className="fbx-coach-traits">
+      {rows.map(([attr, name]) => (
+        <div key={attr}>
+          <b>{name}</b>
+          {[0, 1, 2].map((v) =>
+            attr === 'count' ? (
+              <span key={v} className="fbx-coach-num">
+                {v + 1}
+              </span>
+            ) : (
+              <SymbolIcon key={v} card={{ count: 0, shape: 0, colour: 1, fill: 0, [attr]: v }} className="fbx-coach-sym" />
+            ),
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const TEXT: Record<ContentLang, { title: string; body: string }[]> = {
   en: [
     {
       title: 'It has a secret rule',
       body: 'Every day the Fussbox likes some cards and hates the rest. To start, it shows you two of each.',
+    },
+    {
+      title: 'Every card has four traits',
+      body: 'How many symbols (1 to 3), their shape, their color, and their fill: solid, striped or hollow. The rule can be about any of them, or a mix.',
     },
     {
       title: 'Feed it cards',
@@ -38,6 +72,10 @@ const TEXT: Record<ContentLang, { title: string; body: string }[]> = {
     {
       title: 'То има тайно правило',
       body: 'Всеки ден Fussbox харесва някои карти и мрази останалите. За начало ти показва по две от всеки вид.',
+    },
+    {
+      title: 'Всяка карта има четири белега',
+      body: 'Колко символа има (от 1 до 3), формата им, цвета им и пълнежа им: плътен, на райета или празен. Правилото може да е за всеки от тях или за няколко заедно.',
     },
     {
       title: 'Храни го с карти',
@@ -55,7 +93,7 @@ export const COACH_BUTTONS: Record<ContentLang, { skip: string; next: string; do
   bg: { skip: 'Пропусни', next: 'Напред', done: 'Да играем' },
 };
 
-/** Fussbox's first-time walkthrough: the rule, the tests, the exam. */
+/** Fussbox's first-time walkthrough: the rule, the four traits, the tests, the exam. */
 export function coachSteps(lang: ContentLang): CoachStep[] {
   const t = TEXT[lang];
   return [
@@ -69,8 +107,9 @@ export function coachSteps(lang: ContentLang): CoachStep[] {
         </div>
       ),
     },
+    { ...t[1]!, art: <Traits lang={lang} /> },
     {
-      ...t[1]!,
+      ...t[2]!,
       art: (
         <div className="fbx-coach-art">
           <Cards ids={[card(1, 2, 0, 0)]} tones={['yes']} />
@@ -80,7 +119,7 @@ export function coachSteps(lang: ContentLang): CoachStep[] {
       ),
     },
     {
-      ...t[2]!,
+      ...t[3]!,
       art: <Cards ids={[card(0, 1, 0, 1), card(2, 0, 1, 2), card(1, 1, 0, 0), card(0, 2, 2, 0)]} tones={['yes', 'no', 'yes', 'no']} marks />,
     },
   ];

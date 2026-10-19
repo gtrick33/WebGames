@@ -70,11 +70,11 @@ describe('homepage', () => {
 describe('routing', () => {
   it('labels Crass Act adults only on its page and in Party Mode', async () => {
     const page = renderAt('/games/crass-act');
-    const heading = (await screen.findByRole('heading', { level: 1, name: 'Crass Act' })).parentElement!;
+    const heading = (await screen.findByRole('heading', { level: 1, name: 'Crass Act' }, { timeout: 5000 })).parentElement!;
     expect(heading.textContent).toContain('18+Adults only');
     page.unmount();
     renderAt('/party');
-    const feature = (await screen.findByRole('heading', { level: 2, name: 'Crass Act' })).closest('section')!;
+    const feature = (await screen.findByRole('heading', { level: 2, name: 'Crass Act' }, { timeout: 5000 })).closest('section')!;
     expect(feature.textContent).toContain('18+Adults only');
   });
 

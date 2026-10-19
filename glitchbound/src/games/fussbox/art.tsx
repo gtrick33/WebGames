@@ -3,7 +3,7 @@
  * face. Shared by the game and its first-time walkthrough.
  */
 import { useId } from 'react';
-import { cardOf } from './logic';
+import { cardOf, type Card } from './logic';
 
 export const COLOURS = ['#ff4f9a', '#2d6cdf', '#f5b400'];
 
@@ -24,13 +24,17 @@ const LAYOUT: { ys: number[]; k: number }[] = [
   { ys: [16, 40, 64], k: 0.8 },
 ];
 
-/** A card: 1–3 identical symbols, stacked. */
+/**
+ * A card: 1–3 identical symbols, stacked. With a `title` it is a labelled picture that also shows its name
+ * on hover; without one it is decoration (inside a button that carries the name).
+ */
 export function CardArt({ id, className = '', title }: { id: number; className?: string; title?: string }) {
   const card = cardOf(id);
   const pat = `fbx-${useId().replace(/:/g, '')}`;
   const { ys, k } = LAYOUT[card.count]!;
   return (
-    <svg className={`fbx-card ${className}`} viewBox="0 0 60 80" role="img" aria-label={title}>
+    <svg className={`fbx-card ${className}`} viewBox="0 0 60 80" {...(title ? { role: 'img', 'aria-label': title } : { 'aria-hidden': true })}>
+      {title && <title>{title}</title>}
       <defs>
         <pattern id={pat} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <rect width="2.2" height="5" fill={COLOURS[card.colour]} />
@@ -44,6 +48,20 @@ export function CardArt({ id, className = '', title }: { id: number; className?:
   );
 }
 
+/** One symbol on its own (no card), for the pickers and the walkthrough. */
+export function SymbolIcon({ card, className = '' }: { card: Card; className?: string }) {
+  const pat = `fbx-${useId().replace(/:/g, '')}`;
+  return (
+    <svg className={className} viewBox="15 26 30 28" aria-hidden="true">
+      <defs>
+        <pattern id={pat} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="2.2" height="5" fill={COLOURS[card.colour]} />
+        </pattern>
+      </defs>
+      <Symbol shape={card.shape} colour={card.colour} fill={card.fill} y={40} pat={pat} />
+    </svg>
+  );
+}
 
 export type Mood = 'idle' | 'yes' | 'no' | 'think';
 /** The Fussbox: a little boxy robot whose face lights green (likes it) or red (hates it). */

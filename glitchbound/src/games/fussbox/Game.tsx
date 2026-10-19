@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { ChallengeSpec } from '../../platform/challenge';
 import { openChallengeScores } from '../../platform/challenge';
 import type { ContentLang } from '../../platform/contentLang';
@@ -8,10 +8,10 @@ import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { cardId, cardOf, correctOf, dailyRound, EXAM_SIZE, likes, makeRound, MAX_TESTS, resultLine, scoreOf, type Attr, type Card, type Level, type Round } from './logic';
 import { Coach, useCoach } from '../../components/Coach';
-import { CardArt, COLOURS, Robot, Symbol, type Mood } from './art';
+import { CardArt, Robot, SymbolIcon, type Mood } from './art';
 import { COACH_BUTTONS, coachSteps } from './coach';
 import { createSfx, type Sfx } from './sound';
-import { describe, UI, valueName, type Ui } from './words';
+import { cardPhrase, describe, UI, valueName, type Ui } from './words';
 import './Game.css';
 
 const KEY = 'glitchbound.fussbox';
@@ -111,6 +111,10 @@ function Fussbox({ host, challenge, lang }: { host: GameHost; challenge?: Challe
   }, []);
   const [play, setPlay] = useState<Play | null>(() => (challenge ? { mode: 'challenge', round: makeRound(challenge.seed, 3), tests: [], phase: 'lab', marks: noMarks() } : null));
   const [newBest, setNewBest] = useState(false);
+  // ☰ pauses the round (a sheet over it); "Main menu" parks it, and the menu offers to carry on.
+  const [paused, setPaused] = useState(false);
+  const [parked, setParked] = useState<Play | null>(null);
+  const coach = useCoach('fussbox');
   const started = useRef(false);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
@@ -135,6 +139,8 @@ function Fussbox({ host, challenge, lang }: { host: GameHost; challenge?: Challe
 
   const begin = (mode: Mode, level: Level = saveRef.current.level): void => {
     const cur = saveRef.current;
+    // A parked practice or challenge round stays on offer while the daily is played (that one lives in the save).
+    if (mode !== 'daily' || parked?.mode === 'daily') setParked(null);
     if (mode === 'daily') {
       // One try: starting today's uses it up; leaving halfway (reload, menu) carries on from the save.
       const kept = cur.daily[today]?.open && cur.progress?.day === today ? cur.progress : null;
@@ -195,9 +201,53 @@ function Fussbox({ host, challenge, lang }: { host: GameHost; challenge?: Challe
     setPlay({ ...play, phase: 'done' });
   };
 
-  if (!play) return <Menu save={save} today={today} u={u} lang={lang} onPlay={begin} onMute={() => commit({ ...saveRef.current, muted: !saveRef.current.muted })} />;
+  const mute = (): void => commit({ ...saveRef.current, muted: !saveRef.current.muted });
+  const labelOf = (p: Play): string => (p.mode === 'daily' ? u.daily(dailyNumber(today)) : p.mode === 'challenge' ? u.challengeRound(challenge?.round ?? 1) : `${u.practice} · ${u.levels[p.round.level - 1]}`);
+  const toMenu = (): void => {
+    if (play && play.phase !== 'done') setParked(play);
+    setPaused(false);
+    setPlay(null);
+  };
+  const overlays = (
+    <div className="fbx-layer">
+      {paused && (
+        <Pause
+          u={u}
+          muted={save.muted}
+          onResume={() => setPaused(false)}
+          onHelp={() => {
+            setPaused(false);
+            coach.show();
+          }}
+          onMute={mute}
+          onMenu={toMenu}
+        />
+      )}
+      {coach.open && <Coach steps={coachSteps(lang)} onClose={coach.close} {...COACH_BUTTONS[lang]} />}
+    </div>
+  );
 
-  const label = play.mode === 'daily' ? u.daily(dailyNumber(today)) : play.mode === 'challenge' ? u.challengeRound(challenge?.round ?? 1) : `${u.practice} · ${u.levels[play.round.level - 1]}`;
+  if (!play)
+    return (
+      <>
+        <Menu
+          save={save}
+          today={today}
+          u={u}
+          parked={parked && parked.mode !== 'daily' ? { label: labelOf(parked), tests: parked.tests.length } : null}
+          onResume={() => {
+            setPlay(parked);
+            setParked(null);
+          }}
+          onPlay={begin}
+          onMute={mute}
+          onHelp={coach.show}
+        />
+        {overlays}
+      </>
+    );
+
+  const label = labelOf(play);
   if (play.phase === 'done')
     return (
       <Result
@@ -214,54 +264,58 @@ function Fussbox({ host, challenge, lang }: { host: GameHost; challenge?: Challe
     );
   if (play.phase === 'exam')
     return (
-      <Exam
+      <>
+        <Exam
+          play={play}
+          u={u}
+          lang={lang}
+          label={label}
+          onMark={(i, m) => {
+            start();
+            sfx().mark();
+            const marks = play.marks.slice();
+            marks[i] = marks[i] === m ? null : m;
+            update({ ...play, marks });
+          }}
+          onHandIn={handIn}
+          onMenu={() => setPaused(true)}
+        />
+        {overlays}
+      </>
+    );
+  return (
+    <>
+      <Lab
         play={play}
         u={u}
         lang={lang}
         label={label}
-        onMark={(i, m) => {
-          start();
-          sfx().mark();
-          const marks = play.marks.slice();
-          marks[i] = marks[i] === m ? null : m;
-          update({ ...play, marks });
-        }}
-        onHandIn={handIn}
-        onMenu={() => setPlay(null)}
+        sfx={sfx}
+        active={!paused && !coach.open}
+        onFeed={feed}
+        onExam={() => update({ ...play, phase: 'exam' })}
+        onMenu={() => setPaused(true)}
       />
-    );
-  return (
-    <Lab
-      play={play}
-      u={u}
-      lang={lang}
-      label={label}
-      sfx={sfx}
-      onFeed={feed}
-      onExam={() => update({ ...play, phase: 'exam' })}
-      onMenu={() => setPlay(null)}
-    />
+      {overlays}
+    </>
   );
 }
 
 // ------------------------------------------------------------------ pictures
 
-const cardName = (id: number, lang: ContentLang): string => {
-  const c = cardOf(id);
-  return (['count', 'colour', 'fill', 'shape'] as const).map((a) => valueName(a, c[a], lang)).join(', ');
-};
+/** "2 pink striped circles": what screen readers hear, and what hovering a card shows. */
+const cardName = (id: number, lang: ContentLang): string => cardPhrase(cardOf(id), lang);
 
 // ------------------------------------------------------------------ screens
 
-function Menu({ save, today, u, lang, onPlay, onMute }: { save: Save; today: string; u: Ui; lang: ContentLang; onPlay: (m: Mode, level?: Level) => void; onMute: () => void }) {
-  const coach = useCoach('fussbox');
+function Menu({ save, today, u, parked, onResume, onPlay, onMute, onHelp }: { save: Save; today: string; u: Ui; parked: { label: string; tests: number } | null; onResume: () => void; onPlay: (m: Mode, level?: Level) => void; onMute: () => void; onHelp: () => void }) {
   const daily = save.daily[today];
   const going = daily?.open && save.progress?.day === today;
   const level = dailyRound(today, hashString).level;
   return (
     <div className="fbx fbx-menu">
       <div className="fbx-menu-top">
-        <button className="fbx-icon" onClick={coach.show} aria-label={u.howTo}>
+        <button className="fbx-icon" onClick={onHelp} aria-label={u.howTo}>
           ?
         </button>
         <button className="fbx-icon" onClick={onMute} aria-label={save.muted ? u.soundOn : u.soundOff}>
@@ -273,6 +327,19 @@ function Menu({ save, today, u, lang, onPlay, onMute }: { save: Save; today: str
         Fuss<span>box</span>
       </h1>
       <p className="fbx-tag">{u.tag}</p>
+      {parked && (
+        <section className="fbx-panel fbx-panel-resume">
+          <div className="fbx-panel-head">
+            <b>{u.unfinished}</b>
+            <span>
+              {parked.label} · {u.tests(parked.tests)}
+            </span>
+          </div>
+          <button className="fbx-btn fbx-btn-go fbx-btn-big" onClick={onResume} autoFocus>
+            {u.continueDaily}
+          </button>
+        </section>
+      )}
       <section className="fbx-panel">
         <div className="fbx-panel-head">
           <b>{u.daily(dailyNumber(today))}</b>
@@ -287,7 +354,7 @@ function Menu({ save, today, u, lang, onPlay, onMute }: { save: Save; today: str
         ) : (
           <>
             <p className="fbx-muted">{u.sameForEveryone}</p>
-            <button className="fbx-btn fbx-btn-go fbx-btn-big" onClick={() => onPlay('daily')}>
+            <button className={`fbx-btn fbx-btn-big${parked ? '' : ' fbx-btn-go'}`} onClick={() => onPlay('daily')}>
               {going ? u.continueDaily : u.playDaily}
             </button>
           </>
@@ -307,9 +374,46 @@ function Menu({ save, today, u, lang, onPlay, onMute }: { save: Save; today: str
         </div>
       </section>
       {save.rounds > 0 && <p className="fbx-muted">{u.totals(save.rounds, save.best)}</p>}
-      {coach.open && <Coach steps={coachSteps(lang)} onClose={coach.close} {...COACH_BUTTONS[lang]} />}
     </div>
   );
+}
+
+/** The sheet ☰ opens over a round: carry on, the walkthrough, sound, or back to the menu (the round waits there). */
+function Pause({ u, muted, onResume, onHelp, onMute, onMenu }: { u: Ui; muted: boolean; onResume: () => void; onHelp: () => void; onMute: () => void; onMenu: () => void }) {
+  useEscape(onResume);
+  return (
+    <div className="fbx-sheet" role="dialog" aria-modal="true" aria-labelledby="fbx-pause-title" onClick={(e) => e.target === e.currentTarget && onResume()}>
+      <div className="fbx-sheet-card fbx-pause">
+        <Robot mood="idle" className="fbx-robot-talk" />
+        <h2 id="fbx-pause-title">{u.paused}</h2>
+        <button className="fbx-btn fbx-btn-go fbx-btn-big" onClick={onResume} autoFocus>
+          {u.resume}
+        </button>
+        <button className="fbx-btn fbx-btn-big" onClick={onHelp}>
+          {u.howTo}
+        </button>
+        <button className="fbx-btn fbx-btn-big" onClick={onMute}>
+          {muted ? `🔇 ${u.soundOn}` : `🔊 ${u.soundOff}`}
+        </button>
+        <button className="fbx-btn fbx-btn-big" onClick={onMenu}>
+          {u.mainMenu}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Escape closes the sheet that calls this. */
+function useEscape(onClose: () => void): void {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 }
 
 const PICKERS: { attr: Attr; key: 'count' | 'shape' | 'colour' | 'fill' }[] = [
@@ -319,14 +423,19 @@ const PICKERS: { attr: Attr; key: 'count' | 'shape' | 'colour' | 'fill' }[] = [
   { attr: 'fill', key: 'fill' },
 ];
 
-function Lab({ play, u, lang, label, sfx, onFeed, onExam, onMenu }: { play: Play; u: Ui; lang: ContentLang; label: string; sfx: () => Sfx; onFeed: (id: number) => 'new' | 'known' | 'full'; onExam: () => void; onMenu: () => void }) {
+type Item = { id: number; ex: boolean };
+
+function Lab({ play, u, lang, label, sfx, active, onFeed, onExam, onMenu }: { play: Play; u: Ui; lang: ContentLang; label: string; sfx: () => Sfx; active: boolean; onFeed: (id: number) => 'new' | 'known' | 'full'; onExam: () => void; onMenu: () => void }) {
   const [card, setCard] = useState<Card>({ count: 0, shape: 0, colour: 0, fill: 0 });
   const [say, setSay] = useState<{ mood: Mood; text: string }>({ mood: 'idle', text: u.hello });
   const [flash, setFlash] = useState(0);
+  const [all, setAll] = useState(false);
+  const uid = useId();
   const id = cardId(card);
   const { round, tests } = play;
-  const liked = [...round.liked.map((x) => ({ id: x, ex: true })), ...tests.filter((x) => likes(round.rule, cardOf(x))).map((x) => ({ id: x, ex: false }))];
-  const hated = [...round.hated.map((x) => ({ id: x, ex: true })), ...tests.filter((x) => !likes(round.rule, cardOf(x))).map((x) => ({ id: x, ex: false }))];
+  const liked: Item[] = [...round.liked.map((x) => ({ id: x, ex: true })), ...tests.filter((x) => likes(round.rule, cardOf(x))).map((x) => ({ id: x, ex: false }))];
+  const hated: Item[] = [...round.hated.map((x) => ({ id: x, ex: true })), ...tests.filter((x) => !likes(round.rule, cardOf(x))).map((x) => ({ id: x, ex: false }))];
+  const latest = tests[tests.length - 1];
 
   const feed = (): void => {
     const got = onFeed(id);
@@ -343,9 +452,17 @@ function Lab({ play, u, lang, label, sfx, onFeed, onExam, onMenu }: { play: Play
     sfx().click();
     setCard(cardOf(Math.floor(Math.random() * 81)));
   };
+  /** A card from the trays goes back on the bench, and the robot says what it is. */
+  const pick = (x: number): void => {
+    sfx().click();
+    setCard(cardOf(x));
+    setAll(false);
+    setSay({ mood: 'think', text: u.inspect(likes(round.rule, cardOf(x)), cardName(x, lang)) });
+  };
 
-  // Keyboard: Enter feeds the card, R builds a random one.
+  // Keyboard: Enter feeds the card, R builds a random one (not while a sheet is open over the bench).
   useEffect(() => {
+    if (!active || all) return;
     const onKey = (e: KeyboardEvent): void => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
       // Enter feeds the card, also right after clicking a picker (other buttons keep their own Enter).
@@ -360,96 +477,165 @@ function Lab({ play, u, lang, label, sfx, onFeed, onExam, onMenu }: { play: Play
   });
 
   return (
-    <div className="fbx fbx-lab">
-      <header className="fbx-hud">
-        <button className="fbx-icon" onClick={onMenu} aria-label={u.menu}>
-          ☰
-        </button>
-        <span className="fbx-hud-label">{label}</span>
-        <span className="fbx-hud-tests mono" aria-live="polite">
-          {u.tests(tests.length)}
-        </span>
-      </header>
-      <div className="fbx-speak">
-        <Robot mood={say.mood} key={flash} className="fbx-robot-talk" />
-        <p className="fbx-bubble" role="status">
-          {say.text}
-        </p>
-      </div>
-      <div className="fbx-trays">
-        <Tray title={u.likes} tone="yes" items={liked} u={u} lang={lang} />
-        <Tray title={u.hates} tone="no" items={hated} u={u} lang={lang} />
-      </div>
-      <section className="fbx-builder" aria-label={u.build}>
-        <CardArt id={id} className="fbx-preview" title={cardName(id, lang)} />
-        <div className="fbx-pickers">
-          {PICKERS.map(({ attr, key }) => (
-            <div key={attr} className="fbx-picker" role="radiogroup" aria-label={u[key]}>
-              {[0, 1, 2].map((v) => (
-                <button
-                  key={v}
-                  role="radio"
-                  aria-checked={card[attr] === v}
-                  aria-label={valueName(attr, v, lang)}
-                  className={`fbx-pick${card[attr] === v ? ' is-on' : ''}`}
-                  onClick={() => {
-                    sfx().click();
-                    setCard({ ...card, [attr]: v });
-                  }}
-                >
-                  <PickIcon attr={attr} v={v} card={card} />
-                </button>
-              ))}
-            </div>
-          ))}
+    <>
+      <div className="fbx fbx-lab">
+        <header className="fbx-hud">
+          <button className="fbx-icon" onClick={onMenu} aria-label={u.menu} aria-haspopup="dialog">
+            ☰
+          </button>
+          <span className="fbx-hud-label">{label}</span>
+          <span className="fbx-hud-tests mono" aria-live="polite">
+            {u.tests(tests.length)}
+          </span>
+        </header>
+        <div className="fbx-speak">
+          <Robot mood={say.mood} key={flash} className="fbx-robot-talk" />
+          <p className="fbx-bubble" role="status">
+            {say.text}
+          </p>
         </div>
-      </section>
-      <div className="fbx-row">
-        <button className="fbx-btn" onClick={random} aria-label={u.random}>
-          🎲
-        </button>
-        <button className="fbx-btn fbx-btn-go fbx-btn-feed" onClick={feed} disabled={tests.length >= MAX_TESTS}>
-          {u.feed}
+        <div className="fbx-trays">
+          <Tray title={u.likes} tone="yes" items={liked} latest={latest} u={u} lang={lang} onPick={pick} onAll={() => setAll(true)} />
+          <Tray title={u.hates} tone="no" items={hated} latest={latest} u={u} lang={lang} onPick={pick} onAll={() => setAll(true)} />
+        </div>
+        <section className="fbx-builder" aria-label={u.build}>
+          <div className="fbx-preview-wrap">
+            <CardArt id={id} className="fbx-preview" />
+            <p className="fbx-caption">{cardPhrase(card, lang)}</p>
+          </div>
+          <div className="fbx-pickers">
+            {PICKERS.map(({ attr, key }) => (
+              <div key={attr} className="fbx-picker" role="radiogroup" aria-labelledby={`${uid}${attr}`}>
+                <span className="fbx-picker-name" id={`${uid}${attr}`}>
+                  {u[key]}
+                </span>
+                {[0, 1, 2].map((v) => (
+                  <button
+                    key={v}
+                    role="radio"
+                    aria-checked={card[attr] === v}
+                    aria-label={valueName(attr, v, lang)}
+                    className={`fbx-pick${card[attr] === v ? ' is-on' : ''}`}
+                    onClick={() => {
+                      sfx().click();
+                      setCard({ ...card, [attr]: v });
+                    }}
+                  >
+                    {attr === 'count' ? <b className="fbx-pick-num">{v + 1}</b> : <SymbolIcon card={{ ...card, [attr]: v }} className="fbx-pick-sym" />}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+        <div className="fbx-row">
+          <button className="fbx-btn" onClick={random} aria-label={u.random} title={u.random}>
+            🎲
+          </button>
+          <button className="fbx-btn fbx-btn-go fbx-btn-feed" onClick={feed} disabled={tests.length >= MAX_TESTS}>
+            {u.feed}
+          </button>
+        </div>
+        <button className="fbx-btn fbx-btn-exam" onClick={onExam}>
+          {u.ready} →
         </button>
       </div>
-      <button className="fbx-btn fbx-btn-exam" onClick={onExam}>
-        {u.ready} →
-      </button>
-    </div>
+      {all && <AllCards liked={liked} hated={hated} latest={latest} u={u} lang={lang} onPick={pick} onClose={() => setAll(false)} />}
+    </>
   );
 }
 
-/** The little picture on a picker button: the card being built, with this one choice changed. */
-function PickIcon({ attr, v, card }: { attr: Attr; v: number; card: Card }) {
-  const pat = `fbx-${useId().replace(/:/g, '')}`;
-  if (attr === 'count') return <b className="fbx-pick-num">{v + 1}</b>;
-  const c = { ...card, [attr]: v };
-  return (
-    <svg className="fbx-pick-sym" viewBox="15 26 30 28" aria-hidden="true">
-      <defs>
-        <pattern id={pat} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <rect width="2.2" height="5" fill={COLOURS[c.colour]} />
-        </pattern>
-      </defs>
-      <Symbol shape={c.shape} colour={c.colour} fill={c.fill} y={40} pat={pat} />
-    </svg>
-  );
-}
+const TRAY_CARD = 34;
+const TRAY_GAP = 5;
 
-function Tray({ title, tone, items, u, lang }: { title: string; tone: 'yes' | 'no'; items: { id: number; ex: boolean }[]; u: Ui; lang: ContentLang }) {
+/**
+ * One tray (likes or hates): the newest cards first, as many as fit in one row. When there are more, the
+ * last spot becomes "+N", which opens every card. Tapping a card puts it back on the bench.
+ */
+function Tray({ title, tone, items, latest, u, lang, onPick, onAll }: { title: string; tone: 'yes' | 'no'; items: Item[]; latest?: number; u: Ui; lang: ContentLang; onPick: (id: number) => void; onAll: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(Infinity);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const measure = (): void => setFit(Math.max(2, Math.floor((el.clientWidth - 4 + TRAY_GAP) / (TRAY_CARD + TRAY_GAP))));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const newest = [...items].reverse();
+  const more = newest.length > fit;
+  const shown = more ? newest.slice(0, fit - 1) : newest;
   return (
     <section className={`fbx-tray is-${tone}`} aria-label={title}>
       <h2>
-        {tone === 'yes' ? '✓' : '✗'} {title}
+        {tone === 'yes' ? '✓' : '✗'} {title} <small>{items.length}</small>
       </h2>
-      <div className="fbx-tray-cards">
-        {[...items].reverse().map((x) => (
-          <span key={x.id} className={`fbx-tray-card${x.ex ? ' is-example' : ''}`} title={x.ex ? u.example : undefined}>
-            <CardArt id={x.id} title={cardName(x.id, lang)} />
-          </span>
+      <div className="fbx-tray-cards" ref={ref}>
+        {shown.map((x) => (
+          <TrayCard key={x.id} item={x} isNew={x.id === latest} u={u} lang={lang} onPick={onPick} />
         ))}
+        {more && (
+          <button className="fbx-more" onClick={onAll} aria-label={u.seeAll(items.length)} title={u.seeAll(items.length)}>
+            +{newest.length - shown.length}
+          </button>
+        )}
       </div>
     </section>
+  );
+}
+
+function TrayCard({ item, isNew, u, lang, onPick }: { item: Item; isNew: boolean; u: Ui; lang: ContentLang; onPick: (id: number) => void }) {
+  const name = cardName(item.id, lang);
+  return (
+    <button className={`fbx-tray-card${item.ex ? ' is-example' : ''}${isNew ? ' is-new' : ''}`} onClick={() => onPick(item.id)} aria-label={name} title={item.ex ? `${name} (${u.example})` : name}>
+      <CardArt id={item.id} />
+    </button>
+  );
+}
+
+/** Every card so far, liked and hated, big enough to compare: in the order they came, or alike ones together. */
+function AllCards({ liked, hated, latest, u, lang, onPick, onClose }: { liked: Item[]; hated: Item[]; latest?: number; u: Ui; lang: ContentLang; onPick: (id: number) => void; onClose: () => void }) {
+  const [grouped, setGrouped] = useState(false);
+  useEscape(onClose);
+  const order = (xs: Item[]): Item[] => (grouped ? [...xs].sort((a, b) => a.id - b.id) : xs);
+  const sides: ['yes' | 'no', string, Item[]][] = [
+    ['yes', u.likes, liked],
+    ['no', u.hates, hated],
+  ];
+  return (
+    <div className="fbx-sheet" role="dialog" aria-modal="true" aria-labelledby="fbx-all-title" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="fbx-sheet-card fbx-all">
+        <header className="fbx-all-head">
+          <h2 id="fbx-all-title">{u.allCards}</h2>
+          <button className="fbx-icon" onClick={onClose} aria-label={u.close} autoFocus>
+            ✕
+          </button>
+        </header>
+        <div className="fbx-seg" role="group">
+          <button className={grouped ? '' : 'is-on'} aria-pressed={!grouped} onClick={() => setGrouped(false)}>
+            {u.inOrder}
+          </button>
+          <button className={grouped ? 'is-on' : ''} aria-pressed={grouped} onClick={() => setGrouped(true)}>
+            {u.grouped}
+          </button>
+        </div>
+        <p className="fbx-muted">{u.allHint}</p>
+        {sides.map(([tone, title, xs]) => (
+          <section key={tone} className={`fbx-all-side is-${tone}`} aria-label={title}>
+            <h3>
+              {tone === 'yes' ? '✓' : '✗'} {title} <small>{xs.length}</small>
+            </h3>
+            <div className="fbx-all-grid">
+              {order(xs).map((x) => (
+                <TrayCard key={x.id} item={x} isNew={x.id === latest} u={u} lang={lang} onPick={onPick} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
   );
 }
 

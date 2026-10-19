@@ -3,7 +3,7 @@
  * text. The cards themselves have no words.
  */
 import type { ContentLang } from '../../platform/contentLang';
-import type { Attr, Rule } from './logic';
+import type { Attr, Card, Rule } from './logic';
 
 interface Lang {
   values: Record<Attr, [string, string, string]>;
@@ -72,6 +72,25 @@ export function describe(rule: Rule, lang: ContentLang): string {
 /** Names of the attribute values (for screen readers and the pickers). */
 export const valueName = (a: Attr, v: number, lang: ContentLang): string => LANG[lang].values[a][v]!;
 
+/** Card names in plain words, e.g. "2 pink striped circles" / "2 розови кръга на райета". */
+const PHRASE: Record<ContentLang, (c: Card) => string> = {
+  en: (c) => {
+    const n = c.count + 1;
+    const shape = ['circle', 'triangle', 'square'][c.shape]!;
+    return `${n} ${['pink', 'blue', 'yellow'][c.colour]} ${['solid', 'striped', 'hollow'][c.fill]} ${shape}${n > 1 ? 's' : ''}`;
+  },
+  bg: (c) => {
+    const n = c.count + 1;
+    const one = n === 1;
+    // Masculine nouns take the counting form after 2 and 3 (кръга, триъгълника, квадрата).
+    const shape = (one ? ['кръг', 'триъгълник', 'квадрат'] : ['кръга', 'триъгълника', 'квадрата'])[c.shape]!;
+    const colour = (one ? ['розов', 'син', 'жълт'] : ['розови', 'сини', 'жълти'])[c.colour]!;
+    const fill = (one ? ['плътен ', '', 'празен '] : ['плътни ', '', 'празни '])[c.fill]!;
+    return `${n} ${colour} ${fill}${shape}${c.fill === 1 ? ' на райета' : ''}`;
+  },
+};
+export const cardPhrase = (c: Card, lang: ContentLang): string => PHRASE[lang](c);
+
 export interface Ui {
   tag: string;
   daily: (n: number) => string;
@@ -123,6 +142,16 @@ export interface Ui {
   howTo: string;
   soundOn: string;
   soundOff: string;
+  resume: string;
+  mainMenu: string;
+  unfinished: string;
+  seeAll: (n: number) => string;
+  allCards: string;
+  allHint: string;
+  inOrder: string;
+  grouped: string;
+  close: string;
+  inspect: (yes: boolean, name: string) => string;
 }
 
 const UI_EN: Ui = {
@@ -143,7 +172,7 @@ const UI_EN: Ui = {
   hates: 'Hates',
   example: 'example',
   build: 'Build a card',
-  count: 'How many',
+  count: 'Count',
   shape: 'Shape',
   colour: 'Color',
   fill: 'Fill',
@@ -166,7 +195,7 @@ const UI_EN: Ui = {
   again: 'New rule',
   menu: 'Menu',
   scoreboard: 'See the scoreboard',
-  paused: 'Paused · tap to carry on',
+  paused: 'Paused',
   ding: 'Ding! It likes it.',
   bzzt: 'Bzzt! It hates it.',
   thinking: 'Feed me a card…',
@@ -176,6 +205,16 @@ const UI_EN: Ui = {
   howTo: 'How to play',
   soundOn: 'Turn sound on',
   soundOff: 'Turn sound off',
+  resume: 'Resume',
+  mainMenu: 'Main menu',
+  unfinished: 'Unfinished round',
+  seeAll: (n) => `See all ${n} cards`,
+  allCards: 'Every card so far',
+  allHint: 'Tap a card to put it back on the bench.',
+  inOrder: 'In order',
+  grouped: 'Alike together',
+  close: 'Close',
+  inspect: (yes, name) => `${yes ? 'It likes' : 'It hates'} ${name}.`,
 };
 
 const UI_BG: Ui = {
@@ -196,10 +235,10 @@ const UI_BG: Ui = {
   hates: 'Мрази',
   example: 'пример',
   build: 'Направи карта',
-  count: 'Колко',
+  count: 'Брой',
   shape: 'Форма',
   colour: 'Цвят',
-  fill: 'Запълване',
+  fill: 'Пълнеж',
   feed: 'Дай му я',
   random: 'Случайна карта',
   tests: (n) => `${n} ${n === 1 ? 'тест' : 'теста'}`,
@@ -219,7 +258,7 @@ const UI_BG: Ui = {
   again: 'Ново правило',
   menu: 'Меню',
   scoreboard: 'Виж класирането',
-  paused: 'Пауза · докосни, за да продължиш',
+  paused: 'Пауза',
   ding: 'Дзън! Харесва я.',
   bzzt: 'Бзззт! Мрази я.',
   thinking: 'Дай ми карта…',
@@ -229,6 +268,16 @@ const UI_BG: Ui = {
   howTo: 'Как се играе',
   soundOn: 'Включи звука',
   soundOff: 'Изключи звука',
+  resume: 'Продължи',
+  mainMenu: 'Главно меню',
+  unfinished: 'Недовършен рунд',
+  seeAll: (n) => `Виж всички ${n} карти`,
+  allCards: 'Всички карти досега',
+  allHint: 'Докосни карта, за да я върнеш на масата.',
+  inOrder: 'По ред',
+  grouped: 'Сходните заедно',
+  close: 'Затвори',
+  inspect: (yes, name) => `${yes ? 'Харесва' : 'Мрази'}: ${name}.`,
 };
 
 export const UI: Record<ContentLang, Ui> = { en: UI_EN, bg: UI_BG };
