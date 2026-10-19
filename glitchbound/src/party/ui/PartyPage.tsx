@@ -262,8 +262,10 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
             onSubmit={(e) => {
               e.preventDefault();
               const code = joinCode.trim().toUpperCase();
-              if (/^[A-HJKMNP-Z]{5}$/.test(code)) navigate(`/r/${code}`);
-              else setRoomMsg('Room codes are five letters, like KQTRA.');
+              // A full page load: the server's /r/CODE works out which game the room plays (the client
+              // router has no /r/ route, so navigate() showed "Page not found").
+              if (ROOM_CODE.test(code)) window.location.assign(`/r/${code}`);
+              else setRoomMsg('Check the code: five letters, like KQTRA (codes never use I, L or O).');
             }}
           >
             <h2>Got a code?</h2>
