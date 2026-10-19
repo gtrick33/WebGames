@@ -189,8 +189,10 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
   };
   // "Pick for us": a random game that suits the group's size.
   const surprise = (): void => {
-    const fits = modes.filter((m) => named.length >= 3 || m.id !== 'impostor');
-    const choice = anyOf(fits);
+    // "3–16" → at least 3 (two players were sent to One of a Kind, which needs three).
+    const fits = modes.filter((m) => named.length >= (Number.parseInt(m.players, 10) || 2));
+    // Too few names for any game: picking one still points at the names.
+    const choice = anyOf(fits.length ? fits : modes);
     if (choice) pick(choice.id as ModeId);
   };
 
