@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { onRequestPost as changeCatalog } from '../functions/api/admin/catalog';
+import type { Env } from '../server/http';
+import { signIn } from '../server/signin';
 import { GAMES } from '../src/catalog/games';
 import {
   applySettings,
@@ -19,6 +22,7 @@ import {
 } from '../src/catalog/settings';
 import { challengeForDay } from '../src/platform/daily';
 import { addDays } from '../src/platform/dates';
+import { memoryD1 } from './d1';
 
 const cat = (settings: PublicCatalog['settings'], picks: PublicCatalog['picks'] = {}): PublicCatalog => ({ settings, picks, notice: null });
 const dailyGames = GAMES.filter((g) => g.daily?.length);
@@ -70,6 +74,27 @@ describe('admin game settings', () => {
     expect(sanitizeNotice({ text: '  ', link: '/x' }, 1)).toBeNull();
     expect(sanitizeNotice({ text: 'Hello', link: 'javascript:alert(1)', tone: 'party' }, 1)).toMatchObject({ text: 'Hello', link: '', tone: 'party' });
     expect(sanitizeNotice({ text: 'Hello', link: '/games/wing-it' }, 1)?.link).toBe('/games/wing-it');
+  });
+});
+
+describe('admin catalog API', () => {
+  it('refuses a notice link it would drop, instead of saving the notice without it', async () => {
+    const env: Env = { DB: memoryD1(), NR_DB: {} as Env['NR_DB'], ADMIN_EMAILS: 'boss@example.com' };
+    const { cookie } = await signIn(env, new Request('http://localhost'), { sub: 'dev:boss', email: 'boss@example.com', name: 'Boss', givenName: '', picture: '', provider: 'email' });
+    const post = async (notice: unknown) => {
+      const request = new Request('http://localhost/api/admin/catalog', {
+        method: 'POST',
+        headers: { origin: 'http://localhost', cookie: cookie.split(';')[0]!, 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'notice', notice }),
+      });
+      const res = await changeCatalog({ request, env });
+      return { status: res.status, data: (await res.json()) as { error?: string; message?: string; notice?: { link: string } } };
+    };
+    const bad = await post({ text: 'New game!', link: 'glitchboundstudio.com/games/wing-it' });
+    expect(bad).toMatchObject({ status: 400, data: { error: 'invalid_link', message: expect.stringContaining('https://') } });
+    expect((await post({ text: '  ' })).data).toMatchObject({ error: 'invalid_notice', message: expect.any(String) });
+    expect((await post({ text: 'New game!', link: '/games/wing-it' })).data.notice?.link).toBe('/games/wing-it');
+    expect((await post({ text: 'New game!', link: '  ' })).status).toBe(200);
   });
 });
 
