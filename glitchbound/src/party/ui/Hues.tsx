@@ -157,7 +157,7 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
       {(stage === 'clue' || stage === 'clue2') && (
         <div className="pt-panel">
           <p className="pt-kicker">
-            <Avatar player={cue} size={26} /> <Name player={cue} />, say your {stage === 'clue' ? 'one-word' : 'second (up to two words)'} clue out loud!
+            <Avatar player={cue} size={26} /> <Name player={cue} />, say your {stage === 'clue' ? 'one-word clue' : 'second clue (up to two words)'} out loud!
           </p>
           <p className="pt-muted">No colour names, please. Then pass the phone round: everyone taps their guess.</p>
           {stage === 'clue2' && <Board target={null} marks={marks.map(toMark)} />}

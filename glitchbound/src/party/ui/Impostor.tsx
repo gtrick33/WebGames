@@ -1,6 +1,6 @@
 import { IMPOSTOR_THEMES } from '../content/impostor';
 import { freshRng } from '../engine';
-import { dealImpostor, impostorCount, scoreImpostor, themeById, type ImpostorDeal, type ImpostorOutcome } from '../impostor';
+import { dealImpostor, scoreImpostor, themeById, type ImpostorDeal, type ImpostorOutcome } from '../impostor';
 import type { PartySession } from '../session';
 import type { Player } from '../types';
 import { Avatar, byId, ModeBar, PassPhone, Timer } from './shared';
@@ -86,10 +86,10 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
           </div>
           <p className="pt-label">Impostors</p>
           <div className="pt-seg" role="radiogroup">
-            <button role="radio" aria-checked={s.impostors === 1} onClick={() => setS({ impostors: 1 })}>
+            <button role="radio" aria-checked={s.impostors === 1 || players.length < 7} onClick={() => setS({ impostors: 1 })}>
               One
             </button>
-            <button role="radio" aria-checked={s.impostors === 2} onClick={() => setS({ impostors: 2 })}>
+            <button role="radio" aria-checked={s.impostors === 2 && players.length >= 7} onClick={() => setS({ impostors: 2 })} disabled={players.length < 7}>
               Two <small>7+ players</small>
             </button>
           </div>
@@ -261,7 +261,9 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
           </button>
         </div>
         <p className="pt-muted">
-          Scoring: an impostor nobody catches gets 2 points. Caught? Everyone else gets 1, unless the impostor guesses the word ({impostorCount(players.length, st.settings.impostors) > 1 ? 'each' : 'and'} steals 1).
+          {d.impostors.length > 1
+            ? 'Scoring: if no impostor is voted out, both get 2 points. If one is, everyone who isn’t an impostor gets 1, unless the caught impostor then guesses the word and steals 1.'
+            : 'Scoring: if the impostor isn’t voted out, they get 2 points. If they are, everyone else gets 1, unless the impostor then guesses the word and steals 1.'}
         </p>
       </section>
     </div>
