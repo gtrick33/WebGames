@@ -94,7 +94,8 @@ const coarse = (): boolean => typeof matchMedia !== 'undefined' && matchMedia('(
 async function shortLink(data: ShareData, lines: string[]): Promise<string | null> {
   try {
     const target = new URL(data.url ?? location.href, location.origin);
-    if (target.origin !== location.origin) return null;
+    // Challenge links (/c/<id>) are short already and make their own chat preview.
+    if (target.origin !== location.origin || target.pathname.startsWith('/c/')) return null;
     const res = await fetch('/api/shares', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
