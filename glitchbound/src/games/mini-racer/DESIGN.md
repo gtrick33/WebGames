@@ -17,13 +17,32 @@ chunk when the player presses Play, and everything is released on unmount (rAF, 
 | `ghost.ts` | Ghost recording (20 Hz), playback, storage encoding | yes |
 | `daily.ts` | Date-seeded daily track generator with its own gold time | yes |
 | `sim.ts` | One race: player + AI racers, collisions, laps, sectors, positions, drift, ghost; the driver/autopilot | yes |
-| `render.ts` | Canvas drawing (cached Path2D road, textured surfaces, five car bodies, skids, particles, HUD, km/h gauge, minimap) | DOM |
-| `engine.ts` | Fixed 120 Hz loop, half-screen touch + keyboard steering, adaptive resolution, auto-pause | DOM |
+| `cull.ts` | Chunked polylines with bounding boxes: only the stretches of road and wall near a view become a Path2D | DOM |
+| `tiles.ts` | Scenery tile cache: static scenery painted once into 256-unit tiles, then only copied to the screen | DOM |
+| `render.ts` | Canvas drawing (road, textured surfaces and props painted into tiles; boost pads, posts, five car bodies, skids, particles, HUD, km/h gauge, cached minimap on top) | DOM |
+| `engine.ts` | Fixed 120 Hz loop, half-screen touch + keyboard steering, frame-rate guard (render scale), auto-pause | DOM |
 | `audio.ts` | Synthesized lo-fi race music loop, soft engine hum, tyre squeal and blips (WebAudio, no files) | DOM |
 | `storage.ts` | localStorage bests, ghosts, settings (all guarded) | DOM |
 | `Game.tsx` / `Game.css` | Menu, pause, results, touch controls, arcade reporting | React |
 
 Tests: `tests/mini-racer.test.ts`.
+
+## Performance
+
+- **Scenery tiles** (`tiles.ts`): ground, road, kerbs, surface zones, centre dashes, patches, start line, tyre walls, obstacles
+  and props never move, so they are painted once into 256 x 256-unit tile canvases (at the zoom-at-rest scale, at most
+  2 pixels per unit) and each frame only copies the tiles under the screen. Stroking the wide, dashed road and wall paths
+  every frame was what dropped full-screen play to a crawl on laptops. Tile edges are rounded to whole device pixels and
+  shared by neighbours, so there are no seams. The ring of tiles just off screen is painted ahead of time (3 ms per frame,
+  always at least one tile), so new tiles are rarely painted on the spot. After a zoom or resolution change the old tiles
+  stay on screen, slightly stretched, and are repainted a few per frame. The cache keeps the screen plus that ring
+  (about 50 tiles at 1080p); everything is freed on unmount.
+- **Drawn every frame** on top of the tiles: boost pads (their arrows pulse), checkpoint posts (they change colour; they sit
+  on the tyre wall), skids, cars, ghost, particles and the HUD. The minimap's panel and track are painted once per track.
+- **Frame-rate guard** (`Engine.adapt`): the canvas starts at the screen's pixel ratio (at most 2). If frames average over
+  22 ms (below ~45 fps), the render scale drops 0.25 at a time, at most every 2 s, down to 0.75; this also works mid-race.
+  Frames that painted tiles on the spot don't count. A step that doesn't speed frames up (the browser caps the frame rate,
+  e.g. battery saver) is undone and the guard stops. A paused race is drawn once and not redrawn until it resumes.
 
 ## Rules worth knowing
 
@@ -93,7 +112,7 @@ Tests: `tests/mini-racer.test.ts`.
 - 3-lap races with local bests (race and lap) and medals per track, shown on the track cards and the menu
 - Car collection with coins, medal unlocks and balanced handling; garage screen
 - Leaderboard-ready score with registry `limits`
-- Adaptive canvas resolution; synthesized sound with a mute toggle
+- Scenery tile cache and a frame-rate guard (render scale) for smooth full-screen play; synthesized sound with a mute toggle
 - Race music: an 88 BPM lo-fi loop (Fmaj7-Em7-Dm7-Cmaj7 pad, sine bass, swung pluck arpeggio, soft kick/snare/hats) scheduled on
   the audio clock; it fades in when a race starts, out on the menu, freezes on pause, follows the sound toggle and stops on unmount.
   The engine is a quiet low hum under it.

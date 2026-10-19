@@ -8,8 +8,15 @@ import type { Track } from './track';
 
 /**
  * Runs the game loop: fixed 120 Hz physics, interpolated drawing, keyboard + touch input, sound.
- * Everything it creates (rAF, listeners, observers, AudioContext) is released in dispose().
+ * Everything it creates (rAF, listeners, observers, AudioContext, canvases) is released in dispose().
  */
+
+/** Lowest render scale (canvas pixels per CSS pixel) the frame-rate guard may drop to. */
+const MIN_QUALITY = 0.75;
+/** Average frame time (ms) above which the render scale steps down (below ~45 fps). */
+const SLOW_FRAME_MS = 22;
+/** Time between two render-scale decisions (ms). */
+const ADAPT_EVERY_MS = 2000;
 
 export type UiKey = 'confirm' | 'restart' | 'pause';
 
@@ -49,7 +56,17 @@ export class Engine {
   private lastCount = 99;
   private hud: HudState = { banner: null, popup: null, best: null, split: null, sectors: [], attract: true, touch: false };
   private frameAvg = 16;
-  private dprCap = 2;
+  /**
+   * Render scale (canvas pixels per CSS pixel): the screen's pixel ratio up to 2, lowered a step
+   * at a time while frames stay slow. A step that doesn't help (the browser caps the frame rate,
+   * e.g. a laptop's battery saver) is undone and the scale is left alone from then on.
+   */
+  private quality = Math.min(2, window.devicePixelRatio || 1);
+  private qualityLocked = false;
+  private adaptAt = 0;
+  private lastStep: { avg: number; from: number } | null = null;
+  /** The paused frame is already on screen (nothing changes until the game resumes). */
+  private pausedDrawn = false;
   /** Last time the engine sound was retuned (seconds); audio params change ~20x/s, not every frame. */
   private audioAt = 0;
   private cleanups: (() => void)[] = [];
@@ -147,7 +164,7 @@ export class Engine {
 
   private resize(): void {
     const r = this.root.getBoundingClientRect();
-    this.renderer.resize(r.width, r.height, Math.min(this.dprCap, window.devicePixelRatio || 1));
+    this.renderer.resize(r.width, r.height, Math.min(this.quality, window.devicePixelRatio || 1));
   }
 
   private onKey(e: KeyboardEvent, down: boolean): void {
@@ -205,6 +222,7 @@ export class Engine {
 
   pause(): void {
     this.paused = true;
+    this.pausedDrawn = false;
     this.audio.update(0, 0, false);
     this.audio.pause();
   }
@@ -248,14 +266,9 @@ export class Engine {
     this.last = now;
     const sim = this.sim;
     if (!sim) return;
-    // Adaptive resolution: if frames are slow, draw fewer pixels. Only decided on the menu's demo
-    // lap: resizing the canvas mid-race clears it and costs a hitch of its own.
-    this.frameAvg += (dt * 1000 - this.frameAvg) * 0.05;
-    if (this.attractMode && this.frameAvg > 21 && this.dprCap > 1 && !this.paused && !document.hidden) {
-      this.dprCap = Math.max(1, this.dprCap - 0.25);
-      this.frameAvg = 16;
-      this.resize();
-    }
+    // A paused race is a still picture: draw it once, then only again if the canvas was cleared.
+    if (this.paused && this.pausedDrawn && !this.renderer.dirty) return;
+    this.adapt(now, dt);
     if (!this.paused) {
       this.acc += dt;
       const steer = this.attractMode ? 0 : this.readSteer(dt);
@@ -288,7 +301,34 @@ export class Engine {
     }
     this.hud.touch = this.touchMode;
     this.renderer.draw(sim, this.paused ? 1 : Math.min(1, this.acc / DT), this.paused ? 0 : dt, this.hud);
+    this.pausedDrawn = this.paused;
   };
+
+  /**
+   * Frame-rate guard: if frames stay slow, draw fewer pixels. Frames that painted scenery tiles on
+   * the spot (race start, a jump in the view) are one-off costs and don't count.
+   */
+  private adapt(now: number, dt: number): void {
+    if (this.paused || document.hidden || this.qualityLocked) return;
+    if (this.renderer.tilesPainted === 0) this.frameAvg += (dt * 1000 - this.frameAvg) * 0.05;
+    if (now - this.adaptAt < ADAPT_EVERY_MS) return;
+    this.adaptAt = now;
+    const step = this.lastStep;
+    this.lastStep = null;
+    if (step && this.frameAvg > step.avg * 0.9) {
+      // Fewer pixels didn't make frames faster: something else sets the pace. Undo and stop.
+      this.quality = step.from;
+      this.qualityLocked = true;
+      this.resize();
+      return;
+    }
+    const dpr = Math.min(this.quality, window.devicePixelRatio || 1);
+    if (this.frameAvg > SLOW_FRAME_MS && dpr > MIN_QUALITY) {
+      this.lastStep = { avg: this.frameAvg, from: this.quality };
+      this.quality = Math.max(MIN_QUALITY, dpr - 0.25);
+      this.resize();
+    }
+  }
 
   private handle(e: ReturnType<RaceSim['step']>[number], sim: RaceSim): void {
     const now = this.renderer.now;
@@ -358,6 +398,7 @@ export class Engine {
     for (const c of this.cleanups) c();
     this.cleanups = [];
     this.audio.dispose();
+    this.renderer.dispose();
     this.sim = null;
   }
 }

@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, Sprite, Text, TilingSprite, Texture } from 'pixi.js';
+import { Application, Container, Graphics, Sprite, Text, TilingSprite, Texture, UPDATE_PRIORITY } from 'pixi.js';
 import { ArtLibrary, TRAFFIC_COLORS } from './art';
 import { CarFxFilter } from './carfx';
 import { ParticleSystem } from './particles';
@@ -20,6 +20,10 @@ const ZONES: { name: string; edgeA: number; edgeB: number; grid: number; sky: nu
 /** Music tempo (matches the synth loop), used to pulse the lights on the beat. */
 const BEAT = 60 / 112;
 const ZONE_METERS = 1500;
+/** Frame-rate guard: lowest resolution it may drop to, the slow-frame threshold (ms) and the time between decisions (ms). */
+const MIN_RESOLUTION = 0.75;
+const SLOW_FRAME_MS = 22;
+const ADAPT_EVERY_MS = 2000;
 
 const POWERUP_TINT: Record<PowerUpKind, number> = { magnet: 0xff3fd2, shield: 0x22e4ff, double: 0xffc21a };
 
@@ -144,7 +148,9 @@ export class GameRenderer {
     await app.init({
       resizeTo: parent,
       background: '#05020f',
-      antialias: !settings.lowQuality,
+      // No multisampling: everything with edges is a pre-drawn texture with its own soft border
+      // (art.ts), and 4x samples per pixel were a large share of the cost at full screen.
+      antialias: false,
       resolution: Math.min(window.devicePixelRatio || 1, settings.lowQuality ? 1 : 2),
       autoDensity: true,
       preference: 'webgl',
@@ -207,6 +213,69 @@ export class GameRenderer {
   setSettings(settings: RenderSettings): void {
     this.settings = settings;
     this.particles.setBudget(settings.lowQuality ? 160 : 400);
+    this.applyResolution();
+  }
+
+  private still = false;
+
+  /**
+   * A still scene (the pause screen) stops being redrawn: the last frame stays on the canvas, and
+   * the blurred overlay on top doesn't have to be recomputed every frame either.
+   */
+  setStill(still: boolean): void {
+    if (still === this.still) return;
+    this.still = still;
+    const app = this.app;
+    if (still) app.ticker.remove(app.render, app);
+    else app.ticker.add(app.render, app, UPDATE_PRIORITY.LOW);
+  }
+
+  /** Frame-rate guard state (see trackFrame). */
+  private frameAvg = 16;
+  private quality = 2;
+  private qualityLocked = false;
+  private adaptAt = performance.now();
+  private lastStep: { avg: number; from: number } | null = null;
+
+  /** Canvas pixels per CSS pixel: the screen's ratio, at most 2 (1 in low quality), lowered by the frame-rate guard. */
+  private targetResolution(): number {
+    return Math.min(window.devicePixelRatio || 1, this.settings.lowQuality ? 1 : 2, this.quality);
+  }
+
+  private applyResolution(): void {
+    const r = this.targetResolution();
+    if (Math.abs(this.app.renderer.resolution - r) > 1e-3) this.app.renderer.resolution = r;
+  }
+
+  /**
+   * Frame-rate guard, fed every tick while the game is animating: if frames average over 22 ms
+   * (below ~45 fps), draw fewer pixels, 0.25 at a time and at most every 2 s, down to 0.75. A step
+   * that doesn't speed frames up (the browser caps the frame rate, e.g. battery saver) is undone
+   * and the guard stops.
+   */
+  trackFrame(ms: number, active: boolean): void {
+    const now = performance.now();
+    if (!active || document.hidden || this.qualityLocked) {
+      this.adaptAt = now;
+      return;
+    }
+    this.frameAvg += (Math.min(100, ms) - this.frameAvg) * 0.05;
+    if (now - this.adaptAt < ADAPT_EVERY_MS) return;
+    this.adaptAt = now;
+    const step = this.lastStep;
+    this.lastStep = null;
+    if (step && this.frameAvg > step.avg * 0.9) {
+      this.quality = step.from;
+      this.qualityLocked = true;
+      this.applyResolution();
+      return;
+    }
+    const res = this.targetResolution();
+    if (this.frameAvg > SLOW_FRAME_MS && res > MIN_RESOLUTION) {
+      this.lastStep = { avg: this.frameAvg, from: this.quality };
+      this.quality = Math.max(MIN_RESOLUTION, res - 0.25);
+      this.applyResolution();
+    }
   }
 
   setSkin(skinId: string): void {

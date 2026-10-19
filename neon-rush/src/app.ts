@@ -153,7 +153,11 @@ export class App {
     window.addEventListener('blur', this.onBlur);
     window.addEventListener('pagehide', () => this.saves.save(this.profile));
 
-    this.renderer.app.ticker.add((t) => this.frame(Math.min(t.deltaMS / 1000, 0.05)));
+    this.renderer.app.ticker.add((t) => {
+      this.renderer.trackFrame(t.deltaMS, this.state === 'playing' || this.state === 'menu');
+      this.frame(Math.min(t.deltaMS / 1000, 0.05));
+      this.renderer.setStill(this.state === 'paused');
+    });
     this.toMenu();
     this.analytics.track('boot', { ads: this.ads.provider.name, purchases: this.purchases.name });
 
@@ -743,7 +747,14 @@ export class App {
 
   private frame(dt: number): void {
     const r = this.renderer;
-    if (r.checkResize()) this.world.setViewHeight(r.viewHeight);
+    if (r.checkResize()) {
+      this.world.setViewHeight(r.viewHeight);
+      // A still (paused) scene isn't redrawn by itself: draw the new layout once.
+      if (this.state === 'paused') {
+        r.render(this.world, 0, 0);
+        r.app.render();
+      }
+    }
 
     switch (this.state) {
       case 'menu': {

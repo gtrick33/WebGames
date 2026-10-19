@@ -5,8 +5,13 @@ import { CAR, localVelocity, speedOf } from './physics';
 import type { CarDef, CarShape } from './cars';
 import { COUNTDOWN, RACE_LAPS, type RaceSim } from './sim';
 import { KERB, WALL_HALF, type Obstacle, type Surface, type ThemeId, type Track } from './track';
+import { TileCache } from './tiles';
 
-/** Canvas 2D drawing for the racer: road from cached Path2Ds, low-poly cars, skids, particles, HUD. */
+/**
+ * Canvas 2D drawing for the racer. The scenery that never moves (ground, road, kerbs, walls, props)
+ * is painted into cached tiles (tiles.ts) and copied to the screen; checkpoint posts, boost pads,
+ * skids, cars, particles and the HUD are drawn on top every frame.
+ */
 
 interface Theme {
   ground: string;
@@ -104,10 +109,18 @@ const SURFACE_FILL: Record<Surface, string> = {
 };
 
 
+const shades = new Map<string, string>();
+
+/** A lighter (amt > 0) or darker (amt < 0) version of a #rrggbb colour (memoized: cars use it every frame). */
 function shade(hex: string, amt: number): string {
+  const key = hex + amt;
+  const hit = shades.get(key);
+  if (hit) return hit;
   const n = parseInt(hex.slice(1), 16);
   const f = (c: number): number => Math.max(0, Math.min(255, Math.round(amt < 0 ? c * (1 + amt) : c + (255 - c) * amt)));
-  return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+  const out = `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+  shades.set(key, out);
+  return out;
 }
 
 function pathFrom(pts: Vec[], closed: boolean): Path2D {
@@ -201,6 +214,8 @@ export function hudLane(w: number, h: number): { top: number; height: number; ca
   return { top, height, carMinY: top + height + carHalf, carMaxY: h - speedo - carHalf };
 }
 const PART_MAX = 140;
+/** Time per frame for painting tiles ahead of the camera (one tile is always allowed). */
+const TILE_BUDGET_MS = 3;
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -217,6 +232,9 @@ export class Renderer {
   private zones: { p: Path2D; box: Rect; surface: Surface }[] = [];
   private shortcut: { p: Path2D; box: Rect } | null = null;
   private mini: { path: Path2D; scale: number; ox: number; oy: number; w: number; h: number } | null = null;
+  /** The minimap's panel and track, painted once at the screen's pixel ratio. */
+  private miniImg: { c: HTMLCanvasElement; dpr: number } | null = null;
+  private tiles = new TileCache((g, view) => this.paintStatic(g, view));
   private pattern: CanvasPattern | null = null;
   private skids: Skid[] = [];
   private skidHead = 0;
@@ -228,6 +246,13 @@ export class Renderer {
   car: Pick<CarDef, 'shape' | 'body' | 'accent'> = { shape: 'coupe', body: '#ff5a6c', accent: '#fff6e6' };
   private surfacePatterns = new Map<Surface, CanvasPattern | string>();
   private time = 0;
+  /** Set when the canvas was cleared or the track changed: the next frame must be drawn. */
+  dirty = true;
+
+  /** Tiles painted on the spot in the last frame (a one-off cost the frame-rate meter should ignore). */
+  get tilesPainted(): number {
+    return this.tiles.painted;
+  }
 
   /** Seconds of drawing so far (banner timers use it). */
   get now(): number {
@@ -252,15 +277,26 @@ export class Renderer {
     // (iOS fires resize observers as the toolbar slides).
     const cw = Math.round(this.w * dpr);
     const ch = Math.round(this.h * dpr);
+    if (this.canvas.width !== cw || this.canvas.height !== ch) this.dirty = true;
     if (this.canvas.width !== cw) this.canvas.width = cw;
     if (this.canvas.height !== ch) this.canvas.height = ch;
+  }
+
+  /** Frees the tile and minimap canvases. */
+  dispose(): void {
+    this.tiles.dispose();
+    if (this.miniImg) this.miniImg.c.width = this.miniImg.c.height = 0;
+    this.miniImg = null;
   }
 
   setTrack(track: Track): void {
     if (this.track === track) return;
     this.track = track;
     this.theme = THEMES[track.def.theme];
+    this.dirty = true;
     if (!this.ok) return;
+    this.tiles.clear();
+    this.miniImg = null;
     this.road = new PolyCull(track.path.pts, true);
     this.zones = track.zones.map((z) => ({ ...slice(track.path, z.from, z.to), surface: z.surface }));
     this.shortcut = track.shortcut ? { p: pathFrom(track.shortcut.path.pts, false), box: bboxOf(track.shortcut.path.pts) } : null;
@@ -368,7 +404,9 @@ export class Renderer {
       }
     }
     const d = this.dpr;
-    ctx.setTransform(d * z, 0, 0, d * z, d * (this.w / 2 - this.cam.x * z), d * (this.h / 2 - this.cam.y * z));
+    const unit = d * z;
+    const ox = d * (this.w / 2 - this.cam.x * z);
+    const oy = d * (this.h / 2 - this.cam.y * z);
     const view = {
       minX: this.cam.x - this.w / 2 / z - 80,
       maxX: this.cam.x + this.w / 2 / z + 80,
@@ -376,15 +414,16 @@ export class Renderer {
       maxY: this.cam.y + this.h / 2 / z + 80,
     };
 
-    // Ground
-    ctx.fillStyle = this.pattern ?? this.theme.ground;
-    ctx.fillRect(view.minX, view.minY, view.maxX - view.minX, view.maxY - view.minY);
-    this.drawRoad(track, sim, view);
+    // Ground, road, walls and props: copied from the tile cache (painted sharp for the zoom at rest).
+    const px = 2 / unit;
+    const screen = { minX: this.cam.x - this.w / 2 / z - px, maxX: this.cam.x + this.w / 2 / z + px, minY: this.cam.y - this.h / 2 / z - px, maxY: this.cam.y + this.h / 2 / z + px };
+    this.tiles.draw(ctx, screen, unit, ox, oy, base * d, TILE_BUDGET_MS);
+    ctx.setTransform(unit, 0, 0, unit, ox, oy);
+    if (this.tiles.broken) this.paintStatic(ctx, view);
+    this.dirty = false;
+    this.drawMarks(ctx, track, sim, view);
     this.updateSkids(sim, pose);
     this.drawSkids(view);
-    this.drawWalls(view);
-    this.drawObstacles(track.obstacles, view);
-    this.drawDecor(track, view);
 
     // Ghost, rivals, then player.
     const gp = sim.ghostPose();
@@ -404,9 +443,22 @@ export class Renderer {
     if (!hud.attract) this.drawHud(sim, hud);
   }
 
+  /** The scenery that never moves, for one tile (or straight onto the screen if tiles are unavailable). */
+  private paintStatic(g: CanvasRenderingContext2D, view: Rect): void {
+    const track = this.track;
+    if (!track) return;
+    g.fillStyle = this.pattern ?? this.theme.ground;
+    g.fillRect(view.minX, view.minY, view.maxX - view.minX, view.maxY - view.minY);
+    // Props and patches are culled by their centres, so look a little past the edges.
+    const near = { minX: view.minX - 80, maxX: view.maxX + 80, minY: view.minY - 80, maxY: view.maxY + 80 };
+    this.drawRoad(g, track, view, near);
+    this.drawWalls(g, view);
+    this.drawObstacles(g, track.obstacles, near);
+    this.drawDecor(g, track, near);
+  }
+
   /** Tyre walls: a shadow, a dark base and alternating coloured tyre stacks. */
-  private drawWalls(view: Rect): void {
-    const ctx = this.ctx;
+  private drawWalls(ctx: CanvasRenderingContext2D, view: Rect): void {
     const t = this.theme;
     const pad = WALL_HALF + 8;
     const vis = this.walls.map((w) => w.visible(view, pad)).filter((v) => !v.empty);
@@ -505,8 +557,8 @@ export class Renderer {
     return style;
   }
 
-  private drawRoad(track: Track, sim: RaceSim, view: Rect): void {
-    const ctx = this.ctx;
+  /** Road, kerbs, surfaces, centre dashes, surface patches and the start line (static, painted into tiles). */
+  private drawRoad(ctx: CanvasRenderingContext2D, track: Track, view: Rect, near: Rect): void {
     const t = this.theme;
     const W = track.def.width;
     ctx.lineJoin = 'round';
@@ -574,56 +626,66 @@ export class Renderer {
       ctx.setLineDash([]);
     }
 
-    // Patches
+    // Surface patches (boost pads are animated, so they are drawn every frame in drawMarks).
     for (const p of track.patches) {
-      if (p.c.x < view.minX - p.len || p.c.x > view.maxX + p.len || p.c.y < view.minY - p.len || p.c.y > view.maxY + p.len) continue;
+      if (p.surface === 'boost' || p.c.x < near.minX - p.len || p.c.x > near.maxX + p.len || p.c.y < near.minY - p.len || p.c.y > near.maxY + p.len) continue;
       ctx.save();
       ctx.translate(p.c.x, p.c.y);
       ctx.rotate(Math.atan2(p.t.y, p.t.x));
-      if (p.surface === 'boost') {
-        ctx.fillStyle = '#ffd12e';
-        roundRect(ctx, -p.len / 2, -p.wide / 2, p.len, p.wide, 8);
-        ctx.fill();
-        ctx.fillStyle = '#ff6a1a';
-        const pulse = (this.time * 2) % 1;
-        for (let i = 0; i < 3; i++) {
-          const x = -p.len / 2 + 10 + i * 18 + pulse * 6;
-          ctx.beginPath();
-          ctx.moveTo(x, -p.wide / 2 + 8);
-          ctx.lineTo(x + 12, 0);
-          ctx.lineTo(x, p.wide / 2 - 8);
-          ctx.lineTo(x + 6, 0);
-          ctx.closePath();
-          ctx.fill();
+      ctx.fillStyle = SURFACE_FILL[p.surface];
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.len / 2, p.wide / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.beginPath();
+      ctx.ellipse(-p.len * 0.12, -p.wide * 0.12, p.len * 0.22, p.wide * 0.16, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Start line (checkered).
+    const sl = pointAt(track.path, 0);
+    if (sl.p.x > near.minX - W && sl.p.x < near.maxX + W && sl.p.y > near.minY - W && sl.p.y < near.maxY + W) {
+      const n = leftOf(sl.t);
+      ctx.save();
+      ctx.translate(sl.p.x, sl.p.y);
+      ctx.rotate(Math.atan2(n.y, n.x));
+      const cells = 10;
+      const cw = W / cells;
+      for (let i = 0; i < cells; i++) {
+        for (let j = 0; j < 2; j++) {
+          ctx.fillStyle = (i + j) % 2 ? '#1b1035' : '#ffffff';
+          ctx.fillRect(-W / 2 + i * cw, -cw + j * cw, cw, cw);
         }
-      } else {
-        ctx.fillStyle = SURFACE_FILL[p.surface];
+      }
+      ctx.restore();
+    }
+  }
+
+  /** Boost pads (their arrows pulse) and checkpoint posts (coloured by progress), drawn every frame. */
+  private drawMarks(ctx: CanvasRenderingContext2D, track: Track, sim: RaceSim, view: Rect): void {
+    for (const p of track.patches) {
+      if (p.surface !== 'boost' || p.c.x < view.minX - p.len || p.c.x > view.maxX + p.len || p.c.y < view.minY - p.len || p.c.y > view.maxY + p.len) continue;
+      ctx.save();
+      ctx.translate(p.c.x, p.c.y);
+      ctx.rotate(Math.atan2(p.t.y, p.t.x));
+      ctx.fillStyle = '#ffd12e';
+      roundRect(ctx, -p.len / 2, -p.wide / 2, p.len, p.wide, 8);
+      ctx.fill();
+      ctx.fillStyle = '#ff6a1a';
+      const pulse = (this.time * 2) % 1;
+      for (let i = 0; i < 3; i++) {
+        const x = -p.len / 2 + 10 + i * 18 + pulse * 6;
         ctx.beginPath();
-        ctx.ellipse(0, 0, p.len / 2, p.wide / 2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.18)';
-        ctx.beginPath();
-        ctx.ellipse(-p.len * 0.12, -p.wide * 0.12, p.len * 0.22, p.wide * 0.16, 0, 0, Math.PI * 2);
+        ctx.moveTo(x, -p.wide / 2 + 8);
+        ctx.lineTo(x + 12, 0);
+        ctx.lineTo(x, p.wide / 2 - 8);
+        ctx.lineTo(x + 6, 0);
+        ctx.closePath();
         ctx.fill();
       }
       ctx.restore();
     }
-
-    // Start line (checkered) and checkpoint posts.
-    const sl = pointAt(track.path, 0);
-    const n = leftOf(sl.t);
-    ctx.save();
-    ctx.translate(sl.p.x, sl.p.y);
-    ctx.rotate(Math.atan2(n.y, n.x));
-    const cells = 10;
-    const cw = W / cells;
-    for (let i = 0; i < cells; i++) {
-      for (let j = 0; j < 2; j++) {
-        ctx.fillStyle = (i + j) % 2 ? '#1b1035' : '#ffffff';
-        ctx.fillRect(-W / 2 + i * cw, -cw + j * cw, cw, cw);
-      }
-    }
-    ctx.restore();
     const lap = sim.lap;
     track.checkpoints.forEach((cp, k) => {
       if (k === 0) return;
@@ -743,8 +805,7 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
 
-  private drawObstacles(list: Obstacle[], view: { minX: number; maxX: number; minY: number; maxY: number }): void {
-    const ctx = this.ctx;
+  private drawObstacles(ctx: CanvasRenderingContext2D, list: Obstacle[], view: Rect): void {
     for (const o of list) {
       if (o.x < view.minX || o.x > view.maxX || o.y < view.minY || o.y > view.maxY) continue;
       ctx.save();
@@ -807,8 +868,7 @@ export class Renderer {
     }
   }
 
-  private drawDecor(track: Track, view: { minX: number; maxX: number; minY: number; maxY: number }): void {
-    const ctx = this.ctx;
+  private drawDecor(ctx: CanvasRenderingContext2D, track: Track, view: Rect): void {
     const theme = track.def.theme;
     for (const dcr of track.decor) {
       if (dcr.x < view.minX || dcr.x > view.maxX || dcr.y < view.minY || dcr.y > view.maxY) continue;
@@ -1125,21 +1185,29 @@ export class Renderer {
     const m = this.mini;
     if (!m) return;
     const ctx = this.ctx;
+    const d = this.dpr;
+    if (!this.miniImg || this.miniImg.dpr !== d) {
+      if (this.miniImg) this.miniImg.c.width = this.miniImg.c.height = 0;
+      const c = document.createElement('canvas');
+      c.width = Math.ceil((m.w + 12) * d);
+      c.height = Math.ceil((m.h + 12) * d);
+      const g = c.getContext('2d');
+      if (g) {
+        g.setTransform(d, 0, 0, d, 0, 0);
+        this.drawMiniBase(g, 6, 6);
+        this.miniImg = { c, dpr: d };
+      }
+    }
     ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.72)';
-    roundRect(ctx, x - 6, y - 6, m.w + 12, m.h + 12, 10);
-    ctx.fill();
+    if (this.miniImg) {
+      // Whole device pixels, so the cached panel stays crisp.
+      const img = this.miniImg.c;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(img, Math.round((x - 6) * d), Math.round((y - 6) * d));
+      ctx.setTransform(d, 0, 0, d, 0, 0);
+    } else this.drawMiniBase(ctx, x, y);
     ctx.translate(x - m.ox * m.scale, y - m.oy * m.scale);
     ctx.scale(m.scale, m.scale);
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#1b1035';
-    ctx.lineWidth = 5 / m.scale;
-    ctx.stroke(m.path);
-    if (this.shortcut) {
-      ctx.lineWidth = 2.5 / m.scale;
-      ctx.strokeStyle = '#c88a50';
-      ctx.stroke(this.shortcut.p);
-    }
     const g = sim.ghostPose();
     if (g) {
       ctx.fillStyle = 'rgba(255,255,255,0.95)';
@@ -1167,6 +1235,28 @@ export class Renderer {
     ctx.strokeStyle = '#1b1035';
     ctx.stroke();
     ctx.restore();
+  }
+
+  /** The minimap's panel, track and shortcut with the track's top-left corner at (x, y). */
+  private drawMiniBase(g: CanvasRenderingContext2D, x: number, y: number): void {
+    const m = this.mini;
+    if (!m) return;
+    g.save();
+    g.fillStyle = 'rgba(255,255,255,0.72)';
+    roundRect(g, x - 6, y - 6, m.w + 12, m.h + 12, 10);
+    g.fill();
+    g.translate(x - m.ox * m.scale, y - m.oy * m.scale);
+    g.scale(m.scale, m.scale);
+    g.lineJoin = 'round';
+    g.strokeStyle = '#1b1035';
+    g.lineWidth = 5 / m.scale;
+    g.stroke(m.path);
+    if (this.shortcut) {
+      g.lineWidth = 2.5 / m.scale;
+      g.strokeStyle = '#c88a50';
+      g.stroke(this.shortcut.p);
+    }
+    g.restore();
   }
 }
 

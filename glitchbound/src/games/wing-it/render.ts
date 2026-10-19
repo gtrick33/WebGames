@@ -205,7 +205,8 @@ export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: numb
     canvas.height = Math.round(ch * dpr);
     view.skyKey = '';
   }
-  const ctx = (view.ctx ??= canvas.getContext('2d'));
+  // Opaque: every frame covers the whole canvas, so the page never has to blend it.
+  const ctx = (view.ctx ??= canvas.getContext('2d', { alpha: false }));
   if (!ctx) return;
   // Step back from the latest physics state to where the world was at this moment.
   const back = 1 - Math.max(0, Math.min(1, alpha));
@@ -221,10 +222,8 @@ export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: numb
   const top = -oy / k;
   const fullW = canvas.width / k;
   const bottom = top + canvas.height / k;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
   const look = LOOK[biomeFor(s.score)];
-  ctx.fillStyle = look.sky[0];
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // No separate clear: the sky (top to ground) and the dirt (ground to bottom) cover the whole canvas.
   ctx.setTransform(k, 0, 0, k, ox, oy);
   ctx.save();
 

@@ -11,6 +11,12 @@ import { LANES, LANE_WIDTH, ROAD_WIDTH, type HazardKind, type PowerUpKind } from
  */
 
 const TEX_RES = 2;
+/**
+ * Transparent border (world units) around generated textures. The screen is drawn without
+ * multisampling (cheaper at full screen), so tilted and spinning sprites get their smooth edges
+ * from this border instead: the texture filtering fades the shape out before the sprite's own edge.
+ */
+const TEX_PAD = 2;
 
 function drawSedan(g: Graphics, body: number, w: number, h: number): void {
   const hw = w / 2;
@@ -220,17 +226,18 @@ export class ArtLibrary {
     }, 1);
   }
 
-  private gen(draw: (g: Graphics) => void, res = TEX_RES): Texture {
+  private gen(draw: (g: Graphics) => void, res = TEX_RES, pad = TEX_PAD): Texture {
     const g = new Graphics();
     draw(g);
-    const tex = this.renderer.generateTexture({ target: g, resolution: res, antialias: true });
+    const frame = pad > 0 ? g.getLocalBounds().rectangle.clone().pad(pad) : undefined;
+    const tex = this.renderer.generateTexture({ target: g, resolution: res, antialias: true, frame });
     g.destroy();
     return tex;
   }
 
   /** Lazily build (and cache) the player car texture for a skin. */
-  skinTexture(skin: SkinDef, res = TEX_RES): Texture {
-    const key = `${skin.id}@${res}`;
+  skinTexture(skin: SkinDef, res = TEX_RES, pad = TEX_PAD): Texture {
+    const key = `${skin.id}@${res}+${pad}`;
     const cached = this.skinCache.get(key);
     if (cached) return cached;
     const tex = this.gen(
@@ -240,6 +247,7 @@ export class ArtLibrary {
           finish: skin.finish, tail: 0xff2a4a, head: 0xf4fdff, glow: skin.glow, number: skin.number,
         }),
       res,
+      pad,
     );
     this.skinCache.set(key, tex);
     return tex;
@@ -318,7 +326,8 @@ export class ArtLibrary {
   skinPreview(skin: SkinDef): HTMLCanvasElement {
     let c = this.previewCache.get(skin.id);
     if (!c) {
-      c = this.renderer.extract.canvas({ target: this.skinTexture(skin, 3) }) as HTMLCanvasElement;
+      // No border: the garage frames the car tightly.
+      c = this.renderer.extract.canvas({ target: this.skinTexture(skin, 3, 0) }) as HTMLCanvasElement;
       this.previewCache.set(skin.id, c);
     }
     return c;

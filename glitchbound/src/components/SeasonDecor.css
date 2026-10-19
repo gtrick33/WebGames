@@ -71,3 +71,9 @@
     display: none;
   }
 }
+/* A game filling the screen: the flapping, glowing bats and falling decorations would keep animating
+   (and repainting) underneath it, or over it in immersive mode, for nothing. */
+html.game-focus .season-decor,
+html.game-focus .season-bats {
+  display: none;
+}
