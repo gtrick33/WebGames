@@ -1,16 +1,20 @@
+import { lazy, Suspense } from 'react';
 import { useAccount } from '../platform/account';
 import { AdSlot } from '../components/AdSlot';
 import { Arcade } from '../components/Arcade';
 import { FreeBanner } from '../components/FreeBanner';
 import { Hero } from '../components/Hero';
 import { PartyBanner } from '../components/PartyBanner';
-import { NotifyForm } from '../components/Notify';
 import { ThemeStrip } from '../components/ThemeStrip';
 import { TodaysDailies } from '../components/TodaysDailies';
-import { QuestBoard } from '../components/Quests';
 import { YourArcade } from '../components/Sections';
 import { usePageMeta } from '../platform/meta';
 import { useInitialHashScroll } from '../router/router';
+import { fresh } from '../platform/freshBuild';
+
+// Below the fold (and the quests are for members only): their code loads after the first paint.
+const QuestBoard = lazy(fresh(() => import('../components/Quests').then((m) => ({ default: m.QuestBoard }))));
+const NotifyForm = lazy(fresh(() => import('../components/Notify').then((m) => ({ default: m.NotifyForm }))));
 
 /**
  * Kept short on purpose: what to play now (today's pick, Surprise me, the theme of the day, today's dailies), then the
@@ -30,13 +34,15 @@ export function Home() {
       <Arcade />
       <YourArcade />
       <PartyBanner />
-      {me && (
-        <div className="wrap section">
-          <QuestBoard compact />
-        </div>
-      )}
-      {me && <FreeBanner />}
-      <NotifyForm />
+      <Suspense fallback={null}>
+        {me && (
+          <div className="wrap section">
+            <QuestBoard compact />
+          </div>
+        )}
+        {me && <FreeBanner />}
+        <NotifyForm />
+      </Suspense>
       <div className="wrap">
         <AdSlot placement="home" />
       </div>
