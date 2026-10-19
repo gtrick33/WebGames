@@ -12,7 +12,8 @@ export function QaJoinPage({ token }: { token: string }) {
   const { me, status } = useAccount();
   const [invite, setInvite] = useState<{ valid: boolean; email?: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  // A failed join, for the account that tried (signing in with another one starts clean).
+  const [error, setError] = useState<{ user: string; text: string } | null>(null);
 
   useEffect(() => {
     api<{ valid: boolean; email?: string }>(`/api/qa/invite?token=${encodeURIComponent(token)}`)
@@ -22,13 +23,15 @@ export function QaJoinPage({ token }: { token: string }) {
 
   const join = async (): Promise<void> => {
     setBusy(true);
-    setError('');
+    setError(null);
     try {
       const r = await api<{ user: Me }>('/api/qa/accept', { body: { token, day: dayKey() } });
       account.setMe(r.user);
       navigate('/admin?tab=qa');
+      // Same path, so the router keeps the scroll position: start the QA panel at the top.
+      window.scrollTo(0, 0);
     } catch (e) {
-      setError(e instanceof ApiError && e.message !== e.code ? e.message : 'Could not join. Try again.');
+      setError({ user: me?.id ?? '', text: e instanceof ApiError && e.message !== e.code ? e.message : 'Could not join. Try again.' });
     } finally {
       setBusy(false);
     }
@@ -64,7 +67,7 @@ export function QaJoinPage({ token }: { token: string }) {
               <p>
                 Signed in as <b>{me.email}</b>.
               </p>
-              {error && <p className="signin-error">{error}</p>}
+              {error?.user === me.id && <p className="signin-error">{error.text}</p>}
               <div className="reset-row">
                 <button className="btn btn-primary" disabled={busy} onClick={() => void join()}>
                   Join the QA team
@@ -77,7 +80,7 @@ export function QaJoinPage({ token }: { token: string }) {
           ) : (
             <div className="signin-box panel">
               <h2 className="signin-title">Sign in first</h2>
-              <SignInPanel showPerks={false} onDone={() => undefined} />
+              <SignInPanel showPerks={false} onDone={() => window.scrollTo(0, 0)} />
             </div>
           )}
         </>
