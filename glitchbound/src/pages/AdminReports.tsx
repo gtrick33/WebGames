@@ -263,14 +263,18 @@ export function FeedbackPanel({ data }: { data: AdminReports['feedback'] }) {
 export function BugsPanel({ data, onChange }: { data: AdminReports['bugs']; onChange: () => void }) {
   const [filter, setFilter] = useState<'open' | 'all'>('open');
   const [busy, setBusy] = useState(0);
+  const [error, setError] = useState('');
   const set = useCallback(
     async (id: number, status: string, current: string) => {
       const note = window.prompt(status === 'fixed' ? 'Note for the reporter (optional):' : 'Reason (optional):', current) ?? null;
       if (note === null) return;
       setBusy(id);
+      setError('');
       try {
         await api('/api/admin/bugs', { body: { id, status, note } });
         onChange();
+      } catch {
+        setError(`Report #${id} was not updated. Try again.`);
       } finally {
         setBusy(0);
       }
@@ -286,14 +290,15 @@ export function BugsPanel({ data, onChange }: { data: AdminReports['bugs']; onCh
         </h2>
         <span className="mono info-small">{data.github ? 'Mirrored to GitHub issues (label: bug)' : 'GitHub mirroring off (set the GITHUB_TOKEN secret)'}</span>
         <div className="seg" role="group" aria-label="Filter">
-          <button className={filter === 'open' ? 'is-on' : ''} onClick={() => setFilter('open')}>
+          <button className={filter === 'open' ? 'is-on' : ''} aria-pressed={filter === 'open'} onClick={() => setFilter('open')}>
             Open
           </button>
-          <button className={filter === 'all' ? 'is-on' : ''} onClick={() => setFilter('all')}>
+          <button className={filter === 'all' ? 'is-on' : ''} aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>
             All
           </button>
         </div>
       </div>
+      {error && <p className="admin-warn">{error}</p>}
       {list.length === 0 ? (
         <p>{filter === 'open' ? 'No open bugs. Ship it.' : 'No reports yet.'}</p>
       ) : (
@@ -353,13 +358,17 @@ export function BugsPanel({ data, onChange }: { data: AdminReports['bugs']; onCh
 /** Feedback + bugs, loaded together. */
 export function ReportsPanels() {
   const [data, setData] = useState<AdminReports | null>(null);
+  const [failed, setFailed] = useState(false);
   const load = useCallback(() => {
     api<AdminReports>('/api/admin/reports')
-      .then(setData)
-      .catch(() => setData(null));
+      .then((d) => {
+        setData(d);
+        setFailed(false);
+      })
+      .catch(() => setFailed(true));
   }, []);
   useEffect(load, [load]);
-  if (!data) return null;
+  if (!data) return failed ? <p className="admin-warn">Could not load bug reports and feedback. Reload the page to try again.</p> : null;
   return (
     <>
       <BugsPanel data={data.bugs} onChange={load} />

@@ -36,6 +36,16 @@ function deviceSummary(): string {
   return `${window.screen.width}×${window.screen.height} screen · ${window.innerWidth}×${window.innerHeight} window · ${Math.round(window.devicePixelRatio * 10) / 10}x · ${touch} · ${dark} · ${navigator.language}`;
 }
 
+/** The page of this site the player came from, if the browser says so (another site's address is not sent). */
+function fromPage(): string {
+  try {
+    const ref = new URL(document.referrer);
+    return ref.origin === window.location.origin ? ref.pathname : '';
+  } catch {
+    return '';
+  }
+}
+
 export function ProfileTabs({ current }: { current: 'me' | 'bugs' }) {
   return (
     <nav className="profile-tabs" aria-label="Profile sections">
@@ -89,7 +99,7 @@ export function BugReportPage() {
           category,
           severity,
           device,
-          page: document.referrer ? new URL(document.referrer).pathname : '',
+          page: fromPage(),
           contact: String(data.get('contact') ?? ''),
         },
       });

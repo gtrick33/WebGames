@@ -96,7 +96,8 @@
   border-radius: 12px;
   background: var(--well);
 }
-.qa-fact span {
+/* The label only: a player id inside the value keeps its case (ids are case-sensitive). */
+.qa-fact > span {
   color: var(--fg-2);
   font-size: 11px;
   letter-spacing: 0.06em;
