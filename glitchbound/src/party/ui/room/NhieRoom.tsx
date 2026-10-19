@@ -1,5 +1,6 @@
 import { NHIE_CATEGORIES } from '../../content/nhie';
 import { FINGERS, LENGTHS, MIN_PLAYERS, type Action, type RoomView } from '../../rooms/nhieRoom';
+import { statement } from '../Never';
 import { Clock, Dot, RoomFrame, Scores, seatColor, Waiting, type RoomContext } from './RoomFrame';
 
 type Ctx = RoomContext<RoomView, Action>;
@@ -125,7 +126,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
       {view.statement && (
         <article className="pt-card pt-card-nhie" key={view.statement.text}>
           <span className="pt-kind">{cat?.emoji} Never have I ever…</span>
-          <p className="pt-card-text">…{view.statement.text}.</p>
+          <p className="pt-card-text">…{statement(view.statement.text)}</p>
         </article>
       )}
       {view.phase === 'answer' &&
