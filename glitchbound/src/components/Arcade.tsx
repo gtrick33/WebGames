@@ -17,8 +17,9 @@ import './Arcade.css';
 
 /** Wraps a state change in a View Transition so tiles glide to their new spots (where supported). */
 function withTransition(update: () => void): void {
-  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-  if (doc.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) doc.startViewTransition(() => flushSync(update));
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void> } };
+  // A skipped transition (quick double tap) rejects `ready`; the filter still applies.
+  if (doc.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) doc.startViewTransition(() => flushSync(update)).ready.catch(() => undefined);
   else update();
 }
 

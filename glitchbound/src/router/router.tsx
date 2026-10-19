@@ -76,9 +76,10 @@ export function navigate(to: string, opts: { replace?: boolean; scroll?: boolean
     else window.history.pushState(null, '', url);
     emit();
   };
-  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void> } };
   if (!samePage && doc.startViewTransition && !reducedMotion()) {
-    doc.startViewTransition(() => flushSync(apply));
+    // A skipped or aborted transition (a second click, a hidden tab) rejects `ready`: the page still changes, nothing to report.
+    doc.startViewTransition(() => flushSync(apply)).ready.catch(() => undefined);
   } else {
     apply();
   }
