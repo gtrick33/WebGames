@@ -68,7 +68,7 @@ function GoogleG() {
  * The whole sign-in / sign-up flow: Google (our own styled button, Google's token popup), or
  * email with a one-time code. New and returning players use the same steps.
  */
-export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void; showPerks?: boolean }) {
+export function SignInPanel({ onDone, showPerks = true, notice = '' }: { onDone?: () => void; showPerks?: boolean; notice?: string }) {
   useT();
   const { config } = useAccount();
   const [step, setStep] = useState<'start' | 'code'>('start');
@@ -77,6 +77,8 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState<'' | 'google' | 'email'>('');
   const [error, setError] = useState('');
+  // `notice`: why the last sign-in failed (e.g. an expired email link), shown until the next attempt.
+  const [showNotice, setShowNotice] = useState(!!notice);
   const [note, setNote] = useState('');
   const codeRef = useRef<HTMLInputElement>(null);
 
@@ -95,6 +97,7 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
   const google = (): void => {
     if (!config?.googleClientId) return;
     setError('');
+    setShowNotice(false);
     if (!window.google?.accounts?.oauth2) {
       setBusy('google');
       loadGoogle()
@@ -133,6 +136,7 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
   const sendCode = async (e?: FormEvent): Promise<void> => {
     e?.preventDefault();
     setError('');
+    setShowNotice(false);
     setBusy('email');
     try {
       await account.emailStart(email.trim(), nickname.trim());
@@ -149,6 +153,7 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
   const verify = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
+    setShowNotice(false);
     setBusy('email');
     try {
       await account.emailVerify(email.trim(), code);
@@ -162,11 +167,12 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
 
   const devSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+    setShowNotice(false);
     const data = new FormData(e.currentTarget);
     account
       .devSignIn(String(data.get('email')), String(data.get('name')))
       .then(() => finish('dev'))
-      .catch(() => setError('Dev sign-in failed.'));
+      .catch((err: unknown) => setError(message(err, 'Dev sign-in failed.')));
   };
 
   return (
@@ -182,6 +188,12 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
             </li>
           ))}
         </ul>
+      )}
+
+      {showNotice && (
+        <p className="signin-error" role="alert">
+          {notice}
+        </p>
       )}
 
       {step === 'start' && (
@@ -235,7 +247,6 @@ export function SignInPanel({ onDone, showPerks = true }: { onDone?: () => void;
             inputMode="numeric"
             autoComplete="one-time-code"
             pattern="[0-9]{6}"
-            maxLength={6}
             placeholder="000000"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
