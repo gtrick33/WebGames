@@ -85,7 +85,7 @@ const THEMES: Record<AuctionTheme, Row[]> = {
   myths: [
     ['Zeus', 3, '⚡', 'god'], ['Thor (the god)', 2, '🔨', 'god'], ['Odin', 2, '👁️', 'god'], ['Poseidon', 2, '🔱', 'god'], ['Hades', 2, '💀', 'god'],
     ['Athena', 2, '🦉', 'god'], ['Medusa', 2, '🐍', 'monster'], ['Hercules', 2, '💪', 'hero'], ['Anubis', 2, '🐺', 'god'], ['Ra', 1, '☀️', 'god'],
-    ['The Phoenix', 3, '🔥', 'creature'], ['Kraken', 2, '🐙', 'monster'], ['Minotaur', 1, '🐂', 'monster'], ['Pegasus', 2, '🦄', 'creature'], ['Cerberus', 1, '🐕', 'monster'],
+    ['Valkyrie', 3, '🪽', 'hero'], ['Hydra', 2, '🐲', 'monster'], ['Minotaur', 1, '🐂', 'monster'], ['Sphinx', 2, '🦁', 'creature'], ['Cerberus', 1, '🐕', 'monster'],
     ['Achilles', 1, '🛡️', 'hero'], ['King Arthur', 1, '🗡️', 'hero'], ['Merlin', 2, '🧙', 'magic'], ['Loki (the god)', 2, '🃏', 'trickster'], ['Aphrodite', 2, '💘', 'god'],
   ],
   powers: [

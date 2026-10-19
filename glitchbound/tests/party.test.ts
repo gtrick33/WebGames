@@ -48,10 +48,15 @@ describe('content and filters', () => {
       expect(new Set(list.map((x) => x.id)).size).toBe(list.length);
     }
     for (const c of CHALLENGES) {
-      if (c.text.includes('{B}')) expect(['two', 'one']).toContain(c.target);
+      // A one-player card fills {B} with {A}'s name ("Ana, serenade Ana"), so {B} needs two players.
+      if (c.text.includes('{B}')) expect(c.target, c.id).toBe('two');
       if (c.target === 'two') expect(c.text).toContain('{B}');
       if (c.text.includes('{TEAM1}')) expect(c.target).toBe('teams');
     }
+    // Theme packs mix, so the same lot must not come up twice; trivia questions are drawn from one deck.
+    const lot = (name: string): string => name.toLowerCase().replace(/^the /, '');
+    expect(new Set(AUCTION_ITEMS.map((x) => lot(x.name))).size).toBe(AUCTION_ITEMS.length);
+    expect(new Set(TRIVIA.map((x) => x.q)).size).toBe(TRIVIA.length);
     expect(CHALLENGES.length).toBeGreaterThan(150);
     expect(NHIE.length).toBeGreaterThan(130);
     expect(CHARADES.length).toBeGreaterThan(250);
