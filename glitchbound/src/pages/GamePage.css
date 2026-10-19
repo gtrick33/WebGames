@@ -260,6 +260,10 @@
   .game-actions:has(> :nth-child(3)) > :is(.fav-btn, :last-child) {
     display: none;
   }
+  /* ...and a slightly smaller name fits the longest ones ("Where’s the Ball?") at 375 px. */
+  .game-toolbar:has(.game-actions > :nth-child(3)) .game-heading h1 {
+    font-size: 19px;
+  }
   /* Restart and Exit show only their icons here: make them as narrow as the icon buttons. */
   .game-actions .btn-sm:not(.btn-icon) {
     width: 40px;
