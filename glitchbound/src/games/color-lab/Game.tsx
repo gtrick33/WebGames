@@ -637,7 +637,7 @@ function Play(props: {
     if (apply({ type: 'undo' }) !== prev) sfx().undo();
   };
   const restart = (): void => {
-    if (busy.current) return;
+    if (busy.current || stateRef.current.status !== 'play') return;
     setSelected(null);
     setHinted(null);
     apply({ type: 'restart' });
@@ -727,7 +727,7 @@ function Play(props: {
           <b className="cl-mono">{limitLeft !== null ? limitLeft : state.moves}</b>
           <small>par {state.level.par}</small>
         </div>
-        <button className="cl-tool cl-tool-restart" onClick={restart} aria-label="Restart puzzle" title="Restart (Shift+R)">
+        <button className="cl-tool cl-tool-restart" onClick={restart} aria-label="Restart puzzle" title="Restart (Shift+R)" disabled={state.status !== 'play'}>
           ↻
         </button>
         <button className="cl-tool cl-tool-undo" onClick={undo} aria-label="Undo" title="Undo (U)" disabled={!state.history.length || state.status !== 'play'}>

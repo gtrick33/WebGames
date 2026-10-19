@@ -119,10 +119,13 @@ describe('level reducer', () => {
     expect(s.status).toBe('won');
     expect(resultOf(s)).toMatchObject({ solved: true, moves: 3, points: MAX_POINTS, stars: 3 });
     expect(reduceLevel(s, { type: 'pour', from: 0, to: 1 })).toBe(s);
+    // A solved level can't be restarted and solved (and recorded) again.
+    expect(reduceLevel(s, { type: 'restart' })).toBe(s);
 
     let p = startLevel({ ...level, par: 1 }, 'precision');
     p = reduceLevel(p, { type: 'pour', from: 0, to: 2 });
     expect(p.status).toBe('failed');
+    expect(reduceLevel(p, { type: 'restart' })).toBe(p);
   });
 
   it('adds one spare tube for a cost', () => {

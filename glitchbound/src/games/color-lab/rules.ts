@@ -60,7 +60,8 @@ export function isHidden(s: LevelState, tube: number, index: number): boolean {
 }
 
 export function reduceLevel(s: LevelState, a: LevelAction): LevelState {
-  if (s.status !== 'play' && a.type !== 'restart') return s;
+  // A finished level is recorded once: nothing (not even a restart) can reopen it.
+  if (s.status !== 'play') return s;
   switch (a.type) {
     case 'pour': {
       const board = pour(s.board, a.from, a.to);
