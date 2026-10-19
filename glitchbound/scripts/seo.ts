@@ -25,7 +25,7 @@ export interface PageSpec {
 const SITE = 'GlitchBound';
 const TAGLINE = 'Small Games. Big Obsessions.';
 const HOME_DESC =
-  'GlitchBound is an independent browser arcade: small, sharp games that start in a second. No installs, no accounts. Just press play.';
+  'GlitchBound is an independent browser arcade: small, sharp games that start in a second. No installs, no account needed. Just press play.';
 
 export const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
