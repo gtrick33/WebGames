@@ -461,9 +461,9 @@ const es: string[] = [
   'Racha más larga',
   'Acierta {n} preguntas en un quiz de Wait, What?',
   'Acierta {n} preguntas de Wait, What? seguidas',
-  'El juego de cartas online para gente terrible. Juega la respuesta más horrible y gana. +18.',
+  'Rellena el hueco con la peor carta de tu mano. Gana la respuesta más graciosa. +18.',
   // 420
-  'Un juego de cartas de fiesta online para 3 a 10 jugadores, cada uno con su móvil. En cada ronda, un juez lee una carta negra y los demás juegan la carta blanca más graciosa y más negra de su mano. Cientos de cartas originales, brutalmente groseras, que no se repiten en una sesión, un modo de votación sin juez y salas que compartes con un enlace. Solo adultos. (Las cartas están en inglés.)',
+  'Un juego de cartas de fiesta online para 3 a 10 jugadores, cada uno con su móvil. En cada ronda, un juez lee una carta con un hueco y los demás juegan la carta de respuesta más graciosa y más negra de su mano. Cientos de cartas originales, brutalmente groseras, que no se repiten en una sesión, un modo de votación sin juez y salas que compartes con un enlace. Solo adultos. (Las cartas están en inglés.)',
   'Más puntos en una partida',
   '¿Qué te apetece?',
   'Todo',

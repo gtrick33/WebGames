@@ -31,7 +31,7 @@ database_name = "neon-rush-leaderboard"
 database_id = "9182c9bc-62a0-4568-88c8-4874bcda05db"
 migrations_dir = "../neon-rush/migrations"
 
-# Live Unhinged rooms: Durable Objects in the separate glitchbound-rooms worker (rooms/wrangler.toml).
+# Live Crass Act rooms: Durable Objects in the separate glitchbound-rooms worker (rooms/wrangler.toml).
 [[durable_objects.bindings]]
 name = "ROOMS"
 class_name = "Room"

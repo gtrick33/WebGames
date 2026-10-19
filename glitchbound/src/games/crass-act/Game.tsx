@@ -6,8 +6,8 @@ import { fill, MAX_PLAYERS, MIN_PLAYERS, TARGETS, TIMERS, type RoomView } from '
 import { createRoom, roomInfo, useRoom } from './net';
 import './Game.css';
 
-const ADULT = 'glitchbound.unhinged.adult';
-const NAME = 'glitchbound.unhinged.name';
+const ADULT = 'glitchbound.crass-act.adult';
+const NAME = 'glitchbound.crass-act.name';
 
 const read = (k: string): string => {
   try {
@@ -38,10 +38,10 @@ function setRoomInUrl(code: string | null): void {
 }
 
 export default function Game({ host, restartKey, playerName }: GameModuleProps) {
-  return <Unhinged key={restartKey} host={host} playerName={playerName} />;
+  return <CrassAct key={restartKey} host={host} playerName={playerName} />;
 }
 
-function Unhinged({ host, playerName }: { host: GameHost; playerName?: string }) {
+function CrassAct({ host, playerName }: { host: GameHost; playerName?: string }) {
   const [adult, setAdult] = useState(() => read(ADULT) === '1');
   // Inside the Discord Activity: the player's Discord name, and straight into the call's room.
   const [name, setName] = useState(() => (embedHost() && playerName) || read(NAME) || playerName || '');
@@ -54,7 +54,7 @@ function Unhinged({ host, playerName }: { host: GameHost; playerName?: string })
         <Logo />
         <div className="uh-panel uh-gate">
           <p className="uh-big">This one is for adults.</p>
-          <p>Unhinged is a card game full of crude, dark and offensive jokes. Play it with friends who won’t report you to HR.</p>
+          <p>Crass Act is a card game full of crude, dark and offensive jokes. Play it with friends who won’t report you to HR.</p>
           <div className="uh-row">
             <button
               className="uh-btn uh-btn-go"
@@ -104,10 +104,14 @@ function Unhinged({ host, playerName }: { host: GameHost; playerName?: string })
 
 function Logo() {
   return (
-    <h1 className="uh-logo" aria-label="Unhinged">
-      {'UNHINGED'.split('').map((c, i) => (
-        <span key={i} style={{ ['--i' as string]: i }}>
-          {c}
+    <h1 className="uh-logo" aria-label="Crass Act">
+      {['CRASS', 'ACT'].map((word, w) => (
+        <span key={word} className="uh-word">
+          {word.split('').map((c, i) => (
+            <span key={i} style={{ ['--i' as string]: i + w * 2 }}>
+              {c}
+            </span>
+          ))}
         </span>
       ))}
       <b className="uh-18">18+</b>
@@ -134,7 +138,7 @@ function Home({ name, invite, onName, onEnter }: { name: string; invite: string;
   return (
     <div className="uh uh-center">
       <Logo />
-      <p className="uh-tag">The card game for terrible people.</p>
+      <p className="uh-tag">Bad taste, played well.</p>
       <div className="uh-panel">
         <label className="uh-field">
           <span>Your name</span>
@@ -182,7 +186,7 @@ function Home({ name, invite, onName, onEnter }: { name: string; invite: string;
       <details className="uh-rules">
         <summary>How to play</summary>
         <p>
-          {MIN_PLAYERS} to {MAX_PLAYERS} players, each on their own phone or computer. Every round one player is the judge and reads out a black card. Everyone else plays the funniest (or most horrible) white card from their hand. The judge picks a
+          {MIN_PLAYERS} to {MAX_PLAYERS} players, each on their own phone or computer. Every round one player is the judge and reads out a prompt card. Everyone else plays the funniest (or most horrible) answer card from their hand. The judge picks a
           winner, who gets a point. First to the target wins. In vote mode there is no judge: everyone plays and votes.
         </p>
       </details>
@@ -277,7 +281,7 @@ type Send = ReturnType<typeof useRoom>['send'];
 function invite(code: string): void {
   const app = embedHost()?.invite;
   if (app) return app();
-  void shareOrCopy({ title: 'Unhinged', text: `Join my Unhinged room 😈\nRoom code: ${code}\nThe card game for terrible people (18+)`, url: `${location.origin}/r/${code}` });
+  void shareOrCopy({ title: 'Crass Act', text: `Join my Crass Act room 😈\nRoom code: ${code}\nFill-in-the-blank cards for adults (18+)`, url: `${location.origin}/r/${code}` });
 }
 
 function Players({ view, send, compact = false }: { view: RoomView; send: Send; compact?: boolean }) {
@@ -373,7 +377,7 @@ function Lobby({ view, send, onLeave }: { view: RoomView; send: Send; onLeave: (
 
 function PromptCard({ text, cards, small = false }: { text: string; cards?: string[]; small?: boolean }) {
   return (
-    <div className={`uh-black${small ? ' is-small' : ''}`}>
+    <div className={`uh-prompt${small ? ' is-small' : ''}`}>
       <p>
         {fill(text, cards ?? []).map((part, i) =>
           part.card ? (
@@ -385,7 +389,7 @@ function PromptCard({ text, cards, small = false }: { text: string; cards?: stri
           ),
         )}
       </p>
-      <small>Unhinged</small>
+      <small aria-hidden="true">?!</small>
     </div>
   );
 }
@@ -440,7 +444,7 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
                 return (
                   <button
                     key={c.id}
-                    className={`uh-white${at >= 0 ? ' is-chosen' : ''}`}
+                    className={`uh-answer${at >= 0 ? ' is-chosen' : ''}`}
                     onClick={() => setChosen((list) => (at >= 0 ? list.filter((x) => x !== c.id) : need === 1 ? [c.id] : [...list, c.id].slice(-need)))}
                   >
                     {at >= 0 && need > 1 && <i className="uh-order">{at + 1}</i>}
@@ -484,7 +488,7 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
                   onClick={() => setPick(i)}
                 >
                   {e.cards.map((c, j) => (
-                    <span key={j} className="uh-white is-flat">
+                    <span key={j} className="uh-answer is-flat">
                       {c}
                     </span>
                   ))}
@@ -512,7 +516,7 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
             {view.entries.map((e, i) => (
               <div key={i} className={`uh-entry${e.won ? ' is-won' : ''}`}>
                 {e.cards.map((c, j) => (
-                  <span key={j} className="uh-white is-flat">
+                  <span key={j} className="uh-answer is-flat">
                     {c}
                   </span>
                 ))}

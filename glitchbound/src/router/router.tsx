@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore, type AnchorHTMLAttributes, type MouseEvent } from 'react';
 import { flushSync } from 'react-dom';
+import { currentSlug } from '../catalog/catalog';
 
 /**
  * A deliberately tiny client router: four routes do not need a routing library. Paths are real
@@ -38,7 +39,7 @@ export function matchRoute(pathname: string): Route {
   const c = /^\/c\/([A-Za-z0-9]{5,12})$/.exec(path);
   if (c?.[1]) return { name: 'challenge', id: c[1] };
   const m = /^\/games\/([a-z0-9-]+)$/.exec(path);
-  if (m?.[1]) return { name: 'game', slug: m[1] };
+  if (m?.[1]) return { name: 'game', slug: currentSlug(m[1]) };
   return { name: 'notfound' };
 }
 

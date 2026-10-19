@@ -23,7 +23,7 @@ export interface Env {
   DB: D1Database;
   /** The site's static files (Pages); used to send a page with rewritten link-preview tags. */
   ASSETS?: { fetch: (input: Request | string | URL, init?: RequestInit) => Promise<Response> };
-  /** Live Unhinged rooms (Durable Objects in the glitchbound-rooms worker). */
+  /** Live Crass Act rooms (Durable Objects in the glitchbound-rooms worker). */
   ROOMS?: RoomNamespace;
   /** NEON RUSH's own leaderboard database (served under /play/neon-rush/api). */
   NR_DB: D1Database;

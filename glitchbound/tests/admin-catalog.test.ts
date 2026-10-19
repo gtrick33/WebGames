@@ -31,7 +31,7 @@ describe('admin game settings', () => {
 
   it('keeps party-only games out of the arcade, but not off their own pages', () => {
     const party = GAMES.filter((g) => g.partyOnly).map((g) => g.slug);
-    expect(party).toContain('unhinged');
+    expect(party).toContain('crass-act');
     expect(applySettings(GAMES, EMPTY_CATALOG).map((g) => g.slug)).toEqual(GAMES.filter((g) => !g.partyOnly).map((g) => g.slug));
     expect(applySettings(GAMES, EMPTY_CATALOG, true).map((g) => g.slug)).toEqual(expect.arrayContaining(party));
   });

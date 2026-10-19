@@ -64,7 +64,7 @@ describe('friends challenges', () => {
   });
 
   it('offers challenges in every game but the live card game (it has rooms of its own)', () => {
-    expect(GAMES.filter((g) => !g.challenge).map((g) => g.slug)).toEqual(['unhinged']);
+    expect(GAMES.filter((g) => !g.challenge).map((g) => g.slug)).toEqual(['crass-act']);
     for (const g of GAMES.filter((x) => x.challenge)) expect(g.challenge!.label.length).toBeGreaterThan(10);
   });
 });

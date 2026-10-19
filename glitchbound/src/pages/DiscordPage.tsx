@@ -18,7 +18,7 @@ import './DiscordPage.css';
 
 const GAMES = [
   { slug: 'wait-what', how: 'Same trivia round for everyone in the call, one try each. Live scoreboard, next round in one tap.' },
-  { slug: 'unhinged', how: 'One card table for the whole call: crude, dark and 18+. Everyone plays from their own screen.' },
+  { slug: 'crass-act', how: 'One card table for the whole call: crude, dark and 18+. Everyone plays from their own screen.' },
 ] as const;
 type Slug = (typeof GAMES)[number]['slug'];
 
@@ -126,7 +126,7 @@ export function Picker({ session }: { session: DiscordSession }) {
     try {
       const r = await playInCall(session.instanceId, slug, session.user.name, playerKey());
       if (r.challenge) return navigate(`/games/wait-what?challenge=${r.challenge}`);
-      if (r.room) return navigate(`/games/unhinged?room=${r.room}`);
+      if (r.room) return navigate(`/games/crass-act?room=${r.room}`);
       throw new Error('empty');
     } catch (e) {
       setMsg(e instanceof ApiError && e.message !== e.code ? e.message : e instanceof ApiError && e.code === 'rooms_unavailable' ? t('Rooms are not available right now. Try again in a minute.') : t('Network error. Try again.'));

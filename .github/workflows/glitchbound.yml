@@ -40,7 +40,7 @@ jobs:
       - name: Apply database migrations (D1)
         if: github.event_name != 'pull_request' && env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         run: npx wrangler d1 migrations apply glitchbound --remote
-      - name: Deploy live rooms worker (Unhinged)
+      - name: Deploy live rooms worker (Crass Act)
         if: github.event_name != 'pull_request' && env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         # Needs "Workers Scripts: Edit" on the token; if it is missing the site still deploys and keeps the last worker.
         continue-on-error: true

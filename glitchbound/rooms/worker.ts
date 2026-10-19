@@ -1,5 +1,5 @@
 /**
- * glitchbound-rooms: live rooms for Unhinged and the Party Mode games (see engines.ts). One Durable
+ * glitchbound-rooms: live rooms for Crass Act and the Party Mode games (see engines.ts). One Durable
  * Object per room code holds the game state and every player's WebSocket. Sockets hibernate between
  * messages, so idle rooms cost nothing; a room deletes itself after 3 hours without activity. The site reaches it through the ROOMS binding
  * (functions/api/rooms/*); this worker has no public URL.
@@ -99,7 +99,7 @@ export class Room {
       if (await this.load()) return json({ error: 'exists' }, 409);
       const code = url.searchParams.get('code') ?? '';
       const game = url.searchParams.get('game');
-      const s = ENGINES[isGameId(game) ? game : 'unhinged'].newRoom(code, now, crypto.getRandomValues(new Uint32Array(1))[0]!);
+      const s = ENGINES[isGameId(game) ? game : 'crass-act'].newRoom(code, now, crypto.getRandomValues(new Uint32Array(1))[0]!);
       this.state = s;
       await this.save(s);
       return json(engineFor(s).summary(s));
@@ -130,7 +130,7 @@ export class Room {
     if (url.pathname === '/ws') {
       if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'websocket_required' }, 426);
       const key = url.searchParams.get('key');
-      if (!ENGINES.unhinged.validKey(key)) return json({ error: 'bad_key' }, 400);
+      if (!ENGINES['crass-act'].validKey(key)) return json({ error: 'bad_key' }, 400);
       const pair = new WebSocketPair();
       const client = pair[0];
       const server = pair[1];

@@ -7,6 +7,10 @@ export const SORTS: Record<SortId, string> = { newest: 'Newest', az: 'A to Z' };
 /** A game counts as NEW for this many days after release. */
 export const NEW_FOR_DAYS = 30;
 
+/** Old slugs of renamed games (Unhinged is Crass Act since 2026-10-19): old links, saves and favourites still work. */
+export const RENAMED_SLUGS: Readonly<Record<string, string>> = { unhinged: 'crass-act' };
+export const currentSlug = (slug: string): string => RENAMED_SLUGS[slug] ?? slug;
+
 export function getGame(slug: string, games: GameEntry[] = GAMES): GameEntry | undefined {
   return games.find((g) => g.slug === slug);
 }

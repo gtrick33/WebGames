@@ -13,15 +13,15 @@ export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => 
   const [game, setGame] = useState<RoomGame | 'missing' | null>(null);
   useEffect(() => {
     let live = true;
-    void roomInfo(code).then((r) => live && setGame(r ? (r.game ?? 'unhinged') : 'missing'));
+    void roomInfo(code).then((r) => live && setGame(r ? (r.game ?? 'crass-act') : 'missing'));
     return () => {
       live = false;
     };
   }, [code]);
   useEffect(() => {
-    if (game === 'unhinged') navigate(`/games/unhinged?room=${code}`);
+    if (game === 'crass-act') navigate(`/games/crass-act?room=${code}`);
   }, [game, code]);
-  if (game === null || game === 'unhinged')
+  if (game === null || game === 'crass-act')
     return (
       <div className="pt-screen">
         <ModeBar title={`Room ${code}`} onExit={onLeave} />

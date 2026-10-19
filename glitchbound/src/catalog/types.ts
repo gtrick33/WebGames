@@ -137,7 +137,7 @@ export interface GameEntry {
     minSeconds?: number;
   };
   /**
-   * A Party Mode game (e.g. Unhinged): featured in Party Mode instead of the arcade, so it is left out of
+   * A Party Mode game (e.g. Crass Act): featured in Party Mode instead of the arcade, so it is left out of
    * the arcade's lists, search, home page and rotations. Its own page and room links still work.
    */
   partyOnly?: boolean;

@@ -461,9 +461,9 @@ const pl: string[] = [
   'Najdłuższa seria',
   'Odpowiedz dobrze na {n} pytań w jednym quizie Wait, What?',
   'Odpowiedz dobrze na {n} pytań Wait, What? z rzędu',
-  'Karciana gra online dla okropnych ludzi. Zagraj najgorszą odpowiedź i wygraj. 18+.',
+  'Uzupełnij lukę najgorszą kartą z ręki. Wygrywa najśmieszniejsza odpowiedź. 18+.',
   // 420
-  'Imprezowa gra karciana online dla 3–10 graczy, każdy na swoim telefonie. W każdej rundzie sędzia czyta czarną kartę, a reszta zagrywa najśmieszniejszą i najczarniejszą białą kartę z ręki. Setki oryginalnych, brutalnie wulgarnych kart, które nie powtarzają się w sesji, tryb głosowania bez sędziego i pokoje udostępniane linkiem. Tylko dla dorosłych. (Karty są po angielsku.)',
+  'Imprezowa gra karciana online dla 3–10 graczy, każdy na swoim telefonie. W każdej rundzie sędzia czyta kartę z luką, a reszta zagrywa najśmieszniejszą i najczarniejszą kartę odpowiedzi z ręki. Setki oryginalnych, brutalnie wulgarnych kart, które nie powtarzają się w sesji, tryb głosowania bez sędziego i pokoje udostępniane linkiem. Tylko dla dorosłych. (Karty są po angielsku.)',
   'Najwięcej punktów w jednej grze',
   'Na co masz ochotę?',
   'Wszystko',

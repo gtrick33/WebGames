@@ -88,7 +88,7 @@ export const STICKER_MAX = 14;
 export interface PartySettings {
   /** Left out of Party Mode entirely. */
   hidden: boolean;
-  /** One of the big cards at the top (none chosen = Impostor and Unhinged). */
+  /** One of the big cards at the top (none chosen = Impostor and Crass Act). */
   featured: boolean;
   /** Its live room can be opened (games that have one). */
   room: boolean;

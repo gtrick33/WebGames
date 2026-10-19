@@ -331,7 +331,7 @@ function PartyList({ data, send, busy }: { data: AdminCatalog; send: Send; busy:
 function PartyRow({ g, cat, send, busy, open, onToggle }: { g: PartyGame; cat: PublicCatalog; send: Send; busy: boolean; open: boolean; onToggle: () => void }) {
   const s = partySettingsFor(cat, g.id);
   const patch = (p: Partial<PartySettings> | null, msg = 'Saved'): void => void send({ action: 'party', id: g.id, patch: p }, msg);
-  const entry = g.id === 'unhinged' ? GAMES.find((x) => x.slug === 'unhinged') : undefined;
+  const entry = g.id === 'crass-act' ? GAMES.find((x) => x.slug === 'crass-act') : undefined;
   const ways = [g.onePhone && '📱 One phone', g.room && '🌐 Live room'].filter(Boolean).join(' · ');
   return (
     <li className={`ag-game${s.hidden ? ' is-hidden' : ''}`}>
@@ -361,13 +361,13 @@ function PartyRow({ g, cat, send, busy, open, onToggle }: { g: PartyGame; cat: P
       <div className="ag-switches">
         <Switch on={!s.hidden} label="In Party Mode" hint="Hidden games disappear from the party page (and their room cards)." disabled={busy} onChange={(v) => patch({ hidden: !v }, v ? `${g.title} is back in Party Mode` : `${g.title} is hidden`)} />
         <Switch on={s.featured} label="Featured" hint="A big card at the top of the party page." disabled={busy} onChange={(v) => patch({ featured: v })} />
-        {g.room && g.id !== 'unhinged' && <Switch on={s.room} label="Live room" hint="Players can open a room for it (everyone on their own phone)." disabled={busy} onChange={(v) => patch({ room: v })} />}
+        {g.room && g.id !== 'crass-act' && <Switch on={s.room} label="Live room" hint="Players can open a room for it (everyone on their own phone)." disabled={busy} onChange={(v) => patch({ room: v })} />}
       </div>
       {open && <PartyEditor key={JSON.stringify(s)} g={g} s={s} patch={patch} busy={busy} />}
       {open && entry && (
         <div className="ag-sub">
-          <p className="info-small">Unhinged also has its own game page. Pause it or change its page texts here:</p>
-          <GameEditor game={entry} s={settingsFor(cat, 'unhinged')} send={send} busy={busy} />
+          <p className="info-small">Crass Act also has its own game page. Pause it or change its page texts here:</p>
+          <GameEditor game={entry} s={settingsFor(cat, 'crass-act')} send={send} busy={busy} />
         </div>
       )}
     </li>

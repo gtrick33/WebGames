@@ -465,9 +465,9 @@ export const KEYS: string[] = [
   "Longest streak",
   "Get {n} questions right in one Wait, What? quiz",
   "Answer {n} Wait, What? questions in a row correctly",
-  "The online card game for terrible people. Play the most horrible answer and win. 18+.",
+  "Fill in the blank with the worst card in your hand. The funniest answer wins. 18+.",
   // 420
-  "An online party card game for 3 to 10 players, each on their own phone. Every round a judge reads a black card and everyone else plays the funniest, darkest white card from their hand. Hundreds of original, brutally rude cards that never repeat in a session, a vote mode with no judge, and rooms you share with a link. Adults only.",
+  "An online party card game for 3 to 10 players, each on their own phone. Every round a judge reads a prompt card with a blank and everyone else plays the funniest, darkest answer card from their hand. Hundreds of original, brutally rude cards that never repeat in a session, a vote mode with no judge, and rooms you share with a link. Adults only.",
   "Most points in one game",
   "What do you feel like?",
   "Everything",

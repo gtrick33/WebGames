@@ -16,12 +16,12 @@ export function roomStub(env: Env, code: string): ReturnType<NonNullable<Env['RO
   return env.ROOMS.get(env.ROOMS.idFromName(code));
 }
 
-export const ROOM_GAMES = ['unhinged', 'impostor', 'nhie', 'auction', 'board', 'rps'] as const;
+export const ROOM_GAMES = ['crass-act', 'impostor', 'nhie', 'auction', 'board', 'rps'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 export const isRoomGame = (v: unknown): v is RoomGame => (ROOM_GAMES as readonly unknown[]).includes(v);
 
 export interface RoomSummary {
-  /** Missing on Unhinged rooms. */
+  /** Missing on Crass Act rooms. */
   game?: RoomGame;
   code: string;
   phase: string;
@@ -31,7 +31,7 @@ export interface RoomSummary {
 }
 
 /** Opens a new room for a game (a fresh code; retried on the rare clash). Null when rooms are unavailable. */
-export async function openRoom(env: Env, game: RoomGame = 'unhinged'): Promise<RoomSummary | null> {
+export async function openRoom(env: Env, game: RoomGame = 'crass-act'): Promise<RoomSummary | null> {
   if (!env.ROOMS) return null;
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = newRoomCode();

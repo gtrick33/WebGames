@@ -22,7 +22,7 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
   'wing-it': () => import('../games/wing-it/Game'),
   crosswire: () => import('../games/crosswire/Game'),
   'wait-what': () => import('../games/wait-what/Game'),
-  unhinged: () => import('../games/unhinged/Game'),
+  'crass-act': () => import('../games/crass-act/Game'),
   'to-scale': () => import('../games/to-scale/Game'),
 };
 

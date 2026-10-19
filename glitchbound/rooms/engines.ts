@@ -1,16 +1,16 @@
 /**
  * The games a live room can host. Each engine is a set of pure functions over its own State, with
  * the same shape, so the room server does not need to know the rules. Rooms made before there was
- * more than one game have no `game` field: they are Unhinged.
+ * more than one game have no `game` field: they are Crass Act.
  */
-import * as unhinged from '../src/games/unhinged/engine';
+import * as crassAct from '../src/games/crass-act/engine';
 import * as impostor from '../src/party/impostorRoom';
 import * as auction from '../src/party/rooms/auctionRoom';
 import * as board from '../src/party/rooms/boardRoom';
 import * as nhie from '../src/party/rooms/nhieRoom';
 import * as rps from '../src/party/rooms/rpsRoom';
 
-export type GameId = 'unhinged' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps';
+export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps';
 
 /** What every room engine provides (`State` stays opaque to the server). */
 export interface Engine {
@@ -32,7 +32,7 @@ export interface RoomState {
 }
 
 export const ENGINES: Record<GameId, Engine> = {
-  unhinged: unhinged as unknown as Engine,
+  'crass-act': crassAct as unknown as Engine,
   impostor: impostor as unknown as Engine,
   nhie: nhie as unknown as Engine,
   auction: auction as unknown as Engine,
@@ -42,4 +42,4 @@ export const ENGINES: Record<GameId, Engine> = {
 
 export const isGameId = (v: unknown): v is GameId => typeof v === 'string' && Object.hasOwn(ENGINES, v);
 
-export const engineFor = (s: RoomState): Engine => ENGINES[isGameId(s.game) ? s.game : 'unhinged'];
+export const engineFor = (s: RoomState): Engine => ENGINES[isGameId(s.game) ? s.game : 'crass-act'];

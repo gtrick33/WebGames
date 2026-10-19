@@ -461,9 +461,9 @@ const tr: string[] = [
   'En uzun seri',
   'Bir Wait, What? yarışmasında {n} soruyu doğru bil',
   'Art arda {n} Wait, What? sorusunu doğru bil',
-  'Berbat insanlar için çevrim içi kart oyunu. En kötü cevabı oyna ve kazan. 18+.',
+  'Boşluğu elindeki en kötü kartla doldur. En komik cevap kazanır. 18+.',
   // 420
-  '3–10 oyunculu, herkesin kendi telefonunda oynadığı çevrim içi bir parti kart oyunu. Her turda bir hakem siyah bir kart okur, diğerleri elindeki en komik ve en karanlık beyaz kartı oynar. Bir oturumda tekrar etmeyen yüzlerce özgün, acımasızca kaba kart, hakemsiz oylama modu ve bağlantıyla paylaşılan odalar. Sadece yetişkinler için. (Kartlar İngilizcedir.)',
+  '3–10 oyunculu, herkesin kendi telefonunda oynadığı çevrim içi bir parti kart oyunu. Her turda bir hakem boşluklu bir kart okur, diğerleri elindeki en komik ve en karanlık cevap kartını oynar. Bir oturumda tekrar etmeyen yüzlerce özgün, acımasızca kaba kart, hakemsiz oylama modu ve bağlantıyla paylaşılan odalar. Sadece yetişkinler için. (Kartlar İngilizcedir.)',
   'Bir oyunda en çok puan',
   'Canın ne istiyor?',
   'Hepsi',

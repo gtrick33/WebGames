@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ANSWERS, pickCount, PROMPTS } from '../src/games/unhinged/cards';
-import { act, fill, HAND_SIZE, join, leave, newRoom, stillPicking, tick, viewFor, type State } from '../src/games/unhinged/engine';
+import { ANSWERS, pickCount, PROMPTS } from '../src/games/crass-act/cards';
+import { act, fill, HAND_SIZE, join, leave, newRoom, stillPicking, tick, viewFor, type State } from '../src/games/crass-act/engine';
 
 const KEYS = ['aaaaaaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbbbbbb', 'cccccccccccccccccccccccc', 'dddddddddddddddddddddddd'];
 let now = 1_000_000;
@@ -24,7 +24,7 @@ function playAll(s: State): void {
 
 const keyOfSeat = (s: State, n: number | null): string => s.seats.find((x) => x.n === n)!.key;
 
-describe('Unhinged cards', () => {
+describe('Crass Act cards', () => {
   it('has plenty of unique prompts and answers', () => {
     expect(PROMPTS.length).toBeGreaterThan(150);
     expect(ANSWERS.length).toBeGreaterThan(400);
@@ -39,7 +39,7 @@ describe('Unhinged cards', () => {
   });
 });
 
-describe('Unhinged rooms', () => {
+describe('Crass Act rooms', () => {
   it('needs three players to start and only the host can start', () => {
     const s = newRoom('ABCDE', now, 1);
     join(s, KEYS[0]!, 'Ana', now);

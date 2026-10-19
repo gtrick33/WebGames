@@ -32,8 +32,8 @@ describe('homepage', () => {
     expect(within(arcade).queryByRole('link', { name: 'Letter Pinch' })).toBeNull();
     fireEvent.click(within(arcade).getByRole('button', { name: /Everything/ }));
     expect(within(arcade).getByRole('link', { name: 'Letter Pinch' })).toBeTruthy();
-    // Unhinged lives in Party Mode, not the arcade.
-    expect(within(arcade).queryByRole('link', { name: 'Unhinged' })).toBeNull();
+    // Crass Act lives in Party Mode, not the arcade.
+    expect(within(arcade).queryByRole('link', { name: 'Crass Act' })).toBeNull();
   });
 
   it('filters by category and keeps the filter in the URL', () => {

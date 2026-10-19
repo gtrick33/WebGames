@@ -461,9 +461,9 @@ const ro: string[] = [
   'Cea mai lungă serie',
   'Răspunde corect la {n} întrebări într-un quiz Wait, What?',
   'Răspunde corect la {n} întrebări Wait, What? la rând',
-  'Un joc de cărți online pentru oameni îngrozitori. Joacă cel mai rău răspuns și câștigă. 18+.',
+  'Completează spațiul gol cu cea mai rea carte din mână. Câștigă cel mai amuzant răspuns. 18+.',
   // 420
-  'Un joc de cărți online pentru petreceri, cu 3–10 jucători, fiecare pe telefonul lui. În fiecare rundă, un judecător citește o carte neagră, iar ceilalți joacă cea mai amuzantă și mai neagră carte albă din mână. Sute de cărți originale, brutal de vulgare, care nu se repetă într-o sesiune, un mod cu vot fără judecător și camere distribuite prin link. Doar pentru adulți. (Cărțile sunt în engleză.)',
+  'Un joc de cărți online pentru petreceri, cu 3–10 jucători, fiecare pe telefonul lui. În fiecare rundă, un judecător citește o carte cu un spațiu gol, iar ceilalți joacă cea mai amuzantă și mai neagră carte-răspuns din mână. Sute de cărți originale, brutal de vulgare, care nu se repetă într-o sesiune, un mod cu vot fără judecător și camere distribuite prin link. Doar pentru adulți. (Cărțile sunt în engleză.)',
   'Cele mai multe puncte într-un joc',
   'Ce ai chef să joci?',
   'Tot',

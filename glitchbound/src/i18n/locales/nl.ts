@@ -461,9 +461,9 @@ const nl: string[] = [
   'Langste reeks',
   'Beantwoord {n} vragen goed in één Wait, What?-quiz',
   'Beantwoord {n} Wait, What?-vragen achter elkaar goed',
-  'Het online kaartspel voor vreselijke mensen. Speel het gruwelijkste antwoord en win. 18+.',
+  'Vul de lege plek in met de ergste kaart uit je hand. Het grappigste antwoord wint. 18+.',
   // 420
-  'Een online feestkaartspel voor 3 tot 10 spelers, elk op de eigen telefoon. Elke ronde leest een jurylid een zwarte kaart voor en de rest speelt de grappigste, zwartste witte kaart uit hun hand. Honderden originele, keihard grove kaarten die in een sessie nooit terugkomen, een stemmodus zonder jury en kamers die je deelt met een link. Alleen voor volwassenen. (De kaarten zijn Engels.)',
+  'Een online feestkaartspel voor 3 tot 10 spelers, elk op de eigen telefoon. Elke ronde leest een jurylid een vraagkaart met een lege plek voor en de rest speelt de grappigste, zwartste antwoordkaart uit hun hand. Honderden originele, keihard grove kaarten die in een sessie nooit terugkomen, een stemmodus zonder jury en kamers die je deelt met een link. Alleen voor volwassenen. (De kaarten zijn Engels.)',
   'Meeste punten in één spel',
   'Waar heb je zin in?',
   'Alles',

@@ -10,7 +10,7 @@ const STYLES: { id: Style; label: string; hint: string }[] = [
   { id: 'act', label: '🤐 Act it', hint: 'No talking, no sounds' },
   { id: 'clues', label: '🗣️ Clues', hint: 'Talk, but never say the word' },
   { id: 'draw', label: '✏️ Draw it', hint: 'Sketch on the phone, no letters' },
-  { id: 'heads', label: '📱 Heads up', hint: 'Phone on your forehead, everyone else acts it out' },
+  { id: 'heads', label: '📱 Forehead', hint: 'Phone on your forehead, everyone else acts it out' },
 ];
 
 interface Config {
@@ -243,7 +243,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
       <div className="pt-screen">
         <ModeBar title="Charades" progress={progress} onExit={onExit} />
         <Timer seconds={cfg.seconds} onEnd={() => setPhase('summary')} onTick={(l) => l <= 3 && (beep(520), navigator.vibrate?.(60))} />
-        <HeadsUp key={`${got.length}:${skipped.length}`} word={card.text} onGot={score} onPass={skip} />
+        <Forehead key={`${got.length}:${skipped.length}`} word={card.text} onGot={score} onPass={skip} />
         <p className="pt-muted pt-center">Got {got.length} so far</p>
       </div>
     );
@@ -375,10 +375,10 @@ function GetReady({ seconds, note, onGo }: { seconds: number; note: string; onGo
 }
 
 /**
- * Heads up: the word faces the room while the guesser holds the phone to their forehead. Nodding down
+ * Forehead: the word faces the room while the guesser holds the phone to their forehead. Nodding down
  * (screen to the floor) scores, tilting up (screen to the ceiling) passes; tapping either half works too.
  */
-function HeadsUp({ word, onGot, onPass }: { word: string; onGot: () => void; onPass: () => void }) {
+function Forehead({ word, onGot, onPass }: { word: string; onGot: () => void; onPass: () => void }) {
   const [flash, setFlash] = useState<'got' | 'pass' | null>(null);
   const busy = useRef(false);
   const act = useRef({ onGot, onPass });

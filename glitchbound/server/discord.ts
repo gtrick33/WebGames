@@ -5,7 +5,7 @@ import { openRoom, roomSummary } from './rooms';
 
 /**
  * The Discord Activity (docs/discord-activity.md): signing players in with their Discord account,
- * and the one challenge or Unhinged room that everyone in a Discord call shares.
+ * and the one challenge or Crass Act room that everyone in a Discord call shares.
  */
 
 const API = 'https://discord.com/api/v10';
@@ -14,7 +14,7 @@ const NAME_MAX = 14;
 /** A call's challenge or room is forgotten after this long without anyone picking it. */
 export const INSTANCE_KEEP_MS = 2 * 86400_000;
 
-export const ACTIVITY_GAMES = ['wait-what', 'unhinged'] as const;
+export const ACTIVITY_GAMES = ['wait-what', 'crass-act'] as const;
 export type ActivityGame = (typeof ACTIVITY_GAMES)[number];
 export const isActivityGame = (v: unknown): v is ActivityGame => ACTIVITY_GAMES.includes(v as ActivityGame);
 
@@ -125,9 +125,9 @@ export async function challengeForCall(env: Env, instance: string, player: strin
   return { error: 'try_again' };
 }
 
-/** The call's Unhinged room: the first player opens it, everyone after gets the same code. */
+/** The call's Crass Act room: the first player opens it, everyone after gets the same code. */
 export async function roomForCall(env: Env, instance: string, now = Date.now()): Promise<{ code: string } | { error: 'rooms_unavailable' }> {
-  const game = 'unhinged';
+  const game = 'crass-act';
   const was = await refOf(env, instance, game);
   if (was && (await roomSummary(env, was))) {
     await touch(env, instance, game, now);
@@ -152,10 +152,10 @@ export async function callGames(env: Env, instance: string): Promise<CallGames> 
     const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM challenge_players WHERE challenge_id = ? AND left_at IS NULL').bind(row.id).first<{ n: number }>();
     return { ref: row.id, players: n?.n ?? 0 };
   };
-  const room = async (code: string | null): Promise<CallGames['unhinged']> => {
+  const room = async (code: string | null): Promise<CallGames['crass-act']> => {
     const s = code ? await roomSummary(env, code) : null;
     return s && code ? { ref: code, players: s.players } : null;
   };
-  const [w, u] = await Promise.all([challenge(ref('wait-what')), room(ref('unhinged'))]);
-  return { 'wait-what': w, unhinged: u };
+  const [w, u] = await Promise.all([challenge(ref('wait-what')), room(ref('crass-act'))]);
+  return { 'wait-what': w, 'crass-act': u };
 }

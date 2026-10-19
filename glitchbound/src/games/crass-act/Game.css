@@ -1,9 +1,14 @@
-/* Unhinged: black prompt cards, white answer cards, on a loud red table. */
+/* Crass Act: purple prompt cards, yellow answer cards, on a loud red table. */
 .uh {
   --uh-ink: #14101f;
   --uh-paper: #fffdf8;
   --uh-hot: #ff2e63;
   --uh-gold: #ffd23f;
+  /* Prompt cards are violet, answer cards butter yellow: never black and white. */
+  --uh-violet: #6a35e8;
+  --uh-violet-deep: #4a1fb8;
+  --uh-butter: #fff1a8;
+  --uh-mint: #8ff0c9;
   position: absolute;
   inset: 0;
   overflow-x: hidden;
@@ -42,13 +47,21 @@
 .uh-logo {
   position: relative;
   display: flex;
-  gap: 1px;
-  font-size: clamp(40px, 12vw, 64px);
+  flex-direction: column;
+  align-items: center;
+  font-size: clamp(44px, 13vw, 70px);
   font-weight: 900;
   letter-spacing: -0.02em;
-  line-height: 1;
+  line-height: 0.98;
 }
-.uh-logo span {
+.uh-word {
+  display: flex;
+  gap: 1px;
+}
+.uh-word + .uh-word span {
+  color: var(--uh-gold);
+}
+.uh-word span {
   display: inline-block;
   color: #fff;
   -webkit-text-stroke: 3px var(--uh-ink);
@@ -406,45 +419,50 @@
     transform: scale(1.1);
   }
 }
-.uh-black {
+.uh-prompt {
   position: relative;
   width: min(100%, 360px);
   min-height: 170px;
-  padding: 18px 18px 34px;
-  border: 3px solid #000;
-  border-radius: 18px;
-  background: var(--uh-ink);
-  box-shadow: 6px 7px 0 rgb(0 0 0 / 0.35);
+  padding: 22px 18px 22px;
+  border: 3px solid var(--uh-ink);
+  border-radius: 22px 22px 22px 6px;
+  background: linear-gradient(160deg, var(--uh-violet), var(--uh-violet-deep));
+  box-shadow: 6px 7px 0 var(--uh-ink);
   color: #fff;
   text-align: left;
   animation: uh-deal 0.35s ease-out;
 }
-.uh-black p {
+.uh-prompt p {
   font-size: clamp(19px, 5vw, 23px);
   font-weight: 850;
   line-height: 1.28;
 }
-.uh-black small {
+.uh-prompt small {
   position: absolute;
-  left: 18px;
-  bottom: 12px;
-  font-size: 11px;
+  top: -14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--uh-ink);
+  border-radius: 50%;
+  background: var(--uh-gold);
+  color: var(--uh-ink);
+  font-size: 15px;
   font-weight: 900;
-  letter-spacing: 0.1em;
-  opacity: 0.6;
-  text-transform: uppercase;
+  transform: rotate(10deg);
 }
-.uh-black.is-small {
+.uh-prompt.is-small {
   min-height: 0;
-  padding: 12px 12px 26px;
+  padding: 12px;
   box-shadow: none;
 }
-.uh-black.is-small p {
+.uh-prompt.is-small p {
   font-size: 15px;
 }
-.uh-black.is-small small {
-  left: 12px;
-  bottom: 8px;
+.uh-prompt.is-small small {
+  display: none;
 }
 .uh-blank {
   display: inline-block;
@@ -475,13 +493,13 @@
   gap: 10px;
   width: 100%;
 }
-.uh-white {
+.uh-answer {
   position: relative;
   min-height: 112px;
   padding: 12px;
   border: 3px solid var(--uh-ink);
-  border-radius: 14px;
-  background: var(--uh-paper);
+  border-radius: 14px 14px 4px 14px;
+  background: var(--uh-butter);
   box-shadow: 0 4px 0 var(--uh-ink);
   color: var(--uh-ink);
   font-size: 15px;
@@ -492,21 +510,21 @@
   transition: transform 0.12s;
   animation: uh-deal 0.3s ease-out;
 }
-.uh-white:hover {
+.uh-answer:hover {
   transform: translateY(-3px) rotate(-1deg);
 }
-.uh-white.is-chosen {
-  background: var(--uh-gold);
+.uh-answer.is-chosen {
+  background: var(--uh-mint);
   transform: translateY(-6px) rotate(-2deg);
 }
-.uh-white.is-flat {
+.uh-answer.is-flat {
   display: block;
   min-height: 0;
   box-shadow: none;
   cursor: inherit;
   animation: none;
 }
-.uh-white.is-flat:hover {
+.uh-answer.is-flat:hover {
   transform: none;
 }
 .uh-order {
@@ -613,7 +631,7 @@ button.uh-entry:not(:disabled) {
   display: grid;
   gap: 4px;
 }
-.uh-hit .uh-black {
+.uh-hit .uh-prompt {
   width: 100%;
   animation: none;
 }

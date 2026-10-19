@@ -461,9 +461,9 @@ const pt: string[] = [
   'Maior sequência',
   'Acerta {n} perguntas num quiz do Wait, What?',
   'Acerta {n} perguntas do Wait, What? seguidas',
-  'Um jogo de cartas online para pessoas horríveis. Joga a pior resposta e ganha. 18+.',
+  'Preenche o espaço em branco com a pior carta da tua mão. Ganha a resposta mais engraçada. 18+.',
   // 420
-  'Um jogo de cartas de festa online para 3 a 10 jogadores, cada um no seu telemóvel. Em cada ronda, um juiz lê uma carta preta e os outros jogam a carta branca mais engraçada e mais negra da mão. Centenas de cartas originais e brutalmente grosseiras que não se repetem numa sessão, um modo de votação sem juiz e salas partilhadas por link. Só para adultos. (As cartas são em inglês.)',
+  'Um jogo de cartas de festa online para 3 a 10 jogadores, cada um no seu telemóvel. Em cada ronda, um juiz lê uma carta com um espaço em branco e os outros jogam a carta de resposta mais engraçada e mais negra da mão. Centenas de cartas originais e brutalmente grosseiras que não se repetem numa sessão, um modo de votação sem juiz e salas partilhadas por link. Só para adultos. (As cartas são em inglês.)',
   'Mais pontos num só jogo',
   'Apetece-te o quê?',
   'Tudo',

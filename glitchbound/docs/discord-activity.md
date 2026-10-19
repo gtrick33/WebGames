@@ -1,11 +1,11 @@
 # GlitchBound as a Discord Activity
 
-Wait, What? and Unhinged can be played as a **Discord Activity**: someone in a voice channel (or a DM / group-DM
+Wait, What? and Crass Act can be played as a **Discord Activity**: someone in a voice channel (or a DM / group-DM
 call) opens the App Launcher, picks GlitchBound, and everyone in the call plays together without leaving Discord.
 
 - **Wait, What?** becomes a friends' challenge for the whole call: the same round for everyone, one try each,
   live scoreboard, "Next round" for a rematch (the normal challenge, `src/platform/challenges.ts`).
-- **Unhinged** becomes one live room for the call (the rooms worker in `rooms/`), so nobody types a room code.
+- **Crass Act** becomes one live room for the call (the rooms worker in `rooms/`), so nobody types a room code.
 
 The code is in the repo and **stays off until the Discord application exists and its client ID is set** (steps
 below). Nothing here needs a GlitchBound account: players are recognised by their Discord account.
@@ -42,16 +42,16 @@ Discord client ──iframe──▶ https://<CLIENT_ID>.discordsays.com/?frame_
    `POST /api/discord/play { instanceId, game, name, key }`:
    - `wait-what`: the first player starts a fresh challenge (they host it); everyone after joins that one. If it
      has ended (the host ended it, or it closed by itself) the next pick starts a new one.
-   - `unhinged`: the first player opens a room; everyone after gets the same code. A room that has closed is
+   - `crass-act`: the first player opens a room; everyone after gets the same code. A room that has closed is
      replaced the same way.
    The pairs live in D1 (`discord_instances`, migration `0009`), claimed in one transaction so two people
    tapping at the same moment still end up together. `GET /api/discord/play?instanceId=…` tells the page what is
    already running in the call ("Wait, What? · 3 playing"), polled every few seconds while the picker is open.
    Rows untouched for two days are deleted.
 6. **Play.** The page navigates (client-side) to `/games/wait-what?challenge=<id>` or
-   `/games/unhinged?room=<code>`. Inside the Activity the arcade header and footer are replaced by a slim bar
+   `/games/crass-act?room=<code>`. Inside the Activity the arcade header and footer are replaced by a slim bar
    with "All games", the challenge "Invite" button opens Discord's own invite dialog
-   (`commands.openInviteDialog()`), and Unhinged goes straight into the call's room after the 18+ check.
+   (`commands.openInviteDialog()`), and Crass Act goes straight into the call's room after the 18+ check.
 
 ### Proxy and browser rules this relies on
 
@@ -61,7 +61,7 @@ Discord client ──iframe──▶ https://<CLIENT_ID>.discordsays.com/?frame_
   `patchUrlMappings` are needed. (Older guides prefix requests with `/.proxy/`; Discord's current networking docs
   build URLs from the mapping alone, so we don't.) External things are blocked inside Discord and are left off
   there: Google sign-in, AdSense, Umami. Links that leave the app should use `commands.openExternalLink`.
-- **WebSockets** are supported by the proxy (WebRTC and WebTransport are not). Unhinged rooms already use them.
+- **WebSockets** are supported by the proxy (WebRTC and WebTransport are not). Crass Act rooms already use them.
 - **Origin.** Through the proxy, browser requests carry `Origin: https://<CLIENT_ID>.discordsays.com` while our
   Functions see their own host, so the CSRF check (`sameOrigin`) and the rooms WebSocket check would refuse
   them. `functions/api/_middleware.ts` treats exactly that one origin (our own client ID, nothing else on
@@ -116,11 +116,11 @@ Without `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET`, `/api/discord/*` answer
 10. **Try it:** in a test server (or a DM call), join a voice channel › the rocket (App Launcher) button › your
     app › Launch. Discord asks once to authorize "identify". Check: your Discord name shows, a second account
     in the call sees the same game after picking it, a Wait, What? round reaches the shared scoreboard, and an
-    Unhinged room fills with everyone in the call.
+    Crass Act room fills with everyone in the call.
 11. **Before inviting the public:** during development only you and your team can launch it. Check the
     portal's current rules for making an Activity available to everyone and for the App Directory (app
     verification, Terms of Service and Privacy Policy URLs on General Information; the privacy page is
-    `https://glitchboundstudio.com/privacy`). Unhinged is 18+: keep its in-game age check, and say so in the
+    `https://glitchboundstudio.com/privacy`). Crass Act is 18+: keep its in-game age check, and say so in the
     description.
 
 ### Local testing (optional)
@@ -142,7 +142,7 @@ and `VITE_DISCORD_CLIENT_ID` in `.env.local` before building. Switch the mapping
 ## Limits and follow-ups
 
 - A challenge has at most 6 seats; the 7th person in a call gets "This challenge already has 6 players"
-  (Unhinged rooms have their own limit).
+  (Crass Act rooms have their own limit).
 - The Discord page's texts are English-only for now (they fall back to English in every language).
 - Not yet: Discord names in the main arcade (a "Sign in with Discord" for members), rich presence
   (`setActivity` with the current game), a server-verified participant list (needs a bot token and

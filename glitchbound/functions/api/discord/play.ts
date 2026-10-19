@@ -5,7 +5,7 @@ import { cleanName } from '../../../src/platform/challenge';
 
 /**
  * POST /api/discord/play { instanceId, game, name, key }: the challenge (Wait, What?) or room
- * (Unhinged) that everyone in this Discord call shares; started by the first player who picks it.
+ * (Crass Act) that everyone in this Discord call shares; started by the first player who picks it.
  */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('forbidden', 403);
@@ -15,7 +15,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!validInstance(instance) || !isActivityGame(body?.game)) return bad('bad_request');
   const now = Date.now();
   await sweepInstances(env, now);
-  if (body.game === 'unhinged') {
+  if (body.game === 'crass-act') {
     const room = await roomForCall(env, instance, now);
     return 'error' in room ? bad(room.error, 503) : json({ room: room.code });
   }

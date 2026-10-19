@@ -63,7 +63,7 @@ export const GAMES: GameEntry[] = [
       'and the grid expands from 3×3 to 5×5. Play Classic, a 60-second Speed Run, the Daily Challenge or the no-mistakes Perfect Recall ladder.',
     categories: ['puzzle', 'arcade'],
     moods: ['brainy', 'quick'],
-    tags: ['memory', 'sequence', 'simon', 'brain', 'grid', 'tiles', 'daily', 'pattern', 'focus'],
+    tags: ['memory', 'sequence', 'simon says', 'brain', 'grid', 'tiles', 'daily', 'pattern', 'focus'],
     released: '2026-10-18',
     accent: 'yellow',
     emoji: '🧠',
@@ -516,11 +516,11 @@ export const GAMES: GameEntry[] = [
     limits: { scorePerSecond: 160, minSeconds: 10 },
   },
   {
-    slug: 'unhinged',
-    title: 'Unhinged',
-    tagline: 'The online card game for terrible people. Play the most horrible answer and win. 18+.',
+    slug: 'crass-act',
+    title: 'Crass Act',
+    tagline: 'Fill in the blank with the worst card in your hand. The funniest answer wins. 18+.',
     description:
-      'An online party card game for 3 to 10 players, each on their own phone. Every round a judge reads a black card and everyone else plays the funniest, darkest white card from their hand. ' +
+      'An online party card game for 3 to 10 players, each on their own phone. Every round a judge reads a prompt card with a blank and everyone else plays the funniest, darkest answer card from their hand. ' +
       'Hundreds of original, brutally rude cards that never repeat in a session, a vote mode with no judge, and rooms you share with a link. Adults only.',
     categories: ['party', 'word'],
     moods: ['friends'],
@@ -529,9 +529,9 @@ export const GAMES: GameEntry[] = [
     accent: 'coral',
     emoji: '😈',
     art: {
-      tile: '/games/unhinged/tile.webp',
-      wide: '/games/unhinged/wide.webp',
-      alt: 'The word UNHINGED in wobbly cartoon letters over a black prompt card and a fan of white answer cards on a red table',
+      tile: '/games/crass-act/tile.webp',
+      wide: '/games/crass-act/wide.webp',
+      alt: 'The words CRASS ACT in chunky cartoon letters next to a purple prompt card and a yellow answer card on a red table',
       bg: '#e5383b',
     },
     partyOnly: true,

@@ -11,17 +11,17 @@ const PARTY: Record<string, { name: string; emoji: string; pitch: string }> = {
   rps: { name: 'Rock Paper Scissors', emoji: '✊', pitch: 'Everyone throws in secret, all hands revealed at once. Last hand standing wins.' },
 };
 
-/** GET /r/<code>: a room invite (Unhinged or a Party Mode game). Chats show who is waiting; people land in the room. */
+/** GET /r/<code>: a room invite (Crass Act or a Party Mode game). Chats show who is waiting; people land in the room. */
 export async function onRequestGet({ request, env, params }: Ctx): Promise<Response> {
   const code = String(params?.code ?? '').toUpperCase();
   let host = '';
   let players = 0;
-  let game = 'unhinged';
+  let game = 'crass-act';
   if (validCode(code)) {
     const res = await roomStub(env, code)
       ?.fetch('https://room/info')
       .catch(() => null);
-    if (res?.ok) ({ host, players, game = 'unhinged' } = (await res.json()) as { host: string; players: number; game?: string });
+    if (res?.ok) ({ host, players, game = 'crass-act' } = (await res.json()) as { host: string; players: number; game?: string });
   }
   const party = Object.hasOwn(PARTY, game) ? PARTY[game] : undefined;
   if (party) {
@@ -29,8 +29,8 @@ export async function onRequestGet({ request, env, params }: Ctx): Promise<Respo
     const description = `Room ${code} · ${players ? `${players} player${players === 1 ? '' : 's'} waiting · ` : ''}${party.pitch} Free, on your own phone.`;
     return previewPage(env, request, '/party', { title, description, image: '/og.png', replaceUrl: validCode(code) ? `/party?room=${code}` : '/party' });
   }
-  const target = validCode(code) ? `/games/unhinged?room=${code}` : '/games/unhinged';
-  const title = host ? `${host} wants you in an Unhinged room 😈` : 'Join my Unhinged room 😈';
-  const description = `Room ${code} · ${players ? `${players} player${players === 1 ? '' : 's'} waiting · ` : ''}The card game for terrible people. 18+, free in your browser.`;
-  return previewPage(env, request, '/games/unhinged', { title, description, image: '/games/unhinged/og.jpg', replaceUrl: target });
+  const target = validCode(code) ? `/games/crass-act?room=${code}` : '/games/crass-act';
+  const title = host ? `${host} wants you in an Crass Act room 😈` : 'Join my Crass Act room 😈';
+  const description = `Room ${code} · ${players ? `${players} player${players === 1 ? '' : 's'} waiting · ` : ''}Fill-in-the-blank party cards for adults. 18+, free in your browser.`;
+  return previewPage(env, request, '/games/crass-act', { title, description, image: '/games/crass-act/og.jpg', replaceUrl: target });
 }

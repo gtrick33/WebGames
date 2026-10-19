@@ -65,11 +65,11 @@ export function watchParticipants(sdk: DiscordSDK, onChange: (list: Participant[
   };
 }
 
-export type CallGames = Record<'wait-what' | 'unhinged', { ref: string; players: number } | null>;
+export type CallGames = Record<'wait-what' | 'crass-act', { ref: string; players: number } | null>;
 
 /** What is already running in the call. */
 export const callGames = (instanceId: string): Promise<{ games: CallGames }> => api(`/api/discord/play?instanceId=${encodeURIComponent(instanceId)}`);
 
-/** The call's challenge (Wait, What?) or room (Unhinged), started by whoever picks it first. */
-export const playInCall = (instanceId: string, game: 'wait-what' | 'unhinged', name: string, key: string): Promise<{ challenge?: string; room?: string }> =>
+/** The call's challenge (Wait, What?) or room (Crass Act), started by whoever picks it first. */
+export const playInCall = (instanceId: string, game: 'wait-what' | 'crass-act', name: string, key: string): Promise<{ challenge?: string; room?: string }> =>
   api('/api/discord/play', { body: { instanceId, game, name, key } });

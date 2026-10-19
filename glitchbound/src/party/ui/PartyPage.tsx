@@ -24,7 +24,7 @@ import './Party.css';
 /** The party line-up as players see it: the admins' Party settings applied (hidden, featured, texts, rooms). */
 function usePartyLineup() {
   const live = useLiveCatalog();
-  const games = PARTY_GAMES.filter((g) => !partySettingsFor(live.raw, g.id).hidden && (g.id !== 'unhinged' || !live.settings('unhinged').hidden)).map((g) => {
+  const games = PARTY_GAMES.filter((g) => !partySettingsFor(live.raw, g.id).hidden && (g.id !== 'crass-act' || !live.settings('crass-act').hidden)).map((g) => {
     const s = partySettingsFor(live.raw, g.id);
     return { ...g, title: s.title || g.title, blurb: s.blurb || g.blurb, room: s.room ? g.room : null, label: s.sticker, featured: s.featured };
   });
@@ -173,10 +173,10 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
     CONSEQUENCE_LABEL[s.consequence],
   ].join(' · ');
   const customCount = session.custom.challenges.length + session.custom.nhie.length;
-  const unhinged = getGame('unhinged');
+  const crassAct = getGame('crass-act');
   const { modes, rooms, featured } = usePartyLineup();
   const openRoom = (game: RoomGame = 'impostor'): void => {
-    if (game === 'unhinged') return navigate('/games/unhinged');
+    if (game === 'crass-act') return navigate('/games/crass-act');
     setRoomMsg('Opening a room…');
     (game === 'impostor' ? openImpostorRoom() : openPartyRoom(game)).catch((e: unknown) => setRoomMsg(e instanceof Error ? e.message : 'Could not open a room. Try again.'));
   };
@@ -208,7 +208,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
       {featured.length > 0 && (
         <div className="pt-stars">
           {featured.map((g) => (
-            <Feature key={g.id} g={g} where={where} art={g.id === 'unhinged' ? unhinged?.art : undefined} onPlay={() => pick(g.id as ModeId)} onRoom={() => g.room && openRoom(g.room)} />
+            <Feature key={g.id} g={g} where={where} art={g.id === 'crass-act' ? crassAct?.art : undefined} onPlay={() => pick(g.id as ModeId)} onRoom={() => g.room && openRoom(g.room)} />
           ))}
         </div>
       )}
@@ -220,9 +220,9 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
             <p className="pt-muted">Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.</p>
             <div className="pt-online-games">
               {rooms.map((r) => {
-                // Unhinged keeps its own art and 18+ sticker; its room opens on its own page (name and age check first).
-                const art = r.id === 'unhinged' ? unhinged?.art : undefined;
-                const sticker = r.label || (r.id === 'unhinged' ? r.sticker : '');
+                // Crass Act keeps its own art and 18+ sticker; its room opens on its own page (name and age check first).
+                const art = r.id === 'crass-act' ? crassAct?.art : undefined;
+                const sticker = r.label || (r.id === 'crass-act' ? r.sticker : '');
                 return (
                   <div key={r.id} data-party-game={r.id} className={`pt-online-game${focus === r.id ? ' is-found' : ''}`} style={{ ['--mc' as string]: r.color }}>
                     {art ? (
@@ -483,7 +483,7 @@ function Feature({ g, where, art, onPlay, onRoom }: { g: ShownGame; where: 'one'
   const sticker = g.label || g.sticker;
   const both = g.onePhone && !!g.room;
   return (
-    <section className={`pt-feature${g.id === 'unhinged' ? ' is-unhinged' : ''}`} style={g.id === 'unhinged' || g.id === 'impostor' ? undefined : { background: `linear-gradient(130deg, ${g.color}, #ff4fa3 75%)` }} aria-labelledby={`pt-feature-${g.id}`}>
+    <section className={`pt-feature${g.id === 'crass-act' ? ' is-crass-act' : ''}`} style={g.id === 'crass-act' || g.id === 'impostor' ? undefined : { background: `linear-gradient(130deg, ${g.color}, #ff4fa3 75%)` }} aria-labelledby={`pt-feature-${g.id}`}>
       {sticker && <span className="pt-feature-sticker">{sticker}</span>}
       {art ? (
         <img className="pt-feature-art" src={art.tile} alt="" width={88} height={88} style={{ background: art.bg }} />

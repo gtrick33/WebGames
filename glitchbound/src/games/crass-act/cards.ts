@@ -1,5 +1,5 @@
 /**
- * Unhinged cards (18+). Original content. Prompts use "____" for each blank: one blank means play one
+ * Crass Act cards (18+). Original content. Prompts use "____" for each blank: one blank means play one
  * card, two blanks means play two (in order). Append only: a card's id is its position, and rooms in
  * progress refer to cards by id.
  */

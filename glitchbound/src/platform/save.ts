@@ -2,6 +2,7 @@ import type { GameEntry } from '../catalog/types';
 import type { EndEvent } from './contract';
 import { addDays, dayKey } from './dates';
 import { challengeForDay, metricValue } from './daily';
+import { currentSlug } from '../catalog/catalog';
 
 /**
  * Anonymous, device-local player data. Nothing here leaves the browser.
@@ -46,7 +47,7 @@ export function sanitizeSave(raw: unknown): Save {
       if (!isObj(rec) || !/^[a-z0-9-]{1,64}$/.test(slug)) continue;
       const best: Record<string, number> = {};
       if (isObj(rec.best)) for (const [k, v] of Object.entries(rec.best)) if (isNum(v)) best[k] = Math.floor(v);
-      save.games[slug] = { plays: isNum(rec.plays) ? Math.floor(rec.plays) : 0, best, last: isNum(rec.last) ? rec.last : 0 };
+      save.games[currentSlug(slug)] = { plays: isNum(rec.plays) ? Math.floor(rec.plays) : 0, best, last: isNum(rec.last) ? rec.last : 0 };
     }
   }
   if (isObj(raw.daily)) {
@@ -59,7 +60,7 @@ export function sanitizeSave(raw: unknown): Save {
     for (const [day, slugs] of Object.entries(raw.gameDailies)) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Array.isArray(slugs)) continue;
       const valid = slugs.filter((s): s is string => typeof s === 'string' && /^[a-z0-9-]{1,64}$/.test(s));
-      if (valid.length) save.gameDailies[day] = [...new Set(valid)].slice(0, 64);
+      if (valid.length) save.gameDailies[day] = [...new Set(valid.map(currentSlug))].slice(0, 64);
     }
   }
   return save;

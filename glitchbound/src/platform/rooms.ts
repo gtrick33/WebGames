@@ -1,5 +1,5 @@
 /**
- * Live rooms in the browser (Unhinged and the Party Mode games): creating one, checking one exists, and the live
+ * Live rooms in the browser (Crass Act and the Party Mode games): creating one, checking one exists, and the live
  * connection. The rooms themselves run on the glitchbound-rooms worker (rooms/worker.ts).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -8,10 +8,10 @@ import { playerKey } from './challenges';
 
 export type Connection = 'connecting' | 'open' | 'reconnecting' | 'gone';
 
-export type RoomGame = 'unhinged' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps';
+export type RoomGame = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps';
 
 /** Creates a room for a game on the server; returns its code. */
-export async function createRoom(game: RoomGame = 'unhinged'): Promise<string> {
+export async function createRoom(game: RoomGame = 'crass-act'): Promise<string> {
   const res = await fetch('/api/rooms', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ game }) });
   const data = (await res.json().catch(() => ({}))) as { code?: string; error?: string };
   if (!res.ok || !data.code) throw new Error(data.error === 'rooms_unavailable' ? 'Rooms are not available right now. Try again in a minute.' : 'Could not open a room. Try again.');
@@ -65,7 +65,7 @@ export function useRoom<View, Action>(code: string, name: string) {
             // Counted once per visit to a room (the admin's room stats), not on every reconnect.
             if (!joined) {
               joined = true;
-              track('room_join', { room: (m.state as { game?: string }).game ?? 'unhinged' });
+              track('room_join', { room: (m.state as { game?: string }).game ?? 'crass-act' });
             }
             setView(m.state);
             if (m.now) setSkew(m.now - Date.now());

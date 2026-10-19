@@ -1,4 +1,4 @@
-# Live rooms for Unhinged (Durable Objects). Deployed separately from the Pages site:
+# Live rooms for Crass Act (Durable Objects). Deployed separately from the Pages site:
 #   npx wrangler deploy --config rooms/wrangler.toml
 # The site binds to it as ROOMS (see ../wrangler.toml). It has no public URL of its own.
 name = "glitchbound-rooms"

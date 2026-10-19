@@ -29,16 +29,16 @@ describe('site search', () => {
     expect(top('impostor')).toEqual({ kind: 'party', first: 'impostor' });
     expect(top('truth or dare')).toEqual({ kind: 'party', first: 'prompts' });
     expect(top('never have i ever')).toEqual({ kind: 'party', first: 'nhie' });
-    expect(top('heads up')).toEqual({ kind: 'party', first: 'charades' });
+    expect(top('forehead')).toEqual({ kind: 'party', first: 'charades' });
     expect(top('rock paper scissors')).toEqual({ kind: 'party', first: 'rps' });
     expect(found('party')).toEqual(expect.arrayContaining(['party:impostor', 'party:charades', 'party:board']));
     expect(partyHref({ id: 'rps' })).toBe('/party?play=rps');
   });
 
-  it('still finds arcade games first by their names, and Unhinged only once', () => {
+  it('still finds arcade games first by their names, and Crass Act only once', () => {
     expect(top('wing')).toEqual({ kind: 'games', first: 'wing-it' });
     expect(top('racing')).toMatchObject({ kind: 'games' });
-    expect(found('unhinged').filter((x) => x.endsWith(':unhinged'))).toEqual(['games:unhinged']);
+    expect(found('crass act').filter((x) => x.endsWith(':crass-act'))).toEqual(['games:crass-act']);
   });
 
   it('only offers what fits the player', () => {

@@ -1,5 +1,5 @@
 /**
- * Unhinged game rules, as pure functions over a room's state. The room server (rooms/worker.ts) keeps
+ * Crass Act game rules, as pure functions over a room's state. The room server (rooms/worker.ts) keeps
  * one State per room, applies players' actions with `act`, runs timers with `tick`, and sends each
  * player `viewFor(state, key)`: only their own hand, and nobody's secret key.
  *

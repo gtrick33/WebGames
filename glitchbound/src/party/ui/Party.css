@@ -668,12 +668,12 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: 18px 14px;
 }
-.pt-feature.is-unhinged {
+.pt-feature.is-crass-act {
   background:
     radial-gradient(circle at 12% 30%, rgb(255 255 255 / 0.18), transparent 40%),
     linear-gradient(130deg, #e5383b, #8c1239 55%, #241032);
 }
-.pt-feature.is-unhinged .pt-feature-sticker {
+.pt-feature.is-crass-act .pt-feature-sticker {
   background: #1d1238;
   color: #fff;
 }
@@ -1277,7 +1277,7 @@ img.pt-feature-art {
   touch-action: manipulation;
 }
 
-/* Charades: get ready + heads up */
+/* Charades: get ready + forehead */
 .pt-getready {
   gap: 10px;
 }

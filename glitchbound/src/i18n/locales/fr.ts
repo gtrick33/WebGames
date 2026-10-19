@@ -461,9 +461,9 @@ const fr: string[] = [
   'Plus longue série',
   'Réponds juste à {n} questions dans un quiz Wait, What?',
   'Réponds juste à {n} questions Wait, What? d’affilée',
-  'Le jeu de cartes en ligne pour les gens horribles. Joue la réponse la plus atroce et gagne. 18+.',
+  'Complète le blanc avec la pire carte de ta main. La réponse la plus drôle gagne. 18+.',
   // 420
-  'Un jeu de cartes festif en ligne pour 3 à 10 joueurs, chacun sur son téléphone. À chaque manche, un juge lit une carte noire et les autres jouent la carte blanche la plus drôle et la plus noire de leur main. Des centaines de cartes originales, brutalement grossières, sans répétition dans une session, un mode vote sans juge et des salons à partager par lien. Réservé aux adultes. (Les cartes sont en anglais.)',
+  'Un jeu de cartes festif en ligne pour 3 à 10 joueurs, chacun sur son téléphone. À chaque manche, un juge lit une carte à trou et les autres jouent la carte réponse la plus drôle et la plus noire de leur main. Des centaines de cartes originales, brutalement grossières, sans répétition dans une session, un mode vote sans juge et des salons à partager par lien. Réservé aux adultes. (Les cartes sont en anglais.)',
   'Le plus de points en une partie',
   'Tu as envie de quoi ?',
   'Tout',

@@ -176,7 +176,7 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       path: '/discord',
       file: 'discord.html',
       title: `GlitchBound on Discord · ${SITE}`,
-      description: 'Play Wait, What? and Unhinged together in a Discord call: open the Activities menu in a voice channel and pick GlitchBound.',
+      description: 'Play Wait, What? and Crass Act together in a Discord call: open the Activities menu in a voice channel and pick GlitchBound.',
       image: '/og.png',
       imageAlt: SITE,
       noindex: true,

@@ -50,10 +50,10 @@ export const PAGES: PageEntry[] = [
 
 /** Party games: extra words people use for them. */
 const PARTY_WORDS: Partial<Record<PartyGame['id'], string[]>> = {
-  impostor: ['spy', 'undercover', 'liar', 'secret word', 'faker', 'imposter', 'among us'],
+  impostor: ['spy', 'undercover', 'liar', 'secret word', 'faker', 'imposter', 'social deduction'],
   prompts: ['truth or dare', 'truth', 'dare', 'dares', 'most likely to', 'questions', 'cards'],
   nhie: ['never have i ever', 'nhie', 'fingers', 'confessions'],
-  charades: ['act', 'acting', 'mime', 'heads up', 'draw', 'drawing', 'guess', 'pictionary'],
+  charades: ['act', 'acting', 'mime', 'forehead', 'draw', 'drawing', 'guess', 'sketch'],
   board: ['dice', 'board game', 'snakes and ladders', 'ladders', 'roll'],
   auction: ['bid', 'bidding', 'auction', 'money', 'collection', 'price'],
   rps: ['rock paper scissors', 'rock', 'paper', 'scissors', 'rps', 'roshambo'],
@@ -136,7 +136,7 @@ export function siteSearch(q: string, ctx: SearchContext): SearchGroup[] {
   const games = typed && !latin ? [] : queryGames({ q }, ctx.games);
   const gameBest = Math.max(0, ...games.map((g) => matchScore(g, q)));
 
-  // Unhinged is an arcade game too; it shows once, with its art.
+  // Crass Act is an arcade game too; it shows once, with its art.
   const partyList = (ctx.party ?? PARTY_GAMES).filter((g) => !ctx.games.some((x) => x.slug === g.id));
   const party = partyList
     .map((g) => ({ g, s: score(q, g.title, [...(PARTY_WORDS[g.id] ?? []), 'party game'], `${g.blurb} ${g.roomBlurb ?? ''}`) }))

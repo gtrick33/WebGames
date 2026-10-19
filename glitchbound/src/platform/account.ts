@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { Me, PublicConfig, QuestView } from './apiTypes';
 import { dayKey } from './dates';
+import { currentSlug } from '../catalog/catalog';
 
 /**
  * The signed-in member (or guest) on the client. Talks to /api; everything degrades gracefully
@@ -43,7 +44,7 @@ const GUEST_FAVS = 'glitchbound.favorites';
 function readGuestFavs(): string[] {
   try {
     const v: unknown = JSON.parse(localStorage.getItem(GUEST_FAVS) ?? '[]');
-    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').slice(0, 100) : [];
+    return Array.isArray(v) ? [...new Set(v.filter((x): x is string => typeof x === 'string').map(currentSlug))].slice(0, 100) : [];
   } catch {
     return [];
   }

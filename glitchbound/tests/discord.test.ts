@@ -6,7 +6,7 @@ import { onRequestPost as token } from '../functions/api/discord/token';
 import { challengeForCall, displayName, INSTANCE_KEEP_MS, playerKeyFor } from '../server/discord';
 import type { Ctx, Env, RoomNamespace } from '../server/http';
 import { sameOrigin } from '../server/http';
-import { validKey } from '../src/games/unhinged/engine';
+import { validKey } from '../src/games/crass-act/engine';
 import { playerKey, setPlayerKey } from '../src/platform/challenges';
 import { isDiscordLaunch } from '../src/platform/embed';
 import { matchRoute } from '../src/router/router';
@@ -146,7 +146,7 @@ describe('Discord Activity: API', () => {
       expect((await pick('wait-what', keyOf(2), 'Theo')).data.challenge).toBe(a.data.challenge);
       expect(rows('SELECT COUNT(*) AS n FROM challenge_players')).toEqual([{ n: 2 }]);
       const st = await call<{ games: Record<string, { ref: string; players: number } | null> }>(status, `/api/discord/play?instanceId=${INSTANCE}`);
-      expect(st.data.games).toEqual({ 'wait-what': { ref: a.data.challenge, players: 2 }, unhinged: null });
+      expect(st.data.games).toEqual({ 'wait-what': { ref: a.data.challenge, players: 2 }, 'crass-act': null });
     });
 
     it('keeps two players who pick at the same moment together', async () => {
@@ -180,32 +180,32 @@ describe('Discord Activity: API', () => {
     });
   });
 
-  describe('one Unhinged room per call', () => {
+  describe('one Crass Act room per call', () => {
     it('opens a room for the first player and hands everyone the same code', async () => {
-      const a = await pick('unhinged', keyOf(1), 'Mira');
-      const b = await pick('unhinged', keyOf(2), 'Theo');
+      const a = await pick('crass-act', keyOf(1), 'Mira');
+      const b = await pick('crass-act', keyOf(2), 'Theo');
       expect(a.data.room).toMatch(/^[A-HJKMNP-Z]{5}$/);
       expect(b.data.room).toBe(a.data.room);
       expect(rooms.rooms.size).toBe(1);
     });
 
     it('opens a new room once the call’s room has closed', async () => {
-      const a = (await pick('unhinged', keyOf(1), 'Mira')).data.room!;
+      const a = (await pick('crass-act', keyOf(1), 'Mira')).data.room!;
       rooms.rooms.delete(a);
-      const b = (await pick('unhinged', keyOf(1), 'Mira')).data.room!;
+      const b = (await pick('crass-act', keyOf(1), 'Mira')).data.room!;
       expect(b).not.toBe(a);
       expect(rows('SELECT ref FROM discord_instances')).toEqual([{ ref: b }]);
     });
 
     it('says so when rooms are unavailable', async () => {
       env.ROOMS = undefined;
-      expect(await pick('unhinged', keyOf(1), 'Mira')).toEqual({ status: 503, data: { error: 'rooms_unavailable' } });
+      expect(await pick('crass-act', keyOf(1), 'Mira')).toEqual({ status: 503, data: { error: 'rooms_unavailable' } });
     });
   });
 
   it('forgets calls nobody has used for two days', async () => {
     await pick('wait-what', keyOf(1), 'Mira');
-    db.sqlite.prepare("INSERT INTO discord_instances (instance_id, game, ref, updated_at) VALUES ('old-call', 'unhinged', 'ABCDE', ?)").run(now - INSTANCE_KEEP_MS - 5000);
+    db.sqlite.prepare("INSERT INTO discord_instances (instance_id, game, ref, updated_at) VALUES ('old-call', 'crass-act', 'ABCDE', ?)").run(now - INSTANCE_KEEP_MS - 5000);
     await pick('wait-what', keyOf(2), 'Theo');
     expect(rows('SELECT instance_id FROM discord_instances')).toEqual([{ instance_id: INSTANCE }]);
   });

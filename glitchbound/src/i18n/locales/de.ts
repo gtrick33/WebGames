@@ -461,9 +461,9 @@ const de: string[] = [
   'Längste Serie',
   'Beantworte {n} Fragen richtig in einem Wait-What?-Quiz',
   'Beantworte {n} Wait-What?-Fragen hintereinander richtig',
-  'Das Online-Kartenspiel für schreckliche Menschen. Spiel die fieseste Antwort und gewinn. Ab 18.',
+  'Füll die Lücke mit der fiesesten Karte auf deiner Hand. Die lustigste Antwort gewinnt. Ab 18.',
   // 420
-  'Ein Online-Partykartenspiel für 3 bis 10 Spieler, jeder am eigenen Handy. Jede Runde liest ein Richter eine schwarze Karte vor, und alle anderen spielen die lustigste, schwärzeste weiße Karte aus ihrer Hand. Hunderte originale, brutal derbe Karten ohne Wiederholung pro Sitzung, ein Abstimmungsmodus ohne Richter und Räume, die du per Link teilst. Nur für Erwachsene. (Die Karten sind englisch.)',
+  'Ein Online-Partykartenspiel für 3 bis 10 Spieler, jeder am eigenen Handy. Jede Runde liest ein Richter eine Lückenkarte vor, und alle anderen spielen die lustigste, schwärzeste Antwortkarte aus ihrer Hand. Hunderte originale, brutal derbe Karten ohne Wiederholung pro Sitzung, ein Abstimmungsmodus ohne Richter und Räume, die du per Link teilst. Nur für Erwachsene. (Die Karten sind englisch.)',
   'Meiste Punkte in einem Spiel',
   'Worauf hast du Lust?',
   'Alles',
