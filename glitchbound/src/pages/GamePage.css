@@ -246,8 +246,12 @@
     gap: 8px;
   }
   .game-heading .chip,
+  .game-heading .adult-label-text,
   .hide-sm {
     display: none;
+  }
+  .game-heading .adult-label {
+    padding-right: 3px;
   }
   .back-link {
     padding: 0 10px;

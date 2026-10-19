@@ -11,7 +11,7 @@ import './AdminLayout.css';
 
 /**
  * Admin › Games › Home page banners: the arcade grid in miniature. Click a banner to move it, resize
- * it, recolour it or give it a sticker; presets restyle the whole grid in one click. Nothing changes
+ * it, recolor it or give it a sticker; presets restyle the whole grid in one click. Nothing changes
  * for players until "Publish".
  */
 
@@ -86,7 +86,7 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
         <h2 id="ag-layout">Home page banners</h2>
         <span className="mono info-small">{saved ? 'Custom layout live' : 'Automatic'}</span>
       </div>
-      <p className="info-small">Click a banner to move, resize, recolour or label it. Players see it after you publish. On phones banners show two per row in this order; big and wide ones take the whole row.</p>
+      <p className="info-small">Click a banner to move, resize, recolor or label it. Players see it after you publish. On phones banners show two per row in this order; big and wide ones take the whole row.</p>
 
       <div className="al-presets">
         <span className="al-label">Look</span>
@@ -244,9 +244,9 @@ function TileTools(props: {
         </div>
       </div>
       <div className="al-row">
-        <span className="al-label">Colour</span>
+        <span className="al-label">Color</span>
         <div className="al-swatches">
-          <button className={`al-swatch is-default${accent === null ? ' is-on' : ''}`} style={{ ['--acc' as string]: `var(--${game.accent})` }} onClick={() => props.onAccent(null)} title="The game's own colour" aria-label="Default colour">
+          <button className={`al-swatch is-default${accent === null ? ' is-on' : ''}`} style={{ ['--acc' as string]: `var(--${game.accent})` }} onClick={() => props.onAccent(null)} title="The game's own color" aria-label="Default color">
             ↺
           </button>
           {ACCENTS.map((a) => (
@@ -283,7 +283,7 @@ function TileTools(props: {
 
 /**
  * Admin › Games › Holiday look: one click switches the site's holiday touches (greeting, logo
- * sticker, floating decorations, highlight colours). Automatic follows the calendar.
+ * sticker, floating decorations, highlight colors). Automatic follows the calendar.
  */
 export function SeasonPicker({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
   const current: SeasonSetting = data.season ?? 'auto';
@@ -304,7 +304,7 @@ export function SeasonPicker({ data, send, busy }: { data: AdminCatalog; send: S
         <h2 id="ag-season">Holiday look</h2>
         <span className="mono info-small">{now ? `Live now: ${now.emoji} ${now.name}` : 'No holiday look live'}</span>
       </div>
-      <p className="info-small">A greeting on the home page, a sticker on the logo, a few floating decorations and festive colours. Automatic switches them on around Halloween, Diwali, the winter holidays, Lunar New Year, Valentine’s Day and Easter.</p>
+      <p className="info-small">A greeting on the home page, a sticker on the logo, a few floating decorations and festive colors. Automatic switches them on around Halloween, Diwali, the winter holidays, Lunar New Year, Valentine’s Day and Easter.</p>
       <div className="as-grid" role="radiogroup" aria-label="Holiday look">
         <button role="radio" aria-checked={current === 'auto'} className={`as-card${current === 'auto' ? ' is-on' : ''}`} style={{ ['--c1' as string]: '#2ad1f0', ['--c2' as string]: '#b6e62c' }} onClick={() => pick('auto')} disabled={busy}>
           <span className="as-emoji">🗓️</span>

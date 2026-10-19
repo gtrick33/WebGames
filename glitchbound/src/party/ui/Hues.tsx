@@ -30,9 +30,9 @@ interface Game {
 }
 
 /**
- * Hue Knew? on one phone: the cue giver secretly picks one of four colours and describes it in one
+ * Hue Knew? on one phone: the cue giver secretly picks one of four colors and describes it in one
  * word (then two more, if the table wants a second clue). Everyone taps where they think it is on
- * the colour board. Points go by how alike the colours look, and the cue giver earns a point for
+ * the color board. Points go by how alike the colors look, and the cue giver earns a point for
  * every close guess.
  */
 export function HuesMode({ session, update, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
@@ -47,7 +47,7 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
   const guessers = players.filter((p) => p !== cue);
   const toMark = (m: Mark): BoardMark => ({ cell: m.cell, glyph: byId(players, m.player)?.emoji ?? '•' });
 
-  // The colours are drawn outside the state updaters (React may run an updater twice in development).
+  // The colors are drawn outside the state updaters (React may run an updater twice in development).
   const newRound = (): Partial<Game> => ({ offer: offerColours(r), target: null, marks: [], who: 0, stage: 'pass' });
   const start = (): void => {
     setPending(null);
@@ -83,8 +83,8 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
         <div className="pt-panel">
           <h3>How it works</h3>
           <p className="pt-muted">
-            Each round one player is the <b>cue giver</b>. They secretly pick one of four colours and describe it in <b>one word</b> (no colour names like “red” or “blue”: try “ketchup”). Everyone else taps where they think it
-            is on the board. The closer the colour looks, the more points; the cue giver scores for every close guess.
+            Each round one player is the <b>cue giver</b>. They secretly pick one of four colors and describe it in <b>one word</b> (no color names like “red” or “blue”: try “ketchup”). Everyone else taps where they think it
+            is on the board. The closer the color looks, the more points; the cue giver scores for every close guess.
           </p>
           <label className="pt-switch">
             <input type="checkbox" checked={second} onChange={(e) => set({ second: e.target.checked })} />
@@ -131,16 +131,16 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
         <ModeBar title="Hue Knew?" progress={progress} onExit={onExit} />
         <div className="pt-panel">
           <p className="pt-kicker">
-            <Name player={cue} />, pick your secret colour
+            <Name player={cue} />, pick your secret color
           </p>
           <div className="pt-hk-offer">
             {offer.map((i) => (
-              <button key={i} className={`pt-hk-swatch${target === i ? ' is-on' : ''}`} style={{ background: cellHex(i) }} onClick={() => set({ target: i })} aria-pressed={target === i} aria-label={`Colour ${offer.indexOf(i) + 1}`} />
+              <button key={i} className={`pt-hk-swatch${target === i ? ' is-on' : ''}`} style={{ background: cellHex(i) }} onClick={() => set({ target: i })} aria-pressed={target === i} aria-label={`Color ${offer.indexOf(i) + 1}`} />
             ))}
           </div>
           {target !== null && <Board target={target} marks={[]} highlight />}
           <button className="pt-btn pt-btn-go pt-btn-big" disabled={target === null} onClick={() => setStage('clue')}>
-            {target === null ? 'Tap a colour' : 'Hide it · I’ve got a one-word clue'}
+            {target === null ? 'Tap a color' : 'Hide it · I’ve got a one-word clue'}
           </button>
         </div>
       </div>
@@ -156,7 +156,7 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
           <p className="pt-kicker">
             <Avatar player={cue} size={26} /> <Name player={cue} />, say your {stage === 'clue' ? 'one-word clue' : 'second clue (up to two words)'} out loud!
           </p>
-          <p className="pt-muted">No colour names, please. Then pass the phone round: everyone taps their guess.</p>
+          <p className="pt-muted">No color names, please. Then pass the phone round: everyone taps their guess.</p>
           {stage === 'clue2' && <Board target={null} marks={marks.map(toMark)} />}
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('guess')}>
             Start guessing · {guessers[0]!.name} first
@@ -171,13 +171,13 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
           </p>
           <Board target={null} marks={marks.map(toMark)} pending={pending} pendingGlyph={guesser.emoji} onPick={setPending} />
           <button className="pt-btn pt-btn-go pt-btn-big" disabled={pending === null} onClick={place}>
-            {pending === null ? 'Tap a colour on the board' : who + 1 < guessers.length ? `Lock it in · pass to ${guessers[who + 1]!.name}` : 'Lock it in'}
+            {pending === null ? 'Tap a color on the board' : who + 1 < guessers.length ? `Lock it in · pass to ${guessers[who + 1]!.name}` : 'Lock it in'}
           </button>
         </div>
       )}
       {stage === 'reveal' && target !== null && (
         <div className="pt-panel">
-          <p className="pt-kicker">The colour was…</p>
+          <p className="pt-kicker">The color was…</p>
           <Board target={target} marks={marks.map(toMark)} highlight />
           <HueLegend />
           <ul className="pt-hk-gains">
@@ -215,7 +215,7 @@ export function HueLegend() {
   );
 }
 
-/** A guess on the board: an emoji, or a player's initial on their colour (live rooms). */
+/** A guess on the board: an emoji, or a player's initial on their color (live rooms). */
 export interface BoardMark {
   cell: number;
   glyph: string;
@@ -230,16 +230,16 @@ function MarkGlyph({ m, fresh = false }: { m: BoardMark; fresh?: boolean }) {
   );
 }
 
-/** The colour board: hues across, pale to deep down, with the players' marks on it (live rooms use it too). */
+/** The color board: hues across, pale to deep down, with the players' marks on it (live rooms use it too). */
 export function Board({ target, marks, highlight = false, pending = null, pendingGlyph, pendingColor, onPick }: { target: number | null; marks: BoardMark[]; highlight?: boolean; pending?: number | null; pendingGlyph?: string; pendingColor?: string; onPick?: (i: number) => void }) {
   const at = new Map<number, BoardMark[]>();
   for (const m of marks) at.set(m.cell, [...(at.get(m.cell) ?? []), m]);
   return (
-    <div className={`pt-hk-board${highlight ? ' is-reveal' : ''}`} style={{ ['--cols' as string]: COLS }} role="grid" aria-label="Colour board">
+    <div className={`pt-hk-board${highlight ? ' is-reveal' : ''}`} style={{ ['--cols' as string]: COLS }} role="grid" aria-label="Color board">
       {Array.from({ length: COLS * ROWS }, (_, i) => {
         const here = at.get(i);
         return (
-          <button key={i} className={`pt-hk-cell${i === target ? ' is-target' : ''}${i === pending ? ' is-pending' : ''}`} style={{ background: cellHex(i) }} onClick={() => onPick?.(i)} disabled={!onPick} aria-label={`Colour ${i + 1}`}>
+          <button key={i} className={`pt-hk-cell${i === target ? ' is-target' : ''}${i === pending ? ' is-pending' : ''}`} style={{ background: cellHex(i) }} onClick={() => onPick?.(i)} disabled={!onPick} aria-label={`Color ${i + 1}`}>
             {here && <MarkGlyph m={here[here.length - 1]!} />}
             {i === pending && pendingGlyph && <MarkGlyph m={{ cell: i, glyph: pendingGlyph, color: pendingColor }} fresh />}
           </button>

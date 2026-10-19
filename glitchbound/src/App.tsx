@@ -27,6 +27,8 @@ const FeedbackPrompt = lazy(fresh(() => import('./components/FeedbackPrompt').th
 const DailyPage = lazy(fresh(() => import('./pages/DailyPage').then((m) => ({ default: m.DailyPage }))));
 const PrivacyPage = lazy(fresh(() => import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage }))));
 const TermsPage = lazy(fresh(() => import('./pages/TermsPage').then((m) => ({ default: m.TermsPage }))));
+const AboutPage = lazy(fresh(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage }))));
+const ContactPage = lazy(fresh(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage }))));
 const AdminPage = lazy(fresh(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage }))));
 const LeaderboardsPage = lazy(fresh(() => import('./pages/LeaderboardsPage').then((m) => ({ default: m.LeaderboardsPage }))));
 const ProfilePage = lazy(fresh(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage }))));
@@ -52,6 +54,10 @@ function Page() {
       return <PrivacyPage />;
     case 'terms':
       return <TermsPage />;
+    case 'about':
+      return <AboutPage />;
+    case 'contact':
+      return <ContactPage />;
     case 'leaderboards':
       return <LeaderboardsPage />;
     case 'me':

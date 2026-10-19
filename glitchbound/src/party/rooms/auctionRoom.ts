@@ -1,7 +1,7 @@
 /**
  * Name Your Price in a live room: the same auction rules as the one-phone game (../auction.ts), with
  * each player bidding from their own phone. A shot clock keeps it moving (no decision = pass), away
- * players pass automatically, and the game ends with everyone voting for their favourite collection.
+ * players pass automatically, and the game ends with everyone voting for their favorite collection.
  *
  * Phases: lobby → auction (bidding, then a short "sold" moment per item) → vote → result.
  * All money is fictional.
@@ -43,7 +43,7 @@ export interface State extends RoomBase {
   settings: Settings;
   /** Player ids inside are seat numbers as strings. */
   auction: AuctionState | null;
-  /** Voter seat → favourite collection's seat. */
+  /** Voter seat → favorite collection's seat. */
   votes: Record<string, number>;
   gained: Record<string, number>;
   used: string[];

@@ -593,6 +593,10 @@ const tr: string[] = [
   'oynanan süreye göre skor fazla yüksek',
   'üst üste',
   'Kullanım koşulları',
+  'Hakkımızda',
+  'İletişim',
+  'Yalnızca yetişkinler',
+  'GlitchBound hakkında',
 ];
 
 export default tr;

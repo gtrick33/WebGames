@@ -13,6 +13,8 @@ export type Route =
   | { name: 'daily' }
   | { name: 'privacy' }
   | { name: 'terms' }
+  | { name: 'about' }
+  | { name: 'contact' }
   | { name: 'leaderboards' }
   | { name: 'me' }
   | { name: 'bugs' }
@@ -30,6 +32,8 @@ export function matchRoute(pathname: string): Route {
   if (path === '/daily') return { name: 'daily' };
   if (path === '/privacy') return { name: 'privacy' };
   if (path === '/terms') return { name: 'terms' };
+  if (path === '/about') return { name: 'about' };
+  if (path === '/contact') return { name: 'contact' };
   if (path === '/leaderboards') return { name: 'leaderboards' };
   if (path === '/me') return { name: 'me' };
   if (path === '/me/bugs') return { name: 'bugs' };
@@ -109,7 +113,7 @@ export function Link({ href, onClick, ...rest }: LinkProps) {
   return <a href={href} onClick={handle} {...rest} />;
 }
 
-/** On first load, honour a #hash once the page has rendered. */
+/** On first load, honor a #hash once the page has rendered. */
 export function useInitialHashScroll(): void {
   useEffect(() => {
     const id = window.location.hash.slice(1);

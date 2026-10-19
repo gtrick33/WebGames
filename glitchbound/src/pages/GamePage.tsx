@@ -39,6 +39,7 @@ import { saveStore, useSave } from '../platform/store';
 import { parseBeatParam, shareOrCopy } from '../platform/share';
 import { GAMES } from '../catalog/games';
 import { Link, navigate, useLocation } from '../router/router';
+import { AdultLabel } from '../components/AdultLabel';
 import './GamePage.css';
 import { fresh } from '../platform/freshBuild';
 
@@ -369,6 +370,7 @@ export function GamePage({ game }: { game: GameEntry }) {
         <div className="game-heading">
           <h1>{game.title}</h1>
           <span className="chip">{t(CATEGORIES[game.categories[0]].label)}</span>
+          {game.adult && <AdultLabel text={t('Adults only')} />}
         </div>
         <div className="game-actions">
           <FavoriteButton slug={game.slug} title={game.title} />

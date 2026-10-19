@@ -454,7 +454,7 @@ function Picture({ scene, label, pic, reveal, onTap }: { scene: Scene; label: st
         {pic.hinted !== null &&
           (() => {
             const s = pic.puzzle.diffs[pic.hinted]!.spots[0]!;
-            // Off-centre so the hint narrows the search without pointing exactly at the glitch.
+            // Off-center so the hint narrows the search without pointing exactly at the glitch.
             const a = pic.hinted * 2.4;
             return <circle className="sg-hint" cx={s.x + Math.cos(a) * s.r * 0.7} cy={s.y + Math.sin(a) * s.r * 0.7} r={s.r + 34} />;
           })()}

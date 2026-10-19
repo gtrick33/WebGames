@@ -430,7 +430,7 @@ function ArrowShape({ a, size, gone, shake, onTap }: { a: Arrow; size: number; g
   const [hx, hy] = at(a.cells[a.cells.length - 1]!);
   const dx = DC[a.dir];
   const dy = DR[a.dir];
-  // The tip pokes a little past the head cell's centre; the body starts a little before the tail's.
+  // The tip pokes a little past the head cell's center; the body starts a little before the tail's.
   const sx = tx - dx * 2.6;
   const sy = ty - dy * 2.6;
   const bx = hx + dx * 0.6;

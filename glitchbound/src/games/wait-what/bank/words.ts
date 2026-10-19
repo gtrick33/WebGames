@@ -8,7 +8,7 @@ export const WORDS: Raw[] = [
   ['Which common word is the only one in English that ends in "mt"?', 'Dreamt|Tempt|Exempt|Unkempt', 'Along with its relative "undreamt". The others end in -pt.'],
   ['Where does "OK" probably come from?', 'A joke spelling of "all correct"|A Native American word|The Greek for "all good"|A brand of biscuits', '"Oll korrect" was a fashionable joke in 1830s Boston newspapers.'],
   ['Bluetooth is named after what?', 'A Viking king|A dentist\'s invention|A blue LED|A fish', 'Harald Bluetooth united Danish tribes, as the tech unites devices. The logo is his initials in runes.'],
-  ['The word "robot" comes from a Czech word meaning what?', 'Forced labour|Metal man|Thinking machine|Servant boy', 'It first appeared in Karel Čapek\'s 1920 play R.U.R.'],
+  ['The word "robot" comes from a Czech word meaning what?', 'Forced labor|Metal man|Thinking machine|Servant boy', 'It first appeared in Karel Čapek\'s 1920 play R.U.R.'],
   ['The word "muscle" comes from the Latin for what?', 'Little mouse|Little rope|Strong arm|Moving flesh', 'Romans thought a flexing bicep looked like a mouse under the skin.'],
   ['The word "nice" originally meant what?', 'Foolish|Kind|Pretty|Tasty', 'From the Latin "nescius", ignorant. It took centuries to become a compliment.'],
   ['"Silly" once meant what?', 'Blessed and happy|Stupid|Small|Angry', 'From the Old English "sælig". Meanings drift.'],

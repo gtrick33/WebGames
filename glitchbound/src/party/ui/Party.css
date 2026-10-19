@@ -718,6 +718,9 @@ img.pt-feature-art {
   margin-top: 4px;
   font-weight: 600;
 }
+.pt-feature-copy .adult-label {
+  margin: 4px 0 2px;
+}
 .pt-feature-ctas {
   justify-content: flex-start;
   margin-top: 10px;
@@ -798,6 +801,18 @@ img.pt-feature-art {
 .pt-online-game span {
   color: var(--pt-ink-2);
   font-size: 13px;
+}
+/* The 18+ label keeps its own look inside the room cards (their spans are captions). */
+.pt-online-game .adult-label,
+.pt-online-game .adult-label span,
+.pt-online-game .adult-label b {
+  color: #fff;
+  font-size: 11.5px;
+}
+.pt-online-game .adult-label {
+  display: flex;
+  width: fit-content;
+  margin: 3px 0 2px;
 }
 .pt-online-game .pt-btn {
   margin-top: 4px;

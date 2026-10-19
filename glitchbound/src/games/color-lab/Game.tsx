@@ -613,7 +613,7 @@ function Play(props: {
       setShake(i);
       later(380, () => setShake(null));
       sfx().nope();
-      // Tapping another tube with colour in it picks that one up instead.
+      // Tapping another tube with color in it picks that one up instead.
       setSelected(s.board[i]?.layers.length ? i : null);
       return;
     }

@@ -76,7 +76,7 @@ export interface HomeLayout {
   order: string[];
   /** Banner size per game (missing = the automatic rhythm). */
   sizes: Record<string, TileSize>;
-  /** Banner colour per game (missing = the game's own). */
+  /** Banner color per game (missing = the game's own). */
   accents: Record<string, Accent>;
   /** Short sticker on the banner, e.g. "Hot" (missing = none, or NEW when due). */
   stickers: Record<string, string>;
@@ -240,7 +240,7 @@ export function sanitizeNotice(body: unknown, now: number): Notice | null {
   return { id: now.toString(36), text, link, tone };
 }
 
-/** A valid layout for known games (unknown slugs, sizes and colours are dropped), or null when empty. */
+/** A valid layout for known games (unknown slugs, sizes and colors are dropped), or null when empty. */
 export function sanitizeLayout(body: unknown, games: readonly GameEntry[]): HomeLayout | null {
   const b = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
   const known = new Set(games.map((g) => g.slug));

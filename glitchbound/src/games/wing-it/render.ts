@@ -214,7 +214,7 @@ export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: numb
   const dist = s.dist - dx;
   const y = s.y - (s.y - s.prevY) * back;
   const st = s.lastDx ? s.t - back * STEP : s.t;
-  // Fit the world (W x H) to the canvas, centred; extra space shows more sky above and ground below.
+  // Fit the world (W x H) to the canvas, centerd; extra space shows more sky above and ground below.
   const k = Math.min((cw * dpr) / W, (ch * dpr) / H);
   const ox = (cw * dpr - W * k) / 2;
   const oy = (ch * dpr - H * k) / 2;

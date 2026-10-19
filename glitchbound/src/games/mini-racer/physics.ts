@@ -197,7 +197,7 @@ export function collideBounds(car: CarState, b: { minX: number; minY: number; ma
 }
 
 /**
- * Keeps the car off a tyre-wall segment. The car slides along the wall: the push-out removes the
+ * Keeps the car off a tire-wall segment. The car slides along the wall: the push-out removes the
  * speed into it, a real impact scrubs some speed, and resting contact costs a little each step.
  * Returns the impact speed.
  */
@@ -240,7 +240,7 @@ export function collideSegment(car: CarState, ax: number, ay: number, bx: number
  */
 export const BODY_OFFSET = 12;
 export const BODY_RADIUS = 13;
-/** Rotational inertia of a car body (unit mass): resists spin from off-centre hits. */
+/** Rotational inertia of a car body (unit mass): resists spin from off-center hits. */
 const BODY_INERTIA = 225;
 
 function bodyCircles(car: CarState): [number, number, number, number] {
@@ -251,7 +251,7 @@ function bodyCircles(car: CarState): [number, number, number, number] {
 
 /**
  * Resolves contact between two cars of equal mass: separates every overlapping pair of body circles
- * and bounces their velocities (with a little spin from off-centre hits). Returns the impact speed.
+ * and bounces their velocities (with a little spin from off-center hits). Returns the impact speed.
  */
 export function collideCarPair(a: CarState, b: CarState, restitution = 0.3): number {
   const min = BODY_RADIUS * 2;
@@ -289,7 +289,7 @@ export function collideCarPair(a: CarState, b: CarState, restitution = 0.3): num
         a.vy -= j2 * ny;
         b.vx += j2 * nx;
         b.vy += j2 * ny;
-        // Contact point is between the two circles; an off-centre hit turns the cars a little.
+        // Contact point is between the two circles; an off-center hit turns the cars a little.
         const px = (ax + bx) / 2;
         const py = (ay + by) / 2;
         const spinA = ((px - a.x) * -ny * j2 - (py - a.y) * -nx * j2) / BODY_INERTIA;

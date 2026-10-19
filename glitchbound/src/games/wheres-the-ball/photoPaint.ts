@@ -9,7 +9,7 @@ import { W, type Ball, type Scene } from './scene';
 const TAU = Math.PI * 2;
 
 /**
- * A photographic tennis ball centred on (0, 0): soft contact shadow, felt-yellow body with fine
+ * A photographic tennis ball centerd on (0, 0): soft contact shadow, felt-yellow body with fine
  * speckle, the curved seam, sphere shading lit from the top left, and a fuzzy rim.
  */
 function drawPhotoBall(ctx: CanvasRenderingContext2D, b: Ball, seed: number): void {
@@ -108,7 +108,7 @@ const canvasOf = (w: number, h: number): [HTMLCanvasElement, CanvasRenderingCont
   return [c, c.getContext('2d', { willReadFrequently: true })!];
 };
 
-/** Average colour of a ring around (x, y) in canvas pixels. */
+/** Average color of a ring around (x, y) in canvas pixels. */
 function surroundings(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): [number, number, number] {
   const x0 = Math.max(0, Math.round(x - r));
   const y0 = Math.max(0, Math.round(y - r));
@@ -159,7 +159,7 @@ export function buildComposite(img: HTMLImageElement, scene: Scene): HTMLCanvasE
   bctx.setTransform(soft * k, 0, 0, soft * k, pad * soft, pad * soft);
   drawPhotoBall(bctx, { ...b, x: 0, y: 0 }, scene.seed);
   bctx.setTransform(1, 0, 0, 1, 0, 0);
-  // Light the ball like its surroundings: darker in shade, tinted by the local colour cast.
+  // Light the ball like its surroundings: darker in shade, tinted by the local color cast.
   bctx.globalCompositeOperation = 'source-atop';
   const dim = Math.max(0, Math.min(0.55, (0.62 - lum) * 0.9 + b.shade * 0.6));
   bctx.fillStyle = `rgba(10, 16, 24, ${dim})`;

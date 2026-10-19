@@ -1,6 +1,6 @@
 /**
  * Holiday looks: small touches for the big holidays (a greeting, a logo sticker, a few floating
- * decorations and a highlight colour). Admins choose one in the Games tab, or leave it on automatic,
+ * decorations and a highlight color). Admins choose one in the Games tab, or leave it on automatic,
  * which follows the calendar below. Pure: shared by the browser, the server and the tests.
  */
 
@@ -15,14 +15,14 @@ export interface Holiday {
   greeting: string;
   /** Floating decorations (a few of these drift across lobby pages). */
   decor: string[];
-  /** Two highlight colours. */
+  /** Two highlight colors. */
   colors: [string, string];
 }
 
 export const HOLIDAYS: Holiday[] = [
   { id: 'halloween', emoji: '🎃', name: 'Halloween', greeting: 'Happy Halloween! Spooky tunes are on in Wait, What?', decor: ['🦇', '👻', '🎃', '🕸️', '🍬'], colors: ['#ff7a1a', '#9d4edd'] },
-  { id: 'winter', emoji: '❄️', name: 'Winter holidays', greeting: 'Happy holidays! Cosy up with a puzzle or three.', decor: ['❄️', '❄️', '⛄', '✨', '🎁'], colors: ['#7fd7ff', '#ff4d5e'] },
-  { id: 'valentine', emoji: '💘', name: 'Valentine’s Day', greeting: 'Happy Valentine’s! Challenge your favourite person.', decor: ['💖', '💘', '💌', '🌹'], colors: ['#ff4f9a', '#ff8fb8'] },
+  { id: 'winter', emoji: '❄️', name: 'Winter holidays', greeting: 'Happy holidays! Cozy up with a puzzle or three.', decor: ['❄️', '❄️', '⛄', '✨', '🎁'], colors: ['#7fd7ff', '#ff4d5e'] },
+  { id: 'valentine', emoji: '💘', name: 'Valentine’s Day', greeting: 'Happy Valentine’s! Challenge your favorite person.', decor: ['💖', '💘', '💌', '🌹'], colors: ['#ff4f9a', '#ff8fb8'] },
   { id: 'lunar', emoji: '🧧', name: 'Lunar New Year', greeting: 'Happy Lunar New Year! Wishing you luck and high scores.', decor: ['🧧', '🏮', '🐉', '✨'], colors: ['#e63946', '#ffc928'] },
   { id: 'easter', emoji: '🐣', name: 'Easter', greeting: 'Happy Easter! There’s a ball hidden in every photo, too.', decor: ['🐣', '🥚', '🌷', '🐰'], colors: ['#b8a1ff', '#9be15d'] },
   { id: 'diwali', emoji: '🪔', name: 'Diwali', greeting: 'Happy Diwali! May your days be bright and your streaks long.', decor: ['🪔', '✨', '🎆'], colors: ['#ffb703', '#ff4fc8'] },

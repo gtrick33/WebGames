@@ -68,11 +68,11 @@ describe('build-time SEO', () => {
   it('injects title, canonical, Open Graph and readable content', () => {
     const page = pageSpecs(site).find((p) => p.path === '/games/neon-rush')!;
     const html = renderPage(template, page, site);
-    expect(html).toContain('<title>Play NEON RUSH · GlitchBound</title>');
+    expect(html).toContain('<title>Play Neon Rush · GlitchBound</title>');
     expect(html).toContain('<link rel="canonical" href="https://example.test/games/neon-rush" />');
     expect(html).toContain('<meta property="og:image" content="https://example.test/games/neon-rush/og.jpg" />');
     expect(html).toContain('"@type":"VideoGame"');
-    expect(html).toMatch(/<div id="root"><article class="ssr">[\s\S]*<h1>NEON RUSH<\/h1>/);
+    expect(html).toMatch(/<div id="root"><article class="ssr">[\s\S]*<h1>Neon Rush<\/h1>/);
     expect(html.match(/<title>/g)).toHaveLength(1);
   });
 
@@ -84,6 +84,34 @@ describe('build-time SEO', () => {
     expect(sitemap(site)).toContain('<loc>https://example.test/party</loc>');
     expect(sitemap(site)).toContain('<loc>https://example.test/terms</loc>');
     expect(robots(site)).toContain('Sitemap: https://example.test/sitemap.xml');
+  });
+
+  it('links About, Contact, Privacy and Terms from every page, even without JavaScript', () => {
+    for (const page of pageSpecs(site)) {
+      const html = renderPage(template, page, site);
+      for (const href of ['/about', '/contact', '/privacy', '/terms']) expect(html, page.path).toContain(`<a href="${href}">`);
+    }
+    expect(pageSpecs(site).map((p) => p.file)).toEqual(expect.arrayContaining(['about.html', 'contact.html']));
+    expect(sitemap(site)).toContain('<loc>https://example.test/about</loc>');
+    expect(sitemap(site)).toContain('<loc>https://example.test/contact</loc>');
+  });
+
+  it('groups the home page games by category, with Crass Act labelled adults only under Party Mode', () => {
+    const home = renderPage(template, pageSpecs(site)[0]!, site);
+    expect(home).toContain('<h3>Puzzle games</h3>');
+    expect(home).toContain('<h3>Racing games</h3>');
+    const party = home.slice(home.indexOf('<h3>Party Mode</h3>'));
+    expect(party).toContain('<a href="/games/crass-act">Crass Act</a> <strong>Adults only (18+)</strong>');
+    expect(home.indexOf('/games/crass-act')).toBeGreaterThan(home.indexOf('<h3>Party Mode</h3>'));
+  });
+
+  it('marks only the adults-only game page as adult content', () => {
+    const pages = pageSpecs(site);
+    const crass = renderPage(template, pages.find((p) => p.path === '/games/crass-act')!, site);
+    expect(crass).toContain('<meta name="rating" content="adult" />');
+    expect(crass).toContain('<strong>Adults only (18+).</strong>');
+    const others = pages.filter((p) => p.path !== '/games/crass-act').map((p) => renderPage(template, p, site));
+    expect(others.some((html) => html.includes('name="rating"'))).toBe(false);
   });
 });
 

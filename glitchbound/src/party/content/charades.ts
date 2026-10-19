@@ -60,7 +60,7 @@ const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
     ['Glass slipper fitting', 1], ['Giant monster attacks the city', 1], ['Alien befriends a kid', 2], ['Horror movie scream', 2], ['Creepy hotel corridor', 3], ['Big dance lift', 2], ['Shopping spree', 2], ['Airport goodbye', 2], ['Bossy fashion editor', 3], ['Courtroom drama', 2],
     ['Karate tournament', 1], ['Robot from the future', 1], ['Hero crawling through air vents', 2], ['Assassin on a mission', 2], ['Epic quest across mountains', 2], ['Desert planet', 3], ['Dancing in the rain', 2], ['Evil clown', 2], ['Teddy bear comes to life', 1], ['Christmas elf', 1],
     ['Statues coming to life', 2], ['Putting on a magic mask', 2], ['Disguised as a granny', 3], ['Dragon attacks a village', 1], ['Talking animals', 2], ['Pet alien', 1], ['Royal family drama', 3], ['Regency ball', 2], ['Gangster in a flat cap', 2], ['Space bounty hunter', 2],
-    ['Digging out of prison', 2], ['Zombie apocalypse', 1], ['Detective with a magnifying glass', 2], ['Time traveller arrives', 2], ['Cooking competition', 1], ['Reality dating show', 2], ['Masked robbers', 2], ['Survivors on the road', 2], ['Lifeguard running in slow motion', 1], ['Football coach pep talk', 3],
+    ['Digging out of prison', 2], ['Zombie apocalypse', 1], ['Detective with a magnifying glass', 2], ['Time traveler arrives', 2], ['Cooking competition', 1], ['Reality dating show', 2], ['Masked robbers', 2], ['Survivors on the road', 2], ['Lifeguard running in slow motion', 1], ['Football coach pep talk', 3],
     ['Teen drama party', 3], ['Fight over the family fortune', 3], ['Robot takes over', 3], ['Exorcism', 3], ['Vampire romance', 2], ['Lost in a spirit world', 3], ['Chocolate factory tour', 2], ['Cute pets turn evil', 2], ['Giant tidal wave', 2], ['Car chase', 1],
   ],
   heroes: [
@@ -102,7 +102,7 @@ const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
     ['Detective with gadgets in his hat', 3], ['Kids building a rollercoaster', 3], ['Talking dog', 2], ['Paper cut-out kids', 2], ['Cartoon chase through doors', 2], ['Mouse with a big bow', 1], ['Blue alien', 1], ['Snowman melting in summer', 1], ['Squirrel chasing an acorn', 2], ['Robot that turns into a car', 2],
   ],
   random: [
-    ['Doing the laundry', 1], ['Changing a tyre', 2], ['Ironing a shirt', 1], ['Walking in high heels', 2], ['Skydiving', 2], ['Riding a unicycle', 3], ['Rowing a boat', 1], ['Chopping onions', 1], ['Taking a selfie', 1], ['Climbing a ladder', 1],
+    ['Doing the laundry', 1], ['Changing a tire', 2], ['Ironing a shirt', 1], ['Walking in high heels', 2], ['Skydiving', 2], ['Riding a unicycle', 3], ['Rowing a boat', 1], ['Chopping onions', 1], ['Taking a selfie', 1], ['Climbing a ladder', 1],
     ['Shaving', 1], ['Putting on make-up', 1], ['Doing yoga', 1], ['Lifting weights', 1], ['Rock climbing', 2], ['Milking a cow', 2], ['Making popcorn', 2], ['A tornado', 2], ['A thunderstorm', 2], ['Brain freeze', 2],
     ['Stepping on a toy brick', 1], ['Waiting for the microwave', 3], ['Staying awake in class', 2], ['Sleepwalking', 1], ['Mowing the lawn', 1], ['Parachuting', 2], ['Being a statue', 2], ['Washing a dog', 2], ['Hailing a taxi', 2], ['Blowing out birthday candles', 1],
     ['Catching a fly', 2], ['Untangling headphones', 3], ['Carrying too many shopping bags', 2], ['Walking on hot sand', 2], ['A slow-motion fight', 2], ['Putting up a tent', 2], ['Brushing a horse', 3], ['A magic trick gone wrong', 3], ['Doing the worm', 2], ['Trying to whistle', 2],
@@ -115,7 +115,7 @@ const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
   ],
   sports: [
     ['Boxing', 1], ['Swimming', 1], ['Karate', 1], ['Golf', 1], ['Skiing', 1], ['Snowboarding', 2], ['Skateboarding', 1], ['Archery', 2], ['Fencing', 3], ['Wrestling', 1],
-    ['Weightlifting', 1], ['Gymnastics', 2], ['Synchronised swimming', 3], ['Curling', 3], ['Pole vault', 3], ['High jump', 2], ['Hurdles', 2], ['Sprinting', 1], ['Volleyball', 1], ['Baseball', 1],
+    ['Weightlifting', 1], ['Gymnastics', 2], ['Synchronized swimming', 3], ['Curling', 3], ['Pole vault', 3], ['High jump', 2], ['Hurdles', 2], ['Sprinting', 1], ['Volleyball', 1], ['Baseball', 1],
     ['Cricket', 2], ['Rugby', 2], ['Ice hockey', 2], ['Table tennis', 1], ['Darts', 1], ['Water polo', 3], ['Horse racing', 2], ['Motor racing', 2], ['Javelin', 2], ['Kayaking', 2],
     ['Penalty shoot-out', 2], ['Triathlon', 3], ['Sumo wrestling', 2], ['Figure skating', 2], ['Tug of war', 1],
   ],
@@ -127,7 +127,7 @@ const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
   places: [
     ['Eiffel Tower', 1], ['Pyramids of Giza', 2], ['Great Wall of China', 2], ['Statue of Liberty', 1], ['Leaning Tower of Pisa', 1], ['Big Ben', 2], ['Niagara Falls', 2], ['Mount Everest', 2], ['Las Vegas', 2], ['Hollywood', 2],
     ['Venice', 2], ['The Moon', 1], ['The North Pole', 2], ['A desert island', 1], ['The Amazon rainforest', 3], ['Stonehenge', 3], ['A theme park', 1], ['An airport', 1], ['A gym', 1], ['A library', 2],
-    ['A dentist’s waiting room', 3], ['A nightclub', 2], ['A haunted castle', 2], ['A zoo', 1], ['A hospital', 1], ['A beach', 1], ['A submarine', 2], ['A spaceship', 1], ['A wedding', 1], ['A job centre', 3],
+    ['A dentist’s waiting room', 3], ['A nightclub', 2], ['A haunted castle', 2], ['A zoo', 1], ['A hospital', 1], ['A beach', 1], ['A submarine', 2], ['A spaceship', 1], ['A wedding', 1], ['A job center', 3],
   ],
   afterdark: [
     ['Walk of shame', 2], ['Lap dance', 1], ['Strip poker', 2], ['Speed dating', 2], ['Skinny-dipping', 1], ['Booty call', 2], ['Hickey', 2], ['The morning after', 3], ['First kiss', 1], ['Bachelorette party', 2],

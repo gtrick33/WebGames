@@ -24,7 +24,7 @@ const MAX_FALL = 920;
 export interface Pillar {
   /** Left edge. */
   x: number;
-  /** Gap centre and half-height. */
+  /** Gap center and half-height. */
   gapY: number;
   gapH: number;
   /** Vertical sway (0 = still) and its phase. */
@@ -46,7 +46,7 @@ export interface Sim {
   score: number;
   feathers: number;
   pillars: Pillar[];
-  /** Distance travelled (for parallax and course generation). */
+  /** Distance traveled (for parallax and course generation). */
   dist: number;
   /** Next pillar index to spawn (course position). */
   spawned: number;

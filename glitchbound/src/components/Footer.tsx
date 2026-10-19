@@ -33,6 +33,8 @@ export function Footer() {
             </div>
             <div>
               <p className="eyebrow">{t('Info')}</p>
+              <Link href="/about">{t('About')}</Link>
+              <Link href="/contact">{t('Contact')}</Link>
               <button className="footer-link-btn" onClick={() => openFeedback()}>
                 {t('Give feedback')}
               </button>

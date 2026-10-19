@@ -268,7 +268,7 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragging]);
 
-  // A selected piece goes where the player taps, centred on the tapped cell.
+  // A selected piece goes where the player taps, centerd on the tapped cell.
   const onCellTap = (i: number): void => {
     const s = gameRef.current;
     if (selected === null || !s) return;

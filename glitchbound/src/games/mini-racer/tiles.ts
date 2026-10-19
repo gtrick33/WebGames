@@ -88,7 +88,7 @@ export class TileCache {
     const [ty0, ty1] = tileSpan(view.minY, view.maxY);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (let ty = ty0; ty <= ty1; ty++) {
-      // Edges are rounded to whole device pixels, shared by neighbours, so tiles never leave seams.
+      // Edges are rounded to whole device pixels, shared by neighbors, so tiles never leave seams.
       const y0 = Math.round(oy + ty * TILE * k);
       const y1 = Math.round(oy + (ty + 1) * TILE * k);
       for (let tx = tx0; tx <= tx1; tx++) {

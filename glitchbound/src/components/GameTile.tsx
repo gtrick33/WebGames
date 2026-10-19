@@ -20,7 +20,7 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
   const preview = hasPreview(game.slug);
   // Wide tiles with a preview split into artwork + live screen, so neither covers the other.
   const art = (size === 'xl' || size === 'wide') && !preview ? game.art.wide : game.art.tile;
-  // Admins can recolour a banner and give it a sticker (which takes the place of NEW).
+  // Admins can recolor a banner and give it a sticker (which takes the place of NEW).
   const accent = live.layout?.accents[game.slug] ?? game.accent;
   const sticker = live.layout?.stickers[game.slug];
   return (

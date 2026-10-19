@@ -81,12 +81,12 @@ function typesFor(o: Obj): DiffType[] {
   if (!FIXED.has(o.kind)) t.push('remove');
   if (ASYMMETRIC.has(o.kind)) t.push('flip');
   if (DETAILED.has(o.kind)) t.push('detail');
-  // Big fixed scenery (buildings, barns, the lighthouse) only changes colour or detail; the sun and moon may also change size.
+  // Big fixed scenery (buildings, barns, the lighthouse) only changes color or detail; the sun and moon may also change size.
   if (FIXED.has(o.kind)) return t.filter((x) => x === 'color' || x === 'detail' || ((o.kind === 'sun' || o.kind === 'moon') && x === 'scale'));
   return t;
 }
 
-/** A clearly different colour from the kind's own palette (or the full palette). */
+/** A clearly different color from the kind's own palette (or the full palette). */
 function otherColor(r: R, theme: ThemeId, o: Obj): string {
   const pool = [...colorsFor(theme, o.kind), ...PALETTE].filter((c) => c !== o.c && deltaE(hexToRgb(c), hexToRgb(o.c)) > 25);
   return pool[Math.floor(r() * pool.length)] ?? (o.c === '#ff5a6c' ? '#3d7bff' : '#ff5a6c');

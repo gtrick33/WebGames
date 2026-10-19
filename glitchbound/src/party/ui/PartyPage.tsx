@@ -18,6 +18,7 @@ import { NeverMode } from './Never';
 import { dealPrompt, PromptsMode } from './Prompts';
 import { openPartyRoom, PartyRoomPage } from './room/PartyRoom';
 import { Avatar } from './shared';
+import { AdultLabel } from '../../components/AdultLabel';
 import type { RoomGame } from '../../platform/rooms';
 import { partySettingsFor } from '../../catalog/settings';
 import { useLiveCatalog } from '../../platform/liveCatalog';
@@ -231,9 +232,9 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
             <p className="pt-muted">Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.</p>
             <div className="pt-online-games">
               {rooms.map((r) => {
-                // Crass Act keeps its own art and 18+ sticker; its room opens on its own page (name and age check first).
+                // Crass Act keeps its own art and adults-only label; its room opens on its own page (name and age check first).
                 const art = r.id === 'crass-act' ? crassAct?.art : undefined;
-                const sticker = r.label || (r.id === 'crass-act' ? r.sticker : '');
+                const sticker = r.label;
                 return (
                   <div key={r.id} data-party-game={r.id} className={`pt-online-game${focus === r.id ? ' is-found' : ''}`} style={{ ['--mc' as string]: r.color }}>
                     {art ? (
@@ -247,6 +248,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
                       <b>
                         {r.title}
                         {sticker && <em className="pt-mode-sticker">{sticker}</em>}
+                        {r.adult && <AdultLabel />}
                       </b>
                       <span>
                         {r.roomPlayers} players · {r.roomBlurb}
@@ -537,6 +539,7 @@ function Feature({ g, where, art, onPlay, onRoom }: { g: ShownGame; where: 'one'
       )}
       <div className="pt-feature-copy">
         <h2 id={`pt-feature-${g.id}`}>{g.title}</h2>
+        {g.adult && <AdultLabel />}
         <p>{g.blurb}</p>
         <div className="pt-row pt-feature-ctas">
           {both ? (

@@ -1,8 +1,8 @@
 /**
- * The curated colour set. Every target is an everyday, widely recognised colour reference (signs,
+ * The curated color set. Every target is an everyday, widely recognized color reference (signs,
  * vehicles, food, gems, nature) paired with an original, simplified silhouette drawn in Glyph.tsx.
- * No company names, logos or trademarked colour names are used. Hex values are the commonly
- * published reference values for each colour (e.g. the standard sign or paint shade).
+ * No company names, logos or trademarked color names are used. Hex values are the commonly
+ * published reference values for each color (e.g. the standard sign or paint shade).
  */
 
 import { hexToRgb, hsbToRgb, hueName, rgbToHex, rgbToHsb } from './color';
@@ -86,7 +86,7 @@ export const TARGETS: ColorTarget[] = [
   { id: 'turquoise', name: 'Turquoise', hint: 'A stone named after a country.', hex: '#40E0D0', glyph: 'drop' },
   { id: 'pool', name: 'Swimming Pool Blue', hint: 'Cannonball!', hex: '#2EB8E6', glyph: 'wave' },
   { id: 'navy', name: 'Navy Blue', hint: 'Admirals and blazers.', hex: '#000080', glyph: 'star' },
-  { id: 'denim', name: 'Denim', hint: 'Your favourite jeans.', hex: '#1560BD', glyph: 'tag' },
+  { id: 'denim', name: 'Denim', hint: 'Your favorite jeans.', hex: '#1560BD', glyph: 'tag' },
   { id: 'khaki', name: 'Khaki', hint: 'Safari shorts.', hex: '#C3B091', glyph: 'tag' },
   { id: 'gold', name: 'Gold Medal', hint: 'First place.', hex: '#D4AF37', glyph: 'medal' },
   { id: 'silver', name: 'Silver Medal', hint: 'So close.', hex: '#C0C0C0', glyph: 'medal' },
@@ -103,7 +103,7 @@ export const TARGETS: ColorTarget[] = [
   { id: 'canary', name: 'Canary Yellow', hint: 'A singing songbird.', hex: '#FFEF00', glyph: 'bird' },
   { id: 'cardinal', name: 'Cardinal Red', hint: 'A crested songbird in the snow.', hex: '#C41E3A', glyph: 'bird' },
   { id: 'rubber-duck', name: 'Rubber Duck Yellow', hint: 'Squeaky bath-time buddy.', hex: '#FFD300', glyph: 'bird' },
-  { id: 'pistachio', name: 'Pistachio', hint: 'The ice cream flavour.', hex: '#93C572', glyph: 'popsicle' },
+  { id: 'pistachio', name: 'Pistachio', hint: 'The ice cream flavor.', hex: '#93C572', glyph: 'popsicle' },
   { id: 'raspberry', name: 'Raspberry', hint: 'Sorbet on a hot day.', hex: '#E30B5C', glyph: 'popsicle' },
   { id: 'mango', name: 'Mango', hint: 'Tropical and juicy.', hex: '#FFC324', glyph: 'popsicle' },
   { id: 'midnight', name: 'Midnight Blue', hint: 'Well past bedtime.', hex: '#191970', glyph: 'moon' },
@@ -114,11 +114,11 @@ export const TARGETS: ColorTarget[] = [
   { id: 'watermelon', name: 'Watermelon Pink', hint: 'Mind the seeds.', hex: '#FC6C85', glyph: 'fruit' },
   { id: 'plum', name: 'Plum', hint: 'Sweet, dark, juicy.', hex: '#8E4585', glyph: 'fruit' },
   { id: 'cornflower', name: 'Cornflower Blue', hint: 'A wildflower in a wheat field.', hex: '#6495ED', glyph: 'flower' },
-  { id: 'poppy', name: 'Poppy Red', hint: 'A field flower with a dark centre.', hex: '#E35335', glyph: 'flower' },
+  { id: 'poppy', name: 'Poppy Red', hint: 'A field flower with a dark center.', hex: '#E35335', glyph: 'flower' },
   { id: 'marigold', name: 'Marigold', hint: 'Bright garden petals.', hex: '#EAA221', glyph: 'flower' },
   { id: 'seafoam', name: 'Seafoam', hint: 'Where the waves break.', hex: '#93E9BE', glyph: 'wave' },
   { id: 'teal', name: 'Teal', hint: 'Named after a little duck.', hex: '#008080', glyph: 'drop' },
-  { id: 'slate', name: 'Slate Grey', hint: 'Roof tiles in the rain.', hex: '#708090', glyph: 'house' },
+  { id: 'slate', name: 'Slate Gray', hint: 'Roof tiles in the rain.', hex: '#708090', glyph: 'house' },
   { id: 'coral', name: 'Coral', hint: 'Reef life, warm and pink-orange.', hex: '#FF7F50', glyph: 'bubble' },
   // Added 2026-10-18 for variety. Appended: dailies before WILD_FROM keep drawing from the first ORIGINAL_TARGETS.
   { id: 'tomato', name: 'Tomato Red', hint: 'Sliced into every salad.', hex: '#FF6347', glyph: 'fruit' },
@@ -171,7 +171,7 @@ export const TARGETS: ColorTarget[] = [
   { id: 'copper', name: 'Copper', hint: 'Shiny pans and new pennies.', hex: '#B87333', glyph: 'pot' },
   { id: 'brass', name: 'Brass', hint: 'Trumpets and doorknobs.', hex: '#B5A642', glyph: 'bell' },
   { id: 'platinum', name: 'Platinum', hint: 'Rarer than gold.', hex: '#E5E4E2', glyph: 'medal' },
-  { id: 'rose-gold', name: 'Rose Gold', hint: 'The pinkish jewellery metal.', hex: '#B76E79', glyph: 'medal' },
+  { id: 'rose-gold', name: 'Rose Gold', hint: 'The pinkish jewelry metal.', hex: '#B76E79', glyph: 'medal' },
   { id: 'baby-pink', name: 'Baby Pink', hint: 'Nursery walls.', hex: '#F4C2C2', glyph: 'tag' },
   { id: 'baby-blue', name: 'Baby Blue', hint: 'Booties for a newborn.', hex: '#89CFF0', glyph: 'tag' },
   { id: 'hot-pink', name: 'Hot Pink', hint: 'Loud and proud.', hex: '#FF69B4', glyph: 'star' },
@@ -199,7 +199,7 @@ export const TARGETS: ColorTarget[] = [
   { id: 'chartreuse', name: 'Chartreuse', hint: 'A herbal liqueur’s yellow-green.', hex: '#7FFF00', glyph: 'drop' },
   { id: 'cyan', name: 'Cyan', hint: 'One of the printer inks.', hex: '#00FFFF', glyph: 'drop' },
   { id: 'beige', name: 'Beige', hint: 'Neutral, sensible, everywhere.', hex: '#F5F5DC', glyph: 'tag' },
-  { id: 'taupe', name: 'Taupe', hint: 'Grey-brown and very chic.', hex: '#483C32', glyph: 'tag' },
+  { id: 'taupe', name: 'Taupe', hint: 'Gray-brown and very chic.', hex: '#483C32', glyph: 'tag' },
   { id: 'mahogany', name: 'Mahogany', hint: 'Rich wood for fine furniture.', hex: '#C04000', glyph: 'house' },
   { id: 'cobalt', name: 'Cobalt Blue', hint: 'The glaze on old pottery.', hex: '#0047AB', glyph: 'pot' },
   { id: 'racing-green', name: 'Racing Green', hint: 'A classic British sports car.', hex: '#004225', glyph: 'car' },
@@ -212,7 +212,7 @@ const WILD_GLYPHS: GlyphId[] = ['drop', 'canvas', 'gem', 'star', 'bubble', 'clou
 const WILD_NOUNS = ['Mist', 'Glow', 'Dream', 'Splash', 'Haze', 'Pop', 'Wave', 'Fizz', 'Bloom', 'Echo', 'Spark', 'Velvet'];
 
 /**
- * A "wild card": any colour at all, named from its hue, brightness and vividness ("Dusty Teal Haze").
+ * A "wild card": any color at all, named from its hue, brightness and vividness ("Dusty Teal Haze").
  * Wild cards have no famous reference, so the curated list never runs dry. The id carries the hex, so
  * a saved result always resolves back to the same target.
  */
@@ -221,7 +221,7 @@ export function wildTarget(hex: string): ColorTarget {
   const hsb = rgbToHsb(hexToRgb(H));
   const n = parseInt(H.slice(1), 16);
   const mood = hsb.b < 38 ? 'Deep' : hsb.s < 22 ? 'Dusty' : hsb.b > 85 && hsb.s < 40 ? 'Pale' : hsb.s > 80 && hsb.b > 80 ? 'Electric' : hsb.s > 60 ? 'Bold' : 'Soft';
-  const hue = hsb.s < 10 ? 'Grey' : hueName(hsb.h).replace(/^./, (c) => c.toUpperCase());
+  const hue = hsb.s < 10 ? 'Gray' : hueName(hsb.h).replace(/^./, (c) => c.toUpperCase());
   return {
     id: `wild-${H.slice(1)}`,
     name: `${mood} ${hue} ${WILD_NOUNS[n % WILD_NOUNS.length]}`,
@@ -231,7 +231,7 @@ export function wildTarget(hex: string): ColorTarget {
   };
 }
 
-/** A random wild card that is pleasant to look at (not near-black or near-grey mud). */
+/** A random wild card that is pleasant to look at (not near-black or near-gray mud). */
 export function randomWild(random: () => number): ColorTarget {
   const h = Math.floor(random() * 360);
   const s = 25 + Math.floor(random() * 70);

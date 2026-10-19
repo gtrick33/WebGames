@@ -33,7 +33,7 @@ const who = (u: { nickname: string; email: string }): string => u.nickname || u.
  *   { action: 'reset', slug }              back to the defaults
  *   { action: 'daily', day, pick | null }  hand-pick (or clear) the daily challenge for a date
  *   { action: 'notice', notice | null }    set or remove the site banner
- *   { action: 'layout', layout | null }    home page banner order, sizes, colours and stickers (null = automatic)
+ *   { action: 'layout', layout | null }    home page banner order, sizes, colors and stickers (null = automatic)
  *   { action: 'season', season }           holiday look: 'auto' (by the calendar), 'off' or a holiday id
  *   { action: 'party', id, patch | null }  a Party Mode game's settings (null = back to the defaults)
  */

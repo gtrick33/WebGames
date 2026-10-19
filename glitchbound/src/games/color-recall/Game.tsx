@@ -50,14 +50,14 @@ function ColorRecall({ host, challenge }: { host: GameHost; challenge?: GameModu
   const [today] = useState(() => dayKey());
   const [save, setSave] = useState<CrSave>(loadCr);
   const [screen, setScreen] = useState<Screen>(challenge ? 'play' : 'menu');
-  // A friends' challenge starts straight away: five colours from the challenge's seed, daily peek time.
+  // A friends' challenge starts straight away: five colors from the challenge's seed, daily peek time.
   const [game, setGame] = useState<GameState | null>(() => (challenge ? newGame('challenge', practiceRounds(rng(challenge.seed)), PEEK_MS[DAILY_DIFFICULTY]) : null));
   useEffect(() => {
     if (challenge) host.report({ type: 'start' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const rootRef = useRef<HTMLDivElement>(null);
-  // Each new screen and colour starts at the top of the (scrollable) stage.
+  // Each new screen and color starts at the top of the (scrollable) stage.
   const view = `${screen}:${game?.mode ?? ''}:${game?.index ?? ''}:${game?.phase === 'done'}`;
   useEffect(() => {
     rootRef.current?.scrollTo?.({ top: 0 });
@@ -89,7 +89,7 @@ function ColorRecall({ host, challenge }: { host: GameHost; challenge?: GameModu
   const startDaily = (): void => {
     const done = save.daily[today] ?? [];
     const g = newGame('daily', dailyRounds(today), PEEK_MS[DAILY_DIFFICULTY], done);
-    // One look per daily colour: a colour already shown (then left mid-guess) resumes straight at mixing.
+    // One look per daily color: a color already shown (then left mid-guess) resumes straight at mixing.
     setGame(g.phase === 'peek' && seenDailyRound(save, today) >= g.index ? { ...g, phase: 'guess' } : g);
     setScreen('play');
     if (!isComplete(done)) host.report({ type: 'start' });
@@ -100,7 +100,7 @@ function ColorRecall({ host, challenge }: { host: GameHost; challenge?: GameModu
     host.report({ type: 'start' });
   };
 
-  // Remember each daily colour as soon as it is shown, so leaving and resuming can't show it again.
+  // Remember each daily color as soon as it is shown, so leaving and resuming can't show it again.
   useEffect(() => {
     if (game?.mode === 'daily' && game.phase === 'peek' && seenDailyRound(saveRef.current, today) < game.index) {
       commit(markDailySeen(saveRef.current, today, game.index));
@@ -166,7 +166,7 @@ function ColorRecall({ host, challenge }: { host: GameHost; challenge?: GameModu
 }
 
 /**
- * The one place a finished 5-colour game is reported to the arcade. `isDaily` marks today's
+ * The one place a finished 5-color game is reported to the arcade. `isDaily` marks today's
  * shared daily run (never practice); the arcade counts it as this game's own daily.
  */
 function reportEnd(host: GameHost, results: RoundResult[], isDaily: boolean, challenge?: GameModuleProps['challenge']): ReturnType<typeof endStats> {
@@ -410,7 +410,7 @@ function Play(props: {
   const round = game.rounds[game.index];
   const [mix, setMix] = useState<Mix>(() => mixFromHsb(round ? round.start : { h: 0, s: 50, b: 50 }));
   const [roundIndex, setRoundIndex] = useState(game.index);
-  // New round: move the sliders to that round's (seeded) starting colour.
+  // New round: move the sliders to that round's (seeded) starting color.
   if (roundIndex !== game.index) {
     setRoundIndex(game.index);
     if (round) setMix(mixFromHsb(round.start));
@@ -426,7 +426,7 @@ function Play(props: {
   const { onSubmit, onNext } = props;
   const submit = useCallback(() => onSubmit(mix.rgb), [onSubmit, mix.rgb]);
 
-  // Enter: skip the peek / lock in / next colour.
+  // Enter: skip the peek / lock in / next color.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== 'Enter' || e.repeat) return;
@@ -675,7 +675,7 @@ function Summary({ game, today, save, onMenu, onAgain, challengeId }: { game: Ga
         {Math.round((score / (game.results.length * MAX_POINTS)) * 100)}% accuracy · best color {fmt(best)}
         {game.mode === 'daily' && streak > 0 ? ` · 🔥 ${streak}` : ''}
       </p>
-      <ResultLine line={resultLine(game.results)} label={`${game.results.filter((r) => verdictFor(r.points) === 'perfect').length} perfect of ${game.results.length} colours`} />
+      <ResultLine line={resultLine(game.results)} label={`${game.results.filter((r) => verdictFor(r.points) === 'perfect').length} perfect of ${game.results.length} colors`} />
       <ul className="cr-summary-list">
         {game.results.map((r, i) => {
           const t = resultTarget(r);

@@ -2,7 +2,7 @@ import type { Raw } from './types';
 
 /** Films, music, games and pop culture. Append only: a question's id is its position. Answers: the right one first. */
 export const POP: Raw[] = [
-  ['In the original Wizard of Oz book, what colour were Dorothy\'s slippers?', 'Silver|Ruby red|Gold|Emerald green', 'The 1939 film switched to ruby red to show off Technicolor.'],
+  ['In the original Wizard of Oz book, what color were Dorothy\'s slippers?', 'Silver|Ruby red|Gold|Emerald green', 'The 1939 film switched to ruby red to show off Technicolor.'],
   ['Mickey Mouse was nearly called what?', 'Mortimer|Marvin|Milton|Melvin', 'Walt Disney\'s wife Lillian reportedly found Mortimer too pompous.'],
   ['Until 2015, why could singing "Happy Birthday" in a film cost money?', 'A company claimed to own its copyright|It was banned in cinemas|Its composer\'s family sued everyone|It was a trademark of a bakery', 'A judge ruled the claim invalid, and the song is now free to use.'],
   ['Not adjusting for inflation, which is the highest-grossing film ever (as of 2025)?', 'Avatar|Avengers: Endgame|Titanic|Star Wars: The Force Awakens', 'James Cameron also made Titanic, number three or four depending on the year.'],
@@ -22,8 +22,8 @@ export const POP: Raw[] = [
   ['What did the Hollywood sign originally say?', 'HOLLYWOODLAND|HOLLYWOOD STUDIOS|HOLLY WOODS|WELCOME TO HOLLYWOOD', 'It was an advert for a housing development in 1923.'],
   ['What was Oxford Dictionaries\' 2015 Word of the Year?', 'An emoji|"Selfie"|"Vape"|"Unfriend"', 'The "face with tears of joy" emoji 😂 won.'],
   ['What is the most-watched YouTube video (as of 2025)?', '"Baby Shark Dance"|"Despacito"|"Gangnam Style"|"See You Again"', 'Over 15 billion views, mostly from very small fans.'],
-  ['What was Elvis Presley\'s natural hair colour?', 'Dirty blond|Black|Red|Brown', 'He dyed it black, partly to look like his screen heroes.'],
-  ['Mozart wrote a cheerful song for six voices titled "Leck mich im Arsch". What does it mean?', '"Lick me in the arse"|"Little night music"|"Kiss me quickly"|"Leave me alone"', 'Mozart had a famously rude sense of humour.'],
+  ['What was Elvis Presley\'s natural hair color?', 'Dirty blond|Black|Red|Brown', 'He dyed it black, partly to look like his screen heroes.'],
+  ['Mozart wrote a cheerful song for six voices titled "Leck mich im Arsch". What does it mean?', '"Lick me in the arse"|"Little night music"|"Kiss me quickly"|"Leave me alone"', 'Mozart had a famously rude sense of humor.'],
   ['Look closely at the Mona Lisa. What does she have none of?', 'Eyebrows|A nose|Ears|Hair', 'They may have faded or been cleaned off over the centuries.'],
   ['When the Mona Lisa was stolen in 1911, which famous artist was questioned by police?', 'Pablo Picasso|Claude Monet|Salvador Dalí|Henri Matisse', 'He was cleared. The thief was a museum worker who hid in a cupboard overnight.'],
   ['The real Winnie-the-Pooh was named partly after what?', 'A bear at London Zoo|A Canadian lake|A stuffed toy shop|A pub', 'Winnie was a Canadian black bear named after Winnipeg. Christopher Robin loved visiting her.'],

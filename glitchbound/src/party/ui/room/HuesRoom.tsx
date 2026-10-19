@@ -11,7 +11,7 @@ export function HuesRoomPage({ code, onLeave }: { code: string; onLeave: () => v
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Hue Knew?', emoji: '🎨', invite: 'Join my Hue Knew? room: one-word colour clues, and everyone taps their guess on their own phone.', min: MIN_PLAYERS }}
+      meta={{ title: 'Hue Knew?', emoji: '🎨', invite: 'Join my Hue Knew? room: one-word color clues, and everyone taps their guess on their own phone.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.phase === 'lobby' || v.phase === 'result' ? undefined : `${v.count}/${v.total}`)}
@@ -30,8 +30,8 @@ function Settings({ view, send }: Ctx) {
     <>
       <h3>How it works</h3>
       <p className="pt-muted">
-        Each round one player is the <b>cue giver</b>. They secretly pick one of four colours and describe it in <b>one word</b> (no colour names like “red” or “blue”: try “ketchup”). Everyone taps their guess on their own phone, and the
-        guesses show together. The closer the colour looks, the more points; the cue giver scores for every close guess.
+        Each round one player is the <b>cue giver</b>. They secretly pick one of four colors and describe it in <b>one word</b> (no color names like “red” or “blue”: try “ketchup”). Everyone taps their guess on their own phone, and the
+        guesses show together. The closer the color looks, the more points; the cue giver scores for every close guess.
       </p>
       <label className="pt-switch">
         <input type="checkbox" checked={s.second} onChange={(e) => set({ second: e.target.checked })} />
@@ -122,7 +122,7 @@ function Game(ctx: Ctx) {
           <PickColour key={view.count} {...ctx} round={round} />
         ) : (
           <section className="pt-panel">
-            <p className="pt-kicker">{cue?.name ?? 'The cue giver'} is picking a secret colour…</p>
+            <p className="pt-kicker">{cue?.name ?? 'The cue giver'} is picking a secret color…</p>
             <Board target={null} marks={[]} />
             {view.host && cue && !cue.online && (
               <button className="pt-btn pt-btn-sm pt-btn-ghost" onClick={() => send({ t: 'next' })}>
@@ -173,7 +173,7 @@ function Game(ctx: Ctx) {
             <Board target={null} marks={toMarks(round.marks)} />
             {view.host && cue && !cue.online && (
               <button className="pt-btn pt-btn-sm pt-btn-ghost" onClick={() => send({ t: 'next' })}>
-                {cue.name} has gone: show the colour
+                {cue.name} has gone: show the color
               </button>
             )}
           </section>
@@ -190,7 +190,7 @@ function Game(ctx: Ctx) {
       {who}
       {clues}
       <section className="pt-panel">
-        <p className="pt-kicker">{round.clue ? 'The colour was…' : '⏱ No clue in time: no points this round'}</p>
+        <p className="pt-kicker">{round.clue ? 'The color was…' : '⏱ No clue in time: no points this round'}</p>
         <Board target={round.target} marks={[...toMarks(round.marks), ...toMarks(round.marks2)]} highlight />
         {round.clue && round.target !== null && <HueLegend />}
         <ul className="pt-hk-gains">
@@ -227,10 +227,10 @@ function PickColour({ send, round }: Ctx & { round: Round }) {
   };
   return (
     <section className="pt-panel">
-      <p className="pt-kicker">Pick your secret colour</p>
+      <p className="pt-kicker">Pick your secret color</p>
       <div className="pt-hk-offer">
         {offer.map((i, k) => (
-          <button key={i} className={`pt-hk-swatch${round.target === i ? ' is-on' : ''}`} style={{ background: cellHex(i) }} onClick={() => send({ t: 'pick', cell: i })} aria-pressed={round.target === i} aria-label={`Colour ${k + 1}`} />
+          <button key={i} className={`pt-hk-swatch${round.target === i ? ' is-on' : ''}`} style={{ background: cellHex(i) }} onClick={() => send({ t: 'pick', cell: i })} aria-pressed={round.target === i} aria-label={`Color ${k + 1}`} />
         ))}
       </div>
       {round.target !== null && (
@@ -245,13 +245,13 @@ function PickColour({ send, round }: Ctx & { round: Round }) {
             enterKeyHint="send"
             onChange={(e) => setDraft(e.target.value.replace(/\s/g, ''))}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
-            placeholder="One word, no colour names"
+            placeholder="One word, no color names"
             aria-label="Your one-word clue"
           />
         </>
       )}
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={round.target === null || !draft.trim()} onClick={submit}>
-        {round.target === null ? 'Tap a colour' : 'Send my clue'}
+        {round.target === null ? 'Tap a color' : 'Send my clue'}
       </button>
     </section>
   );
@@ -303,7 +303,7 @@ function SecondClue({ send, round, marks }: Ctx & { round: Round; marks: BoardMa
         Send my second clue
       </button>
       <button className="pt-btn pt-btn-ghost" onClick={() => send({ t: 'done' })}>
-        No second clue · show the colour
+        No second clue · show the color
       </button>
     </section>
   );

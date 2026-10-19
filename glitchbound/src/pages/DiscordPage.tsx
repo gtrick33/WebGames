@@ -8,6 +8,7 @@ import { playerKey } from '../platform/challenges';
 import { useEmbedHost } from '../platform/embed';
 import { usePageMeta } from '../platform/meta';
 import { Link, navigate } from '../router/router';
+import { AdultLabel } from '../components/AdultLabel';
 import './InfoPages.css';
 import './DiscordPage.css';
 
@@ -160,7 +161,9 @@ export function Picker({ session }: { session: DiscordSession }) {
               <button className="dsc-game panel" data-accent={game.accent} disabled={!!busy} onClick={() => void pick(slug)}>
                 <img src={game.art.tile} alt="" width={96} height={96} style={{ background: game.art.bg }} />
                 <span className="dsc-game-main">
-                  <b>{game.title}</b>
+                  <b>
+                    {game.title} {game.adult && <AdultLabel text={t('Adults only')} />}
+                  </b>
                   <span className="info-small">{t(how)}</span>
                   {live && live.players > 0 && <span className="dsc-live">{t('{n} playing now', { n: live.players })}</span>}
                 </span>

@@ -6,7 +6,7 @@
 export interface Player {
   id: string;
   name: string;
-  /** Token colour (board) and accent. */
+  /** Token color (board) and accent. */
   color: string;
   emoji: string;
 }

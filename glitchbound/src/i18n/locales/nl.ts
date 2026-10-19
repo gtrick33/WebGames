@@ -593,6 +593,10 @@ const nl: string[] = [
   'score te hoog voor de gespeelde tijd',
   'op rij',
   'Gebruiksvoorwaarden',
+  'Over ons',
+  'Contact',
+  'Alleen voor volwassenen',
+  'Over GlitchBound',
 ];
 
 export default nl;

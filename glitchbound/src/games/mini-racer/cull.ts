@@ -1,5 +1,5 @@
 /**
- * View culling for long polylines (the road, tyre walls). The line is cut into short chunks with
+ * View culling for long polylines (the road, tire walls). The line is cut into short chunks with
  * bounding boxes; each frame only the stretches near the camera are turned into a Path2D and
  * stroked. Stroking a whole track several times per frame was the main cost of drawing a frame
  * (and the cause of hitches on phones when the camera zoom changes).

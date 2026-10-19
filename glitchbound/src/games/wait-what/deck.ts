@@ -376,7 +376,7 @@ export function morseQuestion(i: number, r: Rng): Question {
     sound: { kind: 'morse', word },
     answers: shown,
     correct: shown.indexOf(word),
-    fact: `${spelled}. SOS was picked as a distress signal in 1905 because it is so easy to send and recognise.`,
+    fact: `${spelled}. SOS was picked as a distress signal in 1905 because it is so easy to send and recognize.`,
   };
 }
 

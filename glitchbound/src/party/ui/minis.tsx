@@ -173,7 +173,7 @@ function Rps({ players, onDone }: MiniProps) {
 
 /* --------------------------------------------------------------- hot potato */
 
-const POTATO_TOPICS = ['fruits', 'countries', 'animals', 'pizza toppings', 'superheroes', 'colours', 'football clubs', 'things in a kitchen', 'board games', 'car brands', 'cartoon characters', 'cities', 'sports', 'breakfast foods', 'musical instruments'];
+const POTATO_TOPICS = ['fruits', 'countries', 'animals', 'pizza toppings', 'superheroes', 'colors', 'football clubs', 'things in a kitchen', 'board games', 'car brands', 'cartoon characters', 'cities', 'sports', 'breakfast foods', 'musical instruments'];
 
 function HotPotato({ players, onDone }: MiniProps) {
   const [topic] = useState(() => randomOf(POTATO_TOPICS));

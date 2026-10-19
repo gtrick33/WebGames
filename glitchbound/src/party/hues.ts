@@ -1,6 +1,6 @@
 /**
- * Hue Knew?: a board of colours. The cue giver secretly picks one and describes it in a word; the
- * others tap where they think it is. Scored by how close the colours look (perceptual ΔE), not by
+ * Hue Knew?: a board of colors. The cue giver secretly picks one and describes it in a word; the
+ * others tap where they think it is. Scored by how close the colors look (perceptual ΔE), not by
  * squares on the board. Pure helpers.
  */
 import { deltaE, hsbToRgb, rgbToHex, type Rgb } from '../games/color-recall/color';
@@ -8,7 +8,7 @@ import { deltaE, hsbToRgb, rgbToHex, type Rgb } from '../games/color-recall/colo
 export const COLS = 18;
 export const ROWS = 10;
 
-/** The colour of a board cell: hue across, pale to deep down. */
+/** The color of a board cell: hue across, pale to deep down. */
 export function cellRgb(i: number): Rgb {
   const col = i % COLS;
   const row = Math.floor(i / COLS);
@@ -19,13 +19,13 @@ export function cellRgb(i: number): Rgb {
 }
 export const cellHex = (i: number): string => rgbToHex(cellRgb(i));
 
-/** Points for a guess, by how different the two colours look. */
+/** Points for a guess, by how different the two colors look. */
 export function huePoints(target: number, guess: number): number {
   const d = deltaE(cellRgb(target), cellRgb(guess));
   return d < 6 ? 3 : d < 13 ? 2 : d < 22 ? 1 : 0;
 }
 
-/** Four far-apart cells to choose the secret colour from. */
+/** Four far-apart cells to choose the secret color from. */
 export function offerColours(r: () => number): number[] {
   const out: number[] = [];
   for (let tries = 0; out.length < 4 && tries < 400; tries++) {

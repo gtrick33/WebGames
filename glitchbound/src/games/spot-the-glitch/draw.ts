@@ -8,7 +8,7 @@ import { H, RADIUS, W, rng, type Obj, type Scene } from './scene';
 const INK = '#2e2d35';
 type C = CanvasRenderingContext2D;
 
-/** Mixes a hex colour towards white (amt > 0) or black (amt < 0). */
+/** Mixes a hex color towards white (amt > 0) or black (amt < 0). */
 function tint(hex: string, amt: number): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex);
   if (!m) return hex;
@@ -17,7 +17,7 @@ function tint(hex: string, amt: number): string {
   return `rgb(${ch[0]} ${ch[1]} ${ch[2]})`;
 }
 
-/** Fills a path with soft top light and a darker underside, edged in a deeper shade of its own colour. */
+/** Fills a path with soft top light and a darker underside, edged in a deeper shade of its own color. */
 function shape(ctx: C, fill: string, path: () => void, line = 1.2): void {
   ctx.beginPath();
   path();

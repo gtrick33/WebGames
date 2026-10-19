@@ -8,9 +8,9 @@ import { doneTubes, isSolved, solveBest, type Board } from './sort';
 
 export const EPOCH = '2026-10-18';
 export const DAILY_LEVELS = 5;
-/** Colours available (see Game.css for their swatches and patterns). */
+/** Colors available (see Game.css for their swatches and patterns). */
 export const COLOR_COUNT = 16;
-/** Dailies up to this day were published with the first 12 colours and one fixed recipe; they stay as they were. */
+/** Dailies up to this day were published with the first 12 colors and one fixed recipe; they stay as they were. */
 export const CLASSIC_UNTIL = '2026-10-18';
 const CLASSIC_COLORS = 12;
 
@@ -28,12 +28,12 @@ export function rng(seed: number): () => number {
 
 type R = () => number;
 
-/** A level's recipe: how many colours, layers per tube, spare tubes, and whether tube sizes vary. */
+/** A level's recipe: how many colors, layers per tube, spare tubes, and whether tube sizes vary. */
 export interface LevelSpec {
   colors: number;
   cap: number;
   empty: number;
-  /** Mixed tube sizes and uneven colour amounts (like a tall tube and short ones). */
+  /** Mixed tube sizes and uneven color amounts (like a tall tube and short ones). */
   odd: boolean;
 }
 
@@ -43,13 +43,13 @@ export interface Level {
   par: number;
   /** Whether par was proven to be the fewest moves possible. */
   parOptimal: boolean;
-  /** Colour ids used (index into the shared palette). */
+  /** Color ids used (index into the shared palette). */
   palette: number[];
   /** Mystery level: layers under the top run stay hidden until they are uncovered. */
   mystery: boolean;
 }
 
-/** Difficulty ladder; Endless keeps climbing past the end by adding colours. */
+/** Difficulty ladder; Endless keeps climbing past the end by adding colors. */
 export function specFor(step: number, r: R): LevelSpec {
   const ladder: LevelSpec[] = [
     { colors: 3, cap: 3, empty: 2, odd: false },
@@ -63,7 +63,7 @@ export function specFor(step: number, r: R): LevelSpec {
     { colors: 9, cap: 4, empty: 2, odd: false },
   ];
   if (step < ladder.length) return ladder[step]!;
-  // Past the ladder: more colours every few levels, with the tube height and shapes varying so the
+  // Past the ladder: more colors every few levels, with the tube height and shapes varying so the
   // long run never settles into one pattern.
   const k = step - ladder.length;
   const shape = k % 5;
@@ -77,7 +77,7 @@ export function specFor(step: number, r: R): LevelSpec {
 
 /**
  * The daily's last two levels change recipe from day to day (after CLASSIC_UNTIL): short tall tubes,
- * odd shapes, many colours in short tubes... The first three stay a gentle warm-up.
+ * odd shapes, many colors in short tubes... The first three stay a gentle warm-up.
  */
 const DAILY_TWISTS: LevelSpec[] = [
   { colors: 6, cap: 4, empty: 2, odd: false },
@@ -109,8 +109,8 @@ function classicBoard(spec: LevelSpec, r: R): Board {
 }
 
 /**
- * Odd layout: tubes of different heights. Each colour has exactly as many layers as its home tube
- * holds, so every colour ends up filling a tube to the brim. Spare tubes reuse those heights.
+ * Odd layout: tubes of different heights. Each color has exactly as many layers as its home tube
+ * holds, so every color ends up filling a tube to the brim. Spare tubes reuse those heights.
  */
 function oddBoard(spec: LevelSpec, r: R): Board {
   const caps = Array.from({ length: spec.colors }, () => Math.max(3, spec.cap - 1 + Math.floor(r() * 3)));
@@ -125,7 +125,7 @@ function oddBoard(spec: LevelSpec, r: R): Board {
     board.push({ cap, layers: units.slice(at, at + cap) });
     at += cap;
   }
-  // Spares come in the tallest height, so any colour can be parked while you dig.
+  // Spares come in the tallest height, so any color can be parked while you dig.
   const tallest = Math.max(...caps);
   for (let e = 0; e < spec.empty; e++) board.push({ cap: e === 0 ? tallest : caps[Math.floor(r() * caps.length)]!, layers: [] });
   return shuffle(board, r);
@@ -145,7 +145,7 @@ export function makeLevel(r: R, spec: LevelSpec, mystery = false, colorCount = C
     const sol = solveBest(board, spec.colors <= 4 ? 40_000 : 12_000);
     if (!sol || sol.moves.length < spec.colors) continue;
     const level = { spec, board, par: sol.moves.length, parOptimal: sol.optimal, palette, mystery };
-    // Prefer levels that need a little thought: par comfortably above the colour count.
+    // Prefer levels that need a little thought: par comfortably above the color count.
     if (sol.moves.length >= spec.colors + 2) return level;
     fallback ??= level;
   }

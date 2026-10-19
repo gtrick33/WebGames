@@ -1,5 +1,5 @@
 /**
- * Synthesized sound, no files: a soft engine hum under a laid-back lo-fi race loop, a tyre squeal
+ * Synthesized sound, no files: a soft engine hum under a laid-back lo-fi race loop, a tire squeal
  * while sliding and a few blips. Created on the first Race press (a user gesture) and closed, with
  * the music scheduler stopped, when the game unmounts.
  */

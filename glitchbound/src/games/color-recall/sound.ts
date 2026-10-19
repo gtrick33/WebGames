@@ -45,7 +45,7 @@ export function createSfx(isMuted: () => boolean): Sfx {
   return {
     tick: () => note(880, 0, 0.06, 0.05, 'sine'),
     reveal(points) {
-      // Better colours climb higher: a happy arpeggio for great guesses, a soft two-note shrug otherwise.
+      // Better colors climb higher: a happy arpeggio for great guesses, a soft two-note shrug otherwise.
       const scale = [523.25, 659.25, 783.99, 1046.5, 1318.5];
       const steps = points >= 980 ? 5 : points >= 900 ? 4 : points >= 750 ? 3 : points >= 550 ? 2 : 1;
       if (steps === 1) {

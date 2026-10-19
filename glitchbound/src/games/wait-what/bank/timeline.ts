@@ -153,7 +153,7 @@ export const EVENTS: Event[] = [
   [1895, 'Volleyball is invented'],
   [1884, 'The first roller coaster in the USA opens'],
   [1885, 'The first car (Benz Patent-Motorwagen) is built'],
-  [1888, 'Jack the Ripper terrorises London'],
+  [1888, 'Jack the Ripper terrorizes London'],
   [1882, 'Tchaikovsky\'s 1812 Overture premieres'],
   [1853, 'Levi Strauss arrives in San Francisco', 'levi'],
   [1873, 'Levi\'s blue jeans are patented', 'levi'],

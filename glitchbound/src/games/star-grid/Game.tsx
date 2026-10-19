@@ -427,7 +427,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         </button>
       </div>
       <p className="sg-help">
-        One ⭐ in every row, column and colour, and stars can’t touch, not even at the corners. {tool === 'star' ? 'Tap a square for a star, tap again to take it back.' : 'Tap or drag to cross out squares that can’t hold a star.'}
+        One ⭐ in every row, column and color, and stars can’t touch, not even at the corners. {tool === 'star' ? 'Tap a square for a star, tap again to take it back.' : 'Tap or drag to cross out squares that can’t hold a star.'}
         <span className="sg-mouse"> Right-click crosses out too.</span>
       </p>
       {paused && round.phase === 'play' && (
@@ -508,7 +508,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <h1 className="sg-title">
         Star <span>Grid</span>
       </h1>
-      <p className="sg-tag">One star in every row, column and colour, and no two stars touching. Pure logic, no guessing needed.</p>
+      <p className="sg-tag">One star in every row, column and color, and no two stars touching. Pure logic, no guessing needed.</p>
       <section className="sg-card">
         <div className="sg-card-head">
           <b>Daily #{dailyNumber(today)}</b>

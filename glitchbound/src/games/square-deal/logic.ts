@@ -18,7 +18,7 @@ export function rng(seed: number): () => number {
   };
 }
 
-/** A piece: its cells as [row, col] offsets from its top-left, and a colour index. */
+/** A piece: its cells as [row, col] offsets from its top-left, and a color index. */
 export interface Piece {
   id: number;
   cells: [number, number][];
@@ -97,7 +97,7 @@ export function dealer(seed: number): () => Piece {
   return () => pieceAt(seed, n++);
 }
 
-/** The board: SIZE*SIZE cells, -1 empty or a colour index. */
+/** The board: SIZE*SIZE cells, -1 empty or a color index. */
 export type Board = number[];
 
 export const emptyBoard = (): Board => new Array<number>(SIZE * SIZE).fill(-1);

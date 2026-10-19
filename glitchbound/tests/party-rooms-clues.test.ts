@@ -248,7 +248,7 @@ describe('Hue Knew? room', () => {
     expect(r.cue).toBe(1);
     expect(r.offer).toHaveLength(4);
     expect(hues.viewFor(s, KEYS[1]!)!.round!.offer).toBeNull();
-    expect(hues.act(s, KEYS[0]!, { t: 'clue', text: 'ketchup' }, T0)).toMatch(/colour first/);
+    expect(hues.act(s, KEYS[0]!, { t: 'clue', text: 'ketchup' }, T0)).toMatch(/color first/);
     const notOffered = [...Array(180).keys()].find((i) => !r.offer.includes(i))!;
     hues.act(s, KEYS[0]!, { t: 'pick', cell: notOffered }, T0);
     expect(r.target).toBeNull();

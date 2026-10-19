@@ -90,7 +90,7 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
         title="Collections are in!"
         players={session.players}
         scores={scores}
-        awards={[...auctionAwards(state), ...(votedTop && votedTop[1] > 0 ? [{ title: 'Group’s Favourite', playerId: votedTop[0], why: `${votedTop[1]} vote${votedTop[1] > 1 ? 's' : ''}` }] : [])]}
+        awards={[...auctionAwards(state), ...(votedTop && votedTop[1] > 0 ? [{ title: 'Group’s Favorite', playerId: votedTop[0], why: `${votedTop[1]} vote${votedTop[1] > 1 ? 's' : ''}` }] : [])]}
         onAgain={() => update((s) => ({ ...s, active: null }))}
         onMenu={onExit}
       >

@@ -24,7 +24,7 @@ export type RaceMode = 'trial' | 'race';
 export interface DriverStyle {
   /** Top speed / acceleration multiplier vs the car's own spec. */
   pace: number;
-  /** How far towards the inside of a bend the driver aims (0 = centre line). */
+  /** How far towards the inside of a bend the driver aims (0 = center line). */
   inside: number;
   /** Steering wobble amplitude (sloppier lines). */
   wobble: number;
@@ -468,7 +468,7 @@ export class RaceSim {
     this.drift.chainTime = 0;
   }
 
-  /** Tyre walls, obstacles, scenery and the world edge. Returns the hardest impact. */
+  /** Tire walls, obstacles, scenery and the world edge. Returns the hardest impact. */
   private collideWorld(r: Racer): number {
     const car = r.car;
     let impact = collideBounds(car, this.track.bounds);
@@ -500,7 +500,7 @@ export class RaceSim {
     return playerImpact;
   }
 
-  /** The surface under a car, adjusted for its tyres. */
+  /** The surface under a car, adjusted for its tires. */
   private surfaceFor(r: Racer) {
     const s = r.ground.surface;
     return LOOSE.has(s) ? onLoose(SURFACES[s], r.spec.loose) : SURFACES[s];

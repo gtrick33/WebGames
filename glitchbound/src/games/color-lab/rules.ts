@@ -148,7 +148,7 @@ export function endStats(mode: Mode, rs: readonly LevelResult[]): { score: numbe
 
 const STAR_EMOJI = ['⬛', '🟧', '🟨', '🟩'];
 
-/** Spoiler-free result line: one square per puzzle, coloured by its stars. */
+/** Spoiler-free result line: one square per puzzle, colored by its stars. */
 export const resultLine = (results: readonly LevelResult[]): string => results.map((r) => STAR_EMOJI[r.stars] ?? '⬛').join('');
 
 /** Spoiler-free result: one square per level and the move counts against par. */

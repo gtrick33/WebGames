@@ -1,5 +1,5 @@
 /**
- * GlitchBound email design: an arcade-cabinet look built only from text, colour and borders.
+ * GlitchBound email design: an arcade-cabinet look built only from text, color and borders.
  * No images, no big buttons and a single link keep it reading like a personal message, which is
  * what Gmail files in the Primary tab (image-heavy, button-heavy mail tends to go to Promotions).
  * Every email gets a matching plain-text part.

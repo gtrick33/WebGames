@@ -593,6 +593,10 @@ const ro: string[] = [
   'scor prea mare pentru timpul jucat',
   'la rând',
   'Termeni de utilizare',
+  'Despre noi',
+  'Contact',
+  'Doar pentru adulți',
+  'Despre GlitchBound',
 ];
 
 export default ro;

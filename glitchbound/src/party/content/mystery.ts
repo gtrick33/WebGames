@@ -16,13 +16,13 @@ export const MYSTERY_WORDS: string[] = (
   'wallet backpack suitcase bottle cup spoon fork knife plate kettle toaster fridge oven microwave vacuum broom bucket ' +
   'phone computer camera television radio robot rocket satellite telescope microscope battery lightbulb headphones keyboard ' +
   'car bus train bicycle motorbike truck tractor helicopter airplane boat submarine sailboat skateboard scooter ambulance ' +
-  'guitar piano drum violin trumpet microphone ticket map compass flag crown sword shield helmet armour arrow ' +
+  'guitar piano drum violin trumpet microphone ticket map compass flag crown sword shield helmet armor arrow ' +
   'pirate ninja wizard witch ghost vampire zombie mermaid fairy giant knight princess cowboy astronaut detective ' +
   'doctor teacher chef farmer firefighter police pilot dentist clown magician painter singer dancer baker plumber ' +
   'snow rain thunder rainbow sun moon star cloud wind tornado fog ice fire smoke earthquake ' +
   'birthday wedding holiday vacation picnic camping fireworks party parade concert museum festival exam homework ' +
   'football tennis golf swimming skiing boxing chess yoga karate marathon basketball baseball bowling surfing hockey ' +
-  'shoe sock hat scarf glove jacket dress tie belt pyjamas sunglasses watch necklace ring wig ' +
+  'shoe sock hat scarf glove jacket dress tie belt pajamas sunglasses watch necklace ring wig ' +
   'tree flower rose cactus grass leaf seed shell pearl diamond gold coin treasure balloon kite puzzle dice ' +
   'snowman sandcastle bubble shadow dream ghost secret mystery memory'
 )

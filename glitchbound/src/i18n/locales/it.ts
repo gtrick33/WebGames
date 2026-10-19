@@ -593,6 +593,10 @@ const it: string[] = [
   'punteggio troppo alto per il tempo giocato',
   'di fila',
   'Termini d’uso',
+  'Chi siamo',
+  'Contatti',
+  'Solo per adulti',
+  'Informazioni su GlitchBound',
 ];
 
 export default it;

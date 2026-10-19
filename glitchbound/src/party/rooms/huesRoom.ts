@@ -1,8 +1,8 @@
 /**
- * Hue Knew? in a live room: the cue giver picks the secret colour on their own phone and types a
- * one-word clue; everyone else taps their guess on their own colour board. Guesses stay hidden until
+ * Hue Knew? in a live room: the cue giver picks the secret color on their own phone and types a
+ * one-word clue; everyone else taps their guess on their own color board. Guesses stay hidden until
  * everyone has placed one, then show together. With the second clue on, the cue giver then adds up
- * to two more words and everyone guesses again. Scored by how alike the colours look (../hues.ts):
+ * to two more words and everyone guesses again. Scored by how alike the colors look (../hues.ts):
  * guessers by closeness, the cue giver one point per close guess.
  *
  * Phases: lobby → pick → guess → (clue2 → guess) → reveal → pick … → result.
@@ -36,7 +36,7 @@ export interface Settings {
 
 export interface Round {
   cue: number;
-  /** The four colours the cue giver chooses from. */
+  /** The four colors the cue giver chooses from. */
   offer: number[];
   target: number | null;
   /** Empty when the cue giver ran out of time. */
@@ -232,7 +232,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
     case 'clue': {
       if (!isCue) return null;
       if (s.phase === 'pick') {
-        if (r!.target === null) return 'Pick your colour first.';
+        if (r!.target === null) return 'Pick your color first.';
         const clue = cleanClue(String(a.text ?? ''));
         if (!clue) return 'Type a one-word clue.';
         r!.clue = clue;
@@ -296,9 +296,9 @@ export interface RoomView {
   total: number;
   round: {
     cue: number;
-    /** The cue giver's four colours, while they pick. */
+    /** The cue giver's four colors, while they pick. */
     offer: number[] | null;
-    /** The secret colour: only on the cue giver's phone until the reveal. */
+    /** The secret color: only on the cue giver's phone until the reveal. */
     target: number | null;
     clue: string;
     clue2: string;

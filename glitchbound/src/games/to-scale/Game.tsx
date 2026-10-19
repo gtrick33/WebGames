@@ -395,13 +395,13 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
   );
 }
 
-/** Real-world sizes of a thing's box, in metres, from its longest side and the picture's shape. */
+/** Real-world sizes of a thing's box, in meters, from its longest side and the picture's shape. */
 function box(size: number, aspect: number): { w: number; h: number } {
   return aspect >= 1 ? { w: size, h: size / aspect } : { w: size * aspect, h: size };
 }
 
 /**
- * The blueprint: the reference in colour on the left, the target's silhouette on the right at the
+ * The blueprint: the reference in color on the left, the target's silhouette on the right at the
  * guessed size, both standing on the floor. The view zooms to keep both in frame (it holds still
  * while you drag the corner handle). On reveal, the real thing appears at its true size.
  */
@@ -463,7 +463,7 @@ function Stage({ shot, guess, reveal, tint, onGuess, onTick }: { shot: Shot; gue
   const refLeft = left;
   const tLeft = left + rb.w * scale + gap;
   const place = (b: { w: number; h: number }, x: number): CSSProperties => ({ left: x, top: floor - b.h * scale, width: b.w * scale, height: b.h * scale });
-  // Labels sit centred under each thing, never wider than the space between the two centres.
+  // Labels sit centerd under each thing, never wider than the space between the two centers.
   const shownW = (reveal ? Math.max(gb.w, tb.w) : gb.w) * scale;
   const refMid = refLeft + (rb.w * scale) / 2;
   const tMid = tLeft + shownW / 2;

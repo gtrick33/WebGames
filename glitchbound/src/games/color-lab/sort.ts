@@ -1,14 +1,14 @@
 /**
  * Color Lab rules and solver. Pure functions only (no React, no DOM), unit tested.
  *
- * Tubes hold stacked layers of colour (bottom first). A pour moves the top run of one colour from
- * one tube to another that is empty or has the same colour on top, as much as fits. The puzzle is
- * solved when every colour fills exactly one tube, holding nothing else.
+ * Tubes hold stacked layers of color (bottom first). A pour moves the top run of one color from
+ * one tube to another that is empty or has the same color on top, as much as fits. The puzzle is
+ * solved when every color fills exactly one tube, holding nothing else.
  */
 
 export interface Tube {
   cap: number;
-  /** Colour ids, bottom to top. */
+  /** Color ids, bottom to top. */
   layers: number[];
 }
 
@@ -23,7 +23,7 @@ export const cloneBoard = (b: Board): Board => b.map((t) => ({ cap: t.cap, layer
 
 export const top = (t: Tube): number | undefined => t.layers[t.layers.length - 1];
 
-/** Length of the same-colour run at the top of a tube. */
+/** Length of the same-color run at the top of a tube. */
 export function topRun(t: Tube): number {
   const c = top(t);
   let n = 0;
@@ -58,7 +58,7 @@ export function pour(b: Board, from: number, to: number): Board {
   return next;
 }
 
-/** Solved: every non-empty tube is full of a single colour, and no colour is split over two tubes. */
+/** Solved: every non-empty tube is full of a single color, and no color is split over two tubes. */
 export function isSolved(b: Board): boolean {
   const seen = new Set<number>();
   for (const t of b) {
@@ -69,14 +69,14 @@ export function isSolved(b: Board): boolean {
   return true;
 }
 
-/** Tubes that are finished: full of one colour, holding every unit of that colour. */
+/** Tubes that are finished: full of one color, holding every unit of that color. */
 export function doneTubes(b: Board): boolean[] {
   const total = new Map<number, number>();
   for (const t of b) for (const c of t.layers) total.set(c, (total.get(c) ?? 0) + 1);
   return b.map((t) => t.layers.length === t.cap && isMono(t) && total.get(t.layers[0]!) === t.layers.length);
 }
 
-/** Moves worth considering: legal, and not pointless shuffles of a whole single-colour tube into an empty one. */
+/** Moves worth considering: legal, and not pointless shuffles of a whole single-color tube into an empty one. */
 export function usefulMoves(b: Board): Move[] {
   const out: Move[] = [];
   for (let from = 0; from < b.length; from++) {
@@ -88,7 +88,7 @@ export function usefulMoves(b: Board): Move[] {
       if (!canPour(b, from, to)) continue;
       const d = b[to]!;
       if (d.layers.length === 0) {
-        // Moving a whole one-colour tube into an identical empty tube changes nothing.
+        // Moving a whole one-color tube into an identical empty tube changes nothing.
         if (wholeMono && d.cap === a.cap) continue;
         // Empty tubes of the same size are interchangeable: try one of each size.
         if (triedEmptyCap.has(d.cap)) continue;
@@ -113,7 +113,7 @@ export function boardKey(b: Board): string {
 
 /**
  * Lower bound on the moves left (admissible): every run that is not the bottom run must move at
- * least once, and every colour split across k tubes needs at least k - 1 pours to gather.
+ * least once, and every color split across k tubes needs at least k - 1 pours to gather.
  */
 export function lowerBound(b: Board): number {
   let runs = 0;

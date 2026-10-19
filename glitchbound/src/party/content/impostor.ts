@@ -81,7 +81,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'clothes',
     name: 'Clothes',
     emoji: '👗',
-    words: ['Jeans|Denim', 'Scarf|Neck', 'Socks|Feet', 'Hoodie|Zip', 'Tie|Office', 'Swimsuit|Beach', 'Pyjamas|Sleep', 'Raincoat|Wet', 'Sneakers|Laces', 'Gloves|Hands', 'Wedding dress|White', 'Sunglasses|Shades', 'Hat|Head', 'Belt|Buckle', 'Uniform|School', 'High heels|Tall', 'Bikini|Summer', 'Suit|Formal', 'Slippers|Home', 'Crown|King'],
+    words: ['Jeans|Denim', 'Scarf|Neck', 'Socks|Feet', 'Hoodie|Zip', 'Tie|Office', 'Swimsuit|Beach', 'Pajamas|Sleep', 'Raincoat|Wet', 'Sneakers|Laces', 'Gloves|Hands', 'Wedding dress|White', 'Sunglasses|Shades', 'Hat|Head', 'Belt|Buckle', 'Uniform|School', 'High heels|Tall', 'Bikini|Summer', 'Suit|Formal', 'Slippers|Home', 'Crown|King'],
   },
   {
     id: 'transport',
@@ -105,7 +105,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'school',
     name: 'School',
     emoji: '🏫',
-    words: ['Homework|Evening', 'Exam|Grades', 'Backpack|Shoulders', 'Pencil|Sharpen', 'Calculator|Maths', 'Lunch break|Food', 'Principal|Office', 'Blackboard|Chalk', 'Field trip|Bus', 'Detention|After class', 'Graduation|Hats', 'Science lab|Experiments', 'Gym class|Sport', 'Library card|Books', 'Report card|Parents', 'Ruler|Straight', 'Map|Geography', 'School bus|Yellow', 'Spelling bee|Letters', 'Summer holidays|Freedom'],
+    words: ['Homework|Evening', 'Exam|Grades', 'Backpack|Shoulders', 'Pencil|Sharpen', 'Calculator|Math', 'Lunch break|Food', 'Principal|Office', 'Blackboard|Chalk', 'Field trip|Bus', 'Detention|After class', 'Graduation|Hats', 'Science lab|Experiments', 'Gym class|Sport', 'Library card|Books', 'Report card|Parents', 'Ruler|Straight', 'Map|Geography', 'School bus|Yellow', 'Spelling bee|Letters', 'Summer holidays|Freedom'],
   },
   {
     id: 'halloween',
@@ -141,7 +141,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'nature',
     name: 'Nature & weather',
     emoji: '🌦️',
-    words: ['Rainbow|Colours', 'Volcano|Lava', 'Waterfall|Splash', 'Thunderstorm|Lightning', 'Desert|Sand', 'Jungle|Vines', 'Iceberg|Floating', 'Tornado|Spin', 'Fog|Grey', 'Cave|Dark', 'Island|Water all around', 'Mountain|Peak', 'Earthquake|Shake', 'Sunrise|Morning', 'Snow|White', 'River|Flow', 'Forest|Trees', 'Hail|Ice', 'Coral reef|Fish', 'Moon|Night'],
+    words: ['Rainbow|Colors', 'Volcano|Lava', 'Waterfall|Splash', 'Thunderstorm|Lightning', 'Desert|Sand', 'Jungle|Vines', 'Iceberg|Floating', 'Tornado|Spin', 'Fog|Gray', 'Cave|Dark', 'Island|Water all around', 'Mountain|Peak', 'Earthquake|Shake', 'Sunrise|Morning', 'Snow|White', 'River|Flow', 'Forest|Trees', 'Hail|Ice', 'Coral reef|Fish', 'Moon|Night'],
   },
   {
     id: 'tech',
@@ -153,7 +153,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'fantasy',
     name: 'Fantasy',
     emoji: '🐉',
-    words: ['Dragon|Fire', 'Unicorn|Horn', 'Mermaid|Tail', 'Wizard|Staff', 'Fairy|Wings', 'Giant|Huge', 'Troll|Bridge', 'Castle|Tower', 'Magic wand|Spell', 'Treasure|Gold', 'Pirate ship|Flag', 'Phoenix|Rebirth', 'Elf|Pointy ears', 'Genie|Lamp', 'Crystal ball|Future', 'Knight|Armour', 'Potion|Bottle', 'Goblin|Green', 'Centaur|Half horse', 'Flying carpet|Rug'],
+    words: ['Dragon|Fire', 'Unicorn|Horn', 'Mermaid|Tail', 'Wizard|Staff', 'Fairy|Wings', 'Giant|Huge', 'Troll|Bridge', 'Castle|Tower', 'Magic wand|Spell', 'Treasure|Gold', 'Pirate ship|Flag', 'Phoenix|Rebirth', 'Elf|Pointy ears', 'Genie|Lamp', 'Crystal ball|Future', 'Knight|Armor', 'Potion|Bottle', 'Goblin|Green', 'Centaur|Half horse', 'Flying carpet|Rug'],
   },
   {
     id: 'space',

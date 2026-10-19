@@ -23,6 +23,8 @@ describe('site search', () => {
     expect(top('favourites')).toEqual({ kind: 'pages', first: 'favorites' });
     expect(top('room code')).toEqual({ kind: 'pages', first: 'room' });
     expect(top('party')).toEqual({ kind: 'pages', first: 'party' });
+    expect(top('contact us')).toEqual({ kind: 'pages', first: 'contact' });
+    expect(top('about')).toEqual({ kind: 'pages', first: 'about' });
   });
 
   it('finds party games, by name or by what they are like', () => {

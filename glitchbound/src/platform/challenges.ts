@@ -1,6 +1,6 @@
 /**
  * Friends' challenges in the browser: the device's player key, and calls to /api/challenges.
- * Members are recognised by their account; guests by a random key kept on this device.
+ * Members are recognized by their account; guests by a random key kept on this device.
  */
 import { api } from './account';
 import type { ChallengeListItem, ChallengeMode, ChallengeView } from './challenge';

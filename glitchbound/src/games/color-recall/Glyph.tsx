@@ -3,7 +3,7 @@ import type { GlyphId } from './targets';
 
 /**
  * Original, simplified silhouettes (no real logos). Each draws its main body in `fill` with an ink
- * outline; small details are ink or white overlays so they read on any fill colour.
+ * outline; small details are ink or white overlays so they read on any fill color.
  */
 const INK = '#14102a';
 

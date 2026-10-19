@@ -15,13 +15,13 @@ export interface CrSave {
   /** Results per day (YYYY-MM-DD); a day is complete with ROUNDS results. */
   daily: Record<string, RoundResult[]>;
   practice: { games: number; best: number; total: number };
-  /** Best single colour ever and how many perfect colours, across both modes. */
+  /** Best single color ever and how many perfect colors, across both modes. */
   bestColor: number;
   perfects: number;
   difficulty: string;
   sliders: 'hsb' | 'rgb';
   muted: boolean;
-  /** The last daily colour whose peek was shown, so leaving and resuming never shows it twice. */
+  /** The last daily color whose peek was shown, so leaving and resuming never shows it twice. */
   dailySeen: { day: string; round: number } | null;
 }
 
@@ -37,7 +37,7 @@ export const emptyCrSave = (): CrSave => ({
   dailySeen: null,
 });
 
-/** Index of the last daily colour already shown today, or -1. */
+/** Index of the last daily color already shown today, or -1. */
 export function seenDailyRound(s: CrSave, day: string): number {
   return s.dailySeen?.day === day ? s.dailySeen.round : -1;
 }
@@ -99,7 +99,7 @@ export function saveCr(s: CrSave, today: string): void {
   }
 }
 
-/** Records one finished colour (daily or practice) into the all-time numbers. */
+/** Records one finished color (daily or practice) into the all-time numbers. */
 export function recordColor(s: CrSave, r: RoundResult, daily: string | null): CrSave {
   const next: CrSave = { ...s, daily: { ...s.daily }, bestColor: Math.max(s.bestColor, r.points), perfects: s.perfects + (verdictFor(r.points) === 'perfect' ? 1 : 0) };
   if (daily) next.daily[daily] = [...(s.daily[daily] ?? []), r].slice(0, ROUNDS);

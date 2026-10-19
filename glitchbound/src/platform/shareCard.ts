@@ -44,7 +44,7 @@ const isGrid = (l: string): boolean => /\p{Extended_Pictographic}/u.test(l) && l
 
 /*
  * Emoji are laid out in fixed boxes: phones often measure an emoji narrower than they draw it,
- * which pushed centred lines off the card. Text runs are measured as usual.
+ * which pushed centerd lines off the card. Text runs are measured as usual.
  */
 const EMOJI = /(\p{Extended_Pictographic}(?:\ufe0f|\p{Emoji_Modifier}|\u200d\p{Extended_Pictographic}\ufe0f?)*)/u;
 const EMOJI_BOX = 1.2;
@@ -59,7 +59,7 @@ export function lineWidth(ctx: CanvasRenderingContext2D, text: string): number {
     .reduce((w, part) => w + (EMOJI.test(part) ? box : ctx.measureText(part).width), 0);
 }
 
-/** Draws a line centred on `cx`, emoji in their fixed boxes. */
+/** Draws a line centerd on `cx`, emoji in their fixed boxes. */
 function drawLine(ctx: CanvasRenderingContext2D, text: string, cx: number, y: number): void {
   const box = fontSize(ctx) * EMOJI_BOX;
   let x = cx - lineWidth(ctx, text) / 2;
@@ -101,7 +101,7 @@ export function tileGrid(n: number, w: number, h: number, gap: number): { cols: 
   return { cols, rows, size: Math.max(40, size) };
 }
 
-/** Game tiles in rows, centred on `cx`: done ones bright with a green ✓, the rest faded with a ✗. */
+/** Game tiles in rows, centerd on `cx`: done ones bright with a green ✓, the rest faded with a ✗. */
 function drawTiles(ctx: CanvasRenderingContext2D, tiles: Tile[], imgs: (HTMLImageElement | null)[], cx: number, top: number, grid: { cols: number; size: number }, gap: number): void {
   const { cols, size } = grid;
   const r = size * 0.22;
@@ -179,7 +179,7 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
   }
   const [a1, a2] = ACCENTS[opts.game?.accent ?? 'cyan'];
 
-  // Background: the game's colours, its wide art softly behind, and a light grain of dots.
+  // Background: the game's colors, its wide art softly behind, and a light grain of dots.
   const bg = ctx.createLinearGradient(0, 0, S, S);
   bg.addColorStop(0, a1);
   bg.addColorStop(1, a2);
@@ -247,7 +247,7 @@ export async function renderShareCard(opts: { game?: GameEntry; lines: string[];
   }
 
   // Text: the first line as the headline, emoji grids large, the rest as wrapped details; the block
-  // is measured first and centred in the panel.
+  // is measured first and centerd in the panel.
   const maxW = pw - 90;
   type Row = { text: string; font: string; color: string; h: number; tiles?: true };
   const rows: Row[] = [];

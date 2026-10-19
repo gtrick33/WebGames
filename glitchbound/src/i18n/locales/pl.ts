@@ -593,6 +593,10 @@ const pl: string[] = [
   'wynik za wysoki jak na czas gry',
   'z rzędu',
   'Regulamin',
+  'O nas',
+  'Kontakt',
+  'Tylko dla dorosłych',
+  'O GlitchBound',
 ];
 
 export default pl;

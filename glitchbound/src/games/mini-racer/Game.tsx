@@ -767,7 +767,7 @@ function ordinal(n: number): string {
   return n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
 }
 
-/** Sector times of each lap, coloured by the delta shown during the race (vs that lap's reference). */
+/** Sector times of each lap, colored by the delta shown during the race (vs that lap's reference). */
 function SectorSummary({ result }: { result: Result }) {
   if (result.splitLog.length === 0) return null;
   const best = result.splits.length ? result.splits.map(sectorTimes) : [];

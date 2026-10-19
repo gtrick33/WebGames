@@ -11,7 +11,7 @@ export const ROUNDS = 5;
 export const EPOCH = '2026-10-18';
 export const MAX_SCORE = ROUNDS * MAX_POINTS;
 
-/** How long the target colour is shown before it hides, per difficulty. 0 = name and shape only. */
+/** How long the target color is shown before it hides, per difficulty. 0 = name and shape only. */
 export const PEEK_MS = { easy: 5000, normal: 3000, hard: 1200, memory: 0 } as const;
 export type Difficulty = keyof typeof PEEK_MS;
 export const DAILY_DIFFICULTY: Difficulty = 'normal';
@@ -36,7 +36,7 @@ export interface RoundSpec {
 
 /**
  * Picks `count` targets that look clearly different from each other (and use different shapes),
- * plus a starting colour for each round, all from `random`.
+ * plus a starting color for each round, all from `random`.
  */
 export function pickRounds(random: () => number, count = ROUNDS, pool: ColorTarget[] = TARGETS): RoundSpec[] {
   const order = pool.map((t) => t);
@@ -101,7 +101,7 @@ export function practiceRounds(random: () => number): RoundSpec[] {
   return rounds;
 }
 
-/** A wild card with its own shape and a clearly different colour from the other rounds. */
+/** A wild card with its own shape and a clearly different color from the other rounds. */
 function distinctWild(random: () => number, others: RoundSpec[]): ColorTarget {
   let t = randomWild(random);
   for (let i = 0; i < 50; i++) {
@@ -136,7 +136,7 @@ export function scoreGuess(target: ColorTarget, guess: Rgb): RoundResult {
 export type Phase = 'peek' | 'guess' | 'reveal' | 'done';
 
 export interface GameState {
-  /** A challenge round is five seeded practice colours, the same for every player. */
+  /** A challenge round is five seeded practice colors, the same for every player. */
   mode: 'daily' | 'practice' | 'challenge';
   peekMs: number;
   rounds: RoundSpec[];
@@ -174,7 +174,7 @@ export function reduce(s: GameState, a: Action): GameState {
 
 export const totalScore = (results: RoundResult[]): number => results.reduce((n, r) => n + r.points, 0);
 
-/** The numbers reported to the arcade at the end of a 5-colour game (keys declared in the registry). */
+/** The numbers reported to the arcade at the end of a 5-color game (keys declared in the registry). */
 export function endStats(results: RoundResult[]): { score: number; stats: Record<string, number> } {
   const score = totalScore(results);
   return {
@@ -187,10 +187,10 @@ export function endStats(results: RoundResult[]): { score: number; stats: Record
   };
 }
 
-/** Spoiler-free result line: how close each colour was, never which colours they were. */
+/** Spoiler-free result line: how close each color was, never which colors they were. */
 export const resultLine = (results: RoundResult[]): string => results.map((r) => VERDICT_EMOJI[verdictFor(r.points)]).join('');
 
-/** Spoiler-free: shows how close each colour was, never which colours they were. */
+/** Spoiler-free: shows how close each color was, never which colors they were. */
 export function shareText(day: string, results: RoundResult[], streak: number, url: string): string {
   const squares = resultLine(results);
   const lines = [`Color Recall #${dailyNumber(day)} 🎨`, `${squares}  ${totalScore(results).toLocaleString('en-US')} / ${MAX_SCORE.toLocaleString('en-US')}`];

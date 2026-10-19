@@ -37,7 +37,7 @@ export const CARS: CarDef[] = [
   {
     id: 'dune-bug',
     name: 'Dune Bug',
-    tagline: 'Fat tyres: happier on dirt, gravel and sand.',
+    tagline: 'Fat tires: happier on dirt, gravel and sand.',
     shape: 'buggy',
     body: '#ffc51f',
     accent: '#1b1035',
@@ -132,7 +132,7 @@ export function getCar(id: string): CarDef {
   return CARS.find((c) => c.id === id) ?? CARS[0]!;
 }
 
-/** Surfaces where `loose` (tyre type) matters. */
+/** Surfaces where `loose` (tire type) matters. */
 export const LOOSE: ReadonlySet<Surface> = new Set<Surface>(['dirt', 'gravel', 'sand', 'grass', 'mud', 'snow']);
 
 /** Physics spec for a car. Loose-surface skill is applied by the sim per surface. */

@@ -32,8 +32,8 @@ const THEMES: Record<AuctionTheme, Row[]> = {
     ['Flying nanny with an umbrella', 1, '☂️', 'magic'], ['Hacker who dodges bullets', 2, '🕶️', 'agile'], ['Lost alien who wants to go home', 1, '🚲', 'cute'],
   ],
   gaming: [
-    ['Platform-jumping hero', 3, '🍄', 'classic'], ['Elf hero with a sword', 3, '🗡️', 'adventure'], ['Armoured space soldier', 2, '🪖', 'strong'], ['Tomb-raiding adventurer', 2, '🏺', 'adventure'], ['Super-speed mascot', 2, '💨', 'speed'],
-    ['Angry war god', 2, '🪓', 'strong'], ['Dot-chomping circle', 1, '🟡', 'classic'], ['Blocky miner', 1, '⛏️', 'builder'], ['Bounty hunter in power armour', 2, '🔫', 'gadgets'], ['Silver-haired monster hunter', 2, '🐺', 'magic'],
+    ['Platform-jumping hero', 3, '🍄', 'classic'], ['Elf hero with a sword', 3, '🗡️', 'adventure'], ['Armored space soldier', 2, '🪖', 'strong'], ['Tomb-raiding adventurer', 2, '🏺', 'adventure'], ['Super-speed mascot', 2, '💨', 'speed'],
+    ['Angry war god', 2, '🪓', 'strong'], ['Dot-chomping circle', 1, '🟡', 'classic'], ['Blocky miner', 1, '⛏️', 'builder'], ['Bounty hunter in power armor', 2, '🔫', 'gadgets'], ['Silver-haired monster hunter', 2, '🐺', 'magic'],
     ['Barrel-throwing ape', 1, '🦍', 'strong'], ['Friendly dinosaur sidekick', 1, '🦖', 'cute'], ['Hooded assassin', 1, '🦅', 'agile'], ['Hero with a giant sword', 2, '⚔️', 'strong'], ['Castle princess', 1, '👑', 'classic'],
     ['Spinning crate-smasher', 1, '🌀', 'speed'], ['Space crewmate (maybe a traitor)', 1, '🚀', 'cute'],
   ],
@@ -68,7 +68,7 @@ const THEMES: Record<AuctionTheme, Row[]> = {
   cars: [
     ['Red Italian supercar', 3, '🏎️', 'supercar'], ['Wedge-shaped supercar', 3, '🏎️', 'supercar'], ['Classic German sports car', 2, '🚗', 'sports'], ['1,500-horsepower hypercar', 3, '🏎️', 'hyper'], ['Self-driving electric car', 2, '🔋', 'electric'],
     ['Tiny city car', 1, '🚙', 'city'], ['Retro camper van', 1, '🚐', 'classic'], ['British spy car', 2, '🚗', 'classic'], ['Race-track special', 2, '🏎️', 'supercar'], ['American muscle car', 2, '🐎', 'muscle'],
-    ['Off-road 4x4', 1, '🚙', 'offroad'], ['Gadget-packed hero car', 3, '🦇', 'fiction'], ['Time-travelling sports car', 2, '⏱️', 'fiction'], ['Monster truck', 1, '🛻', 'offroad'], ['Italian scooter', 1, '🛵', 'city'],
+    ['Off-road 4x4', 1, '🚙', 'offroad'], ['Gadget-packed hero car', 3, '🦇', 'fiction'], ['Time-traveling sports car', 2, '⏱️', 'fiction'], ['Monster truck', 1, '🛻', 'offroad'], ['Italian scooter', 1, '🛵', 'city'],
   ],
   music: [
     ['Michael Jackson', 3, '🕺', 'pop'], ['Beyoncé', 3, '🐝', 'pop'], ['Freddie Mercury', 3, '👑', 'rock'], ['Taylor Swift', 3, '🎤', 'pop'], ['Elvis Presley', 2, '🎸', 'rock'],

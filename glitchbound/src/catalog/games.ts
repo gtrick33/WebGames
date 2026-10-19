@@ -8,7 +8,7 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'neon-rush',
     wallet: true,
-    title: 'NEON RUSH',
+    title: 'Neon Rush',
     tagline: 'An endless neon racer. Weave through traffic, chain near misses, beat your best.',
     description:
       'Switch lanes at the last possible moment, grab coins and power-ups, and chain near misses into an x8 combo. ' +
@@ -22,7 +22,7 @@ export const GAMES: GameEntry[] = [
     art: {
       tile: '/games/neon-rush/tile.webp',
       wide: '/games/neon-rush/wide.webp',
-      alt: 'A blue race car between a cyan and a magenta neon lane line, with the NEON RUSH logo',
+      alt: 'A blue race car between a cyan and a magenta neon lane line, with the Neon Rush logo',
       bg: '#1d0b3a',
     },
     // Built from ../neon-rush into dist/play/neon-rush/ (scripts/build-games.mjs) and served by GlitchBound.
@@ -70,7 +70,7 @@ export const GAMES: GameEntry[] = [
     art: {
       tile: '/games/memory-grid/tile.webp',
       wide: '/games/memory-grid/wide.webp',
-      alt: 'A 3 by 3 grid of candy-coloured tiles on cream paper, three of them glowing in sequence, with the Memory Grid logo',
+      alt: 'A 3 by 3 grid of candy-colored tiles on cream paper, three of them glowing in sequence, with the Memory Grid logo',
       bg: '#fff4e2',
     },
     runtime: { kind: 'module' },
@@ -138,7 +138,7 @@ export const GAMES: GameEntry[] = [
       'HSB or RGB sliders with fine-tune buttons, built for phones',
     ],
     ownDaily: { label: 'Today’s 5 colors' },
-    challenge: { label: 'The same five colours for everyone, with a 3-second peek. The closest mixes win.' },
+    challenge: { label: 'The same five colors for everyone, with a 3-second peek. The closest mixes win.' },
     daily: [
       { metric: 'score', targets: [3000, 3300, 3600, 3900], label: 'Score {n} points in one 5-color game' },
       { metric: 'bestColor', targets: [850, 900, 950], label: 'Mix a single color worth {n} points' },
@@ -233,7 +233,7 @@ export const GAMES: GameEntry[] = [
       'Ten collectible cars with small, balanced handling differences',
       'Race three AI rivals at any level from 0 to 100 (100 is near-perfect), or run a Time Trial against your ghost',
       'Live sector splits, green or red against your best or previous lap',
-      'Tyre walls and solid scenery: no cutting across the sand',
+      'Tire walls and solid scenery: no cutting across the sand',
     ],
     ownDaily: { label: 'Today’s track' },
     challenge: { label: 'A 3-lap Time Trial on the same new track, against the best ghost so far. Most race points wins.' },
@@ -535,6 +535,7 @@ export const GAMES: GameEntry[] = [
       bg: '#e5383b',
     },
     partyOnly: true,
+    adult: true,
     runtime: { kind: 'module' },
     aspect: 'portrait',
     controls: {
@@ -610,7 +611,7 @@ export const GAMES: GameEntry[] = [
     art: {
       tile: '/games/square-deal/tile.webp',
       wide: '/games/square-deal/wide.webp',
-      alt: 'Candy-coloured blocks on a purple 8 by 8 board with a row about to clear, and the Square Deal logo',
+      alt: 'Candy-colored blocks on a purple 8 by 8 board with a row about to clear, and the Square Deal logo',
       bg: '#ff7a45',
     },
     runtime: { kind: 'module' },
@@ -649,7 +650,7 @@ export const GAMES: GameEntry[] = [
     art: {
       tile: '/games/outta-here/tile.webp',
       wide: '/games/outta-here/wide.webp',
-      alt: 'Fat colourful arrows packed on a mint grid, one shooting off the edge, with the Outta Here logo',
+      alt: 'Fat colorful arrows packed on a mint grid, one shooting off the edge, with the Outta Here logo',
       bg: '#19b3c9',
     },
     runtime: { kind: 'module' },
@@ -688,7 +689,7 @@ export const GAMES: GameEntry[] = [
     art: {
       tile: '/games/gloop/tile.webp',
       wide: '/games/gloop/wide.webp',
-      alt: 'A glass jar stacked with smiling jelly blobs of every colour and size, with the Gloop logo',
+      alt: 'A glass jar stacked with smiling jelly blobs of every color and size, with the Gloop logo',
       bg: '#b98cff',
     },
     runtime: { kind: 'module' },
@@ -746,9 +747,9 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'star-grid',
     title: 'Star Grid',
-    tagline: 'One star in every row, column and colour, and no two touching. Three new grids a day.',
+    tagline: 'One star in every row, column and color, and no two touching. Three new grids a day.',
     description:
-      'A pure logic puzzle: the grid is split into coloured regions, and you place exactly one star in every row, every column and every region, with no two stars touching, not even at the corners. ' +
+      'A pure logic puzzle: the grid is split into colored regions, and you place exactly one star in every row, every column and every region, with no two stars touching, not even at the corners. ' +
       'Tap a square for a star and tap again to take it back, or cross out the squares you have ruled out; mistakes light up red. Three daily grids from 6 by 6 to 8 by 8, the same for everyone, plus endless grids up to 9 by 9 and challenges for up to 5 friends.',
     categories: ['puzzle'],
     moods: ['brainy', 'chill'],
@@ -759,7 +760,7 @@ export const GAMES: GameEntry[] = [
     art: {
       tile: '/games/star-grid/tile.webp',
       wide: '/games/star-grid/wide.webp',
-      alt: 'A pastel patchwork grid with gold stars, one in each row, column and colour, on a starry night background',
+      alt: 'A pastel patchwork grid with gold stars, one in each row, column and color, on a starry night background',
       bg: '#2a2878',
     },
     runtime: { kind: 'module' },

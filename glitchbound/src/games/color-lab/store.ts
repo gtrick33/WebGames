@@ -25,7 +25,7 @@ export interface ClSave {
   solved: number;
   underPar: number;
   muted: boolean;
-  /** Patterns on the colours (on by default; helps colour-blind players). */
+  /** Patterns on the colors (on by default; helps color-blind players). */
   patterns: boolean;
   /** Help paid for on today's unfinished daily puzzle, so leaving and coming back doesn't refund it. */
   help: { day: string; index: number; hints: number; spare: boolean } | null;

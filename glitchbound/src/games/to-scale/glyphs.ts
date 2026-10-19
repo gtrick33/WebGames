@@ -1,7 +1,7 @@
 /**
  * Turns an emoji into artwork the game can size precisely: drawn big on a canvas, cropped to its
- * visible pixels (emoji fonts pad differently on every device), and also as a one-colour silhouette.
- * Results are cached per emoji and colour.
+ * visible pixels (emoji fonts pad differently on every device), and also as a one-color silhouette.
+ * Results are cached per emoji and color.
  */
 export interface Glyph {
   /** Data URLs of the cropped picture and the silhouette. */

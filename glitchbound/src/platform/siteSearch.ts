@@ -44,6 +44,8 @@ export const PAGES: PageEntry[] = [
   { id: 'feedback', title: 'Give feedback', icon: 'chat', action: 'feedback', keywords: ['feedback', 'idea', 'suggestion', 'rate', 'review', 'contact', 'help'] },
   { id: 'privacy', title: 'Privacy & your data', icon: 'link', href: '/privacy', keywords: ['privacy', 'data', 'cookies', 'policy', 'gdpr', 'delete my data'] },
   { id: 'terms', title: 'Terms of use', icon: 'link', href: '/terms', keywords: ['terms', 'rules', 'conditions', 'fair play', 'cheating', 'legal'] },
+  { id: 'about', title: 'About GlitchBound', icon: 'link', href: '/about', keywords: ['about', 'about us', 'who made this', 'studio', 'company', 'team', 'creator'] },
+  { id: 'contact', title: 'Contact', icon: 'chat', href: '/contact', keywords: ['contact', 'contact us', 'email', 'support', 'help', 'press', 'get in touch'] },
   { id: 'admin', title: 'Admin dashboard', icon: 'chart', href: '/admin', who: 'admin', keywords: ['admin', 'dashboard', 'stats', 'analytics', 'games settings'] },
   { id: 'qa', title: 'QA panel', icon: 'bug', href: '/admin?tab=qa', who: 'staff', keywords: ['qa', 'qa panel', 'testing', 'ban', 'coins', 'players', 'test'] },
   { id: 'qa-team', title: 'QA team', icon: 'user', href: '/admin?tab=team', who: 'admin', keywords: ['qa team', 'testers', 'invite tester', 'audit', 'audit trail'] },

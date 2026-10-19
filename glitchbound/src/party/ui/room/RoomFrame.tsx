@@ -8,7 +8,7 @@ import { ModeBar } from '../shared';
 const COLORS = ['#ff5a6c', '#ffb020', '#2fd1a0', '#3d7bff', '#a45cff', '#ff7eb6', '#12c6b3', '#ff8a1f', '#8ad13b', '#5b6cff', '#e64c9a', '#00a6d6'];
 export const seatColor = (n: number): string => COLORS[(n - 1) % COLORS.length]!;
 
-/** A player's round initial in their seat colour. */
+/** A player's round initial in their seat color. */
 export function Dot({ p, size = 34 }: { p: Pick<SeatView, 'n' | 'name'>; size?: number }) {
   return (
     <span className="pt-avatar pt-imp-dot" style={{ background: seatColor(p.n), width: size, height: size, fontSize: size * 0.45 }} aria-hidden="true">

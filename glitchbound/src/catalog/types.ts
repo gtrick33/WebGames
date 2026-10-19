@@ -97,7 +97,7 @@ export interface GameEntry {
     wide: string;
     /** Alt text describing the artwork. */
     alt: string;
-    /** Background colour behind the artwork while it loads. */
+    /** Background color behind the artwork while it loads. */
     bg: string;
   };
   runtime: GameRuntime;
@@ -141,6 +141,12 @@ export interface GameEntry {
    * the arcade's lists, search, home page and rotations. Its own page and room links still work.
    */
   partyOnly?: boolean;
+  /**
+   * Adults-only content (18+). Wherever the game is listed it carries the "18+ Adults only" label (never
+   * replaced by a sticker), its page is marked `rating: adult` for search engines, and the game itself
+   * asks players to confirm their age before it starts.
+   */
+  adult?: boolean;
   /**
    * The game keeps a coin wallet, so QA and admins can give a player coins for it. The game collects
    * them with claimCoins() (src/platform/coins.ts) when a signed-in player opens it.

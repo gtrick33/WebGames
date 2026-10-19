@@ -10,6 +10,7 @@ import { useLiveCatalog } from '../platform/liveCatalog';
 import { partyHref, siteSearch, type PageAction, type SearchGroup } from '../platform/siteSearch';
 import { setTheme } from '../platform/theme';
 import { navigate } from '../router/router';
+import { AdultLabel } from './AdultLabel';
 import { Icon } from './Icon';
 import { openSignIn } from './openSignIn';
 import './SearchDialog.css';
@@ -81,7 +82,7 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
                 <strong>{g.title}</strong>
                 <span>{tGame(g.tagline)}</span>
               </span>
-              <span className="chip">{tr(CATEGORIES[g.categories[0]].label)}</span>
+              {g.adult ? <AdultLabel text={tr('Adults only')} /> : <span className="chip">{tr(CATEGORIES[g.categories[0]].label)}</span>}
             </>
           ),
         })),

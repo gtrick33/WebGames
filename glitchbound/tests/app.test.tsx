@@ -20,7 +20,7 @@ describe('homepage', () => {
     expect(screen.getAllByRole('button', { name: /Surprise me/ }).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { level: 2, name: 'Today’s dailies' })).toBeTruthy();
     const arcade = screen.getByRole('region', { name: 'The arcade' });
-    expect(within(arcade).getByRole('link', { name: 'NEON RUSH' }).getAttribute('href')).toBe('/games/neon-rush');
+    expect(within(arcade).getByRole('link', { name: 'Neon Rush' }).getAttribute('href')).toBe('/games/neon-rush');
   });
 
   it('picks games by mood, keeping the mood in the URL', () => {
@@ -28,7 +28,7 @@ describe('homepage', () => {
     const arcade = screen.getByRole('region', { name: 'The arcade' });
     fireEvent.click(within(arcade).getByRole('button', { name: /Quick rounds/ }));
     expect(window.location.search).toBe('?mood=quick');
-    expect(within(arcade).getByRole('link', { name: 'NEON RUSH' })).toBeTruthy();
+    expect(within(arcade).getByRole('link', { name: 'Neon Rush' })).toBeTruthy();
     expect(within(arcade).queryByRole('link', { name: 'Letter Pinch' })).toBeNull();
     fireEvent.click(within(arcade).getByRole('button', { name: /Everything/ }));
     expect(within(arcade).getByRole('link', { name: 'Letter Pinch' })).toBeTruthy();
@@ -62,6 +62,26 @@ describe('homepage', () => {
 });
 
 describe('routing', () => {
+  it('labels Crass Act adults only on its page and in Party Mode', async () => {
+    const page = renderAt('/games/crass-act');
+    const heading = (await screen.findByRole('heading', { level: 1, name: 'Crass Act' })).parentElement!;
+    expect(heading.textContent).toContain('18+Adults only');
+    page.unmount();
+    renderAt('/party');
+    const feature = (await screen.findByRole('heading', { level: 2, name: 'Crass Act' })).closest('section')!;
+    expect(feature.textContent).toContain('18+Adults only');
+  });
+
+  it('opens the About and Contact pages from the footer', async () => {
+    renderAt('/');
+    const footer = screen.getByRole('navigation', { name: 'Footer' });
+    fireEvent.click(within(footer).getByRole('link', { name: 'About' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Small games. Big obsessions.' })).toBeTruthy();
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Footer' })).getByRole('link', { name: 'Contact' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Get in touch' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'sava.hristov@glitchboundstudio.com' }).getAttribute('href')).toBe('mailto:sava.hristov@glitchboundstudio.com');
+  });
+
   it('shows the 404 page for unknown paths and unknown games', () => {
     renderAt('/nowhere');
     expect(screen.getByRole('heading', { level: 1, name: /This level doesn.t exist/ })).toBeTruthy();
@@ -82,7 +102,7 @@ describe('game page', () => {
   it('loads the game only after Play, and records rounds reported by the game', () => {
     renderAt('/games/neon-rush?beat=100');
     expect(document.querySelector('iframe')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Play NEON RUSH/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Play Neon Rush/ }));
     const iframe = document.querySelector('iframe')!;
     expect(iframe.getAttribute('src')).toBe('/play/neon-rush/');
 
@@ -110,7 +130,7 @@ describe('game page', () => {
   it('tucks the full-screen controls into a side tab, and Exit game unloads the game', () => {
     renderAt('/games/neon-rush');
     // jsdom has no Fullscreen API, so Play falls back to the immersive mode.
-    fireEvent.click(screen.getByRole('button', { name: /Play NEON RUSH/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Play Neon Rush/ }));
     expect(document.querySelector('iframe')).not.toBeNull();
     const tab = screen.getByRole('button', { name: 'Game menu' });
     expect(screen.queryByRole('button', { name: /Exit full screen/ })).toBeNull();
@@ -119,13 +139,13 @@ describe('game page', () => {
     expect(screen.getByRole('button', { name: /Exit full screen/ })).toBeTruthy();
     fireEvent.click(within(document.querySelector('.stage-menu')!).getByRole('button', { name: /Exit game/ }));
     expect(document.querySelector('iframe')).toBeNull();
-    expect(screen.getByRole('button', { name: /Play NEON RUSH/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Play Neon Rush/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Game menu' })).toBeNull();
   });
 
   it('pauses the game when the player leaves full screen with Escape', () => {
     renderAt('/games/neon-rush');
-    fireEvent.click(screen.getByRole('button', { name: /Play NEON RUSH/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Play Neon Rush/ }));
     const frame = document.querySelector('iframe')!;
     const post = vi.spyOn(frame.contentWindow!, 'postMessage');
     fireEvent.keyDown(window, { key: 'Escape' });
@@ -137,7 +157,7 @@ describe('game page', () => {
     renderAt('/games/neon-rush');
     expect(screen.getByRole('heading', { name: 'How to play' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Restart/ })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Play NEON RUSH/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Play Neon Rush/ }));
     fireEvent.load(document.querySelector('iframe')!);
     fireEvent.click(screen.getByRole('button', { name: /Restart/ }));
     expect(document.querySelector('iframe')).not.toBeNull();
@@ -160,14 +180,14 @@ describe('members features as a guest (API unreachable in tests)', () => {
   it('keeps favorites on the device and filters the arcade by them', () => {
     renderAt('/');
     const arcade = screen.getByRole('region', { name: 'The arcade' });
-    fireEvent.click(within(arcade).getByRole('button', { name: 'Add NEON RUSH to favorites' }));
-    expect(within(arcade).getByRole('button', { name: 'Remove NEON RUSH from favorites' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(within(arcade).getByRole('button', { name: 'Add Neon Rush to favorites' }));
+    expect(within(arcade).getByRole('button', { name: 'Remove Neon Rush from favorites' }).getAttribute('aria-pressed')).toBe('true');
     expect(JSON.parse(localStorage.getItem('glitchbound.favorites')!)).toEqual(['neon-rush']);
     fireEvent.click(within(arcade).getByRole('button', { name: /Search & sort/ }));
     fireEvent.click(within(arcade).getByRole('button', { name: /Favorites/ }));
     expect(window.location.search).toBe('?fav=1');
-    expect(within(arcade).getByRole('link', { name: 'NEON RUSH' })).toBeTruthy();
-    fireEvent.click(within(arcade).getByRole('button', { name: 'Remove NEON RUSH from favorites' }));
+    expect(within(arcade).getByRole('link', { name: 'Neon Rush' })).toBeTruthy();
+    fireEvent.click(within(arcade).getByRole('button', { name: 'Remove Neon Rush from favorites' }));
     expect(screen.getByText('No favorites yet.')).toBeTruthy();
   });
 

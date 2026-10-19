@@ -4,7 +4,7 @@ import { canDrop, DROP_Y, H, LINE, nextTier, RADII, W, type Sim } from './sim';
 type C = CanvasRenderingContext2D;
 const INK = '#2a1446';
 
-/** Body colour per size (matching the share line's circles); the biggest is a rainbow. */
+/** Body color per size (matching the share line's circles); the biggest is a rainbow. */
 export const BLOB_COLORS = ['#f3eefc', '#ffd23f', '#ff9a3c', '#ff5d5d', '#ff8fc8', '#a66bff', '#3d8bff', '#6fd8ff', '#3fcf7a', '#b27a4d', '#ffffff'];
 
 function body(ctx: C, tier: number, r: number): void {

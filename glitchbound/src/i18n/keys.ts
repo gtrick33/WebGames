@@ -373,7 +373,7 @@ export const KEYS: string[] = [
   "One look at an everyday color, then mix it from memory. Five colors a day.",
   "Glance at a famous everyday color like Stop Sign Red or School Bus Yellow, then recreate it with HSB or RGB sliders. Every guess is scored for perceptual accuracy with tips on what to fix. Five new colors daily, the same for everyone, plus unlimited practice.",
   "Today’s 5 colors",
-  "The same five colours for everyone, with a 3-second peek. The closest mixes win.",
+  "The same five colors for everyone, with a 3-second peek. The closest mixes win.",
   "Best 5-color score",
   "Best single color",
   "Most perfect colors in a game",
@@ -487,7 +487,7 @@ export const KEYS: string[] = [
   "Today is",
   "Party mode",
   "Chill Sunday",
-  "Slow down: colours, pictures and puzzles, no rush.",
+  "Slow down: colors, pictures and puzzles, no rush.",
   // 440
   "Monday Rush",
   "Quick rounds to wake your brain up.",
@@ -503,8 +503,8 @@ export const KEYS: string[] = [
   "Full-Throttle Saturday",
   "Racers, flyers and near misses.",
   "Happy Halloween! Spooky tunes are on in Wait, What?",
-  "Happy holidays! Cosy up with a puzzle or three.",
-  "Happy Valentine’s! Challenge your favourite person.",
+  "Happy holidays! Cozy up with a puzzle or three.",
+  "Happy Valentine’s! Challenge your favorite person.",
   "Happy Lunar New Year! Wishing you luck and high scores.",
   "Happy Easter! There’s a ball hidden in every photo, too.",
   "Happy Diwali! May your days be bright and your streaks long.",
@@ -597,6 +597,10 @@ export const KEYS: string[] = [
   "score too high for the time played",
   "in a row",
   "Terms of use",
+  "About",
+  "Contact",
+  "Adults only",
+  "About GlitchBound",
 ];
 
 export const UI_COUNT = 311;

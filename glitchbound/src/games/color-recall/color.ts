@@ -1,5 +1,5 @@
 /**
- * Colour maths for Color Recall: conversions, perceptual distance (CIEDE2000), scoring and the
+ * Color math for Color Recall: conversions, perceptual distance (CIEDE2000), scoring and the
  * plain-language "what to fix" feedback. Pure functions only, so everything here is unit tested.
  */
 
@@ -26,7 +26,7 @@ const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.m
 
 export function hexToRgb(hex: string): Rgb {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) throw new Error(`bad hex colour: ${hex}`);
+  if (!m) throw new Error(`bad hex color: ${hex}`);
   const n = parseInt(m[1]!, 16);
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
@@ -47,7 +47,7 @@ export function hsbToRgb({ h, s, b }: Hsb): Rgb {
   return { r: Math.round((r1 + m) * 255), g: Math.round((g1 + m) * 255), b: Math.round((b1 + m) * 255) };
 }
 
-/** RGB to HSB. Grey has no hue, so `fallbackHue` keeps the slider where it was. */
+/** RGB to HSB. Gray has no hue, so `fallbackHue` keeps the slider where it was. */
 export function rgbToHsb({ r, g, b }: Rgb, fallbackHue = 0): Hsb {
   const R = r / 255;
   const G = g / 255;
@@ -88,7 +88,7 @@ export function rgbToLab({ r, g, b }: Rgb): Lab {
 const rad = (d: number): number => (d * Math.PI) / 180;
 const deg = (r: number): number => (r * 180) / Math.PI;
 
-/** CIEDE2000 colour difference. ~1 is barely visible, ~10 is clearly different, 50+ is another colour. */
+/** CIEDE2000 color difference. ~1 is barely visible, ~10 is clearly different, 50+ is another color. */
 export function deltaE(c1: Rgb, c2: Rgb): number {
   const l1 = rgbToLab(c1);
   const l2 = rgbToLab(c2);
@@ -133,7 +133,7 @@ export function deltaE(c1: Rgb, c2: Rgb): number {
 export const MAX_POINTS = 1000;
 
 /**
- * Points for one colour, 0-1000. Anything under 1 ΔE (invisible to most eyes) is perfect; the curve
+ * Points for one color, 0-1000. Anything under 1 ΔE (invisible to most eyes) is perfect; the curve
  * then falls smoothly: ΔE 5 ≈ 870, 10 ≈ 660, 20 ≈ 330, 40 ≈ 50.
  */
 export function pointsFor(dE: number): number {
@@ -205,7 +205,7 @@ export function feedback(target: Rgb, guess: Rgb): string[] {
   const dS = g.s - t.s;
   if (Math.abs(dS) >= 8) tips.push({ weight: Math.abs(dS) * 0.8, text: dS > 0 ? (dS > 25 ? 'Far too vivid' : 'Slightly too vivid') : dS < -25 ? 'Far too washed out' : 'Slightly too muted' });
 
-  // Hue only matters when both colours actually have some colour in them.
+  // Hue only matters when both colors actually have some color in them.
   if (t.s > 12 && g.s > 12) {
     let dH = g.h - t.h;
     if (dH > 180) dH -= 360;
@@ -213,7 +213,7 @@ export function feedback(target: Rgb, guess: Rgb): string[] {
     if (Math.abs(dH) > 50 && hueName(g.h) !== hueName(t.h)) {
       tips.push({ weight: Math.abs(dH) * 1.2, text: `Wrong hue: that’s ${hueName(g.h)}, not ${hueName(t.h)}` });
     } else if (Math.abs(dH) >= 6) {
-      // Name the neighbouring hue family the guess drifted toward.
+      // Name the neighboring hue family the guess drifted toward.
       const own = hueName(t.h);
       const near = hueName(t.h + Math.sign(dH) * 35);
       const word = near === own ? hueName(t.h + Math.sign(dH) * 70) : near;
@@ -226,7 +226,7 @@ export function feedback(target: Rgb, guess: Rgb): string[] {
     .map((t) => t.text);
 }
 
-/** Readable text colour (ink or white) on top of a colour. */
+/** Readable text color (ink or white) on top of a color. */
 export function inkOn(c: Rgb): string {
   return rgbToLab(c).L > 62 ? '#14102a' : '#ffffff';
 }

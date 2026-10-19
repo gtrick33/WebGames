@@ -27,7 +27,7 @@ const EGG = 'M0 -13C6 -13 9 -3 9 3C9 9 5 13 0 13C-5 13 -9 9 -9 3C-9 -3 -6 -13 0 
 /** Mirrors a drawing left to right (for the right-hand corner of a garland). */
 const mirrored = (width: number, body: string): string => `<g transform="translate(${width} 0) scale(-1 1)">${body}</g>`;
 
-/** A cobweb spun into a card's top-left corner (drawn as a mask: the page's text colour shows through). */
+/** A cobweb spun into a card's top-left corner (drawn as a mask: the page's text color shows through). */
 const WEB_CORNER = `<g fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round">
 <path d="M0 0L32 0M0 0L27.72 11.48M0 0L18.38 18.38M0 0L11.48 27.72M0 0L0 32"/>
 <path d="M8 0Q6.77 1.35 7.39 3.06Q5.74 3.83 5.66 5.66Q3.83 5.74 3.06 7.39Q1.35 6.77 0 8"/>

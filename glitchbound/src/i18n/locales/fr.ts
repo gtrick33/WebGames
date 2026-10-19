@@ -593,6 +593,10 @@ const fr: string[] = [
   'score trop élevé pour le temps joué',
   'd’affilée',
   'Conditions d’utilisation',
+  'À propos',
+  'Contact',
+  'Réservé aux adultes',
+  'À propos de GlitchBound',
 ];
 
 export default fr;

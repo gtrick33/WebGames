@@ -232,7 +232,7 @@ export function makeScene(seed: number, difficulty: number, env?: EnvId): Scene 
   const texture: ItemKind | null = e === 'lawn' || e === 'picnic' ? 'tuft' : e === 'autumn' ? 'leaf' : e === 'clay' ? 'pebble' : null;
   if (texture) for (let i = 0; i < 18 + difficulty * 6; i++) under.push(place(texture, between(r, 0.6, 1.1)));
 
-  // The ball: away from the very edges, and not sitting on a big object's centre.
+  // The ball: away from the very edges, and not sitting on a big object's center.
   const R0 = diff.ballR;
   let ball: Ball = { x: 400, y: 300, r: R0, rot: r() * Math.PI, shade: 0, dust: 0 };
   for (let t = 0; t < 40; t++) {
@@ -288,7 +288,7 @@ export function warmth(s: Scene, x: number, y: number): 'hot' | 'warm' | 'cold' 
 export function hintBox(s: Scene, level: number, r: R = Math.random): { x: number; y: number; w: number; h: number } {
   const w = level <= 1 ? W / 2 : W / 4;
   const h = level <= 1 ? H / 2 : H / 4;
-  // Seeded jitter so the box does not centre on the ball.
+  // Seeded jitter so the box does not center on the ball.
   const x = Math.min(W - w, Math.max(0, s.ball.x - w * (0.2 + r() * 0.6)));
   const y = Math.min(H - h, Math.max(0, s.ball.y - h * (0.2 + r() * 0.6)));
   return { x, y, w, h };

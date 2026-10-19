@@ -1,12 +1,12 @@
 /**
- * Things to size up: an emoji, what it is, its longest dimension in metres (height for things that
+ * Things to size up: an emoji, what it is, its longest dimension in meters (height for things that
  * stand, length for things that lie) and a fact for the reveal. Sizes are typical real-world values.
  * Only emoji every current phone and computer can draw. Append only: a thing's id is its position.
  */
 export interface Thing {
   emoji: string;
   name: string;
-  /** Longest dimension, in metres. */
+  /** Longest dimension, in meters. */
   size: number;
   fact: string;
 }

@@ -85,7 +85,7 @@ export function fits(word: string, w: readonly Window[]): boolean {
 
 export type KeyState = 'open' | 'out' | 'hit';
 
-/** On-screen key colour: "out" when the letter is impossible in every column still open. */
+/** On-screen key color: "out" when the letter is impossible in every column still open. */
 export function keyState(letter: string, w: readonly Window[]): KeyState {
   const c = idx(letter);
   let open = false;

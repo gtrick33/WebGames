@@ -138,7 +138,7 @@ export const CATEGORIES: Category[] = [
     question: 'Which is faster?',
     more: 'Faster',
     less: 'Slower',
-    format: (v) => (v >= 1 ? `about ${n(v)} km/h` : `about ${n(Math.round(v * 1000))} metres an hour`),
+    format: (v) => (v >= 1 ? `about ${n(v)} km/h` : `about ${n(Math.round(v * 1000))} meters an hour`),
     items: [
       ['Concorde, cruising', '✈️', 2_180],
       ['Passenger jet, cruising', '🛫', 900],

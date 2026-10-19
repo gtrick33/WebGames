@@ -90,9 +90,9 @@ export interface Obj {
   y: number;
   /** Scale; 1 is the kind's natural size. */
   s: number;
-  /** Main colour. */
+  /** Main color. */
   c: string;
-  /** Secondary colour (doors, stripes, petals' centre...). */
+  /** Secondary color (doors, stripes, petals' center...). */
   c2: string;
   /** Small integer that changes a detail (window count, stripes, petals...). */
   v: number;
@@ -496,7 +496,7 @@ export function makeScene(seed: number, theme: ThemeId, crowd = 0): Scene {
     for (let i = 0; i < n; i++) {
       const s = slot.s ? between(r, slot.s[0], slot.s[1]) : between(r, 0.85, 1.15);
       const rad = RADIUS[slot.kind] * s;
-      // Spread objects out: try a few spots and keep the one furthest from its neighbours.
+      // Spread objects out: try a few spots and keep the one furthest from its neighbors.
       let best: { x: number; y: number; d: number } | null = null;
       for (let t = 0; t < 14; t++) {
         const x = slot.kind === 'building' ? 40 + ((i + r() * 0.3) * (W - 60)) / n : between(r, rad + 4, W - rad - 4);

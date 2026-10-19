@@ -45,6 +45,6 @@ export const EMOJI_SAYINGS: EmojiQ[] = [
   ['🌙🔵', 'Once in a blue moon|Over the moon|Out of the blue|Shoot for the moon', 'A blue moon is a second full moon in one calendar month. It happens about every two and a half years.'],
   ['⏰💰', 'Time is money|Money talks|Make up for lost time|Pay through the nose', 'Time is money: often credited to Benjamin Franklin, in 1748.'],
   ['🐱👅❓', 'Cat got your tongue?|Let the cat out of the bag|Curiosity killed the cat|Copycat', 'Cat got your tongue? Asked when someone suddenly goes quiet.'],
-  ['💔🦵', 'Break a leg|Cost an arm and a leg|Pulling your leg|Cold feet', 'Break a leg: theatre people say it because wishing “good luck” is meant to bring bad luck.'],
+  ['💔🦵', 'Break a leg|Cost an arm and a leg|Pulling your leg|Cold feet', 'Break a leg: theater people say it because wishing “good luck” is meant to bring bad luck.'],
   ['🐟💧🚫', 'A fish out of water|There are plenty more fish in the sea|Something smells fishy|Swimming against the tide', 'A fish out of water: someone in a place where they do not fit in.'],
 ];

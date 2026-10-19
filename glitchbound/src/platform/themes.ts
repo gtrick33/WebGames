@@ -1,5 +1,5 @@
 /**
- * Theme days: every day of the week has its own flavour, so there is always a reason to come back
+ * Theme days: every day of the week has its own flavor, so there is always a reason to come back
  * ("it's Trivia Tuesday"). The theme picks which game the daily challenge comes from and what the
  * home page puts up front. Pure: the server uses it too, so everyone gets the same day.
  */
@@ -24,7 +24,7 @@ export interface DayTheme {
 
 /** Sunday first, like Date.getUTCDay(). */
 export const WEEK: DayTheme[] = [
-  { id: 'chill', emoji: '🌿', name: 'Chill Sunday', tagline: 'Slow down: colours, pictures and puzzles, no rush.', moods: ['chill'] },
+  { id: 'chill', emoji: '🌿', name: 'Chill Sunday', tagline: 'Slow down: colors, pictures and puzzles, no rush.', moods: ['chill'] },
   { id: 'rush', emoji: '⚡', name: 'Monday Rush', tagline: 'Quick rounds to wake your brain up.', moods: ['quick'] },
   { id: 'trivia', emoji: '🤯', name: 'Trivia Tuesday', tagline: 'Facts that sound made up, but aren’t.', games: ['wait-what', 'to-scale'], moods: ['brainy'] },
   { id: 'words', emoji: '🔤', name: 'Word Wednesday', tagline: 'Letters, clues and one mystery word.', games: ['letter-pinch', 'crosswire'] },
