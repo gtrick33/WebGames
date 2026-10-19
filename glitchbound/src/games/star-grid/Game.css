@@ -275,7 +275,7 @@
   font-size: 18px;
 }
 .sg-menu {
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
   overflow-y: auto;
   text-align: center;
@@ -361,4 +361,18 @@
   .sg-banner {
     animation: none;
   }
+}
+
+/* Today's daily is used up: Share and the countdown to the next one. */
+.sg-done {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.sg-menu > :first-child {
+  margin-top: auto;
+}
+.sg-menu > :last-child {
+  margin-bottom: auto;
 }

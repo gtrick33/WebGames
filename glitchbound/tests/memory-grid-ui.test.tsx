@@ -49,10 +49,13 @@ describe('Memory Grid UI', () => {
     });
     expect(screen.getByRole('heading', { name: 'New best!' })).toBeTruthy();
     expect(screen.getByText('🔥 1-day streak')).toBeTruthy();
-    // Instant retry.
-    fireEvent.click(screen.getByRole('button', { name: /Play again/ }));
+    // The daily is one try a day: the result offers Classic instead of a replay…
+    fireEvent.click(screen.getByRole('button', { name: /Play Classic/ }));
     expect(report).toHaveBeenCalledTimes(3);
     expect(report).toHaveBeenLastCalledWith({ type: 'start' });
+    // …and the Daily Challenge card in the menu stays locked until tomorrow.
+    fireEvent.click(screen.getByRole('button', { name: 'Back to menu' }));
+    expect((screen.getByRole('button', { name: /Daily Challenge/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('remembers the mute toggle', () => {

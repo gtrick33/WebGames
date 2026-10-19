@@ -233,3 +233,8 @@
     animation: none;
   }
 }
+.wi-done {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}

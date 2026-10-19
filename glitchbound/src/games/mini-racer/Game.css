@@ -804,3 +804,11 @@ a.mr-go {
   transform: translateX(-50%);
   pointer-events: none;
 }
+
+/* Today's daily track is one race a day: the Race button gives way to the countdown. */
+.mr-daily-done {
+  margin: 0;
+  max-width: 22ch;
+  font-weight: 800;
+  text-align: center;
+}

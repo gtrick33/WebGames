@@ -5,6 +5,7 @@ import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
+import { NextDaily } from '../../components/NextDaily';
 import { fits, linesAfter, newGame, place, resultLine, SIZE, type Piece, type State } from './logic';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
@@ -122,6 +123,11 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
   };
 
   const begin = (m: Mode): void => {
+    // Today's daily is one try; starting it uses the try up (even if it is abandoned).
+    if (m === 'daily') {
+      if (saveRef.current.daily[today]) return;
+      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, lines: 0, streak: 0 } } });
+    }
     const seed = m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`square-deal:${today}`) : randomSeed();
     started.current = false;
     setMode(m);
@@ -135,7 +141,6 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
   const finish = (s: State): void => {
     const cur = saveRef.current;
     setNewBest(s.score > cur.best);
-    const prev = cur.daily[today];
     commit({
       ...cur,
       best: Math.max(cur.best, s.score),
@@ -143,8 +148,7 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
       lines: cur.lines + s.lines,
       daily:
         mode === 'daily'
-          ? { ...cur.daily, [today]: prev && prev.best >= s.score ? { ...prev, tries: prev.tries + 1 } : { best: s.score, tries: (prev?.tries ?? 0) + 1, lines: s.lines, streak: s.bestStreak } }
-          : cur.daily,
+          ? { ...cur.daily, [today]: { best: s.score, tries: 1, lines: s.lines, streak: s.bestStreak } } : cur.daily,
     });
     const end = { type: 'end' as const, score: s.score, stats: { lines: s.lines, streak: s.bestStreak } };
     host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
@@ -350,7 +354,7 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
           <ResultLine line={resultLine(s.score, s.lines, s.bestStreak)} label={`${s.score} points, ${s.lines} lines`} />
           {mode === 'daily' && daily && (
             <p className="sd-muted">
-              Today’s best {daily.best} · try {daily.tries}
+              That was today’s one try. <NextDaily />
             </p>
           )}
           <div className="sd-row">
@@ -359,11 +363,11 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
                 See the scoreboard
               </a>
             ) : (
-              <button className="sd-btn sd-btn-go" onClick={() => begin(mode)} autoFocus>
-                Play again
+              <button className="sd-btn sd-btn-go" onClick={() => begin(mode === 'daily' ? 'endless' : mode)} autoFocus>
+                {mode === 'daily' ? 'Play endless' : 'Play again'}
               </button>
             )}
-            {mode === 'daily' && daily && <ShareButton text={`Square Deal #${dailyNumber(today)} 🟧\n${resultLine(daily.best, daily.lines, daily.streak)}\nBest today: ${daily.best} (${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'})\n${window.location.origin}/games/square-deal`} />}
+            {mode === 'daily' && daily && <ShareButton text={`Square Deal #${dailyNumber(today)} 🟧\n${resultLine(daily.best, daily.lines, daily.streak)}\nScore: ${daily.best}\n${window.location.origin}/games/square-deal`} />}
             <button className="sd-btn" onClick={() => show(null)}>
               Menu
             </button>
@@ -414,11 +418,18 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="sd-card">
         <div className="sd-card-head">
           <b>Daily deal #{dailyNumber(today)}</b>
-          <span>{daily ? `best ${daily.best} · ${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'}` : 'The same pieces for everyone'}</span>
+          <span>{daily ? `Today: ${daily.best}` : 'The same pieces for everyone · one try a day'}</span>
         </div>
-        <button className="sd-btn sd-btn-go sd-btn-big" onClick={() => onPlay('daily')}>
-          {daily ? 'Beat today’s best' : 'Play today’s deal'}
-        </button>
+        {daily ? (
+          <div className="sd-done">
+            {daily.best > 0 && <ShareButton text={`Square Deal #${dailyNumber(today)} 🟧\n${resultLine(daily.best, daily.lines, daily.streak)}\nScore: ${daily.best}\n${window.location.origin}/games/square-deal`} />}
+            <NextDaily className="sd-muted" />
+          </div>
+        ) : (
+          <button className="sd-btn sd-btn-go sd-btn-big" onClick={() => onPlay('daily')}>
+            Play today’s deal
+          </button>
+        )}
       </section>
       <section className="sd-card">
         <div className="sd-card-head">

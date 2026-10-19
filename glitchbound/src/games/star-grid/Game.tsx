@@ -5,6 +5,7 @@ import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
+import { NextDaily } from '../../components/NextDaily';
 import { conflicts, DAILY_SIZES, fmtTime, makePuzzle, nextMark, resultLine, solved, solvePoints, type Mark, type Puzzle, type Tool } from './logic';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
@@ -109,6 +110,11 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const seconds = (): number => banked.current + (since.current === null ? 0 : (now() - since.current) / 1000);
 
   const begin = (m: Mode, size = saveRef.current.size): void => {
+    // Today's daily is one try; starting it uses the try up (even if it is abandoned).
+    if (m === 'daily') {
+      if (saveRef.current.daily[today]) return;
+      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, times: [] } } });
+    }
     const puzzles =
       m === 'challenge' && challenge
         ? [makePuzzle(challenge.seed, 8)]
@@ -131,12 +137,11 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     const total = r.times.reduce((a, b) => a + b, 0);
     const cur = saveRef.current;
     setNewBest(r.points > cur.best);
-    const prev = cur.daily[today];
     commit({
       ...cur,
       best: Math.max(cur.best, r.points),
       solved: cur.solved + r.puzzles.length,
-      daily: mode === 'daily' ? { ...cur.daily, [today]: prev && prev.best >= r.points ? { ...prev, tries: prev.tries + 1 } : { best: r.points, tries: (prev?.tries ?? 0) + 1, times: r.times.map(Math.round) } } : cur.daily,
+      daily: mode === 'daily' ? { ...cur.daily, [today]: { best: r.points, tries: 1, times: r.times.map(Math.round) } } : cur.daily,
     });
     const stats: Record<string, number> = mode === 'daily' ? { time: Math.round(total) } : {};
     const end = { type: 'end' as const, score: r.points, stats };
@@ -365,7 +370,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
           <ResultLine line={resultLine(round.times)} label={`Solved in ${round.times.map(fmtTime).join(', ')}`} />
           {mode === 'daily' && daily && (
             <p className="sg-muted">
-              Today’s best {daily.best} · try {daily.tries}
+              That was today’s one try. <NextDaily />
             </p>
           )}
           <div className="sg-row">
@@ -374,11 +379,11 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
                 See the scoreboard
               </a>
             ) : (
-              <button className="sg-btn sg-btn-go" onClick={() => begin(mode)} autoFocus>
-                {mode === 'daily' ? 'Play again' : 'Another grid'}
+              <button className="sg-btn sg-btn-go" onClick={() => begin(mode === 'daily' ? 'endless' : mode)} autoFocus>
+                {mode === 'daily' ? 'Play endless' : 'Another grid'}
               </button>
             )}
-            {mode === 'daily' && daily && <ShareButton text={`Star Grid #${dailyNumber(today)} ⭐\n${resultLine(daily.times)}\nBest today: ${daily.best} (${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'})\n${window.location.origin}/games/star-grid`} />}
+            {mode === 'daily' && daily && <ShareButton text={`Star Grid #${dailyNumber(today)} ⭐\n${resultLine(daily.times)}\nScore: ${daily.best}\n${window.location.origin}/games/star-grid`} />}
             <button className="sg-btn" onClick={() => show(null)}>
               Menu
             </button>
@@ -425,11 +430,18 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="sg-card">
         <div className="sg-card-head">
           <b>Daily #{dailyNumber(today)}</b>
-          <span>{daily ? `best ${daily.best} · ${resultLine(daily.times)}` : 'Three grids, 6×6 to 8×8, the same for everyone'}</span>
+          <span>{daily ? `Today: ${daily.best}` : 'Three grids, 6×6 to 8×8, the same for everyone · one try a day'}</span>
         </div>
-        <button className="sg-btn sg-btn-go sg-btn-big" onClick={() => onPlay('daily')}>
-          {daily ? 'Beat today’s best' : 'Play today’s grids'}
-        </button>
+        {daily ? (
+          <div className="sg-done">
+            {daily.best > 0 && <ShareButton text={`Star Grid #${dailyNumber(today)} ⭐\n${resultLine(daily.times)}\nScore: ${daily.best}\n${window.location.origin}/games/star-grid`} />}
+            <NextDaily className="sg-muted" />
+          </div>
+        ) : (
+          <button className="sg-btn sg-btn-go sg-btn-big" onClick={() => onPlay('daily')}>
+            Play today’s grids
+          </button>
+        )}
       </section>
       <section className="sg-card">
         <div className="sg-card-head">

@@ -319,7 +319,7 @@
 }
 
 .sd-menu {
-  justify-content: center;
+  justify-content: flex-start;
   overflow-y: auto;
   text-align: center;
 }
@@ -395,4 +395,18 @@
   .sd-over {
     animation: none;
   }
+}
+
+/* Today's daily is used up: Share and the countdown to the next one. */
+.sd-done {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.sd-menu > :first-child {
+  margin-top: auto;
+}
+.sd-menu > :last-child {
+  margin-bottom: auto;
 }

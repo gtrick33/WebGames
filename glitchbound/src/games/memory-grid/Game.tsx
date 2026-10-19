@@ -10,7 +10,8 @@ import { ResultLine } from '../../components/ResultLine';
 import { createSfx, type Sfx } from './audio';
 import { accuracy, createRun, next, playbackDone, tap, tick, type RunState } from './engine';
 import { dailySeed, levelFor, MODES, PERFECT_LADDER, perfectSeed, randomSeed, SPEED_PENALTY_SECONDS, type Mode } from './pattern';
-import { liveStreak, loadRecords, playedDailyToday, recordRun, saveRecords, type RecordOutcome, type Records } from './records';
+import { dailyUsedToday, liveStreak, loadRecords, playedDailyToday, recordRun, saveRecords, type RecordOutcome, type Records } from './records';
+import { NextDaily } from '../../components/NextDaily';
 import { MODE_NAMES, reportStats, resultLine, shareText, type RunSummary } from './scoring';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
@@ -121,6 +122,14 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
 
   const start = useCallback(
     (mode: Mode) => {
+      // The Daily Challenge is one try a day; starting it uses the try up.
+      if (mode === 'daily') {
+        if (dailyUsedToday(recordsRef.current, today)) return;
+        const used = { ...recordsRef.current, dailyStarted: today };
+        recordsRef.current = used;
+        setRecords(used);
+        saveRecords(used);
+      }
       inChallenge.current = false;
       setChallengeShown(false);
       sfxRef.current?.unlock();
@@ -362,7 +371,7 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
           outcome={outcome}
           streak={streak}
           shareNote={shareNote}
-          onRetry={() => start(run.mode)}
+          onRetry={() => start(run.mode === 'daily' ? 'classic' : run.mode)}
           onMenu={() => setScreen('menu')}
           onShare={() => void share()}
         />
@@ -375,6 +384,7 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
 
 function Menu({ records, today, streak, onStart, onRecords }: { records: Records; today: string; streak: number; onStart: (m: Mode) => void; onRecords: () => void }) {
   const doneToday = playedDailyToday(records, today);
+  const usedToday = dailyUsedToday(records, today);
   return (
     <div className="mg-menu">
       <div className="mg-hero">
@@ -388,13 +398,16 @@ function Menu({ records, today, streak, onStart, onRecords }: { records: Records
           const best = records.best[m];
           const isDaily = m === 'daily';
           return (
-            <button key={m} className={`mg-mode mg-mode-${m}`} onClick={() => onStart(m)}>
+            <button key={m} className={`mg-mode mg-mode-${m}${isDaily && usedToday ? ' is-done' : ''}`} onClick={() => onStart(m)} disabled={isDaily && usedToday}>
               <span className="mg-mode-name">{MODE_NAMES[m]}</span>
               <span className="mg-mode-blurb">{MODE_BLURB[m]}</span>
               <span className="mg-mode-best">
-                {isDaily && doneToday && records.daily
-                  ? `Today: ${records.daily.score} pts · practice`
-                  : isDaily
+                {isDaily && usedToday ? (
+                  <>
+                    {doneToday && records.daily ? `Today: ${records.daily.score} pts · ` : 'Played today · '}
+                    <NextDaily />
+                  </>
+                ) : isDaily
                     ? streak > 0
                       ? `🔥 ${streak}-day streak · play today`
                       : 'New pattern every day'
@@ -628,7 +641,7 @@ function Result({
           </a>
         ) : (
           <button className="mg-btn mg-btn-go" onClick={onRetry} autoFocus>
-            {s.mode === 'daily' ? 'Play again' : 'Retry'} <kbd>Enter</kbd>
+            {s.mode === 'daily' ? 'Play Classic' : 'Retry'} <kbd>Enter</kbd>
           </button>
         )}
         <button className="mg-btn" onClick={onShare}>

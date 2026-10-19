@@ -34,8 +34,10 @@ export interface DailyResult {
 export interface Records {
   best: Partial<Record<Mode, ModeBest>>;
   board: Partial<Record<Mode, BoardRow[]>>;
-  /** The first Daily Challenge attempt of each day counts; later attempts are practice. */
+  /** Today's Daily Challenge result (one attempt a day). */
   daily: DailyResult | null;
+  /** The day a Daily Challenge was last started: starting it uses up the day's one try. */
+  dailyStarted?: string;
   streak: { last: string | null; count: number; best: number };
   muted: boolean;
 }
@@ -60,6 +62,9 @@ export function liveStreak(r: Records, today: string): number {
 export function playedDailyToday(r: Records, today: string): boolean {
   return r.daily?.day === today;
 }
+
+/** The daily is one try a day: finished, or started and left. */
+export const dailyUsedToday = (r: Records, today: string): boolean => playedDailyToday(r, today) || r.dailyStarted === today;
 
 export interface RecordOutcome {
   records: Records;
@@ -145,6 +150,7 @@ export function parseRecords(raw: string | null): Records {
   if (d && isDay(d.day) && isNum(d.cleared) && isNum(d.score) && isNum(d.accuracy)) r.daily = { day: d.day, cleared: d.cleared, score: d.score, accuracy: d.accuracy };
   const s = data.streak as Record<string, unknown> | undefined;
   if (s && isNum(s.count) && isNum(s.best) && (s.last === null || isDay(s.last))) r.streak = { last: s.last as string | null, count: s.count, best: s.best };
+  if (isDay(data.dailyStarted)) r.dailyStarted = data.dailyStarted;
   r.muted = data.muted === true;
   return r;
 }

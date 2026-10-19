@@ -5,6 +5,7 @@ import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
+import { NextDaily } from '../../components/NextDaily';
 import { arrowAt, canLeave, DAILY_LEVELS, DC, DR, HEARTS, levelPoints, makeLevel, pathAhead, resultLine, type Arrow, type Level } from './logic';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
@@ -121,6 +122,11 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
   };
 
   const begin = (m: Mode): void => {
+    // Today's daily is one try; starting it uses the try up (even if it is abandoned).
+    if (m === 'daily') {
+      if (saveRef.current.daily[today]) return;
+      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, line: '' } } });
+    }
     started.current = false;
     setMode(m);
     setNewBest(false);
@@ -135,13 +141,12 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
     const perfect = r.history.filter((h) => h.cleared && h.mistakes === 0).length;
     const cur = saveRef.current;
     setNewBest(score > cur.best);
-    const prev = cur.daily[today];
     commit({
       ...cur,
       best: Math.max(cur.best, score),
       bestLevels: Math.max(cur.bestLevels, levels),
       runs: cur.runs + 1,
-      daily: mode === 'daily' ? { ...cur.daily, [today]: prev && prev.best >= score ? { ...prev, tries: prev.tries + 1 } : { best: score, tries: (prev?.tries ?? 0) + 1, line: resultLine(r.history) } } : cur.daily,
+      daily: mode === 'daily' ? { ...cur.daily, [today]: { best: score, tries: 1, line: resultLine(r.history) } } : cur.daily,
     });
     const end = { type: 'end' as const, score, stats: { levels, perfect } };
     host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
@@ -310,7 +315,7 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
           <ResultLine line={resultLine(run.history)} label={`${levels} levels cleared, ${run.banked} points`} />
           {mode === 'daily' && daily && (
             <p className="oh-muted">
-              Today’s best {daily.best} · try {daily.tries}
+              That was today’s one try. <NextDaily />
             </p>
           )}
           <div className="oh-row">
@@ -319,11 +324,11 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
                 See the scoreboard
               </a>
             ) : (
-              <button className="oh-btn oh-btn-go" onClick={() => begin(mode)} autoFocus>
-                Play again
+              <button className="oh-btn oh-btn-go" onClick={() => begin(mode === 'daily' ? 'endless' : mode)} autoFocus>
+                {mode === 'daily' ? 'Play endless' : 'Play again'}
               </button>
             )}
-            {mode === 'daily' && daily && <ShareButton text={`Outta Here #${dailyNumber(today)} ➡️\n${daily.line}\nBest today: ${daily.best} (${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'})\n${window.location.origin}/games/outta-here`} />}
+            {mode === 'daily' && daily && <ShareButton text={`Outta Here #${dailyNumber(today)} ➡️\n${daily.line}\nScore: ${daily.best}\n${window.location.origin}/games/outta-here`} />}
             <button className="oh-btn" onClick={() => show(null)}>
               Menu
             </button>
@@ -400,11 +405,18 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="oh-card">
         <div className="oh-card-head">
           <b>Daily #{dailyNumber(today)}</b>
-          <span>{daily ? `best ${daily.best} · ${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'}` : `${DAILY_LEVELS} levels, the same for everyone`}</span>
+          <span>{daily ? `Today: ${daily.best}` : `${DAILY_LEVELS} levels, the same for everyone · one try a day`}</span>
         </div>
-        <button className="oh-btn oh-btn-go oh-btn-big" onClick={() => onPlay('daily')}>
-          {daily ? 'Beat today’s best' : 'Play today’s levels'}
-        </button>
+        {daily ? (
+          <div className="oh-done">
+            {daily.best > 0 && <ShareButton text={`Outta Here #${dailyNumber(today)} ➡️\n${daily.line}\nScore: ${daily.best}\n${window.location.origin}/games/outta-here`} />}
+            <NextDaily className="oh-muted" />
+          </div>
+        ) : (
+          <button className="oh-btn oh-btn-go oh-btn-big" onClick={() => onPlay('daily')}>
+            Play today’s levels
+          </button>
+        )}
       </section>
       <section className="oh-card">
         <div className="oh-card-head">

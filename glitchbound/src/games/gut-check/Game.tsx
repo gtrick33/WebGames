@@ -5,6 +5,7 @@ import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
+import { NextDaily } from '../../components/NextDaily';
 import { answerIsMore, categoryOf, chain, emojiOf, nameOf, resultLine, valueOf, type Card, type Pair } from './logic';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
@@ -87,6 +88,11 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   if (pauseSeen !== pauseKey) setPauseSeen(pauseKey);
 
   const begin = (m: Mode): void => {
+    // Today's daily is one try; starting it uses the try up (even if it is abandoned).
+    if (m === 'daily') {
+      if (saveRef.current.daily[today]) return;
+      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1 } } });
+    }
     started.current = false;
     setMode(m);
     setOver(false);
@@ -97,12 +103,11 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const finish = (streak: number): void => {
     const cur = saveRef.current;
     setNewBest(streak > cur.best);
-    const prev = cur.daily[today];
     commit({
       ...cur,
       best: Math.max(cur.best, streak),
       runs: cur.runs + 1,
-      daily: mode === 'daily' ? { ...cur.daily, [today]: { best: Math.max(prev?.best ?? 0, streak), tries: (prev?.tries ?? 0) + 1 } } : cur.daily,
+      daily: mode === 'daily' ? { ...cur.daily, [today]: { best: streak, tries: 1 } } : cur.daily,
     });
     const end = { type: 'end' as const, score: streak, stats: {} };
     host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
@@ -159,7 +164,6 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const cat = categoryOf(pair.left);
   const streak = run.phase === 'right' ? run.i + 1 : run.i;
   const daily = save.daily[today];
-  const shareStreak = daily?.best ?? 0;
 
   return (
     <div className="gc">
@@ -199,7 +203,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
           <ResultLine line={resultLine(run.i, run.phase === 'wrong')} label={`${run.i} right in a row`} />
           {mode === 'daily' && daily && (
             <p className="gc-muted">
-              Today’s best {daily.best} · try {daily.tries}
+              That was today’s one try. <NextDaily />
             </p>
           )}
           <div className="gc-row">
@@ -208,11 +212,11 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
                 See the scoreboard
               </a>
             ) : (
-              <button className="gc-btn gc-btn-go" onClick={() => begin(mode)} autoFocus>
-                Play again
+              <button className="gc-btn gc-btn-go" onClick={() => begin(mode === 'daily' ? 'endless' : mode)} autoFocus>
+                {mode === 'daily' ? 'Play endless' : 'Play again'}
               </button>
             )}
-            {mode === 'daily' && daily && <ShareButton text={`Gut Check #${dailyNumber(today)} 🎯\n${resultLine(shareStreak, true)}\nBest today: ${shareStreak} in a row (${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'})\n${window.location.origin}/games/gut-check`} />}
+            {mode === 'daily' && daily && <ShareButton text={`Gut Check #${dailyNumber(today)} 🎯\n${resultLine(daily.best, true)}\n${daily.best} in a row\n${window.location.origin}/games/gut-check`} />}
             <button className="gc-btn" onClick={() => setRun(null)}>
               Menu
             </button>
@@ -291,11 +295,18 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="gc-card-menu">
         <div className="gc-card-head">
           <b>Daily #{dailyNumber(today)}</b>
-          <span>{daily ? `best ${daily.best} in a row · ${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'}` : 'The same cards for everyone'}</span>
+          <span>{daily ? `Today: ${daily.best} in a row` : 'The same cards for everyone · one try a day'}</span>
         </div>
-        <button className="gc-btn gc-btn-go gc-btn-big" onClick={() => onPlay('daily')}>
-          {daily ? 'Beat today’s streak' : 'Play today’s cards'}
-        </button>
+        {daily ? (
+          <div className="gc-done">
+            {daily.best > 0 && <ShareButton text={`Gut Check #${dailyNumber(today)} 🎯\n${resultLine(daily.best, true)}\n${daily.best} in a row\n${window.location.origin}/games/gut-check`} />}
+            <NextDaily className="gc-muted" />
+          </div>
+        ) : (
+          <button className="gc-btn gc-btn-go gc-btn-big" onClick={() => onPlay('daily')}>
+            Play today’s cards
+          </button>
+        )}
       </section>
       <section className="gc-card-menu">
         <div className="gc-card-head">

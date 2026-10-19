@@ -665,3 +665,12 @@ a.mg-btn {
   color: var(--mg-ink);
   text-decoration: none;
 }
+/* Today's Daily Challenge is used up: the card stays as a reminder with the countdown. */
+.mg-mode.is-done {
+  cursor: default;
+  opacity: 0.75;
+  filter: saturate(0.7);
+}
+.mg-mode.is-done:hover {
+  transform: none;
+}

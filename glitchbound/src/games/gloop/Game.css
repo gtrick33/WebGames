@@ -166,7 +166,7 @@
   font-size: 18px;
 }
 .gl-menu {
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
   overflow-y: auto;
   text-align: center;
@@ -236,4 +236,18 @@
   .gl-over {
     animation: none;
   }
+}
+
+/* Today's daily is used up: Share and the countdown to the next one. */
+.gl-done {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.gl-menu > :first-child {
+  margin-top: auto;
+}
+.gl-menu > :last-child {
+  margin-bottom: auto;
 }

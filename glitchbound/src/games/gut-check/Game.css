@@ -250,7 +250,7 @@
   font-size: 18px;
 }
 .gc-menu {
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
   overflow-y: auto;
   text-align: center;
@@ -333,4 +333,18 @@
   .gc-over {
     animation: none;
   }
+}
+
+/* Today's daily is used up: Share and the countdown to the next one. */
+.gc-done {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.gc-menu > :first-child {
+  margin-top: auto;
+}
+.gc-menu > :last-child {
+  margin-bottom: auto;
 }

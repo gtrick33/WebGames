@@ -5,6 +5,7 @@ import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
+import { NextDaily } from '../../components/NextDaily';
 import { drawBlob, drawFrame, newView, worldX } from './render';
 import { drop, newSim, nextTier, RADII, resultLine, setAim, step, STEP, TIERS, type Sim } from './sim';
 import { createSfx, type Sfx } from './sound';
@@ -92,6 +93,11 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
   );
 
   const begin = (m: Mode): void => {
+    // Today's daily is one try; starting it uses the try up (even if it is abandoned).
+    if (m === 'daily') {
+      if (saveRef.current.daily[today]) return;
+      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, biggest: 0 } } });
+    }
     modeRef.current = m;
     setMode(m);
     const s = newSim(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`gloop:${today}`) : randomSeed());
@@ -110,13 +116,12 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
       const m = modeRef.current;
       const cur = saveRef.current;
       const newBest = s.score > cur.best;
-      const prev = cur.daily[today];
       commit({
         ...cur,
         best: Math.max(cur.best, s.score),
         biggest: Math.max(cur.biggest, s.biggest),
         runs: cur.runs + 1,
-        daily: m === 'daily' ? { ...cur.daily, [today]: prev && prev.best >= s.score ? { ...prev, tries: prev.tries + 1 } : { best: s.score, tries: (prev?.tries ?? 0) + 1, biggest: s.biggest } } : cur.daily,
+        daily: m === 'daily' ? { ...cur.daily, [today]: { best: s.score, tries: 1, biggest: s.biggest } } : cur.daily,
       });
       const end = { type: 'end' as const, score: s.score, stats: { biggest: s.biggest + 1, merges: s.merges } };
       host.report(m === 'daily' ? { ...end, daily: true } : m === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
@@ -288,7 +293,7 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
           <ResultLine line={resultLine(result.biggest)} label={`Biggest blob: ${SIZE_NAMES[result.biggest]}`} />
           {mode === 'daily' && daily && (
             <p className="gl-muted">
-              Today’s best {daily.best} · try {daily.tries}
+              That was today’s one try. <NextDaily />
             </p>
           )}
           <div className="gl-row">
@@ -297,11 +302,11 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
                 See the scoreboard
               </a>
             ) : (
-              <button className="gl-btn gl-btn-go" onClick={() => begin(mode)} autoFocus>
-                Play again
+              <button className="gl-btn gl-btn-go" onClick={() => begin(mode === 'daily' ? 'endless' : mode)} autoFocus>
+                {mode === 'daily' ? 'Play endless' : 'Play again'}
               </button>
             )}
-            {mode === 'daily' && daily && <ShareButton text={`Gloop #${dailyNumber(today)} 🫧\n${resultLine(daily.biggest)}\nBest today: ${daily.best} (${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'})\n${window.location.origin}/games/gloop`} />}
+            {mode === 'daily' && daily && <ShareButton text={`Gloop #${dailyNumber(today)} 🫧\n${resultLine(daily.biggest)}\nScore: ${daily.best}\n${window.location.origin}/games/gloop`} />}
             <button className="gl-btn" onClick={() => setScreen('menu')}>
               Menu
             </button>
@@ -358,11 +363,18 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="gl-card">
         <div className="gl-card-head">
           <b>Daily jar #{dailyNumber(today)}</b>
-          <span>{daily ? `best ${daily.best} · ${daily.tries} ${daily.tries === 1 ? 'try' : 'tries'}` : 'The same blobs for everyone'}</span>
+          <span>{daily ? `Today: ${daily.best}` : 'The same blobs for everyone · one try a day'}</span>
         </div>
-        <button className="gl-btn gl-btn-go gl-btn-big" onClick={() => onPlay('daily')}>
-          {daily ? 'Beat today’s best' : 'Fill today’s jar'}
-        </button>
+        {daily ? (
+          <div className="gl-done">
+            {daily.best > 0 && <ShareButton text={`Gloop #${dailyNumber(today)} 🫧\n${resultLine(daily.biggest)}\nScore: ${daily.best}\n${window.location.origin}/games/gloop`} />}
+            <NextDaily className="gl-muted" />
+          </div>
+        ) : (
+          <button className="gl-btn gl-btn-go gl-btn-big" onClick={() => onPlay('daily')}>
+            Fill today’s jar
+          </button>
+        )}
       </section>
       <section className="gl-card">
         <div className="gl-card-head">

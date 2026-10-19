@@ -5,6 +5,7 @@ import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
+import { NextDaily } from '../../components/NextDaily';
 import { glyph } from './glyphs';
 import { accuracy, LIVES, makeShot, makeShots, mark, MAX_POINTS, MISS_POINTS, pointsFor, ratioText, rng, SHOTS, type Shot } from './logic';
 import { sizeText, THINGS } from './objects';
@@ -96,6 +97,11 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
   }, []);
 
   const begin = (m: Mode): void => {
+    // Today's 5 shots are one try a day; starting uses it up (even if the round is abandoned).
+    if (m === 'daily') {
+      if (saveRef.current.daily[today]) return;
+      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, line: '' } } });
+    }
     let list: Shot[];
     if (m === 'endless') {
       const r = rng((Math.random() * 2 ** 32) >>> 0);
@@ -137,7 +143,7 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
       best: mode === 'daily' ? Math.max(cur.best, score) : cur.best,
       bestEndless: mode === 'endless' ? Math.max(cur.bestEndless, score) : cur.bestEndless,
       runs: cur.runs + 1,
-      daily: mode === 'daily' ? { ...cur.daily, [today]: { best: Math.max(cur.daily[today]?.best ?? 0, score), tries: (cur.daily[today]?.tries ?? 0) + 1, line: score >= (cur.daily[today]?.best ?? 0) ? line : (cur.daily[today]?.line ?? line) } } : cur.daily,
+      daily: mode === 'daily' ? { ...cur.daily, [today]: { best: score, tries: 1, line } } : cur.daily,
     });
     const end = { type: 'end' as const, score, stats: { bullseyes } };
     host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
@@ -202,11 +208,16 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
         <section className="ts-card ts-card-daily">
           <div>
             <b>Daily #{dailyNumber(today)}</b>
-            <span>{todays ? `Best ${fmt(todays.best)} · ${todays.tries} ${todays.tries === 1 ? 'try' : 'tries'} · ${todays.line}` : `${SHOTS} shots, the same for everyone today`}</span>
+            <span>{todays ? `Today: ${fmt(todays.best)} ${todays.line}` : `${SHOTS} shots, the same for everyone today · one try`}</span>
+            {todays && <NextDaily />}
           </div>
-          <button className="ts-btn ts-btn-go" onClick={() => begin('daily')} autoFocus>
-            {todays ? 'Play again' : 'Play today’s 5'}
-          </button>
+          {todays ? (
+            todays.line && <ShareButton text={`To Scale #${dailyNumber(today)} 📏\n${todays.line}\n${fmt(todays.best)} / ${fmt(SHOTS * MAX_POINTS)}\n${window.location.origin}/games/to-scale`} />
+          ) : (
+            <button className="ts-btn ts-btn-go" onClick={() => begin('daily')} autoFocus>
+              Play today’s 5
+            </button>
+          )}
         </section>
         <section className="ts-card">
           <div>
@@ -242,14 +253,15 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
         {newBest && <p className="ts-new">New best!</p>}
         <ResultLine line={line} label={`${bullseyes} bullseyes out of ${played.length}`} />
         <p className="ts-muted">🎯 within 10% · 🟩 close · 🟨 not bad · 🟧 far · 🟥 way off</p>
+        {mode === 'daily' && <NextDaily className="ts-muted" />}
         <div className="ts-row">
           {mode === 'challenge' && challenge ? (
             <a className="ts-btn ts-btn-go" href={`/c/${challenge.id}`} onClick={openChallengeScores} autoFocus>
               See the scoreboard
             </a>
           ) : (
-            <button className="ts-btn ts-btn-go" onClick={() => begin(mode)} autoFocus>
-              Play again
+            <button className="ts-btn ts-btn-go" onClick={() => begin(mode === 'daily' ? 'endless' : mode)} autoFocus>
+              {mode === 'daily' ? 'Play endless' : 'Play again'}
             </button>
           )}
           {mode === 'daily' && <ShareButton text={shareText} />}

@@ -11,6 +11,7 @@ import { clearGhost, loadGhost, loadSave, saveGhost, writeSave, type Bests, type
 import { lapLine, raceMedal, raceMedalTimes, shareText, type Medal } from './medals';
 import { buildTrack, TRACK_TYPES, type Surface, type Track, type TrackDef } from './track';
 import { TRACKS } from './tracks';
+import { NextDaily } from '../../components/NextDaily';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
 import { useAccount } from '../../platform/account';
@@ -130,12 +131,17 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     setScreen(s);
   }, []);
 
-  const startRace = useCallback(() => {
+  /** Starts a race on the selected track. Today's daily track is one race a day: false when it is used up. */
+  const startRace = useCallback((): boolean => {
     const engine = engineRef.current;
-    if (!engine) return;
+    if (!engine) return false;
     const s = saveRef.current;
     const chal = inChallenge.current && challengeDef;
     const def = chal ? challengeDef : defFor(s.track);
+    if (!chal && def.id === daily.id) {
+      if (s.dailyRaced.includes(today)) return false;
+      update((cur) => ({ ...cur, dailyRaced: [...cur.dailyRaced, today].slice(-7) }));
+    }
     engine.releaseInput();
     const b: Bests = chal ? {} : (s.bests[def.id] ?? {});
     engine.race(trackFor(def), specFor(getCar(s.car)), chal ? (rival?.ghost ?? null) : loadGhost(def.id), b.lap ?? null, {
@@ -147,7 +153,8 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     setFinish(null);
     go('race');
     host.report({ type: 'start' });
-  }, [defFor, trackFor, go, host, challengeDef, rival]);
+    return true;
+  }, [defFor, trackFor, go, host, challengeDef, rival, daily, today, update]);
 
   const toMenu = useCallback(() => {
     const engine = engineRef.current;
@@ -261,7 +268,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
         if (s === 'result' && inChallenge.current && key !== 'pause') return;
         if (key === 'confirm' && (s === 'menu' || s === 'result')) handlers.current.startRace();
         else if (key === 'confirm' && s === 'paused') handlers.current.resume();
-        else if (key === 'restart' && s !== 'menu' && s !== 'garage') handlers.current.startRace();
+        else if (key === 'restart' && s !== 'menu' && s !== 'garage' && !handlers.current.startRace()) handlers.current.toMenu();
         else if (key === 'pause' && s === 'race') handlers.current.pause();
         else if (key === 'pause' && s === 'paused') handlers.current.resume();
         else if (key === 'pause' && (s === 'result' || s === 'garage')) handlers.current.toMenu();
@@ -292,7 +299,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
   // The arcade's Restart button.
   const firstRestart = useRef(restartKey);
   useEffect(() => {
-    if (restartKey !== firstRestart.current) handlers.current.startRace();
+    if (restartKey !== firstRestart.current && !handlers.current.startRace()) handlers.current.toMenu();
   }, [restartKey]);
 
   // The arcade asks for a pause (left full screen with Escape, which the browser swallows, or
@@ -398,7 +405,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
                   style={{ '--tc': THEMES[def.theme].road, '--tg': THEMES[def.theme].ground } as CSSProperties}
                   onClick={() => selectTrack(def.id)}
                 >
-                  {isDaily && <span className="mr-badge">Daily · {today.slice(5).replace('-', '/')}</span>}
+                  {isDaily && <span className="mr-badge">{save.dailyRaced.includes(today) ? 'Daily · done ✓' : `Daily · ${today.slice(5).replace('-', '/')}`}</span>}
                   {def.id === RANDOM_ID && <span className="mr-badge">Random</span>}
                   <span className={`mr-type mr-type-${def.type}`}>{TRACK_TYPES[def.type].name}</span>
                   <span className="mr-track-name">{def.name}</span>
@@ -498,9 +505,15 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
                 <small>Garage</small>
               </span>
             </button>
-            <button className="mr-go" onClick={startRace}>
-              Race!
-            </button>
+            {selected.id === daily.id && save.dailyRaced.includes(today) ? (
+              <p className="mr-daily-done">
+                Today’s daily is raced · <NextDaily />
+              </p>
+            ) : (
+              <button className="mr-go" onClick={startRace}>
+                Race!
+              </button>
+            )}
           </div>
           <p className="mr-keys">
             {touch ? 'Hold the left or right side of the screen to steer. Gas is automatic.' : 'Left / Right or A / D to steer · gas is automatic · R restart · Esc pause'}
@@ -517,9 +530,11 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
             <button className="mr-go" onClick={resume} autoFocus>
               Resume
             </button>
-            <button className="mr-btn" onClick={startRace}>
-              Restart
-            </button>
+            {(finish?.track.id ?? save.track) !== daily.id && (
+              <button className="mr-btn" onClick={startRace}>
+                Restart
+              </button>
+            )}
             <button className="mr-btn" onClick={toMenu}>
               Menu
             </button>
@@ -665,8 +680,8 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId, day }:
             See the scoreboard
           </a>
         ) : (
-          <button className="mr-go" onClick={onAgain} autoFocus>
-            Again{touch ? '' : ' (R)'}
+          <button className="mr-go" onClick={day ? onMenu : onAgain} autoFocus>
+            {day ? 'Other tracks' : `Again${touch ? '' : ' (R)'}`}
           </button>
         )}
         {!challengeId && result.laps.length > 0 && (

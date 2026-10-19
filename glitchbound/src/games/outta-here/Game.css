@@ -268,7 +268,7 @@
   font-size: 18px;
 }
 .oh-menu {
-  justify-content: center;
+  justify-content: flex-start;
   overflow-y: auto;
   text-align: center;
 }
@@ -358,4 +358,18 @@
   .oh-arrow {
     transition: opacity 0.2s;
   }
+}
+
+/* Today's daily is used up: Share and the countdown to the next one. */
+.oh-done {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.oh-menu > :first-child {
+  margin-top: auto;
+}
+.oh-menu > :last-child {
+  margin-bottom: auto;
 }
