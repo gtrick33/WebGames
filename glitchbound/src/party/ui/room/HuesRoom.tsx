@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { cellHex } from '../../hues';
+import { cellHex, cueBonus, explainHues } from '../../hues';
 import { CLOCKS, LAPS, MIN_PLAYERS, type Action, type RoomView } from '../../rooms/huesRoom';
-import { Board, type BoardMark } from '../Hues';
+import { Board, HueLegend, type BoardMark } from '../Hues';
 import { Clock, Dot, RoomFrame, Scores, seatColor, Waiting, type RoomContext } from './RoomFrame';
 
 type Ctx = RoomContext<RoomView, Action>;
@@ -184,13 +184,21 @@ function Game(ctx: Ctx) {
       <section className="pt-panel">
         <p className="pt-kicker">{round.clue ? 'The colour was…' : '⏱ No clue in time: no points this round'}</p>
         <Board target={round.target} marks={[...toMarks(round.marks), ...toMarks(round.marks2)]} highlight />
+        {round.clue && round.target !== null && <HueLegend />}
         <ul className="pt-hk-gains">
-          {players.map((p) => (
-            <li key={p.n}>
-              <Dot p={p} size={24} /> {p.name} <b>+{round.gained?.[String(p.n)] ?? 0}</b>
-              {p.n === round.cue ? ' (cue giver)' : ''}
-            </li>
-          ))}
+          {players.map((p) => {
+            const cells = [round.marks?.[String(p.n)], round.marks2?.[String(p.n)]].filter((c): c is number => c !== undefined);
+            const all = [...Object.values(round.marks ?? {}), ...Object.values(round.marks2 ?? {})];
+            return (
+              <li key={p.n}>
+                <span className="pt-hk-who">
+                  <Dot p={p} size={24} /> {p.name} <b>+{round.gained?.[String(p.n)] ?? 0}</b>
+                  {p.n === round.cue ? ' (cue giver)' : ''}
+                </span>
+                {round.clue && round.target !== null && <small>{explainHues(round.target, cells, p.n === round.cue ? cueBonus(round.target, all) : null)}</small>}
+              </li>
+            );
+          })}
         </ul>
         {view.host && (
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'next' })}>

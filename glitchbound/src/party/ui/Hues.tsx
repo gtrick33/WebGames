@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { freshRng } from '../engine';
-import { cellHex, COLS, huePoints, offerColours, ROWS } from '../hues';
+import { cellHex, COLS, cueBonus, explainHues, HUE_GRADES, huePoints, offerColours, ROWS } from '../hues';
 import type { PartySession } from '../session';
 import type { Player } from '../types';
 import { Avatar, ModeBar, Name, PassPhone, Results } from './shared';
@@ -181,11 +181,21 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
         <div className="pt-panel">
           <p className="pt-kicker">The colour was…</p>
           <Board target={target} marks={marks.map(toMark)} highlight />
+          <HueLegend />
           <ul className="pt-hk-gains">
             {players.map((p) => (
               <li key={p.id}>
-                <Avatar player={p} size={24} /> {p.name} <b>+{gained[p.id] ?? 0}</b>
-                {p === cue ? ' (cue giver)' : ''}
+                <span className="pt-hk-who">
+                  <Avatar player={p} size={24} /> {p.name} <b>+{gained[p.id] ?? 0}</b>
+                  {p === cue ? ' (cue giver)' : ''}
+                </span>
+                <small>
+                  {explainHues(
+                    target,
+                    marks.filter((m) => m.player === p).map((m) => m.cell),
+                    p === cue ? cueBonus(target, marks.map((m) => m.cell)) : null,
+                  )}
+                </small>
               </li>
             ))}
           </ul>
@@ -195,6 +205,15 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
         </div>
       )}
     </div>
+  );
+}
+
+/** The scoring key, shown with every reveal. */
+export function HueLegend() {
+  return (
+    <p className="pt-hk-legend">
+      {HUE_GRADES.filter((g) => g.points > 0).map((g) => `${g.label[0]!.toUpperCase()}${g.label.slice(1)} +${g.points}`).join(' · ')} · Cue giver: +1 for each guess worth 2 or 3
+    </p>
   );
 }
 

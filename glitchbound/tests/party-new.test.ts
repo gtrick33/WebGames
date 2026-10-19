@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MYSTERY_WORDS } from '../src/party/content/mystery';
 import { SPECTRUMS } from '../src/party/content/spectrums';
 import { dialPoints, randomTarget, splitTeams, stealRight } from '../src/party/dial';
-import { cellRgb, COLS, huePoints, offerColours, ROWS } from '../src/party/hues';
+import { cellRgb, COLS, cueBonus, explainHues, huePoints, offerColours, ROWS } from '../src/party/hues';
 import { checkClues, cleanClue, guessIsRight, rating, stem } from '../src/party/unique';
 import { deltaE } from '../src/games/color-recall/color';
 import { PARTY_GAMES } from '../src/party/catalog';
@@ -92,6 +92,16 @@ describe('Hue Knew?', () => {
     expect(huePoints(40, 40)).toBe(3);
     const far = Array.from({ length: COLS * ROWS }, (_, i) => i).find((i) => deltaE(cellRgb(40), cellRgb(i)) > 40)!;
     expect(huePoints(40, far)).toBe(0);
+  });
+
+  it('explains every point in words', () => {
+    const far = Array.from({ length: COLS * ROWS }, (_, i) => i).find((i) => huePoints(40, i) === 0)!;
+    expect(explainHues(40, [40], null)).toBe('spot on (+3)');
+    expect(explainHues(40, [40, far], null)).toBe('1st guess spot on (+3) · 2nd guess too far (+0)');
+    expect(explainHues(40, [], null)).toBe('no guess this round');
+    expect(cueBonus(40, [40, 40, far])).toBe(2);
+    expect(explainHues(40, [], 2)).toBe('1 point for each spot-on or very close guess (2)');
+    expect(explainHues(40, [], 0)).toContain('no guess landed');
   });
 
   it('offers four clearly different colours', () => {

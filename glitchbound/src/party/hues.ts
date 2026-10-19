@@ -34,3 +34,26 @@ export function offerColours(r: () => number): number[] {
   }
   return out;
 }
+
+/** Points per guess, in words. */
+export const HUE_GRADES: { points: number; label: string }[] = [
+  { points: 3, label: 'spot on' },
+  { points: 2, label: 'very close' },
+  { points: 1, label: 'close' },
+  { points: 0, label: 'too far' },
+];
+const gradeLabel = (p: number): string => HUE_GRADES.find((g) => g.points === p)?.label ?? 'too far';
+
+/**
+ * Why a player scored what they did this round, in words. `cells` are their guesses in order;
+ * the cue giver (no guesses) gets a point for each guess anyone placed spot on or very close.
+ */
+export function explainHues(target: number, cells: number[], cueBonus: number | null): string {
+  if (cueBonus !== null) return cueBonus ? `1 point for each spot-on or very close guess (${cueBonus})` : 'no guess landed close enough for a cue point';
+  if (!cells.length) return 'no guess this round';
+  const nth = ['1st', '2nd', '3rd'];
+  return cells.map((c, i) => `${cells.length > 1 ? `${nth[i] ?? `${i + 1}th`} guess ` : ''}${gradeLabel(huePoints(target, c))} (+${huePoints(target, c)})`).join(' · ');
+}
+
+/** How many guesses earned the cue giver a point (worth 2 or 3). */
+export const cueBonus = (target: number, cells: number[]): number => cells.filter((c) => huePoints(target, c) >= 2).length;

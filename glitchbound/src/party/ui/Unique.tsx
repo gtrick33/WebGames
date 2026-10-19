@@ -3,28 +3,20 @@ import { MYSTERY_WORDS } from '../content/mystery';
 import { draw, freshRng } from '../engine';
 import type { PartySession } from '../session';
 import type { Player } from '../types';
-import { checkClues, cleanClue, DECK, guessIsRight, rating, type ClueCheck } from '../unique';
-import { Avatar, ModeBar, Name, PassPhone, Results } from './shared';
+import { DECK, rating, type ClueCheck } from '../unique';
+import { Avatar, ModeBar, Name, Results } from './shared';
 
-type Stage = 'setup' | 'pass' | 'write' | 'check' | 'toGuesser' | 'guess' | 'result' | 'done';
-
-interface Round {
-  guesser: Player;
-  word: string;
-  /** Clue givers in order; clues[i] belongs to givers[i]. */
-  givers: Player[];
-  clues: string[];
-  checked: ClueCheck[];
-  outcome: 'right' | 'wrong' | 'pass' | null;
-  guess: string;
-}
-
+/** Why a clue was struck out (the live room shows these). */
 export const OUT_TEXT: Record<NonNullable<ClueCheck['out']>, string> = { twin: 'same as another clue', 'gives-it-away': 'gives the word away', empty: 'no clue' };
 
+type Stage = 'setup' | 'look' | 'word' | 'clues' | 'result' | 'done';
+type Outcome = 'right' | 'wrong' | 'pass';
+
 /**
- * One of a Kind on one phone, played together against the deck: everyone but the guesser writes a
- * one-word clue in secret, matching clues cancel, and the guesser gets one try. 13 cards; a wrong
- * guess also burns the next card.
+ * One of a Kind on one phone, played together against a 13-card deck. The phone only deals the
+ * words: everyone but the guesser looks at the word, the clues happen out loud at the table (matching
+ * clues are struck out before the guesser hears them), and the guesser gets one try. A wrong guess
+ * also burns the next card. The live room version types clues on each phone instead.
  */
 export function UniqueMode({ session, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
   const players = session.players;
@@ -34,34 +26,40 @@ export function UniqueMode({ session, onExit }: { session: PartySession; update:
   const [turn, setTurn] = useState(0);
   const [cardsLeft, setCardsLeft] = useState(DECK);
   const [score, setScore] = useState(0);
-  const [round, setRound] = useState<Round | null>(null);
-  const [writer, setWriter] = useState(0);
-  const [draft, setDraft] = useState('');
-  const [history, setHistory] = useState<{ word: string; outcome: Round['outcome'] }[]>([]);
+  const [word, setWord] = useState('');
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [history, setHistory] = useState<{ word: string; outcome: Outcome }[]>([]);
+  const guesser: Player = players[turn % players.length]!;
 
-  const newWord = (seen: string[]): { word: string; used: string[] } => {
+  const newWord = (seen: string[]): void => {
     const d = draw(
       MYSTERY_WORDS.map((w) => ({ id: w })),
       seen,
       r,
     );
-    return { word: d.item?.id ?? MYSTERY_WORDS[0]!, used: d.used };
-  };
-  const deal = (t: number, seen: string[]): void => {
-    const guesser = players[t % players.length]!;
-    const { word, used: u } = newWord(seen);
-    setUsed(u);
-    setRound({ guesser, word, givers: players.filter((p) => p !== guesser), clues: [], checked: [], outcome: null, guess: '' });
-    setWriter(0);
-    setDraft('');
-    setStage('pass');
+    setWord(d.item?.id ?? MYSTERY_WORDS[0]!);
+    setUsed(d.used);
   };
   const start = (): void => {
     setTurn(0);
     setCardsLeft(DECK);
     setScore(0);
     setHistory([]);
-    deal(0, used);
+    newWord(used);
+    setStage('look');
+  };
+  const judge = (o: Outcome): void => {
+    setOutcome(o);
+    setHistory((h) => [...h, { word, outcome: o }]);
+    if (o === 'right') setScore((s) => s + 1);
+    setCardsLeft((c) => Math.max(0, c - (o === 'wrong' ? 2 : 1)));
+    setStage('result');
+  };
+  const next = (): void => {
+    if (cardsLeft <= 0) return setStage('done');
+    setTurn(turn + 1);
+    newWord(used);
+    setStage('look');
   };
 
   if (players.length < 3) {
@@ -84,11 +82,16 @@ export function UniqueMode({ session, onExit }: { session: PartySession; update:
         <ModeBar title="One of a Kind" onExit={onExit} />
         <div className="pt-panel">
           <h3>How it works</h3>
+          <ol className="pt-ok-steps">
+            <li>Each round one player guesses. They look away while everyone else sees the secret word.</li>
+            <li>
+              Everyone else thinks of a <b>one-word clue</b>. Compare them quietly first (whisper, or jot them down): <b>matching clues are out</b>.
+            </li>
+            <li>Say the clues that are left. The guesser gets one try.</li>
+          </ol>
           <p className="pt-muted">
-            You all play together against a deck of {DECK} cards. Each round one player guesses. Everyone else secretly writes <b>one word</b> to help, passing the phone around. Then the twist: <b>matching clues cancel out</b>, so
-            the obvious clue might vanish. The guesser gets one try.
+            You all play together against a deck of {DECK} cards. Right: +1. Pass: lose that card. Wrong: lose that card and the next one too.
           </p>
-          <p className="pt-muted">Right: +1. Pass: lose the card. Wrong: lose the card and the next one too.</p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={start}>
             Start
           </button>
@@ -97,7 +100,7 @@ export function UniqueMode({ session, onExit }: { session: PartySession; update:
     );
   }
 
-  if (stage === 'done' || !round) {
+  if (stage === 'done') {
     return (
       <Results title={`${score} of ${DECK}: ${rating(score)}`} players={players} scores={Object.fromEntries(players.map((p) => [p.id, score]))} onAgain={() => setStage('setup')} onMenu={onExit}>
         <ul className="pt-ok-history">
@@ -111,166 +114,71 @@ export function UniqueMode({ session, onExit }: { session: PartySession; update:
     );
   }
 
-  const progress = `🃏 ${cardsLeft} left · ✅ ${score}`;
-  const giver = round.givers[writer]!;
-
-  const submitClue = (): void => {
-    const clue = cleanClue(draft);
-    const clues = [...round.clues, clue];
-    setDraft('');
-    if (writer + 1 < round.givers.length) {
-      setRound({ ...round, clues });
-      setWriter(writer + 1);
-      setStage('pass');
-    } else {
-      setRound({ ...round, clues, checked: checkClues(round.word, clues) });
-      setStage('check');
-    }
-  };
-  const swapWord = (): void => {
-    const { word, used: u } = newWord(used);
-    setUsed(u);
-    setRound({ ...round, word });
-  };
-  const finishGuess = (outcome: 'right' | 'wrong' | 'pass', guess = ''): void => {
-    setRound({ ...round, outcome, guess });
-    setHistory((h) => [...h, { word: round.word, outcome }]);
-    if (outcome === 'right') setScore((s) => s + 1);
-    setCardsLeft((c) => Math.max(0, c - (outcome === 'wrong' ? 2 : 1)));
-    setStage('result');
-  };
-  const next = (): void => {
-    if (cardsLeft <= 0) return setStage('done');
-    setTurn(turn + 1);
-    deal(turn + 1, used);
-  };
-
   return (
     <div className="pt-screen">
-      <ModeBar title="One of a Kind" progress={progress} onExit={onExit} />
-      {stage === 'pass' && (
-        <PassPhone
-          player={giver}
-          note={writer === 0 ? `${round.guesser.name} is guessing this round: keep the screen away from them!` : `Write your clue without peeking at the others. ${round.guesser.name} mustn’t look.`}
-          onReady={() => setStage('write')}
-        />
+      <ModeBar title="One of a Kind" progress={`🃏 ${cardsLeft} left · ✅ ${score}`} onExit={onExit} />
+      {stage === 'look' && (
+        <div className="pt-panel pt-ok-look">
+          <Avatar player={guesser} size={72} />
+          <p className="pt-kicker">This round’s guesser</p>
+          <h2 className="pt-pass-name" style={{ color: guesser.color }}>
+            {guesser.name}
+          </h2>
+          <p className="pt-muted">{guesser.name}, look away or close your eyes. Everyone else, gather round the phone.</p>
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('word')} autoFocus>
+            Show the word
+          </button>
+        </div>
       )}
-      {stage === 'write' && (
+      {stage === 'word' && (
         <div className="pt-panel">
           <p className="pt-kicker">
-            The word for <Name player={round.guesser} /> is
+            The word for <Name player={guesser} /> is
           </p>
-          <p className="pt-ok-word">{round.word}</p>
-          <label className="pt-ok-label" htmlFor="ok-clue">
-            Your one-word clue, {giver.name}
-          </label>
-          <input
-            id="ok-clue"
-            className="pt-input"
-            value={draft}
-            maxLength={24}
-            autoFocus
-            autoComplete="off"
-            autoCapitalize="none"
-            spellCheck={false}
-            onChange={(e) => setDraft(e.target.value.replace(/\s/g, ''))}
-            onKeyDown={(e) => e.key === 'Enter' && draft.trim() && submitClue()}
-            placeholder="One word"
-          />
-          <p className="pt-muted">Matching clues cancel each other out, so try to be helpful and a little original.</p>
-          <button className="pt-btn pt-btn-go pt-btn-big" disabled={!draft.trim()} onClick={submitClue}>
-            {writer + 1 < round.givers.length ? `Hide it · pass to ${round.givers[writer + 1]!.name}` : 'Done · check the clues'}
+          <p className="pt-ok-word">{word}</p>
+          <p className="pt-muted">Think of a one-word clue. Matching clues will be struck out, so try to be helpful and a little original.</p>
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('clues')}>
+            Hide it · {guesser.name} can look
           </button>
-          {writer === 0 && (
-            <button className="pt-btn pt-btn-ghost" onClick={swapWord}>
-              Don’t know this word? Another one
+          <button className="pt-btn pt-btn-ghost" onClick={() => newWord(used)}>
+            Don’t know this word? Another one
+          </button>
+        </div>
+      )}
+      {stage === 'clues' && (
+        <div className="pt-panel">
+          <p className="pt-kicker">Clue time</p>
+          <ol className="pt-ok-steps">
+            <li>Clue givers: compare your clues quietly. Any that match are out.</li>
+            <li>Say the rest to {guesser.name}.</li>
+            <li>{guesser.name} gets one guess.</li>
+          </ol>
+          <p className="pt-muted">How did it go?</p>
+          <div className="pt-ok-judge">
+            <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => judge('right')}>
+              ✅ Got it
             </button>
-          )}
+            <button className="pt-btn pt-btn-big" onClick={() => judge('wrong')}>
+              ❌ Wrong guess
+            </button>
+            <button className="pt-btn pt-btn-ghost" onClick={() => judge('pass')}>
+              ⏭️ {guesser.name} passed
+            </button>
+          </div>
         </div>
       )}
-      {stage === 'check' && (
-        <div className="pt-panel">
-          <p className="pt-kicker">
-            Clue givers only. <Name player={round.guesser} />, look away!
-          </p>
-          <ul className="pt-ok-clues">
-            {round.checked.map((c, i) => (
-              <li key={i} className={c.out ? 'is-out' : ''}>
-                <Avatar player={round.givers[i]!} size={26} /> <b>{c.clue || '–'}</b> {c.out && <small>{OUT_TEXT[c.out]}</small>}
-              </li>
-            ))}
-          </ul>
-          <p className="pt-muted">{round.checked.every((c) => c.out) ? 'Every clue cancelled out! The guesser gets nothing to go on.' : 'Crossed-out clues are hidden from the guesser.'}</p>
-          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('toGuesser')}>
-            Hide · pass to {round.guesser.name}
-          </button>
-        </div>
-      )}
-      {stage === 'toGuesser' && <PassPhone player={round.guesser} note="Your clues are ready." onReady={() => setStage('guess')} />}
-      {stage === 'guess' && <Guess round={round} onDone={finishGuess} />}
       {stage === 'result' && (
         <div className="pt-panel pt-ok-result">
           <p className="pt-kicker">The word was</p>
-          <p className="pt-ok-word">{round.word}</p>
+          <p className="pt-ok-word">{word}</p>
           <p className="pt-ok-verdict">
-            {round.outcome === 'right' ? `✅ ${round.guesser.name} got it!` : round.outcome === 'pass' ? `⏭️ ${round.guesser.name} passed` : `❌ “${round.guess}” was wrong: two cards gone`}
+            {outcome === 'right' ? `✅ ${guesser.name} got it! +1` : outcome === 'pass' ? `⏭️ ${guesser.name} passed: one card gone` : '❌ Wrong: this card and the next one are gone'}
           </p>
-          <ul className="pt-ok-clues">
-            {round.checked.map((c, i) => (
-              <li key={i} className={c.out ? 'is-out' : ''}>
-                <Avatar player={round.givers[i]!} size={26} /> <b>{c.clue || '–'}</b> {c.out && <small>{OUT_TEXT[c.out]}</small>}
-              </li>
-            ))}
-          </ul>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={next} autoFocus>
             {cardsLeft <= 0 ? 'See the score' : `Next card (${cardsLeft} left)`}
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-function Guess({ round, onDone }: { round: Round; onDone: (o: 'right' | 'wrong' | 'pass', guess?: string) => void }) {
-  const [guess, setGuess] = useState('');
-  const shown = round.checked.filter((c) => !c.out);
-  const submit = (): void => {
-    const g = guess.trim();
-    if (g) onDone(guessIsRight(round.word, g) ? 'right' : 'wrong', g);
-  };
-  return (
-    <div className="pt-panel">
-      <p className="pt-kicker">
-        <Name player={round.guesser} />, your clues:
-      </p>
-      {shown.length ? (
-        <ul className="pt-ok-shown">
-          {shown.map((c, i) => (
-            <li key={i}>{c.clue}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="pt-muted">No clues survived. Take a wild guess, or pass.</p>
-      )}
-      <input
-        className="pt-input"
-        value={guess}
-        maxLength={30}
-        autoFocus
-        autoComplete="off"
-        autoCapitalize="none"
-        spellCheck={false}
-        onChange={(e) => setGuess(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && submit()}
-        placeholder="Your guess"
-        aria-label="Your guess"
-      />
-      <button className="pt-btn pt-btn-go pt-btn-big" disabled={!guess.trim()} onClick={submit}>
-        Guess
-      </button>
-      <button className="pt-btn pt-btn-ghost" onClick={() => onDone('pass')}>
-        Pass (lose only this card)
-      </button>
     </div>
   );
 }
