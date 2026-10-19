@@ -7,10 +7,13 @@ import * as crassAct from '../src/games/crass-act/engine';
 import * as impostor from '../src/party/impostorRoom';
 import * as auction from '../src/party/rooms/auctionRoom';
 import * as board from '../src/party/rooms/boardRoom';
+import * as dial from '../src/party/rooms/dialRoom';
+import * as hues from '../src/party/rooms/huesRoom';
 import * as nhie from '../src/party/rooms/nhieRoom';
 import * as rps from '../src/party/rooms/rpsRoom';
+import * as unique from '../src/party/rooms/uniqueRoom';
 
-export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps';
+export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues';
 
 /** What every room engine provides (`State` stays opaque to the server). */
 export interface Engine {
@@ -38,6 +41,9 @@ export const ENGINES: Record<GameId, Engine> = {
   auction: auction as unknown as Engine,
   board: board as unknown as Engine,
   rps: rps as unknown as Engine,
+  dial: dial as unknown as Engine,
+  unique: unique as unknown as Engine,
+  hues: hues as unknown as Engine,
 };
 
 export const isGameId = (v: unknown): v is GameId => typeof v === 'string' && Object.hasOwn(ENGINES, v);

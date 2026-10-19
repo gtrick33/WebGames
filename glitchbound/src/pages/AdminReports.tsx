@@ -42,7 +42,7 @@ function Meter({ label, value, limit, format = fmt }: { label: string; value: nu
   );
 }
 
-const ROOM_NAMES: Record<string, string> = { 'crass-act': 'Crass Act', impostor: 'Impostor', nhie: 'Never Have I Ever', auction: 'Name Your Price', board: 'Dice Adventure', rps: 'Rock Paper Scissors' };
+const ROOM_NAMES: Record<string, string> = { 'crass-act': 'Crass Act', impostor: 'Impostor', nhie: 'Never Have I Ever', auction: 'Name Your Price', board: 'Dice Adventure', rps: 'Rock Paper Scissors', dial: 'Dial It In', unique: 'One of a Kind', hues: 'Hue Knew?' };
 
 export function CloudPanel() {
   const [data, setData] = useState<CloudUsage | null>(null);

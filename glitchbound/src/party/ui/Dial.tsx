@@ -219,8 +219,8 @@ function segments(target: number): { from: number; to: number; points: number }[
   return out.map((g) => ({ ...g, from: Math.max(0, g.from), to: Math.min(100, g.to) })).filter((g) => g.to > g.from);
 }
 
-/** The radio-style tuner: a band of ticks between two ends, scoring stripes and a needle. */
-function Tuner({ scale, target, guess, showTarget, showNeedle, movable, onMove }: { scale: [string, string]; target: number; guess: number; showTarget: boolean; showNeedle: boolean; movable: boolean; onMove: (v: number) => void }) {
+/** The radio-style tuner: a band of ticks between two ends, scoring stripes and a needle (live rooms use it too). */
+export function Tuner({ scale, target, guess, showTarget, showNeedle, movable, onMove }: { scale: [string, string]; target: number; guess: number; showTarget: boolean; showNeedle: boolean; movable: boolean; onMove: (v: number) => void }) {
   const band = useRef<HTMLDivElement>(null);
   const valueAt = (clientX: number): number => {
     const b = band.current?.getBoundingClientRect();

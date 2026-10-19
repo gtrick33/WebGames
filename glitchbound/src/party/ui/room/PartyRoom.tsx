@@ -5,8 +5,11 @@ import { ImpostorRoomPage } from '../ImpostorRoom';
 import { ModeBar } from '../shared';
 import { AuctionRoomPage } from './AuctionRoom';
 import { BoardRoomPage } from './BoardRoom';
+import { DialRoomPage } from './DialRoom';
+import { HuesRoomPage } from './HuesRoom';
 import { NhieRoomPage } from './NhieRoom';
 import { RpsRoomPage } from './RpsRoom';
+import { UniqueRoomPage } from './UniqueRoom';
 
 /** /party?room=CODE: finds out which game the room plays and opens it. */
 export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => void }) {
@@ -32,6 +35,9 @@ export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => 
   if (game === 'auction') return <AuctionRoomPage code={code} onLeave={onLeave} />;
   if (game === 'board') return <BoardRoomPage code={code} onLeave={onLeave} />;
   if (game === 'rps') return <RpsRoomPage code={code} onLeave={onLeave} />;
+  if (game === 'dial') return <DialRoomPage code={code} onLeave={onLeave} />;
+  if (game === 'unique') return <UniqueRoomPage code={code} onLeave={onLeave} />;
+  if (game === 'hues') return <HuesRoomPage code={code} onLeave={onLeave} />;
   // Impostor, and closed rooms (its page explains that the room has closed).
   return <ImpostorRoomPage code={code} onLeave={onLeave} />;
 }

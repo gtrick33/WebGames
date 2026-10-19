@@ -19,7 +19,7 @@ interface Round {
   guess: string;
 }
 
-const OUT_TEXT: Record<NonNullable<ClueCheck['out']>, string> = { twin: 'same as another clue', 'gives-it-away': 'gives the word away', empty: 'no clue' };
+export const OUT_TEXT: Record<NonNullable<ClueCheck['out']>, string> = { twin: 'same as another clue', 'gives-it-away': 'gives the word away', empty: 'no clue' };
 
 /**
  * One of a Kind on one phone, played together against the deck: everyone but the guesser writes a

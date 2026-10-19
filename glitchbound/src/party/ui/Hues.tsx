@@ -159,7 +159,7 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
             <Avatar player={cue} size={26} /> <Name player={cue} />, say your {stage === 'clue' ? 'one-word' : 'second (up to two words)'} clue out loud!
           </p>
           <p className="pt-muted">No colour names, please. Then pass the phone round: everyone taps their guess.</p>
-          {stage === 'clue2' && <Board target={null} marks={marks} />}
+          {stage === 'clue2' && <Board target={null} marks={marks.map(toMark)} />}
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('guess')}>
             Start guessing · {guessers[0]!.name} first
           </button>
@@ -171,7 +171,7 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
             <Avatar player={guesser} size={26} /> <Name player={guesser} />
             {roundTwo ? ', your second guess' : ', tap your guess'}
           </p>
-          <Board target={null} marks={marks} pending={pending} pendingPlayer={guesser} onPick={setPending} />
+          <Board target={null} marks={marks.map(toMark)} pending={pending} pendingGlyph={guesser.emoji} onPick={setPending} />
           <button className="pt-btn pt-btn-go pt-btn-big" disabled={pending === null} onClick={place}>
             {pending === null ? 'Tap a colour on the board' : who + 1 < guessers.length ? `Lock it in · pass to ${guessers[who + 1]!.name}` : 'Lock it in'}
           </button>
@@ -180,7 +180,7 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
       {stage === 'reveal' && target !== null && (
         <div className="pt-panel">
           <p className="pt-kicker">The colour was…</p>
-          <Board target={target} marks={marks} highlight />
+          <Board target={target} marks={marks.map(toMark)} highlight />
           <ul className="pt-hk-gains">
             {players.map((p) => (
               <li key={p.id}>
@@ -198,9 +198,26 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
   );
 }
 
-/** The colour board: hues across, pale to deep down, with the players' marks on it. */
-function Board({ target, marks, highlight = false, pending = null, pendingPlayer, onPick }: { target: number | null; marks: Mark[]; highlight?: boolean; pending?: number | null; pendingPlayer?: Player; onPick?: (i: number) => void }) {
-  const at = new Map<number, Mark[]>();
+const toMark = (m: Mark): BoardMark => ({ cell: m.cell, glyph: m.player.emoji });
+
+/** A guess on the board: an emoji, or a player's initial on their colour (live rooms). */
+export interface BoardMark {
+  cell: number;
+  glyph: string;
+  color?: string;
+}
+
+function MarkGlyph({ m, fresh = false }: { m: BoardMark; fresh?: boolean }) {
+  return (
+    <span className={`pt-hk-mark${m.color ? ' is-dot' : ''}${fresh ? ' is-new' : ''}`} style={m.color ? { background: m.color } : undefined}>
+      {m.glyph}
+    </span>
+  );
+}
+
+/** The colour board: hues across, pale to deep down, with the players' marks on it (live rooms use it too). */
+export function Board({ target, marks, highlight = false, pending = null, pendingGlyph, pendingColor, onPick }: { target: number | null; marks: BoardMark[]; highlight?: boolean; pending?: number | null; pendingGlyph?: string; pendingColor?: string; onPick?: (i: number) => void }) {
+  const at = new Map<number, BoardMark[]>();
   for (const m of marks) at.set(m.cell, [...(at.get(m.cell) ?? []), m]);
   return (
     <div className={`pt-hk-board${highlight ? ' is-reveal' : ''}`} style={{ ['--cols' as string]: COLS }} role="grid" aria-label="Colour board">
@@ -208,8 +225,8 @@ function Board({ target, marks, highlight = false, pending = null, pendingPlayer
         const here = at.get(i);
         return (
           <button key={i} className={`pt-hk-cell${i === target ? ' is-target' : ''}${i === pending ? ' is-pending' : ''}`} style={{ background: cellHex(i) }} onClick={() => onPick?.(i)} disabled={!onPick} aria-label={`Colour ${i + 1}`}>
-            {here && <span className="pt-hk-mark">{here[here.length - 1]!.player.emoji}</span>}
-            {i === pending && pendingPlayer && <span className="pt-hk-mark is-new">{pendingPlayer.emoji}</span>}
+            {here && <MarkGlyph m={here[here.length - 1]!} />}
+            {i === pending && pendingGlyph && <MarkGlyph m={{ cell: i, glyph: pendingGlyph, color: pendingColor }} fresh />}
           </button>
         );
       })}

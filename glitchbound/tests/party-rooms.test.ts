@@ -20,7 +20,7 @@ function runClock<S extends { deadline: number | null }>(s: S, tick: (s: S, now:
 
 describe('room engines registry', () => {
   it('knows every room game and falls back to Crass Act for old rooms', () => {
-    for (const g of ['crass-act', 'impostor', 'nhie', 'auction', 'board', 'rps']) expect(isGameId(g)).toBe(true);
+    for (const g of ['crass-act', 'impostor', 'nhie', 'auction', 'board', 'rps', 'dial', 'unique', 'hues']) expect(isGameId(g)).toBe(true);
     expect(isGameId('toString')).toBe(false);
     expect(engineFor({ game: 'nhie', updated: 0, deadline: null })).toBe(ENGINES.nhie);
     expect(engineFor({ updated: 0, deadline: null })).toBe(ENGINES['crass-act']);

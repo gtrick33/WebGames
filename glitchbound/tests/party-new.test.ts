@@ -7,6 +7,8 @@ import { checkClues, cleanClue, guessIsRight, rating, stem } from '../src/party/
 import { deltaE } from '../src/games/color-recall/color';
 import { PARTY_GAMES } from '../src/party/catalog';
 import { MODE_IDS } from '../src/party/session';
+import { isGameId } from '../rooms/engines';
+import { isRoomGame } from '../server/rooms';
 
 const seq = (vals: number[]): (() => number) => {
   let i = 0;
@@ -100,11 +102,14 @@ describe('Hue Knew?', () => {
 });
 
 describe('Party line-up', () => {
-  it('lists the new games as pass-the-phone modes', () => {
+  it('lists the new games as pass-the-phone modes and live rooms', () => {
     for (const id of ['dial', 'unique', 'hues'] as const) {
       const g = PARTY_GAMES.find((x) => x.id === id);
       expect(g?.onePhone).toBe(true);
       expect((MODE_IDS as readonly string[]).includes(id)).toBe(true);
+      expect(g?.room).toBe(id);
+      expect(isGameId(id) && isRoomGame(id)).toBe(true);
+      expect(g?.roomPlayers && g.roomBlurb).toBeTruthy();
     }
   });
 });

@@ -9,6 +9,9 @@ const PARTY: Record<string, { name: string; emoji: string; pitch: string }> = {
   auction: { name: 'Name Your Price', emoji: '🔨', pitch: 'Bid play money on heroes, villains and legends. Best collection wins.' },
   board: { name: 'Dice Adventure', emoji: '🎲', pitch: 'Roll, race and dodge the slides. Challenges, duels and trivia on the way.' },
   rps: { name: 'Rock Paper Scissors', emoji: '✊', pitch: 'Everyone throws in secret, all hands revealed at once. Last hand standing wins.' },
+  dial: { name: 'Dial It In', emoji: '📻', pitch: 'One player sees the secret spot on the dial and gives one clue. Turn the needle together.' },
+  unique: { name: 'One of a Kind', emoji: '🦄', pitch: 'Everyone writes a one-word clue in secret. Matching clues cancel out. Can the guesser still get it?' },
+  hues: { name: 'Hue Knew?', emoji: '🎨', pitch: 'Describe a secret colour in one word. Whoever taps closest on the colour board scores.' },
 };
 
 /** GET /r/<code>: a room invite (Crass Act or a Party Mode game). Chats show who is waiting; people land in the room. */

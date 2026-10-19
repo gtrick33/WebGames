@@ -1,5 +1,5 @@
 /**
- * What every Party Mode live room shares (Never Have I Ever, Name Your Price, Dice Adventure):
+ * What every Party Mode live room shares (Never Have I Ever, Name Your Price, Dice Adventure and the rest):
  * seats keyed by a player's private key, unique names, a host who hands over when they leave, kicks,
  * and a seeded random source kept in the room state. Pure: the room server runs it (rooms/worker.ts).
  */
