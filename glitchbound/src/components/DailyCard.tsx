@@ -23,7 +23,7 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
   const daily = useDaily(now);
   const [shareMsg, setShareMsg] = useState('');
   if (!daily) return null;
-  const { challenge: c, best, done, streak, week } = daily;
+  const { challenge: c, best, tried, done, streak, week } = daily;
   const unit = c.unit ? ` ${c.unit}` : '';
   const progress = Math.min(1, best / c.target);
   const H = `h${headingLevel}` as const;
@@ -64,7 +64,7 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
             <i style={{ width: `${progress * 100}%` }} />
           </div>
           <p className="mono daily-numbers">
-            {best > 0
+            {tried
               ? t('Best today {best} / {target}', { best: `${fmt(best)}${unit}`, target: `${fmt(c.target)}${unit}` })
               : t('Not attempted yet · target {target}', { target: `${fmt(c.target)}${unit}` })}
           </p>
@@ -77,7 +77,7 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
             <Icon name="check" size={22} /> {t('Cleared')}
           </p>
         ) : (
-          <p className="daily-state">{best > 0 ? t('Keep going') : t('Up for grabs')}</p>
+          <p className="daily-state">{tried ? t('Keep going') : t('Up for grabs')}</p>
         )}
         <div className="daily-streak" aria-label={t('Streak: {n} days. Last 7 days: {c} cleared.', { n: streak, c: week.filter(Boolean).length })}>
           <span className="daily-streak-n">

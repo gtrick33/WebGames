@@ -40,6 +40,8 @@ export interface DailyState {
   challenge: DailyChallenge;
   today: string;
   best: number;
+  /** A round counted toward today's challenge (even one that scored 0). */
+  tried: boolean;
   done: boolean;
   streak: number;
   /** Completion for the last 7 days, oldest first, ending today. */
@@ -61,6 +63,7 @@ export function useDaily(now: Date): DailyState | null {
       challenge,
       today,
       best: rec?.best ?? 0,
+      tried: !!rec,
       done: rec?.done ?? false,
       streak: currentStreak(done, today),
       week: Array.from({ length: 7 }, (_, i) => done.has(addDays(today, i - 6))),
