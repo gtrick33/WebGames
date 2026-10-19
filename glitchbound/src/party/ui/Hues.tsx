@@ -2,16 +2,31 @@ import { useState } from 'react';
 import { freshRng } from '../engine';
 import { cellHex, COLS, cueBonus, explainHues, HUE_GRADES, huePoints, offerColours, ROWS } from '../hues';
 import type { PartySession } from '../session';
-import type { Player } from '../types';
-import { Avatar, ModeBar, Name, PassPhone, Results } from './shared';
+import { Avatar, byId, ModeBar, Name, PassPhone, Results, useSavedGame } from './shared';
 
 type Stage = 'setup' | 'pass' | 'pick' | 'clue' | 'guess' | 'clue2' | 'reveal' | 'done';
 
 interface Mark {
-  player: Player;
+  /** Player id. */
+  player: string;
   cell: number;
   /** 1 for the first clue, 2 for the second. */
   pass: 1 | 2;
+}
+
+interface Game {
+  stage: Stage;
+  laps: number;
+  second: boolean;
+  /** The round number (0-based); the cue giver is `players[n % players.length]`. */
+  n: number;
+  offer: number[];
+  target: number | null;
+  marks: Mark[];
+  /** Whose guess is next (index into the guessers). */
+  who: number;
+  scores: Record<string, number>;
+  gained: Record<string, number>;
 }
 
 /**
@@ -20,63 +35,45 @@ interface Mark {
  * the colour board. Points go by how alike the colours look, and the cue giver earns a point for
  * every close guess.
  */
-export function HuesMode({ session, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
+export function HuesMode({ session, update, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
   const players = session.players;
   const [r] = useState(freshRng);
-  const [stage, setStage] = useState<Stage>('setup');
-  const [laps, setLaps] = useState(players.length <= 4 ? 2 : 1);
-  const [second, setSecond] = useState(true);
-  const [n, setN] = useState(0);
-  const [offer, setOffer] = useState<number[]>([]);
-  const [target, setTarget] = useState<number | null>(null);
-  const [marks, setMarks] = useState<Mark[]>([]);
-  const [who, setWho] = useState(0);
+  const [game, set] = useSavedGame<Game>(session, update, 'hues', () => ({ stage: 'setup', laps: players.length <= 4 ? 2 : 1, second: true, n: 0, offer: [], target: null, marks: [], who: 0, scores: {}, gained: {} }));
+  const { stage, laps, second, n, offer, target, marks, who, scores, gained } = game;
   const [pending, setPending] = useState<number | null>(null);
-  const [scores, setScores] = useState<Record<string, number>>({});
-  const [gained, setGained] = useState<Record<string, number>>({});
+  const setStage = (st: Stage): void => set({ stage: st });
   const total = players.length * laps;
   const cue = players[n % players.length]!;
   const guessers = players.filter((p) => p !== cue);
+  const toMark = (m: Mark): BoardMark => ({ cell: m.cell, glyph: byId(players, m.player)?.emoji ?? '•' });
 
-  const newRound = (): void => {
-    setOffer(offerColours(r));
-    setTarget(null);
-    setMarks([]);
-    setWho(0);
-    setPending(null);
-    setStage('pass');
-  };
+  // The colours are drawn outside the state updaters (React may run an updater twice in development).
+  const newRound = (): Partial<Game> => ({ offer: offerColours(r), target: null, marks: [], who: 0, stage: 'pass' });
   const start = (): void => {
-    setN(0);
-    setScores({});
-    newRound();
+    setPending(null);
+    set({ n: 0, scores: {}, ...newRound() });
   };
   const place = (): void => {
     if (pending === null) return;
     const pass: 1 | 2 = stage === 'guess' && marks.length >= guessers.length ? 2 : 1;
-    const next = [...marks, { player: guessers[who]!, cell: pending, pass }];
-    setMarks(next);
+    const next = [...marks, { player: guessers[who]!.id, cell: pending, pass }];
     setPending(null);
-    if (who + 1 < guessers.length) return setWho(who + 1);
-    setWho(0);
-    if (pass === 1 && second) return setStage('clue2');
+    if (who + 1 < guessers.length) return set({ marks: next, who: who + 1 });
+    if (pass === 1 && second) return set({ marks: next, who: 0, stage: 'clue2' });
     // Everyone has guessed: score the round.
     const g: Record<string, number> = {};
     let cuePts = 0;
     for (const m of next) {
       const p = huePoints(target!, m.cell);
-      g[m.player.id] = (g[m.player.id] ?? 0) + p;
+      g[m.player] = (g[m.player] ?? 0) + p;
       if (p >= 2) cuePts++;
     }
     g[cue.id] = (g[cue.id] ?? 0) + cuePts;
-    setGained(g);
-    setScores((s) => Object.fromEntries(players.map((p) => [p.id, (s[p.id] ?? 0) + (g[p.id] ?? 0)])));
-    setStage('reveal');
+    set((s) => ({ marks: next, who: 0, gained: g, scores: Object.fromEntries(players.map((p) => [p.id, (s.scores[p.id] ?? 0) + (g[p.id] ?? 0)])), stage: 'reveal' }));
   };
   const next = (): void => {
-    if (n + 1 >= total) return setStage('done');
-    setN(n + 1);
-    newRound();
+    setPending(null);
+    set(n + 1 >= total ? { stage: 'done' } : { n: n + 1, ...newRound() });
   };
 
   if (stage === 'setup') {
@@ -90,14 +87,14 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
             is on the board. The closer the colour looks, the more points; the cue giver scores for every close guess.
           </p>
           <label className="pt-switch">
-            <input type="checkbox" checked={second} onChange={(e) => setSecond(e.target.checked)} />
+            <input type="checkbox" checked={second} onChange={(e) => set({ second: e.target.checked })} />
             <span>
               <b>Second clue</b> · after the first guesses, the cue giver adds up to two more words and everyone guesses again
             </span>
           </label>
           <div className="pt-picker" role="group" aria-label="Rounds">
             {[1, 2, 3].map((k) => (
-              <button key={k} className={`pt-chip${laps === k ? ' is-on' : ''}`} aria-pressed={laps === k} onClick={() => setLaps(k)}>
+              <button key={k} className={`pt-chip${laps === k ? ' is-on' : ''}`} aria-pressed={laps === k} onClick={() => set({ laps: k })}>
                 {k === 1 ? 'Everyone cues once' : `Everyone cues ${k}×`} ({players.length * k} rounds)
               </button>
             ))}
@@ -112,7 +109,8 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
 
   if (stage === 'done') {
     const sorted = [...players].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0));
-    return <Results title={`${sorted[0]!.name} has the best eye!`} players={players} scores={scores} onAgain={() => setStage('setup')} onMenu={onExit} />;
+    const tie = (scores[sorted[0]!.id] ?? 0) === (scores[sorted[1]?.id ?? ''] ?? -1);
+    return <Results title={tie ? 'A tie for the best eye!' : `${sorted[0]!.name} has the best eye!`} players={players} scores={scores} onAgain={() => setStage('setup')} onMenu={onExit} />;
   }
 
   const progress = `${n + 1}/${total}`;
@@ -137,7 +135,7 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
           </p>
           <div className="pt-hk-offer">
             {offer.map((i) => (
-              <button key={i} className={`pt-hk-swatch${target === i ? ' is-on' : ''}`} style={{ background: cellHex(i) }} onClick={() => setTarget(i)} aria-pressed={target === i} aria-label={`Colour ${offer.indexOf(i) + 1}`} />
+              <button key={i} className={`pt-hk-swatch${target === i ? ' is-on' : ''}`} style={{ background: cellHex(i) }} onClick={() => set({ target: i })} aria-pressed={target === i} aria-label={`Colour ${offer.indexOf(i) + 1}`} />
             ))}
           </div>
           {target !== null && <Board target={target} marks={[]} highlight />}
@@ -156,7 +154,7 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
       {(stage === 'clue' || stage === 'clue2') && (
         <div className="pt-panel">
           <p className="pt-kicker">
-            <Avatar player={cue} size={26} /> <Name player={cue} />, say your {stage === 'clue' ? 'one-word' : 'second (up to two words)'} clue out loud!
+            <Avatar player={cue} size={26} /> <Name player={cue} />, say your {stage === 'clue' ? 'one-word clue' : 'second clue (up to two words)'} out loud!
           </p>
           <p className="pt-muted">No colour names, please. Then pass the phone round: everyone taps their guess.</p>
           {stage === 'clue2' && <Board target={null} marks={marks.map(toMark)} />}
@@ -192,7 +190,7 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
                 <small>
                   {explainHues(
                     target,
-                    marks.filter((m) => m.player === p).map((m) => m.cell),
+                    marks.filter((m) => m.player === p.id).map((m) => m.cell),
                     p === cue ? cueBonus(target, marks.map((m) => m.cell)) : null,
                   )}
                 </small>
@@ -216,8 +214,6 @@ export function HueLegend() {
     </p>
   );
 }
-
-const toMark = (m: Mark): BoardMark => ({ cell: m.cell, glyph: m.player.emoji });
 
 /** A guess on the board: an emoji, or a player's initial on their colour (live rooms). */
 export interface BoardMark {

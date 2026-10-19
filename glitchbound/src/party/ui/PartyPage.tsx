@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePageMeta } from '../../platform/meta';
 import { TAGS } from '../content/challenges';
-import { CONSEQUENCE_LABEL, freshRng, makePlayer, MAX_PLAYERS, playersProblem, SESSION_CARDS } from '../engine';
+import { cleanName, CONSEQUENCE_LABEL, freshRng, makePlayer, MAX_PLAYERS, playersProblem, SESSION_CARDS } from '../engine';
 import { loadSession, saveSession, type ModeId, type PartySession } from '../session';
 import type { Consequence, Intensity } from '../types';
 import { getGame } from '../../catalog/catalog';
@@ -88,7 +88,8 @@ export function PartyPage() {
   const open = (id: ModeId): void => {
     if (problem) return;
     update((s) => {
-      const ready = { ...s, players: s.players.filter((p) => p.name.trim()) };
+      // A new game starts a new scoreboard (Impostor points must not carry into Party Prompts).
+      const ready = { ...s, players: s.players.filter((p) => p.name.trim()), scores: {} };
       if (id === 'impostor') return { ...ready, active: s.active?.mode === 'impostor' ? s.active : { mode: 'impostor', state: newImpostor() } };
       return id === 'prompts' ? dealPrompt({ ...ready, active: { mode: 'prompts', count: 0, limit: SESSION_CARDS[s.settings.length] } }, freshRng()) : ready;
     });
@@ -151,7 +152,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
     if (!name || players.length >= MAX_PLAYERS && !players.some((p) => !p.name)) return;
     // Fill an empty slot first.
     const empty = players.findIndex((p) => !p.name);
-    if (empty >= 0) setPlayers(players.map((p, i) => (i === empty ? { ...p, name: name.slice(0, 18) } : p)));
+    if (empty >= 0) setPlayers(players.map((p, i) => (i === empty ? { ...p, name: cleanName(name) } : p)));
     else setPlayers([...players, makePlayer(name, players.length)]);
     setNewName('');
   };
@@ -188,8 +189,10 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
   };
   // "Pick for us": a random game that suits the group's size.
   const surprise = (): void => {
-    const fits = modes.filter((m) => named.length >= 3 || m.id !== 'impostor');
-    const choice = anyOf(fits);
+    // "3–16" → at least 3 (two players were sent to One of a Kind, which needs three).
+    const fits = modes.filter((m) => named.length >= (Number.parseInt(m.players, 10) || 2));
+    // Too few names for any game: picking one still points at the names.
+    const choice = anyOf(fits.length ? fits : modes);
     if (choice) pick(choice.id as ModeId);
   };
 
@@ -262,8 +265,8 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
               e.preventDefault();
               const code = joinCode.trim().toUpperCase();
               // /party?room= opens any room (Crass Act ones go on to their own page). /r/ links only work from outside the app.
-              if (/^[A-HJKMNP-Z]{5}$/.test(code)) navigate(`/party?room=${code}`);
-              else setRoomMsg('Room codes are five letters, like KQTRA (never I, L or O).');
+              if (ROOM_CODE.test(code)) navigate(`/party?room=${code}`);
+              else setRoomMsg('Check the code: five letters, like KQTRA (codes never use I, L or O).');
             }}
           >
             <h2>Got a code?</h2>
@@ -310,7 +313,16 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
             add();
           }}
         >
-          <input className="pt-input" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={named.length ? 'Add another name' : 'Type a name, then Enter'} maxLength={18} aria-label="New player name" enterKeyHint="done" />
+          <input
+            className="pt-input"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder={named.length >= MAX_PLAYERS ? `Full: ${MAX_PLAYERS} players is the most` : named.length ? 'Add another name' : 'Type a name, then Enter'}
+            maxLength={18}
+            aria-label="New player name"
+            enterKeyHint="done"
+            disabled={named.length >= MAX_PLAYERS}
+          />
           <button className="pt-btn" disabled={!newName.trim() || named.length >= MAX_PLAYERS}>
             + Add
           </button>
@@ -419,7 +431,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
       )}
       {sheet === 'custom' && (
         <Sheet title="Your own prompts" onClose={() => setSheet(null)}>
-          <CustomPrompts session={session} update={update} onSaved={() => setSheet(null)} />
+          <CustomPrompts session={session} update={update} />
         </Sheet>
       )}
     </div>
@@ -453,7 +465,8 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-function CustomPrompts({ session, update, onSaved }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onSaved?: () => void }) {
+/** The group's own prompts, saved as they type: Done, ✕ or a tap outside never loses them. */
+function CustomPrompts({ session, update }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void }) {
   const [c, setC] = useState(session.custom.challenges.join('\n'));
   const [n, setN] = useState(session.custom.nhie.join('\n'));
   const lines = (t: string): string[] =>
@@ -462,25 +475,38 @@ function CustomPrompts({ session, update, onSaved }: { session: PartySession; up
       .map((x) => x.trim())
       .filter(Boolean)
       .slice(0, 100);
+  const save = (challenges: string, nhie: string): void => update((s) => ({ ...s, custom: { challenges: lines(challenges), nhie: lines(nhie) } }));
   return (
     <div className="pt-rules">
       <label className="pt-label" htmlFor="pt-cc">
         Challenges (one per line). Use {'{A}'} and {'{B}'} for random players.
       </label>
-      <textarea id="pt-cc" className="pt-input pt-textarea" rows={4} value={c} onChange={(e) => setC(e.target.value)} placeholder={'{A}, tell the story of how you met {B}\nEveryone does their best evil laugh'} />
+      <textarea
+        id="pt-cc"
+        className="pt-input pt-textarea"
+        rows={4}
+        value={c}
+        onChange={(e) => {
+          setC(e.target.value);
+          save(e.target.value, n);
+        }}
+        placeholder={'{A}, tell the story of how you met {B}\nEveryone does their best evil laugh'}
+      />
       <label className="pt-label" htmlFor="pt-cn">
         Never Have I Ever statements (one per line)
       </label>
-      <textarea id="pt-cn" className="pt-input pt-textarea" rows={3} value={n} onChange={(e) => setN(e.target.value)} placeholder="been to Sava’s legendary barbecue" />
-      <button
-        className="pt-btn"
-        onClick={() => {
-          update((s) => ({ ...s, custom: { challenges: lines(c), nhie: lines(n) } }));
-          onSaved?.();
+      <textarea
+        id="pt-cn"
+        className="pt-input pt-textarea"
+        rows={3}
+        value={n}
+        onChange={(e) => {
+          setN(e.target.value);
+          save(c, e.target.value);
         }}
-      >
-        Save prompts
-      </button>
+        placeholder="been to Sava’s legendary barbecue"
+      />
+      <p className="pt-muted">Saved as you type. Challenges show up in Party Prompts; statements under “Your own” in Never Have I Ever.</p>
     </div>
   );
 }

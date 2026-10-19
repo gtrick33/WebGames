@@ -1,8 +1,29 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Scores } from '../engine';
+import type { PartySession, SavedMode } from '../session';
 import type { Player } from '../types';
 
 export const byId = (players: readonly Player[], id: string | null | undefined): Player | undefined => players.find((p) => p.id === id);
+
+type Update = (fn: (s: PartySession) => PartySession) => void;
+const isObj = (v: unknown): v is object => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/**
+ * A pass-the-phone game's state, kept in the party session like every other mode, so a refresh, the
+ * back button or the phone dropping the tab picks up where the group was. Fields missing from an
+ * older save fall back to `init`. Every change is saved, so keep fast-changing values (a dragged
+ * needle) in component state and save them when they settle.
+ */
+export function useSavedGame<T extends object>(session: PartySession, update: Update, mode: SavedMode, init: () => T): [T, (patch: Partial<T> | ((g: T) => Partial<T>)) => void] {
+  const [fresh] = useState(init);
+  const saved = (s: PartySession): T => (s.active?.mode === mode && isObj(s.active.data) ? { ...fresh, ...(s.active.data as Partial<T>) } : fresh);
+  const set = (patch: Partial<T> | ((g: T) => Partial<T>)): void =>
+    update((cur) => {
+      const was = saved(cur);
+      return { ...cur, active: { mode, data: { ...was, ...(typeof patch === 'function' ? patch(was) : patch) } } };
+    });
+  return [saved(session), set];
+}
 
 export function Avatar({ player, size = 40 }: { player: Player; size?: number }) {
   return (
@@ -85,17 +106,21 @@ export function PlayerPicker({ players, selected, onToggle, label }: { players: 
   );
 }
 
+/** A player's place on the podium: equal scores share a place (two crowns for a tie at the top). */
+export const podiumPlace = (scores: Scores, players: readonly Player[], id: string): number => 1 + players.filter((p) => (scores[p.id] ?? 0) > (scores[id] ?? 0)).length;
+
 /** Scoreboard + awards + actions, shared by every mode. */
 export function Results({ title, players, scores, awards, children, onAgain, onMenu }: { title: string; players: readonly Player[]; scores: Scores; awards?: { title: string; playerId: string; why: string }[]; children?: ReactNode; onAgain: () => void; onMenu: () => void }) {
   const ranked = [...players].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0));
+  const place = (p: Player): number => podiumPlace(scores, players, p.id);
   return (
     <div className="pt-results">
       <p className="pt-kicker">Game over</p>
       <h2 className="pt-h2">{title}</h2>
       <ol className="pt-podium">
-        {ranked.map((p, i) => (
-          <li key={p.id} className={i === 0 ? 'is-first' : ''}>
-            <span className="pt-rank">{i === 0 ? '👑' : i + 1}</span>
+        {ranked.map((p) => (
+          <li key={p.id} className={place(p) === 1 ? 'is-first' : ''}>
+            <span className="pt-rank">{place(p) === 1 ? '👑' : place(p)}</span>
             <Avatar player={p} size={36} />
             <b>{p.name}</b>
             <span className="pt-score">{scores[p.id] ?? 0}</span>

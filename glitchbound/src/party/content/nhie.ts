@@ -44,7 +44,7 @@ const PACKS: Record<NhieCategory, string[]> = {
     'said “you too” when a waiter said “enjoy your meal”',
     'sung the wrong lyrics confidently for years',
     'practised an argument in the shower',
-    'Googled myself',
+    'searched my own name online',
     'pretended to know a band to seem cool',
     'fallen off a chair',
     'got stuck in clothing in a changing room',

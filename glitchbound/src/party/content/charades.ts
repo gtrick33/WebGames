@@ -1,21 +1,22 @@
 /**
- * Charades cards: titles and names to act out. Difficulty 1 easy, 2 medium, 3 hard. Pop-culture lists
- * live here (not in UI code) so they are easy to refresh as trends change.
+ * Charades cards: scenes, things and famous real people to act out. Difficulty 1 easy, 2 medium, 3 hard.
+ * No film, show, game, song or cartoon titles, characters or brands (they belong to other companies):
+ * generic moments only. Lists live here (not in UI code) so they are easy to refresh.
  */
 import type { CharadesCard, CharadesCategory } from '../types';
 
 const RAW: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
   movies: [
-    ['Titanic', 1], ['Jaws', 1], ['The Lion King', 1], ['Frozen', 1], ['Toy Story', 1], ['Shrek', 1], ['Star Wars', 1], ['Jurassic Park', 1], ['Finding Nemo', 1], ['Harry Potter', 1],
-    ['Home Alone', 1], ['Ghostbusters', 2], ['The Matrix', 2], ['Mamma Mia!', 2], ['Back to the Future', 2], ['The Wizard of Oz', 2], ['Pirates of the Caribbean', 2], ['Mean Girls', 2], ['Rocky', 1], ['Grease', 2],
-    ['Forrest Gump', 2], ['Top Gun', 2], ['The Hunger Games', 2], ['Squid Game', 2], ['Stranger Things', 2], ['Friends', 1], ['The Office', 2], ['Breaking Bad', 3], ['Game of Thrones', 2], ['Inception', 3],
-    ['The Godfather', 3], ['Pulp Fiction', 3], ['Interstellar', 3], ['Gravity', 2], ['Up', 1], ['Cars', 1], ['Ratatouille', 2], ['The Truman Show', 3], ['Jumanji', 2], ['Mission: Impossible', 2],
-    ['Fast & Furious', 2], ['Barbie', 1], ['Oppenheimer', 3], ['Wednesday', 2], ['The Simpsons', 1], ['Avatar', 2], ['Gladiator', 2], ['Kung Fu Panda', 1],
+    ['A sinking ship', 1], ['Shark attack', 1], ['Jungle king roaring', 1], ['Ice queen casting a spell', 1], ['Toys coming to life', 1], ['Sword fight on a ship', 1], ['Laser sword duel', 2], ['Dinosaur escape', 1], ['Underwater treasure hunt', 2], ['Wizard duel', 1],
+    ['Burglars break into a house', 1], ['Ghost hunters', 2], ['Dodging bullets in slow motion', 2], ['Musical number in the street', 2], ['Time machine', 1], ['Tornado carries a house away', 2], ['Pirate walking the plank', 1], ['Popular kids at the lunch table', 2], ['Boxer training montage', 1], ['High school dance-off', 2],
+    ['Running across the country', 2], ['Fighter pilot', 1], ['Survival in the wilderness', 2], ['Game show contestant', 1], ['Kids on bikes chasing a monster', 2], ['Friends on a sofa in a café', 1], ['Awkward office boss', 2], ['Mad scientist’s lab', 2], ['Crowning a new king', 2], ['Dream inside a dream', 3],
+    ['Mafia boss making an offer', 3], ['Dance contest in a diner', 3], ['Astronaut lost in space', 2], ['Floating in zero gravity', 2], ['Hot-air balloon escape', 2], ['Car race to the finish', 1], ['Chef in a chaotic kitchen', 2], ['Hidden camera prank', 2], ['Haunted doll', 2], ['Abseiling into a vault', 2],
+    ['Street race', 1], ['Fashion show runway', 1], ['Inventor’s big test', 3], ['Creepy twins in a hallway', 2], ['Family sitcom dinner', 2], ['Alien invasion', 1], ['Gladiator fight', 2], ['Kung fu master', 1],
   ],
   heroes: [
-    ['Spider-Man', 1], ['Batman', 1], ['Superman', 1], ['Wonder Woman', 1], ['Hulk', 1], ['Iron Man', 1], ['Thor', 2], ['Captain America', 2], ['Black Panther', 2], ['Aquaman', 2],
-    ['The Joker', 1], ['Thanos', 2], ['Catwoman', 2], ['Wolverine', 2], ['Doctor Strange', 3], ['Ant-Man', 2], ['The Flash', 2], ['Deadpool', 2], ['Loki', 2], ['Groot', 2],
-    ['Harley Quinn', 2], ['Magneto', 3], ['Venom', 2], ['Storm', 3], ['Scarlet Witch', 3], ['Darth Vader', 1], ['Maleficent', 2], ['Voldemort', 2],
+    ['Superhero flying', 1], ['Masked vigilante', 1], ['Super strength', 1], ['Warrior princess', 1], ['Angry giant smashing things', 1], ['Hero in a robot suit', 1], ['God of thunder', 2], ['Hero with a shield', 2], ['Cat burglar', 2], ['Underwater hero', 2],
+    ['Villain’s evil laugh', 1], ['Supervillain plotting world domination', 2], ['Jewel thief', 2], ['Hero with claws', 2], ['Sorcerer casting spells', 3], ['Shrinking hero', 2], ['Fastest hero alive', 2], ['Wisecracking antihero', 2], ['Trickster god', 2], ['Walking tree', 2],
+    ['Henchman', 2], ['Master of magnets', 3], ['Slimy alien villain', 2], ['Weather-controlling hero', 3], ['Mind-control villain', 3], ['Villain breathing through a mask', 1], ['Evil fairy queen', 2], ['Dark wizard', 2],
   ],
   animals: [
     ['Kangaroo', 1], ['Penguin', 1], ['Elephant', 1], ['Monkey', 1], ['Snake', 1], ['Giraffe', 1], ['Frog', 1], ['Chicken', 1], ['Shark', 1], ['Crab', 1],
@@ -30,42 +31,42 @@ const RAW: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
   famous: [
     ['Albert Einstein', 1], ['Michael Jackson', 1], ['Elvis Presley', 1], ['Cleopatra', 2], ['Napoleon', 2], ['Usain Bolt', 1], ['Cristiano Ronaldo', 1], ['Lionel Messi', 1], ['Taylor Swift', 1], ['Beyoncé', 1],
     ['Charlie Chaplin', 2], ['Shakespeare', 2], ['Mona Lisa', 2], ['Elon Musk', 2], ['Gordon Ramsay', 2], ['Freddie Mercury', 2], ['Marilyn Monroe', 2], ['Leonardo da Vinci', 3], ['Mozart', 2], ['Muhammad Ali', 2],
-    ['Lady Gaga', 2], ['Serena Williams', 2], ['Mr. Bean', 1], ['The Queen of England', 2], ['Abraham Lincoln', 3], ['Marie Curie', 3],
+    ['Lady Gaga', 2], ['Serena Williams', 2], ['Steve Irwin', 2], ['The Queen of England', 2], ['Abraham Lincoln', 3], ['Marie Curie', 3],
   ],
   games: [
-    ['Mario', 1], ['Pac-Man', 1], ['Tetris', 1], ['Minecraft', 1], ['Fortnite', 1], ['Sonic the Hedgehog', 1], ['Pikachu', 1], ['Zelda', 2], ['Among Us', 1], ['Angry Birds', 1],
-    ['Street Fighter', 2], ['Space Invaders', 2], ['Donkey Kong', 2], ['Lara Croft', 2], ['Kirby', 2], ['The Sims', 2], ['Rocket League', 2], ['Pong', 2], ['Animal Crossing', 2], ['Guitar Hero', 2],
-    ['Mortal Kombat', 3], ['Portal', 3], ['Frogger', 2], ['Just Dance', 1], ['Candy Crush', 1],
+    ['Jumping on platforms', 1], ['Chomping dots in a maze', 1], ['Falling blocks puzzle', 1], ['Digging and building with blocks', 1], ['Battle royale', 1], ['Racing game', 1], ['Treasure hunt', 1], ['Hero with a sword in a dungeon', 2], ['Escape room', 2], ['Slingshot', 1],
+    ['Button mashing', 2], ['Shooting alien invaders', 2], ['Climbing ladders to save someone', 2], ['Exploring an ancient tomb', 2], ['Bubble shooter', 2], ['Building your dream house', 2], ['Kart racing', 1], ['Retro arcade machine', 2], ['Farming game', 2], ['Rhythm game', 2],
+    ['Fighting game combo', 3], ['Teleport puzzle', 3], ['Crossing a busy road', 2], ['Dance mat game', 1], ['Match-three puzzle', 1],
   ],
   internet: [
-    ['Rickroll', 2], ['Dab', 1], ['Floss dance', 1], ['Distracted boyfriend', 2], ['Planking', 2], ['Ice bucket challenge', 1], ['Mannequin challenge', 1], ['Unboxing video', 2], ['Selfie stick', 1], ['Photobomb', 2],
+    ['Online prank link', 2], ['Dab', 1], ['Floss dance', 1], ['Checking out someone else', 2], ['Planking', 2], ['Ice bucket challenge', 1], ['Mannequin challenge', 1], ['Unboxing video', 2], ['Selfie stick', 1], ['Photobomb', 2],
     ['Video call freeze', 2], ['Influencer apology video', 3], ['Cat video', 1], ['Going viral', 3], ['Speed run', 3], ['Live stream', 2], ['Reaction video', 2], ['Doom scrolling', 3], ['Haul video', 3], ['ASMR', 3],
   ],
   cartoons: [
-    ['SpongeBob', 1], ['Scooby-Doo', 1], ['Mickey Mouse', 1], ['Bugs Bunny', 1], ['Peppa Pig', 1], ['Tom and Jerry', 1], ['Homer Simpson', 1], ['Popeye', 2], ['Winnie the Pooh', 1], ['Dora the Explorer', 1],
-    ['Snoopy', 2], ['Garfield', 2], ['Road Runner', 2], ['The Flintstones', 2], ['Rick and Morty', 3], ['Shaggy', 2], ['Pink Panther', 2], ['Bart Simpson', 2], ['Patrick Star', 1], ['Bluey', 1],
+    ['Slipping on a banana peel', 1], ['Anvil falling on your head', 1], ['Running off a cliff and looking down', 1], ['Cat chasing a mouse', 1], ['Talking pig', 1], ['Dog chasing its tail', 1], ['Dad asleep on the sofa', 1], ['Eyes popping out', 2], ['Bear waking from hibernation', 1], ['Little explorer with a map', 1],
+    ['Dog walking its owner', 2], ['Lazy cat on a sofa', 2], ['Bird outrunning everyone', 2], ['Caveman cartoon', 2], ['Dizzy stars around your head', 3], ['Ghost chase down a corridor', 2], ['Tiptoeing detective', 2], ['Cheeky kid prankster', 2], ['Cartoon sneeze', 1], ['Puppy playing pretend', 1],
   ],
   random: [
     ['Brushing teeth', 1], ['Riding a horse', 1], ['Playing the drums', 1], ['Bowling', 1], ['Surfing', 1], ['Juggling', 2], ['Making a pizza', 1], ['Walking on the moon', 2], ['Escalator', 2], ['Blowing up a balloon', 1],
     ['Hiccups', 1], ['Ice skating', 1], ['Changing a nappy', 2], ['Building a snowman', 1], ['Painting a wall', 1], ['Washing a car', 1], ['Eating spaghetti', 1], ['A haunted house', 2], ['A volcano', 2], ['Tightrope walking', 2],
-    ['Sneezing in slow motion', 2], ['Opening a jar that won’t open', 2], ['A rollercoaster', 1], ['Fishing', 1], ['Bungee jumping', 2], ['Playing hide and seek', 2], ['A traffic light', 3], ['Assembling IKEA furniture', 2], ['Camping in the rain', 3], ['Getting a haircut', 2],
+    ['Sneezing in slow motion', 2], ['Opening a jar that won’t open', 2], ['A rollercoaster', 1], ['Fishing', 1], ['Bungee jumping', 2], ['Playing hide and seek', 2], ['A traffic light', 3], ['Hanging a picture on the wall', 2], ['Camping in the rain', 3], ['Getting a haircut', 2],
   ],
 };
 
 /* More cards and categories, appended so existing ids never change. */
 const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
   movies: [
-    ['The Incredibles', 1], ['Moana', 1], ['Encanto', 2], ['Coco', 2], ['Inside Out', 2], ['Minions', 1], ['Despicable Me', 1], ['Madagascar', 1], ['Ice Age', 1], ['The Little Mermaid', 1],
-    ['Beauty and the Beast', 1], ['Aladdin', 1], ['Cinderella', 1], ['King Kong', 1], ['E.T.', 2], ['Psycho', 3], ['The Shining', 3], ['Dirty Dancing', 2], ['Pretty Woman', 2], ['Love Actually', 3],
-    ['The Devil Wears Prada', 3], ['Legally Blonde', 2], ['The Karate Kid', 1], ['Terminator', 1], ['Die Hard', 2], ['John Wick', 2], ['The Lord of the Rings', 2], ['Dune', 3], ['La La Land', 3], ['Joker', 2],
-    ['Paddington', 1], ['Elf', 1], ['Night at the Museum', 2], ['The Mask', 2], ['Mrs. Doubtfire', 3], ['Godzilla', 1], ['Zootopia', 2], ['Lilo & Stitch', 1], ['The Crown', 3], ['Bridgerton', 2],
-    ['Peaky Blinders', 2], ['The Mandalorian', 2], ['Prison Break', 2], ['The Walking Dead', 1], ['Sherlock', 2], ['Doctor Who', 2], ['MasterChef', 1], ['Love Island', 2], ['Money Heist', 2], ['The Last of Us', 2],
-    ['Baywatch', 1], ['Ted Lasso', 3], ['Euphoria', 3], ['Succession', 3], ['Black Mirror', 3], ['The Exorcist', 3], ['Twilight', 2], ['Spirited Away', 3], ['Wonka', 2], ['Gremlins', 2],
+    ['Ocean voyage on a raft', 1], ['Haunted mansion tour', 2], ['Day of the Dead parade', 2], ['Love at first sight', 1], ['Evil genius plotting', 1], ['Bank heist', 2], ['Caveman in the modern world', 2], ['Mermaid on land', 1], ['Monster under the bed', 1], ['Genie granting wishes', 1],
+    ['Glass slipper fitting', 1], ['Giant monster attacks the city', 1], ['Alien befriends a kid', 2], ['Horror movie scream', 2], ['Creepy hotel corridor', 3], ['Big dance lift', 2], ['Shopping spree', 2], ['Airport goodbye', 2], ['Bossy fashion editor', 3], ['Courtroom drama', 2],
+    ['Karate tournament', 1], ['Robot from the future', 1], ['Hero crawling through air vents', 2], ['Assassin on a mission', 2], ['Epic quest across mountains', 2], ['Desert planet', 3], ['Dancing in the rain', 2], ['Evil clown', 2], ['Teddy bear comes to life', 1], ['Christmas elf', 1],
+    ['Statues coming to life', 2], ['Putting on a magic mask', 2], ['Disguised as a granny', 3], ['Dragon attacks a village', 1], ['Talking animals', 2], ['Pet alien', 1], ['Royal family drama', 3], ['Regency ball', 2], ['Gangster in a flat cap', 2], ['Space bounty hunter', 2],
+    ['Digging out of prison', 2], ['Zombie apocalypse', 1], ['Detective with a magnifying glass', 2], ['Time traveller arrives', 2], ['Cooking competition', 1], ['Reality dating show', 2], ['Masked robbers', 2], ['Survivors on the road', 2], ['Lifeguard running in slow motion', 1], ['Football coach pep talk', 3],
+    ['Teen drama party', 3], ['Fight over the family fortune', 3], ['Robot takes over', 3], ['Exorcism', 3], ['Vampire romance', 2], ['Lost in a spirit world', 3], ['Chocolate factory tour', 2], ['Cute pets turn evil', 2], ['Giant tidal wave', 2], ['Car chase', 1],
   ],
   heroes: [
-    ['Robin', 1], ['Black Widow', 2], ['Captain Marvel', 2], ['Nick Fury', 3], ['Supergirl', 2], ['Shazam', 3], ['Green Arrow', 3], ['Poison Ivy', 2], ['Mystique', 3], ['Professor X', 2],
-    ['Gamora', 3], ['Star-Lord', 2], ['Rocket Raccoon', 2], ['Hellboy', 2], ['Blade', 2], ['Ghost Rider', 2], ['Daredevil', 3], ['Silver Surfer', 3], ['Bane', 2], ['The Riddler', 2],
-    ['Two-Face', 3], ['Sauron', 3], ['Cruella de Vil', 2], ['The Wicked Witch', 1], ['Captain Hook', 1], ['Jafar', 2], ['Hades', 2], ['Doctor Octopus', 3],
+    ['Sidekick', 1], ['Super spy', 2], ['Hero shooting energy blasts', 2], ['Spy boss with an eye patch', 3], ['Hero’s secret identity', 3], ['Superhero landing', 2], ['Archer hero', 2], ['Evil plant lady', 2], ['Shape-shifting spy', 3], ['Telepathic professor', 2],
+    ['Space pirate', 2], ['Talking raccoon', 2], ['Demon detective', 2], ['Vampire hunter', 2], ['Hero with a flaming skull', 2], ['Blind hero with super hearing', 3], ['Hero surfing through space', 3], ['Masked strongman villain', 2], ['Villain who leaves riddles', 2], ['Two-faced villain', 3],
+    ['Dark lord in a tower', 3], ['Puppy-snatching villain', 2], ['Wicked witch', 1], ['Pirate captain with a hook', 1], ['Evil royal adviser', 2], ['Lord of the underworld', 2], ['Villain with robot arms', 3], ['Superhero changing in a phone box', 2],
   ],
   animals: [
     ['Horse', 1], ['Cow', 1], ['Pig', 1], ['Sheep', 1], ['Duck', 1], ['Rabbit', 1], ['Lion', 1], ['Tiger', 1], ['Bear', 1], ['Panda', 1],
@@ -86,24 +87,24 @@ const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
     ['Neymar', 2], ['Dolly Parton', 2], ['Bob Ross', 2], ['Houdini', 3], ['Julius Caesar', 3], ['Sigmund Freud', 3], ['Charles Darwin', 3], ['Jeff Bezos', 3], ['Zendaya', 2], ['Tom Holland', 2],
   ],
   games: [
-    ['Pokémon', 1], ['Call of Duty', 2], ['Grand Theft Auto', 2], ['FIFA', 1], ['Halo', 2], ['Overwatch', 3], ['League of Legends', 3], ['Roblox', 1], ['Fall Guys', 2], ['Clash of Clans', 2],
-    ['Mario Kart', 1], ['Super Smash Bros.', 2], ['Resident Evil', 3], ['Assassin’s Creed', 3], ['God of War', 3], ['Subway Surfers', 1], ['Flappy Bird', 1], ['Temple Run', 2], ['Wii Sports', 1], ['Duck Hunt', 2],
-    ['Crash Bandicoot', 2], ['Fruit Ninja', 1], ['Doom', 3], ['Hungry Hungry Hippos', 2], ['Jenga', 1], ['Twister', 1], ['Monopoly', 1], ['Hide and seek', 1], ['Musical chairs', 1], ['Rock, paper, scissors', 1],
+    ['Monster-collecting adventure', 1], ['Sniper hiding in a bush', 2], ['Open-world car chase', 2], ['Football video game', 1], ['Space soldier', 2], ['Healer in a team battle', 3], ['Online battle arena', 3], ['Building an online world', 1], ['Obstacle course race', 2], ['Defending your castle', 2],
+    ['Banana skin on the race track', 1], ['Knocking someone off a platform', 2], ['Survival horror', 3], ['Rooftop parkour', 3], ['Final boss battle', 3], ['Endless runner', 1], ['Tapping to keep a bird in the air', 1], ['Running from a temple monster', 2], ['Motion-control bowling', 1], ['Light-gun shooting', 2],
+    ['Smashing crates', 2], ['Slicing flying fruit', 1], ['Retro first-person shooter', 3], ['Claw machine', 2], ['Wobbly block tower', 1], ['Twisting on a spotty floor mat', 1], ['Going bankrupt in a board game', 1], ['Hide and seek', 1], ['Musical chairs', 1], ['Rock, paper, scissors', 1],
   ],
   internet: [
-    ['Hashtag', 2], ['Swiping right', 2], ['Ghosting', 3], ['Rage quitting', 2], ['Clickbait', 3], ['Buffering', 2], ['Captcha', 3], ['Forgot my password', 2], ['Group chat drama', 3], ['Voice note', 2],
-    ['Duck-face selfie', 1], ['Leaving someone on read', 3], ['Low battery panic', 2], ['Hunting for the Wi-Fi password', 2], ['Mukbang', 3], ['Gender reveal party', 2], ['Fidget spinner', 1], ['Gangnam Style', 1], ['Bottle flip', 1], ['Spam email', 2],
-    ['Accidentally liking an old photo', 3], ['Zoom call on mute', 2], ['Influencer at brunch', 2], ['Plank challenge', 2], ['Typing…', 3],
+    ['Hashtag', 2], ['Swiping right', 2], ['Ghosting', 3], ['Rage quitting', 2], ['Clickbait', 3], ['Buffering', 2], ['Proving you’re not a robot', 3], ['Forgot my password', 2], ['Group chat drama', 3], ['Voice note', 2],
+    ['Duck-face selfie', 1], ['Leaving someone on read', 3], ['Low battery panic', 2], ['Hunting for the internet password', 2], ['Mukbang', 3], ['Gender reveal party', 2], ['Fidget spinner', 1], ['Horse-riding dance', 1], ['Bottle flip', 1], ['Spam email', 2],
+    ['Accidentally liking an old photo', 3], ['Video call on mute', 2], ['Influencer at brunch', 2], ['Plank challenge', 2], ['Typing…', 3],
   ],
   cartoons: [
-    ['Donald Duck', 1], ['Goofy', 1], ['Daffy Duck', 2], ['Tweety', 1], ['Sylvester', 2], ['Fred Flintstone', 2], ['Johnny Bravo', 3], ['The Powerpuff Girls', 2], ['Dexter’s Laboratory', 3], ['Courage the Cowardly Dog', 3],
-    ['Ben 10', 2], ['Wile E. Coyote', 2], ['Elmo', 1], ['Cookie Monster', 1], ['Kermit the Frog', 1], ['Miss Piggy', 2], ['Thomas the Tank Engine', 1], ['Paw Patrol', 1], ['Teenage Mutant Ninja Turtles', 2], ['The Smurfs', 2],
-    ['Inspector Gadget', 3], ['Phineas and Ferb', 3], ['Family Guy', 2], ['South Park', 2], ['Woody Woodpecker', 2], ['Minnie Mouse', 1], ['Stitch', 1], ['Olaf', 1], ['Sid the Sloth', 2], ['Optimus Prime', 2],
+    ['Duck losing its temper', 1], ['Clumsy dog', 1], ['Duck chasing bread', 2], ['Little bird and a hungry cat', 1], ['Cat that keeps getting squashed', 2], ['Caveman with a club', 2], ['Muscle-bound show-off', 3], ['Superpowered little sisters', 2], ['Boy genius with a secret lab', 3], ['Cowardly dog in a spooky house', 3],
+    ['Kid with a transforming watch', 2], ['Coyote with a rocket', 2], ['Furry monster under the bridge', 1], ['Cookie crumbs everywhere', 1], ['Singing frog', 1], ['Diva pig', 2], ['Steam train with a face', 1], ['Rescue puppies', 1], ['Turtles doing kung fu', 2], ['Tiny forest villagers', 2],
+    ['Detective with gadgets in his hat', 3], ['Kids building a rollercoaster', 3], ['Talking dog', 2], ['Paper cut-out kids', 2], ['Cartoon chase through doors', 2], ['Mouse with a big bow', 1], ['Blue alien', 1], ['Snowman melting in summer', 1], ['Squirrel chasing an acorn', 2], ['Robot that turns into a car', 2],
   ],
   random: [
     ['Doing the laundry', 1], ['Changing a tyre', 2], ['Ironing a shirt', 1], ['Walking in high heels', 2], ['Skydiving', 2], ['Riding a unicycle', 3], ['Rowing a boat', 1], ['Chopping onions', 1], ['Taking a selfie', 1], ['Climbing a ladder', 1],
     ['Shaving', 1], ['Putting on make-up', 1], ['Doing yoga', 1], ['Lifting weights', 1], ['Rock climbing', 2], ['Milking a cow', 2], ['Making popcorn', 2], ['A tornado', 2], ['A thunderstorm', 2], ['Brain freeze', 2],
-    ['Stepping on Lego', 1], ['Waiting for the microwave', 3], ['Staying awake in class', 2], ['Sleepwalking', 1], ['Mowing the lawn', 1], ['Parachuting', 2], ['Being a statue', 2], ['Washing a dog', 2], ['Hailing a taxi', 2], ['Blowing out birthday candles', 1],
+    ['Stepping on a toy brick', 1], ['Waiting for the microwave', 3], ['Staying awake in class', 2], ['Sleepwalking', 1], ['Mowing the lawn', 1], ['Parachuting', 2], ['Being a statue', 2], ['Washing a dog', 2], ['Hailing a taxi', 2], ['Blowing out birthday candles', 1],
     ['Catching a fly', 2], ['Untangling headphones', 3], ['Carrying too many shopping bags', 2], ['Walking on hot sand', 2], ['A slow-motion fight', 2], ['Putting up a tent', 2], ['Brushing a horse', 3], ['A magic trick gone wrong', 3], ['Doing the worm', 2], ['Trying to whistle', 2],
   ],
   food: [
@@ -115,24 +116,24 @@ const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
   sports: [
     ['Boxing', 1], ['Swimming', 1], ['Karate', 1], ['Golf', 1], ['Skiing', 1], ['Snowboarding', 2], ['Skateboarding', 1], ['Archery', 2], ['Fencing', 3], ['Wrestling', 1],
     ['Weightlifting', 1], ['Gymnastics', 2], ['Synchronised swimming', 3], ['Curling', 3], ['Pole vault', 3], ['High jump', 2], ['Hurdles', 2], ['Sprinting', 1], ['Volleyball', 1], ['Baseball', 1],
-    ['Cricket', 2], ['Rugby', 2], ['Ice hockey', 2], ['Table tennis', 1], ['Darts', 1], ['Water polo', 3], ['Horse racing', 2], ['Formula 1', 2], ['Javelin', 2], ['Kayaking', 2],
+    ['Cricket', 2], ['Rugby', 2], ['Ice hockey', 2], ['Table tennis', 1], ['Darts', 1], ['Water polo', 3], ['Horse racing', 2], ['Motor racing', 2], ['Javelin', 2], ['Kayaking', 2],
     ['Penalty shoot-out', 2], ['Triathlon', 3], ['Sumo wrestling', 2], ['Figure skating', 2], ['Tug of war', 1],
   ],
   music: [
-    ['Air guitar', 1], ['Playing the violin', 1], ['Opera singer', 2], ['Rock concert', 1], ['Rapper', 1], ['Beatboxing', 2], ['Karaoke', 1], ['Boy band', 2], ['Moonwalk', 1], ['Macarena', 1],
-    ['YMCA', 1], ['Thriller dance', 2], ['Bohemian Rhapsody', 3], ['Single Ladies', 2], ['Let It Go', 1], ['Baby Shark', 1], ['Happy Birthday', 1], ['We Will Rock You', 2], ['Dancing Queen', 2], ['Shake It Off', 2],
-    ['Despacito', 2], ['Uptown Funk', 2], ['Smooth Criminal', 3], ['Stayin’ Alive', 2], ['Eye of the Tiger', 2], ['Twist and Shout', 3], ['Playing the bagpipes', 3], ['DJ at a wedding', 2], ['Crowd surfing', 2], ['Mosh pit', 3],
+    ['Air guitar', 1], ['Playing the violin', 1], ['Opera singer', 2], ['Rock concert', 1], ['Rapper', 1], ['Beatboxing', 2], ['Karaoke', 1], ['Boy band', 2], ['Moonwalk', 1], ['Line dance', 1],
+    ['Spelling letters with your arms', 1], ['Zombie dance', 2], ['Rock opera', 3], ['Pop diva dance routine', 2], ['Power ballad', 1], ['Kids’ song with actions', 1], ['Happy Birthday', 1], ['Stomp, stomp, clap', 2], ['Disco queen', 2], ['Hair-flip dance', 2],
+    ['Salsa dancing', 2], ['Funky strut', 2], ['Gravity-defying lean', 3], ['Disco finger point', 2], ['Training-montage music', 2], ['The twist', 3], ['Playing the bagpipes', 3], ['DJ at a wedding', 2], ['Crowd surfing', 2], ['Mosh pit', 3],
   ],
   places: [
     ['Eiffel Tower', 1], ['Pyramids of Giza', 2], ['Great Wall of China', 2], ['Statue of Liberty', 1], ['Leaning Tower of Pisa', 1], ['Big Ben', 2], ['Niagara Falls', 2], ['Mount Everest', 2], ['Las Vegas', 2], ['Hollywood', 2],
-    ['Venice', 2], ['The Moon', 1], ['The North Pole', 2], ['A desert island', 1], ['The Amazon rainforest', 3], ['Stonehenge', 3], ['Disneyland', 1], ['An airport', 1], ['A gym', 1], ['A library', 2],
+    ['Venice', 2], ['The Moon', 1], ['The North Pole', 2], ['A desert island', 1], ['The Amazon rainforest', 3], ['Stonehenge', 3], ['A theme park', 1], ['An airport', 1], ['A gym', 1], ['A library', 2],
     ['A dentist’s waiting room', 3], ['A nightclub', 2], ['A haunted castle', 2], ['A zoo', 1], ['A hospital', 1], ['A beach', 1], ['A submarine', 2], ['A spaceship', 1], ['A wedding', 1], ['A job centre', 3],
   ],
   afterdark: [
     ['Walk of shame', 2], ['Lap dance', 1], ['Strip poker', 2], ['Speed dating', 2], ['Skinny-dipping', 1], ['Booty call', 2], ['Hickey', 2], ['The morning after', 3], ['First kiss', 1], ['Bachelorette party', 2],
-    ['Stag do', 2], ['Spin the bottle', 1], ['Seven minutes in heaven', 3], ['Sexting', 2], ['Pole dancing', 1], ['Honeymoon', 2], ['Getting caught', 2], ['Sneaking out', 1], ['Body shots', 2], ['Fifty Shades of Grey', 2],
-    ['Magic Mike', 2], ['Tinder date', 1], ['Swiping left', 1], ['Handcuffs', 2], ['Blindfold', 1], ['Dirty dancing', 2], ['Friends with benefits', 3], ['Mile-high club', 3], ['Striptease', 1], ['Bedroom eyes', 2],
-    ['Pillow talk', 3], ['The O face', 2], ['One-night stand', 2], ['Caught cheating', 3], ['Netflix and chill', 2], ['Love bite', 2], ['Massage oil', 2], ['Hot tub', 1], ['Wrong name in bed', 3], ['Hotel “do not disturb” sign', 3],
+    ['Stag do', 2], ['Spin the bottle', 1], ['Seven minutes in heaven', 3], ['Sexting', 2], ['Pole dancing', 1], ['Honeymoon', 2], ['Getting caught', 2], ['Sneaking out', 1], ['Body shots', 2], ['Tied up with a silk scarf', 2],
+    ['Male stripper', 2], ['Dating-app date', 1], ['Swiping left', 1], ['Handcuffs', 2], ['Blindfold', 1], ['Grinding on the dance floor', 2], ['Friends with benefits', 3], ['Mile-high club', 3], ['Striptease', 1], ['Bedroom eyes', 2],
+    ['Pillow talk', 3], ['The O face', 2], ['One-night stand', 2], ['Caught cheating', 3], ['Coming up for “coffee”', 2], ['Love bite', 2], ['Massage oil', 2], ['Hot tub', 1], ['Wrong name in bed', 3], ['Hotel “do not disturb” sign', 3],
   ],
 };
 
@@ -141,14 +142,14 @@ export const CHARADES: CharadesCard[] = (Object.keys(MORE) as CharadesCategory[]
 );
 
 export const CHARADES_CATEGORIES: { id: CharadesCategory; label: string; emoji: string; adult?: boolean }[] = [
-  { id: 'movies', label: 'Movies & TV', emoji: '🎬' },
+  { id: 'movies', label: 'Movie moments', emoji: '🎬' },
   { id: 'heroes', label: 'Heroes & villains', emoji: '🦸' },
   { id: 'animals', label: 'Animals', emoji: '🐒' },
   { id: 'jobs', label: 'Jobs & situations', emoji: '👩‍🍳' },
   { id: 'famous', label: 'Famous people', emoji: '⭐' },
-  { id: 'games', label: 'Video games', emoji: '🕹️' },
+  { id: 'games', label: 'Games', emoji: '🕹️' },
   { id: 'internet', label: 'Internet culture', emoji: '📱' },
-  { id: 'cartoons', label: 'Cartoons', emoji: '🐭' },
+  { id: 'cartoons', label: 'Cartoon moments', emoji: '🐭' },
   { id: 'random', label: 'Random', emoji: '🎲' },
   { id: 'food', label: 'Food & drink', emoji: '🍕' },
   { id: 'sports', label: 'Sports', emoji: '⚽' },

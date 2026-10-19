@@ -19,13 +19,15 @@ export const PARTY_KEY = 'glitchbound.party';
 
 export const MODE_IDS = ['impostor', 'prompts', 'nhie', 'charades', 'board', 'auction', 'dial', 'unique', 'hues'] as const;
 export type ModeId = (typeof MODE_IDS)[number];
+/** Modes that keep their whole game as one saved object. */
+export type SavedMode = 'charades' | 'dial' | 'unique' | 'hues';
 
 export type ModeState =
   | { mode: 'prompts'; count: number; limit: number; card?: DealtCard }
-  | { mode: 'nhie'; count: number; limit: number; reveal: boolean; categories: string[]; have: Record<string, number> }
-  | { mode: 'charades'; data: unknown }
-  /** Dial It In, One of a Kind and Hue Knew? keep their round on screen only. */
-  | { mode: 'dial' | 'unique' | 'hues'; data: null }
+  /** `card` is the statement on the table (its id), so a refresh shows the same one. */
+  | { mode: 'nhie'; count: number; limit: number; reveal: boolean; categories: string[]; have: Record<string, number>; card?: string }
+  /** Charades, Dial It In, One of a Kind and Hue Knew? (ui/shared.tsx useSavedGame). */
+  | { mode: SavedMode; data: unknown }
   | { mode: 'board'; state: BoardState }
   | { mode: 'auction'; state: AuctionState }
   /** Impostor on one phone (ui/Impostor.tsx ImpostorLocal). */

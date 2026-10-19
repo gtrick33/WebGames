@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CHARADES, CHARADES_CATEGORIES } from '../content/charades';
-import { draw, freshRng, shuffle } from '../engine';
+import { draw, freshRng, shuffle, teamTurns } from '../engine';
 import type { PartySession } from '../session';
 import type { CharadesCard, CharadesCategory, Player } from '../types';
-import { Avatar, ModeBar, PassPhone, Results, Timer } from './shared';
+import { Avatar, byId, ModeBar, PassPhone, Results, Timer, useSavedGame } from './shared';
 
 type Style = 'act' | 'clues' | 'draw' | 'heads';
 const STYLES: { id: Style; label: string; hint: string }[] = [
@@ -24,16 +24,37 @@ interface Config {
   countdown: 0 | 5 | 10;
 }
 
+type Phase = 'setup' | 'pass' | 'ready' | 'countdown' | 'play' | 'summary' | 'done';
+
+interface Game {
+  cfg: Config;
+  phase: Phase;
+  turn: number;
+  /** Player ids of the two teams. */
+  teams: [string[], string[]];
+  teamScore: [number, number];
+  card: CharadesCard | null;
+  got: string[];
+  skipped: string[];
+}
+
 export function CharadesMode({ session, update, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
   const [r] = useState(freshRng);
-  const [cfg, setCfg] = useState<Config>({ teams: session.players.length >= 4, categories: ['movies', 'animals', 'jobs', 'random'], difficulty: 0, style: 'act', seconds: 60, rounds: 1, countdown: 5 });
-  const [phase, setPhase] = useState<'setup' | 'pass' | 'ready' | 'countdown' | 'play' | 'summary' | 'done'>('setup');
-  const [turn, setTurn] = useState(0);
-  const [teams, setTeams] = useState<[Player[], Player[]]>([[], []]);
-  const [teamScore, setTeamScore] = useState<[number, number]>([0, 0]);
-  const [card, setCard] = useState<CharadesCard | null>(null);
-  const [got, setGot] = useState<string[]>([]);
-  const [skipped, setSkipped] = useState<string[]>([]);
+  const [game, save] = useSavedGame<Game>(session, update, 'charades', () => ({
+    cfg: { teams: session.players.length >= 4, categories: ['movies', 'animals', 'jobs', 'random'], difficulty: 0, style: 'act', seconds: 60, rounds: 1, countdown: 5 },
+    phase: 'setup',
+    turn: 0,
+    teams: [[], []],
+    teamScore: [0, 0],
+    card: null,
+    got: [],
+    skipped: [],
+  }));
+  const { cfg, turn, teamScore, card, got, skipped } = game;
+  // Back from a refresh in the middle of a turn: it starts again from "you are up" (the clock restarts).
+  const [resumed, setResumed] = useState(() => game.phase === 'countdown' || game.phase === 'play');
+  const phase: Phase = resumed ? 'ready' : game.phase;
+  const setPhase = (p: Phase): void => save({ phase: p });
   const [peek, setPeek] = useState(true);
 
   const adult = session.settings.adultConfirmed;
@@ -41,54 +62,46 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
     () => CHARADES.filter((c) => cfg.categories.includes(c.category) && (adult || c.category !== 'afterdark') && (cfg.difficulty === 0 || c.difficulty === cfg.difficulty)),
     [cfg.categories, cfg.difficulty, adult],
   );
-  // Actors alternate teams (A1, B1, A2, B2...) or go round the circle.
-  const actors = useMemo(() => {
-    if (!cfg.teams) return session.players;
-    const out: Player[] = [];
-    for (let i = 0; i < Math.max(teams[0].length, teams[1].length); i++) {
-      if (teams[0][i]) out.push(teams[0][i]!);
-      if (teams[1][i]) out.push(teams[1][i]!);
-    }
-    return out;
-  }, [cfg.teams, teams, session.players]);
-  const totalTurns = actors.length * cfg.rounds;
-  const actor = actors[turn % Math.max(1, actors.length)];
+  const players = session.players;
+  const teams = useMemo(() => game.teams.map((ids) => ids.map((id) => byId(players, id)).filter((p): p is Player => !!p)) as [Player[], Player[]], [game.teams, players]);
+  // Every turn of the game: teams alternate (A1, B1, A2, B2...) with the same number of turns each,
+  // or everyone goes round the circle.
+  const actors = useMemo(() => (cfg.teams ? teamTurns(teams, cfg.rounds) : Array.from({ length: cfg.rounds }, () => players).flat()), [cfg.teams, cfg.rounds, teams, players]);
+  const totalTurns = actors.length;
+  const actor = actors[turn];
   const actorTeam = actor && cfg.teams ? (teams[0].some((p) => p.id === actor.id) ? 0 : 1) : null;
 
-  const nextCard = (): void => {
+  // The next word, drawn outside the state updaters (React may run an updater twice in development).
+  const nextCard = (): CharadesCard | null => {
     const d = draw(deck, session.used.charades ?? [], r);
-    setCard(d.item);
     setPeek(true);
     update((s) => ({ ...s, used: { ...s.used, charades: d.used } }));
+    return d.item;
   };
 
   const start = (): void => {
-    const mixed = shuffle(session.players, r);
+    const mixed = shuffle(players, r);
     const half = Math.ceil(mixed.length / 2);
-    setTeams([mixed.slice(0, half), mixed.slice(half)]);
-    setTeamScore([0, 0]);
-    setTurn(0);
-    update((s) => ({ ...s, scores: {}, active: { mode: 'charades', data: null } }));
-    setPhase('pass');
+    update((s) => ({ ...s, scores: {} }));
+    save({ teams: [mixed.slice(0, half).map((p) => p.id), mixed.slice(half).map((p) => p.id)], teamScore: [0, 0], turn: 0, phase: 'pass' });
   };
 
   const score = (): void => {
     if (!card || !actor) return;
-    setGot((g) => [...g, card.text]);
-    if (actorTeam !== null) setTeamScore((t) => (actorTeam === 0 ? [t[0] + 1, t[1]] : [t[0], t[1] + 1]));
-    else update((s) => ({ ...s, scores: { ...s.scores, [actor.id]: (s.scores[actor.id] ?? 0) + 1 } }));
+    if (actorTeam === null) update((s) => ({ ...s, scores: { ...s.scores, [actor.id]: (s.scores[actor.id] ?? 0) + 1 } }));
     navigator.vibrate?.(25);
-    nextCard();
+    const nc = nextCard();
+    save((g) => ({ got: [...g.got, card.text], teamScore: actorTeam === null ? g.teamScore : actorTeam === 0 ? [g.teamScore[0] + 1, g.teamScore[1]] : [g.teamScore[0], g.teamScore[1] + 1], card: nc }));
   };
   const skip = (): void => {
     if (!card) return;
-    setSkipped((s) => [...s, card.text]);
-    nextCard();
+    const nc = nextCard();
+    save((g) => ({ skipped: [...g.skipped, card.text], card: nc }));
   };
   const heads = cfg.style === 'heads';
 
   if (phase === 'setup') {
-    const set = <K extends keyof Config>(k: K, v: Config[K]): void => setCfg({ ...cfg, [k]: v });
+    const set = <K extends keyof Config>(k: K, v: Config[K]): void => save((g) => ({ cfg: { ...g.cfg, [k]: v } }));
     return (
       <div className="pt-screen">
         <ModeBar title="Charades" onExit={onExit} />
@@ -98,8 +111,8 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
             <button role="radio" aria-checked={!cfg.teams} onClick={() => set('teams', false)}>
               Every player for themselves
             </button>
-            <button role="radio" aria-checked={cfg.teams} onClick={() => set('teams', true)} disabled={session.players.length < 4}>
-              Two teams {session.players.length < 4 ? '(4+ players)' : ''}
+            <button role="radio" aria-checked={cfg.teams} onClick={() => set('teams', true)} disabled={players.length < 4}>
+              Two teams {players.length < 4 ? '(4+ players)' : ''}
             </button>
           </div>
           <div className="pt-seg" role="radiogroup" aria-label="Style">
@@ -165,11 +178,13 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
   }
 
   if (phase === 'done' || turn >= totalTurns || !actor) {
-    const scores = cfg.teams ? Object.fromEntries(session.players.map((p) => [p.id, teamScore[teams[0].some((x) => x.id === p.id) ? 0 : 1]])) : session.scores;
+    const scores = cfg.teams ? Object.fromEntries(players.map((p) => [p.id, teamScore[teams[0].some((x) => x.id === p.id) ? 0 : 1]])) : session.scores;
+    const best = Math.max(0, ...players.map((p) => session.scores[p.id] ?? 0));
+    const champs = players.filter((p) => (session.scores[p.id] ?? 0) === best);
     return (
       <Results
-        title={cfg.teams ? (teamScore[0] === teamScore[1] ? 'It’s a tie!' : `Team ${teamScore[0] > teamScore[1] ? 1 : 2} wins ${Math.max(...teamScore)}–${Math.min(...teamScore)}!`) : 'Charades champion!'}
-        players={session.players}
+        title={cfg.teams ? (teamScore[0] === teamScore[1] ? 'It’s a tie!' : `Team ${teamScore[0] > teamScore[1] ? 1 : 2} wins ${Math.max(...teamScore)}–${Math.min(...teamScore)}!`) : champs.length === 1 ? `${champs[0]!.name} is the charades champion!` : 'It’s a tie!'}
+        players={players}
         scores={scores}
         onAgain={() => setPhase('setup')}
         onMenu={onExit}
@@ -183,19 +198,20 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
       <div className="pt-screen">
         <ModeBar title="Charades" progress={progress} onExit={onExit} />
         {cfg.teams && (
-          <p className="pt-score-line">
-            Team 1 <b>{teamScore[0]}</b> · <b>{teamScore[1]}</b> Team 2
-          </p>
+          <>
+            <p className="pt-score-line">
+              Team 1 <b>{teamScore[0]}</b> · <b>{teamScore[1]}</b> Team 2
+            </p>
+            {/* Only the actor's own team guesses, so everyone needs to know the line-up. */}
+            <p className="pt-muted pt-center">
+              Team 1: {teams[0].map((p) => p.name).join(', ')} · Team 2: {teams[1].map((p) => p.name).join(', ')}
+            </p>
+          </>
         )}
         <PassPhone
           player={actor}
           note={heads ? `You’re guessing${cfg.teams ? ` for Team ${actorTeam! + 1}` : ''}. Don’t look at the words!` : cfg.teams ? `Acting for Team ${actorTeam! + 1}. Keep the screen to yourself.` : 'Keep the screen to yourself.'}
-          onReady={() => {
-            setGot([]);
-            setSkipped([]);
-            nextCard();
-            setPhase('ready');
-          }}
+          onReady={() => save({ got: [], skipped: [], card: nextCard(), phase: 'ready' })}
         />
       </div>
     );
@@ -219,6 +235,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
             className="pt-btn pt-btn-go pt-btn-big"
             onClick={() => {
               if (heads) askTiltPermission();
+              setResumed(false);
               setPhase(cfg.countdown ? 'countdown' : 'play');
             }}
           >
@@ -242,9 +259,12 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
     return (
       <div className="pt-screen">
         <ModeBar title="Charades" progress={progress} onExit={onExit} />
-        <Timer seconds={cfg.seconds} onEnd={() => setPhase('summary')} onTick={(l) => l <= 3 && (beep(520), navigator.vibrate?.(60))} />
-        <Forehead key={`${got.length}:${skipped.length}`} word={card.text} onGot={score} onPass={skip} />
-        <p className="pt-muted pt-center">Got {got.length} so far</p>
+        {/* The whole screen, over the site's header and tab bar, so the word stays big in landscape too. */}
+        <div className="pt-heads-play">
+          <Timer seconds={cfg.seconds} onEnd={() => setPhase('summary')} onTick={(l) => l <= 3 && (beep(520), navigator.vibrate?.(60))} />
+          <Forehead key={`${got.length}:${skipped.length}`} word={card.text} onGot={score} onPass={skip} />
+          <p className="pt-muted pt-center">Got {got.length} so far</p>
+        </div>
       </div>
     );
   }
@@ -297,10 +317,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
         )}
         <button
           className="pt-btn pt-btn-go pt-btn-big"
-          onClick={() => {
-            setTurn((t) => t + 1);
-            setPhase(turn + 1 >= totalTurns ? 'done' : 'pass');
-          }}
+          onClick={() => save({ turn: turn + 1, phase: turn + 1 >= totalTurns ? 'done' : 'pass' })}
         >
           {turn + 1 >= totalTurns ? 'See results' : 'Next player'}
         </button>
@@ -375,6 +392,16 @@ function GetReady({ seconds, note, onGo }: { seconds: number; note: string; onGo
 }
 
 /**
+ * How much the screen faces up, from the device's tilt: 1 flat on its back, -1 face down, 0 upright
+ * (whether the phone is held in portrait or landscape). Null without a motion sensor.
+ */
+export function screenFacing(beta: number | null, gamma: number | null): number | null {
+  if (beta === null) return null;
+  const rad = Math.PI / 180;
+  return Math.cos(beta * rad) * Math.cos((gamma ?? 0) * rad);
+}
+
+/**
  * Forehead: the word faces the room while the guesser holds the phone to their forehead. Nodding down
  * (screen to the floor) scores, tilting up (screen to the ceiling) passes; tapping either half works too.
  */
@@ -393,17 +420,18 @@ function Forehead({ word, onGot, onPass }: { word: string; onGot: () => void; on
     navigator.vibrate?.(kind === 'got' ? 40 : [30, 60, 30]);
     window.setTimeout(() => (kind === 'got' ? act.current.onGot() : act.current.onPass()), 650);
   }, []);
-  // Tilt: upright in portrait the phone reads about 90°; it only counts again once it's back upright.
+  // Tilt, in portrait or landscape: `facing` is how much the screen faces the ceiling (1) or the floor
+  // (-1); held upright it is about 0. A nod only counts again once the phone is back upright.
   useEffect(() => {
     let armed = false;
     const on = (e: DeviceOrientationEvent): void => {
-      const b = e.beta;
-      if (b === null) return;
-      if (b > 60 && b < 120) armed = true;
-      else if (armed && (b >= 145 || b <= -150)) {
+      const facing = screenFacing(e.beta, e.gamma);
+      if (facing === null) return;
+      if (Math.abs(facing) < 0.5) armed = true;
+      else if (armed && facing <= -0.8) {
         armed = false;
         answer('got');
-      } else if (armed && b <= 30 && b > -60) {
+      } else if (armed && facing >= 0.8) {
         armed = false;
         answer('pass');
       }

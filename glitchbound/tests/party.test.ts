@@ -4,10 +4,15 @@ import { boardAwards, currentPlayer, makeBoard, reduceBoard, standings, startBoa
 import { AUCTION_ITEMS } from '../src/party/content/auction';
 import { CHALLENGES } from '../src/party/content/challenges';
 import { CHARADES, CHARADES_CATEGORIES } from '../src/party/content/charades';
+import { IMPOSTOR_THEMES } from '../src/party/content/impostor';
+import { MYSTERY_WORDS } from '../src/party/content/mystery';
 import { NHIE } from '../src/party/content/nhie';
+import { SPECTRUMS } from '../src/party/content/spectrums';
 import { TRIVIA } from '../src/party/content/trivia';
-import { allowedIntensities, consequenceText, draw, fillChallenge, filterContent, intensityWeights, makePlayer, pickPlayers, playersProblem, rng } from '../src/party/engine';
+import { allowedIntensities, cardConsequence, consequenceText, draw, fillChallenge, filterContent, intensityWeights, makePlayer, pickPlayers, playersProblem, rng } from '../src/party/engine';
 import { emptySession, sanitizeSession } from '../src/party/session';
+import { statement } from '../src/party/ui/Never';
+import { podiumPlace } from '../src/party/ui/shared';
 
 const players = ['Ana', 'Bo', 'Cy', 'Di'].map((n, i) => makePlayer(n, i, `id${i}`));
 
@@ -48,14 +53,35 @@ describe('content and filters', () => {
       expect(new Set(list.map((x) => x.id)).size).toBe(list.length);
     }
     for (const c of CHALLENGES) {
-      if (c.text.includes('{B}')) expect(['two', 'one']).toContain(c.target);
+      // A one-player card fills {B} with {A}'s name ("Ana, serenade Ana"), so {B} needs two players.
+      if (c.text.includes('{B}')) expect(c.target, c.id).toBe('two');
       if (c.target === 'two') expect(c.text).toContain('{B}');
       if (c.text.includes('{TEAM1}')) expect(c.target).toBe('teams');
     }
+    // Theme packs mix, so the same lot must not come up twice; trivia questions are drawn from one deck.
+    const lot = (name: string): string => name.toLowerCase().replace(/^the /, '');
+    expect(new Set(AUCTION_ITEMS.map((x) => lot(x.name))).size).toBe(AUCTION_ITEMS.length);
+    expect(new Set(TRIVIA.map((x) => x.q)).size).toBe(TRIVIA.length);
     expect(CHALLENGES.length).toBeGreaterThan(150);
     expect(NHIE.length).toBeGreaterThan(130);
     expect(CHARADES.length).toBeGreaterThan(250);
     expect(AUCTION_ITEMS.length).toBeGreaterThan(180);
+  });
+
+  it('names no other company’s characters, titles or brands (real people, places and myths are fine)', () => {
+    const banned =
+      /\b(spider-man|batman|superman|wonder woman|iron man|hulk|wolverine|joker|thanos|darth|vader|yoda|jedi|lightsaber|star wars|harry potter|hogwarts|voldemort|hermione|gandalf|mario|luigi|zelda|pok[eé]mon|pikachu|sonic|minecraft|fortnite|roblox|pac-man|among us|playstation|nintendo|xbox|disney|mickey|pixar|marvel|shrek|spongebob|simpsons|scooby|garfield|snoopy|peppa|bluey|barbie|lego|ikea|netflix|tinder|google|googled|instagram|tiktok|zoom call|ted talk|monopoly|jenga|frisbee|rubik|bluetooth|ferrari|lamborghini|porsche|bugatti|mclaren|godzilla|king kong|mothra|toy story|jurassic park|fifty shades|magic mike|rickroll|gangnam|macarena|despacito)\b/i;
+    const texts = [
+      ...CHALLENGES.map((c) => c.text),
+      ...NHIE.map((n) => n.text),
+      ...CHARADES.map((c) => c.text),
+      ...AUCTION_ITEMS.map((a) => a.name),
+      ...TRIVIA.flatMap((t) => [t.q, ...t.options]),
+      ...IMPOSTOR_THEMES.flatMap((t) => [t.name, ...t.words]),
+      ...MYSTERY_WORDS,
+      ...SPECTRUMS.flat(),
+    ];
+    expect(texts.filter((t) => banned.test(t))).toEqual([]);
   });
 
   it('keeps After Dark out unless the group confirmed they are adults, and honours excluded topics', () => {
@@ -87,6 +113,26 @@ describe('content and filters', () => {
     expect(consequenceText('points', 2, r)).toBe('lose 2 points');
     expect(consequenceText('tasks', 1, r)).not.toMatch(/sip|drink/);
     expect(consequenceText('sips', 1, r)).toMatch(/water counts/);
+  });
+
+  it('keeps the same silly task for a card however often the screen redraws', () => {
+    expect(cardConsequence('tasks', 1, 'c12:4')).toBe(cardConsequence('tasks', 1, 'c12:4'));
+    const tasks = new Set(Array.from({ length: 30 }, (_, i) => cardConsequence('tasks', 1, `c${i}:${i}`)));
+    expect(tasks.size).toBeGreaterThan(5);
+    expect(cardConsequence('points', 2, 'c1:1')).toBe('lose 2 points');
+  });
+
+  it('ends every Never Have I Ever statement with exactly one full stop', () => {
+    expect(statement('texted an ex at 2 a.m.')).toBe('texted an ex at 2 a.m.');
+    expect(statement('been to Paris')).toBe('been to Paris.');
+    expect(statement('lied about my age! ')).toBe('lied about my age!');
+    for (const n of NHIE) expect(statement(n.text)).not.toMatch(/\.\.$/);
+  });
+
+  it('gives tied players the same place on the podium', () => {
+    const scores = { id0: 3, id1: 5, id2: 5, id3: 0 };
+    expect(players.map((p) => podiumPlace(scores, players, p.id))).toEqual([3, 1, 1, 4]);
+    expect(players.map((p) => podiumPlace({}, players, p.id))).toEqual([1, 1, 1, 1]);
   });
 });
 
