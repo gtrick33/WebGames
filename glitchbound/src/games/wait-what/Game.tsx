@@ -184,7 +184,8 @@ function Play(props: {
   const [qs, setQs] = useState<Question[]>(() => (mode === 'daily' ? dailyQuiz(today) : mode === 'challenge' && challenge ? challengeQuiz(challenge.seed, challenge.day) : [dealer!.next()]));
   const [run, setRun] = useState<Run>(() => stored ?? emptyRun());
   const idx = run.done ? qs.length : run.picks.length;
-  const [phase, setPhase] = useState<'ask' | 'reveal' | 'done'>(() => (stored?.done ? 'done' : 'ask'));
+  // Reloaded while the last answer was on show: show it again (then the results), never ask it twice.
+  const [phase, setPhase] = useState<'ask' | 'reveal' | 'done'>(() => (stored?.done ? 'done' : mode !== 'endless' && stored && stored.picks.length >= qs.length ? 'reveal' : 'ask'));
   const [elapsed, setElapsed] = useState(() => (stored?.cur && stored.cur.i === stored.picks.length ? stored.cur.secs : 0));
   const [paused, setPaused] = useState(false);
   const started = useRef(false);
