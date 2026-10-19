@@ -122,8 +122,9 @@ export function join(s: State, key: string, rawName: string, now: number): strin
     if (s.seats.length >= MAX_PLAYERS) return 'full';
     const n = s.nextSeat++;
     s.seats.push({ key, n, name: uniqueName(s, name, n), score: 0, online: true, waiting: s.phase !== 'lobby' && s.phase !== 'result' });
-    if (!s.host || !s.seats.some((x) => x.n === s.host && x.online)) s.host = n;
   }
+  // Someone coming back to an empty room takes the host role too (else nobody could start).
+  if (!s.host || !s.seats.some((x) => x.n === s.host && x.online)) s.host = seatOf(s, key)!.n;
   s.updated = now;
   return null;
 }
@@ -139,6 +140,8 @@ export function leave(s: State, key: string, now: number): void {
   if (!seat) return;
   seat.online = false;
   if (s.host === seat.n) s.host = s.seats.find((x) => x.online)?.n ?? s.host;
+  // Nothing to keep for someone who leaves the lobby before scoring: no ghost seat, and their name is free again.
+  if (s.phase === 'lobby' && seat.score === 0) s.seats = s.seats.filter((x) => x !== seat);
   s.updated = now;
   advance(s, now);
 }
@@ -259,7 +262,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       return null;
     case 'vote_now':
       if (s.phase === 'reveal' && isHost) toTalk(s, now);
-      else if (s.phase === 'talk') toVote(s, now);
+      else if (s.phase === 'talk' && s.playing.includes(me.n)) toVote(s, now);
       return null;
     case 'vote': {
       if (s.phase !== 'vote' || !s.playing.includes(me.n)) return null;
@@ -283,6 +286,8 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       const i = s.seats.findIndex((x) => x.n === a.seat);
       if (i >= 0) s.seats.splice(i, 1);
       s.playing = s.playing.filter((n) => n !== a.seat);
+      // Mid-vote, their vote goes, and so do votes for them (those players vote again).
+      if (s.phase === 'vote') for (const [voter, to] of Object.entries(s.votes)) if (Number(voter) === a.seat || to === a.seat) delete s.votes[voter];
       advance(s, now);
       return null;
     }

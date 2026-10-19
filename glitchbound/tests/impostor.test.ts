@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { IMPOSTOR_THEMES, pairs } from '../src/party/content/impostor';
 import { dealImpostor, impostorRng, scoreImpostor, votedOut } from '../src/party/impostor';
-import { act, join, newRoom, tick, viewFor, type State } from '../src/party/impostorRoom';
+import { act, join, leave, newRoom, tick, viewFor, type State } from '../src/party/impostorRoom';
 
 describe('Impostor word bank', () => {
   it('has many themes, each with twenty words and a hint that never gives the word away', () => {
@@ -120,5 +120,41 @@ describe('Impostor live room', () => {
     const late = viewFor(s, 'key-eeeeeeeeeeeeeeee5')!;
     expect(late.card).toBeNull();
     expect(late.players.find((p) => p.you)!.waiting).toBe(true);
+    // They watch this round: they cannot call the vote for the others.
+    for (const k of keys) act(s, k, { t: 'seen' }, 1200);
+    expect(s.phase).toBe('talk');
+    act(s, 'key-eeeeeeeeeeeeeeee5', { t: 'vote_now' }, 1300);
+    expect(s.phase).toBe('talk');
+  });
+
+  it('gives the host role to whoever comes back first when everyone had gone', () => {
+    const s = room();
+    act(s, keys[0]!, { t: 'start' }, 1000);
+    for (const k of keys) leave(s, k, 1100);
+    expect(s.seats.every((x) => !x.online)).toBe(true);
+    join(s, keys[2]!, 'Cy', 1200);
+    expect(s.host).toBe(3);
+    expect(viewFor(s, keys[2]!)!.host).toBe(true);
+  });
+
+  it('frees the seat and the name of someone who leaves the lobby', () => {
+    const s = room();
+    leave(s, keys[1]!, 1100);
+    expect(s.seats.map((x) => x.name)).toEqual(['Ana', 'Cy', 'Di']);
+    join(s, 'key-ffffffffffffffff6', 'Bo', 1200);
+    expect(s.seats.at(-1)!.name).toBe('Bo');
+  });
+
+  it('drops the votes of and for a removed player, so the others vote again', () => {
+    const s = room();
+    act(s, keys[0]!, { t: 'start' }, 1000);
+    for (const k of keys) act(s, k, { t: 'seen' }, 1000);
+    act(s, keys[0]!, { t: 'vote_now' }, 1000);
+    act(s, keys[0]!, { t: 'vote', seat: 4 }, 1000);
+    act(s, keys[1]!, { t: 'vote', seat: 3 }, 1000);
+    act(s, keys[3]!, { t: 'vote', seat: 2 }, 1000);
+    act(s, keys[0]!, { t: 'kick', seat: 4 }, 1000);
+    expect(s.phase).toBe('vote');
+    expect(s.votes).toEqual({ 2: 3 });
   });
 });

@@ -46,6 +46,8 @@ export interface State extends RoomBase {
   /** Seat → their answer to the current statement (true = I have). */
   answers: Record<string, boolean>;
   winners: number[];
+  /** Who was still standing before the last reveal (they share the win if it took everyone out). */
+  lastIn?: number[];
   games: number;
   used: string[];
 }
@@ -107,7 +109,8 @@ function dealNext(s: State, now: number): void {
 }
 
 function reveal(s: State, now: number): void {
-  for (const n of standing(s)) {
+  s.lastIn = standing(s);
+  for (const n of s.lastIn) {
     if (s.answers[n] !== true) continue;
     s.fingers[n] = Math.max(0, (s.fingers[n] ?? 0) - 1);
     s.have[n] = (s.have[n] ?? 0) + 1;
@@ -118,7 +121,9 @@ function reveal(s: State, now: number): void {
 
 function finish(s: State): void {
   const most = Math.max(0, ...s.playing.map((n) => s.fingers[n] ?? 0));
-  s.winners = s.playing.filter((n) => (s.fingers[n] ?? 0) === most);
+  // Nobody has a finger left: the last ones standing went out together and share the win.
+  const from = most > 0 ? s.playing : (s.lastIn ?? s.playing).filter((n) => s.playing.includes(n));
+  s.winners = from.filter((n) => (s.fingers[n] ?? 0) === most);
   for (const x of s.seats) if (s.winners.includes(x.n)) x.score++;
   s.phase = 'result';
   s.deadline = null;

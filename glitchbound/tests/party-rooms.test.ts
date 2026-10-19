@@ -89,6 +89,39 @@ describe('Never Have I Ever room', () => {
     nhie.leave(s, KEYS[1]!, T0);
     expect(s.phase).toBe('lobby');
   });
+
+  it('lets the last ones standing share the win when one statement takes them all out', () => {
+    const s = room(4);
+    nhie.act(s, KEYS[0]!, { t: 'settings', settings: { fingers: 3, length: 60 } }, T0);
+    nhie.act(s, KEYS[0]!, { t: 'start' }, T0);
+    // Player 4 says "I have" three times and is out; then players 1 to 3 go down together.
+    for (let i = 0; i < 6; i++) {
+      KEYS.forEach((k, j) => nhie.act(s, k, { t: 'answer', have: i < 3 ? j === 3 : j < 3 }, T0));
+      nhie.tick(s, s.deadline! + 1);
+    }
+    expect(s.phase).toBe('result');
+    expect(s.winners).toEqual([1, 2, 3]);
+    expect(s.seats.find((x) => x.n === 4)!.score).toBe(0);
+  });
+});
+
+describe('room seats', () => {
+  it('frees the seat and the name of someone who leaves the lobby before scoring anything', () => {
+    const s = rps.newRoom('ABCDE', T0, 1);
+    rps.join(s, KEYS[0]!, 'Ann', T0);
+    rps.join(s, KEYS[1]!, 'Bo', T0);
+    rps.leave(s, KEYS[1]!, T0);
+    expect(s.seats.map((x) => x.name)).toEqual(['Ann']);
+    rps.join(s, KEYS[2]!, 'Bo', T0);
+    expect(s.seats.map((x) => x.name)).toEqual(['Ann', 'Bo']);
+    // Someone with points keeps their seat (and their points) while away.
+    s.seats[1]!.score = 2;
+    rps.leave(s, KEYS[2]!, T0);
+    expect(s.seats.map((x) => [x.name, x.online])).toEqual([
+      ['Ann', true],
+      ['Bo', false],
+    ]);
+  });
 });
 
 describe('Name Your Price room', () => {

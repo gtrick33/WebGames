@@ -68,12 +68,17 @@ export function joinSeat(s: RoomBase, key: string, rawName: string, now: number,
   return null;
 }
 
-/** Marks a player away; the host role passes to someone still here. */
+/**
+ * Marks a player away; the host role passes to someone still here. Someone who leaves the lobby
+ * before scoring anything has nothing to keep, so their seat goes (no ghost in the lobby, and their
+ * name is free again when they come back).
+ */
 export function leaveSeat(s: RoomBase, key: string, now: number): Seat | undefined {
   const seat = seatOf(s, key);
   if (!seat) return undefined;
   seat.online = false;
   if (s.host === seat.n) s.host = s.seats.find((x) => x.online)?.n ?? s.host;
+  if (s.phase === 'lobby' && seat.score === 0) s.seats = s.seats.filter((x) => x !== seat);
   s.updated = now;
   return seat;
 }
