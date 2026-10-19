@@ -1,0 +1,82 @@
+/* Fussbox's tile preview: the robot on a mint bench between its Likes and Hates trays. */
+.pv-fbx {
+  --fbx-ink: #1d1238;
+  --fbx-mint: #d9f7ee;
+  --fbx-teal: #14b8a6;
+  --fbx-gold: #ffc93c;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 4%;
+  padding: 6%;
+  background:
+    radial-gradient(circle at 20% 0%, rgb(255 201 60 / 0.3), transparent 50%),
+    linear-gradient(160deg, #e9fbf5, #bdeee0);
+  overflow: hidden;
+}
+.pv-fbx-tray {
+  display: flex;
+  align-items: center;
+  gap: 4%;
+  height: 26cqh;
+  min-height: 0;
+  padding: 2% 3%;
+  border: 2px solid var(--fbx-ink);
+  border-radius: 10px;
+}
+.pv-fbx-tray.is-yes {
+  background: #e3fbec;
+}
+.pv-fbx-tray.is-no {
+  background: #ffe6e9;
+}
+.pv-fbx-tray b {
+  font-size: 13px;
+  color: var(--fbx-ink);
+}
+.pv-fbx-tray .fbx-card {
+  width: auto;
+  height: 100%;
+  animation: pv-fbx-in 0.3s ease both;
+}
+.pv-fbx-bench {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8%;
+  min-height: 0;
+}
+.pv-fbx-robot {
+  height: 100%;
+  max-height: 100%;
+  width: auto;
+}
+.pv-fbx-card {
+  height: 80%;
+  animation: pv-fbx-slide 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+.pv-fbx-card .fbx-card {
+  width: auto;
+  height: 100%;
+}
+.pv-fbx {
+  container-type: size;
+}
+@keyframes pv-fbx-slide {
+  from {
+    transform: translateX(120%) rotate(12deg);
+  }
+}
+@keyframes pv-fbx-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pv-fbx * {
+    animation: none !important;
+  }
+}

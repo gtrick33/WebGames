@@ -42,4 +42,22 @@ export type GamePreviewLoader = () => Promise<{ default: ComponentType<GamePrevi
 
 export const GAME_PREVIEWS: Record<string, GamePreviewLoader> = {
   'neon-rush': () => import('../games/neon-rush/Preview'),
+  'wing-it': () => import('../games/wing-it/Preview'),
+  'mini-racer': () => import('../games/mini-racer/Preview'),
+  gloop: () => import('../games/gloop/Preview'),
+  'spot-the-glitch': () => import('../games/spot-the-glitch/Preview'),
+  'wheres-the-ball': () => import('../games/wheres-the-ball/Preview'),
+  'memory-grid': () => import('../games/memory-grid/Preview'),
+  'color-recall': () => import('../games/color-recall/Preview'),
+  'letter-pinch': () => import('../games/letter-pinch/Preview'),
+  'color-lab': () => import('../games/color-lab/Preview'),
+  crosswire: () => import('../games/crosswire/Preview'),
+  'wait-what': () => import('../games/wait-what/Preview'),
+  'square-deal': () => import('../games/square-deal/Preview'),
+  'outta-here': () => import('../games/outta-here/Preview'),
+  'gut-check': () => import('../games/gut-check/Preview'),
+  'star-grid': () => import('../games/star-grid/Preview'),
+  'to-scale': () => import('../games/to-scale/Preview'),
+  fussbox: () => import('../games/fussbox/Preview'),
+  whatsit: () => import('../games/whatsit/Preview'),
 };

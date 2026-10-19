@@ -273,15 +273,10 @@
   .tile-wide.has-preview .tile-art {
     aspect-ratio: 4 / 3;
   }
+  /* Two squares side by side: the game's title art and its live preview. */
   .tile-xl.has-preview .tile-art img,
   .tile-wide.has-preview .tile-art img {
-    width: 100%;
-  }
-  .tile-xl .tile-preview,
-  .tile-wide .tile-preview {
-    left: 0;
-    border: 0;
-    box-shadow: none;
+    width: 50%;
   }
 }
 
