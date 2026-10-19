@@ -453,7 +453,7 @@ const de: string[] = [
   'Hol {n} Punkte in einem Crosswire-Raster',
   // 410
   'Quizfragen, die erfunden klingen, es aber nicht sind. Schräge Geschichte, seltsame Tiere, unglaubliche Wörter.',
-  'Ein Quiz voller Fakten, bei denen man „Moment, was?“ sagt: die Armee, die einen Krieg gegen Emus verlor, der Jockey, der nach seinem Tod ein Rennen gewann, der Käse mit lebenden Maden. Hunderte handgeschriebene Fragen in zwölf Kategorien, dazu echte Wörter, die erfunden klingen, und „Was war zuerst?“-Rätsel. Ein Tagesquiz für alle, ein Endlosmodus ohne Wiederholungen und 10-Fragen-Challenges für bis zu 6 Freunde. (Die Fragen sind englisch.)',
+  'Ein Quiz voller Fakten, bei denen man „Moment, was?“ sagt: die Armee, die einen Krieg gegen Emus verlor, der Jockey, der nach seinem Tod ein Rennen gewann, der Käse mit lebenden Maden. Hunderte handgeschriebene Fragen in zwölf Kategorien, dazu echte Wörter, die erfunden klingen, und „Was war zuerst?“-Rätsel. Ein Tagesquiz für alle, ein Endlosmodus ohne Wiederholungen und 10-Fragen-Challenges für bis zu 5 Freunde. (Die Fragen sind englisch.)',
   'Heutiges Quiz',
   '10 Fragen, je 20 Sekunden, für alle gleich. Richtige Antworten bringen 100, plus bis zu 50 für Tempo.',
   'Bestes Quiz',
@@ -588,6 +588,10 @@ const de: string[] = [
   'Nichts passt zu „{q}“. Versuch ein Spiel, eine Kategorie oder eine Seite wie „Profil“.',
   'Partymodus',
   'Einem Partyraum beitreten',
+  'Alle heutigen Quests sind erledigt',
+  'zu kurz, um zu zählen',
+  'Punktzahl zu hoch für die gespielte Zeit',
+  'in Folge',
 ];
 
 export default de;

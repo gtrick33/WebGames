@@ -453,7 +453,7 @@ const es: string[] = [
   'Haz {n} puntos en una cuadrícula de Crosswire',
   // 410
   'Trivia que suena inventada pero no lo es. Historia rara, animales extraños, palabras increíbles.',
-  'Un quiz lleno de datos que te harán decir «¿cómo?»: el ejército que perdió una guerra contra emús, el jockey que ganó una carrera después de morir, el queso que viene con larvas vivas. Cientos de preguntas escritas a mano en doce categorías, más palabras reales que parecen inventadas y retos de «¿qué fue primero?». Un quiz diario para todos, un modo infinito sin repeticiones y retos de 10 preguntas para hasta 6 amigos. (Las preguntas están en inglés.)',
+  'Un quiz lleno de datos que te harán decir «¿cómo?»: el ejército que perdió una guerra contra emús, el jockey que ganó una carrera después de morir, el queso que viene con larvas vivas. Cientos de preguntas escritas a mano en doce categorías, más palabras reales que parecen inventadas y retos de «¿qué fue primero?». Un quiz diario para todos, un modo infinito sin repeticiones y retos de 10 preguntas para hasta 5 amigos. (Las preguntas están en inglés.)',
   'El quiz de hoy',
   '10 preguntas, 20 segundos cada una, iguales para todos. Cada acierto vale 100, más hasta 50 por rapidez.',
   'Mejor quiz',
@@ -588,6 +588,10 @@ const es: string[] = [
   'Nada coincide con “{q}”. Prueba un juego, una categoría o una página como “perfil”.',
   'Modo fiesta',
   'Unirse a una sala de fiesta',
+  'Todas las misiones de hoy están hechas',
+  'demasiado corta para contar',
+  'puntuación demasiado alta para el tiempo jugado',
+  'seguidos',
 ];
 
 export default es;

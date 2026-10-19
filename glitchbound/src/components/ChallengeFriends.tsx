@@ -42,7 +42,7 @@ export async function startChallenge(game: GameEntry, mode: ChallengeMode, name:
   }
 }
 
-/** Game page panel: start a challenge for up to 6 friends, right here in the game. */
+/** Game page panel: start a challenge for up to MAX_PLAYERS players (you and 5 friends), right here in the game. */
 export function ChallengeFriends({ game }: { game: GameEntry }) {
   const t = useT();
   const player = usePlayerName();

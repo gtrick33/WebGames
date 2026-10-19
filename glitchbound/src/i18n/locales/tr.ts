@@ -453,7 +453,7 @@ const tr: string[] = [
   'Bir Crosswire ızgarasında {n} puan yap',
   // 410
   'Uydurma gibi duran ama olmayan bilgi yarışması. Tuhaf tarih, garip hayvanlar, inanılmaz kelimeler.',
-  '“Dur, ne?” dedirten bilgilerle dolu bir yarışma: emulara karşı savaşı kaybeden ordu, öldükten sonra yarış kazanan jokey, canlı kurtçuklu peynir. On iki kategoride yüzlerce elle yazılmış soru, artı uydurma gibi duran gerçek kelimeler ve “hangisi önce geldi?” turları. Herkes için günlük yarışma, tekrarsız sonsuz mod ve en fazla 6 arkadaş için 10 soruluk meydan okumalar. (Sorular İngilizcedir.)',
+  '“Dur, ne?” dedirten bilgilerle dolu bir yarışma: emulara karşı savaşı kaybeden ordu, öldükten sonra yarış kazanan jokey, canlı kurtçuklu peynir. On iki kategoride yüzlerce elle yazılmış soru, artı uydurma gibi duran gerçek kelimeler ve “hangisi önce geldi?” turları. Herkes için günlük yarışma, tekrarsız sonsuz mod ve en fazla 5 arkadaş için 10 soruluk meydan okumalar. (Sorular İngilizcedir.)',
   'Bugünün yarışması',
   '10 soru, her biri 20 saniye, herkes için aynı. Doğru cevap 100 puan, hıza göre 50’ye kadar ek puan.',
   'En iyi yarışma skoru',
@@ -588,6 +588,10 @@ const tr: string[] = [
   '“{q}” ile eşleşen bir şey yok. Bir oyun, kategori veya “profil” gibi bir sayfa dene.',
   'Parti modu',
   'Bir parti odasına katıl',
+  'Bugünün tüm görevleri tamam',
+  'sayılmak için fazla kısa',
+  'oynanan süreye göre skor fazla yüksek',
+  'üst üste',
 ];
 
 export default tr;

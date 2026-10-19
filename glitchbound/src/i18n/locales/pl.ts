@@ -453,7 +453,7 @@ const pl: string[] = [
   'Zdobądź {n} pkt w jednym diagramie Crosswire',
   // 410
   'Quiz, który brzmi jak zmyślony, ale nie jest. Dziwna historia, osobliwe zwierzęta, niewiarygodne słowa.',
-  'Quiz pełen faktów, przy których mówisz „chwila, co?”: armia, która przegrała wojnę z emu, dżokej, który wygrał wyścig po śmierci, ser z żywymi larwami. Setki ręcznie napisanych pytań w dwunastu kategoriach, plus prawdziwe słowa, które brzmią jak zmyślone, i zagadki „co było pierwsze?”. Codzienny quiz dla wszystkich, nieskończony tryb bez powtórek i wyzwania na 10 pytań dla maksymalnie 6 znajomych. (Pytania są po angielsku.)',
+  'Quiz pełen faktów, przy których mówisz „chwila, co?”: armia, która przegrała wojnę z emu, dżokej, który wygrał wyścig po śmierci, ser z żywymi larwami. Setki ręcznie napisanych pytań w dwunastu kategoriach, plus prawdziwe słowa, które brzmią jak zmyślone, i zagadki „co było pierwsze?”. Codzienny quiz dla wszystkich, nieskończony tryb bez powtórek i wyzwania na 10 pytań dla maksymalnie 5 znajomych. (Pytania są po angielsku.)',
   'Dzisiejszy quiz',
   '10 pytań, po 20 sekund, takie same dla wszystkich. Dobra odpowiedź daje 100, plus do 50 za szybkość.',
   'Najlepszy quiz',
@@ -588,6 +588,10 @@ const pl: string[] = [
   'Nic nie pasuje do „{q}”. Spróbuj gry, kategorii albo strony, np. „profil”.',
   'Tryb imprezowy',
   'Dołącz do pokoju imprezowego',
+  'Wszystkie dzisiejsze misje wykonane',
+  'za krótka, by się liczyć',
+  'wynik za wysoki jak na czas gry',
+  'z rzędu',
 ];
 
 export default pl;

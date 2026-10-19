@@ -453,7 +453,7 @@ const ro: string[] = [
   'Fă {n} puncte într-o grilă Crosswire',
   // 410
   'Trivia care sună inventată, dar nu e. Istorie ciudată, animale bizare, cuvinte de necrezut.',
-  'Un quiz plin de fapte „stai, ce?”: armata care a pierdut un război cu emuii, jocheul care a câștigat o cursă după ce a murit, brânza cu larve vii. Sute de întrebări scrise de mână în douăsprezece categorii, plus cuvinte reale care sună inventat și runde „ce a fost mai întâi?”. Un quiz zilnic pentru toți, un mod infinit fără repetări și provocări de 10 întrebări pentru până la 6 prieteni. (Întrebările sunt în engleză.)',
+  'Un quiz plin de fapte „stai, ce?”: armata care a pierdut un război cu emuii, jocheul care a câștigat o cursă după ce a murit, brânza cu larve vii. Sute de întrebări scrise de mână în douăsprezece categorii, plus cuvinte reale care sună inventat și runde „ce a fost mai întâi?”. Un quiz zilnic pentru toți, un mod infinit fără repetări și provocări de 10 întrebări pentru până la 5 prieteni. (Întrebările sunt în engleză.)',
   'Quizul de azi',
   '10 întrebări, câte 20 de secunde, aceleași pentru toți. Un răspuns corect valorează 100, plus până la 50 pentru viteză.',
   'Cel mai bun scor la quiz',
@@ -588,6 +588,10 @@ const ro: string[] = [
   'Nimic nu se potrivește cu „{q}”. Încearcă un joc, o categorie sau o pagină precum „profil”.',
   'Modul petrecere',
   'Intră într-o cameră de petrecere',
+  'Toate misiunile de azi sunt gata',
+  'prea scurtă ca să conteze',
+  'scor prea mare pentru timpul jucat',
+  'la rând',
 ];
 
 export default ro;

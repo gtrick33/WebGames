@@ -453,7 +453,7 @@ const fr: string[] = [
   'Marque {n} points dans une grille Crosswire',
   // 410
   'Un quiz qui sonne faux mais ne l’est pas. Histoire bizarre, animaux étranges, mots incroyables.',
-  'Un quiz rempli de faits qui font dire « attends, quoi ? » : l’armée qui a perdu une guerre contre des émeus, le jockey qui a gagné une course après sa mort, le fromage aux asticots vivants. Des centaines de questions écrites à la main dans douze catégories, plus de vrais mots qui sonnent faux et des énigmes « qu’est-ce qui est venu en premier ? ». Un quiz quotidien pour tous, un mode infini sans répétition et des défis de 10 questions pour 6 amis maximum. (Les questions sont en anglais.)',
+  'Un quiz rempli de faits qui font dire « attends, quoi ? » : l’armée qui a perdu une guerre contre des émeus, le jockey qui a gagné une course après sa mort, le fromage aux asticots vivants. Des centaines de questions écrites à la main dans douze catégories, plus de vrais mots qui sonnent faux et des énigmes « qu’est-ce qui est venu en premier ? ». Un quiz quotidien pour tous, un mode infini sans répétition et des défis de 10 questions pour 5 amis maximum. (Les questions sont en anglais.)',
   'Le quiz du jour',
   '10 questions, 20 secondes chacune, les mêmes pour tous. Une bonne réponse vaut 100, plus jusqu’à 50 pour la vitesse.',
   'Meilleur quiz',
@@ -588,6 +588,10 @@ const fr: string[] = [
   'Rien ne correspond à « {q} ». Essaie un jeu, une catégorie ou une page comme « profil ».',
   'Mode soirée',
   'Rejoindre une salle de soirée',
+  'Toutes les quêtes du jour sont terminées',
+  'trop courte pour compter',
+  'score trop élevé pour le temps joué',
+  'd’affilée',
 ];
 
 export default fr;

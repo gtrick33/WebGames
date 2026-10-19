@@ -453,7 +453,7 @@ const nl: string[] = [
   'Scoor {n} punten in één Crosswire-raster',
   // 410
   'Trivia die verzonnen klinkt, maar het niet is. Rare geschiedenis, vreemde dieren, ongelooflijke woorden.',
-  'Een quiz vol feiten waarbij je zegt “wacht, wat?”: het leger dat een oorlog verloor van emoes, de jockey die na zijn dood een race won, de kaas met levende maden. Honderden handgeschreven vragen in twaalf categorieën, plus echte woorden die verzonnen klinken en “wat kwam eerst?”-puzzels. Een dagelijkse quiz voor iedereen, een eindeloze modus zonder herhalingen en uitdagingen van 10 vragen voor maximaal 6 vrienden. (De vragen zijn Engels.)',
+  'Een quiz vol feiten waarbij je zegt “wacht, wat?”: het leger dat een oorlog verloor van emoes, de jockey die na zijn dood een race won, de kaas met levende maden. Honderden handgeschreven vragen in twaalf categorieën, plus echte woorden die verzonnen klinken en “wat kwam eerst?”-puzzels. Een dagelijkse quiz voor iedereen, een eindeloze modus zonder herhalingen en uitdagingen van 10 vragen voor maximaal 5 vrienden. (De vragen zijn Engels.)',
   'Quiz van vandaag',
   '10 vragen, 20 seconden per vraag, voor iedereen hetzelfde. Goede antwoorden leveren 100 op, plus tot 50 voor snelheid.',
   'Beste quiz',
@@ -588,6 +588,10 @@ const nl: string[] = [
   'Niets gevonden voor “{q}”. Probeer een spel, een categorie of een pagina zoals “profiel”.',
   'Feestmodus',
   'Naar een feestkamer',
+  'Alle quests van vandaag zijn klaar',
+  'te kort om mee te tellen',
+  'score te hoog voor de gespeelde tijd',
+  'op rij',
 ];
 
 export default nl;
