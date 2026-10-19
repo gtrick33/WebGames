@@ -344,7 +344,15 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (!isHost) return 'Only the host can start.';
       if (s.phase !== 'lobby' && s.phase !== 'over') return null;
       if (s.seats.filter((x) => x.online).length < MIN_PLAYERS) return `You need at least ${MIN_PLAYERS} players.`;
-      if (s.phase === 'over') for (const x of s.seats) x.score = 0;
+      // A new game: scores, the one free swap and the greatest hits start over. (Back from the lobby
+      // after too many left, the same game goes on.)
+      if (s.phase === 'over') {
+        for (const x of s.seats) {
+          x.score = 0;
+          x.swapped = false;
+        }
+        s.history = [];
+      }
       s.champion = null;
       s.judge = null;
       s.round = 0;
@@ -381,6 +389,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
     }
     case 'vote': {
       if (s.phase !== 'judging' || !s.settings.vote) return null;
+      if (me.waiting) return 'You join in next round.';
       const e = s.entries[a.entry];
       if (!e) return null;
       if (e.seat === me.n) return 'You cannot vote for yourself.';
@@ -405,8 +414,13 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       const target = seatN(s, a.seat);
       if (!target || target === me) return null;
       s.seats = s.seats.filter((x) => x !== target);
-      s.entries = s.entries.filter((e) => e.seat !== target.n);
-      if (s.judge === target.n && s.phase !== 'lobby' && s.phase !== 'over') startRound(s, now);
+      // Votes point at entries by index: drop their card and their vote, and shift the votes after it.
+      const gone = s.entries.findIndex((e) => e.seat === target.n);
+      if (gone >= 0) s.entries.splice(gone, 1);
+      const votes: Record<string, number> = {};
+      for (const [voter, i] of Object.entries(s.votes)) if (Number(voter) !== target.n && i !== gone) votes[voter] = gone >= 0 && i > gone ? i - 1 : i;
+      s.votes = votes;
+      if ((s.judge === target.n || (s.phase === 'judging' && s.entries.length === 0)) && s.phase !== 'lobby' && s.phase !== 'over') startRound(s, now);
       else settle(s, now);
       return null;
     }

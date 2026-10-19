@@ -131,6 +131,8 @@ function Home({ name, invite, onName, onEnter }: { name: string; invite: string;
     const info = await roomInfo(c);
     setBusy(false);
     if (!info) return setMsg(`There is no room ${c}. Check the code, or open a new room.`);
+    // A Party Mode room (Impostor, Never Have I Ever…): it opens on the party page.
+    if (info.game && info.game !== 'crass-act') return location.assign(`/party?room=${c}`);
     if (info.full) return setMsg(`Room ${c} is full (${MAX_PLAYERS} players).`);
     onEnter(c);
   };
@@ -256,6 +258,19 @@ function Room({ code, name, host, onLeave }: { code: string; name: string; host:
       </div>
     );
 
+  // The code belongs to a Party Mode room, not a Crass Act one: send them to the party page.
+  if ('game' in view && view.game !== 'crass-act')
+    return (
+      <div className="uh uh-center">
+        <Logo />
+        <div className="uh-panel">
+          <p className="uh-big">Room {code} is a Party Mode room.</p>
+          <a className="uh-btn uh-btn-go" href={`/party?room=${code}`}>
+            Open it in Party Mode
+          </a>
+        </div>
+      </div>
+    );
   const left = view.deadline ? Math.max(0, Math.ceil((view.deadline - now) / 1000)) : null;
   return (
     <div className="uh uh-room" ref={root}>
