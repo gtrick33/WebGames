@@ -98,8 +98,8 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
 
   const players = state.order.map((id) => byId(session.players, id)).filter((p): p is Player => !!p);
   if (state.phase === 'done' && (shown[state.winner!] ?? 0) === state.pos[state.winner!]) {
-    const order = standings(state);
-    const scores = Object.fromEntries(order.map((id, i) => [id, order.length - i]));
+    // The number next to each player is the tile they reached (the winner is on the 🏆).
+    const scores = Object.fromEntries(standings(state).map((id) => [id, state.pos[id] ?? 0]));
     return (
       <Results
         title={`${byId(session.players, state.winner)?.name ?? 'Someone'} wins the adventure!`}
@@ -190,7 +190,8 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
 function TileEvent({ state, session, me, players, r, onResolve }: { state: BoardState; session: PartySession; me: Player; players: Player[]; r: () => number; onResolve: (a: BoardAction) => void }) {
   const tile = state.tiles[state.landed]!;
   const others = players.filter((p) => p.id !== me.id);
-  const opponent = useMemo(() => others[Math.floor(r() * others.length)] ?? me, [others, me, r]);
+  // Picked once per tile: `others` is a new list every render, so a memo re-rolled the opponent mid-duel.
+  const [opponent] = useState(() => others[Math.floor(r() * others.length)] ?? me);
   const info = TILE_INFO[tile.kind];
   const [mini, setMini] = useState<MiniId | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);

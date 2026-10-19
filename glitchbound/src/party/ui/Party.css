@@ -1425,6 +1425,7 @@ img.pt-feature-art {
   aspect-ratio: 1;
   border: 2px solid var(--pt-edge);
   border-radius: 12px;
+  color: #1d1238; /* tiles are pastel in both themes */
   font-size: clamp(14px, 4.4vw, 22px);
   transition: transform 0.2s;
 }
@@ -1486,7 +1487,8 @@ img.pt-feature-art {
   height: 84px;
   border: 3px solid var(--pt-edge);
   border-radius: 20px;
-  background: linear-gradient(135deg, var(--pt-card), color-mix(in srgb, var(--pt-orange) 18%, var(--pt-card)));
+  /* A white die in both themes: its pips are dark. */
+  background: linear-gradient(135deg, #fff, #ffe7cc);
   box-shadow: 0 5px 0 var(--pt-shadow);
   padding: 10px;
 }
