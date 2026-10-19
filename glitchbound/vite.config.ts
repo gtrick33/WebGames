@@ -51,8 +51,9 @@ export default defineConfig(({ mode }) => {
   return {
     base: '/',
     plugins: [react(), seoPages(siteUrl, env.VITE_ADSENSE_CLIENT ?? '')],
-    // `npm run dev` proxies /api to the Pages Functions (`npm run dev:api`, port 8788).
-    server: { proxy: { '/api': 'http://127.0.0.1:8788' } },
+    // `npm run dev` proxies /api (and live-room sockets) to the Pages Functions (`npm run dev:api`,
+    // port 8788). GB_API points it at another one, e.g. when several copies run side by side.
+    server: { proxy: { '/api': { target: process.env.GB_API || 'http://127.0.0.1:8788', ws: true } } },
     build: {
       target: 'es2022',
       outDir: 'dist',
