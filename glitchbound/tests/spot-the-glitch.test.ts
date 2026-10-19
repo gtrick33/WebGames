@@ -7,7 +7,9 @@ import {
   giveUp,
   LOCK_MS,
   pictureScore,
+  progressOf,
   resultOf,
+  resumePicture,
   shareText,
   startPicture,
   tap,
@@ -129,8 +131,29 @@ describe('taps, hints and scoring', () => {
     expect(pictureScore(s, 30_000)).toBe(1000 - 40 - 150 - timePenalty(30));
     expect(timePenalty(10)).toBe(0);
     expect(timePenalty(1000)).toBe(400);
+    // The time penalty uses the same rounded seconds the breakdown shows (22.6 s reads 23 s: −12).
+    const quick = { ...startPicture(p, 0), found: [0, 1, 2, 3, 4], finishedAt: 22_600 };
+    expect(resultOf(quick)).toMatchObject({ seconds: 23, score: 1000 - timePenalty(23) });
     const slow = { ...s, misses: Array.from({ length: 30 }, (_, i) => ({ x: 0, y: 0, at: i })) };
     expect(pictureScore(slow, 30_000)).toBe(500);
+  });
+
+  it('resumes an unfinished picture with its finds, misses, hints and clock (no fresh start)', () => {
+    let s = startPicture(p, 1000);
+    s = tap(s, at(0).x, at(0).y, 0, 3000).state;
+    for (let i = 0; i < 2; i++) s = tap(s, -50, -50, 0, 4000 + i).state;
+    s = applyHint(s);
+    const saved = progressOf(s, 9000);
+    expect(saved).toMatchObject({ found: [0], hints: 1, hinted: 1, ms: 8000 });
+
+    const back = resumePicture(p, 50_000, saved);
+    expect(back).toMatchObject({ found: [0], hints: 1, hinted: 1, startedAt: 42_000, finishedAt: null });
+    expect(back.misses.length).toBe(2);
+    // Old misses still cost points but don't count toward the tap-spam lock.
+    expect(tap(back, -50, -50, 0, 50_001).state.lockedUntil).toBe(0);
+    let done = back;
+    for (let i = 1; i < DIFFS; i++) done = tap(done, at(i).x, at(i).y, 0, 52_000).state;
+    expect(resultOf(done)).toMatchObject({ found: DIFFS, misses: 2, hints: 1, seconds: 10 });
   });
 
   it('scores 100 per difference when giving up', () => {
@@ -157,5 +180,16 @@ describe('saves', () => {
     expect(sgStats(s, '2026-10-19')).toMatchObject({ played: 1, streak: 1, best: 2700 });
     expect(s.fastest).toBe(25);
     expect(sanitizeSg({ v: 1, daily: { '2026-10-18': [{ score: 5000, found: 9 }] } }).daily['2026-10-18']![0]).toMatchObject({ score: 1000, found: 5 });
+  });
+
+  it('keeps an unfinished daily picture until it is recorded', () => {
+    const progress = { day: '2026-10-18', index: 1, found: [2, 9, 'x'], misses: [{ x: 1, y: 2 }, { x: 'a' }], hints: 1, hinted: 3, ms: 12_345.6 };
+    const s = sanitizeSg({ v: 1, progress });
+    expect(s.progress).toEqual({ day: '2026-10-18', index: 1, found: [2], misses: [{ x: 1, y: 2 }], hints: 1, hinted: 3, ms: 12_345 });
+    expect(sanitizeSg({ v: 1, progress: { day: 'soon', found: [], misses: [] } }).progress).toBeNull();
+    const r = { score: 900, found: 5, misses: 0, hints: 0, seconds: 25 };
+    expect(recordPicture(s, r, '2026-10-18').progress).toBeNull();
+    // Relax pictures leave it alone.
+    expect(recordPicture(s, r, null, true).progress).toEqual(s.progress);
   });
 });

@@ -46,6 +46,32 @@ export function startPicture(puzzle: Puzzle, now: number): PictureState {
 
 export const isDone = (s: PictureState): boolean => s.finishedAt !== null;
 
+/** What is kept of an unfinished picture: finds, misses, hints and game-clock ms spent so far. */
+export interface PictureProgress {
+  found: number[];
+  misses: { x: number; y: number }[];
+  hints: number;
+  hinted: number | null;
+  ms: number;
+}
+
+export const progressOf = (s: PictureState, now: number): PictureProgress => ({
+  found: s.found,
+  misses: s.misses.map(({ x, y }) => ({ x, y })),
+  hints: s.hints,
+  hinted: s.hinted,
+  ms: Math.max(0, Math.round(now - s.startedAt)),
+});
+
+/** Picks an unfinished picture up again: everything found, missed and paid for stays, and its clock goes on. */
+export function resumePicture(puzzle: Puzzle, now: number, p: PictureProgress): PictureState {
+  const found = p.found.filter((d, i) => d < puzzle.diffs.length && p.found.indexOf(d) === i);
+  // Old misses still cost points but no longer count toward the tap-spam lock.
+  const misses = p.misses.map((m, i) => ({ ...m, at: now - SPAM_WINDOW_MS - p.misses.length + i }));
+  const hinted = p.hinted !== null && p.hinted < puzzle.diffs.length && !found.includes(p.hinted) ? p.hinted : null;
+  return { ...startPicture(puzzle, now - p.ms), found, misses, hints: p.hints, hinted };
+}
+
 /** Applies a tap and says what happened (for sound and visual feedback). */
 export function tap(s: PictureState, x: number, y: number, slop: number, now: number): { state: PictureState; outcome: TapOutcome; diff: number } {
   if (isDone(s)) return { state: s, outcome: 'ignored', diff: -1 };
@@ -86,7 +112,8 @@ export const timePenalty = (secs: number): number => Math.min(400, Math.max(0, M
 export function pictureScore(s: PictureState, now: number): number {
   const found = s.found.length;
   if (s.gaveUp || found < DIFFS) return found * 100;
-  const raw = MAX_PICTURE - s.misses.length * MISS_COST - s.hints * HINT_COST - timePenalty(seconds(s, now));
+  // Whole seconds, rounded like the time the player sees (result, breakdown and share text).
+  const raw = MAX_PICTURE - s.misses.length * MISS_COST - s.hints * HINT_COST - timePenalty(Math.round(seconds(s, now)));
   return Math.max(found * 100, raw);
 }
 
