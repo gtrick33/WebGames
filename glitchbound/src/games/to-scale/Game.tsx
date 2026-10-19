@@ -122,16 +122,6 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
   const shot = shots[idx];
   const total = played.reduce((a, p) => a + p.points, 0);
 
-  const lock = (): void => {
-    if (!shot || phase !== 'aim') return;
-    const points = pointsFor(guess, shot.ratio);
-    setPlayed((p) => [...p, { points, guess }]);
-    if (mode === 'endless' && points < MISS_POINTS) setLives((l) => l - 1);
-    setPhase('reveal');
-    sfx().lock();
-    window.setTimeout(() => sfx().reveal(points), 180);
-  };
-
   const finish = (list: Played[]): void => {
     const score = list.reduce((a, p) => a + p.points, 0);
     const bullseyes = list.filter((p) => p.points >= 900).length;
@@ -147,14 +137,30 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
     });
     const end = { type: 'end' as const, score, stats: { bullseyes } };
     host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
-    sfx().over();
-    setScreen('result');
+  };
+
+  const lock = (): void => {
+    if (!shot || phase !== 'aim') return;
+    const points = pointsFor(guess, shot.ratio);
+    const list = [...played, { points, guess }];
+    const left = mode === 'endless' && points < MISS_POINTS ? lives - 1 : lives;
+    setPlayed(list);
+    setLives(left);
+    setPhase('reveal');
+    sfx().lock();
+    window.setTimeout(() => sfx().reveal(points), 180);
+    // The last shot decides the game: keep the result now, even if the player leaves on its reveal.
+    if (mode === 'endless' ? left <= 0 : idx + 1 >= shots.length) finish(list);
   };
 
   const next = (): void => {
     if (phase !== 'reveal') return;
     const over = mode === 'endless' ? lives <= 0 : idx + 1 >= shots.length;
-    if (over) return finish(played);
+    if (over) {
+      // Already kept when the last shot was locked in.
+      sfx().over();
+      return setScreen('result');
+    }
     let list = shots;
     if (mode === 'endless' && endlessRng.current && idx + 1 >= shots.length) {
       list = [...shots, makeShot(endlessRng.current, new Set(shots.slice(-12).map((s) => s.target)))];

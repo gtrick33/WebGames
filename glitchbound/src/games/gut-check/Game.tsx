@@ -111,7 +111,6 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     });
     const end = { type: 'end' as const, score: streak, stats: {} };
     host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
-    setOver(true);
   };
 
   const call = (c: 'more' | 'less'): void => {
@@ -128,21 +127,22 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       sfx().wrong();
       navigator.vibrate?.(70);
     }
+    // A miss (or the last card) ends the run: keep the result now, even if the player leaves during the reveal.
+    if (!right) finish(run.i);
+    else if (run.i + 1 >= run.pairs.length) finish(run.i + 1);
   };
 
-  // After the reveal: the next pair, or the end of the run.
+  // After the reveal: the next pair, or the end-of-run screen.
   useEffect(() => {
     if (!run || run.phase === 'ask' || over) return;
     const t = window.setTimeout(
       () => {
-        if (run.phase === 'wrong') return finish(run.i);
-        if (run.i + 1 >= run.pairs.length) return finish(run.i + 1);
+        if (run.phase === 'wrong' || run.i + 1 >= run.pairs.length) return setOver(true);
         setRun({ ...run, i: run.i + 1, phase: 'ask', call: null });
       },
       run.phase === 'right' ? 1100 : 1600,
     );
     return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run, over]);
 
   useEffect(() => {
