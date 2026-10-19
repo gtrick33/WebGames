@@ -440,6 +440,7 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
   const { mode, qs, run, today, challenge } = props;
   const total = run.pts.reduce((a, b) => a + b, 0);
   const correct = run.picks.filter((p, i) => qs[i] && judge(qs[i], p) === 'right').length;
+  const strikes = run.picks.filter((p, i) => !qs[i] || ['wrong', 'timeout'].includes(judge(qs[i], p))).length;
   const [shareMsg, setShareMsg] = useState('');
   const [open, setOpen] = useState(false);
   const verdict = useMemo(() => {
@@ -458,7 +459,7 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
         <small>{mode === 'endless' ? ' points' : ` / ${MAX_POINTS.toLocaleString('en-US')}`}</small>
       </p>
       <p className="ww-muted">
-        {correct} right{mode === 'endless' ? ` before ${STRIKES} strikes` : ` out of ${qs.length}`}
+        {correct} right{mode === 'endless' ? (strikes >= STRIKES ? ` before ${STRIKES} strikes` : '') : ` out of ${qs.length}`}
       </p>
       {mode !== 'endless' && <p className="ww-grid">{grid(qs, run)}</p>}
       <div className="ww-row">

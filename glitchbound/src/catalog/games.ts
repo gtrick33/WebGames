@@ -492,7 +492,7 @@ export const GAMES: GameEntry[] = [
     runtime: { kind: 'module' },
     aspect: 'portrait',
     controls: {
-      keyboard: ['1–4 or A–D: answer', 'Enter: next question'],
+      keyboard: ['1–4 or A–D: answer', 'Left / Right: move the lever, Enter: lock it in', 'Enter: next question'],
       touch: ['Tap an answer'],
     },
     stats: [

@@ -349,7 +349,7 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
           <h2>{s.score >= 1500 ? 'What a deal!' : 'No room left'}</h2>
           <p className="sd-big">{s.score}</p>
           <p className="sd-muted">
-            {s.lines} lines · best streak x{s.bestStreak} {newBest ? '· New best!' : `· best ${save.best}`}
+            {s.lines} {s.lines === 1 ? 'line' : 'lines'} · best streak x{s.bestStreak} {newBest ? '· New best!' : `· best ${save.best}`}
           </p>
           <ResultLine line={resultLine(s.score, s.lines, s.bestStreak)} label={`${s.score} points, ${s.lines} lines`} />
           {mode === 'daily' && daily && (
@@ -441,7 +441,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         </button>
       </section>
       <p className="sd-muted">
-        Best {save.best} · {save.runs} games · {save.lines} lines cleared
+        Best {save.best} · {save.runs} {save.runs === 1 ? 'game' : 'games'} · {save.lines} {save.lines === 1 ? 'line' : 'lines'} cleared
       </p>
     </div>
   );

@@ -193,7 +193,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         </button>
       </div>
       <p className="gc-help">
-        <b>{nameOf(pair.right)}</b> vs {nameOf(pair.left)}: {cat.more.toLowerCase()} or {cat.less.toLowerCase()}?
+        <b>{nameOf(pair.right)}</b>: {cat.more.toLowerCase()} or {cat.less.toLowerCase()} than {nameOf(pair.left)}?
       </p>
       {over && (
         <div className="gc-over">
@@ -318,7 +318,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         </button>
       </section>
       <p className="gc-muted">
-        Best streak {save.best} · {save.runs} runs
+        Best streak {save.best} · {save.runs} {save.runs === 1 ? 'run' : 'runs'}
       </p>
       <p className="gc-muted gc-small">People, places, animals, food and history. Every number is rounded; pairs are always far apart.</p>
     </div>
