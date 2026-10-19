@@ -736,7 +736,7 @@ export const GAMES: GameEntry[] = [
       keyboard: ['Up or 1: more', 'Down or 2: less'],
       touch: ['Tap ▲ for more, ▼ for less'],
     },
-    stats: [{ key: 'score', label: 'Longest streak' }],
+    stats: [{ key: 'score', label: 'Longest streak', unit: 'in a row' }],
     highlights: ['Nine topics: people, land, weight, speed, height, mountains, rivers, calories and history', 'Pairs are always far apart, so a right gut feeling is always right', 'A daily run with the same cards for everyone'],
     ownDaily: { label: 'Today’s cards' },
     challenge: { label: 'The same cards in the same order for everyone. Longest streak wins.' },

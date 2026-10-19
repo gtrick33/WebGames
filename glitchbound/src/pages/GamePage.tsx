@@ -223,6 +223,8 @@ export function GamePage({ game }: { game: GameEntry }) {
   };
 
   const [shareMsg, setShareMsg] = useState('');
+  // Most scores are points; a game can name its own (Gut Check counts answers in a row).
+  const scoreUnit = game.stats.find((s) => s.key === 'score')?.unit;
   const live = useLiveCatalog();
   const related = relatedGames(game, 4, live.games);
   const isDailyGame = challengeForDay(dayKey(), GAMES)?.game.slug === game.slug;
@@ -462,7 +464,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             <div key={last.n} className="panel last-round">
               <p className="eyebrow">{t('Last round')}</p>
               <p className="last-score">
-                {fmt(last.event.score)} <span>{t('points')}</span>
+                {fmt(last.event.score)} <span>{scoreUnit ? t(scoreUnit) : t('points')}</span>
               </p>
               <ul className="last-tags">
                 {last.server?.rank && (
@@ -646,7 +648,7 @@ function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRec
                   <dt>{t(st.label)}</dt>
                   <dd className="mono">
                     {record.best[st.key] !== undefined ? fmt(record.best[st.key]!) : '–'}
-                    {st.unit && record.best[st.key] !== undefined ? ` ${st.unit}` : ''}
+                    {st.unit && record.best[st.key] !== undefined ? ` ${t(st.unit)}` : ''}
                   </dd>
                 </div>
               ))}
