@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { onRequestPost as changeCatalog } from '../functions/api/admin/catalog';
+import { onRequestGet as subscribersCsv } from '../functions/api/admin/subscribers';
+import type { Env } from '../server/http';
+import { signIn } from '../server/signin';
 import { GAMES } from '../src/catalog/games';
 import {
   applySettings,
@@ -19,6 +23,7 @@ import {
 } from '../src/catalog/settings';
 import { challengeForDay } from '../src/platform/daily';
 import { addDays } from '../src/platform/dates';
+import { memoryD1 } from './d1';
 
 const cat = (settings: PublicCatalog['settings'], picks: PublicCatalog['picks'] = {}): PublicCatalog => ({ settings, picks, notice: null });
 const dailyGames = GAMES.filter((g) => g.daily?.length);
@@ -70,6 +75,41 @@ describe('admin game settings', () => {
     expect(sanitizeNotice({ text: '  ', link: '/x' }, 1)).toBeNull();
     expect(sanitizeNotice({ text: 'Hello', link: 'javascript:alert(1)', tone: 'party' }, 1)).toMatchObject({ text: 'Hello', link: '', tone: 'party' });
     expect(sanitizeNotice({ text: 'Hello', link: '/games/wing-it' }, 1)?.link).toBe('/games/wing-it');
+  });
+});
+
+describe('admin API', () => {
+  async function asAdmin() {
+    const db = memoryD1();
+    const env: Env = { DB: db, NR_DB: {} as Env['NR_DB'], ADMIN_EMAILS: 'boss@example.com' };
+    const { cookie } = await signIn(env, new Request('http://localhost'), { sub: 'dev:boss', email: 'boss@example.com', name: 'Boss', givenName: '', picture: '', provider: 'email' });
+    return { db, env, cookie: cookie.split(';')[0]! };
+  }
+
+  it('refuses a notice link it would drop, instead of saving the notice without it', async () => {
+    const { env, cookie } = await asAdmin();
+    const post = async (notice: unknown) => {
+      const request = new Request('http://localhost/api/admin/catalog', {
+        method: 'POST',
+        headers: { origin: 'http://localhost', cookie, 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'notice', notice }),
+      });
+      const res = await changeCatalog({ request, env });
+      return { status: res.status, data: (await res.json()) as { error?: string; message?: string; notice?: { link: string } } };
+    };
+    const bad = await post({ text: 'New game!', link: 'glitchboundstudio.com/games/wing-it' });
+    expect(bad).toMatchObject({ status: 400, data: { error: 'invalid_link', message: expect.stringContaining('https://') } });
+    expect((await post({ text: '  ' })).data).toMatchObject({ error: 'invalid_notice', message: expect.any(String) });
+    expect((await post({ text: 'New game!', link: '/games/wing-it' })).data.notice?.link).toBe('/games/wing-it');
+    expect((await post({ text: 'New game!', link: '  ' })).status).toBe(200);
+  });
+
+  it('exports subscribers as a spreadsheet-safe CSV', async () => {
+    const { db, env, cookie } = await asAdmin();
+    db.sqlite.prepare(`INSERT INTO subscribers (email, status, token, created_at) VALUES ('=1+2@x.co', 'pending', 't', 0), ('pat@example.com', 'confirmed', 'u', 0)`).run();
+    const res = await subscribersCsv({ request: new Request('http://localhost/api/admin/subscribers', { headers: { cookie } }), env });
+    const lines = (await res.text()).trim().split('\n');
+    expect(lines).toEqual(['email,status,created,confirmed', "'=1+2@x.co,pending,1970-01-01T00:00:00.000Z,", 'pat@example.com,confirmed,1970-01-01T00:00:00.000Z,']);
   });
 });
 

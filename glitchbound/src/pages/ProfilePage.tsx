@@ -21,6 +21,10 @@ export function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [nickMsg, setNickMsg] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  // Shown on the signed-out page right after the account was deleted.
+  const [deleted, setDeleted] = useState(false);
   const [allFavs, setAllFavs] = useState(false);
   const games = useGames();
 
@@ -35,6 +39,11 @@ export function ProfilePage() {
     return (
       <div className="wrap info-page">
         <h1 className="info-title">Your profile</h1>
+        {deleted && (
+          <p className="panel info-block" role="status">
+            Your account and everything saved with it were deleted.
+          </p>
+        )}
         <p className="info-lead">Sign in to get daily quests, levels, badges, favorites on every device and your name on the leaderboards.</p>
         <div>
           <button className="btn btn-magenta btn-lg" onClick={() => openSignIn()}>
@@ -56,6 +65,24 @@ export function ProfilePage() {
       setNickMsg(err instanceof ApiError ? err.message : 'Could not save.');
     }
   };
+  const editNick = (on: boolean): void => {
+    setEditing(on);
+    setNickMsg('');
+  };
+
+  const deleteAccount = async (): Promise<void> => {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await account.deleteAccount();
+      setDeleted(true);
+      setConfirmDelete(false);
+    } catch {
+      setDeleteError('Could not delete your account right now. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const favorites = games.filter((g) => me.favorites.includes(g.slug));
   const pct = Math.round(((me.xp - me.levelFloor) / Math.max(1, me.levelNext - me.levelFloor)) * 100);
@@ -68,16 +95,16 @@ export function ProfilePage() {
         <div className="profile-id">
           {editing ? (
             <form className="nick-form" onSubmit={(e) => void saveNick(e)}>
-              <input className="field" name="nickname" defaultValue={me.nickname} minLength={3} maxLength={16} aria-label="Nickname" autoFocus />
+              <input className="field" name="nickname" defaultValue={me.nickname} minLength={3} maxLength={14} aria-label="Nickname" autoFocus />
               <button className="btn btn-primary btn-sm">Save</button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => editNick(false)}>
                 Cancel
               </button>
             </form>
           ) : (
             <h1 className="profile-name">
               {me.nickname}
-              <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
+              <button className="btn btn-ghost btn-sm" onClick={() => editNick(true)} aria-label="Edit nickname">
                 Edit
               </button>
             </h1>
@@ -140,8 +167,9 @@ export function ProfilePage() {
       <section className="panel info-block danger" aria-labelledby="account-title">
         <h2 id="account-title">Account</h2>
         <p>
-          Signed in with Google as <b>{me.email}</b>. Leaderboards only show your nickname.
+          Signed in as <b>{me.email}</b>. Leaderboards only show your nickname.
         </p>
+        {confirmDelete && <p className="info-small">Your nickname, XP, levels, bests, rounds, favorites and quest progress are deleted for good. This can’t be undone.</p>}
         <div className="reset-row">
           <button className="btn" onClick={() => void account.signOut()}>
             <Icon name="logout" /> Sign out
@@ -152,15 +180,20 @@ export function ProfilePage() {
             </button>
           ) : (
             <>
-              <button className="btn btn-magenta" onClick={() => void account.deleteAccount()}>
+              <button className="btn btn-magenta" disabled={deleting} onClick={() => void deleteAccount()}>
                 Yes, delete everything
               </button>
-              <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>
+              <button className="btn btn-ghost" disabled={deleting} onClick={() => setConfirmDelete(false)}>
                 Cancel
               </button>
             </>
           )}
         </div>
+        {deleteError && (
+          <p className="info-small" role="alert">
+            {deleteError}
+          </p>
+        )}
       </section>
     </div>
   );
@@ -177,7 +210,9 @@ function BestResults({ me }: { me: Me }) {
   const games = useGames();
   const ranked = rankBests(me.bests, games);
   const top = ranked.slice(0, HIGHLIGHTS);
-  const rest = ranked.slice(HIGHLIGHTS).filter((e) => e.game.title.toLowerCase().includes(query.trim().toLowerCase()));
+  // The list holds the bests below the cards; a search looks through all of them.
+  const q = query.trim().toLowerCase();
+  const rest = q ? ranked.filter((e) => e.game.title.toLowerCase().includes(q)) : ranked.slice(HIGHLIGHTS);
   const untried = games.filter((g) => !me.bests[g.slug]);
   return (
     <section aria-labelledby="bests-title">
@@ -226,6 +261,13 @@ function BestResults({ me }: { me: Me }) {
               </tr>
             </thead>
             <tbody>
+              {rest.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="info-small">
+                    No game matches “{query.trim()}”.
+                  </td>
+                </tr>
+              )}
               {rest.map((e) => (
                 <tr key={e.game.slug}>
                   <td>

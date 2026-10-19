@@ -335,6 +335,12 @@
   min-width: 0;
 }
 .admin .info-block {
+  grid-template-columns: minmax(0, 1fr);
+  overflow-x: auto;
+}
+/* Tables scroll on their own (the leaderboard styles let .hall-wrap overflow on phones), so a
+   wide table doesn't widen its whole panel and push the search box and buttons off screen. */
+.admin .hall-wrap {
   overflow-x: auto;
 }
 
@@ -357,6 +363,18 @@
   background: var(--cyan);
   color: var(--ink);
   box-shadow: var(--hard-sm);
+}
+/* Phones: the four tabs as an even two-by-two block instead of a pill that wraps unevenly. */
+@media (max-width: 560px) {
+  .admin-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    border-radius: 24px;
+  }
+  .admin-tabs a {
+    justify-content: center;
+  }
 }
 
 /* ------------------------------------------------------ Admin › Games */

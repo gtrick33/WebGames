@@ -6,6 +6,12 @@ import { usePageMeta } from '../platform/meta';
 import { Link, navigate } from '../router/router';
 import './InfoPages.css';
 
+/** Why the email link sent the player back here (?error=…); shown until they try again. */
+const ERRORS: Record<string, string> = {
+  link: 'That sign-in link has expired or was already used. Ask for a new code below.',
+  banned: 'This account has been suspended. If you think this is a mistake, write to hello@glitchboundstudio.com.',
+};
+
 /** /signin: sign up or sign in with Google or an email code. */
 export function SignInPage() {
   usePageMeta({ title: 'Sign in or create an account', description: 'Join GlitchBound for free with Google or your email: daily quests, levels and leaderboards.', path: '/signin' });
@@ -40,9 +46,7 @@ export function SignInPage() {
         </div>
         <div className="signin-box panel">
           <h2 className="signin-title">Sign in or sign up</h2>
-          {errorParam === 'link' && <p className="signin-error">That sign-in link has expired or was already used. Ask for a new code below.</p>}
-          {errorParam === 'banned' && <p className="signin-error">This account has been suspended. If you think this is a mistake, write to hello@glitchboundstudio.com.</p>}
-          <SignInPanel showPerks={false} onDone={() => navigate('/me')} />
+          <SignInPanel showPerks={false} onDone={() => navigate('/me')} notice={errorParam ? (ERRORS[errorParam] ?? '') : ''} />
         </div>
       </div>
     </div>

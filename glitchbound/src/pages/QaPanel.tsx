@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { GAMES } from '../catalog/games';
 import { Icon } from '../components/Icon';
-import { account, api, ApiError } from '../platform/account';
+import { account, api, ApiError, useAccount } from '../platform/account';
 import type { Me, QaPlayer, QaPlayerRow, StaffRole } from '../platform/apiTypes';
 import { fmt } from '../platform/daily';
 import { dayKey } from '../platform/dates';
@@ -409,6 +409,7 @@ function BanTool({ player, busy, blocked, onBan }: { player: QaPlayer; busy: boo
 }
 
 function EmailTool({ player, busy, onSend }: { player: QaPlayer; busy: boolean; onSend: (subject: string, message: string) => Promise<boolean> }) {
+  const { config } = useAccount();
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   return (
@@ -429,6 +430,7 @@ function EmailTool({ player, busy, onSend }: { player: QaPlayer; busy: boolean; 
       <p className="info-small">
         From <b>hello@glitchboundstudio.com</b> to <b>{player.email}</b>. It starts with “Hi {player.nickname},”; leave an empty line between paragraphs.
       </p>
+      {config && !config.emailEnabled && <p className="admin-warn">Email sending is off on this site: the message is kept on the player’s record but not sent.</p>}
       <label className="ag-field">
         <span>Subject</span>
         <input className="field" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={120} required />
@@ -557,7 +559,7 @@ function TestingTools({ me, flash, onOpenSelf }: { me: Me; flash: Flash; onOpenS
             ))}
           </select>
           <p className="info-small">
-            {deviceKeys.length ? `Saved here: ${deviceKeys.join(', ')}` : 'Nothing of this game is saved in this browser yet'}, plus its rounds in the arcade save.
+            {deviceKeys.length ? `Saved here: ${deviceKeys.join(', ')}.` : 'Nothing of this game is saved in this browser yet.'} Clearing it also removes its rounds from the arcade save.
           </p>
           <div className="reset-row">
             <button

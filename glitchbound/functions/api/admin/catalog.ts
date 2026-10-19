@@ -104,7 +104,10 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
         return json({ ok: true });
       }
       const notice = sanitizeNotice(body.notice, now);
-      if (!notice) return bad('invalid_notice');
+      if (!notice) return bad('invalid_notice', 400, { message: 'Write a message for the notice.' });
+      // A link that isn't kept would otherwise vanish without a word.
+      const link = (body.notice as { link?: unknown }).link;
+      if (typeof link === 'string' && link.trim() && !notice.link) return bad('invalid_link', 400, { message: 'Links start with / (a page of this site) or https://' });
       await env.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('notice', ?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by")
         .bind(JSON.stringify(notice), now, by)
         .run();
