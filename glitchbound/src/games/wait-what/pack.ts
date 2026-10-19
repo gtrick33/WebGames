@@ -10,6 +10,7 @@
  */
 import type { ContentLang } from '../../platform/contentLang';
 import { ANIMALS } from './bank/animals';
+import { BULGARIA, BULGARIA_SINCE } from './bank/bulgaria';
 import { EMOJI_SAYINGS, EMOJI_TITLES, type EmojiQ } from './bank/emoji';
 import { FOOD } from './bank/food';
 import { GEO } from './bank/geo';
@@ -85,6 +86,7 @@ export const EN: Pack = {
       since: LAUNCH,
       items: { history: HISTORY, animals: ANIMALS, science: SCIENCE, food: FOOD, geo: GEO, space: SPACE, tech: TECH, pop: POP, sports: SPORTS, words: WORDS, money: MONEY, myths: MYTHS },
     },
+    { since: BULGARIA_SINCE, items: BULGARIA },
   ],
   fixedOrder: [
     ['True', 'False'],

@@ -3,7 +3,7 @@
  * This file must stay free of React and browser APIs: vite.config.ts imports the catalog at build
  * time to generate per-game HTML pages, the sitemap and robots.txt.
  */
-import type { ContentLang } from '../platform/contentLang';
+import type { ContentLang } from '../platform/contentLang.ts';
 
 export const CATEGORIES = {
   arcade: { label: 'Arcade', blurb: 'Fast hands, short rounds.' },

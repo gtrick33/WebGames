@@ -1,0 +1,14 @@
+/* "You beat 64% of today's players" under a daily result on the game page. */
+.daily-compare {
+  display: grid;
+  gap: 2px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.daily-compare span {
+  font-size: 12px;
+  color: var(--fg-3);
+}

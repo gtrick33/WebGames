@@ -597,6 +597,8 @@ const nl: string[] = [
   'Contact',
   'Alleen voor volwassenen',
   'Over GlitchBound',
+  'Je hebt {pct}% van de spelers van vandaag verslagen',
+  '{n} speelden vandaag',
 ];
 
 export default nl;

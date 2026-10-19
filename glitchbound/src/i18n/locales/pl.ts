@@ -597,6 +597,8 @@ const pl: string[] = [
   'Kontakt',
   'Tylko dla dorosłych',
   'O GlitchBound',
+  'Pokonałeś {pct}% dzisiejszych graczy',
+  'Dziś zagrało: {n}',
 ];
 
 export default pl;

@@ -129,15 +129,15 @@ function nth(bucket: Bucket, n: number, salt = 0): Variant | null {
 /** Ball size for each daily level: two warm-ups, two medium, one tiny finale. */
 export const DAILY_BUCKETS: Bucket[] = ['big', 'big', 'mid', 'mid', 'small'];
 
-/** The daily's photo (and zoom) for level `index` on day number `day` (0 = PHOTO_FROM). */
-export function dailyVariant(day: number, index: number): Variant | null {
+/** The schedule before photos were rested (day 0, 2026-10-19, keeps the photos it was played with). */
+function firstVariant(day: number, index: number): Variant | null {
   const bucket = DAILY_BUCKETS[index] ?? 'mid';
   const perDay = DAILY_BUCKETS.filter((b) => b === bucket).length;
   const slot = DAILY_BUCKETS.slice(0, index).filter((b) => b === bucket).length;
   // Never the same photo twice in one day: skip ahead past photos used by the day's earlier levels.
   const used = new Set<string>();
   for (let i = 0; i < index; i++) {
-    const v = dailyVariant(day, i);
+    const v = firstVariant(day, i);
     if (v) used.add(v.photo.id);
   }
   for (let k = 0; k < 50; k++) {
@@ -145,6 +145,59 @@ export function dailyVariant(day: number, index: number): Variant | null {
     if (v && !used.has(v.photo.id)) return v;
   }
   return nth(bucket, day * perDay + slot);
+}
+
+/**
+ * A photo shown in a daily rests this many days before it comes back at any zoom (when the library
+ * allows), so a returning player doesn't keep meeting the same picture. From day REST_FROM on.
+ */
+export const PHOTO_REST_DAYS = 21;
+const REST_FROM = 1;
+
+/** Daily photos from REST_FROM on, worked out day by day (each day needs the days before it). */
+const rested: (Variant | null)[][] = [];
+/** Per bucket: how far along its shuffled order the schedule is, and the slots taken out of turn. */
+const cursor: Record<Bucket, number> = { big: 0, mid: 0, small: 0 };
+const taken: Record<Bucket, Set<number>> = { big: new Set(), mid: new Set(), small: new Set() };
+
+function dayVariants(day: number): (Variant | null)[] {
+  if (day < REST_FROM) return DAILY_BUCKETS.map((_, i) => firstVariant(day, i));
+  pools ??= variants();
+  while (rested.length <= day - REST_FROM) {
+    const d = REST_FROM + rested.length;
+    if (rested.length === 0) for (const b of ['big', 'mid', 'small'] as const) cursor[b] = d * DAILY_BUCKETS.filter((x) => x === b).length;
+    const recent = new Set<string>();
+    for (let back = 1; back <= PHOTO_REST_DAYS && d - back >= 0; back++) for (const v of dayVariants(d - back)) if (v) recent.add(v.photo.id);
+    const today: (Variant | null)[] = [];
+    for (const bucket of DAILY_BUCKETS) {
+      const len = pools[bucket].length;
+      if (!len) {
+        today.push(null);
+        continue;
+      }
+      while (taken[bucket].has(cursor[bucket])) taken[bucket].delete(cursor[bucket]++);
+      const fresh = (v: Variant | null): boolean => !!v && !today.some((t) => t?.photo.id === v.photo.id);
+      // The next variant in turn whose photo has rested; failing that (a small library), any not shown today.
+      let pick = -1;
+      for (let k = 0; k < len && pick < 0; k++) {
+        const n = cursor[bucket] + k;
+        const v = nth(bucket, n);
+        if (!taken[bucket].has(n) && fresh(v) && !recent.has(v!.photo.id)) pick = n;
+      }
+      for (let k = 0; k < len && pick < 0; k++) if (!taken[bucket].has(cursor[bucket] + k) && fresh(nth(bucket, cursor[bucket] + k))) pick = cursor[bucket] + k;
+      if (pick < 0) pick = cursor[bucket];
+      if (pick === cursor[bucket]) cursor[bucket]++;
+      else taken[bucket].add(pick);
+      today.push(nth(bucket, pick));
+    }
+    rested.push(today);
+  }
+  return rested[day - REST_FROM]!;
+}
+
+/** The daily's photo (and zoom) for level `index` on day number `day` (0 = PHOTO_FROM). */
+export function dailyVariant(day: number, index: number): Variant | null {
+  return dayVariants(day)[index] ?? null;
 }
 
 /** Ball size for Endless level `index`: big balls first, then mostly medium and small. */

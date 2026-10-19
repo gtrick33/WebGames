@@ -601,6 +601,8 @@ export const KEYS: string[] = [
   "Contact",
   "Adults only",
   "About GlitchBound",
+  "You beat {pct}% of today’s players",
+  "{n} played today",
 ];
 
 export const UI_COUNT = 311;

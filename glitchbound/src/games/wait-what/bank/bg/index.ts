@@ -5,6 +5,7 @@
  */
 import { EN, type Pack } from '../../pack';
 import { ANIMALS } from './animals';
+import { BULGARIA } from './bulgaria';
 import { EMOJI_SAYINGS, EMOJI_TITLES } from './emoji';
 import { FOOD } from './food';
 import { GEO } from './geo';
@@ -33,6 +34,7 @@ export const BG: Pack = {
       since: EN.batches[0]!.since,
       items: { history: HISTORY, animals: ANIMALS, science: SCIENCE, food: FOOD, geo: GEO, space: SPACE, tech: TECH, pop: POP, sports: SPORTS, words: WORDS, money: MONEY, myths: MYTHS },
     },
+    { since: EN.batches[1]!.since, items: BULGARIA },
   ],
   fixedOrder: [
     ['Вярно', 'Невярно'],

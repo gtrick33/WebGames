@@ -597,6 +597,8 @@ const tr: string[] = [
   'İletişim',
   'Yalnızca yetişkinler',
   'GlitchBound hakkında',
+  'Bugünkü oyuncuların %{pct} kadarını geçtin',
+  'Bugün {n} kişi oynadı',
 ];
 
 export default tr;

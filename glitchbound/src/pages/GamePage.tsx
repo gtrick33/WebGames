@@ -25,6 +25,7 @@ import { FavoriteButton } from '../components/FavoriteButton';
 // in the main sheet: admin tables share them).
 import '../components/Leaderboard.css';
 const MiniLeaderboard = lazy(fresh(() => import('../components/Leaderboard').then((m) => ({ default: m.MiniLeaderboard }))));
+const DailyCompare = lazy(fresh(() => import('../components/DailyCompare').then((m) => ({ default: m.DailyCompare }))));
 import { openSignIn } from '../components/openSignIn';
 import { setGuestName, usePlayerName } from '../platform/playerName';
 import { music } from '../platform/music';
@@ -302,7 +303,8 @@ export function GamePage({ game }: { game: GameEntry }) {
           }
         });
       }
-      track('game_end', { game: game.slug, score: e.score });
+      // A game's own daily also carries its (local) day, so today's players can be compared (DailyCompare).
+      track('game_end', e.daily ? { game: game.slug, score: e.score, daily: true, dday: dayKey() } : { game: game.slug, score: e.score });
       if (result.dailyCompleted) track('daily_complete', { game: game.slug, day: dayKey() });
       if (result.gameDailyCompleted) track('daily_complete', { game: game.slug, day: dayKey(), kind: 'game' });
       if (result.dailyCompleted || result.gameDailyCompleted || result.newBests.includes('score') || (beat !== null && e.score > beat)) setBurst((b) => b + 1);
@@ -486,6 +488,11 @@ export function GamePage({ game }: { game: GameEntry }) {
                 {last.result.dailyCompleted && <li className="sticker" data-tone="orange">{t('Daily cleared')}</li>}
                 {last.result.gameDailyCompleted && <li className="sticker" data-tone="orange">{t('{label} done', { label: t(game.ownDaily?.label ?? 'Daily') })}</li>}
               </ul>
+              {last.event.daily && (
+                <Suspense fallback={null}>
+                  <DailyCompare game={game.slug} day={dayKey()} score={last.event.score} />
+                </Suspense>
+              )}
               {!me && (
                 <button className="last-signin" onClick={() => openSignIn(t('Sign in to put your scores on the leaderboard.'))}>
                   <Icon name="crown" size={16} /> {t('Sign in to put scores like this on the leaderboard')}

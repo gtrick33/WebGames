@@ -597,6 +597,8 @@ const de: string[] = [
   'Kontakt',
   'Nur für Erwachsene',
   'Über GlitchBound',
+  'Du hast {pct}% der heutigen Spieler geschlagen',
+  '{n} haben heute gespielt',
 ];
 
 export default de;

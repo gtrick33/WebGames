@@ -597,6 +597,8 @@ const ro: string[] = [
   'Contact',
   'Doar pentru adulți',
   'Despre GlitchBound',
+  'Ai întrecut {pct}% dintre jucătorii de azi',
+  '{n} au jucat azi',
 ];
 
 export default ro;
