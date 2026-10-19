@@ -1,6 +1,6 @@
 import { CoachGrid, type CoachStep } from '../../components/Coach';
 
-/** Region colours for the pictures (a 4×4 grid split into four regions). */
+/** Region colors for the pictures (a 4×4 grid split into four regions). */
 const REGION = ['#ffd6e0', '#cdeefd', '#fff1b8', '#d9f7c8'];
 const REGIONS = [0, 0, 1, 1, 0, 2, 2, 1, 3, 2, 1, 1, 3, 3, 3, 1];
 const STARS = new Set([1, 7, 8, 14]);
@@ -13,8 +13,8 @@ export const COACH: CoachStep[] = [
     art: <CoachGrid size={4} cells={Array.from({ length: 16 }, (_, k) => ({ text: STARS.has(k) ? '★' : '' }))} />,
   },
   {
-    title: 'And one in every colour',
-    body: 'The grid is split into coloured regions. Each region gets exactly one star too.',
+    title: 'And one in every color',
+    body: 'The grid is split into colored regions. Each region gets exactly one star too.',
     art: <CoachGrid size={4} cells={REGIONS.map((r, k) => ({ text: STARS.has(k) ? '★' : '', style: { background: REGION[r] } }))} />,
   },
   {

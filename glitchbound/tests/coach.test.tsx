@@ -9,7 +9,7 @@ describe('first-time walkthrough', () => {
     expect(screen.getByRole('dialog')).toBeTruthy();
     expect(screen.getByText('One star in every row and column')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByText('And one in every colour')).toBeTruthy();
+    expect(screen.getByText('And one in every color')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     fireEvent.click(screen.getByRole('button', { name: 'Let’s play' }));
     expect(screen.queryByRole('dialog')).toBeNull();

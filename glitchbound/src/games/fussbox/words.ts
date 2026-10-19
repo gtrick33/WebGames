@@ -145,7 +145,7 @@ const UI_EN: Ui = {
   build: 'Build a card',
   count: 'How many',
   shape: 'Shape',
-  colour: 'Colour',
+  colour: 'Color',
   fill: 'Fill',
   feed: 'Feed it',
   random: 'Random card',
