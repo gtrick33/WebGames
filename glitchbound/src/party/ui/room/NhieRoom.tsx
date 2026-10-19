@@ -89,13 +89,17 @@ function Game({ view, send, left, me, byN }: Ctx) {
 
   if (view.phase === 'result' && view.result) {
     const winners = view.result.winners.map((n) => byN(n)).filter((p) => !!p);
-    const wildest = Object.entries(view.result.have).sort((a, b) => b[1] - a[1])[0];
+    const most = Math.max(0, ...Object.values(view.result.have));
+    const wildest = Object.entries(view.result.have)
+      .filter(([, n]) => most > 0 && n === most)
+      .map(([n]) => byN(Number(n))?.name)
+      .filter((name) => !!name);
     return (
       <section className="pt-panel pt-imp-result">
         <h2>{winners.length === 1 ? (winners[0]!.you ? '🏆 You win: the most innocent!' : `🏆 ${winners[0]!.name} has done the least!`) : `🏆 A tie: ${winners.map((p) => p.name).join(' & ')}`}</h2>
-        {wildest && wildest[1] > 0 && (
-          <p className="pt-imp-word">
-            🏅 Most experienced: <b>{byN(Number(wildest[0]))?.name}</b>, with {wildest[1]}
+        {wildest.length > 0 && (
+          <p className="pt-muted pt-center">
+            🏅 Most experienced: <b>{wildest.join(' & ')}</b> ({most} × “I have”)
           </p>
         )}
         <Scores players={view.players} />

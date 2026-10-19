@@ -73,7 +73,15 @@ function Game(ctx: Ctx) {
     const winners = ranked.filter((p) => (view.points[String(p.n)] ?? 0) === top);
     return (
       <section className="pt-panel pt-imp-result">
-        <h2>{winners.length === 1 ? (winners[0]!.you ? '🏆 You have the best eye!' : `🏆 ${winners[0]!.name} has the best eye!`) : `🏆 A tie: ${winners.map((p) => p.name).join(' & ')}`}</h2>
+        <h2>
+          {top === 0
+            ? 'Nobody scored this time. Sharper clues next game?'
+            : winners.length === 1
+              ? winners[0]!.you
+                ? '🏆 You have the best eye!'
+                : `🏆 ${winners[0]!.name} has the best eye!`
+              : `🏆 A tie: ${winners.map((p) => p.name).join(' & ')}`}
+        </h2>
         <Scores players={view.players} gained={view.points} />
         {view.host ? (
           <div className="pt-row">

@@ -96,6 +96,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
     return (
       <section className="pt-panel pt-imp-result">
         <h2>{winners.length === 1 ? (winners[0]!.you ? '🏆 You win!' : `🏆 ${winners[0]!.name} wins!`) : winners.length ? `🏆 ${winners.map((p) => p.name).join(' & ')} share it!` : 'Game over'}</h2>
+        {view.settings.mode === 'points' && strip}
         {view.last && <Hands view={view} byN={byN} />}
         <Scores players={view.players} />
         {view.host ? (
@@ -159,6 +160,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
                     ? `💥 Out: ${last.out.map((n) => (byN(n)?.you ? 'you' : byN(n)?.name)).join(', ')}`
                     : `${Object.values(last.gained).some((g) => g > 0) ? 'Points!' : 'No points this time'}`}
               </h2>
+              {view.auto.length > 0 && <p className="pt-muted">🎲 Too slow: a random hand was thrown</p>}
             </>
           )
         )}

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { setGuestName, usePlayerName } from '../../../platform/playerName';
 import { roomInfo, useRoom } from '../../../platform/rooms';
 import { shareOrCopy } from '../../../platform/share';
@@ -30,6 +30,28 @@ export function useLeft(deadline: number | null, skew: number): number | null {
 
 export function Clock({ left }: { left: number | null }) {
   return left === null ? null : <p className={`pt-imp-clock${left <= 5 ? ' is-low' : ''}`}>⏱ {left}s</p>;
+}
+
+/**
+ * Each new step of a room game starts at the top of the screen (the host often presses Start at the
+ * bottom of a long settings list). Returns the ref for the screen.
+ */
+export function useTopOnPhase(phase: string | undefined) {
+  const screen = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (phase && window.scrollY > 0) screen.current?.scrollIntoView({ block: 'start' });
+  }, [phase]);
+  return screen;
+}
+
+/** Room errors and connection trouble, floating where they are seen even when scrolled down. */
+export function RoomNotice({ error, conn }: { error: string; conn: string }) {
+  const text = error || (conn !== 'open' ? 'Reconnecting…' : '');
+  return text ? (
+    <p className="pt-room-toast" role={error ? 'alert' : 'status'}>
+      {text}
+    </p>
+  ) : null;
 }
 
 /** Who has done their part (answered, voted…). */
@@ -194,6 +216,7 @@ function Connected<V extends FrameView, A>({
 }) {
   const { view, conn, error, clearError, gone, skew, send } = useRoom<V, A>(code, name);
   const left = useLeft(view?.deadline ?? null, skew);
+  const screen = useTopOnPhase(view?.phase);
   useEffect(() => {
     if (!error) return;
     const t = window.setTimeout(clearError, 3500);
@@ -228,10 +251,9 @@ function Connected<V extends FrameView, A>({
   const ctx: RoomContext<V, A> = { view, send, left, me, byN: (n) => view.players.find((p) => p.n === n) };
   const here = view.players.filter((p) => p.online).length;
   return (
-    <div className="pt-screen">
+    <div className="pt-screen" ref={screen}>
       {bar}
-      {conn !== 'open' && <p className="pt-warn">Reconnecting…</p>}
-      {error && <p className="pt-warn">{error}</p>}
+      <RoomNotice error={error} conn={conn} />
       {view.phase === 'lobby' ? (
         <>
           <section className="pt-panel">
@@ -246,6 +268,7 @@ function Connected<V extends FrameView, A>({
                   <span>
                     {p.name}
                     {p.host ? ' 👑' : ''}
+                    {p.you ? ' (you)' : ''}
                   </span>
                   {view.host && !p.you && (
                     <button onClick={() => send(kick(p.n))} aria-label={`Remove ${p.name}`}>

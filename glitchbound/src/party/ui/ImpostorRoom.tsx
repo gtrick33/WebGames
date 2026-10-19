@@ -7,6 +7,7 @@ import { shareOrCopy } from '../../platform/share';
 import { navigate } from '../../router/router';
 import { ModeBar } from './shared';
 import { SecretCard } from './Impostor';
+import { RoomNotice, useTopOnPhase } from './room/RoomFrame';
 
 const COLORS = ['#ff5a6c', '#ffb020', '#2fd1a0', '#3d7bff', '#a45cff', '#ff7eb6', '#12c6b3', '#ff8a1f', '#8ad13b', '#5b6cff', '#e64c9a', '#00a6d6'];
 const color = (n: number): string => COLORS[(n - 1) % COLORS.length]!;
@@ -88,6 +89,7 @@ export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () 
 function Room({ code, name, onLeave }: { code: string; name: string; onLeave: () => void }) {
   const { view, conn, error, clearError, gone, skew, send } = useRoom<RoomView, Action>(code, name);
   const left = useLeft(view?.deadline ?? null, skew);
+  const screen = useTopOnPhase(view?.phase);
   const invite = (): void => {
     void shareOrCopy({ title: 'Impostor room', text: `🕵️ Join my Impostor room (code ${code}): one of us gets a different card. Find them!`, url: `${location.origin}/r/${code}` });
   };
@@ -124,10 +126,9 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
   const starter = byN(view.starter);
 
   return (
-    <div className="pt-screen">
+    <div className="pt-screen" ref={screen}>
       {bar}
-      {conn !== 'open' && <p className="pt-warn">Reconnecting…</p>}
-      {error && <p className="pt-warn">{error}</p>}
+      <RoomNotice error={error} conn={conn} />
 
       {view.phase === 'lobby' && (
         <>
@@ -143,6 +144,7 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
                   <span>
                     {p.name}
                     {p.host ? ' 👑' : ''}
+                    {p.you ? ' (you)' : ''}
                   </span>
                   {view.host && !p.you && (
                     <button onClick={() => send({ t: 'kick', seat: p.n })} aria-label={`Remove ${p.name}`}>
@@ -188,7 +190,10 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
           <h2 className="pt-imp-theme">{view.card?.theme ?? '…'}</h2>
           {starter && (
             <p className="pt-imp-starter">
-              <Dot p={starter} /> <b>{starter.you ? 'You start' : `${starter.name} starts`}</b>. Go round, one word each. Never say the word!
+              <Dot p={starter} />
+              <span>
+                <b>{starter.you ? 'You start' : `${starter.name} starts`}</b>. Go round, one word each. Never say the word!
+              </span>
             </p>
           )}
           {view.card && (
@@ -198,9 +203,13 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
             </details>
           )}
           {left !== null && <p className="pt-imp-clock">⏱ {left}s</p>}
-          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'vote_now' })}>
-            🗳️ Start the vote
-          </button>
+          {view.card ? (
+            <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'vote_now' })}>
+              🗳️ Start the vote
+            </button>
+          ) : (
+            <p className="pt-muted">You joined mid-round: you’re in from the next one.</p>
+          )}
         </section>
       )}
 
@@ -251,6 +260,15 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
       {view.phase === 'result' && view.result && (
         <section className="pt-panel pt-imp-result">
           <h2>{view.result.outcome === 'escaped' ? '🕵️ The impostor got away!' : view.result.outcome === 'stole' ? '😈 Caught, but they guessed the word!' : '🎉 Impostor caught!'}</h2>
+          {view.result.outcome === 'escaped' && (
+            <p className="pt-muted">
+              {view.voted !== null
+                ? `${byN(view.voted)?.name ?? 'Someone'} was voted out, but they were innocent.`
+                : Object.keys(view.result.votes).length
+                  ? 'The vote was a tie, so nobody was voted out.'
+                  : 'Nobody voted in time.'}
+            </p>
+          )}
           <p className="pt-imp-word">
             The word was <b>{view.result.word}</b>
           </p>

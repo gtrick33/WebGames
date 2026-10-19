@@ -129,7 +129,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
       <section className="pt-panel pt-imp-result">
         <h2>{sides ? (blue === orange ? `A perfect tie! ${blue} each` : `🏆 ${TEAM[blue > orange ? 0 : 1]} wins, ${Math.max(blue, orange)} to ${Math.min(blue, orange)}!`) : `The room scored ${sum} of ${view.total * 4}`}</h2>
         {best && bestPts > 0 && (
-          <p className="pt-imp-word">
+          <p className="pt-muted pt-center">
             📡 Mind Reader: <b>{best.you ? 'you' : best.name}</b>, whose clues earned {bestPts}
           </p>
         )}
