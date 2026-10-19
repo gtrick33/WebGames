@@ -69,6 +69,7 @@ export function useLocation(): { pathname: string; search: string; hash: string 
 }
 
 const reducedMotion = (): boolean => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const coarsePointer = (): boolean => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
 
 export function navigate(to: string, opts: { replace?: boolean; scroll?: boolean } = {}): void {
   const url = new URL(to, window.location.href);
@@ -82,18 +83,27 @@ export function navigate(to: string, opts: { replace?: boolean; scroll?: boolean
     else window.history.pushState(null, '', url);
     emit();
   };
-  const doc = document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void> } };
-  if (!samePage && doc.startViewTransition && !reducedMotion()) {
+  const scroll = (): void => {
+    if (opts.scroll === false) return;
+    if (url.hash) {
+      // A new page jumps straight to its anchor; only a scroll within the same page glides.
+      const behavior = samePage && !reducedMotion() ? 'smooth' : 'auto';
+      document.getElementById(decodeURIComponent(url.hash.slice(1)))?.scrollIntoView({ behavior });
+    } else if (!samePage) {
+      window.scrollTo(0, 0);
+    }
+  };
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => { updateCallbackDone: Promise<void>; ready: Promise<void> } };
+  // Touch screens skip the transition: iOS Safari can leave its snapshot frozen on screen until the next tap.
+  if (!samePage && doc.startViewTransition && !reducedMotion() && !coarsePointer()) {
+    const vt = doc.startViewTransition(() => flushSync(apply));
     // A skipped or aborted transition (a second click, a hidden tab) rejects `ready`: the page still changes, nothing to report.
-    doc.startViewTransition(() => flushSync(apply)).ready.catch(() => undefined);
+    vt.ready.catch(() => undefined);
+    vt.updateCallbackDone.then(scroll, scroll);
   } else {
-    apply();
-  }
-  if (opts.scroll === false) return;
-  if (url.hash) {
-    requestAnimationFrame(() => document.getElementById(decodeURIComponent(url.hash.slice(1)))?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth' }));
-  } else if (!samePage) {
-    window.scrollTo(0, 0);
+    // Rendered at once, so the anchor to scroll to is already on the page.
+    flushSync(apply);
+    scroll();
   }
 }
 
