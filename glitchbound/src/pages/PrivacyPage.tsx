@@ -4,9 +4,14 @@ import { Icon } from '../components/Icon';
 import { useAccount } from '../platform/account';
 import { ADS, ANALYTICS } from '../platform/env';
 import { usePageMeta } from '../platform/meta';
+import { storageKeys } from '../platform/qa';
 import { saveStore, useSave } from '../platform/store';
 import { Link } from '../router/router';
 import './InfoPages.css';
+
+/** Display preferences stay; everything else the arcade and its games keep in this browser goes. */
+const PREFS = new Set(['glitchbound.theme', 'glitchbound.lang', 'glitchbound.music']);
+const dataKeys = (): string[] => storageKeys().filter((k) => /^(gb\.|glitchbound|neonrush)/i.test(k) && !PREFS.has(k));
 
 export function PrivacyPage() {
   usePageMeta({ title: 'Privacy & your data', description: 'What GlitchBound stores, what it does not, and how to delete your data.', path: '/privacy' });
@@ -28,9 +33,9 @@ export function PrivacyPage() {
         <section className="panel info-block" aria-labelledby="p-device">
           <h2 id="p-device">Saved on this device</h2>
           <p>
-            As a guest, your bests, rounds played, favorites and Daily Challenge history are stored in this browser&rsquo;s local storage. They never
-            leave your device. The date of your last visit is kept there too; our anonymous statistics only learn whether you have visited before and
-            how many days ago, never who you are.
+            As a guest, your bests, rounds played, favorites and Daily Challenge history are stored in this browser&rsquo;s local storage, and each game
+            keeps its own progress there (for example today&rsquo;s puzzle). They never leave your device. The date of your last visit is kept there
+            too; our anonymous statistics only learn whether you have visited before and how many days ago, never who you are.
           </p>
           <p className="info-small mono">
             Right now: {rounds} {rounds === 1 ? 'round' : 'rounds'} recorded · {dailies} daily {dailies === 1 ? 'challenge' : 'challenges'} cleared
@@ -38,7 +43,7 @@ export function PrivacyPage() {
           </p>
           <div className="reset-row">
             {!confirming ? (
-              <button className="btn" onClick={() => setConfirming(true)} disabled={rounds === 0 && dailies === 0}>
+              <button className="btn" onClick={() => setConfirming(true)} disabled={dataKeys().length === 0}>
                 Delete my GlitchBound data
               </button>
             ) : (
@@ -46,6 +51,13 @@ export function PrivacyPage() {
                 <button
                   className="btn btn-magenta"
                   onClick={() => {
+                    for (const k of dataKeys()) {
+                      try {
+                        localStorage.removeItem(k);
+                      } catch {
+                        /* storage blocked */
+                      }
+                    }
                     saveStore.reset();
                     setConfirming(false);
                     setCleared(true);
@@ -67,8 +79,9 @@ export function PrivacyPage() {
         <section className="panel info-block" aria-labelledby="p-account">
           <h2 id="p-account">If you sign in</h2>
           <p>
-            Sign-in uses Google. We receive your name, email address and profile picture from Google and store them with your nickname, XP, favorites,
-            bests, quest progress and the scores of rounds you finish while signed in. Leaderboards show only your nickname and level. We use a single
+            You can sign in with Google or with a one-time code sent to your email address. With Google we receive your name, email address and
+            profile picture; with a code, only your email address. We store them with your nickname, XP, favorites, bests, quest progress, cleared
+            Daily Challenges and the scores of rounds you finish while signed in. Leaderboards show only your nickname and level. We use a single
             essential cookie to keep you signed in.
           </p>
           <p>
@@ -79,6 +92,14 @@ export function PrivacyPage() {
             ) : (
               'You can delete your account and all of this data at any time from your profile.'
             )}
+          </p>
+        </section>
+
+        <section className="panel info-block" aria-labelledby="p-challenges">
+          <h2 id="p-challenges">Friend challenges</h2>
+          <p>
+            When you start or join a challenge, the name you play under and your scores in it are stored on our server so everyone in the challenge can
+            see them, with a random key from this browser that keeps your seat. Challenges are deleted about a month after they end.
           </p>
         </section>
 

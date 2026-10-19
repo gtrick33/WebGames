@@ -121,7 +121,7 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       description: 'What GlitchBound stores, what it does not, and how to delete your local data.',
       image: '/og.png',
       imageAlt: SITE,
-      body: `<section class="ssr"><h1>Privacy &amp; your data</h1><p>${SITE} has no accounts. Personal bests and daily challenge history are kept in your browser's local storage and never uploaded.</p></section>`,
+      body: `<section class="ssr"><h1>Privacy &amp; your data</h1><p>You can play every ${SITE} game without an account. As a guest, your bests and daily challenge history are kept in your browser's local storage and never uploaded. If you sign in, your profile, bests and scores are stored with your account, and you can delete it at any time.</p></section>`,
     },
     {
       path: '/leaderboards',
