@@ -15,36 +15,59 @@ interface BoardState<T> {
   status: 'loading' | 'ok' | 'error';
   rows: T[];
   mine: T | null;
+  /** Asks again after an error. */
+  retry: () => void;
+}
+
+/** A board request that gives up after 12 s: a stalled connection ends in the offline message (with Retry), not "Loading…" forever. */
+function load<T>(path: string): Promise<T> {
+  return Promise.race([api<T>(path), new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error('timeout')), 12_000))]);
+}
+
+function useRequest<T>(path: string, deps: unknown[], pick: (data: unknown) => { rows: T[]; mine: T | null }): BoardState<T> {
+  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState<Omit<BoardState<T>, 'retry'>>({ status: 'loading', rows: [], mine: null });
+  useEffect(() => {
+    let cancelled = false;
+    load<unknown>(path)
+      .then((r) => !cancelled && setState({ status: 'ok', ...pick(r) }))
+      .catch(() => !cancelled && setState({ status: 'error', rows: [], mine: null }));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, attempt, ...deps]);
+  const retry = (): void => {
+    setState({ status: 'loading', rows: [], mine: null });
+    setAttempt((a) => a + 1);
+  };
+  return { ...state, retry };
 }
 
 export function useBoard(game: string, period: Period, refreshKey = 0): BoardState<LeaderRow> {
-  const [state, setState] = useState<BoardState<LeaderRow>>({ status: 'loading', rows: [], mine: null });
   const { me } = useAccount();
-  useEffect(() => {
-    let cancelled = false;
-    api<{ rows: LeaderRow[]; mine: LeaderRow | null }>(`/api/leaderboard?game=${encodeURIComponent(game)}&period=${period}`)
-      .then((r) => !cancelled && setState({ status: 'ok', rows: r.rows, mine: r.mine }))
-      .catch(() => !cancelled && setState({ status: 'error', rows: [], mine: null }));
-    return () => {
-      cancelled = true;
-    };
-  }, [game, period, refreshKey, me?.id]);
-  return state;
+  return useRequest<LeaderRow>(`/api/leaderboard?game=${encodeURIComponent(game)}&period=${period}`, [refreshKey, me?.id], (r) => {
+    const d = r as { rows: LeaderRow[]; mine: LeaderRow | null };
+    return { rows: d.rows, mine: d.mine };
+  });
 }
 
 export function useHall(): BoardState<HallRow> {
-  const [state, setState] = useState<BoardState<HallRow>>({ status: 'loading', rows: [], mine: null });
   const { me } = useAccount();
-  useEffect(() => {
-    let cancelled = false;
-    api<{ rows: HallRow[] }>('/api/hall')
-      .then((r) => !cancelled && setState({ status: 'ok', rows: r.rows, mine: null }))
-      .catch(() => !cancelled && setState({ status: 'error', rows: [], mine: null }));
-    return () => {
-      cancelled = true;
-    };
-  }, [me?.id]);
-  return state;
+  return useRequest<HallRow>('/api/hall', [me?.id], (r) => ({ rows: (r as { rows: HallRow[] }).rows, mine: null }));
+}
+
+/** The offline message under a board, with a way to ask again. */
+export function BoardError({ text, onRetry }: { text: string; onRetry: () => void }) {
+  const t = useT();
+  return (
+    <p className="side-muted board-error">
+      {t(text)}{' '}
+      <button className="link-btn" onClick={onRetry}>
+        {t('Try again')}
+      </button>
+    </p>
+  );
 }
 
 function Medal({ rank }: { rank: number }) {
@@ -145,7 +168,7 @@ export function MiniLeaderboard({ game, refreshKey, embedded = false }: { game: 
   const body = (
     <>
       {board.status === 'loading' && <p className="side-muted">{t('Loading…')}</p>}
-      {board.status === 'error' && <p className="side-muted">{t('The leaderboard is offline right now. Your game still works.')}</p>}
+      {board.status === 'error' && <BoardError text="The leaderboard is offline right now. Your game still works." onRetry={board.retry} />}
       {board.status === 'ok' &&
         (board.rows.length ? (
           <LeaderTable rows={board.rows.slice(0, 5)} mine={board.rows.slice(0, 5).some((r) => r.you) ? null : (board.rows.find((r) => r.you) ?? board.mine)} compact />

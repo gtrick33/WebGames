@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { getGame } from '../catalog/catalog';
-import { BoardEmpty, HallTable, LeaderTable, useBoard, useHall } from '../components/Leaderboard';
+import { BoardEmpty, BoardError, HallTable, LeaderTable, useBoard, useHall } from '../components/Leaderboard';
 import { Icon } from '../components/Icon';
 import { usePageMeta } from '../platform/meta';
 import { navigate, useLocation } from '../router/router';
@@ -30,7 +30,7 @@ function GameBoard({ slug }: { slug: string }) {
         </div>
       </div>
       {board.status === 'loading' && <p className="info-small">Loading…</p>}
-      {board.status === 'error' && <p>The leaderboard is offline right now. Please try again later.</p>}
+      {board.status === 'error' && <BoardError text="The leaderboard is offline right now." onRetry={board.retry} />}
       {board.status === 'ok' && (board.rows.length ? <LeaderTable rows={board.rows} mine={board.mine} /> : <BoardEmpty text="No ranked scores in this period yet." />)}
       <p className="info-small">Best score per member. Scores are checked against real play time; rounds played as a guest are not ranked.</p>
     </div>
@@ -50,7 +50,7 @@ function Hall() {
         Across every game: <b>crowns</b> are #1 spots, <b>podiums</b> are top-3 spots, <b>records</b> are personal bests a player has beaten.
       </p>
       {hall.status === 'loading' && <p className="info-small">Loading…</p>}
-      {hall.status === 'error' && <p>The Hall of Fame is offline right now.</p>}
+      {hall.status === 'error' && <BoardError text="The Hall of Fame is offline right now." onRetry={hall.retry} />}
       {hall.status === 'ok' && (hall.rows.length ? <HallTable rows={hall.rows} /> : <BoardEmpty text="Nobody is in the Hall of Fame yet. Sign in and set the first record." />)}
     </div>
   );

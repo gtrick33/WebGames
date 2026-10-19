@@ -5,6 +5,7 @@ import { CATEGORIES, type GameEntry } from '../catalog/types';
 import { AdSlot } from '../components/AdSlot';
 import { Burst } from '../components/Burst';
 import { DailyCard } from '../components/DailyCard';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { GameStage } from '../components/GameStage';
 import { GameTile } from '../components/GameTile';
 import { Icon } from '../components/Icon';
@@ -636,9 +637,12 @@ function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRec
           </>
         )}
         {tab === 'board' && (
-          <Suspense fallback={<p className="side-muted">{t('Loading…')}</p>}>
-            <MiniLeaderboard game={game} refreshKey={boardKey} embedded />
-          </Suspense>
+          // If the board's code can't load (offline), only this tab says so: the game keeps running.
+          <ErrorBoundary fallback={() => <p className="side-muted">{t('The leaderboard is offline right now. Your game still works.')}</p>}>
+            <Suspense fallback={<p className="side-muted">{t('Loading…')}</p>}>
+              <MiniLeaderboard game={game} refreshKey={boardKey} embedded />
+            </Suspense>
+          </ErrorBoundary>
         )}
         {tab === 'bests' &&
           (record ? (
