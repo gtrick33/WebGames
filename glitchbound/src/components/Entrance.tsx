@@ -2,24 +2,17 @@ import { useEffect, useState } from 'react';
 import './Entrance.css';
 
 const DURATION_MS = 1900;
-/** Set once the entrance has played; index.html reads it too, so returning visitors land straight on the arcade. */
-const SEEN_KEY = 'glitchbound.introSeen';
 
 function shouldPlay(): boolean {
   if (typeof window === 'undefined') return false;
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-  // Only when a visitor arrives at the arcade itself (deep links to games load straight in), and only once per device.
-  if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') return false;
-  try {
-    return !localStorage.getItem(SEEN_KEY);
-  } catch {
-    return false; // no storage: it would play on every visit
-  }
+  // Only when a visitor arrives at (or reloads) the arcade itself; deep links to games load straight in.
+  return window.location.pathname === '/' || window.location.pathname === '/index.html';
 }
 
 /**
  * The arcade entrance: a toy-box cabinet rises, a coin drops, the screen flashes READY and the
- * camera dives into the screen to reveal the site. About 1.9 s, on the first visit only; any click, key or scroll skips it.
+ * camera dives into the screen to reveal the site. About 1.9 s; any click, key or scroll skips it.
  */
 export function ArcadeEntrance() {
   const [show, setShow] = useState(shouldPlay);
@@ -31,11 +24,6 @@ export function ArcadeEntrance() {
 
   useEffect(() => {
     if (!show) return;
-    try {
-      localStorage.setItem(SEEN_KEY, '1');
-    } catch {
-      /* private mode: nothing to remember */
-    }
     const done = (): void => setShow(false);
     const t = window.setTimeout(done, DURATION_MS);
     window.addEventListener('keydown', done, { once: true });

@@ -21,12 +21,12 @@
           if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0522');
         } catch (e) {}
       })();
-      // Arcade entrance (first visit on this device only): cover the page from the very first paint, so the landing
-      // page never flashes before the cabinet animation (the app removes this as soon as the entrance is on screen).
+      // Arcade entrance: cover the page from the very first paint, so the landing page never flashes
+      // before the cabinet animation (the app removes this as soon as the entrance is on screen).
       (function () {
         try {
           var p = location.pathname;
-          if ((p === '/' || p === '/index.html') && location.search.indexOf('frame_id=') < 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches && !localStorage.getItem('glitchbound.introSeen')) {
+          if ((p === '/' || p === '/index.html') && location.search.indexOf('frame_id=') < 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
             document.documentElement.classList.add('entrance-pending');
             setTimeout(function () { document.documentElement.classList.remove('entrance-pending'); }, 4000);
           }
