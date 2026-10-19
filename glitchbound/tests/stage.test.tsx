@@ -57,3 +57,21 @@ describe('module games', () => {
     expect(screen.getByRole('alert')).toBeTruthy();
   });
 });
+
+describe('embedded games', () => {
+  const embed = (url: string) => {
+    render(<GameStage game={fakeGame({ slug: 'emb', title: 'Emb', runtime: { kind: 'embed', url, origins: ['self'] } })} onEvent={vi.fn()} stageRef={createRef()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Play Emb' }));
+  };
+
+  it('shows the stage loader while another site loads', () => {
+    embed('https://games.example/emb/');
+    expect(screen.getByRole('status').textContent).toContain('Loading Emb');
+  });
+
+  it('leaves the loading screen to a game served from this site (it paints its own at once)', () => {
+    embed('/play/emb/');
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByTitle('Emb game')).toBeTruthy();
+  });
+});
