@@ -48,7 +48,7 @@ function Settings({ view, send }: Ctx) {
           </div>
         </>
       )}
-      <p className="pt-muted">Everyone throws in secret on their own phone, then all hands are revealed together. Too slow? A random hand is thrown for you.</p>
+      <p className="pt-muted">Everyone throws in secret on their own phone, then all hands are revealed together. Too slow, or your phone dropped out? A random hand is thrown for you (away for more than 30 seconds counts as leaving).</p>
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={online < MIN_PLAYERS} onClick={() => send({ t: 'start' })}>
         Start
       </button>
@@ -82,9 +82,10 @@ function Game({ view, send, left, me, byN }: Ctx) {
       {playing.map((p) => {
         const out = view.settings.mode === 'knockout' && !view.alive.includes(p.n);
         return (
-          <span key={p.n} className={`pt-finger${out ? ' is-out' : ''}${p.you ? ' is-you' : ''}`}>
+          <span key={p.n} className={`pt-finger${out ? ' is-out' : ''}${p.you ? ' is-you' : ''}`} title={!p.online && !out ? `${p.name} dropped out: a random hand is thrown for them` : undefined}>
             <Dot p={p} size={28} />
             {view.settings.mode === 'points' ? `${view.points[String(p.n)] ?? 0}/${view.settings.target}` : out ? '💥' : '✊'}
+            {!p.online && !out && ' 💤'}
           </span>
         );
       })}
@@ -96,6 +97,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
     return (
       <section className="pt-panel pt-imp-result">
         <h2>{winners.length === 1 ? (winners[0]!.you ? '🏆 You win!' : `🏆 ${winners[0]!.name} wins!`) : winners.length ? `🏆 ${winners.map((p) => p.name).join(' & ')} share it!` : 'Game over'}</h2>
+        {view.settings.mode === 'points' && strip}
         {view.last && <Hands view={view} byN={byN} />}
         <Scores players={view.players} />
         {view.host ? (
@@ -159,6 +161,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
                     ? `💥 Out: ${last.out.map((n) => (byN(n)?.you ? 'you' : byN(n)?.name)).join(', ')}`
                     : `${Object.values(last.gained).some((g) => g > 0) ? 'Points!' : 'No points this time'}`}
               </h2>
+              {view.auto.length > 0 && <p className="pt-muted">🎲 Too slow (or 💤 dropped out): a random hand was thrown</p>}
             </>
           )
         )}

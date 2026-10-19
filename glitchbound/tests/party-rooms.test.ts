@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { onRequestGet as invite } from '../functions/r/[code]';
 import { ENGINES, engineFor, isGameId } from '../rooms/engines';
+import type { Env } from '../server/http';
 import * as auction from '../src/party/rooms/auctionRoom';
 import * as board from '../src/party/rooms/boardRoom';
 import * as nhie from '../src/party/rooms/nhieRoom';
@@ -88,6 +90,52 @@ describe('Never Have I Ever room', () => {
     expect(s.host).toBe(2);
     nhie.leave(s, KEYS[1]!, T0);
     expect(s.phase).toBe('lobby');
+  });
+
+  it('lets the last ones standing share the win when one statement takes them all out', () => {
+    const s = room(4);
+    nhie.act(s, KEYS[0]!, { t: 'settings', settings: { fingers: 3, length: 60 } }, T0);
+    nhie.act(s, KEYS[0]!, { t: 'start' }, T0);
+    // Player 4 says "I have" three times and is out; then players 1 to 3 go down together.
+    for (let i = 0; i < 6; i++) {
+      KEYS.forEach((k, j) => nhie.act(s, k, { t: 'answer', have: i < 3 ? j === 3 : j < 3 }, T0));
+      nhie.tick(s, s.deadline! + 1);
+    }
+    expect(s.phase).toBe('result');
+    expect(s.winners).toEqual([1, 2, 3]);
+    expect(s.seats.find((x) => x.n === 4)!.score).toBe(0);
+  });
+
+  it('tells a player who is already out that their "I have" was just for fun', () => {
+    const s = room(3);
+    nhie.act(s, KEYS[0]!, { t: 'settings', settings: { fingers: 3, length: 60 } }, T0);
+    nhie.act(s, KEYS[0]!, { t: 'start' }, T0);
+    for (let i = 0; i < 4; i++) {
+      KEYS.slice(0, 3).forEach((k, j) => nhie.act(s, k, { t: 'answer', have: j === 2 }, T0));
+      expect(s.phase).toBe('reveal');
+      // Their third "I have" took the last finger; the fourth was just for fun.
+      expect(nhie.viewFor(s, KEYS[2]!)!.wasIn).toBe(i < 3);
+      nhie.tick(s, s.deadline! + 1);
+    }
+  });
+});
+
+describe('room seats', () => {
+  it('frees the seat and the name of someone who leaves the lobby before scoring anything', () => {
+    const s = rps.newRoom('ABCDE', T0, 1);
+    rps.join(s, KEYS[0]!, 'Ann', T0);
+    rps.join(s, KEYS[1]!, 'Bo', T0);
+    rps.leave(s, KEYS[1]!, T0);
+    expect(s.seats.map((x) => x.name)).toEqual(['Ann']);
+    rps.join(s, KEYS[2]!, 'Bo', T0);
+    expect(s.seats.map((x) => x.name)).toEqual(['Ann', 'Bo']);
+    // Someone with points keeps their seat (and their points) while away.
+    s.seats[1]!.score = 2;
+    rps.leave(s, KEYS[2]!, T0);
+    expect(s.seats.map((x) => [x.name, x.online])).toEqual([
+      ['Ann', true],
+      ['Bo', false],
+    ]);
   });
 });
 
@@ -266,5 +314,71 @@ describe('Rock Paper Scissors room', () => {
     rps.act(s, KEYS[1]!, { t: 'throw', hand: 'scissors' }, T0);
     rps.act(s, KEYS[2]!, { t: 'throw', hand: 'scissors' }, T0);
     expect(s.points).toEqual({ 1: 2, 2: 0, 3: 0 });
+  });
+
+  it('keeps a player whose phone drops out for a moment in the game, throwing for them', () => {
+    const s = room(3);
+    rps.leave(s, KEYS[2]!, T0);
+    expect(s.phase).toBe('throw');
+    expect(s.alive).toEqual([1, 2, 3]);
+    // The two still here throw: no waiting out the clock for the one who dropped out.
+    rps.act(s, KEYS[0]!, { t: 'throw', hand: 'rock' }, T0 + 1000);
+    rps.act(s, KEYS[1]!, { t: 'throw', hand: 'rock' }, T0 + 1000);
+    expect(s.phase).toBe('reveal');
+    expect(s.auto).toEqual([3]);
+    // Only their (random) hand can knock them out, not being away.
+    expect(s.alive.includes(3)).toBe(!s.last!.out.includes(3));
+    // Back within the grace period (a reload): the seat is theirs again.
+    rps.join(s, KEYS[2]!, 'P3', T0 + 5000);
+    expect(s.away).toEqual({});
+    expect(rps.viewFor(s, KEYS[2]!)!.players.find((p) => p.you)!.online).toBe(true);
+  });
+
+  it('counts a player gone longer than the grace period as out, so nobody plays as a ghost', () => {
+    const s = room(3);
+    rps.leave(s, KEYS[2]!, T0);
+    // Nobody throws; the clock is only looked at again once the grace period is over.
+    const now = T0 + rps.AWAY_GRACE_MS + 1;
+    rps.tick(s, now);
+    expect(s.alive).not.toContain(3);
+    expect(s.last!.throws[3]).toBeUndefined();
+    // Coming back after that does not put them back in.
+    rps.join(s, KEYS[2]!, 'P3', now);
+    expect(s.alive).not.toContain(3);
+  });
+
+  it('goes back to the lobby only once a 2-player game has lost someone for good', () => {
+    const s = room(2, 'points');
+    rps.leave(s, KEYS[1]!, T0);
+    expect(s.phase).toBe('throw');
+    rps.tick(s, s.deadline! + 1);
+    expect(s.phase).toBe('reveal');
+    rps.tick(s, T0 + rps.AWAY_GRACE_MS + 1);
+    expect(s.phase).toBe('lobby');
+  });
+});
+
+describe('room invite links (/r/CODE)', () => {
+  const page = '<html><head><title>GlitchBound</title></head><body></body></html>';
+  const env = (rooms: Record<string, object>) =>
+    ({
+      DB: {},
+      NR_DB: {},
+      ASSETS: { fetch: async () => new Response(page) },
+      ROOMS: { idFromName: (code: string) => code, get: (code: unknown) => ({ fetch: async () => (rooms[String(code)] ? Response.json(rooms[String(code)]) : new Response('{}', { status: 404 })) }) },
+    }) as unknown as Env;
+  const open = async (code: string, rooms: Record<string, object> = {}): Promise<{ title: string; to: string }> => {
+    const html = await (await invite({ request: new Request(`https://glitchboundstudio.com/r/${code}`), env: env(rooms), params: { code } })).text();
+    return { title: /<title>([^<]*)<\/title>/.exec(html)![1]!, to: /replaceState\(null, '', "([^"]*)"/.exec(html)![1]! };
+  };
+
+  it('sends each room to its own page, with who is waiting', async () => {
+    expect(await open('KQTRA', { KQTRA: { game: 'nhie', host: 'Ann', players: 3 } })).toEqual({ title: 'Ann wants you in a Never Have I Ever room 🙊', to: '/party?room=KQTRA' });
+    expect(await open('KQTRA', { KQTRA: { host: 'Bo', players: 3 } })).toEqual({ title: 'Bo wants you in a Crass Act room 😈', to: '/games/crass-act?room=KQTRA' });
+  });
+
+  it('never sends a closed or mistyped room to the 18+ game', async () => {
+    expect(await open('KQTRA')).toEqual({ title: 'Join my party room 🎉', to: '/party?room=KQTRA' });
+    expect(await open('nope!')).toEqual({ title: 'Join my party room 🎉', to: '/party' });
   });
 });

@@ -131,6 +131,8 @@ function Home({ name, invite, onName, onEnter }: { name: string; invite: string;
     const info = await roomInfo(c);
     setBusy(false);
     if (!info) return setMsg(`There is no room ${c}. Check the code, or open a new room.`);
+    // A Party Mode room (Impostor, Never Have I Ever…): it opens on the party page.
+    if (info.game && info.game !== 'crass-act') return location.assign(`/party?room=${c}`);
     if (info.full) return setMsg(`Room ${c} is full (${MAX_PLAYERS} players).`);
     onEnter(c);
   };
@@ -187,7 +189,7 @@ function Home({ name, invite, onName, onEnter }: { name: string; invite: string;
         <summary>How to play</summary>
         <p>
           {MIN_PLAYERS} to {MAX_PLAYERS} players, each on their own phone or computer. Every round one player is the judge and reads out a prompt card. Everyone else plays the funniest (or most horrible) answer card from their hand. The judge picks a
-          winner, who gets a point. First to the target wins. In vote mode there is no judge: everyone plays and votes.
+          winner, who gets a point. First to the target wins (when players reach it together, they play on until one is ahead). In vote mode there is no judge: everyone plays and votes.
         </p>
       </details>
     </div>
@@ -256,6 +258,19 @@ function Room({ code, name, host, onLeave }: { code: string; name: string; host:
       </div>
     );
 
+  // The code belongs to a Party Mode room, not a Crass Act one: send them to the party page.
+  if ('game' in view && view.game !== 'crass-act')
+    return (
+      <div className="uh uh-center">
+        <Logo />
+        <div className="uh-panel">
+          <p className="uh-big">Room {code} is a Party Mode room.</p>
+          <a className="uh-btn uh-btn-go" href={`/party?room=${code}`}>
+            Open it in Party Mode
+          </a>
+        </div>
+      </div>
+    );
   const left = view.deadline ? Math.max(0, Math.ceil((view.deadline - now) / 1000)) : null;
   return (
     <div className="uh uh-room" ref={root}>
@@ -414,13 +429,14 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
     <div className="uh-table">
       <header className="uh-top">
         <span className="uh-chip">Round {view.round}</span>
-        <span className="uh-chip">First to {view.settings.target}</span>
+        <span className="uh-chip">{view.tiebreak ? 'Tie-breaker' : `First to ${view.settings.target}`}</span>
         {left !== null && view.phase !== 'reveal' && <span className={`uh-chip uh-timer${left <= 10 ? ' is-low' : ''}`}>{left}s</span>}
         <button className="uh-link" onClick={onLeave}>
           Leave
         </button>
       </header>
       <Players view={view} send={send} compact />
+      {view.tiebreak && view.phase !== 'reveal' && <p className="uh-status">⚡ Tie-breaker round! The game goes on until one player is ahead.</p>}
 
       {view.prompt && <PromptCard text={view.prompt.text} cards={view.phase === 'reveal' ? view.entries.find((e) => e.won)?.cards : undefined} />}
 
@@ -469,17 +485,19 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
       {view.phase === 'judging' && (
         <>
           <p className="uh-status">
-            {view.settings.vote
-              ? view.myVote !== null
-                ? 'Vote cast. Waiting for the others…'
-                : 'Vote for the funniest one (not your own!).'
-              : isJudge
-                ? 'Pick the winner. No pressure.'
-                : `${judge?.name ?? 'The judge'} is choosing…`}
+            {view.waiting
+              ? 'You joined mid-round. You’re in from the next one!'
+              : view.settings.vote
+                ? view.myVote !== null
+                  ? 'Vote cast. Waiting for the others…'
+                  : 'Vote for the funniest one (not your own!).'
+                : isJudge
+                  ? 'Pick the winner. No pressure.'
+                  : `${judge?.name ?? 'The judge'} is choosing…`}
           </p>
           <div className="uh-entries">
             {view.entries.map((e, i) => {
-              const canTap = view.settings.vote ? !e.mine && view.myVote === null : isJudge;
+              const canTap = view.settings.vote ? !e.mine && view.myVote === null && !view.waiting : isJudge;
               return (
                 <button
                   key={i}
@@ -497,7 +515,7 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
               );
             })}
           </div>
-          {pick !== null && (isJudge || (view.settings.vote && view.myVote === null)) && (
+          {pick !== null && (isJudge || (view.settings.vote && view.myVote === null && !view.waiting)) && (
             <div className="uh-actions">
               <button className="uh-btn uh-btn-go" onClick={() => send(view.settings.vote ? { t: 'vote', entry: pick } : { t: 'pick', entry: pick })}>
                 {view.settings.vote ? 'Vote for this' : 'This one wins'}
@@ -512,6 +530,7 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
           <p className="uh-winner">
             🏆 {view.entries.filter((e) => e.won).map((e) => e.name).join(' & ')} {view.winners.length > 1 ? 'tie' : 'wins'} the round!
           </p>
+          {view.tiebreak && <p className="uh-status">⚡ Tied for the lead! A tie-breaker round decides it.</p>}
           <div className="uh-entries">
             {view.entries.map((e, i) => (
               <div key={i} className={`uh-entry${e.won ? ' is-won' : ''}`}>

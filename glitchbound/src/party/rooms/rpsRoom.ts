@@ -6,7 +6,9 @@
  *   out; one hand (or all three) is a draw and you throw again. The last one in wins.
  * - Points race: every throw, you score a point for each player your hand beats. First to the target wins.
  *
- * Nobody stalls a round: when the throw clock runs out, a random hand is thrown for you.
+ * Nobody stalls a round: when the throw clock runs out, a random hand is thrown for you, and the same
+ * goes for a player whose phone dropped out (locked, switched apps, reloading). Only someone gone for
+ * longer than AWAY_GRACE_MS has really left: they are out (and no longer throw).
  * Phases: lobby → throw → reveal → throw … → result.
  */
 import { joinSeat, kickSeat, leaveSeat, nextRandom, online, seatOf, seatViews, summaryOf, type RoomBase, type SeatView } from './seats';
@@ -16,6 +18,8 @@ export { validKey } from './seats';
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 12;
 export const THROW_SECONDS = 10;
+/** How long a player can be disconnected mid-game (about two throws) before they count as gone. */
+export const AWAY_GRACE_MS = 30_000;
 const REVEAL_SECONDS = 4;
 export const TARGETS = [3, 5, 10] as const;
 
@@ -47,6 +51,8 @@ export interface State extends RoomBase {
   last: { throws: Record<string, Hand>; out: number[]; gained: Record<string, number>; draw: boolean } | null;
   round: number;
   winners: number[];
+  /** Seat → when they disconnected during this game (cleared when they come back). */
+  away?: Record<string, number>;
 }
 
 export function newRoom(code: string, now: number, seed: number): State {
@@ -70,21 +76,34 @@ export function newRoom(code: string, now: number, seed: number): State {
     last: null,
     round: 0,
     winners: [],
+    away: {},
   };
 }
 
 const inGame = (s: State): boolean => s.phase === 'throw' || s.phase === 'reveal';
 const isHere = (s: State, n: number): boolean => s.seats.some((x) => x.n === n && x.online);
+/** Still in the game: connected, or dropped out less than AWAY_GRACE_MS ago. */
+const present = (s: State, n: number, now: number): boolean => isHere(s, n) || (s.seats.some((x) => x.n === n) && now - (s.away?.[n] ?? -Infinity) < AWAY_GRACE_MS);
 /** Who throws this round. */
-const throwers = (s: State): number[] => (s.settings.mode === 'knockout' ? s.alive : s.playing);
+const throwers = (s: State, now: number): number[] => (s.settings.mode === 'knockout' ? s.alive : s.playing.filter((n) => present(s, n, now)));
 
 export function join(s: State, key: string, name: string, now: number): string | null {
-  return joinSeat(s, key, name, now, MAX_PLAYERS, inGame(s));
+  const err = joinSeat(s, key, name, now, MAX_PLAYERS, inGame(s));
+  const seat = seatOf(s, key);
+  if (seat && s.away) delete s.away[seat.n];
+  return err;
 }
 
 export function leave(s: State, key: string, now: number): void {
-  if (!leaveSeat(s, key, now)) return;
+  const seat = leaveSeat(s, key, now);
+  if (!seat) return;
+  if (inGame(s)) (s.away ??= {})[seat.n] = now;
   settle(s, now);
+}
+
+/** Knockout: players gone longer than the grace period are out. */
+function dropGone(s: State, now: number): void {
+  if (s.settings.mode === 'knockout') s.alive = s.alive.filter((n) => present(s, n, now));
 }
 
 function nextThrow(s: State, now: number): void {
@@ -96,12 +115,14 @@ function nextThrow(s: State, now: number): void {
 }
 
 function reveal(s: State, now: number): void {
-  for (const n of throwers(s))
+  dropGone(s, now);
+  if (s.settings.mode === 'knockout' && s.alive.length <= 1) return finish(s, s.alive);
+  const who = throwers(s, now);
+  for (const n of who)
     if (!s.throws[n]) {
       s.throws[n] = HANDS[nextRandom(s) % 3]!;
       s.auto.push(n);
     }
-  const who = throwers(s);
   const hands = new Set(who.map((n) => s.throws[n]!));
   const gained: Record<string, number> = {};
   let out: number[] = [];
@@ -135,29 +156,27 @@ function finish(s: State, winners: number[]): void {
 /** After a reveal: is there a winner, or another throw? */
 function afterReveal(s: State, now: number): void {
   if (s.settings.mode === 'knockout') {
-    const left = s.alive.filter((n) => isHere(s, n));
-    if (s.alive.length <= 1 || left.length <= 1) return finish(s, left.length === 1 ? left : s.alive);
+    if (s.alive.length <= 1) return finish(s, s.alive);
   } else {
     const top = Math.max(0, ...s.playing.map((n) => s.points[n] ?? 0));
     if (top >= s.settings.target) return finish(s, s.playing.filter((n) => (s.points[n] ?? 0) === top));
   }
   nextThrow(s, now);
+  settle(s, now);
 }
 
 function settle(s: State, now: number): void {
   if (!inGame(s)) return;
-  const here = s.playing.filter((n) => isHere(s, n));
-  if (here.length < 2) {
+  if (s.playing.filter((n) => present(s, n, now)).length < 2) {
     s.phase = 'lobby';
     s.deadline = null;
     return;
   }
-  if (s.settings.mode === 'knockout') {
-    // Someone who left is out; if only one is still in, they win.
-    s.alive = s.alive.filter((n) => isHere(s, n));
-    if (s.alive.length <= 1) return finish(s, s.alive);
-  }
-  if (s.phase === 'throw' && throwers(s).every((n) => s.throws[n])) reveal(s, now);
+  // Someone gone for good is out; if only one is still in, they win.
+  dropGone(s, now);
+  if (s.settings.mode === 'knockout' && s.alive.length <= 1) return finish(s, s.alive);
+  // Everyone still connected has thrown: no need to wait out the clock for someone whose phone dropped out.
+  if (s.phase === 'throw' && throwers(s, now).every((n) => s.throws[n] || !isHere(s, n))) reveal(s, now);
 }
 
 export function tick(s: State, now: number): void {
@@ -200,11 +219,12 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       s.last = null;
       s.round = 0;
       s.winners = [];
+      s.away = {};
       nextThrow(s, now);
       return null;
     }
     case 'throw':
-      if (s.phase !== 'throw' || !throwers(s).includes(me.n) || !(HANDS as readonly unknown[]).includes(a.hand)) return null;
+      if (s.phase !== 'throw' || !throwers(s, now).includes(me.n) || !(HANDS as readonly unknown[]).includes(a.hand)) return null;
       s.throws[me.n] = a.hand;
       settle(s, now);
       return null;
@@ -263,7 +283,7 @@ export function viewFor(s: State, key: string): RoomView | null {
     playing: s.playing,
     alive: s.alive,
     points: s.points,
-    throwing: s.phase === 'throw' && throwers(s).includes(me.n),
+    throwing: s.phase === 'throw' && throwers(s, s.updated).includes(me.n),
     myThrow: s.throws[me.n] ?? null,
     last: s.phase === 'reveal' || s.phase === 'result' ? s.last : null,
     auto: s.phase === 'reveal' ? s.auto : [],

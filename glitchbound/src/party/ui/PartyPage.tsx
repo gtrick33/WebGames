@@ -261,8 +261,9 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
             onSubmit={(e) => {
               e.preventDefault();
               const code = joinCode.trim().toUpperCase();
-              if (/^[A-HJKMNP-Z]{5}$/.test(code)) navigate(`/r/${code}`);
-              else setRoomMsg('Room codes are five letters, like KQTRA.');
+              // /party?room= opens any room (Crass Act ones go on to their own page). /r/ links only work from outside the app.
+              if (/^[A-HJKMNP-Z]{5}$/.test(code)) navigate(`/party?room=${code}`);
+              else setRoomMsg('Room codes are five letters, like KQTRA (never I, L or O).');
             }}
           >
             <h2>Got a code?</h2>

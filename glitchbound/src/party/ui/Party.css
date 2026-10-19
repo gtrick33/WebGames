@@ -1605,6 +1605,28 @@ img.pt-feature-art {
 .pt-imp-clock.is-low {
   color: var(--pt-pink);
 }
+/* Room errors and "Reconnecting…" float above the phone's tab bar, so they show wherever you have scrolled to. */
+.pt-room-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 60;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: var(--pt-ink);
+  color: var(--pt-paper);
+  font-weight: 800;
+  text-align: center;
+  box-shadow: 0 6px 0 var(--pt-shadow);
+  transform: translateX(-50%);
+}
+@media (min-width: 901px) {
+  .pt-room-toast {
+    bottom: 24px;
+  }
+}
 .pt-finger.is-you {
   border-color: var(--pt-edge);
   font-weight: 800;

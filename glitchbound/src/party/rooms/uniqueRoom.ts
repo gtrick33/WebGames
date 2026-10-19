@@ -291,6 +291,8 @@ export interface RoomView {
    * and why the cancelled ones were removed.
    */
   clues: Clue[] | null;
+  /** Guess and verdict: how many clues cancelled each other out, and how many were removed for other reasons (empty, or too close to the word). */
+  cancelled: { twins: number; other: number } | null;
   outcome: Outcome | null;
   guess: string;
   cardsLeft: number;
@@ -321,6 +323,7 @@ export function viewFor(s: State, key: string): RoomView | null {
     myClue: s.phase === 'write' ? (s.clues[me.n] ?? null) : null,
     canSwap: s.phase === 'write' && !guessing && s.playing.includes(me.n) && !Object.keys(s.clues).length,
     clues,
+    cancelled: clues ? { twins: s.checked.filter((c) => c.out === 'twin').length, other: s.checked.filter((c) => c.out && c.out !== 'twin').length } : null,
     outcome: over ? s.outcome : null,
     guess: over ? s.guess : '',
     cardsLeft: s.cardsLeft,
