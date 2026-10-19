@@ -9,6 +9,9 @@ import './InfoPages.css';
 
 type Tab = 'hall' | string;
 
+/** Below this many players the Hall of Fame invites people to claim the empty spots. */
+const EARLY_DAYS = 10;
+
 function GameBoard({ slug }: { slug: string }) {
   const [period, setPeriod] = useState<'all' | '24h'>('all');
   const board = useBoard(slug, period);
@@ -52,6 +55,12 @@ function Hall() {
       {hall.status === 'loading' && <p className="info-small">Loading…</p>}
       {hall.status === 'error' && <BoardError text="The Hall of Fame is offline right now." onRetry={hall.retry} />}
       {hall.status === 'ok' && (hall.rows.length ? <HallTable rows={hall.rows} /> : <BoardEmpty text="Nobody is in the Hall of Fame yet. Sign in and set the first record." />)}
+      {/* A young arcade: say the thin board is an opening, not a ghost town. */}
+      {hall.status === 'ok' && hall.rows.length > 0 && hall.rows.length < EARLY_DAYS && (
+        <p className="info-small board-early">
+          <b>Early days.</b> The boards are still fresh, so a crown is well within reach. Sign in, set a best and claim one.
+        </p>
+      )}
     </div>
   );
 }

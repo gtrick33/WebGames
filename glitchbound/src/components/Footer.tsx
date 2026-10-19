@@ -38,6 +38,7 @@ export function Footer() {
               </button>
               <Link href="/me/bugs">{t('Report a bug')}</Link>
               <Link href="/privacy">{t('Privacy & your data')}</Link>
+              <Link href="/terms">{t('Terms of use')}</Link>
               <a href="/sitemap.xml">{t('Sitemap')}</a>
             </div>
           </nav>

@@ -183,7 +183,7 @@ const ro: string[] = [
   'Limbă',
   'Nou · Modul Petrecere',
   'Ai prieteni pe la tine? Dați telefonul din mână în mână.',
-  'Adevăr sau provocare, Eu niciodată, mimă, un joc de masă cu zaruri și un război de licitații. Adaugă nume și joacă în câteva secunde.',
+  'Impostor, mimă, Eu niciodată și altele. Dați un telefon din mână în mână sau fiecare joacă pe al lui.',
   'Hai la petrecere →',
   'Serie de {n} zile. Termină azi un zilnic ca s-o păstrezi',
   'Serie de {n} zile. Zilnicul de azi e gata',
@@ -592,6 +592,7 @@ const ro: string[] = [
   'prea scurtă ca să conteze',
   'scor prea mare pentru timpul jucat',
   'la rând',
+  'Termeni de utilizare',
 ];
 
 export default ro;

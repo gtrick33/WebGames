@@ -7,7 +7,7 @@ import { drawCarPreview, fmtTime, THEMES } from './render';
 import { AI_PRESETS, type RaceMode, type RaceSim, type Result } from './sim';
 import { sectorTimes } from './sectors';
 import { decodeReplay, encodeReplay } from './ghost';
-import { clearGhost, loadGhost, loadSave, saveGhost, writeSave, type Bests, type SaveData } from './storage';
+import { clearGhost, countDay, DAILY_RACES, KEEP_DAILY, loadGhost, loadSave, saveGhost, writeSave, type Bests, type SaveData } from './storage';
 import { lapLine, raceMedal, raceMedalTimes, shareText, type Medal } from './medals';
 import { buildTrack, TRACK_TYPES, type Surface, type Track, type TrackDef } from './track';
 import { TRACKS } from './tracks';
@@ -79,6 +79,8 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [touch, setTouch] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
   const today = useMemo(() => todayKey(), []);
+  /** Today's daily races not yet started. */
+  const racesLeft = Math.max(0, DAILY_RACES - countDay(save.dailyRaced, today));
   const daily = useMemo(() => dailyTrack(today), [today]);
   const random = useMemo(() => randomTrack(save.randomSeed), [save.randomSeed]);
   const allDefs = useMemo(() => [daily, ...TRACKS, random], [daily, random]);
@@ -134,7 +136,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     setConfirmLeave(false);
   }, []);
 
-  /** Starts a race on the selected track. Today's daily track is one race a day: false when it is used up. */
+  /** Starts a race on the selected track. Today's daily track is three races a day: false when they are used up. */
   const startRace = useCallback((): boolean => {
     const engine = engineRef.current;
     if (!engine) return false;
@@ -142,8 +144,8 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     const chal = inChallenge.current && challengeDef;
     const def = chal ? challengeDef : defFor(s.track);
     if (!chal && def.id === daily.id) {
-      if (s.dailyRaced.includes(today)) return false;
-      update((cur) => ({ ...cur, dailyRaced: [...cur.dailyRaced, today].slice(-7) }));
+      if (countDay(s.dailyRaced, today) >= DAILY_RACES) return false;
+      update((cur) => ({ ...cur, dailyRaced: [...cur.dailyRaced, today].slice(-KEEP_DAILY) }));
     }
     engine.releaseInput();
     const b: Bests = chal ? {} : (s.bests[def.id] ?? {});
@@ -210,7 +212,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
         coins: s0.coins + coins,
         earned: s0.earned + coins,
         dailyPaid: firstDaily ? [...s0.dailyPaid, today].slice(-7) : s0.dailyPaid,
-        dailyEnded: isDaily && !s0.dailyEnded.includes(today) ? [...s0.dailyEnded, today].slice(-7) : s0.dailyEnded,
+        dailyEnded: isDaily && countDay(s0.dailyEnded, today) < countDay(s0.dailyRaced, today) ? [...s0.dailyEnded, today].slice(-KEEP_DAILY) : s0.dailyEnded,
       };
       const newCars = medalUnlocks(after).filter((c) => !before.includes(c));
       if (newCars.length) after = { ...after, cars: [...after.cars, ...newCars.map((c) => c.id)] };
@@ -258,15 +260,15 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
   const settleDaily = useCallback(
     (sim: RaceSim | null) => {
       const s0 = saveRef.current;
-      if (!s0.dailyRaced.includes(today) || s0.dailyEnded.includes(today)) return;
+      if (countDay(s0.dailyEnded, today) >= countDay(s0.dailyRaced, today)) return;
       const r = sim?.track.def.id === daily.id ? sim.result() : null;
       host.report({ type: 'end', score: r?.score ?? 0, stats: r ? { drift: r.drift, cleanLaps: r.cleanLaps } : {}, daily: true });
-      update((cur) => ({ ...cur, dailyEnded: [...cur.dailyEnded, today].slice(-7), dailyLeft: [...cur.dailyLeft, today].slice(-7) }));
+      update((cur) => ({ ...cur, dailyEnded: [...cur.dailyEnded, today].slice(-KEEP_DAILY), dailyLeft: [...cur.dailyLeft, today].slice(-KEEP_DAILY) }));
     },
     [host, update, today, daily],
   );
 
-  // Leaving today's daily race from the pause menu asks first: it is the day's one race.
+  // Leaving today's daily race from the pause menu asks first: it uses up one of the day's races.
   const leave = (): void => {
     if (onDailyRace() && !confirmLeave) {
       setConfirmLeave(true);
@@ -302,7 +304,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
         if (s === 'result' && inChallenge.current && key !== 'pause') return;
         if (key === 'confirm' && (s === 'menu' || s === 'result')) handlers.current.startRace();
         else if (key === 'confirm' && s === 'paused') handlers.current.resume();
-        // Today's daily is one race a day: R must not throw the race away halfway (it has no Restart button either).
+        // Today's daily races are counted: R must not throw one away halfway (it has no Restart button either).
         else if (key === 'restart' && (s === 'race' || s === 'paused') && !inChallenge.current && saveRef.current.track === daily.id) return;
         else if (key === 'restart' && s !== 'menu' && s !== 'garage' && !handlers.current.startRace()) handlers.current.toMenu();
         else if (key === 'pause' && s === 'race') handlers.current.pause();
@@ -314,8 +316,10 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     engine.touchMode = touch;
     engine.setMuted(saveRef.current.muted);
     engine.setCar(getCar(saveRef.current.car));
-    // Today's daily race was left before a reload or a closed tab: it ends now, unfinished.
-    if (!saveRef.current.bests[daily.id]?.lap) handlers.current.settleDaily(null);
+    // Today's daily race was left before a reload or a closed tab: it ends now, unfinished. (Saves from
+    // before races were counted have no end entry for a finished race; its best lap tells.)
+    const s0 = saveRef.current;
+    if (countDay(s0.dailyEnded, today) > 0 || !s0.bests[daily.id]?.lap) handlers.current.settleDaily(null);
     if (inChallenge.current) handlers.current.startRace();
     else handlers.current.toMenu();
     return () => {
@@ -449,7 +453,11 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
                   style={{ '--tc': THEMES[def.theme].road, '--tg': THEMES[def.theme].ground } as CSSProperties}
                   onClick={() => selectTrack(def.id)}
                 >
-                  {isDaily && <span className="mr-badge">{save.dailyLeft.includes(today) ? 'Daily · unfinished' : save.dailyRaced.includes(today) ? 'Daily · done ✓' : `Daily · ${today.slice(5).replace('-', '/')}`}</span>}
+                  {isDaily && (
+                    <span className="mr-badge">
+                      {racesLeft === DAILY_RACES ? `Daily · ${today.slice(5).replace('-', '/')}` : racesLeft > 0 ? `Daily · ${racesLeft} left` : 'Daily · done ✓'}
+                    </span>
+                  )}
                   {def.id === RANDOM_ID && <span className="mr-badge">Random</span>}
                   <span className={`mr-type mr-type-${def.type}`}>{TRACK_TYPES[def.type].name}</span>
                   <span className="mr-track-name">{def.name}</span>
@@ -549,13 +557,13 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
                 <small>Garage</small>
               </span>
             </button>
-            {selected.id === daily.id && save.dailyRaced.includes(today) ? (
+            {selected.id === daily.id && racesLeft === 0 ? (
               <p className="mr-daily-done">
-                {save.dailyLeft.includes(today) ? 'Today’s daily was left unfinished' : 'Today’s daily is raced'} · <NextDaily />
+                Today’s three races are done · <NextDaily />
               </p>
             ) : (
               <button className="mr-go" onClick={startRace}>
-                Race!
+                {selected.id === daily.id && racesLeft < DAILY_RACES ? `Race! (${racesLeft} left)` : 'Race!'}
               </button>
             )}
           </div>
@@ -570,7 +578,13 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
       {screen === 'paused' && (
         <div className="mr-sheet mr-small">
           <h2 className="mr-title">{confirmLeave ? 'Leave today’s daily?' : 'Paused'}</h2>
-          {confirmLeave && <p className="mr-note">This counts as today’s one try: the race ends unfinished and can’t be raced again until tomorrow.</p>}
+          {confirmLeave && (
+            <p className="mr-note">
+              {racesLeft > 0
+                ? `The race ends unfinished and counts as one of today’s ${DAILY_RACES}. You have ${racesLeft} more after it.`
+                : 'This is today’s last race: it ends unfinished, and the daily track opens again tomorrow.'}
+            </p>
+          )}
           <div className="mr-actions">
             <button
               className="mr-go"
@@ -598,7 +612,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
         <p className="mr-chal">⚔️ Challenge{rival ? ` · racing ${rival.name}’s ghost` : ' · you set the pace'}</p>
       )}
       {screen === 'result' && finish && (
-        <ResultCard finish={finish} bests={save.bests[finish.track.id] ?? {}} onAgain={startRace} onMenu={toMenu} touch={touch} challengeId={finish.track.id === CHALLENGE_ID ? challenge?.id : undefined} day={finish.track.id === daily.id ? today : undefined} />
+        <ResultCard finish={finish} bests={save.bests[finish.track.id] ?? {}} onAgain={startRace} onMenu={toMenu} touch={touch} challengeId={finish.track.id === CHALLENGE_ID ? challenge?.id : undefined} day={finish.track.id === daily.id ? today : undefined} racesLeft={racesLeft} />
       )}
     </div>
   );
@@ -665,7 +679,7 @@ function Garage({ save, onPick, onBack, golds }: { save: SaveData; onPick: (c: C
   );
 }
 
-function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId, day }: { finish: Finish; bests: Bests; onAgain: () => void; onMenu: () => void; touch: boolean; challengeId?: string; day?: string }) {
+function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId, day, racesLeft = 0 }: { finish: Finish; bests: Bests; onAgain: () => void; onMenu: () => void; touch: boolean; challengeId?: string; day?: string; racesLeft?: number }) {
   const { result, track, medal, newRecord, coins, newCars } = finish;
   const [shareMsg, setShareMsg] = useState('');
   const share = async (): Promise<void> => {
@@ -732,8 +746,8 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId, day }:
             See the scoreboard
           </a>
         ) : (
-          <button className="mr-go" onClick={day ? onMenu : onAgain} autoFocus>
-            {day ? 'Other tracks' : `Again${touch ? '' : ' (R)'}`}
+          <button className="mr-go" onClick={day && racesLeft === 0 ? onMenu : onAgain} autoFocus>
+            {!day ? `Again${touch ? '' : ' (R)'}` : racesLeft > 0 ? `Race again (${racesLeft} left)` : 'Other tracks'}
           </button>
         )}
         {!challengeId && result.laps.length > 0 && (

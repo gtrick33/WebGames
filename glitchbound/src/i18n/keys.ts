@@ -187,7 +187,7 @@ export const KEYS: string[] = [
   "Language",
   "New · Party Mode",
   "Got friends over? Pass the phone.",
-  "Truth or dare, Never Have I Ever, charades, a dice board game and a bidding war. Add names, play in seconds.",
+  "Impostor, charades, Never Have I Ever and more. Pass one phone around, or everyone plays on their own.",
   "Let’s party →",
   "{n}-day streak. Finish a daily today to keep it",
   "{n}-day streak. Today's daily is done",
@@ -596,6 +596,7 @@ export const KEYS: string[] = [
   "too short to count",
   "score too high for the time played",
   "in a row",
+  "Terms of use",
 ];
 
 export const UI_COUNT = 311;

@@ -6,7 +6,7 @@ import { liveRules } from '../../../server/catalogSettings';
 import { bad, int, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { clientDay, questViews } from '../../../server/members';
 import { requireUser } from '../../../server/session';
-import { LISTED } from '../../../server/staff';
+import { listed } from '../../../server/staff';
 
 const MAX = 1e9;
 
@@ -93,7 +93,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   await env.DB.batch(statements);
 
   const rankRow = ranked
-    ? await env.DB.prepare(`SELECT COUNT(*) AS n FROM bests b JOIN users u ON u.id = b.user_id WHERE b.game = ? AND ${LISTED} AND b.score > (SELECT score FROM bests WHERE user_id = ? AND game = ?)`)
+    ? await env.DB.prepare(`SELECT COUNT(*) AS n FROM bests b JOIN users u ON u.id = b.user_id WHERE b.game = ? AND ${listed(env)} AND b.score > (SELECT score FROM bests WHERE user_id = ? AND game = ?)`)
         .bind(game.slug, user.id, game.slug)
         .first<{ n: number }>()
     : null;

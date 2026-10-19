@@ -183,7 +183,7 @@ const pl: string[] = [
   'Język',
   'Nowość · Tryb imprezowy',
   'Znajomi wpadli? Podawajcie telefon.',
-  'Prawda czy wyzwanie, Nigdy nie, kalambury, gra planszowa z kośćmi i wojna licytacji. Dodaj imiona i graj w kilka sekund.',
+  'Impostor, kalambury, Nigdy nie i więcej. Podawajcie jeden telefon albo grajcie każdy na swoim.',
   'Imprezujemy →',
   'Seria {n} dni. Zagraj dziś dzienne, by ją utrzymać',
   'Seria {n} dni. Dzisiejsze dzienne zrobione',
@@ -592,6 +592,7 @@ const pl: string[] = [
   'za krótka, by się liczyć',
   'wynik za wysoki jak na czas gry',
   'z rzędu',
+  'Regulamin',
 ];
 
 export default pl;

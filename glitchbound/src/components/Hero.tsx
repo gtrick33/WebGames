@@ -7,9 +7,9 @@ import { dayKey, formatCountdown, msUntilMidnight } from '../platform/dates';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
 import { Dot, Star, Tri } from './Shapes';
-import { openSignIn } from './openSignIn';
 import { SurpriseButton } from './Surprise';
 import { latestGame } from '../catalog/catalog';
+import { orderByLayout } from '../catalog/settings';
 import { activeHoliday } from '../platform/seasons';
 import './Hero.css';
 
@@ -32,8 +32,8 @@ function useGlitchPulse(): boolean {
 }
 
 /**
- * The compact intro above the catalogue: brand line on the left, today's status on the right
- * (daily challenge + member level or a sign-in invite). Short on purpose: the games come first.
+ * The compact intro above the catalogue: brand line on the left; on the right a shelf of six games
+ * (so the first screen shows games, not just words), today's challenge and, for members, their level.
  */
 export function Hero() {
   const t = useT();
@@ -41,11 +41,15 @@ export function Hero() {
   const gameCount = live.games.length;
   // Today's pick: an admin's spotlight, else the newest game.
   const pick = live.spotlight ?? latestGame(live.games);
+  // The admins' first six games (today's pick is already a button).
+  const shelf = orderByLayout(live.games, live.layout)
+    .filter((g) => g.slug !== pick?.slug)
+    .slice(0, 6);
   const glitching = useGlitchPulse();
   const now = useNow(1000);
   const holiday = activeHoliday(live.raw.season, dayKey(now));
   const daily = useDaily(now);
-  const { me, status } = useAccount();
+  const { me } = useAccount();
   const ready = me?.quests.filter((q) => q.done && !q.claimed).length ?? 0;
   const left = me?.quests.filter((q) => !q.done).length ?? 0;
 
@@ -83,47 +87,45 @@ export function Hero() {
       </div>
 
       <div className="intro-side">
-        {daily && (
-          <Link href="/daily" className={`intro-card intro-daily${daily.done ? ' is-done' : ''}`}>
-            <span className="intro-card-icon">
-              <Icon name="calendar" size={20} />
-            </span>
-            <span className="intro-card-text">
-              <span className="mono">
-                {t('Daily #{n}', { n: daily.challenge.number })}
-                {daily.done ? ` · ${t('cleared')}` : ''}
+        <nav className="intro-shelf" aria-label={t('Featured')}>
+          {shelf.map((g) => (
+            <Link key={g.slug} href={`/games/${g.slug}`} className="intro-shelf-tile" style={{ background: g.art.bg }}>
+              <img src={g.art.tile} alt="" width={160} height={120} decoding="async" />
+              <span>{g.title}</span>
+            </Link>
+          ))}
+        </nav>
+        <div className="intro-cards">
+          {daily && (
+            <Link href="/daily" className={`intro-card intro-daily${daily.done ? ' is-done' : ''}`}>
+              <span className="intro-card-icon">
+                <Icon name="calendar" size={20} />
               </span>
-              <strong>{tDaily(daily.challenge)}</strong>
-              <span className="mono intro-count">{t('Resets in {time}', { time: formatCountdown(msUntilMidnight(now)) })}</span>
-            </span>
-            <Icon name="arrowRight" />
-          </Link>
-        )}
-        {me ? (
-          <Link href="/me" className="intro-card intro-member">
-            <span className="intro-card-icon">
-              <Icon name="bolt" size={20} />
-            </span>
-            <span className="intro-card-text">
-              <span className="mono">
-                {t('Level {n}', { n: me.level })} · {me.nickname}
+              <span className="intro-card-text">
+                <span className="mono">
+                  {t('Daily #{n}', { n: daily.challenge.number })} · {daily.done ? t('cleared') : daily.challenge.game.title}
+                </span>
+                <strong>{tDaily(daily.challenge)}</strong>
+                <span className="mono intro-count">{t('Resets in {time}', { time: formatCountdown(msUntilMidnight(now)) })}</span>
               </span>
-              <strong>{ready > 0 ? t('{n} quest rewards ready', { n: ready }) : left > 0 ? t('{n} member quests today', { n: left }) : t('All of today’s quests are done')}</strong>
-            </span>
-            <Icon name="arrowRight" />
-          </Link>
-        ) : (
-          <button className="intro-card intro-member" onClick={() => openSignIn()} disabled={status === 'loading'}>
-            <span className="intro-card-icon">
-              <Icon name="star" size={20} />
-            </span>
-            <span className="intro-card-text">
-              <span className="mono">{t('Free membership')}</span>
-              <strong>{t('Daily quests, levels and leaderboards')}</strong>
-            </span>
-            <Icon name="arrowRight" />
-          </button>
-        )}
+              <Icon name="arrowRight" />
+            </Link>
+          )}
+          {me && (
+            <Link href="/me" className="intro-card intro-member">
+              <span className="intro-card-icon">
+                <Icon name="bolt" size={20} />
+              </span>
+              <span className="intro-card-text">
+                <span className="mono">
+                  {t('Level {n}', { n: me.level })} · {me.nickname}
+                </span>
+                <strong>{ready > 0 ? t('{n} quest rewards ready', { n: ready }) : left > 0 ? t('{n} member quests today', { n: left }) : t('All of today’s quests are done')}</strong>
+              </span>
+              <Icon name="arrowRight" />
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="intro-deco" aria-hidden="true">

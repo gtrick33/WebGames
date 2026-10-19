@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { isNew } from '../catalog/catalog';
+import { autoNewSlugs } from '../catalog/catalog';
 import { GAMES } from '../catalog/games';
-import { dailyRules, partySettingsFor, settingsFor, STICKER_MAX, TEXT_LIMITS, type DailyPick, type GameSettings, type NewBadge, type NoticeTone, type PartySettings, type PublicCatalog } from '../catalog/settings';
+import { applySettings, dailyRules, partySettingsFor, settingsFor, STICKER_MAX, TEXT_LIMITS, type DailyPick, type GameSettings, type NewBadge, type NoticeTone, type PartySettings, type PublicCatalog } from '../catalog/settings';
 import type { GameEntry } from '../catalog/types';
 import { Icon } from '../components/Icon';
 import { api, ApiError } from '../platform/account';
@@ -426,7 +426,7 @@ function Chip({ children, tone }: { children: ReactNode; tone?: 'warn' | 'on' })
 function GameRow({ game, cat, send, busy, open, onToggle }: { game: GameEntry; cat: PublicCatalog; send: Send; busy: boolean; open: boolean; onToggle: () => void }) {
   const s = settingsFor(cat, game.slug);
   const patch = (p: Partial<GameSettings>, msg = 'Saved'): void => void send({ action: 'game', slug: game.slug, patch: p }, msg);
-  const autoNew = isNew(game);
+  const autoNew = autoNewSlugs(applySettings(GAMES, cat)).has(game.slug);
   const badgeOn = s.newBadge === 'on' || (s.newBadge === 'auto' && autoNew);
   return (
     <li className={`ag-game${s.hidden ? ' is-hidden' : ''}`}>

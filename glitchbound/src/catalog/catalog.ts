@@ -25,6 +25,19 @@ export function isNew(game: GameEntry, today: Date = new Date(), days = NEW_FOR_
   return age >= -1 && age < days;
 }
 
+/** At most this many games carry the automatic NEW badge, so it still means something when many launch together. */
+export const NEW_MAX = 3;
+
+/**
+ * The games with an automatic NEW badge: the latest releases still within their 30 days, newest first
+ * (games released the same day: the one added to the catalog last counts as newer).
+ */
+export function autoNewSlugs(games: readonly GameEntry[], today: Date = new Date(), max = NEW_MAX): Set<string> {
+  const fresh = games.map((g, i) => ({ g, i })).filter(({ g }) => isNew(g, today));
+  fresh.sort((a, b) => b.g.released.localeCompare(a.g.released) || b.i - a.i);
+  return new Set(fresh.slice(0, max).map(({ g }) => g.slug));
+}
+
 function normalize(s: string): string {
   return s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 }

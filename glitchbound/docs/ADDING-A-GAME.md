@@ -70,7 +70,7 @@ Append to `src/catalog/games.ts` (schema and comments in `src/catalog/types.ts`)
   description: 'Two or three sentences for the game page and meta description.',
   categories: ['word', 'puzzle'],     // first = primary. See CATEGORIES in types.ts.
   tags: ['letters', 'daily', 'anagram'],
-  released: '2026-11-02',             // drives "Newest" and the NEW sticker (30 days)
+  released: '2026-11-02',             // drives "Newest" and the NEW sticker (the 3 newest games, 30 days)
   accent: 'coral',                    // blue | orange | lime | coral | yellow | teal | violet
   art: {
     tile: '/games/word-burst/tile.webp',

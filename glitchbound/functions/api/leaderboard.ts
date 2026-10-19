@@ -3,7 +3,7 @@ import type { LeaderRow } from '../../src/platform/apiTypes';
 import { levelForXp } from '../../src/platform/progression';
 import { bad, json, type Ctx } from '../../server/http';
 import { currentUser } from '../../server/session';
-import { LISTED } from '../../server/staff';
+import { listed } from '../../server/staff';
 
 /**
  * GET /api/leaderboard?game=slug&period=all|24h: top 50 members, plus your own row if you are lower.
@@ -17,9 +17,9 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   const me = await currentUser(env, request);
   const sql =
     period === 'all'
-      ? `SELECT b.user_id, b.score, b.at, u.nickname, u.xp FROM bests b JOIN users u ON u.id = b.user_id WHERE b.game = ? AND b.score > 0 AND ${LISTED} ORDER BY b.score DESC, b.at ASC LIMIT 50`
+      ? `SELECT b.user_id, b.score, b.at, u.nickname, u.xp FROM bests b JOIN users u ON u.id = b.user_id WHERE b.game = ? AND b.score > 0 AND ${listed(env)} ORDER BY b.score DESC, b.at ASC LIMIT 50`
       : `SELECT r.user_id, MAX(r.score) AS score, MAX(r.ended_at) AS at, u.nickname, u.xp FROM runs r JOIN users u ON u.id = r.user_id
-         WHERE r.game = ? AND r.status = 'ok' AND r.score > 0 AND r.ended_at > ? AND ${LISTED} GROUP BY r.user_id ORDER BY score DESC, at ASC LIMIT 50`;
+         WHERE r.game = ? AND r.status = 'ok' AND r.score > 0 AND r.ended_at > ? AND ${listed(env)} GROUP BY r.user_id ORDER BY score DESC, at ASC LIMIT 50`;
   const stmt = env.DB.prepare(sql);
   const res = await (period === 'all' ? stmt.bind(game.slug) : stmt.bind(game.slug, Date.now() - 86400_000)).all<{ user_id: string; score: number; at: number; nickname: string; xp: number }>();
   // Equal scores share a rank (1, 2, 2, 4), as in the Hall of Fame and a round's "Rank #n".
@@ -32,7 +32,7 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   if (me && !rows.some((r) => r.you) && period === 'all') {
     const b = await env.DB.prepare('SELECT score, at FROM bests WHERE user_id = ? AND game = ? AND score > 0').bind(me.id, game.slug).first<{ score: number; at: number }>();
     if (b) {
-      const ahead = await env.DB.prepare(`SELECT COUNT(*) AS n FROM bests b JOIN users u ON u.id = b.user_id WHERE b.game = ? AND b.score > ? AND ${LISTED}`).bind(game.slug, b.score).first<{ n: number }>();
+      const ahead = await env.DB.prepare(`SELECT COUNT(*) AS n FROM bests b JOIN users u ON u.id = b.user_id WHERE b.game = ? AND b.score > ? AND ${listed(env)}`).bind(game.slug, b.score).first<{ n: number }>();
       mine = { rank: (ahead?.n ?? 0) + 1, nickname: me.nickname, level: levelForXp(me.xp), score: b.score, at: b.at, you: true };
     }
   }

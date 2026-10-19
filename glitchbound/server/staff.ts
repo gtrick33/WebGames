@@ -25,10 +25,19 @@ export interface StaffDb {
 }
 
 /**
- * SQL that keeps a users row (alias `u`) on the public boards: not banned and not a QA account
- * (testers' scores are test scores). Their own rows still show to them.
+ * SQL that keeps a users row (alias `u`) on the public boards: not banned, not a QA account (testers'
+ * scores are test scores) and not an admin (the boards are for players; a studio account holding
+ * most of the crowns makes a young arcade look like a private one). Their own rows still show to them.
  */
-export const LISTED = `u.banned_at IS NULL AND NOT EXISTS (SELECT 1 FROM staff st WHERE st.user_id = u.id)`;
+export function listed(env: Pick<Env, 'ADMIN_EMAILS'>): string {
+  const base = `u.banned_at IS NULL AND NOT EXISTS (SELECT 1 FROM staff st WHERE st.user_id = u.id)`;
+  const admins = (env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+    .map((e) => `'${e.replace(/'/g, "''")}'`);
+  return admins.length ? `${base} AND lower(u.email) NOT IN (${admins.join(', ')})` : base;
+}
 
 /** a***@example.com, for showing which address an invitation is for without spelling it out. */
 export function maskEmail(email: string): string {

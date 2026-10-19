@@ -183,7 +183,7 @@ const pt: string[] = [
   'Idioma',
   'Novo · Modo Festa',
   'Amigos em casa? Passem o telemóvel.',
-  'Verdade ou consequência, Eu nunca, mímica, um jogo de tabuleiro com dados e uma guerra de licitações. Junta nomes e joga em segundos.',
+  'Impostor, mímica, Eu nunca e muito mais. Passem um telemóvel de mão em mão, ou cada um joga no seu.',
   'Vamos à festa →',
   'Sequência de {n} dias. Termina um diário hoje para a manter',
   'Sequência de {n} dias. O diário de hoje está feito',
@@ -592,6 +592,7 @@ const pt: string[] = [
   'demasiado curta para contar',
   'pontuação demasiado alta para o tempo jogado',
   'seguidos',
+  'Termos de utilização',
 ];
 
 export default pt;

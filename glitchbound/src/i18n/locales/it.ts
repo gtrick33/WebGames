@@ -183,7 +183,7 @@ const it: string[] = [
   'Lingua',
   'Novità · Modalità festa',
   'Amici a casa? Passatevi il telefono.',
-  'Obbligo o verità, Non ho mai, mimo, un gioco da tavolo con i dadi e una guerra di offerte. Aggiungi i nomi e gioca in pochi secondi.',
+  'Impostor, mimo, Non ho mai e altro ancora. Passatevi un telefono, oppure ognuno gioca sul proprio.',
   'Facciamo festa →',
   'Serie di {n} giorni. Completa una giornaliera oggi per mantenerla',
   'Serie di {n} giorni. La giornaliera di oggi è fatta',
@@ -592,6 +592,7 @@ const it: string[] = [
   'troppo breve per contare',
   'punteggio troppo alto per il tempo giocato',
   'di fila',
+  'Termini d’uso',
 ];
 
 export default it;

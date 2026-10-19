@@ -183,7 +183,7 @@ const nl: string[] = [
   'Taal',
   'Nieuw · Feestmodus',
   'Vrienden over de vloer? Geef de telefoon door.',
-  'Waarheid of durven, Ik heb nog nooit, hints, een dobbelbordspel en een biedoorlog. Voeg namen toe en speel binnen seconden.',
+  'Impostor, hints, Ik heb nog nooit en meer. Geef één telefoon door, of iedereen speelt op zijn eigen.',
   'Feest! →',
   'Reeks van {n} dagen. Speel vandaag een dagelijkse om hem te houden',
   'Reeks van {n} dagen. De dagelijkse van vandaag is gedaan',
@@ -592,6 +592,7 @@ const nl: string[] = [
   'te kort om mee te tellen',
   'score te hoog voor de gespeelde tijd',
   'op rij',
+  'Gebruiksvoorwaarden',
 ];
 
 export default nl;

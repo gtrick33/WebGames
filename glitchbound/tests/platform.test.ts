@@ -81,6 +81,8 @@ describe('build-time SEO', () => {
     expect(renderPage(template, page, site)).toContain('<meta name="robots" content="noindex" />');
     expect(sitemap(site)).not.toContain('404');
     expect(sitemap(site)).toContain('<loc>https://example.test/games/neon-rush</loc>');
+    expect(sitemap(site)).toContain('<loc>https://example.test/party</loc>');
+    expect(sitemap(site)).toContain('<loc>https://example.test/terms</loc>');
     expect(robots(site)).toContain('Sitemap: https://example.test/sitemap.xml');
   });
 });

@@ -103,6 +103,18 @@ export function PrivacyPage() {
           </p>
         </section>
 
+        <section className="panel info-block" aria-labelledby="p-rooms">
+          <h2 id="p-rooms">Party rooms and Discord</h2>
+          <p>
+            A live party room keeps the names and answers typed in it on our server only while it is in use; it deletes itself after three hours without
+            activity. Pass-the-phone games never leave your device.
+          </p>
+          <p>
+            If you play inside Discord, Discord shows the game your display name so your friends see it. We only keep which Discord activity is playing
+            which game, for two days.
+          </p>
+        </section>
+
         <section className="panel info-block" aria-labelledby="p-email">
           <h2 id="p-email">New-game emails</h2>
           <p>
@@ -111,12 +123,20 @@ export function PrivacyPage() {
           </p>
         </section>
 
+        <section className="panel info-block" aria-labelledby="p-reports">
+          <h2 id="p-reports">Feedback and bug reports</h2>
+          <p>
+            What you send (your message, the game, your browser and device type, and a contact address if you add one) is kept so we can read it and
+            fix things. Bug reports, without any contact details, may be copied to our private issue tracker on GitHub.
+          </p>
+        </section>
+
         <section className="panel info-block" aria-labelledby="p-analytics">
           <h2 id="p-analytics">Analytics and crash reports</h2>
           <p>
             We count anonymous events (a page was viewed, a game was started or finished, a search returned results) and collect crash reports so we
             can fix bugs. There are no analytics cookies: visitors are counted with a key that is derived from the request and changes every day, and IP
-            addresses are never stored.
+            addresses are never stored. Events are kept for 180 days and crash reports for 90 days.
             {ANALYTICS.provider === 'umami' && ANALYTICS.umamiWebsiteId ? ' We also use Umami, a cookieless analytics tool.' : ''}
           </p>
         </section>
@@ -152,8 +172,33 @@ export function PrivacyPage() {
             </ul>
           </section>
         )}
+
+        <section className="panel info-block" aria-labelledby="p-who">
+          <h2 id="p-who">Who is responsible, and who helps</h2>
+          <p>
+            GlitchBound, run by Sava Hristov, is responsible for your data (the &ldquo;controller&rdquo;). A few service providers process it only on our
+            behalf: Cloudflare (hosting, database and live rooms), Google (sign-in, if you choose it), Resend (emails) and GitHub (our bug tracker).
+            Some of them are based in the US and protect transfers with the EU&rsquo;s standard contractual clauses or the EU&ndash;US Data Privacy
+            Framework. We never sell your data.
+          </p>
+        </section>
+
+        <section className="panel info-block" aria-labelledby="p-rights">
+          <h2 id="p-rights">Why we may, and your rights</h2>
+          <p>
+            We handle account and game data to run the service you asked for; analytics and crash reports because we have a legitimate interest in
+            keeping GlitchBound working; and emails only with your consent, which you can withdraw with one click. Account data is kept until you delete
+            your account.
+          </p>
+          <p>
+            You can ask to see, correct, export or delete your data, or object to how we use it, by emailing the address below. You can also complain to
+            the Bulgarian Commission for Personal Data Protection (cpdp.bg) or the data protection authority where you live.
+          </p>
+        </section>
       </div>
-      <p className="info-small">Questions or deletion requests: sava.hristov@glitchboundstudio.com</p>
+      <p className="info-small">
+        Questions or data requests: sava.hristov@glitchboundstudio.com · See also the <Link href="/terms">terms of use</Link>.
+      </p>
     </div>
   );
 }

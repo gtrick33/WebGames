@@ -4,6 +4,7 @@ import { onRequestGet as auditTrail } from '../functions/api/admin/qa-audit';
 import { onRequestGet as staffList, onRequestPost as staffChange } from '../functions/api/admin/staff';
 import { onRequestPost as devSignIn } from '../functions/api/auth/dev';
 import { onRequestPost as claimCoins } from '../functions/api/coins/claim';
+import { onRequestGet as hall } from '../functions/api/hall';
 import { onRequestGet as leaderboard } from '../functions/api/leaderboard';
 import { onRequestDelete as deleteMe, onRequestGet as getMe } from '../functions/api/me';
 import { onRequestPost as accept } from '../functions/api/qa/accept';
@@ -286,6 +287,24 @@ describe('QA role', () => {
     expect(db.sqlite.prepare('SELECT user_id FROM bests').all()).toEqual([{ user_id: player.id }]);
     expect(db.sqlite.prepare('SELECT user_id FROM runs').all()).toEqual([{ user_id: player.id }]);
     expect((await call(resetProgress, '/api/qa/reset', { cookie: player.cookie, body: { scope: 'all' } })).status).toBe(403);
+  });
+
+  it('keeps admin scores off the public boards and the Hall of Fame (the admin still sees their own rank)', async () => {
+    env.ADMIN_EMAILS = ` Boss@Example.com , o'brien@example.com`;
+    const admin = await signInAs(ADMIN);
+    const player = await signInAs('player@example.com');
+    for (const [id, score] of [
+      [admin.id, 999],
+      [player.id, 50],
+    ] as const) {
+      db.sqlite.prepare(`INSERT INTO bests (user_id, game, score, stats, at) VALUES (?, 'wing-it', ?, '{}', 1)`).run(id, score);
+    }
+    const board = async (cookie: string) => (await call<{ rows: LeaderRow[]; mine: LeaderRow | null }>(leaderboard, '/api/leaderboard?game=wing-it', { cookie })).data;
+    expect((await board(player.cookie)).rows.map((r) => r.score)).toEqual([50]);
+    expect((await board(admin.cookie)).mine).toMatchObject({ score: 999, rank: 1 });
+    const fame = (await call<{ rows: { nickname: string; crowns: number }[] }>(hall, '/api/hall', { cookie: player.cookie })).data.rows;
+    expect(fame).toHaveLength(1);
+    expect(fame[0]).toMatchObject({ crowns: 1 });
   });
 
   it('keeps secrets out of the trail and finds a game’s keys on this device', () => {

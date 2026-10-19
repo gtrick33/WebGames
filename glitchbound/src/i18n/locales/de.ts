@@ -183,7 +183,7 @@ const de: string[] = [
   'Sprache',
   'Neu · Party-Modus',
   'Freunde zu Besuch? Reicht das Handy weiter.',
-  'Wahrheit oder Pflicht, Ich hab noch nie, Scharade, ein Würfelbrettspiel und ein Bieterkrieg. Namen eintragen und sofort loslegen.',
+  'Impostor, Scharade, Ich hab noch nie und mehr. Reicht ein Handy herum, oder jeder spielt auf seinem eigenen.',
   'Lass uns feiern →',
   '{n}-Tage-Serie. Spiel heute eine Tagesrunde, um sie zu halten',
   '{n}-Tage-Serie. Die heutige Tagesrunde ist geschafft',
@@ -592,6 +592,7 @@ const de: string[] = [
   'zu kurz, um zu zählen',
   'Punktzahl zu hoch für die gespielte Zeit',
   'in Folge',
+  'Nutzungsbedingungen',
 ];
 
 export default de;

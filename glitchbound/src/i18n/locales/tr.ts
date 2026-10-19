@@ -183,7 +183,7 @@ const tr: string[] = [
   'Dil',
   'Yeni · Parti Modu',
   'Arkadaşların mı geldi? Telefonu elden ele dolaştırın.',
-  'Doğruluk mu cesaret mi, Hiç … yapmadım, sessiz sinema, zarlı bir kutu oyunu ve bir açık artırma savaşı. İsimleri ekle, saniyeler içinde oyna.',
+  'Impostor, sessiz sinema, Hiç … yapmadım ve dahası. Tek telefonu elden ele verin ya da herkes kendi telefonunda oynasın.',
   'Parti başlasın →',
   '{n} günlük seri. Korumak için bugün bir günlük bitir',
   '{n} günlük seri. Bugünün günlüğü bitti',
@@ -592,6 +592,7 @@ const tr: string[] = [
   'sayılmak için fazla kısa',
   'oynanan süreye göre skor fazla yüksek',
   'üst üste',
+  'Kullanım koşulları',
 ];
 
 export default tr;

@@ -2,8 +2,8 @@
 .season-decor {
   position: fixed;
   inset: 0;
-  /* Over the page but under the header, see-through, and never in the way of a tap. */
-  z-index: 40;
+  /* Behind the page content (over the background blobs), so nothing ever drifts across text; never in the way of a tap. */
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
 }
@@ -20,11 +20,11 @@
   100% { transform: translate3d(-12px, 112vh, 0) rotate(320deg); }
 }
 
-/* Halloween bats: in front of everything, flapping along a swooping path across the screen. */
+/* Halloween bats: flapping along a swooping path across the screen, behind the content like the rest. */
 .season-bats {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
 }

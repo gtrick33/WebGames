@@ -14,7 +14,7 @@ export function PartyBanner() {
         <span className="party-banner-text">
           <span className="eyebrow">{t('New · Party Mode')}</span>
           <strong>{t('Got friends over? Pass the phone.')}</strong>
-          <span>{t('Truth or dare, Never Have I Ever, charades, a dice board game and a bidding war. Add names, play in seconds.')}</span>
+          <span>{t('Impostor, charades, Never Have I Ever and more. Pass one phone around, or everyone plays on their own.')}</span>
         </span>
         <span className="party-banner-go mono" aria-hidden="true">
           {t('Let’s party →')}

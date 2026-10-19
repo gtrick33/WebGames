@@ -51,7 +51,7 @@ describe('Mini Racer: the arcade pause signal (pauseKey)', () => {
   });
 });
 
-describe('Mini Racer: today’s daily track is one race a day', () => {
+describe('Mini Racer: today’s daily track is three races a day', () => {
   it('R does not throw the daily race away, but restarts any other race', () => {
     render(<Game host={host} restartKey={0} pauseKey={0} />);
     fireEvent.click(screen.getByRole('radio', { name: /Daily/ }));
@@ -72,7 +72,7 @@ describe('Mini Racer: today’s daily track is one race a day', () => {
     });
     expect(screen.getByRole('heading', { name: 'Paused' })).toBeTruthy();
 
-    // Leaving asks first (it is the day's one race), then ends the race once, unfinished.
+    // Leaving asks first (it uses up one of the day's races), then ends the race once, unfinished.
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
     expect(screen.getByRole('heading', { name: 'Leave today’s daily?' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Keep racing' }));
@@ -83,10 +83,9 @@ describe('Mini Racer: today’s daily track is one race a day', () => {
     expect(host.report).toHaveBeenLastCalledWith({ type: 'end', score: 0, stats: { drift: 0, cleanLaps: 0 }, daily: true });
     expect(host.report).toHaveBeenCalledTimes(2);
 
-    // Back on the menu the daily is used up and says so; another track restarts with R as before.
-    expect(screen.queryByRole('button', { name: 'Race!' })).toBeNull();
-    expect(screen.getByText(/Today’s daily was left unfinished/)).toBeTruthy();
-    expect(screen.getByRole('radio', { name: /Daily · unfinished/ })).toBeTruthy();
+    // Back on the menu one of the three races is used; another track restarts with R as before.
+    expect(screen.getByRole('button', { name: 'Race! (2 left)' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /Daily · 2 left/ })).toBeTruthy();
     fireEvent.click(screen.getByRole('radio', { name: /Sunny Bay/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Race!' }));
     act(() => {
@@ -104,7 +103,7 @@ describe('Mini Racer: today’s daily track is one race a day', () => {
     expect(host.report).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'end', daily: true }));
     render(<Game host={host} restartKey={0} pauseKey={0} />);
     expect(host.report).toHaveBeenCalledTimes(2);
-    expect(screen.getByText(/Today’s daily was left unfinished/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Race! (2 left)' })).toBeTruthy();
   });
 
   it('a daily race left by a reload (no goodbye) is settled once when the game opens again', () => {
@@ -114,6 +113,25 @@ describe('Mini Racer: today’s daily track is one race a day', () => {
     unmount();
     render(<Game host={host} restartKey={0} pauseKey={0} />);
     expect(host.report).toHaveBeenCalledTimes(1);
-    expect(screen.getByText(/Today’s daily was left unfinished/)).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /Daily · 2 left/ })).toBeTruthy();
+  });
+
+  it('after three races the daily track is done until tomorrow', () => {
+    const day = todayKey();
+    localStorage.setItem('gb.mini-racer.v1', JSON.stringify({ track: dailyTrack(day).id, dailyRaced: [day, day, day], dailyEnded: [day, day, day], dailyLeft: [day] }));
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    expect(host.report).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /Race!/ })).toBeNull();
+    expect(screen.getByText(/Today’s three races are done/)).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /Daily · done/ })).toBeTruthy();
+  });
+
+  it('a race started before races were counted and finished is not settled again', () => {
+    const day = todayKey();
+    const id = dailyTrack(day).id;
+    localStorage.setItem('gb.mini-racer.v1', JSON.stringify({ track: id, dailyRaced: [day], bests: { [id]: { lap: 30, race: 95 } } }));
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    expect(host.report).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Race! (2 left)' })).toBeTruthy();
   });
 });

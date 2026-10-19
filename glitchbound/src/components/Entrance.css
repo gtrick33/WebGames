@@ -211,7 +211,8 @@ html.entrance-on {
 /* Catalogue tiles wait for the entrance, then pop in as the camera arrives. */
 html.entrance-on .pop-in,
 html.entrance-on .intro-title,
-html.entrance-on .intro-card {
+html.entrance-on .intro-card,
+html.entrance-on .intro-shelf-tile {
   animation-play-state: paused;
 }
 

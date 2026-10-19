@@ -118,10 +118,19 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       path: '/privacy',
       file: 'privacy.html',
       title: `Privacy & your data · ${SITE}`,
-      description: 'What GlitchBound stores, what it does not, and how to delete your local data.',
+      description: 'What GlitchBound stores, for how long, who helps us run it, and how to see or delete your data.',
       image: '/og.png',
       imageAlt: SITE,
       body: `<section class="ssr"><h1>Privacy &amp; your data</h1><p>You can play every ${SITE} game without an account. As a guest, your bests and daily challenge history are kept in your browser's local storage and never uploaded. If you sign in, your profile, bests and scores are stored with your account, and you can delete it at any time.</p></section>`,
+    },
+    {
+      path: '/terms',
+      file: 'terms.html',
+      title: `Terms of use · ${SITE}`,
+      description: 'The rules for playing on GlitchBound: free games, fair play, accounts, Party Mode and coins.',
+      image: '/og.png',
+      imageAlt: SITE,
+      body: `<section class="ssr"><h1>Terms of use</h1><p>Every ${SITE} game is free and runs in your browser, with or without an account. Play fair: no bots, scripts or made-up scores, and nicknames and room messages must not be hateful or harassing. Coins, XP and rewards have no money value. Adult party games are for players 18 and over.</p><p><a href="/privacy">Privacy &amp; your data</a></p></section>`,
     },
     {
       path: '/leaderboards',
@@ -146,10 +155,10 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       path: '/party',
       file: 'party.html',
       title: `Party Mode: party games for one phone · ${SITE}`,
-      description: 'Free pass-the-phone party games: truth or dare, Never Have I Ever, charades, a dice board game and a bidding game. Add your friends’ names and play in seconds.',
+      description: 'Free party games for one phone or everyone’s own: Impostor, charades, Never Have I Ever, truth or dare, word and colour guessing games and more. No app, no sign-up.',
       image: '/og.png',
       imageAlt: 'GlitchBound Party Mode',
-      body: `<section class="ssr"><h1>Party Mode</h1><p>Pass-the-phone party games for groups: Party Prompts (truth, dare, most likely to), Never Have I Ever, Charades, Dice Adventure and Name Your Price. No app, no account.</p><p><a href="/">Back to the arcade</a></p></section>`,
+      body: `<section class="ssr"><h1>Party Mode</h1><p>Party games for groups, on one phone passed around or on everyone’s own phone in a live room: Impostor, Party Prompts (truth, dare, most likely to), Never Have I Ever, Charades, Dial It In, One of a Kind, Hue Knew?, Dice Adventure and Name Your Price. No app, no account.</p><p><a href="/">Back to the arcade</a></p></section>`,
     },
     {
       path: '/me/bugs',
@@ -241,10 +250,11 @@ export function sitemap(siteUrl: string): string {
   const urls = [
     { loc: '/', lastmod: latest, priority: '1.0' },
     ...GAMES.map((g) => ({ loc: `/games/${g.slug}`, lastmod: g.released, priority: '0.9' })),
+    { loc: '/party', lastmod: '', priority: '0.8' },
     { loc: '/daily', lastmod: '', priority: '0.6' },
     { loc: '/leaderboards', lastmod: '', priority: '0.5' },
-    { loc: '/c', lastmod: '', priority: '0.4' },
     { loc: '/privacy', lastmod: '', priority: '0.2' },
+    { loc: '/terms', lastmod: '', priority: '0.2' },
   ];
   const body = urls
     .map((u) => `  <url><loc>${siteUrl}${u.loc}</loc>${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ''}<priority>${u.priority}</priority></url>`)

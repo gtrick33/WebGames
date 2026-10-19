@@ -12,7 +12,7 @@ export type NewBadge = 'auto' | 'on' | 'off';
 export interface GameSettings {
   /** Not listed anywhere; the game page is closed to players (admins can still preview it). */
   hidden: boolean;
-  /** NEW badge: automatic (first 30 days after release), always or never. */
+  /** NEW badge: automatic (the three newest games, for 30 days after release), always or never. */
   newBadge: NewBadge;
   /** Shown first in the arcade grid. */
   pinned: boolean;

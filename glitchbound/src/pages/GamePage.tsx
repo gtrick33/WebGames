@@ -200,8 +200,14 @@ export function GamePage({ game }: { game: GameEntry }) {
   const [renaming, setRenaming] = useState(false);
   const [renameMsg, setRenameMsg] = useState('');
   // Remounting the stage resets the game: autoStart restarts it, otherwise it closes back to the poster.
-  const [stageRun, setStageRun] = useState({ key: 0, autoStart: false });
-  const [playing, setPlaying] = useState(false);
+  // With a mouse and keyboard a module game opens straight on its own menu (one click fewer; full screen
+  // stays a button away). Phones keep the Play poster: that tap is what takes the game full screen.
+  // Embeds and challenge rounds keep it too.
+  const [stageRun, setStageRun] = useState(() => ({
+    key: 0,
+    autoStart: game.runtime.kind === 'module' && !challengeId && typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches,
+  }));
+  const [playing, setPlaying] = useState(stageRun.autoStart);
   const [last, setLast] = useState<LastRound | null>(null);
   const [burst, setBurst] = useState(0);
   // The round the stage plays. Before Play it follows the challenge; a running game keeps its round

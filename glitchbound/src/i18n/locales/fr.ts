@@ -183,7 +183,7 @@ const fr: string[] = [
   'Langue',
   'Nouveau · Mode soirée',
   'Des amis à la maison ? Faites tourner le téléphone.',
-  'Action ou vérité, Je n’ai jamais, mimes, un jeu de plateau aux dés et une guerre d’enchères. Ajoutez des noms et jouez en quelques secondes.',
+  'Impostor, mimes, Je n’ai jamais et plus encore. Faites tourner un téléphone, ou chacun joue sur le sien.',
   'On fait la fête →',
   'Série de {n} jours. Termine un quotidien aujourd’hui pour la garder',
   'Série de {n} jours. Le quotidien du jour est fait',
@@ -592,6 +592,7 @@ const fr: string[] = [
   'trop courte pour compter',
   'score trop élevé pour le temps joué',
   'd’affilée',
+  'Conditions d’utilisation',
 ];
 
 export default fr;

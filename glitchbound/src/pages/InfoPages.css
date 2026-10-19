@@ -36,6 +36,13 @@
 .info-small:empty {
   display: none;
 }
+.board-early {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
 .info-steps {
   display: grid;
   gap: 12px;

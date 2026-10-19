@@ -5,7 +5,7 @@
  * on load and when the tab comes back into view.
  */
 import { useSyncExternalStore } from 'react';
-import { isNew as baseIsNew } from '../catalog/catalog';
+import { autoNewSlugs } from '../catalog/catalog';
 import { GAMES } from '../catalog/games';
 import { applySettings, dailyRules, EMPTY_CATALOG, settingsFor, spotlightGame, type GameSettings, type HomeLayout, type PublicCatalog } from '../catalog/settings';
 import type { GameEntry } from '../catalog/types';
@@ -101,8 +101,8 @@ export function useLiveCatalog(): LiveCatalog {
 /** The games players can see, in display order. */
 export const useGames = (): GameEntry[] => useLiveCatalog().games;
 
-/** NEW badge for a game: the admins' choice, or the automatic 30 days after release. */
+/** NEW badge for a game: the admins' choice, or automatic (the three newest games, for 30 days after release). */
 export function isNewLive(cat: LiveCatalog, game: GameEntry, today?: Date): boolean {
   const badge = cat.settings(game.slug).newBadge;
-  return badge === 'on' ? true : badge === 'off' ? false : baseIsNew(game, today);
+  return badge === 'on' ? true : badge === 'off' ? false : autoNewSlugs(cat.games, today).has(game.slug);
 }

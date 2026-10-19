@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { categoryCounts, getGame, isCategory, isNew, matchScore, queryGames, relatedGames, validateCatalog } from '../src/catalog/catalog';
+import { autoNewSlugs, categoryCounts, getGame, isCategory, isNew, matchScore, queryGames, relatedGames, validateCatalog } from '../src/catalog/catalog';
 import { GAMES } from '../src/catalog/games';
 import { fakeGame } from './fixtures';
 
@@ -78,6 +78,18 @@ describe('helpers', () => {
     const g = fakeGame({ released: '2026-10-01' });
     expect(isNew(g, new Date('2026-10-02T12:00:00Z'))).toBe(true);
     expect(isNew(g, new Date('2026-11-05T12:00:00Z'))).toBe(false);
+  });
+  it('only the three newest games get the automatic NEW badge (the later catalog entry wins a same-day tie)', () => {
+    const day = new Date('2026-10-20T12:00:00Z');
+    const list = [
+      fakeGame({ slug: 'old', released: '2026-08-01' }),
+      fakeGame({ slug: 'a', released: '2026-10-18' }),
+      fakeGame({ slug: 'b', released: '2026-10-19' }),
+      fakeGame({ slug: 'c', released: '2026-10-19' }),
+      fakeGame({ slug: 'd', released: '2026-10-19' }),
+    ];
+    expect([...autoNewSlugs(list, day)].sort()).toEqual(['b', 'c', 'd']);
+    expect([...autoNewSlugs(list.slice(0, 3), day)].sort()).toEqual(['a', 'b']);
   });
   it('relatedGames prefers shared categories and never includes the game itself', () => {
     const related = relatedGames(games[1]!, 4, [...games, fakeGame({ slug: 'delta', categories: ['racing'], released: '2026-01-01' })]);

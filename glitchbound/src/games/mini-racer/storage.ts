@@ -7,6 +7,13 @@ import { DEFAULT_AI_LEVEL, type RaceMode } from './sim';
 const KEY = 'gb.mini-racer.v1';
 const GHOST_PREFIX = 'gb.mini-racer.ghost.';
 
+/** Today's daily track gives this many races; the best one counts. */
+export const DAILY_RACES = 3;
+/** Entries kept in the per-race daily lists: a few days' worth. */
+export const KEEP_DAILY = 9;
+/** How many entries a per-race daily list has for one day. */
+export const countDay = (days: readonly string[], day: string): number => days.reduce((n, d) => n + (d === day ? 1 : 0), 0);
+
 export interface Bests {
   /** Best valid lap, seconds. */
   lap?: number;
@@ -31,11 +38,11 @@ export interface SaveData {
   track: string;
   /** Days whose daily-track coin bonus was already paid. Only the latest few are kept. */
   dailyPaid: string[];
-  /** Days whose daily track was raced: the daily is one race a day. Only the latest few are kept. */
+  /** One entry per daily race started (the daily is three races a day; a day appears once per race). Only the latest few are kept. */
   dailyRaced: string[];
-  /** Days whose daily race has reported its end (finished, or left and settled), so it is reported once. */
+  /** One entry per daily race that has reported its end (finished, or left and settled), so each is reported once. */
   dailyEnded: string[];
-  /** Days whose daily race was left unfinished (a race can't be resumed). */
+  /** One entry per daily race left unfinished (a race can't be resumed). */
   dailyLeft: string[];
   mode: RaceMode;
   /** AI level 0-100 for races. */
@@ -90,9 +97,9 @@ export function loadSave(): SaveData {
     else if (o.difficulty === 'easy' || o.difficulty === 'medium' || o.difficulty === 'hard') d.aiLevel = { easy: 25, medium: 50, hard: 75 }[o.difficulty];
     if (typeof o.randomSeed === 'number' && Number.isFinite(o.randomSeed)) d.randomSeed = Math.abs(Math.floor(o.randomSeed)) % 2 ** 32;
     if (Array.isArray(o.dailyPaid)) d.dailyPaid = o.dailyPaid.filter((x): x is string => typeof x === 'string').slice(-7);
-    if (Array.isArray(o.dailyRaced)) d.dailyRaced = o.dailyRaced.filter((x): x is string => typeof x === 'string').slice(-7);
-    if (Array.isArray(o.dailyEnded)) d.dailyEnded = o.dailyEnded.filter((x): x is string => typeof x === 'string').slice(-7);
-    if (Array.isArray(o.dailyLeft)) d.dailyLeft = o.dailyLeft.filter((x): x is string => typeof x === 'string').slice(-7);
+    if (Array.isArray(o.dailyRaced)) d.dailyRaced = o.dailyRaced.filter((x): x is string => typeof x === 'string').slice(-KEEP_DAILY);
+    if (Array.isArray(o.dailyEnded)) d.dailyEnded = o.dailyEnded.filter((x): x is string => typeof x === 'string').slice(-KEEP_DAILY);
+    if (Array.isArray(o.dailyLeft)) d.dailyLeft = o.dailyLeft.filter((x): x is string => typeof x === 'string').slice(-KEEP_DAILY);
     return d;
   } catch {
     return d;

@@ -21,8 +21,9 @@ interface Save {
   feathers: number;
   runs: number;
   /**
-   * Today's flight (its gaps and feathers draw the share line). `open` while it is in the air (set at
-   * take-off, cleared when it ends); `left` when it ended because the player left mid-flight.
+   * Today's flights: `tries` taken (counted at take-off), the best one's points, gaps and feathers (they
+   * draw the share line). `open` while a flight is in the air; `left` when the last one ended because
+   * the player left mid-flight.
    */
   daily: Record<string, { best: number; tries: number; pillars?: number; feathers?: number; open?: boolean; left?: boolean }>;
   medals: Record<string, number>;
@@ -74,6 +75,19 @@ const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day)
 /** The share line of today's best flight (older saves only kept its points). */
 const dailyLine = (d: Save['daily'][string]): string => flightLine(d.pillars ?? d.best, d.feathers ?? 0);
 
+type DailyRec = Save['daily'][string];
+/** Today's course gives three flights and the best one counts: a reflex game shouldn't end the day on a first misjudged flap. */
+const DAILY_FLIGHTS = 3;
+const flightsLeft = (d: DailyRec | undefined): number => Math.max(0, DAILY_FLIGHTS - (d?.tries ?? 0));
+const flightsText = (n: number): string => `${n} flight${n === 1 ? '' : 's'} left`;
+
+/** Today's record when a flight ends (the try was counted at take-off): the best flight is kept. */
+function dailyAfter(d: DailyRec | undefined, points: number, pillars: number, feathers: number, left = false): DailyRec {
+  const tries = Math.max(1, d?.tries ?? 1);
+  const best = d && d.best >= points && (d.best > 0 || points === 0) ? { best: d.best, pillars: d.pillars ?? 0, feathers: d.feathers ?? 0 } : { best: points, pillars, feathers };
+  return { ...best, tries, ...(left ? { left: true } : {}) };
+}
+
 export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
   return <WingIt key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} />;
 }
@@ -110,8 +124,8 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
   );
 
   const begin = (m: Mode): void => {
-    // The daily course is one flight a day (see tap: taking off uses it up).
-    if (m === 'daily' && saveRef.current.daily[today]) return;
+    // The daily course is three flights a day (see tap: taking off uses one up).
+    if (m === 'daily' && flightsLeft(saveRef.current.daily[today]) === 0) return;
     modeRef.current = m;
     setMode(m);
     sim.current = newSim(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`wing-it:${today}`) : (Math.random() * 2 ** 32) >>> 0);
@@ -137,7 +151,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
         feathers: cur.feathers + s.feathers,
         runs: cur.runs + 1,
         medals: medal ? { ...cur.medals, [medal]: (cur.medals[medal] ?? 0) + 1 } : cur.medals,
-        daily: m === 'daily' ? { ...cur.daily, [today]: { best: points, tries: 1, pillars: s.score, feathers: s.feathers } } : cur.daily,
+        daily: m === 'daily' ? { ...cur.daily, [today]: dailyAfter(cur.daily[today], points, s.score, s.feathers) } : cur.daily,
       };
       commit(next);
       const end = { type: 'end' as const, score: points, stats: { pillars: s.score, feathers: s.feathers } };
@@ -149,17 +163,17 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
 
   /**
    * A daily flight can't be resumed. One left mid-air (the arcade's Restart or Exit, leaving the page,
-   * or a reload) still ends, once, with the points it had (none after a reload), so the day counts for
-   * the arcade streak; the menu then says it was left unfinished.
+   * or a reload) still ends, once, with the points it had (none after a reload) and uses up its try, so
+   * the day counts for the arcade streak; the menu then says it was left unfinished.
    */
   const settleDaily = useCallback(
     (s: Sim | null) => {
       const d = saveRef.current.daily[today];
       if (!d?.open) return;
-      const points = s ? runPoints(s) : d.best;
-      const pillars = s ? s.score : (d.pillars ?? 0);
-      const feathers = s ? s.feathers : (d.feathers ?? 0);
-      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: points, tries: 1, pillars, feathers, left: true } } });
+      const points = s ? runPoints(s) : 0;
+      const pillars = s ? s.score : 0;
+      const feathers = s ? s.feathers : 0;
+      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: dailyAfter(d, points, pillars, feathers, true) } });
       host.report({ type: 'end', score: points, stats: { pillars, feathers }, daily: true });
     },
     [commit, host, today],
@@ -251,9 +265,13 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
     if (s.dead) return;
     if (!s.started) {
       host.report({ type: 'start' });
-      // Taking off on the daily course uses up the day's flight, even if it is abandoned. Backing out
-      // to the menu before the first flap doesn't.
-      if (modeRef.current === 'daily') commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, pillars: 0, feathers: 0, open: true } } });
+      // Taking off on the daily course uses up one of the day's flights, even if it is abandoned. Backing
+      // out to the menu before the first flap doesn't.
+      if (modeRef.current === 'daily') {
+        const d = saveRef.current.daily[today];
+        const rec: DailyRec = { best: d?.best ?? 0, tries: (d?.tries ?? 0) + 1, pillars: d?.pillars ?? 0, feathers: d?.feathers ?? 0, open: true };
+        commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: rec } });
+      }
     }
     flap(s);
     sfx().flap();
@@ -266,8 +284,9 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
       if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
         e.preventDefault();
         if (sim.current?.dead) {
-          // A challenge is one flight; outside one, Space flies again.
-          if (performance.now() - deadAt.current > 700 && modeRef.current !== 'challenge') begin(modeRef.current === 'daily' ? 'endless' : modeRef.current);
+          // A challenge is one flight; outside one, Space flies again (endless once today's flights are used).
+          const m = modeRef.current;
+          if (performance.now() - deadAt.current > 700 && m !== 'challenge') begin(m === 'daily' && flightsLeft(saveRef.current.daily[today]) === 0 ? 'endless' : m);
         } else tap();
       } else if (e.key === 'p' || e.key === 'Escape') {
         if (sim.current?.started && !sim.current.dead) setPaused((p) => !p);
@@ -281,6 +300,8 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
   if (screen === 'menu') return <Menu save={save} today={today} onPlay={begin} onMute={() => commit({ ...saveRef.current, muted: !saveRef.current.muted })} />;
 
   const daily = save.daily[today];
+  const left = flightsLeft(daily);
+  const again: Mode = mode === 'daily' && left === 0 ? 'endless' : mode;
   return (
     <div className="wi">
       <canvas ref={canvas} className="wi-canvas" onPointerDown={(e) => (e.button === 0 || e.pointerType !== 'mouse') && tap()} aria-label="Wing It. Tap or press Space to flap." />
@@ -310,9 +331,15 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
             {result.pillars} gaps · {result.feathers} feather{result.feathers === 1 ? '' : 's'} (+{result.feathers * 3}) {result.newBest ? '· New best!' : `· best ${save.best}`}
           </p>
           <ResultLine line={flightLine(result.pillars, result.feathers)} label={`${result.pillars} gaps${result.medal ? `, ${result.medal} medal` : ''}`} />
-          {mode === 'daily' && (
+          {mode === 'daily' && daily && (
             <p className="wi-muted">
-              That was today’s flight. <NextDaily />
+              {left > 0 ? (
+                `Best today ${daily.best} · ${flightsText(left)}`
+              ) : (
+                <>
+                  Best today {daily.best}. That was your last flight. <NextDaily />
+                </>
+              )}
             </p>
           )}
           <div className="wi-row">
@@ -321,11 +348,11 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
                 See the scoreboard
               </a>
             ) : (
-              <button className="wi-btn wi-btn-go" onClick={() => begin(mode === 'daily' ? 'endless' : mode)} autoFocus>
-                {mode === 'daily' ? 'Fly endless' : 'Fly again'}
+              <button className="wi-btn wi-btn-go" onClick={() => begin(again)} autoFocus>
+                {mode === 'daily' && again === 'endless' ? 'Fly endless' : 'Fly again'}
               </button>
             )}
-            {mode === 'daily' && daily && <ShareButton text={`Wing It #${dailyNumber(today)} 🐤\n${dailyLine(daily)}\nScore: ${daily.best}\n${window.location.origin}/games/wing-it`} />}
+            {mode === 'daily' && daily && left === 0 && <ShareButton text={`Wing It #${dailyNumber(today)} 🐤\n${dailyLine(daily)}\nScore: ${daily.best}\n${window.location.origin}/games/wing-it`} />}
             <button className="wi-btn" onClick={() => setScreen('menu')}>
               Menu
             </button>
@@ -372,6 +399,10 @@ function Mascot() {
 
 function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPlay: (m: Mode) => void; onMute: () => void }) {
   const daily = save.daily[today];
+  const left = flightsLeft(daily);
+  const share = daily && daily.best > 0 && (
+    <ShareButton text={`Wing It #${dailyNumber(today)} 🐤\n${dailyLine(daily)}\nScore: ${daily.best}\n${window.location.origin}/games/wing-it`} />
+  );
   return (
     <div className="wi wi-menu">
       <div className="wi-menu-top">
@@ -387,16 +418,20 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="wi-card">
         <div className="wi-card-head">
           <b>Daily course #{dailyNumber(today)}</b>
-          <span>{daily?.left ? `Left unfinished · ${daily.best}` : daily ? `Today: ${daily.best} · ${dailyLine(daily)}` : 'Same course for everyone · one flight a day'}</span>
+          <span>
+            {!daily
+              ? 'Same course for everyone · best of 3 flights'
+              : `${daily.left ? 'Last flight left unfinished · ' : ''}Today: ${daily.best}${left > 0 ? ` · ${flightsText(left)}` : ` · ${dailyLine(daily)}`}`}
+          </span>
         </div>
-        {daily ? (
+        {left === 0 ? (
           <div className="wi-done">
-            {daily.best > 0 && <ShareButton text={`Wing It #${dailyNumber(today)} 🐤\n${dailyLine(daily)}\nScore: ${daily.best}\n${window.location.origin}/games/wing-it`} />}
+            {share}
             <NextDaily className="wi-muted" />
           </div>
         ) : (
           <button className="wi-btn wi-btn-go wi-btn-big" onClick={() => onPlay('daily')}>
-            Fly today’s course
+            {daily ? `Fly again (${flightsText(left)})` : 'Fly today’s course'}
           </button>
         )}
       </section>

@@ -148,7 +148,8 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px 10px 14px;
-  container-type: inline-size;
+  /* Size (not just inline-size): the grid shrinks to the frame's height too (see .xw-grid). */
+  container-type: size;
 }
 .xw-top {
   display: flex;
@@ -167,7 +168,9 @@
 .xw-grid {
   display: grid;
   gap: 2px;
-  width: min(100%, 560px);
+  /* Never wider than the frame is tall minus the clue bar, tools and keyboard (about 340 px, so the
+     tallest 10×11 grids fit too): a laptop-height frame shows the whole board and keyboard. */
+  width: min(100%, 560px, max(260px, calc(100cqh - 340px)));
   margin: 0 auto;
   padding: 2px;
   border: 2.5px solid var(--xw-ink);

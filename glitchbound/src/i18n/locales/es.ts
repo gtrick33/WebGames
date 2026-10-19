@@ -183,7 +183,7 @@ const es: string[] = [
   'Idioma',
   'Nuevo · Modo fiesta',
   '¿Amigos en casa? Pasad el móvil.',
-  'Verdad o reto, Yo nunca, charadas, un juego de tablero con dados y una guerra de pujas. Añade nombres y juega en segundos.',
+  'Impostor, charadas, Yo nunca y más. Pasaos un móvil o que cada uno juegue en el suyo.',
   '¡A la fiesta! →',
   'Racha de {n} días. Termina un diario hoy para mantenerla',
   'Racha de {n} días. El diario de hoy está hecho',
@@ -592,6 +592,7 @@ const es: string[] = [
   'demasiado corta para contar',
   'puntuación demasiado alta para el tiempo jugado',
   'seguidos',
+  'Condiciones de uso',
 ];
 
 export default es;
