@@ -94,19 +94,24 @@ function Crosswire({ host, challenge }: { host: GameHost; challenge?: GameModule
   return (
     <div className="xw xw-menu">
       <h1 className="xw-title" aria-label="Crosswire">
-        {'CROSS'.split('').map((c, i) => (
-          <span key={i} className="xw-title-cell">
-            {c}
-          </span>
-        ))}
-        <span className="xw-title-clue" aria-hidden="true">
-          →
+        {/* Two halves that wrap as a whole, never in the middle of WIRE. */}
+        <span className="xw-title-word">
+          {'CROSS'.split('').map((c, i) => (
+            <span key={i} className="xw-title-cell">
+              {c}
+            </span>
+          ))}
         </span>
-        {'WIRE'.split('').map((c, i) => (
-          <span key={i} className="xw-title-cell is-alt">
-            {c}
+        <span className="xw-title-word">
+          <span className="xw-title-clue" aria-hidden="true">
+            →
           </span>
-        ))}
+          {'WIRE'.split('').map((c, i) => (
+            <span key={i} className="xw-title-cell is-alt">
+              {c}
+            </span>
+          ))}
+        </span>
       </h1>
       <p className="xw-tag">The crossword where clues live inside the grid. Follow the arrows, crack the mystery word.</p>
       <section className="xw-card">
@@ -156,7 +161,8 @@ function Play(props: {
   const [cursor, setCursor] = useState<Cursor>({ word: 0, pos: 0 });
   const [tally, setTally] = useState<Tally>(stored?.tally ?? { seconds: 0, checks: 0, letterHints: 0, wordHints: 0, mystery: false });
   const [shownWrong, setShownWrong] = useState<string[]>([]);
-  const [phase, setPhase] = useState<'grid' | 'mystery' | 'done'>(stored?.done ? 'done' : 'grid');
+  // A daily grid filled in before a reload goes straight on to the mystery word (or the result).
+  const [phase, setPhase] = useState<'grid' | 'mystery' | 'done'>(() => (stored?.done ? 'done' : stored && solved(p, stored.entries) ? (p.mystery ? 'mystery' : 'done') : 'grid'));
   const [guess, setGuess] = useState('');
   const [msg, setMsg] = useState('');
   const started = useRef(false);
@@ -174,7 +180,7 @@ function Play(props: {
     return () => window.clearInterval(t);
   }, [phase]);
 
-  // Save daily progress as you go.
+  // Save daily progress as you go, the clock too (every second), so leaving or reloading never winds it back.
   useEffect(() => {
     if (!daily) return;
     const cur = save.daily[today];
@@ -182,13 +188,14 @@ function Play(props: {
     const id = window.setTimeout(() => commit({ ...save, daily: { ...save.daily, [today]: { entries, tally, done: false, score: 0 } } }), 400);
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, tally.checks, tally.letterHints, tally.wordHints]);
+  }, [entries, tally.seconds, tally.checks, tally.letterHints, tally.wordHints]);
 
   const finish = (mystery: boolean): void => {
     const t = { ...tallyRef.current, mystery };
     const pts = score(t);
     setTally(t);
     setPhase('done');
+    setMsg(''); // a wrong mystery guess's message must not end up on the Share button
     const next: Save = { ...save, solved: save.solved + 1, best: Math.max(save.best, pts) };
     if (daily) next.daily = { ...save.daily, [today]: { entries, tally: t, done: true, score: pts } };
     commit(next);
@@ -228,6 +235,8 @@ function Play(props: {
   }, [phase, entries, cursor, p]);
 
   useEffect(() => {
+    // Only the grid takes keys: on the result and mystery panels Tab and Space work as usual.
+    if (phase !== 'grid') return;
     const onKey = (e: KeyboardEvent): void => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
@@ -245,7 +254,7 @@ function Play(props: {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [type, back, p]);
+  }, [phase, type, back, p]);
 
   const w = p.words[cursor.word]!;
   const active = new Set(wordCells(w).map(([r, c]) => key(r, c)));
