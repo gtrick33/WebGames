@@ -823,4 +823,43 @@ export const GAMES: GameEntry[] = [
     ],
     limits: { scorePerSecond: 250, minSeconds: 5 },
   },
+  {
+    slug: 'whatsit',
+    contentLangs: ['en', 'bg'],
+    title: 'Whatsit',
+    tagline: 'A secret thing in a box. Ask yes/no questions, then pick it from the line-up.',
+    description:
+      'Every day a brown-paper parcel hides one thing from the day’s theme: an instrument, a sea creature, a dish, a gadget. Ask its yes/no questions, then pick it from a line-up of twelve. The fewer questions you need, the higher you score.',
+    categories: ['word', 'puzzle'],
+    moods: ['brainy', 'chill'],
+    tags: ['twenty questions', 'yes or no', 'guess', 'deduction', 'mystery', 'words', 'daily'],
+    released: '2026-10-19',
+    accent: 'orange',
+    emoji: '📦',
+    art: {
+      tile: '/games/whatsit/tile.webp',
+      wide: '/games/whatsit/wide.webp',
+      alt: 'A brown-paper parcel with peeking eyes and a question mark, between word cards',
+      bg: '#c2410c',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'portrait',
+    controls: {
+      keyboard: ['Tab and Enter to ask questions and open cards', 'Esc closes a card'],
+      touch: ['Tap a question to ask it', 'Tap a card to cross it out or pick it'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'questions', label: 'Fewest questions to solve', lowerIsBetter: true },
+      { key: 'crossed', label: 'Most wrong cards crossed out' },
+    ],
+    highlights: ['A new mystery thing every day', '14 themes, 224 things', 'In English and Bulgarian'],
+    ownDaily: { label: 'Today’s Whatsit' },
+    challenge: { label: 'Same secret thing for everyone. Solve it in the fewest questions.' },
+    daily: [
+      { metric: 'score', targets: [400, 700, 850], label: 'Score {n} in one Whatsit round' },
+      { metric: 'crossed', targets: [5, 8, 11], label: 'Cross out {n} wrong cards and solve a Whatsit' },
+    ],
+    limits: { scorePerSecond: 250, minSeconds: 4 },
+  },
 ];

@@ -30,6 +30,7 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
   'gut-check': () => import('../games/gut-check/Game'),
   'star-grid': () => import('../games/star-grid/Game'),
   fussbox: () => import('../games/fussbox/Game'),
+  whatsit: () => import('../games/whatsit/Game'),
 };
 
 /**
