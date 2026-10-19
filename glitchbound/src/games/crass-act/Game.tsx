@@ -484,17 +484,19 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
       {view.phase === 'judging' && (
         <>
           <p className="uh-status">
-            {view.settings.vote
-              ? view.myVote !== null
-                ? 'Vote cast. Waiting for the others…'
-                : 'Vote for the funniest one (not your own!).'
-              : isJudge
-                ? 'Pick the winner. No pressure.'
-                : `${judge?.name ?? 'The judge'} is choosing…`}
+            {view.waiting
+              ? 'You joined mid-round. You’re in from the next one!'
+              : view.settings.vote
+                ? view.myVote !== null
+                  ? 'Vote cast. Waiting for the others…'
+                  : 'Vote for the funniest one (not your own!).'
+                : isJudge
+                  ? 'Pick the winner. No pressure.'
+                  : `${judge?.name ?? 'The judge'} is choosing…`}
           </p>
           <div className="uh-entries">
             {view.entries.map((e, i) => {
-              const canTap = view.settings.vote ? !e.mine && view.myVote === null : isJudge;
+              const canTap = view.settings.vote ? !e.mine && view.myVote === null && !view.waiting : isJudge;
               return (
                 <button
                   key={i}
@@ -512,7 +514,7 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
               );
             })}
           </div>
-          {pick !== null && (isJudge || (view.settings.vote && view.myVote === null)) && (
+          {pick !== null && (isJudge || (view.settings.vote && view.myVote === null && !view.waiting)) && (
             <div className="uh-actions">
               <button className="uh-btn uh-btn-go" onClick={() => send(view.settings.vote ? { t: 'vote', entry: pick } : { t: 'pick', entry: pick })}>
                 {view.settings.vote ? 'Vote for this' : 'This one wins'}

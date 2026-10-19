@@ -31,6 +31,19 @@ export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => 
         <p className="pt-muted pt-center">Finding the room…</p>
       </div>
     );
+  if (game === 'missing')
+    return (
+      <div className="pt-screen">
+        <ModeBar title={`Room ${code}`} onExit={onLeave} />
+        <section className="pt-panel pt-center">
+          <h2>This room has closed</h2>
+          <p className="pt-muted">Rooms close after three quiet hours. Open a new one and send the link.</p>
+          <button className="pt-btn pt-btn-go" onClick={onLeave}>
+            Back to Party Mode
+          </button>
+        </section>
+      </div>
+    );
   if (game === 'nhie') return <NhieRoomPage code={code} onLeave={onLeave} />;
   if (game === 'auction') return <AuctionRoomPage code={code} onLeave={onLeave} />;
   if (game === 'board') return <BoardRoomPage code={code} onLeave={onLeave} />;
@@ -38,7 +51,6 @@ export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => 
   if (game === 'dial') return <DialRoomPage code={code} onLeave={onLeave} />;
   if (game === 'unique') return <UniqueRoomPage code={code} onLeave={onLeave} />;
   if (game === 'hues') return <HuesRoomPage code={code} onLeave={onLeave} />;
-  // Impostor, and closed rooms (its page explains that the room has closed).
   return <ImpostorRoomPage code={code} onLeave={onLeave} />;
 }
 

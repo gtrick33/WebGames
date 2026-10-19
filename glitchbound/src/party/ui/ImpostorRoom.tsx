@@ -99,7 +99,7 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
     return () => window.clearTimeout(t);
   }, [error, clearError]);
 
-  const bar = <ModeBar title={`Impostor · ${code}`} progress={view?.round ? `Round ${view.round}` : undefined} onExit={onLeave} />;
+  const bar = <ModeBar title={`Impostor · ${code}`} progress={view?.round && !gone ? `Round ${view.round}` : undefined} onExit={onLeave} />;
   if (gone)
     return (
       <div className="pt-screen">

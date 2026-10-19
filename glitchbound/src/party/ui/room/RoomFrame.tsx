@@ -226,7 +226,7 @@ function Connected<V extends FrameView, A>({
     void shareOrCopy({ title: `${meta.title} room`, text: `${meta.emoji} ${meta.invite} Room ${code}:`, url: `${location.origin}/r/${code}` });
   };
 
-  const bar = <ModeBar title={`${meta.title} · ${code}`} progress={view ? progress?.(view) : undefined} onExit={onLeave} />;
+  const bar = <ModeBar title={`${meta.title} · ${code}`} progress={view && !gone ? progress?.(view) : undefined} onExit={onLeave} />;
   if (gone)
     return (
       <div className="pt-screen">
