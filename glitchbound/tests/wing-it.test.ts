@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BIRD_X, HIT_R, biomeFor, flap, flightLine, gapCentre, GROUND, H, medalFor, newSim, PILLAR_W, runPoints, step, type Sim } from '../src/games/wing-it/sim';
+import { BIRD_X, HIT_R, biomeFor, flap, flightLine, gapCentre, GROUND, H, medalFor, newSim, PILLAR_W, runPoints, SPACING, step, VIEW_MARGIN, W, type Sim } from '../src/games/wing-it/sim';
 
 /** A simple autopilot: flap when falling near the bottom of the next gap (a flap rises ~88 units). */
 function autopilot(s: Sim): void {
@@ -21,6 +21,26 @@ describe('Wing It', () => {
     }
     expect(a.y).toBe(b.y);
     expect(a.score).toBe(b.score);
+  });
+
+  it('keeps the course beyond the widest landscape view: no stones appear or vanish on screen', () => {
+    // A 21:9 ultrawide stage shows the full height (H) and (H * 21 / 9 - W) / 2 extra units on each side.
+    const extra = (H * 21) / 9 / 2 - W / 2;
+    expect(extra).toBeLessThan(VIEW_MARGIN - 40);
+    const left = -extra;
+    const right = W + extra;
+    const s = newSim(7);
+    flap(s);
+    let seen = new Set(s.pillars.filter((p) => p.x < right && p.x + PILLAR_W > left));
+    for (let i = 0; i < 6000 && !s.dead; i++) {
+      autopilot(s);
+      step(s);
+      const now = new Set(s.pillars.filter((p) => p.x < right && p.x + PILLAR_W > left));
+      for (const p of seen) if (p.x + PILLAR_W > left) expect(now.has(p), 'a stone vanished in view').toBe(true);
+      for (const p of now) if (!seen.has(p)) expect(p.x, 'a stone appeared in view').toBeGreaterThan(right - SPACING);
+      seen = now;
+    }
+    expect(s.score).toBeGreaterThan(20);
   });
 
   it('hovers until the first flap, then falls and crashes on the ground', () => {

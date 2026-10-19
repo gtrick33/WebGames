@@ -1,5 +1,5 @@
 /** Canvas drawing for Wing It. Rendering only; positions come from sim.ts. */
-import { biomeFor, BIRD_R, BIRD_X, gapCentre, GROUND, H, PILLAR_W, STEP, W, type Biome, type Sim } from './sim';
+import { biomeFor, BIRD_R, BIRD_X, gapCentre, GROUND, H, PILLAR_W, STEP, VIEW_MARGIN, W, type Biome, type Sim } from './sim';
 
 type C = CanvasRenderingContext2D;
 const INK = '#1d1238';
@@ -12,17 +12,22 @@ const LOOK: Record<Biome, { sky: [string, string]; hills: [string, string]; pill
   space: { sky: ['#12082e', '#3a1f6b'], hills: ['#4b2a7a', '#3a2063'], pillar: ['#c96bff', '#9b3fe0'], tuft: '#ff9be9', ground: '#5a3a8f', dirt: '#3e2766', stars: true, sun: null },
 };
 
-function hills(ctx: C, offset: number, base: number, amp: number, color: string, wave: number): void {
+/** A row of hills from x0 to x1 (the whole visible width, which is wider than W on landscape screens). */
+function hills(ctx: C, offset: number, base: number, amp: number, color: string, wave: number, x0: number, x1: number): void {
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.moveTo(0, GROUND);
-  for (let x = 0; x <= W; x += 10) {
+  const from = Math.floor(x0 / 10) * 10;
+  ctx.moveTo(from, GROUND);
+  for (let x = from; x <= x1 + 10; x += 10) {
     const k = (x + offset) / wave;
     ctx.lineTo(x, base - Math.sin(k) * amp - Math.sin(k * 2.3) * amp * 0.4);
   }
-  ctx.lineTo(W, GROUND);
+  ctx.lineTo(x1 + 10, GROUND);
   ctx.fill();
 }
+
+/** Wraps x into [x0 - pad, x0 + span - pad), for scenery that loops across the visible width. */
+const wrap = (x: number, x0: number, span: number, pad: number): number => x0 - pad + ((((x - x0 + pad) % span) + span) % span);
 
 const STONE_H = 30;
 
@@ -214,8 +219,9 @@ export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: numb
   const dist = s.dist - dx;
   const y = s.y - (s.y - s.prevY) * back;
   const st = s.lastDx ? s.t - back * STEP : s.t;
-  // Fit the world (W x H) to the canvas, centerd; extra space shows more sky above and ground below.
-  const k = Math.min((cw * dpr) / W, (ch * dpr) / H);
+  // Fit the world (W x H) to the canvas, centered; extra space shows more sky above and ground below, or
+  // more course to the sides on landscape screens (never wider than the course the sim keeps).
+  const k = Math.max(Math.min((cw * dpr) / W, (ch * dpr) / H), (cw * dpr) / (W + 2 * (VIEW_MARGIN - 40)));
   const ox = (cw * dpr - W * k) / 2;
   const oy = (ch * dpr - H * k) / 2;
   const left = -ox / k;
@@ -239,10 +245,9 @@ export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: numb
   ctx.fillRect(left, top, fullW, GROUND - top);
   if (look.stars) {
     ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    for (let i = 0; i < 40; i++) {
-      const x = (((i * 97 - dist * 0.05) % (W + 40)) + W + 40) % (W + 40) - 20;
-      ctx.fillRect(x, (i * 53) % (GROUND - 120), 2, 2);
-    }
+    const span = fullW + 40;
+    const n = Math.ceil((40 * span) / (W + 40));
+    for (let i = 0; i < n; i++) ctx.fillRect(wrap(i * 97 - dist * 0.05, left, span, 20), (i * 53) % (GROUND - 120), 2, 2);
   }
   if (look.sun) {
     ctx.fillStyle = look.sun;
@@ -252,17 +257,19 @@ export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: numb
   }
   // Clouds
   ctx.fillStyle = look.stars ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.85)';
-  for (let i = 0; i < 4; i++) {
-    const x = ((((i * 160 - dist * 0.2) % (W + 160)) + W + 160) % (W + 160)) - 80;
-    const y = 70 + i * 55;
+  const cloudSpan = Math.max(W, fullW) + 160;
+  const clouds = Math.ceil((4 * cloudSpan) / (W + 160));
+  for (let i = 0; i < clouds; i++) {
+    const x = wrap(i * 160 - dist * 0.2, left, cloudSpan, 80);
+    const y = 70 + (i % 4) * 55;
     ctx.beginPath();
     ctx.arc(x, y, 22, 0, Math.PI * 2);
     ctx.arc(x + 24, y - 8, 26, 0, Math.PI * 2);
     ctx.arc(x + 50, y, 20, 0, Math.PI * 2);
     ctx.fill();
   }
-  hills(ctx, dist * 0.25, GROUND - 90, 26, look.hills[0], 70);
-  hills(ctx, dist * 0.5 + 300, GROUND - 40, 18, look.hills[1], 50);
+  hills(ctx, dist * 0.25, GROUND - 90, 26, look.hills[0], 70, left, left + fullW);
+  hills(ctx, dist * 0.5 + 300, GROUND - 40, 18, look.hills[1], 50, left, left + fullW);
 
   for (const p of s.pillars) {
     const px = p.x + dx;

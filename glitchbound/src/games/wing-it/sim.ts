@@ -16,6 +16,12 @@ export const HIT_R = 12;
 export const PILLAR_W = 70;
 export const SPACING = 230;
 export const STEP = 1 / 120;
+/**
+ * The world is drawn wider than W on landscape screens (render.ts shows up to VIEW_MARGIN - 40 extra on
+ * each side), so the course is kept that far off both edges: stones never pop in or vanish mid-screen.
+ * Only when a pillar is made changes, not what it is, so every course stays the same.
+ */
+export const VIEW_MARGIN = 600;
 
 const GRAVITY = 1850;
 const FLAP_V = -570;
@@ -169,10 +175,10 @@ export function step(s: Sim): SimEvent[] {
     ev.push('crash');
     s.vy = Math.min(s.vy, 0) + 120;
   }
-  // Recycle pillars that left the screen and keep the course going.
-  if (s.pillars[0] && s.pillars[0].x < -PILLAR_W - 20) s.pillars.shift();
+  // Recycle pillars that left the widest view and keep the course going beyond it.
+  if (s.pillars[0] && s.pillars[0].x < -PILLAR_W - 20 - VIEW_MARGIN) s.pillars.shift();
   const last = s.pillars[s.pillars.length - 1]!;
-  if (last.x < W + 60) spawn(s, last.x + SPACING);
+  if (last.x < W + 60 + VIEW_MARGIN) spawn(s, last.x + SPACING);
   return ev;
 }
 

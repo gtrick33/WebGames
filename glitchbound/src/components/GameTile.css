@@ -311,8 +311,11 @@
     aspect-ratio: 1 / 1;
     border-radius: 18px 18px 0 0;
   }
+  /* Banners show their 5:2 artwork whole (titles sit near its edges); a live preview takes 2:1. */
   .tile-xl .tile-art,
-  .tile-wide .tile-art,
+  .tile-wide .tile-art {
+    aspect-ratio: 5 / 2;
+  }
   .tile-xl.has-preview .tile-art,
   .tile-wide.has-preview .tile-art {
     aspect-ratio: 2 / 1;
