@@ -58,6 +58,29 @@ describe('Memory Grid UI', () => {
     expect((screen.getByRole('button', { name: /Daily Challenge/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('R on the daily result plays Classic, also when the page around the game has focus', () => {
+    const report = vi.fn();
+    const page = document.createElement('main');
+    page.tabIndex = -1;
+    document.body.appendChild(page);
+    render(<Game host={{ report }} restartKey={0} />, { container: page.appendChild(document.createElement('div')) });
+    fireEvent.click(screen.getByRole('button', { name: /Daily Challenge/ }));
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    const seq = patternFor(dailySeed(dayKey()), 1, levelFor('daily', 1));
+    fireEvent.pointerDown(tiles()[(seq[0]! + 1) % 9]!);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    // Clicking the game's background focuses the page's <main>; keys still reach the game.
+    page.focus();
+    fireEvent.keyDown(page, { key: 'r' });
+    expect(report).toHaveBeenLastCalledWith({ type: 'start' });
+    expect(screen.getByText('Classic')).toBeTruthy();
+    page.remove();
+  });
+
   it('remembers the mute toggle', () => {
     const { unmount } = render(<Game host={{ report: vi.fn() }} restartKey={0} />);
     fireEvent.click(screen.getByRole('button', { name: 'Mute sound' }));

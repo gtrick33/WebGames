@@ -263,8 +263,10 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
   // Keyboard: arrows move the cursor, Enter / Space taps, 1-9 tap a 3x3 grid like a number pad, M mutes.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      const target = e.target as Node | null;
-      if (target !== document.body && !rootRef.current?.contains(target)) return;
+      // Keys for a field or button around the game are not for the grid. Clicking the game's background
+      // focuses the page's <main>, which must not switch the keyboard off.
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (target && !rootRef.current?.contains(target) && target.closest('input, textarea, select, button, a, [contenteditable="true"]')) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === 'm' || e.key === 'M') {
         toggleMute();
@@ -274,7 +276,8 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
       if (screen === 'result') {
         if (s && !inChallenge.current && (e.key === 'r' || e.key === 'R' || (e.key === 'Enter' && !(target instanceof HTMLButtonElement)))) {
           e.preventDefault();
-          start(s.mode);
+          // Like the button: the daily is one try a day, so its result offers Classic.
+          start(s.mode === 'daily' ? 'classic' : s.mode);
         }
         return;
       }
