@@ -54,8 +54,8 @@ function Medal({ rank }: { rank: number }) {
 export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: LeaderRow[]; mine: LeaderRow | null; unit?: string; compact?: boolean }) {
   return (
     <ol className={`board${compact ? ' board-compact' : ''}`}>
-      {rows.map((r) => (
-        <li key={r.rank} className={`board-row${r.you ? ' is-you' : ''}`} style={{ ['--i' as string]: r.rank }}>
+      {rows.map((r, i) => (
+        <li key={i} className={`board-row${r.you ? ' is-you' : ''}`} style={{ ['--i' as string]: i + 1 }}>
           <Medal rank={r.rank} />
           <span className="board-name">
             <span className="board-nick">{r.nickname}</span>

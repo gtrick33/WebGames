@@ -22,7 +22,12 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
          WHERE r.game = ? AND r.status = 'ok' AND r.ended_at > ? AND ${LISTED} GROUP BY r.user_id ORDER BY score DESC, at ASC LIMIT 50`;
   const stmt = env.DB.prepare(sql);
   const res = await (period === 'all' ? stmt.bind(game.slug) : stmt.bind(game.slug, Date.now() - 86400_000)).all<{ user_id: string; score: number; at: number; nickname: string; xp: number }>();
-  const rows: LeaderRow[] = res.results.map((r, i) => ({ rank: i + 1, nickname: r.nickname, level: levelForXp(r.xp), score: r.score, at: r.at, you: r.user_id === me?.id }));
+  // Equal scores share a rank (1, 2, 2, 4), as in the Hall of Fame and a round's "Rank #n".
+  const rows: LeaderRow[] = [];
+  res.results.forEach((r, i) => {
+    const prev = rows[i - 1];
+    rows.push({ rank: prev?.score === r.score ? prev.rank : i + 1, nickname: r.nickname, level: levelForXp(r.xp), score: r.score, at: r.at, you: r.user_id === me?.id });
+  });
   let mine: LeaderRow | null = null;
   if (me && !rows.some((r) => r.you) && period === 'all') {
     const b = await env.DB.prepare('SELECT score, at FROM bests WHERE user_id = ? AND game = ?').bind(me.id, game.slug).first<{ score: number; at: number }>();
