@@ -1463,6 +1463,11 @@ img.pt-feature-art {
   font-size: clamp(10px, 3vw, 15px);
   animation: pt-hop 0.19s ease-out;
 }
+.pt-token-more {
+  background: #fff;
+  color: #1d1238;
+  font: 800 clamp(9px, 2.6vw, 12px)/1 var(--mono);
+}
 @keyframes pt-hop {
   50% {
     transform: translateY(-6px);

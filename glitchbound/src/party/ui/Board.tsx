@@ -157,11 +157,17 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
               <span className="pt-tile-n">{t.kind === 'shortcut' || t.kind === 'slide' ? `→${t.value}` : i}</span>
               {here.length > 0 && (
                 <span className="pt-tokens">
-                  {here.map((p) => (
+                  {/* A crowded tile (everyone on Start in a big group) shows three tokens and a count. */}
+                  {(here.length > 4 ? here.slice(0, 3) : here).map((p) => (
                     <span key={p.id} className="pt-token" style={{ background: p.color }} title={p.name}>
                       {p.emoji}
                     </span>
                   ))}
+                  {here.length > 4 && (
+                    <span className="pt-token pt-token-more" title={here.slice(3).map((p) => p.name).join(', ')}>
+                      +{here.length - 3}
+                    </span>
+                  )}
                 </span>
               )}
             </div>

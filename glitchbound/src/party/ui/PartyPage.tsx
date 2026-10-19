@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePageMeta } from '../../platform/meta';
 import { TAGS } from '../content/challenges';
-import { CONSEQUENCE_LABEL, freshRng, makePlayer, MAX_PLAYERS, playersProblem, SESSION_CARDS } from '../engine';
+import { cleanName, CONSEQUENCE_LABEL, freshRng, makePlayer, MAX_PLAYERS, playersProblem, SESSION_CARDS } from '../engine';
 import { loadSession, saveSession, type ModeId, type PartySession } from '../session';
 import type { Consequence, Intensity } from '../types';
 import { getGame } from '../../catalog/catalog';
@@ -152,7 +152,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
     if (!name || players.length >= MAX_PLAYERS && !players.some((p) => !p.name)) return;
     // Fill an empty slot first.
     const empty = players.findIndex((p) => !p.name);
-    if (empty >= 0) setPlayers(players.map((p, i) => (i === empty ? { ...p, name: name.slice(0, 18) } : p)));
+    if (empty >= 0) setPlayers(players.map((p, i) => (i === empty ? { ...p, name: cleanName(name) } : p)));
     else setPlayers([...players, makePlayer(name, players.length)]);
     setNewName('');
   };
@@ -310,7 +310,16 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
             add();
           }}
         >
-          <input className="pt-input" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={named.length ? 'Add another name' : 'Type a name, then Enter'} maxLength={18} aria-label="New player name" enterKeyHint="done" />
+          <input
+            className="pt-input"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder={named.length >= MAX_PLAYERS ? `Full: ${MAX_PLAYERS} players is the most` : named.length ? 'Add another name' : 'Type a name, then Enter'}
+            maxLength={18}
+            aria-label="New player name"
+            enterKeyHint="done"
+            disabled={named.length >= MAX_PLAYERS}
+          />
           <button className="pt-btn" disabled={!newName.trim() || named.length >= MAX_PLAYERS}>
             + Add
           </button>
