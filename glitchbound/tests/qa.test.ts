@@ -5,7 +5,7 @@ import { onRequestGet as staffList, onRequestPost as staffChange } from '../func
 import { onRequestPost as devSignIn } from '../functions/api/auth/dev';
 import { onRequestPost as claimCoins } from '../functions/api/coins/claim';
 import { onRequestGet as leaderboard } from '../functions/api/leaderboard';
-import { onRequestGet as getMe } from '../functions/api/me';
+import { onRequestDelete as deleteMe, onRequestGet as getMe } from '../functions/api/me';
 import { onRequestPost as accept } from '../functions/api/qa/accept';
 import { onRequestPost as ban } from '../functions/api/qa/ban';
 import { onRequestPost as giveCoins } from '../functions/api/qa/coins';
@@ -50,10 +50,11 @@ describe('QA role', () => {
   });
 
   /** One API call, through the /api middleware like on Cloudflare (so the audit trail is written). */
-  async function call<T>(handler: Handler, path: string, opts: { cookie?: string; body?: unknown; id?: string } = {}): Promise<{ status: number; data: T }> {
+  async function call<T>(handler: Handler, path: string, opts: { cookie?: string; body?: unknown; id?: string; method?: string } = {}): Promise<{ status: number; data: T }> {
     const headers: Record<string, string> = { origin: ORIGIN, 'cf-connecting-ip': '203.0.113.7', 'user-agent': 'QA-Test-Browser/1.0' };
     if (opts.cookie) headers.cookie = opts.cookie;
-    const init: RequestInit = opts.body === undefined ? { headers } : { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify(opts.body) };
+    const init: RequestInit =
+      opts.body === undefined ? { method: opts.method, headers } : { method: opts.method ?? 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify(opts.body) };
     const request = new Request(`${ORIGIN}${path}`, init);
     const params: Record<string, string> = opts.id ? { id: opts.id } : {};
     const res = await middleware({ request, env, params, next: (r?: Request) => handler({ request: r ?? request, env, params }) });
@@ -243,6 +244,27 @@ describe('QA role', () => {
     const count = audit().length;
     expect((await call(findPlayers, '/api/qa/players', { cookie: qa.cookie })).status).toBe(403);
     expect(audit()).toHaveLength(count);
+  });
+
+  it('deleting an account takes its coins, staff emails and QA seat with it, never the audit trail', async () => {
+    const { admin, qa, player } = await team();
+    await call(giveCoins, '/api/qa/coins', { cookie: qa.cookie, body: { userId: player.id, game: 'mini-racer', amount: 5 } });
+    await call(emailPlayer, '/api/qa/email', { cookie: qa.cookie, body: { userId: player.id, subject: 'Hi', message: 'Hello there' } });
+    const rows = (table: string, id: string): number => (db.sqlite.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE ${table === 'users' ? 'id' : 'user_id'} = ?`).get(id) as { n: number }).n;
+    expect([rows('coin_grants', player.id), rows('player_emails', player.id)]).toEqual([1, 1]);
+    expect((await call(deleteMe, '/api/me', { cookie: player.cookie, method: 'DELETE' })).status).toBe(200);
+    expect([rows('users', player.id), rows('coin_grants', player.id), rows('player_emails', player.id)]).toEqual([0, 0, 0]);
+
+    const trail = audit().length;
+    expect((await call(deleteMe, '/api/me', { cookie: qa.cookie, method: 'DELETE' })).status).toBe(200);
+    expect(audit()).toHaveLength(trail + 1);
+    expect(audit().at(-1)).toMatchObject({ actor_email: 'tester@example.com', action: 'DELETE /api/me', status: 200 });
+    expect((await call<{ staff: StaffRow[] }>(staffList, '/api/admin/staff', { cookie: admin.cookie })).data.staff).toEqual([]);
+    // The same address can be invited again, and the trail can still be filtered by the old tester.
+    expect((await call(staffChange, '/api/admin/staff', { cookie: admin.cookie, body: { action: 'invite', email: 'tester@example.com' } })).status).toBe(200);
+    const log = await call<{ rows: AuditRow[]; actors: string[] }>(auditTrail, '/api/admin/qa-audit?actor=tester@example.com', { cookie: admin.cookie });
+    expect(log.data.actors).toEqual(['tester@example.com']);
+    expect(log.data.rows.length).toBe(trail + 1);
   });
 
   it('keeps QA test scores off the public boards, and resets only the tester’s own progress', async () => {

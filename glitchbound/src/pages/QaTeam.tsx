@@ -172,6 +172,8 @@ function AuditLog({ staff }: { staff: StaffRow[] }) {
   const [applied, setApplied] = useState('');
   const [rows, setRows] = useState<AuditRow[] | null>(null);
   const [more, setMore] = useState(false);
+  // Testers with rows on record: removed ones can still be picked.
+  const [actors, setActors] = useState<string[]>([]);
   const [openId, setOpenId] = useState<number | null>(null);
   const [error, setError] = useState('');
 
@@ -183,10 +185,11 @@ function AuditLog({ staff }: { staff: StaffRow[] }) {
 
   const fetchPage = useCallback(
     (before?: number) =>
-      api<{ rows: AuditRow[]; more: boolean }>(`/api/admin/qa-audit?${query}${before ? `&before=${before}` : ''}`).then(
+      api<{ rows: AuditRow[]; more: boolean; actors?: string[] }>(`/api/admin/qa-audit?${query}${before ? `&before=${before}` : ''}`).then(
         (r) => {
           setRows((prev) => (before && prev ? [...prev, ...r.rows] : r.rows));
           setMore(r.more);
+          setActors(r.actors ?? []);
           setError('');
         },
         (e: unknown) => setError(errorText(e, 'Could not load the audit trail.')),
@@ -211,9 +214,10 @@ function AuditLog({ staff }: { staff: StaffRow[] }) {
       <div className="qa-filters">
         <select className="field" value={actor} onChange={(e) => setActor(e.target.value)} aria-label="Tester">
           <option value="">Every tester</option>
-          {staff.map((s) => (
-            <option key={s.email} value={s.email}>
-              {s.email}
+          {[...new Set([...staff.map((s) => s.email), ...actors])].map((email) => (
+            <option key={email} value={email}>
+              {email}
+              {staff.some((s) => s.email === email) ? '' : ' (removed)'}
             </option>
           ))}
         </select>
@@ -287,7 +291,7 @@ function AuditLine({ row, open, onToggle }: { row: AuditRow; open: boolean; onTo
           <span className={`qa-pill qa-kind-${row.kind}`}>{row.kind}</span> <b className="mono">{row.action}</b>
         </td>
         <td className="qa-dim">{row.targetEmail ?? row.targetId ?? '–'}</td>
-        <td className={bad ? 'is-bad' : 'qa-dim'}>{row.status ?? '–'}</td>
+        <td className={bad ? 'is-bad' : 'qa-dim'}>{row.status ?? 'ok'}</td>
         <td className="qa-dim mono">{row.ip || '–'}</td>
       </tr>
       {open && (

@@ -32,7 +32,11 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   const sql = `SELECT * FROM qa_audit ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY id DESC LIMIT ${csv ? CSV_MAX : PAGE + 1}`;
   const res = await env.DB.prepare(sql).bind(...args).all<AuditRowDb>();
   const rows: AuditRow[] = res.results.map((r) => ({ id: r.id, ts: r.ts, actor: r.actor_email, kind: r.kind, action: r.action, targetId: r.target_id, targetEmail: r.target_email, detail: r.detail, status: r.status, ip: r.ip, userAgent: r.user_agent }));
-  if (!csv) return json({ rows: rows.slice(0, PAGE), more: rows.length > PAGE });
+  if (!csv) {
+    // Everyone on record, removed testers included, for the tester filter.
+    const actors = await env.DB.prepare('SELECT DISTINCT actor_email FROM qa_audit ORDER BY actor_email').all<{ actor_email: string }>();
+    return json({ rows: rows.slice(0, PAGE), more: rows.length > PAGE, actors: actors.results.map((a) => a.actor_email) });
+  }
 
   // Spreadsheet-safe cells: quoted when needed, and never read as a formula.
   const cell = (v: unknown): string => {
