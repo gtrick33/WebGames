@@ -121,6 +121,9 @@ export default function ShareSheet({ data }: { data: ShareData }) {
   const [picture, setPicture] = useState<{ blob: Blob; url: string } | null>(null);
   const [note, setNote] = useState('');
   const closeRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  // Where the focus was before the sheet took it (read on the first render, before any effect moves it).
+  const [back] = useState(() => (document.activeElement instanceof HTMLElement ? document.activeElement : null));
   const mobile = coarse();
 
   useEffect(() => {
@@ -143,13 +146,25 @@ export default function ShareSheet({ data }: { data: ShareData }) {
     };
   }, [data, lines, game, card]);
 
+  // Keyboard: Escape closes, Tab stays inside the sheet, and the focus goes back where it was.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') shareRequests.finish('cancelled');
+      if (e.key !== 'Tab') return;
+      const items = [...(sheetRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') ?? [])];
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (first && last && (e.shiftKey ? document.activeElement === first : document.activeElement === last)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      back?.focus({ preventScroll: true });
+    };
+  }, [back]);
 
   // The message for apps: the text without its old link (the short link goes with it).
   const message = useMemo(
@@ -200,7 +215,7 @@ export default function ShareSheet({ data }: { data: ShareData }) {
 
   return (
     <div className="ss-backdrop" onClick={(e) => e.target === e.currentTarget && shareRequests.finish('cancelled')}>
-      <div className="ss" role="dialog" aria-modal="true" aria-labelledby="ss-title">
+      <div className="ss" role="dialog" aria-modal="true" aria-labelledby="ss-title" ref={sheetRef}>
         <div className="ss-head">
           <h2 id="ss-title">{game ? tr('Share {game}', { game: game.title }) : tr('Share')}</h2>
           <button ref={closeRef} className="ss-close" onClick={() => shareRequests.finish('cancelled')} aria-label={tr('Close')}>
