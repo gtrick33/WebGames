@@ -18,12 +18,29 @@ interface DailyRecord {
   best: number;
   tries: number;
   line: string;
+  /** true: started, not finished (it resumes from `progress`); false: left, could not be resumed, settled. */
+  open?: boolean;
+}
+/** Today's run so far, saved after every tap (`secs`: time spent on the current level). */
+interface Progress {
+  day: string;
+  seed: number;
+  n: number;
+  gone: number[];
+  mistakes: number;
+  hearts: number;
+  banked: number;
+  history: { mistakes: number; cleared: boolean }[];
+  phase: 'play' | 'cleared';
+  gained: number;
+  secs: number;
 }
 interface Save {
   best: number;
   bestLevels: number;
   runs: number;
   daily: Record<string, DailyRecord>;
+  progress?: Progress;
   muted: boolean;
 }
 const emptySave = (): Save => ({ best: 0, bestLevels: 0, runs: 0, daily: {}, muted: false });
@@ -40,7 +57,9 @@ function loadSave(): Save {
     if (o.daily && typeof o.daily === 'object')
       for (const [d, v] of Object.entries(o.daily).slice(-60))
         if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object')
-          s.daily[d] = { best: n(v.best), tries: n(v.tries), line: typeof v.line === 'string' && /^[💨🟡💥]{0,40}$/u.test(v.line) ? v.line : '' };
+          s.daily[d] = { best: n(v.best), tries: n(v.tries), line: typeof v.line === 'string' && /^[💨🟡💥]{0,40}$/u.test(v.line) ? v.line : '', ...(typeof v.open === 'boolean' ? { open: v.open } : {}) };
+    const p = o.progress;
+    if (p && typeof p.day === 'string' && runFrom(p)) s.progress = p;
     return s;
   } catch {
     return emptySave();
@@ -77,6 +96,18 @@ interface Run {
 }
 
 const startRun = (seed: number): Run => ({ seed, n: 1, level: makeLevel(seed, 1), gone: new Set(), leaving: new Set(), mistakes: 0, hearts: HEARTS, banked: 0, history: [], phase: 'play', gained: 0 });
+
+const isInt = (v: unknown, min = 0, max = 2 ** 32): v is number => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
+
+/** Rebuilds a saved daily run, or null when the data is not a valid one. */
+function runFrom(p: Progress): Run | null {
+  if (!isInt(p.seed) || !isInt(p.n, 1, DAILY_LEVELS) || !isInt(p.mistakes) || !isInt(p.hearts, 1, HEARTS) || !isInt(p.banked) || !isInt(p.gained)) return null;
+  if (!(p.phase === 'play' || p.phase === 'cleared') || !(typeof p.secs === 'number' && p.secs >= 0)) return null;
+  if (!Array.isArray(p.history) || p.history.length > DAILY_LEVELS || !p.history.every((h) => h && isInt(h.mistakes) && typeof h.cleared === 'boolean')) return null;
+  const level = makeLevel(p.seed, p.n);
+  if (!Array.isArray(p.gone) || !p.gone.every((id) => isInt(id, 0, level.arrows.length - 1))) return null;
+  return { seed: p.seed, n: p.n, level, gone: new Set(p.gone), leaving: new Set(), mistakes: p.mistakes, hearts: p.hearts, banked: p.banked, history: p.history.map((h) => ({ mistakes: h.mistakes, cleared: h.cleared })), phase: p.phase, gained: p.gained };
+}
 const liveScore = (r: Run): number => r.banked + (r.phase === 'play' ? r.gone.size * 10 : 0);
 
 export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
@@ -92,6 +123,16 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
     setSave(s);
     writeSave(s);
   }, []);
+  // Today's daily was started but its saved round can't be picked up again (storage lost or damaged):
+  // settle it once, as it stood (0), so the arcade still counts the day. It never comes back.
+  useEffect(() => {
+    const cur = saveRef.current;
+    const rec = cur.daily[today];
+    if (!rec?.open || cur.progress?.day === today) return;
+    commit({ ...cur, daily: { ...cur.daily, [today]: { ...rec, open: false } } });
+    host.report({ type: 'end', score: rec.best, stats: {}, daily: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [mode, setMode] = useState<Mode>(challenge ? 'challenge' : 'daily');
   const [run, setRun] = useState<Run | null>(() => (challenge ? startRun(challenge.seed) : null));
   const runRef = useRef(run);
@@ -105,34 +146,54 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
   const combo = useRef(0);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
+  const overTune = useRef(0);
   useEffect(
     () => () => {
+      window.clearTimeout(overTune.current);
       sfxRef.current?.dispose();
       sfxRef.current = null;
     },
     [],
   );
-  // No clock runs while nobody taps (the speed bonus is generous), so a pause request needs no work.
+  // Each level's speed bonus is timed from when it appears. The bonus is small and generous, so the
+  // clock keeps running through an arcade pause request.
   const [pauseSeen, setPauseSeen] = useState(pauseKey);
   if (pauseSeen !== pauseKey) setPauseSeen(pauseKey);
+  // A friends' challenge opens straight on its first level.
+  useEffect(() => {
+    if (runRef.current) levelStart.current = now();
+  }, []);
 
   const show = (r: Run | null): void => {
     runRef.current = r;
     setRun(r);
   };
 
+  /** Saves today's run as it goes, so leaving (menu, reload) carries on from here. */
+  const keep = (r: Run): void => {
+    if (mode !== 'daily' || r.phase === 'over') return;
+    const { seed, n, gone, mistakes, hearts, banked, history, phase, gained } = r;
+    const secs = phase === 'play' ? Math.round((now() - levelStart.current) / 100) / 10 : 0;
+    commit({ ...saveRef.current, progress: { day: today, seed, n, gone: [...gone], mistakes, hearts, banked, history, phase, gained, secs } });
+  };
+
   const begin = (m: Mode): void => {
-    // Today's daily is one try; starting it uses the try up (even if it is abandoned).
-    if (m === 'daily') {
-      if (saveRef.current.daily[today]) return;
-      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, line: '' } } });
+    // Today's daily is one try: starting it uses the try up. Leaving it halfway (menu, reload) is
+    // fine, it carries on where it was, but it can never be started over.
+    const cur = saveRef.current;
+    const kept = m === 'daily' && cur.daily[today]?.open && cur.progress?.day === today ? runFrom(cur.progress) : null;
+    if (m === 'daily' && !kept) {
+      if (cur.daily[today]) return;
+      commit({ ...cur, daily: { ...cur.daily, [today]: { best: 0, tries: 1, line: '', open: true } }, progress: { day: today, seed: hashString(`outta-here:${today}`), n: 1, gone: [], mistakes: 0, hearts: HEARTS, banked: 0, history: [], phase: 'play', gained: 0, secs: 0 } });
     }
     started.current = false;
+    levelStart.current = now() - (kept ? cur.progress!.secs * 1000 : 0);
+    combo.current = 0;
     setMode(m);
     setNewBest(false);
     setBlocked(null);
     setCursor(0);
-    show(startRun(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`outta-here:${today}`) : randomSeed()));
+    show(kept ?? startRun(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`outta-here:${today}`) : randomSeed()));
   };
 
   const finish = (r: Run): void => {
@@ -147,10 +208,11 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
       bestLevels: Math.max(cur.bestLevels, levels),
       runs: cur.runs + 1,
       daily: mode === 'daily' ? { ...cur.daily, [today]: { best: score, tries: 1, line: resultLine(r.history) } } : cur.daily,
+      progress: mode === 'daily' ? undefined : cur.progress,
     });
     const end = { type: 'end' as const, score, stats: { levels, perfect } };
     host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
-    window.setTimeout(() => sfx().over(), 200);
+    overTune.current = window.setTimeout(() => sfx().over(), 200);
   };
 
   const tapArrow = (a: Arrow): void => {
@@ -158,7 +220,6 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
     if (!r || r.phase !== 'play' || r.gone.has(a.id)) return;
     if (!started.current) {
       started.current = true;
-      levelStart.current = now();
       host.report({ type: 'start' });
     }
     if (!canLeave(r.level, r.gone, a)) {
@@ -175,13 +236,20 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
         const over: Run = { ...next, phase: 'over', banked: r.banked + r.gone.size * 10, history: [...r.history, { mistakes: r.mistakes + 1, cleared: false }] };
         show(over);
         finish(over);
-      } else show(next);
+      } else {
+        show(next);
+        keep(next);
+      }
       return;
     }
     sfx().whoosh(combo.current++);
     const gone = new Set(r.gone).add(a.id);
     const leaving = new Set(r.leaving).add(a.id);
-    if (gone.size < r.level.arrows.length) return show({ ...r, gone, leaving });
+    if (gone.size < r.level.arrows.length) {
+      const next: Run = { ...r, gone, leaving };
+      show(next);
+      return keep(next);
+    }
     // Level cleared.
     const secs = (now() - levelStart.current) / 1000;
     const gained = levelPoints(r.level, r.n, r.mistakes, secs);
@@ -192,7 +260,10 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
       const over: Run = { ...done, phase: 'over' };
       show(over);
       finish(over);
-    } else show(done);
+    } else {
+      show(done);
+      keep(done);
+    }
   };
 
   const nextLevel = (): void => {
@@ -202,8 +273,19 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
     combo.current = 0;
     setBlocked(null);
     setCursor(0);
-    show({ ...r, n: r.n + 1, level: makeLevel(r.seed, r.n + 1), gone: new Set(), leaving: new Set(), mistakes: 0, phase: 'play' });
+    const next: Run = { ...r, n: r.n + 1, level: makeLevel(r.seed, r.n + 1), gone: new Set(), leaving: new Set(), mistakes: 0, phase: 'play' };
+    show(next);
+    keep(next);
   };
+
+  // Today's run also saves the level clock every few seconds.
+  const playing = mode === 'daily' && run?.phase === 'play';
+  useEffect(() => {
+    if (!playing) return;
+    const t = window.setInterval(() => runRef.current && keep(runRef.current), 2000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing]);
 
   // Flying arrows are dropped from the drawing once their animation is over.
   useEffect(() => {
@@ -278,7 +360,7 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
             {mode === 'daily' ? `/${DAILY_LEVELS}` : ''}
           </span>
         </div>
-        <div className="oh-hearts" aria-label={`${run.hearts} hearts left`}>
+        <div className="oh-hearts" aria-label={`${run.hearts} ${run.hearts === 1 ? 'heart' : 'hearts'} left`}>
           {Array.from({ length: HEARTS }, (_, i) => (
             <i key={i} className={i < run.hearts ? 'is-on' : ''}>
               {i < run.hearts ? '❤️' : '🤍'}
@@ -387,6 +469,7 @@ function ShareButton({ text }: { text: string }) {
 
 function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPlay: (m: Mode) => void; onMute: () => void }) {
   const daily = save.daily[today];
+  const going = daily?.open && save.progress?.day === today ? save.progress : null;
   return (
     <div className="oh oh-menu">
       <div className="oh-menu-top">
@@ -406,9 +489,13 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="oh-card">
         <div className="oh-card-head">
           <b>Daily #{dailyNumber(today)}</b>
-          <span>{daily ? `Today: ${daily.best}` : `${DAILY_LEVELS} levels, the same for everyone · one try a day`}</span>
+          <span>{going ? `In progress · level ${going.n} of ${DAILY_LEVELS}` : daily?.open !== undefined ? 'Left unfinished · one try a day' : daily ? `Today: ${daily.best}` : `${DAILY_LEVELS} levels, the same for everyone · one try a day`}</span>
         </div>
-        {daily ? (
+        {going ? (
+          <button className="oh-btn oh-btn-go oh-btn-big" onClick={() => onPlay('daily')}>
+            Continue today’s levels
+          </button>
+        ) : daily ? (
           <div className="oh-done">
             {daily.best > 0 && <ShareButton text={`Outta Here #${dailyNumber(today)} ➡️\n${daily.line}\nScore: ${daily.best}\n${window.location.origin}/games/outta-here`} />}
             <NextDaily className="oh-muted" />

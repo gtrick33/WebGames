@@ -87,6 +87,26 @@ export function newSim(seed: number): Sim {
 }
 
 export const nextTier = (s: Sim, ahead = 0): number => tierAt(s.seed, s.dealt + ahead);
+
+const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const int = (v: unknown, min = 0, max = 2 ** 32): v is number => num(v) && Number.isInteger(v) && v >= min && v <= max;
+
+/**
+ * A saved jar (today's daily, saved as it goes) checked and copied back into a Sim, or null when it
+ * is not a valid one. The physics is deterministic, so a restored jar plays on exactly as it would have.
+ */
+export function simFrom(v: unknown): Sim | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  if (!int(o.seed) || !int(o.dealt) || !int(o.nextId) || !int(o.score) || !int(o.merges) || !int(o.biggest, 0, TIERS - 1)) return null;
+  if (![o.aim, o.cooldown, o.t, o.danger].every(num) || o.over !== false || typeof o.started !== 'boolean' || !Array.isArray(o.blobs) || o.blobs.length > 400) return null;
+  const blobs: Blob[] = [];
+  for (const b of o.blobs as Record<string, unknown>[]) {
+    if (!b || !int(b.id) || !int(b.tier, 0, TIERS - 1) || ![b.x, b.y, b.vx, b.vy, b.age, b.high, b.pop].every(num) || b.r !== RADII[b.tier]) return null;
+    blobs.push({ id: b.id, tier: b.tier, x: b.x as number, y: b.y as number, vx: b.vx as number, vy: b.vy as number, r: b.r as number, age: b.age as number, high: b.high as number, pop: b.pop as number });
+  }
+  return { seed: o.seed, blobs, dealt: o.dealt, aim: o.aim as number, cooldown: o.cooldown as number, score: o.score, merges: o.merges, biggest: o.biggest, t: o.t as number, over: false, danger: o.danger as number, nextId: o.nextId, started: o.started };
+}
 export const canDrop = (s: Sim): boolean => !s.over && s.cooldown <= 0;
 
 /** Moves the dropper, keeping the blob inside the jar. */

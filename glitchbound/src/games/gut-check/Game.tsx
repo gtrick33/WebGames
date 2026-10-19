@@ -18,7 +18,10 @@ type Mode = 'daily' | 'endless' | 'challenge';
 interface Save {
   best: number;
   runs: number;
-  daily: Record<string, { best: number; tries: number }>;
+  /** `open` true: started, not finished (it resumes from `progress`); false: left, could not be resumed, settled. */
+  daily: Record<string, { best: number; tries: number; open?: boolean }>;
+  /** Today's run so far: the card it is on (every call before it was right). */
+  progress?: { day: string; i: number };
   muted: boolean;
 }
 const emptySave = (): Save => ({ best: 0, runs: 0, daily: {}, muted: false });
@@ -32,7 +35,10 @@ function loadSave(): Save {
     s.runs = n(o.runs);
     s.muted = o.muted === true;
     if (o.daily && typeof o.daily === 'object')
-      for (const [d, v] of Object.entries(o.daily).slice(-60)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = { best: n(v.best), tries: n(v.tries) };
+      for (const [d, v] of Object.entries(o.daily).slice(-60))
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = { best: n(v.best), tries: n(v.tries), ...(typeof v.open === 'boolean' ? { open: v.open } : {}) };
+    const p = o.progress;
+    if (p && typeof p.day === 'string' && Number.isInteger(p.i) && p.i >= 0 && p.i < CHAIN) s.progress = { day: p.day, i: p.i };
     return s;
   } catch {
     return emptySave();
@@ -69,6 +75,16 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     setSave(s);
     writeSave(s);
   }, []);
+  // Today's daily was started but its saved round can't be picked up again (storage lost or damaged):
+  // settle it once, as it stood (0), so the arcade still counts the day. It never comes back.
+  useEffect(() => {
+    const cur = saveRef.current;
+    const rec = cur.daily[today];
+    if (!rec?.open || cur.progress?.day === today) return;
+    commit({ ...cur, daily: { ...cur.daily, [today]: { ...rec, open: false } } });
+    host.report({ type: 'end', score: rec.best, stats: {}, daily: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [mode, setMode] = useState<Mode>(challenge ? 'challenge' : 'daily');
   const [run, setRun] = useState<Run | null>(() => (challenge ? { pairs: chain(challenge.seed, CHAIN), i: 0, phase: 'ask', call: null } : null));
   const [over, setOver] = useState(false);
@@ -88,16 +104,19 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   if (pauseSeen !== pauseKey) setPauseSeen(pauseKey);
 
   const begin = (m: Mode): void => {
-    // Today's daily is one try; starting it uses the try up (even if it is abandoned).
-    if (m === 'daily') {
-      if (saveRef.current.daily[today]) return;
-      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1 } } });
+    // Today's daily is one try: starting it uses the try up. Leaving it halfway (menu, reload) is
+    // fine, it carries on from the same card, but it can never be started over.
+    const cur = saveRef.current;
+    const kept = m === 'daily' && cur.daily[today]?.open && cur.progress?.day === today ? cur.progress.i : null;
+    if (m === 'daily' && kept === null) {
+      if (cur.daily[today]) return;
+      commit({ ...cur, daily: { ...cur.daily, [today]: { best: 0, tries: 1, open: true } }, progress: { day: today, i: 0 } });
     }
     started.current = false;
     setMode(m);
     setOver(false);
     setNewBest(false);
-    setRun({ pairs: chain(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`gut-check:${today}`) : randomSeed(), CHAIN), i: 0, phase: 'ask', call: null });
+    setRun({ pairs: chain(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`gut-check:${today}`) : randomSeed(), CHAIN), i: kept ?? 0, phase: 'ask', call: null });
   };
 
   const finish = (streak: number): void => {
@@ -108,6 +127,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       best: Math.max(cur.best, streak),
       runs: cur.runs + 1,
       daily: mode === 'daily' ? { ...cur.daily, [today]: { best: streak, tries: 1 } } : cur.daily,
+      progress: mode === 'daily' ? undefined : cur.progress,
     });
     const end = { type: 'end' as const, score: streak, stats: {} };
     host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
@@ -130,6 +150,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     // A miss (or the last card) ends the run: keep the result now, even if the player leaves during the reveal.
     if (!right) finish(run.i);
     else if (run.i + 1 >= run.pairs.length) finish(run.i + 1);
+    else if (mode === 'daily') commit({ ...saveRef.current, progress: { day: today, i: run.i + 1 } });
   };
 
   // After the reveal: the next pair, or the end-of-run screen.
@@ -276,6 +297,7 @@ function ShareButton({ text }: { text: string }) {
 
 function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPlay: (m: Mode) => void; onMute: () => void }) {
   const daily = save.daily[today];
+  const going = daily?.open && save.progress?.day === today ? save.progress : null;
   return (
     <div className="gc gc-menu">
       <div className="gc-menu-top">
@@ -295,9 +317,13 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="gc-card-menu">
         <div className="gc-card-head">
           <b>Daily #{dailyNumber(today)}</b>
-          <span>{daily ? `Today: ${daily.best} in a row` : 'The same cards for everyone · one try a day'}</span>
+          <span>{going ? `In progress · ${going.i} in a row so far` : daily?.open !== undefined ? 'Left unfinished · one try a day' : daily ? `Today: ${daily.best} in a row` : 'The same cards for everyone · one try a day'}</span>
         </div>
-        {daily ? (
+        {going ? (
+          <button className="gc-btn gc-btn-go gc-btn-big" onClick={() => onPlay('daily')}>
+            Continue today’s cards
+          </button>
+        ) : daily ? (
           <div className="gc-done">
             {daily.best > 0 && <ShareButton text={`Gut Check #${dailyNumber(today)} 🎯\n${resultLine(daily.best, true)}\n${daily.best} in a row\n${window.location.origin}/games/gut-check`} />}
             <NextDaily className="gc-muted" />
