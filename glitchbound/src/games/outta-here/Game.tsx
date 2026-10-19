@@ -244,7 +244,8 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
           const col = Math.max(0, Math.min(size - 1, (c % size) + DC[d]));
           return row * size + col;
         });
-      } else if (e.key === 'Enter' || e.key === ' ') {
+      } else if ((e.key === 'Enter' || e.key === ' ') && r.phase !== 'over') {
+        // (Once the run is over, Enter and Space are left to the focused end-screen button.)
         e.preventDefault();
         if (r.phase === 'cleared') return nextLevel();
         const a = arrowAt(r.level, r.gone, cursor);
@@ -428,7 +429,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         </button>
       </section>
       <p className="oh-muted">
-        Best {save.best} · most levels {save.bestLevels} · {save.runs} games
+        Best {save.best} · most levels {save.bestLevels} · {save.runs} {save.runs === 1 ? 'game' : 'games'}
       </p>
     </div>
   );

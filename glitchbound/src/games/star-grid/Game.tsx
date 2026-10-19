@@ -88,6 +88,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const [paused, setPaused] = useState(false);
   const [newBest, setNewBest] = useState(false);
   // Time: seconds banked on this puzzle, plus the running stretch since `since` (null = stopped).
+  // The clock starts as soon as a grid is on screen, so nobody can solve it before the first tap.
   const banked = useRef(0);
   const since = useRef<number | null>(null);
   const started = useRef(false);
@@ -102,6 +103,11 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     },
     [],
   );
+
+  // A friends' challenge opens straight on its grid: its clock starts now.
+  useEffect(() => {
+    if (roundRef.current && since.current === null) since.current = now();
+  }, []);
 
   const show = (r: Round | null): void => {
     roundRef.current = r;
@@ -124,7 +130,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     if (m === 'endless' && size !== saveRef.current.size) commit({ ...saveRef.current, size });
     started.current = false;
     banked.current = 0;
-    since.current = null;
+    since.current = now();
     setClock(0);
     setPaused(false);
     setMode(m);
@@ -204,7 +210,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   }, [paused]);
   const resume = (): void => {
     setPaused(false);
-    if (started.current && roundRef.current?.phase === 'play') since.current = now();
+    if (roundRef.current?.phase === 'play') since.current = now();
   };
   const [pauseSeen, setPauseSeen] = useState(pauseKey);
   if (pauseSeen !== pauseKey) {
@@ -255,6 +261,12 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       const r = roundRef.current;
       if (!r) return;
       const size = r.puzzles[r.i]!.size;
+      if (r.phase === 'play' && (e.key === 'p' || e.key === 'P' || e.key === 'Escape')) {
+        e.preventDefault();
+        return paused ? resume() : pauseNow();
+      }
+      // While paused the grid is hidden: no moves until play resumes.
+      if (paused) return;
       if (r.phase === 'solved' && (e.key === 'Enter' || e.key === ' ')) {
         e.preventDefault();
         return nextPuzzle();
@@ -272,7 +284,6 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       else if (e.key === 'x' || e.key === 'X') setMark(cursor, r.marks[cursor] === 1 ? 0 : 1);
       else if (e.key === 'Enter' || e.key === 's' || e.key === 'S') setMark(cursor, r.marks[cursor] === 2 ? 0 : 2);
       else if (e.key === 'Backspace' || e.key === 'Delete') setMark(cursor, 0);
-      else if (e.key === 'p' || e.key === 'Escape') return paused ? resume() : pauseNow();
       else return;
       e.preventDefault();
     };
@@ -457,7 +468,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         </div>
       </section>
       <p className="sg-muted">
-        Best {save.best} · {save.solved} grids solved
+        Best {save.best} · {save.solved} {save.solved === 1 ? 'grid' : 'grids'} solved
       </p>
     </div>
   );

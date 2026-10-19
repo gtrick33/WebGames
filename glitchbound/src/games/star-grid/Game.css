@@ -178,6 +178,9 @@
   inset: 0;
   border: 0;
   background: rgb(14 11 44 / 0.85);
+  /* The clock is stopped: hide the grid so a pause is no free thinking time. */
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   font-size: 22px;
   font-weight: 900;
 }

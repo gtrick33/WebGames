@@ -216,6 +216,8 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
   useEffect(() => {
     if (screen !== 'play') return;
     const down = (e: KeyboardEvent): void => {
+      // Once the jar is full, Enter and Space are left to the focused end-screen button.
+      if (sim.current?.over) return;
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keysHeld.current.left = true;
       else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keysHeld.current.right = true;
       else if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowDown') {
@@ -386,7 +388,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         </button>
       </section>
       <p className="gl-muted">
-        Best {save.best} · biggest {SIZE_NAMES[save.biggest]} · {save.runs} jars
+        Best {save.best} · biggest {SIZE_NAMES[save.biggest]} · {save.runs} {save.runs === 1 ? 'jar' : 'jars'}
       </p>
       <p className="gl-muted gl-small">Two Rainbow Gloops pop for 100 bonus points.</p>
     </div>
