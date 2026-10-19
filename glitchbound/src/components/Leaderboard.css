@@ -188,3 +188,13 @@
     text-transform: uppercase;
   }
 }
+
+/* The arrow link under a board (also the quests' and profile's): here because this sheet is always loaded. */
+.quests-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cyan-text);
+  font-weight: 700;
+  text-decoration: none;
+}
