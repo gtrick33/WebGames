@@ -48,7 +48,9 @@ export function questsForDay(userId: string, day: string, games: GameEntry[], ha
     const tpl = g.daily![(h >>> 8) % g.daily!.length]!;
     // Member quests use the two easiest targets, so they are reachable in a few rounds.
     const target = tpl.targets[(h >>> 12) % Math.min(2, tpl.targets.length)]!;
-    const label = `${tpl.label.replace('{n}', fmt(target))} in ${g.title}`;
+    // Name the game once: many templates already do ("... in one Wing It flight").
+    const base = tpl.label.replace('{n}', fmt(target));
+    const label = base.includes(g.title) ? base : `${base} in ${g.title}`;
     pool.push({ id: `metric-${g.slug}-${tpl.metric}-${target}`, kind: 'metric', label, icon: 'bolt', xp: 90, target, game: g.slug, metric: tpl.metric });
   }
   if (!hasFavorite) pool.push({ id: 'favorite', kind: 'favorite', label: 'Add a game to your favorites', icon: 'heart', xp: 30, target: 1 });
