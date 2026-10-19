@@ -579,6 +579,15 @@ const it: string[] = [
   'Auto',
   'Giorno',
   'Notte',
+  // site search
+  'Giochi',
+  'Giochi per feste',
+  'Vai a',
+  'per aprire',
+  'Cerca giochi, giochi per feste o pagine',
+  'Nessun risultato per “{q}”. Prova un gioco, una categoria o una pagina come “profilo”.',
+  'Modalità party',
+  'Entra in una stanza party',
 ];
 
 export default it;

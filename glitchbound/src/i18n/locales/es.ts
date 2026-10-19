@@ -579,6 +579,15 @@ const es: string[] = [
   'Auto',
   'Día',
   'Noche',
+  // site search
+  'Juegos',
+  'Juegos de fiesta',
+  'Ir a',
+  'para abrir',
+  'Busca juegos, juegos de fiesta o páginas',
+  'Nada coincide con “{q}”. Prueba un juego, una categoría o una página como “perfil”.',
+  'Modo fiesta',
+  'Unirse a una sala de fiesta',
 ];
 
 export default es;

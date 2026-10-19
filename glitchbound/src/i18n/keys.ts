@@ -583,6 +583,15 @@ export const KEYS: string[] = [
   "Auto",
   "Day",
   "Night",
+  // site search
+  "Games",
+  "Party games",
+  "Go to",
+  "to open",
+  "Search games, party games or pages",
+  "Nothing matches “{q}”. Try a game, a category or a page like “profile”.",
+  "Party Mode",
+  "Join a party room",
 ];
 
 export const UI_COUNT = 311;

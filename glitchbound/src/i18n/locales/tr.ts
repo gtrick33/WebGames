@@ -579,6 +579,15 @@ const tr: string[] = [
   'Otomatik',
   'Gündüz',
   'Gece',
+  // site search
+  'Oyunlar',
+  'Parti oyunları',
+  'Git',
+  'açmak için',
+  'Oyun, parti oyunu veya sayfa ara',
+  '“{q}” ile eşleşen bir şey yok. Bir oyun, kategori veya “profil” gibi bir sayfa dene.',
+  'Parti modu',
+  'Bir parti odasına katıl',
 ];
 
 export default tr;

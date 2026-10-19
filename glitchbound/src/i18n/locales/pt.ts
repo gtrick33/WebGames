@@ -579,6 +579,15 @@ const pt: string[] = [
   'Auto',
   'Dia',
   'Noite',
+  // site search
+  'Jogos',
+  'Jogos de festa',
+  'Ir para',
+  'para abrir',
+  'Pesquisa jogos, jogos de festa ou páginas',
+  'Nada corresponde a “{q}”. Tenta um jogo, uma categoria ou uma página como “perfil”.',
+  'Modo festa',
+  'Entrar numa sala de festa',
 ];
 
 export default pt;

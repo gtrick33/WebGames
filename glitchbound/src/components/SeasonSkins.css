@@ -1,12 +1,16 @@
-/* Holiday skins on the arcade and party pages (art in seasonSkins.ts). SeasonDecor sets
-   html[data-skin] and the two images (--skin-card, --skin-button); each holiday below only says
-   where the art sits on cards and buttons and how it moves. Decoration only: it never takes a click. */
+/* Holiday skins on the arcade and party pages (art in seasonSkins.ts). SeasonDecor sets html[data-skin]
+   and the images (--skin-card, --skin-button, and for garlands --skin-card-r and --skin-card-edge).
+   They dress the edges, never the content, and never take a click:
+   - cards (game tiles and party cards): a garland along the whole top edge (cobwebs, snow that also
+     slides down the sides), or one small ornament on a corner (half outside);
+   - every button: a soft glow ring just outside its outline;
+   - main buttons (.btn-primary, .pt-btn-go): one extra (a spider dangling below, a heart, snow...). */
 
 /* ------------------------------------------------------------------ Cards */
-html[data-skin] :is(#main :is(.tile, .panel, .daily), .party :is(.pt-feature, .pt-mode, .pt-panel, .pt-online-game, .pt-extra)) {
+html[data-skin] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-game)) {
   position: relative;
 }
-html[data-skin] :is(#main :is(.tile, .panel, .daily), .party :is(.pt-feature, .pt-mode, .pt-panel, .pt-online-game, .pt-extra))::after {
+html[data-skin] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-game))::after {
   content: '';
   position: absolute;
   top: var(--skc-top, auto);
@@ -15,7 +19,6 @@ html[data-skin] :is(#main :is(.tile, .panel, .daily), .party :is(.pt-feature, .p
   left: var(--skc-left, auto);
   width: var(--skc-w, auto);
   height: var(--skc-h, auto);
-  aspect-ratio: var(--skc-ratio, auto);
   background: var(--skin-card) center / 100% 100% no-repeat;
   filter: var(--skc-filter, none);
   transform-origin: var(--skc-origin, center);
@@ -23,15 +26,38 @@ html[data-skin] :is(#main :is(.tile, .panel, .daily), .party :is(.pt-feature, .p
   pointer-events: none;
   z-index: 1;
 }
-html[data-skin] :is(#main :is(.tile, .panel, .daily), .party :is(.pt-feature, .pt-mode, .pt-panel, .pt-online-game, .pt-extra)):hover::after {
+/* Stickers on a card stay on top of its ornament. */
+html[data-skin] .party .pt-feature-sticker {
+  z-index: 2;
+}
+html[data-skin] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-game)):hover::after {
   animation: var(--skc-hover, var(--skc-anim, none));
 }
 
-/* ------------------------------------------------------------------ Buttons */
+/* ------------------------------------------------------------------ Buttons: a ring around the outline */
 html[data-skin] :is(#main .btn:not(.btn-ghost, .btn-icon), .party .pt-btn:not(.pt-btn-ghost)) {
   position: relative;
 }
-html[data-skin] :is(#main .btn:not(.btn-ghost, .btn-icon), .party .pt-btn:not(.pt-btn-ghost))::after {
+html[data-skin] :is(#main .btn:not(.btn-ghost, .btn-icon), .party .pt-btn:not(.pt-btn-ghost))::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: var(--skr-border, 0 solid transparent);
+  border-radius: inherit;
+  box-shadow: var(--skr-glow, none);
+  animation: var(--skr-anim, none);
+  pointer-events: none;
+}
+/* Party buttons have square-ish corners: the ring follows them a little wider. */
+html[data-skin] .party .pt-btn:not(.pt-btn-ghost)::before {
+  border-radius: 20px;
+}
+html[data-skin] .party .pt-btn-sm:not(.pt-btn-ghost)::before {
+  border-radius: 16px;
+}
+
+/* ------------------------------------------------------------------ Main buttons: one ornament on the outline */
+html[data-skin] :is(#main .btn-primary:not(.btn-icon), .party .pt-btn-go)::after {
   content: '';
   position: absolute;
   top: var(--skb-top, auto);
@@ -49,24 +75,20 @@ html[data-skin] :is(#main .btn:not(.btn-ghost, .btn-icon), .party .pt-btn:not(.p
   pointer-events: none;
   z-index: 1;
 }
-html[data-skin] :is(#main .btn:not(.btn-ghost, .btn-icon), .party .pt-btn:not(.pt-btn-ghost)):hover::after {
+html[data-skin] :is(#main .btn-primary:not(.btn-icon), .party .pt-btn-go):hover::after {
   height: var(--skb-h-hover, var(--skb-h, auto));
   animation: var(--skb-hover, var(--skb-anim, none));
 }
 
 /* ------------------------------------------------------------------ Halloween: cobwebs and spiders */
 html[data-skin='halloween'] {
-  --skc-top: 0;
-  --skc-left: 0;
-  --skc-w: min(44%, 118px);
-  --skc-ratio: 1;
-  --skc-filter: drop-shadow(0 1px 1px rgb(29 18 56 / 0.55));
-  /* A spider on a thread from the bottom of every button; it lowers itself on hover. */
-  --skb-top: calc(100% - 3px);
-  --skb-right: 26px;
-  --skb-w: 17px;
-  --skb-h: 28px;
-  --skb-h-hover: 46px;
+  --skr-glow: 0 0 0 1.5px rgb(255 122 26 / 0.45), 0 0 12px 1px rgb(157 78 221 / 0.45);
+  /* A spider on its thread below the main buttons' right end; it lowers itself on hover. */
+  --skb-top: calc(100% + 3px);
+  --skb-right: -3px;
+  --skb-w: 14px;
+  --skb-h: 24px;
+  --skb-h-hover: 38px;
   --skb-pos: bottom;
   --skb-size: 100% auto;
   --skb-origin: top center;
@@ -74,97 +96,135 @@ html[data-skin='halloween'] {
   --skb-filter: drop-shadow(0 0 0.6px rgb(255 255 255 / 0.95)) drop-shadow(0 0 1.5px rgb(255 255 255 / 0.55));
   --skb-anim: skin-sway 2.8s ease-in-out infinite alternate;
 }
-/* The web is spun into the card's rounded corner. */
-html[data-skin='halloween'] :is(#main :is(.tile, .panel, .daily), .party :is(.pt-feature, .pt-mode, .pt-panel, .pt-online-game, .pt-extra))::after {
+/* Cobwebs strung along the whole top of every card, spun into both top corners. They are drawn in
+   the page's soft text colour (dark by day, light at night) and kept inside the card's rounded top. */
+html[data-skin='halloween'] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-game))::after {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  padding: 0 38px;
   border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  background: color-mix(in srgb, var(--fg-2, #4a3d6b) 88%, transparent);
+  -webkit-mask:
+    var(--skin-card) left top / 40px 40px no-repeat,
+    var(--skin-card-r) right top / 40px 40px no-repeat,
+    var(--skin-card-edge) left top / 64px 16px round no-repeat content-box;
+  mask:
+    var(--skin-card) left top / 40px 40px no-repeat,
+    var(--skin-card-r) right top / 40px 40px no-repeat,
+    var(--skin-card-edge) left top / 64px 16px round no-repeat content-box;
 }
 
-/* ------------------------------------------------------------------ Winter: snow on top of everything */
+/* ------------------------------------------------------------------ Winter: snow lying on everything */
 html[data-skin='winter'] {
-  --skc-top: -9px;
-  --skc-left: 14px;
-  --skc-right: 14px;
-  --skc-h: 20px;
-  --skc-filter: drop-shadow(0 2px 1.5px rgb(30 70 140 / 0.35));
-  --skb-top: -7px;
-  --skb-left: 14px;
-  --skb-right: 14px;
-  --skb-h: 12px;
-  --skb-filter: drop-shadow(0 1.5px 1px rgb(30 70 140 / 0.35));
+  --skr-glow: 0 0 0 1.5px rgb(223 241 255 / 0.6), 0 0 12px 1px rgb(127 215 255 / 0.45);
+  --skb-h: 36px;
+}
+/* A lumpy drift along the whole top that wraps over both corners and slides down the sides
+   (three pieces: corners and a repeating middle, so it never stretches). */
+html[data-skin='winter'] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-game))::after {
+  top: -10px;
+  left: -6px;
+  right: -6px;
+  height: 48px;
+  padding: 0 44px;
+  background:
+    var(--skin-card) left top / 44px 48px no-repeat,
+    var(--skin-card-r) right top / 44px 48px no-repeat,
+    var(--skin-card-edge) left top / 96px 20px round no-repeat content-box;
+  filter: drop-shadow(0 2px 2px rgb(30 70 140 / 0.3));
+}
+/* The main buttons get the same snow, a size smaller. */
+html[data-skin='winter'] :is(#main .btn-primary:not(.btn-icon), .party .pt-btn-go)::after {
+  top: -7.5px;
+  left: -4.5px;
+  right: -4.5px;
+  height: var(--skb-h);
+  padding: 0 33px;
+  background:
+    var(--skin-card) left top / 33px 36px no-repeat,
+    var(--skin-card-r) right top / 33px 36px no-repeat,
+    var(--skin-card-edge) left top / 72px 15px round no-repeat content-box;
+  filter: drop-shadow(0 1.5px 1.5px rgb(30 70 140 / 0.3));
 }
 
 /* ------------------------------------------------------------------ Valentine's: hearts */
 html[data-skin='valentine'] {
-  --skc-bottom: -15px;
+  /* Small ornaments sit on the bottom-left corner, half outside: the inside half stays in the rounded-off corner. */
+  --skc-bottom: -13px;
   --skc-left: -15px;
-  --skc-w: 58px;
-  --skc-h: 48px;
+  --skc-w: 30px;
+  --skc-h: 27px;
   --skc-hover: skin-beat 0.9s ease-in-out infinite;
-  --skb-top: -9px;
-  --skb-right: 9px;
-  --skb-w: 18px;
-  --skb-h: 17px;
+  --skr-glow: 0 0 0 1.5px rgb(255 143 184 / 0.55), 0 0 12px 1px rgb(255 79 154 / 0.4);
+  --skb-top: -13px;
+  --skb-right: 4px;
+  --skb-w: 16px;
+  --skb-h: 15px;
   --skb-transform: rotate(14deg);
   --skb-hover: skin-beat 0.9s ease-in-out infinite;
 }
 
 /* ------------------------------------------------------------------ Lunar New Year: red envelopes and lanterns */
 html[data-skin='lunar'] {
-  --skc-bottom: -15px;
+  --skc-bottom: -13px;
   --skc-left: -15px;
-  --skc-w: 54px;
-  --skc-h: 48px;
+  --skc-w: 30px;
+  --skc-h: 27px;
   --skc-hover: skin-wobble 0.8s ease-in-out;
-  --skb-top: calc(100% - 2px);
-  --skb-left: 20px;
-  --skb-w: 14px;
-  --skb-h: 28px;
+  --skr-glow: 0 0 0 1.5px rgb(255 201 40 / 0.55), 0 0 12px 1px rgb(230 57 70 / 0.4);
+  /* A lantern hanging off the top-right corner, beside the button. */
+  --skb-top: -6px;
+  --skb-right: -9px;
+  --skb-w: 11px;
+  --skb-h: 22px;
   --skb-origin: top center;
   --skb-anim: skin-swing 2.4s ease-in-out infinite alternate;
 }
 
 /* ------------------------------------------------------------------ Easter: painted eggs */
 html[data-skin='easter'] {
-  --skc-bottom: -15px;
+  --skc-bottom: -12px;
   --skc-left: -15px;
-  --skc-w: 62px;
-  --skc-h: 43px;
+  --skc-w: 32px;
+  --skc-h: 28px;
   --skc-hover: skin-wobble 0.8s ease-in-out;
-  --skb-top: -10px;
-  --skb-right: 10px;
-  --skb-w: 14px;
-  --skb-h: 19px;
-  --skb-transform: rotate(12deg);
+  --skr-glow: 0 0 0 1.5px rgb(184 161 255 / 0.55), 0 0 12px 1px rgb(155 225 93 / 0.4);
+  /* An egg sitting on top of the button's edge. */
+  --skb-top: -18px;
+  --skb-right: 14px;
+  --skb-w: 13px;
+  --skb-h: 18px;
+  --skb-transform: rotate(10deg);
   --skb-hover: skin-wobble 0.6s ease-in-out infinite;
 }
 
-/* ------------------------------------------------------------------ Diwali: diyas and a sweep of golden light */
+/* ------------------------------------------------------------------ Diwali: diyas and a string of lights */
 html[data-skin='diwali'] {
-  --skc-bottom: -15px;
+  --skc-bottom: -12px;
   --skc-left: -15px;
-  --skc-w: 58px;
-  --skc-h: 46px;
+  --skc-w: 32px;
+  --skc-h: 25px;
   --skc-anim: skin-glow 1.8s ease-in-out infinite alternate;
-  --skb-top: 0;
-  --skb-right: 0;
-  --skb-bottom: 0;
-  --skb-left: 0;
-  --skb-size: 260% 100%;
-  --skb-anim: skin-sweep 3.6s ease-in-out infinite;
-}
-html[data-skin='diwali'] :is(#main .btn:not(.btn-ghost, .btn-icon), .party .pt-btn:not(.pt-btn-ghost))::after {
-  border-radius: inherit;
+  /* Every button wears a string of fairy lights that glows softly. */
+  --skr-border: 2px dotted rgb(255 210 63 / 0.9);
+  --skr-glow: 0 0 10px 1px rgb(255 183 3 / 0.35);
+  --skr-anim: skin-lights 1.6s ease-in-out infinite alternate;
 }
 
 /* ------------------------------------------------------------------ Summer: beach balls and suns */
 html[data-skin='summer'] {
-  --skc-bottom: -15px;
-  --skc-left: -15px;
-  --skc-w: 42px;
-  --skc-h: 42px;
+  --skc-bottom: -13px;
+  --skc-left: -13px;
+  --skc-w: 26px;
+  --skc-h: 26px;
   --skc-anim: skin-rock 3s ease-in-out infinite alternate;
-  --skb-top: -9px;
-  --skb-right: 8px;
+  --skr-glow: 0 0 0 1.5px rgb(255 210 63 / 0.6), 0 0 12px 1px rgb(18 198 179 / 0.35);
+  /* A sun peeking over the top-right of the button. */
+  --skb-top: -14px;
+  --skb-right: 2px;
   --skb-w: 18px;
   --skb-h: 18px;
   --skb-anim: skin-spin 9s linear infinite;
@@ -190,11 +250,11 @@ html[data-skin='summer'] {
 }
 @keyframes skin-glow {
   from { filter: drop-shadow(0 0 2px rgb(255 183 3 / 0.35)); }
-  to { filter: drop-shadow(0 0 10px rgb(255 200 60 / 0.95)); }
+  to { filter: drop-shadow(0 0 8px rgb(255 200 60 / 0.9)); }
 }
-@keyframes skin-sweep {
-  from { background-position: 160% 0; }
-  55%, to { background-position: -60% 0; }
+@keyframes skin-lights {
+  from { box-shadow: 0 0 6px 0 rgb(255 183 3 / 0.25); }
+  to { box-shadow: 0 0 14px 2px rgb(255 200 60 / 0.6); }
 }
 @keyframes skin-spin {
   to { transform: rotate(360deg); }
@@ -205,7 +265,8 @@ html[data-skin='summer'] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-skin] :is(#main :is(.tile, .panel, .daily, .btn), .party :is(.pt-feature, .pt-mode, .pt-panel, .pt-online-game, .pt-extra, .pt-btn))::after {
+  html[data-skin] :is(#main :is(.tile, .btn), .party :is(.pt-feature, .pt-mode, .pt-online-game, .pt-btn))::after,
+  html[data-skin] :is(#main .btn, .party .pt-btn)::before {
     animation: none !important;
     transition: none;
   }

@@ -579,6 +579,15 @@ const nl: string[] = [
   'Auto',
   'Dag',
   'Nacht',
+  // site search
+  'Spellen',
+  'Feestspellen',
+  'Ga naar',
+  'om te openen',
+  'Zoek spellen, feestspellen of pagina’s',
+  'Niets gevonden voor “{q}”. Probeer een spel, een categorie of een pagina zoals “profiel”.',
+  'Feestmodus',
+  'Naar een feestkamer',
 ];
 
 export default nl;

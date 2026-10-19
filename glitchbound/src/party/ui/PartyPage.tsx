@@ -63,7 +63,10 @@ const ROOM_CODE = /^[A-HJKMNP-Z]{5}$/;
 export function PartyPage() {
   usePageMeta({ title: 'Party Mode', path: '/party' });
   const { search } = useLocation();
-  const room = new URLSearchParams(search).get('room')?.toUpperCase() ?? '';
+  const params = new URLSearchParams(search);
+  const room = params.get('room')?.toUpperCase() ?? '';
+  // A link to one game (from the site search): the lobby opens on it. 'online' = the rooms tab.
+  const play = params.get('play') ?? '';
   const inRoom = ROOM_CODE.test(room);
   const [session, update] = useSession();
   const [mode, setMode] = useState<ModeId | null>(session.active?.mode ?? null);
@@ -98,7 +101,7 @@ export function PartyPage() {
       {!inRoom && mode === 'charades' && <CharadesMode session={session} update={update} onExit={exit} />}
       {!inRoom && mode === 'board' && <BoardMode session={session} update={update} onExit={exit} />}
       {!inRoom && mode === 'auction' && <AuctionMode session={session} update={update} onExit={exit} />}
-      {!mode && !inRoom && <Lobby session={session} update={update} problem={problem} onOpen={open} onAdult={() => setAdultAsk(true)} />}
+      {!mode && !inRoom && <Lobby key={play} focus={play} session={session} update={update} problem={problem} onOpen={open} onAdult={() => setAdultAsk(true)} />}
       {/* Last, so it opens above the house-rules sheet. */}
       {adultAsk && (
         <AdultGate
@@ -117,10 +120,17 @@ export function PartyPage() {
  * The lobby, kept to two steps: who's playing (name chips), then pick a game. House rules and your
  * own prompts open in a sheet, so they never stand between the group and the first card.
  */
-function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; problem: string | null; onOpen: (m: ModeId) => void; onAdult: () => void }) {
+function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: string; session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; problem: string | null; onOpen: (m: ModeId) => void; onAdult: () => void }) {
   const [newName, setNewName] = useState('');
   const [sheet, setSheet] = useState<'rules' | 'custom' | null>(null);
-  const [where, setWhere] = useState<'one' | 'online'>('one');
+  // Games you can only play in a room open on the rooms tab.
+  const [where, setWhere] = useState<'one' | 'online'>(() => (focus === 'online' || PARTY_GAMES.some((g) => g.id === focus && !g.onePhone) ? 'online' : 'one'));
+  // Opened from a link to one game: bring its card into view (it is highlighted for a moment).
+  useEffect(() => {
+    if (!focus) return;
+    const target = document.querySelector(focus === 'online' ? '.pt-online' : `[data-party-game="${focus}"]`);
+    target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [focus]);
   const [joinCode, setJoinCode] = useState('');
   const [roomMsg, setRoomMsg] = useState('');
   const [nudge, setNudge] = useState(0);
@@ -214,7 +224,7 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
                 const art = r.id === 'unhinged' ? unhinged?.art : undefined;
                 const sticker = r.label || (r.id === 'unhinged' ? r.sticker : '');
                 return (
-                  <div key={r.id} className="pt-online-game" style={{ ['--mc' as string]: r.color }}>
+                  <div key={r.id} data-party-game={r.id} className={`pt-online-game${focus === r.id ? ' is-found' : ''}`} style={{ ['--mc' as string]: r.color }}>
                     {art ? (
                       <img src={art.tile} alt="" width={84} height={84} style={{ background: art.bg }} />
                     ) : (
@@ -311,7 +321,7 @@ function Lobby({ session, update, problem, onOpen, onAdult }: { session: PartySe
       </div>
       <div className="pt-modes pt-modes-lobby">
         {modes.map((m) => (
-          <button key={m.id} className={`pt-mode${problem ? ' is-waiting' : ''}`} style={{ ['--mc' as string]: m.color }} onClick={() => pick(m.id as ModeId)}>
+          <button key={m.id} data-party-game={m.id} className={`pt-mode${problem ? ' is-waiting' : ''}${focus === m.id ? ' is-found' : ''}`} style={{ ['--mc' as string]: m.color }} onClick={() => pick(m.id as ModeId)}>
             <span className="pt-mode-art" aria-hidden="true">
               {m.emoji}
             </span>

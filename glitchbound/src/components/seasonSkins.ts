@@ -1,14 +1,18 @@
 import type { HolidayId } from '../platform/seasons';
 
 /**
- * Holiday skins for the arcade and party pages: a little piece of art on every card and button
- * (Halloween cobwebs and dangling spiders, snow on top of everything at Christmas, hearts for
- * Valentine's...). The art lives here as SVG; where it sits and how it moves is in SeasonSkins.css.
- * `card` and `button` are CSS images (an SVG, or a gradient for light effects).
+ * Holiday skins for the arcade and party pages. They dress the edges of cards and buttons, never
+ * their content: cobwebs strung along the top of every card (spun into both top corners), snow lying
+ * on top and sliding down the sides, or one small ornament on a card's corner (hearts, eggs...); a glow
+ * ring around every button, and on the main buttons one extra (a spider dangling on its thread, a
+ * heart). The art lives here as SVG; where it sits and how it moves is in SeasonSkins.css.
+ * `card` and `button` are CSS images ('none' for no ornament); `extra` sets more CSS variables
+ * (the right-hand corner and the repeating edge of the garlands).
  */
 export interface SeasonSkin {
   card: string;
   button: string;
+  extra?: Record<string, string>;
 }
 
 const INK = '#1d1238';
@@ -20,26 +24,27 @@ const HEART = 'M12 21C12 21 2 14.5 2 8C2 4.7 4.6 2 7.8 2C9.7 2 11.2 3 12 4.4C12.
 /** An egg around (0, 0). */
 const EGG = 'M0 -13C6 -13 9 -3 9 3C9 9 5 13 0 13C-5 13 -9 9 -9 3C-9 -3 -6 -13 0 -13Z';
 
-/** A cobweb spun in the top-left corner, with a spider hanging off it. */
-const COBWEB = svg(
-  '0 0 100 100',
-  `<g fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round">
-<path d="M0 0L100 0M0 0L92.4 38.3M0 0L70.7 70.7M0 0L38.3 92.4M0 0L0 100"/>
-<path d="M22 0Q17.7 3.5 20.3 8.4Q15 10 15.6 15.6Q10 15 8.4 20.3Q3.5 17.7 0 22"/>
-<path d="M44 0Q35.3 7 40.7 16.8Q29.9 20 31.1 31.1Q20 29.9 16.8 40.7Q7 35.3 0 44"/>
-<path d="M66 0Q53 10.5 61 25.3Q44.9 30 46.7 46.7Q30 44.9 25.3 61Q10.5 53 0 66"/>
-<path d="M88 0Q70.6 14 81.3 33.7Q59.8 40 62.2 62.2Q40 59.8 33.7 81.3Q14 70.6 0 88"/>
-<path d="M54 48V69" stroke-width="0.9"/>
-</g>
-<g transform="translate(54 75)">
-<path d="M-3 -2L-8 -6L-10 -2M-3 0L-9 -1L-11 3M-3 2L-8 4L-9 8M-2 3L-6 7L-6 11M3 -2L8 -6L10 -2M3 0L9 -1L11 3M3 2L8 4L9 8M2 3L6 7L6 11" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-<ellipse cy="1.5" rx="4.2" ry="5.2" fill="${INK}"/>
-<circle cy="-4" r="2.9" fill="${INK}"/>
-<circle cx="-1.1" cy="-4.3" r="0.8" fill="#fff"/><circle cx="1.1" cy="-4.3" r="0.8" fill="#fff"/>
-</g>`,
+/** Mirrors a drawing left to right (for the right-hand corner of a garland). */
+const mirrored = (width: number, body: string): string => `<g transform="translate(${width} 0) scale(-1 1)">${body}</g>`;
+
+/** A cobweb spun into a card's top-left corner (drawn as a mask: the page's text colour shows through). */
+const WEB_CORNER = `<g fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round">
+<path d="M0 0L32 0M0 0L27.72 11.48M0 0L18.38 18.38M0 0L11.48 27.72M0 0L0 32"/>
+<path d="M8 0Q6.77 1.35 7.39 3.06Q5.74 3.83 5.66 5.66Q3.83 5.74 3.06 7.39Q1.35 6.77 0 8"/>
+<path d="M15 0Q12.65 2.52 13.86 5.74Q10.73 7.17 10.61 10.61Q7.17 10.73 5.74 13.86Q2.52 12.65 0 15"/>
+<path d="M22 0Q18.54 3.69 20.33 8.42Q15.72 10.5 15.56 15.56Q10.5 15.72 8.42 20.33Q3.69 18.54 0 22"/>
+</g>`;
+const COBWEB_L = svg('0 0 32 32', WEB_CORNER);
+const COBWEB_R = svg('0 0 32 32', mirrored(32, WEB_CORNER));
+/** Silk strands sagging between the two corner webs, repeated along the card's top edge. */
+const COBWEB_EDGE = svg(
+  '0 0 64 14',
+  `<g fill="none" stroke="#fff" stroke-linecap="round"><path d="M0 0.5Q16 16 32 0.5Q48 13 64 0.5" stroke-width="1"/><path d="M12 0.5Q26 9 40 0.5" stroke-width="0.8" opacity="0.7"/></g>`,
+  // Repeats are resized to fit the card exactly ('round'): stretch a little rather than leave gaps.
+  ' preserveAspectRatio="none"',
 );
 
-/** A spider on a long thread (the bottom of the image is the spider; the thread runs off the top). */
+/** A spider on its thread (the bottom of the image is the spider; the thread runs off the top). */
 const SPIDER = svg(
   '0 0 20 60',
   `<path d="M10 0V46" stroke="#fff" stroke-width="1"/><path d="M10 0V46" stroke="${INK}" stroke-width="0.5" opacity="0.5"/>
@@ -51,19 +56,34 @@ const SPIDER = svg(
 </g>`,
 );
 
-/** A soft cap of snow with a few drips; stretched to the width of what it sits on. */
-const SNOWCAP = svg(
-  '0 0 200 24',
-  `<path d="M2 16C2 6 14 4 22 8C28 1 44 1 52 7C60 2 74 2 82 8C90 1 106 0 114 7C122 2 138 2 146 8C154 1 170 2 178 8C188 4 198 8 198 16C198 20 194 21 190 20L186 20C185 23.5 182 23.5 181 20L120 20C119 24 116 24 115 20L60 20C59 23 57 23 56 20L10 20C6 21 2 20 2 16Z" fill="#fff"/>
-<path d="M8 19C40 21 160 21 192 19" stroke="#bfe3ff" stroke-width="2" fill="none" stroke-linecap="round"/>
-<circle cx="40" cy="10" r="1.6" fill="#dff1ff"/><circle cx="120" cy="9" r="1.6" fill="#dff1ff"/><circle cx="170" cy="11" r="1.4" fill="#dff1ff"/>`,
+/*
+ * Snow lying on a card: a lumpy, shaded drift along the top that wraps over the rounded corners and
+ * slides a little way down both sides, with a few icicles. Three pieces (left corner, a repeating top
+ * edge, right corner), so it fits any width without stretching. In every piece the card's top edge is
+ * at y = 10 and, in the corners, its side at x = 6.
+ */
+const SNOW_FILL = '<defs><linearGradient id="sn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.65" stop-color="#f6faff"/><stop offset="1" stop-color="#dcebfa"/></linearGradient></defs>';
+const SNOW_CORNER = `<path d="M9 44C9 47.5 4 47.5 3.5 43L2.5 30C1 22 3 14 9 9C12 4 18 1 24 2C28 -0.5 34 0 37 2.5C40 2 43 3 44 4L44 13L28 13A19 19 0 0 0 9 32Z" fill="url(#sn)" stroke="#d6e7f7" stroke-width="0.8"/>
+<path d="M9 44L9 32A19 19 0 0 1 28 13L44 13" fill="none" stroke="#bcd6ef" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M31 13Q33 20.5 35 13Z" fill="#e8f4ff" stroke="#bcd6ef" stroke-width="0.7"/>
+<path d="M9 36Q13.5 38 9 40Z" fill="#e8f4ff" stroke="#bcd6ef" stroke-width="0.7"/>
+<g fill="#cfe4f8"><circle cx="13" cy="8" r="0.9"/><circle cx="26" cy="5" r="0.8"/><circle cx="5.5" cy="22" r="0.8"/></g>`;
+const SNOW_L = svg('0 0 44 48', SNOW_FILL + SNOW_CORNER);
+const SNOW_R = svg('0 0 44 48', SNOW_FILL + mirrored(44, SNOW_CORNER));
+const SNOW_EDGE = svg(
+  '0 0 96 20',
+  `${SNOW_FILL}<path d="M0 13L0 4C5 1 10 0.5 15 2.5C20 -0.5 27 -0.5 31 2C35 0.5 39 1 42 3C47 0 55 0 60 2.5C64 1 69 0.5 73 2C78 -0.5 86 0 90 2.5C92 3 94 3.5 96 4L96 13Z" fill="url(#sn)"/>
+<path d="M0 4C5 1 10 0.5 15 2.5C20 -0.5 27 -0.5 31 2C35 0.5 39 1 42 3C47 0 55 0 60 2.5C64 1 69 0.5 73 2C78 -0.5 86 0 90 2.5C92 3 94 3.5 96 4" fill="none" stroke="#d6e7f7" stroke-width="0.8"/>
+<path d="M0 13H96" stroke="#bcd6ef" stroke-width="1.6"/>
+<path d="M20 13Q22.5 19.5 25 13Z M67 13Q68.5 17 70 13Z" fill="#e8f4ff" stroke="#bcd6ef" stroke-width="0.7"/>
+<g fill="#cfe4f8"><circle cx="9" cy="6" r="0.9"/><circle cx="37" cy="7" r="0.8"/><circle cx="58" cy="6" r="0.9"/><circle cx="84" cy="7" r="0.8"/></g>`,
   ' preserveAspectRatio="none"',
 );
 
 const heart = (x: number, y: number, s: number, deg: number, fill: string): string =>
   `<g transform="translate(${x} ${y}) scale(${s}) rotate(${deg} 12 12)"><path d="${HEART}" fill="${fill}" stroke="${INK}" stroke-width="${(2 / s).toFixed(2)}" stroke-linejoin="round"/><ellipse cx="7.5" cy="7" rx="2.2" ry="1.4" fill="#fff" opacity="0.75" transform="rotate(-30 7.5 7)"/></g>`;
 
-const HEARTS = svg('0 0 60 50', heart(1, 16, 1.35, -12, '#ff4f9a') + heart(30, 3, 1, 14, '#ff8fb8') + heart(36, 28, 0.78, 8, '#e8174f'));
+const HEARTS = svg('0 0 44 40', heart(1, 10, 1.25, -12, '#ff4f9a') + heart(25, 1, 0.75, 14, '#ff8fb8'));
 const HEART_ONE = svg('0 0 24 23', `<path d="${HEART}" fill="#ff4f9a" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><ellipse cx="7.5" cy="7" rx="2.2" ry="1.4" fill="#fff" opacity="0.75" transform="rotate(-30 7.5 7)"/>`);
 
 /** A red envelope and a lucky coin. */
@@ -96,15 +116,13 @@ const egg = (x: number, y: number, deg: number, fill: string, pattern: string): 
   `<g transform="translate(${x} ${y}) rotate(${deg})"><path d="${EGG}" fill="${fill}" stroke="${INK}" stroke-width="1.8"/>${pattern}</g>`;
 const ZIGZAG = '<path d="M-8.6 0L-5 -3L-1.5 0L2 -3L5.5 0L8.6 -3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>';
 const DOTS = '<g fill="#fff"><circle cx="-3" cy="-4" r="1.6"/><circle cx="3" cy="-1" r="1.6"/><circle cx="-4" cy="4" r="1.6"/><circle cx="3.5" cy="6" r="1.4"/></g>';
-const STRIPES = '<path d="M-8.8 -1H8.8M-8.4 5H8.4" stroke="#fff" stroke-width="2"/>';
 
-/** Three painted eggs in a tuft of grass. */
+/** Two painted eggs in a tuft of grass. */
 const EGGS = svg(
-  '0 0 66 46',
-  egg(14, 26, -14, '#b8a1ff', ZIGZAG) +
-    egg(33, 22, 6, '#ffd36e', DOTS) +
-    egg(51, 27, 18, '#8fe3cf', STRIPES) +
-    `<path d="M2 46L5 37L8 44L11 35L14 44L18 36L21 44L25 38L28 45L32 36L35 44L39 37L42 44L46 36L49 44L53 38L56 44L60 36L64 46Z" fill="#7cc94a" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round"/>`,
+  '0 0 46 40',
+  egg(14, 21, -12, '#b8a1ff', ZIGZAG) +
+    egg(32, 20, 14, '#ffd36e', DOTS) +
+    `<path d="M2 40L5 32L8 38L11 30L14 38L18 31L21 38L25 32L28 39L32 31L35 38L39 32L42 38L44 40Z" fill="#7cc94a" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round"/>`,
 );
 const EGG_ONE = svg('-10 -14 20 28', `<path d="${EGG}" fill="#ffd36e" stroke="${INK}" stroke-width="1.8"/>${DOTS}`);
 
@@ -139,15 +157,12 @@ const SUN = svg(
 <circle cx="12" cy="12" r="5.6" fill="#ffd23f" stroke="${INK}" stroke-width="1.6"/>`,
 );
 
-/** A band of gold light, swept across buttons. */
-const SHIMMER = 'linear-gradient(105deg, transparent 38%, rgb(255 236 170 / 0.85) 48%, rgb(255 255 255 / 0.95) 50%, rgb(255 205 90 / 0.85) 52%, transparent 62%)';
-
 export const SKINS: Record<HolidayId, SeasonSkin> = {
-  halloween: { card: svgUrl(COBWEB), button: svgUrl(SPIDER) },
-  winter: { card: svgUrl(SNOWCAP), button: svgUrl(SNOWCAP) },
+  halloween: { card: svgUrl(COBWEB_L), button: svgUrl(SPIDER), extra: { '--skin-card-r': svgUrl(COBWEB_R), '--skin-card-edge': svgUrl(COBWEB_EDGE) } },
+  winter: { card: svgUrl(SNOW_L), button: 'none', extra: { '--skin-card-r': svgUrl(SNOW_R), '--skin-card-edge': svgUrl(SNOW_EDGE) } },
   valentine: { card: svgUrl(HEARTS), button: svgUrl(HEART_ONE) },
   lunar: { card: svgUrl(RED_ENVELOPE), button: svgUrl(LANTERN) },
   easter: { card: svgUrl(EGGS), button: svgUrl(EGG_ONE) },
-  diwali: { card: svgUrl(DIYA), button: SHIMMER },
+  diwali: { card: svgUrl(DIYA), button: 'none' },
   summer: { card: svgUrl(BEACH_BALL), button: svgUrl(SUN) },
 };

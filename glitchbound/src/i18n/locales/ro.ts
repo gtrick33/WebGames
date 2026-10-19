@@ -579,6 +579,15 @@ const ro: string[] = [
   'Auto',
   'Zi',
   'Noapte',
+  // site search
+  'Jocuri',
+  'Jocuri de petrecere',
+  'Mergi la',
+  'pentru a deschide',
+  'Caută jocuri, jocuri de petrecere sau pagini',
+  'Nimic nu se potrivește cu „{q}”. Încearcă un joc, o categorie sau o pagină precum „profil”.',
+  'Modul petrecere',
+  'Intră într-o cameră de petrecere',
 ];
 
 export default ro;

@@ -579,6 +579,15 @@ const fr: string[] = [
   'Auto',
   'Jour',
   'Nuit',
+  // site search
+  'Jeux',
+  'Jeux de soirée',
+  'Aller à',
+  'pour ouvrir',
+  'Chercher des jeux, des jeux de soirée ou des pages',
+  'Rien ne correspond à « {q} ». Essaie un jeu, une catégorie ou une page comme « profil ».',
+  'Mode soirée',
+  'Rejoindre une salle de soirée',
 ];
 
 export default fr;

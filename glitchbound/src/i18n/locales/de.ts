@@ -579,6 +579,15 @@ const de: string[] = [
   'Auto',
   'Tag',
   'Nacht',
+  // site search
+  'Spiele',
+  'Partyspiele',
+  'Gehe zu',
+  'zum Öffnen',
+  'Spiele, Partyspiele oder Seiten suchen',
+  'Nichts passt zu „{q}“. Versuch ein Spiel, eine Kategorie oder eine Seite wie „Profil“.',
+  'Partymodus',
+  'Einem Partyraum beitreten',
 ];
 
 export default de;

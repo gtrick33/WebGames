@@ -27,13 +27,13 @@ export default function SeasonDecor({ holiday }: { holiday: Holiday }) {
   useEffect(() => {
     if (!skin) return;
     const root = document.documentElement;
+    const { card, button, extra = {} } = SKINS[holiday.id];
+    const vars = { '--skin-card': card, '--skin-button': button, ...extra };
     root.dataset.skin = holiday.id;
-    root.style.setProperty('--skin-card', SKINS[holiday.id].card);
-    root.style.setProperty('--skin-button', SKINS[holiday.id].button);
+    for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v);
     return () => {
       delete root.dataset.skin;
-      root.style.removeProperty('--skin-card');
-      root.style.removeProperty('--skin-button');
+      for (const k of Object.keys(vars)) root.style.removeProperty(k);
     };
   }, [holiday.id, skin]);
   return (
