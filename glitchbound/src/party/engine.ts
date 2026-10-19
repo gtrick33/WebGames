@@ -42,6 +42,20 @@ export function shuffle<T>(list: readonly T[], r: Rng): T[] {
   return a;
 }
 
+/**
+ * Turn order for two teams: the teams alternate, and each team goes round its own players, so both
+ * teams get the same number of turns even when one is bigger (3 vs 2: A1 B1 A2 B2 A3 B1).
+ * `laps` is how many times the bigger team goes round.
+ */
+export function teamTurns<T>(teams: readonly [readonly T[], readonly T[]], laps: number): T[] {
+  const [a, b] = teams;
+  if (!a.length || !b.length) return Array.from({ length: laps }, () => [...a, ...b]).flat();
+  const per = Math.max(a.length, b.length) * laps;
+  const out: T[] = [];
+  for (let i = 0; i < per; i++) out.push(a[i % a.length]!, b[i % b.length]!);
+  return out;
+}
+
 /** Small, fast, seedable PRNG (mulberry32). */
 export function rng(seed: number): Rng {
   let a = seed >>> 0;

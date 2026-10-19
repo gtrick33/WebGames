@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CHARADES, CHARADES_CATEGORIES } from '../content/charades';
-import { draw, freshRng, shuffle } from '../engine';
+import { draw, freshRng, shuffle, teamTurns } from '../engine';
 import type { PartySession } from '../session';
 import type { CharadesCard, CharadesCategory, Player } from '../types';
 import { Avatar, ModeBar, PassPhone, Results, Timer } from './shared';
@@ -41,18 +41,14 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
     () => CHARADES.filter((c) => cfg.categories.includes(c.category) && (adult || c.category !== 'afterdark') && (cfg.difficulty === 0 || c.difficulty === cfg.difficulty)),
     [cfg.categories, cfg.difficulty, adult],
   );
-  // Actors alternate teams (A1, B1, A2, B2...) or go round the circle.
-  const actors = useMemo(() => {
-    if (!cfg.teams) return session.players;
-    const out: Player[] = [];
-    for (let i = 0; i < Math.max(teams[0].length, teams[1].length); i++) {
-      if (teams[0][i]) out.push(teams[0][i]!);
-      if (teams[1][i]) out.push(teams[1][i]!);
-    }
-    return out;
-  }, [cfg.teams, teams, session.players]);
-  const totalTurns = actors.length * cfg.rounds;
-  const actor = actors[turn % Math.max(1, actors.length)];
+  // Every turn of the game: teams alternate (A1, B1, A2, B2...) with the same number of turns each,
+  // or everyone goes round the circle.
+  const actors = useMemo(
+    () => (cfg.teams ? teamTurns(teams, cfg.rounds) : Array.from({ length: cfg.rounds }, () => session.players).flat()),
+    [cfg.teams, cfg.rounds, teams, session.players],
+  );
+  const totalTurns = actors.length;
+  const actor = actors[turn];
   const actorTeam = actor && cfg.teams ? (teams[0].some((p) => p.id === actor.id) ? 0 : 1) : null;
 
   const nextCard = (): void => {
@@ -183,9 +179,15 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
       <div className="pt-screen">
         <ModeBar title="Charades" progress={progress} onExit={onExit} />
         {cfg.teams && (
-          <p className="pt-score-line">
-            Team 1 <b>{teamScore[0]}</b> · <b>{teamScore[1]}</b> Team 2
-          </p>
+          <>
+            <p className="pt-score-line">
+              Team 1 <b>{teamScore[0]}</b> · <b>{teamScore[1]}</b> Team 2
+            </p>
+            {/* Only the actor's own team guesses, so everyone needs to know the line-up. */}
+            <p className="pt-muted pt-center">
+              Team 1: {teams[0].map((p) => p.name).join(', ')} · Team 2: {teams[1].map((p) => p.name).join(', ')}
+            </p>
+          </>
         )}
         <PassPhone
           player={actor}
@@ -242,9 +244,12 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
     return (
       <div className="pt-screen">
         <ModeBar title="Charades" progress={progress} onExit={onExit} />
-        <Timer seconds={cfg.seconds} onEnd={() => setPhase('summary')} onTick={(l) => l <= 3 && (beep(520), navigator.vibrate?.(60))} />
-        <Forehead key={`${got.length}:${skipped.length}`} word={card.text} onGot={score} onPass={skip} />
-        <p className="pt-muted pt-center">Got {got.length} so far</p>
+        {/* The whole screen, over the site's header and tab bar, so the word stays big in landscape too. */}
+        <div className="pt-heads-play">
+          <Timer seconds={cfg.seconds} onEnd={() => setPhase('summary')} onTick={(l) => l <= 3 && (beep(520), navigator.vibrate?.(60))} />
+          <Forehead key={`${got.length}:${skipped.length}`} word={card.text} onGot={score} onPass={skip} />
+          <p className="pt-muted pt-center">Got {got.length} so far</p>
+        </div>
       </div>
     );
   }
@@ -375,6 +380,16 @@ function GetReady({ seconds, note, onGo }: { seconds: number; note: string; onGo
 }
 
 /**
+ * How much the screen faces up, from the device's tilt: 1 flat on its back, -1 face down, 0 upright
+ * (whether the phone is held in portrait or landscape). Null without a motion sensor.
+ */
+export function screenFacing(beta: number | null, gamma: number | null): number | null {
+  if (beta === null) return null;
+  const rad = Math.PI / 180;
+  return Math.cos(beta * rad) * Math.cos((gamma ?? 0) * rad);
+}
+
+/**
  * Forehead: the word faces the room while the guesser holds the phone to their forehead. Nodding down
  * (screen to the floor) scores, tilting up (screen to the ceiling) passes; tapping either half works too.
  */
@@ -393,17 +408,18 @@ function Forehead({ word, onGot, onPass }: { word: string; onGot: () => void; on
     navigator.vibrate?.(kind === 'got' ? 40 : [30, 60, 30]);
     window.setTimeout(() => (kind === 'got' ? act.current.onGot() : act.current.onPass()), 650);
   }, []);
-  // Tilt: upright in portrait the phone reads about 90°; it only counts again once it's back upright.
+  // Tilt, in portrait or landscape: `facing` is how much the screen faces the ceiling (1) or the floor
+  // (-1); held upright it is about 0. A nod only counts again once the phone is back upright.
   useEffect(() => {
     let armed = false;
     const on = (e: DeviceOrientationEvent): void => {
-      const b = e.beta;
-      if (b === null) return;
-      if (b > 60 && b < 120) armed = true;
-      else if (armed && (b >= 145 || b <= -150)) {
+      const facing = screenFacing(e.beta, e.gamma);
+      if (facing === null) return;
+      if (Math.abs(facing) < 0.5) armed = true;
+      else if (armed && facing <= -0.8) {
         armed = false;
         answer('got');
-      } else if (armed && b <= 30 && b > -60) {
+      } else if (armed && facing >= 0.8) {
         armed = false;
         answer('pass');
       }

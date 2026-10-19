@@ -9,6 +9,8 @@ import { PARTY_GAMES } from '../src/party/catalog';
 import { MODE_IDS } from '../src/party/session';
 import { isGameId } from '../rooms/engines';
 import { isRoomGame } from '../server/rooms';
+import { teamTurns } from '../src/party/engine';
+import { screenFacing } from '../src/party/ui/Charades';
 
 const seq = (vals: number[]): (() => number) => {
   let i = 0;
@@ -48,6 +50,32 @@ describe('Dial It In', () => {
       [1, 3, 5],
       [2, 4],
     ]);
+  });
+});
+
+describe('Team turns (Dial It In, Charades)', () => {
+  it('alternates the teams and gives both the same number of turns, even 3 against 2', () => {
+    expect(teamTurns([['a1', 'a2', 'a3'], ['b1', 'b2']], 1)).toEqual(['a1', 'b1', 'a2', 'b2', 'a3', 'b1']);
+    const two = teamTurns([['a1', 'a2', 'a3'], ['b1', 'b2']], 2);
+    expect(two.filter((p) => p.startsWith('a'))).toHaveLength(6);
+    expect(two.filter((p) => p.startsWith('b'))).toHaveLength(6);
+    for (let i = 1; i < two.length; i++) expect(two[i]![0]).not.toBe(two[i - 1]![0]);
+    expect(teamTurns([['a1', 'a2'], ['b1', 'b2']], 1)).toEqual(['a1', 'b1', 'a2', 'b2']);
+  });
+});
+
+describe('Charades forehead tilt', () => {
+  it('reads upright, nodded down and tipped back the same in portrait and landscape', () => {
+    // Portrait: beta 90 upright, 180 face down, 0 face up.
+    expect(Math.abs(screenFacing(90, 0)!)).toBeLessThan(0.1);
+    expect(screenFacing(160, 0)!).toBeLessThan(-0.8);
+    expect(screenFacing(20, 0)!).toBeGreaterThan(0.8);
+    // Landscape: gamma about ±90 upright; tipping it rolls gamma back towards 0 with beta near 180 or 0.
+    expect(Math.abs(screenFacing(0, 88)!)).toBeLessThan(0.1);
+    expect(Math.abs(screenFacing(-178, -85)!)).toBeLessThan(0.1);
+    expect(screenFacing(175, 20)!).toBeLessThan(-0.8);
+    expect(screenFacing(5, -25)!).toBeGreaterThan(0.8);
+    expect(screenFacing(null, null)).toBeNull();
   });
 });
 

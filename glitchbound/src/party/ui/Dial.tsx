@@ -1,7 +1,7 @@
 import { useRef, useState, type KeyboardEvent as RKeyboardEvent, type PointerEvent as RPointerEvent } from 'react';
 import { SPECTRUMS } from '../content/spectrums';
 import { dialPoints, dialVerdict, randomTarget, splitTeams, stealRight, ZONES } from '../dial';
-import { draw, freshRng } from '../engine';
+import { draw, freshRng, teamTurns } from '../engine';
 import type { PartySession } from '../session';
 import type { Player } from '../types';
 import { Avatar, ModeBar, Name, PassPhone, Results } from './shared';
@@ -32,12 +32,15 @@ export function DialMode({ session, onExit }: { session: PartySession; update: (
   const [round, setRound] = useState<Round | null>(null);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [team, setTeam] = useState<[number, number]>([0, 0]);
-  const total = players.length * laps;
   const sides = splitTeams(players);
+  // Who reads each round. With teams they alternate, and both teams read equally often.
+  const readersFor = (k: number): Player[] => (teams ? teamTurns(sides, k) : Array.from({ length: k }, () => players).flat());
+  const readers = readersFor(laps);
+  const total = readers.length;
   const teamOf = (p: Player): 0 | 1 => (sides[0].includes(p) ? 0 : 1);
 
   const deal = (k: number, seen: string[]): void => {
-    const reader = players[k % players.length]!;
+    const reader = readers[k]!;
     const pool = SPECTRUMS.map(([a, b], i) => ({ id: `s${i}`, a, b }));
     const d = draw(pool, seen, r);
     setUsed(d.used);
@@ -91,7 +94,7 @@ export function DialMode({ session, onExit }: { session: PartySession; update: (
           <div className="pt-picker" role="group" aria-label="Rounds">
             {[1, 2, 3].map((k) => (
               <button key={k} className={`pt-chip${laps === k ? ' is-on' : ''}`} aria-pressed={laps === k} onClick={() => setLaps(k)}>
-                {k === 1 ? 'Everyone reads once' : `Everyone reads ${k}×`} ({players.length * k} rounds)
+                {k === 1 ? 'Everyone reads once' : `Everyone reads ${k}×`} ({readersFor(k).length} rounds)
               </button>
             ))}
           </div>

@@ -1244,9 +1244,12 @@ img.pt-feature-art {
   line-height: 1.05;
   text-align: center;
   letter-spacing: -0.02em;
+  /* "Schwarzenegger" is wider than a phone at this size. */
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 .pt-peek {
-  min-height: 80px;
+  min-height: 56px;
   width: 100%;
   border: 3px dashed var(--pt-edge);
   border-radius: 18px;
@@ -1307,6 +1310,21 @@ img.pt-feature-art {
   box-shadow: 0 8px 0 var(--pt-shadow);
   transition: background 0.2s ease;
 }
+/* A forehead turn takes the whole screen: the site's header and tab bar would hide the word,
+   above all in landscape. */
+.pt-heads-play {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: var(--pt-paper);
+}
+.pt-heads-play .pt-heads {
+  min-height: 0;
+}
 .pt-heads.is-got {
   background: var(--pt-mint);
 }
@@ -1339,6 +1357,8 @@ img.pt-feature-art {
   line-height: 1.02;
   letter-spacing: -0.02em;
   text-align: center;
+  overflow-wrap: anywhere;
+  hyphens: auto;
   pointer-events: none;
 }
 .pt-heads.is-got .pt-heads-word,
@@ -1358,10 +1378,12 @@ img.pt-feature-art {
 }
 .pt-sketch canvas {
   width: 100%;
-  height: 260px;
+  /* Tall enough to draw on, short enough that Skip and Got it stay above a phone's tab bar. */
+  height: clamp(180px, 100svh - 576px, 300px);
   border: 2.5px solid var(--pt-edge);
   border-radius: 16px;
-  background: var(--pt-card);
+  /* White paper in both themes: the pen is dark ink. */
+  background: #fff;
   touch-action: none;
 }
 

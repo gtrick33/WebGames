@@ -112,7 +112,8 @@ export function HuesMode({ session, onExit }: { session: PartySession; update: (
 
   if (stage === 'done') {
     const sorted = [...players].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0));
-    return <Results title={`${sorted[0]!.name} has the best eye!`} players={players} scores={scores} onAgain={() => setStage('setup')} onMenu={onExit} />;
+    const tie = (scores[sorted[0]!.id] ?? 0) === (scores[sorted[1]?.id ?? ''] ?? -1);
+    return <Results title={tie ? 'A tie for the best eye!' : `${sorted[0]!.name} has the best eye!`} players={players} scores={scores} onAgain={() => setStage('setup')} onMenu={onExit} />;
   }
 
   const progress = `${n + 1}/${total}`;
