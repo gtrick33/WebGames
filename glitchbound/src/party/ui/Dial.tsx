@@ -4,16 +4,27 @@ import { dialPoints, dialVerdict, randomTarget, splitTeams, stealRight, ZONES } 
 import { draw, freshRng, teamTurns } from '../engine';
 import type { PartySession } from '../session';
 import type { Player } from '../types';
-import { Avatar, ModeBar, Name, PassPhone, Results } from './shared';
+import { Avatar, ModeBar, Name, PassPhone, Results, useSavedGame } from './shared';
 
 type Stage = 'setup' | 'pass' | 'peek' | 'guess' | 'steal' | 'reveal' | 'done';
 
 interface Round {
-  reader: Player;
   scale: [string, string];
   target: number;
   guess: number;
   call: 'left' | 'right' | null;
+}
+
+interface Game {
+  stage: Stage;
+  teams: boolean;
+  laps: number;
+  used: string[];
+  /** The round number (0-based); the reader is `readers[n]`. */
+  n: number;
+  round: Round | null;
+  scores: Record<string, number>;
+  team: [number, number];
 }
 
 /**
@@ -21,57 +32,56 @@ interface Round {
  * gives one clue out loud; the rest slide the needle. Co-op scores one total; with teams (4+ players)
  * the other side can steal a point by calling left or right.
  */
-export function DialMode({ session, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
+export function DialMode({ session, update, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
   const players = session.players;
   const [r] = useState(freshRng);
-  const [stage, setStage] = useState<Stage>('setup');
-  const [teams, setTeams] = useState(players.length >= 4);
-  const [laps, setLaps] = useState(players.length <= 3 ? 3 : players.length <= 6 ? 2 : 1);
-  const [used, setUsed] = useState<string[]>([]);
-  const [n, setN] = useState(0);
-  const [round, setRound] = useState<Round | null>(null);
-  const [scores, setScores] = useState<Record<string, number>>({});
-  const [team, setTeam] = useState<[number, number]>([0, 0]);
+  const [game, set] = useSavedGame<Game>(session, update, 'dial', () => ({
+    stage: 'setup',
+    teams: players.length >= 4,
+    laps: players.length <= 3 ? 3 : players.length <= 6 ? 2 : 1,
+    used: [],
+    n: 0,
+    round: null,
+    scores: {},
+    team: [0, 0],
+  }));
+  const { stage, teams, laps, n, scores, team } = game;
+  // The needle moves with every drag event: it is saved when the guess is locked in.
+  const [needle, setNeedle] = useState<number | null>(null);
+  const round = game.round && { ...game.round, guess: needle ?? game.round.guess };
+  const setStage = (st: Stage): void => set({ stage: st });
   const sides = splitTeams(players);
   // Who reads each round. With teams they alternate, and both teams read equally often.
   const readersFor = (k: number): Player[] => (teams ? teamTurns(sides, k) : Array.from({ length: k }, () => players).flat());
   const readers = readersFor(laps);
   const total = readers.length;
+  const reader = readers[Math.min(n, total - 1)]!;
   const teamOf = (p: Player): 0 | 1 => (sides[0].includes(p) ? 0 : 1);
 
-  const deal = (k: number, seen: string[]): void => {
-    const reader = readers[k]!;
+  const deal = (seen: string[]): Pick<Game, 'used' | 'round' | 'stage'> => {
     const pool = SPECTRUMS.map(([a, b], i) => ({ id: `s${i}`, a, b }));
     const d = draw(pool, seen, r);
-    setUsed(d.used);
     const card = d.item ?? pool[0]!;
-    setRound({ reader, scale: [card.a, card.b], target: randomTarget(r), guess: 50, call: null });
-    setStage('pass');
+    setNeedle(null);
+    return { used: d.used, round: { scale: [card.a, card.b], target: randomTarget(r), guess: 50, call: null }, stage: 'pass' };
   };
-  const start = (): void => {
-    setN(0);
-    setScores({});
-    setTeam([0, 0]);
-    deal(0, used);
+  const start = (): void => set({ n: 0, scores: {}, team: [0, 0], ...deal(game.used) });
+  const lock = (): void => {
+    if (round) set({ round, stage: teams ? 'steal' : 'reveal' });
   };
-  const lock = (): void => setStage(teams ? 'steal' : 'reveal');
   const reveal = (call: 'left' | 'right' | null): void => {
     if (!round) return;
     const pts = dialPoints(round.target, round.guess);
-    setRound({ ...round, call });
-    setScores((s) => ({ ...s, [round.reader.id]: (s[round.reader.id] ?? 0) + pts }));
-    if (teams) {
-      const t = teamOf(round.reader);
-      const steal = call && stealRight(round.target, round.guess, call) ? 1 : 0;
-      setTeam(([a, b]) => (t === 0 ? [a + pts, b + steal] : [a + steal, b + pts]));
-    }
-    setStage('reveal');
+    const t = teamOf(reader);
+    const steal = call && stealRight(round.target, round.guess, call) ? 1 : 0;
+    set((g) => ({
+      round: { ...round, call },
+      scores: { ...g.scores, [reader.id]: (g.scores[reader.id] ?? 0) + pts },
+      team: teams ? (t === 0 ? [g.team[0] + pts, g.team[1] + steal] : [g.team[0] + steal, g.team[1] + pts]) : g.team,
+      stage: 'reveal',
+    }));
   };
-  const next = (): void => {
-    if (n + 1 >= total) return setStage('done');
-    setN(n + 1);
-    deal(n + 1, used);
-  };
+  const next = (): void => set(n + 1 >= total ? { stage: 'done' } : { n: n + 1, ...deal(game.used) });
 
   if (stage === 'setup') {
     return (
@@ -85,7 +95,7 @@ export function DialMode({ session, onExit }: { session: PartySession; update: (
           </p>
           {players.length >= 4 && (
             <label className="pt-switch">
-              <input type="checkbox" checked={teams} onChange={(e) => setTeams(e.target.checked)} />
+              <input type="checkbox" checked={teams} onChange={(e) => set({ teams: e.target.checked })} />
               <span>
                 <b>Two teams</b> · readers take turns across teams, and the other team can steal a point by calling “left” or “right”
               </span>
@@ -93,7 +103,7 @@ export function DialMode({ session, onExit }: { session: PartySession; update: (
           )}
           <div className="pt-picker" role="group" aria-label="Rounds">
             {[1, 2, 3].map((k) => (
-              <button key={k} className={`pt-chip${laps === k ? ' is-on' : ''}`} aria-pressed={laps === k} onClick={() => setLaps(k)}>
+              <button key={k} className={`pt-chip${laps === k ? ' is-on' : ''}`} aria-pressed={laps === k} onClick={() => set({ laps: k })}>
                 {k === 1 ? 'Everyone reads once' : `Everyone reads ${k}×`} ({readersFor(k).length} rounds)
               </button>
             ))}
@@ -132,14 +142,14 @@ export function DialMode({ session, onExit }: { session: PartySession; update: (
   }
 
   const progress = `${n + 1}/${total}`;
-  const others = teams ? sides[teamOf(round.reader)].filter((p) => p !== round.reader) : players.filter((p) => p !== round.reader);
-  const rivals = teams ? sides[1 - teamOf(round.reader)]! : [];
+  const others = teams ? sides[teamOf(reader)].filter((p) => p !== reader) : players.filter((p) => p !== reader);
+  const rivals = teams ? sides[1 - teamOf(reader)]! : [];
 
   if (stage === 'pass') {
     return (
       <div className="pt-screen">
         <ModeBar title="Dial It In" progress={progress} onExit={onExit} />
-        <PassPhone player={round.reader} note="You’re the reader. Only you look at the next screen." onReady={() => setStage('peek')} />
+        <PassPhone player={reader} note="You’re the reader. Only you look at the next screen." onReady={() => setStage('peek')} />
       </div>
     );
   }
@@ -154,9 +164,9 @@ export function DialMode({ session, onExit }: { session: PartySession; update: (
         </p>
       )}
       <div className="pt-dl-reader">
-        <Avatar player={round.reader} size={30} /> <Name player={round.reader} /> {stage === 'peek' ? 'is the reader' : 'is reading'}
+        <Avatar player={reader} size={30} /> <Name player={reader} /> {stage === 'peek' ? 'is the reader' : 'is reading'}
       </div>
-      <Tuner scale={round.scale} target={round.target} guess={round.guess} showTarget={stage === 'peek' || stage === 'reveal'} showNeedle={stage !== 'peek'} movable={stage === 'guess'} onMove={(g) => setRound({ ...round, guess: g })} />
+      <Tuner scale={round.scale} target={round.target} guess={round.guess} showTarget={stage === 'peek' || stage === 'reveal'} showNeedle={stage !== 'peek'} movable={stage === 'guess'} onMove={setNeedle} />
       {stage === 'peek' && (
         <div className="pt-actions">
           <p className="pt-muted">
@@ -170,7 +180,7 @@ export function DialMode({ session, onExit }: { session: PartySession; update: (
       {stage === 'guess' && (
         <div className="pt-actions">
           <p className="pt-muted">
-            {round.reader.name}, say your clue! {others.length ? `${others.map((p) => p.name).join(', ')}: ` : ''}drag the needle to where you think the spot is.
+            {reader.name}, say your clue! {others.length ? `${others.map((p) => p.name).join(', ')}: ` : ''}drag the needle to where you think the spot is.
           </p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={lock}>
             Lock in the needle

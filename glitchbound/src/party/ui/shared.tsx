@@ -1,8 +1,29 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Scores } from '../engine';
+import type { PartySession, SavedMode } from '../session';
 import type { Player } from '../types';
 
 export const byId = (players: readonly Player[], id: string | null | undefined): Player | undefined => players.find((p) => p.id === id);
+
+type Update = (fn: (s: PartySession) => PartySession) => void;
+const isObj = (v: unknown): v is object => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/**
+ * A pass-the-phone game's state, kept in the party session like every other mode, so a refresh, the
+ * back button or the phone dropping the tab picks up where the group was. Fields missing from an
+ * older save fall back to `init`. Every change is saved, so keep fast-changing values (a dragged
+ * needle) in component state and save them when they settle.
+ */
+export function useSavedGame<T extends object>(session: PartySession, update: Update, mode: SavedMode, init: () => T): [T, (patch: Partial<T> | ((g: T) => Partial<T>)) => void] {
+  const [fresh] = useState(init);
+  const saved = (s: PartySession): T => (s.active?.mode === mode && isObj(s.active.data) ? { ...fresh, ...(s.active.data as Partial<T>) } : fresh);
+  const set = (patch: Partial<T> | ((g: T) => Partial<T>)): void =>
+    update((cur) => {
+      const was = saved(cur);
+      return { ...cur, active: { mode, data: { ...was, ...(typeof patch === 'function' ? patch(was) : patch) } } };
+    });
+  return [saved(session), set];
+}
 
 export function Avatar({ player, size = 40 }: { player: Player; size?: number }) {
   return (

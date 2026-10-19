@@ -3,7 +3,7 @@ import { CHARADES, CHARADES_CATEGORIES } from '../content/charades';
 import { draw, freshRng, shuffle, teamTurns } from '../engine';
 import type { PartySession } from '../session';
 import type { CharadesCard, CharadesCategory, Player } from '../types';
-import { Avatar, ModeBar, PassPhone, Results, Timer } from './shared';
+import { Avatar, byId, ModeBar, PassPhone, Results, Timer, useSavedGame } from './shared';
 
 type Style = 'act' | 'clues' | 'draw' | 'heads';
 const STYLES: { id: Style; label: string; hint: string }[] = [
@@ -24,16 +24,37 @@ interface Config {
   countdown: 0 | 5 | 10;
 }
 
+type Phase = 'setup' | 'pass' | 'ready' | 'countdown' | 'play' | 'summary' | 'done';
+
+interface Game {
+  cfg: Config;
+  phase: Phase;
+  turn: number;
+  /** Player ids of the two teams. */
+  teams: [string[], string[]];
+  teamScore: [number, number];
+  card: CharadesCard | null;
+  got: string[];
+  skipped: string[];
+}
+
 export function CharadesMode({ session, update, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
   const [r] = useState(freshRng);
-  const [cfg, setCfg] = useState<Config>({ teams: session.players.length >= 4, categories: ['movies', 'animals', 'jobs', 'random'], difficulty: 0, style: 'act', seconds: 60, rounds: 1, countdown: 5 });
-  const [phase, setPhase] = useState<'setup' | 'pass' | 'ready' | 'countdown' | 'play' | 'summary' | 'done'>('setup');
-  const [turn, setTurn] = useState(0);
-  const [teams, setTeams] = useState<[Player[], Player[]]>([[], []]);
-  const [teamScore, setTeamScore] = useState<[number, number]>([0, 0]);
-  const [card, setCard] = useState<CharadesCard | null>(null);
-  const [got, setGot] = useState<string[]>([]);
-  const [skipped, setSkipped] = useState<string[]>([]);
+  const [game, save] = useSavedGame<Game>(session, update, 'charades', () => ({
+    cfg: { teams: session.players.length >= 4, categories: ['movies', 'animals', 'jobs', 'random'], difficulty: 0, style: 'act', seconds: 60, rounds: 1, countdown: 5 },
+    phase: 'setup',
+    turn: 0,
+    teams: [[], []],
+    teamScore: [0, 0],
+    card: null,
+    got: [],
+    skipped: [],
+  }));
+  const { cfg, turn, teamScore, card, got, skipped } = game;
+  // Back from a refresh in the middle of a turn: it starts again from "you are up" (the clock restarts).
+  const [resumed, setResumed] = useState(() => game.phase === 'countdown' || game.phase === 'play');
+  const phase: Phase = resumed ? 'ready' : game.phase;
+  const setPhase = (p: Phase): void => save({ phase: p });
   const [peek, setPeek] = useState(true);
 
   const adult = session.settings.adultConfirmed;
@@ -41,50 +62,46 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
     () => CHARADES.filter((c) => cfg.categories.includes(c.category) && (adult || c.category !== 'afterdark') && (cfg.difficulty === 0 || c.difficulty === cfg.difficulty)),
     [cfg.categories, cfg.difficulty, adult],
   );
+  const players = session.players;
+  const teams = useMemo(() => game.teams.map((ids) => ids.map((id) => byId(players, id)).filter((p): p is Player => !!p)) as [Player[], Player[]], [game.teams, players]);
   // Every turn of the game: teams alternate (A1, B1, A2, B2...) with the same number of turns each,
   // or everyone goes round the circle.
-  const actors = useMemo(
-    () => (cfg.teams ? teamTurns(teams, cfg.rounds) : Array.from({ length: cfg.rounds }, () => session.players).flat()),
-    [cfg.teams, cfg.rounds, teams, session.players],
-  );
+  const actors = useMemo(() => (cfg.teams ? teamTurns(teams, cfg.rounds) : Array.from({ length: cfg.rounds }, () => players).flat()), [cfg.teams, cfg.rounds, teams, players]);
   const totalTurns = actors.length;
   const actor = actors[turn];
   const actorTeam = actor && cfg.teams ? (teams[0].some((p) => p.id === actor.id) ? 0 : 1) : null;
 
-  const nextCard = (): void => {
+  // The next word, drawn outside the state updaters (React may run an updater twice in development).
+  const nextCard = (): CharadesCard | null => {
     const d = draw(deck, session.used.charades ?? [], r);
-    setCard(d.item);
     setPeek(true);
     update((s) => ({ ...s, used: { ...s.used, charades: d.used } }));
+    return d.item;
   };
 
   const start = (): void => {
-    const mixed = shuffle(session.players, r);
+    const mixed = shuffle(players, r);
     const half = Math.ceil(mixed.length / 2);
-    setTeams([mixed.slice(0, half), mixed.slice(half)]);
-    setTeamScore([0, 0]);
-    setTurn(0);
-    update((s) => ({ ...s, scores: {}, active: { mode: 'charades', data: null } }));
-    setPhase('pass');
+    update((s) => ({ ...s, scores: {} }));
+    save({ teams: [mixed.slice(0, half).map((p) => p.id), mixed.slice(half).map((p) => p.id)], teamScore: [0, 0], turn: 0, phase: 'pass' });
   };
 
   const score = (): void => {
     if (!card || !actor) return;
-    setGot((g) => [...g, card.text]);
-    if (actorTeam !== null) setTeamScore((t) => (actorTeam === 0 ? [t[0] + 1, t[1]] : [t[0], t[1] + 1]));
-    else update((s) => ({ ...s, scores: { ...s.scores, [actor.id]: (s.scores[actor.id] ?? 0) + 1 } }));
+    if (actorTeam === null) update((s) => ({ ...s, scores: { ...s.scores, [actor.id]: (s.scores[actor.id] ?? 0) + 1 } }));
     navigator.vibrate?.(25);
-    nextCard();
+    const nc = nextCard();
+    save((g) => ({ got: [...g.got, card.text], teamScore: actorTeam === null ? g.teamScore : actorTeam === 0 ? [g.teamScore[0] + 1, g.teamScore[1]] : [g.teamScore[0], g.teamScore[1] + 1], card: nc }));
   };
   const skip = (): void => {
     if (!card) return;
-    setSkipped((s) => [...s, card.text]);
-    nextCard();
+    const nc = nextCard();
+    save((g) => ({ skipped: [...g.skipped, card.text], card: nc }));
   };
   const heads = cfg.style === 'heads';
 
   if (phase === 'setup') {
-    const set = <K extends keyof Config>(k: K, v: Config[K]): void => setCfg({ ...cfg, [k]: v });
+    const set = <K extends keyof Config>(k: K, v: Config[K]): void => save((g) => ({ cfg: { ...g.cfg, [k]: v } }));
     return (
       <div className="pt-screen">
         <ModeBar title="Charades" onExit={onExit} />
@@ -94,8 +111,8 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
             <button role="radio" aria-checked={!cfg.teams} onClick={() => set('teams', false)}>
               Every player for themselves
             </button>
-            <button role="radio" aria-checked={cfg.teams} onClick={() => set('teams', true)} disabled={session.players.length < 4}>
-              Two teams {session.players.length < 4 ? '(4+ players)' : ''}
+            <button role="radio" aria-checked={cfg.teams} onClick={() => set('teams', true)} disabled={players.length < 4}>
+              Two teams {players.length < 4 ? '(4+ players)' : ''}
             </button>
           </div>
           <div className="pt-seg" role="radiogroup" aria-label="Style">
@@ -161,11 +178,13 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
   }
 
   if (phase === 'done' || turn >= totalTurns || !actor) {
-    const scores = cfg.teams ? Object.fromEntries(session.players.map((p) => [p.id, teamScore[teams[0].some((x) => x.id === p.id) ? 0 : 1]])) : session.scores;
+    const scores = cfg.teams ? Object.fromEntries(players.map((p) => [p.id, teamScore[teams[0].some((x) => x.id === p.id) ? 0 : 1]])) : session.scores;
+    const best = Math.max(0, ...players.map((p) => session.scores[p.id] ?? 0));
+    const champs = players.filter((p) => (session.scores[p.id] ?? 0) === best);
     return (
       <Results
-        title={cfg.teams ? (teamScore[0] === teamScore[1] ? 'It’s a tie!' : `Team ${teamScore[0] > teamScore[1] ? 1 : 2} wins ${Math.max(...teamScore)}–${Math.min(...teamScore)}!`) : 'Charades champion!'}
-        players={session.players}
+        title={cfg.teams ? (teamScore[0] === teamScore[1] ? 'It’s a tie!' : `Team ${teamScore[0] > teamScore[1] ? 1 : 2} wins ${Math.max(...teamScore)}–${Math.min(...teamScore)}!`) : champs.length === 1 ? `${champs[0]!.name} is the charades champion!` : 'It’s a tie!'}
+        players={players}
         scores={scores}
         onAgain={() => setPhase('setup')}
         onMenu={onExit}
@@ -192,12 +211,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
         <PassPhone
           player={actor}
           note={heads ? `You’re guessing${cfg.teams ? ` for Team ${actorTeam! + 1}` : ''}. Don’t look at the words!` : cfg.teams ? `Acting for Team ${actorTeam! + 1}. Keep the screen to yourself.` : 'Keep the screen to yourself.'}
-          onReady={() => {
-            setGot([]);
-            setSkipped([]);
-            nextCard();
-            setPhase('ready');
-          }}
+          onReady={() => save({ got: [], skipped: [], card: nextCard(), phase: 'ready' })}
         />
       </div>
     );
@@ -221,6 +235,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
             className="pt-btn pt-btn-go pt-btn-big"
             onClick={() => {
               if (heads) askTiltPermission();
+              setResumed(false);
               setPhase(cfg.countdown ? 'countdown' : 'play');
             }}
           >
@@ -302,10 +317,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
         )}
         <button
           className="pt-btn pt-btn-go pt-btn-big"
-          onClick={() => {
-            setTurn((t) => t + 1);
-            setPhase(turn + 1 >= totalTurns ? 'done' : 'pass');
-          }}
+          onClick={() => save({ turn: turn + 1, phase: turn + 1 >= totalTurns ? 'done' : 'pass' })}
         >
           {turn + 1 >= totalTurns ? 'See results' : 'Next player'}
         </button>

@@ -4,7 +4,7 @@ import { draw, freshRng } from '../engine';
 import type { PartySession } from '../session';
 import type { Player } from '../types';
 import { DECK, rating, type ClueCheck } from '../unique';
-import { Avatar, ModeBar, Name, Results } from './shared';
+import { Avatar, ModeBar, Name, Results, useSavedGame } from './shared';
 
 /** Why a clue was struck out (the live room shows these). */
 export const OUT_TEXT: Record<NonNullable<ClueCheck['out']>, string> = { twin: 'same as another clue', 'gives-it-away': 'gives the word away', empty: 'no clue' };
@@ -18,49 +18,44 @@ type Outcome = 'right' | 'wrong' | 'pass';
  * clues are struck out before the guesser hears them), and the guesser gets one try. A wrong guess
  * also burns the next card. The live room version types clues on each phone instead.
  */
-export function UniqueMode({ session, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
+interface Game {
+  stage: Stage;
+  used: string[];
+  turn: number;
+  cardsLeft: number;
+  score: number;
+  word: string;
+  outcome: Outcome | null;
+  history: { word: string; outcome: Outcome }[];
+}
+
+export function UniqueMode({ session, update, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
   const players = session.players;
   const [r] = useState(freshRng);
-  const [stage, setStage] = useState<Stage>('setup');
-  const [used, setUsed] = useState<string[]>([]);
-  const [turn, setTurn] = useState(0);
-  const [cardsLeft, setCardsLeft] = useState(DECK);
-  const [score, setScore] = useState(0);
-  const [word, setWord] = useState('');
-  const [outcome, setOutcome] = useState<Outcome | null>(null);
-  const [history, setHistory] = useState<{ word: string; outcome: Outcome }[]>([]);
+  const [game, set] = useSavedGame<Game>(session, update, 'unique', () => ({ stage: 'setup', used: [], turn: 0, cardsLeft: DECK, score: 0, word: '', outcome: null, history: [] }));
+  const { stage, turn, cardsLeft, score, word, outcome, history } = game;
   const guesser: Player = players[turn % players.length]!;
 
-  const newWord = (seen: string[]): void => {
+  const newWord = (seen: string[]): Pick<Game, 'word' | 'used'> => {
     const d = draw(
       MYSTERY_WORDS.map((w) => ({ id: w })),
       seen,
       r,
     );
-    setWord(d.item?.id ?? MYSTERY_WORDS[0]!);
-    setUsed(d.used);
+    return { word: d.item?.id ?? MYSTERY_WORDS[0]!, used: d.used };
   };
-  const start = (): void => {
-    setTurn(0);
-    setCardsLeft(DECK);
-    setScore(0);
-    setHistory([]);
-    newWord(used);
-    setStage('look');
-  };
-  const judge = (o: Outcome): void => {
-    setOutcome(o);
-    setHistory((h) => [...h, { word, outcome: o }]);
-    if (o === 'right') setScore((s) => s + 1);
-    setCardsLeft((c) => Math.max(0, c - (o === 'wrong' ? 2 : 1)));
-    setStage('result');
-  };
-  const next = (): void => {
-    if (cardsLeft <= 0) return setStage('done');
-    setTurn(turn + 1);
-    newWord(used);
-    setStage('look');
-  };
+  // Draws happen outside the state updaters (React may run an updater twice in development).
+  const start = (): void => set({ turn: 0, cardsLeft: DECK, score: 0, history: [], ...newWord(game.used), stage: 'look' });
+  const judge = (o: Outcome): void =>
+    set((g) => ({
+      outcome: o,
+      history: [...g.history, { word: g.word, outcome: o }],
+      score: g.score + (o === 'right' ? 1 : 0),
+      cardsLeft: Math.max(0, g.cardsLeft - (o === 'wrong' ? 2 : 1)),
+      stage: 'result',
+    }));
+  const next = (): void => set(cardsLeft <= 0 ? { stage: 'done' } : { turn: turn + 1, ...newWord(game.used), stage: 'look' });
+  const setStage = (st: Stage): void => set({ stage: st });
 
   if (players.length < 3) {
     return (
@@ -140,7 +135,7 @@ export function UniqueMode({ session, onExit }: { session: PartySession; update:
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('clues')}>
             Hide it · {guesser.name} can look
           </button>
-          <button className="pt-btn pt-btn-ghost" onClick={() => newWord(used)}>
+          <button className="pt-btn pt-btn-ghost" onClick={() => set(newWord(game.used))}>
             Don’t know this word? Another one
           </button>
         </div>
