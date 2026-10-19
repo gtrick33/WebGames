@@ -101,11 +101,8 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
   );
 
   const begin = (m: Mode): void => {
-    // The daily course is one flight a day; taking off uses it up (even if the flight is abandoned).
-    if (m === 'daily') {
-      if (saveRef.current.daily[today]) return;
-      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, pillars: 0, feathers: 0 } } });
-    }
+    // The daily course is one flight a day (see tap: taking off uses it up).
+    if (m === 'daily' && saveRef.current.daily[today]) return;
     modeRef.current = m;
     setMode(m);
     sim.current = newSim(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`wing-it:${today}`) : (Math.random() * 2 ** 32) >>> 0);
@@ -214,10 +211,15 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
       return;
     }
     if (s.dead) return;
-    if (!s.started) host.report({ type: 'start' });
+    if (!s.started) {
+      host.report({ type: 'start' });
+      // Taking off on the daily course uses up the day's flight, even if it is abandoned. Backing out
+      // to the menu before the first flap doesn't.
+      if (modeRef.current === 'daily') commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, pillars: 0, feathers: 0 } } });
+    }
     flap(s);
     sfx().flap();
-  }, [paused, host, sfx]);
+  }, [paused, host, sfx, commit, today]);
 
   useEffect(() => {
     if (screen !== 'play') return;
