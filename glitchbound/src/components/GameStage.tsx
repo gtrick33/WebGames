@@ -230,7 +230,8 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
         </div>
       )}
 
-      {phase === 'loading' && <StageLoading title={game.title} />}
+      {/* Games served from this site (/play/…) paint their own loading screen the moment their page arrives. */}
+      {phase === 'loading' && !(game.runtime.kind === 'embed' && game.runtime.url.startsWith('/')) && <StageLoading title={game.title} />}
       {overlay}
 
       {phase === 'error' && (

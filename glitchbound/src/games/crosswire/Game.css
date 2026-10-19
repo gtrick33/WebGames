@@ -92,6 +92,10 @@
   justify-content: center;
   gap: 3px;
 }
+.xw-title-word {
+  display: flex;
+  gap: 3px;
+}
 .xw-title-cell {
   display: grid;
   place-items: center;

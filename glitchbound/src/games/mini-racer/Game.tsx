@@ -75,6 +75,8 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
   const [screen, setScreen] = useState<Screen>('menu');
   const screenRef = useRef<Screen>('menu');
   const [finish, setFinish] = useState<Finish | null>(null);
+  /** The pause menu is asking whether to leave today's daily race (see leave). */
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [touch, setTouch] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
   const today = useMemo(() => todayKey(), []);
   const daily = useMemo(() => dailyTrack(today), [today]);
@@ -129,6 +131,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
   const go = useCallback((s: Screen) => {
     screenRef.current = s;
     setScreen(s);
+    setConfirmLeave(false);
   }, []);
 
   /** Starts a race on the selected track. Today's daily track is one race a day: false when it is used up. */
@@ -207,6 +210,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
         coins: s0.coins + coins,
         earned: s0.earned + coins,
         dailyPaid: firstDaily ? [...s0.dailyPaid, today].slice(-7) : s0.dailyPaid,
+        dailyEnded: isDaily && !s0.dailyEnded.includes(today) ? [...s0.dailyEnded, today].slice(-7) : s0.dailyEnded,
       };
       const newCars = medalUnlocks(after).filter((c) => !before.includes(c));
       if (newCars.length) after = { ...after, cars: [...after.cars, ...newCars.map((c) => c.id)] };
@@ -243,9 +247,39 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     go('race');
   }, [go]);
 
-  const handlers = useRef({ startRace, toMenu, onFinish, pause, resume });
+  /** Whether today's daily race is under way (racing or paused). */
+  const onDailyRace = (): boolean => !inChallenge.current && (screenRef.current === 'race' || screenRef.current === 'paused') && saveRef.current.track === daily.id;
+
+  /**
+   * A daily race that is left (or was left before a reload) can't be resumed. It still ends, once, with
+   * whatever was driven so far (nothing after a reload), so the day counts for the arcade streak; the
+   * menu then says it was left unfinished.
+   */
+  const settleDaily = useCallback(
+    (sim: RaceSim | null) => {
+      const s0 = saveRef.current;
+      if (!s0.dailyRaced.includes(today) || s0.dailyEnded.includes(today)) return;
+      const r = sim?.track.def.id === daily.id ? sim.result() : null;
+      host.report({ type: 'end', score: r?.score ?? 0, stats: r ? { drift: r.drift, cleanLaps: r.cleanLaps } : {}, daily: true });
+      update((cur) => ({ ...cur, dailyEnded: [...cur.dailyEnded, today].slice(-7), dailyLeft: [...cur.dailyLeft, today].slice(-7) }));
+    },
+    [host, update, today, daily],
+  );
+
+  // Leaving today's daily race from the pause menu asks first: it is the day's one race.
+  const leave = (): void => {
+    if (onDailyRace() && !confirmLeave) {
+      setConfirmLeave(true);
+      return;
+    }
+    setConfirmLeave(false);
+    if (onDailyRace()) settleDaily(engineRef.current?.sim ?? null);
+    toMenu();
+  };
+
+  const handlers = useRef({ startRace, toMenu, onFinish, pause, resume, onDailyRace, settleDaily });
   useEffect(() => {
-    handlers.current = { startRace, toMenu, onFinish, pause, resume };
+    handlers.current = { startRace, toMenu, onFinish, pause, resume, onDailyRace, settleDaily };
   });
 
   // Engine lifetime = component lifetime. Everything is released on unmount.
@@ -268,6 +302,8 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
         if (s === 'result' && inChallenge.current && key !== 'pause') return;
         if (key === 'confirm' && (s === 'menu' || s === 'result')) handlers.current.startRace();
         else if (key === 'confirm' && s === 'paused') handlers.current.resume();
+        // Today's daily is one race a day: R must not throw the race away halfway (it has no Restart button either).
+        else if (key === 'restart' && (s === 'race' || s === 'paused') && !inChallenge.current && saveRef.current.track === daily.id) return;
         else if (key === 'restart' && s !== 'menu' && s !== 'garage' && !handlers.current.startRace()) handlers.current.toMenu();
         else if (key === 'pause' && s === 'race') handlers.current.pause();
         else if (key === 'pause' && s === 'paused') handlers.current.resume();
@@ -278,9 +314,17 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     engine.touchMode = touch;
     engine.setMuted(saveRef.current.muted);
     engine.setCar(getCar(saveRef.current.car));
+    // Today's daily race was left before a reload or a closed tab: it ends now, unfinished.
+    if (!saveRef.current.bests[daily.id]?.lap) handlers.current.settleDaily(null);
     if (inChallenge.current) handlers.current.startRace();
     else handlers.current.toMenu();
     return () => {
+      // The arcade's Restart or Exit (or leaving the page) during today's daily race ends it here
+      // (a race already over the line but not yet shown is reported as finished).
+      if (handlers.current.onDailyRace()) {
+        if (engine.sim?.finished) handlers.current.onFinish(engine.sim);
+        else handlers.current.settleDaily(engine.sim);
+      }
       engine.dispose();
       engineRef.current = null;
     };
@@ -405,7 +449,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
                   style={{ '--tc': THEMES[def.theme].road, '--tg': THEMES[def.theme].ground } as CSSProperties}
                   onClick={() => selectTrack(def.id)}
                 >
-                  {isDaily && <span className="mr-badge">{save.dailyRaced.includes(today) ? 'Daily · done ✓' : `Daily · ${today.slice(5).replace('-', '/')}`}</span>}
+                  {isDaily && <span className="mr-badge">{save.dailyLeft.includes(today) ? 'Daily · unfinished' : save.dailyRaced.includes(today) ? 'Daily · done ✓' : `Daily · ${today.slice(5).replace('-', '/')}`}</span>}
                   {def.id === RANDOM_ID && <span className="mr-badge">Random</span>}
                   <span className={`mr-type mr-type-${def.type}`}>{TRACK_TYPES[def.type].name}</span>
                   <span className="mr-track-name">{def.name}</span>
@@ -507,7 +551,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
             </button>
             {selected.id === daily.id && save.dailyRaced.includes(today) ? (
               <p className="mr-daily-done">
-                Today’s daily is raced · <NextDaily />
+                {save.dailyLeft.includes(today) ? 'Today’s daily was left unfinished' : 'Today’s daily is raced'} · <NextDaily />
               </p>
             ) : (
               <button className="mr-go" onClick={startRace}>
@@ -525,18 +569,26 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
 
       {screen === 'paused' && (
         <div className="mr-sheet mr-small">
-          <h2 className="mr-title">Paused</h2>
+          <h2 className="mr-title">{confirmLeave ? 'Leave today’s daily?' : 'Paused'}</h2>
+          {confirmLeave && <p className="mr-note">This counts as today’s one try: the race ends unfinished and can’t be raced again until tomorrow.</p>}
           <div className="mr-actions">
-            <button className="mr-go" onClick={resume} autoFocus>
-              Resume
+            <button
+              className="mr-go"
+              onClick={() => {
+                setConfirmLeave(false);
+                resume();
+              }}
+              autoFocus
+            >
+              {confirmLeave ? 'Keep racing' : 'Resume'}
             </button>
             {(finish?.track.id ?? save.track) !== daily.id && (
               <button className="mr-btn" onClick={startRace}>
                 Restart
               </button>
             )}
-            <button className="mr-btn" onClick={toMenu}>
-              Menu
+            <button className="mr-btn" onClick={leave}>
+              {confirmLeave ? 'Leave the race' : 'Menu'}
             </button>
           </div>
         </div>

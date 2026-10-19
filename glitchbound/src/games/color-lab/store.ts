@@ -27,6 +27,8 @@ export interface ClSave {
   muted: boolean;
   /** Patterns on the colours (on by default; helps colour-blind players). */
   patterns: boolean;
+  /** Help paid for on today's unfinished daily puzzle, so leaving and coming back doesn't refund it. */
+  help: { day: string; index: number; hints: number; spare: boolean } | null;
 }
 
 export const emptyClSave = (): ClSave => ({
@@ -40,6 +42,7 @@ export const emptyClSave = (): ClSave => ({
   underPar: 0,
   muted: false,
   patterns: true,
+  help: null,
 });
 
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
@@ -83,6 +86,8 @@ export function sanitizeCl(raw: unknown): ClSave {
   s.underPar = num(o.underPar);
   s.muted = o.muted === true;
   s.patterns = o.patterns !== false;
+  const h = o.help as Record<string, unknown> | null | undefined;
+  if (h && typeof h.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(h.day)) s.help = { day: h.day, index: Math.min(DAILY_LEVELS - 1, num(h.index)), hints: num(h.hints), spare: h.spare === true };
   return s;
 }
 
@@ -115,7 +120,10 @@ export function recordLevel(s: ClSave, r: LevelResult, daily: string | null, pra
     underPar: s.underPar + (r.solved && r.moves <= r.par ? 1 : 0),
     practice: practice && r.solved ? { ...s.practice, solved: s.practice.solved + 1 } : s.practice,
   };
-  if (daily) next.daily[daily] = [...(s.daily[daily] ?? []), r].slice(0, DAILY_LEVELS);
+  if (daily) {
+    next.daily[daily] = [...(s.daily[daily] ?? []), r].slice(0, DAILY_LEVELS);
+    next.help = null;
+  }
   return next;
 }
 

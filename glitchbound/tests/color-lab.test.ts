@@ -119,10 +119,13 @@ describe('level reducer', () => {
     expect(s.status).toBe('won');
     expect(resultOf(s)).toMatchObject({ solved: true, moves: 3, points: MAX_POINTS, stars: 3 });
     expect(reduceLevel(s, { type: 'pour', from: 0, to: 1 })).toBe(s);
+    // A solved level can't be restarted and solved (and recorded) again.
+    expect(reduceLevel(s, { type: 'restart' })).toBe(s);
 
     let p = startLevel({ ...level, par: 1 }, 'precision');
     p = reduceLevel(p, { type: 'pour', from: 0, to: 2 });
     expect(p.status).toBe('failed');
+    expect(reduceLevel(p, { type: 'restart' })).toBe(p);
   });
 
   it('adds one spare tube for a cost', () => {
@@ -162,6 +165,15 @@ describe('scoring and saves', () => {
     const text = shareText({ label: '#3', results: [r], url: 'https://x.test/games/color-lab' });
     expect(text).toContain('Color Lab #3');
     expect(text).toContain('9/8');
+  });
+
+  it('keeps help paid on an unfinished daily puzzle until it is recorded', () => {
+    const s = sanitizeCl({ v: 2, help: { day: '2026-10-18', index: 9, hints: 2, spare: true } });
+    expect(s.help).toEqual({ day: '2026-10-18', index: DAILY_LEVELS - 1, hints: 2, spare: true });
+    expect(sanitizeCl({ v: 2, help: { day: 'x' } }).help).toBeNull();
+    const r = { solved: true, moves: 8, par: 8, hints: 2, spare: true, points: 3, stars: 2 };
+    expect(recordLevel(s, r, '2026-10-18').help).toBeNull();
+    expect(recordLevel(s, r, null).help).toEqual(s.help);
   });
 
   it('records dailies, streaks and repairs bad saves', () => {

@@ -33,6 +33,10 @@ export interface SaveData {
   dailyPaid: string[];
   /** Days whose daily track was raced: the daily is one race a day. Only the latest few are kept. */
   dailyRaced: string[];
+  /** Days whose daily race has reported its end (finished, or left and settled), so it is reported once. */
+  dailyEnded: string[];
+  /** Days whose daily race was left unfinished (a race can't be resumed). */
+  dailyLeft: string[];
   mode: RaceMode;
   /** AI level 0-100 for races. */
   aiLevel: number;
@@ -41,7 +45,7 @@ export interface SaveData {
 }
 
 function defaults(): SaveData {
-  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [], dailyRaced: [], mode: 'trial', aiLevel: DEFAULT_AI_LEVEL, randomSeed: 1 };
+  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [], dailyRaced: [], dailyEnded: [], dailyLeft: [], mode: 'trial', aiLevel: DEFAULT_AI_LEVEL, randomSeed: 1 };
 }
 
 function store(): Storage | null {
@@ -87,6 +91,8 @@ export function loadSave(): SaveData {
     if (typeof o.randomSeed === 'number' && Number.isFinite(o.randomSeed)) d.randomSeed = Math.abs(Math.floor(o.randomSeed)) % 2 ** 32;
     if (Array.isArray(o.dailyPaid)) d.dailyPaid = o.dailyPaid.filter((x): x is string => typeof x === 'string').slice(-7);
     if (Array.isArray(o.dailyRaced)) d.dailyRaced = o.dailyRaced.filter((x): x is string => typeof x === 'string').slice(-7);
+    if (Array.isArray(o.dailyEnded)) d.dailyEnded = o.dailyEnded.filter((x): x is string => typeof x === 'string').slice(-7);
+    if (Array.isArray(o.dailyLeft)) d.dailyLeft = o.dailyLeft.filter((x): x is string => typeof x === 'string').slice(-7);
     return d;
   } catch {
     return d;

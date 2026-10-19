@@ -64,6 +64,12 @@ export function createRun(mode: Mode, seed: string): RunState {
   };
 }
 
+/** Picks a run up again at pattern `round` with its totals so far (an unfinished Daily Challenge). */
+export function resumeRun(mode: Mode, seed: string, p: Pick<RunState, 'round' | 'cleared' | 'longest' | 'score' | 'taps' | 'correctTaps' | 'inputMs'>): RunState {
+  const base = createRun(mode, seed);
+  return { ...base, ...roundState(base, p.round, p.cleared), cleared: p.cleared, longest: p.longest, score: p.score, taps: p.taps, correctTaps: p.correctTaps, inputMs: p.inputMs };
+}
+
 /** Playback finished: the player's turn begins. */
 export function playbackDone(s: RunState): RunState {
   return s.phase === 'showing' ? { ...s, phase: 'input' } : s;

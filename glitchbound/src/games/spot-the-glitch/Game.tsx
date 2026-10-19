@@ -18,7 +18,9 @@ import {
   MAX_PICTURE,
   MISS_COST,
   pictureScore,
+  progressOf,
   resultOf,
+  resumePicture,
   RUSH_BONUS_S,
   RUSH_START_S,
   rushDifficulty,
@@ -137,7 +139,11 @@ function SpotTheGlitch({ host, pauseKey, challenge }: { host: GameHost; pauseKey
   const begin = (r: Run): void => {
     setRun(r);
     setPaused(false);
-    setPic(r.over ? null : startPicture(puzzleFor(r, today, saveRef.current.relax.difficulty), now()));
+    const puzzle = r.over ? null : puzzleFor(r, today, saveRef.current.relax.difficulty);
+    // Today's daily picture left halfway carries on where it was (time, finds, misses, hints).
+    const p = saveRef.current.progress;
+    const resume = r.mode === 'daily' && !r.challenge && p?.day === today && p.index === r.index ? p : null;
+    setPic(puzzle && (resume ? resumePicture(puzzle, now(), resume) : startPicture(puzzle, now())));
     setScreen('play');
   };
 
@@ -152,6 +158,15 @@ function SpotTheGlitch({ host, pauseKey, challenge }: { host: GameHost; pauseKey
     if (mode === 'rush') host.report({ type: 'start' });
     begin(base);
   };
+
+  // The daily is one try a day: its unfinished picture is saved as it goes (about once a second and on
+  // every tap), so leaving or reloading resumes it instead of starting it over with a fresh clock.
+  const tick = Math.floor(clockMs / 1000);
+  useEffect(() => {
+    if (!run || run.mode !== 'daily' || run.challenge || !pic || isDone(pic)) return;
+    saveRef.current = { ...saveRef.current, progress: { day: today, index: run.index, ...progressOf(pic, now()) } };
+    saveSg(saveRef.current, today);
+  }, [run, pic, tick, now, today]);
 
   // Glitch Rush: the run's clock drains while a picture is being played.
   const rushLeft = run?.mode === 'rush' && pic ? Math.max(0, run.clock - (clockMs - pic.startedAt)) : null;
@@ -260,7 +275,10 @@ function SpotTheGlitch({ host, pauseKey, challenge }: { host: GameHost; pauseKey
           }}
           onResume={() => setPaused(false)}
           onNext={next}
-          onMenu={() => setScreen('menu')}
+          onMenu={() => {
+            setSave(saveRef.current); // the menu shows "Resume" for a daily picture left halfway
+            setScreen('menu');
+          }}
         />
       )}
       {screen === 'play' && run && !pic && <Summary run={run} today={today} save={save} onMenu={() => setScreen('menu')} onAgain={() => start(run.mode)} />}
@@ -294,6 +312,7 @@ function Countdown() {
 
 function Menu({ today, save, onStart, onLevel, onMute }: { today: string; save: SgSave; onStart: (m: Mode) => void; onLevel: (d: number) => void; onMute: () => void }) {
   const todays = save.daily[today];
+  const started = !!todays?.length || save.progress?.day === today;
   const stats = sgStats(save, today);
   const done = isComplete(todays);
   const date = parseDayKey(today).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -328,7 +347,7 @@ function Menu({ today, save, onStart, onLevel, onMute }: { today: string; save: 
           <>
             <p className="sg-card-text">Three fresh pictures for everyone today, from easy to sneaky.</p>
             <button className="sg-btn sg-btn-go" onClick={() => onStart('daily')}>
-              {todays?.length ? `Resume (${todays.length}/${DAILY_PICTURES})` : 'Play today’s pictures'}
+              {started ? `Resume (${todays?.length ?? 0}/${DAILY_PICTURES})` : 'Play today’s pictures'}
             </button>
           </>
         )}
@@ -337,7 +356,7 @@ function Menu({ today, save, onStart, onLevel, onMute }: { today: string; save: 
         <section className="sg-card">
           <span className="sg-kicker">Glitch Rush</span>
           <p className="sg-card-text">
-            {RUSH_START_S} seconds on the clock, +{RUSH_BONUS_S} s for every glitch. Pictures get sneakier.
+            {RUSH_START_S} seconds on the clock, +{RUSH_BONUS_S}s for every glitch. Pictures get sneakier.
           </p>
           {save.rush.bestFound > 0 && <p className="sg-muted sg-small">Best: {save.rush.bestFound} glitches</p>}
           <button className="sg-btn" onClick={() => onStart('rush')}>
@@ -500,7 +519,8 @@ function Play(props: {
       {!done ? (
         <div className="sg-actions">
           <button className="sg-btn" onClick={props.onHint} disabled={pic.hinted !== null}>
-            💡 Hint{run.mode === 'relax' ? '' : ` (−${HINT_COST})`}
+            {/* Only the daily (and a challenge) scores hints and misses; Rush counts glitches found. */}
+            💡 Hint{run.mode === 'daily' ? ` (−${HINT_COST})` : ''}
           </button>
           {confirm ? (
             <>
@@ -520,7 +540,11 @@ function Play(props: {
       ) : (
         <PictureDone run={run} pic={pic} onNext={props.onNext} />
       )}
-      {!done && <p className="sg-muted sg-small sg-help">Tap a difference in either picture. Wrong taps cost {MISS_COST}; three quick misses lock taps for {LOCK_MS / 1000}s.</p>}
+      {!done && (
+        <p className="sg-muted sg-small sg-help">
+          Tap a difference in either picture. {run.mode === 'daily' ? `Wrong taps cost ${MISS_COST}; three` : 'Three'} quick misses lock taps for {LOCK_MS / 1000}s.
+        </p>
+      )}
     </div>
   );
 }

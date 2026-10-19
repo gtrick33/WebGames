@@ -50,7 +50,7 @@ function attempt(day: string, seed: number): TrackDef {
   return {
     id: `daily-${day}`,
     name: style.names[Math.floor(r() * style.names.length)]!,
-    blurb: 'A brand-new circuit every day. Same track for everyone until midnight.',
+    blurb: 'A brand-new circuit every day, the same for everyone. One race a day, so make it count.',
     theme: style.theme,
     type: style.type,
     width: 150 + Math.floor(r() * 3) * 6,

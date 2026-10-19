@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { accuracy, createRun, DUPLICATE_TAP_MS, next, playbackDone, tap, tick, type RunState } from '../src/games/memory-grid/engine';
 import { dailySeed, generateSequence, levelFor, mulberry32, patternFor, PERFECT_LADDER, PERFECT_SEED, randomSeed, SPEED_SECONDS } from '../src/games/memory-grid/pattern';
-import { emptyRecords, liveStreak, parseRecords, playedDailyToday, recordRun } from '../src/games/memory-grid/records';
+import { dailyToResume, emptyRecords, liveStreak, parseRecords, playedDailyToday, recordRun } from '../src/games/memory-grid/records';
 import { patternPoints, perfectBonus, reportStats, shareText, type RunSummary } from '../src/games/memory-grid/scoring';
 import { getGame } from '../src/catalog/catalog';
 import { GAME_MODULES } from '../src/catalog/modules';
@@ -276,6 +276,18 @@ describe('memory grid: records and streaks', () => {
     expect(liveStreak(r, '2026-10-22')).toBe(0);
     r = recordRun(r, run({ mode: 'daily' }), '2026-10-25').records;
     expect(r.streak).toEqual({ last: '2026-10-25', count: 1, best: 3 });
+  });
+
+  it('keeps an unfinished daily run for that day only, until the daily is recorded', () => {
+    const dailyRun = { day: '2026-10-18', round: 3, cleared: 2, longest: 4, score: 70, taps: 7, correctTaps: 9, inputMs: 4200.5 };
+    const r = parseRecords(JSON.stringify({ dailyStarted: '2026-10-18', dailyRun }));
+    expect(r.dailyRun).toEqual({ ...dailyRun, correctTaps: 7, inputMs: 4200 });
+    expect(dailyToResume(r, '2026-10-18')?.round).toBe(3);
+    expect(dailyToResume(r, '2026-10-19')).toBeNull();
+    expect(parseRecords(JSON.stringify({ dailyRun: { ...dailyRun, round: 0 } })).dailyRun).toBeUndefined();
+    const done = recordRun(r, run({ mode: 'daily' }), '2026-10-18').records;
+    expect(done.dailyRun).toBeUndefined();
+    expect(dailyToResume(done, '2026-10-18')).toBeNull();
   });
 
   it('ignores corrupt or tampered storage', () => {

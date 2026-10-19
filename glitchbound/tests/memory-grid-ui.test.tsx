@@ -58,6 +58,65 @@ describe('Memory Grid UI', () => {
     expect((screen.getByRole('button', { name: /Daily Challenge/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('R on the daily result plays Classic, also when the page around the game has focus', () => {
+    const report = vi.fn();
+    const page = document.createElement('main');
+    page.tabIndex = -1;
+    document.body.appendChild(page);
+    render(<Game host={{ report }} restartKey={0} />, { container: page.appendChild(document.createElement('div')) });
+    fireEvent.click(screen.getByRole('button', { name: /Daily Challenge/ }));
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    const seq = patternFor(dailySeed(dayKey()), 1, levelFor('daily', 1));
+    fireEvent.pointerDown(tiles()[(seq[0]! + 1) % 9]!);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    // Clicking the game's background focuses the page's <main>; keys still reach the game.
+    page.focus();
+    fireEvent.keyDown(page, { key: 'r' });
+    expect(report).toHaveBeenLastCalledWith({ type: 'start' });
+    expect(screen.getByText('Classic')).toBeTruthy();
+    page.remove();
+  });
+
+  it('a Daily Challenge left halfway resumes at the pattern it reached; the try is used once', () => {
+    const report = vi.fn();
+    const { unmount } = render(<Game host={{ report }} restartKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: /Daily Challenge/ }));
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    for (const t of patternFor(dailySeed(dayKey()), 1, levelFor('daily', 1))) fireEvent.pointerDown(tiles()[t]!);
+    // Leave during the next playback, then come back after a reload.
+    fireEvent.click(screen.getByRole('button', { name: 'Back to menu' }));
+    unmount();
+    render(<Game host={{ report }} restartKey={1} />);
+    const card = screen.getByRole('button', { name: /Daily Challenge/ });
+    expect(card.textContent).toContain('resume at round 2 · 30 pts');
+    fireEvent.click(card);
+    expect(screen.getByText('Round').nextSibling?.textContent).toBe('2');
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    const seq2 = patternFor(dailySeed(dayKey()), 2, levelFor('daily', 2));
+    fireEvent.pointerDown(tiles()[(seq2[0]! + 1) % 9]!);
+    expect(report).toHaveBeenLastCalledWith({ type: 'end', score: 30, stats: { longest: 3, patterns: 1, accuracy: 75 }, daily: true });
+    expect(report.mock.calls.filter(([e]) => (e as { type: string }).type === 'end')).toHaveLength(1);
+  });
+
+  it('settles a Daily Challenge left before runs were saved: one end, the day still counts', () => {
+    localStorage.setItem('glitchbound.memory-grid.v1', JSON.stringify({ dailyStarted: dayKey() }));
+    const report = vi.fn();
+    const { unmount } = render(<Game host={{ report }} restartKey={0} />);
+    expect(report).toHaveBeenCalledWith({ type: 'end', score: 0, stats: { longest: 0, patterns: 0, accuracy: 0 }, daily: true });
+    expect((screen.getByRole('button', { name: /Daily Challenge/ }) as HTMLButtonElement).disabled).toBe(true);
+    unmount();
+    render(<Game host={{ report }} restartKey={1} />);
+    expect(report).toHaveBeenCalledTimes(1);
+  });
+
   it('remembers the mute toggle', () => {
     const { unmount } = render(<Game host={{ report: vi.fn() }} restartKey={0} />);
     fireEvent.click(screen.getByRole('button', { name: 'Mute sound' }));

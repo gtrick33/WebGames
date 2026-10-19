@@ -4,7 +4,8 @@
  */
 import { addDays } from '../../platform/dates';
 import { currentStreak } from '../../platform/daily';
-import { DAILY_PICTURES, MAX_PICTURE, totalScore, type PictureResult } from './logic';
+import { DIFFS } from './diffs';
+import { DAILY_PICTURES, MAX_PICTURE, totalScore, type PictureResult, type PictureProgress } from './logic';
 
 export const STORE_KEY = 'glitchbound.spot-the-glitch';
 const KEEP_DAYS = 400;
@@ -16,9 +17,14 @@ export interface SgSave {
   relax: { pictures: number; difficulty: number };
   fastest: number;
   muted: boolean;
+  /**
+   * Today's unfinished daily picture (finds, misses, hints and time so far). Leaving or reloading picks
+   * it up again instead of starting it over: the daily is one try a day.
+   */
+  progress: (PictureProgress & { day: string; index: number }) | null;
 }
 
-export const emptySgSave = (): SgSave => ({ v: 1, daily: {}, rush: { runs: 0, bestFound: 0, bestScore: 0 }, relax: { pictures: 0, difficulty: 1 }, fastest: 0, muted: false });
+export const emptySgSave = (): SgSave => ({ v: 1, daily: {}, rush: { runs: 0, bestFound: 0, bestScore: 0 }, relax: { pictures: 0, difficulty: 1 }, fastest: 0, muted: false, progress: null });
 
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
 
@@ -47,6 +53,21 @@ export function sanitizeSg(raw: unknown): SgSave {
   s.relax = { pictures: num(x.pictures), difficulty: Math.min(2, num(x.difficulty)) };
   s.fastest = num(o.fastest);
   s.muted = o.muted === true;
+  const p = o.progress as Record<string, unknown> | null | undefined;
+  if (p && typeof p.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.day) && Array.isArray(p.found) && Array.isArray(p.misses)) {
+    const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+    s.progress = {
+      day: p.day,
+      index: Math.min(DAILY_PICTURES - 1, num(p.index)),
+      found: p.found.filter((d): d is number => Number.isInteger(d) && (d as number) >= 0 && (d as number) < DIFFS).slice(0, DIFFS),
+      misses: (p.misses as unknown[])
+        .filter((m): m is { x: number; y: number } => !!m && typeof m === 'object' && isNum((m as { x: unknown }).x) && isNum((m as { y: unknown }).y))
+        .map(({ x, y }) => ({ x, y })),
+      hints: num(p.hints),
+      hinted: Number.isInteger(p.hinted) && (p.hinted as number) >= 0 && (p.hinted as number) < DIFFS ? (p.hinted as number) : null,
+      ms: num(p.ms),
+    };
+  }
   return s;
 }
 
@@ -77,7 +98,10 @@ export function recordPicture(s: SgSave, r: PictureResult, daily: string | null,
     fastest: r.found === 5 && r.hints === 0 && (s.fastest === 0 || r.seconds < s.fastest) ? Math.max(1, r.seconds) : s.fastest,
     relax: relax ? { ...s.relax, pictures: s.relax.pictures + 1 } : s.relax,
   };
-  if (daily) next.daily[daily] = [...(s.daily[daily] ?? []), r].slice(0, DAILY_PICTURES);
+  if (daily) {
+    next.daily[daily] = [...(s.daily[daily] ?? []), r].slice(0, DAILY_PICTURES);
+    next.progress = null;
+  }
   return next;
 }
 
