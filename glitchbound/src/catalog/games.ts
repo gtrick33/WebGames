@@ -132,7 +132,7 @@ export const GAMES: GameEntry[] = [
       { key: 'perfects', label: 'Most perfect colors in a game' },
     ],
     highlights: [
-      '70 hand-picked everyday colors with original illustrations',
+      '150 hand-picked everyday colors with original illustrations, plus one-off wild cards',
       'Five daily colors, identical for every player, with streaks and spoiler-free sharing',
       'Perceptual CIEDE2000 scoring with plain-language tips',
       'HSB or RGB sliders with fine-tune buttons, built for phones',
@@ -372,7 +372,7 @@ export const GAMES: GameEntry[] = [
     ],
     highlights: [
       'Real photos (public domain and CC0) with a fresh ball placement, crop and zoom every time, and an exact hitbox',
-      'Six places: hard court, clay, grass lawn, locker room, garden party and autumn park',
+      'Well over a hundred photos: lawns, leafy paths, forest floors, flower beds, pebble beaches and market stalls',
       'Five daily shots, the same for everyone: smaller balls, busier scenes and sneakier camouflage as you go',
       'Taps only aim; nothing counts until you lock it in. Three tries with hot / warm / cold feedback',
       'Zoom up to 3.2×, two hints per shot, streaks and spoiler-free sharing',
