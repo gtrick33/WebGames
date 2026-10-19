@@ -219,12 +219,15 @@
   align-items: center;
   gap: 10px;
 }
+/* Two lines on phones rather than an ellipsis that cuts off the level number. */
 .wb-top .wb-kicker {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.3;
 }
 .wb-tries {
   display: flex;
