@@ -784,4 +784,44 @@ export const GAMES: GameEntry[] = [
     ],
     limits: { scorePerSecond: 250, minSeconds: 5 },
   },
+  {
+    slug: 'fussbox',
+    contentLangs: ['en', 'bg'],
+    title: 'Fussbox',
+    tagline: 'Every day it has a secret rule. Feed it cards, crack its taste, ace the exam.',
+    description:
+      'The Fussbox is a little robot with very particular taste: every day it secretly likes some cards and hates the rest. Build any card, feed it in and watch it light up green or buzz red, then prove you cracked the rule on eight cards you have never seen. ' +
+      'The fewer cards you need, the higher you score. One daily rule for everyone that gets fussier through the week, practice rules at four levels, and challenges for up to 5 friends.',
+    categories: ['puzzle'],
+    moods: ['brainy', 'chill'],
+    tags: ['logic', 'deduction', 'rule', 'induction', 'cards', 'robot', 'daily', 'brain', 'pattern', 'secret rule'],
+    released: '2026-10-19',
+    accent: 'teal',
+    emoji: '🤖',
+    art: {
+      tile: '/games/fussbox/tile.webp',
+      wide: '/games/fussbox/wide.webp',
+      alt: 'A little purple box robot with a glowing green smile, next to a fan of cards with pink circles, blue triangles and yellow squares',
+      bg: '#0f766e',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'portrait',
+    controls: {
+      keyboard: ['Click the pickers to build a card', 'Enter: feed it the card, R: a random card', 'Tab and Enter to mark the exam cards'],
+      touch: ['Tap the pickers to build a card', 'Tap Feed it to test it', 'Tap ✓ or ✗ on each exam card'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'correct', label: 'Most exam cards right (of 8)' },
+      { key: 'tests', label: 'Fewest tests', lowerIsBetter: true },
+    ],
+    highlights: ['81 cards, a new secret rule every day', 'Rules get fussier from Monday to Sunday', 'The rule is explained after the exam, in English or Bulgarian'],
+    ownDaily: { label: 'Today’s rule' },
+    challenge: { label: 'The same secret rule for everyone. Most exam cards right, in the fewest tests, wins.' },
+    daily: [
+      { metric: 'correct', targets: [6, 7, 8], label: 'Get {n} of 8 right in one Fussbox exam' },
+      { metric: 'score', targets: [600, 800, 950], label: 'Score {n} points in one Fussbox round' },
+    ],
+    limits: { scorePerSecond: 250, minSeconds: 5 },
+  },
 ];

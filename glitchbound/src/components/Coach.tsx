@@ -37,7 +37,7 @@ export function useCoach(slug: string): { open: boolean; show: () => void; close
  * A game's walkthrough: a few steps with a picture each, Next / Skip, then "Let's play". Sits over
  * the game's menu inside its frame; any game can use it (it lives in the game's own chunk).
  */
-export function Coach({ steps, onClose, done = 'Let’s play' }: { steps: CoachStep[]; onClose: () => void; done?: string }) {
+export function Coach({ steps, onClose, done = 'Let’s play', skip = 'Skip', next = 'Next' }: { steps: CoachStep[]; onClose: () => void; done?: string; skip?: string; next?: string }) {
   const [i, setI] = useState(0);
   const step = steps[i]!;
   const last = i === steps.length - 1;
@@ -55,11 +55,11 @@ export function Coach({ steps, onClose, done = 'Let’s play' }: { steps: CoachS
         <div className="coach-row">
           {!last && (
             <button className="coach-btn coach-btn-quiet" onClick={onClose}>
-              Skip
+              {skip}
             </button>
           )}
           <button className="coach-btn coach-btn-go" onClick={() => (last ? onClose() : setI(i + 1))} autoFocus>
-            {last ? done : 'Next'}
+            {last ? done : next}
           </button>
         </div>
         <div className="coach-dots" aria-hidden="true">

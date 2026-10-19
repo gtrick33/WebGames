@@ -1,0 +1,597 @@
+/* Fussbox: a cheerful lab bench in mint and cream, with a little robot that lights up green or red. */
+.fbx {
+  --fbx-ink: #1d1238;
+  --fbx-paper: #fffaf0;
+  --fbx-mint: #d9f7ee;
+  --fbx-teal: #14b8a6;
+  --fbx-yes: #2fbf71;
+  --fbx-no: #ef4a5a;
+  --fbx-gold: #ffc93c;
+  position: absolute;
+  inset: 0;
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 20% 0%, rgb(255 201 60 / 0.25), transparent 45%),
+    radial-gradient(circle at 100% 30%, rgb(20 184 166 / 0.2), transparent 50%),
+    var(--fbx-paper);
+  color: var(--fbx-ink);
+  font-family: var(--font);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.fbx button,
+.fbx a {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.fbx h1,
+.fbx h2,
+.fbx p {
+  margin: 0;
+}
+.fbx-muted {
+  font-size: 13.5px;
+  color: #5e5480;
+  text-align: center;
+}
+.fbx-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.fbx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  border: 2.5px solid var(--fbx-ink);
+  border-radius: 14px;
+  background: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 3px 0 var(--fbx-ink);
+  transition: transform 0.08s;
+}
+.fbx-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+.fbx-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.fbx-btn-go {
+  background: var(--fbx-gold);
+}
+.fbx-btn-big {
+  width: 100%;
+  min-height: 50px;
+  font-size: 17px;
+}
+.fbx-btn.is-on {
+  background: var(--fbx-mint);
+}
+.fbx-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--fbx-ink);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 17px;
+  box-shadow: 0 2px 0 var(--fbx-ink);
+}
+
+/* ---------------------------------------------------------------- the robot */
+.fbx-robot {
+  overflow: visible;
+}
+.fbx-robot-body {
+  fill: #7d6cf7;
+  stroke: var(--fbx-ink);
+  stroke-width: 3;
+}
+.fbx-robot-face {
+  fill: #1f1747;
+  stroke: var(--fbx-ink);
+  stroke-width: 2;
+  transition: fill 0.2s;
+}
+.fbx-robot-eye {
+  fill: #7ff3e2;
+}
+.fbx-robot-mouth {
+  fill: none;
+  stroke: #7ff3e2;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+.fbx-robot-ant {
+  stroke: var(--fbx-ink);
+  stroke-width: 3;
+}
+.fbx-robot-bulb {
+  fill: var(--fbx-gold);
+  stroke: var(--fbx-ink);
+  stroke-width: 2;
+}
+.fbx-robot-foot {
+  fill: var(--fbx-ink);
+}
+.fbx-robot.is-yes .fbx-robot-face {
+  fill: #0f5c36;
+}
+.fbx-robot.is-yes .fbx-robot-eye,
+.fbx-robot.is-yes .fbx-robot-bulb {
+  fill: #6dff9c;
+}
+.fbx-robot.is-yes .fbx-robot-mouth {
+  stroke: #6dff9c;
+}
+.fbx-robot.is-no .fbx-robot-face {
+  fill: #6b0f1c;
+}
+.fbx-robot.is-no .fbx-robot-eye,
+.fbx-robot.is-no .fbx-robot-bulb {
+  fill: #ff7b86;
+}
+.fbx-robot.is-no .fbx-robot-mouth {
+  stroke: #ff7b86;
+}
+.fbx-robot.is-yes {
+  animation: fbx-hop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.fbx-robot.is-no {
+  animation: fbx-shake 0.4s ease;
+}
+@keyframes fbx-hop {
+  40% { transform: translateY(-7px); }
+}
+@keyframes fbx-shake {
+  25% { transform: translateX(-4px) rotate(-3deg); }
+  75% { transform: translateX(4px) rotate(3deg); }
+}
+.fbx-robot-big {
+  width: 96px;
+  flex: none;
+  animation: fbx-bob 3s ease-in-out infinite;
+}
+@keyframes fbx-bob {
+  50% { transform: translateY(-4px); }
+}
+
+/* ---------------------------------------------------------------- cards */
+.fbx-card {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.fbx-card-bg {
+  fill: #fff;
+  stroke: var(--fbx-ink);
+  stroke-width: 3;
+}
+
+/* ---------------------------------------------------------------- menu */
+/* Centred when it fits, scrolls from the top when it does not (plain centring would clip the top). */
+.fbx-menu::before,
+.fbx-menu::after {
+  content: '';
+  flex: 1 0 0;
+}
+.fbx-menu-top {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+}
+.fbx-menu-top .fbx-icon {
+  font-weight: 900;
+}
+
+/* ---------------------------------------------------------------- walkthrough pictures */
+.fbx-coach-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.fbx-coach-robot {
+  width: 64px;
+  flex: none;
+}
+.fbx-coach-arrow {
+  font-size: 26px;
+  font-weight: 900;
+  color: #1d1238;
+}
+.fbx-coach-cards {
+  display: flex;
+  gap: 6px;
+}
+.fbx-coach-card {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 42px;
+  padding: 4px;
+  border-radius: 10px;
+}
+.fbx-coach-card.is-yes {
+  background: #c9f5da;
+}
+.fbx-coach-card.is-no {
+  background: #ffd3d9;
+}
+.fbx-coach-card b {
+  font-size: 14px;
+  line-height: 1;
+}
+.fbx-title {
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.fbx-title span {
+  color: var(--fbx-teal);
+}
+.fbx-tag {
+  max-width: 30ch;
+  text-align: center;
+  font-weight: 600;
+}
+.fbx-panel {
+  display: grid;
+  gap: 8px;
+  width: min(100%, 360px);
+  padding: 12px;
+  border: 2.5px solid var(--fbx-ink);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 0 var(--fbx-ink);
+}
+.fbx-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fbx-panel-head span {
+  font-size: 12.5px;
+  color: #5e5480;
+}
+.fbx-levels {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+.fbx-done {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+}
+.fbx-line {
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+
+/* ---------------------------------------------------------------- lab */
+.fbx-hud {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.fbx-hud-label {
+  flex: 1;
+  font-weight: 800;
+  font-size: 15px;
+}
+.fbx-hud-tests {
+  padding: 4px 10px;
+  border: 2px solid var(--fbx-ink);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.fbx-speak {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.fbx-robot-talk {
+  width: 48px;
+  flex: none;
+}
+.fbx-bubble {
+  flex: 1;
+  position: relative;
+  padding: 9px 12px;
+  border: 2px solid var(--fbx-ink);
+  border-radius: 14px;
+  background: #fff;
+  font-weight: 700;
+  font-size: 14.5px;
+}
+.fbx-lab {
+  gap: 8px;
+}
+.fbx-trays {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px;
+  width: 100%;
+}
+/* Both trays share the label column, so their cards line up in every language. */
+.fbx-tray {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  column-gap: 8px;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 2.5px solid var(--fbx-ink);
+  border-radius: 14px;
+}
+.fbx-tray.is-yes {
+  background: #e3fbec;
+}
+.fbx-tray.is-no {
+  background: #ffe6e9;
+}
+.fbx-tray h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.fbx-tray.is-yes h2 {
+  color: #13804a;
+}
+.fbx-tray.is-no h2 {
+  color: #c22536;
+}
+/* One row, newest card first; older ones scroll sideways. */
+.fbx-tray-cards {
+  display: flex;
+  flex: 1;
+  gap: 5px;
+  min-width: 0;
+  padding: 5px 2px 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.fbx-tray-card {
+  flex: none;
+  width: 34px;
+}
+.fbx-tray-card.is-example {
+  position: relative;
+}
+.fbx-tray-card.is-example::after {
+  content: '★';
+  position: absolute;
+  top: -6px;
+  right: -3px;
+  font-size: 11px;
+  color: var(--fbx-ink);
+}
+.fbx-builder {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 2.5px solid var(--fbx-ink);
+  border-radius: 16px;
+  background: var(--fbx-mint);
+}
+.fbx-preview {
+  width: 72px;
+  flex: none;
+  filter: drop-shadow(0 3px 0 var(--fbx-ink));
+}
+.fbx-pickers {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+}
+.fbx-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.fbx-pick {
+  display: grid;
+  place-items: center;
+  min-height: 38px;
+  padding: 3px;
+  border: 2px solid rgb(29 18 56 / 0.28);
+  border-radius: 11px;
+  background: rgb(255 255 255 / 0.55);
+}
+/* White with a teal ring (not gold), so a yellow symbol stays visible when it is picked. */
+.fbx-pick.is-on {
+  border-color: var(--fbx-ink);
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 2.5px var(--fbx-teal),
+    0 3px 0 var(--fbx-ink);
+  transform: translateY(-2px);
+}
+.fbx-pick.is-on .fbx-pick-num {
+  font-weight: 900;
+}
+.fbx-pick-num {
+  font-size: 17px;
+}
+.fbx-pick-sym {
+  width: 26px;
+  height: 26px;
+  overflow: visible;
+}
+.fbx-btn-feed {
+  flex: 1;
+  min-width: 160px;
+  min-height: 50px;
+  font-size: 17px;
+}
+.fbx-btn-exam {
+  width: 100%;
+  background: var(--fbx-ink);
+  color: #fff !important;
+  box-shadow: 0 3px 0 #000;
+}
+
+/* ---------------------------------------------------------------- exam */
+.fbx-exam-title {
+  font-size: 24px;
+  font-weight: 900;
+}
+.fbx-exam-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fbx-exam-grid li {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 6px;
+  border: 2px solid var(--fbx-ink);
+  border-radius: 13px;
+  background: #fff;
+}
+.fbx-exam-grid li.is-yes {
+  background: #e3fbec;
+}
+.fbx-exam-grid li.is-no {
+  background: #ffe6e9;
+}
+.fbx-yn {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px;
+}
+.fbx-y,
+.fbx-n {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0;
+  border: 2px solid var(--fbx-ink);
+  border-radius: 9px;
+  background: #fff;
+  font-weight: 900;
+}
+.fbx-y.is-on {
+  background: var(--fbx-yes);
+  color: #fff;
+}
+.fbx-n.is-on {
+  background: var(--fbx-no);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------- result */
+.fbx-result {
+  justify-content: flex-start;
+}
+.fbx-eyebrow {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5e5480;
+}
+.fbx-big {
+  font-size: 46px;
+  font-weight: 900;
+  line-height: 1;
+}
+.fbx-rule {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 2.5px solid var(--fbx-ink);
+  border-radius: 14px;
+  background: var(--fbx-mint);
+  text-align: center;
+}
+.fbx-rule span {
+  font-size: 12.5px;
+  color: #3f6b62;
+}
+.fbx-rule b {
+  font-size: 17px;
+}
+.fbx-review {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fbx-review li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+  font-weight: 900;
+}
+.fbx-review li.is-right {
+  background: #d6f7e4;
+}
+.fbx-review li.is-wrong {
+  background: #ffd9de;
+}
+
+@container (max-height: 720px) {
+  .fbx-robot-big {
+    width: 64px;
+  }
+  .fbx-title {
+    font-size: 36px;
+  }
+  .fbx-tag {
+    font-size: 14px;
+  }
+}
+@media (max-width: 380px) {
+  .fbx-exam-grid {
+    gap: 5px;
+  }
+  .fbx-review {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fbx-robot,
+  .fbx-robot-big {
+    animation: none !important;
+  }
+}

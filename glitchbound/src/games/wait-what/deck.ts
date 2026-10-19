@@ -229,7 +229,7 @@ export function timeQuestion(a: number, r: Rng, avoid: ReadonlySet<number> = new
         text: p.text.closer(wa),
         answers: shown,
         correct: shown.indexOf(near),
-        fact: `${capital(wa)}: ${yearText(a, p)}. ${capital(wb)}: ${yearText(b, p)}. ${capital(wc)}: ${yearText(c, p)}.`,
+        fact: `${capital(wa)}: ${stop(yearText(a, p))} ${capital(wb)}: ${stop(yearText(b, p))} ${capital(wc)}: ${stop(yearText(c, p))}`,
       };
     }
   }
@@ -241,9 +241,12 @@ export function timeQuestion(a: number, r: Rng, avoid: ReadonlySet<number> = new
     text: p.text.whichFirst,
     answers: shown,
     correct: shown.indexOf(first),
-    fact: `${capital(wa)}: ${yearText(a, p)}. ${capital(wb)}: ${yearText(b, p)}. ${apart(a, b, p)}`,
+    fact: `${capital(wa)}: ${stop(yearText(a, p))} ${capital(wb)}: ${stop(yearText(b, p))} ${apart(a, b, p)}`,
   };
 }
+
+/** Ends a sentence with one full stop, also after a year that already ends in one ("3200 г. пр.н.е."). */
+const stop = (s: string): string => (s.endsWith('.') ? s : `${s}.`);
 
 function apart(a: number, b: number, p: Pack): string {
   const gap = Math.abs(p.events[a]![0] - p.events[b]![0]);

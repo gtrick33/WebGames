@@ -29,6 +29,7 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
   gloop: () => import('../games/gloop/Game'),
   'gut-check': () => import('../games/gut-check/Game'),
   'star-grid': () => import('../games/star-grid/Game'),
+  fussbox: () => import('../games/fussbox/Game'),
 };
 
 /**
