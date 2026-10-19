@@ -75,9 +75,10 @@ export function PartyPage() {
   const [mode, setMode] = useState<ModeId | null>(session.active?.mode ?? null);
   const [adultAsk, setAdultAsk] = useState(false);
   const top = useRef<HTMLDivElement>(null);
+  // A new game, or going into or out of a room (same page, so the router keeps the scroll), starts at the top.
   useEffect(() => {
     top.current?.scrollIntoView({ block: 'start' });
-  }, [mode]);
+  }, [mode, room]);
 
   // Empty name slots are just unused seats: they never block a game and are dropped when one starts.
   const problem = playersProblem(session.players.filter((p) => p.name.trim()));
@@ -140,6 +141,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
   }, [focus]);
   const [joinCode, setJoinCode] = useState('');
   const [roomMsg, setRoomMsg] = useState('');
+  const [joinMsg, setJoinMsg] = useState('');
   const [nudge, setNudge] = useState(0);
   const whoRef = useRef<HTMLElement>(null);
   const s = session.settings;
@@ -266,16 +268,24 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
               const code = joinCode.trim().toUpperCase();
               // /party?room= opens any room (Crass Act ones go on to their own page). /r/ links only work from outside the app.
               if (ROOM_CODE.test(code)) navigate(`/party?room=${code}`);
-              else setRoomMsg('Check the code: five letters, like KQTRA (codes never use I, L or O).');
+              else setJoinMsg('Check the code: five letters, like KQTRA (codes never use I, L or O).');
             }}
           >
             <h2>Got a code?</h2>
             <div className="pt-add">
-              <input className="pt-input pt-code" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="ABCDE" maxLength={5} aria-label="Room code" autoCapitalize="characters" />
+              <input className="pt-input pt-code" value={joinCode} onChange={(e) => {
+                  setJoinCode(e.target.value.toUpperCase());
+                  setJoinMsg('');
+                }} placeholder="ABCDE" maxLength={5} aria-label="Room code" autoCapitalize="characters" />
               <button className="pt-btn pt-btn-go" disabled={joinCode.trim().length !== 5}>
                 Join
               </button>
             </div>
+            {joinMsg && (
+              <p className="pt-muted" role="alert">
+                {joinMsg}
+              </p>
+            )}
           </form>
         </>
       )}
