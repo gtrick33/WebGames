@@ -184,7 +184,8 @@ function Play(props: {
   const [qs, setQs] = useState<Question[]>(() => (mode === 'daily' ? dailyQuiz(today) : mode === 'challenge' && challenge ? challengeQuiz(challenge.seed, challenge.day) : [dealer!.next()]));
   const [run, setRun] = useState<Run>(() => stored ?? emptyRun());
   const idx = run.done ? qs.length : run.picks.length;
-  const [phase, setPhase] = useState<'ask' | 'reveal' | 'done'>(() => (stored?.done ? 'done' : 'ask'));
+  // Reloaded while the last answer was on show: show it again (then the results), never ask it twice.
+  const [phase, setPhase] = useState<'ask' | 'reveal' | 'done'>(() => (stored?.done ? 'done' : mode !== 'endless' && stored && stored.picks.length >= qs.length ? 'reveal' : 'ask'));
   const [elapsed, setElapsed] = useState(() => (stored?.cur && stored.cur.i === stored.picks.length ? stored.cur.secs : 0));
   const [paused, setPaused] = useState(false);
   const started = useRef(false);
@@ -226,19 +227,47 @@ function Play(props: {
     }
   }, [phase, host]);
 
+  // The finished quiz, kept and reported once: as soon as the last answer is in (so leaving on its
+  // reveal loses nothing), or when the player ends an endless run.
+  const recorded = useRef(false);
+  const record = useCallback(
+    (r: Run) => {
+      if (recorded.current) return;
+      recorded.current = true;
+      const done: Run = { ...r, done: true, cur: undefined };
+      persist(done);
+      const total = done.pts.reduce((a, b) => a + b, 0);
+      const marks = done.picks.map((p, i) => (qs[i] ? judge(qs[i], p) : 'wrong'));
+      const correct = marks.filter((v) => v === 'right').length;
+      let streak = 0;
+      let best = 0;
+      for (const v of marks) {
+        streak = v === 'right' ? streak + 1 : 0;
+        best = Math.max(best, streak);
+      }
+      const s = saveRef.current;
+      commit({ ...s, best: Math.max(s.best, total), bestStreak: Math.max(s.bestStreak, best), bestEndless: mode === 'endless' ? Math.max(s.bestEndless, correct) : s.bestEndless });
+      const end = { type: 'end' as const, score: total, stats: { correct, streak: best } };
+      host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
+    },
+    [persist, saveRef, commit, mode, host, challenge, qs],
+  );
+
   const answer = useCallback(
     (choice: Pick) => {
       if (phase !== 'ask' || paused) return;
       const secs = choice === -1 ? limit : Math.min(limit, elapsed);
-      const right = judge(q, choice) === 'right';
+      const verdict = judge(q, choice);
       const next: Run = { picks: [...run.picks, choice], secs: [...run.secs, Math.round(secs * 10) / 10], pts: [...run.pts, scorePick(q, choice, secs, limit)], done: false };
       setRun(next);
       setPhase('reveal');
       persist(next);
       const s = saveRef.current;
-      commit({ ...s, answered: s.answered + 1, right: s.right + (right ? 1 : 0), seen: dealer ? dealer.seenIds() : s.seen.includes(q.id) ? s.seen : [...s.seen, q.id] });
+      commit({ ...s, answered: s.answered + 1, right: s.right + (verdict === 'right' ? 1 : 0), seen: dealer ? dealer.seenIds() : s.seen.includes(q.id) ? s.seen : [...s.seen, q.id] });
+      const misses = strikes + (verdict === 'wrong' || verdict === 'timeout' ? 1 : 0);
+      if (mode === 'endless' ? misses >= STRIKES : next.picks.length >= qs.length) record(next);
     },
-    [phase, paused, limit, elapsed, q, run, persist, saveRef, commit, dealer],
+    [phase, paused, limit, elapsed, q, run, persist, saveRef, commit, dealer, strikes, mode, qs.length, record],
   );
 
   // The clock runs while a question is being asked; daily and challenge runs save it every second,
@@ -275,25 +304,11 @@ function Play(props: {
 
   const finish = useCallback(
     (r: Run) => {
-      const done: Run = { ...r, done: true, cur: undefined };
-      setRun(done);
+      record(r);
+      setRun({ ...r, done: true, cur: undefined });
       setPhase('done');
-      persist(done);
-      const total = done.pts.reduce((a, b) => a + b, 0);
-      const marks = done.picks.map((p, i) => (qs[i] ? judge(qs[i], p) : 'wrong'));
-      const correct = marks.filter((v) => v === 'right').length;
-      let streak = 0;
-      let best = 0;
-      for (const v of marks) {
-        streak = v === 'right' ? streak + 1 : 0;
-        best = Math.max(best, streak);
-      }
-      const s = saveRef.current;
-      commit({ ...s, best: Math.max(s.best, total), bestStreak: Math.max(s.bestStreak, best), bestEndless: mode === 'endless' ? Math.max(s.bestEndless, correct) : s.bestEndless });
-      const end = { type: 'end' as const, score: total, stats: { correct, streak: best } };
-      host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
     },
-    [persist, saveRef, commit, mode, host, challenge, qs],
+    [record],
   );
 
   const next = useCallback(() => {
@@ -440,6 +455,7 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
   const { mode, qs, run, today, challenge } = props;
   const total = run.pts.reduce((a, b) => a + b, 0);
   const correct = run.picks.filter((p, i) => qs[i] && judge(qs[i], p) === 'right').length;
+  const strikes = run.picks.filter((p, i) => !qs[i] || ['wrong', 'timeout'].includes(judge(qs[i], p))).length;
   const [shareMsg, setShareMsg] = useState('');
   const [open, setOpen] = useState(false);
   const verdict = useMemo(() => {
@@ -458,7 +474,7 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
         <small>{mode === 'endless' ? ' points' : ` / ${MAX_POINTS.toLocaleString('en-US')}`}</small>
       </p>
       <p className="ww-muted">
-        {correct} right{mode === 'endless' ? ` before ${STRIKES} strikes` : ` out of ${qs.length}`}
+        {correct} right{mode === 'endless' ? (strikes >= STRIKES ? ` before ${STRIKES} strikes` : '') : ` out of ${qs.length}`}
       </p>
       {mode !== 'endless' && <p className="ww-grid">{grid(qs, run)}</p>}
       <div className="ww-row">

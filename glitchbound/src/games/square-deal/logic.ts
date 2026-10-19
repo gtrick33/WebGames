@@ -207,9 +207,42 @@ export function place(prev: State, slot: number, row: number, col: number): { st
   return { state, result: { ok: true, cleared: [...clearedSet], lines, points } };
 }
 
-/** Spoiler-free share line: score band squares plus the run's numbers. */
+/** Spoiler-free share line: score band squares plus the run's numbers (the best streak as its multiplier). */
 export function resultLine(score: number, lines: number, bestStreak: number): string {
   const bands = [100, 300, 600, 1000, 1500, 2500, 4000, 6000];
   const filled = bands.filter((b) => score >= b).length;
-  return `${'🟧'.repeat(filled)}${'⬜'.repeat(bands.length - filled)}\n🧹 ${lines} lines · 🔥 x${bestStreak}`;
+  return `${'🟧'.repeat(filled)}${'⬜'.repeat(bands.length - filled)}\n🧹 ${lines} lines · 🔥 ×${streakMultiplier(bestStreak)}`;
+}
+
+/** A round in progress as plain data (to resume today's deal): the tray as piece numbers. */
+export interface Saved {
+  seed: number;
+  dealt: number;
+  board: number[];
+  tray: (number | null)[];
+  score: number;
+  lines: number;
+  streak: number;
+  bestStreak: number;
+  moves: number;
+}
+
+export const toSaved = (s: State): Saved => ({ seed: s.seed, dealt: s.dealt, board: s.board.slice(), tray: s.tray.map((p) => (p ? p.id : null)), score: s.score, lines: s.lines, streak: s.streak, bestStreak: s.bestStreak, moves: s.moves });
+
+const isInt = (v: unknown, min = 0): v is number => typeof v === 'number' && Number.isInteger(v) && v >= min;
+
+/** Rebuilds a saved round, or null when the data is not a valid one. */
+export function fromSaved(v: unknown): State | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Partial<Record<keyof Saved, unknown>>;
+  const nums = [o.seed, o.dealt, o.score, o.lines, o.streak, o.bestStreak, o.moves];
+  if (!nums.every((n) => isInt(n))) return null;
+  const [seed, dealt, score, lines, streak, bestStreak, moves] = nums as number[];
+  const board = o.board;
+  const ids = o.tray;
+  if (!Array.isArray(board) || board.length !== SIZE * SIZE || !board.every((c) => isInt(c, -1) && c < COLORS)) return null;
+  if (!Array.isArray(ids) || ids.length !== TRAY || !ids.every((id) => id === null || (isInt(id) && id < dealt!))) return null;
+  const tray = (ids as (number | null)[]).map((id) => (id === null ? null : pieceAt(seed!, id)));
+  const b = (board as number[]).slice();
+  return { seed: seed!, dealt: dealt!, board: b, tray, score: score!, lines: lines!, streak: streak!, bestStreak: bestStreak!, moves: moves!, over: !tray.some((p) => p && fitsAnywhere(b, p)) };
 }

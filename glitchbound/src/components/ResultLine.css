@@ -1,7 +1,14 @@
+/* The colour emoji fonts, for emoji only: they also carry digits and a wide space, which made
+   lines like "🧹 14 lines" read "1 4" with gaps. */
+@font-face {
+  font-family: 'Result Emoji';
+  src: local('Apple Color Emoji'), local('AppleColorEmoji'), local('Segoe UI Emoji'), local('SegoeUIEmoji'), local('Noto Color Emoji'), local('NotoColorEmoji');
+  unicode-range: U+A9, U+AE, U+200D, U+203C-3299, U+FE0F, U+1F000-1FAFF;
+}
 .result-line {
   max-width: 100%;
   margin: 6px auto;
-  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', system-ui, sans-serif;
+  font-family: 'Result Emoji', system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
   font-size: 24px;
   line-height: 1.3;
   letter-spacing: 2px;

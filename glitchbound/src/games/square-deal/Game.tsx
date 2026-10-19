@@ -6,7 +6,7 @@ import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { NextDaily } from '../../components/NextDaily';
-import { fits, linesAfter, newGame, place, resultLine, SIZE, type Piece, type State } from './logic';
+import { fits, fromSaved, linesAfter, newGame, place, resultLine, SIZE, streakMultiplier, toSaved, type Piece, type Saved, type State } from './logic';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
 
@@ -19,12 +19,16 @@ interface DailyRecord {
   tries: number;
   lines: number;
   streak: number;
+  /** true: started, not finished (it resumes from `progress`); false: left, could not be resumed, settled. */
+  open?: boolean;
 }
 interface Save {
   best: number;
   runs: number;
   lines: number;
   daily: Record<string, DailyRecord>;
+  /** Today's deal so far, saved after every move. */
+  progress?: { day: string; game: Saved };
   muted: boolean;
 }
 const emptySave = (): Save => ({ best: 0, runs: 0, lines: 0, daily: {}, muted: false });
@@ -40,7 +44,10 @@ function loadSave(): Save {
     s.muted = o.muted === true;
     if (o.daily && typeof o.daily === 'object')
       for (const [d, v] of Object.entries(o.daily).slice(-60))
-        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = { best: n(v.best), tries: n(v.tries), lines: n(v.lines), streak: n(v.streak) };
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = { best: n(v.best), tries: n(v.tries), lines: n(v.lines), streak: n(v.streak), ...(typeof v.open === 'boolean' ? { open: v.open } : {}) };
+    const p = o.progress;
+    const game = p && typeof p.day === 'string' ? fromSaved(p.game) : null;
+    if (p && game) s.progress = { day: p.day, game: toSaved(game) };
     return s;
   } catch {
     return emptySave();
@@ -90,6 +97,16 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
     setSave(s);
     writeSave(s);
   }, []);
+  // Today's daily was started but its saved round can't be picked up again (storage lost or damaged):
+  // settle it once, as it stood (0), so the arcade still counts the day. It never comes back.
+  useEffect(() => {
+    const cur = saveRef.current;
+    const rec = cur.daily[today];
+    if (!rec?.open || cur.progress?.day === today) return;
+    commit({ ...cur, daily: { ...cur.daily, [today]: { ...rec, open: false } } });
+    host.report({ type: 'end', score: rec.best, stats: {}, daily: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [mode, setMode] = useState<Mode>(challenge ? 'challenge' : 'daily');
   // A friends' challenge skips the menu: one game on the challenge's seed. null = the menu.
   const [game, setGame] = useState<State | null>(() => (challenge ? newGame(challenge.seed) : null));
@@ -103,8 +120,10 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
   const boardRef = useRef<HTMLDivElement>(null);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
+  const overTune = useRef(0);
   useEffect(
     () => () => {
+      window.clearTimeout(overTune.current);
       sfxRef.current?.dispose();
       sfxRef.current = null;
     },
@@ -123,10 +142,13 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
   };
 
   const begin = (m: Mode): void => {
-    // Today's daily is one try; starting it uses the try up (even if it is abandoned).
-    if (m === 'daily') {
-      if (saveRef.current.daily[today]) return;
-      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, lines: 0, streak: 0 } } });
+    // Today's daily is one try: starting it uses the try up. Leaving it halfway (menu, reload) is
+    // fine, it carries on from the last move, but it can never be started over.
+    const cur = saveRef.current;
+    const kept = m === 'daily' && cur.daily[today]?.open && cur.progress?.day === today ? fromSaved(cur.progress.game) : null;
+    if (m === 'daily' && !kept) {
+      if (cur.daily[today]) return;
+      commit({ ...cur, daily: { ...cur.daily, [today]: { best: 0, tries: 1, lines: 0, streak: 0, open: true } }, progress: { day: today, game: toSaved(newGame(hashString(`square-deal:${today}`))) } });
     }
     const seed = m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`square-deal:${today}`) : randomSeed();
     started.current = false;
@@ -135,7 +157,7 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
     setDrag(null);
     setFx(null);
     setNewBest(false);
-    show(newGame(seed));
+    show(kept ?? newGame(seed));
   };
 
   const finish = (s: State): void => {
@@ -149,10 +171,11 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
       daily:
         mode === 'daily'
           ? { ...cur.daily, [today]: { best: s.score, tries: 1, lines: s.lines, streak: s.bestStreak } } : cur.daily,
+      progress: mode === 'daily' ? undefined : cur.progress,
     });
     const end = { type: 'end' as const, score: s.score, stats: { lines: s.lines, streak: s.bestStreak } };
     host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
-    window.setTimeout(() => sfx().over(), 250);
+    overTune.current = window.setTimeout(() => sfx().over(), 250);
   };
 
   const tryPlace = (slot: number, row: number, col: number): boolean => {
@@ -171,11 +194,12 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
     if (result.lines) {
       sfx().clear(result.lines, state.streak);
       navigator.vibrate?.(20);
-      setFx({ cells: new Set(result.cleared), text: `+${result.points}${state.streak > 1 ? ` · 🔥x${state.streak}` : ''}`, key: state.moves });
+      setFx({ cells: new Set(result.cleared), text: `+${result.points}${state.streak > 1 ? ` · 🔥×${streakMultiplier(state.streak)}` : ''}`, key: state.moves });
     }
     setSelected(null);
     show(state);
     if (state.over) finish(state);
+    else if (mode === 'daily') commit({ ...saveRef.current, progress: { day: today, game: toSaved(state) } });
     return true;
   };
 
@@ -309,8 +333,8 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
           <b>{s.score}</b>
           <span>{mode === 'challenge' ? `⚔️ Challenge · round ${challenge?.round ?? 1}` : mode === 'daily' ? `Daily #${dailyNumber(today)}` : `Best ${save.best}`}</span>
         </div>
-        <div className={`sd-streak${s.streak > 1 ? ' is-on' : ''}`} aria-label={`Streak ${s.streak}`}>
-          🔥 x{Math.max(1, s.streak)}
+        <div className={`sd-streak${s.streak > 1 ? ' is-on' : ''}`} aria-label={`Streak ${s.streak}: line points ×${streakMultiplier(s.streak)}`}>
+          🔥 ×{streakMultiplier(s.streak)}
         </div>
       </div>
       <div className="sd-board" ref={boardRef} role="grid" aria-label="Board, 8 by 8">
@@ -349,7 +373,7 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
           <h2>{s.score >= 1500 ? 'What a deal!' : 'No room left'}</h2>
           <p className="sd-big">{s.score}</p>
           <p className="sd-muted">
-            {s.lines} lines · best streak x{s.bestStreak} {newBest ? '· New best!' : `· best ${save.best}`}
+            {s.lines} {s.lines === 1 ? 'line' : 'lines'} · best streak ×{streakMultiplier(s.bestStreak)} {newBest ? '· New best!' : `· best ${save.best}`}
           </p>
           <ResultLine line={resultLine(s.score, s.lines, s.bestStreak)} label={`${s.score} points, ${s.lines} lines`} />
           {mode === 'daily' && daily && (
@@ -399,6 +423,7 @@ function ShareButton({ text }: { text: string }) {
 
 function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPlay: (m: Mode) => void; onMute: () => void }) {
   const daily = save.daily[today];
+  const going = daily?.open && save.progress?.day === today ? save.progress.game : null;
   return (
     <div className="sd sd-menu">
       <div className="sd-menu-top">
@@ -418,9 +443,13 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="sd-card">
         <div className="sd-card-head">
           <b>Daily deal #{dailyNumber(today)}</b>
-          <span>{daily ? `Today: ${daily.best}` : 'The same pieces for everyone · one try a day'}</span>
+          <span>{going ? `In progress · ${going.score} so far` : daily?.open !== undefined ? 'Left unfinished · one try a day' : daily ? `Today: ${daily.best}` : 'The same pieces for everyone · one try a day'}</span>
         </div>
-        {daily ? (
+        {going ? (
+          <button className="sd-btn sd-btn-go sd-btn-big" onClick={() => onPlay('daily')}>
+            Continue today’s deal
+          </button>
+        ) : daily ? (
           <div className="sd-done">
             {daily.best > 0 && <ShareButton text={`Square Deal #${dailyNumber(today)} 🟧\n${resultLine(daily.best, daily.lines, daily.streak)}\nScore: ${daily.best}\n${window.location.origin}/games/square-deal`} />}
             <NextDaily className="sd-muted" />
@@ -441,7 +470,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         </button>
       </section>
       <p className="sd-muted">
-        Best {save.best} · {save.runs} games · {save.lines} lines cleared
+        Best {save.best} · {save.runs} {save.runs === 1 ? 'game' : 'games'} · {save.lines} {save.lines === 1 ? 'line' : 'lines'} cleared
       </p>
     </div>
   );

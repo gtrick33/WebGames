@@ -7,7 +7,7 @@ import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { NextDaily } from '../../components/NextDaily';
 import { drawBlob, drawFrame, newView, worldX } from './render';
-import { drop, newSim, nextTier, RADII, resultLine, setAim, step, STEP, TIERS, type Sim } from './sim';
+import { drop, newSim, nextTier, RADII, resultLine, setAim, simFrom, step, STEP, TIERS, type Sim } from './sim';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
 
@@ -19,12 +19,16 @@ interface DailyRecord {
   best: number;
   tries: number;
   biggest: number;
+  /** true: started, not finished (it resumes from `progress`); false: left, could not be resumed, settled. */
+  open?: boolean;
 }
 interface Save {
   best: number;
   biggest: number;
   runs: number;
   daily: Record<string, DailyRecord>;
+  /** Today's jar so far, saved at every drop and every few seconds. */
+  progress?: { day: string; sim: Sim };
   muted: boolean;
 }
 const emptySave = (): Save => ({ best: 0, biggest: 0, runs: 0, daily: {}, muted: false });
@@ -40,7 +44,11 @@ function loadSave(): Save {
     s.muted = o.muted === true;
     if (o.daily && typeof o.daily === 'object')
       for (const [d, v] of Object.entries(o.daily).slice(-60))
-        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = { best: n(v.best), tries: n(v.tries), biggest: Math.min(TIERS - 1, n(v.biggest)) };
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object')
+          s.daily[d] = { best: n(v.best), tries: n(v.tries), biggest: Math.min(TIERS - 1, n(v.biggest)), ...(typeof v.open === 'boolean' ? { open: v.open } : {}) };
+    const p = o.progress;
+    const jar = p && typeof p.day === 'string' ? simFrom(p.sim) : null;
+    if (p && jar) s.progress = { day: p.day, sim: jar };
     return s;
   } catch {
     return emptySave();
@@ -70,6 +78,16 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
     setSave(s);
     writeSave(s);
   }, []);
+  // Today's daily was started but its saved round can't be picked up again (storage lost or damaged):
+  // settle it once, as it stood (0), so the arcade still counts the day. It never comes back.
+  useEffect(() => {
+    const cur = saveRef.current;
+    const rec = cur.daily[today];
+    if (!rec?.open || cur.progress?.day === today) return;
+    commit({ ...cur, daily: { ...cur.daily, [today]: { ...rec, open: false } } });
+    host.report({ type: 'end', score: rec.best, stats: {}, daily: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [screen, setScreen] = useState<'menu' | 'play'>(challenge ? 'play' : 'menu');
   const [mode, setMode] = useState<Mode>(challenge ? 'challenge' : 'daily');
   const modeRef = useRef<Mode>(challenge ? 'challenge' : 'daily');
@@ -93,19 +111,23 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
   );
 
   const begin = (m: Mode): void => {
-    // Today's daily is one try; starting it uses the try up (even if it is abandoned).
-    if (m === 'daily') {
-      if (saveRef.current.daily[today]) return;
-      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, biggest: 0 } } });
+    // Today's daily is one try: starting it uses the try up. Leaving it halfway (reload, Restart) is
+    // fine, the jar carries on from where it was, but it can never be started over.
+    const cur = saveRef.current;
+    const kept = m === 'daily' && cur.daily[today]?.open && cur.progress?.day === today ? simFrom(cur.progress.sim) : null;
+    if (m === 'daily' && !kept) {
+      if (cur.daily[today]) return;
+      commit({ ...cur, daily: { ...cur.daily, [today]: { best: 0, tries: 1, biggest: 0, open: true } }, progress: { day: today, sim: newSim(hashString(`gloop:${today}`)) } });
     }
     modeRef.current = m;
     setMode(m);
-    const s = newSim(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`gloop:${today}`) : randomSeed());
+    const s = kept ?? newSim(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`gloop:${today}`) : randomSeed());
     sim.current = s;
     flashes.current = [];
     setResult(null);
-    setPaused(false);
-    const fresh = { score: 0, next: nextTier(s), after: nextTier(s, 1), biggest: 0, over: false };
+    // A jar picked up again waits for a tap, so nothing falls before the player is back.
+    setPaused(!!kept);
+    const fresh = { score: s.score, next: nextTier(s), after: nextTier(s, 1), biggest: s.biggest, over: false };
     hudRef.current = fresh;
     setHud(fresh);
     setScreen('play');
@@ -122,12 +144,22 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
         biggest: Math.max(cur.biggest, s.biggest),
         runs: cur.runs + 1,
         daily: m === 'daily' ? { ...cur.daily, [today]: { best: s.score, tries: 1, biggest: s.biggest } } : cur.daily,
+        progress: m === 'daily' ? undefined : cur.progress,
       });
       const end = { type: 'end' as const, score: s.score, stats: { biggest: s.biggest + 1, merges: s.merges } };
       host.report(m === 'daily' ? { ...end, daily: true } : m === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
       setResult({ score: s.score, biggest: s.biggest, merges: s.merges, newBest });
     },
     [commit, host, today, challenge],
+  );
+
+  /** Saves today's jar as it goes, so leaving (reload, Restart) carries on from here. */
+  const keep = useCallback(
+    (s: Sim) => {
+      if (modeRef.current !== 'daily' || s.over) return;
+      commit({ ...saveRef.current, progress: { day: today, sim: { ...s, blobs: s.blobs.map((b) => ({ ...b })) } } });
+    },
+    [commit, today],
   );
 
   // Game loop: fixed physics steps, drawn every frame.
@@ -145,6 +177,7 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
     let raf = 0;
     let last = performance.now();
     let acc = 0;
+    let kept = sim.current?.t ?? 0;
     const frame = (now: number): void => {
       const s = sim.current;
       const c = canvas.current;
@@ -174,6 +207,10 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
         }
         for (const f of flashes.current) f.age += dt;
         flashes.current = flashes.current.filter((f) => f.age < 0.5);
+        if (s.t - kept >= 2) {
+          kept = s.t;
+          keep(s);
+        }
       }
       if (acc > STEP) acc %= STEP;
       drawFrame(c, view, s, now / 1000, flashes.current);
@@ -191,7 +228,7 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [screen, paused, finish, sfx]);
+  }, [screen, paused, finish, sfx, keep]);
 
   const [pauseSeen, setPauseSeen] = useState(pauseKey);
   if (pauseSeen !== pauseKey) {
@@ -210,12 +247,17 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
     if (!s || s.over) return;
     if (paused) return setPaused(false);
     if (!s.started) host.report({ type: 'start' });
-    if (drop(s)) sfx().drop();
-  }, [paused, host, sfx]);
+    if (drop(s)) {
+      sfx().drop();
+      keep(s);
+    }
+  }, [paused, host, sfx, keep]);
 
   useEffect(() => {
     if (screen !== 'play') return;
     const down = (e: KeyboardEvent): void => {
+      // Once the jar is full, Enter and Space are left to the focused end-screen button.
+      if (sim.current?.over) return;
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keysHeld.current.left = true;
       else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keysHeld.current.right = true;
       else if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowDown') {
@@ -346,6 +388,7 @@ function ShareButton({ text }: { text: string }) {
 
 function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPlay: (m: Mode) => void; onMute: () => void }) {
   const daily = save.daily[today];
+  const going = daily?.open && save.progress?.day === today ? save.progress.sim : null;
   return (
     <div className="gl gl-menu">
       <div className="gl-menu-top">
@@ -363,9 +406,13 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="gl-card">
         <div className="gl-card-head">
           <b>Daily jar #{dailyNumber(today)}</b>
-          <span>{daily ? `Today: ${daily.best}` : 'The same blobs for everyone · one try a day'}</span>
+          <span>{going ? `In progress · ${going.score} so far` : daily?.open !== undefined ? 'Left unfinished · one try a day' : daily ? `Today: ${daily.best}` : 'The same blobs for everyone · one try a day'}</span>
         </div>
-        {daily ? (
+        {going ? (
+          <button className="gl-btn gl-btn-go gl-btn-big" onClick={() => onPlay('daily')}>
+            Carry on with today’s jar
+          </button>
+        ) : daily ? (
           <div className="gl-done">
             {daily.best > 0 && <ShareButton text={`Gloop #${dailyNumber(today)} 🫧\n${resultLine(daily.biggest)}\nScore: ${daily.best}\n${window.location.origin}/games/gloop`} />}
             <NextDaily className="gl-muted" />
@@ -386,7 +433,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         </button>
       </section>
       <p className="gl-muted">
-        Best {save.best} · biggest {SIZE_NAMES[save.biggest]} · {save.runs} jars
+        Best {save.best} · biggest {SIZE_NAMES[save.biggest]} · {save.runs} {save.runs === 1 ? 'jar' : 'jars'}
       </p>
       <p className="gl-muted gl-small">Two Rainbow Gloops pop for 100 bonus points.</p>
     </div>

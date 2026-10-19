@@ -21,7 +21,10 @@ interface Save {
   best: number;
   bestEndless: number;
   runs: number;
-  daily: Record<string, { best: number; tries: number; line: string }>;
+  /** `open` true: started, not finished (it resumes from `progress`); false: left, could not be resumed, settled. */
+  daily: Record<string, { best: number; tries: number; line: string; open?: boolean }>;
+  /** Today's shots so far, saved at every lock-in. */
+  progress?: { day: string; played: Played[] };
   muted: boolean;
 }
 const emptySave = (): Save => ({ best: 0, bestEndless: 0, runs: 0, daily: {}, muted: false });
@@ -37,7 +40,11 @@ function loadSave(): Save {
     s.muted = o.muted === true;
     if (o.daily && typeof o.daily === 'object')
       for (const [d, v] of Object.entries(o.daily).slice(-60))
-        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = { best: n(v.best), tries: n(v.tries), line: typeof v.line === 'string' ? v.line.slice(0, 40) : '' };
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object')
+          s.daily[d] = { best: n(v.best), tries: n(v.tries), line: typeof v.line === 'string' ? v.line.slice(0, 40) : '', ...(typeof v.open === 'boolean' ? { open: v.open } : {}) };
+    const p = o.progress;
+    const ok = (x: Played): boolean => !!x && Number.isInteger(x.points) && x.points >= 0 && x.points <= MAX_POINTS && typeof x.guess === 'number' && x.guess > 0;
+    if (p && typeof p.day === 'string' && Array.isArray(p.played) && p.played.length < SHOTS && p.played.every(ok)) s.progress = { day: p.day, played: p.played.map((x) => ({ points: x.points, guess: x.guess })) };
     return s;
   } catch {
     return emptySave();
@@ -77,9 +84,26 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
     setSave(s);
     writeSave(s);
   }, []);
+  // Today's daily was started but its saved round can't be picked up again (storage lost or damaged):
+  // settle it once, as it stood (0), so the arcade still counts the day. It never comes back.
+  useEffect(() => {
+    const cur = saveRef.current;
+    const rec = cur.daily[today];
+    if (!rec?.open || cur.progress?.day === today) return;
+    commit({ ...cur, daily: { ...cur.daily, [today]: { ...rec, open: false } } });
+    host.report({ type: 'end', score: rec.best, stats: {}, daily: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
-  useEffect(() => () => sfxRef.current?.dispose(), []);
+  const revealTune = useRef(0);
+  useEffect(
+    () => () => {
+      window.clearTimeout(revealTune.current);
+      sfxRef.current?.dispose();
+    },
+    [],
+  );
 
   const [screen, setScreen] = useState<'menu' | 'play' | 'result'>(challenge ? 'play' : 'menu');
   const [mode, setMode] = useState<Mode>(challenge ? 'challenge' : 'daily');
@@ -97,10 +121,13 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
   }, []);
 
   const begin = (m: Mode): void => {
-    // Today's 5 shots are one try a day; starting uses it up (even if the round is abandoned).
-    if (m === 'daily') {
-      if (saveRef.current.daily[today]) return;
-      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, line: '' } } });
+    // Today's 5 shots are one try a day: starting uses it up. Leaving halfway (Restart, reload) is
+    // fine, it carries on with the next shot, but locked-in shots can never be played again.
+    const cur = saveRef.current;
+    const kept = m === 'daily' && cur.daily[today]?.open && cur.progress?.day === today ? cur.progress.played : null;
+    if (m === 'daily' && !kept) {
+      if (cur.daily[today]) return;
+      commit({ ...cur, daily: { ...cur.daily, [today]: { best: 0, tries: 1, line: '', open: true } }, progress: { day: today, played: [] } });
     }
     let list: Shot[];
     if (m === 'endless') {
@@ -108,12 +135,13 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
       endlessRng.current = r;
       list = [makeShot(r)];
     } else list = makeShots(m === 'challenge' && challenge ? challenge.seed : hashString(`to-scale:${today}`));
+    const at = kept?.length ?? 0;
     setMode(m);
     setShots(list);
-    setIdx(0);
-    setGuess(list[0]!.start);
+    setIdx(at);
+    setGuess(list[at]!.start);
     setPhase('aim');
-    setPlayed([]);
+    setPlayed(kept ?? []);
     setLives(LIVES);
     setScreen('play');
     host.report({ type: 'start' });
@@ -121,16 +149,6 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
 
   const shot = shots[idx];
   const total = played.reduce((a, p) => a + p.points, 0);
-
-  const lock = (): void => {
-    if (!shot || phase !== 'aim') return;
-    const points = pointsFor(guess, shot.ratio);
-    setPlayed((p) => [...p, { points, guess }]);
-    if (mode === 'endless' && points < MISS_POINTS) setLives((l) => l - 1);
-    setPhase('reveal');
-    sfx().lock();
-    window.setTimeout(() => sfx().reveal(points), 180);
-  };
 
   const finish = (list: Played[]): void => {
     const score = list.reduce((a, p) => a + p.points, 0);
@@ -144,17 +162,35 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
       bestEndless: mode === 'endless' ? Math.max(cur.bestEndless, score) : cur.bestEndless,
       runs: cur.runs + 1,
       daily: mode === 'daily' ? { ...cur.daily, [today]: { best: score, tries: 1, line } } : cur.daily,
+      progress: mode === 'daily' ? undefined : cur.progress,
     });
     const end = { type: 'end' as const, score, stats: { bullseyes } };
     host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
-    sfx().over();
-    setScreen('result');
+  };
+
+  const lock = (): void => {
+    if (!shot || phase !== 'aim') return;
+    const points = pointsFor(guess, shot.ratio);
+    const list = [...played, { points, guess }];
+    const left = mode === 'endless' && points < MISS_POINTS ? lives - 1 : lives;
+    setPlayed(list);
+    setLives(left);
+    setPhase('reveal');
+    sfx().lock();
+    revealTune.current = window.setTimeout(() => sfx().reveal(points), 180);
+    // The last shot decides the game: keep the result now, even if the player leaves on its reveal.
+    if (mode === 'endless' ? left <= 0 : idx + 1 >= shots.length) finish(list);
+    else if (mode === 'daily') commit({ ...saveRef.current, progress: { day: today, played: list } });
   };
 
   const next = (): void => {
     if (phase !== 'reveal') return;
     const over = mode === 'endless' ? lives <= 0 : idx + 1 >= shots.length;
-    if (over) return finish(played);
+    if (over) {
+      // Already kept when the last shot was locked in.
+      sfx().over();
+      return setScreen('result');
+    }
     let list = shots;
     if (mode === 'endless' && endlessRng.current && idx + 1 >= shots.length) {
       list = [...shots, makeShot(endlessRng.current, new Set(shots.slice(-12).map((s) => s.target)))];
@@ -197,6 +233,7 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
 
   if (screen === 'menu') {
     const todays = save.daily[today];
+    const going = todays?.open && save.progress?.day === today ? save.progress.played : null;
     return (
       <div className="ts ts-menu">
         <div className="ts-logo" aria-label="To Scale">
@@ -208,10 +245,22 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
         <section className="ts-card ts-card-daily">
           <div>
             <b>Daily #{dailyNumber(today)}</b>
-            <span>{todays ? `Today: ${fmt(todays.best)} ${todays.line}` : `${SHOTS} shots, the same for everyone today · one try`}</span>
-            {todays && <NextDaily />}
+            <span>
+              {going
+                ? `In progress · ${going.length} of ${SHOTS} shots, ${fmt(going.reduce((a, p) => a + p.points, 0))} so far`
+                : todays?.open !== undefined
+                  ? 'Left unfinished · one try a day'
+                  : todays
+                    ? `Today: ${fmt(todays.best)} ${todays.line}`
+                    : `${SHOTS} shots, the same for everyone today · one try`}
+            </span>
+            {todays && !going && <NextDaily />}
           </div>
-          {todays ? (
+          {going ? (
+            <button className="ts-btn ts-btn-go" onClick={() => begin('daily')} autoFocus>
+              Carry on
+            </button>
+          ) : todays ? (
             todays.line && <ShareButton text={`To Scale #${dailyNumber(today)} 📏\n${todays.line}\n${fmt(todays.best)} / ${fmt(SHOTS * MAX_POINTS)}\n${window.location.origin}/games/to-scale`} />
           ) : (
             <button className="ts-btn ts-btn-go" onClick={() => begin('daily')} autoFocus>

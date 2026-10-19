@@ -18,12 +18,25 @@ interface DailyRecord {
   best: number;
   tries: number;
   times: number[];
+  /** true: started, not finished (it resumes from `progress`); false: left, could not be resumed, settled. */
+  open?: boolean;
+}
+/** Today's grids so far, saved as you go (`secs`: time on the current grid). */
+interface Progress {
+  day: string;
+  i: number;
+  marks: Mark[];
+  times: number[];
+  points: number;
+  phase: 'play' | 'solved';
+  secs: number;
 }
 interface Save {
   best: number;
   solved: number;
   size: number;
   daily: Record<string, DailyRecord>;
+  progress?: Progress;
   muted: boolean;
 }
 const emptySave = (): Save => ({ best: 0, solved: 0, size: 7, daily: {}, muted: false });
@@ -39,7 +52,9 @@ function loadSave(): Save {
     s.muted = o.muted === true;
     if (o.daily && typeof o.daily === 'object')
       for (const [d, v] of Object.entries(o.daily).slice(-60))
-        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = { best: n(v.best), tries: n(v.tries), times: Array.isArray(v.times) ? v.times.slice(0, 3).map(n) : [] };
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object')
+          s.daily[d] = { best: n(v.best), tries: n(v.tries), times: Array.isArray(v.times) ? v.times.slice(0, 3).map(n) : [], ...(typeof v.open === 'boolean' ? { open: v.open } : {}) };
+    if (o.progress && validProgress(o.progress)) s.progress = o.progress;
     return s;
   } catch {
     return emptySave();
@@ -53,6 +68,23 @@ const writeSave = (s: Save): void => {
   }
 };
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
+const seconds0 = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+function validProgress(p: Progress): boolean {
+  const size = DAILY_SIZES[p.i];
+  return (
+    typeof p.day === 'string' &&
+    size !== undefined &&
+    (p.phase === 'play' || p.phase === 'solved') &&
+    Array.isArray(p.marks) &&
+    p.marks.length === size * size &&
+    p.marks.every((m) => m === 0 || m === 1 || m === 2) &&
+    Array.isArray(p.times) &&
+    p.times.length === p.i + (p.phase === 'solved' ? 1 : 0) &&
+    p.times.every(seconds0) &&
+    seconds0(p.points) &&
+    seconds0(p.secs)
+  );
+}
 const randomSeed = (): number => (Math.random() * 2 ** 32) >>> 0;
 const now = (): number => performance.now();
 
@@ -80,6 +112,16 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     setSave(s);
     writeSave(s);
   }, []);
+  // Today's daily was started but its saved round can't be picked up again (storage lost or damaged):
+  // settle it once, as it stood (0), so the arcade still counts the day. It never comes back.
+  useEffect(() => {
+    const cur = saveRef.current;
+    const rec = cur.daily[today];
+    if (!rec?.open || cur.progress?.day === today) return;
+    commit({ ...cur, daily: { ...cur.daily, [today]: { ...rec, open: false } } });
+    host.report({ type: 'end', score: rec.best, stats: {}, daily: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [mode, setMode] = useState<Mode>(challenge ? 'challenge' : 'daily');
   const [round, setRound] = useState<Round | null>(() => (challenge ? roundFor([makePuzzle(challenge.seed, 8)]) : null));
   const roundRef = useRef(round);
@@ -88,6 +130,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const [paused, setPaused] = useState(false);
   const [newBest, setNewBest] = useState(false);
   // Time: seconds banked on this puzzle, plus the running stretch since `since` (null = stopped).
+  // The clock starts as soon as a grid is on screen, so nobody can solve it before the first tap.
   const banked = useRef(0);
   const since = useRef<number | null>(null);
   const started = useRef(false);
@@ -103,6 +146,11 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     [],
   );
 
+  // A friends' challenge opens straight on its grid: its clock starts now.
+  useEffect(() => {
+    if (roundRef.current && since.current === null) since.current = now();
+  }, []);
+
   const show = (r: Round | null): void => {
     roundRef.current = r;
     setRound(r);
@@ -110,10 +158,13 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const seconds = (): number => banked.current + (since.current === null ? 0 : (now() - since.current) / 1000);
 
   const begin = (m: Mode, size = saveRef.current.size): void => {
-    // Today's daily is one try; starting it uses the try up (even if it is abandoned).
-    if (m === 'daily') {
-      if (saveRef.current.daily[today]) return;
-      commit({ ...saveRef.current, daily: { ...saveRef.current.daily, [today]: { best: 0, tries: 1, times: [] } } });
+    // Today's daily is one try: starting it uses the try up. Leaving it halfway (pause, reload) is
+    // fine, it carries on with the same marks and clock, but it can never be started over.
+    const cur = saveRef.current;
+    const kept = m === 'daily' && cur.daily[today]?.open && cur.progress?.day === today ? cur.progress : null;
+    if (m === 'daily' && !kept) {
+      if (cur.daily[today]) return;
+      commit({ ...cur, daily: { ...cur.daily, [today]: { best: 0, tries: 1, times: [], open: true } }, progress: { day: today, i: 0, marks: new Array<Mark>(DAILY_SIZES[0]! ** 2).fill(0), times: [], points: 0, phase: 'play', secs: 0 } });
     }
     const puzzles =
       m === 'challenge' && challenge
@@ -123,14 +174,20 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
           : [makePuzzle(randomSeed(), size)];
     if (m === 'endless' && size !== saveRef.current.size) commit({ ...saveRef.current, size });
     started.current = false;
-    banked.current = 0;
-    since.current = null;
-    setClock(0);
+    banked.current = kept?.phase === 'play' ? kept.secs : 0;
+    since.current = !kept || kept.phase === 'play' ? now() : null;
+    setClock(banked.current);
     setPaused(false);
     setMode(m);
     setNewBest(false);
     setCursor(null);
-    show(roundFor(puzzles));
+    show(kept ? { puzzles, i: kept.i, marks: kept.marks.slice(), times: kept.times.slice(), points: kept.points, phase: kept.phase } : roundFor(puzzles));
+  };
+
+  /** Saves today's grids as they go, so leaving (pause, reload) carries on from here. */
+  const keep = (r: Round): void => {
+    if (mode !== 'daily' || r.phase === 'done') return;
+    commit({ ...saveRef.current, progress: { day: today, i: r.i, marks: r.marks, times: r.times, points: r.points, phase: r.phase, secs: r.phase === 'play' ? Math.round(seconds() * 10) / 10 : 0 } });
   };
 
   const finish = (r: Round): void => {
@@ -142,6 +199,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       best: Math.max(cur.best, r.points),
       solved: cur.solved + r.puzzles.length,
       daily: mode === 'daily' ? { ...cur.daily, [today]: { best: r.points, tries: 1, times: r.times.map(Math.round) } } : cur.daily,
+      progress: mode === 'daily' ? undefined : cur.progress,
     });
     const stats: Record<string, number> = mode === 'daily' ? { time: Math.round(total) } : {};
     const end = { type: 'end' as const, score: r.points, stats };
@@ -164,7 +222,11 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       if (conflicts(p, marks).has(i)) sfx().clash();
       else sfx().star();
     } else sfx().mark();
-    if (!solved(p, marks)) return show({ ...r, marks });
+    if (!solved(p, marks)) {
+      const next: Round = { ...r, marks };
+      show(next);
+      return keep(next);
+    }
     // Solved: stop the clock, score it.
     const secs = seconds();
     banked.current = 0;
@@ -177,6 +239,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     const next: Round = { ...r, marks, times, points, phase: last ? 'done' : 'solved' };
     show(next);
     if (last) finish(next);
+    else keep(next);
   };
 
   const nextPuzzle = (): void => {
@@ -185,8 +248,19 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     const size = r.puzzles[r.i + 1]!.size;
     setCursor(null);
     since.current = now();
-    show({ ...r, i: r.i + 1, marks: new Array<Mark>(size * size).fill(0), phase: 'play' });
+    const next: Round = { ...r, i: r.i + 1, marks: new Array<Mark>(size * size).fill(0), phase: 'play' };
+    show(next);
+    keep(next);
   };
+
+  // Today's grids also save the clock every few seconds.
+  const ticking = mode === 'daily' && round?.phase === 'play' && !paused;
+  useEffect(() => {
+    if (!ticking) return;
+    const t = window.setInterval(() => roundRef.current && keep(roundRef.current), 2000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticking]);
 
   // The running clock on screen.
   useEffect(() => {
@@ -201,10 +275,12 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     if (!paused || since.current === null) return;
     banked.current = seconds();
     since.current = null;
+    if (roundRef.current) keep(roundRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paused]);
   const resume = (): void => {
     setPaused(false);
-    if (started.current && roundRef.current?.phase === 'play') since.current = now();
+    if (roundRef.current?.phase === 'play') since.current = now();
   };
   const [pauseSeen, setPauseSeen] = useState(pauseKey);
   if (pauseSeen !== pauseKey) {
@@ -255,6 +331,12 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       const r = roundRef.current;
       if (!r) return;
       const size = r.puzzles[r.i]!.size;
+      if (r.phase === 'play' && (e.key === 'p' || e.key === 'P' || e.key === 'Escape')) {
+        e.preventDefault();
+        return paused ? resume() : pauseNow();
+      }
+      // While paused the grid is hidden: no moves until play resumes.
+      if (paused) return;
       if (r.phase === 'solved' && (e.key === 'Enter' || e.key === ' ')) {
         e.preventDefault();
         return nextPuzzle();
@@ -272,7 +354,6 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       else if (e.key === 'x' || e.key === 'X') setMark(cursor, r.marks[cursor] === 1 ? 0 : 1);
       else if (e.key === 'Enter' || e.key === 's' || e.key === 'S') setMark(cursor, r.marks[cursor] === 2 ? 0 : 2);
       else if (e.key === 'Backspace' || e.key === 'Delete') setMark(cursor, 0);
-      else if (e.key === 'p' || e.key === 'Escape') return paused ? resume() : pauseNow();
       else return;
       e.preventDefault();
     };
@@ -405,6 +486,7 @@ function ShareButton({ text }: { text: string }) {
 
 function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPlay: (m: Mode, size?: number) => void; onMute: () => void }) {
   const daily = save.daily[today];
+  const going = daily?.open && save.progress?.day === today ? save.progress : null;
   return (
     <div className="sg sg-menu">
       <div className="sg-menu-top">
@@ -430,9 +512,13 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <section className="sg-card">
         <div className="sg-card-head">
           <b>Daily #{dailyNumber(today)}</b>
-          <span>{daily ? `Today: ${daily.best}` : 'Three grids, 6×6 to 8×8, the same for everyone · one try a day'}</span>
+          <span>{going ? `In progress · grid ${going.i + 1} of ${DAILY_SIZES.length}` : daily?.open !== undefined ? 'Left unfinished · one try a day' : daily ? `Today: ${daily.best}` : 'Three grids, 6×6 to 8×8, the same for everyone · one try a day'}</span>
         </div>
-        {daily ? (
+        {going ? (
+          <button className="sg-btn sg-btn-go sg-btn-big" onClick={() => onPlay('daily')}>
+            Continue today’s grids
+          </button>
+        ) : daily ? (
           <div className="sg-done">
             {daily.best > 0 && <ShareButton text={`Star Grid #${dailyNumber(today)} ⭐\n${resultLine(daily.times)}\nScore: ${daily.best}\n${window.location.origin}/games/star-grid`} />}
             <NextDaily className="sg-muted" />
@@ -457,7 +543,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         </div>
       </section>
       <p className="sg-muted">
-        Best {save.best} · {save.solved} grids solved
+        Best {save.best} · {save.solved} {save.solved === 1 ? 'grid' : 'grids'} solved
       </p>
     </div>
   );

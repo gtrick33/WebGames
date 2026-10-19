@@ -476,7 +476,7 @@ export const GAMES: GameEntry[] = [
     tagline: 'Trivia that sounds made up but isn’t. Weird history, odd animals, words you won’t believe.',
     description:
       'A quiz full of facts that make you say "wait, what?": the army that lost a war to emus, the jockey who won a race after he died, the cheese that comes with live maggots. ' +
-      'Hundreds of hand-written questions across twelve categories, plus real words that sound fake and "which came first?" puzzles. A daily quiz for everyone, an endless mode with no repeats, and 10-question challenges for up to 6 friends.',
+      'Hundreds of hand-written questions across twelve categories, plus real words that sound fake and "which came first?" puzzles. A daily quiz for everyone, an endless mode with no repeats, and 10-question challenges for up to 5 friends.',
     categories: ['trivia', 'word'],
     moods: ['brainy', 'friends'],
     tags: ['trivia', 'quiz', 'facts', 'questions', 'general knowledge', 'pub quiz', 'daily', 'friends', 'challenge', 'multiplayer', 'history', 'science'],
@@ -492,7 +492,7 @@ export const GAMES: GameEntry[] = [
     runtime: { kind: 'module' },
     aspect: 'portrait',
     controls: {
-      keyboard: ['1–4 or A–D: answer', 'Enter: next question'],
+      keyboard: ['1–4 or A–D: answer', 'Left / Right: move the lever, Enter: lock it in', 'Enter: next question'],
       touch: ['Tap an answer'],
     },
     stats: [
@@ -557,7 +557,7 @@ export const GAMES: GameEntry[] = [
     tagline: 'How big is a bus next to a horse? Drag the silhouette to its real size.',
     description:
       'Two things stand side by side on blueprint paper: one you know, and one silhouette at the wrong size. Drag its corner until it is the right size, lock it in and watch the real thing pop up over your guess. ' +
-      'From ants and dice to jumbo jets and the Moon, with a fact after every shot. Five shots a day, the same for everyone, an endless mode with three lives, and challenges for up to 6 friends.',
+      'From ants and dice to jumbo jets and the Moon, with a fact after every shot. Five shots a day, the same for everyone, an endless mode with three lives, and challenges for up to 5 friends.',
     categories: ['puzzle', 'trivia'],
     moods: ['brainy', 'quick'],
     tags: ['size', 'scale', 'estimate', 'guess', 'how big', 'compare', 'daily', 'trivia', 'size it up', 'proportion', 'friends', 'challenge'],
@@ -584,7 +584,7 @@ export const GAMES: GameEntry[] = [
       '57 things from an ant to the Earth, with a real-world fact after every shot',
       'Five daily shots, the same for everyone, shared as a spoiler-free emoji line',
       'Scored on a log scale: half the size and double the size are equally wrong',
-      'Endless mode with three lives, and challenges for up to 6 friends',
+      'Endless mode with three lives, and challenges for up to 5 friends',
     ],
     ownDaily: { label: 'Today’s 5 shots' },
     challenge: { label: 'The same five pairs for everyone. Closest sizes win, up to 1,000 points a shot.' },
@@ -600,7 +600,7 @@ export const GAMES: GameEntry[] = [
     tagline: 'Drop blocks on the grid, fill rows and columns, and chain clears into a streak.',
     description:
       'Three pieces at a time, an 8 by 8 board and no time limit: place every piece, fill a whole row or column to clear it, and clear on back-to-back moves to build a streak worth up to four times the points. ' +
-      'The game ends when nothing fits. A daily deal with the same pieces for everyone, endless shuffles and challenges for up to 6 friends.',
+      'The game ends when nothing fits. A daily deal with the same pieces for everyone, endless shuffles and challenges for up to 5 friends.',
     categories: ['puzzle', 'arcade'],
     moods: ['chill', 'quick'],
     tags: ['blocks', 'block puzzle', 'grid', 'lines', 'clear', 'pieces', 'combo', 'streak', 'daily', 'relaxing'],
@@ -639,7 +639,7 @@ export const GAMES: GameEntry[] = [
     tagline: 'Every arrow wants off the board. Tap them in the right order before you run out of hearts.',
     description:
       'A grid packed with arrows, each pointing where it wants to go. Tap one and it shoots off the edge, unless another arrow is in its way: then it bounces and you lose a heart. ' +
-      'Find the order, clear the board, and move on to bigger ones. Five daily levels, the same for everyone, an endless run where a flawless level wins a heart back, and challenges for up to 6 friends.',
+      'Find the order, clear the board, and move on to bigger ones. Five daily levels, the same for everyone, an endless run where a flawless level wins a heart back, and challenges for up to 5 friends.',
     categories: ['puzzle'],
     moods: ['brainy', 'quick'],
     tags: ['arrows', 'escape', 'logic', 'order', 'tap', 'unblock', 'grid', 'daily', 'brain'],
@@ -678,7 +678,7 @@ export const GAMES: GameEntry[] = [
     tagline: 'Drop jelly blobs in a jar. Two of a kind squish into a bigger one. Don’t let it overflow.',
     description:
       'Aim, drop, and watch the blobs wobble into place. When two blobs of the same size touch they merge into the next size up, from a tiny Drip all the way to a Rainbow Gloop, and every merge scores. ' +
-      'Chain reactions are where the big points are. The round ends when the jar stays full past the line. A daily jar with the same blobs for everyone, endless jars and challenges for up to 6 friends.',
+      'Chain reactions are where the big points are. The round ends when the jar stays full past the line. A daily jar with the same blobs for everyone, endless jars and challenges for up to 5 friends.',
     categories: ['arcade', 'puzzle'],
     moods: ['chill', 'quick'],
     tags: ['merge', 'drop', 'physics', 'blobs', 'jelly', 'jar', 'combo', 'chain', 'daily', 'relaxing', 'satisfying'],
@@ -717,7 +717,7 @@ export const GAMES: GameEntry[] = [
     tagline: 'Two things, one number. Is the next one bigger or smaller? Keep the streak alive.',
     description:
       'Which has more people, Spain or Canada? Is a hippo heavier than a giraffe? Did the Titanic sink before penicillin? You see one number and call the next: more or less. ' +
-      'Right calls build a streak; one miss ends it. Nine topics from countries and mountains to food and history, a daily run with the same cards for everyone, endless runs and challenges for up to 6 friends.',
+      'Right calls build a streak; one miss ends it. Nine topics from countries and mountains to food and history, a daily run with the same cards for everyone, endless runs and challenges for up to 5 friends.',
     categories: ['trivia'],
     moods: ['quick', 'brainy'],
     tags: ['higher or lower', 'more or less', 'compare', 'guess', 'streak', 'numbers', 'facts', 'countries', 'animals', 'daily', 'quiz'],
@@ -749,7 +749,7 @@ export const GAMES: GameEntry[] = [
     tagline: 'One star in every row, column and colour, and no two touching. Three new grids a day.',
     description:
       'A pure logic puzzle: the grid is split into coloured regions, and you place exactly one star in every row, every column and every region, with no two stars touching, not even at the corners. ' +
-      'Tap a square for a star and tap again to take it back, or cross out the squares you have ruled out; mistakes light up red. Three daily grids from 6 by 6 to 8 by 8, the same for everyone, plus endless grids up to 9 by 9 and challenges for up to 6 friends.',
+      'Tap a square for a star and tap again to take it back, or cross out the squares you have ruled out; mistakes light up red. Three daily grids from 6 by 6 to 8 by 8, the same for everyone, plus endless grids up to 9 by 9 and challenges for up to 5 friends.',
     categories: ['puzzle'],
     moods: ['brainy', 'chill'],
     tags: ['logic', 'stars', 'grid', 'regions', 'daily', 'brain', 'deduction', 'sudoku', 'star battle'],
