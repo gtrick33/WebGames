@@ -1,3 +1,8 @@
+/* Inside a page that already has its gutters (the profile), the form uses the page's width and spacing. */
+.wrap .notify {
+  padding-inline: 0;
+  padding-block: 0;
+}
 .notify-box {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) minmax(280px, auto);

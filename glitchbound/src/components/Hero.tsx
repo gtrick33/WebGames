@@ -47,6 +47,7 @@ export function Hero() {
   const daily = useDaily(now);
   const { me, status } = useAccount();
   const ready = me?.quests.filter((q) => q.done && !q.claimed).length ?? 0;
+  const left = me?.quests.filter((q) => !q.done).length ?? 0;
 
   return (
     <section className="intro-band wrap" aria-labelledby="hero-title">
@@ -107,7 +108,7 @@ export function Hero() {
               <span className="mono">
                 {t('Level {n}', { n: me.level })} · {me.nickname}
               </span>
-              <strong>{ready > 0 ? t('{n} quest rewards ready', { n: ready }) : t('{n} member quests today', { n: me.quests.filter((q) => !q.done).length })}</strong>
+              <strong>{ready > 0 ? t('{n} quest rewards ready', { n: ready }) : left > 0 ? t('{n} member quests today', { n: left }) : t('All of today’s quests are done')}</strong>
             </span>
             <Icon name="arrowRight" />
           </Link>

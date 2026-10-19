@@ -5,11 +5,12 @@ import { CATEGORIES, type GameEntry } from '../catalog/types';
 import { AdSlot } from '../components/AdSlot';
 import { Burst } from '../components/Burst';
 import { DailyCard } from '../components/DailyCard';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { GameStage } from '../components/GameStage';
 import { GameTile } from '../components/GameTile';
 import { Icon } from '../components/Icon';
 import { reportError, track } from '../platform/analytics';
-import { account, api, useAccount } from '../platform/account';
+import { account, api, ApiError, useAccount } from '../platform/account';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { SCORES_EVENT } from '../platform/challenge';
 import { challengeSpecOf, useChallengeRun } from '../platform/useChallengeRun';
@@ -223,6 +224,8 @@ export function GamePage({ game }: { game: GameEntry }) {
   };
 
   const [shareMsg, setShareMsg] = useState('');
+  // Most scores are points; a game can name its own (Gut Check counts answers in a row).
+  const scoreUnit = game.stats.find((s) => s.key === 'score')?.unit;
   const live = useLiveCatalog();
   const related = relatedGames(game, 4, live.games);
   const isDailyGame = challengeForDay(dayKey(), GAMES)?.game.slug === game.slug;
@@ -285,8 +288,10 @@ export function GamePage({ game }: { game: GameEntry }) {
             setLast((prev) => (prev && prev.n === n ? { ...prev, server } : prev));
             setBoardKey((k) => k + 1);
             if (server.newBest) setBurst((b) => b + 1);
-          } catch {
-            setLast((prev) => (prev && prev.n === n ? { ...prev, server: null } : prev));
+          } catch (err) {
+            // A round the server refuses (too short, implausible score) comes back as a 422 with the reason.
+            const server = err instanceof ApiError && err.status === 422 ? ({ ok: false, error: err.code } as RunEndResult) : null;
+            setLast((prev) => (prev && prev.n === n ? { ...prev, server } : prev));
           }
         });
       }
@@ -460,7 +465,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             <div key={last.n} className="panel last-round">
               <p className="eyebrow">{t('Last round')}</p>
               <p className="last-score">
-                {fmt(last.event.score)} <span>{t('points')}</span>
+                {fmt(last.event.score)} <span>{scoreUnit ? t(scoreUnit) : t('points')}</span>
               </p>
               <ul className="last-tags">
                 {last.server?.rank && (
@@ -479,7 +484,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                 </button>
               )}
               {me && last.server === undefined && <p className="mono last-saving">{t('Saving to the leaderboard…')}</p>}
-              {me && last.server && !last.server.ok && <p className="mono last-saving">{t('This round was not ranked ({reason}).', { reason: last.server.error ?? '' })}</p>}
+              {me && last.server && !last.server.ok && <p className="mono last-saving">{t('This round was not ranked ({reason}).', { reason: t(last.server.error === 'too_fast' ? 'too short to count' : 'score too high for the time played') })}</p>}
               <div className="last-actions">
                 <button className="btn btn-primary btn-sm" onClick={() => void challengeFriend()} disabled={challenging}>
                   <Icon name={game.challenge ? 'bolt' : 'link'} size={18} /> {t('Challenge a friend')}
@@ -632,9 +637,12 @@ function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRec
           </>
         )}
         {tab === 'board' && (
-          <Suspense fallback={<p className="side-muted">{t('Loading…')}</p>}>
-            <MiniLeaderboard game={game} refreshKey={boardKey} embedded />
-          </Suspense>
+          // If the board's code can't load (offline), only this tab says so: the game keeps running.
+          <ErrorBoundary fallback={() => <p className="side-muted">{t('The leaderboard is offline right now. Your game still works.')}</p>}>
+            <Suspense fallback={<p className="side-muted">{t('Loading…')}</p>}>
+              <MiniLeaderboard game={game} refreshKey={boardKey} embedded />
+            </Suspense>
+          </ErrorBoundary>
         )}
         {tab === 'bests' &&
           (record ? (
@@ -644,7 +652,7 @@ function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRec
                   <dt>{t(st.label)}</dt>
                   <dd className="mono">
                     {record.best[st.key] !== undefined ? fmt(record.best[st.key]!) : '–'}
-                    {st.unit && record.best[st.key] !== undefined ? ` ${st.unit}` : ''}
+                    {st.unit && record.best[st.key] !== undefined ? ` ${t(st.unit)}` : ''}
                   </dd>
                 </div>
               ))}

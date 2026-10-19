@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n';
 import type { GameEntry } from '../catalog/types';
 import { MAX_PLAYERS, type ChallengeView } from '../platform/challenge';
@@ -78,6 +78,23 @@ export function ChallengeDock({ run, game, stageRound, onPlayRound, onScores, sc
   const { state, news } = run;
   const view = viewOf(state);
   const [menu, setMenu] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  // The "more" menu closes on a click elsewhere or Escape, like the header's menus.
+  useEffect(() => {
+    if (!menu) return;
+    const onDown = (e: PointerEvent): void => {
+      if (!moreRef.current?.contains(e.target as Node)) setMenu(false);
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setMenu(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menu]);
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const [seen, setSeen] = useState(0);
   if (news && news.id !== seen) {
@@ -166,7 +183,7 @@ export function ChallengeDock({ run, game, stageRound, onPlayRound, onScores, sc
             <Icon name="share" size={16} /> {t('Invite')}
           </button>
         )}
-        <div className="chd-more">
+        <div className="chd-more" ref={moreRef}>
           <button className="btn btn-sm btn-icon" onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-label={t('More')}>
             <Icon name="menu" size={16} />
           </button>
@@ -196,6 +213,17 @@ export function ChallengeScores({ run, game, onClose }: { run: ChallengeRun; gam
   const t = useT();
   const { state } = run;
   const view = viewOf(state);
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') closeRef.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   if (state.status === 'gone')
     return (
       <div className="chs" role="dialog" aria-label={t('Challenge')}>

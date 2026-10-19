@@ -5,6 +5,11 @@
   bottom: 16px;
   z-index: 56;
 }
+/* Open, the settings pop-up comes in front of the "Enjoying GlitchBound?" card (z-index 150), which
+   sits right above the tab bar on phones. */
+.music.is-open {
+  z-index: 160;
+}
 .music-btn {
   position: relative;
   display: grid;

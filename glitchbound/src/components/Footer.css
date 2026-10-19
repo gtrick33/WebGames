@@ -84,6 +84,12 @@
   font-size: 12px;
   color: var(--fg-3);
 }
+/* Desktop: the settings button sits bottom-left over the page; keep the last line clear of it. */
+@media (min-width: 901px) {
+  .footer-inner {
+    padding-bottom: 76px;
+  }
+}
 @media (max-width: 640px) {
   .fs-3 {
     display: none;

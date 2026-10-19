@@ -24,9 +24,11 @@ export function DailyPage() {
       <div className="wrap info-page">
         <h1 className="info-title">Daily Challenge</h1>
         <p className="info-lead">There is no daily challenge right now. It returns as soon as a game that supports it is in the arcade.</p>
-        <Link href="/#arcade" className="btn btn-primary">
-          Browse the arcade
-        </Link>
+        <div className="nf-actions">
+          <Link href="/#arcade" className="btn btn-primary">
+            Browse the arcade
+          </Link>
+        </div>
       </div>
     );
   }
@@ -51,10 +53,10 @@ export function DailyPage() {
           <h2 id="how-daily">How it works</h2>
           <ol className="info-steps">
             <li>A new challenge unlocks at midnight in your time zone. Everyone on the same date gets the same one.</li>
-            <li>Play the game here on GlitchBound. Every finished round counts toward today&rsquo;s target.</li>
+            <li>Play the game here on GlitchBound. Every finished round is a new try at today&rsquo;s target.</li>
             <li>Games with their own daily puzzle are listed under Today&rsquo;s dailies. Finishing any of them, or clearing the challenge, keeps your streak going.</li>
             <li>Play on consecutive days to build a streak. Miss a day and the streak starts over.</li>
-            <li>Progress is saved in this browser only. There are no accounts and nothing is uploaded.</li>
+            <li>Progress is saved in this browser. If you are signed in, cleared challenges are also saved to your account.</li>
           </ol>
         </section>
         <section className="panel info-block" aria-labelledby="history-daily">

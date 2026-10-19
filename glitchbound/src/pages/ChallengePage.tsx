@@ -37,9 +37,11 @@ export function ChallengePage({ id }: { id: string }) {
       <div className="wrap info-page">
         <h1 className="info-title">{t('This challenge has closed.')}</h1>
         <p className="info-lead">{t('Challenges nobody joins close after a day. Start a new one and send the link.')}</p>
-        <Link href="/c" className="btn btn-primary">
-          {t('Your challenges')}
-        </Link>
+        <div className="nf-actions">
+          <Link href="/c" className="btn btn-primary">
+            {t('Your challenges')}
+          </Link>
+        </div>
       </div>
     );
   return (

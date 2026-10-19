@@ -8,7 +8,11 @@ import { MAX_PLAYERS } from '../../src/platform/challenge';
 export async function onRequestGet({ request, env, params }: Ctx): Promise<Response> {
   const id = String(params?.id ?? '');
   const row = await challengeRow(env, id).catch(() => null);
-  if (!row) return Response.redirect(new URL('/', request.url).toString(), 302);
+  if (!row) {
+    // A challenge that is over (deleted): the app says so, instead of dropping people on the home page unexplained.
+    if (!/^[A-Za-z0-9]{5,12}$/.test(id)) return Response.redirect(new URL('/', request.url).toString(), 302);
+    return previewPage(env, request, '/challenge', { title: 'This challenge has closed · GlitchBound', description: 'Start a new one and send the link to your friends.', replaceUrl: `/c/${id}` });
+  }
   const game = getGame(row.game);
   const view = await viewOf(env, row, null);
   const host = view.players[0]?.name ?? 'A friend';

@@ -255,6 +255,20 @@
   .game-actions {
     gap: 6px;
   }
+  /* While a game runs (Restart, Fullscreen and Exit join the toolbar), the heart and Share step
+     aside so the game's name isn't cut down to its first letter. */
+  .game-actions:has(> :nth-child(3)) > :is(.fav-btn, :last-child) {
+    display: none;
+  }
+  /* ...and a slightly smaller name fits the longest ones ("Where’s the Ball?") at 375 px. */
+  .game-toolbar:has(.game-actions > :nth-child(3)) .game-heading h1 {
+    font-size: 19px;
+  }
+  /* Restart and Exit show only their icons here: make them as narrow as the icon buttons. */
+  .game-actions .btn-sm:not(.btn-icon) {
+    width: 40px;
+    padding: 0;
+  }
 }
 
 .last-signin {
@@ -318,7 +332,8 @@
 }
 .gi-tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Sized to the labels, so a long one ("Leaderboard") doesn't squash its icon. */
+  grid-template-columns: repeat(3, auto);
   gap: 4px;
   padding: 4px;
   border: 1.5px solid var(--line);
@@ -329,16 +344,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   min-height: 38px;
-  padding: 0 6px;
+  padding: 0 4px;
   border: 0;
   border-radius: 10px;
   background: none;
   color: var(--fg-2);
-  font: 700 13.5px var(--font);
-  white-space: nowrap;
+  font: 700 13.5px/1.15 var(--font);
+  text-align: center;
   cursor: pointer;
+}
+.gi-tab svg {
+  flex: none;
 }
 .gi-tab:hover {
   color: var(--fg);

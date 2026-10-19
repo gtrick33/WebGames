@@ -2,6 +2,7 @@ import { latestGame } from '../catalog/catalog';
 import { t as tr, useT } from '../i18n';
 import { Icon } from '../components/Icon';
 import { Dot, Ring, Tri } from '../components/Shapes';
+import { useLiveCatalog } from '../platform/liveCatalog';
 import { usePageMeta } from '../platform/meta';
 import { Link, useLocation } from '../router/router';
 import './InfoPages.css';
@@ -10,7 +11,8 @@ export function NotFound() {
   useT();
   const { pathname } = useLocation();
   usePageMeta({ title: tr('Page not found'), path: pathname });
-  const game = latestGame();
+  // The arcade's newest game as players see it (not a hidden or Party-only one).
+  const game = latestGame(useLiveCatalog().games);
   return (
     <div className="wrap info-page notfound">
       <div className="nf-shapes" aria-hidden="true">

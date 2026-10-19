@@ -94,6 +94,17 @@ describe('member quests', () => {
       expect(tpl.targets.slice(0, 2)).toContain(m.target);
     }
   });
+  it('names the game once in a game quest', () => {
+    let checked = 0;
+    for (let i = 0; i < 200; i++) {
+      const m = questsForDay(`n${i}`, '2026-11-02', GAMES, true).find((q) => q.kind === 'metric');
+      if (!m) continue;
+      const title = GAMES.find((g) => g.slug === m.game)!.title;
+      expect(m.label.split(title).length - 1, m.label).toBe(1);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(20);
+  });
 });
 
 describe('nicknames', () => {
