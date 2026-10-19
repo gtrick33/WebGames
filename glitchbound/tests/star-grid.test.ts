@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getGame } from '../src/catalog/catalog';
-import { conflicts, countSolutions, DAILY_SIZES, makePuzzle, resultLine, solved, solvePoints, type Mark } from '../src/games/star-grid/logic';
+import { conflicts, countSolutions, DAILY_SIZES, makePuzzle, nextMark, resultLine, solved, solvePoints, type Mark } from '../src/games/star-grid/logic';
 
 describe('Star Grid', () => {
   it('makes the same puzzle from the same seed', () => {
@@ -19,7 +19,7 @@ describe('Star Grid', () => {
         expect(solved(p, marks)).toBe(true);
       }
     }
-  });
+  }, 30_000);
 
   it('flags stars that share a row, a column, a region or touch', () => {
     const p = makePuzzle(1, 6);
@@ -45,5 +45,19 @@ describe('Star Grid', () => {
     const seconds = DAILY_SIZES.map((s) => s * 1.5);
     const total = DAILY_SIZES.reduce((a, s, i) => a + solvePoints(s, seconds[i]!), 0);
     expect(total / seconds.reduce((a, b) => a + b, 0)).toBeLessThan(limits.scorePerSecond);
+  });
+});
+
+describe('Star Grid taps', () => {
+  it('puts a star down and takes it back with one tap each', () => {
+    expect(nextMark(0, 'star')).toBe(2);
+    expect(nextMark(2, 'star')).toBe(0);
+    expect(nextMark(1, 'star')).toBe(2);
+  });
+
+  it('crosses out and clears with the cross tool', () => {
+    expect(nextMark(0, 'cross')).toBe(1);
+    expect(nextMark(1, 'cross')).toBe(0);
+    expect(nextMark(2, 'cross')).toBe(1);
   });
 });

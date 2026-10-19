@@ -105,6 +105,9 @@
 .sg-cell.is-bad {
   background: #ff8095;
 }
+.sg-cell > i {
+  pointer-events: none;
+}
 .sg-star {
   font-style: normal;
   line-height: 1;
@@ -133,6 +136,33 @@
 @keyframes sg-glow {
   to {
     transform: scale(1.15) rotate(10deg);
+  }
+}
+.sg-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: min(100%, 300px);
+  padding: 4px;
+  border: 2.5px solid var(--sg-ink);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.12);
+}
+.sg-tool {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  font-weight: 800 !important;
+}
+.sg-tool.is-on {
+  background: #ffe066;
+  box-shadow: 0 3px 0 var(--sg-ink);
+  color: var(--sg-ink) !important;
+}
+@media (hover: none) {
+  .sg-mouse {
+    display: none;
   }
 }
 .sg-help {

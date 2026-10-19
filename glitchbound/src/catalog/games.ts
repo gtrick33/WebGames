@@ -749,7 +749,7 @@ export const GAMES: GameEntry[] = [
     tagline: 'One star in every row, column and colour, and no two touching. Three new grids a day.',
     description:
       'A pure logic puzzle: the grid is split into coloured regions, and you place exactly one star in every row, every column and every region, with no two stars touching, not even at the corners. ' +
-      'Tap once to cross a square out, twice for a star; mistakes light up red. Three daily grids from 6 by 6 to 8 by 8, the same for everyone, plus endless grids up to 9 by 9 and challenges for up to 6 friends.',
+      'Tap a square for a star and tap again to take it back, or cross out the squares you have ruled out; mistakes light up red. Three daily grids from 6 by 6 to 8 by 8, the same for everyone, plus endless grids up to 9 by 9 and challenges for up to 6 friends.',
     categories: ['puzzle'],
     moods: ['brainy', 'chill'],
     tags: ['logic', 'stars', 'grid', 'regions', 'daily', 'brain', 'deduction', 'sudoku', 'star battle'],
@@ -765,8 +765,8 @@ export const GAMES: GameEntry[] = [
     runtime: { kind: 'module' },
     aspect: 'square',
     controls: {
-      keyboard: ['Arrow keys: move', 'Enter or S: star, X: cross out', 'Space: cycle, Backspace: clear', 'P or Esc: pause'],
-      touch: ['Tap once for ✕, twice for a star, three times to clear', 'Drag from a ✕ to cross out more squares'],
+      keyboard: ['Mouse: click for a star, right-click to cross out', 'Arrow keys: move, Space: use the tool, Enter or S: star, X: cross out', 'Backspace: clear, P or Esc: pause'],
+      touch: ['Tap a square for a star, tap again to take it back', 'Switch to ✕ to cross out squares; drag to cross out several'],
     },
     stats: [
       { key: 'score', label: 'Best score' },

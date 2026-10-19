@@ -5,7 +5,7 @@ import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
-import { conflicts, DAILY_SIZES, fmtTime, makePuzzle, resultLine, solved, solvePoints, type Mark, type Puzzle } from './logic';
+import { conflicts, DAILY_SIZES, fmtTime, makePuzzle, nextMark, resultLine, solved, solvePoints, type Mark, type Puzzle, type Tool } from './logic';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
 
@@ -91,6 +91,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const since = useRef<number | null>(null);
   const started = useRef(false);
   const paint = useRef<{ to: Mark; from: Mark } | null>(null);
+  const [tool, setTool] = useState<Tool>('star');
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
   useEffect(
@@ -206,9 +207,11 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     if (round?.phase === 'play' && !paused) setPaused(true);
   }
 
-  // Tap: empty → ✕ → star → empty. Dragging from a tap paints the same change over more cells.
+  // A tap puts a star down or takes it back; with the ✕ tool (or a right-click) it crosses the square out
+  // instead, and dragging crosses out (or clears) more squares. Stars are never painted by a drag.
   const cellAt = (x: number, y: number): number | null => {
-    const el = document.elementFromPoint(x, y) as HTMLElement | null;
+    // The star or ✕ glyph can be the element under the pointer: look up to its square.
+    const el = (document.elementFromPoint(x, y) as HTMLElement | null)?.closest<HTMLElement>('[data-cell]');
     const i = el?.dataset.cell;
     return i === undefined ? null : Number(i);
   };
@@ -217,14 +220,22 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     const i = cellAt(e.clientX, e.clientY);
     if (!r || r.phase !== 'play' || i === null || paused) return;
     e.preventDefault();
-    const from = r.marks[i]!;
-    const to = ((from + 1) % 3) as Mark;
-    paint.current = { from, to };
+    const use: Tool = e.button === 2 ? 'cross' : tool;
+    const to = nextMark(r.marks[i]!, use);
+    paint.current = use === 'cross' ? { from: to === 1 ? 0 : 1, to } : null;
     setMark(i, to);
+    // A release outside the grid still ends the drag.
+    window.addEventListener(
+      'pointerup',
+      () => {
+        paint.current = null;
+      },
+      { once: true },
+    );
   };
   const onMove = (e: RPointerEvent<HTMLDivElement>): void => {
     const p = paint.current;
-    if (!p || p.to === 2) return;
+    if (!p || (e.pointerType === 'mouse' && e.buttons === 0)) return;
     const i = cellAt(e.clientX, e.clientY);
     const r = roundRef.current;
     if (i !== null && r && r.marks[i] === p.from) setMark(i, p.to);
@@ -252,7 +263,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         return;
       }
       if (cursor === null || r.phase !== 'play') return;
-      if (e.key === ' ') setMark(cursor, ((r.marks[cursor]! + 1) % 3) as Mark);
+      if (e.key === ' ') setMark(cursor, nextMark(r.marks[cursor]!, tool));
       else if (e.key === 'x' || e.key === 'X') setMark(cursor, r.marks[cursor] === 1 ? 0 : 1);
       else if (e.key === 'Enter' || e.key === 's' || e.key === 'S') setMark(cursor, r.marks[cursor] === 2 ? 0 : 2);
       else if (e.key === 'Backspace' || e.key === 'Delete') setMark(cursor, 0);
@@ -297,6 +308,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={onUp}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {round.marks.map((m, i) => {
           const row = Math.floor(i / p.size);
@@ -320,7 +332,18 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
           );
         })}
       </div>
-      <p className="sg-help">One ⭐ in every row, column and colour. Stars can’t touch, not even corners. Tap once for ✕, twice for ⭐.</p>
+      <div className="sg-tools" role="radiogroup" aria-label="What a tap does">
+        <button className={`sg-tool${tool === 'star' ? ' is-on' : ''}`} role="radio" aria-checked={tool === 'star'} onClick={() => setTool('star')}>
+          ⭐ Star
+        </button>
+        <button className={`sg-tool${tool === 'cross' ? ' is-on' : ''}`} role="radio" aria-checked={tool === 'cross'} onClick={() => setTool('cross')}>
+          ✕ Cross out
+        </button>
+      </div>
+      <p className="sg-help">
+        One ⭐ in every row, column and colour, and stars can’t touch, not even at the corners. {tool === 'star' ? 'Tap a square for a star, tap again to take it back.' : 'Tap or drag to cross out squares that can’t hold a star.'}
+        <span className="sg-mouse"> Right-click crosses out too.</span>
+      </p>
       {paused && round.phase === 'play' && (
         <button className="sg-overlay" onClick={resume}>
           Paused · tap to continue

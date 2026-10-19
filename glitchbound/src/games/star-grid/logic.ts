@@ -201,6 +201,10 @@ export function makePuzzle(seed: number, size: number): Puzzle {
 /** Cell marks: 0 empty, 1 crossed out, 2 star. */
 export type Mark = 0 | 1 | 2;
 
+/** What a tap does: the star tool puts a star down or takes it back; the cross tool does the same with ✕. */
+export type Tool = 'star' | 'cross';
+export const nextMark = (current: Mark, tool: Tool): Mark => (tool === 'star' ? (current === 2 ? 0 : 2) : current === 1 ? 0 : 1);
+
 /** Stars that break a rule right now (same row, column or region, or touching). */
 export function conflicts(p: Puzzle, marks: Mark[]): Set<number> {
   const bad = new Set<number>();
