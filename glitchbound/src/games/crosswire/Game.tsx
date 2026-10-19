@@ -2,7 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
+import { Coach, useCoach } from '../../components/Coach';
 import { ResultLine } from '../../components/ResultLine';
+import { COACH } from './coach';
 import { ARROW, makePuzzle, wordCells, type Puzzle, type Size } from './grid';
 import {
   backspace,
@@ -73,6 +75,8 @@ function Crosswire({ host, challenge }: { host: GameHost; challenge?: GameModule
     setSave(s);
     writeSave(s);
   }, []);
+  // First time on the menu: a three-step walkthrough (arrowwords are new to most players).
+  const coach = useCoach('crosswire');
 
   if (screen.kind === 'play')
     return (
@@ -139,7 +143,10 @@ function Crosswire({ host, challenge }: { host: GameHost; challenge?: GameModule
       <p className="xw-muted">
         {save.solved} grids solved · best {save.best}
       </p>
-      <p className="xw-muted xw-small">How to play: tap a clue square or a letter square, type the answer. The arrow shows where the answer goes (→ right, ↓ down, ↳ / ↴ around the corner). Circled letters spell a bonus mystery word.</p>
+      <button className="xw-btn" onClick={coach.show}>
+        How to play
+      </button>
+      {coach.open && <Coach steps={COACH} onClose={coach.close} />}
     </div>
   );
 }

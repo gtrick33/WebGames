@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import type { ChallengeSpec } from '../../platform/challenge';
+import type { ContentLang } from '../../platform/contentLang';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { answerText, bankSize, leverStart, CATS, challengeQuiz, dailyNumber, dailyQuiz, EndlessDealer, judge, MAX_POINTS, numberText, pickText, QUIZ_LENGTH, scorePick, timeLimit, type Pick, type Question, type Verdict } from './deck';
 import { openChallengeScores } from '../../platform/challenge';
+import { EN, loadPack, type Pack } from './pack';
 import { melodyLength, morseText, playMorse, playTune } from './sound';
+import { UI, type Ui } from './ui';
 import './Game.css';
 
 const STORE = 'glitchbound.wait-what';
@@ -71,8 +74,30 @@ const FLOATERS: [string, number, number][] = [
 ];
 type Screen = { kind: 'menu' } | { kind: 'play'; mode: Mode; key: string };
 
-export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
-  return <WaitWhat key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} />;
+/** The language the game plays in: its questions (pack) and its own text (ui). */
+const Lang = createContext<{ p: Pack; u: Ui }>({ p: EN, u: UI.en });
+
+export default function Game({ host, restartKey, pauseKey, challenge, lang = 'en' }: GameModuleProps) {
+  return (
+    <LangGate lang={lang}>
+      <WaitWhat key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} />
+    </LangGate>
+  );
+}
+
+/** Loads the questions for the language (English is built in), then shows the game. */
+function LangGate({ lang, children }: { lang: ContentLang; children: ReactNode }) {
+  const [pack, setPack] = useState<Pack | null>(lang === 'en' ? EN : null);
+  useEffect(() => {
+    let live = true;
+    if (lang !== 'en') void loadPack(lang).then((p) => live && setPack(p), () => live && setPack(EN));
+    return () => {
+      live = false;
+    };
+  }, [lang]);
+  const value = useMemo(() => (pack ? { p: pack, u: UI[pack.lang] } : null), [pack]);
+  if (!value) return <div className="ww ww-menu" aria-busy="true" />;
+  return <Lang.Provider value={value}>{children}</Lang.Provider>;
 }
 
 function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: number; challenge?: ChallengeSpec }) {
@@ -86,6 +111,7 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   }, []);
   const [screen, setScreen] = useState<Screen>(() => (challenge ? { kind: 'play', mode: 'challenge', key: `${challenge.id}:${challenge.round}` } : { kind: 'menu' }));
   const [runs, setRuns] = useState(0);
+  const { p, u } = useContext(Lang);
 
   if (screen.kind === 'play')
     return (
@@ -108,7 +134,7 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     );
 
   const todays = save.daily[today];
-  const total = bankSize(today);
+  const total = bankSize(today, p);
   const seen = save.seen.filter((id) => !/^(time|near):/.test(id)).length;
   return (
     <div className="ww ww-menu">
@@ -125,35 +151,43 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
           WHAT<b>?!</b>
         </span>
       </h1>
-      <p className="ww-tag">Trivia that sounds made up but isn’t.</p>
+      <p className="ww-tag">{u.tag}</p>
 
       <section className="ww-card ww-card-daily">
         <div className="ww-card-head">
-          <b>Daily quiz #{dailyNumber(today)}</b>
-          <span>{todays?.done ? `${todays.pts.reduce((a, b) => a + b, 0)} points · ${todays.pts.filter((p) => p > 0).length}/${QUIZ_LENGTH} right` : todays ? `In progress · ${todays.picks.length}/${QUIZ_LENGTH}` : '10 questions · same for everyone today'}</span>
+          <b>{u.dailyQuiz(dailyNumber(today))}</b>
+          <span>
+            {todays?.done
+              ? u.pointsRight(
+                  todays.pts.reduce((a, b) => a + b, 0).toLocaleString(p.locale),
+                  todays.pts.filter((x) => x > 0).length,
+                  QUIZ_LENGTH,
+                )
+              : todays
+                ? u.inProgress(todays.picks.length, QUIZ_LENGTH)
+                : u.sameForEveryone}
+          </span>
         </div>
         <button className="ww-btn ww-btn-go" onClick={() => setScreen({ kind: 'play', mode: 'daily', key: `daily:${today}` })}>
-          {todays?.done ? 'See today’s results' : todays ? 'Continue' : 'Play today’s quiz'}
+          {todays?.done ? u.seeResults : todays ? u.continue : u.playToday}
         </button>
       </section>
 
       <section className="ww-card">
         <div className="ww-card-head">
-          <b>Endless</b>
-          <span>Three strikes and you’re out · no repeats</span>
+          <b>{u.endless}</b>
+          <span>{u.endlessBlurb}</span>
         </div>
         <button className="ww-btn" onClick={() => setScreen({ kind: 'play', mode: 'endless', key: 'endless' })}>
-          Start an endless run
+          {u.startEndless}
         </button>
       </section>
 
       <p className="ww-muted">
-        {save.answered ? `${save.right.toLocaleString('en-US')} of ${save.answered.toLocaleString('en-US')} answered right · best run ${save.bestEndless} · ` : ''}
-        {seen.toLocaleString('en-US')} of {total.toLocaleString('en-US')}+ questions seen
+        {save.answered ? u.answeredRight(save.right.toLocaleString(p.locale), save.answered.toLocaleString(p.locale), save.bestEndless) : ''}
+        {u.seenOf(seen.toLocaleString(p.locale), total.toLocaleString(p.locale))}
       </p>
-      <p className="ww-muted ww-small">
-        Pick an answer, pull the lever to guess a number, type it, put things in order, decode emoji or name a tune. Right answers score 100, plus up to 50 for speed; near misses still score. Keys: 1–4 or A–D to answer, arrows for the lever, Enter for the next question.
-      </p>
+      <p className="ww-muted ww-small">{u.help}</p>
     </div>
   );
 }
@@ -174,14 +208,15 @@ function Play(props: {
   onAgain: () => void;
 }) {
   const { mode, today, challenge, host, saveRef, commit } = props;
+  const { p, u } = useContext(Lang);
   const runKey = mode === 'daily' ? today : mode === 'challenge' && challenge ? `${challenge.id}:${challenge.round}` : null;
   const kept = runKey ? (mode === 'daily' ? props.save.daily[runKey] : props.save.runs[runKey]) : undefined;
   // A finished challenge round is not resumed: when its score never reached the scoreboard (lost on the
   // way, or another player on this device), the round is played again instead of sitting on its results.
   const stored = mode === 'challenge' && kept?.done ? undefined : kept;
 
-  const [dealer] = useState(() => (mode === 'endless' ? new EndlessDealer(props.save.seen) : null));
-  const [qs, setQs] = useState<Question[]>(() => (mode === 'daily' ? dailyQuiz(today) : mode === 'challenge' && challenge ? challengeQuiz(challenge.seed, challenge.day) : [dealer!.next()]));
+  const [dealer] = useState(() => (mode === 'endless' ? new EndlessDealer(props.save.seen, undefined, p) : null));
+  const [qs, setQs] = useState<Question[]>(() => (mode === 'daily' ? dailyQuiz(today, p) : mode === 'challenge' && challenge ? challengeQuiz(challenge.seed, challenge.day, p) : [dealer!.next()]));
   const [run, setRun] = useState<Run>(() => stored ?? emptyRun());
   const idx = run.done ? qs.length : run.picks.length;
   // Reloaded while the last answer was on show: show it again (then the results), never ask it twice.
@@ -361,19 +396,19 @@ function Play(props: {
   return (
     <div className="ww ww-play" style={{ ['--cat' as string]: cat.color }}>
       <header className="ww-top">
-        <span className="ww-top-mode">{mode === 'daily' ? `Daily #${dailyNumber(today)}` : mode === 'challenge' ? `⚔️ Round ${challenge?.round ?? 1}` : 'Endless'}</span>
+        <span className="ww-top-mode">{mode === 'daily' ? u.dailyShort(dailyNumber(today)) : mode === 'challenge' ? u.round(challenge?.round ?? 1) : u.endless}</span>
         {mode === 'endless' ? (
-          <span className="ww-lives" aria-label={`${STRIKES - strikes} lives left`}>
+          <span className="ww-lives" aria-label={u.livesLeft(STRIKES - strikes)}>
             {Array.from({ length: STRIKES }, (_, i) => (i < STRIKES - strikes ? '❤️' : '🖤')).join('')}
           </span>
         ) : (
-          <span className="ww-dots" aria-label={`Question ${Math.min(idx + 1, qs.length)} of ${qs.length}`}>
+          <span className="ww-dots" aria-label={u.questionOf(Math.min(idx + 1, qs.length), qs.length)}>
             {qs.map((_, i) => (
               <i key={i} className={i < run.picks.length ? `is-${verdicts[i] === 'timeout' ? 'wrong' : verdicts[i]}` : i === idx ? 'is-now' : ''} />
             ))}
           </span>
         )}
-        <span className="ww-score">{score.toLocaleString('en-US')}</span>
+        <span className="ww-score">{score.toLocaleString(p.locale)}</span>
       </header>
       <div className="ww-timer" aria-hidden="true">
         <i style={{ transform: `scaleX(${phase === 'ask' ? left / limit : 0})` }} className={left < 5 ? 'is-low' : ''} />
@@ -382,16 +417,16 @@ function Play(props: {
       <main className={`ww-stage${paused ? ' is-paused' : ''}`}>
         <div className="ww-q-card" key={q.id}>
           <span className="ww-chip">
-            {cat.emoji} {cat.label}
+            {cat.emoji} {u.cats[q.cat]}
           </span>
           <h2 className="ww-q">{q.text}</h2>
           {q.emoji && (
-            <p className="ww-emoji" aria-label="Emoji puzzle">
+            <p className="ww-emoji" aria-label={u.emojiPuzzle}>
               {q.emoji}
             </p>
           )}
           {q.sound && <SoundButton key={`s:${q.id}`} q={q} autoPlay={phase === 'ask' && !paused} />}
-          {phase === 'ask' && <span className="ww-left mono">{Math.ceil(left)}s</span>}
+          {phase === 'ask' && <span className="ww-left mono">{u.secondsLeft(Math.ceil(left))}</span>}
         </div>
         {kind === 'choice' && (
           <div className={`ww-answers${q.answers.length <= 2 ? ' is-two' : ''}`} key={`a:${q.id}`}>
@@ -412,33 +447,33 @@ function Play(props: {
         {phase === 'reveal' && verdict && (
           <div className="ww-reveal" role="status">
             <p className={`ww-verdict is-${verdict === 'timeout' ? 'wrong' : verdict}`}>
-              {verdict === 'right' ? `Correct! +${gained}` : verdict === 'close' ? `So close! +${gained}` : verdict === 'timeout' ? 'Time’s up!' : 'Nope!'}
-              {kind === 'number' && picked !== -1 && picked !== null && verdict !== 'right' && <small> Off by {offBy(q, Number(picked))}</small>}
+              {verdict === 'right' ? u.correct(gained) : verdict === 'close' ? u.close(gained) : verdict === 'timeout' ? u.timeUp : u.nope}
+              {kind === 'number' && picked !== -1 && picked !== null && verdict !== 'right' && <small>{u.offBy(offBy(q, Number(picked), u))}</small>}
             </p>
             {(kind === 'number' || kind === 'type') && verdict !== 'right' && (
               <p className="ww-answer-was">
-                Answer: <b>{answerText(q)}</b>
+                {u.answer} <b>{answerText(q)}</b>
               </p>
             )}
             <p className="ww-fact">
-              <b>Wait, what? </b>
+              <b>{u.factPrefix}</b>
               {q.fact}
             </p>
             <button className="ww-btn ww-btn-go" onClick={next} autoFocus>
-              {lastQuestion ? 'See results' : 'Next question'}
+              {lastQuestion ? u.results : u.nextQuestion}
             </button>
           </div>
         )}
         {mode === 'endless' && phase === 'ask' && (
           <button className="ww-btn ww-btn-quiet" onClick={() => finish(run)}>
-            End run
+            {u.endRun}
           </button>
         )}
       </main>
       {paused && (
         <button className="ww-paused" onClick={() => setPaused(false)}>
-          <b>Paused</b>
-          <span>Tap to carry on. The clock is stopped.</span>
+          <b>{u.paused}</b>
+          <span>{u.pausedHint}</span>
         </button>
       )}
     </div>
@@ -453,6 +488,7 @@ function grid(qs: Question[], run: Run): string {
 
 function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; challenge?: ChallengeSpec; onMenu: () => void; onAgain: () => void }) {
   const { mode, qs, run, today, challenge } = props;
+  const { p, u } = useContext(Lang);
   const total = run.pts.reduce((a, b) => a + b, 0);
   const correct = run.picks.filter((p, i) => qs[i] && judge(qs[i], p) === 'right').length;
   const strikes = run.picks.filter((p, i) => !qs[i] || ['wrong', 'timeout'].includes(judge(qs[i], p))).length;
@@ -460,60 +496,62 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
   const [open, setOpen] = useState(false);
   const verdict = useMemo(() => {
     const share = correct / Math.max(1, run.picks.length);
-    if (mode === 'endless') return correct >= 25 ? 'Walking encyclopedia' : correct >= 12 ? 'Seriously impressive' : correct >= 6 ? 'Not bad at all' : 'The facts fought back';
-    return share >= 0.9 ? 'Genius. Suspiciously so.' : share >= 0.7 ? 'Big brain energy' : share >= 0.5 ? 'Respectable' : share >= 0.3 ? 'Wait, what?' : 'The facts won today';
-  }, [correct, run.picks.length, mode]);
+    const [e0, e1, e2, e3] = u.verdictEndless;
+    const [d0, d1, d2, d3, d4] = u.verdictDaily;
+    if (mode === 'endless') return correct >= 25 ? e0 : correct >= 12 ? e1 : correct >= 6 ? e2 : e3;
+    return share >= 0.9 ? d0 : share >= 0.7 ? d1 : share >= 0.5 ? d2 : share >= 0.3 ? d3 : d4;
+  }, [correct, run.picks.length, mode, u]);
 
-  const shareText = `Wait, What? #${dailyNumber(today)} 🤯\n${grid(qs, run)}\n${correct}/${qs.length} right · ${total.toLocaleString('en-US')} points\n${window.location.origin}/games/wait-what`;
+  const shareText = `Wait, What? #${dailyNumber(today)} 🤯\n${grid(qs, run)}\n${u.shareLine(correct, qs.length, total.toLocaleString(p.locale))}\n${window.location.origin}/games/wait-what`;
   return (
     <div className="ww ww-results">
-      <p className="ww-eyebrow">{mode === 'daily' ? `Daily quiz #${dailyNumber(today)}` : mode === 'challenge' ? `Challenge · round ${challenge?.round ?? 1}` : 'Endless run'}</p>
+      <p className="ww-eyebrow">{mode === 'daily' ? u.dailyQuiz(dailyNumber(today)) : mode === 'challenge' ? u.challengeRound(challenge?.round ?? 1) : u.endlessRun}</p>
       <h2 className="ww-verdict-big">{verdict}</h2>
       <p className="ww-total">
-        {total.toLocaleString('en-US')}
-        <small>{mode === 'endless' ? ' points' : ` / ${MAX_POINTS.toLocaleString('en-US')}`}</small>
+        {total.toLocaleString(p.locale)}
+        <small>{mode === 'endless' ? u.points : ` / ${MAX_POINTS.toLocaleString(p.locale)}`}</small>
       </p>
       <p className="ww-muted">
-        {correct} right{mode === 'endless' ? (strikes >= STRIKES ? ` before ${STRIKES} strikes` : '') : ` out of ${qs.length}`}
+        {mode === 'endless' ? (strikes >= STRIKES ? u.rightBefore(correct, STRIKES) : u.rightOutOf(correct, run.picks.length)) : u.rightOutOf(correct, qs.length)}
       </p>
       {mode !== 'endless' && <p className="ww-grid">{grid(qs, run)}</p>}
       <div className="ww-row">
         {mode === 'challenge' && challenge ? (
           <a className="ww-btn ww-btn-go" href={`/c/${challenge.id}`} onClick={openChallengeScores}>
-            See the scoreboard
+            {u.seeScoreboard}
           </a>
         ) : mode === 'endless' ? (
           <button className="ww-btn ww-btn-go" onClick={props.onAgain}>
-            Play again
+            {u.playAgain}
           </button>
         ) : (
-          <button className="ww-btn ww-btn-go" onClick={() => void shareOrCopy({ title: 'Wait, What?', text: shareText }).then((o) => setShareMsg(o === 'copied' ? 'Copied!' : ''))}>
-            {shareMsg || 'Share result'}
+          <button className="ww-btn ww-btn-go" onClick={() => void shareOrCopy({ title: 'Wait, What?', text: shareText }).then((o) => setShareMsg(o === 'copied' ? u.copied : ''))}>
+            {shareMsg || u.shareResult}
           </button>
         )}
         <button className="ww-btn" onClick={props.onMenu}>
-          Menu
+          {u.menu}
         </button>
       </div>
       <button className="ww-btn ww-btn-quiet" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        {open ? 'Hide the answers' : 'Show all the answers'}
+        {open ? u.hideAnswers : u.showAnswers}
       </button>
       {open && (
         <ol className="ww-review">
           {qs.slice(0, run.picks.length).map((x, i) => {
-            const p = run.picks[i]!;
-            const v = judge(x, p);
+            const pk = run.picks[i]!;
+            const v = judge(x, pk);
             return (
               <li key={x.id} className={v === 'right' ? 'is-right' : v === 'close' ? 'is-close' : 'is-wrong'}>
                 <span className="ww-chip">
-                  {CATS[x.cat].emoji} {CATS[x.cat].label}
+                  {CATS[x.cat].emoji} {u.cats[x.cat]}
                 </span>
                 <b>
                   {x.text} {x.emoji}
                 </b>
                 <span>
-                  {v === 'right' ? '✅ ' : v === 'timeout' ? '⏰ No answer · ' : `${v === 'close' ? '🟨' : '❌'} You said ${pickText(x, p)} · `}
-                  {v === 'right' ? answerText(x) : `Answer: ${answerText(x)}`}
+                  {v === 'right' ? '✅ ' : v === 'timeout' ? `⏰ ${u.noAnswer} · ` : `${v === 'close' ? '🟨' : '❌'} ${u.youSaid(pickText(x, pk))} · `}
+                  {v === 'right' ? answerText(x) : `${u.answer} ${answerText(x)}`}
                 </span>
                 <small>{x.fact}</small>
               </li>
@@ -526,14 +564,15 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
 }
 
 /** How far a lever guess was from the answer, as text. */
-function offBy(q: Question, guess: number): string {
+function offBy(q: Question, guess: number, u: Ui): string {
   const n = q.num!;
   const diff = Math.round(Math.abs(guess - n.answer) / n.step) * n.step;
-  return n.unit === '' ? `${diff} year${diff === 1 ? '' : 's'}` : numberText(q, diff);
+  return n.unit === '' ? u.years(diff) : numberText(q, diff);
 }
 
 /** Plays the question's tune or Morse code (once by itself, then on demand), with dancing bars. */
 function SoundButton({ q, autoPlay }: { q: Question; autoPlay: boolean }) {
+  const { u } = useContext(Lang);
   const [playing, setPlaying] = useState(false);
   const [heard, setHeard] = useState(false);
   const stop = useRef<(() => void) | null>(null);
@@ -572,7 +611,7 @@ function SoundButton({ q, autoPlay }: { q: Question; autoPlay: boolean }) {
           <i />
           <i />
         </span>
-        <span>{playing ? 'Playing…' : heard ? 'Play it again' : 'Play the sound'}</span>
+        <span>{playing ? u.playing : heard ? u.playAgainSound : u.playSound}</span>
       </button>
       {s.kind === 'morse' && <p className="ww-morse mono">{morseText(s.word)}</p>}
     </div>
@@ -581,6 +620,7 @@ function SoundButton({ q, autoPlay }: { q: Question; autoPlay: boolean }) {
 
 /** The lever: a slider with − and + (hold to speed up), arrow keys, and Lock it in. */
 function Lever({ q, asking, picked, onLock }: { q: Question; asking: boolean; picked: Pick | null; onLock: (v: number) => void }) {
+  const { u } = useContext(Lang);
   const n = q.num!;
   const snap = useCallback((v: number) => Math.min(n.max, Math.max(n.min, Math.round((v - n.min) / n.step) * n.step + n.min)), [n]);
   // Starts away from the answer (see leverStart).
@@ -621,11 +661,11 @@ function Lever({ q, asking, picked, onLock }: { q: Question; asking: boolean; pi
     <div className={`ww-lever${revealed ? ' is-revealed' : ''}`}>
       <output className="ww-lever-value mono">{numberText(q, shown)}</output>
       <div className="ww-lever-row">
-        <button type="button" className="ww-lever-btn" aria-label="Less" disabled={!asking} onPointerDown={() => startHold(-1)} onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold}>
+        <button type="button" className="ww-lever-btn" aria-label={u.less} disabled={!asking} onPointerDown={() => startHold(-1)} onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold}>
           −
         </button>
         <div className="ww-lever-track">
-          <input type="range" min={n.min} max={n.max} step={n.step} value={shown} disabled={!asking} onChange={(e) => setValue(snap(Number(e.target.value)))} aria-label="Your guess" />
+          <input type="range" min={n.min} max={n.max} step={n.step} value={shown} disabled={!asking} onChange={(e) => setValue(snap(Number(e.target.value)))} aria-label={u.yourGuess} />
           {revealed && (
             <span className="ww-lever-flag" style={{ left: pct(n.answer) }}>
               <b>▲</b>
@@ -633,7 +673,7 @@ function Lever({ q, asking, picked, onLock }: { q: Question; asking: boolean; pi
             </span>
           )}
         </div>
-        <button type="button" className="ww-lever-btn" aria-label="More" disabled={!asking} onPointerDown={() => startHold(1)} onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold}>
+        <button type="button" className="ww-lever-btn" aria-label={u.more} disabled={!asking} onPointerDown={() => startHold(1)} onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold}>
           +
         </button>
       </div>
@@ -643,7 +683,7 @@ function Lever({ q, asking, picked, onLock }: { q: Question; asking: boolean; pi
       </p>
       {!revealed && (
         <button type="button" className="ww-btn ww-btn-go ww-lock" disabled={!asking} onClick={() => onLock(value)}>
-          🔒 Lock it in
+          {u.lockIn}
         </button>
       )}
     </div>
@@ -652,6 +692,7 @@ function Lever({ q, asking, picked, onLock }: { q: Question; asking: boolean; pi
 
 /** Type the answer: small typos are forgiven. */
 function TypeIt({ q, asking, picked, verdict, onLock }: { q: Question; asking: boolean; picked: Pick | null; verdict: Verdict | null; onLock: (v: string) => void }) {
+  const { u } = useContext(Lang);
   const [text, setText] = useState('');
   const done = picked !== null;
   return (
@@ -666,7 +707,7 @@ function TypeIt({ q, asking, picked, verdict, onLock }: { q: Question; asking: b
         className="ww-type-input"
         value={done ? (picked === -1 ? '' : String(picked)) : text}
         onChange={(e) => setText(e.target.value)}
-        placeholder={done ? 'No answer' : 'Type your answer…'}
+        placeholder={done ? u.noAnswer : u.typeHere}
         maxLength={40}
         disabled={!asking}
         autoFocus
@@ -675,20 +716,21 @@ function TypeIt({ q, asking, picked, verdict, onLock }: { q: Question; asking: b
         autoCorrect="off"
         spellCheck={false}
         enterKeyHint="go"
-        aria-label="Your answer"
+        aria-label={u.yourAnswer}
       />
       {!done && (
         <button className="ww-btn ww-btn-go ww-lock" disabled={!asking || !text.trim()}>
-          🔒 Lock it in
+          {u.lockIn}
         </button>
       )}
-      {!done && q.answers[0] && <p className="ww-muted ww-small">Spelling doesn’t have to be perfect.</p>}
+      {!done && q.answers[0] && <p className="ww-muted ww-small">{u.spelling}</p>}
     </form>
   );
 }
 
 /** Tap the answers in order (tap one again to take it back), then lock it in. */
 function OrderIt({ q, asking, picked, onLock }: { q: Question; asking: boolean; picked: Pick | null; onLock: (v: number[]) => void }) {
+  const { u } = useContext(Lang);
   const [seq, setSeq] = useState<number[]>([]);
   const done = picked !== null;
   const mine = done ? (Array.isArray(picked) ? picked : []) : seq;
@@ -718,7 +760,7 @@ function OrderIt({ q, asking, picked, onLock }: { q: Question; asking: boolean; 
               <button type="button" className={`ww-order-item${state}`} onClick={() => tap(i)} disabled={!asking}>
                 <span className="ww-order-badge mono">{done ? real + 1 : at >= 0 ? at + 1 : ''}</span>
                 <span>{a}</span>
-                {done && at !== real && at >= 0 && <span className="ww-order-yours mono">you: {at + 1}</span>}
+                {done && at !== real && at >= 0 && <span className="ww-order-yours mono">{u.you(at + 1)}</span>}
               </button>
             </li>
           );
@@ -726,7 +768,7 @@ function OrderIt({ q, asking, picked, onLock }: { q: Question; asking: boolean; 
       </ol>
       {!done && (
         <button type="button" className="ww-btn ww-btn-go ww-lock" disabled={!asking || seq.length !== q.answers.length} onClick={() => onLock(seq)}>
-          {seq.length === q.answers.length ? '🔒 Lock it in' : `Tap ${q.answers.length - seq.length} more`}
+          {seq.length === q.answers.length ? u.lockIn : u.tapMore(q.answers.length - seq.length)}
         </button>
       )}
     </div>

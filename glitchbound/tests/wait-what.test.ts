@@ -261,3 +261,73 @@ describe('Wait, What? newer question styles', () => {
     expect(challengeQuiz(777, LAUNCH).every((q) => (q.kind ?? 'choice') === 'choice')).toBe(true);
   });
 });
+
+describe('Wait, What? in Bulgarian', () => {
+  it('translates every hand-written question in the same order, with the same number of answers', async () => {
+    const { BG } = await import('../src/games/wait-what/bank/bg');
+    const { EN } = await import('../src/games/wait-what/pack');
+    const fixed = (p: typeof EN, answers: string): boolean => {
+      const list = answers.split('|');
+      return p.fixedOrder.some((o) => o.length === list.length && o.every((x) => list.includes(x)));
+    };
+    expect(BG.batches.length).toBe(EN.batches.length);
+    EN.batches.forEach((b, k) => {
+      for (const cat of HAND_CATS) {
+        const en = b.items[cat];
+        const bg = BG.batches[k]!.items[cat];
+        expect(bg.length, cat).toBe(en.length);
+        en.forEach((raw, i) => {
+          const tr = bg[i]!;
+          expect(tr[0] && tr[2], `${cat}:${i}`).toBeTruthy();
+          expect(tr[1].split('|').length, `${cat}:${i} answers`).toBe(raw[1].split('|').length);
+          expect(new Set(tr[1].split('|')).size, `${cat}:${i} unique answers`).toBe(tr[1].split('|').length);
+          // True/False and friends keep their set order in both languages (so the daily stays in step).
+          expect(fixed(BG, tr[1]), `${cat}:${i} fixed order`).toBe(fixed(EN, raw[1]));
+        });
+      }
+    });
+  });
+
+  it('has every generated list ready: events, lever, tunes and words of the world line up with English', async () => {
+    const { BG } = await import('../src/games/wait-what/bank/bg');
+    expect(BG.events.length).toBe(EVENTS.length);
+    expect(BG.events.every((e, i) => e[0] === EVENTS[i]![0] && typeof e[1] === 'string' && e[1].length > 3)).toBe(true);
+    expect(BG.numbers.length).toBe(NUMBERS.length);
+    expect(BG.numbers.every((n, i) => n.answer === NUMBERS[i]!.answer && n.q && n.fact && (NUMBERS[i]!.unit === undefined) === (n.unit === undefined))).toBe(true);
+    expect(BG.tunes.length).toBe(TUNES.length);
+    expect(new Set(BG.tunes.map((t) => t.name)).size).toBe(TUNES.length);
+    expect(BG.world.length).toBe(WORLD_WORDS.length);
+    expect(BG.world.every((w) => w[1] && w[2])).toBe(true);
+    expect(new Set(BG.odd.map((w) => w[0])).size).toBe(BG.odd.length);
+    expect(BG.odd.length).toBeGreaterThanOrEqual(40);
+    for (const [emoji, answers, fact] of [...BG.emojiTitles, ...BG.emojiSayings]) {
+      expect(emoji && fact).toBeTruthy();
+      expect(new Set(answers.split('|')).size).toBe(4);
+    }
+    for (const [q, accepted, fact] of BG.typed) expect(q && accepted && fact).toBeTruthy();
+  });
+
+  it('picks the same hand-written questions for the daily and for challenges in both languages', async () => {
+    const { BG } = await import('../src/games/wait-what/bank/bg');
+    const hand = (qs: Question[]): string[] => qs.filter((q) => !GENERATED.test(q.id)).map((q) => q.id).sort();
+    for (const day of ['2026-10-18', FORMATS_SINCE, '2026-11-02', '2027-03-01']) {
+      expect(hand(dailyQuiz(day, BG))).toEqual(hand(dailyQuiz(day)));
+      expect(dailyQuiz(day, BG)).toHaveLength(QUIZ_LENGTH);
+    }
+    expect(hand(challengeQuiz(12345, '2026-11-02', BG))).toEqual(hand(challengeQuiz(12345, '2026-11-02')));
+    // A whole Bulgarian endless run builds without gaps.
+    const dealer = new EndlessDealer([], 7, BG);
+    for (let i = 0; i < 120; i++) {
+      const q = dealer.next();
+      expect(q.text, q.id).toBeTruthy();
+      if ((q.kind ?? 'choice') === 'choice') expect(q.correct, q.id).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('accepts typed answers in Cyrillic, ignoring case and a small typo', () => {
+    expect(typedMatches('живак', ['Живак'])).toBe(true);
+    expect(typedMatches('ТИХИЯ ОКЕАН', ['Тихи', 'Тихи океан', 'Тихият океан', 'Тихия океан'])).toBe(true);
+    expect(typedMatches('Габрво', ['Габрово'])).toBe(true);
+    expect(typedMatches('Плевен', ['Габрово'])).toBe(false);
+  });
+});

@@ -3,6 +3,7 @@
  * This file must stay free of React and browser APIs: vite.config.ts imports the catalog at build
  * time to generate per-game HTML pages, the sitemap and robots.txt.
  */
+import type { ContentLang } from '../platform/contentLang';
 
 export const CATEGORIES = {
   arcade: { label: 'Arcade', blurb: 'Fast hands, short rounds.' },
@@ -147,6 +148,12 @@ export interface GameEntry {
    * asks players to confirm their age before it starts.
    */
   adult?: boolean;
+  /**
+   * Languages the game's own content comes in (questions, cards, its in-game text), English first.
+   * Missing = English only. The game gets the one matching the site's language as `lang` (see
+   * src/platform/contentLang.ts).
+   */
+  contentLangs?: ContentLang[];
   /**
    * The game keeps a coin wallet, so QA and admins can give a player coins for it. The game collects
    * them with claimCoins() (src/platform/coins.ts) when a signed-in player opens it.

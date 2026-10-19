@@ -8,6 +8,15 @@
  * back until a pile runs out, so a session does not repeat cards.
  */
 import { ANSWERS, pickCount, PROMPTS } from './cards';
+import { ANSWERS_BG, PROMPTS_BG } from './cards-bg';
+
+/** Which cards a room plays with (the host picks; new rooms start in the host's site language). */
+export type Deck = 'en' | 'bg';
+export const DECKS: Record<Deck, { prompts: readonly string[]; answers: readonly string[] }> = {
+  en: { prompts: PROMPTS, answers: ANSWERS },
+  bg: { prompts: PROMPTS_BG, answers: ANSWERS_BG },
+};
+export const isDeck = (v: unknown): v is Deck => v === 'en' || v === 'bg';
 
 export const MIN_PLAYERS = 3;
 export const MAX_PLAYERS = 10;
@@ -29,6 +38,8 @@ export interface Settings {
   vote: boolean;
   /** Seconds to play a card. */
   seconds: number;
+  /** The cards (rooms from before decks existed have none: English). */
+  deck?: Deck;
 }
 
 export interface Seat {
@@ -111,7 +122,8 @@ export const validKey = (k: unknown): k is string => typeof k === 'string' && /^
 const seatOf = (s: State, key: string): Seat | undefined => s.seats.find((x) => x.key === key);
 const seatN = (s: State, n: number | null): Seat | undefined => (n === null ? undefined : s.seats.find((x) => x.n === n));
 const inGame = (s: State): Seat[] => s.seats.filter((x) => x.online && !x.waiting);
-export const promptPick = (s: State): number => (s.prompt === null ? 1 : pickCount(PROMPTS[s.prompt]!));
+const deckOf = (s: State): (typeof DECKS)[Deck] => DECKS[s.settings.deck ?? 'en'];
+export const promptPick = (s: State): number => (s.prompt === null ? 1 : pickCount(deckOf(s).prompts[s.prompt]!));
 
 /** Draws an answer card; when the pile is empty, reshuffles every card not in a hand or on the table. */
 function drawAnswer(s: State): number | undefined {
@@ -119,14 +131,14 @@ function drawAnswer(s: State): number | undefined {
     const out = new Set<number>([...s.seats.flatMap((x) => x.hand), ...s.entries.flatMap((e) => e.cards)]);
     s.answers = shuffleIn(
       s,
-      range(ANSWERS.length).filter((i) => !out.has(i)),
+      range(deckOf(s).answers.length).filter((i) => !out.has(i)),
     );
   }
   return s.answers.pop();
 }
 
 function drawPrompt(s: State): number {
-  if (s.prompts.length === 0) s.prompts = shuffleIn(s, range(PROMPTS.length));
+  if (s.prompts.length === 0) s.prompts = shuffleIn(s, range(deckOf(s).prompts.length));
   return s.prompts.pop()!;
 }
 
@@ -146,7 +158,7 @@ export function newRoom(code: string, now: number, seed: number): State {
     created: now,
     updated: now,
     phase: 'lobby',
-    settings: { target: 7, vote: false, seconds: 75 },
+    settings: { target: 7, vote: false, seconds: 75, deck: 'en' },
     seats: [],
     nextSeat: 1,
     host: 0,
@@ -330,7 +342,7 @@ export function tick(s: State, now: number): void {
 
 export type Action =
   | { t: 'start' }
-  | { t: 'settings'; target?: number; vote?: boolean; seconds?: number }
+  | { t: 'settings'; target?: number; vote?: boolean; seconds?: number; deck?: Deck }
   | { t: 'play'; cards: number[] }
   | { t: 'pick'; entry: number }
   | { t: 'vote'; entry: number }
@@ -371,6 +383,15 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (typeof a.target === 'number' && (TARGETS as readonly number[]).includes(a.target)) s.settings.target = a.target;
       if (typeof a.vote === 'boolean') s.settings.vote = a.vote;
       if (typeof a.seconds === 'number' && (TIMERS as readonly number[]).includes(a.seconds)) s.settings.seconds = a.seconds;
+      if (isDeck(a.deck) && a.deck !== (s.settings.deck ?? 'en')) {
+        // New cards: every hand, pile and the last game's greatest hits referred to the old ones.
+        s.settings.deck = a.deck;
+        for (const x of s.seats) x.hand = [];
+        s.entries = [];
+        s.history = [];
+        s.prompts = shuffleIn(s, range(deckOf(s).prompts.length));
+        s.answers = shuffleIn(s, range(deckOf(s).answers.length));
+      }
       return null;
     }
     case 'play': {
@@ -504,15 +525,15 @@ export function viewFor(s: State, key: string): RoomView | null {
       waiting: x.waiting,
       you: x === me,
     })),
-    prompt: s.prompt === null || s.phase === 'lobby' || s.phase === 'over' ? null : { id: s.prompt, text: PROMPTS[s.prompt]!, pick: promptPick(s) },
-    hand: me.hand.map((id) => ({ id, text: ANSWERS[id]! })),
+    prompt: s.prompt === null || s.phase === 'lobby' || s.phase === 'over' ? null : { id: s.prompt, text: deckOf(s).prompts[s.prompt]!, pick: promptPick(s) },
+    hand: me.hand.map((id) => ({ id, text: deckOf(s).answers[id]! })),
     played: s.entries.some((e) => e.seat === me.n),
     swapped: me.swapped,
     waiting: me.waiting,
     entries:
       s.phase === 'judging' || reveal
         ? s.entries.map((e, i) => ({
-            cards: e.cards.map((c) => ANSWERS[c]!),
+            cards: e.cards.map((c) => deckOf(s).answers[c]!),
             mine: e.seat === me.n,
             ...(reveal ? { seat: e.seat, name: seatN(s, e.seat)?.name ?? '?', votes: s.settings.vote ? counts[i] : undefined, won: s.winners.includes(e.seat) } : {}),
           }))
@@ -522,7 +543,7 @@ export function viewFor(s: State, key: string): RoomView | null {
     winners: s.winners,
     champion: s.champion,
     tiebreak: s.phase !== 'lobby' && s.phase !== 'over' && tieBreak(s),
-    history: s.phase === 'over' ? s.history.map((h) => ({ prompt: PROMPTS[h.prompt]!, cards: h.cards.map((c) => ANSWERS[c]!), name: h.name })) : [],
+    history: s.phase === 'over' ? s.history.map((h) => ({ prompt: deckOf(s).prompts[h.prompt]!, cards: h.cards.map((c) => deckOf(s).answers[c]!), name: h.name })) : [],
   };
 }
 

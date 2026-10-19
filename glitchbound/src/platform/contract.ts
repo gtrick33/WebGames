@@ -50,9 +50,15 @@ export interface GameModuleProps {
   challenge?: ChallengeSpec;
   /** The player's name on the site (member or guest), for games that show it to others. */
   playerName?: string;
+  /**
+   * The language to play the game's own content in: the site's language when the game lists it in
+   * `contentLangs`, else English. Games without translations can ignore it.
+   */
+  lang?: ContentLang;
 }
 
 import type { ChallengeSpec } from './challenge';
+import type { ContentLang } from './contentLang';
 
 export const MESSAGE_SOURCE = 'glitchbound-game';
 export const PROTOCOL_VERSION = 1;

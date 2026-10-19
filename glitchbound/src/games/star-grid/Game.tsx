@@ -4,10 +4,12 @@ import { openChallengeScores } from '../../platform/challenge';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
+import { Coach, useCoach } from '../../components/Coach';
 import { ResultLine } from '../../components/ResultLine';
 import { NextDaily } from '../../components/NextDaily';
 import { conflicts, DAILY_SIZES, fmtTime, makePuzzle, nextMark, resultLine, solved, solvePoints, type Mark, type Puzzle, type Tool } from './logic';
 import { createSfx, type Sfx } from './sound';
+import { COACH } from './coach';
 import './Game.css';
 
 const KEY = 'glitchbound.star-grid';
@@ -485,11 +487,16 @@ function ShareButton({ text }: { text: string }) {
 }
 
 function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPlay: (m: Mode, size?: number) => void; onMute: () => void }) {
+  // First time on the menu: a short walkthrough of the rules (the ? button brings it back).
+  const coach = useCoach('star-grid');
   const daily = save.daily[today];
   const going = daily?.open && save.progress?.day === today ? save.progress : null;
   return (
     <div className="sg sg-menu">
       <div className="sg-menu-top">
+        <button className="sg-icon" onClick={coach.show} aria-label="How to play">
+          ?
+        </button>
         <button className="sg-icon" onClick={onMute} aria-label={save.muted ? 'Turn sound on' : 'Turn sound off'}>
           {save.muted ? '🔇' : '🔊'}
         </button>
@@ -545,6 +552,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
       <p className="sg-muted">
         Best {save.best} · {save.solved} {save.solved === 1 ? 'grid' : 'grids'} solved
       </p>
+      {coach.open && <Coach steps={COACH} onClose={coach.close} />}
     </div>
   );
 }

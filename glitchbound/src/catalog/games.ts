@@ -473,6 +473,7 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'wait-what',
     title: 'Wait, What?',
+    contentLangs: ['en', 'bg'],
     tagline: 'Trivia that sounds made up but isn’t. Weird history, odd animals, words you won’t believe.',
     description:
       'A quiz full of facts that make you say "wait, what?": the army that lost a war to emus, the jockey who won a race after he died, the cheese that comes with live maggots. ' +
@@ -517,6 +518,7 @@ export const GAMES: GameEntry[] = [
   },
   {
     slug: 'crass-act',
+    contentLangs: ['en', 'bg'],
     title: 'Crass Act',
     tagline: 'Fill in the blank with the worst card in your hand. The funniest answer wins. 18+.',
     description:

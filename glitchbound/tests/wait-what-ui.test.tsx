@@ -45,3 +45,15 @@ describe('Wait, What? UI', () => {
     vi.useRealTimers();
   });
 });
+
+describe('Wait, What? in Bulgarian', () => {
+  it('loads the Bulgarian questions and plays a whole daily in Bulgarian', async () => {
+    localStorage.removeItem('glitchbound.wait-what');
+    render(<Game host={{ report: vi.fn() }} restartKey={0} lang="bg" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Играй днешния куиз' }));
+    // The question card and its category chip are in Bulgarian.
+    const chip = document.querySelector('.ww-chip')!.textContent!;
+    expect(chip).toMatch(/[А-Яа-я]/);
+    expect(document.querySelector('.ww-q')!.textContent).toMatch(/[А-Яа-я]/);
+  });
+});

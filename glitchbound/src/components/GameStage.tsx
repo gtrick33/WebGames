@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode, type RefObject } from 'react';
-import { t, useT } from '../i18n';
+import { t, useLang, useT } from '../i18n';
+import { contentLangFor } from '../platform/contentLang';
 import { GAME_MODULES } from '../catalog/modules';
 import type { GameEntry } from '../catalog/types';
 import { parseGameMessage, type GameEvent, type GameModuleProps } from '../platform/contract';
@@ -62,6 +63,8 @@ interface Props {
  */
 export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef, playerName, onPlayClick, frameRef, overlay, pauseSignal = 0, challenge }: Props) {
   useT();
+  // The game's own content follows the site's language when the game has it (a change restarts it).
+  const lang = contentLangFor(game.contentLangs, useLang());
   const [phase, setPhaseState] = useState<Phase>(() => (!autoStart ? 'poster' : game.runtime.kind === 'embed' ? 'loading' : 'ready'));
   const [attempt, setAttempt] = useState(0);
   const ownFrame = useRef<HTMLIFrameElement>(null);
@@ -196,7 +199,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
 
       {game.runtime.kind === 'module' && phase === 'ready' && Module && (
         <ErrorBoundary
-          key={attempt}
+          key={`${attempt}:${lang}`}
           onError={(e) => {
             // An old tab after a deploy: load the new build instead of reporting a crash (#15-#18).
             if (isStaleBuildError(e)) {
@@ -211,7 +214,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
         >
           <Suspense fallback={<StageLoading title={game.title} />}>
             <div className="stage-module">
-              <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} />
+              <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} lang={lang} />
             </div>
           </Suspense>
         </ErrorBoundary>

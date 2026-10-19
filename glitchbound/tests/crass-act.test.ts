@@ -247,3 +247,37 @@ describe('Crass Act rooms', () => {
     expect(Object.keys(s.votes)).toHaveLength(0);
   });
 });
+
+describe('Crass Act Bulgarian deck', () => {
+  it('has unique Bulgarian prompts and answers, one or two blanks each', async () => {
+    const { ANSWERS_BG, PROMPTS_BG } = await import('../src/games/crass-act/cards-bg');
+    expect(PROMPTS_BG.length).toBeGreaterThanOrEqual(75);
+    expect(ANSWERS_BG.length).toBeGreaterThanOrEqual(200);
+    expect(new Set(PROMPTS_BG).size).toBe(PROMPTS_BG.length);
+    expect(new Set(ANSWERS_BG).size).toBe(ANSWERS_BG.length);
+    for (const p of PROMPTS_BG) expect([1, 2]).toContain(pickCount(p));
+    for (const card of [...PROMPTS_BG, ...ANSWERS_BG]) expect(card).toMatch(/[А-Яа-я]/);
+  });
+
+  it('the host switches a room to the Bulgarian cards between games; hands and piles start over', async () => {
+    const { ANSWERS_BG, PROMPTS_BG } = await import('../src/games/crass-act/cards-bg');
+    const s = newRoom('ABCDE', now, 7);
+    KEYS.slice(0, 3).forEach((k, i) => join(s, k, `P${i + 1}`, now));
+    expect(s.settings.deck).toBe('en');
+    expect(act(s, KEYS[1]!, { t: 'settings', deck: 'bg' }, now)).toBe('Only the host can change settings.');
+    expect(act(s, KEYS[0]!, { t: 'settings', deck: 'bg' }, now)).toBeNull();
+    expect(act(s, KEYS[0]!, { t: 'start' }, now)).toBeNull();
+    const v = viewFor(s, KEYS[1]!)!;
+    expect(PROMPTS_BG).toContain(v.prompt!.text);
+    for (const c of viewFor(s, KEYS[2]!)!.hand) expect(ANSWERS_BG).toContain(c.text);
+    // Mid-game the deck can't change.
+    expect(act(s, KEYS[0]!, { t: 'settings', deck: 'en' }, now)).toBe('Settings can only change between games.');
+  });
+
+  it('rooms saved before decks existed keep playing the English cards', () => {
+    const s = room(3);
+    delete (s.settings as { deck?: string }).deck;
+    const v = viewFor(s, KEYS[1]!)!;
+    expect(PROMPTS).toContain(v.prompt!.text);
+  });
+});
