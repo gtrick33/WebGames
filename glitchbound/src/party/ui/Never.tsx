@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { NHIE, NHIE_CATEGORIES } from '../content/nhie';
 import { cardConsequence, draw, freshRng } from '../engine';
 import type { PartySession } from '../session';
-import type { NhieCategory, NhieStatement } from '../types';
+import type { NhieStatement } from '../types';
 import { Avatar, ModeBar, PlayerPicker, Results } from './shared';
 
 export const FINGERS = 5;
@@ -18,7 +18,9 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
   const [setup, setSetup] = useState(!active || active.count === 0);
   const [cats, setCats] = useState<string[]>(active?.categories.length ? active.categories : ['casual', 'funny', 'embarrassing']);
   const [reveal, setReveal] = useState(active?.reveal ?? true);
-  const [card, setCard] = useState<NhieStatement | null>(null);
+  const own = useMemo(() => session.custom.nhie.map((text, i): NhieStatement => ({ id: `cn-${i}`, text: text.replace(/^never have i ever\s*/i, ''), category: 'casual' })), [session.custom.nhie]);
+  // After a refresh the statement that was on the table comes back.
+  const [card, setCard] = useState<NhieStatement | null>(() => [...NHIE, ...own].find((s) => s.id === active?.card) ?? null);
   const [stage, setStage] = useState<'think' | 'count' | 'pick'>('think');
   const [count, setCount] = useState(3);
   const [haves, setHaves] = useState<string[]>([]);
@@ -26,9 +28,9 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
   const deck = useMemo(
     () => [
       ...NHIE.filter((s) => cats.includes(s.category) && (s.category !== 'adults' || session.settings.adultConfirmed)),
-      ...(cats.includes('custom') ? session.custom.nhie.map((text, i) => ({ id: `cn-${i}`, text: text.replace(/^never have i ever\s*/i, ''), category: 'casual' as NhieCategory })) : []),
+      ...(cats.includes('custom') ? own : []),
     ],
-    [cats, session.settings.adultConfirmed, session.custom.nhie],
+    [cats, session.settings.adultConfirmed, own],
   );
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
     setHaves([]);
     setStage(reveal ? 'think' : 'pick');
     setCount(3);
-    update((s) => ({ ...s, used: { ...s.used, nhie: d.used }, active: { ...st, count: st.count + 1 } }));
+    update((s) => ({ ...s, used: { ...s.used, nhie: d.used }, active: { ...st, count: st.count + 1, card: d.item?.id } }));
   };
 
   const start = (): void => {

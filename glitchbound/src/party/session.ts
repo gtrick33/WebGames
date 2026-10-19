@@ -22,7 +22,8 @@ export type ModeId = (typeof MODE_IDS)[number];
 
 export type ModeState =
   | { mode: 'prompts'; count: number; limit: number; card?: DealtCard }
-  | { mode: 'nhie'; count: number; limit: number; reveal: boolean; categories: string[]; have: Record<string, number> }
+  /** `card` is the statement on the table (its id), so a refresh shows the same one. */
+  | { mode: 'nhie'; count: number; limit: number; reveal: boolean; categories: string[]; have: Record<string, number>; card?: string }
   | { mode: 'charades'; data: unknown }
   /** Dial It In, One of a Kind and Hue Knew? keep their round on screen only. */
   | { mode: 'dial' | 'unique' | 'hues'; data: null }
