@@ -58,20 +58,6 @@
 @keyframes preview-in {
   from { opacity: 0; }
 }
-.tile-xl.has-preview .tile-art,
-.tile-wide.has-preview .tile-art {
-  aspect-ratio: 16 / 7;
-}
-.tile-xl.has-preview .tile-art img,
-.tile-wide.has-preview .tile-art img {
-  width: 50%;
-}
-.tile-xl .tile-preview,
-.tile-wide .tile-preview {
-  left: 50%;
-  border-left: 2px solid var(--accent);
-  box-shadow: inset 12px 0 24px -12px color-mix(in srgb, var(--accent) 70%, transparent);
-}
 .tile-scan {
   position: absolute;
   inset: 0;
@@ -255,8 +241,7 @@
 }
 @media (min-width: 1021px) {
   /* Big banners span two rows: the artwork grows to fill them instead of leaving a gap. */
-  .tile-xl .tile-art,
-  .tile-xl.has-preview .tile-art {
+  .tile-xl .tile-art {
     flex: 1 1 auto;
     aspect-ratio: auto;
     min-height: 280px;
@@ -268,15 +253,6 @@
   .tile-wide .tile-art,
   .tile-tall .tile-art {
     aspect-ratio: 4 / 3;
-  }
-  .tile-xl.has-preview .tile-art,
-  .tile-wide.has-preview .tile-art {
-    aspect-ratio: 4 / 3;
-  }
-  /* Two squares side by side: the game's title art and its live preview. */
-  .tile-xl.has-preview .tile-art img,
-  .tile-wide.has-preview .tile-art img {
-    width: 50%;
   }
 }
 
@@ -310,10 +286,6 @@
   .tile-xl .tile-art,
   .tile-wide .tile-art {
     aspect-ratio: 5 / 2;
-  }
-  .tile-xl.has-preview .tile-art,
-  .tile-wide.has-preview .tile-art {
-    aspect-ratio: 2 / 1;
   }
   .tile-tall .tile-art {
     aspect-ratio: 1 / 1;

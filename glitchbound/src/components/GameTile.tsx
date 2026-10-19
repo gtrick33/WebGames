@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { tGame, useT } from '../i18n';
 import { isNewLive, useLiveCatalog } from '../platform/liveCatalog';
 import type { TileSize } from '../catalog/settings';
@@ -10,22 +10,25 @@ import { Icon } from './Icon';
 import './GameTile.css';
 
 /**
- * A game "cabinet" in the catalogue: artwork with a live looping preview (it runs only while the
- * tile is on screen), title, categories, favorite heart and play action.
+ * A game "cabinet" in the catalogue: its logo artwork, title, categories, favorite heart and play
+ * action. A mouse hovering the tile plays the game's live preview over the artwork; touch screens
+ * keep the calm logo (a grid of moving tiles is too much on a phone).
  */
 export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEntry; size?: TileSize; index?: number; best?: number }) {
   const live = useLiveCatalog();
   const t = useT();
   const style = { '--i': index, viewTransitionName: `tile-${game.slug}` } as CSSProperties;
   const preview = hasPreview(game.slug);
-  // Wide tiles with a preview split into artwork + live screen, so neither covers the other.
-  const art = (size === 'xl' || size === 'wide') && !preview ? game.art.wide : game.art.tile;
+  const [hover, setHover] = useState(false);
+  const art = size === 'xl' || size === 'wide' ? game.art.wide : game.art.tile;
   // Admins can recolor a banner and give it a sticker (which takes the place of NEW).
   const accent = live.layout?.accents[game.slug] ?? game.accent;
   const sticker = live.layout?.stickers[game.slug];
   return (
     <article
-      className={`tile tile-${size} pop-in${preview ? ' has-preview' : ''}`}
+      className={`tile tile-${size} pop-in`}
+      onPointerEnter={(e) => preview && e.pointerType === 'mouse' && setHover(true)}
+      onPointerLeave={() => setHover(false)}
       data-accent={accent}
       style={style}
     >
@@ -35,8 +38,8 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
           {size === 'xl' && art !== game.art.tile && <source media="(min-width: 1021px)" srcSet={game.art.tile} />}
           <img src={art} alt={game.art.alt} loading="lazy" decoding="async" />
         </picture>
-        {preview && <GamePreview slug={game.slug} className="tile-preview" />}
-        {preview && (
+        {hover && <GamePreview slug={game.slug} className="tile-preview" />}
+        {hover && (
           <span className="tile-live mono" aria-hidden="true">
             <i /> {t('Live preview')}
           </span>
