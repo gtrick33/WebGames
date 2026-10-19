@@ -20,7 +20,10 @@ const ChallengeDock = lazy(fresh(() => import('../components/Challenge').then((m
 const ChallengeScores = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeScores }))));
 import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
-import { MiniLeaderboard } from '../components/Leaderboard';
+// The leaderboard tab loads its data from the network anyway, so its code comes with it (its styles stay
+// in the main sheet: admin tables share them).
+import '../components/Leaderboard.css';
+const MiniLeaderboard = lazy(fresh(() => import('../components/Leaderboard').then((m) => ({ default: m.MiniLeaderboard }))));
 import { openSignIn } from '../components/openSignIn';
 import { setGuestName, usePlayerName } from '../platform/playerName';
 import { music } from '../platform/music';
@@ -628,7 +631,11 @@ function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRec
             )}
           </>
         )}
-        {tab === 'board' && <MiniLeaderboard game={game} refreshKey={boardKey} embedded />}
+        {tab === 'board' && (
+          <Suspense fallback={<p className="side-muted">{t('Loading…')}</p>}>
+            <MiniLeaderboard game={game} refreshKey={boardKey} embedded />
+          </Suspense>
+        )}
         {tab === 'bests' &&
           (record ? (
             <dl className="bests">

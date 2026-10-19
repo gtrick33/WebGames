@@ -11,6 +11,9 @@ import { ImpostorMode, newImpostor } from './Impostor';
 import { openImpostorRoom } from './ImpostorRoom';
 import { BoardMode } from './Board';
 import { CharadesMode } from './Charades';
+import { DialMode } from './Dial';
+import { HuesMode } from './Hues';
+import { UniqueMode } from './Unique';
 import { NeverMode } from './Never';
 import { dealPrompt, PromptsMode } from './Prompts';
 import { openPartyRoom, PartyRoomPage } from './room/PartyRoom';
@@ -101,6 +104,9 @@ export function PartyPage() {
       {!inRoom && mode === 'charades' && <CharadesMode session={session} update={update} onExit={exit} />}
       {!inRoom && mode === 'board' && <BoardMode session={session} update={update} onExit={exit} />}
       {!inRoom && mode === 'auction' && <AuctionMode session={session} update={update} onExit={exit} />}
+      {!inRoom && mode === 'dial' && <DialMode session={session} update={update} onExit={exit} />}
+      {!inRoom && mode === 'unique' && <UniqueMode session={session} update={update} onExit={exit} />}
+      {!inRoom && mode === 'hues' && <HuesMode session={session} update={update} onExit={exit} />}
       {!mode && !inRoom && <Lobby key={play} focus={play} session={session} update={update} problem={problem} onOpen={open} onAdult={() => setAdultAsk(true)} />}
       {/* Last, so it opens above the house-rules sheet. */}
       {adultAsk && (

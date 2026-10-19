@@ -3,7 +3,7 @@
  * room with everyone on their own phone, or both) and its card text. The party page and the admin's
  * Party view both read this list; admins can hide, feature or relabel a game (src/catalog/settings.ts).
  */
-export type PartyGameId = 'impostor' | 'prompts' | 'nhie' | 'charades' | 'board' | 'auction' | 'rps' | 'crass-act';
+export type PartyGameId = 'impostor' | 'prompts' | 'nhie' | 'charades' | 'board' | 'auction' | 'rps' | 'crass-act' | 'dial' | 'unique' | 'hues';
 export type PartyRoomGame = 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'crass-act';
 
 export interface PartyGame {
@@ -31,6 +31,9 @@ export const PARTY_GAMES: PartyGame[] = [
   { id: 'prompts', title: 'Party Prompts', emoji: '🃏', blurb: 'Truths, dares and “most likely to”, with your names on every card.', time: '15–45 min', players: '2–16', color: '#ff5a6c', onePhone: true, room: null },
   { id: 'nhie', title: 'Never Have I Ever', emoji: '🙊', blurb: 'Five fingers up, reveal together. Last one standing wins.', time: '10–30 min', players: '3–16', color: '#a45cff', onePhone: true, room: 'nhie', roomPlayers: '3–16', roomBlurb: 'Answer in secret, reveal together' },
   { id: 'charades', title: 'Charades', emoji: '🎭', blurb: 'Act, describe, draw it, or hold the phone to your forehead and guess.', time: '10–30 min', players: '3–16', color: '#ff8a1f', onePhone: true, room: null },
+  { id: 'dial', title: 'Dial It In', emoji: '📻', blurb: 'One player sees where the secret spot is on the dial and gives one clue. Can the group tune in?', time: '15–30 min', players: '2–16', color: '#14b8a6', onePhone: true, room: null, sticker: 'New' },
+  { id: 'unique', title: 'One of a Kind', emoji: '🦄', blurb: 'Everyone writes a one-word clue in secret. Matching clues cancel out. Can the guesser still get it?', time: '15–25 min', players: '3–10', color: '#f59e0b', onePhone: true, room: null, sticker: 'New' },
+  { id: 'hues', title: 'Hue Knew?', emoji: '🎨', blurb: 'Describe a secret colour in one word. Whoever taps closest on the colour board scores.', time: '15–30 min', players: '3–10', color: '#ec4899', onePhone: true, room: null, sticker: 'New' },
   { id: 'board', title: 'Dice Adventure', emoji: '🎲', blurb: 'Roll, race and dodge the nasty slides.', time: '10–35 min', players: '2–8', color: '#2fd1a0', onePhone: true, room: 'board', roomPlayers: '2–8', roomBlurb: 'One board on every phone, roll on your turn' },
   { id: 'auction', title: 'Name Your Price', emoji: '🔨', blurb: 'Bid play money and build the best collection.', time: '15–30 min', players: '2–8', color: '#ffb020', onePhone: true, room: 'auction', roomPlayers: '2–8', roomBlurb: 'Bid from your own phone' },
   { id: 'rps', title: 'Rock Paper Scissors', emoji: '✊', blurb: 'Everyone throws in secret, all hands revealed at once. Last hand standing wins.', time: '2–10 min', players: '2–12', color: '#3d7bff', onePhone: false, room: 'rps', roomPlayers: '2–12', roomBlurb: 'Everyone throws at once. Last hand standing' },

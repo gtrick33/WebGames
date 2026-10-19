@@ -17,13 +17,15 @@ export interface DealtCard {
 
 export const PARTY_KEY = 'glitchbound.party';
 
-export const MODE_IDS = ['impostor', 'prompts', 'nhie', 'charades', 'board', 'auction'] as const;
+export const MODE_IDS = ['impostor', 'prompts', 'nhie', 'charades', 'board', 'auction', 'dial', 'unique', 'hues'] as const;
 export type ModeId = (typeof MODE_IDS)[number];
 
 export type ModeState =
   | { mode: 'prompts'; count: number; limit: number; card?: DealtCard }
   | { mode: 'nhie'; count: number; limit: number; reveal: boolean; categories: string[]; have: Record<string, number> }
   | { mode: 'charades'; data: unknown }
+  /** Dial It In, One of a Kind and Hue Knew? keep their round on screen only. */
+  | { mode: 'dial' | 'unique' | 'hues'; data: null }
   | { mode: 'board'; state: BoardState }
   | { mode: 'auction'; state: AuctionState }
   /** Impostor on one phone (ui/Impostor.tsx ImpostorLocal). */

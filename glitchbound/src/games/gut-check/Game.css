@@ -1,0 +1,336 @@
+/* Gut Check: two big quiz cards on a hot-pink stage, with chunky up and down calls. */
+.gc {
+  --gc-ink: #2b0f3a;
+  --gc-paper: #fff7fb;
+  position: absolute;
+  inset: 0;
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 0%, #ffb6e1 0, transparent 50%),
+    linear-gradient(170deg, #ff5fb0, #e93e8e 55%, #b02a8a);
+  color: var(--gc-ink);
+  font-family: var(--font);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.gc button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.gc-hud {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 10px;
+  width: min(100%, 420px);
+}
+.gc-icon {
+  width: 44px;
+  height: 44px;
+  border: 2.5px solid var(--gc-ink);
+  border-radius: 12px;
+  background: var(--gc-paper);
+  box-shadow: 0 3px 0 var(--gc-ink);
+  font-weight: 900;
+}
+.gc-score {
+  display: grid;
+  justify-items: center;
+  margin-right: 54px;
+  line-height: 1;
+}
+.gc-score b {
+  font: 900 38px/1 var(--mono);
+  color: #fff;
+  -webkit-text-stroke: 2.5px var(--gc-ink);
+  paint-order: stroke;
+  text-shadow: 0 3px 0 var(--gc-ink);
+}
+.gc-score span {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.gc-topic {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin-top: 8px;
+  padding: 4px 14px;
+  border: 2.5px solid var(--gc-ink);
+  border-radius: 999px;
+  background: #ffe066;
+  font-weight: 900;
+}
+.gc-stack {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 420px);
+  flex: 1;
+  min-height: 0;
+  align-content: center;
+}
+.gc-vs {
+  justify-self: center;
+  width: 44px;
+  height: 44px;
+  margin: -16px 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border: 2.5px solid var(--gc-ink);
+  border-radius: 50%;
+  background: #fff;
+  font-weight: 900;
+}
+.gc-card {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: min(26cqh, 190px);
+  padding: 12px;
+  border: 3px solid var(--gc-ink);
+  border-radius: 24px;
+  background: var(--gc-paper);
+  box-shadow: 0 5px 0 var(--gc-ink);
+  text-align: center;
+  animation: gc-in 0.4s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+@keyframes gc-in {
+  from {
+    transform: translateY(18px) scale(0.96);
+    opacity: 0;
+  }
+}
+.gc-card.is-right {
+  background: #c8f7d4;
+}
+.gc-card.is-wrong {
+  background: #ffc6cf;
+  animation: gc-no 0.4s;
+}
+@keyframes gc-no {
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+.gc-emoji {
+  font-size: min(9cqh, 54px);
+  line-height: 1.1;
+}
+.gc-name {
+  font-size: 20px;
+  line-height: 1.15;
+}
+.gc-value {
+  min-height: 1.3em;
+  font: 800 18px/1.3 var(--mono);
+  color: #7a2a63;
+}
+.gc-calls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: min(100%, 420px);
+}
+.gc-call {
+  min-height: 60px;
+  border: 3px solid var(--gc-ink);
+  border-radius: 18px;
+  box-shadow: 0 5px 0 var(--gc-ink);
+  font-size: 20px !important;
+  font-weight: 900 !important;
+}
+.gc-call.is-more {
+  background: #7cf0a8;
+}
+.gc-call.is-less {
+  background: #8fd3ff;
+}
+.gc-call:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--gc-ink);
+}
+.gc-call:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.gc-help {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+.gc-over {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 10;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(calc(100% - 32px), 340px);
+  padding: 20px;
+  border: 3px solid var(--gc-ink);
+  border-radius: 24px;
+  background: var(--gc-paper);
+  box-shadow: 0 6px 0 var(--gc-ink);
+  transform: translate(-50%, -50%);
+  text-align: center;
+  animation: gc-pop 0.4s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+@keyframes gc-pop {
+  from {
+    transform: translate(-50%, -40%) scale(0.85);
+    opacity: 0;
+  }
+}
+.gc-over h2 {
+  margin: 0;
+  font-size: 26px;
+}
+.gc-big {
+  margin: 0;
+  font: 900 56px/1 var(--mono);
+}
+.gc-muted {
+  margin: 0;
+  color: #6b3d5c;
+  font-size: 14px;
+}
+.gc-menu .gc-muted {
+  color: var(--gc-ink);
+  font-weight: 700;
+}
+.gc-small {
+  max-width: 36ch;
+  font-size: 12px;
+}
+.gc-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.gc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 2.5px solid var(--gc-ink);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 0 var(--gc-ink);
+  color: var(--gc-ink);
+  font-weight: 800;
+  text-decoration: none;
+}
+.gc-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--gc-ink);
+}
+.gc-btn-go {
+  background: #ffe066;
+}
+.gc-btn-big {
+  width: 100%;
+  font-size: 18px;
+}
+.gc-menu {
+  justify-content: center;
+  gap: 12px;
+  overflow-y: auto;
+  text-align: center;
+}
+.gc-menu-top {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+.gc-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 44px;
+}
+.gc-logo span {
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 70px;
+  border: 3px solid var(--gc-ink);
+  border-radius: 18px;
+  background: var(--gc-paper);
+  box-shadow: 0 4px 0 var(--gc-ink);
+  animation: gc-tilt 2.4s ease-in-out infinite;
+}
+.gc-logo span:last-child {
+  animation-delay: -1.2s;
+}
+.gc-logo i {
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 900;
+  color: #fff;
+}
+@keyframes gc-tilt {
+  50% {
+    transform: rotate(-6deg) translateY(-3px);
+  }
+}
+.gc-title {
+  margin: 0;
+  font-size: clamp(38px, 11cqw, 56px);
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  -webkit-text-stroke: 3px var(--gc-ink);
+  paint-order: stroke;
+  text-shadow: 0 5px 0 var(--gc-ink);
+}
+.gc-title span {
+  color: #ffe066;
+}
+.gc-tag {
+  max-width: 34ch;
+  margin: 0;
+  font-weight: 700;
+}
+.gc-card-menu {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 340px);
+  padding: 14px;
+  border: 2.5px solid var(--gc-ink);
+  border-radius: 20px;
+  background: var(--gc-paper);
+  box-shadow: 0 5px 0 var(--gc-ink);
+}
+.gc-card-head {
+  display: grid;
+  gap: 2px;
+}
+.gc-card-head span {
+  font-size: 13px;
+  opacity: 0.75;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gc-card,
+  .gc-logo span,
+  .gc-over {
+    animation: none;
+  }
+}

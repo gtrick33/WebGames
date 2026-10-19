@@ -24,6 +24,11 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
   'wait-what': () => import('../games/wait-what/Game'),
   'crass-act': () => import('../games/crass-act/Game'),
   'to-scale': () => import('../games/to-scale/Game'),
+  'square-deal': () => import('../games/square-deal/Game'),
+  'outta-here': () => import('../games/outta-here/Game'),
+  gloop: () => import('../games/gloop/Game'),
+  'gut-check': () => import('../games/gut-check/Game'),
+  'star-grid': () => import('../games/star-grid/Game'),
 };
 
 /**
