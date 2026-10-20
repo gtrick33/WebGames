@@ -34,7 +34,8 @@ export function PrivacyPage() {
           <h2 id="p-device">Saved on this device</h2>
           <p>
             As a guest, your bests, rounds played, favorites and Daily Challenge history are stored in this browser&rsquo;s local storage, and each game
-            keeps its own progress there (for example today&rsquo;s puzzle). They never leave your device. The date of your last visit is kept there
+            keeps its own progress there (for example today&rsquo;s puzzle). As a guest they never leave your device; signed in, a copy is kept with
+            your account (see below). The date of your last visit is kept there
             too; our anonymous statistics only learn whether you have visited before and how many days ago, never who you are.
           </p>
           <p className="info-small mono">
@@ -81,8 +82,10 @@ export function PrivacyPage() {
           <p>
             You can sign in with Google or with a one-time code sent to your email address. With Google we receive your name, email address and
             profile picture; with a code, only your email address. We store them with your nickname, XP, favorites, bests, quest progress, cleared
-            Daily Challenges and the scores of rounds you finish while signed in. Leaderboards show only your nickname and level. We use a single
-            essential cookie to keep you signed in.
+            Daily Challenges and the scores of rounds you finish while signed in. We also keep a copy of each game&rsquo;s save (today&rsquo;s dailies,
+            a daily you left halfway, your bests), so your progress follows you to every device; a save nobody changed for 180 days is deleted, and
+            deleting your GlitchBound data above removes the copies too. Leaderboards show only your nickname and level. We use a single essential
+            cookie to keep you signed in.
           </p>
           <p>
             {me ? (

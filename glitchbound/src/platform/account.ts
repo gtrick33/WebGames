@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { Me, PublicConfig, QuestView } from './apiTypes';
 import { dayKey } from './dates';
 import { currentSlug } from '../catalog/catalog';
+import { setSavesGate } from './syncGate';
 
 /**
  * The signed-in member (or guest) on the client. Talks to /api; everything degrades gracefully
@@ -19,12 +20,14 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function api<T>(path: string, init: { method?: string; body?: unknown; keepalive?: boolean } = {}): Promise<T> {
   const res = await fetch(path, {
     method: init.method ?? (init.body ? 'POST' : 'GET'),
     credentials: 'same-origin',
     headers: init.body ? { 'content-type': 'application/json' } : undefined,
     body: init.body ? JSON.stringify(init.body) : undefined,
+    // A request sent as the page closes (cloud saves) must outlive it.
+    keepalive: init.keepalive || undefined,
   });
   let data: unknown = null;
   try {
@@ -37,6 +40,23 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     throw new ApiError(res.status, d.error ?? 'request_failed', d.message);
   }
   return data as T;
+}
+
+/** The cloud-save engine (platform/cloudSave.ts), loaded once someone signs in. */
+let cloud: Promise<typeof import('./cloudSave')> | null = null;
+
+/**
+ * Starts (or stops) syncing this device's saves with the account. For a member, the game stage waits
+ * (syncGate.ts) until the account's saves are here; `savesAt` lets a device that has them skip the download.
+ */
+function syncSaves(me: Me | null): void {
+  if (!me) {
+    setSavesGate(Promise.resolve());
+    void cloud?.then((m) => m.stopCloudSave());
+    return;
+  }
+  cloud ??= import('./cloudSave');
+  setSavesGate(cloud.then((m) => m.startCloudSave(me.id, me.savesAt)));
 }
 
 const GUEST_FAVS = 'glitchbound.favorites';
@@ -87,21 +107,25 @@ class AccountStore {
     if (this.started || typeof window === 'undefined') return;
     this.started = true;
     this.set({ guestFavorites: readGuestFavs() });
-    void this.refresh();
+    // Games wait for this check (and a member's saves) before reading their saves.
+    setSavesGate(this.refresh());
   }
 
   async refresh(): Promise<void> {
     try {
       const [config, res] = await Promise.all([api<PublicConfig>('/api/config'), api<{ user: Me | null }>(`/api/me?day=${dayKey()}`)]);
       this.set({ config, me: res.user, status: res.user ? 'member' : 'guest' });
+      syncSaves(res.user);
     } catch {
       this.set({ status: 'offline', me: null });
+      syncSaves(null);
     }
   }
 
   /** After Google (or dev) sign-in: carries guest favorites over to the account. */
   async signedIn(me: Me): Promise<void> {
     this.set({ me, status: 'member' });
+    syncSaves(me);
     const pending = this.state.guestFavorites.filter((g) => !me.favorites.includes(g));
     for (const game of pending) await this.toggleFavorite(game, true).catch(() => undefined);
     writeGuestFavs([]);
@@ -139,6 +163,7 @@ class AccountStore {
   async signOut(): Promise<void> {
     await api('/api/auth/logout', { body: {} }).catch(() => undefined);
     this.set({ me: null, status: 'guest' });
+    syncSaves(null);
   }
 
   isFavorite(slug: string): boolean {
@@ -177,6 +202,9 @@ class AccountStore {
     try {
       const res = await api<{ user: Me | null }>(`/api/me?day=${dayKey()}`);
       this.set({ me: res.user, status: res.user ? 'member' : 'guest' });
+      // Another device may have saved since: fetch it (skipped when nothing is newer).
+      const user = res.user;
+      if (user) void cloud?.then((m) => m.startCloudSave(user.id, user.savesAt));
     } catch {
       /* keep what we have */
     }
@@ -197,6 +225,7 @@ class AccountStore {
   async deleteAccount(): Promise<void> {
     await api('/api/me', { method: 'DELETE', body: {} });
     this.set({ me: null, status: 'guest' });
+    syncSaves(null);
   }
 
   /** For tests. */

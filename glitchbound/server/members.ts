@@ -68,7 +68,7 @@ function questProgress(q: QuestDef, rounds: DayRound[], dailyDone: boolean, hasF
 }
 
 export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me> {
-  const [favs, bests, roundCount, dailyDone, claimsCount, crown, quests] = await Promise.all([
+  const [favs, bests, roundCount, dailyDone, claimsCount, crown, quests, saves] = await Promise.all([
     env.DB.prepare('SELECT game FROM favorites WHERE user_id = ? ORDER BY created_at').bind(user.id).all<{ game: string }>(),
     env.DB.prepare(
       `SELECT b.game, b.score, b.stats, b.at,
@@ -87,6 +87,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
       .bind(user.id)
       .first<{ n: number }>(),
     questViews(env, user, day),
+    env.DB.prepare('SELECT MAX(updated_at) AS at FROM game_saves WHERE user_id = ?').bind(user.id).first<{ at: number | null }>(),
   ]);
   const bestMap: Record<string, BestView> = {};
   for (const b of bests.results) bestMap[b.game] = { score: b.score, stats: parseStats(b.stats), at: b.at, rank: b.rank, players: b.players };
@@ -124,6 +125,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
     quests,
     questDay: day,
     joinedAt: user.created_at,
+    savesAt: saves?.at ?? 0,
   };
 }
 

@@ -6,6 +6,8 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { installErrorReporting } from './platform/analytics';
 import { reloadForNewBuild } from './platform/freshBuild';
+import { goToMainAddress } from './platform/canonical';
+import { account } from './platform/account';
 import { isDiscordLaunch, setEmbedHost } from './platform/embed';
 import { DISCORD } from './platform/env';
 import { startLiveCatalog } from './platform/liveCatalog';
@@ -28,11 +30,16 @@ if (DISCORD.enabled && isDiscordLaunch(location.search)) {
 }
 
 const root = document.getElementById('root');
+// One address for everyone, so saves and the sign-in are always the same ones (platform/canonical.ts).
+const leaving = goToMainAddress();
 // The chosen language's words load first (English needs none), so the page never flashes English.
 // A game page waits for its own code too (its HTML preloads it), so it renders in one go.
-const pageCode = matchRoute(location.pathname).name === 'game' ? loadGamePage().catch(() => undefined) : undefined;
+const pageCode = !leaving && matchRoute(location.pathname).name === 'game' ? loadGamePage().catch(() => undefined) : undefined;
+// The sign-in check starts before anything renders: a game page can open its game at once, and the game
+// must wait for a signed-in player's saves (platform/syncGate.ts), which this check leads to.
+if (!leaving) account.start();
 void Promise.all([startI18n(), pageCode]).then(() => {
-  if (!root) return;
+  if (!root || leaving) return;
   // The prerendered HTML inside #root is for crawlers and no-JS visitors; React replaces it.
   createRoot(root).render(
     <StrictMode>

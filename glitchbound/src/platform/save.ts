@@ -125,6 +125,38 @@ export function pruneDaily(save: Save, today: string): void {
   for (const day of Object.keys(save.gameDailies)) if (day < oldest) delete save.gameDailies[day];
 }
 
+/**
+ * Two copies of the save joined into one that keeps everything either has done (devices of one
+ * signed-in player, see platform/cloudSave.ts): the higher round count, the better best per stat,
+ * every cleared Daily Challenge and every finished game daily. Never loses progress from either side.
+ */
+export function mergeSaves(a: Save, b: Save, games: GameEntry[], today: string): Save {
+  const out: Save = structuredClone(a);
+  for (const [slug, rb] of Object.entries(b.games)) {
+    const ra = out.games[slug];
+    if (!ra) {
+      out.games[slug] = structuredClone(rb);
+      continue;
+    }
+    // Both copies count the same shared history, so the larger count is the true one (adding would double it).
+    ra.plays = Math.max(ra.plays, rb.plays);
+    ra.last = Math.max(ra.last, rb.last);
+    const stats = games.find((g) => g.slug === slug)?.stats ?? [];
+    for (const [key, v] of Object.entries(rb.best)) {
+      const prev = ra.best[key];
+      const lower = stats.find((s) => s.key === key)?.lowerIsBetter === true;
+      if (prev === undefined || (lower ? v < prev : v > prev)) ra.best[key] = v;
+    }
+  }
+  for (const [day, d] of Object.entries(b.daily)) {
+    const x = out.daily[day];
+    out.daily[day] = x ? { best: Math.max(x.best, d.best), done: x.done || d.done } : { ...d };
+  }
+  for (const [day, list] of Object.entries(b.gameDailies)) out.gameDailies[day] = [...new Set([...(out.gameDailies[day] ?? []), ...list])];
+  pruneDaily(out, today);
+  return out;
+}
+
 /** Days that keep the streak alive: the arcade challenge was cleared or any game's own daily was finished. */
 export function doneDays(save: Save): Set<string> {
   const days = new Set(Object.entries(save.daily).filter(([, d]) => d.done).map(([day]) => day));

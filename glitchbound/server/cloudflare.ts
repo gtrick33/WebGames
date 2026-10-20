@@ -52,7 +52,7 @@ async function roomStats(env: Env, now: number): Promise<CloudUsage['rooms']> {
 }
 
 const TABLES: Record<'DB' | 'NR_DB', string[]> = {
-  DB: ['users', 'sessions', 'runs', 'bests', 'dailies', 'favorites', 'quest_claims', 'events', 'errors', 'subscribers', 'announcements', 'login_codes', 'feedback', 'bug_reports', 'error_issues'],
+  DB: ['users', 'sessions', 'runs', 'bests', 'dailies', 'game_saves', 'favorites', 'quest_claims', 'events', 'errors', 'subscribers', 'announcements', 'login_codes', 'feedback', 'bug_reports', 'error_issues'],
   NR_DB: ['scores', 'runs'],
 };
 

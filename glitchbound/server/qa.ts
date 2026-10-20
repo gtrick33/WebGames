@@ -170,7 +170,12 @@ export async function emailPlayer(env: Env, target: PlayerDb, subject: string, m
 export async function resetOwnProgress(env: Env, user: UserRow, scope: 'game' | 'today' | 'all', game: string | null, day: string): Promise<void> {
   const db = env.DB;
   if (scope === 'game' && game) {
-    await db.batch([db.prepare('DELETE FROM bests WHERE user_id = ? AND game = ?').bind(user.id, game), db.prepare('DELETE FROM runs WHERE user_id = ? AND game = ?').bind(user.id, game)]);
+    await db.batch([
+      db.prepare('DELETE FROM bests WHERE user_id = ? AND game = ?').bind(user.id, game),
+      db.prepare('DELETE FROM runs WHERE user_id = ? AND game = ?').bind(user.id, game),
+      // The game's cloud save ("glitchbound.<slug>", "gb.<slug>.v1"...), so the next device doesn't bring it back.
+      db.prepare("DELETE FROM game_saves WHERE user_id = ? AND (key IN (?, ?) OR key LIKE ? OR key LIKE ?)").bind(user.id, `glitchbound.${game}`, `gb.${game}`, `glitchbound.${game}.v%`, `gb.${game}.v%`),
+    ]);
   } else if (scope === 'today') {
     await db.batch([
       db.prepare('DELETE FROM dailies WHERE user_id = ? AND day = ?').bind(user.id, day),
@@ -178,6 +183,6 @@ export async function resetOwnProgress(env: Env, user: UserRow, scope: 'game' | 
       db.prepare('DELETE FROM runs WHERE user_id = ? AND day = ?').bind(user.id, day),
     ]);
   } else if (scope === 'all') {
-    await db.batch(['bests', 'runs', 'dailies', 'quest_claims'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(user.id)).concat([db.prepare('UPDATE users SET xp = 0 WHERE id = ?').bind(user.id)]));
+    await db.batch(['bests', 'runs', 'dailies', 'quest_claims', 'game_saves'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(user.id)).concat([db.prepare('UPDATE users SET xp = 0 WHERE id = ?').bind(user.id)]));
   }
 }

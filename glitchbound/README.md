@@ -118,6 +118,21 @@ showing a fake countdown.
 See [docs/LAUNCH-GUIDE.md](docs/LAUNCH-GUIDE.md) (sections 1, 2 and 6) and [docs/ANALYTICS.md](docs/ANALYTICS.md).
 No fake data anywhere: leaderboards only show real members' verified-in-time rounds, and nothing invents player counts.
 
+**Cloud saves.** Every game keeps its own save in localStorage (today's daily, a half-played daily that resumes, bests),
+and so does the arcade (`glitchbound.save`: rounds, the Daily Challenge, which games' dailies are done). For members,
+`src/platform/cloudSave.ts` copies those saves to the account (`functions/api/saves.ts`, D1 table `game_saves`) and
+back, so they follow the player to every device and come back after a browser clears its storage. Games need no
+changes: writes to their keys are noticed. Which keys sync: `src/platform/syncKeys.ts`. Costs stay small: one row per
+player and save, replaced in place (96 KB at most); a save is sent only when it changed, 8 s after the last change
+(40 s at most), when a game closes and when the tab is hidden; saves come down once per visit (skipped when
+`/api/me`'s `savesAt` says nothing is newer) and after 5 minutes away from the tab. Each write carries the version it
+grew from, so a device that was offline never overwrites newer progress: the two copies are merged instead
+(`cloudMerge.ts`; the arcade save merges field by field). A game's stage waits for the download before the game reads
+its save (`syncGate.ts`), and a copy that arrives while that game runs is applied when it closes. Saves nobody changed
+for 180 days are deleted. Removing a save in the app (Privacy page, QA tools) removes the account's copy too; a browser
+clearing its own storage does not. `www.` and the `pages.dev` address send visitors without saves there to the main
+address (`canonical.ts`), since each address keeps its own storage and sign-in.
+
 ## Design system
 
 - **Palette:** night-purple surfaces (`#0d0522` to `#26145a`) with a faint arcade grid, neon **cyan** `#22e4ff`

@@ -60,6 +60,8 @@ export interface Me {
   quests: QuestView[];
   questDay: string;
   joinedAt: number;
+  /** When the newest cloud save changed (0: none): a device that already has it skips the download. */
+  savesAt?: number;
 }
 
 export interface RunEndResult {

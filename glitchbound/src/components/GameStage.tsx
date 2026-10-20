@@ -8,6 +8,7 @@ import { reportError, setActiveGame } from '../platform/analytics';
 import { fresh, isStaleBuildError, reloadForNewBuild } from '../platform/freshBuild';
 import type { ChallengeSpec } from '../platform/challenge';
 import { markPlaying } from '../platform/hooks';
+import { holdGame, savesAreReady, savesReady } from '../platform/syncGate';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Icon } from './Icon';
 import './GameStage.css';
@@ -136,6 +137,19 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
     };
   }, [phase, game.slug]);
 
+  // A signed-in player's saves from other devices are put in place before the game reads them; once
+  // it runs, copies arriving from other devices wait until it closes (platform/syncGate.ts).
+  const [savesIn, setSavesIn] = useState(savesAreReady);
+  useEffect(() => {
+    if (savesIn || phase !== 'ready') return;
+    let live = true;
+    void savesReady().then(() => live && setSavesIn(true));
+    return () => {
+      live = false;
+    };
+  }, [savesIn, phase]);
+  useEffect(() => (phase === 'ready' && savesIn ? holdGame(game.slug) : undefined), [phase, savesIn, game.slug]);
+
   // Pause the game (and its sound) when it is scrolled mostly out of view.
   useEffect(() => {
     const el = stageRef.current;
@@ -213,9 +227,13 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
           fallback={() => null}
         >
           <Suspense fallback={<StageLoading title={game.title} />}>
-            <div className="stage-module">
-              <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} lang={lang} />
-            </div>
+            {savesIn ? (
+              <div className="stage-module">
+                <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} lang={lang} />
+              </div>
+            ) : (
+              <StageLoading title={game.title} />
+            )}
           </Suspense>
         </ErrorBoundary>
       )}

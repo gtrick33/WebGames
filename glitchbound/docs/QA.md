@@ -31,6 +31,8 @@ Without a Resend key nothing is emailed; in local development (`DEV_LOGIN=1`) th
   player's record (`player_emails`).
 - **Testing tools**: open hidden or paused games, reset their *own* account progress (one game, today,
   or everything), clear one game or everything saved in this browser, copy debug info for bug reports.
+  Signed in, clearing a game in this browser also clears its cloud save (otherwise the next sync would bring it back),
+  and resetting one game or everything on the account deletes the matching cloud saves.
   Testers' analytics events are not stored, and their scores never reach the public boards.
 
 ## The audit trail (legal record)
