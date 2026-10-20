@@ -453,7 +453,7 @@ const nl: string[] = [
   'Scoor {n} punten in één Crosswire-raster',
   // 410
   'Trivia die verzonnen klinkt, maar het niet is. Rare geschiedenis, vreemde dieren, ongelooflijke woorden.',
-  'Een quiz vol feiten waarbij je zegt “wacht, wat?”: het leger dat een oorlog verloor van emoes, de jockey die na zijn dood een race won, de kaas met levende maden. Honderden handgeschreven vragen in twaalf categorieën, plus echte woorden die verzonnen klinken en “wat kwam eerst?”-puzzels. Een dagelijkse quiz voor iedereen, een eindeloze modus zonder herhalingen en uitdagingen van 10 vragen voor maximaal 5 vrienden. (De vragen zijn Engels.)',
+  'Een quiz vol feiten waarbij je zegt “wacht, wat?”: het leger dat een oorlog verloor van emoes, de jockey die na zijn dood een race won, de kaas met levende maden. Ruim 1.300 handgeschreven vragen in twaalf categorieën, plus echte woorden die verzonnen klinken en “wat kwam eerst?”-puzzels. Een dagelijkse quiz voor iedereen, een eindeloze modus zonder herhalingen en uitdagingen van 10 vragen voor maximaal 5 vrienden. (De vragen zijn Engels.)',
   'Quiz van vandaag',
   '10 vragen, 20 seconden per vraag, voor iedereen hetzelfde. Goede antwoorden leveren 100 op, plus tot 50 voor snelheid.',
   'Beste quiz',
@@ -1487,7 +1487,7 @@ const nl: string[] = [
   // 1350
   'Tik op een omschrijving of vakje en gebruik dan de toetsen op het scherm',
   'Tik nog eens op hetzelfde vakje om van richting te wisselen',
-  'Honderden met de hand geschreven vragen met een verrassend weetje na elk antwoord',
+  'Ruim 1.300 met de hand geschreven vragen met een verrassend weetje na elk antwoord',
   'Ook gegenereerde vragen: echte woorden die nep klinken, woorden uit andere talen, ‘wat kwam eerst?’',
   'Dagelijkse quiz van 10, gelijk voor iedereen, met een deelbaar resultaatraster',
   'Eindeloze modus: drie fouten, en geen vraag komt terug tot je ze allemaal hebt gezien',

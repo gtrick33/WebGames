@@ -453,7 +453,7 @@ const de: string[] = [
   'Hol {n} Punkte in einem Crosswire-Raster',
   // 410
   'Quizfragen, die erfunden klingen, es aber nicht sind. Schräge Geschichte, seltsame Tiere, unglaubliche Wörter.',
-  'Ein Quiz voller Fakten, bei denen man „Moment, was?“ sagt: die Armee, die einen Krieg gegen Emus verlor, der Jockey, der nach seinem Tod ein Rennen gewann, der Käse mit lebenden Maden. Hunderte handgeschriebene Fragen in zwölf Kategorien, dazu echte Wörter, die erfunden klingen, und „Was war zuerst?“-Rätsel. Ein Tagesquiz für alle, ein Endlosmodus ohne Wiederholungen und 10-Fragen-Challenges für bis zu 5 Freunde. (Die Fragen sind englisch.)',
+  'Ein Quiz voller Fakten, bei denen man „Moment, was?“ sagt: die Armee, die einen Krieg gegen Emus verlor, der Jockey, der nach seinem Tod ein Rennen gewann, der Käse mit lebenden Maden. Über 1.300 handgeschriebene Fragen in zwölf Kategorien, dazu echte Wörter, die erfunden klingen, und „Was war zuerst?“-Rätsel. Ein Tagesquiz für alle, ein Endlosmodus ohne Wiederholungen und 10-Fragen-Challenges für bis zu 5 Freunde. (Die Fragen sind englisch.)',
   'Heutiges Quiz',
   '10 Fragen, je 20 Sekunden, für alle gleich. Richtige Antworten bringen 100, plus bis zu 50 für Tempo.',
   'Bestes Quiz',
@@ -1487,7 +1487,7 @@ const de: string[] = [
   // 1350
   'Tippe auf einen Hinweis oder ein Feld, dann nutze die Bildschirmtasten',
   'Dasselbe Feld nochmal antippen, um die Richtung zu wechseln',
-  'Hunderte handgeschriebene Fragen mit einem überraschenden Fakt nach jeder Antwort',
+  'Über 1.300 handgeschriebene Fragen mit einem überraschenden Fakt nach jeder Antwort',
   'Auch erzeugte Fragen: echte Wörter, die erfunden klingen, Wörter aus anderen Sprachen, „Was kam zuerst?“',
   'Tagesquiz mit 10 Fragen, für alle gleich, mit teilbarem Ergebnisraster',
   'Endlosmodus: drei Fehler, und keine Frage wiederholt sich, bis du alle gesehen hast',

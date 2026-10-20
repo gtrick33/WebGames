@@ -453,7 +453,7 @@ const fr: string[] = [
   'Marque {n} points dans une grille Crosswire',
   // 410
   'Un quiz qui sonne faux mais ne l’est pas. Histoire bizarre, animaux étranges, mots incroyables.',
-  'Un quiz rempli de faits qui font dire « attends, quoi ? » : l’armée qui a perdu une guerre contre des émeus, le jockey qui a gagné une course après sa mort, le fromage aux asticots vivants. Des centaines de questions écrites à la main dans douze catégories, plus de vrais mots qui sonnent faux et des énigmes « qu’est-ce qui est venu en premier ? ». Un quiz quotidien pour tous, un mode infini sans répétition et des défis de 10 questions pour 5 amis maximum. (Les questions sont en anglais.)',
+  'Un quiz rempli de faits qui font dire « attends, quoi ? » : l’armée qui a perdu une guerre contre des émeus, le jockey qui a gagné une course après sa mort, le fromage aux asticots vivants. Plus de 1 300 questions écrites à la main dans douze catégories, plus de vrais mots qui sonnent faux et des énigmes « qu’est-ce qui est venu en premier ? ». Un quiz quotidien pour tous, un mode infini sans répétition et des défis de 10 questions pour 5 amis maximum. (Les questions sont en anglais.)',
   'Le quiz du jour',
   '10 questions, 20 secondes chacune, les mêmes pour tous. Une bonne réponse vaut 100, plus jusqu’à 50 pour la vitesse.',
   'Meilleur quiz',
@@ -1487,7 +1487,7 @@ const fr: string[] = [
   // 1350
   'Touche une définition ou une case, puis utilise le clavier à l’écran',
   'Touche à nouveau la même case pour changer de sens',
-  'Des centaines de questions écrites à la main avec un fait surprenant après chaque réponse',
+  'Plus de 1 300 questions écrites à la main avec un fait surprenant après chaque réponse',
   'Des questions générées aussi : de vrais mots qui ont l’air inventés, des mots d’autres langues, « lequel est venu en premier ? »',
   'Quiz quotidien de 10 questions, le même pour tout le monde, avec une grille de résultat à partager',
   'Mode sans fin : trois erreurs, et aucune question ne se répète tant que tu ne les as pas toutes vues',

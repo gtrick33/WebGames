@@ -453,7 +453,7 @@ const it: string[] = [
   'Fai {n} punti in una griglia di Crosswire',
   // 410
   'Quiz che sembrano inventati ma non lo sono. Storia strana, animali bizzarri, parole incredibili.',
-  'Un quiz pieno di fatti che ti fanno dire «aspetta, cosa?»: l’esercito che perse una guerra contro gli emù, il fantino che vinse una corsa dopo essere morto, il formaggio con le larve vive. Centinaia di domande scritte a mano in dodici categorie, più parole vere che sembrano inventate e sfide «cosa è venuto prima?». Un quiz giornaliero per tutti, una modalità infinita senza ripetizioni e sfide da 10 domande per un massimo di 5 amici. (Le domande sono in inglese.)',
+  'Un quiz pieno di fatti che ti fanno dire «aspetta, cosa?»: l’esercito che perse una guerra contro gli emù, il fantino che vinse una corsa dopo essere morto, il formaggio con le larve vive. Oltre 1.300 domande scritte a mano in dodici categorie, più parole vere che sembrano inventate e sfide «cosa è venuto prima?». Un quiz giornaliero per tutti, una modalità infinita senza ripetizioni e sfide da 10 domande per un massimo di 5 amici. (Le domande sono in inglese.)',
   'Il quiz di oggi',
   '10 domande, 20 secondi ciascuna, uguali per tutti. Ogni risposta giusta vale 100, più fino a 50 per la velocità.',
   'Miglior quiz',
@@ -1487,7 +1487,7 @@ const it: string[] = [
   // 1350
   'Tocca una definizione o una casella, poi usa i tasti sullo schermo',
   'Tocca di nuovo la stessa casella per cambiare direzione',
-  'Centinaia di domande scritte a mano con un fatto sorprendente dopo ogni risposta',
+  'Oltre 1.300 domande scritte a mano con un fatto sorprendente dopo ogni risposta',
   'Anche domande generate: parole vere che sembrano inventate, parole di altre lingue, “quale è venuto prima?”',
   'Quiz giornaliero di 10 domande, uguale per tutti, con una griglia di risultato da condividere',
   'Modalità infinita: tre errori, e nessuna domanda si ripete finché non le hai viste tutte',

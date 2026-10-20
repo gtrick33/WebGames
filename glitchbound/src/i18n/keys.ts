@@ -457,7 +457,7 @@ export const KEYS: string[] = [
   "Score {n} points in one Crosswire grid",
   // 410
   "Trivia that sounds made up but isn’t. Weird history, odd animals, words you won’t believe.",
-  "A quiz full of facts that make you say \"wait, what?\": the army that lost a war to emus, the jockey who won a race after he died, the cheese that comes with live maggots. Hundreds of hand-written questions across twelve categories, plus real words that sound fake and \"which came first?\" puzzles. A daily quiz for everyone, an endless mode with no repeats, and 10-question challenges for up to 5 friends.",
+  "A quiz full of facts that make you say \"wait, what?\": the army that lost a war to emus, the jockey who won a race after he died, the cheese that comes with live maggots. Over 1,300 hand-written questions across twelve categories, plus real words that sound fake and \"which came first?\" puzzles. A daily quiz for everyone, an endless mode with no repeats, and 10-question challenges for up to 5 friends.",
   "Today’s quiz",
   "10 questions, 20 seconds each, the same for everyone. Right answers score 100, plus up to 50 for speed.",
   "Best quiz score",
@@ -1491,7 +1491,7 @@ export const KEYS: string[] = [
   // 1350
   "Tap a clue or a square, then use the on-screen keys",
   "Tap the same square again to switch direction",
-  "Hundreds of hand-written questions with a surprising fact after every answer",
+  "Over 1,300 hand-written questions with a surprising fact after every answer",
   "Generated questions too: real words that sound fake, words from other languages, \"which came first?\"",
   "Daily quiz of 10, the same for everyone, with a shareable result grid",
   "Endless mode: three strikes, and no question repeats until you have seen them all",

@@ -158,6 +158,24 @@ describe('Quizbelief decks', () => {
     }
   });
 
+  it('the 22 October batch leaves earlier dailies alone, then nothing repeats until the whole bank has gone by', async () => {
+    const { EN } = await import('../src/games/wait-what/pack');
+    const { GROWTH_SINCE } = await import('../src/games/wait-what/bank/growth');
+    const before = { ...EN, batches: EN.batches.filter((b) => b.since < GROWTH_SINCE) };
+    for (let d = LAUNCH; d < GROWTH_SINCE; d = addDays(d, 1)) expect(dailyQuiz(d)).toEqual(dailyQuiz(d, before));
+    const total = EN.batches.reduce((n, b) => n + HAND_CATS.reduce((m, c) => m + b.items[c].length, 0), 0);
+    const seen = new Set<string>();
+    for (let d = LAUNCH; seen.size < total; d = addDays(d, 1)) {
+      expect(d < '2028-01-01', 'the walk never covers the bank').toBe(true);
+      const hand = dailyQuiz(d).filter((q) => !GENERATED.test(q.id));
+      const repeats = hand.filter((q) => seen.has(q.id));
+      hand.forEach((q) => seen.add(q.id));
+      // Only the day that finishes the bank may top up with questions from the start of the walk.
+      if (repeats.length) expect(seen.size, `${d} repeats ${repeats[0]!.id}`).toBe(total);
+    }
+    expect(total).toBeGreaterThan(1250);
+  });
+
   it('challenge rounds give every player the same questions', () => {
     expect(challengeQuiz(12345, '2026-10-20')).toEqual(challengeQuiz(12345, '2026-10-20'));
     expect(challengeQuiz(12345, '2026-10-20').map((q) => q.id)).not.toEqual(challengeQuiz(54321, '2026-10-20').map((q) => q.id));

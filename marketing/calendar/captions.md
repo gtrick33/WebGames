@@ -1701,7 +1701,7 @@ Real gameplay, recorded in the browser. More games: https://glitchboundstudio.co
 ```
 Trivia that sounds made up but isn’t. Weird history, odd animals, words you won’t believe.
 
-A quiz full of facts that make you say "wait, what?": the army that lost a war to emus, the jockey who won a race after he died, the cheese that comes with live maggots. Hundreds of hand-written questions across twelve categories, plus real words that sound fake and "which came first?" puzzles. A daily quiz for everyone, an endless mode with no repeats, and 10-question challenges for up to 5 friends.
+A quiz full of facts that make you say "wait, what?": the army that lost a war to emus, the jockey who won a race after he died, the cheese that comes with live maggots. Over 1,300 hand-written questions across twelve categories, plus real words that sound fake and "which came first?" puzzles. A daily quiz for everyone, an endless mode with no repeats, and 10-question challenges for up to 5 friends.
 
 Play Quizbelief free, no download: https://glitchboundstudio.com/games/wait-what
 

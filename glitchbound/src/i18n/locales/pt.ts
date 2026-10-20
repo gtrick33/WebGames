@@ -453,7 +453,7 @@ const pt: string[] = [
   'Faz {n} pontos numa grelha do Crosswire',
   // 410
   'Um quiz que parece inventado, mas não é. História estranha, animais esquisitos, palavras inacreditáveis.',
-  'Um quiz cheio de factos de “espera, o quê?”: o exército que perdeu uma guerra contra emus, o jóquei que ganhou uma corrida depois de morrer, o queijo com larvas vivas. Centenas de perguntas escritas à mão em doze categorias, mais palavras reais que soam inventadas e rondas de “o que veio primeiro?”. Um quiz diário para todos, um modo infinito sem repetições e desafios de 10 perguntas para até 5 amigos. (As perguntas são em inglês.)',
+  'Um quiz cheio de factos de “espera, o quê?”: o exército que perdeu uma guerra contra emus, o jóquei que ganhou uma corrida depois de morrer, o queijo com larvas vivas. Mais de 1300 perguntas escritas à mão em doze categorias, mais palavras reais que soam inventadas e rondas de “o que veio primeiro?”. Um quiz diário para todos, um modo infinito sem repetições e desafios de 10 perguntas para até 5 amigos. (As perguntas são em inglês.)',
   'O quiz de hoje',
   '10 perguntas, 20 segundos cada, iguais para todos. Respostas certas valem 100, mais até 50 pela rapidez.',
   'Melhor pontuação no quiz',
@@ -1487,7 +1487,7 @@ const pt: string[] = [
   // 1350
   'Toca numa pista ou num quadrado e depois usa as teclas do ecrã',
   'Toca outra vez no mesmo quadrado para mudar de direção',
-  'Centenas de perguntas escritas à mão com um facto surpreendente depois de cada resposta',
+  'Mais de 1300 perguntas escritas à mão com um facto surpreendente depois de cada resposta',
   'Também perguntas geradas: palavras reais que parecem inventadas, palavras de outras línguas, “o que veio primeiro?”',
   'Quiz diário de 10, igual para todos, com uma grelha de resultado para partilhar',
   'Modo sem fim: três erros, e nenhuma pergunta se repete até as teres visto todas',

@@ -453,7 +453,7 @@ const pl: string[] = [
   'Zdobądź {n} pkt w jednym diagramie Crosswire',
   // 410
   'Quiz, który brzmi jak zmyślony, ale nie jest. Dziwna historia, osobliwe zwierzęta, niewiarygodne słowa.',
-  'Quiz pełen faktów, przy których mówisz „chwila, co?”: armia, która przegrała wojnę z emu, dżokej, który wygrał wyścig po śmierci, ser z żywymi larwami. Setki ręcznie napisanych pytań w dwunastu kategoriach, plus prawdziwe słowa, które brzmią jak zmyślone, i zagadki „co było pierwsze?”. Codzienny quiz dla wszystkich, nieskończony tryb bez powtórek i wyzwania na 10 pytań dla maksymalnie 5 znajomych. (Pytania są po angielsku.)',
+  'Quiz pełen faktów, przy których mówisz „chwila, co?”: armia, która przegrała wojnę z emu, dżokej, który wygrał wyścig po śmierci, ser z żywymi larwami. Ponad 1300 ręcznie napisanych pytań w dwunastu kategoriach, plus prawdziwe słowa, które brzmią jak zmyślone, i zagadki „co było pierwsze?”. Codzienny quiz dla wszystkich, nieskończony tryb bez powtórek i wyzwania na 10 pytań dla maksymalnie 5 znajomych. (Pytania są po angielsku.)',
   'Dzisiejszy quiz',
   '10 pytań, po 20 sekund, takie same dla wszystkich. Dobra odpowiedź daje 100, plus do 50 za szybkość.',
   'Najlepszy quiz',
@@ -1487,7 +1487,7 @@ const pl: string[] = [
   // 1350
   'Dotknij hasła lub pola, a potem użyj klawiszy na ekranie',
   'Dotknij tego samego pola ponownie, by zmienić kierunek',
-  'Setki ręcznie napisanych pytań z zaskakującą ciekawostką po każdej odpowiedzi',
+  'Ponad 1300 ręcznie napisanych pytań z zaskakującą ciekawostką po każdej odpowiedzi',
   'Także pytania generowane: prawdziwe słowa, które brzmią na zmyślone, słowa z innych języków, „co było pierwsze?”',
   'Codzienny quiz z 10 pytaniami, taki sam dla wszystkich, z siatką wyników do udostępnienia',
   'Tryb bez końca: trzy błędy, a żadne pytanie się nie powtórzy, dopóki nie zobaczysz wszystkich',

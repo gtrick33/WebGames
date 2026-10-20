@@ -10,7 +10,7 @@
  * Content added later goes in a new batch with a `since` date after its release, so dailies and
  * challenges from before then keep their questions.
  */
-import { daysBetween, hashString } from '../../platform/dates';
+import { addDays, daysBetween, hashString } from '../../platform/dates';
 import { EN, LAUNCH, type HandCat, type Pack } from './pack';
 import type { Raw } from './bank/types';
 
@@ -512,14 +512,75 @@ export function pickText(q: Question, pick: Pick): string {
  * The order the daily quiz walks the hand-written bank in: every category shuffled, then all of them
  * interleaved evenly by size, so each day mixes categories and nothing repeats until the bank is used up.
  */
-function dailySequence(day: string, p: Pack): { id: string; cat: HandCat; raw: Raw }[] {
-  const keyed: { key: number; id: string; cat: HandCat; raw: Raw }[] = [];
+type Item = { id: string; cat: HandCat; raw: Raw };
+
+/** Lists merged so each category is spread evenly through the walk (every category keeps its own order). */
+function spread(byCat: (cat: HandCat) => { id: string; raw: Raw }[]): Item[] {
+  const keyed: (Item & { key: number })[] = [];
   for (const cat of HAND_CATS) {
-    const order = dailyOrder(cat, day, p);
+    const order = byCat(cat);
     const offset = (hashString(`ww-offset:${cat}`) % 1000) / 1000;
     order.forEach((x, j) => keyed.push({ key: (j + offset) / order.length, cat, ...x }));
   }
-  return keyed.sort((a, b) => a.key - b.key || a.id.localeCompare(b.id));
+  return keyed.sort((a, b) => a.key - b.key || a.id.localeCompare(b.id)).map(({ key: _, ...x }) => x);
+}
+
+/**
+ * Batches released from this day on extend the daily walk instead of reshuffling it: the questions
+ * already served keep their places, and the new ones are mixed in with the ones not served yet, so a
+ * daily player sees every question once before any comes back. (Earlier batches reshuffled the walk.)
+ */
+export const CONTINUE_FROM = '2026-10-22';
+
+/** Where in the walk a day's six hand-written questions start. */
+function dailyBase(day: string): number {
+  const k0 = daysBetween(LAUNCH, FORMATS_SINCE);
+  return k0 * 8 + (daysBetween(LAUNCH, day) - k0) * 6;
+}
+
+/** A day's hand-written questions: where they start in that day's walk, and how many there are. */
+function handSlots(day: string): [number, number] {
+  return day < FORMATS_SINCE ? [Math.max(0, daysBetween(LAUNCH, day)) * 8, 8] : [dailyBase(day), 6];
+}
+
+/** Walks only change when a batch is released, so each pack keeps one per release. */
+const walks = new WeakMap<Pack, Map<string, Item[]>>();
+
+function dailySequence(day: string, p: Pack): Item[] {
+  const release = p.batches.reduce((last, b) => (b.since <= day && b.since > last ? b.since : last), '');
+  let byRelease = walks.get(p);
+  if (!byRelease) walks.set(p, (byRelease = new Map()));
+  let walk = byRelease.get(release);
+  if (!walk) byRelease.set(release, (walk = buildWalk(day, release, p)));
+  return walk;
+}
+
+function buildWalk(day: string, release: string, p: Pack): Item[] {
+  if (release < CONTINUE_FROM) return spread((cat) => dailyOrder(cat, day, p));
+  const before = dailySequence(addDays(release, -1), p);
+  // Everything the dailies before the release actually served (earlier walks were reshuffled).
+  const served = new Set<string>();
+  for (let d = LAUNCH; d < release; d = addDays(d, 1)) {
+    const walk = dailySequence(d, p);
+    const [first, count] = handSlots(d);
+    for (let i = 0; i < count; i++) served.add(walk[(first + i) % walk.length]!.id);
+  }
+  // Positions already walked stay as they were (they only come round again after a full lap)…
+  const at = dailyBase(release);
+  const walked = Array.from({ length: at }, (_, i) => before[i % before.length]!);
+  // …then every question not served yet, with the new batch shuffled in, category by category.
+  const unseen = before.filter((x) => !served.has(x.id));
+  const fresh = (cat: HandCat): { id: string; raw: Raw }[] => {
+    const out: { id: string; raw: Raw }[] = [];
+    let n = 0;
+    for (const b of p.batches) {
+      const items = b.items[cat];
+      if (b.since === release) out.push(...shuffle(items.map((raw, i) => ({ id: `${cat}:${n + i}`, raw })), rng(hashString(`ww-order:${cat}:${b.since}`))));
+      n += items.length;
+    }
+    return out;
+  };
+  return [...walked, ...spread((cat) => [...unseen.filter((x) => x.cat === cat), ...fresh(cat)])];
 }
 
 /** A fixed shuffled order of 0…n−1 (each list walks its own, so nothing repeats until it runs out). */

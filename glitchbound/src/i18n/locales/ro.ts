@@ -453,7 +453,7 @@ const ro: string[] = [
   'Fă {n} puncte într-o grilă Crosswire',
   // 410
   'Trivia care sună inventată, dar nu e. Istorie ciudată, animale bizare, cuvinte de necrezut.',
-  'Un quiz plin de fapte „stai, ce?”: armata care a pierdut un război cu emuii, jocheul care a câștigat o cursă după ce a murit, brânza cu larve vii. Sute de întrebări scrise de mână în douăsprezece categorii, plus cuvinte reale care sună inventat și runde „ce a fost mai întâi?”. Un quiz zilnic pentru toți, un mod infinit fără repetări și provocări de 10 întrebări pentru până la 5 prieteni. (Întrebările sunt în engleză.)',
+  'Un quiz plin de fapte „stai, ce?”: armata care a pierdut un război cu emuii, jocheul care a câștigat o cursă după ce a murit, brânza cu larve vii. Peste 1.300 de întrebări scrise de mână în douăsprezece categorii, plus cuvinte reale care sună inventat și runde „ce a fost mai întâi?”. Un quiz zilnic pentru toți, un mod infinit fără repetări și provocări de 10 întrebări pentru până la 5 prieteni. (Întrebările sunt în engleză.)',
   'Quizul de azi',
   '10 întrebări, câte 20 de secunde, aceleași pentru toți. Un răspuns corect valorează 100, plus până la 50 pentru viteză.',
   'Cel mai bun scor la quiz',
@@ -1487,7 +1487,7 @@ const ro: string[] = [
   // 1350
   'Atinge o definiție sau un pătrat, apoi folosește tastele de pe ecran',
   'Atinge din nou același pătrat ca să schimbi direcția',
-  'Sute de întrebări scrise de mână, cu o curiozitate surprinzătoare după fiecare răspuns',
+  'Peste 1.300 de întrebări scrise de mână, cu o curiozitate surprinzătoare după fiecare răspuns',
   'Și întrebări generate: cuvinte reale care sună inventat, cuvinte din alte limbi, „ce a apărut primul?”',
   'Quiz zilnic cu 10 întrebări, același pentru toți, cu o grilă de rezultat de distribuit',
   'Mod fără sfârșit: trei greșeli, iar nicio întrebare nu se repetă până nu le-ai văzut pe toate',

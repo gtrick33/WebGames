@@ -9,6 +9,7 @@ import { BULGARIA } from './bulgaria';
 import { EMOJI_SAYINGS, EMOJI_TITLES } from './emoji';
 import { FOOD } from './food';
 import { GEO } from './geo';
+import { GROWTH } from './growth';
 import { HISTORY } from './history';
 import { ODD_WORDS, worldWords } from './lexicon';
 import { MONEY } from './money';
@@ -35,6 +36,7 @@ export const BG: Pack = {
       items: { history: HISTORY, animals: ANIMALS, science: SCIENCE, food: FOOD, geo: GEO, space: SPACE, tech: TECH, pop: POP, sports: SPORTS, words: WORDS, money: MONEY, myths: MYTHS },
     },
     { since: EN.batches[1]!.since, items: BULGARIA },
+    { since: EN.batches[2]!.since, items: GROWTH },
   ],
   fixedOrder: [
     ['Вярно', 'Невярно'],
