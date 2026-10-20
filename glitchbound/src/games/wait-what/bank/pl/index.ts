@@ -1,7 +1,12 @@
-// TEMP: typed answers and emoji puzzles still fall back to English (EN spread below) until pl/typed.ts and pl/emoji.ts exist.
+/**
+ * Quizbelief po polsku (ładowany tylko wtedy, gdy gra działa po polsku, zob. pack.ts). Przetłumaczone
+ * listy trzymają angielską kolejność, więc quiz dnia i wyzwania wybierają te same pytania we wszystkich
+ * językach; liczby, lata i melodie pochodzą z angielskich list.
+ */
 import { EN, type Pack } from '../../pack';
 import { ANIMALS } from './animals';
 import { BULGARIA } from './bulgaria';
+import { EMOJI_SAYINGS, EMOJI_TITLES } from './emoji';
 import { FOOD } from './food';
 import { GEO } from './geo';
 import { GROWTH } from './growth';
@@ -17,13 +22,13 @@ import { SPORTS } from './sports';
 import { TECH } from './tech';
 import { EVENT_TEXT } from './timeline';
 import { TUNE_TEXT } from './tunes';
+import { TYPED } from './typed';
 import { plural, UI_PL } from './ui';
 import { WORDS } from './words';
 
 const capital = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
 export const PL: Pack = {
-  ...EN,
   lang: 'pl',
   locale: 'pl-PL',
   batches: [
@@ -43,6 +48,9 @@ export const PL: Pack = {
   world: worldWords(EN.world),
   events: EN.events.map((e, i) => [e[0], EVENT_TEXT[i]!, e[2], e[3]] as const),
   numbers: EN.numbers.map((n, i) => ({ ...n, q: NUMBER_TEXT[i]!.q, fact: NUMBER_TEXT[i]!.fact, unit: n.unit === undefined ? undefined : NUMBER_TEXT[i]!.unit })),
+  typed: TYPED,
+  emojiTitles: EMOJI_TITLES,
+  emojiSayings: EMOJI_SAYINGS,
   tunes: EN.tunes.map((t, i) => ({ ...t, name: TUNE_TEXT[i]!.name, fact: TUNE_TEXT[i]!.fact })),
   articles: null,
   text: {
