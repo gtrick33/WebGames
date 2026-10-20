@@ -246,6 +246,61 @@ export const GAMES: GameEntry[] = [
     limits: { scorePerSecond: 160, minSeconds: 15 },
   },
   {
+    slug: 'launch-control',
+    wallet: true,
+    title: 'Launch Control',
+    tagline: 'Rev, launch at green, nail every shift. Tune 33 low-poly cars and wager your winnings.',
+    description:
+      'A strategic quarter-mile drag racer in bright low-poly. Hold to build revs, let go the instant the tree turns green, tap each shift just under the redline. ' +
+      'Climb a ladder of 40 rivals in five divisions, wager earned cash on forecast odds, and tune six separate parts on 33 original cars in the garage: engine, transmission, suspension, tyres, aero and looks, each visible on the car and each wearing out. ' +
+      'Everyone gets the same loaner in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
+    categories: ['racing', 'strategy'],
+    moods: ['action', 'quick'],
+    tags: ['drag race', 'cars', 'garage', 'upgrades', 'tuning', 'idle', 'wager', 'quarter mile', 'low poly', 'ghost', 'daily', 'one-touch', 'driving', 'muscle car', 'supercar'],
+    released: '2026-10-21',
+    accent: 'orange',
+    emoji: '🏁',
+    art: {
+      tile: '/games/launch-control/tile.webp',
+      wide: '/games/launch-control/wide.webp',
+      alt: 'A yellow low-poly muscle car launching off the line on a sunny desert drag strip, tyres smoking, with the Launch Control logo',
+      bg: '#ffb703',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'landscape',
+    controls: {
+      keyboard: ['Hold Space to rev, let go at green to launch', 'Tap Space to shift just under the redline', 'Esc or P: pause'],
+      touch: ['Hold anywhere to rev, let go at green to launch', 'Tap to shift just under the redline'],
+    },
+    stats: [
+      { key: 'score', label: 'Best run' },
+      { key: 'etMs', label: 'Fastest quarter mile', unit: 'ms', lowerIsBetter: true },
+      { key: 'trapKmh', label: 'Highest trap speed', unit: 'km/h' },
+      { key: 'reactionMs', label: 'Quickest reaction', unit: 'ms', lowerIsBetter: true },
+      { key: 'perfect', label: 'Most perfect shifts in a run' },
+    ],
+    highlights: [
+      'One button: hold to rev, let go at green, tap to shift. Launch windows and shift zones differ per car',
+      '33 original cars in six tiers, from a 60 hp rear-engined classic to a 3,000 hp rail dragster',
+      'Six separate parts with eight levels each, all visible on the car; they wear out and can fail when neglected',
+      'Materials (scrap, alloy, carbon, chips, rubber) gate the higher levels; cash and materials come only from racing',
+      'A 40-rival ladder in five divisions with purses, first-win bonuses and division finals',
+      'Wagers with odds from a race forecast: underdogs pay more. In-game cash only, never real money',
+      'Your sponsor pays by the hour while you are away (up to eight hours)',
+      'Helmets, suits, paints, liveries, wheels and four sunny strips as cosmetics',
+      'Today’s Showdown: the same loaner car and rival for everyone, three runs, best counts',
+      'Friends’ challenges race your recorded run as a ghost',
+    ],
+    ownDaily: { label: 'Today’s Showdown' },
+    challenge: { label: 'One quarter mile in the same loaner car; the others race your ghost. Highest run score wins.' },
+    daily: [
+      { metric: 'score', targets: [6000, 7500, 9000], label: 'Score {n} in one Launch Control run' },
+      { metric: 'perfect', targets: [2, 3, 4], label: 'Nail {n} perfect shifts in one Launch Control run' },
+    ],
+    // A run scores at most ~16,500 (20,000 minus a 3.9 s ET, plus perfect shifts) and takes at least ~6 s of real time (staging plus the run).
+    limits: { scorePerSecond: 3500, minSeconds: 5 },
+  },
+  {
     slug: 'color-lab',
     title: 'Color Lab',
     tagline: 'Pour colors between glass tubes until each holds one color. Beat par for full points.',

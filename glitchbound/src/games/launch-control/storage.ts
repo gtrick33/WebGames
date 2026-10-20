@@ -1,0 +1,149 @@
+import { CARS, DEFAULT_CAR } from './cars';
+import { COSMETICS, DEFAULTS, getCosmetic, type CosmeticKind } from './cosmetics';
+import { emptyMats } from './economy';
+import { freshCondition, MATERIALS, MAX_LEVEL, PARTS, stockLevels, type Condition, type Levels, type Material } from './parts';
+import { clamp } from './util';
+
+/** The local save: synced to the cloud for members (its key matches platform/syncKeys.ts). Every field is validated on load. */
+export const KEY = 'glitchbound.launch-control';
+/** Today's showdown is three runs a day; the best counts. */
+export const DAILY_TRIES = 3;
+
+export interface OwnedCar {
+  levels: Levels;
+  cond: Condition;
+  paint: string;
+  livery: string;
+  wheels: string;
+}
+
+export interface DailyRecord {
+  best: number;
+  tries: number;
+  /** Best run's ET in ms (0 = none finished). */
+  et: number;
+  /** A run is under way (settled as 0 if the page is left). */
+  open?: boolean;
+  left?: boolean;
+}
+
+export interface Save {
+  cash: number;
+  earned: number;
+  mats: Record<Material, number>;
+  cars: Record<string, OwnedCar>;
+  car: string;
+  /** Opponents beaten on the ladder (the next one is LADDER[rank]). */
+  rank: number;
+  helmet: string;
+  suit: string;
+  env: string;
+  owned: string[];
+  /** When the sponsor last paid, ms. */
+  paidAt: number;
+  daily: Record<string, DailyRecord>;
+  runs: number;
+  wins: number;
+  bestScore: number;
+  /** Best ET in ms (0 = none). */
+  bestEt: number;
+  muted: boolean;
+  seenHelp: boolean;
+}
+
+export const newCar = (): OwnedCar => ({ levels: stockLevels(), cond: freshCondition(), paint: DEFAULTS.paint, livery: DEFAULTS.livery, wheels: DEFAULTS.wheels });
+
+export const emptySave = (): Save => ({
+  cash: 500,
+  earned: 0,
+  mats: emptyMats(),
+  cars: { [DEFAULT_CAR]: newCar() },
+  car: DEFAULT_CAR,
+  rank: 0,
+  helmet: DEFAULTS.helmet,
+  suit: DEFAULTS.suit,
+  env: DEFAULTS.env,
+  owned: [],
+  paidAt: 0,
+  daily: {},
+  runs: 0,
+  wins: 0,
+  bestScore: 0,
+  bestEt: 0,
+  muted: false,
+  seenHelp: false,
+});
+
+const num = (v: unknown, max = 1e12): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(max, Math.floor(v)) : 0);
+const KNOWN_CARS = new Set(CARS.map((c) => c.id));
+
+function cleanCar(v: unknown): OwnedCar {
+  const c = newCar();
+  if (!v || typeof v !== 'object') return c;
+  const o = v as Partial<OwnedCar>;
+  if (o.levels && typeof o.levels === 'object') for (const p of PARTS) c.levels[p] = clamp(num((o.levels as Levels)[p]), 0, MAX_LEVEL);
+  if (o.cond && typeof o.cond === 'object')
+    for (const p of PARTS) {
+      const x = (o.cond as Condition)[p];
+      c.cond[p] = typeof x === 'number' && Number.isFinite(x) ? clamp(x, 0, 100) : 100;
+    }
+  const pick = (kind: CosmeticKind, id: unknown): string => (typeof id === 'string' && getCosmetic(id)?.kind === kind ? id : DEFAULTS[kind]);
+  c.paint = pick('paint', o.paint);
+  c.livery = pick('livery', o.livery);
+  c.wheels = pick('wheels', o.wheels);
+  return c;
+}
+
+export function sanitize(raw: unknown): Save {
+  const s = emptySave();
+  if (!raw || typeof raw !== 'object') return s;
+  const o = raw as Record<string, unknown>;
+  s.cash = num(o.cash);
+  s.earned = num(o.earned);
+  if (o.mats && typeof o.mats === 'object') for (const k of MATERIALS) s.mats[k] = num((o.mats as Record<string, unknown>)[k], 1e6);
+  if (o.cars && typeof o.cars === 'object') for (const [id, v] of Object.entries(o.cars)) if (KNOWN_CARS.has(id)) s.cars[id] = cleanCar(v);
+  if (!s.cars[DEFAULT_CAR]) s.cars[DEFAULT_CAR] = newCar();
+  s.car = typeof o.car === 'string' && s.cars[o.car] ? o.car : DEFAULT_CAR;
+  s.rank = clamp(num(o.rank), 0, 40);
+  const pick = (kind: CosmeticKind, id: unknown): string => (typeof id === 'string' && getCosmetic(id)?.kind === kind ? id : DEFAULTS[kind]);
+  s.helmet = pick('helmet', o.helmet);
+  s.suit = pick('suit', o.suit);
+  s.env = pick('env', o.env);
+  if (Array.isArray(o.owned)) s.owned = [...new Set(o.owned.filter((x): x is string => typeof x === 'string' && !!getCosmetic(x)))];
+  s.paidAt = num(o.paidAt, 1e14);
+  if (o.daily && typeof o.daily === 'object')
+    for (const [d, v] of Object.entries(o.daily).slice(-60)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !v || typeof v !== 'object') continue;
+      const e = v as Partial<DailyRecord>;
+      s.daily[d] = { best: num(e.best), tries: num(e.tries), et: num(e.et), ...(e.open === true ? { open: true } : {}), ...(e.left === true ? { left: true } : {}) };
+    }
+  s.runs = num(o.runs);
+  s.wins = num(o.wins);
+  s.bestScore = num(o.bestScore);
+  s.bestEt = num(o.bestEt);
+  s.muted = o.muted === true;
+  s.seenHelp = o.seenHelp === true;
+  return s;
+}
+
+export function loadSave(): Save {
+  try {
+    return sanitize(JSON.parse(localStorage.getItem(KEY) ?? 'null'));
+  } catch {
+    return emptySave();
+  }
+}
+
+export function writeSave(s: Save): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+  } catch {
+    /* blocked or full storage: the game still plays */
+  }
+}
+
+/** Whether a cosmetic is the player's (free defaults always are). */
+export const owns = (s: Save, id: string): boolean => s.owned.includes(id) || getCosmetic(id)?.price === 0;
+
+/** Everything for sale of one kind, in order. */
+export const shelf = (kind: CosmeticKind) => COSMETICS[kind];

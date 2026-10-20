@@ -30,7 +30,7 @@ export const WEEK: DayTheme[] = [
   { id: 'words', emoji: '🔤', name: 'Word Wednesday', tagline: 'Letters, clues and one mystery word.', games: ['letter-pinch', 'crosswire'] },
   { id: 'throwdown', emoji: '⚔️', name: 'Throwdown Thursday', tagline: 'Send a friend a challenge: same round, one shot each.', cta: 'challenge' },
   { id: 'party', emoji: '🎉', name: 'Party Friday', tagline: 'Friends over? Pass the phone or open a room.', games: ['crass-act'], moods: ['friends'], cta: 'party' },
-  { id: 'throttle', emoji: '🏁', name: 'Full-Throttle Saturday', tagline: 'Racers, flyers and near misses.', games: ['neon-rush', 'mini-racer', 'wing-it'], moods: ['action'] },
+  { id: 'throttle', emoji: '🏁', name: 'Full-Throttle Saturday', tagline: 'Racers, flyers and near misses.', games: ['launch-control', 'neon-rush', 'mini-racer', 'wing-it'], moods: ['action'] },
 ];
 
 /** The theme of a calendar day (YYYY-MM-DD). */

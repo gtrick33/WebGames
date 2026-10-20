@@ -6,6 +6,9 @@ import { REPLAY_MAX, type ChallengeSpec, type ChallengeView } from './challenge'
 import { challengeReplays, closeChallenge, getChallenge, joinChallenge, pollChallenge, rematch as askRematch, submitChallengeScore } from './challenges';
 import type { EndEvent } from './contract';
 
+/** Games whose challenge rounds replay the other players' runs. */
+const GHOST_GAMES = new Set(['mini-racer', 'launch-control']);
+
 export type ChallengeRunState =
   | { status: 'none' }
   | { status: 'loading'; view?: ChallengeView }
@@ -136,8 +139,8 @@ export function useChallengeRun(id: string | null, game: GameEntry, name: string
     return () => window.clearTimeout(t);
   }, [id, live, closesAt, take]);
 
-  // Mini Racer races the others' ghosts: fetch them when it is your turn.
-  const needsReplays = game.slug === 'mini-racer' && !!view?.yourTurn && replays?.round !== view.round;
+  // Mini Racer and Launch Control race the others' ghosts: fetch them when it is your turn.
+  const needsReplays = GHOST_GAMES.has(game.slug) && !!view?.yourTurn && replays?.round !== view.round;
   const round = view?.round ?? 0;
   useEffect(() => {
     if (!id || !needsReplays) return;

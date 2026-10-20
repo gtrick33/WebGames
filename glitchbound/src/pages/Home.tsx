@@ -4,6 +4,7 @@ import { AdSlot } from '../components/AdSlot';
 import { Arcade } from '../components/Arcade';
 import { FreeBanner } from '../components/FreeBanner';
 import { Hero } from '../components/Hero';
+import { LaunchControlBanner } from '../components/LaunchControlBanner';
 import { PartyBanner } from '../components/PartyBanner';
 import { ThemeStrip } from '../components/ThemeStrip';
 import { TodaysDailies } from '../components/TodaysDailies';
@@ -31,6 +32,7 @@ export function Home() {
       <ThemeStrip />
       <TodaysDailies variant="row" headingLevel={2} />
       <Arcade />
+      <LaunchControlBanner />
       {!me && <FreeBanner />}
       <YourArcade />
       <PartyBanner />

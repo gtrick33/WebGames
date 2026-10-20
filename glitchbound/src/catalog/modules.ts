@@ -31,6 +31,7 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
   'star-grid': () => import('../games/star-grid/Game'),
   fussbox: () => import('../games/fussbox/Game'),
   whatsit: () => import('../games/whatsit/Game'),
+  'launch-control': () => import('../games/launch-control/Game'),
 };
 
 /**
@@ -60,4 +61,5 @@ export const GAME_PREVIEWS: Record<string, GamePreviewLoader> = {
   'to-scale': () => import('../games/to-scale/Preview'),
   fussbox: () => import('../games/fussbox/Preview'),
   whatsit: () => import('../games/whatsit/Preview'),
+  'launch-control': () => import('../games/launch-control/Preview'),
 };
