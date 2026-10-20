@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { STUDIO } from '../lib/site.mjs';
 import { GAMES } from '../video/copy.mjs';
 import * as M from '../video/marks.mjs';
+import { question } from '../video/plan.mjs';
 
 const read = (f) => JSON.parse(readFileSync(join(STUDIO, '.cache/content', f), 'utf8'));
 
@@ -107,14 +108,15 @@ function posts(J, catalog, games) {
     P(`${dir}/99-cta.png`, { kind: 'cta', title: 'Tag your *game night* crew', line: 'Party Mode: pass one phone, or everyone plays on their own.', cta: 'glitchboundstudio.com/party' });
   });
 
-  // Trivia carousels (question, then answer).
-  const trivia = JSON.parse(readFileSync(join(STUDIO, '.cache/content/trivia.json'), 'utf8')).filter((q) => q.answers.length === 4 && q.text.length <= 96 && q.fact.length <= 150 && !q.bulgaria);
-  for (let n = 0; n < 12; n++) {
-    const q = trivia[(n * 37 + 11) % trivia.length];
+  // Trivia carousels (question, then answer), hand-picked from Quizbelief's bank like the trivia
+  // shorts (none repeat a short's question; questions up to 96 characters, facts up to 150).
+  const carousel = ['history:27', 'animals:1', 'tech:8', 'history:28', 'science:10', 'geo:37', 'food:5', 'space:33', 'money:4', 'geo:93', 'pop:51', 'animals:58'];
+  carousel.forEach((qid, n) => {
+    const q = question(qid);
     const id = String(n + 1).padStart(2, '0');
     P(`posts/04-trivia-carousels/trivia-${id}-1-question.png`, { kind: 'trivia-q', q });
     P(`posts/04-trivia-carousels/trivia-${id}-2-answer.png`, { kind: 'trivia-a', q });
-  }
+  });
 
   // Spot the Glitch and Where's the Ball puzzle posts.
   const spots = JSON.parse(readFileSync(join(STUDIO, '.cache/content/spot.json'), 'utf8'));
@@ -151,7 +153,7 @@ function posts(J, catalog, games) {
 
   // Holidays and moments.
   const H = [
-    ['halloween', 'Halloween mode|*is on*', 'Cobwebs everywhere. Spooky tunes in Quizbelief', '#ff7a1a', true],
+    ['halloween', 'Halloween mode|*is on*', 'Cobwebs everywhere. Spooky tunes in Quizbelief.', '#ff7a1a', true],
     ['diwali', 'Happy *Diwali*', 'May your days be bright and your streaks long.', '#ffb703', false],
     ['thanksgiving', 'Thankful for|*small games*', 'And for everyone who plays them. Thank you.', '#ff6a1a', false],
     ['black-friday', 'Black Friday deal:|*everything is free*', 'Like every other day. 19 games, no paywall.', '#1d1238', true],
@@ -178,7 +180,7 @@ function posts(J, catalog, games) {
   for (const [slug, score, title] of brags) ST(`stories/beat-my-score/${slug}.png`, { kind: 'beat', title, score, art: G[slug].art.tile });
   ST('stories/announcements/new-dailies.png', { kind: 'announce', eyebrow: 'Every midnight', title: '18 new|*dailies*', line: 'Same puzzles for everyone. Keep your streak alive.' });
   ST('stories/announcements/party-mode.png', { kind: 'announce', eyebrow: 'Party Mode', title: 'Game night,|*one phone*', line: '11 party games. No sign-up.', art: '/party/impostor/tile.webp', accent: '#ff4fc8', cta: 'glitchboundstudio.com/party' });
-  ST('stories/announcements/halloween.png', { kind: 'announce', eyebrow: 'Halloween', title: 'Spooky mode|*is on*', line: 'Cobwebs on every card. Spooky tunes in Quizbelief', dark: true, accent: '#ff7a1a' });
+  ST('stories/announcements/halloween.png', { kind: 'announce', eyebrow: 'Halloween', title: 'Spooky mode|*is on*', line: 'Cobwebs on every card. Spooky tunes in Quizbelief.', dark: true, accent: '#ff7a1a' });
   ST('stories/announcements/winter.png', { kind: 'announce', eyebrow: 'Winter look', title: 'It\u2019s *snowing*|on GlitchBound', line: 'Cozy up with a puzzle or three.', accent: '#7fd7ff' });
   ST('stories/announcements/new-game.png', { kind: 'announce', eyebrow: 'New game', title: 'Whatsit', line: 'A secret thing in a box. Ask yes/no questions, then pick it from the line-up.', art: G.whatsit.art.tile, accent: '#ff8a1f' });
   const hl = [['games', '#2ad1f0'], ['daily', '#ff6a1a'], ['party', '#ff4fc8'], ['new', '#b6e62c'], ['tips', '#ffc928'], ['wins', '#7b4dff'], ['halloween', '#1d1238'], ['winter', '#7fd7ff']];
@@ -197,7 +199,7 @@ function posts(J, catalog, games) {
   TH('02-all-19-games-tour.png', { title: 'ALL 19|games in|*one tour*', bg: C_BG(1), art: G.gloop.art.tile, shot: shot('wing-it', 50), size: 110 });
   TH('03-party-impostor.png', { title: 'Who\u2019s the|*IMPOSTOR?*', bg: '#ff4fc8', art: '/party/impostor/tile.webp', size: 120, tag: 'One phone' });
   TH('04-arcade-tour.png', { title: 'Hover = *it plays*', bg: C_BG(3), art: G['neon-rush'].art.tile, size: 120 });
-  const shotAt = { 'wing-it': ['biome', 2, 1.5], gloop: ['end', 0, -4], 'neon-rush': ['crash', 0, -6], 'color-lab': ['won', 0, 0.3], 'mini-racer': ['finish', 0, -12], 'square-deal': ['clear', -1, 0.2], 'spot-the-glitch': ['found', 4, 0.6], 'outta-here': ['cleared', 2, -4], 'letter-pinch': ['solved', 0, 0.6], 'wheres-the-ball': ['found', 0, 0.5], 'memory-grid': ['miss', 0, -3], crosswire: ['mystery', 0, 0.6], 'gut-check': ['miss', 0, -2], 'star-grid': ['solved', 0, 0.6], 'color-recall': ['reveal', 0, 0.8], 'to-scale': ['lock', 0, 1.0], 'wait-what': ['answer', 0, 1.0], fussbox: ['handin', 0, 1.6], whatsit: ['pick', 0, 1.0] };
+  const shotAt = { 'wing-it': ['biome', 2, 1.5], gloop: ['end', 0, -4], 'neon-rush': ['crash', 0, -6], 'color-lab': ['won', 0, 0.3], 'mini-racer': ['finish', 0, -12], 'square-deal': ['clear', -1, 0.2], 'spot-the-glitch': ['found', 4, 0.6], 'outta-here': ['cleared', 2, -4], 'letter-pinch': ['solved', 0, 0.6], 'wheres-the-ball': ['found', 0, 0.5], 'memory-grid': ['miss', 0, -3], crosswire: ['mystery', 0, 0.6], 'gut-check': ['miss', 0, -2], 'star-grid': ['solved', 0, 0.6], 'color-recall': ['reveal', 0, 0.8], 'to-scale': ['lock', 0, 1.0], 'wait-what': ['answer', 1, 1.2], fussbox: ['handin', 0, 1.6], whatsit: ['pick', 0, 1.0] };
   const words = { 'wing-it': 'Made it to|*SPACE*', gloop: 'So *satisfying*', 'neon-rush': '*Endless* neon racer', 'color-lab': 'Sort the *colors*', 'mini-racer': 'Tiny car.|*Big drifts.*', 'square-deal': 'Chain the *clears*', 'spot-the-glitch': 'Find *5* glitches', 'outta-here': 'Arrows *OUT*', 'letter-pinch': 'Not *that* word game', 'wheres-the-ball': 'Where\u2019s the *ball?*', 'memory-grid': 'How long is *your* memory?', crosswire: 'Crack the *mystery* word', 'gut-check': '*Higher* or lower?', 'star-grid': 'One star per *row*', 'color-recall': 'Color *memory* test', 'to-scale': 'How *big* is it?', 'wait-what': 'Sounds *fake*. Isn\u2019t.', fussbox: 'Read a robot\u2019s *mind*', whatsit: 'What\u2019s in the *box?*' };
   order.forEach((slug, i) => TH(`gameplay/${slug}.png`, { title: words[slug], bg: C_BG(i), art: G[slug].art.tile, shot: shot(slug, shotAt[slug]), size: 100, tag: G[slug].title }));
 }

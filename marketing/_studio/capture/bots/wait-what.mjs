@@ -5,7 +5,7 @@ export default {
   max: 170,
   tail: 4,
   async prepare(page, { args }) {
-    await page.getByRole('button', { name: /play wait/i }).first().click();
+    await page.getByRole('button', { name: /play quizbelief/i }).first().click();
     await page.waitForTimeout(800);
     await page.locator(args.mode === 'endless' ? '.ww-card .ww-btn:not(.ww-btn-go)' : '.ww-card-daily .ww-btn-go').first().click();
     await page.waitForTimeout(900);

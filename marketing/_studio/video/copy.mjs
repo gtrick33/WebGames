@@ -108,8 +108,10 @@ export const GAMES = {
   'wait-what': {
     music: 'brain-snack', color: '#ffc928',
     hooks: ['Trivia that sounds *made up*', 'Real facts. *Sound fake.*', '10 weird questions *every day*'],
-    clips: [{ from: ['answer', 0, -1.8], len: 9 }, { from: ['answer', 2, -1.6], len: 9.5 }],
-    captions: [['Sounds *made up*...', 2.6], ['...but it’s *true*', 6.6], ['Weird history, odd animals, *strange words*', 11]],
+    // Every frame of this game is text, so the take sits in a phone frame and the captions go above it.
+    layout: 'framed', frame: { frameH: 1340, frameY: 480 }, hookY: 290, captionY: 330,
+    clips: [{ from: ['answer', 1, -2.6], to: ['answer', 1, 3.3] }, { from: ['answer', 4, -2.8], to: ['answer', 4, 3.3] }, { from: ['answer', 5, -5.5], to: ['answer', 5, 3.3] }],
+    captions: [['Sounds *made up*...', ['answer', 1, 0.2]], ['...but it’s *true*', ['answer', 1, 1.6]], ['Weird history, odd animals, *strange words*', ['answer', 4, 0.4]], ['Some you *type in*', ['answer', 5, -3.4]], ['*Turnips*, before pumpkins', ['answer', 5, 0.6]]],
     outro: '*10 new questions*|every day',
   },
   'gut-check': {

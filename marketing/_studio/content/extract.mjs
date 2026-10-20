@@ -34,12 +34,15 @@ const trivia = await page.evaluate(async () => {
   const pack = await import('/src/games/wait-what/pack.ts');
   const out = [];
   let n = 0;
-  for (const batch of pack.EN.batches) {
+  // Ids are the game's own: `cat:index`, counted across batches (batch 2 is the Bulgaria facts).
+  const seen = {};
+  for (const [b, batch] of pack.EN.batches.entries()) {
     for (const [cat, list] of Object.entries(batch.items)) {
-      list.forEach((raw, i) => {
-        const q = deck.fromRaw(`${cat}-${i}`, cat, raw, deck.rng(1000 + n++), pack.EN);
+      list.forEach((raw) => {
+        const k = (seen[cat] = (seen[cat] ?? -1) + 1);
+        const q = deck.fromRaw(`${cat}:${k}`, cat, raw, deck.rng(1000 + n++), pack.EN);
         const meta = deck.CATS[cat];
-        out.push({ ...q, catLabel: meta?.label ?? cat, catColor: meta?.color ?? '#7b4dff', bulgaria: cat === 'bulgaria' });
+        out.push({ ...q, since: batch.since, catLabel: meta?.label ?? cat, catColor: meta?.color ?? '#7b4dff', bulgaria: b === 1 });
       });
     }
   }

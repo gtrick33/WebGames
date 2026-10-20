@@ -61,7 +61,7 @@ export async function mount(stage, spec) {
   if (d.hook !== false) ups.push(hook(stage, { text: d.hook ?? `${d.questions.length} weird questions. *5 seconds* each.`, at: 0, dur: INTRO, y: 900, size: 92 }));
   watermark(stage, { x: 60, y: H - 150, size: 48 });
   ups.push(sticker(stage, { text: d.ask ?? 'Comment your score!', at: end - 1.8, dur: 1.8, x: 540, y: 400, size: 54, bg: C.cyan, rot: 3 }));
-  const o = outro(stage, { at: end, w: W, h: H, title: d.outroTitle ?? '*10 new questions* every day', line: 'Quizbelief Free trivia in your browser.', art: '/games/wait-what/tile.webp' });
+  const o = outro(stage, { at: end, w: W, h: H, title: d.outroTitle ?? '*10 new questions* every day', line: 'Quizbelief: free trivia in your browser.', art: '/games/wait-what/tile.webp' });
 
   return async (t) => {
     head.style.transform = `scale(${lerp(0.7, 1, pop(t, 0.05, 0.5))})`;

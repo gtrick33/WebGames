@@ -12,6 +12,15 @@ const HZ = { w: 1920, h: 1080 };
 const pad = (n) => String(n).padStart(2, '0');
 const takeSeconds = (slug, take) => JSON.parse(readFileSync(join(STUDIO, '.cache/footage', slug, `${take}.json`), 'utf8')).seconds;
 
+/** A Quizbelief question by its id in the game's bank (`history:9`). */
+let bank;
+export function question(id) {
+  bank ??= Object.fromEntries(read('trivia.json').map((q) => [q.id, q]));
+  const q = bank[id];
+  if (!q) throw new Error(`no Quizbelief question ${id} in .cache/content/trivia.json (re-run content/extract.mjs)`);
+  return q;
+}
+
 /** Higher-or-lower pairs from one Gut Check topic, each pair clearly apart like the game requires. */
 export function gutPairs(cat, n, seed) {
   let s = seed;
@@ -65,9 +74,9 @@ export function allSpecs() {
       id: `spotlight-${slug}`, out: `videos/shorts/01-game-spotlights/${slug}.mp4`, format: 'reel', ...V, kind: 'spotlight', game: slug,
       music: { track: c.music, start: 0 },
       data: {
-        layout: 'full', clips,
-        hook: { text: c.hooks[0], eyebrow: G[slug].title, eyeColor: c.color, dur: 2.5 },
-        captions: caps(c.captions, body - 0.4, 470, src, 2.6),
+        layout: c.layout ?? 'full', ...c.frame, clips,
+        hook: { text: c.hooks[0], eyebrow: G[slug].title, eyeColor: c.color, dur: 2.5, y: c.hookY },
+        captions: caps(c.captions, body - 0.4, c.captionY ?? 470, src, 2.6),
         stickers: (c.stickers ?? []).map(([text, at, bg]) => ({ text: M.fill(text, slug, 'a'), at: Array.isArray(at) ? M.outputTime(clips, slug, 'a', at) : at, dur: 2.6, x: 760, y: 1240, size: 66, bg, rot: 7 })).filter((x) => x.at !== null),
         outro: { title: c.outro, line: `${G[slug].title} is free in your browser. No download, no sign-up.`, art: G[slug].art.tile },
       },
@@ -116,23 +125,22 @@ export function allSpecs() {
   });
 
   // ---- 5. Quizbelief trivia -------------------------------------------------------------------
-  const trivia = read('trivia.json').filter((q) => q.answers.length === 4 && q.text.length <= 100 && q.fact.length <= 165 && !q.bulgaria);
-  const byCat = {};
-  for (const q of trivia) (byCat[q.cat] ??= []).push(q);
-  const cats = Object.keys(byCat);
-  const picks = [];
-  for (let i = 0; picks.length < 42; i++) {
-    const list = byCat[cats[i % cats.length]];
-    const q = list[Math.floor(i / cats.length) * 3 % list.length];
-    if (q && !picks.includes(q)) picks.push(q);
-    if (i > 500) break;
-  }
+  // Hand-picked from the game's bank (ids are its own `cat:index`, see content/extract.mjs): only
+  // questions whose answer makes people say "wait, what?", no pub-quiz filler. Each video mixes three
+  // categories and saves the strangest for last.
+  const triviaPicks = [
+    ['animals:4', 'history:9', 'space:47'], ['food:3', 'animals:25', 'history:41'], ['tech:1', 'geo:3', 'history:26'],
+    ['animals:43', 'science:74', 'history:24'], ['pop:82', 'geo:6', 'animals:91'], ['food:45', 'space:1', 'sports:31'],
+    ['tech:22', 'animals:110', 'history:141'], ['words:70', 'food:16', 'geo:97'], ['sports:17', 'animals:30', 'money:63'],
+    ['food:27', 'science:70', 'history:154'], ['pop:79', 'space:2', 'money:59'], ['tech:38', 'geo:88', 'history:145'],
+    ['animals:123', 'history:6', 'sports:36'], ['words:100', 'space:93', 'tech:84'],
+  ];
   const triviaHooks = ['3 weird questions. *5 seconds* each.', 'These *sound fake*. They’re not.', 'Get *3 out of 3* and you’re a genius', 'Trivia that sounds *made up*'];
-  for (let n = 0; n < 14; n++) S.push({
+  triviaPicks.forEach((ids, n) => S.push({
     id: `trivia-${pad(n + 1)}`, out: `videos/shorts/05-wait-what-trivia/wait-what-trivia-${pad(n + 1)}.mp4`, format: 'trivia', ...V, kind: 'trivia', game: 'wait-what',
     music: { track: 'brain-snack', start: [0, 18.5, 37][n % 3] },
-    data: { questions: picks.slice(n * 3, n * 3 + 3), hook: triviaHooks[n % triviaHooks.length] },
-  });
+    data: { questions: ids.map(question), hook: triviaHooks[n % triviaHooks.length] },
+  }));
 
   // ---- 6. Gut Check: higher or lower --------------------------------------------------------
   const gut = read('gut-check.json');
@@ -147,7 +155,7 @@ export function allSpecs() {
 
   // ---- 7. Trailers ---------------------------------------------------------------------------------
   const order = ['wing-it', 'gloop', 'neon-rush', 'color-lab', 'mini-racer', 'square-deal', 'spot-the-glitch', 'outta-here', 'letter-pinch', 'wheres-the-ball', 'memory-grid', 'crosswire', 'gut-check', 'star-grid', 'color-recall', 'to-scale', 'wait-what', 'fussbox', 'whatsit'];
-  const shotFrom = { 'wing-it': ['biome', 1, -1.0], gloop: ['end', 0, -12], 'neon-rush': ['crash', 0, -14], 'color-lab': ['won', 0, -4], 'mini-racer': 9, 'square-deal': ['clear', 0, -2.5], 'spot-the-glitch': ['found', 1, -1.2], 'outta-here': ['cleared', 0, -3], 'letter-pinch': ['guess', 1, -2], 'wheres-the-ball': ['found', 0, -3.5], 'memory-grid': ['clear', 5, -0.5], crosswire: ['word', 2, 1.5], 'gut-check': ['right', 2, -1.5], 'star-grid': ['solved', 0, -4.5], 'color-recall': ['reveal', 0, -2.5], 'to-scale': ['lock', 0, -1.2], 'wait-what': ['answer', 0, -1.5], fussbox: ['feed', 1, -1.5], whatsit: ['pick', 0, -6] };
+  const shotFrom = { 'wing-it': ['biome', 1, -1.0], gloop: ['end', 0, -12], 'neon-rush': ['crash', 0, -14], 'color-lab': ['won', 0, -4], 'mini-racer': 9, 'square-deal': ['clear', 0, -2.5], 'spot-the-glitch': ['found', 1, -1.2], 'outta-here': ['cleared', 0, -3], 'letter-pinch': ['guess', 1, -2], 'wheres-the-ball': ['found', 0, -3.5], 'memory-grid': ['clear', 5, -0.5], crosswire: ['word', 2, 1.5], 'gut-check': ['right', 2, -1.5], 'star-grid': ['solved', 0, -4.5], 'color-recall': ['reveal', 0, -2.5], 'to-scale': ['lock', 0, -1.2], 'wait-what': ['answer', 3, -1.0], fussbox: ['feed', 1, -1.5], whatsit: ['pick', 0, -6] };
   const shots = (list, beats) => list.map((slug, i) => ({ slug, take: 'a', from: M.time(slug, 'a', shotFrom[slug]), title: G[slug].title, line: G[slug].tagline, beats: typeof beats === 'function' ? beats(i) : beats, color: GAMES[slug].color }));
   const wallArt = arcade.map((g) => g.art.tile);
   const trailerOutro = { title: 'Small games.|*Big obsessions.*', line: 'Free in your browser. No download, no sign-up.' };
@@ -233,7 +241,7 @@ export function allSpecs() {
   S.push({
     id: 'halloween-trivia', out: 'videos/shorts/09-seasonal/halloween-trivia.mp4', format: 'trivia', ...V, kind: 'seasonal', game: 'wait-what',
     music: { track: 'spooky-glitch', start: 0 },
-    data: { questions: read('trivia.json').filter((q) => /\b(witch|witches|ghost|ghosts|vampire|vampires|skeleton|pumpkin|pumpkins|bats?|spiders?|haunted|graves?|zombie|halloween|skull|monster|candy|mummy|mummies|cemetery|coffin)\b/i.test(q.text + q.fact) && q.answers.length === 4).slice(0, 3), hook: 'Spooky trivia. *5 seconds* each.', kicker: 'Halloween|special' },
+    data: { questions: ['animals:129', 'history:146', 'history:143'].map(question), hook: 'Spooky trivia. *5 seconds* each.', kicker: 'Halloween|special' },
   });
 
   // ---- 10. Party Mode --------------------------------------------------------------------------------

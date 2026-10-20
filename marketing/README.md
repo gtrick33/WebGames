@@ -25,7 +25,7 @@ and options to add by hand; every other story shows glitchboundstudio.com in the
 | `videos/shorts/02-beat-my-score` | "Score to beat" meme-format challenges | 13 |
 | `videos/shorts/03-spot-the-glitch` | Countdown puzzles with the game's own pictures, answers circled | 16 |
 | `videos/shorts/04-wheres-the-ball` | Find-the-ball countdowns with the zoom reveal | 12 |
-| `videos/shorts/05-wait-what-trivia` | 3 real questions from the game's bank per video | 14 |
+| `videos/shorts/05-wait-what-trivia` | Quizbelief: 3 hand-picked questions from the game's bank per video | 14 |
 | `videos/shorts/06-higher-or-lower` | Gut Check pairs with the number reveal | 7 |
 | `videos/shorts/07-trailers` | Vertical trailer, 15 s teaser, puzzle-lovers cut | 3 |
 | `videos/shorts/08-pov-and-memes` | Relatable caption-bar memes over gameplay | 8 |
@@ -72,8 +72,11 @@ Brand rules (colors, type, logo use, voice, safe zones) are in [`BRAND.md`](BRAN
 - **Crass Act (18+)** is left out of everything.
 - **Seasonal footage** shows the site's real holiday looks (Halloween, Diwali, winter); everything else
   was recorded with the holiday look off so it stays evergreen.
-- Footage was recorded from the build of `pre-release` at 3ecbf8c (Oct 19, 2026). If a game changes a
-  lot, re-record it (below) so the videos match what players will see.
+- Footage was recorded from the build of `pre-release` at 3ecbf8c (Oct 19, 2026). Quizbelief (renamed from
+  Wait, What?) and the lobby tours were re-recorded at b09ea08 (Oct 20, 2026), after the rename. If a game
+  changes a lot, re-record it (below) so the videos match what players will see.
+- **Trivia picks:** the Quizbelief shorts and carousels use questions picked by hand by id (`video/plan.mjs`,
+  `stills/jobs.mjs`), each with a real twist; no capitals, chemical symbols or "who painted X".
 
 ## Making more
 
