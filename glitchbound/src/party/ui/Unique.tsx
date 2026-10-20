@@ -33,7 +33,7 @@ interface Game {
 export function UniqueMode({ session, update, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
   const players = session.players;
   const [r] = useState(freshRng);
-  const [game, set] = useSavedGame<Game>(session, update, 'unique', () => ({ stage: 'setup', used: [], turn: 0, cardsLeft: DECK, score: 0, word: '', outcome: null, history: [] }));
+  const [game, set] = useSavedGame<Game>(session, update, 'unique', () => ({ stage: 'setup', used: session.used.unique ?? [], turn: 0, cardsLeft: DECK, score: 0, word: '', outcome: null, history: [] }), 'unique');
   const { stage, turn, cardsLeft, score, word, outcome, history } = game;
   const guesser: Player = players[turn % players.length]!;
 

@@ -188,13 +188,13 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
           </button>
         </div>
       ) : (
-        <TileEvent key={`${state.turn}-${state.landed}`} state={state} session={session} me={me} players={players} r={r} onResolve={act} />
+        <TileEvent key={`${state.turn}-${state.landed}`} state={state} session={session} me={me} players={players} r={r} onResolve={act} remember={(deck, used) => update((cur) => ({ ...cur, used: { ...cur.used, [deck]: used } }))} />
       )}
     </div>
   );
 }
 
-function TileEvent({ state, session, me, players, r, onResolve }: { state: BoardState; session: PartySession; me: Player; players: Player[]; r: () => number; onResolve: (a: BoardAction) => void }) {
+function TileEvent({ state, session, me, players, r, onResolve, remember }: { state: BoardState; session: PartySession; me: Player; players: Player[]; r: () => number; onResolve: (a: BoardAction) => void; remember: (deck: 'challenges' | 'trivia', used: string[]) => void }) {
   const tile = state.tiles[state.landed]!;
   const others = players.filter((p) => p.id !== me.id);
   // Picked once per tile: `others` is a new list every render, so a memo re-rolled the opponent mid-duel.
@@ -203,15 +203,24 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
   const [mini, setMini] = useState<MiniId | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
 
-  const card = useMemo((): Challenge | null => {
+  // Drawn once per tile (the event remounts for every landing), skipping cards this session has seen.
+  const [cardDraw] = useState((): { item: Challenge | null; used: string[] } | null => {
     const kinds = tile.kind === 'card' ? ['truth', 'dare', 'challenge'] : tile.kind === 'group' ? ['group', 'vote'] : tile.kind === 'duel' ? ['duel'] : [];
     if (!kinds.length) return null;
     const pool = filterContent(CHALLENGES, session.settings).filter((c) => kinds.includes(c.kind) && c.target !== 'teams');
     const w = intensityWeights(session.settings);
-    return draw(pool, [], r, (c) => w[c.intensity]).item;
-  }, [tile.kind, session.settings, r]);
+    return draw(pool, session.used.challenges ?? [], r, (c) => w[c.intensity]);
+  });
+  const card = cardDraw?.item ?? null;
   const text = card?.text.replace(/\{A\}/g, me.name).replace(/\{B\}/g, opponent.name).replace(/\{TEAM1\}|\{TEAM2\}/g, 'everyone');
-  const trivia = useMemo(() => (tile.kind === 'trivia' ? TRIVIA[Math.floor(r() * TRIVIA.length)]! : null), [tile.kind, r]);
+  const [triviaDraw] = useState(() => (tile.kind === 'trivia' ? draw(TRIVIA, session.used.trivia ?? [], r) : null));
+  const trivia = triviaDraw?.item ?? null;
+  // The seen lists are saved when the tile is played, so the next landing (or game) deals something new.
+  const resolve = (a: BoardAction): void => {
+    if (cardDraw?.item) remember('challenges', cardDraw.used);
+    if (triviaDraw?.item) remember('trivia', triviaDraw.used);
+    onResolve(a);
+  };
   const options = useMemo(() => (trivia ? shuffle(trivia.options, r) : []), [trivia, r]);
 
   if (mini) {
@@ -219,7 +228,7 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
     const who = parts === 2 ? [me, opponent] : parts === 1 ? [me] : players;
     return (
       <div className="pt-event">
-        <MiniGame id={mini} players={who} onDone={(winner, loser) => onResolve({ type: 'resolve', ok: winner === me.id || (!!loser && loser !== me.id) })} />
+        <MiniGame id={mini} players={who} onDone={(winner, loser) => resolve({ type: 'resolve', ok: winner === me.id || (!!loser && loser !== me.id) })} />
       </div>
     );
   }
@@ -234,7 +243,7 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
           <p className="pt-event-text">
             <Name player={me} /> {tile.kind === 'lucky' ? t('zooms {n} tiles ahead!', { n: tile.value ?? 0 }) : t('takes the shortcut to tile {n}!', { n: tile.value ?? 0 })}
           </p>
-          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => onResolve({ type: 'resolve', ok: true })}>
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => resolve({ type: 'resolve', ok: true })}>
             {t('Woo! 🚀')}
           </button>
         </>
@@ -244,7 +253,7 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
           <p className="pt-event-text">
             <Name player={me} /> {tile.kind === 'setback' ? t('slips back {n} tiles.', { n: tile.value ?? 0 }) : t('slides down to tile {n}.', { n: tile.value ?? 0 })}
           </p>
-          <button className="pt-btn pt-btn-big" onClick={() => onResolve({ type: 'resolve', ok: true })}>
+          <button className="pt-btn pt-btn-big" onClick={() => resolve({ type: 'resolve', ok: true })}>
             {t('Noooo 😩')}
           </button>
         </>
@@ -254,7 +263,7 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
           <p className="pt-event-text">
             <Name player={me} />{' '}{t('rolls again!')}
           </p>
-          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => onResolve({ type: 'resolve', ok: true })}>
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => resolve({ type: 'resolve', ok: true })}>
             {t('Roll again 🎲')}
           </button>
         </>
@@ -264,8 +273,8 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
           <p className="pt-event-text">
             {tNodes('{who}, swap places with anyone (or nobody).', {}, { who: <Name player={me} /> })}
           </p>
-          <PlayerPicker players={others} selected={[]} label={t('Swap with')} onToggle={(id) => onResolve({ type: 'resolve', ok: true, swapWith: id })} />
-          <button className="pt-btn pt-btn-ghost" onClick={() => onResolve({ type: 'resolve', ok: true })}>
+          <PlayerPicker players={others} selected={[]} label={t('Swap with')} onToggle={(id) => resolve({ type: 'resolve', ok: true, swapWith: id })} />
+          <button className="pt-btn pt-btn-ghost" onClick={() => resolve({ type: 'resolve', ok: true })}>
             {t('Stay put')}
           </button>
         </>
@@ -275,10 +284,10 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
           <p className="pt-event-text">{text}</p>
           <p className="pt-muted">{t('Done: one step forward. Skip: one step back.')}</p>
           <div className="pt-row">
-            <button className="pt-btn pt-btn-go" onClick={() => onResolve({ type: 'resolve', ok: true })}>
+            <button className="pt-btn pt-btn-go" onClick={() => resolve({ type: 'resolve', ok: true })}>
               {t('Done ✓')}
             </button>
-            <button className="pt-btn" onClick={() => onResolve({ type: 'resolve', ok: false })}>
+            <button className="pt-btn" onClick={() => resolve({ type: 'resolve', ok: false })}>
               {t('Skip')}
             </button>
           </div>
@@ -288,7 +297,7 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
         <>
           <p className="pt-event-text">{text}</p>
           <p className="pt-muted">{t('The winner jumps 2 tiles ahead.')}</p>
-          <PlayerPicker players={[me, opponent]} selected={[]} label={t('Winner')} onToggle={(id) => onResolve({ type: 'resolve', ok: id === me.id, winnerId: id })} />
+          <PlayerPicker players={[me, opponent]} selected={[]} label={t('Winner')} onToggle={(id) => resolve({ type: 'resolve', ok: id === me.id, winnerId: id })} />
         </>
       )}
       {tile.kind === 'trivia' && trivia && (
@@ -302,7 +311,7 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
             ))}
           </div>
           {answer && (
-            <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => onResolve({ type: 'resolve', ok: answer === trivia.options[0] })}>
+            <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => resolve({ type: 'resolve', ok: answer === trivia.options[0] })}>
               {answer === trivia.options[0] ? t('Correct! +1 step') : t('Wrong: back 1 step')}
             </button>
           )}

@@ -36,15 +36,16 @@ describe('Impostor rules', () => {
 
   it('does not repeat a word until the theme runs out', () => {
     const r = impostorRng(7);
+    const size = pairs(IMPOSTOR_THEMES.find((t) => t.id === 'animals')!).length;
     let used: string[] = [];
     const words = new Set<string>();
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < size; i++) {
       const d = dealImpostor(players, ['animals'], used, r);
       used = d.used;
       words.add(d.deal.word);
     }
-    expect(words.size).toBe(20);
-    expect(dealImpostor(players, ['animals'], used, r).used.length).toBeLessThanOrEqual(20);
+    expect(words.size).toBe(size);
+    expect(dealImpostor(players, ['animals'], used, r).used.length).toBeLessThanOrEqual(size);
   });
 
   it('scores: escaped impostor 2, a caught one who guesses the word 1, else everyone else 1', () => {

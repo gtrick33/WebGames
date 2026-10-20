@@ -36,16 +36,22 @@ interface Game {
 export function DialMode({ session, update, onExit }: { session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; onExit: () => void }) {
   const players = session.players;
   const [r] = useState(freshRng);
-  const [game, set] = useSavedGame<Game>(session, update, 'dial', () => ({
-    stage: 'setup',
-    teams: players.length >= 4,
-    laps: players.length <= 3 ? 3 : players.length <= 6 ? 2 : 1,
-    used: [],
-    n: 0,
-    round: null,
-    scores: {},
-    team: [0, 0],
-  }));
+  const [game, set] = useSavedGame<Game>(
+    session,
+    update,
+    'dial',
+    () => ({
+      stage: 'setup',
+      teams: players.length >= 4,
+      laps: players.length <= 3 ? 3 : players.length <= 6 ? 2 : 1,
+      used: session.used.dial ?? [],
+      n: 0,
+      round: null,
+      scores: {},
+      team: [0, 0],
+    }),
+    'dial',
+  );
   const { stage, teams, laps, n, scores, team } = game;
   // The needle moves with every drag event: it is saved when the guess is locked in.
   const [needle, setNeedle] = useState<number | null>(null);

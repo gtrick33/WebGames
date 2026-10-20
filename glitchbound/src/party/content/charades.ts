@@ -137,8 +137,107 @@ const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
   ],
 };
 
+/* Third batch, appended per category so existing ids never change. */
+const EXTRA: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
+  movies: [
+    ['Slow clap in a school gym', 2], ['Running through an airport to stop a wedding', 2], ['Hacker typing very fast', 1], ['Defusing a bomb: red wire or blue wire', 2], ['Villain explaining the whole plan', 3], ['Training montage up a flight of stairs', 2],
+    ['Heist crew walking in slow motion', 2], ['Last survivor in a horror film', 2], ['Jumping from an exploding building', 1], ['Kissing in the rain', 1], ['Tunnelling out of prison with a spoon', 2], ['Car hanging off a cliff', 1],
+    ['Castaway talking to a ball', 3], ['Dramatic courtroom “Objection!”', 2], ['Spy dangling from the ceiling on a wire', 2], ['Dodging lasers in a museum vault', 2], ['Walking away from an explosion without looking', 2], ['Underdog team wins the final', 2],
+    ['Cowboy showdown at high noon', 1], ['Babysitter alone in a creepy house', 2], ['Mummy rising from a tomb', 1], ['Body swap with a parent', 3], ['Detective revealing the killer at dinner', 3], ['Pulling a sword from a stone', 1],
+    ['Someone objects at the wedding', 2],
+  ],
+  heroes: [
+    ['Hero turning invisible', 1], ['Villain stroking a cat in a big chair', 2], ['Hero who talks to fish', 2], ['Ice-powered villain', 2], ['Hero rescuing a cat from a tree', 1], ['Villain tying someone to the railway tracks', 2],
+    ['Hero with a jetpack', 1], ['Hero lifting a car', 1], ['Hero with laser eyes', 1], ['Villain with a freeze ray', 2], ['Evil twin', 2], ['Robot sidekick', 2],
+    ['Masked wrestler hero', 2], ['Hero who controls fire', 1], ['Villain escaping in a hot-air balloon', 3], ['Ninja assassin', 1], ['Knight in shining armour', 1], ['Hero catching a falling plane', 2],
+    ['Villain’s lair inside a volcano', 3], ['Pirate queen', 2],
+  ],
+  animals: [
+    ['Polar bear', 1], ['Goat', 1], ['Donkey', 1], ['Llama', 2], ['Rooster crowing', 1], ['Turkey', 1],
+    ['Goose', 1], ['Pigeon', 1], ['Vulture', 2], ['Gecko', 2], ['Tortoise', 1], ['Otter', 2],
+    ['Badger', 2], ['Hamster', 1], ['Cat stalking a bird', 2], ['Puppy', 1], ['Starfish', 2], ['Whale', 1],
+    ['Grasshopper', 2], ['Caterpillar', 2], ['Ladybird', 2], ['Praying mantis', 3], ['Bull', 1], ['Reindeer', 1],
+    ['Cheetah', 1], ['Hyena', 2], ['Baboon', 2], ['Sea lion', 2], ['Bison', 2], ['Dragonfly', 3],
+  ],
+  jobs: [
+    ['Lumberjack', 1], ['Fisherman', 1], ['Astronomer', 2], ['Beekeeper', 2], ['Chimney sweep', 2], ['Butler', 1],
+    ['Fortune teller', 1], ['Puppeteer', 2], ['Ventriloquist', 3], ['Tour guide', 1], ['Stunt double', 2], ['Deep-sea diver', 2],
+    ['Street performer', 2], ['Auctioneer', 3], ['School crossing guard', 2], ['Traffic warden', 2], ['Ice cream seller', 1], ['Wedding planner', 2],
+    ['Tailor', 2], ['Bouncer', 1], ['Lighthouse keeper', 3], ['Dog groomer', 2], ['Missing the last train home', 2], ['Getting stuck in a lift', 1],
+    ['Spilling coffee on your laptop', 1], ['Sitting on a whoopee cushion', 1], ['Getting lost in a furniture store', 2], ['Accidentally replying to everyone', 3], ['Hiding from the boss', 2], ['Opening a present you hate', 2],
+  ],
+  famous: [
+    ['Joan of Arc', 2], ['Genghis Khan', 2], ['Queen Victoria', 2], ['Henry VIII', 2], ['Christopher Columbus', 2], ['Neil Armstrong', 1],
+    ['Amelia Earhart', 3], ['Florence Nightingale', 3], ['Galileo', 3], ['Beethoven', 2], ['Marco Polo', 3], ['Tutankhamun', 2],
+    ['Alexander the Great', 2], ['Nikola Tesla', 3], ['Thomas Edison', 2], ['Salvador Dalí', 3], ['Andy Warhol', 3], ['Audrey Hepburn', 3],
+    ['Pelé', 2], ['Diego Maradona', 2], ['Edith Piaf', 3], ['Frank Sinatra', 2], ['Louis Armstrong', 2], ['Jimi Hendrix', 2],
+    ['John Lennon', 2], ['David Bowie', 2], ['Whitney Houston', 2], ['Rasputin', 3], ['Nelson Mandela', 2], ['Winston Churchill', 2],
+    ['Socrates', 3], ['Robin Hood', 1], ['King Arthur', 2], ['Mother Teresa', 2],
+  ],
+  games: [
+    ['Pressing pause at the worst moment', 2], ['Respawning after losing a life', 2], ['Collecting coins', 1], ['Grabbing a power-up', 1], ['Finding a save point', 2], ['Levelling up', 1],
+    ['Game over screen', 1], ['Boss with three health bars', 3], ['Split-screen racing', 2], ['Online lag', 2], ['Spinning a prize wheel', 1], ['Pinball', 1],
+    ['Air hockey', 1], ['Table football', 1], ['Bingo caller', 1], ['Hopscotch', 1], ['Leapfrog', 1], ['Snakes and ladders', 1],
+    ['Building a card tower', 2], ['Poker face', 2], ['Chess grandmaster thinking', 2], ['Whack-a-mole', 1], ['A tutorial that never ends', 3],
+  ],
+  internet: [
+    ['Clicking all the traffic lights to prove you’re human', 2], ['Stuck with a cat filter on a work call', 2], ['Typo in a viral post', 2], ['Main character energy', 3], ['Smart speaker mishearing you', 2], ['Robot vacuum chasing the cat', 1],
+    ['Autocorrect fail', 2], ['Screenshot of a screenshot', 3], ['Life hack that doesn’t work', 2], ['Influencer pose in front of a landmark', 1], ['Tagging the wrong person', 2], ['Two-factor login code', 3],
+    ['Accepting the cookie pop-up', 2], ['Software update at the worst time', 2], ['Waiting while someone is typing', 1], ['Muting the group chat', 2], ['Leaving the group chat dramatically', 2], ['Posting a sunset photo', 1],
+    ['Online quiz result', 2], ['Unsubscribing from emails', 2], ['Phone face ID not recognising you', 2], ['Viral dance challenge', 1], ['Setting up a new phone', 2], ['Forgetting to unmute', 1],
+    ['Battery at one percent', 1],
+  ],
+  cartoons: [
+    ['Running in mid-air', 1], ['Bump growing on your head', 1], ['Tiny rain cloud over one person', 2], ['Light bulb idea over your head', 1], ['Steam coming out of your ears', 1], ['Sneaking along inside a barrel', 2],
+    ['Hiding behind a tree that is far too thin', 2], ['Running into a painted tunnel on a wall', 3], ['Getting squashed flat as a pancake', 1], ['Sooty face after an explosion', 1], ['Heart eyes', 1], ['Jaw hitting the floor', 1],
+    ['Dancing vegetables', 2], ['Hero dog with a cape', 2], ['Bird nest in your hair', 2], ['Villain twirling a moustache', 1], ['Jumping into a hole drawn on the floor', 3], ['Running so fast your legs become a wheel', 2],
+    ['Tongue frozen to a lamppost', 2], ['Snowball growing as it rolls downhill', 2],
+  ],
+  random: [
+    ['Defrosting a freezer', 2], ['Wrapping a present with far too much tape', 1], ['Peeling off a sticker that won’t come off', 2], ['Losing a sock in the washing machine', 2], ['Opening crisps quietly in a cinema', 2], ['Sneaking into the house late at night', 1],
+    ['Folding a fitted sheet', 2], ['Squeezing into skinny jeans', 1], ['Shaking the last bit out of a ketchup bottle', 1], ['Finding a spider in the bath', 1], ['Getting dressed in the dark', 2], ['Running for a train', 1],
+    ['Slipping on ice', 1], ['Being chased by a wasp', 1], ['Getting into a cold sea', 1], ['Learning to ride a bike', 1], ['Building a sandcastle', 1], ['Tiptoeing past a sleeping baby', 2],
+    ['Sneaking a biscuit from the jar', 1], ['Carrying a sofa up the stairs', 2], ['Bathing a cat', 1], ['Plucking eyebrows', 2], ['Walking into a spider’s web', 1], ['Eating soup that is too hot', 1],
+    ['Assembling a trampoline', 3], ['Untying a knot with your teeth', 2], ['Reversing into a parking space', 2], ['Trying to sleep on a plane', 2], ['Climbing over a fence in a dress', 2], ['Losing your shoe in the mud', 2],
+  ],
+  food: [
+    ['Eating an artichoke', 3], ['Cracking open a crab', 2], ['Peeling a mango', 2], ['Eating a lobster', 2], ['Using chopsticks for the first time', 1], ['Cutting a cake into equal slices', 2],
+    ['Making pasta from scratch', 2], ['Flipping a pancake too high', 1], ['Chilli-eating contest', 1], ['Taco breaking on the first bite', 2], ['Ice lolly melting down your arm', 1], ['Opening a coconut', 2],
+    ['Popping candy', 2], ['Cheese pull on a pizza slice', 1], ['Sour sweets', 1], ['Peanut butter stuck to the roof of your mouth', 2], ['Slurping oysters', 2], ['Snails in garlic butter', 3],
+    ['Fizzy drink burp', 1], ['Peeling hot chestnuts', 3], ['Building a gingerbread house', 2], ['Fish and chips on the beach', 1], ['Wobbly jelly on a plate', 1], ['Spreading cold butter on soft bread', 2],
+    ['Biting into a hot pizza', 1],
+  ],
+  sports: [
+    ['Long jump', 1], ['Shot put', 2], ['Discus', 2], ['Badminton', 1], ['Squash', 2], ['Bobsleigh', 2],
+    ['Ski jump', 2], ['Rowing', 1], ['Sailing', 2], ['Cycling race', 1], ['Mountain biking', 2], ['BMX trick', 2],
+    ['High dive', 1], ['Crossing the marathon finish line', 1], ['Passing a relay baton', 2], ['Ribbon gymnastics', 2], ['Trampolining', 1], ['Dressage', 3],
+    ['Rodeo', 1], ['Arm wrestling', 1], ['Snooker', 2], ['Bowling a strike', 1], ['Goalkeeper diving for a save', 1], ['Limbo', 1],
+    ['Synchronised diving', 3],
+  ],
+  music: [
+    ['Playing the triangle', 1], ['Accordion', 2], ['Harp', 2], ['Saxophone solo', 2], ['Trumpet fanfare', 1], ['Drum solo', 1],
+    ['Tuba', 2], ['Banjo', 2], ['Ukulele', 2], ['Yodelling', 2], ['Barbershop quartet', 3], ['Church choir', 2],
+    ['Tap dance', 2], ['Breakdance spin', 2], ['Ballet pirouette', 1], ['Can-can', 2], ['Conga line', 1], ['Tango', 2],
+    ['Irish dancing', 2], ['Bulgarian horo', 2], ['Waltz', 2], ['Stage dive', 2], ['Lighters in the air for a ballad', 2], ['Smashing a guitar on stage', 1],
+  ],
+  places: [
+    ['Sydney Opera House', 2], ['Taj Mahal', 2], ['Colosseum', 2], ['Machu Picchu', 3], ['Grand Canyon', 2], ['Mount Fuji', 2],
+    ['The Sahara', 2], ['Antarctica', 1], ['Times Square', 3], ['A car wash', 1], ['A laundrette', 2], ['A petrol station at 3 a.m.', 2],
+    ['A bowling alley', 1], ['A ski lift', 1], ['A sauna', 1], ['A cinema', 1], ['A traffic jam', 1], ['A supermarket checkout', 1],
+    ['A stuck lift', 1], ['A cruise ship', 1], ['A campsite', 1], ['A haunted forest', 2], ['A football stadium', 1], ['A sushi conveyor belt', 2],
+    ['A sleeper train', 3], ['A courtroom', 2],
+  ],
+  afterdark: [
+    ['Struggling with a bra clasp', 2], ['Sexy firefighter calendar', 2], ['Awkward condom purchase', 2], ['Hiding a lover in the wardrobe', 2], ['Climbing out of a bedroom window', 2], ['Sexy nurse costume', 1],
+    ['Shower for two', 2], ['Champagne in a bubble bath', 2], ['Morning-breath kiss', 2], ['Naughty text sent to Mum', 3], ['Speed-dating bell', 2], ['Rose petals on the bed', 1],
+    ['Candles everywhere', 1], ['Slow striptease with a tie', 2], ['Body paint', 2], ['Rubbing sun cream on a crush', 2], ['Kiss cam at a stadium', 2], ['Edible underwear', 2],
+    ['Waterbed', 2], ['Pole-dancing class', 1], ['Flirting in a sauna', 2], ['Hen-night stripper', 2], ['Hiding a love bite with a scarf', 2], ['Valentine’s dinner disaster', 3],
+    ['Getting caught by the neighbours', 3],
+  ],
+};
+
 export const CHARADES: CharadesCard[] = (Object.keys(MORE) as CharadesCategory[]).flatMap((category) =>
-  [...(RAW[category] ?? []), ...MORE[category]].map(([text, difficulty], i) => ({ id: `ch-${category}-${i + 1}`, text, category, difficulty })),
+  [...(RAW[category] ?? []), ...MORE[category], ...(EXTRA[category] ?? [])].map(([text, difficulty], i) => ({ id: `ch-${category}-${i + 1}`, text, category, difficulty })),
 );
 
 export const CHARADES_CATEGORIES: { id: CharadesCategory; label: string; emoji: string; adult?: boolean }[] = [
