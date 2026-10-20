@@ -30,7 +30,7 @@ export const SPACE: Raw[] = [
   ['Auf welchem Planeten wehen die schnellsten Winde?', 'Neptun|Jupiter|Saturn|Mars', 'Über 2.000 km/h – schneller als der Schall auf der Erde.'],
   ['In welchem Monat ist die Erde der Sonne am nächsten?', 'Januar|Juli|März|Oktober', 'Jahreszeiten entstehen durch die Neigung der Erdachse, nicht durch den Abstand zur Sonne.'],
   ['Was misst ein Lichtjahr?', 'Eine Entfernung|Eine Zeit|Eine Helligkeit|Eine Geschwindigkeit', 'Die Strecke, die Licht in einem Jahr zurücklegt: etwa 9,5 Billionen km.'],
-  ['Eine Staubwolke im Zentrum unserer Galaxie enthält einen Stoff, der auch was aromatisiert?', 'Himbeeren|Schokolade|Kaffee|Vanille', 'Ethylformiat gibt Himbeeren ihr Aroma und riecht nach Rum.'],
+  ['Ein Stoff aus einer Staubwolke im Zentrum unserer Galaxie gibt auch welchem Lebensmittel sein Aroma?', 'Himbeeren|Schokolade|Kaffee|Vanille', 'Ethylformiat gibt Himbeeren ihr Aroma und riecht nach Rum.'],
   ['Welches Lied erklang 1965 als erstes im All, auf einer Mundharmonika?', '„Jingle Bells“|„Happy Birthday“|„Funkel, funkel, kleiner Stern“|„Amazing Grace“', 'Die Gemini-6-Astronauten spielten es, nachdem sie ein „UFO“ in rotem Anzug gemeldet hatten.'],
   ['Wie viel der Masse des Sonnensystems steckt ungefähr in der Sonne?', '99,8 %|50 %|75 %|90 %', 'Alle Planeten, Monde und Asteroiden zusammen sind nur Krümel.'],
   ['Nachdem Astronaut Scott Kelly fast ein Jahr im All verbracht hatte, verglich die NASA ihn mit wem?', 'Seinem eineiigen Zwillingsbruder|Seiner Frau|Einem Roboter|Einer Maus', 'Mark Kelly, ebenfalls Astronaut, blieb auf der Erde. Die meisten Veränderungen bei Scott bildeten sich nach der Rückkehr zurück.'],

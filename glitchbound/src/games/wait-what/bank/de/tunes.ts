@@ -1,2 +1,26 @@
-import { TUNES } from '../tunes'; // STUB
-export const TUNE_TEXT: { name: string; fact: string }[] = TUNES.map((t) => ({ name: t.name, fact: t.fact }));
+/** Die Melodien aus bank/tunes.ts auf Deutsch, in derselben Reihenfolge (Noten und Tempo kommen aus der englischen Liste). */
+export const TUNE_TEXT: { name: string; fact: string }[] = [
+  { name: 'Ode an die Freude', fact: 'Aus Beethovens Neunter Sinfonie (1824), vollendet, als er fast völlig taub war. Heute ist sie die Hymne der Europäischen Union.' },
+  { name: 'Morgen kommt der Weihnachtsmann', fact: 'Die Melodie ist ein altes französisches Lied, „Ah! vous dirai-je, maman“. Mozart schrieb zwölf Variationen darüber, Hoffmann von Fallersleben, der Dichter unserer Nationalhymne, den deutschen Text. Auf Englisch heißt es „Twinkle, Twinkle, Little Star“.' },
+  { name: 'Happy Birthday', fact: 'Es begann 1893 als „Good Morning to All“. 2015 erklärte ein US-Richter den Urheberrechtsanspruch darauf für ungültig.' },
+  { name: 'Jingle Bells', fact: '1857 als „One Horse Open Sleigh“ veröffentlicht. 1965 wurde es das erste Lied, das im Weltall gespielt wurde, auf einer Mundharmonika.' },
+  { name: 'Für Elise', fact: 'Beethovens Stück wurde erst 40 Jahre nach seinem Tod gefunden. Wer Elise war, weiß niemand sicher.' },
+  { name: 'Bruder Jakob', fact: 'Ein französischer Kanon aus dem 18. Jahrhundert über einen Mönch, der die Morgenglocken verschläft.' },
+  { name: 'Mary Had a Little Lamb', fact: 'Die ersten Worte, die je auf einem Phonographen aufgenommen wurden – von Thomas Edison 1877.' },
+  { name: 'Beethovens Fünfte (Schicksalssinfonie)', fact: 'Ta-ta-ta-TAAA. Der Rhythmus entspricht dem Morsezeichen für V, darum nutzte die BBC ihn im Zweiten Weltkrieg als Signal „V für Victory“.' },
+  { name: 'Treulich geführt (Brautchor aus „Lohengrin“)', fact: 'Der Brautchor aus Wagners Oper „Lohengrin“ (1850) – in der die Ehe gründlich schiefgeht.' },
+  { name: 'Toccata und Fuge d-Moll', fact: 'Das Orgelstück, das meist Bach zugeschrieben wird, wurde zum Klang jedes Spukschlosses und jedes verrückten Wissenschaftlers.' },
+  { name: 'Trauermarsch (Chopin)', fact: 'Aus Chopins Klaviersonate Nr. 2 (1839). Zehn Jahre später erklang er bei seiner eigenen Beerdigung.' },
+  { name: 'Dies irae', fact: 'Ein mittelalterlicher Gesang über das Jüngste Gericht, den unzählige Horrorfilme ausgeliehen haben (er eröffnet „Shining“).' },
+  { name: 'In der Halle des Bergkönigs', fact: 'Grieg schrieb es 1875 für „Peer Gynt“, wenn die Trolle den Helden umzingeln. Grieg selbst sagte, er könne es nicht hören.' },
+  { name: 'Guten Abend, gut’ Nacht (Brahms’ Wiegenlied)', fact: 'Brahms schrieb es 1868 für den neugeborenen Sohn einer Freundin. Der Text stammt aus „Des Knaben Wunderhorn“.' },
+  { name: 'London Bridge Is Falling Down', fact: 'Der Kinderreim ist Jahrhunderte alt. Die London Bridge von 1831 wurde später verkauft und in Arizona wieder aufgebaut.' },
+  { name: 'Old MacDonald Had a Farm', fact: 'I-A-I-A-O. Das Lied gibt es in vielen Sprachen, jede mit ihren eigenen Tiergeräuschen.' },
+  { name: 'Row, Row, Row Your Boat', fact: 'Ein Kanon: Jeder Sänger setzt eine Zeile später ein, so kann es ewig weitergehen.' },
+  { name: 'Yankee Doodle', fact: 'Britische Soldaten sangen es, um die Kolonisten zu verspotten – die machten es dann stolz zu ihrer eigenen Hymne.' },
+  { name: 'Eine kleine Nachtmusik', fact: 'Mozart schrieb sie 1787, veröffentlicht wurde sie aber erst 1827, Jahrzehnte nach seinem Tod.' },
+  { name: 'Kanon in D (Pachelbel)', fact: 'Der Kanon des Nürnbergers Johann Pachelbel war über zwei Jahrhunderte fast vergessen – dann wurde er die Lieblingshochzeitsmelodie der Welt.' },
+  { name: 'Auld Lang Syne („Nehmt Abschied, Brüder“)', fact: 'Robert Burns schrieb es 1788 auf. Es wird weltweit zu Silvester gesungen.' },
+  { name: 'When the Saints Go Marching In', fact: 'Ein amerikanisches Spiritual, das zur Jazzhymne von New Orleans wurde – berühmt in der Aufnahme von Louis Armstrong von 1938.' },
+  { name: 'Greensleeves', fact: 'Ein englisches Volkslied aus dem 16. Jahrhundert. Die Legende, Heinrich VIII. habe es geschrieben, ist fast sicher falsch.' },
+];

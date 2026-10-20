@@ -6,7 +6,7 @@ export const MONEY: Raw[] = [
   ['Welches Land führte die ersten Banknoten aus Plastik ein?', 'Australien|Kanada|Großbritannien|Japan', '1988. Sie sind viel schwerer zu fälschen.'],
   ['Benjamin Franklin ist auf dem 100-Dollar-Schein. Welches Amt hatte er nie?', 'US-Präsident|Postmeister|Botschafter in Frankreich|Buchdrucker', 'Nur zwei Nicht-Präsidenten sind auf aktuellen US-Scheinen: Franklin und Alexander Hamilton.'],
   ['Für wie viel wurde die wertvollste Briefmarke der Welt 2021 ungefähr verkauft?', 'Etwa 8 Millionen Dollar|Etwa 80 Dollar|Etwa 8.000 Dollar|Etwa 800 Millionen Dollar', 'Die British Guiana 1c magenta, eine schäbige Ein-Cent-Marke von 1856.'],
-  ['2010 zahlte jemand 10.000 Bitcoins für was?', 'Zwei Pizzas|Einen Gebrauchtwagen|Einen Laptop|Ein Haus', 'Diese Coins waren später Hunderte Millionen Dollar wert.'],
+  ['Was kaufte jemand 2010 für 10.000 Bitcoins?', 'Zwei Pizzas|Einen Gebrauchtwagen|Einen Laptop|Ein Haus', 'Diese Coins waren später Hunderte Millionen Dollar wert.'],
   ['Welche ist die älteste Währung, die noch im Umlauf ist?', 'Das britische Pfund|Der US-Dollar|Der japanische Yen|Der Schweizer Franken', 'Rund 1.200 Jahre alt.'],
   ['Wie viel zahlte Facebook 2012 für Instagram?', '1 Milliarde Dollar|10 Millionen Dollar|100 Millionen Dollar|50 Milliarden Dollar', 'Instagram hatte damals gerade mal 13 Angestellte.'],
   ['Warum haben manche Münzen einen geriffelten Rand?', 'Damit niemand Edelmetall abfeilt|Als Hilfe für Blinde|Für besseren Halt|Reine Verzierung', 'Als Münzen noch aus echtem Gold und Silber waren, schnitten Leute die Ränder ab.'],
@@ -19,6 +19,6 @@ export const MONEY: Raw[] = [
   ['Sambias Währung, der Kwacha, ist nach einem Wort benannt. Was bedeutet es?', 'Morgendämmerung|Gold|Löwe|Fluss', 'Es erinnert an die „neue Morgendämmerung“ der Unabhängigkeit 1964.'],
   ['Für wie viel verkaufte Apple-Mitgründer Ronald Wayne 1976 seinen 10-Prozent-Anteil?', '800 Dollar|80.000 Dollar|8 Millionen Dollar|8 Dollar', 'Heute wäre er Hunderte Milliarden Dollar wert.'],
   ['Welche Firma wurde in den USA als erste mit einer Billion Dollar bewertet?', 'Apple|Amazon|Microsoft|Google', 'Sie knackte die Marke im August 2018. Im Englischen heißt das übrigens „trillion“.'],
-  ['2006 tauschte sich Kyle MacDonald von einer roten Büroklammer hoch bis zu was?', 'Einem Haus|Einem Auto|Einem Boot|Einer Gitarre', 'Er brauchte dafür 14 Tauschgeschäfte in etwa einem Jahr.'],
+  ['Was ertauschte sich Kyle MacDonald 2006, ausgehend von einer roten Büroklammer?', 'Ein Haus|Ein Auto|Ein Boot|Eine Gitarre', 'Er brauchte dafür 14 Tauschgeschäfte in etwa einem Jahr.'],
   ['Wie viele Stück sind ein englisches „baker’s dozen“, ein Bäckerdutzend?', '13|12|11|14', 'Bäcker legten ein Brot dazu, um keine Strafe für zu leichte Ware zu riskieren.'],
 ];

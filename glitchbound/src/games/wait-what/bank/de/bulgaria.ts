@@ -7,11 +7,11 @@ export const BULGARIA: Record<HandCat, Raw[]> = {
     ['Das Gold aus der Nekropole von Warna in Bulgarien ist der älteste bearbeitete Goldschatz, der je gefunden wurde. Wie alt ist er ungefähr?', 'Etwa 6.500 Jahre|Etwa 2.000 Jahre|Etwa 1.000 Jahre|Etwa 4.000 Jahre', 'Die Gräber stammen aus der Zeit um 4600–4200 v. Chr. und sind älter als die Pyramiden Ägyptens.'],
     ['In welchem Land entstand das kyrillische Alphabet?', 'Bulgarien|Russland|Griechenland|Serbien', 'Es nahm im Ersten Bulgarischen Reich Gestalt an, in der Schule von Preslaw, Ende des 9. Jahrhunderts.'],
     ['Als Bulgarien 2007 der EU beitrat, welches Alphabet wurde dadurch offizielle EU-Schrift?', 'Das kyrillische|Das griechische|Das glagolitische|Das armenische', 'Kyrillisch wurde nach dem lateinischen und dem griechischen das dritte offizielle Alphabet der EU.'],
-    ['Was verhinderten 1943 Proteste von Abgeordneten, Geistlichen und einfachen Bulgaren?', 'Die Deportation der bulgarischen Juden in NS-Vernichtungslager|Eine königliche Hochzeit|Den Bau eines Kanals|Ein Fußballspiel gegen Deutschland', 'Rund 48.000 Juden aus dem Vorkriegsgebiet Bulgariens wurden gerettet. Die in den bulgarisch besetzten Gebieten Thrakiens und Makedoniens nicht.'],
-    ['John Atanasoff, Sohn eines bulgarischen Einwanderers, baute um 1940 in den USA was?', 'Einen der ersten elektronischen Digitalrechner|Das erste Strahltriebwerk|Den ersten Fernseher|Den ersten Kernreaktor', 'Den Atanasoff-Berry-Computer. Ein US-Gericht sprach ihm 1973 die Erfindung des elektronischen Digitalrechners zu.'],
+    ['Was verhinderten 1943 Proteste von Abgeordneten, Geistlichen und einfachen Bulgaren?', 'Die Deportation der bulgarischen Juden in die Todeslager|Eine königliche Hochzeit|Den Bau eines Kanals|Ein Fußballspiel gegen Deutschland', 'Rund 48.000 Juden aus dem Vorkriegsgebiet Bulgariens wurden gerettet. Die in den bulgarisch besetzten Gebieten Thrakiens und Makedoniens nicht.'],
+    ['Was baute John Atanasoff, Sohn eines bulgarischen Einwanderers, um 1940 in den USA?', 'Einen der ersten elektronischen Digitalrechner|Das erste Strahltriebwerk|Den ersten Fernseher|Den ersten Kernreaktor', 'Den Atanasoff-Berry-Computer. Ein US-Gericht sprach ihm 1973 die Erfindung des elektronischen Digitalrechners zu.'],
     ['Der Reiter von Madara, um 700 n. Chr. entstanden, ist ungewöhnlich, weil er was ist?', 'Ein Felsrelief, 23 m hoch in eine Klippe gehauen|Eine Pferdestatue aus Bronze|Eine bemalte Höhle|Eine Kreidefigur am Hang', 'Es ist das einzige frühmittelalterliche Felsrelief dieser Art in Europa und UNESCO-Welterbe.'],
     ['Wozu tragen die bulgarischen Kukeri riesige Masken, Pelze und schwere Glocken?', 'Um böse Geister zu vertreiben|Um die Weinlese zu feiern|Um einen neuen König zu begrüßen|Um die Toten zu betrauern', 'Das größte Treffen, „Surva“ in Pernik, lockt jeden Januar Tausende maskierte Tänzer an.'],
-    ['Beim Nestinari-Ritual in den Dörfern des bulgarischen Strandscha-Gebirges tanzt man barfuß auf was?', 'Auf glühender Glut|Auf Eis|Auf Glasscherben|Auf Dornen', 'Der Feuertanz ehrt die Heiligen Konstantin und Helena und steht auf der UNESCO-Liste des immateriellen Kulturerbes.'],
+    ['Worauf tanzt man beim Nestinari-Ritual in den Dörfern des bulgarischen Strandscha-Gebirges barfuß?', 'Auf glühender Glut|Auf Eis|Auf Glasscherben|Auf Dornen', 'Der Feuertanz ehrt die Heiligen Konstantin und Helena und steht auf der UNESCO-Liste des immateriellen Kulturerbes.'],
   ],
   geo: [
     ['Welcher ist der höchste Berg des Balkans?', 'Mussala|Olymp|Triglav|Wichren', 'Der Mussala im bulgarischen Rila-Gebirge ist 2.925 m hoch, ein paar Meter höher als der griechische Olymp.'],
@@ -34,7 +34,7 @@ export const BULGARIA: Record<HandCat, Raw[]> = {
   ],
   pop: [
     ['Ein bulgarisches Volkslied fliegt mit den Voyager-Sonden aus dem Sonnensystem. Welches?', 'Izlel e Deljo Hajdutin|Kalinka|Ederlezi|Hava Nagila', 'Gesungen von Walja Balkanska, ist es auf der Goldenen Schallplatte, die 1977 ins All startete.'],
-    ['1990 gewann „Le Mystère des Voix Bulgares“, ein Album eines bulgarischen Frauenchors, was?', 'Einen Grammy|Einen Oscar|Den Eurovision Song Contest|Den Nobelpreis', 'Die Harmonien des Chors wurden Ende der 1980er ein unerwarteter Welterfolg.'],
+    ['Was gewann 1990 „Le Mystère des Voix Bulgares“, das Album eines bulgarischen Frauenchors?', 'Einen Grammy|Einen Oscar|Den Eurovision Song Contest|Den Nobelpreis', 'Die Harmonien des Chors wurden Ende der 1980er ein unerwarteter Welterfolg.'],
   ],
   space: [
     ['Als Georgi Iwanow 1979 flog, war Bulgarien das wievielte Land, das einen Bürger ins All schickte?', 'Das sechste|Das zweite|Das zehnte|Das zwanzigste', 'Nach der UdSSR, den USA, der Tschechoslowakei, Polen und der DDR.'],

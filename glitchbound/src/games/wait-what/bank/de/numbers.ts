@@ -1,2 +1,46 @@
-import { NUMBERS } from '../numbers'; // STUB
-export const NUMBER_TEXT: { q: string; fact: string; unit?: string }[] = NUMBERS.map((n) => ({ q: n.q, fact: n.fact, unit: n.unit }));
+/**
+ * Die Hebelfragen aus bank/numbers.ts auf Deutsch, in derselben Reihenfolge. Antworten, Bereich und
+ * Punkte kommen aus der englischen Liste; hier stehen nur Text und Einheit (wo das Englische eine hat).
+ */
+export const NUMBER_TEXT: { q: string; fact: string; unit?: string }[] = [
+  { q: 'Wie viele Minuten dauert ein Fußballspiel ohne Nachspielzeit und Verlängerung?', unit: 'Minuten', fact: 'Zwei Halbzeiten zu je 45 Minuten. Die Nachspielzeit kommt obendrauf.' },
+  { q: 'Wie viele Knochen hat eine menschliche Hand, das Handgelenk mitgezählt?', fact: 'Hände und Füße zusammen enthalten mehr als die Hälfte aller Knochen deines Körpers.' },
+  { q: 'Wie viele Tasten hat ein normales Klavier?', fact: '52 weiße und 36 schwarze Tasten – etwas mehr als sieben Oktaven.' },
+  { q: 'Wie viele Zähne hat ein Erwachsener, Weisheitszähne mitgezählt?', fact: 'Zweiunddreißig, auch wenn bei vielen nie alle vier Weisheitszähne durchbrechen.' },
+  { q: 'Wie viele Monde hat der Mars?', fact: 'Phobos und Deimos, benannt nach den griechischen Göttern der Furcht und des Schreckens.' },
+  { q: 'Wie viele Länder gibt es in Afrika?', fact: 'Vierundfünfzig Länder sind UN-Mitglieder, mehr als auf jedem anderen Kontinent.' },
+  { q: 'Wie viele Spieler hat eine Baseballmannschaft auf dem Feld?', fact: 'Neun Feldspieler, Pitcher und Catcher eingeschlossen.' },
+  { q: 'Wie viele Arme hat ein typischer Seestern?', fact: 'Die meisten haben fünf, manche Arten aber 40 oder mehr – und verlorene wachsen nach.' },
+  { q: 'Wie viele Sekunden dauerte der erste Motorflug der Brüder Wright?', fact: 'Zwölf Sekunden und rund 37 Meter, im Dezember 1903. Ein Jumbojet ist länger als dieser Flug.' },
+  { q: 'Wie viele Augen haben die meisten Spinnen?', fact: 'Die meisten haben acht, manche sechs, und einige Höhlenspinnen gar keine.' },
+  { q: 'Wie viele verschiedene Wörter benutzte Dr. Seuss für sein Kinderbuch „Green Eggs and Ham“?', fact: 'Genau fünfzig. Sein Verleger hatte gewettet, dass er mit so wenigen kein Buch schaffen würde.' },
+  { q: 'Wie viele Liter Blut hat ein erwachsener Körper ungefähr?', unit: 'l', fact: 'Etwa 5 Liter, die ungefähr einmal pro Minute durch den ganzen Körper gepumpt werden.' },
+  { q: 'Über wie viele Zeitzonen erstreckt sich Russland?', fact: 'Elf. Wenn in Kaliningrad gefrühstückt wird, ist es auf Kamtschatka schon Abend.' },
+  { q: 'Wie viele Zeilen hat ein Sonett?', fact: 'Vierzehn, ob italienisch oder nach Shakespeare.' },
+  { q: 'Wie viele Spieler hat eine Rugby-Union-Mannschaft auf dem Platz?', fact: 'Fünfzehn. Rugby League spielt mit dreizehn und Siebener-Rugby, nun ja, mit sieben.' },
+  { q: 'Bei welcher Temperatur ungefähr kocht Wasser auf dem Gipfel des Mount Everest?', unit: '°C', fact: 'In der dünnen Luft kocht es schon bei rund 70 °C – zu kühl, um Nudeln richtig zu garen.' },
+  { q: 'Wie alt war Mozart, als er seine erste Sinfonie schrieb?', unit: 'Jahre', fact: 'Acht. Er schrieb sie 1764 in London.' },
+  { q: 'Wie alt wurde der älteste nachweislich belegte Mensch?', unit: 'Jahre', fact: 'Die Französin Jeanne Calment wurde 122 Jahre und 164 Tage alt.' },
+  { q: 'Wie viele Saiten hat eine moderne Konzertharfe?', fact: 'Meist 47, dazu sieben Pedale, die die Tonhöhe verändern.' },
+  { q: 'Wie viele Knochen hat der Hals einer Giraffe?', fact: 'Sieben, genauso viele wie deiner. Jeder einzelne kann über 25 cm lang sein.' },
+  { q: 'Wie viele Zähne hat ein erwachsener Hund?', fact: 'Zehn mehr als ein erwachsener Mensch. Welpen haben 28 Milchzähne.' },
+  { q: 'Wie schnell kann ein Gepard ungefähr sprinten?', unit: 'km/h', fact: 'Rund 100 bis 120 km/h, aber nur ein paar Hundert Meter lang.' },
+  { q: 'Wie viele Streifen hat die US-Flagge?', fact: 'Einen für jede der dreizehn Gründungskolonien. Die 50 Sterne stehen für die heutigen Bundesstaaten.' },
+  { q: 'Wie viele Länder grenzen an Deutschland?', fact: 'Dänemark, Polen, Tschechien, Österreich, die Schweiz, Frankreich, Luxemburg, Belgien und die Niederlande.' },
+  { q: 'Wie viele Augen hat ein normaler sechsseitiger Würfel insgesamt?', fact: '1 + 2 + 3 + 4 + 5 + 6 = 21. Gegenüberliegende Seiten ergeben zusammen immer sieben.' },
+  { q: 'Wie tief ist die tiefste Stelle des Ozeans ungefähr?', unit: 'km', fact: 'Das Challengertief im Marianengraben liegt rund 10,9 km tief. Der Everest passte locker hinein.' },
+  { q: 'Wie hoch ist der Mount Everest?', unit: 'm', fact: '8.849 m, gemeinsam gemessen von China und Nepal im Jahr 2020.' },
+  { q: 'Wie hoch ist der Eiffelturm mit Antennen?', unit: 'm', fact: 'Rund 330 m. Sein Eisen dehnt sich in der Sommerhitze aus und macht ihn bis zu 15 cm höher.' },
+  { q: 'Wie viele Ecken hat eine britische 50-Pence-Münze?', fact: 'Sieben, mit gewölbten Kanten, damit sie trotzdem glatt durch Münzautomaten rollt.' },
+  { q: 'Wie viele Beine hat ein Schmetterling?', fact: 'Sechs, wie jedes Insekt – auch wenn manche Schmetterlinge nur auf vieren zu stehen scheinen.' },
+  { q: 'Wie viele Sinfonien hat Beethoven vollendet?', fact: 'Die Neunte mit ihrer „Ode an die Freude“ vollendete er, als er fast völlig taub war.' },
+  { q: 'Wie viele Beine hat ein Hummer, die Scheren mitgezählt?', fact: 'Zehn: Hummer sind Zehnfußkrebse, so heißen sie auch.' },
+  { q: 'Wie viele Jahre dauerte der Bau des Panamakanals, gerechnet ab dem US-Baubeginn 1904?', unit: 'Jahre', fact: 'Die USA bauten von 1904 bis 1914, nach einem gescheiterten französischen Versuch in den 1880ern.' },
+  { q: 'Wie viele Spieler hat eine Eishockeymannschaft auf dem Eis, Torwart mitgezählt?', fact: 'Fünf Feldspieler und ein Torhüter.' },
+  { q: 'Wie viele Stunden dauert ungefähr ein Tag auf der Venus? (Eine volle Drehung.)', unit: 'Stunden', fact: 'Rund 5.832 Stunden, also 243 Erdtage. Ihr Jahr dauert nur 225 Erdtage.' },
+  { q: 'Bei welcher Temperatur in °C treffen sich die Celsius- und die Fahrenheit-Skala?', unit: '°C', fact: '−40 °C sind genau −40 °F.' },
+  { q: 'Wie viele Jahre lagen zwischen der ersten Mondlandung und dem ersten iPhone?', unit: 'Jahre', fact: 'Von Juli 1969 bis Juni 2007: 38 Jahre.' },
+  { q: 'Wie viele LEGO-Steine braucht man übereinander, um so hoch wie der Eiffelturm zu kommen, in Tausend?', unit: 'Tausend', fact: 'Ein normaler Stein ist 9,6 mm hoch, also reichen rund 34.000 gestapelte Steine bis 330 m.' },
+  { q: 'Wie viele Karten hat ein normales Kartenspiel ohne Joker?', fact: 'Zählt man das Ass als 1 und den König als 13, ergibt das ganze Spiel 364. Mit einem Joker sind es 365.' },
+  { q: 'Wie viele Ringe sind auf der olympischen Flagge?', fact: 'Fünf. Mit dem weißen Hintergrund wurden ihre sechs Farben so gewählt, dass jede Nationalflagge von 1913 mindestens eine davon hatte.' },
+];
