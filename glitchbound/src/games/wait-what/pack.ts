@@ -1,14 +1,14 @@
 /**
  * A language's content for Quizbelief: the question lists plus the sentences the deck builds around
- * them. English is built in; other languages load on demand (bank/bg), so English players never
- * download them.
+ * them. English is built in; every other language is a folder, bank/<lang>/, whose index.ts exports
+ * `PACK`. Folders load on demand, so English players never download them (see bank/PACKS.md).
  *
  * Lists that are translations (the hand-written bank, timeline events, lever numbers, tunes and the
  * words of the world) keep the English order and length, so the daily quiz and a friends' challenge
  * pick the same questions in every language. Word play that can't be translated (real words that
  * sound made up, typed answers, emoji puzzles) has its own list per language.
  */
-import type { ContentLang } from '../../platform/contentLang';
+import type { Lang } from '../../i18n';
 import { ANIMALS } from './bank/animals';
 import { BULGARIA, BULGARIA_SINCE } from './bank/bulgaria';
 import { GROWTH, GROWTH_SINCE } from './bank/growth';
@@ -29,6 +29,7 @@ import { EVENTS, type Event } from './bank/timeline';
 import { TUNES, type Tune } from './bank/tunes';
 import { TYPED, type Typed } from './bank/typed';
 import type { Raw } from './bank/types';
+import type { Ui } from './ui';
 import { WORDS } from './bank/words';
 
 export const LAUNCH = '2026-10-18';
@@ -59,7 +60,7 @@ export interface PackText {
 }
 
 export interface Pack {
-  lang: ContentLang;
+  lang: Lang;
   /** For numbers on the lever ("1,912" / "1 912"). */
   locale: string;
   /** Hand-written questions, in release batches (see deck.ts). */
@@ -77,6 +78,8 @@ export interface Pack {
   /** Words dropped from the start of a typed answer before comparing ("the Moon" = "Moon"). */
   articles: RegExp | null;
   text: PackText;
+  /** The game's own on-screen text in this language (English and Bulgarian keep theirs in ui.ts). */
+  ui?: Ui;
 }
 
 export const EN: Pack = {
@@ -127,8 +130,11 @@ export const EN: Pack = {
   },
 };
 
-/** The content for a language (English is built in; the rest load on demand). */
-export async function loadPack(lang: ContentLang): Promise<Pack> {
-  if (lang === 'bg') return (await import('./bank/bg')).BG;
-  return EN;
+/** Every language folder, loaded only when someone plays in that language. */
+const PACKS = import.meta.glob<{ PACK: Pack }>('./bank/*/index.ts');
+
+/** The content for a language (English is built in; a language without a folder plays in English). */
+export async function loadPack(lang: string): Promise<Pack> {
+  const load = PACKS[`./bank/${lang}/index.ts`];
+  return load ? (await load()).PACK : EN;
 }

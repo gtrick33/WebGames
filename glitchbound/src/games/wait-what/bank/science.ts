@@ -52,6 +52,6 @@ export const SCIENCE: Raw[] = [
   ['Roughly how many times a second does lightning flash somewhere on Earth?', 'About 45|About 4|About 450|About 1', 'That is around four million flashes a day, most of them over land in the tropics.'],
   ['How many people need to be in a room for a better-than-even chance that two share a birthday?', '23|183|50|366', 'With 70 people, the chance is over 99.9%.'],
   ['What is a "jiffy" in computing?', 'A real unit of time, often 1/100 or 1/60 of a second|A tiny file|A crash|A quick reboot', 'Physicists have their own jiffy too: the time light takes to cross a proton.'],
-  ['Why can water heated in a microwave suddenly erupt?', 'It can get hotter than boiling without bubbling, then boil all at once|The microwave adds gas|The cup melts|Steam freezes', 'With no scratches or specks to start bubbles, water can "superheat". A wooden stick in the cup helps.'],
+  ['Why can water heated in a microwave suddenly erupt?', 'It goes past boiling point, then boils all at once|The microwave adds gas|The cup melts|Steam freezes', 'With no scratches or specks to start bubbles, water can "superheat". A wooden stick in the cup helps.'],
   ['Weight for weight, spider silk can be stronger than what?', 'Steel|Diamond|Titanium|Nothing at all', 'Some silks are also stretchier than nylon. Scientists have spent decades trying to mass-produce it.'],
 ];

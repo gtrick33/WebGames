@@ -95,7 +95,7 @@ function LangGate({ lang, children }: { lang: ContentLang; children: ReactNode }
       live = false;
     };
   }, [lang]);
-  const value = useMemo(() => (pack ? { p: pack, u: UI[pack.lang] } : null), [pack]);
+  const value = useMemo(() => (pack ? { p: pack, u: pack.ui ?? (UI as Partial<Record<string, Ui>>)[pack.lang] ?? UI.en } : null), [pack]);
   if (!value) return <div className="ww ww-menu" aria-busy="true" />;
   return <Lang.Provider value={value}>{children}</Lang.Provider>;
 }

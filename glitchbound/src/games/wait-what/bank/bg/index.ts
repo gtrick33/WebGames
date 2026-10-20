@@ -73,3 +73,5 @@ export const BG: Pack = {
     putInOrder: 'Подреди ги: докосни най-старото първо.',
   },
 };
+
+export const PACK = BG;
