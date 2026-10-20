@@ -18,63 +18,19 @@
   transform: translateY(-3px) rotate(0.4deg);
 }
 .lcb-art {
-  position: relative;
-  flex: 0 0 150px;
+  flex: 0 0 190px;
   height: 92px;
   border-radius: 16px;
-  background: linear-gradient(#5ad1ff 0 55%, #4a4e69 55% 100%);
   border: 2px solid #1d1238;
   overflow: hidden;
+  background: #ffb703;
 }
-.lcb-sun {
-  position: absolute;
-  top: 8px;
-  right: 14px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #fff3b0;
-}
-.lcb-road {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 72%;
-  height: 3px;
-  background: repeating-linear-gradient(90deg, #fff 0 14px, transparent 14px 26px);
-}
-.lcb-car {
-  position: absolute;
-  font-size: 30px;
-  line-height: 1;
-  transform: scaleX(-1);
-}
-.lcb-car-a {
-  left: 12px;
-  top: 52px;
-  animation: lcb-launch 2.4s ease-in-out infinite;
-}
-.lcb-car-b {
-  left: 8px;
-  top: 30px;
-  font-size: 22px;
-  animation: lcb-launch 2.4s ease-in-out 0.3s infinite;
-}
-.lcb-flag {
-  position: absolute;
-  right: 6px;
-  top: 34px;
-  font-size: 22px;
-}
-@keyframes lcb-launch {
-  0%,
-  25% {
-    transform: scaleX(-1) translateX(0);
-  }
-  80%,
-  100% {
-    transform: scaleX(-1) translateX(-110px);
-  }
+.lcb-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% 50%;
 }
 .lcb-text {
   display: grid;
@@ -97,9 +53,6 @@
   box-shadow: 3px 3px 0 #1d1238;
 }
 @media (prefers-reduced-motion: reduce) {
-  .lcb-car {
-    animation: none;
-  }
   .lcb:hover {
     transform: none;
   }

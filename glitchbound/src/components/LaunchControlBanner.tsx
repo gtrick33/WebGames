@@ -9,11 +9,7 @@ export function LaunchControlBanner() {
     <section className="wrap section">
       <Link href="/games/launch-control" className="lcb">
         <span className="lcb-art" aria-hidden="true">
-          <span className="lcb-sun" />
-          <span className="lcb-road" />
-          <span className="lcb-car lcb-car-a">🏎️</span>
-          <span className="lcb-car lcb-car-b">🚗</span>
-          <span className="lcb-flag">🏁</span>
+          <img src="/games/launch-control/wide.webp" alt="" loading="lazy" width={1200} height={480} />
         </span>
         <span className="lcb-text">
           <span className="eyebrow">{t('New · Launch Control')}</span>
