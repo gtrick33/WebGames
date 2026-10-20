@@ -16,7 +16,7 @@ export const SPACE: Raw[] = [
   ['What did Apollo astronauts leave on the Moon, about 96 bags of?', 'Human waste|Moon rocks|Plant seeds|Letters from home', 'Scientists would actually like to study them one day.'],
   ['Which sport has been played on the Moon?', 'Golf|Football|Baseball|Tennis', 'Alan Shepard hit two golf balls during Apollo 14 in 1971.'],
   ['Neptune was discovered in 1846. When did it finish its first orbit since?', '2011|1900|1946|It has not yet', 'One Neptune year is about 165 Earth years.'],
-  ['As of 2025, which planet has the most known moons?', 'Saturn|Jupiter|Uranus|Neptune', 'Saturn passed 270 moons in 2025, most of them tiny.'],
+  ['In 2025, astronomers announced 128 new moons for which planet?', 'Saturn|Jupiter|Uranus|Neptune', 'That took its count past 270, far more than any other planet. Most are only a few kilometers wide.'],
   ['Jupiter\'s Great Red Spot storm has been watched for how long?', 'Over 150 years|Two weeks|Ten years|One year', 'It has raged at least since the 1800s, and possibly since the 1600s.'],
   ['Driving to the Sun at 100 km/h would take about how long?', 'About 170 years|About 17 years|About 1,700 years|About 2 years', 'It is about 150 million km away.'],
   ['On which planet might it rain diamonds?', 'Neptune|Mars|Mercury|Venus', 'Pressure deep inside Neptune and Uranus may squeeze carbon into diamond "hail".'],

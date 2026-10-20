@@ -8,7 +8,7 @@ export type Word = readonly [word: string, meaning: string, group?: string];
 export const ODD_WORDS: Word[] = [
   ['snollygoster', 'A clever but dishonest person, especially a politician'],
   ['bumfuzzle', 'To confuse someone', 'confuse'],
-  ['widdershins', 'Anticlockwise, or in the wrong direction'],
+  ['widdershins', 'Counterclockwise, or in the wrong direction'],
   ['cattywampus', 'Crooked, askew or out of line'],
   ['lollygag', 'To waste time doing nothing useful', 'dawdle'],
   ['flibbertigibbet', 'A flighty, chattering person'],

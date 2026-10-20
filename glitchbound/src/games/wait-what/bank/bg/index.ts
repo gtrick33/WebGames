@@ -1,5 +1,5 @@
 /**
- * Wait, What? in Bulgarian (loaded only when the game plays in Bulgarian, see pack.ts). The translated
+ * Quizbelief in Bulgarian (loaded only when the game plays in Bulgarian, see pack.ts). The translated
  * lists keep the English order, so a daily quiz or challenge picks the same questions in both
  * languages; numbers, years and tunes come from the English lists.
  */

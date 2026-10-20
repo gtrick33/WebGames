@@ -1,9 +1,9 @@
 # GlitchBound as a Discord Activity
 
-Wait, What? and Crass Act can be played as a **Discord Activity**: someone in a voice channel (or a DM / group-DM
+Quizbelief and Crass Act can be played as a **Discord Activity**: someone in a voice channel (or a DM / group-DM
 call) opens the App Launcher, picks GlitchBound, and everyone in the call plays together without leaving Discord.
 
-- **Wait, What?** becomes a friends' challenge for the whole call: the same round for everyone, one try each,
+- **Quizbelief** becomes a friends' challenge for the whole call: the same round for everyone, one try each,
   live scoreboard, "Next round" for a rematch (the normal challenge, `src/platform/challenges.ts`).
 - **Crass Act** becomes one live room for the call (the rooms worker in `rooms/`), so nobody types a room code.
 
@@ -46,7 +46,7 @@ Discord client ──iframe──▶ https://<CLIENT_ID>.discordsays.com/?frame_
      replaced the same way.
    The pairs live in D1 (`discord_instances`, migration `0009`), claimed in one transaction so two people
    tapping at the same moment still end up together. `GET /api/discord/play?instanceId=…` tells the page what is
-   already running in the call ("Wait, What? · 3 playing"), polled every few seconds while the picker is open.
+   already running in the call ("Quizbelief · 3 playing"), polled every few seconds while the picker is open.
    Rows untouched for two days are deleted.
 6. **Play.** The page navigates (client-side) to `/games/wait-what?challenge=<id>` or
    `/games/crass-act?room=<code>`. Inside the Activity the arcade header and footer are replaced by a slim bar
@@ -115,7 +115,7 @@ Without `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET`, `/api/discord/*` answer
 9. **Deploy:** commit the two client-ID edits and push to `pre-release`. CI applies migration `0009` and deploys.
 10. **Try it:** in a test server (or a DM call), join a voice channel › the rocket (App Launcher) button › your
     app › Launch. Discord asks once to authorize "identify". Check: your Discord name shows, a second account
-    in the call sees the same game after picking it, a Wait, What? round reaches the shared scoreboard, and an
+    in the call sees the same game after picking it, a Quizbelief round reaches the shared scoreboard, and an
     Crass Act room fills with everyone in the call.
 11. **Before inviting the public:** during development only you and your team can launch it. Check the
     portal's current rules for making an Activity available to everyone and for the App Directory (app

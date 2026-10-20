@@ -1,5 +1,5 @@
 /**
- * A language's content for Wait, What?: the question lists plus the sentences the deck builds around
+ * A language's content for Quizbelief: the question lists plus the sentences the deck builds around
  * them. English is built in; other languages load on demand (bank/bg), so English players never
  * download them.
  *
@@ -110,7 +110,8 @@ export const EN: Pack = {
     worldFact: (word, language, meaning) => `${word} (${language}): ${meaning}. English needs a whole sentence for it.`,
     bc: (year) => `${year} BC`,
     around: (year) => `around ${year}`,
-    closer: (what) => `Which happened closer in time to this: ${what.charAt(0).toLowerCase()}${what.slice(1)}?`,
+    // Only an ordinary first word is lowercased (“the telephone is patented”), never a name (“Pong is released”).
+    closer: (what) => `Which happened closer in time to this: ${/^(The|A|An|Work|Teaching|Basketball|Volleyball|Penicillin|Insulin|Aspirin|Sliced|Chocolate|Bubble|Humans)\b/.test(what) ? what.charAt(0).toLowerCase() + what.slice(1) : what}?`,
     whichFirst: 'Which came first?',
     oneYearApart: 'Just one year apart!',
     yearsApart: (gap, rough) => `${rough ? 'Roughly ' : ''}${gap} years apart.`,

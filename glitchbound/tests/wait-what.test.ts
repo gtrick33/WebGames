@@ -70,7 +70,7 @@ function valid(q: Question): void {
   expect(q.correct).toBeLessThan(q.answers.length);
 }
 
-describe('Wait, What? question bank', () => {
+describe('Quizbelief question bank', () => {
   it('has hundreds of valid questions with unique texts', () => {
     expect(bankSize()).toBeGreaterThan(650);
     const dealer = new EndlessDealer([], 1);
@@ -114,7 +114,7 @@ describe('Wait, What? question bank', () => {
   });
 });
 
-describe('Wait, What? decks', () => {
+describe('Quizbelief decks', () => {
   it('daily quiz: same for everyone, ten different questions, a mix of categories', () => {
     const day = '2026-10-25';
     expect(dailyQuiz(day)).toEqual(dailyQuiz(day));
@@ -186,7 +186,7 @@ describe('Wait, What? decks', () => {
   });
 });
 
-describe('Wait, What? newer question styles', () => {
+describe('Quizbelief newer question styles', () => {
   it('has valid lever, typed, emoji, tune and Morse questions', () => {
     NUMBERS.forEach((_, i) => valid(numberQuestion(i)));
     YEAR_EVENTS.forEach((i) => valid(yearQuestion(i)));
@@ -219,17 +219,18 @@ describe('Wait, What? newer question styles', () => {
   });
 
   it('grades the lever: spot on, close (some points) or wrong', () => {
-    const q = numberQuestion(NUMBERS.findIndex((n) => n.answer === 206));
-    expect(judge(q, 206)).toBe('right');
-    expect(judge(q, 210)).toBe('right');
-    expect(judge(q, 230)).toBe('close');
-    expect(judge(q, 400)).toBe('wrong');
+    // Boiling point on Everest: 70 °C, full points within 3, some points within 15.
+    const q = numberQuestion(NUMBERS.findIndex((n) => n.answer === 70 && n.tol === 3));
+    expect(judge(q, 70)).toBe('right');
+    expect(judge(q, 73)).toBe('right');
+    expect(judge(q, 80)).toBe('close');
+    expect(judge(q, 120)).toBe('wrong');
     expect(judge(q, -1)).toBe('timeout');
-    expect(scorePick(q, 206, 0, 25)).toBe(150);
-    const near = scorePick(q, 215, 0, 25);
+    expect(scorePick(q, 70, 0, 25)).toBe(150);
+    const near = scorePick(q, 76, 0, 25);
     expect(near).toBeGreaterThan(25);
     expect(near).toBeLessThan(100);
-    expect(scorePick(q, 400, 0, 25)).toBe(0);
+    expect(scorePick(q, 120, 0, 25)).toBe(0);
   });
 
   it('accepts typed answers in any case, without accents, with a small typo', () => {
@@ -240,7 +241,8 @@ describe('Wait, What? newer question styles', () => {
     expect(typedMatches('', ['Q'])).toBe(false);
     expect(typedMatches('R', ['Q'])).toBe(false);
     const q = typedQuestion(0);
-    expect(answerText(q)).toBe('Venus');
+    expect(answerText(q)).toBe('Femur');
+    expect(judge(q, 'thigh bone')).toBe('right');
   });
 
   it('grades an order: all right, one swap is close, more is wrong', () => {
@@ -262,7 +264,7 @@ describe('Wait, What? newer question styles', () => {
   });
 });
 
-describe('Wait, What? in Bulgarian', () => {
+describe('Quizbelief in Bulgarian', () => {
   it('translates every hand-written question in the same order, with the same number of answers', async () => {
     const { BG } = await import('../src/games/wait-what/bank/bg');
     const { EN } = await import('../src/games/wait-what/pack');

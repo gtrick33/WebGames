@@ -1,4 +1,4 @@
-// Wait, What?, played like a person: reads each question, hovers over a couple of answers before
+// Quizbelief, played like a person: reads each question, hovers over a couple of answers before
 // committing, gets a fair share wrong, overshoots the number lever and readjusts, fixes a typo when
 // typing, and sometimes puts an order question slightly wrong.
 export default {

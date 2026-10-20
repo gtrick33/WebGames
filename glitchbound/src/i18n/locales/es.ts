@@ -459,8 +459,8 @@ const es: string[] = [
   'Mejor quiz',
   'Más aciertos seguidos',
   'Racha más larga',
-  'Acierta {n} preguntas en un quiz de Wait, What?',
-  'Acierta {n} preguntas de Wait, What? seguidas',
+  'Acierta {n} preguntas en un quiz de Quizbelief',
+  'Acierta {n} preguntas de Quizbelief seguidas',
   'Rellena el hueco con la peor carta de tu mano. Gana la respuesta más graciosa. +18.',
   // 420
   'Un juego de cartas de fiesta online para 3 a 10 jugadores, cada uno con su móvil. En cada ronda, un juez lee una carta con un hueco y los demás juegan la carta de respuesta más graciosa y más negra de su mano. Cientos de cartas originales, brutalmente groseras, que no se repiten en una sesión, un modo de votación sin juez y salas que compartes con un enlace. Solo adultos. (Las cartas están en inglés.)',
@@ -498,7 +498,7 @@ const es: string[] = [
   // 450
   'Sábado a todo gas',
   'Carreras, vuelos y roces por los pelos.',
-  '¡Feliz Halloween! En Wait, What? suenan melodías de miedo.',
+  '¡Feliz Halloween! En Quizbelief suenan melodías de miedo.',
   '¡Felices fiestas! Acurrúcate con un puzle o tres.',
   '¡Feliz San Valentín! Reta a tu persona favorita.',
   '¡Feliz Año Nuevo Lunar! Te deseamos suerte y récords.',

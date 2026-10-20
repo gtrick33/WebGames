@@ -459,8 +459,8 @@ const tr: string[] = [
   'En iyi yarışma skoru',
   'Art arda en çok doğru cevap',
   'En uzun seri',
-  'Bir Wait, What? yarışmasında {n} soruyu doğru bil',
-  'Art arda {n} Wait, What? sorusunu doğru bil',
+  'Bir Quizbelief yarışmasında {n} soruyu doğru bil',
+  'Art arda {n} Quizbelief sorusunu doğru bil',
   'Boşluğu elindeki en kötü kartla doldur. En komik cevap kazanır. 18+.',
   // 420
   '3–10 oyunculu, herkesin kendi telefonunda oynadığı çevrim içi bir parti kart oyunu. Her turda bir hakem boşluklu bir kart okur, diğerleri elindeki en komik ve en karanlık cevap kartını oynar. Bir oturumda tekrar etmeyen yüzlerce özgün, acımasızca kaba kart, hakemsiz oylama modu ve bağlantıyla paylaşılan odalar. Sadece yetişkinler için. (Kartlar İngilizcedir.)',
@@ -498,7 +498,7 @@ const tr: string[] = [
   // 450
   'Tam Gaz Cumartesi',
   'Yarışçılar, uçanlar ve kıl payı geçişler.',
-  'Mutlu Cadılar Bayramı! Wait, What? içinde ürkütücü melodiler çalıyor.',
+  'Mutlu Cadılar Bayramı! Quizbelief içinde ürkütücü melodiler çalıyor.',
   'İyi tatiller! Bir, iki, üç bulmacayla keyfine bak.',
   'Sevgililer Günün kutlu olsun! En sevdiğin kişiye meydan oku.',
   'Ay Yeni Yılın kutlu olsun! Sana şans ve yüksek skorlar diliyoruz.',

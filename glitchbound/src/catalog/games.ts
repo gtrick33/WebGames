@@ -472,7 +472,7 @@ export const GAMES: GameEntry[] = [
   },
   {
     slug: 'wait-what',
-    title: 'Wait, What?',
+    title: 'Quizbelief',
     contentLangs: ['en', 'bg'],
     tagline: 'Trivia that sounds made up but isn’t. Weird history, odd animals, words you won’t believe.',
     description:
@@ -487,7 +487,7 @@ export const GAMES: GameEntry[] = [
     art: {
       tile: '/games/wait-what/tile.webp',
       wide: '/games/wait-what/wide.webp',
-      alt: 'Big cartoon letters reading WAIT, WHAT?! in front of two quiz cards, each with the right answer marked in green',
+      alt: 'Big cartoon letters reading QUIZ BELIEF?!, with a pink “DIS” sticker crossed out above, in front of two quiz cards with the right answers marked in green',
       bg: '#ffd166',
     },
     runtime: { kind: 'module' },
@@ -511,8 +511,8 @@ export const GAMES: GameEntry[] = [
     ownDaily: { label: 'Today’s quiz' },
     challenge: { label: '10 questions, 20 seconds each, the same for everyone. Right answers score 100, plus up to 50 for speed.' },
     daily: [
-      { metric: 'correct', targets: [6, 7, 8], label: 'Get {n} questions right in one Wait, What? quiz' },
-      { metric: 'streak', targets: [4, 5, 6], label: 'Answer {n} Wait, What? questions in a row correctly' },
+      { metric: 'correct', targets: [6, 7, 8], label: 'Get {n} questions right in one Quizbelief quiz' },
+      { metric: 'streak', targets: [4, 5, 6], label: 'Answer {n} Quizbelief questions in a row correctly' },
     ],
     limits: { scorePerSecond: 160, minSeconds: 10 },
   },

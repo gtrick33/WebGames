@@ -1,4 +1,4 @@
-// "Wait, What?" trivia short: questions from the game's own bank, a countdown per question, the
+// "Quizbelief" trivia short: questions from the game's own bank, a countdown per question, the
 // reveal and the game's "Wait, what?" fact, then a CTA card.
 import { C, clamp, css, el, ease, lerp, pop, prog } from '../kit/kit.js';
 import { countdown, hook, markup, outro, paperBG, sticker, watermark } from '../kit/video.js';
@@ -27,7 +27,7 @@ export async function mount(stage, spec) {
   const ups = [paperBG(stage, { w: W, h: H, seed: 21, shapes: 12 })];
   const head = el('div', { class: 'abs' });
   css(head, { left: '60px', top: '170px', right: '220px', zIndex: 10, display: 'flex', alignItems: 'center', gap: '20px' });
-  head.innerHTML = `<div class="sticker" style="background:${C.yellow};font-size:46px;transform:rotate(-3deg)">Wait, What?</div>
+  head.innerHTML = `<div class="sticker" style="background:${C.yellow};font-size:46px;transform:rotate(-3deg)">Quizbelief</div>
     <div class="mono" style="font-size:26px;font-weight:700;color:#4a3d6b;line-height:1.3">${markup(d.kicker ?? 'Trivia that sounds|made up but isn\'t')}</div>`;
   stage.appendChild(head);
   const cd = countdown(stage, { x: 940, y: 210, r: 80 });
@@ -61,7 +61,7 @@ export async function mount(stage, spec) {
   if (d.hook !== false) ups.push(hook(stage, { text: d.hook ?? `${d.questions.length} weird questions. *5 seconds* each.`, at: 0, dur: INTRO, y: 900, size: 92 }));
   watermark(stage, { x: 60, y: H - 150, size: 48 });
   ups.push(sticker(stage, { text: d.ask ?? 'Comment your score!', at: end - 1.8, dur: 1.8, x: 540, y: 400, size: 54, bg: C.cyan, rot: 3 }));
-  const o = outro(stage, { at: end, w: W, h: H, title: d.outroTitle ?? '*10 new questions* every day', line: 'Wait, What? Free trivia in your browser.', art: '/games/wait-what/tile.webp' });
+  const o = outro(stage, { at: end, w: W, h: H, title: d.outroTitle ?? '*10 new questions* every day', line: 'Quizbelief Free trivia in your browser.', art: '/games/wait-what/tile.webp' });
 
   return async (t) => {
     head.style.transform = `scale(${lerp(0.7, 1, pop(t, 0.05, 0.5))})`;

@@ -10,7 +10,7 @@ Five people who have never seen the site, ideally mixed:
 - two who rarely play games (a parent, a grandparent),
 - one teenager,
 - one puzzle or Wordle fan,
-- one Bulgarian speaker who plays in Bulgarian (to check the Bulgarian Wait, What?, Crass Act and the site text).
+- one Bulgarian speaker who plays in Bulgarian (to check the Bulgarian Quizbelief, Crass Act and the site text).
 
 Friends are fine, as long as you don't help them.
 

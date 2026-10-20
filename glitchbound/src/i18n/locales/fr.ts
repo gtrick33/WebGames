@@ -459,8 +459,8 @@ const fr: string[] = [
   'Meilleur quiz',
   'Le plus de bonnes réponses d’affilée',
   'Plus longue série',
-  'Réponds juste à {n} questions dans un quiz Wait, What?',
-  'Réponds juste à {n} questions Wait, What? d’affilée',
+  'Réponds juste à {n} questions dans un quiz Quizbelief',
+  'Réponds juste à {n} questions Quizbelief d’affilée',
   'Complète le blanc avec la pire carte de ta main. La réponse la plus drôle gagne. 18+.',
   // 420
   'Un jeu de cartes festif en ligne pour 3 à 10 joueurs, chacun sur son téléphone. À chaque manche, un juge lit une carte à trou et les autres jouent la carte réponse la plus drôle et la plus noire de leur main. Des centaines de cartes originales, brutalement grossières, sans répétition dans une session, un mode vote sans juge et des salons à partager par lien. Réservé aux adultes. (Les cartes sont en anglais.)',
@@ -498,7 +498,7 @@ const fr: string[] = [
   // 450
   'Samedi plein gaz',
   'Pilotes, oiseaux et frôlements.',
-  'Joyeux Halloween ! Des airs qui font peur dans Wait, What?',
+  'Joyeux Halloween ! Des airs qui font peur dans Quizbelief',
   'Joyeuses fêtes ! Installe-toi avec un puzzle, ou trois.',
   'Joyeuse Saint-Valentin ! Défie ta personne préférée.',
   'Joyeux Nouvel An lunaire ! On te souhaite chance et records.',

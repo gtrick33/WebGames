@@ -14,7 +14,7 @@ export const MONEY: Raw[] = [
   ['The Diners Club card of 1950, an early credit card, was first used to pay where?', 'Restaurants|Petrol stations|Hotels|Department stores', 'The name gives it away.'],
   ['Which ruler is often called the richest person in history?', 'Mansa Musa of Mali|Julius Caesar|Henry VIII|Louis XIV', 'His wealth came from gold and salt in the 1300s.'],
   ['When Mansa Musa gave away gold on his way through Cairo in 1324, what happened?', 'Gold lost value there for years|Egypt went to war|Cairo built a statue of him|The Nile was renamed', 'He spent and gave away so much that he crashed the local gold price.'],
-  ['What is the most expensive painting ever sold (as of 2025)?', 'Salvator Mundi|The Card Players|Interchange|Les Femmes d\'Alger', 'Attributed to Leonardo da Vinci, it sold for $450 million in 2017.'],
+  ['Which painting sold for a record $450 million in 2017?', 'Salvator Mundi|The Card Players|Interchange|Les Femmes d\'Alger', 'Attributed to Leonardo da Vinci, it set the auction record for any work of art.'],
   ['What was the first item sold on Amazon?', 'A book|A CD|A toy|A camera', 'A book about computer science and AI, in 1995.'],
   ['Which country\'s currency is the "won"?', 'South Korea|Japan|Vietnam|Thailand', 'North Korea uses a won too, a different one.'],
   ['How much did Apple\'s co-founder Ronald Wayne sell his 10% share for in 1976?', '$800|$80,000|$8 million|$8', 'It would be worth hundreds of billions of dollars today.'],

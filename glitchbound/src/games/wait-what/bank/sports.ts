@@ -22,7 +22,7 @@ export const SPORTS: Raw[] = [
   ['In snooker, what is a maximum break?', '147|100|155|180', 'All 15 reds with blacks, then all the colors.'],
   ['In golf, what is an "albatross"?', 'Three under par on one hole|Two under par|A hole in one|Four over par', 'Rarer than a hole in one. Some call it a double eagle.'],
   ['Which sport did the Fosbury Flop change?', 'High jump|Pole vault|Diving|Gymnastics', 'Dick Fosbury won gold in 1968 going over backwards. Now almost everyone does.'],
-  ['How long is an Olympic swimming pool?', '50 m|25 m|100 m|75 m', 'It holds about 2.5 million litres of water.'],
+  ['How long is an Olympic swimming pool?', '50 m|25 m|100 m|75 m', 'It holds about 2.5 million liters of water.'],
   ['In which sport would you perform a "Salchow"?', 'Figure skating|Gymnastics|Diving|Skiing', 'It is named after Swedish skater Ulrich Salchow.'],
   ['What is the only country to have played in every men\'s football World Cup?', 'Brazil|Germany|Italy|Argentina', 'Brazil has also won it the most times: five.'],
   ['What is a "googly" in cricket?', 'A ball that spins the opposite way to what the batter expects|A dropped catch|A score of zero|A very high throw', 'It was invented by Bernard Bosanquet around 1900.'],

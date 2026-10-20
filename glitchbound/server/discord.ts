@@ -97,7 +97,7 @@ const touch = (env: Env, instance: string, game: ActivityGame, now: number) => e
 export const sweepInstances = (env: Env, now = Date.now()) => env.DB.prepare('DELETE FROM discord_instances WHERE updated_at < ?').bind(now - INSTANCE_KEEP_MS).run();
 
 /**
- * The call's Wait, What? challenge, with this player seated: the first player starts a fresh one
+ * The call's Quizbelief challenge, with this player seated: the first player starts a fresh one
  * (and hosts it), everyone after joins it; one that has ended is replaced by a new one.
  */
 export async function challengeForCall(env: Env, instance: string, player: string, name: string, now = Date.now()): Promise<{ id: string } | { error: keyof typeof SEAT_ERRORS | 'too_many' | 'try_again' }> {
@@ -142,7 +142,7 @@ export async function roomForCall(env: Env, instance: string, now = Date.now()):
 
 export type CallGames = Record<ActivityGame, { ref: string; players: number } | null>;
 
-/** What is already running in a call, for the picker ("Wait, What? · 3 playing"). */
+/** What is already running in a call, for the picker ("Quizbelief · 3 playing"). */
 export async function callGames(env: Env, instance: string): Promise<CallGames> {
   const { results } = await env.DB.prepare('SELECT game, ref FROM discord_instances WHERE instance_id = ?').bind(instance).all<{ game: string; ref: string }>();
   const ref = (g: ActivityGame): string | null => results.find((r) => r.game === g)?.ref ?? null;

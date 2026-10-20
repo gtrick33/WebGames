@@ -49,7 +49,7 @@ export const SCIENCE: Raw[] = [
   ['Which famous experiment involved shocking frog legs with electricity?', 'Galvani\'s|Newton\'s|Pavlov\'s|Darwin\'s', 'Luigi Galvani made dead frog legs twitch in the 1780s, inspiring tales like Frankenstein.'],
   ['Pavlov trained dogs to drool when they heard what?', 'A signal like a bell or a metronome|Their names|Classical music|A whistle only', 'He paired a sound with food until the sound alone made them salivate.'],
   ['A rainbow seen from a plane can look like what?', 'A full circle|A square|A straight line|A spiral', 'From the ground, the horizon cuts the circle in half.'],
-  ['Can lightning strike the same place twice?', 'Yes, often|No, never', 'The Empire State Building is hit around 20 to 25 times a year.'],
+  ['Roughly how many times a second does lightning flash somewhere on Earth?', 'About 45|About 4|About 450|About 1', 'That is around four million flashes a day, most of them over land in the tropics.'],
   ['What is the speed of light, roughly?', 'About 300,000 km per second|About 300 km per second|About 3,000 km per hour|About 30,000 km per hour', 'Light could go around Earth about 7.5 times in one second.'],
   ['What is a "jiffy" in computing?', 'A real unit of time, often 1/100 or 1/60 of a second|A tiny file|A crash|A quick reboot', 'Physicists have their own jiffy too: the time light takes to cross a proton.'],
   ['What makes popcorn pop?', 'Water inside turning to steam|Air pockets|Oil inside the kernel|Sugar burning', 'Pressure builds until the hull bursts and the starch puffs out.'],

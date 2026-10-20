@@ -459,8 +459,8 @@ const ro: string[] = [
   'Cel mai bun scor la quiz',
   'Cele mai multe răspunsuri corecte la rând',
   'Cea mai lungă serie',
-  'Răspunde corect la {n} întrebări într-un quiz Wait, What?',
-  'Răspunde corect la {n} întrebări Wait, What? la rând',
+  'Răspunde corect la {n} întrebări într-un quiz Quizbelief',
+  'Răspunde corect la {n} întrebări Quizbelief la rând',
   'Completează spațiul gol cu cea mai rea carte din mână. Câștigă cel mai amuzant răspuns. 18+.',
   // 420
   'Un joc de cărți online pentru petreceri, cu 3–10 jucători, fiecare pe telefonul lui. În fiecare rundă, un judecător citește o carte cu un spațiu gol, iar ceilalți joacă cea mai amuzantă și mai neagră carte-răspuns din mână. Sute de cărți originale, brutal de vulgare, care nu se repetă într-o sesiune, un mod cu vot fără judecător și camere distribuite prin link. Doar pentru adulți. (Cărțile sunt în engleză.)',
@@ -498,7 +498,7 @@ const ro: string[] = [
   // 450
   'Sâmbătă în viteză maximă',
   'Piloți, zburători și depășiri la milimetru.',
-  'Halloween fericit! În Wait, What? se aud melodii înfricoșătoare.',
+  'Halloween fericit! În Quizbelief se aud melodii înfricoșătoare.',
   'Sărbători fericite! Fă-te comod cu un puzzle, sau trei.',
   'La mulți ani de Valentine’s Day! Provoacă persoana ta preferată.',
   'Anul Nou Lunar fericit! Îți dorim noroc și scoruri mari.',

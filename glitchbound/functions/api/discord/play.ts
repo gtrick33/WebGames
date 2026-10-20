@@ -4,7 +4,7 @@ import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http'
 import { cleanName } from '../../../src/platform/challenge';
 
 /**
- * POST /api/discord/play { instanceId, game, name, key }: the challenge (Wait, What?) or room
+ * POST /api/discord/play { instanceId, game, name, key }: the challenge (Quizbelief) or room
  * (Crass Act) that everyone in this Discord call shares; started by the first player who picks it.
  */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {

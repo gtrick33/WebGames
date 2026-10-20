@@ -1,5 +1,5 @@
 /**
- * Wait, What? question decks. Hand-written questions come from bank/*, plus generated ones: real
+ * Quizbelief question decks. Hand-written questions come from bank/*, plus generated ones: real
  * words that sound made up, untranslatable words from other languages, and "which came first?".
  *
  * - The daily quiz walks the whole bank in a fixed shuffled order, so a daily player does not see a

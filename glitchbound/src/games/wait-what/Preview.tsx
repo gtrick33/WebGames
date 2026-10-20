@@ -8,7 +8,7 @@ const QS: { cat: string; color: string; q: [string, string]; a: string[]; right:
   { cat: 'HISTORY', color: '#ff8a1f', q: ['Cleopatra lived closer', 'in time to…'], a: ['the pyramids', 'the Moon landing'], right: 1, pick: 1 },
 ];
 
-/** Wait, What?'s attract mode: a weird question, an answer, green or red, the next one. */
+/** Quizbelief's attract mode: a weird question, an answer, green or red, the next one. */
 export default function Preview({ playing = true }: GamePreviewProps) {
   const ref = usePreviewCanvas(playing, () => {
     let i = Math.floor(Math.random() * QS.length);

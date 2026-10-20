@@ -459,8 +459,8 @@ const pl: string[] = [
   'Najlepszy quiz',
   'Najwięcej dobrych odpowiedzi z rzędu',
   'Najdłuższa seria',
-  'Odpowiedz dobrze na {n} pytań w jednym quizie Wait, What?',
-  'Odpowiedz dobrze na {n} pytań Wait, What? z rzędu',
+  'Odpowiedz dobrze na {n} pytań w jednym quizie Quizbelief',
+  'Odpowiedz dobrze na {n} pytań Quizbelief z rzędu',
   'Uzupełnij lukę najgorszą kartą z ręki. Wygrywa najśmieszniejsza odpowiedź. 18+.',
   // 420
   'Imprezowa gra karciana online dla 3–10 graczy, każdy na swoim telefonie. W każdej rundzie sędzia czyta kartę z luką, a reszta zagrywa najśmieszniejszą i najczarniejszą kartę odpowiedzi z ręki. Setki oryginalnych, brutalnie wulgarnych kart, które nie powtarzają się w sesji, tryb głosowania bez sędziego i pokoje udostępniane linkiem. Tylko dla dorosłych. (Karty są po angielsku.)',
@@ -498,7 +498,7 @@ const pl: string[] = [
   // 450
   'Sobota na pełnym gazie',
   'Wyścigi, lot i mijanki na włos.',
-  'Wesołego Halloween! W Wait, What? grają straszne melodie.',
+  'Wesołego Halloween! W Quizbelief grają straszne melodie.',
   'Wesołych świąt! Zaszyj się z łamigłówką albo trzema.',
   'Szczęśliwych Walentynek! Wyzwij swoją ulubioną osobę.',
   'Szczęśliwego Księżycowego Nowego Roku! Życzymy szczęścia i rekordów.',

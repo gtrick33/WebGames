@@ -463,8 +463,8 @@ export const KEYS: string[] = [
   "Best quiz score",
   "Most right answers in one go",
   "Longest streak",
-  "Get {n} questions right in one Wait, What? quiz",
-  "Answer {n} Wait, What? questions in a row correctly",
+  "Get {n} questions right in one Quizbelief quiz",
+  "Answer {n} Quizbelief questions in a row correctly",
   "Fill in the blank with the worst card in your hand. The funniest answer wins. 18+.",
   // 420
   "An online party card game for 3 to 10 players, each on their own phone. Every round a judge reads a prompt card with a blank and everyone else plays the funniest, darkest answer card from their hand. Hundreds of original, brutally rude cards that never repeat in a session, a vote mode with no judge, and rooms you share with a link. Adults only.",
@@ -502,7 +502,7 @@ export const KEYS: string[] = [
   // 450
   "Full-Throttle Saturday",
   "Racers, flyers and near misses.",
-  "Happy Halloween! Spooky tunes are on in Wait, What?",
+  "Happy Halloween! Spooky tunes are on in Quizbelief",
   "Happy holidays! Cozy up with a puzzle or three.",
   "Happy Valentine’s! Challenge your favorite person.",
   "Happy Lunar New Year! Wishing you luck and high scores.",

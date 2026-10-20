@@ -3,10 +3,10 @@ import type { Raw } from './types';
 /** Inventions, tech and brands. Append only: a question's id is its position. Answers: the right one first. */
 export const TECH: Raw[] = [
   ['Bubble wrap was first invented as what?', 'Wallpaper|Packaging|Insulation|A pool cover', 'In 1957 two engineers tried to sell textured plastic wallpaper. Nobody wanted it on their walls.'],
-  ['Play-Doh was first sold as what?', 'Wallpaper cleaner|Modelling clay|Bread dough|Window putty', 'It cleaned soot off wallpaper. When coal heating faded, it became a toy.'],
+  ['Play-Doh was first sold as what?', 'Wallpaper cleaner|Modeling clay|Bread dough|Window putty', 'It cleaned soot off wallpaper. When coal heating faded, it became a toy.'],
   ['The microwave oven was invented after an engineer noticed what?', 'A chocolate bar melted in his pocket|Popcorn popping by itself|An egg exploding|His coffee boiling', 'Percy Spencer was working on radar equipment in 1945.'],
-  ['Which company started out in 1889 making playing cards?', 'Nintendo|Sony|Sega|Atari', 'Its hanafuda cards are still made today.'],
-  ['Since the 1840s, car maker Peugeot has also made which kitchen gadget?', 'Pepper mills|Toasters|Kettles|Can openers', 'Peugeot pepper mills are still sold, with a lion logo.'],
+  ['In which decade was the first 3D printer patented?', 'The 1980s|The 2000s|The 1990s|The 1960s', 'Chuck Hull printed his first object, a small cup, in 1983 and patented the method in 1986.'],
+  ['Since the 1870s, car maker Peugeot has also made which kitchen gadget?', 'Pepper mills|Toasters|Kettles|Can openers', 'Peugeot made coffee mills from 1840 and pepper mills from 1874. They are still sold, with a lion logo.'],
   ['What did Lamborghini make before sports cars?', 'Tractors|Bicycles|Planes|Washing machines', 'Ferruccio Lamborghini was a rich tractor maker unhappy with his Ferrari.'],
   ['Samsung started in 1938 by selling what?', 'Dried fish, noodles and groceries|Radios|Ships|Rice cookers', 'It was a small trading company in Daegu, Korea.'],
   ['Nokia began in 1865 as what?', 'A paper mill|A fishing company|A toy maker|A bank', 'It later made rubber boots and cables before phones.'],

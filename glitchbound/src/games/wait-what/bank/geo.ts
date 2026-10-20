@@ -44,7 +44,7 @@ export const GEO: Raw[] = [
   ['Which is the only continent with no permanent native population?', 'Antarctica|Australia|Europe|South America', 'A few thousand researchers live there at a time, none of them native.'],
   ['Which sea has no coastline?', 'The Sargasso Sea|The Dead Sea|The Black Sea|The Red Sea', 'It is in the Atlantic, defined by ocean currents and floating seaweed.'],
   ['Which country is the world\'s largest producer of avocados?', 'Mexico|Brazil|Spain|Kenya', 'Mexico grows around a third of all avocados.'],
-  ['Which African country defeated an Italian invasion at the Battle of Adwa in 1896?', 'Ethiopia|Egypt|Morocco|Kenya', 'The victory kept Ethiopia independent while most of Africa was colonised.'],
+  ['Which African country defeated an Italian invasion at the Battle of Adwa in 1896?', 'Ethiopia|Egypt|Morocco|Kenya', 'The victory kept Ethiopia independent while most of Africa was colonized.'],
   ['Which European capital sits on 14 islands?', 'Stockholm|Venice|Amsterdam|Copenhagen', 'They are linked by more than 50 bridges. Venice is not a capital.'],
   ['What is the deepest point in the ocean called?', 'Challenger Deep|Atlantis Trench|The Abyss|Poseidon Pit', 'It is in the Mariana Trench, almost 11 km down.'],
   ['Which country is the world\'s largest island nation by area?', 'Indonesia|Japan|United Kingdom|Philippines', 'Indonesia stretches over 5,000 km across thousands of islands.'],

@@ -459,8 +459,8 @@ const nl: string[] = [
   'Beste quiz',
   'Meeste goede antwoorden achter elkaar',
   'Langste reeks',
-  'Beantwoord {n} vragen goed in één Wait, What?-quiz',
-  'Beantwoord {n} Wait, What?-vragen achter elkaar goed',
+  'Beantwoord {n} vragen goed in één Quizbelief-quiz',
+  'Beantwoord {n} Quizbelief-vragen achter elkaar goed',
   'Vul de lege plek in met de ergste kaart uit je hand. Het grappigste antwoord wint. 18+.',
   // 420
   'Een online feestkaartspel voor 3 tot 10 spelers, elk op de eigen telefoon. Elke ronde leest een jurylid een vraagkaart met een lege plek voor en de rest speelt de grappigste, zwartste antwoordkaart uit hun hand. Honderden originele, keihard grove kaarten die in een sessie nooit terugkomen, een stemmodus zonder jury en kamers die je deelt met een link. Alleen voor volwassenen. (De kaarten zijn Engels.)',
@@ -498,7 +498,7 @@ const nl: string[] = [
   // 450
   'Plankgas-zaterdag',
   'Coureurs, vliegers en bijna-botsingen.',
-  'Fijne Halloween! In Wait, What? klinken griezelige deuntjes.',
+  'Fijne Halloween! In Quizbelief klinken griezelige deuntjes.',
   'Fijne feestdagen! Kruip lekker weg met een puzzel of drie.',
   'Fijne Valentijnsdag! Daag je favoriete persoon uit.',
   'Gelukkig Chinees Nieuwjaar! Veel geluk en hoge scores gewenst.',

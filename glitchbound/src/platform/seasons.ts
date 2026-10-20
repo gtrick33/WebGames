@@ -20,7 +20,7 @@ export interface Holiday {
 }
 
 export const HOLIDAYS: Holiday[] = [
-  { id: 'halloween', emoji: '🎃', name: 'Halloween', greeting: 'Happy Halloween! Spooky tunes are on in Wait, What?', decor: ['🦇', '👻', '🎃', '🕸️', '🍬'], colors: ['#ff7a1a', '#9d4edd'] },
+  { id: 'halloween', emoji: '🎃', name: 'Halloween', greeting: 'Happy Halloween! Spooky tunes are on in Quizbelief', decor: ['🦇', '👻', '🎃', '🕸️', '🍬'], colors: ['#ff7a1a', '#9d4edd'] },
   { id: 'winter', emoji: '❄️', name: 'Winter holidays', greeting: 'Happy holidays! Cozy up with a puzzle or three.', decor: ['❄️', '❄️', '⛄', '✨', '🎁'], colors: ['#7fd7ff', '#ff4d5e'] },
   { id: 'valentine', emoji: '💘', name: 'Valentine’s Day', greeting: 'Happy Valentine’s! Challenge your favorite person.', decor: ['💖', '💘', '💌', '🌹'], colors: ['#ff4f9a', '#ff8fb8'] },
   { id: 'lunar', emoji: '🧧', name: 'Lunar New Year', greeting: 'Happy Lunar New Year! Wishing you luck and high scores.', decor: ['🧧', '🏮', '🐉', '✨'], colors: ['#e63946', '#ffc928'] },

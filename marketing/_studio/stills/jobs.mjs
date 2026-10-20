@@ -151,7 +151,7 @@ function posts(J, catalog, games) {
 
   // Holidays and moments.
   const H = [
-    ['halloween', 'Halloween mode|*is on*', 'Cobwebs everywhere. Spooky tunes in Wait, What?', '#ff7a1a', true],
+    ['halloween', 'Halloween mode|*is on*', 'Cobwebs everywhere. Spooky tunes in Quizbelief', '#ff7a1a', true],
     ['diwali', 'Happy *Diwali*', 'May your days be bright and your streaks long.', '#ffb703', false],
     ['thanksgiving', 'Thankful for|*small games*', 'And for everyone who plays them. Thank you.', '#ff6a1a', false],
     ['black-friday', 'Black Friday deal:|*everything is free*', 'Like every other day. 19 games, no paywall.', '#1d1238', true],
@@ -178,7 +178,7 @@ function posts(J, catalog, games) {
   for (const [slug, score, title] of brags) ST(`stories/beat-my-score/${slug}.png`, { kind: 'beat', title, score, art: G[slug].art.tile });
   ST('stories/announcements/new-dailies.png', { kind: 'announce', eyebrow: 'Every midnight', title: '18 new|*dailies*', line: 'Same puzzles for everyone. Keep your streak alive.' });
   ST('stories/announcements/party-mode.png', { kind: 'announce', eyebrow: 'Party Mode', title: 'Game night,|*one phone*', line: '11 party games. No sign-up.', art: '/party/impostor/tile.webp', accent: '#ff4fc8', cta: 'glitchboundstudio.com/party' });
-  ST('stories/announcements/halloween.png', { kind: 'announce', eyebrow: 'Halloween', title: 'Spooky mode|*is on*', line: 'Cobwebs on every card. Spooky tunes in Wait, What?', dark: true, accent: '#ff7a1a' });
+  ST('stories/announcements/halloween.png', { kind: 'announce', eyebrow: 'Halloween', title: 'Spooky mode|*is on*', line: 'Cobwebs on every card. Spooky tunes in Quizbelief', dark: true, accent: '#ff7a1a' });
   ST('stories/announcements/winter.png', { kind: 'announce', eyebrow: 'Winter look', title: 'It\u2019s *snowing*|on GlitchBound', line: 'Cozy up with a puzzle or three.', accent: '#7fd7ff' });
   ST('stories/announcements/new-game.png', { kind: 'announce', eyebrow: 'New game', title: 'Whatsit', line: 'A secret thing in a box. Ask yes/no questions, then pick it from the line-up.', art: G.whatsit.art.tile, accent: '#ff8a1f' });
   const hl = [['games', '#2ad1f0'], ['daily', '#ff6a1a'], ['party', '#ff4fc8'], ['new', '#b6e62c'], ['tips', '#ffc928'], ['wins', '#7b4dff'], ['halloween', '#1d1238'], ['winter', '#7fd7ff']];

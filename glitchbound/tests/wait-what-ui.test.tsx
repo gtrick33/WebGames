@@ -4,7 +4,7 @@ import Game from '../src/games/wait-what/Game';
 import { dailyQuiz, QUIZ_LENGTH, timeLimit } from '../src/games/wait-what/deck';
 import { dayKey } from '../src/platform/dates';
 
-describe('Wait, What? UI', () => {
+describe('Quizbelief UI', () => {
   it('a daily reloaded while its last answer was on show goes to the results, without asking that question again', () => {
     const today = dayKey();
     expect(dailyQuiz(today)).toHaveLength(QUIZ_LENGTH);
@@ -46,7 +46,7 @@ describe('Wait, What? UI', () => {
   });
 });
 
-describe('Wait, What? in Bulgarian', () => {
+describe('Quizbelief in Bulgarian', () => {
   it('loads the Bulgarian questions and plays a whole daily in Bulgarian', async () => {
     localStorage.removeItem('glitchbound.wait-what');
     render(<Game host={{ report: vi.fn() }} restartKey={0} lang="bg" />);

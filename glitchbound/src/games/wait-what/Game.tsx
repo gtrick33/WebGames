@@ -145,10 +145,13 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
           </span>
         ))}
       </div>
-      <h1 className="ww-logo" aria-label="Wait, What?">
-        <span className="ww-logo-a">WAIT,</span>
+      {/* The pun: disbelief, with the "dis" struck out for a quiz. */}
+      <h1 className="ww-logo" aria-label="Quizbelief">
+        <span className="ww-logo-a">
+          <s aria-hidden="true">DIS</s>QUIZ
+        </span>
         <span className="ww-logo-b">
-          WHAT<b>?!</b>
+          BELIEF<b>?!</b>
         </span>
       </h1>
       <p className="ww-tag">{u.tag}</p>
@@ -502,7 +505,7 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
     return share >= 0.9 ? d0 : share >= 0.7 ? d1 : share >= 0.5 ? d2 : share >= 0.3 ? d3 : d4;
   }, [correct, run.picks.length, mode, u]);
 
-  const shareText = `Wait, What? #${dailyNumber(today)} 🤯\n${grid(qs, run)}\n${u.shareLine(correct, qs.length, total.toLocaleString(p.locale))}\n${window.location.origin}/games/wait-what`;
+  const shareText = `Quizbelief #${dailyNumber(today)} 🤯\n${grid(qs, run)}\n${u.shareLine(correct, qs.length, total.toLocaleString(p.locale))}\n${window.location.origin}/games/wait-what`;
   return (
     <div className="ww ww-results">
       <p className="ww-eyebrow">{mode === 'daily' ? u.dailyQuiz(dailyNumber(today)) : mode === 'challenge' ? u.challengeRound(challenge?.round ?? 1) : u.endlessRun}</p>
@@ -525,7 +528,7 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
             {u.playAgain}
           </button>
         ) : (
-          <button className="ww-btn ww-btn-go" onClick={() => void shareOrCopy({ title: 'Wait, What?', text: shareText }).then((o) => setShareMsg(o === 'copied' ? u.copied : ''))}>
+          <button className="ww-btn ww-btn-go" onClick={() => void shareOrCopy({ title: 'Quizbelief', text: shareText }).then((o) => setShareMsg(o === 'copied' ? u.copied : ''))}>
             {shareMsg || u.shareResult}
           </button>
         )}

@@ -82,7 +82,7 @@ Captions and hashtags for every slot are in `calendar.csv` (imports into Buffer,
 | Fri, Nov 27 | `shorts/02-beat-my-score/color-lab-beat-my-score.mp4`<br>Beat my Color Lab score | Holiday post | `beat-my-score/color-recall.png` |  |
 | Sat, Nov 28 | `shorts/04-wheres-the-ball/wheres-the-ball-05.mp4`<br>Where's the ball? 5 seconds<br>+ `shorts/01-game-spotlights/crosswire.mp4` |  | `polls/poll-03-neon-rush-vs-mini-racer.png` | `youtube/gameplay/letter-pinch-gameplay.mp4`<br>Letter Pinch Gameplay: A daily word puzzle that is not the one you think \| Free Browser Game |
 | Sun, Nov 29 | `shorts/08-pov-and-memes/pov-gut-check-confidence.mp4`<br>My confidence vs. my actual knowledge<br>+ `shorts/06-higher-or-lower/gut-check-05-year.mp4` |  | `daily-reminders/outta-here.png` |  |
-| Mon, Nov 30 | `shorts/01-game-spotlights/wait-what.mp4`<br>Wait, What?: Trivia that sounds made up | Game card: Color Lab | `daily-reminders/star-grid.png` |  |
+| Mon, Nov 30 | `shorts/01-game-spotlights/wait-what.mp4`<br>Quizbelief: Trivia that sounds made up | Game card: Color Lab | `daily-reminders/star-grid.png` |  |
 | Tue, Dec 1 | `shorts/09-seasonal/winter-lobby.mp4`<br>It’s snowing on GlitchBound |  | `announcements/winter.png` | `youtube/gameplay/square-deal-gameplay.mp4`<br>Square Deal Gameplay: Drop blocks. Clear lines. Repeat. \| Free Browser Game |
 
 ## Week 7 (from 2026-12-02)

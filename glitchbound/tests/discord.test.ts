@@ -131,7 +131,7 @@ describe('Discord Activity: API', () => {
     });
   });
 
-  describe('one Wait, What? challenge per call', () => {
+  describe('one Quizbelief challenge per call', () => {
     it('lets the first player start it and seats everyone after in the same one', async () => {
       const a = await pick('wait-what', keyOf(1), 'Mira');
       const b = await pick('wait-what', keyOf(2), 'Theo');

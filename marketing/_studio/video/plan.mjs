@@ -115,7 +115,7 @@ export function allSpecs() {
     });
   });
 
-  // ---- 5. Wait, What? trivia -------------------------------------------------------------------
+  // ---- 5. Quizbelief trivia -------------------------------------------------------------------
   const trivia = read('trivia.json').filter((q) => q.answers.length === 4 && q.text.length <= 100 && q.fact.length <= 165 && !q.bulgaria);
   const byCat = {};
   for (const q of trivia) (byCat[q.cat] ??= []).push(q);
@@ -207,7 +207,7 @@ export function allSpecs() {
   });
   const tours = [
     ['tour-lobby', 'off', 'small-games', 'POV: you found *19 free games* in one tab', [['No *download*', 4.4], ['No *sign-up*', 8.4], ['New *dailies* every day', 12.6], ['Party games *too*', 19]], 'videos/shorts/11-compilations/lobby-tour.mp4'],
-    ['halloween-lobby', 'halloween', 'spooky-glitch', 'GlitchBound went *spooky* for Halloween', [['Cobwebs on *everything*', 4.4], ['Spooky tunes in *Wait, What?*', 9], ['Play free *all October*', 15]], 'videos/shorts/09-seasonal/halloween-lobby.mp4'],
+    ['halloween-lobby', 'halloween', 'spooky-glitch', 'GlitchBound went *spooky* for Halloween', [['Cobwebs on *everything*', 4.4], ['Spooky tunes in *Quizbelief*', 9], ['Play free *all October*', 15]], 'videos/shorts/09-seasonal/halloween-lobby.mp4'],
     ['winter-lobby', 'winter', 'snow-day', 'It’s *snowing* on GlitchBound', [['Cozy up with a *puzzle*', 4.4], ['Or three', 8.4], ['Holiday look is *on*', 13]], 'videos/shorts/09-seasonal/winter-lobby.mp4'],
     ['diwali-lobby', 'diwali', 'party-mode', 'Happy *Diwali* from GlitchBound', [['Bright days', 4.4], ['Long *streaks*', 8.4]], 'videos/shorts/09-seasonal/diwali-lobby.mp4'],
   ];

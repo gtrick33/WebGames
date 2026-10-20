@@ -1,5 +1,5 @@
 // Pulls real game content out of the site's own modules (through the dev server) for the quiz and
-// challenge formats: the arcade catalogue, Wait, What? questions, Gut Check pairs data, Spot the
+// challenge formats: the arcade catalogue, Quizbelief questions, Gut Check pairs data, Spot the
 // Glitch puzzles drawn by the game's renderer, and Where's the Ball? photo levels with the ball
 // painted in by the game. Writes .cache/content/.
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -28,7 +28,7 @@ const catalog = await page.evaluate(async () => {
 writeFileSync(join(OUT, 'catalog.json'), JSON.stringify(catalog, null, 2));
 console.log('catalog', catalog.games.length, 'games', catalog.party.length, 'party');
 
-// ---- Wait, What? ------------------------------------------------------------------------------
+// ---- Quizbelief ------------------------------------------------------------------------------
 const trivia = await page.evaluate(async () => {
   const deck = await import('/src/games/wait-what/deck.ts');
   const pack = await import('/src/games/wait-what/pack.ts');

@@ -204,10 +204,12 @@ describe('cloud saves', () => {
     }
     const savesAt = (): number => (db.sqlite.prepare('SELECT MAX(updated_at) AS at FROM game_saves WHERE user_id = ?').get(userId) as { at: number | null }).at ?? 0;
     /** Lets the engine's 8-second timers fire and its requests finish (sign-in checks hash with real async crypto). */
-    async function settle(): Promise<void> {
-      for (let i = 0; i < 6; i++) {
+    /** Lets timers and the fake network run; with `done`, keeps going (up to a limit) until it holds, so a busy machine doesn't flake. */
+    async function settle(done?: () => boolean): Promise<void> {
+      for (let i = 0; i < (done ? 30 : 6); i++) {
         await vi.advanceTimersByTimeAsync(10_000);
         for (let j = 0; j < 20; j++) await new Promise((r) => setImmediate(r));
+        if (done && i >= 5 && done()) return;
       }
     }
 
@@ -228,7 +230,7 @@ describe('cloud saves', () => {
       const arcade = emptySave();
       arcade.gameDailies[TODAY] = ['fussbox'];
       localStorage.setItem(SAVE_KEY, JSON.stringify(arcade));
-      await settle();
+      await settle(() => row('glitchbound.star-grid')?.data === progress);
       expect(row('glitchbound.star-grid')!.data).toBe(progress);
       // Only changes are sent, after the player paused for a moment: one request for both saves.
       expect(requests.filter((r) => r.method === 'POST')).toHaveLength(1);

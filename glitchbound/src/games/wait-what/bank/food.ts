@@ -13,7 +13,7 @@ export const FOOD: Raw[] = [
   ['The croissant\'s ancestor, the kipferl, comes from which country?', 'Austria|France|Italy|Belgium', 'Viennese bakers in Paris helped make it the flaky French classic.'],
   ['Eating a lot of which spice can make you hallucinate?', 'Nutmeg|Cinnamon|Paprika|Ginger', 'Large doses cause nausea, confusion and hallucinations. A pinch is fine.'],
   ['Which fresh fruit stops jelly (gelatin) from setting?', 'Pineapple|Apple|Grape|Strawberry', 'Its enzyme, bromelain, breaks down gelatin\'s proteins. Canned pineapple is fine because heat kills it.'],
-  ['Why can pineapple make your mouth tingle?', 'It is digesting you a little|It is very acidic only|It contains tiny thorns|It is mildly spicy', 'Bromelain breaks down proteins, including the ones on your tongue.'],
+  ['Weight for weight, which has more vitamin C?', 'A kiwi|An orange', 'A kiwi has nearly twice as much, and its fuzzy skin is edible too.'],
   ['To make about half a kilo of honey, bees visit roughly how many flowers?', 'About 2 million|About 2,000|About 20,000|About 200 million', 'A single worker bee makes only about a twelfth of a teaspoon in its life.'],
   ['Which country has a museum dedicated to French fries?', 'Belgium|France|USA|Netherlands', 'The Frietmuseum is in Bruges. Belgians say fries are theirs.'],
   ['Arachibutyrophobia is the fear of what?', 'Peanut butter sticking to the roof of your mouth|Spiders in your food|Eating butter|Peanuts', 'It is a joke word more than a real diagnosis, but it is in some dictionaries.'],

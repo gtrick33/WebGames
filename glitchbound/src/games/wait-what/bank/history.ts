@@ -17,7 +17,7 @@ export const HISTORY: Raw[] = [
   ['What was "mumia", sold in European pharmacies for centuries?', 'Medicine made from ground-up mummies|A fermented fish sauce|A mushroom powder|Dried beetle wings', 'Powdered human mummies were eaten as medicine in Europe well into the 1700s.'],
   ['Which was invented first?', 'The lighter|The match', 'Döbereiner\'s lamp, an early lighter, appeared in 1823. The friction match came along in 1826.'],
   ['Which famous Viking accessory has no historical evidence at all?', 'Horned helmets|Round shields|Bone combs|Iron swords', 'Horns come from costume designs for Wagner\'s operas in 1876. Real Viking helmets were plain.'],
-  ['In the 1830s, ketchup was sold in the US as what?', 'Medicine|Hair dye|Ink|Shoe polish', 'Tomato pills were promoted as a cure for indigestion and diarrhoea.'],
+  ['In the 1830s, ketchup was sold in the US as what?', 'Medicine|Hair dye|Ink|Shoe polish', 'Tomato pills were promoted as a cure for indigestion and diarrhea.'],
   ['What did early Coca-Cola contain?', 'Cocaine|Opium|Absinthe|Arsenic', 'Its coca leaf extract carried traces of cocaine until the early 1900s. The coca flavor without cocaine is still used.'],
   ['In the 1904 Olympic marathon, the first man over the line was disqualified for what?', 'Riding part of the way in a car|Taking a shortcut through a farm|Starting early|Swapping places with his twin', 'Fred Lorz hitched a ride for about 11 miles, then jogged in to cheers before being found out.'],
   ['What did the 1904 Olympic marathon winner\'s trainers give him during the race?', 'Rat poison and brandy|Cocaine and coffee|Raw eggs and vinegar|Opium and tea', 'Thomas Hicks got strychnine (a rat poison) and brandy as a "stimulant". He barely survived and won.'],

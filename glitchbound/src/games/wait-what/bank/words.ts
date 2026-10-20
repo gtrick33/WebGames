@@ -36,6 +36,6 @@ export const WORDS: Raw[] = [
   ['What does "deadline" originally refer to?', 'A line prisoners were shot for crossing|A printing press setting|A railway signal|A finish line', 'It comes from American Civil War prison camps.'],
   ['What language did the word "kindergarten" come from?', 'German|Dutch|Danish|French', '"Children\'s garden", coined by Friedrich Fröbel in 1840.'],
   ['What is the "@" symbol officially called?', 'Commercial at|Atmark|Snail sign|Address sign', 'It was used by merchants long before email.'],
-  ['In a deck of cards, which king has no moustache?', 'King of hearts|King of spades|King of clubs|King of diamonds', 'He is also the "suicide king", seemingly stabbing his own head.'],
+  ['In a deck of cards, which king has no mustache?', 'King of hearts|King of spades|King of clubs|King of diamonds', 'He is also the "suicide king", seemingly stabbing his own head.'],
   ['Which letter appears in no US state name?', 'Q|J|Z|X', 'J appears in New Jersey, Z in Arizona, X in Texas and New Mexico.'],
 ];

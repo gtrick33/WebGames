@@ -84,7 +84,7 @@ export default async function (stage, d) {
     const reveal = k === 'trivia-a';
     frame(stage, { ...d, accent: q.catColor }, `
       <div style="position:absolute;left:60px;right:60px;top:56px;display:flex;justify-content:space-between;align-items:center">
-        <span class="sticker" style="background:${C.yellow};font-size:42px;transform:rotate(-3deg)">Wait, What?</span>
+        <span class="sticker" style="background:${C.yellow};font-size:42px;transform:rotate(-3deg)">Quizbelief</span>
         ${chip(q.catLabel, '#fff')}
       </div>
       <div style="position:absolute;left:60px;right:60px;top:180px;bottom:150px;display:flex;flex-direction:column;gap:18px">

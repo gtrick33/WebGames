@@ -172,7 +172,7 @@ Free in your browser. No download, no sign-up. Play it: link in bio 🎮
 
 ## videos/shorts/01-game-spotlights/wait-what.mp4
 
-**Title / first line:** Wait, What?: Trivia that sounds made up
+**Title / first line:** Quizbelief: Trivia that sounds made up
 
 ```
 Trivia that sounds made up 👀
@@ -181,7 +181,7 @@ Trivia that sounds made up but isn’t. Weird history, odd animals, words you wo
 
 Free in your browser. No download, no sign-up. Play it: link in bio 🎮
 
-#waitwhat #trivia #wordgame #browsergames #freegames #indiegame #gaming
+#quizbelief #trivia #wordgame #browsergames #freegames #indiegame #gaming
 ```
 
 ## videos/shorts/01-game-spotlights/gut-check.mp4
@@ -825,9 +825,9 @@ A new one hides every day: Where’s the Ball? (free, link in bio).
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-02.mp4
@@ -839,9 +839,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-03.mp4
@@ -853,9 +853,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-04.mp4
@@ -867,9 +867,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-05.mp4
@@ -881,9 +881,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-06.mp4
@@ -895,9 +895,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-07.mp4
@@ -909,9 +909,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-08.mp4
@@ -923,9 +923,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-09.mp4
@@ -937,9 +937,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-10.mp4
@@ -951,9 +951,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-11.mp4
@@ -965,9 +965,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-12.mp4
@@ -979,9 +979,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-13.mp4
@@ -993,9 +993,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/05-wait-what-trivia/wait-what-trivia-14.mp4
@@ -1007,9 +1007,9 @@ Comment your score: 3/3 = genius.
 
 Comment your score: 3/3 = genius.
 
-10 new questions every day in Wait, What? (free, link in bio).
+10 new questions every day in Quizbelief (free, link in bio).
 
-#trivia #quiz #funfacts #waitwhat #browsergames #freegames #indiegame
+#trivia #quiz #funfacts #quizbelief #browsergames #freegames #indiegame
 ```
 
 ## videos/shorts/06-higher-or-lower/gut-check-01-people.mp4
@@ -1694,7 +1694,7 @@ Real gameplay, recorded in the browser. More games: https://glitchboundstudio.co
 
 ## videos/youtube/gameplay/wait-what-gameplay.mp4
 
-**Title:** Wait, What? Gameplay: Trivia that sounds made up | Free Browser Game
+**Title:** Quizbelief Gameplay: Trivia that sounds made up | Free Browser Game
 
 **Description:**
 
@@ -1703,12 +1703,12 @@ Trivia that sounds made up but isn’t. Weird history, odd animals, words you wo
 
 A quiz full of facts that make you say "wait, what?": the army that lost a war to emus, the jockey who won a race after he died, the cheese that comes with live maggots. Hundreds of hand-written questions across twelve categories, plus real words that sound fake and "which came first?" puzzles. A daily quiz for everyone, an endless mode with no repeats, and 10-question challenges for up to 5 friends.
 
-Play Wait, What? free, no download: https://glitchboundstudio.com/games/wait-what
+Play Quizbelief free, no download: https://glitchboundstudio.com/games/wait-what
 
 Real gameplay, recorded in the browser. More games: https://glitchboundstudio.com
 ```
 
-**Tags:** Wait, What?, browser game, free game, trivia game, word game, no download
+**Tags:** Quizbelief, browser game, free game, trivia game, word game, no download
 
 ## videos/youtube/gameplay/fussbox-gameplay.mp4
 
@@ -1771,7 +1771,7 @@ Gut Check: Two things, one number. Is the next one bigger or smaller? Keep the s
 Star Grid: One star in every row, column and color, and no two touching. Three new grids a day.
 Color Recall: One look at an everyday color, then mix it from memory. Five colors a day.
 To Scale: How big is a bus next to a horse? Drag the silhouette to its real size.
-Wait, What?: Trivia that sounds made up but isn’t. Weird history, odd animals, words you won’t believe.
+Quizbelief: Trivia that sounds made up but isn’t. Weird history, odd animals, words you won’t believe.
 Fussbox: Every day it has a secret rule. Feed it cards, crack its taste, ace the exam.
 Whatsit: A secret thing in a box. Ask yes/no questions, then pick it from the line-up.
 

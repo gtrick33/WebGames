@@ -459,8 +459,8 @@ const de: string[] = [
   'Bestes Quiz',
   'Meiste richtige Antworten am Stück',
   'Längste Serie',
-  'Beantworte {n} Fragen richtig in einem Wait-What?-Quiz',
-  'Beantworte {n} Wait-What?-Fragen hintereinander richtig',
+  'Beantworte {n} Fragen richtig in einem Quizbelief-Quiz',
+  'Beantworte {n} Quizbelief-Fragen hintereinander richtig',
   'Füll die Lücke mit der fiesesten Karte auf deiner Hand. Die lustigste Antwort gewinnt. Ab 18.',
   // 420
   'Ein Online-Partykartenspiel für 3 bis 10 Spieler, jeder am eigenen Handy. Jede Runde liest ein Richter eine Lückenkarte vor, und alle anderen spielen die lustigste, schwärzeste Antwortkarte aus ihrer Hand. Hunderte originale, brutal derbe Karten ohne Wiederholung pro Sitzung, ein Abstimmungsmodus ohne Richter und Räume, die du per Link teilst. Nur für Erwachsene. (Die Karten sind englisch.)',
@@ -498,7 +498,7 @@ const de: string[] = [
   // 450
   'Vollgas-Samstag',
   'Rennfahrer, Flieger und knappe Manöver.',
-  'Happy Halloween! In Wait, What? laufen gruselige Melodien.',
+  'Happy Halloween! In Quizbelief laufen gruselige Melodien.',
   'Frohe Feiertage! Mach es dir mit ein, zwei, drei Rätseln gemütlich.',
   'Happy Valentinstag! Fordere deinen Lieblingsmenschen heraus.',
   'Frohes Mondneujahr! Wir wünschen dir Glück und Highscores.',

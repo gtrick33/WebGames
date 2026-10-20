@@ -1,4 +1,4 @@
-/** Wait, What?'s own on-screen text in each language it plays in (questions live in the packs). */
+/** Quizbelief's own on-screen text in each language it plays in (questions live in the packs). */
 import type { ContentLang } from '../../platform/contentLang';
 import type { CatId } from './deck';
 
