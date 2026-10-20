@@ -136,18 +136,33 @@ describe('game page', () => {
     expect(save.games['neon-rush']).toMatchObject({ plays: 1, best: { score: 321, meters: 250, coins: 7, nearMisses: 1 } });
   });
 
-  it('tucks the full-screen controls into a side tab, and Exit game unloads the game', () => {
+  it('in full screen, a menu button pauses the game and offers a way out in a pop-up (#21, #22)', () => {
     renderAt('/games/neon-rush');
     // jsdom has no Fullscreen API, so Play falls back to the immersive mode.
     fireEvent.click(screen.getByRole('button', { name: /Play Neon Rush/ }));
-    expect(document.querySelector('iframe')).not.toBeNull();
-    const tab = screen.getByRole('button', { name: 'Game menu' });
-    expect(screen.queryByRole('button', { name: /Exit full screen/ })).toBeNull();
-    fireEvent.click(tab);
-    expect(tab.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByRole('button', { name: /Exit full screen/ })).toBeTruthy();
-    fireEvent.click(within(document.querySelector('.stage-menu')!).getByRole('button', { name: /Exit game/ }));
+    const frame = document.querySelector('iframe')!;
+    expect(frame).not.toBeNull();
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    expect(screen.queryByRole('dialog', { name: 'Game menu' })).toBeNull();
+    // Opening the menu pauses the game; Continue closes it and keeps playing.
+    fireEvent.click(screen.getByRole('button', { name: 'Game menu' }));
+    expect(post).toHaveBeenCalledWith(expect.objectContaining({ source: 'glitchbound-host', type: 'pause' }), window.location.origin);
+    const menu = screen.getByRole('dialog', { name: 'Game menu' });
+    expect(within(menu).getAllByRole('button').map((b) => b.textContent?.trim())).toEqual(['Continue', 'Exit full screen', 'Exit game', 'Report a bug']);
+    fireEvent.click(within(menu).getByRole('button', { name: /Continue/ }));
+    expect(screen.queryByRole('dialog', { name: 'Game menu' })).toBeNull();
+    expect(document.querySelector('.stage-immersive')).not.toBeNull();
+    // Escape closes the pop-up first, without leaving full screen.
+    fireEvent.click(screen.getByRole('button', { name: 'Game menu' }));
+    fireEvent.keyDown(screen.getByRole('button', { name: /Continue/ }), { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Game menu' })).toBeNull();
+    expect(document.querySelector('.stage-immersive')).not.toBeNull();
+    // Exit game closes the game and leaves full screen.
+    fireEvent.click(screen.getByRole('button', { name: 'Game menu' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Game menu' })).getByRole('button', { name: /Exit game/ }));
     expect(document.querySelector('iframe')).toBeNull();
+    expect(document.querySelector('.stage-immersive')).toBeNull();
+    expect(document.documentElement.classList.contains('game-focus')).toBe(false);
     expect(screen.getByRole('button', { name: /Play Neon Rush/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Game menu' })).toBeNull();
   });

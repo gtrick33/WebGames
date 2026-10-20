@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { tGame, useT } from '../i18n';
 import { relatedGames } from '../catalog/catalog';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
@@ -75,16 +75,25 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
 
   const apply = useCallback(
     (next: 'none' | 'fullscreen' | 'immersive') => {
-      if (next === 'none' && modeRef.current !== 'none') onLeaveRef.current?.();
+      const was = modeRef.current;
+      if (next === 'none' && was !== 'none') onLeaveRef.current?.();
       modeRef.current = next;
       const el = ref.current;
       el?.classList.toggle('stage-immersive', next === 'immersive');
       document.documentElement.classList.toggle('game-focus', next !== 'none');
       lockZoom(next !== 'none');
       setMode(next);
+      // The page may have moved under the pinned stage (iPhone Safari): come back to the top, where
+      // the game's toolbar and the way back to the arcade are (issue #21).
+      if (was === 'immersive' && next === 'none') window.scrollTo(0, 0);
     },
     [ref],
   );
+
+  // A restart remounts the stage: the new one is pinned over the screen too while immersive.
+  useLayoutEffect(() => {
+    ref.current?.classList.toggle('stage-immersive', mode === 'immersive');
+  });
 
   useEffect(() => {
     const onChange = (): void => {
@@ -127,42 +136,64 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
 }
 
 /**
- * Full-screen controls as a small tab on the left edge, where game HUDs rarely sit: tap to open
- * Exit full screen / Exit game; it folds away again after a few seconds.
+ * In full screen: a menu button on the left edge (where game HUDs rarely sit) that pauses the game and
+ * opens a pop-up with the ways out: continue, leave full screen, close the game, report a bug. It used
+ * to be a faint tab that folded away, which players on phones couldn't find (issues #21, #22).
  */
-function StageMenu({ slug, onExitFullscreen, onExitGame }: { slug: string; onExitFullscreen: () => void; onExitGame: () => void }) {
+function StageMenu({ slug, title, onOpen, onExitFullscreen, onExitGame }: { slug: string; title: string; onOpen: () => void; onExitFullscreen: () => void; onExitGame: () => void }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
-    const id = window.setTimeout(() => setOpen(false), 4000);
-    return () => window.clearTimeout(id);
+    // Escape closes the pop-up first, before it would leave full screen.
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape') return;
+      e.stopImmediatePropagation();
+      setOpen(false);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [open]);
   return (
-    <div className={`stage-menu${open ? ' is-open' : ''}`}>
-      <button className="stage-menu-tab" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={t('Game menu')}>
-        <Icon name="menu" size={16} />
+    <>
+      <button
+        className="stage-menu-btn"
+        onClick={() => {
+          onOpen();
+          setOpen(true);
+        }}
+        aria-haspopup="dialog"
+        aria-label={t('Game menu')}
+        title={t('Game menu')}
+      >
+        <Icon name="menu" size={20} />
       </button>
       {open && (
-        <div className="stage-menu-items">
-          <button className="stage-exit" onClick={onExitFullscreen}>
-            <Icon name="shrink" size={16} /> {t('Exit full screen')}
-          </button>
-          <button className="stage-exit" onClick={onExitGame}>
-            <Icon name="close" size={16} /> {t('Exit game')}
-          </button>
-          <button
-            className="stage-exit"
-            onClick={() => {
-              onExitFullscreen();
-              navigate(`/me/bugs?game=${slug}`);
-            }}
-          >
-            <Icon name="bug" size={16} /> {t('Report a bug')}
-          </button>
+        <div className="stage-menu-backdrop" onClick={() => setOpen(false)}>
+          <div className="stage-menu-sheet" role="dialog" aria-modal="true" aria-label={t('Game menu')} onClick={(e) => e.stopPropagation()}>
+            <p className="stage-menu-title">{title}</p>
+            <button className="btn btn-primary" onClick={() => setOpen(false)} autoFocus>
+              <Icon name="play" size={18} /> {t('Continue')}
+            </button>
+            <button className="btn" onClick={onExitFullscreen}>
+              <Icon name="shrink" size={18} /> {t('Exit full screen')}
+            </button>
+            <button className="btn" onClick={onExitGame}>
+              <Icon name="close" size={18} /> {t('Exit game')}
+            </button>
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                onExitFullscreen();
+                navigate(`/me/bugs?game=${slug}`);
+              }}
+            >
+              <Icon name="bug" size={18} /> {t('Report a bug')}
+            </button>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -440,7 +471,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                     <ChallengeScores run={chal} game={game} onClose={() => setScoresOpen(false)} />
                   </Suspense>
                 )}
-                {play.active && <StageMenu slug={game.slug} onExitFullscreen={play.exit} onExitGame={close} />}
+                {play.active && <StageMenu slug={game.slug} title={game.title} onOpen={() => setPauseSignal((n) => n + 1)} onExitFullscreen={play.exit} onExitGame={close} />}
               </>
             }
             onPhase={(p) => {
