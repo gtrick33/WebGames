@@ -8,7 +8,7 @@ import type { ForeignWord, Word } from '../lexicon';
  */
 export const ODD_WORDS: Word[] = [
   ['cantamañanas', 'Persona informal y fantasiosa que promete mucho y no cumple nada'],
-  ['zascandil', 'Persona ligera y enredadora que va de acá para allá sin hacer nada de provecho', 'meddler'],
+  ['zascandil', 'Enredador que va de acá para allá sin hacer nada útil', 'meddler'],
   ['chisgarabís', 'Mequetrefe entrometido y bullicioso', 'meddler'],
   ['chiquilicuatro', 'Persona enredadora y entrometida, de poco fundamento', 'meddler'],
   ['tiquismiquis', 'Persona que se fija demasiado en pequeñeces'],
@@ -19,7 +19,7 @@ export const ODD_WORDS: Word[] = [
   ['galimatías', 'Lenguaje tan enrevesado que no hay quien lo entienda', 'gibberish'],
   ['jerigonza', 'Jerga complicada de un oficio que nadie más entiende', 'gibberish'],
   ['cantinflear', 'Hablar mucho y muy deprisa sin decir absolutamente nada', 'gibberish'],
-  ['gaznápiro', 'Persona simplona y torpe que se queda embobada con cualquier cosa', 'fool'],
+  ['gaznápiro', 'Simplón y torpe que se queda embobado con cualquier cosa', 'fool'],
   ['papanatas', 'Persona simple y crédula que se lo traga todo', 'fool'],
   ['zopenco', 'Tonto y bruto a partes iguales', 'fool'],
   ['pazguato', 'Persona simple que se pasma de todo lo que ve', 'fool'],
@@ -50,7 +50,7 @@ export const ODD_WORDS: Word[] = [
   ['pelafustán', 'Persona holgazana y pobretona', 'nobody'],
   ['bululú', 'Cómico ambulante que representaba él solo una obra entera, cambiando la voz'],
   ['alicantina', 'Treta astuta para engañar a alguien', 'trick'],
-  ['cancamusa', 'Truco o labia para deslumbrar a alguien y que no vea la trampa', 'trick'],
+  ['cancamusa', 'Labia para deslumbrar a alguien y que no vea la trampa', 'trick'],
   ['triquiñuela', 'Artimaña para salirse con la suya', 'trick'],
   ['zangamanga', 'Treta, ardid', 'trick'],
   ['mamotreto', 'Libro o legajo enorme y pesadísimo'],

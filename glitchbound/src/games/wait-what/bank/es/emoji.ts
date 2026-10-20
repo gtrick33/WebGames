@@ -28,19 +28,19 @@ export const EMOJI_TITLES: EmojiQ[] = [
   ['🍎👸☠️', 'Blancanieves|La bella durmiente|La Cenicienta|Rapunzel', '«Blancanieves y los siete enanitos» (1937) fue el primer largometraje de dibujos animados en celuloide. El primer largometraje animado de todos fue argentino: «El Apóstol», de 1917.'],
   ['🤠🧸🚀', 'Toy Story|Cars|Paddington|Coco', '«Toy Story» (1995) fue el primer largometraje animado íntegramente por ordenador.'],
   ['💀🎸🌼', 'Coco|Encanto|Soul|Red', '«Coco» (2017) transcurre en el Día de Muertos mexicano, cuando el cempasúchil guía a las almas de vuelta a casa.'],
-  ['🐴🫏🌬️', 'Don Quijote de la Mancha|El Lazarillo de Tormes|La Celestina|Bodas de sangre', 'Cervantes publicó la primera parte en 1605, y muchos la consideran la primera novela moderna.'],
+  ['🛡️🐴🌬️', 'Don Quijote de la Mancha|El Lazarillo de Tormes|La Celestina|Bodas de sangre', 'Cervantes publicó la primera parte en 1605, y muchos la consideran la primera novela moderna.'],
   ['💯📅🧍', 'Cien años de soledad|Crónica de una muerte anunciada|El amor en los tiempos del cólera|Rayuela', 'Gabriel García Márquez la publicó en 1967 y se negó toda su vida a vender los derechos para el cine.'],
-  ['🫏🌼📖', 'Platero y yo|Don Quijote de la Mancha|El principito|Marianela', 'Juan Ramón Jiménez lo publicó en 1914. Platero, el burro, era «pequeño, peludo, suave».'],
+  ['🐴🌼📖', 'Platero y yo|Marianela|La Celestina|Rayuela', 'Juan Ramón Jiménez lo publicó en 1914. Platero, el burro, era «pequeño, peludo, suave».'],
   ['🤴🌹🪐', 'El principito|La bella y la bestia|Peter Pan|Alicia en el país de las maravillas', 'Antoine de Saint-Exupéry lo publicó en 1943, y hoy se lee en cientos de idiomas.'],
   ['🍫💧👩‍🍳', 'Como agua para chocolate|Chocolat|Charlie y la fábrica de chocolate|Ratatouille', 'La novela de Laura Esquivel es de 1989. El título viene de la cocina: el chocolate se hace con agua a punto de hervir, como quien está a punto de estallar.'],
-  ['👦🧑‍🦯🍇', 'El Lazarillo de Tormes|Oliver Twist|Pinocho|Don Quijote de la Mancha', 'Se publicó en 1554 sin nombre de autor, y quién lo escribió sigue siendo un misterio.'],
+  ['👦👨‍🦯🍇', 'El Lazarillo de Tormes|Oliver Twist|Pinocho|Don Quijote de la Mancha', 'Se publicó en 1554 sin nombre de autor, y quién lo escribió sigue siendo un misterio.'],
   ['🌀🐐👧', 'El laberinto del fauno|El orfanato|Alicia en el país de las maravillas|Coraline', 'Guillermo del Toro la estrenó en 2006 y ganó tres Óscar.'],
 ];
 
 /** Refranes y expresiones. */
 export const EMOJI_SAYINGS: EmojiQ[] = [
   ['🦐😴🌊', 'Camarón que se duerme se lo lleva la corriente|Al mal tiempo, buena cara|Quien mucho abarca, poco aprieta|En boca cerrada no entran moscas', 'Quien se despista pierde la oportunidad. En inglés, el pájaro madrugador se lleva el gusano.'],
-  ['🤐🪰', 'En boca cerrada no entran moscas|Perro ladrador, poco mordedor|Ojos que no ven, corazón que no siente|Por la boca muere el pez', 'Mejor callar a tiempo que meter la pata.'],
+  ['🤐🦟', 'En boca cerrada no entran moscas|Perro ladrador, poco mordedor|Ojos que no ven, corazón que no siente|Por la boca muere el pez', 'Mejor callar a tiempo que meter la pata.'],
   ['✋🐦💯🕊️', 'Más vale pájaro en mano que ciento volando|Matar dos pájaros de un tiro|Cría cuervos y te sacarán los ojos|Camarón que se duerme se lo lleva la corriente', 'Mejor algo seguro que mucho dudoso. En la versión inglesa, en el arbusto hay solo dos pájaros.'],
   ['🐕🔊🦷❌', 'Perro ladrador, poco mordedor|A caballo regalado no le mires el diente|Dar gato por liebre|Al mal tiempo, buena cara', 'Quien amenaza mucho rara vez llega a hacer nada.'],
   ['🎁🐴🦷', 'A caballo regalado no le mires el diente|Perro ladrador, poco mordedor|A quien madruga, Dios lo ayuda|Ser uña y carne', 'Lo regalado no se critica. Por los dientes se sabe la edad de un caballo.'],
