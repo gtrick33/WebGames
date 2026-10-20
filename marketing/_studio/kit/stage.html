@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>GlitchBound studio stage</title>
+<link rel="stylesheet" href="brand.css">
+</head><body><div id="stage"></div>
+<script type="module">
+  // The renderer sizes #stage, then calls window.mount(template, data) (stills) or
+  // window.mountVideo(format, spec) + window.seek(t) (videos).
+  const stage = document.getElementById('stage');
+  window.size = (w, h, bg) => { Object.assign(stage.style, { width: `${w}px`, height: `${h}px`, background: bg ?? '' }); };
+  window.mount = async (tpl, data) => {
+    stage.innerHTML = '';
+    stage.className = '';
+    stage.removeAttribute('style');
+    window.size(data.w, data.h, data.bg);
+    const mod = await import(`../templates/${tpl}.js?v=${Date.now()}`);
+    await mod.default(stage, data);
+    const { settle } = await import('./kit.js');
+    await settle(stage);
+    return true;
+  };
+  window.ready = true;
+</script>
+</body></html>

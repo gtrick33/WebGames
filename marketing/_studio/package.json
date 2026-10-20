@@ -1,0 +1,9 @@
+{
+  "name": "glitchbound-studio",
+  "private": true,
+  "type": "module",
+  "description": "Renders GlitchBound marketing material: gameplay capture, music, stills and edited videos.",
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}

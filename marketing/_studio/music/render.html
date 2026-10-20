@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><title>studio music</title>
+<script type="module">
+  import { Studio, wav } from './engine.js';
+  import { TRACKS, SFX } from './tracks.js';
+  const b64 = (bytes) => {
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  };
+  window.renderOne = async (kind, id) => {
+    const spec = (kind === 'sfx' ? SFX : TRACKS).find((t) => t.id === id);
+    const seconds = kind === 'sfx' ? spec.seconds : (spec.bars * 4 * 60) / spec.bpm + spec.tail;
+    const S = new Studio(seconds, { bpm: spec.bpm ?? 120, swing: spec.swing ?? 0, seed: spec.seed ?? 5 });
+    spec.build(S);
+    return b64(wav(await S.render()));
+  };
+  window.list = () => ({ tracks: TRACKS.map(({ id, title, mood, bpm, bars, tail }) => ({ id, title, mood, bpm, seconds: +((bars * 4 * 60) / bpm + tail).toFixed(2) })), sfx: SFX.map((s) => s.id) });
+  window.ready = true;
+</script>

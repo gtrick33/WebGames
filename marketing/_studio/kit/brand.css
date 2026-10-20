@@ -1,0 +1,188 @@
+/* GlitchBound marketing kit: the site's toy-box look (warm paper, ink outlines, hard shadows, saturated
+   accents) scaled up for 1080-wide social canvases. Fonts are OFL (see fonts/). */
+@font-face {
+  font-family: 'Bricolage';
+  font-weight: 200 800;
+  font-stretch: 75% 100%;
+  src: url('fonts/bricolage-grotesque-latin-standard-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2190-2199, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Bricolage';
+  font-weight: 200 800;
+  font-stretch: 75% 100%;
+  src: url('fonts/bricolage-grotesque-latin-ext-standard-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Space Mono';
+  font-weight: 400;
+  src: url('fonts/space-mono-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Space Mono';
+  font-weight: 700;
+  src: url('fonts/space-mono-latin-700-normal.woff2') format('woff2');
+}
+
+:root {
+  --paper: #fff6ea;
+  --paper-2: #fbecd6;
+  --white: #ffffff;
+  --ink: #1d1238;
+  --ink-2: #4a3d6b;
+  --night: #0d0522;
+  --cyan: #2ad1f0;
+  --magenta: #ff4fc8;
+  --violet: #7b4dff;
+  --lime: #b6e62c;
+  --yellow: #ffc928;
+  --orange: #ff6a1a;
+  --coral: #ff5a6c;
+  --teal: #12c6b3;
+  --blue: #3d5bff;
+  --logo-blue: #2c45ff;
+  --cyan-text: #0a74a0;
+  --magenta-text: #c0128c;
+  --font: 'Bricolage', 'Avenir Next', system-ui, sans-serif;
+  --mono: 'Space Mono', ui-monospace, Menlo, monospace;
+  --bw: 6px;
+  --hard: 18px 18px 0 var(--ink);
+  --hard-sm: 9px 9px 0 var(--ink);
+  --sunset: linear-gradient(100deg, #ff7a1a 0%, #ff5a6c 45%, #a45cff 100%);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  background: transparent;
+  overflow: hidden;
+}
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+#stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--paper);
+}
+.abs {
+  position: absolute;
+}
+.mono {
+  font-family: var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.display {
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+}
+.grad-text {
+  background: var(--sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Paper textures */
+.dots {
+  background-image: radial-gradient(rgb(29 18 56 / 0.16) 2.6px, transparent 3.2px);
+  background-size: 42px 42px;
+}
+.grid-paper {
+  background-image: linear-gradient(rgb(29 18 56 / 0.07) 2px, transparent 2px), linear-gradient(90deg, rgb(29 18 56 / 0.07) 2px, transparent 2px);
+  background-size: 60px 60px;
+}
+
+/* Hard-shadow card */
+.card {
+  background: var(--white);
+  border: var(--bw) solid var(--ink);
+  border-radius: 54px;
+  box-shadow: var(--hard);
+}
+/* Pill sticker */
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 34px;
+  border: var(--bw) solid var(--ink);
+  border-radius: 999px;
+  background: var(--yellow);
+  box-shadow: var(--hard-sm);
+  font-weight: 800;
+  font-size: 44px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 24px;
+  border: 5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--white);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 28px 54px;
+  border: var(--bw) solid var(--ink);
+  border-radius: 999px;
+  background: var(--cyan);
+  box-shadow: 12px 12px 0 var(--magenta);
+  font-weight: 800;
+  font-size: 54px;
+  letter-spacing: -0.02em;
+}
+.tile-art {
+  border: var(--bw) solid var(--ink);
+  border-radius: 48px;
+  box-shadow: var(--hard);
+  overflow: hidden;
+  background: var(--white);
+}
+.tile-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wordmark {
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.wordmark b {
+  font-weight: 800;
+  color: var(--cyan-text);
+}
+.on-dark .wordmark b {
+  color: var(--cyan);
+}
+.on-dark .wordmark {
+  color: #fff;
+}
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

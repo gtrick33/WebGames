@@ -1,0 +1,100 @@
+{
+  "tracks": [
+    {
+      "id": "small-games",
+      "title": "Small Games",
+      "mood": "Bright, bouncy synth-pop. The brand theme: trailers, launches, lobby tours.",
+      "bpm": 116,
+      "seconds": 71.28
+    },
+    {
+      "id": "big-obsessions",
+      "title": "Big Obsessions",
+      "mood": "High-energy EDM drop. Fast-cut compilations, \"every game\" montages, hype edits.",
+      "bpm": 128,
+      "seconds": 77.5
+    },
+    {
+      "id": "brain-snack",
+      "title": "Brain Snack",
+      "mood": "Quirky pizzicato and marimba. Puzzles, \"how to play\", satisfying solves.",
+      "bpm": 104,
+      "seconds": 78.15
+    },
+    {
+      "id": "lofi-lobby",
+      "title": "Lo-Fi Lobby",
+      "mood": "Warm lo-fi hip-hop with vinyl crackle. Chill puzzles, \"relax and play\", late-night posts.",
+      "bpm": 80,
+      "seconds": 75
+    },
+    {
+      "id": "pixel-dash",
+      "title": "Pixel Dash",
+      "mood": "Fast chiptune. Arcade action: Wing It, Gloop, Square Deal, speedruns.",
+      "bpm": 150,
+      "seconds": 65.5
+    },
+    {
+      "id": "neon-nights",
+      "title": "Neon Nights",
+      "mood": "Synthwave drive. NEON RUSH, Mini Racer, night-time edits.",
+      "bpm": 100,
+      "seconds": 82.2
+    },
+    {
+      "id": "tick-tock",
+      "title": "Tick Tock",
+      "mood": "Quiz-show tension bed with a ticking clock. Countdown challenges, trivia, \"can you find it?\".",
+      "bpm": 120,
+      "seconds": 66
+    },
+    {
+      "id": "spooky-glitch",
+      "title": "Spooky Glitch",
+      "mood": "Playful Halloween: creepy organ, theremin and bells. October posts.",
+      "bpm": 112,
+      "seconds": 73.71
+    },
+    {
+      "id": "snow-day",
+      "title": "Snow Day",
+      "mood": "Cozy winter bells and sleigh shakers (an original tune). December and holiday posts.",
+      "bpm": 112,
+      "seconds": 73.71
+    },
+    {
+      "id": "party-mode",
+      "title": "Party Mode",
+      "mood": "Funky house groove. Party games, game-night edits, friends challenges.",
+      "bpm": 122,
+      "seconds": 64.95
+    },
+    {
+      "id": "logo-sting",
+      "title": "Logo Sting",
+      "mood": "Three-second sonic logo: a glitchy stutter that snaps into a bright chord. Intros and end cards.",
+      "bpm": 120,
+      "seconds": 5
+    }
+  ],
+  "sfx": [
+    "whoosh",
+    "pop",
+    "ding",
+    "buzz",
+    "tick",
+    "tock",
+    "beep",
+    "beep-go",
+    "impact",
+    "sparkle",
+    "riser",
+    "glitch",
+    "coin",
+    "drumroll",
+    "tada",
+    "notify",
+    "swoosh-down"
+  ]
+}
