@@ -1,8 +1,9 @@
 /**
- * The race: a quarter mile for two cars, stepped at a fixed rate. Pure and deterministic: the same
- * cars, drivers and seed always give the same race (the daily, friends' ghosts and the tests rely
- * on it). A driver is either live (the player's pedal and taps) or a policy (an AI with a skill
- * level) or a script (recorded taps: a ghost).
+ * The race: a quarter mile for up to five cars, stepped at a fixed rate. Pure and deterministic:
+ * the same cars, drivers and seed always give the same race (the daily, friends' ghosts and the
+ * tests rely on it). Every car launches itself at green (launch control); drivers only shift.
+ * A driver is live (the player's taps), a policy (an AI with a skill level) or a script (recorded
+ * taps: a ghost).
  */
 import type { CarDef } from './cars';
 import { effectsOf, PARTS, failChance, type Condition, type Levels, type PartId } from './parts';
@@ -11,14 +12,15 @@ import { clamp, rng } from './util';
 export const DT = 1 / 120;
 /** A quarter mile, metres. */
 export const DISTANCE = 402.336;
+export const MAX_RACERS = 5;
 /** Nobody takes longer than this: the race ends. */
 export const MAX_TIME = 30;
 /** The tree: ambers at these seconds after staging starts, green a little later (seeded). */
 export const AMBERS = [1.0, 1.5, 2.0];
 export const GREEN_MIN = 2.5;
 export const GREEN_JITTER = 0.4;
-/** Holding the pedal this long after green launches anyway. */
-export const LAUNCH_TIMEOUT = 2;
+/** The player's launch control reacts this fast, every time. */
+export const PLAYER_REACTION = 0.15;
 export const IDLE_RPM = 900;
 const G = 9.81;
 const AIR = 1.2;
@@ -27,7 +29,7 @@ const MU = 1.4;
 /** Game physics: everything pulls harder than a real car, so a stock starter runs ~14 s and a dragster ~6 s. */
 const BOOST = 1.5;
 const DRIVE_SHARE = { rwd: 0.7, awd: 1.0, fwd: 0.5 } as const;
-/** Weight transfer at the launch: the nose lifts, so rear-drivers gain grip and front-drivers lose it. */
+/** Weight transfer at the launch: the nose lifts, so rear-drivers gain grip. */
 const LAUNCH_SHARE = { rwd: 1.3, awd: 1.05, fwd: 1.0 } as const;
 
 /** A car resolved with its parts: what the simulation drives. */
@@ -44,13 +46,13 @@ export interface CarSpec {
   grip: number;
   launchGrip: number;
   spinKeep: number;
+  downforce: number;
   dragArea: number;
   shiftTime: number;
   driveEff: number;
   reliability: number;
-  /** Parts whose condition is low enough to fail (owned cars); empty for loaners and opponents. */
+  /** Parts whose condition is low enough to fail (owned cars); empty for loaners and bots. */
   risky: { part: PartId; chance: number }[];
-  /** Kept for the renderer and the UI. */
   def: CarDef;
   levels: Levels;
 }
@@ -63,15 +65,15 @@ export function specOf(def: CarDef, levels: Levels, cond: Condition, canFail = t
   for (let i = 0; i < def.gears; i++) ratios.push(def.gears === 1 ? 1 : g1 * Math.pow(gN / g1, i / (def.gears - 1)));
   const power = def.hp * 745.7 * e.torqueMul;
   const dragArea = def.drag * e.dragMul;
-  // Final drive: top gear at the redline is just past the drag-limited top speed.
   const vTop = Math.cbrt((power * 0.85) / (0.5 * AIR * dragArea)) * 1.12;
   const redline = def.redline + e.redlineAdd;
-  const finalDrive = def.gears === 1 ? (redline / 60) * 2 * Math.PI * WHEEL_R / vTop : (redline / 60) * 2 * Math.PI * WHEEL_R / (gN * vTop);
-  const risky = canFail ? PARTS.filter((p) => p !== 'looks').map((p) => ({ part: p, chance: failChance(cond[p], def.reliability) })).filter((r) => r.chance > 0) : [];
+  const finalDrive = def.gears === 1 ? ((redline / 60) * 2 * Math.PI * WHEEL_R) / vTop : ((redline / 60) * 2 * Math.PI * WHEEL_R) / (gN * vTop);
+  const reliability = clamp(def.reliability + e.reliabilityAdd, 0.2, 1);
+  const risky = canFail ? PARTS.filter((p) => p !== 'looks').map((p) => ({ part: p, chance: failChance(cond[p], reliability) })).filter((r) => r.chance > 0) : [];
   return {
     id: def.id,
     name: def.name,
-    mass: def.mass,
+    mass: def.mass + e.massAdd,
     drive: def.drive,
     gears: def.gears,
     redline,
@@ -81,34 +83,30 @@ export function specOf(def: CarDef, levels: Levels, cond: Condition, canFail = t
     grip: def.grip * e.gripMul,
     launchGrip: e.launchGrip,
     spinKeep: e.spinKeep,
+    downforce: e.downforce,
     dragArea,
     shiftTime: e.shiftTime,
-    driveEff: 0.84 + 0.01 * levels.transmission,
-    reliability: def.reliability,
+    driveEff: e.driveEff,
+    reliability,
     risky,
     def,
     levels: { ...levels },
   };
 }
 
-/** Engine torque at an rpm: a hump peaking around 60 % of the redline (electric: flat, then falling). */
+/** Engine torque at an rpm: a bell around 65 % of the redline (electric: flat, then falling). */
 export function torqueAt(spec: CarSpec, rpm: number): number {
   const t = clamp(rpm / spec.redline, 0, 1.05);
   if (spec.gears === 1) return spec.peakTorque * (t < 0.3 ? 1 : 0.3 / t);
-  // A bell around 65 % of the redline: half the torque at idle, two thirds at the redline.
   const d = (t - 0.65) / 0.35;
   return spec.peakTorque * (0.45 + 0.55 * Math.exp(-d * d));
 }
 
-export const wheelRpm = (spec: CarSpec, v: number, gear: number): number => ((v / (2 * Math.PI * WHEEL_R)) * 60 * spec.ratios[gear - 1]! * spec.finalDrive);
-export const speedAt = (spec: CarSpec, rpm: number, gear: number): number => (rpm / 60 / (spec.ratios[gear - 1]! * spec.finalDrive)) * 2 * Math.PI * WHEEL_R;
-
-/** Force at the tyres from engine torque in a gear, N. */
+export const wheelRpm = (spec: CarSpec, v: number, gear: number): number => (v / (2 * Math.PI * WHEEL_R)) * 60 * spec.ratios[gear - 1]! * spec.finalDrive;
 export const engineForce = (spec: CarSpec, rpm: number, gear: number): number => (BOOST * torqueAt(spec, rpm) * spec.ratios[gear - 1]! * spec.finalDrive * spec.driveEff) / WHEEL_R;
-/** Most force the driven tyres can put down, N (more at the launch with weight transfer). */
-export const tractionLimit = (spec: CarSpec, launching: boolean): number => MU * spec.grip * spec.mass * G * DRIVE_SHARE[spec.drive] * (launching ? spec.launchGrip * LAUNCH_SHARE[spec.drive] : 1.25);
+export const tractionLimit = (spec: CarSpec, launching: boolean, v = 0): number => MU * spec.grip * spec.mass * G * DRIVE_SHARE[spec.drive] * (launching ? spec.launchGrip * LAUNCH_SHARE[spec.drive] : 1.25 * (1 + spec.downforce * (v / 27.8)));
 
-/** The launch rpm where the car just stops spinning its tyres: the sweet spot. */
+/** The launch rpm where the car just stops spinning its tyres: launch control aims here. */
 export function idealLaunchRpm(spec: CarSpec): number {
   const limit = tractionLimit(spec, true);
   let best = IDLE_RPM;
@@ -119,18 +117,11 @@ export function idealLaunchRpm(spec: CarSpec): number {
   return Math.round(best / 50) * 50;
 }
 
-/** The launch window shown on the tacho: a hair under the sweet spot to a little over. */
-export function launchWindow(spec: CarSpec): [number, number] {
-  const ideal = idealLaunchRpm(spec);
-  return [Math.max(IDLE_RPM, ideal - spec.redline * 0.08), Math.min(spec.redline, ideal + spec.redline * 0.05)];
-}
-
 /** Shift zone (fraction of redline): a perfect shift happens here. */
 export const PERFECT_FROM = 0.92;
 export const OK_FROM = 0.8;
 
 export type Phase = 'staging' | 'running' | 'shifting' | 'done';
-export type Fault = 'red' | 'dnf' | null;
 
 export interface Racer {
   spec: CarSpec;
@@ -139,14 +130,10 @@ export interface Racer {
   v: number;
   rpm: number;
   gear: number;
-  pedal: boolean;
-  launched: boolean;
   launchAt: number;
   launchRpm: number;
   reaction: number;
-  /** Clutch slip left at the launch, seconds. */
   slip: number;
-  /** Launch quality below the sweet spot (1 = at or above it): a bogged launch pulls less for the first second. */
   bog: number;
   spinLeft: number;
   shiftLeft: number;
@@ -157,26 +144,23 @@ export interface Racer {
   shifts: number;
   early: number;
   late: number;
-  fault: Fault;
+  dnf: boolean;
   failure: PartId | null;
   failAt: number;
   et: number;
   trap: number;
   /** Shift taps, seconds after the launch (the replay). */
   taps: number[];
-  /** The engine is dead (failure): no drive. */
   dead: boolean;
   stuck: boolean;
+  /** Seconds after the launch when 100 km/h was reached, or -1. */
+  t100: number;
 }
 
-type Lane = 0 | 1;
-export type Event = { type: 'amber'; n: number } | { type: 'green' } | { type: 'launch'; i: Lane } | { type: 'spin'; i: Lane } | { type: 'shift'; i: Lane; quality: 'perfect' | 'ok' | 'early' | 'late' } | { type: 'limiter'; i: Lane } | { type: 'finish'; i: Lane } | { type: 'red'; i: Lane } | { type: 'fail'; i: Lane; part: PartId };
+export type ShiftQuality = 'perfect' | 'ok' | 'early' | 'late';
+export type Event = { type: 'amber'; n: number } | { type: 'green' } | { type: 'launch'; i: number } | { type: 'spin'; i: number } | { type: 'shift'; i: number; quality: ShiftQuality } | { type: 'limiter'; i: number } | { type: 'finish'; i: number } | { type: 'fail'; i: number; part: PartId };
 
-/** How a car is driven. */
-export type Driver =
-  | { kind: 'live' }
-  | { kind: 'policy'; skill: number; seed: number }
-  | { kind: 'script'; script: Script };
+export type Driver = { kind: 'live' } | { kind: 'policy'; skill: number; seed: number } | { kind: 'script'; script: Script };
 
 /** A recorded run: enough to race the same car the same way again (a ghost). */
 export interface Script {
@@ -188,11 +172,8 @@ export interface Script {
 interface PolicyPlan {
   launchRpm: number;
   reaction: number;
-  /** Fraction of the redline the driver shifts at. */
   shiftAt: number;
-  /** Seconds the driver dawdles once there (a late shifter bounces the limiter). */
   lateness: number;
-  /** When the driver first wanted to shift in this gear, or -1. */
   wantedAt: number;
 }
 
@@ -200,13 +181,14 @@ export interface RacerResult {
   et: number | null;
   reaction: number;
   trap: number;
+  t100: number;
   perfect: number;
   shifts: number;
   early: number;
   late: number;
   spinTime: number;
   limiterTime: number;
-  fault: Fault;
+  dnf: boolean;
   failure: PartId | null;
   /** Reaction + ET: when the car crossed the line. */
   crossed: number | null;
@@ -214,36 +196,39 @@ export interface RacerResult {
 }
 
 export interface RaceResult {
-  racers: [RacerResult, RacerResult];
-  /** 0 or 1, or null when nobody finished. */
-  winner: 0 | 1 | null;
-  /** Seconds between the two crossings (positive = the winner's margin). */
+  racers: RacerResult[];
+  /** Racer indices from first to last (finishers by crossing time, then the rest). */
+  order: number[];
+  winner: number | null;
+  /** Seconds between first and second place. */
   margin: number;
 }
 
 function newRacer(spec: CarSpec): Racer {
-  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, pedal: false, launched: false, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, fault: null, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false };
+  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false, t100: -1 };
 }
 
 export class Race {
-  readonly racers: [Racer, Racer];
-  readonly drivers: [Driver, Driver];
+  readonly racers: Racer[];
+  readonly drivers: Driver[];
   readonly greenAt: number;
   t = 0;
   ambersLit = 0;
   green = false;
   done = false;
-  private plans: [PolicyPlan | null, PolicyPlan | null];
+  private plans: (PolicyPlan | null)[];
   private rand: () => number;
+  private events: Event[] = [];
 
-  constructor(specs: [CarSpec, CarSpec], drivers: [Driver, Driver], seed: number) {
+  constructor(specs: CarSpec[], drivers: Driver[], seed: number) {
+    if (specs.length < 1 || specs.length > MAX_RACERS || specs.length !== drivers.length) throw new Error('bad race');
     this.rand = rng(seed);
-    this.racers = [newRacer(specs[0]), newRacer(specs[1])];
+    this.racers = specs.map(newRacer);
     this.drivers = drivers;
     this.greenAt = GREEN_MIN + this.rand() * GREEN_JITTER;
-    this.plans = [this.plan(0), this.plan(1)];
-    // Worn parts may fail somewhere in the run (the first one rolled wins).
+    this.plans = this.racers.map((_, i) => this.plan(i));
     for (const r of this.racers) {
+      // Worn parts may fail somewhere in the run (the first one rolled wins).
       for (const k of r.spec.risky) {
         if (this.rand() < k.chance) {
           r.failure = k.part;
@@ -251,18 +236,21 @@ export class Race {
           break;
         }
       }
+      // Staging: every car sits at its launch rpm before the lights.
+      const d = this.drivers[this.racers.indexOf(r)]!;
+      r.rpm = d.kind === 'script' ? d.script.launchRpm : d.kind === 'policy' ? this.plans[this.racers.indexOf(r)]!.launchRpm : idealLaunchRpm(r.spec);
     }
   }
 
-  private plan(i: 0 | 1): PolicyPlan | null {
-    const d = this.drivers[i];
+  private plan(i: number): PolicyPlan | null {
+    const d = this.drivers[i]!;
     if (d.kind !== 'policy') return null;
     const r = rng(d.seed);
-    const spec = this.racers[i].spec;
+    const spec = this.racers[i]!.spec;
     const skill = clamp(d.skill, 0, 1);
     const err = (1 - skill) * (r() * 2 - 1);
-    const ideal = idealLaunchRpm(spec);
     const err2 = (1 - skill) * (r() * 2 - 1);
+    const ideal = idealLaunchRpm(spec);
     return {
       launchRpm: clamp(ideal + err * spec.redline * 0.3, IDLE_RPM, spec.redline),
       reaction: 0.1 + (1 - skill) * 0.4 + r() * (0.05 + (1 - skill) * 0.15),
@@ -272,43 +260,25 @@ export class Race {
     };
   }
 
-  /** The player's pedal (live drivers only). Holding builds revs; letting go after green launches. */
-  pedal(i: 0 | 1, down: boolean): void {
-    const r = this.racers[i];
-    if (this.drivers[i].kind !== 'live') return;
-    if (r.phase === 'staging' && r.pedal && !down) this.tryLaunch(i);
-    r.pedal = down;
-  }
-
   /** A shift tap (live drivers only). */
-  tap(i: 0 | 1): void {
-    if (this.drivers[i].kind !== 'live') return;
+  tap(i: number): void {
+    if (this.drivers[i]?.kind !== 'live') return;
     this.shift(i);
   }
 
-  private tryLaunch(i: 0 | 1): void {
-    const r = this.racers[i];
-    if (r.launched) return;
-    r.launched = true;
+  private launch(i: number): void {
+    const r = this.racers[i]!;
     r.launchAt = this.t;
     r.launchRpm = r.rpm;
     r.reaction = this.t - this.greenAt;
-    if (!this.green) {
-      r.fault = 'red';
-      r.phase = 'done';
-      this.events.push({ type: 'red', i });
-      return;
-    }
     r.phase = 'running';
     r.slip = r.spec.gears === 1 ? 0 : 0.5;
     r.bog = Math.pow(clamp(r.rpm / Math.max(IDLE_RPM + 1, idealLaunchRpm(r.spec)), 0.3, 1), 1.6);
-    // Too many revs for the tyres: they spin until the chassis settles.
     const spin = engineForce(r.spec, r.rpm, 1) > tractionLimit(r.spec, true);
     if (spin || r.failure === 'suspension') {
       r.spinLeft = (r.failure === 'suspension' ? 1.4 : 0.35) + 0.6 * clamp((engineForce(r.spec, r.rpm, 1) / tractionLimit(r.spec, true) - 1) * 2, 0, 1) * (1 - (r.spec.spinKeep - 0.72) * 2);
       this.events.push({ type: 'spin', i });
       if (r.failure === 'suspension') {
-        r.failure = 'suspension';
         this.events.push({ type: 'fail', i, part: 'suspension' });
         r.failAt = -1;
       }
@@ -316,14 +286,14 @@ export class Race {
     this.events.push({ type: 'launch', i });
   }
 
-  private shift(i: 0 | 1): void {
-    const r = this.racers[i];
+  private shift(i: number): void {
+    const r = this.racers[i]!;
     if (r.phase !== 'running' || r.gear >= r.spec.gears || r.stuck || r.dead) return;
     // While the clutch slips in, the engine revs are not the car's: judge the shift by the wheels.
     const frac = (r.slip > 0 ? Math.min(r.rpm, wheelRpm(r.spec, r.v, r.gear)) : r.rpm) / r.spec.redline;
     r.slip = 0;
     const bounced = r.limiterSince >= 0 && this.t - r.limiterSince > 0.04;
-    let quality: 'perfect' | 'ok' | 'early' | 'late';
+    let quality: ShiftQuality;
     if (bounced) {
       quality = 'late';
       r.late++;
@@ -344,8 +314,6 @@ export class Race {
     this.events.push({ type: 'shift', i, quality });
   }
 
-  private events: Event[] = [];
-
   /** Advances one DT. Returns what happened for the sounds and the HUD. */
   step(): Event[] {
     this.events = [];
@@ -359,45 +327,32 @@ export class Race {
       this.green = true;
       this.events.push({ type: 'green' });
     }
-    for (const i of [0, 1] as const) this.stepRacer(i);
-    const all = this.racers.every((r) => r.phase === 'done');
-    if (all || this.t >= MAX_TIME) {
+    for (let i = 0; i < this.racers.length; i++) this.stepRacer(i);
+    if (this.racers.every((r) => r.phase === 'done') || this.t >= MAX_TIME) {
       for (const r of this.racers)
         if (r.phase !== 'done') {
           r.phase = 'done';
-          r.fault = 'dnf';
+          r.dnf = true;
         }
       this.done = true;
     }
     return this.events;
   }
 
-  private stepRacer(i: 0 | 1): void {
-    const r = this.racers[i];
-    const d = this.drivers[i];
-    const plan = this.plans[i];
+  private stepRacer(i: number): void {
+    const r = this.racers[i]!;
+    const d = this.drivers[i]!;
+    const plan = this.plans[i]!;
     const spec = r.spec;
     if (r.phase === 'done') return;
 
-    // --- staging: build revs, then launch
     if (r.phase === 'staging') {
-      let target: number | null = null;
-      if (d.kind === 'policy' && plan) target = plan.launchRpm;
-      else if (d.kind === 'script') target = d.script.launchRpm;
-      if (target !== null) {
-        r.rpm = r.rpm < target ? Math.min(target, r.rpm + 4500 * DT) : Math.max(target, r.rpm - 5000 * DT);
-        r.pedal = r.rpm < target + 1;
-        const react = d.kind === 'policy' && plan ? plan.reaction : d.kind === 'script' ? d.script.reaction : 0;
-        if (this.t >= this.greenAt + react) this.tryLaunch(i);
-      } else {
-        r.rpm = r.pedal ? Math.min(spec.redline, r.rpm + 4500 * DT) : Math.max(IDLE_RPM, r.rpm - 5000 * DT);
-        if (this.green && this.t >= this.greenAt + LAUNCH_TIMEOUT) this.tryLaunch(i);
-      }
+      const react = d.kind === 'policy' && plan ? plan.reaction : d.kind === 'script' ? d.script.reaction : PLAYER_REACTION;
+      if (this.green && this.t >= this.greenAt + react) this.launch(i);
       return;
     }
 
     const since = this.t - r.launchAt;
-    // --- scheduled failure
     if (r.failure && r.failAt >= 0 && since >= r.failAt) {
       r.failAt = -1;
       this.events.push({ type: 'fail', i, part: r.failure });
@@ -408,7 +363,6 @@ export class Race {
         this.events.push({ type: 'spin', i });
       }
     }
-    // --- scripted and policy shifts
     if (r.phase === 'running' && r.gear < spec.gears && !r.stuck) {
       if (d.kind === 'script') {
         const next = d.script.shifts[r.shifts];
@@ -422,7 +376,6 @@ export class Race {
       }
     }
 
-    // --- forces
     const wheel = wheelRpm(spec, r.v, r.gear);
     let force = 0;
     if (r.phase === 'shifting') {
@@ -431,24 +384,21 @@ export class Race {
       if (r.shiftLeft <= 0) {
         r.phase = 'running';
         r.rpm = Math.max(IDLE_RPM, wheel);
-        // Power-shifting a strong car can light the tyres again.
-        if (engineForce(spec, r.rpm, r.gear) > tractionLimit(spec, false) * 1.1 && r.spinLeft <= 0) {
+        if (engineForce(spec, r.rpm, r.gear) > tractionLimit(spec, false, r.v) * 1.1 && r.spinLeft <= 0) {
           r.spinLeft = 0.25;
           this.events.push({ type: 'spin', i });
         }
       }
     } else if (!r.dead) {
       const launching = since < 1.2;
-      const limit = tractionLimit(spec, launching) * (r.failure === 'tyres' && r.failAt < 0 ? 0.35 : 1);
+      const limit = tractionLimit(spec, launching, r.v) * (r.failure === 'tyres' && r.failAt < 0 ? 0.35 : 1);
       if (r.slip > 0) {
-        // The clutch slips: the engine holds its launch revs (sagging a little) until the wheels catch up.
         r.slip -= DT;
         const held = Math.max(IDLE_RPM, r.launchRpm - 1200 * (0.5 - r.slip));
         r.rpm = Math.max(wheel, held);
         if (wheel >= held) r.slip = 0;
       } else r.rpm = Math.max(IDLE_RPM, wheel);
       let eng = engineForce(spec, r.rpm, r.gear);
-      // Bogged: launching under the sweet spot leaves the car floundering for the first second.
       if (since < 1 && r.gear === 1 && spec.gears > 1) eng *= r.bog + (1 - r.bog) * since;
       if (r.spinLeft > 0) {
         r.spinLeft -= DT;
@@ -472,10 +422,10 @@ export class Race {
     const roll = 0.012 * spec.mass * G;
     const a = (force - drag - roll) / spec.mass;
     r.v = Math.max(0, r.v + a * DT);
+    if (r.t100 < 0 && r.v >= 27.78) r.t100 = since;
     const x0 = r.x;
     r.x += r.v * DT;
     if (r.x >= DISTANCE) {
-      // Interpolate the crossing inside the step.
       const f = (DISTANCE - x0) / (r.x - x0);
       r.et = since - DT + f * DT;
       r.trap = r.v;
@@ -486,52 +436,62 @@ export class Race {
 
   result(): RaceResult {
     const rs = this.racers.map((r): RacerResult => {
-      const finished = r.phase === 'done' && !r.fault;
+      const finished = r.phase === 'done' && !r.dnf;
       return {
         et: finished ? r.et : null,
         reaction: r.reaction,
         trap: r.trap * 3.6,
+        t100: r.t100,
         perfect: r.perfect,
         shifts: r.shifts,
         early: r.early,
         late: r.late,
         spinTime: r.spinTime,
         limiterTime: r.limiterTime,
-        fault: r.fault,
+        dnf: !finished,
         failure: r.failure,
         crossed: finished ? r.reaction + r.et : null,
         script: { launchRpm: Math.round(r.launchRpm), reaction: Math.round(r.reaction * 1000) / 1000, shifts: r.taps },
       };
-    }) as [RacerResult, RacerResult];
-    const a = rs[0].crossed;
-    const b = rs[1].crossed;
-    let winner: 0 | 1 | null = null;
-    if (a !== null && (b === null || a <= b)) winner = 0;
-    else if (b !== null) winner = 1;
-    const margin = a !== null && b !== null ? Math.abs(a - b) : 0;
-    return { racers: rs, winner, margin };
+    });
+    const order = rs
+      .map((_, i) => i)
+      .sort((a, b) => {
+        const ca = rs[a]!.crossed;
+        const cb = rs[b]!.crossed;
+        if (ca === null && cb === null) return rs[b]!.et === null && rs[a]!.et === null ? a - b : 0;
+        if (ca === null) return 1;
+        if (cb === null) return -1;
+        return ca - cb;
+      });
+    const first = order[0]!;
+    const winner = rs[first]!.crossed === null ? null : first;
+    const second = order[1];
+    const margin = winner !== null && second !== undefined && rs[second]!.crossed !== null ? rs[second]!.crossed! - rs[first]!.crossed! : 0;
+    return { racers: rs, order, winner, margin };
   }
 }
 
-/** Runs a whole race at once (forecasts, AI scripts, tests). */
-export function simulate(specs: [CarSpec, CarSpec], drivers: [Driver, Driver], seed: number): RaceResult {
+/** Runs a whole race at once (forecasts, tests). */
+export function simulate(specs: CarSpec[], drivers: Driver[], seed: number): RaceResult {
   const race = new Race(specs, drivers, seed);
   while (!race.done) race.step();
   return race.result();
 }
 
-/** The leaderboard number: higher is better, 0 for a red light or a breakdown. */
+/** The leaderboard number: higher is better, 0 for a breakdown. */
 export function scoreOf(r: RacerResult): number {
   if (r.et === null) return 0;
-  return Math.max(0, 20000 - Math.round(r.et * 1000) - 2 * Math.round(Math.max(0, r.reaction) * 1000) + 150 * r.perfect);
+  return Math.max(0, 20000 - Math.round(r.et * 1000) + 150 * r.perfect);
 }
 
-/** A solo run with a policy driver at a skill: what the car "should" do. Returns the ET (reaction excluded). */
-export function forecastEt(spec: CarSpec, skill: number, seed = 1): number {
+/** A solo run with a policy driver at a skill: what the car "should" do. */
+export function forecastRun(spec: CarSpec, skill: number, seed = 1): { et: number; trap: number; t100: number } {
   const safe = { ...spec, risky: [] };
-  const r = simulate([safe, safe], [{ kind: 'policy', skill, seed }, { kind: 'policy', skill, seed }], seed);
-  return r.racers[0].et ?? MAX_TIME;
+  const r = simulate([safe], [{ kind: 'policy', skill, seed }], seed).racers[0]!;
+  return { et: r.et ?? MAX_TIME, trap: r.trap, t100: r.t100 };
 }
+export const forecastEt = (spec: CarSpec, skill: number, seed = 1): number => forecastRun(spec, skill, seed).et;
 
 // ---- replay encoding (friends' challenges)
 const VERSION = 'lc1';

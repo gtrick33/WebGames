@@ -1,25 +1,28 @@
-/** The four strips: colors and what grows beside the track. Used by the 3D world and the style shop. */
+/** The four strips: all daylight under blue skies. Used by the 3D world and the style shop. */
+export type Scenery = 'bay' | 'canyon' | 'alpine' | 'city';
+
 export interface EnvDef {
   id: string;
+  name: string;
+  scenery: Scenery;
   /** Sky at the top and at the horizon. */
   sky: [string, string];
-  sun: { x: number; y: number; z: number; color: string; r: number } | null;
-  far: 'mountains' | 'skyline' | 'peaks' | 'tents';
-  farColor: string;
-  farColor2: string;
-  mid: 'cactus' | 'palm' | 'pine' | 'lantern';
+  sun: { x: number; y: number; z: number };
   ground: string;
   verge: string;
   track: string;
   line: string;
-  stand: string;
+  stands: [string, string];
+  far: string;
+  far2: string;
   /** Hemisphere light: sky and ground tints. */
   light: [string, string];
+  fog: string;
 }
 
 export const ENV_DEFS: Record<string, EnvDef> = {
-  'e-desert': { id: 'e-desert', sky: ['#ff8c42', '#ffd166'], sun: { x: 260, y: 90, z: -200, color: '#fff3b0', r: 22 }, far: 'mountains', farColor: '#c4467a', farColor2: '#9a3a6a', mid: 'cactus', ground: '#f4a261', verge: '#e9c46a', track: '#4a4e69', line: '#ffffff', stand: '#ff6b6b', light: ['#fff1d6', '#e8a060'] },
-  'e-harbor': { id: 'e-harbor', sky: ['#48cae4', '#caf0f8'], sun: { x: -120, y: 120, z: 240, color: '#ffffff', r: 16 }, far: 'skyline', farColor: '#5e60ce', farColor2: '#7678ed', mid: 'palm', ground: '#90e0ef', verge: '#f1d6a0', track: '#555b6e', line: '#ffffff', stand: '#ffb703', light: ['#ffffff', '#8ec5d6'] },
-  'e-alpine': { id: 'e-alpine', sky: ['#3a86ff', '#bde0fe'], sun: { x: 220, y: 140, z: 180, color: '#ffffff', r: 16 }, far: 'peaks', farColor: '#8d99ae', farColor2: '#6c757d', mid: 'pine', ground: '#80b918', verge: '#55a630', track: '#3d405b', line: '#ffffff', stand: '#e63946', light: ['#ffffff', '#7fb069'] },
-  'e-fair': { id: 'e-fair', sky: ['#5f0f40', '#ff8fab'], sun: { x: -180, y: 70, z: -220, color: '#fff1e6', r: 14 }, far: 'tents', farColor: '#9a031e', farColor2: '#f4a261', mid: 'lantern', ground: '#6a4c93', verge: '#9d4edd', track: '#3c2a4d', line: '#ffd6ff', stand: '#fb8500', light: ['#ffd0e0', '#7a4a9a'] },
+  'e-bay': { id: 'e-bay', name: 'Palm Bay', scenery: 'bay', sky: ['#2f8dff', '#d6f1ff'], sun: { x: 180, y: 140, z: -120 }, ground: '#8fd16f', verge: '#b8e08a', track: '#4b4b55', line: '#ffffff', stands: ['#ff5a6c', '#3d5bff'], far: '#6aa0d8', far2: '#8fbfe8', light: ['#ffffff', '#9ec7a0'], fog: '#cfe9ff' },
+  'e-canyon': { id: 'e-canyon', name: 'Red Canyon', scenery: 'canyon', sky: ['#3a8dff', '#e8f4ff'], sun: { x: 220, y: 130, z: 160 }, ground: '#e9b872', verge: '#d9a861', track: '#4e4a4f', line: '#ffffff', stands: ['#ff6a1a', '#12c6b3'], far: '#c8582a', far2: '#e07a3f', light: ['#ffffff', '#d9a56a'], fog: '#e8f0ff' },
+  'e-alpine': { id: 'e-alpine', name: 'Alpine Pass', scenery: 'alpine', sky: ['#2b7fff', '#e3f2ff'], sun: { x: -160, y: 150, z: 140 }, ground: '#79c050', verge: '#5fae3a', track: '#454552', line: '#ffffff', stands: ['#e63946', '#ffd12e'], far: '#7a8aa6', far2: '#a5b4c9', light: ['#ffffff', '#86b86a'], fog: '#e3f2ff' },
+  'e-city': { id: 'e-city', name: 'Downtown Mile', scenery: 'city', sky: ['#3f93ff', '#d9ecff'], sun: { x: 120, y: 160, z: 200 }, ground: '#8d93a3', verge: '#b7bcc8', track: '#45454e', line: '#ffffff', stands: ['#7b4dff', '#22e4ff'], far: '#5a6c9e', far2: '#7d8fc0', light: ['#ffffff', '#9aa0b3'], fog: '#dbe9ff' },
 };

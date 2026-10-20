@@ -1,80 +1,76 @@
 # Launch Control: design notes
 
-A strategic drag-racing game (GitHub issue #6, asked for as "Drag Kings"; that name clashes with the registered
-mobile-game mark DRAG KINGZ, so the game is called Launch Control). Bright low-poly 3D cars on sunny strips seen from a
-chase camera behind the cars, rendered with Three.js (the only game in the arcade with a 3D dependency; it ships in the
-game's own lazy chunk, so the arcade's startup budget is untouched). Cars are built procedurally from a side profile per
-body style, extruded and bevelled, so every car is a real mesh and every part is real geometry.
+A strategic drag racer (GitHub issue #6, asked for as "Drag Kings"; that name clashes with the registered
+mobile-game mark DRAG KINGZ, so the game is Launch Control). Glossy cartoon 3D seen from behind your car, five
+cars per race, one input: the shift. Rendered with Three.js (the only game in the arcade with a 3D dependency;
+it ships in the game's own lazy chunk, so the arcade's startup budget is untouched).
 
 ## The round
 
-One quarter-mile (402 m) race against one opponent, about ten seconds of driving:
+One quarter mile (402 m) against four rivals, about ten seconds of driving:
 
-1. **Staging**: the tree lights three ambers, half a second apart. Hold the pedal (Space, or the big button) to build
-   revs; let go to drop them. Every car has a launch window: too many revs spin the tyres, too few bog the launch.
-2. **Green**: release the pedal to launch. Releasing before green is a red light: disqualified, wager lost.
-   Reaction time = release − green.
-3. **The run**: tap to shift. The tacho shows the sweet spot just under the redline; shifting there is a *perfect*
-   shift, early loses pull, late bounces off the limiter (time lost, engine wear).
-4. **The finish**: elapsed time (ET), trap speed, reaction and perfect shifts. The winner is the car that crosses
-   first (ET + reaction).
+1. **The lights**: three ambers half a second apart, then green (seeded jitter). Launch control holds every car
+   at its sweet-spot rpm and leaves at green; AI drivers add their own reaction time and launch error.
+2. **The run**: tap (Space, or the SHIFT button) when the needle is in the green zone just under the redline.
+   Perfect shift = quicker change; early = lost pull; bouncing the limiter = lost time and engine wear.
+3. **The finish**: elapsed time (ET), trap speed, perfect shifts, finishing position. First across the line
+   wins the purse and the wager; places pay a share.
 
-**Score** (the leaderboard number, higher is better): `20000 − ET ms − 2 × reaction ms + 150 × perfect shifts`,
-0 for a red light or a breakdown. A stock starter car scores ~5 000, a tuned hypercar ~13 000.
+**Score** (the leaderboard number): `20000 − ET ms + 150 × perfect shifts`, 0 for a breakdown.
 
-Everything is deterministic: a race is `(player car, opponent car, seed, driver scripts)`. A driver script is
-`{ launchRpm, reaction, shifts[] }`, which is how AI opponents drive, how friends' ghosts are replayed and what the
-tests use.
+Everything is deterministic: a race is `(cars, drivers, seed)`. A driver is live (your taps), a policy (an AI with
+a skill: reaction, launch error, shift timing) or a script (`{ launchRpm, reaction, shifts[] }`, a ghost).
 
 ## Modes
 
-- **Ladder** (the campaign): 40 named opponents in five divisions (Street, Club, Pro, Elite, Legend); a win moves
-  you up and pays a purse plus materials the first time. Any beaten opponent can be rematched for the base purse.
-- **Wager**: before a race you see both cars' stats and a forecast ET for each. Stake part of your cash; the payout
-  multiplier comes from the forecast (an underdog pays more). Coins are earned only in the game, never bought.
-- **Today's Showdown** (daily, `ownDaily`): everyone gets the same loaner car and opponent from the day's seed;
-  3 tries, best score counts; share line is spoiler-free.
-- **Friends' challenge**: the same loaner from the challenge seed, one run; your run is sent as a replay and the
-  others race your ghost.
-- **Idle income**: your sponsor pays per hour while you are away (rate grows with your ladder rank, capped at 8 h).
+- **Ladder**: 40 named rivals in five divisions. The rival plus three bots in cars tuned like yours fill the
+  lanes; beat the field for the rung, a purse and materials. Beaten rivals can be rematched.
+- **Wager**: odds come from running the race a dozen times in the simulator; an underdog pays more.
+  Coins are earned only in the game, never bought.
+- **Today's Showdown** (daily): the same loaner car and the same four rivals for everyone from the day's seed;
+  three runs, best counts. A free **daily crate** (cash and materials by rank).
+- **Friends' challenge**: the same loaner; friends' recorded runs race as ghosts, bots fill the rest.
+- **Sponsor income** while away (rate by rank and the car's Looks, capped at 8 hours).
+
+## Bots
+
+`botsFor` picks cars within a tier of yours, tunes their parts so that a *perfect* run of theirs lands about a
+quarter second behind a perfect run of yours (worn parts slow a car that is too quick even stock), then gives
+each a driver skill that only loses time from there. Fair, varied, never a walkover.
 
 ## The garage
 
-30+ original cars (recognisable silhouettes, invented names: no real makes or models). Each car has six separate
-parts, each with 8 levels and its own condition:
+40 original cars with silhouettes after familiar real shapes (invented makers and names). Six separate parts, each
+with eight levels and its own condition, each moving several numbers:
 
-| Part | What it changes | Visible on the car |
+| Part | Each level | Visible on the car |
 | --- | --- | --- |
-| Engine | torque curve, redline | hood scoop, turbo pipes |
-| Transmission | shift time, closer gears | shift-light badge |
-| Suspension | weight transfer (launch grip), wheel hop | ride height, stance |
-| Tyres | grip; wear every race, worn tyres slip | wheel width, slicks |
-| Aerodynamics | drag | splitter, spoiler, diffuser |
-| Looks | fans: a bonus on every purse | livery, underglow |
+| Engine | +9 % torque, +60 rpm, +4 kg, −2 % reliability | hood scoop, twin pipes with flames |
+| Transmission | −35 ms per shift, +1 % drive efficiency, +1 % reliability | shift light |
+| Suspension | +5 % launch grip, less wheel hop, −6 kg | lower stance |
+| Tyres | +6 % grip; wears every race | wider wheels, slicks |
+| Aerodynamics | −5.5 % drag, downforce at speed, +3 kg | splitter, wing, diffuser |
+| Looks | +6 % purse from fans, +3 % sponsor pay | livery, underglow, chrome |
 
-Upgrades cost cash plus **materials** (scrap, alloy, carbon, chips, rubber) earned from wins, the daily and ladder
-milestones. Parts wear with use; below 30 % condition a part can fail mid-race (blown engine, stuck gearbox, tyre
-blowout…), with a chance that comes from the race seed and the car's reliability. Repairs cost cash.
-
-Cosmetics (cash only): driver helmets and suits, paint colors, liveries, wheel styles, and four environments
-(desert strip, harbor mile, alpine run, lantern fair).
+Upgrades cost cash plus materials (scrap, alloy, carbon, chips, rubber). Below 30 % condition a part can fail
+mid-race; repairs cost cash. Cosmetics: helmets, suits, paints, liveries, wheels, four strips.
 
 ## Files
 
 | File | Role | Pure? |
 | --- | --- | --- |
 | `util.ts` | seeded RNG, clamp, formatting | yes |
-| `cars.ts` | the roster: stats, body style, tier, price | yes |
-| `parts.ts` | six parts, levels, costs, wear, stat effects, failures | yes |
-| `sim.ts` | the race: engine, gearing, traction, drag, tree, shifts, drivers, scripts, replays | yes |
-| `economy.ts` | ladder, forecast, wager odds, purses, materials, idle income, the daily loaner | yes |
-| `cosmetics.ts` | helmets, suits, paints, liveries, wheels, environments | yes |
-| `storage.ts` | the local save (validated), cars owned, parts, cosmetics, daily records | DOM |
-| `envs.ts` | the four strips: colors, scenery kinds | yes |
-| `scene3d.ts` | Three.js world per strip, procedural cars with parts and canvas-texture liveries, chase and turntable cameras, thumbnails | DOM/WebGL |
-| `hud.ts` | the 2D overlay: tacho with launch window and shift zone, progress bar, banners, popups; driver portrait | DOM |
-| `sound.ts` | engine note by RPM, shifts, tree, cash, failures (WebAudio, no files) | DOM |
-| `Game.tsx` / `Game.css` | hub, garage, race setup, race, result | React |
-| `Preview.tsx` | catalogue attract mode: two cars racing in 3D, blitted onto the tile | React |
+| `cars.ts` | the roster with stats and a shape recipe per car | yes |
+| `parts.ts` | six parts, levels, costs, multi-stat effects, wear, failures | yes |
+| `sim.ts` | the race for up to five cars: engine, gearing, traction, launch control, shifts, drivers, replays | yes |
+| `economy.ts` | ladder, bots, purses by position, Monte-Carlo odds, materials, sponsor, crate, daily loaner | yes |
+| `cosmetics.ts` / `envs.ts` | cosmetics for sale; the four strips | yes |
+| `storage.ts` | the local save (validated) | DOM |
+| `scene3d.ts` | Three.js: procedural cars (wheel wells, tapered cabin, lamps, parts), worlds, cameras, thumbnails | WebGL |
+| `hud.ts` | the driver portrait | DOM |
+| `RaceScreen.tsx` | the race: 3D view, DOM HUD updated by refs, SHIFT button, rotate nudge | React |
+| `Game.tsx` / `ui.tsx` / `Game.css` | hub, rivals, setup, result, garage, dealer, daily, ladder, help | React |
+| `Preview.tsx` | catalogue attract mode: five cars racing, blitted onto the tile | React |
 
-Tests: `tests/launch-control.test.ts`.
+Tests: `tests/launch-control.test.ts`. Stage aspect is `square`, so phones get a tall stage: the 3D view on top,
+the panels below; landscape puts the panels beside the car (container queries).

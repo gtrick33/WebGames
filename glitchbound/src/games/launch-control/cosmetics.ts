@@ -1,4 +1,4 @@
-/** Cosmetics: bought with earned cash only. Helmets and suits dress the driver; paints, liveries and wheels dress the car; environments are where you race. */
+/** Cosmetics: bought with earned cash only. Helmets and suits dress the driver; paints, liveries and wheels dress the car; strips are where you race. */
 export type CosmeticKind = 'helmet' | 'suit' | 'paint' | 'livery' | 'wheels' | 'env';
 
 export interface Cosmetic {
@@ -6,7 +6,6 @@ export interface Cosmetic {
   kind: CosmeticKind;
   name: string;
   price: number;
-  /** Main color(s): a helmet's shell and visor stripe, a suit's cloth, a paint's hex. */
   colors: string[];
   /** Ladder rank needed before it is for sale (0 = always). */
   rank?: number;
@@ -65,19 +64,19 @@ export const LIVERIES: Cosmetic[] = [
 ];
 
 export const WHEELS: Cosmetic[] = [
-  { id: 'w-steel', kind: 'wheels', name: 'Steelies', price: 0, colors: ['#555'] },
-  { id: 'w-classic', kind: 'wheels', name: 'Classic Five', price: 800, colors: ['#cfcfcf'] },
-  { id: 'w-mesh', kind: 'wheels', name: 'Mesh', price: 2000, colors: ['#e0e0e0'], rank: 6 },
+  { id: 'w-steel', kind: 'wheels', name: 'Steelies', price: 0, colors: ['#8a8a8a'] },
+  { id: 'w-classic', kind: 'wheels', name: 'Classic Five', price: 800, colors: ['#d9d9d9'] },
+  { id: 'w-mesh', kind: 'wheels', name: 'Mesh', price: 2000, colors: ['#e8e8e8'], rank: 6 },
   { id: 'w-star', kind: 'wheels', name: 'Starburst', price: 4000, colors: ['#ffd23f'], rank: 12 },
-  { id: 'w-turbine', kind: 'wheels', name: 'Turbine', price: 9000, colors: ['#1d1238'], rank: 20 },
+  { id: 'w-turbine', kind: 'wheels', name: 'Turbine', price: 9000, colors: ['#2a2a33'], rank: 20 },
   { id: 'w-deep', kind: 'wheels', name: 'Deep Dish Gold', price: 30000, colors: ['#ffd166'], rank: 30 },
 ];
 
 export const ENVS: Cosmetic[] = [
-  { id: 'e-desert', kind: 'env', name: 'Sunset Strip', price: 0, colors: ['#ffb703'] },
-  { id: 'e-harbor', kind: 'env', name: 'Harbor Mile', price: 5000, colors: ['#5ad1ff'], rank: 8 },
-  { id: 'e-alpine', kind: 'env', name: 'Alpine Run', price: 20000, colors: ['#8bd17c'], rank: 16 },
-  { id: 'e-fair', kind: 'env', name: 'Lantern Fair', price: 60000, colors: ['#ff6b9d'], rank: 24 },
+  { id: 'e-bay', kind: 'env', name: 'Palm Bay', price: 0, colors: ['#2f8dff'] },
+  { id: 'e-canyon', kind: 'env', name: 'Red Canyon', price: 5000, colors: ['#e07a3f'], rank: 8 },
+  { id: 'e-alpine', kind: 'env', name: 'Alpine Pass', price: 20000, colors: ['#79c050'], rank: 16 },
+  { id: 'e-city', kind: 'env', name: 'Downtown Mile', price: 60000, colors: ['#7b4dff'], rank: 24 },
 ];
 
 export const COSMETICS: Record<CosmeticKind, Cosmetic[]> = { helmet: HELMETS, suit: SUITS, paint: PAINTS, livery: LIVERIES, wheels: WHEELS, env: ENVS };
@@ -87,4 +86,4 @@ const ALL = new Map<string, Cosmetic>();
 for (const list of Object.values(COSMETICS)) for (const c of list) ALL.set(c.id, c);
 export const getCosmetic = (id: string): Cosmetic | undefined => ALL.get(id);
 /** The free default of each kind. */
-export const DEFAULTS: Record<CosmeticKind, string> = { helmet: 'h-white', suit: 's-navy', paint: 'p-stock', livery: 'l-none', wheels: 'w-steel', env: 'e-desert' };
+export const DEFAULTS: Record<CosmeticKind, string> = { helmet: 'h-white', suit: 's-navy', paint: 'p-stock', livery: 'l-none', wheels: 'w-steel', env: 'e-bay' };

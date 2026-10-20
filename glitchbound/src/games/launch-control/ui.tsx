@@ -1,0 +1,105 @@
+/** Small shared pieces of the Launch Control UI: panels, stickers, stat bars, car pictures, materials. */
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { drawDriver } from './hud';
+import { MATERIAL_INFO, MATERIALS, type Mats } from './parts';
+import { thumbnail, type CarLook } from './scene3d';
+import { fmtCash } from './util';
+
+export function Panel({ title, eyebrow, onBack, right, children, className = '' }: { title?: string; eyebrow?: string; onBack?: () => void; right?: ReactNode; children: ReactNode; className?: string }) {
+  return (
+    <section className={`lc-panel ${className}`}>
+      {(title || onBack) && (
+        <header className="lc-panel-head">
+          {onBack && (
+            <button className="lc-back" onClick={onBack} aria-label="Back">
+              ←
+            </button>
+          )}
+          <div className="lc-panel-titles">
+            {eyebrow && <span className="lc-eyebrow mono">{eyebrow}</span>}
+            {title && <h2 className="lc-h">{title}</h2>}
+          </div>
+          {right && <div className="lc-panel-right">{right}</div>}
+        </header>
+      )}
+      <div className="lc-panel-body">{children}</div>
+    </section>
+  );
+}
+
+export function Sticker({ tone = 'yellow', children, flat }: { tone?: string; children: ReactNode; flat?: boolean }) {
+  return (
+    <span className={`sticker lc-sticker${flat ? ' is-flat' : ''}`} data-tone={tone}>
+      {children}
+    </span>
+  );
+}
+
+export function Cash({ n, sign }: { n: number; sign?: boolean }) {
+  return (
+    <span className={`lc-cash-n mono${sign && n < 0 ? ' is-neg' : ''}`}>
+      <i className="lc-coin" aria-hidden="true" />
+      {sign && n > 0 ? '+' : ''}
+      {n < 0 ? '−' : ''}
+      {fmtCash(Math.abs(n))}
+    </span>
+  );
+}
+
+export function StatBar({ label, value, max, text, tone = 'cyan' }: { label: string; value: number; max: number; text: string; tone?: string }) {
+  const w = Math.max(0, Math.min(100, (value / max) * 100));
+  return (
+    <div className="lc-stat">
+      <span className="lc-stat-label">{label}</span>
+      <span className="lc-stat-bar">
+        <i style={{ width: `${w}%` }} data-tone={tone} />
+      </span>
+      <span className="lc-stat-val mono">{text}</span>
+    </div>
+  );
+}
+
+export function Pips({ level, max }: { level: number; max: number }) {
+  return (
+    <span className="lc-pips" aria-label={`Level ${level} of ${max}`}>
+      {Array.from({ length: max }, (_, i) => (
+        <i key={i} className={i < level ? 'is-on' : ''} />
+      ))}
+    </span>
+  );
+}
+
+export function MatsLine({ mats, have }: { mats: Mats; have?: Record<string, number> }) {
+  const parts = MATERIALS.filter((m) => mats[m]);
+  if (!parts.length) return null;
+  return (
+    <span className="lc-matline">
+      {parts.map((m) => (
+        <span key={m} className={have && have[m]! < mats[m]! ? 'is-short' : ''} title={MATERIAL_INFO[m].name}>
+          {MATERIAL_INFO[m].emoji}
+          {mats[m]}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** A 3D picture of a car. */
+export function CarThumb({ look, className = '', env }: { look: CarLook; className?: string; env?: string }) {
+  const url = useMemo(() => thumbnail(look, env), [look, env]);
+  return url ? <img src={url} width={320} height={180} className={`lc-thumb ${className}`} alt="" /> : <span className={`lc-thumb ${className}`} />;
+}
+
+export function DriverFace({ helmet, suit, size = 64 }: { helmet: [string, string]; suit: string; size?: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const cv = ref.current;
+    const ctx = cv?.getContext('2d');
+    if (!cv || !ctx) return;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    drawDriver(ctx, helmet, suit, cv.width / 2, cv.height * 0.42, cv.height * 0.95);
+  }, [helmet, suit]);
+  return <canvas ref={ref} width={size} height={size} className="lc-face" aria-hidden="true" />;
+}
+
+export const posLabel = (p: number): string => (p === 1 ? '1st' : p === 2 ? '2nd' : p === 3 ? '3rd' : `${p}th`);

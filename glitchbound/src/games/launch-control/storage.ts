@@ -1,6 +1,6 @@
 import { CARS, DEFAULT_CAR } from './cars';
 import { COSMETICS, DEFAULTS, getCosmetic, type CosmeticKind } from './cosmetics';
-import { emptyMats } from './economy';
+import { emptyMats, LADDER_SIZE } from './economy';
 import { freshCondition, MATERIALS, MAX_LEVEL, PARTS, stockLevels, type Condition, type Levels, type Material } from './parts';
 import { clamp } from './util';
 
@@ -33,7 +33,7 @@ export interface Save {
   mats: Record<Material, number>;
   cars: Record<string, OwnedCar>;
   car: string;
-  /** Opponents beaten on the ladder (the next one is LADDER[rank]). */
+  /** Rivals beaten on the ladder (the next one is LADDER[rank]). */
   rank: number;
   helmet: string;
   suit: string;
@@ -41,6 +41,8 @@ export interface Save {
   owned: string[];
   /** When the sponsor last paid, ms. */
   paidAt: number;
+  /** The day the free crate was last opened. */
+  crateDay: string;
   daily: Record<string, DailyRecord>;
   runs: number;
   wins: number;
@@ -53,10 +55,11 @@ export interface Save {
 
 export const newCar = (): OwnedCar => ({ levels: stockLevels(), cond: freshCondition(), paint: DEFAULTS.paint, livery: DEFAULTS.livery, wheels: DEFAULTS.wheels });
 
+/** A new player can afford a couple of level-one parts before the first race. */
 export const emptySave = (): Save => ({
-  cash: 500,
+  cash: 800,
   earned: 0,
-  mats: emptyMats(),
+  mats: { ...emptyMats(), scrap: 6, rubber: 2 },
   cars: { [DEFAULT_CAR]: newCar() },
   car: DEFAULT_CAR,
   rank: 0,
@@ -65,6 +68,7 @@ export const emptySave = (): Save => ({
   env: DEFAULTS.env,
   owned: [],
   paidAt: 0,
+  crateDay: '',
   daily: {},
   runs: 0,
   wins: 0,
@@ -76,6 +80,7 @@ export const emptySave = (): Save => ({
 
 const num = (v: unknown, max = 1e12): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(max, Math.floor(v)) : 0);
 const KNOWN_CARS = new Set(CARS.map((c) => c.id));
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 function cleanCar(v: unknown): OwnedCar {
   const c = newCar();
@@ -104,16 +109,17 @@ export function sanitize(raw: unknown): Save {
   if (o.cars && typeof o.cars === 'object') for (const [id, v] of Object.entries(o.cars)) if (KNOWN_CARS.has(id)) s.cars[id] = cleanCar(v);
   if (!s.cars[DEFAULT_CAR]) s.cars[DEFAULT_CAR] = newCar();
   s.car = typeof o.car === 'string' && s.cars[o.car] ? o.car : DEFAULT_CAR;
-  s.rank = clamp(num(o.rank), 0, 40);
+  s.rank = clamp(num(o.rank), 0, LADDER_SIZE);
   const pick = (kind: CosmeticKind, id: unknown): string => (typeof id === 'string' && getCosmetic(id)?.kind === kind ? id : DEFAULTS[kind]);
   s.helmet = pick('helmet', o.helmet);
   s.suit = pick('suit', o.suit);
   s.env = pick('env', o.env);
   if (Array.isArray(o.owned)) s.owned = [...new Set(o.owned.filter((x): x is string => typeof x === 'string' && !!getCosmetic(x)))];
   s.paidAt = num(o.paidAt, 1e14);
+  s.crateDay = typeof o.crateDay === 'string' && DAY.test(o.crateDay) ? o.crateDay : '';
   if (o.daily && typeof o.daily === 'object')
     for (const [d, v] of Object.entries(o.daily).slice(-60)) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !v || typeof v !== 'object') continue;
+      if (!DAY.test(d) || !v || typeof v !== 'object') continue;
       const e = v as Partial<DailyRecord>;
       s.daily[d] = { best: num(e.best), tries: num(e.tries), et: num(e.et), ...(e.open === true ? { open: true } : {}), ...(e.left === true ? { left: true } : {}) };
     }
