@@ -46,7 +46,7 @@ export const HISTORY: Raw[] = [
   ['In 1923, a jockey won a race at Belmont Park despite what?', 'Being dead|Being blindfolded|Riding backwards|Having no saddle', 'Frank Hayes had a heart attack during the race. His horse crossed first with him still in the saddle.'],
   ['Ships arriving in ancient Alexandria had to hand over what?', 'Any books on board|A tenth of their cargo|Their weapons|A live animal', 'Scribes copied them for the great library, which often kept the originals and returned the copies.'],
   ['The rules of which 4,500-year-old board game were decoded from a clay tablet?', 'The Royal Game of Ur|Chess|Backgammon|Go', 'A British Museum curator worked out the rules from a Babylonian tablet. You can still play it.'],
-  ['Which was the largest connected land empire in history?', 'The Mongol Empire|The Roman Empire|The Ottoman Empire|The Persian Empire', 'At its peak around 1270 it stretched from Korea to Eastern Europe.'],
+  ['In 1979, Robert Williams became the first person known to be killed by what?', 'A factory robot|A self-driving car|A drone|An escalator', 'A robotic arm at a Ford plant in Michigan struck him. His family later won $10 million in damages.'],
   ['Which was founded first?', 'Harvard University|Calculus', 'Harvard was founded in 1636. Newton and Leibniz developed calculus decades later.'],
   ['Which came first?', 'The fax machine|The American Civil War', 'Alexander Bain patented an early fax device in 1843. The Civil War began in 1861.'],
   ['Nintendo and the Eiffel Tower both date from 1889. Which came first?', 'The Eiffel Tower|Nintendo', 'The tower opened in March 1889. Nintendo was founded that September, making playing cards.'],

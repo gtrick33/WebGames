@@ -16,9 +16,9 @@ export const MONEY: Raw[] = [
   ['When Mansa Musa gave away gold on his way through Cairo in 1324, what happened?', 'Gold lost value there for years|Egypt went to war|Cairo built a statue of him|The Nile was renamed', 'He spent and gave away so much that he crashed the local gold price.'],
   ['Which painting sold for a record $450 million in 2017?', 'Salvator Mundi|The Card Players|Interchange|Les Femmes d\'Alger', 'Attributed to Leonardo da Vinci, it set the auction record for any work of art.'],
   ['What was the first item sold on Amazon?', 'A book|A CD|A toy|A camera', 'A book about computer science and AI, in 1995.'],
-  ['Which country\'s currency is the "won"?', 'South Korea|Japan|Vietnam|Thailand', 'North Korea uses a won too, a different one.'],
+  ['Zambia’s currency, the kwacha, is named after a word meaning what?', 'Dawn|Gold|Lion|River', 'It recalls the "new dawn" of independence in 1964.'],
   ['How much did Apple\'s co-founder Ronald Wayne sell his 10% share for in 1976?', '$800|$80,000|$8 million|$8', 'It would be worth hundreds of billions of dollars today.'],
   ['What was the first company to be valued at $1 trillion in the US?', 'Apple|Amazon|Microsoft|Google', 'It passed the mark in August 2018.'],
-  ['Which country was the first to use paper money?', 'China|Italy|Egypt|India', 'Used widely in the Song dynasty, around the 11th century.'],
+  ['In 2006, Kyle MacDonald traded his way from one red paperclip to what?', 'A house|A car|A boat|A guitar', 'It took 14 trades over about a year.'],
   ['What is a "baker\'s dozen"?', '13|12|11|14', 'Bakers added an extra loaf to avoid being fined for short weight.'],
 ];
