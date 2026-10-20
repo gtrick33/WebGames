@@ -4,7 +4,7 @@
  * tests/whatsit.test.ts checks that every thing in a theme gives a different set of answers, so asking all of
  * a theme's questions always singles the secret out.
  */
-import type { ContentLang } from '../../../platform/contentLang';
+import type { BasicLang } from '../../../platform/contentLang';
 
 /** [id, question in English, in Bulgarian, short clue in English, in Bulgarian] */
 export type QuestionRow = [id: string, en: string, bg: string, shortEn: string, shortBg: string];
@@ -21,20 +21,20 @@ export interface ThemeRow {
 
 export interface Question {
   id: string;
-  text: Record<ContentLang, string>;
-  short: Record<ContentLang, string>;
+  text: Record<BasicLang, string>;
+  short: Record<BasicLang, string>;
 }
 export interface Thing {
   /** "<theme>:<thing>", unique across the bank. */
   id: string;
-  name: Record<ContentLang, string>;
-  def: Record<ContentLang, string>;
+  name: Record<BasicLang, string>;
+  def: Record<BasicLang, string>;
   yes: ReadonlySet<string>;
 }
 export interface Theme {
   id: string;
   emoji: string;
-  name: Record<ContentLang, string>;
+  name: Record<BasicLang, string>;
   questions: Question[];
   things: Thing[];
 }

@@ -1,5 +1,5 @@
 /** Whatsit's own text in English and Bulgarian (the things and questions are in the bank). */
-import type { ContentLang } from '../../platform/contentLang';
+import type { BasicLang } from '../../platform/contentLang';
 
 export interface Ui {
   tag: string;
@@ -172,4 +172,4 @@ const UI_BG: Ui = {
   unfinished: 'Недовършен рунд',
 };
 
-export const UI: Record<ContentLang, Ui> = { en: UI_EN, bg: UI_BG };
+export const UI: Record<BasicLang, Ui> = { en: UI_EN, bg: UI_BG };

@@ -58,7 +58,7 @@ export const UI: Ui = {
   less: 'Weniger',
   more: 'Mehr',
   yourGuess: 'Dein Tipp',
-  lockIn: '🔒 Einloggen',
+  lockIn: '🔒 Festlegen',
   typeHere: 'Antwort eintippen…',
   yourAnswer: 'Deine Antwort',
   spelling: 'Die Rechtschreibung muss nicht perfekt sein.',

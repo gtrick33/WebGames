@@ -1,5 +1,5 @@
 /** Quizbelief's own on-screen text in each language it plays in (questions live in the packs). */
-import type { ContentLang } from '../../platform/contentLang';
+import type { BasicLang } from '../../platform/contentLang';
 import type { CatId } from './deck';
 
 export interface Ui {
@@ -242,4 +242,4 @@ const BG: Ui = {
   },
 };
 
-export const UI: Record<ContentLang, Ui> = { en: EN, bg: BG };
+export const UI: Record<BasicLang, Ui> = { en: EN, bg: BG };

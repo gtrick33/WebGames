@@ -1,8 +1,8 @@
 import type { CoachStep } from '../../components/Coach';
-import type { ContentLang } from '../../platform/contentLang';
+import type { BasicLang } from '../../platform/contentLang';
 import { Parcel } from './art';
 
-const TEXT: Record<ContentLang, { title: string; body: string }[]> = {
+const TEXT: Record<BasicLang, { title: string; body: string }[]> = {
   en: [
     {
       title: 'Something is hiding in the box',
@@ -33,7 +33,7 @@ const TEXT: Record<ContentLang, { title: string; body: string }[]> = {
   ],
 };
 
-const EXAMPLE: Record<ContentLang, { theme: string; q: [string, boolean][]; cards: [string, boolean][] }> = {
+const EXAMPLE: Record<BasicLang, { theme: string; q: [string, boolean][]; cards: [string, boolean][] }> = {
   en: {
     theme: '🎻 Musical instruments',
     q: [
@@ -62,13 +62,13 @@ const EXAMPLE: Record<ContentLang, { theme: string; q: [string, boolean][]; card
   },
 };
 
-export const COACH_BUTTONS: Record<ContentLang, { skip: string; next: string; done: string }> = {
+export const COACH_BUTTONS: Record<BasicLang, { skip: string; next: string; done: string }> = {
   en: { skip: 'Skip', next: 'Next', done: 'Let’s play' },
   bg: { skip: 'Пропусни', next: 'Напред', done: 'Да играем' },
 };
 
 /** Whatsit's first-time walkthrough: the box, the questions, the line-up. */
-export function coachSteps(lang: ContentLang): CoachStep[] {
+export function coachSteps(lang: BasicLang): CoachStep[] {
   const t = TEXT[lang];
   const ex = EXAMPLE[lang];
   const yesNo = lang === 'bg' ? ['Да', 'Не'] : ['Yes', 'No'];

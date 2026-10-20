@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { ChallengeSpec } from '../../platform/challenge';
 import { openChallengeScores } from '../../platform/challenge';
-import type { ContentLang } from '../../platform/contentLang';
+import { basicLang, type BasicLang } from '../../platform/contentLang';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, formatCountdown, hashString, msUntilMidnight } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
@@ -95,11 +95,11 @@ interface Play {
   marks: Mark[];
 }
 
-export default function Game({ host, restartKey, challenge, lang = 'en' }: GameModuleProps) {
-  return <Fussbox key={restartKey} host={host} challenge={challenge} lang={lang} />;
+export default function Game({ host, restartKey, challenge, lang }: GameModuleProps) {
+  return <Fussbox key={restartKey} host={host} challenge={challenge} lang={basicLang(lang)} />;
 }
 
-function Fussbox({ host, challenge, lang }: { host: GameHost; challenge?: ChallengeSpec; lang: ContentLang }) {
+function Fussbox({ host, challenge, lang }: { host: GameHost; challenge?: ChallengeSpec; lang: BasicLang }) {
   const u = UI[lang];
   const [today] = useState(() => dayKey());
   const [save, setSave] = useState<Save>(loadSave);
@@ -304,7 +304,7 @@ function Fussbox({ host, challenge, lang }: { host: GameHost; challenge?: Challe
 // ------------------------------------------------------------------ pictures
 
 /** "2 pink striped circles": what screen readers hear, and what hovering a card shows. */
-const cardName = (id: number, lang: ContentLang): string => cardPhrase(cardOf(id), lang);
+const cardName = (id: number, lang: BasicLang): string => cardPhrase(cardOf(id), lang);
 
 // ------------------------------------------------------------------ screens
 
@@ -425,7 +425,7 @@ const PICKERS: { attr: Attr; key: 'count' | 'shape' | 'colour' | 'fill' }[] = [
 
 type Item = { id: number; ex: boolean };
 
-function Lab({ play, u, lang, label, sfx, active, onFeed, onExam, onMenu }: { play: Play; u: Ui; lang: ContentLang; label: string; sfx: () => Sfx; active: boolean; onFeed: (id: number) => 'new' | 'known' | 'full'; onExam: () => void; onMenu: () => void }) {
+function Lab({ play, u, lang, label, sfx, active, onFeed, onExam, onMenu }: { play: Play; u: Ui; lang: BasicLang; label: string; sfx: () => Sfx; active: boolean; onFeed: (id: number) => 'new' | 'known' | 'full'; onExam: () => void; onMenu: () => void }) {
   const [card, setCard] = useState<Card>({ count: 0, shape: 0, colour: 0, fill: 0 });
   const [say, setSay] = useState<{ mood: Mood; text: string }>({ mood: 'idle', text: u.hello });
   const [flash, setFlash] = useState(0);
@@ -552,7 +552,7 @@ const TRAY_GAP = 5;
  * One tray (likes or hates): the newest cards first, as many as fit in one row. When there are more, the
  * last spot becomes "+N", which opens every card. Tapping a card puts it back on the bench.
  */
-function Tray({ title, tone, items, latest, u, lang, onPick, onAll }: { title: string; tone: 'yes' | 'no'; items: Item[]; latest?: number; u: Ui; lang: ContentLang; onPick: (id: number) => void; onAll: () => void }) {
+function Tray({ title, tone, items, latest, u, lang, onPick, onAll }: { title: string; tone: 'yes' | 'no'; items: Item[]; latest?: number; u: Ui; lang: BasicLang; onPick: (id: number) => void; onAll: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState(Infinity);
   useLayoutEffect(() => {
@@ -586,7 +586,7 @@ function Tray({ title, tone, items, latest, u, lang, onPick, onAll }: { title: s
   );
 }
 
-function TrayCard({ item, isNew, u, lang, onPick }: { item: Item; isNew: boolean; u: Ui; lang: ContentLang; onPick: (id: number) => void }) {
+function TrayCard({ item, isNew, u, lang, onPick }: { item: Item; isNew: boolean; u: Ui; lang: BasicLang; onPick: (id: number) => void }) {
   const name = cardName(item.id, lang);
   return (
     <button className={`fbx-tray-card${item.ex ? ' is-example' : ''}${isNew ? ' is-new' : ''}`} onClick={() => onPick(item.id)} aria-label={name} title={item.ex ? `${name} (${u.example})` : name}>
@@ -596,7 +596,7 @@ function TrayCard({ item, isNew, u, lang, onPick }: { item: Item; isNew: boolean
 }
 
 /** Every card so far, liked and hated, big enough to compare: in the order they came, or alike ones together. */
-function AllCards({ liked, hated, latest, u, lang, onPick, onClose }: { liked: Item[]; hated: Item[]; latest?: number; u: Ui; lang: ContentLang; onPick: (id: number) => void; onClose: () => void }) {
+function AllCards({ liked, hated, latest, u, lang, onPick, onClose }: { liked: Item[]; hated: Item[]; latest?: number; u: Ui; lang: BasicLang; onPick: (id: number) => void; onClose: () => void }) {
   const [grouped, setGrouped] = useState(false);
   useEscape(onClose);
   const order = (xs: Item[]): Item[] => (grouped ? [...xs].sort((a, b) => a.id - b.id) : xs);
@@ -639,7 +639,7 @@ function AllCards({ liked, hated, latest, u, lang, onPick, onClose }: { liked: I
   );
 }
 
-function Exam({ play, u, lang, label, onMark, onHandIn, onMenu }: { play: Play; u: Ui; lang: ContentLang; label: string; onMark: (i: number, m: boolean) => void; onHandIn: () => void; onMenu: () => void }) {
+function Exam({ play, u, lang, label, onMark, onHandIn, onMenu }: { play: Play; u: Ui; lang: BasicLang; label: string; onMark: (i: number, m: boolean) => void; onHandIn: () => void; onMenu: () => void }) {
   const left = play.marks.filter((m) => m === null).length;
   return (
     <div className="fbx fbx-exam">
@@ -674,7 +674,7 @@ function Exam({ play, u, lang, label, onMark, onHandIn, onMenu }: { play: Play; 
   );
 }
 
-function Result({ play, u, lang, label, newBest, share, challenge, onAgain, onMenu }: { play: Play; u: Ui; lang: ContentLang; label: string; newBest: boolean; share: string | null; challenge?: ChallengeSpec; onAgain: () => void; onMenu: () => void }) {
+function Result({ play, u, lang, label, newBest, share, challenge, onAgain, onMenu }: { play: Play; u: Ui; lang: BasicLang; label: string; newBest: boolean; share: string | null; challenge?: ChallengeSpec; onAgain: () => void; onMenu: () => void }) {
   const correct = correctOf(play.round, play.marks);
   const score = scoreOf(correct, play.tests.length);
   const line = resultLine(play.round, play.marks);

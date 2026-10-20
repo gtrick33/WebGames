@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { ContentLang } from '../../platform/contentLang';
+import { basicLang, type BasicLang } from '../../platform/contentLang';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { embedHost } from '../../platform/embed';
 import { shareOrCopy } from '../../platform/share';
@@ -40,10 +40,11 @@ function setRoomInUrl(code: string | null): void {
 }
 
 /** The player's language: the game's own text, and the deck a room they open starts with. */
-const Lang = createContext<{ u: Ui; lang: ContentLang }>({ u: UI.en, lang: 'en' });
+const Lang = createContext<{ u: Ui; lang: BasicLang }>({ u: UI.en, lang: 'en' });
 const useUi = (): Ui => useContext(Lang).u;
 
-export default function Game({ host, restartKey, playerName, lang = 'en' }: GameModuleProps) {
+export default function Game({ host, restartKey, playerName, lang: site }: GameModuleProps) {
+  const lang = basicLang(site);
   return (
     <Lang.Provider value={{ u: UI[lang], lang }}>
       <CrassAct key={restartKey} host={host} playerName={playerName} />

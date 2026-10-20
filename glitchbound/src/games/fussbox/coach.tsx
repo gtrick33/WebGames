@@ -1,5 +1,5 @@
 import type { CoachStep } from '../../components/Coach';
-import type { ContentLang } from '../../platform/contentLang';
+import type { BasicLang } from '../../platform/contentLang';
 import { CardArt, Robot, SymbolIcon } from './art';
 import { cardId, type Attr } from './logic';
 import { UI } from './words';
@@ -21,7 +21,7 @@ function Cards({ ids, tones, marks }: { ids: number[]; tones: ('yes' | 'no')[]; 
 }
 
 /** The four traits, each with its three looks, laid out like the card builder's pickers. */
-function Traits({ lang }: { lang: ContentLang }) {
+function Traits({ lang }: { lang: BasicLang }) {
   const u = UI[lang];
   const rows: [Attr, string][] = [
     ['count', u.count],
@@ -49,7 +49,7 @@ function Traits({ lang }: { lang: ContentLang }) {
   );
 }
 
-const TEXT: Record<ContentLang, { title: string; body: string }[]> = {
+const TEXT: Record<BasicLang, { title: string; body: string }[]> = {
   en: [
     {
       title: 'It has a secret rule',
@@ -88,13 +88,13 @@ const TEXT: Record<ContentLang, { title: string; body: string }[]> = {
   ],
 };
 
-export const COACH_BUTTONS: Record<ContentLang, { skip: string; next: string; done: string }> = {
+export const COACH_BUTTONS: Record<BasicLang, { skip: string; next: string; done: string }> = {
   en: { skip: 'Skip', next: 'Next', done: 'Let’s play' },
   bg: { skip: 'Пропусни', next: 'Напред', done: 'Да играем' },
 };
 
 /** Fussbox's first-time walkthrough: the rule, the four traits, the tests, the exam. */
-export function coachSteps(lang: ContentLang): CoachStep[] {
+export function coachSteps(lang: BasicLang): CoachStep[] {
   const t = TEXT[lang];
   return [
     {

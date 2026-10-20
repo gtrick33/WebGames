@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChallengeSpec } from '../../platform/challenge';
 import { openChallengeScores } from '../../platform/challenge';
-import type { ContentLang } from '../../platform/contentLang';
+import { basicLang, type BasicLang } from '../../platform/contentLang';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, formatCountdown, hashString, msUntilMidnight } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
@@ -89,11 +89,11 @@ interface Play {
   pick: string | null;
 }
 
-export default function Game({ host, restartKey, challenge, lang = 'en' }: GameModuleProps) {
-  return <Whatsit key={restartKey} host={host} challenge={challenge} lang={lang} />;
+export default function Game({ host, restartKey, challenge, lang }: GameModuleProps) {
+  return <Whatsit key={restartKey} host={host} challenge={challenge} lang={basicLang(lang)} />;
 }
 
-function Whatsit({ host, challenge, lang }: { host: GameHost; challenge?: ChallengeSpec; lang: ContentLang }) {
+function Whatsit({ host, challenge, lang }: { host: GameHost; challenge?: ChallengeSpec; lang: BasicLang }) {
   const u = UI[lang];
   const [today] = useState(() => dayKey());
   const [save, setSave] = useState<Save>(loadSave);
@@ -310,7 +310,7 @@ function shareText(play: Play, theme: Theme, today: string, u: Ui): string {
 
 // ------------------------------------------------------------------ screens
 
-function Menu({ save, today, u, lang, parked, onResume, onPlay, onMute, onHelp }: { save: Save; today: string; u: Ui; lang: ContentLang; parked: { label: string; questions: number } | null; onResume: () => void; onPlay: (m: Mode, theme?: string) => void; onMute: () => void; onHelp: () => void }) {
+function Menu({ save, today, u, lang, parked, onResume, onPlay, onMute, onHelp }: { save: Save; today: string; u: Ui; lang: BasicLang; parked: { label: string; questions: number } | null; onResume: () => void; onPlay: (m: Mode, theme?: string) => void; onMute: () => void; onHelp: () => void }) {
   const daily = save.daily[today];
   const going = daily?.open && save.progress?.day === today;
   const theme = themeById(dailyRound(today, hashString).theme)!;
@@ -397,7 +397,7 @@ function Hud({ u, label, questions, onMenu }: { u: Ui; label: string; questions:
   );
 }
 
-function Ask({ play, theme, u, lang, label, sfx, onAsk, onReady, onMenu }: { play: Play; theme: Theme; u: Ui; lang: ContentLang; label: string; sfx: () => Sfx; onAsk: (q: string) => boolean | null; onReady: () => void; onMenu: () => void }) {
+function Ask({ play, theme, u, lang, label, sfx, onAsk, onReady, onMenu }: { play: Play; theme: Theme; u: Ui; lang: BasicLang; label: string; sfx: () => Sfx; onAsk: (q: string) => boolean | null; onReady: () => void; onMenu: () => void }) {
   const [say, setSay] = useState<{ mood: Mood; text: string }>({ mood: 'idle', text: u.hello });
   const [flash, setFlash] = useState(0);
   const [confirm, setConfirm] = useState(false);
@@ -460,7 +460,7 @@ function Ask({ play, theme, u, lang, label, sfx, onAsk, onReady, onMenu }: { pla
   );
 }
 
-function Clues({ play, theme, u, lang }: { play: Play; theme: Theme; u: Ui; lang: ContentLang }) {
+function Clues({ play, theme, u, lang }: { play: Play; theme: Theme; u: Ui; lang: BasicLang }) {
   const secret = thingById(play.round.secret)!;
   if (play.asked.length === 0) return <p className="whz-muted">{u.noClues}</p>;
   return (
@@ -478,7 +478,7 @@ function Clues({ play, theme, u, lang }: { play: Play; theme: Theme; u: Ui; lang
   );
 }
 
-function Lineup({ play, theme, u, lang, label, onCross, onPick, onMenu }: { play: Play; theme: Theme; u: Ui; lang: ContentLang; label: string; onCross: (id: string) => void; onPick: (id: string) => void; onMenu: () => void }) {
+function Lineup({ play, theme, u, lang, label, onCross, onPick, onMenu }: { play: Play; theme: Theme; u: Ui; lang: BasicLang; label: string; onCross: (id: string) => void; onPick: (id: string) => void; onMenu: () => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const left = play.round.lineup.filter((id) => !play.crossed.includes(id)).length;
   const card = open ? thingById(open) : undefined;
@@ -534,7 +534,7 @@ function Lineup({ play, theme, u, lang, label, onCross, onPick, onMenu }: { play
   );
 }
 
-function Result({ play, theme, u, lang, label, newBest, share, challenge, onAgain, onMenu }: { play: Play; theme: Theme; u: Ui; lang: ContentLang; label: string; newBest: boolean; share: string | null; challenge?: ChallengeSpec; onAgain: () => void; onMenu: () => void }) {
+function Result({ play, theme, u, lang, label, newBest, share, challenge, onAgain, onMenu }: { play: Play; theme: Theme; u: Ui; lang: BasicLang; label: string; newBest: boolean; share: string | null; challenge?: ChallengeSpec; onAgain: () => void; onMenu: () => void }) {
   const secret = thingById(play.round.secret)!;
   const solved = play.pick === play.round.secret;
   const score = scoreOf(play.asked.length, solved);

@@ -1,5 +1,5 @@
 /** Crass Act's on-screen text in each language it plays in (the cards come from the room's deck). */
-import type { ContentLang } from '../../platform/contentLang';
+import type { BasicLang } from '../../platform/contentLang';
 
 export interface Ui {
   adultsTitle: string;
@@ -246,4 +246,4 @@ const BG: Ui = {
   waitingAnother: 'Чакаме домакина да започне нова игра…',
 };
 
-export const UI: Record<ContentLang, Ui> = { en: EN, bg: BG };
+export const UI: Record<BasicLang, Ui> = { en: EN, bg: BG };

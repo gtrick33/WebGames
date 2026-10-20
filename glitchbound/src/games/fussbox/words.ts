@@ -2,7 +2,7 @@
  * Fussbox's words in English and Bulgarian: the rule explained after the exam, and the game's own
  * text. The cards themselves have no words.
  */
-import type { ContentLang } from '../../platform/contentLang';
+import type { BasicLang } from '../../platform/contentLang';
 import type { Attr, Card, Rule } from './logic';
 
 interface Lang {
@@ -15,7 +15,7 @@ interface Lang {
   odd: string;
 }
 
-const LANG: Record<ContentLang, Lang> = {
+const LANG: Record<BasicLang, Lang> = {
   en: {
     values: {
       count: ['one symbol', 'two symbols', 'three symbols'],
@@ -47,7 +47,7 @@ const LANG: Record<ContentLang, Lang> = {
 };
 
 /** The rule in plain words, e.g. "pink and not striped". */
-export function describe(rule: Rule, lang: ContentLang): string {
+export function describe(rule: Rule, lang: BasicLang): string {
   const L = LANG[lang];
   const go = (x: Rule, top: boolean): string => {
     switch (x.t) {
@@ -70,10 +70,10 @@ export function describe(rule: Rule, lang: ContentLang): string {
 }
 
 /** Names of the attribute values (for screen readers and the pickers). */
-export const valueName = (a: Attr, v: number, lang: ContentLang): string => LANG[lang].values[a][v]!;
+export const valueName = (a: Attr, v: number, lang: BasicLang): string => LANG[lang].values[a][v]!;
 
 /** Card names in plain words, e.g. "2 pink striped circles" / "2 розови кръга на райета". */
-const PHRASE: Record<ContentLang, (c: Card) => string> = {
+const PHRASE: Record<BasicLang, (c: Card) => string> = {
   en: (c) => {
     const n = c.count + 1;
     const shape = ['circle', 'triangle', 'square'][c.shape]!;
@@ -89,7 +89,7 @@ const PHRASE: Record<ContentLang, (c: Card) => string> = {
     return `${n} ${colour} ${fill}${shape}${c.fill === 1 ? ' на райета' : ''}`;
   },
 };
-export const cardPhrase = (c: Card, lang: ContentLang): string => PHRASE[lang](c);
+export const cardPhrase = (c: Card, lang: BasicLang): string => PHRASE[lang](c);
 
 export interface Ui {
   tag: string;
@@ -280,4 +280,4 @@ const UI_BG: Ui = {
   inspect: (yes, name) => `${yes ? 'Харесва' : 'Мрази'}: ${name}.`,
 };
 
-export const UI: Record<ContentLang, Ui> = { en: UI_EN, bg: UI_BG };
+export const UI: Record<BasicLang, Ui> = { en: UI_EN, bg: UI_BG };

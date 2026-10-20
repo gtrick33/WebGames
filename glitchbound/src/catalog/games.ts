@@ -473,7 +473,7 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'wait-what',
     title: 'Quizbelief',
-    contentLangs: ['en', 'bg'],
+    contentLangs: ['en', 'bg', 'de', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ro', 'tr', 'uk'],
     tagline: 'Trivia that sounds made up but isn’t. Weird history, odd animals, words you won’t believe.',
     description:
       'A quiz full of facts that make you say "wait, what?": the army that lost a war to emus, the jockey who won a race after he died, the cheese that comes with live maggots. ' +
