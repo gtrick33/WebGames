@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { HANDS, MIN_PLAYERS, TARGETS, THROW_SECONDS, type Action, type RoomView } from '../../rooms/rpsRoom';
 import { RpsHand } from '../RpsHand';
 import { Dot, RoomFrame, Scores, seatColor, Waiting, type RoomContext } from './RoomFrame';
+import { t } from '../../../i18n';
 
 type Ctx = RoomContext<RoomView, Action>;
 const CHANT = ['Rock…', 'Paper…', 'Scissors…', 'Shoot!'];
@@ -14,7 +15,7 @@ function WaitTimer({ left, waitingFor }: { left: number | null; waitingFor: stri
   return (
     <p className="pt-rps-wait" role="timer">
       ⏱ <b>{time}</b>
-      {waitingFor.length > 0 && <span> · waiting for {waitingFor.join(', ')}</span>}
+      {waitingFor.length > 0 && <span> · {t('waiting for {names}', { names: waitingFor.join(', ') })}</span>}
     </p>
   );
 }
@@ -26,7 +27,7 @@ export function RpsRoomPage({ code, onLeave }: { code: string; onLeave: () => vo
       meta={{ title: 'Rock Paper Scissors', emoji: '✊', invite: 'Rock Paper Scissors on our own phones: everyone throws at once. Last hand standing wins.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
-      progress={(v) => (v.round && v.phase !== 'lobby' ? `Throw ${v.round}` : undefined)}
+      progress={(v) => (v.round && v.phase !== 'lobby' ? t('Throw {n}', { n: v.round }) : undefined)}
       settings={(ctx) => <Settings {...ctx} />}
     >
       {(ctx) => <Game {...ctx} />}
@@ -39,19 +40,19 @@ function Settings({ view, send }: Ctx) {
   const online = view.players.filter((p) => p.online).length;
   return (
     <>
-      <div className="pt-seg" role="radiogroup" aria-label="Mode">
+      <div className="pt-seg" role="radiogroup" aria-label={t('Mode')}>
         <button role="radio" aria-checked={s.mode === 'knockout'} onClick={() => send({ t: 'settings', settings: { mode: 'knockout' } })}>
-          🥊 Last hand standing
-          <small>The losing hand is out</small>
+          {t('🥊 Last hand standing')}
+          <small>{t('The losing hand is out')}</small>
         </button>
         <button role="radio" aria-checked={s.mode === 'points'} onClick={() => send({ t: 'settings', settings: { mode: 'points' } })}>
-          🏁 Points race
-          <small>A point per player you beat</small>
+          {t('🏁 Points race')}
+          <small>{t('A point per player you beat')}</small>
         </button>
       </div>
       {s.mode === 'points' && (
         <>
-          <p className="pt-label">Points to win</p>
+          <p className="pt-label">{t('Points to win')}</p>
           <div className="pt-seg" role="radiogroup">
             {TARGETS.map((t) => (
               <button key={t} role="radio" aria-checked={s.target === t} onClick={() => send({ t: 'settings', settings: { target: t } })}>
@@ -61,9 +62,9 @@ function Settings({ view, send }: Ctx) {
           </div>
         </>
       )}
-      <p className="pt-muted">Everyone throws in secret on their own phone, then all hands are revealed together. No rush: a timer shows how long everyone has waited. After a minute, or if your phone dropped out, a random hand is thrown for you (away for more than 30 seconds counts as leaving).</p>
+      <p className="pt-muted">{t('Everyone throws in secret on their own phone, then all hands are revealed together. No rush: a timer shows how long everyone has waited. After a minute, or if your phone dropped out, a random hand is thrown for you (away for more than 30 seconds counts as leaving).')}</p>
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={online < MIN_PLAYERS} onClick={() => send({ t: 'start' })}>
-        Start
+        {t('Start')}
       </button>
     </>
   );
@@ -95,7 +96,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
       {playing.map((p) => {
         const out = view.settings.mode === 'knockout' && !view.alive.includes(p.n);
         return (
-          <span key={p.n} className={`pt-finger${out ? ' is-out' : ''}${p.you ? ' is-you' : ''}`} title={!p.online && !out ? `${p.name} dropped out: a random hand is thrown for them` : undefined}>
+          <span key={p.n} className={`pt-finger${out ? ' is-out' : ''}${p.you ? ' is-you' : ''}`} title={!p.online && !out ? t('{name} dropped out: a random hand is thrown for them', { name: p.name }) : undefined}>
             <Dot p={p} size={28} />
             {view.settings.mode === 'points' ? `${view.points[String(p.n)] ?? 0}/${view.settings.target}` : out ? '💥' : <RpsHand hand="rock" size={22} bare />}
             {!p.online && !out && ' 💤'}
@@ -109,21 +110,21 @@ function Game({ view, send, left, me, byN }: Ctx) {
     const winners = view.winners.map((n) => byN(n)).filter((p) => !!p);
     return (
       <section className="pt-panel pt-imp-result">
-        <h2>{winners.length === 1 ? (winners[0]!.you ? '🏆 You win!' : `🏆 ${winners[0]!.name} wins!`) : winners.length ? `🏆 ${winners.map((p) => p.name).join(' & ')} share it!` : 'Game over'}</h2>
+        <h2>{winners.length === 1 ? (winners[0]!.you ? t('🏆 You win!') : t('🏆 {name} wins!', { name: winners[0]!.name })) : winners.length ? t('🏆 {names} share it!', { names: winners.map((p) => p.name).join(' & ') }) : t('Game over')}</h2>
         {view.settings.mode === 'points' && strip}
         {view.last && <Hands view={view} byN={byN} />}
         <Scores players={view.players} />
         {view.host ? (
           <div className="pt-row">
             <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'start' })}>
-              Play again
+              {t('Play again')}
             </button>
             <button className="pt-btn" onClick={() => send({ t: 'lobby' })}>
-              Settings
+              {t('Settings')}
             </button>
           </div>
         ) : (
-          <p className="pt-muted pt-center">The host starts the next game.</p>
+          <p className="pt-muted pt-center">{t('The host starts the next game.')}</p>
         )}
       </section>
     );
@@ -135,7 +136,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
         {strip}
         {view.throwing ? (
           <section className="pt-panel pt-center pt-rps">
-            <h2>{view.myThrow ? 'Locked in. Change your mind?' : 'Throw in secret'}</h2>
+            <h2>{view.myThrow ? t('Locked in. Change your mind?') : t('Throw in secret')}</h2>
             <div className="pt-rps-hands">
               {HANDS.map((h) => (
                 <button key={h} className={`pt-rps-hand${view.myThrow === h ? ' is-on' : ''}`} aria-pressed={view.myThrow === h} onClick={() => send({ t: 'throw', hand: h })}>
@@ -147,11 +148,11 @@ function Game({ view, send, left, me, byN }: Ctx) {
           </section>
         ) : (
           <section className="pt-panel pt-center">
-            <p>{view.playing.includes(me.n) ? '💥 You’re out. Watch who’s left!' : 'You joined mid-game: you’re in from the next one.'}</p>
+            <p>{view.playing.includes(me.n) ? t('💥 You’re out. Watch who’s left!') : t('You joined mid-game: you’re in from the next one.')}</p>
             <WaitTimer left={left} waitingFor={throwers.filter((p) => !p.done).map((p) => p.name)} />
           </section>
         )}
-        <Waiting players={throwers} label="Thrown" />
+        <Waiting players={throwers} label={t('Thrown')} />
       </>
     );
   }
@@ -172,12 +173,14 @@ function Game({ view, send, left, me, byN }: Ctx) {
               <Hands view={view} byN={byN} />
               <h2>
                 {last.draw
-                  ? '🤝 Draw! Throw again'
+                  ? t('🤝 Draw! Throw again')
                   : view.settings.mode === 'knockout'
-                    ? `💥 Out: ${last.out.map((n) => (byN(n)?.you ? 'you' : byN(n)?.name)).join(', ')}`
-                    : `${Object.values(last.gained).some((g) => g > 0) ? 'Points!' : 'No points this time'}`}
+                    ? t('💥 Out: {names}', { names: last.out.map((n) => (byN(n)?.you ? t('you') : byN(n)?.name)).join(', ') })
+                    : Object.values(last.gained).some((g) => g > 0)
+                      ? t('Points!')
+                      : t('No points this time')}
               </h2>
-              {view.auto.length > 0 && <p className="pt-muted">🎲 Took over a minute (or 💤 dropped out): a random hand was thrown</p>}
+              {view.auto.length > 0 && <p className="pt-muted">{t('🎲 Took over a minute (or 💤 dropped out): a random hand was thrown')}</p>}
             </>
           )
         )}
@@ -200,7 +203,7 @@ function Hands({ view, byN }: { view: RoomView; byN: Ctx['byN'] }) {
               <RpsHand hand={h} size={56} />
             </b>
             <small>
-              {p.you ? 'You' : p.name}
+              {p.you ? t('You') : p.name}
               {view.auto.includes(p.n) ? ' 🎲' : ''}
               {last.gained[n] ? ` +${last.gained[n]}` : ''}
             </small>

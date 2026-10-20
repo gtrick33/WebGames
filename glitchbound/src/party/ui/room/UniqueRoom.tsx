@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { tNodes } from '../shared';
 import { CLOCKS, MIN_PLAYERS, type Action, type Clue, type RoomView } from '../../rooms/uniqueRoom';
 import { rating } from '../../unique';
 import { OUT_TEXT } from '../Unique';
 import { Clock, Dot, RoomFrame, Scores, Waiting, type RoomContext } from './RoomFrame';
+import { t } from '../../../i18n';
 
 type Ctx = RoomContext<RoomView, Action>;
 
@@ -13,7 +15,7 @@ export function UniqueRoomPage({ code, onLeave }: { code: string; onLeave: () =>
       meta={{ title: 'One of a Kind', emoji: '🦄', invite: 'Join my One of a Kind room: one-word clues on our own phones, and matching clues cancel out.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
-      progress={(v) => (v.phase === 'lobby' ? undefined : `🃏 ${v.cardsLeft} left · ✅ ${v.score}`)}
+      progress={(v) => (v.phase === 'lobby' ? undefined : t('🃏 {n} left · ✅ {score}', { n: v.cardsLeft, score: v.score }))}
       settings={(ctx) => <Settings {...ctx} />}
     >
       {(ctx) => <Game {...ctx} />}
@@ -25,12 +27,15 @@ function Settings({ view, send }: Ctx) {
   const online = view.players.filter((p) => p.online).length;
   return (
     <>
-      <h3>How it works</h3>
+      <h3>{t('How it works')}</h3>
       <p className="pt-muted">
-        You all play together against a deck of {view.deck} cards. Each round one player guesses, and everyone else secretly types <b>one word</b> on their own phone. <b>Matching clues cancel out</b> before the guesser sees them. Right: +1. Pass: lose the
-        card. Wrong: lose the card and the next one too.
+        {tNodes(
+          'You all play together against a deck of {n} cards. Each round one player guesses, and everyone else secretly types {word} on their own phone. {cancel} before the guesser sees them. Right: +1. Pass: lose the card. Wrong: lose the card and the next one too.',
+          { n: view.deck },
+          { word: <b>{t('one word')}</b>, cancel: <b>{t('Matching clues cancel out')}</b> },
+        )}
       </p>
-      <p className="pt-label">Time to write a clue</p>
+      <p className="pt-label">{t('Time to write a clue')}</p>
       <div className="pt-seg" role="radiogroup">
         {CLOCKS.map((c) => (
           <button key={c} role="radio" aria-checked={view.settings.clock === c} onClick={() => send({ t: 'settings', settings: { clock: c } })}>
@@ -39,7 +44,7 @@ function Settings({ view, send }: Ctx) {
         ))}
       </div>
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={online < MIN_PLAYERS} onClick={() => send({ t: 'start' })}>
-        Start
+        {t('Start')}
       </button>
     </>
   );
@@ -70,7 +75,7 @@ function Game(ctx: Ctx) {
     return (
       <section className="pt-panel pt-imp-result">
         <h2>
-          {view.score} of {view.deck}: {rating(view.score)}
+          {t('{n} of {total}', { n: view.score, total: view.deck })}: {t(rating(view.score))}
         </h2>
         <ul className="pt-ok-history">
           {view.history.map((h, i) => (
@@ -83,14 +88,14 @@ function Game(ctx: Ctx) {
         {view.host ? (
           <div className="pt-row">
             <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'start' })}>
-              Play again
+              {t('Play again')}
             </button>
             <button className="pt-btn" onClick={() => send({ t: 'lobby' })}>
-              Settings
+              {t('Settings')}
             </button>
           </div>
         ) : (
-          <p className="pt-muted pt-center">The host starts the next game.</p>
+          <p className="pt-muted pt-center">{t('The host starts the next game.')}</p>
         )}
       </section>
     );
@@ -98,7 +103,7 @@ function Game(ctx: Ctx) {
 
   const who = guesser && (
     <p className="pt-dl-reader">
-      <Dot p={guesser} size={30} /> {iGuess ? 'You’re guessing' : `${guesser.name} is guessing`}
+      <Dot p={guesser} size={30} /> {iGuess ? t('You’re guessing') : t('{name} is guessing', { name: guesser.name })}
     </p>
   );
 
@@ -108,17 +113,17 @@ function Game(ctx: Ctx) {
         {who}
         {iGuess ? (
           <section className="pt-panel pt-center">
-            <h2>Your friends are writing clues</h2>
-            <p className="pt-muted">Matching clues cancel out, so you only see the ones nobody else thought of.</p>
+            <h2>{t('Your friends are writing clues')}</h2>
+            <p className="pt-muted">{t('Matching clues cancel out, so you only see the ones nobody else thought of.')}</p>
           </section>
         ) : (
           <WriteClue key={`${view.card}:${view.word}`} {...ctx} />
         )}
         <Clock left={left} />
-        <Waiting players={givers} label="Clues in" />
+        <Waiting players={givers} label={t('Clues in')} />
         {view.host && (
           <button className="pt-btn pt-btn-sm pt-btn-ghost" onClick={() => send({ t: 'next' })}>
-            Check the clues now
+            {t('Check the clues now')}
           </button>
         )}
       </>
@@ -133,13 +138,13 @@ function Game(ctx: Ctx) {
           <MakeGuess key={view.card} {...ctx} />
         ) : (
           <section className="pt-panel">
-            <p className="pt-kicker">The word is</p>
+            <p className="pt-kicker">{t('The word is')}</p>
             <p className="pt-ok-word">{view.word}</p>
             {view.clues && <ClueList clues={view.clues} byN={byN} />}
-            <p className="pt-muted">{view.clues?.every((c) => c.out) ? `Every clue cancelled out! ${guesser?.name ?? 'The guesser'} gets nothing to go on.` : `Crossed-out clues are hidden from ${guesser?.name ?? 'the guesser'}. No hints out loud!`}</p>
+            <p className="pt-muted">{view.clues?.every((c) => c.out) ? t('Every clue cancelled out! {name} gets nothing to go on.', { name: guesser?.name ?? t('The guesser') }) : t('Crossed-out clues are hidden from {name}. No hints out loud!', { name: guesser?.name ?? t('the guesser') })}</p>
             {view.host && guesser && !guesser.online && (
               <button className="pt-btn pt-btn-sm pt-btn-ghost" onClick={() => send({ t: 'next' })}>
-                {guesser.name} has gone: skip this card
+                {t('{name} has gone: skip this card', { name: guesser.name })}
               </button>
             )}
           </section>
@@ -152,20 +157,24 @@ function Game(ctx: Ctx) {
   // verdict
   return (
     <section className="pt-panel pt-ok-result">
-      <p className="pt-kicker">The word was</p>
+      <p className="pt-kicker">{t('The word was')}</p>
       <p className="pt-ok-word">{view.word}</p>
       <p className="pt-ok-verdict">
         {view.outcome === 'right'
-          ? `✅ ${iGuess ? 'You' : guesser?.name} got it!`
+          ? iGuess
+            ? t('✅ You got it!')
+            : t('✅ {name} got it!', { name: guesser?.name ?? '' })
           : view.outcome === 'pass'
-            ? `⏭️ ${iGuess ? 'You' : (guesser?.name ?? 'The guesser')} passed`
-            : `❌ “${view.guess}” was wrong: two cards gone`}
+            ? iGuess
+              ? t('⏭️ You passed')
+              : t('⏭️ {name} passed', { name: guesser?.name ?? t('The guesser') })
+            : t('❌ “{guess}” was wrong: two cards gone', { guess: view.guess ?? '' })}
       </p>
       {view.clues && <ClueList clues={view.clues} byN={byN} />}
       <Clock left={left} />
       {view.host && (
         <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'next' })}>
-          {view.cardsLeft <= 0 ? 'See the score' : `Next card (${view.cardsLeft} left)`}
+          {view.cardsLeft <= 0 ? t('See the score') : t('Next card ({n} left)', { n: view.cardsLeft })}
         </button>
       )}
     </section>
@@ -178,9 +187,9 @@ function WriteClue({ view, send, byN }: Ctx) {
   if (!view.playing.includes(view.you))
     return (
       <section className="pt-panel pt-center">
-        <p className="pt-kicker">The word is</p>
+        <p className="pt-kicker">{t('The word is')}</p>
         <p className="pt-ok-word">{view.word}</p>
-        <p className="pt-muted">You joined mid-game: you write clues from the next card.</p>
+        <p className="pt-muted">{t('You joined mid-game: you write clues from the next card.')}</p>
       </section>
     );
   const submit = (): void => {
@@ -190,15 +199,15 @@ function WriteClue({ view, send, byN }: Ctx) {
   };
   return (
     <section className="pt-panel">
-      <p className="pt-kicker">The word for {guesser?.name ?? 'the guesser'} is</p>
+      <p className="pt-kicker">{t('The word for {name} is', { name: guesser?.name ?? t('the guesser') })}</p>
       <p className="pt-ok-word">{view.word}</p>
       {view.myClue ? (
         <p className="pt-ok-verdict">
-          Your clue: <b>{view.myClue}</b> ✓
+          {t('Your clue:')}{' '}<b>{view.myClue}</b> ✓
         </p>
       ) : null}
       <label className="pt-ok-label" htmlFor="ok-room-clue">
-        {view.myClue ? 'Change your mind?' : 'Your one-word clue'}
+        {view.myClue ? t('Change your mind?') : t('Your one-word clue')}
       </label>
       <input
         id="ok-room-clue"
@@ -211,15 +220,15 @@ function WriteClue({ view, send, byN }: Ctx) {
         enterKeyHint="send"
         onChange={(e) => setDraft(e.target.value.replace(/\s/g, ''))}
         onKeyDown={(e) => e.key === 'Enter' && submit()}
-        placeholder="One word"
+        placeholder={t('One word')}
       />
-      <p className="pt-muted">Matching clues cancel each other out, so be helpful and a little original. Keep it secret!</p>
+      <p className="pt-muted">{t('Matching clues cancel each other out, so be helpful and a little original. Keep it secret!')}</p>
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={!draft.trim()} onClick={submit}>
-        {view.myClue ? 'Swap my clue' : 'Lock in my clue'}
+        {view.myClue ? t('Swap my clue') : t('Lock in my clue')}
       </button>
       {view.canSwap && (
         <button className="pt-btn pt-btn-ghost" onClick={() => send({ t: 'swap' })}>
-          Don’t know this word? Another one
+          {t('Don’t know this word? Another one')}
         </button>
       )}
     </section>
@@ -236,7 +245,7 @@ function MakeGuess({ view, send }: Ctx) {
   };
   return (
     <section className="pt-panel">
-      <p className="pt-kicker">Your clues:</p>
+      <p className="pt-kicker">{t('Your clues:')}</p>
       {shown.length ? (
         <ul className="pt-ok-shown">
           {shown.map((c) => (
@@ -244,13 +253,13 @@ function MakeGuess({ view, send }: Ctx) {
           ))}
         </ul>
       ) : (
-        <p className="pt-muted">No clues survived. Take a wild guess, or pass.</p>
+        <p className="pt-muted">{t('No clues survived. Take a wild guess, or pass.')}</p>
       )}
       {(twins > 0 || other > 0) && (
         <p className="pt-muted">
-          {twins > 0 && `${twins} matching clue${twins === 1 ? '' : 's'} cancelled out.`}
+          {twins > 0 && (twins === 1 ? t('1 matching clue cancelled out.') : t('{n} matching clues cancelled out.', { n: twins }))}
           {twins > 0 && other > 0 && ' '}
-          {other > 0 && `${other} ${other === 1 ? 'was' : 'were'} removed (empty, or too close to the word).`}
+          {other > 0 && (other === 1 ? t('1 was removed (empty, or too close to the word).') : t('{n} were removed (empty, or too close to the word).', { n: other }))}
         </p>
       )}
       <input
@@ -264,14 +273,14 @@ function MakeGuess({ view, send }: Ctx) {
         enterKeyHint="go"
         onChange={(e) => setGuess(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && submit()}
-        placeholder="Your guess"
-        aria-label="Your guess"
+        placeholder={t('Your guess')}
+        aria-label={t('Your guess')}
       />
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={!guess.trim()} onClick={submit}>
-        Guess
+        {t('Guess')}
       </button>
       <button className="pt-btn pt-btn-ghost" onClick={() => send({ t: 'pass' })}>
-        Pass (lose only this card)
+        {t('Pass (lose only this card)')}
       </button>
     </section>
   );

@@ -4,7 +4,8 @@ import { dialPoints, dialVerdict, randomTarget, splitTeams, stealRight, ZONES } 
 import { draw, freshRng, teamTurns } from '../engine';
 import type { PartySession } from '../session';
 import type { Player } from '../types';
-import { Avatar, ModeBar, Name, PassPhone, Results, useSavedGame } from './shared';
+import { Avatar, ModeBar, Name, PassPhone, Results, useSavedGame, tNodes } from './shared';
+import { t } from '../../i18n';
 
 type Stage = 'setup' | 'pass' | 'peek' | 'guess' | 'steal' | 'reveal' | 'done';
 
@@ -86,39 +87,38 @@ export function DialMode({ session, update, onExit }: { session: PartySession; u
   if (stage === 'setup') {
     return (
       <div className="pt-screen">
-        <ModeBar title="Dial It In" onExit={onExit} />
+        <ModeBar title={t('Dial It In')} onExit={onExit} />
         <div className="pt-panel">
-          <h3>How it works</h3>
+          <h3>{t('How it works')}</h3>
           <p className="pt-muted">
-            Each round one player is the <b>reader</b>. Only they see where the secret spot is on a scale, like <i>Cold ↔ Hot</i>. They give <b>one clue</b> out loud (“a cup of tea”), and everyone else slides the needle to where they think the
-            spot is. Spot on scores 4, close scores 3 or 2.
+            {tNodes('Each round one player is the {reader}. Only they see where the secret spot is on a scale, like {scale}. They give {clue} out loud (“a cup of tea”), and everyone else slides the needle to where they think the spot is. Spot on scores 4, close scores 3 or 2.', {}, { reader: <b>{t('reader')}</b>, scale: <i>{t('Cold ↔ Hot')}</i>, clue: <b>{t('one clue')}</b> })}
           </p>
           {players.length >= 4 && (
             <label className="pt-switch">
               <input type="checkbox" checked={teams} onChange={(e) => set({ teams: e.target.checked })} />
               <span>
-                <b>Two teams</b> · readers take turns across teams, and the other team can steal a point by calling “left” or “right”
+                <b>{t('Two teams')}</b>{' '}{t('· readers take turns across teams, and the other team can steal a point by calling “left” or “right”')}
               </span>
             </label>
           )}
-          <div className="pt-picker" role="group" aria-label="Rounds">
+          <div className="pt-picker" role="group" aria-label={t('Rounds')}>
             {[1, 2, 3].map((k) => (
               <button key={k} className={`pt-chip${laps === k ? ' is-on' : ''}`} aria-pressed={laps === k} onClick={() => set({ laps: k })}>
-                {k === 1 ? 'Everyone reads once' : `Everyone reads ${k}×`} ({readersFor(k).length} rounds)
+                {k === 1 ? t('Everyone reads once') : t('Everyone reads {n}×', { n: k })} ({t('{n} rounds', { n: readersFor(k).length })})
               </button>
             ))}
           </div>
           {teams && players.length >= 4 && (
             <div className="pt-dl-teams">
-              {sides.map((side, t) => (
-                <p key={t}>
-                  <b>{t === 0 ? '🔵 Team Blue' : '🟠 Team Orange'}:</b> {side.map((p) => p.name).join(', ')}
+              {sides.map((side, i) => (
+                <p key={i}>
+                  <b>{i === 0 ? t('🔵 Team Blue') : t('🟠 Team Orange')}:</b> {side.map((p) => p.name).join(', ')}
                 </p>
               ))}
             </div>
           )}
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={start}>
-            Start
+            {t('Start')}
           </button>
         </div>
       </div>
@@ -131,7 +131,7 @@ export function DialMode({ session, update, onExit }: { session: PartySession; u
     const sum = Object.values(scores).reduce((a, b) => a + b, 0);
     return (
       <Results
-        title={teams ? (team[0] === team[1] ? 'A perfect tie!' : `Team ${team[0] > team[1] ? 'Blue' : 'Orange'} wins!`) : `The table scored ${sum} of ${total * 4}`}
+        title={teams ? (team[0] === team[1] ? t('A perfect tie!') : team[0] > team[1] ? t('Team Blue wins!') : t('Team Orange wins!')) : t('The table scored {n} of {total}', { n: sum, total: total * 4 })}
         players={players}
         scores={teamScores}
         awards={best && (scores[best.id] ?? 0) > 0 ? [{ title: 'Mind Reader', playerId: best.id, why: `their clues earned ${scores[best.id]} points` }] : []}
@@ -148,8 +148,8 @@ export function DialMode({ session, update, onExit }: { session: PartySession; u
   if (stage === 'pass') {
     return (
       <div className="pt-screen">
-        <ModeBar title="Dial It In" progress={progress} onExit={onExit} />
-        <PassPhone player={reader} note="You’re the reader. Only you look at the next screen." onReady={() => setStage('peek')} />
+        <ModeBar title={t('Dial It In')} progress={progress} onExit={onExit} />
+        <PassPhone player={reader} note={t('You’re the reader. Only you look at the next screen.')} onReady={() => setStage('peek')} />
       </div>
     );
   }
@@ -157,47 +157,47 @@ export function DialMode({ session, update, onExit }: { session: PartySession; u
   const pts = dialPoints(round.target, round.guess);
   return (
     <div className="pt-screen">
-      <ModeBar title="Dial It In" progress={progress} onExit={onExit} />
+      <ModeBar title={t('Dial It In')} progress={progress} onExit={onExit} />
       {teams && (
         <p className="pt-dl-score">
           🔵 {team[0]} · 🟠 {team[1]}
         </p>
       )}
       <div className="pt-dl-reader">
-        <Avatar player={reader} size={30} /> <Name player={reader} /> {stage === 'peek' ? 'is the reader' : 'is reading'}
+        <Avatar player={reader} size={30} /> {tNodes(stage === 'peek' ? '{who} is the reader' : '{who} is reading', {}, { who: <Name player={reader} /> })}
       </div>
       <Tuner scale={round.scale} target={round.target} guess={round.guess} showTarget={stage === 'peek' || stage === 'reveal'} showNeedle={stage !== 'peek'} movable={stage === 'guess'} onMove={setNeedle} />
       {stage === 'peek' && (
         <div className="pt-actions">
           <p className="pt-muted">
-            Think of <b>one clue</b> for this spot between <b>{round.scale[0]}</b> and <b>{round.scale[1]}</b>. Got it? Hide the spot, then say your clue out loud.
+            {tNodes('Think of {clue} for this spot between {a} and {b}. Got it? Hide the spot, then say your clue out loud.', {}, { clue: <b>{t('one clue')}</b>, a: <b>{round.scale[0]}</b>, b: <b>{round.scale[1]}</b> })}
           </p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('guess')}>
-            Hide it · I’ve got my clue
+            {t('Hide it · I’ve got my clue')}
           </button>
         </div>
       )}
       {stage === 'guess' && (
         <div className="pt-actions">
           <p className="pt-muted">
-            {reader.name}, say your clue! {others.length ? `${others.map((p) => p.name).join(', ')}: ` : ''}drag the needle to where you think the spot is.
+            {t('{name}, say your clue!', { name: reader.name })} {others.length ? `${others.map((p) => p.name).join(', ')}: ` : ''}{t('drag the needle to where you think the spot is.')}
           </p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={lock}>
-            Lock in the needle
+            {t('Lock in the needle')}
           </button>
         </div>
       )}
       {stage === 'steal' && (
         <div className="pt-actions">
           <p className="pt-muted">
-            {rivals.map((p) => p.name).join(', ')}: is the secret spot to the <b>left</b> or the <b>right</b> of the needle? Right call: 1 point.
+            {rivals.map((p) => p.name).join(', ')}: {tNodes('is the secret spot to the {left} or the {right} of the needle? Right call: 1 point.', {}, { left: <b>{t('left')}</b>, right: <b>{t('right')}</b> })}
           </p>
           <div className="pt-row">
             <button className="pt-btn pt-btn-big" onClick={() => reveal('left')}>
-              ◀ Left
+              {t('◀ Left')}
             </button>
             <button className="pt-btn pt-btn-big" onClick={() => reveal('right')}>
-              Right ▶
+              {t('Right ▶')}
             </button>
           </div>
         </div>
@@ -206,10 +206,10 @@ export function DialMode({ session, update, onExit }: { session: PartySession; u
         <div className="pt-actions">
           <p className="pt-dl-verdict">
             {dialVerdict(pts)} <b>+{pts}</b>
-            {teams && round.call && (stealRight(round.target, round.guess, round.call) ? ' · steal! +1' : ' · no steal')}
+            {teams && round.call && (stealRight(round.target, round.guess, round.call) ? t(' · steal! +1') : t(' · no steal'))}
           </p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={next} autoFocus>
-            {n + 1 >= total ? 'See the results' : 'Next round'}
+            {n + 1 >= total ? t('See the results') : t('Next round')}
           </button>
         </div>
       )}

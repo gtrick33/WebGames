@@ -24,6 +24,7 @@ import { partySettingsFor } from '../../catalog/settings';
 import { useLiveCatalog } from '../../platform/liveCatalog';
 import { DEFAULT_FEATURED, PARTY_GAMES } from '../catalog';
 import './Party.css';
+import { t, useT } from '../../i18n';
 
 /** The party line-up as players see it: the admins' Party settings applied (hidden, featured, texts, rooms). */
 function usePartyLineup() {
@@ -65,6 +66,8 @@ function useSession(): [PartySession, (fn: (s: PartySession) => PartySession) =>
 const ROOM_CODE = /^[A-HJKMNP-Z]{5}$/;
 
 export function PartyPage() {
+  // Re-render the party screens when the language changes (they use the plain t()).
+  useT();
   usePageMeta({ title: 'Party Mode', path: '/party' });
   const { search } = useLocation();
   const params = new URLSearchParams(search);
@@ -82,7 +85,7 @@ export function PartyPage() {
   }, [mode, room]);
 
   // Empty name slots are just unused seats: they never block a game and are dropped when one starts.
-  const problem = playersProblem(session.players.filter((p) => p.name.trim()));
+  const problem = playersProblem(session.players.filter((p) => p.name.trim()), t);
   const exit = (): void => {
     update((s) => ({ ...s, active: null }));
     setMode(null);
@@ -202,17 +205,17 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
   return (
     <div className="pt-lobby">
       <header className="pt-hero">
-        <p className="pt-kicker">GlitchBound</p>
+        <p className="pt-kicker">{t('GlitchBound')}</p>
         <h1 className="pt-title">
-          Party <span>Mode</span>
+          <PartyTitle text={t('Party Mode')} />
         </h1>
-        <p className="pt-sub">Friends over, or on a call? {modes.length + rooms.filter((r) => !r.onePhone).length} games, no sign-up.</p>
-        <div className="pt-where" role="tablist" aria-label="How you play">
+        <p className="pt-sub">{t('Friends over, or on a call? {n} games, no sign-up.', { n: modes.length + rooms.filter((r) => !r.onePhone).length })}</p>
+        <div className="pt-where" role="tablist" aria-label={t('How you play')}>
           <button role="tab" aria-selected={where === 'one'} className={where === 'one' ? 'is-on' : ''} onClick={() => setWhere('one')}>
-            📱 Pass one phone
+            {t('📱 Pass one phone')}
           </button>
           <button role="tab" aria-selected={where === 'online'} className={where === 'online' ? 'is-on' : ''} onClick={() => setWhere('online')}>
-            🌐 Everyone’s phone
+            {t('🌐 Everyone’s phone')}
           </button>
         </div>
       </header>
@@ -228,8 +231,8 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
       {where === 'online' && (
         <>
           <section className="pt-panel pt-online">
-            <h2>Play on everyone’s own phone</h2>
-            <p className="pt-muted">Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.</p>
+            <h2>{t('Play on everyone’s own phone')}</h2>
+            <p className="pt-muted">{t('Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.')}</p>
             <div className="pt-online-games">
               {rooms.map((r) => {
                 // Crass Act keeps its arcade art and adults-only label; its room opens on its own page (name and age check first).
@@ -246,15 +249,15 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
                     )}
                     <div>
                       <b>
-                        {r.title}
+                        {t(r.title)}
                         {sticker && <em className="pt-mode-sticker">{sticker}</em>}
-                        {r.adult && <AdultLabel />}
+                        {r.adult && <AdultLabel text={t('Adults only')} />}
                       </b>
                       <span>
-                        {r.roomPlayers} players · {r.roomBlurb}
+                        {t('{n} players', { n: r.roomPlayers ?? '' })} · {t(r.roomBlurb ?? '')}
                       </span>
                       <button className="pt-btn pt-btn-go pt-btn-sm" onClick={() => openRoom(r.room!)}>
-                        Open a room
+                        {t('Open a room')}
                       </button>
                     </div>
                   </div>
@@ -273,14 +276,14 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
               else setJoinMsg('Check the code: five letters, like KQTRA (codes never use I, L or O).');
             }}
           >
-            <h2>Got a code?</h2>
+            <h2>{t('Got a code?')}</h2>
             <div className="pt-add">
               <input className="pt-input pt-code" value={joinCode} onChange={(e) => {
                   setJoinCode(e.target.value.toUpperCase());
                   setJoinMsg('');
-                }} placeholder="ABCDE" maxLength={5} aria-label="Room code" autoCapitalize="characters" />
+                }} placeholder={t('ABCDE')} maxLength={5} aria-label={t('Room code')} autoCapitalize="characters" />
               <button className="pt-btn pt-btn-go" disabled={joinCode.trim().length !== 5}>
-                Join
+                {t('Join')}
               </button>
             </div>
             {joinMsg && (
@@ -297,11 +300,11 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
       <section ref={whoRef} key={nudge} className={`pt-panel pt-who${problem && nudge ? ' is-nudged' : ''}`} aria-labelledby="pt-players">
         <div className="pt-panel-head">
           <h2 id="pt-players">
-            <span className="pt-step">1</span> Who’s playing?
+            <span className="pt-step">1</span>{' '}{t('Who’s playing?')}
           </h2>
           {named.length > 1 && (
             <button className="pt-link" onClick={shuffle}>
-              🔀 Shuffle order
+              {t('🔀 Shuffle order')}
             </button>
           )}
         </div>
@@ -311,7 +314,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
               <li key={p.id} className="pt-name-chip" style={{ ['--pc' as string]: p.color }}>
                 <Avatar player={p} size={26} />
                 <span>{p.name}</span>
-                <button onClick={() => remove(p.id)} aria-label={`Remove ${p.name}`}>
+                <button onClick={() => remove(p.id)} aria-label={t('Remove {name}', { name: p.name })}>
                   ✕
                 </button>
               </li>
@@ -329,14 +332,14 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
             className="pt-input"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder={named.length >= MAX_PLAYERS ? `Full: ${MAX_PLAYERS} players is the most` : named.length ? 'Add another name' : 'Type a name, then Enter'}
+            placeholder={named.length >= MAX_PLAYERS ? t('Full: {n} players is the most', { n: MAX_PLAYERS }) : named.length ? t('Add another name') : t('Type a name, then Enter')}
             maxLength={18}
-            aria-label="New player name"
+            aria-label={t('New player name')}
             enterKeyHint="done"
             disabled={named.length >= MAX_PLAYERS}
           />
           <button className="pt-btn" disabled={!newName.trim() || named.length >= MAX_PLAYERS}>
-            + Add
+            {t('+ Add')}
           </button>
         </form>
         {problem && <p className="pt-warn">{problem}</p>}
@@ -344,10 +347,10 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
 
       <div className="pt-h2-row">
         <h2 className="pt-h2">
-          <span className="pt-step">2</span> Pick a game
+          <span className="pt-step">2</span>{' '}{t('Pick a game')}
         </h2>
         <button className="pt-btn pt-btn-sm pt-surprise" onClick={surprise}>
-          🎲 Pick for us
+          {t('🎲 Pick for us')}
         </button>
       </div>
       <div className="pt-modes pt-modes-lobby">
@@ -362,13 +365,13 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
             )}
             <span className="pt-mode-body">
               <b>
-                {m.title}
-                {m.label && <em className="pt-mode-sticker">{m.label}</em>}
+                {t(m.title)}
+                {m.label && <em className="pt-mode-sticker">{t(m.label)}</em>}
               </b>
-              <span>{m.blurb}</span>
+              <span>{t(m.blurb)}</span>
               <small>
                 👥 {m.players} · ⏱ {m.time}
-                {m.room ? ' · 🌐 own phones too' : ''}
+                {m.room ? t(' · 🌐 own phones too') : ''}
               </small>
             </span>
           </button>
@@ -377,22 +380,22 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
 
       <div className="pt-extras">
         <button className="pt-extra" onClick={() => setSheet('rules')}>
-          <b>⚙️ House rules</b>
+          <b>{t('⚙️ House rules')}</b>
           <span>{rulesSummary}</span>
         </button>
         <button className="pt-extra" onClick={() => setSheet('custom')}>
-          <b>✍️ Your own prompts</b>
-          <span>{customCount ? `${customCount} saved` : 'Add inside jokes'}</span>
+          <b>{t('✍️ Your own prompts')}</b>
+          <span>{customCount ? t('{n} saved', { n: customCount }) : t('Add inside jokes')}</span>
         </button>
       </div>
-      <p className="pt-muted pt-center">Everything stays on this phone. Refreshing is safe: your game picks up where you left off.</p>
+      <p className="pt-muted pt-center">{t('Everything stays on this phone. Refreshing is safe: your game picks up where you left off.')}</p>
       </>
       )}
 
       {sheet === 'rules' && (
-        <Sheet title="House rules" onClose={() => setSheet(null)}>
+        <Sheet title={t('House rules')} onClose={() => setSheet(null)}>
             <div className="pt-rules">
-              <p className="pt-label">Content</p>
+              <p className="pt-label">{t('Content')}</p>
               <div className="pt-picker">
                 {INTENSITIES.map((it) => {
                   const on = s.intensities.includes(it.id) && (it.id !== 'afterdark' || s.adultConfirmed);
@@ -407,12 +410,12 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
                         setSettings({ intensities: next.length ? next : ['casual'] });
                       }}
                     >
-                      {it.label} <small>{it.note}</small>
+                      {t(it.label)} <small>{t(it.note)}</small>
                     </button>
                   );
                 })}
               </div>
-              <p className="pt-label">When someone skips or loses</p>
+              <p className="pt-label">{t('When someone skips or loses')}</p>
               <div className="pt-seg" role="radiogroup">
                 {(Object.keys(CONSEQUENCE_LABEL) as Consequence[]).map((c) => (
                   <button key={c} role="radio" aria-checked={s.consequence === c} onClick={() => setSettings({ consequence: c })}>
@@ -420,33 +423,33 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
                   </button>
                 ))}
               </div>
-              {s.consequence === 'sips' && <p className="pt-muted">Sips are always optional: water or a silly task counts the same. Never drink and drive, and know your limits.</p>}
-              <p className="pt-label">Skip these topics</p>
+              {s.consequence === 'sips' && <p className="pt-muted">{t('Sips are always optional: water or a silly task counts the same. Never drink and drive, and know your limits.')}</p>}
+              <p className="pt-label">{t('Skip these topics')}</p>
               <div className="pt-picker">
-                {TAGS.map((t) => {
-                  const off = s.excludedTags.includes(t.id);
+                {TAGS.map((tag) => {
+                  const off = s.excludedTags.includes(tag.id);
                   return (
-                    <button key={t.id} className={`pt-chip pt-chip-off${off ? ' is-on' : ''}`} aria-pressed={off} onClick={() => setSettings({ excludedTags: off ? s.excludedTags.filter((x) => x !== t.id) : [...s.excludedTags, t.id] })}>
+                    <button key={tag.id} className={`pt-chip pt-chip-off${off ? ' is-on' : ''}`} aria-pressed={off} onClick={() => setSettings({ excludedTags: off ? s.excludedTags.filter((x) => x !== tag.id) : [...s.excludedTags, tag.id] })}>
                       {off ? '🚫 ' : ''}
-                      {t.label}
+                      {t(tag.label)}
                     </button>
                   );
                 })}
               </div>
-              <p className="pt-label">Session length</p>
+              <p className="pt-label">{t('Session length')}</p>
               <div className="pt-seg" role="radiogroup">
                 {(['quick', 'standard', 'long'] as const).map((l) => (
                   <button key={l} role="radio" aria-checked={s.length === l} onClick={() => setSettings({ length: l })}>
-                    {l === 'quick' ? 'Quick' : l === 'standard' ? 'Standard' : 'Long'} <small>{SESSION_CARDS[l]} cards</small>
+                    {l === 'quick' ? t('Quick') : l === 'standard' ? t('Standard') : t('Long')} <small>{t('{n} cards', { n: SESSION_CARDS[l] })}</small>
                   </button>
                 ))}
               </div>
-              <p className="pt-muted">Anyone can skip any card, any time. Nobody has to do anything they’re not comfortable with.</p>
+              <p className="pt-muted">{t('Anyone can skip any card, any time. Nobody has to do anything they’re not comfortable with.')}</p>
             </div>
         </Sheet>
       )}
       {sheet === 'custom' && (
-        <Sheet title="Your own prompts" onClose={() => setSheet(null)}>
+        <Sheet title={t('Your own prompts')} onClose={() => setSheet(null)}>
           <CustomPrompts session={session} update={update} />
         </Sheet>
       )}
@@ -468,13 +471,13 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="pt-modal-card pt-sheet">
         <div className="pt-sheet-head">
           <h2 id="pt-sheet-title">{title}</h2>
-          <button className="pt-icon" onClick={onClose} aria-label="Close">
+          <button className="pt-icon" onClick={onClose} aria-label={t('Close')}>
             ✕
           </button>
         </div>
         {children}
         <button className="pt-btn pt-btn-go" onClick={onClose}>
-          Done
+          {t('Done')}
         </button>
       </div>
     </div>
@@ -495,7 +498,7 @@ function CustomPrompts({ session, update }: { session: PartySession; update: (fn
   return (
     <div className="pt-rules">
       <label className="pt-label" htmlFor="pt-cc">
-        Challenges (one per line). Use {'{A}'} and {'{B}'} for random players.
+        {t('Challenges (one per line). Use {a} and {b} for random players.', { a: '{A}', b: '{B}' })}
       </label>
       <textarea
         id="pt-cc"
@@ -509,7 +512,7 @@ function CustomPrompts({ session, update }: { session: PartySession; update: (fn
         placeholder={'{A}, tell the story of how you met {B}\nEveryone does their best evil laugh'}
       />
       <label className="pt-label" htmlFor="pt-cn">
-        Never Have I Ever statements (one per line)
+        {t('Never Have I Ever statements (one per line)')}
       </label>
       <textarea
         id="pt-cn"
@@ -520,9 +523,9 @@ function CustomPrompts({ session, update }: { session: PartySession; update: (fn
           setN(e.target.value);
           save(c, e.target.value);
         }}
-        placeholder="been to a legendary backyard barbecue"
+        placeholder={t('been to a legendary backyard barbecue')}
       />
-      <p className="pt-muted">Saved as you type. Challenges show up in Party Prompts; statements under “Your own” in Never Have I Ever.</p>
+      <p className="pt-muted">{t('Saved as you type. Challenges show up in Party Prompts; statements under “Your own” in Never Have I Ever.')}</p>
     </div>
   );
 }
@@ -542,26 +545,26 @@ function Feature({ g, where, art, onPlay, onRoom }: { g: ShownGame; where: 'one'
         </span>
       )}
       <div className="pt-feature-copy">
-        <h2 id={`pt-feature-${g.id}`}>{g.title}</h2>
-        {g.adult && <AdultLabel />}
-        <p>{g.blurb}</p>
+        <h2 id={`pt-feature-${g.id}`}>{t(g.title)}</h2>
+        {g.adult && <AdultLabel text={t('Adults only')} />}
+        <p>{t(g.blurb)}</p>
         <div className="pt-row pt-feature-ctas">
           {both ? (
             <>
               <button className="pt-btn pt-btn-go" onClick={where === 'one' ? onPlay : onRoom}>
-                {where === 'one' ? 'Play on this phone' : 'Open a room'}
+                {where === 'one' ? t('Play on this phone') : t('Open a room')}
               </button>
               <button className="pt-btn" onClick={where === 'one' ? onRoom : onPlay}>
-                {where === 'one' ? '🌐 Own phones' : '📱 One phone'}
+                {where === 'one' ? t('🌐 Own phones') : t('📱 One phone')}
               </button>
             </>
           ) : g.room ? (
             <button className="pt-btn pt-btn-go" onClick={onRoom}>
-              Open a room
+              {t('Open a room')}
             </button>
           ) : (
             <button className="pt-btn pt-btn-go" onClick={onPlay}>
-              Play on this phone
+              {t('Play on this phone')}
             </button>
           )}
         </div>
@@ -575,18 +578,30 @@ function AdultGate({ onYes, onNo }: { onYes: () => void; onNo: () => void }) {
     <div className="pt-modal" role="dialog" aria-modal="true" aria-labelledby="pt-adult">
       <div className="pt-modal-card">
         <p className="pt-modal-icon">🔞</p>
-        <h2 id="pt-adult">After Dark is for adults</h2>
-        <p>These cards include mature flirting, relationship and intimacy-themed prompts. Nothing is explicit, and everything stays optional and consensual.</p>
-        <p className="pt-muted">By continuing, everyone playing confirms they are 18 or older (or the age of majority where you live). This is a self-declaration, not an ID check.</p>
+        <h2 id="pt-adult">{t('After Dark is for adults')}</h2>
+        <p>{t('These cards include mature flirting, relationship and intimacy-themed prompts. Nothing is explicit, and everything stays optional and consensual.')}</p>
+        <p className="pt-muted">{t('By continuing, everyone playing confirms they are 18 or older (or the age of majority where you live). This is a self-declaration, not an ID check.')}</p>
         <div className="pt-row">
           <button className="pt-btn pt-btn-go" onClick={onYes}>
-            We’re all 18+
+            {t('We’re all 18+')}
           </button>
           <button className="pt-btn" onClick={onNo}>
-            Keep it clean
+            {t('Keep it clean')}
           </button>
         </div>
       </div>
     </div>
+  );
+}
+
+/** The translated "Party Mode" with every word after the first in the accent color, as in "Party <span>Mode</span>". */
+function PartyTitle({ text }: { text: string }) {
+  const [head, ...rest] = text.split(' ');
+  return rest.length ? (
+    <>
+      {head} <span>{rest.join(' ')}</span>
+    </>
+  ) : (
+    <>{text}</>
   );
 }

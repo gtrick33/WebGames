@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { tNodes } from '../shared';
 import { dialVerdict, splitTeams } from '../../dial';
 import { CLOCKS, CLUE_MAX, LAPS, MIN_PLAYERS, TEAM_MIN, type Action, type RoomView } from '../../rooms/dialRoom';
 import { Tuner } from '../Dial';
 import { Clock, Dot, RoomFrame, Scores, type RoomContext } from './RoomFrame';
+import { t } from '../../../i18n';
 
 type Ctx = RoomContext<RoomView, Action>;
 const TEAM = ['🔵 Team Blue', '🟠 Team Orange'] as const;
@@ -33,16 +35,15 @@ function Settings({ view, send }: Ctx) {
   const teams = s.teams && here.length >= TEAM_MIN;
   return (
     <>
-      <h3>How it works</h3>
+      <h3>{t('How it works')}</h3>
       <p className="pt-muted">
-        Each round one player is the <b>reader</b>. Only their phone shows where the secret spot is on a scale, like <i>Cold ↔ Hot</i>. They type <b>one clue</b> (“a cup of tea”), and everyone else turns the same needle on their own phone. Spot on
-        scores 4, close scores 3 or 2.
+        {tNodes('Each round one player is the {reader}. Only their phone shows where the secret spot is on a scale, like {scale}. They type {clue} (“a cup of tea”), and everyone else turns the same needle on their own phone. Spot on scores 4, close scores 3 or 2.', {}, { reader: <b>{t('reader')}</b>, scale: <i>{t('Cold ↔ Hot')}</i>, clue: <b>{t('one clue')}</b> })}
       </p>
       {here.length >= TEAM_MIN && (
         <label className="pt-switch">
           <input type="checkbox" checked={s.teams} onChange={(e) => set({ teams: e.target.checked })} />
           <span>
-            <b>Two teams</b> · readers take turns across teams, and the other team’s captain can steal a point by calling “left” or “right”
+            <b>{t('Two teams')}</b>{' '}{t('· readers take turns across teams, and the other team’s captain can steal a point by calling “left” or “right”')}
           </span>
         </label>
       )}
@@ -55,14 +56,14 @@ function Settings({ view, send }: Ctx) {
           ))}
         </div>
       )}
-      <div className="pt-picker" role="group" aria-label="Rounds">
+      <div className="pt-picker" role="group" aria-label={t('Rounds')}>
         {LAPS.map((k) => (
           <button key={k} className={`pt-chip${s.laps === k ? ' is-on' : ''}`} aria-pressed={s.laps === k} onClick={() => set({ laps: k })}>
-            {k === 1 ? 'Everyone reads once' : `Everyone reads ${k}×`} ({here.length * k} rounds)
+            {k === 1 ? t('Everyone reads once') : t('Everyone reads {n}×', { n: k })} ({t('{n} rounds', { n: here.length * k })})
           </button>
         ))}
       </div>
-      <p className="pt-label">Time to turn the needle</p>
+      <p className="pt-label">{t('Time to turn the needle')}</p>
       <div className="pt-seg" role="radiogroup">
         {CLOCKS.map((c) => (
           <button key={c} role="radio" aria-checked={s.clock === c} onClick={() => set({ clock: c })}>
@@ -71,7 +72,7 @@ function Settings({ view, send }: Ctx) {
         ))}
       </div>
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={here.length < MIN_PLAYERS} onClick={() => send({ t: 'start' })}>
-        Start
+        {t('Start')}
       </button>
     </>
   );
@@ -127,24 +128,24 @@ function Game({ view, send, left, me, byN }: Ctx) {
     const [blue, orange] = view.team;
     return (
       <section className="pt-panel pt-imp-result">
-        <h2>{sides ? (blue === orange ? `A perfect tie! ${blue} each` : `🏆 ${TEAM[blue > orange ? 0 : 1]} wins, ${Math.max(blue, orange)} to ${Math.min(blue, orange)}!`) : `The room scored ${sum} of ${view.total * 4}`}</h2>
+        <h2>{sides ? (blue === orange ? t('A perfect tie! {n} each', { n: blue }) : t('🏆 {team} wins, {a} to {b}!', { team: t(TEAM[blue > orange ? 0 : 1]), a: Math.max(blue, orange), b: Math.min(blue, orange) })) : t('The room scored {n} of {total}', { n: sum, total: view.total * 4 })}</h2>
         {best && bestPts > 0 && (
           <p className="pt-muted pt-center">
-            📡 Mind Reader: <b>{best.you ? 'you' : best.name}</b>, whose clues earned {bestPts}
+            {tNodes('📡 Mind Reader: {who}, whose clues earned {n}', { n: bestPts }, { who: <b>{best.you ? t('you') : best.name}</b> })}
           </p>
         )}
         <Scores players={view.players} />
         {view.host ? (
           <div className="pt-row">
             <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'start' })}>
-              Play again
+              {t('Play again')}
             </button>
             <button className="pt-btn" onClick={() => send({ t: 'lobby' })}>
-              Settings
+              {t('Settings')}
             </button>
           </div>
         ) : (
-          <p className="pt-muted pt-center">The host starts the next game.</p>
+          <p className="pt-muted pt-center">{t('The host starts the next game.')}</p>
         )}
       </section>
     );
@@ -169,17 +170,17 @@ function Game({ view, send, left, me, byN }: Ctx) {
       {sides ? (
         <p className="pt-dl-score">
           🔵 {view.team[0]} · 🟠 {view.team[1]}
-          {teamOf(me.n) !== null && <small className="pt-muted"> · you’re {TEAM[teamOf(me.n)!]}</small>}
+          {teamOf(me.n) !== null && <small className="pt-muted"> · {t('you’re {team}', { team: t(TEAM[teamOf(me.n)!]) })}</small>}
         </p>
       ) : null}
       {reader && (
         <p className="pt-dl-reader">
-          <Dot p={reader} size={30} /> {isReader ? 'You’re the reader' : `${reader.name} is the reader`}
-          {readerTeam !== null && ` · ${TEAM[readerTeam]}`}
+          <Dot p={reader} size={30} /> {isReader ? t('You’re the reader') : t('{name} is the reader', { name: reader.name })}
+          {readerTeam !== null && ` · ${t(TEAM[readerTeam])}`}
         </p>
       )}
       {round.clue && (
-        <p className="pt-room-clue" aria-label="The clue">
+        <p className="pt-room-clue" aria-label={t('The clue')}>
           “{round.clue}”
         </p>
       )}
@@ -197,7 +198,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
         (isReader ? (
           <section className="pt-actions">
             <p className="pt-muted">
-              Only you can see the spot. Type <b>one clue</b> for it between <b>{round.scale[0]}</b> and <b>{round.scale[1]}</b>: a thing, a person, a saying. No numbers!
+              {tNodes('Only you can see the spot. Type {clue} for it between {a} and {b}: a thing, a person, a saying. No numbers!', {}, { clue: <b>{t('one clue')}</b>, a: <b>{round.scale[0]}</b>, b: <b>{round.scale[1]}</b> })}
             </p>
             <input
               className="pt-input"
@@ -207,19 +208,19 @@ function Game({ view, send, left, me, byN }: Ctx) {
               enterKeyHint="send"
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendClue()}
-              placeholder="Your clue"
-              aria-label="Your clue"
+              placeholder={t('Your clue')}
+              aria-label={t('Your clue')}
             />
             <button className="pt-btn pt-btn-go pt-btn-big" disabled={!draft.trim()} onClick={sendClue}>
-              Send my clue
+              {t('Send my clue')}
             </button>
           </section>
         ) : (
           <section className="pt-actions">
-            <p className="pt-muted">{reader?.name ?? 'The reader'} is thinking of a clue…</p>
+            <p className="pt-muted">{t('{name} is thinking of a clue…', { name: reader?.name ?? t('The reader') })}</p>
             {view.host && reader && !reader.online && (
               <button className="pt-btn pt-btn-sm pt-btn-ghost" onClick={() => send({ t: 'next' })}>
-                {reader.name} has gone: skip this round
+                {t('{name} has gone: skip this round', { name: reader.name })}
               </button>
             )}
           </section>
@@ -229,19 +230,19 @@ function Game({ view, send, left, me, byN }: Ctx) {
         <section className="pt-actions">
           {iGuess ? (
             <>
-              <p className="pt-muted">Drag the needle together: whoever moves it last decides. {round.captain === me.n ? 'You’re the captain: lock it in when you agree.' : `${name(captain)} locks it in.`}</p>
+              <p className="pt-muted">{t('Drag the needle together: whoever moves it last decides.')} {round.captain === me.n ? t('You’re the captain: lock it in when you agree.') : t('{name} locks it in.', { name: name(captain) })}</p>
               {round.captain === me.n && (
                 <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'lock' })}>
-                  Lock in the needle
+                  {t('Lock in the needle')}
                 </button>
               )}
             </>
           ) : isReader ? (
-            <p className="pt-muted">{sides ? 'Your team is' : 'Everyone is'} tuning in. No hints!</p>
+            <p className="pt-muted">{sides ? t('Your team is tuning in. No hints!') : t('Everyone is tuning in. No hints!')}</p>
           ) : (
-            <p className="pt-muted">{readerTeam !== null ? `${TEAM[readerTeam]} is tuning in. Get ready to call left or right!` : 'You joined mid-game: you’re in from the next round.'}</p>
+            <p className="pt-muted">{readerTeam !== null ? t('{team} is tuning in. Get ready to call left or right!', { team: t(TEAM[readerTeam]) }) : t('You joined mid-game: you’re in from the next round.')}</p>
           )}
-          {movedBy && <p className="pt-dl-moved">Needle last moved by {name(movedBy)}</p>}
+          {movedBy && <p className="pt-dl-moved">{t('Needle last moved by {name}', { name: name(movedBy) })}</p>}
         </section>
       )}
 
@@ -250,20 +251,20 @@ function Game({ view, send, left, me, byN }: Ctx) {
           {round.rivalCaptain === me.n ? (
             <>
               <p className="pt-muted">
-                Steal a point: is the secret spot to the <b>left</b> or the <b>right</b> of the needle?
+                {tNodes('Steal a point: is the secret spot to the {left} or the {right} of the needle?', {}, { left: <b>{t('left')}</b>, right: <b>{t('right')}</b> })}
               </p>
               <div className="pt-row">
                 <button className="pt-btn pt-btn-big" onClick={() => send({ t: 'call', side: 'left' })}>
-                  ◀ Left
+                  {t('◀ Left')}
                 </button>
                 <button className="pt-btn pt-btn-big" onClick={() => send({ t: 'call', side: 'right' })}>
-                  Right ▶
+                  {t('Right ▶')}
                 </button>
               </div>
             </>
           ) : (
             <p className="pt-muted">
-              {readerTeam !== null && teamOf(me.n) === 1 - readerTeam ? `Left or right of the needle? Tell ${name(rivalCaptain)}, your captain makes the call.` : `${name(rivalCaptain)} is calling left or right for a steal point…`}
+              {readerTeam !== null && teamOf(me.n) === 1 - readerTeam ? t('Left or right of the needle? Tell {name}, your captain makes the call.', { name: name(rivalCaptain) }) : t('{name} is calling left or right for a steal point…', { name: name(rivalCaptain) })}
             </p>
           )}
         </section>
@@ -277,13 +278,13 @@ function Game({ view, send, left, me, byN }: Ctx) {
                 {dialVerdict(round.points ?? 0)} <b>+{round.points ?? 0}</b>
               </>
             ) : (
-              '⏱ No clue in time: no points'
+              t('⏱ No clue in time: no points')
             )}
-            {sides && round.call && (round.steal ? ' · steal! +1' : ' · no steal')}
+            {sides && round.call && (round.steal ? t(' · steal! +1') : t(' · no steal'))}
           </p>
           {view.host && (
             <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'next' })}>
-              {view.count >= view.total ? 'See the results' : 'Next round'}
+              {view.count >= view.total ? t('See the results') : t('Next round')}
             </button>
           )}
         </section>

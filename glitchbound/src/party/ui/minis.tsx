@@ -7,6 +7,7 @@ import { randomOf } from '../engine';
 import type { Player } from '../types';
 import { RpsHand } from './RpsHand';
 import { Avatar, PassPhone } from './shared';
+import { t } from '../../i18n';
 
 export interface MiniProps {
   players: Player[];
@@ -65,28 +66,28 @@ function ReactionDuel({ players, onDone }: MiniProps) {
     return (
       <div className="pt-mini-result">
         <Avatar player={result.winner} size={72} />
-        <h3>{result.winner.name} wins!</h3>
+        <h3>{t('{name} wins!', { name: result.winner.name })}</h3>
         <p className="pt-muted">{result.why}</p>
         <button className="pt-btn pt-btn-go" onClick={() => onDone(result.winner.id)}>
-          Continue
+          {t('Continue')}
         </button>
       </div>
     );
   return (
     <div className={`pt-duel is-${phase}`}>
-      <button className="pt-duel-half is-top" style={{ ['--pc' as string]: b.color }} onPointerDown={() => tap(b, a)} aria-label={`${b.name}: tap`}>
+      <button className="pt-duel-half is-top" style={{ ['--pc' as string]: b.color }} onPointerDown={() => tap(b, a)} aria-label={t('{name}: tap', { name: b.name })}>
         <span>{b.emoji} {b.name}</span>
       </button>
       <div className="pt-duel-mid">
         {phase === 'ready' ? (
           <button className="pt-btn pt-btn-go" onClick={() => setPhase('wait')}>
-            Ready? Hold the phone between you
+            {t('Ready? Hold the phone between you')}
           </button>
         ) : (
-          <b>{phase === 'go' ? 'TAP!' : 'Wait for green…'}</b>
+          <b>{phase === 'go' ? t('TAP!') : t('Wait for green…')}</b>
         )}
       </div>
-      <button className="pt-duel-half" style={{ ['--pc' as string]: a.color }} onPointerDown={() => tap(a, b)} aria-label={`${a.name}: tap`}>
+      <button className="pt-duel-half" style={{ ['--pc' as string]: a.color }} onPointerDown={() => tap(a, b)} aria-label={t('{name}: tap', { name: a.name })}>
         <span>{a.emoji} {a.name}</span>
       </button>
     </div>
@@ -112,13 +113,13 @@ function Rps({ players, onDone }: MiniProps) {
     setPicks(next);
     setStage(i === 0 ? 'passB' : 'reveal');
   };
-  if (stage === 'passA') return <PassPhone player={a} note="Pick in secret." onReady={() => setStage('pickA')} />;
-  if (stage === 'passB') return <PassPhone player={b} note="Pick in secret." onReady={() => setStage('pickB')} />;
+  if (stage === 'passA') return <PassPhone player={a} note={t('Pick in secret.')} onReady={() => setStage('pickA')} />;
+  if (stage === 'passB') return <PassPhone player={b} note={t('Pick in secret.')} onReady={() => setStage('pickB')} />;
   if (stage === 'pickA' || stage === 'pickB') {
     const i = stage === 'pickA' ? 0 : 1;
     return (
       <div className="pt-rps">
-        <h3>{(i === 0 ? a : b).name}, pick one</h3>
+        <h3>{t('{name}, pick one', { name: (i === 0 ? a : b).name })}</h3>
         <div className="pt-rps-hands">
           {HANDS.map((h) => (
             <button key={h.id} className="pt-rps-hand" onClick={() => pick(i, h.id)}>
@@ -142,19 +143,19 @@ function Rps({ players, onDone }: MiniProps) {
           <RpsHand hand={ha.id} size={84} />
           <small>{a.name}</small>
         </span>
-        <b>vs</b>
+        <b>{t('vs')}</b>
         <span>
           <RpsHand hand={hb.id} size={84} />
           <small>{b.name}</small>
         </span>
       </div>
-      <h3>{roundWinner === null ? 'Draw!' : `${(roundWinner === 0 ? a : b).name} takes the round`}</h3>
+      <h3>{roundWinner === null ? t('Draw!') : t('{name} takes the round', { name: (roundWinner === 0 ? a : b).name })}</h3>
       <p className="pt-muted">
         {a.name} {nextWins[0]} – {nextWins[1]} {b.name}
       </p>
       {champion ? (
         <button className="pt-btn pt-btn-go" onClick={() => onDone(champion.id)}>
-          {champion.name} wins! Continue
+          {t('{name} wins! Continue', { name: champion.name })}
         </button>
       ) : (
         <button
@@ -165,7 +166,7 @@ function Rps({ players, onDone }: MiniProps) {
             setStage('passA');
           }}
         >
-          Next round
+          {t('Next round')}
         </button>
       )}
     </div>
@@ -192,7 +193,7 @@ function HotPotato({ players, onDone }: MiniProps) {
     return (
       <div className="pt-mini-result">
         <p className="pt-boom">💥</p>
-        <h3>POP! Who was holding it?</h3>
+        <h3>{t('POP! Who was holding it?')}</h3>
         <div className="pt-picker">
           {players.map((p) => (
             <button key={p.id} className="pt-chip" style={{ ['--pc' as string]: p.color }} onClick={() => onDone(null, p.id)}>
@@ -200,24 +201,24 @@ function HotPotato({ players, onDone }: MiniProps) {
             </button>
           ))}
         </div>
-        <p className="pt-muted">They lose this one ({passes} passes).</p>
+        <p className="pt-muted">{t('They lose this one ({n} passes).', { n: passes })}</p>
       </div>
     );
   return (
     <div className="pt-potato">
-      <p className="pt-kicker">Topic</p>
+      <p className="pt-kicker">{t('Topic')}</p>
       <h3 className="pt-potato-topic">{topic}</h3>
       {phase === 'ready' ? (
         <>
-          <p className="pt-muted">Say one, then pass the phone on. No repeats, no pauses. It pops at a random moment.</p>
+          <p className="pt-muted">{t('Say one, then pass the phone on. No repeats, no pauses. It pops at a random moment.')}</p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setPhase('live')}>
-            Start the potato
+            {t('Start the potato')}
           </button>
         </>
       ) : (
         <button className="pt-potato-btn" onClick={() => setPasses((n) => n + 1)}>
           🥔
-          <small>Tap, say one, pass!</small>
+          <small>{t('Tap, say one, pass!')}</small>
         </button>
       )}
     </div>

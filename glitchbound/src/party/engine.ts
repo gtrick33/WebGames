@@ -19,15 +19,18 @@ export function makePlayer(name: string, index: number, id = `p${Date.now().toSt
 /** Trims and limits a name; collapses whitespace. */
 export const cleanName = (name: string): string => name.replace(/\s+/g, ' ').trim().slice(0, 18);
 
-/** Problems with the player list, or null when it is ready to play. */
-export function playersProblem(players: readonly Player[]): string | null {
-  if (players.length < MIN_PLAYERS) return `Add at least ${MIN_PLAYERS} players.`;
-  if (players.length > MAX_PLAYERS) return `At most ${MAX_PLAYERS} players.`;
-  if (players.some((p) => !p.name)) return 'Every player needs a name.';
+type Say = (text: string, vars?: Record<string, string | number>) => string;
+const english: Say = (text, vars = {}) => text.replace(/\{(\w+)\}/g, (hole, k: string) => (k in vars ? String(vars[k]) : hole));
+
+/** Problems with the player list, or null when it is ready to play. Pass `t` to get it in the player's language. */
+export function playersProblem(players: readonly Player[], say: Say = english): string | null {
+  if (players.length < MIN_PLAYERS) return say('Add at least {n} players.', { n: MIN_PLAYERS });
+  if (players.length > MAX_PLAYERS) return say('At most {n} players.', { n: MAX_PLAYERS });
+  if (players.some((p) => !p.name)) return say('Every player needs a name.');
   const seen = new Set<string>();
   for (const p of players) {
     const k = p.name.toLowerCase();
-    if (seen.has(k)) return `Two players are called ${p.name}. Add an initial to tell them apart.`;
+    if (seen.has(k)) return say('Two players are called {name}. Add an initial to tell them apart.', { name: p.name });
     seen.add(k);
   }
   return null;

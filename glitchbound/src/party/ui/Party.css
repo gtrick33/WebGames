@@ -718,6 +718,9 @@ img.pt-feature-art {
 .pt-feature-copy h2 {
   font-size: clamp(26px, 6vw, 34px);
   font-weight: 900;
+  /* Long one-word titles in some languages (Самозванець, Hochstapler) wrap instead of running off the card. */
+  overflow-wrap: anywhere;
+  hyphens: auto;
   text-shadow: 2px 2px 0 rgb(29 18 56 / 0.45);
 }
 .pt-feature-copy p {

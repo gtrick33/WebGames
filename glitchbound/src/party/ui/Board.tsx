@@ -6,7 +6,8 @@ import { draw, filterContent, freshRng, intensityWeights, shuffle } from '../eng
 import type { PartySession } from '../session';
 import type { Challenge, Player } from '../types';
 import { MiniGame, MINIS, type MiniId } from './minis';
-import { Avatar, byId, ModeBar, Name, PlayerPicker, Results } from './shared';
+import { Avatar, byId, ModeBar, Name, PlayerPicker, Results, tNodes } from './shared';
+import { t } from '../../i18n';
 
 export const COLS = 6;
 /** Pip positions (3x3 grid cells) for faces 1-6. */
@@ -63,9 +64,9 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
   if (!state) {
     return (
       <div className="pt-screen">
-        <ModeBar title="Dice Adventure" onExit={onExit} />
+        <ModeBar title={t('Dice Adventure')} onExit={onExit} />
         <div className="pt-panel">
-          <h3>Board size</h3>
+          <h3>{t('Board size')}</h3>
           <div className="pt-seg" role="radiogroup">
             {(
               [
@@ -80,7 +81,7 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
               </button>
             ))}
           </div>
-          <p className="pt-muted">Turn order follows your player list ({session.players.map((p) => p.name).join(' → ')}). Land on tiles for challenges, trivia, mini-games, shortcuts and nasty slides. First to the 🏆 wins.</p>
+          <p className="pt-muted">{t('Turn order follows your player list ({order}). Land on tiles for challenges, trivia, mini-games, shortcuts and nasty slides. First to the 🏆 wins.', { order: session.players.map((p) => p.name).join(' → ') })}</p>
           <button
             className="pt-btn pt-btn-go pt-btn-big"
             onClick={() => {
@@ -89,7 +90,7 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
               set(s);
             }}
           >
-            Roll out the board
+            {t('Roll out the board')}
           </button>
         </div>
       </div>
@@ -102,7 +103,7 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
     const scores = Object.fromEntries(standings(state).map((id) => [id, state.pos[id] ?? 0]));
     return (
       <Results
-        title={`${byId(session.players, state.winner)?.name ?? 'Someone'} wins the adventure!`}
+        title={t('{name} wins the adventure!', { name: byId(session.players, state.winner)?.name ?? t('Someone') })}
         players={players}
         scores={scores}
         awards={boardAwards(state)}
@@ -134,8 +135,8 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
 
   return (
     <div className="pt-screen pt-board-screen">
-      <ModeBar title="Dice Adventure" progress={`Turn ${state.turn + 1}`} onExit={onExit} />
-      <div className="pt-standings" aria-label="Positions">
+      <ModeBar title={t('Dice Adventure')} progress={t('Turn {n}', { n: state.turn + 1 })} onExit={onExit} />
+      <div className="pt-standings" aria-label={t('Positions')}>
         {[...players]
           .sort((a, b) => state.pos[b.id]! - state.pos[a.id]!)
           .map((p) => (
@@ -144,17 +145,17 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
             </span>
           ))}
       </div>
-      <div className="pt-board" style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }} role="img" aria-label={`Board with ${state.tiles.length} tiles`}>
-        {state.tiles.map((t, i) => {
+      <div className="pt-board" style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }} role="img" aria-label={t('Board with {n} tiles', { n: state.tiles.length })}>
+        {state.tiles.map((tile, i) => {
           const { row, col } = cell(i);
           const here = players.filter((p) => (shown[p.id] ?? 0) === i);
-          const info = TILE_INFO[t.kind];
+          const info = TILE_INFO[tile.kind];
           return (
-            <div key={i} className={`pt-tile pt-tile-${t.kind}${state.landed === i && state.phase === 'event' ? ' is-landed' : ''}`} style={{ gridRow: row + 1, gridColumn: col + 1, background: info.color }} title={`${i}: ${info.label}`}>
+            <div key={i} className={`pt-tile pt-tile-${tile.kind}${state.landed === i && state.phase === 'event' ? ' is-landed' : ''}`} style={{ gridRow: row + 1, gridColumn: col + 1, background: info.color }} title={`${i}: ${t(info.label)}`}>
               <span className="pt-tile-icon" aria-hidden="true">
                 {info.icon}
               </span>
-              <span className="pt-tile-n">{t.kind === 'shortcut' || t.kind === 'slide' ? `→${t.value}` : i}</span>
+              <span className="pt-tile-n">{tile.kind === 'shortcut' || tile.kind === 'slide' ? `→${tile.value}` : i}</span>
               {here.length > 0 && (
                 <span className="pt-tokens">
                   {/* A crowded tile (everyone on Start in a big group) shows three tokens and a count. */}
@@ -179,10 +180,10 @@ export function BoardMode({ session, update, onExit }: { session: PartySession; 
         <div className="pt-turn">
           <Avatar player={me} size={44} />
           <div>
-            <p className="pt-kicker">Your turn</p>
+            <p className="pt-kicker">{t('Your turn')}</p>
             <b className="pt-turn-name">{me.name}</b>
           </div>
-          <button className={`pt-die${rolling !== null ? ' is-rolling' : ''}`} onClick={roll} disabled={state.phase !== 'roll' || moving} aria-label="Roll the dice">
+          <button className={`pt-die${rolling !== null ? ' is-rolling' : ''}`} onClick={roll} disabled={state.phase !== 'roll' || moving} aria-label={t('Roll the dice')}>
             <DieFace value={rolling ?? (state.lastRoll || 6)} />
           </button>
         </div>
@@ -226,59 +227,59 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
   return (
     <div className="pt-event" style={{ ['--tc' as string]: info.color }}>
       <p className="pt-event-head">
-        <span aria-hidden="true">{info.icon}</span> {info.label}
+        <span aria-hidden="true">{info.icon}</span> {t(info.label)}
       </p>
       {(tile.kind === 'lucky' || tile.kind === 'shortcut') && (
         <>
           <p className="pt-event-text">
-            <Name player={me} /> {tile.kind === 'lucky' ? `zooms ${tile.value} tiles ahead!` : `takes the shortcut to tile ${tile.value}!`}
+            <Name player={me} /> {tile.kind === 'lucky' ? t('zooms {n} tiles ahead!', { n: tile.value ?? 0 }) : t('takes the shortcut to tile {n}!', { n: tile.value ?? 0 })}
           </p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => onResolve({ type: 'resolve', ok: true })}>
-            Woo! 🚀
+            {t('Woo! 🚀')}
           </button>
         </>
       )}
       {(tile.kind === 'setback' || tile.kind === 'slide') && (
         <>
           <p className="pt-event-text">
-            <Name player={me} /> {tile.kind === 'setback' ? `slips back ${tile.value} tiles.` : `slides down to tile ${tile.value}.`}
+            <Name player={me} /> {tile.kind === 'setback' ? t('slips back {n} tiles.', { n: tile.value ?? 0 }) : t('slides down to tile {n}.', { n: tile.value ?? 0 })}
           </p>
           <button className="pt-btn pt-btn-big" onClick={() => onResolve({ type: 'resolve', ok: true })}>
-            Noooo 😩
+            {t('Noooo 😩')}
           </button>
         </>
       )}
       {tile.kind === 'again' && (
         <>
           <p className="pt-event-text">
-            <Name player={me} /> rolls again!
+            <Name player={me} />{' '}{t('rolls again!')}
           </p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => onResolve({ type: 'resolve', ok: true })}>
-            Roll again 🎲
+            {t('Roll again 🎲')}
           </button>
         </>
       )}
       {tile.kind === 'swap' && (
         <>
           <p className="pt-event-text">
-            <Name player={me} />, swap places with anyone (or nobody).
+            {tNodes('{who}, swap places with anyone (or nobody).', {}, { who: <Name player={me} /> })}
           </p>
-          <PlayerPicker players={others} selected={[]} label="Swap with" onToggle={(id) => onResolve({ type: 'resolve', ok: true, swapWith: id })} />
+          <PlayerPicker players={others} selected={[]} label={t('Swap with')} onToggle={(id) => onResolve({ type: 'resolve', ok: true, swapWith: id })} />
           <button className="pt-btn pt-btn-ghost" onClick={() => onResolve({ type: 'resolve', ok: true })}>
-            Stay put
+            {t('Stay put')}
           </button>
         </>
       )}
       {(tile.kind === 'card' || tile.kind === 'group') && card && (
         <>
           <p className="pt-event-text">{text}</p>
-          <p className="pt-muted">Done: one step forward. Skip: one step back.</p>
+          <p className="pt-muted">{t('Done: one step forward. Skip: one step back.')}</p>
           <div className="pt-row">
             <button className="pt-btn pt-btn-go" onClick={() => onResolve({ type: 'resolve', ok: true })}>
-              Done ✓
+              {t('Done ✓')}
             </button>
             <button className="pt-btn" onClick={() => onResolve({ type: 'resolve', ok: false })}>
-              Skip
+              {t('Skip')}
             </button>
           </div>
         </>
@@ -286,8 +287,8 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
       {tile.kind === 'duel' && card && (
         <>
           <p className="pt-event-text">{text}</p>
-          <p className="pt-muted">The winner jumps 2 tiles ahead.</p>
-          <PlayerPicker players={[me, opponent]} selected={[]} label="Winner" onToggle={(id) => onResolve({ type: 'resolve', ok: id === me.id, winnerId: id })} />
+          <p className="pt-muted">{t('The winner jumps 2 tiles ahead.')}</p>
+          <PlayerPicker players={[me, opponent]} selected={[]} label={t('Winner')} onToggle={(id) => onResolve({ type: 'resolve', ok: id === me.id, winnerId: id })} />
         </>
       )}
       {tile.kind === 'trivia' && trivia && (
@@ -302,18 +303,18 @@ function TileEvent({ state, session, me, players, r, onResolve }: { state: Board
           </div>
           {answer && (
             <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => onResolve({ type: 'resolve', ok: answer === trivia.options[0] })}>
-              {answer === trivia.options[0] ? 'Correct! +1 step' : 'Wrong: back 1 step'}
+              {answer === trivia.options[0] ? t('Correct! +1 step') : t('Wrong: back 1 step')}
             </button>
           )}
         </>
       )}
       {tile.kind === 'mini' && (
         <>
-          <p className="pt-event-text">Mini-game time! Win it to step forward.</p>
+          <p className="pt-event-text">{t('Mini-game time! Win it to step forward.')}</p>
           <div className="pt-picker">
             {MINIS.filter((m) => m.players !== 2 || others.length > 0).map((m) => (
               <button key={m.id} className="pt-chip" onClick={() => setMini(m.id)}>
-                {m.emoji} {m.title}
+                {m.emoji} {t(m.title)}
               </button>
             ))}
           </div>

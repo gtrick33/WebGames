@@ -4,6 +4,7 @@ import { cardConsequence, draw, freshRng } from '../engine';
 import type { PartySession } from '../session';
 import type { NhieStatement } from '../types';
 import { Avatar, ModeBar, PlayerPicker, Results } from './shared';
+import { t } from '../../i18n';
 
 export const FINGERS = 5;
 
@@ -61,9 +62,9 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
   if (setup || !active) {
     return (
       <div className="pt-screen">
-        <ModeBar title="Never Have I Ever" onExit={onExit} />
+        <ModeBar title={t('Never Have I Ever')} onExit={onExit} />
         <div className="pt-panel">
-          <h3>Pick your categories</h3>
+          <h3>{t('Pick your categories')}</h3>
           <div className="pt-picker">
             {[...NHIE_CATEGORIES, { id: 'custom' as const, label: `Your own (${session.custom.nhie.length})`, emoji: '✍️', adult: false }].map((c) => {
               const on = cats.includes(c.id);
@@ -76,7 +77,7 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
                   disabled={c.id === 'custom' && session.custom.nhie.length === 0}
                   onClick={() => (locked ? onNeedAdult() : setCats(on ? cats.filter((x) => x !== c.id) : [...cats, c.id]))}
                 >
-                  {c.emoji} {c.label} {locked ? '🔒' : ''}
+                  {c.emoji} {t(c.label)} {locked ? '🔒' : ''}
                 </button>
               );
             })}
@@ -84,12 +85,12 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
           <label className="pt-switch">
             <input type="checkbox" checked={reveal} onChange={(e) => setReveal(e.target.checked)} />
             <span>
-              <b>Reveal together</b> · everyone thinks, then on “3, 2, 1” all hands go up at once
+              <b>{t('Reveal together')}</b>{' '}{t('· everyone thinks, then on “3, 2, 1” all hands go up at once')}
             </span>
           </label>
-          <p className="pt-muted">Everyone starts with {FINGERS} fingers up. Each time you have done it, one goes down. Last one standing wins.</p>
+          <p className="pt-muted">{t('Everyone starts with {n} fingers up. Each time you have done it, one goes down. Last one standing wins.', { n: FINGERS })}</p>
           <button className="pt-btn pt-btn-go pt-btn-big" disabled={!deck.length} onClick={start}>
-            {deck.length ? 'Start' : 'Pick at least one category'}
+            {deck.length ? t('Start') : t('Pick at least one category')}
           </button>
         </div>
       </div>
@@ -103,9 +104,9 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
     if (!over && !card && deck.length) {
       return (
         <div className="pt-screen">
-          <ModeBar title="Never Have I Ever" onExit={onExit} />
+          <ModeBar title={t('Never Have I Ever')} onExit={onExit} />
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => deal(active)}>
-            Continue
+            {t('Continue')}
           </button>
         </div>
       );
@@ -139,44 +140,44 @@ export function NeverMode({ session, update, onExit, onNeedAdult }: { session: P
 
   return (
     <div className="pt-screen">
-      <ModeBar title="Never Have I Ever" progress={`${active.count}/${active.limit}`} onExit={onExit} />
+      <ModeBar title={t('Never Have I Ever')} progress={`${active.count}/${active.limit}`} onExit={onExit} />
       <div className="pt-fingers">
         {session.players.map((p) => (
-          <span key={p.id} className={`pt-finger${fingers(p.id) === 0 ? ' is-out' : ''}`} title={`${p.name}: ${fingers(p.id)} fingers`}>
+          <span key={p.id} className={`pt-finger${fingers(p.id) === 0 ? ' is-out' : ''}`} title={t('{name}: {n} fingers', { name: p.name, n: fingers(p.id) })}>
             <Avatar player={p} size={28} />
             ✋{fingers(p.id)}
           </span>
         ))}
       </div>
       <article className="pt-card pt-card-nhie" key={card.id}>
-        <span className="pt-kind">{NHIE_CATEGORIES.find((c) => c.id === card.category)?.emoji} Never have I ever…</span>
+        <span className="pt-kind">{NHIE_CATEGORIES.find((c) => c.id === card.category)?.emoji} {t('Never have I ever…')}</span>
         <p className="pt-card-text">…{statement(card.text)}</p>
         <p className="pt-cons">
-          If you have: finger down{session.settings.consequence !== 'points' && session.settings.consequence !== 'none' ? ` and ${cons}` : ''}.
+          {session.settings.consequence !== 'points' && session.settings.consequence !== 'none' ? t('If you have: finger down and {what}.', { what: cons }) : t('If you have: finger down.')}
         </p>
       </article>
       {stage === 'think' && (
         <div className="pt-actions">
-          <p className="pt-muted">Everyone decides in secret…</p>
+          <p className="pt-muted">{t('Everyone decides in secret…')}</p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('count')}>
-            Ready: count down
+            {t('Ready: count down')}
           </button>
         </div>
       )}
       {stage === 'count' && (
         <div className="pt-countdown" aria-live="assertive">
-          {count > 0 ? count : 'Reveal!'}
+          {count > 0 ? count : t('Reveal!')}
         </div>
       )}
       {stage === 'pick' && (
         <div className="pt-actions">
-          <p className="pt-muted">Tap everyone who HAS done it:</p>
-          <PlayerPicker players={session.players} selected={haves} label="Players who have" onToggle={(id) => setHaves(haves.includes(id) ? haves.filter((x) => x !== id) : [...haves, id])} />
+          <p className="pt-muted">{t('Tap everyone who HAS done it:')}</p>
+          <PlayerPicker players={session.players} selected={haves} label={t('Players who have')} onToggle={(id) => setHaves(haves.includes(id) ? haves.filter((x) => x !== id) : [...haves, id])} />
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={confirm}>
-            {haves.length ? `${haves.length} finger${haves.length > 1 ? 's' : ''} down · next` : 'Nobody! Next'}
+            {haves.length ? (haves.length > 1 ? t('{n} fingers down · next', { n: haves.length }) : t('1 finger down · next')) : t('Nobody! Next')}
           </button>
           <button className="pt-btn pt-btn-ghost" onClick={() => deal(active)}>
-            Skip this one
+            {t('Skip this one')}
           </button>
         </div>
       )}

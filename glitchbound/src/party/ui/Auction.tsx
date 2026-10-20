@@ -4,7 +4,8 @@ import { AUCTION_ITEMS, AUCTION_THEMES } from '../content/auction';
 import { freshRng, shuffle } from '../engine';
 import type { PartySession } from '../session';
 import type { AuctionTheme, Player } from '../types';
-import { Avatar, byId, ModeBar, Name, Results, Timer } from './shared';
+import { Avatar, byId, ModeBar, Name, Results, Timer, tNodes } from './shared';
+import { t } from '../../i18n';
 
 const RARITY = ['', 'Common', 'Rare', 'Legendary'];
 
@@ -35,10 +36,10 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
     );
     return (
       <div className="pt-screen">
-        <ModeBar title="Name Your Price" onExit={onExit} />
+        <ModeBar title={t('Name Your Price')} onExit={onExit} />
         <div className="pt-panel">
           <p className="pt-muted">
-            Bid play money on characters and things. Everyone starts with the same budget and can own a few items. Highest bid when everyone else passes wins. All money is fictional.
+            {t('Bid play money on characters and things. Everyone starts with the same budget and can own a few items. Highest bid when everyone else passes wins. All money is fictional.')}
           </p>
           <div className="pt-grid2">
             {opt('budget', 'Budget', [10, 20, 50, 100], (v) => `$${v}`)}
@@ -46,13 +47,13 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
             {opt('rounds', 'Items for sale', [8, 12, 16, 24], (v) => `${v}`)}
             {opt('increment', 'Raise by', [1, 2, 5], (v) => `$${v}`)}
           </div>
-          <h3>Theme packs</h3>
+          <h3>{t('Theme packs')}</h3>
           <div className="pt-picker">
-            {AUCTION_THEMES.map((t) => {
-              const on = themes.includes(t.id);
+            {AUCTION_THEMES.map((th) => {
+              const on = themes.includes(th.id);
               return (
-                <button key={t.id} className={`pt-chip${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => setThemes(on ? themes.filter((x) => x !== t.id) : [...themes, t.id])}>
-                  {t.emoji} {t.label}
+                <button key={th.id} className={`pt-chip${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => setThemes(on ? themes.filter((x) => x !== th.id) : [...themes, th.id])}>
+                  {th.emoji} {t(th.label)}
                 </button>
               );
             })}
@@ -60,7 +61,7 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
           <label className="pt-switch">
             <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} />
             <span>
-              <b>Shot clock</b> · 10 seconds to decide, or you pass
+              <b>{t('Shot clock')}</b>{' '}{t('· 10 seconds to decide, or you pass')}
             </span>
           </label>
           <button
@@ -71,7 +72,7 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
               set(startAuction(cfg, session.players.map((p) => p.id), shuffle(pool, r)));
             }}
           >
-            {pool.length < cfg.rounds ? 'Pick more themes' : 'Open the auction'}
+            {pool.length < cfg.rounds ? t('Pick more themes') : t('Open the auction')}
           </button>
         </div>
       </div>
@@ -87,14 +88,14 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
     const scores = Object.fromEntries(state.players.map((p) => [p.id, (votes[p.id] ?? 0) * 3 + p.items.length]));
     return (
       <Results
-        title="Collections are in!"
+        title={t('Collections are in!')}
         players={session.players}
         scores={scores}
         awards={[...auctionAwards(state), ...(votedTop && votedTop[1] > 0 ? [{ title: 'Group’s Favorite', playerId: votedTop[0], why: `${votedTop[1]} vote${votedTop[1] > 1 ? 's' : ''}` }] : [])]}
         onAgain={() => update((s) => ({ ...s, active: null }))}
         onMenu={onExit}
       >
-        <p className="pt-muted">Score = 3 per group vote + 1 per item. House rules welcome: argue it out!</p>
+        <p className="pt-muted">{t('Score = 3 per group vote + 1 per item. House rules welcome: argue it out!')}</p>
         <div className="pt-collections">
           {state.players.map((p) => {
             const sum = sums.find((x) => x.id === p.id)!;
@@ -103,7 +104,7 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
                 <div className="pt-collection-head">
                   <Avatar player={player(p.id)} size={32} />
                   <b>{player(p.id).name}</b>
-                  <span className="pt-muted">${sum.left} left</span>
+                  <span className="pt-muted">{t('${n} left', { n: sum.left })}</span>
                   <button className="pt-btn pt-btn-sm" onClick={() => setVotes((v) => ({ ...v, [p.id]: (v[p.id] ?? 0) + 1 }))}>
                     👍 {votes[p.id] ?? 0}
                   </button>
@@ -116,7 +117,7 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
                       </li>
                     ))
                   ) : (
-                    <li className="pt-muted">Nothing. Bold strategy.</li>
+                    <li className="pt-muted">{t('Nothing. Bold strategy.')}</li>
                   )}
                 </ul>
               </div>
@@ -135,7 +136,7 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
 
   return (
     <div className="pt-screen">
-      <ModeBar title="Name Your Price" progress={`Item ${state.index + 1}/${Math.min(state.settings.rounds, state.queue.length)}`} onExit={onExit} />
+      <ModeBar title={t('Name Your Price')} progress={t('Item {n}/{total}', { n: state.index + 1, total: Math.min(state.settings.rounds, state.queue.length) })} onExit={onExit} />
       <div className="pt-wallets">
         {state.players.map((p) => (
           <span key={p.id} className={`pt-wallet${p.id === state.active ? ' is-now' : ''}${state.passed.includes(p.id) ? ' is-out' : ''}`} style={{ ['--pc' as string]: player(p.id).color }}>
@@ -149,7 +150,7 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
       </div>
       <article className={`pt-lot pt-rarity-${item.rarity}`}>
         <span className="pt-kind">
-          {theme.emoji} {theme.label} · {RARITY[item.rarity]}
+          {theme.emoji} {t(theme.label)} · {t(RARITY[item.rarity]!)}
         </span>
         <span className="pt-lot-emoji" aria-hidden="true">
           {item.emoji}
@@ -158,10 +159,10 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
         <p className="pt-lot-bid">
           {leader ? (
             <>
-              <b>${state.bid}</b> · <Name player={leader} /> leads
+              <b>${state.bid}</b> · {tNodes('{who} leads', {}, { who: <Name player={leader} /> })}
             </>
           ) : (
-            'No bids yet'
+            t('No bids yet')
           )}
         </p>
       </article>
@@ -170,16 +171,16 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
         <div className="pt-actions">
           {timed && <Timer key={`${state.index}-${state.active}-${state.bid}`} seconds={10} onEnd={() => set(reduceAuction(state, { type: 'pass' }))} />}
           <p>
-            <Name player={active} />, your move. You have ${me.budget}.
+            {tNodes('{who}, your move. You have ${n}.', { n: me.budget }, { who: <Name player={active} /> })}
           </p>
           <div className="pt-row">
             {raises.map((v) => (
               <button key={v} className="pt-btn pt-btn-go" onClick={() => set(reduceAuction(state, { type: 'bid', amount: v }))}>
-                Bid ${v}
+                {t('Bid ${n}', { n: v })}
               </button>
             ))}
             <button className="pt-btn" onClick={() => set(reduceAuction(state, { type: 'pass' }))}>
-              Pass
+              {t('Pass')}
             </button>
           </div>
           <form
@@ -193,9 +194,9 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
               }
             }}
           >
-            <input className="pt-input pt-input-sm" inputMode="numeric" value={custom} onChange={(e) => setCustom(e.target.value.replace(/\D/g, ''))} placeholder={`$${minBid(state)}–${me.budget}`} aria-label="Custom bid" />
+            <input className="pt-input pt-input-sm" inputMode="numeric" value={custom} onChange={(e) => setCustom(e.target.value.replace(/\D/g, ''))} placeholder={`$${minBid(state)}–${me.budget}`} aria-label={t('Custom bid')} />
             <button className="pt-btn pt-btn-sm" disabled={!custom}>
-              Bid
+              {t('Bid')}
             </button>
           </form>
         </div>
@@ -204,14 +205,14 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
           <h3 className="pt-center">
             {state.phase === 'sold' && leader ? (
               <>
-                🔨 Sold to <Name player={leader} /> for ${state.bid}!
+                {tNodes('🔨 Sold to {who} for ${n}!', { n: state.bid }, { who: <Name player={leader} /> })}
               </>
             ) : (
-              'Nobody wanted it. Unsold!'
+              t('Nobody wanted it. Unsold!')
             )}
           </h3>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => set(reduceAuction(state, { type: 'next' }))}>
-            Next item →
+            {t('Next item →')}
           </button>
         </div>
       )}

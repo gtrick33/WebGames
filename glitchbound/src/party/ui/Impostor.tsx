@@ -3,7 +3,8 @@ import { freshRng } from '../engine';
 import { dealImpostor, scoreImpostor, themeById, type ImpostorDeal, type ImpostorOutcome } from '../impostor';
 import type { PartySession } from '../session';
 import type { Player } from '../types';
-import { Avatar, byId, ModeBar, PassPhone, Timer } from './shared';
+import { Avatar, byId, ModeBar, PassPhone, Timer, tNodes } from './shared';
+import { t } from '../../i18n';
 
 /** Impostor on one phone: the settings and where the round is (kept in the session, so a refresh resumes). */
 export interface ImpostorLocal {
@@ -52,7 +53,7 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
     });
   };
 
-  const bar = <ModeBar title="Impostor" progress={st.round ? `Round ${st.round}` : undefined} onExit={onExit} />;
+  const bar = <ModeBar title={t('Impostor')} progress={st.round ? `Round ${st.round}` : undefined} onExit={onExit} />;
 
   if (st.stage === 'setup' || !d) {
     const s = st.settings;
@@ -63,17 +64,17 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
         {bar}
         <section className="pt-panel pt-imp-intro">
           <p className="pt-imp-badge">🕵️</p>
-          <h2>Find the impostor</h2>
-          <p className="pt-muted">Everyone gets the secret word, except the impostor, who only gets a hint. Go round saying one word about it. Too obvious and the impostor catches on; too vague and you look guilty. Then vote.</p>
+          <h2>{t('Find the impostor')}</h2>
+          <p className="pt-muted">{t('Everyone gets the secret word, except the impostor, who only gets a hint. Go round saying one word about it. Too obvious and the impostor catches on; too vague and you look guilty. Then vote.')}</p>
           <button className="pt-link" onClick={onRoom}>
-            🌐 Rather play on everyone’s own phone? Open a room
+            {t('🌐 Rather play on everyone’s own phone? Open a room')}
           </button>
         </section>
         <section className="pt-panel">
-          <h3>Themes</h3>
+          <h3>{t('Themes')}</h3>
           <div className="pt-picker">
             <button className={`pt-chip${all ? ' is-on' : ''}`} aria-pressed={all} onClick={() => setS({ themes: [] })}>
-              🎲 Mix them all
+              {t('🎲 Mix them all')}
             </button>
             {IMPOSTOR_THEMES.map((t) => {
               const on = s.themes.includes(t.id);
@@ -84,25 +85,25 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
               );
             })}
           </div>
-          <p className="pt-label">Impostors</p>
+          <p className="pt-label">{t('Impostors')}</p>
           <div className="pt-seg" role="radiogroup">
             <button role="radio" aria-checked={s.impostors === 1 || players.length < 7} onClick={() => setS({ impostors: 1 })}>
-              One
+              {t('One')}
             </button>
             <button role="radio" aria-checked={s.impostors === 2 && players.length >= 7} onClick={() => setS({ impostors: 2 })} disabled={players.length < 7}>
-              Two <small>7+ players</small>
+              {t('Two')}{' '}<small>{t('7+ players')}</small>
             </button>
           </div>
-          <p className="pt-label">The impostor gets</p>
+          <p className="pt-label">{t('The impostor gets')}</p>
           <div className="pt-seg" role="radiogroup">
             <button role="radio" aria-checked={s.hint} onClick={() => setS({ hint: true })}>
-              A hint word
+              {t('A hint word')}
             </button>
             <button role="radio" aria-checked={!s.hint} onClick={() => setS({ hint: false })}>
-              Only the theme <small>harder</small>
+              {t('Only the theme')}{' '}<small>{t('harder')}</small>
             </button>
           </div>
-          <p className="pt-label">Talking time</p>
+          <p className="pt-label">{t('Talking time')}</p>
           <div className="pt-seg" role="radiogroup">
             {TALK.map(([secs, label]) => (
               <button key={secs} role="radio" aria-checked={s.talk === secs} onClick={() => setS({ talk: secs })}>
@@ -111,9 +112,9 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
             ))}
           </div>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={start} disabled={players.length < 3}>
-            Deal the cards
+            {t('Deal the cards')}
           </button>
-          {players.length < 3 && <p className="pt-warn">Impostor needs at least 3 players.</p>}
+          {players.length < 3 && <p className="pt-warn">{t('Impostor needs at least 3 players.')}</p>}
         </section>
       </div>
     );
@@ -125,7 +126,7 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
     return (
       <div className="pt-screen">
         {bar}
-        <PassPhone player={current} note={`${st.turn + 1} of ${players.length}. Nobody else looks!`} onReady={() => set({ stage: 'card' })} />
+        <PassPhone player={current} note={t('{n} of {total}. Nobody else looks!', { n: st.turn + 1, total: players.length })} onReady={() => set({ stage: 'card' })} />
       </div>
     );
   }
@@ -138,7 +139,7 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
         {bar}
         <SecretCard impostor={impostor} theme={themeName} word={d.word} hint={st.settings.hint ? d.hint : null} />
         <button className="pt-btn pt-btn-big" onClick={next}>
-          {st.turn + 1 < players.length ? 'Hide it, pass the phone' : 'Hide it: everyone has seen'}
+          {st.turn + 1 < players.length ? t('Hide it, pass the phone') : t('Hide it: everyone has seen')}
         </button>
       </div>
     );
@@ -150,19 +151,19 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
       <div className="pt-screen">
         {bar}
         <section className="pt-panel pt-imp-talk">
-          <p className="pt-kicker">Theme</p>
+          <p className="pt-kicker">{t('Theme')}</p>
           <h2 className="pt-imp-theme">
             {themeById(d.theme)?.emoji} {themeName}
           </h2>
           {starter && (
             <p className="pt-imp-starter">
-              <Avatar player={starter} size={34} /> <b>{starter.name}</b> starts. Go round, one word each. Never say the word!
+              <Avatar player={starter} size={34} /> {tNodes('{who} starts. Go round, one word each. Never say the word!', {}, { who: <b>{starter.name}</b> })}
             </p>
           )}
           {st.settings.talk > 0 && <Timer seconds={st.settings.talk} onEnd={() => set({ stage: 'vote' })} />}
-          <p className="pt-muted">Two or three rounds of words is usually enough. When you’re ready, vote: point at your suspect on three.</p>
+          <p className="pt-muted">{t('Two or three rounds of words is usually enough. When you’re ready, vote: point at your suspect on three.')}</p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => set({ stage: 'vote' })}>
-            🗳️ Time to vote
+            {t('🗳️ Time to vote')}
           </button>
         </section>
       </div>
@@ -174,8 +175,8 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
       <div className="pt-screen">
         {bar}
         <section className="pt-panel">
-          <h2>Who did the group vote out?</h2>
-          <p className="pt-muted">Everyone points at their suspect on three. Tap the player with the most fingers.</p>
+          <h2>{t('Who did the group vote out?')}</h2>
+          <p className="pt-muted">{t('Everyone points at their suspect on three. Tap the player with the most fingers.')}</p>
           <div className="pt-imp-vote">
             {players.map((p) => (
               <button key={p.id} className="pt-imp-suspect" style={{ ['--pc' as string]: p.color }} onClick={() => (d.impostors.includes(p.id) ? set({ stage: 'guess', voted: p.id }) : finish(p.id, null))}>
@@ -185,7 +186,7 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
             ))}
           </div>
           <button className="pt-btn" onClick={() => finish(null, null)}>
-            It’s a tie: nobody goes
+            {t('It’s a tie: nobody goes')}
           </button>
         </section>
       </div>
@@ -199,9 +200,9 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
         {bar}
         <section className="pt-panel pt-imp-guess">
           <p className="pt-imp-badge">🚨</p>
-          <h2>{caught?.name} was the impostor!</h2>
+          <h2>{t('{name} was the impostor!', { name: caught?.name ?? '' })}</h2>
           <p>
-            Hand {caught?.name} the phone. One guess at the secret word {d.impostors.length > 1 ? 'steals the round for them' : 'steals the round'}:
+            {d.impostors.length > 1 ? t('Hand {name} the phone. One guess at the secret word steals the round for them:', { name: caught?.name ?? '' }) : t('Hand {name} the phone. One guess at the secret word steals the round:', { name: caught?.name ?? '' })}
           </p>
           <div className="pt-imp-options">
             {d.options.map((w) => (
@@ -225,9 +226,9 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
       <section className="pt-panel pt-imp-result">
         <h2>{headline}</h2>
         <p className="pt-imp-word">
-          The word was <b>{d.word}</b>
+          {t('The word was')}{' '}<b>{d.word}</b>
           <small>
-            {themeById(d.theme)?.emoji} {themeName} · hint “{d.hint}”
+            {themeById(d.theme)?.emoji} {themeName} · {t('hint “{hint}”', { hint: d.hint ?? '' })}
           </small>
         </p>
         <div className="pt-imp-reveal">
@@ -239,7 +240,7 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
         </div>
         {st.guess && (
           <p className="pt-muted">
-            Their guess: “{st.guess}” {st.outcome === 'stole' ? '✅' : '❌'}
+            {t('Their guess: “{guess}”', { guess: st.guess })} {st.outcome === 'stole' ? '✅' : '❌'}
           </p>
         )}
         <ol className="pt-imp-scores">
@@ -254,16 +255,16 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
         </ol>
         <div className="pt-row">
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={start}>
-            Next round
+            {t('Next round')}
           </button>
           <button className="pt-btn" onClick={() => set({ stage: 'setup' })}>
-            Change settings
+            {t('Change settings')}
           </button>
         </div>
         <p className="pt-muted">
           {d.impostors.length > 1
-            ? 'Scoring: if no impostor is voted out, both get 2 points. If one is, everyone who isn’t an impostor gets 1, unless the caught impostor then guesses the word and steals 1.'
-            : 'Scoring: if the impostor isn’t voted out, they get 2 points. If they are, everyone else gets 1, unless the impostor then guesses the word and steals 1.'}
+            ? t('Scoring: if no impostor is voted out, both get 2 points. If one is, everyone who isn’t an impostor gets 1, unless the caught impostor then guesses the word and steals 1.')
+            : t('Scoring: if the impostor isn’t voted out, they get 2 points. If they are, everyone else gets 1, unless the impostor then guesses the word and steals 1.')}
         </p>
       </section>
     </div>
@@ -274,27 +275,27 @@ export function ImpostorMode({ session, update, onExit, onRoom }: { session: Par
 export function SecretCard({ impostor, theme, word, hint }: { impostor: boolean; theme: string; word: string | null; hint: string | null }) {
   return (
     <div className={`pt-imp-card${impostor ? ' is-impostor' : ''}`}>
-      <p className="pt-kicker">Theme: {theme}</p>
+      <p className="pt-kicker">{t('Theme: {theme}', { theme })}</p>
       {impostor ? (
         <>
-          <p className="pt-imp-role">🕵️ You are the impostor</p>
+          <p className="pt-imp-role">{t('🕵️ You are the impostor')}</p>
           {hint ? (
             <p className="pt-imp-secret">
-              <small>Your hint</small>
+              <small>{t('Your hint')}</small>
               {hint}
             </p>
           ) : (
             <p className="pt-imp-secret">
-              <small>No hint this time</small>Blend in!
+              <small>{t('No hint this time')}</small>{t('Blend in!')}
             </p>
           )}
-          <p className="pt-muted">Everyone else knows the word. Listen, then say something vague enough to pass.</p>
+          <p className="pt-muted">{t('Everyone else knows the word. Listen, then say something vague enough to pass.')}</p>
         </>
       ) : (
         <>
-          <p className="pt-imp-role">The secret word</p>
+          <p className="pt-imp-role">{t('The secret word')}</p>
           <p className="pt-imp-secret">{word}</p>
-          <p className="pt-muted">One of you doesn’t know it. Hint at it without giving it away.</p>
+          <p className="pt-muted">{t('One of you doesn’t know it. Hint at it without giving it away.')}</p>
         </>
       )}
     </div>

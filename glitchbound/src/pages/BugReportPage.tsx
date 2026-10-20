@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { getLang, useT } from '../i18n';
 import { GAMES } from '../catalog/games';
 import { Icon } from '../components/Icon';
 import { openSignIn } from '../components/openSignIn';
@@ -48,13 +49,14 @@ function fromPage(): string {
 }
 
 export function ProfileTabs({ current }: { current: 'me' | 'bugs' }) {
+  const t = useT();
   return (
-    <nav className="profile-tabs" aria-label="Profile sections">
+    <nav className="profile-tabs" aria-label={t('Profile sections')}>
       <Link href="/me" className="profile-tab" aria-current={current === 'me' ? 'page' : undefined}>
-        <Icon name="user" size={18} /> Profile
+        <Icon name="user" size={18} /> {t('Profile')}
       </Link>
       <Link href="/me/bugs" className="profile-tab" aria-current={current === 'bugs' ? 'page' : undefined}>
-        <Icon name="bug" size={18} /> Bug reports
+        <Icon name="bug" size={18} /> {t('Tickets')}
       </Link>
     </nav>
   );
@@ -62,6 +64,7 @@ export function ProfileTabs({ current }: { current: 'me' | 'bugs' }) {
 
 export function BugReportPage() {
   usePageMeta({ title: 'Report a bug', path: '/me/bugs' });
+  const t = useT();
   const { me } = useAccount();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
@@ -111,7 +114,7 @@ export function BugReportPage() {
       form.reset();
       setSentId(res.id || Date.now());
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not send the report. Check your connection and try again.');
+      setError(err instanceof ApiError ? t(err.message) : t('Could not send the report. Check your connection and try again.'));
     } finally {
       setSending(false);
     }
@@ -121,32 +124,32 @@ export function BugReportPage() {
     <div className="wrap info-page profile bug-page">
       {me && <ProfileTabs current="bugs" />}
       <header>
-        <h1 className="info-title">Report a bug</h1>
-        <p className="info-lead">Something broken, confusing or unfair? Tell us. Every report is read, and we fix things fast.</p>
+        <h1 className="info-title">{category === 'question' ? t('Open a ticket') : t('Report a bug')}</h1>
+        <p className="info-lead">{t('Something broken, confusing or unfair, or a question for us? Open a ticket. Every one is read, and we answer and fix things fast.')}</p>
       </header>
 
       {sentId ? (
         <section className="panel info-block bug-sent" role="status">
           <h2>
-            <Icon name="check" /> Report #{sentId} received. Thank you!
+            <Icon name="check" /> {t('Ticket #{n} received. Thank you!', { n: sentId })}
           </h2>
-          <p>{me ? 'You can follow its status below.' : 'If you left an email, we will let you know when it is fixed.'}</p>
+          <p>{me ? t('You can follow its status below.') : t('If you left an email, we will let you know when it is fixed.')}</p>
           <div className="reset-row">
             <button className="btn" onClick={() => setSentId(0)}>
-              Report another
+              {t('Open another')}
             </button>
             <Link href={game ? `/games/${game}` : '/'} className="btn btn-primary">
-              Back to {GAMES.find((g) => g.slug === game)?.title ?? 'the arcade'}
+              {t('Back to {place}', { place: GAMES.find((g) => g.slug === game)?.title ?? t('the arcade') })}
             </Link>
           </div>
         </section>
       ) : (
         <form className="panel info-block bug-form" onSubmit={(e) => void submit(e)}>
           <label className="bug-label" htmlFor="bug-game">
-            Where did it happen?
+            {t('Where did it happen?')}
           </label>
           <select id="bug-game" className="field" value={game} onChange={(e) => setGame(e.target.value)}>
-            <option value="">The website (not a game)</option>
+            <option value="">{t('The website (not a game)')}</option>
             {GAMES.map((g) => (
               <option key={g.slug} value={g.slug}>
                 {g.title}
@@ -155,55 +158,55 @@ export function BugReportPage() {
           </select>
 
           <fieldset className="bug-fieldset">
-            <legend className="bug-label">What kind of problem?</legend>
+            <legend className="bug-label">{t('What is it about?')}</legend>
             <div className="bug-cats">
               {CATEGORIES.map((c) => (
                 <label key={c.id} className={`bug-cat${category === c.id ? ' is-on' : ''}`}>
                   <input type="radio" name="category" value={c.id} checked={category === c.id} onChange={() => setCategory(c.id)} />
-                  <strong>{c.label}</strong>
-                  <span>{c.hint}</span>
+                  <strong>{t(c.label)}</strong>
+                  <span>{t(c.hint)}</span>
                 </label>
               ))}
             </div>
           </fieldset>
 
           <fieldset className="bug-fieldset">
-            <legend className="bug-label">How bad is it?</legend>
+            <legend className="bug-label">{t('How bad is it?')}</legend>
             <div className="seg bug-sev" role="radiogroup">
               {SEVERITIES.map((s) => (
                 <button type="button" key={s.id} role="radio" aria-checked={severity === s.id} className={severity === s.id ? 'is-on' : ''} onClick={() => setSeverity(s.id)}>
-                  {s.label}
+                  {t(s.label)}
                 </button>
               ))}
             </div>
           </fieldset>
 
           <label className="bug-label" htmlFor="bug-title">
-            Title
+            {t('Title')}
           </label>
-          <input id="bug-title" name="title" className="field" required minLength={4} maxLength={120} placeholder="e.g. Tubes overlap on my phone in Color Lab" />
+          <input id="bug-title" name="title" className="field" required minLength={4} maxLength={120} placeholder={t('e.g. Tubes overlap on my phone in Color Lab')} />
 
           <label className="bug-label" htmlFor="bug-desc">
-            What happened?
+            {t('What happened?')}
           </label>
-          <textarea id="bug-desc" name="description" className="field bug-text" required minLength={10} maxLength={3000} rows={5} placeholder="What did you expect, and what happened instead?" />
+          <textarea id="bug-desc" name="description" className="field bug-text" required minLength={10} maxLength={3000} rows={5} placeholder={t('What did you expect, and what happened instead?')} />
 
           <label className="bug-label" htmlFor="bug-steps">
-            How can we make it happen again? <span>(optional)</span>
+            {t('How can we make it happen again?')} <span>({t('optional')})</span>
           </label>
-          <textarea id="bug-steps" name="steps" className="field bug-text" maxLength={900} rows={3} placeholder={'1. Open the daily\n2. Tap…'} />
+          <textarea id="bug-steps" name="steps" className="field bug-text" maxLength={900} rows={3} placeholder={t('1. Open the daily\n2. Tap…')} />
 
           {!me && (
             <>
               <label className="bug-label" htmlFor="bug-contact">
-                Email for updates <span>(optional)</span>
+                {t('Email for updates')} <span>({t('optional')})</span>
               </label>
               <input id="bug-contact" name="contact" type="email" className="field" maxLength={120} placeholder="you@example.com" />
             </>
           )}
 
           <p className="info-small bug-device">
-            <Icon name="keyboard" size={16} /> We’ll attach your browser and screen size: <span className="mono">{device}</span>
+            <Icon name="keyboard" size={16} /> {t('We’ll attach your browser and screen size:')} <span className="mono">{device}</span>
           </p>
           {error && (
             <p className="bug-error" role="alert">
@@ -212,7 +215,7 @@ export function BugReportPage() {
           )}
           <div className="reset-row">
             <button className="btn btn-primary btn-lg" disabled={sending}>
-              <Icon name="bug" /> {sending ? 'Sending…' : 'Send report'}
+              <Icon name="bug" /> {sending ? t('Sending…') : t('Send')}
             </button>
           </div>
         </form>
@@ -220,19 +223,19 @@ export function BugReportPage() {
 
       <section aria-labelledby="mine-title">
         <h2 id="mine-title" className="profile-h2">
-          Your reports
+          {t('Your tickets')}
         </h2>
         {!me ? (
           <p className="info-lead">
-            <button className="link-btn" onClick={() => openSignIn('Sign in to follow your bug reports.')}>
-              Sign in
+            <button className="link-btn" onClick={() => openSignIn(t('Sign in to follow your tickets.'))}>
+              {t('Sign in')}
             </button>{' '}
-            to see the status of everything you report.
+            {t('to see the status of everything you send.')}
           </p>
         ) : mine === null ? (
-          <p className="info-small">Loading…</p>
+          <p className="info-small">{t('Loading…')}</p>
         ) : mine.length === 0 ? (
-          <p className="info-lead">Nothing reported yet. Thanks for playing!</p>
+          <p className="info-lead">{t('Nothing sent yet. Thanks for playing!')}</p>
         ) : (
           <ul className="bug-list">
             {mine.map((b) => {
@@ -240,15 +243,15 @@ export function BugReportPage() {
               return (
                 <li key={b.id} className="panel bug-item">
                   <span className="sticker" data-tone={st.tone}>
-                    {st.label}
+                    {t(st.label)}
                   </span>
                   <div>
                     <strong>
                       #{b.id} {b.title}
                     </strong>
                     <p className="info-small mono">
-                      {GAMES.find((g) => g.slug === b.game)?.title ?? 'Website'} · {new Date(b.ts).toLocaleDateString()}
-                      {b.updatedAt > b.ts + 1000 ? ` · updated ${new Date(b.updatedAt).toLocaleDateString()}` : ''}
+                      {GAMES.find((g) => g.slug === b.game)?.title ?? t('Website')} · {new Date(b.ts).toLocaleDateString(getLang())}
+                      {b.updatedAt > b.ts + 1000 ? ` · ${t('updated {date}', { date: new Date(b.updatedAt).toLocaleDateString(getLang()) })}` : ''}
                     </p>
                     {b.note && <p className="bug-note">“{b.note}”</p>}
                   </div>

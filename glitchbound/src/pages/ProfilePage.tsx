@@ -12,11 +12,13 @@ import { usePageMeta } from '../platform/meta';
 import type { Me } from '../platform/apiTypes';
 import { rankBests, topLabel } from '../platform/profile';
 import { Link } from '../router/router';
+import { getLang, useT } from '../i18n';
 import { ProfileTabs } from './BugReportPage';
 import './InfoPages.css';
 
 export function ProfilePage() {
   usePageMeta({ title: 'Your profile', path: '/me' });
+  const t = useT();
   const { me, status } = useAccount();
   const [editing, setEditing] = useState(false);
   const [nickMsg, setNickMsg] = useState('');
@@ -31,23 +33,23 @@ export function ProfilePage() {
   if (status === 'loading') {
     return (
       <div className="wrap info-page">
-        <p className="info-lead">Loading your profile…</p>
+        <p className="info-lead">{t('Loading your profile…')}</p>
       </div>
     );
   }
   if (!me) {
     return (
       <div className="wrap info-page">
-        <h1 className="info-title">Your profile</h1>
+        <h1 className="info-title">{t('Your profile')}</h1>
         {deleted && (
           <p className="panel info-block" role="status">
-            Your account and everything saved with it were deleted.
+            {t('Your account and everything saved with it were deleted.')}
           </p>
         )}
-        <p className="info-lead">Sign in to get daily quests, levels, badges, favorites on every device and your name on the leaderboards.</p>
+        <p className="info-lead">{t('Sign in to get daily quests, levels, badges, favorites on every device and your name on the leaderboards.')}</p>
         <div>
           <button className="btn btn-magenta btn-lg" onClick={() => openSignIn()}>
-            <Icon name="user" /> Sign in
+            <Icon name="user" /> {t('Sign in')}
           </button>
         </div>
       </div>
@@ -60,9 +62,9 @@ export function ProfilePage() {
     try {
       await account.update({ nickname });
       setEditing(false);
-      setNickMsg('Saved.');
+      setNickMsg(t('Saved.'));
     } catch (err) {
-      setNickMsg(err instanceof ApiError ? err.message : 'Could not save.');
+      setNickMsg(err instanceof ApiError ? t(err.message) : t('Could not save.'));
     }
   };
   const editNick = (on: boolean): void => {
@@ -78,7 +80,7 @@ export function ProfilePage() {
       setDeleted(true);
       setConfirmDelete(false);
     } catch {
-      setDeleteError('Could not delete your account right now. Please try again.');
+      setDeleteError(t('Could not delete your account right now. Please try again.'));
     } finally {
       setDeleting(false);
     }
@@ -90,30 +92,30 @@ export function ProfilePage() {
   return (
     <div className="wrap info-page profile">
       <ProfileTabs current="me" />
-      <section className="profile-card panel" aria-label="Player card">
+      <section className="profile-card panel" aria-label={t('Player card')}>
         <Avatar name={me.nickname} src={me.avatar} size={84} />
         <div className="profile-id">
           {editing ? (
             <form className="nick-form" onSubmit={(e) => void saveNick(e)}>
-              <input className="field" name="nickname" defaultValue={me.nickname} minLength={3} maxLength={14} aria-label="Nickname" autoFocus />
-              <button className="btn btn-primary btn-sm">Save</button>
+              <input className="field" name="nickname" defaultValue={me.nickname} minLength={3} maxLength={14} aria-label={t('Nickname')} autoFocus />
+              <button className="btn btn-primary btn-sm">{t('Save')}</button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => editNick(false)}>
-                Cancel
+                {t('Cancel')}
               </button>
             </form>
           ) : (
             <h1 className="profile-name">
               {me.nickname}
-              <button className="btn btn-ghost btn-sm" onClick={() => editNick(true)} aria-label="Edit nickname">
-                Edit
+              <button className="btn btn-ghost btn-sm" onClick={() => editNick(true)} aria-label={t('Edit nickname')}>
+                {t('Edit')}
               </button>
             </h1>
           )}
           {nickMsg && <p className="info-small">{nickMsg}</p>}
           <p className="mono profile-sub">
-            Level {me.level} · {fmt(me.xp)} XP · {fmt(me.rounds)} ranked rounds · {me.streak} day streak
+            {t('Level {n}', { n: me.level })} · {fmt(me.xp)} XP · {t('{n} ranked rounds', { n: fmt(me.rounds) })} · {t('{n} day streak', { n: me.streak })}
           </p>
-          <div className="xpbar profile-xp" aria-label={`${pct}% to level ${me.level + 1}`}>
+          <div className="xpbar profile-xp" aria-label={t('{pct}% to level {n}', { pct, n: me.level + 1 })}>
             <i style={{ width: `${pct}%` }} />
           </div>
         </div>
@@ -123,16 +125,16 @@ export function ProfilePage() {
 
       <section aria-labelledby="badges-title">
         <h2 id="badges-title" className="profile-h2">
-          Badges
+          {t('Badges')}
         </h2>
         <ul className="badges">
           {me.badges.map((b, i) => (
-            <li key={b.id} className={`badge${b.earned ? ' is-earned' : ''}`} style={{ ['--i' as string]: i }} title={b.hint}>
+            <li key={b.id} className={`badge${b.earned ? ' is-earned' : ''}`} style={{ ['--i' as string]: i }} title={t(b.hint)}>
               <span className="badge-icon">
                 <Icon name={b.earned ? 'star' : 'bolt'} size={22} />
               </span>
-              <strong>{b.label}</strong>
-              <span className="info-small">{b.hint}</span>
+              <strong>{t(b.label)}</strong>
+              <span className="info-small">{t(b.hint)}</span>
             </li>
           ))}
         </ul>
@@ -142,7 +144,7 @@ export function ProfilePage() {
 
       <section aria-labelledby="favs-title">
         <h2 id="favs-title" className="profile-h2">
-          Favorites
+          {t('Favorites')}
         </h2>
         {favorites.length ? (
           <>
@@ -153,38 +155,38 @@ export function ProfilePage() {
             </div>
             {favorites.length > 6 && (
               <button className="btn btn-ghost show-more" onClick={() => setAllFavs((v) => !v)}>
-                {allFavs ? 'Show fewer' : `Show all ${favorites.length} favorites`}
+                {allFavs ? t('Show fewer') : t('Show all {n} favorites', { n: favorites.length })}
               </button>
             )}
           </>
         ) : (
-          <p className="info-lead">Tap the heart on any game to keep it here.</p>
+          <p className="info-lead">{t('Tap the heart on any game to keep it here.')}</p>
         )}
       </section>
 
       <NotifyForm />
 
       <section className="panel info-block danger" aria-labelledby="account-title">
-        <h2 id="account-title">Account</h2>
+        <h2 id="account-title">{t('Account')}</h2>
         <p>
-          Signed in as <b>{me.email}</b>. Leaderboards only show your nickname.
+          {t('Signed in as')} <b>{me.email}</b>. {t('Leaderboards only show your nickname.')}
         </p>
-        {confirmDelete && <p className="info-small">Your nickname, XP, levels, bests, rounds, favorites and quest progress are deleted for good. This can’t be undone.</p>}
+        {confirmDelete && <p className="info-small">{t('Your nickname, XP, levels, bests, rounds, favorites, quest progress and saves are deleted for good. This can’t be undone.')}</p>}
         <div className="reset-row">
           <button className="btn" onClick={() => void account.signOut()}>
-            <Icon name="logout" /> Sign out
+            <Icon name="logout" /> {t('Sign out')}
           </button>
           {!confirmDelete ? (
             <button className="btn btn-ghost" onClick={() => setConfirmDelete(true)}>
-              Delete my account
+              {t('Delete my account')}
             </button>
           ) : (
             <>
               <button className="btn btn-magenta" disabled={deleting} onClick={() => void deleteAccount()}>
-                Yes, delete everything
+                {t('Yes, delete everything')}
               </button>
               <button className="btn btn-ghost" disabled={deleting} onClick={() => setConfirmDelete(false)}>
-                Cancel
+                {t('Cancel')}
               </button>
             </>
           )}
@@ -206,6 +208,7 @@ const HIGHLIGHTS = 4;
  * every other best in a compact, searchable list, and a nudge towards games not tried yet.
  */
 function BestResults({ me }: { me: Me }) {
+  const t = useT();
   const [query, setQuery] = useState('');
   const games = useGames();
   const ranked = rankBests(me.bests, games);
@@ -217,10 +220,10 @@ function BestResults({ me }: { me: Me }) {
   return (
     <section aria-labelledby="bests-title">
       <h2 id="bests-title" className="profile-h2">
-        Your best results
+        {t('Your best results')}
       </h2>
       {top.length === 0 ? (
-        <p className="info-lead">Finish a round while signed in and your records show up here.</p>
+        <p className="info-lead">{t('Finish a round while signed in and your records show up here.')}</p>
       ) : (
         <div className="best-cards">
           {top.map((e) => {
@@ -235,7 +238,7 @@ function BestResults({ me }: { me: Me }) {
                   <strong className="best-card-title">{e.game.title}</strong>
                   <span className="best-score mono">{fmt(e.best.score)}</span>
                   <span className="info-small mono">
-                    {e.best.rank && e.best.players ? `Rank ${e.best.rank} of ${fmt(e.best.players)}` : 'Personal best'} · {new Date(e.best.at).toLocaleDateString()}
+                    {e.best.rank && e.best.players ? t('Rank {rank} of {n}', { rank: e.best.rank, n: fmt(e.best.players) }) : t('Personal best')} · {new Date(e.best.at).toLocaleDateString(getLang())}
                   </span>
                 </span>
               </Link>
@@ -247,24 +250,24 @@ function BestResults({ me }: { me: Me }) {
       {ranked.length > HIGHLIGHTS && (
         <details className="panel all-bests">
           <summary>
-            All personal bests <span className="mono">({ranked.length} games)</span>
+            {t('All personal bests')} <span className="mono">({t('{n} games', { n: ranked.length })})</span>
           </summary>
           {ranked.length > 10 && (
-            <input className="field all-bests-search" type="search" placeholder="Filter games" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Filter games" />
+            <input className="field all-bests-search" type="search" placeholder={t('Filter games')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('Filter games')} />
           )}
           <table className="bests-table">
             <thead>
               <tr>
-                <th scope="col">Game</th>
-                <th scope="col">Best</th>
-                <th scope="col">Rank</th>
+                <th scope="col">{t('Game')}</th>
+                <th scope="col">{t('Best')}</th>
+                <th scope="col">{t('Rank')}</th>
               </tr>
             </thead>
             <tbody>
               {rest.length === 0 && (
                 <tr>
                   <td colSpan={3} className="info-small">
-                    No game matches “{query.trim()}”.
+                    {t('No game matches “{q}”.', { q: query.trim() })}
                   </td>
                 </tr>
               )}
@@ -284,14 +287,14 @@ function BestResults({ me }: { me: Me }) {
 
       {untried.length > 0 && (
         <div className="untried">
-          <p className="info-small">Not tried yet:</p>
+          <p className="info-small">{t('Not tried yet:')}</p>
           {untried.slice(0, 6).map((g) => (
             <Link key={g.slug} href={`/games/${g.slug}`} className="untried-chip" data-accent={g.accent}>
               <img src={g.art.tile} alt="" width={28} height={28} style={{ background: g.art.bg }} />
               {g.title}
             </Link>
           ))}
-          {untried.length > 6 && <span className="info-small">+{untried.length - 6} more</span>}
+          {untried.length > 6 && <span className="info-small">{t('+{n} more', { n: untried.length - 6 })}</span>}
         </div>
       )}
     </section>

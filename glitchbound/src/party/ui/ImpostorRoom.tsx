@@ -8,6 +8,7 @@ import { navigate } from '../../router/router';
 import { ModeBar } from './shared';
 import { SecretCard } from './Impostor';
 import { RoomNotice, useTopOnPhase } from './room/RoomFrame';
+import { t } from '../../i18n';
 
 const COLORS = ['#ff5a6c', '#ffb020', '#2fd1a0', '#3d7bff', '#a45cff', '#ff7eb6', '#12c6b3', '#ff8a1f', '#8ad13b', '#5b6cff', '#e64c9a', '#00a6d6'];
 const color = (n: number): string => COLORS[(n - 1) % COLORS.length]!;
@@ -47,12 +48,12 @@ export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () 
   if (missing)
     return (
       <div className="pt-screen">
-        <ModeBar title="Impostor room" onExit={onLeave} />
+        <ModeBar title={t('Impostor room')} onExit={onLeave} />
         <section className="pt-panel pt-center">
-          <h2>This room has closed</h2>
-          <p className="pt-muted">Rooms close after three quiet hours. Open a new one and send the link.</p>
+          <h2>{t('This room has closed')}</h2>
+          <p className="pt-muted">{t('Rooms close after three quiet hours. Open a new one and send the link.')}</p>
           <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            Back to Party Mode
+            {t('Back to Party Mode')}
           </button>
         </section>
       </div>
@@ -60,7 +61,7 @@ export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () 
   if (name === null)
     return (
       <div className="pt-screen">
-        <ModeBar title={`Impostor · room ${code}`} onExit={onLeave} />
+        <ModeBar title={`${t('Impostor')} · ${t('room {code}', { code })}`} onExit={onLeave} />
         <form
           className="pt-panel pt-imp-join"
           onSubmit={(e) => {
@@ -72,13 +73,13 @@ export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () 
           }}
         >
           <p className="pt-imp-badge">🕵️</p>
-          <h2>Join the room</h2>
+          <h2>{t('Join the room')}</h2>
           <label className="pt-label" htmlFor="pt-imp-name">
-            Your name (so friends know who’s who)
+            {t('Your name (so friends know who’s who)')}
           </label>
           <input id="pt-imp-name" className="pt-input" value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={20} autoFocus enterKeyHint="go" />
           <button className="pt-btn pt-btn-go pt-btn-big" disabled={!draft.trim()}>
-            Join
+            {t('Join')}
           </button>
         </form>
       </div>
@@ -91,7 +92,7 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
   const left = useLeft(view?.deadline ?? null, skew);
   const screen = useTopOnPhase(view?.phase);
   const invite = (): void => {
-    void shareOrCopy({ title: 'Impostor room', text: `🕵️ Join my Impostor room (code ${code}): one of us gets a different card. Find them!`, url: `${location.origin}/r/${code}` });
+    void shareOrCopy({ title: t('Impostor room'), text: t('🕵️ Join my Impostor room (code {code}): one of us gets a different card. Find them!', { code }), url: `${location.origin}/r/${code}` });
   };
   useEffect(() => {
     if (!error) return;
@@ -99,7 +100,7 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
     return () => window.clearTimeout(t);
   }, [error, clearError]);
 
-  const bar = <ModeBar title={`Impostor · ${code}`} progress={view?.round && !gone ? `Round ${view.round}` : undefined} onExit={onLeave} />;
+  const bar = <ModeBar title={`${t('Impostor')} · ${code}`} progress={view?.round && !gone ? t('Round {n}', { n: view.round }) : undefined} onExit={onLeave} />;
   if (gone)
     return (
       <div className="pt-screen">
@@ -107,7 +108,7 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
         <section className="pt-panel pt-center">
           <h2>{gone}</h2>
           <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            Back to Party Mode
+            {t('Back to Party Mode')}
           </button>
         </section>
       </div>
@@ -116,7 +117,7 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
     return (
       <div className="pt-screen">
         {bar}
-        <p className="pt-muted pt-center">{conn === 'reconnecting' ? 'Reconnecting…' : 'Connecting to the room…'}</p>
+        <p className="pt-muted pt-center">{conn === 'reconnecting' ? t('Reconnecting…') : t('Connecting to the room…')}</p>
       </div>
     );
 
@@ -134,8 +135,8 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
         <>
           <section className="pt-panel">
             <div className="pt-panel-head">
-              <h2>Who’s here</h2>
-              <span className="pt-pill">{view.players.filter((p) => p.online).length} in the room</span>
+              <h2>{t('Who’s here')}</h2>
+              <span className="pt-pill">{t('{n} in the room', { n: view.players.filter((p) => p.online).length })}</span>
             </div>
             <ul className="pt-names">
               {view.players.map((p) => (
@@ -144,10 +145,10 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
                   <span>
                     {p.name}
                     {p.host ? ' 👑' : ''}
-                    {p.you ? ' (you)' : ''}
+                    {p.you ? t(' (you)') : ''}
                   </span>
                   {view.host && !p.you && (
-                    <button onClick={() => send({ t: 'kick', seat: p.n })} aria-label={`Remove ${p.name}`}>
+                    <button onClick={() => send({ t: 'kick', seat: p.n })} aria-label={t('Remove {name}', { name: p.name })}>
                       ✕
                     </button>
                   )}
@@ -155,30 +156,30 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
               ))}
             </ul>
             <button className="pt-btn" onClick={invite}>
-              📨 Invite friends · room {code}
+              {t('📨 Invite friends · room {code}', { code })}
             </button>
-            <p className="pt-muted">Everyone plays on their own phone. Be together in a room, or on a call.</p>
+            <p className="pt-muted">{t('Everyone plays on their own phone. Be together in a room, or on a call.')}</p>
           </section>
           {view.host ? (
             <HostSettings view={view} send={send} />
           ) : (
-            <p className="pt-muted pt-center">Waiting for the host to start…</p>
+            <p className="pt-muted pt-center">{t('Waiting for the host to start…')}</p>
           )}
         </>
       )}
 
       {view.phase === 'reveal' && (
         <>
-          {view.card ? <SecretCard impostor={view.card.impostor} theme={view.card.theme} word={view.card.word} hint={view.card.hint} /> : <p className="pt-panel">You joined mid-round: you’re in from the next one.</p>}
+          {view.card ? <SecretCard impostor={view.card.impostor} theme={view.card.theme} word={view.card.word} hint={view.card.hint} /> : <p className="pt-panel">{t('You joined mid-round: you’re in from the next one.')}</p>}
           {view.card && !me.done && (
             <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'seen' })}>
-              Got it
+              {t('Got it')}
             </button>
           )}
-          <Waiting players={inRound} label="Ready" />
+          <Waiting players={inRound} label={t('Ready')} />
           {view.host && (
             <button className="pt-btn pt-btn-sm" onClick={() => send({ t: 'vote_now' })}>
-              Skip waiting
+              {t('Skip waiting')}
             </button>
           )}
         </>
@@ -186,36 +187,36 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
 
       {view.phase === 'talk' && (
         <section className="pt-panel pt-imp-talk">
-          <p className="pt-kicker">Theme</p>
+          <p className="pt-kicker">{t('Theme')}</p>
           <h2 className="pt-imp-theme">{view.card?.theme ?? '…'}</h2>
           {starter && (
             <p className="pt-imp-starter">
               <Dot p={starter} />
               <span>
-                <b>{starter.you ? 'You start' : `${starter.name} starts`}</b>. Go round, one word each. Never say the word!
+                <b>{starter.you ? t('You start') : t('{name} starts', { name: starter.name })}</b>. {t('Go round, one word each. Never say the word!')}
               </span>
             </p>
           )}
           {view.card && (
             <details className="pt-imp-peek">
-              <summary>Peek at my card</summary>
+              <summary>{t('Peek at my card')}</summary>
               <SecretCard impostor={view.card.impostor} theme={view.card.theme} word={view.card.word} hint={view.card.hint} />
             </details>
           )}
           {left !== null && <p className="pt-imp-clock">⏱ {left}s</p>}
           {view.card ? (
             <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'vote_now' })}>
-              🗳️ Start the vote
+              {t('🗳️ Start the vote')}
             </button>
           ) : (
-            <p className="pt-muted">You joined mid-round: you’re in from the next one.</p>
+            <p className="pt-muted">{t('You joined mid-round: you’re in from the next one.')}</p>
           )}
         </section>
       )}
 
       {view.phase === 'vote' && (
         <section className="pt-panel">
-          <h2>Who’s the impostor?</h2>
+          <h2>{t('Who’s the impostor?')}</h2>
           {left !== null && <p className="pt-imp-clock">⏱ {left}s</p>}
           {view.card ? (
             <div className="pt-imp-vote">
@@ -229,20 +230,20 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
                 ))}
             </div>
           ) : (
-            <p className="pt-muted">You’re in from the next round.</p>
+            <p className="pt-muted">{t('You’re in from the next round.')}</p>
           )}
-          <Waiting players={inRound} label="Voted" />
+          <Waiting players={inRound} label={t('Voted')} />
         </section>
       )}
 
       {view.phase === 'guess' && (
         <section className="pt-panel pt-imp-guess">
           <p className="pt-imp-badge">🚨</p>
-          <h2>{byN(view.voted)?.you ? 'You were caught!' : `${byN(view.voted)?.name} was the impostor!`}</h2>
+          <h2>{byN(view.voted)?.you ? t('You were caught!') : t('{name} was the impostor!', { name: byN(view.voted)?.name ?? '' })}</h2>
           {left !== null && <p className="pt-imp-clock">⏱ {left}s</p>}
           {byN(view.voted)?.you ? (
             <>
-              <p>One guess at the word steals the round:</p>
+              <p>{t('One guess at the word steals the round:')}</p>
               <div className="pt-imp-options">
                 {view.options?.map((w) => (
                   <button key={w} className="pt-btn" onClick={() => send({ t: 'guess', word: w })}>
@@ -252,25 +253,25 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
               </div>
             </>
           ) : (
-            <p className="pt-muted">They get one guess at the word to steal the round…</p>
+            <p className="pt-muted">{t('They get one guess at the word to steal the round…')}</p>
           )}
         </section>
       )}
 
       {view.phase === 'result' && view.result && (
         <section className="pt-panel pt-imp-result">
-          <h2>{view.result.outcome === 'escaped' ? '🕵️ The impostor got away!' : view.result.outcome === 'stole' ? '😈 Caught, but they guessed the word!' : '🎉 Impostor caught!'}</h2>
+          <h2>{view.result.outcome === 'escaped' ? t('🕵️ The impostor got away!') : view.result.outcome === 'stole' ? t('😈 Caught, but they guessed the word!') : t('🎉 Impostor caught!')}</h2>
           {view.result.outcome === 'escaped' && (
             <p className="pt-muted">
               {view.voted !== null
-                ? `${byN(view.voted)?.name ?? 'Someone'} was voted out, but they were innocent.`
+                ? t('{name} was voted out, but they were innocent.', { name: byN(view.voted)?.name ?? t('Someone') })
                 : Object.keys(view.result.votes).length
-                  ? 'The vote was a tie, so nobody was voted out.'
-                  : 'Nobody voted in time.'}
+                  ? t('The vote was a tie, so nobody was voted out.')
+                  : t('Nobody voted in time.')}
             </p>
           )}
           <p className="pt-imp-word">
-            The word was <b>{view.result.word}</b>
+            {t('The word was')}{' '}<b>{view.result.word}</b>
           </p>
           <div className="pt-imp-reveal">
             {view.result.impostors.map((n) => {
@@ -304,14 +305,14 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
           {view.host ? (
             <div className="pt-row">
               <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'next' })}>
-                Next round
+                {t('Next round')}
               </button>
               <button className="pt-btn" onClick={() => send({ t: 'lobby' })}>
-                Settings
+                {t('Settings')}
               </button>
             </div>
           ) : (
-            <p className="pt-muted pt-center">The host starts the next round.</p>
+            <p className="pt-muted pt-center">{t('The host starts the next round.')}</p>
           )}
         </section>
       )}
@@ -340,10 +341,10 @@ function HostSettings({ view, send }: { view: RoomView; send: (a: Action) => voi
   const online = view.players.filter((p) => p.online).length;
   return (
     <section className="pt-panel">
-      <h3>Themes</h3>
+      <h3>{t('Themes')}</h3>
       <div className="pt-picker">
         <button className={`pt-chip${all ? ' is-on' : ''}`} onClick={() => setS({ themes: [] })}>
-          🎲 Mix them all
+          {t('🎲 Mix them all')}
         </button>
         {IMPOSTOR_THEMES.map((t) => {
           const on = s.themes.includes(t.id);
@@ -354,34 +355,34 @@ function HostSettings({ view, send }: { view: RoomView; send: (a: Action) => voi
           );
         })}
       </div>
-      <p className="pt-label">Impostors</p>
+      <p className="pt-label">{t('Impostors')}</p>
       <div className="pt-seg" role="radiogroup">
         <button role="radio" aria-checked={s.impostors === 1} onClick={() => setS({ impostors: 1 })}>
-          One
+          {t('One')}
         </button>
         <button role="radio" aria-checked={s.impostors === 2} onClick={() => setS({ impostors: 2 })}>
-          Two <small>7+ players</small>
+          {t('Two')}{' '}<small>{t('7+ players')}</small>
         </button>
       </div>
-      <p className="pt-label">The impostor gets</p>
+      <p className="pt-label">{t('The impostor gets')}</p>
       <div className="pt-seg" role="radiogroup">
         <button role="radio" aria-checked={s.hint} onClick={() => setS({ hint: true })}>
-          A hint word
+          {t('A hint word')}
         </button>
         <button role="radio" aria-checked={!s.hint} onClick={() => setS({ hint: false })}>
-          Only the theme
+          {t('Only the theme')}
         </button>
       </div>
-      <p className="pt-label">Talking time</p>
+      <p className="pt-label">{t('Talking time')}</p>
       <div className="pt-seg" role="radiogroup">
         {TALK_TIMES.map((secs) => (
           <button key={secs} role="radio" aria-checked={s.talk === secs} onClick={() => setS({ talk: secs })}>
-            {secs ? `${secs / 60} min` : 'No timer'}
+            {secs ? t('{n} min', { n: secs / 60 }) : t('No timer')}
           </button>
         ))}
       </div>
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={online < MIN_PLAYERS} onClick={() => send({ t: 'start' })}>
-        {online < MIN_PLAYERS ? `Waiting for ${MIN_PLAYERS - online} more` : 'Start the round'}
+        {online < MIN_PLAYERS ? t('Waiting for {n} more', { n: MIN_PLAYERS - online }) : t('Start the round')}
       </button>
     </section>
   );

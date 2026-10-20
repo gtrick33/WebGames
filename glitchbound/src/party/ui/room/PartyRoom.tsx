@@ -10,9 +10,12 @@ import { HuesRoomPage } from './HuesRoom';
 import { NhieRoomPage } from './NhieRoom';
 import { RpsRoomPage } from './RpsRoom';
 import { UniqueRoomPage } from './UniqueRoom';
+import { t, useT } from '../../../i18n';
 
 /** /party?room=CODE: finds out which game the room plays and opens it. */
 export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => void }) {
+  // Re-render the party screens when the language changes (they use the plain t()).
+  useT();
   const [game, setGame] = useState<RoomGame | 'missing' | null>(null);
   useEffect(() => {
     let live = true;
@@ -28,7 +31,7 @@ export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => 
     return (
       <div className="pt-screen">
         <ModeBar title={`Room ${code}`} onExit={onLeave} />
-        <p className="pt-muted pt-center">Finding the room…</p>
+        <p className="pt-muted pt-center">{t('Finding the room…')}</p>
       </div>
     );
   if (game === 'missing')
@@ -36,10 +39,10 @@ export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => 
       <div className="pt-screen">
         <ModeBar title={`Room ${code}`} onExit={onLeave} />
         <section className="pt-panel pt-center">
-          <h2>This room has closed</h2>
-          <p className="pt-muted">Rooms close after three quiet hours. Open a new one and send the link.</p>
+          <h2>{t('This room has closed')}</h2>
+          <p className="pt-muted">{t('Rooms close after three quiet hours. Open a new one and send the link.')}</p>
           <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            Back to Party Mode
+            {t('Back to Party Mode')}
           </button>
         </section>
       </div>

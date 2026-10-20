@@ -4,6 +4,7 @@ import { roomInfo, useRoom } from '../../../platform/rooms';
 import { shareOrCopy } from '../../../platform/share';
 import type { SeatView } from '../../rooms/seats';
 import { ModeBar } from '../shared';
+import { t } from '../../../i18n';
 
 const COLORS = ['#ff5a6c', '#ffb020', '#2fd1a0', '#3d7bff', '#a45cff', '#ff7eb6', '#12c6b3', '#ff8a1f', '#8ad13b', '#5b6cff', '#e64c9a', '#00a6d6'];
 export const seatColor = (n: number): string => COLORS[(n - 1) % COLORS.length]!;
@@ -80,7 +81,7 @@ export function Scores({ players, gained }: { players: SeatView[]; gained?: Reco
             <Dot p={p} size={26} />
             <span>
               {p.name}
-              {p.you ? ' (you)' : ''}
+              {p.you ? t(' (you)') : ''}
             </span>
             {gained?.[String(p.n)] ? <em>+{gained[String(p.n)]}</em> : null}
             <b>{p.score}</b>
@@ -152,12 +153,12 @@ export function RoomFrame<V extends FrameView, A>({
   if (missing)
     return (
       <div className="pt-screen">
-        <ModeBar title={`${meta.title} room`} onExit={onLeave} />
+        <ModeBar title={t('{game} room', { game: t(meta.title) })} onExit={onLeave} />
         <section className="pt-panel pt-center">
-          <h2>This room has closed</h2>
-          <p className="pt-muted">Rooms close after three quiet hours. Open a new one and send the link.</p>
+          <h2>{t('This room has closed')}</h2>
+          <p className="pt-muted">{t('Rooms close after three quiet hours. Open a new one and send the link.')}</p>
           <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            Back to Party Mode
+            {t('Back to Party Mode')}
           </button>
         </section>
       </div>
@@ -165,7 +166,7 @@ export function RoomFrame<V extends FrameView, A>({
   if (name === null)
     return (
       <div className="pt-screen">
-        <ModeBar title={`${meta.title} · room ${code}`} onExit={onLeave} />
+        <ModeBar title={`${t(meta.title)} · ${t('room {code}', { code })}`} onExit={onLeave} />
         <form
           className="pt-panel pt-imp-join"
           onSubmit={(e) => {
@@ -177,13 +178,13 @@ export function RoomFrame<V extends FrameView, A>({
           }}
         >
           <p className="pt-imp-badge">{meta.emoji}</p>
-          <h2>Join the room</h2>
+          <h2>{t('Join the room')}</h2>
           <label className="pt-label" htmlFor="pt-room-name">
-            Your name (so friends know who’s who)
+            {t('Your name (so friends know who’s who)')}
           </label>
           <input id="pt-room-name" className="pt-input" value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={20} autoFocus enterKeyHint="go" />
           <button className="pt-btn pt-btn-go pt-btn-big" disabled={!draft.trim()}>
-            Join
+            {t('Join')}
           </button>
         </form>
       </div>
@@ -223,10 +224,10 @@ function Connected<V extends FrameView, A>({
     return () => window.clearTimeout(t);
   }, [error, clearError]);
   const invite = (): void => {
-    void shareOrCopy({ title: `${meta.title} room`, text: `${meta.emoji} ${meta.invite} Room ${code}:`, url: `${location.origin}/r/${code}` });
+    void shareOrCopy({ title: t('{game} room', { game: t(meta.title) }), text: `${meta.emoji} ${t(meta.invite)} ${t('Room {code}:', { code })}`, url: `${location.origin}/r/${code}` });
   };
 
-  const bar = <ModeBar title={`${meta.title} · ${code}`} progress={view && !gone ? progress?.(view) : undefined} onExit={onLeave} />;
+  const bar = <ModeBar title={`${t(meta.title)} · ${code}`} progress={view && !gone ? progress?.(view) : undefined} onExit={onLeave} />;
   if (gone)
     return (
       <div className="pt-screen">
@@ -234,7 +235,7 @@ function Connected<V extends FrameView, A>({
         <section className="pt-panel pt-center">
           <h2>{gone}</h2>
           <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            Back to Party Mode
+            {t('Back to Party Mode')}
           </button>
         </section>
       </div>
@@ -243,7 +244,7 @@ function Connected<V extends FrameView, A>({
     return (
       <div className="pt-screen">
         {bar}
-        <p className="pt-muted pt-center">{conn === 'reconnecting' ? 'Reconnecting…' : 'Connecting to the room…'}</p>
+        <p className="pt-muted pt-center">{conn === 'reconnecting' ? t('Reconnecting…') : t('Connecting to the room…')}</p>
       </div>
     );
 
@@ -258,8 +259,8 @@ function Connected<V extends FrameView, A>({
         <>
           <section className="pt-panel">
             <div className="pt-panel-head">
-              <h2>Who’s here</h2>
-              <span className="pt-pill">{here} in the room</span>
+              <h2>{t('Who’s here')}</h2>
+              <span className="pt-pill">{t('{n} in the room', { n: here })}</span>
             </div>
             <ul className="pt-names">
               {view.players.map((p) => (
@@ -268,10 +269,10 @@ function Connected<V extends FrameView, A>({
                   <span>
                     {p.name}
                     {p.host ? ' 👑' : ''}
-                    {p.you ? ' (you)' : ''}
+                    {p.you ? t(' (you)') : ''}
                   </span>
                   {view.host && !p.you && (
-                    <button onClick={() => send(kick(p.n))} aria-label={`Remove ${p.name}`}>
+                    <button onClick={() => send(kick(p.n))} aria-label={t('Remove {name}', { name: p.name })}>
                       ✕
                     </button>
                   )}
@@ -279,17 +280,17 @@ function Connected<V extends FrameView, A>({
               ))}
             </ul>
             <button className="pt-btn" onClick={invite}>
-              📨 Invite friends · room {code}
+              {t('📨 Invite friends · room {code}', { code })}
             </button>
-            <p className="pt-muted">Everyone plays on their own phone. Be together in a room, or on a call.</p>
+            <p className="pt-muted">{t('Everyone plays on their own phone. Be together in a room, or on a call.')}</p>
           </section>
           {view.host ? (
             <section className="pt-panel">
               {settings(ctx)}
-              {here < meta.min && <p className="pt-muted pt-center">Waiting for {meta.min - here} more to join…</p>}
+              {here < meta.min && <p className="pt-muted pt-center">{t('Waiting for {n} more to join…', { n: meta.min - here })}</p>}
             </section>
           ) : (
-            <p className="pt-muted pt-center">Waiting for the host to start…</p>
+            <p className="pt-muted pt-center">{t('Waiting for the host to start…')}</p>
           )}
         </>
       ) : (

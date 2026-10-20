@@ -3,6 +3,7 @@ import { TILE_INFO } from '../../board';
 import { MIN_PLAYERS, SIZES, VIBES, type Action, type RoomView } from '../../rooms/boardRoom';
 import { cell, COLS, DieFace } from '../Board';
 import { Clock, Dot, RoomFrame, Scores, seatColor, type RoomContext } from './RoomFrame';
+import { t } from '../../../i18n';
 
 type Ctx = RoomContext<RoomView, Action>;
 const SIZE_LABEL: Record<string, [string, string]> = { short: ['Short', '~10 min'], medium: ['Medium', '~20 min'], long: ['Long', '~35 min'] };
@@ -27,7 +28,7 @@ function Settings({ view, send }: Ctx) {
   const online = view.players.filter((p) => p.online).length;
   return (
     <>
-      <h3>Board size</h3>
+      <h3>{t('Board size')}</h3>
       <div className="pt-seg" role="radiogroup">
         {SIZES.map((id) => (
           <button key={id} role="radio" aria-checked={s.size === id} onClick={() => send({ t: 'settings', settings: { size: id } })}>
@@ -36,17 +37,17 @@ function Settings({ view, send }: Ctx) {
           </button>
         ))}
       </div>
-      <p className="pt-label">Challenge cards</p>
+      <p className="pt-label">{t('Challenge cards')}</p>
       <div className="pt-seg" role="radiogroup">
         {VIBES.map((v) => (
           <button key={v} role="radio" aria-checked={s.vibe === v} onClick={() => send({ t: 'settings', settings: { vibe: v } })}>
-            {v === 'casual' ? '😊 Casual' : '🌶️ Spicy'}
+            {v === 'casual' ? t('😊 Casual') : t('🌶️ Spicy')}
           </button>
         ))}
       </div>
-      <p className="pt-muted">Turn order is shuffled. Land on tiles for challenges, duels, trivia, shortcuts and nasty slides. First to the 🏆 wins.</p>
+      <p className="pt-muted">{t('Turn order is shuffled. Land on tiles for challenges, duels, trivia, shortcuts and nasty slides. First to the 🏆 wins.')}</p>
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={online < MIN_PLAYERS} onClick={() => send({ t: 'start' })}>
-        Roll out the board
+        {t('Roll out the board')}
       </button>
     </>
   );
@@ -96,11 +97,11 @@ function Game({ view, send, left, me, byN }: Ctx) {
     const winner = byN(view.result.winner);
     return (
       <section className="pt-panel pt-imp-result">
-        <h2>🏆 {winner?.you ? 'You win the adventure!' : `${winner?.name ?? 'Someone'} wins the adventure!`}</h2>
+        <h2>🏆 {winner?.you ? t('You win the adventure!') : t('{name} wins the adventure!', { name: winner?.name ?? t('Someone') })}</h2>
         <ol className="pt-imp-votes">
           {view.result.standings.map((n, i) => (
             <li key={n}>
-              {i + 1}. {byN(n)?.name} · tile {b.pos[String(n)] ?? 0}
+              {i + 1}. {byN(n)?.name} · {t('tile {n}', { n: b.pos[String(n)] ?? 0 })}
             </li>
           ))}
         </ol>
@@ -108,7 +109,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
           <ul className="pt-awards">
             {view.result.awards.map((a) => (
               <li key={a.title}>
-                <span className="pt-award-title">🏅 {a.title}</span>
+                <span className="pt-award-title">🏅 {t(a.title)}</span>
                 <span>
                   {byN(a.n)?.name} · {a.why}
                 </span>
@@ -120,14 +121,14 @@ function Game({ view, send, left, me, byN }: Ctx) {
         {view.host ? (
           <div className="pt-row">
             <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'start' })}>
-              New board
+              {t('New board')}
             </button>
             <button className="pt-btn" onClick={() => send({ t: 'lobby' })}>
-              Settings
+              {t('Settings')}
             </button>
           </div>
         ) : (
-          <p className="pt-muted pt-center">The host starts the next game.</p>
+          <p className="pt-muted pt-center">{t('The host starts the next game.')}</p>
         )}
       </section>
     );
@@ -142,27 +143,27 @@ function Game({ view, send, left, me, byN }: Ctx) {
 
   return (
     <div className="pt-board-screen pt-room-board">
-      <div className="pt-standings" aria-label="Positions">
+      <div className="pt-standings" aria-label={t('Positions')}>
         {[...players]
           .sort((x, y) => (b.pos[String(y.n)] ?? 0) - (b.pos[String(x.n)] ?? 0))
           .map((p) => (
             <span key={p.n} className={`pt-stand${p.n === b.current ? ' is-now' : ''}`} style={{ ['--pc' as string]: seatColor(p.n) }}>
               {p.name}
-              {p.you ? ' (you)' : ''} <b>{b.pos[String(p.n)]}</b>
+              {p.you ? t(' (you)') : ''} <b>{b.pos[String(p.n)]}</b>
             </span>
           ))}
       </div>
-      <div className="pt-board" style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }} role="img" aria-label={`Board with ${b.tiles.length} tiles`}>
-        {b.tiles.map((t, i) => {
+      <div className="pt-board" style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }} role="img" aria-label={t('Board with {n} tiles', { n: b.tiles.length })}>
+        {b.tiles.map((tile, i) => {
           const { row, col } = cell(i);
           const here = players.filter((p) => (shown[String(p.n)] ?? 0) === i);
-          const info = TILE_INFO[t.kind];
+          const info = TILE_INFO[tile.kind];
           return (
-            <div key={i} className={`pt-tile pt-tile-${t.kind}${b.landed === i && b.step === 'event' ? ' is-landed' : ''}`} style={{ gridRow: row + 1, gridColumn: col + 1, background: info.color }} title={`${i}: ${info.label}`}>
+            <div key={i} className={`pt-tile pt-tile-${tile.kind}${b.landed === i && b.step === 'event' ? ' is-landed' : ''}`} style={{ gridRow: row + 1, gridColumn: col + 1, background: info.color }} title={`${i}: ${t(info.label)}`}>
               <span className="pt-tile-icon" aria-hidden="true">
                 {info.icon}
               </span>
-              <span className="pt-tile-n">{t.kind === 'shortcut' || t.kind === 'slide' ? `→${t.value}` : i}</span>
+              <span className="pt-tile-n">{tile.kind === 'shortcut' || tile.kind === 'slide' ? `→${tile.value}` : i}</span>
               {here.length > 0 && (
                 <span className="pt-tokens">
                   {here.map((p) => (
@@ -181,16 +182,16 @@ function Game({ view, send, left, me, byN }: Ctx) {
         <div className="pt-turn">
           {cur && <Dot p={cur} size={44} />}
           <div>
-            <p className="pt-kicker">{mine ? 'Your turn' : 'Their turn'}</p>
-            <b className="pt-turn-name">{mine ? 'Roll the dice!' : `${cur?.name ?? '…'} is rolling`}</b>
+            <p className="pt-kicker">{mine ? t('Your turn') : t('Their turn')}</p>
+            <b className="pt-turn-name">{mine ? t('Roll the dice!') : t('{name} is rolling', { name: cur?.name ?? '…' })}</b>
             {b.step === 'roll' && <Clock left={left} />}
           </div>
-          <button className={`pt-die${spin !== null ? ' is-rolling' : ''}`} onClick={() => send({ t: 'roll' })} disabled={!mine || b.step !== 'roll' || moving || spin !== null} aria-label="Roll the dice">
+          <button className={`pt-die${spin !== null ? ' is-rolling' : ''}`} onClick={() => send({ t: 'roll' })} disabled={!mine || b.step !== 'roll' || moving || spin !== null} aria-label={t('Roll the dice')}>
             <DieFace value={spin ?? (b.lastRoll || 6)} />
           </button>
         </div>
       ) : (
-        <Event view={view} send={send} left={left} mine={mine} curName={cur?.name ?? 'Someone'} byN={byN} />
+        <Event view={view} send={send} left={left} mine={mine} curName={cur?.name ?? t('Someone')} byN={byN} />
       )}
     </div>
   );
@@ -201,33 +202,32 @@ function Event({ view, send, left, mine, curName, byN }: { view: RoomView; send:
   const b = view.board!;
   const tile = b.tiles[b.landed]!;
   const info = TILE_INFO[ev.kind === 'trivia' ? 'trivia' : tile.kind];
-  const who = mine ? 'You' : curName;
   const opponent = byN(ev.opponent);
-  const wait = <p className="pt-muted">{curName} decides on their phone…</p>;
+  const wait = <p className="pt-muted">{t('{name} decides on their phone…', { name: curName })}</p>;
   return (
     <div className="pt-event" style={{ ['--tc' as string]: info.color }}>
       <p className="pt-event-head">
-        <span aria-hidden="true">{info.icon}</span> {info.label}
+        <span aria-hidden="true">{info.icon}</span> {t(info.label)}
       </p>
       {(ev.kind === 'lucky' || ev.kind === 'shortcut' || ev.kind === 'setback' || ev.kind === 'slide' || ev.kind === 'again') && (
         <>
           <p className="pt-event-text">
-            {ev.kind === 'lucky' && `${who} zoom${mine ? '' : 's'} ${tile.value} tiles ahead!`}
-            {ev.kind === 'shortcut' && `${who} take${mine ? '' : 's'} the shortcut to tile ${tile.value}!`}
-            {ev.kind === 'setback' && `${who} slip${mine ? '' : 's'} back ${tile.value} tiles.`}
-            {ev.kind === 'slide' && `${who} slide${mine ? '' : 's'} down to tile ${tile.value}.`}
-            {ev.kind === 'again' && `${who} roll${mine ? '' : 's'} again!`}
+            {ev.kind === 'lucky' && (mine ? t('You zoom {n} tiles ahead!', { n: tile.value ?? 0 }) : t('{name} zooms {n} tiles ahead!', { name: curName, n: tile.value ?? 0 }))}
+            {ev.kind === 'shortcut' && (mine ? t('You take the shortcut to tile {n}!', { n: tile.value ?? 0 }) : t('{name} takes the shortcut to tile {n}!', { name: curName, n: tile.value ?? 0 }))}
+            {ev.kind === 'setback' && (mine ? t('You slip back {n} tiles.', { n: tile.value ?? 0 }) : t('{name} slips back {n} tiles.', { name: curName, n: tile.value ?? 0 }))}
+            {ev.kind === 'slide' && (mine ? t('You slide down to tile {n}.', { n: tile.value ?? 0 }) : t('{name} slides down to tile {n}.', { name: curName, n: tile.value ?? 0 }))}
+            {ev.kind === 'again' && (mine ? t('You roll again!') : t('{name} rolls again!', { name: curName }))}
           </p>
           {mine && (
             <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'ok' })}>
-              {ev.kind === 'setback' || ev.kind === 'slide' ? 'Noooo 😩' : ev.kind === 'again' ? 'Roll again 🎲' : 'Woo! 🚀'}
+              {ev.kind === 'setback' || ev.kind === 'slide' ? t('Noooo 😩') : ev.kind === 'again' ? t('Roll again 🎲') : t('Woo! 🚀')}
             </button>
           )}
         </>
       )}
       {ev.kind === 'swap' && (
         <>
-          <p className="pt-event-text">{mine ? 'Swap places with anyone (or nobody).' : `${curName} can swap places with anyone…`}</p>
+          <p className="pt-event-text">{mine ? t('Swap places with anyone (or nobody).') : t('{name} can swap places with anyone…', { name: curName })}</p>
           {mine ? (
             <>
               <div className="pt-picker">
@@ -237,13 +237,13 @@ function Event({ view, send, left, mine, curName, byN }: { view: RoomView; send:
                     const p = byN(n);
                     return p ? (
                       <button key={n} className="pt-chip" style={{ ['--pc' as string]: seatColor(n) }} onClick={() => send({ t: 'swap', seat: n })}>
-                        {p.name} · tile {b.pos[String(n)]}
+                        {p.name} · {t('tile {n}', { n: b.pos[String(n)] ?? 0 })}
                       </button>
                     ) : null;
                   })}
               </div>
               <button className="pt-btn pt-btn-ghost" onClick={() => send({ t: 'ok' })}>
-                Stay put
+                {t('Stay put')}
               </button>
             </>
           ) : (
@@ -253,16 +253,16 @@ function Event({ view, send, left, mine, curName, byN }: { view: RoomView; send:
       )}
       {(ev.kind === 'card' || ev.kind === 'group') && (
         <>
-          <p className="pt-event-text">{ev.text ?? 'Make up a challenge for them!'}</p>
+          <p className="pt-event-text">{ev.text ?? t('Make up a challenge for them!')}</p>
           {ev.note && <p className="pt-muted">{ev.note}</p>}
-          <p className="pt-muted">Done: one step forward. Skip: one step back.</p>
+          <p className="pt-muted">{t('Done: one step forward. Skip: one step back.')}</p>
           {mine ? (
             <div className="pt-row">
               <button className="pt-btn pt-btn-go" onClick={() => send({ t: 'done', ok: true })}>
-                Done ✓
+                {t('Done ✓')}
               </button>
               <button className="pt-btn" onClick={() => send({ t: 'done', ok: false })}>
-                Skip
+                {t('Skip')}
               </button>
             </div>
           ) : (
@@ -272,16 +272,16 @@ function Event({ view, send, left, mine, curName, byN }: { view: RoomView; send:
       )}
       {ev.kind === 'duel' && (
         <>
-          <p className="pt-event-text">{ev.text ?? `Duel with ${opponent?.name ?? 'someone'}!`}</p>
-          <p className="pt-muted">The winner jumps 2 tiles ahead.</p>
+          <p className="pt-event-text">{ev.text ?? t('Duel with {name}!', { name: opponent?.name ?? t('someone') })}</p>
+          <p className="pt-muted">{t('The winner jumps 2 tiles ahead.')}</p>
           {mine ? (
             <div className="pt-row">
               <button className="pt-btn pt-btn-go" onClick={() => send({ t: 'winner', seat: view.you })}>
-                I won
+                {t('I won')}
               </button>
               {opponent && (
                 <button className="pt-btn" onClick={() => send({ t: 'winner', seat: opponent.n })}>
-                  {opponent.name} won
+                  {t('{name} won', { name: opponent.name })}
                 </button>
               )}
             </div>
@@ -305,7 +305,7 @@ function Event({ view, send, left, mine, curName, byN }: { view: RoomView; send:
               </button>
             ))}
           </div>
-          {ev.picked !== null ? <p className="pt-event-text">{ev.picked === ev.trivia.right ? 'Correct! +1 step' : 'Wrong: back 1 step'}</p> : !mine && <p className="pt-muted">{curName} is answering…</p>}
+          {ev.picked !== null ? <p className="pt-event-text">{ev.picked === ev.trivia.right ? t('Correct! +1 step') : t('Wrong: back 1 step')}</p> : !mine && <p className="pt-muted">{t('{name} is answering…', { name: curName })}</p>}
         </>
       )}
       <Clock left={left} />

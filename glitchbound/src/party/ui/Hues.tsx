@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { freshRng } from '../engine';
 import { cellHex, COLS, cueBonus, explainHues, HUE_GRADES, huePoints, offerColours, ROWS } from '../hues';
 import type { PartySession } from '../session';
-import { Avatar, byId, ModeBar, Name, PassPhone, Results, useSavedGame } from './shared';
+import { Avatar, byId, ModeBar, Name, PassPhone, Results, useSavedGame, tNodes } from './shared';
+import { t } from '../../i18n';
 
 type Stage = 'setup' | 'pass' | 'pick' | 'clue' | 'guess' | 'clue2' | 'reveal' | 'done';
 
@@ -79,28 +80,27 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
   if (stage === 'setup') {
     return (
       <div className="pt-screen">
-        <ModeBar title="Hue Knew?" onExit={onExit} />
+        <ModeBar title={t('Hue Knew?')} onExit={onExit} />
         <div className="pt-panel">
-          <h3>How it works</h3>
+          <h3>{t('How it works')}</h3>
           <p className="pt-muted">
-            Each round one player is the <b>cue giver</b>. They secretly pick one of four colors and describe it in <b>one word</b> (no color names like “red” or “blue”: try “ketchup”). Everyone else taps where they think it
-            is on the board. The closer the color looks, the more points; the cue giver scores for every close guess.
+            {tNodes('Each round one player is the {cue}. They secretly pick one of four colors and describe it in {word} (no color names like “red” or “blue”: try “ketchup”). Everyone else taps where they think it is on the board. The closer the color looks, the more points; the cue giver scores for every close guess.', {}, { cue: <b>{t('cue giver')}</b>, word: <b>{t('one word')}</b> })}
           </p>
           <label className="pt-switch">
             <input type="checkbox" checked={second} onChange={(e) => set({ second: e.target.checked })} />
             <span>
-              <b>Second clue</b> · after the first guesses, the cue giver adds up to two more words and everyone guesses again
+              <b>{t('Second clue')}</b>{' '}{t('· after the first guesses, the cue giver adds up to two more words and everyone guesses again')}
             </span>
           </label>
-          <div className="pt-picker" role="group" aria-label="Rounds">
+          <div className="pt-picker" role="group" aria-label={t('Rounds')}>
             {[1, 2, 3].map((k) => (
               <button key={k} className={`pt-chip${laps === k ? ' is-on' : ''}`} aria-pressed={laps === k} onClick={() => set({ laps: k })}>
-                {k === 1 ? 'Everyone cues once' : `Everyone cues ${k}×`} ({players.length * k} rounds)
+                {k === 1 ? t('Everyone cues once') : t('Everyone cues {n}×', { n: k })} ({t('{n} rounds', { n: players.length * k })})
               </button>
             ))}
           </div>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={start}>
-            Start
+            {t('Start')}
           </button>
         </div>
       </div>
@@ -110,7 +110,7 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
   if (stage === 'done') {
     const sorted = [...players].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0));
     const tie = (scores[sorted[0]!.id] ?? 0) === (scores[sorted[1]?.id ?? ''] ?? -1);
-    return <Results title={tie ? 'A tie for the best eye!' : `${sorted[0]!.name} has the best eye!`} players={players} scores={scores} onAgain={() => setStage('setup')} onMenu={onExit} />;
+    return <Results title={tie ? t('A tie for the best eye!') : t('{name} has the best eye!', { name: sorted[0]!.name })} players={players} scores={scores} onAgain={() => setStage('setup')} onMenu={onExit} />;
   }
 
   const progress = `${n + 1}/${total}`;
@@ -119,8 +119,8 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
   if (stage === 'pass') {
     return (
       <div className="pt-screen">
-        <ModeBar title="Hue Knew?" progress={progress} onExit={onExit} />
-        <PassPhone player={cue} note="You’re the cue giver. Only you look at the next screen." onReady={() => setStage('pick')} />
+        <ModeBar title={t('Hue Knew?')} progress={progress} onExit={onExit} />
+        <PassPhone player={cue} note={t('You’re the cue giver. Only you look at the next screen.')} onReady={() => setStage('pick')} />
       </div>
     );
   }
@@ -128,19 +128,19 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
   if (stage === 'pick') {
     return (
       <div className="pt-screen">
-        <ModeBar title="Hue Knew?" progress={progress} onExit={onExit} />
+        <ModeBar title={t('Hue Knew?')} progress={progress} onExit={onExit} />
         <div className="pt-panel">
           <p className="pt-kicker">
-            <Name player={cue} />, pick your secret color
+            {tNodes('{who}, pick your secret color', {}, { who: <Name player={cue} /> })}
           </p>
           <div className="pt-hk-offer">
             {offer.map((i) => (
-              <button key={i} className={`pt-hk-swatch${target === i ? ' is-on' : ''}`} style={{ background: cellHex(i) }} onClick={() => set({ target: i })} aria-pressed={target === i} aria-label={`Color ${offer.indexOf(i) + 1}`} />
+              <button key={i} className={`pt-hk-swatch${target === i ? ' is-on' : ''}`} style={{ background: cellHex(i) }} onClick={() => set({ target: i })} aria-pressed={target === i} aria-label={t('Color {n}', { n: offer.indexOf(i) + 1 })} />
             ))}
           </div>
           {target !== null && <Board target={target} marks={[]} highlight />}
           <button className="pt-btn pt-btn-go pt-btn-big" disabled={target === null} onClick={() => setStage('clue')}>
-            {target === null ? 'Tap a color' : 'Hide it · I’ve got a one-word clue'}
+            {target === null ? t('Tap a color') : t('Hide it · I’ve got a one-word clue')}
           </button>
         </div>
       </div>
@@ -150,34 +150,33 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
   const roundTwo = stage === 'clue2' || (stage === 'guess' && marks.length >= guessers.length);
   return (
     <div className="pt-screen">
-      <ModeBar title="Hue Knew?" progress={progress} onExit={onExit} />
+      <ModeBar title={t('Hue Knew?')} progress={progress} onExit={onExit} />
       {(stage === 'clue' || stage === 'clue2') && (
         <div className="pt-panel">
           <p className="pt-kicker">
-            <Avatar player={cue} size={26} /> <Name player={cue} />, say your {stage === 'clue' ? 'one-word clue' : 'second clue (up to two words)'} out loud!
+            <Avatar player={cue} size={26} /> {tNodes(stage === 'clue' ? '{who}, say your one-word clue out loud!' : '{who}, say your second clue (up to two words) out loud!', {}, { who: <Name player={cue} /> })}
           </p>
-          <p className="pt-muted">No color names, please. Then pass the phone round: everyone taps their guess.</p>
+          <p className="pt-muted">{t('No color names, please. Then pass the phone round: everyone taps their guess.')}</p>
           {stage === 'clue2' && <Board target={null} marks={marks.map(toMark)} />}
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('guess')}>
-            Start guessing · {guessers[0]!.name} first
+            {t('Start guessing · {name} first', { name: guessers[0]!.name })}
           </button>
         </div>
       )}
       {stage === 'guess' && (
         <div className="pt-panel">
           <p className="pt-kicker">
-            <Avatar player={guesser} size={26} /> <Name player={guesser} />
-            {roundTwo ? ', your second guess' : ', tap your guess'}
+            <Avatar player={guesser} size={26} /> {tNodes(roundTwo ? '{who}, your second guess' : '{who}, tap your guess', {}, { who: <Name player={guesser} /> })}
           </p>
           <Board target={null} marks={marks.map(toMark)} pending={pending} pendingGlyph={guesser.emoji} onPick={setPending} />
           <button className="pt-btn pt-btn-go pt-btn-big" disabled={pending === null} onClick={place}>
-            {pending === null ? 'Tap a color on the board' : who + 1 < guessers.length ? `Lock it in · pass to ${guessers[who + 1]!.name}` : 'Lock it in'}
+            {pending === null ? t('Tap a color on the board') : who + 1 < guessers.length ? t('Lock it in · pass to {name}', { name: guessers[who + 1]!.name }) : t('Lock it in')}
           </button>
         </div>
       )}
       {stage === 'reveal' && target !== null && (
         <div className="pt-panel">
-          <p className="pt-kicker">The color was…</p>
+          <p className="pt-kicker">{t('The color was…')}</p>
           <Board target={target} marks={marks.map(toMark)} highlight />
           <HueLegend />
           <ul className="pt-hk-gains">
@@ -185,7 +184,7 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
               <li key={p.id}>
                 <span className="pt-hk-who">
                   <Avatar player={p} size={24} /> {p.name} <b>+{gained[p.id] ?? 0}</b>
-                  {p === cue ? ' (cue giver)' : ''}
+                  {p === cue ? t(' (cue giver)') : ''}
                 </span>
                 <small>
                   {explainHues(
@@ -198,7 +197,7 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
             ))}
           </ul>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={next} autoFocus>
-            {n + 1 >= total ? 'See the results' : 'Next round'}
+            {n + 1 >= total ? t('See the results') : t('Next round')}
           </button>
         </div>
       )}
@@ -210,7 +209,7 @@ export function HuesMode({ session, update, onExit }: { session: PartySession; u
 export function HueLegend() {
   return (
     <p className="pt-hk-legend">
-      {HUE_GRADES.filter((g) => g.points > 0).map((g) => `${g.label[0]!.toUpperCase()}${g.label.slice(1)} +${g.points}`).join(' · ')} · Cue giver: +1 for each guess worth 2 or 3
+      {HUE_GRADES.filter((g) => g.points > 0).map((g) => `${t(`${g.label[0]!.toUpperCase()}${g.label.slice(1)}`)} +${g.points}`).join(' · ')} · {t('Cue giver: +1 for each guess worth 2 or 3')}
     </p>
   );
 }
@@ -235,11 +234,11 @@ export function Board({ target, marks, highlight = false, pending = null, pendin
   const at = new Map<number, BoardMark[]>();
   for (const m of marks) at.set(m.cell, [...(at.get(m.cell) ?? []), m]);
   return (
-    <div className={`pt-hk-board${highlight ? ' is-reveal' : ''}`} style={{ ['--cols' as string]: COLS }} role="grid" aria-label="Color board">
+    <div className={`pt-hk-board${highlight ? ' is-reveal' : ''}`} style={{ ['--cols' as string]: COLS }} role="grid" aria-label={t('Color board')}>
       {Array.from({ length: COLS * ROWS }, (_, i) => {
         const here = at.get(i);
         return (
-          <button key={i} className={`pt-hk-cell${i === target ? ' is-target' : ''}${i === pending ? ' is-pending' : ''}`} style={{ background: cellHex(i) }} onClick={() => onPick?.(i)} disabled={!onPick} aria-label={`Color ${i + 1}`}>
+          <button key={i} className={`pt-hk-cell${i === target ? ' is-target' : ''}${i === pending ? ' is-pending' : ''}`} style={{ background: cellHex(i) }} onClick={() => onPick?.(i)} disabled={!onPick} aria-label={t('Color {n}', { n: i + 1 })}>
             {here && <MarkGlyph m={here[here.length - 1]!} />}
             {i === pending && pendingGlyph && <MarkGlyph m={{ cell: i, glyph: pendingGlyph, color: pendingColor }} fresh />}
           </button>

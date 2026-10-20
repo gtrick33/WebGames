@@ -4,7 +4,8 @@ import { draw, freshRng } from '../engine';
 import type { PartySession } from '../session';
 import type { Player } from '../types';
 import { DECK, rating, type ClueCheck } from '../unique';
-import { Avatar, ModeBar, Name, Results, useSavedGame } from './shared';
+import { Avatar, ModeBar, Name, Results, useSavedGame, tNodes } from './shared';
+import { t } from '../../i18n';
 
 /** Why a clue was struck out (the live room shows these). */
 export const OUT_TEXT: Record<NonNullable<ClueCheck['out']>, string> = { twin: 'same as another clue', 'gives-it-away': 'gives the word away', empty: 'no clue' };
@@ -60,11 +61,11 @@ export function UniqueMode({ session, update, onExit }: { session: PartySession;
   if (players.length < 3) {
     return (
       <div className="pt-screen">
-        <ModeBar title="One of a Kind" onExit={onExit} />
+        <ModeBar title={t('One of a Kind')} onExit={onExit} />
         <div className="pt-panel">
-          <p className="pt-muted">One of a Kind needs at least 3 players: one guesser and two or more clue givers (so clues can clash). Add a player in the party menu.</p>
+          <p className="pt-muted">{t('One of a Kind needs at least 3 players: one guesser and two or more clue givers (so clues can clash). Add a player in the party menu.')}</p>
           <button className="pt-btn pt-btn-big" onClick={onExit}>
-            Back to the party menu
+            {t('Back to the party menu')}
           </button>
         </div>
       </div>
@@ -74,21 +75,21 @@ export function UniqueMode({ session, update, onExit }: { session: PartySession;
   if (stage === 'setup') {
     return (
       <div className="pt-screen">
-        <ModeBar title="One of a Kind" onExit={onExit} />
+        <ModeBar title={t('One of a Kind')} onExit={onExit} />
         <div className="pt-panel">
-          <h3>How it works</h3>
+          <h3>{t('How it works')}</h3>
           <ol className="pt-ok-steps">
-            <li>Each round one player guesses. They look away while everyone else sees the secret word.</li>
+            <li>{t('Each round one player guesses. They look away while everyone else sees the secret word.')}</li>
             <li>
-              Everyone else thinks of a <b>one-word clue</b>. Compare them quietly first (whisper, or jot them down): <b>matching clues are out</b>.
+              {tNodes('Everyone else thinks of a {clue}. Compare them quietly first (whisper, or jot them down): {out}.', {}, { clue: <b>{t('one-word clue')}</b>, out: <b>{t('matching clues are out')}</b> })}
             </li>
-            <li>Say the clues that are left. The guesser gets one try.</li>
+            <li>{t('Say the clues that are left. The guesser gets one try.')}</li>
           </ol>
           <p className="pt-muted">
-            You all play together against a deck of {DECK} cards. Right: +1. Pass: lose that card. Wrong: lose that card and the next one too.
+            {t('You all play together against a deck of {n} cards. Right: +1. Pass: lose that card. Wrong: lose that card and the next one too.', { n: DECK })}
           </p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={start}>
-            Start
+            {t('Start')}
           </button>
         </div>
       </div>
@@ -97,7 +98,7 @@ export function UniqueMode({ session, update, onExit }: { session: PartySession;
 
   if (stage === 'done') {
     return (
-      <Results title={`${score} of ${DECK}: ${rating(score)}`} players={players} scores={Object.fromEntries(players.map((p) => [p.id, score]))} onAgain={() => setStage('setup')} onMenu={onExit}>
+      <Results title={`${t('{n} of {total}', { n: score, total: DECK })}: ${t(rating(score))}`} players={players} scores={Object.fromEntries(players.map((p) => [p.id, score]))} onAgain={() => setStage('setup')} onMenu={onExit}>
         <ul className="pt-ok-history">
           {history.map((h, i) => (
             <li key={i}>
@@ -111,66 +112,66 @@ export function UniqueMode({ session, update, onExit }: { session: PartySession;
 
   return (
     <div className="pt-screen">
-      <ModeBar title="One of a Kind" progress={`🃏 ${cardsLeft} left · ✅ ${score}`} onExit={onExit} />
+      <ModeBar title={t('One of a Kind')} progress={t('🃏 {n} left · ✅ {score}', { n: cardsLeft, score })} onExit={onExit} />
       {stage === 'look' && (
         <div className="pt-panel pt-ok-look">
           <Avatar player={guesser} size={72} />
-          <p className="pt-kicker">This round’s guesser</p>
+          <p className="pt-kicker">{t('This round’s guesser')}</p>
           <h2 className="pt-pass-name" style={{ color: guesser.color }}>
             {guesser.name}
           </h2>
-          <p className="pt-muted">{guesser.name}, look away or close your eyes. Everyone else, gather round the phone.</p>
+          <p className="pt-muted">{t('{name}, look away or close your eyes. Everyone else, gather round the phone.', { name: guesser.name })}</p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('word')} autoFocus>
-            Show the word
+            {t('Show the word')}
           </button>
         </div>
       )}
       {stage === 'word' && (
         <div className="pt-panel">
           <p className="pt-kicker">
-            The word for <Name player={guesser} /> is
+            {tNodes('The word for {who} is', {}, { who: <Name player={guesser} /> })}
           </p>
           <p className="pt-ok-word">{word}</p>
-          <p className="pt-muted">Think of a one-word clue. Matching clues will be struck out, so try to be helpful and a little original.</p>
+          <p className="pt-muted">{t('Think of a one-word clue. Matching clues will be struck out, so try to be helpful and a little original.')}</p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => setStage('clues')}>
-            Hide it · {guesser.name} can look
+            {t('Hide it · {name} can look', { name: guesser.name })}
           </button>
           <button className="pt-btn pt-btn-ghost" onClick={() => set(newWord(game.used))}>
-            Don’t know this word? Another one
+            {t('Don’t know this word? Another one')}
           </button>
         </div>
       )}
       {stage === 'clues' && (
         <div className="pt-panel">
-          <p className="pt-kicker">Clue time</p>
+          <p className="pt-kicker">{t('Clue time')}</p>
           <ol className="pt-ok-steps">
-            <li>Clue givers: compare your clues quietly. Any that match are out.</li>
-            <li>Say the rest to {guesser.name}.</li>
-            <li>{guesser.name} gets one guess.</li>
+            <li>{t('Clue givers: compare your clues quietly. Any that match are out.')}</li>
+            <li>{t('Say the rest to {name}.', { name: guesser.name })}</li>
+            <li>{t('{name} gets one guess.', { name: guesser.name })}</li>
           </ol>
-          <p className="pt-muted">How did it go?</p>
+          <p className="pt-muted">{t('How did it go?')}</p>
           <div className="pt-ok-judge">
             <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => judge('right')}>
-              ✅ Got it
+              {t('✅ Got it')}
             </button>
             <button className="pt-btn pt-btn-big" onClick={() => judge('wrong')}>
-              ❌ Wrong guess
+              {t('❌ Wrong guess')}
             </button>
             <button className="pt-btn pt-btn-ghost" onClick={() => judge('pass')}>
-              ⏭️ {guesser.name} passed
+              {t('⏭️ {name} passed', { name: guesser.name })}
             </button>
           </div>
         </div>
       )}
       {stage === 'result' && (
         <div className="pt-panel pt-ok-result">
-          <p className="pt-kicker">The word was</p>
+          <p className="pt-kicker">{t('The word was')}</p>
           <p className="pt-ok-word">{word}</p>
           <p className="pt-ok-verdict">
-            {outcome === 'right' ? `✅ ${guesser.name} got it! +1` : outcome === 'pass' ? `⏭️ ${guesser.name} passed: one card gone` : '❌ Wrong: this card and the next one are gone'}
+            {outcome === 'right' ? t('✅ {name} got it! +1', { name: guesser.name }) : outcome === 'pass' ? t('⏭️ {name} passed: one card gone', { name: guesser.name }) : t('❌ Wrong: this card and the next one are gone')}
           </p>
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={next} autoFocus>
-            {cardsLeft <= 0 ? 'See the score' : `Next card (${cardsLeft} left)`}
+            {cardsLeft <= 0 ? t('See the score') : t('Next card ({n} left)', { n: cardsLeft })}
           </button>
         </div>
       )}

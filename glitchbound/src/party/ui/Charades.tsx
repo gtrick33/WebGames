@@ -3,7 +3,8 @@ import { CHARADES, CHARADES_CATEGORIES } from '../content/charades';
 import { draw, freshRng, shuffle, teamTurns } from '../engine';
 import type { PartySession } from '../session';
 import type { CharadesCard, CharadesCategory, Player } from '../types';
-import { Avatar, byId, ModeBar, PassPhone, Results, Timer, useSavedGame } from './shared';
+import { Avatar, byId, ModeBar, PassPhone, Results, Timer, useSavedGame, tNodes } from './shared';
+import { t } from '../../i18n';
 
 type Style = 'act' | 'clues' | 'draw' | 'heads';
 const STYLES: { id: Style; label: string; hint: string }[] = [
@@ -104,48 +105,48 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
     const set = <K extends keyof Config>(k: K, v: Config[K]): void => save((g) => ({ cfg: { ...g.cfg, [k]: v } }));
     return (
       <div className="pt-screen">
-        <ModeBar title="Charades" onExit={onExit} />
+        <ModeBar title={t('Charades')} onExit={onExit} />
         <div className="pt-panel">
-          <h3>How do you play?</h3>
+          <h3>{t('How do you play?')}</h3>
           <div className="pt-seg" role="radiogroup">
             <button role="radio" aria-checked={!cfg.teams} onClick={() => set('teams', false)}>
-              Every player for themselves
+              {t('Every player for themselves')}
             </button>
             <button role="radio" aria-checked={cfg.teams} onClick={() => set('teams', true)} disabled={players.length < 4}>
-              Two teams {players.length < 4 ? '(4+ players)' : ''}
+              {t('Two teams')} {players.length < 4 ? t('(4+ players)') : ''}
             </button>
           </div>
-          <div className="pt-seg" role="radiogroup" aria-label="Style">
+          <div className="pt-seg" role="radiogroup" aria-label={t('Style')}>
             {STYLES.map((s) => (
               <button key={s.id} role="radio" aria-checked={cfg.style === s.id} onClick={() => set('style', s.id)}>
-                {s.label}
-                <small>{s.hint}</small>
+                {t(s.label)}
+                <small>{t(s.hint)}</small>
               </button>
             ))}
           </div>
-          <h3>Categories</h3>
+          <h3>{t('Categories')}</h3>
           <div className="pt-picker">
             {CHARADES_CATEGORIES.filter((c) => !c.adult || adult).map((c) => {
               const on = cfg.categories.includes(c.id);
               return (
                 <button key={c.id} className={`pt-chip${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => set('categories', on ? cfg.categories.filter((x) => x !== c.id) : [...cfg.categories, c.id])}>
-                  {c.emoji} {c.label}
+                  {c.emoji} {t(c.label)}
                 </button>
               );
             })}
           </div>
           <div className="pt-grid2">
             <label className="pt-field">
-              Difficulty
+              {t('Difficulty')}
               <select value={cfg.difficulty} onChange={(e) => set('difficulty', Number(e.target.value) as Config['difficulty'])}>
-                <option value={0}>Mixed</option>
-                <option value={1}>Easy</option>
-                <option value={2}>Medium</option>
-                <option value={3}>Hard</option>
+                <option value={0}>{t('Mixed')}</option>
+                <option value={1}>{t('Easy')}</option>
+                <option value={2}>{t('Medium')}</option>
+                <option value={3}>{t('Hard')}</option>
               </select>
             </label>
             <label className="pt-field">
-              Time per turn
+              {t('Time per turn')}
               <select value={cfg.seconds} onChange={(e) => set('seconds', Number(e.target.value))}>
                 <option value={30}>30 s</option>
                 <option value={60}>60 s</option>
@@ -153,15 +154,15 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
               </select>
             </label>
             <label className="pt-field">
-              Get-ready countdown
+              {t('Get-ready countdown')}
               <select value={cfg.countdown} onChange={(e) => set('countdown', Number(e.target.value) as Config['countdown'])}>
-                <option value={0}>None</option>
+                <option value={0}>{t('None')}</option>
                 <option value={5}>5 s</option>
                 <option value={10}>10 s</option>
               </select>
             </label>
             <label className="pt-field">
-              Turns each
+              {t('Turns each')}
               <select value={cfg.rounds} onChange={(e) => set('rounds', Number(e.target.value))}>
                 <option value={1}>1</option>
                 <option value={2}>2</option>
@@ -170,7 +171,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
             </label>
           </div>
           <button className="pt-btn pt-btn-go pt-btn-big" disabled={deck.length < 10} onClick={start}>
-            {deck.length < 10 ? 'Pick more categories' : 'Start charades'}
+            {deck.length < 10 ? t('Pick more categories') : t('Start charades')}
           </button>
         </div>
       </div>
@@ -183,7 +184,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
     const champs = players.filter((p) => (session.scores[p.id] ?? 0) === best);
     return (
       <Results
-        title={cfg.teams ? (teamScore[0] === teamScore[1] ? 'It’s a tie!' : `Team ${teamScore[0] > teamScore[1] ? 1 : 2} wins ${Math.max(...teamScore)}–${Math.min(...teamScore)}!`) : champs.length === 1 ? `${champs[0]!.name} is the charades champion!` : 'It’s a tie!'}
+        title={cfg.teams ? (teamScore[0] === teamScore[1] ? t('It’s a tie!') : t('Team {n} wins {a}–{b}!', { n: teamScore[0] > teamScore[1] ? 1 : 2, a: Math.max(...teamScore), b: Math.min(...teamScore) })) : champs.length === 1 ? t('{name} is the charades champion!', { name: champs[0]!.name }) : t('It’s a tie!')}
         players={players}
         scores={scores}
         onAgain={() => setPhase('setup')}
@@ -192,25 +193,25 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
     );
   }
 
-  const progress = `Turn ${turn + 1}/${totalTurns}`;
+  const progress = t('Turn {n}/{total}', { n: turn + 1, total: totalTurns });
   if (phase === 'pass') {
     return (
       <div className="pt-screen">
-        <ModeBar title="Charades" progress={progress} onExit={onExit} />
+        <ModeBar title={t('Charades')} progress={progress} onExit={onExit} />
         {cfg.teams && (
           <>
             <p className="pt-score-line">
-              Team 1 <b>{teamScore[0]}</b> · <b>{teamScore[1]}</b> Team 2
+              {t('Team 1')}{' '}<b>{teamScore[0]}</b> · <b>{teamScore[1]}</b>{' '}{t('Team 2')}
             </p>
             {/* Only the actor's own team guesses, so everyone needs to know the line-up. */}
             <p className="pt-muted pt-center">
-              Team 1: {teams[0].map((p) => p.name).join(', ')} · Team 2: {teams[1].map((p) => p.name).join(', ')}
+              {t('Team {n}', { n: 1 })}: {teams[0].map((p) => p.name).join(', ')} · {t('Team {n}', { n: 2 })}: {teams[1].map((p) => p.name).join(', ')}
             </p>
           </>
         )}
         <PassPhone
           player={actor}
-          note={heads ? `You’re guessing${cfg.teams ? ` for Team ${actorTeam! + 1}` : ''}. Don’t look at the words!` : cfg.teams ? `Acting for Team ${actorTeam! + 1}. Keep the screen to yourself.` : 'Keep the screen to yourself.'}
+          note={heads ? (cfg.teams ? t('You’re guessing for Team {n}. Don’t look at the words!', { n: actorTeam! + 1 }) : t('You’re guessing. Don’t look at the words!')) : cfg.teams ? t('Acting for Team {n}. Keep the screen to yourself.', { n: actorTeam! + 1 }) : t('Keep the screen to yourself.')}
           onReady={() => save({ got: [], skipped: [], card: nextCard(), phase: 'ready' })}
         />
       </div>
@@ -220,16 +221,16 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
   if (phase === 'ready' && card) {
     return (
       <div className="pt-screen">
-        <ModeBar title="Charades" progress={progress} onExit={onExit} />
+        <ModeBar title={t('Charades')} progress={progress} onExit={onExit} />
         <div className="pt-panel pt-center">
           <Avatar player={actor} size={64} />
-          <h3>{actor.name}, you are up</h3>
+          <h3>{t('{name}, you are up', { name: actor.name })}</h3>
           {heads ? (
             <p className="pt-muted">
-              Hold the phone on your forehead, screen facing out, and guess the word from everyone’s acting. <b>Nod down</b> when you get it, <b>tilt up</b> to pass (or tap the right or left side). You have {cfg.seconds} seconds.
+              {tNodes('Hold the phone on your forehead, screen facing out, and guess the word from everyone’s acting. {down} when you get it, {up} to pass (or tap the right or left side). You have {n} seconds.', { n: cfg.seconds }, { down: <b>{t('Nod down')}</b>, up: <b>{t('tilt up')}</b> })}
             </p>
           ) : (
-            <p className="pt-muted">{STYLES.find((s) => s.id === cfg.style)!.hint}. Tap ✓ when they get it, Skip if stuck. You have {cfg.seconds} seconds.</p>
+            <p className="pt-muted">{t(STYLES.find((s) => s.id === cfg.style)!.hint)}. {t('Tap ✓ when they get it, Skip if stuck. You have {n} seconds.', { n: cfg.seconds })}</p>
           )}
           <button
             className="pt-btn pt-btn-go pt-btn-big"
@@ -239,7 +240,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
               setPhase(cfg.countdown ? 'countdown' : 'play');
             }}
           >
-            {cfg.countdown ? `Start (${cfg.countdown} s to get ready)` : 'Start the clock'}
+            {cfg.countdown ? t('Start ({n} s to get ready)', { n: cfg.countdown }) : t('Start the clock')}
           </button>
         </div>
       </div>
@@ -249,7 +250,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
   if (phase === 'countdown' && card) {
     return (
       <div className="pt-screen">
-        <ModeBar title="Charades" progress={progress} onExit={onExit} />
+        <ModeBar title={t('Charades')} progress={progress} onExit={onExit} />
         <GetReady seconds={cfg.countdown} note={heads ? 'Phone on your forehead, screen facing out' : 'Keep the screen to yourself'} onGo={() => setPhase('play')} />
       </div>
     );
@@ -258,12 +259,12 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
   if (phase === 'play' && card && heads) {
     return (
       <div className="pt-screen">
-        <ModeBar title="Charades" progress={progress} onExit={onExit} />
+        <ModeBar title={t('Charades')} progress={progress} onExit={onExit} />
         {/* The whole screen, over the site's header and tab bar, so the word stays big in landscape too. */}
         <div className="pt-heads-play">
           <Timer seconds={cfg.seconds} onEnd={() => setPhase('summary')} onTick={(l) => l <= 3 && (beep(520), navigator.vibrate?.(60))} />
           <Forehead key={`${got.length}:${skipped.length}`} word={card.text} onGot={score} onPass={skip} />
-          <p className="pt-muted pt-center">Got {got.length} so far</p>
+          <p className="pt-muted pt-center">{t('Got {n} so far', { n: got.length })}</p>
         </div>
       </div>
     );
@@ -272,7 +273,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
   if (phase === 'play' && card) {
     return (
       <div className="pt-screen">
-        <ModeBar title="Charades" progress={progress} onExit={onExit} />
+        <ModeBar title={t('Charades')} progress={progress} onExit={onExit} />
         <Timer seconds={cfg.seconds} onEnd={() => setPhase('summary')} onTick={(l) => l <= 3 && navigator.vibrate?.(60)} />
         <div className="pt-charade">
           <span className="pt-kind">
@@ -280,7 +281,7 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
           </span>
           {cfg.style === 'draw' && !peek ? (
             <button className="pt-peek" onPointerDown={() => setPeek(true)} onPointerUp={() => setPeek(false)} onPointerLeave={() => setPeek(false)}>
-              Hold to peek at the word
+              {t('Hold to peek at the word')}
             </button>
           ) : (
             <p className="pt-charade-word" onClick={() => cfg.style === 'draw' && setPeek(false)}>
@@ -291,13 +292,13 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
         </div>
         <div className="pt-row pt-charade-btns">
           <button className="pt-btn pt-btn-skip" onClick={skip}>
-            Skip
+            {t('Skip')}
           </button>
           <button className="pt-btn pt-btn-go pt-btn-yes" onClick={score}>
-            ✓ Got it
+            {t('✓ Got it')}
           </button>
         </div>
-        <p className="pt-muted pt-center">Got {got.length} so far</p>
+        <p className="pt-muted pt-center">{t('Got {n} so far', { n: got.length })}</p>
       </div>
     );
   }
@@ -305,21 +306,21 @@ export function CharadesMode({ session, update, onExit }: { session: PartySessio
   // summary
   return (
     <div className="pt-screen">
-      <ModeBar title="Charades" progress={progress} onExit={onExit} />
+      <ModeBar title={t('Charades')} progress={progress} onExit={onExit} />
       <div className="pt-panel pt-center">
-        <h3>Time! {actor.name} got {got.length}</h3>
+        <h3>{t('Time! {name} got {n}', { name: actor.name, n: got.length })}</h3>
         {got.length > 0 && <p>✓ {got.join(' · ')}</p>}
-        {skipped.length > 0 && <p className="pt-muted">Skipped: {skipped.join(' · ')}</p>}
+        {skipped.length > 0 && <p className="pt-muted">{t('Skipped:')} {skipped.join(' · ')}</p>}
         {cfg.teams && (
           <p className="pt-score-line">
-            Team 1 <b>{teamScore[0]}</b> · <b>{teamScore[1]}</b> Team 2
+            {t('Team 1')}{' '}<b>{teamScore[0]}</b> · <b>{teamScore[1]}</b>{' '}{t('Team 2')}
           </p>
         )}
         <button
           className="pt-btn pt-btn-go pt-btn-big"
           onClick={() => save({ turn: turn + 1, phase: turn + 1 >= totalTurns ? 'done' : 'pass' })}
         >
-          {turn + 1 >= totalTurns ? 'See results' : 'Next player'}
+          {turn + 1 >= totalTurns ? t('See results') : t('Next player')}
         </button>
       </div>
     </div>
@@ -379,13 +380,13 @@ function GetReady({ seconds, note, onGo }: { seconds: number; note: string; onGo
   }, [left]);
   return (
     <div className="pt-panel pt-center pt-getready" role="timer" aria-live="assertive">
-      <p className="pt-kicker">Get ready</p>
+      <p className="pt-kicker">{t('Get ready')}</p>
       <span key={left} className="pt-getready-n">
         {left}
       </span>
       <p className="pt-muted">{note}</p>
       <button className="pt-btn pt-btn-sm pt-btn-ghost" onClick={() => go.current()}>
-        Start now
+        {t('Start now')}
       </button>
     </div>
   );
@@ -441,14 +442,14 @@ function Forehead({ word, onGot, onPass }: { word: string; onGot: () => void; on
   }, [answer]);
   return (
     <div className={`pt-heads${flash ? ` is-${flash}` : ''}`}>
-      <button className="pt-heads-zone is-pass" onClick={() => answer('pass')} aria-label="Pass">
-        <span>⬆ Pass</span>
+      <button className="pt-heads-zone is-pass" onClick={() => answer('pass')} aria-label={t('Pass')}>
+        <span>{t('⬆ Pass')}</span>
       </button>
-      <button className="pt-heads-zone is-got" onClick={() => answer('got')} aria-label="Got it">
-        <span>Got it ⬇</span>
+      <button className="pt-heads-zone is-got" onClick={() => answer('got')} aria-label={t('Got it')}>
+        <span>{t('Got it ⬇')}</span>
       </button>
       <p className="pt-heads-word" aria-live="polite">
-        {flash === 'got' ? '✓ Got it!' : flash === 'pass' ? 'Pass' : word}
+        {flash === 'got' ? t('✓ Got it!') : flash === 'pass' ? t('Pass') : word}
       </p>
     </div>
   );
@@ -504,7 +505,7 @@ function Sketch({ onStart }: { onStart: () => void }) {
           c.getContext('2d')!.clearRect(0, 0, c.width, c.height);
         }}
       >
-        Clear
+        {t('Clear')}
       </button>
     </div>
   );

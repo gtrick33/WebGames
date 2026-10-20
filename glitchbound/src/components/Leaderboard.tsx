@@ -112,13 +112,17 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
         <thead>
           <tr>
             <th scope="col">#</th>
-            <th scope="col">Player</th>
-            <th scope="col" title="Number one in a game">
-              <Icon name="crown" size={16} /> Crowns
+            <th scope="col">{t('Player')}</th>
+            <th scope="col" title={t('Number one in a game')}>
+              <Icon name="crown" size={16} /> {t('Crowns')}
             </th>
-            <th scope="col" title="Top three in a game">Podiums</th>
-            <th scope="col" title="Personal bests beaten">Records</th>
-            <th scope="col">Games</th>
+            <th scope="col" title={t('Top three in a game')}>
+              {t('Podiums')}
+            </th>
+            <th scope="col" title={t('Personal bests beaten')}>
+              {t('Records')}
+            </th>
+            <th scope="col">{t('Games')}</th>
           </tr>
         </thead>
         <tbody>
@@ -133,10 +137,18 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
                   {r.you && <span className="board-you mono">{t('you')}</span>}
                 </span>
               </td>
-              <td className="mono hall-crowns hall-stat" data-label="Crowns">{r.crowns}</td>
-              <td className="mono hall-stat" data-label="Podiums">{r.podiums}</td>
-              <td className="mono hall-stat" data-label="Records">{r.records}</td>
-              <td className="mono hall-stat" data-label="Games">{r.games}</td>
+              <td className="mono hall-crowns hall-stat" data-label={t('Crowns')}>
+                {r.crowns}
+              </td>
+              <td className="mono hall-stat" data-label={t('Podiums')}>
+                {r.podiums}
+              </td>
+              <td className="mono hall-stat" data-label={t('Records')}>
+                {r.records}
+              </td>
+              <td className="mono hall-stat" data-label={t('Games')}>
+                {r.games}
+              </td>
             </tr>
           ))}
         </tbody>

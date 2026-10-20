@@ -86,7 +86,8 @@ describe('routing', () => {
     fireEvent.click(within(screen.getByRole('navigation', { name: 'Footer' })).getByRole('link', { name: 'Contact' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Get in touch' })).toBeTruthy();
     // The studio is reached through tickets only: no personal name or mailbox anywhere.
-    expect(screen.getByRole('link', { name: 'Open a ticket' }).getAttribute('href')).toBe('/me/bugs?category=question');
+    const tickets = screen.getAllByRole('link', { name: 'Open a ticket' });
+    expect(tickets.map((a) => a.getAttribute('href'))).toEqual(tickets.map(() => '/me/bugs?category=question'));
     expect(document.body.textContent).not.toMatch(/sava|hristov|@glitchboundstudio/i);
   });
 

@@ -1,7 +1,21 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Scores } from '../engine';
 import type { PartySession, SavedMode } from '../session';
 import type { Player } from '../types';
+import { t } from '../../i18n';
+
+/**
+ * A translated sentence with React pieces in it (a player's name chip, a number in bold):
+ * tNodes('Sold to {who} for ${n}!', { n: 40 }, { who: <Name player={p} /> }).
+ */
+export function tNodes(template: string, vars: Record<string, string | number>, nodes: Record<string, ReactNode>): ReactNode {
+  return t(template, vars)
+    .split(/(\{\w+\})/)
+    .map((part, i) => {
+      const slot = /^\{(\w+)\}$/.exec(part)?.[1];
+      return slot && slot in nodes ? <Fragment key={i}>{nodes[slot]}</Fragment> : part;
+    });
+}
 
 export const byId = (players: readonly Player[], id: string | null | undefined): Player | undefined => players.find((p) => p.id === id);
 
@@ -45,9 +59,9 @@ export function Name({ player }: { player: Player | undefined }) {
 /** "Pass the phone to X": blocks the screen until that player taps, so the next prompt stays private. */
 export function PassPhone({ player, note, onReady }: { player: Player; note?: string; onReady: () => void }) {
   return (
-    <div className="pt-pass" role="dialog" aria-label={`Pass the phone to ${player.name}`}>
+    <div className="pt-pass" role="dialog" aria-label={t('Pass the phone to {name}', { name: player.name })}>
       <Avatar player={player} size={96} />
-      <p className="pt-kicker">Pass the phone to</p>
+      <p className="pt-kicker">{t('Pass the phone to')}</p>
       <h2 className="pt-pass-name" style={{ color: player.color }}>
         {player.name}
       </h2>
@@ -86,7 +100,7 @@ export function Timer({ seconds, running = true, onEnd, onTick }: { seconds: num
     return () => window.clearInterval(t);
   }, [running]);
   return (
-    <div className={`pt-timer${left <= 5 ? ' is-low' : ''}`} role="timer" aria-label={`${Math.ceil(left)} seconds left`}>
+    <div className={`pt-timer${left <= 5 ? ' is-low' : ''}`} role="timer" aria-label={t('{n} seconds left', { n: Math.ceil(left) })}>
       <span className="pt-timer-bar" style={{ width: `${(left / seconds) * 100}%` }} />
       <b>{Math.ceil(left)}s</b>
     </div>
@@ -115,7 +129,7 @@ export function Results({ title, players, scores, awards, children, onAgain, onM
   const place = (p: Player): number => podiumPlace(scores, players, p.id);
   return (
     <div className="pt-results">
-      <p className="pt-kicker">Game over</p>
+      <p className="pt-kicker">{t('Game over')}</p>
       <h2 className="pt-h2">{title}</h2>
       <ol className="pt-podium">
         {ranked.map((p) => (
@@ -134,7 +148,7 @@ export function Results({ title, players, scores, awards, children, onAgain, onM
             const p = byId(players, a.playerId);
             return (
               <li key={a.title}>
-                <span className="pt-award-title">🏅 {a.title}</span>
+                <span className="pt-award-title">🏅 {t(a.title)}</span>
                 <span>
                   <Name player={p} /> · {a.why}
                 </span>
@@ -145,10 +159,10 @@ export function Results({ title, players, scores, awards, children, onAgain, onM
       )}
       <div className="pt-row">
         <button className="pt-btn pt-btn-go" onClick={onAgain}>
-          Play again
+          {t('Play again')}
         </button>
         <button className="pt-btn" onClick={onMenu}>
-          Other games
+          {t('Other games')}
         </button>
       </div>
     </div>
@@ -162,17 +176,17 @@ export function ModeBar({ title, progress, onExit }: { title: string; progress?:
     <div className="pt-modebar">
       {confirm ? (
         <>
-          <span className="pt-muted">Leave this game?</span>
+          <span className="pt-muted">{t('Leave this game?')}</span>
           <button className="pt-btn pt-btn-sm" onClick={onExit}>
-            Leave
+            {t('Leave')}
           </button>
           <button className="pt-btn pt-btn-sm pt-btn-ghost" onClick={() => setConfirm(false)}>
-            Stay
+            {t('Stay')}
           </button>
         </>
       ) : (
         <>
-          <button className="pt-icon" onClick={() => setConfirm(true)} aria-label="Back to the party menu">
+          <button className="pt-icon" onClick={() => setConfirm(true)} aria-label={t('Back to the party menu')}>
             ←
           </button>
           <span className="pt-modebar-title">{title}</span>

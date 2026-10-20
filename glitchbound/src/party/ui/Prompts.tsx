@@ -4,6 +4,7 @@ import { cardConsequence, draw, fillChallenge, filterContent, freshRng, intensit
 import type { PartySession } from '../session';
 import type { Challenge, ChallengeKind, Player } from '../types';
 import { ModeBar, Name, PlayerPicker, Results, Timer } from './shared';
+import { t } from '../../i18n';
 
 const KIND_LABEL: Record<ChallengeKind, { label: string; color: string }> = {
   truth: { label: 'Truth', color: '#3d7bff' },
@@ -68,15 +69,15 @@ export function PromptsMode({ session, update, onExit }: { session: PartySession
   if (!deck.length) {
     return (
       <div className="pt-screen">
-        <ModeBar title="Party Prompts" onExit={onExit} />
-        <p className="pt-empty">No cards match your filters. Turn some categories back on in setup.</p>
+        <ModeBar title={t('Party Prompts')} onExit={onExit} />
+        <p className="pt-empty">{t('No cards match your filters. Turn some categories back on in setup.')}</p>
       </div>
     );
   }
   if (active.count > active.limit) {
     return (
       <Results
-        title="That’s a wrap!"
+        title={t('That’s a wrap!')}
         players={session.players}
         scores={session.scores}
         onAgain={() => update((s) => dealPrompt({ ...s, scores: {}, active: { mode: 'prompts', count: 0, limit: active.limit } }, r))}
@@ -88,9 +89,9 @@ export function PromptsMode({ session, update, onExit }: { session: PartySession
   if (!card) {
     return (
       <div className="pt-screen">
-        <ModeBar title="Party Prompts" onExit={onExit} />
+        <ModeBar title={t('Party Prompts')} onExit={onExit} />
         <button className="pt-btn pt-btn-go pt-btn-big" onClick={next}>
-          Deal a card
+          {t('Deal a card')}
         </button>
       </div>
     );
@@ -107,26 +108,26 @@ export function PromptsMode({ session, update, onExit }: { session: PartySession
 
   return (
     <div className="pt-screen">
-      <ModeBar title="Party Prompts" progress={`${Math.min(active.count, active.limit)}/${active.limit}`} onExit={onExit} />
+      <ModeBar title={t('Party Prompts')} progress={`${Math.min(active.count, active.limit)}/${active.limit}`} onExit={onExit} />
       <article className="pt-card" style={{ ['--kc' as string]: kind.color }} key={c.id + active.count}>
         <div className="pt-card-head">
-          <span className="pt-kind">{kind.label}</span>
+          <span className="pt-kind">{t(kind.label)}</span>
           <span className="pt-intensity">{INTENSITY_BADGE[c.intensity]}</span>
         </div>
         <p className="pt-card-text">{f.text}</p>
         {c.note && <p className="pt-card-note">{c.note}</p>}
         {f.teams && (
           <p className="pt-muted">
-            Team 1: {f.teams[0].map((p) => p.name).join(', ')} · Team 2: {f.teams[1].map((p) => p.name).join(', ')}
+            {t('Team {n}', { n: 1 })}: {f.teams[0].map((p) => p.name).join(', ')} · {t('Team {n}', { n: 2 })}: {f.teams[1].map((p) => p.name).join(', ')}
           </p>
         )}
         {c.seconds && (timerOn ? <Timer seconds={c.seconds} onEnd={() => navigator.vibrate?.(200)} /> : (
           <button className="pt-btn pt-btn-sm" onClick={() => setTimerOn(true)}>
-            ⏱ Start {c.seconds}s timer
+            {t('⏱ Start {n}s timer', { n: c.seconds })}
           </button>
         ))}
         <p className="pt-cons">
-          {c.kind === 'rule' ? 'Break the rule:' : 'Skip or lose:'} <b>{cons}</b>
+          {c.kind === 'rule' ? t('Break the rule:') : t('Skip or lose:')} <b>{cons}</b>
         </p>
       </article>
 
@@ -137,38 +138,38 @@ export function PromptsMode({ session, update, onExit }: { session: PartySession
               <Name player={paidPlayer} />, {cons}.
             </p>
           ) : (
-            <p>Nobody pays up this time.</p>
+            <p>{t('Nobody pays up this time.')}</p>
           )}
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={next}>
-            Next card →
+            {t('Next card →')}
           </button>
         </div>
       ) : c.kind === 'vote' || c.kind === 'group' ? (
         <div className="pt-actions">
-          <p className="pt-muted">{c.kind === 'vote' ? 'Count to 3 and point. Who got the most votes?' : 'Who lost (or did it worst)?'}</p>
-          <PlayerPicker players={session.players} selected={picked} label="Pick a player" onToggle={(id) => penalize(id, stakes)} />
+          <p className="pt-muted">{c.kind === 'vote' ? t('Count to 3 and point. Who got the most votes?') : t('Who lost (or did it worst)?')}</p>
+          <PlayerPicker players={session.players} selected={picked} label={t('Pick a player')} onToggle={(id) => penalize(id, stakes)} />
           <button className="pt-btn pt-btn-ghost" onClick={() => setPaid('')}>
-            {c.kind === 'vote' ? 'It’s a tie: skip' : 'Nobody, next'}
+            {c.kind === 'vote' ? t('It’s a tie: skip') : t('Nobody, next')}
           </button>
         </div>
       ) : c.kind === 'duel' || f.teams ? (
         <div className="pt-actions">
-          <p className="pt-muted">{f.teams ? 'Which team won?' : 'Who won?'}</p>
+          <p className="pt-muted">{f.teams ? t('Which team won?') : t('Who won?')}</p>
           {f.teams ? (
             <div className="pt-row">
-              {f.teams.map((t, i) => (
+              {f.teams.map((team, i) => (
                 <button
                   key={i}
                   className="pt-btn"
                   onClick={() => {
                     award(
-                      t.map((p) => p.id),
+                      team.map((p) => p.id),
                       1,
                     );
                     setPaid('');
                   }}
                 >
-                  Team {i + 1}
+                  {t('Team {n}', { n: i + 1 })}
                 </button>
               ))}
             </div>
@@ -176,7 +177,7 @@ export function PromptsMode({ session, update, onExit }: { session: PartySession
             <PlayerPicker
               players={f.players}
               selected={picked}
-              label="Winner"
+              label={t('Winner')}
               onToggle={(id) => {
                 setPicked([id]);
                 award([id], 1);
@@ -190,7 +191,7 @@ export function PromptsMode({ session, update, onExit }: { session: PartySession
       ) : c.kind === 'rule' ? (
         <div className="pt-actions">
           <button className="pt-btn pt-btn-go pt-btn-big" onClick={next}>
-            Rule is on! Next card →
+            {t('Rule is on! Next card →')}
           </button>
         </div>
       ) : (
@@ -205,10 +206,10 @@ export function PromptsMode({ session, update, onExit }: { session: PartySession
               setPaid('');
             }}
           >
-            {c.kind === 'question' ? 'They got it right (+1)' : 'Done! (+1)'}
+            {c.kind === 'question' ? t('They got it right (+1)') : t('Done! (+1)')}
           </button>
           <button className="pt-btn" onClick={() => penalize((c.kind === 'question' ? f.players[1] : f.players[0])?.id ?? '', stakes)}>
-            {c.kind === 'question' ? 'Wrong guess' : 'Skip'}
+            {c.kind === 'question' ? t('Wrong guess') : t('Skip')}
           </button>
         </div>
       )}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AUCTION_THEMES } from '../../content/auction';
 import { BUDGETS, CLOCKS, INCREMENTS, LIMITS, MIN_PLAYERS, ROUNDS, type Action, type RoomView, type Wallet } from '../../rooms/auctionRoom';
 import { Clock, Dot, RoomFrame, Scores, seatColor, Waiting, type RoomContext } from './RoomFrame';
+import { t } from '../../../i18n';
 
 type Ctx = RoomContext<RoomView, Action>;
 const RARITY = ['', 'Common', 'Rare', 'Legendary'];
@@ -39,14 +40,14 @@ function Settings({ view, send }: Ctx) {
   );
   return (
     <>
-      <p className="pt-muted">Bid play money on characters and things. Everyone starts with the same budget and can own a few items. All money is fictional.</p>
+      <p className="pt-muted">{t('Bid play money on characters and things. Everyone starts with the same budget and can own a few items. All money is fictional.')}</p>
       <div className="pt-grid2">
         {opt('budget', 'Budget', BUDGETS, (v) => `$${v}`)}
         {opt('limit', 'Items each', LIMITS, (v) => `${v}`)}
         {opt('rounds', 'Items for sale', ROUNDS, (v) => `${v}`)}
         {opt('increment', 'Raise by', INCREMENTS, (v) => `$${v}`)}
       </div>
-      <p className="pt-label">Shot clock</p>
+      <p className="pt-label">{t('Shot clock')}</p>
       <div className="pt-seg" role="radiogroup">
         {CLOCKS.map((c) => (
           <button key={c} role="radio" aria-checked={s.clock === c} onClick={() => set({ clock: c })}>
@@ -54,19 +55,19 @@ function Settings({ view, send }: Ctx) {
           </button>
         ))}
       </div>
-      <h3>Theme packs</h3>
+      <h3>{t('Theme packs')}</h3>
       <div className="pt-picker">
-        {AUCTION_THEMES.map((t) => {
-          const on = s.themes.includes(t.id);
+        {AUCTION_THEMES.map((th) => {
+          const on = s.themes.includes(th.id);
           return (
-            <button key={t.id} className={`pt-chip${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => set({ themes: on ? s.themes.filter((x) => x !== t.id) : [...s.themes, t.id] })}>
-              {t.emoji} {t.label}
+            <button key={th.id} className={`pt-chip${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => set({ themes: on ? s.themes.filter((x) => x !== th.id) : [...s.themes, th.id] })}>
+              {th.emoji} {t(th.label)}
             </button>
           );
         })}
       </div>
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={online < MIN_PLAYERS} onClick={() => send({ t: 'start' })}>
-        Open the auction
+        {t('Open the auction')}
       </button>
     </>
   );
@@ -82,12 +83,12 @@ function Collection({ w, ctx, vote }: { w: Wallet; ctx: Ctx; vote?: boolean }) {
         <Dot p={p} size={30} />
         <b>
           {p.name}
-          {p.you ? ' (you)' : ''}
+          {p.you ? t(' (you)') : ''}
         </b>
-        <span className="pt-muted">${w.budget} left</span>
+        <span className="pt-muted">{t('${n} left', { n: w.budget })}</span>
         {vote && !p.you && (
           <button className={`pt-btn pt-btn-sm${ctx.view.myVote === w.n ? ' pt-btn-go' : ''}`} onClick={() => ctx.send({ t: 'vote', seat: w.n })}>
-            {ctx.view.myVote === w.n ? '👍 Your pick' : '👍 Best'}
+            {ctx.view.myVote === w.n ? t('👍 Your pick') : t('👍 Best')}
           </button>
         )}
         {ctx.view.result && <span className="pt-pill">👍 {votes}</span>}
@@ -100,7 +101,7 @@ function Collection({ w, ctx, vote }: { w: Wallet; ctx: Ctx; vote?: boolean }) {
             </li>
           ))
         ) : (
-          <li className="pt-muted">Nothing. Bold strategy.</li>
+          <li className="pt-muted">{t('Nothing. Bold strategy.')}</li>
         )}
       </ul>
     </div>
@@ -117,7 +118,7 @@ function Game(ctx: Ctx) {
   if (view.phase === 'vote' || view.phase === 'result') {
     return (
       <section className="pt-panel">
-        <h2>{view.phase === 'vote' ? 'Collections are in! Vote for the best one' : '🔨 The results'}</h2>
+        <h2>{view.phase === 'vote' ? t('Collections are in! Vote for the best one') : t('🔨 The results')}</h2>
         {view.phase === 'vote' && (
           <>
             <Clock left={left} />
@@ -131,19 +132,19 @@ function Game(ctx: Ctx) {
         </div>
         {view.phase === 'result' && view.result && (
           <>
-            <p className="pt-muted">This game: 3 points per vote + 1 per item.</p>
+            <p className="pt-muted">{t('This game: 3 points per vote + 1 per item.')}</p>
             <Scores players={view.players} gained={view.result.gained} />
             {view.host ? (
               <div className="pt-row">
                 <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'start' })}>
-                  New auction
+                  {t('New auction')}
                 </button>
                 <button className="pt-btn" onClick={() => send({ t: 'lobby' })}>
-                  Settings
+                  {t('Settings')}
                 </button>
               </div>
             ) : (
-              <p className="pt-muted pt-center">The host starts the next auction.</p>
+              <p className="pt-muted pt-center">{t('The host starts the next auction.')}</p>
             )}
           </>
         )}
@@ -166,7 +167,7 @@ function Game(ctx: Ctx) {
           return p ? (
             <span key={w.n} className={`pt-wallet${w.n === sale.active ? ' is-now' : ''}${sale.passed.includes(w.n) ? ' is-out' : ''}`} style={{ ['--pc' as string]: seatColor(w.n) }}>
               {p.name}
-              {p.you ? ' (you)' : ''}
+              {p.you ? t(' (you)') : ''}
               <b>${w.budget}</b>
               <small>
                 {w.items.length}/{view.settings.limit}
@@ -178,7 +179,7 @@ function Game(ctx: Ctx) {
       {item && (
         <article className={`pt-lot pt-rarity-${item.rarity}`}>
           <span className="pt-kind">
-            {theme?.emoji} {theme?.label} · {RARITY[item.rarity]}
+            {theme?.emoji} {t(theme?.label ?? '')} · {t(RARITY[item.rarity]!)}
           </span>
           <span className="pt-lot-emoji" aria-hidden="true">
             {item.emoji}
@@ -187,10 +188,10 @@ function Game(ctx: Ctx) {
           <p className="pt-lot-bid">
             {leader ? (
               <>
-                <b>${sale.bid}</b> · {leader.you ? 'you lead' : `${leader.name} leads`}
+                <b>${sale.bid}</b> · {leader.you ? t('you lead') : t('{name} leads', { name: leader.name })}
               </>
             ) : (
-              'No bids yet'
+              t('No bids yet')
             )}
           </p>
         </article>
@@ -201,16 +202,16 @@ function Game(ctx: Ctx) {
           {sale.canBid && mine ? (
             <>
               <p>
-                <b>Your move.</b> You have ${mine.budget}.
+                <b>{t('Your move.')}</b> {t('You have ${n}.', { n: mine.budget })}
               </p>
               <div className="pt-row">
                 {raises.map((v) => (
                   <button key={v} className="pt-btn pt-btn-go" onClick={() => send({ t: 'bid', amount: v })}>
-                    Bid ${v}
+                    {t('Bid ${n}', { n: v })}
                   </button>
                 ))}
                 <button className="pt-btn" onClick={() => send({ t: 'pass' })}>
-                  Pass
+                  {t('Pass')}
                 </button>
               </div>
               <form
@@ -224,23 +225,23 @@ function Game(ctx: Ctx) {
                   }
                 }}
               >
-                <input className="pt-input pt-input-sm" inputMode="numeric" value={custom} onChange={(e) => setCustom(e.target.value.replace(/\D/g, ''))} placeholder={`$${sale.minBid}–${mine.budget}`} aria-label="Custom bid" />
+                <input className="pt-input pt-input-sm" inputMode="numeric" value={custom} onChange={(e) => setCustom(e.target.value.replace(/\D/g, ''))} placeholder={`$${sale.minBid}–${mine.budget}`} aria-label={t('Custom bid')} />
                 <button className="pt-btn pt-btn-sm" disabled={!custom}>
-                  Bid
+                  {t('Bid')}
                 </button>
               </form>
             </>
           ) : (
-            <p className="pt-muted pt-center">{active ? `${active.name} is deciding…` : 'Waiting…'}</p>
+            <p className="pt-muted pt-center">{active ? t('{name} is deciding…', { name: active.name }) : t('Waiting…')}</p>
           )}
         </section>
       ) : (
         <section className="pt-actions">
-          <h3 className="pt-center">{sale.state === 'sold' && leader ? `🔨 Sold to ${leader.you ? 'you' : leader.name} for $${sale.bid}!` : 'Nobody wanted it. Unsold!'}</h3>
+          <h3 className="pt-center">{sale.state === 'sold' && leader ? (leader.you ? t('🔨 Sold to you for ${n}!', { n: sale.bid }) : t('🔨 Sold to {name} for ${n}!', { name: leader.name, n: sale.bid })) : t('Nobody wanted it. Unsold!')}</h3>
           <Clock left={left} />
           {view.host && (
             <button className="pt-btn pt-btn-go" onClick={() => send({ t: 'next' })}>
-              Next item →
+              {t('Next item →')}
             </button>
           )}
         </section>

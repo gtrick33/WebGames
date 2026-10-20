@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { t as tr, useT } from '../i18n';
+import { GAMES } from '../catalog/games';
+import { t as tr, tDaily, useT } from '../i18n';
 import type { QuestView } from '../platform/apiTypes';
+import { fmt } from '../platform/daily';
 import { account, useAccount } from '../platform/account';
 import { formatCountdown, msUntilMidnight } from '../platform/dates';
 import { useNow } from '../platform/hooks';
@@ -10,6 +12,21 @@ import { Icon } from './Icon';
 import { openSignIn } from './openSignIn';
 import './Quests.css';
 
+/** A quest's text in the current language, rebuilt from its id (the server sends it in English). */
+export function questLabel(q: Pick<QuestView, 'id' | 'label' | 'target'>): string {
+  const rounds = /^rounds-(\d+)$/.exec(q.id);
+  if (rounds) return tr('Play {n} rounds', { n: rounds[1]! });
+  if (q.id === 'best') return tr('Beat one of your personal bests');
+  if (q.id === 'daily') return tr('Clear today’s Daily Challenge');
+  if (q.id === 'favorite') return tr('Add a game to your favorites');
+  const m = /^metric-([a-z0-9-]+)-([A-Za-z]+)-(\d+)$/.exec(q.id);
+  const g = m ? GAMES.find((x) => x.slug === m[1]) : undefined;
+  const tpl = m && g?.daily ? (g.daily.find((d) => d.metric === m[2] && d.targets.includes(q.target)) ?? g.daily.find((d) => d.metric === m[2])) : undefined;
+  if (!g || !tpl) return tr(q.label);
+  const goal = tDaily({ label: tpl.label.replace('{n}', fmt(q.target)), template: tpl.label, target: q.target });
+  return goal.includes(g.title) ? goal : tr('{goal} in {game}', { goal, game: g.title });
+}
+
 function QuestCard({ q, onClaim, busy }: { q: QuestView; onClaim: () => void; busy: boolean }) {
   const pct = Math.round((q.progress / q.target) * 100);
   return (
@@ -18,7 +35,7 @@ function QuestCard({ q, onClaim, busy }: { q: QuestView; onClaim: () => void; bu
         <Icon name={q.icon} size={22} />
       </span>
       <div className="quest-main">
-        <p className="quest-label">{q.label}</p>
+        <p className="quest-label">{questLabel(q)}</p>
         <div className="quest-bar" aria-hidden="true">
           <i style={{ width: `${pct}%` }} />
         </div>
@@ -28,11 +45,11 @@ function QuestCard({ q, onClaim, busy }: { q: QuestView; onClaim: () => void; bu
       </div>
       {q.claimed ? (
         <span className="quest-state mono">
-          <Icon name="check" size={16} /> Claimed
+          <Icon name="check" size={16} /> {tr('Claimed')}
         </span>
       ) : q.done ? (
         <button className="btn btn-lime btn-sm quest-claim" onClick={onClaim} disabled={busy}>
-          Claim +{q.xp}
+          {tr('Claim +{n}', { n: q.xp })}
         </button>
       ) : (
         <span className="quest-state mono">{pct}%</span>
@@ -88,10 +105,10 @@ export function QuestBoard({ compact = false }: { compact?: boolean }) {
     try {
       const res = await account.claimQuest(q.id);
       setBurst((b) => b + 1);
-      setToast(res.levelUp ? `Level up! You are now level ${account.state.me?.level}.` : `+${res.xp} XP`);
+      setToast(res.levelUp ? tr('Level up! You are now level {n}.', { n: account.state.me?.level ?? '' }) : `+${res.xp} XP`);
       window.setTimeout(() => setToast(''), 3000);
     } catch {
-      setToast('Could not claim right now. Try again.');
+      setToast(tr('Could not claim right now. Try again.'));
     } finally {
       setBusy(false);
     }
@@ -119,7 +136,7 @@ export function QuestBoard({ compact = false }: { compact?: boolean }) {
               <i style={{ width: `${pct}%` }} />
             </div>
             <span className="mono">
-              {me.xp - me.levelFloor} / {me.levelNext - me.levelFloor} XP to level {me.level + 1}
+              {tr('{a} / {b} XP to level {n}', { a: me.xp - me.levelFloor, b: me.levelNext - me.levelFloor, n: me.level + 1 })}
             </span>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { LOBBY_DELAY_S, readFeedback, registerFeedbackOpener, shouldAsk, writeFe
 import { useSave } from '../platform/store';
 import { Link, matchRoute, useLocation } from '../router/router';
 import { Icon } from './Icon';
+import { useT } from '../i18n';
 import './FeedbackPrompt.css';
 
 const WISHES: { id: string; label: string }[] = [
@@ -28,6 +29,7 @@ type Step = 'stars' | 'details' | 'thanks';
  * lobby pages after a few finished rounds (see platform/feedback.ts), or opens on demand.
  */
 export function FeedbackPrompt() {
+  const t = useT();
   const save = useSave();
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
@@ -71,14 +73,14 @@ export function FeedbackPrompt() {
   useEffect(() => {
     if (!LOBBY.has(route) || askedThisVisit.current || open) return;
     if (!shouldAsk(readFeedback(), rounds, Date.now())) return;
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       if (document.hidden || askedThisVisit.current) return;
       askedThisVisit.current = true;
       writeFeedback({ ...readFeedback(), lastShown: Date.now() });
       track('feedback_prompt');
       show();
     }, LOBBY_DELAY_S * 1000);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route, rounds, open]);
 
@@ -112,7 +114,7 @@ export function FeedbackPrompt() {
       track('feedback_sent', { stars });
       setStep('thanks');
     } catch {
-      setError('Could not send right now. Please try again in a moment.');
+      setError(t('Could not send right now. Please try again in a moment.'));
     } finally {
       setSending(false);
     }
@@ -134,7 +136,7 @@ export function FeedbackPrompt() {
 
   return (
     <div className="fb" role="dialog" aria-labelledby="fb-title" ref={panel}>
-      <button className="fb-close" onClick={close} aria-label="Close">
+      <button className="fb-close" onClick={close} aria-label={t('Close')}>
         <Icon name="close" size={18} />
       </button>
       {step === 'thanks' ? (
@@ -142,22 +144,22 @@ export function FeedbackPrompt() {
           <span className="fb-burst" aria-hidden="true">
             ★
           </span>
-          <h2 id="fb-title">Thank you!</h2>
-          <p>We read every note. It shapes what we build next.</p>
+          <h2 id="fb-title">{t('Thank you!')}</h2>
+          <p>{t('We read every note. It shapes what we build next.')}</p>
           <Link href={`/me/bugs${game ? `?game=${game}` : ''}`} className="fb-link" onClick={() => setOpen(false)}>
-            <Icon name="bug" size={16} /> Found a bug? Report it
+            <Icon name="bug" size={16} /> {t('Found a bug? Report it')}
           </Link>
         </div>
       ) : (
         <>
-          <h2 id="fb-title">{aboutTitle ? `How do you like ${aboutTitle}?` : 'Enjoying GlitchBound?'}</h2>
-          <div className="fb-stars" role="radiogroup" aria-label="Your rating" onMouseLeave={() => setHover(0)}>
+          <h2 id="fb-title">{aboutTitle ? t('How do you like {game}?', { game: aboutTitle }) : t('Enjoying GlitchBound?')}</h2>
+          <div className="fb-stars" role="radiogroup" aria-label={t('Your rating')} onMouseLeave={() => setHover(0)}>
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
                 role="radio"
                 aria-checked={stars === n}
-                aria-label={`${n} star${n > 1 ? 's' : ''}: ${STAR_WORDS[n]}`}
+                aria-label={`${n} ★: ${t(STAR_WORDS[n]!)}`}
                 className={`fb-star${n <= shown ? ' is-on' : ''}`}
                 onMouseEnter={() => setHover(n)}
                 onClick={() => {
@@ -172,27 +174,27 @@ export function FeedbackPrompt() {
             ))}
           </div>
           <p className="fb-word mono" aria-live="polite">
-            {STAR_WORDS[shown] || 'Tap a star'}
+            {shown ? t(STAR_WORDS[shown]!) : t('Tap a star')}
           </p>
           {step === 'details' && (
             <div className="fb-details">
               <label className="fb-label" htmlFor="fb-msg">
-                {stars <= 3 ? 'What should we fix or change?' : 'What would make it even better?'} <span>(optional)</span>
+                {stars <= 3 ? t('What should we fix or change?') : t('What would make it even better?')} <span>({t('optional')})</span>
               </label>
-              <textarea id="fb-msg" className="field fb-text" rows={3} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Tell us anything…" />
-              <p className="fb-label">I’d love…</p>
+              <textarea id="fb-msg" className="field fb-text" rows={3} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t('Tell us anything…')} />
+              <p className="fb-label">{t('I’d love…')}</p>
               <div className="fb-chips">
                 {WISHES.map((w) => (
                   <button key={w.id} className={`fb-chip${wish === w.id ? ' is-on' : ''}`} aria-pressed={wish === w.id} onClick={() => setWish(wish === w.id ? '' : w.id)}>
-                    {w.label}
+                    {t(w.label)}
                   </button>
                 ))}
               </div>
               <label className="fb-label" htmlFor="fb-game">
-                About a game? <span>(optional)</span>
+                {t('About a game?')} <span>({t('optional')})</span>
               </label>
               <select id="fb-game" className="field fb-select" value={game} onChange={(e) => setGame(e.target.value)}>
-                <option value="">The arcade in general</option>
+                <option value="">{t('The arcade in general')}</option>
                 {GAMES.filter((g) => !getLiveCatalog().settings(g.slug).hidden).map((g) => (
                   <option key={g.slug} value={g.slug}>
                     {g.title}
@@ -201,7 +203,7 @@ export function FeedbackPrompt() {
               </select>
               {error && <p className="fb-error">{error}</p>}
               <button className="btn btn-primary fb-send" onClick={() => void send()} disabled={sending}>
-                {sending ? 'Sending…' : 'Send feedback'}
+                {sending ? t('Sending…') : t('Send feedback')}
               </button>
             </div>
           )}
