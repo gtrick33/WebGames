@@ -27,7 +27,7 @@ export const MYSTERY_WORDS: string[] = (
   'snowman sandcastle bubble shadow dream ghost secret mystery memory ' +
   'avocado blueberry coconut grape kiwi lime melon olive peach pear plum raspberry lettuce cabbage spinach ' +
   'beetroot radish celery pea bean lentil chilli ginger cinnamon vanilla mustard ketchup mayonnaise omelette ' +
-  'porridge yoghurt muffin croissant bagel pretzel crumpet scone biscuit brownie pudding custard jelly lollipop ' +
+  'porridge yogurt muffin croissant bagel pretzel crumpet scone biscuit brownie pudding custard jelly lollipop ' +
   'marshmallow popsicle smoothie milkshake lemonade juice soda wine beer champagne cocktail whisky gin vodka ' +
   'espresso cappuccino kebab burrito lasagne spaghetti risotto curry dumpling falafel hummus nachos fries hotdog ' +
   'meatball steak llama alpaca donkey bull reindeer moose deer badger otter beaver raccoon skunk hamster ferret ' +
@@ -35,7 +35,7 @@ export const MYSTERY_WORDS: string[] = (
   'swordfish pelican stork crow raven pigeon seagull vulture peacock ostrich turkey goose hummingbird woodpecker ' +
   'robin sparrow beetle ladybird mosquito wasp moth caterpillar cricket grasshopper scorpion centipede tadpole ' +
   'slug skyscraper cottage mansion igloo tent caravan treehouse cabin barn shed windmill palace temple mosque ' +
-  'cathedral stadium arena gym cinema theatre bakery butcher pharmacy supermarket market mall harbour pier tunnel ' +
+  'cathedral stadium arena gym cinema theater bakery butcher pharmacy supermarket market mall harbor pier tunnel ' +
   'motorway roundabout crossroads pavement lamppost bench fountain statue monument cemetery toothbrush toothpaste ' +
   'soap shampoo towel sponge razor comb hairbrush perfume lipstick mascara pillowcase duvet mattress hammock ' +
   'cushion rug curtain wardrobe drawer shelf bookcase desk stool cradle dustpan mop iron hanger peg basket bin ' +

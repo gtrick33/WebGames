@@ -149,7 +149,7 @@ const EXTRA: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
   heroes: [
     ['Hero turning invisible', 1], ['Villain stroking a cat in a big chair', 2], ['Hero who talks to fish', 2], ['Ice-powered villain', 2], ['Hero rescuing a cat from a tree', 1], ['Villain tying someone to the railway tracks', 2],
     ['Hero with a jetpack', 1], ['Hero lifting a car', 1], ['Hero with laser eyes', 1], ['Villain with a freeze ray', 2], ['Evil twin', 2], ['Robot sidekick', 2],
-    ['Masked wrestler hero', 2], ['Hero who controls fire', 1], ['Villain escaping in a hot-air balloon', 3], ['Ninja assassin', 1], ['Knight in shining armour', 1], ['Hero catching a falling plane', 2],
+    ['Masked wrestler hero', 2], ['Hero who controls fire', 1], ['Villain escaping in a hot-air balloon', 3], ['Ninja assassin', 1], ['Knight in shining armor', 1], ['Hero catching a falling plane', 2],
     ['Villain’s lair inside a volcano', 3], ['Pirate queen', 2],
   ],
   animals: [
@@ -184,13 +184,13 @@ const EXTRA: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
     ['Clicking all the traffic lights to prove you’re human', 2], ['Stuck with a cat filter on a work call', 2], ['Typo in a viral post', 2], ['Main character energy', 3], ['Smart speaker mishearing you', 2], ['Robot vacuum chasing the cat', 1],
     ['Autocorrect fail', 2], ['Screenshot of a screenshot', 3], ['Life hack that doesn’t work', 2], ['Influencer pose in front of a landmark', 1], ['Tagging the wrong person', 2], ['Two-factor login code', 3],
     ['Accepting the cookie pop-up', 2], ['Software update at the worst time', 2], ['Waiting while someone is typing', 1], ['Muting the group chat', 2], ['Leaving the group chat dramatically', 2], ['Posting a sunset photo', 1],
-    ['Online quiz result', 2], ['Unsubscribing from emails', 2], ['Phone face ID not recognising you', 2], ['Viral dance challenge', 1], ['Setting up a new phone', 2], ['Forgetting to unmute', 1],
+    ['Online quiz result', 2], ['Unsubscribing from emails', 2], ['Phone face ID not recognizing you', 2], ['Viral dance challenge', 1], ['Setting up a new phone', 2], ['Forgetting to unmute', 1],
     ['Battery at one percent', 1],
   ],
   cartoons: [
     ['Running in mid-air', 1], ['Bump growing on your head', 1], ['Tiny rain cloud over one person', 2], ['Light bulb idea over your head', 1], ['Steam coming out of your ears', 1], ['Sneaking along inside a barrel', 2],
     ['Hiding behind a tree that is far too thin', 2], ['Running into a painted tunnel on a wall', 3], ['Getting squashed flat as a pancake', 1], ['Sooty face after an explosion', 1], ['Heart eyes', 1], ['Jaw hitting the floor', 1],
-    ['Dancing vegetables', 2], ['Hero dog with a cape', 2], ['Bird nest in your hair', 2], ['Villain twirling a moustache', 1], ['Jumping into a hole drawn on the floor', 3], ['Running so fast your legs become a wheel', 2],
+    ['Dancing vegetables', 2], ['Hero dog with a cape', 2], ['Bird nest in your hair', 2], ['Villain twirling a mustache', 1], ['Jumping into a hole drawn on the floor', 3], ['Running so fast your legs become a wheel', 2],
     ['Tongue frozen to a lamppost', 2], ['Snowball growing as it rolls downhill', 2],
   ],
   random: [
@@ -232,7 +232,7 @@ const EXTRA: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
     ['Shower for two', 2], ['Champagne in a bubble bath', 2], ['Morning-breath kiss', 2], ['Naughty text sent to Mum', 3], ['Speed-dating bell', 2], ['Rose petals on the bed', 1],
     ['Candles everywhere', 1], ['Slow striptease with a tie', 2], ['Body paint', 2], ['Rubbing sun cream on a crush', 2], ['Kiss cam at a stadium', 2], ['Edible underwear', 2],
     ['Waterbed', 2], ['Pole-dancing class', 1], ['Flirting in a sauna', 2], ['Hen-night stripper', 2], ['Hiding a love bite with a scarf', 2], ['Valentine’s dinner disaster', 3],
-    ['Getting caught by the neighbours', 3],
+    ['Getting caught by the neighbors', 3],
   ],
 };
 

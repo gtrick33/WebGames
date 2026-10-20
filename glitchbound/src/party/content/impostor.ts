@@ -39,13 +39,13 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'countries',
     name: 'Countries',
     emoji: '🌍',
-    words: ['Italy|Pasta', 'Japan|Sushi', 'Brazil|Carnival', 'Egypt|Pyramids', 'France|Baguette', 'Australia|Kangaroo', 'Canada|Maple', 'Mexico|Sombrero', 'India|Spices', 'China|Great Wall', 'Greece|Islands', 'Spain|Flamenco', 'Germany|Beer', 'Russia|Cold', 'USA|Hollywood', 'United Kingdom|Tea', 'Norway|Fjords', 'Turkey|Bazaar', 'Bulgaria|Yoghurt', 'Iceland|Volcanoes', 'Portugal|Custard tarts', 'Netherlands|Tulips', 'Switzerland|Watches', 'Ireland|Green', 'Scotland|Kilts', 'Thailand|Temples', 'Argentina|Tango', 'Kenya|Safari', 'Morocco|Souks', 'Finland|Saunas', 'South Korea|Kimchi', 'Peru|Llamas'],
+    words: ['Italy|Pasta', 'Japan|Sushi', 'Brazil|Carnival', 'Egypt|Pyramids', 'France|Baguette', 'Australia|Kangaroo', 'Canada|Maple', 'Mexico|Sombrero', 'India|Spices', 'China|Great Wall', 'Greece|Islands', 'Spain|Flamenco', 'Germany|Beer', 'Russia|Cold', 'USA|Hollywood', 'United Kingdom|Tea', 'Norway|Fjords', 'Turkey|Bazaar', 'Bulgaria|Yogurt', 'Iceland|Volcanoes', 'Portugal|Custard tarts', 'Netherlands|Tulips', 'Switzerland|Watches', 'Ireland|Green', 'Scotland|Kilts', 'Thailand|Temples', 'Argentina|Tango', 'Kenya|Safari', 'Morocco|Souks', 'Finland|Saunas', 'South Korea|Kimchi', 'Peru|Llamas'],
   },
   {
     id: 'cities',
     name: 'Cities',
     emoji: '🏙️',
-    words: ['Paris|Tower', 'London|Big Ben', 'New York|Taxis', 'Rome|Colosseum', 'Tokyo|Neon', 'Venice|Canals', 'Barcelona|Gaudí', 'Dubai|Skyscrapers', 'Amsterdam|Bikes', 'Las Vegas|Casinos', 'Istanbul|Two continents', 'Berlin|Wall', 'Sydney|Opera House', 'Rio de Janeiro|Christ statue', 'Moscow|Red Square', 'Athens|Ancient', 'Cairo|Nile', 'Sofia|Vitosha', 'Prague|Bridges', 'Los Angeles|Movie stars', 'Madrid|Royal palace', 'Lisbon|Trams', 'Vienna|Waltz', 'Dublin|Pubs', 'Edinburgh|Castle on a hill', 'Budapest|Thermal baths', 'San Francisco|Golden Gate', 'Hong Kong|Harbour', 'Marrakech|Market square', 'Bangkok|Tuk-tuks', 'Plovdiv|Hills', 'Varna|Sea garden'],
+    words: ['Paris|Tower', 'London|Big Ben', 'New York|Taxis', 'Rome|Colosseum', 'Tokyo|Neon', 'Venice|Canals', 'Barcelona|Gaudí', 'Dubai|Skyscrapers', 'Amsterdam|Bikes', 'Las Vegas|Casinos', 'Istanbul|Two continents', 'Berlin|Wall', 'Sydney|Opera House', 'Rio de Janeiro|Christ statue', 'Moscow|Red Square', 'Athens|Ancient', 'Cairo|Nile', 'Sofia|Vitosha', 'Prague|Bridges', 'Los Angeles|Movie stars', 'Madrid|Royal palace', 'Lisbon|Trams', 'Vienna|Waltz', 'Dublin|Pubs', 'Edinburgh|Castle on a hill', 'Budapest|Thermal baths', 'San Francisco|Golden Gate', 'Hong Kong|Harbor', 'Marrakech|Market square', 'Bangkok|Tuk-tuks', 'Plovdiv|Hills', 'Varna|Sea garden'],
   },
   {
     id: 'sports',
@@ -75,7 +75,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'kitchen',
     name: 'In the kitchen',
     emoji: '🍳',
-    words: ['Frying pan|Eggs', 'Kettle|Boil', 'Toaster|Bread', 'Oven|Bake', 'Blender|Smoothie', 'Fork|Prongs', 'Chopsticks|Two', 'Grater|Cheese', 'Rolling pin|Dough', 'Colander|Holes', 'Spatula|Flip', 'Corkscrew|Wine', 'Ladle|Soup', 'Whisk|Cream', 'Teapot|Cups', 'Cutting board|Knife', 'Dishwasher|Plates', 'Apron|Cooking', 'Ice cube|Freezer', 'Salt shaker|Seasoning', 'Sieve|Flour', 'Measuring jug|Millilitres', 'Tin opener|Can', 'Oven glove|Hot', 'Pepper mill|Grind', 'Saucepan|Lid', 'Egg timer|Sand', 'Pizza cutter|Wheel', 'Tongs|Grab', 'Baking tray|Biscuits', 'Garlic press|Crush', 'Food processor|Chop'],
+    words: ['Frying pan|Eggs', 'Kettle|Boil', 'Toaster|Bread', 'Oven|Bake', 'Blender|Smoothie', 'Fork|Prongs', 'Chopsticks|Two', 'Grater|Cheese', 'Rolling pin|Dough', 'Colander|Holes', 'Spatula|Flip', 'Corkscrew|Wine', 'Ladle|Soup', 'Whisk|Cream', 'Teapot|Cups', 'Cutting board|Knife', 'Dishwasher|Plates', 'Apron|Cooking', 'Ice cube|Freezer', 'Salt shaker|Seasoning', 'Sieve|Flour', 'Measuring jug|Milliliters', 'Tin opener|Can', 'Oven glove|Hot', 'Pepper mill|Grind', 'Saucepan|Lid', 'Egg timer|Sand', 'Pizza cutter|Wheel', 'Tongs|Grab', 'Baking tray|Biscuits', 'Garlic press|Crush', 'Food processor|Chop'],
   },
   {
     id: 'clothes',
@@ -105,7 +105,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'school',
     name: 'School',
     emoji: '🏫',
-    words: ['Homework|Evening', 'Exam|Grades', 'Backpack|Shoulders', 'Pencil|Sharpen', 'Calculator|Math', 'Lunch break|Food', 'Principal|Office', 'Blackboard|Chalk', 'Field trip|Bus', 'Detention|After class', 'Graduation|Hats', 'Science lab|Experiments', 'Gym class|Sport', 'Library card|Books', 'Report card|Parents', 'Ruler|Straight', 'Map|Geography', 'School bus|Yellow', 'Spelling bee|Letters', 'Summer holidays|Freedom', 'Teacher’s pet|Favourite', 'Lunchbox|Sandwich', 'Playground|Swings', 'Sports day|Egg and spoon', 'Assembly|Hall', 'Timetable|Lessons', 'Pencil case|Zip', 'Exercise book|Lines', 'Hall pass|Corridor', 'Class photo|Smile', 'Fire drill|Alarm', 'Prom|Dance'],
+    words: ['Homework|Evening', 'Exam|Grades', 'Backpack|Shoulders', 'Pencil|Sharpen', 'Calculator|Math', 'Lunch break|Food', 'Principal|Office', 'Blackboard|Chalk', 'Field trip|Bus', 'Detention|After class', 'Graduation|Hats', 'Science lab|Experiments', 'Gym class|Sport', 'Library card|Books', 'Report card|Parents', 'Ruler|Straight', 'Map|Geography', 'School bus|Yellow', 'Spelling bee|Letters', 'Summer holidays|Freedom', 'Teacher’s pet|Favorite', 'Lunchbox|Sandwich', 'Playground|Swings', 'Sports day|Egg and spoon', 'Assembly|Hall', 'Timetable|Lessons', 'Pencil case|Zip', 'Exercise book|Lines', 'Hall pass|Corridor', 'Class photo|Smile', 'Fire drill|Alarm', 'Prom|Dance'],
   },
   {
     id: 'halloween',
@@ -117,7 +117,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'winter',
     name: 'Winter & Christmas',
     emoji: '🎄',
-    words: ['Snowman|Carrot', 'Christmas tree|Lights', 'Reindeer|Antlers', 'Present|Wrapping', 'Gingerbread|Cookies', 'Sledge|Hill', 'Mittens|Warm', 'Fireplace|Logs', 'Snowball|Throw', 'Ice skating|Rink', 'Stocking|Chimney', 'Elf|Workshop', 'Mistletoe|Kiss', 'Hot chocolate|Mug', 'Advent calendar|Doors', 'Fireworks|Midnight', 'Snowflake|Unique', 'Ski lift|Mountain', 'Carol singers|Doorstep', 'Candy cane|Stripes', 'Igloo|Ice house', 'Snow angel|Lie down', 'Icicle|Drip', 'Polar bear|Arctic', 'Mulled wine|Cinnamon', 'Chestnuts|Roasting', 'Christmas jumper|Knitted', 'Sleigh bells|Jingle', 'Frost|Windscreen', 'Snowplough|Road', 'Ski goggles|Glare', 'Wreath|Front door'],
+    words: ['Snowman|Carrot', 'Christmas tree|Lights', 'Reindeer|Antlers', 'Present|Wrapping', 'Gingerbread|Cookies', 'Sledge|Hill', 'Mittens|Warm', 'Fireplace|Logs', 'Snowball|Throw', 'Ice skating|Rink', 'Stocking|Chimney', 'Elf|Workshop', 'Mistletoe|Kiss', 'Hot chocolate|Mug', 'Advent calendar|Doors', 'Fireworks|Midnight', 'Snowflake|Unique', 'Ski lift|Mountain', 'Carol singers|Doorstep', 'Candy cane|Stripes', 'Igloo|Ice house', 'Snow angel|Lie down', 'Icicle|Drip', 'Polar bear|Arctic', 'Mulled wine|Cinnamon', 'Chestnuts|Roasting', 'Christmas jumper|Knitted', 'Sleigh bells|Jingle', 'Frost|Windscreen', 'Snowplow|Road', 'Ski goggles|Glare', 'Wreath|Front door'],
   },
   {
     id: 'summer',
@@ -171,7 +171,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'drinks',
     name: 'Drinks',
     emoji: '🥤',
-    words: ['Coffee|Morning', 'Tea|Kettle', 'Orange juice|Breakfast', 'Lemonade|Lemons', 'Hot chocolate|Marshmallows', 'Milk|Cow', 'Smoothie|Blender', 'Cola|Fizzy', 'Water|Tap', 'Beer|Foam', 'Wine|Grapes', 'Champagne|Toast', 'Cocktail|Umbrella', 'Iced tea|Summer', 'Energy drink|Buzz', 'Coconut water|Tropical', 'Bubble tea|Pearls', 'Ayran|Yoghurt', 'Espresso|Tiny cup', 'Kombucha|Fermented', 'Cappuccino|Froth', 'Hot toddy|Honey', 'Gin and tonic|Ice and lemon', 'Mojito|Mint', 'Sangria|Fruit', 'Prosecco|Italian fizz', 'Whisky|Scotland', 'Herbal tea|Calm', 'Boza|Thick', 'Matcha|Green', 'Root beer|Float', 'Slush|Brain freeze'],
+    words: ['Coffee|Morning', 'Tea|Kettle', 'Orange juice|Breakfast', 'Lemonade|Lemons', 'Hot chocolate|Marshmallows', 'Milk|Cow', 'Smoothie|Blender', 'Cola|Fizzy', 'Water|Tap', 'Beer|Foam', 'Wine|Grapes', 'Champagne|Toast', 'Cocktail|Umbrella', 'Iced tea|Summer', 'Energy drink|Buzz', 'Coconut water|Tropical', 'Bubble tea|Pearls', 'Ayran|Yogurt', 'Espresso|Tiny cup', 'Kombucha|Fermented', 'Cappuccino|Froth', 'Hot toddy|Honey', 'Gin and tonic|Ice and lemon', 'Mojito|Mint', 'Sangria|Fruit', 'Prosecco|Italian fizz', 'Whisky|Scotland', 'Herbal tea|Calm', 'Boza|Thick', 'Matcha|Green', 'Root beer|Float', 'Slush|Brain freeze'],
   },
   {
     id: 'fruitveg',
@@ -195,7 +195,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'bulgaria',
     name: 'Bulgaria',
     emoji: '🇧🇬',
-    words: ['Banitsa|Pastry', 'Shopska salad|Cheese', 'Rakia|Strong', 'Martenitsa|Red and white', 'Kukeri|Masks', 'Rila Monastery|Mountains', 'Black Sea|Beach', 'Rose oil|Valley', 'Yoghurt|Bacteria', 'Horo|Circle dance', 'Vitosha|Ski', 'Plovdiv|Old town', 'Varna|Seaside', 'Cyrillic|Alphabet', 'Baba Marta|March', 'Seven Rila Lakes|Hike', 'Lyutenitsa|Peppers', 'Sunny Beach|Party', 'Tarator|Cucumber', 'Nestinari|Fire walking', 'Lukanka|Sausage', 'Shkembe chorba|Hangover', 'Rose Valley|Kazanlak', 'Koprivshtitsa|Old houses', 'Belogradchik Rocks|Fortress', 'Thracian gold|Treasure', 'Bansko|Ski slopes', 'Melnik|Wine', 'Rhodope Mountains|Bagpipes', 'Kozunak|Easter', 'Survachka|New Year', 'Buzludzha|Monument'],
+    words: ['Banitsa|Pastry', 'Shopska salad|Cheese', 'Rakia|Strong', 'Martenitsa|Red and white', 'Kukeri|Masks', 'Rila Monastery|Mountains', 'Black Sea|Beach', 'Rose oil|Valley', 'Yogurt|Bacteria', 'Horo|Circle dance', 'Vitosha|Ski', 'Plovdiv|Old town', 'Varna|Seaside', 'Cyrillic|Alphabet', 'Baba Marta|March', 'Seven Rila Lakes|Hike', 'Lyutenitsa|Peppers', 'Sunny Beach|Party', 'Tarator|Cucumber', 'Nestinari|Fire walking', 'Lukanka|Sausage', 'Shkembe chorba|Hangover', 'Rose Valley|Kazanlak', 'Koprivshtitsa|Old houses', 'Belogradchik Rocks|Fortress', 'Thracian gold|Treasure', 'Bansko|Ski slopes', 'Melnik|Wine', 'Rhodope Mountains|Bagpipes', 'Kozunak|Easter', 'Survachka|New Year', 'Buzludzha|Monument'],
   },
   {
     id: 'powers',
@@ -213,7 +213,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'social',
     name: 'Online life',
     emoji: '📸',
-    words: ['Influencer|Followers', 'Meme|Funny', 'Livestream|Chat', 'Filter|Face', 'Unboxing|Package', 'Viral video|Shares', 'Story|24 hours', 'Comment section|Opinions', 'Dance trend|Moves', 'Group chat|Messages', 'Dating app|Swipe', 'Podcast|Microphone', 'Online shopping|Delivery', 'Clickbait|Title', 'Notification|Ping', 'Screenshot|Proof', 'Voice message|Listen', 'Profile picture|Photo', 'Like button|Heart', 'Subscribe|Channel', 'Troll|Mean comments', 'Blue tick|Verified', 'Direct message|Private', 'Reaction video|Face', 'Unfollow|Bye', 'Trending|Popular', 'Caption|Text', 'Avatar|Cartoon me', 'Cancelled|Backlash', 'Thirst trap|Pose', 'Algorithm|Feed', 'Ghosting|Disappear'],
+    words: ['Influencer|Followers', 'Meme|Funny', 'Livestream|Chat', 'Filter|Face', 'Unboxing|Package', 'Viral video|Shares', 'Story|24 hours', 'Comment section|Opinions', 'Dance trend|Moves', 'Group chat|Messages', 'Dating app|Swipe', 'Podcast|Microphone', 'Online shopping|Delivery', 'Clickbait|Title', 'Notification|Ping', 'Screenshot|Proof', 'Voice message|Listen', 'Profile picture|Photo', 'Like button|Heart', 'Subscribe|Channel', 'Troll|Mean comments', 'Blue tick|Verified', 'Direct message|Private', 'Reaction video|Face', 'Unfollow|Bye', 'Trending|Popular', 'Caption|Text', 'Avatar|Cartoon me', 'Canceled|Backlash', 'Thirst trap|Pose', 'Algorithm|Feed', 'Ghosting|Disappear'],
   },
   {
     id: 'everyday',
