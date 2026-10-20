@@ -1,6 +1,6 @@
 # To Scale
 
-**Pitch.** Two things stand side by side on blueprint paper: one you know (a die, a bus, a person) and one shown as
+**Pitch.** Two things stand side by side on blueprint paper: one you know (a dice, a bus, a person) and one shown as
 a bright silhouette at the wrong size. Drag its corner until it is the right size next to the other one, lock it
 in, and watch the real thing pop up over your guess.
 

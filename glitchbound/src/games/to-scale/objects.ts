@@ -14,7 +14,7 @@ export interface Thing {
 export const THINGS: Thing[] = [
   { emoji: '🐜', name: 'an ant', size: 0.006, fact: 'A worker ant is about 6 mm long, and can carry many times its own weight.' },
   { emoji: '🐝', name: 'a honeybee', size: 0.015, fact: 'A worker honeybee is about 1.5 cm long.' },
-  { emoji: '🎲', name: 'a die', size: 0.016, fact: 'A standard die is 16 mm along each edge.' },
+  { emoji: '🎲', name: 'a dice', size: 0.016, fact: 'A standard dice is 16 mm along each edge.' },
   { emoji: '🐌', name: 'a garden snail', size: 0.03, fact: 'A garden snail’s shell is about 3 cm across.' },
   { emoji: '📎', name: 'a paperclip', size: 0.033, fact: 'A standard paperclip is about 3.3 cm long.' },
   { emoji: '🍓', name: 'a strawberry', size: 0.035, fact: 'A supermarket strawberry is about 3.5 cm long.' },

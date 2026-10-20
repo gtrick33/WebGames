@@ -59,11 +59,11 @@ const writeSave = (s: Save): void => {
 };
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
 const fmt = (n: number): string => n.toLocaleString('en-US');
-/** "a die" → "the die". */
+/** "a dice" → "the dice". */
 const the = (name: string): string => name.replace(/^(a|an) /, 'the ');
 /** A word for a shot's mark, for CSS. */
 const grade = (points: number): string => ({ '🎯': 'bull', '🟩': 'good', '🟨': 'ok', '🟧': 'far' })[mark(points)] ?? 'off';
-/** "2.4× the die", "0.7× the die", "1/3 of the die". */
+/** "2.4× the dice", "0.7× the dice", "1/3 of the dice". */
 const times = (r: number, name: string): string => `${ratioText(r)}${ratioText(r).startsWith('1/') ? ' of' : ''} ${the(name)}`;
 
 export default function Game({ host, restartKey, challenge }: GameModuleProps) {
