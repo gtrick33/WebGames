@@ -1,6 +1,6 @@
 import { useGames } from '../platform/liveCatalog';
 import { useT } from '../i18n';
-import { LangSelect } from './LangPicker';
+import { LangPicker } from './LangPicker';
 import { openFeedback } from '../platform/feedback';
 import { Link } from '../router/router';
 import { LogoMark } from './Logo';
@@ -17,7 +17,7 @@ export function Footer() {
           <div className="footer-pitch">
             <LogoMark size={56} />
             <p>{t('An independent studio making small, original browser games. No installs and nothing to buy. Play as a guest, or sign in for quests and leaderboards.')}</p>
-            <LangSelect />
+            <LangPicker variant="footer" />
           </div>
           <nav className="footer-cols" aria-label="Footer">
             <div>

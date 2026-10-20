@@ -1,10 +1,23 @@
 import { useEffect, useState } from 'react';
-import { HANDS, MIN_PLAYERS, TARGETS, type Action, type Hand, type RoomView } from '../../rooms/rpsRoom';
-import { Clock, Dot, RoomFrame, Scores, seatColor, Waiting, type RoomContext } from './RoomFrame';
+import { HANDS, MIN_PLAYERS, TARGETS, THROW_SECONDS, type Action, type RoomView } from '../../rooms/rpsRoom';
+import { RpsHand } from '../RpsHand';
+import { Dot, RoomFrame, Scores, seatColor, Waiting, type RoomContext } from './RoomFrame';
 
 type Ctx = RoomContext<RoomView, Action>;
-const EMOJI: Record<Hand, string> = { rock: '✊', paper: '✋', scissors: '✌️' };
 const CHANT = ['Rock…', 'Paper…', 'Scissors…', 'Shoot!'];
+
+/** How long everyone has been waiting this throw (m:ss), counting up: no countdown to rush anyone. */
+function WaitTimer({ left, waitingFor }: { left: number | null; waitingFor: string[] }) {
+  if (left === null) return null;
+  const s = Math.max(0, THROW_SECONDS - left);
+  const time = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  return (
+    <p className="pt-rps-wait" role="timer">
+      ⏱ <b>{time}</b>
+      {waitingFor.length > 0 && <span> · waiting for {waitingFor.join(', ')}</span>}
+    </p>
+  );
+}
 
 export function RpsRoomPage({ code, onLeave }: { code: string; onLeave: () => void }) {
   return (
@@ -48,7 +61,7 @@ function Settings({ view, send }: Ctx) {
           </div>
         </>
       )}
-      <p className="pt-muted">Everyone throws in secret on their own phone, then all hands are revealed together. Too slow, or your phone dropped out? A random hand is thrown for you (away for more than 30 seconds counts as leaving).</p>
+      <p className="pt-muted">Everyone throws in secret on their own phone, then all hands are revealed together. No rush: a timer shows how long everyone has waited. After a minute, or if your phone dropped out, a random hand is thrown for you (away for more than 30 seconds counts as leaving).</p>
       <button className="pt-btn pt-btn-go pt-btn-big" disabled={online < MIN_PLAYERS} onClick={() => send({ t: 'start' })}>
         Start
       </button>
@@ -84,7 +97,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
         return (
           <span key={p.n} className={`pt-finger${out ? ' is-out' : ''}${p.you ? ' is-you' : ''}`} title={!p.online && !out ? `${p.name} dropped out: a random hand is thrown for them` : undefined}>
             <Dot p={p} size={28} />
-            {view.settings.mode === 'points' ? `${view.points[String(p.n)] ?? 0}/${view.settings.target}` : out ? '💥' : '✊'}
+            {view.settings.mode === 'points' ? `${view.points[String(p.n)] ?? 0}/${view.settings.target}` : out ? '💥' : <RpsHand hand="rock" size={22} bare />}
             {!p.online && !out && ' 💤'}
           </span>
         );
@@ -125,15 +138,18 @@ function Game({ view, send, left, me, byN }: Ctx) {
             <h2>{view.myThrow ? 'Locked in. Change your mind?' : 'Throw in secret'}</h2>
             <div className="pt-rps-hands">
               {HANDS.map((h) => (
-                <button key={h} className={`pt-rps-hand${view.myThrow === h ? ' is-on' : ''}`} aria-pressed={view.myThrow === h} aria-label={h} onClick={() => send({ t: 'throw', hand: h })}>
-                  {EMOJI[h]}
+                <button key={h} className={`pt-rps-hand${view.myThrow === h ? ' is-on' : ''}`} aria-pressed={view.myThrow === h} onClick={() => send({ t: 'throw', hand: h })}>
+                  <RpsHand hand={h} size={76} />
                 </button>
               ))}
             </div>
-            <Clock left={left} />
+            <WaitTimer left={left} waitingFor={throwers.filter((p) => !p.done && !p.you).map((p) => p.name)} />
           </section>
         ) : (
-          <p className="pt-panel pt-center">{view.playing.includes(me.n) ? '💥 You’re out. Watch who’s left!' : 'You joined mid-game: you’re in from the next one.'}</p>
+          <section className="pt-panel pt-center">
+            <p>{view.playing.includes(me.n) ? '💥 You’re out. Watch who’s left!' : 'You joined mid-game: you’re in from the next one.'}</p>
+            <WaitTimer left={left} waitingFor={throwers.filter((p) => !p.done).map((p) => p.name)} />
+          </section>
         )}
         <Waiting players={throwers} label="Thrown" />
       </>
@@ -148,7 +164,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
       <section className="pt-panel pt-center pt-rps">
         {step < CHANT.length ? (
           <p key={step} className="pt-rps-chant">
-            ✊ {CHANT[step]}
+            <RpsHand hand="rock" size={52} /> {CHANT[step]}
           </p>
         ) : (
           last && (
@@ -161,11 +177,10 @@ function Game({ view, send, left, me, byN }: Ctx) {
                     ? `💥 Out: ${last.out.map((n) => (byN(n)?.you ? 'you' : byN(n)?.name)).join(', ')}`
                     : `${Object.values(last.gained).some((g) => g > 0) ? 'Points!' : 'No points this time'}`}
               </h2>
-              {view.auto.length > 0 && <p className="pt-muted">🎲 Too slow (or 💤 dropped out): a random hand was thrown</p>}
+              {view.auto.length > 0 && <p className="pt-muted">🎲 Took over a minute (or 💤 dropped out): a random hand was thrown</p>}
             </>
           )
         )}
-        <Clock left={left} />
       </section>
     </>
   );
@@ -181,7 +196,9 @@ function Hands({ view, byN }: { view: RoomView; byN: Ctx['byN'] }) {
         const out = last.out.includes(p.n);
         return (
           <span key={n} className={`pt-rps-throw${out ? ' is-out' : ''}`} style={{ ['--pc' as string]: seatColor(p.n) }}>
-            <b aria-label={h}>{EMOJI[h]}</b>
+            <b>
+              <RpsHand hand={h} size={56} />
+            </b>
             <small>
               {p.you ? 'You' : p.name}
               {view.auto.includes(p.n) ? ' 🎲' : ''}

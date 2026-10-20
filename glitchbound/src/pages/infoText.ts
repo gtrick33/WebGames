@@ -3,7 +3,7 @@
  * no React or CSS, so the build can import it.
  */
 
-/** The studio's mailbox, as on the privacy page and in the terms. */
-export const CONTACT_EMAIL = 'sava.hristov@glitchboundstudio.com';
-export const CONTACT_DESCRIPTION = 'How to reach GlitchBound: email, feedback, bug reports and data requests.';
+/** Where players reach the studio: a ticket (bug report, question or data request). No account needed. */
+export const CONTACT_PATH = '/me/bugs?category=question';
+export const CONTACT_DESCRIPTION = 'How to reach GlitchBound: tickets for bugs, questions and data requests, and feedback.';
 export const ABOUT_DESCRIPTION = 'Who makes GlitchBound, what kind of games it has, and the few rules the arcade sticks to.';

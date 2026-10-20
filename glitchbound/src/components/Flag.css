@@ -1,0 +1,6 @@
+.flag {
+  flex: none;
+  display: block;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.18);
+}

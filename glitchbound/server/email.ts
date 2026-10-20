@@ -10,7 +10,7 @@ export interface Mail {
   html: string;
   text: string;
   unsubscribeUrl?: string;
-  /** Override the sender display, e.g. "Sava at GlitchBound <hello@glitchboundstudio.com>". */
+  /** Override the sender display, e.g. "Maya at GlitchBound <hello@glitchboundstudio.com>". */
   from?: string;
 }
 

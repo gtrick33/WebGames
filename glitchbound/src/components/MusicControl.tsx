@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LANGS, setLang, useLang, useT } from '../i18n';
 import { music, useMusic } from '../platform/music';
 import { setTheme, useTheme, type ThemeChoice } from '../platform/theme';
+import { Flag } from './Flag';
 import { Icon } from './Icon';
 import './MusicControl.css';
 
@@ -73,7 +74,7 @@ export function MusicControl() {
             <div className="set-langs" role="radiogroup" aria-label={t('Language')}>
               {LANGS.map((l) => (
                 <button key={l.code} role="radio" aria-checked={l.code === lang} className={`set-lang${l.code === lang ? ' is-on' : ''}`} onClick={() => void setLang(l.code)}>
-                  <span aria-hidden="true">{l.flag}</span> {l.name}
+                  <Flag lang={l.code} /> {l.name}
                 </button>
               ))}
             </div>

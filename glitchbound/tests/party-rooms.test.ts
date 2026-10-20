@@ -337,8 +337,8 @@ describe('Rock Paper Scissors room', () => {
   it('counts a player gone longer than the grace period as out, so nobody plays as a ghost', () => {
     const s = room(3);
     rps.leave(s, KEYS[2]!, T0);
-    // Nobody throws; the clock is only looked at again once the grace period is over.
-    const now = T0 + rps.AWAY_GRACE_MS + 1;
+    // Nobody throws; the clock is only looked at again once the throw limit and the grace period are over.
+    const now = Math.max(s.deadline!, T0 + rps.AWAY_GRACE_MS) + 1;
     rps.tick(s, now);
     expect(s.alive).not.toContain(3);
     expect(s.last!.throws[3]).toBeUndefined();
@@ -353,7 +353,7 @@ describe('Rock Paper Scissors room', () => {
     expect(s.phase).toBe('throw');
     rps.tick(s, s.deadline! + 1);
     expect(s.phase).toBe('reveal');
-    rps.tick(s, T0 + rps.AWAY_GRACE_MS + 1);
+    rps.tick(s, Math.max(s.deadline!, T0 + rps.AWAY_GRACE_MS) + 1);
     expect(s.phase).toBe('lobby');
   });
 });

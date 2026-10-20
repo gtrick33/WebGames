@@ -132,7 +132,7 @@ export function playerMail(target: Pick<UserRow, 'email' | 'nickname'>, subject:
     title: subject,
     intro: [`Hi ${target.nickname},`, ...message.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)],
     signoff: 'The GlitchBound team',
-    footer: `You got this because ${target.email} has a GlitchBound account. Just reply if you have questions.`,
+    footer: `You got this because ${target.email} has a GlitchBound account. Questions? Open a ticket under Report a bug on GlitchBound (replies to this email are not read).`,
   });
   return { to: target.email, subject, html, text };
 }

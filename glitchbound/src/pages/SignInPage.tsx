@@ -9,7 +9,7 @@ import './InfoPages.css';
 /** Why the email link sent the player back here (?error=…); shown until they try again. */
 const ERRORS: Record<string, string> = {
   link: 'That sign-in link has expired or was already used. Ask for a new code below.',
-  banned: 'This account has been suspended. If you think this is a mistake, write to hello@glitchboundstudio.com.',
+  banned: 'This account has been suspended. If you think this is a mistake, open a ticket under Report a bug (no account needed).',
 };
 
 /** /signin: sign up or sign in with Google or an email code. */

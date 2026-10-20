@@ -64,29 +64,34 @@
 .lang-item.is-on {
   background: color-mix(in srgb, var(--cyan) 30%, transparent);
 }
-/* On phones the header is full: the footer has the language list instead. */
+/* On phones the header is full: the footer has the language picker instead. */
 @media (max-width: 640px) {
-  .lang {
+  .lang-header {
     display: none;
   }
 }
 
-.lang-select {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border: 1.5px solid currentColor;
-  border-radius: 999px;
-  font-weight: 700;
+/* Footer: the language's name, and the list opens upwards. */
+.lang-footer .lang-btn {
+  gap: 9px;
+  height: 40px;
+  padding: 0 12px 0 14px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--fg);
 }
-.lang-select select {
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
+.lang-footer .lang-btn svg:last-child {
+  opacity: 0.7;
+  transition: transform 0.2s;
 }
-.lang-select option {
-  color: #1d1238;
+.lang-footer .lang-btn[aria-expanded='true'] svg:last-child {
+  transform: rotate(180deg);
+}
+.lang-footer .lang-menu {
+  top: auto;
+  right: auto;
+  bottom: calc(100% + 10px);
+  left: 0;
+  width: min(320px, calc(100vw - 32px));
+  transform-origin: bottom left;
 }

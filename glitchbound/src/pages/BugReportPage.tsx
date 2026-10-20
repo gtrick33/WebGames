@@ -16,6 +16,7 @@ const CATEGORIES: { id: string; label: string; hint: string }[] = [
   { id: 'scores', label: 'Scores & saves', hint: 'Lost progress, wrong score, leaderboard' },
   { id: 'account', label: 'Account', hint: 'Sign-in, profile, emails' },
   { id: 'idea', label: 'Idea', hint: 'Not a bug, but it would be better if…' },
+  { id: 'question', label: 'Question or request', hint: 'Your data, press, anything else' },
 ];
 const SEVERITIES: { id: string; label: string }[] = [
   { id: 'blocker', label: 'Can’t play' },
@@ -63,9 +64,12 @@ export function BugReportPage() {
   usePageMeta({ title: 'Report a bug', path: '/me/bugs' });
   const { me } = useAccount();
   const { search } = useLocation();
-  const presetGame = new URLSearchParams(search).get('game') ?? '';
+  const params = new URLSearchParams(search);
+  const presetGame = params.get('game') ?? '';
+  const presetCategory = params.get('category') ?? '';
   const [game, setGame] = useState(GAMES.some((g) => g.slug === presetGame) ? presetGame : '');
-  const [category, setCategory] = useState('bug');
+  // The contact page links here with ?category=question: tickets are the one way to reach the studio.
+  const [category, setCategory] = useState(CATEGORIES.some((c) => c.id === presetCategory) ? presetCategory : 'bug');
   const [severity, setSeverity] = useState('annoying');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');

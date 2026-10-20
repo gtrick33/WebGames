@@ -1,5 +1,5 @@
 .stage {
-  --stage-h: clamp(520px, calc(100svh - var(--header-h) - 120px), 940px);
+  --stage-h: clamp(520px, calc(100svh - var(--header-h) - 110px), 1080px);
   position: relative;
   border: 2px solid var(--cyan);
   border-radius: var(--r-lg);
@@ -29,6 +29,19 @@
 .stage-square {
   height: var(--stage-h);
   width: min(100%, var(--stage-h));
+}
+/* Desktop and tablets: like a video player, the stage fills the column's width and the screen's height
+   (instead of a narrow portrait strip beside empty space). Games keep their own shape inside and fill the
+   rest with their background. */
+@media (min-width: 761px) {
+  .stage-portrait,
+  .stage-square,
+  .stage-landscape {
+    width: 100%;
+    height: var(--stage-h);
+    max-height: none;
+    aspect-ratio: auto;
+  }
 }
 .stage:fullscreen {
   width: 100vw;

@@ -12,8 +12,8 @@ GOOGLE_CLIENT_ID = "808378746013-u4ljh1p7q3juh3iri13p3rvje40m8o52.apps.googleuse
 ADMIN_EMAILS = "savawow99@gmail.com,sava.hristov@glitchboundstudio.com"
 # Sender for announcement emails; the domain must be verified in Resend.
 MAIL_FROM = "GlitchBound <hello@glitchboundstudio.com>"
-# Replies to site emails land in the Google Workspace inbox.
-MAIL_REPLY_TO = "sava.hristov@glitchboundstudio.com"
+# Optional Reply-To for site emails. Left empty: players reach the studio through tickets (Report a bug), not by email.
+MAIL_REPLY_TO = ""
 # Discord Activity client ID (public; docs/discord-activity.md). Off until this and the
 # DISCORD_CLIENT_SECRET Pages secret are set.
 DISCORD_CLIENT_ID = ""

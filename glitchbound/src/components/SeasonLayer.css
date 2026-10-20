@@ -19,6 +19,10 @@ html[data-season] .intro-hl {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  /* A text-clipped gradient only paints inside the box, and the title's tight line height leaves the
+     descenders ("g") and the last letters' overhang outside it: grow the box without moving the text. */
+  padding: 0.04em 0.14em 0.2em 0.04em;
+  margin: -0.04em -0.14em -0.2em -0.04em;
 }
 .season-greeting {
   display: inline-flex;

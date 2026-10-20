@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { randomOf } from '../engine';
 import type { Player } from '../types';
+import { RpsHand } from './RpsHand';
 import { Avatar, PassPhone } from './shared';
 
 export interface MiniProps {
@@ -95,9 +96,9 @@ function ReactionDuel({ players, onDone }: MiniProps) {
 /* --------------------------------------------------------------------- RPS */
 
 const HANDS = [
-  { id: 'rock', emoji: '✊', beats: 'scissors' },
-  { id: 'paper', emoji: '✋', beats: 'rock' },
-  { id: 'scissors', emoji: '✌️', beats: 'paper' },
+  { id: 'rock', beats: 'scissors' },
+  { id: 'paper', beats: 'rock' },
+  { id: 'scissors', beats: 'paper' },
 ] as const;
 
 function Rps({ players, onDone }: MiniProps) {
@@ -120,8 +121,8 @@ function Rps({ players, onDone }: MiniProps) {
         <h3>{(i === 0 ? a : b).name}, pick one</h3>
         <div className="pt-rps-hands">
           {HANDS.map((h) => (
-            <button key={h.id} className="pt-rps-hand" onClick={() => pick(i, h.id)} aria-label={h.id}>
-              {h.emoji}
+            <button key={h.id} className="pt-rps-hand" onClick={() => pick(i, h.id)}>
+              <RpsHand hand={h.id} size={76} />
             </button>
           ))}
         </div>
@@ -138,12 +139,12 @@ function Rps({ players, onDone }: MiniProps) {
     <div className="pt-rps">
       <div className="pt-rps-reveal">
         <span>
-          {ha.emoji}
+          <RpsHand hand={ha.id} size={84} />
           <small>{a.name}</small>
         </span>
         <b>vs</b>
         <span>
-          {hb.emoji}
+          <RpsHand hand={hb.id} size={84} />
           <small>{b.name}</small>
         </span>
       </div>

@@ -21,8 +21,7 @@ export function AboutPage() {
         <section className="panel info-block" aria-labelledby="a-who">
           <h2 id="a-who">Who makes it</h2>
           <p>
-            GlitchBound is an independent studio run by Sava Hristov. Every game is designed and built here: no clones, no reskins, no games bought in
-            from elsewhere.
+            GlitchBound is an independent studio. Every game is designed and built here: no clones, no reskins, no games bought in from elsewhere.
           </p>
         </section>
 

@@ -1,14 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { LANGS, setLang, useLang, useT } from '../i18n';
+import { Flag } from './Flag';
+import { Icon } from './Icon';
 import './LangPicker.css';
 
-/** The header's language button: the current flag; opens the list of languages. */
-export function LangPicker() {
+/**
+ * The language button and its list of languages. In the header: the flag and the language code; in the
+ * footer (always there, also on small phones): the flag and the language's name, opening upwards.
+ */
+export function LangPicker({ variant = 'header' }: { variant?: 'header' | 'footer' }) {
   const t = useT();
   const lang = useLang();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const current = LANGS.find((l) => l.code === lang) ?? LANGS[0]!;
+  const menuId = `lang-menu-${variant}`;
 
   useEffect(() => {
     if (!open) return;
@@ -27,12 +33,19 @@ export function LangPicker() {
   }, [open]);
 
   return (
-    <div className="lang" ref={ref}>
-      <button className="lang-btn" aria-expanded={open} aria-controls="lang-menu" aria-label={t('Language: {name}', { name: current.name })} title={current.name} onClick={() => setOpen((v) => !v)}>
-        <span aria-hidden="true">{current.flag}</span>
-        <span className="lang-code mono">{current.code.toUpperCase()}</span>
+    <div className={`lang lang-${variant}`} ref={ref}>
+      <button className="lang-btn" aria-expanded={open} aria-controls={menuId} aria-label={t('Language: {name}', { name: current.name })} title={current.name} onClick={() => setOpen((v) => !v)}>
+        <Flag lang={current.code} />
+        {variant === 'footer' ? (
+          <>
+            <span className="lang-name">{current.name}</span>
+            <Icon name="chevronDown" size={16} />
+          </>
+        ) : (
+          <span className="lang-code mono">{current.code.toUpperCase()}</span>
+        )}
       </button>
-      <ul id="lang-menu" className="lang-menu panel" hidden={!open} role="listbox" aria-label={t('Language')}>
+      <ul id={menuId} className="lang-menu panel" hidden={!open} role="listbox" aria-label={t('Language')}>
         {LANGS.map((l) => (
           <li key={l.code}>
             <button
@@ -44,30 +57,11 @@ export function LangPicker() {
                 void setLang(l.code);
               }}
             >
-              <span aria-hidden="true">{l.flag}</span> {l.name}
+              <Flag lang={l.code} /> {l.name}
             </button>
           </li>
         ))}
       </ul>
     </div>
-  );
-}
-
-/** A plain language select (footer): always reachable, also on small phones. */
-export function LangSelect() {
-  const t = useT();
-  const lang = useLang();
-  return (
-    <label className="lang-select">
-      <span aria-hidden="true">🌐</span>
-      <span className="sr-only">{t('Language')}</span>
-      <select value={lang} onChange={(e) => void setLang(e.target.value as typeof lang)}>
-        {LANGS.map((l) => (
-          <option key={l.code} value={l.code}>
-            {l.flag} {l.name}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }

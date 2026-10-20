@@ -5,6 +5,7 @@ import { useAccount } from '../platform/account';
 import { ADS, ANALYTICS } from '../platform/env';
 import { usePageMeta } from '../platform/meta';
 import { storageKeys } from '../platform/qa';
+import { CONTACT_PATH } from './infoText';
 import { saveStore, useSave } from '../platform/store';
 import { Link } from '../router/router';
 import './InfoPages.css';
@@ -179,7 +180,7 @@ export function PrivacyPage() {
         <section className="panel info-block" aria-labelledby="p-who">
           <h2 id="p-who">Who is responsible, and who helps</h2>
           <p>
-            GlitchBound, run by Sava Hristov, is responsible for your data (the &ldquo;controller&rdquo;). A few service providers process it only on our
+            GlitchBound is responsible for your data (the &ldquo;controller&rdquo;). A few service providers process it only on our
             behalf: Cloudflare (hosting, database and live rooms), Google (sign-in, if you choose it), Resend (emails) and GitHub (our bug tracker).
             Some of them are based in the US and protect transfers with the EU&rsquo;s standard contractual clauses or the EU&ndash;US Data Privacy
             Framework. We never sell your data.
@@ -194,13 +195,14 @@ export function PrivacyPage() {
             your account.
           </p>
           <p>
-            You can ask to see, correct, export or delete your data, or object to how we use it, by emailing the address below. You can also complain to
+            You can ask to see, correct, export or delete your data, or object to how we use it, by opening a ticket (see below). You can also complain to
             the Bulgarian Commission for Personal Data Protection (cpdp.bg) or the data protection authority where you live.
           </p>
         </section>
       </div>
       <p className="info-small">
-        Questions or data requests: sava.hristov@glitchboundstudio.com · See also the <Link href="/terms">terms of use</Link>.
+        Questions or data requests: <Link href={CONTACT_PATH}>open a ticket</Link> and choose &ldquo;Question or request&rdquo; · See also the{' '}
+        <Link href="/terms">terms of use</Link>.
       </p>
     </div>
   );

@@ -26,6 +26,10 @@
   margin-left: auto;
 }
 
+/* A wider page than the rest of the site, so the game gets the room (like a video page). */
+.game-page > .wrap {
+  max-width: calc(1720px + 2 * var(--gutter));
+}
 .game-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);

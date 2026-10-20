@@ -6,7 +6,7 @@
  *   out; one hand (or all three) is a draw and you throw again. The last one in wins.
  * - Points race: every throw, you score a point for each player your hand beats. First to the target wins.
  *
- * Nobody stalls a round: when the throw clock runs out, a random hand is thrown for you, and the same
+ * Nobody stalls a round: after a minute without a throw, a random hand is thrown for you, and the same
  * goes for a player whose phone dropped out (locked, switched apps, reloading). Only someone gone for
  * longer than AWAY_GRACE_MS has really left: they are out (and no longer throw).
  * Phases: lobby → throw → reveal → throw … → result.
@@ -17,7 +17,8 @@ export { validKey } from './seats';
 
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 12;
-export const THROW_SECONDS = 10;
+/** Nobody is rushed (players see a timer counting up); after this long an idle player gets a random hand. */
+export const THROW_SECONDS = 60;
 /** How long a player can be disconnected mid-game (about two throws) before they count as gone. */
 export const AWAY_GRACE_MS = 30_000;
 const REVEAL_SECONDS = 4;

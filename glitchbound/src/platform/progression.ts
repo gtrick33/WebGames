@@ -94,7 +94,7 @@ export function randomName(rand: () => number = Math.random): string {
 
 /**
  * Starting nickname candidates for a new member, best first: their Google name when it fits
- * (e.g. "Sava Hristov"), their first name, first name + digits, then a random name.
+ * (e.g. "Ada Lovelace"), their first name, first name + digits, then a random name.
  */
 export function nicknameCandidates(fullName: string, givenName: string, seed: string): string[] {
   const clean = (s: string): string => s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 _.-]/g, '').replace(/\s+/g, ' ').trim();

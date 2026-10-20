@@ -7,7 +7,7 @@
 import { GAMES } from '../src/catalog/games.ts';
 import { validateCatalog } from '../src/catalog/catalog.ts';
 import { CATEGORIES, type CategoryId, type GameEntry } from '../src/catalog/types.ts';
-import { ABOUT_DESCRIPTION, CONTACT_DESCRIPTION, CONTACT_EMAIL } from '../src/pages/infoText.ts';
+import { ABOUT_DESCRIPTION, CONTACT_DESCRIPTION, CONTACT_PATH } from '../src/pages/infoText.ts';
 
 export interface PageSpec {
   /** URL path, e.g. /games/neon-rush */
@@ -178,8 +178,8 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       description: ABOUT_DESCRIPTION,
       image: '/og.png',
       imageAlt: SITE,
-      jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: SITE, url: `${siteUrl}/`, email: CONTACT_EMAIL, founder: { '@type': 'Person', name: 'Sava Hristov' } },
-      body: `<section class="ssr"><h1>About ${SITE}</h1><p>${SITE} is an independent browser arcade: original games that start in a second, plus Party Mode for groups. No installs, nothing to buy and no account needed.</p><h2>Who makes it</h2><p>${SITE} is an independent studio run by Sava Hristov. Every game is designed and built here.</p><h2>Something new every day</h2><p>Most games have a daily round: the same puzzle for everyone, new at midnight your time.</p><h2>For all ages, with one exception</h2><p>The arcade is made for everyone. Crass Act and the After Dark party cards are for adults only: they carry an 18+ label and ask players to confirm their age before they start.</p><p><a href="/contact">Contact us</a> · <a href="/privacy">Privacy &amp; your data</a></p></section>`,
+      jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: SITE, url: `${siteUrl}/` },
+      body: `<section class="ssr"><h1>About ${SITE}</h1><p>${SITE} is an independent browser arcade: original games that start in a second, plus Party Mode for groups. No installs, nothing to buy and no account needed.</p><h2>Who makes it</h2><p>${SITE} is an independent studio. Every game is designed and built here.</p><h2>Something new every day</h2><p>Most games have a daily round: the same puzzle for everyone, new at midnight your time.</p><h2>For all ages, with one exception</h2><p>The arcade is made for everyone. Crass Act and the After Dark party cards are for adults only: they carry an 18+ label and ask players to confirm their age before they start.</p><p><a href="/contact">Contact us</a> · <a href="/privacy">Privacy &amp; your data</a></p></section>`,
     },
     {
       path: '/contact',
@@ -188,7 +188,7 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       description: CONTACT_DESCRIPTION,
       image: '/og.png',
       imageAlt: SITE,
-      body: `<section class="ssr"><h1>Get in touch</h1><p>Questions, ideas, problems or press: email <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p><p>Something broken? <a href="/me/bugs">Report a bug</a>, no account needed. To see, export, correct or delete your data, email us from the address on your account.</p><p>${SITE} is run by Sava Hristov. See also the <a href="/terms">terms of use</a>.</p></section>`,
+      body: `<section class="ssr"><h1>Get in touch</h1><p>Questions, requests, problems or press: <a href="${CONTACT_PATH.replace('&', '&amp;')}">open a ticket</a>, no account needed. You can follow its status on your profile.</p><p>Something broken? <a href="/me/bugs">Report a bug</a>. To see, export, correct or delete your data, open a ticket and choose “Question or request”.</p><p>See also the <a href="/terms">terms of use</a>.</p></section>`,
     },
     {
       path: '/leaderboards',

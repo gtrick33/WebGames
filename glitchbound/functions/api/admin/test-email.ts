@@ -24,7 +24,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   const base = siteUrl(env, request);
 
   if (body?.kind === 'welcome') {
-    const mail = welcomeMail(base, { id: `preview-${utcDay()}`, email: to, nickname: typeof body.nickname === 'string' ? body.nickname.slice(0, 14) : 'Sava' }, utcDay());
+    const mail = welcomeMail(base, { id: `preview-${utcDay()}`, email: to, nickname: typeof body.nickname === 'string' ? body.nickname.slice(0, 14) : 'Player' }, utcDay());
     const sent = await sendBatch(env, [{ ...mail, subject: `${mail.subject} (test)` }]);
     return json({ ok: true, sent, to, kind: 'welcome' });
   }

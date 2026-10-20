@@ -3,7 +3,7 @@ import type { Env } from './http';
 
 /** Shared validation for player feedback and bug reports (pure, unit tested). */
 
-export const BUG_CATEGORIES = ['bug', 'visual', 'performance', 'scores', 'account', 'idea'] as const;
+export const BUG_CATEGORIES = ['bug', 'visual', 'performance', 'scores', 'account', 'idea', 'question'] as const;
 export const BUG_SEVERITIES = ['blocker', 'annoying', 'minor'] as const;
 export const BUG_STATUSES = ['open', 'fixed', 'wontfix'] as const;
 export const FEEDBACK_WISHES = ['more_games', 'harder', 'easier', 'multiplayer', 'more_dailies', 'better_mobile', 'nothing'] as const;

@@ -1625,18 +1625,22 @@ img.pt-feature-art {
   display: flex;
   gap: 12px;
 }
+/* The hands are drawn tiles (RpsHand.tsx); the button is just the press. */
 .pt-rps-hand {
-  width: 90px;
-  height: 90px;
-  border: 3px solid var(--pt-edge);
+  display: grid;
+  padding: 0;
+  border: 0;
   border-radius: 22px;
-  background: var(--pt-card);
-  box-shadow: 0 5px 0 var(--pt-shadow);
-  font-size: 48px;
+  background: none;
+  filter: drop-shadow(0 5px 0 var(--pt-shadow));
+  transition: transform 0.15s, filter 0.15s;
+  cursor: pointer;
 }
-.party .pt-rps-hand {
-  font-size: 48px;
-  line-height: 1;
+.pt-rps-hand:hover {
+  transform: translateY(-3px) rotate(-3deg);
+}
+.pt-rps-art {
+  display: block;
 }
 .pt-rps-reveal {
   display: flex;
@@ -1694,15 +1698,28 @@ img.pt-feature-art {
 }
 .pt-room-answer .pt-btn.is-on,
 .pt-rps-hand.is-on {
-  background: var(--pt-yellow);
-  color: #1d1238;
   transform: translateY(3px);
-  box-shadow: 0 2px 0 var(--pt-shadow);
+  filter: drop-shadow(0 0 0 var(--pt-yellow)) drop-shadow(0 2px 0 var(--pt-shadow));
+  outline: 4px solid var(--pt-yellow);
+  outline-offset: 3px;
+}
+.pt-rps-wait {
+  font-weight: 800;
+}
+.pt-rps-wait b {
+  font-variant-numeric: tabular-nums;
+}
+.pt-rps-wait span {
+  font-weight: 600;
+  opacity: 0.8;
 }
 .pt-room-reveal h2 {
   font-size: clamp(22px, 6vw, 30px);
 }
 .pt-rps-chant {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   font-size: clamp(34px, 11vw, 56px);
   font-weight: 900;
   animation: pt-shake 0.32s ease-in-out;
@@ -1733,8 +1750,8 @@ img.pt-feature-art {
   animation: pt-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
 }
 .pt-rps-throw b {
-  font-size: 46px;
-  line-height: 1.1;
+  display: block;
+  margin-bottom: 4px;
 }
 .pt-rps-throw small {
   font-weight: 800;

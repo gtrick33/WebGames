@@ -85,7 +85,9 @@ describe('routing', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Small games. Big obsessions.' })).toBeTruthy();
     fireEvent.click(within(screen.getByRole('navigation', { name: 'Footer' })).getByRole('link', { name: 'Contact' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Get in touch' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'sava.hristov@glitchboundstudio.com' }).getAttribute('href')).toBe('mailto:sava.hristov@glitchboundstudio.com');
+    // The studio is reached through tickets only: no personal name or mailbox anywhere.
+    expect(screen.getByRole('link', { name: 'Open a ticket' }).getAttribute('href')).toBe('/me/bugs?category=question');
+    expect(document.body.textContent).not.toMatch(/sava|hristov|@glitchboundstudio/i);
   });
 
   it('shows the 404 page for unknown paths and unknown games', () => {

@@ -520,7 +520,7 @@ function CustomPrompts({ session, update }: { session: PartySession; update: (fn
           setN(e.target.value);
           save(c, e.target.value);
         }}
-        placeholder="been to Sava’s legendary barbecue"
+        placeholder="been to a legendary backyard barbecue"
       />
       <p className="pt-muted">Saved as you type. Challenges show up in Party Prompts; statements under “Your own” in Never Have I Ever.</p>
     </div>
