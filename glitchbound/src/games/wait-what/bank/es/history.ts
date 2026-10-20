@@ -2,7 +2,7 @@ import type { Raw } from '../types';
 
 /** Historia insólita: en el mismo orden que bank/history.ts. */
 export const HISTORY: Raw[] = [
-  ['La Universidad de Oxford ya daba clases antes de que se fundara… ¿cuál de estos?', 'El Imperio azteca|El Imperio romano|El Imperio persa|El antiguo Egipto', 'Hay constancia de clases en Oxford en 1096. Los aztecas fundaron Tenochtitlan en 1325 y su imperio en 1428.'],
+  ['¿Cuál de estos se fundó cuando la Universidad de Oxford ya daba clases?', 'El Imperio azteca|El Imperio romano|El Imperio persa|El antiguo Egipto', 'Hay constancia de clases en Oxford en 1096. Los aztecas fundaron Tenochtitlan en 1325 y su imperio en 1428.'],
   ['¿A qué suceso vivió Cleopatra más cerca en el tiempo?', 'La llegada a la Luna|La construcción de la Gran Pirámide', 'La Gran Pirámide se terminó hacia el 2560 a. C., unos 2500 años antes de Cleopatra. La llegada a la Luna fue unos 2000 años después de ella.'],
   ['¿Seguían vivos los mamuts lanudos cuando se construyó la Gran Pirámide de Guiza?', 'Sí|No', 'Un pequeño grupo sobrevivió en la isla de Wrangel, frente a Siberia, hasta el 2000 a. C. más o menos, siglos después de terminada la pirámide.'],
   ['En 1932, el ejército australiano libró una «guerra» contra un animal… y la perdió. ¿Cuál?', 'Los emús|Los canguros|Los conejos|Los sapos de caña', 'La Gran Guerra del Emú: ni con ametralladoras lograron los soldados mermar a los emús de Australia Occidental, y se retiraron.'],
