@@ -6,7 +6,7 @@ export const WORDS: Raw[] = [
   ['İngilizcede ayakkabı bağcığının plastik ucuna ne denir?', 'Aglet|Ferrule|Nib|Tassel', 'İğne anlamına gelen eski bir Fransızca kelimeden.'],
   ['# işaretinin resmî adı nedir?', 'Oktotorp|Haştagon|Çaprazkafes|Kuadrigram', 'Bell Labs mühendisleri ona 1960’larda, belki de şaka olsun diye bu adı verdi.'],
   ['İngilizcede “mt” ile biten tek yaygın kelime hangisi?', 'Dreamt|Tempt|Exempt|Unkempt', 'Akrabası “undreamt” ile birlikte. Diğerleri -pt ile biter.'],
-  ['“OK” muhtemelen nereden geliyor?', '“All correct”un şakacı bir yazımından|Bir Kızılderili kelimesinden|Yunancada “her şey yolunda”dan|Bir bisküvi markasından', '“Oll korrect”, 1830’larda Boston gazetelerinde moda olan bir şakaydı.'],
+  ['“OK” muhtemelen nereden geliyor?', '“All correct”in şakacı bir yazımından|Bir Kızılderili kelimesinden|Yunancada “her şey yolunda”dan|Bir bisküvi markasından', '“Oll korrect”, 1830’larda Boston gazetelerinde moda olan bir şakaydı.'],
   ['Bluetooth adını neden alır?', 'Bir Viking kralından|Bir diş hekiminin icadından|Mavi bir LED’den|Bir balıktan', '“Mavi Diş” lakaplı Harald, Danimarka kabilelerini birleştirdi; bu teknoloji de cihazları birleştiriyor. Logo, onun runik harflerle yazılmış baş harfleri.'],
   ['“Robot” kelimesi, ne anlama gelen Çekçe bir kelimeden gelir?', 'Zorla çalıştırma|Metal adam|Düşünen makine|Uşak', 'İlk kez Karel Čapek’in 1920 tarihli R.U.R. adlı oyununda geçti.'],
   ['İngilizce “muscle” (kas) kelimesi Latincede neyin adından gelir?', 'Küçük fare|Küçük ip|Güçlü kol|Hareket eden et', 'Romalılara göre kasılan pazı kası, derinin altında kıpırdayan bir fareye benziyordu.'],
