@@ -280,7 +280,8 @@ describe('cloud saves', () => {
       current = 'B';
       await startCloudSave(userId, 0); // offline at start: no download, so B pushes from its old version
       localStorage.setItem('glitchbound.whatsit', JSON.stringify({ best: 12, rounds: 7, daily: { '2026-10-19': { score: 10, solved: true }, '2026-10-18': { score: 12, solved: true } } }));
-      await settle();
+      // B's push is refused (A's is newer), B merges and pushes again: wait for that round trip.
+      await settle(() => row('glitchbound.whatsit')!.at > atA);
       const merged = JSON.parse(row('glitchbound.whatsit')!.data) as { best: number; rounds: number; daily: Record<string, unknown> };
       expect(row('glitchbound.whatsit')!.at).toBeGreaterThan(atA);
       expect(merged.best).toBe(30);
