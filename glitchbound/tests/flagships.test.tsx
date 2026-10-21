@@ -112,8 +112,8 @@ describe('next step after a round', () => {
   });
 
   it('then an unplayed game in the same mood', () => {
-    // (Throwdown Thursday's own game, Belot, already played)
-    const r = nextStep({ ...base, game: bySlug('neon-rush'), played: new Set([...FLAGSHIP_FALLBACK, 'belot']) });
+    // (Throwdown Thursday's own games, Belot and Backgammon, already played)
+    const r = nextStep({ ...base, game: bySlug('neon-rush'), played: new Set([...FLAGSHIP_FALLBACK, 'belot', 'backgammon']) });
     expect(r.kind).toBe('mood');
     if (r.kind === 'mood') expect(r.game.moods!.some((m) => bySlug('neon-rush').moods!.includes(m))).toBe(true);
   });
@@ -131,7 +131,7 @@ describe('language picks', () => {
     expect(housePicks('bg')).toContain('belot');
     expect(housePicks('bg')).not.toContain('letter-pinch');
     expect(flagshipGames(GAMES, [], null, 4, housePicks('bg')).map((f) => f.game.slug)).toContain('belot');
-    expect(LOCAL_FIRST.bg).toContain('belot');
+    expect(LOCAL_FIRST.bg).toEqual(['belot', 'backgammon']);
     // an admin's own list still wins
     expect(flagshipGames(GAMES, ['gloop', 'whatsit', 'fussbox', 'neon-rush'], null, 4, housePicks('bg')).map((f) => f.game.slug)).toEqual(['gloop', 'whatsit', 'fussbox', 'neon-rush']);
   });

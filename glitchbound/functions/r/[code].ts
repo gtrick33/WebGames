@@ -17,6 +17,7 @@ const PARTY: Record<string, { name: string; emoji: string; pitch: string }> = {
 /** Arcade games with their own live rooms: where the invite lands and how it reads. */
 const GAMES: Record<string, { page: string; title: (host: string) => string; pitch: string; image: string }> = {
   drag: { page: '/games/launch-control', title: (h) => (h ? `${h} wants to race you in Launch Control 🏁` : 'Race me in Launch Control 🏁'), pitch: 'Head-to-head drag race, live on your own phone.', image: '/games/launch-control/og.jpg' },
+  backgammon: { page: '/games/backgammon', title: (h) => (h ? `${h} wants a game of backgammon with you 🎲` : 'Play backgammon with me 🎲'), pitch: 'A live match on your own phone, to 3, 5 or 7 points.', image: '/games/backgammon/og.jpg' },
   belot: { page: '/games/belot', title: (h) => (h ? `${h} saved you a seat at the Belot table 🃏` : 'Join my Belot table 🃏'), pitch: 'Four players, two teams, first to 151. Live on your own phone.', image: '/games/belot/og.jpg' },
 };
 

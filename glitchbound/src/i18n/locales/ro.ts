@@ -1922,6 +1922,19 @@ const ro: string[] = [
   'Aceleași patru împărțeli pentru toți: câștigă cele mai multe puncte.',
   'Împărțelile zilei',
   'Cea mai mare diferență de victorie',
+  'Cursa clasică cu două zaruri și cincisprezece piese, contra calculatorului sau a unui prieten.',
+  'Aruncă, aleargă, lovește și scoate piese pe o tablă desenată de mână: table clasice cu marți și marți dublu, fără zarul de dublare. Joacă partida zilei (aceleași zaruri pentru toți), un meci până la 3, 5 sau 7 contra calculatorului de la Ușor la Expert sau un meci live cu un prieten de pe telefonul lui.',
+  'Reguli clasice cu marți și marți dublu',
+  'Meciuri live cu un prieten, până la 3, 5 sau 7 puncte',
+  'Aceleași zaruri pentru toți în partida zilei',
+  'R sau Spațiu: aruncă zarurile',
+  'Tab până la o poziție, Enter ca să alegi și să muți o piesă',
+  'U: anulează, Enter: gata',
+  'Atinge Aruncă pentru a arunca zarurile',
+  'Atinge o piesă, apoi unde merge',
+  'Aceleași zaruri pentru toți: câștigă cel mai bun rezultat.',
+  'Partida zilei',
+  'Cele mai multe puncte într-o victorie',
 ];
 
 export default ro;

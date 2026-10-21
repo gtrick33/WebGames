@@ -1922,6 +1922,19 @@ const de: string[] = [
   'Dieselben vier Partien für alle: die meisten Punkte gewinnen.',
   'Partien des Tages',
   'Größter Siegvorsprung',
+  'Das klassische Rennen mit zwei Würfeln und fünfzehn Steinen, gegen den Computer oder einen Freund.',
+  'Würfeln, ziehen, schlagen und auswürfeln auf einem handgezeichneten Brett: klassisches Backgammon mit Gammon und Backgammon, ohne Verdopplungswürfel. Spiel die Partie des Tages (für alle dieselben Würfe), ein Match auf 3, 5 oder 7 gegen Computerspieler von Leicht bis Experte oder ein Live-Match mit einem Freund an seinem Handy.',
+  'Klassische Regeln mit Gammon und Backgammon',
+  'Live-Matches mit einem Freund, auf 3, 5 oder 7 Punkte',
+  'Für alle dieselben Würfe in der Partie des Tages',
+  'R oder Leertaste: würfeln',
+  'Tab zu einem Feld, Enter: Stein wählen und ziehen',
+  'U: rückgängig, Enter: fertig',
+  'Tippe auf Würfeln',
+  'Tippe einen Stein an, dann sein Ziel',
+  'Für alle dieselben Würfe: das beste Ergebnis gewinnt.',
+  'Partie des Tages',
+  'Die meisten Punkte bei einem Sieg',
 ];
 
 export default de;

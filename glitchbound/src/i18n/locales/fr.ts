@@ -1922,6 +1922,19 @@ const fr: string[] = [
   'Les mêmes quatre donnes pour tous : le plus de points gagne.',
   'Donnes du jour',
   'Plus grand écart de victoire',
+  'La course classique à deux dés et quinze dames, contre l’ordinateur ou un ami.',
+  'Lance, avance, frappe et sors tes dames sur un plateau dessiné à la main : backgammon classique avec gammons et backgammons, sans videau. Joue la partie du jour (les mêmes dés pour tous), un match en 3, 5 ou 7 contre l’ordinateur de Facile à Expert, ou un match en direct avec un ami sur son téléphone.',
+  'Règles classiques avec gammons et backgammons',
+  'Matchs en direct avec un ami, en 3, 5 ou 7 points',
+  'Les mêmes dés pour tous dans la partie du jour',
+  'R ou Espace : lancer les dés',
+  'Tab jusqu’à une flèche, Entrée pour choisir et déplacer une dame',
+  'U : annuler, Entrée : terminé',
+  'Touche Lancer pour jeter les dés',
+  'Touche une dame, puis sa destination',
+  'Les mêmes dés pour tous : le meilleur résultat gagne.',
+  'Partie du jour',
+  'Le plus de points sur une victoire',
 ];
 
 export default fr;

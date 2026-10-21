@@ -1927,6 +1927,19 @@ export const KEYS: string[] = [
   "The same four deals for everyone: most points wins.",
   "Today’s deals",
   "Biggest winning margin",
+  "The classic race of two dice and fifteen checkers, against the computer or a friend.",
+  "Roll, run, hit and bear off on a hand-drawn board: classic backgammon with gammons and backgammons and no doubling cube. Play today’s game (the same dice for everyone), a match to 3, 5 or 7 against computer players from Easy to Expert, or a live match with a friend on their own phone.",
+  "Classic rules with gammons and backgammons",
+  "Live matches with a friend, to 3, 5 or 7 points",
+  "The same dice for everyone in today’s game",
+  "R or Space: roll the dice",
+  "Tab to a point, Enter to pick a checker and move it",
+  "U: undo, Enter: done",
+  "Tap Roll to throw the dice",
+  "Tap a checker, then where it goes",
+  "The same dice for everyone: the best result wins.",
+  "Today’s game",
+  "Most points in a win",
 ];
 
 export const UI_COUNT = 311;

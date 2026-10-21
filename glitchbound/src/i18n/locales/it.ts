@@ -1922,6 +1922,19 @@ const it: string[] = [
   'Le stesse quattro mani per tutti: vince chi fa più punti.',
   'Mani del giorno',
   'Vittoria con più scarto',
+  'La corsa classica con due dadi e quindici pedine, contro il computer o un amico.',
+  'Tira, corri, colpisci e porta fuori su una tavola disegnata a mano: backgammon classico con gammon e backgammon, senza cubo del raddoppio. Gioca la partita del giorno (gli stessi dadi per tutti), un match a 3, 5 o 7 contro il computer da Facile a Esperto, o un match dal vivo con un amico dal suo telefono.',
+  'Regole classiche con gammon e backgammon',
+  'Match dal vivo con un amico, a 3, 5 o 7 punti',
+  'Gli stessi dadi per tutti nella partita del giorno',
+  'R o Spazio: tira i dadi',
+  'Tab su una punta, Invio per scegliere e muovere una pedina',
+  'U: annulla, Invio: fatto',
+  'Tocca Tira per lanciare i dadi',
+  'Tocca una pedina, poi dove va',
+  'Gli stessi dadi per tutti: vince il miglior risultato.',
+  'Partita del giorno',
+  'Più punti in una vittoria',
 ];
 
 export default it;

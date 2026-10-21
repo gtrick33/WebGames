@@ -1922,6 +1922,19 @@ const pl: string[] = [
   'Te same cztery rozdania dla wszystkich: wygrywa najwięcej punktów.',
   'Dzisiejsze rozdania',
   'Największa przewaga zwycięstwa',
+  'Klasyczny wyścig z dwiema kostkami i piętnastoma pionami, z komputerem albo znajomym.',
+  'Rzucaj, biegnij, bij i zdejmuj na ręcznie rysowanej planszy: klasyczny backgammon z gammonem i backgammonem, bez kostki dublującej. Zagraj w dzisiejszą grę (te same rzuty dla wszystkich), mecz do 3, 5 lub 7 z komputerem od Łatwego do Eksperta albo mecz na żywo ze znajomym na jego telefonie.',
+  'Klasyczne zasady z gammonem i backgammonem',
+  'Mecze na żywo ze znajomym, do 3, 5 lub 7 punktów',
+  'Te same rzuty dla wszystkich w dzisiejszej grze',
+  'R lub spacja: rzuć kostkami',
+  'Tab do pola, Enter, aby wybrać i przesunąć piona',
+  'U: cofnij, Enter: gotowe',
+  'Dotknij Rzuć, aby rzucić kostkami',
+  'Dotknij piona, a potem miejsca docelowego',
+  'Te same rzuty dla wszystkich: wygrywa najlepszy wynik.',
+  'Dzisiejsza gra',
+  'Najwięcej punktów w wygranej',
 ];
 
 export default pl;

@@ -1922,6 +1922,19 @@ const pt: string[] = [
   'As mesmas quatro mãos para todos: ganha quem fizer mais pontos.',
   'Mãos do dia',
   'Maior margem de vitória',
+  'A corrida clássica de dois dados e quinze peças, contra o computador ou um amigo.',
+  'Lança, corre, bate e retira peças num tabuleiro desenhado à mão: gamão clássico com gammon e backgammon, sem dado de dobrar. Joga o jogo do dia (os mesmos dados para todos), um match a 3, 5 ou 7 contra o computador de Fácil a Especialista, ou um match ao vivo com um amigo no telemóvel dele.',
+  'Regras clássicas com gammon e backgammon',
+  'Matches ao vivo com um amigo, a 3, 5 ou 7 pontos',
+  'Os mesmos dados para todos no jogo do dia',
+  'R ou Espaço: lançar os dados',
+  'Tab até uma casa, Enter para escolher e mover uma peça',
+  'U: desfazer, Enter: feito',
+  'Toca em Lançar para atirar os dados',
+  'Toca numa peça e depois no destino',
+  'Os mesmos dados para todos: ganha o melhor resultado.',
+  'Jogo do dia',
+  'Mais pontos numa vitória',
 ];
 
 export default pt;

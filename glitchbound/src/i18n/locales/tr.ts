@@ -1922,6 +1922,19 @@ const tr: string[] = [
   'Herkes için aynı dört el: en çok puan kazanır.',
   'Günün elleri',
   'En büyük galibiyet farkı',
+  'İki zar ve on beş pulla klasik yarış, bilgisayara ya da bir arkadaşına karşı.',
+  'El çizimi bir tahtada zar at, koş, kır ve topla: mars ve çift marslı klasik tavla, katlama zarı yok. Günün oyununu (herkes için aynı zarlar), Kolay\'dan Uzman\'a bilgisayara karşı 3, 5 ya da 7\'lik bir maçı veya bir arkadaşınla kendi telefonundan canlı bir maçı oyna.',
+  'Mars ve çift marslı klasik kurallar',
+  'Bir arkadaşla 3, 5 ya da 7 puanlık canlı maçlar',
+  'Günün oyununda herkes için aynı zarlar',
+  'R ya da Boşluk: zar at',
+  'Tab ile bir haneye git, Enter ile pul seç ve oynat',
+  'U: geri al, Enter: tamam',
+  'Zar atmak için At\'a dokun',
+  'Bir pula, sonra gideceği yere dokun',
+  'Herkes için aynı zarlar: en iyi sonuç kazanır.',
+  'Günün oyunu',
+  'Bir galibiyette en çok puan',
 ];
 
 export default tr;

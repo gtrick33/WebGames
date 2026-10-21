@@ -1,8 +1,9 @@
 /**
- * The games a live room can host (the party games, Crass Act, Launch Control's live races and Belot's tables). Each engine is a set of pure functions over its own State, with
+ * The games a live room can host (the party games, Crass Act, Launch Control's live races, Belot's and Backgammon's tables). Each engine is a set of pure functions over its own State, with
  * the same shape, so the room server does not need to know the rules. Rooms made before there was
  * more than one game have no `game` field: they are Crass Act.
  */
+import * as backgammon from '../src/games/backgammon/room';
 import * as belot from '../src/games/belot/room';
 import * as crassAct from '../src/games/crass-act/engine';
 import * as drag from '../src/games/launch-control/room';
@@ -15,7 +16,7 @@ import * as nhie from '../src/party/rooms/nhieRoom';
 import * as rps from '../src/party/rooms/rpsRoom';
 import * as unique from '../src/party/rooms/uniqueRoom';
 
-export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot';
+export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon';
 
 /** What every room engine provides (`State` stays opaque to the server). */
 export interface Engine {
@@ -48,6 +49,7 @@ export const ENGINES: Record<GameId, Engine> = {
   hues: hues as unknown as Engine,
   drag: drag as unknown as Engine,
   belot: belot as unknown as Engine,
+  backgammon: backgammon as unknown as Engine,
 };
 
 export const isGameId = (v: unknown): v is GameId => typeof v === 'string' && Object.hasOwn(ENGINES, v);

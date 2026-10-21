@@ -1922,6 +1922,19 @@ const es: string[] = [
   'Las mismas cuatro manos para todos: gana quien más puntos haga.',
   'Manos del día',
   'Mayor margen de victoria',
+  'La carrera clásica de dos dados y quince fichas, contra la máquina o un amigo.',
+  'Tira, corre, golpea y saca fichas en un tablero dibujado a mano: backgammon clásico con gammon y backgammon, sin dado doblador. Juega la partida del día (los mismos dados para todos), un match a 3, 5 o 7 contra la máquina de Fácil a Experto, o un match en vivo con un amigo desde su móvil.',
+  'Reglas clásicas con gammon y backgammon',
+  'Matches en vivo con un amigo, a 3, 5 o 7 puntos',
+  'Los mismos dados para todos en la partida del día',
+  'R o espacio: tirar los dados',
+  'Tab hasta un punto, Enter para elegir y mover una ficha',
+  'U: deshacer, Enter: listo',
+  'Toca Tirar para lanzar los dados',
+  'Toca una ficha y luego adónde va',
+  'Los mismos dados para todos: gana el mejor resultado.',
+  'Partida del día',
+  'Más puntos en una victoria',
 ];
 
 export default es;

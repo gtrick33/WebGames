@@ -22,7 +22,7 @@ export const HOUSE_PICKS: Record<string, readonly string[]> = {
 
 /** Games a language's players tend to look for first: ranked right after the best games in the arcade. */
 export const LOCAL_FIRST: Record<string, readonly string[]> = {
-  bg: ['belot'],
+  bg: ['belot', 'backgammon'],
 };
 
 export const housePicks = (lang: string): readonly string[] => HOUSE_PICKS[lang] ?? FLAGSHIP_FALLBACK;

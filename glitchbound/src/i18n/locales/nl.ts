@@ -1922,6 +1922,19 @@ const nl: string[] = [
   'Dezelfde vier spellen voor iedereen: de meeste punten winnen.',
   'Spellen van vandaag',
   'Grootste winstmarge',
+  'De klassieke race met twee dobbelstenen en vijftien schijven, tegen de computer of een vriend.',
+  'Gooi, ren, sla en speel uit op een handgetekend bord: klassiek backgammon met gammon en backgammon, zonder verdubbelingskubus. Speel het spel van vandaag (dezelfde worpen voor iedereen), een match tot 3, 5 of 7 tegen de computer van Makkelijk tot Expert, of een live match met een vriend op diens telefoon.',
+  'Klassieke regels met gammon en backgammon',
+  'Live matches met een vriend, tot 3, 5 of 7 punten',
+  'Dezelfde worpen voor iedereen in het spel van vandaag',
+  'R of spatie: gooi de dobbelstenen',
+  'Tab naar een punt, Enter om een schijf te kiezen en te zetten',
+  'U: ongedaan, Enter: klaar',
+  'Tik op Gooi om de dobbelstenen te gooien',
+  'Tik op een schijf, dan waar hij heen gaat',
+  'Dezelfde worpen voor iedereen: het beste resultaat wint.',
+  'Spel van vandaag',
+  'Meeste punten in een overwinning',
 ];
 
 export default nl;
