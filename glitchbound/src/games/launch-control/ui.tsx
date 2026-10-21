@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { GameMenuButton } from '../../components/GameMenuButton';
 import { drawDriver } from './hud';
+import { Icon, MAT_ICON } from './icons';
 import { MATERIAL_INFO, MATERIALS, type Mats } from './parts';
 import { cachedThumb, requestThumb, thumbKey, type CarLook } from './scene3d';
 import { fmtCash } from './util';
@@ -13,7 +14,7 @@ export function Panel({ title, eyebrow, onBack, right, children, className = '' 
         <header className="lc-panel-head">
           {onBack && (
             <button className="lc-back" onClick={onBack} aria-label="Back">
-              ←
+              <Icon name="back" size={20} />
             </button>
           )}
           <div className="lc-panel-titles">
@@ -37,7 +38,7 @@ export function Sheet({ title, eyebrow, onBack, right, tabs, viewRef, children, 
     <section className={`lc-modal ${className}`} role="dialog" aria-label={title}>
       <header className="lc-modal-head">
         <button className="lc-back" onClick={onBack} aria-label="Back">
-          ←
+          <Icon name="back" size={20} />
         </button>
         <div className="lc-panel-titles">
           {eyebrow && <span className="lc-eyebrow mono">{eyebrow}</span>}
@@ -103,9 +104,23 @@ export function MatsLine({ mats, have }: { mats: Mats; have?: Record<string, num
   return (
     <span className="lc-matline">
       {parts.map((m) => (
-        <span key={m} className={have && have[m]! < mats[m]! ? 'is-short' : ''} title={MATERIAL_INFO[m].name}>
-          {MATERIAL_INFO[m].emoji}
+        <span key={m} className={`lc-mat${have && have[m]! < mats[m]! ? ' is-short' : ''}`} data-mat={m} title={MATERIAL_INFO[m].name}>
+          <Icon name={MAT_ICON[m]} size={14} />
           {mats[m]}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Every material you hold, for the top bar and the parts shop. */
+export function MatsPill({ mats }: { mats: Mats }) {
+  return (
+    <span className="lc-pill lc-pill-mats mono">
+      {MATERIALS.map((m) => (
+        <span key={m} className="lc-mat" data-mat={m} title={MATERIAL_INFO[m].name}>
+          <Icon name={MAT_ICON[m]} size={14} />
+          {mats[m] ?? 0}
         </span>
       ))}
     </span>

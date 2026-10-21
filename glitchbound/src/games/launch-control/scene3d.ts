@@ -1363,7 +1363,10 @@ export interface FixedCamera {
   fov?: number;
 }
 
-export type Framing = 'center' | 'right' | 'thumb';
+/** How the showcase frames the car: centred, in the right part (a menu on the left), a thumbnail, or high (a menu below, on phones). */
+export type Framing = 'center' | 'right' | 'thumb' | 'high';
+/** For 'high': the camera renders a view this much taller and shows its top part, so the car sits a third of the way down. */
+const HIGH = 1.7;
 /** What the showcase camera looks at: the whole car on the turntable, or where a part shows on it. */
 export type ShowFocus = 'car' | 'engine' | 'transmission' | 'suspension' | 'tyres' | 'aero' | 'looks';
 /** Camera per focus: a fixed angle (null = the turntable's), distance and height factors, and where it aims (x in car lengths, y in metres). */
@@ -1549,6 +1552,10 @@ export class Stage3D {
       const fullW = this.w * 1.42;
       this.camera.aspect = fullW / this.h;
       this.camera.setViewOffset(fullW, this.h, 0, 0, this.w, this.h);
+    } else if (framing === 'high') {
+      const fullH = this.h * HIGH;
+      this.camera.aspect = this.w / fullH;
+      this.camera.setViewOffset(this.w, fullH, 0, fullH / 2 - this.h * 0.34, this.w, this.h);
     } else {
       this.camera.aspect = this.w / this.h;
       this.camera.clearViewOffset();
@@ -1662,11 +1669,12 @@ export class Stage3D {
     this.setFrame(framing);
     const len = rig?.len ?? 4.5;
     const fov = framing === 'thumb' ? 30 : 38;
-    this.camera.fov = fov;
     const vHalf = THREE.MathUtils.degToRad(fov / 2);
+    // 'high' renders a taller view: its fov covers that whole view, the sizes below are for the part on screen
+    this.camera.fov = framing === 'high' ? THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(vHalf) * HIGH)) : fov;
     const visibleShare = framing === 'right' ? 1 / 1.42 : 1;
-    const hHalf = Math.atan(Math.tan(vHalf) * this.camera.aspect);
-    const want = framing === 'thumb' ? 0.8 : framing === 'right' ? 0.42 : 0.66;
+    const hHalf = Math.atan(Math.tan(vHalf) * (framing === 'high' ? this.w / this.h : this.camera.aspect));
+    const want = framing === 'thumb' ? 0.8 : framing === 'right' ? 0.42 : framing === 'high' ? 0.9 : 0.66;
     const across = len * 0.92 + 0.4;
     const dW = across / (2 * Math.tan(hHalf) * want * visibleShare);
     const dH = 2.0 / (2 * Math.tan(vHalf) * (framing === 'thumb' ? 0.8 : 0.55));

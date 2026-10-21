@@ -5,7 +5,7 @@ import { emptySave, KEY } from '../src/games/launch-control/storage';
 
 /**
  * The whole game in jsdom (no WebGL: the 3D stage is skipped, everything else runs): menus, a real
- * five-car race driven frame by frame with a fake clock, launching at green and shifting whenever
+ * head-to-head race driven frame by frame with a fake clock, launching at green and shifting whenever
  * the needle is in the green zone,
  * and the result, money and save that follow.
  */

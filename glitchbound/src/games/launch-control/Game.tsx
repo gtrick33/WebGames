@@ -11,14 +11,15 @@ import { CARS, getCar, TIER_NAME, type CarDef } from './cars';
 import { COSMETICS, DEFAULTS, getCosmetic, KIND_NAME, type Cosmetic, type CosmeticKind } from './cosmetics';
 import { addMats, avgLevel, botsFor, botSpec, crateFor, difficultyOf, DIVISIONS, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, hasMats, idleIncome, idleRate, LADDER, loanerFor, materialsFor, PER_DIVISION, PLAYER_SKILL, RACE_SIZE, rivalBot, settle, STAKE_SHARES, typicalEt, type Bot, type Forecast, type Opponent } from './economy';
 import { ENV_DEFS } from './envs';
-import { applyWear, effectsOf, FAILURE_TEXT, levelGains, MATERIAL_INFO, MATERIALS, MAX_LEVEL, PART_INFO, PART_VISUALS, PARTS, raceWear, repairCost, RISKY, upgradeCost, type Condition, type Levels, type Mats, type PartId } from './parts';
+import { applyWear, effectsOf, FAILURE_TEXT, levelGains, MATERIALS, MAX_LEVEL, PART_INFO, PART_VISUALS, PARTS, raceWear, repairCost, RISKY, upgradeCost, type Condition, type Levels, type Mats, type PartId } from './parts';
 import { RaceScreen, type RacePlan } from './RaceScreen';
 import { lookKey, Stage3D, type CarLook, type ShowFocus } from './scene3d';
 import { decodeScript, encodeScript, forecastRun, scoreOf, simulate, specOf, type CarSpec, type Driver, type RaceResult } from './sim';
 import { createSfx, type Sfx } from './sound';
 import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type Save } from './storage';
 import { GameMenuButton } from '../../components/GameMenuButton';
-import { CarThumb, Cash, DriverFace, MatsLine, Panel, Pips, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
+import { Icon, PART_ICON } from './icons';
+import { CarThumb, Cash, DriverFace, MatsLine, MatsPill, Panel, Pips, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
 import { fmtCash, fmtEt, fmtShort } from './util';
 import './Game.css';
 
@@ -593,7 +594,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     if (!stage || racing) return;
     stage.setEnv(save.env);
     stage.setCar(0, stageLookRef.current);
-    const framing = portrait || docked ? 'center' : 'right';
+    const framing = docked ? 'center' : portrait ? 'high' : 'right';
     const reduced = prefersReduced();
     let raf = 0;
     let last = performance.now();
@@ -617,29 +618,30 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const topbar = (
     <header className="lc-top">
       <button className="lc-logo" onClick={() => go('hub')} aria-label="Launch Control menu">
-        LAUNCH<span>CONTROL</span>
+        <span className="lc-logo-tree" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="lc-logo-word">
+          Launch<b>Control</b>
+        </span>
       </button>
       <div className="lc-wallet" aria-live="polite">
         <span className="lc-pill lc-pill-cash">
           <Cash n={save.cash} />
         </span>
-        <span className="lc-pill lc-pill-mats mono">
-          {MATERIALS.map((m) => (
-            <span key={m} title={MATERIAL_INFO[m].name}>
-              {MATERIAL_INFO[m].emoji}
-              {save.mats[m]}
-            </span>
-          ))}
-        </span>
+        <MatsPill mats={save.mats} />
         <span className="lc-pill lc-pill-rank mono" title="Ladder rank">
-          🏆 {save.rank}/{LADDER.length}
+          <Icon name="trophy" size={15} />
+          {save.rank}/{LADDER.length}
         </span>
       </div>
       <button className="lc-icon" onClick={() => commit((s) => ({ ...s, muted: !s.muted }))} aria-label={save.muted ? 'Unmute' : 'Mute'}>
-        {save.muted ? '🔇' : '🔊'}
+        <Icon name={save.muted ? 'mute' : 'sound'} size={19} />
       </button>
       <button className="lc-icon" onClick={() => go('help')} aria-label="How to race">
-        ?
+        <Icon name="help" size={19} />
       </button>
       <GameMenuButton className="lc-icon" />
     </header>
@@ -647,7 +649,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
 
   return (
     <div ref={rootRef} className={`lc${portrait ? ' is-portrait' : ''}`} data-screen={racing ? 'race' : screen}>
-      <div ref={stageBoxRef} className="lc-stage" data-mode={racing ? 'race' : docked ? 'dock' : portrait ? 'top' : 'full'} aria-hidden="true" />
+      <div ref={stageBoxRef} className="lc-stage" data-mode={racing ? 'race' : docked ? 'dock' : 'full'} aria-hidden="true" />
       {racing && plan ? (
         <>
           <RaceScreen plan={plan.race} stageRef={stageRef} paused={paused} setPaused={setPaused} onFinish={(r) => finishRace(plan, r)} sfx={sfx} nudge={portrait && touch} onStart={() => undefined} />
@@ -695,91 +697,96 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       <main className="lc-main">
         {screen === 'hub' && (
           <div className="lc-hub">
-            <nav className="lc-menu" aria-label="Game menu">
-              <button className="lc-menu-btn is-race" autoFocus onClick={() => go('rivals')}>
-                <span className="lc-menu-icon" aria-hidden="true">
-                  🏁
+            <div className="lc-hero">
+              <span className="lc-hero-tier" data-tier={car.tier}>
+                {TIER_NAME[car.tier]} · Lv {Math.round(avgLevel(owned.levels))}
+              </span>
+              <h2 className="lc-hero-name">{car.name}</h2>
+              <dl className="lc-specs">
+                <div>
+                  <dt>Power</dt>
+                  <dd>
+                    {mySheet.hp}
+                    <small>hp</small>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Weight</dt>
+                  <dd>
+                    {mySheet.mass}
+                    <small>kg</small>
+                  </dd>
+                </div>
+                <div>
+                  <dt>¼ mile</dt>
+                  <dd>
+                    {fmtEt(mySheet.et)}
+                    <small>s</small>
+                  </dd>
+                </div>
+              </dl>
+              <div className="lc-division-bar" aria-label={`${DIVISIONS[nextOpp.division]} division: ${Math.min(PER_DIVISION, save.rank - nextOpp.division * PER_DIVISION)} of ${PER_DIVISION} beaten`}>
+                <span className="lc-division-name">{ladderDone ? 'King of the strip' : `${DIVISIONS[nextOpp.division]} division`}</span>
+                <span className="lc-division-steps" aria-hidden="true">
+                  {Array.from({ length: PER_DIVISION }, (_, k) => {
+                    const i = nextOpp.division * PER_DIVISION + k;
+                    return <i key={k} className={i < save.rank ? 'is-done' : i === save.rank ? 'is-next' : ''} data-boss={k === PER_DIVISION - 1 ? '1' : undefined} />;
+                  })}
                 </span>
-                <span className="lc-menu-text">
-                  <b>Race</b>
-                  <small>{ladderDone ? 'King of the strip · rematch anyone' : `Next: ${nextOpp.name} · ${DIVISIONS[nextOpp.division]}`}</small>
-                </span>
-                {!ladderDone && <Sticker tone={nextDiff.tone}>{nextDiff.label}</Sticker>}
-              </button>
-              <button className="lc-menu-btn" onClick={() => go('daily')}>
-                <span className="lc-menu-icon" aria-hidden="true">
-                  📅
-                </span>
-                <span className="lc-menu-text">
+              </div>
+            </div>
+            <div className="lc-modes">
+              <button className="lc-mode" data-tone="cyan" onClick={() => go('daily')}>
+                <Icon name="calendar" />
+                <span className="lc-mode-text">
                   <b>Daily</b>
-                  <small>Showdown #{dailyNumber(today)}{triesLeft > 0 ? ` · ${triesLeft} runs left` : ' · done'}{crateOpen ? '' : ' · crate waiting'}</small>
+                  <small>
+                    Showdown #{dailyNumber(today)}
+                    {triesLeft > 0 ? ` · ${triesLeft} runs left` : ' · done'}
+                    {crateOpen ? '' : ' · crate'}
+                  </small>
                 </span>
                 {!crateOpen && <span className="lc-badge">1</span>}
               </button>
-              <button className="lc-menu-btn" onClick={() => go('garage')}>
-                <span className="lc-menu-icon" aria-hidden="true">
-                  🔧
+              <button className="lc-mode" data-tone="magenta" onClick={() => setup('gauntlet', null, 1)} disabled={save.rank < GAUNTLET_UNLOCK}>
+                <Icon name="crown" />
+                <span className="lc-mode-text">
+                  <b>King’s Gauntlet</b>
+                  <small>{save.rank < GAUNTLET_UNLOCK ? 'Beat the Street final' : save.gauntletBest ? `Best streak ${save.gauntletBest}` : 'Endless streak'}</small>
                 </span>
-                <span className="lc-menu-text">
-                  <b>My garage</b>
-                  <small>Repairs, paint and style</small>
-                </span>
-                {PARTS.some((p) => p !== 'looks' && owned.cond[p] < RISKY) && <Sticker tone="coral">Worn</Sticker>}
+                {save.rank < GAUNTLET_UNLOCK && <Icon name="lock" size={18} className="lc-mode-lock" />}
               </button>
-              <button className="lc-menu-btn" onClick={() => go('parts')}>
-                <span className="lc-menu-icon" aria-hidden="true">
-                  🔩
-                </span>
-                <span className="lc-menu-text">
-                  <b>Parts shop</b>
-                  <small>Six parts, see each one on your car</small>
-                </span>
+            </div>
+            <nav className="lc-rail" aria-label="Garage and shops">
+              <button className="lc-tile" onClick={() => go('garage')} aria-label="My garage">
+                <Icon name="wrench" />
+                <span>Garage</span>
+                {PARTS.some((p) => p !== 'looks' && owned.cond[p] < RISKY) && <span className="lc-badge is-warn">!</span>}
+              </button>
+              <button className="lc-tile" onClick={() => go('parts')} aria-label="Parts shop">
+                <Icon name="engine" />
+                <span>Parts</span>
                 {PARTS.some((p) => owned.levels[p] < MAX_LEVEL && save.cash >= upgradeCost(car, p, owned.levels[p] + 1).cash && hasMats(save.mats, upgradeCost(car, p, owned.levels[p] + 1).mats)) && <span className="lc-badge">↑</span>}
               </button>
-              <button className="lc-menu-btn" onClick={() => go('dealer')}>
-                <span className="lc-menu-icon" aria-hidden="true">
-                  🚗
-                </span>
-                <span className="lc-menu-text">
-                  <b>Dealer</b>
-                  <small>{CARS.length} cars · {Object.keys(save.cars).length} owned</small>
-                </span>
+              <button className="lc-tile" onClick={() => go('dealer')} aria-label="Dealer">
+                <Icon name="car" />
+                <span>Dealer</span>
               </button>
-              <button className="lc-menu-btn" onClick={() => setup('gauntlet', null, 1)} disabled={save.rank < GAUNTLET_UNLOCK}>
-                <span className="lc-menu-icon" aria-hidden="true">
-                  👑
-                </span>
-                <span className="lc-menu-text">
-                  <b>King’s Gauntlet</b>
-                  <small>{save.rank < GAUNTLET_UNLOCK ? `Beat the Street final to unlock` : save.gauntletBest ? `Best streak ${save.gauntletBest} · how far can you go?` : 'Back-to-back races, each one harder'}</small>
-                </span>
-                {save.rank < GAUNTLET_UNLOCK && <Sticker tone="cyan" flat>🔒</Sticker>}
-              </button>
-              <button className="lc-menu-btn" onClick={() => go('ladder')}>
-                <span className="lc-menu-icon" aria-hidden="true">
-                  🏆
-                </span>
-                <span className="lc-menu-text">
-                  <b>Ladder</b>
-                  <small>Rank {save.rank}/{LADDER.length}</small>
-                </span>
+              <button className="lc-tile" onClick={() => go('ladder')} aria-label="Ladder">
+                <Icon name="trophy" />
+                <span>Ladder</span>
               </button>
             </nav>
-            <div className="lc-mycar lc-panel">
-              <CarThumb look={look} className="lc-mycar-thumb" />
-              <div className="lc-mycar-text">
-                <span className="lc-eyebrow mono">My car · {TIER_NAME[car.tier]}</span>
-                <b>{car.name}</b>
-                <span className="mono lc-mycar-stats">
-                  {mySheet.hp} hp · {mySheet.mass} kg · ¼ mile ~{fmtEt(mySheet.et)} s
+            <button className="lc-go" autoFocus onClick={() => go('rivals')}>
+              <b className="lc-go-label">Race</b>
+              <span className="lc-go-sub">{ladderDone ? 'King of the strip · rematch anyone' : `Next: ${nextOpp.name} · ${DIVISIONS[nextOpp.division]}`}</span>
+              {!ladderDone && (
+                <span className="lc-go-diff" data-tone={nextDiff.tone}>
+                  {nextDiff.label}
                 </span>
-                <Pips level={Math.round(avgLevel(owned.levels))} max={MAX_LEVEL} />
-              </div>
-              <DriverFace helmet={look.helmet} suit={look.suit} size={56} />
-            </div>
-            <p className="lc-foot mono">
-              {save.wins} wins / {save.runs} races · best ¼ mile {save.bestEt ? `${fmtEt(save.bestEt / 1000)} s` : '–'} · sponsor ${fmtCash(idleRate(save.rank, effectsOf(owned.levels, owned.cond).sponsorMul))}/h away
-            </p>
+              )}
+              <Icon name="play" size={26} className="lc-go-arrow" />
+            </button>
           </div>
         )}
 
@@ -800,8 +807,10 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   {plan.me.def.name} · ~{fmtEt(plan.forecast.myEt)} s
                 </span>
               </div>
-              <span className="lc-vs">VS</span>
-              <div className="lc-vcard">
+              <span className="lc-versus-mark" aria-label="versus">
+                VS
+              </span>
+              <div className="lc-vcard is-rival">
                 <CarThumb look={plan.race.looks[1] ?? plan.race.looks[0]!} />
                 <b>{plan.race.names[1]}</b>
                 <span className="mono">
@@ -822,7 +831,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   <span className="lc-eyebrow mono">Your odds of winning</span>
                   <b className="mono">{Math.round(plan.forecast.pWin * 100)}%</b>
                   <span>
-                    A win pays <b>{plan.forecast.mult}×</b> your stake plus the <Cash n={plan.rival.purse} /> purse. Places pay less; lose and the stake is gone.
+                    A win pays <b>{plan.forecast.mult}×</b> your stake plus the <Cash n={plan.rival.purse} /> purse. Lose and the stake is gone (second still gets a small consolation).
                   </span>
                 </div>
                 <div className="lc-stakes" role="radiogroup" aria-label="Stake">
@@ -878,10 +887,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   <CarThumb look={{ ...lookOf(save, loaner.car, loaner.levels), paint: DEFAULTS.paint }} className="lc-daily-thumb" />
                   <div>
                     <b>{loaner.car.name}</b>
-                    <span className="lc-sub">The same loaner and the same four rivals for everyone today. Three runs, best counts.</span>
-                    <span className="mono lc-sub">
-                      vs {loaner.bots.map((b) => b.name).join(', ')}
-                    </span>
+                    <span className="lc-sub">The same loaner and the same opponent for everyone today. Three runs, best counts.</span>
+                    <span className="mono lc-sub">vs {loaner.bots.map((b) => b.name).join(', ')}</span>
                   </div>
                 </div>
                 <div className="lc-daily-foot">
@@ -900,8 +907,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
               <div className="lc-daily-card lc-panel-inner">
                 <span className="lc-eyebrow mono">Daily crate</span>
                 <div className="lc-daily-row">
-                  <span className="lc-crate" aria-hidden="true">
-                    {crateOpen ? '📭' : '🎁'}
+                  <span className={`lc-crate${crateOpen ? ' is-open' : ''}`} aria-hidden="true">
+                    <Icon name={crateOpen ? 'check' : 'gift'} size={34} />
                   </span>
                   <div>
                     <b>{crateOpen ? 'Opened today' : 'A free crate is waiting'}</b>
@@ -926,6 +933,9 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
 
         {screen === 'ladder' && (
           <Panel eyebrow={`${save.rank} of ${LADDER.length} beaten`} title="The ladder" onBack={() => go('hub')}>
+            <p className="lc-foot mono">
+              {save.wins} wins · {save.runs} races · best ¼ mile {save.bestEt ? `${fmtEt(save.bestEt / 1000)} s` : '–'} · sponsor ${fmtCash(idleRate(save.rank, effectsOf(owned.levels, owned.cond).sponsorMul))}/h while you’re away
+            </p>
             <ol className="lc-ladder">
               {LADDER.map((o, i) => {
                 const beaten = i < save.rank;
@@ -934,10 +944,11 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   <li key={o.rank} className={`lc-opp${beaten ? ' is-beaten' : ''}${next ? ' is-next' : ''}${o.boss ? ' is-boss' : ''}`}>
                     {i % PER_DIVISION === 0 && <h3 className="lc-division mono">{DIVISIONS[o.division]} division</h3>}
                     <div className="lc-opp-row">
-                      <span className="lc-rank mono">{o.rank}</span>
+                      <span className="lc-rank mono">{beaten ? <Icon name="check" size={16} /> : o.rank}</span>
                       <div>
                         <b>
-                          {o.name} {o.boss ? '👑' : ''}
+                          {o.name}
+                          {o.boss && <Icon name="crown" size={15} className="lc-boss" />}
                         </b>
                         <span className="mono">
                           {getCar(o.car).name} · purse ${fmtCash(o.purse)}
@@ -960,13 +971,16 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           <Panel eyebrow="One button" title="How to race" onBack={() => go('hub')}>
             <ol className="lc-help">
               <li>
-                <b>The launch.</b> Three ambers, then green. Tap the moment it turns green: launch control holds the perfect revs, your reaction does the rest. Tap during the ambers and it’s a jump start.
+                <b>The start.</b> Both cars burn out, roll into the beams and stage. Then the tree: three ambers half a second apart, then green. Tap the moment it turns green; tap during the ambers and it’s a red light.
               </li>
               <li>
-                <b>Shift.</b> Every gear has its own green zone near the top of the revs, and it moves after each shift. Tap (or press Space) while the needle is in the green for a <i>perfect</i> shift and a kick of speed. Yellow is fine, red is slow, early bogs the car, and the limiter wears the engine.
+                <b>Shift.</b> Every gear has its own green zone on the tach ring, and it moves after each shift. Tap (or press Space) while the needle is in the green for a <i>perfect</i> shift and a kick of speed. Yellow is fine, red is slow, early bogs the car, and the limiter wears the engine.
               </li>
               <li>
-                <b>Five cars.</b> Every race is you against four rivals in cars tuned like yours. First across the line takes the purse and the wager; places pay less.
+                <b>Head to head.</b> Every race is you against one rival. Win and you take the purse and the wager; second pays a small consolation.
+              </li>
+              <li>
+                <b>King’s Gauntlet.</b> After the Street final: back-to-back races, each opponent quicker than the last. One loss ends the run; the streak goes on the leaderboard.
               </li>
               <li>
                 <b>Garage.</b> Six separate parts, eight levels each. Every level moves several numbers (a bigger engine is also heavier and a touch less reliable). Parts wear with use; under {RISKY}% they can fail mid-run.
@@ -993,14 +1007,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           right={
             <>
               {cashPill}
-              <span className="lc-pill lc-pill-mats mono">
-                {MATERIALS.map((m) => (
-                  <span key={m} title={MATERIAL_INFO[m].name}>
-                    {MATERIAL_INFO[m].emoji}
-                    {save.mats[m]}
-                  </span>
-                ))}
-              </span>
+              <MatsPill mats={save.mats} />
             </>
           }
           tabs={
@@ -1017,7 +1024,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                     setPreviewNext(false);
                   }}
                 >
-                  <span aria-hidden="true">{PART_INFO[p].emoji}</span>
+                  <Icon name={PART_ICON[p]} />
                   <b>{PART_INFO[p].name}</b>
                   <small className="mono">Lv {owned.levels[p]}</small>
                 </button>
@@ -1063,7 +1070,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 </button>
               ))}
               <button className="lc-tab" onClick={() => go('parts')}>
-                Upgrades →
+                Upgrades <Icon name="next" size={16} />
               </button>
             </div>
           }
@@ -1088,7 +1095,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                     <li key={p} className={`lc-part${cond < RISKY ? ' is-worn' : ''}`}>
                       <div className="lc-part-top">
                         <span className="lc-part-icon" aria-hidden="true">
-                          {PART_INFO[p].emoji}
+                          <Icon name={PART_ICON[p]} />
                         </span>
                         <div className="lc-part-name">
                           <b>{PART_INFO[p].name}</b>
@@ -1206,7 +1213,10 @@ function WornWarning({ cond }: { cond: Condition }) {
   if (!worn.length) return null;
   return (
     <p className="lc-warn" role="status">
-      ⚠️ {worn.map((p) => PART_INFO[p].name).join(', ')} under {RISKY}%: could fail mid-race. Repair in the garage.
+      <Icon name="warn" size={18} />
+      <span>
+        {worn.map((p) => PART_INFO[p].name).join(', ')} under {RISKY}%: could fail mid-race. Repair in the garage.
+      </span>
     </p>
   );
 }
@@ -1263,12 +1273,22 @@ function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, view
               {on && <span className="lc-rcard-sel mono">Selected</span>}
               <CarThumb look={lookOf(emptySave(), getCar(r.car), r.levels)} />
               <b className="lc-rcard-name">
-                {r.boss ? '👑 ' : ''}
+                {r.boss && <Icon name="crown" size={15} className="lc-boss" />}
                 {r.name}
               </b>
               <span className="lc-rcard-car mono">{getCar(r.car).name}</span>
               <span className="lc-rcard-foot" data-tone={locked ? 'locked' : d.tone}>
-                {locked ? `🔒 Beat #${r.rank - 1} first` : i < save.rank ? `✓ Beaten · ${d.label}` : d.label}
+                {locked ? (
+                  <>
+                    <Icon name="lock" size={13} /> Beat #{r.rank - 1} first
+                  </>
+                ) : i < save.rank ? (
+                  <>
+                    <Icon name="check" size={13} /> Beaten · {d.label}
+                  </>
+                ) : (
+                  d.label
+                )}
               </span>
             </button>
           );
@@ -1278,7 +1298,7 @@ function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, view
         <div className="lc-rival-head">
           <div>
             <b>
-              {o.boss ? '👑 ' : ''}
+              {o.boss && <Icon name="crown" size={16} className="lc-boss" />}
               {o.name} · #{o.rank}
             </b>
             <span className="lc-sub">{o.blurb}</span>
@@ -1302,7 +1322,7 @@ function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, view
           <b>${fmtCash(o.purse)}</b>
           <i>{next ? 'first win ×3' : 'rematch'}</i>
         </div>
-        <p className="lc-foot mono">Three more racers in cars like yours join every race. First place takes the purse.</p>
+        <p className="lc-foot mono">Head to head: the winner takes the purse, second gets a small consolation.</p>
       </div>
       <button className="btn btn-lg lc-cta lc-modal-cta" onClick={() => onRace(o, next ? 'ladder' : 'rematch')} disabled={!beaten && !next}>
         {next ? `Race ${o.name}` : `Rematch ${o.name}`}
@@ -1334,7 +1354,7 @@ function PartPanel({ part, car, levels, cond, save, preview, setPreview, onBuy }
     <div className={`lc-part-panel lc-panel-inner${part !== 'looks' && cond[part] < RISKY ? ' is-worn' : ''}`}>
       <div className="lc-part-top">
         <span className="lc-part-icon" aria-hidden="true">
-          {info.emoji}
+          <Icon name={PART_ICON[part]} />
         </span>
         <div className="lc-part-name">
           <b>{info.name}</b>
@@ -1359,7 +1379,7 @@ function PartPanel({ part, car, levels, cond, save, preview, setPreview, onBuy }
             Now · Lv {level}
           </button>
           <button role="radio" aria-checked={preview} className={`lc-seg-btn${preview ? ' is-on' : ''}`} onClick={() => setPreview(true)}>
-            👀 Preview Lv {level + 1}
+            Preview Lv {level + 1}
           </button>
         </div>
       )}
@@ -1390,7 +1410,7 @@ function PartPanel({ part, car, levels, cond, save, preview, setPreview, onBuy }
           {PART_VISUALS[part].map(([lv, text]) => (
             <li key={text} className={level >= lv ? 'is-have' : lv === nextVisual ? 'is-next' : ''}>
               <span className="mono">Lv {lv}</span> {text}
-              {level >= lv ? ' ✓' : ''}
+              {level >= lv && <Icon name="check" size={14} className="lc-have" />}
             </li>
           ))}
         </ul>
@@ -1442,7 +1462,11 @@ function StyleShop({ save, kind, setKind, onPick, trying, onTry }: { save: Save;
               </button>
               <b>{c.name}</b>
               <button className={`btn btn-sm${!mine && !locked && save.cash >= c.price ? ' lc-cta' : ''}`} onClick={() => onPick(c)} disabled={locked || (!mine && save.cash < c.price) || on}>
-                {on ? 'Equipped' : mine ? 'Equip' : locked ? `🔒 Rank ${c.rank}` : <Cash n={c.price} />}
+                {on ? 'Equipped' : mine ? 'Equip' : locked ? (
+                  <>
+                    <Icon name="lock" size={14} /> Rank {c.rank}
+                  </>
+                ) : <Cash n={c.price} />}
               </button>
             </li>
           );
@@ -1485,19 +1509,29 @@ function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onGar
           <span className="mono">run score {fmtCash(g.total)}{save.gauntletBest ? ` · best ${save.gauntletBest}` : ''}</span>
         </div>
       )}
-      {mine.failure && <p className="lc-warn">💥 {FAILURE_TEXT[mine.failure]}</p>}
+      {mine.failure && (
+        <p className="lc-warn">
+          <Icon name="warn" size={18} />
+          <span>{FAILURE_TEXT[mine.failure]}</span>
+        </p>
+      )}
       <ol className="lc-order">
         {o.result.order.map((idx, k) => {
           const r = o.result.racers[idx]!;
+          const other = o.result.racers[idx === 0 ? 1 : 0];
+          const gap = r.et !== null && other && other.et !== null ? r.et - other.et : null;
           return (
-            <li key={idx} className={idx === 0 ? 'is-you' : ''}>
-              <span className="lc-order-pos mono">{k + 1}</span>
+            <li key={idx} className={`${idx === 0 ? 'is-you' : 'is-rival'}${k === 0 ? ' is-winner' : ''}`}>
+              <span className="lc-order-pos">{k === 0 ? <Icon name="trophy" size={18} /> : k + 1}</span>
               <CarThumb look={p.race.looks[idx]!} className="lc-order-thumb" />
               <span className="lc-order-name">
                 <b>{idx === 0 ? me : p.race.names[idx]}</b>
                 <small>{p.race.specs[idx]!.def.name}</small>
               </span>
-              <span className="mono lc-order-et">{r.et !== null ? `${fmtEt(r.et)} s` : 'DNF'}</span>
+              <span className="lc-order-et mono">
+                {r.et !== null ? `${fmtEt(r.et)} s` : 'DNF'}
+                {gap !== null && gap > 0 && <small>+{gap.toFixed(3)}</small>}
+              </span>
             </li>
           );
         })}
@@ -1574,7 +1608,8 @@ function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onGar
       )}
       {o.rankUp && (
         <p className="lc-rankup">
-          🏆 Rank {save.rank} of {LADDER.length}: {save.rank < LADDER.length ? `next up ${LADDER[save.rank]!.name}` : 'you are the King of the strip'}
+          <Icon name="trophy" size={18} />
+          Rank {save.rank} of {LADDER.length}: {save.rank < LADDER.length ? `next up ${LADDER[save.rank]!.name}` : 'you are the King of the strip'}
         </p>
       )}
       <div className="lc-actions">
