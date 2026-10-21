@@ -216,9 +216,15 @@ export function buildAlive(o: AliveOpts): Alive {
     group: g,
     update(t, dt, excite, focusX) {
       frame++;
-      // the crowd: a gentle bounce, a jump when excited (fans near the action jump hardest)
+      // the crowd: a gentle bounce, a jump when excited (fans near the action jump hardest); only
+      // the stands in view move (they're laid out down the strip, so that's one run of fans)
+      let lo = -1;
+      let hi = -1;
       for (let i = 0; i < fans.length; i++) {
         const f = fans[i]!;
+        if (f.x < focusX - 45 || f.x > focusX + 230) continue;
+        if (lo < 0) lo = i;
+        hi = i;
         const near = Math.max(0, 1 - Math.abs(f.x - focusX) / 160);
         const amp = 0.035 + excite * (0.12 + 0.3 * near);
         const jump = Math.max(0, Math.sin(t * f.w + f.ph)) * amp;
@@ -231,8 +237,13 @@ export function buildAlive(o: AliveOpts): Alive {
         dummy.updateMatrix();
         heads.setMatrixAt(i, dummy.matrix);
       }
-      torsos.instanceMatrix.needsUpdate = true;
-      heads.instanceMatrix.needsUpdate = true;
+      if (lo >= 0) {
+        for (const m of [torsos, heads]) {
+          m.instanceMatrix.clearUpdateRanges();
+          m.instanceMatrix.addUpdateRange(lo * 16, (hi - lo + 1) * 16);
+          m.instanceMatrix.needsUpdate = true;
+        }
+      }
       // flags flap (every other frame is plenty)
       if (frame % 2 === 0) {
         flagsAt.forEach((f, i) => {

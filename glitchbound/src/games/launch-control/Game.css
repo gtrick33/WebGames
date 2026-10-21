@@ -750,8 +750,55 @@
   }
 }
 .lc-face {
+  flex: none;
   width: 56px;
   height: 56px;
+}
+/* the player icon: the driver in a round frame, ringed in their side's colour */
+.lc-face.is-badge {
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px var(--lc-rival),
+    0 4px 10px rgb(0 0 0 / 0.35);
+}
+.is-you .lc-face.is-badge,
+.lc-hero-driver .lc-face.is-badge {
+  box-shadow:
+    0 0 0 2px var(--lc-you),
+    0 4px 10px rgb(0 0 0 / 0.35);
+}
+.lc-pic {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+.lc-pic > .lc-face {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+}
+.lc-order-pic > .lc-face {
+  left: -6px;
+  bottom: -5px;
+}
+.lc-hero-driver {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 -2px;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--lc-fg);
+}
+.lc-vs-face {
+  justify-self: center;
+  margin-bottom: 6px;
+  transform: skewX(8deg);
+}
+.lc-rival-who {
+  display: grid;
+  flex: 1;
+  min-width: 0;
 }
 .lc-boss {
   display: inline-block;
@@ -1139,6 +1186,12 @@
   .lc-hero-tier {
     grid-area: tier;
     justify-self: start;
+  }
+  .lc-hero-driver {
+    grid-area: tier;
+    justify-self: end;
+    align-self: center;
+    margin: 0;
   }
   .lc-hero-name {
     grid-area: name;

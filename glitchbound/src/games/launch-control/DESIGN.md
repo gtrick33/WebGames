@@ -58,16 +58,16 @@ each a driver skill that only loses time from there. Fair, varied, never a walko
 
 ## The garage
 
-43 original cars (invented makers and names) on 16 CC0 low-poly bodies, each car with its own size and shape tweaks (models.ts, modelcar.ts; credits in CREDITS.md). Six separate parts, each
+50 original cars (invented makers and names): RG Poly's low-poly city bodies in their factory paint schemes for the street to pro tiers, Cosmo's sports cars, supercars and hypercar for the top ones (models.ts, modelcar.ts; credits in CREDITS.md). The drivers sit in closed cars, so their helmet and suit show on a portrait next to their name. Six separate parts, each
 with eight levels and its own condition, each moving several numbers:
 
 | Part | Each level | Visible on the car |
 | --- | --- | --- |
-| Engine | +9 % torque, +60 rpm, +4 kg, −2 % reliability | hood scoop, twin pipes with flames |
-| Transmission | −35 ms per shift, +1 % drive efficiency, +1 % reliability | shift light |
-| Suspension | +5 % launch grip, less wheel hop, −6 kg | lower stance |
-| Tyres | +6 % grip; wears every race | wider wheels, slicks |
-| Aerodynamics | −5.5 % drag, downforce at speed, +3 kg | splitter, wing, diffuser |
+| Engine | +9 % torque, +60 rpm, +4 kg, −2 % reliability | nothing outside |
+| Transmission | −35 ms per shift, +1 % drive efficiency, +1 % reliability | nothing outside |
+| Suspension | +5 % launch grip, less wheel hop, −6 kg | lower every level, tyres tucked into the arches |
+| Tyres | +6 % grip; wears every race | a coloured sidewall band and lettering per level (STREET to DRAG KING) |
+| Aerodynamics | −5.5 % drag, downforce at speed, +3 kg | something new every level: roof spoiler, ducktail and splitter, pedestal wing, diffuser and skirts, carbon wing, canards, swan-neck GT wing, time-attack wing (aero.ts) |
 | Looks | +6 % purse from fans, +3 % sponsor pay | livery, underglow, chrome |
 
 Upgrades cost cash plus materials (scrap, alloy, carbon, chips, rubber). Below 30 % condition a part can fail

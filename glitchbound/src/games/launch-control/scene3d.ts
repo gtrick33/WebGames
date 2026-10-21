@@ -15,7 +15,7 @@ import { clamp, lerp, shade } from './util';
 import { buildAlive, type Alive } from './alive';
 import type { LightsState } from './sim';
 import { buildModelCar, paintOf } from './modelcar';
-import { getModel, loadModel, specFor } from './models';
+import { fileFor, getModel, loadModel } from './models';
 import { CHROME, DRL, GLASS, LAMP, RUBBER, TAIL, TRIM, ball, blobTexture, box, lam, mergeStatic, mesh, pillow, std } from './mats';
 
 export interface CarLook {
@@ -1410,6 +1410,9 @@ function markerTexture(): THREE.CanvasTexture {
   return t;
 }
 
+/** Most device pixels the stage draws a frame (about a phone's full screen at its pixel ratio). */
+const PIXEL_BUDGET = 2_100_000;
+
 /** Where the garage turntable parks the car: down the strip, clear of the gantries. */
 const SHOW_X = 70;
 
@@ -1448,7 +1451,8 @@ export class Stage3D {
     this.renderer.toneMapping = THREE.NeutralToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.enabled = shadows;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // plain PCF: soft enough at this map size, and a good deal cheaper on a laptop's GPU
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.pmrem = new THREE.PMREMGenerator(this.renderer);
     this.hemi = new THREE.HemisphereLight('#ffffff', '#88aa88', 0.75);
     this.scene.add(this.hemi);
@@ -1501,7 +1505,7 @@ export class Stage3D {
   setCar(i: number, look: CarLook | null): void {
     if (i < 0 || i >= LANES) return;
     const key = look ? lookKeyOf(look) : '';
-    if (key === this.carKeys[i] && (this.cars[i] || !look || getModel(specFor(look.def).base) === undefined)) {
+    if (key === this.carKeys[i] && (this.cars[i] || !look || getModel(fileFor(look.def)) === undefined)) {
       if (this.cars[i]) this.cars[i]!.group.position.set(0, 0, LANE_Z[i]!);
       return;
     }
@@ -1513,11 +1517,11 @@ export class Stage3D {
     }
     this.carKeys[i] = key;
     if (!look) return;
-    const base = specFor(look.def).base;
-    const model = getModel(base);
+    const file = fileFor(look.def);
+    const model = getModel(file);
     if (model === undefined) {
       // first use of this body: load it, then build if the lane still wants this car
-      void loadModel(base).then(() => {
+      void loadModel(file).then(() => {
         if (!this.disposed && this.carKeys[i] === key && !this.cars[i]) this.setCar(i, look);
       });
       return;
@@ -1536,13 +1540,21 @@ export class Stage3D {
   resize(w: number, h: number, dpr: number): void {
     this.w = Math.max(1, Math.floor(w));
     this.h = Math.max(1, Math.floor(h));
-    this.renderer.setPixelRatio(dpr);
+    this.renderer.setPixelRatio(this.fitDpr(dpr));
     this.renderer.setSize(this.w, this.h, false);
   }
 
   setPixelRatio(dpr: number): void {
-    this.renderer.setPixelRatio(dpr);
+    this.renderer.setPixelRatio(this.fitDpr(dpr));
     this.renderer.setSize(this.w, this.h, false);
+  }
+
+  /**
+   * A big window on a sharp screen is millions of pixels a frame (a laptop's full screen is four
+   * times a phone's), so the pixel ratio comes down until the canvas fits the budget.
+   */
+  private fitDpr(dpr: number): number {
+    return Math.max(0.75, Math.min(dpr, Math.sqrt(PIXEL_BUDGET / (this.w * this.h))));
   }
 
   private placeCar(i: number, s: CarState, dt: number, t: number): void {
@@ -1816,9 +1828,9 @@ function pumpThumbs(): void {
   // the page may be gone by the time a model finishes loading (tests, a closed tab)
   if (thumbBusy || !thumbQueue.length || typeof window === 'undefined') return;
   thumbBusy = true;
-  const base = specFor(thumbQueue[0]!.look.def).base;
-  if (getModel(base) === undefined) {
-    void loadModel(base).then(() => {
+  const file = fileFor(thumbQueue[0]!.look.def);
+  if (getModel(file) === undefined) {
+    void loadModel(file).then(() => {
       thumbBusy = false;
       pumpThumbs();
     });

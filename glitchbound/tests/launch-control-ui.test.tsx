@@ -173,7 +173,7 @@ describe('Launch Control: daily, garage and wager', () => {
     const panel = (): Element => document.querySelector('.lc-part-panel')!;
     expect(panel().textContent).toMatch(/Engine/);
     expect(panel().textContent).toMatch(/\+9% torque/);
-    expect(panel().textContent).toMatch(/Hood scoop/);
+    expect(panel().textContent).toMatch(/Nothing you can see: it all happens under the hood/);
     // preview the next level on the car, then buy it
     fireEvent.click(screen.getByRole('radio', { name: /Preview Lv 1/ }));
     expect(screen.getByRole('radio', { name: /Preview Lv 1/ }).getAttribute('aria-checked')).toBe('true');
@@ -185,7 +185,7 @@ describe('Launch Control: daily, garage and wager', () => {
     expect(save.mats.scrap).toBeLessThan(6);
     // every part has its own tab and its own visuals
     fireEvent.click(screen.getByRole('tab', { name: /Aero/ }));
-    expect(panel().textContent).toMatch(/Rear wing/);
+    expect(panel().textContent).toMatch(/Pedestal wing/);
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(screen.getByRole('button', { name: /^Parts shop/ })).toBeTruthy();
   });
@@ -198,7 +198,7 @@ describe('Launch Control: daily, garage and wager', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Inspect the engine/ }));
     expect(document.querySelector('.lc-modal')?.classList.contains('is-inspect')).toBe(true);
     const card = screen.getByRole('region', { name: 'Inspecting the engine' });
-    expect(card.textContent).toMatch(/Hood scoop/);
+    expect(card.textContent).toMatch(/Under the hood/);
     // another part's tab inspects that one
     fireEvent.click(screen.getByRole('tab', { name: /Aero/ }));
     const aero = screen.getByRole('region', { name: 'Inspecting the aerodynamics' });

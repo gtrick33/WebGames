@@ -4,6 +4,13 @@
 /games/*/*.webp
   Cache-Control: public, max-age=86400
 
+# Launch Control's car models (a day, like the art: a model can be replaced under the same name).
+/games/launch-control/rg/*
+  Cache-Control: public, max-age=86400
+
+/games/launch-control/cosmo/*
+  Cache-Control: public, max-age=86400
+
 # Game photo library: files are named by their source id and never change.
 /photos/*
   Cache-Control: public, max-age=31536000, immutable

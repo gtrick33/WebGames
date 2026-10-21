@@ -95,11 +95,16 @@ function lookOf(save: Save, def: CarDef, levels?: Levels): CarLook {
 }
 
 const BOT_PAINTS = ['p-stock', 'p-white', 'p-red', 'p-blue', 'p-yellow', 'p-lime', 'p-pink', 'p-orange', 'p-teal', 'p-violet', 'p-black'];
+/** A rival's helmet and suit, picked from their name (the same in every race and on every list). */
+function botDriver(name: string): { helmet: [string, string]; suit: string } {
+  const h = hashString(name) >>> 0;
+  const hm = COSMETICS.helmet[h % COSMETICS.helmet.length]!;
+  return { helmet: [hm.colors[0]!, hm.colors[1]!], suit: COSMETICS.suit[(h >>> 11) % COSMETICS.suit.length]!.colors[0]! };
+}
+
 function botLook(b: Bot): CarLook {
   const h = hashString(b.name) >>> 0;
-  const helmets = COSMETICS.helmet;
-  const hm = helmets[h % helmets.length]!;
-  return { def: b.car, levels: b.levels, paint: BOT_PAINTS[(h >>> 3) % BOT_PAINTS.length]!, livery: (h >>> 7) % 3 === 0 ? 'l-roundel' : DEFAULTS.livery, wheels: (h >>> 9) % 2 ? 'w-classic' : 'w-steel', helmet: [hm.colors[0]!, hm.colors[1]!], suit: COSMETICS.suit[(h >>> 11) % COSMETICS.suit.length]!.colors[0]! };
+  return { def: b.car, levels: b.levels, paint: BOT_PAINTS[(h >>> 3) % BOT_PAINTS.length]!, livery: (h >>> 7) % 3 === 0 ? 'l-roundel' : DEFAULTS.livery, wheels: (h >>> 9) % 2 ? 'w-classic' : 'w-steel', ...botDriver(b.name) };
 }
 
 /** The numbers the garage shows for a car with its parts. */
@@ -883,6 +888,10 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
               <span className="lc-hero-tier" data-tier={car.tier}>
                 {TIER_NAME[car.tier]} · Lv {Math.round(avgLevel(owned.levels))}
               </span>
+              <span className="lc-hero-driver">
+                <DriverFace helmet={look.helmet} suit={look.suit} size={34} badge />
+                <span>{me}</span>
+              </span>
               <h2 className="lc-hero-name">{car.name}</h2>
               <dl className="lc-specs">
                 <div>
@@ -991,7 +1000,10 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           >
             <div className="lc-versus">
               <div className="lc-vcard is-you">
-                <CarThumb look={plan.race.looks[0]!} />
+                <span className="lc-pic">
+                  <CarThumb look={plan.race.looks[0]!} />
+                  <DriverFace helmet={plan.race.looks[0]!.helmet} suit={plan.race.looks[0]!.suit} size={42} badge />
+                </span>
                 <b>{me}</b>
                 <span className="mono">
                   {plan.me.def.name} · ~{fmtEt(plan.forecast.myEt)} s
@@ -1001,7 +1013,10 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 VS
               </span>
               <div className="lc-vcard is-rival">
-                <CarThumb look={plan.race.looks[1] ?? plan.race.looks[0]!} />
+                <span className="lc-pic">
+                  <CarThumb look={plan.race.looks[1] ?? plan.race.looks[0]!} />
+                  <DriverFace helmet={(plan.race.looks[1] ?? plan.race.looks[0]!).helmet} suit={(plan.race.looks[1] ?? plan.race.looks[0]!).suit} size={42} badge />
+                </span>
                 <b>{plan.race.names[1]}</b>
                 <span className="mono">
                   {plan.race.specs[1]?.def.name}
@@ -1135,6 +1150,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                     {i % PER_DIVISION === 0 && <h3 className="lc-division mono">{DIVISIONS[o.division]} division</h3>}
                     <div className="lc-opp-row">
                       <span className="lc-rank mono">{beaten ? <Icon name="check" size={16} /> : o.rank}</span>
+                      <DriverFace {...botDriver(o.name)} size={40} badge />
                       <div>
                         <b>
                           {o.name}
@@ -1495,7 +1511,8 @@ function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, view
       </div>
       <div className="lc-rival-detail lc-panel-inner">
         <div className="lc-rival-head">
-          <div>
+          <DriverFace {...botDriver(o.name)} size={52} badge />
+          <div className="lc-rival-who">
             <b>
               {o.boss && <Icon name="crown" size={16} className="lc-boss" />}
               {o.name} · #{o.rank}
@@ -1691,14 +1708,18 @@ function PartPanel({ part, car, levels, cond, save, preview, setPreview, onBuy, 
       </ul>
       <div className="lc-visuals">
         <span className="lc-eyebrow mono">On the car</span>
-        <ul>
-          {PART_VISUALS[part].map(([lv, text]) => (
-            <li key={text} className={level >= lv ? 'is-have' : lv === nextVisual ? 'is-next' : ''}>
-              <span className="mono">Lv {lv}</span> {text}
-              {level >= lv && <Icon name="check" size={14} className="lc-have" />}
-            </li>
-          ))}
-        </ul>
+        {PART_VISUALS[part].length ? (
+          <ul>
+            {PART_VISUALS[part].map(([lv, text]) => (
+              <li key={text} className={level >= lv ? 'is-have' : lv === nextVisual ? 'is-next' : ''}>
+                <span className="mono">Lv {lv}</span> {text}
+                {level >= lv && <Icon name="check" size={14} className="lc-have" />}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="lc-sub">Nothing you can see: it all happens {part === 'engine' ? 'under the hood' : 'inside the car'}.</p>
+        )}
       </div>
       {next ? (
         <button className={`btn lc-upgrade${can ? ' lc-cta' : ''}`} onClick={onBuy} disabled={!can}>
@@ -1808,7 +1829,10 @@ function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onGar
           return (
             <li key={idx} className={`${idx === 0 ? 'is-you' : 'is-rival'}${k === 0 ? ' is-winner' : ''}`}>
               <span className="lc-order-pos">{k === 0 ? <Icon name="trophy" size={18} /> : k + 1}</span>
-              <CarThumb look={p.race.looks[idx]!} className="lc-order-thumb" />
+              <span className="lc-pic lc-order-pic">
+                <CarThumb look={p.race.looks[idx]!} className="lc-order-thumb" />
+                <DriverFace helmet={p.race.looks[idx]!.helmet} suit={p.race.looks[idx]!.suit} size={30} badge />
+              </span>
               <span className="lc-order-name">
                 <b>{idx === 0 ? me : p.race.names[idx]}</b>
                 <small>{p.race.specs[idx]!.def.name}</small>

@@ -1,15 +1,17 @@
 /**
- * Builds a race car from a loaded base model (models.ts): the body is scaled and reshaped to the
- * car's own proportions, repainted (with the livery mapped onto its sides and top), the wheels
- * become spinning parts sized by the tyre upgrade, and the visible upgrades (wings, splitter,
- * diffuser, scoop or blower, exhausts and flames, shift light, underglow) are snapped onto the
- * body's real surface by casting rays at it.
+ * Builds a race car from a loaded model (models.ts): the body is repainted (the factory scheme, a
+ * new colour over the atlas's own shading, or a livery mapped onto its sides and top), the wheels
+ * become spinning parts, and the upgrades show: the aero kit (aero.ts) is snapped onto the body's
+ * real surface by casting rays at it, the suspension drops the body toward the ground a step per
+ * level, the tyres get coloured sidewall bands and lettering, and the looks add underglow and a
+ * pinstripe. The engine and the transmission don't change the outside.
  */
 import * as THREE from 'three';
-import type { Feature } from './cars';
+import { buildAero, type BodySurface } from './aero';
 import { getCosmetic } from './cosmetics';
-import { CHROME, GLASS, LAMP, RUBBER, TAIL, TRIM, blobTexture, box, mergeStatic, mesh, pillow, std } from './mats';
-import { specFor, warpGeometry, warpPoint, type LoadedModel } from './models';
+import { blobTexture, mergeStatic, mesh, std } from './mats';
+import { PACKS, type LoadedModel, type ModelPart, type Role } from './models';
+import { MAX_LEVEL } from './parts';
 import type { CarLook, CarRig } from './scene3d';
 import { clamp, shade } from './util';
 
@@ -77,6 +79,14 @@ function liveryTexture(look: CarLook, paint: string): THREE.CanvasTexture | null
   const ctx = cv.getContext('2d')!;
   ctx.fillStyle = paint;
   ctx.fillRect(0, 0, S, S);
+  // the sides catch the light at the top and darken toward the sills, like the atlas's gradients
+  for (const base of [SIDE_R, SIDE_L]) {
+    const g = ctx.createLinearGradient(0, (1 - base - 0.4) * S, 0, (1 - base) * S);
+    g.addColorStop(0, shade(paint, 0.14));
+    g.addColorStop(1, shade(paint, -0.22));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, (1 - base - 0.4) * S, S, 0.4 * S);
+  }
   const X = (u: number): number => u * S;
   const Y = (v: number): number => (1 - v) * S;
   /** A polygon on both sides: points are [u, height fraction 0..1]. */
@@ -161,38 +171,256 @@ function liveryTexture(look: CarLook, paint: string): THREE.CanvasTexture | null
   return t;
 }
 
-// ---------------------------------------------------------------- Kenney palette recolour
-/** The palette cell (32 x 128 px column, row) each Kenney body is painted with. */
-const KENNEY_PAINT: Record<string, [number, number]> = { rail: [13, 1], funny: [15, 1] };
-const kenneyTex = new Map<string, THREE.Texture>();
+// ---------------------------------------------------------------- materials
+/** The pack's own materials and the repainted paint, shared by every car (never disposed). */
+const shared = new Map<string, THREE.MeshStandardMaterial>();
+function sharedMat(key: string, make: () => THREE.MeshStandardMaterial): THREE.MeshStandardMaterial {
+  let m = shared.get(key);
+  if (!m) {
+    m = make();
+    shared.set(key, m);
+  }
+  return m;
+}
 
-function kenneyTexture(base: string, src: THREE.Texture, paint: string): THREE.Texture {
-  const key = `${base}|${paint}`;
-  const hit = kenneyTex.get(key);
+function roleMat(role: Exclude<Role, 'paint'>, model: LoadedModel): THREE.MeshStandardMaterial {
+  const t = model.tex;
+  const cosmo = model.pack === 'cosmo';
+  return sharedMat(`${model.pack}|${role}`, () => {
+    switch (role) {
+      case 'glass':
+        return new THREE.MeshStandardMaterial({ map: t.glass, metalness: cosmo ? 0.7 : 0.55, roughness: cosmo ? 0.08 : 0.22, envMapIntensity: 1.3 });
+      case 'metal':
+        return new THREE.MeshStandardMaterial({ map: t.atlas, metalness: 0.75, roughness: 0.28 });
+      case 'trim':
+        return new THREE.MeshStandardMaterial({ map: t.atlas, metalness: 0, roughness: 0.55 });
+      case 'lamp':
+        // the palette is the lamps' glow: white at the front, red at the back
+        return new THREE.MeshStandardMaterial({ color: '#000000', emissiveMap: t.atlas, emissive: '#ffffff', emissiveIntensity: 1.6 });
+      default:
+        return new THREE.MeshStandardMaterial({ map: t.atlas, metalness: cosmo ? 0.45 : 0.32, roughness: cosmo ? 0.2 : 0.42 });
+    }
+  });
+}
+
+/** A new colour over the palette's shading: brightness under the paint becomes `ref`, so the factory spot shows exactly `paint`. */
+function paintMat(paint: string, model: LoadedModel): THREE.MeshStandardMaterial {
+  const key = `paint|${model.pack}|${paint}|${model.paintRef.toFixed(3)}`;
+  const cosmo = model.pack === 'cosmo';
+  return sharedMat(key, () => new THREE.MeshStandardMaterial({ map: model.tex.luma, color: new THREE.Color(paint).multiplyScalar(1 / model.paintRef), metalness: cosmo ? 0.45 : 0.32, roughness: cosmo ? 0.22 : 0.36 }));
+}
+
+// ---------------------------------------------------------------- tyre sidewalls
+/** Each tyre level's sidewall: a coloured band near the tread, the compound's name, thin pinlines at the top levels. */
+const SIDEWALL: { band: string; w: number; text: string; ink: string; line?: string }[] = [
+  { band: '#f2f2f2', w: 0.03, text: '', ink: '#f2f2f2' },
+  { band: '#f2f2f2', w: 0.045, text: 'STREET', ink: '#f2f2f2' },
+  { band: '#ffd21f', w: 0.05, text: 'SPORT', ink: '#f2f2f2' },
+  { band: '#ffd21f', w: 0.07, text: 'SPORT+', ink: '#ffd21f' },
+  { band: '#ff2d2d', w: 0.06, text: 'TRACK', ink: '#f2f2f2' },
+  { band: '#ff2d2d', w: 0.075, text: 'TRACK R', ink: '#f2f2f2', line: '#f2f2f2' },
+  { band: '#b44dff', w: 0.075, text: 'SLICK', ink: '#f2f2f2', line: '#f2f2f2' },
+  { band: '#ffc93a', w: 0.085, text: 'DRAG KING', ink: '#ffc93a', line: '#ffc93a' },
+];
+
+/** Where the sidewall art sits, as fractions of the decal's outer radius (the tyre's edge). */
+const BAND_OUT = 0.91;
+const TEXT_R = 0.76;
+/** Space the lettering needs inside the band; a big rim pushes it out and shrinks it. */
+const textFit = (inner: number, w: number): { r: number; size: number } => {
+  const room = BAND_OUT - w - 0.015 - inner;
+  return room >= 0.22 ? { r: TEXT_R, size: 0.1 } : { r: inner + room / 2, size: Math.max(0.05, room * 0.62) };
+};
+/** Bought rims cover the inner part of the sidewall, out to this fraction of the tyre's radius. */
+const RIM_R = 0.62;
+
+const sidewallTex = new Map<string, THREE.CanvasTexture>();
+/** `inner`: where the sidewall starts (rim's edge), as a fraction of the decal's radius. */
+function sidewallTexture(level: number, inner: number): THREE.CanvasTexture {
+  const key = `${level}|${inner}`;
+  const hit = sidewallTex.get(key);
   if (hit) return hit;
-  const img = src.image as CanvasImageSource & { width: number; height: number };
-  const cell = KENNEY_PAINT[base];
-  if (!img || !cell) return src;
+  const spec = SIDEWALL[clamp(level, 1, SIDEWALL.length) - 1]!;
+  const S = 512;
+  const R = S / 2;
   const cv = document.createElement('canvas');
-  cv.width = img.width;
-  cv.height = img.height;
+  cv.width = S;
+  cv.height = S;
   const ctx = cv.getContext('2d')!;
-  ctx.drawImage(img, 0, 0);
-  const cw = img.width / 16;
-  const ch = img.height / 4;
-  const g = ctx.createLinearGradient(0, cell[1] * ch, 0, (cell[1] + 1) * ch);
-  g.addColorStop(0, shade(paint, 0.12));
-  g.addColorStop(1, shade(paint, -0.18));
-  ctx.fillStyle = g;
-  ctx.fillRect(cell[0] * cw, cell[1] * ch, cw, ch);
+  const ring = (r0: number, r1: number, color: string): void => {
+    ctx.beginPath();
+    ctx.arc(R, R, r1 * R, 0, Math.PI * 2);
+    ctx.arc(R, R, r0 * R, 0, Math.PI * 2, true);
+    ctx.fillStyle = color;
+    ctx.fill();
+  };
+  ring(BAND_OUT - spec.w, BAND_OUT, spec.band);
+  if (spec.line) ring(BAND_OUT + 0.025, BAND_OUT + 0.037, spec.line);
+  if (spec.text) {
+    const fit = textFit(inner, spec.w);
+    const size = R * fit.size;
+    ctx.font = `900 ${size}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = spec.ink;
+    const words = [`LC ${spec.text}`, spec.text];
+    words.forEach((word, k) => {
+      const chars = [...word];
+      const widths = chars.map((ch) => ctx.measureText(ch).width * 1.1);
+      const total = widths.reduce((a, b) => a + b, 0);
+      const rr = fit.r * R;
+      let ang = -Math.PI / 2 + k * Math.PI - total / rr / 2;
+      chars.forEach((ch, i) => {
+        ang += widths[i]! / 2 / rr;
+        ctx.save();
+        ctx.translate(R + rr * Math.cos(ang), R + rr * Math.sin(ang));
+        ctx.rotate(ang + Math.PI / 2);
+        ctx.fillText(ch, 0, 0);
+        ctx.restore();
+        ang += widths[i]! / 2 / rr;
+      });
+      // a small diamond either side of the name
+      for (const side of [-1, 1]) {
+        const a = -Math.PI / 2 + k * Math.PI + side * (total / rr / 2 + 0.12);
+        ctx.save();
+        ctx.translate(R + rr * Math.cos(a), R + rr * Math.sin(a));
+        ctx.rotate(a + Math.PI / 4);
+        ctx.fillStyle = spec.band;
+        ctx.fillRect(-size * 0.17, -size * 0.17, size * 0.34, size * 0.34);
+        ctx.restore();
+        ctx.fillStyle = spec.ink;
+      }
+    });
+  }
   const t = new THREE.CanvasTexture(cv);
-  t.flipY = src.flipY;
   t.colorSpace = THREE.SRGBColorSpace;
-  t.magFilter = src.magFilter;
-  t.minFilter = src.minFilter;
-  t.anisotropy = 4;
-  kenneyTex.set(key, t);
+  t.anisotropy = 8;
+  sidewallTex.set(key, t);
   return t;
+}
+
+const sidewallMat = new Map<string, THREE.MeshStandardMaterial>();
+function sidewallMaterial(level: number, innerFrac: number): THREE.MeshStandardMaterial {
+  // a few rim sizes are plenty: the art is the same, only the lettering moves out of the way
+  const inner = Math.round(innerFrac * 20) / 20;
+  const key = `${level}|${inner}`;
+  let m = sidewallMat.get(key);
+  if (!m) {
+    m = new THREE.MeshStandardMaterial({ map: sidewallTexture(level, inner), transparent: true, alphaTest: 0.35, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    sidewallMat.set(key, m);
+  }
+  return m;
+}
+
+// ---------------------------------------------------------------- rims
+/** The wheel cosmetics as a rim face: lip, spokes over a dark barrel, centre cap. Spins with the wheel. */
+const rimTex = new Map<string, THREE.CanvasTexture>();
+function rimTexture(style: string, color: string): THREE.CanvasTexture {
+  const key = `${style}|${color}`;
+  const hit = rimTex.get(key);
+  if (hit) return hit;
+  const S = 256;
+  const R = S / 2;
+  const cv = document.createElement('canvas');
+  cv.width = S;
+  cv.height = S;
+  const ctx = cv.getContext('2d')!;
+  const disc = (r: number, fill: string | CanvasGradient): void => {
+    ctx.beginPath();
+    ctx.arc(R, R, r * R, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+  };
+  // the barrel and the brake behind the spokes
+  const barrel = ctx.createRadialGradient(R, R, R * 0.2, R, R, R);
+  barrel.addColorStop(0, '#2a2a30');
+  barrel.addColorStop(1, '#0c0c0f');
+  disc(1, barrel);
+  disc(0.74, '#3b3b42');
+  disc(0.6, '#1a1a1f');
+  const metal = ctx.createLinearGradient(0, 0, S, S);
+  metal.addColorStop(0, shade(color, 0.35));
+  metal.addColorStop(0.5, color);
+  metal.addColorStop(1, shade(color, -0.3));
+  ctx.fillStyle = metal;
+  ctx.strokeStyle = metal;
+  const spokes = (n: number, w: number, r0: number, r1: number, twist = 0): void => {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      ctx.save();
+      ctx.translate(R, R);
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(r0 * R, -w * R * 0.6);
+      ctx.lineTo(r1 * R, -w * R + twist * R);
+      ctx.lineTo(r1 * R, w * R + twist * R);
+      ctx.lineTo(r0 * R, w * R * 0.6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  };
+  switch (style) {
+    case 'w-classic':
+      spokes(5, 0.14, 0.15, 0.92);
+      break;
+    case 'w-mesh':
+      ctx.lineWidth = R * 0.035;
+      for (let i = 0; i < 16; i++)
+        for (const k of [-1, 1]) {
+          ctx.save();
+          ctx.translate(R, R);
+          ctx.rotate((i / 16) * Math.PI * 2);
+          ctx.beginPath();
+          ctx.moveTo(R * 0.2, 0);
+          ctx.quadraticCurveTo(R * 0.55, k * R * 0.22, R * 0.92, k * R * 0.32);
+          ctx.stroke();
+          ctx.restore();
+        }
+      break;
+    case 'w-star':
+      spokes(10, 0.07, 0.15, 0.92);
+      break;
+    case 'w-turbine':
+      spokes(12, 0.08, 0.2, 0.92, 0.12);
+      break;
+    case 'w-deep':
+      disc(0.94, metal);
+      disc(0.72, '#141418');
+      spokes(6, 0.12, 0.15, 0.74);
+      break;
+    default:
+      spokes(8, 0.1, 0.15, 0.92);
+  }
+  // the lip, the cap and its bolts
+  ctx.lineWidth = R * 0.07;
+  ctx.beginPath();
+  ctx.arc(R, R, R * 0.95, 0, Math.PI * 2);
+  ctx.stroke();
+  disc(0.2, metal);
+  ctx.fillStyle = '#16161a';
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(R + Math.cos(a) * R * 0.12, R + Math.sin(a) * R * 0.12, R * 0.025, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  rimTex.set(key, t);
+  return t;
+}
+
+const rimMat = new Map<string, THREE.MeshStandardMaterial>();
+function rimMaterial(style: string, color: string): THREE.MeshStandardMaterial {
+  const key = `${style}|${color}`;
+  let m = rimMat.get(key);
+  if (!m) {
+    m = new THREE.MeshStandardMaterial({ map: rimTexture(style, color), metalness: 0.6, roughness: 0.3, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    rimMat.set(key, m);
+  }
+  return m;
 }
 
 // ---------------------------------------------------------------- underglow
@@ -216,286 +444,172 @@ function glowTexture(): THREE.CanvasTexture {
 // ---------------------------------------------------------------- the build
 const ray = new THREE.Raycaster();
 const DOWN = new THREE.Vector3(0, -1, 0);
+const UP = new THREE.Vector3(0, 1, 0);
 const BACK = new THREE.Vector3(-1, 0, 0);
 const FWD = new THREE.Vector3(1, 0, 0);
+const IN = new THREE.Vector3(0, 0, -1);
 
-/** Where the driver's head sits in open bodies (model space, left seat). */
-const SEAT: Partial<Record<string, [number, number, number]>> = { roadster: [-0.5, 1.5, -0.42] };
-
-/** Default width relative to a uniform scale: the source bodies are chunkier than real cars. */
-const DEFAULT_W = 0.86;
+/** Deepest drop at full suspension, metres (less when the wheel arches are tight). */
+const MAX_DROP = 0.17;
+/** How far a tyre may tuck up past the arch's lip into the wing at full drop, metres. */
+const TUCK = 0.075;
 
 export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
   const def = look.def;
-  const spec = specFor(def);
   const lv = look.levels;
-  const kenney = !model.hasPaint;
-  const warp = spec.warp ?? 'none';
-  const has = (f: Feature): boolean => def.shape.features.includes(f);
   const disposables: { dispose(): void }[] = [];
   const keepD = <T extends { dispose(): void }>(d: T): T => {
     disposables.push(d);
     return d;
   };
-  const paint = paintOf(look);
-
-  // size: the warped body's length becomes the car's length
+  // the stock paint: RG cars keep their factory scheme; Cosmo cars wear their roster colour
+  const stock = look.paint === 'p-stock' || !getCosmetic(look.paint);
+  const factory = stock && model.pack === 'rg';
+  const paint = stock ? (factory ? model.factory : def.color) : paintOf(look);
+  const s = model.scale;
   const mb = model.box;
-  const nose = warpPoint(mb.max.x, mb.max.y * 0.3, 0, warp, mb)[0];
-  const modelLen = nose - mb.min.x;
-  const s = spec.len / modelLen;
-  const hK = spec.h ?? 1;
-  const sx = s;
-  const sy = s * hK;
-  const sz = s * (spec.w ?? (kenney ? 1 : DEFAULT_W));
-  const cx = (nose + mb.min.x) / 2;
+  const cx = (mb.min.x + mb.max.x) / 2;
 
   const root = new THREE.Group();
   const bodyG = new THREE.Group();
   root.add(bodyG);
   const shell = new THREE.Group();
-  shell.scale.set(sx, sy, sz);
-  shell.position.x = -cx * sx;
+  shell.scale.setScalar(s);
+  shell.position.x = -cx * s;
   bodyG.add(shell);
 
-  // body parts, by role
-  const paintOpts = { metalness: 0.18, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.15 };
-  const tex = kenney ? null : liveryTexture(look, paint);
+  // body: the paint (factory, a new colour, or a livery), the rest in the pack's own materials
+  const tex = liveryTexture(look, paint);
   if (tex) keepD(tex);
-  const paintMat = keepD(new THREE.MeshPhysicalMaterial(tex ? { map: tex, ...paintOpts } : { color: paint, ...paintOpts }));
+  const liveryMat = tex ? keepD(new THREE.MeshStandardMaterial({ map: tex, metalness: 0.32, roughness: 0.36 })) : null;
   const bodyMeshes: THREE.Mesh[] = [];
-  const wheelSrc: THREE.Object3D[] = [];
-  const baseKey = `${spec.base}|${warp}`;
-  model.scene.children.forEach((o) => {
-    if (/^wheel_(fl|fr|rl|rr)$/.test(o.name)) {
-      wheelSrc.push(o);
-      return;
-    }
-    if (!(o instanceof THREE.Mesh)) return;
-    const src = o.material as THREE.MeshStandardMaterial;
-    const role = src.name;
-    let geo = warpGeometry(o.geometry, `${baseKey}|${o.name}`, warp, mb);
+  const addPart = (p: ModelPart, i: number, into: THREE.Object3D): THREE.Mesh => {
+    let geo = p.geo;
     let mat: THREE.Material;
-    switch (role) {
-      case 'paint':
-        if (tex) geo = withLiveryUv(geo, `${baseKey}|${o.name}|uv`, mb);
-        mat = paintMat;
-        break;
-      case 'glass':
-        mat = GLASS();
-        break;
-      case 'lamp':
-        mat = LAMP();
-        break;
-      case 'tail':
-        mat = TAIL();
-        break;
-      case 'chrome':
-        mat = CHROME();
-        break;
-      case 'trim':
-        mat = TRIM();
-        break;
-      case 'kbody':
-        mat = keepD(new THREE.MeshStandardMaterial({ map: src.map ? kenneyTexture(spec.base, src.map, paint) : null, roughness: 0.42, metalness: 0.15, side: THREE.DoubleSide }));
-        break;
-      default:
-        mat = std(`#${src.color.getHexString()}`, { rough: 0.45, metal: 0.2 });
-    }
+    if (p.role === 'paint') {
+      if (liveryMat) {
+        geo = withLiveryUv(p.geo, `${model.file}|${i}`, mb);
+        mat = liveryMat;
+      } else mat = factory ? roleMat('body', model) : paintMat(paint, model);
+    } else mat = roleMat(p.role, model);
     const m = new THREE.Mesh(geo, mat);
     m.castShadow = true;
     m.userData.shared = true;
-    shell.add(m);
-    bodyMeshes.push(m);
-  });
+    into.add(m);
+    return m;
+  };
+  model.body.forEach((p, i) => bodyMeshes.push(addPart(p, i, shell)));
+  // the factory wing stays until the aero kit brings its own
+  if (lv.aero < 3) model.wing.forEach((p, i) => addPart(p, 1000 + i, shell));
 
-  // wheels: pivots that spin, holding a copy of the model's wheel scaled to the tyre upgrade
+  // wheels: pivots that spin; the tyres get their sidewall art
   const wheels: THREE.Object3D[] = [];
-  const srcR = wheelSrc[0] ? wheelSrc[0].position.y : 0.4;
-  const wheelK = spec.wheel ?? 1;
-  const wScale = s * Math.min(1, hK) * wheelK * (1 + lv.tyres * 0.012);
-  const wheelR = srcR * wScale;
-  const lift = wheelR - srcR * sy;
-  const rimCol = getCosmetic(look.wheels)?.colors[0] ?? '#cfcfcf';
-  const rimMat = std(rimCol, { metal: 0.6, rough: 0.28 });
-  const tyreMat = lv.tyres >= 5 ? std('#141418', { rough: 0.55 }) : RUBBER();
-  for (const w of wheelSrc) {
-    const [wx, , wz] = warpPoint(w.position.x, w.position.y, w.position.z, warp, mb);
-    const rear = wx < 0;
-    const axleK = (rear ? spec.rear : spec.front) ?? 1;
-    const r = wheelR * axleK;
+  const tyreMat = std('#19181d', { rough: 0.86 });
+  const rimCol = look.wheels === 'w-steel' ? null : getCosmetic(look.wheels)?.colors[0];
+  const rimFace = PACKS[model.pack].rimFace;
+  let wheelR = 0.3;
+  for (const w of model.wheels) {
     const pivot = new THREE.Group();
-    pivot.position.set((wx - cx) * sx, r, wz * sz);
-    pivot.userData.r = r;
-    const inner = w.clone();
-    inner.position.set(0, 0, 0);
-    const widthK = 1 + lv.tyres * (rear ? 0.06 : 0.03) + (def.drive === 'fwd' || !rear ? 0 : 0.08);
-    inner.scale.set(wScale * axleK, wScale * axleK, wScale * widthK * Math.sqrt(axleK));
-    inner.traverse((c) => {
-      if (!(c instanceof THREE.Mesh)) return;
-      const role = (c.material as THREE.Material).name;
-      if (role === 'tire') c.material = tyreMat;
-      else if (role === 'rim') c.material = rimMat;
-      c.castShadow = true;
-      c.userData.shared = true;
-    });
-    // keep the tyre's outer face inside the body's width as it widens
-    pivot.position.z -= Math.sign(wz) * (widthK - 1) * 0.15 * wScale;
+    pivot.position.set((w.pos.x - cx) * s, w.r * s, w.pos.z * s);
+    pivot.userData.r = w.r * s;
+    wheelR = w.r * s;
+    const inner = new THREE.Group();
+    inner.scale.setScalar(s);
+    for (const g of w.tyre) {
+      const m = new THREE.Mesh(g, tyreMat);
+      m.castShadow = true;
+      m.userData.shared = true;
+      inner.add(m);
+    }
+    for (const h of w.hub) {
+      // RG hubs are tiny: bought rims are painted over the sidewall below; Cosmo rims take the colour
+      const m = new THREE.Mesh(h.geo, rimCol ? std(rimCol, { metal: 0.65, rough: 0.28 }) : roleMat(h.role === 'paint' ? 'metal' : h.role, model));
+      m.castShadow = true;
+      m.userData.shared = true;
+      inner.add(m);
+    }
+    const side = Math.sign(w.pos.z) || 1;
+    const outer = w.r * 0.985;
+    if (rimCol && rimFace) {
+      const rimGeo = keepD(new THREE.CircleGeometry(w.r * RIM_R, 40));
+      if (side < 0) rimGeo.rotateY(Math.PI);
+      const rim = new THREE.Mesh(rimGeo, rimMaterial(look.wheels, rimCol));
+      rim.position.z = side * (w.halfW + 0.003);
+      inner.add(rim);
+    }
+    if (lv.tyres >= 1) {
+      const inR = rimCol && rimFace ? w.r * RIM_R : Math.min(w.hubR * 1.03, outer * 0.78);
+      const ringGeo = keepD(new THREE.RingGeometry(inR, outer, 48, 1));
+      // planar UVs over the decal's full square, so the art lines up with the radius
+      const p = ringGeo.attributes.position!;
+      const uv = ringGeo.attributes.uv!;
+      for (let k = 0; k < p.count; k++) uv.setXY(k, p.getX(k) / outer / 2 + 0.5, p.getY(k) / outer / 2 + 0.5);
+      if (side < 0) ringGeo.rotateY(Math.PI);
+      const decal = new THREE.Mesh(ringGeo, sidewallMaterial(lv.tyres, inR / outer));
+      decal.position.z = side * (w.halfW + 0.002);
+      inner.add(decal);
+    }
     pivot.add(inner);
     root.add(pivot);
     wheels.push(pivot);
   }
 
-  // stance: big wheels lift the body, the suspension upgrade drops it
-  const clearance = mb.min.y * sy + lift;
-  bodyG.position.y = lift - Math.min(lv.suspension * 0.022, Math.max(0, clearance - 0.04));
-
-  // the body's real surface, for placing parts (in root space)
+  // the body's real surface, for placing parts (car space, before the suspension drop)
   root.updateMatrixWorld(true);
   const cast = (from: THREE.Vector3, dir: THREE.Vector3): THREE.Vector3 | null => {
     ray.set(from, dir);
-    ray.far = 200;
-    const hits = ray.intersectObjects(bodyMeshes, false);
-    return hits[0]?.point ?? null;
+    ray.far = 50;
+    return ray.intersectObjects(bodyMeshes, false)[0]?.point ?? null;
   };
-  const L = spec.len;
   const bb = new THREE.Box3().setFromObject(shell);
+  const surface: BodySurface = {
+    topAt: (x, z = 0) => cast(new THREE.Vector3(x, 20, z), DOWN)?.y ?? null,
+    backAt: (y, z = 0) => cast(new THREE.Vector3(-20, y, z), FWD)?.x ?? null,
+    frontAt: (y, z = 0) => cast(new THREE.Vector3(20, y, z), BACK)?.x ?? null,
+    sideAt: (x, y) => cast(new THREE.Vector3(x, y, 20), IN)?.z ?? null,
+    xMin: bb.min.x,
+    xMax: bb.max.x,
+    bottom: bb.min.y,
+    top: bb.max.y,
+    halfW: (bb.max.z - bb.min.z) / 2,
+    frontAxle: Math.max(...wheels.map((w) => w.position.x)),
+    rearAxle: Math.min(...wheels.map((w) => w.position.x)),
+    wheelR,
+  };
+  const L = bb.max.x - bb.min.x;
   const W = bb.max.z - bb.min.z;
   const H = bb.max.y;
   const bottom = bb.min.y;
-  const xAt = (u: number): number => -L / 2 + u * L;
-  const topAt = (x: number, z = 0): number => cast(new THREE.Vector3(x, 20, z), DOWN)?.y ?? H * 0.6;
-  const frontAt = (y: number, z = 0): number => cast(new THREE.Vector3(50, y, z), BACK)?.x ?? L / 2;
-  const backAt = (y: number, z = 0): number => cast(new THREE.Vector3(-50, y, z), FWD)?.x ?? -L / 2;
+  const xAt = (u: number): number => bb.min.x + u * L;
 
-  const parts = new THREE.Group();
-  bodyG.parent!.add(parts);
-  const dark = std('#1d1c24', { rough: 0.35, metal: 0.2 });
-  const carbon = std('#16161b', { rough: 0.3, metal: 0.35 });
-
-  // aero
-  if (!kenney) {
-    const wingLevel = lv.aero >= 7 || has('bigwing') ? 2 : lv.aero >= 4 || has('wing') ? 1 : 0;
-    const wx = xAt(0.07);
-    const deckY = topAt(wx);
-    if (wingLevel) {
-      const wh = wingLevel === 2 ? 0.34 : 0.17;
-      const span = W * (wingLevel === 2 ? 0.98 : 0.86);
-      const wing = pillow(0.36, 0.05, span, wingLevel === 2 ? carbon : dark, wx, deckY + wh, 0);
-      wing.rotation.z = -0.1;
-      parts.add(wing);
-      for (const z of [1, -1]) parts.add(box(0.11, wh + 0.02, 0.035, TRIM(), wx + 0.02, deckY + wh / 2, z * span * 0.32));
-      if (wingLevel === 2) for (const z of [1, -1]) parts.add(box(0.44, 0.2, 0.025, carbon, wx, deckY + wh + 0.05, z * span * 0.5));
-    } else if (lv.aero >= 1) {
-      const lip = pillow(0.18, 0.05, W * 0.72, paintMat, xAt(0.035), topAt(xAt(0.035)) + 0.015, 0);
-      lip.rotation.z = -0.15;
-      parts.add(lip);
-    }
-    if (lv.aero >= 2 || has('lip')) {
-      const y = bottom + 0.03;
-      parts.add(pillow(0.24, 0.035, W * 0.86, carbon, frontAt(y + 0.1) - 0.07, y, 0));
-    }
-    if (lv.aero >= 6) for (const z of [1, -1]) {
-      const y = bottom + 0.22;
-      const fin = box(0.22, 0.02, 0.16, carbon, frontAt(y, z * W * 0.38) - 0.02, y, z * W * 0.44);
-      fin.rotation.z = 0.25;
-      parts.add(fin);
-    }
-    if (lv.aero >= 5) {
-      const y = bottom + 0.05;
-      const x = backAt(y + 0.08) + 0.12;
-      for (let i = -2; i <= 2; i++) parts.add(box(0.34, 0.12, 0.022, carbon, x, y, i * W * 0.11));
+  // suspension: each level drops the body a step, tucking the tyres up into the arches, and never
+  // closer than a few centimetres to the strip
+  let room = MAX_DROP;
+  for (const w of wheels) {
+    const r = (w.userData.r as number) ?? wheelR;
+    for (const dz of [-0.12, 0, 0.12]) {
+      const hit = cast(new THREE.Vector3(w.position.x, w.position.y + r * 0.2, w.position.z * 0.85 + dz), UP);
+      if (hit) room = Math.min(room, hit.y - (w.position.y + r) + TUCK);
     }
   }
+  room = clamp(Math.min(room, bb.min.y - 0.05), 0.06, MAX_DROP);
+  const drop = (room * clamp(lv.suspension, 0, MAX_LEVEL)) / MAX_LEVEL;
 
-  // engine: scoop, then a blower through the hood
-  if (!kenney) {
-    const hx = xAt(0.76);
-    const hy = topAt(hx);
-    if (lv.engine >= 8 || has('hump')) {
-      parts.add(pillow(0.5, 0.26, 0.42, CHROME(), hx, hy + 0.1, 0));
-      parts.add(pillow(0.3, 0.2, 0.36, dark, hx + 0.08, hy + 0.3, 0));
-      for (const z of [-0.09, 0.09]) parts.add(mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.18, 12), CHROME(), hx + 0.08, hy + 0.45, z));
-    } else if (lv.engine >= 3 || has('scoop')) {
-      const scoop = pillow(0.5, 0.11, W * 0.26, lv.engine >= 3 ? dark : paintMat, hx, hy + 0.035, 0);
-      scoop.rotation.z = 0.05;
-      parts.add(scoop);
-      parts.add(box(0.03, 0.055, W * 0.2, std('#08080a'), hx + 0.24, hy + 0.06, 0));
-    }
-    if (has('roofscoop')) {
-      const rx = xAt(0.5);
-      parts.add(pillow(0.34, 0.14, 0.26, dark, rx, topAt(rx) + 0.05, 0));
-    }
-    if (has('sidepipes')) for (const z of [1, -1]) parts.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, L * 0.34, 12).rotateZ(Math.PI / 2), CHROME(), 0, bottom + 0.1, z * (W / 2 + 0.01)));
-    if (has('bullbar')) {
-      const bx = frontAt(bottom + 0.35) + 0.08;
-      for (const y of [bottom + 0.2, bottom + 0.5]) parts.add(mesh(new THREE.CylinderGeometry(0.035, 0.035, W * 0.74, 10).rotateX(Math.PI / 2), CHROME(), bx, y, 0));
-      for (const z of [-0.28, 0.28]) parts.add(mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.42, 10), CHROME(), bx, bottom + 0.35, z));
-    }
-    if (has('wide'))
-      for (const w of wheels) {
-        const flare = mesh(new THREE.TorusGeometry(wheelR * 1.12, 0.05, 8, 20, Math.PI), TRIM(), w.position.x, wheelR, Math.sign(w.position.z) * (W / 2 - 0.03));
-        parts.add(flare);
-      }
-  }
+  // the aero kit, in body colour and carbon
+  const parts = buildAero(surface, { level: lv.aero, paint: std(paint, { metal: 0.32, rough: 0.36 }) });
+  bodyG.add(parts);
 
-  // exhausts and flames
-  const flames: THREE.Object3D[] = [];
+  // exhaust pops on a shift, for every car, at the back of the body
   const pops: THREE.Object3D[] = [];
   const popMat = std('#ffb03a', { emissive: '#ff7a00', ei: 2.4 });
-  const pipes = def.hp > 300 || lv.engine >= 6 ? 2 : 1;
-  const pipeZ = pipes === 2 ? [W * 0.3, -W * 0.3] : [-W * 0.28];
-  for (const z of pipeZ) {
-    const py = bottom + (kenney ? 0.25 : 0.14);
-    const px = backAt(py + 0.05, z) - 0.02;
-    parts.add(mesh(new THREE.CylinderGeometry(0.045 + lv.engine * 0.003, 0.05 + lv.engine * 0.003, 0.2, 12).rotateZ(Math.PI / 2), CHROME(), px + 0.04, py, z));
-    // a short pop on every shift, for every car
-    const pop = mesh(keepD(new THREE.ConeGeometry(0.06, 0.32, 7).rotateZ(Math.PI / 2)), popMat, px - 0.2, py, z);
+  const popY = bottom + 0.07;
+  for (const z of def.hp > 300 ? [W * 0.28, -W * 0.28] : [-W * 0.28]) {
+    const px = (surface.backAt(popY, z) ?? bb.min.x) - 0.02;
+    const pop = mesh(keepD(new THREE.ConeGeometry(0.06, 0.32, 7).rotateZ(Math.PI / 2)), popMat, px - 0.16, popY, z);
     pop.visible = false;
     pop.name = 'pop';
     parts.add(pop);
     pops.push(pop);
-    if (lv.engine >= 6) {
-      const flame = mesh(keepD(new THREE.ConeGeometry(0.075, 0.62, 8).rotateZ(Math.PI / 2)), std('#ff8a1f', { emissive: '#ff5a00', ei: 2 }), px - 0.36, py, z);
-      flame.visible = false;
-      flame.name = 'flame';
-      parts.add(flame);
-      flames.push(flame);
-    }
-  }
-
-  // transmission: a shift light along the top of the rear window
-  let shiftLamp: THREE.MeshStandardMaterial | null = null;
-  let best = { x: 0, y: 0 };
-  for (let u = 0.2; u <= 0.7; u += 0.025) {
-    const x = xAt(u);
-    const y = topAt(x);
-    if (y > best.y + 0.01 || (y > best.y - 0.02 && x < best.x)) best = { x, y };
-  }
-  if (lv.transmission >= 2 && !kenney) {
-    shiftLamp = keepD(new THREE.MeshStandardMaterial({ color: '#3a3845', emissive: '#000000' }));
-    const lamp = pillow(0.06, lv.transmission >= 5 ? 0.045 : 0.035, W * (lv.transmission >= 5 ? 0.56 : 0.32), shiftLamp, best.x - 0.02, best.y + 0.02, 0);
-    lamp.name = 'shiftlamp';
-    parts.add(lamp);
-  }
-
-  // open cars show their driver, in the player's helmet and suit
-  const seat = SEAT[spec.base];
-  if (seat) {
-    const [x, y, z] = warpPoint(seat[0], seat[1], seat[2], warp, mb);
-    const hx = (x - cx) * sx;
-    const hy = y * sy + bodyG.position.y;
-    const hz = z * sz;
-    const r = 0.15;
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), std(look.helmet[0], { rough: 0.25, metal: 0.1 }));
-    helmet.position.set(hx, hy, hz);
-    parts.add(helmet);
-    const visor = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), std('#111118', { rough: 0.08, metal: 0.3 }));
-    visor.scale.set(r * 0.55, r * 0.5, r * 0.82);
-    visor.position.set(hx + r * 0.55, hy + 0.01, hz);
-    parts.add(visor);
-    parts.add(box(r * 1.7, r * 0.28, r * 0.34, std(look.helmet[1]), hx, hy + r * 0.84, hz));
-    parts.add(pillow(0.3, 0.32, 0.38, std(look.suit, { rough: 0.9 }), hx - 0.04, hy - 0.3, hz));
   }
 
   // looks: underglow
@@ -514,10 +628,9 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
   blob.name = 'blob';
   root.add(blob);
 
-  // smoke pool
+  // smoke pool: enough puffs for a burnout cloud
   const smoke: THREE.Mesh[] = [];
   const smokeGeo = keepD(new THREE.SphereGeometry(0.4, 8, 6));
-  // enough puffs for a burnout cloud
   for (let i = 0; i < 40; i++) {
     const m = new THREE.Mesh(smokeGeo, keepD(new THREE.MeshBasicMaterial({ color: '#f4f4f4', transparent: true, opacity: 0.5, depthWrite: false })));
     m.visible = false;
@@ -526,38 +639,34 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
     smoke.push(m);
   }
 
-  // parts merge per material; the body and wheels share the model's geometry and stay as they are
-  disposables.push(...mergeStatic(parts, (o) => o.name === 'flame' || o.name === 'pop' || o.name === 'shiftlamp', { cast: true, receive: false }));
-  parts.traverse((o) => {
-    if (o instanceof THREE.Mesh && o.geometry && !o.userData.shared && !disposables.includes(o.geometry)) disposables.push(o.geometry);
-  });
-  root.traverse((o) => {
-    if (o instanceof THREE.Mesh && o.geometry && !o.userData.shared && !disposables.includes(o.geometry)) disposables.push(o.geometry);
-  });
+  // the kit merges per material; the body and wheels share the model's geometry and stay as they are
+  disposables.push(...mergeStatic(parts, (o) => o.name === 'pop', { cast: true, receive: false }));
+  bodyG.position.y = -drop;
 
   // where each part shows on the car, for the inspect marker (the showcase camera works on the -z side)
   const near = wheels.filter((w) => w.position.z < 0);
   const front = near.reduce<THREE.Object3D | undefined>((a, w) => (!a || w.position.x > a.position.x ? w : a), undefined);
   const back = near.reduce<THREE.Object3D | undefined>((a, w) => (!a || w.position.x < a.position.x ? w : a), undefined);
-  const hoodX = xAt(0.76);
+  const hoodX = xAt(0.8);
   const deckX = xAt(0.07);
+  const aeroBox = new THREE.Box3().setFromObject(parts);
   const anchors: CarRig['anchors'] = {
-    engine: new THREE.Vector3(hoodX, topAt(hoodX) + 0.14, 0),
-    transmission: new THREE.Vector3(best.x, best.y + 0.08, 0),
-    aero: new THREE.Vector3(deckX, topAt(deckX) + 0.22, 0),
-    looks: new THREE.Vector3(0, bottom + (H - bottom) * 0.45, -W / 2 - 0.03),
+    engine: new THREE.Vector3(hoodX, (surface.topAt(hoodX) ?? H * 0.6) + 0.12 - drop, 0),
+    transmission: new THREE.Vector3(0, bottom + 0.05 - drop, -W / 2 - 0.05),
+    aero: aeroBox.isEmpty() || lv.aero < 3 ? new THREE.Vector3(deckX, (surface.topAt(deckX) ?? H * 0.6) + 0.2 - drop, 0) : new THREE.Vector3(aeroBox.min.x + 0.15, aeroBox.max.y + 0.06 - drop, 0),
+    looks: new THREE.Vector3(0, bottom + (H - bottom) * 0.45 - drop, -W / 2 - 0.03),
   };
-  if (front) anchors.tyres = new THREE.Vector3(front.position.x, front.position.y, front.position.z - 0.18);
-  if (back) anchors.suspension = new THREE.Vector3(back.position.x, back.position.y * 1.95, back.position.z - 0.05);
+  if (front) anchors.tyres = new THREE.Vector3(front.position.x, front.position.y, front.position.z - 0.2);
+  if (back) anchors.suspension = new THREE.Vector3(back.position.x, back.position.y * 2 + 0.04 - drop, back.position.z - 0.05);
 
   return {
     group: root,
     wheels,
     wheelR,
     anchors,
-    flames,
+    flames: [],
     pops,
-    shiftLamp,
+    shiftLamp: null,
     smoke,
     len: L,
     dispose() {

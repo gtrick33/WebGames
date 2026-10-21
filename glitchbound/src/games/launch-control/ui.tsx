@@ -148,16 +148,32 @@ export function CarThumb({ look, className = '', env }: { look: CarLook; classNa
   return url ? <img src={url} width={360} height={200} className={`lc-thumb ${className}`} alt="" /> : <span className={`lc-thumb is-loading ${className}`} />;
 }
 
-export function DriverFace({ helmet, suit, size = 64 }: { helmet: [string, string]; suit: string; size?: number }) {
+/** The driver portrait: the player icon (helmet and suit). `badge` puts it in a round frame. */
+export function DriverFace({ helmet, suit, size = 64, badge, className = '' }: { helmet: [string, string]; suit: string; size?: number; badge?: boolean; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const [h0, h1] = helmet;
   useEffect(() => {
     const cv = ref.current;
     const ctx = cv?.getContext('2d');
     if (!cv || !ctx) return;
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    drawDriver(ctx, helmet, suit, cv.width / 2, cv.height * 0.42, cv.height * 0.95);
-  }, [helmet, suit]);
-  return <canvas ref={ref} width={size} height={size} className="lc-face" aria-hidden="true" />;
+    const px = cv.width;
+    ctx.clearRect(0, 0, px, px);
+    if (badge) {
+      const g = ctx.createRadialGradient(px * 0.5, px * 0.35, px * 0.05, px * 0.5, px * 0.5, px * 0.55);
+      g.addColorStop(0, '#3a3a52');
+      g.addColorStop(1, '#14141f');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(px / 2, px / 2, px / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      drawDriver(ctx, [h0, h1], suit, px / 2, px * 0.44, px * 0.98);
+      ctx.restore();
+    } else drawDriver(ctx, [h0, h1], suit, px / 2, px * 0.42, px * 0.95);
+  }, [h0, h1, suit, badge]);
+  const px = Math.round(size * Math.min(3, typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1));
+  return <canvas ref={ref} width={px} height={px} style={{ width: size, height: size }} className={`lc-face${badge ? ' is-badge' : ''} ${className}`} aria-hidden="true" />;
 }
 
 export const posLabel = (p: number): string => (p === 1 ? '1st' : p === 2 ? '2nd' : p === 3 ? '3rd' : `${p}th`);

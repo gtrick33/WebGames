@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { GameMenuButton } from '../../components/GameMenuButton';
 import { FAILURE_TEXT } from './parts';
 import { LANES, LIGHTS_OFF, type CarLook, type CarState, type LightsState, type Stage3D } from './scene3d';
+import { DriverFace } from './ui';
 import { MAX_STEP, replay } from './room';
 import { DISTANCE, DT, LIGHTS, lightsOf, Race, shiftRpm, type CarSpec, type Driver, type RaceResult, type ShiftWindow } from './sim';
 import type { Sfx } from './sound';
@@ -266,6 +267,8 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
 
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
+      // about 60 frames a second: a 120 Hz screen would draw every frame twice for nothing
+      if (last && now - last < 14) return;
       if (!last) last = now;
       const realDt = now - last;
       let dt = realDt / 1000;
@@ -471,6 +474,8 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
   const rivalName = plan.names[1] ?? 'Rival';
   const meCar = plan.specs[0]!.def.name;
   const rivalCar = plan.specs[1]?.def.name ?? '';
+  const meLook = plan.looks[0]!;
+  const rivalLook = plan.looks[1];
   return (
     <div ref={rootRef} className="lc-race" data-phase={phase} data-state="launch" aria-label="Drag race. Five red lights come on; tap or press Space the moment they go out to launch, then each time the needle is in the green zone to shift.">
       <div className="lc-hud" aria-hidden="true">
@@ -479,6 +484,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
             <span ref={posEl} className="lc-plate-pos mono">
               P1
             </span>
+            <DriverFace helmet={meLook.helmet} suit={meLook.suit} size={38} badge />
             <span className="lc-plate-text">
               <b>{meName}</b>
               <small>{meCar}</small>
@@ -503,6 +509,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
           </div>
           {plan.specs.length > 1 && (
             <div className="lc-plate is-rival">
+              {rivalLook && <DriverFace helmet={rivalLook.helmet} suit={rivalLook.suit} size={38} badge />}
               <span className="lc-plate-text">
                 <b>{rivalName}</b>
                 <small>{rivalCar}</small>
@@ -516,12 +523,14 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
         {phase === 'intro' && (
           <div className="lc-vs" key="vs">
             <div className="lc-vs-side is-you">
+              <DriverFace helmet={meLook.helmet} suit={meLook.suit} size={72} badge className="lc-vs-face" />
               <small className="mono">YOU</small>
               <b>{meName}</b>
               <span>{meCar}</span>
             </div>
             <div className="lc-vs-mark">VS</div>
             <div className="lc-vs-side is-rival">
+              {rivalLook && <DriverFace helmet={rivalLook.helmet} suit={rivalLook.suit} size={72} badge className="lc-vs-face" />}
               <small className="mono">{plan.tagline ?? 'RIVAL'}</small>
               <b>{rivalName}</b>
               <span>{rivalCar}</span>

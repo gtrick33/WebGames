@@ -12,7 +12,7 @@ import { RaceScreen, type RacePlan } from './RaceScreen';
 import { levelsOf, liveRace, type Action, type LiveCar, type PlayerView, type RoomView } from './room';
 import type { CarLook, Stage3D } from './scene3d';
 import type { Sfx } from './sound';
-import { CarThumb, Panel } from './ui';
+import { CarThumb, DriverFace, Panel } from './ui';
 import { fmtEt } from './util';
 
 export const lookOfLive = (c: LiveCar): CarLook => ({
@@ -210,7 +210,10 @@ function Seat({ p, car, label }: { p: PlayerView | undefined; car: LiveCar | nul
   return (
     <div className={`lc-live-seat${p?.you ? ' is-you' : ' is-rival'}${p?.ready ? ' is-ready' : ''}`}>
       {car ? (
-        <CarThumb look={lookOfLive(car)} />
+        <span className="lc-pic">
+          <CarThumb look={lookOfLive(car)} />
+          <DriverFace helmet={car.helmet} suit={car.suit} size={42} badge />
+        </span>
       ) : (
         <span className="lc-live-empty" aria-hidden="true">
           <i />

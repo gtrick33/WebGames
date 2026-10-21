@@ -28,11 +28,11 @@ export interface PartInfo {
 }
 
 export const PART_INFO: Record<PartId, PartInfo> = {
-  engine: { id: 'engine', name: 'Engine', emoji: '⚙️', blurb: 'Bigger turbo, hotter cams, higher redline. Heavier and a little less forgiving.', look: 'Hood scoop, twin pipes with flames' },
-  transmission: { id: 'transmission', name: 'Transmission', emoji: '🕹️', blurb: 'Faster shifts and a stronger driveline.', look: 'Shift light on the rear window' },
-  suspension: { id: 'suspension', name: 'Suspension', emoji: '🛞', blurb: 'Lighter coilovers and better weight transfer: more grip off the line, less wheel hop.', look: 'Lower, wider stance' },
-  tyres: { id: 'tyres', name: 'Tyres', emoji: '🏁', blurb: 'Stickier compound and wider wheels. They wear out and need replacing.', look: 'Wider wheels, slicks' },
-  aero: { id: 'aero', name: 'Aerodynamics', emoji: '🪽', blurb: 'Less drag for top-end speed, a touch of downforce for grip at speed.', look: 'Splitter, spoiler, diffuser' },
+  engine: { id: 'engine', name: 'Engine', emoji: '⚙️', blurb: 'Bigger turbo, hotter cams, higher redline. Heavier and a little less forgiving.', look: 'Under the hood: nothing changes outside' },
+  transmission: { id: 'transmission', name: 'Transmission', emoji: '🕹️', blurb: 'Faster shifts and a stronger driveline.', look: 'Inside the car: nothing changes outside' },
+  suspension: { id: 'suspension', name: 'Suspension', emoji: '🛞', blurb: 'Lighter coilovers and better weight transfer: more grip off the line, less wheel hop.', look: 'Lower every level, tyres tucked into the arches' },
+  tyres: { id: 'tyres', name: 'Tyres', emoji: '🏁', blurb: 'Stickier compound and a stronger carcass. They wear out and need replacing.', look: 'Coloured sidewall bands and lettering' },
+  aero: { id: 'aero', name: 'Aerodynamics', emoji: '🪽', blurb: 'Less drag for top-end speed, a touch of downforce for grip at speed.', look: 'Spoilers and wings, splitter, diffuser' },
   looks: { id: 'looks', name: 'Looks', emoji: '✨', blurb: 'Fans pay: a bonus on every purse and a better sponsor deal.', look: 'Livery, underglow, chrome' },
 };
 
@@ -41,11 +41,11 @@ export type Condition = Record<PartId, number>;
 
 /** What a part's levels add that you can see on the car (modelcar.ts draws them), by the level they arrive at. */
 export const PART_VISUALS: Record<PartId, [number, string][]> = {
-  engine: [[1, 'Bigger exhaust tips every level'], [3, 'Hood scoop'], [6, 'Twin exhausts that spit flames'], [8, 'Supercharger through the hood']],
-  transmission: [[2, 'Shift light on the rear window'], [5, 'Wide LED shift bar']],
-  suspension: [[1, 'Sits about 2 cm lower every level']],
-  tyres: [[1, 'Bigger, wider wheels every level'], [5, 'Racing slicks']],
-  aero: [[1, 'Ducktail spoiler'], [2, 'Front splitter'], [4, 'Rear wing'], [5, 'Diffuser fins'], [6, 'Canards'], [7, 'Big carbon wing with end plates']],
+  engine: [],
+  transmission: [],
+  suspension: [[1, 'Sits lower every level, down to the tyres tucked into the arches']],
+  tyres: [[1, 'White sidewall band'], [2, 'STREET lettering'], [3, 'Yellow SPORT band'], [4, 'Wide yellow SPORT+ band'], [5, 'Red TRACK band'], [6, 'TRACK R with a pinline'], [7, 'Purple SLICK band'], [8, 'Gold DRAG KING band']],
+  aero: [[1, 'Roof spoiler'], [2, 'Ducktail and front splitter'], [3, 'Pedestal wing'], [4, 'Diffuser and side skirts'], [5, 'Carbon wing with end plates'], [6, 'Canards and a carbon roof spoiler'], [7, 'Swan-neck double-element GT wing'], [8, 'Time-attack wing with a gurney flap']],
   looks: [[4, 'Lime underglow'], [7, 'Pink underglow and a pinstripe']],
 };
 
