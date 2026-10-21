@@ -15,6 +15,7 @@ import { NextDaily } from '../../components/NextDaily';
 import { MODE_NAMES, reportStats, resultLine, shareText, type RunSummary } from './scoring';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const MODE_BLURB: Record<Mode, string> = {
   classic: 'One more step every round. One slip ends it.',
@@ -366,6 +367,7 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
           </span>
         )}
         <span className="mg-top-title">{screen === 'play' && run ? MODE_NAMES[run.mode] : screen === 'records' ? 'Local records' : 'Memory Grid'}</span>
+        <GameMenuButton className="mg-icon" />
         <button className="mg-icon" onClick={toggleMute} aria-label={muted ? 'Unmute sound' : 'Mute sound'} aria-pressed={muted}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />

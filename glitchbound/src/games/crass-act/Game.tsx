@@ -7,6 +7,7 @@ import { fill, MAX_PLAYERS, MIN_PLAYERS, TARGETS, TIMERS, type Deck, type RoomVi
 import { createRoom, roomInfo, useRoom } from './net';
 import { UI, type Ui } from './ui';
 import './Game.css';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const ADULT = 'glitchbound.crass-act.adult';
 const NAME = 'glitchbound.crass-act.name';
@@ -48,6 +49,9 @@ export default function Game({ host, restartKey, playerName, lang: site }: GameM
   return (
     <Lang.Provider value={{ u: UI[lang], lang }}>
       <CrassAct key={restartKey} host={host} playerName={playerName} />
+      <div className="uh-menu-corner">
+        <GameMenuButton />
+      </div>
     </Lang.Provider>
   );
 }

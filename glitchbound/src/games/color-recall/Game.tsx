@@ -29,6 +29,7 @@ import { createSfx, type Sfx } from './sound';
 import { crStats, isComplete, loadCr, markDailySeen, recordColor, recordPracticeGame, saveCr, seenDailyRound, type CrSave } from './store';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
 const DIFFICULTIES: { id: Difficulty; label: string; note: string }[] = [
@@ -226,6 +227,7 @@ function Menu(props: {
       <div className="cr-menu-top">
         <MuteButton muted={save.muted} onClick={props.onMute} />
         {stats.streak > 0 && <span className="cr-chip cr-chip-fire">🔥 {stats.streak}-day streak</span>}
+        <GameMenuButton className="cr-icon-btn" />
       </div>
       <Wordmark />
       <p className="cr-tagline">See a color. Hold it in your head. Mix it back.</p>
@@ -358,6 +360,7 @@ function Stats({ save, today, onBack }: { save: CrSave; today: string; onBack: (
           ←
         </button>
         <h2>Your stats</h2>
+        <GameMenuButton className="cr-icon-btn" />
       </div>
       <div className="cr-stat-grid">
         {tiles.map(([k, v]) => (
@@ -462,6 +465,7 @@ function Play(props: {
           })}
         </ol>
         <span className="cr-total cr-mono">{fmt(totalScore(game.results))}</span>
+        <GameMenuButton className="cr-icon-btn" />
       </div>
 
       <div className={`cr-hero cr-hero-${game.phase}`}>

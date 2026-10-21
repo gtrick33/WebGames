@@ -39,6 +39,7 @@ import { createSfx, type Sfx } from './sound';
 import { isComplete, loadSg, recordPicture, recordRush, saveSg, sgStats, type SgSave } from './store';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 type Mode = 'daily' | 'rush' | 'relax';
 type Screen = 'menu' | 'play';
@@ -323,6 +324,7 @@ function Menu({ today, save, onStart, onLevel, onMute }: { today: string; save: 
           {save.muted ? '🔇' : '🔊'}
         </button>
         {stats.streak > 0 && <span className="sg-chip">🔥 {stats.streak}-day streak</span>}
+        <GameMenuButton className="sg-icon-btn" />
       </div>
       <Wordmark />
       <p className="sg-tagline">Two pictures. Five glitches. Find them all, fast.</p>
@@ -499,6 +501,7 @@ function Play(props: {
         <span className={`sg-clock sg-mono${props.rushLeft !== null && props.rushLeft < 10_000 ? ' is-low' : ''}`} aria-label="Time">
           {props.rushLeft !== null ? `${Math.ceil(props.rushLeft / 1000)}s` : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`}
         </span>
+        <GameMenuButton className="sg-icon-btn" />
       </div>
       <div className="sg-found" aria-live="polite" aria-label={`${pic.found.length} of ${DIFFS} glitches found`}>
         {Array.from({ length: DIFFS }, (_, i) => (

@@ -10,6 +10,7 @@ import { EN, loadPack, type Pack } from './pack';
 import { melodyLength, morseText, playMorse, playTune } from './sound';
 import { UI, type Ui } from './ui';
 import './Game.css';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const STORE = 'glitchbound.wait-what';
 const STRIKES = 3;
@@ -138,6 +139,7 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const seen = save.seen.filter((id) => !/^(time|near):/.test(id)).length;
   return (
     <div className="ww ww-menu">
+      <div className="ww-menu-top"><GameMenuButton /></div>
       <div className="ww-float" aria-hidden="true">
         {FLOATERS.map(([e, x, y], i) => (
           <span key={i} style={{ left: `${x}%`, top: `${y}%`, ['--i' as string]: i }}>
@@ -411,7 +413,10 @@ function Play(props: {
             ))}
           </span>
         )}
-        <span className="ww-score">{score.toLocaleString(p.locale)}</span>
+        <span className="ww-top-end">
+          <span className="ww-score">{score.toLocaleString(p.locale)}</span>
+          <GameMenuButton />
+        </span>
       </header>
       <div className="ww-timer" aria-hidden="true">
         <i style={{ transform: `scaleX(${phase === 'ask' ? left / limit : 0})` }} className={left < 5 ? 'is-low' : ''} />

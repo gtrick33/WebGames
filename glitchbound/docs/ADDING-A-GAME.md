@@ -128,11 +128,12 @@ impossible for the real time between `start` and `end`. Without limits, any scor
 
 ### The full-screen menu button
 
-In full screen the arcade draws a round menu button (continue, exit full screen, exit game, report a bug) over the
-game, in the top-left corner by default. Play the game in full screen on its menus and mid-round: if that corner is
-taken, set `menu: { corner: 'top-left' | 'top-right' | 'top-center', x, y }` in the registry entry (`x`/`y` move
-it inward/down, 0-240 px) so it sits in space the game leaves free. A module game with its own top bar can set
-`menu: 'own'` instead: it then gets an `openMenu` prop in full screen and shows its own button for it.
+In full screen the arcade's game menu (continue, exit full screen, exit game, report a bug) is a button inside the
+game's own UI, never a floating overlay. Render `<GameMenuButton className="<your icon-button class>" />` (from
+`src/components/GameMenuButton`) in your top row on the menu screen and in the play HUD, next to your mute or pause
+button. It reads the menu from context and renders nothing outside full screen, so the normal layout is unchanged.
+Embedded games get a `{ type: 'menu', available }` host command and answer with `{ type: 'menu' }` when their own
+button is pressed.
 
 ## 4. Add artwork
 
@@ -166,6 +167,6 @@ Commit and push to `pre-release`; CI deploys. The new page is live at `/games/<s
 - [ ] (module) loader added to `modules.ts`
 - [ ] Three artwork files, original
 - [ ] Controls listed for keyboard and touch
-- [ ] Full-screen menu button sits in free space (registry `menu`) on the menus and mid-round
+- [ ] `<GameMenuButton>` in the top row of the menu screen and the play HUD (check in full screen)
 - [ ] `npm run check` passes
 - [ ] Played a round on the dev server and saw "Last round" + "Your bests" update

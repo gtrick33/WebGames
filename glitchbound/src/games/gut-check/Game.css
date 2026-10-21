@@ -348,3 +348,12 @@
 .gc-menu > :last-child {
   margin-bottom: auto;
 }
+
+/* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
+.gc-hud {
+  grid-template-columns: auto 1fr;
+}
+.gc-menu-top {
+  display: flex;
+  gap: 8px;
+}

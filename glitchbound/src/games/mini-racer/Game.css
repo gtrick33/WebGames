@@ -816,3 +816,11 @@ a.mr-go {
   font-weight: 800;
   text-align: center;
 }
+
+/* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
+.mr-pause-menu {
+  left: 60px;
+}
+.mr-menu-chip {
+  min-width: 36px;
+}

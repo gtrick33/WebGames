@@ -11,6 +11,7 @@ import { conflicts, DAILY_SIZES, fmtTime, makePuzzle, nextMark, resultLine, solv
 import { createSfx, type Sfx } from './sound';
 import { COACH } from './coach';
 import './Game.css';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const KEY = 'glitchbound.star-grid';
 const EPOCH = '2026-10-19';
@@ -372,23 +373,26 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const border = (i: number, j: number): boolean => j < 0 || j >= p.size * p.size || p.regions[i] !== p.regions[j];
 
   return (
-    <div className="sg">
-      <div className="sg-hud" aria-live="polite">
-        <button className="sg-icon" onClick={() => (round.phase === 'done' ? show(null) : paused ? resume() : pauseNow())} aria-label={round.phase === 'done' ? 'Menu' : paused ? 'Resume' : 'Pause'}>
+    <div className="sgd">
+      <div className="sgd-hud" aria-live="polite">
+        <span className="game-menu-pair">
+        <button className="sgd-icon" onClick={() => (round.phase === 'done' ? show(null) : paused ? resume() : pauseNow())} aria-label={round.phase === 'done' ? 'Menu' : paused ? 'Resume' : 'Pause'}>
           {round.phase === 'done' ? '☰' : paused ? '▶' : 'II'}
         </button>
-        <div className="sg-mid">
+        <GameMenuButton className="sgd-icon" />
+        </span>
+        <div className="sgd-mid">
           <b>{fmtTime(shown)}</b>
           <span>
             {mode === 'challenge' ? `⚔️ Challenge · round ${challenge?.round ?? 1}` : mode === 'daily' ? `Daily #${dailyNumber(today)} · ${round.i + 1} of ${round.puzzles.length}` : `Endless · ${p.size}×${p.size}`}
           </span>
         </div>
-        <div className="sg-count" aria-label={`${round.marks.filter((m) => m === 2).length} of ${p.size} stars`}>
+        <div className="sgd-count" aria-label={`${round.marks.filter((m) => m === 2).length} of ${p.size} stars`}>
           ⭐ {round.marks.filter((m) => m === 2).length}/{p.size}
         </div>
       </div>
       <div
-        className={`sg-board${round.phase !== 'play' ? ' is-solved' : ''}`}
+        className={`sgd-board${round.phase !== 'play' ? ' is-solved' : ''}`}
         style={{ ['--n' as string]: p.size }}
         role="grid"
         aria-label={`${p.size} by ${p.size} star grid`}
@@ -402,7 +406,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
           const row = Math.floor(i / p.size);
           const col = i % p.size;
           const cls = [
-            'sg-cell',
+            'sgd-cell',
             `is-r${p.regions[i]}`,
             border(i, i - p.size) || row === 0 ? 'b-t' : '',
             border(i, i + p.size) || row === p.size - 1 ? 'b-b' : '',
@@ -415,59 +419,59 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
             .join(' ');
           return (
             <div key={i} data-cell={i} className={cls} role="gridcell" aria-label={`Row ${row + 1}, column ${col + 1}: ${m === 2 ? 'star' : m === 1 ? 'crossed out' : 'empty'}`}>
-              {m === 2 ? <i className="sg-star">★</i> : m === 1 ? <i className="sg-x">✕</i> : null}
+              {m === 2 ? <i className="sgd-star">★</i> : m === 1 ? <i className="sgd-x">✕</i> : null}
             </div>
           );
         })}
       </div>
-      <div className="sg-tools" role="radiogroup" aria-label="What a tap does">
-        <button className={`sg-tool${tool === 'star' ? ' is-on' : ''}`} role="radio" aria-checked={tool === 'star'} onClick={() => setTool('star')}>
+      <div className="sgd-tools" role="radiogroup" aria-label="What a tap does">
+        <button className={`sgd-tool${tool === 'star' ? ' is-on' : ''}`} role="radio" aria-checked={tool === 'star'} onClick={() => setTool('star')}>
           ⭐ Star
         </button>
-        <button className={`sg-tool${tool === 'cross' ? ' is-on' : ''}`} role="radio" aria-checked={tool === 'cross'} onClick={() => setTool('cross')}>
+        <button className={`sgd-tool${tool === 'cross' ? ' is-on' : ''}`} role="radio" aria-checked={tool === 'cross'} onClick={() => setTool('cross')}>
           ✕ Cross out
         </button>
       </div>
-      <p className="sg-help">
+      <p className="sgd-help">
         One ⭐ in every row, column and color, and stars can’t touch, not even at the corners. {tool === 'star' ? 'Tap a square for a star, tap again to take it back.' : 'Tap or drag to cross out squares that can’t hold a star.'}
-        <span className="sg-mouse"> Right-click crosses out too.</span>
+        <span className="sgd-mouse"> Right-click crosses out too.</span>
       </p>
       {paused && round.phase === 'play' && (
-        <button className="sg-overlay" onClick={resume}>
+        <button className="sgd-overlay" onClick={resume}>
           Paused · tap to continue
         </button>
       )}
       {round.phase === 'solved' && (
-        <button className="sg-banner" onClick={nextPuzzle} autoFocus>
+        <button className="sgd-banner" onClick={nextPuzzle} autoFocus>
           <b>Solved in {fmtTime(round.times[round.times.length - 1]!)}!</b>
           <span>Next: {round.puzzles[round.i + 1]!.size}×{round.puzzles[round.i + 1]!.size} →</span>
         </button>
       )}
       {round.phase === 'done' && (
-        <div className="sg-over">
+        <div className="sgd-over">
           <h2>{round.times.every((t) => t < 60) ? 'Star player!' : 'All stars in place'}</h2>
-          <p className="sg-big">{round.points}</p>
-          <p className="sg-muted">
+          <p className="sgd-big">{round.points}</p>
+          <p className="sgd-muted">
             {round.puzzles.length > 1 ? `${round.puzzles.length} grids in ${fmtTime(round.times.reduce((a, b) => a + b, 0))}` : `Solved in ${fmtTime(round.times[0]!)}`} {newBest ? '· New best!' : `· best ${save.best}`}
           </p>
           <ResultLine line={resultLine(round.times)} label={`Solved in ${round.times.map(fmtTime).join(', ')}`} />
           {mode === 'daily' && daily && (
-            <p className="sg-muted">
+            <p className="sgd-muted">
               That was today’s one try. <NextDaily />
             </p>
           )}
-          <div className="sg-row">
+          <div className="sgd-row">
             {mode === 'challenge' && challenge ? (
-              <a className="sg-btn sg-btn-go" href={`/c/${challenge.id}`} onClick={openChallengeScores} autoFocus>
+              <a className="sgd-btn sgd-btn-go" href={`/c/${challenge.id}`} onClick={openChallengeScores} autoFocus>
                 See the scoreboard
               </a>
             ) : (
-              <button className="sg-btn sg-btn-go" onClick={() => begin(mode === 'daily' ? 'endless' : mode)} autoFocus>
+              <button className="sgd-btn sgd-btn-go" onClick={() => begin(mode === 'daily' ? 'endless' : mode)} autoFocus>
                 {mode === 'daily' ? 'Play endless' : 'Another grid'}
               </button>
             )}
             {mode === 'daily' && daily && <ShareButton text={`Star Grid #${dailyNumber(today)} ⭐\n${resultLine(daily.times)}\nScore: ${daily.best}\n${window.location.origin}/games/star-grid`} />}
-            <button className="sg-btn" onClick={() => show(null)}>
+            <button className="sgd-btn" onClick={() => show(null)}>
               Menu
             </button>
           </div>
@@ -480,7 +484,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
 function ShareButton({ text }: { text: string }) {
   const [msg, setMsg] = useState('');
   return (
-    <button className="sg-btn" onClick={() => void shareOrCopy({ title: 'Star Grid', text }).then((o) => setMsg(o === 'copied' ? 'Copied!' : ''))}>
+    <button className="sgd-btn" onClick={() => void shareOrCopy({ title: 'Star Grid', text }).then((o) => setMsg(o === 'copied' ? 'Copied!' : ''))}>
       {msg || 'Share'}
     </button>
   );
@@ -492,16 +496,17 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
   const daily = save.daily[today];
   const going = daily?.open && save.progress?.day === today ? save.progress : null;
   return (
-    <div className="sg sg-menu">
-      <div className="sg-menu-top">
-        <button className="sg-icon" onClick={coach.show} aria-label="How to play">
+    <div className="sgd sgd-menu">
+      <div className="sgd-menu-top">
+        <button className="sgd-icon" onClick={coach.show} aria-label="How to play">
           ?
         </button>
-        <button className="sg-icon" onClick={onMute} aria-label={save.muted ? 'Turn sound on' : 'Turn sound off'}>
+        <button className="sgd-icon" onClick={onMute} aria-label={save.muted ? 'Turn sound on' : 'Turn sound off'}>
           {save.muted ? '🔇' : '🔊'}
         </button>
+        <GameMenuButton className="sgd-icon" />
       </div>
-      <div className="sg-logo" aria-hidden="true">
+      <div className="sgd-logo" aria-hidden="true">
         {[2, 0, 3, 1].map((c, row) => (
           <span key={row}>
             {[0, 1, 2, 3].map((col) => (
@@ -512,44 +517,44 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
           </span>
         ))}
       </div>
-      <h1 className="sg-title">
+      <h1 className="sgd-title">
         Star <span>Grid</span>
       </h1>
-      <p className="sg-tag">One star in every row, column and color, and no two stars touching. Pure logic, no guessing needed.</p>
-      <section className="sg-card">
-        <div className="sg-card-head">
+      <p className="sgd-tag">One star in every row, column and color, and no two stars touching. Pure logic, no guessing needed.</p>
+      <section className="sgd-card">
+        <div className="sgd-card-head">
           <b>Daily #{dailyNumber(today)}</b>
           <span>{going ? `In progress · grid ${going.i + 1} of ${DAILY_SIZES.length}` : daily?.open !== undefined ? 'Left unfinished · one try a day' : daily ? `Today: ${daily.best}` : 'Three grids, 6×6 to 8×8, the same for everyone · one try a day'}</span>
         </div>
         {going ? (
-          <button className="sg-btn sg-btn-go sg-btn-big" onClick={() => onPlay('daily')}>
+          <button className="sgd-btn sgd-btn-go sgd-btn-big" onClick={() => onPlay('daily')}>
             Continue today’s grids
           </button>
         ) : daily ? (
-          <div className="sg-done">
+          <div className="sgd-done">
             {daily.best > 0 && <ShareButton text={`Star Grid #${dailyNumber(today)} ⭐\n${resultLine(daily.times)}\nScore: ${daily.best}\n${window.location.origin}/games/star-grid`} />}
-            <NextDaily className="sg-muted" />
+            <NextDaily className="sgd-muted" />
           </div>
         ) : (
-          <button className="sg-btn sg-btn-go sg-btn-big" onClick={() => onPlay('daily')}>
+          <button className="sgd-btn sgd-btn-go sgd-btn-big" onClick={() => onPlay('daily')}>
             Play today’s grids
           </button>
         )}
       </section>
-      <section className="sg-card">
-        <div className="sg-card-head">
+      <section className="sgd-card">
+        <div className="sgd-card-head">
           <b>Endless</b>
           <span>A brand-new grid every time. Pick a size:</span>
         </div>
-        <div className="sg-sizes">
+        <div className="sgd-sizes">
           {[6, 7, 8, 9].map((s) => (
-            <button key={s} className={`sg-btn${save.size === s ? ' is-on' : ''}`} onClick={() => onPlay('endless', s)}>
+            <button key={s} className={`sgd-btn${save.size === s ? ' is-on' : ''}`} onClick={() => onPlay('endless', s)}>
               {s}×{s}
             </button>
           ))}
         </div>
       </section>
-      <p className="sg-muted">
+      <p className="sgd-muted">
         Best {save.best} · {save.solved} {save.solved === 1 ? 'grid' : 'grids'} solved
       </p>
       {coach.open && <Coach steps={COACH} onClose={coach.close} />}

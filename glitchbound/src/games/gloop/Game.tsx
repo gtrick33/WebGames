@@ -10,6 +10,7 @@ import { drawBlob, drawFrame, newView, worldX } from './render';
 import { drop, newSim, nextTier, RADII, resultLine, setAim, simFrom, step, STEP, TIERS, type Sim } from './sim';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const KEY = 'glitchbound.gloop';
 const EPOCH = '2026-10-19';
@@ -288,9 +289,12 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
   return (
     <div className="gl">
       <div className="gl-hud" aria-live="polite">
-        <button className="gl-icon" onClick={() => (hud.over ? setScreen('menu') : setPaused((p) => !p))} aria-label={hud.over ? 'Menu' : 'Pause'}>
-          {hud.over ? '☰' : 'II'}
-        </button>
+        <span className="game-menu-pair">
+          <button className="gl-icon" onClick={() => (hud.over ? setScreen('menu') : setPaused((p) => !p))} aria-label={hud.over ? 'Menu' : 'Pause'}>
+            {hud.over ? '☰' : 'II'}
+          </button>
+          <GameMenuButton className="gl-icon" />
+        </span>
         <div className="gl-score">
           <b>{hud.score}</b>
           <span>{mode === 'challenge' ? `⚔️ Challenge · round ${challenge?.round ?? 1}` : mode === 'daily' ? `Daily jar #${dailyNumber(today)}` : `Best ${save.best}`}</span>
@@ -395,6 +399,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         <button className="gl-icon" onClick={onMute} aria-label={save.muted ? 'Turn sound on' : 'Turn sound off'}>
           {save.muted ? '🔇' : '🔊'}
         </button>
+        <GameMenuButton className="gl-icon" />
       </div>
       <div className="gl-family" aria-hidden="true">
         {[1, 3, 5, 7].map((t) => (

@@ -11,6 +11,7 @@ import { accuracy, LIVES, makeShot, makeShots, mark, MAX_POINTS, MISS_POINTS, po
 import { sizeText, THINGS } from './objects';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const KEY = 'glitchbound.to-scale';
 const EPOCH = '2026-10-19';
@@ -236,6 +237,9 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
     const going = todays?.open && save.progress?.day === today ? save.progress.played : null;
     return (
       <div className="ts ts-menu">
+        <div className="ts-menu-top">
+          <GameMenuButton />
+        </div>
         <div className="ts-logo" aria-label="To Scale">
           <span className="ts-logo-small">TO</span>
           <span className="ts-logo-big">SCALE</span>
@@ -336,7 +340,10 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
         <span className="ts-dots">
           {mode === 'endless' ? `Shot ${idx + 1}` : shots.map((_, i) => <i key={i} className={i < played.length ? `is-${grade(played[i]!.points)}` : i === idx ? 'is-now' : ''} />)}
         </span>
-        <b>{fmt(total)}</b>
+        <span className="ts-hud-end">
+          <b>{fmt(total)}</b>
+          <GameMenuButton />
+        </span>
       </header>
       <p className="ts-question">
         How big is <b>{target.name}</b> next to <b>{ref.name}</b>?

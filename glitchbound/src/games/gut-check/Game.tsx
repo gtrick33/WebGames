@@ -9,6 +9,7 @@ import { NextDaily } from '../../components/NextDaily';
 import { answerIsMore, categoryOf, chain, emojiOf, nameOf, resultLine, valueOf, type Card, type Pair } from './logic';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const KEY = 'glitchbound.gut-check';
 const EPOCH = '2026-10-19';
@@ -189,9 +190,12 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   return (
     <div className="gc">
       <div className="gc-hud" aria-live="polite">
-        <button className="gc-icon" onClick={() => setRun(null)} aria-label="Menu">
-          ☰
-        </button>
+        <span className="game-menu-pair">
+          <button className="gc-icon" onClick={() => setRun(null)} aria-label="Menu">
+            ☰
+          </button>
+          <GameMenuButton className="gc-icon" />
+        </span>
         <div className="gc-score">
           <b>{streak}</b>
           <span>{mode === 'challenge' ? `⚔️ Challenge · round ${challenge?.round ?? 1}` : mode === 'daily' ? `Daily #${dailyNumber(today)} · streak` : `Best ${save.best} · streak`}</span>
@@ -304,6 +308,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         <button className="gc-icon" onClick={onMute} aria-label={save.muted ? 'Turn sound on' : 'Turn sound off'}>
           {save.muted ? '🔇' : '🔊'}
         </button>
+        <GameMenuButton className="gc-icon" />
       </div>
       <div className="gc-logo" aria-hidden="true">
         <span>🐘</span>

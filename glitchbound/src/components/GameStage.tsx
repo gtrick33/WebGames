@@ -9,6 +9,7 @@ import { fresh, isStaleBuildError, reloadForNewBuild } from '../platform/freshBu
 import type { ChallengeSpec } from '../platform/challenge';
 import { markPlaying } from '../platform/hooks';
 import { holdGame, savesAreReady, savesReady } from '../platform/syncGate';
+import { GameMenuContext } from './GameMenuButton';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Icon } from './Icon';
 import './GameStage.css';
@@ -26,7 +27,7 @@ export function allowedOrigins(origins: string[]): string[] {
 }
 
 /** Sends a command to an embedded game (see neon-rush/src/analytics/embed.ts listenToHost). */
-export function postToGame(frame: HTMLIFrameElement | null, game: GameEntry, message: { type: 'identity'; name: string } | { type: 'pause' } | { type: 'challenge'; seed: number | null }): void {
+export function postToGame(frame: HTMLIFrameElement | null, game: GameEntry, message: { type: 'identity'; name: string } | { type: 'pause' } | { type: 'challenge'; seed: number | null } | { type: 'menu'; available: boolean }): void {
   if (!frame?.contentWindow || game.runtime.kind !== 'embed') return;
   const target = game.runtime.url.startsWith('/') ? window.location.origin : new URL(game.runtime.url).origin;
   try {
@@ -82,6 +83,11 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
     seedRef.current = challengeSeed;
   }, [challengeSeed]);
   const iframeRef = frameRef ?? ownFrame;
+  // The arcade's game menu (full screen only): embedded games show their own button for it.
+  const openMenuRef = useRef(openMenu);
+  useEffect(() => {
+    openMenuRef.current = openMenu;
+  });
   const onPhaseRef = useRef(onPhase);
   useEffect(() => {
     onPhaseRef.current = onPhase;
@@ -101,6 +107,12 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
       if (ev?.type === 'ready') {
         if (nameRef.current) postToGame(iframeRef.current, game, { type: 'identity', name: nameRef.current });
         if (seedRef.current !== null) postToGame(iframeRef.current, game, { type: 'challenge', seed: seedRef.current });
+        postToGame(iframeRef.current, game, { type: 'menu', available: !!openMenuRef.current });
+      }
+      // the game's own menu button: the page never sees it as a round event
+      if (ev?.type === 'menu') {
+        openMenuRef.current?.();
+        return;
       }
       // The page hears 'ready' too (it hands over coin gifts then).
       if (ev) onEvent(ev);
@@ -108,6 +120,12 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, [game, onEvent, iframeRef]);
+
+  // Embedded games show their menu button only while the arcade's menu is available (full screen).
+  const menuAvailable = !!openMenu;
+  useEffect(() => {
+    if (phase === 'ready') postToGame(iframeRef.current, game, { type: 'menu', available: menuAvailable });
+  }, [phase, menuAvailable, game, iframeRef]);
 
   // Keep the game's racer name in sync with the arcade (sent again whenever it changes).
   useEffect(() => {
@@ -231,7 +249,9 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
           <Suspense fallback={<StageLoading title={game.title} />}>
             {savesIn ? (
               <div className="stage-module">
-                <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} lang={lang} openMenu={openMenu} />
+                <GameMenuContext.Provider value={openMenu}>
+                  <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} lang={lang} openMenu={openMenu} />
+                </GameMenuContext.Provider>
               </div>
             ) : (
               <StageLoading title={game.title} />

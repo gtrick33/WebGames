@@ -498,6 +498,10 @@ export class App {
     ui.on('garage', () => this.openPage('garage'));
     ui.on('missions', () => this.openPage('missions'));
     ui.on('settings', () => this.openPage('settings'));
+    ui.on('hostMenu', () => {
+      if (this.state === 'playing') this.pause();
+      notifyHost({ type: 'menu' });
+    });
     ui.on('leaderboard', () => this.openPage('leaderboard'));
     ui.on('boardTab', (el) => {
       this.boardPeriod = el.dataset.period === 'all' ? 'all' : 'daily';
@@ -725,6 +729,11 @@ export class App {
     }
     if (c.type === 'challenge') {
       this.challengeSeed = c.seed;
+      return;
+    }
+    if (c.type === 'menu') {
+      // In the arcade's full screen, its game menu (exit full screen, exit game) gets a button in our top bars.
+      this.ui.show('hostMenu', c.available);
       return;
     }
     if (c.type === 'pause') {

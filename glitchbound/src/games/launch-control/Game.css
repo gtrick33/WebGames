@@ -195,7 +195,8 @@
 }
 @container (min-aspect-ratio: 1/1) {
   .lc-main {
-    top: 58px;
+    /* clear of the top bar's tilted logo */
+    top: 72px;
     left: 8px;
     right: auto;
     width: min(60%, 640px);
@@ -2059,35 +2060,91 @@
   }
 }
 
-/* the arcade's game menu button, drawn by the game itself in full screen (registry menu: 'own') */
-.lc-menu-icon-btn {
-  display: grid;
-  place-items: center;
-}
-.lc-menu-icon-btn span,
-.lc-menu-icon-btn span::before,
-.lc-menu-icon-btn span::after {
-  display: block;
-  width: 16px;
-  height: 2.5px;
-  border-radius: 2px;
-  background: currentColor;
-}
-.lc-menu-icon-btn span {
-  position: relative;
-}
-.lc-menu-icon-btn span::before,
-.lc-menu-icon-btn span::after {
-  content: '';
-  position: absolute;
-  left: 0;
-}
-.lc-menu-icon-btn span::before {
-  top: -5.5px;
-}
-.lc-menu-icon-btn span::after {
-  top: 5.5px;
-}
 .lc-modal-head .lc-icon {
   flex: none;
+}
+
+/* short landscape screens (a phone on its side): the hub's buttons two to a row, no car card (the car is on the turntable) */
+@container (min-aspect-ratio: 1/1) and (max-height: 520px) {
+  .lc[data-screen='hub'] .lc-main {
+    width: min(60%, 560px);
+    top: 70px;
+  }
+  .lc-menu {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .lc-menu-btn {
+    min-height: 46px;
+    padding: 4px 8px;
+    gap: 8px;
+    border-radius: 14px;
+  }
+  .lc-menu-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+  .lc-menu-text b {
+    font-size: 14px;
+  }
+  .lc-menu-text small {
+    font-size: 11px;
+  }
+  .lc-hub .lc-mycar,
+  .lc-hub .lc-foot {
+    display: none;
+  }
+  .lc-logo {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  .lc-logo span {
+    font-size: 10px;
+  }
+}
+/* toasts sit at the bottom and never block a tap */
+.lc-toast {
+  top: auto;
+  bottom: 14px;
+  pointer-events: none;
+}
+/* short screens: slimmer pop-up header and part tabs, so the 3D view and the content get the room */
+@container (max-height: 520px) {
+  .lc-modal-head {
+    padding: 5px 10px;
+  }
+  .lc-modal-head .lc-h {
+    font-size: 18px;
+  }
+  .lc-modal-tabs {
+    padding-top: 6px;
+  }
+  .lc-ptab {
+    grid-auto-flow: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 5px 6px;
+  }
+  .lc-ptab > span {
+    font-size: 16px;
+  }
+  .lc-ptab small {
+    display: none;
+  }
+  .lc-modal-body {
+    padding: 8px 10px 10px;
+    gap: 8px;
+  }
+}
+/* the arcade's game menu beside the race's pause button (full screen only) */
+.lc-race-menu {
+  position: absolute;
+  top: 10px;
+  right: 58px;
+  z-index: 3;
+}
+.lc-race:has(.lc-race-menu) .lc-hud-top {
+  padding-right: 100px;
 }

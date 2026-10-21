@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
+import { GameMenuButton } from '../../components/GameMenuButton';
 import { FAILURE_TEXT } from './parts';
 import { LANES, type CarLook, type CarState, type Stage3D } from './scene3d';
 import { DISTANCE, DT, Race, shiftRpm, type CarSpec, type Driver, type RaceResult, type ShiftWindow } from './sim';
@@ -279,7 +280,8 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
       }
     };
     const pdown = (e: PointerEvent): void => {
-      if ((e.target as HTMLElement).closest('.lc-pause, .lc-overlay')) return;
+      // buttons on the race screen are not shift taps (the menu one pauses the race itself)
+      if ((e.target as HTMLElement).closest('.lc-pause, .lc-overlay, .game-menu-btn')) return;
       e.preventDefault();
       tap();
     };
@@ -373,6 +375,7 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
         <span />
         <span />
       </button>
+      <GameMenuButton className="lc-icon lc-race-menu" />
       <button ref={shiftBtn} className="lc-shift is-idle" aria-label="Launch and shift" tabIndex={-1}>
         LAUNCH
       </button>

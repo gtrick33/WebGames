@@ -142,8 +142,8 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
  */
 function StageMenu({ slug, title, placement, open, setOpen, onOpen, onExitFullscreen, onExitGame }: { slug: string; title: string; placement: GameEntry['menu']; open: boolean; setOpen: (open: boolean) => void; onOpen: () => void; onExitFullscreen: () => void; onExitGame: () => void }) {
   const t = useT();
-  // the button sits in a top corner the game leaves free (or the game draws its own: 'own')
-  const spot = placement === 'own' ? null : (placement ?? { corner: 'top-left' as const });
+  // games draw the button in their own UI (the default); a corner in the registry makes the arcade draw one instead
+  const spot = placement && placement !== 'own' ? placement : null;
   useEffect(() => {
     if (!open) return;
     // Escape closes the pop-up first, before it would leave full screen.
@@ -328,6 +328,8 @@ export function GamePage({ game }: { game: GameEntry }) {
           : null;
         return;
       }
+      // the game's menu button is handled by the stage; it is never a round
+      if (e.type === 'menu') return;
       // A friends' challenge round: send the score to the challenge too. Embedded games (NEON RUSH)
       // only know the seed, so the page names the round for them.
       const round = stageSpecRef.current;
@@ -487,7 +489,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             frameRef={frameRef}
             playerName={player.name}
             onPlayClick={play.enter}
-            openMenu={play.active && game.menu === 'own' ? openMenu : undefined}
+            openMenu={play.active && (game.menu ?? 'own') === 'own' ? openMenu : undefined}
             overlay={
               <>
                 {challengeId && scoresOpen && (

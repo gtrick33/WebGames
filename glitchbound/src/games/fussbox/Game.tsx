@@ -13,6 +13,7 @@ import { COACH_BUTTONS, coachSteps } from './coach';
 import { createSfx, type Sfx } from './sound';
 import { cardPhrase, describe, UI, valueName, type Ui } from './words';
 import './Game.css';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const KEY = 'glitchbound.fussbox';
 const EPOCH = '2026-10-19';
@@ -321,6 +322,7 @@ function Menu({ save, today, u, parked, onResume, onPlay, onMute, onHelp }: { sa
         <button className="fbx-icon" onClick={onMute} aria-label={save.muted ? u.soundOn : u.soundOff}>
           {save.muted ? '🔇' : '🔊'}
         </button>
+        <GameMenuButton className="fbx-icon" />
       </div>
       <Robot mood="idle" className="fbx-robot-big" />
       <h1 className="fbx-title">
@@ -487,6 +489,7 @@ function Lab({ play, u, lang, label, sfx, active, onFeed, onExam, onMenu }: { pl
           <span className="fbx-hud-tests mono" aria-live="polite">
             {u.tests(tests.length)}
           </span>
+          <GameMenuButton className="fbx-icon" />
         </header>
         <div className="fbx-speak">
           <Robot mood={say.mood} key={flash} className="fbx-robot-talk" />
@@ -649,6 +652,7 @@ function Exam({ play, u, lang, label, onMark, onHandIn, onMenu }: { play: Play; 
         </button>
         <span className="fbx-hud-label">{label}</span>
         <span className="fbx-hud-tests mono">{u.tests(play.tests.length)}</span>
+        <GameMenuButton className="fbx-icon" />
       </header>
       <h2 className="fbx-exam-title">{u.examTitle}</h2>
       <p className="fbx-muted">{u.examHint}</p>

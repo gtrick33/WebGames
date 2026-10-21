@@ -158,6 +158,9 @@ function MyGame({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
   // Keyboard: listen on window while playing; Escape/P toggles pause; ignore e.repeat for actions.
 
   if (screen === 'menu') return <Menu /* daily card (#N, today's best/tries), endless card, totals, mute */ />;
+  // The arcade's full-screen menu lives inside the game: put <GameMenuButton className="xx-icon" />
+  // (src/components/GameMenuButton) in the menu's top row next to mute, and in the play HUD next to
+  // pause. It renders nothing outside full screen. Never rely on an arcade overlay button.
   // play: HUD with aria-live, pause button (☰ / II), "Paused · tap to continue" overlay.
   // result: big score, "New best!", <ResultLine line={…} label={…} />, then:
   //   challenge → <a href={`/c/${challenge.id}`} onClick={openChallengeScores} autoFocus>See the scoreboard</a>

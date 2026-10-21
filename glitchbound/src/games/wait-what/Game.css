@@ -815,3 +815,19 @@
     animation: none !important;
   }
 }
+
+/* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
+.ww-menu-top {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+}
+.ww-menu-top:empty {
+  display: none;
+}
+.ww-top-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

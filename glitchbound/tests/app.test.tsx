@@ -136,7 +136,7 @@ describe('game page', () => {
     expect(save.games['neon-rush']).toMatchObject({ plays: 1, best: { score: 321, meters: 250, coins: 7, nearMisses: 1 } });
   });
 
-  it('in full screen, a menu button pauses the game and offers a way out in a pop-up (#21, #22)', () => {
+  it('in full screen, the game\'s own menu button pauses it and offers a way out in a pop-up (#21, #22)', () => {
     renderAt('/games/neon-rush');
     // jsdom has no Fullscreen API, so Play falls back to the immersive mode.
     fireEvent.click(screen.getByRole('button', { name: /Play Neon Rush/ }));
@@ -144,8 +144,17 @@ describe('game page', () => {
     expect(frame).not.toBeNull();
     const post = vi.spyOn(frame.contentWindow!, 'postMessage');
     expect(screen.queryByRole('dialog', { name: 'Game menu' })).toBeNull();
-    // Opening the menu pauses the game; Continue closes it and keeps playing.
-    fireEvent.click(screen.getByRole('button', { name: 'Game menu' }));
+    // no floating arcade button: the game shows its own, once told the menu is available
+    expect(document.querySelector('.stage-menu-btn')).toBeNull();
+    const fromGame = (type: string): void =>
+      act(() => {
+        window.dispatchEvent(new MessageEvent('message', { data: { source: 'glitchbound-game', version: 1, type }, origin: window.location.origin, source: frame.contentWindow }));
+      });
+    fromGame('ready');
+    expect(post).toHaveBeenCalledWith(expect.objectContaining({ source: 'glitchbound-host', type: 'menu', available: true }), window.location.origin);
+    // the game's button asks for the menu: it opens and pauses the game; Continue closes it
+    const openFromGame = (): void => fromGame('menu');
+    openFromGame();
     expect(post).toHaveBeenCalledWith(expect.objectContaining({ source: 'glitchbound-host', type: 'pause' }), window.location.origin);
     const menu = screen.getByRole('dialog', { name: 'Game menu' });
     expect(within(menu).getAllByRole('button').map((b) => b.textContent?.trim())).toEqual(['Continue', 'Exit full screen', 'Exit game', 'Report a bug']);
@@ -153,12 +162,12 @@ describe('game page', () => {
     expect(screen.queryByRole('dialog', { name: 'Game menu' })).toBeNull();
     expect(document.querySelector('.stage-immersive')).not.toBeNull();
     // Escape closes the pop-up first, without leaving full screen.
-    fireEvent.click(screen.getByRole('button', { name: 'Game menu' }));
+    openFromGame();
     fireEvent.keyDown(screen.getByRole('button', { name: /Continue/ }), { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Game menu' })).toBeNull();
     expect(document.querySelector('.stage-immersive')).not.toBeNull();
     // Exit game closes the game and leaves full screen.
-    fireEvent.click(screen.getByRole('button', { name: 'Game menu' }));
+    openFromGame();
     fireEvent.click(within(screen.getByRole('dialog', { name: 'Game menu' })).getByRole('button', { name: /Exit game/ }));
     expect(document.querySelector('iframe')).toBeNull();
     expect(document.querySelector('.stage-immersive')).toBeNull();
@@ -167,12 +176,14 @@ describe('game page', () => {
     expect(screen.queryByRole('button', { name: 'Game menu' })).toBeNull();
   });
 
-  it('puts the full-screen menu button in the corner the registry gives each game', async () => {
+  it('in full screen every game shows the menu button inside its own top bar', async () => {
     renderAt('/games/memory-grid');
     fireEvent.click(screen.getByRole('button', { name: /Play Memory Grid/ }));
-    const btn = (await screen.findByRole('button', { name: 'Game menu' }, { timeout: 5000 })) as HTMLButtonElement;
-    expect(btn.dataset.corner).toBe('top-right');
-    expect(btn.style.getPropertyValue('--menu-x')).toBe('52px');
+    const btn = await screen.findByRole('button', { name: 'Game menu' }, { timeout: 5000 });
+    expect(btn.closest('.mg-top')).not.toBeNull();
+    expect(document.querySelector('.stage-menu-btn')).toBeNull();
+    fireEvent.click(btn);
+    expect(screen.getByRole('dialog', { name: 'Game menu' })).toBeTruthy();
   });
 
   it('a game that draws its own menu button gets no arcade button, and its button opens the menu', async () => {

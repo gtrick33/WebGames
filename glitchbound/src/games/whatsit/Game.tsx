@@ -14,6 +14,7 @@ import { answer, answerLine, dailyRound, EPOCH, makeRound, scoreOf, stillFitting
 import { createSfx, type Sfx } from './sound';
 import { UI, type Ui } from './words';
 import './Game.css';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const KEY = 'glitchbound.whatsit';
 type Mode = 'daily' | 'endless' | 'challenge';
@@ -323,6 +324,7 @@ function Menu({ save, today, u, lang, parked, onResume, onPlay, onMute, onHelp }
         <button className="whz-icon" onClick={onMute} aria-label={save.muted ? u.soundOn : u.soundOff}>
           {save.muted ? '🔇' : '🔊'}
         </button>
+        <GameMenuButton className="whz-icon" />
       </div>
       <Parcel mood="idle" className="whz-parcel-big" />
       <h1 className="whz-title">
@@ -393,6 +395,7 @@ function Hud({ u, label, questions, onMenu }: { u: Ui; label: string; questions:
       <span className="whz-hud-count mono" aria-live="polite">
         {u.questions(questions)}
       </span>
+      <GameMenuButton className="whz-icon" />
     </header>
   );
 }

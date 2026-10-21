@@ -160,10 +160,11 @@ export interface GameEntry {
    */
   wallet?: boolean;
   /**
-   * Where the arcade's full-screen menu button sits on this game: a top corner the game leaves
-   * free on its menus and while playing (default top-left), moved `x` px inward and `y` px down
-   * to clear the game's own buttons; or 'own' when the game shows the button in its own top bar
-   * (module games only: they get `openMenu`, see contract.ts).
+   * The arcade's full-screen menu button (continue, exit full screen, exit game, report a bug). By
+   * default ('own') every game shows it inside its own UI, in its top row: module games render
+   * <GameMenuButton>, embedded games answer the 'menu' host command (see contract.ts). A corner
+   * makes the arcade draw a floating button there instead, moved `x` px inward and `y` px down:
+   * only for an embedded game that can't show its own.
    */
   menu?: 'own' | { corner: 'top-left' | 'top-right' | 'top-center'; x?: number; y?: number };
   /** Free-form game-specific data. */

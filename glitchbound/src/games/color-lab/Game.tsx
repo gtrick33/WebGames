@@ -28,6 +28,7 @@ import { createSfx, type Sfx } from './sound';
 import { clStats, isComplete, loadCl, recordEndless, recordLevel, recordPrecision, saveCl, type ClSave, type PracticeSize } from './store';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const PRACTICE: { id: PracticeSize; label: string; note: string; step: number }[] = [
   { id: 'small', label: 'Small', note: '4 colors', step: 1 },
@@ -302,6 +303,7 @@ function Menu(props: {
           </button>
         </div>
         {stats.streak > 0 && <span className="cl-chip cl-chip-fire">🔥 {stats.streak}-day streak</span>}
+        <GameMenuButton className="cl-icon-btn" />
       </div>
       <Wordmark />
       <p className="cl-tagline">Pour the colors until every tube holds just one. Fewer moves, more points.</p>
@@ -460,6 +462,7 @@ function Stats({ save, today, onBack }: { save: ClSave; today: string; onBack: (
           ←
         </button>
         <h2>Your stats</h2>
+        <GameMenuButton className="cl-icon-btn" style={{ marginLeft: 'auto' }} />
       </div>
       <div className="cl-stat-grid">
         {tiles.map(([k, v]) => (
@@ -728,6 +731,7 @@ function Play(props: {
             ))}
           </ol>
         ) : null}
+        <GameMenuButton className="cl-icon-btn" style={{ marginLeft: 'auto' }} />
       </div>
 
       <div className="cl-toolbar">

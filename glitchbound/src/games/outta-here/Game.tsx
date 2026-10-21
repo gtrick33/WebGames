@@ -11,6 +11,7 @@ import { arrowAt, canLeave, DAILY_LEVELS, DC, DR, HEARTS, levelPoints, makeLevel
 import { createSfx, type Sfx } from './sound';
 import { COACH } from './coach';
 import './Game.css';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const KEY = 'glitchbound.outta-here';
 const EPOCH = '2026-10-19';
@@ -352,9 +353,12 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
   return (
     <div className="oh">
       <div className="oh-hud" aria-live="polite">
-        <button className="oh-icon" onClick={() => show(null)} aria-label="Menu">
-          ☰
-        </button>
+        <span className="game-menu-pair">
+          <button className="oh-icon" onClick={() => show(null)} aria-label="Menu">
+            ☰
+          </button>
+          <GameMenuButton className="oh-icon" />
+        </span>
         <div className="oh-mid">
           <b>{score}</b>
           <span>
@@ -483,6 +487,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         <button className="oh-icon" onClick={onMute} aria-label={save.muted ? 'Turn sound on' : 'Turn sound off'}>
           {save.muted ? '🔇' : '🔊'}
         </button>
+        <GameMenuButton className="oh-icon" />
       </div>
       <div className="oh-logo" aria-hidden="true">
         <span>⬆</span>

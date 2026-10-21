@@ -6,7 +6,7 @@ import type { RunStats } from '../game/world';
  * never the player id or name. Does nothing when the game is not embedded.
  * Protocol: glitchbound/src/platform/contract.ts (source "glitchbound-game", version 1).
  */
-type HostMessage = { type: 'ready' } | { type: 'start' } | { type: 'end'; score: number; stats: Record<string, number> };
+type HostMessage = { type: 'ready' } | { type: 'start' } | { type: 'end'; score: number; stats: Record<string, number> } | { type: 'menu' };
 
 export function notifyHost(message: HostMessage, win: Pick<Window, 'parent'> | undefined = globalThis.window): void {
   if (!win || win.parent === win) return;
@@ -29,9 +29,11 @@ export function runEndMessage(stats: RunStats): HostMessage {
 /**
  * Messages the host page may send to the game. `challenge`: a friends' challenge round is on, so
  * every run uses this seed (the same traffic for every player); null ends it. `coins`: coins the
- * arcade's QA team or an admin gave this player; add them to the wallet.
+ * arcade's QA team or an admin gave this player; add them to the wallet. `menu`: whether the
+ * arcade's game menu is available (it is in full screen); the game then shows a menu button that
+ * sends `{ type: 'menu' }` back.
  */
-export type HostCommand = { type: 'identity'; name: string } | { type: 'pause' } | { type: 'challenge'; seed: number | null } | { type: 'coins'; amount: number };
+export type HostCommand = { type: 'identity'; name: string } | { type: 'pause' } | { type: 'challenge'; seed: number | null } | { type: 'coins'; amount: number } | { type: 'menu'; available: boolean };
 
 /** The most coins one gift may carry (the arcade allows up to 100,000 per grant, several at once). */
 const MAX_GIFT = 10_000_000;
@@ -49,6 +51,7 @@ export function listenToHost(onCommand: (c: HostCommand) => void, win: Window | 
     if (d.type === 'identity' && typeof d.name === 'string') onCommand({ type: 'identity', name: d.name.slice(0, 40) });
     else if (d.type === 'pause') onCommand({ type: 'pause' });
     else if (d.type === 'challenge' && (d.seed === null || (typeof d.seed === 'number' && Number.isInteger(d.seed)))) onCommand({ type: 'challenge', seed: d.seed === null ? null : d.seed | 0 });
+    else if (d.type === 'menu' && typeof d.available === 'boolean') onCommand({ type: 'menu', available: d.available });
     else if (d.type === 'coins' && typeof d.amount === 'number' && Number.isInteger(d.amount) && d.amount > 0 && d.amount <= MAX_GIFT) onCommand({ type: 'coins', amount: d.amount });
   };
   win.addEventListener('message', handler);

@@ -25,7 +25,12 @@ export interface ReadyEvent {
   type: 'ready';
 }
 
-export type GameEvent = ReadyEvent | StartEvent | EndEvent;
+/** The player pressed the game's own menu button: open the arcade's game menu (full screen only). */
+export interface MenuEvent {
+  type: 'menu';
+}
+
+export type GameEvent = ReadyEvent | StartEvent | EndEvent | MenuEvent;
 
 export interface GameHost {
   report(event: GameEvent): void;
@@ -57,8 +62,10 @@ export interface GameModuleProps {
   lang?: ContentLang;
   /**
    * In full screen, opens the arcade's game menu (continue, exit full screen, exit game, report a
-   * bug) and pauses the game. Only games with `menu: 'own'` in the registry get it: they show
-   * their own button for it; for the rest the arcade draws one in a free corner.
+   * bug) and pauses the game; undefined outside full screen. Games show it as a button in their own
+   * top row: render <GameMenuButton> (src/components/GameMenuButton.tsx), which reads it from
+   * context and renders nothing outside full screen. Embedded games get a 'menu' host command
+   * instead and answer with a 'menu' event.
    */
   openMenu?: () => void;
 }
@@ -86,6 +93,7 @@ export function parseGameMessage(data: unknown): GameEvent | null {
   if (m.source !== MESSAGE_SOURCE || m.version !== PROTOCOL_VERSION) return null;
   if (m.type === 'start') return { type: 'start' };
   if (m.type === 'ready') return { type: 'ready' };
+  if (m.type === 'menu') return { type: 'menu' };
   if (m.type !== 'end') return null;
   const score = cleanNumber(m.score);
   if (score === null) return null;

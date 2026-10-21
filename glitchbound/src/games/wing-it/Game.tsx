@@ -10,6 +10,7 @@ import { biomeFor, flap, flightLine, MEDAL_ICON, medalFor, newSim, runPoints, st
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const KEY = 'glitchbound.wing-it';
 const EPOCH = '2026-10-19';
@@ -312,6 +313,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
       <button className="wi-pause" onClick={() => (sim.current?.started && !sim.current.dead ? setPaused((p) => !p) : setScreen('menu'))} aria-label={hud.started && !hud.dead ? 'Pause' : 'Menu'}>
         {hud.started && !hud.dead ? 'II' : '☰'}
       </button>
+      <GameMenuButton className="wi-pause wi-pause-menu" />
       {!hud.started && !hud.dead && (
         <div className="wi-hint" aria-hidden="true">
           <b>{mode === 'challenge' ? `⚔️ Challenge · round ${challenge?.round ?? 1} · one flight` : mode === 'daily' ? `Daily course #${dailyNumber(today)}` : 'Endless'}</b>
@@ -409,6 +411,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         <button className="wi-icon" onClick={onMute} aria-label={save.muted ? 'Turn sound on' : 'Turn sound off'}>
           {save.muted ? '🔇' : '🔊'}
         </button>
+        <GameMenuButton className="wi-icon" style={{ marginLeft: 8 }} />
       </div>
       <Mascot />
       <h1 className="wi-title">

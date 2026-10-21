@@ -238,3 +238,8 @@
   justify-items: center;
   gap: 6px;
 }
+
+/* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
+.wi-pause-menu {
+  right: 64px;
+}

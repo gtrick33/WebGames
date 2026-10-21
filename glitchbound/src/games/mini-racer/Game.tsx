@@ -18,6 +18,7 @@ import { useAccount } from '../../platform/account';
 import { claimCoins } from '../../platform/coins';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 type Screen = 'menu' | 'garage' | 'race' | 'paused' | 'result';
 
@@ -407,6 +408,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
           <span />
         </button>
       )}
+      {screen === 'race' && <GameMenuButton className="mr-pause mr-pause-menu" />}
 
       {screen === 'menu' && (
         <div className="mr-sheet mr-menu">
@@ -436,6 +438,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
               >
                 {save.muted ? 'Muted' : 'Sound'}
               </button>
+              <GameMenuButton className="mr-chip mr-menu-chip" />
             </div>
           </div>
 

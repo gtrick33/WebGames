@@ -84,4 +84,15 @@ describe('host commands', () => {
     send({ source: 'glitchbound-host', version: 1, type: 'coins', amount: 50 }, {}); // not the parent
     expect(got).toEqual([{ type: 'coins', amount: 500 }]);
   });
+
+  it('learns whether the arcade menu is available (true/false only)', async () => {
+    const { listenToHost } = await import('../src/analytics/embed');
+    const { win, send } = host();
+    const got: unknown[] = [];
+    listenToHost((c) => got.push(c), win);
+    send({ source: 'glitchbound-host', version: 1, type: 'menu', available: true });
+    send({ source: 'glitchbound-host', version: 1, type: 'menu', available: 'yes' });
+    send({ source: 'glitchbound-host', version: 1, type: 'menu', available: false });
+    expect(got).toEqual([{ type: 'menu', available: true }, { type: 'menu', available: false }]);
+  });
 });

@@ -27,7 +27,6 @@ export const GAMES: GameEntry[] = [
     },
     // Built from ../neon-rush into dist/play/neon-rush/ (scripts/build-games.mjs) and served by GlitchBound.
     runtime: { kind: 'embed', url: '/play/neon-rush/', origins: ['self'] },
-    menu: { corner: 'top-center' },
     aspect: 'portrait',
     challenge: { label: 'The same traffic for everyone: one run each. Highest score wins.' },
     controls: {
@@ -75,7 +74,6 @@ export const GAMES: GameEntry[] = [
       bg: '#fff4e2',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-right', x: 52 },
     aspect: 'square',
     controls: {
       keyboard: ['Arrow keys: move between tiles', 'Enter or Space: tap a tile', '1 to 9: tap a 3×3 tile (number-pad layout)', 'M: mute', 'R: retry'],
@@ -122,7 +120,6 @@ export const GAMES: GameEntry[] = [
       bg: '#2b1650',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-right' },
     aspect: 'portrait',
     controls: {
       keyboard: ['Tab to a slider, then Left / Right arrows to adjust', 'Enter: lock in your color, then next color'],
@@ -214,7 +211,6 @@ export const GAMES: GameEntry[] = [
       bg: '#f6d896',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-left', y: 112 },
     aspect: 'square',
     controls: {
       keyboard: ['Left / Right or A / D: steer (gas is automatic)', 'Hold a turn at speed to drift', 'R: restart, Esc or P: pause'],
@@ -271,7 +267,6 @@ export const GAMES: GameEntry[] = [
       bg: '#2f8dff',
     },
     runtime: { kind: 'module' },
-    menu: 'own',
     aspect: 'square',
     controls: {
       keyboard: ['Space, Enter or Up: launch at green, then shift when the needle is in the green zone', 'Esc or P: pause'],
@@ -326,7 +321,6 @@ export const GAMES: GameEntry[] = [
       bg: '#e6f6ef',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-right' },
     aspect: 'portrait',
     controls: {
       keyboard: ['1-9, 0, Q-R: pick up a tube, then pick where to pour', 'U or Backspace: undo, Shift+R: restart, H: hint', 'Enter: next puzzle'],
@@ -375,7 +369,6 @@ export const GAMES: GameEntry[] = [
       bg: '#fff1d6',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-right', x: 80 },
     aspect: 'square',
     controls: {
       keyboard: ['Click a difference in either picture', 'Hint and Give up buttons below the pictures'],
@@ -422,7 +415,6 @@ export const GAMES: GameEntry[] = [
       bg: '#e9f5c8',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-right', x: 72 },
     aspect: 'square',
     controls: {
       keyboard: ['Click to aim, Enter to lock it in', '+ / -: zoom', 'Scroll to pan when zoomed'],
@@ -468,7 +460,6 @@ export const GAMES: GameEntry[] = [
       bg: '#8fdcff',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-left', x: 52 },
     aspect: 'portrait',
     controls: {
       keyboard: ['Space, W or Up: flap', 'P or Esc: pause'],
@@ -514,7 +505,6 @@ export const GAMES: GameEntry[] = [
       bg: '#fbf6ec',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-right', x: 60 },
     aspect: 'portrait',
     controls: {
       keyboard: ['Type letters, Backspace to delete', 'Space: switch direction, Tab: next clue'],
@@ -557,7 +547,6 @@ export const GAMES: GameEntry[] = [
       bg: '#ffd166',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-right', x: 56 },
     aspect: 'portrait',
     controls: {
       keyboard: ['1–4 or A–D: answer', 'Left / Right: move the lever, Enter: lock it in', 'Enter: next question'],
@@ -641,7 +630,6 @@ export const GAMES: GameEntry[] = [
       bg: '#123a7a',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-right', x: 44 },
     aspect: 'portrait',
     controls: {
       keyboard: ['Up / Down or + / −: resize (Shift for big steps)', 'Mouse wheel or drag the corner handle', 'Enter: lock it in, then next shot'],
@@ -872,7 +860,6 @@ export const GAMES: GameEntry[] = [
       bg: '#0f766e',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-right', x: 84 },
     aspect: 'portrait',
     controls: {
       keyboard: ['Click to build a card, Enter to feed it', 'R: a random card'],
@@ -912,7 +899,6 @@ export const GAMES: GameEntry[] = [
       bg: '#c2410c',
     },
     runtime: { kind: 'module' },
-    menu: { corner: 'top-right', x: 100 },
     aspect: 'portrait',
     controls: {
       keyboard: ['Tab and Enter to ask questions and open cards', 'Esc closes a card'],

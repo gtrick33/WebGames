@@ -30,6 +30,7 @@ import {
 } from './logic';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const STORE = 'glitchbound.crosswire';
 interface Save {
@@ -97,6 +98,7 @@ function Crosswire({ host, challenge }: { host: GameHost; challenge?: GameModule
   const todays = save.daily[today];
   return (
     <div className="xw xw-menu">
+      <div className="xw-menu-top"><GameMenuButton className="xw-icon" /></div>
       <h1 className="xw-title" aria-label="Crosswire">
         {/* Two halves that wrap as a whole, never in the middle of WIRE. */}
         <span className="xw-title-word">
@@ -315,6 +317,7 @@ function Play(props: {
         <span className="xw-time">
           {Math.floor(tally.seconds / 60)}:{String(tally.seconds % 60).padStart(2, '0')}
         </span>
+        <GameMenuButton className="xw-icon" />
       </div>
 
       <div className="xw-grid" style={{ gridTemplateColumns: `repeat(${p.cols}, 1fr)` }} role="grid" aria-label="Crossword grid">

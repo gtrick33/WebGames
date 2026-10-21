@@ -383,3 +383,13 @@ a.xw-btn {
   color: inherit;
   text-decoration: none;
 }
+
+/* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
+.xw-menu-top {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+.xw-menu-top:empty {
+  display: none;
+}

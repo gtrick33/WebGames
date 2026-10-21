@@ -29,6 +29,7 @@ import { createSfx, type Sfx } from './sfx';
 import { finishDaily, finishPractice, loadSave, shownStreak, storeSave, type PinchSave, type Tally } from './storage';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 type Mode = 'daily' | 'practice';
 type Panel = 'none' | 'help' | 'stats';
@@ -296,6 +297,7 @@ export default function Game({ host, challenge }: GameModuleProps) {
           <IconButton label={save.muted ? 'Turn sound on' : 'Turn sound off'} onClick={toggleSound}>
             <SoundIcon off={save.muted} />
           </IconButton>
+          <GameMenuButton className="lp-icon" />
         </div>
       </header>
 

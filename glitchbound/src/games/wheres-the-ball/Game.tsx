@@ -37,6 +37,7 @@ import { createSfx, type Sfx } from './sound';
 import { isComplete, loadWb, recordEndless, recordLevel, saveWb, wbStats, type WbSave } from './store';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 type Mode = 'daily' | 'endless';
 const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
@@ -307,6 +308,7 @@ function Menu({ today, save, onStart, onMute }: { today: string; save: WbSave; o
           {save.muted ? '🔇' : '🔊'}
         </button>
         {stats.streak > 0 && <span className="wb-chip">🔥 {stats.streak}-day streak</span>}
+        <GameMenuButton className="wb-icon-btn" />
       </div>
       <h1 className="wb-wordmark">
         <span>Where’s the</span>
@@ -495,6 +497,7 @@ function Play(props: {
         </span>
         {run.mode === 'endless' && <span className="wb-lives" aria-label={`${run.lives} lives`}>{'❤'.repeat(Math.max(0, run.lives))}</span>}
         <span className="wb-clock wb-mono">{Math.floor(secs)}s</span>
+        <GameMenuButton className="wb-icon-btn" />
       </div>
 
       <div className="wb-view" ref={view}>

@@ -410,3 +410,12 @@
 .sd-menu > :last-child {
   margin-bottom: auto;
 }
+
+/* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
+.sd-hud {
+  grid-template-columns: auto 1fr auto;
+}
+.sd-menu-top {
+  display: flex;
+  gap: 8px;
+}

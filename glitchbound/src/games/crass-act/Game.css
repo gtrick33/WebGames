@@ -646,3 +646,18 @@ button.uh-entry:not(:disabled) {
     animation: none !important;
   }
 }
+
+/* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
+.uh-menu-corner {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+}
+.uh-menu-corner:empty {
+  display: none;
+}
+/* keep the room header clear of the corner button while it shows */
+.stage-module:has(.uh-menu-corner .game-menu-btn) .uh-top {
+  padding-inline: 48px;
+}

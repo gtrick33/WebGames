@@ -251,3 +251,12 @@
 .gl-menu > :last-child {
   margin-bottom: auto;
 }
+
+/* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
+.gl-hud {
+  grid-template-columns: auto 1fr 64px;
+}
+.gl-menu-top {
+  display: flex;
+  gap: 8px;
+}

@@ -9,6 +9,7 @@ import { NextDaily } from '../../components/NextDaily';
 import { fits, fromSaved, linesAfter, newGame, place, resultLine, SIZE, streakMultiplier, toSaved, type Piece, type Saved, type State } from './logic';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
+import { GameMenuButton } from '../../components/GameMenuButton';
 
 const KEY = 'glitchbound.square-deal';
 const EPOCH = '2026-10-19';
@@ -326,9 +327,12 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
   return (
     <div className="sd">
       <div className="sd-hud" aria-live="polite">
-        <button className="sd-icon" onClick={() => show(null)} aria-label="Menu">
-          ☰
-        </button>
+        <span className="game-menu-pair">
+          <button className="sd-icon" onClick={() => show(null)} aria-label="Menu">
+            ☰
+          </button>
+          <GameMenuButton className="sd-icon" />
+        </span>
         <div className="sd-score">
           <b>{s.score}</b>
           <span>{mode === 'challenge' ? `⚔️ Challenge · round ${challenge?.round ?? 1}` : mode === 'daily' ? `Daily #${dailyNumber(today)}` : `Best ${save.best}`}</span>
@@ -430,6 +434,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         <button className="sd-icon" onClick={onMute} aria-label={save.muted ? 'Turn sound on' : 'Turn sound off'}>
           {save.muted ? '🔇' : '🔊'}
         </button>
+        <GameMenuButton className="sd-icon" />
       </div>
       <div className="sd-logo" aria-hidden="true">
         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (

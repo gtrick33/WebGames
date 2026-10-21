@@ -1631,7 +1631,10 @@ function renderThumb(look: CarLook, env: string): string {
 }
 
 function pumpThumbs(): void {
-  if (thumbBusy || !thumbQueue.length) return;
+  // pictures nobody waits for any more (their card was closed) are skipped
+  while (thumbQueue.length && !thumbWaiters.get(thumbQueue[0]!.key)?.size) thumbWaiters.delete(thumbQueue.shift()!.key);
+  // the page may be gone by the time a model finishes loading (tests, a closed tab)
+  if (thumbBusy || !thumbQueue.length || typeof window === 'undefined') return;
   thumbBusy = true;
   const base = specFor(thumbQueue[0]!.look.def).base;
   if (getModel(base) === undefined) {

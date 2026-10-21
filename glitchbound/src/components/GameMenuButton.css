@@ -1,0 +1,25 @@
+/* The arcade's game menu button inside a game (full screen only). Games pass their own icon-button
+   class; this is the look for games that have none: the site's cartoon round button. */
+.game-menu-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+}
+.game-menu-btn.is-plain {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #1d1238;
+  border-radius: 50%;
+  background: #fff;
+  color: #1d1238;
+  box-shadow: 2px 2px 0 #1d1238;
+}
+/* An existing top-left button and the menu button side by side, in a grid HUD's first cell. */
+.game-menu-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

@@ -17,7 +17,8 @@ import { lookKey, Stage3D, type CarLook, type ShowFocus } from './scene3d';
 import { decodeScript, encodeScript, forecastRun, scoreOf, specOf, type CarSpec, type Driver, type RaceResult } from './sim';
 import { createSfx, type Sfx } from './sound';
 import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type Save } from './storage';
-import { CarThumb, Cash, DriverFace, MatsLine, MenuButton, Panel, Pips, posLabel, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
+import { GameMenuButton } from '../../components/GameMenuButton';
+import { CarThumb, Cash, DriverFace, MatsLine, Panel, Pips, posLabel, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
 import { fmtCash, fmtEt, fmtShort } from './util';
 import './Game.css';
 
@@ -584,7 +585,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       <button className="lc-icon" onClick={() => go('help')} aria-label="How to race">
         ?
       </button>
-      {openMenu && <MenuButton onClick={openMenu} />}
+      <GameMenuButton className="lc-icon" />
     </header>
   );
 
@@ -892,11 +893,10 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           </Panel>
         )}
       </main>
-      {screen === 'rivals' && <RivalsSheet save={save} mySheet={mySheet} mySpec={mySpec} sel={rivalIdx} setPick={setRivalPick} onBack={() => go('hub')} onRace={(o, mode) => setup(mode, o)} viewRef={setViewEl} right={cashPill} onMenu={openMenu} />}
+      {screen === 'rivals' && <RivalsSheet save={save} mySheet={mySheet} mySpec={mySpec} sel={rivalIdx} setPick={setRivalPick} onBack={() => go('hub')} onRace={(o, mode) => setup(mode, o)} viewRef={setViewEl} right={cashPill} />}
 
       {screen === 'parts' && (
         <Popup
-          onMenu={openMenu}
           eyebrow={`Parts shop · ${car.name}`}
           title={PART_INFO[partTab].name}
           onBack={() => go('hub')}
@@ -953,7 +953,6 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
 
       {screen === 'garage' && (
         <Popup
-          onMenu={openMenu}
           eyebrow={`My garage · ${TIER_NAME[car.tier]}`}
           title={car.name}
           onBack={() => go('hub')}
@@ -1036,7 +1035,6 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
 
       {screen === 'dealer' && (
         <Popup
-          onMenu={openMenu}
           eyebrow={`${CARS.length} cars · ${Object.keys(save.cars).length} owned`}
           title="Dealer"
           onBack={() => go('hub')}
@@ -1152,7 +1150,7 @@ function StatSheet({ sheet, def }: { sheet: Sheet; def: CarDef }) {
   );
 }
 
-function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, viewRef, right, onMenu }: { save: Save; mySheet: Sheet; mySpec: CarSpec; sel: number; setPick: (i: number) => void; onBack: () => void; onRace: (o: Opponent, mode: Mode) => void; viewRef: (el: HTMLDivElement | null) => void; right: ReactNode; onMenu?: () => void }) {
+function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, viewRef, right }: { save: Save; mySheet: Sheet; mySpec: CarSpec; sel: number; setPick: (i: number) => void; onBack: () => void; onRace: (o: Opponent, mode: Mode) => void; viewRef: (el: HTMLDivElement | null) => void; right: ReactNode }) {
   // the rivals around you: a few you have beaten (rematches), the next one, and a few locked ahead
   const lo = Math.max(0, Math.min(save.rank - 3, LADDER.length - 8));
   const list = LADDER.slice(lo, Math.min(LADDER.length, lo + 8));
@@ -1164,7 +1162,7 @@ function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, view
   const next = sel === save.rank;
   const oSheet = sheetOf(getCar(o.car), o.levels, newCar().cond);
   return (
-    <Popup eyebrow={`${DIVISIONS[o.division]} division · ${save.rank}/${LADDER.length} beaten`} title="Pick your rival" onBack={onBack} viewRef={viewRef} right={right} onMenu={onMenu} className="lc-rivals-sheet">
+    <Popup eyebrow={`${DIVISIONS[o.division]} division · ${save.rank}/${LADDER.length} beaten`} title="Pick your rival" onBack={onBack} viewRef={viewRef} right={right} className="lc-rivals-sheet">
       <div className="lc-rgrid" role="listbox" aria-label="Rivals">
         {list.map((r, k) => {
           const i = lo + k;
