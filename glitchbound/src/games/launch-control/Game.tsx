@@ -1049,27 +1049,27 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   })}
                 </span>
               </div>
-              {nextCar && (
-                <button
-                  className="lc-next-car"
-                  onClick={() => {
-                    go('dealer');
-                    setPreviewCar(nextCar.id);
-                  }}
-                >
-                  <span className="lc-next-car-text">
-                    <small className="mono">{save.cash >= nextCar.price ? 'Ready to buy' : 'Next car'}</small>
-                    <b>
-                      <span aria-hidden="true">{TRAIT_INFO[nextCar.trait].icon}</span> {nextCar.name}
-                    </b>
-                    <small className="mono">{save.cash >= nextCar.price ? `$${fmtShort(nextCar.price)} at the dealer` : nextSlip && nextSlip.division === nextOpp.division ? `$${fmtShort(nextCar.price)} · or beat ${nextSlip.name}` : `$${fmtShort(nextCar.price - save.cash)} to go`}</small>
-                  </span>
-                  <span className="lc-next-car-bar" aria-hidden="true">
-                    <i style={{ transform: `scaleX(${Math.min(1, save.cash / Math.max(1, nextCar.price)).toFixed(3)})` }} />
-                  </span>
-                </button>
-              )}
             </div>
+            {nextCar && (
+              <button
+                className="lc-next-car"
+                onClick={() => {
+                  go('dealer');
+                  setPreviewCar(nextCar.id);
+                }}
+              >
+                <span className="lc-next-car-text">
+                  <small className="mono">{save.cash >= nextCar.price ? 'Ready to buy' : 'Next car'}</small>
+                  <b>
+                    <span aria-hidden="true">{TRAIT_INFO[nextCar.trait].icon}</span> {nextCar.name}
+                  </b>
+                  <small className="mono">{save.cash >= nextCar.price ? `$${fmtShort(nextCar.price)} at the dealer` : nextSlip && nextSlip.division === nextOpp.division ? `$${fmtShort(nextCar.price)} · or beat ${nextSlip.name}` : `$${fmtShort(nextCar.price - save.cash)} to go`}</small>
+                </span>
+                <span className="lc-next-car-bar" aria-hidden="true">
+                  <i style={{ transform: `scaleX(${Math.min(1, save.cash / Math.max(1, nextCar.price)).toFixed(3)})` }} />
+                </span>
+              </button>
+            )}
             <div className="lc-modes">
               <button className="lc-mode" data-tone="cyan" onClick={() => go('daily')}>
                 <Icon name="calendar" />
