@@ -1890,6 +1890,9 @@ const es: string[] = [
   'Desliza hacia arriba para ocultar la barra de Safari. Para pantalla completa siempre: Compartir y luego «Añadir a pantalla de inicio».',
   'Juega a pantalla completa, sin las barras de Safari',
   'Desliza hacia arriba aquí para ocultar la barra de Safari',
+  'Toca el botón Compartir de Safari',
+  'Elige «Añadir a pantalla de inicio»',
+  'Abre GlitchBound desde tu pantalla de inicio: pantalla completa, sin barras del navegador',
 ];
 
 export default es;

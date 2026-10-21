@@ -24,6 +24,7 @@ export function MusicControl() {
   const [theme] = useTheme();
   const install = useInstall();
   const [open, setOpen] = useState(false);
+  const [guide, setGuide] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => music.init(), []);
@@ -59,6 +60,27 @@ export function MusicControl() {
       </button>
       {open && (
         <div id="settings-pop" className="music-pop panel" role="dialog" aria-label={t('Settings')}>
+          {!install.standalone && (
+            <section className="set-block set-app">
+              <button
+                className="set-toggle set-app-btn is-on"
+                onClick={() => (install.canPrompt ? void promptInstall() : setGuide((g) => !g))}
+                aria-expanded={install.canPrompt ? undefined : guide}
+              >
+                <Icon name="expand" size={18} /> {t('Full screen app')}
+              </button>
+              {!install.canPrompt && guide && (
+                <ol className="set-steps">
+                  <li>
+                    {t('Tap Safari’s Share button')} <Icon name="share" size={16} />
+                  </li>
+                  <li>{t('Choose Add to Home Screen')}</li>
+                  <li>{t('Open GlitchBound from your Home Screen: full screen, no browser bars')}</li>
+                </ol>
+              )}
+              {!install.canPrompt && !guide && <p className="set-note">{install.ios ? t('Tap Share, then Add to Home Screen: GlitchBound opens full screen, without Safari’s bars.') : t('Install GlitchBound to play full screen, without the browser’s bars.')}</p>}
+            </section>
+          )}
           <section className="set-block">
             <p className="set-head mono">{t('Sound')}</p>
             <div className="set-row">
@@ -91,19 +113,6 @@ export function MusicControl() {
               ))}
             </div>
           </section>
-          {!install.standalone && (
-            <section className="set-block">
-              <p className="set-head mono">{t('Full screen app')}</p>
-              {install.canPrompt && (
-                <div className="set-row">
-                  <button className="set-toggle is-on" onClick={() => void promptInstall()}>
-                    {t('Install the app')}
-                  </button>
-                </div>
-              )}
-              <p className="set-note">{install.ios ? t('Tap Share, then Add to Home Screen: GlitchBound opens full screen, without Safari’s bars.') : t('Install GlitchBound to play full screen, without the browser’s bars.')}</p>
-            </section>
-          )}
         </div>
       )}
     </div>

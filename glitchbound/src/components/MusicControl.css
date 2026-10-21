@@ -193,3 +193,26 @@ html.game-focus .music {
     animation: none;
   }
 }
+
+/* the full-screen app: the first thing in the menu */
+.set-app-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  min-height: 46px;
+  font-size: 16px;
+}
+.set-steps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 22px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.set-steps svg {
+  display: inline-block;
+  vertical-align: -3px;
+}

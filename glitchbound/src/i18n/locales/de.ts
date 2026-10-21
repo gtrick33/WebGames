@@ -1890,6 +1890,9 @@ const de: string[] = [
   'Wische nach oben, um die Leiste von Safari auszublenden. Für Vollbild jedes Mal: Teilen, dann „Zum Home-Bildschirm“.',
   'Im Vollbild spielen, ohne die Leisten von Safari',
   'Hier nach oben wischen, um die Leiste von Safari auszublenden',
+  'Tippe in Safari auf Teilen',
+  'Wähle „Zum Home-Bildschirm“',
+  'Öffne GlitchBound vom Home-Bildschirm: Vollbild, ohne Browserleisten',
 ];
 
 export default de;

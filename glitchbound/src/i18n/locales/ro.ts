@@ -1890,6 +1890,9 @@ const ro: string[] = [
   'Glisează în sus ca să ascunzi bara Safari. Pentru ecran complet de fiecare dată: Partajează, apoi „Adaugă pe ecranul principal”.',
   'Joacă pe tot ecranul, fără barele Safari',
   'Glisează în sus aici ca să ascunzi bara Safari',
+  'Atinge butonul Partajează din Safari',
+  'Alege „Adaugă pe ecranul principal”',
+  'Deschide GlitchBound de pe ecranul principal: tot ecranul, fără barele browserului',
 ];
 
 export default ro;

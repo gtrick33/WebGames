@@ -1890,6 +1890,9 @@ const fr: string[] = [
   'Balayez vers le haut pour masquer la barre de Safari. Pour le plein écran à chaque fois : Partager, puis « Sur l’écran d’accueil ».',
   'Jouez en plein écran, sans les barres de Safari',
   'Balayez vers le haut ici pour masquer la barre de Safari',
+  'Touchez le bouton Partager de Safari',
+  'Choisissez « Sur l’écran d’accueil »',
+  'Ouvrez GlitchBound depuis l’écran d’accueil : plein écran, sans barres du navigateur',
 ];
 
 export default fr;

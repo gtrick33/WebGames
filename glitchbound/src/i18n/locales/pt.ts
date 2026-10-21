@@ -1890,6 +1890,9 @@ const pt: string[] = [
   'Desliza para cima para esconder a barra do Safari. Para ecrã inteiro sempre: Partilhar e depois «Adicionar ao ecrã principal».',
   'Joga em ecrã inteiro, sem as barras do Safari',
   'Desliza para cima aqui para esconder a barra do Safari',
+  'Toca no botão Partilhar do Safari',
+  'Escolhe «Adicionar ao ecrã principal»',
+  'Abre o GlitchBound a partir do ecrã principal: ecrã inteiro, sem barras do navegador',
 ];
 
 export default pt;

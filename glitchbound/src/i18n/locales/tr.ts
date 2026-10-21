@@ -1890,6 +1890,9 @@ const tr: string[] = [
   'Safari çubuğunu gizlemek için yukarı kaydır. Her seferinde tam ekran için: Paylaş, ardından “Ana Ekrana Ekle”.',
   'Safari çubukları olmadan tam ekran oyna',
   'Safari çubuğunu gizlemek için burada yukarı kaydır',
+  'Safari’nin Paylaş düğmesine dokun',
+  '“Ana Ekrana Ekle”yi seç',
+  'GlitchBound’u ana ekranından aç: tam ekran, tarayıcı çubukları yok',
 ];
 
 export default tr;
