@@ -1907,6 +1907,21 @@ const nl: string[] = [
   'Nog een poging op de uitdaging van vandaag',
   'Live multiplayer',
   'Speel live met vrienden, ieder op een eigen apparaat ({n} spelers)',
+  'De slagenklassieker voor vier: bied, meld en breng je team naar 151.',
+  'Twee teams van twee, 32 kaarten, partners tegenover elkaar. Bied een kleur, geen troef of alles troef, roep contra en recontra, meld drieën, vieren, vijven en carrés, roep belote en race naar 151 met de clubtelling: met binnen, hangende en pit-spellen. Speel de vier spellen van vandaag (voor iedereen gelijk), een hele partij tegen de computer van Makkelijk tot Expert, of een live tafel met vrienden, ieder op de eigen telefoon.',
+  'Clubregels: contra en recontra, meldingen, belote, pit, binnen en hangende spellen',
+  'Computerspelers op vier niveaus, van Makkelijk tot Expert',
+  'Live tafels voor vier, met de computer op elke lege plaats',
+  'Elke dag dezelfde vier spellen voor iedereen',
+  'Pijltjes en Enter: kies en speel een kaart',
+  '1–4, N, A: bied een kleur, geen troef, alles troef',
+  'P passen, D contra, R recontra',
+  'Esc: pauze',
+  'Tik op een kaart om hem te spelen',
+  'Tik op een bod in de biedbalk',
+  'Dezelfde vier spellen voor iedereen: de meeste punten winnen.',
+  'Spellen van vandaag',
+  'Grootste winstmarge',
 ];
 
 export default nl;

@@ -1907,6 +1907,21 @@ const de: string[] = [
   'Noch ein Versuch bei der heutigen Challenge',
   'Live-Mehrspieler',
   'Spiel live mit Freunden, jeder auf seinem eigenen Gerät ({n} Spieler)',
+  'Der Stichspiel-Klassiker für vier: reizen, ansagen und dein Team auf 151 bringen.',
+  'Zwei Teams zu zweit, 32 Karten, Partner sitzen sich gegenüber. Reize eine Farbe, kein Trumpf oder alles Trumpf, sage Kontra und Rekontra, melde Terzen, Quarten, Quinten und Carrés, sage Belote an und spiel auf 151 mit der Club-Wertung: samt verlorenen, hängenden und Valat-Spielen. Spiel die vier Partien des Tages (für alle gleich), ein ganzes Match gegen Computerspieler von Leicht bis Experte oder einen Live-Tisch mit Freunden, jeder am eigenen Handy.',
+  'Club-Regeln: Kontra und Rekontra, Meldungen, Belote, Valat, verlorene und hängende Spiele',
+  'Computerspieler in vier Stufen, von Leicht bis Experte',
+  'Live-Tische für vier, mit Computerspielern auf freien Plätzen',
+  'Jeden Tag dieselben vier Partien für alle',
+  'Pfeiltasten und Enter: Karte wählen und spielen',
+  '1–4, N, A: Farbe, kein Trumpf, alles Trumpf reizen',
+  'P passen, D Kontra, R Rekontra',
+  'Esc: Pause',
+  'Tippe eine Karte, um sie zu spielen',
+  'Tippe ein Gebot in der Reizleiste',
+  'Dieselben vier Partien für alle: die meisten Punkte gewinnen.',
+  'Partien des Tages',
+  'Größter Siegvorsprung',
 ];
 
 export default de;

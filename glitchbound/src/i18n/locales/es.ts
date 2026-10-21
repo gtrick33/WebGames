@@ -1907,6 +1907,21 @@ const es: string[] = [
   'Un intento más al reto de hoy',
   'Multijugador en vivo',
   'Juega en vivo con amigos, cada uno en su dispositivo ({n} jugadores)',
+  'El clásico de bazas para cuatro: puja, canta y lleva a tu equipo a 151.',
+  'Dos equipos de dos, 32 cartas, compañeros frente a frente. Puja un palo, sin triunfo o todo triunfo, di contra y recontra, canta tercias, cuartas, quintas y cuatro iguales, canta belote y llega a 151 con el recuento de club: con manos dentro, colgadas y valat. Juega las cuatro manos del día (iguales para todos), una partida completa contra la máquina de Fácil a Experto o una mesa en vivo con amigos, cada uno en su móvil.',
+  'Reglas de club: contra y recontra, cantos, belote, valat, manos dentro y colgadas',
+  'Rivales de la máquina en cuatro niveles, de Fácil a Experto',
+  'Mesas en vivo para cuatro, con la máquina en cualquier asiento libre',
+  'Las mismas cuatro manos para todos, cada día',
+  'Flechas y Enter: elige y juega una carta',
+  '1–4, N, A: puja un palo, sin triunfo, todo triunfo',
+  'P pasar, D contra, R recontra',
+  'Esc: pausa',
+  'Toca una carta para jugarla',
+  'Toca una puja en la barra',
+  'Las mismas cuatro manos para todos: gana quien más puntos haga.',
+  'Manos del día',
+  'Mayor margen de victoria',
 ];
 
 export default es;

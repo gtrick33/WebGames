@@ -1907,6 +1907,21 @@ const pt: string[] = [
   'Mais uma tentativa no desafio de hoje',
   'Multijogador ao vivo',
   'Joga ao vivo com amigos, cada um no seu dispositivo ({n} jogadores)',
+  'O clássico das vazas para quatro: licita, canta e leva a tua equipa aos 151.',
+  'Duas equipas de dois, 32 cartas, parceiros frente a frente. Licita um naipe, sem trunfo ou tudo trunfo, diz contra e recontra, canta tercetos, quartetos, quintetos e quadras, canta a belote e corre para os 151 com a contagem de clube: com mãos dentro, suspensas e capote. Joga as quatro mãos do dia (iguais para todos), uma partida completa contra o computador de Fácil a Especialista, ou uma mesa ao vivo com amigos, cada um no seu telemóvel.',
+  'Regras de clube: contra e recontra, cantos, belote, capote, mãos dentro e suspensas',
+  'Adversários de computador em quatro níveis, de Fácil a Especialista',
+  'Mesas ao vivo para quatro, com o computador em qualquer lugar vazio',
+  'As mesmas quatro mãos para todos, todos os dias',
+  'Setas e Enter: escolhe e joga uma carta',
+  '1–4, N, A: licita um naipe, sem trunfo, tudo trunfo',
+  'P passar, D contra, R recontra',
+  'Esc: pausa',
+  'Toca numa carta para a jogar',
+  'Toca numa licitação na barra',
+  'As mesmas quatro mãos para todos: ganha quem fizer mais pontos.',
+  'Mãos do dia',
+  'Maior margem de vitória',
 ];
 
 export default pt;

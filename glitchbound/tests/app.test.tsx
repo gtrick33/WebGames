@@ -42,7 +42,7 @@ describe('homepage', () => {
     expect(within(arcade).getByRole('link', { name: 'Neon Rush' }).getAttribute('href')).toBe('/games/neon-rush');
     // Games friends can play together live carry the label, and only those.
     const liveTiles = [...arcade.querySelectorAll('.live-badge')].map((b) => b.closest('article')!.querySelector('.tile-link')!.textContent);
-    expect(liveTiles).toEqual(['Launch Control']);
+    expect(liveTiles.sort()).toEqual(['Belot', 'Launch Control']);
   });
 
   it('picks games by mood, keeping the mood in the URL', () => {

@@ -1907,6 +1907,21 @@ const ro: string[] = [
   'Încă o încercare la provocarea de azi',
   'Multiplayer live',
   'Joacă live cu prietenii, fiecare pe dispozitivul lui ({n} jucători)',
+  'Clasicul jocului de levate în patru: licitează, anunță și du-ți echipa la 151.',
+  'Două echipe de câte doi, 32 de cărți, partenerii stau față în față. Licitează o culoare, fără atu sau tot atu, spune contra și recontra, anunță terțe, cvarte, cvinte și careuri, anunță belote și aleargă spre 151 cu numărătoarea de club: cu jocuri înăuntru, suspendate și valat. Joacă cele patru împărțeli ale zilei (aceleași pentru toți), un meci întreg contra calculatorului de la Ușor la Expert sau o masă live cu prietenii, fiecare de pe telefonul lui.',
+  'Reguli de club: contra și recontra, anunțuri, belote, valat, jocuri înăuntru și suspendate',
+  'Jucători la calculator pe patru niveluri, de la Ușor la Expert',
+  'Mese live pentru patru, cu calculatorul pe orice loc liber',
+  'Aceleași patru împărțeli pentru toți, în fiecare zi',
+  'Săgeți și Enter: alege și joacă o carte',
+  '1–4, N, A: licitează o culoare, fără atu, tot atu',
+  'P pas, D contra, R recontra',
+  'Esc: pauză',
+  'Atinge o carte ca s-o joci',
+  'Atinge o licitație în bară',
+  'Aceleași patru împărțeli pentru toți: câștigă cele mai multe puncte.',
+  'Împărțelile zilei',
+  'Cea mai mare diferență de victorie',
 ];
 
 export default ro;

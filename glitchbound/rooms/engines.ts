@@ -1,8 +1,9 @@
 /**
- * The games a live room can host (the party games, Crass Act, and Launch Control's live races). Each engine is a set of pure functions over its own State, with
+ * The games a live room can host (the party games, Crass Act, Launch Control's live races and Belot's tables). Each engine is a set of pure functions over its own State, with
  * the same shape, so the room server does not need to know the rules. Rooms made before there was
  * more than one game have no `game` field: they are Crass Act.
  */
+import * as belot from '../src/games/belot/room';
 import * as crassAct from '../src/games/crass-act/engine';
 import * as drag from '../src/games/launch-control/room';
 import * as impostor from '../src/party/impostorRoom';
@@ -14,7 +15,7 @@ import * as nhie from '../src/party/rooms/nhieRoom';
 import * as rps from '../src/party/rooms/rpsRoom';
 import * as unique from '../src/party/rooms/uniqueRoom';
 
-export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag';
+export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot';
 
 /** What every room engine provides (`State` stays opaque to the server). */
 export interface Engine {
@@ -46,6 +47,7 @@ export const ENGINES: Record<GameId, Engine> = {
   unique: unique as unknown as Engine,
   hues: hues as unknown as Engine,
   drag: drag as unknown as Engine,
+  belot: belot as unknown as Engine,
 };
 
 export const isGameId = (v: unknown): v is GameId => typeof v === 'string' && Object.hasOwn(ENGINES, v);

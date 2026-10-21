@@ -12,6 +12,21 @@ import type { GameEntry } from './types';
 export const FLAGSHIP_FALLBACK = ['wait-what', 'launch-control', 'color-recall', 'letter-pinch'];
 export const FLAGSHIP_MAX = 4;
 
+/**
+ * The house picks per site language, where they differ: a language whose players will not get much out
+ * of an English word puzzle sees the table game they look for in its place.
+ */
+export const HOUSE_PICKS: Record<string, readonly string[]> = {
+  bg: ['wait-what', 'belot', 'launch-control', 'color-recall'],
+};
+
+/** Games a language's players tend to look for first: ranked right after the best games in the arcade. */
+export const LOCAL_FIRST: Record<string, readonly string[]> = {
+  bg: ['belot'],
+};
+
+export const housePicks = (lang: string): readonly string[] => HOUSE_PICKS[lang] ?? FLAGSHIP_FALLBACK;
+
 export interface Flagship {
   game: GameEntry;
   /** The day's theme points at this game: it leads the row and wears the theme's sticker. */
@@ -32,13 +47,13 @@ export function chosenFlagships(cat: PublicCatalog, games: readonly { slug: stri
  * other game, up to `max` and without repeats. When the day's theme fits one of them, that one moves
  * to the front.
  */
-export function flagshipGames(games: readonly GameEntry[], chosen: readonly string[], theme?: DayTheme | null, max = FLAGSHIP_MAX): Flagship[] {
+export function flagshipGames(games: readonly GameEntry[], chosen: readonly string[], theme?: DayTheme | null, max = FLAGSHIP_MAX, house: readonly string[] = FLAGSHIP_FALLBACK): Flagship[] {
   const out: GameEntry[] = [];
   const add = (g: GameEntry | undefined): void => {
     if (g && out.length < max && !out.includes(g)) out.push(g);
   };
   for (const slug of chosen) add(games.find((g) => g.slug === slug));
-  for (const slug of FLAGSHIP_FALLBACK) add(games.find((g) => g.slug === slug));
+  for (const slug of house) add(games.find((g) => g.slug === slug));
   for (const g of games) add(g);
   const lead = theme ? themeGames(theme, out)[0] : undefined;
   const ordered = lead ? [lead, ...out.filter((g) => g !== lead)] : out;

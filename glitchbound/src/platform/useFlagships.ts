@@ -1,4 +1,5 @@
-import { chosenFlagships, flagshipGames, type Flagship } from '../catalog/flagships';
+import { chosenFlagships, flagshipGames, FLAGSHIP_MAX, housePicks, type Flagship } from '../catalog/flagships';
+import { useLang } from '../i18n';
 import { orderByLayout } from '../catalog/settings';
 import { dayKey } from './dates';
 import { useNow } from './hooks';
@@ -12,7 +13,8 @@ import { themeOf, type DayTheme } from './themes';
  */
 export function useFlagships(): { list: Flagship[]; theme: DayTheme } {
   const live = useLiveCatalog();
+  const lang = useLang();
   const theme = themeOf(dayKey(useNow(60_000)));
   const games = orderByLayout(live.games, live.layout).filter((g) => !live.settings(g.slug).maintenance);
-  return { list: flagshipGames(games, chosenFlagships(live.raw, games), theme), theme };
+  return { list: flagshipGames(games, chosenFlagships(live.raw, games), theme, FLAGSHIP_MAX, housePicks(lang)), theme };
 }

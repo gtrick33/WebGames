@@ -1907,6 +1907,21 @@ const fr: string[] = [
   'Encore un essai au défi du jour',
   'Multijoueur en direct',
   'Joue en direct avec tes amis, chacun sur son appareil ({n} joueurs)',
+  'Le classique des levées à quatre : annonce, déclare et mène ton équipe à 151.',
+  'Deux équipes de deux, 32 cartes, partenaires face à face. Annonce une couleur, sans atout ou tout atout, dis contre et surcontre, déclare tierces, cinquantes, cents et carrés, annonce la belote et file vers 151 avec le décompte de club : donnes dedans, suspendues et capot compris. Joue les quatre donnes du jour (les mêmes pour tous), une partie complète contre l’ordinateur de Facile à Expert, ou une table en direct avec tes amis, chacun sur son téléphone.',
+  'Règles de club : contre et surcontre, déclarations, belote, capot, donnes dedans et suspendues',
+  'Des adversaires ordinateur à quatre niveaux, de Facile à Expert',
+  'Des tables en direct à quatre, avec l’ordinateur à chaque place libre',
+  'Les mêmes quatre donnes pour tous, chaque jour',
+  'Flèches et Entrée : choisir et jouer une carte',
+  '1–4, N, A : annoncer une couleur, sans atout, tout atout',
+  'P passer, D contre, R surcontre',
+  'Échap : pause',
+  'Touche une carte pour la jouer',
+  'Touche une annonce dans la barre',
+  'Les mêmes quatre donnes pour tous : le plus de points gagne.',
+  'Donnes du jour',
+  'Plus grand écart de victoire',
 ];
 
 export default fr;

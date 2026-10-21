@@ -8,7 +8,10 @@ import { playerKey } from './challenges';
 
 export type Connection = 'connecting' | 'open' | 'reconnecting' | 'gone';
 
-export type RoomGame = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag';
+export type RoomGame = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot';
+
+/** Rooms that belong to an arcade game (not Party Mode): the game page that opens them. */
+export const GAME_ROOM_PAGE: Partial<Record<RoomGame, string>> = { 'crass-act': '/games/crass-act', drag: '/games/launch-control', belot: '/games/belot' };
 
 /** Creates a room for a game on the server; returns its code. */
 export async function createRoom(game: RoomGame = 'crass-act'): Promise<string> {

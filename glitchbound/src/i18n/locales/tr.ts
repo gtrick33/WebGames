@@ -1907,6 +1907,21 @@ const tr: string[] = [
   'Bugünün mücadelesine bir deneme daha',
   'Canlı çok oyunculu',
   'Arkadaşlarınla canlı oyna, herkes kendi cihazında ({n} oyuncu)',
+  'Dört kişilik el alma klasiği: ihale aç, deklare et, takımını 151\'e taşı.',
+  'İkişer kişilik iki takım, 32 kart, eşler karşılıklı oturur. Bir renk, kozsuz ya da hepsi koz ihale aç, kontra ve rekontra de, üçlü, dörtlü, beşli ve kare deklare et, belote söyle ve kulüp sayımıyla 151\'e koş: içeride kalan, askıda kalan ve valat elleri dahil. Günün dört elini (herkes için aynı), Kolay\'dan Uzman\'a bilgisayar oyuncularına karşı tam bir maçı ya da arkadaşlarınla canlı bir masayı oyna, herkes kendi telefonundan.',
+  'Kulüp kuralları: kontra ve rekontra, deklarasyonlar, belote, valat, içeride ve askıda kalan eller',
+  'Kolay\'dan Uzman\'a dört seviyede bilgisayar oyuncuları',
+  'Dört kişilik canlı masalar, her boş yerde bilgisayar oyuncusu',
+  'Her gün herkes için aynı dört el',
+  'Oklar ve Enter: kart seç ve oyna',
+  '1–4, N, A: renk, kozsuz, hepsi koz ihalesi',
+  'P pas, D kontra, R rekontra',
+  'Esc: duraklat',
+  'Oynamak için bir karta dokun',
+  'İhale çubuğunda bir teklife dokun',
+  'Herkes için aynı dört el: en çok puan kazanır.',
+  'Günün elleri',
+  'En büyük galibiyet farkı',
 ];
 
 export default tr;

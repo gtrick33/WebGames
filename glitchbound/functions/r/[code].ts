@@ -14,7 +14,13 @@ const PARTY: Record<string, { name: string; emoji: string; pitch: string }> = {
   hues: { name: 'Hue Knew?', emoji: '🎨', pitch: 'Describe a secret color in one word. Whoever taps closest on the color board scores.' },
 };
 
-/** GET /r/<code>: a room invite (Crass Act or a Party Mode game). Chats show who is waiting; people land in the room. */
+/** Arcade games with their own live rooms: where the invite lands and how it reads. */
+const GAMES: Record<string, { page: string; title: (host: string) => string; pitch: string; image: string }> = {
+  drag: { page: '/games/launch-control', title: (h) => (h ? `${h} wants to race you in Launch Control 🏁` : 'Race me in Launch Control 🏁'), pitch: 'Head-to-head drag race, live on your own phone.', image: '/games/launch-control/og.jpg' },
+  belot: { page: '/games/belot', title: (h) => (h ? `${h} saved you a seat at the Belot table 🃏` : 'Join my Belot table 🃏'), pitch: 'Four players, two teams, first to 151. Live on your own phone.', image: '/games/belot/og.jpg' },
+};
+
+/** GET /r/<code>: a room invite (Crass Act, a Party Mode game, or an arcade game's table). Chats show who is waiting; people land in the room. */
 export async function onRequestGet({ request, env, params }: Ctx): Promise<Response> {
   const code = String(params?.code ?? '').toUpperCase();
   let host = '';
@@ -34,6 +40,11 @@ export async function onRequestGet({ request, env, params }: Ctx): Promise<Respo
       image: '/og.png',
       replaceUrl: validCode(code) ? `/party?room=${code}` : '/party',
     });
+  const own = Object.hasOwn(GAMES, game) ? GAMES[game] : undefined;
+  if (own) {
+    const description = `Room ${code} · ${players ? `${players} player${players === 1 ? '' : 's'} waiting · ` : ''}${own.pitch} Free, no sign-up.`;
+    return previewPage(env, request, own.page, { title: own.title(host), description, image: own.image, replaceUrl: `${own.page}?room=${code}` });
+  }
   const party = Object.hasOwn(PARTY, game) ? PARTY[game] : undefined;
   if (party) {
     const title = host ? `${host} wants you in a ${party.name} room ${party.emoji}` : `Join my ${party.name} room ${party.emoji}`;

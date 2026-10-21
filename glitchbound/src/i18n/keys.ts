@@ -1912,6 +1912,21 @@ export const KEYS: string[] = [
   "One more try at today’s challenge",
   "Live multiplayer",
   "Play live with friends, each on their own device ({n} players)",
+  "The four-player trick-taking classic: bid, declare, and carry your team to 151.",
+  "Two teams of two, 32 cards, partners sitting opposite. Bid a suit, no trumps or all trumps, call contra and recontra, declare tierces, quartes, quints and carrés, call belote, and race to 151 with the club scoring: inside, hanging and valat deals included. Play today’s four deals (the same for everyone), a full match against computer players from Easy to Expert, or a live table with friends, each on their own phone.",
+  "Club rules: contra and recontra, declarations, belote, valat, inside and hanging deals",
+  "Computer players at four levels, from Easy to Expert",
+  "Live tables for four, with computer players in any empty seat",
+  "The same four deals for everyone, every day",
+  "Arrows and Enter: pick and play a card",
+  "1–4, N, A: bid a suit, no trumps, all trumps",
+  "P pass, D contra, R recontra",
+  "Esc: pause",
+  "Tap a card to play it",
+  "Tap a call in the bidding bar",
+  "The same four deals for everyone: most points wins.",
+  "Today’s deals",
+  "Biggest winning margin",
 ];
 
 export const UI_COUNT = 311;

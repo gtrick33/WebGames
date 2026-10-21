@@ -32,6 +32,7 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
   fussbox: () => import('../games/fussbox/Game'),
   whatsit: () => import('../games/whatsit/Game'),
   'launch-control': () => import('../games/launch-control/Game'),
+  belot: () => import('../games/belot/Game'),
 };
 
 /**

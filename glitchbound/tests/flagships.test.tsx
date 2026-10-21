@@ -112,7 +112,8 @@ describe('next step after a round', () => {
   });
 
   it('then an unplayed game in the same mood', () => {
-    const r = nextStep({ ...base, game: bySlug('neon-rush'), played: new Set(FLAGSHIP_FALLBACK) });
+    // (Throwdown Thursday's own game, Belot, already played)
+    const r = nextStep({ ...base, game: bySlug('neon-rush'), played: new Set([...FLAGSHIP_FALLBACK, 'belot']) });
     expect(r.kind).toBe('mood');
     if (r.kind === 'mood') expect(r.game.moods!.some((m) => bySlug('neon-rush').moods!.includes(m))).toBe(true);
   });
@@ -120,5 +121,18 @@ describe('next step after a round', () => {
   it('falls back to playing again', () => {
     const one = fakeGame({ slug: 'solo', moods: ['chill'] });
     expect(nextStep({ ...base, games: [one], flagships: [], game: one, daily: { game: one, done: true } })).toEqual({ kind: 'again', daily: false });
+  });
+});
+
+describe('language picks', () => {
+  it('Bulgarian-language visitors get Belot among the house picks and first in the grid after them', async () => {
+    const { housePicks, LOCAL_FIRST } = await import('../src/catalog/flagships');
+    expect(housePicks('en')).toEqual(FLAGSHIP_FALLBACK);
+    expect(housePicks('bg')).toContain('belot');
+    expect(housePicks('bg')).not.toContain('letter-pinch');
+    expect(flagshipGames(GAMES, [], null, 4, housePicks('bg')).map((f) => f.game.slug)).toContain('belot');
+    expect(LOCAL_FIRST.bg).toContain('belot');
+    // an admin's own list still wins
+    expect(flagshipGames(GAMES, ['gloop', 'whatsit', 'fussbox', 'neon-rush'], null, 4, housePicks('bg')).map((f) => f.game.slug)).toEqual(['gloop', 'whatsit', 'fussbox', 'neon-rush']);
   });
 });

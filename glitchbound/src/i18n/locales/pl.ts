@@ -1907,6 +1907,21 @@ const pl: string[] = [
   'Jeszcze jedna próba w dzisiejszym wyzwaniu',
   'Multiplayer na żywo',
   'Graj na żywo ze znajomymi, każdy na swoim urządzeniu ({n} graczy)',
+  'Klasyczna gra w lewy dla czterech: licytuj, melduj i doprowadź drużynę do 151.',
+  'Dwie drużyny po dwie osoby, 32 karty, partnerzy siedzą naprzeciw. Licytuj kolor, bez atu lub wszystko atu, mów kontra i rekontra, melduj tercje, kwarty, kwinty i karety, zapowiadaj belote i graj do 151 według klubowego liczenia: z rozdaniami w środku, wiszącymi i walatem. Zagraj dzisiejsze cztery rozdania (takie same dla wszystkich), cały mecz z komputerem od Łatwego do Eksperta albo stół na żywo ze znajomymi, każdy na swoim telefonie.',
+  'Zasady klubowe: kontra i rekontra, meldunki, belote, walat, rozdania w środku i wiszące',
+  'Gracze komputerowi na czterech poziomach, od Łatwego do Eksperta',
+  'Stoły na żywo dla czterech, z komputerem na każdym wolnym miejscu',
+  'Te same cztery rozdania dla wszystkich, codziennie',
+  'Strzałki i Enter: wybierz i zagraj kartę',
+  '1–4, N, A: licytuj kolor, bez atu, wszystko atu',
+  'P pas, D kontra, R rekontra',
+  'Esc: pauza',
+  'Dotknij karty, aby ją zagrać',
+  'Dotknij odzywki na pasku licytacji',
+  'Te same cztery rozdania dla wszystkich: wygrywa najwięcej punktów.',
+  'Dzisiejsze rozdania',
+  'Największa przewaga zwycięstwa',
 ];
 
 export default pl;

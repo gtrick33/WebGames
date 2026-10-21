@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useT } from '../i18n';
+import { useLang, useT } from '../i18n';
 import { flushSync } from 'react-dom';
 import { categoryCounts, isCategory, queryGames, SORTS, type SortId } from '../catalog/catalog';
-import { rankForHome } from '../catalog/flagships';
+import { LOCAL_FIRST, rankForHome } from '../catalog/flagships';
 import { orderByLayout, tileSizeFor } from '../catalog/settings';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { MOODS, type CategoryId, type MoodId } from '../catalog/types';
@@ -61,8 +61,9 @@ export function Arcade() {
   // The default view ranks the grid: the flagships (then any other pinned game), the games this device
   // has played, then the rest. A search or a chosen sort shows exactly what it asked for.
   const flagships = useFlagships().list.map((f) => f.game.slug);
+  const local = LOCAL_FIRST[useLang()] ?? [];
   const pinned = games.filter((g) => live.settings(g.slug).pinned).map((g) => g.slug);
-  const all = q.trim() ? hits : sortParam !== null ? ordered : rankForHome(ordered, [...flagships, ...pinned], recentSlugs(save));
+  const all = q.trim() ? hits : sortParam !== null ? ordered : rankForHome(ordered, [...flagships, ...local, ...pinned], recentSlugs(save));
   const results = (favOnly ? all.filter((g) => favorites.includes(g.slug)) : all).filter((g) => !mood || g.moods?.includes(mood));
   const filtered = q.trim() !== '' || category !== null || favOnly || mood !== null;
   // Search, categories and sort open by themselves when a link (or the player) is using them.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createRoom, roomInfo, type RoomGame } from '../../../platform/rooms';
+import { createRoom, GAME_ROOM_PAGE, roomInfo, type RoomGame } from '../../../platform/rooms';
 import { navigate } from '../../../router/router';
 import { ImpostorRoomPage } from '../ImpostorRoom';
 import { ModeBar } from '../shared';
@@ -24,11 +24,11 @@ export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => 
       live = false;
     };
   }, [code]);
+  const page = game && game !== 'missing' ? GAME_ROOM_PAGE[game] : undefined;
   useEffect(() => {
-    if (game === 'crass-act') navigate(`/games/crass-act?room=${code}`);
-    if (game === 'drag') navigate(`/games/launch-control?room=${code}`);
-  }, [game, code]);
-  if (game === null || game === 'crass-act' || game === 'drag')
+    if (page) navigate(`${page}?room=${code}`);
+  }, [page, code]);
+  if (game === null || page)
     return (
       <div className="pt-screen">
         <ModeBar title={`Room ${code}`} onExit={onLeave} />

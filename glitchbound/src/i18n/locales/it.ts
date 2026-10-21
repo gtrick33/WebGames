@@ -1907,6 +1907,21 @@ const it: string[] = [
   'Un altro tentativo alla sfida di oggi',
   'Multigiocatore dal vivo',
   'Gioca dal vivo con gli amici, ognuno sul suo dispositivo ({n} giocatori)',
+  'Il classico delle prese in quattro: dichiara, accusa e porta la tua squadra a 151.',
+  'Due squadre da due, 32 carte, compagni uno di fronte all’altro. Dichiara un seme, senza briscola o tutto briscola, chiama contro e ricontro, accusa terze, quarte, quinte e carré, chiama la belote e corri a 151 con il conteggio da circolo: mani dentro, sospese e cappotto compresi. Gioca le quattro mani del giorno (uguali per tutti), una partita intera contro il computer da Facile a Esperto, o un tavolo dal vivo con gli amici, ognuno sul suo telefono.',
+  'Regole da circolo: contro e ricontro, accuse, belote, cappotto, mani dentro e sospese',
+  'Avversari al computer in quattro livelli, da Facile a Esperto',
+  'Tavoli dal vivo per quattro, con il computer in ogni posto libero',
+  'Le stesse quattro mani per tutti, ogni giorno',
+  'Frecce e Invio: scegli e gioca una carta',
+  '1–4, N, A: dichiara un seme, senza briscola, tutto briscola',
+  'P passo, D contro, R ricontro',
+  'Esc: pausa',
+  'Tocca una carta per giocarla',
+  'Tocca una dichiarazione nella barra',
+  'Le stesse quattro mani per tutti: vince chi fa più punti.',
+  'Mani del giorno',
+  'Vittoria con più scarto',
 ];
 
 export default it;
