@@ -242,3 +242,80 @@
   font-weight: 600;
   opacity: 0.75;
 }
+
+/* Hidden games stay in the editor, dimmed, so they can be switched back on from here. */
+.al-tile.is-hidden {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+}
+.al-tile.is-hidden.is-sel {
+  opacity: 0.85;
+}
+.al-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  padding: 2px 7px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: #ffd9cf;
+  color: #7a1f12;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+/* "Start here": the four best games this order and the switches give the home page. */
+.al-best {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md, 14px);
+  background: var(--surface);
+}
+.al-best-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.al-best-card button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.al-best-card button img {
+  border-radius: 8px;
+}
+.al-best-card .al-n {
+  position: static;
+}
+.al-best-card.is-default button {
+  border-style: dashed;
+  color: var(--fg-2);
+}
+.al-best-card.is-sel button {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cyan) 40%, transparent);
+}
+.al-best-tag {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.al-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

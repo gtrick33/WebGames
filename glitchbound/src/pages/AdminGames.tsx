@@ -10,13 +10,14 @@ import { challengeForDay, fmt } from '../platform/daily';
 import { addDays, dayKey } from '../platform/dates';
 import { setCatalog } from '../platform/liveCatalog';
 import { Link } from '../router/router';
-import { LayoutEditor, SeasonPicker } from './AdminLayout';
+import { LayoutEditor, SeasonPicker, Switch } from './AdminLayout';
 import { DEFAULT_FEATURED, PARTY_GAMES, type PartyGame } from '../party/catalog';
 
 /**
  * Admin › Games: what players see, without a rebuild. Show or hide games, pin them, choose the home
- * spotlight and NEW badges, pause a broken game, edit texts, hand-pick daily challenges, lay out the
- * home page banners and post a site notice. Every change is written to the change log.
+ * spotlight, the four best games and NEW badges, pause a broken game, edit texts, hand-pick daily
+ * challenges, lay out the home page banners and post a site notice. Every change is written to the
+ * change log.
  */
 
 type Send = (body: Record<string, unknown>, done?: string) => Promise<boolean>;
@@ -410,15 +411,6 @@ function PartyEditor({ g, s, patch, busy }: { g: PartyGame; s: PartySettings; pa
   );
 }
 
-function Switch({ on, label, hint, disabled, onChange }: { on: boolean; label: string; hint?: string; disabled: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button type="button" className={`ag-switch${on ? ' is-on' : ''}`} role="switch" aria-checked={on} disabled={disabled} onClick={() => onChange(!on)} title={hint}>
-      <span className="ag-knob" aria-hidden="true" />
-      {label}
-    </button>
-  );
-}
-
 function Chip({ children, tone }: { children: ReactNode; tone?: 'warn' | 'on' }) {
   return <span className={`ag-chip${tone ? ` is-${tone}` : ''}`}>{children}</span>;
 }
@@ -440,6 +432,7 @@ function GameRow({ game, cat, send, busy, open, onToggle }: { game: GameEntry; c
             {badgeOn && <Chip tone="on">NEW</Chip>}
             {s.pinned && <Chip tone="on">Pinned</Chip>}
             {s.spotlight && <Chip tone="on">Spotlight</Chip>}
+            {s.flagship && <Chip tone="on">Best game</Chip>}
             {game.daily?.length ? !s.inDaily && <Chip>Not in daily</Chip> : null}
             {(s.title || s.tagline || s.description) && <Chip>Edited text</Chip>}
           </span>
@@ -451,7 +444,8 @@ function GameRow({ game, cat, send, busy, open, onToggle }: { game: GameEntry; c
       <div className="ag-switches">
         <Switch on={!s.hidden} label="Visible" hint="Hidden games disappear from the arcade, search and dailies; the page is closed to players." disabled={busy} onChange={(v) => patch({ hidden: !v }, v ? `${game.title} is visible` : `${game.title} is hidden`)} />
         <Switch on={s.pinned} label="Pinned" hint="Shown first in the arcade grid." disabled={busy} onChange={(v) => patch({ pinned: v })} />
-        <Switch on={s.spotlight} label="Spotlight" hint="The big featured game on the home page (one at a time)." disabled={busy} onChange={(v) => patch({ spotlight: v })} />
+        <Switch on={s.spotlight} label="Spotlight" hint="Today’s pick in the hero (one game at a time)." disabled={busy} onChange={(v) => patch({ spotlight: v })} />
+        <Switch on={s.flagship} label="Best game" hint="One of the four Start here cards under the hero, in banner order (see Home page banners)." disabled={busy} onChange={(v) => patch({ flagship: v }, v ? `${game.title} is a best game` : `${game.title} is no longer a best game`)} />
         {game.daily?.length ? <Switch on={s.inDaily} label="In daily rotation" hint="May be picked as Today’s challenge." disabled={busy} onChange={(v) => patch({ inDaily: v })} /> : null}
         <label className="ag-inline">
           NEW badge

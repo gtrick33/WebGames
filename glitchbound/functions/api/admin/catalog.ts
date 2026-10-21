@@ -169,6 +169,7 @@ const LABELS: Record<keyof GameSettings, string> = {
   newBadge: 'NEW badge',
   pinned: 'pinned',
   spotlight: 'spotlight',
+  flagship: 'best game',
   inDaily: 'in daily rotation',
   maintenance: 'maintenance',
   title: 'title',

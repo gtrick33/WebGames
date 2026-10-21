@@ -62,7 +62,7 @@ describe('admin game settings', () => {
   });
 
   it('only accepts valid patches and stores just the differences', () => {
-    expect(sanitizePatch({ hidden: 'yes', newBadge: 'sometimes', pinned: true, title: '  Hi\u0000  ', bogus: 1 })).toEqual({ pinned: true, title: 'Hi' });
+    expect(sanitizePatch({ hidden: 'yes', newBadge: 'sometimes', pinned: true, flagship: true, title: '  Hi\u0000  ', bogus: 1 })).toEqual({ pinned: true, flagship: true, title: 'Hi' });
     expect(sanitizePatch({ tagline: 'x'.repeat(500) }).tagline).toHaveLength(110);
     expect(compactSettings({ ...DEFAULT_SETTINGS, hidden: true, newBadge: 'off' })).toEqual({ hidden: true, newBadge: 'off' });
   });

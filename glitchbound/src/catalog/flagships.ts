@@ -1,12 +1,13 @@
 /**
- * The home page's "Start here" games: the four we would show a friend first. Admins pick them by
- * pinning games; the fallback list fills whatever is left. Pure: shared by the home page, the arcade
- * grid's order and the end-of-round "next up" suggestion.
+ * The home page's "Start here" games: the four we would show a friend first. Admins choose them with
+ * the "Best game" switch on a banner and order them like the banners; the fallback list fills whatever
+ * is left. Pure: shared by the home page, the admin preview, the arcade grid's order and the
+ * end-of-round "next up" suggestion.
  */
 import { themeGames, type DayTheme } from '../platform/themes';
 import type { GameEntry } from './types';
 
-/** The owner's flagships, in order, used where fewer than four games are pinned. */
+/** The owner's flagships, in order, used where fewer than four games carry the Best game switch. */
 export const FLAGSHIP_FALLBACK = ['wait-what', 'launch-control', 'color-recall', 'letter-pinch'];
 export const FLAGSHIP_MAX = 4;
 
@@ -17,12 +18,13 @@ export interface Flagship {
 }
 
 /**
- * Pinned games first (in catalog order), then the fallback list fills up to `max`, without repeats.
- * When the day's theme fits one of them, that one moves to the front.
+ * The chosen games first, in the order `games` comes in (the admins' banner order), then the fallback
+ * list fills up to `max`, without repeats. When the day's theme fits one of them, that one moves to
+ * the front.
  */
-export function flagshipGames(games: readonly GameEntry[], pinned: (slug: string) => boolean, theme?: DayTheme | null, max = FLAGSHIP_MAX): Flagship[] {
+export function flagshipGames(games: readonly GameEntry[], chosen: (slug: string) => boolean, theme?: DayTheme | null, max = FLAGSHIP_MAX): Flagship[] {
   const out: GameEntry[] = [];
-  for (const g of games) if (out.length < max && pinned(g.slug)) out.push(g);
+  for (const g of games) if (out.length < max && chosen(g.slug)) out.push(g);
   for (const slug of FLAGSHIP_FALLBACK) {
     if (out.length >= max) break;
     const g = games.find((x) => x.slug === slug);

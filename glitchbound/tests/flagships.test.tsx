@@ -12,13 +12,16 @@ const none = (): boolean => false;
 const theme = (id: ThemeId) => WEEK.find((t) => t.id === id)!;
 
 describe('flagship games', () => {
-  it('falls back to the four house picks when nothing is pinned', () => {
+  it('falls back to the four house picks when no game carries the Best game switch', () => {
     expect(flagshipGames(GAMES, none).map((f) => f.game.slug)).toEqual(FLAGSHIP_FALLBACK);
   });
 
-  it('puts pinned games first and fills the rest from the fallback list without repeats', () => {
-    const pinned = new Set(['neon-rush', 'color-recall']);
-    expect(flagshipGames(GAMES, (s) => pinned.has(s)).map((f) => f.game.slug)).toEqual(['neon-rush', 'color-recall', 'wait-what', 'launch-control']);
+  it('puts the chosen games first, in the order given, and fills the rest from the fallback list without repeats', () => {
+    const best = new Set(['neon-rush', 'color-recall']);
+    expect(flagshipGames(GAMES, (s) => best.has(s)).map((f) => f.game.slug)).toEqual(['neon-rush', 'color-recall', 'wait-what', 'launch-control']);
+    // The admins' banner order decides the order of the chosen ones.
+    const reversed = [...GAMES].reverse();
+    expect(flagshipGames(reversed, (s) => best.has(s)).map((f) => f.game.slug)).toEqual(['color-recall', 'neon-rush', 'wait-what', 'launch-control']);
   });
 
   it('lets the day’s theme lead: Word Wednesday puts Letter Pinch first, with the sticker', () => {
@@ -40,7 +43,7 @@ describe('flagship games', () => {
     expect(list.map((f) => f.game.slug)).toEqual(FLAGSHIP_FALLBACK);
   });
 
-  it('caps at four even with many pinned games', () => {
+  it('caps at four even with many chosen games', () => {
     expect(flagshipGames(GAMES, () => true)).toHaveLength(4);
   });
 

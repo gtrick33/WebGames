@@ -18,6 +18,8 @@ export interface GameSettings {
   pinned: boolean;
   /** The big featured game on the home page (one at a time). */
   spotlight: boolean;
+  /** One of the home page's "Start here" games (up to four, in banner order; fewer = the house picks fill in). */
+  flagship: boolean;
   /** May be picked as "Today's challenge". */
   inDaily: boolean;
   /** Non-empty: the game is temporarily unavailable and players see this message. */
@@ -33,6 +35,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   newBadge: 'auto',
   pinned: false,
   spotlight: false,
+  flagship: false,
   inDaily: true,
   maintenance: '',
   title: '',
@@ -189,7 +192,7 @@ export const TEXT_LIMITS = { title: 40, tagline: 110, description: 600, maintena
 export function sanitizePatch(body: unknown): Partial<GameSettings> {
   const b = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
   const out: Partial<GameSettings> = {};
-  for (const k of ['hidden', 'pinned', 'spotlight', 'inDaily'] as const) if (typeof b[k] === 'boolean') out[k] = b[k];
+  for (const k of ['hidden', 'pinned', 'spotlight', 'flagship', 'inDaily'] as const) if (typeof b[k] === 'boolean') out[k] = b[k];
   if (b.newBadge === 'auto' || b.newBadge === 'on' || b.newBadge === 'off') out.newBadge = b.newBadge;
   for (const k of ['maintenance', 'title', 'tagline', 'description'] as const) if (typeof b[k] === 'string') out[k] = clean(b[k], TEXT_LIMITS[k]);
   return out;
