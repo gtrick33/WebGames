@@ -143,6 +143,14 @@ export interface GameEntry {
    */
   partyOnly?: boolean;
   /**
+   * Live multiplayer: friends play together at the same moment in a live room (rooms/worker.ts), each
+   * on their own device. Wherever the game is listed it carries the "Live multiplayer" label.
+   */
+  live?: {
+    /** How many play in one room, e.g. "2" or "2–4". */
+    players: string;
+  };
+  /**
    * Adults-only content (18+). Wherever the game is listed it carries the "18+ Adults only" label (never
    * replaced by a sticker), its page is marked `rating: adult` for search engines, and the game itself
    * asks players to confirm their age before it starts.

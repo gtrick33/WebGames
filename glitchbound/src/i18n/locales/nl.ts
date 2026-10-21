@@ -1905,6 +1905,8 @@ const nl: string[] = [
   'Keuze voor {theme}',
   'Meer zoals {game}',
   'Nog een poging op de uitdaging van vandaag',
+  'Live multiplayer',
+  'Speel live met vrienden, ieder op een eigen apparaat ({n} spelers)',
 ];
 
 export default nl;

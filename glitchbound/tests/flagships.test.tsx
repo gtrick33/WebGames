@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FLAGSHIP_FALLBACK, flagshipGames, rankForHome } from '../src/catalog/flagships';
+import { chosenFlagships, FLAGSHIP_FALLBACK, flagshipGames, rankForHome, toggleFlagship } from '../src/catalog/flagships';
 import { GAMES } from '../src/catalog/games';
 import { FlagshipRow } from '../src/components/FlagshipRow';
 import { nextStep } from '../src/platform/nextStep';
@@ -8,48 +8,55 @@ import { WEEK, type ThemeId } from '../src/platform/themes';
 import { fakeGame } from './fixtures';
 
 const bySlug = (slug: string) => GAMES.find((g) => g.slug === slug)!;
-const none = (): boolean => false;
 const theme = (id: ThemeId) => WEEK.find((t) => t.id === id)!;
 
 describe('flagship games', () => {
-  it('falls back to the four house picks when no game carries the Best game switch', () => {
-    expect(flagshipGames(GAMES, none).map((f) => f.game.slug)).toEqual(FLAGSHIP_FALLBACK);
+  it('falls back to the four house picks when nothing was chosen', () => {
+    expect(flagshipGames(GAMES, []).map((f) => f.game.slug)).toEqual(FLAGSHIP_FALLBACK);
   });
 
-  it('puts the chosen games first, in the order given, and fills the rest from the fallback list without repeats', () => {
-    const best = new Set(['neon-rush', 'color-recall']);
-    expect(flagshipGames(GAMES, (s) => best.has(s)).map((f) => f.game.slug)).toEqual(['neon-rush', 'color-recall', 'wait-what', 'launch-control']);
-    // The admins' banner order decides the order of the chosen ones.
-    const reversed = [...GAMES].reverse();
-    expect(flagshipGames(reversed, (s) => best.has(s)).map((f) => f.game.slug)).toEqual(['color-recall', 'neon-rush', 'wait-what', 'launch-control']);
+  it('keeps the admins’ order and fills the rest from the house picks without repeats', () => {
+    expect(flagshipGames(GAMES, ['neon-rush', 'color-recall']).map((f) => f.game.slug)).toEqual(['neon-rush', 'color-recall', 'wait-what', 'launch-control']);
+    expect(flagshipGames(GAMES, ['color-recall', 'neon-rush']).map((f) => f.game.slug)).toEqual(['color-recall', 'neon-rush', 'wait-what', 'launch-control']);
   });
 
   it('lets the day’s theme lead: Word Wednesday puts Letter Pinch first, with the sticker', () => {
-    const list = flagshipGames(GAMES, none, theme('words'));
+    const list = flagshipGames(GAMES, [], theme('words'));
     expect(list[0]).toMatchObject({ game: { slug: 'letter-pinch' }, themed: true });
     expect(list.filter((f) => f.themed)).toHaveLength(1);
     expect(list.map((f) => f.game.slug).sort()).toEqual([...FLAGSHIP_FALLBACK].sort());
   });
 
   it('maps the other themed days to the owner’s flagships', () => {
-    expect(flagshipGames(GAMES, none, theme('trivia'))[0]!.game.slug).toBe('wait-what');
-    expect(flagshipGames(GAMES, none, theme('throttle'))[0]!.game.slug).toBe('launch-control');
-    expect(flagshipGames(GAMES, none, theme('chill'))[0]!.game.slug).toBe('color-recall');
+    expect(flagshipGames(GAMES, [], theme('trivia'))[0]!.game.slug).toBe('wait-what');
+    expect(flagshipGames(GAMES, [], theme('throttle'))[0]!.game.slug).toBe('launch-control');
+    expect(flagshipGames(GAMES, [], theme('chill'))[0]!.game.slug).toBe('color-recall');
   });
 
   it('has no themed card on Throwdown Thursday', () => {
-    const list = flagshipGames(GAMES, none, theme('throwdown'));
+    const list = flagshipGames(GAMES, [], theme('throwdown'));
     expect(list.some((f) => f.themed)).toBe(false);
     expect(list.map((f) => f.game.slug)).toEqual(FLAGSHIP_FALLBACK);
   });
 
-  it('caps at four even with many chosen games', () => {
-    expect(flagshipGames(GAMES, () => true)).toHaveLength(4);
+  it('caps at four, skips games players cannot see and keeps the row full', () => {
+    expect(flagshipGames(GAMES, GAMES.map((g) => g.slug))).toHaveLength(4);
+    const games = GAMES.filter((g) => g.slug !== 'wait-what');
+    const row = flagshipGames(games, ['wait-what']).map((f) => f.game.slug);
+    expect(row.slice(0, 3)).toEqual(['launch-control', 'color-recall', 'letter-pinch']);
+    expect(row).toHaveLength(4);
   });
 
-  it('skips fallback games that are not in the catalog it is given', () => {
-    const games = GAMES.filter((g) => g.slug !== 'wait-what');
-    expect(flagshipGames(games, none).map((f) => f.game.slug)).toEqual(['launch-control', 'color-recall', 'letter-pinch']);
+  it('reads the saved list, else the old per-game switch in the given order', () => {
+    const cat = { settings: { 'neon-rush': { flagship: true }, 'gloop': { flagship: true } }, picks: {}, notice: null };
+    expect(chosenFlagships(cat, GAMES)).toEqual(GAMES.filter((g) => g.slug === 'neon-rush' || g.slug === 'gloop').map((g) => g.slug));
+    expect(chosenFlagships({ ...cat, flagships: ['whatsit'] }, GAMES)).toEqual(['whatsit']);
+  });
+
+  it('switches a game in (taking the last card) and out (a house pick fills in)', () => {
+    expect(toggleFlagship(GAMES, [], 'neon-rush', true)).toEqual(['wait-what', 'launch-control', 'color-recall', 'neon-rush']);
+    expect(toggleFlagship(GAMES, ['neon-rush', 'gloop', 'fussbox', 'whatsit'], 'gloop', false)).toEqual(['neon-rush', 'fussbox', 'whatsit', 'wait-what']);
+    expect(toggleFlagship(GAMES, [], 'wait-what', true)).toEqual(FLAGSHIP_FALLBACK);
   });
 });
 

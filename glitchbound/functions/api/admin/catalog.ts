@@ -3,7 +3,7 @@ import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http'
 import { requireAdmin } from '../../../server/session';
 import { getGame } from '../../../src/catalog/catalog';
 import { GAMES } from '../../../src/catalog/games';
-import { compactParty, compactSettings, isDay, partySettingsFor, sanitizeLayout, sanitizeNotice, sanitizePartyPatch, sanitizePatch, sanitizePick, settingsFor, type GameSettings, type PartySettings } from '../../../src/catalog/settings';
+import { compactParty, compactSettings, isDay, partySettingsFor, sanitizeFlagships, sanitizeLayout, sanitizeNotice, sanitizePartyPatch, sanitizePatch, sanitizePick, settingsFor, type GameSettings, type PartySettings } from '../../../src/catalog/settings';
 import { isPartyId, PARTY_GAMES } from '../../../src/party/catalog';
 import type { AdminCatalog } from '../../../src/platform/apiTypes';
 import { HOLIDAYS, isSeasonSetting } from '../../../src/platform/seasons';
@@ -34,6 +34,7 @@ const who = (u: { nickname: string; email: string }): string => u.nickname || u.
  *   { action: 'daily', day, pick | null }  hand-pick (or clear) the daily challenge for a date
  *   { action: 'notice', notice | null }    set or remove the site banner
  *   { action: 'layout', layout | null }    home page banner order, sizes, colors and stickers (null = automatic)
+ *   { action: 'flagships', list | null }   the home page's best games, in order (null = the house picks)
  *   { action: 'season', season }           holiday look: 'auto' (by the calendar), 'off' or a holiday id
  *   { action: 'party', id, patch | null }  a Party Mode game's settings (null = back to the defaults)
  */
@@ -127,6 +128,24 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
       const first = layout.order.slice(0, 3).map((slug) => getGame(slug)?.title ?? slug);
       await logAdmin(env, by, 'layout', `Home page banners updated${first.length ? `: ${first.join(', ')} first` : ''}`);
       return json({ ok: true, layout });
+    }
+    case 'flagships': {
+      const list = body.list === null ? null : sanitizeFlagships(body.list, GAMES);
+      if (body.list !== null && !list) return bad('nothing_to_change');
+      const cat = await loadCatalog(env, today(), today());
+      const statements = [
+        list
+          ? env.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('flagships', ?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by").bind(JSON.stringify(list), now, by)
+          : env.DB.prepare("DELETE FROM site_settings WHERE key = 'flagships'"),
+      ];
+      // The old per-game switch is retired: clear it so "back to the house picks" really means them.
+      for (const [slug, s] of Object.entries(cat.settings)) {
+        if (!s.flagship) continue;
+        statements.push(env.DB.prepare('UPDATE game_settings SET data = ?, updated_at = ?, updated_by = ? WHERE slug = ?').bind(JSON.stringify(compactSettings({ ...settingsFor(cat, slug), flagship: false })), now, by, slug));
+      }
+      await env.DB.batch(statements);
+      await logAdmin(env, by, 'flagships', list ? `Our best games: ${list.map((slug) => getGame(slug)?.title ?? slug).join(', ')}` : 'Our best games: back to the house picks');
+      return json({ ok: true, flagships: list });
     }
     case 'season': {
       if (!isSeasonSetting(body.season)) return bad('invalid_season');

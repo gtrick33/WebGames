@@ -11,6 +11,7 @@ import {
   DEFAULT_SETTINGS,
   EMPTY_CATALOG,
   orderByLayout,
+  sanitizeFlagships,
   sanitizeLayout,
   sanitizeNotice,
   sanitizePatch,
@@ -21,6 +22,7 @@ import {
   tileSizeFor,
   type PublicCatalog,
 } from '../src/catalog/settings';
+import { loadCatalog } from '../server/catalogSettings';
 import { challengeForDay } from '../src/platform/daily';
 import { addDays } from '../src/platform/dates';
 import { memoryD1 } from './d1';
@@ -62,7 +64,8 @@ describe('admin game settings', () => {
   });
 
   it('only accepts valid patches and stores just the differences', () => {
-    expect(sanitizePatch({ hidden: 'yes', newBadge: 'sometimes', pinned: true, flagship: true, title: '  Hi\u0000  ', bogus: 1 })).toEqual({ pinned: true, flagship: true, title: 'Hi' });
+    // The old per-game Best game switch is read but no longer written.
+    expect(sanitizePatch({ hidden: 'yes', newBadge: 'sometimes', pinned: true, flagship: true, title: '  Hi\u0000  ', bogus: 1 })).toEqual({ pinned: true, title: 'Hi' });
     expect(sanitizePatch({ tagline: 'x'.repeat(500) }).tagline).toHaveLength(110);
     expect(compactSettings({ ...DEFAULT_SETTINGS, hidden: true, newBadge: 'off' })).toEqual({ hidden: true, newBadge: 'off' });
   });
@@ -85,6 +88,25 @@ describe('admin API', () => {
     const { cookie } = await signIn(env, new Request('http://localhost'), { sub: 'dev:boss', email: 'boss@example.com', name: 'Boss', givenName: '', picture: '', provider: 'email' });
     return { db, env, cookie: cookie.split(';')[0]! };
   }
+
+  it('saves the best games as an ordered list, retires the old switch, and goes back to the house picks', async () => {
+    const { env, cookie } = await asAdmin();
+    const post = async (body: unknown) => {
+      const request = new Request('http://localhost/api/admin/catalog', { method: 'POST', headers: { origin: 'http://localhost', cookie, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      return changeCatalog({ request, env });
+    };
+    expect((await post({ action: 'game', slug: 'gloop', patch: { pinned: true } })).status).toBe(200);
+    // An old row with the retired switch on.
+    await env.DB.prepare('UPDATE game_settings SET data = ? WHERE slug = ?').bind(JSON.stringify({ pinned: true, flagship: true }), 'gloop').run();
+    expect((await post({ action: 'flagships', list: ['whatsit', 'crass-act', 'nope', 'whatsit', 'gloop', 'fussbox', 'neon-rush'] })).status).toBe(200);
+    let cat = await loadCatalog(env, '2026-01-01', '2026-01-02');
+    expect(cat.flagships).toEqual(['whatsit', 'gloop', 'fussbox', 'neon-rush']);
+    expect(cat.settings.gloop).toEqual({ pinned: true });
+    expect((await post({ action: 'flagships', list: [] })).status).toBe(400);
+    expect((await post({ action: 'flagships', list: null })).status).toBe(200);
+    cat = await loadCatalog(env, '2026-01-01', '2026-01-02');
+    expect(cat.flagships).toBeUndefined();
+  });
 
   it('refuses a notice link it would drop, instead of saving the notice without it', async () => {
     const { env, cookie } = await asAdmin();
@@ -143,6 +165,15 @@ describe('daily challenge with admin rules', () => {
     expect(c.target).toBe(4321);
     expect(c.label).toContain('4,321');
     expect(challengeForDay(days[11]!, GAMES, rules)).toEqual(challengeForDay(days[11]!, GAMES, null));
+  });
+});
+
+describe('best games list', () => {
+  it('keeps known arcade games once each, at most four', () => {
+    expect(sanitizeFlagships(['gloop', 'gloop', 'crass-act', 'x', 3, 'whatsit'], GAMES)).toEqual(['gloop', 'whatsit']);
+    expect(sanitizeFlagships(['a'], GAMES)).toBeNull();
+    expect(sanitizeFlagships('gloop', GAMES)).toBeNull();
+    expect(sanitizeFlagships(GAMES.map((g) => g.slug), GAMES)).toHaveLength(4);
   });
 });
 

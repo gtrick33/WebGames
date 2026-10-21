@@ -40,6 +40,9 @@ describe('homepage', () => {
     await waitFor(() => expect(within(party).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/party?play=impostor'));
     const arcade = screen.getByRole('region', { name: 'The arcade' });
     expect(within(arcade).getByRole('link', { name: 'Neon Rush' }).getAttribute('href')).toBe('/games/neon-rush');
+    // Games friends can play together live carry the label, and only those.
+    const liveTiles = [...arcade.querySelectorAll('.live-badge')].map((b) => b.closest('article')!.querySelector('.tile-link')!.textContent);
+    expect(liveTiles).toEqual(['Launch Control']);
   });
 
   it('picks games by mood, keeping the mood in the URL', () => {

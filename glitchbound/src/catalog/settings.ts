@@ -18,7 +18,10 @@ export interface GameSettings {
   pinned: boolean;
   /** The big featured game on the home page (one at a time). */
   spotlight: boolean;
-  /** One of the home page's "Start here" games (up to four, in banner order; fewer = the house picks fill in). */
+  /**
+   * Before the best games became a list of their own (PublicCatalog.flagships): one of the "Start here"
+   * games. Still read when no list was saved; never written any more.
+   */
   flagship: boolean;
   /** May be picked as "Today's challenge". */
   inDaily: boolean;
@@ -115,6 +118,8 @@ export interface PublicCatalog {
   layout?: HomeLayout | null;
   /** The holiday look (missing = automatic, by the calendar). */
   season?: SeasonSetting;
+  /** The home page's "Start here" games in order (missing or null = the house picks). */
+  flagships?: string[] | null;
 }
 
 export const EMPTY_CATALOG: PublicCatalog = { settings: {}, picks: {}, notice: null, layout: null };
@@ -192,7 +197,7 @@ export const TEXT_LIMITS = { title: 40, tagline: 110, description: 600, maintena
 export function sanitizePatch(body: unknown): Partial<GameSettings> {
   const b = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
   const out: Partial<GameSettings> = {};
-  for (const k of ['hidden', 'pinned', 'spotlight', 'flagship', 'inDaily'] as const) if (typeof b[k] === 'boolean') out[k] = b[k];
+  for (const k of ['hidden', 'pinned', 'spotlight', 'inDaily'] as const) if (typeof b[k] === 'boolean') out[k] = b[k];
   if (b.newBadge === 'auto' || b.newBadge === 'on' || b.newBadge === 'off') out.newBadge = b.newBadge;
   for (const k of ['maintenance', 'title', 'tagline', 'description'] as const) if (typeof b[k] === 'string') out[k] = clean(b[k], TEXT_LIMITS[k]);
   return out;
@@ -241,6 +246,14 @@ export function sanitizeNotice(body: unknown, now: number): Notice | null {
   const link = /^\/[a-z0-9/_\-?=&#.]*$/i.test(rawLink) || /^https:\/\/[^\s"'<>]+$/i.test(rawLink) ? rawLink : '';
   const tone: NoticeTone = b.tone === 'warning' || b.tone === 'party' ? b.tone : 'info';
   return { id: now.toString(36), text, link, tone };
+}
+
+/** A valid best games list: known arcade games, no repeats, at most four (null when empty). */
+export function sanitizeFlagships(body: unknown, games: readonly GameEntry[], max = 4): string[] | null {
+  if (!Array.isArray(body)) return null;
+  const ok = new Set(games.filter((g) => !g.partyOnly).map((g) => g.slug));
+  const out = [...new Set(body.filter((x): x is string => typeof x === 'string' && ok.has(x)))].slice(0, max);
+  return out.length ? out : null;
 }
 
 /** A valid layout for known games (unknown slugs, sizes and colors are dropped), or null when empty. */

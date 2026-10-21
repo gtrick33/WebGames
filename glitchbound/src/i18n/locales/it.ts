@@ -1905,6 +1905,8 @@ const it: string[] = [
   'Scelta per {theme}',
   'Altri come {game}',
   'Un altro tentativo alla sfida di oggi',
+  'Multigiocatore dal vivo',
+  'Gioca dal vivo con gli amici, ognuno sul suo dispositivo ({n} giocatori)',
 ];
 
 export default it;

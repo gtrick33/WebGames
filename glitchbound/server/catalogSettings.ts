@@ -12,13 +12,14 @@ import type { Env } from './http';
 
 export async function loadCatalog(env: Env, from: string, to: string): Promise<PublicCatalog> {
   try {
-    const [settings, picks, notice, layout, season, party] = await Promise.all([
+    const [settings, picks, notice, layout, season, party, flagships] = await Promise.all([
       env.DB.prepare('SELECT slug, data FROM game_settings').all<{ slug: string; data: string }>(),
       env.DB.prepare('SELECT day, slug, template, target FROM daily_picks WHERE day >= ? AND day <= ?').bind(from, to).all<{ day: string; slug: string; template: number | null; target: number | null }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'notice'").first<{ value: string }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'layout'").first<{ value: string }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'season'").first<{ value: string }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'party'").first<{ value: string }>(),
+      env.DB.prepare("SELECT value FROM site_settings WHERE key = 'flagships'").first<{ value: string }>(),
     ]);
     const out: PublicCatalog = { settings: {}, picks: {}, notice: null, layout: null };
     if (isSeasonSetting(season?.value)) out.season = season.value;
@@ -50,6 +51,14 @@ export async function loadCatalog(env: Env, from: string, to: string): Promise<P
         out.layout = JSON.parse(layout.value) as HomeLayout;
       } catch {
         /* automatic layout */
+      }
+    }
+    if (flagships?.value) {
+      try {
+        const list = JSON.parse(flagships.value) as unknown;
+        if (Array.isArray(list)) out.flagships = list.filter((x): x is string => typeof x === 'string');
+      } catch {
+        /* the house picks */
       }
     }
     return out;

@@ -1905,6 +1905,8 @@ const ro: string[] = [
   'Alegerea pentru {theme}',
   'Mai multe ca {game}',
   'Încă o încercare la provocarea de azi',
+  'Multiplayer live',
+  'Joacă live cu prietenii, fiecare pe dispozitivul lui ({n} jucători)',
 ];
 
 export default ro;

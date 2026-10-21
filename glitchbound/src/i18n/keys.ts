@@ -1910,6 +1910,8 @@ export const KEYS: string[] = [
   "{theme} pick",
   "More like {game}",
   "One more try at today’s challenge",
+  "Live multiplayer",
+  "Play live with friends, each on their own device ({n} players)",
 ];
 
 export const UI_COUNT = 311;

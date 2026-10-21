@@ -10,6 +10,7 @@ import { challengeForDay, fmt } from '../platform/daily';
 import { addDays, dayKey } from '../platform/dates';
 import { setCatalog } from '../platform/liveCatalog';
 import { Link } from '../router/router';
+import { BestGamesEditor, savedBest, sendBestToggle } from './AdminBest';
 import { LayoutEditor, SeasonPicker, Switch } from './AdminLayout';
 import { DEFAULT_FEATURED, PARTY_GAMES, type PartyGame } from '../party/catalog';
 
@@ -40,7 +41,7 @@ export function AdminGames() {
           setData(d);
           setError('');
           // The rest of the site (open in this tab) follows the change right away.
-          setCatalog({ settings: d.settings, picks: d.picks, notice: d.notice, layout: d.layout ?? null, season: d.season, party: d.party });
+          setCatalog({ settings: d.settings, picks: d.picks, notice: d.notice, layout: d.layout ?? null, season: d.season, party: d.party, flagships: d.flagships ?? null });
         })
         .catch((e: unknown) => setError(e instanceof ApiError && e.status === 403 ? 'Only admins can change games.' : 'Could not load the game settings.')),
     [],
@@ -94,6 +95,7 @@ export function AdminGames() {
       {view === 'arcade' ? (
         <>
           <DailyPlanner data={data} send={send} busy={busy} />
+          <BestGamesEditor key={JSON.stringify(savedBest(data))} data={data} send={send} busy={busy} />
           <LayoutEditor key={JSON.stringify(data.layout ?? null)} data={data} send={send} busy={busy} />
           <GamesList data={data} send={send} busy={busy} />
         </>
@@ -279,6 +281,7 @@ function GamesList({ data, send, busy }: { data: AdminCatalog; send: Send; busy:
   const [open, setOpen] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'changed' | 'hidden'>('all');
   const arcade = GAMES.filter((g) => !g.partyOnly);
+  const best = savedBest(data);
   const list = arcade.filter((g) => {
     const s = data.settings[g.slug];
     return filter === 'all' || (filter === 'hidden' ? s?.hidden : s && Object.keys(s).length > 0);
@@ -299,7 +302,7 @@ function GamesList({ data, send, busy }: { data: AdminCatalog; send: Send; busy:
       {list.length === 0 && <p className="info-small">Nothing here.</p>}
       <ul className="ag-games">
         {list.map((g) => (
-          <GameRow key={g.slug} game={g} cat={data} send={send} busy={busy} open={open === g.slug} onToggle={() => setOpen(open === g.slug ? null : g.slug)} />
+          <GameRow key={g.slug} game={g} cat={data} best={best.includes(g.slug)} onBest={(on) => sendBestToggle(data, send, g, on)} send={send} busy={busy} open={open === g.slug} onToggle={() => setOpen(open === g.slug ? null : g.slug)} />
         ))}
       </ul>
     </section>
@@ -415,7 +418,7 @@ function Chip({ children, tone }: { children: ReactNode; tone?: 'warn' | 'on' })
   return <span className={`ag-chip${tone ? ` is-${tone}` : ''}`}>{children}</span>;
 }
 
-function GameRow({ game, cat, send, busy, open, onToggle }: { game: GameEntry; cat: PublicCatalog; send: Send; busy: boolean; open: boolean; onToggle: () => void }) {
+function GameRow({ game, cat, best, onBest, send, busy, open, onToggle }: { game: GameEntry; cat: PublicCatalog; best: boolean; onBest: (on: boolean) => void; send: Send; busy: boolean; open: boolean; onToggle: () => void }) {
   const s = settingsFor(cat, game.slug);
   const patch = (p: Partial<GameSettings>, msg = 'Saved'): void => void send({ action: 'game', slug: game.slug, patch: p }, msg);
   const autoNew = autoNewSlugs(applySettings(GAMES, cat)).has(game.slug);
@@ -432,7 +435,7 @@ function GameRow({ game, cat, send, busy, open, onToggle }: { game: GameEntry; c
             {badgeOn && <Chip tone="on">NEW</Chip>}
             {s.pinned && <Chip tone="on">Pinned</Chip>}
             {s.spotlight && <Chip tone="on">Spotlight</Chip>}
-            {s.flagship && <Chip tone="on">Best game</Chip>}
+            {best && <Chip tone="on">Best game</Chip>}
             {game.daily?.length ? !s.inDaily && <Chip>Not in daily</Chip> : null}
             {(s.title || s.tagline || s.description) && <Chip>Edited text</Chip>}
           </span>
@@ -445,7 +448,7 @@ function GameRow({ game, cat, send, busy, open, onToggle }: { game: GameEntry; c
         <Switch on={!s.hidden} label="Visible" hint="Hidden games disappear from the arcade, search and dailies; the page is closed to players." disabled={busy} onChange={(v) => patch({ hidden: !v }, v ? `${game.title} is visible` : `${game.title} is hidden`)} />
         <Switch on={s.pinned} label="Pinned" hint="Shown first in the arcade grid." disabled={busy} onChange={(v) => patch({ pinned: v })} />
         <Switch on={s.spotlight} label="Spotlight" hint="Today’s pick in the hero (one game at a time)." disabled={busy} onChange={(v) => patch({ spotlight: v })} />
-        <Switch on={s.flagship} label="Best game" hint="One of the four Start here cards under the hero, in banner order (see Home page banners)." disabled={busy} onChange={(v) => patch({ flagship: v }, v ? `${game.title} is a best game` : `${game.title} is no longer a best game`)} />
+        {!game.partyOnly && <Switch on={best} label="Best game" hint="One of the four Start here cards under the hero. Switching one on takes the last card; order them in Our best games." disabled={busy || s.hidden} onChange={onBest} />}
         {game.daily?.length ? <Switch on={s.inDaily} label="In daily rotation" hint="May be picked as Today’s challenge." disabled={busy} onChange={(v) => patch({ inDaily: v })} /> : null}
         <label className="ag-inline">
           NEW badge

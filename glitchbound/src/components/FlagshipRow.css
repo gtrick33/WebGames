@@ -56,6 +56,7 @@
   transition-duration: 0.08s;
 }
 .flagship-art {
+  position: relative;
   aspect-ratio: 1;
   overflow: hidden;
   border-bottom: 2px solid var(--ink);

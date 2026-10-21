@@ -1905,6 +1905,8 @@ const de: string[] = [
   'Tipp für {theme}',
   'Mehr wie {game}',
   'Noch ein Versuch bei der heutigen Challenge',
+  'Live-Mehrspieler',
+  'Spiel live mit Freunden, jeder auf seinem eigenen Gerät ({n} Spieler)',
 ];
 
 export default de;

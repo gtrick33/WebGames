@@ -3,6 +3,7 @@ import { tGame, useT } from '../i18n';
 import { useFlagships } from '../platform/useFlagships';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
+import { LiveBadge } from './LiveBadge';
 import './FlagshipRow.css';
 
 /**
@@ -31,6 +32,7 @@ export function FlagshipRow() {
           <li key={g.slug} className="flagship pop-in" data-accent={g.accent} style={{ '--i': i } as CSSProperties}>
             <div className="flagship-art" style={{ background: g.art.bg }}>
               <img src={g.art.tile} alt="" width={512} height={512} decoding="async" loading={i < 2 ? 'eager' : 'lazy'} />
+              <LiveBadge game={g} className="on-art" />
             </div>
             {themed && (
               <span className="sticker flagship-sticker" data-tone="magenta">

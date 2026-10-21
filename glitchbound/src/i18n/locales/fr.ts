@@ -1905,6 +1905,8 @@ const fr: string[] = [
   'Choix {theme}',
   'Dans le genre de {game}',
   'Encore un essai au défi du jour',
+  'Multijoueur en direct',
+  'Joue en direct avec tes amis, chacun sur son appareil ({n} joueurs)',
 ];
 
 export default fr;

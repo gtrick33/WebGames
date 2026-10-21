@@ -1905,6 +1905,8 @@ const tr: string[] = [
   '{theme} seçimi',
   '{game} gibi daha fazlası',
   'Bugünün mücadelesine bir deneme daha',
+  'Canlı çok oyunculu',
+  'Arkadaşlarınla canlı oyna, herkes kendi cihazında ({n} oyuncu)',
 ];
 
 export default tr;

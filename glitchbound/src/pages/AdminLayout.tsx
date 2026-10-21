@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { queryGames } from '../catalog/catalog';
-import { flagshipGames } from '../catalog/flagships';
 import { GAMES } from '../catalog/games';
 import { ACCENTS, applySettings, orderByLayout, settingsFor, STICKER_MAX, tileSizeFor, type GameSettings, type HomeLayout, type TileSize } from '../catalog/settings';
 import type { Accent, GameEntry } from '../catalog/types';
@@ -8,14 +7,14 @@ import type { AdminCatalog } from '../platform/apiTypes';
 import { dayKey } from '../platform/dates';
 import { refreshCatalog } from '../platform/liveCatalog';
 import { activeHoliday, autoHoliday, HOLIDAYS, type SeasonSetting } from '../platform/seasons';
+import { savedBest, sendBestToggle } from './AdminBest';
 import './AdminLayout.css';
 
 /**
  * Admin › Games › Home page banners: the arcade grid in miniature. Click a banner to move it, resize
  * it, recolor it, give it a sticker, or flip its switches (visible, pinned, spotlight, best game);
  * presets restyle the whole grid in one click. The order and looks go live on "Publish"; the switches
- * save right away. The "Start here" strip previews the four best games this order and the switches
- * give the home page.
+ * save right away (Best game edits the same list as Our best games, above).
  */
 
 type Send = (body: Record<string, unknown>, done?: string) => Promise<boolean>;
@@ -52,11 +51,7 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
   }, [editable, draft, data]);
   const selected = shown.find((g) => g.slug === sel) ?? null;
   const flags = (slug: string): GameSettings => settingsFor(data, slug);
-  // The "Start here" row this order and the Best game switches give players (the day's theme may still move one first).
-  const best = flagshipGames(
-    shown.filter((g) => !flags(g.slug).hidden),
-    (slug) => flags(slug).flagship,
-  );
+  const best = savedBest(data);
   const dirty = JSON.stringify(normal(draft, editable)) !== JSON.stringify(normal(saved ?? emptyLayout(), editable));
 
   const update = (fn: (l: HomeLayout) => HomeLayout): void => setDraft((l) => fn({ ...l, sizes: { ...l.sizes }, accents: { ...l.accents }, stickers: { ...l.stickers }, order: [...l.order] }));
@@ -98,25 +93,6 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
       </div>
       <p className="info-small">Click a banner to move, resize, recolor or label it, or to switch it on or off, pin it, spotlight it or make it a best game. Order and looks go live when you publish; the switches save right away. On phones banners show two per row in this order; big and wide ones take the whole row.</p>
 
-      <div className="al-best" role="group" aria-label="Start here: the best games">
-        <span className="al-label">Start here</span>
-        <ol className="al-best-list">
-          {best.map(({ game: g }, i) => {
-            const chosen = flags(g.slug).flagship;
-            return (
-              <li key={g.slug} className={`al-best-card${chosen ? '' : ' is-default'}${sel === g.slug ? ' is-sel' : ''}`}>
-                <button type="button" aria-pressed={sel === g.slug} onClick={() => setSel(sel === g.slug ? null : g.slug)} title={chosen ? 'A best game: click to change it' : 'A house pick, filling in: switch Best game on a banner to choose your own'}>
-                  <span className="al-n mono">{i + 1}</span>
-                  <img src={g.art.tile} alt="" width={36} height={36} style={{ background: g.art.bg }} />
-                  <span className="al-best-name">{g.title}</span>
-                  {!chosen && <span className="al-best-tag mono">default</span>}
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-        <span className="info-small">The four big cards under the hero, in banner order. Switch “Best game” on a banner to choose them; with fewer than four, the house picks fill in. The day’s theme may move one of them to the front.</span>
-      </div>
 
       <div className="al-presets">
         <span className="al-label">Look</span>
@@ -155,7 +131,7 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
               <span className="al-name">
                 {f.pinned && '📌 '}
                 {f.spotlight && '🔦 '}
-                {f.flagship && '⭐ '}
+                {best.includes(g.slug) && '⭐ '}
                 {g.title}
               </span>
             </button>
@@ -171,6 +147,8 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
           count={shown.length}
           layout={draft}
           settings={flags(selected.slug)}
+          best={best.includes(selected.slug)}
+          onBest={(on) => sendBestToggle(data, send, selected, on)}
           busy={busy}
           onFlag={(patch, msg) => void send({ action: 'game', slug: selected.slug, patch }, msg)}
           onMove={(to) => move(selected.slug, to)}
@@ -230,6 +208,9 @@ function TileTools(props: {
   count: number;
   layout: HomeLayout;
   settings: GameSettings;
+  /** In Our best games (the four Start here cards). */
+  best: boolean;
+  onBest: (on: boolean) => void;
   busy: boolean;
   /** Flips one of the game's switches (saved right away, unlike the layout). */
   onFlag: (patch: Partial<GameSettings>, msg?: string) => void;
@@ -276,7 +257,7 @@ function TileTools(props: {
           <Switch on={!s.hidden} label="Visible" hint="Hidden games disappear from the arcade, search and dailies; the page is closed to players." disabled={props.busy} onChange={(v) => props.onFlag({ hidden: !v }, v ? `${game.title} is visible` : `${game.title} is hidden`)} />
           <Switch on={s.pinned} label="Pinned" hint="Shown first in the arcade grid." disabled={props.busy} onChange={(v) => props.onFlag({ pinned: v })} />
           <Switch on={s.spotlight} label="Spotlight" hint="Today’s pick in the hero (one game at a time)." disabled={props.busy} onChange={(v) => props.onFlag({ spotlight: v })} />
-          <Switch on={s.flagship} label="Best game" hint="One of the four Start here cards under the hero, in banner order." disabled={props.busy} onChange={(v) => props.onFlag({ flagship: v }, v ? `${game.title} is a best game` : `${game.title} is no longer a best game`)} />
+          <Switch on={props.best} label="Best game" hint="One of the four Start here cards under the hero. Switching one on takes the last card; order them in Our best games." disabled={props.busy || s.hidden} onChange={props.onBest} />
         </div>
         <span className="info-small">Saved right away, no publish needed.</span>
       </div>

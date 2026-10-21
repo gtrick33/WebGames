@@ -7,6 +7,7 @@ import { Link } from '../router/router';
 import { FavoriteButton } from './FavoriteButton';
 import { GamePreview, hasPreview } from './GamePreview';
 import { Icon } from './Icon';
+import { LiveBadge } from './LiveBadge';
 import './GameTile.css';
 
 /**
@@ -45,6 +46,7 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
           </span>
         )}
         <span className="tile-scan" aria-hidden="true" />
+        {!hover && <LiveBadge game={game} className="on-art" />}
       </div>
       <div className="tile-body">
         <div className="tile-meta">

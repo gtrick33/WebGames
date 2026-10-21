@@ -1,0 +1,54 @@
+/* "Live multiplayer": a pill with a pulsing dot, on tiles, best-game cards and the game page. */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px 4px 8px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: #fffaf2;
+  color: #1d1238;
+  font: 700 10.5px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.live-badge i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--coral);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--coral) 60%, transparent);
+  animation: live-pulse 1.8s ease-out infinite;
+}
+@keyframes live-pulse {
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+/* On a tile or card it sits on the artwork, bottom right. */
+.live-badge.on-art {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1;
+  pointer-events: none;
+}
+@media (max-width: 640px) {
+  .live-badge.on-art {
+    right: 6px;
+    bottom: 6px;
+    padding: 3px 7px 3px 6px;
+    font-size: 9.5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-badge i {
+    animation: none;
+  }
+}

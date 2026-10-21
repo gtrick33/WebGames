@@ -21,6 +21,7 @@ const ChallengeDock = lazy(fresh(() => import('../components/Challenge').then((m
 const ChallengeScores = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeScores }))));
 import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
+import { LiveBadge } from '../components/LiveBadge';
 import { nextStep } from '../platform/nextStep';
 import { useFlagships } from '../platform/useFlagships';
 import { recentSlugs } from '../platform/save';
@@ -507,6 +508,7 @@ export function GamePage({ game }: { game: GameEntry }) {
           <h1>{game.title}</h1>
           <span className="chip">{t(CATEGORIES[game.categories[0]].label)}</span>
           {game.adult && <AdultLabel text={t('Adults only')} />}
+          <LiveBadge game={game} />
         </div>
         <div className="game-actions">
           <FavoriteButton slug={game.slug} title={game.title} />

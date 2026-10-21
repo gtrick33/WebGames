@@ -248,6 +248,7 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'launch-control',
     wallet: true,
+    live: { players: '2' },
     title: 'Launch Control',
     tagline: 'Head-to-head 3D drag races: nail the launch and every shift, tune 50 cars, run the gauntlet.',
     description:
