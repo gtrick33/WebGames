@@ -4,7 +4,7 @@ import { CARS } from './cars';
 import { DEFAULTS, ENVS, HELMETS } from './cosmetics';
 import { freshCondition, type Levels } from './parts';
 import { Stage3D, type CarLook, type CarState } from './scene3d';
-import { DT, Race, specOf, treeOf } from './sim';
+import { DT, lightsOf, Race, specOf } from './sim';
 
 /** Launch Control's attract mode: two tuned cars race the quarter mile head to head in 3D, over and over, blitted onto the tile. */
 export default function Preview({ playing = true }: GamePreviewProps) {
@@ -63,7 +63,7 @@ export default function Preview({ playing = true }: GamePreviewProps) {
           place();
         }
         const state = (r: (typeof race.racers)[number]): CarState => ({ x: r.x, v: r.v, rpm: r.rpm, redline: r.spec.redline, spinning: r.spinLeft > 0, dead: r.dead });
-        stage.renderRace(race.racers.map(state), treeOf(race), t, dt, undefined, { excite: race.green && !race.done ? 0.6 : 0.2 });
+        stage.renderRace(race.racers.map(state), lightsOf(race), t, dt, undefined, { excite: race.out && !race.done ? 0.6 : 0.2 });
         ctx.drawImage(stage.canvas, 0, 0, w, h);
       },
     };

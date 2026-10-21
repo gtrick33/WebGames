@@ -5,7 +5,7 @@ import { COSMETICS, DEFAULTS, getCosmetic } from '../src/games/launch-control/co
 import { addMats, botsFor, botSpec, crateFor, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, idleIncome, idleRate, LADDER, LADDER_SIZE, loanerFor, materialsFor, opponentSpec, purseAt, RACE_SIZE, settle, typicalEt } from '../src/games/launch-control/economy';
 import { ENV_DEFS } from '../src/games/launch-control/envs';
 import { applyWear, effectsOf, failChance, freshCondition, levelGains, MAX_LEVEL, PARTS, raceWear, repairCost, RISKY, stockLevels, upgradeCost, type Levels } from '../src/games/launch-control/parts';
-import { AMBER_GAP, AUTO_LAUNCH, decodeScript, DT, encodeScript, engineForce, forecastEt, forecastRun, GREEN_SECONDS, idealLaunchRpm, JUMP_PENALTY, Race, scoreOf, shiftRpm, shiftWindows, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
+import { AUTO_LAUNCH, FIRST_LIGHT, LIGHT_GAP, LIGHTS, OUT_HOLD_MAX, decodeScript, DT, encodeScript, engineForce, forecastEt, forecastRun, GREEN_SECONDS, idealLaunchRpm, JUMP_PENALTY, Race, scoreOf, shiftRpm, shiftWindows, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
 import { emptySave, sanitize } from '../src/games/launch-control/storage';
 import { rng } from '../src/games/launch-control/util';
 
@@ -76,18 +76,18 @@ describe('the race', () => {
     expect(r1.winner).toBe(r1.order[0]);
   });
 
-  it('the launch is a tap at green: quick is perfect, none goes late, a jump start is punished', () => {
+  it('the launch is a tap at lights out: quick is perfect, none goes late, a jump start is punished', () => {
     const spec = stock('lazzaro');
-    const launchWith = (tapAfterGreen: number | null, earlyTapAt?: number | 'amber') => {
+    const launchWith = (tapAfterGreen: number | null, earlyTapAt?: number | 'lights') => {
       const race = new Race([spec], [{ kind: 'live' }], 3);
       let tapped = false;
       let early = false;
       while (!race.done) {
-        if (earlyTapAt !== undefined && !early && (earlyTapAt === 'amber' ? race.ambersLit >= 2 : race.t >= earlyTapAt)) {
+        if (earlyTapAt !== undefined && !early && (earlyTapAt === 'lights' ? race.lightsOn >= 3 : race.t >= earlyTapAt)) {
           race.tap(0);
           early = true;
         }
-        if (tapAfterGreen !== null && !tapped && race.green && race.t >= race.greenAt + tapAfterGreen) {
+        if (tapAfterGreen !== null && !tapped && race.out && race.t >= race.outAt + tapAfterGreen) {
           race.tap(0);
           tapped = true;
         }
@@ -108,26 +108,32 @@ describe('the race', () => {
     expect(none.reaction).toBeGreaterThanOrEqual(AUTO_LAUNCH - 1e-9);
     expect(none.reaction).toBeLessThan(AUTO_LAUNCH + DT + 1e-9);
     expect(none.launch).toBe('slow');
-    // a tap during the ambers is a jump start (and a second tap at green can't undo it)
-    const jump = launchWith(0.2, 'amber');
+    // a tap while the lights are on is a jump start (and a second tap at lights out can't undo it)
+    const jump = launchWith(0.2, 'lights');
     expect(jump.launch).toBe('jump');
     expect(jump.reaction).toBeGreaterThanOrEqual(JUMP_PENALTY - 1e-9);
     expect(jump.reaction).toBeLessThan(JUMP_PENALTY + DT + 1e-9);
-    // a tap before the first amber is ignored
+    // a tap before the first light is ignored
     expect(launchWith(0.2, 0.5).launch).toBe('perfect');
-    // a sportsman tree: a random hold once staged, three ambers half a second apart, green half a second after
-    const seeds = [1, 2, 3, 4, 5, 6].map((sd) => new Race([spec], [{ kind: 'live' }], sd));
+    // Formula 1 lights: five reds one a second, then out after a random 0 to 3 s with all five lit
+    const seeds = Array.from({ length: 40 }, (_, sd) => new Race([spec], [{ kind: 'live' }], sd + 1));
     for (const r of seeds) {
-      expect(r.amberAt[1]! - r.amberAt[0]!).toBeCloseTo(AMBER_GAP, 9);
-      expect(r.greenAt - r.amberAt[2]!).toBeCloseTo(AMBER_GAP, 9);
+      expect(r.lightAt).toHaveLength(LIGHTS);
+      expect(r.lightAt[0]).toBeCloseTo(FIRST_LIGHT, 9);
+      for (let k = 1; k < LIGHTS; k++) expect(r.lightAt[k]! - r.lightAt[k - 1]!).toBeCloseTo(LIGHT_GAP, 9);
+      const hold = r.outAt - r.lightAt[LIGHTS - 1]!;
+      expect(hold).toBeGreaterThanOrEqual(0);
+      expect(hold).toBeLessThanOrEqual(OUT_HOLD_MAX);
     }
-    expect(new Set(seeds.map((r) => r.amberAt[0]!.toFixed(3))).size).toBeGreaterThan(4);
+    const holds = seeds.map((r) => r.outAt - r.lightAt[LIGHTS - 1]!);
+    expect(Math.min(...holds)).toBeLessThan(0.6);
+    expect(Math.max(...holds)).toBeGreaterThan(2.4);
     expect(quick.crossed!).toBeLessThan(none.crossed!);
     expect(quick.crossed!).toBeLessThan(jump.crossed!);
     expect(scoreOf(quick)).toBeGreaterThan(scoreOf(none));
   });
 
-  it('shift windows sit near the top of the revs, move every race and take about the same time to cross', () => {
+  it('shift windows sit anywhere from 70 to 92 % of the revs, change spot and size every gear and race, and the same for every car', () => {
     const cars = ['bumble', 'kaiser', 'falkon', 'rail'].map(stock);
     const mids = new Set<string>();
     for (let seed = 1; seed <= 12; seed++) {
@@ -137,29 +143,38 @@ describe('the race', () => {
       for (const ws of per)
         for (const w of ws) {
           expect(w.okLo).toBeLessThan(w.lo);
-          expect(w.lo).toBeGreaterThanOrEqual(0.69);
+          expect(w.lo).toBeGreaterThanOrEqual(0.6);
           expect(w.hi).toBeLessThanOrEqual(0.985);
           expect(w.okHi).toBeLessThanOrEqual(0.992);
         }
       mids.add(((per[0]![0]!.lo + per[0]![0]!.hi) / 2).toFixed(3));
     }
     expect(mids.size).toBeGreaterThan(8);
-    // the needle crosses first gear's green in about GREEN_SECONDS in any car
+    // the spots spread over the range, and the greens are not all the same size
+    const all = Array.from({ length: 60 }, (_, sd) => shiftWindows(sd + 1, cars[0]!)).flat();
+    const centres = all.map((w) => (w.lo + w.hi) / 2);
+    expect(Math.min(...centres)).toBeLessThan(0.74);
+    expect(Math.max(...centres)).toBeGreaterThan(0.88);
+    const greens = all.map((w) => w.hi - w.lo);
+    expect(Math.max(...greens) / Math.min(...greens)).toBeGreaterThan(1.35);
+    const yellows = all.map((w) => w.lo - w.okLo);
+    expect(new Set(yellows.map((y) => y.toFixed(3))).size).toBeGreaterThan(20);
+    // the needle crosses first gear's green in GREEN_SECONDS (a random size within the range) in any car
     for (const spec of cars) {
       const race = new Race([spec], [{ kind: 'live' }], 5);
       const me = race.racers[0]!;
       let enter = -1;
       let crossed = -1;
       while (!race.done && crossed < 0) {
-        if (me.phase === 'staging' && race.green) race.tap(0);
+        if (me.phase === 'staging' && race.out) race.tap(0);
         const w = race.windowOf(0)!;
         const f = shiftRpm(me) / spec.redline;
         if (me.phase === 'running' && enter < 0 && f >= w.lo) enter = race.t;
         if (enter >= 0 && f >= w.hi) crossed = race.t - enter;
         race.step();
       }
-      expect(crossed, spec.id).toBeGreaterThan(GREEN_SECONDS * 0.6);
-      expect(crossed, spec.id).toBeLessThan(GREEN_SECONDS * 1.5);
+      expect(crossed, spec.id).toBeGreaterThan(GREEN_SECONDS.min * 0.6);
+      expect(crossed, spec.id).toBeLessThan(GREEN_SECONDS.max * 1.5);
     }
   });
 
@@ -172,7 +187,7 @@ describe('the race', () => {
           const race = new Race([spec], [{ kind: 'live' }], seed);
           const me = race.racers[0]!;
           while (!race.done) {
-            if (me.phase === 'staging' && race.green && race.t >= race.greenAt + 0.25) race.tap(0);
+            if (me.phase === 'staging' && race.out && race.t >= race.outAt + 0.25) race.tap(0);
             const w = race.windowOf(0);
             if (w && me.phase === 'running' && shiftRpm(me) / spec.redline >= aim(w)) race.tap(0);
             race.step();
@@ -204,7 +219,7 @@ describe('the race', () => {
     while (!race.done) {
       race.step();
       const me = race.racers[0]!;
-      if (me.phase === 'staging' && race.green) race.tap(0);
+      if (me.phase === 'staging' && race.out) race.tap(0);
       const w = race.windowOf(0);
       if (w && me.phase === 'running' && shiftRpm(me) >= spec.redline * (w.lo + w.hi) / 2) {
         race.tap(0);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { NextDaily } from '../../components/NextDaily';
 import { ResultLine } from '../../components/ResultLine';
 import { useAccount } from '../../platform/account';
@@ -14,7 +14,7 @@ import { addMats, avgLevel, botsFor, botSpec, crateFor, difficultyOf, DIVISIONS,
 import { ENV_DEFS } from './envs';
 import { applyWear, effectsOf, FAILURE_TEXT, levelGains, MATERIALS, MAX_LEVEL, PART_INFO, PART_VISUALS, PARTS, raceWear, repairCost, RISKY, upgradeCost, type Condition, type Levels, type Mats, type PartId } from './parts';
 import { RaceScreen, type RacePlan } from './RaceScreen';
-import { lookKey, Stage3D, type CarLook, type ShowFocus } from './scene3d';
+import { lookKey, NO_ORBIT, Stage3D, type CarLook, type Orbit, type ShowFocus } from './scene3d';
 import { decodeScript, encodeScript, forecastRun, scoreOf, simulate, specOf, type CarSpec, type Driver, type RaceResult } from './sim';
 import { createSfx, type Sfx } from './sound';
 import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type Save } from './storage';
@@ -22,8 +22,8 @@ import { GameMenuButton } from '../../components/GameMenuButton';
 import { Icon, PART_ICON } from './icons';
 import { LiveRoom } from './live';
 import type { LiveCar } from './room';
-import { CarThumb, Cash, DriverFace, MatsLine, MatsPill, Panel, Pips, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
-import { fmtCash, fmtEt, fmtShort } from './util';
+import { CarThumb, Cash, DriverFace, MatsLine, MatsPill, Panel, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
+import { clamp, fmtCash, fmtEt, fmtShort } from './util';
 import './Game.css';
 
 const EPOCH = '2026-10-21';
@@ -172,6 +172,12 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const [partTab, setPartTab] = useState<PartId>('engine');
   /** The parts shop shows the next level of the open part on the car. */
   const [previewNext, setPreviewNext] = useState(false);
+  /** A part being inspected: the 3D view fills the pop-up, the camera on the part, its spot marked. */
+  const [inspect, setInspect] = useState<PartId | null>(null);
+  /** The player's own turn of the 3D view (drag, pinch, scroll); reset when the focus changes. */
+  const orbitRef = useRef<Orbit>({ ...NO_ORBIT });
+  /** When the player last touched the 3D view (the turntable waits before turning on its own). */
+  const touchAt = useRef(0);
   /** A cosmetic tried on in the style shop before buying it. */
   const [styleTry, setStyleTry] = useState<string | null>(null);
   /** The open sheet's 3D view: the shared stage docks over it. */
@@ -558,6 +564,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     sfx().click();
     setPreviewCar(null);
     setPreviewNext(false);
+    setInspect(null);
     setStyleTry(null);
     setScreen(s);
   };
@@ -577,11 +584,20 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     }
     return previewCar ? lookOf(save, getCar(previewCar)) : look;
   }, [screen, rivalIdx, previewNext, partTab, styleTry, previewCar, save, look, car, owned]);
-  const focus: ShowFocus = screen === 'parts' ? partTab : 'car';
+  const focus: ShowFocus = inspect ?? (screen === 'parts' ? partTab : 'car');
   const focusRef = useRef(focus);
   useEffect(() => {
     focusRef.current = focus;
   });
+  // a new focus starts from its own camera, not wherever the player had turned the last one
+  useEffect(() => {
+    orbitRef.current = { ...NO_ORBIT };
+  }, [focus, screen]);
+  // the marker on the car: the part on show in the parts shop, or the one being inspected
+  const marker = screen === 'parts' ? (inspect ?? partTab) : screen === 'garage' ? inspect : null;
+  useEffect(() => {
+    stageRef.current?.setMarker(marker);
+  }, [marker]);
   const angleRef = useRef(-0.8);
   const docked = !!viewEl;
   // A sheet's 3D view: the shared stage is moved over it (and follows it when the layout changes).
@@ -611,6 +627,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     if (!box) return;
     // a fresh canvas per mount: a disposed renderer loses its context for good
     const cv = document.createElement('canvas');
+    cv.setAttribute('aria-hidden', 'true');
     box.appendChild(cv);
     let stage: Stage3D;
     try {
@@ -642,7 +659,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     if (!stage || racing) return;
     stage.setEnv(save.env);
     stage.setCar(0, stageLookRef.current);
-    const framing = docked ? 'center' : portrait ? 'high' : 'right';
+    // inspecting: the car sits high in the view, clear of the caption at the bottom
+    const framing = docked ? (inspect ? 'high' : 'center') : portrait ? 'high' : 'right';
     const reduced = prefersReduced();
     let raf = 0;
     let last = performance.now();
@@ -652,13 +670,80 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       if (now - last < 14 || document.hidden) return;
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      if (focusRef.current === 'car') angleRef.current += dt * 0.25;
-      stage.renderShowcase(angleRef.current, framing, dt * 1.5, focusRef.current, dt);
+      // the turntable turns on its own, but not while (or just after) the player turns it
+      if (focusRef.current === 'car' && !reduced && now - touchAt.current > 4000) angleRef.current += dt * 0.25;
+      stage.renderShowcase(angleRef.current, framing, reduced ? 0 : dt * 1.5, focusRef.current, dt, orbitRef.current);
     };
-    stage.renderShowcase(angleRef.current, framing, 0, focusRef.current, reduced ? 0 : 1 / 60);
-    if (!reduced) raf = requestAnimationFrame(loop);
+    stage.setMarker(marker);
+    stage.renderShowcase(angleRef.current, framing, 0, focusRef.current, reduced ? 0 : 1 / 60, orbitRef.current);
+    raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [showKey, save.env, racing, portrait, docked, focus]);
+    // the marker is set by its own effect; this one only needs it at the start
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showKey, save.env, racing, portrait, docked, focus, inspect]);
+  // a docked 3D view can be turned: drag to orbit, pinch or scroll to zoom
+  useEffect(() => {
+    const box = stageBoxRef.current;
+    if (!box || !docked) return;
+    const pts = new Map<number, { x: number; y: number }>();
+    let span = 0;
+    const gap = (): number => {
+      const [a, b] = [...pts.values()];
+      return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+    };
+    const down = (e: PointerEvent): void => {
+      if ((e.target as HTMLElement).closest('button')) return;
+      box.setPointerCapture?.(e.pointerId);
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      span = gap();
+      touchAt.current = performance.now();
+    };
+    const move = (e: PointerEvent): void => {
+      const p = pts.get(e.pointerId);
+      if (!p) return;
+      const o = orbitRef.current;
+      if (pts.size === 1) {
+        o.yaw -= (e.clientX - p.x) * 0.012;
+        o.pitch = clamp(o.pitch + (e.clientY - p.y) * 0.005, -0.3, 0.9);
+      }
+      p.x = e.clientX;
+      p.y = e.clientY;
+      if (pts.size === 2) {
+        const g = gap();
+        if (span > 0 && g > 0) o.zoom = clamp((o.zoom * span) / g, 0.5, 1.7);
+        span = g;
+      }
+      touchAt.current = performance.now();
+    };
+    const up = (e: PointerEvent): void => {
+      pts.delete(e.pointerId);
+      span = gap();
+    };
+    const wheel = (e: WheelEvent): void => {
+      e.preventDefault();
+      orbitRef.current.zoom = clamp(orbitRef.current.zoom * Math.exp(e.deltaY * 0.0012), 0.5, 1.7);
+      touchAt.current = performance.now();
+    };
+    box.addEventListener('pointerdown', down);
+    box.addEventListener('pointermove', move);
+    box.addEventListener('pointerup', up);
+    box.addEventListener('pointercancel', up);
+    box.addEventListener('wheel', wheel, { passive: false });
+    return () => {
+      box.removeEventListener('pointerdown', down);
+      box.removeEventListener('pointermove', move);
+      box.removeEventListener('pointerup', up);
+      box.removeEventListener('pointercancel', up);
+      box.removeEventListener('wheel', wheel);
+    };
+  }, [docked]);
+  const zoomBy = (k: number): void => {
+    orbitRef.current.zoom = clamp(orbitRef.current.zoom * k, 0.5, 1.7);
+    touchAt.current = performance.now();
+  };
+  const resetView = (): void => {
+    orbitRef.current = { ...NO_ORBIT };
+  };
   const cashPill = (
     <span className="lc-pill lc-pill-cash">
       <Cash n={save.cash} />
@@ -667,7 +752,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const topbar = (
     <header className="lc-top">
       <button className="lc-logo" onClick={() => go('hub')} aria-label="Launch Control menu">
-        <span className="lc-logo-tree" aria-hidden="true">
+        <span className="lc-logo-lights" aria-hidden="true">
           <i />
           <i />
           <i />
@@ -698,7 +783,50 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
 
   return (
     <div ref={rootRef} className={`lc${portrait ? ' is-portrait' : ''}`} data-screen={racing ? 'race' : screen}>
-      <div ref={stageBoxRef} className="lc-stage" data-mode={racing ? 'race' : docked ? 'dock' : 'full'} aria-hidden="true" />
+      <div ref={stageBoxRef} className="lc-stage" data-mode={racing ? 'race' : docked ? 'dock' : 'full'}>
+        {docked && !racing && (
+          <div className="lc-view-ui">
+            {!inspect && (
+              <span className="lc-view-hint mono">
+                <Icon name="rotate" size={14} />
+                Drag to turn · pinch to zoom
+              </span>
+            )}
+            <div className="lc-view-tools">
+              <button className="lc-view-btn" onClick={() => zoomBy(0.85)} aria-label="Zoom in">
+                <Icon name="plus" size={18} />
+              </button>
+              <button className="lc-view-btn" onClick={() => zoomBy(1 / 0.85)} aria-label="Zoom out">
+                <Icon name="minus" size={18} />
+              </button>
+              <button className="lc-view-btn" onClick={resetView} aria-label="Reset the view">
+                <Icon name="reset" size={18} />
+              </button>
+            </div>
+            {screen === 'parts' && !inspect && (
+              <button className="lc-view-inspect" onClick={() => setInspect(partTab)}>
+                <Icon name="eye" size={18} />
+                Inspect the {PART_INFO[partTab].name.toLowerCase()}
+              </button>
+            )}
+            {inspect && (screen === 'parts' || screen === 'garage') && (
+              <InspectCard
+                part={inspect}
+                mode={screen === 'parts' ? 'upgrade' : 'repair'}
+                car={car}
+                levels={owned.levels}
+                cond={owned.cond}
+                save={save}
+                preview={previewNext}
+                setPreview={setPreviewNext}
+                onUpgrade={() => buyUpgrade(inspect)}
+                onRepair={() => repair(inspect)}
+                onDone={() => setInspect(null)}
+              />
+            )}
+          </div>
+        )}
+      </div>
       {screen === 'race' && plan ? (
         <>
           <RaceScreen plan={plan.race} stageRef={stageRef} paused={paused} setPaused={setPaused} onFinish={(r) => finishRace(plan, r)} sfx={sfx} nudge={portrait && touch} onStart={() => undefined} />
@@ -1027,7 +1155,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           <Panel eyebrow="One button" title="How to race" onBack={() => go('hub')}>
             <ol className="lc-help">
               <li>
-                <b>The start.</b> Both cars burn out, roll into the beams and stage. Then the tree: three ambers half a second apart, then green. Tap the moment it turns green; tap during the ambers and it’s a red light.
+                <b>The start.</b> Both cars burn out and stage. Then the start lights, as in Formula 1: five reds come on one a second, and with all five lit they go out after anything from no wait to three seconds. Launch the moment they go out; tap while they’re on and it’s a jump start.
               </li>
               <li>
                 <b>Shift.</b> Every gear has its own green zone on the tach ring, and it moves after each shift. Tap (or press Space) while the needle is in the green for a <i>perfect</i> shift and a kick of speed. Yellow is fine, red is slow, early bogs the car, and the limiter wears the engine.
@@ -1060,7 +1188,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           title={PART_INFO[partTab].name}
           onBack={() => go('hub')}
           viewRef={setViewEl}
-          className="lc-parts-sheet"
+          className={`lc-parts-sheet${inspect ? ' is-inspect' : ''}`}
           right={
             <>
               {cashPill}
@@ -1079,6 +1207,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                     sfx().click();
                     setPartTab(p);
                     setPreviewNext(false);
+                    if (inspect) setInspect(p);
                   }}
                 >
                   <Icon name={PART_ICON[p]} />
@@ -1098,7 +1227,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
               ))}
             </div>
           )}
-          <PartPanel part={partTab} car={car} levels={owned.levels} cond={owned.cond} save={save} preview={previewNext} setPreview={setPreviewNext} onBuy={() => buyUpgrade(partTab)} />
+          <PartPanel part={partTab} car={car} levels={owned.levels} cond={owned.cond} save={save} preview={previewNext} setPreview={setPreviewNext} onBuy={() => buyUpgrade(partTab)} onInspect={() => setInspect(partTab)} />
           <StatSheet sheet={mySheet} def={car} />
         </Popup>
       )}
@@ -1109,6 +1238,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           title={car.name}
           onBack={() => go('hub')}
           viewRef={setViewEl}
+          className={inspect ? 'is-inspect' : ''}
           right={cashPill}
           tabs={
             <div className="lc-tabs" role="tablist">
@@ -1156,17 +1286,23 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                         </span>
                         <div className="lc-part-name">
                           <b>{PART_INFO[p].name}</b>
-                          <span className="mono">{Math.round(cond)}%</span>
+                          <span className="mono">
+                            Lv {owned.levels[p]} · {cond < RISKY ? 'could fail' : cond < 60 ? 'worn' : cond < 100 ? 'fine' : 'like new'}
+                          </span>
                         </div>
-                      </div>
-                      <div className="lc-cond">
-                        <span className="lc-cond-bar">
-                          <i style={{ width: `${cond}%` }} className={cond < RISKY ? 'is-bad' : cond < 60 ? 'is-mid' : ''} />
+                        <span className="lc-ring mono" data-tone={cond < RISKY ? 'bad' : cond < 60 ? 'mid' : 'good'} style={{ '--p': `${cond}%` } as CSSProperties} aria-label={`${Math.round(cond)}% condition`}>
+                          {Math.round(cond)}
                         </span>
                       </div>
-                      <button className={`btn btn-sm${cond < 100 && save.cash >= fix ? ' lc-cta' : ''}`} onClick={() => repair(p)} disabled={cond >= 100 || save.cash < fix}>
-                        {cond >= 100 ? 'Like new' : <>Repair <Cash n={fix} /></>}
-                      </button>
+                      <div className="lc-part-actions">
+                        <button className="btn btn-sm" onClick={() => setInspect(p)} aria-label={`Inspect the ${PART_INFO[p].name.toLowerCase()}`}>
+                          <Icon name="eye" size={16} />
+                          Inspect
+                        </button>
+                        <button className={`btn btn-sm${cond < 100 && save.cash >= fix ? ' lc-cta' : ''}`} onClick={() => repair(p)} disabled={cond >= 100 || save.cash < fix}>
+                          {cond >= 100 ? 'Like new' : fix <= 0 ? 'Repair · free' : <>Repair <Cash n={fix} /></>}
+                        </button>
+                      </div>
                     </li>
                   );
                 })}
@@ -1388,8 +1524,90 @@ function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, view
   );
 }
 
+/** A part's eight levels as a track; the levels that change the car's look are marked. */
+function LevelTrack({ level, marks }: { level: number; marks: number[] }) {
+  return (
+    <span className="lc-ltrack" role="img" aria-label={`Level ${level} of ${MAX_LEVEL}`}>
+      {Array.from({ length: MAX_LEVEL }, (_, i) => (
+        <i key={i} className={i < level ? 'is-on' : i === level ? 'is-next' : ''} data-mark={marks.includes(i + 1) ? '1' : undefined} />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * The caption over the 3D view while a part is inspected: what it is and what shows on the car,
+ * with the upgrade (parts shop) or the repair (garage) right there.
+ */
+function InspectCard({ part, mode, car, levels, cond, save, preview, setPreview, onUpgrade, onRepair, onDone }: { part: PartId; mode: 'upgrade' | 'repair'; car: CarDef; levels: Levels; cond: Condition; save: Save; preview: boolean; setPreview: (on: boolean) => void; onUpgrade: () => void; onRepair: () => void; onDone: () => void }) {
+  const info = PART_INFO[part];
+  const level = levels[part];
+  const maxed = level >= MAX_LEVEL;
+  const next = maxed ? null : upgradeCost(car, part, level + 1);
+  const can = next ? save.cash >= next.cash && hasMats(save.mats, next.mats) : false;
+  const nextLook = PART_VISUALS[part].find(([lv]) => lv > level);
+  const fix = repairCost(car, part, cond[part]);
+  return (
+    <div className="lc-inspect" role="region" aria-label={`Inspecting the ${info.name.toLowerCase()}`}>
+      <div className="lc-part-top">
+        <span className="lc-part-icon" aria-hidden="true">
+          <Icon name={PART_ICON[part]} />
+        </span>
+        <div className="lc-part-name">
+          <b>{info.name}</b>
+          <span className="mono">
+            Lv {level}/{MAX_LEVEL} · {info.look}
+          </span>
+        </div>
+        <button className="btn btn-sm" onClick={onDone}>
+          Done
+        </button>
+      </div>
+      {mode === 'upgrade' ? (
+        <>
+          <LevelTrack level={level} marks={PART_VISUALS[part].map(([lv]) => lv)} />
+          {nextLook && <p className="lc-sub">Next on the car: {nextLook[1]} (Lv {nextLook[0]})</p>}
+          {!maxed && (
+            <div className="lc-seg" role="radiogroup" aria-label="Show on the car">
+              <button role="radio" aria-checked={!preview} className={`lc-seg-btn${!preview ? ' is-on' : ''}`} onClick={() => setPreview(false)}>
+                Now · Lv {level}
+              </button>
+              <button role="radio" aria-checked={preview} className={`lc-seg-btn${preview ? ' is-on' : ''}`} onClick={() => setPreview(true)}>
+                Lv {level + 1}
+              </button>
+            </div>
+          )}
+          {next ? (
+            <button className={`btn lc-upgrade${can ? ' lc-cta' : ''}`} onClick={onUpgrade} disabled={!can}>
+              <span>Upgrade to Lv {level + 1}</span>
+              <Cash n={next.cash} />
+              <MatsLine mats={next.mats} have={save.mats} />
+            </button>
+          ) : (
+            <Sticker tone="lime" flat>
+              Maxed
+            </Sticker>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="lc-cond">
+            <span className="lc-cond-bar">
+              <i style={{ width: `${cond[part]}%` }} className={cond[part] < RISKY ? 'is-bad' : cond[part] < 60 ? 'is-mid' : ''} />
+            </span>
+            <span className="mono">{Math.round(cond[part])}% condition</span>
+          </div>
+          <button className={`btn lc-upgrade${cond[part] < 100 && save.cash >= fix ? ' lc-cta' : ''}`} onClick={onRepair} disabled={cond[part] >= 100 || save.cash < fix}>
+            {cond[part] >= 100 ? 'Like new' : fix <= 0 ? 'Repair · free' : <>Repair <Cash n={fix} /></>}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** One part in the parts shop: what it does now and at the next level, what you see on the car, and the buy button. */
-function PartPanel({ part, car, levels, cond, save, preview, setPreview, onBuy }: { part: PartId; car: CarDef; levels: Levels; cond: Condition; save: Save; preview: boolean; setPreview: (on: boolean) => void; onBuy: () => void }) {
+function PartPanel({ part, car, levels, cond, save, preview, setPreview, onBuy, onInspect }: { part: PartId; car: CarDef; levels: Levels; cond: Condition; save: Save; preview: boolean; setPreview: (on: boolean) => void; onBuy: () => void; onInspect: () => void }) {
   const info = PART_INFO[part];
   const level = levels[part];
   const maxed = level >= MAX_LEVEL;
@@ -1419,8 +1637,12 @@ function PartPanel({ part, car, levels, cond, save, preview, setPreview, onBuy }
             Lv {level}/{MAX_LEVEL}
           </span>
         </div>
-        <Pips level={level} max={MAX_LEVEL} />
+        <button className="btn btn-sm" onClick={onInspect}>
+          <Icon name="eye" size={16} />
+          Inspect
+        </button>
       </div>
+      <LevelTrack level={level} marks={PART_VISUALS[part].map(([lv]) => lv)} />
       <p className="lc-sub">{info.blurb}</p>
       {part !== 'looks' && (
         <div className="lc-cond">

@@ -10,10 +10,10 @@ import * as THREE from 'three';
 import type { CabinKind, CarDef, Feature } from './cars';
 import { getCosmetic } from './cosmetics';
 import { ENV_DEFS, type EnvDef } from './envs';
-import type { Levels } from './parts';
+import type { Levels, PartId } from './parts';
 import { clamp, lerp, shade } from './util';
 import { buildAlive, type Alive } from './alive';
-import type { TreeState } from './sim';
+import type { LightsState } from './sim';
 import { buildModelCar, paintOf } from './modelcar';
 import { getModel, loadModel, specFor } from './models';
 import { CHROME, DRL, GLASS, LAMP, RUBBER, TAIL, TRIM, ball, blobTexture, box, lam, mergeStatic, mesh, pillow, std } from './mats';
@@ -43,11 +43,13 @@ export const DISTANCE_M = 402.336;
 export const LANES = 2;
 const LANE_PITCH = 4.0;
 export const LANE_Z = [-LANE_PITCH / 2, LANE_PITCH / 2] as const;
-/** The Christmas tree stands between the lanes, a little past the start line. */
-const TREE_X = 4.5;
+/** The start-light gantry: this far down the strip, the lights this high (in the chase camera's view). */
+const LIGHTS_X = 7.5;
+const LIGHTS_Y = 5.2;
+const LIGHTS = 5;
 
-export type { TreeState } from './sim';
-export { DARK_TREE } from './sim';
+export type { LightsState } from './sim';
+export { LIGHTS_OFF } from './sim';
 
 /** Extras for a race frame: the crowd's excitement (0..1) and the intro orbit (0..1, then null). */
 export interface RaceView {
@@ -574,6 +576,8 @@ export interface CarRig {
   group: THREE.Group;
   wheels: THREE.Object3D[];
   wheelR: number;
+  /** Where each part shows on the car (car space), for the inspect marker; the fallback builder has none. */
+  anchors?: Partial<Record<PartId, THREE.Vector3>>;
   flames: THREE.Object3D[];
   /** Short exhaust pops on a shift (every car has them; `flames` are the big engine-upgrade ones). */
   pops?: THREE.Object3D[];
@@ -993,8 +997,8 @@ export function buildCar(look: CarLook): CarRig {
 // ---------------------------------------------------------------- the world
 interface World {
   group: THREE.Group;
-  /** Lights the Christmas tree. */
-  tree(state: TreeState): void;
+  /** Sets the start lights (how many reds are on, or lights out). */
+  lights(state: LightsState): void;
   clouds: THREE.Group;
   alive: Alive;
   dispose(): void;
@@ -1173,36 +1177,31 @@ function buildWorld(env: EnvDef): World {
   add(gan);
   add(box(0.4, 1.7, LANE_W * 2 + 5.4, lam('#ffd12e'), -14, 7.5, 0));
   for (const z of [-(LANE_W + 2.4), LANE_W + 2.4]) add(box(0.4, 7.5, 0.4, TRIM(), -14, 3.75, z));
-  // the Christmas tree between the lanes: per side pre-stage and stage bulbs, three ambers, green, red
-  add(box(0.16, 3.3, 0.16, TRIM(), TREE_X, 1.65, 0));
-  add(box(0.5, 0.12, 1.6, TRIM(), TREE_X, 0.06, 0));
-  const treeMats: { kind: 'pre' | 'stage' | 'amber' | 'green' | 'red'; lane: 0 | 1; idx: number; on: string; mat: THREE.MeshStandardMaterial }[] = [];
-  const bulb = (r: number): THREE.SphereGeometry => keep(new THREE.SphereGeometry(r, 14, 10));
-  const small = bulb(0.095);
-  const big = bulb(0.155);
-  ([0, 1] as const).forEach((lane) => {
-    const zs = LANE_Z[lane] < 0 ? -1 : 1;
-    add(pillow(0.26, 2.9, 0.5, TRIM(), TREE_X, 1.78, zs * 0.36));
-    const put = (kind: 'pre' | 'stage' | 'amber' | 'green' | 'red', idx: number, y: number, on: string, geo: THREE.SphereGeometry, dz = 0): void => {
-      const mat = keep(new THREE.MeshStandardMaterial({ color: '#2b2938', emissive: '#000000', roughness: 0.25 }));
-      const m = mesh(geo, mat, TREE_X - 0.15, y, zs * 0.36 + dz);
+  // the start lights, as in Formula 1: a gantry over the grid with five pods of red lights
+  const postZ = LANE_W + 1.7;
+  for (const z of [-postZ, postZ]) add(box(0.36, LIGHTS_Y + 0.8, 0.36, TRIM(), LIGHTS_X, (LIGHTS_Y + 0.8) / 2, z));
+  add(box(0.3, 0.32, postZ * 2 + 0.4, TRIM(), LIGHTS_X, LIGHTS_Y + 0.75, 0));
+  add(box(0.42, 1.7, 7.6, lam('#14121b'), LIGHTS_X, LIGHTS_Y, 0));
+  const lampGeo = keep(new THREE.CylinderGeometry(0.3, 0.3, 0.08, 24).rotateZ(Math.PI / 2));
+  const lampMats: THREE.MeshStandardMaterial[] = [];
+  for (let k = 0; k < LIGHTS; k++) {
+    const z = (k - (LIGHTS - 1) / 2) * 1.42;
+    add(box(0.5, 1.5, 1.14, lam('#1d1a26'), LIGHTS_X - 0.06, LIGHTS_Y, z));
+    const mat = keep(new THREE.MeshStandardMaterial({ color: '#3a1a1e', emissive: '#000000', roughness: 0.3 }));
+    for (const dy of [0.35, -0.35]) {
+      const m = mesh(lampGeo, mat, LIGHTS_X - 0.33, LIGHTS_Y + dy, z);
       m.name = 'keep';
       add(m);
-      treeMats.push({ kind, lane, idx, on, mat });
-    };
-    for (const dz of [-0.11, 0.11]) put('pre', 0, 3.0, '#fff4c8', small, dz);
-    for (const dz of [-0.11, 0.11]) put('stage', 0, 2.76, '#fff4c8', small, dz);
-    for (let i = 0; i < 3; i++) put('amber', i, 2.42 - i * 0.37, '#ffb703', big);
-    put('green', 0, 1.3, '#2bff88', big);
-    put('red', 0, 0.93, '#ff2a3a', big);
-  });
-  const setTree = (st: TreeState): void => {
-    for (const b of treeMats) {
-      const on = b.kind === 'pre' ? st.pre[b.lane] : b.kind === 'stage' ? st.stage[b.lane] : b.kind === 'amber' ? st.ambers > b.idx && !st.green && !st.red[b.lane] : b.kind === 'green' ? st.green && !st.red[b.lane] : st.red[b.lane];
-      b.mat.emissive.set(on ? b.on : '#000000');
-      b.mat.emissiveIntensity = on ? 2.2 : 1;
-      b.mat.color.set(on ? b.on : '#2b2938');
     }
+    lampMats.push(mat);
+  }
+  const setLights = (st: LightsState): void => {
+    lampMats.forEach((mat, k) => {
+      const on = !st.out && st.on > k;
+      mat.emissive.set(on ? '#ff1a2a' : '#000000');
+      mat.emissiveIntensity = on ? 2.6 : 1;
+      mat.color.set(on ? '#ff3344' : '#3a1a1e');
+    });
   };
   // rubber laid down in the burnout box and the first metres of each lane
   const rubber = keep(new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.32, depthWrite: false }));
@@ -1346,7 +1345,7 @@ function buildWorld(env: EnvDef): World {
   g.add(alive.group);
   return {
     group: g,
-    tree: setTree,
+    lights: setLights,
     clouds,
     alive,
     dispose() {
@@ -1379,6 +1378,38 @@ const FOCUS: Record<ShowFocus, { angle: number | null; dist: number; height: num
   aero: { angle: Math.PI + 0.72, dist: 0.9, height: 0.5, aimX: -0.12, aimY: 0.8 },
   looks: { angle: -0.95, dist: 0.95, height: 0.48, aimX: 0, aimY: 0.4 },
 };
+/** The player's own turn of the showcase camera (drag to orbit, pinch or scroll to zoom), on top of the focus. */
+export interface Orbit {
+  yaw: number;
+  pitch: number;
+  zoom: number;
+}
+export const NO_ORBIT: Orbit = { yaw: 0, pitch: 0, zoom: 1 };
+
+/** The inspect marker: a glowing ring drawn over everything at a part's spot on the car. */
+function markerTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d')!;
+  const glow = g.createRadialGradient(64, 64, 20, 64, 64, 64);
+  glow.addColorStop(0, 'rgba(255,209,46,0.55)');
+  glow.addColorStop(1, 'rgba(255,209,46,0)');
+  g.fillStyle = glow;
+  g.fillRect(0, 0, 128, 128);
+  g.lineWidth = 9;
+  g.strokeStyle = '#ffd12e';
+  g.beginPath();
+  g.arc(64, 64, 34, 0, Math.PI * 2);
+  g.stroke();
+  g.fillStyle = '#ffffff';
+  g.beginPath();
+  g.arc(64, 64, 10, 0, Math.PI * 2);
+  g.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 /** Where the garage turntable parks the car: down the strip, clear of the gantries. */
 const SHOW_X = 70;
 
@@ -1397,6 +1428,8 @@ export class Stage3D {
   private envMap: THREE.Texture | null = null;
   private pmrem: THREE.PMREMGenerator;
   private cars: (CarRig | null)[] = Array.from({ length: LANES }, () => null);
+  private marker: THREE.Sprite | null = null;
+  private markerPart: PartId | null = null;
   private carKeys: string[] = Array.from({ length: LANES }, () => '');
   private camPos = new THREE.Vector3(-9, 3.2, 0);
   private camAim = new THREE.Vector3(8, 1, 0);
@@ -1590,9 +1623,10 @@ export class Stage3D {
    * your car (it holds at the line for a moment at the launch, so the cars pull away from it). A
    * fixed camera is for pictures.
    */
-  renderRace(cars: CarState[], tree: TreeState, t: number, dt: number, fixed?: FixedCamera, view: RaceView = {}): void {
+  renderRace(cars: CarState[], lights: LightsState, t: number, dt: number, fixed?: FixedCamera, view: RaceView = {}): void {
     if (!this.world) this.setEnv('e-bay');
     this.lastT = t;
+    if (this.marker) this.marker.visible = false;
     for (let i = 0; i < LANES; i++) {
       const c = cars[i];
       if (c) this.placeCar(i, c, dt, t);
@@ -1600,7 +1634,7 @@ export class Stage3D {
     }
     for (let i = 0; i < cars.length; i++) if (this.cars[i]) this.cars[i]!.group.visible = true;
     const me = cars[0]!;
-    this.world!.tree(tree);
+    this.world!.lights(lights);
     this.world!.clouds.position.x += dt * 1.5;
     this.world!.alive.update(t, dt, view.excite ?? 0, me.x);
     this.setFrame('center');
@@ -1610,7 +1644,7 @@ export class Stage3D {
     const chasePos = new THREE.Vector3(me.x - back, (narrow ? 5.2 : 4.0) + Math.min(1, me.v * 0.01), 0);
     const chaseAim = new THREE.Vector3(me.x + (narrow ? 16 : 14), 0.5, 0);
     if (view.intro !== undefined && view.intro !== null) {
-      // the intro: from low in front of your car, round its outside (never past the tree or into the
+      // the intro: from low in front of your car, round its outside (never into the
       // tyre wall) and up to the chase position
       const p = Math.min(1, Math.max(0, view.intro));
       const e = p * p * (3 - 2 * p);
@@ -1661,11 +1695,16 @@ export class Stage3D {
     this.renderer.render(this.scene, this.camera);
   }
 
+  /** Marks a part's spot on the showcase car (null: no marker). */
+  setMarker(part: PartId | null): void {
+    this.markerPart = part;
+  }
+
   /**
    * The garage turntable or a thumbnail: car 0 parked on the strip, the others hidden. With a part
    * `focus` the camera swings to where that part shows; `dt` > 0 eases it there, 0 jumps.
    */
-  renderShowcase(angle: number, framing: Framing = 'center', cloudDt = 0, focus: ShowFocus = 'car', dt = 0): void {
+  renderShowcase(angle: number, framing: Framing = 'center', cloudDt = 0, focus: ShowFocus = 'car', dt = 0, orbit: Orbit = NO_ORBIT): void {
     if (!this.world) this.setEnv('e-bay');
     const rig = this.cars[0];
     for (let i = 1; i < LANES; i++) if (this.cars[i]) this.cars[i]!.group.visible = false;
@@ -1688,9 +1727,11 @@ export class Stage3D {
     const across = len * 0.92 + 0.4;
     const dW = across / (2 * Math.tan(hHalf) * want * visibleShare);
     const dH = 2.0 / (2 * Math.tan(vHalf) * (framing === 'thumb' ? 0.8 : 0.55));
-    const d = Math.max(dW, dH);
+    // the whole car fits the view; a part's close-up keeps its distance from the car's size, so a
+    // narrow phone view doesn't push the camera far back to fit the full length across
+    const d = focus === 'car' ? Math.max(dW, dH) : Math.max(dH, len * 1.1);
     const f = FOCUS[focus];
-    const goal = { a: f.angle ?? angle, d: d * f.dist, h: focus === 'car' ? (framing === 'thumb' ? 0.22 : 0.3) : f.height, ax: f.aimX * len, ay: f.aimY };
+    const goal = { a: (f.angle ?? angle) + orbit.yaw, d: d * f.dist * orbit.zoom, h: (focus === 'car' ? (framing === 'thumb' ? 0.22 : 0.3) : f.height) + orbit.pitch, ax: f.aimX * len, ay: f.aimY };
     const sh = this.show;
     if (!sh.ready || dt <= 0) {
       Object.assign(sh, goal, { ready: dt > 0 });
@@ -1706,8 +1747,22 @@ export class Stage3D {
       sh.ax += (goal.ax - sh.ax) * k;
       sh.ay += (goal.ay - sh.ay) * k;
     }
-    this.camera.position.set(SHOW_X + sh.ax * 0.5 + Math.cos(sh.a) * sh.d, 0.75 + sh.d * sh.h, Math.sin(sh.a) * sh.d);
+    // never under the strip, however low the player turns the camera
+    this.camera.position.set(SHOW_X + sh.ax * 0.5 + Math.cos(sh.a) * sh.d, Math.max(0.3, 0.75 + sh.d * sh.h), Math.sin(sh.a) * sh.d);
     this.camera.lookAt(SHOW_X + sh.ax, sh.ay, 0);
+    const spot = this.markerPart ? rig?.anchors?.[this.markerPart] : undefined;
+    if (spot && rig && framing !== 'thumb') {
+      if (!this.marker) {
+        this.marker = new THREE.Sprite(new THREE.SpriteMaterial({ map: markerTexture(), depthTest: false, depthWrite: false, transparent: true }));
+        this.marker.renderOrder = 999;
+        this.scene.add(this.marker);
+      }
+      rig.group.updateMatrixWorld();
+      this.marker.position.copy(spot).applyMatrix4(rig.group.matrixWorld);
+      const pulse = 1 + 0.18 * Math.sin(performance.now() / 180);
+      this.marker.scale.setScalar(0.42 * pulse * Math.max(0.7, sh.d / 6));
+      this.marker.visible = true;
+    } else if (this.marker) this.marker.visible = false;
     this.camera.updateProjectionMatrix();
     this.sun.position.set(SHOW_X - 10, 40, 22);
     this.sun.target.position.set(SHOW_X, 0, 0);
@@ -1716,6 +1771,10 @@ export class Stage3D {
 
   dispose(): void {
     this.disposed = true;
+    if (this.marker) {
+      this.marker.material.map?.dispose();
+      this.marker.material.dispose();
+    }
     for (let i = 0; i < LANES; i++) this.setCar(i, null);
     if (this.world) {
       this.scene.remove(this.world.group);

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Game from '../src/games/launch-control/Game';
 import { emptySave, KEY } from '../src/games/launch-control/storage';
@@ -117,15 +117,17 @@ describe('Launch Control: a full ladder race', () => {
     expect(document.querySelector('.lc-pop')?.textContent).toBe('TOO EARLY');
   });
 
-  it('a tap during the ambers is a jump start', () => {
+  it('a tap while the red lights are on is a jump start', () => {
     render(<Game host={host} restartKey={0} pauseKey={0} />);
     startLadderRace();
-    for (let f = 0; f < 1500 && !document.querySelector('.lc-banner')?.textContent?.includes('●'); f++) act(() => tick());
+    // the HUD shows the lights coming on, as on the gantry
+    for (let f = 0; f < 2000 && Number(document.querySelector('.lc-f1')?.getAttribute('data-on') ?? 0) < 3; f++) act(() => tick());
+    expect(document.querySelector('.lc-f1')?.getAttribute('data-show')).toBe('1');
     act(() => {
       fireEvent.keyDown(window, { code: 'Space', key: ' ' });
     });
     act(() => tick());
-    expect(document.querySelector('.lc-banner')?.textContent).toMatch(/RED LIGHT/);
+    expect(document.querySelector('.lc-banner')?.textContent).toMatch(/JUMP START/);
     expect(document.querySelector('.lc-race')?.getAttribute('data-state')).toBe('launch');
   });
 
@@ -186,6 +188,29 @@ describe('Launch Control: daily, garage and wager', () => {
     expect(panel().textContent).toMatch(/Rear wing/);
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(screen.getByRole('button', { name: /^Parts shop/ })).toBeTruthy();
+  });
+
+  it('a part can be inspected on the car: the 3D view takes the pop-up, and it upgrades from there', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Parts shop/ }));
+    // the 3D view has its own controls
+    expect(screen.getByRole('button', { name: 'Reset the view' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Inspect the engine/ }));
+    expect(document.querySelector('.lc-modal')?.classList.contains('is-inspect')).toBe(true);
+    const card = screen.getByRole('region', { name: 'Inspecting the engine' });
+    expect(card.textContent).toMatch(/Hood scoop/);
+    // another part's tab inspects that one
+    fireEvent.click(screen.getByRole('tab', { name: /Aero/ }));
+    const aero = screen.getByRole('region', { name: 'Inspecting the aerodynamics' });
+    fireEvent.click(within(aero).getByRole('button', { name: /^Upgrade to Lv 1/ }));
+    expect(JSON.parse(localStorage.getItem(KEY)!).cars.bumble.levels.aero).toBe(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(document.querySelector('.lc-modal')?.classList.contains('is-inspect')).toBe(false);
+    // the garage inspects a part for its repair
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    fireEvent.click(screen.getByRole('button', { name: 'My garage' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Inspect the tyres' }));
+    expect(screen.getByRole('region', { name: 'Inspecting the tyres' }).textContent).toMatch(/condition/);
   });
 
   it('the rival picker shows big cards with one selected, and races the pick', () => {

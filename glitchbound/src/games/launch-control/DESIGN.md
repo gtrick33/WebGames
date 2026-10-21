@@ -8,16 +8,18 @@ it ships in the game's own lazy chunk, so the arcade's startup budget is untouch
 ## The round
 
 One quarter mile (402 m) against one rival, about ten seconds of driving, after a show: an intro orbit with the
-match-up, burnouts, staging (pre-stage and stage bulbs on a centre tree), then the lights.
+match-up, burnouts and staging, then the start lights.
 
-1. **The launch**: a seeded hold of 1.2 to 2.5 s, then a sportsman tree: three ambers half a second apart, then green. Launch control holds every car
-   at its strongest grip-safe rpm; the player taps to go. A reaction under 0.28 s is a perfect launch (a short
-   kick), under 0.45 s good, slower is a slow start, and no tap goes at green + 1 s. A tap during the ambers is a
-   jump start: the car goes at green + 0.6 s, bogged. AI drivers have their own reaction time and launch error.
+1. **The launch**: Formula 1 lights on a gantry over the grid (and in the HUD): five reds come on one a second,
+   and with all five lit they go out after a seeded random wait of 0 to 3 s. No rhythm to anticipate. Launch control holds every car
+   at its strongest grip-safe rpm; the player taps at lights out. A reaction under 0.3 s is a perfect launch (a
+   short kick), under 0.5 s good, slower is a slow start, and no tap goes 1 s after lights out. A tap while the
+   lights are on is a jump start: the car goes 0.6 s after lights out, bogged. AI drivers have their own reaction time and launch error.
 2. **The run**: each gear has its own shift window, drawn on the tach's ring (the shift button never changes colour): green with yellow either
-   side and red above. Where the green sits (78 to 90 % of the redline) comes from the race seed, so everyone in
-   a race shares the spots; how wide it is comes from the car (`shiftWindows`), so the needle takes about a quarter of a second to
-   cross the green in any car's lower gears. Green = perfect (a 40 % quicker change and an 18 % kick for 0.8 s);
+   side and red above. Everything about a window is drawn from the race seed per gear, so everyone in a race
+   shares it and every gear differs: where the green sits (70 to 92 % of the redline), how long the needle takes
+   to cross it (0.2 to 0.32 s) and each yellow band (0.12 to 0.26 s, drawn separately below and above). Times
+   become revs per car (`shiftWindows`), so a window is equally hard in any car. Green = perfect (a 40 % quicker change and an 18 % kick for 0.8 s);
    yellow = ok; red, or more than 0.14 s on the limiter = late (a slower change); below yellow = early (bogs).
    Hitting the green is always the fastest line. A tap below half the redline is ignored. The needle follows the
    gear (the wheels) during the clutch launch, so it never crashes after the start.
@@ -92,7 +94,7 @@ mid-race; repairs cost cash. Cosmetics: helmets, suits, paints, liveries, wheels
 | `RaceScreen.tsx` | the race on the shared stage: the show (intro, burnout, staging), plates, clock, a tach ring with this gear's window, pop-ups, cars drawn between sim steps (no judder), the live mode | React |
 | `live.tsx` | race a friend: invite, both cars, ready, the live race, result and running score | React |
 | `icons.tsx` | the line icon set (no emoji in the UI) | React |
-| `Game.tsx` / `ui.tsx` / `Game.css` | hub (car first), rivals, setup, result, garage, dealer, daily, ladder, help; frosted glass, a condensed slanted display face | React |
+| `Game.tsx` / `ui.tsx` / `Game.css` | hub (car first), rivals, setup, result, garage, dealer, daily, ladder, help; frosted glass, a condensed slanted display face. Pop-ups with a 3D view can be turned (drag, pinch, scroll, zoom buttons); the parts shop and the garage's repairs inspect a part: the view takes the pop-up, the camera goes to the part, a marker pulses on its spot (anchors from `modelcar.ts`), and the upgrade or repair is right there | React |
 | `Preview.tsx` | catalogue attract mode: two cars racing, blitted onto the tile | React |
 
 Stage aspect is `square`, so phones get a tall stage: the car in the upper part, the buttons and panels below;

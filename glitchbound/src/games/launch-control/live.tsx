@@ -200,7 +200,7 @@ export function LiveRoom({
             {me?.ready ? (friend ? `Waiting for ${friend.name}…` : 'Waiting for your friend…') : result ? 'Rematch' : 'Ready'}
           </button>
         )}
-        <p className="lc-foot mono">{friend?.ready && !me?.ready ? `${friend.name} is ready. ` : ''}Same tree, same start, live. Friendly: no wear, no money.</p>
+        <p className="lc-foot mono">{friend?.ready && !me?.ready ? `${friend.name} is ready. ` : ''}Same lights, same start, live. Friendly: no wear, no money.</p>
       </Panel>
     </div>
   );

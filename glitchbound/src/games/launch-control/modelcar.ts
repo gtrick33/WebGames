@@ -466,13 +466,13 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
 
   // transmission: a shift light along the top of the rear window
   let shiftLamp: THREE.MeshStandardMaterial | null = null;
+  let best = { x: 0, y: 0 };
+  for (let u = 0.2; u <= 0.7; u += 0.025) {
+    const x = xAt(u);
+    const y = topAt(x);
+    if (y > best.y + 0.01 || (y > best.y - 0.02 && x < best.x)) best = { x, y };
+  }
   if (lv.transmission >= 2 && !kenney) {
-    let best = { x: 0, y: 0 };
-    for (let u = 0.2; u <= 0.7; u += 0.025) {
-      const x = xAt(u);
-      const y = topAt(x);
-      if (y > best.y + 0.01 || (y > best.y - 0.02 && x < best.x)) best = { x, y };
-    }
     shiftLamp = keepD(new THREE.MeshStandardMaterial({ color: '#3a3845', emissive: '#000000' }));
     const lamp = pillow(0.06, lv.transmission >= 5 ? 0.045 : 0.035, W * (lv.transmission >= 5 ? 0.56 : 0.32), shiftLamp, best.x - 0.02, best.y + 0.02, 0);
     lamp.name = 'shiftlamp';
@@ -535,10 +535,26 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
     if (o instanceof THREE.Mesh && o.geometry && !o.userData.shared && !disposables.includes(o.geometry)) disposables.push(o.geometry);
   });
 
+  // where each part shows on the car, for the inspect marker (the showcase camera works on the -z side)
+  const near = wheels.filter((w) => w.position.z < 0);
+  const front = near.reduce<THREE.Object3D | undefined>((a, w) => (!a || w.position.x > a.position.x ? w : a), undefined);
+  const back = near.reduce<THREE.Object3D | undefined>((a, w) => (!a || w.position.x < a.position.x ? w : a), undefined);
+  const hoodX = xAt(0.76);
+  const deckX = xAt(0.07);
+  const anchors: CarRig['anchors'] = {
+    engine: new THREE.Vector3(hoodX, topAt(hoodX) + 0.14, 0),
+    transmission: new THREE.Vector3(best.x, best.y + 0.08, 0),
+    aero: new THREE.Vector3(deckX, topAt(deckX) + 0.22, 0),
+    looks: new THREE.Vector3(0, bottom + (H - bottom) * 0.45, -W / 2 - 0.03),
+  };
+  if (front) anchors.tyres = new THREE.Vector3(front.position.x, front.position.y, front.position.z - 0.18);
+  if (back) anchors.suspension = new THREE.Vector3(back.position.x, back.position.y * 1.95, back.position.z - 0.05);
+
   return {
     group: root,
     wheels,
     wheelR,
+    anchors,
     flames,
     pops,
     shiftLamp,

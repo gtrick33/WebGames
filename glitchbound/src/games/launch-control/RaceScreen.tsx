@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { GameMenuButton } from '../../components/GameMenuButton';
 import { FAILURE_TEXT } from './parts';
-import { DARK_TREE, LANES, type CarLook, type CarState, type Stage3D, type TreeState } from './scene3d';
+import { LANES, LIGHTS_OFF, type CarLook, type CarState, type LightsState, type Stage3D } from './scene3d';
 import { MAX_STEP, replay } from './room';
-import { DISTANCE, DT, Race, shiftRpm, treeOf, type CarSpec, type Driver, type RaceResult, type ShiftWindow } from './sim';
+import { DISTANCE, DT, LIGHTS, lightsOf, Race, shiftRpm, type CarSpec, type Driver, type RaceResult, type ShiftWindow } from './sim';
 import type { Sfx } from './sound';
 import { fmtEt } from './util';
 
@@ -57,7 +57,7 @@ type StripState = 'launch' | 'go' | 'shift' | 'top' | 'done';
 /**
  * The race: the shared 3D stage (an intro orbit, burnouts, then the chase camera), a HUD updated
  * through refs every frame (no React renders per frame), and one input: tap anywhere, the big
- * button or Space. Tap at green to launch, then each time the needle is in this gear's green.
+ * button or Space. Tap at lights out to launch, then each time the needle is in this gear's green.
  */
 export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFinish, sfx, nudge: nudgeAtStart, onStart }: { plan: RacePlan; /** Live: the friend's taps so far (sim steps). */ remoteTaps?: readonly number[]; stageRef: RefObject<Stage3D | null>; paused: boolean; setPaused: (p: boolean) => void; onFinish: (r: RaceResult) => void; sfx: () => Sfx; nudge: boolean; onStart: () => void }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -79,6 +79,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
   const gapEl = useRef<HTMLSpanElement>(null);
   const dots = useRef<(HTMLSpanElement | null)[]>([]);
   const shiftBtn = useRef<HTMLButtonElement>(null);
+  const lightsEl = useRef<HTMLDivElement>(null);
   const skipRef = useRef<() => void>(() => undefined);
   useEffect(() => {
     pausedRef.current = paused;
@@ -160,7 +161,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
         s.burnout();
         say('BURNOUT', 'orange');
       }
-      if (p === 'race') say('STAGED', 'cyan', 'Tap the moment the light turns green');
+      if (p === 'race') say('STAGED', 'cyan', 'Five red lights: launch the moment they go out');
     };
     skipRef.current = () => {
       if (show === 'intro') toPhase('burnout');
@@ -171,11 +172,12 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
     const onEvents = (evs: ReturnType<Race['step']>): void => {
       for (const e of evs) {
         switch (e.type) {
-          case 'amber':
+          case 'light':
             s.amber();
-            say('●'.repeat(e.n) + '○'.repeat(3 - e.n), 'yellow');
+            // the five lights are on the gantry and in the HUD; the staging banner makes way
+            if (e.n === 1) setBanner(null);
             break;
-          case 'green':
+          case 'out':
             s.green();
             greenAt = clock;
             if (!me.jumped) say('GO!', 'lime');
@@ -185,7 +187,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
           case 'jump':
             if (e.i === 0) {
               s.red();
-              say('RED LIGHT', 'coral', 'Jumped the start: you go late');
+              say('JUMP START', 'coral', 'Too early: you go late');
             }
             break;
           case 'launch':
@@ -201,7 +203,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
                 popup('PERFECT LAUNCH!', 'lime');
               } else if (e.quality === 'good') popup('GOOD LAUNCH', 'cyan');
               else if (e.quality === 'slow') popup('SLOW START', 'orange');
-              setBanner((b) => (b && (b.text === 'GO!' || b.text.startsWith('●')) ? null : b));
+              setBanner((b) => (b && b.text === 'GO!' ? null : b));
             }
             break;
           case 'spin':
@@ -282,7 +284,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
       dt = Math.min(dt, 0.1);
       showT += dt;
       rt += dt;
-      let tree: TreeState = DARK_TREE;
+      let lights: LightsState = LIGHTS_OFF;
       if (live && (show === 'intro' || show === 'burnout')) {
         // live: the show runs on the room's clock, the same on both phones
         const toGo = (live.startPerf - now) / 1000;
@@ -293,7 +295,6 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
       if (show === 'intro') {
         if (showT >= INTRO_S) toPhase('burnout');
       } else if (show === 'burnout') {
-        tree = { ...DARK_TREE, pre: [showT > BURNOUT_S * 0.6, showT > BURNOUT_S * 0.7] };
         if (showT >= BURNOUT_S) toPhase('race');
       }
       if (live && (show === 'race' || show === 'done')) {
@@ -333,7 +334,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
             onFinishRef.current(race.result());
           }
         }
-        tree = treeOf(race);
+        lights = lightsOf(race);
         if (marshalsUp && greenAt >= 0 && clock - greenAt > 2.5) {
           stage?.marshals(false);
           marshalsUp = false;
@@ -358,13 +359,13 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
           }
           onEvents(stepRace());
         }
-        tree = treeOf(race);
+        lights = lightsOf(race);
         if (marshalsUp && greenAt >= 0 && clock - greenAt > 2.5) {
           stage?.marshals(false);
           marshalsUp = false;
         }
       }
-      // the crowd: building through the show, roaring at green, again at the finish
+      // the crowd: building through the show, roaring at lights out, again at the finish
       const goal = show === 'intro' ? 0.2 : show === 'burnout' ? 0.45 : greenAt < 0 ? 0.5 : Math.max(0.3, 1 - (clock - greenAt) * 0.3, me.x > DISTANCE - 80 ? 0.8 : 0, finishCheer);
       excite += (goal - excite) * Math.min(1, dt * 3);
       finishCheer = Math.max(0, finishCheer - dt * 0.15);
@@ -383,13 +384,17 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
         shownGear = gearKey;
         if (face.current) face.current.style.background = tachRing(gearKey > 0 ? race.windowOf(0) : null);
       }
-      const st: StripState = show !== 'race' && show !== 'done' ? 'launch' : me.phase === 'staging' ? (race.green && !me.jumped ? 'go' : 'launch') : me.phase === 'done' ? 'done' : me.gear >= me.spec.gears || me.stuck ? 'top' : 'shift';
+      const st: StripState = show !== 'race' && show !== 'done' ? 'launch' : me.phase === 'staging' ? (race.out && !me.jumped ? 'go' : 'launch') : me.phase === 'done' ? 'done' : me.gear >= me.spec.gears || me.stuck ? 'top' : 'shift';
       if (st !== shownState) {
         shownState = st;
         root.dataset.state = st;
         if (shiftBtn.current) shiftBtn.current.textContent = st === 'launch' || st === 'go' ? 'LAUNCH' : 'SHIFT';
       }
       root.dataset.hot = hot ? '1' : '';
+      if (lightsEl.current) {
+        lightsEl.current.dataset.on = String(race.out ? 0 : race.lightsOn);
+        lightsEl.current.dataset.show = (show === 'race' || show === 'done') && (!race.out || clock - greenAt < 0.7) ? '1' : '';
+      }
       if (needle.current) needle.current.style.transform = `rotate(${-135 + Math.min(1.02, (show === 'burnout' ? 0.72 + Math.sin(showT * 9) * 0.1 : me.rpm / me.spec.redline)) * SWEEP}deg)`;
       if (speedEl.current) speedEl.current.textContent = String(Math.round(me.v * 3.6));
       if (gearEl.current) gearEl.current.textContent = me.spec.gears === 1 ? 'D' : me.phase === 'staging' ? 'N' : String(me.gear);
@@ -409,7 +414,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
       // how far into the next sim step this frame is
       const alpha = show !== 'race' && show !== 'done' ? 1 : Math.min(1, Math.max(0, live ? (now - live.startPerf) / 1000 / DT - stepsDone : acc / DT));
       const state = (r: typeof me, i: number): CarState => ({ x: prevX[i]! + (r.x - prevX[i]!) * alpha, v: r.v, rpm: r.rpm, redline: r.spec.redline, spinning: r.spinLeft > 0 || show === 'burnout', dead: r.dead });
-      stage?.renderRace(race.racers.map(state), tree, rt, dt, undefined, { excite, intro: show === 'intro' ? showT / INTRO_S : null });
+      stage?.renderRace(race.racers.map(state), lights, rt, dt, undefined, { excite, intro: show === 'intro' ? showT / INTRO_S : null });
     };
     raf = requestAnimationFrame(frame);
 
@@ -467,7 +472,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
   const meCar = plan.specs[0]!.def.name;
   const rivalCar = plan.specs[1]?.def.name ?? '';
   return (
-    <div ref={rootRef} className="lc-race" data-phase={phase} data-state="launch" aria-label="Drag race. Tap or press Space at green to launch, then each time the needle is in the green zone to shift.">
+    <div ref={rootRef} className="lc-race" data-phase={phase} data-state="launch" aria-label="Drag race. Five red lights come on; tap or press Space the moment they go out to launch, then each time the needle is in the green zone to shift.">
       <div className="lc-hud" aria-hidden="true">
         <div className="lc-hud-top">
           <div className="lc-plate is-you">
@@ -524,6 +529,14 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
             {!plan.live && <p className="lc-vs-skip mono">Tap to skip</p>}
           </div>
         )}
+        <div ref={lightsEl} className="lc-f1" data-on="0">
+          {Array.from({ length: LIGHTS }, (_, k) => (
+            <span key={k} className="lc-f1-pod">
+              <i />
+              <i />
+            </span>
+          ))}
+        </div>
         {pop && (
           <div key={pop.key} className="lc-pop" data-tone={pop.tone}>
             {pop.text}

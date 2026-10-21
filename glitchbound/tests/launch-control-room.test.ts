@@ -15,7 +15,7 @@ function goodTaps(cars: LiveCar[], seed: number, i: number): number[] {
     const r = race.racers[i]!;
     const w = race.windowOf(i);
     const frac = r.rpm / r.spec.redline;
-    if ((r.phase === 'staging' && race.green) || (r.phase === 'running' && w && frac >= (w.lo + w.hi) / 2)) {
+    if ((r.phase === 'staging' && race.out) || (r.phase === 'running' && w && frac >= (w.lo + w.hi) / 2)) {
       if (taps[taps.length - 1] !== k) {
         taps.push(k);
         race.tap(i);

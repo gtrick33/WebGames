@@ -188,7 +188,117 @@
   z-index: 5;
   overflow: hidden;
   border-radius: 16px;
+  /* the docked view can be turned: drag to orbit, pinch or scroll to zoom */
+  cursor: grab;
+  touch-action: none;
+}
+.lc-stage[data-mode='dock']:active {
+  cursor: grabbing;
+}
+/* what floats over a docked 3D view: the hint, zoom and reset, the inspect button and caption */
+.lc-view-ui {
+  position: absolute;
+  inset: 0;
   pointer-events: none;
+}
+.lc-view-ui button {
+  pointer-events: auto;
+}
+.lc-view-hint {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgb(10 6 30 / 0.6);
+  color: #fff;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+.lc-view-tools {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  gap: 6px;
+}
+.lc-view-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--lc-edge);
+  border-radius: 12px;
+  background: rgb(10 6 30 / 0.66);
+  color: #fff;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.lc-view-btn:hover {
+  background: rgb(34 22 80 / 0.9);
+}
+.lc-view-inspect {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--lc-gold);
+  color: #1a1030;
+  font: 800 15px/1 var(--lc-display);
+  font-stretch: 85%;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 0 #b07a00, 0 10px 24px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.lc-view-inspect:active {
+  transform: translateX(-50%) translateY(3px);
+  box-shadow: 0 1px 0 #b07a00;
+}
+.lc-inspect {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  display: grid;
+  gap: 10px;
+  width: min(520px, calc(100% - 24px));
+  padding: 12px 14px;
+  border: 1px solid var(--lc-edge);
+  border-radius: 16px;
+  background: rgb(14 8 36 / 0.84);
+  color: var(--lc-fg);
+  box-shadow: var(--lc-lift);
+  -webkit-backdrop-filter: var(--lc-blur);
+  backdrop-filter: var(--lc-blur);
+  cursor: default;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  animation: lc-panel-in 0.24s cubic-bezier(0.2, 1, 0.3, 1);
+}
+.lc-inspect .lc-part-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* inspecting: the 3D view takes the whole pop-up (the part tabs stay, to look at another part) */
+.lc-modal.is-inspect .lc-modal-body.has-view {
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+}
+.lc-modal.is-inspect .lc-modal-content {
+  display: none;
 }
 
 /* ================================================================ top bar */
@@ -214,20 +324,16 @@
   -webkit-backdrop-filter: var(--lc-blur);
   backdrop-filter: var(--lc-blur);
 }
-.lc-logo-tree {
+.lc-logo-lights {
   display: grid;
   gap: 2px;
 }
-.lc-logo-tree i {
+.lc-logo-lights i {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--lc-yellow);
-  box-shadow: 0 0 6px var(--lc-yellow);
-}
-.lc-logo-tree i:last-child {
-  background: var(--lc-green);
-  box-shadow: 0 0 6px var(--lc-green);
+  background: #ff2a3a;
+  box-shadow: 0 0 6px #ff2a3a;
 }
 .lc-logo-word {
   display: grid;
@@ -1794,7 +1900,7 @@
   padding: 10px 12px max(12px, env(safe-area-inset-bottom));
 }
 .lc-modal-body.has-view {
-  grid-template-rows: minmax(130px, 38%) minmax(0, 1fr);
+  grid-template-rows: minmax(200px, 50%) minmax(0, 1fr);
 }
 .lc-modal-view {
   min-height: 0;
@@ -1823,7 +1929,7 @@
 @container (min-width: 700px) and (min-aspect-ratio: 1/1) {
   .lc-modal-body.has-view {
     grid-template-rows: minmax(0, 1fr);
-    grid-template-columns: minmax(0, 1.15fr) minmax(330px, 1fr);
+    grid-template-columns: minmax(0, 1.5fr) minmax(340px, 1fr);
   }
 }
 @container (max-height: 520px) {
@@ -2078,6 +2184,61 @@
 }
 .lc-cond-bar i.is-bad {
   background: var(--lc-coral);
+}
+.lc-ltrack {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+}
+.lc-ltrack i {
+  position: relative;
+  height: 10px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.12);
+  transform: skewX(-18deg);
+}
+.lc-ltrack i.is-on {
+  background: linear-gradient(90deg, #a8e02a, var(--lc-lime));
+}
+.lc-ltrack i.is-next {
+  box-shadow: inset 0 0 0 1.5px var(--lc-yellow);
+}
+/* a level that changes the car's look */
+.lc-ltrack i[data-mark]::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lc-yellow);
+  transform: translateX(-50%) skewX(18deg);
+}
+.lc-ring {
+  --tone: var(--lc-lime);
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, #1a1036 76%, transparent 78% 100%),
+    conic-gradient(var(--tone) var(--p), rgb(255 255 255 / 0.12) 0);
+  font-size: 12px;
+  font-weight: 700;
+}
+.lc-ring[data-tone='mid'] {
+  --tone: var(--lc-yellow);
+}
+.lc-ring[data-tone='bad'] {
+  --tone: var(--lc-coral);
+}
+.lc-part-actions {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
 }
 .lc-upgrade,
 .lc-part-panel .lc-upgrade {
@@ -2785,6 +2946,55 @@
     transform: translateX(-50%) translateY(-30px);
   }
 }
+/* the start lights in the HUD, the same as on the gantry: five pods, two reds each */
+.lc-f1 {
+  position: absolute;
+  left: 50%;
+  top: calc(max(10px, env(safe-area-inset-top)) + 66px);
+  display: flex;
+  gap: 7px;
+  padding: 8px 9px;
+  border: 1px solid var(--hud-line);
+  border-radius: 12px;
+  background: rgb(10 8 20 / 0.8);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.35);
+  opacity: 0;
+  transform: translateX(-50%) translateY(-6px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+.lc-f1[data-show='1'] {
+  opacity: 1;
+  transform: translateX(-50%);
+}
+.lc-f1-pod {
+  display: grid;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 8px;
+  background: #1d1a26;
+}
+.lc-f1-pod i {
+  display: block;
+  width: clamp(14px, 3.6cqmin, 24px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #3a1a1e;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.lc-f1[data-on='1'] .lc-f1-pod:nth-child(-n + 1) i,
+.lc-f1[data-on='2'] .lc-f1-pod:nth-child(-n + 2) i,
+.lc-f1[data-on='3'] .lc-f1-pod:nth-child(-n + 3) i,
+.lc-f1[data-on='4'] .lc-f1-pod:nth-child(-n + 4) i,
+.lc-f1[data-on='5'] .lc-f1-pod i {
+  background: radial-gradient(circle at 40% 35%, #ff9a9a, #ff1a2a 62%);
+  box-shadow: 0 0 14px #ff1a2a, 0 0 4px #ff6a6a;
+}
+@container (max-width: 560px) {
+  .lc-f1 {
+    top: calc(max(10px, env(safe-area-inset-top)) + 112px);
+  }
+}
 /* the tach: a ring that only shows this gear's window, a needle, the gear, the speed */
 .lc-hud-bottom {
   display: flex;
@@ -3017,6 +3227,7 @@
   .lc-modal,
   .lc-banner,
   .lc-pop,
+  .lc-f1,
   .lc-vs-side,
   .lc-vs-mark,
   .lc-thumb.is-loading,

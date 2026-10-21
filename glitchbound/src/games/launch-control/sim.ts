@@ -1,9 +1,9 @@
 /**
  * The race: a quarter mile for up to five cars, stepped at a fixed rate. Pure and deterministic:
  * the same cars, drivers and seed always give the same race (the daily, friends' ghosts and the
- * tests rely on it). The player's one button launches at green and then shifts: each gear has its
- * own shift window (green, with yellow either side, red above), at a seeded random spot near the
- * top of the rev range, the same for every car in the race.
+ * tests rely on it). The player's one button launches at lights out and then shifts: each gear has its
+ * own shift window (green, with yellow either side, red above), at a seeded random spot and size,
+ * the same for every car in the race.
  * A driver is live (the player's taps), a policy (an AI with a skill level) or a script (recorded
  * taps: a ghost).
  */
@@ -15,23 +15,25 @@ export const DT = 1 / 120;
 /** A quarter mile, metres. */
 export const DISTANCE = 402.336;
 export const MAX_RACERS = 5;
-/** Nobody takes longer than this: the race ends. */
-export const MAX_TIME = 30;
+/** Nobody takes longer than this (the lights included): the race ends. */
+export const MAX_TIME = 36;
 /**
- * The tree, as on a real sportsman tree: both cars are staged at t = 0, the starter holds for a
- * random moment (so nobody can anticipate it), then three ambers light half a second apart and the
- * green comes half a second after the last one.
+ * The start, as in Formula 1: both cars are staged at t = 0, five red lights come on one a second,
+ * and with all five lit they go out after a random wait (seeded, 0 to 3 s): lights out and away.
  */
-export const STAGE_HOLD_MIN = 1.2;
-export const STAGE_HOLD_JITTER = 1.3;
-export const AMBER_GAP = 0.5;
-/** A live driver who never taps launches this long after green anyway. */
+export const LIGHTS = 5;
+/** The first red light comes on this long after the cars are staged; the others follow one a second. */
+export const FIRST_LIGHT = 1.0;
+export const LIGHT_GAP = 1.0;
+/** With all five lit, the lights go out after a random wait from none to this long (the start: no rhythm to guess). */
+export const OUT_HOLD_MAX = 3;
+/** A live driver who never taps launches this long after lights out anyway. */
 export const AUTO_LAUNCH = 1.0;
-/** Tapping during the ambers is a jump start: the car goes this long after green, bogged. */
+/** Tapping while the red lights are on is a jump start: the car goes this long after lights out, bogged. */
 export const JUMP_PENALTY = 0.6;
-/** Reaction times (s) for a perfect and a good launch. */
-export const LAUNCH_PERFECT = 0.28;
-export const LAUNCH_GOOD = 0.45;
+/** Reaction times (s) for a perfect and a good launch (no rhythm to anticipate, so a little kinder than a drag tree). */
+export const LAUNCH_PERFECT = 0.3;
+export const LAUNCH_GOOD = 0.5;
 export const IDLE_RPM = 900;
 const G = 9.81;
 const AIR = 1.2;
@@ -144,9 +146,12 @@ export interface ShiftWindow {
   okHi: number;
 }
 
-/** How long the needle takes to sweep the green and each yellow band, seconds. */
-export const GREEN_SECONDS = 0.26;
-export const YELLOW_SECONDS = 0.2;
+/**
+ * How long the needle takes to sweep the green and each yellow band, seconds: drawn per gear and
+ * race within these ranges, so some greens are generous and some are a flick.
+ */
+export const GREEN_SECONDS = { min: 0.2, max: 0.32 } as const;
+export const YELLOW_SECONDS = { min: 0.12, max: 0.26 } as const;
 
 /** How fast the needle climbs in a gear near the top of the revs (share of the redline per second). */
 export function needleRate(spec: CarSpec, gear: number): number {
@@ -159,22 +164,27 @@ export function needleRate(spec: CarSpec, gear: number): number {
 }
 
 /**
- * A car's shift windows, one per gear change. Where they sit comes from the race seed (the same
- * spots for everyone in a race); how wide they are comes from the car, so the needle takes about
- * the same time to cross the green in any gear of any car.
+ * A car's shift windows, one per gear change. Everything about them comes from the race seed (the
+ * same for everyone in a race) and changes every gear: where the green sits (70 to 92 % of the
+ * redline), how wide it is and how wide each yellow band is. Widths are drawn as time on the needle
+ * and turned into revs for each car, so the green is equally hard in any car.
  */
 export function shiftWindows(seed: number, spec: CarSpec): ShiftWindow[] {
   const r = rng((seed ^ 0x2c1b3c6d) >>> 0);
+  const between = (lo: number, hi: number): number => lo + r() * (hi - lo);
   const out: ShiftWindow[] = [];
   for (let g = 1; g < spec.gears; g++) {
-    // centres never depend on the car (so an upgrade can't move a window), and fit under the redline
-    const c = 0.78 + r() * 0.12;
+    // drawn whatever the car (so an upgrade can't move a window, and every car sees the same draws)
+    const c = between(0.7, 0.92);
+    const green = between(GREEN_SECONDS.min, GREEN_SECONDS.max);
+    const below = between(YELLOW_SECONDS.min, YELLOW_SECONDS.max);
+    const above = between(YELLOW_SECONDS.min, YELLOW_SECONDS.max);
     const rate = needleRate(spec, g);
-    const hw = clamp((rate * GREEN_SECONDS) / 2, 0.024, 0.07);
-    const ym = clamp(rate * YELLOW_SECONDS, 0.04, 0.085);
+    // the centre stays put (the same for every car); the green narrows rather than reach the redline
+    const hw = Math.min(clamp((rate * green) / 2, 0.02, 0.08), 0.97 - c);
     const hi = c + hw;
     const lo = c - hw;
-    out.push({ lo, hi, okLo: lo - ym, okHi: Math.min(0.992, hi + ym) });
+    out.push({ lo, hi, okLo: lo - clamp(rate * below, 0.03, 0.1), okHi: Math.min(0.992, hi + clamp(rate * above, 0.03, 0.1)) });
   }
   return out;
 }
@@ -223,7 +233,7 @@ export interface Racer {
   /** A short push after a perfect shift or launch (multiplier, seconds left). */
   boostMul: number;
   boostLeft: number;
-  /** Tapped during the ambers (live drivers). */
+  /** Tapped while the red lights were on (live drivers). */
   jumped: boolean;
   launchQ: LaunchQuality | null;
 }
@@ -231,7 +241,7 @@ export interface Racer {
 export type LaunchQuality = 'perfect' | 'good' | 'slow' | 'jump';
 
 export type ShiftQuality = 'perfect' | 'ok' | 'early' | 'late';
-export type Event = { type: 'amber'; n: number } | { type: 'green' } | { type: 'launch'; i: number; quality: LaunchQuality } | { type: 'jump'; i: number } | { type: 'spin'; i: number } | { type: 'shift'; i: number; quality: ShiftQuality } | { type: 'tooEarly'; i: number } | { type: 'zone'; i: number } | { type: 'limiter'; i: number } | { type: 'finish'; i: number } | { type: 'fail'; i: number; part: PartId };
+export type Event = { type: 'light'; n: number } | { type: 'out' } | { type: 'launch'; i: number; quality: LaunchQuality } | { type: 'jump'; i: number } | { type: 'spin'; i: number } | { type: 'shift'; i: number; quality: ShiftQuality } | { type: 'tooEarly'; i: number } | { type: 'zone'; i: number } | { type: 'limiter'; i: number } | { type: 'finish'; i: number } | { type: 'fail'; i: number; part: PartId };
 
 /**
  * The rpm the shift is judged on and the needle shows: while the clutch slips at the launch the
@@ -292,14 +302,15 @@ function newRacer(spec: CarSpec): Racer {
 export class Race {
   readonly racers: Racer[];
   readonly drivers: Driver[];
-  readonly greenAt: number;
-  /** When each amber lights. */
-  readonly amberAt: readonly number[];
+  /** Lights out: the go signal. */
+  readonly outAt: number;
+  /** When each of the five red lights comes on. */
+  readonly lightAt: readonly number[];
   /** Each racer's shift windows (see shiftWindows). */
   readonly windows: ShiftWindow[][];
   t = 0;
-  ambersLit = 0;
-  green = false;
+  lightsOn = 0;
+  out = false;
   done = false;
   private plans: (PolicyPlan | null)[];
   private rand: () => number;
@@ -310,9 +321,8 @@ export class Race {
     this.rand = rng(seed);
     this.racers = specs.map(newRacer);
     this.drivers = drivers;
-    const hold = STAGE_HOLD_MIN + this.rand() * STAGE_HOLD_JITTER;
-    this.amberAt = [hold, hold + AMBER_GAP, hold + 2 * AMBER_GAP];
-    this.greenAt = hold + 3 * AMBER_GAP;
+    this.lightAt = Array.from({ length: LIGHTS }, (_, k) => FIRST_LIGHT + k * LIGHT_GAP);
+    this.outAt = this.lightAt[LIGHTS - 1]! + this.rand() * OUT_HOLD_MAX;
     this.windows = this.racers.map((r) => shiftWindows(seed, r.spec));
     this.plans = this.racers.map((_, i) => this.plan(i));
     for (const r of this.racers) {
@@ -357,16 +367,16 @@ export class Race {
   }
 
   /**
-   * The player's button (live drivers only): at green it launches, during the ambers it is a jump
+   * The player's button (live drivers only): at lights out it launches, while the lights are on it is a jump
    * start, while running it shifts. A stray tap far below the window is ignored.
    */
   tap(i: number): void {
     if (this.drivers[i]?.kind !== 'live') return;
     const r = this.racers[i]!;
     if (r.phase === 'staging') {
-      if (this.green) {
+      if (this.out) {
         if (!r.jumped) this.launch(i);
-      } else if (this.ambersLit > 0 && !r.jumped) {
+      } else if (this.lightsOn > 0 && !r.jumped) {
         r.jumped = true;
         this.events.push({ type: 'jump', i });
       }
@@ -384,7 +394,7 @@ export class Race {
     const r = this.racers[i]!;
     r.launchAt = this.t;
     r.launchRpm = r.rpm;
-    r.reaction = this.t - this.greenAt;
+    r.reaction = this.t - this.outAt;
     r.phase = 'running';
     r.slip = r.spec.gears === 1 ? 0 : 3;
     r.bog = Math.pow(clamp(r.rpm / Math.max(IDLE_RPM + 1, idealLaunchRpm(r.spec)), 0.3, 1), 1.6);
@@ -447,13 +457,13 @@ export class Race {
       return out;
     }
     this.t += DT;
-    while (this.ambersLit < this.amberAt.length && this.t >= this.amberAt[this.ambersLit]!) {
-      this.ambersLit++;
-      this.events.push({ type: 'amber', n: this.ambersLit });
+    while (this.lightsOn < this.lightAt.length && this.t >= this.lightAt[this.lightsOn]!) {
+      this.lightsOn++;
+      this.events.push({ type: 'light', n: this.lightsOn });
     }
-    if (!this.green && this.t >= this.greenAt) {
-      this.green = true;
-      this.events.push({ type: 'green' });
+    if (!this.out && this.t >= this.outAt) {
+      this.out = true;
+      this.events.push({ type: 'out' });
     }
     for (let i = 0; i < this.racers.length; i++) this.stepRacer(i);
     if (this.racers.every((r) => r.phase === 'done') || this.t >= MAX_TIME) {
@@ -479,7 +489,7 @@ export class Race {
     if (r.phase === 'staging') {
       // live drivers launch with their tap (tap()); a jump start or no tap launches late
       const react = d.kind === 'policy' && plan ? plan.reaction : d.kind === 'script' ? d.script.reaction : r.jumped ? JUMP_PENALTY : AUTO_LAUNCH;
-      if (this.green && this.t >= this.greenAt + react - 1e-9) this.launch(i);
+      if (this.out && this.t >= this.outAt + react - 1e-9) this.launch(i);
       return;
     }
 
@@ -618,20 +628,17 @@ export class Race {
   }
 }
 
-/** What the Christmas tree shows: per lane pre-stage and stage bulbs and a red light for a jump; ambers and green are shared. */
-export interface TreeState {
-  pre: [boolean, boolean];
-  stage: [boolean, boolean];
-  ambers: number;
-  green: boolean;
-  red: [boolean, boolean];
+/** What the start lights show: how many of the five red lights are on, lights out, and who jumped. */
+export interface LightsState {
+  on: number;
+  out: boolean;
+  jumped: [boolean, boolean];
 }
-export const DARK_TREE: TreeState = { pre: [false, false], stage: [false, false], ambers: 0, green: false, red: [false, false] };
+export const LIGHTS_OFF: LightsState = { on: 0, out: false, jumped: [false, false] };
 
-/** The tree for a race in progress (both cars are staged once the race clock runs). */
-export function treeOf(race: Race): TreeState {
+export function lightsOf(race: Race): LightsState {
   const jumped = (i: number): boolean => !!race.racers[i]?.jumped;
-  return { pre: [true, race.racers.length > 1], stage: [true, race.racers.length > 1], ambers: race.ambersLit, green: race.green, red: [jumped(0), jumped(1)] };
+  return { on: race.lightsOn, out: race.out, jumped: [jumped(0), jumped(1)] };
 }
 
 /** Runs a whole race at once (forecasts, tests). */
