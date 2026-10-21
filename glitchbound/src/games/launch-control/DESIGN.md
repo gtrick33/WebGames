@@ -11,8 +11,10 @@ One quarter mile (402 m) against four rivals, about ten seconds of driving:
 
 1. **The lights**: three ambers half a second apart, then green (seeded jitter). Launch control holds every car
    at its sweet-spot rpm and leaves at green; AI drivers add their own reaction time and launch error.
-2. **The run**: tap (Space, or the SHIFT button) when the needle is in the green zone just under the redline.
-   Perfect shift = quicker change; early = lost pull; bouncing the limiter = lost time and engine wear.
+2. **The run**: tap (Space, or the SHIFT button) when the shift lights flash (88 % of the redline and up).
+   Perfect shift = quicker change; early = lost pull; staying on the limiter for more than 0.14 s = late, lost time
+   and engine wear. A tap below half the redline is taken as accidental and ignored. The needle follows the gear
+   (the wheels) during the clutch launch, so it never crashes after the start.
 3. **The finish**: elapsed time (ET), trap speed, perfect shifts, finishing position. First across the line
    wins the purse and the wager; places pay a share.
 
@@ -66,11 +68,14 @@ mid-race; repairs cost cash. Cosmetics: helmets, suits, paints, liveries, wheels
 | `economy.ts` | ladder, bots, purses by position, Monte-Carlo odds, materials, sponsor, crate, daily loaner | yes |
 | `cosmetics.ts` / `envs.ts` | cosmetics for sale; the four strips | yes |
 | `storage.ts` | the local save (validated) | DOM |
-| `scene3d.ts` | Three.js: procedural cars (wheel wells, tapered cabin, lamps, parts), worlds, cameras, thumbnails | WebGL |
+| `scene3d.ts` | Three.js: lofted cars (rounded cross-sections, flat capped nose and tail, fender arches, glass cabin with painted pillars, lamps snapped to the surface), sky reflections, worlds merged per material (~250 draw calls for a race), one shared stage, a thumbnail queue | WebGL |
 | `hud.ts` | the driver portrait | DOM |
-| `RaceScreen.tsx` | the race: 3D view, DOM HUD updated by refs, SHIFT button, rotate nudge | React |
+| `RaceScreen.tsx` | the race on the shared stage: shift lights that flash in the perfect zone, a gauge with the real zones, a zone cue, stray-tap guard, pixel-ratio guard, rotate nudge | React |
 | `Game.tsx` / `ui.tsx` / `Game.css` | hub, rivals, setup, result, garage, dealer, daily, ladder, help | React |
 | `Preview.tsx` | catalogue attract mode: five cars racing, blitted onto the tile | React |
 
 Tests: `tests/launch-control.test.ts`. Stage aspect is `square`, so phones get a tall stage: the 3D view on top,
 the panels below; landscape puts the panels beside the car (container queries).
+
+Tests: `tests/launch-control.test.ts` (simulation, economy, save) and `tests/launch-control-ui.test.tsx` (the whole
+game in jsdom with a fake clock: menus, a five-car race shifted on the lights, results, daily leave, garage, wager).

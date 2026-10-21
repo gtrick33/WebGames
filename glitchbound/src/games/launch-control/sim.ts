@@ -117,9 +117,13 @@ export function idealLaunchRpm(spec: CarSpec): number {
   return Math.round(best / 50) * 50;
 }
 
-/** Shift zone (fraction of redline): a perfect shift happens here. */
-export const PERFECT_FROM = 0.92;
-export const OK_FROM = 0.8;
+/** Shift zone (fraction of redline): a perfect shift happens here, a good one from OK_FROM. */
+export const PERFECT_FROM = 0.88;
+export const OK_FROM = 0.72;
+/** Taps below this share of the redline are taken as accidental and ignored. */
+export const IGNORE_BELOW = 0.5;
+/** Seconds on the limiter before a shift counts as late. */
+export const LATE_AFTER = 0.14;
 
 export type Phase = 'staging' | 'running' | 'shifting' | 'done';
 
@@ -155,10 +159,18 @@ export interface Racer {
   stuck: boolean;
   /** Seconds after the launch when 100 km/h was reached, or -1. */
   t100: number;
+  /** The needle is in the perfect zone in this gear (for the cue sound). */
+  inZone: boolean;
 }
 
 export type ShiftQuality = 'perfect' | 'ok' | 'early' | 'late';
-export type Event = { type: 'amber'; n: number } | { type: 'green' } | { type: 'launch'; i: number } | { type: 'spin'; i: number } | { type: 'shift'; i: number; quality: ShiftQuality } | { type: 'limiter'; i: number } | { type: 'finish'; i: number } | { type: 'fail'; i: number; part: PartId };
+export type Event = { type: 'amber'; n: number } | { type: 'green' } | { type: 'launch'; i: number } | { type: 'spin'; i: number } | { type: 'shift'; i: number; quality: ShiftQuality } | { type: 'tooEarly'; i: number } | { type: 'zone'; i: number } | { type: 'limiter'; i: number } | { type: 'finish'; i: number } | { type: 'fail'; i: number; part: PartId };
+
+/**
+ * The rpm the shift is judged on and the needle shows: while the clutch slips at the launch the
+ * engine sits at its launch revs, but what matters is what the gear is doing (the wheels).
+ */
+export const shiftRpm = (r: Racer): number => (r.slip > 0 ? Math.min(r.rpm, Math.max(IDLE_RPM, wheelRpm(r.spec, r.v, r.gear))) : r.rpm);
 
 export type Driver = { kind: 'live' } | { kind: 'policy'; skill: number; seed: number } | { kind: 'script'; script: Script };
 
@@ -205,7 +217,7 @@ export interface RaceResult {
 }
 
 function newRacer(spec: CarSpec): Racer {
-  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false, t100: -1 };
+  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false, t100: -1, inZone: false };
 }
 
 export class Race {
@@ -260,9 +272,15 @@ export class Race {
     };
   }
 
-  /** A shift tap (live drivers only). */
+  /** A shift tap (live drivers only). A stray tap far below the zone is ignored. */
   tap(i: number): void {
     if (this.drivers[i]?.kind !== 'live') return;
+    const r = this.racers[i]!;
+    if (r.phase !== 'running' || r.gear >= r.spec.gears || r.stuck || r.dead) return;
+    if (shiftRpm(r) < r.spec.redline * IGNORE_BELOW) {
+      this.events.push({ type: 'tooEarly', i });
+      return;
+    }
     this.shift(i);
   }
 
@@ -272,7 +290,7 @@ export class Race {
     r.launchRpm = r.rpm;
     r.reaction = this.t - this.greenAt;
     r.phase = 'running';
-    r.slip = r.spec.gears === 1 ? 0 : 0.5;
+    r.slip = r.spec.gears === 1 ? 0 : 3;
     r.bog = Math.pow(clamp(r.rpm / Math.max(IDLE_RPM + 1, idealLaunchRpm(r.spec)), 0.3, 1), 1.6);
     const spin = engineForce(r.spec, r.rpm, 1) > tractionLimit(r.spec, true);
     if (spin || r.failure === 'suspension') {
@@ -289,10 +307,10 @@ export class Race {
   private shift(i: number): void {
     const r = this.racers[i]!;
     if (r.phase !== 'running' || r.gear >= r.spec.gears || r.stuck || r.dead) return;
-    // While the clutch slips in, the engine revs are not the car's: judge the shift by the wheels.
-    const frac = (r.slip > 0 ? Math.min(r.rpm, wheelRpm(r.spec, r.v, r.gear)) : r.rpm) / r.spec.redline;
+    const frac = shiftRpm(r) / r.spec.redline;
     r.slip = 0;
-    const bounced = r.limiterSince >= 0 && this.t - r.limiterSince > 0.04;
+    r.inZone = false;
+    const bounced = r.limiterSince >= 0 && this.t - r.limiterSince > LATE_AFTER;
     let quality: ShiftQuality;
     if (bounced) {
       quality = 'late';
@@ -314,10 +332,15 @@ export class Race {
     this.events.push({ type: 'shift', i, quality });
   }
 
-  /** Advances one DT. Returns what happened for the sounds and the HUD. */
+  /** Advances one DT. Returns what happened for the sounds and the HUD (including taps made since the last step). */
   step(): Event[] {
-    this.events = [];
-    if (this.done) return this.events;
+    const fromTaps = this.events;
+    this.events = [...fromTaps];
+    if (this.done) {
+      const out = this.events;
+      this.events = [];
+      return out;
+    }
     this.t += DT;
     while (this.ambersLit < AMBERS.length && this.t >= AMBERS[this.ambersLit]!) {
       this.ambersLit++;
@@ -336,7 +359,9 @@ export class Race {
         }
       this.done = true;
     }
-    return this.events;
+    const out = this.events;
+    this.events = [];
+    return out;
   }
 
   private stepRacer(i: number): void {
@@ -367,7 +392,7 @@ export class Race {
       if (d.kind === 'script') {
         const next = d.script.shifts[r.shifts];
         if (next !== undefined && since >= next) this.shift(i);
-      } else if (d.kind === 'policy' && plan && (r.slip > 0 ? wheelRpm(spec, r.v, r.gear) : r.rpm) >= spec.redline * plan.shiftAt) {
+      } else if (d.kind === 'policy' && plan && shiftRpm(r) >= spec.redline * plan.shiftAt) {
         if (plan.wantedAt < 0) plan.wantedAt = this.t;
         if (this.t - plan.wantedAt >= plan.lateness) {
           plan.wantedAt = -1;
@@ -393,10 +418,15 @@ export class Race {
       const launching = since < 1.2;
       const limit = tractionLimit(spec, launching, r.v) * (r.failure === 'tyres' && r.failAt < 0 ? 0.35 : 1);
       if (r.slip > 0) {
+        // The clutch slips: the engine holds near its launch revs (sagging a little) until the
+        // wheels catch up, then locks; no sudden drop of the needle.
         r.slip -= DT;
-        const held = Math.max(IDLE_RPM, r.launchRpm - 1200 * (0.5 - r.slip));
+        const held = Math.max(IDLE_RPM, r.launchRpm - 350 * since);
         r.rpm = Math.max(wheel, held);
-        if (wheel >= held) r.slip = 0;
+        if (wheel >= held - 30 || r.slip <= 0) {
+          r.slip = 0;
+          r.rpm = Math.max(IDLE_RPM, wheel);
+        }
       } else r.rpm = Math.max(IDLE_RPM, wheel);
       let eng = engineForce(spec, r.rpm, r.gear);
       if (since < 1 && r.gear === 1 && spec.gears > 1) eng *= r.bog + (1 - r.bog) * since;
@@ -417,6 +447,10 @@ export class Race {
           force *= r.gear < spec.gears ? 0.3 : 0.9;
         }
       }
+    }
+    if (d.kind === 'live' && r.phase === 'running' && r.gear < spec.gears && !r.inZone && shiftRpm(r) >= spec.redline * PERFECT_FROM) {
+      r.inZone = true;
+      this.events.push({ type: 'zone', i });
     }
     const drag = 0.5 * AIR * spec.dragArea * (r.failure === 'aero' && r.failAt < 0 ? 2.5 : 1) * r.v * r.v;
     const roll = 0.012 * spec.mass * G;

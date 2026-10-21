@@ -121,9 +121,12 @@ export const typicalEt = (spec: CarSpec, skill: number): number => (forecastEt(s
  */
 export function botsFor(me: CarSpec, count: number, seed: number, rival?: Opponent): Bot[] {
   const r = rng(seed);
-  // Bots are built so that even a perfectly driven run of theirs lands a touch behind a perfect run of
-  // yours; their driver's skill (0.35..0.85) then only makes them slower. Beatable, never a walkover.
-  const target = forecastEt(me, 1, 3) + 0.25;
+  // Bots are built so that a perfectly driven run of theirs lands just behind a perfect run of
+  // yours; their driver's skill (0.45..0.9) then only makes them slower. You win with clean shifts;
+  // miss a couple and the field catches you.
+  // The first rungs of the ladder are gentler, so a new player wins a race or two while learning.
+  const ease = rival ? Math.max(0, 0.6 - (rival.rank - 1) * 0.12) : 0.12;
+  const target = forecastEt(me, 1, 3) + 0.08 + ease;
   const myTier = me.def.tier;
   const myLevel = avgLevel(me.levels);
   const names = [...BOT_NAMES].sort(() => r() - 0.5);
@@ -165,7 +168,7 @@ export function botsFor(me: CarSpec, count: number, seed: number, rival?: Oppone
       const gap = Math.abs(et - target) + (et < target - 0.3 ? 5 : 0);
       if (gap < bestGap) {
         bestGap = gap;
-        pick = { name: names[0] ?? `Racer ${bots.length}`, car: cand.c, levels, cond, skill: clamp(0.35 + r() * 0.5, 0, 1) };
+        pick = { name: names[0] ?? `Racer ${bots.length}`, car: cand.c, levels, cond, skill: clamp(0.45 + r() * 0.45 - ease * 0.4, 0, 1) };
       }
       if (gap < 0.2) break;
     }

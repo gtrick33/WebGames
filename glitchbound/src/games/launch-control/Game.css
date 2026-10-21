@@ -35,6 +35,7 @@
 }
 .lc .btn {
   gap: 8px;
+  color: var(--btn-fg);
 }
 .lc .lc-cta {
   --btn-bg: var(--lc-yellow);
@@ -53,6 +54,14 @@
 .lc-stage {
   position: absolute;
   inset: 0;
+}
+/* Portrait menus: the 3D turntable in the top band, the panels below on the site's colours. */
+.lc.is-portrait {
+  background: linear-gradient(180deg, #2f8dff 0 40%, var(--lc-surface-2) 40%);
+}
+.lc-stage[data-mode='top'] {
+  bottom: auto;
+  height: 46%;
 }
 .lc-stage canvas {
   width: 100%;
@@ -179,7 +188,7 @@
   left: 8px;
   right: 8px;
   bottom: 8px;
-  top: 42%;
+  top: 40%;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1136,79 +1145,6 @@
   justify-content: space-between;
   padding: 10px;
 }
-.lc-hud-top {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 8px;
-  align-items: start;
-}
-.lc-hud-you,
-.lc-hud-rivals {
-  display: grid;
-  padding: 6px 10px;
-  border: 2px solid var(--lc-ink);
-  border-radius: 12px;
-  background: var(--lc-surface);
-  box-shadow: 3px 3px 0 var(--lc-ink);
-  font-size: 12px;
-  line-height: 1.1;
-  min-width: 0;
-}
-.lc-hud-you b,
-.lc-hud-rivals b {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.lc-hud-you {
-  border-color: var(--lc-cyan);
-}
-.lc-hud-rivals {
-  text-align: right;
-  margin-right: 46px;
-}
-.lc-shiftmeter {
-  display: grid;
-  gap: 3px;
-  justify-items: center;
-  width: clamp(160px, 40cqw, 320px);
-}
-.lc-shiftmeter-track {
-  position: relative;
-  width: 100%;
-  height: 16px;
-  border: 2px solid var(--lc-ink);
-  border-radius: 999px;
-  background: var(--lc-ink);
-  overflow: hidden;
-}
-.lc-shiftmeter-zone,
-.lc-shiftmeter-perfect {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-}
-.lc-shiftmeter-zone {
-  background: color-mix(in srgb, var(--lc-yellow) 55%, transparent);
-}
-.lc-shiftmeter-perfect {
-  background: var(--lc-lime);
-}
-.lc-shiftmeter-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 0;
-  background: linear-gradient(90deg, var(--lc-cyan), var(--lc-magenta));
-  opacity: 0.85;
-}
-.lc-shiftmeter-label {
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: #fff;
-  text-shadow: 0 1px 0 #1d1238, 1px 0 0 #1d1238, -1px 0 0 #1d1238, 0 -1px 0 #1d1238;
-}
 .lc-pop {
   position: absolute;
   left: 50%;
@@ -1339,17 +1275,6 @@
   position: relative;
   width: clamp(88px, 24cqw, 130px);
   aspect-ratio: 1;
-}
-.lc-gauge-face {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 3px solid var(--lc-ink);
-  background: conic-gradient(from 210deg, var(--lc-cyan) 0 160deg, var(--lc-yellow) 160deg 200deg, var(--lc-coral) 200deg 240deg, var(--lc-ink) 240deg 360deg);
-  box-shadow: 3px 3px 0 var(--lc-ink);
-  display: grid;
-  place-content: center;
-  text-align: center;
 }
 .lc-gauge-face::before {
   content: '';
@@ -1528,5 +1453,188 @@
   .lc-nudge-phone {
     animation: none;
     transform: rotate(-90deg);
+  }
+}
+
+
+/* ---------------------------------------------------------------- v3: top bar on narrow stages */
+@container (max-width: 560px) {
+  .lc-pill-mats {
+    display: none;
+  }
+}
+@container (max-width: 420px) {
+  .lc-pill-rank {
+    display: none;
+  }
+  .lc-logo {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+  .lc-logo span {
+    font-size: 10px;
+  }
+  .lc-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+  }
+  .lc-menu-btn {
+    min-height: 50px;
+  }
+  .lc-menu-text b {
+    font-size: 15px;
+  }
+}
+
+/* ---------------------------------------------------------------- v3: race HUD */
+.lc-hud-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding-right: 50px;
+}
+.lc-chip-you {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 0 10px;
+  padding: 6px 10px;
+  border: 2px solid var(--lc-cyan);
+  border-radius: 12px;
+  background: var(--lc-surface);
+  box-shadow: 3px 3px 0 var(--lc-ink);
+  font-size: 12px;
+  line-height: 1.1;
+}
+.lc-chip-you .lc-eyebrow {
+  grid-column: 1;
+}
+.lc-chip-you b {
+  grid-column: 1;
+  font-size: 13px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lc-pos {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--lc-yellow);
+}
+.lc-leds {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 6px 8px 4px;
+  border: 2px solid var(--lc-ink);
+  border-radius: 14px;
+  background: var(--lc-surface);
+  box-shadow: 3px 3px 0 var(--lc-ink);
+}
+.lc-leds i {
+  height: 14px;
+  border-radius: 50%;
+  background: #2b2350;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+.lc-leds i[data-on='g'] {
+  background: #3dff7a;
+  box-shadow: 0 0 8px #3dff7a;
+}
+.lc-leds i[data-on='y'] {
+  background: var(--lc-yellow);
+  box-shadow: 0 0 8px var(--lc-yellow);
+}
+.lc-leds i[data-on='r'] {
+  background: #ff3b4e;
+  box-shadow: 0 0 8px #ff3b4e;
+}
+.lc-leds i[data-on='hot'] {
+  background: var(--lc-cyan);
+  box-shadow: 0 0 12px var(--lc-cyan);
+  animation: lc-flash 0.16s steps(2) infinite;
+}
+.lc-leds.is-hot {
+  border-color: var(--lc-cyan);
+}
+.lc-leds-label {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--lc-muted);
+}
+.lc-leds.is-hot .lc-leds-label {
+  color: var(--lc-cyan);
+}
+@keyframes lc-flash {
+  50% {
+    opacity: 0.35;
+  }
+}
+.lc-gauge-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--lc-ink);
+  box-shadow: 3px 3px 0 var(--lc-ink);
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+.lc-needle {
+  transform: rotate(-135deg);
+}
+.lc-progress-flag {
+  position: absolute;
+  right: -4px;
+  top: -5px;
+  width: 8px;
+  height: 20px;
+  background: repeating-linear-gradient(0deg, #fff 0 4px, #1d1238 4px 8px);
+  border: 1px solid #1d1238;
+}
+.lc-thumb.is-loading,
+.lc-swatch.is-loading {
+  display: block;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(100deg, var(--lc-surface-2) 30%, var(--lc-line) 50%, var(--lc-surface-2) 70%);
+  background-size: 300% 100%;
+  animation: lc-shimmer 1.2s linear infinite;
+}
+@keyframes lc-shimmer {
+  to {
+    background-position: -150% 0;
+  }
+}
+@container (max-width: 480px) {
+  .lc-leds {
+    gap: 3px;
+    padding: 5px 6px 3px;
+  }
+  .lc-leds i {
+    height: 11px;
+  }
+  .lc-chip-you b {
+    max-width: 70px;
+  }
+  .lc-pos {
+    font-size: 15px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-leds i[data-on='hot'] {
+    animation: none;
+  }
+  .lc-thumb.is-loading,
+  .lc-swatch.is-loading {
+    animation: none;
   }
 }

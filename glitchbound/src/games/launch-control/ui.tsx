@@ -1,8 +1,8 @@
 /** Small shared pieces of the Launch Control UI: panels, stickers, stat bars, car pictures, materials. */
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { drawDriver } from './hud';
 import { MATERIAL_INFO, MATERIALS, type Mats } from './parts';
-import { thumbnail, type CarLook } from './scene3d';
+import { cachedThumb, requestThumb, thumbKey, type CarLook } from './scene3d';
 import { fmtCash } from './util';
 
 export function Panel({ title, eyebrow, onBack, right, children, className = '' }: { title?: string; eyebrow?: string; onBack?: () => void; right?: ReactNode; children: ReactNode; className?: string }) {
@@ -84,10 +84,25 @@ export function MatsLine({ mats, have }: { mats: Mats; have?: Record<string, num
   );
 }
 
-/** A 3D picture of a car. */
+/** A 3D picture of a car, rendered in the background (one at a time) and cached. */
+export function useThumb(look: CarLook, env = 'e-bay'): string {
+  const key = thumbKey(look, env);
+  const [got, setGot] = useState<{ key: string; url: string }>({ key: '', url: '' });
+  const ready = cachedThumb(key);
+  const lookRef = useRef(look);
+  useEffect(() => {
+    lookRef.current = look;
+  });
+  useEffect(() => {
+    if (cachedThumb(key) !== undefined) return;
+    return requestThumb(lookRef.current, env, (url) => setGot({ key, url }));
+  }, [key, env]);
+  return ready ?? (got.key === key ? got.url : '');
+}
+
 export function CarThumb({ look, className = '', env }: { look: CarLook; className?: string; env?: string }) {
-  const url = useMemo(() => thumbnail(look, env), [look, env]);
-  return url ? <img src={url} width={320} height={180} className={`lc-thumb ${className}`} alt="" /> : <span className={`lc-thumb ${className}`} />;
+  const url = useThumb(look, env);
+  return url ? <img src={url} width={360} height={200} className={`lc-thumb ${className}`} alt="" /> : <span className={`lc-thumb is-loading ${className}`} />;
 }
 
 export function DriverFace({ helmet, suit, size = 64 }: { helmet: [string, string]; suit: string; size?: number }) {

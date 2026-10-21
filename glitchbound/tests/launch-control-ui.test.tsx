@@ -1,0 +1,180 @@
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import Game from '../src/games/launch-control/Game';
+import { KEY } from '../src/games/launch-control/storage';
+
+/**
+ * The whole game in jsdom (no WebGL: the 3D stage is skipped, everything else runs): menus, a real
+ * five-car race driven frame by frame with a fake clock, shifting whenever the shift lights flash,
+ * and the result, money and save that follow.
+ */
+const host = { report: vi.fn() };
+let frames: FrameRequestCallback[] = [];
+let now = 0;
+
+beforeEach(() => {
+  frames = [];
+  now = 1000;
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    frames.push(cb);
+    return frames.length;
+  });
+  vi.stubGlobal('cancelAnimationFrame', () => undefined);
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+  host.report.mockClear();
+});
+
+/** Runs one animation frame 1/60 s later. */
+function tick(): void {
+  now += 1000 / 60;
+  const run = frames;
+  frames = [];
+  for (const cb of run) cb(now);
+}
+
+/** Pop-up texts seen during the last race. */
+let pops = new Set<string>();
+
+/** Races until the result screen, tapping Space whenever the lights flash; returns the taps made. */
+function driveRace(opts: { tapWhenHot: boolean; maxFrames?: number } = { tapWhenHot: true }): number {
+  let taps = 0;
+  let lastTap = -999;
+  pops = new Set();
+  for (let f = 0; f < (opts.maxFrames ?? 4000); f++) {
+    act(() => tick());
+    if (!document.querySelector('.lc-race')) break;
+    const pop = document.querySelector('.lc-pop')?.textContent;
+    if (pop) pops.add(pop);
+    if (opts.tapWhenHot && document.querySelector('.lc-leds.is-hot') && f - lastTap > 6) {
+      act(() => {
+        fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+      });
+      taps++;
+      lastTap = f;
+    }
+  }
+  return taps;
+}
+
+function startLadderRace(): void {
+  fireEvent.click(screen.getByRole('button', { name: /^Race\s*Next/ }));
+  fireEvent.click(screen.getByRole('button', { name: /^Race Dizzy Dee/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm race' }));
+}
+
+describe('Launch Control: a full ladder race', () => {
+  it('goes hub → rival → setup → race → result, pays out and saves', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    expect(screen.getByText('Next: Dizzy Dee · Street')).toBeTruthy();
+    startLadderRace();
+    expect(host.report).toHaveBeenCalledWith({ type: 'start' });
+    expect(document.querySelector('.lc-race')).toBeTruthy();
+    const taps = driveRace();
+    expect(taps).toBeGreaterThanOrEqual(3);
+    expect(pops.has('PERFECT!')).toBe(true);
+    // the result: five cars in order, our times, a purse
+    const rows = document.querySelectorAll('.lc-order li');
+    expect(rows).toHaveLength(5);
+    expect(document.querySelector('.lc-times')?.textContent).toMatch(/3\/3 perfect/);
+    expect(document.querySelector('.lc-ledger')?.textContent).toMatch(/Purse/);
+    const end = host.report.mock.calls.map((c) => c[0]).find((e) => e.type === 'end');
+    expect(end.stats.perfect).toBe(3);
+    expect(end.score).toBeGreaterThan(5000);
+    // a clean run in the starter car wins the first rung: rank 1, cash up, parts worn
+    expect(screen.getByRole('heading', { name: 'You won!' })).toBeTruthy();
+    const save = JSON.parse(localStorage.getItem(KEY)!);
+    expect(save.rank).toBe(1);
+    expect(save.cash).toBeGreaterThan(800);
+    expect(save.cars.bumble.cond.tyres).toBeLessThan(100);
+    // next rival is offered
+    expect(screen.getByRole('button', { name: 'Next rival' })).toBeTruthy();
+  });
+
+  it('a driver who never shifts sits on the limiter and loses', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    startLadderRace();
+    driveRace({ tapWhenHot: false });
+    expect(screen.queryByRole('heading', { name: 'You won!' })).toBeNull();
+    const end = host.report.mock.calls.map((c) => c[0]).find((e) => e.type === 'end');
+    expect(end.stats.perfect).toBe(0);
+    expect(JSON.parse(localStorage.getItem(KEY)!).rank).toBe(0);
+  });
+
+  it('a stray tap right after the start is ignored, not an early shift', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    startLadderRace();
+    // run until the car has launched, then tap at once
+    for (let f = 0; f < 400 && document.querySelector('.lc-timer span')?.textContent === '0.000'; f++) act(() => tick());
+    act(() => {
+      fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+    });
+    act(() => tick());
+    expect(document.querySelector('.lc-gear')?.textContent).toBe('1');
+    expect(document.querySelector('.lc-pop')?.textContent).toBe('WAIT FOR GREEN');
+  });
+
+  it('pause stops the clock; Escape resumes', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    startLadderRace();
+    for (let f = 0; f < 300; f++) act(() => tick());
+    act(() => {
+      fireEvent.keyDown(window, { code: 'Escape', key: 'Escape' });
+    });
+    expect(screen.getByRole('heading', { name: 'Paused' })).toBeTruthy();
+    const t = document.querySelector('.lc-timer span')?.textContent;
+    for (let f = 0; f < 60; f++) act(() => tick());
+    expect(document.querySelector('.lc-timer span')?.textContent).toBe(t);
+    act(() => {
+      fireEvent.keyDown(window, { code: 'Escape', key: 'Escape' });
+    });
+    expect(screen.queryByRole('heading', { name: 'Paused' })).toBeNull();
+  });
+});
+
+describe('Launch Control: daily, garage and wager', () => {
+  it('a daily run left mid-race asks first, then counts as a run scored 0', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Daily\s*Showdown/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Run \(3 left\)/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Run \(3 left\)/ }));
+    for (let f = 0; f < 120; f++) act(() => tick());
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Leave the race' }));
+    expect(screen.getByText(/Leaving counts as one of today’s 3 runs/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Leave anyway' }));
+    expect(host.report).toHaveBeenCalledWith({ type: 'end', score: 0, stats: {}, daily: true });
+    const day = Object.values(JSON.parse(localStorage.getItem(KEY)!).daily)[0] as { tries: number; left: boolean };
+    expect(day.tries).toBe(1);
+    expect(day.left).toBe(true);
+  });
+
+  it('the garage sells a level of a part for cash and materials, as its own card', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: /^My garage/ }));
+    const cards = document.querySelectorAll('.lc-part');
+    expect(cards).toHaveLength(6);
+    const engine = cards[0]!;
+    expect(engine.textContent).toMatch(/Engine/);
+    expect(engine.textContent).toMatch(/\+9% torque/);
+    fireEvent.click(engine.querySelector('.lc-upgrade')!);
+    expect(document.querySelectorAll('.lc-part')[0]!.textContent).toMatch(/Lv 1\/8/);
+    const save = JSON.parse(localStorage.getItem(KEY)!);
+    expect(save.cars.bumble.levels.engine).toBe(1);
+    expect(save.cash).toBeLessThan(800);
+    expect(save.mats.scrap).toBeLessThan(6);
+  });
+
+  it('a lost wager takes the stake; the ledger says so', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Race\s*Next/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Race Dizzy Dee/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /25%/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm race' }));
+    expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBe(600);
+    driveRace({ tapWhenHot: false });
+    expect(document.querySelector('.lc-ledger')?.textContent).toMatch(/Wager/);
+    expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBeLessThan(800);
+  });
+});

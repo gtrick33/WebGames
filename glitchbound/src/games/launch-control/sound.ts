@@ -17,6 +17,10 @@ export interface Sfx {
   red(): void;
   finish(win: boolean): void;
   click(): void;
+  /** The needle entered the perfect zone. */
+  cue(): void;
+  /** A tap too early to count. */
+  nope(): void;
   quiet(): void;
   dispose(): void;
 }
@@ -134,6 +138,8 @@ export function createSfx(isMuted: () => boolean): Sfx {
       else [440, 330].forEach((f, i) => tone(f, f * 0.9, i * 0.18, 0.25, 0.06, 'triangle'));
     },
     click: () => tone(700, 500, 0, 0.04, 0.03, 'square'),
+    cue: () => tone(1760, 1760, 0, 0.07, 0.05, 'square'),
+    nope: () => tone(220, 180, 0, 0.12, 0.05, 'triangle'),
     quiet() {
       if (eng && ctx) eng.g.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.05);
     },

@@ -9,15 +9,15 @@ import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { CARS, getCar, TIER_NAME, type CarDef } from './cars';
 import { COSMETICS, DEFAULTS, getCosmetic, KIND_NAME, type Cosmetic, type CosmeticKind } from './cosmetics';
-import { addMats, avgLevel, botsFor, botSpec, crateFor, difficultyOf, DIVISIONS, forecast, hasMats, idleIncome, idleRate, LADDER, loanerFor, materialsFor, PER_DIVISION, RACE_SIZE, rivalBot, settle, STAKE_SHARES, type Bot, type Forecast, type Opponent } from './economy';
+import { addMats, avgLevel, botsFor, botSpec, crateFor, difficultyOf, DIVISIONS, forecast, hasMats, idleIncome, idleRate, LADDER, loanerFor, materialsFor, PER_DIVISION, PLAYER_SKILL, RACE_SIZE, rivalBot, settle, STAKE_SHARES, typicalEt, type Bot, type Forecast, type Opponent } from './economy';
 import { ENV_DEFS } from './envs';
 import { applyWear, effectsOf, FAILURE_TEXT, levelGains, MATERIAL_INFO, MATERIALS, MAX_LEVEL, PART_INFO, PARTS, raceWear, repairCost, RISKY, upgradeCost, type Condition, type Levels, type Mats, type PartId } from './parts';
 import { RaceScreen, type RacePlan } from './RaceScreen';
-import { lookKey, Stage3D, thumbnail, type CarLook } from './scene3d';
+import { lookKey, Stage3D, type CarLook } from './scene3d';
 import { decodeScript, encodeScript, forecastRun, scoreOf, specOf, type CarSpec, type Driver, type RaceResult } from './sim';
 import { createSfx, type Sfx } from './sound';
 import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type Save } from './storage';
-import { CarThumb, Cash, DriverFace, MatsLine, Panel, Pips, posLabel, StatBar, Sticker } from './ui';
+import { CarThumb, Cash, DriverFace, MatsLine, Panel, Pips, posLabel, StatBar, Sticker, useThumb } from './ui';
 import { fmtCash, fmtEt, fmtShort } from './util';
 import './Game.css';
 
@@ -52,6 +52,18 @@ interface Outcome {
 }
 
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
+
+const diffCache = new Map<string, { label: string; tone: string }>();
+/** How hard a ladder rival is for a car: their typical run against yours, the same rule everywhere. */
+function rivalDifficulty(o: Opponent, me: CarSpec): { label: string; tone: string } {
+  const key = `${o.rank}|${me.def.id}|${JSON.stringify(me.levels)}|${Math.round(me.grip * 100)}|${Math.round(me.peakTorque)}`;
+  const hit = diffCache.get(key);
+  if (hit) return hit;
+  const d = difficultyOf(typicalEt(botSpec(rivalBot(o)), o.skill) - typicalEt({ ...me, risky: [] }, PLAYER_SKILL));
+  diffCache.set(key, d);
+  if (diffCache.size > 400) diffCache.delete(diffCache.keys().next().value!);
+  return d;
+}
 const dailySeed = (day: string): number => hashString(`${SLUG}:${day}`);
 const prefersReduced = (): boolean => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -130,6 +142,10 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
   const [rivalPick, setRivalPick] = useState<number | null>(null);
   const [portrait, setPortrait] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const stageBoxRef = useRef<HTMLDivElement>(null);
+  /** The shared stage; created by the first effect below, so later effects always see the live one. */
+  const stageRef = useRef<Stage3D | null>(null);
+  const [touch] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
   useEffect(() => () => sfxRef.current?.dispose(), []);
@@ -162,7 +178,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
       const fx = effectsOf(s0.cars[s0.car]?.levels ?? newCar().levels, s0.cars[s0.car]?.cond ?? newCar().cond);
       const pay = idleIncome(s0.rank, now - s0.paidAt, fx.sponsorMul);
       commit((s) => ({ ...s, cash: s.cash + pay, earned: s.earned + pay, paidAt: now }));
-      if (pay > 0) setToast(`Your sponsor paid $${fmtCash(pay)} while you were away`);
+      if (pay >= 25) setToast(`Your sponsor paid $${fmtCash(pay)} while you were away`);
     } else if (s0.paidAt === 0) commit((s) => ({ ...s, paidAt: now }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -178,6 +194,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
   const car = getCar(save.car);
   const owned = save.cars[save.car] ?? newCar();
   const mySheet = useMemo(() => sheetOf(car, owned.levels, owned.cond), [car, owned]);
+  const mySpec = useMemo(() => specOf(car, owned.levels, owned.cond), [car, owned]);
+  const nextDiff = useMemo(() => rivalDifficulty(LADDER[Math.min(save.rank, LADDER.length - 1)]!, mySpec), [save.rank, mySpec]);
   const look = useMemo(() => lookOf(save, car), [save, car]);
   const nextOpp = LADDER[Math.min(save.rank, LADDER.length - 1)]!;
   const ladderDone = save.rank >= LADDER.length;
@@ -429,43 +447,63 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
     setScreen(s);
   };
 
-  // ---- the race screen
-  if (screen === 'race' && plan) {
-    return (
-      <div ref={rootRef} className="lc" data-screen="race">
-        <RaceScreen plan={plan.race} paused={paused} setPaused={setPaused} onFinish={(r) => finishRace(plan, r)} sfx={sfx} portraitNudge={portrait} />
-        {paused && (
-          <div className="lc-overlay" role="dialog" aria-label="Paused">
-            <div className="lc-panel lc-dialog">
-              <h2 className="lc-h">Paused</h2>
-              {confirmLeave ? (
-                <>
-                  <p>Leaving counts as one of today’s {DAILY_TRIES} runs, scored 0.</p>
-                  <button className="btn btn-lime" onClick={() => setConfirmLeave(false)}>
-                    Keep racing
-                  </button>
-                  <button className="btn" onClick={leaveRace}>
-                    Leave anyway
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button className="btn btn-lime" autoFocus onClick={() => setPaused(false)}>
-                    Resume
-                  </button>
-                  <button className="btn" onClick={leaveRace}>
-                    Leave the race
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
+  const stageLook = useMemo(() => (previewCar ? lookOf(save, getCar(previewCar)) : look), [previewCar, save, look]);
+  const racing = screen === 'race' && !!plan;
 
-  const stageLook = previewCar ? lookOf(save, getCar(previewCar)) : look;
+  // One WebGL stage for the whole game: the menus' turntable and the race share it.
+  useEffect(() => {
+    const box = stageBoxRef.current;
+    if (!box) return;
+    // a fresh canvas per mount: a disposed renderer loses its context for good
+    const cv = document.createElement('canvas');
+    box.appendChild(cv);
+    let stage: Stage3D;
+    try {
+      stage = new Stage3D(cv);
+    } catch {
+      cv.remove();
+      return;
+    }
+    stageRef.current = stage;
+    const size = (): void => stage.resize(box.clientWidth, box.clientHeight, Math.min(2, window.devicePixelRatio || 1));
+    size();
+    const ro = new ResizeObserver(size);
+    ro.observe(box);
+    return () => {
+      ro.disconnect();
+      stage.dispose();
+      cv.remove();
+      stageRef.current = null;
+    };
+  }, []);
+  // The turntable: the selected (or previewed) car on the chosen strip, outside races.
+  const showKey = lookKey(stageLook);
+  const stageLookRef = useRef(stageLook);
+  useEffect(() => {
+    stageLookRef.current = stageLook;
+  });
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || racing) return;
+    stage.setEnv(save.env);
+    stage.setCar(0, stageLookRef.current);
+    const framing = portrait ? 'center' : 'right';
+    const reduced = prefersReduced();
+    let raf = 0;
+    let last = performance.now();
+    let angle = -0.8;
+    const loop = (now: number): void => {
+      raf = requestAnimationFrame(loop);
+      if (now - last < 33 || document.hidden) return;
+      const dt = (now - last) / 1000;
+      last = now;
+      angle += dt * 0.25;
+      stage.renderShowcase(angle, framing, dt * 1.5);
+    };
+    stage.renderShowcase(angle, framing);
+    if (!reduced) raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [showKey, save.env, racing, portrait]);
   const topbar = (
     <header className="lc-top">
       <button className="lc-logo" onClick={() => go('hub')} aria-label="Launch Control menu">
@@ -497,8 +535,41 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
   );
 
   return (
-    <div ref={rootRef} className="lc" data-screen={screen}>
-      <CarStage look={stageLook} env={save.env} spin={screen === 'hub' || screen === 'dealer' || screen === 'garage'} frame={portrait ? 'portrait' : 'landscape'} />
+    <div ref={rootRef} className={`lc${portrait ? ' is-portrait' : ''}`} data-screen={racing ? 'race' : screen}>
+      <div ref={stageBoxRef} className="lc-stage" data-mode={racing ? 'race' : portrait ? 'top' : 'full'} aria-hidden="true" />
+      {racing && plan ? (
+        <>
+          <RaceScreen plan={plan.race} stageRef={stageRef} paused={paused} setPaused={setPaused} onFinish={(r) => finishRace(plan, r)} sfx={sfx} nudge={portrait && touch} onStart={() => undefined} />
+          {paused && (
+            <div className="lc-overlay" role="dialog" aria-label="Paused">
+              <div className="lc-panel lc-dialog">
+                <h2 className="lc-h">Paused</h2>
+                {confirmLeave ? (
+                  <>
+                    <p>Leaving counts as one of today’s {DAILY_TRIES} runs, scored 0.</p>
+                    <button className="btn btn-lime" onClick={() => setConfirmLeave(false)}>
+                      Keep racing
+                    </button>
+                    <button className="btn" onClick={leaveRace}>
+                      Leave anyway
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn btn-lime" autoFocus onClick={() => setPaused(false)}>
+                      Resume
+                    </button>
+                    <button className="btn" onClick={leaveRace}>
+                      Leave the race
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
       {topbar}
       {toast && (
         <div className="lc-toast" role="status">
@@ -517,7 +588,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
                   <b>Race</b>
                   <small>{ladderDone ? 'King of the strip · rematch anyone' : `Next: ${nextOpp.name} · ${DIVISIONS[nextOpp.division]}`}</small>
                 </span>
-                {!ladderDone && <Sticker tone={difficultyOf(forecastRun(botSpec(rivalBot(nextOpp)), nextOpp.skill, 7).et - mySheet.et).tone}>{difficultyOf(forecastRun(botSpec(rivalBot(nextOpp)), nextOpp.skill, 7).et - mySheet.et).label}</Sticker>}
+                {!ladderDone && <Sticker tone={nextDiff.tone}>{nextDiff.label}</Sticker>}
               </button>
               <button className="lc-menu-btn" onClick={() => go('daily')}>
                 <span className="lc-menu-icon" aria-hidden="true">
@@ -577,7 +648,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
         )}
 
         {screen === 'rivals' && (
-          <RivalsScreen save={save} mySheet={mySheet} pick={rivalPick} setPick={setRivalPick} onBack={() => go('hub')} onRace={(o, mode) => setup(mode, o)} />
+          <RivalsScreen save={save} mySheet={mySheet} mySpec={mySpec} pick={rivalPick} setPick={setRivalPick} onBack={() => go('hub')} onRace={(o, mode) => setup(mode, o)} />
         )}
 
         {screen === 'setup' && plan && (
@@ -645,7 +716,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
         {screen === 'result' && outcome && <ResultScreen o={outcome} me={me} today={today} challenge={challenge} save={save} triesLeft={triesLeft} onAgain={() => (outcome.plan.mode === 'daily' ? setup('daily', null) : setup(outcome.rankUp ? 'ladder' : outcome.plan.mode, outcome.rankUp ? null : outcome.plan.rival))} onGarage={() => go('garage')} onMenu={() => go('hub')} />}
 
         {screen === 'garage' && (
-          <Panel eyebrow={`${car.maker} · ${car.year} · ${TIER_NAME[car.tier]}`} title={car.name} onBack={() => go('hub')} right={<span className="lc-pill lc-pill-cash"><Cash n={save.cash} /></span>} className="lc-garage">
+          <Panel eyebrow={`My garage · ${TIER_NAME[car.tier]}`} title={car.name} onBack={() => go('hub')} className="lc-garage">
             <div className="lc-tabs" role="tablist">
               {(['parts', 'repairs', 'style'] as GarageTab[]).map((t) => (
                 <button key={t} role="tab" aria-selected={garageTab === t} className={`lc-tab${garageTab === t ? ' is-on' : ''}`} onClick={() => setGarageTab(t)}>
@@ -759,7 +830,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
         )}
 
         {screen === 'dealer' && (
-          <Panel eyebrow={`${CARS.length} cars · ${Object.keys(save.cars).length} owned`} title="Dealer" onBack={() => go('hub')} right={<span className="lc-pill lc-pill-cash"><Cash n={save.cash} /></span>}>
+          <Panel eyebrow={`${CARS.length} cars · ${Object.keys(save.cars).length} owned`} title="Dealer" onBack={() => go('hub')}>
             <div className="lc-chips" role="tablist" aria-label="Tier">
               {[0, 1, 2, 3, 4, 5, 6].map((t) => (
                 <button key={t} role="tab" aria-selected={dealerTier === t} className={`lc-chip${dealerTier === t ? ' is-on' : ''}`} onClick={() => setDealerTier(t)}>
@@ -914,6 +985,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
           </Panel>
         )}
       </main>
+        </>
+      )}
     </div>
   );
 }
@@ -957,14 +1030,14 @@ function StatSheet({ sheet, def }: { sheet: Sheet; def: CarDef }) {
   );
 }
 
-function RivalsScreen({ save, mySheet, pick, setPick, onBack, onRace }: { save: Save; mySheet: Sheet; pick: number | null; setPick: (i: number) => void; onBack: () => void; onRace: (o: Opponent, mode: Mode) => void }) {
+function RivalsScreen({ save, mySheet, mySpec, pick, setPick, onBack, onRace }: { save: Save; mySheet: Sheet; mySpec: CarSpec; pick: number | null; setPick: (i: number) => void; onBack: () => void; onRace: (o: Opponent, mode: Mode) => void }) {
   const lo = Math.max(0, Math.min(save.rank - 2, LADDER.length - 5));
   const list = LADDER.slice(lo, Math.min(LADDER.length, lo + 6));
   const sel = pick !== null && pick >= lo && pick < lo + list.length ? pick : Math.min(save.rank, LADDER.length - 1);
   const o = LADDER[sel]!;
   const oSpec = botSpec(rivalBot(o));
   const run = forecastRun(oSpec, o.skill, 7);
-  const diff = difficultyOf(run.et - mySheet.et);
+  const diff = rivalDifficulty(o, mySpec);
   const beaten = sel < save.rank;
   const next = sel === save.rank;
   const oc = getCar(o.car);
@@ -976,7 +1049,7 @@ function RivalsScreen({ save, mySheet, pick, setPick, onBack, onRace }: { save: 
           const i = lo + k;
           const locked = i > save.rank;
           const rs = sheetOf(getCar(r.car), r.levels, newCar().cond);
-          const d = difficultyOf(forecastRun(botSpec(rivalBot(r)), r.skill, 7).et - mySheet.et);
+          const d = rivalDifficulty(r, mySpec);
           return (
             <button key={r.rank} role="option" aria-selected={i === sel} className={`lc-rival${i === sel ? ' is-on' : ''}${locked ? ' is-locked' : ''}${i < save.rank ? ' is-beaten' : ''}`} onClick={() => !locked && setPick(i)} disabled={locked}>
               <CarThumb look={lookOf(emptySave(), getCar(r.car), r.levels)} />
@@ -988,7 +1061,7 @@ function RivalsScreen({ save, mySheet, pick, setPick, onBack, onRace }: { save: 
               <span className="mono lc-rival-nums">
                 {rs.hp} hp · {rs.mass} kg
               </span>
-              <span className="mono lc-rival-nums">¼ mi ~{fmtEt(rs.et)} s</span>
+              <span className="mono lc-rival-nums">best ¼ mi {fmtEt(rs.et)} s</span>
               {locked ? <Sticker tone="cyan" flat>🔒 Rank {r.rank}</Sticker> : <Sticker tone={d.tone} flat>{d.label}</Sticker>}
             </button>
           );
@@ -1005,9 +1078,9 @@ function RivalsScreen({ save, mySheet, pick, setPick, onBack, onRace }: { save: 
           <Sticker tone={diff.tone}>{diff.label}</Sticker>
         </div>
         <div className="lc-compare mono">
-          <span>¼ mile</span>
-          <b>{fmtEt(run.et)} s</b>
-          <i>you ~{fmtEt(mySheet.et)} s</i>
+          <span>Their run</span>
+          <b>~{fmtEt(run.et)} s</b>
+          <i>yours ~{fmtEt(mySheet.et)} s</i>
           <span>Power</span>
           <b>{oSheet.hp} hp</b>
           <i>you {mySheet.hp} hp</i>
@@ -1063,8 +1136,9 @@ function StyleShop({ save, kind, setKind, onPick }: { save: Save; kind: Cosmetic
 
 function Swatch({ c, save }: { c: Cosmetic; save: Save }) {
   const isCar = c.kind === 'paint' || c.kind === 'livery' || c.kind === 'wheels';
-  const url = useMemo(() => (isCar ? thumbnail({ ...lookOf(save, getCar(save.car)), [c.kind]: c.id }) : ''), [isCar, c, save]);
-  if (isCar) return url ? <img src={url} width={320} height={180} className="lc-swatch" alt="" /> : <span className="lc-swatch" />;
+  const base = lookOf(save, getCar(save.car));
+  const url = useThumb(isCar ? { ...base, [c.kind]: c.id } : base);
+  if (isCar) return url ? <img src={url} width={360} height={200} className="lc-swatch" alt="" /> : <span className="lc-swatch is-loading" />;
   if (c.kind === 'env') {
     const e = ENV_DEFS[c.id];
     return <span className="lc-swatch lc-swatch-env" style={{ background: e ? `linear-gradient(${e.sky[0]} 0 55%, ${e.ground} 55% 75%, ${e.track} 75%)` : c.colors[0] }} />;
@@ -1073,62 +1147,6 @@ function Swatch({ c, save }: { c: Cosmetic; save: Save }) {
     <span className="lc-swatch lc-swatch-face">
       <DriverFace helmet={c.kind === 'helmet' ? [c.colors[0]!, c.colors[1]!] : [getCosmetic(save.helmet)?.colors[0] ?? '#fff', getCosmetic(save.helmet)?.colors[1] ?? '#1d1238']} suit={c.kind === 'suit' ? c.colors[0]! : (getCosmetic(save.suit)?.colors[0] ?? '#1d3557')} size={72} />
     </span>
-  );
-}
-
-/** The background: the chosen strip with the selected car on a slow turntable. */
-function CarStage({ look, env, spin, frame }: { look: CarLook; env: string; spin: boolean; frame: 'portrait' | 'landscape' }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<Stage3D | null>(null);
-  useEffect(() => {
-    const cv = ref.current;
-    const root = rootRef.current;
-    if (!cv || !root) return;
-    let stage: Stage3D;
-    try {
-      stage = new Stage3D(cv);
-    } catch {
-      return;
-    }
-    stageRef.current = stage;
-    const size = (): void => stage.resize(root.clientWidth, root.clientHeight, Math.min(2, window.devicePixelRatio || 1));
-    size();
-    const ro = new ResizeObserver(size);
-    ro.observe(root);
-    return () => {
-      ro.disconnect();
-      stage.dispose();
-      stageRef.current = null;
-    };
-  }, []);
-  const key = lookKey(look);
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    stage.setEnv(env);
-    stage.setCar(0, look);
-    const reduced = prefersReduced();
-    let raf = 0;
-    let last = performance.now();
-    let t = 0;
-    const loop = (now: number): void => {
-      raf = requestAnimationFrame(loop);
-      if (now - last < 33 || document.hidden) return;
-      t += (now - last) / 1000;
-      last = now;
-      stage.renderShowcase(t, t * 0.25 - 0.8, 'garage', frame);
-    };
-    stage.renderShowcase(0, -0.8, 'garage', frame);
-    if (!reduced && spin) raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-    // The look is keyed by its visible fields.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, env, spin, frame]);
-  return (
-    <div ref={rootRef} className="lc-stage" aria-hidden="true">
-      <canvas ref={ref} />
-    </div>
   );
 }
 
