@@ -1888,6 +1888,8 @@ const it: string[] = [
   'Tocca Condividi, poi «Aggiungi alla schermata Home»: GlitchBound si apre a schermo intero, senza le barre di Safari.',
   'Installa GlitchBound per giocare a schermo intero, senza le barre del browser.',
   'Scorri verso l’alto per nascondere la barra di Safari. Per lo schermo intero ogni volta: Condividi, poi «Aggiungi alla schermata Home».',
+  'Gioca a schermo intero, senza le barre di Safari',
+  'Scorri verso l’alto qui per nascondere la barra di Safari',
 ];
 
 export default it;

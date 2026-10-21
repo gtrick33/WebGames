@@ -140,35 +140,58 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
 }
 
 /**
- * iPhone Safari in the pinned (immersive) mode: once a visit, how to get the bars out of the way (a
- * swipe now, or the Home Screen app for good). Fades after a few seconds.
+ * iPhone Safari while a game is pinned over the screen: as long as Safari's bar is showing, a handle
+ * at the bottom. A swipe up on it scrolls the page under the stage and Safari tucks its bar away, in
+ * every game, even ones that keep swipes for themselves (or run in a frame). It goes as the bar goes.
  */
-function SafariBarsTip() {
+function SafariBarsHandle() {
   const t = useT();
-  const [show, setShow] = useState(() => {
-    if (!isIos() || isStandalone()) return false;
+  const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
     try {
-      return sessionStorage.getItem('glitchbound.barsTip') !== '1';
+      return sessionStorage.getItem('glitchbound.barsHandle') === '1';
     } catch {
-      return true;
+      return false;
     }
   });
   useEffect(() => {
-    if (!show) return;
-    try {
-      sessionStorage.setItem('glitchbound.barsTip', '1');
-    } catch {
-      /* storage blocked */
-    }
-    const id = window.setTimeout(() => setShow(false), 7000);
-    return () => window.clearTimeout(id);
-  }, [show]);
-  if (!show) return null;
+    if (!isIos() || isStandalone()) return;
+    // the large viewport (bars tucked away) against the visible one tells whether the bar is out
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100lvh;visibility:hidden;pointer-events:none';
+    document.body.appendChild(probe);
+    const check = (): void => setOpen(window.innerHeight < probe.offsetHeight - 24);
+    check();
+    window.addEventListener('resize', check);
+    window.addEventListener('scroll', check, { passive: true });
+    window.visualViewport?.addEventListener('resize', check);
+    return () => {
+      window.removeEventListener('resize', check);
+      window.removeEventListener('scroll', check);
+      window.visualViewport?.removeEventListener('resize', check);
+      probe.remove();
+    };
+  }, []);
+  if (!open || dismissed) return null;
   return (
-    <button className="stage-tip" onClick={() => setShow(false)}>
-      <Icon name="share" size={16} />
-      {t('Swipe up to hide Safari’s bar. For full screen every time: Share, then Add to Home Screen.')}
-    </button>
+    <div className="stage-handle" role="note">
+      <Icon name="arrowUp" size={18} />
+      <span>{t('Swipe up here to hide Safari’s bar')}</span>
+      <button
+        className="stage-handle-x"
+        onClick={() => {
+          setDismissed(true);
+          try {
+            sessionStorage.setItem('glitchbound.barsHandle', '1');
+          } catch {
+            /* storage blocked */
+          }
+        }}
+        aria-label={t('Close')}
+      >
+        <Icon name="close" size={14} />
+      </button>
+    </div>
   );
 }
 
@@ -534,7 +557,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                     <ChallengeScores run={chal} game={game} onClose={() => setScoresOpen(false)} />
                   </Suspense>
                 )}
-                {play.immersive && <SafariBarsTip />}
+                {play.immersive && <SafariBarsHandle />}
                 {play.active && <StageMenu slug={game.slug} title={game.title} placement={game.menu} open={menuOpen} setOpen={setMenuOpen} onOpen={() => setPauseSignal((n) => n + 1)} onExitFullscreen={play.exit} onExitGame={close} />}
               </>
             }

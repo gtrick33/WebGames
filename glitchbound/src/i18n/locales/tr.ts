@@ -1888,6 +1888,8 @@ const tr: string[] = [
   'Paylaş’a, ardından “Ana Ekrana Ekle”ye dokun: GlitchBound, Safari çubukları olmadan tam ekran açılır.',
   'Tarayıcı çubukları olmadan tam ekran oynamak için GlitchBound’u yükle.',
   'Safari çubuğunu gizlemek için yukarı kaydır. Her seferinde tam ekran için: Paylaş, ardından “Ana Ekrana Ekle”.',
+  'Safari çubukları olmadan tam ekran oyna',
+  'Safari çubuğunu gizlemek için burada yukarı kaydır',
 ];
 
 export default tr;

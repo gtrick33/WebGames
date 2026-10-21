@@ -1888,6 +1888,8 @@ const pl: string[] = [
   'Stuknij Udostępnij, a potem „Do ekranu początkowego”: GlitchBound otworzy się na pełnym ekranie, bez pasków Safari.',
   'Zainstaluj GlitchBound, aby grać na pełnym ekranie, bez pasków przeglądarki.',
   'Przesuń w górę, aby ukryć pasek Safari. Pełny ekran za każdym razem: Udostępnij, potem „Do ekranu początkowego”.',
+  'Graj na pełnym ekranie, bez pasków Safari',
+  'Przesuń tutaj w górę, aby ukryć pasek Safari',
 ];
 
 export default pl;

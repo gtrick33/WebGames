@@ -1893,6 +1893,8 @@ export const KEYS: string[] = [
   "Tap Share, then Add to Home Screen: GlitchBound opens full screen, without Safari’s bars.",
   "Install GlitchBound to play full screen, without the browser’s bars.",
   "Swipe up to hide Safari’s bar. For full screen every time: Share, then Add to Home Screen.",
+  "Play full screen, without Safari’s bars",
+  "Swipe up here to hide Safari’s bar",
 ];
 
 export const UI_COUNT = 311;

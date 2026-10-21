@@ -291,44 +291,63 @@ html.game-focus.game-scroll body {
   overflow-y: auto;
   overscroll-behavior: auto;
 }
-.stage-tip {
+/* room to scroll, so the swipe that tucks Safari's bar away always has somewhere to go */
+html.game-focus.game-scroll body {
+  min-height: calc(100lvh + 240px);
+}
+/* the handle for that swipe (iPhone Safari, while its bar is out): it lets the swipe through to the page */
+.stage-handle {
   position: absolute;
   z-index: 31;
   left: 50%;
-  bottom: calc(14px + env(safe-area-inset-bottom));
+  bottom: calc(10px + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   gap: 8px;
   width: max-content;
   max-width: calc(100% - 32px);
-  padding: 10px 14px;
-  border: 1px solid rgb(255 255 255 / 0.25);
-  border-radius: 14px;
+  min-height: 46px;
+  padding: 6px 6px 6px 16px;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 999px;
   background: rgb(7 2 26 / 0.86);
   color: #fff;
-  font: 600 14px/1.35 var(--font);
-  text-align: left;
+  font: 600 14px/1.3 var(--font);
   box-shadow: 0 10px 28px rgb(0 0 0 / 0.35);
   transform: translateX(-50%);
-  cursor: pointer;
+  touch-action: pan-y;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  animation: stage-tip-in 0.3s ease-out;
+  animation: stage-handle-in 0.3s ease-out;
 }
-.stage-tip svg {
+.stage-handle svg {
   flex: none;
 }
-@keyframes stage-tip-in {
+.stage-handle-x {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  cursor: pointer;
+}
+@keyframes stage-handle-in {
   from {
     opacity: 0;
     transform: translateX(-50%) translateY(10px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .stage-tip {
+  .stage-handle {
     animation: none;
   }
 }
+
 /* Full-screen menu: a round button in a top corner each game leaves free (the registry's `menu`,
    nudged by --menu-x/--menu-y past the game's own buttons). It opens a pause pop-up over the game
    with the ways out (issues #21, #22). Games with menu: 'own' draw the button themselves. */

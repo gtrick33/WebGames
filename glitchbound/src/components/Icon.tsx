@@ -9,6 +9,7 @@ const PATHS = {
   ),
   arrowRight: <path d="M4 12h15M13 6l6 6-6 6" />,
   arrowLeft: <path d="M20 12H5M11 6l-6 6 6 6" />,
+  arrowUp: <path d="M12 20V5M6 11l6-6 6 6" />,
   share: <path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />,
   restart: <path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5" />,
   expand: <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />,

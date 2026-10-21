@@ -1888,6 +1888,8 @@ const nl: string[] = [
   'Tik op Deel en dan op ‘Zet op beginscherm’: GlitchBound opent op volledig scherm, zonder de balken van Safari.',
   'Installeer GlitchBound om op volledig scherm te spelen, zonder de balken van de browser.',
   'Veeg omhoog om de balk van Safari te verbergen. Voor elke keer volledig scherm: Deel, dan ‘Zet op beginscherm’.',
+  'Speel op volledig scherm, zonder de balken van Safari',
+  'Veeg hier omhoog om de balk van Safari te verbergen',
 ];
 
 export default nl;
