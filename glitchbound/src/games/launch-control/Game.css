@@ -2190,6 +2190,51 @@
   }
 }
 
+/* phones held upright: a slim header and the part tabs in one row (icon and level; the name is still
+   there for screen readers), so the 3D view and the cards start higher */
+@container (max-aspect-ratio: 1/1) {
+  .lc-modal-head {
+    gap: 8px;
+    padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 6px max(10px, env(safe-area-inset-left));
+  }
+  .lc-modal-head .lc-h {
+    font-size: 23px;
+  }
+  .lc-modal-tabs {
+    padding: 8px 10px 0;
+  }
+  .lc-modal .lc-ptabs {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .lc-modal .lc-ptab {
+    grid-auto-flow: row;
+    gap: 1px;
+    padding: 6px 2px 5px;
+  }
+  .lc-modal .lc-ptab .lc-ic {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+  }
+  .lc-modal .lc-ptab b {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .lc-modal .lc-ptab small {
+    display: block;
+    font-size: 11px;
+  }
+  .lc-modal-body {
+    gap: 8px;
+    padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+  }
+}
+
 /* ---------------------------------------------------------------- the stat sheet */
 .lc-sheet {
   display: grid;

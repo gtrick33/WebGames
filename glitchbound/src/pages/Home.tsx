@@ -18,7 +18,8 @@ const QuestBoard = lazy(fresh(() => import('../components/Quests').then((m) => (
 const NotifyForm = lazy(fresh(() => import('../components/Notify').then((m) => ({ default: m.NotifyForm }))));
 
 /**
- * Kept short on purpose: what to play now (today's pick, Surprise me, six games, the theme of the day, today's dailies),
+ * Kept short on purpose: what to play now (today's pick, Surprise me, six games, the Launch Control spotlight, the theme
+ * of the day, today's dailies),
  * then the games by mood. Newcomers get the free-and-no-sign-up promise right after the games; members see their quests.
  * The daily challenge in full lives on /daily.
  */
@@ -29,10 +30,10 @@ export function Home() {
   return (
     <>
       <Hero />
+      <LaunchControlBanner />
       <ThemeStrip />
       <TodaysDailies variant="row" headingLevel={2} />
       <Arcade />
-      <LaunchControlBanner />
       {!me && <FreeBanner />}
       <YourArcade />
       <PartyBanner />
