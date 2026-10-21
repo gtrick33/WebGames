@@ -12,6 +12,12 @@ export interface Sfx {
   perfect(): void;
   limiter(): void;
   squeal(): void;
+  /** The crowd roars (0..1 loudness): the launch, a close finish, a win. */
+  cheer(level: number): void;
+  /** Tyres lit up in the burnout box. */
+  burnout(): void;
+  /** An exhaust pop on a shift. */
+  pop(): void;
   cash(): void;
   fail(): void;
   red(): void;
@@ -120,6 +126,18 @@ export function createSfx(isMuted: () => boolean): Sfx {
     perfect: () => [1047, 1319, 1568].forEach((f, i) => tone(f, f, i * 0.05, 0.14, 0.06, 'triangle')),
     limiter: () => tone(300, 300, 0, 0.05, 0.05, 'sawtooth'),
     squeal: () => noise(0, 0.5, 0.18, 3200),
+    cheer: (level) => {
+      // a wash of voices: several overlapping noise bands, rising and falling
+      for (let k = 0; k < 4; k++) noise(k * 0.12, 1.4 + level, 0.05 + level * 0.07, 600 + k * 380);
+    },
+    burnout: () => {
+      noise(0, 1.4, 0.16, 2400);
+      noise(0.1, 1.2, 0.1, 900);
+    },
+    pop: () => {
+      noise(0, 0.07, 0.22, 180);
+      tone(90, 50, 0, 0.08, 0.08, 'square');
+    },
     cash: () => {
       tone(1200, 1200, 0, 0.06, 0.05, 'square');
       tone(1600, 1600, 0.07, 0.1, 0.05, 'square');

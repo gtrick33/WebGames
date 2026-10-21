@@ -441,12 +441,20 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
 
   // exhausts and flames
   const flames: THREE.Object3D[] = [];
+  const pops: THREE.Object3D[] = [];
+  const popMat = std('#ffb03a', { emissive: '#ff7a00', ei: 2.4 });
   const pipes = def.hp > 300 || lv.engine >= 6 ? 2 : 1;
   const pipeZ = pipes === 2 ? [W * 0.3, -W * 0.3] : [-W * 0.28];
   for (const z of pipeZ) {
     const py = bottom + (kenney ? 0.25 : 0.14);
     const px = backAt(py + 0.05, z) - 0.02;
     parts.add(mesh(new THREE.CylinderGeometry(0.045 + lv.engine * 0.003, 0.05 + lv.engine * 0.003, 0.2, 12).rotateZ(Math.PI / 2), CHROME(), px + 0.04, py, z));
+    // a short pop on every shift, for every car
+    const pop = mesh(keepD(new THREE.ConeGeometry(0.06, 0.32, 7).rotateZ(Math.PI / 2)), popMat, px - 0.2, py, z);
+    pop.visible = false;
+    pop.name = 'pop';
+    parts.add(pop);
+    pops.push(pop);
     if (lv.engine >= 6) {
       const flame = mesh(keepD(new THREE.ConeGeometry(0.075, 0.62, 8).rotateZ(Math.PI / 2)), std('#ff8a1f', { emissive: '#ff5a00', ei: 2 }), px - 0.36, py, z);
       flame.visible = false;
@@ -509,7 +517,8 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
   // smoke pool
   const smoke: THREE.Mesh[] = [];
   const smokeGeo = keepD(new THREE.SphereGeometry(0.4, 8, 6));
-  for (let i = 0; i < 14; i++) {
+  // enough puffs for a burnout cloud
+  for (let i = 0; i < 40; i++) {
     const m = new THREE.Mesh(smokeGeo, keepD(new THREE.MeshBasicMaterial({ color: '#f4f4f4', transparent: true, opacity: 0.5, depthWrite: false })));
     m.visible = false;
     m.name = 'smoke';
@@ -518,7 +527,7 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
   }
 
   // parts merge per material; the body and wheels share the model's geometry and stay as they are
-  disposables.push(...mergeStatic(parts, (o) => o.name === 'flame' || o.name === 'shiftlamp', { cast: true, receive: false }));
+  disposables.push(...mergeStatic(parts, (o) => o.name === 'flame' || o.name === 'pop' || o.name === 'shiftlamp', { cast: true, receive: false }));
   parts.traverse((o) => {
     if (o instanceof THREE.Mesh && o.geometry && !o.userData.shared && !disposables.includes(o.geometry)) disposables.push(o.geometry);
   });
@@ -531,6 +540,7 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
     wheels,
     wheelR,
     flames,
+    pops,
     shiftLamp,
     smoke,
     len: L,

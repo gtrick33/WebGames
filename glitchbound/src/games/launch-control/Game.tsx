@@ -9,23 +9,23 @@ import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { CARS, getCar, TIER_NAME, type CarDef } from './cars';
 import { COSMETICS, DEFAULTS, getCosmetic, KIND_NAME, type Cosmetic, type CosmeticKind } from './cosmetics';
-import { addMats, avgLevel, botsFor, botSpec, crateFor, difficultyOf, DIVISIONS, forecast, hasMats, idleIncome, idleRate, LADDER, loanerFor, materialsFor, PER_DIVISION, PLAYER_SKILL, RACE_SIZE, rivalBot, settle, STAKE_SHARES, typicalEt, type Bot, type Forecast, type Opponent } from './economy';
+import { addMats, avgLevel, botsFor, botSpec, crateFor, difficultyOf, DIVISIONS, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, hasMats, idleIncome, idleRate, LADDER, loanerFor, materialsFor, PER_DIVISION, PLAYER_SKILL, RACE_SIZE, rivalBot, settle, STAKE_SHARES, typicalEt, type Bot, type Forecast, type Opponent } from './economy';
 import { ENV_DEFS } from './envs';
 import { applyWear, effectsOf, FAILURE_TEXT, levelGains, MATERIAL_INFO, MATERIALS, MAX_LEVEL, PART_INFO, PART_VISUALS, PARTS, raceWear, repairCost, RISKY, upgradeCost, type Condition, type Levels, type Mats, type PartId } from './parts';
 import { RaceScreen, type RacePlan } from './RaceScreen';
 import { lookKey, Stage3D, type CarLook, type ShowFocus } from './scene3d';
-import { decodeScript, encodeScript, forecastRun, scoreOf, specOf, type CarSpec, type Driver, type RaceResult } from './sim';
+import { decodeScript, encodeScript, forecastRun, scoreOf, simulate, specOf, type CarSpec, type Driver, type RaceResult } from './sim';
 import { createSfx, type Sfx } from './sound';
 import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type Save } from './storage';
 import { GameMenuButton } from '../../components/GameMenuButton';
-import { CarThumb, Cash, DriverFace, MatsLine, Panel, Pips, posLabel, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
+import { CarThumb, Cash, DriverFace, MatsLine, Panel, Pips, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
 import { fmtCash, fmtEt, fmtShort } from './util';
 import './Game.css';
 
 const EPOCH = '2026-10-21';
 const SLUG = 'launch-control';
 type Screen = 'hub' | 'rivals' | 'setup' | 'race' | 'result' | 'garage' | 'parts' | 'dealer' | 'daily' | 'ladder' | 'help';
-type Mode = 'ladder' | 'rematch' | 'daily' | 'challenge';
+type Mode = 'ladder' | 'rematch' | 'daily' | 'challenge' | 'gauntlet';
 type GarageTab = 'repairs' | 'style';
 
 interface Plan {
@@ -37,6 +37,8 @@ interface Plan {
   stake: number;
   forecast: Forecast;
   carId: string | null;
+  /** King's Gauntlet round (1, 2, ...). */
+  round?: number;
 }
 
 interface Outcome {
@@ -50,6 +52,8 @@ interface Outcome {
   wear: Condition;
   rankUp: boolean;
   newBest: boolean;
+  /** A gauntlet round: the streak so far, the run's total and whether it ended here. */
+  gauntlet?: { round: number; wins: number; total: number; over: boolean; prize: number };
 }
 
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
@@ -141,6 +145,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const [dealerTier, setDealerTier] = useState(0);
   const [previewCar, setPreviewCar] = useState<string | null>(null);
   const [rivalPick, setRivalPick] = useState<number | null>(null);
+  /** A King's Gauntlet run in progress: wins so far and their total score. */
+  const gauntletRef = useRef<{ wins: number; total: number } | null>(null);
   const [partTab, setPartTab] = useState<PartId>('engine');
   /** The parts shop shows the next level of the open part on the car. */
   const [previewNext, setPreviewNext] = useState(false);
@@ -214,8 +220,9 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
 
   // ---- building a race
   const setup = useCallback(
-    (mode: Mode, rival: Opponent | null): void => {
+    (mode: Mode, rival: Opponent | null, round = 1): void => {
       const s = saveRef.current;
+      let tagline: string | undefined;
       const seed = mode === 'challenge' && challenge ? challenge.seed : mode === 'daily' ? dailySeed(today) : (Math.random() * 2 ** 32) >>> 0;
       let meSpec: CarSpec;
       let bots: Bot[];
@@ -231,9 +238,18 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
         env = loan.env;
         carId = null;
         looks.push({ ...lookOf(s, loan.car, loan.levels), paint: DEFAULTS.paint });
+        tagline = mode === 'daily' ? 'TODAY’S OPPONENT' : 'RIVAL';
         if (mode === 'challenge') {
-          // Friends' ghosts race the same loaner; bots fill the empty lanes.
-          const ghosts = (challenge?.replays ?? []).map((r) => ({ name: r.name, script: decodeScript(r.replay) })).filter((g) => g.script).slice(0, RACE_SIZE - 1);
+          // Head to head with the fastest friend's ghost so far; the day's bot when nobody has raced yet.
+          const ghosts = (challenge?.replays ?? [])
+            .map((r) => ({ name: r.name, script: decodeScript(r.replay) }))
+            .filter((g) => g.script)
+            .map((g) => {
+              const run = simulate([meSpec], [{ kind: 'script', script: g.script! }], seed).racers[0]!;
+              return { ...g, crossed: run.crossed ?? Infinity };
+            })
+            .sort((a, b) => a.crossed - b.crossed)
+            .slice(0, RACE_SIZE - 1);
           const specs: CarSpec[] = [meSpec];
           for (const gh of ghosts) {
             specs.push(meSpec);
@@ -241,6 +257,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
             names.push(gh.name);
             looks.push({ ...looks[0]!, paint: BOT_PAINTS[((hashString(gh.name) >>> 0) >>> 3) % BOT_PAINTS.length]! });
           }
+          tagline = ghosts.length ? 'FASTEST GHOST' : 'RIVAL';
           const fill = bots.slice(0, RACE_SIZE - 1 - ghosts.length);
           for (const b of fill) {
             specs.push(botSpec(b));
@@ -248,10 +265,18 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
             names.push(b.name);
             looks.push(botLook(b));
           }
-          setPlan({ mode, me: meSpec, bots: fill, race: { specs, drivers, looks, names, env, seed }, rival: null, stake: 0, forecast: forecast(meSpec, fill), carId });
+          setPlan({ mode, me: meSpec, bots: fill, race: { specs, drivers, looks, names, env, seed, tagline }, rival: null, stake: 0, forecast: forecast(meSpec, fill), carId });
           setScreen('setup');
           return;
         }
+      } else if (mode === 'gauntlet') {
+        const c = getCar(s.car);
+        const o = s.cars[s.car] ?? newCar();
+        meSpec = specOf(c, o.levels, o.cond);
+        bots = [gauntletRival(meSpec, round, seed)];
+        rival = null;
+        tagline = `GAUNTLET · ROUND ${round}`;
+        looks.push(lookOf(s, c));
       } else {
         const c = getCar(s.car);
         const o = s.cars[s.car] ?? newCar();
@@ -259,6 +284,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
         const opp = rival ?? LADDER[Math.min(s.rank, LADDER.length - 1)]!;
         bots = botsFor(meSpec, RACE_SIZE - 1, seed, opp);
         rival = opp;
+        tagline = `${rivalDifficulty(opp, meSpec).label.toUpperCase()} · #${opp.rank}${opp.boss ? ' · FINAL' : ''}`;
         looks.push(lookOf(s, c));
       }
       const specs: CarSpec[] = [meSpec];
@@ -268,7 +294,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
         names.push(b.name);
         looks.push(botLook(b));
       }
-      setPlan({ mode, me: meSpec, bots, race: { specs, drivers, looks, names, env, seed }, rival: mode === 'daily' ? null : rival, stake: 0, forecast: forecast(meSpec, bots), carId });
+      setPlan({ mode, me: meSpec, bots, race: { specs, drivers, looks, names, env, seed, tagline }, rival: mode === 'daily' || mode === 'gauntlet' ? null : rival, stake: 0, forecast: forecast(meSpec, bots), carId, round: mode === 'gauntlet' ? round : undefined });
       setScreen('setup');
     },
     [challenge, today, me],
@@ -292,7 +318,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     setPaused(false);
     setConfirmLeave(false);
     sfx().click();
-    host.report({ type: 'start' });
+    if (p.mode !== 'gauntlet' || (p.round ?? 1) === 1) host.report({ type: 'start' });
+    if (p.mode === 'gauntlet' && (p.round ?? 1) === 1) gauntletRef.current = { wins: 0, total: 0 };
     setScreen('race');
   };
 
@@ -312,12 +339,33 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       let mats: Mats = {};
       let wear = raceWear({ spinTime: mine.spinTime, limiterTime: mine.limiterTime, missedShifts: mine.late + mine.early, dnf: mine.et === null });
       let rankUp = false;
+      let gauntletInfo: Outcome['gauntlet'];
       if (p.mode === 'daily') {
         const d = s0.daily[today] ?? { best: 0, tries: 1, et: 0 };
         const better = score > d.best;
         commit((s) => ({ ...s, runs: s.runs + 1, wins: s.wins + (won ? 1 : 0), daily: { ...s.daily, [today]: { best: Math.max(d.best, score), tries: d.tries, et: better && mine.et !== null ? Math.round(mine.et * 1000) : d.et, open: false } } }));
         host.report({ type: 'end', score, stats, daily: true });
         wear = raceWear({ spinTime: 0, limiterTime: 0, missedShifts: 0, dnf: false });
+      } else if (p.mode === 'gauntlet') {
+        const run = gauntletRef.current ?? { wins: 0, total: 0 };
+        const round = p.round ?? 1;
+        let prize = 0;
+        if (won) {
+          const pz = gauntletPrize(round, s0.rank, p.race.seed);
+          prize = pz.cash;
+          mats = pz.mats;
+          run.wins++;
+          run.total += score;
+          cash = { purse: pz.cash, wager: 0, bonus: 0 };
+        }
+        gauntletRef.current = won ? run : null;
+        commit((s) => {
+          const oc = s.cars[p.carId!] ?? newCar();
+          return { ...s, cash: s.cash + prize, earned: s.earned + prize, mats: addMats(s.mats, mats), runs: s.runs + 1, wins: s.wins + (won ? 1 : 0), gauntletBest: Math.max(s.gauntletBest, run.wins), cars: { ...s.cars, [p.carId!]: { ...oc, cond: applyWear(oc.cond, wear) } } };
+        });
+        // the whole streak is one run on the leaderboard: its total score, and the streak itself
+        if (!won) host.report({ type: 'end', score: run.total, stats: { ...stats, streak: run.wins } });
+        gauntletInfo = { round, wins: run.wins, total: run.total, over: !won, prize };
       } else if (p.mode === 'challenge' && challenge) {
         commit((s) => ({ ...s, runs: s.runs + 1, wins: s.wins + (won ? 1 : 0) }));
         host.report({ type: 'end', score, stats, challenge: { id: challenge.id, round: challenge.round, replay: mine.et !== null ? encodeScript(mine.script) : undefined } });
@@ -350,7 +398,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       if (newBest || (mine.et !== null && (s0.bestEt === 0 || Math.round(mine.et * 1000) < s0.bestEt)))
         commit((s) => ({ ...s, bestScore: Math.max(s.bestScore, score), bestEt: mine.et !== null && (s.bestEt === 0 || Math.round(mine.et * 1000) < s.bestEt) ? Math.round(mine.et * 1000) : s.bestEt }));
       if (cash.purse + cash.wager + cash.bonus > 0) sfx().cash();
-      setOutcome({ plan: p, result, position, score, won, cash, mats, wear, rankUp, newBest });
+      setOutcome({ plan: p, result, position, score, won, cash, mats, wear, rankUp, newBest, gauntlet: gauntletInfo });
       setScreen('result');
     },
     [commit, host, challenge, today, sfx],
@@ -362,12 +410,20 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     host.report({ type: 'end', score: 0, stats: {}, daily: true });
     commit((s) => ({ ...s, daily: { ...s.daily, [today]: { ...d, open: false, left: true } } }));
   }, [commit, host, today]);
+  /** Ends a gauntlet run that is still going (the player left): the streak so far is the run. */
+  const endGauntlet = (): void => {
+    const run = gauntletRef.current;
+    if (!run) return;
+    gauntletRef.current = null;
+    host.report({ type: 'end', score: run.total, stats: { streak: run.wins } });
+  };
   const leaveRace = (): void => {
     if (plan?.mode === 'daily' && !confirmLeave) {
       setConfirmLeave(true);
       return;
     }
     settleOpenDaily();
+    if (plan?.mode === 'gauntlet') endGauntlet();
     sfx().quiet();
     setScreen(plan?.mode === 'challenge' ? 'setup' : 'hub');
   };
@@ -689,6 +745,16 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   <small>{CARS.length} cars · {Object.keys(save.cars).length} owned</small>
                 </span>
               </button>
+              <button className="lc-menu-btn" onClick={() => setup('gauntlet', null, 1)} disabled={save.rank < GAUNTLET_UNLOCK}>
+                <span className="lc-menu-icon" aria-hidden="true">
+                  👑
+                </span>
+                <span className="lc-menu-text">
+                  <b>King’s Gauntlet</b>
+                  <small>{save.rank < GAUNTLET_UNLOCK ? `Beat the Street final to unlock` : save.gauntletBest ? `Best streak ${save.gauntletBest} · how far can you go?` : 'Back-to-back races, each one harder'}</small>
+                </span>
+                {save.rank < GAUNTLET_UNLOCK && <Sticker tone="cyan" flat>🔒</Sticker>}
+              </button>
               <button className="lc-menu-btn" onClick={() => go('ladder')}>
                 <span className="lc-menu-icon" aria-hidden="true">
                   🏆
@@ -718,7 +784,14 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
         )}
 
         {screen === 'setup' && plan && (
-          <Panel eyebrow={plan.mode === 'daily' ? `Today’s Showdown #${dailyNumber(today)}` : plan.mode === 'challenge' ? 'Friends’ challenge' : plan.rival?.boss ? 'Division final' : 'Race setup'} title={plan.mode === 'daily' ? 'Same car, same rivals, for everyone' : plan.mode === 'challenge' ? 'Race your friends’ ghosts' : `vs ${plan.rival?.name ?? 'rival'}`} onBack={challenge ? undefined : () => go(plan.mode === 'daily' ? 'daily' : 'rivals')}>
+          <Panel
+            eyebrow={plan.mode === 'daily' ? `Today’s Showdown #${dailyNumber(today)}` : plan.mode === 'challenge' ? 'Friends’ challenge' : plan.mode === 'gauntlet' ? `King’s Gauntlet · round ${plan.round ?? 1}` : plan.rival?.boss ? 'Division final' : 'Head to head'}
+            title={plan.mode === 'daily' ? 'Same car, same opponent, for everyone' : plan.mode === 'challenge' ? 'Beat the fastest ghost' : `vs ${plan.race.names[1] ?? 'rival'}`}
+            onBack={challenge ? undefined : () => {
+              if (plan.mode === 'gauntlet') endGauntlet();
+              go(plan.mode === 'daily' ? 'daily' : plan.mode === 'gauntlet' ? 'hub' : 'rivals');
+            }}
+          >
             <div className="lc-versus">
               <div className="lc-vcard is-you">
                 <CarThumb look={plan.race.looks[0]!} />
@@ -737,16 +810,11 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 </span>
               </div>
             </div>
-            <div className="lc-also">
-              <span className="lc-eyebrow mono">Also on the strip</span>
-              <div className="lc-also-list">
-                {plan.race.names.slice(2).map((n, i) => (
-                  <span key={n} className="lc-chip mono">
-                    {n} · {plan.race.specs[i + 2]?.def.name}
-                  </span>
-                ))}
-              </div>
-            </div>
+            {plan.mode === 'gauntlet' && (
+              <p className="lc-sub">
+                {(plan.round ?? 1) === 1 ? 'Win and the next opponent is quicker. Lose once and the run is over: your streak goes on the leaderboard.' : `Streak ${(plan.round ?? 1) - 1}. Every round the opponent gets quicker.`}
+              </p>
+            )}
             {plan.carId && <WornWarning cond={owned.cond} />}
             {plan.rival && (
               <div className="lc-wager">
@@ -774,12 +842,32 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
               </div>
             )}
             <button className="btn btn-lg lc-cta" autoFocus onClick={() => startRace(plan)}>
-              {plan.mode === 'daily' ? `Run (${triesLeft} left)` : 'Confirm race'}
+              {plan.mode === 'daily' ? `Run (${triesLeft} left)` : plan.mode === 'gauntlet' ? `Race round ${plan.round ?? 1}` : 'Confirm race'}
             </button>
           </Panel>
         )}
 
-        {screen === 'result' && outcome && <ResultScreen o={outcome} me={me} today={today} challenge={challenge} save={save} triesLeft={triesLeft} onAgain={() => (outcome.plan.mode === 'daily' ? setup('daily', null) : setup(outcome.rankUp ? 'ladder' : outcome.plan.mode, outcome.rankUp ? null : outcome.plan.rival))} onGarage={() => go('garage')} onMenu={() => go('hub')} />}
+        {screen === 'result' && outcome && (
+          <ResultScreen
+            o={outcome}
+            me={me}
+            today={today}
+            challenge={challenge}
+            save={save}
+            triesLeft={triesLeft}
+            onAgain={() =>
+              outcome.plan.mode === 'daily' ? setup('daily', null) : outcome.gauntlet ? setup('gauntlet', null, outcome.gauntlet.over ? 1 : outcome.gauntlet.round + 1) : setup(outcome.rankUp ? 'ladder' : outcome.plan.mode, outcome.rankUp ? null : outcome.plan.rival)
+            }
+            onGarage={() => {
+              endGauntlet();
+              go('garage');
+            }}
+            onMenu={() => {
+              endGauntlet();
+              go('hub');
+            }}
+          />
+        )}
 
         {screen === 'daily' && (
           <Panel eyebrow="Every day" title="Daily" onBack={() => go('hub')}>
@@ -1383,12 +1471,20 @@ function Swatch({ c, save }: { c: Cosmetic; save: Save }) {
 function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onGarage, onMenu }: { o: Outcome; me: string; today: string; challenge?: ChallengeSpec; save: Save; triesLeft: number; onAgain: () => void; onGarage: () => void; onMenu: () => void }) {
   const mine = o.result.racers[0]!;
   const p = o.plan;
-  const title = mine.et === null ? 'Did not finish' : o.won ? (p.rival?.boss && o.rankUp ? 'Division champion!' : 'You won!') : `${posLabel(o.position)} place`;
+  const g = o.gauntlet;
+  const title = g ? (g.over ? `Streak over: ${g.wins} ${g.wins === 1 ? 'win' : 'wins'}` : `Round ${g.round} won!`) : mine.et === null ? 'Did not finish' : o.won ? (p.rival?.boss && o.rankUp ? 'Division champion!' : 'You won!') : 'Beaten';
   const d = save.daily[today];
   const line = resultLine(o);
   const share = `Launch Control #${dailyNumber(today)} 🏁\n${line}\nBest today: ${fmtCash(d?.best ?? 0)} (${d?.tries ?? 0} ${d?.tries === 1 ? 'run' : 'runs'})\n${window.location.origin}/games/${SLUG}`;
   return (
-    <Panel eyebrow={p.mode === 'daily' ? `Today’s Showdown #${dailyNumber(today)}` : p.mode === 'challenge' ? 'Friends’ challenge' : 'Race result'} title={title} className={`lc-result${o.won ? ' is-win' : ''}`}>
+    <Panel eyebrow={p.mode === 'daily' ? `Today’s Showdown #${dailyNumber(today)}` : p.mode === 'challenge' ? 'Friends’ challenge' : g ? 'King’s Gauntlet' : 'Race result'} title={title} className={`lc-result${o.won ? ' is-win' : ''}`}>
+      {g && (
+        <div className="lc-streak">
+          <span className="lc-eyebrow mono">Streak</span>
+          <b className="mono">{g.wins}</b>
+          <span className="mono">run score {fmtCash(g.total)}{save.gauntletBest ? ` · best ${save.gauntletBest}` : ''}</span>
+        </div>
+      )}
       {mine.failure && <p className="lc-warn">💥 {FAILURE_TEXT[mine.failure]}</p>}
       <ol className="lc-order">
         {o.result.order.map((idx, k) => {
@@ -1428,10 +1524,24 @@ function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onGar
       </div>
       {o.newBest && <Sticker tone="lime">New best!</Sticker>}
       {(p.mode === 'daily' || p.mode === 'challenge') && <ResultLine line={line} label={`${title}. ${mine.et !== null ? `${fmtEt(mine.et)} seconds` : 'no time'}.`} />}
+      {g && g.prize > 0 && (
+        <ul className="lc-ledger mono">
+          <li>
+            <span>Round prize</span>
+            <Cash n={g.prize} sign />
+          </li>
+          {MATERIALS.some((m) => o.mats[m]) && (
+            <li>
+              <span>Materials</span>
+              <MatsLine mats={o.mats} />
+            </li>
+          )}
+        </ul>
+      )}
       {p.rival && (
         <ul className="lc-ledger mono">
           <li>
-            <span>Purse ({posLabel(o.position)})</span>
+            <span>{o.position === 1 ? 'Purse' : 'Consolation'}</span>
             <Cash n={o.cash.purse} sign />
           </li>
           {p.stake > 0 && (
@@ -1474,7 +1584,7 @@ function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onGar
           </a>
         ) : (
           <button className="btn btn-lg lc-cta" autoFocus onClick={onAgain} disabled={p.mode === 'daily' && triesLeft <= 0}>
-            {p.mode === 'daily' ? (triesLeft > 0 ? `Run again (${triesLeft} left)` : 'No runs left today') : o.rankUp ? 'Next rival' : 'Race again'}
+            {p.mode === 'daily' ? (triesLeft > 0 ? `Run again (${triesLeft} left)` : 'No runs left today') : g ? (g.over ? 'New gauntlet run' : `Next round (${g.round + 1})`) : o.rankUp ? 'Next rival' : 'Race again'}
           </button>
         )}
         {p.mode === 'daily' && <ShareButton text={share} />}

@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { getGame } from '../src/catalog/catalog';
 import { CARS, getCar } from '../src/games/launch-control/cars';
 import { COSMETICS, DEFAULTS, getCosmetic } from '../src/games/launch-control/cosmetics';
-import { addMats, botsFor, botSpec, crateFor, forecast, idleIncome, idleRate, LADDER, LADDER_SIZE, loanerFor, materialsFor, opponentSpec, purseAt, RACE_SIZE, settle, typicalEt } from '../src/games/launch-control/economy';
+import { addMats, botsFor, botSpec, crateFor, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, idleIncome, idleRate, LADDER, LADDER_SIZE, loanerFor, materialsFor, opponentSpec, purseAt, RACE_SIZE, settle, typicalEt } from '../src/games/launch-control/economy';
 import { ENV_DEFS } from '../src/games/launch-control/envs';
 import { applyWear, effectsOf, failChance, freshCondition, levelGains, MAX_LEVEL, PARTS, raceWear, repairCost, RISKY, stockLevels, upgradeCost, type Levels } from '../src/games/launch-control/parts';
-import { AUTO_LAUNCH, decodeScript, encodeScript, engineForce, forecastEt, forecastRun, GREEN_SECONDS, idealLaunchRpm, JUMP_PENALTY, Race, scoreOf, shiftRpm, shiftWindows, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
+import { AMBER_GAP, AUTO_LAUNCH, decodeScript, DT, encodeScript, engineForce, forecastEt, forecastRun, GREEN_SECONDS, idealLaunchRpm, JUMP_PENALTY, Race, scoreOf, shiftRpm, shiftWindows, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
 import { emptySave, sanitize } from '../src/games/launch-control/storage';
 import { rng } from '../src/games/launch-control/util';
 
@@ -78,12 +78,12 @@ describe('the race', () => {
 
   it('the launch is a tap at green: quick is perfect, none goes late, a jump start is punished', () => {
     const spec = stock('lazzaro');
-    const launchWith = (tapAfterGreen: number | null, earlyTapAt?: number) => {
+    const launchWith = (tapAfterGreen: number | null, earlyTapAt?: number | 'amber') => {
       const race = new Race([spec], [{ kind: 'live' }], 3);
       let tapped = false;
       let early = false;
       while (!race.done) {
-        if (earlyTapAt !== undefined && !early && race.t >= earlyTapAt) {
+        if (earlyTapAt !== undefined && !early && (earlyTapAt === 'amber' ? race.ambersLit >= 2 : race.t >= earlyTapAt)) {
           race.tap(0);
           early = true;
         }
@@ -104,14 +104,24 @@ describe('the race', () => {
     expect(engineForce(spec, idealLaunchRpm(spec), 1)).toBeLessThanOrEqual(tractionLimit(spec, true));
     expect(launchWith(0.4).launch).toBe('good');
     const none = launchWith(null);
-    expect(none.reaction).toBeCloseTo(AUTO_LAUNCH, 2);
+    // the launch lands on the first step after the moment (the hold is not step-aligned)
+    expect(none.reaction).toBeGreaterThanOrEqual(AUTO_LAUNCH - 1e-9);
+    expect(none.reaction).toBeLessThan(AUTO_LAUNCH + DT + 1e-9);
     expect(none.launch).toBe('slow');
     // a tap during the ambers is a jump start (and a second tap at green can't undo it)
-    const jump = launchWith(0.2, 1.2);
+    const jump = launchWith(0.2, 'amber');
     expect(jump.launch).toBe('jump');
-    expect(jump.reaction).toBeCloseTo(JUMP_PENALTY, 2);
+    expect(jump.reaction).toBeGreaterThanOrEqual(JUMP_PENALTY - 1e-9);
+    expect(jump.reaction).toBeLessThan(JUMP_PENALTY + DT + 1e-9);
     // a tap before the first amber is ignored
     expect(launchWith(0.2, 0.5).launch).toBe('perfect');
+    // a sportsman tree: a random hold once staged, three ambers half a second apart, green half a second after
+    const seeds = [1, 2, 3, 4, 5, 6].map((sd) => new Race([spec], [{ kind: 'live' }], sd));
+    for (const r of seeds) {
+      expect(r.amberAt[1]! - r.amberAt[0]!).toBeCloseTo(AMBER_GAP, 9);
+      expect(r.greenAt - r.amberAt[2]!).toBeCloseTo(AMBER_GAP, 9);
+    }
+    expect(new Set(seeds.map((r) => r.amberAt[0]!.toFixed(3))).size).toBeGreaterThan(4);
     expect(quick.crossed!).toBeLessThan(none.crossed!);
     expect(quick.crossed!).toBeLessThan(jump.crossed!);
     expect(scoreOf(quick)).toBeGreaterThan(scoreOf(none));
@@ -333,21 +343,23 @@ describe('parts and economy', () => {
     for (let d = 0; d < 4; d++) expect(avg(ets.slice(d * 8, d * 8 + 8))).toBeGreaterThan(avg(ets.slice(d * 8 + 8, d * 8 + 16)));
   });
 
-  it('bots fill a race with cars like yours, the rival among them, and the first rung is winnable', () => {
+  it('races are head to head: the ladder rival alone; tuned bots are cars like yours; the first rung is winnable', () => {
     const start = specOf(getCar('bumble'), stockLevels(), fresh, false);
-    const bots = botsFor(start, RACE_SIZE - 1, 42, LADDER[0]!);
-    expect(bots).toHaveLength(4);
-    expect(bots[0]!.rival).toBe(LADDER[0]);
+    expect(RACE_SIZE).toBe(2);
+    const field = botsFor(start, RACE_SIZE - 1, 42, LADDER[0]!);
+    expect(field).toHaveLength(1);
+    expect(field[0]!.rival).toBe(LADDER[0]);
+    const bots = botsFor(start, 4, 42);
     const myBest = forecastEt(start, 1, 3);
-    for (const b of bots.slice(1)) {
+    for (const b of bots) {
       expect(Math.abs(b.car.tier - 1)).toBeLessThanOrEqual(1);
       // their perfect run is a little behind yours; their driver only loses time from there
       expect(forecastEt(botSpec(b), 1, 3)).toBeGreaterThan(myBest - 0.15);
       expect(forecastEt(botSpec(b), 1, 3)).toBeLessThan(myBest + 1.2);
       expect(typicalEt(botSpec(b), b.skill)).toBeGreaterThanOrEqual(forecastEt(botSpec(b), 1, 3) - 0.05);
     }
-    expect(botsFor(start, 4, 42, LADDER[0]!)).toEqual(bots);
-    expect(forecast(start, bots).pWin).toBeGreaterThan(0.12);
+    expect(botsFor(start, 4, 42)).toEqual(bots);
+    expect(forecast(start, field).pWin).toBeGreaterThan(0.12);
     const tuned = specOf(getCar('falkon'), { ...stockLevels(), engine: 5, tyres: 5 }, fresh, false);
     const b2 = botsFor(tuned, 4, 7);
     for (const b of b2) expect(Math.abs(b.car.tier - 4)).toBeLessThanOrEqual(1);
@@ -363,9 +375,23 @@ describe('parts and economy', () => {
     const win = settle({ position: 1, purse: 1000, fansMul: 1.2, stake: 500, mult: 2.5, firstWin: true });
     expect(win).toEqual({ purse: 1200, wager: 750, bonus: 2000 });
     const second = settle({ position: 2, purse: 1000, fansMul: 1.2, stake: 500, mult: 2.5, firstWin: false });
-    expect(second).toEqual({ purse: 400, wager: -500, bonus: 0 });
-    const last = settle({ position: 5, purse: 1000, fansMul: 1.2, stake: 500, mult: 2.5, firstWin: false });
-    expect(last.purse).toBe(100);
+    expect(second).toEqual({ purse: 300, wager: -500, bonus: 0 });
+  });
+
+  it('the gauntlet: opponents get quicker every round, prizes grow, materials every third win', () => {
+    expect(GAUNTLET_UNLOCK).toBe(8);
+    const me = specOf(getCar('kaiser'), { ...stockLevels(), engine: 2, tyres: 2 }, fresh, false);
+    const mine = forecastEt(me, 1, 3);
+    const ets = [1, 3, 6, 9, 12].map((round) => forecastEt(botSpec(gauntletRival(me, round, 99)), 1, 3));
+    // early rounds are a little behind your best, later ones are quicker than it
+    expect(ets[0]!).toBeGreaterThan(mine);
+    expect(ets[4]!).toBeLessThan(mine);
+    expect(ets[4]!).toBeLessThan(ets[0]! - 0.3);
+    expect(gauntletRival(me, 12, 99).skill).toBeGreaterThan(gauntletRival(me, 1, 99).skill);
+    expect(gauntletRival(me, 3, 5)).toEqual(gauntletRival(me, 3, 5));
+    expect(gauntletPrize(5, 10, 1).cash).toBeGreaterThan(gauntletPrize(1, 10, 1).cash);
+    expect(Object.keys(gauntletPrize(2, 10, 1).mats)).toHaveLength(0);
+    expect(gauntletPrize(3, 10, 1).mats.scrap).toBeGreaterThan(0);
   });
 
   it('materials come by division, doubled on a first win; the crate grows with rank', () => {

@@ -249,11 +249,11 @@ export const GAMES: GameEntry[] = [
     slug: 'launch-control',
     wallet: true,
     title: 'Launch Control',
-    tagline: 'Five-car 3D drag races: nail every shift, tune 43 cars, wager your winnings.',
+    tagline: 'Head-to-head 3D drag races: nail the launch and every shift, tune 43 cars, run the gauntlet.',
     description:
-      'A strategic quarter-mile drag racer in glossy 3D, seen from behind your car. Launch on green, then hit every shift in a green zone that moves each gear, against four rivals in cars like yours. ' +
+      'A strategic quarter-mile drag racer in glossy 3D, seen from behind your car. Stage at the tree, launch on green, then hit every shift in a green zone that moves each gear, head to head against one rival at a time. ' +
       'Climb a ladder of 40 rivals in five divisions, wager earned cash on forecast odds, and tune six separate parts on 43 original cars in the parts shop: engine, transmission, suspension, tyres, aero and looks, each visible on the car, each moving several stats, each wearing out. ' +
-      'Everyone gets the same loaner and the same rivals in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
+      'Then run the King’s Gauntlet: back-to-back races against ever quicker opponents for the longest streak. Everyone gets the same loaner and opponent in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
     categories: ['racing', 'strategy'],
     moods: ['action', 'quick'],
     tags: ['drag race', 'cars', 'garage', 'upgrades', 'tuning', 'idle', 'wager', 'quarter mile', '3d', 'ghost', 'daily', 'one-touch', 'driving', 'muscle car', 'supercar', 'hypercar'],
@@ -278,10 +278,12 @@ export const GAMES: GameEntry[] = [
       { key: 'trapKmh', label: 'Highest trap speed', unit: 'km/h' },
       { key: 'perfect', label: 'Most perfect shifts in a run' },
       { key: 'position', label: 'Best finish', lowerIsBetter: true },
+      { key: 'streak', label: 'Longest gauntlet streak' },
     ],
     highlights: [
       'One input: tap at green to launch, then shift in a green zone that sits somewhere new in every gear. Perfect launches and shifts win races',
-      'Every race is five cars: you and four rivals in cars tuned like yours; the named ladder rival is one of them',
+      'Every race is head to head: you against one rival, with a burnout, staging and a real sportsman tree before the green',
+      'The King’s Gauntlet: back-to-back races, each opponent quicker than the last; the whole streak is one run on the leaderboard',
       '43 original cars in six tiers, built on real 3D car models from a supermini to a hypercar, each with its own proportions',
       'Six separate parts with eight levels each, each visible on the car and each moving several stats; they wear out and can fail when neglected',
       'Materials (scrap, alloy, carbon, chips, rubber) gate the higher levels; cash and materials come only from racing',

@@ -17,10 +17,14 @@ export const DISTANCE = 402.336;
 export const MAX_RACERS = 5;
 /** Nobody takes longer than this: the race ends. */
 export const MAX_TIME = 30;
-/** The tree: ambers at these seconds after staging starts, green a little later (seeded). */
-export const AMBERS = [1.0, 1.5, 2.0];
-export const GREEN_MIN = 2.5;
-export const GREEN_JITTER = 0.4;
+/**
+ * The tree, as on a real sportsman tree: both cars are staged at t = 0, the starter holds for a
+ * random moment (so nobody can anticipate it), then three ambers light half a second apart and the
+ * green comes half a second after the last one.
+ */
+export const STAGE_HOLD_MIN = 1.2;
+export const STAGE_HOLD_JITTER = 1.3;
+export const AMBER_GAP = 0.5;
 /** A live driver who never taps launches this long after green anyway. */
 export const AUTO_LAUNCH = 1.0;
 /** Tapping during the ambers is a jump start: the car goes this long after green, bogged. */
@@ -289,6 +293,8 @@ export class Race {
   readonly racers: Racer[];
   readonly drivers: Driver[];
   readonly greenAt: number;
+  /** When each amber lights. */
+  readonly amberAt: readonly number[];
   /** Each racer's shift windows (see shiftWindows). */
   readonly windows: ShiftWindow[][];
   t = 0;
@@ -304,7 +310,9 @@ export class Race {
     this.rand = rng(seed);
     this.racers = specs.map(newRacer);
     this.drivers = drivers;
-    this.greenAt = GREEN_MIN + this.rand() * GREEN_JITTER;
+    const hold = STAGE_HOLD_MIN + this.rand() * STAGE_HOLD_JITTER;
+    this.amberAt = [hold, hold + AMBER_GAP, hold + 2 * AMBER_GAP];
+    this.greenAt = hold + 3 * AMBER_GAP;
     this.windows = this.racers.map((r) => shiftWindows(seed, r.spec));
     this.plans = this.racers.map((_, i) => this.plan(i));
     for (const r of this.racers) {
@@ -439,7 +447,7 @@ export class Race {
       return out;
     }
     this.t += DT;
-    while (this.ambersLit < AMBERS.length && this.t >= AMBERS[this.ambersLit]!) {
+    while (this.ambersLit < this.amberAt.length && this.t >= this.amberAt[this.ambersLit]!) {
       this.ambersLit++;
       this.events.push({ type: 'amber', n: this.ambersLit });
     }
@@ -608,6 +616,22 @@ export class Race {
     const margin = winner !== null && second !== undefined && rs[second]!.crossed !== null ? rs[second]!.crossed! - rs[first]!.crossed! : 0;
     return { racers: rs, order, winner, margin };
   }
+}
+
+/** What the Christmas tree shows: per lane pre-stage and stage bulbs and a red light for a jump; ambers and green are shared. */
+export interface TreeState {
+  pre: [boolean, boolean];
+  stage: [boolean, boolean];
+  ambers: number;
+  green: boolean;
+  red: [boolean, boolean];
+}
+export const DARK_TREE: TreeState = { pre: [false, false], stage: [false, false], ambers: 0, green: false, red: [false, false] };
+
+/** The tree for a race in progress (both cars are staged once the race clock runs). */
+export function treeOf(race: Race): TreeState {
+  const jumped = (i: number): boolean => !!race.racers[i]?.jumped;
+  return { pre: [true, race.racers.length > 1], stage: [true, race.racers.length > 1], ambers: race.ambersLit, green: race.green, red: [jumped(0), jumped(1)] };
 }
 
 /** Runs a whole race at once (forecasts, tests). */

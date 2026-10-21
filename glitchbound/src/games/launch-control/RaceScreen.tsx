@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { GameMenuButton } from '../../components/GameMenuButton';
 import { FAILURE_TEXT } from './parts';
-import { LANES, type CarLook, type CarState, type Stage3D } from './scene3d';
-import { DISTANCE, DT, Race, shiftRpm, type CarSpec, type Driver, type RaceResult, type ShiftWindow } from './sim';
+import { DARK_TREE, LANES, type CarLook, type CarState, type Stage3D, type TreeState } from './scene3d';
+import { DISTANCE, DT, Race, shiftRpm, treeOf, type CarSpec, type Driver, type RaceResult, type ShiftWindow } from './sim';
 import type { Sfx } from './sound';
 import { fmtEt } from './util';
 
@@ -13,30 +13,33 @@ export interface RacePlan {
   names: string[];
   env: string;
   seed: number;
+  /** A line under the rival's name in the intro (a difficulty, "Gauntlet round 4", "ghost"). */
+  tagline?: string;
 }
 
-/** The gauge sweeps 270 degrees, from bottom-left to bottom-right. */
+/** The tach sweeps 270 degrees, from bottom-left to bottom-right. */
 const SWEEP = 270;
-const BLUE = '#22e4ff';
+const NEUTRAL = 'rgba(255,255,255,0.14)';
 const YELLOW = '#ffd12e';
 const GREEN = '#3dff7a';
 const RED = '#ff3b4e';
-const OFF = '#120a2c';
-/** The gauge face for a gear: its window in green and yellow, red above (no window: plain, red at the top). */
-function gaugeBg(w: ShiftWindow | null): string {
+/** The tach's ring: this gear's window in green with yellow either side and red above (no window: red at the top). */
+function tachRing(w: ShiftWindow | null): string {
   const a = (f: number): string => `${(SWEEP * f).toFixed(1)}deg`;
-  if (!w) return `conic-gradient(from 225deg, ${BLUE} 0deg ${a(0.985)}, ${RED} ${a(0.985)} ${a(1)}, ${OFF} ${a(1)} 360deg)`;
-  return `conic-gradient(from 225deg, ${BLUE} 0deg ${a(w.okLo)}, ${YELLOW} ${a(w.okLo)} ${a(w.lo)}, ${GREEN} ${a(w.lo)} ${a(w.hi)}, ${YELLOW} ${a(w.hi)} ${a(w.okHi)}, ${RED} ${a(w.okHi)} ${a(1)}, ${OFF} ${a(1)} 360deg)`;
+  if (!w) return `conic-gradient(from 225deg, ${NEUTRAL} 0deg ${a(0.985)}, ${RED} ${a(0.985)} ${a(1)}, transparent ${a(1)} 360deg)`;
+  return `conic-gradient(from 225deg, ${NEUTRAL} 0deg ${a(w.okLo)}, ${YELLOW} ${a(w.okLo)} ${a(w.lo)}, ${GREEN} ${a(w.lo)} ${a(w.hi)}, ${YELLOW} ${a(w.hi)} ${a(w.okHi)}, ${RED} ${a(w.okHi)} ${a(1)}, transparent ${a(1)} 360deg)`;
 }
-/** The rev strip shows the top half of the revs: 50 % to 100 % of the redline. */
-const STRIP_FROM = 0.5;
-const pct = (f: number): number => Math.max(0, Math.min(100, ((f - STRIP_FROM) / (1 - STRIP_FROM)) * 100));
+
+/** The pre-race show before the clock runs: the intro orbit with the match-up, then burnouts. */
+const INTRO_S = 3.2;
+const BURNOUT_S = 1.8;
+type Phase = 'intro' | 'burnout' | 'race' | 'done';
 type StripState = 'launch' | 'go' | 'shift' | 'top' | 'done';
-const STRIP_LABEL: Record<StripState, string> = { launch: 'TAP ON GREEN TO LAUNCH', go: 'GO! TAP NOW', shift: 'SHIFT IN THE GREEN', top: 'TOP GEAR · FLAT OUT', done: 'FINISHED' };
 
 /**
- * The race: the shared 3D stage drawn from behind your car, a HUD updated through refs every
- * frame (no React renders per frame), and one input: tap anywhere, the SHIFT button or Space.
+ * The race: the shared 3D stage (an intro orbit, burnouts, then the chase camera), a HUD updated
+ * through refs every frame (no React renders per frame), and one input: tap anywhere, the big
+ * button or Space. Tap at green to launch, then each time the needle is in this gear's green.
  */
 export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, nudge: nudgeAtStart, onStart }: { plan: RacePlan; stageRef: RefObject<Stage3D | null>; paused: boolean; setPaused: (p: boolean) => void; onFinish: (r: RaceResult) => void; sfx: () => Sfx; nudge: boolean; onStart: () => void }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -44,21 +47,20 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
   const onFinishRef = useRef(onFinish);
   const setPausedRef = useRef(setPaused);
   const onStartRef = useRef(onStart);
+  const [phase, setPhase] = useState<Phase>('intro');
   const [pop, setPop] = useState<{ text: string; tone: string; key: number } | null>(null);
-  const [banner, setBanner] = useState<{ text: string; sub?: string; tone: string } | null>({ text: 'GET READY', sub: 'Tap the moment the light turns green, then shift in the green zone', tone: 'yellow' });
+  const [banner, setBanner] = useState<{ text: string; sub?: string; tone: string; key: number } | null>(null);
   const [nudge, setNudge] = useState(nudgeAtStart);
-  const strip = useRef<HTMLDivElement>(null);
-  const zones = useRef<(HTMLElement | null)[]>([]);
-  const fill = useRef<HTMLSpanElement>(null);
-  const stripLabel = useRef<HTMLSpanElement>(null);
   const face = useRef<HTMLDivElement>(null);
   const needle = useRef<HTMLDivElement>(null);
   const speedEl = useRef<HTMLSpanElement>(null);
   const gearEl = useRef<HTMLSpanElement>(null);
   const timeEl = useRef<HTMLSpanElement>(null);
   const posEl = useRef<HTMLSpanElement>(null);
+  const gapEl = useRef<HTMLSpanElement>(null);
   const dots = useRef<(HTMLSpanElement | null)[]>([]);
   const shiftBtn = useRef<HTMLButtonElement>(null);
+  const skipRef = useRef<() => void>(() => undefined);
   useEffect(() => {
     pausedRef.current = paused;
     onFinishRef.current = onFinish;
@@ -79,35 +81,69 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
     for (let i = 0; i < LANES; i++) stage?.setCar(i, plan.looks[i] ?? null);
     const race = new Race(plan.specs, plan.drivers, plan.seed);
     const me = race.racers[0]!;
+    const rival = race.racers[1];
+    // the show before the race clock: intro, then burnouts (taps skip ahead)
+    let show: Phase = 'intro';
+    let showT = 0;
+    /** Render time: never jumps back (smoke and pops are timed with it). */
+    let rt = 0;
     let clock = 0;
     let acc = 0;
     let last = 0;
     let raf = 0;
     let finishedAt = -1;
     let audioAt = 0;
-    let popKey = 0;
+    let key = 0;
     let started = false;
+    let greenAt = -1;
     let shownGear = -2;
     let shownState = '';
+    let excite = 0.15;
+    let finishCheer = 0;
+    let marshalsUp = false;
     // a slow phone drops the pixel ratio a step at a time
     let dpr = Math.min(1.75, window.devicePixelRatio || 1);
     let frameAvg = 16;
     let adaptAt = 0;
     stage?.setPixelRatio(dpr);
     const s = sfx();
-    const popup = (text: string, tone: string): void => setPop({ text, tone, key: ++popKey });
+    const popup = (text: string, tone: string): void => setPop({ text, tone, key: ++key });
+    const say = (text: string, tone: string, sub?: string): void => setBanner({ text, sub, tone, key: ++key });
+    const toPhase = (p: Phase): void => {
+      show = p;
+      showT = 0;
+      setPhase(p);
+      if (p === 'burnout') {
+        s.burnout();
+        say('BURNOUT', 'orange');
+      }
+      if (p === 'race') say('STAGED', 'cyan', 'Tap the moment the light turns green');
+    };
+    skipRef.current = () => {
+      if (show === 'intro') toPhase('burnout');
+      else if (show === 'burnout') toPhase('race');
+    };
+    s.cheer(0.25);
 
     const onEvents = (evs: ReturnType<Race['step']>): void => {
       for (const e of evs) {
         switch (e.type) {
           case 'amber':
             s.amber();
-            setBanner({ text: '●'.repeat(e.n) + '○'.repeat(3 - e.n), tone: 'yellow' });
+            say('●'.repeat(e.n) + '○'.repeat(3 - e.n), 'yellow');
             break;
           case 'green':
             s.green();
-            setBanner({ text: 'GO!', tone: 'lime' });
-            window.setTimeout(() => setBanner((b) => (b?.text === 'GO!' ? null : b)), 650);
+            greenAt = clock;
+            if (!me.jumped) say('GO!', 'lime');
+            stage?.marshals(true);
+            marshalsUp = true;
+            break;
+          case 'jump':
+            if (e.i === 0) {
+              s.red();
+              say('RED LIGHT', 'coral', 'Jumped the start: you go late');
+            }
             break;
           case 'launch':
             if (e.i === 0) {
@@ -115,17 +151,14 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
                 started = true;
                 onStartRef.current();
               }
+              stage?.kick(e.quality === 'perfect' ? 1.3 : 0.8);
+              s.cheer(e.quality === 'perfect' ? 0.9 : 0.6);
               if (e.quality === 'perfect') {
                 s.perfect();
                 popup('PERFECT LAUNCH!', 'lime');
               } else if (e.quality === 'good') popup('GOOD LAUNCH', 'cyan');
               else if (e.quality === 'slow') popup('SLOW START', 'orange');
-            }
-            break;
-          case 'jump':
-            if (e.i === 0) {
-              s.nope();
-              popup('JUMP START!', 'coral');
+              setBanner((b) => (b && (b.text === 'GO!' || b.text.startsWith('●')) ? null : b));
             }
             break;
           case 'spin':
@@ -144,10 +177,13 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
             }
             break;
           case 'shift':
+            stage?.pop(e.i);
             if (e.i === 0) {
               s.shift();
+              s.pop();
               if (e.quality === 'perfect') {
                 s.perfect();
+                stage?.kick(0.55);
                 popup('PERFECT!', 'lime');
               } else if (e.quality === 'ok') popup('GOOD', 'cyan');
               else if (e.quality === 'early') popup('EARLY', 'orange');
@@ -160,15 +196,19 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
           case 'fail':
             if (e.i === 0) {
               s.fail();
-              setBanner({ text: 'BREAKDOWN', sub: FAILURE_TEXT[e.part], tone: 'coral' });
+              say('BREAKDOWN', 'coral', FAILURE_TEXT[e.part]);
             }
             break;
           case 'finish':
             if (e.i === 0) {
-              const ahead = race.racers.filter((r, k) => k !== 0 && r.phase === 'done' && !r.dnf && r.reaction + r.et < me.reaction + me.et).length;
-              const pos = ahead + 1;
-              s.finish(pos === 1);
-              setBanner({ text: pos === 1 ? 'YOU WON!' : `${pos === 2 ? '2ND' : pos === 3 ? '3RD' : `${pos}TH`} PLACE`, sub: `${fmtEt(me.et)} s · ${Math.round(me.trap * 3.6)} km/h`, tone: pos === 1 ? 'lime' : 'yellow' });
+              const beat = rival && rival.phase === 'done' && !rival.dnf && rival.reaction + rival.et < me.reaction + me.et;
+              const won = !beat;
+              s.finish(won);
+              s.cheer(won ? 1 : 0.5);
+              stage?.kick(0.5);
+              finishCheer = won ? 1 : 0.5;
+              if (won) stage?.confetti(0);
+              say(won ? 'YOU WIN!' : 'BEATEN', won ? 'lime' : 'yellow', `${fmtEt(me.et)} s · ${Math.round(me.trap * 3.6)} km/h`);
             }
             break;
         }
@@ -193,82 +233,97 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
         stage?.setPixelRatio(dpr);
       }
       dt = Math.min(dt, 0.1);
-      acc += dt;
-      let steps = 0;
-      while (acc >= DT && steps < 24) {
-        acc -= DT;
-        steps++;
-        clock += DT;
-        if (race.done) {
-          if (finishedAt < 0) finishedAt = clock;
-          else if (clock - finishedAt > 2.2) {
-            cancelAnimationFrame(raf);
-            raf = 0;
-            s.quiet();
-            onFinishRef.current(race.result());
-            return;
+      showT += dt;
+      rt += dt;
+      let tree: TreeState = DARK_TREE;
+      if (show === 'intro') {
+        if (showT >= INTRO_S) toPhase('burnout');
+      } else if (show === 'burnout') {
+        tree = { ...DARK_TREE, pre: [showT > BURNOUT_S * 0.6, showT > BURNOUT_S * 0.7] };
+        if (showT >= BURNOUT_S) toPhase('race');
+      }
+      if (show === 'race' || show === 'done') {
+        acc += dt;
+        let steps = 0;
+        while (acc >= DT && steps < 24) {
+          acc -= DT;
+          steps++;
+          clock += DT;
+          if (race.done) {
+            if (finishedAt < 0) finishedAt = clock;
+            else if (clock - finishedAt > 2.6) {
+              cancelAnimationFrame(raf);
+              raf = 0;
+              s.quiet();
+              onFinishRef.current(race.result());
+              return;
+            }
+            continue;
           }
-          continue;
+          onEvents(race.step());
         }
-        onEvents(race.step());
+        tree = treeOf(race);
+        if (marshalsUp && greenAt >= 0 && clock - greenAt > 2.5) {
+          stage?.marshals(false);
+          marshalsUp = false;
+        }
       }
-      if (clock - audioAt > 0.05) {
+      // the crowd: building through the show, roaring at green, again at the finish
+      const goal = show === 'intro' ? 0.2 : show === 'burnout' ? 0.45 : greenAt < 0 ? 0.5 : Math.max(0.3, 1 - (clock - greenAt) * 0.3, me.x > DISTANCE - 80 ? 0.8 : 0, finishCheer);
+      excite += (goal - excite) * Math.min(1, dt * 3);
+      finishCheer = Math.max(0, finishCheer - dt * 0.15);
+      if (clock - audioAt > 0.05 || show !== 'race') {
         audioAt = clock;
-        s.engine(me.dead ? 0 : me.rpm / me.spec.redline, me.phase === 'running' ? 1 : 0.3);
+        const revs = show === 'burnout' ? 0.75 + Math.sin(showT * 9) * 0.12 : show === 'intro' ? 0.25 : me.dead ? 0 : me.rpm / me.spec.redline;
+        s.engine(revs, me.phase === 'running' || show === 'burnout' ? 1 : 0.3);
       }
-      // HUD: the rev strip and gauge show this gear's window; they move to new spots after each shift
+      // HUD: the tach shows this gear's window; it moves to a new spot after each shift
       const frac = Math.min(1.02, shiftRpm(me) / me.spec.redline);
       const canShift = me.phase === 'running' && me.gear < me.spec.gears && !me.stuck && !me.dead;
-      const win = canShift || me.phase === 'shifting' ? race.windowOf(0) : null;
-      const hot = canShift && !!win && frac >= win.lo && frac <= win.hi;
+      const win = canShift ? race.windowOf(0) : null;
+      const hot = !!win && frac >= win.lo && frac <= win.hi;
       const gearKey = me.phase === 'staging' || me.phase === 'done' ? -1 : me.gear;
       if (gearKey !== shownGear) {
         shownGear = gearKey;
-        const w = gearKey > 0 ? race.windowOf(0) : null;
-        const spans: [number, number][] = w ? [[w.okLo, w.lo], [w.lo, w.hi], [w.hi, w.okHi], [w.okHi, 1]] : [[0, 0], [0, 0], [0, 0], [0.985, 1]];
-        spans.forEach(([a, b], k) => {
-          const el = zones.current[k];
-          if (!el) return;
-          el.style.left = `${pct(a)}%`;
-          el.style.width = `${Math.max(0, pct(b) - pct(a))}%`;
-        });
-        if (face.current) face.current.style.background = gaugeBg(w);
+        if (face.current) face.current.style.background = tachRing(gearKey > 0 ? race.windowOf(0) : null);
       }
-      const st: StripState = me.phase === 'staging' ? (race.green && !me.jumped ? 'go' : 'launch') : me.phase === 'done' ? 'done' : me.gear >= me.spec.gears || me.stuck ? 'top' : 'shift';
+      const st: StripState = show !== 'race' && show !== 'done' ? 'launch' : me.phase === 'staging' ? (race.green && !me.jumped ? 'go' : 'launch') : me.phase === 'done' ? 'done' : me.gear >= me.spec.gears || me.stuck ? 'top' : 'shift';
       if (st !== shownState) {
         shownState = st;
-        if (strip.current) strip.current.dataset.state = st;
-        if (stripLabel.current) stripLabel.current.textContent = STRIP_LABEL[st];
+        root.dataset.state = st;
         if (shiftBtn.current) shiftBtn.current.textContent = st === 'launch' || st === 'go' ? 'LAUNCH' : 'SHIFT';
       }
-      if (fill.current) fill.current.style.width = `${pct(me.phase === 'staging' ? me.rpm / me.spec.redline : frac)}%`;
-      strip.current?.classList.toggle('is-hot', hot);
-      if (needle.current) needle.current.style.transform = `rotate(${-135 + Math.min(1.02, me.rpm / me.spec.redline) * SWEEP}deg)`;
+      root.dataset.hot = hot ? '1' : '';
+      if (needle.current) needle.current.style.transform = `rotate(${-135 + Math.min(1.02, (show === 'burnout' ? 0.72 + Math.sin(showT * 9) * 0.1 : me.rpm / me.spec.redline)) * SWEEP}deg)`;
       if (speedEl.current) speedEl.current.textContent = String(Math.round(me.v * 3.6));
-      if (gearEl.current) gearEl.current.textContent = me.spec.gears === 1 ? 'D' : String(me.gear);
+      if (gearEl.current) gearEl.current.textContent = me.spec.gears === 1 ? 'D' : me.phase === 'staging' ? 'N' : String(me.gear);
       if (timeEl.current) timeEl.current.textContent = me.phase === 'staging' ? '0.000' : me.phase === 'done' && !me.dnf ? fmtEt(me.et) : fmtEt(Math.max(0, clock - me.launchAt));
-      let place = 1;
       race.racers.forEach((r, i) => {
         const d = dots.current[i];
         if (d) d.style.left = `${Math.min(100, (r.x / DISTANCE) * 100)}%`;
-        if (i > 0 && r.x > me.x) place++;
       });
-      if (posEl.current) posEl.current.textContent = `P${place}/${race.racers.length}`;
-      if (shiftBtn.current) {
-        shiftBtn.current.classList.toggle('is-hot', hot);
-        shiftBtn.current.classList.toggle('is-idle', !canShift && !(st === 'go'));
-        shiftBtn.current.classList.toggle('is-go', st === 'go');
+      const ahead = rival ? (me.phase === 'done' && rival.phase === 'done' ? me.reaction + me.et <= rival.reaction + rival.et : me.x >= rival.x) : true;
+      if (posEl.current) posEl.current.textContent = ahead ? 'P1' : 'P2';
+      if (gapEl.current && rival) {
+        const g = me.x - rival.x;
+        gapEl.current.textContent = me.phase === 'staging' ? 'staged' : `${g >= 0 ? '+' : '−'}${Math.abs(g).toFixed(1)} m`;
+        gapEl.current.dataset.ahead = g >= 0 ? '1' : '';
       }
-      const state = (r: typeof me): CarState => ({ x: r.x, v: r.v, rpm: r.rpm, redline: r.spec.redline, spinning: r.spinLeft > 0, dead: r.dead });
-      stage?.renderRace(race.racers.map(state), race.ambersLit, race.green, clock, dt);
+      if (shiftBtn.current) shiftBtn.current.classList.toggle('is-idle', !canShift && st !== 'go');
+      const state = (r: typeof me): CarState => ({ x: r.x, v: r.v, rpm: r.rpm, redline: r.spec.redline, spinning: r.spinLeft > 0 || show === 'burnout', dead: r.dead });
+      stage?.renderRace(race.racers.map(state), tree, rt, dt, undefined, { excite, intro: show === 'intro' ? showT / INTRO_S : null });
     };
     raf = requestAnimationFrame(frame);
 
     const tap = (): void => {
       if (pausedRef.current) return;
+      if (show === 'intro' || show === 'burnout') {
+        skipRef.current();
+        return;
+      }
       race.tap(0);
     };
-    const key = (e: KeyboardEvent): void => {
+    const keyDown = (e: KeyboardEvent): void => {
       if (e.code === 'Escape' || e.code === 'KeyP') {
         e.preventDefault();
         setPausedRef.current(!pausedRef.current);
@@ -280,70 +335,46 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
       }
     };
     const pdown = (e: PointerEvent): void => {
-      // buttons on the race screen are not shift taps (the menu one pauses the race itself)
+      // buttons on the race screen are not taps on the strip (the menu one pauses the race itself)
       if ((e.target as HTMLElement).closest('.lc-pause, .lc-overlay, .game-menu-btn')) return;
       e.preventDefault();
       tap();
     };
-    window.addEventListener('keydown', key);
+    window.addEventListener('keydown', keyDown);
     root.addEventListener('pointerdown', pdown);
     return () => {
       if (raf) cancelAnimationFrame(raf);
-      window.removeEventListener('keydown', key);
+      window.removeEventListener('keydown', keyDown);
       root.removeEventListener('pointerdown', pdown);
       s.quiet();
+      stage?.marshals(false);
       stage?.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     };
     // One race per mount: the plan is fixed for its lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const meName = plan.names[0] ?? 'You';
+  const rivalName = plan.names[1] ?? 'Rival';
+  const meCar = plan.specs[0]!.def.name;
+  const rivalCar = plan.specs[1]?.def.name ?? '';
   return (
-    <div ref={rootRef} className="lc-race" aria-label="Drag race. Tap or press Space at green to launch, then each time the needle is in the green zone to shift.">
+    <div ref={rootRef} className="lc-race" data-phase={phase} data-state="launch" aria-label="Drag race. Tap or press Space at green to launch, then each time the needle is in the green zone to shift.">
       <div className="lc-hud" aria-hidden="true">
         <div className="lc-hud-top">
-          <div className="lc-chip-you">
-            <span className="lc-eyebrow mono">You</span>
-            <b>{plan.specs[0]!.def.name}</b>
-            <span ref={posEl} className="lc-pos mono">
-              P1/{plan.names.length}
+          <div className="lc-plate is-you">
+            <span ref={posEl} className="lc-plate-pos mono">
+              P1
+            </span>
+            <span className="lc-plate-text">
+              <b>{meName}</b>
+              <small>{meCar}</small>
             </span>
           </div>
-          <div ref={strip} className="lc-rev" data-state="launch">
-            <div className="lc-rev-track">
-              {['y', 'g', 'y', 'r'].map((c, k) => (
-                <i
-                  key={k}
-                  className={`lc-rev-zone is-${c}`}
-                  ref={(el) => {
-                    zones.current[k] = el;
-                  }}
-                />
-              ))}
-              <span ref={fill} className="lc-rev-fill" />
-            </div>
-            <span ref={stripLabel} className="lc-rev-label mono">
-              {STRIP_LABEL.launch}
-            </span>
-          </div>
-        </div>
-        {pop && (
-          <div key={pop.key} className="lc-pop" data-tone={pop.tone}>
-            {pop.text}
-          </div>
-        )}
-        {banner && (
-          <div className="lc-banner" data-tone={banner.tone}>
-            <b>{banner.text}</b>
-            {banner.sub && <span>{banner.sub}</span>}
-          </div>
-        )}
-        <div className="lc-hud-bottom">
-          <div className="lc-timer">
+          <div className="lc-clock">
             <span ref={timeEl} className="mono">
               0.000
             </span>
-            <small className="mono">¼ MILE</small>
             <div className="lc-progress">
               {plan.names.map((n, i) => (
                 <span
@@ -357,17 +388,58 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
               <i className="lc-progress-flag" />
             </div>
           </div>
-          <div className="lc-gauge">
-            <div ref={face} className="lc-gauge-face" style={{ background: gaugeBg(null) }}>
+          {plan.specs.length > 1 && (
+            <div className="lc-plate is-rival">
+              <span className="lc-plate-text">
+                <b>{rivalName}</b>
+                <small>{rivalCar}</small>
+              </span>
+              <span ref={gapEl} className="lc-plate-gap mono">
+                staged
+              </span>
+            </div>
+          )}
+        </div>
+        {phase === 'intro' && (
+          <div className="lc-vs" key="vs">
+            <div className="lc-vs-side is-you">
+              <small className="mono">YOU</small>
+              <b>{meName}</b>
+              <span>{meCar}</span>
+            </div>
+            <div className="lc-vs-mark">VS</div>
+            <div className="lc-vs-side is-rival">
+              <small className="mono">{plan.tagline ?? 'RIVAL'}</small>
+              <b>{rivalName}</b>
+              <span>{rivalCar}</span>
+            </div>
+            <p className="lc-vs-skip mono">Tap to skip</p>
+          </div>
+        )}
+        {pop && (
+          <div key={pop.key} className="lc-pop" data-tone={pop.tone}>
+            {pop.text}
+          </div>
+        )}
+        {banner && phase !== 'intro' && (
+          <div key={banner.key} className="lc-banner" data-tone={banner.tone}>
+            <b>{banner.text}</b>
+            {banner.sub && <span>{banner.sub}</span>}
+          </div>
+        )}
+        <div className="lc-hud-bottom">
+          <div className="lc-tach">
+            <div ref={face} className="lc-tach-ring" style={{ background: tachRing(null) }} />
+            <div className="lc-tach-face">
               <div ref={needle} className="lc-needle" />
+              <span ref={gearEl} className="lc-gear mono">
+                N
+              </span>
               <span ref={speedEl} className="lc-speed mono">
                 0
               </span>
               <small className="mono">km/h</small>
             </div>
-            <span ref={gearEl} className="lc-gear mono">
-              1
-            </span>
           </div>
         </div>
       </div>

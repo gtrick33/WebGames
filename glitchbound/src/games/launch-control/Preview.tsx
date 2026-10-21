@@ -4,9 +4,9 @@ import { CARS } from './cars';
 import { DEFAULTS, ENVS, HELMETS } from './cosmetics';
 import { freshCondition, type Levels } from './parts';
 import { Stage3D, type CarLook, type CarState } from './scene3d';
-import { DT, Race, specOf } from './sim';
+import { DT, Race, specOf, treeOf } from './sim';
 
-/** Launch Control's attract mode: five tuned cars race the quarter mile in 3D, over and over, blitted onto the tile. */
+/** Launch Control's attract mode: two tuned cars race the quarter mile head to head in 3D, over and over, blitted onto the tile. */
 export default function Preview({ playing = true }: GamePreviewProps) {
   const ref = usePreviewCanvas(playing, () => {
     let stage: Stage3D | null = null;
@@ -20,7 +20,7 @@ export default function Preview({ playing = true }: GamePreviewProps) {
       const h = HELMETS[Math.floor(Math.random() * HELMETS.length)]!;
       return { look: { def, levels, paint: DEFAULTS.paint, livery: Math.random() < 0.4 ? 'l-stripes' : DEFAULTS.livery, wheels: 'w-classic', helmet: [h.colors[0]!, h.colors[1]!], suit: '#1d3557' }, levels };
     };
-    let cars = Array.from({ length: 5 }, pick);
+    let cars = Array.from({ length: 2 }, pick);
     let env = ENVS[Math.floor(Math.random() * ENVS.length)]!.id;
     const start = (): Race => new Race(cars.map((c) => specOf(c.look.def, c.levels, freshCondition(), false)), cars.map((_, i) => ({ kind: 'policy', skill: i ? 0.5 + Math.random() * 0.4 : 0.9, seed: Math.floor(Math.random() * 1e9) })), Math.floor(Math.random() * 1e9));
     let race = start();
@@ -56,14 +56,14 @@ export default function Preview({ playing = true }: GamePreviewProps) {
         }
         if (race.done && doneAt < 0) doneAt = t;
         if (doneAt >= 0 && t - doneAt > 1.5) {
-          cars = Array.from({ length: 5 }, pick);
+          cars = Array.from({ length: 2 }, pick);
           env = ENVS[Math.floor(Math.random() * ENVS.length)]!.id;
           race = start();
           doneAt = -1;
           place();
         }
         const state = (r: (typeof race.racers)[number]): CarState => ({ x: r.x, v: r.v, rpm: r.rpm, redline: r.spec.redline, spinning: r.spinLeft > 0, dead: r.dead });
-        stage.renderRace(race.racers.map(state), race.ambersLit, race.green, t, dt);
+        stage.renderRace(race.racers.map(state), treeOf(race), t, dt, undefined, { excite: race.green && !race.done ? 0.6 : 0.2 });
         ctx.drawImage(stage.canvas, 0, 0, w, h);
       },
     };

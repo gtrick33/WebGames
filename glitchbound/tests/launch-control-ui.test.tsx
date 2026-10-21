@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Game from '../src/games/launch-control/Game';
-import { KEY } from '../src/games/launch-control/storage';
+import { emptySave, KEY } from '../src/games/launch-control/storage';
 
 /**
  * The whole game in jsdom (no WebGL: the 3D stage is skipped, everything else runs): menus, a real
@@ -48,7 +48,7 @@ function driveRace(opts: { tapWhenHot: boolean; maxFrames?: number } = { tapWhen
     if (!document.querySelector('.lc-race')) break;
     const pop = document.querySelector('.lc-pop')?.textContent;
     if (pop) pops.add(pop);
-    if (opts.tapWhenHot && document.querySelector('.lc-rev.is-hot, .lc-rev[data-state="go"]') && f - lastTap > 6) {
+    if (opts.tapWhenHot && document.querySelector('.lc-race[data-hot="1"], .lc-race[data-state="go"]') && f - lastTap > 6) {
       act(() => {
         fireEvent.keyDown(window, { code: 'Space', key: ' ' });
       });
@@ -78,7 +78,7 @@ describe('Launch Control: a full ladder race', () => {
     expect(pops.has('PERFECT LAUNCH!')).toBe(true);
     // the result: five cars in order, our times, a purse
     const rows = document.querySelectorAll('.lc-order li');
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(2);
     expect(document.querySelector('.lc-times')?.textContent).toMatch(/3\/3 perfect/);
     expect(document.querySelector('.lc-ledger')?.textContent).toMatch(/Purse/);
     const end = host.report.mock.calls.map((c) => c[0]).find((e) => e.type === 'end');
@@ -108,7 +108,7 @@ describe('Launch Control: a full ladder race', () => {
     render(<Game host={host} restartKey={0} pauseKey={0} />);
     startLadderRace();
     // run until the car has launched, then tap at once
-    for (let f = 0; f < 400 && document.querySelector('.lc-timer span')?.textContent === '0.000'; f++) act(() => tick());
+    for (let f = 0; f < 1500 && document.querySelector('.lc-clock span')?.textContent === '0.000'; f++) act(() => tick());
     act(() => {
       fireEvent.keyDown(window, { code: 'Space', key: ' ' });
     });
@@ -120,13 +120,13 @@ describe('Launch Control: a full ladder race', () => {
   it('a tap during the ambers is a jump start', () => {
     render(<Game host={host} restartKey={0} pauseKey={0} />);
     startLadderRace();
-    for (let f = 0; f < 400 && !document.querySelector('.lc-banner')?.textContent?.includes('●'); f++) act(() => tick());
+    for (let f = 0; f < 1500 && !document.querySelector('.lc-banner')?.textContent?.includes('●'); f++) act(() => tick());
     act(() => {
       fireEvent.keyDown(window, { code: 'Space', key: ' ' });
     });
     act(() => tick());
-    expect(document.querySelector('.lc-pop')?.textContent).toBe('JUMP START!');
-    expect(document.querySelector('.lc-rev')?.getAttribute('data-state')).toBe('launch');
+    expect(document.querySelector('.lc-banner')?.textContent).toMatch(/RED LIGHT/);
+    expect(document.querySelector('.lc-race')?.getAttribute('data-state')).toBe('launch');
   });
 
   it('pause stops the clock; Escape resumes', () => {
@@ -137,9 +137,9 @@ describe('Launch Control: a full ladder race', () => {
       fireEvent.keyDown(window, { code: 'Escape', key: 'Escape' });
     });
     expect(screen.getByRole('heading', { name: 'Paused' })).toBeTruthy();
-    const t = document.querySelector('.lc-timer span')?.textContent;
+    const t = document.querySelector('.lc-clock span')?.textContent;
     for (let f = 0; f < 60; f++) act(() => tick());
-    expect(document.querySelector('.lc-timer span')?.textContent).toBe(t);
+    expect(document.querySelector('.lc-clock span')?.textContent).toBe(t);
     act(() => {
       fireEvent.keyDown(window, { code: 'Escape', key: 'Escape' });
     });
@@ -215,3 +215,31 @@ describe('Launch Control: daily, garage and wager', () => {
     expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBeLessThan(800);
   });
 });
+
+describe('Launch Control: the King’s Gauntlet', () => {
+  it('is locked until the Street final, then runs round after round and reports the streak as one run', () => {
+    localStorage.setItem(KEY, JSON.stringify({ ...emptySave(), rank: 2 }));
+    const { unmount } = render(<Game host={host} restartKey={0} pauseKey={0} />);
+    expect((screen.getByRole('button', { name: /^King’s Gauntlet/ }) as HTMLButtonElement).disabled).toBe(true);
+    unmount();
+    localStorage.setItem(KEY, JSON.stringify({ ...emptySave(), rank: 8 }));
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: /^King’s Gauntlet/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Race round 1' }));
+    expect(host.report).toHaveBeenCalledWith({ type: 'start' });
+    driveRace();
+    expect(screen.getByRole('heading', { name: 'Round 1 won!' })).toBeTruthy();
+    expect(document.querySelector('.lc-streak')?.textContent).toMatch(/1/);
+    // no end yet: the run goes on
+    expect(host.report.mock.calls.map((c) => c[0]).some((e) => e.type === 'end')).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Next round (2)' }));
+    expect(screen.getByRole('button', { name: 'Race round 2' })).toBeTruthy();
+    // leaving ends the run: the streak so far is the run on the leaderboard
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    const end = host.report.mock.calls.map((c) => c[0]).find((e) => e.type === 'end');
+    expect(end.stats.streak).toBe(1);
+    expect(end.score).toBeGreaterThan(5000);
+    expect(JSON.parse(localStorage.getItem(KEY)!).gauntletBest).toBe(1);
+  });
+});
+

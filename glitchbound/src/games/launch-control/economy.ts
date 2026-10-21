@@ -1,7 +1,7 @@
 /**
- * The money side: the ladder of rivals, the bots that fill a five-car race, purses by finishing
- * position and materials, wager odds, sponsor income while away, the daily crate and the daily
- * loaner. Pure, so the tests can check that the numbers add up.
+ * The money side: the ladder of rivals, the opponent in each head-to-head race, purses and
+ * materials, wager odds, the King's Gauntlet, sponsor income while away, the daily crate and the
+ * daily loaner. Pure, so the tests can check that the numbers add up.
  */
 import { CARS, getCar, type CarDef } from './cars';
 import { ENVS } from './cosmetics';
@@ -12,8 +12,8 @@ import { clamp, rng } from './util';
 export const DIVISIONS = ['Street', 'Club', 'Pro', 'Elite', 'Legend'] as const;
 export const PER_DIVISION = 8;
 export const LADDER_SIZE = DIVISIONS.length * PER_DIVISION;
-/** Cars in a PvE race: you and four others. */
-export const RACE_SIZE = 5;
+/** Every race is head to head: you and one opponent. */
+export const RACE_SIZE = 2;
 
 export interface Opponent {
   rank: number;
@@ -120,13 +120,18 @@ export const typicalEt = (spec: CarSpec, skill: number): number => (forecastEt(s
  * and a forecast within about a second of yours (re-rolled a few times when it is not).
  */
 export function botsFor(me: CarSpec, count: number, seed: number, rival?: Opponent): Bot[] {
-  const r = rng(seed);
   // Bots are built so that a perfectly driven run of theirs lands just behind a perfect run of
-  // yours; their driver's skill (0.45..0.9) then only makes them slower. You win with clean shifts;
-  // miss a couple and the field catches you.
+  // yours; their driver's skill (0.35..0.8) then only makes them slower. You win with clean shifts;
+  // miss a couple and they catch you.
   // The first rungs of the ladder are gentler, so a new player wins a race or two while learning.
   const ease = rival ? Math.max(0, 0.6 - (rival.rank - 1) * 0.12) : 0.12;
-  const target = forecastEt(me, 1, 3) + 0.08 + ease;
+  const r = rng(seed);
+  return fieldFor(me, count, seed, forecastEt(me, 1, 3) + 0.08 + ease, () => clamp(0.35 + r() * 0.45 - ease * 0.4, 0, 1), rival);
+}
+
+/** Bots in cars like yours whose perfect run lands near `target` seconds, each with a skill from `skill()`. */
+function fieldFor(me: CarSpec, count: number, seed: number, target: number, skill: () => number, rival?: Opponent): Bot[] {
+  const r = rng(seed ^ 0x51ed27);
   const myTier = me.def.tier;
   const myLevel = avgLevel(me.levels);
   const names = [...BOT_NAMES].sort(() => r() - 0.5);
@@ -168,14 +173,36 @@ export function botsFor(me: CarSpec, count: number, seed: number, rival?: Oppone
       const gap = Math.abs(et - target) + (et < target - 0.3 ? 5 : 0);
       if (gap < bestGap) {
         bestGap = gap;
-        pick = { name: names[0] ?? `Racer ${bots.length}`, car: cand.c, levels, cond, skill: clamp(0.35 + r() * 0.45 - ease * 0.4, 0, 1) };
+        pick = { name: names[0] ?? `Racer ${bots.length}`, car: cand.c, levels, cond, skill: 0 };
       }
       if (gap < 0.2) break;
     }
     names.shift();
-    bots.push(pick!);
+    bots.push({ ...pick!, skill: skill() });
   }
   return bots.slice(0, count);
+}
+
+// ---- the King's Gauntlet: back-to-back races against opponents that get quicker every round
+/** Beat the Street division (its final) and the gauntlet opens. */
+export const GAUNTLET_UNLOCK = PER_DIVISION;
+
+/**
+ * The opponent for a gauntlet round (1, 2, ...): a car like yours whose perfect run starts a little
+ * behind your perfect run and gains about 0.08 s a round, so by round 6 or 7 they are as quick as you
+ * at your best, and after that quicker. Their driving improves too.
+ */
+export function gauntletRival(me: CarSpec, round: number, seed: number): Bot {
+  const gap = 0.42 - (round - 1) * 0.08;
+  const skill = clamp(0.5 + round * 0.045, 0, 0.98);
+  return fieldFor(me, 1, seed ^ (round * 7919), forecastEt(me, 1, 3) + gap, () => skill)[0]!;
+}
+
+/** What a gauntlet win pays: a purse that grows every round, and materials every third win. */
+export function gauntletPrize(round: number, rank: number, seed: number): { cash: number; mats: Mats } {
+  const cash = Math.round((purseAt(Math.max(1, Math.min(rank, LADDER_SIZE)), false) * (0.6 + 0.15 * round)) / 10) * 10;
+  const o = LADDER[clamp(rank - 1, 0, LADDER_SIZE - 1)]!;
+  return { cash, mats: round % 3 === 0 ? materialsFor(o, false, seed) : {} };
 }
 
 export const botSpec = (b: Bot): CarSpec => specOf(b.car, b.levels, b.cond, false);
@@ -240,8 +267,8 @@ export function forecast(me: CarSpec, bots: Bot[]): Forecast {
 /** Stake buttons: nothing, a tenth, a quarter, half, everything. */
 export const STAKE_SHARES = [0, 0.1, 0.25, 0.5, 1] as const;
 
-/** Share of the purse by finishing position (1st to 5th). */
-export const PURSE_SHARE = [1, 0.4, 0.2, 0.1, 0.1] as const;
+/** Share of the purse by finishing position: the winner takes it, the runner-up a consolation. */
+export const PURSE_SHARE = [1, 0.3] as const;
 
 /** Cash after a race: the purse by position (fans add to it), the wager (first place only), the first-win bonus. */
 export function settle(input: { position: number; purse: number; fansMul: number; stake: number; mult: number; firstWin: boolean }): { purse: number; wager: number; bonus: number } {
@@ -281,7 +308,7 @@ export interface Loaner {
   env: string;
 }
 
-/** The same loaner and the same four rivals for everyone with the same seed: a fair showdown. */
+/** The same loaner and the same opponent for everyone with the same seed: a fair showdown. */
 export function loanerFor(seed: number): Loaner {
   const r = rng(seed);
   const pool = CARS.filter((c) => c.tier <= 5);

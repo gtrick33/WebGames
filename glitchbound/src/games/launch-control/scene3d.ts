@@ -12,6 +12,8 @@ import { getCosmetic } from './cosmetics';
 import { ENV_DEFS, type EnvDef } from './envs';
 import type { Levels } from './parts';
 import { clamp, lerp, shade } from './util';
+import { buildAlive, type Alive } from './alive';
+import type { TreeState } from './sim';
 import { buildModelCar, paintOf } from './modelcar';
 import { getModel, loadModel, specFor } from './models';
 import { CHROME, DRL, GLASS, LAMP, RUBBER, TAIL, TRIM, ball, blobTexture, box, lam, mergeStatic, mesh, pillow, std } from './mats';
@@ -37,9 +39,21 @@ export interface CarState {
 
 export const DISTANCE_M = 402.336;
 /** Five lanes: the player in the middle (lane 0), then alternating right and left. */
-export const LANES = 5;
+/** Head to head: two lanes, you on the left. */
+export const LANES = 2;
 const LANE_PITCH = 4.0;
-export const LANE_Z = [0, -LANE_PITCH, LANE_PITCH, -2 * LANE_PITCH, 2 * LANE_PITCH] as const;
+export const LANE_Z = [-LANE_PITCH / 2, LANE_PITCH / 2] as const;
+/** The Christmas tree stands between the lanes, a little past the start line. */
+const TREE_X = 4.5;
+
+export type { TreeState } from './sim';
+export { DARK_TREE } from './sim';
+
+/** Extras for a race frame: the crowd's excitement (0..1) and the intro orbit (0..1, then null). */
+export interface RaceView {
+  excite?: number;
+  intro?: number | null;
+}
 const LANE_W = (LANE_PITCH * LANES) / 2;
 
 const noise = (i: number, k = 1): number => {
@@ -561,6 +575,10 @@ export interface CarRig {
   wheels: THREE.Object3D[];
   wheelR: number;
   flames: THREE.Object3D[];
+  /** Short exhaust pops on a shift (every car has them; `flames` are the big engine-upgrade ones). */
+  pops?: THREE.Object3D[];
+  popUntil?: number;
+  smokeT?: number;
   shiftLamp: THREE.MeshStandardMaterial | null;
   smoke: THREE.Mesh[];
   len: number;
@@ -975,8 +993,10 @@ export function buildCar(look: CarLook): CarRig {
 // ---------------------------------------------------------------- the world
 interface World {
   group: THREE.Group;
-  lamps: THREE.MeshStandardMaterial[];
+  /** Lights the Christmas tree. */
+  tree(state: TreeState): void;
   clouds: THREE.Group;
+  alive: Alive;
   dispose(): void;
 }
 
@@ -1057,7 +1077,6 @@ function buildWorld(env: EnvDef): World {
     dispose.push(d);
     return d;
   };
-  const lamps: THREE.MeshStandardMaterial[] = [];
   const add = (m: THREE.Object3D): void => {
     g.add(m);
   };
@@ -1154,57 +1173,81 @@ function buildWorld(env: EnvDef): World {
   add(gan);
   add(box(0.4, 1.7, LANE_W * 2 + 5.4, lam('#ffd12e'), -14, 7.5, 0));
   for (const z of [-(LANE_W + 2.4), LANE_W + 2.4]) add(box(0.4, 7.5, 0.4, TRIM(), -14, 3.75, z));
-  // the tree: a gantry over the strip ahead of the cars, a light cluster per lane
-  const TX = 14;
-  for (const z of [-(LANE_W + 1.6), LANE_W + 1.6]) add(box(0.3, 7.2, 0.3, TRIM(), TX, 3.6, z));
-  add(box(0.35, 0.35, LANE_W * 2 + 3.5, TRIM(), TX, 7.2, 0));
-  for (const z of LANE_Z) add(pillow(0.4, 1.9, 0.55, TRIM(), TX, 6.15, z));
-  const lampGeo = keep(new THREE.SphereGeometry(0.14, 14, 10));
-  ['#ffb703', '#ffb703', '#ffb703', '#06d6a0', '#e63946'].forEach((col, i) => {
-    const m = keep(new THREE.MeshStandardMaterial({ color: '#3a3845', emissive: '#000000', roughness: 0.3 }));
-    m.userData = { on: col };
-    const inst = new THREE.InstancedMesh(lampGeo, m, LANES);
-    LANE_Z.forEach((z, k) => {
-      dummy.position.set(TX - 0.24, 6.9 - i * 0.36, z);
-      dummy.updateMatrix();
-      inst.setMatrixAt(k, dummy.matrix);
-    });
-    keep(inst);
-    add(inst);
-    lamps.push(m);
+  // the Christmas tree between the lanes: per side pre-stage and stage bulbs, three ambers, green, red
+  add(box(0.16, 3.3, 0.16, TRIM(), TREE_X, 1.65, 0));
+  add(box(0.5, 0.12, 1.6, TRIM(), TREE_X, 0.06, 0));
+  const treeMats: { kind: 'pre' | 'stage' | 'amber' | 'green' | 'red'; lane: 0 | 1; idx: number; on: string; mat: THREE.MeshStandardMaterial }[] = [];
+  const bulb = (r: number): THREE.SphereGeometry => keep(new THREE.SphereGeometry(r, 14, 10));
+  const small = bulb(0.095);
+  const big = bulb(0.155);
+  ([0, 1] as const).forEach((lane) => {
+    const zs = LANE_Z[lane] < 0 ? -1 : 1;
+    add(pillow(0.26, 2.9, 0.5, TRIM(), TREE_X, 1.78, zs * 0.36));
+    const put = (kind: 'pre' | 'stage' | 'amber' | 'green' | 'red', idx: number, y: number, on: string, geo: THREE.SphereGeometry, dz = 0): void => {
+      const mat = keep(new THREE.MeshStandardMaterial({ color: '#2b2938', emissive: '#000000', roughness: 0.25 }));
+      const m = mesh(geo, mat, TREE_X - 0.15, y, zs * 0.36 + dz);
+      m.name = 'keep';
+      add(m);
+      treeMats.push({ kind, lane, idx, on, mat });
+    };
+    for (const dz of [-0.11, 0.11]) put('pre', 0, 3.0, '#fff4c8', small, dz);
+    for (const dz of [-0.11, 0.11]) put('stage', 0, 2.76, '#fff4c8', small, dz);
+    for (let i = 0; i < 3; i++) put('amber', i, 2.42 - i * 0.37, '#ffb703', big);
+    put('green', 0, 1.3, '#2bff88', big);
+    put('red', 0, 0.93, '#ff2a3a', big);
   });
+  const setTree = (st: TreeState): void => {
+    for (const b of treeMats) {
+      const on = b.kind === 'pre' ? st.pre[b.lane] : b.kind === 'stage' ? st.stage[b.lane] : b.kind === 'amber' ? st.ambers > b.idx && !st.green && !st.red[b.lane] : b.kind === 'green' ? st.green && !st.red[b.lane] : st.red[b.lane];
+      b.mat.emissive.set(on ? b.on : '#000000');
+      b.mat.emissiveIntensity = on ? 2.2 : 1;
+      b.mat.color.set(on ? b.on : '#2b2938');
+    }
+  };
+  // rubber laid down in the burnout box and the first metres of each lane
+  const rubber = keep(new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.32, depthWrite: false }));
+  for (const z of LANE_Z)
+    for (const dz of [-0.75, 0.75]) {
+      const strip = mesh(keep(new THREE.PlaneGeometry(38, 0.32).rotateX(-Math.PI / 2)), rubber, 14, 0.009, z + dz);
+      strip.name = 'keep';
+      add(strip);
+    }
+  // sponsor boards along the tyre walls
+  const boardTex = keep(textTexture('GLITCHBOUND  •  LAUNCH CONTROL  •  TURBO  •  NITRO  •  ', '#1d1238', '#ffd12e', 1024, 64, 38));
+  boardTex.wrapS = THREE.RepeatWrapping;
+  boardTex.repeat.set(1, 1);
+  const boardMat = keep(new THREE.MeshLambertMaterial({ map: boardTex }));
+  for (let x = -20; x < 440; x += 24)
+    for (const side of [1, -1]) {
+      const b = mesh(keep(new THREE.PlaneGeometry(23.5, 0.62)), boardMat, x + 12, 0.95, side * (LANE_W + 1.5));
+      b.rotation.y = side > 0 ? Math.PI : 0;
+      b.name = 'keep';
+      add(b);
+    }
+  // the paddock behind the start: tents and team trucks
+  const tentCols = ['#ff4fc8', '#22e4ff', '#ffd12e', '#c4f034'];
+  for (let i = 0; i < 6; i++) {
+    const side = i % 2 ? 1 : -1;
+    const x = -46 + (i >> 1) * 11;
+    const z = side * (LANE_W + 26 + noise(i, 60) * 6);
+    add(box(6, 0.12, 6, lam('#f4f4f8'), x, 2.6, z));
+    const roof = mesh(new THREE.ConeGeometry(4.6, 1.6, 4), lam(tentCols[i % 4]!), x, 3.4, z);
+    roof.rotation.y = Math.PI / 4;
+    add(roof);
+    for (const [dx, dz] of [[-2.8, -2.8], [2.8, -2.8], [-2.8, 2.8], [2.8, 2.8]]) add(box(0.1, 2.6, 0.1, TRIM(), x + dx!, 1.3, z + dz!));
+    add(box(8, 3, 2.5, lam(tentCols[(i + 1) % 4]!), x + 1, 1.7, z + side * 6));
+    add(box(2.4, 2.4, 2.5, lam('#f4f4f8'), x + 6.2, 1.5, z + side * 6));
+  }
 
-  // grandstands: seats, roofs and an instanced crowd
-  const palette = ['#1d1238', '#ffffff', '#ffd12e', '#22e4ff', '#ff4fc8', '#c4f034', '#ff6a1a'];
-  const crowd = new THREE.InstancedMesh(keep(new THREE.SphereGeometry(0.26, 6, 4)), keep(new THREE.MeshLambertMaterial({ color: '#ffffff' })), 24 * 2 * 3 * 11);
-  let ci = 0;
+  // grandstands: seats and roofs (the crowd and the flags are alive: see alive.ts)
   for (let seg = 0; seg < 24; seg++) {
     const x = -30 + seg * 20;
     for (const side of [1, -1]) {
-      for (let row = 0; row < 3; row++) {
-        add(box(19, 1, 2.6, lam(seg % 2 ? env.stands[0] : env.stands[1]), x, 0.5 + row, side * (LANE_W + 7.5 + row * 2.6)));
-        for (let k = 0; k < 11; k++) {
-          dummy.position.set(x - 8.5 + k * 1.7, 1.3 + row, side * (LANE_W + 7.5 + row * 2.6) + (noise(ci, 15) - 0.5));
-          dummy.scale.setScalar(0.8 + noise(ci, 16) * 0.5);
-          dummy.updateMatrix();
-          crowd.setMatrixAt(ci, dummy.matrix);
-          crowd.setColorAt(ci, new THREE.Color(palette[(ci * 7 + seg) % palette.length]!));
-          ci++;
-        }
-      }
+      for (let row = 0; row < 3; row++) add(box(19, 1, 2.6, lam(seg % 2 ? env.stands[0] : env.stands[1]), x, 0.5 + row, side * (LANE_W + 7.5 + row * 2.6)));
       add(box(19, 0.2, 4, lam(seg % 2 ? env.stands[1] : env.stands[0]), x, 5.4, side * (LANE_W + 13.1)));
       for (const dx of [-8, 8]) add(box(0.2, 2.4, 0.2, TRIM(), x + dx, 4.2, side * (LANE_W + 14.5)));
     }
   }
-  crowd.count = ci;
-  keep(crowd);
-  add(crowd);
-  for (let x = -30; x < 450; x += 1.6)
-    for (const side of [1, -1]) {
-      const f = mesh(new THREE.PlaneGeometry(0.5, 0.4), lam(palette[Math.abs(Math.round(x / 1.6)) % palette.length]!), x, 3.9, side * (LANE_W + 6.2));
-      f.rotation.y = side > 0 ? 0 : Math.PI;
-      add(f);
-    }
 
   // scenery per strip
   const palm = (i: number, x: number, z: number): void => {
@@ -1298,12 +1341,17 @@ function buildWorld(env: EnvDef): World {
   }
 
   dispose.push(...mergeStatic(g, (o) => o.name === 'keep' || o instanceof THREE.InstancedMesh, { cast: false, receive: true }));
+  // the living layer goes on after the merge: it moves every frame
+  const alive = buildAlive({ laneW: LANE_W, stands: env.stands, far: env.far });
+  g.add(alive.group);
   return {
     group: g,
-    lamps,
+    tree: setTree,
     clouds,
+    alive,
     dispose() {
       for (const d of dispose) d.dispose();
+      alive.dispose();
     },
   };
 }
@@ -1351,8 +1399,10 @@ export class Stage3D {
   private camAim = new THREE.Vector3(8, 1, 0);
   private w = 1;
   private h = 1;
-  private smokeT = 0;
   private disposed = false;
+  private lastT = 0;
+  private shakeAmt = 0;
+  private fovKick = 0;
   /** The showcase camera, eased toward its focus (angle, distance, height, aim). */
   private show = { a: 0, d: 0, h: 0, ax: 0, ay: 0, ready: false };
 
@@ -1468,6 +1518,8 @@ export class Stage3D {
     rig.group.rotation.z = lerp(rig.group.rotation.z, s.v > 0.5 && s.rpm / s.redline > 0.6 ? 0.018 : 0, 0.1);
     const frac = s.rpm / s.redline;
     for (const f of rig.flames) f.visible = frac > 0.86 && !s.dead && Math.sin(t * 60) > -0.3;
+    const popping = (rig.popUntil ?? -1) > t;
+    for (const p of rig.pops ?? []) p.visible = popping && Math.sin(t * 90) > -0.5;
     if (rig.shiftLamp) rig.shiftLamp.emissive.set(frac > 0.88 && Math.sin(t * 40) > 0 ? '#ff2a1a' : '#000000');
     for (const m of rig.smoke) {
       if (!m.visible) continue;
@@ -1478,14 +1530,14 @@ export class Stage3D {
       mt.opacity -= 0.8 * dt;
       if (mt.opacity <= 0) m.visible = false;
     }
-    if ((s.spinning || s.dead) && t - this.smokeT > 0.05) {
-      this.smokeT = t;
+    if ((s.spinning || s.dead) && t - (rig.smokeT ?? -1) > (s.v < 2 ? 0.025 : 0.05)) {
+      rig.smokeT = t;
       const m = rig.smoke.find((x) => !x.visible);
       if (m) {
         const mt = m.material as THREE.MeshBasicMaterial;
         mt.color.set(s.dead ? '#444444' : '#f4f4f4');
-        mt.opacity = 0.5;
-        m.scale.setScalar(0.5);
+        mt.opacity = 0.62;
+        m.scale.setScalar(s.v < 2 ? 0.8 : 0.5);
         m.visible = true;
         m.position.set(s.dead ? rig.len * 0.3 : -rig.len * 0.35, s.dead ? 1.2 : 0.3, (Math.random() - 0.5) * 1.6);
       }
@@ -1503,9 +1555,37 @@ export class Stage3D {
     }
   }
 
-  /** Draws one race frame from behind the player's car (or from a fixed camera, for pictures). */
-  renderRace(cars: CarState[], ambers: number, green: boolean, t: number, dt: number, fixed?: FixedCamera): void {
+  /** A jolt for the camera: a little shake and a short widening of the view (the launch, a perfect shift, the finish). */
+  kick(strength = 1): void {
+    this.shakeAmt = Math.max(this.shakeAmt, 0.16 * strength);
+    this.fovKick = Math.max(this.fovKick, 7 * strength);
+  }
+
+  /** An exhaust pop on a car (a shift). */
+  pop(i: number): void {
+    const rig = this.cars[i];
+    if (rig) rig.popUntil = this.lastT + 0.14;
+  }
+
+  /** Confetti cannons just ahead of a car (a win). */
+  confetti(i = 0): void {
+    const rig = this.cars[i];
+    if (rig && this.world) this.world.alive.confetti(rig.group.position.x + 9);
+  }
+
+  /** The marshals at the line: arms up at green, down again after. */
+  marshals(up: boolean): void {
+    this.world?.alive.marshals(up);
+  }
+
+  /**
+   * Draws one race frame: the intro orbit around both cars at the line, then the chase camera behind
+   * your car (it holds at the line for a moment at the launch, so the cars pull away from it). A
+   * fixed camera is for pictures.
+   */
+  renderRace(cars: CarState[], tree: TreeState, t: number, dt: number, fixed?: FixedCamera, view: RaceView = {}): void {
     if (!this.world) this.setEnv('e-bay');
+    this.lastT = t;
     for (let i = 0; i < LANES; i++) {
       const c = cars[i];
       if (c) this.placeCar(i, c, dt, t);
@@ -1513,24 +1593,46 @@ export class Stage3D {
     }
     for (let i = 0; i < cars.length; i++) if (this.cars[i]) this.cars[i]!.group.visible = true;
     const me = cars[0]!;
-    this.world!.lamps.forEach((m, i) => {
-      const on = i < 3 ? ambers > i && !green : i === 3 ? green : false;
-      m.emissive.set(on ? (m.userData.on as string) : '#000000');
-      m.color.set(on ? (m.userData.on as string) : '#3a3845');
-    });
+    this.world!.tree(tree);
     this.world!.clouds.position.x += dt * 1.5;
+    this.world!.alive.update(t, dt, view.excite ?? 0, me.x);
     this.setFrame('center');
     const narrow = this.w < this.h;
-    // pulled back and up far enough to see the rivals in the next lanes (all five in landscape)
-    const back = (narrow ? 13.5 : 11.5) + Math.min(4, me.v * 0.04);
-    const target = new THREE.Vector3(me.x - back, (narrow ? 6.0 : 4.5) + Math.min(1, me.v * 0.01), 0);
-    const aim = new THREE.Vector3(me.x + (narrow ? 16 : 14), 0.5, 0);
-    const k = Math.min(1, dt * 6);
-    this.camPos.lerp(target, k);
-    this.camAim.lerp(aim, k);
+    // centred between the two lanes, high and far enough to keep both cars in view
+    const back = (narrow ? 12.5 : 10.5) + Math.min(4, me.v * 0.04);
+    const chasePos = new THREE.Vector3(me.x - back, (narrow ? 5.2 : 4.0) + Math.min(1, me.v * 0.01), 0);
+    const chaseAim = new THREE.Vector3(me.x + (narrow ? 16 : 14), 0.5, 0);
+    if (view.intro !== undefined && view.intro !== null) {
+      // the intro: from low in front of your car, round its outside (never past the tree or into the
+      // tyre wall) and up to the chase position
+      const p = Math.min(1, Math.max(0, view.intro));
+      const e = p * p * (3 - 2 * p);
+      const cx = me.x;
+      const cz = LANE_Z[0];
+      const a0 = Math.atan2(-1.7, 7);
+      const a1 = Math.atan2(chasePos.z - cz, chasePos.x - cx) - Math.PI * 2;
+      const r0 = Math.hypot(7, 1.7);
+      const r1 = Math.hypot(chasePos.x - cx, chasePos.z - cz);
+      const a = a0 + (a1 - a0) * e;
+      const r = r0 + (r1 - r0) * e;
+      this.camPos.set(cx + Math.cos(a) * r, 1.1 + (chasePos.y - 1.1) * e + Math.sin(p * Math.PI) * 1.8, Math.max(-LANE_W - 1.2, cz + Math.sin(a) * r));
+      this.camAim.set(cx + 0.5, 0.8, cz).lerp(chaseAim, e * e);
+    } else {
+      // the launch: the camera stays back for a moment and then catches the car up
+      const k = Math.min(1, dt * (me.x < 40 ? 1.4 + me.x * 0.12 : 6));
+      this.camPos.lerp(chasePos, k);
+      this.camAim.lerp(chaseAim, Math.min(1, k * 1.5));
+    }
     this.camera.position.copy(this.camPos);
+    if (this.shakeAmt > 0.001) {
+      this.camera.position.x += (Math.random() - 0.5) * this.shakeAmt;
+      this.camera.position.y += (Math.random() - 0.5) * this.shakeAmt;
+      this.camera.position.z += (Math.random() - 0.5) * this.shakeAmt;
+      this.shakeAmt *= Math.exp(-dt * 7);
+    }
     this.camera.lookAt(this.camAim);
-    this.camera.fov = (narrow ? 64 : 54) + Math.min(10, me.v * 0.09);
+    this.camera.fov = (narrow ? 62 : 52) + Math.min(10, me.v * 0.09) + this.fovKick;
+    this.fovKick *= Math.exp(-dt * 4);
     if (fixed) {
       this.camera.position.set(...fixed.pos);
       this.camera.lookAt(...fixed.aim);
@@ -1556,6 +1658,7 @@ export class Stage3D {
       rig.group.rotation.z = 0;
     }
     this.world!.clouds.position.x += cloudDt;
+    if (cloudDt > 0) this.world!.alive.update(performance.now() / 1000, Math.min(0.1, cloudDt / 1.5), 0, SHOW_X);
     this.setFrame(framing);
     const len = rig?.len ?? 4.5;
     const fov = framing === 'thumb' ? 30 : 38;
