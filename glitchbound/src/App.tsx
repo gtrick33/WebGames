@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { getGame } from './catalog/catalog';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Footer } from './components/Footer';
@@ -23,7 +23,6 @@ import { DiscordBar } from './discord/DiscordBar';
 import { track } from './platform/analytics';
 import { useAccount } from './platform/account';
 import { useEmbedHost } from './platform/embed';
-import { isIos, isStandalone } from './platform/install';
 import { DISCORD } from './platform/env';
 import { useLiveCatalog } from './platform/liveCatalog';
 import { visitInfo } from './platform/visit';
@@ -33,7 +32,6 @@ import { fresh } from './platform/freshBuild';
 // Pages most visitors never open are separate chunks, so the first load stays small on any phone.
 // Not needed for the first paint: loads right after it (it registers the "Rate this game" opener).
 const FeedbackPrompt = lazy(fresh(() => import('./components/FeedbackPrompt').then((m) => ({ default: m.FeedbackPrompt }))));
-const InstallPrompt = lazy(fresh(() => import('./components/InstallPrompt').then((m) => ({ default: m.InstallPrompt }))));
 // Preloaded wherever it is likely next, so a game page doesn't wait for it (pages/loadGamePage.ts).
 const GamePage = lazy(gamePageModule);
 const DailyPage = lazy(fresh(() => import('./pages/DailyPage').then((m) => ({ default: m.DailyPage }))));
@@ -103,8 +101,6 @@ export function App() {
   const { pathname } = useLocation();
   // Inside the Discord Activity the arcade's header and footer give way to a slim bar.
   const embedded = !!useEmbedHost();
-  // iPhone and iPad in Safari: Safari's bars can only go by playing from the Home Screen app
-  const [safariTab] = useState(() => isIos() && !isStandalone());
   useEffect(() => {
     track('page_view', { path: matchRoute(pathname).name, ...visitInfo() });
   }, [pathname]);
@@ -149,7 +145,6 @@ export function App() {
       <MusicControl />
       <Suspense fallback={null}>
         <FeedbackPrompt />
-        {safariTab && !embedded && <InstallPrompt />}
       </Suspense>
       <SeasonLayer />
     </>

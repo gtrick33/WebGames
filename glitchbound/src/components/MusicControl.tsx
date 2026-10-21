@@ -91,7 +91,7 @@ export function MusicControl() {
               ))}
             </div>
           </section>
-          {!install.standalone && (install.ios || install.canPrompt) && (
+          {!install.standalone && (
             <section className="set-block">
               <p className="set-head mono">{t('Full screen app')}</p>
               {install.canPrompt && (
