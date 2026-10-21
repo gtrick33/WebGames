@@ -456,3 +456,67 @@
 .stage-paused-msg strong {
   font-size: 24px;
 }
+
+/* After a round: the one next step (today's challenge, a flagship, a themed or similar game, or another go). */
+.next-up {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1.5px dashed var(--line);
+}
+.next-up-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--fg);
+  text-decoration: none;
+  box-shadow: var(--hard-sm);
+  transition:
+    transform 0.2s var(--spring),
+    box-shadow 0.2s var(--spring),
+    border-color 0.2s;
+}
+.next-up-link:hover,
+.next-up-link:focus-visible {
+  transform: translate(-2px, -2px);
+  border-color: var(--accent);
+  box-shadow: var(--hard);
+}
+.next-up-link img {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  object-fit: cover;
+}
+.next-up-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.next-up-text strong {
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+.next-up-text span {
+  font-size: 13px;
+  color: var(--fg-2);
+}
+.next-up-link > svg {
+  flex: none;
+  color: var(--accent, var(--cyan-text));
+}
+.next-up .btn {
+  justify-self: start;
+}
+@media (prefers-reduced-motion: reduce) {
+  .next-up-link {
+    transition: none;
+  }
+}

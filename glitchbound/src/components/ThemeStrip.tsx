@@ -7,22 +7,26 @@ import { Link } from '../router/router';
 import { Icon } from './Icon';
 import './ThemeStrip.css';
 
-/** "Today is Trivia Tuesday": the day's theme, its games, and what to do about it. */
-export function ThemeStrip() {
+/**
+ * "Today is Trivia Tuesday": the day's theme, its games, and what to do about it. `embedded` renders
+ * it as the header of a larger section (no page gutter of its own, one heading level down).
+ */
+export function ThemeStrip({ embedded = false }: { embedded?: boolean }) {
   const t = useT();
   const live = useLiveCatalog();
   const day = dayKey(useNow(60_000));
   const theme = themeOf(day);
   const games = themeGames(theme, live.games.filter((g) => !live.settings(g.slug).maintenance)).slice(0, 3);
   const first = games[0];
+  const Name = embedded ? 'h3' : 'h2';
   return (
-    <section className="wrap theme-strip" data-theme-day={theme.id} aria-label={t('Today’s theme')}>
+    <section className={`${embedded ? '' : 'wrap '}theme-strip${embedded ? ' is-embedded' : ''}`} data-theme-day={theme.id} aria-label={t('Today’s theme')}>
       <span className="theme-emoji" aria-hidden="true">
         {theme.emoji}
       </span>
       <div className="theme-copy">
         <p className="theme-kicker mono">{t('Today is')}</p>
-        <h2 className="theme-name">{t(theme.name)}</h2>
+        <Name className="theme-name">{t(theme.name)}</Name>
         <p className="theme-tag">{t(theme.tagline)}</p>
       </div>
       {games.length > 0 && (

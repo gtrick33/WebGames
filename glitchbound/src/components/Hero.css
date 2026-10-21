@@ -88,50 +88,6 @@
   display: grid;
   gap: 12px;
 }
-/* Six games right in the first screen: the art does the talking. */
-.intro-shelf {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-.intro-shelf-tile {
-  display: grid;
-  overflow: hidden;
-  border: 2px solid var(--ink);
-  border-radius: 14px;
-  color: var(--fg);
-  text-decoration: none;
-  box-shadow: var(--hard-sm);
-  transition: transform 0.3s var(--spring), box-shadow 0.3s;
-  animation: pop-in 0.6s var(--spring) both;
-}
-.intro-shelf-tile:nth-child(2) { animation-delay: 0.04s; }
-.intro-shelf-tile:nth-child(3) { animation-delay: 0.08s; }
-.intro-shelf-tile:nth-child(4) { animation-delay: 0.12s; }
-.intro-shelf-tile:nth-child(5) { animation-delay: 0.16s; }
-.intro-shelf-tile:nth-child(6) { animation-delay: 0.2s; }
-.intro-shelf-tile:hover,
-.intro-shelf-tile:focus-visible {
-  transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--ink);
-}
-.intro-shelf-tile img {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-}
-.intro-shelf-tile span {
-  overflow: hidden;
-  padding: 5px 8px 6px;
-  border-top: 2px solid var(--ink);
-  background: var(--surface);
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
 .intro-card {
   display: flex;
   align-items: center;
@@ -231,13 +187,6 @@
   .intro-ctas .btn {
     flex: 1 1 auto;
     justify-content: center;
-  }
-  .intro-shelf {
-    gap: 8px;
-  }
-  .intro-shelf-tile span {
-    padding: 4px 6px 5px;
-    font-size: 12px;
   }
   /* Status cards become a swipeable row so the catalogue starts right below. */
   .intro-cards {

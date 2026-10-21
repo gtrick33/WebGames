@@ -1893,6 +1893,18 @@ const ro: string[] = [
   'Atinge butonul Partajează din Safari',
   'Alege „Adaugă pe ecranul principal”',
   'Deschide GlitchBound de pe ecranul principal: tot ecranul, fără barele browserului',
+  'Începe aici',
+  'Cele mai bune jocuri ale noastre',
+  'Patru de care să te prinzi. Fiecare are un puzzle nou în fiecare zi.',
+  'Azi',
+  '{a} din {b} zilnice făcute',
+  'Te mai așteaptă azi',
+  'Urmează',
+  'Provocarea de azi te așteaptă',
+  'Unul dintre cele mai bune ale noastre, nou pentru tine',
+  'Alegerea pentru {theme}',
+  'Mai multe ca {game}',
+  'Încă o încercare la provocarea de azi',
 ];
 
 export default ro;

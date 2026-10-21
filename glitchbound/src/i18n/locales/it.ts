@@ -1893,6 +1893,18 @@ const it: string[] = [
   'Tocca il pulsante Condividi di Safari',
   'Scegli «Aggiungi alla schermata Home»',
   'Apri GlitchBound dalla schermata Home: schermo intero, senza barre del browser',
+  'Inizia da qui',
+  'I nostri giochi migliori',
+  'Quattro da cui farsi prendere. Ognuno ha un nuovo rompicapo ogni giorno.',
+  'Oggi',
+  '{a} di {b} giornalieri fatti',
+  'Ti aspettano ancora oggi',
+  'Prossimo',
+  'La sfida di oggi ti aspetta',
+  'Uno dei nostri migliori, nuovo per te',
+  'Scelta per {theme}',
+  'Altri come {game}',
+  'Un altro tentativo alla sfida di oggi',
 ];
 
 export default it;

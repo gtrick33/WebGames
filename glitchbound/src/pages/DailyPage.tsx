@@ -2,6 +2,7 @@ import { DailyCard } from '../components/DailyCard';
 import { Icon } from '../components/Icon';
 import { addDays } from '../platform/dates';
 import { DAILY_HISTORY_DAYS, doneDays } from '../platform/save';
+import { ThemeStrip } from '../components/ThemeStrip';
 import { TodaysDailies } from '../components/TodaysDailies';
 import { useDaily, useNow } from '../platform/hooks';
 import { usePageMeta } from '../platform/meta';
@@ -47,6 +48,10 @@ export function DailyPage() {
       <p className="info-lead">{t('One challenge a day, the same for everyone. Clear it in a single round, keep your streak alive, and share the result without spoiling anything.')}</p>
 
       <DailyCard variant="page" headingLevel={2} />
+
+      <div className="daily-theme">
+        <ThemeStrip embedded />
+      </div>
 
       <TodaysDailies headingLevel={2} />
 

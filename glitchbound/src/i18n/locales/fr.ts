@@ -1893,6 +1893,18 @@ const fr: string[] = [
   'Touchez le bouton Partager de Safari',
   'Choisissez « Sur l’écran d’accueil »',
   'Ouvrez GlitchBound depuis l’écran d’accueil : plein écran, sans barres du navigateur',
+  'Commence ici',
+  'Nos meilleurs jeux',
+  'Quatre pour y prendre goût. Chacun a une nouvelle énigme chaque jour.',
+  'Aujourd’hui',
+  '{a} défis quotidiens sur {b} faits',
+  'T’attendent encore aujourd’hui',
+  'Ensuite',
+  'Le défi du jour t’attend',
+  'Un de nos meilleurs, nouveau pour toi',
+  'Choix {theme}',
+  'Dans le genre de {game}',
+  'Encore un essai au défi du jour',
 ];
 
 export default fr;

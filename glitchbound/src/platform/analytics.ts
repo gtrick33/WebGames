@@ -20,6 +20,7 @@ export type AnalyticsEvent =
   | 'category_select'
   | 'mood_select'
   | 'surprise_me'
+  | 'next_up'
   | 'game_error'
   | 'favorite'
   | 'sign_in'

@@ -680,3 +680,8 @@
     font-size: 22px;
   }
 }
+
+/* The daily page: the day's theme between the challenge and the list of every daily. */
+.daily-theme {
+  margin-top: 28px;
+}

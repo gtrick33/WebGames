@@ -1893,6 +1893,18 @@ const tr: string[] = [
   'Safari’nin Paylaş düğmesine dokun',
   '“Ana Ekrana Ekle”yi seç',
   'GlitchBound’u ana ekranından aç: tam ekran, tarayıcı çubukları yok',
+  'Buradan başla',
+  'En iyi oyunlarımız',
+  'Bağlanacağın dört oyun. Her birinde her gün yeni bir bulmaca.',
+  'Bugün',
+  '{b} günlükten {a} tamamlandı',
+  'Bugün seni hâlâ bekliyor',
+  'Sıradaki',
+  'Bugünün mücadelesi seni bekliyor',
+  'En iyilerimizden biri, senin için yeni',
+  '{theme} seçimi',
+  '{game} gibi daha fazlası',
+  'Bugünün mücadelesine bir deneme daha',
 ];
 
 export default tr;

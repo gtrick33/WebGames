@@ -1893,6 +1893,18 @@ const pl: string[] = [
   'Stuknij przycisk Udostępnij w Safari',
   'Wybierz „Do ekranu początkowego”',
   'Otwórz GlitchBound z ekranu początkowego: pełny ekran, bez pasków przeglądarki',
+  'Zacznij tutaj',
+  'Nasze najlepsze gry',
+  'Cztery, od których trudno się oderwać. Każda ma nową zagadkę co dzień.',
+  'Dziś',
+  '{a} z {b} dziennych zrobione',
+  'Czekają jeszcze dziś na ciebie',
+  'Dalej',
+  'Dzisiejsze wyzwanie czeka',
+  'Jedna z naszych najlepszych, nowa dla ciebie',
+  'Wybór na {theme}',
+  'Podobne do {game}',
+  'Jeszcze jedna próba w dzisiejszym wyzwaniu',
 ];
 
 export default pl;

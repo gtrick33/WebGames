@@ -21,6 +21,9 @@ const ChallengeDock = lazy(fresh(() => import('../components/Challenge').then((m
 const ChallengeScores = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeScores }))));
 import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
+import { nextStep } from '../platform/nextStep';
+import { useFlagships } from '../platform/useFlagships';
+import { recentSlugs } from '../platform/save';
 // The leaderboard tab loads its data from the network anyway, so its code comes with it (its styles stay
 // in the main sheet: admin tables share them).
 import '../components/Leaderboard.css';
@@ -350,7 +353,10 @@ export function GamePage({ game }: { game: GameEntry }) {
   const scoreUnit = game.stats.find((s) => s.key === 'score')?.unit;
   const live = useLiveCatalog();
   const related = relatedGames(game, 4, live.games);
-  const isDailyGame = challengeForDay(dayKey(), GAMES)?.game.slug === game.slug;
+  const todayKey = dayKey();
+  const todayChallenge = challengeForDay(todayKey, GAMES);
+  const isDailyGame = todayChallenge?.game.slug === game.slug;
+  const { list: flagships, theme } = useFlagships();
   const { me } = useAccount();
   const settings = live.settings(game.slug);
   // An admin paused the game: players see the message instead of the stage (admins and QA can still test it).
@@ -478,6 +484,18 @@ export function GamePage({ game }: { game: GameEntry }) {
     setChallenging(false);
     if (err) flashShare(err);
   };
+
+  // After a round: where to go next, so one game leads to another (today's challenge first).
+  const next = last
+    ? nextStep({
+        game,
+        games: live.games.filter((g) => !live.settings(g.slug).maintenance),
+        daily: todayChallenge ? { game: todayChallenge.game, done: save.daily[todayKey]?.done ?? false } : null,
+        flagships: flagships.map((f) => f.game),
+        played: new Set(recentSlugs(save)),
+        theme,
+      })
+    : null;
 
   return (
     <div className="game-page" data-accent={game.accent}>
@@ -626,6 +644,33 @@ export function GamePage({ game }: { game: GameEntry }) {
                   <Icon name="share" size={18} /> {t('Share score')}
                 </button>
               </div>
+              {next && (
+                <div className="next-up">
+                  <p className="eyebrow">{t('Next up')}</p>
+                  {next.kind === 'again' ? (
+                    <button className="btn btn-sm btn-ink" onClick={restart}>
+                      <Icon name="restart" size={18} /> {next.daily ? t('One more try at today’s challenge') : t('Play again')}
+                    </button>
+                  ) : (
+                    <Link href={`/games/${next.game.slug}`} className="next-up-link" data-accent={next.game.accent} onClick={() => track('next_up', { from: game.slug, to: next.game.slug, why: next.kind })}>
+                      <img src={next.game.art.tile} alt="" width={48} height={48} style={{ background: next.game.art.bg }} />
+                      <span className="next-up-text">
+                        <strong>{next.game.title}</strong>
+                        <span>
+                          {next.kind === 'daily'
+                            ? t('Today’s challenge is waiting')
+                            : next.kind === 'flagship'
+                              ? t('One of our best, and new to you')
+                              : next.kind === 'theme'
+                                ? t('{theme} pick', { theme: t(next.theme.name) })
+                                : t('More like {game}', { game: game.title })}
+                        </span>
+                      </span>
+                      <Icon name="play" size={20} />
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

@@ -9,7 +9,6 @@ import { Icon } from './Icon';
 import { Dot, Star, Tri } from './Shapes';
 import { SurpriseButton } from './Surprise';
 import { latestGame } from '../catalog/catalog';
-import { orderByLayout } from '../catalog/settings';
 import { activeHoliday } from '../platform/seasons';
 import './Hero.css';
 
@@ -32,8 +31,9 @@ function useGlitchPulse(): boolean {
 }
 
 /**
- * The compact intro above the catalogue: brand line on the left; on the right a shelf of six games
- * (so the first screen shows games, not just words), today's challenge and, for members, their level.
+ * The compact intro above the catalogue: brand line, today's pick and Surprise me on the left; on the
+ * right today's challenge and, for members, their level. The games themselves start right below
+ * (the flagship row), so the hero stays short.
  */
 export function Hero() {
   const t = useT();
@@ -41,10 +41,6 @@ export function Hero() {
   const gameCount = live.games.length;
   // Today's pick: an admin's spotlight, else the newest game.
   const pick = live.spotlight ?? latestGame(live.games);
-  // The admins' first six games (today's pick is already a button).
-  const shelf = orderByLayout(live.games, live.layout)
-    .filter((g) => g.slug !== pick?.slug)
-    .slice(0, 6);
   const glitching = useGlitchPulse();
   const now = useNow(1000);
   const holiday = activeHoliday(live.raw.season, dayKey(now));
@@ -87,14 +83,6 @@ export function Hero() {
       </div>
 
       <div className="intro-side">
-        <nav className="intro-shelf" aria-label={t('Featured')}>
-          {shelf.map((g) => (
-            <Link key={g.slug} href={`/games/${g.slug}`} className="intro-shelf-tile" style={{ background: g.art.bg }}>
-              <img src={g.art.tile} alt="" width={160} height={120} decoding="async" />
-              <span>{g.title}</span>
-            </Link>
-          ))}
-        </nav>
         <div className="intro-cards">
           {daily && (
             <Link href="/daily" className={`intro-card intro-daily${daily.done ? ' is-done' : ''}`}>

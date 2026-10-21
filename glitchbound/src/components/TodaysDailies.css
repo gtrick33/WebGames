@@ -274,3 +274,26 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---------------------------------------------- home page: the Today section */
+.today-featured {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+  margin-bottom: 26px;
+}
+.today-featured .daily {
+  margin: 0;
+}
+.today-more {
+  display: grid;
+  gap: 4px;
+}
+.today-more-label {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}

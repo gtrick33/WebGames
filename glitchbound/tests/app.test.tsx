@@ -19,12 +19,25 @@ function renderAt(path: string) {
 }
 
 describe('homepage', () => {
-  it('renders the hero, today’s pick, today’s dailies and the arcade', () => {
+  it('renders the hero, today’s pick, the flagships, Today and the arcade', async () => {
     renderAt('/');
     expect(screen.getByRole('heading', { level: 1, name: /Small games\.\s*Big obsessions\./ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Today’s pick/ }).getAttribute('href')).toMatch(/^\/games\//);
     expect(screen.getAllByRole('button', { name: /Surprise me/ }).length).toBeGreaterThan(0);
-    expect(screen.getByRole('heading', { level: 2, name: 'Today’s dailies' })).toBeTruthy();
+    // Start here: the four flagships, each one link.
+    const start = screen.getByRole('region', { name: 'Our best games' });
+    const flagships = within(start).getAllByRole('link').map((a) => a.getAttribute('href'));
+    expect(flagships).toHaveLength(4);
+    expect(flagships.sort()).toEqual(['/games/color-recall', '/games/launch-control', '/games/letter-pinch', '/games/wait-what']);
+    // Today: the day's theme, the daily challenge and the link to every daily.
+    const today = screen.getByRole('region', { name: 'Today' });
+    expect(within(today).getByText('Today is')).toBeTruthy();
+    expect(within(today).getByText(/^Today’s challenge/)).toBeTruthy();
+    expect(within(today).getByRole('link', { name: /Play today’s challenge|Play again/ }).getAttribute('href')).toMatch(/^\/games\//);
+    expect(within(today).getByRole('link', { name: /All dailies/ }).getAttribute('href')).toBe('/daily');
+    // Party Mode shows its two featured games (their cards load after the first paint).
+    const party = screen.getByRole('region', { name: 'Party Mode' });
+    await waitFor(() => expect(within(party).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/party?play=impostor'));
     const arcade = screen.getByRole('region', { name: 'The arcade' });
     expect(within(arcade).getByRole('link', { name: 'Neon Rush' }).getAttribute('href')).toBe('/games/neon-rush');
   });
@@ -132,6 +145,11 @@ describe('game page', () => {
     });
     expect(screen.getByText('Last round')).toBeTruthy();
     expect(screen.getByText(/You beat/)).toBeTruthy();
+    // ...and offers one next step (today's challenge, a flagship, a themed or similar game, or another go).
+    expect(screen.getByText('Next up')).toBeTruthy();
+    const nextUp = document.querySelector('.next-up a, .next-up button')!;
+    expect(nextUp).toBeTruthy();
+    if (nextUp.tagName === 'A') expect(nextUp.getAttribute('href')).toMatch(/^\/games\/(?!neon-rush)/);
     const save = JSON.parse(localStorage.getItem(SAVE_KEY)!);
     expect(save.games['neon-rush']).toMatchObject({ plays: 1, best: { score: 321, meters: 250, coins: 7, nearMisses: 1 } });
   });

@@ -15,6 +15,10 @@
   color: #1d1238;
   box-shadow: var(--hard);
 }
+/* As the header of the home page's Today section it sits flush with the daily card below. */
+.theme-strip.is-embedded {
+  margin: 0;
+}
 .theme-strip[data-theme-day='chill'] { --t1: #b6e62c; --t2: #12c6b3; }
 .theme-strip[data-theme-day='rush'] { --t1: #ffd12e; --t2: #ff6a1a; }
 .theme-strip[data-theme-day='trivia'] { --t1: #ffe066; --t2: #ff8fc8; }

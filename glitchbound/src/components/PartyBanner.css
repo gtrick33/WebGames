@@ -39,3 +39,70 @@
   font-weight: 700;
   box-shadow: 3px 3px 0 #1d1238;
 }
+
+/* The two featured party games, right under the banner. */
+.party-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 14px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.party-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-lg);
+  color: #1d1238;
+  text-decoration: none;
+  box-shadow: var(--hard-sm);
+  transition: transform 0.25s var(--spring), box-shadow 0.25s var(--spring);
+}
+.party-card:hover,
+.party-card:focus-visible {
+  transform: translate(-2px, -3px);
+  box-shadow: var(--hard);
+}
+.party-card img,
+.party-card-emoji {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  background: #fffaf2;
+  font-size: 38px;
+}
+.party-card-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.party-card-text strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.party-card-text > span {
+  font-size: 14px;
+  font-weight: 600;
+}
+.party-card-meta {
+  font-size: 12px;
+  opacity: 0.85;
+}
+@media (prefers-reduced-motion: reduce) {
+  .party-banner:hover,
+  .party-card:hover {
+    transform: none;
+  }
+}

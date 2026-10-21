@@ -6,20 +6,24 @@ import { track } from '../platform/analytics';
 import { dayKey, formatCountdown, msUntilMidnight } from '../platform/dates';
 import { streakState, sweepShare } from '../platform/engage';
 import { SITE_URL } from '../platform/env';
-import { useNow } from '../platform/hooks';
+import { useDaily, useNow } from '../platform/hooks';
 import { shareOrCopy } from '../platform/share';
 import { doneDays } from '../platform/save';
 import { useSave } from '../platform/store';
 import { Link } from '../router/router';
+import { useFlagships } from '../platform/useFlagships';
+import { DailyCard } from './DailyCard';
 import { Icon } from './Icon';
+import { ThemeStrip } from './ThemeStrip';
 import './TodaysDailies.css';
 
 /**
  * Every game's own daily puzzle in one strip, with what this player has finished today. Finishing
  * any of them (or the arcade challenge) keeps the shared streak alive. Hidden when no released game
- * has its own daily.
+ * has its own daily. `featured` is the home page's Today section: the day's theme on top, the daily
+ * challenge as the big card, and the flagship dailies still open as chips.
  */
-export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full' }: { headingLevel?: 2 | 3; games?: GameEntry[]; variant?: 'full' | 'row' }) {
+export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full' }: { headingLevel?: 2 | 3; games?: GameEntry[]; variant?: 'full' | 'row' | 'featured' }) {
   const live = useLiveCatalog();
   // Games an admin paused are left out of today's list.
   const games = (given ?? live.games).filter((g) => !live.settings(g.slug).maintenance);
@@ -28,6 +32,9 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
   const now = useNow(1000);
   const today = dayKey(now);
   const [shareMsg, setShareMsg] = useState('');
+  // Only the featured variant uses these; the hooks run every time so React sees the same order.
+  const daily = useDaily(now);
+  const flagships = useFlagships().list;
   const list = games.filter((g) => g.ownDaily && g.released <= today).sort((a, b) => a.title.localeCompare(b.title));
   if (list.length === 0) return null;
   const finished = new Set(save.gameDailies[today] ?? []);
@@ -44,7 +51,76 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
     setShareMsg(outcome === 'copied' ? t('Copied! Paste it anywhere.') : outcome === 'failed' ? t('Could not share from this browser.') : '');
   };
 
-  // The home page's one-line version: progress, streak, and every game's daily as a tappable icon.
+  const chip = (g: GameEntry) => {
+    const done = finished.has(g.slug);
+    return (
+      <li key={g.slug}>
+        <Link href={`/games/${g.slug}`} className={`today-chip${done ? ' is-done' : ''}`} data-accent={g.accent} title={`${g.title}: ${t(g.ownDaily!.label)}`}>
+          <span className="today-icon">
+            <img src={g.art.tile} alt="" width={60} height={60} loading="lazy" style={{ background: g.art.bg }} />
+            {done && (
+              <span className="today-check" aria-hidden="true">
+                ✓
+              </span>
+            )}
+          </span>
+          <span className="today-name">{g.title}</span>
+          <span className="sr-only">{done ? t('Done') : t('Play')}</span>
+        </Link>
+      </li>
+    );
+  };
+
+  // The home page's Today section: the theme as its header, the daily challenge as the big card, and
+  // the flagship dailies this player has not done yet as chips. The rest are one link away on /daily.
+  if (variant === 'featured') {
+    const listed = new Set(list.map((g) => g.slug));
+    const bandSlug = daily?.challenge.game.slug;
+    const chips = flagships.map((f) => f.game).filter((g) => listed.has(g.slug) && !finished.has(g.slug) && g.slug !== bandSlug);
+    return (
+      <section className="wrap today-featured" aria-labelledby="today-title">
+        <div className="today-head">
+          <H id="today-title" className="today-title">
+            {t('Today')}
+          </H>
+          <span className="mono today-meta">
+            {t('{a} of {b} dailies done', { a: doneCount, b: list.length })}
+            {streak > 0 && (
+              <>
+                {' · '}
+                <Icon name="flame" size={14} /> {streak}
+              </>
+            )}
+          </span>
+          <span className="today-links">
+            {doneCount > 0 && (
+              <button className="today-share" onClick={() => void share('home')}>
+                <Icon name="share" size={15} /> {t('Share today')}
+              </button>
+            )}
+            <Link href="/daily" className="today-all">
+              {t('All dailies')} <Icon name="arrowRight" size={16} />
+            </Link>
+          </span>
+        </div>
+        {shareMsg && (
+          <p className="today-msg" role="status">
+            {shareMsg}
+          </p>
+        )}
+        <ThemeStrip embedded />
+        <DailyCard variant="band" headingLevel={3} />
+        {chips.length > 0 && (
+          <div className="today-more">
+            <p className="today-more-label mono">{t('Also waiting for you today')}</p>
+            <ul className="today-list">{chips.map(chip)}</ul>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  // The one-line version: progress, streak, and every game's daily as a tappable icon.
   if (variant === 'row')
     return (
       <section className="wrap today-row" aria-labelledby="today-title">
@@ -80,27 +156,7 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
         <div className={`dailies-progress${all ? ' is-sweep' : ''}`} aria-hidden="true">
           <i style={{ width: `${(doneCount / list.length) * 100}%` }} />
         </div>
-        <ul className="today-list">
-          {list.map((g) => {
-            const done = finished.has(g.slug);
-            return (
-              <li key={g.slug}>
-                <Link href={`/games/${g.slug}`} className={`today-chip${done ? ' is-done' : ''}`} data-accent={g.accent} title={`${g.title}: ${t(g.ownDaily!.label)}`}>
-                  <span className="today-icon">
-                    <img src={g.art.tile} alt="" width={60} height={60} loading="lazy" style={{ background: g.art.bg }} />
-                    {done && (
-                      <span className="today-check" aria-hidden="true">
-                        ✓
-                      </span>
-                    )}
-                  </span>
-                  <span className="today-name">{g.title}</span>
-                  <span className="sr-only">{done ? t('Done') : t('Play')}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <ul className="today-list">{list.map(chip)}</ul>
       </section>
     );
 

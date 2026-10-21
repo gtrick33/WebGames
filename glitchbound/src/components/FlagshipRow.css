@@ -1,0 +1,163 @@
+/* "Start here": the four flagship games, the biggest cards on the home page. */
+.flagships {
+  margin-top: clamp(14px, 2.6vw, 30px);
+  margin-bottom: clamp(26px, 4vw, 44px);
+}
+.flagships-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 6px 24px;
+  margin-bottom: 16px;
+}
+.flagships-title {
+  margin: 4px 0 0;
+  font-size: clamp(28px, 3.6vw, 44px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.flagships-sub {
+  max-width: 40ch;
+  margin: 0;
+  color: var(--fg-2);
+}
+.flagship-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(14px, 1.8vw, 24px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.flagship {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  box-shadow: var(--hard);
+  transition:
+    transform 0.35s var(--spring),
+    box-shadow 0.35s var(--spring);
+}
+.flagship:hover,
+.flagship:focus-within {
+  transform: translate(-3px, -4px);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 30px color-mix(in srgb, var(--accent) 35%, transparent),
+    9px 10px 0 var(--ink);
+}
+.flagship:active {
+  transform: translate(2px, 2px);
+  transition-duration: 0.08s;
+}
+.flagship-art {
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-bottom: 2px solid var(--ink);
+}
+.flagship-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--out);
+}
+.flagship:hover .flagship-art img {
+  transform: scale(1.05);
+}
+.flagship-sticker {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  gap: 6px;
+  grid-auto-flow: column;
+  transform: rotate(-3deg);
+  box-shadow: var(--hard-sm);
+}
+.flagship-body {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 8px;
+  padding: 14px 16px 16px;
+}
+.flagship-title {
+  margin: 0;
+  font-size: clamp(20px, 1.8vw, 26px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.flagship-link {
+  color: inherit;
+  text-decoration: none;
+}
+/* The whole card opens the game. */
+.flagship-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-lg);
+}
+.flagship-link:focus-visible {
+  outline: none;
+}
+.flagship:focus-within {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.flagship-tag {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.35;
+  color: var(--fg-2);
+}
+.flagship-play {
+  align-self: end;
+  justify-self: start;
+  margin-top: 4px;
+}
+@media (max-width: 1020px) {
+  .flagship-tag {
+    font-size: 13.5px;
+  }
+}
+@media (max-width: 720px) {
+  .flagships-sub {
+    display: none;
+  }
+  .flagship-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .flagship-body {
+    gap: 6px;
+    padding: 12px 12px 14px;
+  }
+  .flagship-title {
+    font-size: 18px;
+  }
+  .flagship-tag {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 13px;
+  }
+  .flagship-sticker {
+    top: 8px;
+    left: 8px;
+    padding: 5px 8px 4px;
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flagship,
+  .flagship-art img {
+    transition: none;
+  }
+}

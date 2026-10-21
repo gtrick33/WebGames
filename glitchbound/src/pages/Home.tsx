@@ -2,11 +2,10 @@ import { lazy, Suspense } from 'react';
 import { useAccount } from '../platform/account';
 import { AdSlot } from '../components/AdSlot';
 import { Arcade } from '../components/Arcade';
+import { FlagshipRow } from '../components/FlagshipRow';
 import { FreeBanner } from '../components/FreeBanner';
 import { Hero } from '../components/Hero';
-import { LaunchControlBanner } from '../components/LaunchControlBanner';
 import { PartyBanner } from '../components/PartyBanner';
-import { ThemeStrip } from '../components/ThemeStrip';
 import { TodaysDailies } from '../components/TodaysDailies';
 import { YourArcade } from '../components/Sections';
 import { usePageMeta } from '../platform/meta';
@@ -18,10 +17,10 @@ const QuestBoard = lazy(fresh(() => import('../components/Quests').then((m) => (
 const NotifyForm = lazy(fresh(() => import('../components/Notify').then((m) => ({ default: m.NotifyForm }))));
 
 /**
- * Kept short on purpose: what to play now (today's pick, Surprise me, six games, the Launch Control spotlight, the theme
- * of the day, today's dailies),
- * then the games by mood. Newcomers get the free-and-no-sign-up promise right after the games; members see their quests.
- * The daily challenge in full lives on /daily.
+ * One clear path for a newcomer: the hero (today's pick, Surprise me), the four flagship games, then
+ * Today (the day's theme, the daily challenge and the flagship dailies still open), then every game
+ * by mood and Party Mode. Returning devices get "Continue playing" below; guests the free-and-no-sign-up
+ * promise, members their quests. The daily challenge in full lives on /daily.
  */
 export function Home() {
   usePageMeta({ path: '/' });
@@ -30,13 +29,12 @@ export function Home() {
   return (
     <>
       <Hero />
-      <LaunchControlBanner />
-      <ThemeStrip />
-      <TodaysDailies variant="row" headingLevel={2} />
+      <FlagshipRow />
+      <TodaysDailies variant="featured" headingLevel={2} />
       <Arcade />
+      <PartyBanner />
       {!me && <FreeBanner />}
       <YourArcade />
-      <PartyBanner />
       <Suspense fallback={null}>
         {me && (
           <div className="wrap section">

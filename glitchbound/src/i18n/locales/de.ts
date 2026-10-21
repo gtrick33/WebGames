@@ -1893,6 +1893,18 @@ const de: string[] = [
   'Tippe in Safari auf Teilen',
   'Wähle „Zum Home-Bildschirm“',
   'Öffne GlitchBound vom Home-Bildschirm: Vollbild, ohne Browserleisten',
+  'Hier starten',
+  'Unsere besten Spiele',
+  'Vier zum Hängenbleiben. Jedes hat jeden Tag ein neues Rätsel.',
+  'Heute',
+  '{a} von {b} Tagesrätseln geschafft',
+  'Warten heute noch auf dich',
+  'Als Nächstes',
+  'Die heutige Challenge wartet',
+  'Eines unserer besten, neu für dich',
+  'Tipp für {theme}',
+  'Mehr wie {game}',
+  'Noch ein Versuch bei der heutigen Challenge',
 ];
 
 export default de;

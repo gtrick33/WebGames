@@ -1893,6 +1893,18 @@ const nl: string[] = [
   'Tik op de Deel-knop van Safari',
   'Kies ‘Zet op beginscherm’',
   'Open GlitchBound vanaf je beginscherm: volledig scherm, zonder browserbalken',
+  'Begin hier',
+  'Onze beste games',
+  'Vier om aan verslingerd te raken. Elke dag een nieuwe puzzel in elk.',
+  'Vandaag',
+  '{a} van {b} dagelijkse gedaan',
+  'Wachten vandaag nog op je',
+  'Hierna',
+  'De uitdaging van vandaag wacht',
+  'Een van onze beste, nieuw voor jou',
+  'Keuze voor {theme}',
+  'Meer zoals {game}',
+  'Nog een poging op de uitdaging van vandaag',
 ];
 
 export default nl;

@@ -1898,6 +1898,18 @@ export const KEYS: string[] = [
   "Tap Safari’s Share button",
   "Choose Add to Home Screen",
   "Open GlitchBound from your Home Screen: full screen, no browser bars",
+  "Start here",
+  "Our best games",
+  "Four to get hooked on. Each one has a fresh puzzle every day.",
+  "Today",
+  "{a} of {b} dailies done",
+  "Also waiting for you today",
+  "Next up",
+  "Today’s challenge is waiting",
+  "One of our best, and new to you",
+  "{theme} pick",
+  "More like {game}",
+  "One more try at today’s challenge",
 ];
 
 export const UI_COUNT = 311;
