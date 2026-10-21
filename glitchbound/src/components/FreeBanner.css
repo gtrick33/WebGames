@@ -118,7 +118,7 @@
   white-space: nowrap;
 }
 
-/* The mini banner in the home page hero's side column (desktop only: phones get the big one below). */
+/* The mini banner in the home page hero: in the side column on wide screens, under the daily card on phones. */
 .free-mini {
   display: flex;
   flex-wrap: wrap;
@@ -151,8 +151,21 @@
 .free-mini-cta {
   flex: none;
 }
+/* On phones the mini banner up in the hero is the promise: the big one near the footer would repeat it. */
 @media (max-width: 900px) {
-  .free-mini {
+  .free-band {
     display: none;
+  }
+  .free-mini {
+    justify-content: center;
+    text-align: center;
+  }
+  .free-mini-words {
+    justify-content: center;
+    font-size: 19px;
+  }
+  .free-mini-cta {
+    flex: 1 1 100%;
+    justify-content: center;
   }
 }

@@ -34,7 +34,7 @@ function useGlitchPulse(): boolean {
 
 /**
  * The intro above the catalogue: brand line, today's pick and Surprise me on the left; on the right
- * today at a glance (the day's theme, the daily challenge, and the free promise on wide screens). The
+ * today at a glance (the day's theme, the daily challenge and the free promise). The
  * games themselves start right below (the flagship row).
  */
 export function Hero() {
@@ -80,7 +80,7 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Today, at a glance: the day's theme, the daily challenge and (on wide screens) the free promise. */}
+      {/* Today, at a glance: the day's theme, the daily challenge and the free promise. */}
       <div className="intro-side">
         <ThemeStrip embedded />
         <DailyCard variant="hero" />
