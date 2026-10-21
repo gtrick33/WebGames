@@ -253,10 +253,10 @@ export const GAMES: GameEntry[] = [
     slug: 'launch-control',
     wallet: true,
     title: 'Launch Control',
-    tagline: 'Five-car 3D drag races: nail every shift, tune 40 cars, wager your winnings.',
+    tagline: 'Five-car 3D drag races: nail every shift, tune 43 cars, wager your winnings.',
     description:
       'A strategic quarter-mile drag racer in glossy 3D, seen from behind your car. Launch on green, then hit every shift in a green zone that moves each gear, against four rivals in cars like yours. ' +
-      'Climb a ladder of 40 rivals in five divisions, wager earned cash on forecast odds, and tune six separate parts on 40 original cars in the garage: engine, transmission, suspension, tyres, aero and looks, each visible on the car, each moving several stats, each wearing out. ' +
+      'Climb a ladder of 40 rivals in five divisions, wager earned cash on forecast odds, and tune six separate parts on 43 original cars in the parts shop: engine, transmission, suspension, tyres, aero and looks, each visible on the car, each moving several stats, each wearing out. ' +
       'Everyone gets the same loaner and the same rivals in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
     categories: ['racing', 'strategy'],
     moods: ['action', 'quick'],
@@ -267,7 +267,7 @@ export const GAMES: GameEntry[] = [
     art: {
       tile: '/games/launch-control/tile.webp',
       wide: '/games/launch-control/wide.webp',
-      alt: 'A yellow 3D muscle car launching off the line on a sunny seaside drag strip beside four rivals, with the Launch Control logo',
+      alt: 'A yellow 3D muscle car with a supercharger launching off the line beside three rivals on a sunny drag strip, with the Launch Control logo',
       bg: '#2f8dff',
     },
     runtime: { kind: 'module' },
@@ -287,7 +287,7 @@ export const GAMES: GameEntry[] = [
     highlights: [
       'One input: tap at green to launch, then shift in a green zone that sits somewhere new in every gear. Perfect launches and shifts win races',
       'Every race is five cars: you and four rivals in cars tuned like yours; the named ladder rival is one of them',
-      '40 original cars in six tiers, shaped after the real thing from a supermini to a hypercar, in glossy clearcoat 3D',
+      '43 original cars in six tiers, built on real 3D car models from a supermini to a hypercar, each with its own proportions',
       'Six separate parts with eight levels each, each visible on the car and each moving several stats; they wear out and can fail when neglected',
       'Materials (scrap, alloy, carbon, chips, rubber) gate the higher levels; cash and materials come only from racing',
       'A 40-rival ladder in five divisions with purses by finishing position, first-win bonuses and division finals',

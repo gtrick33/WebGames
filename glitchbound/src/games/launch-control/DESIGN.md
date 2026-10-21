@@ -47,7 +47,7 @@ each a driver skill that only loses time from there. Fair, varied, never a walko
 
 ## The garage
 
-40 original cars with silhouettes after familiar real shapes (invented makers and names). Six separate parts, each
+43 original cars (invented makers and names) on 16 CC0 low-poly bodies, each car with its own size and shape tweaks (models.ts, modelcar.ts; credits in CREDITS.md). Six separate parts, each
 with eight levels and its own condition, each moving several numbers:
 
 | Part | Each level | Visible on the car |
@@ -73,7 +73,10 @@ mid-race; repairs cost cash. Cosmetics: helmets, suits, paints, liveries, wheels
 | `economy.ts` | ladder, bots, purses by position, Monte-Carlo odds, materials, sponsor, crate, daily loaner | yes |
 | `cosmetics.ts` / `envs.ts` | cosmetics for sale; the four strips | yes |
 | `storage.ts` | the local save (validated) | DOM |
-| `scene3d.ts` | Three.js: lofted cars (rounded cross-sections, flat capped nose and tail, fender arches, glass cabin with painted pillars, lamps snapped to the surface), sky reflections, worlds merged per material (~250 draw calls for a race), one shared stage, a thumbnail queue | WebGL |
+| `scene3d.ts` | Three.js: the stage (race chase camera, garage turntable with a camera focus per part, docking into pop-ups), sky reflections, worlds merged per material, a thumbnail queue; the old lofted car builder stays as a fallback when a model cannot load | WebGL |
+| `models.ts` | the 16 CC0 bodies: which body and proportions each car uses, shape tweaks (chopped roof, wide hips, long hood), loading and caching | WebGL |
+| `modelcar.ts` | builds a car from a body: repaint and livery mapping, spinning wheels sized by the tyre upgrade, upgrade parts snapped to the body by raycasts | WebGL |
+| `mats.ts` | shared materials, mesh helpers and static-mesh merging | WebGL |
 | `hud.ts` | the driver portrait | DOM |
 | `RaceScreen.tsx` | the race on the shared stage: a rev strip and gauge with this gear's window, launch and shift pop-ups, a zone cue, stray-tap guard, pixel-ratio guard, rotate nudge | React |
 | `Game.tsx` / `ui.tsx` / `Game.css` | hub, rivals, setup, result, garage, dealer, daily, ladder, help | React |
