@@ -1935,6 +1935,9 @@ const fr: string[] = [
   'Les mêmes dés pour tous : le meilleur résultat gagne.',
   'Partie du jour',
   'Le plus de points sur une victoire',
+  'Jeux multijoueur en direct',
+  'Jouer ensemble',
+  'Joue avec tes amis au même moment, chacun sur son appareil.',
 ];
 
 export default fr;

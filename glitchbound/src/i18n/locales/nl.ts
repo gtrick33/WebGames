@@ -1935,6 +1935,9 @@ const nl: string[] = [
   'Dezelfde worpen voor iedereen: het beste resultaat wint.',
   'Spel van vandaag',
   'Meeste punten in een overwinning',
+  'Live multiplayergames',
+  'Samen spelen',
+  'Speel tegelijk met vrienden, ieder op een eigen apparaat.',
 ];
 
 export default nl;

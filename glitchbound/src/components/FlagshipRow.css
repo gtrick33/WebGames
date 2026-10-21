@@ -117,6 +117,13 @@
   line-height: 1.35;
   color: var(--fg-2);
 }
+.flagship-players {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
 .flagship-play {
   align-self: end;
   justify-self: start;

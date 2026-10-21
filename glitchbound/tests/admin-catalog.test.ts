@@ -108,6 +108,24 @@ describe('admin API', () => {
     expect(cat.flagships).toBeUndefined();
   });
 
+  it('saves the live multiplayer games as an ordered list, hides the row with an empty one, and goes back to every live game', async () => {
+    const { env, cookie } = await asAdmin();
+    const post = async (body: unknown) => {
+      const request = new Request('http://localhost/api/admin/catalog', { method: 'POST', headers: { origin: 'http://localhost', cookie, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      return changeCatalog({ request, env });
+    };
+    expect((await post({ action: 'multiplayer', list: ['belot', 'crass-act', 'nope', 'belot', 'launch-control'] })).status).toBe(200);
+    let cat = await loadCatalog(env, '2026-01-01', '2026-01-02');
+    expect(cat.multiplayer).toEqual(['belot', 'launch-control']);
+    expect((await post({ action: 'multiplayer', list: [] })).status).toBe(200);
+    cat = await loadCatalog(env, '2026-01-01', '2026-01-02');
+    expect(cat.multiplayer).toEqual([]);
+    expect((await post({ action: 'multiplayer', list: ['nope'] })).status).toBe(400);
+    expect((await post({ action: 'multiplayer', list: null })).status).toBe(200);
+    cat = await loadCatalog(env, '2026-01-01', '2026-01-02');
+    expect(cat.multiplayer).toBeUndefined();
+  });
+
   it('refuses a notice link it would drop, instead of saving the notice without it', async () => {
     const { env, cookie } = await asAdmin();
     const post = async (notice: unknown) => {

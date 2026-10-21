@@ -168,6 +168,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  max-width: 100%;
+}
+/* Long labels ("Играй днешното предизвикателство") wrap instead of stretching the card. */
+.daily-actions .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
 }
 .daily-share-msg {
   min-height: 1em;
@@ -184,6 +191,73 @@
 }
 .daily-page .daily-side {
   grid-column: 2;
+}
+
+/* ---------------------------------------------------------------- hero variant (the home page hero's side column) */
+.daily-hero {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 18px 20px 20px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--hard);
+}
+.daily-hero::before {
+  width: 150px;
+}
+.daily-hero .daily-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 74px;
+}
+.daily-hero .daily-badge-text b {
+  font-size: 22px;
+}
+.daily-hero .daily-badge-text .mono {
+  font-size: 9px;
+}
+/* the eyebrow and the title flow around the star (a float needs block flow) */
+.daily-hero .daily-main {
+  display: block;
+}
+.daily-hero .daily-main > * + * {
+  margin-top: 10px;
+}
+/* a flex line can't wrap round a float: the eyebrow runs as text */
+.daily-hero .daily-main .eyebrow {
+  display: block;
+}
+.daily-hero .daily-main .eyebrow svg {
+  vertical-align: -3px;
+}
+.daily-hero .daily-badge-text .mono {
+  letter-spacing: 0.04em;
+}
+.daily-hero .daily-main::before {
+  content: '';
+  float: right;
+  width: 72px;
+  height: 70px;
+  margin: -6px -8px 2px 10px;
+}
+.daily-hero .daily-title {
+  font-size: clamp(22px, 2vw, 28px);
+}
+/* the state and the streak share a line when they fit, the rest takes full lines */
+.daily-hero .daily-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.daily-hero .daily-countdown,
+.daily-hero .daily-actions,
+.daily-hero .daily-share-msg {
+  flex: 1 1 100%;
+}
+.daily-hero .daily-actions .btn {
+  flex: 1 1 auto;
+  justify-content: center;
 }
 
 /* ---------------------------------------------------------------- compact variant (game page side panel) */
@@ -214,7 +288,7 @@
 }
 @media (max-width: 600px) {
   .daily {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .daily-badge {
     position: absolute;
@@ -228,13 +302,31 @@
   .daily-badge-text .mono {
     font-size: 10px;
   }
+  /* The star sits in the top corner: the eyebrow and the title flow around it (a float needs block flow). */
+  .daily-main {
+    display: block;
+  }
+  .daily-main > * + * {
+    margin-top: 14px;
+  }
   .daily-main .eyebrow {
-    padding-right: 90px;
+    display: block;
+  }
+  .daily-main .eyebrow svg {
+    vertical-align: -3px;
+  }
+  .daily-main::before {
+    content: '';
+    float: right;
+    width: 80px;
+    height: 76px;
+    margin: -8px -8px 4px 10px;
   }
   .daily-page .daily-side {
     grid-column: 1;
   }
   .daily-actions .btn {
     width: 100%;
+    justify-content: center;
   }
 }

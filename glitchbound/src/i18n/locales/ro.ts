@@ -1935,6 +1935,9 @@ const ro: string[] = [
   'Aceleași zaruri pentru toți: câștigă cel mai bun rezultat.',
   'Partida zilei',
   'Cele mai multe puncte într-o victorie',
+  'Jocuri multiplayer live',
+  'Jucați împreună',
+  'Joacă cu prietenii în același timp, fiecare pe dispozitivul lui.',
 ];
 
 export default ro;

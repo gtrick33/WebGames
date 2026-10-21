@@ -12,16 +12,14 @@ import { doneDays } from '../platform/save';
 import { useSave } from '../platform/store';
 import { Link } from '../router/router';
 import { useFlagships } from '../platform/useFlagships';
-import { DailyCard } from './DailyCard';
 import { Icon } from './Icon';
-import { ThemeStrip } from './ThemeStrip';
 import './TodaysDailies.css';
 
 /**
  * Every game's own daily puzzle in one strip, with what this player has finished today. Finishing
  * any of them (or the arcade challenge) keeps the shared streak alive. Hidden when no released game
- * has its own daily. `featured` is the home page's Today section: the day's theme on top, the daily
- * challenge as the big card, and the flagship dailies still open as chips.
+ * has its own daily. `featured` is the home page's Today section: the flagship dailies still open as
+ * chips (the day's theme and the daily challenge sit in the hero above it).
  */
 export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full' }: { headingLevel?: 2 | 3; games?: GameEntry[]; variant?: 'full' | 'row' | 'featured' }) {
   const live = useLiveCatalog();
@@ -71,7 +69,7 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
     );
   };
 
-  // The home page's Today section: the theme as its header, the daily challenge as the big card, and
+  // The home page's Today section (the day's theme and the daily challenge sit in the hero above it):
   // the flagship dailies this player has not done yet as chips. The rest are one link away on /daily.
   if (variant === 'featured') {
     const listed = new Set(list.map((g) => g.slug));
@@ -108,8 +106,6 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
             {shareMsg}
           </p>
         )}
-        <ThemeStrip embedded />
-        <DailyCard variant="band" headingLevel={3} />
         {chips.length > 0 && (
           <div className="today-more">
             <p className="today-more-label mono">{t('Also waiting for you today')}</p>

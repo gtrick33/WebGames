@@ -1935,6 +1935,9 @@ const pt: string[] = [
   'Os mesmos dados para todos: ganha o melhor resultado.',
   'Jogo do dia',
   'Mais pontos numa vitória',
+  'Jogos multijogador ao vivo',
+  'Jogar juntos',
+  'Joga com amigos ao mesmo tempo, cada um no seu dispositivo.',
 ];
 
 export default pt;

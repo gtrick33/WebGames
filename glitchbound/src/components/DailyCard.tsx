@@ -14,10 +14,11 @@ import './DailyCard.css';
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /**
- * The daily challenge, in three densities: `band` (homepage), `page` (/daily) and `compact` (game page).
- * Renders nothing if no game in the catalog supports daily challenges.
+ * The daily challenge, in four densities: `band` (a full-width band), `hero` (the home page hero's side
+ * column), `page` (/daily) and `compact` (game page). Renders nothing if no game in the catalog supports
+ * daily challenges.
  */
-export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'band' | 'page' | 'compact'; headingLevel?: 2 | 3 }) {
+export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'band' | 'hero' | 'page' | 'compact'; headingLevel?: 2 | 3 }) {
   const t = useT();
   const now = useNow(1000);
   const daily = useDaily(now);

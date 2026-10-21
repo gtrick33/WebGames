@@ -1935,6 +1935,9 @@ const pl: string[] = [
   'Te same rzuty dla wszystkich: wygrywa najlepszy wynik.',
   'Dzisiejsza gra',
   'Najwięcej punktów w wygranej',
+  'Gry multiplayer na żywo',
+  'Grajcie razem',
+  'Graj ze znajomymi w tej samej chwili, każdy na swoim urządzeniu.',
 ];
 
 export default pl;

@@ -7,10 +7,27 @@ import './FreeBanner.css';
 /**
  * The promise, in big letters: everything is free and needs no account. Signing in is optional
  * and only adds things (synced progress, leaderboards, quests), which the right side spells out.
+ * `mini` is the one-line version for the home page hero's side column.
  */
-export function FreeBanner() {
+export function FreeBanner({ mini = false }: { mini?: boolean }) {
   const t = useT();
   const { me, status } = useAccount();
+  // The small one: the three words in a row and, for guests, the optional sign-in.
+  if (mini)
+    return (
+      <section className="free-mini" aria-label={`${t('100% free.')} ${t('No sign-up.')} ${t('No downloads.')}`}>
+        <p className="free-mini-words" aria-hidden="true">
+          <span className="free-w free-w1">{t('100% free.')}</span>
+          <span className="free-w free-w2">{t('No sign-up.')}</span>
+          <span className="free-w free-w3">{t('No downloads.')}</span>
+        </p>
+        {!me && (
+          <button className="btn btn-sm btn-primary free-mini-cta" onClick={() => openSignIn()} disabled={status === 'loading'}>
+            <Icon name="star" size={15} /> {t('Sign in free')}
+          </button>
+        )}
+      </section>
+    );
   const perks = [t('Your bests and streaks on every device'), t('Leaderboards and the Hall of Fame'), t('Daily quests, XP and levels'), t('Favorites that follow you')];
   return (
     <section className={`wrap free-band${me ? ' is-member' : ''}`} aria-labelledby="free-title">

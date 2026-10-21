@@ -3,6 +3,7 @@ import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http'
 import { requireAdmin } from '../../../server/session';
 import { getGame } from '../../../src/catalog/catalog';
 import { GAMES } from '../../../src/catalog/games';
+import { MULTIPLAYER_MAX } from '../../../src/catalog/multiplayer';
 import { compactParty, compactSettings, isDay, partySettingsFor, sanitizeFlagships, sanitizeLayout, sanitizeNotice, sanitizePartyPatch, sanitizePatch, sanitizePick, settingsFor, type GameSettings, type PartySettings } from '../../../src/catalog/settings';
 import { isPartyId, PARTY_GAMES } from '../../../src/party/catalog';
 import type { AdminCatalog } from '../../../src/platform/apiTypes';
@@ -35,6 +36,7 @@ const who = (u: { nickname: string; email: string }): string => u.nickname || u.
  *   { action: 'notice', notice | null }    set or remove the site banner
  *   { action: 'layout', layout | null }    home page banner order, sizes, colors and stickers (null = automatic)
  *   { action: 'flagships', list | null }   the home page's best games, in order (null = the house picks)
+ *   { action: 'multiplayer', list | null } the home page's live multiplayer games, in order (null = every live game, [] = hidden)
  *   { action: 'season', season }           holiday look: 'auto' (by the calendar), 'off' or a holiday id
  *   { action: 'party', id, patch | null }  a Party Mode game's settings (null = back to the defaults)
  */
@@ -146,6 +148,17 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
       await env.DB.batch(statements);
       await logAdmin(env, by, 'flagships', list ? `Our best games: ${list.map((slug) => getGame(slug)?.title ?? slug).join(', ')}` : 'Our best games: back to the house picks');
       return json({ ok: true, flagships: list });
+    }
+    case 'multiplayer': {
+      const hide = Array.isArray(body.list) && body.list.length === 0;
+      const list = body.list === null ? null : hide ? [] : sanitizeFlagships(body.list, GAMES, MULTIPLAYER_MAX);
+      if (body.list !== null && !list) return bad('nothing_to_change');
+      await (list
+        ? env.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('multiplayer', ?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by").bind(JSON.stringify(list), now, by)
+        : env.DB.prepare("DELETE FROM site_settings WHERE key = 'multiplayer'")
+      ).run();
+      await logAdmin(env, by, 'multiplayer', !list ? 'Live multiplayer games: back to every live game' : list.length ? `Live multiplayer games: ${list.map((slug) => getGame(slug)?.title ?? slug).join(', ')}` : 'Live multiplayer games: hidden');
+      return json({ ok: true, multiplayer: list });
     }
     case 'season': {
       if (!isSeasonSetting(body.season)) return bad('invalid_season');

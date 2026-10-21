@@ -11,6 +11,7 @@ import { addDays, dayKey } from '../platform/dates';
 import { setCatalog } from '../platform/liveCatalog';
 import { Link } from '../router/router';
 import { BestGamesEditor, savedBest, sendBestToggle } from './AdminBest';
+import { MultiplayerEditor, savedMultiplayer } from './AdminMultiplayer';
 import { LayoutEditor, SeasonPicker, Switch } from './AdminLayout';
 import { DEFAULT_FEATURED, PARTY_GAMES, type PartyGame } from '../party/catalog';
 
@@ -41,7 +42,7 @@ export function AdminGames() {
           setData(d);
           setError('');
           // The rest of the site (open in this tab) follows the change right away.
-          setCatalog({ settings: d.settings, picks: d.picks, notice: d.notice, layout: d.layout ?? null, season: d.season, party: d.party, flagships: d.flagships ?? null });
+          setCatalog({ settings: d.settings, picks: d.picks, notice: d.notice, layout: d.layout ?? null, season: d.season, party: d.party, flagships: d.flagships ?? null, multiplayer: d.multiplayer ?? null });
         })
         .catch((e: unknown) => setError(e instanceof ApiError && e.status === 403 ? 'Only admins can change games.' : 'Could not load the game settings.')),
     [],
@@ -96,6 +97,7 @@ export function AdminGames() {
         <>
           <DailyPlanner data={data} send={send} busy={busy} />
           <BestGamesEditor key={JSON.stringify(savedBest(data))} data={data} send={send} busy={busy} />
+          <MultiplayerEditor key={JSON.stringify([data.multiplayer ?? null, savedMultiplayer(data)])} data={data} send={send} busy={busy} />
           <LayoutEditor key={JSON.stringify(data.layout ?? null)} data={data} send={send} busy={busy} />
           <GamesList data={data} send={send} busy={busy} />
         </>

@@ -19,7 +19,7 @@ function renderAt(path: string) {
 }
 
 describe('homepage', () => {
-  it('renders the hero, today’s pick, the flagships, Today and the arcade', async () => {
+  it('renders the hero with today at a glance, the flagships, the live multiplayer games, Today and the arcade', async () => {
     renderAt('/');
     expect(screen.getByRole('heading', { level: 1, name: /Small games\.\s*Big obsessions\./ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Today’s pick/ }).getAttribute('href')).toMatch(/^\/games\//);
@@ -29,11 +29,17 @@ describe('homepage', () => {
     const flagships = within(start).getAllByRole('link').map((a) => a.getAttribute('href'));
     expect(flagships).toHaveLength(4);
     expect(flagships.sort()).toEqual(['/games/color-recall', '/games/launch-control', '/games/letter-pinch', '/games/wait-what']);
-    // Today: the day's theme, the daily challenge and the link to every daily.
+    // The hero's side: the day's theme and the daily challenge (and the free promise on wide screens).
+    const hero = screen.getByRole('region', { name: /Small games\./ });
+    expect(within(hero).getByText('Today is')).toBeTruthy();
+    expect(within(hero).getByText(/^Today’s challenge/)).toBeTruthy();
+    expect(within(hero).getByRole('link', { name: /Play today’s challenge|Play again/ }).getAttribute('href')).toMatch(/^\/games\//);
+    expect(within(hero).getByRole('region', { name: /100% free\./ })).toBeTruthy();
+    // Live multiplayer games, right under the best games.
+    const together = screen.getByRole('region', { name: 'Live multiplayer games' });
+    expect(within(together).getAllByRole('link').map((a) => a.getAttribute('href')).sort()).toEqual(['/games/backgammon', '/games/belot', '/games/launch-control']);
+    // Today: the link to every daily.
     const today = screen.getByRole('region', { name: 'Today' });
-    expect(within(today).getByText('Today is')).toBeTruthy();
-    expect(within(today).getByText(/^Today’s challenge/)).toBeTruthy();
-    expect(within(today).getByRole('link', { name: /Play today’s challenge|Play again/ }).getAttribute('href')).toMatch(/^\/games\//);
     expect(within(today).getByRole('link', { name: /All dailies/ }).getAttribute('href')).toBe('/daily');
     // Party Mode shows its two featured games (their cards load after the first paint).
     const party = screen.getByRole('region', { name: 'Party Mode' });
@@ -272,7 +278,8 @@ describe('members features as a guest (API unreachable in tests)', () => {
   it('tells guests it is free with no sign-up, and opens the sign-in dialog when they want more', async () => {
     renderAt('/');
     expect(screen.getByRole('heading', { level: 2, name: /100% free\.\s*No sign-up\.\s*No downloads\./ })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Sign in free/ }));
+    // the hero's mini banner and the big one both offer it
+    fireEvent.click(screen.getAllByRole('button', { name: /Sign in free/ })[0]!);
     // The dialog loads on first use, then opens.
     const dialog = (await screen.findByRole('heading', { name: 'Join the arcade' }, { timeout: 3000 })).closest('dialog') as HTMLDialogElement;
     await waitFor(() => expect(dialog.open).toBe(true));

@@ -120,6 +120,8 @@ export interface PublicCatalog {
   season?: SeasonSetting;
   /** The home page's "Start here" games in order (missing or null = the house picks). */
   flagships?: string[] | null;
+  /** The home page's "Live multiplayer games" in order (missing or null = every live game, [] = hidden). */
+  multiplayer?: string[] | null;
 }
 
 export const EMPTY_CATALOG: PublicCatalog = { settings: {}, picks: {}, notice: null, layout: null };

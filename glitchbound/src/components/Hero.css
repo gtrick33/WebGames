@@ -84,76 +84,35 @@
   display: grid;
   gap: 14px;
 }
-.intro-cards {
-  display: grid;
-  gap: 12px;
+/* Today at a glance: the theme strip, the daily challenge and the mini free banner, a little tighter. */
+.intro-side .theme-strip {
+  gap: 10px 14px;
+  padding: 12px 14px;
 }
-.intro-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  width: 100%;
-  padding: 14px 16px;
-  border: 1.5px solid var(--line);
-  border-radius: 18px;
-  background: linear-gradient(180deg, var(--surface-2), var(--surface));
-  color: var(--fg);
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-  box-shadow: var(--hard-sm);
-  transition: transform 0.3s var(--spring), border-color 0.2s, box-shadow 0.3s;
-  animation: pop-in 0.6s var(--spring) both;
+.intro-side .theme-emoji {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  font-size: 26px;
 }
-.intro-card + .intro-card {
-  animation-delay: 0.08s;
+.intro-side .theme-copy {
+  flex-basis: 180px;
 }
-.intro-card:hover {
-  transform: translate(-2px, -2px);
-  border-color: var(--cyan);
-  box-shadow: var(--glow-cyan), 5px 5px 0 var(--ink);
+.intro-side .theme-name {
+  font-size: clamp(20px, 1.9vw, 26px);
 }
-.intro-card > svg {
-  flex: none;
-  color: var(--fg-3);
+.intro-side .theme-tag {
+  font-size: 13.5px;
 }
-.intro-card-icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  flex: none;
-  border-radius: 12px;
-  background: var(--orange);
-  color: var(--ink);
+.intro-side .theme-games img {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
 }
-.intro-daily.is-done .intro-card-icon {
-  background: var(--lime);
-}
-.intro-member .intro-card-icon {
-  background: var(--magenta);
-}
-.intro-card-text {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-.intro-card-text .mono {
-  font-size: 11.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--cyan-text);
-}
-.intro-card-text strong {
-  font-size: 17px;
-  line-height: 1.2;
-}
-.intro-count {
-  color: var(--fg-3) !important;
-  font-variant-numeric: tabular-nums;
+.intro-side .theme-cta {
+  padding-block: 8px;
 }
 
-/* Decoration lives in the gap at the top-right edge, never behind text. */
 .intro-deco {
   position: absolute;
   inset: 0;
@@ -172,7 +131,7 @@
 
 @media (max-width: 900px) {
   .intro-band {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 14px;
   }
   .intro-title {
@@ -187,26 +146,6 @@
   .intro-ctas .btn {
     flex: 1 1 auto;
     justify-content: center;
-  }
-  /* Status cards become a swipeable row so the catalogue starts right below. */
-  .intro-cards {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(270px, 82%);
-    overflow-x: auto;
-    margin-inline: calc(-1 * var(--gutter));
-    padding: 2px var(--gutter) 8px;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-  .intro-cards:has(> :only-child) {
-    grid-auto-columns: 100%;
-  }
-  .intro-card {
-    scroll-snap-align: start;
-    padding: 12px 14px;
-  }
-  .intro-card-text strong {
-    font-size: 15.5px;
   }
   .deco {
     display: none;

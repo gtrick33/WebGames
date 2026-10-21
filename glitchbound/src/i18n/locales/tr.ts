@@ -1935,6 +1935,9 @@ const tr: string[] = [
   'Herkes için aynı zarlar: en iyi sonuç kazanır.',
   'Günün oyunu',
   'Bir galibiyette en çok puan',
+  'Canlı çok oyunculu oyunlar',
+  'Birlikte oynayın',
+  'Arkadaşlarınla aynı anda oyna, herkes kendi cihazında.',
 ];
 
 export default tr;

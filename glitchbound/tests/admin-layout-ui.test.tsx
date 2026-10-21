@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { BestGamesEditor } from '../src/pages/AdminBest';
+import { MultiplayerEditor } from '../src/pages/AdminMultiplayer';
 import { LayoutEditor } from '../src/pages/AdminLayout';
 import type { AdminCatalog } from '../src/platform/apiTypes';
 
@@ -44,6 +45,36 @@ describe('Our best games editor', () => {
     expect(titles()).toEqual(['Gloop', 'Quizbelief', 'Launch Control', 'Color Recall']);
     fireEvent.click(screen.getByRole('button', { name: 'Back to house picks' }));
     expect(send).toHaveBeenCalledWith({ action: 'flagships', list: null }, 'Our best games: back to the house picks');
+  });
+});
+
+describe('Live multiplayer games editor', () => {
+  const list = () => within(screen.getByRole('list', { name: 'Live multiplayer games, in order' }));
+  const mtitles = () => [...document.querySelectorAll('.am-row .ab-title')].map((b) => b.textContent);
+
+  it('starts from every live game; add, remove and reorder, then publish', () => {
+    const send = vi.fn(async () => true);
+    render(<MultiplayerEditor data={data()} send={send} busy={false} />);
+    expect(mtitles()).toEqual(['Launch Control', 'Belot', 'Backgammon']);
+    expect(screen.getByText('Every live game')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Belot' }));
+    fireEvent.change(list().getByRole('combobox', { name: 'Add a game' }), { target: { value: 'gloop' } });
+    expect(screen.getByText('not live')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Move Backgammon earlier' }));
+    expect(mtitles()).toEqual(['Backgammon', 'Launch Control', 'Gloop']);
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    expect(send).toHaveBeenCalledWith({ action: 'multiplayer', list: ['backgammon', 'launch-control', 'gloop'] }, 'Live multiplayer games published');
+  });
+
+  it('removing every game and publishing hides the row; a saved list can go back to every live game', () => {
+    const send = vi.fn(async () => true);
+    render(<MultiplayerEditor data={{ ...data(), multiplayer: ['belot'] }} send={send} busy={false} />);
+    expect(mtitles()).toEqual(['Belot']);
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Belot' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    expect(send).toHaveBeenCalledWith({ action: 'multiplayer', list: [] }, 'Live multiplayer games hidden');
+    fireEvent.click(screen.getByRole('button', { name: 'Back to every live game' }));
+    expect(send).toHaveBeenLastCalledWith({ action: 'multiplayer', list: null }, 'Live multiplayer games: back to every live game');
   });
 });
 

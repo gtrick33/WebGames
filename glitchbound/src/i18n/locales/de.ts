@@ -1935,6 +1935,9 @@ const de: string[] = [
   'Für alle dieselben Würfe: das beste Ergebnis gewinnt.',
   'Partie des Tages',
   'Die meisten Punkte bei einem Sieg',
+  'Live-Mehrspieler-Spiele',
+  'Zusammen spielen',
+  'Spiel mit Freunden im selben Moment, jeder auf seinem eigenen Gerät.',
 ];
 
 export default de;

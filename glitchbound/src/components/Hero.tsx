@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { tDaily, useT } from '../i18n';
+import { useT } from '../i18n';
 import { useLiveCatalog } from '../platform/liveCatalog';
-import { useAccount } from '../platform/account';
-import { useDaily, useNow } from '../platform/hooks';
-import { dayKey, formatCountdown, msUntilMidnight } from '../platform/dates';
+import { useNow } from '../platform/hooks';
+import { dayKey } from '../platform/dates';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
 import { Dot, Star, Tri } from './Shapes';
+import { DailyCard } from './DailyCard';
+import { FreeBanner } from './FreeBanner';
 import { SurpriseButton } from './Surprise';
+import { ThemeStrip } from './ThemeStrip';
 import { latestGame } from '../catalog/catalog';
 import { activeHoliday } from '../platform/seasons';
 import './Hero.css';
@@ -31,9 +33,9 @@ function useGlitchPulse(): boolean {
 }
 
 /**
- * The compact intro above the catalogue: brand line, today's pick and Surprise me on the left; on the
- * right today's challenge and, for members, their level. The games themselves start right below
- * (the flagship row), so the hero stays short.
+ * The intro above the catalogue: brand line, today's pick and Surprise me on the left; on the right
+ * today at a glance (the day's theme, the daily challenge, and the free promise on wide screens). The
+ * games themselves start right below (the flagship row).
  */
 export function Hero() {
   const t = useT();
@@ -44,10 +46,6 @@ export function Hero() {
   const glitching = useGlitchPulse();
   const now = useNow(1000);
   const holiday = activeHoliday(live.raw.season, dayKey(now));
-  const daily = useDaily(now);
-  const { me } = useAccount();
-  const ready = me?.quests.filter((q) => q.done && !q.claimed).length ?? 0;
-  const left = me?.quests.filter((q) => !q.done).length ?? 0;
 
   return (
     <section className="intro-band wrap" aria-labelledby="hero-title">
@@ -82,38 +80,11 @@ export function Hero() {
         </div>
       </div>
 
+      {/* Today, at a glance: the day's theme, the daily challenge and (on wide screens) the free promise. */}
       <div className="intro-side">
-        <div className="intro-cards">
-          {daily && (
-            <Link href="/daily" className={`intro-card intro-daily${daily.done ? ' is-done' : ''}`}>
-              <span className="intro-card-icon">
-                <Icon name="calendar" size={20} />
-              </span>
-              <span className="intro-card-text">
-                <span className="mono">
-                  {t('Daily #{n}', { n: daily.challenge.number })} · {daily.done ? t('cleared') : daily.challenge.game.title}
-                </span>
-                <strong>{tDaily(daily.challenge)}</strong>
-                <span className="mono intro-count">{t('Resets in {time}', { time: formatCountdown(msUntilMidnight(now)) })}</span>
-              </span>
-              <Icon name="arrowRight" />
-            </Link>
-          )}
-          {me && (
-            <Link href="/me" className="intro-card intro-member">
-              <span className="intro-card-icon">
-                <Icon name="bolt" size={20} />
-              </span>
-              <span className="intro-card-text">
-                <span className="mono">
-                  {t('Level {n}', { n: me.level })} · {me.nickname}
-                </span>
-                <strong>{ready > 0 ? t('{n} quest rewards ready', { n: ready }) : left > 0 ? t('{n} member quests today', { n: left }) : t('All of today’s quests are done')}</strong>
-              </span>
-              <Icon name="arrowRight" />
-            </Link>
-          )}
-        </div>
+        <ThemeStrip embedded />
+        <DailyCard variant="hero" />
+        <FreeBanner mini />
       </div>
 
       <div className="intro-deco" aria-hidden="true">

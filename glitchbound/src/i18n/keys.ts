@@ -1940,6 +1940,9 @@ export const KEYS: string[] = [
   "The same dice for everyone: the best result wins.",
   "Today’s game",
   "Most points in a win",
+  "Live multiplayer games",
+  "Play together",
+  "Play with friends at the same moment, each on their own device.",
 ];
 
 export const UI_COUNT = 311;

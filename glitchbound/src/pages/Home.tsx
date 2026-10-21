@@ -5,6 +5,7 @@ import { Arcade } from '../components/Arcade';
 import { FlagshipRow } from '../components/FlagshipRow';
 import { FreeBanner } from '../components/FreeBanner';
 import { Hero } from '../components/Hero';
+import { MultiplayerRow } from '../components/MultiplayerRow';
 import { PartyBanner } from '../components/PartyBanner';
 import { TodaysDailies } from '../components/TodaysDailies';
 import { YourArcade } from '../components/Sections';
@@ -17,9 +18,9 @@ const QuestBoard = lazy(fresh(() => import('../components/Quests').then((m) => (
 const NotifyForm = lazy(fresh(() => import('../components/Notify').then((m) => ({ default: m.NotifyForm }))));
 
 /**
- * One clear path for a newcomer: the hero (today's pick, Surprise me), the four flagship games, then
- * Today (the day's theme, the daily challenge and the flagship dailies still open), then every game
- * by mood and Party Mode. Returning devices get "Continue playing" below; guests the free-and-no-sign-up
+ * One clear path for a newcomer: the hero (today's pick, Surprise me, and today at a glance: the day's
+ * theme and the daily challenge), the four flagship games, the live multiplayer games, then Today (the
+ * flagship dailies still open), then every game by mood and Party Mode. Returning devices get "Continue playing" below; guests the free-and-no-sign-up
  * promise, members their quests. The daily challenge in full lives on /daily.
  */
 export function Home() {
@@ -30,6 +31,7 @@ export function Home() {
     <>
       <Hero />
       <FlagshipRow />
+      <MultiplayerRow />
       <TodaysDailies variant="featured" headingLevel={2} />
       <Arcade />
       <PartyBanner />

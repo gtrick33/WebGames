@@ -1935,6 +1935,9 @@ const it: string[] = [
   'Gli stessi dadi per tutti: vince il miglior risultato.',
   'Partita del giorno',
   'Più punti in una vittoria',
+  'Giochi multigiocatore dal vivo',
+  'Giocare insieme',
+  'Gioca con gli amici nello stesso momento, ognuno sul suo dispositivo.',
 ];
 
 export default it;
