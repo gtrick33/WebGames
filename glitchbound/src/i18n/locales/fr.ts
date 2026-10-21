@@ -1883,6 +1883,11 @@ const fr: string[] = [
   // 1710
   'Passe le téléphone à {name}',
   '{n} secondes restantes',
+  'Appli plein écran',
+  'Installer l’appli',
+  'Touchez Partager, puis « Sur l’écran d’accueil » : GlitchBound s’ouvre en plein écran, sans les barres de Safari.',
+  'Installez GlitchBound pour jouer en plein écran, sans les barres du navigateur.',
+  'Balayez vers le haut pour masquer la barre de Safari. Pour le plein écran à chaque fois : Partager, puis « Sur l’écran d’accueil ».',
 ];
 
 export default fr;

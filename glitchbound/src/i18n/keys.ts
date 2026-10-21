@@ -1887,6 +1887,12 @@ export const KEYS: string[] = [
   // 1710
   "Pass the phone to {name}",
   "{n} seconds left",
+  // 1712: the arcade as a full-screen app
+  "Full screen app",
+  "Install the app",
+  "Tap Share, then Add to Home Screen: GlitchBound opens full screen, without Safari’s bars.",
+  "Install GlitchBound to play full screen, without the browser’s bars.",
+  "Swipe up to hide Safari’s bar. For full screen every time: Share, then Add to Home Screen.",
 ];
 
 export const UI_COUNT = 311;

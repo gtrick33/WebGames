@@ -1883,6 +1883,11 @@ const tr: string[] = [
   // 1710
   'Telefonu {name} adlı oyuncuya ver',
   '{n} saniye kaldı',
+  'Tam ekran uygulama',
+  'Uygulamayı yükle',
+  'Paylaş’a, ardından “Ana Ekrana Ekle”ye dokun: GlitchBound, Safari çubukları olmadan tam ekran açılır.',
+  'Tarayıcı çubukları olmadan tam ekran oynamak için GlitchBound’u yükle.',
+  'Safari çubuğunu gizlemek için yukarı kaydır. Her seferinde tam ekran için: Paylaş, ardından “Ana Ekrana Ekle”.',
 ];
 
 export default tr;

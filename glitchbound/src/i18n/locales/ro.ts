@@ -1883,6 +1883,11 @@ const ro: string[] = [
   // 1710
   'Dă telefonul lui {name}',
   'Mai sunt {n} secunde',
+  'Aplicație pe tot ecranul',
+  'Instalează aplicația',
+  'Atinge Partajează, apoi „Adaugă pe ecranul principal”: GlitchBound se deschide pe tot ecranul, fără barele Safari.',
+  'Instalează GlitchBound ca să joci pe tot ecranul, fără barele browserului.',
+  'Glisează în sus ca să ascunzi bara Safari. Pentru ecran complet de fiecare dată: Partajează, apoi „Adaugă pe ecranul principal”.',
 ];
 
 export default ro;

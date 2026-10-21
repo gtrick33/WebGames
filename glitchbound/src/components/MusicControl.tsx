@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { LANGS, setLang, useLang, useT } from '../i18n';
+import { promptInstall, useInstall } from '../platform/install';
 import { music, useMusic } from '../platform/music';
 import { setTheme, useTheme, type ThemeChoice } from '../platform/theme';
 import { Flag } from './Flag';
@@ -13,7 +14,7 @@ const THEMES: { id: ThemeChoice; icon: 'sun' | 'moon' | null; label: string }[] 
 ];
 
 /**
- * The settings button: sound, language and theme in one place. It sits at the end of the phone tab
+ * The settings button: sound, language, theme and the full-screen app in one place. It sits at the end of the phone tab
  * bar (where the header has no room for the language and theme buttons) and bottom-left on desktop.
  */
 export function MusicControl() {
@@ -21,6 +22,7 @@ export function MusicControl() {
   const m = useMusic();
   const lang = useLang();
   const [theme] = useTheme();
+  const install = useInstall();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -89,6 +91,19 @@ export function MusicControl() {
               ))}
             </div>
           </section>
+          {!install.standalone && (install.ios || install.canPrompt) && (
+            <section className="set-block">
+              <p className="set-head mono">{t('Full screen app')}</p>
+              {install.canPrompt && (
+                <div className="set-row">
+                  <button className="set-toggle is-on" onClick={() => void promptInstall()}>
+                    {t('Install the app')}
+                  </button>
+                </div>
+              )}
+              <p className="set-note">{install.ios ? t('Tap Share, then Add to Home Screen: GlitchBound opens full screen, without Safari’s bars.') : t('Install GlitchBound to play full screen, without the browser’s bars.')}</p>
+            </section>
+          )}
         </div>
       )}
     </div>

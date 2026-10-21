@@ -28,6 +28,7 @@ const MiniLeaderboard = lazy(fresh(() => import('../components/Leaderboard').the
 const DailyCompare = lazy(fresh(() => import('../components/DailyCompare').then((m) => ({ default: m.DailyCompare }))));
 import { openSignIn } from '../components/openSignIn';
 import { setGuestName, usePlayerName } from '../platform/playerName';
+import { isIos, isStandalone } from '../platform/install';
 import { music } from '../platform/music';
 import { openFeedback } from '../platform/feedback';
 import type { EndEvent, GameEvent } from '../platform/contract';
@@ -65,7 +66,7 @@ function lockZoom(on: boolean): void {
  * "immersive" mode that pins the stage over the whole screen. Either way the page stops scrolling
  * and zooming while playing.
  */
-function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): { active: boolean; enter: () => void; exit: () => void } {
+function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): { active: boolean; immersive: boolean; enter: () => void; exit: () => void } {
   const [mode, setMode] = useState<'none' | 'fullscreen' | 'immersive'>('none');
   const modeRef = useRef(mode);
   const onLeaveRef = useRef(onLeave);
@@ -81,6 +82,9 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
       const el = ref.current;
       el?.classList.toggle('stage-immersive', next === 'immersive');
       document.documentElement.classList.toggle('game-focus', next !== 'none');
+      // iPhone Safari can't hide its bars for a website: the page under the pinned stage stays
+      // scrollable, so a swipe on the game lets Safari tuck them away
+      document.documentElement.classList.toggle('game-scroll', next === 'immersive' && isIos() && !isStandalone());
       lockZoom(next !== 'none');
       setMode(next);
       // The page may have moved under the pinned stage (iPhone Safari): come back to the top, where
@@ -103,7 +107,7 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
     document.addEventListener('fullscreenchange', onChange);
     return () => {
       document.removeEventListener('fullscreenchange', onChange);
-      document.documentElement.classList.remove('game-focus');
+      document.documentElement.classList.remove('game-focus', 'game-scroll');
       lockZoom(false);
     };
   }, [ref, apply]);
@@ -132,7 +136,40 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
     return () => window.removeEventListener('keydown', onKey);
   }, [mode, apply]);
 
-  return { active: mode !== 'none', enter, exit };
+  return { active: mode !== 'none', immersive: mode === 'immersive', enter, exit };
+}
+
+/**
+ * iPhone Safari in the pinned (immersive) mode: once a visit, how to get the bars out of the way (a
+ * swipe now, or the Home Screen app for good). Fades after a few seconds.
+ */
+function SafariBarsTip() {
+  const t = useT();
+  const [show, setShow] = useState(() => {
+    if (!isIos() || isStandalone()) return false;
+    try {
+      return sessionStorage.getItem('glitchbound.barsTip') !== '1';
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    if (!show) return;
+    try {
+      sessionStorage.setItem('glitchbound.barsTip', '1');
+    } catch {
+      /* storage blocked */
+    }
+    const id = window.setTimeout(() => setShow(false), 7000);
+    return () => window.clearTimeout(id);
+  }, [show]);
+  if (!show) return null;
+  return (
+    <button className="stage-tip" onClick={() => setShow(false)}>
+      <Icon name="share" size={16} />
+      {t('Swipe up to hide Safari’s bar. For full screen every time: Share, then Add to Home Screen.')}
+    </button>
+  );
 }
 
 /**
@@ -497,6 +534,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                     <ChallengeScores run={chal} game={game} onClose={() => setScoresOpen(false)} />
                   </Suspense>
                 )}
+                {play.immersive && <SafariBarsTip />}
                 {play.active && <StageMenu slug={game.slug} title={game.title} placement={game.menu} open={menuOpen} setOpen={setMenuOpen} onOpen={() => setPauseSignal((n) => n + 1)} onExitFullscreen={play.exit} onExitGame={close} />}
               </>
             }

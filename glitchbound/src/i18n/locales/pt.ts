@@ -1883,6 +1883,11 @@ const pt: string[] = [
   // 1710
   'Passa o telemóvel a {name}',
   'Faltam {n} segundos',
+  'App em ecrã inteiro',
+  'Instalar a app',
+  'Toca em Partilhar e depois em «Adicionar ao ecrã principal»: o GlitchBound abre em ecrã inteiro, sem as barras do Safari.',
+  'Instala o GlitchBound para jogar em ecrã inteiro, sem as barras do navegador.',
+  'Desliza para cima para esconder a barra do Safari. Para ecrã inteiro sempre: Partilhar e depois «Adicionar ao ecrã principal».',
 ];
 
 export default pt;

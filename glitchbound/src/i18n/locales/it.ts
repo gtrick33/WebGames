@@ -1883,6 +1883,11 @@ const it: string[] = [
   // 1710
   'Passa il telefono a {name}',
   'Restano {n} secondi',
+  'App a schermo intero',
+  'Installa l’app',
+  'Tocca Condividi, poi «Aggiungi alla schermata Home»: GlitchBound si apre a schermo intero, senza le barre di Safari.',
+  'Installa GlitchBound per giocare a schermo intero, senza le barre del browser.',
+  'Scorri verso l’alto per nascondere la barra di Safari. Per lo schermo intero ogni volta: Condividi, poi «Aggiungi alla schermata Home».',
 ];
 
 export default it;

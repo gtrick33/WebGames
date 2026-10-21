@@ -1883,6 +1883,11 @@ const de: string[] = [
   // 1710
   'Gib das Handy an {name}',
   'Noch {n} Sekunden',
+  'Vollbild-App',
+  'App installieren',
+  'Tippe auf Teilen und dann auf „Zum Home-Bildschirm“: GlitchBound öffnet sich im Vollbild, ohne die Leisten von Safari.',
+  'Installiere GlitchBound, um im Vollbild zu spielen, ohne die Leisten des Browsers.',
+  'Wische nach oben, um die Leiste von Safari auszublenden. Für Vollbild jedes Mal: Teilen, dann „Zum Home-Bildschirm“.',
 ];
 
 export default de;

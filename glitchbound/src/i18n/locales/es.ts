@@ -1883,6 +1883,11 @@ const es: string[] = [
   // 1710
   'Pasa el móvil a {name}',
   'Quedan {n} segundos',
+  'App a pantalla completa',
+  'Instalar la app',
+  'Toca Compartir y luego «Añadir a pantalla de inicio»: GlitchBound se abre a pantalla completa, sin las barras de Safari.',
+  'Instala GlitchBound para jugar a pantalla completa, sin las barras del navegador.',
+  'Desliza hacia arriba para ocultar la barra de Safari. Para pantalla completa siempre: Compartir y luego «Añadir a pantalla de inicio».',
 ];
 
 export default es;
