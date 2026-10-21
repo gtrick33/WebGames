@@ -12,6 +12,13 @@
   user-select: none;
   -webkit-touch-callout: none;
 }
+/* iPhone Safari still selects text inside buttons and labels unless every element says so; zero
+   specificity, so a game's own explicit rule (a copyable share line) still wins. */
+:where(.stage) :where(*) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 .stage :is(input, textarea, [contenteditable='true']) {
   -webkit-user-select: text;
   user-select: text;

@@ -2148,3 +2148,30 @@
 .lc-race:has(.lc-race-menu) .lc-hud-top {
   padding-right: 100px;
 }
+/* phones: no text selection or Copy menu on a long press anywhere in the game (inputs excepted) */
+.lc *:not(input):not(textarea) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.lc-stage canvas {
+  touch-action: none;
+}
+/* the hub's items keep their size (the car card was squashed to a sliver) and the list only scrolls
+   up and down, without the elastic sideways drift or an empty band at the end */
+.lc-hub > * {
+  flex-shrink: 0;
+}
+.lc-hub,
+.lc-panel-body,
+.lc-modal-content {
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+}
+/* rows that scroll sideways inside those lists (rival cards on phones, chip rows) keep both directions */
+.lc-rgrid,
+.lc-chips,
+.lc-rivals {
+  touch-action: pan-x pan-y;
+}
