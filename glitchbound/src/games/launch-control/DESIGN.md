@@ -19,8 +19,9 @@ match-up, burnouts and staging, then the start lights.
    side and red above. Everything about a window is drawn from the race seed per gear, so everyone in a race
    shares it and every gear differs: where the green sits (70 to 92 % of the redline), how long the needle takes
    to cross it (0.2 to 0.32 s) and each yellow band (0.12 to 0.26 s, drawn separately below and above). Times
-   become revs per car (`shiftWindows`), so a window is equally hard in any car. Green = perfect (a 40 % quicker change and an 18 % kick for 0.8 s);
-   yellow = ok; red, or more than 0.14 s on the limiter = late (a slower change); below yellow = early (bogs).
+   become revs per car (`shiftWindows`), so a window is equally hard in any car. Green = perfect (a 40 % quicker change and a 32 % kick that
+   swells in and fades over a second); yellow = ok; red, or more than 0.14 s on the limiter = late (a slower change); below yellow = early (bogs).
+   After every change the clutch bites over 0.14 s, so the push comes back smoothly (the camera's punch eases the same way): no jump forward.
    Hitting the green is always the fastest line. A tap below half the redline is ignored. The needle follows the
    gear (the wheels) during the clutch launch, so it never crashes after the start.
 3. **The finish**: elapsed time (ET), trap speed, perfect shifts, finishing position. First across the line
@@ -29,12 +30,34 @@ match-up, burnouts and staging, then the start lights.
 **Score** (the leaderboard number): `20000 − (reaction + ET) ms + 150 × perfect shifts + 150 for a perfect launch`, 0 for a breakdown.
 
 Everything is deterministic: a race is `(cars, drivers, seed)`. A driver is live (your taps), a policy (an AI with
-a skill: reaction, launch error, shift timing) or a script (`{ launchRpm, reaction, shifts[] }`, a ghost).
+a skill: reaction, launch error, shift timing) or a script (`{ launchRpm, reaction, shifts[], nitro? }`, a ghost; encoded `lc3`,
+older `lc1`/`lc2` replays still load).
+
+**Traits** (`TRAIT_INFO` in cars.ts, read by `specOf` and the race): every car has one.
+
+| Trait | What it does |
+| --- | --- |
+| Featherweight | 4 % lighter; a perfect shift takes half the usual time (other shifts are normal, so it rewards the green) |
+| Turbo | soft below 45 % of the revs, then the torque climbs to 118 %: it hits late in every gear |
+| Big torque | pulls hardest low and fades at the top; 10 % less launch grip, and the nose lifts (a wheelie on screen) |
+| Rev monster | +700 rpm, greens 20 % tighter, a 40 % kick from a perfect shift |
+| Electric overdrive | one gear: a charge meter fills over 1.25 s, five times a run; tap in its green for a surge with no clutch gap. A full charge left alone vents (a late tap). The inverter (its transmission upgrade) adds torque |
+| Pursuit special | the most forgiving launch: perfect up to 0.36 s, good to 0.56 s; a siren whoop and flashing beacons |
+| All-wheel grip | never spins at the launch or after a shift; a launch 0.03 s more forgiving |
+| Nitrous | one shot a run: from second gear on, hold the button 0.45 s and it pushes up to 40 % harder for 2.2 s (swelling in and fading). Policy drivers fire it early in third. Not in live rooms (holds aren't synced) or the daily loaner |
+
+The race screen also has speed lines, nitrous flames, a slow-motion photo finish when the two cars cross within
+0.15 s (not live), and a coast-down past the line (the quickest cars on a parachute).
 
 ## Modes
 
 - **Ladder**: 40 named rivals in five divisions, one at a time; beat them for the rung, a purse and materials.
-  Beaten rivals can be rematched.
+  Beaten rivals can be rematched. A rival whose car is the one you're driving brings the car nearest it in price
+  from their division instead. Each **division final** is a pink slip: the boss drives a car from the next tier
+  (tuned down by `BOSS_LEVEL` to stay just quicker than you), and the first win over them puts it in your
+  garage, tuning and all (owned already: a fifth of its price in cash). The new car gets a reveal: the garage door
+  rolls up on it, then its trait and numbers.
+- **Test drive**: one a day, in any car you don't own, stock, against a car like it; no prize, wear or score.
 - **King's Gauntlet** (after the Street final): back-to-back races against ever quicker opponents; one loss ends
   the run, and the streak (with the sum of the won races' scores) is one run on the leaderboard.
 - **Race a friend** (live): a room on the rooms worker (`room.ts`) seats two phones; each picks a car from its own
@@ -52,14 +75,21 @@ a skill: reaction, launch error, shift timing) or a script (`{ launchRpm, reacti
 
 ## Bots
 
-`botsFor` picks cars within a tier of yours, tunes their parts so that a *perfect* run of theirs lands about a
-quarter second behind a perfect run of yours (worn parts slow a car that is too quick even stock), then gives
-each a driver skill that only loses time from there. Fair, varied, never a walkover.
+`botsFor` picks cars within a tier of yours (never your own car, never the last one on the roster), tunes their
+parts so that a *perfect* run of theirs lands about a quarter second behind a perfect run of yours (worn parts slow
+a car that is too quick even stock), then gives each a driver skill that only loses time from there. Fair, varied,
+never a walkover.
 
 ## The garage
 
-50 original cars (invented makers and names): RG Poly's low-poly city bodies in their factory paint schemes for the street to pro tiers, Cosmo's sports cars, supercars and hypercar for the top ones (models.ts, modelcar.ts; credits in CREDITS.md). The drivers sit in closed cars, so their helmet and suit show on a portrait next to their name. Six separate parts, each
-with eight levels and its own condition, each moving several numbers:
+28 original cars (invented makers and names), each on a body of its own: RG Poly's low-poly city cars, taxi, tow
+truck and police car (most in their factory paint), Cosmo's off-roader, van, police sedan, luxury SUV, rally hatch
+and fifties cruiser in the middle, and its muscle car, electric coupe, supercars and hypercar at the top (models.ts,
+modelcar.ts; credits in CREDITS.md). Stock pace is tuned so a dearer car is always quicker within its tier and every
+tier is clearly quicker than the last (a test checks both). The hub shows the next car to aim for and how far the
+cash has to go; the dealer has a collection view (yours in colour, the rest dimmed with their price or the boss to
+beat). The drivers sit in closed cars, so their helmet and suit show on a portrait next to their name. Six separate
+parts with eight levels each, each moving several numbers:
 
 | Part | Each level | Visible on the car |
 | --- | --- | --- |
@@ -70,8 +100,8 @@ with eight levels and its own condition, each moving several numbers:
 | Aerodynamics | −5.5 % drag, downforce at speed, +3 kg | something new every level: roof spoiler, ducktail and splitter, pedestal wing, diffuser and skirts, carbon wing, canards, swan-neck GT wing, time-attack wing (aero.ts) |
 | Looks | +6 % purse from fans, +3 % sponsor pay | livery, underglow, chrome |
 
-Upgrades cost cash plus materials (scrap, alloy, carbon, chips, rubber). Below 30 % condition a part can fail
-mid-race; repairs cost cash. Cosmetics: helmets, suits, paints, liveries, wheels, four strips.
+Upgrades cost cash plus materials: parts (every level) and rubber (tyres). Only the tyres wear; new ones cost cash,
+and below 30 % they can blow mid-race. Cosmetics: helmets, suits, paints, liveries, wheels, four strips.
 
 ## Files
 
@@ -86,7 +116,7 @@ mid-race; repairs cost cash. Cosmetics: helmets, suits, paints, liveries, wheels
 | `cosmetics.ts` / `envs.ts` | cosmetics for sale; the four strips | yes |
 | `storage.ts` | the local save (validated) | DOM |
 | `scene3d.ts` | Three.js: the stage (race chase camera, garage turntable with a camera focus per part, docking into pop-ups), sky reflections, worlds merged per material, a thumbnail queue; the old lofted car builder stays as a fallback when a model cannot load | WebGL |
-| `models.ts` | the 16 CC0 bodies: which body and proportions each car uses, shape tweaks (chopped roof, wide hips, long hood), loading and caching | WebGL |
+| `models.ts` | the 28 CC0 bodies (RG Poly and Cosmo): which body each car uses, the packs' palettes, paint cells and factory wings, loading and caching | WebGL |
 | `modelcar.ts` | builds a car from a body: repaint and livery mapping, spinning wheels sized by the tyre upgrade, upgrade parts snapped to the body by raycasts | WebGL |
 | `mats.ts` | shared materials, mesh helpers and static-mesh merging | WebGL |
 | `hud.ts` | the driver portrait | DOM |

@@ -8,23 +8,23 @@ import { claimCoins } from '../../platform/coins';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
-import { CARS, getCar, TIER_NAME, type CarDef } from './cars';
+import { CARS, getCar, TIER_NAME, TRAIT_INFO, type CarDef } from './cars';
 import { COSMETICS, DEFAULTS, getCosmetic, KIND_NAME, type Cosmetic, type CosmeticKind } from './cosmetics';
-import { addMats, avgLevel, botsFor, botSpec, crateFor, difficultyOf, DIVISIONS, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, hasMats, idleIncome, idleRate, LADDER, loanerFor, materialsFor, PER_DIVISION, PLAYER_SKILL, RACE_SIZE, rivalBot, settle, STAKE_SHARES, typicalEt, type Bot, type Forecast, type Opponent } from './economy';
+import { addMats, avgLevel, botsFor, botSpec, crateFor, difficultyOf, DIVISIONS, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, hasMats, idleIncome, idleRate, LADDER, loanerFor, materialsFor, PER_DIVISION, PINK_SLIP, pinkSlipCash, PLAYER_SKILL, RACE_SIZE, rivalBot, rivalCarId, settle, STAKE_SHARES, typicalEt, type Bot, type Forecast, type Opponent } from './economy';
 import { ENV_DEFS } from './envs';
-import { applyWear, effectsOf, FAILURE_TEXT, levelGains, MATERIALS, MAX_LEVEL, PART_INFO, PART_VISUALS, PARTS, raceWear, repairCost, RISKY, upgradeCost, type Condition, type Levels, type Mats, type PartId } from './parts';
+import { applyWear, effectsOf, FAILURE_TEXT, freshCondition, levelGains, MATERIALS, MAX_LEVEL, PART_INFO, PART_VISUALS, PARTS, raceWear, repairCost, RISKY, stockLevels, upgradeCost, wears, type Condition, type Levels, type Mats, type PartId } from './parts';
 import { RaceScreen, type RacePlan } from './RaceScreen';
 import { lookKey, NO_ORBIT, Stage3D, type CarLook, type Orbit, type ShowFocus } from './scene3d';
 import { decodeScript, encodeScript, forecastRun, scoreOf, simulate, specOf, type CarSpec, type Driver, type RaceResult } from './sim';
 import { createSfx, type Sfx } from './sound';
 import { Intro, introNeeded } from './intro';
 import { warmCars } from './models';
-import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type Save } from './storage';
+import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type OwnedCar, type Save } from './storage';
 import { GameMenuButton } from '../../components/GameMenuButton';
 import { Icon, PART_ICON } from './icons';
 import { LiveRoom } from './live';
 import type { LiveCar } from './room';
-import { CarThumb, Cash, DriverFace, MatsLine, MatsPill, Panel, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
+import { CarThumb, Cash, DriverFace, MatsLine, MatsPill, Panel, Sheet as Popup, StatBar, Sticker, TraitBadge, useThumb } from './ui';
 import { clamp, fmtCash, fmtEt, fmtShort } from './util';
 import './Game.css';
 
@@ -33,7 +33,8 @@ const EPOCH = '2026-10-21';
 const BY_PRICE: readonly CarDef[] = [...CARS].sort((a, b) => a.price - b.price || a.tier - b.tier || a.name.localeCompare(b.name));
 const SLUG = 'launch-control';
 type Screen = 'hub' | 'rivals' | 'setup' | 'race' | 'result' | 'garage' | 'parts' | 'dealer' | 'daily' | 'ladder' | 'help' | 'live';
-type Mode = 'ladder' | 'rematch' | 'daily' | 'challenge' | 'gauntlet';
+/** `test`: the dealer's free test drive (one a day, no prize, no wear). */
+type Mode = 'ladder' | 'rematch' | 'daily' | 'challenge' | 'gauntlet' | 'test';
 type GarageTab = 'repairs' | 'style';
 
 interface Plan {
@@ -62,6 +63,8 @@ interface Outcome {
   newBest: boolean;
   /** A gauntlet round: the streak so far, the run's total and whether it ended here. */
   gauntlet?: { round: number; wins: number; total: number; over: boolean; prize: number };
+  /** A boss beaten for the first time: their car is yours (or, owned already, sold on for cash). */
+  pinkSlip?: { car: string; owned: boolean; cash: number };
 }
 
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
@@ -72,7 +75,7 @@ function rivalDifficulty(o: Opponent, me: CarSpec): { label: string; tone: strin
   const key = `${o.rank}|${me.def.id}|${JSON.stringify(me.levels)}|${Math.round(me.grip * 100)}|${Math.round(me.peakTorque)}`;
   const hit = diffCache.get(key);
   if (hit) return hit;
-  const d = difficultyOf(typicalEt(botSpec(rivalBot(o)), o.skill) - typicalEt({ ...me, risky: [] }, PLAYER_SKILL));
+  const d = difficultyOf(typicalEt(botSpec(rivalBot(o, me.def.id)), o.skill) - typicalEt({ ...me, risky: [] }, PLAYER_SKILL));
   diffCache.set(key, d);
   if (diffCache.size > 400) diffCache.delete(diffCache.keys().next().value!);
   return d;
@@ -175,6 +178,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const [styleKind, setStyleKind] = useState<CosmeticKind>('paint');
   const [dealerTier, setDealerTier] = useState(0);
   const [previewCar, setPreviewCar] = useState<string | null>(null);
+  /** A new car being shown off (bought or won): the garage-door reveal over the hub. */
+  const [reveal, setReveal] = useState<string | null>(null);
   const [rivalPick, setRivalPick] = useState<number | null>(null);
   /** A King's Gauntlet run in progress: wins so far and their total score. */
   const gauntletRef = useRef<{ wins: number; total: number } | null>(null);
@@ -304,10 +309,13 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const triesLeft = DAILY_TRIES - (dailyRec?.tries ?? 0);
   const loaner = useMemo(() => loanerFor(dailySeed(today)), [today]);
   const crateOpen = save.crateDay === today;
+  // the hub's goal: the next car up from yours you don't have yet (or any you don't), and its pink slip
+  const nextCar = BY_PRICE.find((d) => !save.cars[d.id] && d.price > car.price) ?? BY_PRICE.find((d) => !save.cars[d.id]);
+  const nextSlip = nextCar ? PINK_SLIP[nextCar.id] : undefined;
 
   // ---- building a race
   const setup = useCallback(
-    (mode: Mode, rival: Opponent | null, round = 1): void => {
+    (mode: Mode, rival: Opponent | null, round = 1, testId?: string): void => {
       const s = saveRef.current;
       let tagline: string | undefined;
       const seed = mode === 'challenge' && challenge ? challenge.seed : mode === 'daily' ? dailySeed(today) : (Math.random() * 2 ** 32) >>> 0;
@@ -356,6 +364,15 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           setScreen('setup');
           return;
         }
+      } else if (mode === 'test') {
+        // the dealer's test drive: the car stock, against a car like it
+        const c = getCar(testId ?? s.car);
+        meSpec = specOf(c, stockLevels(), freshCondition(), false);
+        bots = botsFor(meSpec, RACE_SIZE - 1, seed);
+        rival = null;
+        carId = null;
+        tagline = 'TEST DRIVE';
+        looks.push({ ...lookOf(s, c, stockLevels()), paint: DEFAULTS.paint, livery: DEFAULTS.livery, wheels: DEFAULTS.wheels });
       } else if (mode === 'gauntlet') {
         const c = getCar(s.car);
         const o = s.cars[s.car] ?? newCar();
@@ -381,7 +398,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
         names.push(b.name);
         looks.push(botLook(b));
       }
-      setPlan({ mode, me: meSpec, bots, race: { specs, drivers, looks, names, env, seed, tagline }, rival: mode === 'daily' || mode === 'gauntlet' ? null : rival, stake: 0, forecast: forecast(meSpec, bots), carId, round: mode === 'gauntlet' ? round : undefined });
+      setPlan({ mode, me: meSpec, bots, race: { specs, drivers, looks, names, env, seed, tagline }, rival: mode === 'daily' || mode === 'gauntlet' || mode === 'test' ? null : rival, stake: 0, forecast: forecast(meSpec, bots), carId, round: mode === 'gauntlet' ? round : undefined });
       setScreen('setup');
     },
     [challenge, today, me],
@@ -401,11 +418,12 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       commit((s) => ({ ...s, daily: { ...s.daily, [today]: { ...d, tries: d.tries + 1, open: true, left: false } } }));
     }
     if (p.stake > 0) commit((s) => ({ ...s, cash: s.cash - p.stake }));
+    if (p.mode === 'test') commit((s) => ({ ...s, testDay: today }));
     setOutcome(null);
     setPaused(false);
     setConfirmLeave(false);
     sfx().click();
-    if (p.mode !== 'gauntlet' || (p.round ?? 1) === 1) host.report({ type: 'start' });
+    if (p.mode !== 'test' && (p.mode !== 'gauntlet' || (p.round ?? 1) === 1)) host.report({ type: 'start' });
     if (p.mode === 'gauntlet' && (p.round ?? 1) === 1) gauntletRef.current = { wins: 0, total: 0 };
     setScreen('race');
   };
@@ -424,15 +442,19 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       }
       let cash = { purse: 0, wager: 0, bonus: 0 };
       let mats: Mats = {};
-      let wear = raceWear({ spinTime: mine.spinTime, limiterTime: mine.limiterTime, missedShifts: mine.late + mine.early, dnf: mine.et === null });
+      let wear = raceWear({ spinTime: mine.spinTime });
       let rankUp = false;
       let gauntletInfo: Outcome['gauntlet'];
-      if (p.mode === 'daily') {
+      let pinkSlip: Outcome['pinkSlip'];
+      if (p.mode === 'test') {
+        // a test drive: nothing won, nothing worn, nothing on the leaderboard
+        wear = raceWear({ spinTime: 0 });
+      } else if (p.mode === 'daily') {
         const d = s0.daily[today] ?? { best: 0, tries: 1, et: 0 };
         const better = score > d.best;
         commit((s) => ({ ...s, runs: s.runs + 1, wins: s.wins + (won ? 1 : 0), daily: { ...s.daily, [today]: { best: Math.max(d.best, score), tries: d.tries, et: better && mine.et !== null ? Math.round(mine.et * 1000) : d.et, open: false } } }));
         host.report({ type: 'end', score, stats, daily: true });
-        wear = raceWear({ spinTime: 0, limiterTime: 0, missedShifts: 0, dnf: false });
+        wear = raceWear({ spinTime: 0 });
       } else if (p.mode === 'gauntlet') {
         const run = gauntletRef.current ?? { wins: 0, total: 0 };
         const round = p.round ?? 1;
@@ -456,7 +478,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       } else if (p.mode === 'challenge' && challenge) {
         commit((s) => ({ ...s, runs: s.runs + 1, wins: s.wins + (won ? 1 : 0) }));
         host.report({ type: 'end', score, stats, challenge: { id: challenge.id, round: challenge.round, replay: mine.et !== null ? encodeScript(mine.script) : undefined } });
-        wear = raceWear({ spinTime: 0, limiterTime: 0, missedShifts: 0, dnf: false });
+        wear = raceWear({ spinTime: 0 });
       } else {
         const opp = p.rival!;
         const firstWin = won && p.mode === 'ladder' && s0.rank === opp.rank - 1;
@@ -465,27 +487,35 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
         cash = settle({ position: mine.et === null ? RACE_SIZE : position, purse: opp.purse, fansMul: fans, stake: p.stake, mult: p.forecast.mult, firstWin });
         if (won) mats = materialsFor(opp, firstWin, p.race.seed);
         rankUp = firstWin;
+        // a division final won for the first time: the boss hands over the keys, tuning and all
+        if (firstWin && opp.boss) {
+          const owned = !!s0.cars[opp.car];
+          pinkSlip = { car: opp.car, owned, cash: owned ? pinkSlipCash(getCar(opp.car)) : 0 };
+        }
+        const slip = pinkSlip;
         const back = p.stake + cash.wager;
         commit((s) => {
           const oc = s.cars[p.carId!] ?? newCar();
+          const cars = { ...s.cars, [p.carId!]: { ...oc, cond: applyWear(oc.cond, wear) } };
+          if (slip && !slip.owned && !cars[slip.car]) cars[slip.car] = { ...newCar(), levels: { ...opp.levels } };
           return {
             ...s,
-            cash: Math.max(0, s.cash + cash.purse + Math.max(0, back) + cash.bonus),
-            earned: s.earned + cash.purse + Math.max(0, cash.wager) + cash.bonus,
+            cash: Math.max(0, s.cash + cash.purse + Math.max(0, back) + cash.bonus + (slip?.cash ?? 0)),
+            earned: s.earned + cash.purse + Math.max(0, cash.wager) + cash.bonus + (slip?.cash ?? 0),
             mats: addMats(s.mats, mats),
             rank: rankUp ? s.rank + 1 : s.rank,
             runs: s.runs + 1,
             wins: s.wins + (won ? 1 : 0),
-            cars: { ...s.cars, [p.carId!]: { ...oc, cond: applyWear(oc.cond, wear) } },
+            cars,
           };
         });
         host.report({ type: 'end', score, stats });
       }
-      const newBest = score > s0.bestScore && score > 0;
-      if (newBest || (mine.et !== null && (s0.bestEt === 0 || Math.round(mine.et * 1000) < s0.bestEt)))
+      const newBest = p.mode !== 'test' && score > s0.bestScore && score > 0;
+      if (p.mode !== 'test' && (newBest || (mine.et !== null && (s0.bestEt === 0 || Math.round(mine.et * 1000) < s0.bestEt))))
         commit((s) => ({ ...s, bestScore: Math.max(s.bestScore, score), bestEt: mine.et !== null && (s.bestEt === 0 || Math.round(mine.et * 1000) < s.bestEt) ? Math.round(mine.et * 1000) : s.bestEt }));
       if (cash.purse + cash.wager + cash.bonus > 0) sfx().cash();
-      setOutcome({ plan: p, result, position, score, won, cash, mats, wear, rankUp, newBest, gauntlet: gauntletInfo });
+      setOutcome({ plan: p, result, position, score, won, cash, mats, wear, rankUp, newBest, gauntlet: gauntletInfo, pinkSlip });
       setScreen('result');
     },
     [commit, host, challenge, today, sfx],
@@ -544,14 +574,6 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     sfx().click();
     commit((x) => ({ ...x, cash: x.cash - cost, cars: { ...x.cars, [x.car]: { ...oc, cond: { ...oc.cond, [part]: 100 } } } }));
   };
-  const repairAll = (): void => {
-    const s = saveRef.current;
-    const oc = s.cars[s.car] ?? newCar();
-    const total = PARTS.reduce((n, p) => n + repairCost(getCar(s.car), p, oc.cond[p]), 0);
-    if (total <= 0 || s.cash < total) return;
-    sfx().cash();
-    commit((x) => ({ ...x, cash: x.cash - total, cars: { ...x.cars, [x.car]: { ...oc, cond: newCar().cond } } }));
-  };
   const buyCar = (def: CarDef): void => {
     const s = saveRef.current;
     if (s.cars[def.id]) {
@@ -564,8 +586,21 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     // the new car is already on the turntable: no second rev on top of the start-up
     revFrom.current = def.id;
     commit((x) => ({ ...x, cash: x.cash - def.price, cars: { ...x.cars, [def.id]: newCar() }, car: def.id }));
+    showOff(def.id);
+  };
+  /** The garage-door reveal for a new car, over the hub (where the car has the whole screen). */
+  const showOff = (id: string): void => {
     setPreviewCar(null);
-    setToast(`${def.name} is yours. Tune it in the garage.`);
+    setInspect(null);
+    setReveal(id);
+    setScreen('hub');
+  };
+  /** Claims a pink slip from the result screen: the won car is the one you drive now. */
+  const claimSlip = (id: string): void => {
+    revFrom.current = id;
+    sfx().buy(getCar(id));
+    commit((x) => (x.cars[id] ? { ...x, car: id } : x));
+    showOff(id);
   };
   const buyOrEquip = (c: Cosmetic): void => {
     const s = saveRef.current;
@@ -607,7 +642,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const stageLook = useMemo((): CarLook => {
     if (screen === 'rivals') {
       const o = LADDER[rivalIdx]!;
-      return lookOf(emptySave(), getCar(o.car), o.levels);
+      return lookOf(emptySave(), getCar(rivalCarId(o, save.car)), o.levels);
     }
     if (screen === 'parts' && previewNext && owned.levels[partTab] < MAX_LEVEL) return lookOf(save, car, { ...owned.levels, [partTab]: owned.levels[partTab] + 1 });
     if (screen === 'garage' && styleTry) {
@@ -967,11 +1002,15 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
         </div>
       )}
       <main className="lc-main">
-        {screen === 'hub' && (
+        {screen === 'hub' && reveal && <CarReveal def={getCar(reveal)} owned={save.cars[reveal]} slip={!!PINK_SLIP[reveal] && outcome?.pinkSlip?.car === reveal} onDone={() => setReveal(null)} />}
+        {screen === 'hub' && !reveal && (
           <div className="lc-hub">
             <div className="lc-hero">
-              <span className="lc-hero-tier" data-tier={car.tier}>
-                {TIER_NAME[car.tier]} · Lv {Math.round(avgLevel(owned.levels))}
+              <span className="lc-hero-tags">
+                <span className="lc-hero-tier" data-tier={car.tier}>
+                  {TIER_NAME[car.tier]} · Lv {Math.round(avgLevel(owned.levels))}
+                </span>
+                <TraitBadge trait={car.trait} />
               </span>
               <span className="lc-hero-driver">
                 <DriverFace helmet={look.helmet} suit={look.suit} size={34} badge />
@@ -1010,6 +1049,26 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   })}
                 </span>
               </div>
+              {nextCar && (
+                <button
+                  className="lc-next-car"
+                  onClick={() => {
+                    go('dealer');
+                    setPreviewCar(nextCar.id);
+                  }}
+                >
+                  <span className="lc-next-car-text">
+                    <small className="mono">{save.cash >= nextCar.price ? 'Ready to buy' : 'Next car'}</small>
+                    <b>
+                      <span aria-hidden="true">{TRAIT_INFO[nextCar.trait].icon}</span> {nextCar.name}
+                    </b>
+                    <small className="mono">{save.cash >= nextCar.price ? `$${fmtShort(nextCar.price)} at the dealer` : nextSlip && nextSlip.division === nextOpp.division ? `$${fmtShort(nextCar.price)} · or beat ${nextSlip.name}` : `$${fmtShort(nextCar.price - save.cash)} to go`}</small>
+                  </span>
+                  <span className="lc-next-car-bar" aria-hidden="true">
+                    <i style={{ transform: `scaleX(${Math.min(1, save.cash / Math.max(1, nextCar.price)).toFixed(3)})` }} />
+                  </span>
+                </button>
+              )}
             </div>
             <div className="lc-modes">
               <button className="lc-mode" data-tone="cyan" onClick={() => go('daily')}>
@@ -1044,7 +1103,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
               <button className="lc-tile" onClick={() => go('garage')} aria-label="My garage">
                 <Icon name="wrench" />
                 <span>Garage</span>
-                {PARTS.some((p) => p !== 'looks' && owned.cond[p] < RISKY) && <span className="lc-badge is-warn">!</span>}
+                {PARTS.some((p) => wears(p) && owned.cond[p] < RISKY) && <span className="lc-badge is-warn">!</span>}
               </button>
               <button className="lc-tile" onClick={() => go('parts')} aria-label="Parts shop">
                 <Icon name="engine" />
@@ -1075,11 +1134,16 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
 
         {screen === 'setup' && plan && (
           <Panel
-            eyebrow={plan.mode === 'daily' ? `Today’s Showdown #${dailyNumber(today)}` : plan.mode === 'challenge' ? 'Friends’ challenge' : plan.mode === 'gauntlet' ? `King’s Gauntlet · round ${plan.round ?? 1}` : plan.rival?.boss ? 'Division final' : 'Head to head'}
+            eyebrow={plan.mode === 'daily' ? `Today’s Showdown #${dailyNumber(today)}` : plan.mode === 'challenge' ? 'Friends’ challenge' : plan.mode === 'gauntlet' ? `King’s Gauntlet · round ${plan.round ?? 1}` : plan.mode === 'test' ? 'Free test drive' : plan.rival?.boss ? 'Division final · pink slip' : 'Head to head'}
             title={plan.mode === 'daily' ? 'Same car, same opponent, for everyone' : plan.mode === 'challenge' ? 'Beat the fastest ghost' : `vs ${plan.race.names[1] ?? 'rival'}`}
             className="lc-setup"
             onBack={challenge ? undefined : () => {
               if (plan.mode === 'gauntlet') endGauntlet();
+              if (plan.mode === 'test') {
+                go('dealer');
+                setPreviewCar(plan.me.def.id);
+                return;
+              }
               go(plan.mode === 'daily' ? 'daily' : plan.mode === 'gauntlet' ? 'hub' : 'rivals');
             }}
           >
@@ -1093,6 +1157,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 <span className="mono">
                   {plan.me.def.name} · ~{fmtEt(plan.forecast.myEt)} s
                 </span>
+                <TraitBadge trait={plan.me.def.trait} />
               </div>
               <span className="lc-versus-mark" aria-label="versus">
                 VS
@@ -1107,8 +1172,18 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   {plan.race.specs[1]?.def.name}
                   {plan.race.drivers[1]?.kind === 'script' ? ' · ghost' : plan.forecast.etList[0] !== undefined ? ` · ~${fmtEt(plan.forecast.etList[0])} s` : ''}
                 </span>
+                {plan.race.specs[1] && <TraitBadge trait={plan.race.specs[1].def.trait} />}
               </div>
             </div>
+            {plan.rival?.boss && (
+              <p className="lc-slip-note">
+                <Sticker tone="magenta" flat>
+                  Pink slip
+                </Sticker>
+                <span>{save.rank === plan.rival.rank - 1 ? (save.cars[plan.rival.car] ? `Beat ${plan.rival.name} and their ${getCar(plan.rival.car).name} is sold on for you: +$${fmtCash(pinkSlipCash(getCar(plan.rival.car)))}.` : `Beat ${plan.rival.name} and their ${getCar(plan.rival.car).name} is yours, tuning and all.`) : 'You already won this one.'}</span>
+              </p>
+            )}
+            {plan.mode === 'test' && <p className="lc-sub">The car as it leaves the factory, against a car like it. No prize, no wear, one a day.</p>}
             {plan.mode === 'gauntlet' && (
               <p className="lc-sub">
                 {(plan.round ?? 1) === 1 ? 'Win and the next opponent is quicker. Lose once and the run is over: your streak goes on the leaderboard.' : `Streak ${(plan.round ?? 1) - 1}. Every round the opponent gets quicker.`}
@@ -1141,7 +1216,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
               </div>
             )}
             <button className="btn btn-lg lc-cta" autoFocus onClick={() => startRace(plan)}>
-              {plan.mode === 'daily' ? `Run (${triesLeft} left)` : plan.mode === 'gauntlet' ? `Race round ${plan.round ?? 1}` : 'Confirm race'}
+              {plan.mode === 'daily' ? `Run (${triesLeft} left)` : plan.mode === 'gauntlet' ? `Race round ${plan.round ?? 1}` : plan.mode === 'test' ? 'Start the test drive' : 'Confirm race'}
             </button>
           </Panel>
         )}
@@ -1154,9 +1229,17 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
             challenge={challenge}
             save={save}
             triesLeft={triesLeft}
-            onAgain={() =>
-              outcome.plan.mode === 'daily' ? setup('daily', null) : outcome.gauntlet ? setup('gauntlet', null, outcome.gauntlet.over ? 1 : outcome.gauntlet.round + 1) : setup(outcome.rankUp ? 'ladder' : outcome.plan.mode, outcome.rankUp ? null : outcome.plan.rival)
-            }
+            onAgain={() => {
+              if (outcome.plan.mode === 'test') {
+                go('dealer');
+                setPreviewCar(outcome.plan.me.def.id);
+                return;
+              }
+              if (outcome.plan.mode === 'daily') setup('daily', null);
+              else if (outcome.gauntlet) setup('gauntlet', null, outcome.gauntlet.over ? 1 : outcome.gauntlet.round + 1);
+              else setup(outcome.rankUp ? 'ladder' : outcome.plan.mode, outcome.rankUp ? null : outcome.plan.rival);
+            }}
+            onClaim={claimSlip}
             onGarage={() => {
               endGauntlet();
               go('garage');
@@ -1242,7 +1325,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                           {o.boss && <Icon name="crown" size={15} className="lc-boss" />}
                         </b>
                         <span className="mono">
-                          {getCar(o.car).name} · purse ${fmtCash(o.purse)}
+                          {getCar(rivalCarId(o, save.car)).name} · purse ${fmtCash(o.purse)}
                         </span>
                       </div>
                       {(beaten || next) && (
@@ -1265,7 +1348,13 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 <b>The start.</b> Both cars burn out and stage. Then the start lights, as in Formula 1: five reds come on one a second, and with all five lit they go out after anything from no wait to three seconds. Launch the moment they go out; tap while they’re on and it’s a jump start.
               </li>
               <li>
-                <b>Shift.</b> Every gear has its own green zone on the tach ring, and it moves after each shift. Tap (or press Space) while the needle is in the green for a <i>perfect</i> shift and a kick of speed. Yellow is fine, red is slow, early bogs the car, and the limiter wears the engine.
+                <b>Shift.</b> Every gear has its own green zone on the tach ring, and it moves after each shift. Tap (or press Space) while the needle is in the green for a <i>perfect</i> shift and a kick of speed. Yellow is fine, red is slow, and early bogs the car.
+              </li>
+              <li>
+                <b>Every car is different.</b> Each has one trait. Turbos hit late, big torque pulls hard and spins easily, rev monsters kick harder on a perfect shift, featherweights snap through one, police cars forgive a slow start and all-wheel drive never spins. An electric has no gears: tap <i>Boost</i> each time its charge meter peaks. Cars with nitrous get one shot a run: from second gear on, hold the button down to fire it.
+              </li>
+              <li>
+                <b>Pink slips.</b> Every division final is raced for the boss’s car. Beat a boss the first time and the car is yours, tuning and all. The dealer gives you one free test drive a day in any car you don’t own yet.
               </li>
               <li>
                 <b>Head to head.</b> Every race is you against one rival. Win and you take the purse and the wager; second pays a small consolation.
@@ -1274,7 +1363,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 <b>King’s Gauntlet.</b> After the Street final: back-to-back races, each opponent quicker than the last. One loss ends the run; the streak goes on the leaderboard.
               </li>
               <li>
-                <b>Garage.</b> Six separate parts, eight levels each. Every level moves several numbers (a bigger engine is also heavier and a touch less reliable). Parts wear with use; under {RISKY}% they can fail mid-run.
+                <b>Garage.</b> Six separate parts, eight levels each. Every level moves several numbers (a bigger engine is also heavier and a touch less reliable). Tyres wear with use and need replacing; under {RISKY}% they can blow out mid-run. Nothing else wears.
               </li>
               <li>
                 <b>Money.</b> Purses, wagers, the daily crate and your sponsor (paid by the hour while you’re away) are the only money there is. Nothing here is ever bought with real money.
@@ -1309,7 +1398,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   key={p}
                   role="tab"
                   aria-selected={partTab === p}
-                  className={`lc-ptab${partTab === p ? ' is-on' : ''}${p !== 'looks' && owned.cond[p] < RISKY ? ' is-worn' : ''}`}
+                  className={`lc-ptab${partTab === p ? ' is-on' : ''}${wears(p) && owned.cond[p] < RISKY ? ' is-worn' : ''}`}
                   onClick={() => {
                     sfx().click();
                     setPartTab(p);
@@ -1360,7 +1449,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                     setStyleTry(null);
                   }}
                 >
-                  {t === 'repairs' ? 'Repairs' : 'Style'}
+                  {t === 'repairs' ? 'Tyres' : 'Style'}
                 </button>
               ))}
               <button className="lc-tab" onClick={() => go('parts')}>
@@ -1380,9 +1469,9 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           )}
           {garageTab === 'repairs' && (
             <div className="lc-repairs">
-              <p className="lc-sub">Parts wear with every race. Under {RISKY}% they can fail mid-run; a fresh part never does.</p>
+              <p className="lc-sub">Tyres wear with every race, more when they spin. Under {RISKY}% they can blow out mid-run; new tyres never do. Nothing else wears.</p>
               <ul className="lc-parts lc-parts-compact">
-                {PARTS.filter((p) => p !== 'looks').map((p) => {
+                {PARTS.filter(wears).map((p) => {
                   const cond = owned.cond[p];
                   const fix = repairCost(car, p, cond);
                   return (
@@ -1394,7 +1483,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                         <div className="lc-part-name">
                           <b>{PART_INFO[p].name}</b>
                           <span className="mono">
-                            Lv {owned.levels[p]} · {cond < RISKY ? 'could fail' : cond < 60 ? 'worn' : cond < 100 ? 'fine' : 'like new'}
+                            Lv {owned.levels[p]} · {cond < RISKY ? 'could blow' : cond < 60 ? 'worn' : cond < 100 ? 'fine' : 'like new'}
                           </span>
                         </div>
                         <span className="lc-ring mono" data-tone={cond < RISKY ? 'bad' : cond < 60 ? 'mid' : 'good'} style={{ '--p': `${cond}%` } as CSSProperties} aria-label={`${Math.round(cond)}% condition`}>
@@ -1407,21 +1496,13 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                           Inspect
                         </button>
                         <button className={`btn btn-sm${cond < 100 && save.cash >= fix ? ' lc-cta' : ''}`} onClick={() => repair(p)} disabled={cond >= 100 || save.cash < fix}>
-                          {cond >= 100 ? 'Like new' : fix <= 0 ? 'Repair · free' : <>Repair <Cash n={fix} /></>}
+                          {cond >= 100 ? 'Like new' : fix <= 0 ? 'New tyres · free' : <>New tyres <Cash n={fix} /></>}
                         </button>
                       </div>
                     </li>
                   );
                 })}
               </ul>
-              {(() => {
-                const total = PARTS.reduce((n, p) => n + repairCost(car, p, owned.cond[p]), 0);
-                return (
-                  <button className="btn lc-cta" onClick={repairAll} disabled={total <= 0 || save.cash < total}>
-                    {total <= 0 ? 'Everything is like new' : <>Repair all <Cash n={total} /></>}
-                  </button>
-                );
-              })()}
             </div>
           )}
           {garageTab === 'style' && <StyleShop save={save} kind={styleKind} setKind={setStyleKind} onPick={buyOrEquip} trying={styleTry} onTry={setStyleTry} />}
@@ -1430,16 +1511,16 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
 
       {screen === 'dealer' && (
         <Popup
-          eyebrow={`${CARS.length} cars · ${Object.keys(save.cars).length} owned`}
+          eyebrow={`${Object.keys(save.cars).length} of ${CARS.length} collected`}
           title="Dealer"
           onBack={() => go('hub')}
           viewRef={setViewEl}
           right={cashPill}
           tabs={
             <div className="lc-chips" role="tablist" aria-label="Tier">
-              {[0, 1, 2, 3, 4, 5, 6].map((t) => (
+              {[-1, 0, 1, 2, 3, 4, 5, 6].map((t) => (
                 <button key={t} role="tab" aria-selected={dealerTier === t} className={`lc-chip${dealerTier === t ? ' is-on' : ''}`} onClick={() => setDealerTier(t)}>
-                  {t === 0 ? 'All' : TIER_NAME[t as CarDef['tier']]}
+                  {t === -1 ? 'Collection' : t === 0 ? 'All' : TIER_NAME[t as CarDef['tier']]}
                 </button>
               ))}
             </div>
@@ -1459,15 +1540,40 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   <span className="mono lc-sub">
                     {shown.hp} hp · {shown.mass} kg · {shown.drive.toUpperCase()} · {shown.gears === 1 ? 'single speed' : `${shown.gears} gears`} · ¼ mi ~{fmtEt(sh.et)} s
                   </span>
+                  <TraitBadge trait={shown.trait} full />
                 </div>
-                <button className={`btn${mine ? '' : save.cash >= shown.price ? ' lc-cta' : ''}`} onClick={() => buyCar(shown)} disabled={(!mine && save.cash < shown.price) || shown.id === save.car}>
-                  {mine ? (shown.id === save.car ? 'Your car' : 'Drive this one') : <>Buy <Cash n={shown.price} /></>}
-                </button>
+                <div className="lc-dealer-buttons">
+                  <button className={`btn${mine ? '' : save.cash >= shown.price ? ' lc-cta' : ''}`} onClick={() => buyCar(shown)} disabled={(!mine && save.cash < shown.price) || shown.id === save.car}>
+                    {mine ? (shown.id === save.car ? 'Your car' : 'Drive this one') : <>Buy <Cash n={shown.price} /></>}
+                  </button>
+                  {!mine && (
+                    <button className="btn btn-sm" onClick={() => setup('test', null, 1, shown.id)} disabled={save.testDay === today} title={save.testDay === today ? 'One free test drive a day: come back tomorrow' : undefined}>
+                      {save.testDay === today ? 'Test drive used today' : 'Free test drive'}
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })()}
-          <ul className="lc-cars">
-            {BY_PRICE.filter((d) => dealerTier === 0 || d.tier === dealerTier).map((d) => {
+          {dealerTier === -1 && (
+            <ul className="lc-book">
+              {BY_PRICE.map((d) => {
+                const mine = !!save.cars[d.id];
+                const slip = PINK_SLIP[d.id];
+                return (
+                  <li key={d.id} className={`${mine ? 'is-owned' : ''}${(previewCar ?? save.car) === d.id ? ' is-sel' : ''}`}>
+                    <button onClick={() => setPreviewCar(d.id)} aria-label={`${d.name}${mine ? ', collected' : ''}`}>
+                      <CarThumb look={lookOf(save, d)} />
+                      <b>{d.name}</b>
+                      <small className="mono">{mine ? `${TRAIT_INFO[d.trait].icon} ${TRAIT_INFO[d.trait].name}` : slip ? `Pink slip: beat ${slip.name}` : `$${fmtShort(d.price)}`}</small>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <ul className="lc-cars" hidden={dealerTier === -1}>
+            {BY_PRICE.filter((d) => dealerTier <= 0 || d.tier === dealerTier).map((d) => {
               const mine = !!save.cars[d.id];
               const sh = sheetOf(d, newCar().levels, newCar().cond);
               const sel = (previewCar ?? save.car) === d.id;
@@ -1484,7 +1590,9 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                     <span className="lc-car-nums mono">
                       {d.hp} hp · {d.mass} kg · {d.drive.toUpperCase()} · ¼ mi ~{fmtEt(sh.et)} s
                     </span>
+                    <TraitBadge trait={d.trait} />
                     <p className="lc-blurb">{d.blurb}</p>
+                    {!mine && PINK_SLIP[d.id] && <p className="lc-blurb lc-slip-line">Or win it: beat {PINK_SLIP[d.id]!.name}, the {DIVISIONS[PINK_SLIP[d.id]!.division]} final.</p>}
                   </div>
                   <div className="lc-car-side">
                     <Sticker tone={['lime', 'cyan', 'yellow', 'orange', 'coral', 'magenta'][d.tier - 1]} flat>
@@ -1508,14 +1616,54 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
 
 // ---- screens and pieces
 
+/**
+ * A new car's moment: the garage door rolls up on it (the car itself is the hub's showcase behind),
+ * then its name, its trait and what it does.
+ */
+function CarReveal({ def, owned, slip, onDone }: { def: CarDef; owned?: OwnedCar; slip: boolean; onDone: () => void }) {
+  const sh = sheetOf(def, owned?.levels ?? stockLevels(), owned?.cond ?? freshCondition());
+  const t = TRAIT_INFO[def.trait];
+  return (
+    <div className="lc-reveal" role="dialog" aria-label={`New car: ${def.name}`}>
+      <div className="lc-reveal-door" aria-hidden="true" />
+      <div className="lc-reveal-top">
+        <Sticker tone={slip ? 'magenta' : 'lime'}>{slip ? 'Won on a pink slip' : 'New car'}</Sticker>
+        <span className="lc-eyebrow mono">
+          {def.maker} {def.year} · {def.kind} · {TIER_NAME[def.tier]}
+        </span>
+        <h2 className="lc-reveal-name">{def.name}</h2>
+      </div>
+      <div className="lc-reveal-card">
+        <div className="lc-reveal-trait">
+          <span className="lc-reveal-icon" aria-hidden="true">
+            {t.icon}
+          </span>
+          <span>
+            <b>{t.name}</b>
+            <small>{t.blurb}</small>
+          </span>
+        </div>
+        <div className="lc-reveal-stats">
+          <StatBar label="Power" value={sh.hp} max={2600} text={`${sh.hp} hp`} tone="coral" />
+          <StatBar label="Weight" value={2600 - sh.mass} max={2200} text={`${sh.mass} kg`} tone="cyan" />
+          <StatBar label="¼ mile" value={16 - sh.et} max={11} text={`${fmtEt(sh.et)} s`} tone="lime" />
+        </div>
+        <button className="btn btn-lg lc-cta" autoFocus onClick={onDone}>
+          Let’s race
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function WornWarning({ cond }: { cond: Condition }) {
-  const worn = PARTS.filter((p) => p !== 'looks' && cond[p] < RISKY);
+  const worn = PARTS.filter((p) => wears(p) && cond[p] < RISKY);
   if (!worn.length) return null;
   return (
     <p className="lc-warn" role="status">
       <Icon name="warn" size={18} />
       <span>
-        {worn.map((p) => PART_INFO[p].name).join(', ')} under {RISKY}%: could fail mid-race. Repair in the garage.
+        {worn.map((p) => PART_INFO[p].name).join(', ')} under {RISKY}%: could blow out mid-race. Fit new ones in the garage.
       </span>
     </p>
   );
@@ -1553,12 +1701,12 @@ function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, view
   const lo = Math.max(0, Math.min(save.rank - 3, LADDER.length - 8));
   const list = LADDER.slice(lo, Math.min(LADDER.length, lo + 8));
   const o = LADDER[sel]!;
-  const oSpec = botSpec(rivalBot(o));
+  const oSpec = botSpec(rivalBot(o, save.car));
   const run = forecastRun(oSpec, o.skill, 7);
   const diff = rivalDifficulty(o, mySpec);
   const beaten = sel < save.rank;
   const next = sel === save.rank;
-  const oSheet = sheetOf(getCar(o.car), o.levels, newCar().cond);
+  const oSheet = sheetOf(getCar(rivalCarId(o, save.car)), o.levels, newCar().cond);
   return (
     <Popup eyebrow={`${DIVISIONS[o.division]} division · ${save.rank}/${LADDER.length} beaten`} title="Pick your rival" onBack={onBack} viewRef={viewRef} right={right} className="lc-rivals-sheet">
       <div className="lc-rgrid" role="listbox" aria-label="Rivals">
@@ -1571,12 +1719,12 @@ function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, view
             <button key={r.rank} role="option" aria-selected={on} className={`lc-rcard${on ? ' is-on' : ''}${locked ? ' is-locked' : ''}${i < save.rank ? ' is-beaten' : ''}`} onClick={() => !locked && setPick(i)} disabled={locked}>
               <span className="lc-rcard-rank mono">#{r.rank}</span>
               {on && <span className="lc-rcard-sel mono">Selected</span>}
-              <CarThumb look={lookOf(emptySave(), getCar(r.car), r.levels)} />
+              <CarThumb look={lookOf(emptySave(), getCar(rivalCarId(r, save.car)), r.levels)} />
               <b className="lc-rcard-name">
                 {r.boss && <Icon name="crown" size={15} className="lc-boss" />}
                 {r.name}
               </b>
-              <span className="lc-rcard-car mono">{getCar(r.car).name}</span>
+              <span className="lc-rcard-car mono">{getCar(rivalCarId(r, save.car)).name}</span>
               <span className="lc-rcard-foot" data-tone={locked ? 'locked' : d.tone}>
                 {locked ? (
                   <>
@@ -1611,7 +1759,7 @@ function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, view
           <b>~{fmtEt(run.et)} s</b>
           <i>yours ~{fmtEt(mySheet.et)} s</i>
           <span>Car</span>
-          <b>{getCar(o.car).name}</b>
+          <b>{getCar(rivalCarId(o, save.car)).name}</b>
           <i>you {getCar(save.car).name}</i>
           <span>Power</span>
           <b>{oSheet.hp} hp</b>
@@ -1698,17 +1846,23 @@ function InspectCard({ part, mode, car, levels, cond, save, preview, setPreview,
           )}
         </>
       ) : (
-        <>
-          <div className="lc-cond">
-            <span className="lc-cond-bar">
-              <i style={{ width: `${cond[part]}%` }} className={cond[part] < RISKY ? 'is-bad' : cond[part] < 60 ? 'is-mid' : ''} />
-            </span>
-            <span className="mono">{Math.round(cond[part])}% condition</span>
-          </div>
-          <button className={`btn lc-upgrade${cond[part] < 100 && save.cash >= fix ? ' lc-cta' : ''}`} onClick={onRepair} disabled={cond[part] >= 100 || save.cash < fix}>
-            {cond[part] >= 100 ? 'Like new' : fix <= 0 ? 'Repair · free' : <>Repair <Cash n={fix} /></>}
-          </button>
-        </>
+        wears(part) ? (
+          <>
+            <div className="lc-cond">
+              <span className="lc-cond-bar">
+                <i style={{ width: `${cond[part]}%` }} className={cond[part] < RISKY ? 'is-bad' : cond[part] < 60 ? 'is-mid' : ''} />
+              </span>
+              <span className="mono">{Math.round(cond[part])}% condition</span>
+            </div>
+            <button className={`btn lc-upgrade${cond[part] < 100 && save.cash >= fix ? ' lc-cta' : ''}`} onClick={onRepair} disabled={cond[part] >= 100 || save.cash < fix}>
+              {cond[part] >= 100 ? 'Like new' : fix <= 0 ? 'New tyres · free' : <>New tyres <Cash n={fix} /></>}
+            </button>
+          </>
+        ) : (
+          <Sticker tone="lime" flat>
+            Never wears
+          </Sticker>
+        )
       )}
     </div>
   );
@@ -1734,7 +1888,7 @@ function PartPanel({ part, car, levels, cond, save, preview, setPreview, onBuy, 
     { label: 'Top speed', a: now.trap, b: after.trap, fmt: (n) => `${Math.round(n)} km/h` },
   ];
   return (
-    <div className={`lc-part-panel lc-panel-inner${part !== 'looks' && cond[part] < RISKY ? ' is-worn' : ''}`}>
+    <div className={`lc-part-panel lc-panel-inner${wears(part) && cond[part] < RISKY ? ' is-worn' : ''}`}>
       <div className="lc-part-top">
         <span className="lc-part-icon" aria-hidden="true">
           <Icon name={PART_ICON[part]} />
@@ -1752,7 +1906,7 @@ function PartPanel({ part, car, levels, cond, save, preview, setPreview, onBuy, 
       </div>
       <LevelTrack level={level} marks={PART_VISUALS[part].map(([lv]) => lv)} />
       <p className="lc-sub">{info.blurb}</p>
-      {part !== 'looks' && (
+      {wears(part) && (
         <div className="lc-cond">
           <span className="lc-cond-bar">
             <i style={{ width: `${cond[part]}%` }} className={cond[part] < RISKY ? 'is-bad' : cond[part] < 60 ? 'is-mid' : ''} />
@@ -1883,7 +2037,7 @@ function Swatch({ c, save }: { c: Cosmetic; save: Save }) {
   );
 }
 
-function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onGarage, onMenu }: { o: Outcome; me: string; today: string; challenge?: ChallengeSpec; save: Save; triesLeft: number; onAgain: () => void; onGarage: () => void; onMenu: () => void }) {
+function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onClaim, onGarage, onMenu }: { o: Outcome; me: string; today: string; challenge?: ChallengeSpec; save: Save; triesLeft: number; onAgain: () => void; onClaim: (car: string) => void; onGarage: () => void; onMenu: () => void }) {
   const mine = o.result.racers[0]!;
   const p = o.plan;
   const g = o.gauntlet;
@@ -1892,7 +2046,27 @@ function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onGar
   const line = resultLine(o);
   const share = `Launch Control #${dailyNumber(today)} 🏁\n${line}\nBest today: ${fmtCash(d?.best ?? 0)} (${d?.tries ?? 0} ${d?.tries === 1 ? 'run' : 'runs'})\n${window.location.origin}/games/${SLUG}`;
   return (
-    <Panel eyebrow={p.mode === 'daily' ? `Today’s Showdown #${dailyNumber(today)}` : p.mode === 'challenge' ? 'Friends’ challenge' : g ? 'King’s Gauntlet' : 'Race result'} title={title} className={`lc-result${o.won ? ' is-win' : ''}`}>
+    <Panel eyebrow={p.mode === 'daily' ? `Today’s Showdown #${dailyNumber(today)}` : p.mode === 'challenge' ? 'Friends’ challenge' : g ? 'King’s Gauntlet' : p.mode === 'test' ? `Test drive · ${p.me.def.name}` : 'Race result'} title={title} className={`lc-result${o.won ? ' is-win' : ''}`}>
+      {o.pinkSlip && (
+        <div className="lc-slip">
+          <CarThumb look={lookOf(save, getCar(o.pinkSlip.car))} />
+          <div>
+            <Sticker tone="magenta">Pink slip!</Sticker>
+            <b>{o.pinkSlip.owned ? `${getCar(o.pinkSlip.car).name}: sold on` : `${p.race.names[1]} hands you the keys`}</b>
+            <span>{o.pinkSlip.owned ? <>You already have one, so the slip goes for <Cash n={o.pinkSlip.cash} />.</> : <>Their {getCar(o.pinkSlip.car).name} is yours, tuning and all.</>}</span>
+            {!o.pinkSlip.owned && (
+              <button className="btn lc-cta" onClick={() => onClaim(o.pinkSlip!.car)}>
+                Drive it now
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {p.mode === 'test' && (
+        <p className="lc-sub">
+          {save.cars[p.me.def.id] ? 'It is yours now.' : save.cash >= p.me.def.price ? <>Like it? It is <Cash n={p.me.def.price} /> at the dealer, and you can afford it.</> : <>Like it? It is <Cash n={p.me.def.price} /> at the dealer.</>}
+        </p>
+      )}
       {g && (
         <div className="lc-streak">
           <span className="lc-eyebrow mono">Streak</span>
@@ -1910,7 +2084,8 @@ function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onGar
         {o.result.order.map((idx, k) => {
           const r = o.result.racers[idx]!;
           const other = o.result.racers[idx === 0 ? 1 : 0];
-          const gap = r.et !== null && other && other.et !== null ? r.et - other.et : null;
+          // behind by: who crossed the line first decides (the start counts), not the quarter-mile time alone
+          const gap = r.crossed !== null && other && other.crossed !== null ? r.crossed - other.crossed : null;
           return (
             <li key={idx} className={`${idx === 0 ? 'is-you' : 'is-rival'}${k === 0 ? ' is-winner' : ''}`}>
               <span className="lc-order-pos">{k === 0 ? <Icon name="trophy" size={18} /> : k + 1}</span>
@@ -2013,7 +2188,7 @@ function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onGar
           </a>
         ) : (
           <button className="btn btn-lg lc-cta" autoFocus onClick={onAgain} disabled={p.mode === 'daily' && triesLeft <= 0}>
-            {p.mode === 'daily' ? (triesLeft > 0 ? `Run again (${triesLeft} left)` : 'No runs left today') : g ? (g.over ? 'New gauntlet run' : `Next round (${g.round + 1})`) : o.rankUp ? 'Next rival' : 'Race again'}
+            {p.mode === 'daily' ? (triesLeft > 0 ? `Run again (${triesLeft} left)` : 'No runs left today') : p.mode === 'test' ? 'Back to the dealer' : g ? (g.over ? 'New gauntlet run' : `Next round (${g.round + 1})`) : o.rankUp ? 'Next rival' : 'Race again'}
           </button>
         )}
         {p.mode === 'daily' && <ShareButton text={share} />}

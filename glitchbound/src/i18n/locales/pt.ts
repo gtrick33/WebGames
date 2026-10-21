@@ -1966,6 +1966,16 @@ const pt: string[] = [
   'Espaço, Enter ou seta para cima: arranca quando as cinco luzes vermelhas se apagarem e muda quando o ponteiro estiver na zona verde',
   'Esc ou P: pausa',
   'Toca em qualquer lado (ou no botão grande) quando as luzes vermelhas se apagarem e depois sempre que o ponteiro estiver na zona verde',
+  'Duelos de arrancadas em 3D: acerta em cada mudança, ganha os carros dos rivais e coleciona 28 carros com truques próprios.',
+  'Um jogo estratégico de arrancadas de um quarto de milha em 3D brilhante, visto de trás do teu carro. Arranca quando as cinco luzes vermelhas se apagarem e depois acerta em cada mudança numa zona verde que muda de sítio e de tamanho em cada velocidade, sempre frente a frente com um rival. Coleciona 28 carros originais, desde um sedan familiar de olhos redondos até um hiperdesportivo com nitro, cada um com o seu traço: os turbos empurram tarde, o binário alto levanta a frente, os monstros de rotação dão mais coice, os carros da polícia perdoam uma partida lenta, um elétrico ativa o overdrive em vez de mudar e os carros com nitro têm um disparo por corrida. Sobe uma escada de 40 rivais em cinco divisões e ganha o carro de cada chefe, aposta o dinheiro ganho segundo as probabilidades previstas e afina seis peças com oito níveis cada: a aerodinâmica junta um novo spoiler ou asa em cada nível, a suspensão rebaixa o carro, os pneus ganham faixas de cor e só os pneus se desgastam. Depois, enfrenta o King’s Gauntlet pela sequência mais longa ou corre ao vivo contra um amigo, cada um no seu telemóvel. No Duelo do dia todos recebem o mesmo carro emprestado e o mesmo adversário; os amigos correm contra o teu fantasma nos desafios. Nada de dinheiro real.',
+  '28 carros originais em seis escalões, cada um com a sua carroçaria 3D low-poly: citadinos, um táxi, um reboque, carros da polícia, um todo-o-terreno e uma carrinha até superdesportivos e um hiperdesportivo com nitro',
+  'Cada carro tem um traço que muda a forma como anda: turbo, binário alto, monstro de rotação, peso-pena, tração integral, especial de perseguição, overdrive elétrico ou nitro',
+  'Seis peças separadas com oito níveis cada, cada uma altera várias estatísticas; a aerodinâmica, a suspensão e os pneus mudam o carro em cada nível. Só os pneus se desgastam',
+  'As peças e a borracha desbloqueiam os níveis mais altos; o dinheiro e os materiais só vêm das corridas',
+  'Uma escada de 40 rivais em cinco divisões com prémios, bónus pela primeira vitória e finais de divisão em que se disputa o carro do chefe',
+  'Um test drive grátis todos os dias em qualquer carro que ainda não tenhas',
+  'Mantém Espaço premido (a partir da segunda): dispara o nitro, nos carros que o têm',
+  'Mantém o botão premido (a partir da segunda): dispara o nitro, nos carros que o têm',
 ];
 
 export default pt;

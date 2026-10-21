@@ -1,7 +1,7 @@
 import { CARS, DEFAULT_CAR } from './cars';
 import { COSMETICS, DEFAULTS, getCosmetic, type CosmeticKind } from './cosmetics';
 import { emptyMats, LADDER_SIZE } from './economy';
-import { freshCondition, MATERIALS, MAX_LEVEL, PARTS, stockLevels, type Condition, type Levels, type Material } from './parts';
+import { freshCondition, MATERIALS, MAX_LEVEL, PARTS, stockLevels, wears, type Condition, type Levels, type Material } from './parts';
 import { clamp } from './util';
 
 /** The local save: synced to the cloud for members (its key matches platform/syncKeys.ts). Every field is validated on load. */
@@ -43,6 +43,8 @@ export interface Save {
   paidAt: number;
   /** The day the free crate was last opened. */
   crateDay: string;
+  /** The day the free test drive was last used. */
+  testDay: string;
   daily: Record<string, DailyRecord>;
   runs: number;
   wins: number;
@@ -64,7 +66,7 @@ export const newCar = (): OwnedCar => ({ levels: stockLevels(), cond: freshCondi
 export const emptySave = (): Save => ({
   cash: 800,
   earned: 0,
-  mats: { ...emptyMats(), scrap: 6, rubber: 2 },
+  mats: { ...emptyMats(), parts: 6, rubber: 2 },
   cars: { [DEFAULT_CAR]: newCar() },
   car: DEFAULT_CAR,
   rank: 0,
@@ -74,6 +76,7 @@ export const emptySave = (): Save => ({
   owned: [],
   paidAt: 0,
   crateDay: '',
+  testDay: '',
   daily: {},
   runs: 0,
   wins: 0,
@@ -85,6 +88,37 @@ export const emptySave = (): Save => ({
   seenHelp: false,
 });
 
+/**
+ * Cars the roster dropped (it went from 50 cars to 28, each on its own body): an owned one becomes the
+ * car that took its place, upgrades and paint kept, or comes back as its price in cash when that car
+ * is owned already.
+ */
+const RETIRED: Record<string, [string, number]> = {
+  'pico-dot': ['pico-pop', 2400],
+  lazzaro: ['kestrel', 11000],
+  'kurogane-gt': ['vossberg-gti', 16000],
+  kaiser: ['astro', 12000],
+  'rotary-rebel': ['tsubasa', 26000],
+  brickhouse: ['bayou-boss', 30000],
+  'comet-ss': ['stallion', 38000],
+  gullwing: ['sakura', 42000],
+  panther: ['night-patrol', 36000],
+  marlin: ['tsubasa', 28000],
+  sterling: ['redline', 130000],
+  widowmaker: ['ironhide', 110000],
+  ragazzo: ['vortex', 140000],
+  longbow: ['falkon', 115000],
+  'blue-thunder': ['falkon', 125000],
+  wraith: ['hellion', 230000],
+  valkyr: ['stallone-812', 900000],
+  'royal-flush': ['peregrine', 1500000],
+  goldrush: ['toro', 1800000],
+  nova: ['toro', 2100000],
+  zephyr: ['peregrine', 2300000],
+  veyr: ['toro', 2500000],
+  'nitro-funny': ['toro', 2700000],
+};
+
 const num = (v: unknown, max = 1e12): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(max, Math.floor(v)) : 0);
 const KNOWN_CARS = new Set(CARS.map((c) => c.id));
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -94,10 +128,11 @@ function cleanCar(v: unknown): OwnedCar {
   if (!v || typeof v !== 'object') return c;
   const o = v as Partial<OwnedCar>;
   if (o.levels && typeof o.levels === 'object') for (const p of PARTS) c.levels[p] = clamp(num((o.levels as Levels)[p]), 0, MAX_LEVEL);
+  // only tyres wear now: any other part an older save had worn comes back like new
   if (o.cond && typeof o.cond === 'object')
     for (const p of PARTS) {
       const x = (o.cond as Condition)[p];
-      c.cond[p] = typeof x === 'number' && Number.isFinite(x) ? clamp(x, 0, 100) : 100;
+      c.cond[p] = wears(p) && typeof x === 'number' && Number.isFinite(x) ? clamp(x, 0, 100) : 100;
     }
   const pick = (kind: CosmeticKind, id: unknown): string => (typeof id === 'string' && getCosmetic(id)?.kind === kind ? id : DEFAULTS[kind]);
   c.paint = pick('paint', o.paint);
@@ -112,10 +147,27 @@ export function sanitize(raw: unknown): Save {
   const o = raw as Record<string, unknown>;
   s.cash = num(o.cash);
   s.earned = num(o.earned);
-  if (o.mats && typeof o.mats === 'object') for (const k of MATERIALS) s.mats[k] = num((o.mats as Record<string, unknown>)[k], 1e6);
-  if (o.cars && typeof o.cars === 'object') for (const [id, v] of Object.entries(o.cars)) if (KNOWN_CARS.has(id)) s.cars[id] = cleanCar(v);
+  if (o.mats && typeof o.mats === 'object') {
+    const m = o.mats as Record<string, unknown>;
+    for (const k of MATERIALS) s.mats[k] = num(m[k], 1e6);
+    // saves from before the merge: scrap, alloy, carbon and chips become parts, worth what they cost
+    s.mats.parts = Math.min(1e6, s.mats.parts + num(m.scrap, 1e6) + 2 * num(m.alloy, 1e6) + 3 * num(m.carbon, 1e6) + 4 * num(m.chips, 1e6));
+  }
+  const moved: Record<string, string> = {};
+  if (o.cars && typeof o.cars === 'object') {
+    const cars = Object.entries(o.cars);
+    for (const [id, v] of cars) if (KNOWN_CARS.has(id)) s.cars[id] = cleanCar(v);
+    for (const [id, v] of cars) {
+      const r = RETIRED[id];
+      if (!r) continue;
+      if (s.cars[r[0]]) s.cash = Math.min(1e12, s.cash + r[1]);
+      else s.cars[r[0]] = cleanCar(v);
+      moved[id] = r[0];
+    }
+  }
   if (!s.cars[DEFAULT_CAR]) s.cars[DEFAULT_CAR] = newCar();
-  s.car = typeof o.car === 'string' && s.cars[o.car] ? o.car : DEFAULT_CAR;
+  const sel = typeof o.car === 'string' ? (moved[o.car] ?? o.car) : '';
+  s.car = s.cars[sel] ? sel : DEFAULT_CAR;
   s.rank = clamp(num(o.rank), 0, LADDER_SIZE);
   const pick = (kind: CosmeticKind, id: unknown): string => (typeof id === 'string' && getCosmetic(id)?.kind === kind ? id : DEFAULTS[kind]);
   s.helmet = pick('helmet', o.helmet);
@@ -124,6 +176,7 @@ export function sanitize(raw: unknown): Save {
   if (Array.isArray(o.owned)) s.owned = [...new Set(o.owned.filter((x): x is string => typeof x === 'string' && !!getCosmetic(x)))];
   s.paidAt = num(o.paidAt, 1e14);
   s.crateDay = typeof o.crateDay === 'string' && DAY.test(o.crateDay) ? o.crateDay : '';
+  s.testDay = typeof o.testDay === 'string' && DAY.test(o.testDay) ? o.testDay : '';
   if (o.daily && typeof o.daily === 'object')
     for (const [d, v] of Object.entries(o.daily).slice(-60)) {
       if (!DAY.test(d) || !v || typeof v !== 'object') continue;

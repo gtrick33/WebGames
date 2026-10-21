@@ -1966,6 +1966,16 @@ const it: string[] = [
   'Spazio, Invio o Su: parti quando le cinque luci rosse si spengono, poi cambia quando la lancetta è nella zona verde',
   'Esc o P: pausa',
   'Tocca ovunque (o il pulsante grande) quando le luci rosse si spengono, poi ogni volta che la lancetta è nella zona verde',
+  'Duelli di accelerazione in 3D: azzecca ogni cambiata, vinci le auto dei rivali e colleziona 28 auto con i loro trucchi.',
+  'Un gioco strategico di gare di accelerazione sul quarto di miglio in 3D lucido, visto da dietro la tua auto. Parti quando le cinque luci rosse si spengono, poi azzecca ogni cambiata in una zona verde che cambia posizione e ampiezza a ogni marcia, testa a testa contro un rivale alla volta. Colleziona 28 auto originali, dalla berlina di famiglia con gli occhi tondi all’hypercar col nitro, ognuna con il suo tratto: i turbo spingono tardi, la coppia alta alza il muso, i mostri di giri danno un calcio più forte, le auto della polizia perdonano una partenza lenta, un’elettrica attiva l’overdrive invece di cambiare e le auto col nitro hanno una scarica a gara. Scala una classifica di 40 rivali in cinque divisioni e vinci l’auto di ogni boss, scommetti i soldi guadagnati sulle quote previste ed elabora sei parti con otto livelli ciascuna: l’aerodinamica aggiunge uno spoiler o un alettone nuovo a ogni livello, le sospensioni abbassano l’auto, le gomme ricevono fianchi colorati e solo le gomme si consumano. Poi affronta il King’s Gauntlet per la serie più lunga oppure sfida un amico dal vivo, ognuno sul suo telefono. Nella sfida del giorno tutti hanno la stessa auto in prestito e lo stesso avversario; gli amici sfidano il tuo fantasma nelle sfide. Niente soldi veri, da nessuna parte.',
+  '28 auto originali in sei livelli, ognuna con la sua carrozzeria 3D low-poly: utilitarie, un taxi, un carro attrezzi, auto della polizia, un fuoristrada e un furgone fino alle supercar e a un’hypercar col nitro',
+  'Ogni auto ha un tratto che cambia come si guida: turbo, coppia alta, mostro di giri, peso piuma, trazione integrale, speciale inseguimento, overdrive elettrico o nitro',
+  'Sei parti separate con otto livelli ciascuna, ognuna cambia diverse statistiche; aerodinamica, sospensioni e gomme cambiano l’auto a ogni livello. Si consumano solo le gomme',
+  'Ricambi e gomma sbloccano i livelli più alti; soldi e materiali arrivano solo correndo',
+  'Una classifica di 40 rivali in cinque divisioni con premi, bonus per la prima vittoria e finali di divisione in cui ti giochi l’auto del boss',
+  'Un giro di prova gratis ogni giorno con un’auto che non hai ancora',
+  'Tieni premuto Spazio (dalla seconda): spara il nitro, sulle auto che ce l’hanno',
+  'Tieni premuto il pulsante (dalla seconda): spara il nitro, sulle auto che ce l’hanno',
 ];
 
 export default it;

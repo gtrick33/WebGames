@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { buildAero, type BodySurface } from './aero';
 import { getCosmetic } from './cosmetics';
 import { blobTexture, mergeStatic, mesh, std } from './mats';
-import { PACKS, type LoadedModel, type ModelPart, type Role } from './models';
+import { PACKS, STOCK_RECOLOR, type LoadedModel, type ModelPart, type Role } from './models';
 import { MAX_LEVEL } from './parts';
 import type { CarLook, CarRig } from './scene3d';
 import { clamp, shade } from './util';
@@ -441,6 +441,21 @@ function glowTexture(): THREE.CanvasTexture {
   return glowTex;
 }
 
+/** Red and white gores for the parachute. */
+function stripeTexture(): THREE.CanvasTexture {
+  const cv = document.createElement('canvas');
+  cv.width = 128;
+  cv.height = 8;
+  const ctx = cv.getContext('2d')!;
+  for (let k = 0; k < 8; k++) {
+    ctx.fillStyle = k % 2 ? '#f4f4f4' : '#e8262e';
+    ctx.fillRect(k * 16, 0, 16, 8);
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 // ---------------------------------------------------------------- the build
 const ray = new THREE.Raycaster();
 const DOWN = new THREE.Vector3(0, -1, 0);
@@ -462,9 +477,9 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
     disposables.push(d);
     return d;
   };
-  // the stock paint: RG cars keep their factory scheme; Cosmo cars wear their roster colour
+  // the stock paint: RG cars keep their factory scheme (unless another car wears it); Cosmo cars wear their roster colour
   const stock = look.paint === 'p-stock' || !getCosmetic(look.paint);
-  const factory = stock && model.pack === 'rg';
+  const factory = stock && model.pack === 'rg' && !STOCK_RECOLOR.has(def.id);
   const paint = stock ? (factory ? model.factory : def.color) : paintOf(look);
   const s = model.scale;
   const mb = model.box;
@@ -612,6 +627,77 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
     pops.push(pop);
   }
 
+  // nitrous: long blue flames from the same pipes (only cars that carry it)
+  const nitro: THREE.Object3D[] = [];
+  if (def.trait === 'nitro') {
+    // a long blue cone with a white-hot core and a glow at the pipe
+    const outer = keepD(new THREE.MeshBasicMaterial({ color: '#4f9dff', transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.AdditiveBlending }));
+    const core = keepD(new THREE.MeshBasicMaterial({ color: '#e8f8ff', transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending }));
+    const outerGeo = keepD(new THREE.ConeGeometry(0.19, 1.7, 10, 1, true).rotateZ(Math.PI / 2).translate(-0.85, 0, 0));
+    const coreGeo = keepD(new THREE.ConeGeometry(0.09, 0.95, 8, 1, true).rotateZ(Math.PI / 2).translate(-0.47, 0, 0));
+    const glowMat = keepD(new THREE.SpriteMaterial({ map: glowTexture(), color: '#6fb6ff', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    for (const z of [W * 0.28, -W * 0.28]) {
+      const f = new THREE.Group();
+      f.position.set((surface.backAt(popY, z) ?? bb.min.x) - 0.04, popY, z);
+      f.add(new THREE.Mesh(outerGeo, outer), new THREE.Mesh(coreGeo, core));
+      const glow = new THREE.Sprite(glowMat);
+      glow.scale.setScalar(0.9);
+      f.add(glow);
+      f.visible = false;
+      bodyG.add(f);
+      nitro.push(f);
+    }
+  }
+
+  // a police car's beacons, on the highest point of the roof (where its light bar is)
+  const beacons: THREE.Object3D[] = [];
+  if (def.trait === 'pursuit') {
+    let bx = 0;
+    let by = -1;
+    for (let k = 0; k <= 40; k++) {
+      const x = surface.xMin + ((surface.xMax - surface.xMin) * k) / 40;
+      const y = surface.topAt(x, 0) ?? -1;
+      if (y > by) {
+        by = y;
+        bx = x;
+      }
+    }
+    for (const [col, z] of [['#ff2a3a', W * 0.16], ['#2a6bff', -W * 0.16]] as const) {
+      const b = new THREE.Sprite(keepD(new THREE.SpriteMaterial({ map: glowTexture(), color: col, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })));
+      b.scale.setScalar(1.3);
+      b.position.set(bx, by + 0.06, z);
+      b.visible = false;
+      bodyG.add(b);
+      beacons.push(b);
+    }
+  }
+
+  // the kings stop on a parachute: a striped canopy on four lines, behind the tail
+  let chute: THREE.Object3D | undefined;
+  if (def.tier >= 6) {
+    const g = new THREE.Group();
+    // a shallow canopy (its open side to the car) with a dark vent at the crown, trailing on long lines
+    const canopy = new THREE.Mesh(keepD(new THREE.SphereGeometry(0.85, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.5, 1).rotateZ(Math.PI / 2)), keepD(new THREE.MeshStandardMaterial({ map: keepD(stripeTexture()), side: THREE.DoubleSide, roughness: 0.8 })));
+    g.add(canopy);
+    const vent = new THREE.Mesh(keepD(new THREE.CircleGeometry(0.16, 12).rotateY(-Math.PI / 2)), keepD(new THREE.MeshBasicMaterial({ color: '#2a1a1a', side: THREE.DoubleSide })));
+    vent.position.x = -0.43;
+    g.add(vent);
+    const lineMat = keepD(new THREE.MeshBasicMaterial({ color: '#2b2b33' }));
+    for (const [y, z] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      const from = new THREE.Vector3(0, y * 0.83, z * 0.83);
+      const to = new THREE.Vector3(4.6, -0.75, 0);
+      const len = from.distanceTo(to);
+      const line = new THREE.Mesh(keepD(new THREE.CylinderGeometry(0.026, 0.026, len, 4)), lineMat);
+      line.position.copy(from).add(to).multiplyScalar(0.5);
+      line.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize());
+      g.add(line);
+    }
+    g.position.set(bb.min.x - 4.7, 1.2, 0);
+    g.visible = false;
+    root.add(g);
+    chute = g;
+  }
+
   // looks: underglow
   if (lv.looks >= 4) {
     const glow = new THREE.Mesh(keepD(new THREE.PlaneGeometry(L * 1.05, W * 1.7)), keepD(new THREE.MeshBasicMaterial({ color: lv.looks >= 7 ? '#ff4f9a' : '#b8f02a', map: glowTexture(), transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending })));
@@ -667,6 +753,10 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
     anchors,
     flames: [],
     pops,
+    nitro,
+    beacons,
+    chute,
+    rearX: surface.rearAxle,
     shiftLamp: null,
     smoke,
     len: L,

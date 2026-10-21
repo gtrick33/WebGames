@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { GameMenuButton } from '../../components/GameMenuButton';
+import { TRAIT_INFO } from './cars';
 import { FAILURE_TEXT } from './parts';
 import { LANES, LIGHTS_OFF, type CarLook, type CarState, type LightsState, type Stage3D } from './scene3d';
 import { DriverFace } from './ui';
 import { MAX_STEP, replay } from './room';
-import { DISTANCE, DT, LIGHTS, lightsOf, Race, shiftRpm, type CarSpec, type Driver, type RaceResult, type ShiftWindow } from './sim';
+import { canNitro, canShift, DISTANCE, DT, LIGHTS, lightsOf, NITRO_HOLD_S, NITRO_S, Race, shiftRpm, type CarSpec, type Driver, type Racer, type RaceResult, type ShiftWindow } from './sim';
 import type { Sfx } from './sound';
 import { fmtEt } from './util';
 
@@ -49,6 +50,19 @@ function tachRing(w: ShiftWindow | null): string {
   return `conic-gradient(from 225deg, ${NEUTRAL} 0deg ${a(w.okLo)}, ${YELLOW} ${a(w.okLo)} ${a(w.lo)}, ${GREEN} ${a(w.lo)} ${a(w.hi)}, ${YELLOW} ${a(w.hi)} ${a(w.okHi)}, ${RED} ${a(w.okHi)} ${a(1)}, transparent ${a(1)} 360deg)`;
 }
 
+/** Past the line a car brakes to a stop (a parachute pops on the quickest), instead of freezing on the stripe. */
+function coastOf(r: Racer, t: number): { x: number; v: number; chute: number } {
+  if (r.phase !== 'done' || r.dnf) return { x: r.x, v: r.dead ? 0 : r.v, chute: 0 };
+  const since = Math.max(0, t - (r.launchAt + r.et));
+  const chute = r.spec.def.tier >= 6 || r.trap > 69;
+  const a = chute ? 13 : 8;
+  const tt = Math.min(since, r.trap / a);
+  return { x: DISTANCE + r.trap * tt - 0.5 * a * tt * tt, v: Math.max(0, r.trap - a * since), chute: chute ? Math.min(1, Math.max(0, (since - 0.25) / 0.35)) : 0 };
+}
+
+/** A big-torque car lifts its nose off the line: up over a third of a second, down by 1.1 s. */
+const wheelie = (since: number): number => (since <= 0 ? 0 : since < 0.35 ? Math.sin((since / 0.35) * (Math.PI / 2)) : Math.max(0, 1 - (since - 0.35) / 0.75));
+
 /** The pre-race show before the clock runs: the intro orbit with the match-up, then burnouts. */
 const INTRO_S = 3.2;
 const BURNOUT_S = 1.8;
@@ -81,6 +95,9 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
   const dots = useRef<(HTMLSpanElement | null)[]>([]);
   const shiftBtn = useRef<HTMLButtonElement>(null);
   const lightsEl = useRef<HTMLDivElement>(null);
+  const nosEl = useRef<HTMLDivElement>(null);
+  const nosFill = useRef<HTMLElement>(null);
+  const linesEl = useRef<HTMLDivElement>(null);
   const skipRef = useRef<() => void>(() => undefined);
   useEffect(() => {
     pausedRef.current = paused;
@@ -146,6 +163,13 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
     let excite = 0.15;
     let finishCheer = 0;
     let marshalsUp = false;
+    // the button held down (the nitrous fires after NITRO_HOLD_S), and the photo-finish slow motion
+    let holdAt = -1;
+    let timeScale = 1;
+    let slowSaid = false;
+    let shownNos = '';
+    const hasNos = me.spec.trait === 'nitro' && !live;
+    const ev = me.spec.gears === 1;
     // a slow phone drops the pixel ratio a step at a time
     let dpr = Math.min(1.75, window.devicePixelRatio || 1);
     let frameAvg = 16;
@@ -202,6 +226,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
               }
               stage?.kick(e.quality === 'perfect' ? 1.3 : 0.8);
               s.cheer(e.quality === 'perfect' ? 0.9 : 0.6);
+              if (me.spec.trait === 'pursuit') s.siren();
               if (e.quality === 'perfect') {
                 s.perfect();
                 popup('PERFECT LAUNCH!', 'lime');
@@ -226,8 +251,18 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
             }
             break;
           case 'shift':
-            stage?.pop(e.i);
-            if (e.i === 0) {
+            if (race.racers[e.i]!.spec.gears > 1) stage?.pop(e.i);
+            if (e.i === 0 && ev) {
+              // an electric's overdrive: a surge, no clutch
+              s.surge(e.quality === 'perfect' ? 1 : e.quality === 'ok' ? 0.5 : 0.15);
+              if (e.quality === 'perfect') {
+                s.perfect();
+                stage?.kick(0.7);
+                popup('OVERDRIVE!', 'lime');
+              } else if (e.quality === 'ok') popup('SURGE', 'cyan');
+              else if (e.quality === 'early') popup('EARLY', 'orange');
+              else popup('MISSED', 'coral');
+            } else if (e.i === 0) {
               s.shift();
               s.pop();
               if (e.quality === 'perfect') {
@@ -241,6 +276,13 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
             break;
           case 'limiter':
             if (e.i === 0) s.limiter();
+            break;
+          case 'nitro':
+            stage?.kick(e.i === 0 ? 1.4 : 0.4);
+            if (e.i === 0) {
+              s.nitro();
+              popup('NITROUS!', 'cyan');
+            }
             break;
           case 'fail':
             if (e.i === 0) {
@@ -290,6 +332,21 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
       dt = Math.min(dt, 0.1);
       showT += dt;
       rt += dt;
+      // the nitrous: the button held down long enough, once the car can take it
+      if (hasNos && holdAt >= 0 && rt - holdAt >= NITRO_HOLD_S && canNitro(me)) {
+        race.nitro(0);
+        holdAt = -1;
+      }
+      // a photo finish: both cars cross within 0.15 s of each other and time slows right down for it
+      // (not live: the friend's phone runs on the same clock)
+      const eta = (r: Racer): number => (r.phase === 'done' ? r.launchAt + r.et : race.t + (DISTANCE - r.x) / Math.max(1, r.v));
+      const photo = !live && !!rival && race.out && !race.done && me.phase !== 'staging' && rival.phase !== 'staging' && !me.dnf && !rival.dnf && [me, rival].some((r) => r.phase !== 'done' && r.x > DISTANCE - 28) && Math.abs(eta(me) - eta(rival)) < 0.15;
+      timeScale += ((photo ? 0.3 : 1) - timeScale) * Math.min(1, dt * (photo ? 10 : 4));
+      if (photo && !slowSaid) {
+        slowSaid = true;
+        say('PHOTO FINISH', 'yellow');
+      }
+      const simDt = dt * timeScale;
       let lights: LightsState = LIGHTS_OFF;
       if (live && (show === 'intro' || show === 'burnout')) {
         // live: the show runs on the room's clock, the same on both phones
@@ -346,7 +403,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
           marshalsUp = false;
         }
       } else if (show === 'race' || show === 'done') {
-        acc += dt;
+        acc += simDt;
         let steps = 0;
         while (acc >= DT && steps < 24) {
           acc -= DT;
@@ -380,28 +437,45 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
         const revs = show === 'burnout' ? 0.75 + Math.sin(showT * 9) * 0.12 : show === 'intro' ? 0.25 : me.dead ? 0 : me.rpm / me.spec.redline;
         s.engine(revs, me.phase === 'running' || show === 'burnout' ? 1 : 0.3);
       }
-      // HUD: the tach shows this gear's window; it moves to a new spot after each shift
+      // HUD: the tach shows this gear's window; it moves to a new spot after each shift (an electric's
+      // needle is its overdrive charge)
       const frac = Math.min(1.02, shiftRpm(me) / me.spec.redline);
-      const canShift = me.phase === 'running' && me.gear < me.spec.gears && !me.stuck && !me.dead;
-      const win = canShift ? race.windowOf(0) : null;
+      const shiftable = canShift(me);
+      const win = shiftable ? race.windowOf(0) : null;
       const hot = !!win && frac >= win.lo && frac <= win.hi;
-      const gearKey = me.phase === 'staging' || me.phase === 'done' ? -1 : me.gear;
+      const gearKey = me.phase === 'staging' || me.phase === 'done' ? -1 : ev ? me.stage : me.gear;
       if (gearKey !== shownGear) {
         shownGear = gearKey;
         if (face.current) face.current.style.background = tachRing(gearKey > 0 ? race.windowOf(0) : null);
       }
-      const st: StripState = show !== 'race' && show !== 'done' ? 'launch' : me.phase === 'staging' ? (race.out && !me.jumped ? 'go' : 'launch') : me.phase === 'done' ? 'done' : me.gear >= me.spec.gears || me.stuck ? 'top' : 'shift';
+      const st: StripState = show !== 'race' && show !== 'done' ? 'launch' : me.phase === 'staging' ? (race.out && !me.jumped ? 'go' : 'launch') : me.phase === 'done' ? 'done' : me.phase === 'shifting' || shiftable ? 'shift' : 'top';
       if (st !== shownState) {
         shownState = st;
         root.dataset.state = st;
-        if (shiftBtn.current) shiftBtn.current.textContent = st === 'launch' || st === 'go' ? 'LAUNCH' : 'SHIFT';
+        if (shiftBtn.current) shiftBtn.current.textContent = st === 'launch' || st === 'go' ? 'LAUNCH' : ev ? 'BOOST' : 'SHIFT';
+      }
+      // the nitrous gauge: waiting for second gear, ready (hold), filling while held, burning, spent
+      if (hasNos && nosEl.current) {
+        const holding = holdAt >= 0 && canNitro(me);
+        const ns = me.nitroLeft > 0 ? 'burn' : me.nitroUsed ? 'used' : holding ? 'hold' : canNitro(me) ? 'ready' : 'wait';
+        if (ns !== shownNos) {
+          shownNos = ns;
+          nosEl.current.dataset.state = ns;
+        }
+        if (nosFill.current) nosFill.current.style.transform = `scaleX(${ns === 'burn' ? me.nitroLeft / NITRO_S : ns === 'hold' ? Math.min(1, (rt - holdAt) / NITRO_HOLD_S) : ns === 'used' ? 0 : 1})`;
+      }
+      // speed lines past 120 km/h, thicker on the nitrous
+      if (linesEl.current) {
+        const k = Math.max(0, Math.min(1, (me.v - 33) / 45)) * (me.phase === 'done' ? Math.max(0, 1 - (clock - me.launchAt - me.et)) : 1);
+        linesEl.current.style.opacity = (k * 0.5 + (me.nitroLeft > 0 ? 0.35 : 0)).toFixed(3);
+        if (k > 0) linesEl.current.style.transform = `rotate(${((rt * 97) % 7).toFixed(2)}deg)`;
       }
       root.dataset.hot = hot ? '1' : '';
       if (lightsEl.current) {
         lightsEl.current.dataset.on = String(race.out ? 0 : race.lightsOn);
         lightsEl.current.dataset.show = (show === 'race' || show === 'done') && (!race.out || clock - greenAt < 0.7) ? '1' : '';
       }
-      if (needle.current) needle.current.style.transform = `rotate(${-135 + Math.min(1.02, (show === 'burnout' ? 0.72 + Math.sin(showT * 9) * 0.1 : me.rpm / me.spec.redline)) * SWEEP}deg)`;
+      if (needle.current) needle.current.style.transform = `rotate(${-135 + Math.min(1.02, show === 'burnout' ? 0.72 + Math.sin(showT * 9) * 0.1 : ev && shiftable ? me.charge : me.rpm / me.spec.redline) * SWEEP}deg)`;
       if (speedEl.current) speedEl.current.textContent = String(Math.round(me.v * 3.6));
       if (gearEl.current) gearEl.current.textContent = me.spec.gears === 1 ? 'D' : me.phase === 'staging' ? 'N' : String(me.gear);
       if (timeEl.current) timeEl.current.textContent = me.phase === 'staging' ? '0.000' : me.phase === 'done' && !me.dnf ? fmtEt(me.et) : fmtEt(Math.max(0, clock - me.launchAt));
@@ -416,11 +490,27 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
         gapEl.current.textContent = me.phase === 'staging' ? 'staged' : `${g >= 0 ? '+' : '−'}${Math.abs(g).toFixed(1)} m`;
         gapEl.current.dataset.ahead = g >= 0 ? '1' : '';
       }
-      if (shiftBtn.current) shiftBtn.current.classList.toggle('is-idle', !canShift && st !== 'go');
+      if (shiftBtn.current) shiftBtn.current.classList.toggle('is-idle', !shiftable && st !== 'go' && !(hasNos && canNitro(me)));
       // how far into the next sim step this frame is
       const alpha = show !== 'race' && show !== 'done' ? 1 : Math.min(1, Math.max(0, live ? (now - live.startPerf) / 1000 / DT - stepsDone : acc / DT));
-      const state = (r: typeof me, i: number): CarState => ({ x: prevX[i]! + (r.x - prevX[i]!) * alpha, v: r.v, rpm: r.rpm, redline: r.spec.redline, spinning: r.spinLeft > 0 || show === 'burnout', dead: r.dead });
-      stage?.renderRace(race.racers.map(state), lights, rt, dt, undefined, { excite, intro: show === 'intro' ? showT / INTRO_S : null });
+      const tNow = clock + alpha * DT;
+      const state = (r: typeof me, i: number): CarState => {
+        const c = coastOf(r, tNow);
+        const racing = r.phase !== 'staging' && r.phase !== 'done';
+        return {
+          x: r.phase === 'done' ? c.x : prevX[i]! + (r.x - prevX[i]!) * alpha,
+          v: c.v,
+          rpm: r.rpm,
+          redline: r.spec.redline,
+          spinning: r.spinLeft > 0 || show === 'burnout',
+          dead: r.dead,
+          lift: r.spec.trait === 'torque' && r.phase !== 'staging' && r.launchQ !== 'jump' ? wheelie(tNow - r.launchAt) : 0,
+          nitro: r.nitroLeft > 0,
+          siren: r.spec.trait === 'pursuit' && (racing || r.phase === 'done'),
+          chute: c.chute,
+        };
+      };
+      stage?.renderRace(race.racers.map(state), lights, rt, simDt, undefined, { excite, intro: show === 'intro' ? showT / INTRO_S : null });
     };
     raf = requestAnimationFrame(frame);
 
@@ -451,19 +541,35 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
       if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'Enter' || e.code === 'KeyW') && !e.repeat) {
         e.preventDefault();
         tap();
+        holdAt = rt;
       }
+    };
+    const keyUp = (e: KeyboardEvent): void => {
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'Enter' || e.code === 'KeyW') holdAt = -1;
+    };
+    const release = (): void => {
+      holdAt = -1;
     };
     const pdown = (e: PointerEvent): void => {
       // buttons on the race screen are not taps on the strip (the menu one pauses the race itself)
       if ((e.target as HTMLElement).closest('.lc-pause, .lc-overlay, .game-menu-btn')) return;
       e.preventDefault();
       tap();
+      holdAt = rt;
     };
     window.addEventListener('keydown', keyDown);
+    window.addEventListener('keyup', keyUp);
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
+    window.addEventListener('blur', release);
     root.addEventListener('pointerdown', pdown);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       window.removeEventListener('keydown', keyDown);
+      window.removeEventListener('keyup', keyUp);
+      window.removeEventListener('pointerup', release);
+      window.removeEventListener('pointercancel', release);
+      window.removeEventListener('blur', release);
       root.removeEventListener('pointerdown', pdown);
       s.quiet();
       stage?.marshals(false);
@@ -481,6 +587,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
   const rivalLook = plan.looks[1];
   return (
     <div ref={rootRef} className="lc-race" data-phase={phase} data-state="launch" aria-label="Drag race. Five red lights come on; tap or press Space the moment they go out to launch, then each time the needle is in the green zone to shift.">
+      <div ref={linesEl} className="lc-speedlines" aria-hidden="true" />
       <div className="lc-hud" aria-hidden="true">
         <div className="lc-hud-top">
           <div className="lc-plate is-you">
@@ -530,6 +637,9 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
               <small className="mono">YOU</small>
               <b>{meName}</b>
               <span>{meCar}</span>
+              <em className="lc-vs-trait">
+                {TRAIT_INFO[plan.specs[0]!.trait].icon} {TRAIT_INFO[plan.specs[0]!.trait].name}
+              </em>
             </div>
             <div className="lc-vs-mark">VS</div>
             <div className="lc-vs-side is-rival">
@@ -537,6 +647,11 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
               <small className="mono">{plan.tagline ?? 'RIVAL'}</small>
               <b>{rivalName}</b>
               <span>{rivalCar}</span>
+              {plan.specs[1] && (
+                <em className="lc-vs-trait">
+                  {TRAIT_INFO[plan.specs[1].trait].icon} {TRAIT_INFO[plan.specs[1].trait].name}
+                </em>
+              )}
             </div>
             {!plan.live && <p className="lc-vs-skip mono">Tap to skip</p>}
           </div>
@@ -561,6 +676,15 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
           </div>
         )}
         <div className="lc-hud-bottom">
+          {plan.specs[0]!.trait === 'nitro' && !plan.live && (
+            <div ref={nosEl} className="lc-nos" data-state="wait">
+              <b className="mono">NOS</b>
+              <span className="lc-nos-bar">
+                <i ref={nosFill} />
+              </span>
+              <small className="lc-nos-hint">hold</small>
+            </div>
+          )}
           <div className="lc-tach">
             <div ref={face} className="lc-tach-ring" style={{ background: tachRing(null) }} />
             <div className="lc-tach-face">

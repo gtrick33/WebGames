@@ -1966,6 +1966,16 @@ const fr: string[] = [
   'Espace, Entrée ou Haut : démarre quand les cinq feux rouges s’éteignent, puis passe la vitesse quand l’aiguille est dans la zone verte',
   'Échap ou P : pause',
   'Touche n’importe où (ou le gros bouton) quand les feux rouges s’éteignent, puis à chaque fois que l’aiguille est dans la zone verte',
+  'Des duels de drag racing en 3D : réussis chaque passage, gagne la voiture de tes rivaux et collectionne 28 voitures uniques.',
+  'Une course de dragster stratégique sur un quart de mile, en 3D brillante, vue de derrière ta voiture. Démarre quand les cinq feux rouges s’éteignent, puis réussis chaque passage de vitesse dans une zone verte qui change de place et de taille à chaque rapport, en face-à-face contre un seul rival à la fois. Collectionne 28 voitures originales, de la berline familiale aux yeux ronds à l’hypercar au nitro, chacune avec son propre trait : les turbos poussent tard, le gros couple lève le nez, les monstres de régime frappent plus fort, les voitures de police pardonnent un départ lent, une électrique déclenche l’overdrive au lieu de passer les vitesses et les voitures au nitro ont une décharge par course. Grimpe un classement de 40 rivaux en cinq divisions et gagne la voiture de chaque boss, mise l’argent gagné selon des cotes prévues et prépare six pièces de huit niveaux chacune : l’aéro ajoute un nouvel aileron à chaque niveau, la suspension abaisse la voiture, les pneus reçoivent des flancs colorés, et seuls les pneus s’usent. Ensuite, lance-toi dans le King’s Gauntlet pour la plus longue série ou affronte un ami en direct, chacun sur son téléphone. Dans le duel du jour, tout le monde a la même voiture de prêt et le même adversaire ; tes amis affrontent ton fantôme dans les défis. Jamais d’argent réel.',
+  '28 voitures originales en six niveaux, chacune avec sa propre carrosserie 3D low-poly : citadines, un taxi, une dépanneuse, des voitures de police, un tout-terrain et un fourgon jusqu’aux supercars et à une hypercar au nitro',
+  'Chaque voiture a un trait qui change sa conduite : turbo, gros couple, monstre de régime, poids plume, adhérence intégrale, spéciale poursuite, overdrive électrique ou nitro',
+  'Six pièces distinctes de huit niveaux chacune, chacune modifiant plusieurs stats ; l’aéro, la suspension et les pneus changent la voiture à chaque niveau. Seuls les pneus s’usent',
+  'Les pièces et le caoutchouc débloquent les niveaux supérieurs ; l’argent et les matériaux ne viennent que des courses',
+  'Un classement de 40 rivaux en cinq divisions avec des gains, des bonus de première victoire et des finales de division courues pour la voiture du boss',
+  'Un essai gratuit chaque jour dans une voiture que tu n’as pas encore',
+  'Maintiens Espace (dès la deuxième) : déclenche le nitro, sur les voitures qui en ont',
+  'Maintiens le bouton (dès la deuxième) : déclenche le nitro, sur les voitures qui en ont',
 ];
 
 export default fr;

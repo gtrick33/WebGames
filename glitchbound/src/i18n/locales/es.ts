@@ -1966,6 +1966,16 @@ const es: string[] = [
   'Espacio, Intro o flecha arriba: sal cuando se apaguen las cinco luces rojas y cambia cuando la aguja esté en la zona verde',
   'Esc o P: pausa',
   'Toca en cualquier sitio (o el botón grande) cuando se apaguen las luces rojas y luego cada vez que la aguja esté en la zona verde',
+  'Duelos de aceleración en 3D: clava cada cambio, gánales el coche a tus rivales y colecciona 28 coches con trucos propios.',
+  'Un juego estratégico de carreras de aceleración de un cuarto de milla en 3D brillante, visto desde detrás de tu coche. Sal cuando se apaguen las cinco luces rojas y luego clava cada cambio en una zona verde que cambia de sitio y tamaño en cada marcha, siempre cara a cara contra un rival. Colecciona 28 coches originales, desde un sedán familiar de ojos redondos hasta un hiperdeportivo con nitro, cada uno con su propio rasgo: los turbos empujan tarde, el par alto levanta el morro, los monstruos de revoluciones dan más patada, los coches de policía perdonan una salida lenta, un eléctrico activa el overdrive en lugar de cambiar y los coches con nitro tienen un disparo por carrera. Escala una clasificación de 40 rivales en cinco divisiones y gánale el coche a cada jefe, apuesta el dinero ganado según las cuotas previstas y mejora seis piezas con ocho niveles cada una: la aerodinámica añade un alerón nuevo en cada nivel, la suspensión baja el coche, los neumáticos ganan franjas de color y solo los neumáticos se desgastan. Después, corre el King’s Gauntlet para lograr la racha más larga o corre en vivo contra un amigo, cada uno en su móvil. En el Duelo del día todos reciben el mismo coche prestado y el mismo rival; tus amigos corren contra tu fantasma en los desafíos. Nada de dinero real.',
+  '28 coches originales en seis niveles, cada uno con su propia carrocería 3D low-poly: utilitarios, un taxi, una grúa, coches de policía, un todoterreno y una furgoneta hasta superdeportivos y un hiperdeportivo con nitro',
+  'Cada coche tiene un rasgo que cambia cómo se conduce: turbo, par alto, monstruo de revoluciones, peso pluma, tracción total, especial de persecución, overdrive eléctrico o nitro',
+  'Seis piezas por separado con ocho niveles cada una, cada una cambia varias estadísticas; la aerodinámica, la suspensión y los neumáticos cambian el coche en cada nivel. Solo se desgastan los neumáticos',
+  'Las piezas y el caucho desbloquean los niveles altos; el dinero y los materiales solo se ganan corriendo',
+  'Una clasificación de 40 rivales en cinco divisiones con premios, bonus por la primera victoria y finales de división en las que te juegas el coche del jefe',
+  'Una prueba gratis cada día con cualquier coche que aún no tengas',
+  'Mantén Espacio (desde segunda): dispara el nitro, en los coches que lo llevan',
+  'Mantén pulsado el botón (desde segunda): dispara el nitro, en los coches que lo llevan',
 ];
 
 export default es;

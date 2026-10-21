@@ -14,63 +14,44 @@ import type { CarDef } from './cars';
 
 /** Every car's body: pack folder and file. RG cars keep their factory scheme; Cosmo cars are painted their `color`. */
 export const MODEL_FILE: Record<string, string> = {
-  // street
+  // street: city cars, a farm truck, a tow truck and an off-roader
   bumble: 'rg/Car_17_A',
   'pico-pop': 'rg/Car_4_1_C',
-  'pico-dot': 'rg/Car_4_1_A',
+  rustler: 'rg/Car_12_B',
+  'dune-bug': 'cosmo/jeep',
+  cabbie: 'rg/Taxi_3',
+  longroof: 'rg/Car_3_2_G',
+  // club
   griffon: 'rg/Car_8_A',
   kestrel: 'rg/Car_7_R',
-  astro: 'rg/Car_5_I',
-  rustler: 'rg/Car_12_B',
-  longroof: 'rg/Car_3_2_G',
-  'dune-bug': 'rg/Car_17_I',
-  cabbie: 'rg/Taxi_3',
-  // club
   'vossberg-gti': 'rg/Car_6_B',
-  lazzaro: 'rg/Car_17_G',
-  tsubasa: 'rg/Car_9_B',
-  stallion: 'rg/Car_11_A',
-  'kurogane-gt': 'rg/Car_6_F',
-  kaiser: 'rg/Car_5_S',
-  'bayou-boss': 'rg/Car_12_T',
+  astro: 'rg/Car_5_I',
+  breadbox: 'cosmo/van',
   interceptor: 'rg/Car_Police_1_A_1',
   // pro
-  'rotary-rebel': 'rg/Car_9_L',
-  brickhouse: 'rg/Car_4_1_P',
-  'comet-ss': 'rg/Car_11_B',
-  gullwing: 'rg/Car_7_A',
-  panther: 'rg/Car_11_K',
-  sakura: 'rg/Car_6_G',
-  marlin: 'rg/Car_9_S',
-  'night-patrol': 'rg/Car_Police_4_B_1',
-  // elite: the sportiest city bodies, a fifties cruiser and a sports sedan
+  stallion: 'rg/Car_11_A',
+  sakura: 'cosmo/rally',
+  tsubasa: 'rg/Car_9_B',
+  'night-patrol': 'cosmo/police',
+  'bayou-boss': 'cosmo/armor',
+  // elite: the sportiest city bodies and a fifties cruiser
   ironhide: 'rg/Car_10_A',
-  falkon: 'rg/Car_2_F',
+  redline: 'rg/Car_18_F',
   vortex: 'rg/Car_1_D',
-  sterling: 'rg/Car_18_N',
-  widowmaker: 'rg/Car_6_V',
-  ragazzo: 'rg/Car_2_B',
+  falkon: 'rg/Car_2_F',
   monarch: 'cosmo/mobil',
-  longbow: 'rg/Car_10_V',
-  'blue-thunder': 'rg/Car_2_E',
-  // legend: supercars and muscle
-  toro: 'cosmo/lamb',
-  'stallone-812': 'cosmo/italia',
-  peregrine: 'cosmo/ghini',
-  wraith: 'rg/Car_9_W',
+  // legend: modern muscle, an electric and a V12
   hellion: 'cosmo/kamaro',
   elektra: 'cosmo/coupe',
-  valkyr: 'cosmo/fenyr',
-  redline: 'rg/Car_18_F',
-  // kings: the wildest, the hypercar last
-  'royal-flush': 'rg/Car_18_ZZ',
-  goldrush: 'cosmo/kamaro',
-  nova: 'cosmo/coupe',
-  zephyr: 'cosmo/italia',
-  veyr: 'cosmo/ghini',
-  'nitro-funny': 'cosmo/lamb',
+  'stallone-812': 'cosmo/italia',
+  // kings: the hypercar last
+  peregrine: 'cosmo/ghini',
+  toro: 'cosmo/lamb',
   rail: 'cosmo/fenyr',
 };
+
+/** RG cars whose factory colour another car already wears: their stock paint is their roster colour instead. */
+export const STOCK_RECOLOR: ReadonlySet<string> = new Set(['longroof', 'vossberg-gti', 'astro', 'stallion', 'ironhide']);
 
 export const fileFor = (def: CarDef): string => MODEL_FILE[def.id] ?? 'rg/Car_17_A';
 

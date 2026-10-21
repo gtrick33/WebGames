@@ -6,17 +6,18 @@ export const PARTS = ['engine', 'transmission', 'suspension', 'tyres', 'aero', '
 export type PartId = (typeof PARTS)[number];
 export const MAX_LEVEL = 8;
 
-export const MATERIALS = ['scrap', 'alloy', 'carbon', 'chips', 'rubber'] as const;
+/** Two materials: parts for every upgrade, rubber for tyres (there used to be five: see storage's migration). */
+export const MATERIALS = ['parts', 'rubber'] as const;
 export type Material = (typeof MATERIALS)[number];
 export type Mats = Partial<Record<Material, number>>;
 
 export const MATERIAL_INFO: Record<Material, { name: string; emoji: string; blurb: string }> = {
-  scrap: { name: 'Scrap', emoji: '🔩', blurb: 'Bolts and brackets. Every win drops some.' },
-  alloy: { name: 'Alloy', emoji: '🪙', blurb: 'Light metal for serious parts. Club division and up.' },
-  carbon: { name: 'Carbon', emoji: '🧵', blurb: 'Woven carbon fibre. Pro division and up.' },
-  chips: { name: 'Chips', emoji: '💾', blurb: 'Engine computers. Elite division and up.' },
+  parts: { name: 'Parts', emoji: '🔩', blurb: 'Bolts, alloy, carbon and chips: every win drops a box, bigger in higher divisions.' },
   rubber: { name: 'Rubber', emoji: '⚫', blurb: 'Race compound for tyres.' },
 };
+
+/** Only tyres wear (and need replacing); every other part stays like new. */
+export const wears = (part: PartId): boolean => part === 'tyres';
 
 export interface PartInfo {
   id: PartId;
@@ -52,25 +53,17 @@ export const PART_VISUALS: Record<PartId, [number, string][]> = {
 export const stockLevels = (): Levels => ({ engine: 0, transmission: 0, suspension: 0, tyres: 0, aero: 0, looks: 0 });
 export const freshCondition = (): Condition => ({ engine: 100, transmission: 100, suspension: 100, tyres: 100, aero: 100, looks: 100 });
 
+/** Parts for each level (times the car's tier): about what the old scrap, alloy, carbon and chips were worth together. */
+const PARTS_NEEDED = [2, 4, 6, 8, 9, 12, 13, 17];
+
 /** Cash and materials for taking a part from `level - 1` to `level`. */
 export function upgradeCost(car: CarDef, part: PartId, level: number): { cash: number; mats: Mats } {
   const base = Math.max(1500, car.price);
   const cash = Math.round((base * 0.06 * Math.pow(1.38, level - 1)) / 10) * 10;
   const t = car.tier;
-  let mats: Mats = {};
-  if (level <= 2) mats.scrap = 2 * level * t;
-  else if (level <= 4) {
-    mats.scrap = 4 * t;
-    mats.alloy = (level - 2) * t;
-  } else if (level <= 6) {
-    mats.alloy = 3 * t;
-    mats.carbon = (level - 4) * t;
-  } else {
-    mats.carbon = 3 * t;
-    mats.chips = (level - 6) * t;
-  }
+  let mats: Mats = { parts: PARTS_NEEDED[level - 1]! * t };
   if (part === 'tyres') mats.rubber = level * t;
-  if (part === 'looks') mats = { scrap: Math.ceil(level * t * 1.5) };
+  if (part === 'looks') mats = { parts: Math.ceil(level * t * 1.5) };
   return { cash, mats };
 }
 
@@ -133,19 +126,12 @@ export function levelGains(part: PartId): string[] {
   }
 }
 
-/** Condition below which a part can fail in a race. */
+/** Condition below which tyres can blow in a race. */
 export const RISKY = 30;
 
-/** Wear from one race, by part. Spinning tyres and bouncing off the limiter cost extra. */
-export function raceWear(input: { spinTime: number; limiterTime: number; missedShifts: number; dnf: boolean }): Condition {
-  return {
-    engine: 2.5 + input.limiterTime * 6,
-    transmission: 1.5 + input.missedShifts * 2,
-    suspension: 1.2 + input.spinTime * 1.5,
-    tyres: 7 + input.spinTime * 8,
-    aero: 0.6,
-    looks: 0,
-  };
+/** Wear from one race: only the tyres, more when they spin. */
+export function raceWear(input: { spinTime: number }): Condition {
+  return { engine: 0, transmission: 0, suspension: 0, tyres: 7 + input.spinTime * 8, aero: 0, looks: 0 };
 }
 
 export function applyWear(cond: Condition, wear: Condition): Condition {
@@ -154,14 +140,14 @@ export function applyWear(cond: Condition, wear: Condition): Condition {
   return out;
 }
 
-/** Cash to bring a part back to 100 %. */
+/** Cash to bring a part back to 100 % (new tyres; nothing else wears). */
 export function repairCost(car: CarDef, part: PartId, cond: number): number {
+  if (!wears(part)) return 0;
   const base = Math.max(1500, car.price);
-  const share: Record<PartId, number> = { engine: 0.05, transmission: 0.03, suspension: 0.02, tyres: 0.015, aero: 0.01, looks: 0 };
-  return Math.round((base * share[part] * (100 - clamp(cond, 0, 100))) / 100 / 5) * 5;
+  return Math.round((base * 0.015 * (100 - clamp(cond, 0, 100))) / 100 / 5) * 5;
 }
 
-/** Chance (0..1) that a part fails during one race. Only worn parts can fail; reliable cars fail less. */
+/** Chance (0..1) that a worn part fails during one race (only tyres wear, so only tyres can blow); reliable cars fail less. */
 export function failChance(cond: number, reliability: number): number {
   if (cond >= RISKY) return 0;
   return ((RISKY - cond) / RISKY) * 0.55 * (1.25 - clamp(reliability, 0, 1) * 0.75);

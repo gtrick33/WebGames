@@ -1966,6 +1966,16 @@ const tr: string[] = [
   'Boşluk, Enter veya Yukarı: beş kırmızı ışık sönünce kalk, ibre yeşil bölgedeyken vites at',
   'Esc veya P: duraklat',
   'Kırmızı ışıklar sönünce herhangi bir yere (ya da büyük düğmeye) dokun, sonra ibre her yeşil bölgeye girdiğinde yine dokun',
+  '3D drag düelloları: her vites geçişini tuttur, rakiplerinin arabalarını kazan, kendine has 28 araba topla.',
+  'Arabanın arkasından görülen, parlak 3D’de stratejik bir çeyrek mil drag yarışı. Beş kırmızı ışık sönünce kalk, sonra her viteste yeri ve boyu değişen yeşil bölgede her geçişi tuttur; her seferinde tek bir rakiple kafa kafaya. Yuvarlak farlı bir aile sedanından nitrolu bir hiper arabaya kadar 28 özgün araba topla; her birinin kendi özelliği var: turbolar geç vurur, yüksek tork burnu kaldırır, devir canavarları daha sert tekme atar, polis arabaları yavaş bir kalkışı affeder, elektrikli araba vites yerine overdrive’a basar ve nitrolu arabaların yarış başına bir atışı vardır. Beş ligde 40 rakiplik bir sıralamada yüksel ve her patronun arabasını kazan, kazandığın parayı tahmini oranlarla ortaya koy ve her biri sekiz seviyeli altı parçayı modifiye et: aerodinamik her seviyede yeni bir spoyler ya da kanat ekler, süspansiyon arabayı alçaltır, lastikler renkli yanaklar kazanır ve yalnızca lastikler aşınır. Sonra en uzun seri için King’s Gauntlet’a gir ya da bir arkadaşınla canlı yarış, herkes kendi telefonunda. Günün düellosunda herkes aynı ödünç arabayı ve rakibi alır; arkadaşların meydan okumalarda senin hayaletine karşı yarışır. Hiçbir yerde gerçek para yok.',
+  'Altı sınıfta, her biri kendi low-poly 3D gövdesine sahip 28 özgün araba: şehir arabaları, bir taksi, bir çekici, polis arabaları, bir arazi aracı ve bir panelvandan süper arabalara ve nitrolu bir hiper arabaya kadar',
+  'Her arabanın sürüşünü değiştiren tek bir özelliği var: turbo, yüksek tork, devir canavarı, tüy siklet, dört çeker tutuş, takip özel, elektrikli overdrive ya da nitro',
+  'Her biri sekiz seviyeli ve birkaç değeri değiştiren altı ayrı parça; aerodinamik, süspansiyon ve lastikler arabayı her seviyede değiştirir. Yalnızca lastikler aşınır',
+  'Parçalar ve kauçuk üst seviyelerin kilidini açar; para ve malzeme yalnızca yarışlardan gelir',
+  'Ödüller, ilk galibiyet bonusları ve patronun arabası için koşulan lig finalleriyle beş ligde 40 rakiplik bir sıralama',
+  'Her gün henüz sahip olmadığın herhangi bir arabayla ücretsiz test sürüşü',
+  'Boşluğu basılı tut (ikinci vitesten itibaren): nitrosu olan arabalarda nitroyu ateşle',
+  'Düğmeyi basılı tut (ikinci vitesten itibaren): nitrosu olan arabalarda nitroyu ateşle',
 ];
 
 export default tr;

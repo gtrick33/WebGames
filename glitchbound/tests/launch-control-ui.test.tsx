@@ -182,7 +182,7 @@ describe('Launch Control: daily, garage and wager', () => {
     const save = JSON.parse(localStorage.getItem(KEY)!);
     expect(save.cars.bumble.levels.engine).toBe(1);
     expect(save.cash).toBeLessThan(800);
-    expect(save.mats.scrap).toBeLessThan(6);
+    expect(save.mats.parts).toBeLessThan(6);
     // every part has its own tab and its own visuals
     fireEvent.click(screen.getByRole('tab', { name: /Aero/ }));
     expect(panel().textContent).toMatch(/Pedestal wing/);

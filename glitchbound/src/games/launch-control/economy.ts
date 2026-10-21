@@ -36,18 +36,22 @@ const NAMES = [
 ];
 const BLURBS = [
   ['Learned to drive last Tuesday.', 'Has been racing since before you were born.', 'Shifts by feel. Mostly the wrong feel.', 'Brought a sandwich.', 'Never stops smiling.', 'Runs a food truck on weekdays.', 'Fixes everything with one wrench.', 'Rules the street division with a tiny hatch.'],
-  ['Turbo in everything. Even the lawnmower.', 'Says the car has nitrous. It does not.', 'The car is small. He is not.', 'Quiet, polite, brutal off the line.', 'Famous for launching too hard.', 'Taught half this division to drive.', 'Shifts at the redline, every time.', 'Owns the club. Owns the strip. For now.'],
-  ['Catches every launch.', 'Italian, loud, fast.', 'Tyres are her whole personality.', 'Burns rubber before every run. Loses tyres.', 'Smooth as a velvet glove.', 'Her wagon has no business being this quick.', 'Drifted in from the circuit scene.', 'Three-time pro champion.'],
+  ['Turbo in everything. Even the lawnmower.', 'Says the car has nitrous. It does not.', 'The car is small. He is not.', 'Quiet, polite, brutal off the line.', 'Famous for launching too hard.', 'Taught half this division to drive.', 'Shifts at the redline, every time.', 'Owns the club. Owns the strip. Bets the car on it.'],
+  ['Catches every launch.', 'Italian, loud, fast.', 'Tyres are her whole personality.', 'Burns rubber before every run. Loses tyres.', 'Smooth as a velvet glove.', 'Her rally hatch has no business being this quick.', 'Drifted in from the circuit scene.', 'Three-time pro champion.'],
   ['Reaction time close to zero.', 'Strikes once, never twice.', 'Carbon fibre everything.', 'Unpredictable launch, unbeatable top end.', 'Boost pressure to the moon.', 'Every shift is perfect.', 'Dumps the clutch like it owes him money.', 'Elite champion. Spotless record.'],
   ['Calculates the ideal launch in his head.', 'Says nothing. Wins everything.', 'Flat out, every time, no fear.', 'One tap from the perfect run. Or from a blow-up.', 'Crashed nine times. Still here.', 'Built the car. Built the engine. Built the engine builder.', 'Nobody has seen the car up close.', 'The last name on the ladder.'],
 ];
+/** Each division's cars; its boss (the last) drives a car from the next tier up, and the first win over a boss wins it (pink slips). */
 const DIV_CARS: string[][] = [
-  ['bumble', 'pico-pop', 'pico-dot', 'griffon', 'rustler', 'astro', 'longroof', 'kestrel'],
-  ['vossberg-gti', 'lazzaro', 'kaiser', 'bayou-boss', 'stallion', 'brickhouse', 'kurogane-gt', 'tsubasa'],
-  ['rotary-rebel', 'gullwing', 'marlin', 'sakura', 'panther', 'brickhouse', 'ironhide', 'comet-ss'],
-  ['longbow', 'sterling', 'monarch', 'ragazzo', 'widowmaker', 'vortex', 'wraith', 'falkon'],
-  ['elektra', 'hellion', 'stallone-812', 'peregrine', 'toro', 'valkyr', 'veyr', 'zephyr'],
+  ['bumble', 'pico-pop', 'cabbie', 'rustler', 'dune-bug', 'longroof', 'pico-pop', 'vossberg-gti'],
+  ['griffon', 'kestrel', 'astro', 'vossberg-gti', 'breadbox', 'interceptor', 'kestrel', 'tsubasa'],
+  ['night-patrol', 'sakura', 'bayou-boss', 'stallion', 'tsubasa', 'sakura', 'tsubasa', 'monarch'],
+  ['falkon', 'monarch', 'vortex', 'redline', 'ironhide', 'vortex', 'redline', 'elektra'],
+  ['elektra', 'hellion', 'elektra', 'hellion', 'stallone-812', 'hellion', 'stallone-812', 'toro'],
 ];
+
+/** Base tuning of each division's boss (its car is from the next tier). */
+const BOSS_LEVEL = [0.4, 1.0, 1.8, 3.2, 4.4];
 
 export function purseAt(rank: number, boss: boolean): number {
   return Math.round((100 * Math.pow(1.25, rank - 1) * (boss ? 2 : 1)) / 10) * 10;
@@ -61,14 +65,15 @@ function build(): Opponent[] {
       const rank = d * PER_DIVISION + i + 1;
       const boss = i === PER_DIVISION - 1;
       // The first two rungs drive stock cars, so a fresh starter can beat them; tuning ramps from there.
-      const lo = d * 1.6 + i * 0.25 - (d === 0 ? 0.6 : 0);
+      // A boss's car is a tier up, so it carries far less tuning (BOSS_LEVEL keeps it just quicker than you).
+      const lo = boss ? BOSS_LEVEL[d]! : d * 1.4 + i * 0.25 - (d === 0 ? 0.6 : 0);
       const lvl = (): number => clamp(Math.round(lo + r() * 1.2), 0, MAX_LEVEL);
       out.push({
         rank,
         name: NAMES[d]![i]!,
         car: DIV_CARS[d]![i]!,
         levels: { engine: lvl(), transmission: lvl(), suspension: lvl(), tyres: lvl(), aero: lvl(), looks: lvl() },
-        skill: clamp(0.2 + d * 0.17 + i * 0.02 + (boss ? 0.08 : 0), 0, 1),
+        skill: clamp(0.2 + d * 0.15 + i * 0.02 + (boss ? 0.08 : 0), 0, 0.97),
         division: d,
         boss,
         purse: purseAt(rank, boss),
@@ -81,7 +86,33 @@ function build(): Opponent[] {
 
 export const LADDER: readonly Opponent[] = build();
 
-export const opponentSpec = (o: Opponent): CarSpec => specOf(getCar(o.car), o.levels, freshCondition(), false);
+/** Pink slips: each boss's car, won outright the first time you beat that boss. */
+export const PINK_SLIP: Readonly<Record<string, Opponent>> = Object.fromEntries(LADDER.filter((o) => o.boss).map((o) => [o.car, o]));
+/** A pink slip for a car you already own is sold on: a fifth of its price. */
+export const pinkSlipCash = (def: CarDef): number => Math.round((def.price * 0.2) / 10) * 10;
+
+/**
+ * The car a rival brings against yours: their own, unless it is the car you are driving (a race
+ * against your twin is no race), then the one from their division's garage nearest it in price (so
+ * in pace). A boss always brings their own: it is the pink slip.
+ */
+export function rivalCarId(o: Opponent, mine?: string): string {
+  if (o.car !== mine || o.boss) return o.car;
+  const pool = DIV_CARS[o.division]!.slice(0, PER_DIVISION - 1).filter((id) => id !== mine);
+  const price = getCar(o.car).price;
+  let best = o.car;
+  let gap = Infinity;
+  for (const id of pool) {
+    const g = Math.abs(getCar(id).price - price);
+    if (g < gap) {
+      gap = g;
+      best = id;
+    }
+  }
+  return best;
+}
+
+export const opponentSpec = (o: Opponent, mine?: string): CarSpec => specOf(getCar(rivalCarId(o, mine)), o.levels, freshCondition(), false);
 
 /** Difficulty sticker for a rival next to your car's forecast. */
 export function difficultyOf(gap: number): { label: string; tone: string } {
@@ -107,7 +138,7 @@ export interface Bot {
 const BOT_NAMES = ['Blitz Bea', 'Kofi Kickdown', 'Nova Nine', 'Old Man Ron', 'Jinx Jules', 'Marisol Mach', 'Patch', 'Sprocket Sam', 'Luna Launch', 'Hank the Tank', 'Zippy Zoe', 'Boris Boost', 'Ines Inferno', 'Dash Dalton', 'Quiet Quinn', 'Rev Ramona', 'Chip Chen', 'Vee Vortex', 'Mika Misfire', 'Dusty Dale'];
 
 /** A ladder rival as a bot (fresh car, its own tuning and skill). */
-export const rivalBot = (o: Opponent): Bot => ({ name: o.name, car: getCar(o.car), levels: o.levels, cond: freshCondition(), skill: o.skill, rival: o });
+export const rivalBot = (o: Opponent, mine?: string): Bot => ({ name: o.name, car: getCar(rivalCarId(o, mine)), levels: o.levels, cond: freshCondition(), skill: o.skill, rival: o });
 
 /** The average part level of a car. */
 export const avgLevel = (l: Levels): number => (l.engine + l.transmission + l.suspension + l.tyres + l.aero + l.looks) / 6;
@@ -136,7 +167,7 @@ function fieldFor(me: CarSpec, count: number, seed: number, target: number, skil
   const myLevel = avgLevel(me.levels);
   const names = [...BOT_NAMES].sort(() => r() - 0.5);
   const bots: Bot[] = [];
-  if (rival) bots.push(rivalBot(rival));
+  if (rival) bots.push(rivalBot(rival, me.def.id));
   const levelsAt = (base: number, jitter: number): Levels => {
     const lv = (): number => clamp(Math.round(base + (r() * 2 - 1) * jitter), 0, MAX_LEVEL);
     return { engine: lv(), transmission: lv(), suspension: lv(), tyres: lv(), aero: lv(), looks: lv() };
@@ -145,7 +176,8 @@ function fieldFor(me: CarSpec, count: number, seed: number, target: number, skil
   const best = (c: CarDef, levels: Levels, cond = freshCondition()): number => forecastEt(specOf(c, levels, cond, false), 1, 3);
   const flat = levelsAt(myLevel, 0);
   // Cars near yours in pace at your level of tuning: the seven closest, picked from at random.
-  const pool = CARS.filter((c) => Math.abs(c.tier - myTier) <= 1 && c.id !== 'rail' && c.id !== 'nitro-funny')
+  // never your own car (a race against your twin is no race), never the last car on the roster
+  const pool = CARS.filter((c) => Math.abs(c.tier - myTier) <= 1 && c.id !== 'rail' && c.id !== me.def.id)
     .map((c) => ({ c, et: best(c, flat) }))
     .sort((a, b) => Math.abs(a.et - target) - Math.abs(b.et - target))
     .slice(0, 7);
@@ -211,10 +243,7 @@ export const botSpec = (b: Bot): CarSpec => specOf(b.car, b.levels, b.cond, fals
 export function materialsFor(o: Opponent, firstWin: boolean, seed: number): Mats {
   const r = rng(seed);
   const d = o.division;
-  const m: Mats = { scrap: 2 + d * 2 + Math.floor(r() * 3) };
-  if (d >= 1) m.alloy = 1 + d + Math.floor(r() * 2);
-  if (d >= 2) m.carbon = d - 1 + Math.floor(r() * 2);
-  if (d >= 3) m.chips = d - 2 + Math.floor(r() * 2);
+  const m: Mats = { parts: 3 + d * 8 + Math.floor(r() * (3 + d * 2)) };
   if (r() < 0.5 + d * 0.1) m.rubber = 1 + Math.floor(r() * (d + 2));
   if (firstWin) for (const k of MATERIALS) if (m[k]) m[k] = m[k]! * 2;
   if (o.boss) for (const k of MATERIALS) if (m[k]) m[k] = m[k]! + 2;
@@ -227,7 +256,7 @@ export const addMats = (a: Record<Material, number>, b: Mats, sign = 1): Record<
   return out;
 };
 export const hasMats = (have: Record<Material, number>, need: Mats): boolean => MATERIALS.every((k) => have[k] >= (need[k] ?? 0));
-export const emptyMats = (): Record<Material, number> => ({ scrap: 0, alloy: 0, carbon: 0, chips: 0, rubber: 0 });
+export const emptyMats = (): Record<Material, number> => ({ parts: 0, rubber: 0 });
 
 // ---- wagers and purses
 /** Where the player's forecast assumes they drive: a decent, not perfect, driver. */
@@ -292,11 +321,7 @@ export function idleIncome(rank: number, awayMs: number, sponsorMul = 1): number
 export function crateFor(rank: number, seed: number): { cash: number; mats: Mats } {
   const r = rng(seed);
   const d = Math.floor(clamp(rank, 0, LADDER_SIZE - 1) / PER_DIVISION);
-  const mats: Mats = { scrap: 3 + d * 2 + Math.floor(r() * 3) };
-  if (d >= 1) mats.alloy = 1 + Math.floor(r() * (d + 1));
-  if (d >= 2) mats.carbon = Math.floor(r() * d);
-  if (d >= 3) mats.chips = Math.floor(r() * (d - 1));
-  mats.rubber = 1 + Math.floor(r() * 3);
+  const mats: Mats = { parts: 3 + d * 6 + Math.floor(r() * (3 + d * 2)), rubber: 1 + Math.floor(r() * 3) };
   return { cash: Math.round(purseAt(rank + 1, false) * 1.5), mats };
 }
 
@@ -311,7 +336,8 @@ export interface Loaner {
 /** The same loaner and the same opponent for everyone with the same seed: a fair showdown. */
 export function loanerFor(seed: number): Loaner {
   const r = rng(seed);
-  const pool = CARS.filter((c) => c.tier <= 5);
+  // nitrous is for cars you own: the showdown stays one button, tapped
+  const pool = CARS.filter((c) => c.tier <= 5 && c.trait !== 'nitro');
   const car = pool[Math.floor(r() * pool.length)]!;
   const base = Math.floor(r() * 5);
   const lvl = (): number => clamp(Math.round(base + r() * 3), 0, MAX_LEVEL);

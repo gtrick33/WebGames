@@ -834,6 +834,12 @@
   justify-items: start;
   gap: 8px;
 }
+.lc-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
 .lc-hero-tier {
   padding: 4px 10px 3px;
   border-radius: 6px;
@@ -1177,15 +1183,36 @@
     top: calc(max(8px, env(safe-area-inset-top)) + 56px);
     gap: 8px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto;
-    grid-template-areas: 'tier' 'name' '.' 'specs' 'go' 'modes' 'rail';
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto auto;
+    grid-template-areas: 'tier' 'name' 'next' '.' 'specs' 'go' 'modes' 'rail';
   }
   .lc-hero {
     display: contents;
   }
-  .lc-hero-tier {
+  .lc-hero-tags {
     grid-area: tier;
     justify-self: start;
+    /* leave the driver's name its corner */
+    max-width: calc(100% - 150px);
+  }
+  .lc-next-car {
+    grid-area: next;
+    justify-self: start;
+    width: min(100%, 250px);
+    padding: 6px 10px 7px;
+  }
+  .lc-rail,
+  .lc-tile {
+    min-width: 0;
+  }
+  .lc-tile {
+    font-size: clamp(9.5px, 2.7cqw, 12px);
+    letter-spacing: 0;
+  }
+  .lc-tile > span:not(.lc-badge) {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .lc-hero-driver {
     grid-area: tier;
@@ -1265,8 +1292,8 @@
 @container (max-aspect-ratio: 1/1) and (min-aspect-ratio: 4/5) {
   .lc-hub {
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
-    grid-template-areas: 'tier tier' 'name name' 'specs specs' '. .' 'modes modes' 'rail go';
+    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas: 'tier tier' 'name name' 'specs specs' 'next next' '. .' 'modes modes' 'rail go';
   }
   .lc-specs {
     justify-self: start;
@@ -1283,7 +1310,8 @@
     grid-template-areas: 'label arrow';
     min-width: 0;
     min-height: 0;
-    margin: 0;
+    /* the slant leans left past the box: room so it never covers the last tile */
+    margin: 0 0 0 14px;
     padding: 10px 14px 10px 22px;
   }
   .lc-go-label {
@@ -2947,6 +2975,7 @@
 }
 .lc-hud {
   position: absolute;
+  z-index: 2;
   inset: 0;
   display: flex;
   flex-direction: column;
@@ -3138,6 +3167,12 @@
   font-style: oblique 9deg;
   text-transform: uppercase;
   line-height: 0.95;
+}
+.lc-vs-trait {
+  font-size: 12.5px;
+  font-style: normal;
+  font-weight: 800;
+  opacity: 0.85;
 }
 .lc-vs-side span {
   font-size: 15px;
@@ -3396,6 +3431,87 @@
   font-weight: 700;
   opacity: 0.9;
 }
+/* nitrous: a glass pill next to the tach, waiting, ready (hold the button), filling, burning, spent */
+.lc-nos {
+  order: 2;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  margin-bottom: 8px;
+  padding: 8px 10px 7px;
+  border: 1px solid var(--hud-line);
+  border-radius: 14px;
+  background: var(--hud-glass);
+  color: #fff;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: opacity 0.2s, box-shadow 0.2s;
+}
+.lc-nos b {
+  font-size: 15px;
+  letter-spacing: 0.14em;
+}
+.lc-nos-bar {
+  position: relative;
+  overflow: hidden;
+  width: 64px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.14);
+}
+.lc-nos-bar i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #3a8bff, #a6e6ff);
+  transform-origin: 0 50%;
+}
+.lc-nos-hint {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.lc-nos[data-state='wait'] {
+  opacity: 0.55;
+}
+.lc-nos[data-state='wait'] .lc-nos-hint::after {
+  content: ' from 2nd';
+}
+.lc-nos[data-state='ready'],
+.lc-nos[data-state='hold'] {
+  box-shadow: 0 0 0 2px #3a8bff, 0 0 22px rgb(58 139 255 / 0.6);
+}
+.lc-nos[data-state='ready'] {
+  animation: lc-nos-ready 0.9s ease-in-out infinite alternate;
+}
+.lc-nos[data-state='burn'] {
+  box-shadow: 0 0 0 2px #a6e6ff, 0 0 30px rgb(166 230 255 / 0.85);
+}
+.lc-nos[data-state='burn'] .lc-nos-hint,
+.lc-nos[data-state='used'] .lc-nos-hint {
+  visibility: hidden;
+}
+.lc-nos[data-state='used'] {
+  opacity: 0.35;
+}
+@keyframes lc-nos-ready {
+  to {
+    transform: scale(1.06);
+  }
+}
+/* speed lines: streaks from the vanishing point, only at speed (opacity set every frame) */
+.lc-speedlines {
+  position: absolute;
+  inset: -20%;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  background: repeating-conic-gradient(from 0deg at 50% 52%, transparent 0deg 5deg, rgb(255 255 255 / 0.5) 5deg 5.35deg, transparent 5.35deg 9deg);
+  -webkit-mask: radial-gradient(closest-side at 50% 52%, transparent 55%, #000 100%);
+  mask: radial-gradient(closest-side at 50% 52%, transparent 55%, #000 100%);
+}
+
 /* the button: neutral glass, the same in every zone (the tach is the guide) */
 .lc-shift {
   position: absolute;
@@ -3561,6 +3677,12 @@
 
 /* ================================================================ calm, when asked */
 @media (prefers-reduced-motion: reduce) {
+  .lc-speedlines {
+    display: none;
+  }
+  .lc-nos[data-state='ready'] {
+    animation: none;
+  }
   .lc-toast,
   .lc-panel,
   .lc-modal,
@@ -3951,4 +4073,299 @@
 }
 .lc-sound-row[aria-checked='true'] .lc-knob::after {
   transform: translateX(16px);
+}
+
+/* ================================================================ traits, goals, pink slips, the reveal */
+.lc-trait {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  justify-self: start;
+  max-width: 100%;
+  padding: 3px 9px 3px 7px;
+  border: 1px solid var(--lc-edge);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.lc-trait small {
+  flex-basis: 100%;
+  padding: 0 0 2px 2px;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  white-space: normal;
+  color: var(--lc-muted);
+}
+.lc-trait:has(small) {
+  border-radius: 12px;
+}
+.lc-trait[data-trait='nitro'] {
+  border-color: rgb(110 182 255 / 0.6);
+}
+.lc-trait[data-trait='electric'] {
+  border-color: rgb(196 240 52 / 0.55);
+}
+.lc-trait[data-trait='pursuit'] {
+  border-color: rgb(255 80 100 / 0.55);
+}
+/* the hub's goal: the next car, and how far the cash has to go */
+.lc-next-car {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 300px);
+  padding: 8px 12px 9px;
+  border: 1px solid var(--lc-edge);
+  border-radius: 12px;
+  background: var(--lc-glass);
+  -webkit-backdrop-filter: var(--lc-blur);
+  backdrop-filter: var(--lc-blur);
+  color: #fff;
+  text-align: left;
+  transition: transform 0.14s, border-color 0.14s;
+}
+.lc-next-car:hover {
+  transform: translateY(-2px);
+  border-color: var(--lc-edge-hi);
+}
+.lc-next-car-text {
+  display: grid;
+  gap: 1px;
+}
+.lc-next-car-text b {
+  font-size: 16px;
+}
+.lc-next-car-text small {
+  font-size: 11.5px;
+  color: var(--lc-muted);
+}
+.lc-next-car-text small:first-child {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.lc-next-car-bar {
+  position: relative;
+  overflow: hidden;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.16);
+}
+.lc-next-car-bar i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--lc-gold);
+  transform-origin: 0 50%;
+}
+@container (max-height: 520px) {
+  .lc-next-car {
+    display: none;
+  }
+}
+/* pink slips */
+.lc-slip-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 14px;
+}
+.lc-slip {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1.5px solid rgb(255 92 200 / 0.7);
+  border-radius: var(--lc-r);
+  background: linear-gradient(135deg, rgb(255 92 200 / 0.18), rgb(120 60 255 / 0.12));
+  box-shadow: 0 0 28px rgb(255 92 200 / 0.25);
+  animation: lc-slip-in 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.lc-slip > div {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+.lc-slip b {
+  font-size: 18px;
+}
+.lc-slip span {
+  font-size: 14px;
+  color: var(--lc-muted);
+}
+.lc-slip-line {
+  color: rgb(255 150 220);
+}
+@keyframes lc-slip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) rotate(-2deg);
+  }
+}
+.lc-dealer-buttons {
+  display: grid;
+  justify-items: stretch;
+  gap: 6px;
+}
+/* the collection book: every car, the ones you have in colour, the rest dimmed with how to get them */
+.lc-book {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
+}
+.lc-book button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 6px 8px;
+  border: 1px solid var(--lc-edge);
+  border-radius: var(--lc-r);
+  background: var(--lc-glass-2);
+  color: #fff;
+  text-align: left;
+}
+.lc-book .lc-thumb {
+  width: 100%;
+  height: auto;
+}
+.lc-book li:not(.is-owned) .lc-thumb {
+  filter: grayscale(1) brightness(0.45) contrast(1.15);
+}
+.lc-book li:not(.is-owned) b {
+  color: var(--lc-muted);
+}
+.lc-book b {
+  font-size: 14px;
+}
+.lc-book small {
+  font-size: 11px;
+  color: var(--lc-muted);
+}
+.lc-book li.is-owned button {
+  border-color: rgb(196 240 52 / 0.5);
+}
+.lc-book li.is-sel button {
+  border-color: var(--lc-yellow);
+  box-shadow: 0 0 0 1px var(--lc-yellow);
+}
+/* the reveal: the garage door rolls up on the new car, then its card */
+.lc-reveal {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: calc(max(8px, env(safe-area-inset-top)) + 58px) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  pointer-events: auto;
+  text-align: center;
+}
+.lc-reveal-door {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(180deg, rgb(255 255 255 / 0.08) 0 2px, transparent 2px 46px),
+    linear-gradient(180deg, #4a4f63, #2b2e3d 70%, #1c1e2a);
+  box-shadow: inset 0 -14px 0 #ffd12e, 0 10px 30px rgb(0 0 0 / 0.5);
+  animation: lc-door 1.15s 0.25s cubic-bezier(0.6, 0, 0.3, 1) forwards;
+}
+@keyframes lc-door {
+  to {
+    transform: translateY(-104%);
+  }
+}
+.lc-reveal-top,
+.lc-reveal-card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  animation: lc-reveal-in 0.5s 1.25s both;
+}
+.lc-reveal-name {
+  margin: 0;
+  font-size: clamp(40px, 9cqmin, 76px);
+  line-height: 0.9;
+  color: #fff;
+  text-shadow: 0 3px 0 rgb(20 16 31 / 0.55), 0 12px 32px rgb(0 0 0 / 0.4);
+}
+.lc-reveal-card {
+  width: min(100%, 440px);
+  padding: 14px;
+  border: 1px solid var(--lc-edge);
+  border-radius: 18px;
+  background: var(--lc-glass);
+  -webkit-backdrop-filter: var(--lc-blur);
+  backdrop-filter: var(--lc-blur);
+  animation-delay: 1.45s;
+}
+.lc-reveal-card > * {
+  width: 100%;
+}
+.lc-reveal-trait {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.lc-reveal-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.12);
+  font-size: 26px;
+}
+.lc-reveal-trait b {
+  display: block;
+  font-size: 18px;
+}
+.lc-reveal-trait small {
+  font-size: 13.5px;
+  color: var(--lc-muted);
+}
+.lc-reveal-stats {
+  display: grid;
+  gap: 6px;
+}
+@keyframes lc-reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@container (max-height: 520px) {
+  .lc-reveal {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+  .lc-reveal-top {
+    align-self: flex-start;
+    justify-items: start;
+    text-align: left;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-reveal-door {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+  .lc-reveal-top,
+  .lc-reveal-card,
+  .lc-slip {
+    animation: none;
+  }
 }

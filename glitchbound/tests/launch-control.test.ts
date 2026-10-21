@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getGame } from '../src/catalog/catalog';
-import { CARS, getCar } from '../src/games/launch-control/cars';
+import { CARS, getCar, TRAIT_INFO } from '../src/games/launch-control/cars';
+import { MODEL_FILE } from '../src/games/launch-control/models';
 import { COSMETICS, DEFAULTS, getCosmetic } from '../src/games/launch-control/cosmetics';
 import { addMats, botsFor, botSpec, crateFor, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, idleIncome, idleRate, LADDER, LADDER_SIZE, loanerFor, materialsFor, opponentSpec, purseAt, RACE_SIZE, settle, typicalEt } from '../src/games/launch-control/economy';
 import { ENV_DEFS } from '../src/games/launch-control/envs';
@@ -16,8 +17,8 @@ const stock = (id: string): CarSpec => specOf(getCar(id), stockLevels(), fresh, 
 const policy = (skill: number, seed: number): Driver => ({ kind: 'policy', skill, seed });
 
 describe('roster', () => {
-  it('has at least 40 cars with unique ids and names, shapes that make sense, and no real makes', () => {
-    expect(CARS.length).toBeGreaterThanOrEqual(40);
+  it('has 28 cars with unique ids and names, shapes that make sense, and no real makes', () => {
+    expect(CARS.length).toBe(28);
     expect(new Set(CARS.map((c) => c.id)).size).toBe(CARS.length);
     expect(new Set(CARS.map((c) => c.name)).size).toBe(CARS.length);
     const banned = /\b(ford|toyota|honda|nissan|ferrari|lamborghini|porsche|bugatti|tesla|dodge|chevrolet|bmw|mercedes|audi|volkswagen|mustang|supra|skyline|corvette|camaro|viper|chiron|mazda|subaru|mitsubishi|koenigsegg|pagani|renault|opel|peugeot|mclaren|rimac|volvo|mini|fiat|jaguar|aston)\b/i;
@@ -50,7 +51,7 @@ describe('roster', () => {
   });
 
   it('every upgrade level makes the car quicker, and maxed is at least 20 % quicker than stock', () => {
-    for (const c of [getCar('bumble'), getCar('tsubasa'), getCar('veyr')]) {
+    for (const c of [getCar('bumble'), getCar('tsubasa'), getCar('elektra'), getCar('toro')]) {
       let prev = forecastEt(specOf(c, stockLevels(), fresh, false), 1);
       for (let l = 1; l <= MAX_LEVEL; l++) {
         const lv: Levels = { engine: l, transmission: l, suspension: l, tyres: l, aero: l, looks: l };
@@ -85,7 +86,7 @@ describe('the dealer', () => {
 
 describe('the race', () => {
   it('is deterministic: same cars, drivers and seed give the same result', () => {
-    const specs = [stock('stallion'), stock('tsubasa'), stock('kaiser'), stock('astro'), stock('lazzaro')];
+    const specs = [stock('stallion'), stock('tsubasa'), stock('griffon'), stock('astro'), stock('kestrel')];
     const drivers = [policy(0.7, 4), policy(0.5, 9), policy(0.6, 2), policy(0.4, 3), policy(0.8, 5)];
     const r1 = simulate(specs, drivers, 77);
     const r2 = simulate(specs, drivers, 77);
@@ -98,7 +99,7 @@ describe('the race', () => {
   });
 
   it('the launch is a tap at lights out: quick is perfect, none goes late, a jump start is punished', () => {
-    const spec = stock('lazzaro');
+    const spec = stock('astro');
     const launchWith = (tapAfterGreen: number | null, earlyTapAt?: number | 'lights') => {
       const race = new Race([spec], [{ kind: 'live' }], 3);
       let tapped = false;
@@ -155,7 +156,7 @@ describe('the race', () => {
   });
 
   it('shift windows sit anywhere from 70 to 92 % of the revs, change spot and size every gear and race, and the same for every car', () => {
-    const cars = ['bumble', 'kaiser', 'falkon', 'rail'].map(stock);
+    const cars = ['bumble', 'astro', 'falkon', 'rail'].map(stock);
     const mids = new Set<string>();
     for (let seed = 1; seed <= 12; seed++) {
       const per = cars.map((c) => shiftWindows(seed, c));
@@ -225,7 +226,7 @@ describe('the race', () => {
   });
 
   it('a scripted launch below the sweet spot bogs and above it spins; both lose time', () => {
-    const spec = stock('lazzaro');
+    const spec = stock('kestrel');
     const ref = simulate([spec], [policy(1, 1)], 3).racers[0]!.script;
     const run = (launchRpm: number): number => simulate([spec], [{ kind: 'script', script: { ...ref, launchRpm } }], 3).racers[0]!.et!;
     const ideal = idealLaunchRpm(spec);
@@ -235,7 +236,7 @@ describe('the race', () => {
 
   it('a live driver races by shifting only: perfect taps count, no tap means the limiter', () => {
     const spec = stock('comet-ss');
-    const race = new Race([spec, stock('kaiser')], [{ kind: 'live' }, policy(0.6, 2)], 11);
+    const race = new Race([spec, stock('astro')], [{ kind: 'live' }, policy(0.6, 2)], 11);
     let taps = 0;
     while (!race.done) {
       race.step();
@@ -268,16 +269,17 @@ describe('the race', () => {
     expect(wins).toBeGreaterThanOrEqual(18);
   });
 
-  it('a worn engine can let go, a fresh one never does', () => {
-    const def = getCar('rotary-rebel');
-    const worn = specOf(def, stockLevels(), { ...fresh, engine: 5 }, true);
+  it('worn tyres can blow, fresh ones never do, and no other part ever fails', () => {
+    const def = getCar('rail');
+    const worn = specOf(def, stockLevels(), { ...fresh, tyres: 5 }, true);
     const ok = specOf(def, stockLevels(), fresh, true);
     expect(ok.risky).toHaveLength(0);
+    expect(specOf(def, stockLevels(), { ...fresh, engine: 0, transmission: 0, aero: 0 }, true).risky).toHaveLength(0);
     expect(worn.risky[0]!.chance).toBeGreaterThan(0.3);
     let fails = 0;
     for (let seed = 1; seed <= 30; seed++) {
       const r = simulate([worn, ok], [policy(0.8, seed), policy(0.8, seed)], seed);
-      if (r.racers[0]!.failure === 'engine') fails++;
+      if (r.racers[0]!.failure === 'tyres') fails++;
       expect(r.racers[1]!.failure).toBeNull();
     }
     expect(fails).toBeGreaterThan(5);
@@ -314,7 +316,7 @@ describe('the race', () => {
 
 describe('parts and economy', () => {
   it('upgrade costs rise with level, need materials by division, and each part moves several stats', () => {
-    const car = getCar('kurogane-gt');
+    const car = getCar('vossberg-gti');
     let prev = 0;
     for (let l = 1; l <= MAX_LEVEL; l++) {
       const c = upgradeCost(car, 'engine', l);
@@ -322,7 +324,7 @@ describe('parts and economy', () => {
       prev = c.cash;
       expect(Object.values(c.mats).some((n) => n! > 0)).toBe(true);
     }
-    expect(upgradeCost(car, 'engine', 8).mats.chips).toBeGreaterThan(0);
+    expect(upgradeCost(car, 'engine', 8).mats.parts).toBeGreaterThan(upgradeCost(car, 'engine', 1).mats.parts!);
     expect(upgradeCost(car, 'tyres', 1).mats.rubber).toBeGreaterThan(0);
     for (const p of PARTS) expect(levelGains(p).length).toBeGreaterThanOrEqual(2);
     const a = effectsOf(stockLevels(), fresh);
@@ -353,17 +355,19 @@ describe('parts and economy', () => {
     expect(worn.torqueMul).toBeLessThan(b.torqueMul);
   });
 
-  it('wear never pushes a condition out of range and spinning costs tyres most', () => {
-    const w = raceWear({ spinTime: 1.5, limiterTime: 0.5, missedShifts: 2, dnf: false });
-    expect(w.tyres).toBeGreaterThan(w.engine);
+  it('only tyres wear (more when they spin), wear stays in range, and only tyres cost anything to replace', () => {
+    const w = raceWear({ spinTime: 1.5 });
+    expect(w.tyres).toBeGreaterThan(raceWear({ spinTime: 0 }).tyres);
+    for (const p of PARTS) if (p !== 'tyres') expect(w[p]).toBe(0);
     const c = applyWear({ ...fresh, tyres: 3 }, w);
     expect(c.tyres).toBe(0);
     for (const p of PARTS) {
       expect(c[p]).toBeGreaterThanOrEqual(0);
       expect(c[p]).toBeLessThanOrEqual(100);
     }
-    expect(repairCost(getCar('veyr'), 'engine', 0)).toBeGreaterThan(repairCost(getCar('bumble'), 'engine', 0));
-    expect(repairCost(getCar('veyr'), 'engine', 100)).toBe(0);
+    expect(repairCost(getCar('toro'), 'tyres', 0)).toBeGreaterThan(repairCost(getCar('bumble'), 'tyres', 0));
+    expect(repairCost(getCar('toro'), 'tyres', 100)).toBe(0);
+    expect(repairCost(getCar('toro'), 'engine', 0)).toBe(0);
   });
 
   it('the ladder has 40 rivals, climbing in purse and pace, with champions every eighth rung', () => {
@@ -416,7 +420,7 @@ describe('parts and economy', () => {
 
   it('the gauntlet: opponents get quicker every round, prizes grow, materials every third win', () => {
     expect(GAUNTLET_UNLOCK).toBe(8);
-    const me = specOf(getCar('kaiser'), { ...stockLevels(), engine: 2, tyres: 2 }, fresh, false);
+    const me = specOf(getCar('astro'), { ...stockLevels(), engine: 2, tyres: 2 }, fresh, false);
     const mine = forecastEt(me, 1, 3);
     const ets = [1, 3, 6, 9, 12].map((round) => forecastEt(botSpec(gauntletRival(me, round, 99)), 1, 3));
     // early rounds are a little behind your best, later ones are quicker than it
@@ -427,20 +431,19 @@ describe('parts and economy', () => {
     expect(gauntletRival(me, 3, 5)).toEqual(gauntletRival(me, 3, 5));
     expect(gauntletPrize(5, 10, 1).cash).toBeGreaterThan(gauntletPrize(1, 10, 1).cash);
     expect(Object.keys(gauntletPrize(2, 10, 1).mats)).toHaveLength(0);
-    expect(gauntletPrize(3, 10, 1).mats.scrap).toBeGreaterThan(0);
+    expect(gauntletPrize(3, 10, 1).mats.parts).toBeGreaterThan(0);
   });
 
   it('materials come by division, doubled on a first win; the crate grows with rank', () => {
     const a = materialsFor(LADDER[0]!, false, 1);
     const b = materialsFor(LADDER[0]!, true, 1);
-    expect(b.scrap).toBe(a.scrap! * 2);
-    expect(a.chips).toBeUndefined();
-    expect(materialsFor(LADDER[30]!, false, 1).chips).toBeGreaterThan(0);
-    const have = addMats({ scrap: 1, alloy: 0, carbon: 0, chips: 0, rubber: 0 }, b);
-    expect(have.scrap).toBe(1 + b.scrap!);
-    expect(addMats(have, { scrap: 999 }, -1).scrap).toBe(0);
+    expect(b.parts).toBe(a.parts! * 2);
+    expect(materialsFor(LADDER[30]!, false, 1).parts).toBeGreaterThan(a.parts!);
+    const have = addMats({ parts: 1, rubber: 0 }, b);
+    expect(have.parts).toBe(1 + b.parts!);
+    expect(addMats(have, { parts: 999 }, -1).parts).toBe(0);
     expect(crateFor(0, 1).cash).toBeLessThan(crateFor(20, 1).cash);
-    expect(crateFor(30, 1).mats.chips).toBeDefined();
+    expect(crateFor(30, 1).mats.parts).toBeGreaterThan(crateFor(0, 1).mats.parts!);
     expect(crateFor(0, 1)).toEqual(crateFor(0, 1));
   });
 
@@ -484,14 +487,14 @@ describe('cosmetics and the save', () => {
   });
 
   it('sanitizes a damaged save and keeps the starter car', () => {
-    const s = sanitize({ cash: -5, cars: { nope: {}, veyr: { levels: { engine: 99 }, cond: { tyres: -4 }, paint: 'h-red' } }, car: 'veyr', rank: 99, owned: ['h-red', 'zzz'], helmet: 'p-red', env: 'e-desert', crateDay: 'yesterday', daily: { '2026-10-21': { best: 12, tries: 2, open: true }, bad: {} } });
+    const s = sanitize({ cash: -5, cars: { nope: {}, toro: { levels: { engine: 99 }, cond: { tyres: -4 }, paint: 'h-red' } }, car: 'toro', rank: 99, owned: ['h-red', 'zzz'], helmet: 'p-red', env: 'e-desert', crateDay: 'yesterday', daily: { '2026-10-21': { best: 12, tries: 2, open: true }, bad: {} } });
     expect(s.cash).toBe(0);
     expect(s.cars.bumble).toBeDefined();
     expect(s.cars.nope).toBeUndefined();
-    expect(s.cars.veyr!.levels.engine).toBe(MAX_LEVEL);
-    expect(s.cars.veyr!.cond.tyres).toBe(0);
-    expect(s.cars.veyr!.paint).toBe(DEFAULTS.paint);
-    expect(s.car).toBe('veyr');
+    expect(s.cars.toro!.levels.engine).toBe(MAX_LEVEL);
+    expect(s.cars.toro!.cond.tyres).toBe(0);
+    expect(s.cars.toro!.paint).toBe(DEFAULTS.paint);
+    expect(s.car).toBe('toro');
     expect(s.rank).toBe(40);
     expect(s.owned).toEqual(['h-red']);
     expect(s.helmet).toBe(DEFAULTS.helmet);
@@ -502,7 +505,12 @@ describe('cosmetics and the save', () => {
     expect(s.musicOff).toBe(false);
     expect(sanitize({ ...emptySave(), musicOff: true, muted: 'yes' }).musicOff).toBe(true);
     expect(sanitize(null)).toEqual(emptySave());
-    expect(emptySave().mats.scrap).toBeGreaterThan(0);
+    expect(emptySave().mats.parts).toBeGreaterThan(0);
+    // saves from before the materials merged: the old four become parts, worth what they cost; only tyres stay worn
+    const old = sanitize({ ...emptySave(), mats: { scrap: 3, alloy: 2, carbon: 1, chips: 1, rubber: 4 }, cars: { bumble: { ...emptySave().cars.bumble, cond: { ...fresh, engine: 20, tyres: 40 } } } });
+    expect(old.mats).toEqual({ parts: 3 + 4 + 3 + 4, rubber: 4 });
+    expect(old.cars.bumble!.cond.engine).toBe(100);
+    expect(old.cars.bumble!.cond.tyres).toBe(40);
     expect(LADDER[0]!.levels.engine).toBe(0);
   });
 
@@ -513,5 +521,118 @@ describe('cosmetics and the save', () => {
     expect(xs).toEqual(Array.from({ length: 1000 }, () => b()));
     expect(xs.reduce((p, q) => p + q, 0) / 1000).toBeGreaterThan(0.45);
     expect(xs.reduce((p, q) => p + q, 0) / 1000).toBeLessThan(0.55);
+  });
+});
+
+describe('traits and the roster', () => {
+  /** A live run that taps each window's middle, launches at `reaction` and optionally holds for the nitrous. */
+  const drive = (spec: CarSpec, seed: number, o: { reaction?: number; nitro?: boolean; tap?: boolean } = {}) => {
+    const race = new Race([spec], [{ kind: 'live' }], seed);
+    const me = race.racers[0]!;
+    let launched = false;
+    while (!race.done) {
+      if (!launched && race.out && race.t >= race.outAt + (o.reaction ?? 0.2)) {
+        race.tap(0);
+        launched = true;
+      }
+      const w = race.windowOf(0);
+      if (o.tap !== false && w && me.phase === 'running' && shiftRpm(me) / spec.redline >= (w.lo + w.hi) / 2) race.tap(0);
+      if (o.nitro) race.nitro(0);
+      race.step();
+    }
+    return race.result().racers[0]!;
+  };
+
+  it('gives every car one trait and a body of its own', () => {
+    expect(new Set(Object.values(MODEL_FILE)).size).toBe(CARS.length);
+    for (const c of CARS) {
+      expect(MODEL_FILE[c.id], c.id).toBeDefined();
+      expect(TRAIT_INFO[c.trait].name.length).toBeGreaterThan(2);
+    }
+    // every trait is on the roster, and nitrous only on the top half
+    for (const t of Object.keys(TRAIT_INFO)) expect(CARS.some((c) => c.trait === t), t).toBe(true);
+    for (const c of CARS.filter((x) => x.trait === 'nitro')) expect(c.tier).toBeGreaterThanOrEqual(4);
+  });
+
+  it('within a tier a dearer car is quicker, so every purchase is a step up', () => {
+    for (let t = 1; t <= 6; t++) {
+      const tier = CARS.filter((c) => c.tier === t).sort((a, b) => a.price - b.price);
+      const et = (id: string): number => Array.from({ length: 9 }, (_, k) => forecastEt(stock(id), 1, k + 1)).reduce((x, y) => x + y) / 9;
+      for (let i = 1; i < tier.length; i++) expect(et(tier[i]!.id), `${tier[i - 1]!.id} → ${tier[i]!.id}`).toBeLessThan(et(tier[i - 1]!.id));
+    }
+  });
+
+  it('nitrous fires once, never in first gear, and is worth a good chunk of the run', () => {
+    const spec = stock('monarch');
+    const race = new Race([spec], [{ kind: 'live' }], 5);
+    let early = false;
+    while (!race.done) {
+      if (race.out && race.racers[0]!.phase === 'staging') race.tap(0);
+      const me = race.racers[0]!;
+      if (me.phase === 'running' && me.gear === 1) {
+        race.nitro(0);
+        early ||= me.nitroUsed;
+      }
+      race.step();
+    }
+    expect(early).toBe(false);
+    const withN = drive(spec, 5, { nitro: true });
+    const without = drive(spec, 5);
+    expect(withN.script.nitro).toBeGreaterThan(0);
+    expect(without.script.nitro).toBeUndefined();
+    expect(withN.et!).toBeLessThan(without.et! - 0.15);
+    // a car without the bottle ignores the hold
+    expect(drive(stock('falkon'), 5, { nitro: true }).script.nitro).toBeUndefined();
+  });
+
+  it('an electric taps overdrive five times as its charge peaks; a charge left alone vents as a late shift', () => {
+    const spec = stock('elektra');
+    expect(spec.stages).toBe(5);
+    const tapped = drive(spec, 9);
+    expect(tapped.shifts).toBe(5);
+    expect(tapped.perfect).toBe(5);
+    const ignored = drive(spec, 9, { tap: false });
+    expect(ignored.late).toBe(5);
+    expect(tapped.et!).toBeLessThan(ignored.et! - 0.2);
+  });
+
+  it('police cars forgive a slow launch, all-wheel drive never spins, and policy bots use their nitrous', () => {
+    expect(drive(stock('interceptor'), 3, { reaction: 0.34 }).launch).toBe('perfect');
+    expect(drive(stock('breadbox'), 3, { reaction: 0.34 }).launch).toBe('good');
+    for (const id of CARS.filter((c) => c.trait === 'awd').map((c) => c.id)) {
+      const r = simulate([specOf(getCar(id), maxed, fresh, false)], [policy(0.3, 4)], 4).racers[0]!;
+      expect(r.spinTime, id).toBe(0);
+    }
+    const bot = simulate([stock('rail')], [policy(0.9, 2)], 2).racers[0]!;
+    expect(bot.script.nitro).toBeGreaterThan(0);
+  });
+
+  it('ghosts keep their nitrous, and older replays still load', () => {
+    const spec = stock('rail');
+    const r = simulate([spec], [policy(0.9, 6)], 6).racers[0]!;
+    const dec = decodeScript(encodeScript(r.script))!;
+    expect(dec.nitro).toBeCloseTo(r.script.nitro!, 3);
+    const again = simulate([spec], [{ kind: 'script', script: dec }], 6).racers[0]!;
+    expect(Math.abs(again.et! - r.et!)).toBeLessThan(0.02);
+    expect(decodeScript('lc2,3000,250,1200,2400')).toEqual({ launchRpm: 3000, reaction: 0.25, shifts: [1.2, 2.4] });
+  });
+
+  it('a retired car becomes the one that took its place, or its price in cash when that car is owned', () => {
+    const s = sanitize({ cash: 100, cars: { bumble: {}, veyr: { levels: { engine: 5 } }, nova: {}, kaiser: { paint: 'p-stock' } }, car: 'veyr' });
+    expect(s.cars.veyr).toBeUndefined();
+    expect(s.cars.toro!.levels.engine).toBe(5);
+    expect(s.car).toBe('toro');
+    expect(s.cars.astro).toBeDefined();
+    // nova also became a toro: that one is paid back
+    expect(s.cash).toBe(100 + 2100000);
+  });
+
+  it('a race is never against your own car, and every boss drives a car from the next tier', () => {
+    for (const id of ['bumble', 'tsubasa', 'elektra']) {
+      const bots = botsFor(stock(id), 1, 33);
+      expect(bots[0]!.car.id).not.toBe(id);
+    }
+    for (const o of LADDER.filter((x) => x.boss)) expect(getCar(o.car).tier).toBe(o.division + 2);
+    for (let seed = 1; seed < 40; seed++) expect(loanerFor(seed).car.trait).not.toBe('nitro');
   });
 });

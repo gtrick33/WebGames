@@ -7,8 +7,8 @@
  * A driver is live (the player's taps), a policy (an AI with a skill level) or a script (recorded
  * taps: a ghost).
  */
-import type { CarDef } from './cars';
-import { effectsOf, PARTS, failChance, type Condition, type Levels, type PartId } from './parts';
+import type { CarDef, Trait } from './cars';
+import { effectsOf, PARTS, failChance, wears, type Condition, type Levels, type PartId } from './parts';
 import { clamp, rng } from './util';
 
 export const DT = 1 / 120;
@@ -80,9 +80,23 @@ export interface CarSpec {
   reliability: number;
   /** Parts whose condition is low enough to fail (owned cars); empty for loaners and bots. */
   risky: { part: PartId; chance: number }[];
+  /** The car's signature (cars.ts): it bends the torque curve, the shifts, the launch or the windows. */
+  trait: Trait;
+  /** Taps the run asks for: one per gear change, or the electric's overdrive stages. */
+  stages: number;
   def: CarDef;
   levels: Levels;
 }
+
+/** An electric car has no gears: it taps "overdrive" when its charge meter peaks, this many times a run. */
+export const EV_STAGES = 5;
+/** Seconds the overdrive charge takes to fill (an unanswered full charge vents and starts again). */
+export const CHARGE_S = 1.25;
+/** Nitrous: one shot a run, this long, pushing up to this much harder (it swells and fades like a boost). */
+export const NITRO_S = 2.2;
+export const NITRO_MUL = 1.4;
+/** Holding the button this long fires the nitrous (from second gear on, on cars that carry it). */
+export const NITRO_HOLD_S = 0.45;
 
 export function specOf(def: CarDef, levels: Levels, cond: Condition, canFail = true): CarSpec {
   const e = effectsOf(levels, cond);
@@ -93,22 +107,26 @@ export function specOf(def: CarDef, levels: Levels, cond: Condition, canFail = t
   const power = def.hp * 745.7 * e.torqueMul;
   const dragArea = def.drag * e.dragMul;
   const vTop = Math.cbrt((power * 0.85) / (0.5 * AIR * dragArea)) * 1.12;
-  const redline = def.redline + e.redlineAdd;
+  const trait = def.trait;
+  // a rev monster spins 700 rpm higher (its gears stretch to suit)
+  const redline = def.redline + e.redlineAdd + (trait === 'revs' ? 700 : 0);
   const finalDrive = def.gears === 1 ? ((redline / 60) * 2 * Math.PI * WHEEL_R) / vTop : ((redline / 60) * 2 * Math.PI * WHEEL_R) / (gN * vTop);
   const reliability = clamp(def.reliability + e.reliabilityAdd, 0.2, 1);
-  const risky = canFail ? PARTS.filter((p) => p !== 'looks').map((p) => ({ part: p, chance: failChance(cond[p], reliability) })).filter((r) => r.chance > 0) : [];
+  const risky = canFail ? PARTS.filter((p) => wears(p)).map((p) => ({ part: p, chance: failChance(cond[p], reliability) })).filter((r) => r.chance > 0) : [];
   return {
     id: def.id,
     name: def.name,
-    mass: def.mass + e.massAdd,
+    // a featherweight is lighter (and snaps through a perfect shift: see shift()); big torque is hard on the tyres at the launch
+    mass: (def.mass + e.massAdd) * (trait === 'light' ? 0.96 : 1),
     drive: def.drive,
     gears: def.gears,
     redline,
-    peakTorque: def.torque * e.torqueMul,
+    // an electric has no gearbox to upgrade: its "transmission" is the inverter, worth torque instead
+    peakTorque: def.torque * e.torqueMul * (def.gears === 1 ? 1 + 0.07 * levels.transmission : 1),
     ratios,
     finalDrive,
     grip: def.grip * e.gripMul,
-    launchGrip: e.launchGrip,
+    launchGrip: e.launchGrip * (trait === 'torque' ? 0.9 : 1),
     spinKeep: e.spinKeep,
     downforce: e.downforce,
     dragArea,
@@ -116,17 +134,25 @@ export function specOf(def: CarDef, levels: Levels, cond: Condition, canFail = t
     driveEff: e.driveEff,
     reliability,
     risky,
+    trait,
+    stages: def.gears === 1 ? EV_STAGES : def.gears - 1,
     def,
     levels: { ...levels },
   };
 }
 
-/** Engine torque at an rpm: a bell around 65 % of the redline (electric: flat, then falling). */
+/**
+ * Engine torque at an rpm: a bell around 65 % of the redline (electric: flat, then falling). A turbo
+ * is soft low down and hits hard late in each gear; big torque pulls hardest low and fades at the top.
+ */
 export function torqueAt(spec: CarSpec, rpm: number): number {
   const t = clamp(rpm / spec.redline, 0, 1.05);
   if (spec.gears === 1) return spec.peakTorque * (t < 0.3 ? 1 : 0.3 / t);
   const d = (t - 0.65) / 0.35;
-  return spec.peakTorque * (0.45 + 0.55 * Math.exp(-d * d));
+  const base = spec.peakTorque * (0.45 + 0.55 * Math.exp(-d * d));
+  if (spec.trait === 'turbo') return base * (t < 0.45 ? 0.8 : t < 0.7 ? 0.8 + ((t - 0.45) / 0.25) * 0.38 : 1.18);
+  if (spec.trait === 'torque') return base * (1.17 - 0.26 * t);
+  return base;
 }
 
 export const wheelRpm = (spec: CarSpec, v: number, gear: number): number => (v / (2 * Math.PI * WHEEL_R)) * 60 * spec.ratios[gear - 1]! * spec.finalDrive;
@@ -187,15 +213,18 @@ export function shiftWindows(seed: number, spec: CarSpec): ShiftWindow[] {
   const r = rng((seed ^ 0x2c1b3c6d) >>> 0);
   const between = (lo: number, hi: number): number => lo + r() * (hi - lo);
   const out: ShiftWindow[] = [];
-  for (let g = 1; g < spec.gears; g++) {
+  const ev = spec.gears === 1;
+  for (let g = 1; g <= spec.stages; g++) {
     // drawn whatever the car (so an upgrade can't move a window, and every car sees the same draws)
     const c = between(0.7, 0.92);
     const green = between(GREEN_SECONDS.min, GREEN_SECONDS.max);
     const below = between(YELLOW_SECONDS.min, YELLOW_SECONDS.max);
     const above = between(YELLOW_SECONDS.min, YELLOW_SECONDS.max);
-    const rate = needleRate(spec, g);
-    // the centre stays put (the same for every car); the green narrows rather than reach the redline
-    const hw = Math.min(clamp((rate * green) / 2, 0.02, 0.08), 0.97 - c);
+    // the electric's meter is its charge, which fills at a steady rate
+    const rate = ev ? 1 / CHARGE_S : needleRate(spec, g);
+    // the centre stays put (the same for every car); the green narrows rather than reach the redline,
+    // and a rev monster's greens are tighter (its perfect shifts kick harder)
+    const hw = Math.min(clamp((rate * green) / 2, 0.02, 0.08) * (spec.trait === 'revs' ? 0.8 : 1), 0.97 - c);
     const hi = c + hw;
     const lo = c - hw;
     out.push({ lo, hi, okLo: lo - clamp(rate * below, 0.03, 0.1), okHi: Math.min(0.992, hi + clamp(rate * above, 0.03, 0.1)) });
@@ -253,18 +282,32 @@ export interface Racer {
   /** Tapped while the red lights were on (live drivers). */
   jumped: boolean;
   launchQ: LaunchQuality | null;
+  /** Electric: the overdrive stage being charged (1-based) and its charge 0..1. */
+  stage: number;
+  charge: number;
+  /** Nitrous: fired yet and seconds left; when the clutch last bit (bots time their shot from it) and when it fired (the replay). */
+  nitroUsed: boolean;
+  nitroLeft: number;
+  gearAt: number;
+  nitroAt: number;
 }
 
 export type LaunchQuality = 'perfect' | 'good' | 'slow' | 'jump';
 
 export type ShiftQuality = 'perfect' | 'ok' | 'early' | 'late';
-export type Event = { type: 'light'; n: number } | { type: 'out' } | { type: 'launch'; i: number; quality: LaunchQuality } | { type: 'jump'; i: number } | { type: 'spin'; i: number } | { type: 'shift'; i: number; quality: ShiftQuality } | { type: 'tooEarly'; i: number } | { type: 'zone'; i: number } | { type: 'limiter'; i: number } | { type: 'finish'; i: number } | { type: 'fail'; i: number; part: PartId };
+export type Event = { type: 'light'; n: number } | { type: 'out' } | { type: 'launch'; i: number; quality: LaunchQuality } | { type: 'jump'; i: number } | { type: 'spin'; i: number } | { type: 'shift'; i: number; quality: ShiftQuality } | { type: 'tooEarly'; i: number } | { type: 'zone'; i: number } | { type: 'limiter'; i: number } | { type: 'finish'; i: number } | { type: 'fail'; i: number; part: PartId } | { type: 'nitro'; i: number };
 
 /**
  * The rpm the shift is judged on and the needle shows: while the clutch slips at the launch the
  * engine sits at its launch revs, but what matters is what the gear is doing (the wheels).
  */
-export const shiftRpm = (r: Racer): number => (r.slip > 0 ? Math.min(r.rpm, Math.max(IDLE_RPM, wheelRpm(r.spec, r.v, r.gear))) : r.rpm);
+export const shiftRpm = (r: Racer): number => (r.spec.gears === 1 ? r.charge * r.spec.redline : r.slip > 0 ? Math.min(r.rpm, Math.max(IDLE_RPM, wheelRpm(r.spec, r.v, r.gear))) : r.rpm);
+
+/** Whether the button would shift (or, electric, fire overdrive) right now. */
+export const canShift = (r: Racer): boolean => r.phase === 'running' && !r.stuck && !r.dead && (r.spec.gears === 1 ? r.stage <= r.spec.stages : r.gear < r.spec.gears);
+
+/** Whether holding the button would fire the nitrous now: a car that carries it, from second gear on, not fired yet. */
+export const canNitro = (r: Racer): boolean => r.spec.trait === 'nitro' && !r.nitroUsed && r.phase === 'running' && !r.dead && r.gear >= 2;
 
 export type Driver = { kind: 'live' } | { kind: 'policy'; skill: number; seed: number } | { kind: 'script'; script: Script };
 
@@ -273,6 +316,8 @@ export interface Script {
   launchRpm: number;
   reaction: number;
   shifts: number[];
+  /** When the nitrous fired, seconds after the launch (none: never). */
+  nitro?: number;
 }
 
 interface PolicyPlan {
@@ -313,7 +358,7 @@ export interface RaceResult {
 }
 
 function newRacer(spec: CarSpec): Racer {
-  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false, t100: -1, inZone: false, boostMul: 1, boostLeft: 0, boostTotal: 0, engage: 99, jumped: false, launchQ: null };
+  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false, t100: -1, inZone: false, boostMul: 1, boostLeft: 0, boostTotal: 0, engage: 99, jumped: false, launchQ: null, stage: 1, charge: 0, nitroUsed: false, nitroLeft: 0, gearAt: 0, nitroAt: 0 };
 }
 
 export class Race {
@@ -377,10 +422,26 @@ export class Race {
     };
   }
 
-  /** The current gear's window for a racer (null in top gear). */
+  /** The current gear's window for a racer (null in top gear); an electric's current overdrive stage. */
   windowOf(i: number): ShiftWindow | null {
     const r = this.racers[i]!;
+    if (r.spec.gears === 1) return r.stage <= r.spec.stages ? (this.windows[i]![r.stage - 1] ?? null) : null;
     return r.gear < r.spec.gears ? (this.windows[i]![r.gear - 1] ?? null) : null;
+  }
+
+  /** Holding the button (live drivers): the nitrous, when the car carries it and is past first gear. */
+  nitro(i: number): void {
+    if (this.drivers[i]?.kind !== 'live') return;
+    this.fireNitro(i);
+  }
+
+  private fireNitro(i: number): void {
+    const r = this.racers[i]!;
+    if (!canNitro(r)) return;
+    r.nitroUsed = true;
+    r.nitroLeft = NITRO_S;
+    r.nitroAt = Math.round((this.t - r.launchAt) * 1000) / 1000;
+    this.events.push({ type: 'nitro', i });
   }
 
   /**
@@ -399,7 +460,7 @@ export class Race {
       }
       return;
     }
-    if (r.phase !== 'running' || r.gear >= r.spec.gears || r.stuck || r.dead) return;
+    if (!canShift(r)) return;
     if (shiftRpm(r) < r.spec.redline * IGNORE_BELOW) {
       this.events.push({ type: 'tooEarly', i });
       return;
@@ -415,12 +476,14 @@ export class Race {
     r.phase = 'running';
     r.slip = r.spec.gears === 1 ? 0 : 3;
     r.bog = Math.pow(clamp(r.rpm / Math.max(IDLE_RPM + 1, idealLaunchRpm(r.spec)), 0.3, 1), 1.6);
-    r.launchQ = r.jumped ? 'jump' : r.reaction <= LAUNCH_PERFECT ? 'perfect' : r.reaction <= LAUNCH_GOOD ? 'good' : 'slow';
+    // a police car's launch is the most forgiving, all-wheel drive's a little
+    const easy = r.spec.trait === 'pursuit' ? 0.06 : r.spec.trait === 'awd' ? 0.03 : 0;
+    r.launchQ = r.jumped ? 'jump' : r.reaction <= LAUNCH_PERFECT + easy ? 'perfect' : r.reaction <= LAUNCH_GOOD + easy ? 'good' : 'slow';
     if (r.launchQ === 'perfect') {
       r.boostMul = 1.16;
       r.boostLeft = r.boostTotal = 1.0;
     } else if (r.launchQ === 'jump') r.bog *= 0.75;
-    const spin = engineForce(r.spec, r.rpm, 1) > tractionLimit(r.spec, true);
+    const spin = r.spec.trait !== 'awd' && engineForce(r.spec, r.rpm, 1) > tractionLimit(r.spec, true);
     if (spin || r.failure === 'suspension') {
       r.spinLeft = (r.failure === 'suspension' ? 1.4 : 0.35) + 0.6 * clamp((engineForce(r.spec, r.rpm, 1) / tractionLimit(r.spec, true) - 1) * 2, 0, 1) * (1 - (r.spec.spinKeep - 0.72) * 2);
       this.events.push({ type: 'spin', i });
@@ -434,12 +497,12 @@ export class Race {
 
   private shift(i: number): void {
     const r = this.racers[i]!;
-    if (r.phase !== 'running' || r.gear >= r.spec.gears || r.stuck || r.dead) return;
+    if (!canShift(r)) return;
     const frac = shiftRpm(r) / r.spec.redline;
     const w = this.windowOf(i)!;
     r.slip = 0;
     r.inZone = false;
-    const bounced = r.limiterSince >= 0 && this.t - r.limiterSince > LATE_AFTER;
+    const bounced = r.spec.gears > 1 && r.limiterSince >= 0 && this.t - r.limiterSince > LATE_AFTER;
     let quality: ShiftQuality;
     if (bounced || frac > w.okHi) {
       quality = 'late';
@@ -454,10 +517,19 @@ export class Race {
     }
     r.shifts++;
     r.taps.push(Math.round((this.t - r.launchAt) * 1000) / 1000);
+    if (r.spec.gears === 1) {
+      // overdrive: no clutch, no gap; the charge empties into a surge and the next stage starts filling
+      r.boostMul = quality === 'perfect' ? 1.34 : quality === 'ok' ? 1.12 : 1;
+      r.boostLeft = r.boostTotal = quality === 'perfect' ? 1.0 : quality === 'ok' ? 0.6 : 0;
+      r.stage++;
+      r.charge = 0;
+      this.events.push({ type: 'shift', i, quality });
+      return;
+    }
     r.phase = 'shifting';
-    r.shiftLeft = r.spec.shiftTime * (quality === 'perfect' ? 0.6 : quality === 'ok' ? 1 : quality === 'early' ? 1.15 : 1.45);
-    // a perfect shift kicks; an early one bogs in the next gear (both swell in and fade out: see boostNow)
-    r.boostMul = quality === 'perfect' ? 1.32 : quality === 'early' ? 0.76 : 1;
+    r.shiftLeft = r.spec.shiftTime * (quality === 'perfect' ? (r.spec.trait === 'light' ? 0.3 : 0.6) : quality === 'ok' ? 1 : quality === 'early' ? 1.15 : 1.45);
+    // a perfect shift kicks (a rev monster's harder); an early one bogs in the next gear (both swell in and fade out: see boostNow)
+    r.boostMul = quality === 'perfect' ? (r.spec.trait === 'revs' ? 1.4 : 1.32) : quality === 'early' ? 0.76 : 1;
     r.boostLeft = r.boostTotal = quality === 'perfect' ? 1.0 : quality === 'early' ? 0.5 : 0;
     r.gear++;
     r.limiterSince = -1;
@@ -521,11 +593,22 @@ export class Race {
         this.events.push({ type: 'spin', i });
       }
     }
-    if (r.phase === 'running' && r.gear < spec.gears && !r.stuck) {
+    // the electric's overdrive charge fills while it runs; a full charge nobody used vents (a late "shift")
+    if (spec.gears === 1 && r.phase === 'running' && canShift(r)) {
+      r.charge += DT / CHARGE_S;
+      if (r.charge >= 1) {
+        r.charge = 0;
+        r.late++;
+        r.stage++;
+        this.events.push({ type: 'shift', i, quality: 'late' });
+      }
+    }
+    if (canShift(r)) {
+      const k = spec.gears === 1 ? r.stage - 1 : r.gear - 1;
       if (d.kind === 'script') {
         const next = d.script.shifts[r.shifts];
         if (next !== undefined && since >= next) this.shift(i);
-      } else if (d.kind === 'policy' && plan && shiftRpm(r) >= spec.redline * (plan.shiftAt[r.gear - 1] ?? 0.95)) {
+      } else if (d.kind === 'policy' && plan && shiftRpm(r) >= spec.redline * (plan.shiftAt[k] ?? 0.95)) {
         if (plan.wantedAt < 0) plan.wantedAt = this.t;
         if (this.t - plan.wantedAt >= plan.lateness) {
           plan.wantedAt = -1;
@@ -542,8 +625,9 @@ export class Race {
       if (r.shiftLeft <= 0) {
         r.phase = 'running';
         r.engage = 0;
+        r.gearAt = this.t;
         r.rpm = Math.max(IDLE_RPM, wheel);
-        if (engineForce(spec, r.rpm, r.gear) > tractionLimit(spec, false, r.v) * 1.1 && r.spinLeft <= 0) {
+        if (spec.trait !== 'awd' && engineForce(spec, r.rpm, r.gear) > tractionLimit(spec, false, r.v) * 1.1 && r.spinLeft <= 0) {
           r.spinLeft = 0.25;
           this.events.push({ type: 'spin', i });
         }
@@ -564,7 +648,10 @@ export class Race {
       } else r.rpm = Math.max(IDLE_RPM, wheel);
       let eng = engineForce(spec, r.rpm, r.gear);
       if (since < 1 && r.gear === 1 && spec.gears > 1) eng *= r.bog + (1 - r.bog) * since;
-      const boost = boostNow(r);
+      // nitrous swells in and fades like a boost, on top of it
+      const nitro = r.nitroLeft > 0 ? boostNow({ boostMul: NITRO_MUL, boostLeft: r.nitroLeft, boostTotal: NITRO_S }) : 1;
+      if (r.nitroLeft > 0) r.nitroLeft -= DT;
+      const boost = boostNow(r) * nitro;
       if (r.boostLeft > 0) r.boostLeft -= DT;
       eng *= boost;
       if (r.spinLeft > 0) {
@@ -585,13 +672,18 @@ export class Race {
         }
       }
     }
+    // policy drivers fire their nitrous a moment into third gear (second in a three-speed); ghosts when they did
+    if (canNitro(r)) {
+      if (d.kind === 'policy' && plan && r.gear >= Math.min(3, spec.gears) && this.t - r.gearAt >= 0.2 + plan.lateness) this.fireNitro(i);
+      else if (d.kind === 'script' && d.script.nitro !== undefined && since >= d.script.nitro) this.fireNitro(i);
+    }
     // the clutch bites over ENGAGE_S: the push comes back smoothly instead of in one step (that
     // step read on screen as the car jumping forward)
     if (r.phase === 'running' && r.engage < ENGAGE_S) {
       force *= smooth01(r.engage / ENGAGE_S);
       r.engage += DT;
     }
-    const win = r.gear < spec.gears ? this.windows[i]![r.gear - 1] : undefined;
+    const win = this.windowOf(i);
     if (d.kind === 'live' && win && r.phase === 'running' && !r.inZone && shiftRpm(r) >= spec.redline * win.lo) {
       r.inZone = true;
       this.events.push({ type: 'zone', i });
@@ -630,7 +722,7 @@ export class Race {
         dnf: !finished,
         failure: r.failure,
         crossed: finished ? r.reaction + r.et : null,
-        script: { launchRpm: Math.round(r.launchRpm), reaction: Math.round(r.reaction * 1000) / 1000, shifts: r.taps },
+        script: { launchRpm: Math.round(r.launchRpm), reaction: Math.round(r.reaction * 1000) / 1000, shifts: r.taps, ...(r.nitroUsed ? { nitro: r.nitroAt } : {}) },
       };
     });
     const order = rs
@@ -686,19 +778,22 @@ export function forecastRun(spec: CarSpec, skill: number, seed = 1): { et: numbe
 export const forecastEt = (spec: CarSpec, skill: number, seed = 1): number => forecastRun(spec, skill, seed).et;
 
 // ---- replay encoding (friends' challenges)
-const VERSION = 'lc2';
+/** lc3 adds the nitrous (milliseconds after the launch, -1 for none) before the shifts; lc1 and lc2 have none. */
+const VERSION = 'lc3';
 export function encodeScript(s: Script): string {
-  return [VERSION, s.launchRpm, Math.round(s.reaction * 1000), ...s.shifts.map((t) => Math.round(t * 1000))].join(',');
+  return [VERSION, s.launchRpm, Math.round(s.reaction * 1000), s.nitro === undefined ? -1 : Math.round(s.nitro * 1000), ...s.shifts.map((t) => Math.round(t * 1000))].join(',');
 }
 export function decodeScript(raw: string | null | undefined): Script | null {
   if (!raw) return null;
   const p = raw.split(',');
-  if ((p[0] !== VERSION && p[0] !== 'lc1') || p.length < 3 || p.length > 40) return null;
+  const v3 = p[0] === VERSION;
+  if ((!v3 && p[0] !== 'lc2' && p[0] !== 'lc1') || p.length < 3 || p.length > 40) return null;
   const nums = p.slice(1).map(Number);
   if (nums.some((n) => !Number.isFinite(n))) return null;
-  const [launchRpm, reaction, ...shifts] = nums as [number, number, ...number[]];
-  if (launchRpm < 0 || launchRpm > 30000 || reaction < -5000 || reaction > 10000) return null;
-  const sh = shifts.map((n) => n / 1000);
+  const [launchRpm, reaction, ...rest] = nums as [number, number, ...number[]];
+  const nitroMs = v3 ? rest.shift() : -1;
+  if (launchRpm < 0 || launchRpm > 30000 || reaction < -5000 || reaction > 10000 || nitroMs === undefined || nitroMs > 60000) return null;
+  const sh = rest.map((n) => n / 1000);
   for (let i = 1; i < sh.length; i++) if (sh[i]! < sh[i - 1]!) return null;
-  return { launchRpm, reaction: reaction / 1000, shifts: sh };
+  return { launchRpm, reaction: reaction / 1000, shifts: sh, ...(nitroMs >= 0 ? { nitro: nitroMs / 1000 } : {}) };
 }

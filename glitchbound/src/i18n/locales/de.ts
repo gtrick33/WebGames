@@ -1966,6 +1966,16 @@ const de: string[] = [
   'Leertaste, Enter oder Pfeil hoch: Starte, wenn die fünf roten Lichter ausgehen, und schalte, wenn die Nadel in der grünen Zone ist',
   'Esc oder P: Pause',
   'Tippe irgendwo (oder auf den großen Knopf), wenn die roten Lichter ausgehen, dann jedes Mal, wenn die Nadel in der grünen Zone ist',
+  'Drag-Duelle in 3D: Triff jeden Gangwechsel, gewinn die Autos deiner Rivalen und sammle 28 Autos mit eigenen Tricks.',
+  'Ein taktisches Viertelmeilen-Dragrennen in glänzendem 3D, gesehen von hinter deinem Auto. Starte, wenn die fünf roten Lichter ausgehen, und triff dann jeden Gangwechsel in einer grünen Zone, die in jedem Gang Lage und Größe ändert, immer Kopf an Kopf gegen einen Rivalen. Sammle 28 eigene Autos, von der kulleräugigen Familienlimousine bis zum Hypercar mit Lachgas, jedes mit seiner eigenen Eigenart: Turbos packen spät zu, viel Drehmoment hebt die Nase, Drehzahlmonster treten härter zu, Polizeiautos verzeihen einen langsamen Start, ein Elektroauto zündet Overdrive statt zu schalten, und Lachgas-Autos haben einen Schuss pro Rennen. Steig eine Rangliste aus 40 Rivalen in fünf Divisionen hinauf und gewinn das Auto jedes Bosses, setz verdientes Geld auf prognostizierte Quoten und tune sechs Teile mit je acht Stufen: Die Aerodynamik bringt auf jeder Stufe einen neuen Spoiler oder Flügel, das Fahrwerk legt das Auto tiefer, die Reifen bekommen farbige Flanken, und nur die Reifen nutzen sich ab. Dann fahr den King’s Gauntlet für die längste Serie oder fahr live gegen einen Freund, jeder auf seinem eigenen Handy. Im Showdown des Tages bekommen alle denselben Leihwagen und Gegner; Freunde fahren in Challenges gegen deinen Geist. Nirgends echtes Geld.',
+  '28 eigene Autos in sechs Klassen, jedes mit eigener Low-Poly-3D-Karosserie: Stadtautos, ein Taxi, ein Abschleppwagen, Polizeiautos, ein Geländewagen und ein Transporter bis hin zu Supersportwagen und einem Hypercar mit Lachgas',
+  'Jedes Auto hat eine Eigenart, die verändert, wie es fährt: Turbo, viel Drehmoment, Drehzahlmonster, Federgewicht, Allradgrip, Verfolgungsspezial, Elektro-Overdrive oder Lachgas',
+  'Sechs einzelne Teile mit je acht Stufen, jedes verändert mehrere Werte; Aerodynamik, Fahrwerk und Reifen verändern das Auto auf jeder Stufe. Nur die Reifen nutzen sich ab',
+  'Teile und Gummi schalten die höheren Stufen frei; Geld und Material gibt es nur durch Rennen',
+  'Eine Rangliste aus 40 Rivalen in fünf Divisionen mit Preisgeld, Boni für den ersten Sieg und Divisionsfinals um das Auto des Bosses',
+  'Jeden Tag eine kostenlose Probefahrt in einem Auto, das du noch nicht hast',
+  'Leertaste halten (ab dem zweiten Gang): Lachgas zünden, bei Autos, die es haben',
+  'Knopf halten (ab dem zweiten Gang): Lachgas zünden, bei Autos, die es haben',
 ];
 
 export default de;

@@ -1966,6 +1966,16 @@ const ro: string[] = [
   'Spațiu, Enter sau săgeată sus: pornește când se sting cele cinci lumini roșii, apoi schimbă când acul e în zona verde',
   'Esc sau P: pauză',
   'Atinge oriunde (sau butonul mare) când se sting luminile roșii, apoi de fiecare dată când acul e în zona verde',
+  'Dueluri de drag racing în 3D: prinde fiecare schimbare, câștigă mașinile rivalilor și colecționează 28 de mașini unice.',
+  'Un joc strategic de drag racing pe un sfert de milă, în 3D lucios, văzut din spatele mașinii tale. Pornește când se sting cele cinci lumini roșii, apoi prinde fiecare schimbare de treaptă într-o zonă verde care își schimbă locul și mărimea la fiecare treaptă, mereu față în față cu un singur rival. Colecționează 28 de mașini originale, de la un sedan de familie cu ochi rotunzi la un hypercar cu nitro, fiecare cu trăsătura ei: turbo-urile împing târziu, cuplul mare ridică botul, monștrii de turație lovesc mai tare, mașinile de poliție iartă un start lent, o electrică activează overdrive în loc să schimbe treptele, iar mașinile cu nitro au o singură doză pe cursă. Urcă un clasament de 40 de rivali în cinci divizii și câștigă mașina fiecărui șef, pariază banii câștigați pe cote prognozate și tunează șase piese cu câte opt niveluri: aerodinamica adaugă un eleron sau o aripă nouă la fiecare nivel, suspensia coboară mașina, anvelopele primesc flancuri colorate și doar anvelopele se uzează. Apoi înfruntă King’s Gauntlet pentru cea mai lungă serie sau întrece-te live cu un prieten, fiecare pe telefonul lui. În Duelul zilei toată lumea primește aceeași mașină împrumutată și același adversar; prietenii se întrec cu fantoma ta în provocări. Nicăieri bani adevărați.',
+  '28 de mașini originale în șase clase, fiecare cu propria caroserie 3D low-poly: mașini de oraș, un taxi, o mașină de tractare, mașini de poliție, un off-road și o dubă, până la supercaruri și un hypercar cu nitro',
+  'Fiecare mașină are o trăsătură care schimbă felul în care merge: turbo, cuplu mare, monstru de turație, categorie pană, tracțiune integrală, special de urmărire, overdrive electric sau nitro',
+  'Șase piese separate cu câte opt niveluri, fiecare schimbă mai multe statistici; aerodinamica, suspensia și anvelopele schimbă mașina la fiecare nivel. Doar anvelopele se uzează',
+  'Piesele și cauciucul deblochează nivelurile mai mari; banii și materialele vin doar din curse',
+  'Un clasament de 40 de rivali în cinci divizii cu premii, bonusuri pentru prima victorie și finale de divizie în care joci pe mașina șefului',
+  'Un test drive gratuit în fiecare zi cu orice mașină pe care nu o ai încă',
+  'Ține apăsat Spațiu (din treapta a doua): pornește nitro, la mașinile care îl au',
+  'Ține apăsat butonul (din treapta a doua): pornește nitro, la mașinile care îl au',
 ];
 
 export default ro;

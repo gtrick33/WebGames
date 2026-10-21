@@ -37,6 +37,12 @@ export interface Sfx {
   pop(): void;
   /** A turbo's blow-off valve between gears. */
   blowoff(): void;
+  /** The nitrous valve opens: a purge hiss and a deep roar. */
+  nitro(): void;
+  /** An electric's overdrive surge (0..1: how clean the tap was). */
+  surge(level: number): void;
+  /** A police car's siren, one whoop. */
+  siren(): void;
   /** Crossing the line at speed. */
   whoosh(): void;
   cash(): void;
@@ -66,19 +72,25 @@ export interface Sfx {
 
 type Voice = 'i4' | 'v8' | 'v12' | 'ev';
 
-/** The engine layout a car's note uses (from its kind, maker and gears; nothing in the sim depends on it). */
-export function voiceOf(def: CarDef | undefined): { kind: Voice; redline: number } {
-  if (!def) return { kind: 'v8', redline: 6500 };
+/**
+ * The engine a car's note uses (from its kind, trait and gears; nothing in the sim depends on it): big
+ * torque and police cars burble like V8s, exotics scream, small cars rasp, and a turbo whistles over
+ * whatever it is bolted to.
+ */
+export function voiceOf(def: CarDef | undefined): { kind: Voice; redline: number; turbo: boolean } {
+  if (!def) return { kind: 'v8', redline: 6500, turbo: false };
   const k = def.kind.toLowerCase();
   const kind: Voice =
-    def.gears === 1 || k.includes('electric')
+    def.gears === 1 || def.trait === 'electric'
       ? 'ev'
-      : k.includes('supercar') || k.includes('hypercar') || def.redline >= 8600
-        ? 'v12'
-        : /city|compact|hatch|sports sedan|taxi|classic sedan|track|rally|boxy/.test(k) && def.hp < 520
-          ? 'i4'
-          : 'v8';
-  return { kind, redline: def.redline };
+      : def.trait === 'torque' || def.trait === 'pursuit'
+        ? 'v8'
+        : k.includes('supercar') || k.includes('hypercar') || def.redline >= 8600
+          ? 'v12'
+          : /city|compact|hatch|sports sedan|taxi|classic sedan|track|rally|boxy|off-roader/.test(k) && def.hp < 520
+            ? 'i4'
+            : 'v8';
+  return { kind, redline: def.redline + (def.trait === 'revs' ? 700 : 0), turbo: def.trait === 'turbo' };
 }
 
 const hz = (m: number): number => 440 * 2 ** ((m - 69) / 12);
@@ -117,7 +129,7 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
   let noiseBuf: AudioBuffer | null = null;
   let disposed = false;
   let voice = voiceOf(undefined);
-  let eng: { osc: OscillatorNode[]; shape: WaveShaperNode; band: BiquadFilterNode; low: BiquadFilterNode; rumble: AudioBufferSourceNode; rumbleGain: GainNode; g: GainNode; kind: Voice } | null = null;
+  let eng: { osc: OscillatorNode[]; shape: WaveShaperNode; band: BiquadFilterNode; low: BiquadFilterNode; rumble: AudioBufferSourceNode; rumbleGain: GainNode; g: GainNode; kind: Voice; whistle: { o: OscillatorNode; g: GainNode } | null } | null = null;
   let mode: MusicMode = 'off';
   /** The piece playing now: its own gain and reverb, so a switch can silence it, tails and all. */
   let deck: { out: GainNode; verb: ConvolverNode } | null = null;
@@ -236,7 +248,7 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
   const engineNodes = (): typeof eng => {
     const c = audio();
     if (!c || !fx || !noiseBuf) return null;
-    if (eng && eng.kind === voice.kind) return eng;
+    if (eng && eng.kind === voice.kind && !!eng.whistle === voice.turbo) return eng;
     stopEngine();
     const ev = voice.kind === 'ev';
     const g = c.createGain();
@@ -272,7 +284,18 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
     rumbleGain.gain.value = 0.0001;
     rumble.connect(rf).connect(rumbleGain).connect(g);
     rumble.start();
-    eng = { osc, shape, band, low, rumble, rumbleGain, g, kind: voice.kind };
+    // a turbo's whistle: a thin sine that climbs with the boost, outside the distortion
+    let whistle: { o: OscillatorNode; g: GainNode } | null = null;
+    if (voice.turbo) {
+      const o = c.createOscillator();
+      o.type = 'sine';
+      const wg = c.createGain();
+      wg.gain.value = 0.0001;
+      o.connect(wg).connect(fx);
+      o.start();
+      whistle = { o, g: wg };
+    }
+    eng = { osc, shape, band, low, rumble, rumbleGain, g, kind: voice.kind, whistle };
     return eng;
   };
   function stopEngine(): void {
@@ -284,6 +307,7 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
       try {
         e.osc.forEach((o) => o.stop());
         e.rumble.stop();
+        e.whistle?.o.stop();
       } catch {
         /* already stopped */
       }
@@ -476,10 +500,14 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
       e.low.frequency.setTargetAtTime(e.kind === 'ev' ? 5200 : 700 + frac * 3800 + load * 800, t, 0.04);
       e.rumbleGain.gain.setTargetAtTime(0.02 + load * 0.09, t, 0.05);
       e.g.gain.setTargetAtTime((e.kind === 'ev' ? 0.06 : 0.11) + load * (e.kind === 'ev' ? 0.06 : 0.12) + frac * 0.05, t, 0.04);
+      if (e.whistle) {
+        e.whistle.o.frequency.setTargetAtTime(1900 + frac * 4600, t, 0.05);
+        e.whistle.g.gain.setTargetAtTime(0.0001 + load * frac * frac * 0.03, t, 0.08);
+      }
     },
     voice(def) {
       const v = voiceOf(def);
-      if (v.kind !== voice.kind) stopEngine();
+      if (v.kind !== voice.kind || v.turbo !== voice.turbo) stopEngine();
       voice = v;
     },
     amber: () => {
@@ -494,7 +522,7 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
     shift: () => {
       noise(0, 0.07, 0.35, 2600);
       tone(240, 110, 0, 0.09, 0.18, 'square', undefined, 1600);
-      if (voice.kind !== 'ev' && voice.kind !== 'v8') blowoff();
+      if (voice.turbo) blowoff();
     },
     perfect: () => [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, f, i * 0.05, 0.18, 0.12, 'triangle')),
     limiter: () => tone(320, 300, 0, 0.06, 0.12, 'sawtooth', undefined, 2200),
@@ -512,6 +540,21 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
       tone(110, 45, 0, 0.1, 0.22, 'square', undefined, 700);
     },
     blowoff,
+    nitro: () => {
+      noise(0, 0.5, 0.3, 6500, { type: 'highpass', attack: 0.01 });
+      noise(0.05, 2.2, 0.32, 160, { type: 'lowpass', attack: 0.15 });
+      noise(0.05, 2.0, 0.12, 900, { to: 2400, attack: 0.2 });
+      tone(55, 90, 0.05, 1.6, 0.16, 'sawtooth', undefined, 500);
+    },
+    surge: (level) => {
+      tone(600, 2400, 0, 0.28, 0.08 + level * 0.1, 'sine');
+      tone(300, 1200, 0, 0.32, 0.05 + level * 0.06, 'triangle');
+      noise(0, 0.22, 0.06 + level * 0.08, 5200, { q: 4, to: 8000 });
+    },
+    siren: () => {
+      tone(700, 1500, 0, 0.32, 0.09, 'square', undefined, 2600);
+      tone(1500, 700, 0.32, 0.36, 0.09, 'square', undefined, 2600);
+    },
     whoosh: () => noise(0, 0.9, 0.3, 400, { to: 3600, q: 1.5, attack: 0.3 }),
     cash: () => {
       tone(1319, 1319, 0, 0.07, 0.12, 'square', undefined, 4000);
@@ -610,6 +653,7 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
       try {
         eng?.osc.forEach((o) => o.stop());
         eng?.rumble.stop();
+        eng?.whistle?.o.stop();
       } catch {
         /* already stopped */
       }

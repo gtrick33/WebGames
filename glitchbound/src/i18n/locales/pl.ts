@@ -1966,6 +1966,16 @@ const pl: string[] = [
   'Spacja, Enter lub strzałka w górę: ruszaj, gdy zgaśnie pięć czerwonych świateł, i zmieniaj bieg, gdy wskazówka jest w zielonej strefie',
   'Esc lub P: pauza',
   'Stuknij w dowolnym miejscu (lub duży przycisk), gdy zgasną czerwone światła, a potem za każdym razem, gdy wskazówka jest w zielonej strefie',
+  'Pojedynki drag racingowe w 3D: trafiaj każdą zmianę biegu, wygrywaj auta rywali i zbierz 28 aut z własnymi sztuczkami.',
+  'Strategiczny drag racing na ćwierć mili w błyszczącym 3D, widziany zza twojego auta. Ruszaj, gdy zgaśnie pięć czerwonych świateł, a potem trafiaj każdą zmianę biegu w zielonej strefie, która na każdym biegu zmienia miejsce i rozmiar, zawsze łeb w łeb z jednym rywalem. Zbierz 28 oryginalnych aut, od rodzinnego sedana z okrągłymi reflektorami po hiperauto z nitro, a każde ma własną cechę: turbo kopie późno, duży moment obrotowy podnosi przód, potwory obrotów mocniej kopią, radiowozy wybaczają powolny start, auto elektryczne odpala overdrive zamiast zmieniać biegi, a auta z nitro mają jeden strzał na wyścig. Wspinaj się po drabince 40 rywali w pięciu dywizjach i wygraj auto każdego bossa, obstawiaj zarobione pieniądze według prognozowanych kursów i tuninguj sześć części po osiem poziomów: aerodynamika na każdym poziomie dodaje nowy spojler lub skrzydło, zawieszenie obniża auto, opony dostają kolorowe boki, a zużywają się tylko opony. Potem zmierz się z King’s Gauntlet o najdłuższą serię albo ścigaj się na żywo ze znajomym, każdy na swoim telefonie. W Pojedynku dnia wszyscy dostają to samo wypożyczone auto i rywala; znajomi ścigają się z twoim duchem w wyzwaniach. Nigdzie prawdziwych pieniędzy.',
+  '28 oryginalnych aut w sześciu klasach, każde z własnym nadwoziem low-poly 3D: auta miejskie, taksówka, laweta, radiowozy, terenówka i van, aż po supersamochody i hiperauto z nitro',
+  'Każde auto ma jedną cechę, która zmienia sposób jazdy: turbo, duży moment obrotowy, potwór obrotów, waga piórkowa, napęd na cztery koła, pościgowe, elektryczny overdrive lub nitro',
+  'Sześć osobnych części po osiem poziomów, a każda zmienia kilka parametrów; aerodynamika, zawieszenie i opony zmieniają auto na każdym poziomie. Zużywają się tylko opony',
+  'Części i guma odblokowują wyższe poziomy; pieniądze i materiały zdobywa się tylko w wyścigach',
+  'Drabinka 40 rywali w pięciu dywizjach z nagrodami, premiami za pierwsze zwycięstwo i finałami dywizji, w których stawką jest auto bossa',
+  'Codziennie darmowa jazda próbna autem, którego jeszcze nie masz',
+  'Przytrzymaj Spację (od drugiego biegu): odpal nitro w autach, które je mają',
+  'Przytrzymaj przycisk (od drugiego biegu): odpal nitro w autach, które je mają',
 ];
 
 export default pl;

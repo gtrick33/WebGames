@@ -250,14 +250,15 @@ export const GAMES: GameEntry[] = [
     wallet: true,
     live: { players: '2' },
     title: 'Launch Control',
-    tagline: 'Head-to-head 3D drag races: nail the launch and every shift, tune 50 cars, run the gauntlet.',
+    tagline: 'Head-to-head 3D drag races: nail every shift, win your rivals’ cars, collect 28 cars with their own tricks.',
     description:
       'A strategic quarter-mile drag racer in glossy 3D, seen from behind your car. Launch when the five red lights go out, then hit every shift in a green zone that changes spot and size each gear, head to head against one rival at a time. ' +
-      'Climb a ladder of 40 rivals in five divisions, wager earned cash on forecast odds, and tune six separate parts on 50 original cars in the parts shop: engine, transmission, suspension, tires, aero and looks, each moving several stats and wearing out; aero bolts on a new spoiler or wing at every level, suspension drops the car, tires get colored sidewalls. ' +
-      'Then run the King’s Gauntlet: back-to-back races against ever quicker opponents for the longest streak. Or race a friend live, each on your own phone. Everyone gets the same loaner and opponent in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
+      'Collect 28 original cars, from a round-eyed family sedan to a nitrous hypercar, each with its own trait: turbos hit late, big torque lifts the nose, rev monsters kick harder, police cars forgive a slow start, an electric taps overdrive instead of shifting, and nitrous cars get one shot a run. ' +
+      'Climb a ladder of 40 rivals in five divisions and win each boss’s car, wager earned cash on forecast odds, and tune six parts at eight levels each: aero bolts on a new spoiler or wing at every level, suspension drops the car, tires get colored sidewalls, and only the tires wear. ' +
+      'Then run the King’s Gauntlet for the longest streak, or race a friend live, each on your own phone. Everyone gets the same loaner and opponent in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
     categories: ['racing', 'strategy'],
     moods: ['action', 'quick'],
-    tags: ['drag race', 'cars', 'garage', 'upgrades', 'tuning', 'idle', 'wager', 'quarter mile', '3d', 'ghost', 'daily', 'one-touch', 'driving', 'muscle car', 'supercar', 'hypercar', 'multiplayer', 'friends'],
+    tags: ['drag race', 'cars', 'garage', 'upgrades', 'tuning', 'idle', 'wager', 'quarter mile', '3d', 'ghost', 'daily', 'one-touch', 'driving', 'muscle car', 'supercar', 'hypercar', 'nitro', 'police car', 'electric car', 'collection', 'multiplayer', 'friends'],
     released: '2026-10-21',
     accent: 'orange',
     emoji: '🏁',
@@ -270,8 +271,8 @@ export const GAMES: GameEntry[] = [
     runtime: { kind: 'module' },
     aspect: 'square',
     controls: {
-      keyboard: ['Space, Enter or Up: launch when the five red lights go out, then shift when the needle is in the green zone', 'Esc or P: pause'],
-      touch: ['Tap anywhere (or the big button) when the red lights go out, then each time the needle is in the green zone'],
+      keyboard: ['Space, Enter or Up: launch when the five red lights go out, then shift when the needle is in the green zone', 'Hold Space (from second gear): fire the nitrous, on cars that carry it', 'Esc or P: pause'],
+      touch: ['Tap anywhere (or the big button) when the red lights go out, then each time the needle is in the green zone', 'Hold the button (from second gear): fire the nitrous, on cars that carry it'],
     },
     stats: [
       { key: 'score', label: 'Best race score' },
@@ -286,10 +287,12 @@ export const GAMES: GameEntry[] = [
       'Every race is head to head: you against one rival, with a burnout, staging and Formula 1 start lights',
       'The King’s Gauntlet: back-to-back races, each opponent quicker than the last; the whole streak is one run on the leaderboard',
       'Race a friend live: send a link, both phones race the same start at the same moment, the room settles the winner',
-      '50 original cars in six tiers on real low-poly 3D models: city cars, rally hatches and muscle cars up to supercars and a hypercar',
-      'Six separate parts with eight levels each, each moving several stats; aero, suspension and tires change the car at every level. They wear out and can fail when neglected',
-      'Materials (scrap, alloy, carbon, chips, rubber) gate the higher levels; cash and materials come only from racing',
-      'A 40-rival ladder in five divisions with purses by finishing position, first-win bonuses and division finals',
+      '28 original cars in six tiers, each on its own low-poly 3D body: city cars, a taxi, a tow truck, police cars, an off-roader and a van up to supercars and a nitrous hypercar',
+      'Every car has one trait that changes how it drives: turbo, big torque, rev monster, featherweight, all-wheel grip, pursuit special, electric overdrive or nitrous',
+      'Six separate parts with eight levels each, each moving several stats; aero, suspension and tires change the car at every level. Only the tires wear',
+      'Parts and rubber gate the higher levels; cash and materials come only from racing',
+      'A 40-rival ladder in five divisions with purses, first-win bonuses and division finals raced for the boss’s car',
+      'A free test drive every day in any car you don’t own yet',
       'Wagers with odds from a race forecast: underdogs pay more. In-game cash only, never real money',
       'Your sponsor pays by the hour while you are away, and a free crate waits every day',
       'Helmets and suits on your driver portrait, paints, liveries, rims and four sunny strips as cosmetics',

@@ -35,6 +35,14 @@ export interface CarState {
   redline: number;
   spinning: boolean;
   dead: boolean;
+  /** A wheelie, 0..1 (big-torque launches). */
+  lift?: number;
+  /** The nitrous is burning. */
+  nitro?: boolean;
+  /** A police car's lights are flashing. */
+  siren?: boolean;
+  /** The parachute's out, 0..1 (past the line). */
+  chute?: number;
 }
 
 export const DISTANCE_M = 402.336;
@@ -593,6 +601,11 @@ export interface CarRig {
   shiftLamp: THREE.MeshStandardMaterial | null;
   smoke: THREE.Mesh[];
   len: number;
+  /** Nitrous flames, a police car's two beacons (red, blue), the parachute, and the rear axle's x (a wheelie pivots on it). */
+  nitro?: THREE.Object3D[];
+  beacons?: THREE.Object3D[];
+  chute?: THREE.Object3D;
+  rearX?: number;
   dispose(): void;
 }
 
@@ -1582,6 +1595,28 @@ export class Stage3D {
     rig.pitch = (rig.pitch ?? 0) + rig.pitchVel * Math.min(dt, 0.05);
     if (rig.body) rig.body.rotation.z = rig.pitch;
     else rig.group.rotation.z = rig.pitch;
+    // a wheelie tips the whole car (wheels too) back on its rear axle
+    const lift = (s.lift ?? 0) * 0.075;
+    if (rig.body) rig.group.rotation.z = lift;
+    rig.group.position.y = lift > 0 ? -(rig.rearX ?? -rig.len * 0.33) * Math.sin(lift) : 0;
+    for (const f of rig.nitro ?? []) {
+      f.visible = !!s.nitro && Math.sin(t * 70 + f.id) > -0.6;
+      if (f.visible) f.scale.set(0.75 + Math.random() * 0.55, 0.9 + Math.random() * 0.2, 0.9 + Math.random() * 0.2);
+    }
+    if (rig.beacons) {
+      const on = !!s.siren;
+      const ph = Math.floor(t * 7) % 2;
+      rig.beacons.forEach((b, k) => (b.visible = on && ph === k && Math.sin(t * 60) > -0.4));
+    }
+    if (rig.chute) {
+      const c = s.chute ?? 0;
+      rig.chute.visible = c > 0;
+      if (c > 0) {
+        rig.chute.scale.setScalar(0.3 + 0.7 * c);
+        rig.chute.position.y = 1.0 + 0.45 * c + Math.sin(t * 9) * 0.05;
+        rig.chute.position.z = Math.sin(t * 5.3) * 0.12;
+      }
+    }
     const frac = s.rpm / s.redline;
     for (const f of rig.flames) f.visible = frac > 0.86 && !s.dead && Math.sin(t * 60) > -0.3;
     const popping = (rig.popUntil ?? -1) > t;

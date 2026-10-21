@@ -1,6 +1,7 @@
 /** Small shared pieces of the Launch Control UI: panels, stickers, stat bars, car pictures, materials. */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { GameMenuButton } from '../../components/GameMenuButton';
+import { TRAIT_INFO, type Trait } from './cars';
 import { drawDriver } from './hud';
 import { Icon, MAT_ICON } from './icons';
 import { MATERIAL_INFO, MATERIALS, type Mats } from './parts';
@@ -53,6 +54,17 @@ export function Sheet({ title, eyebrow, onBack, right, tabs, viewRef, children, 
         <div className="lc-modal-content">{children}</div>
       </div>
     </section>
+  );
+}
+
+/** A car's signature trait: its icon and name, the rule in the tooltip (and in the blurb where there's room). */
+export function TraitBadge({ trait, full }: { trait: Trait; full?: boolean }) {
+  const t = TRAIT_INFO[trait];
+  return (
+    <span className="lc-trait" data-trait={trait} title={t.blurb}>
+      <span aria-hidden="true">{t.icon}</span> {t.name}
+      {full && <small>{t.blurb}</small>}
+    </span>
   );
 }
 

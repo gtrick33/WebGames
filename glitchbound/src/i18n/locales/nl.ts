@@ -1966,6 +1966,16 @@ const nl: string[] = [
   'Spatie, Enter of pijl omhoog: start als de vijf rode lichten uitgaan en schakel als de naald in de groene zone staat',
   'Esc of P: pauze',
   'Tik ergens (of op de grote knop) als de rode lichten uitgaan, en daarna telkens als de naald in de groene zone staat',
+  'Dragrace-duels in 3D: raak elk schakelmoment, win de auto’s van je rivalen en verzamel 28 auto’s met eigen trucs.',
+  'Een strategische dragrace over een kwart mijl in glanzend 3D, gezien van achter je auto. Start als de vijf rode lichten uitgaan en raak daarna elk schakelmoment in een groene zone die per versnelling van plek en grootte verandert, steeds één tegen één tegen een rivaal. Verzamel 28 originele auto’s, van een gezinssedan met ronde koplampen tot een hypercar met nitro, elk met een eigen eigenschap: turbo’s trekken laat door, veel koppel tilt de neus op, toerenmonsters schoppen harder, politieauto’s vergeven een trage start, een elektrische auto geeft overdrive in plaats van te schakelen en nitro-auto’s hebben één shot per race. Klim op een ladder van 40 rivalen in vijf divisies en win de auto van elke baas, zet verdiend geld in op voorspelde odds en tune zes onderdelen met elk acht niveaus: aero zet op elk niveau een nieuwe spoiler of vleugel op de auto, de vering legt de auto lager, de banden krijgen gekleurde zijwanden en alleen de banden slijten. Ren daarna de King’s Gauntlet voor de langste reeks of race live tegen een vriend, ieder op een eigen telefoon. In het Duel van vandaag krijgt iedereen dezelfde leenauto en tegenstander; vrienden racen in uitdagingen tegen je geest. Nergens echt geld.',
+  '28 originele auto’s in zes klassen, elk met een eigen low-poly 3D-carrosserie: stadsauto’s, een taxi, een takelwagen, politieauto’s, een terreinwagen en een bestelbus tot supercars en een hypercar met nitro',
+  'Elke auto heeft één eigenschap die verandert hoe hij rijdt: turbo, veel koppel, toerenmonster, vedergewicht, vierwielgrip, achtervolgingsspecial, elektrische overdrive of nitro',
+  'Zes losse onderdelen met elk acht niveaus, elk verandert meerdere waarden; aero, vering en banden veranderen de auto op elk niveau. Alleen de banden slijten',
+  'Onderdelen en rubber ontgrendelen de hogere niveaus; geld en materiaal krijg je alleen door te racen',
+  'Een ladder van 40 rivalen in vijf divisies met prijzengeld, bonussen voor de eerste zege en divisiefinales om de auto van de baas',
+  'Elke dag een gratis proefrit in een auto die je nog niet hebt',
+  'Houd Spatie ingedrukt (vanaf de tweede versnelling): geef nitro, bij auto’s die het hebben',
+  'Houd de knop ingedrukt (vanaf de tweede versnelling): geef nitro, bij auto’s die het hebben',
 ];
 
 export default nl;

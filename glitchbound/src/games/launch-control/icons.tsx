@@ -54,4 +54,4 @@ export function Icon({ name, size = 22, className = '' }: { name: IconName; size
 }
 
 export const PART_ICON: Record<PartId, IconName> = { engine: 'engine', transmission: 'transmission', suspension: 'suspension', tyres: 'tyres', aero: 'aero', looks: 'looks' };
-export const MAT_ICON: Record<Material, IconName> = { scrap: 'scrap', alloy: 'alloy', carbon: 'carbon', chips: 'chips', rubber: 'rubber' };
+export const MAT_ICON: Record<Material, IconName> = { parts: 'scrap', rubber: 'rubber' };
