@@ -6,6 +6,7 @@ import { addMats, botsFor, botSpec, crateFor, forecast, GAUNTLET_UNLOCK, gauntle
 import { ENV_DEFS } from '../src/games/launch-control/envs';
 import { applyWear, effectsOf, failChance, freshCondition, levelGains, MAX_LEVEL, PARTS, raceWear, repairCost, RISKY, stockLevels, upgradeCost, type Levels } from '../src/games/launch-control/parts';
 import { AUTO_LAUNCH, FIRST_LIGHT, LIGHT_GAP, LIGHTS, OUT_HOLD_MAX, decodeScript, DT, encodeScript, engineForce, forecastEt, forecastRun, GREEN_SECONDS, idealLaunchRpm, JUMP_PENALTY, Race, scoreOf, shiftRpm, shiftWindows, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
+import { voiceOf } from '../src/games/launch-control/sound';
 import { emptySave, sanitize } from '../src/games/launch-control/storage';
 import { rng } from '../src/games/launch-control/util';
 
@@ -59,6 +60,26 @@ describe('roster', () => {
       }
       expect(prev).toBeLessThan(forecastEt(specOf(c, stockLevels(), fresh, false), 1) * 0.8);
     }
+  });
+});
+
+describe('the dealer', () => {
+  it('lists cars cheapest first, and the tier tags climb with the price (tier price ranges never overlap)', () => {
+    const byPrice = [...CARS].sort((a, b) => a.price - b.price);
+    for (let i = 1; i < byPrice.length; i++) expect(byPrice[i]!.tier, `${byPrice[i - 1]!.name} → ${byPrice[i]!.name}`).toBeGreaterThanOrEqual(byPrice[i - 1]!.tier);
+    for (let t = 1; t < 6; t++) {
+      const top = Math.max(...CARS.filter((c) => c.tier === t).map((c) => c.price));
+      const next = Math.min(...CARS.filter((c) => c.tier === t + 1).map((c) => c.price));
+      expect(top, `tier ${t} tops out below tier ${t + 1}`).toBeLessThan(next);
+    }
+  });
+
+  it('gives every car an engine voice: electric cars whine, supercars scream, city cars rasp', () => {
+    expect(voiceOf(getCar('elektra')).kind).toBe('ev');
+    expect(voiceOf(getCar('toro')).kind).toBe('v12');
+    expect(voiceOf(getCar('pico-pop')).kind).toBe('i4');
+    expect(voiceOf(getCar('hellion')).kind).toBe('v8');
+    for (const c of CARS) expect(['i4', 'v8', 'v12', 'ev']).toContain(voiceOf(c).kind);
   });
 });
 
@@ -478,6 +499,8 @@ describe('cosmetics and the save', () => {
     expect(s.crateDay).toBe('');
     expect(s.daily['2026-10-21']).toEqual({ best: 12, tries: 2, et: 0, open: true });
     expect(s.daily.bad).toBeUndefined();
+    expect(s.musicOff).toBe(false);
+    expect(sanitize({ ...emptySave(), musicOff: true, muted: 'yes' }).musicOff).toBe(true);
     expect(sanitize(null)).toEqual(emptySave());
     expect(emptySave().mats.scrap).toBeGreaterThan(0);
     expect(LADDER[0]!.levels.engine).toBe(0);

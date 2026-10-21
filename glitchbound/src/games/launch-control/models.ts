@@ -407,3 +407,22 @@ export function loadModel(file: string): Promise<LoadedModel | null> {
 export async function preloadCars(defs: CarDef[]): Promise<void> {
   await Promise.all([...new Set(defs.map(fileFor))].map(loadModel));
 }
+
+/** Both packs' shared palettes (small, and every car needs one). Never rejects. */
+export const preloadShared = (): Promise<unknown> => Promise.all([loadShared('rg'), loadShared('cosmo')]);
+
+/** Whether a car's body is settled in memory (loaded, or known to be unavailable). */
+export const modelSettled = (def: CarDef): boolean => loaded.has(fileFor(def));
+
+/**
+ * Loads car bodies quietly, a few at a time, so the dealer's pictures and the next rivals never wait
+ * on the network. Bodies already loaded cost nothing. Stops early when `stop()` says so.
+ */
+export async function warmCars(defs: readonly CarDef[], stop: () => boolean = () => false, parallel = 4): Promise<void> {
+  const files = [...new Set(defs.map(fileFor))].filter((f) => !loaded.has(f));
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < files.length && !stop()) await loadModel(files[next++]!);
+  };
+  await Promise.all(Array.from({ length: Math.min(parallel, files.length) }, worker));
+}

@@ -152,6 +152,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
     let adaptAt = 0;
     stage?.setPixelRatio(dpr);
     const s = sfx();
+    s.voice(plan.looks[0]?.def);
     const popup = (text: string, tone: string): void => setPop({ text, tone, key: ++key });
     const say = (text: string, tone: string, sub?: string): void => setBanner({ text, sub, tone, key: ++key });
     const toPhase = (p: Phase): void => {
@@ -180,6 +181,8 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
             break;
           case 'out':
             s.green();
+            // the staging loop cuts dead: from here it is all engine and crowd
+            s.music('off');
             greenAt = clock;
             if (!me.jumped) say('GO!', 'lime');
             stage?.marshals(true);

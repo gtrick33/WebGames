@@ -17,6 +17,8 @@ import { RaceScreen, type RacePlan } from './RaceScreen';
 import { lookKey, NO_ORBIT, Stage3D, type CarLook, type Orbit, type ShowFocus } from './scene3d';
 import { decodeScript, encodeScript, forecastRun, scoreOf, simulate, specOf, type CarSpec, type Driver, type RaceResult } from './sim';
 import { createSfx, type Sfx } from './sound';
+import { Intro, introNeeded } from './intro';
+import { warmCars } from './models';
 import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type Save } from './storage';
 import { GameMenuButton } from '../../components/GameMenuButton';
 import { Icon, PART_ICON } from './icons';
@@ -27,6 +29,8 @@ import { clamp, fmtCash, fmtEt, fmtShort } from './util';
 import './Game.css';
 
 const EPOCH = '2026-10-21';
+/** The dealer's order: cheapest first (tiers follow, since their price ranges never overlap). */
+const BY_PRICE: readonly CarDef[] = [...CARS].sort((a, b) => a.price - b.price || a.tier - b.tier || a.name.localeCompare(b.name));
 const SLUG = 'launch-control';
 type Screen = 'hub' | 'rivals' | 'setup' | 'race' | 'result' | 'garage' | 'parts' | 'dealer' | 'daily' | 'ladder' | 'help' | 'live';
 type Mode = 'ladder' | 'rematch' | 'daily' | 'challenge' | 'gauntlet';
@@ -196,8 +200,26 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const stageRef = useRef<Stage3D | null>(null);
   const [touch] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
   const sfxRef = useRef<Sfx | null>(null);
-  const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
+  const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted, () => saveRef.current.musicOff)), []);
   useEffect(() => () => sfxRef.current?.dispose(), []);
+  /** The cars the first screen shows: yours, the rest of your garage, and your next rival's. */
+  const [introDefs] = useState<CarDef[]>(() => {
+    const ids = [save.car, ...Object.keys(save.cars).slice(0, 8), LADDER[Math.min(save.rank, LADDER.length - 1)]!.car];
+    return [...new Set(ids)].map(getCar);
+  });
+  /** The opening title card plays while those load (not at all when they are already in memory). */
+  const [intro, setIntro] = useState(() => typeof window !== 'undefined' && introNeeded(introDefs));
+  const [soundOpen, setSoundOpen] = useState(false);
+  // After the opening, every other body loads quietly, cheapest first (the dealer's order).
+  useEffect(() => {
+    if (intro) return;
+    let stop = false;
+    const id = window.setTimeout(() => void warmCars(BY_PRICE, () => stop, 3), 1500);
+    return () => {
+      stop = true;
+      window.clearTimeout(id);
+    };
+  }, [intro]);
   const me = playerName || 'You';
   /** Your car for a live race, as the room needs it. */
   const liveCarFor = useCallback((id: string): LiveCar => {
@@ -511,7 +533,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     if (level > MAX_LEVEL) return;
     const cost = upgradeCost(getCar(s.car), part, level);
     if (s.cash < cost.cash || !hasMats(s.mats, cost.mats)) return;
-    sfx().cash();
+    sfx().upgrade();
     commit((x) => ({ ...x, cash: x.cash - cost.cash, mats: addMats(x.mats, cost.mats, -1), cars: { ...x.cars, [x.car]: { ...oc, levels: { ...oc.levels, [part]: level }, cond: { ...oc.cond, [part]: 100 } } } }));
   };
   const repair = (part: PartId): void => {
@@ -538,7 +560,9 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       return;
     }
     if (s.cash < def.price) return;
-    sfx().cash();
+    sfx().buy(def);
+    // the new car is already on the turntable: no second rev on top of the start-up
+    revFrom.current = def.id;
     commit((x) => ({ ...x, cash: x.cash - def.price, cars: { ...x.cars, [def.id]: newCar() }, car: def.id }));
     setPreviewCar(null);
     setToast(`${def.name} is yours. Tune it in the garage.`);
@@ -630,6 +654,37 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     };
   }, [viewEl]);
   const racing = (screen === 'race' && !!plan) || (screen === 'live' && liveRacing);
+  // Music: the menu theme everywhere, the tension loop from the start of a race (it cuts at lights out).
+  useEffect(() => {
+    if (intro) return;
+    sfx().music(racing ? 'race' : 'menu');
+  }, [racing, intro, sfx]);
+  // A throttle blip when the car on the turntable changes (picking, buying, previewing).
+  const shownCar = stageLook.def.id;
+  const revFrom = useRef(shownCar);
+  useEffect(() => {
+    if (revFrom.current === shownCar) return;
+    revFrom.current = shownCar;
+    if (!racing && !intro) sfx().rev(getCar(shownCar));
+  }, [shownCar, racing, intro, sfx]);
+  // The dealer's pictures need every body: load them now, six at a time, cheapest (the top of the list) first.
+  useEffect(() => {
+    if (screen !== 'dealer') return;
+    let stop = false;
+    void warmCars(BY_PRICE, () => stop, 6);
+    return () => {
+      stop = true;
+    };
+  }, [screen]);
+  // The sound menu closes on any tap outside it.
+  useEffect(() => {
+    if (!soundOpen) return;
+    const close = (e: PointerEvent): void => {
+      if (!(e.target as Element | null)?.closest('.lc-sound')) setSoundOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [soundOpen]);
 
   // One WebGL stage for the whole game: the menus' turntable and the race share it.
   useEffect(() => {
@@ -781,9 +836,38 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           {save.rank}/{LADDER.length}
         </span>
       </div>
-      <button className="lc-icon" onClick={() => commit((s) => ({ ...s, muted: !s.muted }))} aria-label={save.muted ? 'Unmute' : 'Mute'}>
-        <Icon name={save.muted ? 'mute' : 'sound'} size={19} />
-      </button>
+      <div className="lc-sound">
+        <button className="lc-icon" onClick={() => setSoundOpen((o) => !o)} aria-label="Sound" aria-expanded={soundOpen} aria-haspopup="true">
+          <Icon name={save.muted && save.musicOff ? 'mute' : 'sound'} size={19} />
+        </button>
+        {soundOpen && (
+          <div className="lc-sound-menu" role="group" aria-label="Sound">
+            <button
+              className="lc-sound-row"
+              role="switch"
+              aria-checked={!save.musicOff}
+              onClick={() => {
+                commit((s) => ({ ...s, musicOff: !s.musicOff }));
+                sfx().refresh();
+              }}
+            >
+              Music <span className="lc-knob" aria-hidden="true" />
+            </button>
+            <button
+              className="lc-sound-row"
+              role="switch"
+              aria-checked={!save.muted}
+              onClick={() => {
+                commit((s) => ({ ...s, muted: !s.muted }));
+                sfx().refresh();
+                if (!saveRef.current.muted) sfx().click();
+              }}
+            >
+              Sound effects <span className="lc-knob" aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </div>
       <button className="lc-icon" onClick={() => go('help')} aria-label="How to race">
         <Icon name="help" size={19} />
       </button>
@@ -792,7 +876,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   );
 
   return (
-    <div ref={rootRef} className={`lc${portrait ? ' is-portrait' : ''}`} data-screen={racing ? 'race' : screen}>
+    <div ref={rootRef} className={`lc${portrait ? ' is-portrait' : ''}`} data-screen={racing ? 'race' : screen} onPointerDown={() => sfx().unlock()} onKeyDown={() => sfx().unlock()}>
+      {intro && <Intro defs={introDefs} sfx={sfx} onDone={() => setIntro(false)} />}
       <div ref={stageBoxRef} className="lc-stage" data-mode={racing ? 'race' : docked ? 'dock' : 'full'}>
         {docked && !racing && (
           <div className="lc-view-ui">
@@ -1382,7 +1467,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
             );
           })()}
           <ul className="lc-cars">
-            {CARS.filter((d) => dealerTier === 0 || d.tier === dealerTier).map((d) => {
+            {BY_PRICE.filter((d) => dealerTier === 0 || d.tier === dealerTier).map((d) => {
               const mine = !!save.cars[d.id];
               const sh = sheetOf(d, newCar().levels, newCar().cond);
               const sel = (previewCar ?? save.car) === d.id;

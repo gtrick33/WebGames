@@ -51,7 +51,10 @@ export interface Save {
   bestEt: number;
   /** Longest King's Gauntlet streak (wins in a row). */
   gauntletBest: number;
+  /** Sound effects and the engine off. */
   muted: boolean;
+  /** Music off (sound effects can stay on). */
+  musicOff: boolean;
   seenHelp: boolean;
 }
 
@@ -78,6 +81,7 @@ export const emptySave = (): Save => ({
   bestEt: 0,
   gauntletBest: 0,
   muted: false,
+  musicOff: false,
   seenHelp: false,
 });
 
@@ -132,6 +136,7 @@ export function sanitize(raw: unknown): Save {
   s.bestEt = num(o.bestEt);
   s.gauntletBest = num(o.gauntletBest);
   s.muted = o.muted === true;
+  s.musicOff = o.musicOff === true;
   s.seenHelp = o.seenHelp === true;
   return s;
 }

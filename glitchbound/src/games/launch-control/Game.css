@@ -3581,3 +3581,374 @@
     transform: rotate(-90deg);
   }
 }
+
+/* ================================================================ intro: race-day title card while the cars load */
+.lc-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 70% at 50% 0%, #4b2a9c 0%, transparent 60%),
+    linear-gradient(180deg, #1b0f45 0%, #0f0a2a 55%, #08051a 100%);
+  color: var(--lc-fg);
+  perspective: 600px;
+  transition:
+    transform 0.6s cubic-bezier(0.7, 0, 0.3, 1),
+    opacity 0.6s;
+}
+.lc-intro.is-out {
+  transform: translateY(-104%);
+  transition-delay: 0.25s;
+}
+/* the strip: lane lines rushing toward you */
+.lc-intro-road {
+  position: absolute;
+  inset: 60% -40% -10%;
+  transform: rotateX(62deg);
+  transform-origin: 50% 0;
+  background: linear-gradient(180deg, #2a2346, #17122c);
+}
+.lc-intro-lane,
+.lc-intro-dash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+}
+.lc-intro-lane {
+  left: 36%;
+  background: #fbf8ff;
+  opacity: 0.8;
+}
+.lc-intro-lane.is-right {
+  left: auto;
+  right: 36%;
+}
+.lc-intro-dash {
+  left: calc(50% - 5px);
+  background: repeating-linear-gradient(180deg, var(--lc-yellow) 0 60px, transparent 60px 120px);
+  animation: lc-intro-rush 0.45s linear infinite;
+}
+@keyframes lc-intro-rush {
+  to {
+    background-position: 0 120px;
+  }
+}
+/* the start gantry */
+.lc-intro-gantry {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: clamp(5px, min(2cqw, 1.6cqh), 14px);
+  margin-top: max(5cqh, calc(env(safe-area-inset-top) + 10px));
+  padding: clamp(6px, 1.4cqh, 10px) clamp(8px, 3cqw, 18px);
+  border: 2px solid #050310;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #2b2b33, #121218);
+  box-shadow:
+    0 6px 0 #050310,
+    0 18px 40px rgb(0 0 0 / 0.5);
+}
+.lc-intro-pod {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 10px;
+  background: #07060c;
+}
+.lc-intro-pod i {
+  width: clamp(14px, min(5.5cqw, 4.6cqh), 34px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4a1418, #200608);
+  transition:
+    background 0.08s,
+    box-shadow 0.08s;
+}
+.lc-intro-pod.is-on i {
+  background: radial-gradient(circle at 35% 30%, #ff8a8f, #ff1f33 55%, #b0000f);
+  box-shadow:
+    0 0 14px #ff2a3a,
+    0 0 34px rgb(255 42 58 / 0.6);
+}
+.lc-intro.is-holding .lc-intro-pod.is-on i {
+  animation: lc-intro-hold 1.2s ease-in-out infinite;
+}
+@keyframes lc-intro-hold {
+  50% {
+    box-shadow:
+      0 0 6px #ff2a3a,
+      0 0 14px rgb(255 42 58 / 0.4);
+  }
+}
+.lc-intro-title {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: clamp(4px, 1.4cqh, 10px);
+  margin-top: clamp(10px, 4cqh, 36px);
+  text-align: center;
+}
+.lc-intro-word {
+  font-size: clamp(30px, min(13cqw, 9.5cqh), 104px);
+  line-height: 0.84;
+  text-shadow:
+    0 4px 0 #050310,
+    0 10px 30px rgb(0 0 0 / 0.55);
+  animation: lc-intro-slam 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes lc-intro-slam {
+  from {
+    opacity: 0;
+    transform: scale(1.8) skewX(-12deg);
+    filter: blur(6px);
+  }
+}
+.lc-intro-tag {
+  font: 700 clamp(13px, min(3.6cqw, 3.4cqh), 20px) / 1.2 var(--lc-display);
+  color: var(--lc-muted);
+  animation: lc-intro-tag 1.6s ease-in-out both;
+}
+@keyframes lc-intro-tag {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  15%,
+  85% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+/* "Loading" sits in the middle of the screen */
+.lc-intro-loading {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  transform: translate(-50%, -50%);
+}
+.lc-intro-label {
+  padding: 6px 14px;
+  border: 1px solid var(--lc-edge);
+  border-radius: 999px;
+  background: var(--lc-glass);
+  -webkit-backdrop-filter: var(--lc-blur);
+  backdrop-filter: var(--lc-blur);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.lc-intro-label i {
+  font-style: normal;
+  animation: lc-intro-dot 1.2s infinite;
+}
+.lc-intro-label i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.lc-intro-label i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes lc-intro-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.2;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+.lc-intro-bar {
+  width: 110px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.14);
+}
+.lc-intro-bar i {
+  display: block;
+  height: 100%;
+  background: var(--lc-gold);
+  transform-origin: 0 50%;
+  transition: transform 0.3s ease-out;
+}
+.lc-intro-go {
+  font: 800 clamp(48px, 16cqw, 120px) / 1 var(--lc-display);
+  font-style: oblique 9deg;
+  color: var(--lc-lime);
+  text-shadow:
+    0 4px 0 #050310,
+    0 0 40px rgb(196 240 52 / 0.6);
+  animation: lc-intro-slam 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+/* a cartoon dragster doing a burnout at the bottom */
+.lc-intro-car {
+  position: absolute;
+  z-index: 1;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  width: clamp(160px, min(46cqw, 44cqh), 380px);
+  transform: translateX(-50%);
+  overflow: visible;
+  animation: lc-intro-shake 0.09s linear infinite alternate;
+}
+.lc-intro.is-out .lc-intro-car {
+  transform: translateX(120cqw);
+  transition: transform 0.55s cubic-bezier(0.5, 0, 0.9, 0.4);
+  animation: none;
+}
+@keyframes lc-intro-shake {
+  to {
+    translate: 0 1.5px;
+  }
+}
+.lc-intro-car path,
+.lc-intro-car circle {
+  stroke: #050310;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+.lc-intro-body {
+  fill: var(--lc-yellow);
+}
+.lc-intro-wing {
+  fill: #ff4d5e;
+}
+.lc-intro-glass {
+  fill: #6fe8ff;
+}
+.lc-intro-stripe {
+  fill: none;
+  stroke: #050310 !important;
+  stroke-width: 3 !important;
+  stroke-dasharray: 18 10;
+}
+.lc-intro-wheel {
+  fill: #1c1a26;
+}
+.lc-intro-hub {
+  fill: #c9ccd3;
+}
+.lc-intro-smoke circle {
+  fill: #e9e6f2;
+  stroke: none !important;
+  opacity: 0.8;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lc-intro-puff 0.9s ease-out infinite;
+}
+.lc-intro-smoke circle:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.lc-intro-smoke circle:nth-child(3) {
+  animation-delay: 0.6s;
+}
+@keyframes lc-intro-puff {
+  from {
+    opacity: 0.9;
+    transform: scale(0.4) translate(0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.4) translate(-18px, -10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-intro,
+  .lc-intro.is-out .lc-intro-car {
+    transition: opacity 0.3s;
+  }
+  .lc-intro.is-out {
+    transform: none;
+    opacity: 0;
+  }
+  .lc-intro-dash,
+  .lc-intro-car,
+  .lc-intro-smoke circle,
+  .lc-intro-word,
+  .lc-intro-tag,
+  .lc-intro-go,
+  .lc-intro.is-holding .lc-intro-pod.is-on i {
+    animation: none;
+  }
+}
+
+/* ================================================================ sound menu */
+.lc-sound {
+  position: relative;
+  flex: none;
+}
+.lc-sound-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 6;
+  display: grid;
+  gap: 6px;
+  min-width: 200px;
+  padding: 8px;
+  border: 1px solid var(--lc-edge);
+  border-radius: 14px;
+  background: var(--lc-glass-hi);
+  -webkit-backdrop-filter: var(--lc-blur);
+  backdrop-filter: var(--lc-blur);
+  box-shadow: var(--lc-lift);
+  animation: lc-panel-in 0.18s cubic-bezier(0.2, 1, 0.3, 1);
+}
+.lc-sound-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 6px 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--lc-fg);
+  font: 700 15px/1 var(--lc-display);
+  text-align: left;
+  cursor: pointer;
+}
+.lc-sound-row:hover {
+  background: var(--lc-glass-2);
+}
+.lc-sound-row .lc-knob {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+  transition: background 0.15s;
+}
+.lc-sound-row .lc-knob::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.lc-sound-row[aria-checked='true'] .lc-knob {
+  background: var(--lc-lime);
+}
+.lc-sound-row[aria-checked='true'] .lc-knob::after {
+  transform: translateX(16px);
+}
