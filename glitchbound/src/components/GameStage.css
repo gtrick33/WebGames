@@ -240,6 +240,27 @@
   }
 }
 
+/* Phones on their side and other short screens: the stage fits the screen below the header (and above
+   the bottom tab bar where there is one) instead of running past it. Full screen still pins it over all. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .stage-portrait,
+  .stage-square,
+  .stage-landscape {
+    width: 100%;
+    height: calc(100svh - var(--header-h) - 16px);
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: auto;
+  }
+}
+@media (orientation: landscape) and (max-height: 560px) and (max-width: 900px) {
+  .stage-portrait,
+  .stage-square,
+  .stage-landscape {
+    height: calc(100svh - var(--header-h) - 96px - env(safe-area-inset-bottom));
+  }
+}
+
 /* No double-tap zoom on the game. */
 .stage,
 .stage * {

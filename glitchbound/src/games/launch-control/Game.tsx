@@ -183,6 +183,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   /** The open sheet's 3D view: the shared stage docks over it. */
   const [viewEl, setViewEl] = useState<HTMLDivElement | null>(null);
   const [portrait, setPortrait] = useState(false);
+  /** Taller than wide by a good margin (a phone held upright), not just squarish (a desktop column). */
+  const [tall, setTall] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const stageBoxRef = useRef<HTMLDivElement>(null);
   /** The shared stage; created by the first effect below, so later effects always see the live one. */
@@ -228,7 +230,10 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setPortrait(el.clientHeight > el.clientWidth));
+    const ro = new ResizeObserver(() => {
+      setPortrait(el.clientHeight > el.clientWidth);
+      setTall(el.clientHeight > el.clientWidth * 1.25);
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -660,7 +665,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     stage.setEnv(save.env);
     stage.setCar(0, stageLookRef.current);
     // inspecting: the car sits high in the view, clear of the caption at the bottom
-    const framing = docked ? (inspect ? 'high' : 'center') : portrait ? 'high' : 'right';
+    const framing = docked ? (inspect ? 'high' : 'center') : tall ? 'high' : portrait ? 'center' : 'right';
     const reduced = prefersReduced();
     let raf = 0;
     let last = performance.now();
@@ -680,7 +685,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     return () => cancelAnimationFrame(raf);
     // the marker is set by its own effect; this one only needs it at the start
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showKey, save.env, racing, portrait, docked, focus, inspect]);
+  }, [showKey, save.env, racing, portrait, tall, docked, focus, inspect]);
   // a docked 3D view can be turned: drag to orbit, pinch or scroll to zoom
   useEffect(() => {
     const box = stageBoxRef.current;
@@ -978,6 +983,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           <Panel
             eyebrow={plan.mode === 'daily' ? `Today’s Showdown #${dailyNumber(today)}` : plan.mode === 'challenge' ? 'Friends’ challenge' : plan.mode === 'gauntlet' ? `King’s Gauntlet · round ${plan.round ?? 1}` : plan.rival?.boss ? 'Division final' : 'Head to head'}
             title={plan.mode === 'daily' ? 'Same car, same opponent, for everyone' : plan.mode === 'challenge' ? 'Beat the fastest ghost' : `vs ${plan.race.names[1] ?? 'rival'}`}
+            className="lc-setup"
             onBack={challenge ? undefined : () => {
               if (plan.mode === 'gauntlet') endGauntlet();
               go(plan.mode === 'daily' ? 'daily' : plan.mode === 'gauntlet' ? 'hub' : 'rivals');

@@ -98,7 +98,7 @@
   --btn-line: var(--lc-edge-hi);
   --btn-shadow: transparent;
   gap: 8px;
-  min-height: 46px;
+  min-height: 50px;
   padding: 0 20px;
   border-width: 1px;
   border-radius: 12px;
@@ -107,7 +107,7 @@
   font-family: var(--lc-display);
   font-stretch: 85%;
   font-weight: 800;
-  font-size: 16px;
+  font-size: 17.5px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   -webkit-backdrop-filter: blur(8px);
@@ -152,14 +152,14 @@
   --btn-line: transparent;
 }
 .lc .btn-sm {
-  min-height: 38px;
+  min-height: 42px;
   padding: 0 14px;
-  font-size: 14px;
+  font-size: 15.5px;
 }
 .lc .btn-lg {
   width: 100%;
-  min-height: 54px;
-  font-size: 19px;
+  min-height: 58px;
+  font-size: 21px;
 }
 
 /* ================================================================ the 3D stage */
@@ -168,6 +168,8 @@
   inset: 0;
 }
 .lc-stage canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -215,7 +217,7 @@
   border-radius: 999px;
   background: rgb(10 6 30 / 0.6);
   color: #fff;
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: 0.04em;
 }
 .lc-view-tools {
@@ -228,8 +230,8 @@
 .lc-view-btn {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   padding: 0;
   border: 1px solid var(--lc-edge);
   border-radius: 12px;
@@ -254,7 +256,7 @@
   border-radius: 999px;
   background: var(--lc-gold);
   color: #1a1030;
-  font: 800 15px/1 var(--lc-display);
+  font: 800 17px/1 var(--lc-display);
   font-stretch: 85%;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -337,7 +339,7 @@
 }
 .lc-logo-word {
   display: grid;
-  font-size: 15px;
+  font-size: 17px;
   line-height: 0.88;
   text-align: left;
 }
@@ -358,24 +360,24 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 34px;
-  padding: 0 12px;
+  height: 38px;
+  padding: 0 14px;
   border: 1px solid var(--lc-edge);
   border-radius: 999px;
   background: var(--lc-glass);
   -webkit-backdrop-filter: var(--lc-blur);
   backdrop-filter: var(--lc-blur);
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 700;
   white-space: nowrap;
 }
 .lc-pill-cash {
   color: var(--lc-yellow);
-  font-size: 14px;
+  font-size: 16px;
 }
 .lc-pill-mats {
   gap: 10px;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 .lc-pill-rank .lc-ic {
   color: var(--lc-yellow);
@@ -428,8 +430,8 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 1px solid var(--lc-edge);
   border-radius: 12px;
@@ -477,7 +479,7 @@
   background: rgb(20 40 10 / 0.86);
   color: var(--lc-lime);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 15.5px;
   text-align: center;
   box-shadow: var(--lc-lift);
   -webkit-backdrop-filter: var(--lc-blur);
@@ -543,7 +545,7 @@
 }
 .lc-h {
   margin: 0;
-  font-size: clamp(22px, 4.6cqw, 30px);
+  font-size: clamp(26px, 5cqw, 36px);
   line-height: 0.95;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -553,7 +555,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--lc-muted);
@@ -562,20 +564,20 @@
   display: block;
   margin: 0;
   color: var(--lc-muted);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.4;
 }
 .lc-foot {
   margin: 0;
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--lc-faint);
 }
 .lc-back {
   display: grid;
   place-items: center;
   flex: none;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 1px solid var(--lc-edge);
   border-radius: 12px;
@@ -612,7 +614,7 @@
   border: 1px solid rgb(255 209 46 / 0.55);
   border-radius: 12px;
   background: rgb(255 209 46 / 0.12);
-  font-size: 13px;
+  font-size: 14.5px;
   line-height: 1.35;
 }
 .lc-warn .lc-ic {
@@ -649,12 +651,12 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 34px;
-  padding: 0 14px;
+  min-height: 40px;
+  padding: 0 16px;
   border: 1px solid var(--lc-edge);
   border-radius: 999px;
   background: var(--lc-glass-2);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -691,11 +693,11 @@
   background: rgb(0 0 0 / 0.25);
 }
 .lc-seg-btn {
-  min-height: 34px;
+  min-height: 40px;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
 }
 .lc-seg-btn.is-on {
@@ -720,7 +722,7 @@
   display: inline-flex;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
 }
 .lc-thumb {
@@ -786,7 +788,7 @@
   border-radius: 6px;
   background: var(--tier, var(--lc-lime));
   color: var(--lc-ink);
-  font: 800 12px/1 var(--lc-display);
+  font: 800 13.5px/1 var(--lc-display);
   font-stretch: 85%;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -826,13 +828,13 @@
   backdrop-filter: var(--lc-blur);
 }
 .lc-specs > div {
-  padding: 6px 14px 7px;
+  padding: 8px 16px 9px;
 }
 .lc-specs > div + div {
   border-left: 1px solid var(--lc-edge);
 }
 .lc-specs dt {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -840,13 +842,13 @@
 }
 .lc-specs dd {
   margin: 0;
-  font-size: 22px;
+  font-size: 27px;
   line-height: 1.05;
   font-variant-numeric: tabular-nums;
 }
 .lc-specs small {
   margin-left: 2px;
-  font: 600 11px var(--font, sans-serif);
+  font: 600 12.5px var(--font, sans-serif);
   text-transform: none;
   color: var(--lc-muted);
 }
@@ -863,7 +865,7 @@
 }
 .lc-division-name {
   white-space: nowrap;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -873,8 +875,8 @@
   gap: 3px;
 }
 .lc-division-steps i {
-  width: 14px;
-  height: 7px;
+  width: 16px;
+  height: 8px;
   border-radius: 2px;
   background: rgb(255 255 255 / 0.2);
   transform: skewX(-20deg);
@@ -908,8 +910,8 @@
   align-items: center;
   gap: 12px;
   min-width: 0;
-  min-height: 60px;
-  padding: 10px 14px 10px 12px;
+  min-height: 68px;
+  padding: 12px 16px 12px 14px;
   border: 1px solid var(--lc-edge);
   border-radius: var(--lc-r);
   background: var(--lc-glass);
@@ -928,9 +930,9 @@
   --tone: var(--lc-lime);
 }
 .lc-mode > .lc-ic:first-child {
-  width: 38px;
-  height: 38px;
-  padding: 8px;
+  width: 44px;
+  height: 44px;
+  padding: 9px;
   border-radius: 10px;
   background: color-mix(in srgb, var(--tone) 20%, transparent);
   color: var(--tone);
@@ -942,11 +944,11 @@
   gap: 3px;
 }
 .lc-mode b {
-  font-size: 19px;
+  font-size: 22px;
   line-height: 0.95;
 }
 .lc-mode small {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--lc-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -979,23 +981,23 @@
   justify-items: center;
   align-content: center;
   gap: 4px;
-  width: 72px;
-  min-height: 64px;
+  width: 88px;
+  min-height: 74px;
   padding: 8px 4px 7px;
   border: 1px solid var(--lc-edge);
   border-radius: var(--lc-r);
   background: var(--lc-glass);
   -webkit-backdrop-filter: var(--lc-blur);
   backdrop-filter: var(--lc-blur);
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   transition: transform 0.14s, border-color 0.14s, background-color 0.14s;
 }
 .lc-tile .lc-ic {
-  width: 25px;
-  height: 25px;
+  width: 28px;
+  height: 28px;
 }
 .lc-tile:hover {
   transform: translateY(-2px);
@@ -1018,8 +1020,8 @@
     'sub arrow';
   align-items: center;
   gap: 2px 16px;
-  min-width: 270px;
-  min-height: 92px;
+  min-width: 300px;
+  min-height: 100px;
   /* room for the slant's corners */
   margin: 0 10px 0 0;
   padding: 12px 18px 12px 26px;
@@ -1068,13 +1070,13 @@
 }
 .lc-go-label {
   grid-area: label;
-  font-size: 46px;
+  font-size: 52px;
   line-height: 0.82;
 }
 .lc-go-sub {
   grid-area: sub;
   min-width: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: rgb(26 16 48 / 0.75);
   overflow: hidden;
@@ -1083,8 +1085,8 @@
 }
 .lc-go-arrow {
   grid-area: arrow;
-  width: 50px;
-  height: 50px;
+  width: 56px;
+  height: 56px;
   padding: 13px 12px 13px 14px;
   border-radius: 50%;
   background: #1a1030;
@@ -1096,12 +1098,12 @@
 .lc-go-diff {
   position: absolute;
   top: 9px;
-  right: 82px;
+  right: 90px;
   padding: 3px 8px 2px;
   border-radius: 5px;
   background: #1a1030;
   color: var(--tone, var(--lc-lime));
-  font: 800 10.5px/1 var(--mono, monospace);
+  font: 800 12px/1 var(--mono, monospace);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -1121,7 +1123,7 @@
 /* phones upright: the car up top, the buttons stacked at the bottom */
 @container (max-aspect-ratio: 1/1) {
   .lc-hub {
-    top: calc(max(8px, env(safe-area-inset-top)) + 52px);
+    top: calc(max(8px, env(safe-area-inset-top)) + 56px);
     gap: 8px;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto;
@@ -1136,7 +1138,7 @@
   }
   .lc-hero-name {
     grid-area: name;
-    font-size: clamp(30px, 10cqw, 46px);
+    font-size: clamp(32px, 11cqw, 50px);
   }
   .lc-specs {
     grid-area: specs;
@@ -1144,10 +1146,10 @@
   }
   .lc-specs > div {
     flex: 1;
-    padding: 5px 10px 6px;
+    padding: 6px 12px 7px;
   }
   .lc-specs dd {
-    font-size: 19px;
+    font-size: 23px;
   }
   .lc-division-bar {
     display: none;
@@ -1157,26 +1159,26 @@
   }
   .lc-mode.is-wide {
     grid-column: 1 / -1;
-    min-height: 48px;
+    min-height: 54px;
   }
   .lc-mode {
-    min-height: 56px;
-    padding: 8px 10px;
-    gap: 9px;
+    min-height: 64px;
+    padding: 9px 12px;
+    gap: 10px;
   }
   .lc-mode > .lc-ic:first-child {
-    width: 32px;
-    height: 32px;
-    padding: 6px;
+    width: 38px;
+    height: 38px;
+    padding: 8px;
   }
   .lc-mode b {
-    font-size: 15px;
+    font-size: 17.5px;
   }
   .lc-mode small {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-    font-size: 10.5px;
+    font-size: 12.5px;
     line-height: 1.25;
     white-space: normal;
   }
@@ -1189,71 +1191,146 @@
   .lc-tile {
     flex: 1;
     width: auto;
-    min-height: 58px;
-    font-size: 10px;
-    letter-spacing: 0.05em;
+    min-height: 68px;
+    font-size: 12px;
   }
   .lc-go {
     min-width: 0;
-    min-height: 78px;
+    min-height: 88px;
     margin: 0 6px;
   }
   .lc-go-label {
-    font-size: 40px;
+    font-size: 46px;
   }
 }
-/* phones on their side and other short screens: tighter, no extras */
+/* squarish stages (a desktop column beside the page's panels): the event cards in a row, the shop
+   tiles and RACE side by side, so the car keeps the middle */
+@container (max-aspect-ratio: 1/1) and (min-aspect-ratio: 4/5) {
+  .lc-hub {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas: 'tier tier' 'name name' 'specs specs' '. .' 'modes modes' 'rail go';
+  }
+  .lc-specs {
+    justify-self: start;
+  }
+  .lc-modes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .lc-mode.is-wide {
+    grid-column: auto;
+    min-height: 64px;
+  }
+  .lc-go {
+    align-self: stretch;
+    grid-template-areas: 'label arrow';
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 10px 14px 10px 22px;
+  }
+  .lc-go-label {
+    font-size: 44px;
+  }
+  /* the next rival's name is on the rival picker; here the tiles need the room */
+  .lc-go-sub {
+    display: none;
+  }
+  .lc-go-diff {
+    top: 6px;
+    right: 74px;
+  }
+}
+/* phones on their side and other short screens: the car's name and numbers up top, the event cards
+   in one row with the shop tiles under them, RACE beside both */
 @container (min-aspect-ratio: 1/1) and (max-height: 520px) {
   .lc-hub {
-    top: calc(max(6px, env(safe-area-inset-top)) + 48px);
-    gap: 6px;
-    grid-template-columns: minmax(0, 330px) minmax(0, 1fr) auto;
+    top: calc(max(6px, env(safe-area-inset-top)) + 52px);
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'hero .'
+      '. .'
+      'modes go'
+      'rail go';
   }
   .lc-hero {
-    gap: 5px;
+    gap: 6px;
   }
   .lc-hero-name {
-    font-size: clamp(28px, 9cqh, 40px);
+    font-size: clamp(30px, 10cqh, 44px);
   }
   .lc-specs dd {
-    font-size: 17px;
+    font-size: 21px;
   }
   .lc-specs > div {
-    padding: 4px 10px 5px;
+    padding: 5px 12px 6px;
   }
   .lc-division-bar {
     display: none;
   }
   .lc-modes {
-    gap: 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 720px;
+    gap: 8px;
   }
   .lc-mode {
-    min-height: 48px;
-    padding: 6px 12px 6px 8px;
+    min-height: 54px;
+    padding: 7px 10px;
+    gap: 9px;
   }
   .lc-mode > .lc-ic:first-child {
-    width: 32px;
-    height: 32px;
-    padding: 6px;
+    width: 34px;
+    height: 34px;
+    padding: 7px;
   }
   .lc-mode b {
-    font-size: 16px;
+    font-size: 17px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lc-mode small {
+    font-size: 12.5px;
+  }
+  .lc-mode-lock {
+    display: none;
+  }
+  .lc-rail {
+    gap: 8px;
   }
   .lc-tile {
-    width: 62px;
-    min-height: 54px;
-    padding: 6px 4px 5px;
+    width: auto;
+    min-width: 84px;
+    min-height: 58px;
+    padding: 6px 12px 5px;
+    font-size: 12px;
   }
   .lc-tile .lc-ic {
-    width: 21px;
-    height: 21px;
+    width: 24px;
+    height: 24px;
   }
   .lc-go {
+    align-self: stretch;
     min-width: 230px;
-    min-height: 76px;
+    min-height: 0;
   }
   .lc-go-label {
-    font-size: 38px;
+    font-size: 46px;
+  }
+}
+/* small phones on their side: the event cards drop their icons to keep their names */
+@container (min-aspect-ratio: 1/1) and (max-height: 520px) and (max-width: 760px) {
+  .lc-mode > .lc-ic:first-child {
+    display: none;
+  }
+  .lc-tile {
+    min-width: 72px;
+    padding: 6px 8px 5px;
+  }
+  .lc-go {
+    min-width: 190px;
   }
 }
 
@@ -1288,6 +1365,77 @@
   width: auto;
 }
 
+/* short landscape screens (a phone on its side): wider panels in two columns, so a screen fits without scrolling */
+@container (min-aspect-ratio: 1/1) and (max-height: 520px) {
+  .lc-main {
+    width: min(76%, 860px);
+  }
+  .lc-setup .lc-panel-body,
+  .lc-result .lc-panel-body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-auto-flow: row dense;
+    align-items: start;
+  }
+  .lc-panel-head {
+    padding: 7px 12px;
+  }
+  .lc-h {
+    font-size: 25px;
+  }
+  .lc-panel-body {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .lc-setup .lc-versus,
+  .lc-setup .lc-sub,
+  .lc-setup .lc-warn,
+  .lc-result .lc-streak,
+  .lc-result .lc-order,
+  .lc-result .lc-times,
+  .lc-result .lc-warn {
+    grid-column: 1;
+  }
+  /* the wager fills the right-hand column beside the face-off */
+  .lc-setup .lc-wager {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    gap: 8px;
+    padding: 10px;
+  }
+  .lc-setup .lc-vcard .lc-thumb {
+    aspect-ratio: 2.4;
+  }
+  .lc-setup .lc-wager {
+    font-size: 13.5px;
+  }
+  .lc-setup .lc-wager-odds > b {
+    font-size: 30px;
+  }
+  .lc-setup .lc-stakes {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .lc-setup .lc-stake {
+    min-height: 46px;
+    font-size: 14px;
+  }
+  /* the race button stays in reach if the panel still has to scroll */
+  .lc-setup .lc-cta {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+  }
+  .lc-result .lc-ledger,
+  .lc-result .lc-rankup,
+  .lc-result .result-line,
+  .lc-result .lc-sticker {
+    grid-column: 2;
+  }
+  .lc-setup .lc-cta,
+  .lc-result .lc-actions {
+    grid-column: 1 / -1;
+  }
+}
+
 /* ---------------------------------------------------------------- setup: the face-off */
 .lc-versus {
   position: relative;
@@ -1303,7 +1451,7 @@
   border: 1px solid var(--lc-edge);
   border-radius: var(--lc-r);
   background: var(--lc-glass-2);
-  font-size: 12px;
+  font-size: 13.5px;
   text-align: center;
 }
 .lc-vcard.is-you {
@@ -1313,7 +1461,7 @@
   border-top: 3px solid var(--lc-rival);
 }
 .lc-vcard b {
-  font-size: 20px;
+  font-size: 24px;
   line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1321,7 +1469,7 @@
 }
 .lc-vcard .mono {
   color: var(--lc-muted);
-  font-size: 11px;
+  font-size: 12.5px;
 }
 .lc-versus-mark {
   position: absolute;
@@ -1330,13 +1478,13 @@
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: var(--lc-ink);
   box-shadow: 0 0 0 2px var(--lc-yellow), 0 6px 18px rgb(0 0 0 / 0.4);
   color: var(--lc-yellow);
-  font-size: 20px;
+  font-size: 22px;
   transform: translate(-50%, -50%);
 }
 .lc-wager {
@@ -1346,14 +1494,14 @@
   border: 1px solid var(--lc-edge);
   border-radius: var(--lc-r);
   background: var(--lc-glass-2);
-  font-size: 13px;
+  font-size: 15px;
 }
 .lc-wager-odds {
   display: grid;
   gap: 3px;
 }
 .lc-wager-odds > b {
-  font-size: 34px;
+  font-size: 40px;
   line-height: 0.9;
   color: var(--lc-lime);
 }
@@ -1366,16 +1514,16 @@
   display: grid;
   justify-items: center;
   align-content: center;
-  min-height: 46px;
+  min-height: 52px;
   padding: 4px 6px;
   border: 1px solid var(--lc-edge);
   border-radius: 10px;
   background: var(--lc-glass-2);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.15;
 }
 .lc-stake small {
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--lc-muted);
 }
 .lc-stake.is-on {
@@ -1406,7 +1554,7 @@
 }
 .lc-order li {
   display: grid;
-  grid-template-columns: 30px 76px minmax(0, 1fr) auto;
+  grid-template-columns: 34px 88px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 6px 12px 6px 8px;
@@ -1414,7 +1562,7 @@
   border-left: 4px solid var(--lc-rival);
   border-radius: 12px;
   background: var(--lc-glass-2);
-  font-size: 13px;
+  font-size: 15px;
 }
 .lc-order li.is-you {
   border-left-color: var(--lc-you);
@@ -1425,7 +1573,7 @@
 .lc-order-pos {
   display: grid;
   place-items: center;
-  font: 800 18px/1 var(--lc-display);
+  font: 800 21px/1 var(--lc-display);
   font-stretch: 75%;
   color: var(--lc-muted);
 }
@@ -1433,7 +1581,7 @@
   color: var(--lc-yellow);
 }
 .lc-order-thumb {
-  width: 76px;
+  width: 88px;
 }
 .lc-order-name {
   display: grid;
@@ -1441,24 +1589,24 @@
   line-height: 1.15;
 }
 .lc-order-name b {
-  font-size: 15px;
+  font-size: 17.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .lc-order-name small {
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--lc-muted);
 }
 .lc-order-et {
   display: grid;
   justify-items: end;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .lc-order-et small {
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--lc-coral);
 }
 .lc-times {
@@ -1476,13 +1624,13 @@
   text-align: center;
 }
 .lc-times span {
-  font-size: 9.5px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--lc-muted);
 }
 .lc-times b {
-  font-size: 14px;
+  font-size: 17px;
 }
 @container (max-width: 440px) {
   .lc-times {
@@ -1504,7 +1652,7 @@
   border: 1px solid var(--lc-edge);
   border-radius: var(--lc-r);
   background: var(--lc-glass-2);
-  font-size: 13px;
+  font-size: 15px;
 }
 .lc-ledger li {
   display: flex;
@@ -1567,11 +1715,11 @@
   background: linear-gradient(120deg, rgb(90 31 154 / 0.7), rgb(255 79 200 / 0.25));
 }
 .lc-streak b {
-  font-size: 56px;
+  font-size: 64px;
   line-height: 0.85;
 }
 .lc-streak > span:last-child {
-  font-size: 12px;
+  font-size: 13.5px;
   color: var(--lc-muted);
 }
 
@@ -1591,7 +1739,7 @@
   min-width: 0;
 }
 .lc-daily-row b {
-  font-size: 15px;
+  font-size: 17.5px;
 }
 .lc-daily-thumb {
   flex: none;
@@ -1602,7 +1750,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 .lc-crate {
   display: grid;
@@ -1629,7 +1777,7 @@
 }
 .lc-division {
   margin: 10px 0 2px;
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--lc-muted);
@@ -1641,7 +1789,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 52px;
+  min-height: 58px;
   padding: 6px 10px;
   border: 1px solid var(--lc-edge);
   border-radius: 12px;
@@ -1667,19 +1815,19 @@
   gap: 4px;
 }
 .lc-opp-row span.mono {
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--lc-muted);
 }
 .lc-rank {
   display: grid;
   place-items: center;
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 8px;
   background: rgb(255 255 255 / 0.08);
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
 }
 .lc-opp.is-beaten .lc-rank {
   background: rgb(196 240 52 / 0.18);
@@ -1690,7 +1838,7 @@
   gap: 10px;
   margin: 0;
   padding-left: 20px;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.45;
 }
 .lc-help li::marker {
@@ -1717,7 +1865,7 @@
   border-top: 3px solid var(--lc-rival);
   border-radius: var(--lc-r);
   background: var(--lc-glass-2);
-  font-size: 12px;
+  font-size: 13.5px;
   text-align: center;
 }
 .lc-live-seat.is-you {
@@ -1729,7 +1877,7 @@
 .lc-live-seat b {
   font-family: var(--lc-display);
   font-stretch: 75%;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 800;
   font-style: oblique 9deg;
   line-height: 1;
@@ -1740,10 +1888,10 @@
 }
 .lc-live-seat .mono {
   color: var(--lc-muted);
-  font-size: 11px;
+  font-size: 12.5px;
 }
 .lc-live-seat .lc-live-state {
-  font-size: 10px;
+  font-size: 11.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -1776,7 +1924,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -1789,14 +1937,14 @@
   text-align: center;
 }
 .lc-live-code {
-  font-size: 34px;
+  font-size: 40px;
   letter-spacing: 0.3em;
   line-height: 1;
   color: var(--lc-yellow);
 }
 .lc-live-link {
   max-width: 100%;
-  font-size: 11.5px;
+  font-size: 13px;
   color: var(--lc-muted);
   overflow-wrap: anywhere;
 }
@@ -1814,17 +1962,17 @@
   background: var(--lc-glass-2);
 }
 .lc-live-score b {
-  font-size: 22px;
+  font-size: 26px;
   font-variant-numeric: tabular-nums;
 }
 .lc-live-score small {
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--lc-muted);
 }
 .lc-live-margin {
   grid-column: 1 / -1;
   margin: 0;
-  font-size: 12px;
+  font-size: 13.5px;
   text-align: center;
   color: var(--lc-muted);
 }
@@ -1961,10 +2109,10 @@
 }
 .lc-stat {
   display: grid;
-  grid-template-columns: 66px minmax(0, 1fr) auto;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 13px;
 }
 .lc-stat-label {
   color: var(--lc-muted);
@@ -1972,7 +2120,7 @@
   text-transform: uppercase;
 }
 .lc-stat-bar {
-  height: 6px;
+  height: 8px;
   border-radius: 3px;
   background: rgb(255 255 255 / 0.1);
   overflow: hidden;
@@ -2000,7 +2148,7 @@
   background: linear-gradient(90deg, #b18cff, var(--lc-magenta));
 }
 .lc-stat-val {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -2011,7 +2159,7 @@
   gap: 4px 16px;
   padding-top: 8px;
   border-top: 1px solid var(--lc-edge);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--lc-muted);
 }
 .lc-sheet-times b {
@@ -2034,16 +2182,16 @@
   justify-items: center;
   gap: 2px;
   min-width: 0;
-  padding: 8px 4px 6px;
+  padding: 10px 4px 8px;
   border: 1px solid var(--lc-edge);
   border-radius: 12px;
   background: var(--lc-glass-2);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.1;
 }
 .lc-ptab .lc-ic {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   margin-bottom: 2px;
 }
 .lc-ptab b {
@@ -2053,7 +2201,7 @@
   white-space: nowrap;
 }
 .lc-ptab small {
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--lc-muted);
 }
 .lc-ptab:hover {
@@ -2121,8 +2269,8 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   border-radius: 11px;
   background: rgb(255 209 46 / 0.16);
   color: var(--lc-yellow);
@@ -2134,10 +2282,10 @@
   line-height: 1.15;
 }
 .lc-part-name b {
-  font-size: 16px;
+  font-size: 18.5px;
 }
 .lc-part-name span {
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--lc-muted);
 }
 .lc-gains {
@@ -2153,7 +2301,7 @@
   border-radius: 999px;
   background: rgb(196 240 52 / 0.16);
   color: var(--lc-lime);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
 }
 .lc-gains li.is-bad {
@@ -2164,7 +2312,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 .lc-cond-bar {
   flex: 1;
@@ -2220,13 +2368,13 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 46px;
-  height: 46px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background:
     radial-gradient(closest-side, #1a1036 76%, transparent 78% 100%),
     conic-gradient(var(--tone) var(--p), rgb(255 255 255 / 0.12) 0);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
 }
 .lc-ring[data-tone='mid'] {
@@ -2253,7 +2401,7 @@
 .lc-delta {
   display: grid;
   gap: 3px;
-  font-size: 12.5px;
+  font-size: 14.5px;
 }
 .lc-delta-row {
   display: grid;
@@ -2298,11 +2446,11 @@
   border: 1px dashed var(--lc-edge-hi);
   border-radius: 10px;
   color: var(--lc-muted);
-  font-size: 13px;
+  font-size: 14.5px;
 }
 .lc-visuals li .mono {
   min-width: 38px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .lc-visuals li.is-have {
   border-style: solid;
@@ -2340,7 +2488,7 @@
   border: 1px solid var(--lc-edge);
   border-radius: var(--lc-r);
   background: var(--lc-glass-2);
-  font-size: 13px;
+  font-size: 14.5px;
   text-align: center;
 }
 .lc-item.is-on {
@@ -2382,7 +2530,7 @@
 }
 .lc-dealer-name {
   display: block;
-  font-size: 28px;
+  font-size: 32px;
   line-height: 0.95;
 }
 .lc-cars {
@@ -2394,7 +2542,7 @@
 }
 .lc-car {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) auto;
+  grid-template-columns: 136px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   padding: 8px;
@@ -2421,15 +2569,15 @@
   min-width: 0;
 }
 .lc-car-info b {
-  font-size: 15px;
+  font-size: 17.5px;
 }
 .lc-car-nums {
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--lc-muted);
 }
 .lc-blurb {
   margin: 0;
-  font-size: 12px;
+  font-size: 13.5px;
   color: var(--lc-muted);
 }
 .lc-car-side {
@@ -2455,7 +2603,7 @@
 /* ---------------------------------------------------------------- rivals: big cards, one clearly picked */
 .lc-rgrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 10px;
   touch-action: pan-x pan-y;
 }
@@ -2479,7 +2627,7 @@
   z-index: 1;
   padding: 3px 7px;
   border-radius: 6px;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 800;
 }
 .lc-rcard-rank {
@@ -2496,11 +2644,11 @@
   display: flex;
   align-items: center;
   margin-top: 4px;
-  font-size: 18px;
+  font-size: 21px;
   line-height: 1;
 }
 .lc-rcard-car {
-  font-size: 11.5px;
+  font-size: 13px;
   color: var(--lc-muted);
 }
 .lc-rcard-foot {
@@ -2511,7 +2659,7 @@
   margin: 6px -8px 0;
   padding: 6px 8px;
   background: rgb(255 255 255 / 0.08);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -2577,7 +2725,7 @@
 .lc-rival-head b {
   display: inline-flex;
   align-items: center;
-  font-size: 16px;
+  font-size: 18px;
 }
 .lc-compare {
   display: grid;
@@ -2586,7 +2734,7 @@
   padding: 10px 12px;
   border-radius: 12px;
   background: rgb(0 0 0 / 0.2);
-  font-size: 12px;
+  font-size: 14px;
 }
 .lc-compare span {
   color: var(--lc-muted);
@@ -2655,12 +2803,12 @@
 .lc-plate-pos {
   display: grid;
   place-items: center;
-  min-width: 34px;
-  height: 30px;
+  min-width: 38px;
+  height: 34px;
   border-radius: 7px;
   background: var(--hud-you);
   color: var(--lc-ink);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
 }
 .lc-plate-text {
@@ -2669,14 +2817,14 @@
   line-height: 1.1;
 }
 .lc-plate-text b {
-  font-size: 14px;
+  font-size: 16.5px;
   font-weight: 800;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .lc-plate-text small {
-  font-size: 11px;
+  font-size: 12.5px;
   opacity: 0.7;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2689,12 +2837,12 @@
   display: grid;
   place-items: center;
   min-width: 64px;
-  height: 30px;
+  height: 34px;
   padding: 0 8px;
   border-radius: 7px;
   background: rgb(255 59 78 / 0.85);
   color: #fff;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
 }
 .lc-plate-gap[data-ahead='1'] {
@@ -2715,7 +2863,7 @@
   color: #fff;
 }
 .lc-clock > span {
-  font-size: clamp(20px, 4.5cqw, 30px);
+  font-size: clamp(24px, 5cqw, 38px);
   font-weight: 800;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
@@ -2787,7 +2935,7 @@
   transform: skewX(8deg);
 }
 .lc-vs-side small {
-  font-size: 11px;
+  font-size: 12.5px;
   letter-spacing: 0.14em;
   opacity: 0.75;
 }
@@ -2801,7 +2949,7 @@
   line-height: 0.95;
 }
 .lc-vs-side span {
-  font-size: 13px;
+  font-size: 15px;
   opacity: 0.8;
 }
 .lc-vs-mark {
@@ -2826,7 +2974,7 @@
   border-radius: 999px;
   background: rgb(0 0 0 / 0.35);
   color: #fff;
-  font-size: 11px;
+  font-size: 12.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -2879,7 +3027,7 @@
   text-transform: uppercase;
 }
 .lc-banner span {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
 }
 .lc-banner[data-tone='lime'] {
@@ -2950,7 +3098,7 @@
 .lc-f1 {
   position: absolute;
   left: 50%;
-  top: calc(max(10px, env(safe-area-inset-top)) + 66px);
+  top: calc(max(10px, env(safe-area-inset-top)) + 96px);
   display: flex;
   gap: 7px;
   padding: 8px 9px;
@@ -2992,7 +3140,7 @@
 }
 @container (max-width: 560px) {
   .lc-f1 {
-    top: calc(max(10px, env(safe-area-inset-top)) + 112px);
+    top: calc(max(10px, env(safe-area-inset-top)) + 136px);
   }
 }
 /* the tach: a ring that only shows this gear's window, a needle, the gear, the speed */
@@ -3004,7 +3152,7 @@
 }
 .lc-tach {
   position: relative;
-  width: clamp(124px, 22cqmin, 176px);
+  width: clamp(140px, 24cqmin, 196px);
   aspect-ratio: 1;
 }
 .lc-tach-ring {
@@ -3027,7 +3175,7 @@
   box-shadow: inset 0 0 18px rgb(0 0 0 / 0.5), 0 8px 24px rgb(0 0 0 / 0.35);
 }
 .lc-tach-face small {
-  font-size: 9px;
+  font-size: 10.5px;
   letter-spacing: 0.12em;
   opacity: 0.6;
 }
@@ -3047,13 +3195,13 @@
 .lc-gear {
   font-family: var(--lc-display);
   font-stretch: 75%;
-  font-size: clamp(32px, 6.5cqmin, 48px);
+  font-size: clamp(36px, 7cqmin, 54px);
   font-weight: 800;
   line-height: 1;
   color: #fff;
 }
 .lc-speed {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   opacity: 0.9;
 }
@@ -3063,8 +3211,8 @@
   z-index: 2;
   right: max(14px, env(safe-area-inset-right));
   bottom: max(14px, env(safe-area-inset-bottom));
-  width: clamp(92px, 22cqmin, 150px);
-  height: clamp(92px, 22cqmin, 150px);
+  width: clamp(100px, 24cqmin, 160px);
+  height: clamp(100px, 24cqmin, 160px);
   border: 2px solid rgb(255 255 255 / 0.85);
   border-radius: 50%;
   background: radial-gradient(circle at 50% 30%, rgb(70 50 150 / 0.75), rgb(14 8 36 / 0.85));
@@ -3074,7 +3222,7 @@
   backdrop-filter: blur(6px);
   font-family: var(--lc-display);
   font-stretch: 80%;
-  font-size: clamp(18px, 4.8cqmin, 28px);
+  font-size: clamp(20px, 5.2cqmin, 30px);
   font-weight: 800;
   font-style: oblique 9deg;
   letter-spacing: 0.06em;
@@ -3132,7 +3280,7 @@
   background: var(--hud-glass);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 700;
   pointer-events: none;
 }

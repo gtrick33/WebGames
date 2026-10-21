@@ -251,7 +251,7 @@ export const GAMES: GameEntry[] = [
     title: 'Launch Control',
     tagline: 'Head-to-head 3D drag races: nail the launch and every shift, tune 43 cars, run the gauntlet.',
     description:
-      'A strategic quarter-mile drag racer in glossy 3D, seen from behind your car. Stage at the tree, launch on green, then hit every shift in a green zone that moves each gear, head to head against one rival at a time. ' +
+      'A strategic quarter-mile drag racer in glossy 3D, seen from behind your car. Launch when the five red lights go out, then hit every shift in a green zone that changes spot and size each gear, head to head against one rival at a time. ' +
       'Climb a ladder of 40 rivals in five divisions, wager earned cash on forecast odds, and tune six separate parts on 43 original cars in the parts shop: engine, transmission, suspension, tyres, aero and looks, each visible on the car, each moving several stats, each wearing out. ' +
       'Then run the King’s Gauntlet: back-to-back races against ever quicker opponents for the longest streak. Or race a friend live, each on your own phone. Everyone gets the same loaner and opponent in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
     categories: ['racing', 'strategy'],
@@ -269,8 +269,8 @@ export const GAMES: GameEntry[] = [
     runtime: { kind: 'module' },
     aspect: 'square',
     controls: {
-      keyboard: ['Space, Enter or Up: launch at green, then shift when the needle is in the green zone', 'Esc or P: pause'],
-      touch: ['Tap anywhere (or the big button) at green to launch, then each time the needle is in the green zone'],
+      keyboard: ['Space, Enter or Up: launch when the five red lights go out, then shift when the needle is in the green zone', 'Esc or P: pause'],
+      touch: ['Tap anywhere (or the big button) when the red lights go out, then each time the needle is in the green zone'],
     },
     stats: [
       { key: 'score', label: 'Best run' },
@@ -281,8 +281,8 @@ export const GAMES: GameEntry[] = [
       { key: 'streak', label: 'Longest gauntlet streak' },
     ],
     highlights: [
-      'One input: tap at green to launch, then shift in a green zone that sits somewhere new in every gear. Perfect launches and shifts win races',
-      'Every race is head to head: you against one rival, with a burnout, staging and a real sportsman tree before the green',
+      'One input: launch when the five red lights go out (after a random wait), then shift in a green zone that changes spot and size every gear. Perfect launches and shifts win races',
+      'Every race is head to head: you against one rival, with a burnout, staging and Formula 1 start lights',
       'The King’s Gauntlet: back-to-back races, each opponent quicker than the last; the whole streak is one run on the leaderboard',
       'Race a friend live: send a link, both phones race the same tree at the same moment, the room settles the winner',
       '43 original cars in six tiers, built on real 3D car models from a supermini to a hypercar, each with its own proportions',
