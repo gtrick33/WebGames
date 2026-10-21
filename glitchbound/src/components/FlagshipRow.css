@@ -162,6 +162,24 @@
     padding: 5px 8px 4px;
     font-size: 11px;
   }
+  /* The live multiplayer games swipe sideways on phones: one row, so the page stays short. */
+  .multiplayer .flagship-row {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(150px, 44%);
+    overflow-x: auto;
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 2px var(--gutter) 10px;
+    scroll-padding-inline: var(--gutter);
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .multiplayer .flagship-row::-webkit-scrollbar {
+    display: none;
+  }
+  .multiplayer .flagship {
+    scroll-snap-align: start;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .flagship,

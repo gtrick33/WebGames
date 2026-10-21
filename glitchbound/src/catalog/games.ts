@@ -253,7 +253,7 @@ export const GAMES: GameEntry[] = [
     tagline: 'Head-to-head 3D drag races: nail the launch and every shift, tune 50 cars, run the gauntlet.',
     description:
       'A strategic quarter-mile drag racer in glossy 3D, seen from behind your car. Launch when the five red lights go out, then hit every shift in a green zone that changes spot and size each gear, head to head against one rival at a time. ' +
-      'Climb a ladder of 40 rivals in five divisions, wager earned cash on forecast odds, and tune six separate parts on 50 original cars in the parts shop: engine, transmission, suspension, tyres, aero and looks, each moving several stats and wearing out; aero bolts on a new spoiler or wing at every level, suspension drops the car, tyres get coloured sidewalls. ' +
+      'Climb a ladder of 40 rivals in five divisions, wager earned cash on forecast odds, and tune six separate parts on 50 original cars in the parts shop: engine, transmission, suspension, tires, aero and looks, each moving several stats and wearing out; aero bolts on a new spoiler or wing at every level, suspension drops the car, tires get colored sidewalls. ' +
       'Then run the King’s Gauntlet: back-to-back races against ever quicker opponents for the longest streak. Or race a friend live, each on your own phone. Everyone gets the same loaner and opponent in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
     categories: ['racing', 'strategy'],
     moods: ['action', 'quick'],
@@ -274,7 +274,7 @@ export const GAMES: GameEntry[] = [
       touch: ['Tap anywhere (or the big button) when the red lights go out, then each time the needle is in the green zone'],
     },
     stats: [
-      { key: 'score', label: 'Best run' },
+      { key: 'score', label: 'Best race score' },
       { key: 'etMs', label: 'Fastest quarter mile', unit: 'ms', lowerIsBetter: true },
       { key: 'trapKmh', label: 'Highest trap speed', unit: 'km/h' },
       { key: 'perfect', label: 'Most perfect shifts in a run' },
@@ -285,9 +285,9 @@ export const GAMES: GameEntry[] = [
       'One input: launch when the five red lights go out (after a random wait), then shift in a green zone that changes spot and size every gear. Perfect launches and shifts win races',
       'Every race is head to head: you against one rival, with a burnout, staging and Formula 1 start lights',
       'The King’s Gauntlet: back-to-back races, each opponent quicker than the last; the whole streak is one run on the leaderboard',
-      'Race a friend live: send a link, both phones race the same tree at the same moment, the room settles the winner',
+      'Race a friend live: send a link, both phones race the same start at the same moment, the room settles the winner',
       '50 original cars in six tiers on real low-poly 3D models: city cars, rally hatches and muscle cars up to supercars and a hypercar',
-      'Six separate parts with eight levels each, each moving several stats; aero, suspension and tyres change the car at every level. They wear out and can fail when neglected',
+      'Six separate parts with eight levels each, each moving several stats; aero, suspension and tires change the car at every level. They wear out and can fail when neglected',
       'Materials (scrap, alloy, carbon, chips, rubber) gate the higher levels; cash and materials come only from racing',
       'A 40-rival ladder in five divisions with purses by finishing position, first-win bonuses and division finals',
       'Wagers with odds from a race forecast: underdogs pay more. In-game cash only, never real money',
