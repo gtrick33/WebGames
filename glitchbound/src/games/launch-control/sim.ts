@@ -12,6 +12,20 @@ import { effectsOf, PARTS, failChance, type Condition, type Levels, type PartId 
 import { clamp, rng } from './util';
 
 export const DT = 1 / 120;
+
+/** How long the clutch takes to bite after a shift (the drive ramps back in over this). */
+export const ENGAGE_S = 0.14;
+const smooth01 = (x: number): number => {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+};
+/** A boost right now: it swells over the first quarter of its time and fades over the rest. */
+function boostNow(r: { boostMul: number; boostLeft: number; boostTotal: number }): number {
+  if (r.boostLeft <= 0 || r.boostTotal <= 0) return 1;
+  const p = 1 - r.boostLeft / r.boostTotal;
+  const env = p < 0.25 ? smooth01(p / 0.25) : 1 - smooth01((p - 0.25) / 0.75);
+  return 1 + (r.boostMul - 1) * env;
+}
 /** A quarter mile, metres. */
 export const DISTANCE = 402.336;
 export const MAX_RACERS = 5;
@@ -230,9 +244,12 @@ export interface Racer {
   t100: number;
   /** The needle is in the perfect zone in this gear (for the cue sound). */
   inZone: boolean;
-  /** A short push after a perfect shift or launch (multiplier, seconds left). */
+  /** A short push after a perfect shift or launch: its peak multiplier, seconds left, and full length (it swells and fades). */
   boostMul: number;
   boostLeft: number;
+  boostTotal: number;
+  /** Seconds since the clutch bit after the last shift (the drive comes back over ENGAGE_S, not at once). */
+  engage: number;
   /** Tapped while the red lights were on (live drivers). */
   jumped: boolean;
   launchQ: LaunchQuality | null;
@@ -296,7 +313,7 @@ export interface RaceResult {
 }
 
 function newRacer(spec: CarSpec): Racer {
-  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false, t100: -1, inZone: false, boostMul: 1, boostLeft: 0, jumped: false, launchQ: null };
+  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false, t100: -1, inZone: false, boostMul: 1, boostLeft: 0, boostTotal: 0, engage: 99, jumped: false, launchQ: null };
 }
 
 export class Race {
@@ -400,8 +417,8 @@ export class Race {
     r.bog = Math.pow(clamp(r.rpm / Math.max(IDLE_RPM + 1, idealLaunchRpm(r.spec)), 0.3, 1), 1.6);
     r.launchQ = r.jumped ? 'jump' : r.reaction <= LAUNCH_PERFECT ? 'perfect' : r.reaction <= LAUNCH_GOOD ? 'good' : 'slow';
     if (r.launchQ === 'perfect') {
-      r.boostMul = 1.08;
-      r.boostLeft = 1.0;
+      r.boostMul = 1.16;
+      r.boostLeft = r.boostTotal = 1.0;
     } else if (r.launchQ === 'jump') r.bog *= 0.75;
     const spin = engineForce(r.spec, r.rpm, 1) > tractionLimit(r.spec, true);
     if (spin || r.failure === 'suspension') {
@@ -439,9 +456,9 @@ export class Race {
     r.taps.push(Math.round((this.t - r.launchAt) * 1000) / 1000);
     r.phase = 'shifting';
     r.shiftLeft = r.spec.shiftTime * (quality === 'perfect' ? 0.6 : quality === 'ok' ? 1 : quality === 'early' ? 1.15 : 1.45);
-    // a perfect shift kicks; an early one bogs in the next gear
-    r.boostMul = quality === 'perfect' ? 1.18 : quality === 'early' ? 0.88 : 1;
-    r.boostLeft = quality === 'perfect' ? 0.8 : quality === 'early' ? 0.5 : 0;
+    // a perfect shift kicks; an early one bogs in the next gear (both swell in and fade out: see boostNow)
+    r.boostMul = quality === 'perfect' ? 1.32 : quality === 'early' ? 0.76 : 1;
+    r.boostLeft = r.boostTotal = quality === 'perfect' ? 1.0 : quality === 'early' ? 0.5 : 0;
     r.gear++;
     r.limiterSince = -1;
     this.events.push({ type: 'shift', i, quality });
@@ -524,6 +541,7 @@ export class Race {
       r.rpm = Math.max(IDLE_RPM, r.rpm - 2500 * DT);
       if (r.shiftLeft <= 0) {
         r.phase = 'running';
+        r.engage = 0;
         r.rpm = Math.max(IDLE_RPM, wheel);
         if (engineForce(spec, r.rpm, r.gear) > tractionLimit(spec, false, r.v) * 1.1 && r.spinLeft <= 0) {
           r.spinLeft = 0.25;
@@ -546,17 +564,16 @@ export class Race {
       } else r.rpm = Math.max(IDLE_RPM, wheel);
       let eng = engineForce(spec, r.rpm, r.gear);
       if (since < 1 && r.gear === 1 && spec.gears > 1) eng *= r.bog + (1 - r.bog) * since;
-      if (r.boostLeft > 0) {
-        r.boostLeft -= DT;
-        eng *= r.boostMul;
-      }
+      const boost = boostNow(r);
+      if (r.boostLeft > 0) r.boostLeft -= DT;
+      eng *= boost;
       if (r.spinLeft > 0) {
         r.spinLeft -= DT;
         r.spinTime += DT;
         force = limit * spec.spinKeep;
         r.rpm = Math.min(spec.redline, r.rpm + 7000 * DT);
       } else {
-        force = Math.min(eng, limit * (r.boostLeft > 0 && r.boostMul > 1 ? r.boostMul : 1));
+        force = Math.min(eng, limit * Math.max(1, boost));
         if (r.rpm >= spec.redline - 1) {
           if (r.limiterSince < 0) {
             r.limiterSince = this.t;
@@ -567,6 +584,12 @@ export class Race {
           force *= r.gear < spec.gears ? 0.3 : 0.9;
         }
       }
+    }
+    // the clutch bites over ENGAGE_S: the push comes back smoothly instead of in one step (that
+    // step read on screen as the car jumping forward)
+    if (r.phase === 'running' && r.engage < ENGAGE_S) {
+      force *= smooth01(r.engage / ENGAGE_S);
+      r.engage += DT;
     }
     const win = r.gear < spec.gears ? this.windows[i]![r.gear - 1] : undefined;
     if (d.kind === 'live' && win && r.phase === 'running' && !r.inZone && shiftRpm(r) >= spec.redline * win.lo) {

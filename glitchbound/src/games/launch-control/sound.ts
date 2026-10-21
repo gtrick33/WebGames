@@ -119,6 +119,8 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
   let voice = voiceOf(undefined);
   let eng: { osc: OscillatorNode[]; shape: WaveShaperNode; band: BiquadFilterNode; low: BiquadFilterNode; rumble: AudioBufferSourceNode; rumbleGain: GainNode; g: GainNode; kind: Voice } | null = null;
   let mode: MusicMode = 'off';
+  /** The piece playing now: its own gain and reverb, so a switch can silence it, tails and all. */
+  let deck: { out: GainNode; verb: ConvolverNode } | null = null;
   let timer = 0;
   let nextBar = 0;
   let barN = 0;
@@ -290,6 +292,29 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
 
   // ---- music
   const musicOn = (): boolean => !isMusicOff() && mode !== 'off';
+  /**
+   * A fresh deck for a new piece. The old one fades out in a few hundredths of a second and is
+   * unplugged: notes it already scheduled (a menu chord lasts a whole bar) and its reverb tail stop
+   * with it instead of ringing over the next piece.
+   */
+  const newDeck = (): void => {
+    if (!ctx || !musicBus) return;
+    const old = deck;
+    if (old) {
+      old.out.gain.cancelScheduledValues(ctx.currentTime);
+      old.out.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.025);
+      window.setTimeout(() => old.out.disconnect(), 350);
+    }
+    const out = ctx.createGain();
+    out.connect(musicBus);
+    const v = ctx.createConvolver();
+    v.buffer = verb?.buffer ?? null;
+    const wet = ctx.createGain();
+    wet.gain.value = 0.22;
+    v.connect(wet).connect(out);
+    deck = { out, verb: v };
+  };
+  const deckOut = (): AudioNode | null => deck?.out ?? musicBus;
   const note = (f: number, t: number, dur: number, gain: number, type: OscillatorType, cutoff: number, opts: { attack?: number; release?: number; detune?: number; wet?: number } = {}): void => {
     if (!ctx || !musicBus) return;
     const o = ctx.createOscillator();
@@ -306,11 +331,11 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
     g.gain.exponentialRampToValueAtTime(gain, t + a);
     g.gain.setValueAtTime(gain, t + Math.max(a, dur - r));
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(lp).connect(g).connect(musicBus);
-    if (opts.wet && verb) {
+    o.connect(lp).connect(g).connect(deckOut()!);
+    if (opts.wet && deck) {
       const w = ctx.createGain();
       w.gain.value = opts.wet;
-      g.connect(w).connect(verb);
+      g.connect(w).connect(deck.verb);
     }
     o.start(t);
     o.stop(t + dur + 0.05);
@@ -323,7 +348,7 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
     o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-    o.connect(g).connect(musicBus);
+    o.connect(g).connect(deckOut()!);
     o.start(t);
     o.stop(t + 0.32);
   };
@@ -337,11 +362,11 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
     const g = ctx.createGain();
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + len);
-    s.connect(f).connect(g).connect(musicBus);
-    if (wet && verb) {
+    s.connect(f).connect(g).connect(deckOut()!);
+    if (wet && deck) {
       const w = ctx.createGain();
       w.gain.value = wet;
-      g.connect(w).connect(verb);
+      g.connect(w).connect(deck.verb);
     }
     s.start(t, Math.random());
     s.stop(t + len + 0.02);
@@ -415,6 +440,7 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
     musicBus.gain.setTargetAtTime(on ? (mode === 'race' ? 0.6 : 0.5) : 0.0001, c.currentTime, on ? fadeS : Math.min(fadeS, 0.06));
     if (on && !timer) {
       if (c.state === 'suspended' && !document.hidden) void c.resume().catch(() => undefined);
+      if (!deck) newDeck();
       nextBar = Math.max(nextBar, c.currentTime + 0.12);
       timer = window.setInterval(schedule, 150);
       schedule();
@@ -538,10 +564,32 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean = ()
       if (next === mode) return;
       const from = mode;
       mode = next;
-      // a new piece starts on a fresh bar; the race loop cuts dead (lights out), the menu fades in
-      if (ctx && next !== 'off' && from !== next) {
-        nextBar = ctx.currentTime + 0.1;
-        barN = 0;
+      // A new piece gets a new deck and starts on a fresh bar: whatever the old one had queued is cut
+      // (the race loop dies at lights out, the menu never rings over the staging loop).
+      if (ctx) {
+        newDeck();
+        if (next !== 'off') {
+          nextBar = ctx.currentTime + (from === 'menu' && next === 'race' ? 0.45 : 0.1);
+          barN = 0;
+          // into the staging loop: a short rising sweep where the menu stops
+          if (from === 'menu' && next === 'race' && musicOn() && noiseBuf && deck) {
+            const t = ctx.currentTime;
+            const src = ctx.createBufferSource();
+            src.buffer = noiseBuf;
+            const f = ctx.createBiquadFilter();
+            f.type = 'bandpass';
+            f.Q.value = 1.6;
+            f.frequency.setValueAtTime(260, t);
+            f.frequency.exponentialRampToValueAtTime(3800, t + 0.45);
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.16, t + 0.38);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+            src.connect(f).connect(g).connect(deck.out);
+            src.start(t);
+            src.stop(t + 0.55);
+          }
+        }
       }
       applyMusic(next === 'off' ? 0.03 : next === 'race' ? 0.3 : 0.8);
     },

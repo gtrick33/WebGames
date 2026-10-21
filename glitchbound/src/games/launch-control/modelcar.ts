@@ -661,6 +661,7 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
 
   return {
     group: root,
+    body: bodyG,
     wheels,
     wheelR,
     anchors,

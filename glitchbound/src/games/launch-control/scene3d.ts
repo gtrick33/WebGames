@@ -583,6 +583,13 @@ export interface CarRig {
   pops?: THREE.Object3D[];
   popUntil?: number;
   smokeT?: number;
+  /** The sprung body (pitches on the push; the wheels stay on the strip). */
+  body?: THREE.Object3D;
+  /** Body pitch state: last speed, smoothed acceleration, pitch and its rate. */
+  lastV?: number;
+  accel?: number;
+  pitch?: number;
+  pitchVel?: number;
   shiftLamp: THREE.MeshStandardMaterial | null;
   smoke: THREE.Mesh[];
   len: number;
@@ -1441,7 +1448,9 @@ export class Stage3D {
   private disposed = false;
   private lastT = 0;
   private shakeAmt = 0;
+  /** The camera's punch on a jolt: it eases toward its target (a sudden widening reads as a jump) and the target fades. */
   private fovKick = 0;
+  private fovKickGoal = 0;
   /** The showcase camera, eased toward its focus (angle, distance, height, aim). */
   private show = { a: 0, d: 0, h: 0, ax: 0, ay: 0, ready: false };
 
@@ -1563,7 +1572,16 @@ export class Stage3D {
     rig.group.position.set(s.x, 0, LANE_Z[i]!);
     const spin = s.spinning ? s.v + 18 : s.v;
     for (const w of rig.wheels) w.rotation.z -= (spin * dt) / ((w.userData.r as number | undefined) ?? rig.wheelR);
-    rig.group.rotation.z = lerp(rig.group.rotation.z, s.v > 0.5 && s.rpm / s.redline > 0.6 ? 0.018 : 0, 0.1);
+    // The body pitches with the push: it squats (nose up) under acceleration and dips while the
+    // clutch is out between gears, on a damped spring so it settles like a car on its springs.
+    const accel = dt > 0 ? (s.v - (rig.lastV ?? s.v)) / dt : 0;
+    rig.lastV = s.v;
+    rig.accel = (rig.accel ?? 0) + (accel - (rig.accel ?? 0)) * Math.min(1, dt * 12);
+    const goal = clamp(rig.accel * 0.0042, -0.012, 0.045);
+    rig.pitchVel = ((rig.pitchVel ?? 0) + ((goal - (rig.pitch ?? 0)) * 140 - (rig.pitchVel ?? 0) * 13) * Math.min(dt, 0.05));
+    rig.pitch = (rig.pitch ?? 0) + rig.pitchVel * Math.min(dt, 0.05);
+    if (rig.body) rig.body.rotation.z = rig.pitch;
+    else rig.group.rotation.z = rig.pitch;
     const frac = s.rpm / s.redline;
     for (const f of rig.flames) f.visible = frac > 0.86 && !s.dead && Math.sin(t * 60) > -0.3;
     const popping = (rig.popUntil ?? -1) > t;
@@ -1609,8 +1627,8 @@ export class Stage3D {
 
   /** A jolt for the camera: a little shake and a short widening of the view (the launch, a perfect shift, the finish). */
   kick(strength = 1): void {
-    this.shakeAmt = Math.max(this.shakeAmt, 0.16 * strength);
-    this.fovKick = Math.max(this.fovKick, 7 * strength);
+    this.shakeAmt = Math.max(this.shakeAmt, 0.12 * strength);
+    this.fovKickGoal = Math.max(this.fovKickGoal, 5 * strength);
   }
 
   /** An exhaust pop on a car (a shift). */
@@ -1688,14 +1706,17 @@ export class Stage3D {
     }
     this.camera.position.copy(this.camPos);
     if (this.shakeAmt > 0.001) {
-      this.camera.position.x += (Math.random() - 0.5) * this.shakeAmt;
-      this.camera.position.y += (Math.random() - 0.5) * this.shakeAmt;
-      this.camera.position.z += (Math.random() - 0.5) * this.shakeAmt;
-      this.shakeAmt *= Math.exp(-dt * 7);
+      // a rumble, not jitter: a few sines out of step instead of a new random spot every frame
+      const k = this.shakeAmt;
+      this.camera.position.x += k * 0.35 * Math.sin(t * 23.1);
+      this.camera.position.y += k * (0.6 * Math.sin(t * 31.7 + 1.3) + 0.25 * Math.sin(t * 53.3));
+      this.camera.position.z += k * 0.45 * Math.sin(t * 27.9 + 2.1);
+      this.shakeAmt *= Math.exp(-dt * 6);
     }
     this.camera.lookAt(this.camAim);
+    this.fovKick += (this.fovKickGoal - this.fovKick) * (1 - Math.exp(-dt * 14));
+    this.fovKickGoal *= Math.exp(-dt * 3.2);
     this.camera.fov = (narrow ? 62 : 52) + Math.min(10, me.v * 0.09) + this.fovKick;
-    this.fovKick *= Math.exp(-dt * 4);
     if (fixed) {
       this.camera.position.set(...fixed.pos);
       this.camera.lookAt(...fixed.aim);
@@ -1724,6 +1745,9 @@ export class Stage3D {
       rig.group.visible = true;
       rig.group.position.set(SHOW_X, 0, 0);
       rig.group.rotation.z = 0;
+      if (rig.body) rig.body.rotation.z = 0;
+      rig.pitch = rig.pitchVel = 0;
+      rig.lastV = undefined;
     }
     this.world!.clouds.position.x += cloudDt;
     if (cloudDt > 0) this.world!.alive.update(performance.now() / 1000, Math.min(0.1, cloudDt / 1.5), 0, SHOW_X);
