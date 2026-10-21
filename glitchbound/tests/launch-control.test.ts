@@ -5,7 +5,7 @@ import { COSMETICS, DEFAULTS, getCosmetic } from '../src/games/launch-control/co
 import { addMats, botsFor, botSpec, crateFor, forecast, idleIncome, idleRate, LADDER, LADDER_SIZE, loanerFor, materialsFor, opponentSpec, purseAt, RACE_SIZE, settle, typicalEt } from '../src/games/launch-control/economy';
 import { ENV_DEFS } from '../src/games/launch-control/envs';
 import { applyWear, effectsOf, failChance, freshCondition, levelGains, MAX_LEVEL, PARTS, raceWear, repairCost, RISKY, stockLevels, upgradeCost, type Levels } from '../src/games/launch-control/parts';
-import { decodeScript, encodeScript, engineForce, forecastEt, forecastRun, idealLaunchRpm, PLAYER_REACTION, Race, scoreOf, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
+import { AUTO_LAUNCH, decodeScript, encodeScript, engineForce, forecastEt, forecastRun, GREEN_SECONDS, idealLaunchRpm, JUMP_PENALTY, Race, scoreOf, shiftRpm, shiftWindows, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
 import { emptySave, sanitize } from '../src/games/launch-control/storage';
 import { rng } from '../src/games/launch-control/util';
 
@@ -76,15 +76,106 @@ describe('the race', () => {
     expect(r1.winner).toBe(r1.order[0]);
   });
 
-  it('launch control leaves at green at the sweet spot, so a live driver never spins or bogs', () => {
+  it('the launch is a tap at green: quick is perfect, none goes late, a jump start is punished', () => {
     const spec = stock('lazzaro');
-    const race = new Race([spec], [{ kind: 'live' }], 3);
-    while (!race.done) race.step();
-    const r = race.result().racers[0]!;
-    expect(r.reaction).toBeCloseTo(PLAYER_REACTION, 2);
-    expect(r.script.launchRpm).toBe(idealLaunchRpm(spec));
-    expect(r.spinTime).toBe(0);
+    const launchWith = (tapAfterGreen: number | null, earlyTapAt?: number) => {
+      const race = new Race([spec], [{ kind: 'live' }], 3);
+      let tapped = false;
+      let early = false;
+      while (!race.done) {
+        if (earlyTapAt !== undefined && !early && race.t >= earlyTapAt) {
+          race.tap(0);
+          early = true;
+        }
+        if (tapAfterGreen !== null && !tapped && race.green && race.t >= race.greenAt + tapAfterGreen) {
+          race.tap(0);
+          tapped = true;
+        }
+        race.step();
+      }
+      return race.result().racers[0]!;
+    };
+    const quick = launchWith(0.2);
+    expect(quick.reaction).toBeCloseTo(0.2, 1);
+    expect(quick.launch).toBe('perfect');
+    // launch control still holds the sweet-spot revs: no wheelspin
+    expect(quick.script.launchRpm).toBe(idealLaunchRpm(spec));
+    expect(quick.spinTime).toBe(0);
     expect(engineForce(spec, idealLaunchRpm(spec), 1)).toBeLessThanOrEqual(tractionLimit(spec, true));
+    expect(launchWith(0.4).launch).toBe('good');
+    const none = launchWith(null);
+    expect(none.reaction).toBeCloseTo(AUTO_LAUNCH, 2);
+    expect(none.launch).toBe('slow');
+    // a tap during the ambers is a jump start (and a second tap at green can't undo it)
+    const jump = launchWith(0.2, 1.2);
+    expect(jump.launch).toBe('jump');
+    expect(jump.reaction).toBeCloseTo(JUMP_PENALTY, 2);
+    // a tap before the first amber is ignored
+    expect(launchWith(0.2, 0.5).launch).toBe('perfect');
+    expect(quick.crossed!).toBeLessThan(none.crossed!);
+    expect(quick.crossed!).toBeLessThan(jump.crossed!);
+    expect(scoreOf(quick)).toBeGreaterThan(scoreOf(none));
+  });
+
+  it('shift windows sit near the top of the revs, move every race and take about the same time to cross', () => {
+    const cars = ['bumble', 'kaiser', 'falkon', 'rail'].map(stock);
+    const mids = new Set<string>();
+    for (let seed = 1; seed <= 12; seed++) {
+      const per = cars.map((c) => shiftWindows(seed, c));
+      // same race, same spots for everyone (widths follow each car)
+      for (const ws of per) expect((ws[0]!.lo + ws[0]!.hi) / 2).toBeCloseTo((per[0]![0]!.lo + per[0]![0]!.hi) / 2, 6);
+      for (const ws of per)
+        for (const w of ws) {
+          expect(w.okLo).toBeLessThan(w.lo);
+          expect(w.lo).toBeGreaterThanOrEqual(0.69);
+          expect(w.hi).toBeLessThanOrEqual(0.985);
+          expect(w.okHi).toBeLessThanOrEqual(0.992);
+        }
+      mids.add(((per[0]![0]!.lo + per[0]![0]!.hi) / 2).toFixed(3));
+    }
+    expect(mids.size).toBeGreaterThan(8);
+    // the needle crosses first gear's green in about GREEN_SECONDS in any car
+    for (const spec of cars) {
+      const race = new Race([spec], [{ kind: 'live' }], 5);
+      const me = race.racers[0]!;
+      let enter = -1;
+      let crossed = -1;
+      while (!race.done && crossed < 0) {
+        if (me.phase === 'staging' && race.green) race.tap(0);
+        const w = race.windowOf(0)!;
+        const f = shiftRpm(me) / spec.redline;
+        if (me.phase === 'running' && enter < 0 && f >= w.lo) enter = race.t;
+        if (enter >= 0 && f >= w.hi) crossed = race.t - enter;
+        race.step();
+      }
+      expect(crossed, spec.id).toBeGreaterThan(GREEN_SECONDS * 0.6);
+      expect(crossed, spec.id).toBeLessThan(GREEN_SECONDS * 1.5);
+    }
+  });
+
+  it('shifting in the green beats yellow, red and early shifts', () => {
+    for (const id of ['bumble', 'stallion', 'falkon']) {
+      const spec = stock(id);
+      const avg = (aim: (w: { lo: number; hi: number; okLo: number; okHi: number }) => number): number => {
+        let sum = 0;
+        for (let seed = 1; seed <= 8; seed++) {
+          const race = new Race([spec], [{ kind: 'live' }], seed);
+          const me = race.racers[0]!;
+          while (!race.done) {
+            if (me.phase === 'staging' && race.green && race.t >= race.greenAt + 0.25) race.tap(0);
+            const w = race.windowOf(0);
+            if (w && me.phase === 'running' && shiftRpm(me) / spec.redline >= aim(w)) race.tap(0);
+            race.step();
+          }
+          sum += race.result().racers[0]!.et!;
+        }
+        return sum / 8;
+      };
+      const green = avg((w) => (w.lo + w.hi) / 2);
+      expect(green, id).toBeLessThan(avg((w) => (w.hi + w.okHi) / 2));
+      expect(green, id).toBeLessThan(avg(() => 0.99));
+      expect(green, id).toBeLessThan(avg((w) => w.okLo - 0.04) - 0.3);
+    }
   });
 
   it('a scripted launch below the sweet spot bogs and above it spins; both lose time', () => {
@@ -103,7 +194,9 @@ describe('the race', () => {
     while (!race.done) {
       race.step();
       const me = race.racers[0]!;
-      if (me.phase === 'running' && me.gear < spec.gears && me.slip <= 0 && me.rpm >= spec.redline * 0.95) {
+      if (me.phase === 'staging' && race.green) race.tap(0);
+      const w = race.windowOf(0);
+      if (w && me.phase === 'running' && shiftRpm(me) >= spec.redline * (w.lo + w.hi) / 2) {
         race.tap(0);
         taps++;
       }

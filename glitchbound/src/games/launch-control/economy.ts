@@ -168,7 +168,7 @@ export function botsFor(me: CarSpec, count: number, seed: number, rival?: Oppone
       const gap = Math.abs(et - target) + (et < target - 0.3 ? 5 : 0);
       if (gap < bestGap) {
         bestGap = gap;
-        pick = { name: names[0] ?? `Racer ${bots.length}`, car: cand.c, levels, cond, skill: clamp(0.45 + r() * 0.45 - ease * 0.4, 0, 1) };
+        pick = { name: names[0] ?? `Racer ${bots.length}`, car: cand.c, levels, cond, skill: clamp(0.35 + r() * 0.45 - ease * 0.4, 0, 1) };
       }
       if (gap < 0.2) break;
     }
@@ -204,9 +204,9 @@ export const emptyMats = (): Record<Material, number> => ({ scrap: 0, alloy: 0, 
 
 // ---- wagers and purses
 /** Where the player's forecast assumes they drive: a decent, not perfect, driver. */
-export const PLAYER_SKILL = 0.85;
+export const PLAYER_SKILL = 0.75;
 /** A policy driver's typical reaction time at a skill (sim.ts plans it the same way). */
-export const typicalReaction = (skill: number): number => 0.1 + (1 - skill) * 0.4 + 0.025 + 0.075 * (1 - skill);
+export const typicalReaction = (skill: number): number => 0.17 + (1 - skill) * 0.4 + 0.025 + 0.075 * (1 - skill);
 
 export interface Forecast {
   myEt: number;

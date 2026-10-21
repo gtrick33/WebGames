@@ -348,7 +348,7 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
 
   // stance: big wheels lift the body, the suspension upgrade drops it
   const clearance = mb.min.y * sy + lift;
-  bodyG.position.y = lift - Math.min(lv.suspension * 0.013, Math.max(0, clearance - 0.06));
+  bodyG.position.y = lift - Math.min(lv.suspension * 0.022, Math.max(0, clearance - 0.04));
 
   // the body's real surface, for placing parts (in root space)
   root.updateMatrixWorld(true);
@@ -466,7 +466,7 @@ export function buildModelCar(look: CarLook, model: LoadedModel): CarRig {
       if (y > best.y + 0.01 || (y > best.y - 0.02 && x < best.x)) best = { x, y };
     }
     shiftLamp = keepD(new THREE.MeshStandardMaterial({ color: '#3a3845', emissive: '#000000' }));
-    const lamp = pillow(0.06, 0.035, W * 0.32, shiftLamp, best.x - 0.02, best.y + 0.02, 0);
+    const lamp = pillow(0.06, lv.transmission >= 5 ? 0.045 : 0.035, W * (lv.transmission >= 5 ? 0.56 : 0.32), shiftLamp, best.x - 0.02, best.y + 0.02, 0);
     lamp.name = 'shiftlamp';
     parts.add(lamp);
   }

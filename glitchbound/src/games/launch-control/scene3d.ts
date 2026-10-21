@@ -1316,6 +1316,18 @@ export interface FixedCamera {
 }
 
 export type Framing = 'center' | 'right' | 'thumb';
+/** What the showcase camera looks at: the whole car on the turntable, or where a part shows on it. */
+export type ShowFocus = 'car' | 'engine' | 'transmission' | 'suspension' | 'tyres' | 'aero' | 'looks';
+/** Camera per focus: a fixed angle (null = the turntable's), distance and height factors, and where it aims (x in car lengths, y in metres). */
+const FOCUS: Record<ShowFocus, { angle: number | null; dist: number; height: number; aimX: number; aimY: number }> = {
+  car: { angle: null, dist: 1, height: 0.3, aimX: 0, aimY: 0.62 },
+  engine: { angle: -0.5, dist: 0.78, height: 0.62, aimX: 0.2, aimY: 0.85 },
+  transmission: { angle: Math.PI + 0.55, dist: 0.8, height: 0.42, aimX: -0.18, aimY: 0.85 },
+  suspension: { angle: -Math.PI / 2, dist: 0.74, height: 0.02, aimX: 0.12, aimY: 0.42 },
+  tyres: { angle: -1.1, dist: 0.66, height: 0.1, aimX: 0.24, aimY: 0.4 },
+  aero: { angle: Math.PI + 0.72, dist: 0.9, height: 0.5, aimX: -0.12, aimY: 0.8 },
+  looks: { angle: -0.95, dist: 0.95, height: 0.48, aimX: 0, aimY: 0.4 },
+};
 /** Where the garage turntable parks the car: down the strip, clear of the gantries. */
 const SHOW_X = 70;
 
@@ -1341,6 +1353,8 @@ export class Stage3D {
   private h = 1;
   private smokeT = 0;
   private disposed = false;
+  /** The showcase camera, eased toward its focus (angle, distance, height, aim). */
+  private show = { a: 0, d: 0, h: 0, ax: 0, ay: 0, ready: false };
 
   constructor(canvas?: HTMLCanvasElement, shadows = true) {
     this.canvas = canvas ?? document.createElement('canvas');
@@ -1528,8 +1542,11 @@ export class Stage3D {
     this.renderer.render(this.scene, this.camera);
   }
 
-  /** The garage turntable or a thumbnail: car 0 parked on the strip, the others hidden. */
-  renderShowcase(angle: number, framing: Framing = 'center', cloudDt = 0): void {
+  /**
+   * The garage turntable or a thumbnail: car 0 parked on the strip, the others hidden. With a part
+   * `focus` the camera swings to where that part shows; `dt` > 0 eases it there, 0 jumps.
+   */
+  renderShowcase(angle: number, framing: Framing = 'center', cloudDt = 0, focus: ShowFocus = 'car', dt = 0): void {
     if (!this.world) this.setEnv('e-bay');
     const rig = this.cars[0];
     for (let i = 1; i < LANES; i++) if (this.cars[i]) this.cars[i]!.group.visible = false;
@@ -1551,8 +1568,25 @@ export class Stage3D {
     const dW = across / (2 * Math.tan(hHalf) * want * visibleShare);
     const dH = 2.0 / (2 * Math.tan(vHalf) * (framing === 'thumb' ? 0.8 : 0.55));
     const d = Math.max(dW, dH);
-    this.camera.position.set(SHOW_X + Math.cos(angle) * d, 0.75 + d * (framing === 'thumb' ? 0.22 : 0.3), Math.sin(angle) * d);
-    this.camera.lookAt(SHOW_X, 0.62, 0);
+    const f = FOCUS[focus];
+    const goal = { a: f.angle ?? angle, d: d * f.dist, h: focus === 'car' ? (framing === 'thumb' ? 0.22 : 0.3) : f.height, ax: f.aimX * len, ay: f.aimY };
+    const sh = this.show;
+    if (!sh.ready || dt <= 0) {
+      Object.assign(sh, goal, { ready: dt > 0 });
+    } else {
+      const k = 1 - Math.exp(-dt * 4.5);
+      // the shortest way round to the new angle
+      let da = (goal.a - sh.a) % (Math.PI * 2);
+      if (da > Math.PI) da -= Math.PI * 2;
+      if (da < -Math.PI) da += Math.PI * 2;
+      sh.a += da * k;
+      sh.d += (goal.d - sh.d) * k;
+      sh.h += (goal.h - sh.h) * k;
+      sh.ax += (goal.ax - sh.ax) * k;
+      sh.ay += (goal.ay - sh.ay) * k;
+    }
+    this.camera.position.set(SHOW_X + sh.ax * 0.5 + Math.cos(sh.a) * sh.d, 0.75 + sh.d * sh.h, Math.sin(sh.a) * sh.d);
+    this.camera.lookAt(SHOW_X + sh.ax, sh.ay, 0);
     this.camera.updateProjectionMatrix();
     this.sun.position.set(SHOW_X - 10, 40, 22);
     this.sun.target.position.set(SHOW_X, 0, 0);

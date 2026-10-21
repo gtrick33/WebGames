@@ -251,7 +251,7 @@ export const GAMES: GameEntry[] = [
     title: 'Launch Control',
     tagline: 'Five-car 3D drag races: nail every shift, tune 40 cars, wager your winnings.',
     description:
-      'A strategic quarter-mile drag racer in glossy 3D, seen from behind your car. Launch control does the start; you time every shift just under the redline against four rivals in cars like yours. ' +
+      'A strategic quarter-mile drag racer in glossy 3D, seen from behind your car. Launch on green, then hit every shift in a green zone that moves each gear, against four rivals in cars like yours. ' +
       'Climb a ladder of 40 rivals in five divisions, wager earned cash on forecast odds, and tune six separate parts on 40 original cars in the garage: engine, transmission, suspension, tyres, aero and looks, each visible on the car, each moving several stats, each wearing out. ' +
       'Everyone gets the same loaner and the same rivals in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
     categories: ['racing', 'strategy'],
@@ -269,8 +269,8 @@ export const GAMES: GameEntry[] = [
     runtime: { kind: 'module' },
     aspect: 'square',
     controls: {
-      keyboard: ['Space, Enter or Up: shift when the needle is in the green', 'Esc or P: pause'],
-      touch: ['Tap anywhere (or the SHIFT button) when the needle is in the green'],
+      keyboard: ['Space, Enter or Up: launch at green, then shift when the needle is in the green zone', 'Esc or P: pause'],
+      touch: ['Tap anywhere (or the big button) at green to launch, then each time the needle is in the green zone'],
     },
     stats: [
       { key: 'score', label: 'Best run' },
@@ -280,7 +280,7 @@ export const GAMES: GameEntry[] = [
       { key: 'position', label: 'Best finish', lowerIsBetter: true },
     ],
     highlights: [
-      'One input: launch control starts the car, you shift just under the redline. Perfect shifts win races',
+      'One input: tap at green to launch, then shift in a green zone that sits somewhere new in every gear. Perfect launches and shifts win races',
       'Every race is five cars: you and four rivals in cars tuned like yours; the named ladder rival is one of them',
       '40 original cars in six tiers, shaped after the real thing from a supermini to a hypercar, in glossy clearcoat 3D',
       'Six separate parts with eight levels each, each visible on the car and each moving several stats; they wear out and can fail when neglected',

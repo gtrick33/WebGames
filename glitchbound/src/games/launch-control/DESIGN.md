@@ -9,16 +9,21 @@ it ships in the game's own lazy chunk, so the arcade's startup budget is untouch
 
 One quarter mile (402 m) against four rivals, about ten seconds of driving:
 
-1. **The lights**: three ambers half a second apart, then green (seeded jitter). Launch control holds every car
-   at its sweet-spot rpm and leaves at green; AI drivers add their own reaction time and launch error.
-2. **The run**: tap (Space, or the SHIFT button) when the shift lights flash (88 % of the redline and up).
-   Perfect shift = quicker change; early = lost pull; staying on the limiter for more than 0.14 s = late, lost time
-   and engine wear. A tap below half the redline is taken as accidental and ignored. The needle follows the gear
-   (the wheels) during the clutch launch, so it never crashes after the start.
+1. **The launch**: three ambers half a second apart, then green (seeded jitter). Launch control holds every car
+   at its strongest grip-safe rpm; the player taps to go. A reaction under 0.28 s is a perfect launch (a short
+   kick), under 0.45 s good, slower is a slow start, and no tap goes at green + 1 s. A tap during the ambers is a
+   jump start: the car goes at green + 0.6 s, bogged. AI drivers have their own reaction time and launch error.
+2. **The run**: each gear has its own shift window, drawn on the rev strip and the gauge: green with yellow either
+   side and red above. Where the green sits (78 to 90 % of the redline) comes from the race seed, so everyone in
+   a race shares the spots; how wide it is comes from the car (`shiftWindows`), so the needle takes about a quarter of a second to
+   cross the green in any car's lower gears. Green = perfect (a 40 % quicker change and an 18 % kick for 0.8 s);
+   yellow = ok; red, or more than 0.14 s on the limiter = late (a slower change); below yellow = early (bogs).
+   Hitting the green is always the fastest line. A tap below half the redline is ignored. The needle follows the
+   gear (the wheels) during the clutch launch, so it never crashes after the start.
 3. **The finish**: elapsed time (ET), trap speed, perfect shifts, finishing position. First across the line
    wins the purse and the wager; places pay a share.
 
-**Score** (the leaderboard number): `20000 − ET ms + 150 × perfect shifts`, 0 for a breakdown.
+**Score** (the leaderboard number): `20000 − (reaction + ET) ms + 150 × perfect shifts + 150 for a perfect launch`, 0 for a breakdown.
 
 Everything is deterministic: a race is `(cars, drivers, seed)`. A driver is live (your taps), a policy (an AI with
 a skill: reaction, launch error, shift timing) or a script (`{ launchRpm, reaction, shifts[] }`, a ghost).
@@ -70,7 +75,7 @@ mid-race; repairs cost cash. Cosmetics: helmets, suits, paints, liveries, wheels
 | `storage.ts` | the local save (validated) | DOM |
 | `scene3d.ts` | Three.js: lofted cars (rounded cross-sections, flat capped nose and tail, fender arches, glass cabin with painted pillars, lamps snapped to the surface), sky reflections, worlds merged per material (~250 draw calls for a race), one shared stage, a thumbnail queue | WebGL |
 | `hud.ts` | the driver portrait | DOM |
-| `RaceScreen.tsx` | the race on the shared stage: shift lights that flash in the perfect zone, a gauge with the real zones, a zone cue, stray-tap guard, pixel-ratio guard, rotate nudge | React |
+| `RaceScreen.tsx` | the race on the shared stage: a rev strip and gauge with this gear's window, launch and shift pop-ups, a zone cue, stray-tap guard, pixel-ratio guard, rotate nudge | React |
 | `Game.tsx` / `ui.tsx` / `Game.css` | hub, rivals, setup, result, garage, dealer, daily, ladder, help | React |
 | `Preview.tsx` | catalogue attract mode: five cars racing, blitted onto the tile | React |
 

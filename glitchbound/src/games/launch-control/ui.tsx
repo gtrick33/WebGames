@@ -27,6 +27,32 @@ export function Panel({ title, eyebrow, onBack, right, children, className = '' 
   );
 }
 
+/**
+ * A full-screen pop-up (shops, garage, dealer, rivals): a header with the way back and your cash,
+ * optional tabs, then the 3D view (the shared stage is docked over `viewRef`) beside or above the content.
+ */
+export function Sheet({ title, eyebrow, onBack, right, tabs, viewRef, children, className = '' }: { title: string; eyebrow?: string; onBack: () => void; right?: ReactNode; tabs?: ReactNode; viewRef?: (el: HTMLDivElement | null) => void; children: ReactNode; className?: string }) {
+  return (
+    <section className={`lc-modal ${className}`} role="dialog" aria-label={title}>
+      <header className="lc-modal-head">
+        <button className="lc-back" onClick={onBack} aria-label="Back">
+          ←
+        </button>
+        <div className="lc-panel-titles">
+          {eyebrow && <span className="lc-eyebrow mono">{eyebrow}</span>}
+          <h2 className="lc-h">{title}</h2>
+        </div>
+        {right && <div className="lc-modal-right">{right}</div>}
+      </header>
+      {tabs && <div className="lc-modal-tabs">{tabs}</div>}
+      <div className={`lc-modal-body${viewRef ? ' has-view' : ''}`}>
+        {viewRef && <div ref={viewRef} className="lc-modal-view" aria-hidden="true" />}
+        <div className="lc-modal-content">{children}</div>
+      </div>
+    </section>
+  );
+}
+
 export function Sticker({ tone = 'yellow', children, flat }: { tone?: string; children: ReactNode; flat?: boolean }) {
   return (
     <span className={`sticker lc-sticker${flat ? ' is-flat' : ''}`} data-tone={tone}>

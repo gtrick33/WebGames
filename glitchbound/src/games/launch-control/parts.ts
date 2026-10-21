@@ -29,7 +29,7 @@ export interface PartInfo {
 
 export const PART_INFO: Record<PartId, PartInfo> = {
   engine: { id: 'engine', name: 'Engine', emoji: '⚙️', blurb: 'Bigger turbo, hotter cams, higher redline. Heavier and a little less forgiving.', look: 'Hood scoop, twin pipes with flames' },
-  transmission: { id: 'transmission', name: 'Transmission', emoji: '🕹️', blurb: 'Faster shifts and a stronger driveline.', look: 'Shift light on the roof' },
+  transmission: { id: 'transmission', name: 'Transmission', emoji: '🕹️', blurb: 'Faster shifts and a stronger driveline.', look: 'Shift light on the rear window' },
   suspension: { id: 'suspension', name: 'Suspension', emoji: '🛞', blurb: 'Lighter coilovers and better weight transfer: more grip off the line, less wheel hop.', look: 'Lower, wider stance' },
   tyres: { id: 'tyres', name: 'Tyres', emoji: '🏁', blurb: 'Stickier compound and wider wheels. They wear out and need replacing.', look: 'Wider wheels, slicks' },
   aero: { id: 'aero', name: 'Aerodynamics', emoji: '🪽', blurb: 'Less drag for top-end speed, a touch of downforce for grip at speed.', look: 'Splitter, spoiler, diffuser' },
@@ -38,6 +38,16 @@ export const PART_INFO: Record<PartId, PartInfo> = {
 
 export type Levels = Record<PartId, number>;
 export type Condition = Record<PartId, number>;
+
+/** What a part's levels add that you can see on the car (modelcar.ts draws them), by the level they arrive at. */
+export const PART_VISUALS: Record<PartId, [number, string][]> = {
+  engine: [[1, 'Bigger exhaust tips every level'], [3, 'Hood scoop'], [6, 'Twin exhausts that spit flames'], [8, 'Supercharger through the hood']],
+  transmission: [[2, 'Shift light on the rear window'], [5, 'Wide LED shift bar']],
+  suspension: [[1, 'Sits about 2 cm lower every level']],
+  tyres: [[1, 'Bigger, wider wheels every level'], [5, 'Racing slicks']],
+  aero: [[1, 'Ducktail spoiler'], [2, 'Front splitter'], [4, 'Rear wing'], [5, 'Diffuser fins'], [6, 'Canards'], [7, 'Big carbon wing with end plates']],
+  looks: [[4, 'Lime underglow'], [7, 'Pink underglow and a pinstripe']],
+};
 
 export const stockLevels = (): Levels => ({ engine: 0, transmission: 0, suspension: 0, tyres: 0, aero: 0, looks: 0 });
 export const freshCondition = (): Condition => ({ engine: 100, transmission: 100, suspension: 100, tyres: 100, aero: 100, looks: 100 });

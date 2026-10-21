@@ -5,7 +5,8 @@ import { KEY } from '../src/games/launch-control/storage';
 
 /**
  * The whole game in jsdom (no WebGL: the 3D stage is skipped, everything else runs): menus, a real
- * five-car race driven frame by frame with a fake clock, shifting whenever the shift lights flash,
+ * five-car race driven frame by frame with a fake clock, launching at green and shifting whenever
+ * the needle is in the green zone,
  * and the result, money and save that follow.
  */
 const host = { report: vi.fn() };
@@ -37,7 +38,7 @@ function tick(): void {
 /** Pop-up texts seen during the last race. */
 let pops = new Set<string>();
 
-/** Races until the result screen, tapping Space whenever the lights flash; returns the taps made. */
+/** Races until the result screen, tapping Space at green and whenever the needle is in the green; returns the taps made. */
 function driveRace(opts: { tapWhenHot: boolean; maxFrames?: number } = { tapWhenHot: true }): number {
   let taps = 0;
   let lastTap = -999;
@@ -47,7 +48,7 @@ function driveRace(opts: { tapWhenHot: boolean; maxFrames?: number } = { tapWhen
     if (!document.querySelector('.lc-race')) break;
     const pop = document.querySelector('.lc-pop')?.textContent;
     if (pop) pops.add(pop);
-    if (opts.tapWhenHot && document.querySelector('.lc-leds.is-hot') && f - lastTap > 6) {
+    if (opts.tapWhenHot && document.querySelector('.lc-rev.is-hot, .lc-rev[data-state="go"]') && f - lastTap > 6) {
       act(() => {
         fireEvent.keyDown(window, { code: 'Space', key: ' ' });
       });
@@ -72,8 +73,9 @@ describe('Launch Control: a full ladder race', () => {
     expect(host.report).toHaveBeenCalledWith({ type: 'start' });
     expect(document.querySelector('.lc-race')).toBeTruthy();
     const taps = driveRace();
-    expect(taps).toBeGreaterThanOrEqual(3);
+    expect(taps).toBeGreaterThanOrEqual(4);
     expect(pops.has('PERFECT!')).toBe(true);
+    expect(pops.has('PERFECT LAUNCH!')).toBe(true);
     // the result: five cars in order, our times, a purse
     const rows = document.querySelectorAll('.lc-order li');
     expect(rows).toHaveLength(5);
@@ -112,7 +114,19 @@ describe('Launch Control: a full ladder race', () => {
     });
     act(() => tick());
     expect(document.querySelector('.lc-gear')?.textContent).toBe('1');
-    expect(document.querySelector('.lc-pop')?.textContent).toBe('WAIT FOR GREEN');
+    expect(document.querySelector('.lc-pop')?.textContent).toBe('TOO EARLY');
+  });
+
+  it('a tap during the ambers is a jump start', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    startLadderRace();
+    for (let f = 0; f < 400 && !document.querySelector('.lc-banner')?.textContent?.includes('●'); f++) act(() => tick());
+    act(() => {
+      fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+    });
+    act(() => tick());
+    expect(document.querySelector('.lc-pop')?.textContent).toBe('JUMP START!');
+    expect(document.querySelector('.lc-rev')?.getAttribute('data-state')).toBe('launch');
   });
 
   it('pause stops the clock; Escape resumes', () => {
@@ -150,20 +164,43 @@ describe('Launch Control: daily, garage and wager', () => {
     expect(day.left).toBe(true);
   });
 
-  it('the garage sells a level of a part for cash and materials, as its own card', () => {
+  it('the parts shop sells a level of a part for cash and materials, one tab per part', () => {
     render(<Game host={host} restartKey={0} pauseKey={0} />);
-    fireEvent.click(screen.getByRole('button', { name: /^My garage/ }));
-    const cards = document.querySelectorAll('.lc-part');
-    expect(cards).toHaveLength(6);
-    const engine = cards[0]!;
-    expect(engine.textContent).toMatch(/Engine/);
-    expect(engine.textContent).toMatch(/\+9% torque/);
-    fireEvent.click(engine.querySelector('.lc-upgrade')!);
-    expect(document.querySelectorAll('.lc-part')[0]!.textContent).toMatch(/Lv 1\/8/);
+    fireEvent.click(screen.getByRole('button', { name: /^Parts shop/ }));
+    expect(document.querySelectorAll('.lc-ptab')).toHaveLength(6);
+    const panel = (): Element => document.querySelector('.lc-part-panel')!;
+    expect(panel().textContent).toMatch(/Engine/);
+    expect(panel().textContent).toMatch(/\+9% torque/);
+    expect(panel().textContent).toMatch(/Hood scoop/);
+    // preview the next level on the car, then buy it
+    fireEvent.click(screen.getByRole('radio', { name: /Preview Lv 1/ }));
+    expect(screen.getByRole('radio', { name: /Preview Lv 1/ }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(panel().querySelector('.lc-upgrade')!);
+    expect(panel().textContent).toMatch(/Lv 1\/8/);
     const save = JSON.parse(localStorage.getItem(KEY)!);
     expect(save.cars.bumble.levels.engine).toBe(1);
     expect(save.cash).toBeLessThan(800);
     expect(save.mats.scrap).toBeLessThan(6);
+    // every part has its own tab and its own visuals
+    fireEvent.click(screen.getByRole('tab', { name: /Aero/ }));
+    expect(panel().textContent).toMatch(/Rear wing/);
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('button', { name: /^Parts shop/ })).toBeTruthy();
+  });
+
+  it('the rival picker shows big cards with one selected, and races the pick', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Race\s*Next/ }));
+    const cards = screen.getAllByRole('option');
+    expect(cards.length).toBeGreaterThanOrEqual(4);
+    expect(cards.filter((c) => c.getAttribute('aria-selected') === 'true')).toHaveLength(1);
+    expect(document.querySelector('.lc-rcard.is-on')?.textContent).toMatch(/Selected/);
+    expect(document.querySelector('.lc-rcard.is-on')?.textContent).toMatch(/Dizzy Dee/);
+    // locked rivals can't be picked
+    const locked = document.querySelector('.lc-rcard.is-locked') as HTMLButtonElement;
+    expect(locked.disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: /^Race Dizzy Dee/ }));
+    expect(screen.getByRole('button', { name: 'Confirm race' })).toBeTruthy();
   });
 
   it('a lost wager takes the stake; the ledger says so', () => {

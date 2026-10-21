@@ -1,7 +1,9 @@
 /**
  * The race: a quarter mile for up to five cars, stepped at a fixed rate. Pure and deterministic:
  * the same cars, drivers and seed always give the same race (the daily, friends' ghosts and the
- * tests rely on it). Every car launches itself at green (launch control); drivers only shift.
+ * tests rely on it). The player's one button launches at green and then shifts: each gear has its
+ * own shift window (green, with yellow either side, red above), at a seeded random spot near the
+ * top of the rev range, the same for every car in the race.
  * A driver is live (the player's taps), a policy (an AI with a skill level) or a script (recorded
  * taps: a ghost).
  */
@@ -19,8 +21,13 @@ export const MAX_TIME = 30;
 export const AMBERS = [1.0, 1.5, 2.0];
 export const GREEN_MIN = 2.5;
 export const GREEN_JITTER = 0.4;
-/** The player's launch control reacts this fast, every time. */
-export const PLAYER_REACTION = 0.15;
+/** A live driver who never taps launches this long after green anyway. */
+export const AUTO_LAUNCH = 1.0;
+/** Tapping during the ambers is a jump start: the car goes this long after green, bogged. */
+export const JUMP_PENALTY = 0.6;
+/** Reaction times (s) for a perfect and a good launch. */
+export const LAUNCH_PERFECT = 0.28;
+export const LAUNCH_GOOD = 0.45;
 export const IDLE_RPM = 900;
 const G = 9.81;
 const AIR = 1.2;
@@ -106,20 +113,68 @@ export const wheelRpm = (spec: CarSpec, v: number, gear: number): number => (v /
 export const engineForce = (spec: CarSpec, rpm: number, gear: number): number => (BOOST * torqueAt(spec, rpm) * spec.ratios[gear - 1]! * spec.finalDrive * spec.driveEff) / WHEEL_R;
 export const tractionLimit = (spec: CarSpec, launching: boolean, v = 0): number => MU * spec.grip * spec.mass * G * DRIVE_SHARE[spec.drive] * (launching ? spec.launchGrip * LAUNCH_SHARE[spec.drive] : 1.25 * (1 + spec.downforce * (v / 27.8)));
 
-/** The launch rpm where the car just stops spinning its tyres: launch control aims here. */
+/**
+ * The launch rpm launch control holds: the strongest pull the tyres can take without spinning
+ * (just under the grip limit, or the torque peak when the tyres can take everything).
+ */
 export function idealLaunchRpm(spec: CarSpec): number {
   const limit = tractionLimit(spec, true);
   let best = IDLE_RPM;
+  let bestF = -1;
   for (let r = IDLE_RPM; r <= spec.redline * 0.95; r += 50) {
-    if (engineForce(spec, r, 1) <= limit * 0.98) best = r;
-    else break;
+    const f = engineForce(spec, r, 1);
+    if (f > limit * 0.98) break;
+    if (f >= bestF) {
+      bestF = f;
+      best = r;
+    }
   }
   return Math.round(best / 50) * 50;
 }
 
-/** Shift zone (fraction of redline): a perfect shift happens here, a good one from OK_FROM. */
-export const PERFECT_FROM = 0.88;
-export const OK_FROM = 0.72;
+/** One gear's shift window, as shares of the redline: perfect in [lo, hi], good in [okLo, okHi]. */
+export interface ShiftWindow {
+  lo: number;
+  hi: number;
+  okLo: number;
+  okHi: number;
+}
+
+/** How long the needle takes to sweep the green and each yellow band, seconds. */
+export const GREEN_SECONDS = 0.26;
+export const YELLOW_SECONDS = 0.2;
+
+/** How fast the needle climbs in a gear near the top of the revs (share of the redline per second). */
+export function needleRate(spec: CarSpec, gear: number): number {
+  const rpm = spec.redline * 0.85;
+  const k = spec.ratios[gear - 1]! * spec.finalDrive;
+  const v = (rpm / (60 * k)) * 2 * Math.PI * WHEEL_R;
+  const force = Math.min(engineForce(spec, rpm, gear), tractionLimit(spec, false, v));
+  const a = (force - 0.5 * AIR * spec.dragArea * v * v - 0.012 * spec.mass * G) / spec.mass;
+  return Math.max(0.02, ((a / (2 * Math.PI * WHEEL_R)) * 60 * k) / spec.redline);
+}
+
+/**
+ * A car's shift windows, one per gear change. Where they sit comes from the race seed (the same
+ * spots for everyone in a race); how wide they are comes from the car, so the needle takes about
+ * the same time to cross the green in any gear of any car.
+ */
+export function shiftWindows(seed: number, spec: CarSpec): ShiftWindow[] {
+  const r = rng((seed ^ 0x2c1b3c6d) >>> 0);
+  const out: ShiftWindow[] = [];
+  for (let g = 1; g < spec.gears; g++) {
+    // centres never depend on the car (so an upgrade can't move a window), and fit under the redline
+    const c = 0.78 + r() * 0.12;
+    const rate = needleRate(spec, g);
+    const hw = clamp((rate * GREEN_SECONDS) / 2, 0.024, 0.07);
+    const ym = clamp(rate * YELLOW_SECONDS, 0.04, 0.085);
+    const hi = c + hw;
+    const lo = c - hw;
+    out.push({ lo, hi, okLo: lo - ym, okHi: Math.min(0.992, hi + ym) });
+  }
+  return out;
+}
+
 /** Taps below this share of the redline are taken as accidental and ignored. */
 export const IGNORE_BELOW = 0.5;
 /** Seconds on the limiter before a shift counts as late. */
@@ -161,10 +216,18 @@ export interface Racer {
   t100: number;
   /** The needle is in the perfect zone in this gear (for the cue sound). */
   inZone: boolean;
+  /** A short push after a perfect shift or launch (multiplier, seconds left). */
+  boostMul: number;
+  boostLeft: number;
+  /** Tapped during the ambers (live drivers). */
+  jumped: boolean;
+  launchQ: LaunchQuality | null;
 }
 
+export type LaunchQuality = 'perfect' | 'good' | 'slow' | 'jump';
+
 export type ShiftQuality = 'perfect' | 'ok' | 'early' | 'late';
-export type Event = { type: 'amber'; n: number } | { type: 'green' } | { type: 'launch'; i: number } | { type: 'spin'; i: number } | { type: 'shift'; i: number; quality: ShiftQuality } | { type: 'tooEarly'; i: number } | { type: 'zone'; i: number } | { type: 'limiter'; i: number } | { type: 'finish'; i: number } | { type: 'fail'; i: number; part: PartId };
+export type Event = { type: 'amber'; n: number } | { type: 'green' } | { type: 'launch'; i: number; quality: LaunchQuality } | { type: 'jump'; i: number } | { type: 'spin'; i: number } | { type: 'shift'; i: number; quality: ShiftQuality } | { type: 'tooEarly'; i: number } | { type: 'zone'; i: number } | { type: 'limiter'; i: number } | { type: 'finish'; i: number } | { type: 'fail'; i: number; part: PartId };
 
 /**
  * The rpm the shift is judged on and the needle shows: while the clutch slips at the launch the
@@ -184,7 +247,8 @@ export interface Script {
 interface PolicyPlan {
   launchRpm: number;
   reaction: number;
-  shiftAt: number;
+  /** Where it shifts out of each gear (share of the redline). */
+  shiftAt: number[];
   lateness: number;
   wantedAt: number;
 }
@@ -198,6 +262,7 @@ export interface RacerResult {
   shifts: number;
   early: number;
   late: number;
+  launch: LaunchQuality | null;
   spinTime: number;
   limiterTime: number;
   dnf: boolean;
@@ -217,13 +282,15 @@ export interface RaceResult {
 }
 
 function newRacer(spec: CarSpec): Racer {
-  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false, t100: -1, inZone: false };
+  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false, t100: -1, inZone: false, boostMul: 1, boostLeft: 0, jumped: false, launchQ: null };
 }
 
 export class Race {
   readonly racers: Racer[];
   readonly drivers: Driver[];
   readonly greenAt: number;
+  /** Each racer's shift windows (see shiftWindows). */
+  readonly windows: ShiftWindow[][];
   t = 0;
   ambersLit = 0;
   green = false;
@@ -238,6 +305,7 @@ export class Race {
     this.racers = specs.map(newRacer);
     this.drivers = drivers;
     this.greenAt = GREEN_MIN + this.rand() * GREEN_JITTER;
+    this.windows = this.racers.map((r) => shiftWindows(seed, r.spec));
     this.plans = this.racers.map((_, i) => this.plan(i));
     for (const r of this.racers) {
       // Worn parts may fail somewhere in the run (the first one rolled wins).
@@ -248,7 +316,7 @@ export class Race {
           break;
         }
       }
-      // Staging: every car sits at its launch rpm before the lights.
+      // Staging: every car sits at its launch rpm before the lights (launch control holds it).
       const d = this.drivers[this.racers.indexOf(r)]!;
       r.rpm = d.kind === 'script' ? d.script.launchRpm : d.kind === 'policy' ? this.plans[this.racers.indexOf(r)]!.launchRpm : idealLaunchRpm(r.spec);
     }
@@ -263,19 +331,39 @@ export class Race {
     const err = (1 - skill) * (r() * 2 - 1);
     const err2 = (1 - skill) * (r() * 2 - 1);
     const ideal = idealLaunchRpm(spec);
+    // aims at each window's middle, off by up to a skill-sized error
+    const shiftAt = this.windows[i]!.map((w) => clamp((w.lo + w.hi) / 2 + (1 - skill) * 0.17 * (r() * 2 - 1) + err2 * 0.02, 0.6, 0.995));
     return {
       launchRpm: clamp(ideal + err * spec.redline * 0.3, IDLE_RPM, spec.redline),
-      reaction: 0.1 + (1 - skill) * 0.4 + r() * (0.05 + (1 - skill) * 0.15),
-      shiftAt: clamp(0.96 + err2 * 0.2, 0.76, 1.0),
-      lateness: err2 > 0.2 ? (err2 - 0.2) * 0.5 : 0,
+      reaction: 0.17 + (1 - skill) * 0.4 + r() * (0.05 + (1 - skill) * 0.15),
+      shiftAt,
+      lateness: err2 > 0.4 ? (err2 - 0.4) * 0.4 : 0,
       wantedAt: -1,
     };
   }
 
-  /** A shift tap (live drivers only). A stray tap far below the zone is ignored. */
+  /** The current gear's window for a racer (null in top gear). */
+  windowOf(i: number): ShiftWindow | null {
+    const r = this.racers[i]!;
+    return r.gear < r.spec.gears ? (this.windows[i]![r.gear - 1] ?? null) : null;
+  }
+
+  /**
+   * The player's button (live drivers only): at green it launches, during the ambers it is a jump
+   * start, while running it shifts. A stray tap far below the window is ignored.
+   */
   tap(i: number): void {
     if (this.drivers[i]?.kind !== 'live') return;
     const r = this.racers[i]!;
+    if (r.phase === 'staging') {
+      if (this.green) {
+        if (!r.jumped) this.launch(i);
+      } else if (this.ambersLit > 0 && !r.jumped) {
+        r.jumped = true;
+        this.events.push({ type: 'jump', i });
+      }
+      return;
+    }
     if (r.phase !== 'running' || r.gear >= r.spec.gears || r.stuck || r.dead) return;
     if (shiftRpm(r) < r.spec.redline * IGNORE_BELOW) {
       this.events.push({ type: 'tooEarly', i });
@@ -292,6 +380,11 @@ export class Race {
     r.phase = 'running';
     r.slip = r.spec.gears === 1 ? 0 : 3;
     r.bog = Math.pow(clamp(r.rpm / Math.max(IDLE_RPM + 1, idealLaunchRpm(r.spec)), 0.3, 1), 1.6);
+    r.launchQ = r.jumped ? 'jump' : r.reaction <= LAUNCH_PERFECT ? 'perfect' : r.reaction <= LAUNCH_GOOD ? 'good' : 'slow';
+    if (r.launchQ === 'perfect') {
+      r.boostMul = 1.08;
+      r.boostLeft = 1.0;
+    } else if (r.launchQ === 'jump') r.bog *= 0.75;
     const spin = engineForce(r.spec, r.rpm, 1) > tractionLimit(r.spec, true);
     if (spin || r.failure === 'suspension') {
       r.spinLeft = (r.failure === 'suspension' ? 1.4 : 0.35) + 0.6 * clamp((engineForce(r.spec, r.rpm, 1) / tractionLimit(r.spec, true) - 1) * 2, 0, 1) * (1 - (r.spec.spinKeep - 0.72) * 2);
@@ -301,24 +394,25 @@ export class Race {
         r.failAt = -1;
       }
     }
-    this.events.push({ type: 'launch', i });
+    this.events.push({ type: 'launch', i, quality: r.launchQ });
   }
 
   private shift(i: number): void {
     const r = this.racers[i]!;
     if (r.phase !== 'running' || r.gear >= r.spec.gears || r.stuck || r.dead) return;
     const frac = shiftRpm(r) / r.spec.redline;
+    const w = this.windowOf(i)!;
     r.slip = 0;
     r.inZone = false;
     const bounced = r.limiterSince >= 0 && this.t - r.limiterSince > LATE_AFTER;
     let quality: ShiftQuality;
-    if (bounced) {
+    if (bounced || frac > w.okHi) {
       quality = 'late';
       r.late++;
-    } else if (frac >= PERFECT_FROM) {
+    } else if (frac >= w.lo && frac <= w.hi) {
       quality = 'perfect';
       r.perfect++;
-    } else if (frac >= OK_FROM) quality = 'ok';
+    } else if (frac >= w.okLo) quality = 'ok';
     else {
       quality = 'early';
       r.early++;
@@ -326,7 +420,10 @@ export class Race {
     r.shifts++;
     r.taps.push(Math.round((this.t - r.launchAt) * 1000) / 1000);
     r.phase = 'shifting';
-    r.shiftLeft = r.spec.shiftTime * (quality === 'perfect' ? 0.8 : 1);
+    r.shiftLeft = r.spec.shiftTime * (quality === 'perfect' ? 0.6 : quality === 'ok' ? 1 : quality === 'early' ? 1.15 : 1.45);
+    // a perfect shift kicks; an early one bogs in the next gear
+    r.boostMul = quality === 'perfect' ? 1.18 : quality === 'early' ? 0.88 : 1;
+    r.boostLeft = quality === 'perfect' ? 0.8 : quality === 'early' ? 0.5 : 0;
     r.gear++;
     r.limiterSince = -1;
     this.events.push({ type: 'shift', i, quality });
@@ -372,8 +469,9 @@ export class Race {
     if (r.phase === 'done') return;
 
     if (r.phase === 'staging') {
-      const react = d.kind === 'policy' && plan ? plan.reaction : d.kind === 'script' ? d.script.reaction : PLAYER_REACTION;
-      if (this.green && this.t >= this.greenAt + react) this.launch(i);
+      // live drivers launch with their tap (tap()); a jump start or no tap launches late
+      const react = d.kind === 'policy' && plan ? plan.reaction : d.kind === 'script' ? d.script.reaction : r.jumped ? JUMP_PENALTY : AUTO_LAUNCH;
+      if (this.green && this.t >= this.greenAt + react - 1e-9) this.launch(i);
       return;
     }
 
@@ -392,7 +490,7 @@ export class Race {
       if (d.kind === 'script') {
         const next = d.script.shifts[r.shifts];
         if (next !== undefined && since >= next) this.shift(i);
-      } else if (d.kind === 'policy' && plan && shiftRpm(r) >= spec.redline * plan.shiftAt) {
+      } else if (d.kind === 'policy' && plan && shiftRpm(r) >= spec.redline * (plan.shiftAt[r.gear - 1] ?? 0.95)) {
         if (plan.wantedAt < 0) plan.wantedAt = this.t;
         if (this.t - plan.wantedAt >= plan.lateness) {
           plan.wantedAt = -1;
@@ -430,13 +528,17 @@ export class Race {
       } else r.rpm = Math.max(IDLE_RPM, wheel);
       let eng = engineForce(spec, r.rpm, r.gear);
       if (since < 1 && r.gear === 1 && spec.gears > 1) eng *= r.bog + (1 - r.bog) * since;
+      if (r.boostLeft > 0) {
+        r.boostLeft -= DT;
+        eng *= r.boostMul;
+      }
       if (r.spinLeft > 0) {
         r.spinLeft -= DT;
         r.spinTime += DT;
         force = limit * spec.spinKeep;
         r.rpm = Math.min(spec.redline, r.rpm + 7000 * DT);
       } else {
-        force = Math.min(eng, limit);
+        force = Math.min(eng, limit * (r.boostLeft > 0 && r.boostMul > 1 ? r.boostMul : 1));
         if (r.rpm >= spec.redline - 1) {
           if (r.limiterSince < 0) {
             r.limiterSince = this.t;
@@ -448,7 +550,8 @@ export class Race {
         }
       }
     }
-    if (d.kind === 'live' && r.phase === 'running' && r.gear < spec.gears && !r.inZone && shiftRpm(r) >= spec.redline * PERFECT_FROM) {
+    const win = r.gear < spec.gears ? this.windows[i]![r.gear - 1] : undefined;
+    if (d.kind === 'live' && win && r.phase === 'running' && !r.inZone && shiftRpm(r) >= spec.redline * win.lo) {
       r.inZone = true;
       this.events.push({ type: 'zone', i });
     }
@@ -480,6 +583,7 @@ export class Race {
         shifts: r.shifts,
         early: r.early,
         late: r.late,
+        launch: r.launchQ,
         spinTime: r.spinTime,
         limiterTime: r.limiterTime,
         dnf: !finished,
@@ -513,10 +617,10 @@ export function simulate(specs: CarSpec[], drivers: Driver[], seed: number): Rac
   return race.result();
 }
 
-/** The leaderboard number: higher is better, 0 for a breakdown. */
+/** The leaderboard number: higher is better, 0 for a breakdown. The start counts: reaction + ET. */
 export function scoreOf(r: RacerResult): number {
   if (r.et === null) return 0;
-  return Math.max(0, 20000 - Math.round(r.et * 1000) + 150 * r.perfect);
+  return Math.max(0, 20000 - Math.round((r.et + Math.max(0, r.reaction)) * 1000) + 150 * r.perfect + (r.launch === 'perfect' ? 150 : 0));
 }
 
 /** A solo run with a policy driver at a skill: what the car "should" do. */
@@ -528,14 +632,14 @@ export function forecastRun(spec: CarSpec, skill: number, seed = 1): { et: numbe
 export const forecastEt = (spec: CarSpec, skill: number, seed = 1): number => forecastRun(spec, skill, seed).et;
 
 // ---- replay encoding (friends' challenges)
-const VERSION = 'lc1';
+const VERSION = 'lc2';
 export function encodeScript(s: Script): string {
   return [VERSION, s.launchRpm, Math.round(s.reaction * 1000), ...s.shifts.map((t) => Math.round(t * 1000))].join(',');
 }
 export function decodeScript(raw: string | null | undefined): Script | null {
   if (!raw) return null;
   const p = raw.split(',');
-  if (p[0] !== VERSION || p.length < 3 || p.length > 40) return null;
+  if ((p[0] !== VERSION && p[0] !== 'lc1') || p.length < 3 || p.length > 40) return null;
   const nums = p.slice(1).map(Number);
   if (nums.some((n) => !Number.isFinite(n))) return null;
   const [launchRpm, reaction, ...shifts] = nums as [number, number, ...number[]];

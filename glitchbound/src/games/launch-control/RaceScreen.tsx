@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { FAILURE_TEXT } from './parts';
 import { LANES, type CarLook, type CarState, type Stage3D } from './scene3d';
-import { DISTANCE, DT, OK_FROM, PERFECT_FROM, Race, shiftRpm, type CarSpec, type Driver, type RaceResult } from './sim';
+import { DISTANCE, DT, Race, shiftRpm, type CarSpec, type Driver, type RaceResult, type ShiftWindow } from './sim';
 import type { Sfx } from './sound';
 import { fmtEt } from './util';
 
@@ -14,10 +14,24 @@ export interface RacePlan {
   seed: number;
 }
 
-const LEDS = 10;
 /** The gauge sweeps 270 degrees, from bottom-left to bottom-right. */
 const SWEEP = 270;
-const GAUGE_BG = `conic-gradient(from 225deg, #22e4ff 0deg ${SWEEP * OK_FROM}deg, #ffd12e ${SWEEP * OK_FROM}deg ${SWEEP * PERFECT_FROM}deg, #c4f034 ${SWEEP * PERFECT_FROM}deg ${SWEEP * 0.985}deg, #ff3b4e ${SWEEP * 0.985}deg ${SWEEP}deg, #120a2c ${SWEEP}deg 360deg)`;
+const BLUE = '#22e4ff';
+const YELLOW = '#ffd12e';
+const GREEN = '#3dff7a';
+const RED = '#ff3b4e';
+const OFF = '#120a2c';
+/** The gauge face for a gear: its window in green and yellow, red above (no window: plain, red at the top). */
+function gaugeBg(w: ShiftWindow | null): string {
+  const a = (f: number): string => `${(SWEEP * f).toFixed(1)}deg`;
+  if (!w) return `conic-gradient(from 225deg, ${BLUE} 0deg ${a(0.985)}, ${RED} ${a(0.985)} ${a(1)}, ${OFF} ${a(1)} 360deg)`;
+  return `conic-gradient(from 225deg, ${BLUE} 0deg ${a(w.okLo)}, ${YELLOW} ${a(w.okLo)} ${a(w.lo)}, ${GREEN} ${a(w.lo)} ${a(w.hi)}, ${YELLOW} ${a(w.hi)} ${a(w.okHi)}, ${RED} ${a(w.okHi)} ${a(1)}, ${OFF} ${a(1)} 360deg)`;
+}
+/** The rev strip shows the top half of the revs: 50 % to 100 % of the redline. */
+const STRIP_FROM = 0.5;
+const pct = (f: number): number => Math.max(0, Math.min(100, ((f - STRIP_FROM) / (1 - STRIP_FROM)) * 100));
+type StripState = 'launch' | 'go' | 'shift' | 'top' | 'done';
+const STRIP_LABEL: Record<StripState, string> = { launch: 'TAP ON GREEN TO LAUNCH', go: 'GO! TAP NOW', shift: 'SHIFT IN THE GREEN', top: 'TOP GEAR · FLAT OUT', done: 'FINISHED' };
 
 /**
  * The race: the shared 3D stage drawn from behind your car, a HUD updated through refs every
@@ -29,12 +43,14 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
   const onFinishRef = useRef(onFinish);
   const setPausedRef = useRef(setPaused);
   const onStartRef = useRef(onStart);
-  const [phase, setPhase] = useState<'staging' | 'running' | 'done'>('staging');
   const [pop, setPop] = useState<{ text: string; tone: string; key: number } | null>(null);
-  const [banner, setBanner] = useState<{ text: string; sub?: string; tone: string } | null>({ text: 'GET READY', sub: 'Tap or press Space to shift when the lights go green', tone: 'yellow' });
+  const [banner, setBanner] = useState<{ text: string; sub?: string; tone: string } | null>({ text: 'GET READY', sub: 'Tap the moment the light turns green, then shift in the green zone', tone: 'yellow' });
   const [nudge, setNudge] = useState(nudgeAtStart);
-  const leds = useRef<(HTMLElement | null)[]>([]);
-  const ledBox = useRef<HTMLDivElement>(null);
+  const strip = useRef<HTMLDivElement>(null);
+  const zones = useRef<(HTMLElement | null)[]>([]);
+  const fill = useRef<HTMLSpanElement>(null);
+  const stripLabel = useRef<HTMLSpanElement>(null);
+  const face = useRef<HTMLDivElement>(null);
   const needle = useRef<HTMLDivElement>(null);
   const speedEl = useRef<HTMLSpanElement>(null);
   const gearEl = useRef<HTMLSpanElement>(null);
@@ -69,8 +85,9 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
     let finishedAt = -1;
     let audioAt = 0;
     let popKey = 0;
-    let lastPhase = '';
     let started = false;
+    let shownGear = -2;
+    let shownState = '';
     // a slow phone drops the pixel ratio a step at a time
     let dpr = Math.min(1.75, window.devicePixelRatio || 1);
     let frameAvg = 16;
@@ -92,9 +109,22 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
             window.setTimeout(() => setBanner((b) => (b?.text === 'GO!' ? null : b)), 650);
             break;
           case 'launch':
-            if (e.i === 0 && !started) {
-              started = true;
-              onStartRef.current();
+            if (e.i === 0) {
+              if (!started) {
+                started = true;
+                onStartRef.current();
+              }
+              if (e.quality === 'perfect') {
+                s.perfect();
+                popup('PERFECT LAUNCH!', 'lime');
+              } else if (e.quality === 'good') popup('GOOD LAUNCH', 'cyan');
+              else if (e.quality === 'slow') popup('SLOW START', 'orange');
+            }
+            break;
+          case 'jump':
+            if (e.i === 0) {
+              s.nope();
+              popup('JUMP START!', 'coral');
             }
             break;
           case 'spin':
@@ -109,7 +139,7 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
           case 'tooEarly':
             if (e.i === 0) {
               s.nope();
-              popup('WAIT FOR GREEN', 'cyan');
+              popup('TOO EARLY', 'orange');
             }
             break;
           case 'shift':
@@ -181,25 +211,37 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
         }
         onEvents(race.step());
       }
-      const ph = me.phase === 'staging' ? 'staging' : me.phase === 'done' ? 'done' : 'running';
-      if (ph !== lastPhase) {
-        lastPhase = ph;
-        setPhase(ph);
-      }
       if (clock - audioAt > 0.05) {
         audioAt = clock;
         s.engine(me.dead ? 0 : me.rpm / me.spec.redline, me.phase === 'running' ? 1 : 0.3);
       }
-      // HUD
+      // HUD: the rev strip and gauge show this gear's window; they move to new spots after each shift
       const frac = Math.min(1.02, shiftRpm(me) / me.spec.redline);
       const canShift = me.phase === 'running' && me.gear < me.spec.gears && !me.stuck && !me.dead;
-      const hot = canShift && frac >= PERFECT_FROM;
-      const lit = me.phase === 'staging' ? 0 : Math.max(0, Math.min(LEDS, Math.round(((frac - 0.4) / (PERFECT_FROM - 0.4)) * (LEDS - 2))));
-      for (let i = 0; i < LEDS; i++) {
-        const el = leds.current[i];
-        if (el) el.dataset.on = hot ? 'hot' : i < lit ? (i < 5 ? 'g' : i < 8 ? 'y' : 'r') : '';
+      const win = canShift || me.phase === 'shifting' ? race.windowOf(0) : null;
+      const hot = canShift && !!win && frac >= win.lo && frac <= win.hi;
+      const gearKey = me.phase === 'staging' || me.phase === 'done' ? -1 : me.gear;
+      if (gearKey !== shownGear) {
+        shownGear = gearKey;
+        const w = gearKey > 0 ? race.windowOf(0) : null;
+        const spans: [number, number][] = w ? [[w.okLo, w.lo], [w.lo, w.hi], [w.hi, w.okHi], [w.okHi, 1]] : [[0, 0], [0, 0], [0, 0], [0.985, 1]];
+        spans.forEach(([a, b], k) => {
+          const el = zones.current[k];
+          if (!el) return;
+          el.style.left = `${pct(a)}%`;
+          el.style.width = `${Math.max(0, pct(b) - pct(a))}%`;
+        });
+        if (face.current) face.current.style.background = gaugeBg(w);
       }
-      ledBox.current?.classList.toggle('is-hot', hot);
+      const st: StripState = me.phase === 'staging' ? (race.green && !me.jumped ? 'go' : 'launch') : me.phase === 'done' ? 'done' : me.gear >= me.spec.gears || me.stuck ? 'top' : 'shift';
+      if (st !== shownState) {
+        shownState = st;
+        if (strip.current) strip.current.dataset.state = st;
+        if (stripLabel.current) stripLabel.current.textContent = STRIP_LABEL[st];
+        if (shiftBtn.current) shiftBtn.current.textContent = st === 'launch' || st === 'go' ? 'LAUNCH' : 'SHIFT';
+      }
+      if (fill.current) fill.current.style.width = `${pct(me.phase === 'staging' ? me.rpm / me.spec.redline : frac)}%`;
+      strip.current?.classList.toggle('is-hot', hot);
       if (needle.current) needle.current.style.transform = `rotate(${-135 + Math.min(1.02, me.rpm / me.spec.redline) * SWEEP}deg)`;
       if (speedEl.current) speedEl.current.textContent = String(Math.round(me.v * 3.6));
       if (gearEl.current) gearEl.current.textContent = me.spec.gears === 1 ? 'D' : String(me.gear);
@@ -213,7 +255,8 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
       if (posEl.current) posEl.current.textContent = `P${place}/${race.racers.length}`;
       if (shiftBtn.current) {
         shiftBtn.current.classList.toggle('is-hot', hot);
-        shiftBtn.current.classList.toggle('is-idle', !canShift);
+        shiftBtn.current.classList.toggle('is-idle', !canShift && !(st === 'go'));
+        shiftBtn.current.classList.toggle('is-go', st === 'go');
       }
       const state = (r: typeof me): CarState => ({ x: r.x, v: r.v, rpm: r.rpm, redline: r.spec.redline, spinning: r.spinLeft > 0, dead: r.dead });
       stage?.renderRace(race.racers.map(state), race.ambersLit, race.green, clock, dt);
@@ -254,7 +297,7 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
   }, []);
 
   return (
-    <div ref={rootRef} className="lc-race" aria-label="Drag race. Tap or press Space to shift when the lights flash.">
+    <div ref={rootRef} className="lc-race" aria-label="Drag race. Tap or press Space at green to launch, then each time the needle is in the green zone to shift.">
       <div className="lc-hud" aria-hidden="true">
         <div className="lc-hud-top">
           <div className="lc-chip-you">
@@ -264,16 +307,22 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
               P1/{plan.names.length}
             </span>
           </div>
-          <div ref={ledBox} className="lc-leds">
-            {Array.from({ length: LEDS }, (_, i) => (
-              <i
-                key={i}
-                ref={(el) => {
-                  leds.current[i] = el;
-                }}
-              />
-            ))}
-            <span className="lc-leds-label mono">{phase === 'staging' ? 'LAUNCH CONTROL' : phase === 'done' ? 'FINISHED' : 'SHIFT WHEN THEY FLASH'}</span>
+          <div ref={strip} className="lc-rev" data-state="launch">
+            <div className="lc-rev-track">
+              {['y', 'g', 'y', 'r'].map((c, k) => (
+                <i
+                  key={k}
+                  className={`lc-rev-zone is-${c}`}
+                  ref={(el) => {
+                    zones.current[k] = el;
+                  }}
+                />
+              ))}
+              <span ref={fill} className="lc-rev-fill" />
+            </div>
+            <span ref={stripLabel} className="lc-rev-label mono">
+              {STRIP_LABEL.launch}
+            </span>
           </div>
         </div>
         {pop && (
@@ -307,7 +356,7 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
             </div>
           </div>
           <div className="lc-gauge">
-            <div className="lc-gauge-face" style={{ background: GAUGE_BG }}>
+            <div ref={face} className="lc-gauge-face" style={{ background: gaugeBg(null) }}>
               <div ref={needle} className="lc-needle" />
               <span ref={speedEl} className="lc-speed mono">
                 0
@@ -324,8 +373,8 @@ export function RaceScreen({ plan, stageRef, paused, setPaused, onFinish, sfx, n
         <span />
         <span />
       </button>
-      <button ref={shiftBtn} className="lc-shift is-idle" aria-label="Shift" tabIndex={-1}>
-        SHIFT
+      <button ref={shiftBtn} className="lc-shift is-idle" aria-label="Launch and shift" tabIndex={-1}>
+        LAUNCH
       </button>
       {nudge && (
         <div className="lc-nudge" role="status">
