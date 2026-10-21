@@ -8,7 +8,7 @@ import { playerKey } from './challenges';
 
 export type Connection = 'connecting' | 'open' | 'reconnecting' | 'gone';
 
-export type RoomGame = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues';
+export type RoomGame = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag';
 
 /** Creates a room for a game on the server; returns its code. */
 export async function createRoom(game: RoomGame = 'crass-act'): Promise<string> {

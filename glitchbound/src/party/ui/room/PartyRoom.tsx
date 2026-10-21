@@ -26,8 +26,9 @@ export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => 
   }, [code]);
   useEffect(() => {
     if (game === 'crass-act') navigate(`/games/crass-act?room=${code}`);
+    if (game === 'drag') navigate(`/games/launch-control?room=${code}`);
   }, [game, code]);
-  if (game === null || game === 'crass-act')
+  if (game === null || game === 'crass-act' || game === 'drag')
     return (
       <div className="pt-screen">
         <ModeBar title={`Room ${code}`} onExit={onLeave} />

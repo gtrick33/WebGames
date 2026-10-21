@@ -1049,6 +1049,10 @@
   .lc-modes {
     grid-template-columns: 1fr 1fr;
   }
+  .lc-mode.is-wide {
+    grid-column: 1 / -1;
+    min-height: 48px;
+  }
   .lc-mode {
     min-height: 56px;
     padding: 8px 10px;
@@ -1586,6 +1590,154 @@
 .lc-help li::marker {
   color: var(--lc-yellow);
   font-weight: 800;
+}
+
+/* ---------------------------------------------------------------- live: race a friend */
+.lc-live.is-win .lc-h {
+  color: var(--lc-yellow);
+}
+.lc-live-seats {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.lc-live-seat {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 8px 10px;
+  border: 1px solid var(--lc-edge);
+  border-top: 3px solid var(--lc-rival);
+  border-radius: var(--lc-r);
+  background: var(--lc-glass-2);
+  font-size: 12px;
+  text-align: center;
+}
+.lc-live-seat.is-you {
+  border-top-color: var(--lc-you);
+}
+.lc-live-seat.is-ready {
+  box-shadow: 0 0 0 1px var(--lc-lime);
+}
+.lc-live-seat b {
+  font-family: var(--lc-display);
+  font-stretch: 75%;
+  font-size: 20px;
+  font-weight: 800;
+  font-style: oblique 9deg;
+  line-height: 1;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lc-live-seat .mono {
+  color: var(--lc-muted);
+  font-size: 11px;
+}
+.lc-live-seat .lc-live-state {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.lc-live-seat.is-ready .lc-live-state {
+  color: var(--lc-lime);
+}
+.lc-live-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--lc-r-sm);
+  background: rgb(0 0 0 / 0.25);
+}
+.lc-live-empty i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lc-muted);
+  animation: lc-blink 1.2s ease-in-out infinite;
+}
+.lc-live-empty i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.lc-live-empty i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.lc-live-tally {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.lc-live-tally i {
+  font-style: normal;
+  opacity: 0.4;
+}
+.lc-live-invite {
+  justify-items: center;
+  text-align: center;
+}
+.lc-live-code {
+  font-size: 34px;
+  letter-spacing: 0.3em;
+  line-height: 1;
+  color: var(--lc-yellow);
+}
+.lc-live-link {
+  max-width: 100%;
+  font-size: 11.5px;
+  color: var(--lc-muted);
+  overflow-wrap: anywhere;
+}
+.lc-live-score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+.lc-live-score > div {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--lc-edge);
+  border-radius: var(--lc-r);
+  background: var(--lc-glass-2);
+}
+.lc-live-score b {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.lc-live-score small {
+  font-size: 11px;
+  color: var(--lc-muted);
+}
+.lc-live-margin {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--lc-muted);
+}
+.lc-live-net {
+  position: absolute;
+  z-index: 6;
+  top: 64px;
+  left: 50%;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--lc-edge);
+  border-radius: 999px;
+  background: var(--lc-glass);
+  font-size: 12px;
+  transform: translateX(-50%);
+}
+/* a live race has no pause: the arcade menu takes its corner */
+.lc-race:not(:has(.lc-pause)) .lc-race-menu {
+  right: max(10px, env(safe-area-inset-right));
 }
 
 /* ================================================================ full-screen pop-ups (shops, garage, dealer, rivals) */
@@ -2870,6 +3022,7 @@
   .lc-thumb.is-loading,
   .lc-swatch.is-loading,
   .lc-division-steps i.is-next,
+  .lc-live-empty i,
   .lc-go::before {
     animation: none;
   }

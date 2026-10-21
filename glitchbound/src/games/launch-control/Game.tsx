@@ -3,6 +3,7 @@ import { NextDaily } from '../../components/NextDaily';
 import { ResultLine } from '../../components/ResultLine';
 import { useAccount } from '../../platform/account';
 import { openChallengeScores, type ChallengeSpec } from '../../platform/challenge';
+import { createRoom } from '../../platform/rooms';
 import { claimCoins } from '../../platform/coins';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
@@ -19,13 +20,15 @@ import { createSfx, type Sfx } from './sound';
 import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type Save } from './storage';
 import { GameMenuButton } from '../../components/GameMenuButton';
 import { Icon, PART_ICON } from './icons';
+import { LiveRoom } from './live';
+import type { LiveCar } from './room';
 import { CarThumb, Cash, DriverFace, MatsLine, MatsPill, Panel, Pips, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
 import { fmtCash, fmtEt, fmtShort } from './util';
 import './Game.css';
 
 const EPOCH = '2026-10-21';
 const SLUG = 'launch-control';
-type Screen = 'hub' | 'rivals' | 'setup' | 'race' | 'result' | 'garage' | 'parts' | 'dealer' | 'daily' | 'ladder' | 'help';
+type Screen = 'hub' | 'rivals' | 'setup' | 'race' | 'result' | 'garage' | 'parts' | 'dealer' | 'daily' | 'ladder' | 'help' | 'live';
 type Mode = 'ladder' | 'rematch' | 'daily' | 'challenge' | 'gauntlet';
 type GarageTab = 'repairs' | 'style';
 
@@ -112,6 +115,20 @@ interface Sheet {
   t100: number;
 }
 const sheetCache = new Map<string, Sheet>();
+/** The room code from an invite link (?room=ABCDE). */
+function linkedRoom(): string | null {
+  const c = new URLSearchParams(location.search).get('room')?.toUpperCase() ?? '';
+  return /^[A-HJKMNP-Z]{5}$/.test(c) ? c : null;
+}
+
+/** Keeps the room in the address bar, so a reload goes back into it. */
+function setRoomInUrl(code: string | null): void {
+  const url = new URL(location.href);
+  if (code) url.searchParams.set('room', code);
+  else url.searchParams.delete('room');
+  history.replaceState(history.state, '', url);
+}
+
 function sheetOf(def: CarDef, levels: Levels, cond: Condition): Sheet {
   const key = `${def.id}|${JSON.stringify(levels)}|${PARTS.map((p) => Math.round(cond[p])).join()}`;
   const hit = sheetCache.get(key);
@@ -135,7 +152,11 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     setSave(next);
     writeSave(next);
   }, []);
-  const [screen, setScreen] = useState<Screen>(challenge ? 'setup' : 'hub');
+  /** A live room with a friend: its code (from an invite link, or one you opened). */
+  const [liveCode, setLiveCode] = useState<string | null>(() => (challenge ? null : linkedRoom()));
+  const [liveRacing, setLiveRacing] = useState(false);
+  const [opening, setOpening] = useState(false);
+  const [screen, setScreen] = useState<Screen>(challenge ? 'setup' : liveCode ? 'live' : 'hub');
   const [plan, setPlan] = useState<Plan | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [toast, setToast] = useState('');
@@ -165,6 +186,33 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
   useEffect(() => () => sfxRef.current?.dispose(), []);
   const me = playerName || 'You';
+  /** Your car for a live race, as the room needs it. */
+  const liveCarFor = useCallback((id: string): LiveCar => {
+    const s = saveRef.current;
+    const l = lookOf(s, getCar(id));
+    return { id, levels: PARTS.map((p) => l.levels[p]), paint: l.paint, livery: l.livery, wheels: l.wheels, helmet: l.helmet, suit: l.suit };
+  }, []);
+  const openLive = async (): Promise<void> => {
+    if (opening) return;
+    sfx().click();
+    setOpening(true);
+    try {
+      const code = await createRoom('drag');
+      setRoomInUrl(code);
+      setLiveCode(code);
+      setScreen('live');
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : 'Could not open a room. Try again.');
+    } finally {
+      setOpening(false);
+    }
+  };
+  const leaveLive = (): void => {
+    setRoomInUrl(null);
+    setLiveCode(null);
+    setLiveRacing(false);
+    go('hub');
+  };
 
   useEffect(() => {
     if (!toast) return;
@@ -555,7 +603,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       box.removeAttribute('style');
     };
   }, [viewEl]);
-  const racing = screen === 'race' && !!plan;
+  const racing = (screen === 'race' && !!plan) || (screen === 'live' && liveRacing);
 
   // One WebGL stage for the whole game: the menus' turntable and the race share it.
   useEffect(() => {
@@ -600,7 +648,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     let last = performance.now();
     const loop = (now: number): void => {
       raf = requestAnimationFrame(loop);
-      if (now - last < 33 || document.hidden) return;
+      // about 60 frames a second (a 30 fps turntable looks steppy); nothing while hidden
+      if (now - last < 14 || document.hidden) return;
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       if (focusRef.current === 'car') angleRef.current += dt * 0.25;
@@ -650,7 +699,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   return (
     <div ref={rootRef} className={`lc${portrait ? ' is-portrait' : ''}`} data-screen={racing ? 'race' : screen}>
       <div ref={stageBoxRef} className="lc-stage" data-mode={racing ? 'race' : docked ? 'dock' : 'full'} aria-hidden="true" />
-      {racing && plan ? (
+      {screen === 'race' && plan ? (
         <>
           <RaceScreen plan={plan.race} stageRef={stageRef} paused={paused} setPaused={setPaused} onFinish={(r) => finishRace(plan, r)} sfx={sfx} nudge={portrait && touch} onStart={() => undefined} />
           {paused && (
@@ -688,7 +737,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
         </>
       ) : (
         <>
-      {topbar}
+      {!liveRacing && topbar}
       {toast && (
         <div className="lc-toast" role="status">
           {toast}
@@ -755,6 +804,13 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   <small>{save.rank < GAUNTLET_UNLOCK ? 'Beat the Street final' : save.gauntletBest ? `Best streak ${save.gauntletBest}` : 'Endless streak'}</small>
                 </span>
                 {save.rank < GAUNTLET_UNLOCK && <Icon name="lock" size={18} className="lc-mode-lock" />}
+              </button>
+              <button className="lc-mode is-wide" data-tone="lime" onClick={() => void openLive()} disabled={opening}>
+                <Icon name="users" />
+                <span className="lc-mode-text">
+                  <b>Race a friend</b>
+                  <small>{opening ? 'Opening a room…' : 'Live, head to head, on their phone'}</small>
+                </span>
               </button>
             </div>
             <nav className="lc-rail" aria-label="Garage and shops">
@@ -995,6 +1051,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           </Panel>
         )}
       </main>
+      {screen === 'live' && liveCode && <LiveRoom code={liveCode} name={playerName || 'Racer'} env={save.env} owned={Object.keys(save.cars)} carFor={liveCarFor} defaultCar={save.car} stageRef={stageRef} sfx={sfx} onRacing={setLiveRacing} onLeave={leaveLive} />}
       {screen === 'rivals' && <RivalsSheet save={save} mySheet={mySheet} mySpec={mySpec} sel={rivalIdx} setPick={setRivalPick} onBack={() => go('hub')} onRace={(o, mode) => setup(mode, o)} viewRef={setViewEl} right={cashPill} />}
 
       {screen === 'parts' && (

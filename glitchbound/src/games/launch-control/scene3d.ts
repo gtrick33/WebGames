@@ -1624,11 +1624,21 @@ export class Stage3D {
       const r = r0 + (r1 - r0) * e;
       this.camPos.set(cx + Math.cos(a) * r, 1.1 + (chasePos.y - 1.1) * e + Math.sin(p * Math.PI) * 1.8, Math.max(-LANE_W - 1.2, cz + Math.sin(a) * r));
       this.camAim.set(cx + 0.5, 0.8, cz).lerp(chaseAim, e * e);
-    } else {
+    } else if (me.x < 40) {
       // the launch: the camera stays back for a moment and then catches the car up
-      const k = Math.min(1, dt * (me.x < 40 ? 1.4 + me.x * 0.12 : 6));
+      const k = 1 - Math.exp(-dt * (1.4 + me.x * 0.12));
       this.camPos.lerp(chasePos, k);
       this.camAim.lerp(chaseAim, Math.min(1, k * 1.5));
+    } else {
+      // then it rides with the car: only its place relative to the car eases (easing the absolute
+      // position makes it trail by an amount that wobbles with every frame's length: judder)
+      const k = 1 - Math.exp(-dt * 6);
+      this.camPos.x -= me.x;
+      this.camAim.x -= me.x;
+      this.camPos.lerp(chasePos.setX(chasePos.x - me.x), k);
+      this.camAim.lerp(chaseAim.setX(chaseAim.x - me.x), Math.min(1, k * 1.5));
+      this.camPos.x += me.x;
+      this.camAim.x += me.x;
     }
     this.camera.position.copy(this.camPos);
     if (this.shakeAmt > 0.001) {

@@ -253,10 +253,10 @@ export const GAMES: GameEntry[] = [
     description:
       'A strategic quarter-mile drag racer in glossy 3D, seen from behind your car. Stage at the tree, launch on green, then hit every shift in a green zone that moves each gear, head to head against one rival at a time. ' +
       'Climb a ladder of 40 rivals in five divisions, wager earned cash on forecast odds, and tune six separate parts on 43 original cars in the parts shop: engine, transmission, suspension, tyres, aero and looks, each visible on the car, each moving several stats, each wearing out. ' +
-      'Then run the King’s Gauntlet: back-to-back races against ever quicker opponents for the longest streak. Everyone gets the same loaner and opponent in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
+      'Then run the King’s Gauntlet: back-to-back races against ever quicker opponents for the longest streak. Or race a friend live, each on your own phone. Everyone gets the same loaner and opponent in Today’s Showdown; friends race your ghost in challenges. No real money anywhere.',
     categories: ['racing', 'strategy'],
     moods: ['action', 'quick'],
-    tags: ['drag race', 'cars', 'garage', 'upgrades', 'tuning', 'idle', 'wager', 'quarter mile', '3d', 'ghost', 'daily', 'one-touch', 'driving', 'muscle car', 'supercar', 'hypercar'],
+    tags: ['drag race', 'cars', 'garage', 'upgrades', 'tuning', 'idle', 'wager', 'quarter mile', '3d', 'ghost', 'daily', 'one-touch', 'driving', 'muscle car', 'supercar', 'hypercar', 'multiplayer', 'friends'],
     released: '2026-10-21',
     accent: 'orange',
     emoji: '🏁',
@@ -284,6 +284,7 @@ export const GAMES: GameEntry[] = [
       'One input: tap at green to launch, then shift in a green zone that sits somewhere new in every gear. Perfect launches and shifts win races',
       'Every race is head to head: you against one rival, with a burnout, staging and a real sportsman tree before the green',
       'The King’s Gauntlet: back-to-back races, each opponent quicker than the last; the whole streak is one run on the leaderboard',
+      'Race a friend live: send a link, both phones race the same tree at the same moment, the room settles the winner',
       '43 original cars in six tiers, built on real 3D car models from a supermini to a hypercar, each with its own proportions',
       'Six separate parts with eight levels each, each visible on the car and each moving several stats; they wear out and can fail when neglected',
       'Materials (scrap, alloy, carbon, chips, rubber) gate the higher levels; cash and materials come only from racing',
