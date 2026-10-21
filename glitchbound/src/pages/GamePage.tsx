@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { tGame, useT } from '../i18n';
 import { relatedGames } from '../catalog/catalog';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
@@ -140,9 +140,10 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
  * opens a pop-up with the ways out: continue, leave full screen, close the game, report a bug. It used
  * to be a faint tab that folded away, which players on phones couldn't find (issues #21, #22).
  */
-function StageMenu({ slug, title, onOpen, onExitFullscreen, onExitGame }: { slug: string; title: string; onOpen: () => void; onExitFullscreen: () => void; onExitGame: () => void }) {
+function StageMenu({ slug, title, placement, open, setOpen, onOpen, onExitFullscreen, onExitGame }: { slug: string; title: string; placement: GameEntry['menu']; open: boolean; setOpen: (open: boolean) => void; onOpen: () => void; onExitFullscreen: () => void; onExitGame: () => void }) {
   const t = useT();
-  const [open, setOpen] = useState(false);
+  // the button sits in a top corner the game leaves free (or the game draws its own: 'own')
+  const spot = placement === 'own' ? null : (placement ?? { corner: 'top-left' as const });
   useEffect(() => {
     if (!open) return;
     // Escape closes the pop-up first, before it would leave full screen.
@@ -153,21 +154,25 @@ function StageMenu({ slug, title, onOpen, onExitFullscreen, onExitGame }: { slug
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [open]);
+  }, [open, setOpen]);
   return (
     <>
-      <button
-        className="stage-menu-btn"
-        onClick={() => {
-          onOpen();
-          setOpen(true);
-        }}
-        aria-haspopup="dialog"
-        aria-label={t('Game menu')}
-        title={t('Game menu')}
-      >
-        <Icon name="menu" size={20} />
-      </button>
+      {spot && (
+        <button
+          className="stage-menu-btn"
+          data-corner={spot.corner}
+          style={{ '--menu-x': `${spot.x ?? 0}px`, '--menu-y': `${spot.y ?? 0}px` } as CSSProperties}
+          onClick={() => {
+            onOpen();
+            setOpen(true);
+          }}
+          aria-haspopup="dialog"
+          aria-label={t('Game menu')}
+          title={t('Game menu')}
+        >
+          <Icon name="menu" size={20} />
+        </button>
+      )}
       {open && (
         <div className="stage-menu-backdrop" onClick={() => setOpen(false)}>
           <div className="stage-menu-sheet" role="dialog" aria-modal="true" aria-label={t('Game menu')} onClick={(e) => e.stopPropagation()}>
@@ -175,15 +180,28 @@ function StageMenu({ slug, title, onOpen, onExitFullscreen, onExitGame }: { slug
             <button className="btn btn-primary" onClick={() => setOpen(false)} autoFocus>
               <Icon name="play" size={18} /> {t('Continue')}
             </button>
-            <button className="btn" onClick={onExitFullscreen}>
+            <button
+              className="btn"
+              onClick={() => {
+                setOpen(false);
+                onExitFullscreen();
+              }}
+            >
               <Icon name="shrink" size={18} /> {t('Exit full screen')}
             </button>
-            <button className="btn" onClick={onExitGame}>
+            <button
+              className="btn"
+              onClick={() => {
+                setOpen(false);
+                onExitGame();
+              }}
+            >
               <Icon name="close" size={18} /> {t('Exit game')}
             </button>
             <button
               className="btn btn-ghost"
               onClick={() => {
+                setOpen(false);
                 onExitFullscreen();
                 navigate(`/me/bugs?game=${slug}`);
               }}
@@ -208,6 +226,11 @@ export function GamePage({ game }: { game: GameEntry }) {
   // Leaving full screen (Escape, the browser's own exit, or the menu) pauses the game and its music.
   const [pauseSignal, setPauseSignal] = useState(0);
   const play = usePlayMode(stageRef, () => setPauseSignal((n) => n + 1));
+  const [menuOpen, setMenuOpen] = useState(false);
+  const openMenu = useCallback(() => {
+    setPauseSignal((n) => n + 1);
+    setMenuOpen(true);
+  }, []);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const player = usePlayerName();
   const chal = useChallengeRun(challengeId, game, player.name);
@@ -464,6 +487,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             frameRef={frameRef}
             playerName={player.name}
             onPlayClick={play.enter}
+            openMenu={play.active && game.menu === 'own' ? openMenu : undefined}
             overlay={
               <>
                 {challengeId && scoresOpen && (
@@ -471,7 +495,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                     <ChallengeScores run={chal} game={game} onClose={() => setScoresOpen(false)} />
                   </Suspense>
                 )}
-                {play.active && <StageMenu slug={game.slug} title={game.title} onOpen={() => setPauseSignal((n) => n + 1)} onExitFullscreen={play.exit} onExitGame={close} />}
+                {play.active && <StageMenu slug={game.slug} title={game.title} placement={game.menu} open={menuOpen} setOpen={setMenuOpen} onOpen={() => setPauseSignal((n) => n + 1)} onExitFullscreen={play.exit} onExitGame={close} />}
               </>
             }
             onPhase={(p) => {

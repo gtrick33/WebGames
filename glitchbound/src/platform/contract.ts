@@ -55,6 +55,12 @@ export interface GameModuleProps {
    * `contentLangs`, else English. Games without translations can ignore it.
    */
   lang?: ContentLang;
+  /**
+   * In full screen, opens the arcade's game menu (continue, exit full screen, exit game, report a
+   * bug) and pauses the game. Only games with `menu: 'own'` in the registry get it: they show
+   * their own button for it; for the rest the arcade draws one in a free corner.
+   */
+  openMenu?: () => void;
 }
 
 import type { ChallengeSpec } from './challenge';

@@ -122,6 +122,8 @@ export function validateCatalog(games: GameEntry[] = GAMES): string[] {
       if (!d.label.includes('{n}')) errors.push(`${at}: daily label must contain {n}`);
     }
     if (g.ownDaily && !g.ownDaily.label.trim()) errors.push(`${at}: ownDaily needs a label`);
+    if (g.menu === 'own' && g.runtime.kind !== 'module') errors.push(`${at}: only module games can show their own menu button`);
+    if (g.menu && g.menu !== 'own' && [g.menu.x ?? 0, g.menu.y ?? 0].some((n) => !(n >= 0 && n <= 240))) errors.push(`${at}: menu offsets must be 0-240 px`);
     if (g.runtime.kind === 'embed') {
       if (g.runtime.url.startsWith('/')) {
         if (!g.runtime.origins.includes('self')) errors.push(`${at}: a same-site embed must list 'self' in origins`);

@@ -126,6 +126,14 @@ when its tile scrolls near the screen. Keep the simulation in a separate pure fi
 Add `limits: { scorePerSecond, minSeconds }` to the registry entry. The server rejects ranked rounds whose score is
 impossible for the real time between `start` and `end`. Without limits, any score is accepted.
 
+### The full-screen menu button
+
+In full screen the arcade draws a round menu button (continue, exit full screen, exit game, report a bug) over the
+game, in the top-left corner by default. Play the game in full screen on its menus and mid-round: if that corner is
+taken, set `menu: { corner: 'top-left' | 'top-right' | 'top-center', x, y }` in the registry entry (`x`/`y` move
+it inward/down, 0-240 px) so it sits in space the game leaves free. A module game with its own top bar can set
+`menu: 'own'` instead: it then gets an `openMenu` prop in full screen and shows its own button for it.
+
 ## 4. Add artwork
 
 Put three files in `public/games/<slug>/`:
@@ -158,5 +166,6 @@ Commit and push to `pre-release`; CI deploys. The new page is live at `/games/<s
 - [ ] (module) loader added to `modules.ts`
 - [ ] Three artwork files, original
 - [ ] Controls listed for keyboard and touch
+- [ ] Full-screen menu button sits in free space (registry `menu`) on the menus and mid-round
 - [ ] `npm run check` passes
 - [ ] Played a round on the dev server and saw "Last round" + "Your bests" update

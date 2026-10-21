@@ -167,6 +167,28 @@ describe('game page', () => {
     expect(screen.queryByRole('button', { name: 'Game menu' })).toBeNull();
   });
 
+  it('puts the full-screen menu button in the corner the registry gives each game', async () => {
+    renderAt('/games/memory-grid');
+    fireEvent.click(screen.getByRole('button', { name: /Play Memory Grid/ }));
+    const btn = (await screen.findByRole('button', { name: 'Game menu' }, { timeout: 5000 })) as HTMLButtonElement;
+    expect(btn.dataset.corner).toBe('top-right');
+    expect(btn.style.getPropertyValue('--menu-x')).toBe('52px');
+  });
+
+  it('a game that draws its own menu button gets no arcade button, and its button opens the menu', async () => {
+    renderAt('/games/launch-control');
+    fireEvent.click(screen.getByRole('button', { name: /Play Launch Control/ }));
+    // the game's own button, in its top bar (the 3D stage is skipped in jsdom)
+    const own = await screen.findByRole('button', { name: 'Game menu' }, { timeout: 8000 });
+    expect(document.querySelector('.stage-menu-btn')).toBeNull();
+    expect(own.closest('.lc-top')).not.toBeNull();
+    fireEvent.click(own);
+    const menu = screen.getByRole('dialog', { name: 'Game menu' });
+    fireEvent.click(within(menu).getByRole('button', { name: /Exit full screen/ }));
+    expect(screen.queryByRole('dialog', { name: 'Game menu' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Game menu' })).toBeNull();
+  });
+
   it('pauses the game when the player leaves full screen with Escape', () => {
     renderAt('/games/neon-rush');
     fireEvent.click(screen.getByRole('button', { name: /Play Neon Rush/ }));

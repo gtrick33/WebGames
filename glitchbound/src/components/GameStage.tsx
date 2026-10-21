@@ -56,13 +56,15 @@ interface Props {
   pauseSignal?: number;
   /** A friends' challenge round to play (module games). */
   challenge?: ChallengeSpec;
+  /** Opens the full-screen game menu (passed to module games that draw their own button). */
+  openMenu?: () => void;
 }
 
 /**
  * The game viewport. Nothing game-related loads until the player presses Play, so the page itself
  * stays fast. Each game is isolated: an iframe for embedded games, an error boundary for modules.
  */
-export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef, playerName, onPlayClick, frameRef, overlay, pauseSignal = 0, challenge }: Props) {
+export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef, playerName, onPlayClick, frameRef, overlay, pauseSignal = 0, challenge, openMenu }: Props) {
   useT();
   // The game's own content follows the site's language when the game has it (a change restarts it).
   const lang = contentLangFor(game.contentLangs, useLang());
@@ -229,7 +231,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
           <Suspense fallback={<StageLoading title={game.title} />}>
             {savesIn ? (
               <div className="stage-module">
-                <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} lang={lang} />
+                <Module host={host} restartKey={attempt} pauseKey={pauseKey} challenge={challenge} playerName={playerName} lang={lang} openMenu={openMenu} />
               </div>
             ) : (
               <StageLoading title={game.title} />

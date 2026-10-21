@@ -17,7 +17,7 @@ import { lookKey, Stage3D, type CarLook, type ShowFocus } from './scene3d';
 import { decodeScript, encodeScript, forecastRun, scoreOf, specOf, type CarSpec, type Driver, type RaceResult } from './sim';
 import { createSfx, type Sfx } from './sound';
 import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type Save } from './storage';
-import { CarThumb, Cash, DriverFace, MatsLine, Panel, Pips, posLabel, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
+import { CarThumb, Cash, DriverFace, MatsLine, MenuButton, Panel, Pips, posLabel, Sheet as Popup, StatBar, Sticker, useThumb } from './ui';
 import { fmtCash, fmtEt, fmtShort } from './util';
 import './Game.css';
 
@@ -67,8 +67,8 @@ function rivalDifficulty(o: Opponent, me: CarSpec): { label: string; tone: strin
 const dailySeed = (day: string): number => hashString(`${SLUG}:${day}`);
 const prefersReduced = (): boolean => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export default function Game({ host, restartKey, pauseKey, challenge, playerName }: GameModuleProps) {
-  return <LaunchControl key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} playerName={playerName} />;
+export default function Game({ host, restartKey, pauseKey, challenge, playerName, openMenu }: GameModuleProps) {
+  return <LaunchControl key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} playerName={playerName} openMenu={openMenu} />;
 }
 
 function lookOf(save: Save, def: CarDef, levels?: Levels): CarLook {
@@ -119,7 +119,7 @@ function sheetOf(def: CarDef, levels: Levels, cond: Condition): Sheet {
   return sheet;
 }
 
-function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHost; pauseKey?: number; challenge?: ChallengeSpec; playerName?: string }) {
+function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { host: GameHost; pauseKey?: number; challenge?: ChallengeSpec; playerName?: string; openMenu?: () => void }) {
   const [today] = useState(() => dayKey());
   const [save, setSave] = useState<Save>(loadSave);
   const saveRef = useRef(save);
@@ -584,6 +584,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
       <button className="lc-icon" onClick={() => go('help')} aria-label="How to race">
         ?
       </button>
+      {openMenu && <MenuButton onClick={openMenu} />}
     </header>
   );
 
@@ -615,6 +616,11 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
                     <button className="btn" onClick={leaveRace}>
                       Leave the race
                     </button>
+                    {openMenu && (
+                      <button className="btn btn-ghost" onClick={openMenu}>
+                        Game menu
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -886,10 +892,11 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
           </Panel>
         )}
       </main>
-      {screen === 'rivals' && <RivalsSheet save={save} mySheet={mySheet} mySpec={mySpec} sel={rivalIdx} setPick={setRivalPick} onBack={() => go('hub')} onRace={(o, mode) => setup(mode, o)} viewRef={setViewEl} right={cashPill} />}
+      {screen === 'rivals' && <RivalsSheet save={save} mySheet={mySheet} mySpec={mySpec} sel={rivalIdx} setPick={setRivalPick} onBack={() => go('hub')} onRace={(o, mode) => setup(mode, o)} viewRef={setViewEl} right={cashPill} onMenu={openMenu} />}
 
       {screen === 'parts' && (
         <Popup
+          onMenu={openMenu}
           eyebrow={`Parts shop · ${car.name}`}
           title={PART_INFO[partTab].name}
           onBack={() => go('hub')}
@@ -946,6 +953,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
 
       {screen === 'garage' && (
         <Popup
+          onMenu={openMenu}
           eyebrow={`My garage · ${TIER_NAME[car.tier]}`}
           title={car.name}
           onBack={() => go('hub')}
@@ -1028,6 +1036,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName }: { host: GameHo
 
       {screen === 'dealer' && (
         <Popup
+          onMenu={openMenu}
           eyebrow={`${CARS.length} cars · ${Object.keys(save.cars).length} owned`}
           title="Dealer"
           onBack={() => go('hub')}
@@ -1143,7 +1152,7 @@ function StatSheet({ sheet, def }: { sheet: Sheet; def: CarDef }) {
   );
 }
 
-function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, viewRef, right }: { save: Save; mySheet: Sheet; mySpec: CarSpec; sel: number; setPick: (i: number) => void; onBack: () => void; onRace: (o: Opponent, mode: Mode) => void; viewRef: (el: HTMLDivElement | null) => void; right: ReactNode }) {
+function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, viewRef, right, onMenu }: { save: Save; mySheet: Sheet; mySpec: CarSpec; sel: number; setPick: (i: number) => void; onBack: () => void; onRace: (o: Opponent, mode: Mode) => void; viewRef: (el: HTMLDivElement | null) => void; right: ReactNode; onMenu?: () => void }) {
   // the rivals around you: a few you have beaten (rematches), the next one, and a few locked ahead
   const lo = Math.max(0, Math.min(save.rank - 3, LADDER.length - 8));
   const list = LADDER.slice(lo, Math.min(LADDER.length, lo + 8));
@@ -1155,7 +1164,7 @@ function RivalsSheet({ save, mySheet, mySpec, sel, setPick, onBack, onRace, view
   const next = sel === save.rank;
   const oSheet = sheetOf(getCar(o.car), o.levels, newCar().cond);
   return (
-    <Popup eyebrow={`${DIVISIONS[o.division]} division · ${save.rank}/${LADDER.length} beaten`} title="Pick your rival" onBack={onBack} viewRef={viewRef} right={right} className="lc-rivals-sheet">
+    <Popup eyebrow={`${DIVISIONS[o.division]} division · ${save.rank}/${LADDER.length} beaten`} title="Pick your rival" onBack={onBack} viewRef={viewRef} right={right} onMenu={onMenu} className="lc-rivals-sheet">
       <div className="lc-rgrid" role="listbox" aria-label="Rivals">
         {list.map((r, k) => {
           const i = lo + k;

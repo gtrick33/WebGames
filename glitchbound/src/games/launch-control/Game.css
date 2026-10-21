@@ -1744,6 +1744,8 @@
   display: grid;
   gap: 10px;
   align-content: start;
+  /* rows keep their full height (a scrolling row such as the rival cards would shrink otherwise) */
+  grid-auto-rows: max-content;
   padding: 2px 4px 4px 2px;
 }
 .lc-modal-cta {
@@ -2055,4 +2057,37 @@
   .lc-modal {
     animation: none;
   }
+}
+
+/* the arcade's game menu button, drawn by the game itself in full screen (registry menu: 'own') */
+.lc-menu-icon-btn {
+  display: grid;
+  place-items: center;
+}
+.lc-menu-icon-btn span,
+.lc-menu-icon-btn span::before,
+.lc-menu-icon-btn span::after {
+  display: block;
+  width: 16px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.lc-menu-icon-btn span {
+  position: relative;
+}
+.lc-menu-icon-btn span::before,
+.lc-menu-icon-btn span::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+.lc-menu-icon-btn span::before {
+  top: -5.5px;
+}
+.lc-menu-icon-btn span::after {
+  top: 5.5px;
+}
+.lc-modal-head .lc-icon {
+  flex: none;
 }

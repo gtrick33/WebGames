@@ -159,6 +159,13 @@ export interface GameEntry {
    * them with claimCoins() (src/platform/coins.ts) when a signed-in player opens it.
    */
   wallet?: boolean;
+  /**
+   * Where the arcade's full-screen menu button sits on this game: a top corner the game leaves
+   * free on its menus and while playing (default top-left), moved `x` px inward and `y` px down
+   * to clear the game's own buttons; or 'own' when the game shows the button in its own top bar
+   * (module games only: they get `openMenu`, see contract.ts).
+   */
+  menu?: 'own' | { corner: 'top-left' | 'top-right' | 'top-center'; x?: number; y?: number };
   /** Free-form game-specific data. */
   meta?: Record<string, unknown>;
 }

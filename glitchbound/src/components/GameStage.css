@@ -256,17 +256,18 @@ html.game-focus body {
   overflow: hidden;
   overscroll-behavior: none;
 }
-/* Full-screen menu: a round button on the left edge, below the top HUD row and clear of Safari's
-   swipe-back strip. It opens a pause pop-up over the game with the ways out (issues #21, #22). */
+/* Full-screen menu: a round button in a top corner each game leaves free (the registry's `menu`,
+   nudged by --menu-x/--menu-y past the game's own buttons). It opens a pause pop-up over the game
+   with the ways out (issues #21, #22). Games with menu: 'own' draw the button themselves. */
 .stage-menu-btn {
   position: absolute;
-  top: 38%;
-  left: calc(10px + env(safe-area-inset-left));
+  top: calc(10px + var(--menu-y, 0px) + env(safe-area-inset-top));
+  left: calc(10px + var(--menu-x, 0px) + env(safe-area-inset-left));
   z-index: 5;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border: 2px solid rgb(255 255 255 / 0.7);
   border-radius: 50%;
@@ -276,6 +277,14 @@ html.game-focus body {
   cursor: pointer;
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
+}
+.stage-menu-btn[data-corner='top-right'] {
+  left: auto;
+  right: calc(10px + var(--menu-x, 0px) + env(safe-area-inset-right));
+}
+.stage-menu-btn[data-corner='top-center'] {
+  left: calc(50% + var(--menu-x, 0px));
+  transform: translateX(-50%);
 }
 .stage-menu-btn:hover,
 .stage-menu-btn:focus-visible {
