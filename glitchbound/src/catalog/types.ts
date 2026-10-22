@@ -54,6 +54,8 @@ export interface DailyTemplate {
   targets: number[];
   /** Human text. `{n}` is replaced with the formatted target. */
   label: string;
+  /** The text for a target of 1, when `label` would read wrong ("Clear {n} picture" for "Clear {n} pictures"). */
+  one?: string;
 }
 
 /**

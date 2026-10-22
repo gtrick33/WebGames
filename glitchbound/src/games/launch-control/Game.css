@@ -4198,6 +4198,117 @@
   border-color: var(--lc-yellow);
   box-shadow: 0 0 0 1px var(--lc-yellow);
 }
+/* the car you're working on (garage, parts shop): it opens the list of every car you own */
+.lc-carswitch {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 14px 6px 6px;
+  border: 1px solid var(--lc-edge);
+  border-radius: var(--lc-r);
+  background: var(--lc-glass-2);
+  color: #fff;
+  text-align: left;
+}
+.lc-carswitch:hover,
+.lc-mycar:hover {
+  border-color: var(--lc-edge-hi);
+}
+.lc-carswitch-text,
+.lc-mycar-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.lc-carswitch-text b,
+.lc-mycar-info b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 17px;
+}
+.lc-carswitch-text small,
+.lc-mycar-nums {
+  font-size: 12px;
+  color: var(--lc-muted);
+}
+.lc-carswitch-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--lc-yellow);
+}
+/* your cars, over the pop-up and its 3D view */
+.lc-picker {
+  z-index: 6;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
+.lc-picker > .lc-panel {
+  width: min(560px, 100%);
+  max-height: 100%;
+}
+/* the sort stays in view above the list (it opens scrolled to the car you drive) */
+.lc-picker-sort {
+  position: sticky;
+  top: -14px;
+  z-index: 1;
+  margin: -14px -14px 0;
+  padding: 10px 14px;
+  background: #1a1238;
+}
+.lc-mycar-nums span {
+  white-space: nowrap;
+}
+.lc-mycars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.lc-mycar {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--lc-edge);
+  border-radius: var(--lc-r);
+  background: var(--lc-glass-2);
+  color: #fff;
+  text-align: left;
+}
+.lc-mycar.is-on {
+  border-color: var(--lc-lime);
+  box-shadow: 0 0 0 1px var(--lc-lime);
+}
+.lc-mycar-info .lc-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.lc-mycar-go {
+  padding: 6px 12px;
+  border: 1px solid var(--lc-edge-hi);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+@container (max-width: 420px) {
+  .lc-mycar {
+    grid-template-columns: 84px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding-right: 8px;
+  }
+  .lc-mycar-go {
+    padding: 5px 9px;
+    font-size: 12px;
+  }
+}
 /* the reveal: the garage door rolls up on the new car, then its card */
 .lc-reveal {
   position: absolute;

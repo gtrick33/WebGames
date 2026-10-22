@@ -425,7 +425,7 @@ const pl: string[] = [
   'Najwięcej obrazków w Rush',
   'Zdobądź {n} pkt w jednym dziennym Spot the Glitch',
   'Znajdź {n} błędów w jednej grze Spot the Glitch',
-  'Zalicz {n} obrazków bez pomyłki i podpowiedzi',
+  'Zalicz {n} obrazki bez pomyłki i podpowiedzi',
   'W każdym zdjęciu ukrywa się jedna piłka tenisowa. Przybliż, wyceluj i złap ją.',
   'Przeszukuj prawdziwe zdjęcia trawników, ścieżek w liściach, kamienistych plaż, rabat kwiatowych i straganów w poszukiwaniu jednej piłki tenisowej, dopasowanej rozmiarem i światłem do sceny. Pięć nowych zdjęć dziennie, każde trudniejsze, z podpowiedziami, trzema próbami na zdjęcie i punktami za szybkość. Tryb Nieskończony nie przestaje.',
   'Dzisiejsze 5 zdjęć',
@@ -1551,7 +1551,7 @@ const pl: string[] = [
   'Dzisiejsze 5 poziomów',
   'Przejdź {n} poziomów w jednej grze Outta Here',
   // 1410
-  'Przejdź {n} poziomów bez błędu w Outta Here',
+  'Przejdź {n} poziomy bez błędu w Outta Here',
   'Najwięcej poziomów w grze',
   'Najwięcej bezbłędnych poziomów',
   'Wrzucaj galaretowe gluty do słoika. Dwa takie same zlewają się w większy. Nie daj mu się przelać.',
@@ -1976,6 +1976,9 @@ const pl: string[] = [
   'Codziennie darmowa jazda próbna autem, którego jeszcze nie masz',
   'Przytrzymaj Spację (od drugiego biegu): odpal nitro w autach, które je mają',
   'Przytrzymaj przycisk (od drugiego biegu): odpal nitro w autach, które je mają',
+  'Zalicz {n} obrazek bez pomyłki i podpowiedzi',
+  'Traf w punkt (do 10%) {n} raz w jednej grze To Scale',
+  'Przejdź {n} poziom bez błędu w Outta Here',
 ];
 
 export default pl;

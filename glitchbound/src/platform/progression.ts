@@ -5,7 +5,7 @@
 import type { GameEntry } from '../catalog/types';
 import type { QuestIcon } from './apiTypes';
 import type { DailyRules } from '../catalog/settings';
-import { challengeForDay, fmt } from './daily';
+import { challengeForDay, fmt, templateText } from './daily';
 import { hashString } from './dates';
 
 /** XP needed for level n is 100 * n(n-1)/2: L2 = 100, L3 = 300, L4 = 600, L5 = 1000 ... */
@@ -49,7 +49,7 @@ export function questsForDay(userId: string, day: string, games: GameEntry[], ha
     // Member quests use the two easiest targets, so they are reachable in a few rounds.
     const target = tpl.targets[(h >>> 12) % Math.min(2, tpl.targets.length)]!;
     // Name the game once: many templates already do ("... in one Wing It flight").
-    const base = tpl.label.replace('{n}', fmt(target));
+    const base = templateText(tpl, target).replace('{n}', fmt(target));
     const label = base.includes(g.title) ? base : `${base} in ${g.title}`;
     pool.push({ id: `metric-${g.slug}-${tpl.metric}-${target}`, kind: 'metric', label, icon: 'bolt', xp: 90, target, game: g.slug, metric: tpl.metric });
   }

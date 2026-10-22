@@ -1976,6 +1976,9 @@ const nl: string[] = [
   'Elke dag een gratis proefrit in een auto die je nog niet hebt',
   'Houd Spatie ingedrukt (vanaf de tweede versnelling): geef nitro, bij auto’s die het hebben',
   'Houd de knop ingedrukt (vanaf de tweede versnelling): geef nitro, bij auto’s die het hebben',
+  'Haal {n} plaatje zonder misser of hint',
+  'Haal {n} rake gok (binnen 10%) in één spel To Scale',
+  'Haal {n} level zonder fout in Outta Here',
 ];
 
 export default nl;

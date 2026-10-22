@@ -1981,6 +1981,9 @@ export const KEYS: string[] = [
   "A free test drive every day in any car you don’t own yet",
   "Hold Space (from second gear): fire the nitrous, on cars that carry it",
   "Hold the button (from second gear): fire the nitrous, on cars that carry it",
+  "Clear {n} picture without a miss or hint",
+  "Land {n} spot-on guess (within 10%) in one To Scale game",
+  "Clear {n} level without a mistake in Outta Here",
 ];
 
 export const UI_COUNT = 311;

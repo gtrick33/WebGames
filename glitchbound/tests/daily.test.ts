@@ -25,6 +25,19 @@ describe('daily challenge', () => {
     expect(labels.size).toBeGreaterThan(3);
   });
 
+  it('says "1 picture", not "1 pictures", and every catalog text a target of 1 can pick is singular', () => {
+    const day = '2026-11-03';
+    const glitch = GAMES.find((g) => g.slug === 'spot-the-glitch')!;
+    const template = glitch.daily!.findIndex((t) => t.metric === 'clean');
+    const pick = (target: number) => challengeForDay(day, GAMES, { picks: { [day]: { slug: glitch.slug, template, target } }, exclude: new Set() })!;
+    expect(pick(1).label).toBe('Clear 1 picture without a miss or hint');
+    expect(pick(1).template).toBe('Clear {n} picture without a miss or hint');
+    expect(pick(2).label).toBe('Clear 2 pictures without a miss or hint');
+    for (const g of GAMES)
+      for (const t of g.daily ?? [])
+        if (t.targets.includes(1)) expect(t.one ?? t.label, `${g.slug}: ${t.label}`).not.toMatch(/\{n\} (?:[\w-]+ )?\w*[^\Ws]s\b/);
+  });
+
   it('numbers days from the epoch', () => {
     expect(challengeForDay(DAILY_EPOCH, GAMES)?.number).toBe(1);
     expect(challengeForDay(addDays(DAILY_EPOCH, 9), GAMES)?.number).toBe(10);

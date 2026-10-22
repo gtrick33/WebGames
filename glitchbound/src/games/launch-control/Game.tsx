@@ -178,6 +178,9 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const [styleKind, setStyleKind] = useState<CosmeticKind>('paint');
   const [dealerTier, setDealerTier] = useState(0);
   const [previewCar, setPreviewCar] = useState<string | null>(null);
+  // the cars you own, in a pop-up over the garage or the parts shop (a row of every name gets long)
+  const [pickCar, setPickCar] = useState(false);
+  const [carSort, setCarSort] = useState<CarSort>('new');
   /** A new car being shown off (bought or won): the garage-door reveal over the hub. */
   const [reveal, setReveal] = useState<string | null>(null);
   const [rivalPick, setRivalPick] = useState<number | null>(null);
@@ -717,6 +720,16 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     document.addEventListener('pointerdown', close);
     return () => document.removeEventListener('pointerdown', close);
   }, [soundOpen]);
+  // The car picker closes on Escape, and when its pop-up does.
+  const pickerOpen = pickCar && (screen === 'parts' || screen === 'garage');
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const key = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setPickCar(false);
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [pickerOpen]);
   // iPhone Safari scrolls the page under the pinned stage on any swipe the game doesn't scroll itself
   // (that's how its bars tuck away). On a pop-up or panel that swipe only moves the hidden page, and
   // while it moves Safari drops frames of the 3D view, so it flashes blue. There a swipe nothing inside
@@ -748,7 +761,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       if (!t || !e.cancelable) return;
       if (hold === null) {
         const el = e.target instanceof Element ? e.target : null;
-        hold = !!el?.closest('.lc-modal, .lc-panel') && !scrolls(el, Math.abs(t.clientY - y0) >= Math.abs(t.clientX - x0));
+        hold = !!el?.closest('.lc-modal, .lc-panel, .lc-overlay') && !scrolls(el, Math.abs(t.clientY - y0) >= Math.abs(t.clientX - x0));
       }
       if (hold) e.preventDefault();
     };
@@ -1433,15 +1446,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
             </div>
           }
         >
-          {Object.keys(save.cars).length > 1 && (
-            <div className="lc-chips" role="tablist" aria-label="Your cars">
-              {Object.keys(save.cars).map((id) => (
-                <button key={id} className={`lc-chip${id === save.car ? ' is-on' : ''}`} onClick={() => commit((x) => ({ ...x, car: id }))}>
-                  {getCar(id).name}
-                </button>
-              ))}
-            </div>
-          )}
+          {Object.keys(save.cars).length > 1 && <CarSwitch save={save} onOpen={() => setPickCar(true)} />}
           <PartPanel part={partTab} car={car} levels={owned.levels} cond={owned.cond} save={save} preview={previewNext} setPreview={setPreviewNext} onBuy={() => buyUpgrade(partTab)} onInspect={() => setInspect(partTab)} />
           <StatSheet sheet={mySheet} def={car} />
         </Popup>
@@ -1477,15 +1482,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
             </div>
           }
         >
-          {Object.keys(save.cars).length > 1 && (
-            <div className="lc-chips" role="tablist" aria-label="Your cars">
-              {Object.keys(save.cars).map((id) => (
-                <button key={id} className={`lc-chip${id === save.car ? ' is-on' : ''}`} onClick={() => commit((x) => ({ ...x, car: id }))}>
-                  {getCar(id).name}
-                </button>
-              ))}
-            </div>
-          )}
+          {Object.keys(save.cars).length > 1 && <CarSwitch save={save} onOpen={() => setPickCar(true)} />}
           {garageTab === 'repairs' && (
             <div className="lc-repairs">
               <p className="lc-sub">Tyres wear with every race, more when they spin. Under {RISKY}% they can blow out mid-run; new tyres never do. Nothing else wears.</p>
@@ -1627,6 +1624,20 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           </ul>
         </Popup>
       )}
+      {pickerOpen && (
+        <CarPicker
+          save={save}
+          sort={carSort}
+          setSort={setCarSort}
+          onPick={(id) => {
+            setPickCar(false);
+            if (id === saveRef.current.car) return;
+            sfx().click();
+            commit((x) => (x.cars[id] ? { ...x, car: id } : x));
+          }}
+          onClose={() => setPickCar(false)}
+        />
+      )}
         </>
       )}
     </div>
@@ -1634,6 +1645,101 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
 }
 
 // ---- screens and pieces
+
+type CarSort = 'new' | 'quick' | 'tier';
+const CAR_SORTS: [CarSort, string][] = [
+  ['new', 'Newest'],
+  ['quick', 'Quickest'],
+  ['tier', 'By tier'],
+];
+
+/** In the garage and the parts shop: the car you're working on, and the way to the others you own. */
+function CarSwitch({ save, onOpen }: { save: Save; onOpen: () => void }) {
+  const def = getCar(save.car);
+  return (
+    <button className="lc-carswitch" onClick={onOpen} aria-haspopup="dialog">
+      <CarThumb look={lookOf(save, def)} />
+      <span className="lc-carswitch-text">
+        <b>{def.name}</b>
+        <small className="mono">
+          {TIER_NAME[def.tier]} · {Object.keys(save.cars).length} cars owned
+        </small>
+      </span>
+      <span className="lc-carswitch-go">
+        Change <Icon name="next" size={16} />
+      </span>
+    </button>
+  );
+}
+
+/**
+ * Every car you own in one list: its picture, name, tier, trait and numbers as upgraded, the one you
+ * drive marked. Newest first (the one you just got is on top), quickest or by tier. A tap selects it.
+ */
+function CarPicker({ save, sort, setSort, onPick, onClose }: { save: Save; sort: CarSort; setSort: (s: CarSort) => void; onPick: (id: string) => void; onClose: () => void }) {
+  const ids = Object.keys(save.cars);
+  const rows = ids.map((id, got) => {
+    const def = getCar(id);
+    const o = save.cars[id]!;
+    return { def, got, sheet: sheetOf(def, o.levels, o.cond) };
+  });
+  if (sort === 'new') rows.sort((a, b) => b.got - a.got);
+  else if (sort === 'quick') rows.sort((a, b) => a.sheet.et - b.sheet.et);
+  else rows.sort((a, b) => BY_PRICE.indexOf(a.def) - BY_PRICE.indexOf(b.def));
+  // the car you drive is in view (and focused) when the list opens; only the list scrolls (scrollIntoView
+  // would move the page under the stage too)
+  const onRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const el = onRef.current;
+    const list = el?.closest('.lc-panel-body');
+    if (!el || !list) return;
+    el.focus({ preventScroll: true });
+    const r = el.getBoundingClientRect();
+    const b = list.getBoundingClientRect();
+    list.scrollTop += r.top - b.top - (b.height - r.height) / 2;
+  }, []);
+  return (
+    <div className="lc-overlay lc-picker" role="dialog" aria-label="Your cars" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <Panel eyebrow={`${ids.length} of ${CARS.length} collected`} title="Your cars" onBack={onClose}>
+        <div className="lc-chips lc-picker-sort" role="tablist" aria-label="Sort">
+          {CAR_SORTS.map(([k, name]) => (
+            <button key={k} role="tab" aria-selected={sort === k} className={`lc-chip${sort === k ? ' is-on' : ''}`} onClick={() => setSort(k)}>
+              {name}
+            </button>
+          ))}
+        </div>
+        <ul className="lc-mycars">
+          {rows.map(({ def, sheet }) => {
+            const on = def.id === save.car;
+            return (
+              <li key={def.id}>
+                <button ref={on ? onRef : undefined} className={`lc-mycar${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => onPick(def.id)}>
+                  <CarThumb look={lookOf(save, def)} />
+                  <span className="lc-mycar-info">
+                    <b>{def.name}</b>
+                    <span className="lc-eyebrow mono">
+                      {TIER_NAME[def.tier]} · <span aria-hidden="true">{TRAIT_INFO[def.trait].icon}</span> {TRAIT_INFO[def.trait].name}
+                    </span>
+                    <span className="lc-mycar-nums mono">
+                      <span>{sheet.hp} hp</span> · <span>{sheet.mass} kg</span> · <span>¼ mi {fmtEt(sheet.et)} s</span>
+                    </span>
+                  </span>
+                  {on ? (
+                    <Sticker tone="lime" flat>
+                      Selected
+                    </Sticker>
+                  ) : (
+                    <span className="lc-mycar-go">Select</span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </Panel>
+    </div>
+  );
+}
 
 /**
  * A new car's moment: the garage door rolls up on it (the car itself is the hub's showcase behind),

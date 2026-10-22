@@ -1976,6 +1976,9 @@ const de: string[] = [
   'Jeden Tag eine kostenlose Probefahrt in einem Auto, das du noch nicht hast',
   'Leertaste halten (ab dem zweiten Gang): Lachgas zünden, bei Autos, die es haben',
   'Knopf halten (ab dem zweiten Gang): Lachgas zünden, bei Autos, die es haben',
+  'Schaff {n} Bild ohne Fehler oder Tipp',
+  'Lande {n} Volltreffer (innerhalb 10 %) in einer To-Scale-Runde',
+  'Schaff {n} Level ohne Fehler in Outta Here',
 ];
 
 export default de;

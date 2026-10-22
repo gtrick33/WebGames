@@ -120,6 +120,7 @@ export function validateCatalog(games: GameEntry[] = GAMES): string[] {
       if (!g.stats.some((s) => s.key === d.metric)) errors.push(`${at}: daily metric "${d.metric}" is not in stats`);
       if (d.targets.length === 0 || d.targets.some((t) => !(t > 0))) errors.push(`${at}: daily targets must be positive`);
       if (!d.label.includes('{n}')) errors.push(`${at}: daily label must contain {n}`);
+      if (d.one !== undefined && !d.one.includes('{n}')) errors.push(`${at}: daily "one" text must contain {n}`);
     }
     if (g.ownDaily && !g.ownDaily.label.trim()) errors.push(`${at}: ownDaily needs a label`);
     if (g.menu && g.menu !== 'own' && [g.menu.x ?? 0, g.menu.y ?? 0].some((n) => !(n >= 0 && n <= 240))) errors.push(`${at}: menu offsets must be 0-240 px`);

@@ -1976,6 +1976,9 @@ const it: string[] = [
   'Un giro di prova gratis ogni giorno con un’auto che non hai ancora',
   'Tieni premuto Spazio (dalla seconda): spara il nitro, sulle auto che ce l’hanno',
   'Tieni premuto il pulsante (dalla seconda): spara il nitro, sulle auto che ce l’hanno',
+  'Completa {n} immagine senza errori né aiuti',
+  'Azzecca {n} tentativo preciso (entro il 10%) in una partita di To Scale',
+  'Supera {n} livello senza errori in Outta Here',
 ];
 
 export default it;

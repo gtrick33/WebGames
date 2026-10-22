@@ -87,7 +87,9 @@ truck and police car (most in their factory paint), Cosmo's off-roader, van, pol
 and fifties cruiser in the middle, and its muscle car, electric coupe, supercars and hypercar at the top (models.ts,
 modelcar.ts; credits in CREDITS.md). Stock pace is tuned so a dearer car is always quicker within its tier and every
 tier is clearly quicker than the last (a test checks both). The dealer has a collection view (yours in colour, the
-rest dimmed with their price or the boss to beat). The drivers sit in closed cars, so their helmet and suit show on a
+rest dimmed with their price or the boss to beat). In the garage and the parts shop, the car you're working on opens a
+list of the cars you own (picture, tier, trait, numbers as upgraded, the selected one marked), newest first, quickest
+or by tier. The drivers sit in closed cars, so their helmet and suit show on a
 portrait next to their name. Six separate parts with eight levels each, each moving several numbers:
 
 | Part | Each level | Visible on the car |

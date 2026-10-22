@@ -1976,6 +1976,9 @@ const fr: string[] = [
   'Un essai gratuit chaque jour dans une voiture que tu n’as pas encore',
   'Maintiens Espace (dès la deuxième) : déclenche le nitro, sur les voitures qui en ont',
   'Maintiens le bouton (dès la deuxième) : déclenche le nitro, sur les voitures qui en ont',
+  'Réussis {n} image sans erreur ni indice',
+  'Réussis {n} estimation pile (à 10 % près) dans une partie de To Scale',
+  'Termine {n} niveau sans erreur dans Outta Here',
 ];
 
 export default fr;

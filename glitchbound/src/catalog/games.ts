@@ -399,7 +399,7 @@ export const GAMES: GameEntry[] = [
     daily: [
       { metric: 'score', targets: [2000, 2300, 2500], label: 'Score {n} points in one Spot the Glitch daily' },
       { metric: 'found', targets: [12, 15, 20], label: 'Find {n} glitches in one Spot the Glitch game' },
-      { metric: 'clean', targets: [1, 2], label: 'Clear {n} pictures without a miss or hint' },
+      { metric: 'clean', targets: [1, 2], label: 'Clear {n} pictures without a miss or hint', one: 'Clear {n} picture without a miss or hint' },
     ],
   },
   {
@@ -656,7 +656,7 @@ export const GAMES: GameEntry[] = [
     challenge: { label: 'The same five pairs for everyone. Closest sizes win, up to 1,000 points a shot.' },
     daily: [
       { metric: 'score', targets: [2500, 3000, 3500], label: 'Score {n} points in one To Scale game' },
-      { metric: 'bullseyes', targets: [1, 2], label: 'Land {n} spot-on guesses (within 10%) in one To Scale game' },
+      { metric: 'bullseyes', targets: [1, 2], label: 'Land {n} spot-on guesses (within 10%) in one To Scale game', one: 'Land {n} spot-on guess (within 10%) in one To Scale game' },
     ],
     limits: { scorePerSecond: 1000, minSeconds: 3 },
   },
@@ -734,7 +734,7 @@ export const GAMES: GameEntry[] = [
     challenge: { label: 'The same levels for everyone, three hearts each. Highest score wins.' },
     daily: [
       { metric: 'levels', targets: [3, 4, 5], label: 'Clear {n} levels in one Outta Here game' },
-      { metric: 'perfect', targets: [1, 2, 3], label: 'Clear {n} levels without a mistake in Outta Here' },
+      { metric: 'perfect', targets: [1, 2, 3], label: 'Clear {n} levels without a mistake in Outta Here', one: 'Clear {n} level without a mistake in Outta Here' },
     ],
     limits: { scorePerSecond: 250, minSeconds: 3 },
   },

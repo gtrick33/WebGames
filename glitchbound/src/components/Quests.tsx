@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { GAMES } from '../catalog/games';
 import { t as tr, tDaily, useT } from '../i18n';
 import type { QuestView } from '../platform/apiTypes';
-import { fmt } from '../platform/daily';
+import { fmt, templateText } from '../platform/daily';
 import { account, useAccount } from '../platform/account';
 import { formatCountdown, msUntilMidnight } from '../platform/dates';
 import { useNow } from '../platform/hooks';
@@ -23,7 +23,8 @@ export function questLabel(q: Pick<QuestView, 'id' | 'label' | 'target'>): strin
   const g = m ? GAMES.find((x) => x.slug === m[1]) : undefined;
   const tpl = m && g?.daily ? (g.daily.find((d) => d.metric === m[2] && d.targets.includes(q.target)) ?? g.daily.find((d) => d.metric === m[2])) : undefined;
   if (!g || !tpl) return tr(q.label);
-  const goal = tDaily({ label: tpl.label.replace('{n}', fmt(q.target)), template: tpl.label, target: q.target });
+  const text = templateText(tpl, q.target);
+  const goal = tDaily({ label: text.replace('{n}', fmt(q.target)), template: text, target: q.target });
   return goal.includes(g.title) ? goal : tr('{goal} in {game}', { goal, game: g.title });
 }
 

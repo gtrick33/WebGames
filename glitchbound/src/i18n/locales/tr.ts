@@ -1976,6 +1976,9 @@ const tr: string[] = [
   'Her gün henüz sahip olmadığın herhangi bir arabayla ücretsiz test sürüşü',
   'Boşluğu basılı tut (ikinci vitesten itibaren): nitrosu olan arabalarda nitroyu ateşle',
   'Düğmeyi basılı tut (ikinci vitesten itibaren): nitrosu olan arabalarda nitroyu ateşle',
+  'Hatasız ve ipucusuz {n} resim bitir',
+  'Bir To Scale oyununda {n} tam isabetli tahmin (%10 içinde) yap',
+  'Outta Here’da hatasız {n} bölüm geç',
 ];
 
 export default tr;

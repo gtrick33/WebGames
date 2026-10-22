@@ -1976,6 +1976,9 @@ const es: string[] = [
   'Una prueba gratis cada día con cualquier coche que aún no tengas',
   'Mantén Espacio (desde segunda): dispara el nitro, en los coches que lo llevan',
   'Mantén pulsado el botón (desde segunda): dispara el nitro, en los coches que lo llevan',
+  'Supera {n} imagen sin fallos ni pistas',
+  'Logra {n} acierto exacto (dentro del 10 %) en una partida de To Scale',
+  'Supera {n} nivel sin fallar en Outta Here',
 ];
 
 export default es;

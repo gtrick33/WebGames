@@ -1976,6 +1976,9 @@ const ro: string[] = [
   'Un test drive gratuit în fiecare zi cu orice mașină pe care nu o ai încă',
   'Ține apăsat Spațiu (din treapta a doua): pornește nitro, la mașinile care îl au',
   'Ține apăsat butonul (din treapta a doua): pornește nitro, la mașinile care îl au',
+  'Termină {n} imagine fără greșeli sau indicii',
+  'Nimerește fix {n} încercare (sub 10%) într-un joc To Scale',
+  'Treci {n} nivel fără greșeală în Outta Here',
 ];
 
 export default ro;

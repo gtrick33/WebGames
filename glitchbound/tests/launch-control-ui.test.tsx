@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Game from '../src/games/launch-control/Game';
-import { emptySave, KEY } from '../src/games/launch-control/storage';
+import { emptySave, KEY, newCar } from '../src/games/launch-control/storage';
 
 /**
  * The whole game in jsdom (no WebGL: the 3D stage is skipped, everything else runs): menus, a real
@@ -230,6 +230,29 @@ describe('Launch Control: daily, garage and wager', () => {
     Object.defineProperty(content, 'scrollHeight', { configurable: true, value: 900 });
     Object.defineProperty(content, 'clientHeight', { configurable: true, value: 300 });
     expect(swipe(content)).toBe(true);
+  });
+
+  it('your cars open in a pop-up, newest first with the selected one marked, and a tap selects one', () => {
+    localStorage.setItem(KEY, JSON.stringify({ ...emptySave(), cars: { bumble: newCar(), 'dune-bug': newCar(), 'pico-pop': newCar() }, car: 'dune-bug' }));
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: 'My garage' }));
+    // one button for the car you're working on, not a row of every name
+    expect(document.querySelectorAll('.lc-chip')).toHaveLength(0);
+    fireEvent.click(screen.getByRole('button', { name: /Trailhound.*3 cars owned.*Change/ }));
+    const list = screen.getByRole('dialog', { name: 'Your cars' });
+    expect([...list.querySelectorAll('.lc-mycar b')].map((b) => b.textContent)).toEqual(['Pico Pop', 'Trailhound', 'Bumble']);
+    expect(within(list).getByRole('button', { pressed: true }).textContent).toMatch(/Trailhound.*hp.*kg.*¼ mi.*Selected/);
+    fireEvent.click(within(list).getByRole('tab', { name: 'By tier' }));
+    expect([...list.querySelectorAll('.lc-mycar b')].map((b) => b.textContent)).toEqual(['Bumble', 'Pico Pop', 'Trailhound']);
+    fireEvent.click(within(list).getByRole('button', { name: /^Pico Pop/ }));
+    expect(screen.queryByRole('dialog', { name: 'Your cars' })).toBeNull();
+    expect(JSON.parse(localStorage.getItem(KEY)!).car).toBe('pico-pop');
+    // the parts shop has it too, and Escape closes it
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Parts shop/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Pico Pop.*Change/ }));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Your cars' })).toBeNull();
   });
 
   it('the rival picker shows big cards with one selected, and races the pick', () => {

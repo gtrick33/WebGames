@@ -1,5 +1,5 @@
 import type { DailyRules } from '../catalog/settings';
-import type { GameEntry } from '../catalog/types';
+import type { DailyTemplate, GameEntry } from '../catalog/types';
 import type { EndEvent } from './contract';
 import { addDays, daysBetween, hashString } from './dates';
 import { themeGames, themeOf, THEMES_SINCE } from './themes';
@@ -21,6 +21,9 @@ export interface DailyChallenge {
 }
 
 export const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
+
+/** A template's text for a target, before `{n}` is filled in: its singular form for 1 when it has one. */
+export const templateText = (tpl: DailyTemplate, target: number): string => (target === 1 && tpl.one ? tpl.one : tpl.label);
 
 /**
  * Today's challenge, identical for every player on the same calendar day. Returns null when no game
@@ -65,6 +68,7 @@ export function challengeForDay(day: string, games: GameEntry[], rules: DailyRul
   const tpl = (picked?.template !== null && picked?.template !== undefined ? templates[picked.template] : undefined) ?? templates[(h >>> 8) % templates.length]!;
   const target = picked?.target ?? tpl.targets[(h >>> 16) % tpl.targets.length]!;
   const unit = game.stats.find((s) => s.key === tpl.metric)?.unit ?? '';
+  const text = templateText(tpl, target);
   return {
     day,
     number: Math.max(1, daysBetween(DAILY_EPOCH, day) + 1),
@@ -72,8 +76,8 @@ export function challengeForDay(day: string, games: GameEntry[], rules: DailyRul
     metric: tpl.metric,
     target,
     unit,
-    label: tpl.label.replace('{n}', fmt(target)),
-    template: tpl.label,
+    label: text.replace('{n}', fmt(target)),
+    template: text,
   };
 }
 
