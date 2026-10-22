@@ -138,8 +138,9 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         const keep = melee ? 10 : 62;
         const d = Math.hypot(target.x - p.x, target.y - p.y);
         const step = flowStep(w.map, toTarget, p.x, p.y);
-        // a pillar in the way: walk round it rather than shoot the stone
-        const blocked = !lineOfSight(w.map, p.x, p.y, target.x, target.y);
+        // a pillar or a rock in the way: walk round it rather than shoot the stone (shots leave from
+        // a little above the hero's feet)
+        const blocked = !lineOfSight(w.map, p.x, p.y, target.x, target.y) || !lineOfSight(w.map, p.x, p.y - 4, target.x, target.y);
         if (d > keep + target.r + 30 || (step && d > keep + target.r) || (blocked && step)) {
           if (step) {
             mx = step.x;

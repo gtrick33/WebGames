@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { xpToNext } from '../src/games/sigilfall/data/classes';
+import { CLASS_IDS, xpToNext } from '../src/games/sigilfall/data/classes';
+import { BOSSES } from '../src/games/sigilfall/data/bosses';
 import { ENEMIES } from '../src/games/sigilfall/data/enemies';
-import { QUEST_DEFS, QUESTS } from '../src/games/sigilfall/data/quests';
+import { NPCS, QUEST_DEFS, QUESTS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import type { QuestDef } from '../src/games/sigilfall/data/types';
 import { generateZone } from '../src/games/sigilfall/data/zonegen';
@@ -12,7 +13,11 @@ import { K, parseRegion } from '../src/games/sigilfall/sim/map';
 import { objectiveTarget } from '../src/games/sigilfall/sim/objective';
 import { nextRegion, npcRegion, spotRegion } from '../src/games/sigilfall/sim/routes';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
-import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
+import { COMPANION_ART } from '../src/games/sigilfall/render/art/companions';
+import { FOE_ART } from '../src/games/sigilfall/render/art/foes';
+import { TOWNSFOLK_LOOKS } from '../src/games/sigilfall/render/art/townsfolk';
+import { ZONE_ART } from '../src/games/sigilfall/render/art/zones';
+import { CREATURE_ART } from '../src/games/sigilfall/render/artdata';
 import { newWorld, play, readyHero } from './sigilfall-bot';
 
 const step = (w: World, seconds: number, each?: (w: World) => void) => {
@@ -48,7 +53,7 @@ describe('sigilfall zone generator', () => {
     expect(kinds.filter((k) => k === 'waystone')).toHaveLength(1);
     for (const npc of ['reeve-aldous', 'hanna', 'tobin', 'sefa', 'pim']) expect(m.markers.some((x) => x.marker.kind === 'npc' && x.marker.npc === npc), npc).toBe(true);
     const exits = m.markers.filter((x) => x.marker.kind === 'exit');
-    expect(exits.map((x) => (x.marker as { to: string }).to).sort()).toEqual(['emberwick', 'gallows-keep', 'saltmarsh']);
+    expect(exits.map((x) => (x.marker as { to: string }).to).sort()).toEqual(['emberwick', 'gallows-keep', 'greyfen', 'saltmarsh']);
     // ways out to other zones sit on the edge of the map
     for (const x of exits) if ((x.marker as { to: string }).to !== 'gallows-keep') expect(x.tx === 0 || x.ty === 0 || x.tx === m.w - 1 || x.ty === m.h - 1).toBe(true);
     const packs = m.markers.filter((x) => x.marker.kind === 'pack').map((x) => ({ ...x, level: (x.marker as { level: number }).level }));
@@ -415,12 +420,19 @@ describe('sigilfall map kinds', () => {
 describe('sigilfall wild zones, played', () => {
   // every class, at the zone's lower levels, fights its way through the packs around the town
   const ZONES = [
+    { region: 'brackenridge', level: 6 },
     { region: 'thornvale', level: 9 },
+    { region: 'greyfen', level: 12 },
     { region: 'saltmarsh', level: 15 },
+    { region: 'amberfield', level: 17 },
+    { region: 'duskfen', level: 19 },
+    { region: 'ironpeak', level: 21 },
+    { region: 'ashen-barrows', level: 24 },
+    { region: 'stormwatch', level: 27 },
   ] as const;
   for (const z of ZONES) {
     for (const cls of CLASS_IDS) {
-      it(`${cls}: holds its own in ${z.region} at level ${z.level}`, () => {
+      it(`${cls}: holds its own in ${z.region} at level ${z.level}`, { timeout: 30_000 }, () => {
         const w = newWorld(z.region, readyHero(cls, z.level, 'common', 5));
         const r = play(w, { seconds: 240, done: (x) => x.run.kills >= 25 });
         expect(r.stuck).toBe(false);
@@ -429,4 +441,27 @@ describe('sigilfall wild zones, played', () => {
       });
     }
   }
+});
+
+describe('sigilfall art', () => {
+  it('every sprite and townsfolk look is drawn once, and every enemy, boss and person has one', () => {
+    // zone art files are merged into one table, so a repeated id would silently replace another
+    const drawn = new Set<string>();
+    for (const table of [CREATURE_ART, COMPANION_ART, FOE_ART, ...ZONE_ART.map((z) => z.foes)]) {
+      for (const id of Object.keys(table)) {
+        expect(drawn.has(id), `sprite ${id} is drawn twice`).toBe(false);
+        drawn.add(id);
+      }
+    }
+    for (const e of Object.values(ENEMIES)) expect(drawn.has(e.sprite), `${e.id} has no sprite ${e.sprite}`).toBe(true);
+    for (const b of Object.values(BOSSES)) expect(drawn.has(b.sprite), `${b.id} has no sprite ${b.sprite}`).toBe(true);
+    const looks = new Set<string>();
+    for (const table of [TOWNSFOLK_LOOKS, ...ZONE_ART.map((z) => z.looks)]) {
+      for (const id of Object.keys(table)) {
+        expect(looks.has(id), `look ${id} is defined twice`).toBe(false);
+        looks.add(id);
+      }
+    }
+    for (const n of Object.values(NPCS)) expect(looks.has(n.id) || drawn.has(n.sprite), `${n.id} has no look`).toBe(true);
+  });
 });

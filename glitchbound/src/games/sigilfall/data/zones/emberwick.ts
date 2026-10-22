@@ -24,6 +24,7 @@ function plan(): CityPlan {
   c.fill(10, 39, 93, 42, 'cobble');
   c.gate('e', 41, 4, 94, 95, { to: 'whisperwood', label: 'East gate: the road to the Whisperwood' });
   c.gate('s', 52, 4, 73, 74, { to: 'thornvale', label: 'South gate: the road to Thornvale', minLevel: 7 });
+  c.gate('w', 41, 4, 8, 9, { to: 'brackenridge', label: 'West gate: the road to Brackenridge', minLevel: 5 });
   c.building('tower', 93, 35, 3, 3, { pave: false });
   c.building('tower', 93, 44, 3, 3, { pave: false });
   c.building('tower', 45, 72, 3, 3, { pave: false });
@@ -132,7 +133,7 @@ export const EMBERWICK: RegionDef = {
   kind: 'town',
   level: 1,
   levels: [1, 1],
-  at: [30, 50],
+  at: [44, 68],
   dark: false,
   safe: true,
   music: 'village',

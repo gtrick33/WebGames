@@ -12,7 +12,7 @@ export const SALTMARSH = wildRegion(
     subtitle: 'Dunes, shoals and smugglers',
     theme: 'coast',
     levels: [14, 20],
-    at: [48, 74],
+    at: [57, 80],
     dark: false,
     safe: false,
     music: 'coast',
@@ -29,7 +29,10 @@ export const SALTMARSH = wildRegion(
     water: { kind: 'sea', side: 'e', depth: 0.24 },
     sand: 'dunes',
     hubs: [{ at: [0.5, 0.42], npcs: ['harbormaster-quill', 'marla', 'dorran', 'ines'], houses: 6 }],
-    exits: [{ side: 'w', at: 0.5, to: 'thornvale', label: 'The coast road to Thornvale' }],
+    exits: [
+      { side: 'w', at: 0.5, to: 'thornvale', label: 'The coast road to Thornvale' },
+      { side: 'n', at: 0.4, to: 'amberfield', label: 'North road to the Amberfield', minLevel: 15 },
+    ],
     pois: [
       { at: [0.68, 0.8], r: 11, kind: 'nest', packs: [['mirefin-skirmisher', 'mirefin-skirmisher', 'mirefin-skirmisher'], ['mirefin-oracle', 'mirefin-spearthrower', 'mirefin-skirmisher'], ['mirefin-spearthrower', 'mirefin-spearthrower']], elite: true, spot: { id: 'mirefin-shoals', name: 'Mirefin Shoals' } },
       { at: [0.26, 0.14], r: 10, kind: 'nest', packs: [['cliff-harpy', 'cliff-harpy'], ['cliff-harpy', 'cliff-harpy', 'cliff-harpy']], rare: 'gullwing', spot: { id: 'gull-cliffs', name: 'Gull Cliffs' } },

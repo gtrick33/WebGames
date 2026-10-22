@@ -50,6 +50,8 @@ export interface PoiSpec {
   chest?: 'common' | 'rare' | 'epic';
   /** A way down: a dungeon's door. */
   entrance?: { to: RegionId; label: string; minLevel?: number };
+  /** A building standing at the sight (a lighthouse on its point, a watchtower), its door toward the middle. */
+  landmark?: { style: Extract<Marker, { kind: 'building' }>['style']; w: number; h: number; name?: string };
 }
 
 export interface ZoneSpec {
@@ -495,6 +497,13 @@ class ZoneBuilder {
       case 'cave':
         ring(Math.round(r * 2.6), r - 0.5, (x, y, k) => k % 4 !== 0 && free(x, y) && this.set(x, y, ROCK));
         break;
+    }
+    if (p.landmark) {
+      const { style, w, h, name } = p.landmark;
+      const x0 = cx - Math.floor(w / 2);
+      const y0 = cy - h - 1;
+      for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) this.set(x, y, HOUSE);
+      this.put(x0, y0 + h - 1, { kind: 'building', style, w, h, ...(name ? { name } : {}) });
     }
     if (p.entrance) this.put(cx, cy, { kind: 'exit', to: p.entrance.to, label: p.entrance.label, ...(p.entrance.minLevel ? { minLevel: p.entrance.minLevel } : {}) });
     if (p.spot) this.put(cx, cy + (p.entrance ? 2 : 0), { kind: 'spot', id: p.spot.id, name: p.spot.name, r: Math.max(4, r - 1) });

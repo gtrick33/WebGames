@@ -165,6 +165,8 @@ export interface Enemy {
   master: number;
   /** Seconds until it can blink again; seconds since it was last hit. */
   blinkT: number;
+  /** Seconds before a summoner may raise again. */
+  raiseT: number;
   hurtT: number;
   victimT: number;
 }

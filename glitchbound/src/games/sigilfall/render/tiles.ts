@@ -103,7 +103,7 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef): void {
   const theme = region.theme;
   const look = THEMES[theme];
   // woods have trunks where the canopy meets a clearing; bare lands (desert, crystal wastes) have cliffs
-  const woody = look.trees.filter((t) => t !== 'cactus' && t !== 'crystal').length * 2 > look.trees.length;
+  const woody = !look.cliffs && look.trees.filter((t) => t !== 'cactus' && t !== 'crystal').length * 2 > look.trees.length;
   for (let i = 0; i < map.w * map.h; i++) {
     const tx = i % map.w;
     const ty = Math.floor(i / map.w);

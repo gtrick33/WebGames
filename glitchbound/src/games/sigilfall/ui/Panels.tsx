@@ -9,7 +9,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/
 import type { ClassId, Item, QuestDef, RegionDef, RegionId, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { bagSize, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, specCost, talentPoints, trackedQuest, treeOpen, type Character } from '../progress/character';
+import { bagSize, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
@@ -60,6 +60,17 @@ export function Panels({ engine }: { engine: SigilEngine }) {
 
 const SLOT_LABEL: Record<SlotId, string> = { weapon: 'Weapon', offhand: 'Off-hand', head: 'Head', chest: 'Chest', legs: 'Legs', hands: 'Hands', feet: 'Feet', amulet: 'Amulet', ring: 'Ring', relic: 'Relic' };
 const SHOWN_STATS: StatKey[] = ['power', 'crit', 'critDmg', 'haste', 'armor', 'speed', 'regen', 'ultCharge', 'fire', 'frost', 'lightning', 'poison', 'physical', 'arcane', 'potion'];
+
+/** Each sigil's color on the hero sheet. */
+const SIGIL_COLOR: Record<(typeof SIGILS)[number], string> = {
+  'sigil-embers': '#ff7a3d',
+  'sigil-tides': '#4ab8ff',
+  'sigil-stone': '#c8b898',
+  'sigil-sun': '#ffd84d',
+  'sigil-frost': '#bfe8ff',
+  'sigil-thorns': '#6ad05a',
+  'sigil-veil': '#c58cff',
+};
 
 function HeroPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
@@ -130,6 +141,14 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
             </div>
           ))}
         </dl>
+        <div className="rb-sigils" aria-label={`Sigils: ${SIGILS.filter((id) => h.perks.includes(id)).length} of ${SIGILS.length}`}>
+          {SIGILS.map((id) => (
+            <span key={id} className={`rb-sigil${h.perks.includes(id) ? ' is-won' : ''}`} style={{ '--sigil': SIGIL_COLOR[id] } as React.CSSProperties} title={h.perks.includes(id) ? `${PERKS[id].name}: ${PERKS[id].text}` : 'A sigil not yet found'} />
+          ))}
+          <span className="rb-small rb-dim">
+            Sigils {SIGILS.filter((id) => h.perks.includes(id)).length} / {SIGILS.length}
+          </span>
+        </div>
       </section>
       <section className="rb-bag" aria-label="Bag">
         <div className="rb-bag-head">
@@ -712,10 +731,18 @@ const KIND_COLOR: Record<RegionDef['kind'], string> = { town: '#ffcf5a', wild: '
 /** The world at a glance: every region where it lies, the ways between them, what is still unknown. */
 function WorldMap({ hero, here, sel, goal, onSel }: { hero: Character; here: RegionId; sel: RegionId; goal?: RegionId; onSel: (r: RegionId) => void }) {
   const links = useMemo(() => regionLinks(), []);
+  // the box fits the world, with room for the names under the edge regions
+  const box = useMemo(() => {
+    const xs = REGION_IDS.map((id) => REGIONS[id].at[0]);
+    const ys = REGION_IDS.map((id) => REGIONS[id].at[1]);
+    const x0 = Math.min(...xs) - 12;
+    const y0 = Math.min(...ys) - 6;
+    return { x0, y0, w: Math.max(...xs) + 12 - x0, h: Math.max(...ys) + 12 - y0 };
+  }, []);
   const known = (id: RegionId): boolean => hero.unlocked.includes(id) || REGIONS[id].kind === 'town';
   return (
-    <svg className="rb-world" viewBox="0 0 100 92" role="group" aria-label="World map">
-      <rect x="0" y="0" width="100" height="92" rx="3" className="rb-world-sea" />
+    <svg className="rb-world" viewBox={`${box.x0} ${box.y0} ${box.w} ${box.h}`} role="group" aria-label="World map">
+      <rect x={box.x0} y={box.y0} width={box.w} height={box.h} rx="3" className="rb-world-sea" />
       {links.map(([a, b]) => {
         const A = REGIONS[a].at;
         const B = REGIONS[b].at;

@@ -470,13 +470,22 @@ export interface EnemyDef {
   /** Colors swapped on its sprite (one drawing, several creatures). */
   pal?: Record<string, string>;
   /** Raises these minions (up to `max` alive at once) instead of attacking, now and then. */
-  summons?: { enemy: string; count: number; max: number };
+  /** Raises `count` of `enemy` at a time, never more than `max` alive, then rests `cd` seconds (default 7). */
+  summons?: { enemy: string; count: number; max: number; cd?: number };
   /** Slips away this far when the hero gets close (a few seconds between blinks). */
   blink?: number;
   /** Heals this share of its health a second once it hasn't been hit for a few seconds. */
   regen?: number;
   /** Exploders: the poison left where they burst (seconds, 0 for none). */
-  burst?: { radius: number; pool: number };
+  burst?: {
+    radius: number;
+    /** Seconds a poison pool stays where it burst (0: none). */
+    pool: number;
+    /** The burst's color (default sickly green). */
+    color?: string;
+    /** It also bursts when killed (shown on the ground first): exploders and anything else bloated. */
+    onDeath?: boolean;
+  };
   /** Charger rush. */
   rush?: { speed: number; dist: number };
   /** Armored slam and caster circles. */
@@ -494,7 +503,25 @@ export type EliteAffix = 'frenzied' | 'molten' | 'vampiric' | 'shielded' | 'vola
 
 /* ----------------------------------------------------------------- regions */
 
-export type RegionId = 'emberwick' | 'whisperwood' | 'crypt' | 'thornvale' | 'gallows-keep' | 'saltmarsh' | 'smugglers-grotto';
+export type RegionId =
+  | 'emberwick'
+  | 'whisperwood'
+  | 'crypt'
+  | 'thornvale'
+  | 'gallows-keep'
+  | 'saltmarsh'
+  | 'smugglers-grotto'
+  /* Acts I and II of the Hollow King (see WORLD.md) */
+  | 'brackenridge'
+  | 'greyfen'
+  | 'amberfield'
+  | 'duskfen'
+  | 'rotmother-cistern'
+  | 'ironpeak'
+  | 'deepforge-halls'
+  | 'ashen-barrows'
+  | 'barrow-of-kings'
+  | 'stormwatch';
 /** How a region looks (see data/themes.ts): outdoor biomes, and the stone of indoor places. */
 export type Theme =
   | 'village'
@@ -525,7 +552,8 @@ export type Theme =
   | 'icecave'
   | 'temple'
   | 'lavacave'
-  | 'citadel';
+  | 'citadel'
+  | 'cistern';
 
 /** What a letter on a region map stands for (the terrain under it is the region's floor). */
 export type Marker =
@@ -544,7 +572,7 @@ export type Marker =
   | { kind: 'checkpoint' }
   | { kind: 'hazard'; hazard: 'bramble' | 'spore' }
   /** A building drawn over its footprint (w x h tiles, the marker at its bottom-left), with a name over the door. */
-  | { kind: 'building'; style: 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall'; w: number; h: number; name?: string }
+  | { kind: 'building'; style: 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall' | 'lighthouse'; w: number; h: number; name?: string }
   /** A place to discover (an explore objective, a line in the log): walking within `r` tiles finds it. */
   | { kind: 'spot'; id: string; name: string; r: number };
 
@@ -610,8 +638,9 @@ export type Objective =
   | { kind: 'explore'; spot: string; label: string }
   | { kind: 'clear'; region: RegionId; tier: number; label: string };
 
-/** Lasting gifts from the ends of quest chains. */
-export type PerkId = 'mount' | 'satchel' | 'flask' | 'hearth';
+/** Lasting gifts from the ends of quest chains; the seven sigils are the main story's. */
+export type PerkId = 'mount' | 'satchel' | 'flask' | 'hearth' | SigilId;
+export type SigilId = 'sigil-embers' | 'sigil-tides' | 'sigil-stone' | 'sigil-sun' | 'sigil-frost' | 'sigil-thorns' | 'sigil-veil';
 
 export interface QuestDef {
   id: string;

@@ -89,7 +89,7 @@ export const GALLOWS_KEEP: RegionDef = {
   kind: 'dungeon',
   level: 14,
   levels: [13, 16],
-  at: [32, 76],
+  at: [30, 84],
   dark: true,
   safe: false,
   music: 'cave',

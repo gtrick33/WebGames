@@ -29,7 +29,21 @@ export const SHOPS: Record<ShopId, ShopDef> = {
 };
 
 /** Sigil Marks a boss pays on Normal (×2 on Heroic, ×3 on Mythic). */
-export const BOSS_MARKS: Record<string, number> = { grimtusk: 1, ossric: 2, morgrave: 4 };
+export const BOSS_MARKS: Record<string, number> = {
+  grimtusk: 1,
+  ossric: 2,
+  morgrave: 4,
+  hangman: 2,
+  varric: 3,
+  'the-drowned': 2,
+  saltbeard: 3,
+  'brother-pustule': 2,
+  'the-rot-mother': 3,
+  'slag-colossus': 2,
+  'forgemaster-grold': 3,
+  'king-hrodric': 2,
+  'sir-corvane': 4,
+};
 
 /** The quartermaster's prices, by rarity. */
 export const QM_PRICE = { epic: { marks: 6, gold: 400 }, legendary: { marks: 16, gold: 1200 } } as const;

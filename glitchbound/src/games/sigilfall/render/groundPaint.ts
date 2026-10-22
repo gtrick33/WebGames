@@ -115,6 +115,8 @@ export class GroundPainter {
   private readonly theme: Theme;
   private readonly pal: Pal;
   private readonly stone: Indoor | null;
+  /** Bare land: rock cliffs instead of the woods' canopy. */
+  private readonly cliffs: boolean;
   /** Padded row length: the per-tile arrays have a one-tile border around the map. */
   private readonly pw: number;
   /** Per tile, the canopy's blobs: 2 × (x, y, r), a highlight (x, y, r) in art px, and the tile's hash. */
@@ -132,6 +134,7 @@ export class GroundPainter {
     this.theme = src.theme;
     this.pal = palette(src.theme);
     this.stone = THEMES[src.theme].indoor ? stonePalette(src.theme) : null;
+    this.cliffs = !!THEMES[src.theme].cliffs;
     const pw = map.w + 2;
     const ph = map.h + 2;
     this.pw = pw;
@@ -248,8 +251,9 @@ export class GroundPainter {
   private outdoorPixel(ax: number, ay: number): RGB {
     const P = this.pal;
     const k = this.kAt(ax, ay);
+    if (this.cliffs && (k === K.Wall || k === K.Illusion)) return this.cliff(P, ax, ay);
     // the canopy covers foliage and hangs a little over the ground around it
-    const cl = this.canopyAt(ax, ay);
+    const cl = this.cliffs ? -1 : this.canopyAt(ax, ay);
     if (cl >= 0) return this.canopyColor(P, cl, ax, ay);
     let col: RGB;
     switch (k) {
@@ -280,8 +284,57 @@ export class GroundPainter {
       default:
         col = this.grass(P, ax, ay, k === K.Deco);
     }
-    // the canopy's shadow falls down and to the right
+    // the canopy's shadow falls down and to the right; a cliff's lies at its foot
     if (cl === -2) col = mixRGB(col, [10, 26, 22], 0.38);
+    else if (this.cliffs && this.isRock(ax, ay - 3 * D)) col = mixRGB(col, [24, 12, 6], this.isRock(ax, ay - D) ? 0.42 : 0.28);
+    return col;
+  }
+
+  private isRock(ax: number, ay: number): boolean {
+    const k = this.kAt(ax, ay);
+    return k === K.Wall || k === K.Illusion;
+  }
+
+  /**
+   * Bare lands: rock where other lands have woods. A flat top with strata and cracks, a lit rim where
+   * it meets the ground behind, and a cliff face of layered stone where it drops to the ground below.
+   */
+  private cliff(P: Pal, ax: number, ay: number): RGB {
+    const L = P.leaf;
+    const FACE = 10 * D;
+    // how far down the ground is (within a face's height)
+    let down = 0;
+    for (let d = 1; d <= FACE; d++) {
+      if (!this.isRock(ax, ay + d)) {
+        down = d;
+        break;
+      }
+    }
+    if (!this.isRock(ax, ay - 1) || !this.isRock(ax - 1, ay) || !this.isRock(ax + 1, ay) || down === 1) return OUTLINE_RGB;
+    if (down > 0) {
+      // the face: layers of stone, darker toward the foot, cracked here and there
+      const f = FACE - down;
+      const layer = Math.floor((ay + Math.round(noise2(ax / 18, ay / 40, 81) * 6)) / 7);
+      let col = L[f < 3 ? 3 : f < FACE - 6 ? 2 : 1]!;
+      if ((ay + Math.round(noise2(ax / 18, ay / 40, 81) * 6)) % 7 === 0) col = L[f < 3 ? 4 : 1]!;
+      const crack = hash2(Math.floor(ax / 5), layer, 83);
+      if (crack < 0.12 && ax % 5 === 2) col = L[0]!;
+      else if (hash2(ax, ay, 84) < 0.05) col = L[1]!;
+      if (down <= 2) col = L[0]!;
+      return col;
+    }
+    // the top: a lit rim at the back edge, strata like contour lines, cracks and grit
+    if (!this.isRock(ax, ay - 2 * D)) return L[5]!;
+    if (!this.isRock(ax - 2 * D, ay) || !this.isRock(ax + 2 * D, ay)) return L[2]!;
+    const n = noise2(ax / 30, ay / 30, 85);
+    const band = (n * 5) % 1;
+    let col = L[n > 0.55 ? 4 : 3]!;
+    if (band < 0.04) col = L[2]!;
+    const h = hash2(ax, ay, 86);
+    if (h < 0.025) col = L[2]!;
+    else if (h < 0.04) col = L[5]!;
+    const ck = noise2(ax / 9, ay / 9, 87);
+    if (Math.abs(ck - 0.5) < 0.012) col = L[1]!;
     return col;
   }
 
@@ -564,6 +617,13 @@ export class GroundPainter {
     const k = this.kindAt(tx, ty);
     const lx = ax - tx * T;
     const ly = ay - ty * T;
+    // water underground (flooded tunnels, a sea cave): darker, with a stone lip where the floor ends
+    if (k === K.Water) {
+      const above = this.kindAt(tx, ty - 1);
+      if (above !== K.Water && above !== K.Bridge && ly < 3) return ly === 0 ? P.lip : P.lip2;
+      return mixRGB(this.water(this.pal, ax, ay), [6, 8, 20], 0.35);
+    }
+    if (k === K.Bridge) return bridge(ax, ay);
     if (k === K.Wall || k === K.Cracked) {
       const below = this.kindAt(tx, ty + 1);
       const face = below !== K.Wall && below !== K.Cracked;

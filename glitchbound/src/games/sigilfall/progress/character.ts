@@ -2,7 +2,7 @@ import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { QUESTS, QUEST_DEFS } from '../data/quests';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS, talentNode } from '../data/talents';
-import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SlotId } from '../data/types';
+import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SigilId, SlotId } from '../data/types';
 import { itemClass, itemSlot, salvageValue } from './items';
 
 /**
@@ -29,7 +29,22 @@ export const PERKS: Record<PerkId, { name: string; text: string }> = {
   flask: { name: 'Tobin’s Flask', text: 'carry one more potion' },
   mount: { name: 'Gullport Strider', text: 'move 30% faster outside fights' },
   hearth: { name: 'Hearthstone', text: 'return to the last waystone from anywhere' },
+  'sigil-embers': { name: 'Sigil of Embers', text: '+4% health and power' },
+  'sigil-tides': { name: 'Sigil of Tides', text: '+4% health and power' },
+  'sigil-stone': { name: 'Sigil of Stone', text: '+4% health and power' },
+  'sigil-sun': { name: 'Sigil of the Sun', text: '+4% health and power' },
+  'sigil-frost': { name: 'Sigil of Frost', text: '+4% health and power' },
+  'sigil-thorns': { name: 'Sigil of Thorns', text: '+4% health and power' },
+  'sigil-veil': { name: 'Sigil of the Veil', text: '+4% health and power' },
 };
+
+/** The seven sigils, in the order the story wins them. */
+export const SIGILS: SigilId[] = ['sigil-embers', 'sigil-tides', 'sigil-stone', 'sigil-sun', 'sigil-frost', 'sigil-thorns', 'sigil-veil'];
+
+/** The sigils won so far (Duskspire's last door opens only for all seven). */
+export const sigilCount = (c: Pick<Character, 'perks'>): number => c.perks.filter((p) => p.startsWith('sigil-')).length;
+/** Health and power each sigil adds, in percent. */
+export const SIGIL_BONUS = 4;
 
 export type QuestState = 'locked' | 'active' | 'done';
 

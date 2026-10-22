@@ -1,3 +1,4 @@
+import { DUNGEONS } from './dungeons';
 import { GALLOWS_KEEP } from './dungeons/gallows';
 import { SMUGGLERS_GROTTO } from './dungeons/grotto';
 import type { Marker, RegionDef, RegionId } from './types';
@@ -173,7 +174,7 @@ const HAND_LAID: Record<string, RegionDef> = {
     kind: 'wild',
     level: 3,
     levels: [2, 6],
-    at: [44, 42],
+    at: [54, 61],
     dark: false,
     safe: false,
     music: 'forest',
@@ -190,7 +191,7 @@ const HAND_LAID: Record<string, RegionDef> = {
     kind: 'dungeon',
     level: 7,
     levels: [7, 9],
-    at: [50, 34],
+    at: [61, 53],
     dark: true,
     safe: false,
     music: 'crypt',
@@ -226,7 +227,11 @@ const HAND_LAID: Record<string, RegionDef> = {
 };
 
 /** Every region: the hand-laid ones and the generated zones. */
-export const REGIONS = { ...HAND_LAID, ...Object.fromEntries(ZONES.map((z) => [z.region.id, z.region])) } as Record<RegionId, RegionDef>;
+export const REGIONS = {
+  ...HAND_LAID,
+  ...Object.fromEntries(ZONES.map((z) => [z.region.id, z.region])),
+  ...Object.fromEntries(DUNGEONS.map((d) => [d.region.id, d.region])),
+} as Record<RegionId, RegionDef>;
 
 /** Every region, in the order the world map lists them. */
 export const REGION_IDS = Object.keys(REGIONS) as RegionId[];

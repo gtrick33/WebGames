@@ -1293,6 +1293,44 @@ export class Renderer {
         g.restore();
         return;
       }
+      if (pr.look === 'flame') {
+        // a gout of fire: a flickering head with a tail streaming back
+        const fl = Math.floor(time * 14) % 2;
+        for (let i = 3; i >= 1; i--) pixelDisc(g, Math.round(x - Math.cos(a) * i * 2.5), Math.round(y - Math.sin(a) * i * 2.5), Math.max(1, r - i + 1), i === 3 ? '#a8261e' : '#ff7a3d');
+        pixelDisc(g, x, y, r + 1, '#ff2a4a');
+        pixelDisc(g, x, y, r, fl ? '#ff9a3d' : '#ffb04d');
+        g.fillStyle = '#fff2a0';
+        g.fillRect(x - 1, y - 1, 2, 2);
+        return;
+      }
+      if (pr.look === 'bolt') {
+        // a crackling bolt of lightning, jagged along its flight
+        g.save();
+        g.translate(x, y);
+        g.rotate(a);
+        const j = Math.floor(time * 20) % 2 ? 1 : -1;
+        const pts: [number, number][] = [[-9, 0], [-6, -2 * j], [-3, 1 * j], [0, -2 * j], [3, 0]];
+        for (const [width, color] of [[4, '#ff2a4a'], [2, pr.color], [1, '#ffffff']] as const) {
+          g.fillStyle = color;
+          for (let i = 0; i < pts.length - 1; i++) {
+            const [x0, y0] = pts[i]!;
+            const [x1, y1] = pts[i + 1]!;
+            for (let t = 0; t <= 3; t++) g.fillRect(Math.round(x0 + ((x1 - x0) * t) / 3) - (width >> 1), Math.round(y0 + ((y1 - y0) * t) / 3) - (width >> 1), width, width);
+          }
+        }
+        g.restore();
+        return;
+      }
+      if (pr.look === 'ball') {
+        // a cannonball (or a lump of something heavy): dark iron, a glint, a smoky wake
+        g.fillStyle = 'rgba(90,84,100,0.5)';
+        for (let i = 1; i <= 3; i++) g.fillRect(Math.round(x - Math.cos(a) * i * 3) - 1, Math.round(y - Math.sin(a) * i * 3) - 1, 2, 2);
+        pixelDisc(g, x, y, r + 1, '#ff2a4a');
+        pixelDisc(g, x, y, r, '#2a2630');
+        g.fillStyle = '#8a8698';
+        g.fillRect(x - 1, y - r + 1, 2, 1);
+        return;
+      }
       const pulse = Math.floor(time * 10) % 2;
       pixelDisc(g, x, y, r + 1, '#ff2a4a');
       pixelDisc(g, x, y, r, pr.color);

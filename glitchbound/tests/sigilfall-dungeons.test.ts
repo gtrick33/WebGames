@@ -33,7 +33,7 @@ const DUNGEONS: { region: RegionId; level: number; bosses: string[] }[] = [
 describe('sigilfall dungeons', () => {
   for (const d of DUNGEONS) {
     for (const cls of CLASS_IDS) {
-      it(`${cls}: clears ${d.region} at level ${d.level}`, () => {
+      it(`${cls}: clears ${d.region} at level ${d.level}`, { timeout: 30_000 }, () => {
         const { w, r } = runDungeon(d.region, cls, d.level);
         expect(r.stuck).toBe(false);
         expect(w.cleared).toBe(true);

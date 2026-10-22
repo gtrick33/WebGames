@@ -1,4 +1,6 @@
+import { DUNGEONS } from './dungeons';
 import type { ClassId, ItemBase, ItemDef, Rarity, SkillOp, SlotId, StatKey } from './types';
+import { ZONES } from './zones';
 
 /**
  * Hand-made items: every one of them changes how a skill or the hero behaves, not only numbers.
@@ -881,6 +883,9 @@ export const ITEMS: ItemDef[] = [
     special: true,
   },
 ];
+
+// each zone's and dungeon's own items
+ITEMS.push(...[...ZONES, ...DUNGEONS].flatMap((m) => m.items ?? []));
 
 export const ITEM_DEFS: Record<string, ItemDef> = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
 

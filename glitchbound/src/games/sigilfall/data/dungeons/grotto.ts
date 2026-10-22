@@ -89,7 +89,7 @@ export const SMUGGLERS_GROTTO: RegionDef = {
   kind: 'dungeon',
   level: 20,
   levels: [19, 22],
-  at: [56, 82],
+  at: [66, 85],
   dark: true,
   safe: false,
   music: 'cave',

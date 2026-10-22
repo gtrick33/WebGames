@@ -3,6 +3,7 @@ import { hasStatus, hurtPlayer, tickStatuses } from './combat';
 import { hurtPet } from './pets';
 import { castRay, circleHitsWall, flowStep, lineOfSight, moveCircle, pushOut } from './map';
 import { updateBoss } from './boss';
+import type { StatusId } from '../data/types';
 import type { Enemy, Pet } from './types';
 import type { World } from './world';
 
@@ -47,6 +48,7 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
   e.hurtT += dt;
   if (e.def.regen && e.hurtT > 4 && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * e.def.regen * dt);
   e.blinkT -= dt;
+  e.raiseT -= dt;
   const p = victimOf(w, e);
   const stunned = hasStatus(e, 'stun') || hasStatus(e, 'freeze');
   const rooted = hasStatus(e, 'root');
@@ -139,8 +141,9 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
         blinkAway(w, e, p);
         break;
       }
-      // necromancers raise their dead before anything else
-      if (e.def.summons && e.atkCd <= 0 && w.enemies.filter((o) => o.master === e.id && !o.dead).length < e.def.summons.max) {
+      // necromancers raise their dead before anything else (and rest a while after each call, so a
+      // quick hero doesn't keep them chanting forever)
+      if (e.def.summons && e.atkCd <= 0 && e.raiseT <= 0 && w.enemies.filter((o) => o.master === e.id && !o.dead).length < e.def.summons.max) {
         startRaise(w, e);
         break;
       }
@@ -437,6 +440,7 @@ function startRaise(w: World, e: Enemy): void {
 function raise(w: World, e: Enemy): void {
   e.raising = false;
   const s = e.def.summons!;
+  e.raiseT = s.cd ?? 7;
   const alive = w.enemies.filter((o) => o.master === e.id && !o.dead).length;
   const n = Math.min(s.count, s.max - alive);
   for (let i = 0; i < n; i++) {
@@ -513,14 +517,16 @@ function act(w: World, e: Enemy): void {
     return;
   }
   if (e.def.ai === 'exploder') {
-    // it bursts (the circle drawn at the wind-up does the damage) and is gone, with nothing to loot
+    // it bursts (the circle drawn at the wind-up does the damage) and is gone, with nothing to loot:
+    // kill it before it gets there
     const b = e.def.burst;
     if (b && b.pool > 0) w.spawnField({ x: e.x, y: e.y, r: b.radius * 0.8, dur: b.pool, tick: 0.5, dmg: e.dmg * 0.3, type: 'poison', status: { status: 'poison', dur: 2, power: e.dmg * 0.3 }, look: 'poison', hostile: true, depth: 0, spec: null, onHit: false });
-    w.fxBurst(e.x, e.y, '#9ac04a', 16, b?.radius ?? 26);
+    w.fxBurst(e.x, e.y, b?.color ?? '#9ac04a', 16, b?.radius ?? 26);
     w.sfx('explode', 0.6);
     e.hp = 0;
     e.dead = true;
     e.deathT = 0;
+    w.enemyGone(e);
     return;
   }
   if (e.mend) {
@@ -581,7 +587,7 @@ function shoot(w: World, e: Enemy): void {
   if (!s) return;
   const look = s.look ?? (s.homing ? 'orb' : e.def.id === 'skeleton-archer' ? 'enemyArrow' : 'stone');
   const fire = (a: number, mul: number): void => {
-    w.spawnProjectile({ x: e.x + Math.cos(a) * e.r, y: e.y - 3 + Math.sin(a) * e.r, vx: Math.cos(a) * s.speed, vy: Math.sin(a) * s.speed, r: s.radius, life: 260, dmg: e.dmg * mul, type: 'physical', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look, color: s.color, hostile: true, homing: s.homing ?? 0, child: false, knock: 0, ...(s.status ? { status: s.status } : {}) });
+    w.spawnProjectile({ x: e.x + Math.cos(a) * e.r, y: e.y - 3 + Math.sin(a) * e.r, vx: Math.cos(a) * s.speed, vy: Math.sin(a) * s.speed, r: s.radius, life: 260, dmg: e.dmg * mul, type: 'physical', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look, color: s.color, hostile: true, homing: s.homing ?? 0, child: false, knock: 0, ...(s.status ? { status: shotStatus(e, s.status) } : {}) });
   };
   for (let i = 0; i < s.count; i++) fire(s.count === 1 ? e.aimA : e.aimA - s.spread / 2 + (s.spread * i) / (s.count - 1), 1);
   // elites throw a wider spread
@@ -644,4 +650,10 @@ export function separate(w: World, dt: number, list: Enemy[] = w.enemies): void 
       }
     }
   }
+}
+
+/** A shot's status: burning, poison and bleeding grow with the enemy's level like its damage (a slow stays a slow). */
+function shotStatus(e: Enemy, st: { status: StatusId; dur: number; power: number }): { status: StatusId; dur: number; power: number } {
+  const dot = st.status === 'burn' || st.status === 'poison' || st.status === 'bleed';
+  return dot ? { ...st, power: st.power * (e.dmg / Math.max(1, e.def.dmg)) } : st;
 }

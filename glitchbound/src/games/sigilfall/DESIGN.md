@@ -200,16 +200,35 @@ quests, sights (3 % of a level each) and dungeons are the way up. Roads to new l
 level. Perks from quests: a bigger satchel, a bigger flask, a mount (×1.3 speed outside fights, not in
 dungeons) and the hearthstone.
 
+The world so far is the capital and ten open zones (levels 2 to 32), Acts I and II of the Hollow King's story
+(`WORLD.md`): the Whisperwood, Brackenridge, Thornvale, Greyfen, the Saltmarsh, the Amberfield, Duskfen, Ironpeak,
+the Ashen Barrows and Stormwatch. Each zone module (`data/zones/<id>.ts`, `-quests.ts`, `-foes.ts`, and its art in
+`render/art/zones/<id>.ts`) holds its spec, townsfolk, quests, enemies and hand-made items; a sight can stand a
+landmark building (Stormwatch's lighthouse). The main story's quests that join the zones are in `data/story.ts`.
+
+**Sigils.** The seven sigils are the main story's rewards (`perk`s): each adds 4% health and power, the hero sheet
+shows them, and Duskspire's last door will open only for all seven. Acts I and II give three: Embers (the
+Regent's council), Tides (the drowned fleet) and Stone (the Deepforge).
+
 Dungeons are chains of rooms that seal while you fight their waves, with checkpoints and phased bosses: the
-Hollow Crypt (Warden Ossric, Morgrave), Gallows Keep (the Hangman, Varric Blackhand) and the Smugglers' Grotto
-(the Drowned Priestess, Captain Saltbeard). Beating the boss of a dungeon's last boss room opens a portal home and
-a reward screen; loot still on the ground is collected for you when the fight is won or when you leave, so
-nothing is lost.
+Hollow Crypt (Warden Ossric, Morgrave), Gallows Keep (the Hangman, Varric Blackhand), the Smugglers' Grotto (the
+Drowned Priestess, Captain Saltbeard), the Rotmother's Cistern (Brother Pustule, the Rot-Mother), the Deepforge
+Halls (the Slag Colossus, Forgemaster Grold) and the Barrow of Kings (King Hrodric, Sir Corvane the Fallen). A
+dungeon module (`data/dungeons/<id>.ts`) holds its map, bosses, enemies and items; its own boss attacks are in
+`sim/patterns/<id>.ts` (ids with its prefix, like `rot:bile`), run by `boss.ts` through a small kit. Beating the
+boss of a dungeon's last boss room opens a portal home and a reward screen; loot still on the ground is collected
+for you when the fight is won or when you leave, so nothing is lost.
+
+**Enemy strength by level.** Enemy health grows a fifth a level to 15, then follows the heroes, whose damage
+multiplies with specializations, talents and gear (`HP_CURVE` in `data/enemies.ts`: ×4 at 15, ×15 at 30, ×64 at
+60), so fights don't melt away as heroes grow. Damage grows ×1.14 a level; burning, poison and bleeding from enemy
+shots grow with it.
 
 Enemies are archetypes (melee, hopper, ranged, charger, armored, caster, diver, exploder) with wind-ups you
 can read, and tricks on top: flanking, healing a hurt friend, leading a moving target, webs and poison shots,
-raising minions (to a limit), blinking away, knitting back together, bursting when they die, floating over
-water; named rares and recolored variants. Elites get affixes. They walk straight at you only when their whole body fits along the way (otherwise they follow the
+raising minions (to a limit, resting between calls), blinking away, knitting back together, swelling and bursting
+(or bursting when killed), floating over water; named rares and recolored variants. Enemy shots look like what
+they are: arrows, spears, webs, skulls, flames, lightning and cannonballs. Elites get affixes. They walk straight at you only when their whole body fits along the way (otherwise they follow the
 flow field around pillars) and slide off corners they catch on. Bosses are phase lists of weighted, cooldown-limited attack patterns (`bosses.ts`, run by `boss.ts`):
 every dangerous attack is telegraphed, phases change at health thresholds with a short immune transition. A boss
 charges only along a clear lane; with a pillar in the way it walks round it.
@@ -243,7 +262,10 @@ cloud saves (up to 96 KB); the backup stays on the device.
 - `tests/sigilfall-world.test.ts`: the zone generator, routes across the world, respawns, sleeping enemies,
   sights, loot and kill objectives, level warnings, perks, enemy tricks, and every class fighting its way through
   Thornvale and the Saltmarsh.
-- `tests/sigilfall-dungeons.test.ts`: every class clears Gallows Keep and the Smugglers' Grotto.
+- `tests/sigilfall-dungeons.test.ts`: every class clears Gallows Keep and the Smugglers' Grotto;
+  `tests/sigilfall-dungeon-<id>.test.ts` the same for each newer dungeon, plus its own boss mechanics.
+- `tests/sigilfall-world.test.ts` also plays every class through every open zone at its first levels, and checks
+  that every sprite and townsfolk look is drawn once (zone art tables are merged).
 
 ## Known limits
 
@@ -251,5 +273,7 @@ cloud saves (up to 96 KB); the backup stays on the device.
   phones.
 - Balance is tuned against the bot; real players will find Normal easier or harder depending on skill.
 - Sound is synthesized; there is no recorded audio.
-- The level cap is 60, but the zones so far reach level 22 (Mythic crypt aside). The rest of the world in
-  `WORLD.md`, the Hollow King's story and Duskspire are the next stages.
+- The level cap is 60, but the zones so far reach level 32 (Mythic crypt aside). Acts III and IV in `WORLD.md`,
+  and Duskspire with the Hollow King, are the next stages.
+- Measured with the bot, the Ranger's and the Mage's damage at level 40 and above runs far ahead of the other
+  classes (a crit-reset proc with Aimed Shot, stacked fire talents); to be balanced with Act III.

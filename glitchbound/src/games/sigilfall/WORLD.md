@@ -65,6 +65,52 @@ with side quests and dungeons). Each zone's main chain ends by pointing to the n
    Sunken Reaches, the Bonefields where the Legion musters, the Weeping Woods, Emberdeep, the
    Riftscar Wastes, Gloamhollow, Hollowmere and the Pale Reach, to Duskspire and Vaelor.
 
+## The main story, Acts I and II, quest by quest
+
+Each zone's main chain starts with the quest named here (with that `after`, giver and level) and ends
+with the one named here; the story quests in `data/story.ts` join them. The ids are fixed: other zones
+and the story depend on them.
+
+| Zone | First quest of its chain | Last quest of its chain |
+| --- | --- | --- |
+| Brackenridge | `west-road`: after `alpha`, from Maren, level 5 (talk to Warden Hollis in Fernstead) | `lay-the-grey-lady`: kill the Grey Lady, a Sigil-warden's widow who woke when the King did; her last words: he calls all the dead |
+| Thornvale | `south-road`: after `alpha`, from Maren | `the-bandit-king` (Varric) → story `hollow-gold` |
+| Greyfen | `the-digging-dead`: after `the-empty-tomb`, from Maren, level 11 (talk to Marshwarden Tilde in Reedwater) | `the-ghoul-mother`: kill Mother Mire; the ghouls were made by a sickness brewed in Duskfen |
+| **Act I ends** | `the-regents-council` (story): after `hollow-gold` and `the-ghoul-mother`, the Regent names the enemy | the Sigil of Embers |
+| Saltmarsh | `east-to-gullport`: after `hunt-black-bess` | `captain-saltbeard` → story `the-drowned-fleet` (the Sigil of Tides) |
+| Amberfield | `refugees-on-the-road`: after `the-regents-council`, from the Regent, level 16 (talk to Marshal Dunmore in Hearthstead) | `orders-from-the-north`: the Legion's orders: bone-steel from the stolen Deepforge at Ironpeak |
+| Duskfen | `the-sick-villages`: after `the-ghoul-mother`, from Marshwarden Tilde, level 18 (talk to Healer Osk in Stilt Hollow) | `the-rot-mother`: defeat the Rot-Mother in her cistern |
+| Ironpeak | `the-dwarves-plea`: after `orders-from-the-north`, from Marshal Dunmore, level 20 (talk to Thane Borrik in Kragholt) | `forgemaster-grold`: defeat Grold in the Deepforge Halls (the Sigil of Stone) |
+| Ashen Barrows | `the-lanterns-dim`: after `the-dwarves-plea`, from Thane Borrik, level 23 (talk to Lamplighter Ivo on Lantern Hill) | `sir-corvane`: defeat Sir Corvane in the Barrow of Kings |
+| Stormwatch | `the-lighthouse-calls`: after `the-drowned-fleet`, from Harbormaster Quill, level 26 (talk to Keeper Ansel) | `the-last-light`: the drowned fleet broken against the lighthouse |
+| **Act II ends** | `the-kings-design` (story): after `sir-corvane`; Corvane carried a map of where the seven sigils rest | Act III: the race for the sigils |
+
+The new dungeons and their bosses (ids fixed; the zone chains above fight them):
+
+| Dungeon (id) | Levels | Way in | Bosses |
+| --- | --- | --- | --- |
+| The Rotmother's Cistern (`rotmother-cistern`) | 22-25 | Duskfen, the Cistern Mouth (level 21) | Brother Pustule (`brother-pustule`), the Rot-Mother (`the-rot-mother`) |
+| The Deepforge Halls (`deepforge-halls`) | 25-28 | Ironpeak, the Deepforge Gate (level 24) | the Slag Colossus (`slag-colossus`), Forgemaster Grold (`forgemaster-grold`) |
+| The Barrow of Kings (`barrow-of-kings`) | 28-31 | the Ashen Barrows, the Kings' Mound (level 27) | King Hrodric (`king-hrodric`), Sir Corvane the Fallen (`sir-corvane`) |
+
+### What Acts I and II hold (built)
+
+- **Brackenridge** (Fernstead: Warden Hollis, Mother Alsa's inn, Pip's hides): kobolds who dug into the barrows,
+  the first undead, King Snagtooth, Old Rustback and the Grey Lady.
+- **Greyfen** (Reedwater: Marshwarden Tilde, Old Ferris's inn, Nella's oddments): ghouls, drowned villagers, bog
+  hags, Longshanks and Mother Mire.
+- **The Amberfield** (Hearthstead: Marshal Dunmore, Tess's inn, Gaius's cart, Wynn the fletcher): centaur clans and
+  their war-chief Stormhoof, Goldmane, the Legion's riders and hounds under Captain Vosk.
+- **Duskfen** (Stilt Hollow: Healer Osk, Brother Wendel's hostel, Mags): plague ghouls, bloated corpses, rot-sisters,
+  trolls, Gutrot and Bogmaw; the Rotmother's Cistern.
+- **Ironpeak** (Kragholt: Thane Borrik, Hilda's Frostmalt, Oz's facets, Brenna the smith, Grold's daughter): Legion
+  miners, bonecallers and slagthrowers, bone golems, griffons, Stormwing and Old Horn; the Deepforge Halls.
+- **The Ashen Barrows** (Lantern Hill: Lamplighter Ivo, Sister Maud's rest, Kell's grave goods): wights, wight
+  knights and archers, banshees, corpse-candles, the Headless Lord and Mother Aldith; the Barrow of Kings.
+- **Stormwatch** (the lighthouse town: Keeper Ansel, Captain Morra, Bosun Pike's Drowned Man, Odile the glasswright):
+  the drowned fleet's sailors, gunners and chanters, barnacle brutes, storm harpies, elementals and wisps, Captain
+  Gloam, the Galemother, and Admiral Blackwake at the Stormwatch Light.
+
 ## The capital
 
 **Emberwick**, the Ember City, is where every hero starts and where the story keeps coming back: a

@@ -310,7 +310,7 @@ export class World {
           this.spots.push({ ...pos, id: m.id, name: m.name, r: m.r });
           break;
         case 'dummy': {
-          const e = this.addEnemy('moss-slime', pos.x, pos.y, 1, { room: -1, pack: -1 });
+          const e = this.addEnemy('moss-slime', pos.x, pos.y, 1, { room: -1, pack: -1, post: true });
           e.dummy = m.shooter ? 2 : 1;
           e.name = m.shooter ? 'Bolt Dummy' : 'Training Dummy';
           e.hp = e.maxHp = 9999;
@@ -366,7 +366,7 @@ export class World {
   }
 
   /** Creates an enemy (scaled to its level, the difficulty tier and rift modifiers). */
-  addEnemy(id: string, x: number, y: number, level: number, o: { elite?: boolean; room: number; pack: number; spawn?: boolean }): Enemy {
+  addEnemy(id: string, x: number, y: number, level: number, o: { elite?: boolean; room: number; pack: number; spawn?: boolean; post?: boolean }): Enemy {
     const def = ENEMIES[id] ?? ENEMIES['moss-slime']!;
     const sc = enemyScale(level);
     const tier = TIERS[this.tier]!;
@@ -430,12 +430,13 @@ export class World {
       raising: false,
       master: 0,
       blinkT: 0,
+      raiseT: 0,
       hurtT: 99,
       name: o.elite ? `${ELITE_AFFIXES[elite[0]!].name} ${def.name}` : def.name,
     };
-    // big enemies (elites, guardians) must not start overlapping a wall or a pillar (training
-    // dummies stand on their own post on purpose)
-    const free = this.map.kind[tileAt(this.map, x, y)] === K.Prop ? null : pushOut(this.map, x, y, e.r, o.room);
+    // nothing starts overlapping a wall, a pillar or a prop (a pack member landing on a camp's crate
+    // would be stuck in it); training dummies stand on their own post on purpose
+    const free = o.post ? null : pushOut(this.map, x, y, e.r, o.room);
     if (free) {
       e.x = e.homeX = free.x;
       e.y = e.homeY = free.y;
@@ -467,7 +468,8 @@ export class World {
       cx = (room0.reduce((a, i) => a + (i % this.map.w), 0) / room0.length + 0.5) * TILE;
       cy = (room0.reduce((a, i) => a + Math.floor(i / this.map.w), 0) / room0.length + 0.5) * TILE;
     }
-    e.boss = { def, phase: 0, rest: 1.4, pattern: null, cds: {}, queue: [], shift: 0, dazed: 0, dying: 0, cx, cy, collapse: 0, misc: {} };
+    // a boss may open with something (its first phase's `enter`)
+    e.boss = { def, phase: 0, rest: 1.4, pattern: null, cds: {}, queue: [...(def.phases[0]?.enter ?? [])], shift: 0, dazed: 0, dying: 0, cx, cy, collapse: 0, misc: {} };
     this.bossId = e.id;
     return e;
   }
@@ -527,7 +529,7 @@ export class World {
     this.projectiles.push({ id: this.nextId++, hostile: false, splitDone: false, trailT: 0, homing: 0, age: 0, wide: false, dead: false, ...p });
   }
   spawnField(f: Omit<Field, 'id' | 't' | 'tickT'>): void {
-    if (this.fields.length > 80) this.fields.shift();
+    if (this.fields.length > 200) this.fields.shift();
     this.fields.push({ ...f, id: this.nextId++, t: f.dur, tickT: f.hostile ? 0.25 : 0 });
   }
   addTelegraph(t: Omit<Telegraph, 'id' | 't' | 'dead'>): void {
@@ -1111,9 +1113,13 @@ export class World {
       const r = e.elite.includes('volatile') ? 34 : 24;
       this.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r, r2: 0, angle: 0, len: 0, dur: 1, dmg: e.dmg * (e.elite.length ? 1.6 : 0.9), knock: 120, tone: 'enemy', owner: -1, linger: 0 });
     }
-    // the pack is gone: it comes back in a while
-    const st = e.pack > 0 ? this.packs[e.pack - 1] : undefined;
-    if (st && st.respawnT < 0 && !this.enemies.some((x) => x !== e && !x.dead && st.ids.includes(x.id))) st.respawnT = st.rare ? RESPAWN_RARE : RESPAWN_TIME * (0.8 + this.rand() * 0.5);
+    // things that burst when they die (a bloated corpse): step away from the body
+    const b = e.def.burst;
+    if (b?.onDeath) {
+      this.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r: b.radius, r2: 0, angle: 0, len: 0, dur: 0.8, dmg: e.dmg * 1.6, knock: 120, tone: 'enemy', owner: -1, linger: 0 });
+      if (b.pool > 0) this.after(0.8, () => this.spawnField({ x: e.x, y: e.y, r: b.radius * 0.8, dur: b.pool, tick: 0.5, dmg: e.dmg * 0.3, type: 'poison', status: { status: 'poison', dur: 2, power: e.dmg * 0.3 }, look: 'poison', hostile: true, depth: 0, spec: null, onHit: false }));
+    }
+    this.enemyGone(e);
     const here = this.region.id;
     this.questProgress((o) => o.kind === 'kill' && o.region === here && (!o.enemies || o.enemies.includes(e.def.id)));
     // quest items some enemies carry
@@ -1194,6 +1200,12 @@ export class World {
       this.emit({ t: 'cleared' });
     }
     this.emit({ t: 'save' });
+  }
+
+  /** An enemy is gone (killed, or burst by itself): when the last of its pack is gone, the pack comes back in a while. */
+  enemyGone(e: Enemy): void {
+    const st = e.pack > 0 ? this.packs[e.pack - 1] : undefined;
+    if (st && st.respawnT < 0 && !this.enemies.some((x) => x !== e && !x.dead && st.ids.includes(x.id))) st.respawnT = st.rare ? RESPAWN_RARE : RESPAWN_TIME * (0.8 + this.rand() * 0.5);
   }
 
   playerDies(): void {

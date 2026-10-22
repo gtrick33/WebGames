@@ -8,7 +8,7 @@ import { OUTLINE_RGB, Painter, ramp, rgb, type Ramp, type RGB } from './kit';
  * walls fill the lower part of the picture and its roof rises above. Positions are in art pixels.
  */
 
-export type BuildingStyle = 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall';
+export type BuildingStyle = 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall' | 'lighthouse';
 
 const T = 32;
 
@@ -23,7 +23,7 @@ const FRAME: RGB = rgb('#4a2e18');
 
 /** How tall a style's picture is above its footprint (art px), so the scenery can place it. */
 export function buildingRise(style: BuildingStyle, h: number): number {
-  return style === 'keep' ? 110 : style === 'tower' ? 96 : style === 'temple' ? 96 : style === 'hall' ? 70 : h * 10 + 36;
+  return style === 'lighthouse' ? 150 : style === 'keep' ? 110 : style === 'tower' ? 96 : style === 'temple' ? 96 : style === 'hall' ? 70 : h * 10 + 36;
 }
 
 export function building(style: BuildingStyle, w: number, h: number, seed: number): Painter {
@@ -253,6 +253,42 @@ export function building(style: BuildingStyle, w: number, h: number, seed: numbe
         if (Math.abs(wx + 5 - (ox + W / 2)) < gw) continue;
         window(wx, wallTop + 22, 10, 16);
       }
+      break;
+    }
+    case 'lighthouse': {
+      // a tall tapering tower in red and white bands, a gallery, the lantern room lit, a dark cap
+      const cx = ox + Math.round(W / 2);
+      const top = 30;
+      const base = Math.round(W * 0.36);
+      const narrow = Math.round(W * 0.22);
+      const RED = ramp('#c9473b');
+      for (let y = top; y < ground; y++) {
+        const t = (y - top) / (ground - top);
+        const half = Math.round(narrow + (base - narrow) * t);
+        const band = Math.floor((y - top) / 16) % 2 === 0 ? PLASTER : RED;
+        for (let x = cx - half; x < cx + half; x++) {
+          const lx = (x - (cx - half)) / (half * 2);
+          p.set(x, y, band[lx < 0.22 ? 1 : lx > 0.78 ? 3 : 2]!);
+        }
+      }
+      for (let y = ground - 3; y < ground; y++) for (let x = cx - base; x < cx + base; x++) p.set(x, y, DARK_STONE[3]!);
+      // the gallery and its rail
+      p.rect(cx - narrow - 6, top - 3, (narrow + 6) * 2, 4, DARK_STONE[3]!);
+      for (let x = cx - narrow - 6; x < cx + narrow + 6; x += 3) p.rect(x, top - 8, 1, 5, DARK_STONE[2]!);
+      p.rect(cx - narrow - 6, top - 9, (narrow + 6) * 2, 1, DARK_STONE[2]!);
+      // the lantern room: glass and the great light
+      p.rect(cx - narrow + 3, top - 22, (narrow - 3) * 2, 14, GLASS);
+      p.rect(cx - 5, top - 19, 10, 8, GLASS_HI);
+      for (let x = cx - narrow + 3; x < cx + narrow - 3; x += 7) p.rect(x, top - 22, 1, 14, FRAME);
+      // the cap
+      for (let y = 0; y < 10; y++) {
+        const half = Math.round((narrow - 1) * (y / 9));
+        for (let x = cx - half; x < cx + half; x++) p.set(x, top - 32 + y, RED[3]!);
+      }
+      p.rect(cx - 1, top - 36, 2, 5, DARK_STONE[3]!);
+      window(cx - 4, Math.round(top + (ground - top) * 0.3), 8, 10);
+      window(cx - 4, Math.round(top + (ground - top) * 0.58), 8, 10);
+      door(cx, 12, 20, true);
       break;
     }
     case 'tower': {

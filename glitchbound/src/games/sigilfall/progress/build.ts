@@ -4,7 +4,7 @@ import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { Effect, FormDef, GroundSpec, Mod, ProcDef, Rarity, ResourceDef, SkillOp, SkillSpec, SlotKey, Stats, StatKey } from '../data/types';
 import { SLOTS } from '../data/types';
-import { hasUltimate, type Character } from './character';
+import { hasUltimate, SIGIL_BONUS, sigilCount, type Character } from './character';
 import { opText } from './describe';
 import { itemMods, itemName, itemStats } from './items';
 
@@ -394,6 +394,9 @@ export function heroStats(c: Character, mods: Entry[] = collectMods(c)): { stats
     else if (e.mod.when === 'afterDodge') afterDodge[e.mod.stat] = (afterDodge[e.mod.stat] ?? 0) + v;
     else stats[e.mod.stat] += v;
   }
+  const sigils = sigilCount(c) * SIGIL_BONUS;
+  stats.hpPct += sigils;
+  stats.power += sigils;
   stats.crit = Math.min(75, stats.crit);
   stats.speed = Math.min(40, stats.speed);
   const maxHp = Math.round(stats.hp * (1 + stats.hpPct / 100));

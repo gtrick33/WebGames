@@ -2299,3 +2299,23 @@
     animation: none;
   }
 }
+
+/* the seven sigils on the hero sheet: a dim socket each, lit once won */
+.rb-sigils {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 2px;
+}
+.rb-sigil {
+  width: 14px;
+  height: 14px;
+  transform: rotate(45deg);
+  border: 2px solid #3a3450;
+  background: #1a1626;
+}
+.rb-sigil.is-won {
+  border-color: var(--rb-ink);
+  background: var(--sigil);
+  box-shadow: 0 0 6px var(--sigil);
+}

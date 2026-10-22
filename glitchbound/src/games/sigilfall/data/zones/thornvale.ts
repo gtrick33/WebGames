@@ -12,7 +12,7 @@ export const THORNVALE = wildRegion(
     subtitle: 'Farmland under the Gallows Gang',
     theme: 'farm',
     levels: [8, 14],
-    at: [30, 64],
+    at: [40, 79],
     dark: false,
     safe: false,
     music: 'plains',
@@ -31,6 +31,7 @@ export const THORNVALE = wildRegion(
     exits: [
       { side: 'n', at: 0.36, to: 'emberwick', label: 'North road to Emberwick' },
       { side: 'e', at: 0.58, to: 'saltmarsh', label: 'The coast road', minLevel: 13 },
+      { side: 'w', at: 0.62, to: 'greyfen', label: 'West road to Greyfen', minLevel: 11 },
     ],
     pois: [
       { at: [0.18, 0.47], r: 9, kind: 'farm', packs: [['hill-wolf', 'hill-wolf'], ['hill-wolf', 'hill-wolf', 'hill-wolf']], spot: { id: 'tobins-farm', name: 'Tobin’s Farm' } },

@@ -1,3 +1,4 @@
+import { DUNGEONS } from './dungeons';
 import type { ClassId } from './types';
 
 /**
@@ -33,8 +34,11 @@ export type PatternId =
   | 'barrage'
   | 'kegs';
 
+/** A dungeon's own attack (sim/patterns/): its prefix and a name, like 'rot:bile-wave'. */
+export type ExtraPatternId = `${string}:${string}`;
+
 export interface PatternUse {
-  id: PatternId;
+  id: PatternId | ExtraPatternId;
   /** How often it is picked relative to the others. */
   w: number;
   /** Seconds before the same pattern can come again. */
@@ -321,7 +325,7 @@ export const BOSSES: Record<string, BossDef> = {
     name: 'The Drowned Priestess',
     title: 'Voice of the Deep Tide',
     sprite: 'the-drowned',
-    hp: 1600,
+    hp: 1120,
     dmg: 20,
     radius: 10,
     xp: 420,
@@ -365,7 +369,7 @@ export const BOSSES: Record<string, BossDef> = {
     name: 'Captain Saltbeard',
     title: 'Master of the Smugglers’ Grotto',
     sprite: 'saltbeard',
-    hp: 3100,
+    hp: 2170,
     dmg: 22,
     radius: 10,
     xp: 900,
@@ -422,3 +426,5 @@ export const BOSSES: Record<string, BossDef> = {
     intro: 'Forty years a smuggler, twenty a captain, and he has never once paid a harbor fee.',
   },
 };
+
+for (const d of DUNGEONS) Object.assign(BOSSES, d.bosses);

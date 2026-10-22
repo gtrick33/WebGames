@@ -2,6 +2,7 @@ import { dist, inLine, pickWeighted, TAU } from '../core/math';
 import type { PatternUse } from '../data/bosses';
 import { hasStatus, hurtPlayer } from './combat';
 import { castRay, circleHitsWall, flowStep, K, lineOfSight, moveCircle, TILE, tileAt } from './map';
+import { EXTRA_PATTERNS } from './patterns';
 import type { Enemy } from './types';
 import type { World } from './world';
 
@@ -780,6 +781,16 @@ function runPattern(w: World, e: Enemy, dt: number): void {
         w.sfx('sling', 0.6);
         pt.step = 1;
       } else if (pt.t >= 0.7) endPattern(w, e);
+      break;
+    }
+    default: {
+      // a dungeon's own attack (sim/patterns/)
+      const fn = EXTRA_PATTERNS[u.id];
+      if (!fn) {
+        endPattern(w, e);
+        break;
+      }
+      fn(w, e, dt, { use: u, pt, aimAt, num: (k, d) => num(u, k, d), str: (k, d) => str(u, k, d), end: () => endPattern(w, e) });
       break;
     }
   }

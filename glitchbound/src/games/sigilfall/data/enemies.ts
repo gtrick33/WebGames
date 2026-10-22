@@ -1,4 +1,5 @@
 import type { EliteAffix, EnemyDef } from './types';
+import { DUNGEONS } from './dungeons';
 import { ZONES } from './zones';
 
 /**
@@ -322,7 +323,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     keep: 105,
     heals: 0.25,
     slam: { radius: 22 },
-    shot: { speed: 90, radius: 3.5, count: 3, spread: 0.5, color: '#9cf07a', status: { status: 'poison', dur: 3, power: 4 } },
+    shot: { speed: 90, radius: 3.5, count: 3, spread: 0.5, color: '#9cf07a', status: { status: 'poison', dur: 3, power: 3 } },
     blurb: 'Mends the bandits around her. Kill her first, or the fight never ends.',
   },
   'hill-wolf': {
@@ -616,7 +617,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
 };
 
 // each zone's own enemies
-for (const z of ZONES) Object.assign(ENEMIES, z.foes ?? {});
+for (const z of [...ZONES, ...DUNGEONS]) Object.assign(ENEMIES, z.foes ?? {});
 
 export const ELITE_AFFIXES: Record<EliteAffix, { name: string; text: string }> = {
   frenzied: { name: 'Frenzied', text: 'moves and attacks faster' },
@@ -626,9 +627,35 @@ export const ELITE_AFFIXES: Record<EliteAffix, { name: string; text: string }> =
   volatile: { name: 'Volatile', text: 'explodes when it dies: step away' },
 };
 
+/**
+ * Enemy health by level. Up to 15 it grows by a fifth a level; after that it follows the heroes, whose
+ * damage multiplies with their specialization, talents and gear (measured with the play-bot: about 30×
+ * from level 10 to 60), so a fight takes about as long at 50 as at 15, a little less.
+ */
+const HP_CURVE: [number, number][] = [
+  [1, 1],
+  [15, 4.08],
+  [20, 7],
+  [25, 10.5],
+  [30, 15],
+  [35, 21],
+  [40, 28],
+  [50, 45],
+  [60, 64],
+];
+
+const hpScale = (level: number): number => {
+  for (let i = 1; i < HP_CURVE.length; i++) {
+    const [l1, v1] = HP_CURVE[i]!;
+    const [l0, v0] = HP_CURVE[i - 1]!;
+    if (level <= l1) return v0 + ((v1 - v0) * (Math.max(level, l0) - l0)) / (l1 - l0);
+  }
+  return HP_CURVE[HP_CURVE.length - 1]![1];
+};
+
 /** Health and damage multipliers for an enemy level. */
 export const enemyScale = (level: number): { hp: number; dmg: number; xp: number } => ({
-  hp: 1 + 0.22 * (level - 1),
+  hp: hpScale(level),
   dmg: 1 + 0.14 * (level - 1),
   xp: 1 + 0.15 * (level - 1),
 });

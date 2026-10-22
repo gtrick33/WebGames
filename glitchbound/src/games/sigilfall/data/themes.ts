@@ -53,6 +53,8 @@ export interface ThemeLook {
   ambient?: Ambient;
   /** Its water is lava. */
   lava?: boolean;
+  /** Bare land: rock cliffs and mesas stand where other lands have woods (colored by `ground.leaf`). */
+  cliffs?: boolean;
   /** A color laid thin over everything (gloomy lands). */
   tint?: string;
 }
@@ -350,6 +352,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     leaves: ['#2a4a1a', '#365e20', '#447428', '#548a30', '#6aa23c', '#8abc52'],
     bark: '#8a6a3a',
     ambient: 'dust',
+    cliffs: true,
   },
   fey: {
     indoor: false,
@@ -513,6 +516,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     bark: '#1e1a1a',
     ambient: 'embers',
     lava: true,
+    cliffs: true,
   },
   deadlake: {
     indoor: false,
@@ -548,6 +552,23 @@ export const THEMES: Record<Theme, ThemeLook> = {
     moss: '#5a6a3a',
     crack: '#14100c',
   }),
+  // sewers and cisterns: green-stained stone, slime in the cracks
+  cistern: indoor(
+    '#08100c',
+    {
+      slab: ['#4a5a4c', '#526254', '#465648', '#4e5e50'],
+      mortar: '#2c3a2e',
+      top: '#0e1810',
+      topHi: '#18241a',
+      lip: '#3a4c3c',
+      lip2: '#2a382c',
+      brick: ['#5a6e58', '#4e6250', '#627660'],
+      brickMortar: '#223024',
+      moss: '#7aa04a',
+      crack: '#0c140e',
+    },
+    'spores',
+  ),
   keep: indoor('#101218', {
     slab: ['#5a5e6a', '#626672', '#565a66', '#5e626e'],
     mortar: '#363a46',
