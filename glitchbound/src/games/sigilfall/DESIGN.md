@@ -2,7 +2,8 @@
 
 A single-player, top-down pixel-art action RPG, built for phones first (landscape, two thumbs) and fully playable
 with a keyboard and mouse. Seven classes, gear that changes how skills behave, three talent trees and a
-specialization per class, three regions, three bosses and three difficulty tiers.
+specialization per class, a capital city and big open zones, dungeons with phased bosses and three difficulty
+tiers. The story, the Hollow King and the plan for all 28 zones and their dungeons are in `WORLD.md`.
 
 **Name.** The game launched as "Riftbound" on 2026-10-22 and was renamed Sigilfall the same day: Riftbound is
 also Riot Games' League of Legends trading card game. In the story, the sigils that held the Rift shut have
@@ -22,7 +23,7 @@ for players, while admins still see both. It reports `start`/`end` to the arcade
 
 | Folder | What is in it |
 | --- | --- |
-| `data/` | Content only, typed: a kit per class in `kits/` (its definition, skills as `SkillSpec`s, talents), pets, items, enemies, bosses, regions (ASCII maps), quests and NPCs |
+| `data/` | Content only, typed: a kit per class in `kits/` (its definition, skills as `SkillSpec`s, talents), pets, items, enemies, bosses, regions, quests and NPCs; a module per zone in `zones/` (its region, people, quests and enemies), dungeons in `dungeons/`, the zone generator (`zonegen.ts`), the city builder (`citygen.ts`) and every land's look (`themes.ts`) |
 | `progress/` | The hero (`character.ts`), items and loot, the build resolver (`build.ts`), item and modifier text (`describe.ts`), saves |
 | `sim/` | The world (`world.ts`), casting and projectiles, combat and statuses, companions (`pets.ts`), enemy AI, the boss framework, tile maps and collision |
 | `render/` | Canvas 2D at a low pixel resolution: the ground (chunked, painted on a worker), the paper-doll hero, sprites, lighting, effects |
@@ -149,7 +150,11 @@ in world units.
   trim; legendary: gold and a glowing stone; epic and legendary armor adds a cape). Generated armor is dyed per
   piece from its material's colors (`itemTint`), so two robes rarely match. Empty slots show the class outfit
   (the mage's hat and robe). The character screen is a paper doll with the hero in the middle (tap to turn).
-- **Trees, bushes, rocks** (`render/art/flora.ts`) are painted at art resolution; other props, creatures and
+- **Trees, bushes, rocks** (`render/art/flora.ts`) are painted at art resolution, each land with its own trees
+  (oaks and pines, palms, snowy pines, dead trees, cacti, mushrooms, crystal spires, willows, jungle trees: the
+  theme's list in `data/themes.ts`), a few dozen variants of each shared across a zone. **Buildings**
+  (`render/art/buildings.ts`) are painted per style (house, tavern, inn, shop, smithy, temple, keep, tower,
+  hall) over their footprint. Other props, creatures and
   weapons are their text art doubled with Scale2x (smooth diagonals, a fine outline) until they are redrawn.
   Companions and the druid's cat and bear are in `render/art/companions.ts`.
 - **Icons**: skills and talents use 24 × 24 glyphs (`render/art/icons.ts`, one per skill in `skillGlyphs.ts`)
@@ -173,17 +178,41 @@ costs 25 gold per level.
 
 ## World
 
-Regions are ASCII maps in `regions.ts` with a legend per region: walls, water, doors, cracked walls (secrets),
-props, NPCs, chests, waystones, exits, packs, hazards and boss marks. Emberwick is the safe village and training
-yard; the Whisperwood has packs in the open, elites, spore hazards, a hidden grove and Grimtusk's den; the Hollow
-Crypt is a chain of rooms that seal while you fight their waves, with checkpoints, Warden Ossric (the miniboss)
-and Morgrave in the Sanctum. Clearing the crypt opens a portal home and a reward screen; loot still on the ground
-is collected for you when the fight is won or when you leave, so nothing is lost.
+The story and the map of the whole world are in `WORLD.md`. Each region is a tile map with markers, from one
+of three sources:
 
-Enemies are archetypes (melee, hopper, ranged, charger, armored, caster) with wind-ups you can read; elites get
-affixes. They walk straight at you only when their whole body fits along the way (otherwise they follow the
+- **Hand-laid** ASCII maps with a legend (the Whisperwood, the Hollow Crypt, the dungeons in `dungeons/`): walls,
+  water, doors, cracked walls (secrets), props, NPCs, chests, waystones, exits, packs, hazards and boss marks.
+- **The city builder** (`citygen.ts`): Emberwick is a short script of walls and gates, avenues and squares,
+  buildings with their keepers at the door (the keep with the Regent, the temple, the Drunken Wyvern tavern, the
+  Ember Hearth inn, the smithy, shops, houses), the training grounds, a pond, gardens and lamps.
+- **The zone generator** (`zonegen.ts`): an open zone is a `ZoneSpec` (size, seed, levels, how much forest,
+  water as lakes, a river or a coast, beaches, towns with their people and houses, sights, camps, nests, ruins,
+  caves with dungeon entrances, wrecks, and the packs of the open land). It lays out the land, joins every place
+  with roads, levels the packs by their distance from the way in and places everything as markers; the same
+  spec always makes the same zone, generated on first visit. Its `holds` (people, places, ways out) are known
+  without generating it, so quest markers can route across the world (`sim/routes.ts`).
+
+In the open zones a wiped-out pack comes back after 100 s (named enemies after 300 s), never in sight of the
+hero; enemies far away and not fighting sleep, so a zone can hold hundreds. Those packs are tougher than a
+dungeon's (×1.8 health, ×1.15 damage) and pay half the experience: the road to 60 is meant to be long, and
+quests, sights (3 % of a level each) and dungeons are the way up. Roads to new lands warn heroes below their
+level. Perks from quests: a bigger satchel, a bigger flask, a mount (×1.3 speed outside fights, not in
+dungeons) and the hearthstone.
+
+Dungeons are chains of rooms that seal while you fight their waves, with checkpoints and phased bosses: the
+Hollow Crypt (Warden Ossric, Morgrave), Gallows Keep (the Hangman, Varric Blackhand) and the Smugglers' Grotto
+(the Drowned Priestess, Captain Saltbeard). Beating the boss of a dungeon's last boss room opens a portal home and
+a reward screen; loot still on the ground is collected for you when the fight is won or when you leave, so
+nothing is lost.
+
+Enemies are archetypes (melee, hopper, ranged, charger, armored, caster, diver, exploder) with wind-ups you
+can read, and tricks on top: flanking, healing a hurt friend, leading a moving target, webs and poison shots,
+raising minions (to a limit), blinking away, knitting back together, bursting when they die, floating over
+water; named rares and recolored variants. Elites get affixes. They walk straight at you only when their whole body fits along the way (otherwise they follow the
 flow field around pillars) and slide off corners they catch on. Bosses are phase lists of weighted, cooldown-limited attack patterns (`bosses.ts`, run by `boss.ts`):
-every dangerous attack is telegraphed, phases change at health thresholds with a short immune transition.
+every dangerous attack is telegraphed, phases change at health thresholds with a short immune transition. A boss
+charges only along a clear lane; with a pillar in the way it walks round it.
 
 Difficulty: Normal, Heroic (+6 enemy levels, ×1.9 health, ×1.4 damage) and Mythic (+12, ×4, ×2.1), each opened
 by clearing the crypt on the tier below, with optional modifiers for more loot.
@@ -211,6 +240,10 @@ cloud saves (up to 96 KB); the backup stays on the device.
 - `tests/sigilfall-economy.test.ts`: mana, rage, regeneration, potions, shops, aiming and dodge cooldowns.
 - `tests/sigilfall-classes.test.ts`: the version 1 migration, Holy Power, drains, heals over time, Shield
   Wall, companions (staying, healing, taunting, fading), fear and the druid's forms.
+- `tests/sigilfall-world.test.ts`: the zone generator, routes across the world, respawns, sleeping enemies,
+  sights, loot and kill objectives, level warnings, perks, enemy tricks, and every class fighting its way through
+  Thornvale and the Saltmarsh.
+- `tests/sigilfall-dungeons.test.ts`: every class clears Gallows Keep and the Smugglers' Grotto.
 
 ## Known limits
 
@@ -218,5 +251,5 @@ cloud saves (up to 96 KB); the backup stays on the device.
   phones.
 - Balance is tuned against the bot; real players will find Normal easier or harder depending on skill.
 - Sound is synthesized; there is no recorded audio.
-- The level cap is 60, but the regions so far are tuned for levels 1 to 20 (Mythic). Zones for the levels after
-  that are the next stage.
+- The level cap is 60, but the zones so far reach level 22 (Mythic crypt aside). The rest of the world in
+  `WORLD.md`, the Hollow King's story and Duskspire are the next stages.

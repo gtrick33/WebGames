@@ -4,7 +4,7 @@ import { CLASS_IDS, CLASSES } from '../data/classes';
 import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL } from '../data/talents';
-import type { ClassId } from '../data/types';
+import type { ClassId, RegionId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { cleanName } from '../progress/character';
 import { Portrait, SkillIcon } from './common';
@@ -46,7 +46,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
                   <span>
                     Level {h.level} {CLASSES[h.cls].name}
                   </span>
-                  <span className="rb-dim">{h.unlocked.includes('crypt') ? REGIONS.crypt.name : h.unlocked.includes('whisperwood') ? REGIONS.whisperwood.name : REGIONS.emberwick.name}</span>
+                  <span className="rb-dim">{farthest(h.unlocked).name}</span>
                 </div>
                 <div className="rb-slot-actions">
                   <button className="rb-btn is-small" onClick={() => engine.play(i)}>
@@ -89,6 +89,9 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
 }
 
 const DIFFICULTY = ['', 'Easy to learn', 'Some practice', 'Takes skill'];
+
+/** How far a hero has come: the highest-level land they have been to. */
+const farthest = (unlocked: RegionId[]) => unlocked.map((id) => REGIONS[id]).reduce((a, b) => (b.levels[1] > a.levels[1] ? b : a), REGIONS.emberwick);
 
 /** Choosing a class and a name. */
 export function CreateScreen({ engine }: { engine: SigilEngine }) {

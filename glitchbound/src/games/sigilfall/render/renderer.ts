@@ -1,4 +1,5 @@
 import { clamp, damp, dist, hash2, TAU } from '../core/math';
+import { THEMES } from '../data/themes';
 import type { ClassId } from '../data/types';
 import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
@@ -7,7 +8,7 @@ import type { Enemy, Fx, Pet, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
 import { itemTint } from '../progress/items';
 import { canvas, ctx2d, DETAIL, pixelText, rgba, type Cnv } from './pixel';
-import { creatureSprite, glowDisc, heldWeapon, heroLook, heroSprite, npcSprite, recolored, weaponSprite, type HeroDir } from './sprites';
+import { creatureSprite, glowDisc, heldWeapon, heroLook, heroSprite, npcSprite, recolored, vendorSign, weaponSprite, type HeroDir } from './sprites';
 import type { HeroLook } from './art/hero';
 import { buildScenery, type Scenery } from './tiles';
 import { objectiveTarget } from '../sim/objective';
@@ -222,7 +223,7 @@ export class Renderer {
 
     // everything is drawn in world pixels; the transform turns them into art pixels
     g.setTransform(DETAIL, 0, 0, DETAIL, 0, 0);
-    g.fillStyle = sc.theme === 'crypt' ? '#0e0c18' : sc.theme === 'forest' ? '#123a22' : '#1f5a2a';
+    g.fillStyle = THEMES[sc.theme].bg;
     g.fillRect(0, 0, this.vw, this.vh);
     sc.ground.draw(g, ox, oy, this.vw, this.vh);
     g.translate(-ox, -oy);
@@ -271,7 +272,15 @@ export class Renderer {
 
     // the crypt is dark: light comes from the hero, torches and spells
     if (w.region.dark) this.drawLighting(w, sc, ox, oy, time);
-    else if (sc.theme === 'forest') this.drawCanopyShade(ox, oy, time);
+    else if (sc.theme === 'forest' || sc.theme === 'jungle') this.drawCanopyShade(ox, oy, time);
+    // gloomy lands lie under a cold veil
+    const veil = THEMES[sc.theme].tint;
+    if (veil && !w.region.dark) {
+      g.globalAlpha = 0.26;
+      g.fillStyle = veil;
+      g.fillRect(ox, oy, this.vw, this.vh);
+      g.globalAlpha = 1;
+    }
 
     // collapse ring (Morgrave's last phase)
     const bz = w.boss();
@@ -517,6 +526,21 @@ export class Renderer {
       if (e.dead || e.state !== 'windup' || e.boss) continue;
       const k = clamp(1 - e.t / e.def.windup, 0, 1);
       const red = '#ff3b3b';
+      if (e.mend) {
+        // a healer gathering a heal: a green thread to its friend (stun or kill it to stop it)
+        const ally = w.enemyById(e.mend);
+        if (ally) {
+          g.strokeStyle = rgba('#7bff9a', 0.35 + k * 0.5);
+          g.lineWidth = 1;
+          g.setLineDash([2, 2]);
+          g.beginPath();
+          g.moveTo(e.x, e.y - 4);
+          g.lineTo(ally.x, ally.y - 4);
+          g.stroke();
+          g.setLineDash([]);
+        }
+        continue;
+      }
       g.save();
       switch (e.def.ai) {
         case 'melee':
@@ -897,7 +921,7 @@ export class Renderer {
     if (e.boss && bossHidden(e)) return;
     const moving = e.state === 'chase' || e.state === 'act' || e.state === 'return';
     const frame = moving ? Math.floor(e.walkT * 6) % 2 : Math.floor(time * 2 + e.id) % 2;
-    const sprite = e.boss?.def.id === 'grimtusk' ? recolored('grimtusk', frame, {}, 'grimtusk') : creatureSprite(e.def.sprite, frame);
+    const sprite = e.def.pal ? recolored(e.def.sprite, frame, e.def.pal, `en:${e.def.id}`) : e.boss?.def.id === 'grimtusk' ? recolored('grimtusk', frame, {}, 'grimtusk') : creatureSprite(e.def.sprite, frame);
     const flip = Math.cos(e.face) < 0;
     let sx = 1;
     let sy = 1;
@@ -915,7 +939,7 @@ export class Renderer {
     // whole art pixels, so the doubled art stays crisp
     const dw = Math.round(sprite.width * scale * sx) / sprite.k;
     const dh = Math.round(sprite.height * scale * sy) / sprite.k;
-    const floatY = e.def.ai === 'caster' || e.boss?.def.floats ? Math.round(Math.sin(time * 3 + e.id) * 2) - 3 : 0;
+    const floatY = e.def.ai === 'caster' || e.def.floats || e.boss?.def.floats ? Math.round(Math.sin(time * 3 + e.id) * 2) - (e.def.floats ? 6 : 3) : 0;
     const x = Math.round((e.x - dw / 2) * sprite.k) / sprite.k;
     const y = Math.round((e.y + e.r * 0.8 - dh + floatY) * sprite.k) / sprite.k;
     g.save();
@@ -1051,10 +1075,25 @@ export class Renderer {
     const sw = sprite.width / sprite.k;
     const sh = sprite.height / sprite.k;
     g.drawImage(face < 0 ? sprite.f : sprite.c, Math.round(x) - sw / 2, Math.round(y + 7 - sh + b), sw, sh);
-    // a "!" over NPCs with something new to say
-    if (npcHasNews(w, id)) {
-      const img = pixelText('!', '#ffe066');
-      g.drawImage(img, Math.round(x - img.width / 2), Math.round(y + 4 - sh + Math.sin(bob * 3) * 1.5) - 4);
+    // vendors carry a sign of what they sell; quests use "!" (yours) and "?" (talk to them) above it
+    let top = Math.round(y + 4 - sh);
+    const def = NPCS[id];
+    const sign = def ? vendorSign(def.shop ?? (def.service === 'respec' ? 'respec' : '')) : null;
+    if (sign) {
+      const bw = sign.width / sign.k;
+      const bh = sign.height / sign.k;
+      const bx = Math.round(x - bw / 2);
+      const by = top - bh - 1;
+      g.fillStyle = 'rgba(27,20,40,0.72)';
+      g.fillRect(bx - 2, by - 2, bw + 4, bh + 4);
+      g.fillRect(Math.round(x) - 1, by + bh + 2, 2, 1);
+      g.drawImage(sign.c, bx, by, bw, bh);
+      top = by - 2;
+    }
+    const mark = npcMark(w, id);
+    if (mark) {
+      const img = pixelText(mark, '#ffe066');
+      g.drawImage(img, Math.round(x - img.width / 2), Math.round(top + Math.sin(bob * 3) * 1.5) - 4);
     }
   }
 
@@ -1236,6 +1275,21 @@ export class Renderer {
         g.fillRect(-L + 1, -1, L, 2);
         g.fillStyle = '#ff3f6a';
         g.fillRect(1, -1, 2, 2);
+        g.restore();
+        return;
+      }
+      if (pr.look === 'web') {
+        // a spray of sticky threads
+        g.save();
+        g.translate(x, y);
+        g.rotate(time * 6);
+        g.fillStyle = '#ff2a4a';
+        g.fillRect(-r - 1, -1, r * 2 + 2, 2);
+        g.fillRect(-1, -r - 1, 2, r * 2 + 2);
+        g.fillStyle = pr.color;
+        g.fillRect(-r, 0, r * 2, 1);
+        g.fillRect(0, -r, 1, r * 2);
+        g.fillRect(-1, -1, 3, 3);
         g.restore();
         return;
       }
@@ -1605,23 +1659,27 @@ export class Renderer {
 
   private drawEnemyBar(e: Enemy, w: World): void {
     if (e.dead || e.boss || e.dummy || e.state === 'spawn') return;
-    if (e.hp >= e.maxHp && !e.elite.length && e.shield <= 0) return;
+    const named = !!e.def.named;
+    if (e.hp >= e.maxHp && !e.elite.length && !named && e.shield <= 0) return;
     const g = this.g;
-    const wdt = e.elite.length ? 22 : 14;
+    const wdt = e.elite.length || named ? 22 : 14;
     const x = Math.round(e.x - wdt / 2);
     const sprite = creatureSprite(e.def.sprite, 0);
-    const y = Math.round(e.y + e.r * 0.8 - (sprite.height / sprite.k) * e.scale - 5);
+    const y = Math.round(e.y + e.r * 0.8 - (sprite.height / sprite.k) * e.scale - 5 - (e.def.floats ? 6 : 0));
     g.fillStyle = '#1b1428';
     g.fillRect(x - 1, y - 1, wdt + 2, 4);
     g.fillStyle = '#4a1a26';
     g.fillRect(x, y, wdt, 2);
-    g.fillStyle = e.elite.length ? '#ffcf5a' : '#ff4a5a';
+    g.fillStyle = named ? '#d8b0ff' : e.elite.length ? '#ffcf5a' : '#ff4a5a';
     g.fillRect(x, y, Math.max(0, Math.round((wdt * e.hp) / e.maxHp)), 2);
     if (e.shield > 0) {
       g.fillStyle = '#7fd8ff';
       g.fillRect(x, y - 1, Math.max(1, Math.round((wdt * e.shield) / (e.maxHp * 0.4))), 1);
     }
-    if (e.elite.length) {
+    if (named) {
+      const img = pixelText(`${e.name} ${e.level}`, '#e8d0ff');
+      g.drawImage(img, Math.round(e.x - img.width / 2), y - 8);
+    } else if (e.elite.length) {
       const img = pixelText(e.name.split(' ')[0]!, '#ffd36b');
       g.drawImage(img, Math.round(e.x - img.width / 2), y - 8);
     }
@@ -1700,10 +1758,12 @@ export const rarityColor = (r: string | undefined): string => (r === 'legendary'
 
 
 /** Whether an NPC is the giver of an active quest (shows a "!"). */
-function npcHasNews(w: World, id: string): boolean {
-  return Object.entries(w.hero.quests).some(([q, s]) => s.state === 'active' && questGiver(q) === id);
+function npcMark(w: World, id: string): '?' | '!' | null {
+  const active = Object.entries(w.hero.quests).filter(([, s]) => s.state === 'active');
+  if (active.some(([q]) => QUEST_DEFS[q]?.objective.kind === 'talk' && (QUEST_DEFS[q]!.objective as { npc: string }).npc === id)) return '?';
+  return active.some(([q]) => questGiver(q) === id) ? '!' : null;
 }
 
-import { QUEST_DEFS } from '../data/quests';
+import { NPCS, QUEST_DEFS } from '../data/quests';
 const questGiver = (q: string): string | undefined => QUEST_DEFS[q]?.giver;
 

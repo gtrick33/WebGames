@@ -1,4 +1,8 @@
+import { GALLOWS_KEEP } from './dungeons/gallows';
+import { SMUGGLERS_GROTTO } from './dungeons/grotto';
 import type { Marker, RegionDef, RegionId } from './types';
+import { EMBERWICK } from './zones/emberwick';
+import { ZONES } from './zones';
 
 /*
  * The world: hand-laid tile maps (16 px tiles). Letters are terrain unless the region lists them as a
@@ -10,37 +14,6 @@ import type { Marker, RegionDef, RegionId } from './types';
  *           Z cracked wall (breaks when hit)   D door (closes during a room's fight)   % overgrown
  *           hedge you can walk through   k brambles (hurt)
  */
-
-const EMBERWICK_MAP = [
-  '############################################',
-  '#TT....,,...T........,,.....T....,,.....TTT#',
-  '#T...hhhh.........hhhh.........hhhh......TT#',
-  '#....hhhh...L.....hhhh....L....hhhh.......T#',
-  '#,...Hhhh.........Hhhh.........Hhhh........#',
-  '#......=.I...........=..........N..=...t...#',
-  '#..,...=========.....=......========.......#',
-  '#T.............=:::::::::::::::=...........#',
-  '#T..xo.........::::::::::::::::::....ffffff#',
-  '#.............:::::::::W::::::::::...f....f#',
-  '#.....E.......::::::::::::::::::::...f.D..f#',
-  '#,....=========::::w:::::::::::::==..f..d.f#',
-  '#.............:::::::::::P::::::::=..f.D..f#',
-  '#..Y......K...::::::::::::::::::::=..f....f#',
-  '#..t..........::::::::::::::::::::=..ff=fff#',
-  '#.........,....::::::::::::::::::=====.....#',
-  '#.T.............=......B.M.........=.......X',
-  '#..,,...........=.....A.x..........========X',
-  '#...............=.....oo...........=.......X',
-  '#..~~~~.........=..................=.......#',
-  '#.~~~~~~~.......=......hhhh........=...T...#',
-  '#.~~~~~~~~bbbbbb=......hhhh........=.......#',
-  '#..~~~~~~~......=..V...Hhhh........=..,,...#',
-  '#...~~~~~.......=====================......#',
-  '#T...~~~....,.........,,.......c.....T.....#',
-  '#TT.........r......T..........,,......,...T#',
-  '#TTT....,,......T.........T.........r...TTT#',
-  '############################################',
-];
 
 const WHISPERWOOD_MAP = [
   '######################################################################################',
@@ -159,28 +132,6 @@ const CRYPT_MAP = [
   '########################################################',
 ];
 
-const villageMarkers: Record<string, Marker> = {
-  P: { kind: 'start' },
-  W: { kind: 'waystone' },
-  E: { kind: 'npc', npc: 'maren' },
-  B: { kind: 'npc', npc: 'brannoc' },
-  Y: { kind: 'npc', npc: 'ysolde' },
-  V: { kind: 'npc', npc: 'pell' },
-  I: { kind: 'npc', npc: 'tamsin' },
-  M: { kind: 'npc', npc: 'odo' },
-  N: { kind: 'npc', npc: 'wren' },
-  K: { kind: 'npc', npc: 'hale' },
-  D: { kind: 'dummy' },
-  d: { kind: 'dummy', shooter: true },
-  X: { kind: 'exit', to: 'whisperwood', label: 'Road to the Whisperwood' },
-  L: { kind: 'prop', prop: 'lamp', solid: true },
-  x: { kind: 'prop', prop: 'crate', solid: true },
-  o: { kind: 'prop', prop: 'barrel', solid: true },
-  A: { kind: 'prop', prop: 'anvil', solid: true },
-  w: { kind: 'prop', prop: 'well', solid: true },
-  c: { kind: 'prop', prop: 'chickens' },
-};
-
 const forestMarkers: Record<string, Marker> = {
   P: { kind: 'start' },
   W: { kind: 'waystone' },
@@ -211,27 +162,18 @@ const cryptMarkers: Record<string, Marker> = {
   M: { kind: 'boss', boss: 'morgrave' },
 };
 
-export const REGIONS: Record<RegionId, RegionDef> = {
-  emberwick: {
-    id: 'emberwick',
-    name: 'Emberwick',
-    subtitle: 'A village at the edge of the Whisperwood',
-    theme: 'village',
-    level: 1,
-    dark: false,
-    safe: true,
-    music: 'village',
-    map: EMBERWICK_MAP,
-    markers: villageMarkers,
-    encounters: [],
-    blurb: 'Home. The smith, the elder, the waystone, and dummies that never hit back (well, one does).',
-  },
+/** The hand-laid regions: the town, the first wood, and the dungeons. */
+const HAND_LAID: Record<string, RegionDef> = {
+  emberwick: EMBERWICK,
   whisperwood: {
     id: 'whisperwood',
     name: 'Whisperwood',
     subtitle: 'An old forest, restless since the Rift opened',
     theme: 'forest',
+    kind: 'wild',
     level: 3,
+    levels: [2, 6],
+    at: [44, 42],
     dark: false,
     safe: false,
     music: 'forest',
@@ -245,7 +187,10 @@ export const REGIONS: Record<RegionId, RegionDef> = {
     name: 'The Hollow Crypt',
     subtitle: 'Where the Rift first opened',
     theme: 'crypt',
+    kind: 'dungeon',
     level: 7,
+    levels: [7, 9],
+    at: [50, 34],
     dark: true,
     safe: false,
     music: 'crypt',
@@ -276,7 +221,15 @@ export const REGIONS: Record<RegionId, RegionDef> = {
     ],
     blurb: 'Rooms that seal behind you, the Warden at the gate, and Morgrave at the heart of the Rift.',
   },
+  'gallows-keep': GALLOWS_KEEP,
+  'smugglers-grotto': SMUGGLERS_GROTTO,
 };
+
+/** Every region: the hand-laid ones and the generated zones. */
+export const REGIONS = { ...HAND_LAID, ...Object.fromEntries(ZONES.map((z) => [z.region.id, z.region])) } as Record<RegionId, RegionDef>;
+
+/** Every region, in the order the world map lists them. */
+export const REGION_IDS = Object.keys(REGIONS) as RegionId[];
 
 /** Difficulty tiers: enemy level bonus, health and damage on top, loot and experience bonus. */
 export const TIERS = [

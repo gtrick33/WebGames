@@ -3,7 +3,7 @@ import { MAX_LEVEL } from '../data/classes';
 import { ITEMS } from '../data/items';
 import type { Item, Rarity } from '../data/types';
 import { QM_LEVEL, QM_PRICE, SHOPS, type ShopId } from '../data/vendors';
-import { addItem, bagFull, POTION_CAP, type Character } from './character';
+import { addItem, bagFull, potionCap, type Character } from './character';
 import { makeItem, rollGear, salvageValue, usableBy } from './items';
 
 /**
@@ -88,7 +88,7 @@ export function buyItem(c: Character, shop: ShopId, uid: string): Item | null {
 /** Buys up to `n` potions (as many as the gold and the cap allow). Returns how many were bought. */
 export function buyPotions(c: Character, n: number): number {
   const price = potionPrice(c.level);
-  const can = Math.min(n, POTION_CAP - c.potions, Math.floor(c.gold / price));
+  const can = Math.min(n, potionCap(c) - c.potions, Math.floor(c.gold / price));
   if (can <= 0) return 0;
   c.potions += can;
   c.gold -= can * price;

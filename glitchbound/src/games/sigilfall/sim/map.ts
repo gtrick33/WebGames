@@ -29,6 +29,9 @@ export const K = {
   Illusion: 17,
   Bramble: 18,
   Prop: 19,
+  Sand: 20,
+  /** City walls (stone, too high to see over). */
+  Rampart: 21,
 } as const;
 export type K = (typeof K)[keyof typeof K];
 
@@ -53,12 +56,14 @@ const TERRAIN: Record<string, K> = {
   '%': K.Illusion,
   k: K.Bramble,
   u: K.Rock,
+  s: K.Sand,
+  '|': K.Rampart,
 };
 
 /** Kinds you can't walk through. */
-const SOLID_KINDS = new Set<K>([K.Water, K.Wall, K.Tree, K.Bush, K.Rock, K.Fence, K.House, K.HouseAnchor, K.Pillar, K.Brazier, K.Cracked, K.Prop]);
+const SOLID_KINDS = new Set<K>([K.Water, K.Wall, K.Tree, K.Bush, K.Rock, K.Fence, K.House, K.HouseAnchor, K.Pillar, K.Brazier, K.Cracked, K.Prop, K.Rampart]);
 /** Kinds that stop projectiles (water and fences don't, low enough to shoot over). */
-const BLOCK_KINDS = new Set<K>([K.Wall, K.Tree, K.Rock, K.House, K.HouseAnchor, K.Pillar, K.Cracked]);
+const BLOCK_KINDS = new Set<K>([K.Wall, K.Tree, K.Rock, K.House, K.HouseAnchor, K.Pillar, K.Cracked, K.Rampart]);
 
 export interface PlacedMarker {
   ch: string;
@@ -145,6 +150,18 @@ export function parseRegion(def: RegionDef): TileMap {
       if (rr) near.add(rr - 1);
     }
     for (const r of near) doors[r]!.push(i);
+  }
+  // markers a zone generator placed: they stand on the ground already there (sand, a road), or on grass
+  for (const pm of def.placed ?? []) {
+    const { tx, ty, marker } = pm;
+    if (tx < 0 || ty < 0 || tx >= w || ty >= h) continue;
+    const i = ty * w + tx;
+    markers.push({ ch: '', marker, tx, ty });
+    if ((marker.kind === 'prop' && marker.solid) || marker.kind === 'waystone' || marker.kind === 'dummy') kind[i] = K.Prop;
+    // buildings stand on their own footprint, which stays solid
+    else if (marker.kind !== 'building' && SOLID_KINDS.has(kind[i] as K)) kind[i] = K.Floor;
+    solid[i] = SOLID_KINDS.has(kind[i] as K) ? 1 : 0;
+    block[i] = BLOCK_KINDS.has(kind[i] as K) ? 1 : 0;
   }
   return { w, h, kind, room, solid, block, markers, doors, roomTiles };
 }

@@ -2,13 +2,15 @@ import { dist, dist2, rng, TAU } from '../core/math';
 import { BOSSES } from '../data/bosses';
 import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
-import { ITEM_DEFS } from '../data/items';
+import { ITEM_DEFS, ITEMS } from '../data/items';
+import { QUEST_DEFS } from '../data/quests';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
+import { THEMES } from '../data/themes';
 import { BOSS_MARKS } from '../data/vendors';
 import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey } from '../data/types';
 import { ACTION_SLOTS } from '../data/types';
 import { buildHero, type HeroBuild } from '../progress/build';
-import { addItem, addXp, BAG_OVERFLOW, BAG_SIZE, bagFull, questEvent, startQuests, type Character } from '../progress/character';
+import { addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, startQuests, type Character } from '../progress/character';
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
 import { separate, updateEnemy } from './ai';
@@ -69,6 +71,38 @@ interface Spore {
 const POTION_HEAL = 40;
 /** Seconds without fighting before the fast out-of-combat regeneration starts. */
 const CALM_AFTER = 3;
+/** Enemies further than this from the hero (and not fighting) sleep. */
+const SLEEP_X = 460;
+const SLEEP_Y = 320;
+/** A wiped-out pack comes back only out of sight. */
+const RESPAWN_CLEAR_X = 300;
+const RESPAWN_CLEAR_Y = 220;
+/** Seconds before a wiped-out pack comes back (named enemies take longer). */
+const RESPAWN_TIME = 100;
+const RESPAWN_RARE = 300;
+/** Discovering a sight pays this share of a level. */
+const EXPLORE_XP = 0.03;
+/** The mount: faster outside fights. */
+const MOUNT_SPEED = 1.3;
+/**
+ * The packs of the open lands are tougher than a dungeon's and pay less each: they come back, and the
+ * road to 60 is meant to be long (quests and dungeons are the way up, not standing in a field).
+ */
+const WILD = { hp: 1.8, dmg: 1.15, xp: 0.5 };
+
+/** A pack in the open: where it stands, what it is, and when it comes back. */
+interface PackState {
+  index: number;
+  enemies: string[];
+  x: number;
+  y: number;
+  level: number;
+  elite: boolean;
+  rare: boolean;
+  ids: number[];
+  /** Seconds until it comes back once wiped out (−1 while any of it lives). */
+  respawnT: number;
+}
 /** Out of combat: health and mana regained per second, as a share of the maximum. */
 const OUT_OF_COMBAT_HP = 0.1;
 const OUT_OF_COMBAT_MANA = 0.2;
@@ -124,8 +158,12 @@ export class World {
   /** The hero just stepped onto an exit: the engine offers to travel. */
   pendingExit: Interactable | null = null;
   waystones: { x: number; y: number }[] = [];
-  exits: { x: number; y: number; to: RegionId; label: string }[] = [];
+  exits: { x: number; y: number; to: RegionId; label: string; minLevel?: number }[] = [];
   shrines: { x: number; y: number; id: string }[] = [];
+  /** Places to discover (sights in the wilds). */
+  spots: { x: number; y: number; id: string; name: string; r: number }[] = [];
+  /** Packs in the open, so they can come back a while after they are killed. */
+  packs: PackState[] = [];
   props: { x: number; y: number; prop: string }[] = [];
   chickens: { x: number; y: number; vx: number; vy: number; t: number; face: number }[] = [];
   /** This run's tallies (for the report and the reward screen). */
@@ -220,17 +258,27 @@ export class World {
   }
 
   /** A walkable spot a tile or so in from an exit tile. */
+  /** A free spot a step from an exit, toward the middle of the map (so arriving doesn't stand on it). */
   private insideOf(pt: { x: number; y: number }): { x: number; y: number } {
-    for (const [dx, dy] of [
-      [0, -1],
-      [0, 1],
-      [-1, 0],
-      [1, 0],
-    ] as const) {
-      const x = pt.x + dx * TILE * 1.5;
-      const y = pt.y + dy * TILE * 1.5;
-      const i = tileAt(this.map, x, y);
-      if (i >= 0 && !this.map.solid[i] && this.map.kind[i] !== K.Water) return { x, y };
+    const cx = (this.map.w * TILE) / 2 - pt.x;
+    const cy = (this.map.h * TILE) / 2 - pt.y;
+    const dirs = (
+      [
+        [0, -1],
+        [0, 1],
+        [-1, 0],
+        [1, 0],
+      ] as const
+    )
+      .map(([dx, dy]) => ({ dx, dy, toward: dx * cx + dy * cy }))
+      .sort((a, b) => b.toward - a.toward);
+    for (const step of [2.5, 1.5]) {
+      for (const { dx, dy } of dirs) {
+        const x = pt.x + dx * TILE * step;
+        const y = pt.y + dy * TILE * step;
+        const i = tileAt(this.map, x, y);
+        if (i >= 0 && !this.map.solid[i] && this.map.kind[i] !== K.Water) return { x, y };
+      }
     }
     return pt;
   }
@@ -252,14 +300,15 @@ export class World {
         }
         case 'pack': {
           pack += 1;
-          m.enemies.forEach((id, i) => {
-            const a = (TAU * i) / m.enemies.length + this.rand();
-            const r = m.enemies.length > 1 ? 10 + this.rand() * 10 : 0;
-            const lvl = this.level + (this.rand() < 0.3 ? 1 : 0);
-            this.addEnemy(id, pos.x + Math.cos(a) * r, pos.y + Math.sin(a) * r, lvl, { elite: !!m.elite && i === 0, room: -1, pack });
-          });
+          const level = m.level !== undefined ? m.level + TIERS[this.tier]!.levels : this.level;
+          const st: PackState = { index: pack, enemies: m.enemies, x: pos.x, y: pos.y, level, elite: !!m.elite, rare: !!m.rare, ids: [], respawnT: -1 };
+          this.packs.push(st);
+          this.spawnPack(st);
           break;
         }
+        case 'spot':
+          this.spots.push({ ...pos, id: m.id, name: m.name, r: m.r });
+          break;
         case 'dummy': {
           const e = this.addEnemy('moss-slime', pos.x, pos.y, 1, { room: -1, pack: -1 });
           e.dummy = m.shooter ? 2 : 1;
@@ -273,7 +322,7 @@ export class World {
           this.waystones.push(pos);
           break;
         case 'exit':
-          this.exits.push({ ...pos, to: m.to, label: m.label });
+          this.exits.push({ ...pos, to: m.to, label: m.label, ...(m.minLevel ? { minLevel: m.minLevel } : {}) });
           break;
         case 'shrine':
           this.shrines.push({ ...pos, id: m.id });
@@ -288,6 +337,31 @@ export class World {
         default:
           break;
       }
+    }
+  }
+
+  /** A pack's enemies, around its spot (again, when it comes back). */
+  private spawnPack(st: PackState): void {
+    st.ids = st.enemies.map((id, i) => {
+      const a = (TAU * i) / st.enemies.length + this.rand();
+      const r = st.enemies.length > 1 ? 10 + this.rand() * 10 : 0;
+      const lvl = st.level + (!st.rare && this.rand() < 0.3 ? 1 : 0);
+      return this.addEnemy(id, st.x + Math.cos(a) * r, st.y + Math.sin(a) * r, lvl, { elite: st.elite && i === 0, room: -1, pack: st.index }).id;
+    });
+    st.respawnT = -1;
+  }
+
+  /** In the wilds, a pack that was wiped out comes back after a while, never in sight of the hero. */
+  private updatePacks(dt: number): void {
+    // the generated wilds; the first wood, with its boss at the end, stays cleared once cleared
+    if (this.region.kind !== 'wild' || !this.region.holds) return;
+    const p = this.player;
+    for (const st of this.packs) {
+      if (st.respawnT < 0) continue;
+      // the timer stops at zero (−1 means the pack is alive), waiting for the hero to look away
+      st.respawnT = Math.max(0, st.respawnT - dt);
+      if (st.respawnT > 0 || (Math.abs(p.x - st.x) < RESPAWN_CLEAR_X && Math.abs(p.y - st.y) < RESPAWN_CLEAR_Y)) continue;
+      this.spawnPack(st);
     }
   }
 
@@ -306,7 +380,8 @@ export class World {
       }
     }
     const hasted = this.mods.includes('hasted') ? 1.2 : 1;
-    const hp = Math.round(def.hp * sc.hp * tier.hp * (this.mods.includes('fortified') ? 1.4 : 1) * (o.elite ? 3.2 : 1));
+    const wild = o.pack >= 0 && !!this.region.holds;
+    const hp = Math.round(def.hp * sc.hp * tier.hp * (this.mods.includes('fortified') ? 1.4 : 1) * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1));
     const e: Enemy = {
       id: this.nextId++,
       def,
@@ -318,7 +393,7 @@ export class World {
       r: def.radius * (def.scale ?? 1) * (o.elite ? 1.25 : 1),
       hp,
       maxHp: hp,
-      dmg: def.dmg * sc.dmg * tier.dmg * (o.elite ? 1.35 : 1),
+      dmg: def.dmg * sc.dmg * tier.dmg * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1),
       speedMul: hasted * (elite.includes('frenzied') ? 1.35 : 1),
       atkMul: hasted * (elite.includes('frenzied') ? 1.4 : 1),
       shield: elite.includes('shielded') ? hp * 0.4 : 0,
@@ -351,6 +426,11 @@ export class World {
       strafe: this.rand() * 2,
       victim: 0,
       victimT: 0,
+      mend: 0,
+      raising: false,
+      master: 0,
+      blinkT: 0,
+      hurtT: 99,
       name: o.elite ? `${ELITE_AFFIXES[elite[0]!].name} ${def.name}` : def.name,
     };
     // big enemies (elites, guardians) must not start overlapping a wall or a pillar (training
@@ -586,9 +666,19 @@ export class World {
     this.shakeAmt = Math.max(0, this.shakeAmt - rawDt * 18);
     this.updatePlayer(dt);
     this.updateFlow(dt);
-    for (const e of this.enemies) updateEnemy(this, e, dt);
+    // in the wilds, enemies far away and minding their own business sleep (a zone holds hundreds)
+    const awake: Enemy[] = [];
+    const wild = this.region.kind === 'wild';
+    const px = this.player.x;
+    const py = this.player.y;
+    for (const e of this.enemies) {
+      if (wild && !e.aggro && !e.dead && e.state === 'idle' && (Math.abs(e.x - px) > SLEEP_X || Math.abs(e.y - py) > SLEEP_Y)) continue;
+      updateEnemy(this, e, dt);
+      awake.push(e);
+    }
     updatePets(this, dt);
-    separate(this, dt);
+    separate(this, dt, awake);
+    this.updatePacks(dt);
     updateProjectiles(this, dt);
     updateFields(this, dt);
     updateTraps(this, dt);
@@ -622,7 +712,8 @@ export class World {
       f.x += f.vx * dt;
       f.y += f.vy * dt;
       if (f.kind === 'spark' || f.kind === 'rubble' || f.kind === 'coin') f.vy += 220 * dt;
-      if (f.kind === 'smoke' || f.kind === 'ember' || f.kind === 'leaf') {
+      // drifting air (leaves, snow, ash) keeps its pace; smoke and embers slow down
+      if (f.kind === 'smoke' || f.kind === 'ember') {
         f.vx *= Math.exp(-2 * dt);
         if (f.kind !== 'ember' || !f.sprite) f.vy *= Math.exp(-2 * dt);
       }
@@ -718,6 +809,7 @@ export class World {
     } else {
       const stunned = playerStunned(this);
       let speed = 78 * (1 + stats.speed / 100) * playerSlow(this);
+      if (this.hero.perks.includes('mount') && p.calm > CALM_AFTER && this.region.kind !== 'dungeon') speed *= MOUNT_SPEED;
       if (p.channel) speed *= 0.8;
       if (p.windup) speed *= 0.35;
       if (stunned) speed = 0;
@@ -897,7 +989,7 @@ export class World {
         const item = d.item!;
         d.dead = true;
         if (h.bag.some((i) => i.uid === item.uid)) continue;
-        if (h.bag.length < BAG_SIZE + BAG_OVERFLOW) {
+        if (h.bag.length < bagSize(h) + BAG_OVERFLOW) {
           h.bag.push(item);
           this.run.items.push(item);
           items += 1;
@@ -1004,19 +1096,35 @@ export class World {
     this.run.kills += 1;
     const tier = TIERS[this.tier]!;
     const bonus = 1 + this.mods.reduce((a, m) => a + RIFT_MODS[m].bonus, 0);
-    const xp = e.def.xp * enemyScale(e.level).xp * tier.xp * (e.elite.length ? 4 : 1) * bonus;
+    // raised minions are worth little: a necromancer is not a farm
+    const wild = e.pack >= 0 && this.region.holds ? WILD.xp : 1;
+    const xp = e.def.xp * enemyScale(e.level).xp * tier.xp * (e.elite.length ? 4 : 1) * (e.master ? 0.25 : 1) * bonus * wild;
     this.giveXp(xp);
-    const gold = goldDrop(e.def.gold, e.level, this.rand) * (e.elite.length ? 3 : 1);
+    const big = e.elite.length > 0 || !!e.def.named;
+    const gold = goldDrop(e.def.gold, e.level, this.rand) * (big ? 3 : 1);
     if (gold > 0) this.dropGold(e.x, e.y, gold);
-    const chance = (e.elite.length ? 1 : 0.075) * tier.loot * bonus;
-    if (this.rand() < chance) this.dropItem(e.x, e.y, this.rollItem(e.elite.length ? 'elite' : 'enemy', e.level));
+    const chance = (big ? 1 : 0.075) * tier.loot * bonus;
+    if (this.rand() < chance) this.dropItem(e.x, e.y, this.rollItem(big ? 'elite' : 'enemy', e.level));
     if (this.rand() < (e.elite.length ? 0.4 : 0.07)) this.dropAt('orb', e.x, e.y, 1);
     if (e.elite.length && h.quests['rift-shards']?.state === 'active' && h.shards < 3) this.dropAt('shard', e.x, e.y, 1);
     if (e.elite.includes('volatile') || this.mods.includes('volatile')) {
       const r = e.elite.includes('volatile') ? 34 : 24;
       this.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r, r2: 0, angle: 0, len: 0, dur: 1, dmg: e.dmg * (e.elite.length ? 1.6 : 0.9), knock: 120, tone: 'enemy', owner: -1, linger: 0 });
     }
-    this.questProgress((o) => o.kind === 'kill' && o.region === this.region.id);
+    // the pack is gone: it comes back in a while
+    const st = e.pack > 0 ? this.packs[e.pack - 1] : undefined;
+    if (st && st.respawnT < 0 && !this.enemies.some((x) => x !== e && !x.dead && st.ids.includes(x.id))) st.respawnT = st.rare ? RESPAWN_RARE : RESPAWN_TIME * (0.8 + this.rand() * 0.5);
+    const here = this.region.id;
+    this.questProgress((o) => o.kind === 'kill' && o.region === here && (!o.enemies || o.enemies.includes(e.def.id)));
+    // quest items some enemies carry
+    for (const [id, q] of Object.entries(h.quests)) {
+      if (q.state !== 'active') continue;
+      const o = QUEST_DEFS[id]?.objective;
+      if (o?.kind !== 'loot' || o.region !== here || !o.from.includes(e.def.id) || this.rand() >= o.chance) continue;
+      this.text(e.x, e.y - e.r - 12, `+ ${o.item}`, '#ffe066', false);
+      this.sfx('pickup', 0.5);
+      this.questProgress((x) => x === o);
+    }
   }
 
   giveXp(n: number): void {
@@ -1075,8 +1183,9 @@ export class World {
     // the room opens
     const enc = this.encounters[e.room];
     if (enc) this.clearEncounter(enc);
-    // the final boss of a region: the rift closes, a portal home opens
-    if (def.id === 'morgrave') {
+    // a dungeon's last boss (the one in its last boss room): the way home opens
+    const last = [...this.encounters].reverse().find((x) => !!x.def.boss)?.def.boss;
+    if (this.region.kind === 'dungeon' && def.id === last) {
       this.cleared = true;
       this.portal = { x: e.x, y: e.y };
       const key = `${this.region.id}:${this.tier}`;
@@ -1291,6 +1400,18 @@ export class World {
       this.questProgress((o) => o.kind === 'explore' && o.spot === s.id);
       this.emit({ t: 'save' });
     }
+    // sights in the wilds: found by walking near; exploring pays a little
+    for (const sp of this.spots) {
+      const key = `spot:${this.region.id}:${sp.id}`;
+      if (this.hero.opened.includes(key) || dist(p.x, p.y, sp.x, sp.y) > sp.r * TILE) continue;
+      this.hero.opened.push(key);
+      this.sfx('discover');
+      this.emit({ t: 'banner', text: sp.name, sub: 'Discovered' });
+      this.emit({ t: 'discover', spot: sp.id });
+      this.giveXp(Math.round(xpToNext(this.hero.level) * EXPLORE_XP));
+      this.questProgress((o) => o.kind === 'explore' && o.spot === sp.id);
+      this.emit({ t: 'save' });
+    }
     // waystones: checkpoints (you come back here if you fall)
     for (const ws of this.waystones) {
       if (dist(p.x, p.y, ws.x, ws.y) > 30) continue;
@@ -1339,10 +1460,43 @@ export class World {
       const p = this.player;
       if (dist(n.x, n.y, p.x, p.y) < 60) n.face = p.x < n.x ? -1 : 1;
     }
-    // the forest drops leaves, the crypt drifts dust
-    if (this.region.theme === 'forest' && this.rand() < dt * 2.2) {
-      const p = this.player;
-      this.addFx({ kind: 'leaf', x: p.x + (this.rand() - 0.5) * 360, y: p.y - 130, vx: 12 + this.rand() * 10, vy: 18 + this.rand() * 10, life: 6, size: 1, color: this.rand() < 0.5 ? '#7cc45a' : '#d8b44a', a: this.rand() * TAU });
+    // the air of each land: falling leaves, seeds and petals, sea spray, snow, ash, spores, motes, embers, dust
+    const look = THEMES[this.region.theme];
+    const p = this.player;
+    const pick = <T,>(l: readonly T[]): T => l[Math.floor(this.rand() * l.length)]!;
+    const sx = p.x + (this.rand() - 0.5) * 380;
+    const sy = p.y + (this.rand() - 0.5) * 230;
+    const a = this.rand() * TAU;
+    switch (look.ambient) {
+      case 'leaves':
+        if (this.rand() < dt * 2.2) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: 12 + this.rand() * 10, vy: 18 + this.rand() * 10, life: 6, size: 1, color: pick([look.leaves[3], look.leaves[4], '#d8b44a']), a });
+        break;
+      case 'seeds':
+        if (this.rand() < dt * 1.6) this.addFx({ kind: 'leaf', x: p.x - 200 + this.rand() * 120, y: sy, vx: 22 + this.rand() * 14, vy: -3 + this.rand() * 6, life: 7, size: 1, color: pick(['#f2ead8', '#ffd84d', '#f2ead8']), a });
+        break;
+      case 'spray':
+        if (this.rand() < dt * 2.4) this.addFx({ kind: 'leaf', x: p.x + 200 - this.rand() * 80, y: sy, vx: -40 - this.rand() * 25, vy: 4 + this.rand() * 4, life: 6, size: 1, color: pick(['#f0fbff', '#e8d4a0']), a });
+        break;
+      case 'snow':
+        if (this.rand() < dt * 9) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: -8 + this.rand() * 6, vy: 22 + this.rand() * 14, life: 8, size: 1, color: pick(['#ffffff', '#e8f0ff']), a });
+        break;
+      case 'ash':
+        if (this.rand() < dt * 3) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: 6 + this.rand() * 8, vy: 12 + this.rand() * 8, life: 9, size: 1, color: pick(['#8a8a8a', '#b8b0a8', '#5a5a5a']), a });
+        break;
+      case 'spores':
+        if (this.rand() < dt * 2.5) this.addFx({ kind: 'leaf', x: sx, y: sy + 60, vx: -3 + this.rand() * 6, vy: -8 - this.rand() * 6, life: 6, size: 1, color: pick([look.ground.flowers[0], look.ground.flowers[1], look.ground.water.light]), a });
+        break;
+      case 'motes':
+        if (this.rand() < dt * 2) this.addFx({ kind: 'leaf', x: sx, y: sy, vx: -4 + this.rand() * 8, vy: -4 - this.rand() * 4, life: 5, size: 1, color: pick([look.ground.flowers[0], look.ground.flowers[1], look.ground.flowers[3]]), a });
+        break;
+      case 'embers':
+        if (this.rand() < dt * 4) this.addFx({ kind: 'leaf', x: sx, y: p.y + 120, vx: -6 + this.rand() * 12, vy: -26 - this.rand() * 20, life: 5, size: 1, color: pick(['#ff7a2a', '#ffcf5a', '#ff3f1e']), a });
+        break;
+      case 'dust':
+        if (this.rand() < dt * 3) this.addFx({ kind: 'leaf', x: p.x - 200, y: sy, vx: 60 + this.rand() * 30, vy: -2 + this.rand() * 4, life: 6, size: 1, color: pick([look.ground.sand[3], look.ground.sand[1]]), a });
+        break;
+      default:
+        break;
     }
   }
 
@@ -1371,7 +1525,7 @@ export class World {
       const d = dist(p.x, p.y, x.x, x.y);
       if (d < 20) {
         onExit = i;
-        best = { kind: 'exit', to: x.to, x: x.x, y: x.y, label: x.label, locked: this.hero.unlocked.includes(x.to) ? null : x.to === 'crypt' ? 'Sealed. Defeat Grimtusk for the key.' : 'Not open yet.' };
+        best = { kind: 'exit', to: x.to, x: x.x, y: x.y, label: x.label, locked: this.exitLock(x) };
       }
     });
     // the portal after the final boss
@@ -1382,6 +1536,17 @@ export class World {
       this.exitInside = onExit;
       if (onExit >= 0 && this.interactable) this.pendingExit = this.interactable;
     }
+  }
+
+  /** Why an exit won't take the hero yet (the old roads need a quest; new lands warn the too-young), or null. */
+  private exitLock(x: World['exits'][number]): string | null {
+    const h = this.hero;
+    if ((x.to === 'whisperwood' || x.to === 'crypt') && !h.unlocked.includes(x.to)) return x.to === 'crypt' ? 'Sealed. Defeat Grimtusk for the key.' : 'Not open yet.';
+    if (x.minLevel && h.level < x.minLevel) {
+      const r = REGIONS[x.to];
+      return `Too dangerous before level ${x.minLevel}: ${r.name} is for levels ${r.levels[0]}-${r.levels[1]}.`;
+    }
+    return null;
   }
 
   /* ----------------------------------------------------- quests */
@@ -1403,7 +1568,11 @@ export class World {
       if (r.tier !== undefined) h.tier = Math.max(h.tier, r.tier);
       if (r.item) {
         let item: Item | null;
-        if (r.item === 'class-epic') item = makeItem(h.cls === 'mage' ? 'ember-staff' : h.cls === 'warrior' ? 'cleaverfang' : 'splitwood-bow', Math.max(3, h.level), this.rand);
+        if (r.item === 'class-epic') {
+          // the smith's masterwork: the class's signature epic weapon
+          const epic = ITEMS.find((i) => i.cls === h.cls && i.slot === 'weapon' && i.rarity === 'epic');
+          item = epic ? makeItem(epic.id, Math.max(3, h.level), this.rand) : rollLoot(h.cls as ClassId, Math.max(3, h.level), 'chest-epic', 0, this.rand);
+        }
         else if (typeof r.item === 'string') item = makeItem(r.item, Math.max(ITEM_DEFS[r.item]?.minLevel ?? 1, h.level), this.rand);
         else item = rollLoot(h.cls as ClassId, Math.max(1, h.level), r.item.rarity === 'rare' ? 'chest-rare' : 'quest', 0, this.rand);
         if (item) {
@@ -1414,6 +1583,11 @@ export class World {
             if (h.bag.length === 1 && Object.keys(h.equip).length === 0) this.emit({ t: 'hint', id: 'equip' });
           } else this.dropItem(this.player.x, this.player.y, item);
         }
+      }
+      if (r.perk && !h.perks.includes(r.perk)) {
+        h.perks.push(r.perk);
+        this.emit({ t: 'toast', text: `${PERKS[r.perk].name}: ${PERKS[r.perk].text}`, tone: 'good' });
+        this.rebuild();
       }
       this.giveXp(r.xp);
       if (q.id === 'rift-shards') h.shards = Math.max(0, h.shards - 3);

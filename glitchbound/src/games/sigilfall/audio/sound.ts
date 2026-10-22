@@ -5,7 +5,7 @@
  * master / music / effects volumes and the mute switch.
  */
 
-export type MusicId = 'village' | 'forest' | 'crypt' | 'boss' | 'title' | null;
+export type MusicId = 'village' | 'forest' | 'crypt' | 'plains' | 'coast' | 'cave' | 'boss' | 'title' | null;
 
 interface Voice {
   f: number;
@@ -150,6 +150,39 @@ const SONGS: Record<Exclude<MusicId, null>, Song> = {
     lead: 'sine',
     drums: false,
     pad: 0.75,
+  },
+  // Thornvale: open fields, a walking tune in G
+  plains: {
+    bpm: 104,
+    bass: [43, 48, 50, 43],
+    chords: [[55, 59, 62], [55, 60, 64], [57, 62, 66], [55, 59, 62]],
+    melody: [2, null, 4, 5, 4, null, 2, null, 1, 2, 4, null, 2, null, null, null, 4, null, 5, 7, 5, 4, 2, null, 1, null, 0, 1, 2, null, null, null],
+    scale: [67, 69, 71, 72, 74, 76, 78, 79],
+    lead: 'triangle',
+    drums: true,
+    pad: 0.3,
+  },
+  // the Saltmarsh: a shanty in D dorian, rolling like the swell
+  coast: {
+    bpm: 118,
+    bass: [38, 45, 36, 43],
+    chords: [[50, 53, 57], [57, 60, 64], [48, 52, 55], [55, 59, 62]],
+    melody: [0, null, 2, 3, 4, null, 3, 2, 1, null, 2, null, 0, null, null, null, 4, null, 5, 4, 3, null, 2, 1, 0, null, 1, 2, 0, null, null, null],
+    scale: [62, 64, 65, 67, 69, 71, 72],
+    lead: 'square',
+    drums: true,
+    pad: 0.35,
+  },
+  // caves and keeps: low, slow and echoing
+  cave: {
+    bpm: 86,
+    bass: [38, 38, 41, 36],
+    chords: [[50, 53, 57], [50, 53, 56], [53, 56, 60], [48, 51, 55]],
+    melody: [0, null, null, 2, 1, null, null, null, 0, null, 3, null, 2, null, null, null, 4, null, 3, null, 2, null, 1, null, 0, null, null, null, null, null, null, null],
+    scale: [62, 63, 65, 67, 68, 70],
+    lead: 'sine',
+    drums: false,
+    pad: 0.7,
   },
   boss: {
     bpm: 148,

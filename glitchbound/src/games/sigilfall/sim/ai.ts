@@ -1,7 +1,7 @@
 import { angleDiff, clamp, dist, TAU } from '../core/math';
 import { hasStatus, hurtPlayer, tickStatuses } from './combat';
 import { hurtPet } from './pets';
-import { circleHitsWall, flowStep, lineOfSight, moveCircle, pushOut } from './map';
+import { castRay, circleHitsWall, flowStep, lineOfSight, moveCircle, pushOut } from './map';
 import { updateBoss } from './boss';
 import type { Enemy, Pet } from './types';
 import type { World } from './world';
@@ -43,6 +43,10 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
     updateBoss(w, e, dt);
     return;
   }
+  // trolls and the like knit back together when left alone
+  e.hurtT += dt;
+  if (e.def.regen && e.hurtT > 4 && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * e.def.regen * dt);
+  e.blinkT -= dt;
   const p = victimOf(w, e);
   const stunned = hasStatus(e, 'stun') || hasStatus(e, 'freeze');
   const rooted = hasStatus(e, 'root');
@@ -130,7 +134,25 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
       const los = lineOfSight(w.map, e.x, e.y, p.x, p.y);
       const toward = steer(w, e, los);
       const ai = e.def.ai;
-      if (ai === 'ranged' || ai === 'caster') {
+      // shades slip away when the hero gets close
+      if (e.def.blink && e.blinkT <= 0 && d < 52 && !p.dead) {
+        blinkAway(w, e, p);
+        break;
+      }
+      // necromancers raise their dead before anything else
+      if (e.def.summons && e.atkCd <= 0 && w.enemies.filter((o) => o.master === e.id && !o.dead).length < e.def.summons.max) {
+        startRaise(w, e);
+        break;
+      }
+      // healers mend a hurt friend before anything else
+      if (e.def.heals && e.atkCd <= 0) {
+        const ally = hurtAlly(w, e);
+        if (ally) {
+          startMend(w, e, ally);
+          break;
+        }
+      }
+      if (ai === 'ranged' || ai === 'caster' || ai === 'diver') {
         const keep = e.def.keep ?? 90;
         if (los && d <= e.def.reach && e.atkCd <= 0) {
           startWindup(w, e);
@@ -173,6 +195,12 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
         if (d > e.def.reach * 0.7 + e.r + p.r) {
           mx = toward.x;
           my = toward.y;
+          // pack hunters swing out to the side and close in from there
+          if (e.def.flank && los && d > 34) {
+            const a = Math.atan2(my, mx) + (e.id % 2 ? 1 : -1) * 0.8 * clamp((d - 34) / 90, 0, 1);
+            mx = Math.cos(a);
+            my = Math.sin(a);
+          }
         }
       }
       if (ai === 'hopper') {
@@ -191,8 +219,8 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
     case 'windup': {
       e.t -= dt * e.atkMul;
       // ranged enemies keep tracking a little until the last part of the wind-up
-      if ((e.def.ai === 'ranged' || e.def.ai === 'caster') && e.t > e.def.windup * 0.45 && !p.dead) {
-        e.aimA = Math.atan2(p.y - e.y, p.x - e.x);
+      if ((e.def.ai === 'ranged' || e.def.ai === 'caster') && !e.mend && e.t > e.def.windup * 0.45 && !p.dead) {
+        e.aimA = aimAt(w, e, p);
       }
       if (e.t <= 0) act(w, e);
       break;
@@ -356,8 +384,96 @@ function clearPath(w: World, x0: number, y0: number, x1: number, y1: number, r: 
   return true;
 }
 
+/**
+ * Where a shot should go: at the target, or ahead of the hero by `lead` of the way they'd move while
+ * it flies (aim is fixed a moment before the shot, so changing direction then makes it miss).
+ */
+function aimAt(w: World, e: Enemy, v: Victim): number {
+  const lead = e.def.shot?.lead ?? 0;
+  if (!lead || v.pet) return Math.atan2(v.y - e.y, v.x - e.x);
+  const p = w.player;
+  const t = dist(e.x, e.y, p.x, p.y) / (e.def.shot?.speed ?? 150);
+  return Math.atan2(p.y + p.vy * t * lead - e.y, p.x + p.vx * t * lead - e.x);
+}
+
+/** The most hurt friend a healer can reach, if any is below 70% health. */
+function hurtAlly(w: World, e: Enemy): Enemy | null {
+  let best: Enemy | null = null;
+  let low = 0.7;
+  for (const o of w.enemies) {
+    if (o === e || o.dead || o.dummy || o.boss || o.state === 'spawn') continue;
+    const share = o.hp / o.maxHp;
+    if (share >= low || dist(e.x, e.y, o.x, o.y) > 150 || !lineOfSight(w.map, e.x, e.y, o.x, o.y)) continue;
+    low = share;
+    best = o;
+  }
+  return best;
+}
+
+/** A blink: gone in a puff, back a little way off, away from the hero. */
+function blinkAway(w: World, e: Enemy, v: Victim): void {
+  const away = Math.atan2(e.y - v.y, e.x - v.x) + (w.rand() - 0.5) * 1.4;
+  const to = castRay(w.map, e.x, e.y, e.r, away, e.def.blink ?? 70);
+  w.addFx({ kind: 'smoke', x: e.x, y: e.y, life: 0.4, size: 8, color: '#c9a8ff' });
+  e.x = to.x;
+  e.y = to.y;
+  e.vx = 0;
+  e.vy = 0;
+  e.blinkT = 4;
+  w.addFx({ kind: 'burst', x: e.x, y: e.y, life: 0.3, size: 10, color: '#c9a8ff' });
+  w.sfx('blink', 0.35);
+}
+
+/** A summoner's call: a dark circle while it chants, then its minions climb out of the ground. */
+function startRaise(w: World, e: Enemy): void {
+  e.state = 'windup';
+  e.t = e.def.windup * 1.4;
+  e.raising = true;
+  e.mend = 0;
+  w.addFx({ kind: 'ring', x: e.x, y: e.y + 2, life: e.def.windup * 1.4, size: 22, color: '#9a5aff' });
+  w.sfx('summon', 0.4);
+}
+
+function raise(w: World, e: Enemy): void {
+  e.raising = false;
+  const s = e.def.summons!;
+  const alive = w.enemies.filter((o) => o.master === e.id && !o.dead).length;
+  const n = Math.min(s.count, s.max - alive);
+  for (let i = 0; i < n; i++) {
+    const a = (TAU * i) / n + w.rand();
+    const to = castRay(w.map, e.x, e.y, 6, a, 22);
+    const m = w.addEnemy(s.enemy, to.x, to.y, Math.max(1, e.level - 1), { room: e.room, pack: -1, spawn: true });
+    m.master = e.id;
+    m.aggro = true;
+  }
+}
+
+function startMend(w: World, e: Enemy, ally: Enemy): void {
+  e.state = 'windup';
+  e.t = e.def.windup;
+  e.mend = ally.id;
+  e.aimA = Math.atan2(ally.y - e.y, ally.x - e.x);
+  e.face = Math.cos(e.aimA) < 0 ? Math.PI : 0;
+  w.sfx('enemyWindup', 0.35);
+}
+
+/** The heal lands (if its target still lives). */
+function mend(w: World, e: Enemy): void {
+  const ally = w.enemyById(e.mend);
+  e.mend = 0;
+  if (!ally || ally.dead) return;
+  const add = ally.maxHp * (e.def.heals ?? 0);
+  ally.hp = Math.min(ally.maxHp, ally.hp + add);
+  w.addFx({ kind: 'zap', x: e.x, y: e.y - 4, x2: ally.x, y2: ally.y - 4, life: 0.3, size: 1.4, color: '#7bff9a' });
+  w.addFx({ kind: 'glow', x: ally.x, y: ally.y - 4, life: 0.5, size: 12, color: '#7bff9a' });
+  w.text(ally.x, ally.y - ally.r - 10, `+${Math.round(add)}`, '#7bff9a', false);
+  w.sfx('soul', 0.4);
+}
+
 function startWindup(w: World, e: Enemy): void {
   const p = victimOf(w, e);
+  e.mend = 0;
+  e.raising = false;
   e.state = 'windup';
   e.t = e.def.windup;
   e.aimA = Math.atan2(p.y - e.y, p.x - e.x);
@@ -374,11 +490,45 @@ function startWindup(w: World, e: Enemy): void {
     const len = Math.min(e.def.rush?.dist ?? 120, 220);
     e.rushLeft = len;
   }
+  if (e.def.ai === 'exploder') {
+    // the swell: a circle that follows it and bursts when the wind-up ends
+    const r = e.def.burst?.radius ?? 26;
+    w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r, r2: 0, angle: 0, len: 0, dur: e.def.windup / e.atkMul, dmg: e.dmg * 2.2, knock: 140, tone: 'enemy', owner: e.id, linger: 0 });
+  }
+  if (e.def.ai === 'diver') {
+    // a swoop along a line marked on the ground
+    const len = Math.min(e.def.rush?.dist ?? 140, 240);
+    e.rushLeft = len;
+    w.addTelegraph({ shape: 'line', x: e.x, y: e.y, r: 0, r2: e.r * 2 + 4, angle: e.aimA, len: len + e.r, dur: e.def.windup / e.atkMul, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
+  }
   w.sfx(e.def.ai === 'charger' ? 'snort' : 'enemyWindup', 0.4);
 }
 
 function act(w: World, e: Enemy): void {
   const p = victimOf(w, e);
+  if (e.raising) {
+    raise(w, e);
+    e.state = 'recover';
+    e.t = e.def.recover;
+    return;
+  }
+  if (e.def.ai === 'exploder') {
+    // it bursts (the circle drawn at the wind-up does the damage) and is gone, with nothing to loot
+    const b = e.def.burst;
+    if (b && b.pool > 0) w.spawnField({ x: e.x, y: e.y, r: b.radius * 0.8, dur: b.pool, tick: 0.5, dmg: e.dmg * 0.3, type: 'poison', status: { status: 'poison', dur: 2, power: e.dmg * 0.3 }, look: 'poison', hostile: true, depth: 0, spec: null, onHit: false });
+    w.fxBurst(e.x, e.y, '#9ac04a', 16, b?.radius ?? 26);
+    w.sfx('explode', 0.6);
+    e.hp = 0;
+    e.dead = true;
+    e.deathT = 0;
+    return;
+  }
+  if (e.mend) {
+    mend(w, e);
+    e.state = 'recover';
+    e.t = e.def.recover;
+    return;
+  }
   switch (e.def.ai) {
     case 'melee': {
       w.addFx({ kind: 'slash', x: e.x, y: e.y, a: e.aimA, a2: 1.8, life: 0.15, size: e.def.reach + 6, color: '#ff8a8a', r2: 0 });
@@ -418,6 +568,7 @@ function act(w: World, e: Enemy): void {
       e.t = e.def.recover;
       break;
     case 'charger':
+    case 'diver':
       e.state = 'act';
       e.rushHit = false;
       w.sfx('rush', 0.6);
@@ -428,18 +579,14 @@ function act(w: World, e: Enemy): void {
 function shoot(w: World, e: Enemy): void {
   const s = e.def.shot;
   if (!s) return;
-  for (let i = 0; i < s.count * (e.elite.length ? 1 : 1); i++) {
-    const a = s.count === 1 ? e.aimA : e.aimA - s.spread / 2 + (s.spread * i) / (s.count - 1);
-    w.spawnProjectile({ x: e.x + Math.cos(a) * e.r, y: e.y - 3 + Math.sin(a) * e.r, vx: Math.cos(a) * s.speed, vy: Math.sin(a) * s.speed, r: s.radius, life: 260, dmg: e.dmg, type: 'physical', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look: s.homing ? 'orb' : e.def.id === 'skeleton-archer' ? 'enemyArrow' : 'stone', color: s.color, hostile: true, homing: s.homing ?? 0, child: false, knock: 0 });
-  }
+  const look = s.look ?? (s.homing ? 'orb' : e.def.id === 'skeleton-archer' ? 'enemyArrow' : 'stone');
+  const fire = (a: number, mul: number): void => {
+    w.spawnProjectile({ x: e.x + Math.cos(a) * e.r, y: e.y - 3 + Math.sin(a) * e.r, vx: Math.cos(a) * s.speed, vy: Math.sin(a) * s.speed, r: s.radius, life: 260, dmg: e.dmg * mul, type: 'physical', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look, color: s.color, hostile: true, homing: s.homing ?? 0, child: false, knock: 0, ...(s.status ? { status: s.status } : {}) });
+  };
+  for (let i = 0; i < s.count; i++) fire(s.count === 1 ? e.aimA : e.aimA - s.spread / 2 + (s.spread * i) / (s.count - 1), 1);
   // elites throw a wider spread
-  if (e.elite.length && s.count === 1) {
-    for (const off of [-0.32, 0.32]) {
-      const a = e.aimA + off;
-      w.spawnProjectile({ x: e.x, y: e.y - 3, vx: Math.cos(a) * s.speed, vy: Math.sin(a) * s.speed, r: s.radius, life: 260, dmg: e.dmg * 0.8, type: 'physical', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look: s.homing ? 'orb' : 'stone', color: s.color, hostile: true, homing: s.homing ?? 0, child: false, knock: 0 });
-    }
-  }
-  w.sfx(e.def.id === 'skeleton-archer' ? 'enemyBow' : 'sling', 0.45);
+  if (e.elite.length && s.count === 1) for (const off of [-0.32, 0.32]) fire(e.aimA + off, 0.8);
+  w.sfx(look === 'enemyArrow' ? 'enemyBow' : look === 'spear' ? 'spear' : 'sling', 0.45);
 }
 
 /** Training dummies: the shooter fires a slow bolt you can dodge through. */
@@ -458,8 +605,7 @@ function updateDummy(w: World, e: Enemy, dt: number): void {
 }
 
 /** Pushes enemies apart and out of the hero. */
-export function separate(w: World, dt: number): void {
-  const list = w.enemies;
+export function separate(w: World, dt: number, list: Enemy[] = w.enemies): void {
   const p = w.player;
   for (let i = 0; i < list.length; i++) {
     const a = list[i]!;

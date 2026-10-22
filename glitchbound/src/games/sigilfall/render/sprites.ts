@@ -3,8 +3,11 @@ import type { ClassId, Item, ItemIcon, SlotId } from '../data/types';
 import { itemIcon, itemMat, itemTint } from '../progress/items';
 import { HERO_H, HERO_W, paintHero, type ChestStyle, type FeetStyle, type HandStyle, type HeadStyle, type HeroLook, type LegStyle, type Piece } from './art/hero';
 import { NPCS } from '../data/quests';
-import { CREATURE_ART, ITEM_ICON_PAL, ITEM_ICONS, type Pal } from './artdata';
+import { CREATURE_ART, ITEM_ICON_PAL, ITEM_ICONS, type Art, type Pal } from './artdata';
 import { COMPANION_ART } from './art/companions';
+import { FOE_ART } from './art/foes';
+import { TOWNSFOLK_LOOKS } from './art/townsfolk';
+import { ZONE_ART } from './art/zones';
 import { glyphIcon } from './art/icons';
 import { DMG_COLOR, SKILL_GLYPH } from './art/skillGlyphs';
 import { SKILLS } from '../data/skills';
@@ -190,16 +193,20 @@ export function heroDollUrl(look: HeroLook, view: HeroDir, scale = 4): string {
 
 export { HERO_H, HERO_W };
 
+/** Every creature drawing: the first ones, companions, the new lands' enemies, each zone's own. */
+const ALL_ART: Record<string, Art> = Object.assign({}, CREATURE_ART, COMPANION_ART, FOE_ART, ...ZONE_ART.map((z) => z.foes));
+const artFor = (id: string): Art => ALL_ART[id] ?? CREATURE_ART.slime!;
+
 /** A creature frame (enemies, bosses, NPCs). Art faces right. */
 export function creatureSprite(id: string, frame: number): Sprite {
-  const art = CREATURE_ART[id] ?? COMPANION_ART[id] ?? CREATURE_ART.slime!;
+  const art = artFor(id);
   const f = frame % art.frames.length;
   return memo(`cr:${id}:${f}`, () => paint2x(art.frames[f]!, art.pal));
 }
 
 /** Grimtusk and friends tinted for elites and bosses are drawn from the same art with a palette swap. */
 export function recolored(id: string, frame: number, pal: Pal, key: string): Sprite {
-  const art = CREATURE_ART[id] ?? COMPANION_ART[id] ?? CREATURE_ART.slime!;
+  const art = artFor(id);
   const f = frame % art.frames.length;
   return memo(`rc:${key}:${f}`, () => paint2x(art.frames[f]!, { ...art.pal, ...pal }));
 }
@@ -255,6 +262,24 @@ export function heldWeapon(cls: ClassId, weapon: Item | undefined): { kind: stri
     default:
       return { kind: icon === 'axe' ? 'axe' : icon === 'hammer' ? 'hammer' : 'sword', tint };
   }
+}
+
+/* -------------------------------------------------------------- vendor signs */
+
+/** What a vendor or a service is, as a little picture over their head (quests use ! and ? instead). */
+const SIGNS: Record<string, { rows: string[]; pal: Pal }> = {
+  inn: { rows: ['...cc...', '...ww...', '..wwww..', '.wrrrrw.', 'wrrRrrrw', 'wrrrrrrw', 'wrrrrrrw', '.wwwwww.'], pal: { c: '#a0703f', w: '#d8e8f0', r: '#ff4a5a', R: '#ffc0c8' } },
+  weapons: { rows: ['......ww', '.....wWw', '....wWw.', '.g.wWw..', '..gWw...', '..bg....', '.b..g...', 'b.......'], pal: { w: '#c8ccd8', W: '#ffffff', g: '#ffcf5a', b: '#8a5a34' } },
+  armor: { rows: ['..mmmm..', '.mMMMMm.', 'mMmmmmMm', 'mm.mm.mm', 'mm....mm', 'mmm..mmm', '.m....m.', '........'], pal: { m: '#9aa3b8', M: '#e8ecf4' } },
+  curios: { rows: ['...gg...', '..gGGg..', '...gg...', '..y..y..', '.y....y.', '.y....y.', '..y..y..', '...yy...'], pal: { g: '#c58cff', G: '#f4e4ff', y: '#ffcf5a' } },
+  quartermaster: { rows: ['...pp...', '...pp...', 'pppPPppp', '.ppPPpp.', '..pPPp..', '.pp..pp.', 'pp....pp', '........'], pal: { p: '#ff6ad5', P: '#ffd0f4' } },
+  respec: { rows: ['.bbbbbb.', 'bWWbWWWb', 'bWWbWWWb', 'bWWbWWWb', 'bWWbWWWb', 'bbbbbbbb', '........', '........'], pal: { b: '#6a3ab0', W: '#f2ead8' } },
+};
+
+/** A vendor's sign, or null for someone who sells nothing. */
+export function vendorSign(kind: string): Sprite | null {
+  const sign = SIGNS[kind];
+  return sign ? memo(`sign:${kind}`, () => paint2x(sign.rows, sign.pal)) : null;
 }
 
 /* ----------------------------------------------------------------- icons */
@@ -392,6 +417,8 @@ const NPC_LOOKS: Record<string, HeroLook> = {
     quiver: null,
     cape: null,
   },
+  ...TOWNSFOLK_LOOKS,
+  ...Object.assign({}, ...ZONE_ART.map((z) => z.looks)),
 };
 
 /** An NPC's sprite: drawn like a hero in their own clothes (older art for anyone without a look). */

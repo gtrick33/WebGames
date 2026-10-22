@@ -1,4 +1,6 @@
+import { STORY_QUESTS } from './story';
 import type { NpcDef, QuestDef } from './types';
+import { ZONES } from './zones';
 
 /**
  * The quest chain. A quest starts by itself as soon as the ones in `after` are done, and pays out the
@@ -104,6 +106,7 @@ export const QUESTS: QuestDef[] = [
     reward: { xp: 4000, gold: 1000, item: 'glitch-shard' },
   },
 ];
+QUESTS.push(...STORY_QUESTS, ...ZONES.flatMap((z) => z.quests));
 
 export const QUEST_DEFS: Record<string, QuestDef> = Object.fromEntries(QUESTS.map((q) => [q.id, q]));
 
@@ -111,12 +114,16 @@ export const NPCS: Record<string, NpcDef> = {
   maren: {
     id: 'maren',
     name: 'Elder Maren',
-    title: 'Village elder',
+    title: 'Elder of Emberwick',
     sprite: 'elder',
     talk: [
-      { when: { quest: 'first-steps', state: 'active' }, lines: ['There you are. The sigils that held the Rift shut have fallen, and the Whisperwood has gone mad with it.', 'Before I send you out there, show me you can swing. The training yard is just east of the square.'] },
+      { when: { quest: 'first-steps', state: 'active' }, lines: ['There you are. The sigils that held the Rift shut have fallen, and the Whisperwood has gone mad with it.', 'Before I send you out there, show me you can swing. The training grounds are right behind me.'] },
       { when: { quest: 'first-spell', state: 'active' }, lines: ['Good arm. Now your skill: every hero has a trick of their own. Use it on a dummy.'] },
       { when: { quest: 'first-dodge', state: 'active' }, lines: ['The dummy at the back fires slow bolts. Dodge right through one.', 'While you dodge, nothing can touch you. Remember that when something big swings at you.'] },
+      { when: { quest: 'the-empty-tomb', state: 'active' }, lines: ['Empty? Then the old stories were true, and I was a fool to hope otherwise.', 'His name was Vaelor. A king who would not die, so the Rift hollowed him out. The Sigil-wardens locked him beneath the wood with his heart torn out.', 'With the sigils fallen, nothing holds him. If he walks, he walks north, to Duskspire, where his throne waits. Gods help us all.'] },
+      { when: { quest: 'hollow-gold', state: 'active' }, lines: ['Grey coin with an empty crown. Hollow gold: the King paid his armies in it, centuries ago.', 'And a Pale Herald signing orders to bandits. He is buying the living to bleed us while he raises the dead.', 'Every road out of Emberwick will need watching now. You have done more for us than you know.'] },
+      { when: { quest: 'the-drowned-fleet', state: 'active' }, lines: ['A fleet crewed by the drowned. Quill is right to be afraid.', 'The Hollow King gathers his Legion on land and at sea. He wants the old sigils, all seven. With them he could tear the Rift open for good.', 'Then we find the sigils first. Rest tonight. Tomorrow the whole world is our road.'] },
+      { when: { quest: 'south-road', state: 'active' }, lines: ['A rider came up from Millbrook, in the south. Bandits are bleeding the village dry, and their reeve has run out of ideas.', 'Take the south road out of the village and find Reeve Aldous. Mind the wolves on the way.'] },
       { when: { quest: 'into-the-wood', state: 'active' }, lines: ['The waystone in the square will take you to the Whisperwood. Thin out the creatures on the trails.', 'Come back whenever you need. The waystone works both ways.'] },
       { when: { quest: 'alpha', state: 'active' }, lines: ['The creatures follow an alpha. A boar the size of a cart, they say, with the Rift in its eyes.', 'Its den is at the east end of the wood. Watch for its charge and step aside.'] },
       { when: { quest: 'the-warden', state: 'active' }, lines: ['The Hollow Crypt is open. Its rooms seal behind you until everything in them is dead.', 'Ossric guards the inner gate. He hits a wall hard when he misses a charge.'] },
@@ -195,4 +202,37 @@ export const NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [{ lines: ['Have you seen my chickens? No? Good. They’re plotting something.', 'Stay off the brambles in the wood. They bite.'] }],
   },
+  'regent-elowen': {
+    id: 'regent-elowen',
+    name: 'Regent Elowen',
+    title: 'Regent of Emberwick',
+    sprite: 'elder',
+    talk: [
+      { when: { quest: 'the-drowned-fleet', state: 'done' }, lines: ['A fleet of the drowned, a Legion of the dead, and a king who will not stay in his grave.', 'Emberwick will hold. Our walls are old but they are not tired. Go where Maren sends you; you carry this city’s hope now.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Maren told me. Vaelor. I had hoped that name was only for frightening children.', 'I have sent riders to every town. They will need help before they ask for it. Be that help.'] },
+      { lines: ['Welcome to Emberwick. These walls have stood since the Sigil-wardens built them.', 'The sigils have fallen and the roads are no longer safe. If Elder Maren says you are ready, the city is glad of you.'] },
+    ],
+  },
+  gorran: {
+    id: 'gorran',
+    name: 'Gorran',
+    title: 'Keeper of the Drunken Wyvern',
+    sprite: 'villager',
+    shop: 'inn',
+    shopName: 'The Drunken Wyvern',
+    talk: [
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Folk say the dead are walking in the north. Folk say a lot of things after the third ale.', 'But a man came down from the Pale Reach last week, white as milk, and he wouldn’t drink. That’s the part that worries me.'] },
+      { lines: ['Pull up a stool. Ale, stew, and the best rumors in the city, all on the house if you saved my cousin’s farm.', 'I keep potions behind the bar too. Don’t tell Tamsin.'] },
+    ],
+  },
+  'guard-gate': {
+    id: 'guard-gate',
+    name: 'Sergeant Brask',
+    title: 'East gate',
+    sprite: 'villager',
+    talk: [
+      { lines: ['East gate. The road runs to the Whisperwood, and it isn’t a stroll any more.', 'South gate goes down to Thornvale. Wolves and worse on that road. Don’t go before you’re ready.'] },
+    ],
+  },
 };
+for (const z of ZONES) Object.assign(NPCS, z.npcs);

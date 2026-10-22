@@ -1857,6 +1857,10 @@
   margin: 0;
   font-size: 14px;
 }
+.rb-quest-group {
+  display: grid;
+  gap: 8px;
+}
 .rb-done ul {
   margin: 6px 0 0;
   padding-left: 18px;
@@ -1905,6 +1909,84 @@
   display: grid;
   gap: 6px;
   margin-top: 6px;
+}
+.rb-world {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  border: 3px solid var(--rb-ink);
+  border-radius: 8px;
+  background: #1a2a3a;
+  font-family: var(--font);
+}
+.rb-world-sea {
+  fill: #20384e;
+}
+.rb-world line {
+  stroke: #6a6480;
+  stroke-width: 0.6;
+  stroke-dasharray: 1.2 1.2;
+}
+.rb-world line.is-known {
+  stroke: #c9a06a;
+  stroke-width: 0.9;
+  stroke-dasharray: none;
+}
+.rb-world-node {
+  cursor: pointer;
+}
+.rb-world-node:focus {
+  outline: none;
+}
+.rb-world-node > rect,
+.rb-world-node > circle:not(.rb-world-here) {
+  stroke: #1b1428;
+  stroke-width: 0.7;
+}
+.rb-world-node.is-sel > rect,
+.rb-world-node.is-sel > circle:not(.rb-world-here),
+.rb-world-node:focus-visible > rect,
+.rb-world-node:focus-visible > circle:not(.rb-world-here) {
+  stroke: #ffffff;
+  stroke-width: 0.9;
+}
+.rb-world-here {
+  fill: none;
+  stroke: var(--rb-cyan);
+  stroke-width: 0.8;
+  animation: rb-pulse 1.6s ease-in-out infinite;
+}
+.rb-world-name,
+.rb-world-lvl,
+.rb-world-q,
+.rb-world-goal {
+  text-anchor: middle;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #1b1428;
+  stroke-width: 0.7;
+  pointer-events: none;
+}
+.rb-world-name {
+  font-size: 2.7px;
+  fill: #f2ead8;
+}
+.rb-world-lvl {
+  font-size: 2.2px;
+  fill: #b8b0cc;
+}
+.rb-world-q {
+  font-size: 3.4px;
+  fill: #f2ead8;
+}
+.rb-world-goal {
+  font-size: 4.6px;
+  fill: #ffe066;
+}
+@keyframes rb-pulse {
+  50% {
+    opacity: 0.35;
+  }
 }
 .rb-mods {
   display: grid;
@@ -2212,7 +2294,8 @@
   .rb-logo-word,
   .rb-interact,
   .rb-sb-ult.is-ready,
-  .rb-rotate-phone {
+  .rb-rotate-phone,
+  .rb-world-here {
     animation: none;
   }
 }

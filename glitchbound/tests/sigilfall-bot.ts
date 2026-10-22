@@ -11,7 +11,7 @@ import { rollGear } from '../src/games/sigilfall/progress/items';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { SPEC_LEVEL, TALENTS } from '../src/games/sigilfall/data/talents';
 import { rng } from '../src/games/sigilfall/core/math';
-import { flowField, flowStep, TILE } from '../src/games/sigilfall/sim/map';
+import { flowField, flowStep, lineOfSight, TILE } from '../src/games/sigilfall/sim/map';
 import type { Enemy, WorldEvent } from '../src/games/sigilfall/sim/types';
 import { emptyInput, inside, World } from '../src/games/sigilfall/sim/world';
 
@@ -138,7 +138,9 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         const keep = melee ? 10 : 62;
         const d = Math.hypot(target.x - p.x, target.y - p.y);
         const step = flowStep(w.map, toTarget, p.x, p.y);
-        if (d > keep + target.r + 30 || (step && d > keep + target.r)) {
+        // a pillar in the way: walk round it rather than shoot the stone
+        const blocked = !lineOfSight(w.map, p.x, p.y, target.x, target.y);
+        if (d > keep + target.r + 30 || (step && d > keep + target.r) || (blocked && step)) {
           if (step) {
             mx = step.x;
             my = step.y;

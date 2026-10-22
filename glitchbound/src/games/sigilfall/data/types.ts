@@ -429,7 +429,11 @@ export interface ClassDef {
 
 /* ----------------------------------------------------------------- enemies */
 
-export type EnemyAi = 'melee' | 'hopper' | 'ranged' | 'charger' | 'armored' | 'caster';
+/**
+ * Divers keep their distance, then swoop along a marked line. Exploders run at you, swell, and burst
+ * (they die doing it).
+ */
+export type EnemyAi = 'melee' | 'hopper' | 'ranged' | 'charger' | 'armored' | 'caster' | 'diver' | 'exploder';
 
 export interface EnemyDef {
   id: string;
@@ -453,8 +457,26 @@ export interface EnemyDef {
   attackCd: number;
   /** Physical damage taken is cut by this share unless its armor is broken (armored). */
   armor?: number;
-  /** Ranged and caster attacks. */
-  shot?: { speed: number; radius: number; count: number; spread: number; color: string; homing?: number };
+  /** Ranged and caster attacks. `lead` aims ahead of a moving target (0-1: how far ahead). */
+  shot?: { speed: number; radius: number; count: number; spread: number; color: string; homing?: number; lead?: number; look?: string; status?: { status: StatusId; dur: number; power: number } };
+  /** Melee packs circle in from the sides instead of walking straight at you. */
+  flank?: boolean;
+  /** Mends a hurt ally nearby (this share of its health) instead of attacking. */
+  heals?: number;
+  /** Drawn floating above its shadow. */
+  floats?: boolean;
+  /** A named enemy: its name shows, it comes back slowly, and it carries better loot. */
+  named?: boolean;
+  /** Colors swapped on its sprite (one drawing, several creatures). */
+  pal?: Record<string, string>;
+  /** Raises these minions (up to `max` alive at once) instead of attacking, now and then. */
+  summons?: { enemy: string; count: number; max: number };
+  /** Slips away this far when the hero gets close (a few seconds between blinks). */
+  blink?: number;
+  /** Heals this share of its health a second once it hasn't been hit for a few seconds. */
+  regen?: number;
+  /** Exploders: the poison left where they burst (seconds, 0 for none). */
+  burst?: { radius: number; pool: number };
   /** Charger rush. */
   rush?: { speed: number; dist: number };
   /** Armored slam and caster circles. */
@@ -472,16 +494,46 @@ export type EliteAffix = 'frenzied' | 'molten' | 'vampiric' | 'shielded' | 'vola
 
 /* ----------------------------------------------------------------- regions */
 
-export type RegionId = 'emberwick' | 'whisperwood' | 'crypt';
-export type Theme = 'village' | 'forest' | 'crypt';
+export type RegionId = 'emberwick' | 'whisperwood' | 'crypt' | 'thornvale' | 'gallows-keep' | 'saltmarsh' | 'smugglers-grotto';
+/** How a region looks (see data/themes.ts): outdoor biomes, and the stone of indoor places. */
+export type Theme =
+  | 'village'
+  | 'forest'
+  | 'farm'
+  | 'coast'
+  | 'autumn'
+  | 'marsh'
+  | 'plague'
+  | 'plains'
+  | 'mountain'
+  | 'barrow'
+  | 'storm'
+  | 'moor'
+  | 'desert'
+  | 'fey'
+  | 'snow'
+  | 'rift'
+  | 'jungle'
+  | 'warfront'
+  | 'blight'
+  | 'haunted'
+  | 'volcanic'
+  | 'deadlake'
+  | 'crypt'
+  | 'cave'
+  | 'keep'
+  | 'icecave'
+  | 'temple'
+  | 'lavacave'
+  | 'citadel';
 
 /** What a letter on a region map stands for (the terrain under it is the region's floor). */
 export type Marker =
   | { kind: 'start' }
-  | { kind: 'pack'; enemies: string[]; elite?: boolean; named?: string }
+  | { kind: 'pack'; enemies: string[]; elite?: boolean; named?: string; level?: number; rare?: boolean }
   | { kind: 'chest'; id: string; tier: 'common' | 'rare' | 'epic'; once?: boolean }
   | { kind: 'npc'; npc: string }
-  | { kind: 'exit'; to: RegionId; label: string }
+  | { kind: 'exit'; to: RegionId; label: string; minLevel?: number }
   | { kind: 'waystone' }
   | { kind: 'boss'; boss: string }
   | { kind: 'secret'; id: string }
@@ -490,7 +542,18 @@ export type Marker =
   | { kind: 'prop'; prop: string; solid?: boolean }
   | { kind: 'torch' }
   | { kind: 'checkpoint' }
-  | { kind: 'hazard'; hazard: 'bramble' | 'spore' };
+  | { kind: 'hazard'; hazard: 'bramble' | 'spore' }
+  /** A building drawn over its footprint (w x h tiles, the marker at its bottom-left), with a name over the door. */
+  | { kind: 'building'; style: 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall'; w: number; h: number; name?: string }
+  /** A place to discover (an explore objective, a line in the log): walking within `r` tiles finds it. */
+  | { kind: 'spot'; id: string; name: string; r: number };
+
+/** A marker put at a tile by a zone generator, instead of a letter on the map. */
+export interface PlacedMarkerDef {
+  tx: number;
+  ty: number;
+  marker: Marker;
+}
 
 /** A room that seals its doors and spawns waves when the player walks in (dungeons). */
 export interface Encounter {
@@ -510,27 +573,45 @@ export interface RegionDef {
   name: string;
   subtitle: string;
   theme: Theme;
-  /** Enemy level on Normal. */
+  /** A town (safe), the wilds, or a dungeon (rooms, a boss at the end, difficulty tiers). */
+  kind: 'town' | 'wild' | 'dungeon';
+  /** Enemy level on Normal (in the wilds, at the way in; packs carry their own). */
   level: number;
+  /** The levels the region is for, shown on the world map. */
+  levels: [number, number];
+  /** Where it sits on the world map (0-100 across, 0-100 down). */
+  at: [number, number];
   dark: boolean;
   safe: boolean;
-  music: 'village' | 'forest' | 'crypt';
+  music: MusicTrack;
   map: string[];
   markers: Record<string, Marker>;
+  /** Markers a generator put at tiles (wild zones). */
+  placed?: PlacedMarkerDef[];
+  /** What a generated zone holds, known without generating it (for routes between regions). */
+  holds?: { exits: RegionId[]; npcs: string[]; spots: string[] };
   encounters: Encounter[];
   /** Where the camera starts when entering from the waystone / another region. */
   blurb: string;
 }
 
+export type MusicTrack = 'village' | 'forest' | 'crypt' | 'plains' | 'coast' | 'cave';
+
 /* ------------------------------------------------------------------ quests */
 
 export type Objective =
   | { kind: 'tutorial'; step: 'attack' | 'skill' | 'dodge'; count: number; label: string }
-  | { kind: 'kill'; region: RegionId; count: number; label: string }
+  | { kind: 'kill'; region: RegionId; count: number; label: string; enemies?: string[] }
+  /** Things carried by some enemies: each kill of one of `from` has `chance` to give one. */
+  | { kind: 'loot'; region: RegionId; item: string; from: string[]; chance: number; count: number; label: string }
+  | { kind: 'talk'; npc: string; label: string }
   | { kind: 'boss'; boss: string; label: string }
   | { kind: 'collect'; item: 'shard'; count: number; label: string }
   | { kind: 'explore'; spot: string; label: string }
   | { kind: 'clear'; region: RegionId; tier: number; label: string };
+
+/** Lasting gifts from the ends of quest chains. */
+export type PerkId = 'mount' | 'satchel' | 'flask' | 'hearth';
 
 export interface QuestDef {
   id: string;
@@ -541,7 +622,11 @@ export interface QuestDef {
   objective: Objective;
   /** Quests that must be done first (it starts by itself once they are). */
   after?: string[];
-  reward: { xp: number; gold: number; item?: string | { rarity: Rarity }; unlock?: RegionId; tier?: number; text?: string };
+  /** Only once the hero has been to this region (its quests start when they first arrive). */
+  zone?: RegionId;
+  /** Only from this level. */
+  level?: number;
+  reward: { xp: number; gold: number; item?: string | { rarity: Rarity }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId };
 }
 
 /* -------------------------------------------------------------------- npcs */
@@ -555,8 +640,9 @@ export interface NpcDef {
   talk: { when?: { quest: string; state: 'locked' | 'active' | 'done' }; lines: string[] }[];
   /** What the NPC offers besides talk. */
   service?: 'respec' | 'smith' | 'waystone';
-  /** A vendor: the shop they open. */
+  /** A vendor: the shop they open, and its name over the door (else the shop's own name). */
   shop?: ShopId;
+  shopName?: string;
   /** Colors swapped on the base sprite, so one sprite can dress several people. */
   pal?: Record<string, string>;
 }

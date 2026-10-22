@@ -1,8 +1,12 @@
 import { hash2 } from '../core/math';
+import { REGIONS } from '../data/regions';
+import { THEMES, type TreeKind } from '../data/themes';
 import type { RegionDef, Theme } from '../data/types';
 import { K, TILE, type TileMap } from '../sim/map';
 import { Ground } from './ground';
-import { bushArt, edgeTrunk, oakTree, pineTree, rockArt } from './art/flora';
+import { building } from './art/buildings';
+import { bushArt, cactus, crystalSpire, deadTree, edgeTrunk, jungleTree, mushroomTree, oakTree, palmTree, pineTree, rockArt, willowTree } from './art/flora';
+import type { Painter } from './art/kit';
 import { canvas, ctx2d, DETAIL, OUTLINE, type Cnv } from './pixel';
 
 /** Art pixels per world pixel: every object picture is at art resolution. */
@@ -51,8 +55,55 @@ export function buildScenery(map: TileMap, region: RegionDef): Scenery {
 
 /* -------------------------------------------------------------- objects */
 
+/*
+ * A big zone stands thousands of trees, bushes and rocks: each kind is painted in a few dozen
+ * variants per theme and shared, rather than once per tile.
+ */
+const VARIANTS = 24;
+const shared = new Map<string, Cnv>();
+function variant(key: string, seed: number, paint: (seed: number) => Painter): Cnv {
+  const v = seed % VARIANTS;
+  const k = `${key}:${v}`;
+  let c = shared.get(k);
+  if (!c) {
+    c = paint(v * 41 + 7).toCanvas();
+    shared.set(k, c);
+  }
+  return c;
+}
+
+function treeArt(kind: TreeKind, theme: Theme, seed: number): Cnv {
+  return variant(`${kind}:${theme}`, seed, (s) => {
+    switch (kind) {
+      case 'pine':
+        return pineTree(s);
+      case 'snowpine':
+        return pineTree(s, true);
+      case 'palm':
+        return palmTree(s);
+      case 'dead':
+        return deadTree(theme, s);
+      case 'cactus':
+        return cactus(s);
+      case 'mushroom':
+        return mushroomTree(theme, s);
+      case 'crystal':
+        return crystalSpire(s);
+      case 'willow':
+        return willowTree(theme, s);
+      case 'jungle':
+        return jungleTree(theme, s);
+      default:
+        return oakTree(theme, s);
+    }
+  });
+}
+
 function buildObjects(sc: Scenery, map: TileMap, region: RegionDef): void {
   const theme = region.theme;
+  const look = THEMES[theme];
+  // woods have trunks where the canopy meets a clearing; bare lands (desert, crystal wastes) have cliffs
+  const woody = look.trees.filter((t) => t !== 'cactus' && t !== 'crystal').length * 2 > look.trees.length;
   for (let i = 0; i < map.w * map.h; i++) {
     const tx = i % map.w;
     const ty = Math.floor(i / map.w);
@@ -62,18 +113,18 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef): void {
     const h = hash2(tx, ty, 77);
     switch (k) {
       case K.Tree: {
-        const pine = theme === 'forest' && h < 0.45;
-        const c = (pine ? pineTree(Math.floor(h * 1000)) : oakTree(theme, Math.floor(h * 1000))).toCanvas();
+        const kind = look.trees[Math.floor(hash2(tx, ty, 91) * look.trees.length)] ?? 'oak';
+        const c = treeArt(kind, theme, Math.floor(h * 1000));
         sc.objects.push({ x, y: bottom - 3, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 3, fade: true, kind: 'tree' });
         break;
       }
       case K.Bush: {
-        const c = bushArt(theme, Math.floor(h * 1000)).toCanvas();
+        const c = variant(`bush:${theme}`, Math.floor(h * 1000), (s) => bushArt(theme, s));
         sc.objects.push({ x, y: bottom - 2, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: false, kind: 'bush' });
         break;
       }
       case K.Rock: {
-        const c = rockArt(theme, Math.floor(h * 1000)).toCanvas();
+        const c = variant(`rock:${theme}`, Math.floor(h * 1000), (s) => rockArt(theme, s));
         sc.objects.push({ x, y: bottom - 3, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: false, kind: 'rock' });
         break;
       }
@@ -83,7 +134,7 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef): void {
         break;
       }
       case K.HouseAnchor: {
-        const c = house(Math.floor(h * 3));
+        const c = building('house', 4, 3, Math.floor(h * 1000)).toCanvas();
         // the anchor is the footprint's bottom-left: 4 tiles wide, 3 tall
         sc.objects.push({ x: tx * TILE + 32, y: bottom - 2, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: true, kind: 'house' });
         break;
@@ -100,7 +151,8 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef): void {
         break;
       }
       case K.Wall: {
-        if (theme !== 'crypt') {
+        if (!look.indoor) {
+          if (!woody) break;
           // the forest's edge hangs over the ground a little: trunks where foliage meets a clearing
           const below = ty + 1 < map.h ? map.kind[i + map.w] : K.Wall;
           if (below !== K.Wall && below !== K.Illusion && below !== undefined && h < 0.45) {
@@ -109,7 +161,7 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef): void {
           }
         } else {
           const below = ty + 1 < map.h ? map.kind[i + map.w] : K.Wall;
-          if (below !== K.Wall && below !== K.Cracked && h < 0.16 && tx % 3 === 0) sc.torches.push({ x, y: ty * TILE + 9 });
+          if (below !== K.Wall && below !== K.Cracked && below !== undefined && h < 0.16 && tx % 3 === 0) sc.torches.push({ x, y: ty * TILE + 9 });
         }
         break;
       }
@@ -129,14 +181,26 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef): void {
       const c = waystone();
       sc.objects.push({ x, y: bottom - 5, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: false, kind: 'waystone' });
     }
-    if (m.kind === 'exit' && theme === 'village') {
-      const c = signpost();
-      sc.objects.push({ x: x - 10, y: bottom - 14, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: false, kind: 'sign' });
+    if (m.kind === 'building') {
+      const c = building(m.style, m.w, m.h, pm.tx * 31 + pm.ty).toCanvas();
+      // the marker is the footprint's bottom-left tile; the picture's bottom edge is the footprint's
+      sc.objects.push({ x: (pm.tx + m.w / 2) * TILE, y: bottom - 2, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 3, fade: true, kind: 'building' });
     }
-    if (m.kind === 'exit' && theme === 'forest') {
-      const c = cryptGate();
-      // drawn once for the pair of gate tiles
-      if (!sc.objects.some((o) => o.kind === 'gate')) sc.objects.push({ x: x + 8, y: bottom + 1, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 4, fade: false, kind: 'gate' });
+    if (m.kind === 'exit' && !look.indoor) {
+      if (REGIONS[m.to]?.kind === 'dungeon') {
+        if (region.id === 'whisperwood') {
+          // the Hollow Crypt's gate, drawn once for the pair of gate tiles
+          const c = cryptGate();
+          if (!sc.objects.some((o) => o.kind === 'gate')) sc.objects.push({ x: x + 8, y: bottom + 1, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 4, fade: false, kind: 'gate' });
+        } else {
+          const c = caveMouth();
+          sc.objects.push({ x, y: bottom + 1, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 4, fade: false, kind: 'gate' });
+        }
+      } else if (!sc.objects.some((o) => o.kind === 'sign' && Math.abs(o.x - (x - 10)) < 3 * TILE && Math.abs(o.y - (bottom - 14)) < 3 * TILE)) {
+        // a signpost by the road out (one for a wide gateway)
+        const c = signpost();
+        sc.objects.push({ x: x - 10, y: bottom - 14, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: false, kind: 'sign' });
+      }
     }
     if (m.kind === 'shrine') {
       const c = shrine();
@@ -259,68 +323,6 @@ function fence(map: TileMap, tx: number, ty: number): Cnv {
   return smooth2x(c);
 }
 
-function house(variant: number): Cnv {
-  const c = canvas(66, 68);
-  const g = ctx2d(c);
-  const roof = [
-    ['#c9473b', '#a8352b', '#e0685a'],
-    ['#4a6ac0', '#3a5098', '#6a8ae0'],
-    ['#4a9a5a', '#3a7a48', '#6aba7a'],
-  ][variant % 3]!;
-  // walls
-  g.fillStyle = '#efe0c0';
-  g.fillRect(5, 34, 56, 32);
-  g.fillStyle = '#d8c8a0';
-  g.fillRect(5, 60, 56, 6);
-  g.fillStyle = '#6a4424';
-  for (const x of [5, 21, 44, 59]) g.fillRect(x, 34, 2, 32);
-  g.fillRect(5, 34, 56, 2);
-  g.fillRect(5, 48, 56, 1);
-  // door
-  g.fillStyle = '#4a2e18';
-  g.fillRect(28, 46, 10, 20);
-  g.fillStyle = '#7a4a28';
-  g.fillRect(29, 47, 8, 19);
-  g.fillStyle = '#5a3a20';
-  g.fillRect(33, 47, 1, 19);
-  g.fillStyle = '#ffcf5a';
-  g.fillRect(35, 56, 1, 2);
-  // windows with warm light
-  for (const x of [10, 48]) {
-    g.fillStyle = '#4a2e18';
-    g.fillRect(x - 1, 39, 10, 10);
-    g.fillStyle = '#ffd86b';
-    g.fillRect(x, 40, 8, 8);
-    g.fillStyle = '#ffeaa8';
-    g.fillRect(x, 40, 3, 3);
-    g.fillStyle = '#4a2e18';
-    g.fillRect(x + 3, 40, 2, 8);
-    g.fillRect(x, 43, 8, 2);
-    g.fillStyle = '#8a5a34';
-    g.fillRect(x - 2, 49, 12, 2);
-  }
-  // roof
-  for (let y = 0; y < 32; y++) {
-    const inset = Math.round(14 - (y / 31) * 14);
-    const x0 = 1 + inset;
-    const w = 64 - inset * 2;
-    g.fillStyle = y % 4 === 3 ? roof[1]! : roof[0]!;
-    g.fillRect(x0, 4 + y, w, 1);
-    if (y % 4 !== 3) {
-      g.fillStyle = roof[2]!;
-      for (let x = x0 + ((y >> 2) % 2) * 3; x < x0 + w; x += 6) g.fillRect(x, 4 + y, 1, 1);
-    }
-  }
-  g.fillStyle = roof[1]!;
-  g.fillRect(1, 35, 64, 2);
-  // chimney
-  g.fillStyle = '#8a7a6a';
-  g.fillRect(46, 0, 7, 12);
-  g.fillStyle = '#6a5a4a';
-  g.fillRect(46, 0, 7, 2);
-  return outline(c);
-}
-
 function pillar(): Cnv {
   const c = canvas(14, 30);
   const g = ctx2d(c);
@@ -422,6 +424,44 @@ function cryptGate(): Cnv {
   return outline(c);
 }
 
+/** A dungeon's way in out in the wilds: a mouth in a mound of rock, with a torch either side. */
+function caveMouth(): Cnv {
+  const c = canvas(44, 34);
+  const g = ctx2d(c);
+  // the mound
+  for (let y = 0; y < 34; y++) {
+    const half = Math.round(21 * Math.sqrt(Math.max(0, 1 - ((y - 34) / 32) ** 2)));
+    g.fillStyle = y < 6 ? '#8a8494' : '#6e6878';
+    g.fillRect(22 - half, y, half * 2, 1);
+  }
+  g.fillStyle = '#5a5464';
+  for (const [x, y, w] of [[6, 20, 6], [30, 16, 7], [12, 9, 5], [27, 7, 4], [36, 26, 4]] as const) g.fillRect(x, y, w, 2);
+  g.fillStyle = '#a8a2b0';
+  for (const [x, y, w] of [[14, 3, 6], [24, 2, 5], [8, 13, 3], [33, 11, 3]] as const) g.fillRect(x, y, w, 1);
+  // the dark way in, framed by timbers
+  g.fillStyle = '#0e0a18';
+  for (let y = 12; y < 34; y++) {
+    const half = y < 20 ? Math.round(9 * Math.sqrt(Math.max(0, 1 - ((y - 20) / 8) ** 2))) : 9;
+    g.fillRect(22 - half, y, half * 2, 1);
+  }
+  g.fillStyle = '#6a4424';
+  g.fillRect(11, 16, 3, 18);
+  g.fillRect(30, 16, 3, 18);
+  g.fillRect(10, 14, 24, 3);
+  g.fillStyle = '#8a5a34';
+  g.fillRect(11, 14, 22, 1);
+  // torches
+  for (const x of [5, 37]) {
+    g.fillStyle = '#4a2e18';
+    g.fillRect(x, 22, 2, 8);
+    g.fillStyle = '#ff7a3d';
+    g.fillRect(x - 1, 18, 4, 4);
+    g.fillStyle = '#ffd86b';
+    g.fillRect(x, 19, 2, 2);
+  }
+  return outline(c);
+}
+
 function shrine(): Cnv {
   const c = canvas(18, 24);
   const g = ctx2d(c);
@@ -441,11 +481,139 @@ function shrine(): Cnv {
   return outline(c);
 }
 
-/** Small village props. */
+/** Small props: the village's, and the camps, nests and wrecks out in the wilds. */
 function prop(kind: string): Cnv | null {
-  const c = canvas(24, 26);
+  const c = kind === 'wreck' ? canvas(48, 30) : canvas(24, 26);
   const g = ctx2d(c);
   switch (kind) {
+    case 'tent':
+      // canvas over a ridge pole, the flap open on the dark inside
+      for (let y = 5; y < 26; y++) {
+        const half = Math.round(((y - 5) / 20) * 11);
+        g.fillStyle = '#d8c8a0';
+        g.fillRect(12 - half, y, half * 2, 1);
+        g.fillStyle = '#b8a880';
+        g.fillRect(12 - half, y, Math.max(1, Math.round(half * 0.7)), 1);
+      }
+      g.fillStyle = '#3a2a20';
+      for (let y = 13; y < 26; y++) {
+        const half = Math.round(((y - 13) / 12) * 4);
+        g.fillRect(13 - half, y, half * 2 + 1, 1);
+      }
+      g.fillStyle = '#efe0c0';
+      for (let y = 13; y < 26; y++) g.fillRect(14 + Math.round(((y - 13) / 12) * 4), y, 1, 1);
+      g.fillStyle = '#6a4424';
+      g.fillRect(11, 2, 2, 4);
+      g.fillStyle = '#c9473b';
+      g.fillRect(13, 2, 4, 2);
+      break;
+    case 'campfire':
+      g.fillStyle = '#7a7a8a';
+      for (const [x, y] of [[4, 21], [7, 24], [12, 25], [17, 24], [20, 21], [17, 18], [7, 18]] as const) g.fillRect(x - 1, y - 1, 3, 2);
+      g.fillStyle = '#9a9aaa';
+      for (const [x, y] of [[4, 21], [12, 25], [20, 21]] as const) g.fillRect(x - 1, y - 1, 2, 1);
+      g.fillStyle = '#5a3a20';
+      g.fillRect(6, 21, 12, 2);
+      g.fillStyle = '#7a4a28';
+      g.fillRect(9, 19, 6, 2);
+      g.fillStyle = '#ff7a3d';
+      for (let y = 8; y < 21; y++) {
+        const half = Math.round(((y - 8) / 12) * 4) + (y % 3 === 0 ? 1 : 0);
+        g.fillRect(12 - half, y, half * 2, 1);
+      }
+      g.fillStyle = '#ffd86b';
+      for (let y = 13; y < 21; y++) {
+        const half = Math.round(((y - 13) / 7) * 2);
+        g.fillRect(12 - half, y, half * 2, 1);
+      }
+      g.fillStyle = '#ff3f2a';
+      g.fillRect(8, 15, 1, 3);
+      g.fillRect(15, 14, 1, 4);
+      break;
+    case 'bones':
+      // a skull and a few long bones, lying low
+      g.fillStyle = '#e8e0d0';
+      g.fillRect(4, 18, 6, 5);
+      g.fillRect(5, 23, 4, 1);
+      g.fillStyle = '#2a2230';
+      g.fillRect(5, 20, 2, 1);
+      g.fillRect(8, 20, 1, 1);
+      g.fillStyle = '#c8c0b0';
+      g.fillRect(4, 22, 6, 1);
+      g.fillStyle = '#e8e0d0';
+      g.fillRect(12, 22, 8, 1);
+      g.fillRect(11, 21, 2, 3);
+      g.fillRect(19, 21, 2, 3);
+      g.fillRect(14, 17, 1, 4);
+      g.fillRect(13, 16, 3, 1);
+      g.fillRect(13, 21, 3, 1);
+      g.fillStyle = '#c8c0b0';
+      for (const x of [16, 18, 20]) g.fillRect(x, 17, 1, 3);
+      g.fillRect(16, 17, 5, 1);
+      break;
+    case 'eggs':
+      // a nest of twigs with three speckled eggs
+      g.fillStyle = '#6a4a28';
+      g.fillRect(3, 20, 18, 4);
+      g.fillRect(5, 24, 14, 1);
+      g.fillStyle = '#8a6a3a';
+      for (let x = 3; x < 21; x += 3) g.fillRect(x, 19 + (x % 2), 3, 1);
+      g.fillStyle = '#a8844a';
+      for (let x = 4; x < 20; x += 4) g.fillRect(x, 22, 2, 1);
+      for (const [x, y] of [[7, 15], [12, 14], [16, 16]] as const) {
+        g.fillStyle = '#e8e4d8';
+        g.fillRect(x - 2, y, 4, 5);
+        g.fillRect(x - 1, y - 1, 2, 1);
+        g.fillStyle = '#c8c0b0';
+        g.fillRect(x + 1, y + 1, 1, 4);
+        g.fillStyle = '#8a7a6a';
+        g.fillRect(x - 1, y + 1, 1, 1);
+        g.fillRect(x, y + 3, 1, 1);
+      }
+      break;
+    case 'wreck': {
+      // a boat on its side in the sand: planked hull, ribs where the planks are gone, the broken mast
+      for (let y = 12; y < 28; y++) {
+        const t = (y - 12) / 15;
+        const x0 = Math.round(4 + t * 6);
+        const x1 = Math.round(46 - t * 3);
+        g.fillStyle = (y - 12) % 3 === 2 ? '#5a3a20' : y < 16 ? '#9a6a3a' : '#7a4a28';
+        g.fillRect(x0, y, x1 - x0, 1);
+      }
+      g.fillStyle = '#2a1a14';
+      g.fillRect(24, 14, 12, 10);
+      g.fillStyle = '#9a6a3a';
+      for (const x of [26, 30, 34]) g.fillRect(x, 13, 2, 12);
+      g.fillStyle = '#b8844a';
+      g.fillRect(4, 12, 42, 1);
+      g.fillStyle = '#6a4424';
+      g.fillRect(16, 1, 3, 12);
+      g.fillRect(18, 4, 8, 2);
+      g.fillStyle = '#d8c8a0';
+      g.fillRect(19, 6, 6, 5);
+      g.fillStyle = '#b8a880';
+      g.fillRect(19, 9, 6, 2);
+      g.fillStyle = '#3a8a6a';
+      g.fillRect(8, 26, 4, 2);
+      g.fillRect(38, 25, 5, 2);
+      break;
+    }
+    case 'chickens':
+      // two hens pecking
+      for (const [x, y, f] of [[6, 18, 1], [16, 21, -1]] as const) {
+        g.fillStyle = '#efe8dc';
+        g.fillRect(x - 3, y, 7, 4);
+        g.fillRect(x + f * 3 - 1, y - 2, 3, 3);
+        g.fillStyle = '#c8c0b0';
+        g.fillRect(x - f * 3 - (f > 0 ? 1 : -1), y - 1, 2, 2);
+        g.fillStyle = '#c9473b';
+        g.fillRect(x + f * 3, y - 3, 1, 1);
+        g.fillStyle = '#ffcf5a';
+        g.fillRect(x + f * 5 - (f < 0 ? 1 : 0), y - 1, 1, 1);
+        g.fillRect(x - 1, y + 4, 1, 2);
+        g.fillRect(x + 1, y + 4, 1, 2);
+      }
+      break;
     case 'lamp':
       g.fillStyle = '#3a3448';
       g.fillRect(11, 6, 2, 20);

@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { NPCS } from '../data/quests';
+import { mapColors } from '../data/themes';
 import type { Theme } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { K, TILE, type TileMap } from '../sim/map';
@@ -17,12 +18,6 @@ const SPAN = 44;
 /** Device-independent size of the minimap, in CSS pixels. */
 const SIZE = 88;
 
-const COLORS: Record<Theme, { floor: string; wall: string; path: string; cobble: string; water: string; solid: string }> = {
-  village: { floor: '#3f7a3a', wall: '#1d3a22', path: '#a8885a', cobble: '#8a8a96', water: '#2f6cc0', solid: '#5a4434' },
-  forest: { floor: '#356a3e', wall: '#12301c', path: '#86704c', cobble: '#7a7a86', water: '#245aa0', solid: '#2a4a30' },
-  crypt: { floor: '#4e4c62', wall: '#16142a', path: '#5e5870', cobble: '#5e5870', water: '#24406a', solid: '#2a283e' },
-};
-
 const base = new WeakMap<TileMap, HTMLCanvasElement>();
 
 /** One pixel per tile, colored by what the tile is. */
@@ -34,9 +29,9 @@ function baseLayer(map: TileMap, theme: Theme): HTMLCanvasElement {
   c.height = map.h;
   const g = c.getContext('2d')!;
   const img = g.createImageData(map.w, map.h);
-  const pal = COLORS[theme];
+  const pal = mapColors(theme);
   const rgb = (hex: string): [number, number, number] => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
-  const cols = { floor: rgb(pal.floor), wall: rgb(pal.wall), path: rgb(pal.path), cobble: rgb(pal.cobble), water: rgb(pal.water), solid: rgb(pal.solid) };
+  const cols = { floor: rgb(pal.floor), wall: rgb(pal.wall), path: rgb(pal.path), cobble: rgb(pal.cobble), water: rgb(pal.water), solid: rgb(pal.solid), sand: rgb(pal.sand) };
   for (let i = 0; i < map.w * map.h; i++) {
     const k = map.kind[i];
     const col =
@@ -48,7 +43,9 @@ function baseLayer(map: TileMap, theme: Theme): HTMLCanvasElement {
             ? cols.cobble
             : k === K.Water
               ? cols.water
-              : map.solid[i]
+              : k === K.Sand
+                ? cols.sand
+                : map.solid[i]
                 ? cols.solid
                 : cols.floor;
     img.data.set([col[0], col[1], col[2], 255], i * 4);

@@ -201,7 +201,7 @@ function BossBar({ engine }: { engine: SigilEngine }) {
 
 function Tracker({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
-  const q = trackedQuest(h);
+  const q = trackedQuest(h, engine.world?.region.id);
   if (!q || engine.ui.boss) return null;
   const pr = questProgress(h, q);
   return (
@@ -290,7 +290,7 @@ function Dialogue({ engine }: { engine: SigilEngine }) {
         <p key={d.i}>{d.lines[d.i]}</p>
         <div className="rb-dialogue-actions">
           {npc.shop && (
-            <button className="rb-btn is-small is-gold" onClick={() => engine.openShop(npc.shop!)}>
+            <button className="rb-btn is-small is-gold" onClick={() => engine.openShop(npc.shop!, npc.id)}>
               Trade
             </button>
           )}
@@ -401,9 +401,9 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   return (
     <div className="rb-modal">
-      <div className="rb-card rb-reward" role="dialog" aria-modal="true" aria-label="Rift closed">
+      <div className="rb-card rb-reward" role="dialog" aria-modal="true" aria-label="Dungeon cleared">
         <span className="rb-kicker">{TIERS[r.tier]!.name} · {REGIONS[r.region].name}</span>
-        <h2>The Rift is closed!</h2>
+        <h2>{r.region === 'crypt' ? 'The Rift is closed!' : `${REGIONS[r.region].name} cleared!`}</h2>
         <div className="rb-reward-stats">
           <span>
             <b>{fmt(r.xp)}</b> XP

@@ -5,7 +5,7 @@ import { REGIONS, TIERS, type RiftMod } from './data/regions';
 import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SlotId } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
-import { BAG_SIZE, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, unequip, type Character } from './progress/character';
+import { bagSize, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
@@ -47,8 +47,9 @@ export interface UiState {
   screen: 'title' | 'create' | 'game';
   createSlot: number;
   panel: PanelId | null;
-  /** The vendor whose shop is open (with panel 'shop'). */
+  /** The shop that is open (with panel 'shop'), and the vendor keeping it. */
   shop: ShopId | null;
+  shopNpc?: string;
   pause: boolean;
   dialogue: { npc: string; lines: string[]; i: number } | null;
   travel: { to: RegionId; label: string; locked: string | null } | null;
@@ -513,6 +514,8 @@ export class SigilEngine {
       w.run = prev.run;
     }
     if (prev) w.player.ult = prev.player.ult;
+    // the quests of a land start when the hero first gets there
+    for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
     this.world = w;
     this.renderer.snap(w);
     this.ui = { ...this.ui, panel: null, travel: null, dialogue: null, boss: null, death: false, banner: { text: region.name, sub: region.safe ? region.subtitle : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`, id: performance.now() } };
@@ -530,7 +533,7 @@ export class SigilEngine {
   private collectLeftovers(w: World, leaving: boolean): void {
     const got = w.collectAll();
     if (got.items > 0 && this.hero) {
-      const over = this.hero.bag.length > BAG_SIZE;
+      const over = this.hero.bag.length > bagSize(this.hero);
       this.toast(`${leaving ? 'Picked up' : 'Collected'} ${got.items} item${got.items === 1 ? '' : 's'} ${leaving ? 'you left behind' : 'from the fight'}`, 'loot', undefined, over ? 'Your bag is over-full: salvage or wear something to pick up more.' : undefined);
     }
     if (got.salvaged > 0) this.toast(`Your bag was full: the rest became ${got.salvaged} gold`, 'warn');
@@ -577,6 +580,8 @@ export class SigilEngine {
       this.setUi({ travel: null });
       return;
     }
+    // walking there is how a new land is found (its waystone then works for travel)
+    if (this.hero && !this.hero.unlocked.includes(t.to)) this.hero.unlocked.push(t.to);
     this.travel(t.to, w.tier, w.mods, w.region.id);
   }
 
@@ -595,6 +600,8 @@ export class SigilEngine {
     this.touch.release();
     this.sound.play('open');
     this.setUi({ dialogue: { npc: npcId, lines: entry.lines, i: 0 } });
+    // a message delivered, a question asked: talking is the objective
+    this.world?.questProgress((o) => o.kind === 'talk' && o.npc === npcId);
   }
 
   nextLine(): void {
@@ -619,12 +626,12 @@ export class SigilEngine {
   }
 
   /** A vendor's shop. */
-  openShop(shop: ShopId): void {
+  openShop(shop: ShopId, npc?: string): void {
     if (this.ui.screen !== 'game' || this.ui.death || this.ui.reward) return;
     this.kbm?.release();
     this.touch.release();
     this.sound.play('open');
-    this.setUi({ panel: 'shop', shop, pause: false, dialogue: null });
+    this.setUi({ panel: 'shop', shop, shopNpc: npc, pause: false, dialogue: null });
   }
 
   buy(shop: ShopId, uid: string): Item | null {

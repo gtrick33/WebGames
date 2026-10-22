@@ -742,7 +742,7 @@ export function updateProjectiles(w: World, dt: number): void {
               w.dodgedSomething();
             }
           } else {
-            hurtPlayer(w, pr.dmg, { fromX: pr.x - pr.vx * 0.05, fromY: pr.y - pr.vy * 0.05, knock: 40 });
+            hurtPlayer(w, pr.dmg, { fromX: pr.x - pr.vx * 0.05, fromY: pr.y - pr.vy * 0.05, knock: 40, ...(pr.status ? { status: pr.status } : {}) });
             w.addFx({ kind: 'burst', x: pr.x, y: pr.y, life: 0.2, size: 6, color: pr.color });
             pr.dead = true;
           }

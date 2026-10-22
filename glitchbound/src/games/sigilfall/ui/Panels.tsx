@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CLASSES, levelPower, xpToNext } from '../data/classes';
 import { ITEM_DEFS } from '../data/items';
 import { QUESTS } from '../data/quests';
-import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
+import { mapColors } from '../data/themes';
+import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/talents';
-import type { ClassId, Item, RegionId, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
+import type { ClassId, Item, QuestDef, RegionDef, RegionId, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { BAG_SIZE, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, questProgress, questState, respecCost, specCost, talentPoints, treeOpen, type Character } from '../progress/character';
+import { bagSize, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, specCost, talentPoints, trackedQuest, treeOpen, type Character } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
@@ -16,6 +17,7 @@ import { rarityColor } from '../render/renderer';
 import { glyphIconUrl, heroDollUrl, heroLook } from '../render/sprites';
 import { K, TILE } from '../sim/map';
 import { objectiveTarget } from '../sim/objective';
+import { npcRegion, regionLinks } from '../sim/routes';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
 import { ShopPanel } from './Shop';
 
@@ -132,7 +134,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
       <section className="rb-bag" aria-label="Bag">
         <div className="rb-bag-head">
           <strong>
-            Bag {h.bag.length}/{BAG_SIZE}
+            Bag {h.bag.length}/{bagSize(h)}
           </strong>
           <div className="rb-seg" role="group" aria-label="Sort">
             {(['new', 'best', 'slot'] as const).map((s) => (
@@ -152,7 +154,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
               </button>
             );
           })}
-          {Array.from({ length: Math.max(0, BAG_SIZE - h.bag.length) }, (_, i) => (
+          {Array.from({ length: Math.max(0, bagSize(h) - h.bag.length) }, (_, i) => (
             <span key={`e${i}`} className="rb-bslot is-empty" />
           ))}
         </div>
@@ -275,7 +277,7 @@ export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, act
       {actions ?? (
       <div className="rb-row">
         {worn ? (
-          <button className="rb-btn" onClick={() => engine.unequipSlot(slot) && onDone()} disabled={h.bag.length >= BAG_SIZE}>
+          <button className="rb-btn" onClick={() => engine.unequipSlot(slot) && onDone()} disabled={h.bag.length >= bagSize(h)}>
             Take off
           </button>
         ) : (
@@ -570,29 +572,46 @@ function scaleMod(m: TalentNode['mods'][number], rank: number): TalentNode['mods
 
 function QuestsPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
+  const here = engine.world?.region.id;
   const active = QUESTS.filter((q) => questState(h, q.id) === 'active');
   const done = QUESTS.filter((q) => questState(h, q.id) === 'done');
+  // grouped by where they are done, this region first
+  const groups = new Map<string, QuestDef[]>();
+  for (const q of active) {
+    const r = questRegion(q) ?? npcRegion(q.giver) ?? 'emberwick';
+    groups.set(r, [...(groups.get(r) ?? []), q]);
+  }
+  const order = [...groups.keys()].sort((a, b) => Number(b === here) - Number(a === here));
   return (
     <div className="rb-quests">
       {active.length === 0 && <p className="rb-dim">No quests right now. The Rift will stir again.</p>}
-      {active.map((q) => {
-        const pr = questProgress(h, q);
-        return (
-          <article key={q.id} className="rb-quest">
-            <strong>{q.name}</strong>
-            <p>{q.text}</p>
-            <span className="rb-small">
-              {q.objective.label}
-              {pr.of > 1 ? `: ${pr.n} / ${pr.of}` : ''}
-            </span>
-            {pr.of > 1 && <Bar value={pr.n} max={pr.of} color="#ffcf5a" />}
-            <span className="rb-small rb-dim">
-              Reward: {q.reward.xp} XP · {q.reward.gold} gold{q.reward.item ? ' · an item' : ''}
-              {q.reward.unlock ? ` · opens ${REGIONS[q.reward.unlock].name}` : ''}
-            </span>
-          </article>
-        );
-      })}
+      {order.map((r) => (
+        <section key={r} className="rb-quest-group">
+          <span className="rb-kicker">
+            {REGIONS[r as RegionId]?.name ?? r}
+            {r === here ? ' · here' : ''}
+          </span>
+          {groups.get(r)!.map((q) => {
+            const pr = questProgress(h, q);
+            return (
+              <article key={q.id} className="rb-quest">
+                <strong>{q.name}</strong>
+                <p>{q.text}</p>
+                <span className="rb-small">
+                  {q.objective.label}
+                  {pr.of > 1 ? `: ${pr.n} / ${pr.of}` : ''}
+                </span>
+                {pr.of > 1 && <Bar value={pr.n} max={pr.of} color="#ffcf5a" />}
+                <span className="rb-small rb-dim">
+                  Reward: {q.reward.xp} XP · {q.reward.gold} gold{q.reward.item ? ' · an item' : ''}
+                  {q.reward.unlock ? ` · opens ${REGIONS[q.reward.unlock].name}` : ''}
+                  {q.reward.perk ? <b className="rb-gold"> · {PERKS[q.reward.perk].name}: {PERKS[q.reward.perk].text}</b> : null}
+                </span>
+              </article>
+            );
+          })}
+        </section>
+      ))}
       {done.length > 0 && (
         <details className="rb-done">
           <summary>Completed · {done.length}</summary>
@@ -602,6 +621,15 @@ function QuestsPanel({ engine }: { engine: SigilEngine }) {
             ))}
           </ul>
         </details>
+      )}
+      {h.perks.length > 0 && (
+        <p className="rb-small">
+          {h.perks.map((k) => (
+            <span key={k} className="rb-chip">
+              {PERKS[k].name}: {PERKS[k].text}
+            </span>
+          ))}
+        </p>
       )}
       <p className="rb-small rb-dim">
         {h.stats.kills} foes defeated · {h.stats.deaths} falls · {Math.round(h.stats.time / 60)} minutes played
@@ -617,9 +645,16 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   const w = engine.world!;
   const atStone = !!w.interactable && w.interactable.kind === 'waystone';
   const canTravel = atStone || w.region.safe;
+  const [sel, setSel] = useState<RegionId>(w.region.id);
   const [tier, setTier] = useState(Math.min(h.tier, w.tier || h.tier));
   const [mods, setMods] = useState<RiftMod[]>([]);
-  const regions: RegionId[] = ['emberwick', 'whisperwood', 'crypt'];
+  const r = REGIONS[sel];
+  const open = h.unlocked.includes(sel);
+  const here = w.region.id === sel;
+  // difficulty tiers are for dungeons (and the old wood)
+  const tiered = h.tier > 0 && (r.kind === 'dungeon' || sel === 'whisperwood');
+  const pick = tiered ? tier : 0;
+  const goal = trackedQuest(h, w.region.id);
   return (
     <div className="rb-map">
       <section className="rb-map-left">
@@ -627,25 +662,20 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
         <MiniMap engine={engine} />
       </section>
       <section className="rb-map-right">
-        <span className="rb-kicker">{canTravel ? 'Travel by waystone' : 'Travel from a waystone or the village'}</span>
-        {regions.map((id) => {
-          const r = REGIONS[id];
-          const open = h.unlocked.includes(id);
-          const here = w.region.id === id;
-          return (
-            <div key={id} className={`rb-dest${open ? '' : ' is-locked'}${here ? ' is-here' : ''}`}>
-              <div>
-                <strong>{r.name}</strong>
-                <span className="rb-small rb-dim">{open ? r.blurb : id === 'whisperwood' ? 'Finish your training with Elder Maren.' : 'Defeat Grimtusk in the Whisperwood.'}</span>
-                {open && !r.safe && <span className="rb-small">Enemy level {r.level + TIERS[tier]!.levels}</span>}
-              </div>
-              <button className="rb-btn is-small is-gold" disabled={!open || !canTravel || (here && (r.safe || tier === w.tier))} onClick={() => engine.travel(id, tier, mods, undefined)}>
-                {here ? 'Here' : 'Go'}
-              </button>
-            </div>
-          );
-        })}
-        {h.tier > 0 && (
+        <span className="rb-kicker">{canTravel ? 'The world · travel by waystone' : 'The world · travel from a waystone or a town'}</span>
+        <WorldMap hero={h} here={w.region.id} sel={sel} goal={goal ? questRegion(goal) : undefined} onSel={setSel} />
+        <div className={`rb-dest${open ? '' : ' is-locked'}${here ? ' is-here' : ''}`}>
+          <div>
+            <strong>
+              {open || r.kind === 'town' ? r.name : 'Unknown land'} <span className="rb-dim rb-small">{r.kind === 'town' ? 'Town' : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0] + TIERS[pick]!.levels}-${r.levels[1] + TIERS[pick]!.levels}`}</span>
+            </strong>
+            <span className="rb-small rb-dim">{open ? r.blurb : sel === 'whisperwood' ? 'Finish your training with Elder Maren.' : sel === 'crypt' ? 'Defeat Grimtusk in the Whisperwood.' : 'Not discovered yet: walk there to find it.'}</span>
+          </div>
+          <button className="rb-btn is-small is-gold" disabled={!open || !canTravel || (here && (r.safe || pick === w.tier))} onClick={() => engine.travel(sel, pick, mods, undefined)}>
+            {here ? 'Here' : 'Go'}
+          </button>
+        </div>
+        {tiered && (
           <div className="rb-tiers">
             <span className="rb-kicker">Difficulty</span>
             <div className="rb-seg">
@@ -677,6 +707,52 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   );
 }
 
+const KIND_COLOR: Record<RegionDef['kind'], string> = { town: '#ffcf5a', wild: '#6ad06a', dungeon: '#c58cff' };
+
+/** The world at a glance: every region where it lies, the ways between them, what is still unknown. */
+function WorldMap({ hero, here, sel, goal, onSel }: { hero: Character; here: RegionId; sel: RegionId; goal?: RegionId; onSel: (r: RegionId) => void }) {
+  const links = useMemo(() => regionLinks(), []);
+  const known = (id: RegionId): boolean => hero.unlocked.includes(id) || REGIONS[id].kind === 'town';
+  return (
+    <svg className="rb-world" viewBox="0 0 100 92" role="group" aria-label="World map">
+      <rect x="0" y="0" width="100" height="92" rx="3" className="rb-world-sea" />
+      {links.map(([a, b]) => {
+        const A = REGIONS[a].at;
+        const B = REGIONS[b].at;
+        return <line key={`${a}-${b}`} x1={A[0]} y1={A[1]} x2={B[0]} y2={B[1]} className={known(a) && known(b) ? 'is-known' : ''} />;
+      })}
+      {REGION_IDS.map((id) => {
+        const r = REGIONS[id];
+        const [x, y] = r.at;
+        const k = known(id);
+        const col = k ? KIND_COLOR[r.kind] : '#6a6480';
+        return (
+          <g key={id} className={`rb-world-node${id === sel ? ' is-sel' : ''}`} onClick={() => onSel(id)} role="button" aria-label={k ? r.name : 'Unknown land'} tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSel(id)}>
+            {id === here && <circle cx={x} cy={y} r="5.2" className="rb-world-here" />}
+            {r.kind === 'town' ? <rect x={x - 2.6} y={y - 2.6} width="5.2" height="5.2" rx="1" fill={col} /> : r.kind === 'dungeon' ? <rect x={x - 2.2} y={y - 2.2} width="4.4" height="4.4" fill={col} transform={`rotate(45 ${x} ${y})`} /> : <circle cx={x} cy={y} r="3.1" fill={col} />}
+            {!k && (
+              <text x={x} y={y + 1.1} className="rb-world-q">
+                ?
+              </text>
+            )}
+            {id === goal && (
+              <text x={x + 3.2} y={y - 2.6} className="rb-world-goal">
+                !
+              </text>
+            )}
+            <text x={x} y={y + 6.4} className="rb-world-name">
+              {k ? r.name.replace(/^The /, '') : '???'}
+            </text>
+            <text x={x} y={y + 9} className="rb-world-lvl">
+              {r.kind === 'town' ? 'town' : `${r.levels[0]}-${r.levels[1]}`}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 /** A small overview of the current region with the hero on it. */
 function MiniMap({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -688,15 +764,17 @@ function MiniMap({ engine }: { engine: SigilEngine }) {
     c.width = m.w * 2;
     c.height = m.h * 2;
     const g = c.getContext('2d')!;
+    const pal = mapColors(w.region.theme);
     const color = (k: number): string => {
-      if (k === K.Wall || k === K.Illusion) return w.region.theme === 'crypt' ? '#14121e' : '#1c4428';
-      if (k === K.Water) return '#2f6cc0';
-      if (k === K.Path || k === K.Bridge) return w.region.theme === 'crypt' ? '#4e4c62' : '#b08a58';
-      if (k === K.Cobble) return '#8a889a';
-      if (k === K.Tree || k === K.Bush) return '#2c6a38';
-      if (k === K.House || k === K.HouseAnchor) return '#b04a3a';
+      if (k === K.Wall || k === K.Illusion) return pal.wall;
+      if (k === K.Water) return pal.water;
+      if (k === K.Path || k === K.Bridge) return pal.path;
+      if (k === K.Cobble) return pal.cobble;
+      if (k === K.Sand) return pal.sand;
+      if (k === K.Tree || k === K.Bush) return pal.wall;
+      if (k === K.House || k === K.HouseAnchor) return pal.house;
       if (k === K.Door) return '#8a6a3a';
-      return w.region.theme === 'crypt' ? '#3e3c52' : w.region.theme === 'forest' ? '#3c8a50' : '#5aa848';
+      return pal.floor;
     };
     for (let i = 0; i < m.w * m.h; i++) {
       g.fillStyle = color(m.kind[i]!);

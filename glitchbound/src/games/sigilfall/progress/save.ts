@@ -4,10 +4,10 @@ import { QUEST_DEFS } from '../data/quests';
 import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
-import type { ClassId, Item, RegionId, SlotId, StatKey } from '../data/types';
+import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { BAG_OVERFLOW, BAG_SIZE, learnedSkills, pointsInTree, POTION_CAP, START_POTIONS, startQuests, talentPoints, type Character } from './character';
+import { BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 
 /**
@@ -165,13 +165,14 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     skills: [null, null, null],
     equip: {},
     bag: [],
-    potions: int(o.potions, 0, POTION_CAP, START_POTIONS),
+    potions: int(o.potions, 0, POTION_CAP + 1, START_POTIONS),
     quests: {},
     unlocked: ['emberwick'],
     tier: int(o.tier, 0, 2, 0),
     bosses: {},
     clears: {},
     opened: [],
+    perks: Array.isArray(o.perks) ? [...new Set(o.perks.filter((x): x is PerkId => typeof x === 'string' && x in PERKS))] : [],
     stats: { kills: 0, deaths: 0, time: 0, runs: 0, bestRun: 0 },
     created: int(o.created, 0, 4e12, Date.now()),
     updated: int(o.updated, 0, 4e12, Date.now()),
@@ -188,6 +189,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     }
   }
   if (spent > talentPoints(c) || !talentsLegal(c)) c.talents = {};
+  c.potions = Math.min(c.potions, potionCap(c));
   // skills: only learned skills of this class
   const learned = learnedSkills(c);
   if (Array.isArray(o.skills)) {
@@ -211,7 +213,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     else c.bag.push(unique(item));
   }
   if (Array.isArray(o.bag)) {
-    for (const raw of o.bag.slice(0, BAG_SIZE + BAG_OVERFLOW)) {
+    for (const raw of o.bag.slice(0, bagSize(c) + BAG_OVERFLOW)) {
       const item = validateItem(raw);
       if (item) c.bag.push(unique(item));
     }
@@ -223,13 +225,14 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     if (!QUEST_DEFS[id] || !e) continue;
     c.quests[id] = { state: e.state === 'done' ? 'done' : 'active', n: int(e.n, 0, 1e6, 0) };
   }
-  startQuests(c);
   if (Array.isArray(o.unlocked)) for (const r of o.unlocked) if (typeof r === 'string' && r in REGIONS && !c.unlocked.includes(r as RegionId)) c.unlocked.push(r as RegionId);
+  // quests of the zones the hero has been to start once those are known
+  startQuests(c);
   for (const key of ['bosses', 'clears'] as const) {
     const m = obj(o[key]) ?? {};
-    for (const [k, n] of Object.entries(m).slice(0, 40)) if (/^[a-z0-9:-]{1,32}$/.test(k)) c[key][k] = int(n, 0, 1e6, 0);
+    for (const [k, n] of Object.entries(m).slice(0, 200)) if (/^[a-z0-9:-]{1,32}$/.test(k)) c[key][k] = int(n, 0, 1e6, 0);
   }
-  if (Array.isArray(o.opened)) c.opened = [...new Set(o.opened.filter((x): x is string => typeof x === 'string' && /^[a-z0-9:-]{1,40}$/.test(x)))].slice(0, 200);
+  if (Array.isArray(o.opened)) c.opened = [...new Set(o.opened.filter((x): x is string => typeof x === 'string' && /^[a-z0-9:-]{1,48}$/.test(x)))].slice(0, 600);
   const s = obj(o.stats) ?? {};
   c.stats = { kills: int(s.kills, 0, 1e9, 0), deaths: int(s.deaths, 0, 1e9, 0), time: int(s.time, 0, 1e10, 0), runs: int(s.runs, 0, 1e9, 0), bestRun: int(s.bestRun, 0, 1e9, 0) };
   return c;

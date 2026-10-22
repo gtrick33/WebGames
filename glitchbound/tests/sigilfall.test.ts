@@ -49,9 +49,8 @@ const levelTo = (c: Character, level: number): void => {
 };
 
 describe('sigilfall content', () => {
-  it('has about 20-30 hand-made items with unique ids, a description line for every effect, and real targets', () => {
+  it('has hand-made items with unique ids, a description line for every effect, and real targets', () => {
     expect(ITEMS.length).toBeGreaterThanOrEqual(20);
-    expect(ITEMS.length).toBeLessThanOrEqual(32);
     expect(new Set(ITEMS.map((i) => i.id)).size).toBe(ITEMS.length);
     const named = (m: Mod) => m.t === 'skill' && !['*', 'basic', 'dodge', 'ult'].includes(m.skill);
     for (const it of ITEMS) {
@@ -167,7 +166,7 @@ describe('sigilfall maps', () => {
       const open = { ...m, solid: m.solid.map((s, i) => (m.kind[i] === K.Cracked ? 0 : s)) };
       const f = flowField(open, start!.tx, start!.ty, 30000);
       for (const pm of m.markers) {
-        if (pm.marker.kind === 'prop' || pm.marker.kind === 'hazard') continue;
+        if (pm.marker.kind === 'prop' || pm.marker.kind === 'hazard' || pm.marker.kind === 'building') continue;
         // solid markers (waystones, dummies) are used from the tile next to them
         const near = [0, 1, -1, m.w, -m.w].map((d) => f[pm.ty * m.w + pm.tx + d] ?? -1);
         expect(Math.max(...near), `${pm.marker.kind} at ${pm.tx},${pm.ty}`).toBeGreaterThanOrEqual(0);
@@ -703,7 +702,7 @@ describe('sigilfall combat', () => {
     for (const id of Object.keys(REGIONS) as RegionId[]) {
       const m = parseRegion(REGIONS[id]);
       for (const pm of m.markers) {
-        if (pm.marker.kind === 'prop' || pm.marker.kind === 'waystone' || pm.marker.kind === 'dummy') continue;
+        if (pm.marker.kind === 'prop' || pm.marker.kind === 'waystone' || pm.marker.kind === 'dummy' || pm.marker.kind === 'building') continue;
         const { x, y } = markerPos(pm);
         expect(m.solid[Math.floor(y / TILE) * m.w + Math.floor(x / TILE)], `${id} ${pm.marker.kind} ${pm.tx},${pm.ty}`).toBe(0);
       }

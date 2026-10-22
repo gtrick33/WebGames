@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NPCS } from '../data/quests';
 import { QM_LEVEL, SHOPS, type ShopId } from '../data/vendors';
 import type { SigilEngine } from '../engine';
-import { BAG_SIZE, POTION_CAP } from '../progress/character';
+import { bagSize, potionCap } from '../progress/character';
 import { itemName, salvageValue } from '../progress/items';
 import { cantBuy, potionPrice, stockFor, type ShopItem } from '../progress/shop';
 import { fmt, Frame, ItemIcon, Portrait } from './common';
@@ -13,7 +13,8 @@ import { uiIcon } from './uiIcons';
 export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId }) {
   const h = engine.hero!;
   const def = SHOPS[shop];
-  const npc = Object.values(NPCS).find((n) => n.shop === shop);
+  // the vendor you are trading with (else the first who keeps this kind of shop)
+  const npc = (engine.ui.shopNpc ? NPCS[engine.ui.shopNpc] : undefined) ?? Object.values(NPCS).find((n) => n.shop === shop);
   const [tab, setTab] = useState<'buy' | 'sell'>('buy');
   const [sel, setSel] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -24,7 +25,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
   const title = (
     <span className="rb-shop-title">
       {npc && <Portrait kind="npc" id={npc.id} size={30} />}
-      <span>{def.name}</span>
+      <span>{npc?.shopName ?? def.name}</span>
     </span>
   );
   return (
@@ -56,7 +57,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
                   setConfirm(null);
                 }}
               >
-                {t === 'buy' ? 'Buy' : `Sell (${h.bag.length}/${BAG_SIZE})`}
+                {t === 'buy' ? 'Buy' : `Sell (${h.bag.length}/${bagSize(h)})`}
               </button>
             ))}
           </div>
@@ -172,7 +173,7 @@ function priceText(s: ShopItem): string {
 function PotionCounter({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const price = potionPrice(h.level);
-  const room = POTION_CAP - h.potions;
+  const room = potionCap(h) - h.potions;
   const afford = Math.floor(h.gold / price);
   return (
     <div className="rb-inn">
@@ -180,7 +181,7 @@ function PotionCounter({ engine }: { engine: SigilEngine }) {
         <img src={uiIcon('potion', 4)} alt="" className="rb-inn-icon" />
         <div>
           <strong>Healing Potion</strong>
-          <span className="rb-dim rb-small">Restores 40% of your health at once. You carry {h.potions} of {POTION_CAP}.</span>
+          <span className="rb-dim rb-small">Restores 40% of your health at once. You carry {h.potions} of {potionCap(h)}.</span>
           <span className="rb-gold">{price} gold each</span>
         </div>
       </div>

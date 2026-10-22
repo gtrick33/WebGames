@@ -2,7 +2,7 @@ import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { QUESTS, QUEST_DEFS } from '../data/quests';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS, talentNode } from '../data/talents';
-import type { ClassId, Item, Objective, QuestDef, RegionId, SlotId } from '../data/types';
+import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SlotId } from '../data/types';
 import { itemClass, itemSlot, salvageValue } from './items';
 
 /**
@@ -17,6 +17,19 @@ export const BAG_OVERFLOW = 10;
 /** Potions carried at most; they are bought at the inn (and a new hero starts with a few). */
 export const POTION_CAP = 5;
 export const START_POTIONS = 3;
+
+/** Bag slots, with the Satchel from Thornvale's story. */
+export const bagSize = (c: Pick<Character, 'perks'>): number => BAG_SIZE + (c.perks.includes('satchel') ? 6 : 0);
+/** Potions carried at most, with the Flask. */
+export const potionCap = (c: Pick<Character, 'perks'>): number => POTION_CAP + (c.perks.includes('flask') ? 1 : 0);
+
+/** The lasting gifts at the ends of quest chains, and what each does. */
+export const PERKS: Record<PerkId, { name: string; text: string }> = {
+  satchel: { name: 'Millbrook Satchel', text: '6 more bag slots' },
+  flask: { name: 'Tobin’s Flask', text: 'carry one more potion' },
+  mount: { name: 'Gullport Strider', text: 'move 30% faster outside fights' },
+  hearth: { name: 'Hearthstone', text: 'return to the last waystone from anywhere' },
+};
 
 export type QuestState = 'locked' | 'active' | 'done';
 
@@ -50,6 +63,8 @@ export interface Character {
   clears: Record<string, number>;
   /** One-time things done: once-only chests, discovered spots. */
   opened: string[];
+  /** Gifts from the ends of quest chains (a bigger bag, a mount...). */
+  perks: PerkId[];
   stats: { kills: number; deaths: number; time: number; runs: number; bestRun: number };
   created: number;
   updated: number;
@@ -80,6 +95,7 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     bosses: {},
     clears: {},
     opened: [],
+    perks: [],
     stats: { kills: 0, deaths: 0, time: 0, runs: 0, bestRun: 0 },
     created: now,
     updated: now,
@@ -221,7 +237,7 @@ export function respec(c: Character): boolean {
 
 /* ------------------------------------------------------------- equipment */
 
-export const bagFull = (c: Character): boolean => c.bag.length >= BAG_SIZE;
+export const bagFull = (c: Character): boolean => c.bag.length >= bagSize(c);
 
 /** Adds an item to the bag; false when the bag is full. */
 export function addItem(c: Character, item: Item): boolean {
@@ -280,11 +296,16 @@ export function questState(c: Character, id: string): QuestState {
   return q ? q.state : 'locked';
 }
 
-/** Starts every quest whose prerequisites are done. Returns the quests that just started. */
+/**
+ * Starts every quest whose prerequisites are done, once the hero has been to its zone and is of its
+ * level. Returns the quests that just started.
+ */
 export function startQuests(c: Character): QuestDef[] {
   const started: QuestDef[] = [];
   for (const q of QUESTS) {
     if (c.quests[q.id]) continue;
+    if (q.zone && !c.unlocked.includes(q.zone)) continue;
+    if (q.level && c.level < q.level) continue;
     if ((q.after ?? []).every((id) => questState(c, id) === 'done')) {
       c.quests[q.id] = { state: 'active', n: 0 };
       started.push(q);
@@ -299,7 +320,7 @@ export const activeQuests = (c: Character): QuestDef[] => QUESTS.filter((q) => q
 export function questProgress(c: Character, q: QuestDef): { n: number; of: number } {
   const n = c.quests[q.id]?.n ?? 0;
   const o = q.objective;
-  const of = o.kind === 'kill' || o.kind === 'tutorial' || o.kind === 'collect' ? o.count : 1;
+  const of = o.kind === 'kill' || o.kind === 'tutorial' || o.kind === 'collect' || o.kind === 'loot' ? o.count : 1;
   return { n: Math.min(n, of), of };
 }
 
@@ -322,5 +343,18 @@ export function questEvent(c: Character, match: (o: Objective) => boolean, amoun
 
 export const questDef = (id: string): QuestDef | undefined => QUEST_DEFS[id];
 
-/** The objective to point at: the first active quest, story first. */
-export const trackedQuest = (c: Character): QuestDef | undefined => activeQuests(c)[0];
+/** Where a quest is done (its objective's region, else its zone). */
+export function questRegion(q: QuestDef): RegionId | undefined {
+  const o = q.objective;
+  if (o.kind === 'kill' || o.kind === 'loot' || o.kind === 'clear') return o.region;
+  return q.zone;
+}
+
+/**
+ * The quest to point at: the first active one done where the hero is now, else the first active one
+ * (the story comes first in the list).
+ */
+export function trackedQuest(c: Character, here?: RegionId): QuestDef | undefined {
+  const list = activeQuests(c);
+  return (here && list.find((q) => questRegion(q) === here)) || list[0];
+}

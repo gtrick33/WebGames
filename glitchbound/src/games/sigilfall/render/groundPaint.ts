@@ -1,4 +1,5 @@
 import { hash2 } from '../core/math';
+import { THEMES } from '../data/themes';
 import type { Theme } from '../data/types';
 import { K, TILE } from '../sim/map';
 import { mixRGB, OUTLINE_RGB, ramp, rgb, type RGB } from './art/kit';
@@ -29,46 +30,53 @@ export interface GroundSource {
   theme: Theme;
 }
 
-const PAL = {
-  village: {
-    grass: ['#3f8a3c', '#4f9c45', '#5aaa4a', '#66b654', '#72c25e'].map(rgb),
-    field: ['#4f9c45', '#5aaa4a', '#66b654', '#72c25e'].map(rgb),
-    rough: ['#3f8a3c', '#4f9c45', '#5aaa4a'].map(rgb),
-    blade: rgb('#86d066'),
-    bladeHi: rgb('#a8e07e'),
-    flowers: ['#ff5a6c', '#ffd84d', '#ffffff', '#8ab4ff', '#ff9ad8'].map(rgb),
-    path: ['#a07648', '#b58a58', '#c99d66', '#d6ab74'].map(rgb),
-    dirt: ['#b58a58', '#c99d66', '#d6ab74'].map(rgb),
-    pebble: ramp('#9a8a72'),
-    leaf: ['#184a24', '#22602e', '#2d7a3a', '#3c9447', '#5cb15c', '#7ccc6e'].map(rgb),
-    water: { deep: rgb('#2a62b4'), mid: rgb('#3478cc'), shallow: rgb('#4a92e0'), depths: ['#2a62b4', '#3478cc', '#4a92e0'].map(rgb), light: rgb('#7ab8f0'), foam: rgb('#d8f0ff'), bank: rgb('#5a4430'), bankDark: rgb('#3e2e22') },
-  },
-  forest: {
-    grass: ['#357a42', '#44904e', '#4f9e58', '#58a862', '#64b46c'].map(rgb),
-    field: ['#44904e', '#4f9e58', '#58a862', '#64b46c'].map(rgb),
-    rough: ['#357a42', '#44904e', '#4f9e58'].map(rgb),
-    blade: rgb('#6cbe76'),
-    bladeHi: rgb('#8ed690'),
-    flowers: ['#b0e05a', '#ffe07a', '#d8f0ff', '#ff9ad8', '#9ad0ff'].map(rgb),
-    path: ['#806040', '#937046', '#a27e52', '#b08c5e'].map(rgb),
-    dirt: ['#937046', '#a27e52', '#b08c5e'].map(rgb),
-    pebble: ramp('#7a6a58'),
-    leaf: ['#0f2c1b', '#163d25', '#1f5233', '#2b6a42', '#3f8a55', '#5aa86a'].map(rgb),
-    water: { deep: rgb('#20508e'), mid: rgb('#2a68b0'), shallow: rgb('#3a80cc'), depths: ['#20508e', '#2a68b0', '#3a80cc'].map(rgb), light: rgb('#6aa8e6'), foam: rgb('#c8eaff'), bank: rgb('#4a3826'), bankDark: rgb('#30241a') },
-  },
-};
+/** The painter's colors for an outdoor theme, from the theme table. */
+function palette(theme: Theme) {
+  const g = THEMES[theme].ground;
+  const w = g.water;
+  return {
+    grass: g.grass.map(rgb),
+    field: g.grass.slice(1).map(rgb),
+    rough: g.grass.slice(0, 3).map(rgb),
+    blade: rgb(g.blade),
+    bladeHi: rgb(g.bladeHi),
+    flowers: g.flowers.map(rgb),
+    path: g.path.map(rgb),
+    dirt: g.path.slice(1).map(rgb),
+    pebble: ramp(g.pebble),
+    leaf: g.leaf.map(rgb),
+    water: { deep: rgb(w.deep), mid: rgb(w.mid), shallow: rgb(w.shallow), depths: [w.deep, w.mid, w.shallow].map(rgb), light: rgb(w.light), foam: rgb(w.foam), bank: rgb(w.bank), bankDark: rgb(w.bankDark) },
+    sand: g.sand.map(rgb),
+    shell: g.shell.map(rgb),
+  };
+}
+type Pal = ReturnType<typeof palette>;
 
-const CRYPT = {
-  slab: ['#55536a', '#5b5970', '#504e65', '#58566d'].map(rgb),
-  mortar: rgb('#34324a'),
-  top: rgb('#17152a'),
-  topHi: rgb('#221f38'),
-  lip: rgb('#3e3a5c'),
-  lip2: rgb('#2c2844'),
-  brick: ['#6a6488', '#5e587c', '#726c90'].map(rgb),
-  brickMortar: rgb('#2a263e'),
-  moss: ramp('#4e6e4a'),
-  crack: rgb('#16132a'),
+/** Indoor stone, from the theme table. */
+function stonePalette(theme: Theme) {
+  const t = THEMES[theme].stone!;
+  return {
+    slab: t.slab.map(rgb),
+    mortar: rgb(t.mortar),
+    top: rgb(t.top),
+    topHi: rgb(t.topHi),
+    lip: rgb(t.lip),
+    lip2: rgb(t.lip2),
+    brick: t.brick.map(rgb),
+    brickMortar: rgb(t.brickMortar),
+    moss: ramp(t.moss),
+    crack: rgb(t.crack),
+  };
+}
+type Indoor = ReturnType<typeof stonePalette>;
+
+const CITY_WALL = {
+  top: rgb('#a4a4b0'),
+  topHi: rgb('#b2b2bc'),
+  mortar: rgb('#7a7a88'),
+  lip: rgb('#c8c8d4'),
+  lip2: rgb('#8a8a98'),
+  brick: ['#a8a8b4', '#9c9ca8', '#b4b4c0'].map(rgb),
 };
 
 const COBBLE = {
@@ -83,11 +91,11 @@ const BRAMBLE = { vine: rgb('#3a4a22'), vineDark: rgb('#26321a'), thorn: rgb('#d
 
 /** What the ground looks like under a tile (solid things stand on grass or stone). */
 function groundOf(k: number): number {
-  if (k === K.Path || k === K.Cobble || k === K.Water || k === K.Bramble || k === K.Bridge || k === K.Deco || k === K.Wall || k === K.Illusion || k === K.Cracked) return k;
+  if (k === K.Path || k === K.Cobble || k === K.Water || k === K.Bramble || k === K.Bridge || k === K.Deco || k === K.Wall || k === K.Illusion || k === K.Cracked || k === K.Sand || k === K.Rampart) return k;
   return K.Floor;
 }
 
-const blendable = (k: number): boolean => k !== K.Bridge && k !== K.Cracked;
+const blendable = (k: number): boolean => k !== K.Bridge && k !== K.Cracked && k !== K.Rampart;
 
 /** A tone between two ramp steps, dithered only inside a narrow band so most ground is flat color. */
 function band(cols: RGB[], t: number, x: number, y: number): RGB {
@@ -105,6 +113,8 @@ function band(cols: RGB[], t: number, x: number, y: number): RGB {
 export class GroundPainter {
   private readonly map: GroundSource;
   private readonly theme: Theme;
+  private readonly pal: Pal;
+  private readonly stone: Indoor | null;
   /** Padded row length: the per-tile arrays have a one-tile border around the map. */
   private readonly pw: number;
   /** Per tile, the canopy's blobs: 2 × (x, y, r), a highlight (x, y, r) in art px, and the tile's hash. */
@@ -120,6 +130,8 @@ export class GroundPainter {
     const map = src;
     this.map = src;
     this.theme = src.theme;
+    this.pal = palette(src.theme);
+    this.stone = THEMES[src.theme].indoor ? stonePalette(src.theme) : null;
     const pw = map.w + 2;
     const ph = map.h + 2;
     this.pw = pw;
@@ -199,11 +211,11 @@ export class GroundPainter {
   paint(cx: number, cy: number, out: Uint8ClampedArray, row0 = 0, row1 = CHUNK_ART): void {
     const x0 = cx * CHUNK_ART;
     const y0 = cy * CHUNK_ART;
-    const crypt = this.theme === 'crypt';
+    const indoor = this.stone;
     for (let row = row0; row < row1; row++) {
       const ay = y0 + row;
       for (let x = 0; x < CHUNK_ART; x++) {
-        const c = crypt ? this.cryptPixel(x0 + x, ay) : this.outdoorPixel(x0 + x, ay);
+        const c = indoor ? this.cryptPixel(indoor, x0 + x, ay) : this.outdoorPixel(x0 + x, ay);
         const o = (row * CHUNK_ART + x) * 4;
         out[o] = c[0];
         out[o + 1] = c[1];
@@ -234,7 +246,7 @@ export class GroundPainter {
   }
 
   private outdoorPixel(ax: number, ay: number): RGB {
-    const P = this.theme === 'forest' ? PAL.forest : PAL.village;
+    const P = this.pal;
     const k = this.kAt(ax, ay);
     // the canopy covers foliage and hangs a little over the ground around it
     const cl = this.canopyAt(ax, ay);
@@ -256,6 +268,11 @@ export class GroundPainter {
       case K.Bramble:
         col = bramble(P, ax, ay);
         break;
+      case K.Sand:
+        col = this.sand(P, ax, ay);
+        break;
+      case K.Rampart:
+        return this.rampart(ax, ay);
       case K.Wall:
       case K.Illusion:
         col = P.leaf[1]!;
@@ -268,7 +285,64 @@ export class GroundPainter {
     return col;
   }
 
-  private grass(P: typeof PAL.village, ax: number, ay: number, deco: boolean): RGB {
+  /** City walls: a flagged walkway on top and, where the wall drops to the ground, a face of stone blocks. */
+  private rampart(ax: number, ay: number): RGB {
+    const C = CITY_WALL;
+    const tx = Math.floor(ax / T);
+    const ty = Math.floor(ay / T);
+    const lx = ax - tx * T;
+    const ly = ay - ty * T;
+    const face = this.kindAt(tx, ty + 1) !== K.Rampart;
+    const topRows = 9 * D;
+    if (!face || ly < topRows) {
+      // the walkway's flagstones, with a lip where it ends
+      if (face && ly >= topRows - 3) return ly === topRows - 1 ? C.lip2 : C.lip;
+      const edgeL = this.kindAt(tx - 1, ty) !== K.Rampart && lx < 4;
+      const edgeR = this.kindAt(tx + 1, ty) !== K.Rampart && lx >= T - 4;
+      if (edgeL || edgeR) return C.lip;
+      const sx = Math.floor(ax / 20);
+      const sy = Math.floor(ay / 14);
+      if (ax % 20 === 0 || ay % 14 === 0) return C.mortar;
+      return hash2(sx, sy, 421) < 0.5 ? C.top : C.topHi;
+    }
+    const fy = ly - topRows;
+    const row = Math.floor(fy / 8);
+    const off = row % 2 ? 9 : 0;
+    const bx = (ax + off) % 18;
+    const by = fy % 8;
+    if (by === 7 || bx === 0) return C.mortar;
+    const base = C.brick[Math.floor(hash2(Math.floor((ax + off) / 18), row + ty * 3, 423) * 3)]!;
+    if (by === 0 || bx === 1) return mixRGB(base, [255, 255, 255], 0.12);
+    if (ly >= T - 2) return mixRGB(base, [0, 0, 0], 0.3);
+    return hash2(ax, ay, 425) < 0.05 ? mixRGB(base, [20, 20, 40], 0.15) : base;
+  }
+
+  /** Sand: soft dunes with wind ripples, darker grains, and a shell or pebble here and there. */
+  private sand(P: Pal, ax: number, ay: number): RGB {
+    const t = noise2(ax / 26, ay / 26, 61) * 0.6 + noise2(ax / 7, ay / 7, 62) * 0.4;
+    let col = band(P.sand, t * 0.85 + 0.1, ax, ay);
+    const ry = ay + Math.round(Math.sin(ax / 9 + noise2(ax / 30, ay / 30, 66) * 4) * 2);
+    if (noise2(ax / 12, ay / 12, 63) > 0.5) {
+      if (ry % 9 === 0) col = P.sand[4]!;
+      else if (ry % 9 === 1) col = P.sand[1]!;
+    }
+    const h = hash2(ax, ay, 64);
+    if (h < 0.03) col = P.sand[0]!;
+    else if (h < 0.045) col = P.sand[4]!;
+    const cx = Math.floor(ax / 13);
+    const cy = Math.floor(ay / 13);
+    const sh = hash2(cx, cy, 65);
+    if (sh < 0.07) {
+      const dx = ax - (cx * 13 + 3 + (Math.floor(sh * 977) % 7));
+      const dy = ay - (cy * 13 + 3 + (Math.floor(sh * 577) % 7));
+      if (dy === 0 && dx >= 0 && dx < 2) return P.shell[0]!;
+      if (dy === 1 && dx >= 0 && dx < 2) return P.shell[1]!;
+      if (dy === 2 && dx === 1) return P.sand[0]!;
+    }
+    return col;
+  }
+
+  private grass(P: Pal, ax: number, ay: number, deco: boolean): RGB {
     const G = P.grass;
     const t = noise2(ax / 30, ay / 30, 3) * 0.65 + noise2(ax / 9, ay / 9, 9) * 0.35;
     let col = band(P.field, t, ax, ay);
@@ -317,7 +391,7 @@ export class GroundPainter {
     return col;
   }
 
-  private path(P: typeof PAL.village, ax: number, ay: number): RGB {
+  private path(P: Pal, ax: number, ay: number): RGB {
     const t = noise2(ax / 16, ay / 16, 3) * 0.7 + noise2(ax / 5, ay / 5, 4) * 0.3;
     let col = band(P.dirt, t, ax, ay);
     // pebbles with a lit top and a shadow below
@@ -342,7 +416,7 @@ export class GroundPainter {
     return col;
   }
 
-  private water(P: typeof PAL.village, ax: number, ay: number): RGB {
+  private water(P: Pal, ax: number, ay: number): RGB {
     const W = P.water;
     // in the middle of open water the shore is far: no need to look for it
     const tx = Math.floor(ax / T);
@@ -468,7 +542,7 @@ export class GroundPainter {
     return layer >= 0 ? layer : shadow ? -2 : -1;
   }
 
-  private canopyColor(P: typeof PAL.village, layer: number, ax: number, ay: number): RGB {
+  private canopyColor(P: Pal, layer: number, ax: number, ay: number): RGB {
     if (layer === 0) return OUTLINE_RGB;
     if (layer === 5) return rgb('#ff8ad8');
     if (layer === 6) return rgb('#ffe07a');
@@ -484,8 +558,7 @@ export class GroundPainter {
 
   /* --------------------------------------------------------------- crypt */
 
-  private cryptPixel(ax: number, ay: number): RGB {
-    const P = CRYPT;
+  private cryptPixel(P: Indoor, ax: number, ay: number): RGB {
     const tx = Math.floor(ax / T);
     const ty = Math.floor(ay / T);
     const k = this.kindAt(tx, ty);
@@ -558,7 +631,7 @@ export class GroundPainter {
     const nearWall = this.kindAt(tx - 1, ty) === K.Wall || this.kindAt(tx + 1, ty) === K.Wall;
     if (nearWall) {
       const mn = noise2(ax / 6, ay / 6, 17);
-      if (mn > 0.74) col = mn > 0.8 ? CRYPT.moss[2] : (ax + ay) & 1 ? CRYPT.moss[3] : col;
+      if (mn > 0.74) col = mn > 0.8 ? P.moss[2] : (ax + ay) & 1 ? P.moss[3] : col;
     }
     return col;
   }
@@ -644,7 +717,7 @@ function bridge(ax: number, ay: number): RGB {
   return R[2];
 }
 
-function bramble(P: typeof PAL.village, ax: number, ay: number): RGB {
+function bramble(P: Pal, ax: number, ay: number): RGB {
   const v1 = Math.abs(Math.sin(ax * 0.35 + Math.sin(ay * 0.25) * 2)) < 0.12;
   const v2 = Math.abs(Math.sin(ay * 0.4 + ax * 0.15)) < 0.09;
   if (v1 || v2) {

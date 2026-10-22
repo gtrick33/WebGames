@@ -96,6 +96,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   }
   if (!e.dummy) e.hp -= dmg;
   e.flash = 0.12;
+  e.hurtT = 0;
   // some attacks give mana back (the Mage's bolt): only the direct hit, never splits or chains
   const manaBack = o.depth === 0 ? (spec?.extra.manaOnHit ?? 0) : 0;
   if (manaBack > 0 && w.player.maxMana > 0) w.player.mana = Math.min(w.player.maxMana, w.player.mana + (w.player.maxMana * manaBack) / 100);

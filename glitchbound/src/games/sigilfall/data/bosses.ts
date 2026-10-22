@@ -22,7 +22,16 @@ export type PatternId =
   | 'teleport'
   | 'riftNova'
   | 'collapse'
-  | 'roar';
+  | 'roar'
+  | 'cleave'
+  | 'chop'
+  | 'hook'
+  | 'volley'
+  | 'vanish'
+  | 'tide'
+  | 'orbs'
+  | 'barrage'
+  | 'kegs';
 
 export interface PatternUse {
   id: PatternId;
@@ -30,8 +39,8 @@ export interface PatternUse {
   w: number;
   /** Seconds before the same pattern can come again. */
   cd: number;
-  /** Pattern knobs (counts, enemies to summon, speeds). */
-  p?: Record<string, number | string[]>;
+  /** Pattern knobs (counts, enemies to summon, speeds, a projectile's look and color). */
+  p?: Record<string, number | string | string[]>;
 }
 
 export interface BossPhase {
@@ -201,5 +210,215 @@ export const BOSSES: Record<string, BossDef> = {
       chance: [0.35, 0.6, 1],
     },
     intro: 'A sorcerer who opened the Rift to live forever. It is working, sort of.',
+  },
+  /* ------------------------------------------------------------ Gallows Keep */
+  hangman: {
+    id: 'hangman',
+    name: 'The Hangman',
+    title: 'Headsman of the Gallows Gang',
+    sprite: 'hangman',
+    hp: 1500,
+    dmg: 20,
+    radius: 10,
+    xp: 420,
+    gold: [70, 100],
+    phases: [
+      {
+        at: 1,
+        speed: 34,
+        rest: [0.8, 1.2],
+        patterns: [
+          // the axe in a wide arc in front of him, then straight down along a line
+          { id: 'cleave', w: 3, cd: 3.5, p: { r: 54, arc: 1, wind: 0.8, mul: 1.4 } },
+          { id: 'chop', w: 3, cd: 4, p: { len: 130, width: 20, wind: 0.9, mul: 1.6 } },
+          // the noose: caught in its line, you are dragged in for the axe
+          { id: 'hook', w: 2, cd: 7, p: { len: 150, width: 12, wind: 0.85 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'The Hangman takes up a second axe!',
+        speed: 40,
+        rest: [0.6, 1],
+        enter: [{ id: 'roar', w: 1, cd: 0 }],
+        patterns: [
+          { id: 'chop', w: 3, cd: 5, p: { lines: 3, spread: 0.55, len: 140, width: 18, wind: 0.95, mul: 1.6 } },
+          // a chain of thrown axes, each one shown before it flies
+          { id: 'volley', w: 3, cd: 6, p: { shots: 3, wind: 0.5, interval: 0.15, speed: 200, r: 5, mul: 1.2, color: '#c8ccd8', range: 320 } },
+          { id: 'cleave', w: 2, cd: 4, p: { swings: 2, r: 54, arc: 1, wind: 0.65, lunge: 30, mul: 1.4 } },
+          { id: 'hook', w: 2, cd: 6, p: { len: 160, width: 12, wind: 0.8 } },
+        ],
+      },
+    ],
+    first: { any: ['second-wind-ring'] },
+    drops: { items: { any: ['second-wind-ring', 'thornmail', 'static-band', 'zephyr-boots'], warrior: ['sunder-band'], mage: ['piercing-catalyst'], ranger: ['ricochet-longbow'] }, chance: [0.3, 0.45, 0.65] },
+    intro: 'The gang’s executioner. He has never needed a second swing, but he brought a second axe.',
+  },
+  varric: {
+    id: 'varric',
+    name: 'Varric Blackhand',
+    title: 'King of the Gallows Gang',
+    sprite: 'varric',
+    hp: 3000,
+    dmg: 21,
+    radius: 10,
+    xp: 900,
+    gold: [150, 220],
+    phases: [
+      {
+        at: 1,
+        speed: 46,
+        rest: [0.6, 1],
+        patterns: [
+          // two long knives: he steps in and cuts twice
+          { id: 'cleave', w: 3, cd: 2.5, p: { swings: 2, r: 38, arc: 0.85, wind: 0.45, gap: 0.08, lunge: 26, mul: 1 } },
+          // fans of thrown knives
+          { id: 'volley', w: 3, cd: 4, p: { shots: 2, fan: 5, spread: 1, wind: 0.55, interval: 0.3, speed: 170, r: 3, mul: 0.8, look: 'enemyArrow', color: '#d8dce6', len: 110 } },
+          // quick dashes along a lane: no wall stops him for long
+          { id: 'tripleCharge', w: 2, cd: 5, p: { count: 2, wind: 0.5, speed: 330, len: 160, stun: 0, mul: 1.1 } },
+        ],
+      },
+      {
+        at: 0.6,
+        banner: 'Blackhand whistles for his cutthroats!',
+        speed: 50,
+        rest: [0.5, 0.9],
+        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['bandit-cutthroat', 'bandit-cutthroat'] } }, { id: 'vanish', w: 1, cd: 0, p: { r: 44, arc: 1, wind: 0.6, mul: 1.3 } }],
+        patterns: [
+          // a smoke bomb: gone, then behind you with both knives
+          { id: 'vanish', w: 3, cd: 6, p: { r: 44, arc: 1, wind: 0.6, mul: 1.3 } },
+          { id: 'cleave', w: 3, cd: 2.5, p: { swings: 2, r: 38, arc: 0.85, wind: 0.45, gap: 0.08, lunge: 26, mul: 1 } },
+          { id: 'volley', w: 2, cd: 4, p: { shots: 2, fan: 7, spread: 1.3, wind: 0.55, interval: 0.3, speed: 170, r: 3, mul: 0.8, look: 'enemyArrow', color: '#d8dce6', len: 110 } },
+          { id: 'tripleCharge', w: 2, cd: 5, p: { count: 3, wind: 0.45, speed: 340, len: 160, stun: 0, mul: 1.1 } },
+          { id: 'summon', w: 1, cd: 16, p: { enemies: ['bandit-cutthroat', 'bandit-cutthroat'] } },
+        ],
+      },
+      {
+        at: 0.25,
+        banner: 'Nobody takes the Gallows from me!',
+        speed: 54,
+        rest: [0.45, 0.8],
+        enter: [{ id: 'vanish', w: 1, cd: 0, p: { r: 46, arc: 1.1, wind: 0.55, mul: 1.3 } }],
+        patterns: [
+          { id: 'vanish', w: 3, cd: 5, p: { r: 46, arc: 1.1, wind: 0.55, mul: 1.3 } },
+          { id: 'volley', w: 3, cd: 4, p: { shots: 3, fan: 5, spread: 1, wind: 0.5, interval: 0.25, speed: 180, r: 3, mul: 0.8, look: 'enemyArrow', color: '#d8dce6', len: 110 } },
+          { id: 'tripleCharge', w: 2, cd: 5, p: { count: 3, wind: 0.42, speed: 350, len: 170, stun: 0, mul: 1.1 } },
+          { id: 'cleave', w: 2, cd: 2.5, p: { swings: 3, r: 38, arc: 0.85, wind: 0.42, gap: 0.06, lunge: 24, mul: 1 } },
+          { id: 'summon', w: 1, cd: 18, p: { enemies: ['bandit-cutthroat', 'hill-wolf'] } },
+        ],
+      },
+    ],
+    first: { any: ['glitch-shard'] },
+    drops: {
+      items: { warrior: ['bloodthirst-blade', 'riposte-gauntlets'], mage: ['glacier-staff', 'tome-of-blinking'], ranger: ['ricochet-longbow', 'huntmasters-hood'], any: ['glitch-shard', 'amulet-of-echoes', 'riftwalker-mantle'] },
+      chance: [0.35, 0.6, 1],
+    },
+    intro: 'He took the hill with two knives and a grin. He has kept it with the same.',
+  },
+  /* ------------------------------------------------------------ the Smugglers' Grotto */
+  'the-drowned': {
+    id: 'the-drowned',
+    name: 'The Drowned Priestess',
+    title: 'Voice of the Deep Tide',
+    sprite: 'the-drowned',
+    hp: 1600,
+    dmg: 20,
+    radius: 10,
+    xp: 420,
+    gold: [70, 100],
+    floats: true,
+    phases: [
+      {
+        at: 1,
+        speed: 30,
+        rest: [0.8, 1.3],
+        patterns: [
+          // slow water orbs that seek you out
+          { id: 'orbs', w: 3, cd: 4, p: { count: 4, speed: 55, homing: 1, mul: 0.9, color: '#7ad8ff' } },
+          // whirlpools open under you
+          { id: 'graveGrasp', w: 3, cd: 3.5, p: { count: 4 } },
+          // a wall of water rolls across the shrine: find the gap
+          { id: 'tide', w: 2, cd: 7, p: { speed: 70, gap: 3, form: 1.1 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'The Drowned calls her children from the deep!',
+        speed: 34,
+        rest: [0.6, 1.1],
+        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['mirefin-skirmisher', 'mirefin-skirmisher', 'mirefin-spearthrower'] } }],
+        patterns: [
+          { id: 'tide', w: 3, cd: 6, p: { speed: 75, gap: 3, form: 1, waves: 2, gapT: 1.3 } },
+          { id: 'orbs', w: 3, cd: 4, p: { count: 6, speed: 58, homing: 1.1, mul: 0.9, color: '#7ad8ff' } },
+          { id: 'graveGrasp', w: 2, cd: 3.5, p: { count: 5 } },
+          { id: 'teleport', w: 1, cd: 8 },
+          { id: 'summon', w: 1, cd: 18, p: { enemies: ['mirefin-skirmisher', 'mirefin-oracle'] } },
+        ],
+      },
+    ],
+    first: { any: ['menders-charm'] },
+    drops: { items: { any: ['menders-charm', 'second-wind-ring', 'static-band', 'amulet-of-echoes'], mage: ['glacier-staff'], warrior: ['bulwark-of-dawn'], ranger: ['viper-quiver'] }, chance: [0.3, 0.45, 0.65] },
+    intro: 'The mirefins pray to her. The smugglers pay her. Nobody remembers what she was before the sea.',
+  },
+  saltbeard: {
+    id: 'saltbeard',
+    name: 'Captain Saltbeard',
+    title: 'Master of the Smugglers’ Grotto',
+    sprite: 'saltbeard',
+    hp: 3100,
+    dmg: 22,
+    radius: 10,
+    xp: 900,
+    gold: [150, 220],
+    phases: [
+      {
+        at: 1,
+        speed: 40,
+        rest: [0.7, 1.1],
+        patterns: [
+          // the cutlass: two quick cuts, stepping in
+          { id: 'cleave', w: 3, cd: 3, p: { swings: 2, r: 42, arc: 0.95, wind: 0.5, gap: 0.1, lunge: 24, mul: 1.15 } },
+          // the flintlock aims where you are going, not where you are
+          { id: 'volley', w: 3, cd: 4.5, p: { wind: 0.85, speed: 330, lead: 1, r: 3, mul: 1.7, color: '#ffd27a', len: 240, width: 6, sfx: 'thunder' } },
+          // powder kegs: the circle is the fuse
+          { id: 'kegs', w: 2, cd: 7, p: { count: 3, fuse: 2.2, r: 34, mul: 1.6 } },
+          // the cannons on the cliff: shells across the cove, salvo after salvo
+          { id: 'barrage', w: 2, cd: 8, p: { salvos: 3, count: 5, r: 24, dur: 1.1, gap: 0.5, mul: 1.2 } },
+        ],
+      },
+      {
+        at: 0.6,
+        banner: 'All hands! Repel boarders!',
+        speed: 44,
+        rest: [0.6, 1],
+        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['smuggler-cutlass', 'smuggler-cutlass', 'smuggler-bomber'] } }, { id: 'barrage', w: 1, cd: 0, p: { salvos: 3, count: 6, r: 24, dur: 1.1, gap: 0.5, mul: 1.2 } }],
+        patterns: [
+          { id: 'cleave', w: 3, cd: 3, p: { swings: 3, r: 42, arc: 0.95, wind: 0.48, gap: 0.08, lunge: 24, mul: 1.15 } },
+          { id: 'volley', w: 3, cd: 4.5, p: { shots: 2, interval: 0.3, wind: 0.8, speed: 330, lead: 1, r: 3, mul: 1.7, color: '#ffd27a', len: 240, width: 6, sfx: 'thunder' } },
+          { id: 'kegs', w: 2, cd: 7, p: { count: 4, fuse: 2.2, r: 34, mul: 1.6 } },
+          { id: 'barrage', w: 2, cd: 8, p: { salvos: 4, count: 6, r: 24, dur: 1.1, gap: 0.5, mul: 1.2 } },
+          { id: 'summon', w: 1, cd: 18, p: { enemies: ['smuggler-cutlass', 'smuggler-bomber'] } },
+        ],
+      },
+      {
+        at: 0.25,
+        banner: 'Fire everything we have!',
+        speed: 46,
+        rest: [0.5, 0.9],
+        enter: [{ id: 'kegs', w: 1, cd: 0, p: { count: 6, fuse: 2.4, r: 32, spread: 50, mul: 1.6 } }],
+        patterns: [
+          { id: 'barrage', w: 3, cd: 6, p: { salvos: 4, count: 7, r: 24, dur: 1, gap: 0.45, mul: 1.2 } },
+          { id: 'volley', w: 3, cd: 4, p: { shots: 3, interval: 0.25, wind: 0.75, speed: 340, lead: 1, r: 3, mul: 1.7, color: '#ffd27a', len: 240, width: 6, sfx: 'thunder' } },
+          { id: 'kegs', w: 2, cd: 6, p: { count: 5, fuse: 2.2, r: 32, spread: 50, mul: 1.6 } },
+          { id: 'cleave', w: 2, cd: 3, p: { swings: 3, r: 42, arc: 0.95, wind: 0.45, gap: 0.08, lunge: 24, mul: 1.15 } },
+        ],
+      },
+    ],
+    first: { any: ['amulet-of-echoes'] },
+    drops: {
+      items: { warrior: ['quakehammer', 'whirling-greaves'], mage: ['stormcaller-rod', 'heart-of-the-inferno'], ranger: ['galeheart-bow', 'trappers-satchel'], any: ['amulet-of-echoes', 'crown-of-the-hollow-king', 'riftwalker-mantle', 'glitch-shard'] },
+      chance: [0.35, 0.6, 1],
+    },
+    intro: 'Forty years a smuggler, twenty a captain, and he has never once paid a harbor fee.',
   },
 };

@@ -158,6 +158,14 @@ export interface Enemy {
   name: string;
   /** Who it is after: 0 the hero, otherwise a pet's id; re-chosen every `victimT` seconds. */
   victim: number;
+  /** A healer's wind-up is for mending this ally (0: an attack). */
+  mend: number;
+  /** A summoner's wind-up raises its minions; minions know their master. */
+  raising: boolean;
+  master: number;
+  /** Seconds until it can blink again; seconds since it was last hit. */
+  blinkT: number;
+  hurtT: number;
   victimT: number;
 }
 
@@ -217,6 +225,8 @@ export interface Projectile {
   wide: boolean;
   /** Zaps the nearest enemy every `zap` seconds as it flies (Ball Lightning). */
   zapT?: number;
+  /** An enemy shot's status on the hero (a web slows). */
+  status?: { status: StatusId; dur: number; power: number };
   dead: boolean;
 }
 
