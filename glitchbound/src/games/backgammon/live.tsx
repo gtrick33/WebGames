@@ -66,7 +66,6 @@ export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; co
       canAct={canAct}
       onRoll={() => send({ t: 'roll' })}
       onStep={(st) => send({ t: 'step', from: st.from, to: st.to, die: st.die })}
-      onUndo={() => send({ t: 'undo' })}
       onDone={() => send({ t: 'done' })}
       sfx={sfx}
       score={view.match.score}

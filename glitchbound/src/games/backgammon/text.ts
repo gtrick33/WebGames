@@ -16,8 +16,6 @@ export interface Words {
   roll: string;
   rollFirst: string;
   opening: (a: number, b: number, youStart: boolean) => string;
-  undo: string;
-  done: string;
   noMoves: string;
   yourTurn: string;
   theirTurn: (name: string) => string;
@@ -100,8 +98,6 @@ const en: Words = {
   roll: 'Roll',
   rollFirst: 'Roll to see who starts',
   opening: (a, b, youStart) => `You ${a} · them ${b}: ${youStart ? 'you start' : 'they start'}`,
-  undo: 'Undo',
-  done: 'Done',
   noMoves: 'No legal move with that roll',
   yourTurn: 'Your turn',
   turnSideways: 'Turn your phone sideways for a bigger board',
@@ -190,8 +186,6 @@ const bg: Words = {
   roll: 'Хвърли',
   rollFirst: 'Хвърли, за да видим кой започва',
   opening: (a, b, youStart) => `Ти ${a} · те ${b}: ${youStart ? 'ти започваш' : 'те започват'}`,
-  undo: 'Върни',
-  done: 'Готово',
   noMoves: 'Няма възможен ход с тези зарове',
   yourTurn: 'Твой ред',
   turnSideways: 'Завърти телефона хоризонтално за по-голяма дъска',

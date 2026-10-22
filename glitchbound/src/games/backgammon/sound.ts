@@ -8,6 +8,8 @@ export interface Sfx {
   rattle(): void;
   dice(): void;
   clack(stack: number): void;
+  /** A moving checker touching down on a point it passes. */
+  tap(): void;
   hit(): void;
   bearOff(): void;
   turn(): void;
@@ -230,6 +232,7 @@ export function createSfx(isMuted: () => boolean, isMusicOff: () => boolean): Sf
       knock(0.2, 580, 0.08);
     },
     clack: (stack) => knock(0, 240 + Math.min(5, stack) * 30, 0.22),
+    tap: () => knock(0, 760 + Math.random() * 80, 0.05),
     hit: () => {
       knock(0, 200, 0.3);
       noise(0, 0.25, 0.3, 700, 'bandpass', 1);

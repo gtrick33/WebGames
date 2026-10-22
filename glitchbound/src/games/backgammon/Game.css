@@ -301,6 +301,8 @@
   }
   .tb-actions {
     width: 100%;
+    /* as tall as the Roll button, so the board does not shift as the button comes and goes */
+    min-height: 56px;
     justify-content: center;
   }
 }
@@ -430,6 +432,15 @@
 .tb-point {
   cursor: default;
 }
+/* no box around a tapped point: the keyboard's focus shows on the triangle itself */
+.tb-point:focus,
+.tb-point:focus-visible {
+  outline: none;
+}
+.tb-point:focus-visible .tb-tri {
+  stroke: var(--tb-cyan);
+  stroke-width: 6;
+}
 .tb-point.is-source,
 .tb-point.is-target {
   cursor: pointer;
@@ -477,7 +488,7 @@
   pointer-events: none;
 }
 .tb-checker {
-  transition: transform 0.38s cubic-bezier(0.3, 1.25, 0.5, 1);
+  /* moves are animated from the board (a bounce through each point), never by a transition */
   cursor: default;
 }
 .tb-checker.is-src,

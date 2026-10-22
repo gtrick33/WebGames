@@ -988,7 +988,7 @@ export const GAMES: GameEntry[] = [
     aspect: 'square',
     live: { players: '2' },
     controls: {
-      keyboard: ['R or Space: roll the dice', 'Tab to a point, Enter to pick a checker and move it', 'U: undo, Enter: done', 'Esc: pause'],
+      keyboard: ['R or Space: roll the dice', 'Tab to a point, Enter to pick a checker and move it', 'Esc: pause'],
       touch: ['Tap Roll to throw the dice', 'Tap a checker, then where it goes'],
     },
     stats: [

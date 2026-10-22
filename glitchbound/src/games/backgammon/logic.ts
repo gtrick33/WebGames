@@ -316,6 +316,29 @@ export function step(g: Game, st: Step): Game {
   return n;
 }
 
+/**
+ * The steps that take game a to game b, in order, for a screen to show them one at a time: a turn
+ * going on, or ending (the rest of it, and the next turn's first steps if any). Null when b does not
+ * follow from a that way (a new game, an undo): the screen goes straight there.
+ */
+export function stepsBetween(a: Game, b: Game): { side: Side; st: Step }[] | null {
+  if (posKey(a.pos) === posKey(b.pos)) return [];
+  const prefix = (x: Step[], y: Step[]): boolean => x.length <= y.length && x.every((s, i) => sameStep(s, y[i]!));
+  let out: { side: Side; st: Step }[] | null = null;
+  if (a.phase === 'move' && b.phase === 'move' && b.turn === a.turn && b.rolls === a.rolls) {
+    if (prefix(a.steps, b.steps)) out = b.steps.slice(a.steps.length).map((st) => ({ side: b.turn, st }));
+  } else if (a.phase === 'move' && b.lastTurn && b.lastTurn.side === a.turn && prefix(a.steps, b.lastTurn.steps)) {
+    const side = b.lastTurn.side;
+    out = b.lastTurn.steps.slice(a.steps.length).map((st) => ({ side, st }));
+    if (b.phase === 'move' && b.turn !== side) out.push(...b.steps.map((st) => ({ side: b.turn, st })));
+  }
+  if (!out) return null;
+  // only if they really lead there
+  let p = a.pos;
+  for (const { side, st } of out) p = applyStep(p, side, st);
+  return posKey(p) === posKey(b.pos) ? out : null;
+}
+
 /** Takes back this turn's steps (back to the roll). */
 export function undo(g: Game): Game {
   if (g.phase !== 'move' || !g.steps.length) return g;

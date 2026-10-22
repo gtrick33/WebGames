@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ENGINES } from '../rooms/engines';
 import { nextSteps, turnDone } from '../src/games/backgammon/logic';
-import { act, AWAY_MS, BOT_MS, join, leave, newRoom, SHEET_MS, tick, viewFor, type State } from '../src/games/backgammon/room';
+import { act, AWAY_MS, BOT_MS, DONE_MS, join, leave, newRoom, SHEET_MS, tick, viewFor, type State } from '../src/games/backgammon/room';
 
 const A = 'player-key-aaaaaaaaaaaaaaaa';
 const B = 'player-key-bbbbbbbbbbbbbbbb';
@@ -71,6 +71,28 @@ describe('backgammon live room', () => {
     expect(s.phase).toBe('over');
     expect(Math.max(...s.match!.score)).toBeGreaterThanOrEqual(3);
   }, 60_000);
+
+  it("a played-out turn passes by itself if the player's 'done' never arrives", () => {
+    const s = newRoom('ABCDE', 0, 9);
+    join(s, A, 'Ana', 1);
+    join(s, B, 'Bo', 2);
+    act(s, A, { t: 'start' }, 4);
+    let t = 5;
+    act(s, A, { t: 'roll' }, ++t);
+    // play the opening move to the end, without 'done'
+    for (let i = 0; i < 6; i++) {
+      const g = s.match!.game;
+      const st = g.phase === 'move' ? nextSteps(g)[0] : undefined;
+      if (!st) break;
+      act(s, g.turn === 0 ? A : B, { t: 'step', from: st.from, to: st.to, die: st.die }, ++t);
+    }
+    const g = s.match!.game;
+    expect(g.phase === 'move' && g.steps.length > 0 && turnDone(g)).toBe(true);
+    expect(s.deadline).toBe(t + DONE_MS);
+    tick(s, t + DONE_MS);
+    expect(s.match!.game.turn).not.toBe(g.turn);
+    expect(s.match!.game.phase).toBe('roll');
+  });
 
   it('the computer plays the second place on its clock; someone who leaves is played for', () => {
     const s = newRoom('ABCDE', 0, 13);

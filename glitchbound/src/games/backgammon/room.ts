@@ -9,7 +9,7 @@
  */
 import { joinSeat, kickSeat, leaveSeat, nextRandom, seatByN, seatOf, seatViews, summaryOf, type RoomBase, type SeatView } from '../../party/rooms/seats';
 import { choosePlay, LEVELS, type Level } from './ai';
-import { bookGame, endTurn, newMatch, nextGame, nextSteps, playAll, roll, rng, step, TARGETS, turnDone, undo, type Match, type Side } from './logic';
+import { bookGame, endTurn, newMatch, nextGame, nextSteps, playAll, roll, rng, step, TARGETS, turnDone, type Match, type Side } from './logic';
 
 export { validKey } from '../../party/rooms/seats';
 
@@ -19,6 +19,9 @@ export const BOT_MS = 1100;
 export const AWAY_MS = 5000;
 /** A roll with no legal move shows for this long before the turn passes. */
 export const STUCK_MS = 1800;
+/** A played-out turn passes this long after its last step if the player's board has not passed it already
+ *  (it does, once the last checker lands: this only covers a lost message). */
+export const DONE_MS = 4000;
 export const SHEET_MS = 20000;
 
 export type Phase = 'lobby' | 'play' | 'gameEnd' | 'over';
@@ -107,7 +110,7 @@ function schedule(s: State, now: number): void {
     else if (a.away) {
       s.awaySince ??= now;
       s.moveAt = s.awaySince + AWAY_MS;
-    } else if (g.phase === 'move' && !g.steps.length && turnDone(g)) s.moveAt = now + STUCK_MS;
+    } else if (g.phase === 'move' && turnDone(g)) s.moveAt = now + (g.steps.length ? DONE_MS : STUCK_MS);
     if (!a.away) s.awaySince = null;
   } else s.awaySince = null;
   s.deadline = s.phase === 'gameEnd' ? s.sheetUntil : s.moveAt;
@@ -168,7 +171,7 @@ export function tick(s: State, now: number): void {
       computerMove(s, a.bot ?? 'hard');
       afterMove(s, now);
     } else if (a && g.phase === 'move' && turnDone(g)) {
-      // a roll with nothing to play: the turn passes by itself
+      // a roll with nothing (left) to play: the turn passes by itself
       s.match = { ...s.match, game: endTurn(g) };
     }
   }
@@ -183,7 +186,6 @@ export type Action =
   | { t: 'start' }
   | { t: 'roll' }
   | { t: 'step'; from: number; to: number; die: number }
-  | { t: 'undo' }
   | { t: 'done' }
   | { t: 'next' }
   | { t: 'again' }
@@ -240,10 +242,6 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       afterMove(s, now);
       return done();
     }
-    case 'undo':
-      if (!myTurn || !g) return null;
-      s.match = { ...s.match!, game: undo(g) };
-      return done();
     case 'done':
       if (!myTurn || !g || !turnDone(g)) return null;
       s.match = { ...s.match!, game: endTurn(g) };

@@ -26,8 +26,17 @@ home and in cafés).
   the width, with a note that turning the phone gives a bigger board.
 - Moves are the player's choice: a tap picks a checker up (nothing moves by itself) and every place it can reach
   lights up with its count, each number on its own and both together (a double's two, three and four steps), from
-  `routesFrom` in logic.ts; a tap on one goes there, a move of two numbers hopping through the point between. Only
-  when a single checker can move (one on the bar, say) is it picked up for the player.
+  `routesFrom` in logic.ts; a tap on one goes there. Only when a single checker can move (one on the bar, say) is it
+  picked up for the player.
+- A move is made once it is chosen: no Undo, no Done. When nothing is left to play the turn passes by itself, a beat
+  after the last checker lands.
+- Checkers never teleport: every step bounces point by point along its way (a quick hop and a soft tap on each point
+  it passes, a clack where it lands; in from the bar is one leap), and a checker it hits flies to the bar once it
+  lands. This is the same for everyone (you, the computer, a friend on their phone): the board replays the steps
+  between the position it shows and the game's (`stepsBetween` in logic.ts), one after another, so a whole turn
+  arriving at once from the live table plays out the same way. Nothing can be picked up while a checker is moving,
+  and the computer's steps are paced to the bounces.
+- A tapped point gets no focus box; the keyboard's focus shows as a cyan outline on the triangle.
 - The dice shake for a moment, faces flicking, before they land with a little bounce; nothing moves until then.
 
 ## Modes

@@ -8,9 +8,9 @@ import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { createRoom, roomInfo } from '../../platform/rooms';
 import { shareOrCopy } from '../../platform/share';
 import { choosePlay, LEVELS, type Level } from './ai';
-import { Board } from './Board';
+import { Board, moveMs } from './Board';
 import { LiveBoard } from './live';
-import { bookGame, endTurn, newMatch, nextGame, pips, rng, roll, step, TARGETS, turnDone, undo, type Match, type Step } from './logic';
+import { bookGame, endTurn, newMatch, nextGame, pips, rng, roll, step, TARGETS, turnDone, type Match, type Step } from './logic';
 import { createSfx, type Sfx } from './sound';
 import { WORDS, type Words } from './text';
 import './Game.css';
@@ -175,7 +175,6 @@ function Backgammon({ host, pauseKey, challenge, playerName }: { host: GameHost;
   };
   const onRoll = (): void => update((r) => withGame(r, roll));
   const onStep = (st: Step): void => update((r) => withGame(r, (g) => step(g, st)));
-  const onUndo = (): void => update((r) => withGame(r, undo));
   const onDone = (): void => update((r) => withGame(r, endTurn));
 
   // the computer's turns (one checker at a time), a roll you cannot play, and the end of a game
@@ -213,7 +212,8 @@ function Backgammon({ host, pauseKey, challenge, playerName }: { host: GameHost;
           // a plan that no longer fits (never expected): end the turn
           return { ...r, match: { ...r.match, game: next && ng === cur ? endTurn(cur) : ng } };
         }),
-      g.steps.length === 0 ? 900 : 480,
+      // each step once the one before has bounced its way there
+      g.steps.length === 0 ? 900 : moveMs(1, g.steps[g.steps.length - 1]!) + 260,
     );
     return () => window.clearTimeout(t);
   }, [run, paused, result, update]);
@@ -334,7 +334,6 @@ function Backgammon({ host, pauseKey, challenge, playerName }: { host: GameHost;
           canAct={canAct}
           onRoll={onRoll}
           onStep={onStep}
-          onUndo={onUndo}
           onDone={onDone}
           sfx={sfx}
           score={r.match.score}

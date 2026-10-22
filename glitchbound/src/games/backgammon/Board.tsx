@@ -7,9 +7,9 @@
  * there. The bar and the bear-off tray, pip counts and the match score. It shows a game and reports
  * your roll and steps; it never changes the game itself.
  */
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Level } from './ai';
-import { BAR, mine, nextSteps, OFF, pips, posKey, routesFrom, startPos, turnDone, type Game, type Pos, type Route, type Side, type Step } from './logic';
+import { applyStep, BAR, mine, nextSteps, OFF, pips, posKey, routesFrom, startPos, stepsBetween, turnDone, type Game, type Pos, type Route, type Side, type Step } from './logic';
 import type { Sfx } from './sound';
 import type { Words } from './text';
 
@@ -27,8 +27,40 @@ const TRAY_X = 890;
 const TRAY_W = 90;
 /** The dice shake this long before they land (no moves until then). */
 export const ROLL_MS = 650;
-/** A move of two or more steps hops through the points between, this far apart. */
-export const HOP_MS = 260;
+/** A moving checker bounces from point to point, this long each (one bounce per point it passes). */
+export const PIP_MS = 115;
+/** A hit checker's flight to the bar, once the mover has landed on it. */
+const HIT_MS = 340;
+/** A beat after a checker lands, before the next one sets off (and before a finished turn passes). */
+const BEAT_MS = 120;
+
+/** The points a step bounces on along its way, in order (not the one it lands on); in from the bar is one leap. */
+function passes(side: Side, st: Step): number[] {
+  if (st.from === BAR[side]) return [];
+  const d = side === 0 ? -1 : 1;
+  const out: number[] = [];
+  for (let k = st.from + d; k !== st.to && out.length < 26; k += d) if (k >= 1 && k <= 24) out.push(k);
+  return out;
+}
+/** Until the moving checker lands. */
+const flightMs = (side: Side, st: Step): number => (st.from === BAR[side] ? 3 : passes(side, st).length + 1) * PIP_MS;
+/** How long a step takes on the board: the checker's bounces, then a hit checker's flight to the bar. */
+export const moveMs = (side: Side, st: Step): number => flightMs(side, st) + (st.hit ? HIT_MS : 0);
+
+const place = (x: number, y: number, s = 1): string => `translate(${x}px, ${y}px) scale(${s})`;
+/** Bounces through the points: up and over between each two, touching down on each. */
+function hopFrames(pts: { x: number; y: number }[], lift = 22): Keyframe[] {
+  const n = pts.length - 1;
+  const frames: Keyframe[] = [];
+  pts.forEach((pt, i) => {
+    if (i > 0) {
+      const a = pts[i - 1]!;
+      frames.push({ offset: (2 * i - 1) / (2 * n), transform: place((a.x + pt.x) / 2, (a.y + pt.y) / 2 - lift, 1.16), easing: 'ease-in' });
+    }
+    frames.push({ offset: i / n, transform: place(pt.x, pt.y), easing: 'ease-out' });
+  });
+  return frames;
+}
 
 /** Where display point d (1-24, you at the bottom) is: its column centre and whether it hangs from the top. */
 function column(d: number): { x: number; top: boolean } {
@@ -150,7 +182,7 @@ export interface BoardProps {
   canAct: boolean;
   onRoll?: () => void;
   onStep?: (st: Step) => void;
-  onUndo?: () => void;
+  /** The turn is over (nothing left to play): the board calls it by itself, a beat after the last checker lands. */
   onDone?: () => void;
   sfx: () => Sfx;
   score: [number, number];
@@ -160,13 +192,140 @@ export interface BoardProps {
   note?: string;
 }
 
-export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo, onDone, sfx, score, target, tools, overlay, note }: BoardProps) {
+export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone, sfx, score, target, tools, overlay, note }: BoardProps) {
   const them = (1 - me) as Side;
-  const p = game.pos;
+  const sfxRef = useRef(sfx);
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    sfxRef.current = sfx;
+    onDoneRef.current = onDone;
+  });
+
+  // ---- what the board shows: the game's position, reached one step at a time, each step bouncing
+  // through the points it passes, whoever moved (you, the computer, a friend on their phone)
+  const [shown, setShown] = useState<Pos>(game.pos);
+  const [moving, setMoving] = useState(false);
+  const seen = useRef(game);
+  const shownRef = useRef(game.pos);
+  const queue = useRef<{ side: Side; st: Step }[]>([]);
+  const playing = useRef(false);
+  const timers = useRef<number[]>([]);
+  /** The step the last change of `shown` made (for the checkers to bounce along it). */
+  const current = useRef<{ key: string; side: Side; st: Step; before: Pos } | null>(null);
+  const pump = (): void => {
+    if (playing.current) return;
+    const next = queue.current.shift();
+    if (!next) {
+      timers.current = [];
+      setMoving(false);
+      // anything the steps did not account for (not expected): straight there
+      if (posKey(shownRef.current) !== posKey(seen.current.pos)) {
+        current.current = null;
+        shownRef.current = seen.current.pos;
+        setShown(seen.current.pos);
+      }
+      return;
+    }
+    playing.current = true;
+    setMoving(true);
+    const before = shownRef.current;
+    const after = applyStep(before, next.side, next.st);
+    current.current = { key: posKey(after), side: next.side, st: next.st, before };
+    shownRef.current = after;
+    setShown(after);
+    timers.current.push(
+      // a light tap on each point it bounces on, then the landing
+      ...passes(next.side, next.st).map((_, k) => window.setTimeout(() => sfxRef.current().tap(), (k + 1) * PIP_MS)),
+      window.setTimeout(() => {
+        const s = sfxRef.current();
+        if (next.st.hit) s.hit();
+        else if (next.st.to === OFF[next.side]) s.bearOff();
+        else s.clack(Math.abs(after.pts[next.st.to] ?? 0));
+      }, flightMs(next.side, next.st)),
+      window.setTimeout(() => {
+        playing.current = false;
+        pump();
+      }, moveMs(next.side, next.st) + BEAT_MS),
+    );
+  };
+  useEffect(() => {
+    const prev = seen.current;
+    if (prev === game) return;
+    seen.current = game;
+    const steps = stepsBetween(prev, game);
+    if (steps === null) {
+      // a new game, a position from nowhere: straight there
+      timers.current.forEach((t) => window.clearTimeout(t));
+      timers.current = [];
+      queue.current = [];
+      playing.current = false;
+      current.current = null;
+      shownRef.current = game.pos;
+      setShown(game.pos);
+      setMoving(false);
+      return;
+    }
+    queue.current.push(...steps);
+    pump();
+    // pump only reads refs and setters
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game]);
+  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+
+  const p = shown;
   const key = posKey(p);
   const [lay, setLay] = useState(() => ({ key, map: relayout(freshLayout(startPos()), p) }));
   if (lay.key !== key) setLay({ key, map: relayout(lay.map, p) });
   const layout = lay.key === key ? lay.map : relayout(lay.map, p);
+
+  // ---- the checkers move: the mover bounces along its way, a checker it hits flies to the bar once it
+  // lands, anything else that shifts (a stack closing up, a new game) glides
+  const spots = useMemo(() => {
+    const m = new Map<number, { x: number; y: number; loc: string }>();
+    for (const [loc, ids] of Object.entries(layout))
+      ids.forEach((id, k) => {
+        const at = spotOf(loc, k, ids.length, me);
+        m.set(id, { x: at.x, y: at.y, loc });
+      });
+    return m;
+  }, [layout, me]);
+  const els = useRef(new Map<number, SVGGElement>());
+  const was = useRef(spots);
+  useLayoutEffect(() => {
+    const before = was.current;
+    was.current = spots;
+    if (before === spots) return;
+    const mv = current.current?.key === key ? current.current : null;
+    /** Where a checker passing point k touches down: on top of what is there. */
+    const touch = (k: number, pos: Pos): { x: number; y: number } => {
+      const c = column(display(k, me));
+      const n = Math.min(4, Math.abs(pos.pts[k] ?? 0));
+      return { x: c.x, y: c.top ? Y_TOP + R + n * 2 * R : Y_BOT - R - n * 2 * R };
+    };
+    let landsAt = 0;
+    const moves = [...spots].filter(([id, to]) => {
+      const from = before.get(id);
+      return !!from && (from.x !== to.x || from.y !== to.y);
+    });
+    // the mover first: a hit waits for it
+    moves.sort(([, a], [, b]) => (mv && Number(a.loc[0]) === mv.side ? -1 : 0) - (mv && Number(b.loc[0]) === mv.side ? -1 : 0));
+    for (const [id, to] of moves) {
+      const from = before.get(id)!;
+      const el = els.current.get(id);
+      if (!el || typeof el.animate !== 'function') continue;
+      el.getAnimations().forEach((a) => a.cancel());
+      const side = Number(to.loc[0]) as Side;
+      if (mv && side === mv.side && from.loc !== to.loc) {
+        const pts = [from, ...passes(mv.side, mv.st).map((k) => touch(k, mv.before)), to];
+        landsAt = flightMs(mv.side, mv.st);
+        el.animate(hopFrames(pts, pts.length === 2 ? 60 : 22), { duration: landsAt });
+      } else if (mv?.st.hit && side !== mv.side && to.loc.endsWith(':bar')) {
+        el.animate(hopFrames([from, to], 70), { duration: HIT_MS, delay: Math.max(0, landsAt - 40), fill: 'backwards' });
+      } else {
+        el.animate([{ transform: place(from.x, from.y) }, { transform: place(to.x, to.y) }], { duration: 240, easing: 'ease-out' });
+      }
+    }
+  }, [spots, key, me]);
 
   // ---- the dice: a short shake as they roll, faces flicking, before they land (no moves until then)
   const [settled, setSettled] = useState(game.rolls);
@@ -184,36 +343,28 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
     return () => window.clearInterval(id);
   }, [rolling]);
 
-  // ---- moves: tap a checker, see where it can go (each number and both together), tap one
-  const [hopping, setHopping] = useState(false);
-  const legal = canAct && game.phase === 'move' && !rolling && !hopping ? nextSteps(game) : [];
+  // ---- moves: tap a checker, see where it can go (each number and both together), tap one; a move
+  // is made once it is chosen (no undo), and the turn passes by itself when nothing is left to play
+  const busy = moving || rolling;
+  const legal = canAct && game.phase === 'move' && !busy ? nextSteps(game) : [];
   const sources = [...new Set(legal.map((s) => s.from))];
   const [sel, setSel] = useState<number | null>(null);
   // only one checker can move (one on the bar, say): it is picked up for the player; where it goes is theirs
   const selected = sel !== null && sources.includes(sel) ? sel : sources.length === 1 ? sources[0]! : null;
   const routes = useMemo(() => (selected !== null ? routesFrom(game, selected) : []), [game, selected]);
   const routeTo = (to: number): Route | undefined => routes.find((r) => r.to === to);
-  const myRoll = canAct && !rolling && (game.phase === 'roll' || game.phase === 'opening');
-  const done = canAct && !rolling && !hopping && turnDone(game);
-  const onStepRef = useRef(onStep);
+  const myRoll = canAct && !busy && (game.phase === 'roll' || game.phase === 'opening');
+  const stuck = canAct && !busy && game.phase === 'move' && game.steps.length === 0 && turnDone(game);
+  const turnOver = canAct && !busy && game.phase === 'move' && game.steps.length > 0 && turnDone(game);
   useEffect(() => {
-    onStepRef.current = onStep;
-  });
-  const hops = useRef<number[]>([]);
-  useEffect(() => () => hops.current.forEach((t) => window.clearTimeout(t)), []);
-  /** Plays a route: its first step now, the rest one hop at a time (the checker passes the points between). */
+    if (!turnOver) return;
+    const t = window.setTimeout(() => onDoneRef.current?.(), BEAT_MS * 2);
+    return () => window.clearTimeout(t);
+  }, [turnOver]);
+  /** Plays a route: all its steps at once (the board shows them one after the other). */
   const go = (r: Route): void => {
     setSel(null);
-    const [first, ...rest] = r.steps;
-    onStep?.(first!);
-    if (!rest.length) return;
-    setHopping(true);
-    hops.current = rest.map((st, k) =>
-      window.setTimeout(() => {
-        onStepRef.current?.(st);
-        if (k === rest.length - 1) setHopping(false);
-      }, HOP_MS * (k + 1)),
-    );
+    for (const st of r.steps) onStep?.(st);
   };
 
   // ---- sounds, from what changed
@@ -227,20 +378,11 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
       s.rattle();
       window.setTimeout(() => s.dice(), ROLL_MS - 60);
     }
-    // steps made since (this turn's, or a whole turn that just ended)
-    const fresh = game.steps.length > prev.steps.length && game.turn === prev.turn ? game.steps.slice(prev.steps.length) : game.lastTurn && game.lastTurn !== prev.lastTurn && prev.steps.length === 0 ? game.lastTurn.steps : [];
-    fresh.forEach((st, i) =>
-      window.setTimeout(() => {
-        if (st.hit) s.hit();
-        else if (st.to === OFF[game.lastTurn?.side ?? game.turn]) s.bearOff();
-        else s.clack(2);
-      }, i * 140),
-    );
     if (game.phase === 'over' && prev.phase !== 'over' && game.winner !== null) window.setTimeout(() => (game.winner === me ? s.win(game.points) : s.lose()), 300);
     if (game.turn === me && prev.turn !== me && game.phase === 'roll') s.turn();
   }, [game, me, sfx]);
   const tapSource = (from: number): void => {
-    if (!canAct || rolling || hopping) return;
+    if (!canAct || busy) return;
     if (!sources.includes(from)) {
       if (selected !== null) tapTarget(from);
       else sfx().nope();
@@ -278,7 +420,11 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
       <g
         key={d}
         className={`tb-point${d % 2 ? ' is-odd' : ' is-even'}${lit ? ' is-target' : ''}${src ? ' is-source' : ''}`}
-        onClick={() => tapPoint(i)}
+        onClick={(e) => {
+          // a tap leaves no focus ring behind (the keyboard keeps its own)
+          if (e.detail) (e.currentTarget as SVGGElement).blur();
+          tapPoint(i);
+        }}
         tabIndex={canAct && (lit || src) ? 0 : -1}
         role="button"
         aria-label={`${d}: ${mine(p, me, i) ? `${mine(p, me, i)} ${names[me]}` : mine(p, them, i) ? `${mine(p, them, i)} ${names[them]}` : '0'}`}
@@ -310,7 +456,16 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
       const isSel = selected === i && isTop && side === game.turn;
       const isSrc = sources.includes(i) && isTop && side === game.turn && canAct;
       checkers.push(
-        <g key={id} className={`tb-checker side-${side === me ? 'me' : 'them'}${at.slice ? ' is-off' : ''}${isSel ? ' is-sel' : ''}${isSrc ? ' is-src' : ''}`} style={{ transform: `translate(${at.x}px, ${at.y}px)` }} onClick={() => (where === 'off' ? undefined : tapPoint(i))}>
+        <g
+          key={id}
+          ref={(el) => {
+            if (el) els.current.set(id, el);
+            else els.current.delete(id);
+          }}
+          className={`tb-checker side-${side === me ? 'me' : 'them'}${at.slice ? ' is-off' : ''}${isSel ? ' is-sel' : ''}${isSrc ? ' is-src' : ''}`}
+          style={{ transform: place(at.x, at.y) }}
+          onClick={() => (where === 'off' ? undefined : tapPoint(i))}
+        >
           {at.slice ? (
             <rect x={-TRAY_W / 2 + 8} y="-6" width={TRAY_W - 16} height="12" rx="5" className="tb-slice" />
           ) : (
@@ -336,7 +491,7 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
     if (roll[0] === roll[1]) return left.length === 0;
     return !left.includes(roll[idx]!);
   };
-  // keyboard: R or Space rolls, U undoes, Enter finishes the turn
+  // keyboard: R or Space rolls
   useEffect(() => {
     if (!canAct) return;
     const onKey = (e: KeyboardEvent): void => {
@@ -345,8 +500,7 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
       if ((k === 'r' || k === ' ') && myRoll && onRoll) {
         e.preventDefault();
         onRoll();
-      } else if (k === 'u' && game.steps.length && onUndo) onUndo();
-      else if (k === 'enter' && done && onDone && (e.target as Element | null)?.tagName !== 'BUTTON') onDone();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -427,19 +581,9 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
               🎲 {w.roll}
             </button>
           )}
-          {canAct && game.phase === 'move' && game.steps.length > 0 && onUndo && (
-            <button className="tb-btn" onClick={onUndo}>
-              ↶ {w.undo}
-            </button>
-          )}
-          {done && game.steps.length > 0 && onDone && (
-            <button className="tb-btn is-go" onClick={onDone} autoFocus>
-              {w.done} ✓
-            </button>
-          )}
-          {done && game.steps.length === 0 && <span className="tb-hint mono">{w.noMoves}</span>}
+          {stuck && <span className="tb-hint mono">{w.noMoves}</span>}
           {!canAct && game.phase !== 'over' && <span className="tb-hint mono">{w.theirTurn(names[game.phase === 'opening' ? me : game.turn])}</span>}
-          {canAct && game.phase === 'move' && !done && <span className="tb-hint mono">{w.yourTurn}</span>}
+          {canAct && game.phase === 'move' && !turnDone(game) && <span className="tb-hint mono">{w.yourTurn}</span>}
         </div>
       </footer>
     </div>
