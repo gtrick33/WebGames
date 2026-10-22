@@ -86,10 +86,9 @@ never a walkover.
 truck and police car (most in their factory paint), Cosmo's off-roader, van, police sedan, luxury SUV, rally hatch
 and fifties cruiser in the middle, and its muscle car, electric coupe, supercars and hypercar at the top (models.ts,
 modelcar.ts; credits in CREDITS.md). Stock pace is tuned so a dearer car is always quicker within its tier and every
-tier is clearly quicker than the last (a test checks both). The hub shows the next car to aim for and how far the
-cash has to go; the dealer has a collection view (yours in colour, the rest dimmed with their price or the boss to
-beat). The drivers sit in closed cars, so their helmet and suit show on a portrait next to their name. Six separate
-parts with eight levels each, each moving several numbers:
+tier is clearly quicker than the last (a test checks both). The dealer has a collection view (yours in colour, the
+rest dimmed with their price or the boss to beat). The drivers sit in closed cars, so their helmet and suit show on a
+portrait next to their name. Six separate parts with eight levels each, each moving several numbers:
 
 | Part | Each level | Visible on the car |
 | --- | --- | --- |

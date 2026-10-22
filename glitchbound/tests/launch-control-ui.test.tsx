@@ -213,6 +213,25 @@ describe('Launch Control: daily, garage and wager', () => {
     expect(screen.getByRole('region', { name: 'Inspecting the tyres' }).textContent).toMatch(/condition/);
   });
 
+  it('a swipe on a pop-up goes to what it can scroll, never to the page under the stage', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    /** A swipe up on `el`; false when the game kept it from scrolling the page. */
+    const swipe = (el: Element): boolean => {
+      fireEvent.touchStart(el, { touches: [{ clientX: 100, clientY: 400 }] });
+      return fireEvent.touchMove(el, { touches: [{ clientX: 102, clientY: 300 }] });
+    };
+    // the menus' turntable lets it through (iPhone Safari tucks its bars away)
+    expect(swipe(document.querySelector('.lc-hub')!)).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'My garage' }));
+    const content = document.querySelector('.lc-modal-content') as HTMLElement;
+    expect(swipe(content)).toBe(false);
+    // content taller than its box scrolls itself
+    content.style.overflowY = 'auto';
+    Object.defineProperty(content, 'scrollHeight', { configurable: true, value: 900 });
+    Object.defineProperty(content, 'clientHeight', { configurable: true, value: 300 });
+    expect(swipe(content)).toBe(true);
+  });
+
   it('the rival picker shows big cards with one selected, and races the pick', () => {
     render(<Game host={host} restartKey={0} pauseKey={0} />);
     fireEvent.click(screen.getByRole('button', { name: /^Race\s*Next/ }));

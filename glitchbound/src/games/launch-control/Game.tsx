@@ -309,9 +309,6 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const triesLeft = DAILY_TRIES - (dailyRec?.tries ?? 0);
   const loaner = useMemo(() => loanerFor(dailySeed(today)), [today]);
   const crateOpen = save.crateDay === today;
-  // the hub's goal: the next car up from yours you don't have yet (or any you don't), and its pink slip
-  const nextCar = BY_PRICE.find((d) => !save.cars[d.id] && d.price > car.price) ?? BY_PRICE.find((d) => !save.cars[d.id]);
-  const nextSlip = nextCar ? PINK_SLIP[nextCar.id] : undefined;
 
   // ---- building a race
   const setup = useCallback(
@@ -720,6 +717,48 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     document.addEventListener('pointerdown', close);
     return () => document.removeEventListener('pointerdown', close);
   }, [soundOpen]);
+  // iPhone Safari scrolls the page under the pinned stage on any swipe the game doesn't scroll itself
+  // (that's how its bars tuck away). On a pop-up or panel that swipe only moves the hidden page, and
+  // while it moves Safari drops frames of the 3D view, so it flashes blue. There a swipe nothing inside
+  // can scroll goes nowhere; the menus' turntable still lets it through.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    let x0 = 0;
+    let y0 = 0;
+    let hold: boolean | null = null;
+    const scrolls = (from: Element, down: boolean): boolean => {
+      for (let el: Element | null = from; el && el !== root; el = el.parentElement) {
+        const s = getComputedStyle(el);
+        const overflow = down ? s.overflowY : s.overflowX;
+        if ((overflow === 'auto' || overflow === 'scroll') && (down ? el.scrollHeight > el.clientHeight : el.scrollWidth > el.clientWidth)) return true;
+      }
+      return false;
+    };
+    const start = (e: TouchEvent): void => {
+      const t = e.touches[0];
+      if (e.touches.length !== 1 || !t) return;
+      x0 = t.clientX;
+      y0 = t.clientY;
+      hold = null;
+    };
+    // decided on the swipe's first move: once Safari has started a scroll it can't be stopped
+    const move = (e: TouchEvent): void => {
+      const t = e.touches[0];
+      if (!t || !e.cancelable) return;
+      if (hold === null) {
+        const el = e.target instanceof Element ? e.target : null;
+        hold = !!el?.closest('.lc-modal, .lc-panel') && !scrolls(el, Math.abs(t.clientY - y0) >= Math.abs(t.clientX - x0));
+      }
+      if (hold) e.preventDefault();
+    };
+    root.addEventListener('touchstart', start, { passive: true });
+    root.addEventListener('touchmove', move, { passive: false });
+    return () => {
+      root.removeEventListener('touchstart', start);
+      root.removeEventListener('touchmove', move);
+    };
+  }, []);
 
   // One WebGL stage for the whole game: the menus' turntable and the race share it.
   useEffect(() => {
@@ -1050,26 +1089,6 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 </span>
               </div>
             </div>
-            {nextCar && (
-              <button
-                className="lc-next-car"
-                onClick={() => {
-                  go('dealer');
-                  setPreviewCar(nextCar.id);
-                }}
-              >
-                <span className="lc-next-car-text">
-                  <small className="mono">{save.cash >= nextCar.price ? 'Ready to buy' : 'Next car'}</small>
-                  <b>
-                    <span aria-hidden="true">{TRAIT_INFO[nextCar.trait].icon}</span> {nextCar.name}
-                  </b>
-                  <small className="mono">{save.cash >= nextCar.price ? `$${fmtShort(nextCar.price)} at the dealer` : nextSlip && nextSlip.division === nextOpp.division ? `$${fmtShort(nextCar.price)} · or beat ${nextSlip.name}` : `$${fmtShort(nextCar.price - save.cash)} to go`}</small>
-                </span>
-                <span className="lc-next-car-bar" aria-hidden="true">
-                  <i style={{ transform: `scaleX(${Math.min(1, save.cash / Math.max(1, nextCar.price)).toFixed(3)})` }} />
-                </span>
-              </button>
-            )}
             <div className="lc-modes">
               <button className="lc-mode" data-tone="cyan" onClick={() => go('daily')}>
                 <Icon name="calendar" />
