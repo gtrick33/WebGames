@@ -3,7 +3,7 @@ import type { ClassId } from '../data/types';
 import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
 import { K, TILE } from '../sim/map';
-import type { Enemy, Fx, Projectile, Telegraph } from '../sim/types';
+import type { Enemy, Fx, Pet, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
 import { itemTint } from '../progress/items';
 import { canvas, ctx2d, DETAIL, pixelText, rgba, type Cnv } from './pixel';
@@ -46,6 +46,46 @@ const PROJECTILE_COLORS: Record<string, [string, string]> = {
   shard: ['#bdf1ff', '#ffffff'],
   needle: ['#8be36b', '#e8ffd8'],
   quake: ['#c9a06a', '#f2dcb0'],
+  firebolt: ['#ff7a3d', '#ffe07a'],
+  icelance: ['#9be7ff', '#ffffff'],
+  ball: ['#7fc8ff', '#ffffff'],
+  comet: ['#9be7ff', '#ffffff'],
+  smite: ['#ffd84d', '#fffbe0'],
+  'holy-shock': ['#ffe066', '#ffffff'],
+  holyfire: ['#ff9a3d', '#fff2a0'],
+  judgment: ['#ffd84d', '#fff6c8'],
+  shield: ['#ffd84d', '#ffffff'],
+  shadowbolt: ['#7a3ad0', '#e0c8ff'],
+  chaosbolt: ['#5ad03a', '#eaffa0'],
+  wrath: ['#7bd65a', '#f0ffe0'],
+  vines: ['#4a9a3a', '#9cf07a'],
+  starfire: ['#c9a8ff', '#fff6d0'],
+  starsurge: ['#ff8ad8', '#ffffff'],
+};
+
+/** Ground effects by look. */
+const FIELD_COLORS: Record<string, string> = {
+  fire: '#ff7a3d',
+  poison: '#8be36b',
+  frost: '#9be7ff',
+  arrows: '#f5e6c8',
+  lightning: '#9ad8ff',
+  rift: '#ff3fd2',
+  holy: '#ffe066',
+  shadow: '#9a5aff',
+  nature: '#9cf07a',
+};
+
+/** Bolts without their own colors take their damage type's. */
+const TYPE_COLORS: Record<string, [string, string]> = {
+  fire: PROJECTILE_COLORS.fireball!,
+  lightning: PROJECTILE_COLORS.lightning!,
+  poison: PROJECTILE_COLORS.needle!,
+  frost: PROJECTILE_COLORS.shard!,
+  arcane: PROJECTILE_COLORS['arcane-bolt']!,
+  holy: PROJECTILE_COLORS.smite!,
+  shadow: PROJECTILE_COLORS.shadowbolt!,
+  nature: PROJECTILE_COLORS.wrath!,
 };
 
 export class Renderer {
@@ -219,6 +259,7 @@ export class Renderer {
     for (const c of w.chickens) if (inView(c.x, c.y)) items.push({ y: c.y, draw: () => this.drawChicken(c.x, c.y, c.face, time) });
     for (const d of w.drops) if (inView(d.x, d.y)) items.push({ y: d.y, draw: () => this.drawDrop(d.kind, d.x, d.y, d.z, d.item?.r, time, d.t) });
     for (const e of w.enemies) if (inView(e.x, e.y)) items.push({ y: e.y + e.r * 0.6, draw: () => this.drawEnemy(e, time) });
+    for (const pet of w.pets) if (inView(pet.x, pet.y)) items.push({ y: pet.y + pet.r * 0.6, draw: () => this.drawPet(pet, time) });
     items.push({ y: p.y + 5, draw: () => this.drawHero(w, time) });
     this.drawDoors(w, items);
     items.sort((a, b) => a.y - b.y);
@@ -237,6 +278,7 @@ export class Renderer {
     if (bz?.boss && bz.boss.collapse > 0) this.drawCollapse(bz.boss.cx, bz.boss.cy, bz.boss.collapse, time);
 
     for (const e of w.enemies) if (inView(e.x, e.y)) this.drawEnemyBar(e, w);
+    for (const pet of w.pets) if (inView(pet.x, pet.y)) this.drawPetBar(pet);
     for (const t of w.texts) {
       const img = pixelText(t.text, t.color);
       const a = clamp(1.6 - t.t / (t.big ? 0.75 : 0.55), 0, 1);
@@ -334,7 +376,7 @@ export class Renderer {
     const g = this.g;
     const life = f.t / f.dur;
     const fade = clamp(life * 3, 0, 1);
-    const color = f.look === 'fire' ? '#ff7a3d' : f.look === 'poison' ? '#8be36b' : f.look === 'frost' ? '#9be7ff' : f.look === 'arrows' ? '#f5e6c8' : f.look === 'lightning' ? '#9ad8ff' : '#ff3fd2';
+    const color = FIELD_COLORS[f.look] ?? '#ff3fd2';
     if (f.look === 'arrows') {
       g.strokeStyle = rgba('#f5e6c8', 0.5 * fade);
       g.lineWidth = 1;
@@ -363,7 +405,17 @@ export class Renderer {
       const a = hash2(i, f.id, 3) * TAU;
       const r = Math.sqrt(hash2(i, f.id, 4)) * f.r * 0.9;
       g.fillStyle = rgba(f.look === 'fire' ? (ph < 0.5 ? '#ffd86b' : '#ff7a3d') : color, (1 - ph) * fade);
-      g.fillRect(Math.round(f.x + Math.cos(a) * r), Math.round(f.y + Math.sin(a) * r * 0.75 - ph * 6), 1, f.look === 'fire' ? 2 : 1);
+      g.fillRect(Math.round(f.x + Math.cos(a) * r), Math.round(f.y + Math.sin(a) * r * 0.75 - ph * 6), 1, f.look === 'fire' || f.look === 'holy' ? 2 : 1);
+    }
+    if (f.look === 'holy' || f.look === 'shadow' || f.look === 'nature') {
+      // a consecrated ring, a pool of shadow, a ring of leaves: the edge turns slowly
+      const k = f.look === 'shadow' ? -0.6 : 0.6;
+      g.fillStyle = rgba(f.look === 'nature' ? '#4a9a3a' : color, 0.6 * fade);
+      const m = Math.max(6, Math.round(f.r / 2.5));
+      for (let i = 0; i < m; i++) {
+        const a = time * k + (i * TAU) / m;
+        g.fillRect(Math.round(f.x + Math.cos(a) * f.r * 0.92), Math.round(f.y + Math.sin(a) * f.r * 0.69), 2, 1);
+      }
     }
   }
 
@@ -627,6 +679,13 @@ export class Renderer {
       g.ellipse(p.x, p.y + 5, 8, 3.5, 0, 0, TAU);
       g.stroke();
     }
+    for (const pet of w.pets) {
+      if (pet.dead) continue;
+      g.fillStyle = 'rgba(0,0,0,0.25)';
+      g.beginPath();
+      g.ellipse(pet.x, pet.y + pet.r * 0.7, pet.r * 1.05, pet.r * 0.42, 0, 0, TAU);
+      g.fill();
+    }
     for (const e of w.enemies) {
       if (e.dead && e.deathT > 0.3) continue;
       g.fillStyle = 'rgba(0,0,0,0.25)';
@@ -659,31 +718,34 @@ export class Renderer {
       g.restore();
       return;
     }
-    const dir: HeroDir = p.dir === 0 ? 'down' : p.dir === 3 ? 'up' : 'side';
-    const flip = p.dir === 1;
-    const moving = Math.hypot(p.vx, p.vy) > 10;
-    const frame = moving ? (Math.floor(p.walkT * 7) % 2) + 1 : 0;
-    const s = heroSprite(look, dir, frame);
-    const bob = moving ? (Math.floor(p.walkT * 7) % 2 === 0 ? 0 : -0.5) : Math.sin(time * 2.5) > 0.6 ? -0.5 : 0;
-    // the picture is at art resolution: its feet (one row above the bottom) stand at p.y + 6
-    const sw = s.width / DETAIL;
-    const sh = s.height / DETAIL;
-    const x = Math.round(p.x) - sw / 2;
-    const y = Math.round(p.y) + 6.5 - sh + bob;
     const blink = p.iframe > 0 && !p.dash && Math.floor(time * 20) % 2 === 0;
-    // the held weapon behind the body when facing up or away from the aim
-    const wpn = weaponSprite(this.weapon.kind, this.weapon.tint);
-    const weaponBehind = p.dir === 3 || (p.actKind !== null && ((p.dir === 1 && Math.cos(p.actAngle) > 0) || (p.dir === 2 && Math.cos(p.actAngle) < 0)));
-    if (weaponBehind) this.drawWeapon(w, wpn, time);
-    // the shield is placed from where the old, smaller hero's corner was
-    const sx0 = Math.round(p.x) - 9;
-    const sy0 = Math.round(p.y) - 17 + Math.round(bob);
-    if (cls === 'warrior' && p.dir !== 3) this.drawShield(w, p.dir, sx0, sy0);
-    g.globalAlpha = blink ? 0.45 : 1;
-    g.drawImage(p.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, x, y, sw, sh);
-    g.globalAlpha = 1;
-    if (!weaponBehind) this.drawWeapon(w, wpn, time);
-    if (cls === 'warrior' && p.dir === 3) this.drawShield(w, p.dir, sx0, sy0);
+    if (p.form) this.drawShape(w, p.form, time, blink);
+    else {
+      const dir: HeroDir = p.dir === 0 ? 'down' : p.dir === 3 ? 'up' : 'side';
+      const flip = p.dir === 1;
+      const moving = Math.hypot(p.vx, p.vy) > 10;
+      const frame = moving ? (Math.floor(p.walkT * 7) % 2) + 1 : 0;
+      const s = heroSprite(look, dir, frame);
+      const bob = moving ? (Math.floor(p.walkT * 7) % 2 === 0 ? 0 : -0.5) : Math.sin(time * 2.5) > 0.6 ? -0.5 : 0;
+      // the picture is at art resolution: its feet (one row above the bottom) stand at p.y + 6
+      const sw = s.width / DETAIL;
+      const sh = s.height / DETAIL;
+      const x = Math.round(p.x) - sw / 2;
+      const y = Math.round(p.y) + 6.5 - sh + bob;
+      // the held weapon behind the body when facing up or away from the aim
+      const wpn = weaponSprite(this.weapon.kind, this.weapon.tint);
+      const weaponBehind = p.dir === 3 || (p.actKind !== null && ((p.dir === 1 && Math.cos(p.actAngle) > 0) || (p.dir === 2 && Math.cos(p.actAngle) < 0)));
+      if (weaponBehind) this.drawWeapon(w, wpn, time);
+      // the shield is placed from where the old, smaller hero's corner was
+      const sx0 = Math.round(p.x) - 9;
+      const sy0 = Math.round(p.y) - 17 + Math.round(bob);
+      if ((cls === 'warrior' || cls === 'paladin') && p.dir !== 3) this.drawShield(w, p.dir, sx0, sy0);
+      g.globalAlpha = blink ? 0.45 : 1;
+      g.drawImage(p.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, x, y, sw, sh);
+      g.globalAlpha = 1;
+      if (!weaponBehind) this.drawWeapon(w, wpn, time);
+      if ((cls === 'warrior' || cls === 'paladin') && p.dir === 3) this.drawShield(w, p.dir, sx0, sy0);
+    }
     if (p.shield > 0) {
       g.strokeStyle = `rgba(127,216,255,${0.5 + Math.sin(time * 8) * 0.2})`;
       g.lineWidth = 1;
@@ -698,7 +760,83 @@ export class Renderer {
         g.fillRect(Math.round(p.x + Math.cos(a) * 16), Math.round(p.y - 2 + Math.sin(a) * 9), 3, 1);
       }
     }
+    if (p.buffs.length) this.drawBuffs(w, time);
     if (hasStatus(p, 'stun')) this.drawStars(p.x, p.y - 18, time);
+  }
+
+  /** A druid in cat or bear form: the beast instead of the hero, turned the way they face. */
+  private drawShape(w: World, form: string, time: number, blink: boolean): void {
+    const g = this.g;
+    const p = w.player;
+    const moving = Math.hypot(p.vx, p.vy) > 10;
+    const frame = moving ? Math.floor(p.walkT * 8) % 2 : 0;
+    const s = creatureSprite(form, frame);
+    const flip = p.dir === 1 || (p.dir !== 2 && Math.cos(p.actKind ? p.actAngle : p.aim) < 0);
+    const sw = s.width / s.k;
+    const sh = s.height / s.k;
+    // a pounce or a swipe leans the beast forward
+    const lunge = p.actKind && p.actT > 0 ? Math.round(Math.cos(p.actAngle) * 2) : 0;
+    const breathe = moving ? 0 : Math.sin(time * 2.5) > 0.6 ? -0.5 : 0;
+    g.globalAlpha = blink ? 0.45 : 1;
+    g.drawImage(p.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, Math.round(p.x) - sw / 2 + lunge, Math.round(p.y) + 6.5 - sh + breathe, sw, sh);
+    g.globalAlpha = 1;
+  }
+
+  /** Buffs show as motes of their color rising around the hero; damage walls as a ring. */
+  private drawBuffs(w: World, time: number): void {
+    const g = this.g;
+    const p = w.player;
+    p.buffs.forEach((b, i) => {
+      for (let j = 0; j < 2; j++) {
+        const t = time * 0.9 + j * 0.5 + i * 0.27;
+        const ph = t % 1;
+        const a = i * 2.4 + j * 3.1 + Math.floor(t) * 1.7;
+        g.fillStyle = rgba(b.def.color, (1 - ph) * 0.9);
+        g.fillRect(Math.round(p.x + Math.cos(a) * 8), Math.round(p.y + 3 - ph * 18), 1, 2);
+      }
+      if (b.def.dr) {
+        g.strokeStyle = rgba(b.def.color, 0.3 + Math.sin(time * 5) * 0.1);
+        g.lineWidth = 1;
+        g.beginPath();
+        g.ellipse(p.x, p.y + 4, 10, 4, 0, 0, TAU);
+        g.stroke();
+      }
+    });
+  }
+
+  private drawPet(pet: Pet, time: number): void {
+    const g = this.g;
+    const moving = Math.hypot(pet.vx, pet.vy) > 8;
+    const frame = moving ? Math.floor(pet.walkT * 7) % 2 : Math.floor(time * 2 + pet.id) % 2;
+    const sprite = pet.def.pal ? recolored(pet.def.sprite, frame, pet.def.pal, `pet:${pet.def.id}`) : creatureSprite(pet.def.sprite, frame);
+    const flip = Math.cos(pet.face) < 0;
+    const dw = sprite.width / sprite.k;
+    const dh = sprite.height / sprite.k;
+    const float = pet.def.id === 'voidwalker' ? Math.round(Math.sin(time * 3 + pet.id) * 1.5) - 2 : 0;
+    const lunge = pet.actT > 0 && !pet.def.ranged ? (flip ? -2 : 2) : 0;
+    const x = Math.round((pet.x - dw / 2 + lunge) * sprite.k) / sprite.k;
+    const y = Math.round((pet.y + pet.r * 0.8 - dh + float) * sprite.k) / sprite.k;
+    if (pet.dead) g.globalAlpha = clamp(1 - pet.deathT / 0.5, 0, 1);
+    // a summon about to fade flickers
+    else if (pet.life < 2) g.globalAlpha = Math.floor(time * 10) % 2 ? 1 : 0.5;
+    g.drawImage(pet.flash > 0 ? (flip ? sprite.wf : sprite.w) : flip ? sprite.f : sprite.c, x, y, dw, dh);
+    g.globalAlpha = 1;
+  }
+
+  /** A companion's health, in green, once it has been hit. */
+  private drawPetBar(pet: Pet): void {
+    if (pet.dead || pet.hp >= pet.maxHp) return;
+    const g = this.g;
+    const s = creatureSprite(pet.def.sprite, 0);
+    const wdt = 12;
+    const x = Math.round(pet.x - wdt / 2);
+    const y = Math.round(pet.y + pet.r * 0.8 - s.height / s.k - 4);
+    g.fillStyle = '#1b1428';
+    g.fillRect(x - 1, y - 1, wdt + 2, 4);
+    g.fillStyle = '#1e3a1a';
+    g.fillRect(x, y, wdt, 2);
+    g.fillStyle = '#7bd65a';
+    g.fillRect(x, y, Math.max(0, Math.round((wdt * pet.hp) / pet.maxHp)), 2);
   }
 
   private drawShield(w: World, dir: number, x: number, y: number): void {
@@ -1114,7 +1252,49 @@ export class Renderer {
       return;
     }
     const look = pr.look;
-    const [c1, c2] = PROJECTILE_COLORS[look] ?? (pr.type === 'fire' ? PROJECTILE_COLORS.fireball! : pr.type === 'lightning' ? PROJECTILE_COLORS.lightning! : pr.type === 'poison' ? PROJECTILE_COLORS.needle! : pr.type === 'frost' ? PROJECTILE_COLORS.shard! : ['#e8e0c8', '#ffffff']);
+    const [c1, c2] = PROJECTILE_COLORS[look] ?? TYPE_COLORS[pr.type] ?? ['#e8e0c8', '#ffffff'];
+    if (look === 'shield' || look === 'judgment') {
+      // a thrown shield or a hammer of light, spinning
+      const s = weaponSprite(look === 'shield' ? 'shield' : 'hammer', look === 'shield' ? undefined : '#ffd84d');
+      g.globalAlpha = 0.45;
+      g.drawImage(glowDisc(c1, 9), x - 9, y - 9);
+      g.globalAlpha = 1;
+      g.save();
+      g.translate(x, y);
+      g.rotate(time * 16);
+      g.drawImage(s.c, -s.width / s.k / 2, -s.height / s.k / 2, s.width / s.k, s.height / s.k);
+      g.restore();
+      return;
+    }
+    if (look === 'icelance' || look === 'vines') {
+      // a long spike of ice, or a lashing root
+      g.save();
+      g.translate(x, y);
+      g.rotate(a);
+      if (look === 'icelance') {
+        g.fillStyle = rgba(c1, 0.35);
+        g.fillRect(-16, -1, 8, 2);
+        g.fillStyle = '#1b1428';
+        g.fillRect(-10, -2, 12, 4);
+        g.fillStyle = c1;
+        g.fillRect(-9, -1, 10, 2);
+        g.fillStyle = c2;
+        g.fillRect(-6, -1, 7, 1);
+        g.fillRect(2, -1, 2, 2);
+        g.fillRect(4, 0, 1, 1);
+      } else {
+        for (let i = 0; i < 6; i++) {
+          const wy = Math.round(Math.sin(time * 20 - i * 1.3) * 1.5);
+          g.fillStyle = i % 2 ? c1 : '#2e6a2a';
+          g.fillRect(-i * 2 - 1, wy - 1, 2, 2);
+        }
+        g.fillStyle = c2;
+        g.fillRect(1, -1, 2, 2);
+        g.fillRect(-4, Math.round(Math.sin(time * 20) * 2) - 3, 1, 2);
+      }
+      g.restore();
+      return;
+    }
     if (look === 'quake') {
       g.save();
       g.translate(x, y);
@@ -1160,9 +1340,33 @@ export class Renderer {
     const R = Math.round(r);
     pixelDisc(g, x, y, R, c1);
     pixelDisc(g, x, y, Math.max(1, R - 1), c2);
-    if (look === 'lightning' || look === 'spark') {
+    if (look === 'lightning' || look === 'spark' || look === 'ball') {
       g.fillStyle = '#ffffff';
       g.fillRect(x + Math.round(Math.random() * 4 - 2), y + Math.round(Math.random() * 4 - 2), 1, 1);
+      if (look === 'ball') {
+        const k = Math.random() * TAU;
+        g.fillStyle = c1;
+        g.fillRect(x + Math.round(Math.cos(k) * (R + 2)), y + Math.round(Math.sin(k) * (R + 2)), 1, 2);
+      }
+    } else if (look === 'starsurge' || look === 'starfire') {
+      // twinkles trail the star
+      for (let i = 0; i < 2; i++) {
+        const ph = (time * 3 + i * 0.5 + pr.x * 0.01) % 1;
+        g.fillStyle = rgba(c2, 1 - ph);
+        g.fillRect(Math.round(x - Math.cos(a) * (4 + ph * 8) + Math.sin(a) * (i ? 3 : -3)), Math.round(y - Math.sin(a) * (4 + ph * 8) - Math.cos(a) * (i ? 3 : -3)), 1, 1);
+      }
+      g.fillStyle = c2;
+      g.fillRect(x - R - 1, y, 1, 1);
+      g.fillRect(x + R, y, 1, 1);
+      g.fillRect(x, y - R - 1, 1, 1);
+      g.fillRect(x, y + R, 1, 1);
+    } else if (look === 'shadowbolt' || look === 'chaosbolt') {
+      // a dark heart and wisps
+      g.fillStyle = look === 'chaosbolt' ? '#1a3a10' : '#1b0e2e';
+      g.fillRect(x - 1, y - 1, 2, 2);
+      g.fillStyle = rgba(c1, 0.7);
+      const k = time * 12 + pr.x;
+      g.fillRect(Math.round(x + Math.cos(k) * (R + 1)), Math.round(y + Math.sin(k) * (R + 1)), 1, 1);
     }
   }
 
@@ -1293,9 +1497,11 @@ export class Renderer {
         break;
       }
       case 'ghost': {
-        const s = heroSprite(this.look ?? heroLook(w.hero.cls), w.player.dir === 0 ? 'down' : w.player.dir === 3 ? 'up' : 'side', 0);
+        const pl = w.player;
+        const s = pl.form ? creatureSprite(pl.form, 0) : heroSprite(this.look ?? heroLook(w.hero.cls), pl.dir === 0 ? 'down' : pl.dir === 3 ? 'up' : 'side', 0);
+        const flip = pl.form ? pl.dir === 1 || (pl.dir !== 2 && Math.cos(pl.aim) < 0) : pl.dir === 1;
         g.globalAlpha = clamp(0.5 - k * 0.5, 0, 1);
-        g.drawImage(w.player.dir === 1 ? s.wf : s.w, Math.round(f.x) - s.width / DETAIL / 2, Math.round(f.y) + 6.5 - s.height / DETAIL, s.width / DETAIL, s.height / DETAIL);
+        g.drawImage(flip ? s.wf : s.w, Math.round(f.x) - s.width / s.k / 2, Math.round(f.y) + 6.5 - s.height / s.k, s.width / s.k, s.height / s.k);
         g.globalAlpha = 1;
         break;
       }

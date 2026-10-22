@@ -5,7 +5,7 @@ import { REGIONS, TIERS, type RiftMod } from './data/regions';
 import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SlotId } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
-import { BAG_SIZE, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, unequip, type Character } from './progress/character';
+import { BAG_SIZE, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
@@ -720,6 +720,17 @@ export class SigilEngine {
   resetTalents(): boolean {
     if (!this.hero || !respec(this.hero)) return false;
     this.changed('reset');
+    return true;
+  }
+
+  /** Takes (or changes) the specialization. */
+  chooseSpec(tree: 0 | 1 | 2): boolean {
+    if (!this.hero || !chooseSpec(this.hero, tree)) return false;
+    this.changed('levelup');
+    const def = CLASSES[this.hero.cls];
+    const spec = def.trees[tree];
+    const shape = spec.formOnly ? def.forms?.find((f) => f.specSwap?.tree === tree) : undefined;
+    this.toast(`${spec.name}: ${SKILLS[spec.skill]?.name ?? ''} learned${shape ? ` (in ${shape.name})` : ''}`, 'good');
     return true;
   }
 

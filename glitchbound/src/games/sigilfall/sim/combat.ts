@@ -1,8 +1,9 @@
 import { TAU, clamp, dist2 } from '../core/math';
 import { CLASSES, levelPower } from '../data/classes';
-import type { DmgType, Effect, ProcDef, SkillSpec, StatKey, Stats, StatusId } from '../data/types';
+import type { BuffDef, DmgType, Effect, ProcDef, SkillSpec, StatKey, Stats, StatusId } from '../data/types';
 import { typeBonus } from '../progress/build';
 import { bossHidden } from './boss';
+import { summonPet } from './pets';
 import type { Enemy, Projectile } from './types';
 import type { World } from './world';
 
@@ -14,19 +15,31 @@ import type { World } from './world';
  * - bosses can't be stunned, frozen or rooted (they are slowed instead).
  */
 
-const STATUS_DMG: Partial<Record<StatusId, DmgType>> = { burn: 'fire', poison: 'poison' };
+/** Damage over time and its type (a curse carries its own). */
+const STATUS_DMG: Partial<Record<StatusId, DmgType>> = { burn: 'fire', poison: 'poison', bleed: 'physical', curse: 'shadow' };
+const isDot = (id: StatusId): boolean => id in STATUS_DMG;
 
-/** The hero's stats right now, with the conditional ones that apply. */
+/** The hero's stats right now, with the conditional ones and buffs that apply. */
 export function effStats(w: World): Stats {
   const b = w.build;
   const p = w.player;
   const lowHp = p.hp < p.maxHp * 0.5;
   const afterDodge = w.time - p.lastDodge < 3;
-  if (!lowHp && !afterDodge) return b.stats;
+  const buffed = p.buffs.some((x) => x.def.stats);
+  if (!lowHp && !afterDodge && !buffed) return b.stats;
   const s = { ...b.stats };
   if (lowHp) for (const [k, v] of Object.entries(b.lowHp)) s[k as StatKey] += v ?? 0;
   if (afterDodge) for (const [k, v] of Object.entries(b.afterDodge)) s[k as StatKey] += v ?? 0;
+  for (const x of p.buffs) for (const [k, v] of Object.entries(x.def.stats ?? {})) s[k as StatKey] += v ?? 0;
   return s;
+}
+
+/** Gains (or spends, n < 0) the class's resource; mana counts in % of the maximum for effects. */
+export function gainResource(w: World, n: number, mana: 'points' | 'pct' = 'points'): void {
+  const p = w.player;
+  if (p.maxMana <= 0 || !n) return;
+  const add = w.build.resource?.kind === 'mana' && mana === 'pct' ? (p.maxMana * n) / 100 : n;
+  p.mana = Math.max(0, Math.min(p.maxMana, p.mana + add));
 }
 
 export const hasStatus = (e: { statuses: { id: StatusId }[] }, id: StatusId): boolean => e.statuses.some((s) => s.id === id);
@@ -67,7 +80,8 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
     crit = true;
     mult *= 1 + stats.critDmg / 100;
   }
-  if (type === 'physical' && e.def.armor && !hasStatus(e, 'armorBreak')) mult *= 1 - e.def.armor;
+  // armor turns physical blows aside (bleeding goes through it)
+  if (type === 'physical' && e.def.armor && !hasStatus(e, 'armorBreak') && !o.isDot) mult *= 1 - e.def.armor;
   mult *= 1 - (e.def.resist?.[type] ?? 0);
   let dmg = Math.max(1, Math.round(base * mult));
   const shown = dmg;
@@ -103,31 +117,31 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   w.player.calm = 0;
   if (e.dummy) w.dummyHit(spec ?? null);
   if (o.depth === 0 && !o.isDot) {
-    runProcs(w, 'hit', { x: e.x, y: e.y, target: e, base, type, depth: o.depth, hitDmg: shown });
-    if (crit) runProcs(w, 'crit', { x: e.x, y: e.y, target: e, base, type, depth: o.depth, hitDmg: shown });
+    runProcs(w, 'hit', { x: e.x, y: e.y, target: e, base, type, depth: o.depth, hitDmg: shown, skill: spec?.id });
+    if (crit) runProcs(w, 'crit', { x: e.x, y: e.y, target: e, base, type, depth: o.depth, hitDmg: shown, skill: spec?.id });
   }
   if (e.hp <= 0 && !e.dummy) killEnemy(w, e, type, o.depth, spec ?? null);
   return shown;
 }
 
-const DOT_COLOR: Record<DmgType, string> = { physical: '#ffffff', fire: '#ff9a4d', frost: '#9be7ff', lightning: '#9ad8ff', poison: '#8be36b', arcane: '#d2a8ff' };
+export const DOT_COLOR: Record<DmgType, string> = { physical: '#ffffff', fire: '#ff9a4d', frost: '#9be7ff', lightning: '#9ad8ff', poison: '#8be36b', arcane: '#d2a8ff', shadow: '#b58aff', holy: '#ffe9a0', nature: '#9cf07a' };
 
 /** Applies a status from the hero (hitDmg sizes damage over time). */
-export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: number; power: number; chance?: number }, hitDmg: number): void {
+export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: number; power: number; chance?: number; dmgType?: DmgType }, hitDmg: number): void {
   if (e.dead || e.dummy === 2) return;
   if (s.chance !== undefined && s.chance < 1 && w.rand() > s.chance) return;
   let id = s.status;
   let dur = s.dur;
   let power = s.power;
   // bosses shrug off hard control, elites halve it
-  if (id === 'stun' || id === 'freeze' || id === 'root') {
+  if (id === 'stun' || id === 'freeze' || id === 'root' || id === 'fear') {
     if (e.boss) {
       id = 'chill';
       power = 0.3;
       dur *= 0.5;
     } else if (e.elite.length) dur *= 0.5;
   }
-  if (id === 'burn' || id === 'poison') power = Math.max(1, s.power * hitDmg);
+  if (isDot(id)) power = Math.max(1, s.power * Math.max(hitDmg, 1));
   if (id === 'poison') {
     const stacks = e.statuses.filter((x) => x.id === 'poison');
     if (stacks.length >= 3) {
@@ -137,19 +151,25 @@ export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: numb
     } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true });
     return;
   }
-  const cur = e.statuses.find((x) => x.id === id);
+  // curses of different kinds (shadow, arcane, holy) are separate; the same kind refreshes
+  const dtype = id === 'curse' ? (s.dmgType ?? 'shadow') : undefined;
+  const cur = e.statuses.find((x) => x.id === id && x.dtype === dtype);
   if (cur) {
     cur.t = Math.max(cur.t, dur);
     cur.power = Math.max(cur.power, power);
-  } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true });
+  } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true, ...(dtype ? { dtype } : {}) });
   if (id === 'freeze') w.sfx('freeze');
+  if (id === 'fear') {
+    e.state = e.state === 'windup' || e.state === 'act' ? 'recover' : e.state;
+    w.text(e.x, e.y - e.r - 10, 'FEARED', '#c9a8ff', false);
+  }
 }
 
 /** Counts statuses down and deals damage over time. */
 export function tickStatuses(w: World, e: Enemy, dt: number): void {
   for (const s of e.statuses) {
     s.t -= dt;
-    const type = STATUS_DMG[s.id];
+    const type = s.dtype ?? STATUS_DMG[s.id];
     if (type) {
       s.tick -= dt;
       if (s.tick <= 0) {
@@ -270,7 +290,8 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
       break;
     }
     case 'heal':
-      healPlayer(w, e.pct, true);
+      // heals from hits, kills and procs share the per-second limit; a heal you cast is whole
+      healPlayer(w, e.pct, c.when === 'hit' || c.when === 'kill' || c.when === 'proc');
       break;
     case 'shield': {
       const p = w.player;
@@ -328,6 +349,28 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
     case 'charge':
       w.player.ult = Math.min(100, w.player.ult + e.pct);
       break;
+    case 'buff':
+      addBuff(w, e.buff);
+      break;
+    case 'resource':
+      gainResource(w, e.n, 'pct');
+      break;
+    case 'fear':
+      w.addFx({ kind: 'ring', x: c.x, y: c.y, life: 0.4, size: e.radius, color: '#a87aff' });
+      for (const en of enemiesIn(w, c.x, c.y, e.radius)) applyStatus(w, en, { status: 'fear', dur: e.dur, power: 1 }, 0);
+      break;
+    case 'summon':
+      summonPet(w, e.pet, e.count, e.dur);
+      break;
+    case 'sacrifice': {
+      const p = w.player;
+      const lose = Math.min(p.hp - 1, (p.maxHp * e.pct) / 100);
+      if (lose > 0) {
+        p.hp -= lose;
+        w.text(p.x, p.y - 18, `-${Math.round(lose)}`, '#c9a8ff', false);
+      }
+      break;
+    }
     case 'riftBurst': {
       const x = c.x;
       const y = c.y;
@@ -350,9 +393,10 @@ function childSpec(s: SkillSpec): SkillSpec {
 }
 
 /** Triggers the hero's procs for an event. */
-export function runProcs(w: World, on: ProcDef['on'], c: Omit<EffectCtx, 'angle' | 'spec' | 'when'> & { angle?: number; killType?: DmgType; statuses?: StatusId[] }): void {
+export function runProcs(w: World, on: ProcDef['on'], c: Omit<EffectCtx, 'angle' | 'spec' | 'when'> & { angle?: number; killType?: DmgType; statuses?: StatusId[]; skill?: string }): void {
   for (const p of w.build.procs) {
     if (p.on !== on) continue;
+    if (p.skill && p.skill !== c.skill) continue;
     if (p.dmgType && (c.killType ?? c.type) !== p.dmgType) continue;
     if (p.status && !(c.statuses ?? c.target?.statuses.map((s) => s.id) ?? []).includes(p.status)) continue;
     if ((w.procCd[p.id] ?? 0) > w.time) continue;
@@ -374,14 +418,26 @@ export function killEnemy(w: World, e: Enemy, type: DmgType, depth: number, spec
   e.hp = 0;
   w.onKill(e);
   if (spec && depth === 0) applyEffects(w, spec.onKill, { x: e.x, y: e.y, angle: Math.atan2(e.y - w.player.y, e.x - w.player.x), spec, base: spec.damage, type, depth, target: e, hitDmg: 0, when: 'kill' });
-  runProcs(w, 'kill', { x: e.x, y: e.y, target: e, base: 0, type, depth, hitDmg: 0, killType: type, statuses });
+  runProcs(w, 'kill', { x: e.x, y: e.y, target: e, base: 0, type, depth, hitDmg: 0, killType: type, statuses, skill: spec?.id });
 }
 
-/** Heals the hero by a share of max health. Healing from hits draws from a per-second budget. */
-export function healPlayer(w: World, pct: number, fromHit: boolean): number {
+/** A buff on the hero: the same buff refreshes (the longer time, the stronger numbers). */
+export function addBuff(w: World, def: BuffDef): void {
+  const p = w.player;
+  const cur = p.buffs.find((b) => b.def.id === def.id);
+  if (cur) {
+    cur.t = Math.max(cur.t, def.dur);
+    cur.def = def;
+  } else p.buffs.push({ def, t: def.dur });
+  w.addFx({ kind: 'glow', x: p.x, y: p.y - 6, life: 0.5, size: 14, color: def.color });
+  w.sfx('buff', 0.6);
+}
+
+/** Heals the hero by a share of max health (more with the healing stat). Healing from hits draws from a per-second budget. */
+export function healPlayer(w: World, pct: number, fromHit: boolean, quiet = false): number {
   const p = w.player;
   if (p.dead) return 0;
-  let amount = (p.maxHp * pct) / 100;
+  let amount = ((p.maxHp * pct) / 100) * (1 + (effStats(w).healing ?? 0) / 100);
   if (fromHit) {
     amount = Math.min(amount, p.healBudget);
     p.healBudget -= amount;
@@ -389,7 +445,7 @@ export function healPlayer(w: World, pct: number, fromHit: boolean): number {
   const before = p.hp;
   p.hp = Math.min(p.maxHp, p.hp + amount);
   const healed = p.hp - before;
-  if (healed >= 1) w.text(p.x, p.y - 16, `+${Math.round(healed)}`, '#6dff8f', false);
+  if (healed >= 1 && !quiet) w.text(p.x, p.y - 16, `+${Math.round(healed)}`, '#6dff8f', false);
   return healed;
 }
 
@@ -408,6 +464,9 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   const reduction = Math.min(0.6, stats.armor / (stats.armor + 60));
   let d = dmg * (1 - reduction);
   if (o.source && hasStatus(o.source, 'weaken')) d *= 1 - statusPower(o.source, 'weaken') / 100;
+  // walls and wards: buffs that cut damage taken (at most 75% together)
+  const dr = Math.min(75, p.buffs.reduce((a, b) => a + (b.def.dr ?? 0), 0));
+  if (dr > 0) d *= 1 - dr / 100;
   d = Math.max(1, Math.round(d));
   if (p.shield > 0) {
     const took = Math.min(p.shield, d);
@@ -418,7 +477,9 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   p.flash = 0.18;
   p.lastHurt = w.time;
   p.calm = 0;
-  w.text(p.x, p.y - 18, `-${Math.round(dmg * (1 - reduction))}`, '#ff5a5a', false);
+  w.text(p.x, p.y - 18, `-${Math.round(dmg * (1 - reduction) * (1 - dr / 100))}`, '#ff5a5a', false);
+  // rage: being hit makes you angry (10% of your health in one blow is 6 Rage)
+  if (w.build.resource?.kind === 'rage') gainResource(w, (d / p.maxHp) * 60 + 1);
   w.sfx('hurt');
   w.shake(2.2);
   if (o.knock && o.fromX !== undefined && o.fromY !== undefined) {

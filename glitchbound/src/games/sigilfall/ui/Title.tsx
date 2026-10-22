@@ -3,6 +3,7 @@ import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
+import { SPEC_LEVEL } from '../data/talents';
 import type { ClassId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { cleanName } from '../progress/character';
@@ -131,7 +132,13 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           ))}
         </div>
         <p className="rb-dim">
-          Talent paths: <b style={{ color: def.trees[0].color }}>{def.trees[0].name}</b> ({def.trees[0].blurb.toLowerCase()}) or <b style={{ color: def.trees[1].color }}>{def.trees[1].name}</b> ({def.trees[1].blurb.toLowerCase()})
+          At level {SPEC_LEVEL} you choose a specialization:{' '}
+          {def.trees.map((t, i) => (
+            <span key={t.name}>
+              {i > 0 && (i === def.trees.length - 1 ? ' or ' : ', ')}
+              <b style={{ color: t.color }}>{t.name}</b> ({t.blurb.replace(/\.$/, '').toLowerCase()})
+            </span>
+          ))}
         </p>
         <form
           className="rb-create-go"

@@ -1,8 +1,8 @@
 # Sigilfall: design notes
 
 A single-player, top-down pixel-art action RPG, built for phones first (landscape, two thumbs) and fully playable
-with a keyboard and mouse. Three classes, gear that changes how skills behave, two talent trees per class,
-three regions, three bosses and three difficulty tiers.
+with a keyboard and mouse. Seven classes, gear that changes how skills behave, three talent trees and a
+specialization per class, three regions, three bosses and three difficulty tiers.
 
 **Name.** The game launched as "Riftbound" on 2026-10-22 and was renamed Sigilfall the same day: Riftbound is
 also Riot Games' League of Legends trading card game. In the story, the sigils that held the Rift shut have
@@ -22,9 +22,9 @@ for players, while admins still see both. It reports `start`/`end` to the arcade
 
 | Folder | What is in it |
 | --- | --- |
-| `data/` | Content only, typed: classes, skills (as `SkillSpec`s), talents, items, enemies, bosses, regions (ASCII maps), quests and NPCs |
+| `data/` | Content only, typed: a kit per class in `kits/` (its definition, skills as `SkillSpec`s, talents), pets, items, enemies, bosses, regions (ASCII maps), quests and NPCs |
 | `progress/` | The hero (`character.ts`), items and loot, the build resolver (`build.ts`), item and modifier text (`describe.ts`), saves |
-| `sim/` | The world (`world.ts`), casting and projectiles, combat and statuses, enemy AI, the boss framework, tile maps and collision |
+| `sim/` | The world (`world.ts`), casting and projectiles, combat and statuses, companions (`pets.ts`), enemy AI, the boss framework, tile maps and collision |
 | `render/` | Canvas 2D at a low pixel resolution: the ground (chunked, painted on a worker), the paper-doll hero, sprites, lighting, effects |
 | `input/` | Keyboard and mouse, and the touch state the on-screen controls write into |
 | `ui/` | React screens: title, HUD, touch controls, desktop skill bar, the hero/skills/talents/quests/map panels, settings |
@@ -78,13 +78,49 @@ skill it changes ("Fireball splits into 3 smaller projectiles (40 % damage each)
 Items: 31 hand-made ones (uncommon to legendary, most of them changing a skill) and generated gear (common to
 rare: rolled stats, and rare pieces roll a small skill modifier). Epic and legendary drops are always hand-made.
 
+## Classes
+
+Each class is one file in `data/kits/` (`kit.ts` has the shorthands): its definition, about twenty skills and
+three talent trees. `classes.ts`, `skills.ts` and `talents.ts` gather them.
+
+| Class | Resource | What makes it itself |
+| --- | --- | --- |
+| Warrior | Rage | earned by landing swings and taking hits, spent by heavy skills, fades after a fight; shield |
+| Mage | Mana | elemental bolts, novas and fields; Fire, Storm and Frost |
+| Ranger | Focus | refills steadily (faster with haste); arrows, traps and a wolf |
+| Paladin | Holy Power | 0 to 5 whole points: builders give one each, finishers spend three; heals from its own strikes |
+| Priest | Mana | holy bolts and heals over time, or shadow curses, a drain and fear |
+| Warlock | Mana | curses that tick, a life drain, fear, and demons that fight beside them (Life Tap trades health for mana) |
+| Druid | Mana | spells in caster form; Cat Form and Bear Form swap the whole bar for claws or paws |
+
+Damage types: physical, fire, frost, lightning, poison, arcane, shadow, holy, nature. Statuses add bleed (a
+physical DoT that ignores armor), curse (a DoT of the caster's type; different types stack) and fear (the enemy
+runs from the hero and attacks nothing; bosses are only slowed, elites for half as long).
+
+- **Specializations and talents.** At level 10 a hero picks one of their class's three trees as a
+  specialization: it gives that tree's ability (Bloodthirst, Flamestrike, Holy Shock, Rip in Cat Form…) and a
+  passive. One talent point per level from 10 (51 at 60). A tree has seven rows, each opening after 5 more
+  points in it; the other two trees stay shut until 31 points are in the specialization. Changing
+  specialization resets talents (free below level 15).
+- **Buffs** (`BuffDef`): timed stats, damage reduction (capped at 75 % with everything else) and healing over
+  time; shown as rising motes around the hero.
+- **Companions** (`data/pets.ts`, `sim/pets.ts`): the warlock's imp, voidwalker, felguard and infernal, the
+  ranger's wolf, the druid's treants. Their numbers are shares of the hero's, raised by the `pet` stat. A
+  companion that stays (its summon is on the bar) is called when the hero arrives and healed by casting again;
+  temporary ones fade. Enemies near a taunting companion attack it instead of the hero (bosses always go for
+  the hero).
+- **Drains** channel on one enemy and heal by a share of the damage (`extra.drainHeal`).
+- **Forms** (`ClassDef.forms`): a shape swaps the basic attack, dodge and the other skill slots (the shape's
+  own skill stays, to change back), and adds stats; Bear Form adds health.
+
 ## Mana, regeneration, potions
 
-Casters have a resource (`ClassDef.resource`, mana for the Mage): skills cost a share of the maximum
-(`SkillSpec.cost`), mana comes back slowly in a fight and the basic bolt returns a little per hit
-(`extra.manaOnHit`). After 3 s without fighting, health and mana come back fast (10 % and 20 % a second), so
-potions are for trouble inside a fight. Potions (40 % health) are bought at the inn, five at most; nothing
-refills them for free. Dodges have real cooldowns (4.5 to 5.5 s).
+Every class has a resource (`ClassDef.resource`): mana skills cost a share of the maximum (`SkillSpec.cost`),
+the others whole points; `SkillSpec.gen` gives some back on use (on a hit, for melee). Mana comes back slowly in
+a fight and the basic bolts return a little per hit (`extra.manaOnHit`). After 3 s without fighting, health and
+mana come back fast (10 % and 20 % a second), so potions are for trouble inside a fight; rage and Holy Power
+fade instead. Potions (40 % health) are bought at the inn, five at most; nothing refills them for free. Dodges
+have real cooldowns (4.5 to 5.5 s).
 
 ## Vendors
 
@@ -115,6 +151,10 @@ in world units.
   (the mage's hat and robe). The character screen is a paper doll with the hero in the middle (tap to turn).
 - **Trees, bushes, rocks** (`render/art/flora.ts`) are painted at art resolution; other props, creatures and
   weapons are their text art doubled with Scale2x (smooth diagonals, a fine outline) until they are redrawn.
+  Companions and the druid's cat and bear are in `render/art/companions.ts`.
+- **Icons**: skills and talents use 24 × 24 glyphs (`render/art/icons.ts`, one per skill in `skillGlyphs.ts`)
+  on a tile in the damage type's color. New bolts have their own looks (a spinning shield, a hammer of light, a
+  lance of ice, lashing roots, stars).
 
 Gear has a **legs** slot (trousers, breeches, legguards), sold by the armory.
 
@@ -126,10 +166,10 @@ on the rim, pointing, when it is far). The full map shows the same marker.
 
 ## Progression
 
-Levels 1 to 20 (`xpToNext`), one talent point per level. Skills unlock at levels 1 to 6 and slot themselves into
-empty slots; the ultimate at level 3. Talents: two trees per class, a row opens per 3 points in its tree, some
-nodes need another first, and each tree ends in a signature talent. Resetting talents is free below level 5,
-then costs 25 gold per level.
+Levels 1 to 60 (`xpToNext`). Skills unlock at levels 1, 2, 4, 6, 14 and 22 and slot themselves into empty
+slots; the ultimate at level 3; the specialization's ability at 10. Talents are described under Classes; some
+nodes need another first, and each tree ends in a capstone. Resetting talents is free below level 15, then
+costs 25 gold per level.
 
 ## World
 
@@ -153,7 +193,8 @@ by clearing the crypt on the tier below, with optional modifiers for more loot.
 `glitchbound.sigilfall` holds three hero slots and settings: versioned (`SAVE_VERSION`), validated field by field
 on load (unknown items, skills and talents are dropped, numbers clamped, duplicate item ids renamed), with a
 device-only backup copy. A damaged save falls back to the backup and keeps the damaged copy; a save from a newer
-version is never overwritten. The main key follows a signed-in player between devices through the arcade's
+version is never overwritten. Version 2 (three trees and specializations) gave every older hero their talent
+points back with no specialization chosen. The main key follows a signed-in player between devices through the arcade's
 cloud saves (up to 96 KB); the backup stays on the device.
 
 ## Testing
@@ -167,6 +208,9 @@ cloud saves (up to 96 KB); the backup stays on the device.
   paints in row pieces exactly as in one go, and puts things on the square on stone.
 - `tests/sigilfall-look.test.ts`: every armor piece changes the hero's look; dyes; the legs slot rolls, sells
   and saves; Scale2x.
+- `tests/sigilfall-economy.test.ts`: mana, rage, regeneration, potions, shops, aiming and dodge cooldowns.
+- `tests/sigilfall-classes.test.ts`: the version 1 migration, Holy Power, drains, heals over time, Shield
+  Wall, companions (staying, healing, taunting, fading), fear and the druid's forms.
 
 ## Known limits
 
@@ -174,3 +218,5 @@ cloud saves (up to 96 KB); the backup stays on the device.
   phones.
 - Balance is tuned against the bot; real players will find Normal easier or harder depending on skill.
 - Sound is synthesized; there is no recorded audio.
+- The level cap is 60, but the regions so far are tuned for levels 1 to 20 (Mythic). Zones for the levels after
+  that are the next stage.

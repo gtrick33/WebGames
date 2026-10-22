@@ -6,25 +6,28 @@
  */
 import { xpToNext } from '../src/games/sigilfall/data/classes';
 import { SLOTS, type ClassId, type RegionId, type SlotKey } from '../src/games/sigilfall/data/types';
-import { learnTalent, newCharacter, addXp, freePoints, type Character } from '../src/games/sigilfall/progress/character';
+import { chooseSpec, learnTalent, newCharacter, addXp, freePoints, type Character } from '../src/games/sigilfall/progress/character';
 import { rollGear } from '../src/games/sigilfall/progress/items';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
-import { TALENTS } from '../src/games/sigilfall/data/talents';
+import { SPEC_LEVEL, TALENTS } from '../src/games/sigilfall/data/talents';
 import { rng } from '../src/games/sigilfall/core/math';
 import { flowField, flowStep, TILE } from '../src/games/sigilfall/sim/map';
 import type { Enemy, WorldEvent } from '../src/games/sigilfall/sim/types';
 import { emptyInput, inside, World } from '../src/games/sigilfall/sim/world';
 
-/** A hero of a level with a full set of gear of that level and every talent point spent. */
-export function readyHero(cls: ClassId, level: number, rarity: 'common' | 'uncommon' | 'rare' = 'uncommon', seed = 7): Character {
+/**
+ * A hero of a level with a full set of gear of that level, a specialization (from level 10) and every
+ * talent point spent, down its tree first.
+ */
+export function readyHero(cls: ClassId, level: number, rarity: 'common' | 'uncommon' | 'rare' = 'uncommon', seed = 7, spec: 0 | 1 | 2 = 0): Character {
   const c = newCharacter(cls, 'Bot', 'bot', 0);
   let need = 0;
-  while (c.level < level && need++ < 100) addXp(c, xpToNext(c.level));
+  while (c.level < level && need++ < 200) addXp(c, xpToNext(c.level));
   const r = rng(seed);
   for (const slot of SLOTS) c.equip[slot] = rollGear(cls, level, rarity, r, slot);
-  // spend points down the first tree, then the second
-  for (let guard = 0; freePoints(c) > 0 && guard < 200; guard++) {
-    const node = TALENTS[cls].find((n) => learnTalent(c, n.id));
+  if (c.level >= SPEC_LEVEL) chooseSpec(c, spec);
+  for (let guard = 0; freePoints(c) > 0 && guard < 400; guard++) {
+    const node = [...TALENTS[cls]].sort((a, b) => (a.tree === spec ? 0 : 1) - (b.tree === spec ? 0 : 1) || a.row - b.row).find((n) => learnTalent(c, n.id));
     if (!node) break;
   }
   return c;
@@ -65,8 +68,8 @@ const tileOf = (w: World, x: number, y: number): number => Math.floor(y / TILE) 
  * reachable (null = stand still).
  */
 export function play(w: World, o: { seconds: number; done: (w: World) => boolean; goal?: (w: World) => { x: number; y: number } | null; maxDeaths?: number; trace?: (w: World, info: string) => void }): BotResult {
-  const melee = w.hero.cls === 'warrior';
-  const keep = melee ? 10 : 62;
+  // melee classes (and a druid in a shape) close in; the others keep their distance
+  const isMelee = (): boolean => w.build.skills[w.build.bar.basic ?? '']?.spec.cast === 'melee';
   const res: BotResult = { time: 0, deaths: 0, kills: 0, bossesDown: [], events: [], lowest: 1, stuck: false, bossTimes: {} };
   const bossStart: Record<string, number> = {};
   let fromHero: Int16Array = new Int16Array(w.map.w * w.map.h);
@@ -131,6 +134,8 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         my = ay / l;
         if (danger.dur - danger.t < 0.35 && p.cds.dodge.charges > 0) f.casts.push({ slot: 'dodge', angle: Math.atan2(my, mx), dist: null, assist: 0 });
       } else if (target) {
+        const melee = isMelee();
+        const keep = melee ? 10 : 62;
         const d = Math.hypot(target.x - p.x, target.y - p.y);
         const step = flowStep(w.map, toTarget, p.x, p.y);
         if (d > keep + target.r + 30 || (step && d > keep + target.r)) {
@@ -169,7 +174,8 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         const reach = (slot: SlotKey): boolean => {
           const id = w.build.bar[slot];
           const spec = id ? w.build.skills[id]?.spec : undefined;
-          if (!spec || spec.cast === 'blink') return false;
+          if (!spec || spec.cast === 'blink' || spec.cast === 'form') return false;
+          if (spec.cast === 'buff' || spec.cast === 'summon') return d < 120;
           if (spec.cast === 'melee' || spec.cast === 'nova' || spec.aim === 'self') return d < Math.max(spec.area, 18) + target!.r + 6;
           if (spec.cast === 'dash') return d > 30 && d < spec.range;
           return d < Math.max(60, spec.range * 0.9);

@@ -3,11 +3,11 @@ import { BASE_DEFS, ITEM_DEFS, MINOR_MODS } from '../data/items';
 import { QUEST_DEFS } from '../data/quests';
 import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
-import { TALENTS } from '../data/talents';
+import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { BAG_OVERFLOW, BAG_SIZE, learnedSkills, POTION_CAP, START_POTIONS, startQuests, talentPoints, type Character } from './character';
+import { BAG_OVERFLOW, BAG_SIZE, learnedSkills, pointsInTree, POTION_CAP, START_POTIONS, startQuests, talentPoints, type Character } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 
 /**
@@ -28,7 +28,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -125,7 +125,7 @@ export function validateItem(v: unknown): Item | null {
   const authored = ITEM_DEFS[o.base];
   const base = BASE_DEFS[o.base];
   if (!authored && !base) return null;
-  const il = int(o.il, 1, 40, 1);
+  const il = int(o.il, 1, 70, 1);
   const r = authored ? authored.rarity : RARITIES.includes(o.r as never) ? (o.r as Item['r']) : 'common';
   if (!authored && (r === 'epic' || r === 'legendary')) return null;
   const item: Item = { uid: o.uid.slice(0, 24), base: o.base, r, il, st: [] };
@@ -161,6 +161,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     restock: int(o.restock, 0, 1e6, 0),
     sold: Array.isArray(o.sold) ? o.sold.filter((x): x is string => typeof x === 'string' && x.length <= 24).slice(0, 80) : [],
     talents: {},
+    spec: level >= SPEC_LEVEL && (o.spec === 0 || o.spec === 1 || o.spec === 2) ? o.spec : null,
     skills: [null, null, null],
     equip: {},
     bag: [],
@@ -175,7 +176,8 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     created: int(o.created, 0, 4e12, Date.now()),
     updated: int(o.updated, 0, 4e12, Date.now()),
   };
-  // talents: known nodes, ranks within limits; more points than the level allows resets them all
+  // talents: known nodes, ranks within limits, and a spend the rules allow (more points than the level
+  // gives, or points where the specialization doesn't open them yet, resets them all)
   const t = obj(o.talents) ?? {};
   let spent = 0;
   for (const node of TALENTS[cls]) {
@@ -185,7 +187,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
       spent += r;
     }
   }
-  if (spent > talentPoints(c)) c.talents = {};
+  if (spent > talentPoints(c) || !talentsLegal(c)) c.talents = {};
   // skills: only learned skills of this class
   const learned = learnedSkills(c);
   if (Array.isArray(o.skills)) {
@@ -233,11 +235,40 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   return c;
 }
 
+/** Whether a hero's talents could have been learned in some order under the rules (spec first, rows). */
+function talentsLegal(c: Character): boolean {
+  const spent = Object.values(c.talents).reduce((a, b) => a + b, 0);
+  if (!spent) return true;
+  if (c.spec === null) return false;
+  for (const tree of [0, 1, 2] as const) {
+    const nodes = TALENTS[c.cls].filter((n) => n.tree === tree && (c.talents[n.id] ?? 0) > 0);
+    if (nodes.length && tree !== c.spec && pointsInTree(c, c.spec) < SPEC_FOCUS) return false;
+    // each taken row needs the points below it in the same tree
+    for (const n of nodes) {
+      const below = TALENTS[c.cls].filter((m) => m.tree === tree && m.row < n.row).reduce((a, m) => a + (c.talents[m.id] ?? 0), 0);
+      if (below < n.row * ROW_COST) return false;
+      if (n.requires && !(c.talents[n.requires] ?? 0)) return false;
+    }
+  }
+  return true;
+}
+
 /** Brings an older save up to date. Returns null for something that is not a Sigilfall save. */
 export function migrate(raw: unknown): SaveFile | null {
   const o = obj(raw);
   if (!o || typeof o.v !== 'number') return null;
-  // (version 1 is the first: future versions add steps here, oldest first)
+  // version 2: three talent trees and specializations replaced the two old trees; every hero gets
+  // their points back (talents open at level 10 now, with the specialization)
+  if (o.v === 1) {
+    for (const h of Array.isArray(o.heroes) ? o.heroes : []) {
+      const hero = obj(h);
+      if (hero) {
+        hero.talents = {};
+        hero.spec = null;
+      }
+    }
+    o.v = 2;
+  }
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];
   const list = Array.isArray(o.heroes) ? o.heroes : [];

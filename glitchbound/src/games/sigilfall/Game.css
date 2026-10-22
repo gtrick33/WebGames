@@ -553,9 +553,9 @@
 }
 .rb-classes {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  max-width: 900px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 980px;
   margin: 12px auto;
 }
 .rb-class {
@@ -723,6 +723,37 @@
   position: absolute;
   inset: 0 auto 0 0;
   background: linear-gradient(#8fd0ff, #3a8fe8 60%, #2a6cc0);
+}
+.rb-mp.is-rage {
+  background: #3a0e12;
+}
+.rb-mp.is-rage i {
+  background: linear-gradient(#ff8a7a, #e0403a 60%, #a82420);
+}
+.rb-mp.is-focus,
+.rb-mp.is-energy {
+  background: #3a2a0e;
+}
+.rb-mp.is-focus i,
+.rb-mp.is-energy i {
+  background: linear-gradient(#ffe0a0, #e8b04a 60%, #b07a20);
+}
+/* Holy Power: five gems that light up */
+.rb-pips {
+  display: flex;
+  gap: 3px;
+  height: 11px;
+}
+.rb-pips i {
+  flex: 1;
+  border: 2px solid var(--rb-ink);
+  border-radius: 3px;
+  background: #3a2e10;
+  transition: background 0.15s;
+}
+.rb-pips i.is-on {
+  background: linear-gradient(#fff2b0, #ffd84d 60%, #c99a20);
+  box-shadow: 0 0 6px rgb(255 216 77 / 0.6);
 }
 .rb-mp em {
   position: absolute;
@@ -1674,24 +1705,97 @@
   color: var(--tc);
   text-shadow: 1px 1px 0 var(--rb-ink);
 }
+.rb-tree-tabs button {
+  border-bottom: 3px solid transparent;
+}
+.rb-tree-tabs button.is-on {
+  border-bottom-color: var(--tc);
+}
+.rb-tree-wrap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.rb-tree.is-locked .rb-tree-grid {
+  opacity: 0.55;
+}
+/* seven rows of four, with the points each row needs down the left */
 .rb-tree-grid {
   display: grid;
-  grid-template-columns: repeat(3, 56px);
-  grid-template-rows: repeat(4, 58px);
-  gap: 6px 14px;
+  grid-template-columns: 22px repeat(4, 44px);
+  grid-template-rows: repeat(7, 46px);
+  gap: 6px 10px;
   justify-content: center;
+}
+.rb-row-need {
+  grid-column: 1;
+  align-self: center;
+  font: 700 10px var(--mono);
+  color: #7a6a9a;
+  text-align: right;
+}
+.rb-node.is-full .rb-node-rank {
+  color: var(--rb-gold);
+}
+/* choosing a specialization */
+.rb-specs {
+  display: grid;
+  gap: 10px;
+}
+.rb-spec-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.rb-spec {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 10px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 22%, transparent), rgb(0 0 0 / 0.22));
+}
+.rb-spec.is-on {
+  box-shadow: 0 0 0 3px var(--tc);
+}
+.rb-spec header {
+  display: grid;
+}
+.rb-spec header strong {
+  color: var(--tc);
+  font-size: 17px;
+  text-shadow: 1px 1px 0 var(--rb-ink);
+}
+.rb-spec p {
+  margin: 0;
+}
+.rb-spec-skill {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.rb-spec-skill > span {
+  display: grid;
+}
+.rb-spec .rb-btn {
+  margin-top: auto;
 }
 .rb-node {
   position: relative;
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   border: 3px solid var(--rb-ink);
   border-radius: 10px;
   background: #241a36;
 }
 .rb-node img {
+  width: 36px;
+  height: 36px;
+  image-rendering: pixelated;
   filter: grayscale(0.8) brightness(0.7);
 }
 .rb-node.is-taken {
@@ -2027,13 +2131,23 @@
     padding: 8px 6px;
   }
   .rb-tree-grid {
-    grid-template-columns: repeat(3, 48px);
-    grid-template-rows: repeat(4, 50px);
-    gap: 4px 10px;
+    grid-template-columns: 18px repeat(4, 40px);
+    grid-template-rows: repeat(7, 42px);
+    gap: 4px 8px;
   }
   .rb-node {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
+  }
+  .rb-node img {
+    width: 32px;
+    height: 32px;
+  }
+  .rb-tree-wrap {
+    grid-template-columns: 1fr;
+  }
+  .rb-spec-cards {
+    grid-template-columns: 1fr;
   }
   .rb-tracker {
     font-size: 11.5px;
@@ -2048,7 +2162,13 @@
     grid-template-columns: 1fr;
   }
   .rb-classes {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .rb-class strong {
+    font-size: 15px;
+  }
+  .rb-class .rb-dim {
+    font-size: 11px;
   }
   .rb-hero {
     grid-template-columns: 1fr;

@@ -1,8 +1,9 @@
 import { angleDiff, clamp, dist, TAU } from '../core/math';
 import { hasStatus, hurtPlayer, tickStatuses } from './combat';
+import { hurtPet } from './pets';
 import { circleHitsWall, flowStep, lineOfSight, moveCircle, pushOut } from './map';
 import { updateBoss } from './boss';
-import type { Enemy } from './types';
+import type { Enemy, Pet } from './types';
 import type { World } from './world';
 
 /**
@@ -42,7 +43,7 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
     updateBoss(w, e, dt);
     return;
   }
-  const p = w.player;
+  const p = victimOf(w, e);
   const stunned = hasStatus(e, 'stun') || hasStatus(e, 'freeze');
   const rooted = hasStatus(e, 'root');
   const chill = e.statuses.find((s) => s.id === 'chill');
@@ -60,6 +61,15 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
       e.t = 0.2;
     }
     applyMove(w, e, 0, 0, dt);
+    return;
+  }
+  e.victimT -= dt;
+  if (hasStatus(e, 'fear')) {
+    // terrified: runs from the hero and attacks nothing
+    const a = Math.atan2(e.y - w.player.y, e.x - w.player.x) + Math.sin(w.time * 3 + e.id) * 0.5;
+    if (e.state === 'windup' || e.state === 'act') e.state = 'chase';
+    e.aggro = true;
+    applyMove(w, e, Math.cos(a) * speed * 0.85, Math.sin(a) * speed * 0.85, dt);
     return;
   }
 
@@ -197,7 +207,7 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
       e.rushLeft -= step;
       if (!e.rushHit && !p.dead && dist(e.x, e.y, p.x, p.y) < e.r + p.r + 2) {
         e.rushHit = true;
-        hurtPlayer(w, e.dmg * (e.def.ai === 'hopper' ? 1 : 1.25), { fromX: e.x, fromY: e.y, knock: 130, source: e });
+        hurtVictim(w, p, e.dmg * (e.def.ai === 'hopper' ? 1 : 1.25), { fromX: e.x, fromY: e.y, knock: 130, source: e });
       }
       if (e.def.ai === 'charger' && (w.rand() < 0.5)) w.addFx({ kind: 'smoke', x: e.x, y: e.y + e.r * 0.6, life: 0.3, size: 3, color: '#b9a58a' });
       if (res.bx || res.by) {
@@ -277,12 +287,59 @@ function applyMove(w: World, e: Enemy, vx: number, vy: number, dt: number): void
   e.y = res.y;
 }
 
+/** Who an enemy is after: the hero, or a companion. */
+interface Victim {
+  x: number;
+  y: number;
+  r: number;
+  dead: boolean;
+  pet: Pet | null;
+}
+
 /**
- * Toward the player: straight when the way is clear for the enemy's whole body, along the flow field
+ * The enemy's target. Bosses always fight the hero. Others look again every second: a taunting
+ * companion near them draws them (it counts as much closer), otherwise the nearest of the hero and
+ * the companions; with the hero down, a companion still standing.
+ */
+function victimOf(w: World, e: Enemy): Victim {
+  const p = w.player;
+  const hero: Victim = { x: p.x, y: p.y, r: p.r, dead: p.dead, pet: null };
+  if (e.boss || !w.pets.length) return hero;
+  if (e.victimT <= 0) {
+    e.victimT = 1;
+    let best = p.dead ? Infinity : dist(e.x, e.y, p.x, p.y);
+    e.victim = 0;
+    for (const pet of w.pets) {
+      if (pet.dead) continue;
+      const d = dist(e.x, e.y, pet.x, pet.y);
+      if (d > e.def.aggro) continue;
+      const score = d * (pet.def.taunt ? 0.45 : 1.3);
+      if (score < best) {
+        best = score;
+        e.victim = pet.id;
+      }
+    }
+  }
+  const pet = e.victim ? w.pets.find((x) => x.id === e.victim && !x.dead) : undefined;
+  if (!pet) {
+    e.victim = 0;
+    return hero;
+  }
+  return { x: pet.x, y: pet.y, r: pet.r, dead: false, pet };
+}
+
+/** An enemy's blow lands on whoever it was after. */
+function hurtVictim(w: World, v: Victim, dmg: number, o: Parameters<typeof hurtPlayer>[2]): void {
+  if (v.pet) hurtPet(w, v.pet, dmg);
+  else hurtPlayer(w, dmg, o);
+}
+
+/**
+ * Toward the target: straight when the way is clear for the enemy's whole body, along the flow field
  * otherwise (so a big enemy doesn't walk into a pillar the player is behind).
  */
 function steer(w: World, e: Enemy, los: boolean): { x: number; y: number } {
-  const p = w.player;
+  const p = victimOf(w, e);
   if (los && clearPath(w, e.x, e.y, p.x, p.y, e.r * 0.9)) {
     const a = Math.atan2(p.y - e.y, p.x - e.x);
     return { x: Math.cos(a), y: Math.sin(a) };
@@ -300,7 +357,7 @@ function clearPath(w: World, x0: number, y0: number, x1: number, y1: number, r: 
 }
 
 function startWindup(w: World, e: Enemy): void {
-  const p = w.player;
+  const p = victimOf(w, e);
   e.state = 'windup';
   e.t = e.def.windup;
   e.aimA = Math.atan2(p.y - e.y, p.x - e.x);
@@ -321,11 +378,11 @@ function startWindup(w: World, e: Enemy): void {
 }
 
 function act(w: World, e: Enemy): void {
-  const p = w.player;
+  const p = victimOf(w, e);
   switch (e.def.ai) {
     case 'melee': {
       w.addFx({ kind: 'slash', x: e.x, y: e.y, a: e.aimA, a2: 1.8, life: 0.15, size: e.def.reach + 6, color: '#ff8a8a', r2: 0 });
-      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= e.def.reach + p.r + e.r + 4 && Math.abs(angleDiff(e.aimA, Math.atan2(p.y - e.y, p.x - e.x))) < 1.1) hurtPlayer(w, e.dmg, { fromX: e.x, fromY: e.y, knock: 80, source: e });
+      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= e.def.reach + p.r + e.r + 4 && Math.abs(angleDiff(e.aimA, Math.atan2(p.y - e.y, p.x - e.x))) < 1.1) hurtVictim(w, p, e.dmg, { fromX: e.x, fromY: e.y, knock: 80, source: e });
       w.sfx('enemySwing', 0.5);
       e.state = 'recover';
       e.t = e.def.recover;
@@ -343,7 +400,9 @@ function act(w: World, e: Enemy): void {
       w.fxBurst(e.x, e.y + 4, '#a89070', 10, r);
       w.shake(2);
       w.sfx('slam', 0.6);
-      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= r + p.r * 0.5) hurtPlayer(w, e.dmg * 1.2, { fromX: e.x, fromY: e.y, knock: 120, source: e });
+      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= r + p.r * 0.5) hurtVictim(w, p, e.dmg * 1.2, { fromX: e.x, fromY: e.y, knock: 120, source: e });
+      // a slam also catches companions standing in it
+      for (const pet of w.pets) if (!pet.dead && pet !== p.pet && dist(e.x, e.y, pet.x, pet.y) <= r + pet.r * 0.5) hurtPet(w, pet, e.dmg * 1.2);
       e.state = 'recover';
       e.t = e.def.recover;
       break;

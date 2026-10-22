@@ -5,6 +5,7 @@
  * every boss can be beaten by every class.
  */
 import { describe, expect, it } from 'vitest';
+import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import type { World } from '../src/games/sigilfall/sim/world';
@@ -26,7 +27,7 @@ const modest = (cls: ClassId, level: number) => {
   return c;
 };
 
-const CLASSES: ClassId[] = ['mage', 'warrior', 'ranger'];
+const CLASSES: ClassId[] = CLASS_IDS;
 
 describe('sigilfall play-throughs', () => {
   for (const cls of CLASSES) {

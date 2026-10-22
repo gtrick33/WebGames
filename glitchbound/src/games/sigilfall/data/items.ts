@@ -525,6 +525,17 @@ export const BASES: ItemBase[] = [
   { id: 'spell-tome', name: 'Spell Tome', slot: 'offhand', cls: 'mage', icon: 'tome', tint: '#7a5ad0' },
   { id: 'kite-shield', name: 'Kite Shield', slot: 'offhand', cls: 'warrior', icon: 'shield', tint: '#8a93a8', implicit: { stat: 'armor', base: 4, per: 1 } },
   { id: 'quiver', name: 'Quiver', slot: 'offhand', cls: 'ranger', icon: 'quiver', tint: '#9a6a3a' },
+  { id: 'dark-staff', name: 'Dark Staff', slot: 'weapon', cls: 'warlock', icon: 'staff', tint: '#6a3a8a', implicit: { stat: 'power', base: 4, per: 1.1 } },
+  { id: 'bone-wand', name: 'Bone Wand', slot: 'weapon', cls: 'warlock', icon: 'wand', tint: '#d8d0b0', implicit: { stat: 'power', base: 3, per: 1 } },
+  { id: 'grimoire', name: 'Grimoire', slot: 'offhand', cls: 'warlock', icon: 'tome', tint: '#5a2a6a', implicit: { stat: 'pet', base: 4, per: 0.8 } },
+  { id: 'holy-staff', name: 'Holy Staff', slot: 'weapon', cls: 'priest', icon: 'staff', tint: '#e8d8a0', implicit: { stat: 'power', base: 4, per: 1.1 } },
+  { id: 'mace', name: 'Mace', slot: 'weapon', cls: 'priest', icon: 'hammer', tint: '#c8ccd8', implicit: { stat: 'power', base: 4, per: 1.05 } },
+  { id: 'prayer-book', name: 'Prayer Book', slot: 'offhand', cls: 'priest', icon: 'tome', tint: '#f2ece0', implicit: { stat: 'healing', base: 4, per: 0.5 } },
+  { id: 'warhammer', name: 'Warhammer', slot: 'weapon', cls: 'paladin', icon: 'hammer', tint: '#d8c890', implicit: { stat: 'power', base: 5, per: 1.2 } },
+  { id: 'longsword', name: 'Longsword', slot: 'weapon', cls: 'paladin', icon: 'sword', tint: '#e8e4d8', implicit: { stat: 'power', base: 4, per: 1.1 } },
+  { id: 'tower-shield', name: 'Tower Shield', slot: 'offhand', cls: 'paladin', icon: 'shield', tint: '#e8c050', implicit: { stat: 'armor', base: 4, per: 1 } },
+  { id: 'gnarled-staff', name: 'Gnarled Staff', slot: 'weapon', cls: 'druid', icon: 'staff', tint: '#7a5a2a', implicit: { stat: 'power', base: 4, per: 1.1 } },
+  { id: 'idol', name: 'Idol', slot: 'offhand', cls: 'druid', icon: 'orb', tint: '#7bd65a', implicit: { stat: 'haste', base: 2, per: 0.4 } },
   { id: 'cloth-hood', name: 'Hood', slot: 'head', icon: 'hood', tint: '#5a6aa0' },
   { id: 'iron-helm', name: 'Helm', slot: 'head', icon: 'helm', tint: '#a8aec0', implicit: { stat: 'armor', base: 2, per: 0.6 } },
   { id: 'leather-cap', name: 'Cap', slot: 'head', icon: 'cap', tint: '#8a5a3a' },
@@ -580,6 +591,11 @@ export const STAT_ROLL: Record<StatKey, { base: number; per: number; max?: numbe
   lightning: { base: 3, per: 1.1 },
   poison: { base: 3, per: 1.1 },
   arcane: { base: 3, per: 1.1 },
+  shadow: { base: 3, per: 1.1 },
+  holy: { base: 3, per: 1.1 },
+  nature: { base: 3, per: 1.1 },
+  healing: { base: 3, per: 0.6, max: 40 },
+  pet: { base: 4, per: 1, max: 60 },
 };
 
 export const RARITY_MUL: Record<Rarity, number> = { common: 0.8, uncommon: 1, rare: 1.15, epic: 1.3, legendary: 1.45 };
@@ -591,6 +607,10 @@ export const CLASS_ELEMENTS: Record<ClassId, StatKey[]> = {
   mage: ['fire', 'frost', 'lightning', 'arcane'],
   warrior: ['physical'],
   ranger: ['physical', 'poison'],
+  warlock: ['shadow', 'fire'],
+  priest: ['holy', 'shadow'],
+  paladin: ['holy', 'physical'],
+  druid: ['nature', 'arcane', 'physical'],
 };
 
 /** Small skill modifiers rare generated gear can roll (one each), by class. Kept modest: hand-made items are the stars. */
@@ -617,6 +637,28 @@ export const MINOR_MODS: { cls: ClassId; skill: string; op: SkillOp }[] = [
   { cls: 'ranger', skill: 'hunters-mark', op: { op: 'cooldown', pct: 15 } },
   { cls: 'ranger', skill: 'arrow', op: { op: 'damage', pct: 15 } },
   { cls: 'ranger', skill: 'arrow-rain', op: { op: 'area', pct: 20 } },
+  // the classes added later go at the end: saves keep a mod by its place in this list
+  { cls: 'warlock', skill: 'shadow-bolt', op: { op: 'damage', pct: 15 } },
+  { cls: 'warlock', skill: 'corruption', op: { op: 'damage', pct: 20 } },
+  { cls: 'warlock', skill: 'drain-life', op: { op: 'duration', pct: 25 } },
+  { cls: 'warlock', skill: 'rain-of-fire', op: { op: 'area', pct: 20 } },
+  { cls: 'warlock', skill: 'fear', op: { op: 'cooldown', pct: 15 } },
+  { cls: 'priest', skill: 'smite', op: { op: 'damage', pct: 15 } },
+  { cls: 'priest', skill: 'holy-nova', op: { op: 'area', pct: 20 } },
+  { cls: 'priest', skill: 'shadow-word-pain', op: { op: 'damage', pct: 20 } },
+  { cls: 'priest', skill: 'mind-blast', op: { op: 'cooldown', pct: 12 } },
+  { cls: 'priest', skill: 'power-word-shield', op: { op: 'cooldown', pct: 15 } },
+  { cls: 'paladin', skill: 'crusader-strike', op: { op: 'damage', pct: 15 } },
+  { cls: 'paladin', skill: 'judgment', op: { op: 'damage', pct: 20 } },
+  { cls: 'paladin', skill: 'consecration', op: { op: 'area', pct: 20 } },
+  { cls: 'paladin', skill: 'divine-storm', op: { op: 'damage', pct: 20 } },
+  { cls: 'paladin', skill: 'hammer-of-justice', op: { op: 'cooldown', pct: 15 } },
+  { cls: 'druid', skill: 'wrath', op: { op: 'damage', pct: 15 } },
+  { cls: 'druid', skill: 'moonfire', op: { op: 'damage', pct: 20 } },
+  { cls: 'druid', skill: 'starfire', op: { op: 'damage', pct: 20 } },
+  { cls: 'druid', skill: 'rejuvenation', op: { op: 'duration', pct: 25 } },
+  { cls: 'druid', skill: 'claw', op: { op: 'damage', pct: 15 } },
+  { cls: 'druid', skill: 'maul', op: { op: 'damage', pct: 15 } },
 ];
 
 /** Name words for generated gear, by its strongest stat. */
@@ -638,6 +680,11 @@ export const STAT_WORD: Record<StatKey, string> = {
   lightning: 'Crackling',
   poison: 'Venomous',
   arcane: 'Arcane',
+  shadow: 'Shadowed',
+  holy: 'Hallowed',
+  nature: 'Verdant',
+  healing: 'Blessed',
+  pet: 'Bestial',
 };
 
 /** Suffixes for rare generated gear. */

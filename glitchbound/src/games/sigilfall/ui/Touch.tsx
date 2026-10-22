@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PointerEvent as RPointerEvent } from 'react';
+import { skillCost } from '../sim/cast';
 import { CLASSES } from '../data/classes';
 import { SKILLS } from '../data/skills';
 import type { SlotKey } from '../data/types';
@@ -172,7 +173,7 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
       return;
     }
     const spec = id ? world.build.skills[id]?.spec : undefined;
-    b.classList.toggle('is-nomana', !!spec && spec.cost > 0 && p.maxMana > 0 && (spec.cost * p.maxMana) / 100 > p.mana);
+    b.classList.toggle('is-nomana', !!spec && skillCost(world, spec, slot) > p.mana + 1e-6);
     const cd = p.cds[slot];
     const empty = cd.charges <= 0;
     const share = empty ? Math.max(0, cd.t / Math.max(0.01, cd.cd)) : 0;

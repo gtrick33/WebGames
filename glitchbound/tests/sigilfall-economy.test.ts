@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { CLASSES } from '../src/games/sigilfall/data/classes';
+import { CLASS_IDS, CLASSES } from '../src/games/sigilfall/data/classes';
 import { SKILLS } from '../src/games/sigilfall/data/skills';
 import { QM_LEVEL } from '../src/games/sigilfall/data/vendors';
 import { POTION_CAP } from '../src/games/sigilfall/progress/character';
 import { itemSlot } from '../src/games/sigilfall/progress/items';
 import { emptySave, loadSave, writeSave } from '../src/games/sigilfall/progress/save';
 import { buyItem, buyPotions, cantBuy, potionPrice, restock, stockFor } from '../src/games/sigilfall/progress/shop';
-import { hitEnemy } from '../src/games/sigilfall/sim/combat';
+import { hitEnemy, hurtPlayer } from '../src/games/sigilfall/sim/combat';
 import { tryCast } from '../src/games/sigilfall/sim/cast';
 import { emptyInput } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
@@ -41,10 +41,36 @@ describe('sigilfall mana', () => {
     expect(p.mana).toBeGreaterThan(before);
   });
 
-  it('classes without mana cast on cooldowns alone', () => {
+  it('rage: a warrior starts with none, earns it by hitting and being hit, spends it, and it fades after the fight', () => {
     const w = newWorld('whisperwood', readyHero('warrior', 6));
-    expect(w.player.maxMana).toBe(0);
+    const p = w.player;
+    expect(p.maxMana).toBe(100);
+    expect(p.mana).toBe(0);
+    // Heavy Strike needs 20
+    expect(w.build.bar.s1).toBe('heavy-strike');
+    expect(tryCast(w, { slot: 's1', angle: 0, dist: null, assist: 0 })).toBe(false);
+    w.enemies = [];
+    const e = w.addEnemy('moss-slime', p.x + 14, p.y, 3, { room: -1, pack: 0 });
+    e.hp = e.maxHp = 1e6;
+    e.state = 'chase';
+    p.aim = 0;
+    // a swing that connects gives rage
+    expect(tryCast(w, { slot: 'basic', angle: 0, dist: null, assist: 0 })).toBe(true);
+    expect(p.mana).toBe(6);
+    // so does taking a hit
+    p.iframe = 0;
+    hurtPlayer(w, p.maxHp * 0.2, {});
+    expect(p.mana).toBeGreaterThan(11);
+    p.mana = 25;
     expect(tryCast(w, { slot: 's1', angle: 0, dist: null, assist: 0 })).toBe(true);
+    step(w, 0.5);
+    expect(p.mana).toBeLessThanOrEqual(5);
+    // out of the fight it fades away
+    p.mana = 50;
+    w.enemies = [];
+    p.calm = 10;
+    step(w, 4);
+    expect(p.mana).toBeLessThan(40);
   });
 
   it('out of combat, health and mana come back fast; in combat they don’t', () => {
@@ -164,6 +190,6 @@ describe('sigilfall aiming', () => {
   });
 
   it('dodges have real cooldowns', () => {
-    for (const cls of ['mage', 'warrior', 'ranger'] as const) expect(SKILLS[CLASSES[cls].dodge]!.base.cooldown).toBeGreaterThanOrEqual(4.5);
+    for (const cls of CLASS_IDS) expect(SKILLS[CLASSES[cls].dodge]!.base.cooldown).toBeGreaterThanOrEqual(4.5);
   });
 });

@@ -1,5 +1,6 @@
+import { PETS } from '../data/pets';
 import { SKILLS } from '../data/skills';
-import type { DmgType, Effect, GroundSpec, Mod, ProcDef, SkillOp, StatKey, StatusId } from '../data/types';
+import type { BuffDef, DmgType, Effect, GroundSpec, Mod, ProcDef, SkillOp, StatKey, StatusId } from '../data/types';
 
 /**
  * Plain-language text for stats, effects and modifiers, generated from the same data the simulation
@@ -24,9 +25,14 @@ export const STAT_LABEL: Record<StatKey, string> = {
   lightning: 'Lightning damage',
   poison: 'Poison damage',
   arcane: 'Arcane damage',
+  shadow: 'Shadow damage',
+  holy: 'Holy damage',
+  nature: 'Nature damage',
+  healing: 'Healing',
+  pet: 'Companion damage and health',
 };
 
-const PERCENT = new Set<StatKey>(['hpPct', 'power', 'crit', 'critDmg', 'haste', 'speed', 'ultCharge', 'potion', 'physical', 'fire', 'frost', 'lightning', 'poison', 'arcane']);
+const PERCENT = new Set<StatKey>(['hpPct', 'power', 'crit', 'critDmg', 'haste', 'speed', 'ultCharge', 'potion', 'physical', 'fire', 'frost', 'lightning', 'poison', 'arcane', 'shadow', 'holy', 'nature', 'healing', 'pet']);
 
 export function fmtStat(stat: StatKey, v: number): string {
   const n = stat === 'regen' ? v.toFixed(1) : String(Math.round(v));
@@ -45,9 +51,12 @@ export const STATUS_NAME: Record<StatusId, string> = {
   armorBreak: 'Armor Broken',
   mark: 'Marked',
   weaken: 'Weakened',
+  bleed: 'Bleeding',
+  curse: 'Cursed',
+  fear: 'Feared',
 };
 
-export const DMG_NAME: Record<DmgType, string> = { physical: 'physical', fire: 'fire', frost: 'frost', lightning: 'lightning', poison: 'poison', arcane: 'arcane' };
+export const DMG_NAME: Record<DmgType, string> = { physical: 'physical', fire: 'fire', frost: 'frost', lightning: 'lightning', poison: 'poison', arcane: 'arcane', shadow: 'shadow', holy: 'holy', nature: 'nature' };
 
 const pct = (v: number): string => `${Math.round(v * 100)}%`;
 const secs = (v: number): string => `${Number.isInteger(v) ? v : v.toFixed(1)} s`;
@@ -74,6 +83,12 @@ function statusText(s: StatusId, dur: number, power: number): string {
       return `marks (+${Math.round(power)}% damage taken from you for ${secs(dur)})`;
     case 'weaken':
       return `weakens (${Math.round(power)}% less damage dealt for ${secs(dur)})`;
+    case 'bleed':
+      return `makes enemies Bleed (${pct(power)} of the hit per second for ${secs(dur)}, through armor)`;
+    case 'curse':
+      return `curses (${pct(power)} of the hit as damage over time per second, ${secs(dur)})`;
+    case 'fear':
+      return `terrifies: enemies run from you for ${secs(dur)}`;
   }
 }
 
@@ -112,7 +127,26 @@ export function effectText(e: Effect): string {
       return `charges your ultimate by ${Math.round(e.pct)}%`;
     case 'riftBurst':
       return `tears a rift that bursts after ${secs(e.delay)}`;
+    case 'buff':
+      return buffText(e.buff);
+    case 'resource':
+      return `gives ${e.n} ${e.n === 1 ? 'point' : 'points'} of your resource`;
+    case 'fear':
+      return `terrifies enemies around it for ${secs(e.dur)}`;
+    case 'summon':
+      return `calls ${e.count === 1 ? `a ${PETS[e.pet]?.name ?? 'companion'}` : `${e.count} ${PETS[e.pet]?.name ?? 'companion'}s`}${e.dur ? ` for ${secs(e.dur)}` : ''}`;
+    case 'sacrifice':
+      return `costs you ${Math.round(e.pct)}% of your health`;
   }
+}
+
+/** A buff, as a clause: "for 8 s: +20% Damage, 30% less damage taken". */
+export function buffText(b: BuffDef): string {
+  const parts: string[] = [];
+  for (const [k, v] of Object.entries(b.stats ?? {})) if (v) parts.push(fmtStat(k as StatKey, v));
+  if (b.dr) parts.push(`${Math.round(b.dr)}% less damage taken`);
+  if (b.hot) parts.push(`heals ${b.hot}% of your health per second`);
+  return `${b.name} for ${secs(b.dur)}: ${parts.join(', ')}`;
 }
 
 const skillName = (id: string): string => (id === '*' ? 'Every skill' : id === 'dodge' ? 'Your dodge' : id === 'basic' ? 'Your basic attack' : SKILLS[id]?.name ?? id);
@@ -159,6 +193,10 @@ export function opText(skill: string, op: SkillOp): string {
       return `${s} deals +${op.pct}% damage to ${op.status === 'lowHp' ? 'enemies below 30% health' : `${STATUS_NAME[op.status]} enemies`}.`;
     case 'afterDodge':
       return `${s} deals +${op.pct}% damage within ${secs(op.window)} after a dodge.`;
+    case 'gen':
+      return `${s} gives ${op.n} more of your resource.`;
+    case 'cost':
+      return `${s} costs ${op.pct}% less.`;
   }
 }
 

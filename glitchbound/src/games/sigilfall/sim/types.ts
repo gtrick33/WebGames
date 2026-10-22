@@ -1,5 +1,6 @@
 import type { BossDef, PatternUse } from '../data/bosses';
-import type { DmgType, EliteAffix, EnemyDef, GroundSpec, Item, SkillSpec, SlotKey, StatusId } from '../data/types';
+import type { PetDef } from '../data/pets';
+import type { BuffDef, DmgType, EliteAffix, EnemyDef, GroundSpec, Item, SkillSpec, SlotKey, StatusId } from '../data/types';
 
 /** Runtime state of everything in a region. Positions are pixels; times are seconds. */
 
@@ -14,6 +15,8 @@ export interface Status {
   stack?: number;
   /** Damage over time came from the player. */
   fromPlayer?: boolean;
+  /** A curse's damage type. */
+  dtype?: DmgType;
 }
 
 export interface Cooldown {
@@ -28,7 +31,7 @@ export interface Cooldown {
 export interface Player {
   x: number;
   y: number;
-  /** Mana (classes with a resource; 0 / 0 otherwise). */
+  /** The class's resource (mana, rage, energy, focus or Holy Power; 0 / 0 for a class without one). */
   mana: number;
   maxMana: number;
   vx: number;
@@ -45,7 +48,12 @@ export interface Player {
   iframe: number;
   dash: { vx: number; vy: number; t: number; spec: SkillSpec | null; hit: Set<number>; dodge: boolean } | null;
   windup: { slot: SlotKey; spec: SkillSpec; t: number; total: number; angle: number; tx: number; ty: number } | null;
-  channel: { spec: SkillSpec; t: number; tickT: number } | null;
+  /** A channel: whirlwinds around the hero, or a drain on one enemy (`target`). */
+  channel: { spec: SkillSpec; t: number; tickT: number; target?: number } | null;
+  /** Timed buffs (shouts, walls, wings, healing over time). */
+  buffs: { def: BuffDef; t: number }[];
+  /** A druid's shape (a FormDef id), or null. */
+  form: string | null;
   cds: Record<SlotKey, Cooldown>;
   ult: number;
   combo: number;
@@ -148,6 +156,35 @@ export interface Enemy {
   scale: number;
   strafe: number;
   name: string;
+  /** Who it is after: 0 the hero, otherwise a pet's id; re-chosen every `victimT` seconds. */
+  victim: number;
+  victimT: number;
+}
+
+/** A companion fighting for the hero. */
+export interface Pet {
+  id: number;
+  def: PetDef;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  hp: number;
+  maxHp: number;
+  /** Base damage per attack (the hero's multipliers apply on top). */
+  dmg: number;
+  atkCd: number;
+  /** Seconds it has left (summons that fade), Infinity for one that stays. */
+  life: number;
+  target: number | null;
+  face: number;
+  walkT: number;
+  flash: number;
+  /** Swing or shot animation. */
+  actT: number;
+  dead: boolean;
+  deathT: number;
 }
 
 export interface Projectile {
@@ -178,6 +215,8 @@ export interface Projectile {
   knock: number;
   /** Rolls through walls' edges for a moment (quakes). */
   wide: boolean;
+  /** Zaps the nearest enemy every `zap` seconds as it flies (Ball Lightning). */
+  zapT?: number;
   dead: boolean;
 }
 

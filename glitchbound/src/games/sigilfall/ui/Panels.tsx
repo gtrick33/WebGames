@@ -4,16 +4,16 @@ import { ITEM_DEFS } from '../data/items';
 import { QUESTS } from '../data/quests';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { SKILLS } from '../data/skills';
-import { ROW_COST, TALENTS } from '../data/talents';
+import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/talents';
 import type { ClassId, Item, RegionId, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { BAG_SIZE, cantEquip, cantLearn, freePoints, learnedSkills, pointsInTree, questProgress, questState, respecCost, talentPoints, type Character } from '../progress/character';
+import { BAG_SIZE, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, questProgress, questState, respecCost, specCost, talentPoints, treeOpen, type Character } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
 import { rarityColor } from '../render/renderer';
-import { heroDollUrl, heroLook } from '../render/sprites';
+import { glyphIconUrl, heroDollUrl, heroLook } from '../render/sprites';
 import { K, TILE } from '../sim/map';
 import { objectiveTarget } from '../sim/objective';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
@@ -390,120 +390,173 @@ function SkillsPanel({ engine }: { engine: SigilEngine }) {
 
 /* ------------------------------------------------------------- talents */
 
-const TALENT_ICON: Record<string, string> = {
-  fire: 'fireball',
-  burn: 'fireball',
-  explode: 'meteor',
-  spread: 'meteor',
-  clock: 'blink',
-  meteor: 'meteor',
-  bolt: 'chain-lightning',
-  chain: 'chain-lightning',
-  nova: 'frost-nova',
-  crit: 'hunters-mark',
-  blink: 'blink',
-  storm: 'chain-lightning',
-  combo: 'cleave',
-  blood: 'heavy-strike',
-  heal: 'whirlwind',
-  skull: 'heavy-strike',
-  whirl: 'whirlwind',
-  armor: 'shield-bash',
-  shield: 'shield-bash',
-  counter: 'sidestep',
-  heart: 'shield-bash',
-  break: 'charge',
-  quake: 'earthsplitter',
-  mark: 'hunters-mark',
-  fan: 'multishot',
-  rain: 'arrow-rain',
-  poison: 'poison-trap',
-  trap: 'poison-trap',
-  fang: 'piercing-arrow',
-};
-
 function TalentsPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const cls = CLASSES[h.cls];
   const [sel, setSel] = useState<TalentNode | null>(null);
-  const [resetAsk, setResetAsk] = useState(false);
+  const [tab, setTab] = useState<0 | 1 | 2>(h.spec ?? 0);
+  const [ask, setAsk] = useState<'reset' | 'spec' | null>(null);
   const free = freePoints(h);
   const cost = respecCost(h);
-  const node = sel;
+  if (h.spec === null || ask === 'spec') return <SpecChoice engine={engine} onDone={() => setAsk(null)} />;
+  const tree = cls.trees[tab];
+  const open = treeOpen(h, tab);
+  const node = sel && sel.tree === tab ? sel : null;
   return (
     <div className="rb-talents">
       <div className="rb-talents-head">
         <span>
-          <b className={free ? 'rb-gold' : ''}>{free}</b> point{free === 1 ? '' : 's'} to spend · {talentPoints(h)} earned (one per level)
+          <b className={free ? 'rb-gold' : ''}>{free}</b> point{free === 1 ? '' : 's'} to spend · {talentPoints(h)} earned (one per level from {SPEC_LEVEL})
         </span>
-        {resetAsk ? (
-          <button className="rb-btn is-small is-danger" onClick={() => (engine.resetTalents(), setResetAsk(false))} disabled={h.gold < cost}>
-            {cost ? `Reset for ${cost} gold?` : 'Reset for free?'}
+        <span className="rb-row">
+          {ask === 'reset' ? (
+            <button className="rb-btn is-small is-danger" onClick={() => (engine.resetTalents(), setAsk(null))} disabled={h.gold < cost}>
+              {cost ? `Reset for ${cost} gold?` : 'Reset for free?'}
+            </button>
+          ) : (
+            <button className="rb-btn is-small is-ghost" onClick={() => setAsk('reset')} disabled={talentPoints(h) === free}>
+              Reset talents{cost ? ` (${cost} gold)` : ' (free until level 15)'}
+            </button>
+          )}
+          <button className="rb-btn is-small is-ghost" onClick={() => setAsk('spec')}>
+            Change specialization
           </button>
-        ) : (
-          <button className="rb-btn is-small is-ghost" onClick={() => setResetAsk(true)} disabled={talentPoints(h) === free}>
-            Reset talents{cost ? ` (${cost} gold)` : ' (free until level 5)'}
-          </button>
-        )}
+        </span>
       </div>
-      <div className="rb-trees">
-        {([0, 1] as const).map((tree) => (
-          <section key={tree} className="rb-tree" style={{ ['--tc' as string]: cls.trees[tree].color }}>
-            <header>
-              <strong>{cls.trees[tree].name}</strong>
-              <span className="rb-small rb-dim">
-                {cls.trees[tree].blurb} · {pointsInTree(h, tree)} pts
-              </span>
-            </header>
-            <div className="rb-tree-grid">
-              {TALENTS[h.cls]
-                .filter((n) => n.tree === tree)
-                .map((n) => {
-                  const rank = h.talents[n.id] ?? 0;
-                  const why = cantLearn(h, n.id);
-                  const open = pointsInTree(h, tree) >= n.row * ROW_COST && (!n.requires || (h.talents[n.requires] ?? 0) > 0);
-                  return (
-                    <button
-                      key={n.id}
-                      className={`rb-node${rank ? ' is-taken' : ''}${!why ? ' is-ready' : ''}${!open ? ' is-closed' : ''}${node?.id === n.id ? ' is-sel' : ''}${n.row === 3 ? ' is-cap' : ''}`}
-                      style={{ gridRow: n.row + 1, gridColumn: n.col + 1 }}
-                      onClick={() => setSel(n)}
-                      aria-label={`${n.name}, rank ${rank} of ${n.ranks}`}
-                    >
-                      <SkillIcon id={TALENT_ICON[n.icon] ?? 'arcane-bolt'} size={30} />
-                      <span className="rb-node-rank">
-                        {rank}/{n.ranks}
-                      </span>
-                    </button>
-                  );
-                })}
-            </div>
-          </section>
+      <div className="rb-seg rb-tree-tabs" role="tablist" aria-label="Talent trees">
+        {cls.trees.map((t, i) => (
+          <button key={t.name} role="tab" aria-selected={tab === i} className={tab === i ? 'is-on' : ''} style={{ ['--tc' as string]: t.color }} onClick={() => setTab(i as 0 | 1 | 2)}>
+            {h.spec === i && <span aria-label="your specialization">★ </span>}
+            {t.name} <span className="rb-dim">{pointsInTree(h, i as 0 | 1 | 2)}</span>
+          </button>
         ))}
       </div>
-      <div className="rb-talent-detail">
-        {node ? (
-          <>
-            <strong>
-              {node.name}{' '}
-              <span className="rb-dim">
-                · rank {h.talents[node.id] ?? 0}/{node.ranks} · {cls.trees[node.tree].name}
+      <div className="rb-tree-wrap">
+        <section className={`rb-tree${open ? '' : ' is-locked'}`} style={{ ['--tc' as string]: tree.color }}>
+          <header>
+            <strong>{tree.name}</strong>
+            <span className="rb-small rb-dim">{tree.blurb}</span>
+            {!open && (
+              <span className="rb-small rb-gold">
+                Opens after {SPEC_FOCUS} points in {cls.trees[h.spec].name} ({pointsInTree(h, h.spec)} so far)
               </span>
-            </strong>
-            <p>{node.text}</p>
-            {(h.talents[node.id] ?? 0) > 0 && modLines(node.mods.map((m) => scaleMod(m, h.talents[node.id] ?? 0))).length > 0 && <p className="rb-gold rb-small">Now: {modLines(node.mods.map((m) => scaleMod(m, h.talents[node.id] ?? 0))).join(' ')}</p>}
-            {cantLearn(h, node.id) ? (
-              <p className="rb-dim rb-small">{cantLearn(h, node.id)}</p>
-            ) : (
-              <button className="rb-btn is-gold" onClick={() => engine.learn(node.id)}>
-                Learn {node.name}
-              </button>
             )}
-          </>
-        ) : (
-          <p className="rb-dim">Pick a talent to read it. Each row opens after {ROW_COST} points in its tree; the last one is the tree’s signature.</p>
-        )}
+          </header>
+          <div className="rb-tree-grid">
+            {Array.from({ length: TALENT_ROWS }, (_, row) => (
+              <span key={`r${row}`} className="rb-row-need" style={{ gridRow: row + 1 }}>
+                {row * ROW_COST}
+              </span>
+            ))}
+            {TALENTS[h.cls]
+              .filter((n) => n.tree === tab)
+              .map((n) => {
+                const rank = h.talents[n.id] ?? 0;
+                const why = cantLearn(h, n.id);
+                const rowOpen = open && pointsInTree(h, tab) >= n.row * ROW_COST && (!n.requires || (h.talents[n.requires] ?? 0) > 0);
+                return (
+                  <button
+                    key={n.id}
+                    className={`rb-node${rank ? ' is-taken' : ''}${!why ? ' is-ready' : ''}${!rowOpen ? ' is-closed' : ''}${node?.id === n.id ? ' is-sel' : ''}${n.row === TALENT_ROWS - 1 ? ' is-cap' : ''}${rank >= n.ranks ? ' is-full' : ''}`}
+                    style={{ gridRow: n.row + 1, gridColumn: n.col + 2 }}
+                    onClick={() => setSel(n)}
+                    aria-label={`${n.name}, rank ${rank} of ${n.ranks}`}
+                  >
+                    <img src={glyphIconUrl(n.icon, tree.color, 4)} alt="" draggable={false} />
+                    <span className="rb-node-rank">
+                      {rank}/{n.ranks}
+                    </span>
+                  </button>
+                );
+              })}
+          </div>
+        </section>
+        <div className="rb-talent-detail">
+          {node ? (
+            <>
+              <strong>
+                {node.name}{' '}
+                <span className="rb-dim">
+                  · rank {h.talents[node.id] ?? 0}/{node.ranks} · {cls.trees[node.tree].name}
+                  {node.row === TALENT_ROWS - 1 ? ' · capstone' : ''}
+                </span>
+              </strong>
+              <p>{node.text}</p>
+              {(h.talents[node.id] ?? 0) > 0 && modLines(node.mods.map((m) => scaleMod(m, h.talents[node.id] ?? 0))).length > 0 && <p className="rb-gold rb-small">Now: {modLines(node.mods.map((m) => scaleMod(m, h.talents[node.id] ?? 0))).join(' ')}</p>}
+              {cantLearn(h, node.id) ? (
+                <p className="rb-dim rb-small">{cantLearn(h, node.id)}</p>
+              ) : (
+                <button className="rb-btn is-gold" onClick={() => engine.learn(node.id)}>
+                  Learn {node.name}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="rb-small">
+                <b style={{ color: cls.trees[h.spec].color }}>{cls.trees[h.spec].passive.name}</b> ({cls.trees[h.spec].name}): {cls.trees[h.spec].passive.text}
+              </p>
+              <p className="rb-dim rb-small">
+                Pick a talent to read it. Each row opens after {ROW_COST} more points in its tree; the last row is the tree’s capstone. Your specialization’s tree comes first: the other two open after {SPEC_FOCUS} points in it.
+              </p>
+            </>
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+/** Choosing (or changing) the specialization: what each one gives. */
+function SpecChoice({ engine, onDone }: { engine: SigilEngine; onDone: () => void }) {
+  const h = engine.hero!;
+  const cls = CLASSES[h.cls];
+  const cost = specCost(h);
+  const early = h.level < SPEC_LEVEL;
+  return (
+    <div className="rb-specs">
+      <p className="rb-small">
+        {early
+          ? `At level ${SPEC_LEVEL} you choose a specialization: its ability, its passive, and the talent tree your points go into first (one point a level from then on).`
+          : h.spec === null
+            ? 'Choose your specialization. It gives you its ability and its passive, and its talent tree is where your points go first. You can change it later at a cost.'
+            : `Changing your specialization resets your talents${cost ? ` and costs ${cost} gold` : ''}.`}
+      </p>
+      <div className="rb-spec-cards">
+        {cls.trees.map((t, i) => {
+          const sk = SKILLS[t.skill];
+          const why = cantSpec(h, i as 0 | 1 | 2);
+          return (
+            <section key={t.name} className={`rb-spec${h.spec === i ? ' is-on' : ''}`} style={{ ['--tc' as string]: t.color }}>
+              <header>
+                <strong>{t.name}</strong>
+                <span className="rb-small rb-dim">{t.role}</span>
+              </header>
+              <p className="rb-small">{t.blurb}</p>
+              {sk && (
+                <div className="rb-spec-skill">
+                  <SkillIcon id={sk.id} size={36} />
+                  <span>
+                    <b>{sk.name}</b>
+                    <span className="rb-small rb-dim">{sk.blurb}</span>
+                  </span>
+                </div>
+              )}
+              <p className="rb-small">
+                <b>{t.passive.name}:</b> {t.passive.text}
+              </p>
+              <button className="rb-btn is-gold" disabled={!!why} onClick={() => engine.chooseSpec(i as 0 | 1 | 2) && onDone()}>
+                {why ?? (h.spec === null ? `Become ${t.name}` : `Switch${cost ? ` · ${cost} gold` : ''}`)}
+              </button>
+            </section>
+          );
+        })}
+      </div>
+      {h.spec !== null && (
+        <button className="rb-btn is-ghost is-small" onClick={onDone}>
+          Keep {cls.trees[h.spec].name}
+        </button>
+      )}
     </div>
   );
 }

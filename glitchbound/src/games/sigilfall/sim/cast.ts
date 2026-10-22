@@ -1,6 +1,8 @@
 import { angleDiff, dist, dist2, inCone, TAU } from '../core/math';
-import type { SkillSpec, SlotKey } from '../data/types';
-import { applyEffects, applyStatus, enemiesIn, hitEnemy, hurtPlayer, playerStunned, runProcs } from './combat';
+import { CLASSES } from '../data/classes';
+import type { GroundSpec, SkillSpec, SlotKey } from '../data/types';
+import { applyEffects, applyStatus, enemiesIn, gainResource, healPlayer, hitEnemy, hurtPlayer, playerStunned, runProcs } from './combat';
+import { hurtPet } from './pets';
 import { blocksAt, castRay, lineOfSight, moveCircle } from './map';
 import type { Enemy, Projectile } from './types';
 import type { World } from './world';
@@ -78,15 +80,16 @@ function resolveAim(w: World, spec: SkillSpec, req: CastRequest): Aim | null {
     return { angle, tx: p.x + Math.cos(angle) * d, ty: p.y + Math.sin(angle) * d, target: null };
   }
   // a tap: the basic attack finds the nearest enemy (if the setting is on) and spells that need a target
-  // (chains, marks) always do; every other spell goes where the hero faces, shown by the facing marker
-  const targeted = spec.cast === 'chain' || spec.cast === 'mark';
+  // (chains, marks, drains) always do; every other spell goes where the hero faces, shown by the facing marker
+  const targeted = spec.cast === 'chain' || spec.cast === 'mark' || spec.cast === 'drain';
   const target = targeted || (req.slot === 'basic' && w.settings.autoTarget) ? autoTarget(w, reach, p.aim) : null;
   if (target) {
     const angle = Math.atan2(target.y - p.y, target.x - p.x);
     const d = Math.min(spec.range, dist(p.x, p.y, target.x, target.y));
     return { angle, tx: p.x + Math.cos(angle) * d, ty: p.y + Math.sin(angle) * d, target };
   }
-  if (spec.cast === 'chain' || spec.cast === 'mark') return null;
+  if (spec.cast === 'mark' || spec.cast === 'drain') return null;
+  if (spec.cast === 'chain') return null;
   const angle = p.aim;
   const d = spec.range * 0.6;
   return { angle, tx: p.x + Math.cos(angle) * d, ty: p.y + Math.sin(angle) * d, target: null };
@@ -109,12 +112,13 @@ export function tryCast(w: World, req: CastRequest): boolean {
   if (p.dash && !p.dash.dodge) return false;
   if (p.dash?.dodge && req.slot === 'dodge') return false;
   if (p.channel && req.slot !== 'dodge') return false;
-  // mana: a share of the maximum (classes without mana pay nothing)
-  const cost = req.slot !== 'ult' && spec.cost > 0 && p.maxMana > 0 ? (spec.cost * p.maxMana) / 100 : 0;
+  // the resource: mana costs a share of the maximum, the others their points
+  const cost = skillCost(w, spec, req.slot);
   if (cost > p.mana + 1e-6) {
     if (w.time - w.noManaAt > 1) {
       w.noManaAt = w.time;
-      w.text(p.x, p.y - 20, 'Not enough mana', '#7fc4ff', false);
+      const res = w.build.resource!;
+      w.text(p.x, p.y - 20, `Not enough ${res.name.toLowerCase()}`, res.color, false);
       w.sfx('nomana', 0.5);
     }
     return false;
@@ -147,6 +151,16 @@ export function tryCast(w: World, req: CastRequest): boolean {
   return true;
 }
 
+/** What a skill costs right now, in the resource's own units (0 for the ultimate and for shapes' skills). */
+export function skillCost(w: World, spec: SkillSpec, slot: SlotKey): number {
+  const p = w.player;
+  if (slot === 'ult' || spec.cost <= 0 || p.maxMana <= 0) return 0;
+  const kind = w.build.resource?.kind;
+  if (kind === 'mana') return (spec.cost * p.maxMana) / 100;
+  // Holy Power comes in whole points
+  return kind === 'holy' ? Math.max(0, Math.round(spec.cost)) : spec.cost;
+}
+
 function dodgeAim(w: World, req: CastRequest): Aim {
   const p = w.player;
   // dodge goes where you are moving; standing still, where you aim
@@ -173,6 +187,8 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
   p.aim = angle;
   const ctx = { x: p.x, y: p.y, angle, spec, base: spec.damage, type: spec.dmgType, depth: 0, hitDmg: 0, when: 'cast' as const };
   applyEffects(w, spec.onCast, ctx);
+  // the resource some skills give (a melee swing only when it connects: see melee)
+  if (spec.gen > 0 && spec.cast !== 'melee') gainResource(w, spec.gen);
   switch (spec.cast) {
     case 'projectile':
       fireProjectiles(w, spec, angle);
@@ -180,7 +196,7 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
       p.actKind = spec.tags.includes('melee') ? 'heavy' : slot === 'basic' ? 'shoot' : 'cast';
       p.actT = 0.22;
       p.actAngle = angle;
-      w.sfx(spec.look === 'quake' ? 'quake' : spec.dmgType === 'fire' ? 'fireball' : spec.look === 'lightning' ? 'zap' : w.hero.cls === 'ranger' ? 'bow' : 'bolt');
+      w.sfx(spec.look === 'quake' ? 'quake' : (CAST_SOUND[spec.dmgType] ?? (spec.look === 'lightning' ? 'zap' : w.hero.cls === 'ranger' ? 'bow' : 'bolt')));
       if (spec.look === 'quake') w.shake(3);
       break;
     case 'melee':
@@ -189,12 +205,13 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
     case 'nova': {
       p.actKind = 'cast';
       p.actT = 0.25;
-      w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.4, size: spec.area, color: spec.dmgType === 'frost' ? '#9be7ff' : '#ffffff' });
+      const [ring, shard] = NOVA_TINT[spec.look ?? ''] ?? NOVA_TINT[spec.dmgType] ?? NOVA_TINT.frost!;
+      w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.4, size: spec.area, color: ring });
       for (let i = 0; i < 14; i++) {
         const a = (TAU * i) / 14;
-        w.addFx({ kind: 'shard', x: p.x + Math.cos(a) * 6, y: p.y + Math.sin(a) * 6, vx: Math.cos(a) * spec.area * 2.2, vy: Math.sin(a) * spec.area * 2.2, life: 0.35, size: 2, color: '#d8f6ff' });
+        w.addFx({ kind: 'shard', x: p.x + Math.cos(a) * 6, y: p.y + Math.sin(a) * 6, vx: Math.cos(a) * spec.area * 2.2, vy: Math.sin(a) * spec.area * 2.2, life: 0.35, size: 2, color: shard });
       }
-      w.sfx('nova');
+      w.sfx(spec.dmgType === 'holy' || spec.dmgType === 'shadow' ? spec.dmgType : 'nova');
       hitAll(w, spec, enemiesIn(w, p.x, p.y, spec.area), p.x, p.y);
       w.breakWalls(p.x, p.y, spec.area);
       break;
@@ -246,7 +263,33 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
       p.actT = spec.duration;
       w.sfx('whirl');
       break;
+    case 'buff':
+    case 'summon':
+      // the cast effects (shields, buffs, companions) are the whole skill
+      p.actKind = 'cast';
+      p.actT = 0.25;
+      p.actAngle = angle;
+      w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.35, size: 14, color: buffColor(spec) });
+      if (spec.cast === 'buff') w.sfx('buff');
+      break;
+    case 'form': {
+      const form = w.build.form?.skill === spec.id ? null : (CLASSES[w.hero.cls].forms?.find((f) => f.skill === spec.id)?.id ?? null);
+      w.setForm(form);
+      break;
+    }
+    case 'drain': {
+      const e = target ?? autoTarget(w, spec.range, angle);
+      if (!e) break;
+      p.channel = { spec, t: spec.duration, tickT: 0, target: e.id };
+      p.actKind = 'cast';
+      p.actT = spec.duration;
+      p.actAngle = Math.atan2(e.y - p.y, e.x - p.x);
+      w.sfx('drain');
+      break;
+    }
     case 'mark':
+      // aimed by hand: the enemy nearest the aimed line
+      target ??= autoTarget(w, spec.range, angle);
       if (target) {
         w.addFx({ kind: 'zap', x: p.x, y: p.y, x2: target.x, y2: target.y, life: 0.2, size: 1, color: '#ffe066' });
         const d = hitEnemy(w, target, spec.damage, spec.dmgType, { spec, depth: 0, fromX: p.x, fromY: p.y });
@@ -326,6 +369,7 @@ function melee(w: World, spec: SkillSpec, angle: number): void {
   w.addFx({ kind: 'slash', x: p.x, y: p.y, a: angle, a2: arc, life: heavy ? 0.24 : 0.16, size: reach + 4, color: heavy ? '#ffe6b0' : big ? '#fff2c8' : '#ffffff', r2: big || heavy ? 1 : 0 });
   w.sfx(heavy ? 'heavy' : big ? 'swingBig' : 'swing');
   hitAll(w, spec, list, p.x, p.y, mul);
+  if (list.length && spec.gen > 0) gainResource(w, spec.gen);
   if (list.length && (heavy || big)) w.hitstop(heavy ? 0.06 : 0.035);
   if (heavy) w.shake(list.length ? 2.5 : 1);
   // the strike lands in front: impact effects happen there
@@ -402,9 +446,10 @@ function ground(w: World, spec: SkillSpec, angle: number, tx: number, ty: number
   p.actT = 0.3;
   p.actAngle = angle;
   if (spec.duration > 0 && spec.tick > 0) {
-    // a field: arrow rain
-    w.spawnField({ x: tx, y: ty, r: spec.area, dur: spec.duration, tick: spec.tick, dmg: spec.damage, type: spec.dmgType, look: 'arrows', hostile: false, depth: 0, spec, onHit: true });
-    w.sfx('volley');
+    // a field: arrow rain, blizzard, consecration, rain of fire
+    const look = fieldLook(spec);
+    w.spawnField({ x: tx, y: ty, r: spec.area, dur: spec.duration, tick: spec.tick, dmg: spec.damage, type: spec.dmgType, look, hostile: false, depth: 0, spec, onHit: true });
+    w.sfx(look === 'arrows' ? 'volley' : 'fieldCast');
     return;
   }
   const strikes = spec.extra.strikes ?? 0;
@@ -493,11 +538,86 @@ export function updateTraps(w: World, dt: number): void {
   w.traps = w.traps.filter((t) => !t.dead);
 }
 
-/** Whirlwind: hits all around every tick; may pull enemies in. */
+const FIELD_LOOKS = new Set<string>(['fire', 'poison', 'frost', 'arrows', 'lightning', 'rift', 'shadow', 'holy', 'nature']);
+
+/** A nova's ring and shards, by its look or damage type. */
+const NOVA_TINT: Record<string, [string, string]> = {
+  frost: ['#9be7ff', '#d8f6ff'],
+  fire: ['#ffb070', '#ffe07a'],
+  lightning: ['#bfe9ff', '#ffffff'],
+  arcane: ['#d2a8ff', '#f0e0ff'],
+  poison: ['#8be36b', '#d8ffc8'],
+  physical: ['#ffffff', '#e8e0d0'],
+  holy: ['#fff2a0', '#ffe066'],
+  shadow: ['#b58aff', '#7a4ad0'],
+  nature: ['#9cf07a', '#d8ffc8'],
+  halo: ['#fff6c8', '#ffd84d'],
+  darkhalo: ['#c9a8ff', '#6a3ab0'],
+};
+
+/** The sound of a cast bolt, by damage type (others: zap, bow or bolt). */
+const CAST_SOUND: Partial<Record<SkillSpec['dmgType'], string>> = { fire: 'fireball', holy: 'holy', shadow: 'shadow', nature: 'nature' };
+
+/** What a skill's field looks like: its own look, or one from its damage type. */
+function fieldLook(spec: SkillSpec): GroundSpec['look'] {
+  if (spec.look && FIELD_LOOKS.has(spec.look)) return spec.look as GroundSpec['look'];
+  switch (spec.dmgType) {
+    case 'physical':
+      return 'arrows';
+    case 'arcane':
+      return 'rift';
+    default:
+      return spec.dmgType as GroundSpec['look'];
+  }
+}
+
+/** The color of a self-cast's flash (shields blue, shouts red, holy gold, demons green). */
+function buffColor(spec: SkillSpec): string {
+  for (const e of spec.onCast) if (e.kind === 'buff') return e.buff.color;
+  if (spec.onCast.some((e) => e.kind === 'shield')) return '#7fd8ff';
+  if (spec.onCast.some((e) => e.kind === 'summon')) return '#8bff6a';
+  if (spec.onCast.some((e) => e.kind === 'heal')) return '#6dff8f';
+  return '#ffffff';
+}
+
+/** A drain: the bound enemy takes a hit every tick and the caster heals a share of it. */
+function updateDrain(w: World, dt: number): void {
+  const p = w.player;
+  const ch = p.channel!;
+  const e = w.enemies.find((x) => x.id === ch.target);
+  // it breaks when the enemy dies, gets away or out of sight
+  if (!e || e.dead || dist(e.x, e.y, p.x, p.y) > ch.spec.range + e.r + 20 || !lineOfSight(w.map, p.x, p.y, e.x, e.y)) {
+    p.channel = null;
+    p.actKind = null;
+    return;
+  }
+  p.aim = Math.atan2(e.y - p.y, e.x - p.x);
+  p.actAngle = p.aim;
+  ch.t -= dt;
+  ch.tickT -= dt;
+  if (ch.tickT <= 0) {
+    ch.tickT += ch.spec.tick;
+    const d = hitEnemy(w, e, ch.spec.damage, ch.spec.dmgType, { spec: ch.spec, depth: 0, fromX: p.x, fromY: p.y });
+    applyEffects(w, ch.spec.onHit, { x: e.x, y: e.y, angle: p.aim, spec: ch.spec, base: ch.spec.damage, type: ch.spec.dmgType, depth: 0, target: e, hitDmg: d, when: 'hit' });
+    const share = (ch.spec.extra.drainHeal ?? 0) / 100;
+    if (share > 0 && d > 0) healPlayer(w, ((d * share) / p.maxHp) * 100, false);
+    w.addFx({ kind: 'zap', x: e.x, y: e.y - 3, x2: p.x, y2: p.y - 6, life: ch.spec.tick, size: 1.6, color: ch.spec.dmgType === 'holy' ? '#ffe9a0' : '#b58aff' });
+  }
+  if (ch.t <= 0) {
+    p.channel = null;
+    p.actKind = null;
+  }
+}
+
+/** Whirlwind: hits all around every tick; may pull enemies in. Drains hit their one enemy. */
 export function updateChannel(w: World, dt: number): void {
   const p = w.player;
   const ch = p.channel;
   if (!ch) return;
+  if (ch.target !== undefined) {
+    updateDrain(w, dt);
+    return;
+  }
   ch.t -= dt;
   ch.tickT -= dt;
   const pull = ch.spec.extra.pull ?? 0;
@@ -530,9 +650,9 @@ export function updateDash(w: World, dt: number): void {
   const res = moveCircle(w.map, p.x, p.y, p.r, d.vx * dt, d.vy * dt);
   p.x = res.x;
   p.y = res.y;
-  if (d.dodge) {
-    if (w.rand() < 0.6) w.addFx({ kind: 'ghost', x: p.x, y: p.y, life: 0.2, size: 1, color: '#ffffff', sprite: 'hero' });
-  } else if (d.spec && d.spec.damage > 0) {
+  if (d.dodge && w.rand() < 0.6) w.addFx({ kind: 'ghost', x: p.x, y: p.y, life: 0.2, size: 1, color: '#ffffff', sprite: 'hero' });
+  // a dash with damage hits what it runs through (a pounce or a bear's charge too, though they are dodges)
+  if (d.spec && d.spec.damage > 0) {
     for (const e of w.enemies) {
       if (e.dead || e.state === 'spawn' || d.hit.has(e.id)) continue;
       if (dist2(e.x, e.y, p.x, p.y) > (p.r + e.r + d.spec.radius) ** 2) continue;
@@ -544,7 +664,7 @@ export function updateDash(w: World, dt: number): void {
     }
   }
   if (d.t <= 0 || res.bx || res.by) {
-    if (!d.dodge && d.spec) {
+    if (d.spec && (!d.dodge || d.spec.damage > 0)) {
       applyEffects(w, d.spec.onImpact, { x: p.x, y: p.y, angle: Math.atan2(d.vy, d.vx), spec: d.spec, base: d.spec.damage, type: d.spec.dmgType, depth: 0, hitDmg: 0, when: 'impact' });
       w.breakWalls(p.x + Math.cos(Math.atan2(d.vy, d.vx)) * 10, p.y + Math.sin(Math.atan2(d.vy, d.vx)) * 10, 8);
     }
@@ -570,6 +690,28 @@ export function updateProjectiles(w: World, dt: number): void {
       pr.vx = Math.cos(a) * sp;
       pr.vy = Math.sin(a) * sp;
     }
+    // Ball Lightning: zaps the nearest enemy as it rolls
+    if (!pr.hostile && pr.spec?.extra.zap && pr.depth === 0) {
+      pr.zapT = (pr.zapT ?? 0) - dt;
+      if (pr.zapT <= 0) {
+        pr.zapT = pr.spec.extra.zap;
+        const range = pr.spec.extra.zapRange ?? 50;
+        let best: Enemy | null = null;
+        let bd = range * range;
+        for (const e of w.enemies) {
+          if (e.dead || e.state === 'spawn') continue;
+          const d2 = dist2(e.x, e.y, pr.x, pr.y);
+          if (d2 < bd) {
+            bd = d2;
+            best = e;
+          }
+        }
+        if (best) {
+          w.addFx({ kind: 'zap', x: pr.x, y: pr.y, x2: best.x, y2: best.y, life: 0.15, size: 1, color: '#d8f2ff' });
+          hitEnemy(w, best, pr.dmg * (pr.spec.extra.zapMul ?? 0.4), pr.type, { depth: 1, fromX: pr.x, fromY: pr.y, knock: 5 });
+        }
+      }
+    }
     const step = Math.hypot(pr.vx, pr.vy) * dt;
     const sub = Math.max(1, Math.ceil(step / 4));
     for (let s = 0; s < sub && !pr.dead; s++) {
@@ -585,6 +727,14 @@ export function updateProjectiles(w: World, dt: number): void {
         break;
       }
       if (pr.hostile) {
+        // companions stand in the way of shots
+        const pet = w.pets.find((x) => !x.dead && dist2(pr.x, pr.y, x.x, x.y) < (pr.r + x.r) ** 2);
+        if (pet) {
+          hurtPet(w, pet, pr.dmg);
+          w.addFx({ kind: 'burst', x: pr.x, y: pr.y, life: 0.2, size: 6, color: pr.color });
+          pr.dead = true;
+          continue;
+        }
         if (!p.dead && dist2(pr.x, pr.y, p.x, p.y) < (pr.r + p.r) ** 2) {
           if (p.iframe > 0) {
             if (!pr.hit.includes(-1)) {

@@ -4,6 +4,7 @@ import { xpToNext } from '../data/classes';
 import { NPCS } from '../data/quests';
 import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
+import type { ResourceDef } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { freePoints, questProgress, trackedQuest } from '../progress/character';
 import { modLines } from '../progress/describe';
@@ -69,6 +70,14 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
 
 /* ------------------------------------------------------------------ HUD */
 
+const RESOURCE_HELP: Record<ResourceDef['kind'], string> = {
+  mana: 'Mana: spells cost it, it comes back fast out of combat',
+  rage: 'Rage: hitting and being hit build it, your big skills spend it, it fades out of combat',
+  energy: 'Energy: skills spend it, it comes back quickly',
+  focus: 'Focus: shots spend it, it comes back quickly',
+  holy: 'Holy Power: some skills build it (up to 5), others spend 3',
+};
+
 function Hud({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const w = engine.world!;
@@ -78,12 +87,14 @@ function Hud({ engine }: { engine: SigilEngine }) {
   const xp = useRef<HTMLElement>(null);
   const mp = useRef<HTMLElement>(null);
   const mpText = useRef<HTMLElement>(null);
+  const pips = useRef<HTMLSpanElement>(null);
   const enc = useRef<HTMLDivElement>(null);
   useFrame(engine, (world) => {
     const p = world.player;
     if (hp.current) hp.current.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`;
     if (mp.current && p.maxMana > 0) mp.current.style.width = `${Math.max(0, (p.mana / p.maxMana) * 100)}%`;
     if (mpText.current && p.maxMana > 0) mpText.current.textContent = `${Math.floor(p.mana)}`;
+    if (pips.current) for (let i = 0; i < pips.current.children.length; i++) pips.current.children[i]!.classList.toggle('is-on', i < Math.floor(p.mana + 1e-6));
     if (shield.current) shield.current.style.width = `${Math.min(100, (p.shield / p.maxHp) * 100)}%`;
     if (hpText.current) hpText.current.textContent = `${Math.max(0, Math.ceil(p.hp))} / ${p.maxHp}`;
     if (xp.current) xp.current.style.width = `${world.xpShare() * 100}%`;
@@ -93,6 +104,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
       if (a) enc.current.textContent = `${a.title} · wave ${Math.max(1, a.wave)} of ${a.waves}`;
     }
   });
+  const res = w.build.resource;
   const fresh = h.bag.filter((i) => i.fresh).length;
   const points = freePoints(h);
   const region = REGIONS[w.region.id];
@@ -109,11 +121,19 @@ function Hud({ engine }: { engine: SigilEngine }) {
             <b ref={shield} className="rb-shieldbar" />
             <em ref={hpText} />
           </span>
-          {w.player.maxMana > 0 && (
-            <span className="rb-mp" title="Mana: spells cost it, it comes back fast out of combat">
-              <i ref={mp} />
-              <em ref={mpText} />
+          {res?.kind === 'holy' ? (
+            <span ref={pips} className="rb-pips" title={RESOURCE_HELP.holy} aria-label="Holy Power">
+              {Array.from({ length: res.base }, (_, i) => (
+                <i key={i} />
+              ))}
             </span>
+          ) : (
+            res && (
+              <span className={`rb-mp is-${res.kind}`} title={RESOURCE_HELP[res.kind]}>
+                <i ref={mp} />
+                <em ref={mpText} />
+              </span>
+            )
           )}
           <span className="rb-xp" title={`${fmt(h.xp)} / ${fmt(xpToNext(h.level))} XP`}>
             <i ref={xp} />

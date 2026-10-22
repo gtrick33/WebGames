@@ -6,9 +6,9 @@
 
 import type { ShopId } from './vendors';
 
-export type ClassId = 'mage' | 'warrior' | 'ranger';
-export type DmgType = 'physical' | 'fire' | 'frost' | 'lightning' | 'poison' | 'arcane';
-export type StatusId = 'burn' | 'poison' | 'chill' | 'freeze' | 'shock' | 'stun' | 'root' | 'armorBreak' | 'mark' | 'weaken';
+export type ClassId = 'mage' | 'warrior' | 'ranger' | 'warlock' | 'priest' | 'paladin' | 'druid';
+export type DmgType = 'physical' | 'fire' | 'frost' | 'lightning' | 'poison' | 'arcane' | 'shadow' | 'holy' | 'nature';
+export type StatusId = 'burn' | 'poison' | 'chill' | 'freeze' | 'shock' | 'stun' | 'root' | 'armorBreak' | 'mark' | 'weaken' | 'bleed' | 'curse' | 'fear';
 export type SlotId = 'weapon' | 'offhand' | 'head' | 'chest' | 'legs' | 'hands' | 'feet' | 'amulet' | 'ring' | 'relic';
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
@@ -23,9 +23,10 @@ export const RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legend
  * - hp: flat max health · hpPct: % max health · power: % damage · crit: % chance · critDmg: % extra crit damage
  * - haste: cooldowns recover (100 + haste)% as fast · armor: flat, cuts damage taken (armor / (armor + 60), max 60%)
  * - speed: % move speed · regen: health per second · ultCharge: % faster ultimate charge · potion: % potion healing
- * - fire / frost / lightning / poison / physical / arcane: % damage of that type
+ * - healing: % more from your heals and healing over time · pet: % more damage and health for companions
+ * - fire / frost / lightning / poison / physical / arcane / shadow / holy / nature: % damage of that type
  */
-export type StatKey = 'hp' | 'hpPct' | 'power' | 'crit' | 'critDmg' | 'haste' | 'armor' | 'speed' | 'regen' | 'ultCharge' | 'potion' | DmgType;
+export type StatKey = 'hp' | 'hpPct' | 'power' | 'crit' | 'critDmg' | 'haste' | 'armor' | 'speed' | 'regen' | 'ultCharge' | 'potion' | 'healing' | 'pet' | DmgType;
 export type Stats = Record<StatKey, number>;
 
 /** Skill slots on the action bar. */
@@ -46,8 +47,12 @@ export const ACTION_SLOTS: SlotKey[] = ['basic', 's1', 's2', 's3', 'ult', 'dodge
  * - trap: placed at a point, arms, springs on the first enemy near it
  * - channel: repeats a nova around the caster while it lasts (whirlwind)
  * - mark: picks one enemy and applies its effects
+ * - buff: on the caster only (shields, shouts, heals): its cast effects are the skill
+ * - drain: a channel on one enemy that hits it every tick and heals the caster for a share
+ * - summon: like buff, its cast effects are the skill (a { kind: 'summon' } effect calls companions; casting again heals the ones that stay)
+ * - form: takes on a shape (druids): the bar changes until the form is cast again
  */
-export type CastKind = 'projectile' | 'melee' | 'nova' | 'chain' | 'blink' | 'dash' | 'ground' | 'trap' | 'channel' | 'mark';
+export type CastKind = 'projectile' | 'melee' | 'nova' | 'chain' | 'blink' | 'dash' | 'ground' | 'trap' | 'channel' | 'mark' | 'buff' | 'drain' | 'summon' | 'form';
 
 /** A field left on the ground (burning ground, poison cloud, arrow rain). Damage is a share of the skill's hit. */
 export interface GroundSpec {
@@ -60,12 +65,13 @@ export interface GroundSpec {
   dmgType: DmgType;
   status?: { status: StatusId; dur: number; power: number };
   /** Visual style. */
-  look: 'fire' | 'poison' | 'frost' | 'arrows' | 'lightning' | 'rift';
+  look: 'fire' | 'poison' | 'frost' | 'arrows' | 'lightning' | 'rift' | 'shadow' | 'holy' | 'nature';
 }
 
 /** Something that happens because of a hit, an impact, a kill or a cast. */
 export type Effect =
-  | { kind: 'status'; status: StatusId; dur: number; power: number; chance?: number }
+  /** A status on the enemy hit. Damage over time (burn, poison, bleed, curse) is `power` × the hit per second; a curse deals `dmgType` (shadow unless set). */
+  | { kind: 'status'; status: StatusId; dur: number; power: number; chance?: number; dmgType?: DmgType }
   /** A burst at the impact point: `mul` of the skill's damage to every enemy within `radius`. */
   | { kind: 'explode'; radius: number; mul: number; dmgType?: DmgType; status?: { status: StatusId; dur: number; power: number } }
   /** The projectile bursts into `count` smaller ones flying outward, each with `mul` of its damage. */
@@ -91,7 +97,31 @@ export type Effect =
   /** Adds `pct` points of ultimate charge. */
   | { kind: 'charge'; pct: number }
   /** Delayed burst at the point (the dodge's rift): `mul` of the class's reference damage after `delay` s. */
-  | { kind: 'riftBurst'; radius: number; mul: number; delay: number };
+  | { kind: 'riftBurst'; radius: number; mul: number; delay: number }
+  /** A buff on the caster for `dur` seconds (stats, damage taken cut, healing over time). */
+  | { kind: 'buff'; buff: BuffDef }
+  /** Gains `n` of the class's resource (rage, holy power; mana in % of the maximum). */
+  | { kind: 'resource'; n: number }
+  /** Enemies within `radius` run away in fear for `dur` seconds (bosses are slowed instead). */
+  | { kind: 'fear'; radius: number; dur: number }
+  /** Calls `count` companions (PETS by id) for `dur` seconds (0 = until they fall). */
+  | { kind: 'summon'; pet: string; count: number; dur: number }
+  /** Costs the caster `pct`% of their max health (never below 1). */
+  | { kind: 'sacrifice'; pct: number };
+
+/** A timed buff on the hero. The same id refreshes instead of stacking. */
+export interface BuffDef {
+  id: string;
+  name: string;
+  dur: number;
+  /** Stats added while it lasts. */
+  stats?: Partial<Record<StatKey, number>>;
+  /** Damage taken cut by this share (%), on top of armor. */
+  dr?: number;
+  /** Healing per second, as a share (%) of max health. */
+  hot?: number;
+  color: string;
+}
 
 /**
  * A skill's full behaviour after every modifier is applied. Items and talents never touch the
@@ -137,8 +167,13 @@ export interface SkillSpec {
   afterDodge?: { window: number; pct: number };
   /** Skill-specific knobs: chain jumps and range, trap limit, echo waves, pull, mana per hit, etc. */
   extra: Record<string, number>;
-  /** Resource cost, as a share (%) of the hero's maximum (mana for casters; 0 for classes without one). */
+  /**
+   * Resource cost: for mana a share (%) of the maximum; for rage, energy, focus and holy power the
+   * points themselves. 0 for classes without a resource.
+   */
   cost: number;
+  /** Resource gained when used (rage from a swing that hits, holy power from a builder). */
+  gen: number;
   /** Visual variant (e.g. Arcane Bolt turned to lightning). */
   look?: string;
   tags: string[];
@@ -173,7 +208,11 @@ export type SkillOp =
   | { op: 'onHit' | 'onImpact' | 'onKill' | 'onCast'; effect: Effect }
   | { op: 'trail'; ground: GroundSpec }
   | { op: 'bonusVs'; status: StatusId | 'lowHp'; pct: number }
-  | { op: 'afterDodge'; window: number; pct: number };
+  | { op: 'afterDodge'; window: number; pct: number }
+  /** More of the resource gained when used. */
+  | { op: 'gen'; n: number }
+  /** Costs `pct`% less of the resource. */
+  | { op: 'cost'; pct: number };
 
 /** A triggered effect with its own chance and internal cooldown. */
 export interface ProcDef {
@@ -287,9 +326,9 @@ export interface Item {
 export interface TalentNode {
   id: string;
   name: string;
-  /** Tree index within the class (0 or 1). */
-  tree: 0 | 1;
-  /** Row: points spent in this tree needed = row * 3 (row 0 is free). */
+  /** Tree index within the class (0, 1 or 2: the specializations, in order). */
+  tree: 0 | 1 | 2;
+  /** Row (0-6): points spent in this tree needed = row × ROW_COST (row 0 is free). */
   row: number;
   col: number;
   ranks: number;
@@ -302,21 +341,62 @@ export interface TalentNode {
   icon: string;
 }
 
-export interface TalentTree {
+/**
+ * A specialization: one of a class's three talent trees. Choosing it (from level 10) grants its
+ * ability and its passive, and its tree is where the points go first.
+ */
+export interface SpecDef {
   name: string;
   blurb: string;
   color: string;
+  /** How it plays, in a few words (damage, tank, healing hybrid). */
+  role: string;
+  /** The ability the specialization grants: it joins the skills you can put on the bar. */
+  skill: string;
+  /** Always on while this is your specialization. */
+  passive: { name: string; text: string; mods: Mod[] };
+  /** The ability belongs to a druid shape: it is used there, not put on the normal bar. */
+  formOnly?: boolean;
+}
+
+/**
+ * A druid shape: while in it, the basic attack and the other two skill slots become the form's, and
+ * its stats apply. Casting the form's skill again returns to normal.
+ */
+export interface FormDef {
+  id: string;
+  name: string;
+  /** The skill that takes this shape. */
+  skill: string;
+  basic: string;
+  skills: [string, string];
+  /** A specialization (tree) that swaps one of the shape's skills for its own ability. */
+  specSwap?: { tree: 0 | 1 | 2; slot: 0 | 1; skill: string };
+  /** The dodge while in this shape. */
+  dodge: string;
+  stats: Partial<Record<StatKey, number>>;
+  /** Max health share while in shape (%, bears are big). */
+  hpPct?: number;
 }
 
 /* ----------------------------------------------------------------- classes */
 
+/**
+ * A class's resource.
+ * - mana: a pool that grows with level; costs are shares of it; it trickles back in a fight and
+ *   refills fast out of one.
+ * - rage: 0-100, earned by hitting and being hit, spent on skills, fades out of combat.
+ * - energy / focus: 0-100, comes back quickly at a fixed rate; skills spend it.
+ * - holy: Holy Power, 0-5 points built by some skills and spent by others; fades out of combat.
+ */
 export interface ResourceDef {
+  kind: 'mana' | 'rage' | 'energy' | 'focus' | 'holy';
   name: string;
   color: string;
-  /** Maximum at level 1, and per level after. */
+  /** Maximum at level 1, and per level after (mana); the fixed maximum otherwise (perLevel 0). */
   base: number;
   perLevel: number;
-  /** Regained per second while fighting, as a share (%) of the maximum. Out of combat it refills fast. */
+  /** Mana: regained per second in a fight, as a share (%) of the maximum. Energy and focus: points per second. Rage: points lost per second out of combat. */
   regen: number;
 }
 
@@ -337,7 +417,9 @@ export interface ClassDef {
   dodge: string;
   /** The skills equipped when a new hero starts (by slot). */
   start: [string, string | null, string | null];
-  trees: [TalentTree, TalentTree];
+  trees: [SpecDef, SpecDef, SpecDef];
+  /** Druids: the shapes they can take. */
+  forms?: FormDef[];
   /** Damage a typical hit deals at level 1 (scales item procs and ultimate charge). */
   refDamage: number;
   /** A spell resource (mana): skills cost a share of it. Classes without one cast on cooldowns alone. */

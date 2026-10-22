@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { rng } from '../src/games/sigilfall/core/math';
 import { BOSSES } from '../src/games/sigilfall/data/bosses';
-import { CLASSES, MAX_LEVEL, xpToNext } from '../src/games/sigilfall/data/classes';
+import { CLASS_IDS, CLASSES, MAX_LEVEL, xpToNext } from '../src/games/sigilfall/data/classes';
+import { PETS } from '../src/games/sigilfall/data/pets';
+import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL } from '../src/games/sigilfall/data/talents';
 import { ITEMS, MINOR_MODS } from '../src/games/sigilfall/data/items';
 import { QUESTS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
@@ -16,6 +18,9 @@ import {
   BAG_OVERFLOW,
   BAG_SIZE,
   cantLearn,
+  cantSpec,
+  chooseSpec,
+  pointsInTree,
   equip,
   freePoints,
   learnTalent,
@@ -37,7 +42,7 @@ import { flowField, K, markerPos, parseRegion, TILE } from '../src/games/sigilfa
 import { emptyInput } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
 
-const CLS: ClassId[] = ['mage', 'warrior', 'ranger'];
+const CLS: ClassId[] = CLASS_IDS;
 const hero = (cls: ClassId = 'mage'): Character => newCharacter(cls, 'Test', 'hero0', 0);
 const levelTo = (c: Character, level: number): void => {
   while (c.level < level) addXp(c, xpToNext(c.level));
@@ -71,24 +76,60 @@ describe('sigilfall content', () => {
         if (n.requires) expect(ids.has(n.requires), n.id).toBe(true);
         for (const m of n.mods) if (m.t === 'skill' && !['*', 'basic', 'dodge', 'ult'].includes(m.skill)) expect(SKILLS[m.skill]?.cls, `${n.id} → ${m.skill}`).toBe(cls);
       }
-      // both trees exist and reach the last row
-      for (const tree of [0, 1] as const) expect(Math.max(...TALENTS[cls].filter((n) => n.tree === tree).map((n) => n.row))).toBe(3);
+      // three trees of seven rows, each ending in one capstone that 30 points below it can reach, with
+      // more ranks below it than that, so the way there is a choice
+      for (const tree of [0, 1, 2] as const) {
+        const nodes = TALENTS[cls].filter((n) => n.tree === tree);
+        const caps = nodes.filter((n) => n.row === 6);
+        expect(caps, `${cls} tree ${tree}`).toHaveLength(1);
+        expect(caps[0]!.ranks).toBe(1);
+        expect(nodes.filter((n) => n.row < 6).reduce((a, n) => a + n.ranks, 0), `${cls} tree ${tree}`).toBeGreaterThanOrEqual(32);
+        for (const n of nodes) {
+          expect(n.row >= 0 && n.row <= 6 && n.col >= 0 && n.col <= 3, n.id).toBe(true);
+          const below = nodes.filter((m) => m.row < n.row).reduce((a, m) => a + m.ranks, 0);
+          expect(below, n.id).toBeGreaterThanOrEqual(n.row * ROW_COST);
+          if (n.requires) expect(nodes.find((m) => m.id === n.requires)!.row, n.id).toBeLessThan(n.row);
+          expect(modLines(n.mods).length, n.id).toBe(n.mods.length);
+          for (const m of n.mods) {
+            const e = m.t === 'proc' ? m.proc.effect : m.t === 'skill' && 'effect' in m.op ? m.op.effect : null;
+            if (e?.kind === 'summon') expect(PETS[e.pet], n.id).toBeTruthy();
+            if (m.t === 'proc' && m.proc.skill) expect(SKILLS[m.proc.skill]?.cls, n.id).toBe(cls);
+          }
+        }
+        // no two talents in one spot
+        expect(new Set(nodes.map((n) => `${n.row}:${n.col}`)).size).toBe(nodes.length);
+      }
     }
     for (const m of MINOR_MODS) expect(SKILLS[m.skill]?.cls).toBe(m.cls);
   });
 
-  it('classes have their own kits: a basic, four skills, an ultimate and a dodge', () => {
+  it('classes have their own kits: a basic, six skills, three specializations, an ultimate and a dodge', () => {
+    expect(CLS).toHaveLength(7);
     const seen = new Set<string>();
     for (const cls of CLS) {
       const d = CLASSES[cls];
-      const kit = [d.basic, ...d.skills, d.ult, d.dodge];
-      for (const id of kit) {
+      const forms = (d.forms ?? []).flatMap((f) => [f.basic, ...f.skills, f.dodge]);
+      const kit = [d.basic, ...d.skills, ...d.trees.map((t) => t.skill), d.ult, d.dodge, ...forms];
+      for (const id of new Set(kit)) {
         expect(SKILLS[id]?.cls, id).toBe(cls);
-        expect(seen.has(id)).toBe(false);
+        expect(seen.has(id), id).toBe(false);
         seen.add(id);
       }
+      expect(d.skills).toHaveLength(6);
+      expect(d.trees).toHaveLength(3);
       expect(SKILLS[d.ult]!.kind).toBe('ultimate');
       expect(SKILLS[d.dodge]!.kind).toBe('dodge');
+      // skills arrive over the levels; the specialization's at 10
+      for (const t of d.trees) expect(SKILLS[t.skill]!.unlock).toBe(SPEC_LEVEL);
+      expect(d.skills.map((id) => SKILLS[id]!.unlock)).toEqual([1, 2, 4, 6, 14, 22]);
+      for (const f of d.forms ?? []) expect(d.skills).toContain(f.skill);
+      // every skill's text exists and every resource cost makes sense for the class
+      for (const id of kit) {
+        const sd = SKILLS[id]!;
+        expect(sd.blurb.length, id).toBeGreaterThan(10);
+        if (sd.base.cost > 0) expect(d.resource, id).toBeTruthy();
+        if (d.resource?.kind === 'holy') expect(sd.base.cost === 0 || sd.base.cost === 3, id).toBe(true);
+      }
     }
   });
 
@@ -262,31 +303,74 @@ describe('sigilfall character', () => {
     expect(new Set(c.skills).size).toBe(3);
   });
 
-  it('talents need points, rows and prerequisites; respec gives every point back', () => {
+  it('talents open at level 10 with a specialization; rows need points, some talents need others', () => {
     const c = hero('mage');
-    expect(learnTalent(c, 'kindling')).toBe(false);
-    levelTo(c, 10);
-    expect(freePoints(c)).toBe(9);
-    expect(cantLearn(c, 'combustion')).toMatch(/Needs 3 points/);
-    expect(cantLearn(c, 'wildfire')).toMatch(/Needs/);
+    levelTo(c, 9);
+    expect(freePoints(c)).toBe(0);
+    expect(cantLearn(c, 'kindling')).toMatch(/level 10/);
+    expect(cantSpec(c, 0)).toMatch(/level 10/);
+    levelTo(c, 20);
+    expect(freePoints(c)).toBe(11);
+    expect(cantLearn(c, 'kindling')).toMatch(/specialization/);
+    expect(learnedSkills(c)).not.toContain('flamestrike');
+    // the first choice is free and brings the specialization's ability and passive
+    expect(chooseSpec(c, 0)).toBe(true);
+    expect(learnedSkills(c)).toContain('flamestrike');
+    // the bar was full: the new ability takes the last slot
+    expect(c.skills[2]).toBe('flamestrike');
+    expect(buildHero(c).stats.fire).toBe(CLASSES.mage.base.fire + 10);
+    // the other trees wait for 31 points in this one
+    expect(cantLearn(c, 'conduction')).toMatch(new RegExp(`${SPEC_FOCUS} points in Pyromancer`));
+    expect(cantLearn(c, 'combustion')).toMatch(/Needs 5 points/);
     for (let i = 0; i < 3; i++) expect(learnTalent(c, 'kindling')).toBe(true);
     expect(learnTalent(c, 'kindling')).toBe(false); // full rank
+    learnTalent(c, 'fire-focus');
+    learnTalent(c, 'fire-focus');
     expect(learnTalent(c, 'combustion')).toBe(true);
     learnTalent(c, 'smolder');
     learnTalent(c, 'smolder');
-    // row 2 is open now, but Wildfire still needs Ignition
+    learnTalent(c, 'pyroclasm');
+    learnTalent(c, 'pyroclasm');
+    // row 2 is open now (10 points), but Wildfire still needs Ignition
     expect(cantLearn(c, 'wildfire')).toMatch(/Ignition/);
     expect(learnTalent(c, 'ignition')).toBe(true);
-    expect(learnTalent(c, 'wildfire')).toBe(true);
-    expect(freePoints(c)).toBe(1);
-    // respec costs gold from level 5
-    expect(respecCost(c)).toBe(250);
+    expect(learnTalent(c, 'wildfire')).toBe(false); // no points left
+    expect(freePoints(c)).toBe(0);
+    // resetting costs gold from level 15 and gives every point back
+    expect(respecCost(c)).toBe(500);
     expect(respec(c)).toBe(false);
-    c.gold = 300;
+    c.gold = 600;
     expect(respec(c)).toBe(true);
-    expect(c.gold).toBe(50);
-    expect(freePoints(c)).toBe(9);
-    expect(buildHero(c).stats.fire).toBe(CLASSES.mage.base.fire);
+    expect(c.gold).toBe(100);
+    expect(freePoints(c)).toBe(11);
+    // changing the specialization costs the same and resets talents; its ability leaves the bar
+    learnTalent(c, 'kindling');
+    c.skills = ['fireball', 'flamestrike', null];
+    c.gold = 500;
+    expect(chooseSpec(c, 2)).toBe(true);
+    expect(c.gold).toBe(0);
+    expect(c.talents).toEqual({});
+    expect(c.skills).not.toContain('flamestrike');
+    expect(learnedSkills(c)).toContain('blizzard');
+    expect(c.skills).toContain('blizzard');
+    expect(cantSpec(c, 2)).toMatch(/your specialization/);
+  });
+
+  it('51 points at the cap: 31 in the specialization, then the rest anywhere', () => {
+    const c = hero('warrior');
+    levelTo(c, MAX_LEVEL);
+    expect(freePoints(c)).toBe(51);
+    chooseSpec(c, 1);
+    // fill Guardian row by row
+    for (let row = 0; row <= 6; row++) for (const n of TALENTS.warrior.filter((x) => x.tree === 1 && x.row === row)) while (learnTalent(c, n.id));
+    expect(pointsInTree(c, 1)).toBeGreaterThanOrEqual(SPEC_FOCUS);
+    expect(c.talents.avalanche).toBe(1);
+    // the other trees are open now, and the points left go there (not far enough for their capstones)
+    expect(cantLearn(c, 'bloodlust')).toBeNull();
+    for (const tree of [0, 2] as const) for (let row = 0; row <= 6; row++) for (const n of TALENTS.warrior.filter((x) => x.tree === tree && x.row === row)) while (learnTalent(c, n.id));
+    expect(freePoints(c)).toBe(0);
+    expect(c.talents.bloodstorm ?? 0).toBe(0);
+    expect(c.talents.bladestorm ?? 0).toBe(0);
   });
 
   it('equipping and unequipping never duplicates or loses an item', () => {
@@ -444,6 +528,7 @@ describe('sigilfall saves', () => {
         level: 999,
         xp: -5,
         gold: 'lots',
+        spec: 0,
         talents: { kindling: 99, 'not-a-talent': 3 },
         skills: ['fireball', 'fireball', 'cleave'],
         equip: { weapon: { uid: 'a', base: 'cleaverfang', r: 'epic', il: 4, st: [] }, head: { uid: 'b', base: 'nonsense', r: 'rare', il: 2, st: [] } },
@@ -465,6 +550,11 @@ describe('sigilfall saves', () => {
     expect(c.bag.map((i) => i.base).sort()).toEqual(['cleaverfang', 'ember-staff']);
     expect(new Set(c.bag.map((i) => i.uid)).size).toBe(2);
     expect(c.unlocked).toEqual(['emberwick', 'crypt']);
+    expect(c.spec).toBe(0);
+    // talents the rules can't reach (another tree before 31 points in the specialization) are reset
+    const d = validateCharacter({ cls: 'mage', level: 30, spec: 0, talents: { conduction: 3, kindling: 1 } }, 0)!;
+    expect(d.talents).toEqual({});
+    expect(validateCharacter({ cls: 'mage', level: 5, spec: 1 }, 0)!.spec).toBeNull();
     expect(validateCharacter({ cls: 'bard' }, 0)).toBeNull();
     expect(validateCharacter('hero', 0)).toBeNull();
   });

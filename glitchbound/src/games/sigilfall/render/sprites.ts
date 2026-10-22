@@ -3,7 +3,11 @@ import type { ClassId, Item, ItemIcon, SlotId } from '../data/types';
 import { itemIcon, itemMat, itemTint } from '../progress/items';
 import { HERO_H, HERO_W, paintHero, type ChestStyle, type FeetStyle, type HandStyle, type HeadStyle, type HeroLook, type LegStyle, type Piece } from './art/hero';
 import { NPCS } from '../data/quests';
-import { CREATURE_ART, ITEM_ICON_PAL, ITEM_ICONS, SKILL_ICON_PAL, SKILL_ICONS, type Pal } from './artdata';
+import { CREATURE_ART, ITEM_ICON_PAL, ITEM_ICONS, type Pal } from './artdata';
+import { COMPANION_ART } from './art/companions';
+import { glyphIcon } from './art/icons';
+import { DMG_COLOR, SKILL_GLYPH } from './art/skillGlyphs';
+import { SKILLS } from '../data/skills';
 import { canvas, ctx2d, makeSprite, paint, scale2x, scaled, shade, type Cnv, type Sprite } from './pixel';
 
 /** Every sprite the game draws, built once on first use. */
@@ -62,6 +66,54 @@ const BARE: Record<ClassId, HeroLook> = {
     hands: { style: 'gloves', mat: 'leather', tint: '#7a5034', r: 'common' },
     feet: { style: 'boots', mat: 'leather', tint: '#6a4428', r: 'common' },
     quiver: '#9a6a3a',
+    cape: null,
+  },
+  warlock: {
+    skin: '#e8c8b8',
+    hair: '#2a1a2a',
+    hairStyle: 'long',
+    head: { style: 'hood', mat: 'cloth', tint: '#4a2a6a', r: 'common' },
+    chest: { style: 'robe', mat: 'cloth', tint: '#3a1a4a', r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#2a1a3a', r: 'common' },
+    hands: { style: 'gloves', mat: 'cloth', tint: '#2a1a2a', r: 'common' },
+    feet: { style: 'shoes', mat: 'leather', tint: '#2a1a1a', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  priest: {
+    skin: '#f2d0b0',
+    hair: '#e8d080',
+    hairStyle: 'short',
+    head: null,
+    chest: { style: 'robe', mat: 'cloth', tint: '#f2ece0', r: 'epic' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#d8d0c0', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'leather', tint: '#8a6a4a', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  paladin: {
+    skin: '#f0c8a0',
+    hair: '#d8b060',
+    hairStyle: 'short',
+    head: null,
+    chest: { style: 'plate', mat: 'mail', tint: '#b8bcc8', r: 'rare' },
+    legs: { style: 'greaves', mat: 'mail', tint: '#9aa0b0', r: 'common' },
+    hands: { style: 'gauntlets', mat: 'plate', tint: '#c8ccd8', r: 'common' },
+    feet: { style: 'boots', mat: 'leather', tint: '#6a4428', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  druid: {
+    skin: '#e0b088',
+    hair: '#6a8a3a',
+    hairStyle: 'long',
+    head: null,
+    chest: { style: 'robe', mat: 'cloth', tint: '#7a5a2a', r: 'common' },
+    legs: { style: 'trousers', mat: 'leather', tint: '#4a3a2a', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'leather', tint: '#4a3020', r: 'common' },
+    quiver: null,
     cape: null,
   },
 };
@@ -140,14 +192,14 @@ export { HERO_H, HERO_W };
 
 /** A creature frame (enemies, bosses, NPCs). Art faces right. */
 export function creatureSprite(id: string, frame: number): Sprite {
-  const art = CREATURE_ART[id] ?? CREATURE_ART.slime!;
+  const art = CREATURE_ART[id] ?? COMPANION_ART[id] ?? CREATURE_ART.slime!;
   const f = frame % art.frames.length;
   return memo(`cr:${id}:${f}`, () => paint2x(art.frames[f]!, art.pal));
 }
 
 /** Grimtusk and friends tinted for elites and bosses are drawn from the same art with a palette swap. */
 export function recolored(id: string, frame: number, pal: Pal, key: string): Sprite {
-  const art = CREATURE_ART[id] ?? CREATURE_ART.slime!;
+  const art = CREATURE_ART[id] ?? COMPANION_ART[id] ?? CREATURE_ART.slime!;
   const f = frame % art.frames.length;
   return memo(`rc:${key}:${f}`, () => paint2x(art.frames[f]!, { ...art.pal, ...pal }));
 }
@@ -189,9 +241,20 @@ export function weaponSprite(kind: string, tint?: string): Sprite {
 export function heldWeapon(cls: ClassId, weapon: Item | undefined): { kind: string; tint?: string } {
   const icon = weapon ? itemIcon(weapon) : undefined;
   const tint = weapon ? itemTint(weapon) : undefined;
-  if (cls === 'mage') return { kind: 'staff', tint: tint ?? CLASSES.mage.colors.accent };
-  if (cls === 'ranger') return { kind: 'bow', tint };
-  return { kind: icon === 'axe' ? 'axe' : icon === 'hammer' ? 'hammer' : 'sword', tint };
+  switch (cls) {
+    case 'mage':
+    case 'warlock':
+    case 'druid':
+      return { kind: 'staff', tint: tint ?? CLASSES[cls].colors.accent };
+    case 'priest':
+      return icon === 'hammer' ? { kind: 'hammer', tint } : { kind: 'staff', tint: tint ?? '#ffe9a0' };
+    case 'ranger':
+      return { kind: 'bow', tint };
+    case 'paladin':
+      return { kind: icon === 'sword' ? 'sword' : 'hammer', tint: tint ?? '#ffd84d' };
+    default:
+      return { kind: icon === 'axe' ? 'axe' : icon === 'hammer' ? 'hammer' : 'sword', tint };
+  }
 }
 
 /* ----------------------------------------------------------------- icons */
@@ -209,12 +272,18 @@ export function itemIconUrl(item: Item | { icon: ItemIcon; tint: string }, scale
   return url;
 }
 
+/** A skill's icon (its glyph in its color), as a data URL for the UI (cached). */
 export function skillIconUrl(id: string, scale = 4): string {
-  const key = `skill:${id}:${scale}`;
+  const [glyph, color] = SKILL_GLYPH[id] ?? ['star'];
+  return glyphIconUrl(glyph, color ?? DMG_COLOR[SKILLS[id]?.base.dmgType ?? 'arcane'], scale);
+}
+
+/** A glyph on a tile of a color (talents use their tree's color), as a data URL (cached). */
+export function glyphIconUrl(glyph: string, color: string, scale = 4): string {
+  const key = `glyph:${glyph}:${color}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
-  const rows = SKILL_ICONS[id] ?? SKILL_ICONS['arcane-bolt']!;
-  const url = scaled(paint(rows, SKILL_ICON_PAL), scale).toDataURL();
+  const url = scaled(glyphIcon(glyph, color).toCanvas(), Math.max(1, Math.round(scale / 2))).toDataURL();
   iconCache.set(key, url);
   return url;
 }

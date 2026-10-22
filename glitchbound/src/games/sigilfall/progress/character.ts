@@ -1,7 +1,7 @@
 import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { QUESTS, QUEST_DEFS } from '../data/quests';
 import { SKILLS } from '../data/skills';
-import { ROW_COST, TALENTS, talentNode } from '../data/talents';
+import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS, talentNode } from '../data/talents';
 import type { ClassId, Item, Objective, QuestDef, RegionId, SlotId } from '../data/types';
 import { itemClass, itemSlot, salvageValue } from './items';
 
@@ -34,6 +34,8 @@ export interface Character {
   restock: number;
   sold: string[];
   talents: Record<string, number>;
+  /** The chosen specialization (a talent tree, 0-2), from level 10; null before choosing. */
+  spec: 0 | 1 | 2 | null;
   /** Skills in slots 1-3 (null = empty). */
   skills: [string | null, string | null, string | null];
   equip: Partial<Record<SlotId, Item>>;
@@ -67,6 +69,7 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     restock: 0,
     sold: [],
     talents: {},
+    spec: null,
     skills: [...def.start],
     equip: {},
     bag: [],
@@ -110,9 +113,13 @@ export function addXp(c: Character, n: number): number[] {
   return reached;
 }
 
-/** Skills the hero has learned by level (the pool for slots 1-3). */
+/** Skills the hero has learned by level, and their specialization's (the pool for slots 1-3). */
 export function learnedSkills(c: Character): string[] {
-  return CLASSES[c.cls].skills.filter((id) => (SKILLS[id]?.unlock ?? 99) <= c.level);
+  const def = CLASSES[c.cls];
+  const pool = def.skills.filter((id) => (SKILLS[id]?.unlock ?? 99) <= c.level);
+  // a shape's specialization ability (the druid's Rip, Ironfur) lives on that shape's bar instead
+  if (c.spec !== null && c.level >= SPEC_LEVEL && !def.trees[c.spec].formOnly) pool.push(def.trees[c.spec].skill);
+  return pool;
 }
 
 export const hasUltimate = (c: Character): boolean => (SKILLS[CLASSES[c.cls].ult]?.unlock ?? 99) <= c.level;
@@ -137,10 +144,17 @@ export function setSkill(c: Character, slot: 0 | 1 | 2, id: string | null): bool
 
 /* ---------------------------------------------------------------- talents */
 
-export const talentPoints = (c: Character): number => Math.max(0, c.level - 1);
+/** One point per level from level 10 (when a specialization is chosen): 51 at level 60. */
+export const talentPoints = (c: Character): number => Math.max(0, c.level - SPEC_LEVEL + 1);
 export const spentPoints = (c: Character): number => Object.values(c.talents).reduce((a, b) => a + b, 0);
 export const freePoints = (c: Character): number => talentPoints(c) - spentPoints(c);
-export const pointsInTree = (c: Character, tree: 0 | 1): number => TALENTS[c.cls].filter((n) => n.tree === tree).reduce((a, n) => a + (c.talents[n.id] ?? 0), 0);
+export const pointsInTree = (c: Character, tree: 0 | 1 | 2): number => TALENTS[c.cls].filter((n) => n.tree === tree).reduce((a, n) => a + (c.talents[n.id] ?? 0), 0);
+
+/** Whether a tree takes points yet: the specialization's at once, the other two after 31 points in it. */
+export function treeOpen(c: Character, tree: 0 | 1 | 2): boolean {
+  if (c.spec === null) return false;
+  return tree === c.spec || pointsInTree(c, c.spec) >= SPEC_FOCUS;
+}
 
 /** Why a talent can't take another point, or null if it can. */
 export function cantLearn(c: Character, id: string): string | null {
@@ -148,11 +162,44 @@ export function cantLearn(c: Character, id: string): string | null {
   if (!node) return 'Unknown talent.';
   const rank = c.talents[id] ?? 0;
   if (rank >= node.ranks) return 'Already at full rank.';
+  const trees = CLASSES[c.cls].trees;
+  if (c.spec === null) return c.level < SPEC_LEVEL ? `Talents open at level ${SPEC_LEVEL}, with your specialization.` : 'Choose a specialization first.';
+  if (!treeOpen(c, node.tree)) return `Spend ${SPEC_FOCUS} points in ${trees[c.spec].name} first.`;
   if (freePoints(c) <= 0) return 'No talent points left. You get one every level.';
   const need = node.row * ROW_COST;
-  if (pointsInTree(c, node.tree) < need) return `Needs ${need} points in ${CLASSES[c.cls].trees[node.tree].name} first.`;
+  if (pointsInTree(c, node.tree) < need) return `Needs ${need} points in ${trees[node.tree].name} first.`;
   if (node.requires && !(c.talents[node.requires] ?? 0)) return `Needs ${talentNode(c.cls, node.requires)?.name ?? 'another talent'} first.`;
   return null;
+}
+
+/** What choosing a specialization costs now (the first choice is free; changing resets talents). */
+export const specCost = (c: Character): number => (c.spec === null ? 0 : respecCost(c));
+
+/** Why the hero can't take this specialization, or null. */
+export function cantSpec(c: Character, tree: 0 | 1 | 2): string | null {
+  if (c.level < SPEC_LEVEL) return `Specializations open at level ${SPEC_LEVEL}.`;
+  if (c.spec === tree) return 'This is your specialization.';
+  if (c.gold < specCost(c)) return `Changing costs ${specCost(c)} gold.`;
+  return null;
+}
+
+/** Takes a specialization and puts its ability on the bar. Changing it resets talents and takes the old one's ability off. */
+export function chooseSpec(c: Character, tree: 0 | 1 | 2): boolean {
+  if (cantSpec(c, tree)) return false;
+  const def = CLASSES[c.cls];
+  if (c.spec !== null) {
+    c.gold -= specCost(c);
+    c.talents = {};
+    const old = def.trees[c.spec].skill;
+    c.skills = c.skills.map((id) => (id === old ? null : id)) as Character['skills'];
+  }
+  c.spec = tree;
+  autoSlotSkills(c);
+  // the specialization's ability goes on the bar even when it is full (in the last slot; what was there
+  // stays learned and can go back from the Skills screen)
+  const skill = def.trees[tree].skill;
+  if (!def.trees[tree].formOnly && !c.skills.includes(skill)) c.skills[2] = skill;
+  return true;
 }
 
 export function learnTalent(c: Character, id: string): boolean {
@@ -161,8 +208,8 @@ export function learnTalent(c: Character, id: string): boolean {
   return true;
 }
 
-/** Resetting talents is free up to level 5, then costs a little gold per level. */
-export const respecCost = (c: Character): number => (c.level < 5 ? 0 : c.level * 25);
+/** Resetting talents is free up to level 15, then costs a little gold per level. */
+export const respecCost = (c: Character): number => (c.level < 15 ? 0 : c.level * 25);
 
 export function respec(c: Character): boolean {
   const cost = respecCost(c);

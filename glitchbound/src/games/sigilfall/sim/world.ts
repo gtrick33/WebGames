@@ -1,6 +1,6 @@
 import { dist, dist2, rng, TAU } from '../core/math';
 import { BOSSES } from '../data/bosses';
-import { CLASSES, xpToNext } from '../data/classes';
+import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
 import { ITEM_DEFS } from '../data/items';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
@@ -12,10 +12,11 @@ import { addItem, addXp, BAG_OVERFLOW, BAG_SIZE, bagFull, questEvent, startQuest
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
 import { separate, updateEnemy } from './ai';
+import { refreshPets, summonPet, updatePets } from './pets';
 import { updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type TileMap } from './map';
-import type { Chest, Drop, Enemy, Field, FloatText, Fx, Interactable, NpcActor, Player, Projectile, Telegraph, Trap, Wave, WorldEvent } from './types';
+import type { Chest, Drop, Enemy, Field, FloatText, Fx, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent } from './types';
 import { inCone, inLine } from '../core/math';
 
 /** What the input adapters hand the world every frame. */
@@ -85,6 +86,7 @@ export class World {
   input: InputFrame = emptyInput();
 
   enemies: Enemy[] = [];
+  pets: Pet[] = [];
   projectiles: Projectile[] = [];
   fields: Field[] = [];
   telegraphs: Telegraph[] = [];
@@ -153,6 +155,17 @@ export class World {
     this.checkpoint = { ...spawn };
     this.player = this.newPlayer(spawn.x, spawn.y);
     this.spawnContent();
+    this.callCompanions();
+  }
+
+  /** Companions that stay (the wolf, the imp) come along into every region: the ones on the bar are called at once. */
+  private callCompanions(): void {
+    for (const slot of ['s1', 's2', 's3'] as const) {
+      const id = this.build.bar[slot];
+      const spec = id ? this.build.skills[id]?.spec : undefined;
+      if (spec?.cast !== 'summon') continue;
+      for (const e of spec.onCast) if (e.kind === 'summon' && e.dur === 0) summonPet(this, e.pet, e.count, 0);
+    }
   }
 
   /* ------------------------------------------------------------- setup */
@@ -170,7 +183,8 @@ export class World {
       dir: 0,
       hp: this.build.maxHp,
       maxHp: this.build.maxHp,
-      mana: this.build.maxMana,
+      // mana, energy and focus start full; rage and Holy Power are earned in the fight
+      mana: this.build.resource?.kind === 'rage' || this.build.resource?.kind === 'holy' ? 0 : this.build.maxMana,
       maxMana: this.build.maxMana,
       shield: 0,
       shieldT: 0,
@@ -178,6 +192,8 @@ export class World {
       dash: null,
       windup: null,
       channel: null,
+      buffs: [],
+      form: null,
       cds,
       ult: 0,
       combo: 0,
@@ -333,6 +349,8 @@ export class World {
       deathT: 0,
       scale: (def.scale ?? 1) * (o.elite ? 1.3 : 1),
       strafe: this.rand() * 2,
+      victim: 0,
+      victimT: 0,
       name: o.elite ? `${ELITE_AFFIXES[elite[0]!].name} ${def.name}` : def.name,
     };
     // big enemies (elites, guardians) must not start overlapping a wall or a pillar (training
@@ -505,16 +523,36 @@ export class World {
     }
   }
 
-  /** Re-reads the hero after gear, talents or skills changed (keeps health as a share). */
+  /** Re-reads the hero after gear, talents, skills or a shape changed (keeps health as a share). */
   rebuild(): void {
-    const share = this.player.maxHp > 0 ? this.player.hp / this.player.maxHp : 1;
-    this.build = buildHero(this.hero);
-    this.player.maxHp = this.build.maxHp;
-    this.player.hp = Math.max(1, Math.min(this.build.maxHp, Math.round(this.build.maxHp * share)));
-    const mShare = this.player.maxMana > 0 ? this.player.mana / this.player.maxMana : 1;
-    this.player.maxMana = this.build.maxMana;
-    this.player.mana = Math.min(this.build.maxMana, this.build.maxMana * mShare);
+    const p = this.player;
+    const share = p.maxHp > 0 ? p.hp / p.maxHp : 1;
+    this.build = buildHero(this.hero, p.form);
+    p.maxHp = this.build.maxHp;
+    p.hp = Math.max(1, Math.min(this.build.maxHp, Math.round(this.build.maxHp * share)));
+    if (this.build.resource?.kind === 'mana') {
+      const mShare = p.maxMana > 0 ? p.mana / p.maxMana : 1;
+      p.maxMana = this.build.maxMana;
+      p.mana = Math.min(this.build.maxMana, this.build.maxMana * mShare);
+    } else {
+      p.maxMana = this.build.maxMana;
+      p.mana = Math.min(p.mana, p.maxMana);
+    }
     this.syncCooldowns(false);
+    refreshPets(this);
+  }
+
+  /** A druid takes a shape (or returns to their own, null): the bar changes with it. */
+  setForm(form: string | null): void {
+    const p = this.player;
+    if (p.form === form) return;
+    p.form = form;
+    p.channel = null;
+    this.rebuild();
+    this.fxBurst(p.x, p.y, form === 'bear' ? '#a0703f' : form === 'cat' ? '#ffb04d' : '#7bd65a', 14, 14);
+    this.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.35, size: 16, color: '#7bd65a' });
+    this.sfx('shapeshift');
+    this.emit({ t: 'hero' });
   }
 
   private syncCooldowns(fresh: boolean): void {
@@ -549,6 +587,7 @@ export class World {
     this.updatePlayer(dt);
     this.updateFlow(dt);
     for (const e of this.enemies) updateEnemy(this, e, dt);
+    updatePets(this, dt);
     separate(this, dt);
     updateProjectiles(this, dt);
     updateFields(this, dt);
@@ -619,6 +658,14 @@ export class World {
       p.shieldT -= dt;
       if (p.shieldT <= 0) p.shield = 0;
     }
+    // buffs run out; healing over time ticks (it is not limited like healing from hits)
+    if (p.buffs.length) {
+      for (const b of p.buffs) {
+        b.t -= dt;
+        if (b.def.hot) healPlayer(this, b.def.hot * dt, false, true);
+      }
+      p.buffs = p.buffs.filter((b) => b.t > 0);
+    }
     tickPlayerStatuses(this, dt);
     if (p.dead) return;
     // regeneration: the regen stat always; out of combat (3 s without hitting or being hit) health and
@@ -626,10 +673,18 @@ export class World {
     const calm = p.calm > CALM_AFTER;
     const regen = stats.regen + (calm ? p.maxHp * (this.region.safe ? 0.3 : OUT_OF_COMBAT_HP) : 0);
     if (regen > 0 && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + regen * dt);
-    if (p.maxMana > 0 && p.mana < p.maxMana) {
-      const res = CLASSES[this.hero.cls].resource;
-      const rate = calm ? OUT_OF_COMBAT_MANA : (res?.regen ?? 0) / 100;
-      p.mana = Math.min(p.maxMana, p.mana + p.maxMana * rate * dt);
+    // the resource: mana trickles back (fast out of combat), energy and focus come back at a fixed rate,
+    // rage and Holy Power fade once the fight is over
+    const res = this.build.resource;
+    if (res && p.maxMana > 0) {
+      if (res.kind === 'mana') {
+        const rate = calm ? OUT_OF_COMBAT_MANA : res.regen / 100;
+        p.mana = Math.min(p.maxMana, p.mana + p.maxMana * rate * dt);
+      } else if (res.kind === 'energy' || res.kind === 'focus') {
+        p.mana = Math.min(p.maxMana, p.mana + res.regen * (1 + stats.haste / 100) * dt);
+      } else if (calm && p.calm > CALM_AFTER + 2) {
+        p.mana = Math.max(0, p.mana - res.regen * dt);
+      }
     }
     // cooldowns recharge faster with haste
     const haste = 1 + stats.haste / 100;
@@ -1392,7 +1447,7 @@ export class World {
 
   /** How full the experience bar is. */
   xpShare(): number {
-    return this.hero.level >= 20 ? 1 : this.hero.xp / xpToNext(this.hero.level);
+    return this.hero.level >= MAX_LEVEL ? 1 : this.hero.xp / xpToNext(this.hero.level);
   }
 
   /** The current boss (for the health bar). */
