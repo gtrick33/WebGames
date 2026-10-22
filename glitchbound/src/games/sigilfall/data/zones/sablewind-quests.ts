@@ -1,0 +1,320 @@
+import type { NpcDef, QuestDef } from '../types';
+
+/**
+ * Dustcrown's people and the quests of Sablewind Canyon (see WORLD.md). The Hollow Legion's wagon road
+ * runs along the canyon floor below the town: bone-steel, blasting powder and the dead, hauled west
+ * every night. The main chain watches the road from the Old Lookout, breaks the wagon teams, reads
+ * their manifests with a scout from Highwall, stops the sappers widening the canyon and ends at the
+ * Supply Depot with Quartermaster Vane, whose ledgers show where it all goes: the siege of Highwall.
+ * Scout Ilya wants the raptors off her road home, Dora wants her mules back from the rocs, and Garrick
+ * wants to know what happened to his last shift. Main chain first.
+ */
+export const SABLEWIND_QUESTS: QuestDef[] = [
+  /* ---------------------------------------------------------- the way in */
+  {
+    id: 'the-supply-road',
+    name: 'The Supply Road',
+    giver: 'oasis-keeper-sefu',
+    text: 'The Legion’s diggers did not walk into the Sunscorch from nowhere: they came down the canyon road from the north, and so did their pay. The caravans out of Sablewind Canyon say Legion wagons roll west along it every night, loaded to the axles. Take the north road out of the Sunscorch into the canyon and find Foreman Garrick in Dustcrown, the mining town on the rim.',
+    objective: { kind: 'talk', npc: 'foreman-garrick', label: 'Talk to Foreman Garrick in Dustcrown' },
+    after: ['the-sun-king'],
+    level: 37,
+    reward: { xp: 1300, gold: 360 },
+  },
+  /* ------------------------------------------------------ the wagon road */
+  {
+    id: 'the-old-lookout',
+    name: 'The Old Lookout',
+    giver: 'foreman-garrick',
+    text: 'The wagons pass at night, down on the canyon floor, and nobody in Dustcrown has had the nerve to count them. North-west of town stands the Old Lookout, a watchtower from the days when Dustcrown could afford watchmen. Climb up to it and watch the road. Garrick would like a number, even a frightening one.',
+    objective: { kind: 'explore', spot: 'old-lookout', label: 'Watch the road from the Old Lookout' },
+    after: ['the-supply-road'],
+    zone: 'sablewind',
+    reward: { xp: 1400, gold: 370, text: 'Forty wagons by midnight, pulled by the dead and driven by the dead, and not a lantern among them.' },
+  },
+  {
+    id: 'break-the-teams',
+    name: 'Break the Teams',
+    giver: 'foreman-garrick',
+    text: 'Forty wagons a night. Garrick has had enough of watching. Break the Legion’s wagon teams wherever you catch them on the canyon roads: the drivers with their whips, the bone-haulers under their crates, the wagon-guards riding on top.',
+    objective: { kind: 'kill', region: 'sablewind', count: 12, enemies: ['legion-teamster', 'bone-hauler', 'legion-wagon-guard'], label: 'Break the Legion’s wagon teams' },
+    after: ['the-old-lookout'],
+    zone: 'sablewind',
+    level: 38,
+    reward: { xp: 1550, gold: 380 },
+  },
+  {
+    id: 'the-manifests',
+    name: 'The Manifests',
+    giver: 'foreman-garrick',
+    text: 'Every Legion teamster carries a bone tube on its belt, and in every tube is a manifest: what is on the wagon, and where it is going. The dead are tidy that way. Bring Garrick five manifests from the teamsters on the canyon roads.',
+    objective: { kind: 'loot', region: 'sablewind', item: 'Wagon Manifest', from: ['legion-teamster'], chance: 0.4, count: 5, label: 'Take Wagon Manifests from Legion teamsters' },
+    after: ['break-the-teams'],
+    zone: 'sablewind',
+    level: 38,
+    reward: { xp: 1550, gold: 380 },
+  },
+  {
+    id: 'a-scouts-eye',
+    name: 'A Scout’s Eye',
+    giver: 'foreman-garrick',
+    text: 'The manifests are written in the Legion’s army hand, all marks and numbers. Garrick can read an ore assay, not this. Scout Ilya, who came down out of the west a month ago and sells blades on the square, can read anything with a number in it. She won’t say where she learned. Take her the manifests.',
+    objective: { kind: 'talk', npc: 'scout-ilya', label: 'Take the manifests to Scout Ilya' },
+    after: ['the-manifests'],
+    zone: 'sablewind',
+    level: 39,
+    reward: { xp: 1450, gold: 390 },
+  },
+  {
+    id: 'the-broken-wagons',
+    name: 'The Broken Wagons',
+    giver: 'scout-ilya',
+    text: 'Pitch, ladders, bone-steel and powder: a siege train, Ilya says, and powder most of all. Garrick’s miners once ambushed a convoy at a bend east of town, now called the Broken Wagons. They broke four wagons and lost eleven men, and the Legion never came back for its wagons. Ilya says the Legion always comes back. Go and see what is still lying there.',
+    objective: { kind: 'explore', spot: 'broken-wagons', label: 'Search the Broken Wagons' },
+    after: ['a-scouts-eye'],
+    zone: 'sablewind',
+    level: 39,
+    reward: { xp: 1600, gold: 390, text: 'The wagons are full of blasting powder, and fresh tracks lead away north, toward the sound of blasting.' },
+  },
+  {
+    id: 'the-sappers-cut',
+    name: 'The Sappers’ Cut',
+    giver: 'foreman-garrick',
+    text: 'The Legion’s sappers have been blasting the canyon wider north of town, at the Sappers’ Cut, so their siege engines can pass, and every blast shakes the dust off Dustcrown’s roofs. Stop the blasting. Kill the sappers, from as far away as you can manage, and don’t stand by the bodies.',
+    objective: { kind: 'kill', region: 'sablewind', count: 8, enemies: ['legion-sapper'], label: 'Stop the Legion’s sappers' },
+    after: ['the-broken-wagons'],
+    zone: 'sablewind',
+    level: 40,
+    reward: { xp: 1700, gold: 400 },
+  },
+  {
+    id: 'the-supply-depot',
+    name: 'The Supply Depot',
+    giver: 'scout-ilya',
+    text: 'Every manifest is countersigned the same way: Q. M. Vane. Every wagon on the road is counted in at the Legion’s Supply Depot in the far north-west, where the canyon road turns west for Highwall, and Quartermaster Vane does the counting. Find the depot, and how well it is guarded.',
+    objective: { kind: 'explore', spot: 'supply-depot', label: 'Find the Legion’s Supply Depot' },
+    after: ['the-sappers-cut'],
+    zone: 'sablewind',
+    level: 40,
+    reward: { xp: 1650, gold: 400 },
+  },
+  {
+    id: 'the-quartermasters-end',
+    name: 'The Quartermaster’s End',
+    giver: 'foreman-garrick',
+    text: 'Quartermaster Vane keeps the books for the whole wagon road: what goes west, when, and to whom. He keeps them at his depot in the far north-west, with his best wagon guards around him and a whistle for the sappers. Close the books on him, and bring his ledgers back to Dustcrown.',
+    objective: { kind: 'kill', region: 'sablewind', count: 1, enemies: ['quartermaster-vane'], label: 'Defeat Quartermaster Vane at the Supply Depot' },
+    after: ['the-supply-depot'],
+    zone: 'sablewind',
+    level: 41,
+    reward: {
+      xp: 5700,
+      gold: 1400,
+      item: 'garricks-lamp-helm',
+      text: 'Vane’s ledgers are the siege of Highwall in numbers: every wagon in the canyon goes to General Morvain’s lines, and the last page counts what he needs to break the wall. Ilya reads it twice and goes white. Garrick gives you his old lamp-helm.',
+    },
+  },
+  /* --------------------------------------------------- Ilya's road home */
+  {
+    id: 'raptor-run',
+    name: 'Raptor Run',
+    giver: 'scout-ilya',
+    text: 'Ilya means to go home through the western gulches when this is done, and the trail runs through Raptor Run, west of Dustcrown, where the canyon raptors hunt. She would like to know how many there are before she tries it. She would like you to be the one who finds out.',
+    objective: { kind: 'explore', spot: 'raptor-run', label: 'Scout Raptor Run' },
+    after: ['the-supply-road'],
+    zone: 'sablewind',
+    level: 38,
+    reward: { xp: 1500, gold: 370 },
+  },
+  {
+    id: 'pack-hunters',
+    name: 'Pack Hunters',
+    giver: 'scout-ilya',
+    text: 'Too many, and they hunt the way the Legion fights: two from the sides while you watch the one in front. Thin out the canyon raptors west of Dustcrown and around Raptor Run, and watch your flanks while you do.',
+    objective: { kind: 'kill', region: 'sablewind', count: 10, enemies: ['canyon-raptor'], label: 'Kill canyon raptors' },
+    after: ['raptor-run'],
+    zone: 'sablewind',
+    level: 39,
+    reward: { xp: 1700, gold: 390 },
+  },
+  {
+    id: 'the-red-matriarch',
+    name: 'The Red Matriarch',
+    giver: 'scout-ilya',
+    text: 'The pack comes back as fast as you thin it, because the Red Matriarch keeps it: an old raptor crested in gold, the mother of everything in Raptor Run. She dens in the middle of the Run, west of Dustcrown. Kill her, and the pack scatters for a season.',
+    objective: { kind: 'kill', region: 'sablewind', count: 1, enemies: ['the-red-matriarch'], label: 'Defeat the Red Matriarch at Raptor Run' },
+    after: ['pack-hunters'],
+    zone: 'sablewind',
+    level: 40,
+    reward: { xp: 2700, gold: 600, item: 'matriarchs-fang', text: 'Ilya strings the Matriarch’s hooked claw on gut for you. “For luck. Not hers.”' },
+  },
+  /* ---------------------------------------------------- Dora's mules */
+  {
+    id: 'the-missing-mules',
+    name: 'The Missing Mules',
+    giver: 'dustcrown-dora',
+    text: 'Dora’s mules carry the Dust-Up’s water up from the river, and three of them have gone missing this week, picked clean off the trail. She suspects the rocs that nest on the Roc Eyrie, north-east of town, and she suspects them loudly. Go and look in the eyrie.',
+    objective: { kind: 'explore', spot: 'roc-eyrie', label: 'Look into the Roc Eyrie' },
+    after: ['the-supply-road'],
+    zone: 'sablewind',
+    level: 38,
+    reward: { xp: 1500, gold: 370, text: 'Mule bones in every nest. Dora’s suspicions are confirmed, loudly.' },
+  },
+  {
+    id: 'mules-on-the-wing',
+    name: 'Mules on the Wing',
+    giver: 'dustcrown-dora',
+    text: 'Dora wants the rocs to learn that Dustcrown’s mules are not on the menu. Bring down cliff rocs wherever they hunt along the canyon rim. She’ll keep the water coming and your bed made.',
+    objective: { kind: 'kill', region: 'sablewind', count: 8, enemies: ['cliff-roc'], label: 'Bring down cliff rocs' },
+    after: ['the-missing-mules'],
+    zone: 'sablewind',
+    level: 39,
+    reward: { xp: 1700, gold: 390 },
+  },
+  {
+    id: 'roc-plumes',
+    name: 'Roc Plumes',
+    giver: 'dustcrown-dora',
+    text: 'Three mules, Dora says, is a debt, and the rocs can pay it in feathers. A roc plume pillow is worth a night’s walk for a tired traveller, and the Dust-Up needs a reason for travellers to stop. Bring her six good plumes from the rocs of the canyon rim.',
+    objective: { kind: 'loot', region: 'sablewind', item: 'Roc Plume', from: ['cliff-roc'], chance: 0.4, count: 6, label: 'Collect Roc Plumes from cliff rocs' },
+    after: ['mules-on-the-wing'],
+    zone: 'sablewind',
+    level: 40,
+    reward: { xp: 2000, gold: 560, item: 'rocfeather-jerkin', text: 'Dora has the plumes left over from the pillows quilted into a jerkin for you.' },
+  },
+  /* ------------------------------------------------- Garrick's last shift */
+  {
+    id: 'the-lost-shift',
+    name: 'The Lost Shift',
+    giver: 'foreman-garrick',
+    text: 'A month ago Garrick sent his last shift down the Redrock Mine, south-east of town, and they never came up. Nobody has been back since. Garrick would go himself, but he has a town to keep from panicking, mostly himself. Go down to the mine and see.',
+    objective: { kind: 'explore', spot: 'redrock-mine', label: 'Search the Redrock Mine' },
+    after: ['the-supply-road'],
+    zone: 'sablewind',
+    level: 38,
+    reward: { xp: 1550, gold: 370, text: 'The picks are still in the rock and the lamps burned out. The tracks leading out of the mine wear Dustcrown boots, and they lead to the wagon road.' },
+  },
+  {
+    id: 'tags-of-the-lost',
+    name: 'Tags of the Lost',
+    giver: 'foreman-garrick',
+    text: 'Garrick’s miners walk the wagon road now, whips in their hands. Every miner in Dustcrown wears a brass tag with their name on it, and the Legion’s teamsters still wear theirs. Garrick wants them back, so the names can go on the wall in the town hall where they belong.',
+    objective: { kind: 'loot', region: 'sablewind', item: 'Miner’s Tag', from: ['legion-teamster'], chance: 0.35, count: 5, label: 'Recover Miners’ Tags from Legion teamsters' },
+    after: ['the-lost-shift'],
+    zone: 'sablewind',
+    level: 39,
+    reward: { xp: 1750, gold: 520, item: { rarity: 'rare' }, text: 'Garrick hangs the tags on the wall one by one, and reads every name out loud.' },
+  },
+];
+
+export const SABLEWIND_NPCS: Record<string, NpcDef> = {
+  'foreman-garrick': {
+    id: 'foreman-garrick',
+    name: 'Foreman Garrick',
+    title: 'Foreman of Dustcrown',
+    sprite: 'villager',
+    talk: [
+      {
+        when: { quest: 'the-supply-road', state: 'active' },
+        lines: ['Sefu sent you? Then the Sunscorch has had it as bad as we have. Worse, maybe. At least our dead stay on the road.', 'Garrick. Foreman, mayor, and whatever else Dustcrown needs on a given day. Today it needs someone who can fight.'],
+      },
+      {
+        when: { quest: 'the-old-lookout', state: 'active' },
+        lines: ['The wagons go by every night under the rim. We hear them. We don’t look. Looking feels like asking for trouble.', 'The Old Lookout, north-west of town. Climb up and count. Bring me a number, even a bad one.'],
+      },
+      {
+        when: { quest: 'break-the-teams', state: 'active' },
+        lines: ['Forty wagons. Forty. I thought we’d hear about it if the whole Legion moved house past our door. Turns out we did. We just didn’t listen.', 'Break their teams. Drivers, haulers, the lot. Every wagon that doesn’t reach the end of the road is one less for whoever is waiting there.'],
+      },
+      { when: { quest: 'the-manifests', state: 'active' }, lines: ['The drivers carry bone tubes on their belts. Papers. The dead keep papers.', 'Bring me five. I want to know what’s on those wagons.'] },
+      {
+        when: { quest: 'a-scouts-eye', state: 'active' },
+        lines: ['Marks and numbers. Army writing. I can read an ore assay and a bar bill and not much in between.', 'Ilya can read it. She sells blades on the square and she’s a scout of somewhere, though she won’t say where. Ask her.'],
+      },
+      {
+        when: { quest: 'the-sappers-cut', state: 'active' },
+        lines: ['Every blast shakes the dust off my roofs. We’re a mining town. We know what powder does to rock, and we know what it does to people standing near it.', 'Kill the sappers from a distance. And don’t stand by the bodies. I mean it.'],
+      },
+      {
+        when: { quest: 'the-quartermasters-end', state: 'active' },
+        lines: ['Vane. A clerk with an army. I’ve worked for men like that. I never wanted to kill one before.', 'Bring me his ledgers. I want to see what our canyon has been paying for.'],
+      },
+      {
+        when: { quest: 'the-lost-shift', state: 'active' },
+        lines: ['Eleven men and women went down the Redrock Mine a month ago, south-east of town. Nobody came up.', 'I should go. I keep meaning to. Every morning I mean to. Will you?'],
+      },
+      {
+        when: { quest: 'tags-of-the-lost', state: 'active' },
+        lines: ['Our miners, driving the Legion’s wagons. I saw Old Tam on the road last night with a whip in his hand. Tam couldn’t stand to hit a mule.', 'Bring me their tags. Their names go on the wall, not on the road.'],
+      },
+      {
+        when: { quest: 'the-wall-burns', state: 'active' },
+        lines: ['Highwall. Every wagon we watched was going there, and Highwall’s been holding out alone.', 'Take the ledgers to the Regent. Dustcrown will keep the canyon. Somebody has to, and we’re already here.'],
+      },
+      { when: { quest: 'the-quartermasters-end', state: 'done' }, lines: ['The road is quiet. First quiet night in a month. I didn’t sleep a wink. Too quiet.', 'Wear the helm. The lamp still works. Mostly.'] },
+      { lines: ['Dustcrown. Copper, tin and red dust, since my grandfather’s day. The Legion hasn’t bothered with us yet. I try not to take it personally.', 'Mind the rim. It’s further down than it looks.'] },
+    ],
+  },
+  'dustcrown-dora': {
+    id: 'dustcrown-dora',
+    name: 'Dustcrown Dora',
+    title: 'Innkeeper',
+    sprite: 'villager',
+    shop: 'inn',
+    shopName: 'The Dust-Up',
+    talk: [
+      {
+        when: { quest: 'the-missing-mules', state: 'active' },
+        lines: ['Three mules gone this week! Picked clean off the river trail. Mules don’t just fly away.', 'Unless something carries them. The Roc Eyrie, north-east of town. I’d bet the inn on it, and I don’t bet the inn lightly.'],
+      },
+      {
+        when: { quest: 'mules-on-the-wing', state: 'active' },
+        lines: ['Mule bones! In every nest! I knew it! I told everyone! Nobody listened!', 'Bring down the rocs. Every one you clip is a mule that comes home.'],
+      },
+      {
+        when: { quest: 'roc-plumes', state: 'active' },
+        lines: ['Three mules is a debt. The rocs can pay it in feathers.', 'Six plumes for the pillows. A roc plume pillow will bring travellers in from the next canyon. Or at least keep them in bed till noon.'],
+      },
+      { when: { quest: 'roc-plumes', state: 'done' }, lines: ['The pillows are a sensation! Two miners overslept and missed a shift. Garrick is furious. I’m delighted.'] },
+      { when: { quest: 'the-quartermasters-end', state: 'done' }, lines: ['The wagons have stopped! I can hear the river at night again. I’d forgotten it was there.'] },
+      { lines: ['Welcome to the Dust-Up. Dust on the floor, dust in the beds, dust in the ale. The potions are clean. I check.', 'Sit down before you fall down. Everybody who comes up from the canyon looks like you.'] },
+    ],
+  },
+  'scout-ilya': {
+    id: 'scout-ilya',
+    name: 'Scout Ilya',
+    title: 'Scout',
+    sprite: 'villager',
+    shop: 'weapons',
+    shopName: 'The Scout’s Cache',
+    talk: [
+      {
+        when: { quest: 'a-scouts-eye', state: 'active' },
+        lines: ['Let me see. …These are army marks. Highwall’s own supply marks, turned around and used against us.', 'Pitch. Ladders. Bone-steel. Powder, by the ton. The dead, by the cartload. This is a siege train. And every page is countersigned “Q. M. Vane.”', 'All right, yes. I’m a Highwall scout. I was cut off when the Legion closed the west road. Now you know.'],
+      },
+      {
+        when: { quest: 'the-broken-wagons', state: 'active' },
+        lines: ['The Legion never leaves a wagon behind without a reason. If Garrick’s wagons are still lying at the bend east of town, somebody wants them there.', 'Go and see why. Carefully.'],
+      },
+      {
+        when: { quest: 'the-supply-depot', state: 'active' },
+        lines: ['Every wagon is counted in at a depot in the far north-west, where the road turns for Highwall. Vane keeps it.', 'Find it. Count the guards. Then count them again: the Legion doesn’t sleep.'],
+      },
+      {
+        when: { quest: 'the-quartermasters-end', state: 'done' },
+        lines: ['I’ve read his last page three times. Everything Morvain needs to break the wall, and the day he expects to have it.', 'Highwall has to hear this. If you go west, I’m going with you as far as the March.'],
+      },
+      {
+        when: { quest: 'raptor-run', state: 'active' },
+        lines: ['When this is done I’m going home, west through the gulches. The trail runs through Raptor Run, west of town.', 'How many raptors? I’d like to know before I find out.'],
+      },
+      { when: { quest: 'pack-hunters', state: 'active' }, lines: ['They hunt like the Legion fights: two from the sides while you watch the one in front. Don’t watch the one in front.'] },
+      {
+        when: { quest: 'the-red-matriarch', state: 'active' },
+        lines: ['The Red Matriarch. Old, gold-crested, and every raptor in the Run is hers.', 'Kill her and the pack scatters for a season. Long enough for me to get home.'],
+      },
+      { when: { quest: 'the-red-matriarch', state: 'done' }, lines: ['The Run’s quiet. I walked half of it this morning, just to see if I could. I could.'] },
+      { lines: ['The Scout’s Cache. Blades, bows and anything else I took off somebody who didn’t need it any more.', 'Everything’s been used. Everything still works.'] },
+    ],
+  },
+};

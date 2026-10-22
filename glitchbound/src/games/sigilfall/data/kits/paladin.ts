@@ -132,7 +132,7 @@ export const PALADIN: Kit = {
       10,
       'Templar’s Verdict',
       'Costs 3 Holy Power. One mighty blow of holy light on the enemies in front of you.',
-      spec({ id: 'templars-verdict', cast: 'melee', cooldown: 1, damage: 66, dmgType: 'holy', windup: 0.1, area: 30, arc: 1.2, knock: 120, cost: 3, tags: ['melee', 'holy'] }),
+      spec({ id: 'templars-verdict', cast: 'melee', cooldown: 1, damage: 40, dmgType: 'holy', windup: 0.1, area: 30, arc: 1.2, knock: 120, cost: 3, tags: ['melee', 'holy'] }),
     ),
     sk(
       'ultimate',
@@ -319,6 +319,6 @@ export const PALADIN: Kit = {
     T(2, 4, 2, 'swift-judgment', 'Swift Judgment', 2, 'clock', 'Judgment recharges 15% faster per rank.', [cdr('judgment', 15)]),
     T(2, 5, 0, 'avenging-crusader', 'Avenging Crusader', 2, 'sun', 'Avenging Wrath deals +25% damage per rank.', [dmg('avenging-wrath', 25)]),
     T(2, 5, 2, 'relentless-inquisitor', 'Relentless Inquisitor', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
-    T(2, 6, 1, 'final-verdict', 'Final Verdict', 1, 'explode', 'Templar’s Verdict bursts with holy light where it lands, striking everything around for 75% of its damage.', [K('templars-verdict', { op: 'onImpact', effect: { kind: 'explode', radius: 36, mul: 0.75, dmgType: 'holy' } })]),
+    T(2, 6, 1, 'final-verdict', 'Final Verdict', 1, 'explode', 'Templar’s Verdict bursts with holy light where it lands, striking everything around for 30% of its damage.', [K('templars-verdict', { op: 'onImpact', effect: { kind: 'explode', radius: 36, mul: 0.3, dmgType: 'holy' } })]),
   ],
 };

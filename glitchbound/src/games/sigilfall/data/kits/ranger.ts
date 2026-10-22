@@ -206,7 +206,7 @@ export const RANGER: Kit = {
     T(2, 4, 1, 'feral-instinct', 'Feral Instinct', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
     T(2, 4, 2, 'wild-hunt', 'Wild Hunt', 2, 'heart', '+5% max health per rank.', [S('hpPct', 5)]),
     T(2, 5, 0, 'ferocious-inspiration', 'Ferocious Inspiration', 2, 'power', '+3% damage per rank.', [S('power', 3)]),
-    T(2, 5, 2, 'intimidation', 'Intimidation', 3, 'wolf', '+10% companion damage and health per rank.', [S('pet', 10)]),
-    T(2, 6, 1, 'beast-mastery', 'Beast Mastery', 1, 'wolf', 'Your companions deal and take as if 50% stronger, and Call Wolf calls a second wolf.', [S('pet', 50), K('call-wolf', { op: 'onCast', effect: { kind: 'summon', pet: 'wolf', count: 2, dur: 0 } })]),
+    T(2, 5, 2, 'intimidation', 'Intimidation', 3, 'wolf', '+6% companion damage and health per rank.', [S('pet', 6)]),
+    T(2, 6, 1, 'beast-mastery', 'Beast Mastery', 1, 'wolf', 'Your companions deal and take as if 25% stronger, and Call Wolf calls a second wolf.', [S('pet', 25), K('call-wolf', { op: 'onCast', effect: { kind: 'summon', pet: 'wolf', count: 2, dur: 0 } })]),
   ],
 };

@@ -32,7 +32,10 @@ export const STORMWATCH = wildRegion(
     water: { kind: 'sea', side: 's', depth: 0.22 },
     sand: 'shore',
     hubs: [{ at: [0.36, 0.46], npcs: ['keeper-ansel', 'captain-morra', 'bosun-pike', 'odile'], houses: 6 }],
-    exits: [{ side: 'w', at: 0.4, to: 'amberfield', label: 'West road to the Amberfield' }],
+    exits: [
+      { side: 'w', at: 0.4, to: 'amberfield', label: 'West road to the Amberfield' },
+      { side: 'e', at: 0.35, to: 'vinecoil', label: 'East road to Vinecoil Jungle', minLevel: 38 },
+    ],
     pois: [
       // the finale: the Admiral comes ashore under the light with his honor guard
       { at: [0.52, 0.76], r: 11, kind: 'ruin', level: 30, packs: [['barnacle-brute', 'drowned-sailor', 'drowned-sailor'], ['drowned-gunner', 'drowned-chanter', 'drowned-sailor'], ['drowned-gunner', 'drowned-gunner']], elite: true, rare: 'admiral-blackwake', spot: { id: 'lighthouse-point', name: 'Lighthouse Point' }, landmark: { style: 'lighthouse', w: 3, h: 3, name: 'The Stormwatch Light' } },

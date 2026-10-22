@@ -34,7 +34,7 @@ export const PETS: Record<string, PetDef> = {
   voidwalker: { id: 'voidwalker', name: 'Voidwalker', sprite: 'voidwalker', hp: 0.9, dmg: 0.35, dmgType: 'shadow', speed: 70, radius: 7, reach: 18, ranged: false, attackCd: 1.2, taunt: true },
   felguard: { id: 'felguard', name: 'Felguard', sprite: 'felguard', hp: 0.75, dmg: 0.95, dmgType: 'physical', speed: 82, radius: 7, reach: 20, ranged: false, attackCd: 1.1, taunt: true },
   infernal: { id: 'infernal', name: 'Infernal', sprite: 'infernal', hp: 1.2, dmg: 1.1, dmgType: 'fire', speed: 70, radius: 9, reach: 22, ranged: false, attackCd: 1.1, taunt: true },
-  wolf: { id: 'wolf', name: 'Wolf', sprite: 'wolf', hp: 0.6, dmg: 0.6, dmgType: 'physical', speed: 105, radius: 6, reach: 16, ranged: false, attackCd: 0.9, taunt: true },
+  wolf: { id: 'wolf', name: 'Wolf', sprite: 'wolf', hp: 0.6, dmg: 0.45, dmgType: 'physical', speed: 105, radius: 6, reach: 16, ranged: false, attackCd: 0.9, taunt: true },
   treant: { id: 'treant', name: 'Treant', sprite: 'treant', hp: 0.3, dmg: 0.35, dmgType: 'nature', speed: 75, radius: 6, reach: 16, ranged: false, attackCd: 1.1, taunt: true },
 };
 

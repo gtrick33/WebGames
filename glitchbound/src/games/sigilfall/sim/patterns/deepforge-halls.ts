@@ -259,8 +259,9 @@ function pour(w: World, e: Enemy, lane: Lane, wind: number, open: number, phase:
   const a = lane.dir > 0 ? 0 : Math.PI;
   const len = b.x1 - b.x0 - TILE;
   const live = (): boolean => fighting(w, e, phase);
-  const molten = (first: boolean): void =>
+  const molten = (first: boolean): void => {
     w.addTelegraph({ shape: 'line', x, y, r: 0, r2: LANE_W, angle: a, len, dur: first ? wind : 0.01, dmg: e.dmg * (first ? 0.8 : 0.6), status: burn(e), knock: 0, tone: 'enemy', owner: -1, linger: 0.55 });
+  };
   molten(true);
   // the spout glows while the metal comes
   w.addFx({ kind: 'glow', x: x - Math.cos(a) * 6, y: y - 6, life: wind + 0.3, size: 16, color: '#ff8a2a' });

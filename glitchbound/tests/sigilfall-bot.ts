@@ -19,7 +19,7 @@ import { emptyInput, inside, World } from '../src/games/sigilfall/sim/world';
  * A hero of a level with a full set of gear of that level, a specialization (from level 10) and every
  * talent point spent, down its tree first.
  */
-export function readyHero(cls: ClassId, level: number, rarity: 'common' | 'uncommon' | 'rare' = 'uncommon', seed = 7, spec: 0 | 1 | 2 = 0): Character {
+export function readyHero(cls: ClassId, level: number, rarity: 'common' | 'uncommon' | 'rare' | 'epic' = 'uncommon', seed = 7, spec: 0 | 1 | 2 = 0): Character {
   const c = newCharacter(cls, 'Bot', 'bot', 0);
   let need = 0;
   while (c.level < level && need++ < 200) addXp(c, xpToNext(c.level));
@@ -184,8 +184,16 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           return d < Math.max(60, spec.range * 0.9);
         };
         if (reach('basic')) f.holdBasic = { slot: 'basic', angle: a, dist: null, assist: 0 };
-        for (const slot of ['s1', 's2', 's3'] as const) if (p.cds[slot].charges > 0 && reach(slot)) f.casts.push({ slot, angle: a, dist: null, assist: 0 });
+        // the ultimate first: a skill that is always ready would otherwise keep it waiting
         if (p.ult >= 100 && d < 90) f.casts.push({ slot: 'ult', angle: a, dist: null, assist: 0 });
+        // the big skills first (the longest cooldown), as a player would: a quick one is always ready
+        // again, and would otherwise keep the specialization's skill waiting; channels (which hold
+        // everything else back while they last) only when nothing else is ready
+        const cd = (slot: SlotKey): number => {
+          const spec = w.build.skills[w.build.bar[slot] ?? '']?.spec;
+          return !spec ? 0 : spec.cast === 'channel' || spec.cast === 'drain' ? -1 : spec.cooldown;
+        };
+        for (const slot of (['s1', 's2', 's3'] as const).slice().sort((x, y) => cd(y) - cd(x))) if (p.cds[slot].charges > 0 && reach(slot)) f.casts.push({ slot, angle: a, dist: null, assist: 0 });
       }
       if (p.hp < p.maxHp * 0.4 && w.hero.potions > 0) f.potion = true;
     }
@@ -208,7 +216,8 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
     const bad = brokenNumbers(w);
     if (bad) throw new Error(`not a number after ${res.time.toFixed(2)} s: ${bad}`);
     // stuck: neither moving nor hurting anything for 20 s while something is left to do
-    const hpNow = w.enemies.reduce((a, e) => a + (e.dead || e.dummy ? 0 : e.hp), 0);
+    // (a ward counts: wearing it down is progress too)
+    const hpNow = w.enemies.reduce((a, e) => a + (e.dead || e.dummy ? 0 : e.hp + e.shield), 0);
     const progress = Math.hypot(w.player.x - lastMove.x, w.player.y - lastMove.y) > 24 || hpNow < foeHp - 0.5;
     foeHp = hpNow;
     if (progress) lastMove = { x: w.player.x, y: w.player.y, t: res.time };

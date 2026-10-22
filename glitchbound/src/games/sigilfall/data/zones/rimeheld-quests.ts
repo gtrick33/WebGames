@@ -1,0 +1,330 @@
+import type { NpcDef, QuestDef } from '../types';
+
+/**
+ * Frostgate's people and the quests of Rimeheld Tundra (see WORLD.md). The Sigil of Frost sleeps in the
+ * Rimeheld Vault under the ice, and the Legion has come for it: its dead northmen walk the sledge
+ * roads, and Jarl Hrimfang of the frost giants, paid in Hollow gold, has broken the Vault Door open and
+ * woken the Rime Wyrm below. The main chain runs from the Sledge Camp through the Giants' Hearth and
+ * Hild's reading of the giants' torcs to the Vault Door and down into the vault. Brewer Olav wants his
+ * mead back from the yetis, Huntress Ylva wants Old Whitefang's pelt, and Runecarver Hild wants to know
+ * who is rewriting the Frozen Shrine. Main chain first.
+ */
+export const RIMEHELD_QUESTS: QuestDef[] = [
+  /* ---------------------------------------------------------- the way in */
+  {
+    id: 'the-frozen-road',
+    name: 'The Frozen Road',
+    giver: 'regent-elowen',
+    text: 'Corvane’s map puts the Sigil of Frost under the ice of Rimeheld, in a vault the Sigil-wardens sealed and the north forgot. The Legion has the same map. Frostgate stands between that vault and the rest of the world, and its jarl, Sigrun, owes Emberwick nothing at all. Take the west road through the Glimmerwood into Rimeheld Tundra, find Jarl Sigrun in Frostgate, and be polite.',
+    objective: { kind: 'talk', npc: 'jarl-sigrun', label: 'Talk to Jarl Sigrun in Frostgate' },
+    after: ['the-kings-design'],
+    level: 33,
+    reward: { xp: 800, gold: 280 },
+  },
+  /* -------------------------------------------------------- the Sigil of Frost */
+  {
+    id: 'the-last-sledges',
+    name: 'The Last Sledges',
+    giver: 'jarl-sigrun',
+    text: 'Frostgate lives on what its sledges bring in from the outlying steads. Three sledge-trains went out last week; none came back, and the dogs that did would not say why. The last fire anyone saw was at the Sledge Camp, north-east of Frostgate, where the trains stop for the night. Sigrun wants to know who put it out.',
+    objective: { kind: 'explore', spot: 'sledge-camp', label: 'Search the Sledge Camp' },
+    after: ['the-frozen-road'],
+    zone: 'rimeheld',
+    reward: { xp: 1000, gold: 290 },
+  },
+  {
+    id: 'bones-on-the-ice',
+    name: 'Bones on the Ice',
+    giver: 'jarl-sigrun',
+    text: 'The sledges were broken open and the drivers taken, and the tracks lead away across the snow beside the dead men who took them: northmen three hundred years dead, cut out of the ice of the old battlefields with Legion violet in their eyes. Sigrun’s grandmother’s grandmother fought beside some of them. She would like them put back. Defeat the Legion’s huscarls and spearmen wherever they march on the tundra.',
+    objective: { kind: 'kill', region: 'rimeheld', count: 12, enemies: ['legion-huscarl', 'legion-spearman'], label: 'Defeat the Legion’s dead northmen' },
+    after: ['the-last-sledges'],
+    zone: 'rimeheld',
+    level: 34,
+    reward: { xp: 1300, gold: 310 },
+  },
+  {
+    id: 'the-giants-hearth',
+    name: 'The Giants’ Hearth',
+    giver: 'jarl-sigrun',
+    text: 'The dead do not march alone. Sigrun’s scouts have seen frost giants walking with them, and frost giants walk with nobody. Jarl Hrimfang of the giants keeps his fire at the Giants’ Hearth, north-west of Frostgate, and has kept a treaty with Frostgate for two hundred years. Go and see whether he still remembers it.',
+    objective: { kind: 'explore', spot: 'giants-hearth', label: 'Look over the Giants’ Hearth' },
+    after: ['bones-on-the-ice'],
+    zone: 'rimeheld',
+    level: 34,
+    reward: { xp: 1100, gold: 310 },
+  },
+  {
+    id: 'hollow-gold-torcs',
+    name: 'Torcs of Grey Gold',
+    giver: 'jarl-sigrun',
+    text: 'Hrimfang was not at his hearth, but his giants were, and every one wore a new torc of grey gold at its throat, cold to the touch. Giants do not wear what they did not earn. Bring Sigrun four of the torcs: she wants to know who has been paying her neighbours. The giants keep to the Giants’ Hearth and the high snow north and west of Frostgate.',
+    objective: { kind: 'loot', region: 'rimeheld', item: 'Hollow-Gold Torc', from: ['frost-giant'], chance: 0.4, count: 4, label: 'Take Hollow-Gold Torcs from frost giants' },
+    after: ['the-giants-hearth'],
+    zone: 'rimeheld',
+    level: 35,
+    reward: { xp: 1400, gold: 330 },
+  },
+  {
+    id: 'the-runes-on-the-torcs',
+    name: 'The Runes on the Torcs',
+    giver: 'jarl-sigrun',
+    text: 'The torcs are carved with runes, and nobody in Frostgate reads runes like Runecarver Hild, who carves them into every axe in town. Sigrun has a bad feeling about what they say and would like it confirmed by somebody who can spell. Hild works at her forge on the square.',
+    objective: { kind: 'talk', npc: 'runecarver-hild', label: 'Bring the torcs to Runecarver Hild' },
+    after: ['hollow-gold-torcs'],
+    zone: 'rimeheld',
+    level: 35,
+    reward: { xp: 1000, gold: 330 },
+  },
+  {
+    id: 'the-vault-door',
+    name: 'The Vault Door',
+    giver: 'jarl-sigrun',
+    text: 'So Hrimfang has sold the Sigil-wardens’ vault for a sack of grey coin. The way down is the Vault Door, in the ice of the far west of the tundra, and nobody has opened it in three hundred years. Sigrun fears somebody opened it this week. Go and see, and count how many of them are still standing outside.',
+    objective: { kind: 'explore', spot: 'vault-door', label: 'Find the Vault Door' },
+    after: ['the-runes-on-the-torcs'],
+    zone: 'rimeheld',
+    level: 36,
+    reward: { xp: 1200, gold: 350 },
+  },
+  {
+    id: 'the-traitor-jarl',
+    name: 'The Traitor Jarl',
+    giver: 'jarl-sigrun',
+    text: 'The Door stands open and the cold pours out of it. Hrimfang has gone down with his giants and the Legion’s dead to dig out the Sigil of Frost, and he has woken something down there doing it. Go into the Rimeheld Vault through the Vault Door, in the far west, and settle the treaty with Jarl Hrimfang. Sigrun says to tell him who sent you. She says to tell him twice.',
+    objective: { kind: 'boss', boss: 'jarl-hrimfang', label: 'Defeat Jarl Hrimfang in the Rimeheld Vault' },
+    after: ['the-vault-door'],
+    zone: 'rimeheld',
+    level: 37,
+    reward: { xp: 3000, gold: 600, item: { rarity: 'rare' } },
+  },
+  {
+    id: 'the-vault-of-rime',
+    name: 'The Vault of Rime',
+    giver: 'jarl-sigrun',
+    text: 'Below Hrimfang’s dig, at the bottom of the vault, the Sigil-wardens left a guardian for the Sigil of Frost: the Rime Wyrm, asleep on its hoard for three hundred years. Hrimfang’s picks woke it and it woke mad, and now it breaks the ice from beneath. If it is not stopped, the lakes of Rimeheld will go out from under Frostgate. Go down to the bottom of the Rimeheld Vault and end the Rime Wyrm.',
+    objective: { kind: 'boss', boss: 'the-rime-wyrm', label: 'Defeat the Rime Wyrm in the Rimeheld Vault' },
+    after: ['the-traitor-jarl'],
+    zone: 'rimeheld',
+    level: 38,
+    reward: {
+      xp: 5200,
+      gold: 1150,
+      item: 'rimehelm-of-the-jarls',
+      perk: 'sigil-frost',
+      text: 'In the wyrm’s hoard, under three hundred years of frost, lies the Sigil of Frost, so cold it burns. You carry it up into the light. Sigrun gives you the Rimehelm her mother wore, and says Frostgate owes Emberwick one thing now: a hero back, when one is asked for.',
+    },
+  },
+  /* ------------------------------------------------------- Olav's mead */
+  {
+    id: 'the-mead-thieves',
+    name: 'The Mead Thieves',
+    giver: 'brewer-olav',
+    text: 'Brewer Olav makes the best mead north of anywhere, out of snow-honey and patience. This winter the yetis came down from Yeti Hollow, south-east of Frostgate, smelled it, and stayed. They have broken into his cellar twice and his brother once. Olav would like them discouraged. Six should make the point.',
+    objective: { kind: 'kill', region: 'rimeheld', count: 6, enemies: ['yeti'], label: 'Discourage the yetis' },
+    after: ['the-frozen-road'],
+    zone: 'rimeheld',
+    level: 34,
+    reward: { xp: 1200, gold: 300 },
+  },
+  {
+    id: 'the-stolen-casks',
+    name: 'The Stolen Casks',
+    giver: 'brewer-olav',
+    text: 'The yetis did not drink the mead in the cellar. They carried it off, a cask under each arm, back toward Yeti Hollow south-east of town. Olav wants his casks back. The yetis cannot work the bungs yet, and he would like to get there before they learn. Take the stolen casks from the yetis that have them.',
+    objective: { kind: 'loot', region: 'rimeheld', item: 'Stolen Mead Cask', from: ['yeti', 'grumbleback'], chance: 0.4, count: 4, label: 'Take back Olav’s mead casks from yetis' },
+    after: ['the-mead-thieves'],
+    zone: 'rimeheld',
+    level: 35,
+    reward: { xp: 1300, gold: 320 },
+  },
+  {
+    id: 'enough-is-enough',
+    name: 'Enough Is Enough',
+    giver: 'brewer-olav',
+    text: 'Four casks back, every one of them empty and every bung bitten off. Only one yeti on the tundra has jaws like that: Grumbleback, the great old yeti of Yeti Hollow, south-east of Frostgate, who has raided the town’s honey since Olav’s father was the brewer. Olav has decided enough is enough. He decided it loudly, and he would like you to go and decide it too.',
+    objective: { kind: 'kill', region: 'rimeheld', count: 1, enemies: ['grumbleback'], label: 'Defeat Grumbleback in Yeti Hollow' },
+    after: ['the-stolen-casks'],
+    zone: 'rimeheld',
+    level: 36,
+    reward: { xp: 2200, gold: 520, item: 'olavs-bottomless-horn', text: 'Olav fills his grandfather’s drinking horn for you and swears it has never once been empty. You check. It isn’t.' },
+  },
+  /* ---------------------------------------------------- Ylva's white wolf */
+  {
+    id: 'the-white-wolves',
+    name: 'The White Wolves',
+    giver: 'huntress-ylva',
+    text: 'Huntress Ylva has hunted the tundra for twenty winters, and she says the ice wolves have never been this bold: packs of six on the sledge roads, packs at Frostgate’s own gate. Something is driving them, and until she knows what, she wants them thinned. Hunt ten ice wolves anywhere on the tundra around Frostgate.',
+    objective: { kind: 'kill', region: 'rimeheld', count: 10, enemies: ['ice-wolf'], label: 'Hunt ice wolves' },
+    after: ['the-frozen-road'],
+    zone: 'rimeheld',
+    level: 33,
+    reward: { xp: 1100, gold: 290 },
+  },
+  {
+    id: 'whitefangs-den',
+    name: 'Whitefang’s Den',
+    giver: 'huntress-ylva',
+    text: 'Ylva has read the tracks: every pack comes from one place, Whitefang’s Den, south-west of Frostgate, where an old white wolf has denned since Ylva was a girl. Whitefang should be dead of old age by now. The tracks say otherwise. Go and look at the den and tell her what you find.',
+    objective: { kind: 'explore', spot: 'whitefang-den', label: 'Find Whitefang’s Den' },
+    after: ['the-white-wolves'],
+    zone: 'rimeheld',
+    level: 35,
+    reward: { xp: 1000, gold: 310 },
+  },
+  {
+    id: 'whitefangs-pelt',
+    name: 'Whitefang’s Pelt',
+    giver: 'huntress-ylva',
+    text: 'Whitefang is alive, and bigger than a wolf has any right to be, and the Legion has been feeding him: bones by the cartload outside his den, picked clean. The Legion wants the tundra’s wolves at Frostgate’s gate, and Whitefang leads them wherever it points. Ylva would hunt him herself, but she has seen him. Go back to the den, south-west of Frostgate, and bring her his pelt.',
+    objective: { kind: 'kill', region: 'rimeheld', count: 1, enemies: ['old-whitefang'], label: 'Defeat Old Whitefang at his den' },
+    after: ['whitefangs-den'],
+    zone: 'rimeheld',
+    level: 36,
+    reward: { xp: 2200, gold: 520, item: 'whitefang-pelt', text: 'Ylva cures the old wolf’s pelt herself in a night and a day, and lets nobody else touch it. “He was the best hunter on the tundra,” she says. “Now you are.”' },
+  },
+  /* ------------------------------------------------------- Hild's runes */
+  {
+    id: 'the-frozen-shrine',
+    name: 'The Frozen Shrine',
+    giver: 'runecarver-hild',
+    text: 'Runecarver Hild learned her letters from the stones of the Frozen Shrine, far west of Frostgate, where the Sigil-wardens carved the words that keep the vault shut. Lately the wraiths of the old wardens walk there, which they never used to, and the frost on the stones has started to move. Hild wants to know what the runes say now.',
+    objective: { kind: 'explore', spot: 'frozen-shrine', label: 'Read the stones of the Frozen Shrine' },
+    after: ['the-frozen-road'],
+    zone: 'rimeheld',
+    level: 34,
+    reward: { xp: 1000, gold: 300 },
+  },
+  {
+    id: 'rime-runes',
+    name: 'Rime-Runes',
+    giver: 'runecarver-hild',
+    text: 'The shrine’s runes are being written over in frost, letter by letter, by the rime-wraiths themselves: a warding turned inside out. Hild can unpick it if she has the frost-runes the wraiths carry, little cold letters that never melt. Bring her four, from the rime-wraiths around the Frozen Shrine and across the west of the tundra.',
+    objective: { kind: 'loot', region: 'rimeheld', item: 'Rime-Rune', from: ['rime-wraith'], chance: 0.35, count: 4, label: 'Take Rime-Runes from rime-wraiths' },
+    after: ['the-frozen-shrine'],
+    zone: 'rimeheld',
+    level: 36,
+    reward: { xp: 1300, gold: 330, item: 'rime-runed-gauntlets', text: 'Hild unpicks the frost from the shrine, rune by rune, and sets the last rime-runes into a pair of gauntlets for you. They never melt.' },
+  },
+];
+
+export const RIMEHELD_NPCS: Record<string, NpcDef> = {
+  'jarl-sigrun': {
+    id: 'jarl-sigrun',
+    name: 'Jarl Sigrun',
+    title: 'Jarl of Frostgate',
+    sprite: 'villager',
+    talk: [
+      {
+        when: { quest: 'the-frozen-road', state: 'active' },
+        lines: ['Emberwick sends one hero for the Sigil of Frost. Generous of them.', 'I am Sigrun. Frostgate is mine, and so is the road to the vault, and so is the cold. You will want a better coat.'],
+      },
+      {
+        when: { quest: 'the-last-sledges', state: 'active' },
+        lines: ['Three sledge-trains out, none back. The dogs came home. Dogs do not lie, but they do not talk either.', 'The trains stop for the night at the Sledge Camp, north-east of here. Find out who put the fire out.'],
+      },
+      {
+        when: { quest: 'bones-on-the-ice', state: 'active' },
+        lines: ['Dead northmen. Out of the ice of the old battlefields, wearing the Legion’s violet like a borrowed cloak.', 'Some of them fought beside my grandmother’s grandmother. Put them back in the ice. Gently, if they let you.'],
+      },
+      {
+        when: { quest: 'the-giants-hearth', state: 'active' },
+        lines: ['Giants walking with the dead. Giants do not walk with anybody. They barely walk with each other.', 'Hrimfang keeps his fire at the Giants’ Hearth, north-west of here. Two hundred years of treaty. Ask him if he remembers.'],
+      },
+      { when: { quest: 'hollow-gold-torcs', state: 'active' }, lines: ['New torcs, grey gold, cold to the touch. Bring me four. I want to know who is paying my neighbours.'] },
+      { when: { quest: 'the-runes-on-the-torcs', state: 'active' }, lines: ['Runes on them. Hild reads runes better than I read people, and I read people well. Take them to her, on the square.'] },
+      {
+        when: { quest: 'the-vault-door', state: 'active' },
+        lines: ['Sold. The wardens’ vault, for a sack of grey coin. I knew Hrimfang was greedy. I did not know he was cheap.', 'The Vault Door is in the ice, far west. Nobody has opened it in three hundred years. Go and see who opened it this week.'],
+      },
+      {
+        when: { quest: 'the-traitor-jarl', state: 'active' },
+        lines: ['Open. Of course it is open.', 'Go down. Find Hrimfang. Tell him who sent you. Tell him twice. Giants are slow.'],
+      },
+      {
+        when: { quest: 'the-vault-of-rime', state: 'active' },
+        lines: ['Hrimfang is done. Good. But the ice is groaning under the lakes, and it groans from below.', 'The wardens left a guardian on the sigil: the Rime Wyrm. Hrimfang woke it. Put it back to sleep, the long way.'],
+      },
+      {
+        when: { quest: 'the-vault-of-rime', state: 'done' },
+        lines: ['The ice is quiet. The lakes are where I left them. You did that.', 'Frostgate owes Emberwick a hero now. When you need one, send word. We will come slowly, through the snow, and we will come.'],
+      },
+      { lines: ['Frostgate. We keep the road, the cold keeps us. It is a fair trade most winters.', 'If you are cold, drink something. If you are still cold, drink something else. Olav will advise you.'] },
+    ],
+  },
+  'brewer-olav': {
+    id: 'brewer-olav',
+    name: 'Brewer Olav',
+    title: 'Innkeeper',
+    sprite: 'villager',
+    shop: 'inn',
+    shopName: 'The Mead-Hall',
+    talk: [
+      {
+        when: { quest: 'the-mead-thieves', state: 'active' },
+        lines: ['Yetis! In my cellar! Twice! And my brother once, but he was asking for it.', 'They come down from Yeti Hollow, south-east of town. Discourage six. Discourage them hard.'],
+      },
+      {
+        when: { quest: 'the-stolen-casks', state: 'active' },
+        lines: ['They did not drink it. They took it. A cask under each arm, home to the Hollow, like it was theirs.', 'Get my casks back before they work out the bungs. Yetis are slow to learn, but they are very motivated.'],
+      },
+      {
+        when: { quest: 'enough-is-enough', state: 'active' },
+        lines: ['Empty. All four. Bungs bitten clean off.', 'That is Grumbleback. He raided my father’s cellar, and my grandfather’s, and now mine. Yeti Hollow, south-east. Enough is enough!', 'I said it loudly. Now you go and say it louder.'],
+      },
+      { when: { quest: 'enough-is-enough', state: 'done' }, lines: ['The cellar is full and the door is shut and nothing is scratching at it. First round is on the house. Every round is on the house. For you. Today.'] },
+      { when: { quest: 'the-vault-of-rime', state: 'done' }, lines: ['A hero who killed a wyrm drinks free in the Mead-Hall. Forever. Within reason. Mostly within reason.'] },
+      { lines: ['The Mead-Hall! Mead for the cold, potions for the brave, a fire for everybody.', 'Snow-honey, patience and a secret. The secret is more honey.'] },
+    ],
+  },
+  'runecarver-hild': {
+    id: 'runecarver-hild',
+    name: 'Runecarver Hild',
+    title: 'Runecarver',
+    sprite: 'villager',
+    shop: 'weapons',
+    shopName: 'Hild’s Runed Steel',
+    talk: [
+      {
+        when: { quest: 'the-runes-on-the-torcs', state: 'active' },
+        lines: [
+          'Let me see. This is Hrimfang’s oath-rune: a giant’s promise, cut into the gold. He has sworn something to somebody.',
+          'And under it, stamped, not carved: an empty crown. Hollow gold. The Legion bought the Jarl of the Giants, and he sold them the vault.',
+          'Tell Sigrun. She will not be surprised. She will be furious, which is different.',
+        ],
+      },
+      {
+        when: { quest: 'the-frozen-shrine', state: 'active' },
+        lines: ['I learned my letters at the Frozen Shrine, far west of here. The wardens carved the words that keep the vault shut on its stones.', 'Now the frost on them moves, and the old wardens walk. Go and read me what they say.'],
+      },
+      {
+        when: { quest: 'rime-runes', state: 'active' },
+        lines: ['Written over. In frost. By the wraiths themselves, letter by letter, the warding turned inside out.', 'Their frost-runes never melt. Bring me four and I will unpick it.'],
+      },
+      { when: { quest: 'rime-runes', state: 'done' }, lines: ['The shrine says what it should again. The wardens can rest. So can I, a little.'] },
+      { lines: ['Hild’s Runed Steel. Every blade with a rune on it. Most of the runes mean “sharp”. One means “mine”.', 'Do not touch the grindstone. It bites.'] },
+    ],
+  },
+  'huntress-ylva': {
+    id: 'huntress-ylva',
+    name: 'Huntress Ylva',
+    title: 'Huntress',
+    sprite: 'villager',
+    talk: [
+      {
+        when: { quest: 'the-white-wolves', state: 'active' },
+        lines: ['Twenty winters I have hunted this tundra. The wolves have never been this bold. Packs of six on the roads. Packs at our gate.', 'Something is driving them. Until I know what, thin them. Ten will do for a start.'],
+      },
+      {
+        when: { quest: 'whitefangs-den', state: 'active' },
+        lines: ['The tracks all come from one place: Whitefang’s Den, south-west of here. An old white wolf has denned there since I was a girl.', 'He should be dead of old age. The tracks disagree.'],
+      },
+      {
+        when: { quest: 'whitefangs-pelt', state: 'active' },
+        lines: ['Bones outside his den, by the cartload, picked clean. The Legion is feeding him, and he leads the packs where it points.', 'I have seen him. I would like you to see him instead. Bring me his pelt.'],
+      },
+      { when: { quest: 'whitefangs-pelt', state: 'done' }, lines: ['The packs have gone back to the hills, where wolves belong. The road is quiet. I almost miss them.'] },
+      { lines: ['Keep to the roads after dark. Wolves keep to everything else.', 'Snow tells you everything, if you can read it. Mostly it says “wolves”.'] },
+    ],
+  },
+};

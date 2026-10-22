@@ -43,6 +43,14 @@ export const BOSS_MARKS: Record<string, number> = {
   'forgemaster-grold': 3,
   'king-hrodric': 2,
   'sir-corvane': 4,
+  'the-sand-warden': 2,
+  'the-sun-king': 4,
+  'jarl-hrimfang': 2,
+  'the-rime-wyrm': 4,
+  'the-siege-breaker': 3,
+  'general-morvain': 5,
+  'hollow-guard': 4,
+  vaelor: 10,
 };
 
 /** The quartermaster's prices, by rarity. */

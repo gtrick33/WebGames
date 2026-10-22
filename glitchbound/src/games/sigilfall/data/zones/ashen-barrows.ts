@@ -30,7 +30,8 @@ export const ASHEN_BARROWS = wildRegion(
     scatter: { trees: 1.4, bushes: 0.8, rocks: 1.8, flowers: 2 },
     water: { kind: 'lakes', amount: 0.2 },
     hubs: [{ at: [0.5, 0.25], npcs: ['lamplighter-ivo', 'sister-maud', 'gravedigger-kell'], houses: 5 }],
-    exits: [{ side: 'e', at: 0.5, to: 'ironpeak', label: 'East pass to Ironpeak' }],
+    exits: [{ side: 'e', at: 0.5, to: 'ironpeak', label: 'East pass to Ironpeak' },
+      { side: 'n', at: 0.5, to: 'grimward', label: 'North road to the Grimward Moors', minLevel: 28 }],
     pois: [
       {
         at: [0.12, 0.62],

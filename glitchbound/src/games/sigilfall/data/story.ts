@@ -70,4 +70,20 @@ export const STORY_QUESTS: QuestDef[] = [
       text: 'The Regent spreads the map on her council table. Three marks are already in your hands. Four are not, and the Legion is marching on every one of them.',
     },
   },
+  /* --------------------------------------------------- Act III: The Long Night */
+  {
+    id: 'the-long-night-ends',
+    name: 'The Long Night Ends',
+    giver: 'lord-commander-varn',
+    zone: 'highwall',
+    text: 'General Morvain is dead in the rubble of Highwall’s inner ward, and his army is breaking up into the snow. The Lord-Commander wants the Regent to hear it from the one who did it.',
+    objective: { kind: 'talk', npc: 'regent-elowen', label: 'Tell the Regent that Highwall holds' },
+    after: ['general-morvain'],
+    reward: {
+      xp: 30000,
+      gold: 2400,
+      item: { rarity: 'epic' },
+      text: 'Highwall holds, and beyond it the road runs north into the King’s own lands. The Withered Queen has the Sigil of Thorns, the Pale Herald has the Veil, and Duskspire waits at the end of it all.',
+    },
+  },
 ];

@@ -111,10 +111,15 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   }
   if (w.settings.numbers || crit) w.text(e.x + (w.rand() - 0.5) * 6, e.y - e.r - 6, String(shown), crit ? '#ffe14d' : o.isDot ? DOT_COLOR[type] : '#ffffff', crit);
   if (!o.isDot) w.sfx(crit ? 'crit' : 'hit');
-  // ultimate charge: hits worth a typical attack fill about 1/30th
+  // ultimate charge: hits worth a typical attack fill about 1/30th, but never faster than the charge budget
+  // allows (it refills over seconds), so a hero with great gear doesn't cast the ultimate every few hits
   const ref = CLASSES[w.hero.cls].refDamage * levelPower(w.hero.level);
   const rate = (o.charge ?? (o.depth === 0 ? 1 : 0.5)) * (1 + stats.ultCharge / 100);
-  if (!e.dummy) w.player.ult = Math.min(100, w.player.ult + (shown / (ref * 30)) * 100 * rate);
+  if (!e.dummy && w.player.ult < 100) {
+    const gain = Math.min((shown / (ref * 30)) * 100 * rate, w.player.ultBudget);
+    w.player.ultBudget -= gain;
+    w.player.ult = Math.min(100, w.player.ult + gain);
+  }
   w.player.calm = 0;
   if (e.dummy) w.dummyHit(spec ?? null);
   if (o.depth === 0 && !o.isDot) {
@@ -127,8 +132,8 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
 
 export const DOT_COLOR: Record<DmgType, string> = { physical: '#ffffff', fire: '#ff9a4d', frost: '#9be7ff', lightning: '#9ad8ff', poison: '#8be36b', arcane: '#d2a8ff', shadow: '#b58aff', holy: '#ffe9a0', nature: '#9cf07a' };
 
-/** Applies a status from the hero (hitDmg sizes damage over time). */
-export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: number; power: number; chance?: number; dmgType?: DmgType }, hitDmg: number): void {
+/** Applies a status from the hero (hitDmg sizes damage over time; `src` is the skill it came from). */
+export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: number; power: number; chance?: number; dmgType?: DmgType }, hitDmg: number, src?: string): void {
   if (e.dead || e.dummy === 2) return;
   if (s.chance !== undefined && s.chance < 1 && w.rand() > s.chance) return;
   let id = s.status;
@@ -152,13 +157,15 @@ export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: numb
     } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true });
     return;
   }
-  // curses of different kinds (shadow, arcane, holy) are separate; the same kind refreshes
+  // curses of different kinds (shadow, arcane, holy) or from different skills (Corruption and Unstable
+  // Affliction) are separate; the same skill's curse refreshes
   const dtype = id === 'curse' ? (s.dmgType ?? 'shadow') : undefined;
-  const cur = e.statuses.find((x) => x.id === id && x.dtype === dtype);
+  const from = id === 'curse' ? src : undefined;
+  const cur = e.statuses.find((x) => x.id === id && x.dtype === dtype && x.src === from);
   if (cur) {
     cur.t = Math.max(cur.t, dur);
     cur.power = Math.max(cur.power, power);
-  } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true, ...(dtype ? { dtype } : {}) });
+  } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true, ...(dtype ? { dtype } : {}), ...(from ? { src: from } : {}) });
   if (id === 'freeze') w.sfx('freeze');
   if (id === 'fear') {
     e.state = e.state === 'windup' || e.state === 'act' ? 'recover' : e.state;
@@ -227,7 +234,7 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
   if (c.depth > 2) return;
   switch (e.kind) {
     case 'status':
-      if (c.target) applyStatus(w, c.target, e, c.hitDmg);
+      if (c.target) applyStatus(w, c.target, e, c.hitDmg, c.spec?.id);
       break;
     case 'explode': {
       w.fxBurst(c.x, c.y, e.dmgType === 'poison' ? '#8be36b' : e.dmgType === 'lightning' ? '#9ad8ff' : '#ffb04d', 14, e.radius);
@@ -439,6 +446,9 @@ export function healPlayer(w: World, pct: number, fromHit: boolean, quiet = fals
   const p = w.player;
   if (p.dead) return 0;
   let amount = ((p.maxHp * pct) / 100) * (1 + (effStats(w).healing ?? 0) / 100);
+  // a curse on the hero cuts the healing it takes
+  const curse = p.statuses.find((s) => s.id === 'curse');
+  if (curse) amount *= 1 - clamp(curse.power, 0, 0.9);
   if (fromHit) {
     amount = Math.min(amount, p.healBudget);
     p.healBudget -= amount;
@@ -505,12 +515,12 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   return true;
 }
 
-/** Player statuses: burning and poisoned hurt, chilled slows (stun is brief). */
+/** Player statuses: burning, poison and bleeding hurt, chilled slows (stun is brief), a curse cuts healing. */
 export function tickPlayerStatuses(w: World, dt: number): void {
   const p = w.player;
   for (const s of p.statuses) {
     s.t -= dt;
-    if (s.id === 'burn' || s.id === 'poison') {
+    if (s.id === 'burn' || s.id === 'poison' || s.id === 'bleed') {
       s.tick -= dt;
       if (s.tick <= 0) {
         s.tick += 0.5;
@@ -518,7 +528,7 @@ export function tickPlayerStatuses(w: World, dt: number): void {
           const d = Math.max(1, Math.round(s.power * 0.5));
           p.hp -= d;
           p.flash = 0.08;
-          w.text(p.x, p.y - 18, `-${d}`, s.id === 'burn' ? '#ff9a4d' : '#8be36b', false);
+          w.text(p.x, p.y - 18, `-${d}`, s.id === 'burn' ? '#ff9a4d' : s.id === 'bleed' ? '#e04a5a' : '#8be36b', false);
           if (p.hp <= 0) w.playerDies();
         }
       }

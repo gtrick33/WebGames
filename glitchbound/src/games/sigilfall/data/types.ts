@@ -521,7 +521,34 @@ export type RegionId =
   | 'deepforge-halls'
   | 'ashen-barrows'
   | 'barrow-of-kings'
-  | 'stormwatch';
+  | 'stormwatch'
+  /* Act III */
+  | 'grimward'
+  | 'sunscorch'
+  | 'tomb-of-the-sun-king'
+  | 'glimmerwood'
+  | 'rimeheld'
+  | 'rimeheld-vault'
+  | 'shattered-vale'
+  | 'sablewind'
+  | 'vinecoil'
+  | 'highwall'
+  | 'siege-of-highwall'
+  /* Act IV */
+  | 'blightwood'
+  | 'blightheart'
+  | 'frostfang'
+  | 'sunken-reaches'
+  | 'bonefields'
+  | 'weeping-woods'
+  | 'emberdeep'
+  | 'molten-throne'
+  | 'riftscar'
+  | 'spire-of-the-rift'
+  | 'gloamhollow'
+  | 'hollowmere'
+  | 'pale-reach'
+  | 'duskspire';
 /** How a region looks (see data/themes.ts): outdoor biomes, and the stone of indoor places. */
 export type Theme =
   | 'village'
@@ -546,6 +573,11 @@ export type Theme =
   | 'haunted'
   | 'volcanic'
   | 'deadlake'
+  | 'peaks'
+  | 'sunken'
+  | 'bonefield'
+  | 'gloam'
+  | 'pale'
   | 'crypt'
   | 'cave'
   | 'keep'
@@ -553,7 +585,9 @@ export type Theme =
   | 'temple'
   | 'lavacave'
   | 'citadel'
-  | 'cistern';
+  | 'cistern'
+  | 'roots'
+  | 'riftspire';
 
 /** What a letter on a region map stands for (the terrain under it is the region's floor). */
 export type Marker =

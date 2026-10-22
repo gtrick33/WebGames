@@ -17,6 +17,8 @@ export interface Status {
   fromPlayer?: boolean;
   /** A curse's damage type. */
   dtype?: DmgType;
+  /** The skill a curse came from (each skill's curse is its own). */
+  src?: string;
 }
 
 export interface Cooldown {
@@ -56,6 +58,8 @@ export interface Player {
   form: string | null;
   cds: Record<SlotKey, Cooldown>;
   ult: number;
+  /** How much ultimate charge hits may still add right now (refills over seconds: see ultFloor in world.ts). */
+  ultBudget: number;
   combo: number;
   comboT: number;
   lastDodge: number;

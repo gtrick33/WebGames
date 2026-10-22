@@ -3,6 +3,9 @@ import type { EnemyDef, ItemDef, RegionDef } from '../types';
 import { BARROW_OF_KINGS } from './barrow-of-kings';
 import { DEEPFORGE_HALLS } from './deepforge-halls';
 import { ROTMOTHER_CISTERN } from './rotmother-cistern';
+import { TOMB_OF_THE_SUN_KING } from './tomb-of-the-sun-king';
+import { RIMEHELD_VAULT } from './rimeheld-vault';
+import { SIEGE_OF_HIGHWALL } from './siege-of-highwall';
 
 /**
  * Dungeons with everything that is theirs: the rooms (a hand-laid map), the bosses, the enemies first
@@ -17,4 +20,4 @@ export interface DungeonModule {
   items?: ItemDef[];
 }
 
-export const DUNGEONS: DungeonModule[] = [ROTMOTHER_CISTERN, DEEPFORGE_HALLS, BARROW_OF_KINGS];
+export const DUNGEONS: DungeonModule[] = [ROTMOTHER_CISTERN, DEEPFORGE_HALLS, BARROW_OF_KINGS, TOMB_OF_THE_SUN_KING, RIMEHELD_VAULT, SIEGE_OF_HIGHWALL];

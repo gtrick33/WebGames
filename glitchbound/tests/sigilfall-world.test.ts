@@ -429,6 +429,14 @@ describe('sigilfall wild zones, played', () => {
     { region: 'ironpeak', level: 21 },
     { region: 'ashen-barrows', level: 24 },
     { region: 'stormwatch', level: 27 },
+    { region: 'grimward', level: 30 },
+    { region: 'sunscorch', level: 31 },
+    { region: 'glimmerwood', level: 32 },
+    { region: 'rimeheld', level: 34 },
+    { region: 'shattered-vale', level: 36 },
+    { region: 'sablewind', level: 38 },
+    { region: 'vinecoil', level: 40 },
+    { region: 'highwall', level: 41 },
   ] as const;
   for (const z of ZONES) {
     for (const cls of CLASS_IDS) {

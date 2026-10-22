@@ -105,7 +105,9 @@ function choose(w: World, e: Enemy): PatternUse | null {
 function startPattern(e: Enemy, use: PatternUse): void {
   const b = e.boss!;
   b.pattern = { use, t: 0, step: 0, data: {} };
-  b.cds[use.id] = use.cd;
+  // a phase's opening move (often cd 0) still rests its own copy in the phase's list
+  const own = b.def.phases[b.phase]?.patterns.find((u) => u.id === use.id);
+  b.cds[use.id] = Math.max(use.cd, own?.cd ?? 0);
 }
 
 function endPattern(w: World, e: Enemy): void {
@@ -146,7 +148,8 @@ function runPattern(w: World, e: Enemy, dt: number): void {
           pt.data.a = a;
           const end = castRay(w.map, e.x, e.y, e.r, a, num(u, 'len', 260));
           pt.data.len = Math.max(30, dist(e.x, e.y, end.x, end.y));
-          w.addTelegraph({ shape: 'line', x: e.x, y: e.y, r: 0, r2: e.r * 2 + 6, angle: a, len: pt.data.len + e.r, dur: wind, dmg: 0, knock: 0, tone: 'enemy', owner: e.id, linger: 0 });
+          // as wide as the rush reaches (it hits whatever comes within its radius plus the hero's)
+          w.addTelegraph({ shape: 'line', x: e.x, y: e.y, r: 0, r2: (e.r + p.r + 3) * 2, angle: a, len: pt.data.len + e.r, dur: wind, dmg: 0, knock: 0, tone: 'enemy', owner: e.id, linger: 0 });
           e.face = Math.cos(a) < 0 ? Math.PI : 0;
           w.sfx('snort', 0.8);
         }

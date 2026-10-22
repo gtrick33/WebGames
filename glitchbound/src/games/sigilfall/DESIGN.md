@@ -96,7 +96,8 @@ three talent trees. `classes.ts`, `skills.ts` and `talents.ts` gather them.
 
 Damage types: physical, fire, frost, lightning, poison, arcane, shadow, holy, nature. Statuses add bleed (a
 physical DoT that ignores armor), curse (a DoT of the caster's type; different types stack) and fear (the enemy
-runs from the hero and attacks nothing; bosses are only slowed, elites for half as long).
+runs from the hero and attacks nothing; bosses are only slowed, elites for half as long). On the hero, burning,
+poison and bleeding tick, chill slows, stun stops, and a curse cuts the healing taken (Vaelor's Hollowing).
 
 - **Specializations and talents.** At level 10 a hero picks one of their class's three trees as a
   specialization: it gives that tree's ability (Bloodthirst, Flamestrike, Holy Shock, Rip in Cat Form…) and a
@@ -219,6 +220,10 @@ dungeon module (`data/dungeons/<id>.ts`) holds its map, bosses, enemies and item
 boss of a dungeon's last boss room opens a portal home and a reward screen; loot still on the ground is collected
 for you when the fight is won or when you leave, so nothing is lost.
 
+**The ultimate** fills from damage dealt, measured against a typical attack of the hero's level. From the 20s on,
+gear and talents make hits much bigger than that, so a full bar can't come back faster than `ultFloor` (none to
+speak of in the teens, 4 s at 30, 6 s from 38): otherwise it would come every few hits.
+
 **Enemy strength by level.** Enemy health grows a fifth a level to 15, then follows the heroes, whose damage
 multiplies with specializations, talents and gear (`HP_CURVE` in `data/enemies.ts`: ×4 at 15, ×15 at 30, ×64 at
 60), so fights don't melt away as heroes grow. Damage grows ×1.14 a level; burning, poison and bleeding from enemy
@@ -266,6 +271,8 @@ cloud saves (up to 96 KB); the backup stays on the device.
   `tests/sigilfall-dungeon-<id>.test.ts` the same for each newer dungeon, plus its own boss mechanics.
 - `tests/sigilfall-world.test.ts` also plays every class through every open zone at its first levels, and checks
   that every sprite and townsfolk look is drawn once (zone art tables are merged).
+- `tests/sigilfall-ids.test.ts`: every quest and item id is used once, and no two zones or dungeons define the same
+  enemy, boss or person (their tables are merged, so a repeated id would quietly replace another).
 
 ## Known limits
 
@@ -273,7 +280,9 @@ cloud saves (up to 96 KB); the backup stays on the device.
   phones.
 - Balance is tuned against the bot; real players will find Normal easier or harder depending on skill.
 - Sound is synthesized; there is no recorded audio.
-- The level cap is 60, but the zones so far reach level 32 (Mythic crypt aside). Acts III and IV in `WORLD.md`,
-  and Duskspire with the Hollow King, are the next stages.
-- Measured with the bot, the Ranger's and the Mage's damage at level 40 and above runs far ahead of the other
-  classes (a crit-reset proc with Aimed Shot, stacked fire talents); to be balanced with Act III.
+- The level cap is 60, but the zones so far reach level 46 (Mythic crypt aside). Act IV in `WORLD.md`, with
+  Duskspire and the Hollow King, is the next stage.
+- Measured with the bot at level 60 in rare gear, the damage specializations deal about 20-44k a second
+  (Retribution and the Beastmaster were cut back from 55-67k; each skill's curse is now its own, so Affliction's
+  stack). The bot plays the default bar with the specialization's skill on it, so specs that want another bar
+  (Shadow casts, Cat and Bear Form) measure low; giving each specialization a bar of its own is still to come.

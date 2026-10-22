@@ -15,7 +15,7 @@ const barkOf = (theme: Theme): Ramp => ramp(THEMES[theme].bark);
 const PINE_BARK = ramp('#56381e');
 
 /** Rock colors where the lands differ from plain grey stone. */
-const ROCK: Partial<Record<Theme, string>> = { crypt: '#5e5c74', desert: '#b0784a', volcanic: '#3a3436', snow: '#9aa8b8', rift: '#5a4a7a', blight: '#5a4e5e', haunted: '#5e6a76', deadlake: '#6a6c74', mountain: '#7e7e8c' };
+const ROCK: Partial<Record<Theme, string>> = { crypt: '#5e5c74', desert: '#b0784a', volcanic: '#3a3436', snow: '#9aa8b8', rift: '#5a4a7a', blight: '#5a4e5e', haunted: '#5e6a76', deadlake: '#6a6c74', mountain: '#7e7e8c', peaks: '#8a94a6', sunken: '#4e5e58', bonefield: '#8a8270', gloam: '#3a443c', pale: '#7a7e8c' };
 
 type Blob = [number, number, number];
 

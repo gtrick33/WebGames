@@ -187,6 +187,10 @@ export const ASHEN_BARROWS_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       {
+        when: { quest: 'the-howling-moors', state: 'active' },
+        lines: ['Something howls on the moors north of the downs. Every night now, and closer.', 'Grimward’s huntmaster, Orla, will know what. Take the north road past the last of the barrows, and keep a lamp lit.'],
+      },
+      {
         when: { quest: 'the-lanterns-dim', state: 'active' },
         lines: ['Kragholt sent you? Good. Stand in the light. Always stand in the light, here.', 'The dead won’t cross a warden’s lamp. That’s why Lantern Hill is still standing. And the lamps are going out, one a night.'],
       },

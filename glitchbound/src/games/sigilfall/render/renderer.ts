@@ -1643,12 +1643,14 @@ export class Renderer {
     lg.fillStyle = 'rgba(10,6,26,0.72)';
     lg.fillRect(0, 0, this.vw, this.vh);
     lg.globalCompositeOperation = 'destination-out';
-    const hole = (x: number, y: number, r: number, a = 1): void => {
+    const hole = (x: number, y: number, r0: number, a = 1): void => {
+      // in steps of 4 px and at most 240 (each size of light is a canvas kept for good)
+      const r = Math.min(240, Math.max(4, Math.round(r0 / 4) * 4));
       const sx = x - ox;
       const sy = y - oy;
       if (sx < -r || sy < -r || sx > this.vw + r || sy > this.vh + r) return;
       lg.globalAlpha = a;
-      lg.drawImage(glowDisc('#ffffff', Math.round(r)), Math.round(sx - r), Math.round(sy - r));
+      lg.drawImage(glowDisc('#ffffff', r), Math.round(sx - r), Math.round(sy - r));
     };
     const p = w.player;
     hole(p.x, p.y - 4, 120);

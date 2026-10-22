@@ -211,6 +211,10 @@ export const STORMWATCH_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       {
+        when: { quest: 'the-serpent-temples', state: 'active' },
+        lines: ['South of the Sunscorch the jungle starts, and in the jungle are temples older than my light. Somebody is buying venom there by the barrel.', 'Warden Kesh holds Vinehold, down the south road from the desert. Tell her Ansel sent you. She’ll pretend not to remember me.'],
+      },
+      {
         when: { quest: 'the-lighthouse-calls', state: 'active' },
         lines: ['Quill sent you? Then the gull made it. I wasn’t sure. It was a very old gull.', 'I’m Ansel. I keep the light. Forty years, and I’ve never once let it go out. I’d like to make it forty-one.'],
       },

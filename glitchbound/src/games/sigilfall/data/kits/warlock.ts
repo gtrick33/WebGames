@@ -25,7 +25,7 @@ export const WARLOCK: Kit = {
         color: '#8bff6a',
         role: 'Damage over time',
         skill: 'unstable-affliction',
-        passive: { name: 'Malefic Grasp', text: '+10% shadow damage, and every skill deals +10% damage to Cursed enemies.', mods: [S('shadow', 10), K('*', { op: 'bonusVs', status: 'curse', pct: 10 })] },
+        passive: { name: 'Malefic Grasp', text: '+25% shadow damage, and every skill deals +20% damage to Cursed enemies.', mods: [S('shadow', 25), K('*', { op: 'bonusVs', status: 'curse', pct: 20 })] },
       },
       {
         name: 'Demonology',

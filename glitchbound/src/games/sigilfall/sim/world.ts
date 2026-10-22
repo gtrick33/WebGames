@@ -10,7 +10,7 @@ import { BOSS_MARKS } from '../data/vendors';
 import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey } from '../data/types';
 import { ACTION_SLOTS } from '../data/types';
 import { buildHero, type HeroBuild } from '../progress/build';
-import { addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, startQuests, type Character } from '../progress/character';
+import { addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character } from '../progress/character';
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
 import { separate, updateEnemy } from './ai';
@@ -82,6 +82,12 @@ const RESPAWN_TIME = 100;
 const RESPAWN_RARE = 300;
 /** Discovering a sight pays this share of a level. */
 const EXPLORE_XP = 0.03;
+/**
+ * The quickest a full ultimate bar can come back, in seconds, by hero level. Hits charge the bar against a
+ * typical attack of the hero's level, and from the 20s on gear and talents make hits far bigger than that:
+ * without a floor the ultimate would come every couple of hits. Early on the floor is out of the way.
+ */
+export const ultFloor = (level: number): number => Math.min(6, Math.max(1.5, (level - 14) * 0.25));
 /** The mount: faster outside fights. */
 const MOUNT_SPEED = 1.3;
 /**
@@ -234,6 +240,7 @@ export class World {
       form: null,
       cds,
       ult: 0,
+      ultBudget: 200,
       combo: 0,
       comboT: 0,
       lastDodge: -99,
@@ -528,12 +535,18 @@ export class World {
     if (this.projectiles.length > 260) return;
     this.projectiles.push({ id: this.nextId++, hostile: false, splitDone: false, trailT: 0, homing: 0, age: 0, wide: false, dead: false, ...p });
   }
-  spawnField(f: Omit<Field, 'id' | 't' | 'tickT'>): void {
+  /** Lays a field on the ground and returns it (a pattern may grow it or take it away). */
+  spawnField(f: Omit<Field, 'id' | 't' | 'tickT'>): Field {
     if (this.fields.length > 200) this.fields.shift();
-    this.fields.push({ ...f, id: this.nextId++, t: f.dur, tickT: f.hostile ? 0.25 : 0 });
+    const field: Field = { ...f, id: this.nextId++, t: f.dur, tickT: f.hostile ? 0.25 : 0 };
+    this.fields.push(field);
+    return field;
   }
-  addTelegraph(t: Omit<Telegraph, 'id' | 't' | 'dead'>): void {
-    this.telegraphs.push({ ...t, id: this.nextId++, t: 0, dead: false });
+  /** Shows an attack on the ground and returns it. */
+  addTelegraph(t: Omit<Telegraph, 'id' | 't' | 'dead'>): Telegraph {
+    const tg: Telegraph = { ...t, id: this.nextId++, t: 0, dead: false };
+    this.telegraphs.push(tg);
+    return tg;
   }
   spawnWave(x: number, y: number, speed: number, max: number, width: number, dmg: number): void {
     this.waves.push({ id: this.nextId++, x, y, r: 8, speed, max, width, dmg, hitPlayer: false, dead: false });
@@ -727,6 +740,9 @@ export class World {
   private updatePlayer(dt: number): void {
     const p = this.player;
     const inp = this.input;
+    // the ultimate's charge budget refills at one full bar per ultFloor seconds (two seconds' worth at most)
+    const ultRate = 100 / ultFloor(this.hero.level);
+    p.ultBudget = Math.min(ultRate * 2, p.ultBudget + dt * ultRate);
     if (p.dead) {
       p.deadT += dt / 0.35;
       return;
@@ -1223,7 +1239,7 @@ export class World {
     this.emit({ t: 'death' });
   }
 
-  /** Back at the last checkpoint: the room you died in resets, potions refill. */
+  /** Back at the last checkpoint: the room you died in resets (potions don't come back: buy more). */
   respawn(): void {
     for (const enc of this.encounters) {
       if (enc.state !== 'active') continue;
@@ -1550,10 +1566,12 @@ export class World {
     }
   }
 
-  /** Why an exit won't take the hero yet (the old roads need a quest; new lands warn the too-young), or null. */
+  /** Why an exit won't take the hero yet (the old roads need a quest, Duskspire all seven sigils; new lands warn the too-young), or null. */
   private exitLock(x: World['exits'][number]): string | null {
     const h = this.hero;
     if ((x.to === 'whisperwood' || x.to === 'crypt') && !h.unlocked.includes(x.to)) return x.to === 'crypt' ? 'Sealed. Defeat Grimtusk for the key.' : 'Not open yet.';
+    // Duskspire's last door: seven locks, one for each sigil
+    if (x.to === 'duskspire' && sigilCount(h) < SIGILS.length) return `Seven locks bar the gate, one for each sigil. You carry ${sigilCount(h)} of ${SIGILS.length}.`;
     if (x.minLevel && h.level < x.minLevel) {
       const r = REGIONS[x.to];
       return `Too dangerous before level ${x.minLevel}: ${r.name} is for levels ${r.levels[0]}-${r.levels[1]}.`;
