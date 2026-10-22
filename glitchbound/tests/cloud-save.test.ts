@@ -203,13 +203,17 @@ describe('cloud saves', () => {
       await startCloudSave(userId, savesAt());
     }
     const savesAt = (): number => (db.sqlite.prepare('SELECT MAX(updated_at) AS at FROM game_saves WHERE user_id = ?').get(userId) as { at: number | null }).at ?? 0;
-    /** Lets the engine's 8-second timers fire and its requests finish (sign-in checks hash with real async crypto). */
-    /** Lets timers and the fake network run; with `done`, keeps going (up to a limit) until it holds, so a busy machine doesn't flake. */
+    /**
+     * Lets timers and the fake network run; with `done`, keeps going until it holds. The limit is real
+     * time, not rounds: each request hashes its session on a worker thread, which a busy machine (CI
+     * running every file at once) can keep waiting longer than any number of quick rounds.
+     */
     async function settle(done?: () => boolean): Promise<void> {
-      for (let i = 0; i < (done ? 30 : 6); i++) {
+      const until = performance.now() + 5_000;
+      for (let i = 0; ; i++) {
         await vi.advanceTimersByTimeAsync(10_000);
         for (let j = 0; j < 20; j++) await new Promise((r) => setImmediate(r));
-        if (done && i >= 5 && done()) return;
+        if (i >= 5 && (!done || done() || performance.now() > until)) return;
       }
     }
 
@@ -249,7 +253,7 @@ describe('cloud saves', () => {
     it('downloads only when the account has something newer, and sends only real changes', async () => {
       await startCloudSave(userId, 0);
       localStorage.setItem('glitchbound.gloop', '{"best":3}');
-      await settle();
+      await settle(() => !!row('glitchbound.gloop'));
       stopCloudSave();
       await startCloudSave(userId, savesAt());
       await settle();
@@ -266,12 +270,12 @@ describe('cloud saves', () => {
     it('two devices that both played merge instead of overwriting each other', async () => {
       await startCloudSave(userId, 0);
       localStorage.setItem('glitchbound.whatsit', JSON.stringify({ best: 10, daily: { '2026-10-19': { score: 10, solved: true } } }));
-      await settle();
+      await settle(() => !!row('glitchbound.whatsit'));
       await useDevice('B');
       await useDevice('A');
       // A plays today while B, still on yesterday's copy, finishes something else offline.
       localStorage.setItem('glitchbound.whatsit', JSON.stringify({ best: 30, daily: { '2026-10-19': { score: 10, solved: true }, [TODAY]: { score: 30, solved: true } } }));
-      await settle();
+      await settle(() => !!row('glitchbound.whatsit')?.data.includes(TODAY));
       const atA = row('glitchbound.whatsit')!.at;
       devices.set('A', snapshot());
       stopCloudSave();
@@ -293,7 +297,7 @@ describe('cloud saves', () => {
     it('a copy from another device waits until the running game closes, then merges', async () => {
       await startCloudSave(userId, 0);
       localStorage.setItem('glitchbound.gut-check', JSON.stringify({ best: 2, daily: {} }));
-      await settle();
+      await settle(() => !!row('glitchbound.gut-check'));
       // Another device saves a newer copy.
       const at = row('glitchbound.gut-check')!.at;
       await call(postSaves, '/api/saves', { items: [{ key: 'glitchbound.gut-check', data: JSON.stringify({ best: 8, daily: { [TODAY]: { best: 8, tries: 1 } } }), base: at }] });
@@ -307,7 +311,7 @@ describe('cloud saves', () => {
       expect(JSON.parse(row('glitchbound.gut-check')!.data).best).toBe(8);
       // ...and joined with what the game saved once it closes.
       release();
-      await settle();
+      await settle(() => !!row('glitchbound.gut-check')?.data.includes('muted'));
       const local = JSON.parse(localStorage.getItem('glitchbound.gut-check')!) as { best: number; muted: boolean; daily: Record<string, unknown> };
       expect(local).toEqual({ best: 8, daily: { [TODAY]: { best: 8, tries: 1 } }, muted: true });
       expect(JSON.parse(row('glitchbound.gut-check')!.data)).toEqual(local);
@@ -317,12 +321,12 @@ describe('cloud saves', () => {
       localStorage.setItem('glitchbound.fussbox', JSON.stringify({ best: 5, daily: { [TODAY]: { score: 5, open: false } } }));
       await call(postSaves, '/api/saves', { items: [{ key: 'glitchbound.fussbox', data: JSON.stringify({ best: 9, daily: { '2026-10-19': { score: 9 } } }), base: 0 }] });
       await startCloudSave(userId, savesAt());
-      await settle();
+      await settle(() => !!row('glitchbound.fussbox')?.data.includes(TODAY));
       const both = JSON.parse(row('glitchbound.fussbox')!.data) as { best: number; daily: Record<string, unknown> };
       expect(both.best).toBe(9);
       expect(Object.keys(both.daily).sort()).toEqual(['2026-10-19', TODAY]);
       localStorage.removeItem('glitchbound.fussbox');
-      await settle();
+      await settle(() => !row('glitchbound.fussbox'));
       expect(row('glitchbound.fussbox')).toBeUndefined();
       expect(hashText('abc')).not.toBe(hashText('abd'));
     });
