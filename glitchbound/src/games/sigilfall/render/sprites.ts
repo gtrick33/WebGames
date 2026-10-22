@@ -1,47 +1,155 @@
 import { CLASSES } from '../data/classes';
-import type { ClassId, Item, ItemIcon } from '../data/types';
-import { itemIcon, itemTint } from '../progress/items';
+import type { ClassId, Item, ItemIcon, SlotId } from '../data/types';
+import { itemIcon, itemMat, itemTint } from '../progress/items';
+import { HERO_H, HERO_W, paintHero, type ChestStyle, type FeetStyle, type HandStyle, type HeadStyle, type HeroLook, type LegStyle, type Piece } from './art/hero';
 import { NPCS } from '../data/quests';
-import { CREATURE_ART, HERO_ART, ITEM_ICON_PAL, ITEM_ICONS, SKILL_ICON_PAL, SKILL_ICONS, type Pal } from './artdata';
-import { canvas, ctx2d, makeSprite, paint, scaled, shade, type Cnv, type Sprite } from './pixel';
+import { CREATURE_ART, ITEM_ICON_PAL, ITEM_ICONS, SKILL_ICON_PAL, SKILL_ICONS, type Pal } from './artdata';
+import { canvas, ctx2d, makeSprite, paint, scale2x, scaled, shade, type Cnv, type Sprite } from './pixel';
 
 /** Every sprite the game draws, built once on first use. */
 
 const cache = new Map<string, Sprite>();
 const iconCache = new Map<string, string>();
 
-function memo(key: string, make: () => Cnv): Sprite {
+/** A sprite built once; `k` is its art pixels per world pixel. */
+function memo(key: string, make: () => Cnv, k = 2): Sprite {
   let s = cache.get(key);
   if (!s) {
-    s = makeSprite(make());
+    s = makeSprite(make(), k);
     cache.set(key, s);
   }
   return s;
 }
 
+/** Text art doubled with Scale2x, then painted with a fine outline. */
+const paint2x = (rows: string[], pal: Pal): Cnv => paint(scale2x(rows), pal);
+
 export type HeroDir = 'down' | 'up' | 'side';
 
-/** A hero frame: 0 idle, 1 and 2 walking. Side frames face right. */
-export function heroSprite(cls: ClassId, dir: HeroDir, frame: number): Sprite {
-  return memo(`hero:${cls}:${dir}:${frame}`, () => {
-    const a = HERO_ART[cls]!;
-    const legs = a.legs[dir][frame % a.legs[dir].length]!;
-    return paint([...a.body[dir], ...legs], a.pal);
-  });
+/** How each class looks in the slots where it wears nothing. */
+const BARE: Record<ClassId, HeroLook> = {
+  mage: {
+    skin: '#f5c9a0',
+    hair: '#e8e4f0',
+    hairStyle: 'short',
+    head: { style: 'wizard', mat: 'cloth', tint: '#7a5ae6', r: 'common' },
+    chest: { style: 'robe', mat: 'cloth', tint: '#6a4ad0', r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#4a3a7a', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'leather', tint: '#6a4428', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  warrior: {
+    skin: '#f2bf96',
+    hair: '#6a4428',
+    hairStyle: 'short',
+    head: null,
+    chest: { style: 'tunic', mat: 'cloth', tint: '#b8433a', r: 'common' },
+    legs: { style: 'trousers', mat: 'leather', tint: '#6a4a34', r: 'common' },
+    hands: { style: 'gloves', mat: 'leather', tint: '#8a6a4a', r: 'common' },
+    feet: { style: 'boots', mat: 'leather', tint: '#5a3a24', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  ranger: {
+    skin: '#f0c09a',
+    hair: '#e8c070',
+    hairStyle: 'pony',
+    head: null,
+    chest: { style: 'tunic', mat: 'leather', tint: '#4f8a4a', r: 'common' },
+    legs: { style: 'trousers', mat: 'leather', tint: '#5a4430', r: 'common' },
+    hands: { style: 'gloves', mat: 'leather', tint: '#7a5034', r: 'common' },
+    feet: { style: 'boots', mat: 'leather', tint: '#6a4428', r: 'common' },
+    quiver: '#9a6a3a',
+    cape: null,
+  },
+};
+
+function piece<S extends string>(it: Item, style: S): Piece<S> {
+  return { style, mat: itemMat(it), tint: itemTint(it), r: it.r };
 }
+
+/** What a hero looks like in the gear they wear: every armor piece shows. */
+export function heroLook(cls: ClassId, equip: Partial<Record<SlotId, Item>> = {}): HeroLook {
+  const bare = BARE[cls];
+  const { head, chest, legs, hands, feet, offhand } = equip;
+  const metal = (it: Item): boolean => itemMat(it) === 'plate' || itemMat(it) === 'mail';
+  const headStyle = (it: Item): HeadStyle => {
+    const icon = itemIcon(it);
+    return icon === 'hood' || icon === 'helm' || icon === 'crown' ? icon : 'cap';
+  };
+  const chestStyle = (it: Item): ChestStyle => (itemIcon(it) === 'robe' ? 'robe' : itemIcon(it) === 'plate' ? 'plate' : 'tunic');
+  const legStyle = (it: Item): LegStyle => (metal(it) ? 'greaves' : 'trousers');
+  const handStyle = (it: Item): HandStyle => (metal(it) ? 'gauntlets' : 'gloves');
+  const feetStyle = (it: Item): FeetStyle => (metal(it) ? 'sabatons' : itemMat(it) === 'cloth' ? 'shoes' : 'boots');
+  const chestPiece = chest ? piece(chest, chestStyle(chest)) : bare.chest;
+  return {
+    ...bare,
+    head: head ? piece(head, headStyle(head)) : bare.head,
+    chest: chestPiece,
+    legs: legs ? piece(legs, legStyle(legs)) : bare.legs,
+    hands: hands ? piece(hands, handStyle(hands)) : bare.hands,
+    feet: feet ? piece(feet, feetStyle(feet)) : bare.feet,
+    quiver: offhand && itemIcon(offhand) === 'quiver' ? itemTint(offhand) : bare.quiver,
+    // epic and legendary armor comes with a cape
+    cape: chest && chestPiece.style !== 'robe' && (chest.r === 'epic' || chest.r === 'legendary') ? (chest.r === 'legendary' ? '#a8262e' : '#5a2a8a') : null,
+  };
+}
+
+const lookKey = (l: HeroLook): string => JSON.stringify(l);
+
+/**
+ * A hero frame at art resolution (DETAIL × world size): 0 standing, 1 and 2 walking. Side frames
+ * face right.
+ */
+export function heroSprite(look: HeroLook, dir: HeroDir, frame: number): Sprite {
+  return memo(`hero:${lookKey(look)}:${dir}:${frame}`, () => paintHero(look, dir, frame).toCanvas());
+}
+
+/** The top of a hero (head and shoulders) for portraits. */
+function heroBust(look: HeroLook): Cnv {
+  const full = paintHero(look, 'down', 0).toCanvas();
+  const top = look.head?.style === 'wizard' ? 0 : look.head?.style === 'helm' && look.head.r !== 'common' && look.head.r !== 'uncommon' ? 6 : 9;
+  const c = canvas(HERO_W, 44 - top);
+  ctx2d(c).drawImage(full, 0, -top);
+  return c;
+}
+
+/** A hero's portrait in their gear, as a data URL (cached). */
+export function heroPortraitUrl(look: HeroLook, scale = 3): string {
+  const key = `portrait:hero:${lookKey(look)}:${scale}`;
+  const hit = iconCache.get(key);
+  if (hit) return hit;
+  const url = scaled(heroBust(look), scale).toDataURL();
+  iconCache.set(key, url);
+  return url;
+}
+
+/** A whole hero standing, for the character screen (cached). */
+export function heroDollUrl(look: HeroLook, view: HeroDir, scale = 4): string {
+  const key = `doll:${lookKey(look)}:${view}:${scale}`;
+  const hit = iconCache.get(key);
+  if (hit) return hit;
+  const url = scaled(heroSprite(look, view, 0).c, scale).toDataURL();
+  iconCache.set(key, url);
+  return url;
+}
+
+export { HERO_H, HERO_W };
 
 /** A creature frame (enemies, bosses, NPCs). Art faces right. */
 export function creatureSprite(id: string, frame: number): Sprite {
   const art = CREATURE_ART[id] ?? CREATURE_ART.slime!;
   const f = frame % art.frames.length;
-  return memo(`cr:${id}:${f}`, () => paint(art.frames[f]!, art.pal));
+  return memo(`cr:${id}:${f}`, () => paint2x(art.frames[f]!, art.pal));
 }
 
 /** Grimtusk and friends tinted for elites and bosses are drawn from the same art with a palette swap. */
 export function recolored(id: string, frame: number, pal: Pal, key: string): Sprite {
   const art = CREATURE_ART[id] ?? CREATURE_ART.slime!;
   const f = frame % art.frames.length;
-  return memo(`rc:${key}:${f}`, () => paint(art.frames[f]!, { ...art.pal, ...pal }));
+  return memo(`rc:${key}:${f}`, () => paint2x(art.frames[f]!, { ...art.pal, ...pal }));
 }
 
 /* --------------------------------------------------------------- weapons */
@@ -73,7 +181,7 @@ export function weaponSprite(kind: string, tint?: string): Sprite {
       } else if (kind === 'bow') pal.w = tint;
       else if (kind === 'shield') pal.t = tint;
     }
-    return paint(w.rows, pal);
+    return paint2x(w.rows, pal);
   });
 }
 
@@ -111,20 +219,130 @@ export function skillIconUrl(id: string, scale = 4): string {
   return url;
 }
 
-/** An NPC's sprite: their base art, recolored when they have their own colors. */
+/** How the townsfolk dress (they are drawn like heroes). */
+const NPC_LOOKS: Record<string, HeroLook> = {
+  maren: {
+    skin: '#e8b890',
+    hair: '#e8e4f0',
+    hairStyle: 'long',
+    beard: '#e8e4f0',
+    head: null,
+    chest: { style: 'robe', mat: 'cloth', tint: '#7a5a3a', r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#4a3a2a', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'leather', tint: '#4a3020', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  brannoc: {
+    skin: '#d8a07a',
+    hair: '#3a2a1a',
+    hairStyle: 'short',
+    beard: '#3a2a1a',
+    apron: '#5a3a24',
+    head: null,
+    chest: { style: 'tunic', mat: 'cloth', tint: '#8a4a2a', r: 'common' },
+    legs: { style: 'trousers', mat: 'leather', tint: '#4a3a2a', r: 'common' },
+    hands: { style: 'gloves', mat: 'leather', tint: '#3a2a1a', r: 'common' },
+    feet: { style: 'boots', mat: 'leather', tint: '#3a2a1a', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  ysolde: {
+    skin: '#f0c8b0',
+    hair: '#2a1a3a',
+    hairStyle: 'long',
+    head: { style: 'hood', mat: 'cloth', tint: '#3a6a9a', r: 'rare' },
+    chest: { style: 'robe', mat: 'cloth', tint: '#2a4a7a', r: 'rare' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#2a2a4a', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'cloth', tint: '#2a2a4a', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  tamsin: {
+    skin: '#f2c4a0',
+    hair: '#c9473b',
+    hairStyle: 'pony',
+    apron: '#f2ece0',
+    head: null,
+    chest: { style: 'tunic', mat: 'cloth', tint: '#5a7ab0', r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#7a3a20', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'leather', tint: '#5a3a24', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  odo: {
+    skin: '#c88a64',
+    hair: '#1a1a22',
+    hairStyle: 'short',
+    beard: '#1a1a22',
+    head: null,
+    chest: { style: 'plate', mat: 'mail', tint: '#8a90a6', r: 'common' },
+    legs: { style: 'greaves', mat: 'mail', tint: '#7a7e8a', r: 'common' },
+    hands: { style: 'gauntlets', mat: 'plate', tint: '#a8aec0', r: 'common' },
+    feet: { style: 'sabatons', mat: 'plate', tint: '#9aa0b0', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  wren: {
+    skin: '#f0c09a',
+    hair: '#3a8a6a',
+    hairStyle: 'long',
+    head: { style: 'cap', mat: 'leather', tint: '#c9479b', r: 'epic' },
+    chest: { style: 'robe', mat: 'cloth', tint: '#a0407a', r: 'uncommon' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#3a3a5a', r: 'common' },
+    hands: { style: 'gloves', mat: 'cloth', tint: '#3a8a6a', r: 'common' },
+    feet: { style: 'shoes', mat: 'cloth', tint: '#3a3a5a', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  hale: {
+    skin: '#e0a882',
+    hair: '#6a6a7a',
+    hairStyle: 'short',
+    beard: '#6a6a7a',
+    head: { style: 'helm', mat: 'plate', tint: '#8a7ac0', r: 'rare' },
+    chest: { style: 'plate', mat: 'plate', tint: '#7a6ab0', r: 'epic' },
+    legs: { style: 'greaves', mat: 'plate', tint: '#6a5aa0', r: 'common' },
+    hands: { style: 'gauntlets', mat: 'plate', tint: '#7a6ab0', r: 'common' },
+    feet: { style: 'sabatons', mat: 'plate', tint: '#6a5aa0', r: 'common' },
+    quiver: null,
+    cape: '#3b2a8a',
+  },
+  pell: {
+    skin: '#e8b088',
+    hair: '#8a5a2a',
+    hairStyle: 'short',
+    head: { style: 'cap', mat: 'leather', tint: '#c9a35a', r: 'common' },
+    chest: { style: 'tunic', mat: 'cloth', tint: '#6a8a3a', r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#5a4a3a', r: 'common' },
+    hands: null,
+    feet: { style: 'boots', mat: 'leather', tint: '#5a3a24', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+};
+
+/** An NPC's sprite: drawn like a hero in their own clothes (older art for anyone without a look). */
 export function npcSprite(id: string, frame = 0): Sprite {
+  const look = NPC_LOOKS[id];
+  if (look) return heroSprite(look, 'down', 0);
   const npc = NPCS[id];
   if (!npc) return creatureSprite('villager', frame);
   return npc.pal ? recolored(npc.sprite, frame, npc.pal, `npc:${id}`) : creatureSprite(npc.sprite, frame);
 }
 
-/** A hero, creature or NPC portrait for the UI. */
+/** A hero (in class colors, no gear), creature or NPC portrait for the UI. */
 export function portraitUrl(kind: 'hero' | 'creature' | 'npc', id: string, scale = 4): string {
+  if (kind === 'hero') return heroPortraitUrl(heroLook(id as ClassId), Math.max(1, Math.round(scale * 0.75)));
+  if (kind === 'npc' && NPC_LOOKS[id]) return heroPortraitUrl(NPC_LOOKS[id], Math.max(1, Math.round(scale * 0.75)));
   const key = `portrait:${kind}:${id}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
-  const s = kind === 'hero' ? heroSprite(id as ClassId, 'down', 0) : kind === 'npc' ? npcSprite(id) : creatureSprite(id, 0);
-  const url = scaled(s.c, scale).toDataURL();
+  const s = kind === 'npc' ? npcSprite(id) : creatureSprite(id, 0);
+  const url = scaled(s.c, Math.max(1, Math.round(scale / s.k))).toDataURL();
   iconCache.set(key, url);
   return url;
 }
@@ -141,6 +359,6 @@ export function glowDisc(color: string, r: number): Cnv {
   grd.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = grd;
   g.fillRect(0, 0, r * 2, r * 2);
-  cache.set(key, { c, f: c, w: c, wf: c, width: c.width, height: c.height });
+  cache.set(key, { c, f: c, w: c, wf: c, width: c.width, height: c.height, k: 1 });
   return c;
 }

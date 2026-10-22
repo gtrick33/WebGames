@@ -179,6 +179,7 @@ export class SigilEngine {
     this.persist();
     this.kbm?.dispose();
     this.sound.dispose();
+    this.renderer.dispose();
   }
 
   private onVisibility = (): void => {

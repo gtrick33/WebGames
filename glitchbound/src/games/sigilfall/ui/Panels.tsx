@@ -5,14 +5,15 @@ import { QUESTS } from '../data/quests';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, TALENTS } from '../data/talents';
-import type { Item, RegionId, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
+import type { ClassId, Item, RegionId, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { BAG_SIZE, cantEquip, cantLearn, freePoints, learnedSkills, pointsInTree, questProgress, questState, respecCost, talentPoints } from '../progress/character';
+import { BAG_SIZE, cantEquip, cantLearn, freePoints, learnedSkills, pointsInTree, questProgress, questState, respecCost, talentPoints, type Character } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
 import { rarityColor } from '../render/renderer';
+import { heroDollUrl, heroLook } from '../render/sprites';
 import { K, TILE } from '../sim/map';
 import { objectiveTarget } from '../sim/objective';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
@@ -55,7 +56,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
 
 /* --------------------------------------------------------------- hero */
 
-const SLOT_LABEL: Record<SlotId, string> = { weapon: 'Weapon', offhand: 'Off-hand', head: 'Head', chest: 'Chest', hands: 'Hands', feet: 'Feet', amulet: 'Amulet', ring: 'Ring', relic: 'Relic' };
+const SLOT_LABEL: Record<SlotId, string> = { weapon: 'Weapon', offhand: 'Off-hand', head: 'Head', chest: 'Chest', legs: 'Legs', hands: 'Hands', feet: 'Feet', amulet: 'Amulet', ring: 'Ring', relic: 'Relic' };
 const SHOWN_STATS: StatKey[] = ['power', 'crit', 'critDmg', 'haste', 'armor', 'speed', 'regen', 'ultCharge', 'fire', 'frost', 'lightning', 'poison', 'physical', 'arcane', 'potion'];
 
 function HeroPanel({ engine }: { engine: SigilEngine }) {
@@ -84,7 +85,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
     <div className="rb-hero">
       <section className="rb-hero-left" aria-label="Equipment and stats">
         <div className="rb-hero-id">
-          <Portrait kind="hero" id={h.cls} size={48} />
+          <Portrait kind="hero" id={h.cls} equip={h.equip} size={48} />
           <div>
             <strong>{h.name}</strong>
             <span>
@@ -100,11 +101,18 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
           {SLOTS.map((slot) => {
             const it = h.equip[slot];
             return (
-              <button key={slot} className={`rb-eslot${it && sel?.uid === it.uid ? ' is-sel' : ''}`} onClick={() => it && pick('worn', it.uid)} aria-label={it ? `${SLOT_LABEL[slot]}: ${itemName(it)}` : `${SLOT_LABEL[slot]}: empty`}>
-                {it ? <ItemIcon item={it} size={44} /> : <span className="rb-eslot-empty">{SLOT_LABEL[slot]}</span>}
+              <button
+                key={slot}
+                className={`rb-eslot${it && sel?.uid === it.uid ? ' is-sel' : ''}`}
+                style={{ gridArea: slot }}
+                onClick={() => it && pick('worn', it.uid)}
+                aria-label={it ? `${SLOT_LABEL[slot]}: ${itemName(it)}` : `${SLOT_LABEL[slot]}: empty`}
+              >
+                {it ? <ItemIcon item={it} size={40} /> : <span className="rb-eslot-empty">{SLOT_LABEL[slot]}</span>}
               </button>
             );
           })}
+          <HeroDoll cls={h.cls} equip={h.equip} />
         </div>
         <dl className="rb-stats">
           <div>
@@ -758,5 +766,16 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
         </section>
       </div>
     </Frame>
+  );
+}
+
+/** The hero in everything they wear; tap to turn them around. */
+function HeroDoll({ cls, equip }: { cls: ClassId; equip: Character['equip'] }) {
+  const [view, setView] = useState(0);
+  const views = ['down', 'side', 'up'] as const;
+  return (
+    <button className="rb-doll" style={{ gridArea: 'doll' }} onClick={() => setView((v) => (v + 1) % views.length)} aria-label="Your hero in their gear (tap to turn)">
+      <img src={heroDollUrl(heroLook(cls, equip), views[view]!, 4)} alt="" draggable={false} />
+    </button>
   );
 }

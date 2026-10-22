@@ -6,8 +6,9 @@ import { K, TILE } from '../sim/map';
 import type { Enemy, Fx, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
 import { itemTint } from '../progress/items';
-import { canvas, ctx2d, pixelText, rgba, type Cnv } from './pixel';
-import { creatureSprite, glowDisc, heldWeapon, heroSprite, npcSprite, recolored, weaponSprite, type HeroDir } from './sprites';
+import { canvas, ctx2d, DETAIL, pixelText, rgba, type Cnv } from './pixel';
+import { creatureSprite, glowDisc, heldWeapon, heroLook, heroSprite, npcSprite, recolored, weaponSprite, type HeroDir } from './sprites';
+import type { HeroLook } from './art/hero';
 import { buildScenery, type Scenery } from './tiles';
 import { objectiveTarget } from '../sim/objective';
 
@@ -82,36 +83,44 @@ export class Renderer {
   resize(cssW: number, cssH: number, dpr: number, touch: boolean): void {
     const devW = Math.max(1, Math.round(cssW * dpr));
     const devH = Math.max(1, Math.round(cssH * dpr));
-    const target = touch ? 196 : 236;
+    // the view is about this many world pixels tall; art pixels are DETAIL to a world pixel
+    const target = (touch ? 196 : 236) * DETAIL;
     const shortSide = Math.min(devW, devH);
     const landscape = devW >= devH;
     let s = Math.max(1, Math.round((landscape ? devH : devW * 1.25) / target));
-    if (shortSide / s < 150) s = Math.max(1, Math.floor(shortSide / 150));
+    if (shortSide / s < 150 * DETAIL) s = Math.max(1, Math.floor(shortSide / (150 * DETAIL)));
     this.scale = s;
-    this.vw = Math.ceil(devW / s);
-    this.vh = Math.ceil(devH / s);
-    if (this.canvas.width !== this.vw || this.canvas.height !== this.vh) {
-      this.canvas.width = this.vw;
-      this.canvas.height = this.vh;
+    const aw = Math.ceil(devW / s / DETAIL) * DETAIL;
+    const ah = Math.ceil(devH / s / DETAIL) * DETAIL;
+    this.vw = aw / DETAIL;
+    this.vh = ah / DETAIL;
+    if (this.canvas.width !== aw || this.canvas.height !== ah) {
+      this.canvas.width = aw;
+      this.canvas.height = ah;
       this.g = ctx2d(this.canvas);
     }
     // the canvas is shown a touch larger than the element when the division isn't exact
-    this.canvas.style.width = `${(this.vw * s) / dpr}px`;
-    this.canvas.style.height = `${(this.vh * s) / dpr}px`;
-    if (this.light.width !== this.vw || this.light.height !== this.vh) {
-      this.light.width = this.vw;
-      this.light.height = this.vh;
+    this.canvas.style.width = `${(aw * s) / dpr}px`;
+    this.canvas.style.height = `${(ah * s) / dpr}px`;
+    if (this.light.width !== aw || this.light.height !== ah) {
+      this.light.width = aw;
+      this.light.height = ah;
       this.lg = ctx2d(this.light);
     }
   }
 
   /** Screen (CSS px relative to the canvas) to world coordinates. */
   toWorld(cx: number, cy: number, dpr: number): { x: number; y: number } {
-    return { x: this.camX + (cx * dpr) / this.scale, y: this.camY + (cy * dpr) / this.scale };
+    const k = dpr / this.scale / DETAIL;
+    return { x: this.camX + cx * k, y: this.camY + cy * k };
   }
 
+  private look: HeroLook | null = null;
+
+  /** Picks up the hero's gear: the weapon in hand and the look of everything worn. */
   setHeroWeapon(cls: ClassId, w: World): void {
     this.weapon = heldWeapon(cls, w.hero.equip.weapon);
+    this.look = heroLook(cls, w.hero.equip);
   }
 
   /** The camera's lean toward the aim (and a boss), smoothed; the camera itself is pinned to the hero's pixel. */
@@ -139,8 +148,14 @@ export class Renderer {
     this.camY = mapH <= this.vh ? Math.round((mapH - this.vh) / 2) : clamp(y, 0, mapH - this.vh);
   }
 
+  /** Lets go of the region's ground painter (a worker). */
+  dispose(): void {
+    this.scenery?.ground.dispose();
+  }
+
   draw(w: World, dt: number, time: number): void {
     if (this.sceneryFor !== w) {
+      this.scenery?.ground.dispose();
       this.scenery = buildScenery(w.map, w.region);
       this.sceneryFor = w;
       this.setHeroWeapon(w.hero.cls, w);
@@ -165,10 +180,11 @@ export class Renderer {
     const ox = this.camX + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
     const oy = this.camY + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
 
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    // everything is drawn in world pixels; the transform turns them into art pixels
+    g.setTransform(DETAIL, 0, 0, DETAIL, 0, 0);
     g.fillStyle = sc.theme === 'crypt' ? '#0e0c18' : sc.theme === 'forest' ? '#123a22' : '#1f5a2a';
     g.fillRect(0, 0, this.vw, this.vh);
-    g.drawImage(sc.ground, ox, oy, this.vw, this.vh, 0, 0, this.vw, this.vh);
+    sc.ground.draw(g, ox, oy, this.vw, this.vh);
     g.translate(-ox, -oy);
 
     this.drawLiveGround(w, sc, time, ox, oy);
@@ -189,9 +205,10 @@ export class Renderer {
       items.push({
         y: o.y,
         draw: () => {
-          const behind = o.fade && !p.dead && p.y < o.y && p.y > o.y + o.dy + 4 && Math.abs(p.x - o.x) < o.c.width / 2 - 2;
+          const ow = o.c.width / DETAIL;
+          const behind = o.fade && !p.dead && p.y < o.y && p.y > o.y + o.dy + 4 && Math.abs(p.x - o.x) < ow / 2 - 2;
           if (behind) g.globalAlpha = 0.55;
-          g.drawImage(o.c, Math.round(o.x + o.dx), Math.round(o.y + o.dy));
+          g.drawImage(o.c, Math.round(o.x + o.dx), Math.round(o.y + o.dy), ow, o.c.height / DETAIL);
           g.globalAlpha = 1;
         },
       });
@@ -230,7 +247,7 @@ export class Renderer {
     }
     this.drawInteractMarker(w, time);
     this.drawObjectiveArrow(w, ox, oy, time);
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.setTransform(DETAIL, 0, 0, DETAIL, 0, 0);
     // hurt vignette
     if (!p.dead && p.hp < p.maxHp * 0.3) {
       const a = 0.25 + Math.sin(time * 6) * 0.08;
@@ -244,6 +261,8 @@ export class Renderer {
       g.fillStyle = `rgba(20,0,10,${clamp(p.deadT * 0.5, 0, 0.55)})`;
       g.fillRect(0, 0, this.vw, this.vh);
     }
+    // paint the ground just outside the view ahead of time
+    sc.ground.prefetch(ox, oy, this.vw, this.vh);
   }
 
   /* ---------------------------------------------------------------- ground */
@@ -629,13 +648,14 @@ export class Renderer {
     const g = this.g;
     const p = w.player;
     const cls = w.hero.cls;
+    const look = this.look ?? heroLook(cls);
     if (p.dead) {
-      const s = heroSprite(cls, 'down', 0);
+      const s = heroSprite(look, 'down', 0);
       g.save();
       g.globalAlpha = clamp(1 - p.deadT * 0.5, 0.3, 1);
       g.translate(Math.round(p.x), Math.round(p.y + 4));
       g.rotate(Math.min(1.4, p.deadT * 3));
-      g.drawImage(s.c, -s.width / 2, -s.height + 2);
+      g.drawImage(s.c, -s.width / DETAIL / 2, -s.height / DETAIL + 3, s.width / DETAIL, s.height / DETAIL);
       g.restore();
       return;
     }
@@ -643,21 +663,27 @@ export class Renderer {
     const flip = p.dir === 1;
     const moving = Math.hypot(p.vx, p.vy) > 10;
     const frame = moving ? (Math.floor(p.walkT * 7) % 2) + 1 : 0;
-    const s = heroSprite(cls, dir, frame);
-    const bob = moving ? (Math.floor(p.walkT * 7) % 2 === 0 ? 0 : -1) : Math.sin(time * 2.5) > 0.6 ? -1 : 0;
-    const x = Math.round(p.x) - Math.floor(s.width / 2);
-    const y = Math.round(p.y) + 6 - s.height + bob;
+    const s = heroSprite(look, dir, frame);
+    const bob = moving ? (Math.floor(p.walkT * 7) % 2 === 0 ? 0 : -0.5) : Math.sin(time * 2.5) > 0.6 ? -0.5 : 0;
+    // the picture is at art resolution: its feet (one row above the bottom) stand at p.y + 6
+    const sw = s.width / DETAIL;
+    const sh = s.height / DETAIL;
+    const x = Math.round(p.x) - sw / 2;
+    const y = Math.round(p.y) + 6.5 - sh + bob;
     const blink = p.iframe > 0 && !p.dash && Math.floor(time * 20) % 2 === 0;
     // the held weapon behind the body when facing up or away from the aim
     const wpn = weaponSprite(this.weapon.kind, this.weapon.tint);
     const weaponBehind = p.dir === 3 || (p.actKind !== null && ((p.dir === 1 && Math.cos(p.actAngle) > 0) || (p.dir === 2 && Math.cos(p.actAngle) < 0)));
     if (weaponBehind) this.drawWeapon(w, wpn, time);
-    if (cls === 'warrior' && p.dir !== 3) this.drawShield(w, p.dir, x, y);
+    // the shield is placed from where the old, smaller hero's corner was
+    const sx0 = Math.round(p.x) - 9;
+    const sy0 = Math.round(p.y) - 17 + Math.round(bob);
+    if (cls === 'warrior' && p.dir !== 3) this.drawShield(w, p.dir, sx0, sy0);
     g.globalAlpha = blink ? 0.45 : 1;
-    g.drawImage(p.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, x, y);
+    g.drawImage(p.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, x, y, sw, sh);
     g.globalAlpha = 1;
     if (!weaponBehind) this.drawWeapon(w, wpn, time);
-    if (cls === 'warrior' && p.dir === 3) this.drawShield(w, p.dir, x, y);
+    if (cls === 'warrior' && p.dir === 3) this.drawShield(w, p.dir, sx0, sy0);
     if (p.shield > 0) {
       g.strokeStyle = `rgba(127,216,255,${0.5 + Math.sin(time * 8) * 0.2})`;
       g.lineWidth = 1;
@@ -679,10 +705,10 @@ export class Renderer {
     const off = w.hero.equip.offhand;
     const s = weaponSprite('shield', off ? itemTint(off) : undefined);
     const sx = dir === 1 ? x + 10 : dir === 2 ? x - 1 : dir === 0 ? x + 1 : x + 9;
-    this.g.drawImage(s.c, sx, y + 11);
+    this.g.drawImage(s.c, sx, y + 11, s.width / s.k, s.height / s.k);
   }
 
-  private drawWeapon(w: World, wpn: { c: Cnv; f: Cnv; width: number; height: number }, time: number): void {
+  private drawWeapon(w: World, wpn: { c: Cnv; f: Cnv; width: number; height: number; k: number }, time: number): void {
     const g = this.g;
     const p = w.player;
     const kind = this.weapon.kind;
@@ -717,8 +743,10 @@ export class Renderer {
     g.translate(Math.round(p.x) + Math.round(ox), Math.round(p.y) - 3 + Math.round(oy));
     // art points up: rotate so its top points along the angle
     g.rotate(angle + Math.PI / 2);
-    if (kind === 'bow') g.drawImage(wpn.c, -wpn.width / 2, -wpn.height / 2);
-    else g.drawImage(wpn.c, -wpn.width / 2, -wpn.height + 3);
+    const ww = wpn.width / wpn.k;
+    const wh = wpn.height / wpn.k;
+    if (kind === 'bow') g.drawImage(wpn.c, -ww / 2, -wh / 2, ww, wh);
+    else g.drawImage(wpn.c, -ww / 2, -wh + 3, ww, wh);
     g.restore();
   }
 
@@ -746,11 +774,12 @@ export class Renderer {
       sx += k;
     }
     const scale = e.scale;
-    const dw = Math.round(sprite.width * scale * sx);
-    const dh = Math.round(sprite.height * scale * sy);
+    // whole art pixels, so the doubled art stays crisp
+    const dw = Math.round(sprite.width * scale * sx) / sprite.k;
+    const dh = Math.round(sprite.height * scale * sy) / sprite.k;
     const floatY = e.def.ai === 'caster' || e.boss?.def.floats ? Math.round(Math.sin(time * 3 + e.id) * 2) - 3 : 0;
-    const x = Math.round(e.x - dw / 2);
-    const y = Math.round(e.y + e.r * 0.8 - dh + floatY);
+    const x = Math.round((e.x - dw / 2) * sprite.k) / sprite.k;
+    const y = Math.round((e.y + e.r * 0.8 - dh + floatY) * sprite.k) / sprite.k;
     g.save();
     if (e.state === 'spawn') {
       const k = clamp(1 - e.t / 0.7, 0, 1);
@@ -881,11 +910,13 @@ export class Renderer {
     g.beginPath();
     g.ellipse(x, y + 6, 6, 2.5, 0, 0, TAU);
     g.fill();
-    g.drawImage(face < 0 ? sprite.f : sprite.c, Math.round(x - sprite.width / 2), Math.round(y + 7 - sprite.height + b));
+    const sw = sprite.width / sprite.k;
+    const sh = sprite.height / sprite.k;
+    g.drawImage(face < 0 ? sprite.f : sprite.c, Math.round(x) - sw / 2, Math.round(y + 7 - sh + b), sw, sh);
     // a "!" over NPCs with something new to say
     if (npcHasNews(w, id)) {
       const img = pixelText('!', '#ffe066');
-      g.drawImage(img, Math.round(x - img.width / 2), Math.round(y + 2 - sprite.height + Math.sin(bob * 3) * 1.5) - 4);
+      g.drawImage(img, Math.round(x - img.width / 2), Math.round(y + 4 - sh + Math.sin(bob * 3) * 1.5) - 4);
     }
   }
 
@@ -1262,9 +1293,9 @@ export class Renderer {
         break;
       }
       case 'ghost': {
-        const s = heroSprite(w.hero.cls, w.player.dir === 0 ? 'down' : w.player.dir === 3 ? 'up' : 'side', 0);
+        const s = heroSprite(this.look ?? heroLook(w.hero.cls), w.player.dir === 0 ? 'down' : w.player.dir === 3 ? 'up' : 'side', 0);
         g.globalAlpha = clamp(0.5 - k * 0.5, 0, 1);
-        g.drawImage(w.player.dir === 1 ? s.wf : s.w, Math.round(f.x - s.width / 2), Math.round(f.y + 6 - s.height));
+        g.drawImage(w.player.dir === 1 ? s.wf : s.w, Math.round(f.x) - s.width / DETAIL / 2, Math.round(f.y) + 6.5 - s.height / DETAIL, s.width / DETAIL, s.height / DETAIL);
         g.globalAlpha = 1;
         break;
       }
@@ -1306,7 +1337,7 @@ export class Renderer {
 
   private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number): void {
     const lg = this.lg;
-    lg.setTransform(1, 0, 0, 1, 0, 0);
+    lg.setTransform(DETAIL, 0, 0, DETAIL, 0, 0);
     lg.globalCompositeOperation = 'source-over';
     // a fresh layer every frame (a translucent fill drawn over last frame's would stack up to black)
     lg.clearRect(0, 0, this.vw, this.vh);
@@ -1341,6 +1372,7 @@ export class Renderer {
     g.save();
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.drawImage(this.light, 0, 0);
+    g.setTransform(DETAIL, 0, 0, DETAIL, 0, 0);
     // warm glow around flames
     g.globalCompositeOperation = 'lighter';
     g.globalAlpha = 0.18;
@@ -1372,7 +1404,7 @@ export class Renderer {
     const wdt = e.elite.length ? 22 : 14;
     const x = Math.round(e.x - wdt / 2);
     const sprite = creatureSprite(e.def.sprite, 0);
-    const y = Math.round(e.y + e.r * 0.8 - sprite.height * e.scale - 5);
+    const y = Math.round(e.y + e.r * 0.8 - (sprite.height / sprite.k) * e.scale - 5);
     g.fillStyle = '#1b1428';
     g.fillRect(x - 1, y - 1, wdt + 2, 4);
     g.fillStyle = '#4a1a26';

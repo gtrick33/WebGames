@@ -1,6 +1,6 @@
 import { pickWeighted, randInt } from '../core/math';
 import { BASE_DEFS, BASES, CLASS_ELEMENTS, ITEM_DEFS, ITEMS, MINOR_MODS, RARE_SUFFIX, RARITY_MUL, RARITY_ROLLS, SLOT_STATS, STAT_ROLL, STAT_WORD } from '../data/items';
-import type { ClassId, Item, ItemDef, ItemIcon, Mod, Rarity, SlotId, StatKey } from '../data/types';
+import type { ClassId, Item, ItemDef, ItemIcon, Material, Mod, Rarity, SlotId, StatKey } from '../data/types';
 import { RARITIES } from '../data/types';
 
 /** Item helpers: what an item is, what it does, and how loot is rolled. Pure functions. */
@@ -17,8 +17,50 @@ export function itemClass(item: Item): ClassId | undefined {
 export function itemIcon(item: Item): ItemIcon {
   return ITEM_DEFS[item.base]?.icon ?? BASE_DEFS[item.base]?.icon ?? 'relic';
 }
+/**
+ * An item's main color. Generated armor is dyed: each piece gets one of its material's colors (picked
+ * by its id), so two robes rarely look alike, on the hero or in the bag.
+ */
 export function itemTint(item: Item): string {
-  return ITEM_DEFS[item.base]?.tint ?? BASE_DEFS[item.base]?.tint ?? '#ccc';
+  const def = ITEM_DEFS[item.base];
+  if (def) return def.tint;
+  const base = BASE_DEFS[item.base];
+  if (!base) return '#ccc';
+  if (!ARMOR_SLOTS.includes(base.slot)) return base.tint;
+  const dyes = DYES[itemMat(item)];
+  let h = 0;
+  for (let i = 0; i < item.uid.length; i++) h = (Math.imul(h, 31) + item.uid.charCodeAt(i)) | 0;
+  return dyes[(h >>> 0) % dyes.length]!;
+}
+
+const ARMOR_SLOTS: SlotId[] = ['head', 'chest', 'legs', 'hands', 'feet'];
+
+const DYES: Record<Material, string[]> = {
+  cloth: ['#5a4ab0', '#2a6a8a', '#8a2a4a', '#3a7a4a', '#7a5a2a', '#4a4a6a', '#a04a8a', '#2a4a8a', '#6a2a2a', '#d8d0c0'],
+  leather: ['#8a5a3a', '#6a4428', '#5a4a3a', '#7a6a4a', '#4a3a2a', '#6a3a2a', '#4a5a3a', '#3a3a3a'],
+  mail: ['#9aa0b0', '#8a8e9a', '#7a7e8a', '#a8a090'],
+  plate: ['#a8aec0', '#9aa0b0', '#b8b0a0', '#7a8090', '#c0c4cc'],
+  gold: ['#ffcf5a', '#e8b84a'],
+};
+
+/** What a piece of armor is made of. */
+export function itemMat(item: Item): Material {
+  const def = ITEM_DEFS[item.base] ?? BASE_DEFS[item.base];
+  if (def?.mat) return def.mat;
+  switch (def?.icon) {
+    case 'helm':
+    case 'plate':
+      return 'plate';
+    case 'crown':
+      return 'gold';
+    case 'cap':
+    case 'jerkin':
+    case 'gloves':
+    case 'boots':
+      return 'leather';
+    default:
+      return 'cloth';
+  }
 }
 export function itemName(item: Item): string {
   return ITEM_DEFS[item.base]?.name ?? item.n ?? BASE_DEFS[item.base]?.name ?? 'Unknown item';

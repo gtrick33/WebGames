@@ -25,7 +25,7 @@ for players, while admins still see both. It reports `start`/`end` to the arcade
 | `data/` | Content only, typed: classes, skills (as `SkillSpec`s), talents, items, enemies, bosses, regions (ASCII maps), quests and NPCs |
 | `progress/` | The hero (`character.ts`), items and loot, the build resolver (`build.ts`), item and modifier text (`describe.ts`), saves |
 | `sim/` | The world (`world.ts`), casting and projectiles, combat and statuses, enemy AI, the boss framework, tile maps and collision |
-| `render/` | Canvas 2D at a low pixel resolution: text-art sprites, the pre-drawn ground, lighting, effects |
+| `render/` | Canvas 2D at a low pixel resolution: the ground (chunked, painted on a worker), the paper-doll hero, sprites, lighting, effects |
 | `input/` | Keyboard and mouse, and the touch state the on-screen controls write into |
 | `ui/` | React screens: title, HUD, touch controls, desktop skill bar, the hero/skills/talents/quests/map panels, settings |
 | `engine.ts` | The loop, the bridge between the world and React, saving, sound and travel |
@@ -94,6 +94,30 @@ epics and legendaries at the top item level, for Sigil Marks, from level 15). Ge
 hero's class and level with stable ids, changes when they level up or come back from an expedition, and
 bought pieces stay sold. Bosses pay Sigil Marks (more on Heroic and Mythic). Every vendor buys bag items.
 
+## Art
+
+The world is laid out in world pixels (16 per tile) and drawn at twice that resolution (`DETAIL` in
+`render/pixel.ts`), so newer art has finer pixels while the camera, the simulation and the old 1× effects stay
+in world units.
+
+- **Ground** (`render/groundPaint.ts`): every art pixel is a pure function of the map and its position: grass
+  with single blades and flowers, worn paths with pebbles and a shadow under the grass edge, water with banks,
+  foam and ripples, cobbles, plank bridges, the forest canopy seen from above (leafy edges, glints, a shadow on
+  the ground) and crypt flagstones and brick. `render/ground.ts` keeps 256 × 256 chunks: the ones in view are
+  painted at once if they aren't ready, the ring around them on a worker (`ground.worker.ts`, or a few
+  milliseconds per frame without one), and far ones are dropped, so a large map costs only what is near.
+- **Heroes and townsfolk** (`render/art/hero.ts`) are paper dolls painted at art resolution in three views
+  with walking frames. Each worn piece is drawn from its style (hood, helm, cap, crown; robe, tunic,
+  breastplate; trousers or greaves; gloves or gauntlets; shoes, boots or sabatons), material (cloth, leather,
+  mail, plate, gold: `mat` on an item, else from its icon), color and rarity (rare: a light trim; epic: gold
+  trim; legendary: gold and a glowing stone; epic and legendary armor adds a cape). Generated armor is dyed per
+  piece from its material's colors (`itemTint`), so two robes rarely match. Empty slots show the class outfit
+  (the mage's hat and robe). The character screen is a paper doll with the hero in the middle (tap to turn).
+- **Trees, bushes, rocks** (`render/art/flora.ts`) are painted at art resolution; other props, creatures and
+  weapons are their text art doubled with Scale2x (smooth diagonals, a fine outline) until they are redrawn.
+
+Gear has a **legs** slot (trousers, breeches, legguards), sold by the armory.
+
 ## Minimap and quest markers
 
 A round minimap in the corner shows the ground around the hero, the waystone, exits, vendors, chests, nearby
@@ -117,7 +141,8 @@ and Morgrave in the Sanctum. Clearing the crypt opens a portal home and a reward
 is collected for you when the fight is won or when you leave, so nothing is lost.
 
 Enemies are archetypes (melee, hopper, ranged, charger, armored, caster) with wind-ups you can read; elites get
-affixes. Bosses are phase lists of weighted, cooldown-limited attack patterns (`bosses.ts`, run by `boss.ts`):
+affixes. They walk straight at you only when their whole body fits along the way (otherwise they follow the
+flow field around pillars) and slide off corners they catch on. Bosses are phase lists of weighted, cooldown-limited attack patterns (`bosses.ts`, run by `boss.ts`):
 every dangerous attack is telegraphed, phases change at health thresholds with a short immune transition.
 
 Difficulty: Normal, Heroic (+6 enemy levels, ×1.9 health, ×1.4 damage) and Mythic (+12, ×4, ×2.1), each opened
@@ -138,6 +163,10 @@ cloud saves (up to 96 KB); the backup stays on the device.
 - `tests/sigilfall-sim.test.ts`: a bot (`tests/sigilfall-bot.ts`) plays every class through the Whisperwood and
   the crypt on all three tiers: no stuck spots, no broken numbers, every boss beaten.
 - `tests/sigilfall-section.test.tsx`: the tab, the address, and turning the section off.
+- `tests/sigilfall-ground.test.ts`: the ground painter makes no canvases (it runs on a worker), is deterministic,
+  paints in row pieces exactly as in one go, and puts things on the square on stone.
+- `tests/sigilfall-look.test.ts`: every armor piece changes the hero's look; dyes; the legs slot rolls, sells
+  and saves; Scale2x.
 
 ## Known limits
 

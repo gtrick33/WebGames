@@ -9,10 +9,13 @@ import type { ShopId } from './vendors';
 export type ClassId = 'mage' | 'warrior' | 'ranger';
 export type DmgType = 'physical' | 'fire' | 'frost' | 'lightning' | 'poison' | 'arcane';
 export type StatusId = 'burn' | 'poison' | 'chill' | 'freeze' | 'shock' | 'stun' | 'root' | 'armorBreak' | 'mark' | 'weaken';
-export type SlotId = 'weapon' | 'offhand' | 'head' | 'chest' | 'hands' | 'feet' | 'amulet' | 'ring' | 'relic';
+export type SlotId = 'weapon' | 'offhand' | 'head' | 'chest' | 'legs' | 'hands' | 'feet' | 'amulet' | 'ring' | 'relic';
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
-export const SLOTS: SlotId[] = ['weapon', 'offhand', 'head', 'chest', 'hands', 'feet', 'amulet', 'ring', 'relic'];
+export const SLOTS: SlotId[] = ['weapon', 'offhand', 'head', 'chest', 'legs', 'hands', 'feet', 'amulet', 'ring', 'relic'];
+
+/** What a worn piece is made of (it decides how it looks on the hero). */
+export type Material = 'cloth' | 'leather' | 'mail' | 'plate' | 'gold';
 export const RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
 
 /**
@@ -215,6 +218,7 @@ export type ItemIcon =
   | 'robe'
   | 'plate'
   | 'jerkin'
+  | 'legs'
   | 'gloves'
   | 'boots'
   | 'amulet'
@@ -234,6 +238,8 @@ export interface ItemDef {
   icon: ItemIcon;
   /** Main color of the artwork. */
   tint: string;
+  /** What it's made of, when the icon alone doesn't say (chain is mail, gauntlets are plate). */
+  mat?: Material;
   /** Stats at item level 1 and how much they grow per level. */
   stats: { stat: StatKey; base: number; per: number }[];
   mods: Mod[];
@@ -253,6 +259,7 @@ export interface ItemBase {
   cls?: ClassId;
   icon: ItemIcon;
   tint: string;
+  mat?: Material;
   /** Always-on stat (weapons: power). */
   implicit?: { stat: StatKey; base: number; per: number };
 }

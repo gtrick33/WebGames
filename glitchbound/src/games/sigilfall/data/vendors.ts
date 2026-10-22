@@ -19,7 +19,7 @@ export interface ShopDef {
 export const SHOPS: Record<ShopId, ShopDef> = {
   inn: { id: 'inn', name: 'The Ember Hearth', blurb: 'Healing potions for the road. You can carry five.' },
   weapons: { id: 'weapons', name: 'Brannoc’s Forge', blurb: 'Weapons and off-hands for your class, at your level.', slots: ['weapon', 'offhand'] },
-  armor: { id: 'armor', name: 'Odo’s Armory', blurb: 'Helms, armor, gloves and boots.', slots: ['head', 'chest', 'hands', 'feet'] },
+  armor: { id: 'armor', name: 'Odo’s Armory', blurb: 'Helms, armor, legwear, gloves and boots.', slots: ['head', 'chest', 'legs', 'hands', 'feet'] },
   curios: { id: 'curios', name: 'Wren’s Curios', blurb: 'Amulets, rings and relics.', slots: ['amulet', 'ring', 'relic'] },
   quartermaster: {
     id: 'quartermaster',

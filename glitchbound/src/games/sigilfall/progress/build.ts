@@ -14,8 +14,8 @@ import { itemMods, itemName, itemStats } from './items';
  *
  * Resolution order, the same for every skill:
  *   1. the skill's base spec;
- *   2. talents, in tree order, then items, in slot order (weapon, off-hand, head, chest, hands, feet,
- *      amulet, ring, relic);
+ *   2. talents, in tree order, then items, in slot order (weapon, off-hand, head, chest, legs, hands,
+ *      feet, amulet, ring, relic);
  *   3. counts (projectiles, pierce, bounce, charges, extra knobs) add up as they come;
  *   4. percentages of the same kind add up, then apply once (+30% and +20% area = +50%);
  *   5. effects merge by kind: the same status keeps the stronger duration and power, two explosions

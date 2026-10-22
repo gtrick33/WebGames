@@ -39,7 +39,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
           {heroes.map((h, i) =>
             h ? (
               <div key={i} className="rb-slot">
-                <Portrait kind="hero" id={h.cls} size={52} />
+                <Portrait kind="hero" id={h.cls} equip={h.equip} size={52} />
                 <div className="rb-slot-text">
                   <strong>{h.name}</strong>
                   <span>

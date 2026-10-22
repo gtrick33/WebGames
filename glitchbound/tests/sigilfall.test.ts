@@ -620,3 +620,27 @@ describe('sigilfall combat', () => {
     }
   });
 });
+
+describe('sigilfall enemy movement', () => {
+  it('a big enemy walks around a pillar instead of into it, even when it can see past it', () => {
+    // the Hollow Crypt's east room: the hero and a guardian on either side of the pillar at (47, 42),
+    // the line between them just clear of it, but not wide enough for the guardian's body
+    const w = newWorld('crypt', readyHero('ranger', 8));
+    expect(w.map.kind[42 * w.map.w + 47]).toBe(K.Pillar);
+    w.enemies = [];
+    const p = w.player;
+    p.x = 45.4 * TILE;
+    p.y = 40.4 * TILE;
+    const e = w.addEnemy('crypt-guardian', 48.5 * TILE, 43.3 * TILE, 6, { room: -1, pack: 0 });
+    e.state = 'chase';
+    let closest = Infinity;
+    for (let t = 0; t < 6; t += 1 / 60) {
+      w.input = emptyInput();
+      p.iframe = 99;
+      p.hp = p.maxHp;
+      w.step(1 / 60);
+      closest = Math.min(closest, Math.hypot(e.x - p.x, e.y - p.y));
+    }
+    expect(closest).toBeLessThan(e.def.reach + e.r + p.r + 2);
+  });
+});

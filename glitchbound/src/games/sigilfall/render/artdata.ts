@@ -89,6 +89,7 @@ export const ITEM_ICONS: Record<string, string[]> = {
   "robe": ["...tt..tt...", "..tttggttt..", ".ttttggtttt.", ".tTttggttTt.", "..tttggttt..", "..tTtggtTt..", "..tttggttt..", ".tTttggttTt.", ".tttttttttt.", ".TTTTTTTTTT.", "............", "............"],
   "plate": ["..mm....mm..", ".mmmmmmmmmm.", "mmmlmmmmMmmm", "mMmlmttmMmMm", "mM.lmttmM.Mm", "..mlmttmMm..", "..mlmmmmMm..", "..mmMMMMmm..", "..MmmmmmmM..", "...MMMMMM...", "............", "............"],
   "jerkin": ["..kk....kk..", ".kkkkkkkkkk.", "kKkkkggkkkKk", "kK.kkggkk.Kk", "..kkkttkkk..", "..kKkttkKk..", "..kkkkkkkk..", "..KKKKKKKK..", "............", "............", "............", "............"],
+  "legs": ["...tttttt...", "..tttttttT..", "..tttggttT..", "..ttT..ttT..", "..ttT..ttT..", "..tTT..ttT..", "..ttT..tTT..", "..ttT..ttT..", "..ttT..ttT..", ".tttT..tttT.", ".TTTT..TTTT.", "............"],
   "gloves": ["............", ".t.t.t......", ".t.t.t.t....", ".ttttttt....", ".tttttttt...", ".ttttttTt...", "..tttttT....", "..gggggg....", "..TTTTTT....", "............", "............", "............"],
   "boots": ["..tttt......", "..tttT......", "..tttT......", "..tttT......", "..ggggg.....", "..ttttT.....", "..tttttttt..", ".ttttttttTt.", ".TTTTTTTTTT.", "............", "............", "............"],
   "amulet": [".g........g.", "..g......g..", "...g....g...", "....g..g....", "....gggg....", "...gttttg...", "...tlltTt...", "...tltttt...", "...ttttTt...", "....tTTt....", "............", "............"],

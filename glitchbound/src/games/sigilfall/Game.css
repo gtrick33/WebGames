@@ -1423,20 +1423,47 @@
   gap: 2px;
   flex: 1;
 }
+/* the paper doll: armor down the left, weapons and jewelry down the right, the hero between */
 .rb-equip {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  grid-template-rows: repeat(5, 48px);
+  grid-template-areas:
+    'head doll weapon'
+    'chest doll offhand'
+    'legs doll amulet'
+    'hands doll ring'
+    'feet doll relic';
+  gap: 5px 6px;
   margin-bottom: 8px;
 }
 .rb-eslot {
   display: grid;
   place-items: center;
-  aspect-ratio: 1;
   border: 2px solid var(--rb-ink);
   border-radius: 8px;
   background: rgb(0 0 0 / 0.22);
   padding: 2px;
+}
+.rb-doll {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  border: 2px solid var(--rb-ink);
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse 45% 8% at 50% 88%, rgb(0 0 0 / 0.35), transparent 100%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(0 0 0 / 0.25));
+  padding: 4px;
+  cursor: pointer;
+}
+.rb-doll img {
+  image-rendering: pixelated;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: 100%;
+  object-fit: contain;
 }
 .rb-eslot.is-sel,
 .rb-bslot.is-sel {

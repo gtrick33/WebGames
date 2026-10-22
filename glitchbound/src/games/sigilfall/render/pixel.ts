@@ -7,6 +7,13 @@ import type { Pal } from './artdata';
 
 export const OUTLINE = '#1b1428';
 
+/**
+ * Art pixels per world pixel. The world is laid out in 16-px tiles; it is drawn at twice that
+ * resolution, so newer art (drawn at DETAIL × its world size) has finer pixels, while older art drawn
+ * at world size simply shows each of its pixels as a 2×2 block.
+ */
+export const DETAIL = 2;
+
 export type Cnv = HTMLCanvasElement;
 
 export function canvas(w: number, h: number): Cnv {
@@ -30,8 +37,11 @@ export interface Sprite {
   /** White silhouette for the hit flash. */
   w: Cnv;
   wf: Cnv;
+  /** Canvas size, in art pixels. */
   width: number;
   height: number;
+  /** Art pixels per world pixel: draw it at width / k × height / k. */
+  k: number;
 }
 
 /** Text art to a canvas. The outline adds one pixel on every side. */
@@ -128,9 +138,41 @@ export function silhouette(src: Cnv, color = '#ffffff'): Cnv {
   return c;
 }
 
-export function makeSprite(c: Cnv): Sprite {
+export function makeSprite(c: Cnv, k = 1): Sprite {
   const f = mirror(c);
-  return { c, f, w: silhouette(c), wf: silhouette(f), width: c.width, height: c.height };
+  return { c, f, w: silhouette(c), wf: silhouette(f), width: c.width, height: c.height, k };
+}
+
+/**
+ * Doubles text art with Scale2x (EPX): each pixel becomes four, and where two neighbours of the same
+ * color meet at a corner the corner takes their color, so diagonals come out smooth instead of as
+ * staircases of 2×2 blocks. Painted with an outline afterwards, the outline is one fine pixel.
+ */
+export function scale2x(rows: string[]): string[] {
+  const h = rows.length;
+  const w = rows.reduce((m, r) => Math.max(m, r.length), 0);
+  const at = (x: number, y: number): string => (x < 0 || y < 0 || x >= w || y >= h ? '.' : (rows[y]![x] ?? '.').replace(' ', '.'));
+  const out: string[] = [];
+  for (let y = 0; y < h; y++) {
+    let a = '';
+    let b = '';
+    for (let x = 0; x < w; x++) {
+      const E = at(x, y);
+      const B = at(x, y - 1);
+      const D = at(x - 1, y);
+      const F = at(x + 1, y);
+      const H = at(x, y + 1);
+      if (B !== H && D !== F) {
+        a += (D === B ? D : E) + (B === F ? F : E);
+        b += (D === H ? D : E) + (H === F ? F : E);
+      } else {
+        a += E + E;
+        b += E + E;
+      }
+    }
+    out.push(a, b);
+  }
+  return out;
 }
 
 /** Draws a canvas scaled up without smoothing (for UI icons). */

@@ -5,7 +5,7 @@
  * every boss can be beaten by every class.
  */
 import { describe, expect, it } from 'vitest';
-import { SLOTS, type ClassId } from '../src/games/sigilfall/data/types';
+import type { ClassId } from '../src/games/sigilfall/data/types';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero } from './sigilfall-bot';
@@ -19,10 +19,10 @@ function nextRoom(w: World): { x: number; y: number } | null {
   return i === undefined ? null : { x: ((i % w.map.w) + 0.5) * TILE, y: (Math.floor(i / w.map.w) + 0.5) * TILE };
 }
 
-/** Common gear in six of nine slots: what a new player has on reaching the forest. */
+/** Common armor and weapons, no jewelry: what a new player has on reaching the forest. */
 const modest = (cls: ClassId, level: number) => {
   const c = readyHero(cls, level, 'common', 11);
-  for (const s of SLOTS.slice(6)) delete c.equip[s];
+  for (const s of ['amulet', 'ring', 'relic'] as const) delete c.equip[s];
   return c;
 };
 

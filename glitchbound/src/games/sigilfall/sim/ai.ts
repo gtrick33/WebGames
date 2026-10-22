@@ -250,7 +250,25 @@ function applyMove(w: World, e: Enemy, vx: number, vy: number, dt: number): void
       e.y = free.y;
     }
   }
-  const res = moveCircle(w.map, e.x, e.y, e.r, (vx + e.vx) * dt, (vy + e.vy) * dt);
+  let res = moveCircle(w.map, e.x, e.y, e.r, (vx + e.vx) * dt, (vy + e.vy) * dt);
+  // caught on a corner (a body wider than half a tile following a path between pillars): slide off
+  // it, turning a little either way, whichever way gets closer to the player
+  const want = Math.hypot(vx, vy) * dt;
+  if (want > 0.05 && Math.hypot(res.x - e.x, res.y - e.y) < want * 0.3) {
+    const p = w.player;
+    let best = Infinity;
+    for (const a of [0.6, -0.6, 1.2, -1.2]) {
+      const c = Math.cos(a);
+      const s = Math.sin(a);
+      const t = moveCircle(w.map, e.x, e.y, e.r, (vx * c - vy * s) * dt, (vx * s + vy * c) * dt);
+      if (Math.hypot(t.x - e.x, t.y - e.y) < want * 0.5) continue;
+      const d = Math.hypot(t.x - p.x, t.y - p.y);
+      if (d < best) {
+        best = d;
+        res = t;
+      }
+    }
+  }
   if (vx || vy) {
     e.walkT += dt;
     if (Math.abs(vx) > 1) e.face = vx < 0 ? Math.PI : 0;
@@ -259,14 +277,26 @@ function applyMove(w: World, e: Enemy, vx: number, vy: number, dt: number): void
   e.y = res.y;
 }
 
-/** Toward the player: straight when in sight, along the flow field when not. */
+/**
+ * Toward the player: straight when the way is clear for the enemy's whole body, along the flow field
+ * otherwise (so a big enemy doesn't walk into a pillar the player is behind).
+ */
 function steer(w: World, e: Enemy, los: boolean): { x: number; y: number } {
   const p = w.player;
-  if (los) {
+  if (los && clearPath(w, e.x, e.y, p.x, p.y, e.r * 0.9)) {
     const a = Math.atan2(p.y - e.y, p.x - e.x);
     return { x: Math.cos(a), y: Math.sin(a) };
   }
   return flowStep(w.map, w.flow, e.x, e.y) ?? { x: 0, y: 0 };
+}
+
+/** Whether a circle of radius r can slide straight from one point to another. */
+function clearPath(w: World, x0: number, y0: number, x1: number, y1: number, r: number): boolean {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const n = Math.ceil(Math.hypot(dx, dy) / 5);
+  for (let i = 1; i < n; i++) if (circleHitsWall(w.map, x0 + (dx * i) / n, y0 + (dy * i) / n, r)) return false;
+  return true;
 }
 
 function startWindup(w: World, e: Enemy): void {

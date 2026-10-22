@@ -100,7 +100,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
     <>
       <div className="rb-hud-hero">
         <div className="rb-hud-face">
-          <Portrait kind="hero" id={h.cls} size={34} />
+          <Portrait kind="hero" id={h.cls} equip={h.equip} size={34} />
           <span className="rb-lvl">{h.level}</span>
         </div>
         <div className="rb-hud-bars">
