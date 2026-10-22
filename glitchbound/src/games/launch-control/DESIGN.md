@@ -116,7 +116,7 @@ and below 30 % they can blow mid-race. Cosmetics: helmets, suits, paints, liveri
 | `economy.ts` | ladder, bots, purses by position, Monte-Carlo odds, materials, sponsor, crate, daily loaner | yes |
 | `cosmetics.ts` / `envs.ts` | cosmetics for sale; the four strips | yes |
 | `storage.ts` | the local save (validated) | DOM |
-| `scene3d.ts` | Three.js: the stage (race chase camera, garage turntable with a camera focus per part, docking into pop-ups), sky reflections, worlds merged per material, a thumbnail queue; the old lofted car builder stays as a fallback when a model cannot load | WebGL |
+| `scene3d.ts` | Three.js: the stage (race chase camera, garage turntable with a camera focus per part (the camera stays between the barriers, the car turns the rest of the way), docking into pop-ups, a redraw straight after every resize), sky reflections, worlds merged per material, a thumbnail queue; the old lofted car builder stays as a fallback when a model cannot load | WebGL |
 | `models.ts` | the 28 CC0 bodies (RG Poly and Cosmo): which body each car uses, the packs' palettes, paint cells and factory wings, loading and caching | WebGL |
 | `modelcar.ts` | builds a car from a body: repaint and livery mapping, spinning wheels sized by the tyre upgrade, upgrade parts snapped to the body by raycasts | WebGL |
 | `mats.ts` | shared materials, mesh helpers and static-mesh merging | WebGL |

@@ -1435,6 +1435,11 @@ const PIXEL_BUDGET = 2_100_000;
 
 /** Where the garage turntable parks the car: down the strip, clear of the gantries. */
 const SHOW_X = 70;
+/**
+ * How far across the strip the turntable camera may go: between the barriers (5.5 m out, the
+ * grandstands from 10 m). Along the strip it is clear for a long way.
+ */
+const SHOW_Z_MAX = LANE_W + 1;
 
 const lookKeyOf = (look: CarLook): string => `${look.def.id}|${JSON.stringify(look.levels)}|${look.paint}|${look.livery}|${look.wheels}|${look.helmet.join()}|${look.suit}`;
 export const lookKey = lookKeyOf;
@@ -1466,6 +1471,8 @@ export class Stage3D {
   private fovKickGoal = 0;
   /** The showcase camera, eased toward its focus (angle, distance, height, aim). */
   private show = { a: 0, d: 0, h: 0, ax: 0, ay: 0, ready: false };
+  /** The last framing drawn, to draw again straight after a resize. */
+  private frame: Framing | null = null;
 
   constructor(canvas?: HTMLCanvasElement, shadows = true) {
     this.canvas = canvas ?? document.createElement('canvas');
@@ -1560,10 +1567,21 @@ export class Stage3D {
   }
 
   resize(w: number, h: number, dpr: number): void {
-    this.w = Math.max(1, Math.floor(w));
-    this.h = Math.max(1, Math.floor(h));
+    const nw = Math.max(1, Math.floor(w));
+    const nh = Math.max(1, Math.floor(h));
+    if (nw === this.w && nh === this.h && this.renderer.getPixelRatio() === this.fitDpr(dpr, nw, nh)) return;
+    this.w = nw;
+    this.h = nh;
     this.renderer.setPixelRatio(this.fitDpr(dpr));
     this.renderer.setSize(this.w, this.h, false);
+    // A resize empties the canvas, and the next frame only comes after this one is shown: while
+    // Safari's bar slides away the view resizes every frame and would show nothing (a blue flash).
+    // The last picture is drawn again at the new size, right away.
+    if (this.frame) {
+      this.setFrame(this.frame);
+      this.camera.updateProjectionMatrix();
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   setPixelRatio(dpr: number): void {
@@ -1575,14 +1593,15 @@ export class Stage3D {
    * A big window on a sharp screen is millions of pixels a frame (a laptop's full screen is four
    * times a phone's), so the pixel ratio comes down until the canvas fits the budget.
    */
-  private fitDpr(dpr: number): number {
-    return Math.max(0.75, Math.min(dpr, Math.sqrt(PIXEL_BUDGET / (this.w * this.h))));
+  private fitDpr(dpr: number, w = this.w, h = this.h): number {
+    return Math.max(0.75, Math.min(dpr, Math.sqrt(PIXEL_BUDGET / (w * h))));
   }
 
   private placeCar(i: number, s: CarState, dt: number, t: number): void {
     const rig = this.cars[i];
     if (!rig) return;
     rig.group.position.set(s.x, 0, LANE_Z[i]!);
+    rig.group.rotation.y = 0;
     const spin = s.spinning ? s.v + 18 : s.v;
     for (const w of rig.wheels) w.rotation.z -= (spin * dt) / ((w.userData.r as number | undefined) ?? rig.wheelR);
     // The body pitches with the push: it squats (nose up) under acceleration and dips while the
@@ -1646,6 +1665,7 @@ export class Stage3D {
   }
 
   private setFrame(framing: Framing): void {
+    this.frame = framing;
     if (framing === 'right') {
       const fullW = this.w * 1.42;
       this.camera.aspect = fullW / this.h;
@@ -1818,9 +1838,18 @@ export class Stage3D {
       sh.ax += (goal.ax - sh.ax) * k;
       sh.ay += (goal.ay - sh.ay) * k;
     }
+    // The camera goes round the car only as far as the strip is clear: a tall phone's view puts it some
+    // 20 m back, which out to the side is in the grandstands (their roofs filled the view). It stays
+    // between the barriers and the car turns the rest of the way on its spot: the same view of the car.
+    const camA = Math.asin(clamp((SHOW_Z_MAX / sh.d) * Math.sin(sh.a), -1, 1));
+    const turn = sh.a - camA;
+    if (rig) rig.group.rotation.y = turn;
+    // the aim (and the camera's lean toward it) is a point on the car, so it turns with it
+    const aimX = sh.ax * Math.cos(turn);
+    const aimZ = -sh.ax * Math.sin(turn);
     // never under the strip, however low the player turns the camera
-    this.camera.position.set(SHOW_X + sh.ax * 0.5 + Math.cos(sh.a) * sh.d, Math.max(0.3, 0.75 + sh.d * sh.h), Math.sin(sh.a) * sh.d);
-    this.camera.lookAt(SHOW_X + sh.ax, sh.ay, 0);
+    this.camera.position.set(SHOW_X + aimX * 0.5 + Math.cos(camA) * sh.d, Math.max(0.3, 0.75 + sh.d * sh.h), aimZ * 0.5 + Math.sin(camA) * sh.d);
+    this.camera.lookAt(SHOW_X + aimX, sh.ay, aimZ);
     const spot = this.markerPart ? rig?.anchors?.[this.markerPart] : undefined;
     if (spot && rig && framing !== 'thumb') {
       if (!this.marker) {

@@ -961,6 +961,13 @@
   display: grid;
   gap: 8px;
 }
+/* the event cards and the shop tiles sit above RACE (last in the page): its slant and solid shadow
+   covered the Daily card's badge */
+.lc-modes,
+.lc-rail {
+  position: relative;
+  z-index: 1;
+}
 .lc-mode {
   position: relative;
   display: flex;
