@@ -28,6 +28,51 @@ function boostNow(r: { boostMul: number; boostLeft: number; boostTotal: number }
 }
 /** A quarter mile, metres. */
 export const DISTANCE = 402.336;
+/** The shutdown area past the line, metres, to the sand trap and catch fence at its end. */
+export const SHUTDOWN = 320;
+
+/** A car's run-out past the line, sampled every RUN_DT: metres past the line and speed, to the stop. */
+export interface RunOut {
+  x: Float32Array;
+  v: Float32Array;
+  stopT: number;
+  stopX: number;
+}
+export const RUN_DT = 1 / 60;
+const runOuts = new Map<string, RunOut>();
+/**
+ * Past the line (only for show: the time and speed are taken at the line). A moment off the throttle,
+ * then the brakes come on over half a second, with a parachute on the quickest cars that pulls hardest
+ * at speed. The last few metres a second roll out instead of stopping dead, and every car stops well
+ * short of the sand trap (it brakes harder when the room runs short).
+ */
+export function runOut(trap: number, chute: boolean): RunOut {
+  const key = `${trap.toFixed(1)}|${chute ? 1 : 0}`;
+  const hit = runOuts.get(key);
+  if (hit) return hit;
+  const xs = [0];
+  const vs = [trap];
+  let x = 0;
+  let v = Math.max(0, trap);
+  let t = 0;
+  while (v > 0 && t < 20) {
+    t += RUN_DT;
+    const brakes = clamp((t - 0.3) / 0.5, 0, 1);
+    let a = 1.2 + brakes * (12 + (chute ? 0.0026 * v * v : 0));
+    const room = SHUTDOWN - 45 - x;
+    if (room > 1) a = Math.max(a, (v * v) / (2 * room));
+    if (v < 3) a *= Math.max(0.3, v / 3);
+    v = Math.max(0, v - a * RUN_DT);
+    x += v * RUN_DT;
+    xs.push(x);
+    vs.push(v);
+  }
+  const run: RunOut = { x: Float32Array.from(xs), v: Float32Array.from(vs), stopT: t, stopX: x };
+  runOuts.set(key, run);
+  if (runOuts.size > 64) runOuts.delete(runOuts.keys().next().value!);
+  return run;
+}
+
 export const MAX_RACERS = 5;
 /** Nobody takes longer than this (the lights included): the race ends. */
 export const MAX_TIME = 36;

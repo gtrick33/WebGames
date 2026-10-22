@@ -13,7 +13,7 @@ import { ENV_DEFS, type EnvDef } from './envs';
 import type { Levels, PartId } from './parts';
 import { clamp, lerp, shade } from './util';
 import { buildAlive, type Alive } from './alive';
-import type { LightsState } from './sim';
+import { SHUTDOWN, type LightsState } from './sim';
 import { buildModelCar, paintOf } from './modelcar';
 import { fileFor, getModel, loadModel } from './models';
 import { CHROME, DRL, GLASS, LAMP, RUBBER, TAIL, TRIM, ball, blobTexture, box, lam, mergeStatic, mesh, pillow, std } from './mats';
@@ -46,6 +46,8 @@ export interface CarState {
 }
 
 export const DISTANCE_M = 402.336;
+/** The end of the shutdown area: the sand trap starts here. */
+const END_X = DISTANCE_M + SHUTDOWN;
 /** Five lanes: the player in the middle (lane 0), then alternating right and left. */
 /** Head to head: two lanes, you on the left. */
 export const LANES = 2;
@@ -63,6 +65,11 @@ export { LIGHTS_OFF } from './sim';
 export interface RaceView {
   excite?: number;
   intro?: number | null;
+  /**
+   * The finish: how far the camera's move is (0 at your car crossing the line, 1 when it is in place)
+   * and where your car will stop.
+   */
+  outro?: { p: number; stopX: number } | null;
 }
 const LANE_W = (LANE_PITCH * LANES) / 2;
 
@@ -1131,15 +1138,22 @@ function buildWorld(env: EnvDef): World {
   clouds.name = 'keep';
   add(clouds);
 
-  // ground, verge, strip
-  const ground = mesh(new THREE.PlaneGeometry(2600, 2600).rotateX(-Math.PI / 2), lam(env.ground), 200, -0.03, 0);
+  // ground, verge, strip: from behind the start to the end of the shutdown area past the line. The
+  // layers sit centimetres apart, so they are cut into 20 m pieces: one huge triangle loses the depth
+  // precision near the camera and the grass under the asphalt flickers through.
+  const ground = mesh(new THREE.PlaneGeometry(2600, 2600, 26, 26).rotateX(-Math.PI / 2), lam(env.ground), 200, -0.03, 0);
   add(ground);
-  add(mesh(new THREE.PlaneGeometry(640, 48).rotateX(-Math.PI / 2), lam(env.verge), 200, -0.015, 0));
+  const stripFrom = -120;
+  const stripTo = END_X + 40;
+  const stripLen = stripTo - stripFrom;
+  const stripMid = (stripFrom + stripTo) / 2;
+  const pieces = Math.ceil(stripLen / 20);
+  add(mesh(new THREE.PlaneGeometry(stripLen, 48, pieces, 1).rotateX(-Math.PI / 2), lam(env.verge), stripMid, -0.015, 0));
   const asphalt = std(env.track, { rough: 0.95 });
-  add(mesh(new THREE.PlaneGeometry(640, LANE_W * 2 + 1.6).rotateX(-Math.PI / 2), asphalt, 200, 0, 0));
+  add(mesh(new THREE.PlaneGeometry(stripLen, LANE_W * 2 + 1.6, pieces, 1).rotateX(-Math.PI / 2), asphalt, stripMid, 0, 0));
   const groove = std(shade(env.track, -0.22), { rough: 1 });
-  for (const z of LANE_Z) add(mesh(new THREE.PlaneGeometry(430, 1.7).rotateX(-Math.PI / 2), groove, 200, 0.004, z));
-  for (let k = 0; k <= LANES; k++) add(mesh(new THREE.PlaneGeometry(640, 0.18).rotateX(-Math.PI / 2), lam(env.line), 200, 0.006, -LANE_W + k * LANE_PITCH));
+  for (const z of LANE_Z) add(mesh(new THREE.PlaneGeometry(430, 1.7, 22, 1).rotateX(-Math.PI / 2), groove, 200, 0.004, z));
+  for (let k = 0; k <= LANES; k++) add(mesh(new THREE.PlaneGeometry(stripLen, 0.18, pieces, 1).rotateX(-Math.PI / 2), lam(env.line), stripMid, 0.006, -LANE_W + k * LANE_PITCH));
   add(mesh(new THREE.PlaneGeometry(0.5, LANE_W * 2 + 1.6).rotateX(-Math.PI / 2), lam('#ffffff'), 0, 0.007, 0));
   for (let m = 20; m < DISTANCE_M; m += 20) {
     for (const z of [-(LANE_W + 1.0), LANE_W + 1.0]) add(mesh(new THREE.PlaneGeometry(0.7, 1.4).rotateX(-Math.PI / 2), lam('#ffffff'), m, 0.007, z));
@@ -1155,13 +1169,13 @@ function buildWorld(env: EnvDef): World {
   }
   // tyre walls (instanced: two colours)
   const tyreGeo = keep(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 10));
-  const tyreCount = Math.ceil(500 / 0.9) * 2 * 2;
+  const tyreCount = Math.ceil((END_X + 40) / 0.9) * 2 * 2;
   const tyresRed = new THREE.InstancedMesh(tyreGeo, lam('#ff3b4e'), tyreCount);
   const tyresWhite = new THREE.InstancedMesh(tyreGeo, lam('#ffffff'), tyreCount);
   let nr = 0;
   let nw = 0;
   const dummy = new THREE.Object3D();
-  for (let x = -40; x < 460; x += 0.9) {
+  for (let x = -40; x < END_X; x += 0.9) {
     const i = Math.round(x / 0.9);
     for (const z of [-(LANE_W + 1.9), LANE_W + 1.9])
       for (const layer of [0, 1]) {
@@ -1189,6 +1203,14 @@ function buildWorld(env: EnvDef): World {
   banner.name = 'keep';
   add(banner);
   add(box(0.3, 1.9, LANE_W * 2 + 5.4, lam('#ff3b4e'), DISTANCE_M, 8, 0));
+  // the end of the shutdown area: a sand trap and a catch fence (the cars stop well before it)
+  add(mesh(new THREE.PlaneGeometry(26, LANE_W * 2 + 3).rotateX(-Math.PI / 2), lam('#e6cf93'), END_X + 13, 0.012, 0));
+  const fenceZ = LANE_W + 1.6;
+  for (let z = -fenceZ; z <= fenceZ + 0.01; z += 2.2) add(box(0.14, 3.4, 0.14, TRIM(), END_X + 25, 1.7, z));
+  add(box(0.18, 0.18, fenceZ * 2 + 0.4, TRIM(), END_X + 25, 3.4, 0));
+  const net = mesh(new THREE.PlaneGeometry(fenceZ * 2, 3.2), keep(new THREE.MeshLambertMaterial({ color: '#1d1238', transparent: true, opacity: 0.45, side: THREE.DoubleSide })), END_X + 25, 1.7, 0);
+  net.rotation.y = -Math.PI / 2;
+  add(net);
   // sponsor gantry behind the start
   const gt = keep(textTexture('LAUNCH CONTROL', '#ffd12e', '#1d1238', 1024, 128, 86));
   const gan = mesh(new THREE.PlaneGeometry(LANE_W * 2 + 5.3, 1.6), keep(new THREE.MeshLambertMaterial({ map: gt })), -13.75, 7.5, 0);
@@ -1236,7 +1258,7 @@ function buildWorld(env: EnvDef): World {
   boardTex.wrapS = THREE.RepeatWrapping;
   boardTex.repeat.set(1, 1);
   const boardMat = keep(new THREE.MeshLambertMaterial({ map: boardTex }));
-  for (let x = -20; x < 440; x += 24)
+  for (let x = -20; x < END_X - 24; x += 24)
     for (const side of [1, -1]) {
       const b = mesh(keep(new THREE.PlaneGeometry(23.5, 0.62)), boardMat, x + 12, 0.95, side * (LANE_W + 1.5));
       b.rotation.y = side > 0 ? Math.PI : 0;
@@ -1728,6 +1750,17 @@ export class Stage3D {
     const back = (narrow ? 12.5 : 10.5) + Math.min(4, me.v * 0.04);
     const chasePos = new THREE.Vector3(me.x - back, (narrow ? 5.2 : 4.0) + Math.min(1, me.v * 0.01), 0);
     const chaseAim = new THREE.Vector3(me.x + (narrow ? 16 : 14), 0.5, 0);
+    // The finish: a crane shot up over your car and round to the front, down the strip where it will
+    // stop, so the car rolls to a halt in front of the camera (between the lanes: over both cars).
+    const outro = view.outro ? smooth(0, 1, view.outro.p) : 0;
+    if (outro > 0) {
+      const aim = new THREE.Vector3(me.x, 0.7, LANE_Z[0] * 0.6);
+      chaseAim.lerp(aim, smooth(0, 1, (view.outro?.p ?? 0) * 2.5));
+      chasePos.lerp(new THREE.Vector3(view.outro!.stopX + (narrow ? 11 : 9), narrow ? 2.2 : 1.9, 0), outro);
+      // high and wide as it passes the car, so the car never fills the view
+      chasePos.y += Math.sin(Math.PI * outro) * 4.5;
+      chasePos.z += Math.sin(Math.PI * outro) * 2.5;
+    }
     if (view.intro !== undefined && view.intro !== null) {
       // the intro: from low in front of your car, round its outside (never into the
       // tyre wall) and up to the chase position
@@ -1771,7 +1804,7 @@ export class Stage3D {
     this.camera.lookAt(this.camAim);
     this.fovKick += (this.fovKickGoal - this.fovKick) * (1 - Math.exp(-dt * 14));
     this.fovKickGoal *= Math.exp(-dt * 3.2);
-    this.camera.fov = (narrow ? 62 : 52) + Math.min(10, me.v * 0.09) + this.fovKick;
+    this.camera.fov = lerp((narrow ? 62 : 52) + Math.min(10, me.v * 0.09), narrow ? 56 : 46, outro) + this.fovKick;
     if (fixed) {
       this.camera.position.set(...fixed.pos);
       this.camera.lookAt(...fixed.aim);

@@ -6,7 +6,7 @@ import { COSMETICS, DEFAULTS, getCosmetic } from '../src/games/launch-control/co
 import { addMats, botsFor, botSpec, crateFor, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, idleIncome, idleRate, LADDER, LADDER_SIZE, loanerFor, materialsFor, opponentSpec, purseAt, RACE_SIZE, settle, typicalEt } from '../src/games/launch-control/economy';
 import { ENV_DEFS } from '../src/games/launch-control/envs';
 import { applyWear, effectsOf, failChance, freshCondition, levelGains, MAX_LEVEL, PARTS, raceWear, repairCost, RISKY, stockLevels, upgradeCost, type Levels } from '../src/games/launch-control/parts';
-import { AUTO_LAUNCH, FIRST_LIGHT, LIGHT_GAP, LIGHTS, OUT_HOLD_MAX, decodeScript, DT, encodeScript, engineForce, forecastEt, forecastRun, GREEN_SECONDS, idealLaunchRpm, JUMP_PENALTY, Race, scoreOf, shiftRpm, shiftWindows, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
+import { AUTO_LAUNCH, FIRST_LIGHT, LIGHT_GAP, LIGHTS, OUT_HOLD_MAX, decodeScript, DT, encodeScript, runOut, SHUTDOWN, engineForce, forecastEt, forecastRun, GREEN_SECONDS, idealLaunchRpm, JUMP_PENALTY, Race, scoreOf, shiftRpm, shiftWindows, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
 import { voiceOf } from '../src/games/launch-control/sound';
 import { emptySave, sanitize } from '../src/games/launch-control/storage';
 import { rng } from '../src/games/launch-control/util';
@@ -85,6 +85,23 @@ describe('the dealer', () => {
 });
 
 describe('the race', () => {
+  it('past the line every car runs out to a stop in the shutdown area, slowing all the way, short of the sand trap', () => {
+    for (let trap = 15; trap <= 130; trap += 5)
+      for (const chute of [false, true]) {
+        const r = runOut(trap, chute);
+        expect(r.v[0]).toBeCloseTo(trap, 3);
+        expect(r.v[r.v.length - 1]).toBe(0);
+        expect(r.stopX).toBeLessThan(SHUTDOWN - 40);
+        expect(r.stopT).toBeLessThan(7);
+        for (let i = 1; i < r.v.length; i++) {
+          expect(r.v[i]!).toBeLessThanOrEqual(r.v[i - 1]!);
+          expect(r.x[i]!).toBeGreaterThanOrEqual(r.x[i - 1]!);
+        }
+      }
+    // a parachute stops a car sooner from the same speed
+    expect(runOut(80, true).stopX).toBeLessThan(runOut(80, false).stopX);
+  });
+
   it('is deterministic: same cars, drivers and seed give the same result', () => {
     const specs = [stock('stallion'), stock('tsubasa'), stock('griffon'), stock('astro'), stock('kestrel')];
     const drivers = [policy(0.7, 4), policy(0.5, 9), policy(0.6, 2), policy(0.4, 3), policy(0.8, 5)];

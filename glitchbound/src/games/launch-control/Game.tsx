@@ -1253,6 +1253,8 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           </Panel>
         )}
 
+        {/* the race dips to dark at the end of its run-out; the result comes up out of the same dark */}
+        {screen === 'result' && <div className="lc-fadein" aria-hidden="true" />}
         {screen === 'result' && outcome && (
           <ResultScreen
             o={outcome}

@@ -94,6 +94,46 @@ describe('Launch Control: a full ladder race', () => {
     expect(screen.getByRole('button', { name: 'Next rival' })).toBeTruthy();
   });
 
+  /** Frames until `done` holds (or the limit), tapping at lights out and in the green. */
+  const until = (done: () => boolean, limit = 4000): number => {
+    let f = 0;
+    for (; f < limit && !done(); f++) {
+      act(() => tick());
+      if (document.querySelector('.lc-race[data-hot="1"], .lc-race[data-state="go"]') && f % 7 === 0) act(() => void fireEvent.keyDown(window, { code: 'Space', key: ' ' }));
+    }
+    return f;
+  };
+  const raceEl = (): HTMLElement | null => document.querySelector('.lc-race');
+  /** A ladder race to your car crossing the line (the intro skipped). */
+  const toTheLine = (): void => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    startLadderRace();
+    act(() => void fireEvent.keyDown(window, { code: 'Space', key: ' ' }));
+    act(() => void fireEvent.keyUp(window, { code: 'Space', key: ' ' }));
+    until(() => raceEl()?.dataset.state === 'done');
+  };
+
+  it('after the line the cars run out to a stop, then the screen dips to dark and the result comes up', () => {
+    toTheLine();
+    // it used to cut to the result 2.6 s after the finish, mid-braking
+    const outro = until(() => !!raceEl()?.classList.contains('is-leaving'));
+    expect(raceEl()?.classList.contains('is-leaving')).toBe(true);
+    expect(outro).toBeGreaterThan(Math.round(2.6 * 60));
+    expect(until(() => !raceEl(), 60)).toBeLessThan(40);
+    expect(document.querySelector('.lc-fadein')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /You won!|Beaten/ })).toBeTruthy();
+  }, 20_000);
+
+  it('a tap a moment after the finish goes straight to the result', () => {
+    toTheLine();
+    // once the other car is in too, the race says a tap continues
+    until(() => raceEl()?.dataset.skip === '1');
+    expect(raceEl()?.classList.contains('is-leaving')).toBe(false);
+    act(() => void fireEvent.keyDown(window, { code: 'Space', key: ' ' }));
+    expect(until(() => !raceEl(), 60)).toBeLessThan(40);
+    expect(screen.getByRole('button', { name: 'Next rival' })).toBeTruthy();
+  }, 20_000);
+
   it('a driver who never shifts sits on the limiter and loses', () => {
     render(<Game host={host} restartKey={0} pauseKey={0} />);
     startLadderRace();

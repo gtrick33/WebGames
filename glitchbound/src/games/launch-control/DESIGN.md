@@ -46,8 +46,11 @@ older `lc1`/`lc2` replays still load).
 | All-wheel grip | never spins at the launch or after a shift; a launch 0.03 s more forgiving |
 | Nitrous | one shot a run: from second gear on, hold the button 0.45 s and it pushes up to 40 % harder for 2.2 s (swelling in and fading). Policy drivers fire it early in third. Not in live rooms (holds aren't synced) or the daily loaner |
 
-The race screen also has speed lines, nitrous flames, a slow-motion photo finish when the two cars cross within
-0.15 s (not live), and a coast-down past the line (the quickest cars on a parachute).
+The race screen also has speed lines, nitrous flames and a slow-motion photo finish when the two cars cross within
+0.15 s (not live). Past the line there is a 320 m shutdown area ending in a sand trap and catch fence: each car lifts,
+brakes (the quickest on a parachute, strongest at speed) and rolls to a stop well short of it (`runOut` in sim.ts),
+while the camera cranes up over your car and round in front of where it stops. The result comes up half a second
+after your car stops, through a dip to dark; "Tap to continue" skips there once both cars are in.
 
 ## Modes
 

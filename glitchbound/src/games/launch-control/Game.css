@@ -2974,6 +2974,60 @@
   inset: 0;
   touch-action: none;
 }
+/* the finish: the controls step aside for the run-out, then the screen dips to dark for the result,
+   which comes up out of the same dark (.lc-fadein) */
+.lc-race[data-state='done'] .lc-shift,
+.lc-race[data-state='done'] .lc-nos {
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.lc-race::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: #0c0820;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.38s ease-in;
+}
+.lc-race.is-leaving::after {
+  opacity: 1;
+}
+.lc-continue {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--hud-glass);
+  color: #fff;
+  font-size: 12.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.3s;
+}
+.lc-race[data-skip='1'] .lc-continue {
+  opacity: 1;
+}
+.lc-fadein {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: #0c0820;
+  pointer-events: none;
+  animation: lc-fadein 0.5s ease-out forwards;
+}
+@keyframes lc-fadein {
+  to {
+    opacity: 0;
+  }
+}
 .lc-hud {
   position: absolute;
   z-index: 2;

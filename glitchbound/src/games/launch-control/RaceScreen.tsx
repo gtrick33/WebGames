@@ -5,7 +5,7 @@ import { FAILURE_TEXT } from './parts';
 import { LANES, LIGHTS_OFF, type CarLook, type CarState, type LightsState, type Stage3D } from './scene3d';
 import { DriverFace } from './ui';
 import { MAX_STEP, replay } from './room';
-import { canNitro, canShift, DISTANCE, DT, LIGHTS, lightsOf, NITRO_HOLD_S, NITRO_S, Race, shiftRpm, type CarSpec, type Driver, type Racer, type RaceResult, type ShiftWindow } from './sim';
+import { canNitro, canShift, DISTANCE, DT, LIGHTS, lightsOf, NITRO_HOLD_S, NITRO_S, Race, RUN_DT, runOut, shiftRpm, type CarSpec, type Driver, type Racer, type RaceResult, type ShiftWindow } from './sim';
 import type { Sfx } from './sound';
 import { fmtEt } from './util';
 
@@ -50,15 +50,22 @@ function tachRing(w: ShiftWindow | null): string {
   return `conic-gradient(from 225deg, ${NEUTRAL} 0deg ${a(w.okLo)}, ${YELLOW} ${a(w.okLo)} ${a(w.lo)}, ${GREEN} ${a(w.lo)} ${a(w.hi)}, ${YELLOW} ${a(w.hi)} ${a(w.okHi)}, ${RED} ${a(w.okHi)} ${a(1)}, transparent ${a(1)} 360deg)`;
 }
 
-/** Past the line a car brakes to a stop (a parachute pops on the quickest), instead of freezing on the stripe. */
+/** The quickest cars pop a parachute past the line. */
+const hasChute = (r: Racer): boolean => r.spec.def.tier >= 6 || r.trap > 69;
+/** Past the line a car runs out to a stop in the shutdown area (runOut), instead of freezing on the stripe. */
 function coastOf(r: Racer, t: number): { x: number; v: number; chute: number } {
   if (r.phase !== 'done' || r.dnf) return { x: r.x, v: r.dead ? 0 : r.v, chute: 0 };
   const since = Math.max(0, t - (r.launchAt + r.et));
-  const chute = r.spec.def.tier >= 6 || r.trap > 69;
-  const a = chute ? 13 : 8;
-  const tt = Math.min(since, r.trap / a);
-  return { x: DISTANCE + r.trap * tt - 0.5 * a * tt * tt, v: Math.max(0, r.trap - a * since), chute: chute ? Math.min(1, Math.max(0, (since - 0.25) / 0.35)) : 0 };
+  const chute = hasChute(r);
+  const run = runOut(r.trap, chute);
+  const f = Math.min(run.x.length - 1, since / RUN_DT);
+  const i = Math.floor(f);
+  const j = Math.min(run.x.length - 1, i + 1);
+  const k = f - i;
+  return { x: DISTANCE + run.x[i]! + (run.x[j]! - run.x[i]!) * k, v: run.v[i]! + (run.v[j]! - run.v[i]!) * k, chute: chute ? Math.min(1, Math.max(0, (since - 0.25) / 0.35)) : 0 };
 }
+/** The fade to the result screen (the result fades in from the same dark: .lc-race::after, .lc-fadein). */
+const LEAVE_MS = 380;
 
 /** A big-torque car lifts its nose off the line: up over a third of a second, down by 1.1 s. */
 const wheelie = (since: number): number => (since <= 0 ? 0 : since < 0.35 ? Math.sin((since / 0.35) * (Math.PI / 2)) : Math.max(0, 1 - (since - 0.35) / 0.75));
@@ -173,6 +180,25 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
     // a slow phone drops the pixel ratio a step at a time
     let dpr = Math.min(1.75, window.devicePixelRatio || 1);
     let frameAvg = 16;
+    // The finish: your car runs out to a stop while the camera cranes round in front of it, then the
+    // screen dips to dark and the result comes up (a tap a moment after the finish goes straight there).
+    const crossAt = (): number => (me.phase === 'done' && !me.dnf ? me.launchAt + me.et : -1);
+    const myRun = (): ReturnType<typeof runOut> => runOut(me.trap, hasChute(me));
+    // the dip to dark runs on the frame clock (rt), and the result comes once it is dark
+    let leaveAt = -1;
+    const leave = (): void => {
+      if (leaveAt >= 0) return;
+      leaveAt = rt;
+      root.classList.add('is-leaving');
+    };
+    /** Seconds `t` (race time) into the finish: whether the run-out has played (your car has stopped). */
+    const outroDone = (t: number): boolean => {
+      const c = crossAt();
+      if (c < 0) return t - finishedAt > 2.6;
+      return t - finishedAt > 1 && t - c > Math.min(7, myRun().stopT + 0.6);
+    };
+    /** A tap this long after the finish skips the rest of it (not the taps still landing as you cross). */
+    const canSkip = (t: number): boolean => finishedAt >= 0 && t - finishedAt > 0.8 && (crossAt() < 0 || t - crossAt() > 1.2);
     let adaptAt = 0;
     stage?.setPixelRatio(dpr);
     const s = sfx();
@@ -332,6 +358,13 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
       dt = Math.min(dt, 0.1);
       showT += dt;
       rt += dt;
+      if (leaveAt >= 0 && rt - leaveAt >= LEAVE_MS / 1000) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+        s.quiet();
+        onFinishRef.current(race.result());
+        return;
+      }
       // the nitrous: the button held down long enough, once the car can take it
       if (hasNos && holdAt >= 0 && rt - holdAt >= NITRO_HOLD_S && canNitro(me)) {
         race.nitro(0);
@@ -392,9 +425,9 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
             finishCheer = won ? 1 : 0.5;
             if (won) stage?.confetti(0);
             say(won ? 'YOU WIN!' : deadHeat ? 'DEAD HEAT' : res.winner === null ? 'NO WINNER' : 'BEATEN', won ? 'lime' : 'yellow', res.margin > 0 && !deadHeat ? `by ${res.margin.toFixed(3)} s` : undefined);
-          } else if ((now - live.startPerf) / 1000 - finishedAt > 2.6 && liveSettled) {
+          } else if (liveSettled && outroDone((now - live.startPerf) / 1000)) {
             liveSettled = false;
-            onFinishRef.current(race.result());
+            leave();
           }
         }
         lights = lightsOf(race);
@@ -411,13 +444,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
           clock += DT;
           if (race.done) {
             if (finishedAt < 0) finishedAt = clock;
-            else if (clock - finishedAt > 2.6) {
-              cancelAnimationFrame(raf);
-              raf = 0;
-              s.quiet();
-              onFinishRef.current(race.result());
-              return;
-            }
+            else if (outroDone(clock)) leave();
             continue;
           }
           onEvents(stepRace());
@@ -434,7 +461,8 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
       finishCheer = Math.max(0, finishCheer - dt * 0.15);
       if (clock - audioAt > 0.05 || show !== 'race') {
         audioAt = clock;
-        const revs = show === 'burnout' ? 0.75 + Math.sin(showT * 9) * 0.12 : show === 'intro' ? 0.25 : me.dead ? 0 : me.rpm / me.spec.redline;
+        // past the line the revs fall with the car
+        const revs = show === 'burnout' ? 0.75 + Math.sin(showT * 9) * 0.12 : show === 'intro' ? 0.25 : me.dead ? 0 : crossAt() >= 0 ? 0.15 + 0.6 * (coastOf(me, clock).v / Math.max(1, me.trap)) : me.rpm / me.spec.redline;
         s.engine(revs, me.phase === 'running' || show === 'burnout' ? 1 : 0.3);
       }
       // HUD: the tach shows this gear's window; it moves to a new spot after each shift (an electric's
@@ -475,8 +503,9 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
         lightsEl.current.dataset.on = String(race.out ? 0 : race.lightsOn);
         lightsEl.current.dataset.show = (show === 'race' || show === 'done') && (!race.out || clock - greenAt < 0.7) ? '1' : '';
       }
-      if (needle.current) needle.current.style.transform = `rotate(${-135 + Math.min(1.02, show === 'burnout' ? 0.72 + Math.sin(showT * 9) * 0.1 : ev && shiftable ? me.charge : me.rpm / me.spec.redline) * SWEEP}deg)`;
-      if (speedEl.current) speedEl.current.textContent = String(Math.round(me.v * 3.6));
+      const coastV = crossAt() >= 0 ? coastOf(me, clock).v : -1;
+      if (needle.current) needle.current.style.transform = `rotate(${-135 + Math.min(1.02, show === 'burnout' ? 0.72 + Math.sin(showT * 9) * 0.1 : coastV >= 0 ? 0.15 + 0.6 * (coastV / Math.max(1, me.trap)) : ev && shiftable ? me.charge : me.rpm / me.spec.redline) * SWEEP}deg)`;
+      if (speedEl.current) speedEl.current.textContent = String(Math.round((coastV >= 0 ? coastV : me.v) * 3.6));
       if (gearEl.current) gearEl.current.textContent = me.spec.gears === 1 ? 'D' : me.phase === 'staging' ? 'N' : String(me.gear);
       if (timeEl.current) timeEl.current.textContent = me.phase === 'staging' ? '0.000' : me.phase === 'done' && !me.dnf ? fmtEt(me.et) : fmtEt(Math.max(0, clock - me.launchAt));
       race.racers.forEach((r, i) => {
@@ -510,11 +539,20 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
           chute: c.chute,
         };
       };
-      stage?.renderRace(race.racers.map(state), lights, rt, simDt, undefined, { excite, intro: show === 'intro' ? showT / INTRO_S : null });
+      // once a tap can skip the rest of the finish, say so
+      const skip = race.done && leaveAt < 0 && canSkip(live ? (now - live.startPerf) / 1000 : clock) ? '1' : '';
+      if (root.dataset.skip !== skip) root.dataset.skip = skip;
+      const crossed = crossAt();
+      const outro = crossed >= 0 ? { p: (tNow - crossed) / Math.max(2.2, myRun().stopT * 0.7), stopX: DISTANCE + myRun().stopX } : null;
+      stage?.renderRace(race.racers.map(state), lights, rt, simDt, undefined, { excite, intro: show === 'intro' ? showT / INTRO_S : null, outro });
     };
     raf = requestAnimationFrame(frame);
 
     const tap = (): void => {
+      if (race.done && canSkip(live ? (performance.now() - live.startPerf) / 1000 : clock)) {
+        leave();
+        return;
+      }
       if (live) {
         if (show !== 'race' && show !== 'done') return;
         if (me.phase === 'done') return;
@@ -707,6 +745,9 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
         </button>
       )}
       <GameMenuButton className="lc-icon lc-race-menu" />
+      <p className="lc-continue mono" aria-hidden="true">
+        Tap to continue
+      </p>
       <button ref={shiftBtn} className="lc-shift is-idle" aria-label="Launch and shift" tabIndex={-1}>
         LAUNCH
       </button>
