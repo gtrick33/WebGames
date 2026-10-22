@@ -56,6 +56,11 @@ export interface Me {
   bests: Record<string, BestView>;
   rounds: number;
   streak: number;
+  /**
+   * Days this member cleared the Daily Challenge, newest first (up to 400), as the server recorded them
+   * from checked rounds. The site counts the streak from these, so it is the same on every device.
+   */
+  dailyDays: string[];
   badges: Badge[];
   quests: QuestView[];
   questDay: string;

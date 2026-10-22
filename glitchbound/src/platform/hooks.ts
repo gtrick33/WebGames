@@ -4,7 +4,6 @@ import { dailyRules } from '../catalog/settings';
 import { useLiveCatalog } from './liveCatalog';
 import { challengeForDay, currentStreak, type DailyChallenge } from './daily';
 import { addDays, dayKey } from './dates';
-import { doneDays } from './save';
 import { useSave } from './store';
 
 /** Games running on the page right now: clocks around the stage hold still meanwhile. */
@@ -48,8 +47,11 @@ export interface DailyState {
   week: boolean[];
 }
 
-/** Today's challenge plus this player's progress. Null when the catalog has no daily-capable game. */
-export function useDaily(now: Date): DailyState | null {
+/**
+ * Today's challenge plus this player's progress. `days` are the days that count for the streak
+ * (useStreakDays). Null when the catalog has no daily-capable game.
+ */
+export function useDaily(now: Date, days: ReadonlySet<string>): DailyState | null {
   const save = useSave();
   const today = dayKey(now);
   // The admins' daily picks and exclusions come in through the live catalog.
@@ -57,16 +59,16 @@ export function useDaily(now: Date): DailyState | null {
   return useMemo(() => {
     const challenge = challengeForDay(today, GAMES, dailyRules(live.raw));
     if (!challenge) return null;
-    const done = doneDays(save);
     const rec = save.daily[today];
     return {
       challenge,
       today,
       best: rec?.best ?? 0,
       tried: !!rec,
-      done: rec?.done ?? false,
-      streak: currentStreak(done, today),
-      week: Array.from({ length: 7 }, (_, i) => done.has(addDays(today, i - 6))),
+      // cleared here, or on another device (the account's record)
+      done: !!rec?.done || days.has(today),
+      streak: currentStreak(days, today),
+      week: Array.from({ length: 7 }, (_, i) => days.has(addDays(today, i - 6))),
     };
-  }, [save, today, live]);
+  }, [save, days, today, live]);
 }

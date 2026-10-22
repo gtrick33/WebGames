@@ -121,6 +121,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
     bests: bestMap,
     rounds,
     streak,
+    dailyDays: dailyDone.results.map((d) => d.day),
     badges,
     quests,
     questDay: day,

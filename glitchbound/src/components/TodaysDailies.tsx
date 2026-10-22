@@ -7,8 +7,8 @@ import { dayKey, formatCountdown, msUntilMidnight } from '../platform/dates';
 import { streakState, sweepShare } from '../platform/engage';
 import { SITE_URL } from '../platform/env';
 import { useDaily, useNow } from '../platform/hooks';
+import { useStreakDays } from '../platform/streak';
 import { shareOrCopy } from '../platform/share';
-import { doneDays } from '../platform/save';
 import { useSave } from '../platform/store';
 import { Link } from '../router/router';
 import { useFlagships } from '../platform/useFlagships';
@@ -31,13 +31,14 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
   const today = dayKey(now);
   const [shareMsg, setShareMsg] = useState('');
   // Only the featured variant uses these; the hooks run every time so React sees the same order.
-  const daily = useDaily(now);
+  const streakDays = useStreakDays();
+  const daily = useDaily(now, streakDays);
   const flagships = useFlagships().list;
   const list = games.filter((g) => g.ownDaily && g.released <= today).sort((a, b) => a.title.localeCompare(b.title));
   if (list.length === 0) return null;
   const finished = new Set(save.gameDailies[today] ?? []);
   const doneCount = list.filter((g) => finished.has(g.slug)).length;
-  const { streak, atRisk } = streakState(doneDays(save), today);
+  const { streak, atRisk } = streakState(streakDays, today);
   const H = `h${headingLevel}` as const;
   const all = doneCount === list.length;
   // The Daily Sweep: an emoji row for chats, and a picture card with every game's tile ticked or not.

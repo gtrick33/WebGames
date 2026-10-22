@@ -194,6 +194,12 @@ class AccountStore {
     if (this.state.me) this.set({ me: { ...this.state.me, quests } });
   }
 
+  /** The server recorded a cleared Daily Challenge for `day`: it counts for the streak at once. */
+  addDailyDay(day: string): void {
+    const me = this.state.me;
+    if (me && !me.dailyDays?.includes(day)) this.set({ me: { ...me, dailyDays: [day, ...(me.dailyDays ?? [])] } });
+  }
+
   setMe(me: Me): void {
     this.set({ me, status: 'member' });
   }

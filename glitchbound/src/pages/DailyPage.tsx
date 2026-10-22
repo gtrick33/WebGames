@@ -1,10 +1,11 @@
 import { DailyCard } from '../components/DailyCard';
 import { Icon } from '../components/Icon';
 import { addDays } from '../platform/dates';
-import { DAILY_HISTORY_DAYS, doneDays } from '../platform/save';
+import { DAILY_HISTORY_DAYS } from '../platform/save';
 import { ThemeStrip } from '../components/ThemeStrip';
 import { TodaysDailies } from '../components/TodaysDailies';
 import { useDaily, useNow } from '../platform/hooks';
+import { useStreakDays } from '../platform/streak';
 import { usePageMeta } from '../platform/meta';
 import { useSave } from '../platform/store';
 import { Link } from '../router/router';
@@ -19,7 +20,8 @@ export function DailyPage() {
   });
   const t = useT();
   const now = useNow(60_000);
-  const daily = useDaily(now);
+  const done = useStreakDays();
+  const daily = useDaily(now, done);
   const save = useSave();
 
   if (!daily) {
@@ -37,7 +39,6 @@ export function DailyPage() {
   }
 
   const days = Array.from({ length: 28 }, (_, i) => addDays(daily.today, i - 27));
-  const done = doneDays(save);
 
   return (
     <div className="wrap info-page">

@@ -5,6 +5,7 @@ import { dailyShareText, fmt } from '../platform/daily';
 import { formatCountdown, msUntilMidnight } from '../platform/dates';
 import { SITE_URL } from '../platform/env';
 import { useDaily, useNow } from '../platform/hooks';
+import { useStreakDays } from '../platform/streak';
 import { shareOrCopy } from '../platform/share';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
@@ -21,7 +22,7 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'band' | 'hero' | 'page' | 'compact'; headingLevel?: 2 | 3 }) {
   const t = useT();
   const now = useNow(1000);
-  const daily = useDaily(now);
+  const daily = useDaily(now, useStreakDays());
   const [shareMsg, setShareMsg] = useState('');
   if (!daily) return null;
   const { challenge: c, best, tried, done, streak, week } = daily;

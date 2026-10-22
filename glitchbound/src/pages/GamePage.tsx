@@ -414,8 +414,11 @@ export function GamePage({ game }: { game: GameEntry }) {
         void pending.then(async (runId) => {
           if (!runId) return;
           try {
-            const server = await api<RunEndResult>('/api/runs/end', { body: { runId, score: e.score, stats: e.stats ?? {}, day: dayKey() } });
+            const day = dayKey();
+            const server = await api<RunEndResult>('/api/runs/end', { body: { runId, score: e.score, stats: e.stats ?? {}, day } });
             account.setQuests(server.quests);
+            // the streak counts the server's record: a cleared challenge it just stored counts now
+            if (server.dailyCompleted) account.addDailyDay(day);
             setLast((prev) => (prev && prev.n === n ? { ...prev, server } : prev));
             setBoardKey((k) => k + 1);
             if (server.newBest) setBurst((b) => b + 1);

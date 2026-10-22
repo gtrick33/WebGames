@@ -6,8 +6,7 @@ import { nextTheme, setTheme, useTheme } from '../platform/theme';
 import { dayKey } from '../platform/dates';
 import { streakState } from '../platform/engage';
 import { useNow } from '../platform/hooks';
-import { doneDays } from '../platform/save';
-import { useSave } from '../platform/store';
+import { useStreakDays } from '../platform/streak';
 import { Link, useLocation } from '../router/router';
 import { Icon, type IconName } from './Icon';
 import { LogoMark, Wordmark } from './Logo';
@@ -30,9 +29,9 @@ const TABS: { href: string; label: string; short?: string; icon: IconName }[] = 
 /** The daily streak, always in view (like a flame you don't want to go out). Pulses when today is not done yet. */
 function StreakChip() {
   const t = useT();
-  const save = useSave();
+  const days = useStreakDays();
   const today = dayKey(useNow(60_000));
-  const { streak, atRisk } = streakState(doneDays(save), today);
+  const { streak, atRisk } = streakState(days, today);
   if (streak === 0) return null;
   const label = atRisk ? t('{n}-day streak. Clear today’s challenge to keep it', { n: streak }) : t('{n}-day streak. Today’s challenge is cleared', { n: streak });
   return (
