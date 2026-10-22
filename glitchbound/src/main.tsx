@@ -32,7 +32,8 @@ const root = document.getElementById('root');
 const leaving = goToMainAddress();
 // The chosen language's words load first (English needs none), so the page never flashes English.
 // A game page waits for its own code too (its HTML preloads it), so it renders in one go.
-const pageCode = !leaving && matchRoute(location.pathname).name === 'game' ? loadGamePage().catch(() => undefined) : undefined;
+const firstRoute = matchRoute(location.pathname).name;
+const pageCode = !leaving && (firstRoute === 'game' || firstRoute === 'section') ? loadGamePage().catch(() => undefined) : undefined;
 // The sign-in check starts before anything renders: a game page can open its game at once, and the game
 // must wait for a signed-in player's saves (platform/syncGate.ts), which this check leads to.
 if (!leaving) account.start();

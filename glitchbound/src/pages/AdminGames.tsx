@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { autoNewSlugs } from '../catalog/catalog';
+import { autoNewSlugs, inArcade, SECTION_GAMES } from '../catalog/catalog';
 import { GAMES } from '../catalog/games';
 import { applySettings, dailyRules, partySettingsFor, settingsFor, STICKER_MAX, TEXT_LIMITS, type DailyPick, type GameSettings, type NewBadge, type NoticeTone, type PartySettings, type PublicCatalog } from '../catalog/settings';
 import type { GameEntry } from '../catalog/types';
@@ -33,7 +33,7 @@ export function AdminGames() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState('');
-  const [view, setView] = useState<'arcade' | 'party'>('arcade');
+  const [view, setView] = useState<'arcade' | 'party' | 'sections'>('arcade');
 
   const load = useCallback(
     () =>
@@ -92,8 +92,15 @@ export function AdminGames() {
         <button role="tab" aria-selected={view === 'party'} className={view === 'party' ? 'is-on' : ''} onClick={() => setView('party')}>
           🎉 Party Mode
         </button>
+        {SECTION_GAMES.length > 0 && (
+          <button role="tab" aria-selected={view === 'sections'} className={view === 'sections' ? 'is-on' : ''} onClick={() => setView('sections')}>
+            ⚔️ {SECTION_GAMES.length === 1 ? SECTION_GAMES[0]!.section!.label : 'Sections'}
+          </button>
+        )}
       </div>
-      {view === 'arcade' ? (
+      {view === 'sections' ? (
+        <SectionList data={data} send={send} busy={busy} />
+      ) : view === 'arcade' ? (
         <>
           <DailyPlanner data={data} send={send} busy={busy} />
           <BestGamesEditor key={JSON.stringify(savedBest(data))} data={data} send={send} busy={busy} />
@@ -282,7 +289,7 @@ function DailyEditor({ day, current, pick, send, busy, onDone }: { day: string; 
 function GamesList({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
   const [open, setOpen] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'changed' | 'hidden'>('all');
-  const arcade = GAMES.filter((g) => !g.partyOnly);
+  const arcade = GAMES.filter(inArcade);
   const best = savedBest(data);
   const list = arcade.filter((g) => {
     const s = data.settings[g.slug];
@@ -308,6 +315,66 @@ function GamesList({ data, send, busy }: { data: AdminCatalog; send: Send; busy:
         ))}
       </ul>
     </section>
+  );
+}
+
+/* --------------------------------------------------------------- sections */
+
+/**
+ * Games with a section of their own (Riftbound): one switch turns the whole section on or off (its tab
+ * next to Arcade and Party, and its page), plus the pause message and texts every game has.
+ */
+function SectionList({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
+  return (
+    <section className="panel info-block" aria-labelledby="ag-sections">
+      <div className="admin-row">
+        <h2 id="ag-sections">Sections · {SECTION_GAMES.length}</h2>
+      </div>
+      <p className="info-small">
+        Games big enough to have a tab of their own next to Arcade and Party. Switching one off hides its tab and closes its page to players (admins and QA can still open it to test).
+        Players keep their saved progress either way.
+      </p>
+      <ul className="ag-games">
+        {SECTION_GAMES.map((g) => (
+          <SectionRow key={g.slug} game={g} cat={data} send={send} busy={busy} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function SectionRow({ game, cat, send, busy }: { game: GameEntry; cat: PublicCatalog; send: Send; busy: boolean }) {
+  const [open, setOpen] = useState(false);
+  const s = settingsFor(cat, game.slug);
+  const label = game.section!.label;
+  const patch = (p: Partial<GameSettings>, msg = 'Saved'): void => void send({ action: 'game', slug: game.slug, patch: p }, msg);
+  return (
+    <li className={`ag-game${s.hidden ? ' is-hidden' : ''}`}>
+      <div className="ag-game-head">
+        <img src={game.art.tile} alt="" width={48} height={48} style={{ background: game.art.bg }} />
+        <div className="ag-game-title">
+          <b>{s.title || game.title}</b>
+          <span className="ag-chips">
+            {s.hidden ? <Chip tone="warn">Off</Chip> : <Chip tone="on">On</Chip>}
+            {s.maintenance && <Chip tone="warn">Paused</Chip>}
+            <Chip>{game.section!.path}</Chip>
+          </span>
+        </div>
+        <button className="btn btn-sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+          {open ? 'Close' : 'Edit'}
+        </button>
+      </div>
+      <div className="ag-switches">
+        <Switch
+          on={!s.hidden}
+          label={`${label} is on`}
+          hint={`Off: the ${label} tab disappears for players and ${game.section!.path} shows “page not found”.`}
+          disabled={busy}
+          onChange={(v) => patch({ hidden: !v }, v ? `${label} is on` : `${label} is off`)}
+        />
+      </div>
+      {open && <GameEditor game={game} s={s} send={send} busy={busy} />}
+    </li>
   );
 }
 

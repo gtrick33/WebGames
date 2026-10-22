@@ -156,14 +156,14 @@ export function partySettingsFor(cat: PublicCatalog, id: string): PartySettings 
 }
 
 /**
- * The games players see in the arcade: text overrides applied, hidden and party-only games removed,
+ * The games players see in the arcade: text overrides applied, hidden, party-only and section games removed,
  * pinned games first. `includeHidden` keeps them all (game pages, admin views).
  */
 export function applySettings(games: readonly GameEntry[], cat: PublicCatalog, includeHidden = false): GameEntry[] {
   const out: { g: GameEntry; pinned: boolean; i: number }[] = [];
   games.forEach((g, i) => {
     const s = settingsFor(cat, g.slug);
-    if ((s.hidden || g.partyOnly) && !includeHidden) return;
+    if ((s.hidden || g.partyOnly || g.section) && !includeHidden) return;
     const merged = s.title || s.tagline || s.description ? { ...g, title: s.title || g.title, tagline: s.tagline || g.tagline, description: s.description || g.description } : g;
     out.push({ g: merged, pinned: s.pinned, i });
   });
@@ -253,7 +253,7 @@ export function sanitizeNotice(body: unknown, now: number): Notice | null {
 /** A valid best games list: known arcade games, no repeats, at most four (null when empty). */
 export function sanitizeFlagships(body: unknown, games: readonly GameEntry[], max = 4): string[] | null {
   if (!Array.isArray(body)) return null;
-  const ok = new Set(games.filter((g) => !g.partyOnly).map((g) => g.slug));
+  const ok = new Set(games.filter((g) => !g.partyOnly && !g.section).map((g) => g.slug));
   const out = [...new Set(body.filter((x): x is string => typeof x === 'string' && ok.has(x)))].slice(0, max);
   return out.length ? out : null;
 }

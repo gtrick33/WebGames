@@ -36,11 +36,13 @@ describe('admin game settings', () => {
     expect(settingsFor(EMPTY_CATALOG, GAMES[0]!.slug)).toEqual(DEFAULT_SETTINGS);
   });
 
-  it('keeps party-only games out of the arcade, but not off their own pages', () => {
+  it('keeps party-only games and games with a section of their own out of the arcade, but not off their own pages', () => {
     const party = GAMES.filter((g) => g.partyOnly).map((g) => g.slug);
+    const sections = GAMES.filter((g) => g.section).map((g) => g.slug);
     expect(party).toContain('crass-act');
-    expect(applySettings(GAMES, EMPTY_CATALOG).map((g) => g.slug)).toEqual(GAMES.filter((g) => !g.partyOnly).map((g) => g.slug));
-    expect(applySettings(GAMES, EMPTY_CATALOG, true).map((g) => g.slug)).toEqual(expect.arrayContaining(party));
+    expect(sections).toContain('riftbound');
+    expect(applySettings(GAMES, EMPTY_CATALOG).map((g) => g.slug)).toEqual(GAMES.filter((g) => !g.partyOnly && !g.section).map((g) => g.slug));
+    expect(applySettings(GAMES, EMPTY_CATALOG, true).map((g) => g.slug)).toEqual(expect.arrayContaining([...party, ...sections]));
   });
 
   it('hides games from players (admins still get them), pins games first and applies text', () => {

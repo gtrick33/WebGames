@@ -19,7 +19,7 @@ type Send = (body: Record<string, unknown>, done?: string) => Promise<boolean>;
 /** The arcade games players can see, in the banners' order (what the best games are picked from). */
 export function bestPool(data: AdminCatalog): GameEntry[] {
   return orderByLayout(
-    applySettings(GAMES, data).filter((g) => !g.partyOnly),
+    applySettings(GAMES, data).filter((g) => !g.partyOnly && !g.section),
     data.layout ?? null,
   );
 }

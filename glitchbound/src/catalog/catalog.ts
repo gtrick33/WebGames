@@ -15,6 +15,18 @@ export function getGame(slug: string, games: GameEntry[] = GAMES): GameEntry | u
   return games.find((g) => g.slug === slug);
 }
 
+/** Whether a game is listed in the arcade (Party Mode games and games with a section of their own are not). */
+export const inArcade = (g: GameEntry): boolean => !g.partyOnly && !g.section;
+
+/** Games with a section of their own (a tab next to Arcade and Party). */
+export const SECTION_GAMES: readonly GameEntry[] = GAMES.filter((g) => g.section);
+
+/** The game whose section lives at this path ("/riftbound"), if any. */
+export const sectionGame = (path: string): GameEntry | undefined => SECTION_GAMES.find((g) => g.section?.path === path);
+
+/** Where a game's page lives: its section, or /games/<slug>. */
+export const gamePath = (g: GameEntry): string => g.section?.path ?? `/games/${g.slug}`;
+
 export function isCategory(value: string | null | undefined): value is CategoryId {
   return !!value && Object.hasOwn(CATEGORIES, value);
 }
@@ -102,6 +114,9 @@ export function latestGame(games: GameEntry[] = GAMES): GameEntry | undefined {
   return queryGames({ sort: 'newest' }, games)[0];
 }
 
+/** Paths of the site's own pages, which a section can never take. */
+const RESERVED_PATHS = new Set(['/daily', '/privacy', '/terms', '/about', '/contact', '/leaderboards', '/me', '/party', '/admin', '/signin', '/discord', '/games', '/play', '/api', '/index']);
+
 /** Returns a list of problems with the registry; empty when everything is valid. Runs in tests and at build time. */
 export function validateCatalog(games: GameEntry[] = GAMES): string[] {
   const errors: string[] = [];
@@ -137,6 +152,11 @@ export function validateCatalog(games: GameEntry[] = GAMES): string[] {
       }
     }
     for (const p of [g.art.tile, g.art.wide]) if (!p.startsWith('/')) errors.push(`${at}: art paths must start with /`);
+    if (g.section) {
+      if (!/^\/[a-z]{3,20}$/.test(g.section.path) || RESERVED_PATHS.has(g.section.path)) errors.push(`${at}: section path must be a free /word`);
+      if (!g.section.label.trim()) errors.push(`${at}: section needs a label`);
+      if (g.partyOnly) errors.push(`${at}: a game is either in Party Mode or a section of its own`);
+    }
   }
   return errors;
 }

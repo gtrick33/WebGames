@@ -35,7 +35,7 @@ const emptyLayout = (): HomeLayout => ({ order: [], sizes: {}, accents: {}, stic
 export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
   // Every arcade game, newest first (the arcade's order before any layout). Hidden games stay in the
   // editor, dimmed, so they can be switched back on from here; players never see them.
-  const editable = useMemo(() => queryGames({ sort: 'newest' }, applySettings(GAMES, data, true).filter((g) => !g.partyOnly)), [data]);
+  const editable = useMemo(() => queryGames({ sort: 'newest' }, applySettings(GAMES, data, true).filter((g) => !g.partyOnly && !g.section)), [data]);
   const saved = data.layout ?? null;
   const [draft, setDraft] = useState<HomeLayout>(() => {
     const base = saved ?? emptyLayout();

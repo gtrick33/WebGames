@@ -1005,4 +1005,45 @@ export const GAMES: GameEntry[] = [
     challenge: { label: 'The same dice for everyone: the best result wins.' },
     limits: { scorePerSecond: 20, minSeconds: 30 },
   },
+  {
+    slug: 'riftbound',
+    title: 'Riftbound',
+    tagline: 'A pixel-art action RPG: three heroes, gear that changes your skills, dungeons and bosses.',
+    description:
+      'A top-down pixel-art action RPG made for phones first (a joystick and skill buttons), with WASD and the mouse on a computer. Pick a Mage, Warrior or Ranger and fight through the Whisperwood and the Hollow Crypt to close the Rift. ' +
+      'Gear changes how your skills work: a staff that splits your Fireball, a hammer whose Heavy Strike sends a shockwave, a bow whose arrows split. Level up, pick talents in two trees, beat three bosses, then go back on Heroic and Mythic for legendary loot. Your heroes are saved, and follow you to other devices when you sign in.',
+    categories: ['arcade', 'strategy'],
+    moods: ['action'],
+    tags: ['rpg', 'action rpg', 'pixel art', 'dungeon', 'boss', 'loot', 'mage', 'warrior', 'ranger', 'fantasy'],
+    released: '2026-10-22',
+    accent: 'magenta',
+    emoji: '⚔️',
+    art: {
+      tile: '/games/riftbound/tile.webp',
+      wide: '/games/riftbound/wide.webp',
+      alt: 'A pixel-art mage casting fireballs at a giant boar in a forest clearing, with loot glowing on the grass',
+      bg: '#2f6a3a',
+    },
+    section: { path: '/riftbound', label: 'Riftbound' },
+    runtime: { kind: 'module' },
+    aspect: 'landscape',
+    controls: {
+      keyboard: ['WASD or arrows: move · mouse: aim', 'Left click: attack · Q, E, R: skills', 'Space: dodge · F: ultimate (changeable) · 1: potion', 'G: talk and travel · I bag · K talents · J quests · M map · Esc pause'],
+      touch: ['Left thumb: the joystick (it appears where you touch)', 'Right thumb: attack, three skills, the ultimate and dodge', 'Tap a skill to aim at the nearest enemy, or drag it to aim (drag back to cancel)'],
+    },
+    stats: [
+      { key: 'score', label: 'Best expedition' },
+      { key: 'level', label: 'Highest hero level' },
+      { key: 'bosses', label: 'Most bosses in one expedition' },
+      { key: 'kills', label: 'Most foes in one expedition' },
+    ],
+    highlights: [
+      'Three classes that play differently: Mage, Warrior and Ranger',
+      '31 hand-made items that change how skills behave, plus generated gear',
+      'Two talent trees per class, each ending in a signature talent',
+      'Three regions and three bosses with telegraphed attacks and phases',
+      'Heroic and Mythic difficulty for better loot, and up to three saved heroes',
+    ],
+    limits: { scorePerSecond: 400, minSeconds: 20 },
+  },
 ];

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { tGame, useT } from '../i18n';
-import { relatedGames } from '../catalog/catalog';
+import { gamePath, relatedGames } from '../catalog/catalog';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
 import { AdSlot } from '../components/AdSlot';
 import { Burst } from '../components/Burst';
@@ -365,7 +365,7 @@ export function GamePage({ game }: { game: GameEntry }) {
   const runRef = useRef<Promise<string | null> | null>(null);
   const [boardKey, setBoardKey] = useState(0);
 
-  usePageMeta({ title: `Play ${game.title}`, description: `${game.tagline} Free to play in your browser on GlitchBound.`, path: `/games/${game.slug}`, image: `/games/${game.slug}/og.jpg` });
+  usePageMeta({ title: `Play ${game.title}`, description: `${game.tagline} Free to play in your browser on GlitchBound.`, path: gamePath(game), image: `/games/${game.slug}/og.jpg` });
 
   useEffect(() => {
     track('game_view', { game: game.slug });
@@ -454,7 +454,7 @@ export function GamePage({ game }: { game: GameEntry }) {
   const share = async (kind: 'game' | 'score' | 'challenge'): Promise<void> => {
     track('share_click', { game: game.slug, what: kind });
     const score = last?.event.score ?? 0;
-    const url = kind === 'challenge' ? `${SITE_URL}/games/${game.slug}?beat=${score}` : `${SITE_URL}/games/${game.slug}`;
+    const url = kind === 'challenge' ? `${SITE_URL}${gamePath(game)}?beat=${score}` : `${SITE_URL}${gamePath(game)}`;
     const text =
       kind === 'game'
         ? `${game.title}: ${tGame(game.tagline)}`
@@ -509,7 +509,8 @@ export function GamePage({ game }: { game: GameEntry }) {
         </Link>
         <div className="game-heading">
           <h1>{game.title}</h1>
-          <span className="chip">{t(CATEGORIES[game.categories[0]].label)}</span>
+          {/* a game with its own section isn't filed under an arcade category */}
+          {!game.section && <span className="chip">{t(CATEGORIES[game.categories[0]].label)}</span>}
           {game.adult && <AdultLabel text={t('Adults only')} />}
           <LiveBadge game={game} />
         </div>

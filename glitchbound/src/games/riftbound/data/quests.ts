@@ -1,0 +1,159 @@
+import type { NpcDef, QuestDef } from './types';
+
+/**
+ * The quest chain. A quest starts by itself as soon as the ones in `after` are done, and pays out the
+ * moment its objective is met (no walking back to hand it in). NPCs comment on where you are in it.
+ */
+export const QUESTS: QuestDef[] = [
+  {
+    id: 'first-steps',
+    name: 'First Steps',
+    giver: 'maren',
+    text: 'Elder Maren wants to see you swing before she sends you anywhere. The training yard is east of the square.',
+    objective: { kind: 'tutorial', step: 'attack', count: 3, label: 'Hit a training dummy' },
+    reward: { xp: 25, gold: 10 },
+  },
+  {
+    id: 'first-spell',
+    name: 'Tricks of the Trade',
+    giver: 'maren',
+    text: 'Now use your skill on a dummy.',
+    objective: { kind: 'tutorial', step: 'skill', count: 1, label: 'Use your skill on a dummy' },
+    after: ['first-steps'],
+    reward: { xp: 15, gold: 5 },
+  },
+  {
+    id: 'first-dodge',
+    name: 'Out of Harm’s Way',
+    giver: 'maren',
+    text: 'The far dummy fires slow bolts. Dodge through one: you can’t be hurt for a moment while dodging.',
+    objective: { kind: 'tutorial', step: 'dodge', count: 1, label: 'Dodge through a bolt' },
+    after: ['first-spell'],
+    reward: { xp: 30, gold: 10, item: { rarity: 'uncommon' }, unlock: 'whisperwood', text: 'The Whisperwood opens on the waystone.' },
+  },
+  {
+    id: 'into-the-wood',
+    name: 'Into the Whisperwood',
+    giver: 'maren',
+    text: 'Something has stirred up the Whisperwood. Thin out the creatures on the trails.',
+    objective: { kind: 'kill', region: 'whisperwood', count: 15, label: 'Defeat creatures in the Whisperwood' },
+    after: ['first-dodge'],
+    reward: { xp: 140, gold: 40 },
+  },
+  {
+    id: 'rift-shards',
+    name: 'Shards of the Rift',
+    giver: 'brannoc',
+    text: 'Brannoc can forge something special from Rift Shards. The glowing elites in the Whisperwood carry them.',
+    objective: { kind: 'collect', item: 'shard', count: 3, label: 'Collect Rift Shards from elites' },
+    after: ['first-dodge'],
+    reward: { xp: 160, gold: 30, item: 'class-epic', text: 'Brannoc forges you a weapon that changes how your skill works.' },
+  },
+  {
+    id: 'hidden-grove',
+    name: 'The Hidden Grove',
+    giver: 'ysolde',
+    text: 'Ysolde says an old grove hides in the north-west of the wood, behind a hedge that isn’t really there.',
+    objective: { kind: 'explore', spot: 'hidden-grove', label: 'Find the Hidden Grove' },
+    after: ['first-dodge'],
+    reward: { xp: 120, gold: 25, item: { rarity: 'rare' } },
+  },
+  {
+    id: 'alpha',
+    name: 'The Alpha',
+    giver: 'maren',
+    text: 'The beasts follow an alpha with a rift in its eyes. It dens at the east end of the Whisperwood.',
+    objective: { kind: 'boss', boss: 'grimtusk', label: 'Defeat Grimtusk' },
+    after: ['into-the-wood'],
+    reward: { xp: 260, gold: 60, unlock: 'crypt', text: 'The Hollow Crypt is open: through the gate north of the den, or from the waystone.' },
+  },
+  {
+    id: 'the-warden',
+    name: 'The Warden',
+    giver: 'maren',
+    text: 'The Hollow Crypt is where the Rift began. Its warden still stands guard, long after his death.',
+    objective: { kind: 'boss', boss: 'ossric', label: 'Defeat Warden Ossric' },
+    after: ['alpha'],
+    reward: { xp: 380, gold: 90 },
+  },
+  {
+    id: 'close-the-rift',
+    name: 'Close the Rift',
+    giver: 'maren',
+    text: 'Morgrave tore the Rift open. End him and it closes, for now.',
+    objective: { kind: 'boss', boss: 'morgrave', label: 'Defeat Morgrave' },
+    after: ['the-warden'],
+    reward: { xp: 700, gold: 200, tier: 1, text: 'Heroic difficulty is open: stronger enemies, better loot.' },
+  },
+  {
+    id: 'heroic',
+    name: 'Heroic Deeds',
+    giver: 'ysolde',
+    text: 'The Rift is stirring again, stronger. Clear the Hollow Crypt on Heroic difficulty.',
+    objective: { kind: 'clear', region: 'crypt', tier: 1, label: 'Clear the Hollow Crypt on Heroic' },
+    after: ['close-the-rift'],
+    reward: { xp: 1500, gold: 400, item: 'amulet-of-echoes', tier: 2, text: 'Mythic difficulty is open.' },
+  },
+  {
+    id: 'mythic',
+    name: 'Beyond the Rift',
+    giver: 'ysolde',
+    text: 'At Mythic the Rift shows its true face. Clear the Hollow Crypt there.',
+    objective: { kind: 'clear', region: 'crypt', tier: 2, label: 'Clear the Hollow Crypt on Mythic' },
+    after: ['heroic'],
+    reward: { xp: 4000, gold: 1000, item: 'glitch-shard' },
+  },
+];
+
+export const QUEST_DEFS: Record<string, QuestDef> = Object.fromEntries(QUESTS.map((q) => [q.id, q]));
+
+export const NPCS: Record<string, NpcDef> = {
+  maren: {
+    id: 'maren',
+    name: 'Elder Maren',
+    title: 'Village elder',
+    sprite: 'elder',
+    talk: [
+      { when: { quest: 'first-steps', state: 'active' }, lines: ['There you are. The Rift has opened again, and the Whisperwood has gone mad with it.', 'Before I send you out there, show me you can swing. The training yard is just east of the square.'] },
+      { when: { quest: 'first-spell', state: 'active' }, lines: ['Good arm. Now your skill: every hero has a trick of their own. Use it on a dummy.'] },
+      { when: { quest: 'first-dodge', state: 'active' }, lines: ['The dummy at the back fires slow bolts. Dodge right through one.', 'While you dodge, nothing can touch you. Remember that when something big swings at you.'] },
+      { when: { quest: 'into-the-wood', state: 'active' }, lines: ['The waystone in the square will take you to the Whisperwood. Thin out the creatures on the trails.', 'Come back whenever you need. The waystone works both ways.'] },
+      { when: { quest: 'alpha', state: 'active' }, lines: ['The creatures follow an alpha. A boar the size of a cart, they say, with the Rift in its eyes.', 'Its den is at the east end of the wood. Watch for its charge and step aside.'] },
+      { when: { quest: 'the-warden', state: 'active' }, lines: ['The Hollow Crypt is open. Its rooms seal behind you until everything in them is dead.', 'Ossric guards the inner gate. He hits a wall hard when he misses a charge.'] },
+      { when: { quest: 'close-the-rift', state: 'active' }, lines: ['Morgrave waits in the sanctum. He was a scholar once.', 'When the Rift tears wider, keep moving and watch the floor.'] },
+      { lines: ['The Rift is quiet for now. It won’t stay that way.', 'Ysolde says it is stirring again. Talk to her if you’re looking for real trouble.'] },
+    ],
+  },
+  brannoc: {
+    id: 'brannoc',
+    name: 'Brannoc',
+    title: 'Smith',
+    sprite: 'smith',
+    service: 'smith',
+    talk: [
+      { when: { quest: 'rift-shards', state: 'active' }, lines: ['Those elites in the wood, the ones that glow? They carry Rift Shards.', 'Bring me three and I’ll forge you something that changes how you fight. Not just sharper. Different.'] },
+      { when: { quest: 'rift-shards', state: 'locked' }, lines: ['Busy. Come back when Maren is done with you.'] },
+      { lines: ['Gear you don’t want, I’ll melt down for gold. Open your bag and salvage it.', 'Each piece of gear changes something. Read the gold text: that’s where the magic is.'] },
+    ],
+  },
+  ysolde: {
+    id: 'ysolde',
+    name: 'Ysolde',
+    title: 'Mystic',
+    sprite: 'mystic',
+    service: 'respec',
+    talk: [
+      { when: { quest: 'hidden-grove', state: 'active' }, lines: ['There is a grove in the north-west of the wood that the trees keep to themselves.', 'Look for a hedge that shimmers. Walk straight through it.'] },
+      { when: { quest: 'heroic', state: 'active' }, lines: ['The Rift remembers you. It has grown teeth.', 'Heroic difficulty waits on the waystone. Choose it when you travel to the crypt.'] },
+      { when: { quest: 'mythic', state: 'active' }, lines: ['Mythic. The Rift at its worst. I would not, but you will.'] },
+      { lines: ['Talents are choices, not chains. I can unbind them for a little gold.', 'Open your talents and choose Reset to try another path.'] },
+    ],
+  },
+  pell: {
+    id: 'pell',
+    name: 'Pell',
+    title: 'Farmer',
+    sprite: 'villager',
+    talk: [{ lines: ['Have you seen my chickens? No? Good. They’re plotting something.', 'Stay off the brambles in the wood. They bite.'] }],
+  },
+};

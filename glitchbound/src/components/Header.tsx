@@ -7,6 +7,8 @@ import { dayKey } from '../platform/dates';
 import { streakState } from '../platform/engage';
 import { useNow } from '../platform/hooks';
 import { useStreakDays } from '../platform/streak';
+import { useLiveCatalog } from '../platform/liveCatalog';
+import { SECTION_GAMES } from '../catalog/catalog';
 import { Link, useLocation } from '../router/router';
 import { Icon, type IconName } from './Icon';
 import { LogoMark, Wordmark } from './Logo';
@@ -19,12 +21,23 @@ import { fresh } from '../platform/freshBuild';
 const SignInDialog = lazy(fresh(() => import('./SignIn').then((m) => ({ default: m.SignInDialog }))));
 const SearchDialog = lazy(fresh(() => import('./SearchDialog').then((m) => ({ default: m.SearchDialog }))));
 
-const TABS: { href: string; label: string; short?: string; icon: IconName }[] = [
+type Tab = { href: string; label: string; short?: string; icon: IconName; slug?: string };
+
+const TABS: Tab[] = [
   { href: '/', label: 'Arcade', icon: 'gamepad' },
   { href: '/party', label: 'Party', icon: 'party' },
+  // Games with a section of their own (Riftbound) get a tab here, after Party.
+  ...SECTION_GAMES.map((g): Tab => ({ href: g.section!.path, label: g.section!.label, icon: 'sword', slug: g.slug })),
   { href: '/daily', label: 'Daily', icon: 'calendar' },
   { href: '/leaderboards', label: 'Leaderboards', short: 'Ranks', icon: 'crown' },
 ];
+
+/** The tabs players see: a section whose game an admin hid is switched off (staff still see it, to test it). */
+function useTabs(): Tab[] {
+  const live = useLiveCatalog();
+  const { me } = useAccount();
+  return TABS.filter((tab) => !tab.slug || !live.settings(tab.slug).hidden || !!me?.role);
+}
 
 /** The daily streak, always in view (like a flame you don't want to go out). Pulses when today is not done yet. */
 function StreakChip() {
@@ -167,7 +180,10 @@ export function Header() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const active = (href: string): boolean => (href === '/' ? pathname === '/' || pathname.startsWith('/games/') : pathname.startsWith(href));
+  const tabs = useTabs();
+  // A section game's own /games/<slug> address belongs to its tab, not the arcade's.
+  const sectionAt = SECTION_GAMES.find((g) => pathname === g.section!.path || pathname === `/games/${g.slug}`);
+  const active = (href: string): boolean => (sectionAt ? href === sectionAt.section!.path : href === '/' ? pathname === '/' || pathname.startsWith('/games/') : pathname.startsWith(href));
 
   return (
     <>
@@ -179,7 +195,7 @@ export function Header() {
           </Link>
 
           <nav className="tabs" aria-label={t('Main')}>
-            {TABS.map((tab) => (
+            {tabs.map((tab) => (
               <Link key={tab.href} href={tab.href} className="tab" aria-current={active(tab.href) ? 'page' : undefined}>
                 <Icon name={tab.icon} size={18} />
                 <span>{t(tab.label)}</span>
@@ -204,7 +220,7 @@ export function Header() {
       </header>
       {/* Bottom tab bar on phones: thumb-reachable, always visible. */}
       <nav className="bottom-tabs" aria-label={t('Main (mobile)')}>
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <Link key={tab.href} href={tab.href} className="bottom-tab" aria-current={active(tab.href) ? 'page' : undefined} aria-label={t(tab.label)}>
             <Icon name={tab.icon} size={22} />
             <span>{t(tab.short ?? tab.label)}</span>

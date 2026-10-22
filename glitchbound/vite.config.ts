@@ -56,7 +56,7 @@ function seoPages(siteUrl: string, adsenseClient: string): Plugin {
         mkdirSync(dirname(file), { recursive: true });
         const html = renderPage(template, page, siteUrl);
         // A game page fetches the game page's code alongside the app's, so it renders in one go (src/main.tsx).
-        writeFileSync(file, page.path.startsWith('/games/') ? preload(html, gamePageCode) : html);
+        writeFileSync(file, page.gamePage ? preload(html, gamePageCode) : html);
       }
       writeFileSync(join(outDir, 'sitemap.xml'), sitemap(siteUrl));
       writeFileSync(join(outDir, 'robots.txt'), robots(siteUrl));

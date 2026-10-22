@@ -1,0 +1,412 @@
+import { angleDiff, clamp, dist, TAU } from '../core/math';
+import { hasStatus, hurtPlayer, tickStatuses } from './combat';
+import { circleHitsWall, flowStep, lineOfSight, moveCircle, pushOut } from './map';
+import { updateBoss } from './boss';
+import type { Enemy } from './types';
+import type { World } from './world';
+
+/**
+ * Enemy behaviour. Every attack has a wind-up the player can read (the renderer draws it from the
+ * state): melee arcs, slam circles, aim lines, charge lanes, and circles on the ground for casters.
+ * Attack directions lock when the wind-up starts, so stepping aside always works.
+ */
+
+/** How strongly enemies push away from each other. */
+const SEPARATION = 60;
+
+export function updateEnemy(w: World, e: Enemy, dt: number): void {
+  if (e.dead) {
+    e.deathT += dt;
+    return;
+  }
+  tickStatuses(w, e, dt);
+  if (e.dead) return;
+  e.flash = Math.max(0, e.flash - dt);
+  // knockback and impulses fade quickly
+  const fr = Math.exp(-9 * dt);
+  e.vx *= fr;
+  e.vy *= fr;
+  if (e.state === 'spawn') {
+    e.t -= dt;
+    if (e.t <= 0) {
+      e.state = 'chase';
+      e.aggro = true;
+    }
+    return;
+  }
+  if (e.dummy) {
+    updateDummy(w, e, dt);
+    return;
+  }
+  if (e.boss) {
+    updateBoss(w, e, dt);
+    return;
+  }
+  const p = w.player;
+  const stunned = hasStatus(e, 'stun') || hasStatus(e, 'freeze');
+  const rooted = hasStatus(e, 'root');
+  const chill = e.statuses.find((s) => s.id === 'chill');
+  const slow = chill ? clamp(1 - chill.power, 0.25, 1) : 1;
+  const speed = e.def.speed * e.speedMul * slow;
+  const d = dist(e.x, e.y, p.x, p.y);
+  e.atkCd -= dt * e.atkMul;
+  let mx = 0;
+  let my = 0;
+
+  if (stunned) {
+    // a stun interrupts wind-ups and rushes
+    if (e.state === 'windup' || e.state === 'act') {
+      e.state = 'recover';
+      e.t = 0.2;
+    }
+    applyMove(w, e, 0, 0, dt);
+    return;
+  }
+
+  switch (e.state) {
+    case 'idle': {
+      e.t -= dt;
+      if (e.t <= 0) {
+        e.t = 1.5 + w.rand() * 2.5;
+        e.face = w.rand() * TAU;
+      }
+      if (e.t > 1.2 && dist(e.x, e.y, e.homeX, e.homeY) < 40) {
+        mx = Math.cos(e.face) * 0.35;
+        my = Math.sin(e.face) * 0.35;
+      } else {
+        const a = Math.atan2(e.homeY - e.y, e.homeX - e.x);
+        if (dist(e.x, e.y, e.homeX, e.homeY) > 20) {
+          mx = Math.cos(a) * 0.4;
+          my = Math.sin(a) * 0.4;
+        }
+      }
+      if (!p.dead && d < e.def.aggro && lineOfSight(w.map, e.x, e.y, p.x, p.y)) w.alertPack(e);
+      if (e.aggro) {
+        e.state = 'chase';
+        e.atkCd = Math.max(e.atkCd, 0.4 + w.rand() * 0.6);
+      }
+      break;
+    }
+    case 'return': {
+      const a = Math.atan2(e.homeY - e.y, e.homeX - e.x);
+      mx = Math.cos(a);
+      my = Math.sin(a);
+      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.3 * dt);
+      if (dist(e.x, e.y, e.homeX, e.homeY) < 12) {
+        e.state = 'idle';
+        e.aggro = false;
+        e.statuses = [];
+      }
+      if (!p.dead && d < e.def.aggro * 0.7 && lineOfSight(w.map, e.x, e.y, p.x, p.y)) {
+        e.aggro = true;
+        e.state = 'chase';
+      }
+      break;
+    }
+    case 'chase': {
+      if (p.dead) {
+        e.state = 'return';
+        break;
+      }
+      // leash: packs in the open give up when you run far away; room enemies never do
+      if (e.room < 0 && d > e.def.aggro * 2.6) {
+        e.lostT += dt;
+        if (e.lostT > 3) {
+          e.state = 'return';
+          e.lostT = 0;
+          break;
+        }
+      } else e.lostT = 0;
+      const los = lineOfSight(w.map, e.x, e.y, p.x, p.y);
+      const toward = steer(w, e, los);
+      const ai = e.def.ai;
+      if (ai === 'ranged' || ai === 'caster') {
+        const keep = e.def.keep ?? 90;
+        if (los && d <= e.def.reach && e.atkCd <= 0) {
+          startWindup(w, e);
+          break;
+        }
+        if (!los || d > keep + 18) {
+          mx = toward.x;
+          my = toward.y;
+        } else if (d < keep - 18) {
+          const a = Math.atan2(e.y - p.y, e.x - p.x);
+          mx = Math.cos(a);
+          my = Math.sin(a);
+        } else {
+          // strafe around the player
+          e.strafe -= dt;
+          if (e.strafe < -2.5) e.strafe = 2 + w.rand() * 1.5;
+          const side = e.strafe > 0 ? 1 : -1;
+          const a = Math.atan2(p.y - e.y, p.x - e.x) + (Math.PI / 2) * side;
+          mx = Math.cos(a) * 0.6;
+          my = Math.sin(a) * 0.6;
+        }
+      } else if (ai === 'charger') {
+        if (los && d <= e.def.reach && d > 26 && e.atkCd <= 0) {
+          startWindup(w, e);
+          break;
+        }
+        if (d < 26) {
+          const a = Math.atan2(e.y - p.y, e.x - p.x) + 0.6;
+          mx = Math.cos(a);
+          my = Math.sin(a);
+        } else {
+          mx = toward.x;
+          my = toward.y;
+        }
+      } else {
+        if (d <= e.def.reach + p.r + e.r && e.atkCd <= 0) {
+          startWindup(w, e);
+          break;
+        }
+        if (d > e.def.reach * 0.7 + e.r + p.r) {
+          mx = toward.x;
+          my = toward.y;
+        }
+      }
+      if (ai === 'hopper') {
+        // slimes move in hops
+        e.hopT -= dt;
+        if (e.hopT <= 0 && (mx || my)) {
+          e.hopT = 0.75 + w.rand() * 0.3;
+          e.vx += mx * 95;
+          e.vy += my * 95;
+        }
+        mx = 0;
+        my = 0;
+      }
+      break;
+    }
+    case 'windup': {
+      e.t -= dt * e.atkMul;
+      // ranged enemies keep tracking a little until the last part of the wind-up
+      if ((e.def.ai === 'ranged' || e.def.ai === 'caster') && e.t > e.def.windup * 0.45 && !p.dead) {
+        e.aimA = Math.atan2(p.y - e.y, p.x - e.x);
+      }
+      if (e.t <= 0) act(w, e);
+      break;
+    }
+    case 'act': {
+      // rushes (chargers) and leaps (hoppers)
+      const sp = e.def.ai === 'hopper' ? 170 : (e.def.rush?.speed ?? 200);
+      const step = sp * dt * slow;
+      const res = moveCircle(w.map, e.x, e.y, e.r, Math.cos(e.aimA) * step, Math.sin(e.aimA) * step);
+      e.x = res.x;
+      e.y = res.y;
+      e.rushLeft -= step;
+      if (!e.rushHit && !p.dead && dist(e.x, e.y, p.x, p.y) < e.r + p.r + 2) {
+        e.rushHit = true;
+        hurtPlayer(w, e.dmg * (e.def.ai === 'hopper' ? 1 : 1.25), { fromX: e.x, fromY: e.y, knock: 130, source: e });
+      }
+      if (e.def.ai === 'charger' && (w.rand() < 0.5)) w.addFx({ kind: 'smoke', x: e.x, y: e.y + e.r * 0.6, life: 0.3, size: 3, color: '#b9a58a' });
+      if (res.bx || res.by) {
+        // ran into a wall: dazed, a free moment to hit back
+        if (e.def.ai === 'charger') {
+          e.statuses.push({ id: 'stun', t: 1, power: 1, tick: 0 });
+          w.text(e.x, e.y - e.r - 8, 'DAZED', '#ffe066', false);
+          w.shake(1.2);
+        }
+        e.rushLeft = 0;
+      }
+      if (e.rushLeft <= 0) {
+        e.state = 'recover';
+        e.t = e.def.recover;
+      }
+      return;
+    }
+    case 'recover':
+      e.t -= dt * e.atkMul;
+      if (e.t <= 0) {
+        e.state = 'chase';
+        e.atkCd = e.def.attackCd * (0.85 + w.rand() * 0.3);
+      }
+      break;
+    default:
+      break;
+  }
+
+  if (rooted) {
+    mx = 0;
+    my = 0;
+  }
+  applyMove(w, e, mx * speed, my * speed, dt);
+  // molten elites leave fire behind them
+  if (e.elite.includes('molten') && (Math.abs(mx) + Math.abs(my) > 0.1 || Math.abs(e.vx) + Math.abs(e.vy) > 20)) {
+    e.trailT -= dt;
+    if (e.trailT <= 0) {
+      e.trailT = 0.45;
+      w.spawnField({ x: e.x, y: e.y, r: 10, dur: 2.5, tick: 0.5, dmg: e.dmg * 0.35, type: 'fire', status: { status: 'burn', dur: 2, power: e.dmg * 0.25 }, look: 'fire', hostile: true, depth: 0, spec: null, onHit: false });
+    }
+  }
+}
+
+function applyMove(w: World, e: Enemy, vx: number, vy: number, dt: number): void {
+  // a circle that overlaps a wall can't move at all: step it out first
+  if (circleHitsWall(w.map, e.x, e.y, e.r)) {
+    const free = pushOut(w.map, e.x, e.y, e.r, e.room);
+    if (free) {
+      e.x = free.x;
+      e.y = free.y;
+    }
+  }
+  const res = moveCircle(w.map, e.x, e.y, e.r, (vx + e.vx) * dt, (vy + e.vy) * dt);
+  if (vx || vy) {
+    e.walkT += dt;
+    if (Math.abs(vx) > 1) e.face = vx < 0 ? Math.PI : 0;
+  }
+  e.x = res.x;
+  e.y = res.y;
+}
+
+/** Toward the player: straight when in sight, along the flow field when not. */
+function steer(w: World, e: Enemy, los: boolean): { x: number; y: number } {
+  const p = w.player;
+  if (los) {
+    const a = Math.atan2(p.y - e.y, p.x - e.x);
+    return { x: Math.cos(a), y: Math.sin(a) };
+  }
+  return flowStep(w.map, w.flow, e.x, e.y) ?? { x: 0, y: 0 };
+}
+
+function startWindup(w: World, e: Enemy): void {
+  const p = w.player;
+  e.state = 'windup';
+  e.t = e.def.windup;
+  e.aimA = Math.atan2(p.y - e.y, p.x - e.x);
+  e.aimX = p.x;
+  e.aimY = p.y;
+  e.face = Math.cos(e.aimA) < 0 ? Math.PI : 0;
+  if (e.def.ai === 'caster' && (!e.def.shot || w.rand() < 0.55)) {
+    // a circle on the ground where the player stands now
+    const r = e.def.slam?.radius ?? 20;
+    w.addTelegraph({ shape: 'circle', x: p.x, y: p.y, r, r2: 0, angle: 0, len: 0, dur: e.def.windup / e.atkMul, dmg: e.dmg * 1.2, knock: 40, tone: e.def.id === 'rift-acolyte' ? 'rift' : 'enemy', owner: e.id, linger: 0 });
+    e.aimX = -1;
+  } else if (e.def.ai === 'caster') e.aimX = -2;
+  if (e.def.ai === 'charger') {
+    const len = Math.min(e.def.rush?.dist ?? 120, 220);
+    e.rushLeft = len;
+  }
+  w.sfx(e.def.ai === 'charger' ? 'snort' : 'enemyWindup', 0.4);
+}
+
+function act(w: World, e: Enemy): void {
+  const p = w.player;
+  switch (e.def.ai) {
+    case 'melee': {
+      w.addFx({ kind: 'slash', x: e.x, y: e.y, a: e.aimA, a2: 1.8, life: 0.15, size: e.def.reach + 6, color: '#ff8a8a', r2: 0 });
+      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= e.def.reach + p.r + e.r + 4 && Math.abs(angleDiff(e.aimA, Math.atan2(p.y - e.y, p.x - e.x))) < 1.1) hurtPlayer(w, e.dmg, { fromX: e.x, fromY: e.y, knock: 80, source: e });
+      w.sfx('enemySwing', 0.5);
+      e.state = 'recover';
+      e.t = e.def.recover;
+      break;
+    }
+    case 'hopper':
+      e.state = 'act';
+      e.rushLeft = 38;
+      e.rushHit = false;
+      w.sfx('squish', 0.5);
+      break;
+    case 'armored': {
+      const r = e.def.slam?.radius ?? 30;
+      w.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.35, size: r, color: '#ffb07a' });
+      w.fxBurst(e.x, e.y + 4, '#a89070', 10, r);
+      w.shake(2);
+      w.sfx('slam', 0.6);
+      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= r + p.r * 0.5) hurtPlayer(w, e.dmg * 1.2, { fromX: e.x, fromY: e.y, knock: 120, source: e });
+      e.state = 'recover';
+      e.t = e.def.recover;
+      break;
+    }
+    case 'ranged':
+      shoot(w, e);
+      e.state = 'recover';
+      e.t = e.def.recover;
+      break;
+    case 'caster':
+      if (e.aimX === -2) shoot(w, e);
+      e.state = 'recover';
+      e.t = e.def.recover;
+      break;
+    case 'charger':
+      e.state = 'act';
+      e.rushHit = false;
+      w.sfx('rush', 0.6);
+      break;
+  }
+}
+
+function shoot(w: World, e: Enemy): void {
+  const s = e.def.shot;
+  if (!s) return;
+  for (let i = 0; i < s.count * (e.elite.length ? 1 : 1); i++) {
+    const a = s.count === 1 ? e.aimA : e.aimA - s.spread / 2 + (s.spread * i) / (s.count - 1);
+    w.spawnProjectile({ x: e.x + Math.cos(a) * e.r, y: e.y - 3 + Math.sin(a) * e.r, vx: Math.cos(a) * s.speed, vy: Math.sin(a) * s.speed, r: s.radius, life: 260, dmg: e.dmg, type: 'physical', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look: s.homing ? 'orb' : e.def.id === 'skeleton-archer' ? 'enemyArrow' : 'stone', color: s.color, hostile: true, homing: s.homing ?? 0, child: false, knock: 0 });
+  }
+  // elites throw a wider spread
+  if (e.elite.length && s.count === 1) {
+    for (const off of [-0.32, 0.32]) {
+      const a = e.aimA + off;
+      w.spawnProjectile({ x: e.x, y: e.y - 3, vx: Math.cos(a) * s.speed, vy: Math.sin(a) * s.speed, r: s.radius, life: 260, dmg: e.dmg * 0.8, type: 'physical', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look: s.homing ? 'orb' : 'stone', color: s.color, hostile: true, homing: s.homing ?? 0, child: false, knock: 0 });
+    }
+  }
+  w.sfx(e.def.id === 'skeleton-archer' ? 'enemyBow' : 'sling', 0.45);
+}
+
+/** Training dummies: the shooter fires a slow bolt you can dodge through. */
+function updateDummy(w: World, e: Enemy, dt: number): void {
+  e.hp = e.maxHp;
+  if (e.dummy !== 2) return;
+  const p = w.player;
+  e.atkCd -= dt;
+  if (e.atkCd > 0 || p.dead) return;
+  if (dist(e.x, e.y, p.x, p.y) > 150 || !lineOfSight(w.map, e.x, e.y, p.x, p.y)) return;
+  e.atkCd = 2.2;
+  const a = Math.atan2(p.y - e.y, p.x - e.x);
+  e.face = Math.cos(a) < 0 ? Math.PI : 0;
+  w.spawnProjectile({ x: e.x, y: e.y - 6, vx: Math.cos(a) * 62, vy: Math.sin(a) * 62, r: 4, life: 170, dmg: 3, type: 'arcane', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look: 'orb', color: '#ffcf5a', hostile: true, homing: 0, child: false, knock: 0 });
+  w.sfx('sling', 0.3);
+}
+
+/** Pushes enemies apart and out of the hero. */
+export function separate(w: World, dt: number): void {
+  const list = w.enemies;
+  const p = w.player;
+  for (let i = 0; i < list.length; i++) {
+    const a = list[i]!;
+    if (a.dead || a.dummy) continue;
+    for (let j = i + 1; j < list.length; j++) {
+      const b = list[j]!;
+      if (b.dead || b.dummy) continue;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const min = a.r + b.r;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= min * min || d2 === 0) continue;
+      const d = Math.sqrt(d2);
+      const push = ((min - d) / min) * SEPARATION * dt;
+      const ma = a.boss ? 0 : 1 / a.def.mass;
+      const mb = b.boss ? 0 : 1 / b.def.mass;
+      const sum = ma + mb || 1;
+      const ra = moveCircle(w.map, a.x, a.y, a.r, (-dx / d) * push * (ma / sum) * 2, (-dy / d) * push * (ma / sum) * 2);
+      a.x = ra.x;
+      a.y = ra.y;
+      const rb = moveCircle(w.map, b.x, b.y, b.r, (dx / d) * push * (mb / sum) * 2, (dy / d) * push * (mb / sum) * 2);
+      b.x = rb.x;
+      b.y = rb.y;
+    }
+    // enemies never stand inside the hero (the hero isn't pushed: movement stays in the player's hands)
+    if (!p.dead && a.state !== 'act') {
+      const dx = a.x - p.x;
+      const dy = a.y - p.y;
+      const min = a.r + p.r;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < min * min && d2 > 0 && !a.boss) {
+        const d = Math.sqrt(d2);
+        const r = moveCircle(w.map, a.x, a.y, a.r, (dx / d) * (min - d), (dy / d) * (min - d));
+        a.x = r.x;
+        a.y = r.y;
+      }
+    }
+  }
+}

@@ -284,7 +284,9 @@
     bottom: calc(10px + env(safe-area-inset-bottom));
     z-index: 55;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* one column per tab: four, or five while a section (Riftbound) is switched on */
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     padding-right: 60px !important; /* room for the settings button docked inside the bar */
     gap: 4px;
     padding: 6px;
@@ -306,6 +308,11 @@
     font-weight: 700;
     text-decoration: none;
   }
+  .bottom-tab span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .bottom-tab[aria-current='page'] {
     color: var(--ink);
     background: var(--cyan);
@@ -313,6 +320,11 @@
   }
   body {
     padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 400px) {
+  .bottom-tab {
+    font-size: 10.5px;
   }
 }
 @media (max-width: 420px) {

@@ -21,6 +21,8 @@ export interface PageSpec {
   noindex?: boolean;
   /** Adults-only page: `<meta name="rating" content="adult">` keeps it out of SafeSearch, not the rest of the site. */
   adult?: boolean;
+  /** A game's page: its HTML preloads the game page's code. */
+  gamePage?: boolean;
   jsonLd?: object;
   body: string;
 }
@@ -37,20 +39,24 @@ const ADULT = 'Adults only (18+)';
  * Site links under every page's readable fallback, so crawlers and visitors without JavaScript can
  * reach the info pages too (the app replaces all of it with its own footer).
  */
-const SSR_FOOTER = `<footer class="ssr ssr-foot"><nav aria-label="Site"><a href="/">Arcade</a> · <a href="/party">Party Mode</a> · <a href="/daily">Daily Challenge</a> · <a href="/leaderboards">Leaderboards</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></nav><p>© ${new Date().getFullYear()} ${SITE} · All games are original works.</p></footer>`;
+const SSR_FOOTER = `<footer class="ssr ssr-foot"><nav aria-label="Site"><a href="/">Arcade</a> · <a href="/party">Party Mode</a> · ${GAMES.filter((g) => g.section).map((g) => `<a href="${g.section!.path}">${g.section!.label}</a> · `).join('')}<a href="/daily">Daily Challenge</a> · <a href="/leaderboards">Leaderboards</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></nav><p>© ${new Date().getFullYear()} ${SITE} · All games are original works.</p></footer>`;
 
 export const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** A game's one-liner without the trailing "18+." that the adults-only label already says. */
 const taglineOf = (g: GameEntry): string => (g.adult ? g.tagline.replace(/\s*18\+\.?$/, '') : g.tagline);
 
+/** Where a game's page lives: its own section (Riftbound at /riftbound), or /games/<slug>. */
+const pathOf = (g: GameEntry): string => g.section?.path ?? `/games/${g.slug}`;
+
 function gameItem(g: GameEntry): string {
-  return `<li><a href="/games/${g.slug}">${esc(g.title)}</a>${g.adult ? ` <strong>${ADULT}</strong>` : ''}: ${esc(taglineOf(g))}</li>`;
+  return `<li><a href="${pathOf(g)}">${esc(g.title)}</a>${g.adult ? ` <strong>${ADULT}</strong>` : ''}: ${esc(taglineOf(g))}</li>`;
 }
 
 /** The home page's games, grouped by their main category; Party Mode games (Crass Act) get their own group. */
 function homeGames(): string {
-  const arcade = GAMES.filter((g) => !g.partyOnly);
+  const arcade = GAMES.filter((g) => !g.partyOnly && !g.section);
+  const sections = GAMES.filter((g) => g.section);
   const dailies = arcade.filter((g) => g.ownDaily).length;
   const groups = (Object.keys(CATEGORIES) as CategoryId[])
     .map((c) => ({ c, games: arcade.filter((g) => g.categories[0] === c) }))
@@ -63,6 +69,7 @@ function homeGames(): string {
     ...groups,
     `<h3>Party Mode</h3><p>Games for groups, on one phone or everyone's own: Impostor, charades, Never Have I Ever and more. <a href="/party">Open Party Mode</a>.</p>`,
     party.length ? `<ul>${party.map(gameItem).join('')}</ul>` : '',
+    ...sections.map((g) => `<h3>${esc(g.section!.label)}</h3><p>${esc(g.tagline)} <a href="${g.section!.path}">Open ${esc(g.title)}</a>.</p>`),
   ].join('');
 }
 
@@ -70,7 +77,7 @@ function gameBody(g: GameEntry): string {
   const cats = g.categories.map((c) => CATEGORIES[c].label).join(', ');
   const list = (items: string[] = []): string => items.map((i) => `<li>${esc(i)}</li>`).join('');
   return `<article class="ssr">
-<p><a href="/">GlitchBound</a> / ${g.partyOnly ? '<a href="/party">Party Mode</a>' : '<a href="/#arcade">Arcade</a>'}</p>
+<p><a href="/">GlitchBound</a> / ${g.partyOnly ? '<a href="/party">Party Mode</a>' : g.section ? esc(g.section.label) : '<a href="/#arcade">Arcade</a>'}</p>
 <h1>${esc(g.title)}</h1>
 ${g.adult ? `<p><strong>${ADULT}.</strong> Everyone playing must be 18 or over, and confirms it before the game starts.</p>` : ''}
 <p>${esc(g.description)}</p>
@@ -79,6 +86,38 @@ ${g.highlights ? `<ul>${list(g.highlights)}</ul>` : ''}
 <h2>How to play</h2><ul>${list(g.controls.keyboard)}${list(g.controls.touch)}</ul>
 <p>JavaScript is required to play. ${g.homepage ? `You can also play at <a href="${esc(g.homepage)}">${esc(g.homepage)}</a>.` : ''}</p>
 </article>`;
+}
+
+function gameSpec(g: GameEntry, siteUrl: string): PageSpec {
+  const url = `${siteUrl}${pathOf(g)}`;
+  return {
+    path: `/games/${g.slug}`,
+    file: `games/${g.slug}.html`,
+    gamePage: true,
+    title: `Play ${g.title} · ${SITE}`,
+    description: `${taglineOf(g)}${g.adult ? ` ${ADULT}.` : ''} Free to play in your browser on ${SITE}.`,
+    image: `/games/${g.slug}/og.jpg`,
+    imageAlt: g.art.alt,
+    adult: g.adult,
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'VideoGame',
+      name: g.title,
+      description: g.description,
+      url,
+      image: `${siteUrl}/games/${g.slug}/og.jpg`,
+      genre: g.categories.map((c) => CATEGORIES[c].label),
+      gamePlatform: 'Web browser',
+      applicationCategory: 'Game',
+      operatingSystem: 'Any',
+      datePublished: g.released,
+      isAccessibleForFree: true,
+      ...(g.adult ? { contentRating: 'Adults only (18+)', audience: { '@type': 'PeopleAudience', suggestedMinAge: 18 } } : {}),
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      publisher: { '@type': 'Organization', name: SITE, url: `${siteUrl}/` },
+    },
+    body: gameBody(g),
+  };
 }
 
 export function pageSpecs(siteUrl: string): PageSpec[] {
@@ -95,35 +134,8 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       jsonLd: { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE, url: `${siteUrl}/`, description: HOME_DESC },
       body: `<section class="ssr"><h1>${SITE}: ${TAGLINE}</h1><p>${esc(HOME_DESC)}</p>${homeGames()}</section>`,
     },
-    ...GAMES.map(
-      (g): PageSpec => ({
-        path: `/games/${g.slug}`,
-        file: `games/${g.slug}.html`,
-        title: `Play ${g.title} · ${SITE}`,
-        description: `${taglineOf(g)}${g.adult ? ` ${ADULT}.` : ''} Free to play in your browser on ${SITE}.`,
-        image: `/games/${g.slug}/og.jpg`,
-        imageAlt: g.art.alt,
-        adult: g.adult,
-        jsonLd: {
-          '@context': 'https://schema.org',
-          '@type': 'VideoGame',
-          name: g.title,
-          description: g.description,
-          url: `${siteUrl}/games/${g.slug}`,
-          image: `${siteUrl}/games/${g.slug}/og.jpg`,
-          genre: g.categories.map((c) => CATEGORIES[c].label),
-          gamePlatform: 'Web browser',
-          applicationCategory: 'Game',
-          operatingSystem: 'Any',
-          datePublished: g.released,
-          isAccessibleForFree: true,
-          ...(g.adult ? { contentRating: 'Adults only (18+)', audience: { '@type': 'PeopleAudience', suggestedMinAge: 18 } } : {}),
-          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-          publisher: { '@type': 'Organization', name: SITE, url: `${siteUrl}/` },
-        },
-        body: gameBody(g),
-      }),
-    ),
+    // A section game (Riftbound) is indexed at its section; its /games/<slug> address shows the same page.
+    ...GAMES.flatMap((g) => (g.section ? [{ ...gameSpec(g, siteUrl), path: g.section.path, file: `${g.section.path.slice(1)}.html` }, { ...gameSpec(g, siteUrl), noindex: true }] : [gameSpec(g, siteUrl)])),
     {
       path: '/daily',
       file: 'daily.html',
@@ -308,7 +320,7 @@ export function sitemap(siteUrl: string): string {
   const latest = GAMES.map((g) => g.released).sort().at(-1) ?? '';
   const urls = [
     { loc: '/', lastmod: latest, priority: '1.0' },
-    ...GAMES.map((g) => ({ loc: `/games/${g.slug}`, lastmod: g.released, priority: '0.9' })),
+    ...GAMES.map((g) => ({ loc: pathOf(g), lastmod: g.released, priority: '0.9' })),
     { loc: '/party', lastmod: '', priority: '0.8' },
     { loc: '/daily', lastmod: '', priority: '0.6' },
     { loc: '/leaderboards', lastmod: '', priority: '0.5' },

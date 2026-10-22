@@ -20,7 +20,8 @@ export function SeasonLayer() {
   const day = dayKey(useNow(60_000));
   const holiday = activeHoliday(live.raw.season, day);
   const { pathname } = useLocation();
-  const inGame = matchRoute(pathname).name === 'game';
+  const route = matchRoute(pathname).name;
+  const inGame = route === 'game' || route === 'section';
 
   // The lobby music follows the holiday too (the everyday tune otherwise).
   const songId = holiday?.id ?? 'default';

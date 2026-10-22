@@ -146,6 +146,18 @@ export interface GameEntry {
    */
   partyOnly?: boolean;
   /**
+   * A game big enough to be a section of its own (Riftbound): a tab next to Arcade and Party at `path`,
+   * where its page lives (/games/<slug> shows the same page). Like partyOnly it is left out of the
+   * arcade's lists, home page and rotations; search still finds it. Hiding the game in the admin turns
+   * the whole section off: the tab disappears and its page is closed to players.
+   */
+  section?: {
+    /** e.g. "/riftbound": one lowercase word, never the path of another page. */
+    path: string;
+    /** The tab's label. */
+    label: string;
+  };
+  /**
    * Live multiplayer: friends play together at the same moment in a live room (rooms/worker.ts), each
    * on their own device. Wherever the game is listed it carries the "Live multiplayer" label.
    */
