@@ -50,6 +50,8 @@ const SFX: Record<string, (s: Sound) => void> = {
   hurt: (s) => (s.tones([{ f: 180, to: 90, dur: 0.15, gain: 0.07, type: 'sawtooth' }]), s.noise(0.08, 0.05, 1000, 'lowpass')),
   shield: (s) => s.tones([{ f: 600, to: 900, dur: 0.15, gain: 0.03, type: 'sine' }]),
   shieldBreak: (s) => s.noise(0.15, 0.05, 2500, 'highpass'),
+  nomana: (s) => s.tones([{ f: 330, to: 220, dur: 0.12, gain: 0.025, type: 'sine' }]),
+  buy: (s) => s.tones([{ f: 988, dur: 0.05, gain: 0.03, type: 'square' }, { f: 1319, dur: 0.06, gain: 0.025, type: 'square', at: 0.06 }, { f: 1760, dur: 0.08, gain: 0.02, type: 'triangle', at: 0.12 }]),
   potion: (s) => s.tones([0, 1, 2].map((i) => ({ f: hz(72 + i * 4), dur: 0.1, gain: 0.03, type: 'sine' as OscillatorType, at: i * 0.06 }))),
   orb: (s) => s.tones([{ f: 880, to: 1320, dur: 0.1, gain: 0.03, type: 'sine' }]),
   coin: (s) => s.tones([{ f: 1320, dur: 0.05, gain: 0.025, type: 'square' }, { f: 1760, dur: 0.07, gain: 0.02, type: 'square', at: 0.05 }]),

@@ -4,6 +4,8 @@
  * so content can grow without touching the simulation, and saves only ever store ids.
  */
 
+import type { ShopId } from './vendors';
+
 export type ClassId = 'mage' | 'warrior' | 'ranger';
 export type DmgType = 'physical' | 'fire' | 'frost' | 'lightning' | 'poison' | 'arcane';
 export type StatusId = 'burn' | 'poison' | 'chill' | 'freeze' | 'shock' | 'stun' | 'root' | 'armorBreak' | 'mark' | 'weaken';
@@ -130,8 +132,10 @@ export interface SkillSpec {
   bonusVs: { status: StatusId | 'lowHp'; pct: number }[];
   /** Extra damage when cast soon after a dodge. */
   afterDodge?: { window: number; pct: number };
-  /** Skill-specific knobs: chain jumps and range, trap limit, echo waves, pull, etc. */
+  /** Skill-specific knobs: chain jumps and range, trap limit, echo waves, pull, mana per hit, etc. */
   extra: Record<string, number>;
+  /** Resource cost, as a share (%) of the hero's maximum (mana for casters; 0 for classes without one). */
+  cost: number;
   /** Visual variant (e.g. Arcane Bolt turned to lightning). */
   look?: string;
   tags: string[];
@@ -299,6 +303,16 @@ export interface TalentTree {
 
 /* ----------------------------------------------------------------- classes */
 
+export interface ResourceDef {
+  name: string;
+  color: string;
+  /** Maximum at level 1, and per level after. */
+  base: number;
+  perLevel: number;
+  /** Regained per second while fighting, as a share (%) of the maximum. Out of combat it refills fast. */
+  regen: number;
+}
+
 export interface ClassDef {
   id: ClassId;
   name: string;
@@ -319,6 +333,8 @@ export interface ClassDef {
   trees: [TalentTree, TalentTree];
   /** Damage a typical hit deals at level 1 (scales item procs and ultimate charge). */
   refDamage: number;
+  /** A spell resource (mana): skills cost a share of it. Classes without one cast on cooldowns alone. */
+  resource?: ResourceDef;
   colors: { main: string; dark: string; accent: string };
 }
 
@@ -450,4 +466,8 @@ export interface NpcDef {
   talk: { when?: { quest: string; state: 'locked' | 'active' | 'done' }; lines: string[] }[];
   /** What the NPC offers besides talk. */
   service?: 'respec' | 'smith' | 'waystone';
+  /** A vendor: the shop they open. */
+  shop?: ShopId;
+  /** Colors swapped on the base sprite, so one sprite can dress several people. */
+  pal?: Record<string, string>;
 }

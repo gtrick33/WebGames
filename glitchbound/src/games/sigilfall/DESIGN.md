@@ -45,9 +45,11 @@ first tap or key, and has master, music and effects volumes and a mute switch.
 
 Touch: a floating joystick on the left (size, dead zone, sensitivity and a fixed mode in Settings), attack, three
 skills, the ultimate (larger, gold, with its charge) and dodge on the right (mirrored for left-handed players).
-A tap aims at the nearest enemy when "Tap to aim" is on; a drag aims by hand and shows the shot's path, and
-dragging back to the button cancels. Aim assist (off, light, strong) only nudges a dragged aim a few degrees
-toward an enemy near the line; an explicit aim is never replaced by a target elsewhere. Multitouch uses pointer
+The attack aims at the nearest enemy by itself (no aim line). A tapped spell goes where the hero faces, shown
+by a small arrow ahead of them (spells that need a target, chain lightning and marks, still pick the nearest
+enemy); a drag aims by hand and shows the spell's path, and dragging back to the button cancels. Aim assist
+(off, light, strong) only nudges a dragged aim a few degrees toward an enemy near the line; an explicit aim is
+never replaced by a target elsewhere. The potion sits in the thumb cluster on touch. Multitouch uses pointer
 capture, and every pointer is released on cancel, blur and pause, so nothing stays held.
 
 Keyboard and mouse: WASD or arrows, mouse aim, left button attack, Q E R skills, Space dodge, the ultimate on F
@@ -75,6 +77,28 @@ skill it changes ("Fireball splits into 3 smaller projectiles (40 % damage each)
 
 Items: 31 hand-made ones (uncommon to legendary, most of them changing a skill) and generated gear (common to
 rare: rolled stats, and rare pieces roll a small skill modifier). Epic and legendary drops are always hand-made.
+
+## Mana, regeneration, potions
+
+Casters have a resource (`ClassDef.resource`, mana for the Mage): skills cost a share of the maximum
+(`SkillSpec.cost`), mana comes back slowly in a fight and the basic bolt returns a little per hit
+(`extra.manaOnHit`). After 3 s without fighting, health and mana come back fast (10 % and 20 % a second), so
+potions are for trouble inside a fight. Potions (40 % health) are bought at the inn, five at most; nothing
+refills them for free. Dodges have real cooldowns (4.5 to 5.5 s).
+
+## Vendors
+
+Emberwick's vendors (`data/vendors.ts`, `progress/shop.ts`, `ui/Shop.tsx`): the inn (potions), Brannoc
+(weapons and off-hands), Odo (armor), Wren (amulets, rings, relics) and the Sigil Quartermaster (hand-made
+epics and legendaries at the top item level, for Sigil Marks, from level 15). Gear stock is rolled for the
+hero's class and level with stable ids, changes when they level up or come back from an expedition, and
+bought pieces stay sold. Bosses pay Sigil Marks (more on Heroic and Mythic). Every vendor buys bag items.
+
+## Minimap and quest markers
+
+A round minimap in the corner shows the ground around the hero, the waystone, exits, vendors, chests, nearby
+enemies and the quest marker (`sim/objective.ts`: a place, or for hunting quests the nearest fitting enemy;
+on the rim, pointing, when it is far). The full map shows the same marker.
 
 ## Progression
 

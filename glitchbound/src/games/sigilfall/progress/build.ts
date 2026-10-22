@@ -48,6 +48,8 @@ export interface HeroBuild {
   lowHp: Partial<Stats>;
   afterDodge: Partial<Stats>;
   maxHp: number;
+  /** Maximum mana (0 for a class without a resource). */
+  maxMana: number;
   /** Skill ids on the bar (null = empty or not learned yet). */
   bar: Record<SlotKey, string | null>;
   skills: Record<string, ResolvedSkill>;
@@ -371,7 +373,9 @@ export function buildHero(c: Character): HeroBuild {
   };
   const skills: Record<string, ResolvedSkill> = {};
   for (const id of [def.basic, ...def.skills, def.ult, def.dodge]) skills[id] = resolveSkill(c, id, mods);
-  return { ...heroStats(c, mods), bar, skills, procs: heroProcs(mods) };
+  const res = def.resource;
+  const maxMana = res ? Math.round(res.base + res.perLevel * (c.level - 1)) : 0;
+  return { ...heroStats(c, mods), maxMana, bar, skills, procs: heroProcs(mods) };
 }
 
 /** Damage multiplier of a stat block for a damage type (power + that element). */

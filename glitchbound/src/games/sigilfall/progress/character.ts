@@ -14,7 +14,9 @@ import { itemClass, itemSlot, salvageValue } from './items';
 export const BAG_SIZE = 30;
 /** Loot collected for you when you leave (or win) may overfill the bag by this much. */
 export const BAG_OVERFLOW = 10;
-export const MAX_POTIONS = 3;
+/** Potions carried at most; they are bought at the inn (and a new hero starts with a few). */
+export const POTION_CAP = 5;
+export const START_POTIONS = 3;
 
 export type QuestState = 'locked' | 'active' | 'done';
 
@@ -26,6 +28,11 @@ export interface Character {
   xp: number;
   gold: number;
   shards: number;
+  /** Sigil Marks: paid by bosses, spent at the quartermaster. */
+  marks: number;
+  /** How many times the shops have restocked, and what was bought since (by item id). */
+  restock: number;
+  sold: string[];
   talents: Record<string, number>;
   /** Skills in slots 1-3 (null = empty). */
   skills: [string | null, string | null, string | null];
@@ -56,11 +63,14 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     xp: 0,
     gold: 0,
     shards: 0,
+    marks: 0,
+    restock: 0,
+    sold: [],
     talents: {},
     skills: [...def.start],
     equip: {},
     bag: [],
-    potions: MAX_POTIONS,
+    potions: START_POTIONS,
     quests: {},
     unlocked: ['emberwick'],
     tier: 0,

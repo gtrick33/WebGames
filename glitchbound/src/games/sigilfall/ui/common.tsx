@@ -20,7 +20,7 @@ export function SkillIcon({ id, size = 40 }: { id: string; size?: number }) {
   return <img className="rb-skillicon" src={skillIconUrl(id, 4)} alt="" width={size} height={size} draggable={false} />;
 }
 
-export function Portrait({ kind, id, size = 48 }: { kind: 'hero' | 'creature'; id: string; size?: number }) {
+export function Portrait({ kind, id, size = 48 }: { kind: 'hero' | 'creature' | 'npc'; id: string; size?: number }) {
   return <img className="rb-portrait" src={portraitUrl(kind, id, 4)} alt="" style={{ height: size }} draggable={false} />;
 }
 

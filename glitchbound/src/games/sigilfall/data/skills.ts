@@ -27,6 +27,7 @@ export function spec(p: Partial<SkillSpec> & Pick<SkillSpec, 'id' | 'cast'>): Sk
     onCast: [],
     bonusVs: [],
     extra: {},
+    cost: 0,
     tags: [],
     ...p,
   };
@@ -45,7 +46,7 @@ const MAGE: SkillDef[] = [
     kind: 'basic',
     unlock: 1,
     blurb: 'A quick bolt of raw arcana.',
-    base: spec({ id: 'arcane-bolt', cast: 'projectile', range: 150, cooldown: 0.42, damage: 10, dmgType: 'arcane', speed: 235, radius: 3, tags: ['projectile', 'basic'] }),
+    base: spec({ id: 'arcane-bolt', cast: 'projectile', range: 150, cooldown: 0.42, damage: 10, dmgType: 'arcane', speed: 235, radius: 3, extra: { manaOnHit: 2 }, tags: ['projectile', 'basic'] }),
   },
   {
     id: 'fireball',
@@ -54,7 +55,7 @@ const MAGE: SkillDef[] = [
     kind: 'skill',
     unlock: 1,
     blurb: 'Hurls a ball of fire that bursts on the first enemy it hits.',
-    base: spec({ id: 'fireball', cast: 'projectile', range: 160, cooldown: 3.2, damage: 28, dmgType: 'fire', speed: 165, radius: 5, knock: 40, tags: ['projectile', 'fire'] }),
+    base: spec({ id: 'fireball', cast: 'projectile', range: 160, cooldown: 3.2, damage: 28, dmgType: 'fire', speed: 165, radius: 5, knock: 40, cost: 12, tags: ['projectile', 'fire'] }),
   },
   {
     id: 'frost-nova',
@@ -72,6 +73,7 @@ const MAGE: SkillDef[] = [
       dmgType: 'frost',
       area: 46,
       knock: 30,
+      cost: 15,
       onHit: [{ kind: 'status', status: 'chill', dur: 2.5, power: 0.45 }],
       tags: ['aoe', 'frost'],
     }),
@@ -83,7 +85,7 @@ const MAGE: SkillDef[] = [
     kind: 'skill',
     unlock: 4,
     blurb: 'A bolt that leaps from enemy to enemy.',
-    base: spec({ id: 'chain-lightning', cast: 'chain', range: 125, cooldown: 5, damage: 19, dmgType: 'lightning', extra: { jumps: 3, chainRange: 64, falloff: 0.85 }, tags: ['lightning'] }),
+    base: spec({ id: 'chain-lightning', cast: 'chain', range: 125, cooldown: 5, damage: 19, dmgType: 'lightning', cost: 14, extra: { jumps: 3, chainRange: 64, falloff: 0.85 }, tags: ['lightning'] }),
   },
   {
     id: 'blink',
@@ -92,7 +94,7 @@ const MAGE: SkillDef[] = [
     kind: 'skill',
     unlock: 6,
     blurb: 'Teleport a short way in the aimed direction.',
-    base: spec({ id: 'blink', cast: 'blink', range: 74, cooldown: 7.5, damage: 20, dmgType: 'arcane', tags: ['movement'] }),
+    base: spec({ id: 'blink', cast: 'blink', range: 74, cooldown: 7.5, damage: 20, dmgType: 'arcane', cost: 8, tags: ['movement'] }),
   },
   {
     id: 'meteor',
@@ -123,7 +125,7 @@ const MAGE: SkillDef[] = [
     kind: 'dodge',
     unlock: 1,
     blurb: 'Slip a few steps away, untouchable for a moment.',
-    base: spec({ id: 'phase-step', cast: 'dash', range: 50, cooldown: 2.4, duration: 0.16, tags: ['movement', 'dodge'] }),
+    base: spec({ id: 'phase-step', cast: 'dash', range: 50, cooldown: 5, duration: 0.16, tags: ['movement', 'dodge'] }),
   },
 ];
 
@@ -203,7 +205,7 @@ const WARRIOR: SkillDef[] = [
     kind: 'dodge',
     unlock: 1,
     blurb: 'A quick lunge out of harm’s way.',
-    base: spec({ id: 'sidestep', cast: 'dash', range: 48, cooldown: 2.6, duration: 0.18, tags: ['movement', 'dodge'] }),
+    base: spec({ id: 'sidestep', cast: 'dash', range: 48, cooldown: 5.5, duration: 0.18, tags: ['movement', 'dodge'] }),
   },
 ];
 
@@ -283,7 +285,7 @@ const RANGER: SkillDef[] = [
     kind: 'dodge',
     unlock: 1,
     blurb: 'Roll out of the way. Two charges.',
-    base: spec({ id: 'tumble', cast: 'dash', range: 56, cooldown: 2.2, charges: 2, duration: 0.2, tags: ['movement', 'dodge'] }),
+    base: spec({ id: 'tumble', cast: 'dash', range: 56, cooldown: 4.5, charges: 2, duration: 0.2, tags: ['movement', 'dodge'] }),
   },
 ];
 

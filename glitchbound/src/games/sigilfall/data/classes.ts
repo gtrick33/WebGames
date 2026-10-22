@@ -40,6 +40,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
       { name: 'Stormcaller', blurb: 'Lightning that chains, shocks and strikes.', color: '#5ad1ff' },
     ],
     refDamage: 20,
+    resource: { name: 'Mana', color: '#4aa8ff', base: 100, perLevel: 6, regen: 3 },
     colors: { main: '#6b4bd6', dark: '#3b2a8a', accent: '#ffcf5a' },
   },
   warrior: {

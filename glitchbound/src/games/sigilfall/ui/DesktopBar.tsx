@@ -55,6 +55,8 @@ function Slot({ engine, slot, keyLabel }: { engine: SigilEngine; slot: SlotKey; 
       if (num.current) num.current.textContent = p.ult >= 100 ? '' : `${Math.floor(p.ult)}%`;
       return;
     }
+    const spec = world.build.skills[id]?.spec;
+    b.classList.toggle('is-nomana', !!spec && spec.cost > 0 && p.maxMana > 0 && (spec.cost * p.maxMana) / 100 > p.mana);
     const c = p.cds[slot];
     const empty = c.charges <= 0;
     const share = empty ? Math.max(0, c.t / Math.max(0.01, c.cd)) : 0;

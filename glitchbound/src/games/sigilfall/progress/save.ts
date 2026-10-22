@@ -7,7 +7,7 @@ import { TALENTS } from '../data/talents';
 import type { ClassId, Item, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { BAG_OVERFLOW, BAG_SIZE, learnedSkills, MAX_POTIONS, startQuests, talentPoints, type Character } from './character';
+import { BAG_OVERFLOW, BAG_SIZE, learnedSkills, POTION_CAP, START_POTIONS, startQuests, talentPoints, type Character } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 
 /**
@@ -157,11 +157,14 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     xp: level >= MAX_LEVEL ? 0 : int(o.xp, 0, xpToNext(level) - 1, 0),
     gold: int(o.gold, 0, 1e9, 0),
     shards: int(o.shards, 0, 99, 0),
+    marks: int(o.marks, 0, 1e6, 0),
+    restock: int(o.restock, 0, 1e6, 0),
+    sold: Array.isArray(o.sold) ? o.sold.filter((x): x is string => typeof x === 'string' && x.length <= 24).slice(0, 80) : [],
     talents: {},
     skills: [null, null, null],
     equip: {},
     bag: [],
-    potions: int(o.potions, 0, MAX_POTIONS, MAX_POTIONS),
+    potions: int(o.potions, 0, POTION_CAP, START_POTIONS),
     quests: {},
     unlocked: ['emberwick'],
     tier: int(o.tier, 0, 2, 0),

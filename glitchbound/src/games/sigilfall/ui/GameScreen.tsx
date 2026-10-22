@@ -13,6 +13,7 @@ import type { World } from '../sim/world';
 import { fmt, ItemIcon, Portrait } from './common';
 import { DesktopBar } from './DesktopBar';
 import { Panels } from './Panels';
+import { Minimap } from './Minimap';
 import { TouchControls } from './Touch';
 import { uiIcon } from './uiIcons';
 
@@ -75,10 +76,14 @@ function Hud({ engine }: { engine: SigilEngine }) {
   const hpText = useRef<HTMLElement>(null);
   const shield = useRef<HTMLElement>(null);
   const xp = useRef<HTMLElement>(null);
+  const mp = useRef<HTMLElement>(null);
+  const mpText = useRef<HTMLElement>(null);
   const enc = useRef<HTMLDivElement>(null);
   useFrame(engine, (world) => {
     const p = world.player;
     if (hp.current) hp.current.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`;
+    if (mp.current && p.maxMana > 0) mp.current.style.width = `${Math.max(0, (p.mana / p.maxMana) * 100)}%`;
+    if (mpText.current && p.maxMana > 0) mpText.current.textContent = `${Math.floor(p.mana)}`;
     if (shield.current) shield.current.style.width = `${Math.min(100, (p.shield / p.maxHp) * 100)}%`;
     if (hpText.current) hpText.current.textContent = `${Math.max(0, Math.ceil(p.hp))} / ${p.maxHp}`;
     if (xp.current) xp.current.style.width = `${world.xpShare() * 100}%`;
@@ -104,6 +109,12 @@ function Hud({ engine }: { engine: SigilEngine }) {
             <b ref={shield} className="rb-shieldbar" />
             <em ref={hpText} />
           </span>
+          {w.player.maxMana > 0 && (
+            <span className="rb-mp" title="Mana: spells cost it, it comes back fast out of combat">
+              <i ref={mp} />
+              <em ref={mpText} />
+            </span>
+          )}
           <span className="rb-xp" title={`${fmt(h.xp)} / ${fmt(xpToNext(h.level))} XP`}>
             <i ref={xp} />
           </span>
@@ -112,11 +123,13 @@ function Hud({ engine }: { engine: SigilEngine }) {
             {w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
           </span>
         </div>
-        <button className="rb-potion" onClick={() => engine.drinkPotion()} disabled={h.potions <= 0} aria-label={`Drink a potion (${h.potions} left)`}>
-          <img src={uiIcon('potion', 3)} alt="" />
-          <span>{h.potions}</span>
-          {!engine.touchMode && <kbd>1</kbd>}
-        </button>
+        {!engine.touchMode && (
+          <button className="rb-potion" onClick={() => engine.drinkPotion()} disabled={h.potions <= 0} aria-label={`Drink a potion (${h.potions} left)`}>
+            <img src={uiIcon('potion', 3)} alt="" />
+            <span>{h.potions}</span>
+            <kbd>1</kbd>
+          </button>
+        )}
       </div>
       <div className="rb-hud-menu">
         <HudButton icon="bag" label="Hero & bag" badge={fresh || undefined} onClick={() => engine.openPanel('hero')} kbd="I" engine={engine} />
@@ -127,6 +140,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
         <HudButton icon="pause" label="Pause" onClick={() => engine.togglePause()} kbd="Esc" engine={engine} />
         <GameMenuButton className="rb-hudbtn" />
       </div>
+      <Minimap engine={engine} />
       <div className="rb-encounter" ref={enc} hidden />
     </>
   );
@@ -244,11 +258,10 @@ function Dialogue({ engine }: { engine: SigilEngine }) {
   const d = engine.ui.dialogue!;
   const npc = NPCS[d.npc]!;
   const last = d.i + 1 >= d.lines.length;
-  const sprite = d.npc === 'maren' ? 'elder' : d.npc === 'brannoc' ? 'smith' : d.npc === 'ysolde' ? 'mystic' : 'villager';
   return (
     <div className="rb-dialogue" onClick={() => !last && engine.nextLine()}>
       <div className="rb-dialogue-face">
-        <Portrait kind="creature" id={sprite} size={56} />
+        <Portrait kind="npc" id={d.npc} size={56} />
       </div>
       <div className="rb-dialogue-body">
         <strong>
@@ -256,9 +269,9 @@ function Dialogue({ engine }: { engine: SigilEngine }) {
         </strong>
         <p key={d.i}>{d.lines[d.i]}</p>
         <div className="rb-dialogue-actions">
-          {last && npc.service === 'smith' && (
-            <button className="rb-btn is-small" onClick={() => engine.openPanel('hero')}>
-              Open my bag
+          {npc.shop && (
+            <button className="rb-btn is-small is-gold" onClick={() => engine.openShop(npc.shop!)}>
+              Trade
             </button>
           )}
           {last && npc.service === 'respec' && (
@@ -266,7 +279,7 @@ function Dialogue({ engine }: { engine: SigilEngine }) {
               Talents
             </button>
           )}
-          <button className="rb-btn is-small is-gold" onClick={() => (last ? engine.closeDialogue() : engine.nextLine())} autoFocus>
+          <button className={`rb-btn is-small${npc.shop ? '' : ' is-gold'}`} onClick={() => (last ? engine.closeDialogue() : engine.nextLine())} autoFocus={!npc.shop}>
             {last ? 'Farewell' : 'Next ▸'}
           </button>
         </div>

@@ -1,6 +1,7 @@
 import { CLASSES } from '../data/classes';
 import type { ClassId, Item, ItemIcon } from '../data/types';
 import { itemIcon, itemTint } from '../progress/items';
+import { NPCS } from '../data/quests';
 import { CREATURE_ART, HERO_ART, ITEM_ICON_PAL, ITEM_ICONS, SKILL_ICON_PAL, SKILL_ICONS, type Pal } from './artdata';
 import { canvas, ctx2d, makeSprite, paint, scaled, shade, type Cnv, type Sprite } from './pixel';
 
@@ -110,12 +111,19 @@ export function skillIconUrl(id: string, scale = 4): string {
   return url;
 }
 
-/** A hero or creature portrait for the UI. */
-export function portraitUrl(kind: 'hero' | 'creature', id: string, scale = 4): string {
+/** An NPC's sprite: their base art, recolored when they have their own colors. */
+export function npcSprite(id: string, frame = 0): Sprite {
+  const npc = NPCS[id];
+  if (!npc) return creatureSprite('villager', frame);
+  return npc.pal ? recolored(npc.sprite, frame, npc.pal, `npc:${id}`) : creatureSprite(npc.sprite, frame);
+}
+
+/** A hero, creature or NPC portrait for the UI. */
+export function portraitUrl(kind: 'hero' | 'creature' | 'npc', id: string, scale = 4): string {
   const key = `portrait:${kind}:${id}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
-  const s = kind === 'hero' ? heroSprite(id as ClassId, 'down', 0) : creatureSprite(id, 0);
+  const s = kind === 'hero' ? heroSprite(id as ClassId, 'down', 0) : kind === 'npc' ? npcSprite(id) : creatureSprite(id, 0);
   const url = scaled(s.c, scale).toDataURL();
   iconCache.set(key, url);
   return url;

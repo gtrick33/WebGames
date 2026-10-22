@@ -4,10 +4,11 @@ import { CLASSES, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
 import { ITEM_DEFS } from '../data/items';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
+import { BOSS_MARKS } from '../data/vendors';
 import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey } from '../data/types';
 import { ACTION_SLOTS } from '../data/types';
 import { buildHero, type HeroBuild } from '../progress/build';
-import { addItem, addXp, BAG_OVERFLOW, BAG_SIZE, bagFull, MAX_POTIONS, questEvent, startQuests, type Character } from '../progress/character';
+import { addItem, addXp, BAG_OVERFLOW, BAG_SIZE, bagFull, questEvent, startQuests, type Character } from '../progress/character';
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
 import { separate, updateEnemy } from './ai';
@@ -65,6 +66,11 @@ interface Spore {
 }
 
 const POTION_HEAL = 40;
+/** Seconds without fighting before the fast out-of-combat regeneration starts. */
+const CALM_AFTER = 3;
+/** Out of combat: health and mana regained per second, as a share of the maximum. */
+const OUT_OF_COMBAT_HP = 0.1;
+const OUT_OF_COMBAT_MANA = 0.2;
 
 export class World {
   region: RegionDef;
@@ -110,6 +116,8 @@ export class World {
   /** The boss being fought (for the health bar). */
   bossId: number | null = null;
   interactable: Interactable | null = null;
+  /** When "Not enough mana" was last said (it isn't repeated every frame). */
+  noManaAt = -99;
   private exitInside = -1;
   /** The hero just stepped onto an exit: the engine offers to travel. */
   pendingExit: Interactable | null = null;
@@ -162,6 +170,8 @@ export class World {
       dir: 0,
       hp: this.build.maxHp,
       maxHp: this.build.maxHp,
+      mana: this.build.maxMana,
+      maxMana: this.build.maxMana,
       shield: 0,
       shieldT: 0,
       iframe: 0.5,
@@ -501,6 +511,9 @@ export class World {
     this.build = buildHero(this.hero);
     this.player.maxHp = this.build.maxHp;
     this.player.hp = Math.max(1, Math.min(this.build.maxHp, Math.round(this.build.maxHp * share)));
+    const mShare = this.player.maxMana > 0 ? this.player.mana / this.player.maxMana : 1;
+    this.player.maxMana = this.build.maxMana;
+    this.player.mana = Math.min(this.build.maxMana, this.build.maxMana * mShare);
     this.syncCooldowns(false);
   }
 
@@ -608,9 +621,16 @@ export class World {
     }
     tickPlayerStatuses(this, dt);
     if (p.dead) return;
-    // regeneration: always the stat, and quickly once out of combat
-    const regen = stats.regen + (p.calm > 4 ? p.maxHp * (this.region.safe ? 0.25 : 0.02) : 0);
+    // regeneration: the regen stat always; out of combat (3 s without hitting or being hit) health and
+    // mana come back fast, so potions are for trouble inside a fight, not for topping up between them
+    const calm = p.calm > CALM_AFTER;
+    const regen = stats.regen + (calm ? p.maxHp * (this.region.safe ? 0.3 : OUT_OF_COMBAT_HP) : 0);
     if (regen > 0 && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + regen * dt);
+    if (p.maxMana > 0 && p.mana < p.maxMana) {
+      const res = CLASSES[this.hero.cls].resource;
+      const rate = calm ? OUT_OF_COMBAT_MANA : (res?.regen ?? 0) / 100;
+      p.mana = Math.min(p.maxMana, p.mana + p.maxMana * rate * dt);
+    }
     // cooldowns recharge faster with haste
     const haste = 1 + stats.haste / 100;
     for (const slot of ACTION_SLOTS) {
@@ -969,6 +989,10 @@ export class World {
     this.run.bosses += 1;
     const first = !h.bosses[def.id];
     h.bosses[def.id] = (h.bosses[def.id] ?? 0) + 1;
+    // Sigil Marks for the quartermaster: more on harder tiers
+    const marks = (BOSS_MARKS[def.id] ?? 1) * (1 + this.tier);
+    h.marks += marks;
+    this.emit({ t: 'toast', text: `+${marks} Sigil Mark${marks === 1 ? '' : 's'}`, tone: 'loot' });
     this.fxBurst(e.x, e.y, '#ffe066', 40, 40);
     this.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.8, size: 80, color: '#ffffff' });
     this.shake(7);
@@ -1044,7 +1068,6 @@ export class World {
     const p = this.newPlayer(this.checkpoint.x, this.checkpoint.y);
     p.ult = 0;
     p.iframe = 1.5;
-    this.hero.potions = MAX_POTIONS;
     this.emit({ t: 'hero' });
   }
 
@@ -1144,7 +1167,8 @@ export class World {
         }
       }
       this.checkpoint = best;
-      this.hero.potions = MAX_POTIONS;
+      p.hp = p.maxHp;
+      p.mana = p.maxMana;
       this.emit({ t: 'checkpoint' });
       this.emit({ t: 'hero' });
     }
@@ -1212,17 +1236,12 @@ export class World {
       this.questProgress((o) => o.kind === 'explore' && o.spot === s.id);
       this.emit({ t: 'save' });
     }
-    // waystones: checkpoints that refill potions
+    // waystones: checkpoints (you come back here if you fall)
     for (const ws of this.waystones) {
       if (dist(p.x, p.y, ws.x, ws.y) > 30) continue;
-      if (dist(this.checkpoint.x, this.checkpoint.y, ws.x, ws.y) > 34 || this.hero.potions < MAX_POTIONS) {
-        const firstTouch = dist(this.checkpoint.x, this.checkpoint.y, ws.x, ws.y) > 34;
+      if (dist(this.checkpoint.x, this.checkpoint.y, ws.x, ws.y) > 34) {
         this.checkpoint = { x: ws.x, y: ws.y + 18 };
-        if (this.hero.potions < MAX_POTIONS) {
-          this.hero.potions = MAX_POTIONS;
-          this.emit({ t: 'toast', text: 'Potions refilled at the waystone', tone: 'good' });
-          this.emit({ t: 'hero' });
-        } else if (firstTouch && !this.region.safe) this.emit({ t: 'toast', text: 'Waystone attuned: you will return here if you fall', tone: 'info' });
+        if (!this.region.safe) this.emit({ t: 'toast', text: 'Waystone attuned: you will return here if you fall', tone: 'info' });
       }
     }
   }

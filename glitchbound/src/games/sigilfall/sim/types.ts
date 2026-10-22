@@ -28,6 +28,9 @@ export interface Cooldown {
 export interface Player {
   x: number;
   y: number;
+  /** Mana (classes with a resource; 0 / 0 otherwise). */
+  mana: number;
+  maxMana: number;
   vx: number;
   vy: number;
   r: number;

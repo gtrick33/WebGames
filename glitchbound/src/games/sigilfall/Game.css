@@ -710,6 +710,43 @@
     1px -1px 0 var(--rb-ink),
     -1px 1px 0 var(--rb-ink);
 }
+.rb-mp {
+  position: relative;
+  display: block;
+  height: 11px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 4px;
+  background: #0e2240;
+  overflow: hidden;
+}
+.rb-mp i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(#8fd0ff, #3a8fe8 60%, #2a6cc0);
+}
+.rb-mp em {
+  position: absolute;
+  inset: 0;
+  font: 700 8.5px/8px var(--mono);
+  font-style: normal;
+  text-align: center;
+  text-shadow:
+    1px 1px 0 var(--rb-ink),
+    -1px -1px 0 var(--rb-ink);
+}
+.rb-sb.is-nomana img,
+.rb-slot6.is-nomana img {
+  filter: grayscale(0.7) brightness(0.65);
+}
+.rb-sb.is-nomana::after,
+.rb-slot6.is-nomana::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgb(40 110 220 / 0.32);
+  pointer-events: none;
+}
 .rb-xp {
   display: block;
   height: 6px;
@@ -769,8 +806,8 @@
 }
 .rb-tracker {
   position: absolute;
-  top: calc(56px + var(--sa-t));
-  right: calc(8px + var(--sa-r));
+  top: calc(58px + var(--sa-t));
+  right: calc(104px + var(--sa-r));
   display: grid;
   max-width: min(240px, 40vw);
   padding: 6px 10px;
@@ -1143,6 +1180,39 @@
       0 0 0 4px rgb(255 207 90 / 0.6),
       0 0 18px rgb(255 207 90 / 0.8);
   }
+}
+.rb-sb-potion {
+  right: 116px;
+  bottom: 162px;
+  width: 46px;
+  height: 46px;
+  background: radial-gradient(circle at 40% 35%, #a04a5a, #6a2434 70%);
+  pointer-events: auto;
+}
+.rb-sb-potion img {
+  width: 20px;
+  height: 26px;
+}
+.rb-sb-potion:disabled {
+  opacity: 0.45;
+}
+.rb-minimap-hud {
+  position: absolute;
+  top: calc(56px + var(--sa-t));
+  right: calc(8px + var(--sa-r));
+  width: 88px;
+  height: 88px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  opacity: 0.9;
+}
+.rb-minimap-hud canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
 }
 .rb-sb-dodge {
   right: 206px;
@@ -1778,6 +1848,111 @@
   }
 }
 
+/* ---------------------------------------------------------------- shops */
+.rb-shop-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.rb-shop-title .rb-portrait {
+  height: 30px;
+}
+.rb-shop {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+}
+.rb-shop-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+}
+.rb-purse {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.rb-marks {
+  color: #c9a8ff;
+}
+.rb-shop-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 320px);
+  gap: 10px;
+  min-height: 0;
+}
+.rb-shop-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.rb-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+.rb-ware {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 5px 8px 5px 5px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.22);
+  text-align: left;
+  color: var(--rb-text);
+}
+.rb-ware > .rb-itemicon {
+  grid-row: span 2;
+}
+.rb-ware.is-sel {
+  box-shadow: 0 0 0 3px var(--rb-gold);
+}
+.rb-ware.is-dim {
+  opacity: 0.6;
+}
+.rb-ware-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-ware-price {
+  font: 700 12px var(--mono);
+  color: var(--rb-gold);
+}
+.rb-inn {
+  display: grid;
+  gap: 10px;
+  max-width: 460px;
+}
+.rb-inn-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.rb-inn-row > div {
+  display: grid;
+  gap: 2px;
+}
+.rb-inn-icon {
+  width: 42px;
+  image-rendering: pixelated;
+}
+@media (max-width: 760px), (max-height: 430px) {
+  .rb-shop-body {
+    grid-template-columns: 1fr;
+  }
+  .rb-shop-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
 /* ------------------------------------------------------- small screens */
 @media (max-width: 760px), (max-height: 430px) {
   .rb-hero {
@@ -1862,8 +2037,14 @@
     justify-content: flex-end;
     max-width: 50vw;
   }
-  .rb-tracker {
+  .rb-minimap-hud {
     top: calc(104px + var(--sa-t));
+    width: 78px;
+    height: 78px;
+  }
+  .rb-tracker {
+    top: calc(188px + var(--sa-t));
+    right: calc(8px + var(--sa-r));
   }
 }
 /* short landscape phones: shrink the cluster so the view stays open */

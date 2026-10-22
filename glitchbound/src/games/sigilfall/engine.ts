@@ -5,9 +5,11 @@ import { REGIONS, TIERS, type RiftMod } from './data/regions';
 import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SlotId } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
-import { BAG_SIZE, equip, learnedSkills, learnTalent, MAX_POTIONS, newCharacter, questState, respec, salvage, setSkill, unequip, type Character } from './progress/character';
+import { BAG_SIZE, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
+import { buyItem, buyPotions, restock } from './progress/shop';
+import type { ShopId } from './data/vendors';
 import { Renderer } from './render/renderer';
 import { Sound, type MusicId } from './audio/sound';
 import type { Interactable } from './sim/types';
@@ -18,7 +20,7 @@ import { emptyInput, World, type InputFrame } from './sim/world';
  * (reported to the arcade), the frame loop, sound, and the UI state the React layer shows.
  */
 
-export type PanelId = 'hero' | 'skills' | 'talents' | 'quests' | 'map' | 'settings';
+export type PanelId = 'hero' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop';
 
 export interface Toast {
   id: number;
@@ -45,6 +47,8 @@ export interface UiState {
   screen: 'title' | 'create' | 'game';
   createSlot: number;
   panel: PanelId | null;
+  /** The vendor whose shop is open (with panel 'shop'). */
+  shop: ShopId | null;
   pause: boolean;
   dialogue: { npc: string; lines: string[]; i: number } | null;
   travel: { to: RegionId; label: string; locked: string | null } | null;
@@ -105,6 +109,7 @@ export class SigilEngine {
       screen: 'title',
       createSlot: 0,
       panel: null,
+      shop: null,
       pause: false,
       dialogue: null,
       travel: null,
@@ -251,6 +256,7 @@ export class SigilEngine {
     }
     this.handleEvents(w);
     this.renderer.aim = paused ? null : this.touch.aim;
+    this.renderer.touchMode = this.touchMode;
     this.renderer.draw(w, paused ? 0 : dt, now / 1000);
     for (const fn of this.frameHooks) fn(w, this);
     // timers that run in real time
@@ -470,7 +476,6 @@ export class SigilEngine {
     this.slot = slot;
     this.hero = h;
     this.save.last = slot;
-    h.potions = MAX_POTIONS;
     this.ui = { ...this.ui, screen: 'game', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [] };
     this.travel('emberwick', 0, []);
     this.sound.unlock();
@@ -507,7 +512,6 @@ export class SigilEngine {
       w.run = prev.run;
     }
     if (prev) w.player.ult = prev.player.ult;
-    if (region.safe) h.potions = MAX_POTIONS;
     this.world = w;
     this.renderer.snap(w);
     this.ui = { ...this.ui, panel: null, travel: null, dialogue: null, boss: null, death: false, banner: { text: region.name, sub: region.safe ? region.subtitle : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`, id: performance.now() } };
@@ -547,6 +551,8 @@ export class SigilEngine {
     const score = Math.round(s.xp + s.gold * 2 + s.bosses * 250);
     this.hero.stats.bestRun = Math.max(this.hero.stats.bestRun, score);
     this.host.report({ type: 'end', score, stats: { level: this.hero.level, kills: s.kills, bosses: s.bosses } });
+    // the vendors have new stock when you come back
+    restock(this.hero);
     if (toast && (s.kills || s.items.length)) this.toast(`Expedition over: +${s.xp} XP, +${s.gold} gold`, 'good', undefined, `${s.kills} foes defeated${s.items.length ? ` · ${s.items.length} items` : ''}`);
     this.run = null;
   }
@@ -609,6 +615,36 @@ export class SigilEngine {
     this.touch.release();
     this.sound.play('open');
     this.setUi({ panel: p, pause: false, dialogue: null });
+  }
+
+  /** A vendor's shop. */
+  openShop(shop: ShopId): void {
+    if (this.ui.screen !== 'game' || this.ui.death || this.ui.reward) return;
+    this.kbm?.release();
+    this.touch.release();
+    this.sound.play('open');
+    this.setUi({ panel: 'shop', shop, pause: false, dialogue: null });
+  }
+
+  buy(shop: ShopId, uid: string): Item | null {
+    if (!this.hero) return null;
+    const item = buyItem(this.hero, shop, uid);
+    if (!item) return null;
+    this.sound.play('buy');
+    this.persist();
+    this.bump();
+    return item;
+  }
+
+  buyPotions(n: number): number {
+    if (!this.hero) return 0;
+    const got = buyPotions(this.hero, n);
+    if (got) {
+      this.sound.play('buy');
+      this.persist();
+      this.bump();
+    }
+    return got;
   }
 
   closePanel(): void {

@@ -77,7 +77,10 @@ function resolveAim(w: World, spec: SkillSpec, req: CastRequest): Aim | null {
     const d = spec.aim === 'ground' ? (req.dist ?? 0.7) * spec.range : spec.range;
     return { angle, tx: p.x + Math.cos(angle) * d, ty: p.y + Math.sin(angle) * d, target: null };
   }
-  const target = w.settings.autoTarget || spec.cast === 'chain' || spec.cast === 'mark' ? autoTarget(w, reach, p.aim) : null;
+  // a tap: the basic attack finds the nearest enemy (if the setting is on) and spells that need a target
+  // (chains, marks) always do; every other spell goes where the hero faces, shown by the facing marker
+  const targeted = spec.cast === 'chain' || spec.cast === 'mark';
+  const target = targeted || (req.slot === 'basic' && w.settings.autoTarget) ? autoTarget(w, reach, p.aim) : null;
   if (target) {
     const angle = Math.atan2(target.y - p.y, target.x - p.x);
     const d = Math.min(spec.range, dist(p.x, p.y, target.x, target.y));
@@ -106,12 +109,23 @@ export function tryCast(w: World, req: CastRequest): boolean {
   if (p.dash && !p.dash.dodge) return false;
   if (p.dash?.dodge && req.slot === 'dodge') return false;
   if (p.channel && req.slot !== 'dodge') return false;
+  // mana: a share of the maximum (classes without mana pay nothing)
+  const cost = req.slot !== 'ult' && spec.cost > 0 && p.maxMana > 0 ? (spec.cost * p.maxMana) / 100 : 0;
+  if (cost > p.mana + 1e-6) {
+    if (w.time - w.noManaAt > 1) {
+      w.noManaAt = w.time;
+      w.text(p.x, p.y - 20, 'Not enough mana', '#7fc4ff', false);
+      w.sfx('nomana', 0.5);
+    }
+    return false;
+  }
   const aim = req.slot === 'dodge' ? dodgeAim(w, req) : resolveAim(w, spec, req);
   if (!aim) {
     w.text(p.x, p.y - 20, 'No target', '#c9c3e6', false);
     return false;
   }
   // pay
+  p.mana -= cost;
   if (req.slot === 'ult') {
     p.ult = 0;
     runProcs(w, 'ult', { x: p.x, y: p.y, base: 0, type: spec.dmgType, depth: 1, hitDmg: 0 });

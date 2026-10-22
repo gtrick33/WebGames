@@ -12,9 +12,10 @@ import { uiIcon } from './uiIcons';
 /**
  * Two-thumb touch controls. Left: a joystick that appears where the thumb lands (or stays fixed),
  * follows the thumb if it slides far, and lets go on release, cancel or lost capture, so it never
- * sticks. Right: attack, three skills, the ultimate and dodge. Tap a skill to aim it at the nearest
- * enemy; drag it to aim yourself (drag back to the button to cancel). Every control captures its own
- * finger, so moving and casting at once just works.
+ * sticks. Right: attack, three skills, the ultimate and dodge. Attack aims at the nearest enemy (no aim
+ * line); a tapped spell goes where the hero faces (the facing marker); drag a spell to aim it yourself
+ * (drag back to the button to cancel). Every control captures its own finger, so moving and casting at
+ * once just works.
  */
 
 const AIM_DEADZONE = 14;
@@ -33,6 +34,7 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
         <SkillButton engine={engine} slot="s3" />
         <SkillButton engine={engine} slot="ult" />
         <SkillButton engine={engine} slot="dodge" />
+        <PotionButton engine={engine} />
       </div>
       <InteractButton engine={engine} />
     </>
@@ -169,6 +171,8 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
       if (numRef.current) numRef.current.textContent = pct >= 100 ? '' : `${Math.floor(pct)}%`;
       return;
     }
+    const spec = id ? world.build.skills[id]?.spec : undefined;
+    b.classList.toggle('is-nomana', !!spec && spec.cost > 0 && p.maxMana > 0 && (spec.cost * p.maxMana) / 100 > p.mana);
     const cd = p.cds[slot];
     const empty = cd.charges <= 0;
     const share = empty ? Math.max(0, cd.t / Math.max(0.01, cd.cd)) : 0;
@@ -229,7 +233,9 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
       pr.cancel = false;
     } else pr.cancel = true;
     if (slot === 'basic') {
+      // the attack aims by itself or by the drag, without an aim line in the way
       engine.touch.setHold(pr.cancel ? null : { slot, angle: pr.angle, dist: null, assist: engine.settings.aimAssist });
+      return;
     }
     engine.touch.setAim(previewFor(engine, slot, pr.angle, pr.frac, pr.cancel));
   };
@@ -272,6 +278,26 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
       <span className="rb-sb-cd" ref={cdRef} />
       <span className="rb-sb-num" ref={numRef} />
       <span className="rb-sb-charges" ref={chRef} />
+    </button>
+  );
+}
+
+/** A potion within thumb's reach (on touch it lives in the cluster, not the top bar). */
+function PotionButton({ engine }: { engine: SigilEngine }) {
+  const h = engine.hero!;
+  return (
+    <button
+      className="rb-sb rb-sb-potion"
+      aria-label={`Drink a potion (${h.potions} left)`}
+      disabled={h.potions <= 0}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        engine.drinkPotion();
+      }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <img src={uiIcon('potion', 3)} alt="" draggable={false} />
+      <span className="rb-sb-charges">{h.potions}</span>
     </button>
   );
 }

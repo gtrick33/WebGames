@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CLASSES, levelPower, xpToNext } from '../data/classes';
 import { ITEM_DEFS } from '../data/items';
 import { QUESTS } from '../data/quests';
@@ -14,7 +14,9 @@ import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
 import { rarityColor } from '../render/renderer';
 import { K, TILE } from '../sim/map';
+import { objectiveTarget } from '../sim/objective';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
+import { ShopPanel } from './Shop';
 
 const TABS: { id: PanelId; label: string }[] = [
   { id: 'hero', label: 'Hero' },
@@ -27,6 +29,7 @@ const TABS: { id: PanelId; label: string }[] = [
 export function Panels({ engine }: { engine: SigilEngine }) {
   const p = engine.ui.panel;
   if (p === 'settings') return <SettingsPanel engine={engine} onClose={() => engine.closePanel()} />;
+  if (p === 'shop' && engine.ui.shop) return <ShopPanel engine={engine} shop={engine.ui.shop} />;
   const h = engine.hero!;
   const title = (
     <span className="rb-tabs" role="tablist">
@@ -178,7 +181,8 @@ function isUpgrade(cur: Item | undefined, it: Item): boolean {
   return itemScore(it) > itemScore(cur) + 5;
 }
 
-function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone }: { engine: SigilEngine; item: Item; worn: boolean; confirm: boolean; onSalvage: () => void; onDone: () => void }) {
+/** An item's card: stats, comparison with what is worn, what it changes; `actions` replaces the equip row. */
+export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, actions }: { engine: SigilEngine; item: Item; worn: boolean; confirm: boolean; onSalvage: () => void; onDone: () => void; actions?: ReactNode }) {
   const h = engine.hero!;
   const slot = itemSlot(item);
   const current = h.equip[slot];
@@ -260,6 +264,7 @@ function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone }: { engine
         </p>
       )}
       {def && <p className="rb-lore">“{def.lore}”</p>}
+      {actions ?? (
       <div className="rb-row">
         {worn ? (
           <button className="rb-btn" onClick={() => engine.unequipSlot(slot) && onDone()} disabled={h.bag.length >= BAG_SIZE}>
@@ -286,6 +291,7 @@ function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone }: { engine
           </>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -298,6 +304,8 @@ function specLine(engine: SigilEngine, spec: SkillSpec): string {
   const st = w.build.stats;
   const parts: string[] = [];
   if (spec.damage > 0) parts.push(`${Math.round(spec.damage * levelPower(engine.hero!.level) * typeBonus(st, spec.dmgType))} ${DMG_NAME[spec.dmgType]} damage${spec.count > 1 ? ` ×${spec.count}` : ''}${spec.cast === 'channel' || spec.tick ? ' per hit' : ''}`);
+  if (spec.cost > 0 && w.player.maxMana > 0) parts.push(`${Math.round((spec.cost * w.player.maxMana) / 100)} mana`);
+  if (spec.extra.manaOnHit && w.player.maxMana > 0) parts.push(`+${Math.round((spec.extra.manaOnHit * w.player.maxMana) / 100)} mana per hit`);
   if (spec.cooldown > 0) parts.push(`${(spec.cooldown / (1 + st.haste / 100)).toFixed(1)} s cooldown${spec.charges > 1 ? `, ${spec.charges} charges` : ''}`);
   if (spec.cast === 'projectile' && spec.pierce > 0 && spec.pierce < 99) parts.push(`pierces ${spec.pierce}`);
   if (spec.pierce >= 99) parts.push('passes through all');
@@ -643,13 +651,15 @@ function MiniMap({ engine }: { engine: SigilEngine }) {
     for (const c2 of w.chests) if (!c2.open) dot(c2.x, c2.y, '#ffcf5a', 3);
     for (const n of w.npcs) dot(n.x, n.y, '#ffffff', 3);
     for (const x of w.exits) dot(x.x, x.y, '#ff3fd2', 4);
+    const goal = objectiveTarget(w);
+    if (goal) dot(goal.x, goal.y, '#ffe066', 5);
     dot(w.player.x, w.player.y, '#ff4a4a', 4);
   }, [w, engine.version]);
   return (
     <div className="rb-minimap">
       <canvas ref={ref} aria-label={`Map of ${w.region.name}`} />
       <span className="rb-small rb-dim">
-        <i style={{ background: '#ff4a4a' }} /> you <i style={{ background: '#22e4ff' }} /> waystone <i style={{ background: '#ffcf5a' }} /> chest <i style={{ background: '#ff3fd2' }} /> exit{w.npcs.length > 0 && (
+        <i style={{ background: '#ff4a4a' }} /> you <i style={{ background: '#22e4ff' }} /> waystone <i style={{ background: '#ffcf5a' }} /> chest <i style={{ background: '#ff3fd2' }} /> exit <i style={{ background: '#ffe066' }} /> quest{w.npcs.length > 0 && (
           <>
             {' '}
             <i style={{ background: '#ffffff' }} /> villager
@@ -709,7 +719,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
           <span className="rb-kicker">Aiming</span>
           <label className="rb-check">
             <input type="checkbox" checked={s.autoTarget} onChange={(e) => set({ autoTarget: e.target.checked })} />
-            <span>Tap to aim at the nearest enemy</span>
+            <span>Attack aims at the nearest enemy</span>
           </label>
           <div className="rb-seg" role="group" aria-label="Aim assist">
             {['Off', 'Light', 'Strong'].map((l, i) => (
@@ -718,7 +728,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
               </button>
             ))}
           </div>
-          <span className="rb-small rb-dim">Aim assist nudges a dragged aim by a few degrees toward an enemy. It never overrides where you point.</span>
+          <span className="rb-small rb-dim">Spells go where your hero faces (the small arrow) or where you drag them. Aim assist nudges a dragged aim by a few degrees toward an enemy; it never overrides where you point.</span>
           <span className="rb-kicker">Keyboard</span>
           <div className="rb-seg" role="group" aria-label="Ultimate key">
             {(['f', 't', 'shift', 'rmb'] as const).map((k) => (

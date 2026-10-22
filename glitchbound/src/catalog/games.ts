@@ -1029,7 +1029,7 @@ export const GAMES: GameEntry[] = [
     aspect: 'landscape',
     controls: {
       keyboard: ['WASD or arrows: move · mouse: aim', 'Left click: attack · Q, E, R: skills', 'Space: dodge · F: ultimate (changeable) · 1: potion', 'G: talk and travel · I bag · K talents · J quests · M map · Esc pause'],
-      touch: ['Left thumb: the joystick (it appears where you touch)', 'Right thumb: attack, three skills, the ultimate and dodge', 'Tap a skill to aim at the nearest enemy, or drag it to aim (drag back to cancel)'],
+      touch: ['Left thumb: the joystick (it appears where you touch)', 'Right thumb: attack, three skills, the ultimate and dodge', 'Attack aims by itself; tap a spell to cast it where you face, or drag it to aim (drag back to cancel)'],
     },
     stats: [
       { key: 'score', label: 'Best expedition' },

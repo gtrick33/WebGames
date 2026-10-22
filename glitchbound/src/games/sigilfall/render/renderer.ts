@@ -7,8 +7,9 @@ import type { Enemy, Fx, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
 import { itemTint } from '../progress/items';
 import { canvas, ctx2d, pixelText, rgba, type Cnv } from './pixel';
-import { creatureSprite, glowDisc, heldWeapon, heroSprite, recolored, weaponSprite, type HeroDir } from './sprites';
+import { creatureSprite, glowDisc, heldWeapon, heroSprite, npcSprite, recolored, weaponSprite, type HeroDir } from './sprites';
 import { buildScenery, type Scenery } from './tiles';
+import { objectiveTarget } from '../sim/objective';
 
 /**
  * Draws the world at low resolution (a few hundred pixels across) onto a canvas that CSS scales up
@@ -26,6 +27,14 @@ export interface AimPreview {
   size: number;
   cancel: boolean;
 }
+
+/** Where the hero holds the weapon at rest, by facing (0 down, 1 left, 2 right, 3 up): hand offset and lean. */
+const REST_POSE: Record<number, { x: number; y: number; lean: number }> = {
+  0: { x: 6, y: 1, lean: 0.22 },
+  1: { x: -4, y: 1, lean: -0.32 },
+  2: { x: 4, y: 1, lean: 0.32 },
+  3: { x: -6, y: 0, lean: -0.18 },
+};
 
 const PROJECTILE_COLORS: Record<string, [string, string]> = {
   'arcane-bolt': ['#d2a8ff', '#ffffff'],
@@ -53,6 +62,8 @@ export class Renderer {
   private light: Cnv;
   private lg: CanvasRenderingContext2D;
   aim: AimPreview | null = null;
+  /** Touch controls: show the facing marker (where a tapped spell goes). */
+  touchMode = false;
   /** The hero's held weapon art changes with gear. */
   private weapon: { kind: string; tint?: string } = { kind: 'staff' };
   reducedMotion = false;
@@ -103,11 +114,29 @@ export class Renderer {
     this.weapon = heldWeapon(cls, w.hero.equip.weapon);
   }
 
+  /** The camera's lean toward the aim (and a boss), smoothed; the camera itself is pinned to the hero's pixel. */
+  private leanX = 0;
+  private leanY = -8;
+
   /** Puts the camera on the hero at once (after loading a region or respawning). */
   snap(w: World): void {
-    const m = w.map;
-    this.camX = clamp(w.player.x - this.vw / 2, 0, Math.max(0, m.w * TILE - this.vw));
-    this.camY = clamp(w.player.y - this.vh / 2 - 8, 0, Math.max(0, m.h * TILE - this.vh));
+    this.leanX = 0;
+    this.leanY = -8;
+    this.placeCamera(w);
+  }
+
+  /**
+   * The camera follows the hero's rounded position exactly, plus the smoothed lean, so the hero never
+   * wobbles a pixel against the ground while walking (rounding the two separately made them shimmer).
+   */
+  private placeCamera(w: World): void {
+    const p = w.player;
+    const mapW = w.map.w * TILE;
+    const mapH = w.map.h * TILE;
+    const x = Math.round(p.x) + Math.round(this.leanX - this.vw / 2);
+    const y = Math.round(p.y) + Math.round(this.leanY - this.vh / 2);
+    this.camX = mapW <= this.vw ? Math.round((mapW - this.vw) / 2) : clamp(x, 0, mapW - this.vw);
+    this.camY = mapH <= this.vh ? Math.round((mapH - this.vh) / 2) : clamp(y, 0, mapH - this.vh);
   }
 
   draw(w: World, dt: number, time: number): void {
@@ -120,25 +149,21 @@ export class Renderer {
     const sc = this.scenery!;
     const g = this.g;
     const p = w.player;
-    // camera: follows the hero, leaning a little toward where they aim
-    const mapW = w.map.w * TILE;
-    const mapH = w.map.h * TILE;
+    // camera: on the hero, leaning a little toward where they aim (and toward a boss)
     const lead = p.dead ? 0 : 14;
-    let tx = p.x + Math.cos(p.aim) * lead - this.vw / 2;
-    let ty = p.y + Math.sin(p.aim) * lead * 0.7 - this.vh / 2 - 8;
+    let lx = Math.cos(p.aim) * lead;
+    let ly = Math.sin(p.aim) * lead * 0.7 - 8;
     const boss = w.boss();
     if (boss && !boss.dead) {
-      // keep some of the boss in view
-      tx = tx * 0.8 + (boss.x - this.vw / 2) * 0.2;
-      ty = ty * 0.8 + (boss.y - this.vh / 2) * 0.2;
+      lx = lx * 0.8 + (boss.x - p.x) * 0.2;
+      ly = ly * 0.8 + (boss.y - p.y) * 0.2;
     }
-    tx = mapW <= this.vw ? (mapW - this.vw) / 2 : clamp(tx, 0, mapW - this.vw);
-    ty = mapH <= this.vh ? (mapH - this.vh) / 2 : clamp(ty, 0, mapH - this.vh);
-    this.camX = damp(this.camX, tx, 7, dt);
-    this.camY = damp(this.camY, ty, 7, dt);
+    this.leanX = damp(this.leanX, lx, 4, dt);
+    this.leanY = damp(this.leanY, ly, 4, dt);
+    this.placeCamera(w);
     const shake = this.reducedMotion ? 0 : w.shakeAmt;
-    const ox = Math.round(this.camX + (shake ? (Math.random() - 0.5) * shake : 0));
-    const oy = Math.round(this.camY + (shake ? (Math.random() - 0.5) * shake : 0));
+    const ox = this.camX + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
+    const oy = this.camY + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
 
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.fillStyle = sc.theme === 'crypt' ? '#0e0c18' : sc.theme === 'forest' ? '#123a22' : '#1f5a2a';
@@ -153,6 +178,7 @@ export class Renderer {
     this.drawEnemyWarnings(w);
     for (const tr of w.traps) this.drawTrap(tr.x, tr.y, tr.arm > 0, time);
     this.drawAim(w);
+    this.drawFacing(w, time);
     this.drawRings(w);
 
     // everything standing, sorted by depth
@@ -536,6 +562,36 @@ export class Renderer {
     g.restore();
   }
 
+  /** Touch: a small arrow ahead of the hero, where a tapped spell will fly. */
+  private drawFacing(w: World, time: number): void {
+    const p = w.player;
+    if (!this.touchMode || this.aim || p.dead || w.region.safe) return;
+    const g = this.g;
+    const d = 17 + Math.sin(time * 5) * 1.2;
+    g.save();
+    g.translate(Math.round(p.x + Math.cos(p.aim) * d), Math.round(p.y - 2 + Math.sin(p.aim) * d * 0.8));
+    g.rotate(p.aim);
+    g.globalAlpha = 0.55;
+    g.fillStyle = '#1b1428';
+    g.beginPath();
+    g.moveTo(5, 0);
+    g.lineTo(-3, -4.5);
+    g.lineTo(-1, 0);
+    g.lineTo(-3, 4.5);
+    g.closePath();
+    g.fill();
+    g.globalAlpha = 0.85;
+    g.fillStyle = '#ffffff';
+    g.beginPath();
+    g.moveTo(4, 0);
+    g.lineTo(-2, -3);
+    g.lineTo(-0.5, 0);
+    g.lineTo(-2, 3);
+    g.closePath();
+    g.fill();
+    g.restore();
+  }
+
   /** Shadows and auras under characters. */
   private drawRings(w: World): void {
     const g = this.g;
@@ -589,12 +645,12 @@ export class Renderer {
     const frame = moving ? (Math.floor(p.walkT * 7) % 2) + 1 : 0;
     const s = heroSprite(cls, dir, frame);
     const bob = moving ? (Math.floor(p.walkT * 7) % 2 === 0 ? 0 : -1) : Math.sin(time * 2.5) > 0.6 ? -1 : 0;
-    const x = Math.round(p.x - s.width / 2);
-    const y = Math.round(p.y + 6 - s.height + bob);
+    const x = Math.round(p.x) - Math.floor(s.width / 2);
+    const y = Math.round(p.y) + 6 - s.height + bob;
     const blink = p.iframe > 0 && !p.dash && Math.floor(time * 20) % 2 === 0;
     // the held weapon behind the body when facing up or away from the aim
     const wpn = weaponSprite(this.weapon.kind, this.weapon.tint);
-    const weaponBehind = p.dir === 3 || (p.dir === 1 && Math.cos(p.aim) > 0) || (p.dir === 2 && Math.cos(p.aim) < 0);
+    const weaponBehind = p.dir === 3 || (p.actKind !== null && ((p.dir === 1 && Math.cos(p.actAngle) > 0) || (p.dir === 2 && Math.cos(p.actAngle) < 0)));
     if (weaponBehind) this.drawWeapon(w, wpn, time);
     if (cls === 'warrior' && p.dir !== 3) this.drawShield(w, p.dir, x, y);
     g.globalAlpha = blink ? 0.45 : 1;
@@ -630,21 +686,35 @@ export class Renderer {
     const g = this.g;
     const p = w.player;
     const kind = this.weapon.kind;
-    let angle = p.aim;
-    let reach = 5;
+    let angle: number;
+    let ox: number;
+    let oy: number;
     if (p.actKind === 'swing' || p.actKind === 'heavy') {
       // sweep the arc while the swing plays
       const total = p.actKind === 'heavy' ? 0.28 : 0.2;
       const k = clamp(1 - p.actT / total, 0, 1);
       const arc = p.actKind === 'heavy' ? 1.6 : p.actBig ? 2.6 : 2;
       angle = p.actAngle - arc / 2 + arc * k;
-      reach = 7;
-    } else if (p.actKind === 'spin') angle = time * 18;
-    else if (p.actKind === null && Math.hypot(p.vx, p.vy) < 10 && w.input.aim === null) angle = p.dir === 1 ? Math.PI * 0.75 : p.dir === 3 ? -Math.PI / 2 : Math.PI * 0.25;
-    const hx = p.x + Math.cos(angle) * reach;
-    const hy = p.y - 3 + Math.sin(angle) * reach * 0.8;
+      ox = Math.cos(angle) * 7;
+      oy = Math.sin(angle) * 5.6;
+    } else if (p.actKind === 'spin') {
+      angle = time * 18;
+      ox = Math.cos(angle) * 5;
+      oy = Math.sin(angle) * 4;
+    } else if (p.actKind) {
+      // casting and shooting: the weapon points where the skill goes
+      angle = p.actAngle;
+      ox = Math.cos(angle) * 5;
+      oy = Math.sin(angle) * 4;
+    } else {
+      // at rest (walking included): held upright at the side, leaning toward the way the hero faces
+      const pose = REST_POSE[p.dir] ?? REST_POSE[0]!;
+      angle = -Math.PI / 2 + pose.lean;
+      ox = pose.x;
+      oy = pose.y;
+    }
     g.save();
-    g.translate(Math.round(hx), Math.round(hy));
+    g.translate(Math.round(p.x) + Math.round(ox), Math.round(p.y) - 3 + Math.round(oy));
     // art points up: rotate so its top points along the angle
     g.rotate(angle + Math.PI / 2);
     if (kind === 'bow') g.drawImage(wpn.c, -wpn.width / 2, -wpn.height / 2);
@@ -805,7 +875,7 @@ export class Renderer {
 
   private drawNpc(w: World, id: string, x: number, y: number, face: number, bob: number): void {
     const g = this.g;
-    const sprite = creatureSprite(npcSprite(id), 0);
+    const sprite = npcSprite(id);
     const b = Math.sin(bob * 2) > 0.7 ? -1 : 0;
     g.fillStyle = 'rgba(0,0,0,0.25)';
     g.beginPath();
@@ -1333,7 +1403,8 @@ export class Renderer {
   /** An arrow at the edge of the view toward the current objective. */
   private drawObjectiveArrow(w: World, ox: number, oy: number, time: number): void {
     const target = objectiveTarget(w);
-    if (!target) return;
+    // enemies to hunt show on the minimap; the edge arrow is for places
+    if (!target || target.soft) return;
     const g = this.g;
     const cx = ox + this.vw / 2;
     const cy = oy + this.vh / 2;
@@ -1389,7 +1460,6 @@ function pixelDisc(g: CanvasRenderingContext2D, x: number, y: number, r: number,
 
 export const rarityColor = (r: string | undefined): string => (r === 'legendary' ? '#ff9a2a' : r === 'epic' ? '#c58cff' : r === 'rare' ? '#5ab0ff' : r === 'uncommon' ? '#6dff8f' : '#e8e0d0');
 
-const npcSprite = (id: string): string => (id === 'maren' ? 'elder' : id === 'brannoc' ? 'smith' : id === 'ysolde' ? 'mystic' : 'villager');
 
 /** Whether an NPC is the giver of an active quest (shows a "!"). */
 function npcHasNews(w: World, id: string): boolean {
@@ -1399,37 +1469,3 @@ function npcHasNews(w: World, id: string): boolean {
 import { QUEST_DEFS } from '../data/quests';
 const questGiver = (q: string): string | undefined => QUEST_DEFS[q]?.giver;
 
-/** Where the tracked quest wants you to go in this region, if anywhere. */
-export function objectiveTarget(w: World): { x: number; y: number } | null {
-  const h = w.hero;
-  const active = Object.entries(h.quests).filter(([, s]) => s.state === 'active').map(([id]) => QUEST_DEFS[id]!);
-  for (const q of active) {
-    const o = q.objective;
-    if (o.kind === 'tutorial' && w.region.id === 'emberwick') {
-      const d = w.enemies.find((e) => e.dummy === (o.step === 'dodge' ? 2 : 1));
-      if (d) return { x: d.x, y: d.y };
-    }
-    if ((o.kind === 'kill' || o.kind === 'collect') && w.region.id === 'emberwick' && h.unlocked.includes('whisperwood')) {
-      const ws = w.waystones[0];
-      if (ws) return ws;
-    }
-    if (o.kind === 'boss' && o.boss === 'grimtusk' && w.region.id === 'whisperwood') {
-      const m = w.map.markers.find((pm) => pm.marker.kind === 'boss');
-      if (m) return { x: (m.tx + 0.5) * TILE, y: (m.ty + 0.5) * TILE };
-    }
-    if (o.kind === 'boss' && (o.boss === 'ossric' || o.boss === 'morgrave') && w.region.id === 'whisperwood' && h.unlocked.includes('crypt')) {
-      const x = w.exits.find((e) => e.to === 'crypt');
-      if (x) return x;
-    }
-    if (o.kind === 'boss' && w.region.id === 'crypt') {
-      const m = w.map.markers.find((pm) => pm.marker.kind === 'boss' && pm.marker.boss === o.boss);
-      if (m) return { x: (m.tx + 0.5) * TILE, y: (m.ty + 0.5) * TILE };
-    }
-    if (o.kind === 'explore' && w.region.id === 'whisperwood' && dist(w.player.x, w.player.y, w.shrines[0]?.x ?? 0, w.shrines[0]?.y ?? 0) < 260) {
-      // only a nudge once you are already in the north-west
-      return null;
-    }
-  }
-  if (w.portal) return w.portal;
-  return null;
-}
