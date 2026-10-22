@@ -10,7 +10,7 @@ import { currentSlug, getGame, sectionGame } from '../catalog/catalog';
 export type Route =
   | { name: 'home' }
   | { name: 'game'; slug: string }
-  /** A game with a section of its own (Riftbound): its tab's path, or its /games/<slug> address. */
+  /** A game with a section of its own (Sigilfall): its tab's path, or its /games/<slug> address. */
   | { name: 'section'; slug: string }
   | { name: 'daily' }
   | { name: 'privacy' }

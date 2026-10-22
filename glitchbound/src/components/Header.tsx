@@ -26,7 +26,7 @@ type Tab = { href: string; label: string; short?: string; icon: IconName; slug?:
 const TABS: Tab[] = [
   { href: '/', label: 'Arcade', icon: 'gamepad' },
   { href: '/party', label: 'Party', icon: 'party' },
-  // Games with a section of their own (Riftbound) get a tab here, after Party.
+  // Games with a section of their own (Sigilfall) get a tab here, after Party.
   ...SECTION_GAMES.map((g): Tab => ({ href: g.section!.path, label: g.section!.label, icon: 'sword', slug: g.slug })),
   { href: '/daily', label: 'Daily', icon: 'calendar' },
   { href: '/leaderboards', label: 'Leaderboards', short: 'Ranks', icon: 'crown' },

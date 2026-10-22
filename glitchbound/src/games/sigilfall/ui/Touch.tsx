@@ -2,7 +2,7 @@ import { useEffect, useRef, type PointerEvent as RPointerEvent } from 'react';
 import { CLASSES } from '../data/classes';
 import { SKILLS } from '../data/skills';
 import type { SlotKey } from '../data/types';
-import type { RiftEngine } from '../engine';
+import type { SigilEngine } from '../engine';
 import type { AimPreview } from '../render/renderer';
 import { skillIconUrl } from '../render/sprites';
 import type { World } from '../sim/world';
@@ -20,7 +20,7 @@ import { uiIcon } from './uiIcons';
 const AIM_DEADZONE = 14;
 const AIM_RANGE = 70;
 
-export function TouchControls({ engine }: { engine: RiftEngine }) {
+export function TouchControls({ engine }: { engine: SigilEngine }) {
   // fingers are let go when the controls go away (a menu opened)
   useEffect(() => () => engine.touch.release(), [engine]);
   return (
@@ -39,7 +39,7 @@ export function TouchControls({ engine }: { engine: RiftEngine }) {
   );
 }
 
-function Joystick({ engine }: { engine: RiftEngine }) {
+function Joystick({ engine }: { engine: SigilEngine }) {
   const zone = useRef<HTMLDivElement>(null);
   const base = useRef<HTMLDivElement>(null);
   const knob = useRef<HTMLDivElement>(null);
@@ -133,7 +133,7 @@ function Joystick({ engine }: { engine: RiftEngine }) {
 }
 
 /** What a skill's aim looks like on the ground while dragging. */
-function previewFor(engine: RiftEngine, slot: SlotKey, angle: number, frac: number, cancel: boolean): AimPreview | null {
+function previewFor(engine: SigilEngine, slot: SlotKey, angle: number, frac: number, cancel: boolean): AimPreview | null {
   const w = engine.world;
   if (!w) return null;
   const id = w.build.bar[slot];
@@ -145,7 +145,7 @@ function previewFor(engine: RiftEngine, slot: SlotKey, angle: number, frac: numb
   return { shape: 'line', angle, dist: spec.range, size: Math.max(3, spec.radius * 2 + 2), cancel };
 }
 
-function SkillButton({ engine, slot }: { engine: RiftEngine; slot: SlotKey }) {
+function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
   const h = engine.hero!;
   const w = engine.world!;
   const id = w.build.bar[slot];
@@ -277,7 +277,7 @@ function SkillButton({ engine, slot }: { engine: RiftEngine; slot: SlotKey }) {
 }
 
 /** Talk / travel: a big button when something is in reach. */
-function InteractButton({ engine }: { engine: RiftEngine }) {
+function InteractButton({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLButtonElement>(null);
   const text = useRef<HTMLSpanElement>(null);
   useFrame(engine, (w) => {

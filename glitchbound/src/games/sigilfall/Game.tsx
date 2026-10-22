@@ -1,32 +1,32 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
-import { RiftEngine } from './engine';
+import { SigilEngine } from './engine';
 import { GameScreen } from './ui/GameScreen';
 import { CreateScreen, TitleScreen } from './ui/Title';
 import './Game.css';
 
 /**
- * Riftbound: a pixel-art action RPG. The arcade bumps restartKey on Restart (a fresh mount reloads
+ * Sigilfall: a pixel-art action RPG. The arcade bumps restartKey on Restart (a fresh mount reloads
  * the save); pauseKey asks for a pause when the player leaves full screen or scrolls away.
  */
 export default function Game({ host, restartKey, pauseKey, playerName }: GameModuleProps) {
-  return <Riftbound key={restartKey} host={host} pauseKey={pauseKey} playerName={playerName ?? ''} />;
+  return <Sigilfall key={restartKey} host={host} pauseKey={pauseKey} playerName={playerName ?? ''} />;
 }
 
-function Riftbound({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: number; playerName: string }) {
+function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: number; playerName: string }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [engine, setEngine] = useState<RiftEngine | null>(null);
+  const [engine, setEngine] = useState<SigilEngine | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const stage = stageRef.current;
     if (!canvas || !stage) return;
-    const e = new RiftEngine(canvas, host, playerName);
+    const e = new SigilEngine(canvas, host, playerName);
     e.attach(stage);
     setEngine(e);
     // a handle for automated play-testing on the dev server only (never in a build)
-    if (import.meta.env.DEV) (window as unknown as { __rb?: RiftEngine }).__rb = e;
+    if (import.meta.env.DEV) (window as unknown as { __rb?: SigilEngine }).__rb = e;
     host.report({ type: 'ready' });
     // the canvas follows the stage's size; the view picks a crisp whole-number pixel scale
     const fit = (): void => {
@@ -73,13 +73,13 @@ function Riftbound({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
 
   return (
     <div className="rb" ref={stageRef}>
-      <canvas ref={canvasRef} className="rb-canvas" aria-label="Riftbound game view" />
+      <canvas ref={canvasRef} className="rb-canvas" aria-label="Sigilfall game view" />
       {engine && <Screens engine={engine} />}
     </div>
   );
 }
 
-function Screens({ engine }: { engine: RiftEngine }) {
+function Screens({ engine }: { engine: SigilEngine }) {
   useSyncExternalStore(engine.subscribe, engine.getVersion, engine.getVersion);
   const ui = engine.ui;
   if (ui.screen === 'title') return <TitleScreen engine={engine} />;

@@ -2,12 +2,12 @@ import { useRef } from 'react';
 import { CLASSES } from '../data/classes';
 import { SKILLS } from '../data/skills';
 import type { SlotKey } from '../data/types';
-import type { RiftEngine } from '../engine';
+import type { SigilEngine } from '../engine';
 import { skillIconUrl } from '../render/sprites';
 import { useFrame } from './GameScreen';
 
 /** The desktop action bar: keys on every slot, cooldowns, the ultimate's charge, and the interact prompt. */
-export function DesktopBar({ engine }: { engine: RiftEngine }) {
+export function DesktopBar({ engine }: { engine: SigilEngine }) {
   const ult = engine.settings.ultKey;
   const slots: { slot: SlotKey; key: string }[] = [
     { slot: 'basic', key: 'LMB' },
@@ -37,7 +37,7 @@ export function DesktopBar({ engine }: { engine: RiftEngine }) {
   );
 }
 
-function Slot({ engine, slot, keyLabel }: { engine: RiftEngine; slot: SlotKey; keyLabel: string }) {
+function Slot({ engine, slot, keyLabel }: { engine: SigilEngine; slot: SlotKey; keyLabel: string }) {
   const w = engine.world!;
   const h = engine.hero!;
   const id = w.build.bar[slot];

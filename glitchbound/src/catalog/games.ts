@@ -1006,8 +1006,8 @@ export const GAMES: GameEntry[] = [
     limits: { scorePerSecond: 20, minSeconds: 30 },
   },
   {
-    slug: 'riftbound',
-    title: 'Riftbound',
+    slug: 'sigilfall',
+    title: 'Sigilfall',
     tagline: 'A pixel-art action RPG: three heroes, gear that changes your skills, dungeons and bosses.',
     description:
       'A top-down pixel-art action RPG made for phones first (a joystick and skill buttons), with WASD and the mouse on a computer. Pick a Mage, Warrior or Ranger and fight through the Whisperwood and the Hollow Crypt to close the Rift. ' +
@@ -1019,12 +1019,12 @@ export const GAMES: GameEntry[] = [
     accent: 'magenta',
     emoji: '⚔️',
     art: {
-      tile: '/games/riftbound/tile.webp',
-      wide: '/games/riftbound/wide.webp',
+      tile: '/games/sigilfall/tile.webp',
+      wide: '/games/sigilfall/wide.webp',
       alt: 'A pixel-art mage casting fireballs at a giant boar in a forest clearing, with loot glowing on the grass',
       bg: '#2f6a3a',
     },
-    section: { path: '/riftbound', label: 'Riftbound' },
+    section: { path: '/sigilfall', label: 'Sigilfall' },
     runtime: { kind: 'module' },
     aspect: 'landscape',
     controls: {

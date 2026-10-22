@@ -21,40 +21,40 @@ function renderAt(path: string) {
   return render(<App />);
 }
 
-const hideRiftbound = () => setCatalog({ ...EMPTY_CATALOG, settings: { riftbound: { hidden: true } } });
+const hideSigilfall = () => setCatalog({ ...EMPTY_CATALOG, settings: { sigilfall: { hidden: true } } });
 
-describe('Riftbound, a section of its own', () => {
+describe('Sigilfall, a section of its own', () => {
   it('has its own address and stays out of the arcade lists', () => {
-    const g = getGame('riftbound')!;
-    expect(g.section).toEqual({ path: '/riftbound', label: 'Riftbound' });
+    const g = getGame('sigilfall')!;
+    expect(g.section).toEqual({ path: '/sigilfall', label: 'Sigilfall' });
     expect(SECTION_GAMES).toContain(g);
-    expect(sectionGame('/riftbound')).toBe(g);
-    expect(gamePath(g)).toBe('/riftbound');
+    expect(sectionGame('/sigilfall')).toBe(g);
+    expect(gamePath(g)).toBe('/sigilfall');
     expect(inArcade(g)).toBe(false);
     expect(GAMES.filter(inArcade)).not.toContain(g);
-    expect(applySettings(GAMES, EMPTY_CATALOG).map((x) => x.slug)).not.toContain('riftbound');
-    expect(matchRoute('/riftbound')).toEqual({ name: 'section', slug: 'riftbound' });
-    expect(matchRoute('/games/riftbound')).toEqual({ name: 'section', slug: 'riftbound' });
+    expect(applySettings(GAMES, EMPTY_CATALOG).map((x) => x.slug)).not.toContain('sigilfall');
+    expect(matchRoute('/sigilfall')).toEqual({ name: 'section', slug: 'sigilfall' });
+    expect(matchRoute('/games/sigilfall')).toEqual({ name: 'section', slug: 'sigilfall' });
   });
 
   it('gets a tab next to Arcade and Party, but no tile in the arcade', () => {
     renderAt('/');
-    const tabs = screen.getAllByRole('link', { name: 'Riftbound' }).map((a) => a.getAttribute('href'));
-    expect(tabs).toContain('/riftbound');
+    const tabs = screen.getAllByRole('link', { name: 'Sigilfall' }).map((a) => a.getAttribute('href'));
+    expect(tabs).toContain('/sigilfall');
     const arcade = screen.getByRole('region', { name: 'The arcade' });
-    expect(within(arcade).queryByRole('link', { name: 'Riftbound' })).toBeNull();
+    expect(within(arcade).queryByRole('link', { name: 'Sigilfall' })).toBeNull();
   });
 
-  it('opens its page at /riftbound', async () => {
-    renderAt('/riftbound');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Riftbound' })).toBeTruthy();
+  it('opens its page at /sigilfall', async () => {
+    renderAt('/sigilfall');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sigilfall' })).toBeTruthy();
   });
 
   it('turned off by an admin: no tab, and its address is not found', () => {
-    hideRiftbound();
+    hideSigilfall();
     renderAt('/');
-    expect(screen.queryByRole('link', { name: 'Riftbound' })).toBeNull();
-    renderAt('/riftbound');
+    expect(screen.queryByRole('link', { name: 'Sigilfall' })).toBeNull();
+    renderAt('/sigilfall');
     expect(screen.getAllByRole('heading', { level: 1 }).some((h) => /doesn’t exist/.test(h.textContent ?? ''))).toBe(true);
   });
 });

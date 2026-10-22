@@ -321,7 +321,7 @@ function GamesList({ data, send, busy }: { data: AdminCatalog; send: Send; busy:
 /* --------------------------------------------------------------- sections */
 
 /**
- * Games with a section of their own (Riftbound): one switch turns the whole section on or off (its tab
+ * Games with a section of their own (Sigilfall): one switch turns the whole section on or off (its tab
  * next to Arcade and Party, and its page), plus the pause message and texts every game has.
  */
 function SectionList({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {

@@ -3,7 +3,7 @@ import type { Item, Rarity } from '../data/types';
 import { itemIconUrl, portraitUrl, skillIconUrl } from '../render/sprites';
 import { rarityColor } from '../render/renderer';
 
-/** Small shared pieces of the Riftbound UI. */
+/** Small shared pieces of the Sigilfall UI. */
 
 export const RARITY_NAME: Record<Rarity, string> = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary' };
 

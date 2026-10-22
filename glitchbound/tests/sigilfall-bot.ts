@@ -1,19 +1,19 @@
 /**
- * A simple play-bot for Riftbound's simulation: it walks to the nearest enemy along the map, keeps a
+ * A simple play-bot for Sigilfall's simulation: it walks to the nearest enemy along the map, keeps a
  * class-appropriate distance, fires everything that is ready, drinks potions, and steps out of (or
  * dodges) enemy telegraphs. It is not clever, which is the point: if it can clear a region and beat
  * its boss, a person can too.
  */
-import { xpToNext } from '../src/games/riftbound/data/classes';
-import { SLOTS, type ClassId, type RegionId, type SlotKey } from '../src/games/riftbound/data/types';
-import { learnTalent, newCharacter, addXp, freePoints, type Character } from '../src/games/riftbound/progress/character';
-import { rollGear } from '../src/games/riftbound/progress/items';
-import { DEFAULT_SETTINGS } from '../src/games/riftbound/progress/save';
-import { TALENTS } from '../src/games/riftbound/data/talents';
-import { rng } from '../src/games/riftbound/core/math';
-import { flowField, flowStep, TILE } from '../src/games/riftbound/sim/map';
-import type { Enemy, WorldEvent } from '../src/games/riftbound/sim/types';
-import { emptyInput, inside, World } from '../src/games/riftbound/sim/world';
+import { xpToNext } from '../src/games/sigilfall/data/classes';
+import { SLOTS, type ClassId, type RegionId, type SlotKey } from '../src/games/sigilfall/data/types';
+import { learnTalent, newCharacter, addXp, freePoints, type Character } from '../src/games/sigilfall/progress/character';
+import { rollGear } from '../src/games/sigilfall/progress/items';
+import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
+import { TALENTS } from '../src/games/sigilfall/data/talents';
+import { rng } from '../src/games/sigilfall/core/math';
+import { flowField, flowStep, TILE } from '../src/games/sigilfall/sim/map';
+import type { Enemy, WorldEvent } from '../src/games/sigilfall/sim/types';
+import { emptyInput, inside, World } from '../src/games/sigilfall/sim/world';
 
 /** A hero of a level with a full set of gear of that level and every talent point spent. */
 export function readyHero(cls: ClassId, level: number, rarity: 'common' | 'uncommon' | 'rare' = 'uncommon', seed = 7): Character {

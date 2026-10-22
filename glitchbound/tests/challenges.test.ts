@@ -63,8 +63,8 @@ describe('friends challenges', () => {
     expect(decodeReplay('')).toBeNull();
   });
 
-  it('offers challenges in every game but the live card game (it has rooms of its own) and Riftbound (scores depend on a long-kept hero)', () => {
-    expect(GAMES.filter((g) => !g.challenge).map((g) => g.slug)).toEqual(['crass-act', 'riftbound']);
+  it('offers challenges in every game but the live card game (it has rooms of its own) and Sigilfall (scores depend on a long-kept hero)', () => {
+    expect(GAMES.filter((g) => !g.challenge).map((g) => g.slug)).toEqual(['crass-act', 'sigilfall']);
     for (const g of GAMES.filter((x) => x.challenge)) expect(g.challenge!.label.length).toBeGreaterThan(10);
   });
 });

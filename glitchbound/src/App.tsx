@@ -90,7 +90,7 @@ function Page() {
     case 'game':
     case 'section': {
       // Hidden games are closed to players; admins and QA testers can still open them to preview and test.
-      // A section game (Riftbound) that is hidden is the whole section switched off.
+      // A section game (Sigilfall) that is hidden is the whole section switched off.
       const game = getGame(route.slug, live.all);
       return game && (!live.settings(game.slug).hidden || me?.role) ? <GamePage key={`${game.slug}:${challengeParam}`} game={game} /> : <NotFound />;
     }

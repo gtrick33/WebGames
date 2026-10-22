@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { rng } from '../src/games/riftbound/core/math';
-import { BOSSES } from '../src/games/riftbound/data/bosses';
-import { CLASSES, MAX_LEVEL, xpToNext } from '../src/games/riftbound/data/classes';
-import { ITEMS, MINOR_MODS } from '../src/games/riftbound/data/items';
-import { QUESTS } from '../src/games/riftbound/data/quests';
-import { REGIONS } from '../src/games/riftbound/data/regions';
-import { SKILLS } from '../src/games/riftbound/data/skills';
-import { TALENTS } from '../src/games/riftbound/data/talents';
-import { RARITIES, SLOTS, type ClassId, type Mod, type RegionId, type SkillOp } from '../src/games/riftbound/data/types';
-import { applyOps, buildHero, resolveSkill } from '../src/games/riftbound/progress/build';
+import { rng } from '../src/games/sigilfall/core/math';
+import { BOSSES } from '../src/games/sigilfall/data/bosses';
+import { CLASSES, MAX_LEVEL, xpToNext } from '../src/games/sigilfall/data/classes';
+import { ITEMS, MINOR_MODS } from '../src/games/sigilfall/data/items';
+import { QUESTS } from '../src/games/sigilfall/data/quests';
+import { REGIONS } from '../src/games/sigilfall/data/regions';
+import { SKILLS } from '../src/games/sigilfall/data/skills';
+import { TALENTS } from '../src/games/sigilfall/data/talents';
+import { RARITIES, SLOTS, type ClassId, type Mod, type RegionId, type SkillOp } from '../src/games/sigilfall/data/types';
+import { applyOps, buildHero, resolveSkill } from '../src/games/sigilfall/progress/build';
 import {
   addItem,
   addXp,
@@ -27,15 +27,15 @@ import {
   setSkill,
   unequip,
   type Character,
-} from '../src/games/riftbound/progress/character';
-import { modLines } from '../src/games/riftbound/progress/describe';
-import { itemMods, makeItem, rollGear, rollLoot, usableBy } from '../src/games/riftbound/progress/items';
-import { DEFAULT_SETTINGS, emptySave, loadSave, migrate, SAVE_KEY, SAVE_VERSION, validateCharacter, validateSettings, writeSave } from '../src/games/riftbound/progress/save';
-import { hitEnemy } from '../src/games/riftbound/sim/combat';
-import { tryCast } from '../src/games/riftbound/sim/cast';
-import { flowField, K, markerPos, parseRegion, TILE } from '../src/games/riftbound/sim/map';
-import { emptyInput } from '../src/games/riftbound/sim/world';
-import { newWorld, readyHero } from './riftbound-bot';
+} from '../src/games/sigilfall/progress/character';
+import { modLines } from '../src/games/sigilfall/progress/describe';
+import { itemMods, makeItem, rollGear, rollLoot, usableBy } from '../src/games/sigilfall/progress/items';
+import { DEFAULT_SETTINGS, emptySave, loadSave, migrate, SAVE_KEY, SAVE_VERSION, validateCharacter, validateSettings, writeSave } from '../src/games/sigilfall/progress/save';
+import { hitEnemy } from '../src/games/sigilfall/sim/combat';
+import { tryCast } from '../src/games/sigilfall/sim/cast';
+import { flowField, K, markerPos, parseRegion, TILE } from '../src/games/sigilfall/sim/map';
+import { emptyInput } from '../src/games/sigilfall/sim/world';
+import { newWorld, readyHero } from './sigilfall-bot';
 
 const CLS: ClassId[] = ['mage', 'warrior', 'ranger'];
 const hero = (cls: ClassId = 'mage'): Character => newCharacter(cls, 'Test', 'hero0', 0);
@@ -43,7 +43,7 @@ const levelTo = (c: Character, level: number): void => {
   while (c.level < level) addXp(c, xpToNext(c.level));
 };
 
-describe('riftbound content', () => {
+describe('sigilfall content', () => {
   it('has about 20-30 hand-made items with unique ids, a description line for every effect, and real targets', () => {
     expect(ITEMS.length).toBeGreaterThanOrEqual(20);
     expect(ITEMS.length).toBeLessThanOrEqual(32);
@@ -113,7 +113,7 @@ describe('riftbound content', () => {
   });
 });
 
-describe('riftbound maps', () => {
+describe('sigilfall maps', () => {
   for (const id of Object.keys(REGIONS) as RegionId[]) {
     it(`${id}: rectangular, a start, and everything reachable from it`, () => {
       const def = REGIONS[id];
@@ -146,7 +146,7 @@ describe('riftbound maps', () => {
   }
 });
 
-describe('riftbound builds: equipment changes how skills work', () => {
+describe('sigilfall builds: equipment changes how skills work', () => {
   it('Ember Staff makes Fireball split on impact, and touches nothing else', () => {
     const c = hero('mage');
     levelTo(c, 6);
@@ -231,7 +231,7 @@ describe('riftbound builds: equipment changes how skills work', () => {
   });
 });
 
-describe('riftbound character', () => {
+describe('sigilfall character', () => {
   it('levels on a rising curve, carries extra experience over and stops at the cap', () => {
     for (let l = 1; l < MAX_LEVEL; l++) expect(xpToNext(l + 1)).toBeGreaterThan(xpToNext(l));
     const c = hero();
@@ -332,7 +332,7 @@ function rollable(base: string, slot: string): boolean {
   return rollGear('warrior', 1, 'common', rng(1), slot as never).base !== undefined;
 }
 
-describe('riftbound loot', () => {
+describe('sigilfall loot', () => {
   it('drops gear the hero can use, at sensible levels and rarities', () => {
     for (const cls of CLS) {
       const r = rng(42);
@@ -361,7 +361,7 @@ describe('riftbound loot', () => {
   });
 });
 
-describe('riftbound saves', () => {
+describe('sigilfall saves', () => {
   const sample = (): Character => {
     const c = readyHero('ranger', 6, 'rare', 3);
     c.gold = 321;
@@ -410,6 +410,23 @@ describe('riftbound saves', () => {
     expect(loadSave().status).toBe('reset');
     localStorage.clear();
     expect(loadSave().status).toBe('new');
+  });
+
+  it('picks up a save made while the game was called Riftbound, then moves it to the new key', () => {
+    const save = emptySave();
+    save.heroes[2] = sample();
+    localStorage.setItem('glitchbound.riftbound', JSON.stringify(save));
+    localStorage.setItem('glitchbound.riftbound.bak', JSON.stringify(save));
+    const { save: back, status } = loadSave();
+    expect(status).toBe('ok');
+    expect(back.heroes[2]?.gold).toBe(321);
+    expect(writeSave(back)).toBe(true);
+    expect(localStorage.getItem(SAVE_KEY)).toContain('"gold":321');
+    expect(localStorage.getItem('glitchbound.riftbound')).toBeNull();
+    expect(localStorage.getItem('glitchbound.riftbound.bak')).toBeNull();
+    // the new key wins over a leftover old one
+    localStorage.setItem('glitchbound.riftbound', JSON.stringify(emptySave()));
+    expect(loadSave().save.heroes[2]?.gold).toBe(321);
   });
 
   it('never treats a save from a newer version as empty', () => {
@@ -463,7 +480,7 @@ describe('riftbound saves', () => {
   });
 });
 
-describe('riftbound combat', () => {
+describe('sigilfall combat', () => {
   it('an aimed shot goes where it was aimed, even with an enemy elsewhere', () => {
     const w = newWorld('whisperwood', readyHero('mage', 4));
     const p = w.player;

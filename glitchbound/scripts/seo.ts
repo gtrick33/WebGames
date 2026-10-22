@@ -46,7 +46,7 @@ export const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g,
 /** A game's one-liner without the trailing "18+." that the adults-only label already says. */
 const taglineOf = (g: GameEntry): string => (g.adult ? g.tagline.replace(/\s*18\+\.?$/, '') : g.tagline);
 
-/** Where a game's page lives: its own section (Riftbound at /riftbound), or /games/<slug>. */
+/** Where a game's page lives: its own section (Sigilfall at /sigilfall), or /games/<slug>. */
 const pathOf = (g: GameEntry): string => g.section?.path ?? `/games/${g.slug}`;
 
 function gameItem(g: GameEntry): string {
@@ -134,7 +134,7 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       jsonLd: { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE, url: `${siteUrl}/`, description: HOME_DESC },
       body: `<section class="ssr"><h1>${SITE}: ${TAGLINE}</h1><p>${esc(HOME_DESC)}</p>${homeGames()}</section>`,
     },
-    // A section game (Riftbound) is indexed at its section; its /games/<slug> address shows the same page.
+    // A section game (Sigilfall) is indexed at its section; its /games/<slug> address shows the same page.
     ...GAMES.flatMap((g) => (g.section ? [{ ...gameSpec(g, siteUrl), path: g.section.path, file: `${g.section.path.slice(1)}.html` }, { ...gameSpec(g, siteUrl), noindex: true }] : [gameSpec(g, siteUrl)])),
     {
       path: '/daily',

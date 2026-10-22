@@ -40,7 +40,7 @@ describe('admin game settings', () => {
     const party = GAMES.filter((g) => g.partyOnly).map((g) => g.slug);
     const sections = GAMES.filter((g) => g.section).map((g) => g.slug);
     expect(party).toContain('crass-act');
-    expect(sections).toContain('riftbound');
+    expect(sections).toContain('sigilfall');
     expect(applySettings(GAMES, EMPTY_CATALOG).map((g) => g.slug)).toEqual(GAMES.filter((g) => !g.partyOnly && !g.section).map((g) => g.slug));
     expect(applySettings(GAMES, EMPTY_CATALOG, true).map((g) => g.slug)).toEqual(expect.arrayContaining([...party, ...sections]));
   });

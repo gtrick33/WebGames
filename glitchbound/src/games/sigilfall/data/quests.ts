@@ -80,7 +80,7 @@ export const QUESTS: QuestDef[] = [
     id: 'close-the-rift',
     name: 'Close the Rift',
     giver: 'maren',
-    text: 'Morgrave tore the Rift open. End him and it closes, for now.',
+    text: 'Morgrave broke the sigils and tore the Rift open. End him and it closes, for now.',
     objective: { kind: 'boss', boss: 'morgrave', label: 'Defeat Morgrave' },
     after: ['the-warden'],
     reward: { xp: 700, gold: 200, tier: 1, text: 'Heroic difficulty is open: stronger enemies, better loot.' },
@@ -114,7 +114,7 @@ export const NPCS: Record<string, NpcDef> = {
     title: 'Village elder',
     sprite: 'elder',
     talk: [
-      { when: { quest: 'first-steps', state: 'active' }, lines: ['There you are. The Rift has opened again, and the Whisperwood has gone mad with it.', 'Before I send you out there, show me you can swing. The training yard is just east of the square.'] },
+      { when: { quest: 'first-steps', state: 'active' }, lines: ['There you are. The sigils that held the Rift shut have fallen, and the Whisperwood has gone mad with it.', 'Before I send you out there, show me you can swing. The training yard is just east of the square.'] },
       { when: { quest: 'first-spell', state: 'active' }, lines: ['Good arm. Now your skill: every hero has a trick of their own. Use it on a dummy.'] },
       { when: { quest: 'first-dodge', state: 'active' }, lines: ['The dummy at the back fires slow bolts. Dodge right through one.', 'While you dodge, nothing can touch you. Remember that when something big swings at you.'] },
       { when: { quest: 'into-the-wood', state: 'active' }, lines: ['The waystone in the square will take you to the Whisperwood. Thin out the creatures on the trails.', 'Come back whenever you need. The waystone works both ways.'] },

@@ -4,13 +4,13 @@ import { CLASS_IDS, CLASSES } from '../data/classes';
 import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { ClassId } from '../data/types';
-import type { RiftEngine } from '../engine';
+import type { SigilEngine } from '../engine';
 import { cleanName } from '../progress/character';
 import { Portrait, SkillIcon } from './common';
 import { SettingsPanel } from './Panels';
 
 /** The title screen: your heroes (three slots) and the way to make a new one. */
-export function TitleScreen({ engine }: { engine: RiftEngine }) {
+export function TitleScreen({ engine }: { engine: SigilEngine }) {
   const heroes = engine.heroes();
   const [settings, setSettings] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
@@ -27,8 +27,8 @@ export function TitleScreen({ engine }: { engine: RiftEngine }) {
       <div className="rb-title-main">
         <div className="rb-logo">
           <span className="rb-logo-kicker">A GlitchBound adventure</span>
-          <h1 className="rb-logo-word">Riftbound</h1>
-          <p className="rb-logo-tag">Close the Rift. Find the gear that changes how you fight.</p>
+          <h1 className="rb-logo-word">Sigilfall</h1>
+          <p className="rb-logo-tag">The sigils have fallen and the Rift is open. Find the gear that changes how you fight.</p>
           {lastHero && (
             <button className="rb-btn is-gold is-big" onClick={() => engine.play(last)} autoFocus>
               Continue as {lastHero.name}
@@ -90,7 +90,7 @@ export function TitleScreen({ engine }: { engine: RiftEngine }) {
 const DIFFICULTY = ['', 'Easy to learn', 'Some practice', 'Takes skill'];
 
 /** Choosing a class and a name. */
-export function CreateScreen({ engine }: { engine: RiftEngine }) {
+export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const [cls, setCls] = useState<ClassId>('mage');
   const [name, setName] = useState(() => cleanName(engine.defaultName));
   const def = CLASSES[cls];

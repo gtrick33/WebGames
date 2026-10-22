@@ -1,17 +1,21 @@
-# Riftbound: design notes
+# Sigilfall: design notes
 
 A single-player, top-down pixel-art action RPG, built for phones first (landscape, two thumbs) and fully playable
 with a keyboard and mouse. Three classes, gear that changes how skills behave, two talent trees per class,
 three regions, three bosses and three difficulty tiers.
 
-**Name.** "Riftbound" is also the name of Riot Games' League of Legends trading card game (2025). Check the
-trademark before promoting the game widely; the name is used only in `games.ts`, the artwork and the UI text.
+**Name.** The game launched as "Riftbound" on 2026-10-22 and was renamed Sigilfall the same day: Riftbound is
+also Riot Games' League of Legends trading card game. In the story, the sigils that held the Rift shut have
+fallen. The old slug stays in `RENAMED_SLUGS`; `/riftbound` and `/games/riftbound/…` redirect
+(`functions/riftbound.ts`, `functions/games/riftbound/`), migration 0013 moves stored data (favorites, bests,
+admin settings, shares, cloud saves), and a device save under the old key is picked up on first load. The CSS
+class prefix `rb-` and the dev-only `window.__rb` handle are left from the first name.
 
 ## Where it lives
 
-Riftbound is not an arcade tile: it has its own tab next to Arcade and Party (`section` in its `GameEntry`), at
-`/riftbound` (`/games/riftbound` opens the same page and is `noindex`). Admins turn it on and off from
-Admin › Games › Riftbound (the game's `hidden` setting): hidden, the tab disappears and the address is Not Found
+Sigilfall is not an arcade tile: it has its own tab next to Arcade and Party (`section` in its `GameEntry`), at
+`/sigilfall` (`/games/sigilfall` opens the same page and is `noindex`). Admins turn it on and off from
+Admin › Games › Sigilfall (the game's `hidden` setting): hidden, the tab disappears and the address is Not Found
 for players, while admins still see both. It reports `start`/`end` to the arcade like every module game.
 
 ## Code map
@@ -97,7 +101,7 @@ by clearing the crypt on the tier below, with optional modifiers for more loot.
 
 ## Saves
 
-`glitchbound.riftbound` holds three hero slots and settings: versioned (`SAVE_VERSION`), validated field by field
+`glitchbound.sigilfall` holds three hero slots and settings: versioned (`SAVE_VERSION`), validated field by field
 on load (unknown items, skills and talents are dropped, numbers clamped, duplicate item ids renamed), with a
 device-only backup copy. A damaged save falls back to the backup and keeps the damaged copy; a save from a newer
 version is never overwritten. The main key follows a signed-in player between devices through the arcade's
@@ -105,11 +109,11 @@ cloud saves (up to 96 KB); the backup stays on the device.
 
 ## Testing
 
-- `tests/riftbound.test.ts`: content checks, map reachability, build rules (Ember Staff changes only Fireball,
+- `tests/sigilfall.test.ts`: content checks, map reachability, build rules (Ember Staff changes only Fireball,
   merges and caps), levels, talents, equip without duplication, loot, saves, smart targeting, boss phases.
-- `tests/riftbound-sim.test.ts`: a bot (`tests/riftbound-bot.ts`) plays every class through the Whisperwood and
+- `tests/sigilfall-sim.test.ts`: a bot (`tests/sigilfall-bot.ts`) plays every class through the Whisperwood and
   the crypt on all three tiers: no stuck spots, no broken numbers, every boss beaten.
-- `tests/riftbound-section.test.tsx`: the tab, the address, and turning the section off.
+- `tests/sigilfall-section.test.tsx`: the tab, the address, and turning the section off.
 
 ## Known limits
 

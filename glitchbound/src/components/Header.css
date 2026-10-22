@@ -284,7 +284,7 @@
     bottom: calc(10px + env(safe-area-inset-bottom));
     z-index: 55;
     display: grid;
-    /* one column per tab: four, or five while a section (Riftbound) is switched on */
+    /* one column per tab: four, or five while a section (Sigilfall) is switched on */
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     padding-right: 60px !important; /* room for the settings button docked inside the bar */

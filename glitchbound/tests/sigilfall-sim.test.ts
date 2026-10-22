@@ -1,14 +1,14 @@
 /**
- * Riftbound play-throughs: a simple bot (tests/riftbound-bot.ts) plays each class through the
+ * Sigilfall play-throughs: a simple bot (tests/sigilfall-bot.ts) plays each class through the
  * forest and the crypt at every difficulty, with gear a player would plausibly have by then. It
  * proves the regions can be finished (no soft-locks, no stuck spots, no broken numbers) and that
  * every boss can be beaten by every class.
  */
 import { describe, expect, it } from 'vitest';
-import { SLOTS, type ClassId } from '../src/games/riftbound/data/types';
-import { TILE } from '../src/games/riftbound/sim/map';
-import type { World } from '../src/games/riftbound/sim/world';
-import { newWorld, play, readyHero } from './riftbound-bot';
+import { SLOTS, type ClassId } from '../src/games/sigilfall/data/types';
+import { TILE } from '../src/games/sigilfall/sim/map';
+import type { World } from '../src/games/sigilfall/sim/world';
+import { newWorld, play, readyHero } from './sigilfall-bot';
 
 /** The middle of the first room not fought yet (the bot's route through a region). */
 function nextRoom(w: World): { x: number; y: number } | null {
@@ -28,7 +28,7 @@ const modest = (cls: ClassId, level: number) => {
 
 const CLASSES: ClassId[] = ['mage', 'warrior', 'ranger'];
 
-describe('riftbound play-throughs', () => {
+describe('sigilfall play-throughs', () => {
   for (const cls of CLASSES) {
     it(`${cls}: beats Grimtusk in the Whisperwood at level 3 with modest gear`, () => {
       const w = newWorld('whisperwood', modest(cls, 3));

@@ -7,8 +7,11 @@ export const SORTS: Record<SortId, string> = { newest: 'Newest', az: 'A to Z' };
 /** A game counts as NEW for this many days after release. */
 export const NEW_FOR_DAYS = 30;
 
-/** Old slugs of renamed games (Unhinged is Crass Act since 2026-10-19): old links, saves and favorites still work. */
-export const RENAMED_SLUGS: Readonly<Record<string, string>> = { unhinged: 'crass-act' };
+/**
+ * Old slugs of renamed games (Unhinged is Crass Act since 2026-10-19, Riftbound is Sigilfall since 2026-10-22):
+ * old links, saves and favorites still work.
+ */
+export const RENAMED_SLUGS: Readonly<Record<string, string>> = { unhinged: 'crass-act', riftbound: 'sigilfall' };
 export const currentSlug = (slug: string): string => RENAMED_SLUGS[slug] ?? slug;
 
 export function getGame(slug: string, games: GameEntry[] = GAMES): GameEntry | undefined {
@@ -21,8 +24,12 @@ export const inArcade = (g: GameEntry): boolean => !g.partyOnly && !g.section;
 /** Games with a section of their own (a tab next to Arcade and Party). */
 export const SECTION_GAMES: readonly GameEntry[] = GAMES.filter((g) => g.section);
 
-/** The game whose section lives at this path ("/riftbound"), if any. */
-export const sectionGame = (path: string): GameEntry | undefined => SECTION_GAMES.find((g) => g.section?.path === path);
+/** The game whose section lives at this path ("/sigilfall", or a renamed game's old one: "/riftbound"), if any. */
+export function sectionGame(path: string): GameEntry | undefined {
+  const g = SECTION_GAMES.find((x) => x.section?.path === path);
+  const old = g ? undefined : /^\/([a-z0-9-]+)$/.exec(path)?.[1];
+  return g ?? (old && RENAMED_SLUGS[old] ? SECTION_GAMES.find((x) => x.slug === RENAMED_SLUGS[old]) : undefined);
+}
 
 /** Where a game's page lives: its section, or /games/<slug>. */
 export const gamePath = (g: GameEntry): string => g.section?.path ?? `/games/${g.slug}`;

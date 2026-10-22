@@ -7,7 +7,7 @@ import { SKILLS } from '../data/skills';
 import { ROW_COST, TALENTS } from '../data/talents';
 import type { Item, RegionId, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
-import type { PanelId, RiftEngine } from '../engine';
+import type { PanelId, SigilEngine } from '../engine';
 import { BAG_SIZE, cantEquip, cantLearn, freePoints, learnedSkills, pointsInTree, questProgress, questState, respecCost, talentPoints } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
@@ -24,7 +24,7 @@ const TABS: { id: PanelId; label: string }[] = [
   { id: 'map', label: 'Map' },
 ];
 
-export function Panels({ engine }: { engine: RiftEngine }) {
+export function Panels({ engine }: { engine: SigilEngine }) {
   const p = engine.ui.panel;
   if (p === 'settings') return <SettingsPanel engine={engine} onClose={() => engine.closePanel()} />;
   const h = engine.hero!;
@@ -55,7 +55,7 @@ export function Panels({ engine }: { engine: RiftEngine }) {
 const SLOT_LABEL: Record<SlotId, string> = { weapon: 'Weapon', offhand: 'Off-hand', head: 'Head', chest: 'Chest', hands: 'Hands', feet: 'Feet', amulet: 'Amulet', ring: 'Ring', relic: 'Relic' };
 const SHOWN_STATS: StatKey[] = ['power', 'crit', 'critDmg', 'haste', 'armor', 'speed', 'regen', 'ultCharge', 'fire', 'frost', 'lightning', 'poison', 'physical', 'arcane', 'potion'];
 
-function HeroPanel({ engine }: { engine: RiftEngine }) {
+function HeroPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const w = engine.world!;
   const [sel, setSel] = useState<{ where: 'bag' | 'worn'; uid: string } | null>(null);
@@ -178,7 +178,7 @@ function isUpgrade(cur: Item | undefined, it: Item): boolean {
   return itemScore(it) > itemScore(cur) + 5;
 }
 
-function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone }: { engine: RiftEngine; item: Item; worn: boolean; confirm: boolean; onSalvage: () => void; onDone: () => void }) {
+function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone }: { engine: SigilEngine; item: Item; worn: boolean; confirm: boolean; onSalvage: () => void; onDone: () => void }) {
   const h = engine.hero!;
   const slot = itemSlot(item);
   const current = h.equip[slot];
@@ -293,7 +293,7 @@ function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone }: { engine
 /* -------------------------------------------------------------- skills */
 
 /** One line of numbers for a skill as it is now (after level, gear and talents). */
-function specLine(engine: RiftEngine, spec: SkillSpec): string {
+function specLine(engine: SigilEngine, spec: SkillSpec): string {
   const w = engine.world!;
   const st = w.build.stats;
   const parts: string[] = [];
@@ -308,7 +308,7 @@ function specLine(engine: RiftEngine, spec: SkillSpec): string {
   return parts.join(' · ');
 }
 
-function SkillCard({ engine, id, slotLabel, active, onClick }: { engine: RiftEngine; id: string; slotLabel?: string; active?: boolean; onClick?: () => void }) {
+function SkillCard({ engine, id, slotLabel, active, onClick }: { engine: SigilEngine; id: string; slotLabel?: string; active?: boolean; onClick?: () => void }) {
   const w = engine.world!;
   const def = SKILLS[id]!;
   const res = w.build.skills[id];
@@ -334,7 +334,7 @@ function SkillCard({ engine, id, slotLabel, active, onClick }: { engine: RiftEng
   );
 }
 
-function SkillsPanel({ engine }: { engine: RiftEngine }) {
+function SkillsPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const cls = CLASSES[h.cls];
   const [slot, setSlot] = useState<0 | 1 | 2>(0);
@@ -406,7 +406,7 @@ const TALENT_ICON: Record<string, string> = {
   fang: 'piercing-arrow',
 };
 
-function TalentsPanel({ engine }: { engine: RiftEngine }) {
+function TalentsPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const cls = CLASSES[h.cls];
   const [sel, setSel] = useState<TalentNode | null>(null);
@@ -499,7 +499,7 @@ function scaleMod(m: TalentNode['mods'][number], rank: number): TalentNode['mods
 
 /* -------------------------------------------------------------- quests */
 
-function QuestsPanel({ engine }: { engine: RiftEngine }) {
+function QuestsPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const active = QUESTS.filter((q) => questState(h, q.id) === 'active');
   const done = QUESTS.filter((q) => questState(h, q.id) === 'done');
@@ -543,7 +543,7 @@ function QuestsPanel({ engine }: { engine: RiftEngine }) {
 
 /* ----------------------------------------------------------------- map */
 
-function MapPanel({ engine }: { engine: RiftEngine }) {
+function MapPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const w = engine.world!;
   const atStone = !!w.interactable && w.interactable.kind === 'waystone';
@@ -609,7 +609,7 @@ function MapPanel({ engine }: { engine: RiftEngine }) {
 }
 
 /** A small overview of the current region with the hero on it. */
-function MiniMap({ engine }: { engine: RiftEngine }) {
+function MiniMap({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const w = engine.world!;
   useEffect(() => {
@@ -662,7 +662,7 @@ function MiniMap({ engine }: { engine: RiftEngine }) {
 
 /* ------------------------------------------------------------ settings */
 
-export function SettingsPanel({ engine, onClose }: { engine: RiftEngine; onClose: () => void }) {
+export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClose: () => void }) {
   const s = engine.settings;
   const set = engine.setSettings.bind(engine);
   const slider = (label: string, key: 'master' | 'music' | 'sfx' | 'deadzone' | 'sensitivity' | 'joystick', min: number, max: number, step: number, show: (v: number) => string) => (

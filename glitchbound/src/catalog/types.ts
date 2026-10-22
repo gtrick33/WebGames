@@ -146,13 +146,13 @@ export interface GameEntry {
    */
   partyOnly?: boolean;
   /**
-   * A game big enough to be a section of its own (Riftbound): a tab next to Arcade and Party at `path`,
+   * A game big enough to be a section of its own (Sigilfall): a tab next to Arcade and Party at `path`,
    * where its page lives (/games/<slug> shows the same page). Like partyOnly it is left out of the
    * arcade's lists, home page and rotations; search still finds it. Hiding the game in the admin turns
    * the whole section off: the tab disappears and its page is closed to players.
    */
   section?: {
-    /** e.g. "/riftbound": one lowercase word, never the path of another page. */
+    /** e.g. "/sigilfall": one lowercase word, never the path of another page. */
     path: string;
     /** The tab's label. */
     label: string;

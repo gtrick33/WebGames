@@ -1,5 +1,5 @@
 /**
- * Riftbound's sound: synthesized effects (no audio files) and a small procedural score per region,
+ * Sigilfall's sound: synthesized effects (no audio files) and a small procedural score per region,
  * with a boss theme. The AudioContext is created on the first tap or key (browsers block sound before
  * that), effects are rate-limited so a big fight never turns into noise, and everything follows the
  * master / music / effects volumes and the mute switch.

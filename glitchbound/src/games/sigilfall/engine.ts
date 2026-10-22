@@ -60,7 +60,7 @@ export interface UiState {
 
 const STEP = 1 / 60;
 
-export class RiftEngine {
+export class SigilEngine {
   save: SaveFile;
   loadStatus: LoadStatus;
   /** False when saving would overwrite something we couldn't read (or storage is blocked). */
@@ -76,7 +76,7 @@ export class RiftEngine {
   version = 0;
   private listeners = new Set<() => void>();
   /** Per-frame updaters (the HUD writes straight into the DOM). */
-  readonly frameHooks = new Set<(w: World, e: RiftEngine) => void>();
+  readonly frameHooks = new Set<(w: World, e: SigilEngine) => void>();
   private host: GameHost;
   private raf = 0;
   private last = 0;
@@ -120,7 +120,7 @@ export class RiftEngine {
           : loaded.status === 'reset'
             ? 'Your save could not be read and was set aside. Starting fresh.'
             : loaded.status === 'newer'
-              ? 'This save is from a newer version of Riftbound. Reload the page to continue it. Nothing will be saved until then.'
+              ? 'This save is from a newer version of Sigilfall. Reload the page to continue it. Nothing will be saved until then.'
               : loaded.status === 'blocked'
                 ? 'Your browser is blocking storage, so progress can’t be saved this time.'
                 : '',

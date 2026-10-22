@@ -13,17 +13,21 @@ import { itemClass, itemSlot, newUid } from './items';
 /**
  * The save: up to three heroes and the settings, versioned and validated field by field on load.
  *
- * - `glitchbound.riftbound` is the save itself. For signed-in players the arcade copies it to their
+ * - `glitchbound.sigilfall` is the save itself. For signed-in players the arcade copies it to their
  *   account and back (platform/cloudSave.ts), so it follows them between devices.
- * - `glitchbound.riftbound.bak` is the last good copy on this device only. A save that fails to parse
+ * - `glitchbound.sigilfall.bak` is the last good copy on this device only. A save that fails to parse
  *   or validate is never written over: it is kept in `.corrupt` and the backup is used instead.
  * - A save from a newer version of the game (another device already updated) is left alone: the game
  *   runs without saving and asks for a reload, rather than overwrite progress it can't read.
+ * - The game was called Riftbound on its first day: a save under the old keys is picked up when there is
+ *   none under the new ones, and the old keys go once the save is written under the new name.
  */
 
-export const SAVE_KEY = 'glitchbound.riftbound';
-const BACKUP_KEY = 'glitchbound.riftbound.bak';
-const CORRUPT_KEY = 'glitchbound.riftbound.corrupt';
+export const SAVE_KEY = 'glitchbound.sigilfall';
+const BACKUP_KEY = 'glitchbound.sigilfall.bak';
+const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
+const OLD_SAVE_KEY = 'glitchbound.riftbound';
+const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
 export const SAVE_VERSION = 1;
 export const HERO_SLOTS = 3;
 
@@ -226,7 +230,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   return c;
 }
 
-/** Brings an older save up to date. Returns null for something that is not a Riftbound save. */
+/** Brings an older save up to date. Returns null for something that is not a Sigilfall save. */
 export function migrate(raw: unknown): SaveFile | null {
   const o = obj(raw);
   if (!o || typeof o.v !== 'number') return null;
@@ -250,7 +254,7 @@ function read(key: string): string | null {
 
 export function storageWorks(): boolean {
   try {
-    const k = 'glitchbound.riftbound.probe';
+    const k = 'glitchbound.sigilfall.probe';
     localStorage.setItem(k, '1');
     localStorage.removeItem(k);
     return true;
@@ -273,11 +277,11 @@ function parse(text: string | null): SaveFile | null | 'newer' {
 
 export function loadSave(): { save: SaveFile; status: LoadStatus } {
   if (!storageWorks()) return { save: emptySave(), status: 'blocked' };
-  const main = read(SAVE_KEY);
+  const main = read(SAVE_KEY) ?? read(OLD_SAVE_KEY);
   const parsed = parse(main);
   if (parsed === 'newer') return { save: emptySave(), status: 'newer' };
   if (parsed) return { save: parsed, status: 'ok' };
-  const backup = parse(read(BACKUP_KEY));
+  const backup = parse(read(BACKUP_KEY) ?? read(OLD_BACKUP_KEY));
   if (main) {
     try {
       localStorage.setItem(CORRUPT_KEY, main);
@@ -298,6 +302,9 @@ export function writeSave(save: SaveFile): boolean {
     if (!migrate(JSON.parse(text))) return false;
     localStorage.setItem(SAVE_KEY, text);
     localStorage.setItem(BACKUP_KEY, text);
+    // saved under the new name: the old one's keys are no longer needed
+    localStorage.removeItem(OLD_SAVE_KEY);
+    localStorage.removeItem(OLD_BACKUP_KEY);
     return true;
   } catch {
     return false;

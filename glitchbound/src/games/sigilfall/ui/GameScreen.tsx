@@ -4,7 +4,7 @@ import { xpToNext } from '../data/classes';
 import { NPCS } from '../data/quests';
 import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
-import type { RiftEngine } from '../engine';
+import type { SigilEngine } from '../engine';
 import { freePoints, questProgress, trackedQuest } from '../progress/character';
 import { modLines } from '../progress/describe';
 import { itemMods, itemName, usableBy } from '../progress/items';
@@ -17,7 +17,7 @@ import { TouchControls } from './Touch';
 import { uiIcon } from './uiIcons';
 
 /** Registers a per-frame DOM update (no React render per frame). */
-export function useFrame(engine: RiftEngine, fn: (w: World) => void): void {
+export function useFrame(engine: SigilEngine, fn: (w: World) => void): void {
   const ref = useRef(fn);
   useEffect(() => {
     ref.current = fn;
@@ -31,7 +31,7 @@ export function useFrame(engine: RiftEngine, fn: (w: World) => void): void {
   }, [engine]);
 }
 
-export function GameScreen({ engine }: { engine: RiftEngine }) {
+export function GameScreen({ engine }: { engine: SigilEngine }) {
   const ui = engine.ui;
   const w = engine.world;
   const h = engine.hero;
@@ -68,7 +68,7 @@ export function GameScreen({ engine }: { engine: RiftEngine }) {
 
 /* ------------------------------------------------------------------ HUD */
 
-function Hud({ engine }: { engine: RiftEngine }) {
+function Hud({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const w = engine.world!;
   const hp = useRef<HTMLElement>(null);
@@ -132,7 +132,7 @@ function Hud({ engine }: { engine: RiftEngine }) {
   );
 }
 
-function HudButton({ icon, label, badge, onClick, kbd, engine }: { icon: string; label: string; badge?: number; onClick: () => void; kbd: string; engine: RiftEngine }) {
+function HudButton({ icon, label, badge, onClick, kbd, engine }: { icon: string; label: string; badge?: number; onClick: () => void; kbd: string; engine: SigilEngine }) {
   return (
     <button className="rb-hudbtn" onClick={onClick} aria-label={badge ? `${label} (${badge} new)` : label} title={engine.touchMode ? label : `${label} (${kbd})`}>
       <img src={uiIcon(icon, 3)} alt="" />
@@ -141,7 +141,7 @@ function HudButton({ icon, label, badge, onClick, kbd, engine }: { icon: string;
   );
 }
 
-function BossBar({ engine }: { engine: RiftEngine }) {
+function BossBar({ engine }: { engine: SigilEngine }) {
   const bar = useRef<HTMLElement>(null);
   const lag = useRef<HTMLElement>(null);
   const shown = useRef(1);
@@ -165,7 +165,7 @@ function BossBar({ engine }: { engine: RiftEngine }) {
   );
 }
 
-function Tracker({ engine }: { engine: RiftEngine }) {
+function Tracker({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const q = trackedQuest(h);
   if (!q || engine.ui.boss) return null;
@@ -181,7 +181,7 @@ function Tracker({ engine }: { engine: RiftEngine }) {
   );
 }
 
-function Toasts({ engine }: { engine: RiftEngine }) {
+function Toasts({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   return (
     <div className="rb-toasts" aria-live="polite">
@@ -228,7 +228,7 @@ function Toasts({ engine }: { engine: RiftEngine }) {
   );
 }
 
-function LevelUp({ engine }: { engine: RiftEngine }) {
+function LevelUp({ engine }: { engine: SigilEngine }) {
   const l = engine.ui.levelUp!;
   return (
     <div className="rb-levelup" key={l.id} aria-live="polite">
@@ -240,7 +240,7 @@ function LevelUp({ engine }: { engine: RiftEngine }) {
 
 /* ------------------------------------------------------------- overlays */
 
-function Dialogue({ engine }: { engine: RiftEngine }) {
+function Dialogue({ engine }: { engine: SigilEngine }) {
   const d = engine.ui.dialogue!;
   const npc = NPCS[d.npc]!;
   const last = d.i + 1 >= d.lines.length;
@@ -275,7 +275,7 @@ function Dialogue({ engine }: { engine: RiftEngine }) {
   );
 }
 
-function TravelConfirm({ engine }: { engine: RiftEngine }) {
+function TravelConfirm({ engine }: { engine: SigilEngine }) {
   const t = engine.ui.travel!;
   const region = REGIONS[t.to];
   return (
@@ -309,7 +309,7 @@ function TravelConfirm({ engine }: { engine: RiftEngine }) {
   );
 }
 
-function PauseMenu({ engine }: { engine: RiftEngine }) {
+function PauseMenu({ engine }: { engine: SigilEngine }) {
   const [leaving, setLeaving] = useState(false);
   const w = engine.world!;
   return (
@@ -341,7 +341,7 @@ function PauseMenu({ engine }: { engine: RiftEngine }) {
   );
 }
 
-function DeathScreen({ engine }: { engine: RiftEngine }) {
+function DeathScreen({ engine }: { engine: SigilEngine }) {
   const w = engine.world!;
   return (
     <div className="rb-modal is-dark">
@@ -361,7 +361,7 @@ function DeathScreen({ engine }: { engine: RiftEngine }) {
   );
 }
 
-function RewardScreen({ engine }: { engine: RiftEngine }) {
+function RewardScreen({ engine }: { engine: SigilEngine }) {
   const r = engine.ui.reward!;
   const mins = Math.floor(r.seconds / 60);
   const secs = Math.floor(r.seconds % 60);
@@ -410,7 +410,7 @@ function RewardScreen({ engine }: { engine: RiftEngine }) {
 }
 
 /** Phones held upright: suggest turning sideways (never required). */
-function RotateHint({ engine }: { engine: RiftEngine }) {
+function RotateHint({ engine }: { engine: SigilEngine }) {
   const [portrait, setPortrait] = useState(() => typeof matchMedia === 'function' && matchMedia('(orientation: portrait)').matches);
   useEffect(() => {
     if (typeof matchMedia !== 'function') return;
@@ -425,7 +425,7 @@ function RotateHint({ engine }: { engine: RiftEngine }) {
       <div className="rb-card rb-rotate" role="dialog" aria-modal="true" aria-label="Turn your phone">
         <span className="rb-rotate-phone" aria-hidden="true" />
         <h2>Turn your phone sideways</h2>
-        <p className="rb-dim">Riftbound plays best in landscape: more room to see, a thumb on each side.</p>
+        <p className="rb-dim">Sigilfall plays best in landscape: more room to see, a thumb on each side.</p>
         <button className="rb-btn" onClick={() => engine.setSettings({ rotateSeen: true })}>
           Play upright anyway
         </button>
