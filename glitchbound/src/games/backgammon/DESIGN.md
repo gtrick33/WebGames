@@ -19,6 +19,17 @@ home and in cafés).
 - Winning: the first to bear off all fifteen. 1 point; a gammon (the loser has not borne any off) 2; a backgammon
   (and still has a checker on the bar or in the winner's home board) 3. Matches to 3, 5 or 7 points.
 
+## The board
+
+- Always the right way round, laid out for landscape: on a phone on its side (or a wide window) the board takes the
+  whole height and the players, the score and the buttons stand in a column beside it; on an upright phone it fits
+  the width, with a note that turning the phone gives a bigger board.
+- Moves are the player's choice: a tap picks a checker up (nothing moves by itself) and every place it can reach
+  lights up with its count, each number on its own and both together (a double's two, three and four steps), from
+  `routesFrom` in logic.ts; a tap on one goes there, a move of two numbers hopping through the point between. Only
+  when a single checker can move (one on the bar, say) is it picked up for the player.
+- The dice shake for a moment, faces flicking, before they land with a little bounce; nothing moves until then.
+
 ## Modes
 
 - **Today's game**: one game against the Hard player with the same dice for everyone (the rolls come from the date).

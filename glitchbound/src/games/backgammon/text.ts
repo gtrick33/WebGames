@@ -21,6 +21,8 @@ export interface Words {
   noMoves: string;
   yourTurn: string;
   theirTurn: (name: string) => string;
+  /** On an upright phone: the board is laid out for landscape. */
+  turnSideways: string;
   pips: string;
   off: string;
   bar: string;
@@ -102,6 +104,7 @@ const en: Words = {
   done: 'Done',
   noMoves: 'No legal move with that roll',
   yourTurn: 'Your turn',
+  turnSideways: 'Turn your phone sideways for a bigger board',
   theirTurn: (name) => `${name} is playing…`,
   pips: 'pips',
   off: 'Off',
@@ -191,6 +194,7 @@ const bg: Words = {
   done: 'Готово',
   noMoves: 'Няма възможен ход с тези зарове',
   yourTurn: 'Твой ред',
+  turnSideways: 'Завърти телефона хоризонтално за по-голяма дъска',
   theirTurn: (name) => `${name} играе…`,
   pips: 'точки',
   off: 'Изнесени',

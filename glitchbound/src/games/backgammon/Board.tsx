@@ -1,13 +1,15 @@
 /**
  * The backgammon board, shared by the single-player game and the live room: an SVG board seen from
- * `me` (your home always bottom right), checkers that keep their identity from one position to the
- * next (so moves and hits glide), dice that tumble, tap-to-move with the legal targets lit, the bar
- * and the bear-off tray, pip counts and the match score. It shows a game and reports your roll and
- * steps; it never changes the game itself.
+ * `me` (your home always bottom right), always the right way round (landscape first: on an upright
+ * phone it fits the width), checkers that keep their identity from one position to the next (so
+ * moves and hits glide), dice that shake before they land, and moves you choose: tap a checker and
+ * every place it can reach lights up with its count (each number, and both together), tap one to go
+ * there. The bar and the bear-off tray, pip counts and the match score. It shows a game and reports
+ * your roll and steps; it never changes the game itself.
  */
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Level } from './ai';
-import { BAR, mine, nextSteps, OFF, pips, posKey, startPos, turnDone, type Game, type Pos, type Side, type Step } from './logic';
+import { BAR, mine, nextSteps, OFF, pips, posKey, routesFrom, startPos, turnDone, type Game, type Pos, type Route, type Side, type Step } from './logic';
 import type { Sfx } from './sound';
 import type { Words } from './text';
 
@@ -23,6 +25,10 @@ const TRI = 290;
 const R = 29;
 const TRAY_X = 890;
 const TRAY_W = 90;
+/** The dice shake this long before they land (no moves until then). */
+export const ROLL_MS = 650;
+/** A move of two or more steps hops through the points between, this far apart. */
+export const HOP_MS = 260;
 
 /** Where display point d (1-24, you at the bottom) is: its column centre and whether it hangs from the top. */
 function column(d: number): { x: number; top: boolean } {
@@ -99,7 +105,7 @@ function relayout(prev: Layout, p: Pos): Layout {
   return next;
 }
 
-function Die({ n, x, y, used, tumble }: { n: number; x: number; y: number; used: boolean; tumble: boolean }) {
+function Die({ n, x, y, used }: { n: number; x: number; y: number; used: boolean }) {
   const dots: Record<number, [number, number][]> = {
     1: [[0, 0]],
     2: [[-1, -1], [1, 1]],
@@ -109,11 +115,28 @@ function Die({ n, x, y, used, tumble }: { n: number; x: number; y: number; used:
     6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]],
   };
   return (
-    <g className={`tb-die${used ? ' is-used' : ''}${tumble ? ' is-tumble' : ''}`} style={{ transform: `translate(${x}px, ${y}px)` }}>
-      <rect x="-27" y="-27" width="54" height="54" rx="12" className="tb-die-face" />
-      {dots[n]!.map(([dx, dy], i) => (
-        <circle key={i} cx={dx * 13} cy={dy * 13} r="5.6" className="tb-pip" />
-      ))}
+    <g className={`tb-die${used ? ' is-used' : ''}`} style={{ transform: `translate(${x}px, ${y}px)` }}>
+      <g className="tb-die-in">
+        <rect x="-27" y="-27" width="54" height="54" rx="12" className="tb-die-face" />
+        {dots[n]!.map(([dx, dy], i) => (
+          <circle key={i} cx={dx * 13} cy={dy * 13} r="5.6" className="tb-pip" />
+        ))}
+      </g>
+    </g>
+  );
+}
+
+/** How far a route goes, as the numbers it uses add up (what the player reads off the dice). */
+const count = (r: Route): number => r.steps.reduce((a, st) => a + st.die, 0);
+
+/** A place the picked-up checker can go: a ring where it would land, with the count to get there. */
+function Landing({ x, y, n }: { x: number; y: number; n: number }) {
+  return (
+    <g className="tb-land" style={{ transform: `translate(${x}px, ${y}px)` }}>
+      <circle r={R * 0.92} className="tb-land-ring" />
+      <text y="9" className="tb-land-n">
+        {n}
+      </text>
     </g>
   );
 }
@@ -140,35 +163,61 @@ export interface BoardProps {
 export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo, onDone, sfx, score, target, tools, overlay, note }: BoardProps) {
   const them = (1 - me) as Side;
   const p = game.pos;
-  // a tall box (a phone held upright) turns the board a quarter turn, so it fills the height
-  const stageRef = useRef<HTMLDivElement>(null);
-  const [vertical, setVertical] = useState(false);
-  useEffect(() => {
-    const el = stageRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setVertical(el.clientHeight > el.clientWidth * 1.15));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  /** Keeps text upright on the turned board. */
-  const upright = (x: number, y: number): string | undefined => (vertical ? `rotate(-90 ${x} ${y})` : undefined);
   const key = posKey(p);
   const [lay, setLay] = useState(() => ({ key, map: relayout(freshLayout(startPos()), p) }));
   if (lay.key !== key) setLay({ key, map: relayout(lay.map, p) });
   const layout = lay.key === key ? lay.map : relayout(lay.map, p);
 
-  const legal = canAct && game.phase === 'move' ? nextSteps(game) : [];
+  // ---- the dice: a short shake as they roll, faces flicking, before they land (no moves until then)
+  const [settled, setSettled] = useState(game.rolls);
+  const rolling = !!game.roll && game.rolls !== settled;
+  useEffect(() => {
+    if (!rolling) return;
+    const t = window.setTimeout(() => setSettled(game.rolls), ROLL_MS);
+    return () => window.clearTimeout(t);
+  }, [rolling, game.rolls]);
+  const [faces, setFaces] = useState<[number, number]>([1, 6]);
+  useEffect(() => {
+    if (!rolling) return;
+    const face = (): number => 1 + Math.floor(Math.random() * 6);
+    const id = window.setInterval(() => setFaces([face(), face()]), 70);
+    return () => window.clearInterval(id);
+  }, [rolling]);
+
+  // ---- moves: tap a checker, see where it can go (each number and both together), tap one
+  const [hopping, setHopping] = useState(false);
+  const legal = canAct && game.phase === 'move' && !rolling && !hopping ? nextSteps(game) : [];
   const sources = [...new Set(legal.map((s) => s.from))];
   const [sel, setSel] = useState<number | null>(null);
-  // the bar is the only way in: select it for the player
+  // only one checker can move (one on the bar, say): it is picked up for the player; where it goes is theirs
   const selected = sel !== null && sources.includes(sel) ? sel : sources.length === 1 ? sources[0]! : null;
-  const targets = selected !== null ? legal.filter((s) => s.from === selected) : [];
-  const myRoll = canAct && (game.phase === 'roll' || game.phase === 'opening');
-  const done = canAct && turnDone(game);
+  const routes = useMemo(() => (selected !== null ? routesFrom(game, selected) : []), [game, selected]);
+  const routeTo = (to: number): Route | undefined => routes.find((r) => r.to === to);
+  const myRoll = canAct && !rolling && (game.phase === 'roll' || game.phase === 'opening');
+  const done = canAct && !rolling && !hopping && turnDone(game);
+  const onStepRef = useRef(onStep);
+  useEffect(() => {
+    onStepRef.current = onStep;
+  });
+  const hops = useRef<number[]>([]);
+  useEffect(() => () => hops.current.forEach((t) => window.clearTimeout(t)), []);
+  /** Plays a route: its first step now, the rest one hop at a time (the checker passes the points between). */
+  const go = (r: Route): void => {
+    setSel(null);
+    const [first, ...rest] = r.steps;
+    onStep?.(first!);
+    if (!rest.length) return;
+    setHopping(true);
+    hops.current = rest.map((st, k) =>
+      window.setTimeout(() => {
+        onStepRef.current?.(st);
+        if (k === rest.length - 1) setHopping(false);
+      }, HOP_MS * (k + 1)),
+    );
+  };
 
-  // ---- dice tumble and sounds, from what changed
+  // ---- sounds, from what changed
   const prevRef = useRef<Game | null>(null);
-  const [tumble, setTumble] = useState(0);
   useEffect(() => {
     const prev = prevRef.current;
     prevRef.current = game;
@@ -176,9 +225,7 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
     const s = sfx();
     if (game.rolls !== prev.rolls && game.roll) {
       s.rattle();
-      window.setTimeout(() => s.dice(), 380);
-      const t = window.setTimeout(() => setTumble((n) => n + 1), 0);
-      void t;
+      window.setTimeout(() => s.dice(), ROLL_MS - 60);
     }
     // steps made since (this turn's, or a whole turn that just ended)
     const fresh = game.steps.length > prev.steps.length && game.turn === prev.turn ? game.steps.slice(prev.steps.length) : game.lastTurn && game.lastTurn !== prev.lastTurn && prev.steps.length === 0 ? game.lastTurn.steps : [];
@@ -192,52 +239,38 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
     if (game.phase === 'over' && prev.phase !== 'over' && game.winner !== null) window.setTimeout(() => (game.winner === me ? s.win(game.points) : s.lose()), 300);
     if (game.turn === me && prev.turn !== me && game.phase === 'roll') s.turn();
   }, [game, me, sfx]);
-  const [tumbleSeen, setTumbleSeen] = useState(0);
-  const tumbling = tumble !== tumbleSeen;
-  useEffect(() => {
-    if (!tumbling) return;
-    const t = window.setTimeout(() => setTumbleSeen(tumble), 650);
-    return () => window.clearTimeout(t);
-  }, [tumbling, tumble]);
-
   const tapSource = (from: number): void => {
-    if (!canAct) return;
-    const opts = legal.filter((s) => s.from === from);
-    if (!opts.length) {
+    if (!canAct || rolling || hopping) return;
+    if (!sources.includes(from)) {
       if (selected !== null) tapTarget(from);
       else sfx().nope();
       return;
     }
-    const dests = [...new Set(opts.map((s) => s.to))];
-    // one place to go: go there
-    if (dests.length === 1) {
-      onStep?.(opts.sort((a, b) => b.die - a.die)[0]!);
-      setSel(null);
-      return;
-    }
-    setSel(from === selected ? null : from);
+    // a second tap puts it down again (unless it is the only checker that can move)
+    setSel(from === selected && sources.length > 1 ? null : from);
     sfx().click();
   };
   const tapTarget = (to: number): void => {
-    const st = targets.filter((s) => s.to === to).sort((a, b) => b.die - a.die)[0];
-    if (st) {
-      onStep?.(st);
-      setSel(null);
-    } else if (sources.includes(to)) tapSource(to);
+    const r = routeTo(to);
+    if (r) go(r);
+    else if (sources.includes(to)) tapSource(to);
     else sfx().nope();
   };
   const tapPoint = (i: number): void => {
-    if (selected !== null && targets.some((s) => s.to === i)) tapTarget(i);
+    if (selected !== null && routeTo(i)) tapTarget(i);
     else if (sources.includes(i)) tapSource(i);
     else if (selected !== null) setSel(null);
   };
 
   // ---- drawing
   const tris: ReactNode[] = [];
+  // the landing rings go over the checkers (a stack would hide them)
+  const landings: ReactNode[] = [];
   for (let d = 1; d <= 24; d++) {
     const c = column(d);
     const i = me === 0 ? d : 25 - d;
-    const lit = targets.some((s) => s.to === i);
+    const route = routeTo(i);
+    const lit = !!route;
     const src = sources.includes(i);
     const base = c.top ? Y_TOP : Y_BOT;
     const tip = c.top ? Y_TOP + TRI : Y_BOT - TRI;
@@ -259,12 +292,12 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
       >
         <rect x={c.x - PW / 2} y={c.top ? Y_TOP : Y_BOT - TRI - 20} width={PW} height={TRI + 20} className="tb-hit" />
         <path d={`M${c.x - PW / 2 + 3} ${base} L${c.x} ${tip} L${c.x + PW / 2 - 3} ${base} Z`} className="tb-tri" />
-        {lit && <circle cx={c.x} cy={c.top ? Y_TOP + R + mine(p, game.turn, i) * 2 * R : Y_BOT - R - mine(p, game.turn, i) * 2 * R} r={R * 0.55} className="tb-land" />}
-        <text x={c.x} y={c.top ? Y_TOP - 8 : Y_BOT + 22} className="tb-num" transform={upright(c.x, c.top ? Y_TOP - 13 : Y_BOT + 17)}>
+        <text x={c.x} y={c.top ? Y_TOP - 8 : Y_BOT + 22} className="tb-num">
           {d}
         </text>
       </g>,
     );
+    if (route) landings.push(<Landing key={d} x={c.x} y={c.top ? Y_TOP + R + Math.min(4, mine(p, game.turn, i)) * 2 * R : Y_BOT - R - Math.min(4, mine(p, game.turn, i)) * 2 * R} n={count(route)} />);
   }
   const checkers: ReactNode[] = [];
   for (const [loc, ids] of Object.entries(layout)) {
@@ -291,7 +324,8 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
       );
     });
   }
-  const offTarget = targets.some((s) => s.to === OFF[game.turn]);
+  const offRoute = routeTo(OFF[game.turn]);
+  const offTarget = !!offRoute;
   const roll = game.roll;
   const diceSide = game.turn === me ? 1 : 0;
   const diceX = diceSide ? BAR_X + BAR_W + (X1 - BAR_X - BAR_W) / 2 : X0 + (BAR_X - X0) / 2;
@@ -337,8 +371,11 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
         <div className="tb-tools">{tools}</div>
       </header>
 
-      <div className="tb-stage" ref={stageRef}>
-        <svg className="tb-board" viewBox={vertical ? '0 0 760 1000' : '0 0 1000 760'} role="img" aria-label={w.title}>
+      <div className="tb-stage">
+        <p className="tb-rotate mono" aria-hidden="true">
+          ↻ {w.turnSideways}
+        </p>
+        <svg className="tb-board" viewBox="0 0 1000 760" role="img" aria-label={w.title}>
           <defs>
             <linearGradient id="tb-wood" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0" stopColor="#b5733a" />
@@ -349,29 +386,29 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onUndo
               <stop offset="1" stopColor="#123f45" />
             </radialGradient>
           </defs>
-          <g transform={vertical ? 'translate(760 0) rotate(90)' : undefined}>
           <rect x="4" y="4" width="992" height="752" rx="28" className="tb-frame" />
           <rect x={X0} y={Y_TOP} width={BAR_X - X0} height={Y_BOT - Y_TOP} rx="8" className="tb-felt" />
           <rect x={BAR_X + BAR_W} y={Y_TOP} width={X1 - BAR_X - BAR_W} height={Y_BOT - Y_TOP} rx="8" className="tb-felt" />
           <rect x={BAR_X} y={Y_TOP - 12} width={BAR_W} height={Y_BOT - Y_TOP + 24} rx="10" className={`tb-barstrip${selected === BAR[game.turn] ? ' is-sel' : ''}`} onClick={() => sources.includes(BAR[game.turn]) && tapSource(BAR[game.turn])} />
           <rect x={TRAY_X} y={Y_TOP} width={TRAY_W} height={Y_BOT - Y_TOP} rx="12" className={`tb-tray${offTarget ? ' is-target' : ''}`} onClick={() => offTarget && tapTarget(OFF[game.turn])} />
-          <text x={TRAY_X + TRAY_W / 2} y={Y_BOT / 2 + 20} className={`tb-tray-label${vertical ? ' is-flat' : ''}`} transform={upright(TRAY_X + TRAY_W / 2, Y_BOT / 2 + 20)}>
+          <text x={TRAY_X + TRAY_W / 2} y={Y_BOT / 2 + 20} className="tb-tray-label">
             {w.off}
           </text>
+          {offRoute && <Landing x={TRAY_X + TRAY_W / 2} y={game.turn === me ? Y_BOT - 60 : Y_TOP + 60} n={count(offRoute)} />}
           {tris}
           {checkers}
+          {landings}
           {roll && (
-            <g key={tumble} className={tumbling ? 'tb-dice is-rolling' : 'tb-dice'}>
-              <Die n={roll[0]} x={diceX - 36} y={380} used={dieUsed(0)} tumble={tumbling} />
-              <Die n={roll[1]} x={diceX + 36} y={380} used={dieUsed(1)} tumble={tumbling} />
-              {roll[0] === roll[1] && game.phase === 'move' && (
-                <text x={diceX} y={436} className="tb-double" transform={upright(diceX, 430)}>
+            <g key={game.rolls} className={rolling ? 'tb-dice is-rolling' : 'tb-dice is-landed'}>
+              <Die n={rolling ? faces[0] : roll[0]} x={diceX - 36} y={380} used={!rolling && dieUsed(0)} />
+              <Die n={rolling ? faces[1] : roll[1]} x={diceX + 36} y={380} used={!rolling && dieUsed(1)} />
+              {!rolling && roll[0] === roll[1] && game.phase === 'move' && (
+                <text x={diceX} y={436} className="tb-double">
                   ×{left.length}
                 </text>
               )}
             </g>
           )}
-          </g>
         </svg>
         {overlay}
       </div>

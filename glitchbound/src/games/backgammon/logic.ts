@@ -277,6 +277,33 @@ function startTurn(g: Game, r: [number, number]): Game {
 /** The steps the side to move may make now. */
 export const nextSteps = (g: Game): Step[] => (g.phase === 'move' ? legalSteps(g.pos, g.turn, g.left) : []);
 
+/** Where one checker can go now, and the steps there: one die, or on with the next (both numbers, a double's four). */
+export interface Route {
+  to: number;
+  steps: Step[];
+}
+
+/**
+ * Every place the checker on `from` can reach with the dice left, each by its fewest steps: a single
+ * number, or two (or a double's three and four) one after the other through points it may land on.
+ * Of two equal ways, the one that does not hit on the way (only where it ends).
+ */
+export function routesFrom(g: Game, from: number): Route[] {
+  const out = new Map<number, Route>();
+  const hitsOnTheWay = (steps: Step[]): boolean => steps.slice(0, -1).some((st) => st.hit);
+  const walk = (cur: Game, at: number, path: Step[]): void => {
+    for (const st of nextSteps(cur)) {
+      if (st.from !== at) continue;
+      const steps = [...path, st];
+      const prev = out.get(st.to);
+      if (!prev || steps.length < prev.steps.length || (steps.length === prev.steps.length && hitsOnTheWay(prev.steps) && !hitsOnTheWay(steps))) out.set(st.to, { to: st.to, steps });
+      if (st.to !== OFF[cur.turn]) walk(step(cur, st), st.to, steps);
+    }
+  };
+  walk(g, from, []);
+  return [...out.values()];
+}
+
 const sameStep = (a: Step, b: Step): boolean => a.from === b.from && a.to === b.to && a.die === b.die;
 
 /** Makes one step (refused when not legal now). Bearing off the fifteenth ends the game. */
