@@ -1984,6 +1984,11 @@ export const KEYS: string[] = [
   "Clear {n} picture without a miss or hint",
   "Land {n} spot-on guess (within 10%) in one To Scale game",
   "Clear {n} level without a mistake in Outta Here",
+  "{n}-day streak. Clear today’s challenge to keep it",
+  "{n}-day streak. Today’s challenge is cleared",
+  "Keep your {n}-day streak alive: clear today’s challenge before midnight.",
+  "Games with their own daily puzzle are listed under Today’s dailies. Only clearing the challenge keeps your streak going.",
+  "Most games have a daily round: the same puzzle for everyone, new at midnight your time. Clear the Daily Challenge each day to keep your streak going, then compare with friends.",
 ];
 
 export const UI_COUNT = 311;

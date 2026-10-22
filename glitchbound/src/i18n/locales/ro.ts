@@ -1979,6 +1979,11 @@ const ro: string[] = [
   'Termină {n} imagine fără greșeli sau indicii',
   'Nimerește fix {n} încercare (sub 10%) într-un joc To Scale',
   'Treci {n} nivel fără greșeală în Outta Here',
+  'Serie de {n} zile. Treci provocarea de azi ca s-o păstrezi',
+  'Serie de {n} zile. Provocarea de azi e trecută',
+  'Păstrează-ți seria de {n} zile: treci provocarea de azi înainte de miezul nopții.',
+  'Jocurile cu propriul puzzle zilnic sunt în Zilnicele de azi. Doar trecerea provocării îți continuă seria.',
+  'Majoritatea jocurilor au o rundă zilnică: același puzzle pentru toți, nou la miezul nopții la tine. Treci Provocarea zilei în fiecare zi ca să-ți păstrezi seria, apoi compară-te cu prietenii.',
 ];
 
 export default ro;

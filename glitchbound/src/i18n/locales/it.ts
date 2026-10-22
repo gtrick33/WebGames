@@ -1979,6 +1979,11 @@ const it: string[] = [
   'Completa {n} immagine senza errori né aiuti',
   'Azzecca {n} tentativo preciso (entro il 10%) in una partita di To Scale',
   'Supera {n} livello senza errori in Outta Here',
+  'Serie di {n} giorni. Supera la sfida di oggi per mantenerla',
+  'Serie di {n} giorni. La sfida di oggi è superata',
+  'Tieni viva la tua serie di {n} giorni: supera la sfida di oggi entro mezzanotte.',
+  'I giochi con un proprio puzzle giornaliero sono elencati in Le giornaliere di oggi. Solo superare la sfida mantiene viva la serie.',
+  'La maggior parte dei giochi ha una partita giornaliera: lo stesso puzzle per tutti, nuovo a mezzanotte nel tuo fuso. Supera la Sfida giornaliera ogni giorno per mantenere la serie, poi confrontati con gli amici.',
 ];
 
 export default it;

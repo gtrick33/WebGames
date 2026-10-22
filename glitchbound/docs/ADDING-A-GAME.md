@@ -107,8 +107,8 @@ If the game has its own daily round (the same puzzle for everyone on a date), ad
 host.report({ type: 'end', score, stats, daily: true });
 ```
 
-The game then appears in **Today's dailies** (homepage and `/daily`), and finishing it keeps the player's arcade streak
-alive. Only report `daily: true` for the real daily puzzle, never for practice rounds.
+The game then appears in **Today's dailies** (homepage and `/daily`), ticked once the player finishes it (the arcade
+streak counts only the Daily Challenge). Only report `daily: true` for the real daily puzzle, never for practice rounds.
 
 Adding `daily` templates puts the game into the daily rotation from its release date onward (the daily challenge
 picks one daily-capable game per day). Leave `daily` out if the game has no fair single-round target.

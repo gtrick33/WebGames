@@ -114,7 +114,8 @@ export interface GameEntry {
   daily?: DailyTemplate[];
   /**
    * The game has its own daily puzzle (same for everyone on a date). It is listed in "Today's dailies"
-   * and counts toward the arcade streak when the game reports `{ type: 'end', daily: true, ... }`.
+   * and ticked there when the game reports `{ type: 'end', daily: true, ... }` (the arcade streak counts
+   * only the Daily Challenge).
    */
   ownDaily?: {
     /** Short name of the daily round, e.g. "Today's grid". */

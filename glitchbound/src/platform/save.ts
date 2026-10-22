@@ -157,11 +157,12 @@ export function mergeSaves(a: Save, b: Save, games: GameEntry[], today: string):
   return out;
 }
 
-/** Days that keep the streak alive: the arcade challenge was cleared or any game's own daily was finished. */
+/**
+ * Days that keep the streak alive: the Daily Challenge was cleared (the same rule as the account's
+ * streak and its badges). A game's own daily gets its tick under Today's dailies, not a streak day.
+ */
 export function doneDays(save: Save): Set<string> {
-  const days = new Set(Object.entries(save.daily).filter(([, d]) => d.done).map(([day]) => day));
-  for (const [day, slugs] of Object.entries(save.gameDailies)) if (slugs.length) days.add(day);
-  return days;
+  return new Set(Object.entries(save.daily).filter(([, d]) => d.done).map(([day]) => day));
 }
 
 /** Games played on this device, most recent first. */

@@ -61,7 +61,7 @@ export function DailyPage() {
           <ol className="info-steps">
             <li>{t('A new challenge unlocks at midnight in your time zone. Everyone on the same date gets the same one.')}</li>
             <li>{t('Play the game here on GlitchBound. Every finished round is a new try at today’s target.')}</li>
-            <li>{t('Games with their own daily puzzle are listed under Today’s dailies. Finishing any of them, or clearing the challenge, keeps your streak going.')}</li>
+            <li>{t('Games with their own daily puzzle are listed under Today’s dailies. Only clearing the challenge keeps your streak going.')}</li>
             <li>{t('Play on consecutive days to build a streak. Miss a day and the streak starts over.')}</li>
             <li>{t('Progress is saved in this browser. Signed in, it is also saved to your account, so it follows you to every device.')}</li>
           </ol>

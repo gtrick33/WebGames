@@ -1979,6 +1979,11 @@ const fr: string[] = [
   'Réussis {n} image sans erreur ni indice',
   'Réussis {n} estimation pile (à 10 % près) dans une partie de To Scale',
   'Termine {n} niveau sans erreur dans Outta Here',
+  'Série de {n} jours. Réussis le défi du jour pour la garder',
+  'Série de {n} jours. Le défi du jour est réussi',
+  'Garde ta série de {n} jours : réussis le défi du jour avant minuit.',
+  'Les jeux avec leur propre puzzle quotidien sont listés dans Les quotidiens du jour. Seul le défi réussi prolonge ta série.',
+  'La plupart des jeux ont une partie quotidienne : le même puzzle pour tout le monde, renouvelé à minuit chez toi. Réussis le Défi du jour chaque jour pour garder ta série, puis compare avec tes amis.',
 ];
 
 export default fr;

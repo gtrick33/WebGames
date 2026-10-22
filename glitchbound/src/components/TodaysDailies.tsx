@@ -16,8 +16,8 @@ import { Icon } from './Icon';
 import './TodaysDailies.css';
 
 /**
- * Every game's own daily puzzle in one strip, with what this player has finished today. Finishing
- * any of them (or the arcade challenge) keeps the shared streak alive. Hidden when no released game
+ * Every game's own daily puzzle in one strip, with what this player has finished today, and the streak
+ * (kept by clearing the Daily Challenge). Hidden when no released game
  * has its own daily. `featured` is the home page's Today section: the flagship dailies still open as
  * chips (the day's theme and the daily challenge sit in the hero above it).
  */
@@ -173,7 +173,7 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
         <p className="dailies-risk">
           <Icon name="flame" size={20} />
           <span>
-            {t('Keep your {n}-day streak alive: finish any daily before midnight.', { n: streak })} <span className="mono">{formatCountdown(msUntilMidnight(now))}</span>
+            {t('Keep your {n}-day streak alive: clear today’s challenge before midnight.', { n: streak })} <span className="mono">{formatCountdown(msUntilMidnight(now))}</span>
           </span>
         </p>
       )}

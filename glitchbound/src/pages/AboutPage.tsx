@@ -35,7 +35,7 @@ export function AboutPage() {
         <section className="panel info-block" aria-labelledby="a-daily">
           <h2 id="a-daily">{t('Something new every day')}</h2>
           <p>
-            {t('Most games have a daily round: the same puzzle for everyone, new at midnight your time. Clear them to keep your streak going, then compare with friends.')}{' '}
+            {t('Most games have a daily round: the same puzzle for everyone, new at midnight your time. Clear the Daily Challenge each day to keep your streak going, then compare with friends.')}{' '}
             <Link href="/daily">{t('Today’s Daily Challenge')}</Link>
           </p>
         </section>

@@ -1979,6 +1979,11 @@ const de: string[] = [
   'Schaff {n} Bild ohne Fehler oder Tipp',
   'Lande {n} Volltreffer (innerhalb 10 %) in einer To-Scale-Runde',
   'Schaff {n} Level ohne Fehler in Outta Here',
+  '{n}-Tage-Serie. Meistere die heutige Challenge, um sie zu halten',
+  '{n}-Tage-Serie. Die heutige Challenge ist gemeistert',
+  'Halte deine {n}-Tage-Serie am Leben: Meistere die heutige Challenge vor Mitternacht.',
+  'Spiele mit eigenem Tagesrätsel stehen unter „Heutige Tagesrunden“. Nur die Challenge zu meistern hält deine Serie am Laufen.',
+  'Die meisten Spiele haben eine Tagesrunde: dasselbe Rätsel für alle, neu um Mitternacht deiner Zeit. Meistere jeden Tag die Tägliche Challenge, um deine Serie zu halten, und vergleich dich mit Freunden.',
 ];
 
 export default de;

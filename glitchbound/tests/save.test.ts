@@ -108,7 +108,7 @@ describe('recording rounds', () => {
     expect(doneDays(save).has(dayKey(now))).toBe(true);
   });
 
-  it('records a game’s own daily once per day and counts it toward the streak', () => {
+  it('records a game’s own daily once per day, without counting it as a streak day (only the challenge does)', () => {
     const now = new Date(2026, 9, 20, 12);
     const own = fakeGame({ slug: 'own', daily: undefined, ownDaily: { label: 'Today’s grid' } });
     const save = emptySave();
@@ -116,7 +116,7 @@ describe('recording rounds', () => {
     expect(applyRound(save, own, { type: 'end', score: 5, daily: true }, [own], now).gameDailyCompleted).toBe(true);
     expect(applyRound(save, own, { type: 'end', score: 9, daily: true }, [own], now).gameDailyCompleted).toBe(false);
     expect(save.gameDailies[dayKey(now)]).toEqual(['own']);
-    expect(doneDays(save).has(dayKey(now))).toBe(true);
+    expect(doneDays(save).has(dayKey(now))).toBe(false);
     // A game without ownDaily cannot claim a daily.
     const plain = fakeGame({ slug: 'plain', daily: undefined });
     expect(applyRound(save, plain, { type: 'end', score: 1, daily: true }, [plain], now).gameDailyCompleted).toBe(false);

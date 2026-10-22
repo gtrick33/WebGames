@@ -1979,6 +1979,11 @@ const pl: string[] = [
   'Zalicz {n} obrazek bez pomyłki i podpowiedzi',
   'Traf w punkt (do 10%) {n} raz w jednej grze To Scale',
   'Przejdź {n} poziom bez błędu w Outta Here',
+  'Seria {n} dni. Zalicz dzisiejsze wyzwanie, by ją utrzymać',
+  'Seria {n} dni. Dzisiejsze wyzwanie zaliczone',
+  'Utrzymaj serię {n} dni: zalicz dzisiejsze wyzwanie przed północą.',
+  'Gry z własną codzienną łamigłówką są wymienione w Dzisiejsze dzienne. Serię podtrzymuje tylko zaliczenie wyzwania.',
+  'Większość gier ma codzienną rundę: tę samą łamigłówkę dla wszystkich, nową o północy twojego czasu. Zaliczaj Codzienne wyzwanie każdego dnia, żeby utrzymać serię, a potem porównaj się ze znajomymi.',
 ];
 
 export default pl;

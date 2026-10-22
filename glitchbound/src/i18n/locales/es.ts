@@ -1979,6 +1979,11 @@ const es: string[] = [
   'Supera {n} imagen sin fallos ni pistas',
   'Logra {n} acierto exacto (dentro del 10 %) en una partida de To Scale',
   'Supera {n} nivel sin fallar en Outta Here',
+  'Racha de {n} días. Supera el reto de hoy para mantenerla',
+  'Racha de {n} días. El reto de hoy está superado',
+  'Mantén viva tu racha de {n} días: supera el reto de hoy antes de medianoche.',
+  'Los juegos con su propio reto diario aparecen en «Retos de hoy». Solo superar el Reto diario mantiene tu racha.',
+  'La mayoría de los juegos tiene una ronda diaria: el mismo reto para todos, nuevo a medianoche en tu hora. Supera el Reto diario cada día para mantener tu racha y compárate con tus amigos.',
 ];
 
 export default es;

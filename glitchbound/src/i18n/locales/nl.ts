@@ -1979,6 +1979,11 @@ const nl: string[] = [
   'Haal {n} plaatje zonder misser of hint',
   'Haal {n} rake gok (binnen 10%) in één spel To Scale',
   'Haal {n} level zonder fout in Outta Here',
+  'Reeks van {n} dagen. Haal de uitdaging van vandaag om hem te houden',
+  'Reeks van {n} dagen. De uitdaging van vandaag is gehaald',
+  'Houd je reeks van {n} dagen in leven: haal vóór middernacht de uitdaging van vandaag.',
+  'Spellen met een eigen dagelijkse puzzel staan onder Dagelijkse van vandaag. Alleen de uitdaging halen houdt je reeks in stand.',
+  'De meeste spellen hebben een dagelijkse ronde: dezelfde puzzel voor iedereen, nieuw om middernacht bij jou. Haal elke dag de Dagelijkse uitdaging om je reeks vast te houden en vergelijk dan met vrienden.',
 ];
 
 export default nl;

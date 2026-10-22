@@ -1979,6 +1979,11 @@ const tr: string[] = [
   'Hatasız ve ipucusuz {n} resim bitir',
   'Bir To Scale oyununda {n} tam isabetli tahmin (%10 içinde) yap',
   'Outta Here’da hatasız {n} bölüm geç',
+  '{n} günlük seri. Korumak için bugünün meydan okumasını geç',
+  '{n} günlük seri. Bugünün meydan okuması geçildi',
+  '{n} günlük serini koru: gece yarısından önce bugünün meydan okumasını geç.',
+  'Kendi günlük bulmacası olan oyunlar Bugünün günlüklerinde listelenir. Serini yalnızca meydan okumayı geçmek sürdürür.',
+  'Çoğu oyunun günlük bir turu var: herkes için aynı bulmaca, senin saatinle gece yarısı yenilenir. Serini korumak için her gün Günlük meydan okumayı geç, sonra arkadaşlarınla karşılaştır.',
 ];
 
 export default tr;

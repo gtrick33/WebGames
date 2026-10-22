@@ -34,7 +34,7 @@ function StreakChip() {
   const today = dayKey(useNow(60_000));
   const { streak, atRisk } = streakState(doneDays(save), today);
   if (streak === 0) return null;
-  const label = atRisk ? t('{n}-day streak. Finish a daily today to keep it', { n: streak }) : t("{n}-day streak. Today's daily is done", { n: streak });
+  const label = atRisk ? t('{n}-day streak. Clear today’s challenge to keep it', { n: streak }) : t('{n}-day streak. Today’s challenge is cleared', { n: streak });
   return (
     <Link href="/daily" className={`streak-chip${atRisk ? ' is-risk' : ''}`} aria-label={label} title={label}>
       <Icon name="flame" size={18} />
