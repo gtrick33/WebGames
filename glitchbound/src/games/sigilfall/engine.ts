@@ -1,5 +1,6 @@
 import type { GameHost } from '../../platform/contract';
 import { CLASSES } from './data/classes';
+import { keyAffixes, weekOf } from './data/keystones';
 import { NPCS, QUEST_DEFS } from './data/quests';
 import { REGIONS, TIERS, type RiftMod } from './data/regions';
 import { SKILLS } from './data/skills';
@@ -90,7 +91,8 @@ export class SigilEngine {
   private deathAt = 0;
   private rewardAt = 0;
   private nextToast = 1;
-  private run: { start: number; region: RegionId; tier: number; mods: RiftMod[] } | null = null;
+  /** The expedition under way: where, on which tier, and the Riftstone's level for a stone run (else 0). */
+  private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number } | null = null;
   private hidden = false;
   /** Pause asked for by the arcade (left full screen, scrolled away). */
   private toWorldFn: (x: number, y: number) => { x: number; y: number } = (x, y) => ({ x, y });
@@ -496,7 +498,7 @@ export class SigilEngine {
 
   /* ------------------------------------------------------------- travel */
 
-  travel(to: RegionId, tier: number, mods: RiftMod[], from?: RegionId): void {
+  travel(to: RegionId, tier: number, mods: RiftMod[], from?: RegionId, key = 0): void {
     const h = this.hero;
     if (!h) return;
     const region = REGIONS[to];
@@ -505,10 +507,24 @@ export class SigilEngine {
     if (prev) this.collectLeftovers(prev, true);
     // expeditions: leaving the village starts one, coming back ends it
     if (region.safe) this.endRun(true);
-    else if (!this.run) this.startRun(to, tier, mods);
-    else this.run.region = to;
+    else if (!this.run) this.startRun(to, tier, mods, key);
+    else {
+      // a Riftstone is for the dungeon it was set in: walking out ends it
+      if (this.run.key && to !== this.run.region) this.run.key = 0;
+      this.run.region = to;
+    }
+    const stone = this.run?.key ?? 0;
     const keepTier = this.run ? this.run.tier : tier;
-    const w = new World({ region: to, tier: region.safe ? 0 : keepTier, mods: region.safe ? [] : (this.run?.mods ?? mods), hero: h, settings: this.settings, seed: (Math.random() * 2 ** 32) >>> 0, from });
+    const w = new World({
+      region: to,
+      tier: region.safe ? 0 : keepTier,
+      mods: region.safe ? [] : (this.run?.mods ?? mods),
+      hero: h,
+      settings: this.settings,
+      seed: (Math.random() * 2 ** 32) >>> 0,
+      from,
+      ...(stone ? { key: stone, affixes: keyAffixes(stone, weekOf(Date.now())) } : {}),
+    });
     if (prev && !prev.region.safe && this.run) {
       // carry this expedition's tallies across regions
       w.run = prev.run;
@@ -518,13 +534,14 @@ export class SigilEngine {
     for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
     this.world = w;
     this.renderer.snap(w);
-    this.ui = { ...this.ui, panel: null, travel: null, dialogue: null, boss: null, death: false, banner: { text: region.name, sub: region.safe ? region.subtitle : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`, id: performance.now() } };
+    const sub = region.safe ? region.subtitle : w.keyRun ? `Riftstone +${w.keyRun.key}` : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`;
+    this.ui = { ...this.ui, panel: null, travel: null, dialogue: null, boss: null, death: false, banner: { text: region.name, sub, id: performance.now() } };
     this.persist();
     this.bump();
   }
 
-  private startRun(region: RegionId, tier: number, mods: RiftMod[]): void {
-    this.run = { start: performance.now(), region, tier, mods };
+  private startRun(region: RegionId, tier: number, mods: RiftMod[], key: number): void {
+    this.run = { start: performance.now(), region, tier, mods, key };
     if (this.hero) this.hero.stats.runs += 1;
     this.host.report({ type: 'start' });
   }

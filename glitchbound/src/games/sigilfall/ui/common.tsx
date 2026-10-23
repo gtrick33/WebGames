@@ -44,6 +44,9 @@ export function Frame({ title, onClose, children, wide, className = '' }: { titl
   );
 }
 
+/** Seconds as m:ss. */
+export const clock = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
 export const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
 
 export function Bar({ value, max, color, label }: { value: number; max: number; color: string; label?: string }) {

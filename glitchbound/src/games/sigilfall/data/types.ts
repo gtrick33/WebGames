@@ -689,7 +689,7 @@ export interface QuestDef {
   zone?: RegionId;
   /** Only from this level. */
   level?: number;
-  reward: { xp: number; gold: number; item?: string | { rarity: Rarity }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId };
+  reward: { xp: number; gold: number; item?: string | { rarity: Rarity }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId; keystone?: number };
 }
 
 /* -------------------------------------------------------------------- npcs */

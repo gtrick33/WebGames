@@ -76,6 +76,10 @@ export interface Character {
   bosses: Record<string, number>;
   /** Region clears by "region:tier". */
   clears: Record<string, number>;
+  /** The Riftstone's level (0 before Ysolde gives one; see data/keystones.ts). */
+  keystone: number;
+  /** The highest stone finished in time, by dungeon. */
+  bestKeys: Record<string, number>;
   /** One-time things done: once-only chests, discovered spots. */
   opened: string[];
   /** Gifts from the ends of quest chains (a bigger bag, a mount...). */
@@ -109,6 +113,8 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     tier: 0,
     bosses: {},
     clears: {},
+    keystone: 0,
+    bestKeys: {},
     opened: [],
     perks: [],
     stats: { kills: 0, deaths: 0, time: 0, runs: 0, bestRun: 0 },

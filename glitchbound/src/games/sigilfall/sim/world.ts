@@ -3,6 +3,7 @@ import { BOSSES } from '../data/bosses';
 import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
 import { ITEM_DEFS, ITEMS } from '../data/items';
+import { KEY_DEATH, KEY_LEVEL, KEY_MIN, keyLoot, keyMarks, keyPar, keyScale, keyUpgrade, type KeyAffix } from '../data/keystones';
 import { QUEST_DEFS } from '../data/quests';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { THEMES } from '../data/themes';
@@ -49,6 +50,19 @@ export interface WorldOptions {
   seed: number;
   /** The region the hero came from (arrive at the exit that leads back there). */
   from?: RegionId;
+  /** A Riftstone run of this level (dungeons only), with the week's affixes for it. */
+  key?: number;
+  affixes?: KeyAffix[];
+}
+
+/** A Riftstone run: its clock (seconds so far and deaths), and how it ended. */
+export interface KeyRun {
+  key: number;
+  affixes: KeyAffix[];
+  par: number;
+  t: number;
+  deaths: number;
+  end: { time: number; up: number; marks: number } | null;
 }
 
 interface EncounterState {
@@ -174,6 +188,12 @@ export class World {
   chickens: { x: number; y: number; vx: number; vy: number; t: number; face: number }[] = [];
   /** This run's tallies (for the report and the reward screen). */
   run = { xp: 0, gold: 0, kills: 0, bosses: 0, items: [] as Item[] };
+  /** A Riftstone run, if this is one. */
+  keyRun: KeyRun | null = null;
+  /** Sanguine pools: blood that heals enemies standing in it. */
+  private pools: { x: number; y: number; r: number; t: number }[] = [];
+  /** Enemies already in a rage (Raging). */
+  private raged = new WeakSet<Enemy>();
   private bramble = 0;
   private hpBefore = 0;
 
@@ -183,6 +203,14 @@ export class World {
     this.tier = this.region.safe ? 0 : o.tier;
     this.mods = this.region.safe ? [] : o.mods;
     this.level = this.region.level + TIERS[this.tier]!.levels;
+    // a Riftstone: the dungeon at level 60 (its loot as on Mythic), the stone's might and the week's affixes
+    if (o.key && o.key >= KEY_MIN && this.region.kind === 'dungeon') {
+      const affixes = o.affixes ?? [];
+      this.keyRun = { key: o.key, affixes, par: keyPar(this.region), t: 0, deaths: 0, end: null };
+      this.tier = 2;
+      this.level = KEY_LEVEL;
+      this.mods = affixes.filter((a): a is 'volatile' | 'hasted' => a === 'volatile' || a === 'hasted');
+    }
     this.hero = o.hero;
     this.settings = o.settings;
     this.rand = rng(o.seed);
@@ -372,11 +400,24 @@ export class World {
     }
   }
 
+  /** Health on top of an enemy's level: the difficulty tier and rift modifiers, or a Riftstone's might. */
+  private hpMul(boss: boolean): number {
+    const k = this.keyRun;
+    if (!k) return TIERS[this.tier]!.hp * (this.mods.includes('fortified') ? 1.4 : 1);
+    return keyScale(k.key).hp * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.3 : 1);
+  }
+
+  /** Damage on top of an enemy's level, likewise. */
+  private dmgMul(boss: boolean): number {
+    const k = this.keyRun;
+    if (!k) return TIERS[this.tier]!.dmg;
+    return keyScale(k.key).dmg * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.15 : 1);
+  }
+
   /** Creates an enemy (scaled to its level, the difficulty tier and rift modifiers). */
   addEnemy(id: string, x: number, y: number, level: number, o: { elite?: boolean; room: number; pack: number; spawn?: boolean; post?: boolean }): Enemy {
     const def = ENEMIES[id] ?? ENEMIES['moss-slime']!;
     const sc = enemyScale(level);
-    const tier = TIERS[this.tier]!;
     const elite: EliteAffix[] = [];
     if (o.elite) {
       const pool: EliteAffix[] = ['frenzied', 'molten', 'vampiric', 'shielded', ...(this.tier > 0 ? (['volatile'] as EliteAffix[]) : [])];
@@ -388,7 +429,7 @@ export class World {
     }
     const hasted = this.mods.includes('hasted') ? 1.2 : 1;
     const wild = o.pack >= 0 && !!this.region.holds;
-    const hp = Math.round(def.hp * sc.hp * tier.hp * (this.mods.includes('fortified') ? 1.4 : 1) * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1));
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(false) * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1));
     const e: Enemy = {
       id: this.nextId++,
       def,
@@ -400,7 +441,7 @@ export class World {
       r: def.radius * (def.scale ?? 1) * (o.elite ? 1.25 : 1),
       hp,
       maxHp: hp,
-      dmg: def.dmg * sc.dmg * tier.dmg * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1),
+      dmg: def.dmg * sc.dmg * this.dmgMul(false) * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1),
       speedMul: hasted * (elite.includes('frenzied') ? 1.35 : 1),
       atkMul: hasted * (elite.includes('frenzied') ? 1.4 : 1),
       shield: elite.includes('shielded') ? hp * 0.4 : 0,
@@ -457,13 +498,12 @@ export class World {
     const def = BOSSES[id]!;
     const level = this.level + 1;
     const sc = enemyScale(level);
-    const tier = TIERS[this.tier]!;
-    const hp = Math.round(def.hp * sc.hp * tier.hp * (this.mods.includes('fortified') ? 1.4 : 1));
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(true));
     const e = this.addEnemy('skeleton', x, y, level, { room, pack: -1 });
     e.def = { ...ENEMIES.skeleton!, id: def.id, name: def.name, sprite: def.sprite, radius: def.radius, mass: 99, resist: {}, armor: 0, xp: def.xp, gold: def.gold, scale: 1 };
     e.r = def.radius;
     e.hp = e.maxHp = hp;
-    e.dmg = def.dmg * sc.dmg * tier.dmg;
+    e.dmg = def.dmg * sc.dmg * this.dmgMul(true);
     e.name = def.name;
     e.scale = 1;
     e.state = 'chase';
@@ -678,6 +718,7 @@ export class World {
     }
     if (this.player.dead) dt *= 0.35;
     this.time += dt;
+    if (this.keyRun) this.updateKeyRun(rawDt, dt);
     this.shakeAmt = Math.max(0, this.shakeAmt - rawDt * 18);
     this.updatePlayer(dt);
     this.updateFlow(dt);
@@ -1112,6 +1153,7 @@ export class World {
     }
     h.stats.kills += 1;
     this.run.kills += 1;
+    if (this.keyRun && !e.master) this.keyOnKill(e);
     const tier = TIERS[this.tier]!;
     const bonus = 1 + this.mods.reduce((a, m) => a + RIFT_MODS[m].bonus, 0);
     // raised minions are worth little: a necromancer is not a farm
@@ -1186,7 +1228,7 @@ export class World {
     this.giveXp(def.xp * enemyScale(e.level).xp * tier.xp);
     this.dropGold(e.x, e.y, Math.round((def.gold[0] + this.rand() * (def.gold[1] - def.gold[0])) * (1 + 0.2 * (e.level - 1))));
     const cls = h.cls as ClassId;
-    const il = e.level;
+    const il = this.keyRun ? keyLoot(this.keyRun.key) : e.level;
     if (first) {
       for (const id of [...(def.first[cls] ?? []), ...(def.first.any ?? [])]) {
         const it = makeItem(id, il, this.rand);
@@ -1213,9 +1255,86 @@ export class World {
       const key = `${this.region.id}:${this.tier}`;
       h.clears[key] = (h.clears[key] ?? 0) + 1;
       this.questProgress((o) => o.kind === 'clear' && o.region === this.region.id && o.tier <= this.tier);
+      if (this.keyRun) this.endKeyRun(e.x, e.y);
       this.emit({ t: 'cleared' });
     }
     this.emit({ t: 'save' });
+  }
+
+  /* ------------------------------------------------------ Riftstones */
+
+  /** The clock runs (at full speed even while the hero is down), enemies rage, blood pools heal. */
+  private updateKeyRun(rawDt: number, dt: number): void {
+    const k = this.keyRun!;
+    if (!k.end) k.t += rawDt;
+    if (k.affixes.includes('raging')) {
+      for (const e of this.enemies) {
+        if (e.dead || e.boss || e.dummy || this.raged.has(e) || e.hp > e.maxHp * 0.3) continue;
+        this.raged.add(e);
+        e.dmg *= 1.5;
+        e.atkMul *= 1.2;
+        this.text(e.x, e.y - e.r - 10, 'ENRAGED', '#ff4a4a', false);
+        this.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.4, size: e.r + 10, color: '#ff4a4a' });
+      }
+    }
+    if (this.pools.length) {
+      for (const pl of this.pools) {
+        pl.t -= dt;
+        for (const e of this.enemies) if (!e.dead && !e.boss && dist(e.x, e.y, pl.x, pl.y) < pl.r + e.r && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.05 * dt);
+      }
+      this.pools = this.pools.filter((pl) => pl.t > 0);
+    }
+  }
+
+  /** An enemy falls in a Riftstone run: what the week's affixes do with it. */
+  private keyOnKill(e: Enemy): void {
+    const k = this.keyRun!;
+    const p = this.player;
+    if (k.affixes.includes('bolstering')) {
+      for (const o of this.enemies) {
+        if (o === e || o.dead || o.boss || o.dummy || o.room !== e.room || dist(o.x, o.y, e.x, e.y) > 140) continue;
+        o.maxHp *= 1.15;
+        o.hp *= 1.15;
+        o.dmg *= 1.1;
+        this.addFx({ kind: 'zap', x: e.x, y: e.y - 4, x2: o.x, y2: o.y - 6, life: 0.25, size: 1, color: '#ffb04d' });
+      }
+    }
+    if (k.affixes.includes('sanguine')) {
+      this.pools.push({ x: e.x, y: e.y, r: 26, t: 10 });
+      this.spawnField({ x: e.x, y: e.y, r: 26, dur: 10, tick: 0.5, dmg: e.dmg * 0.15, type: 'shadow', look: 'fire', hostile: true, depth: 0, spec: null, onHit: false });
+    }
+    if (k.affixes.includes('bursting') && !p.dead && dist(p.x, p.y, e.x, e.y) < 400) {
+      // a stack of bleeding: 1.5% of the hero's health a second, for 4 s from the last
+      const per = p.maxHp * 0.015;
+      const cur = p.statuses.find((x) => x.id === 'bleed');
+      if (cur) {
+        cur.t = 4;
+        cur.power += per;
+      } else p.statuses.push({ id: 'bleed', t: 4, power: per, tick: 0.5 });
+    }
+  }
+
+  /** The last boss falls: the clock stops, the stone grows or shrinks, and the cache opens. */
+  private endKeyRun(x: number, y: number): void {
+    const k = this.keyRun!;
+    if (k.end) return;
+    const h = this.hero;
+    const time = k.t + k.deaths * KEY_DEATH;
+    const up = keyUpgrade(time, k.par);
+    const marks = keyMarks(k.key, up > 0);
+    k.end = { time, up, marks };
+    h.keystone = Math.max(KEY_MIN, k.key + up);
+    if (up > 0) h.bestKeys[this.region.id] = Math.max(h.bestKeys[this.region.id] ?? 0, k.key);
+    h.marks += marks;
+    // the Rift's cache: more the higher the stone, and only in time
+    if (up > 0) for (let i = 0; i < 1 + Math.floor(k.key / 3); i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key)));
+    const mm = Math.floor(time / 60);
+    const ss = String(Math.floor(time % 60)).padStart(2, '0');
+    this.emit({
+      t: 'banner',
+      text: up > 0 ? `In time: ${mm}:${ss}` : `Out of time: ${mm}:${ss}`,
+      sub: up > 0 ? `Riftstone +${k.key} → +${h.keystone} · ${marks} Sigil Marks` : `Riftstone falls to +${h.keystone} · ${marks} Sigil Marks`,
+    });
   }
 
   /** An enemy is gone (killed, or burst by itself): when the last of its pack is gone, the pack comes back in a while. */
@@ -1234,6 +1353,10 @@ export class World {
     p.channel = null;
     p.windup = null;
     this.hero.stats.deaths += 1;
+    if (this.keyRun && !this.keyRun.end) {
+      this.keyRun.deaths += 1;
+      this.text(p.x, p.y - 30, `-${KEY_DEATH} s`, '#ff4a8a', true);
+    }
     this.sfx('playerDie');
     this.shake(5);
     this.emit({ t: 'death' });
@@ -1596,6 +1719,11 @@ export class World {
       this.run.gold += r.gold;
       if (r.unlock && !h.unlocked.includes(r.unlock)) h.unlocked.push(r.unlock);
       if (r.tier !== undefined) h.tier = Math.max(h.tier, r.tier);
+      // a Riftstone (data/keystones.ts): the first one, from Ysolde
+      if (r.keystone) {
+        h.keystone = Math.max(h.keystone, r.keystone);
+        this.emit({ t: 'toast', text: `Riftstone +${h.keystone}: any dungeon, at level 60, against the clock (from the map)`, tone: 'good' });
+      }
       if (r.item) {
         let item: Item | null;
         if (r.item === 'class-epic') {

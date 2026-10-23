@@ -852,6 +852,22 @@
   color: var(--rb-gold);
   font-size: 13px;
 }
+.rb-keytime {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  color: #e8f6ff;
+}
+.rb-keytime.is-late {
+  color: #ff6a6a;
+}
+.rb-affixes {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+}
+.rb-affixes li {
+  margin: 2px 0;
+}
 .rb-encounter {
   position: absolute;
   top: calc(8px + var(--sa-t));

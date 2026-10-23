@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CLASSES, levelPower, xpToNext } from '../data/classes';
 import { ITEM_DEFS } from '../data/items';
+import { KEY_AFFIXES, KEY_LEVEL, KEY_MIN, keyAffixes, keyLoot, keyPar, weekAffixes, weekOf } from '../data/keystones';
 import { QUESTS } from '../data/quests';
 import { mapColors } from '../data/themes';
 import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
@@ -18,7 +19,7 @@ import { glyphIconUrl, heroDollUrl, heroLook } from '../render/sprites';
 import { K, TILE } from '../sim/map';
 import { objectiveTarget } from '../sim/objective';
 import { npcRegion, regionLinks } from '../sim/routes';
-import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
+import { Bar, clock, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
 import { ShopPanel } from './Shop';
 
 const TABS: { id: PanelId; label: string }[] = [
@@ -667,12 +668,18 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   const [sel, setSel] = useState<RegionId>(w.region.id);
   const [tier, setTier] = useState(Math.min(h.tier, w.tier || h.tier));
   const [mods, setMods] = useState<RiftMod[]>([]);
+  const [stone, setStone] = useState(false);
   const r = REGIONS[sel];
   const open = h.unlocked.includes(sel);
   const here = w.region.id === sel;
+  // a Riftstone fits any dungeon, at level 60
+  const keyed = h.keystone >= KEY_MIN && h.level >= KEY_LEVEL && r.kind === 'dungeon';
+  const useKey = keyed && stone;
   // difficulty tiers are for dungeons (and the old wood)
-  const tiered = h.tier > 0 && (r.kind === 'dungeon' || sel === 'whisperwood');
+  const tiered = h.tier > 0 && (r.kind === 'dungeon' || sel === 'whisperwood') && !useKey;
   const pick = tiered ? tier : 0;
+  // this week's affixes (read once: the panel isn't open across a Monday)
+  const [week] = useState(() => weekOf(Date.now()));
   const goal = trackedQuest(h, w.region.id);
   return (
     <div className="rb-map">
@@ -686,14 +693,45 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
         <div className={`rb-dest${open ? '' : ' is-locked'}${here ? ' is-here' : ''}`}>
           <div>
             <strong>
-              {open || r.kind === 'town' ? r.name : 'Unknown land'} <span className="rb-dim rb-small">{r.kind === 'town' ? 'Town' : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0] + TIERS[pick]!.levels}-${r.levels[1] + TIERS[pick]!.levels}`}</span>
+              {open || r.kind === 'town' ? r.name : 'Unknown land'}{' '}
+              <span className="rb-dim rb-small">
+                {r.kind === 'town' ? 'Town' : useKey ? `Dungeon · level ${KEY_LEVEL} · Riftstone +${h.keystone}` : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0] + TIERS[pick]!.levels}-${r.levels[1] + TIERS[pick]!.levels}`}
+              </span>
             </strong>
             <span className="rb-small rb-dim">{open ? r.blurb : sel === 'whisperwood' ? 'Finish your training with Elder Maren.' : sel === 'crypt' ? 'Defeat Grimtusk in the Whisperwood.' : 'Not discovered yet: walk there to find it.'}</span>
           </div>
-          <button className="rb-btn is-small is-gold" disabled={!open || !canTravel || (here && (r.safe || pick === w.tier))} onClick={() => engine.travel(sel, pick, mods, undefined)}>
+          <button
+            className="rb-btn is-small is-gold"
+            disabled={!open || !canTravel || (here && (r.safe || (pick === w.tier && !useKey && !w.keyRun)))}
+            onClick={() => (useKey ? engine.travel(sel, 2, [], undefined, h.keystone) : engine.travel(sel, pick, mods, undefined))}
+          >
             {here ? 'Here' : 'Go'}
           </button>
         </div>
+        {keyed && open && (
+          <div className="rb-tiers rb-stone">
+            <label className="rb-check">
+              <input type="checkbox" checked={stone} onChange={(e) => setStone(e.target.checked)} />
+              <span>
+                <b className="rb-gold">Riftstone +{h.keystone}</b> Run it at level {KEY_LEVEL} against the clock ({clock(keyPar(r))}; each fall costs 10 s). In time, the
+                stone grows; late, it shrinks. Loot of item level {keyLoot(h.keystone)}
+                {h.bestKeys[sel] ? `; your best here is +${h.bestKeys[sel]}` : ''}.
+              </span>
+            </label>
+            {useKey && (
+              <ul className="rb-affixes">
+                {weekAffixes(week).map((a) => (
+                  <li key={a.at} className={keyAffixes(h.keystone, week).includes(a.affix) && h.keystone >= a.at ? '' : 'rb-dim'}>
+                    <b>
+                      +{a.at} {KEY_AFFIXES[a.affix].name}
+                    </b>{' '}
+                    {KEY_AFFIXES[a.affix].text}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
         {tiered && (
           <div className="rb-tiers">
             <span className="rb-kicker">Difficulty</span>

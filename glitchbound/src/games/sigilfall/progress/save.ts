@@ -171,6 +171,8 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     tier: int(o.tier, 0, 2, 0),
     bosses: {},
     clears: {},
+    keystone: int(o.keystone, 0, 999, 0),
+    bestKeys: {},
     opened: [],
     perks: Array.isArray(o.perks) ? [...new Set(o.perks.filter((x): x is PerkId => typeof x === 'string' && x in PERKS))] : [],
     stats: { kills: 0, deaths: 0, time: 0, runs: 0, bestRun: 0 },
@@ -228,7 +230,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   if (Array.isArray(o.unlocked)) for (const r of o.unlocked) if (typeof r === 'string' && r in REGIONS && !c.unlocked.includes(r as RegionId)) c.unlocked.push(r as RegionId);
   // quests of the zones the hero has been to start once those are known
   startQuests(c);
-  for (const key of ['bosses', 'clears'] as const) {
+  for (const key of ['bosses', 'clears', 'bestKeys'] as const) {
     const m = obj(o[key]) ?? {};
     for (const [k, n] of Object.entries(m).slice(0, 200)) if (/^[a-z0-9:-]{1,32}$/.test(k)) c[key][k] = int(n, 0, 1e6, 0);
   }

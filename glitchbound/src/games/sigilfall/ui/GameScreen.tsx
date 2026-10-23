@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { xpToNext } from '../data/classes';
 import { NPCS } from '../data/quests';
+import { KEY_AFFIXES, KEY_DEATH } from '../data/keystones';
 import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { ResourceDef } from '../data/types';
@@ -11,7 +12,7 @@ import { modLines } from '../progress/describe';
 import { itemMods, itemName, usableBy } from '../progress/items';
 import { rarityColor } from '../render/renderer';
 import type { World } from '../sim/world';
-import { fmt, ItemIcon, Portrait } from './common';
+import { clock, fmt, ItemIcon, Portrait } from './common';
 import { DesktopBar } from './DesktopBar';
 import { Panels } from './Panels';
 import { Minimap } from './Minimap';
@@ -43,7 +44,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
     <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}`}>
       <Hud engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
-      <Tracker engine={engine} />
+      {w.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
       <Toasts engine={engine} />
       {ui.banner && (
         <div className="rb-banner" key={ui.banner.id} aria-live="polite">
@@ -195,6 +196,26 @@ function BossBar({ engine }: { engine: SigilEngine }) {
         <i ref={lag} className="rb-boss-lag" />
         <i ref={bar} className="rb-boss-fill" />
       </span>
+    </div>
+  );
+}
+
+/** A Riftstone run's clock: time so far (falls included) against the dungeon's, the stone and its affixes. */
+function KeyClock({ engine }: { engine: SigilEngine }) {
+  const k = engine.world!.keyRun!;
+  const time = useRef<HTMLElement>(null);
+  useFrame(engine, (world) => {
+    const run = world.keyRun;
+    if (!run || !time.current) return;
+    const t = run.end ? run.end.time : run.t + run.deaths * KEY_DEATH;
+    time.current.textContent = `${clock(t)} / ${clock(run.par)}`;
+    time.current.classList.toggle('is-late', t > run.par);
+  });
+  return (
+    <div className="rb-tracker rb-keyclock" role="timer">
+      <strong>Riftstone +{k.key}</strong>
+      <b ref={time} className="rb-keytime" />
+      {k.affixes.length > 0 && <span className="rb-small">{k.affixes.map((a) => KEY_AFFIXES[a].name).join(' · ')}</span>}
     </div>
   );
 }

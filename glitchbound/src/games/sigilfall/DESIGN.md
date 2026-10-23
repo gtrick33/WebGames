@@ -241,6 +241,16 @@ charges only along a clear lane; with a pillar in the way it walks round it.
 Difficulty: Normal, Heroic (+6 enemy levels, ×1.9 health, ×1.4 damage) and Mythic (+12, ×4, ×2.1), each opened
 by clearing the crypt on the tier below, with optional modifiers for more loot.
 
+**Riftstones** (the endgame, `data/keystones.ts`): after the Hollow King falls, Ysolde gives the hero a Riftstone
+(+2). From the map, any dungeon can be run with it: at level 60, its enemies tougher with every level of the stone
+(health ×1.6·1.1ᵏ, damage ×1.25·1.08ᵏ, without end) and the week's affixes joining at +2 (Fortified or
+Tyrannical), +4 (Bolstering, Sanguine, Raging or Bursting), +7 (Volatile or Hasted) and +10 (both of the first).
+A clock runs from the start (each fall adds 10 s), set from the dungeon's enemies and its bosses' health to a
+little over twice what a level-60 hero in good gear needs on a +2 stone. Beat it and the stone grows by one,
+two or three levels (under 100 %, 80 % or 60 % of the clock) and the Rift's cache opens; miss it and it shrinks
+by one (never below +2). Loot is made at the stone's item level (60 + the stone, at most 70), Sigil Marks grow
+with it, and the best stone beaten in time is kept for each dungeon.
+
 ## Saves
 
 `glitchbound.sigilfall` holds three hero slots and settings: versioned (`SAVE_VERSION`), validated field by field
@@ -271,6 +281,8 @@ cloud saves (up to 96 KB); the backup stays on the device.
   `tests/sigilfall-dungeon-<id>.test.ts` the same for each newer dungeon, plus its own boss mechanics.
 - `tests/sigilfall-world.test.ts` also plays every class through every open zone at its first levels, and checks
   that every sprite and townsfolk look is drawn once (zone art tables are merged).
+- `tests/sigilfall-keystones.test.ts`: Riftstones: scaling, the week's affixes, the clock (falls included), the
+  stone growing and shrinking, every affix at work, saves, and a hero beating the clock on a +2 stone.
 - `tests/sigilfall-ids.test.ts`: every quest and item id is used once, and no two zones or dungeons define the same
   enemy, boss or person (their tables are merged, so a repeated id would quietly replace another).
 
