@@ -141,7 +141,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
           </span>
           <span className="rb-region">
             {region.name}
-            {w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
+            {w.keyRun ? <b className="rb-gold"> · Riftstone +{w.keyRun.key}</b> : w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
           </span>
         </div>
         {!engine.touchMode && (
