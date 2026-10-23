@@ -1,0 +1,323 @@
+import type { NpcDef, QuestDef } from '../types';
+
+/**
+ * Veilwatch's people and the quests of the Riftscar Wastes (see WORLD.md). For three hundred years the
+ * mages of Veilwatch have kept a ring of ward-towers round the place where the Rift first tore the world
+ * open; now the Pale Herald, the Hollow King's voice, feeds it from his Spire in the far north-west and
+ * keeps the Sigil of the Veil at its top. The main chain runs from the Fallen Ward and its wraiths to the
+ * Herald's pilgrims and their sermons, Lyra's reading of them, and up the Spire of the Rift past the Veil
+ * Sentinel to the Herald himself. Steward Pell wants his runner back from the Glass Flats, Arcanist Lyra
+ * wants floatstone hearts for her orrery, and Wardmage Tamsin wants the First Tear quiet, and the Unmade
+ * in it gone. Main chain first.
+ */
+export const RIFTSCAR_QUESTS: QuestDef[] = [
+  /* ---------------------------------------------------------- the way in */
+  {
+    id: 'the-veil-torn',
+    name: 'The Veil Torn',
+    giver: 'magister-quell',
+    text: 'Since the Tearborn fell, every brass rod in Shardwatch has pointed the same way: north, past the Blightwood, to the Riftscar Wastes, where the Rift first tore the world open in the old war. Something there is still feeding the crack in the Vale, and Quell is sure what: the Pale Herald, the Hollow King’s own voice, who keeps the Sigil of the Veil. The mages of Veilwatch have held their wards up in the south-east of the wastes for three hundred years. Take the north track out of the Blightwood to Veilwatch and find Archmage Orrin.',
+    objective: { kind: 'talk', npc: 'archmage-orrin', label: 'Talk to Archmage Orrin in Veilwatch' },
+    after: ['the-heart-of-the-tear'],
+    level: 53,
+    reward: { xp: 1850, gold: 650 },
+  },
+  /* ------------------------------------------------------- the Sigil of the Veil */
+  {
+    id: 'the-fallen-ward',
+    name: 'The Fallen Ward',
+    giver: 'archmage-orrin',
+    text: 'Veilwatch keeps a ring of ward-towers round the wastes, and each one holds back a piece of the Rift the way a hand holds a door. Three nights ago the tower west of the bastion went dark, and its two wardmages haven’t sent so much as a pigeon. Orrin would like to know why before the next one goes. Go west to the Fallen Ward.',
+    objective: { kind: 'explore', spot: 'fallen-ward', label: 'Find out what happened at the Fallen Ward west of Veilwatch' },
+    after: ['the-veil-torn'],
+    zone: 'riftscar',
+    reward: { xp: 1850, gold: 650 },
+  },
+  {
+    id: 'tear-wraiths',
+    name: 'Tear-Wraiths',
+    giver: 'archmage-orrin',
+    text: 'The wardmages are gone, and what came through the gap they left are tear-wraiths: the souls of those who fell into the Rift in the old war, torn as thin as cloth and blown back out. They throw Rift-lightning where you are going rather than where you are, which Orrin calls rude. Lay twelve of them to rest, round the Fallen Ward west of Veilwatch and over the glass.',
+    objective: { kind: 'kill', region: 'riftscar', count: 12, enemies: ['tear-wraith'], label: 'Lay tear-wraiths to rest' },
+    after: ['the-fallen-ward'],
+    zone: 'riftscar',
+    level: 54,
+    reward: { xp: 1900, gold: 660 },
+  },
+  {
+    id: 'the-pale-pilgrims',
+    name: 'The Pale Pilgrims',
+    giver: 'archmage-orrin',
+    text: 'Orrin’s lookouts have seen people walking across the glass at night, in pale robes and porcelain masks, singing. Living people, which nobody in Veilwatch has seen out there in a hundred years. They are all walking the same way: west, toward the far side of the wastes. Follow them and find where they gather.',
+    objective: { kind: 'explore', spot: 'heralds-camp', label: 'Find where the pilgrims gather in the far west' },
+    after: ['tear-wraiths'],
+    zone: 'riftscar',
+    level: 54,
+    reward: { xp: 1900, gold: 660 },
+  },
+  {
+    id: 'the-pale-acolytes',
+    name: 'The Pale Acolytes',
+    giver: 'archmage-orrin',
+    text: 'They are the Pale Herald’s pilgrims: acolytes who have swallowed slivers of Rift-glass to carry their master’s light, and when one of them dies, the glass tears its way out. Orrin would rather they stopped arriving. Break up the Herald’s Pilgrims in the far west of the wastes, ten of the acolytes at least, and step back from every one that falls.',
+    objective: { kind: 'kill', region: 'riftscar', count: 10, enemies: ['pale-acolyte'], label: 'Defeat the Herald’s pale acolytes' },
+    after: ['the-pale-pilgrims'],
+    zone: 'riftscar',
+    level: 55,
+    reward: { xp: 1950, gold: 680 },
+  },
+  {
+    id: 'the-heralds-sermons',
+    name: 'The Herald’s Sermons',
+    giver: 'archmage-orrin',
+    text: 'The acolytes are led by veil-weavers, who pull wraiths through the Veil with their bare hands and read the Herald’s sermons to the flock at night. Orrin wants the sermons: the Herald’s own words, written down, are worth more to him than any number of dead pilgrims. Take three from the veil-weavers, at the pilgrims’ camp in the far west or wherever they lead their flocks.',
+    objective: { kind: 'loot', region: 'riftscar', item: 'Veil-Silk Sermon', from: ['veil-weaver'], chance: 0.4, count: 3, label: 'Take Veil-Silk Sermons from veil-weavers' },
+    after: ['the-pale-acolytes'],
+    zone: 'riftscar',
+    level: 55,
+    reward: { xp: 1950, gold: 680 },
+  },
+  {
+    id: 'lyras-reading',
+    name: 'Lyra’s Reading',
+    giver: 'archmage-orrin',
+    text: 'The sermons are written on veil-silk in a hand that moves when you look away from it, and Orrin has looked away from it a great deal. Arcanist Lyra keeps Veilwatch’s cabinet of things that shouldn’t be, and reads them for fun. Take the sermons to her on the bastion’s square.',
+    objective: { kind: 'talk', npc: 'arcanist-lyra', label: 'Bring the sermons to Arcanist Lyra' },
+    after: ['the-heralds-sermons'],
+    zone: 'riftscar',
+    level: 55,
+    reward: { xp: 1900, gold: 680 },
+  },
+  {
+    id: 'the-spires-foot',
+    name: 'The Spire’s Foot',
+    giver: 'archmage-orrin',
+    text: 'The Herald built his Spire round the Sigil of the Veil like a lamp round its flame, Lyra says, and he burns it to hold the Rift open from this side. The Spire of the Rift stands in the far north-west of the wastes, where the floating stones are thickest. Go to its foot and see what guards the door.',
+    objective: { kind: 'explore', spot: 'spire-foot', label: 'Reach the foot of the Spire in the far north-west' },
+    after: ['lyras-reading'],
+    zone: 'riftscar',
+    level: 55,
+    reward: { xp: 1950, gold: 700, item: { rarity: 'rare' } },
+  },
+  {
+    id: 'the-veil-sentinel',
+    name: 'The Veil Sentinel',
+    giver: 'archmage-orrin',
+    text: 'The Spire’s way up is kept by the Veil Sentinel, a guardian the Sigil-wardens set over the Rift three hundred years ago and the Herald turned to keep it open instead. Orrin’s grandmother helped make it. He would like it broken, and he would like not to talk about it. Go into the Spire of the Rift and break the Sentinel.',
+    objective: { kind: 'boss', boss: 'veil-sentinel', label: 'Defeat the Veil Sentinel in the Spire of the Rift' },
+    after: ['the-spires-foot'],
+    zone: 'riftscar',
+    level: 56,
+    reward: { xp: 3200, gold: 1150, item: { rarity: 'rare' } },
+  },
+  {
+    id: 'the-pale-herald',
+    name: 'The Pale Herald',
+    giver: 'archmage-orrin',
+    text: 'At the top of the Spire the Pale Herald stands in the light of the Sigil of the Veil, feeding the Rift. He bought Varric with hollow gold, paid the Saltmarsh smugglers and the voidcallers who sang the Vale open: the Hollow King’s voice, in every lie since the crypt. Climb the Spire of the Rift, silence him, and take back the Sigil of the Veil.',
+    objective: { kind: 'boss', boss: 'the-pale-herald', label: 'Defeat the Pale Herald at the top of the Spire' },
+    after: ['the-veil-sentinel'],
+    zone: 'riftscar',
+    level: 57,
+    reward: {
+      xp: 8000,
+      gold: 2300,
+      item: 'mantle-of-veilwatch',
+      perk: 'sigil-veil',
+      text: 'The Herald falls silent at last, and the Hollow King has lost his voice. In the light at the top of the Spire you take the Sigil of the Veil, and the Rift, for the first time in three hundred years, begins to close. Orrin takes off the mantle every archmage of Veilwatch has worn and puts it round your shoulders. “The wards can keep themselves now,” he says. “Go and finish it.”',
+    },
+  },
+  /* -------------------------------------------------------- Pell's runner */
+  {
+    id: 'the-lost-runner',
+    name: 'The Lost Runner',
+    giver: 'steward-pell',
+    text: 'Steward Pell’s nephew Oswin runs messages and lamp-oil between the ward-towers, and has the fastest legs in Veilwatch and the shortest attention. Two days ago he ran north to the Glass Flats with oil for the north ward and hasn’t run back. Pell has counted the bastion’s spoons twice to keep from worrying. Go north to the Glass Flats and find him.',
+    objective: { kind: 'explore', spot: 'glass-flats', label: 'Look for Oswin on the Glass Flats north of Veilwatch' },
+    after: ['the-veil-torn'],
+    zone: 'riftscar',
+    level: 54,
+    reward: { xp: 1900, gold: 660 },
+  },
+  {
+    id: 'stalkers-on-the-glass',
+    name: 'Stalkers on the Glass',
+    giver: 'steward-pell',
+    text: 'Oswin is alive, sitting in a chalk ward-circle in the middle of the Glass Flats, where he has been for two days, with void stalkers pacing round the edge of it. They pounce along a line and vanish when you corner them, and the chalk is wearing thin. Kill ten void stalkers on the Glass Flats north of Veilwatch so he can run home.',
+    objective: { kind: 'kill', region: 'riftscar', count: 10, enemies: ['void-stalker'], label: 'Kill void stalkers on the Glass Flats' },
+    after: ['the-lost-runner'],
+    zone: 'riftscar',
+    level: 54,
+    reward: { xp: 2200, gold: 1000, item: 'oswins-runners', text: 'Oswin runs home the moment the last stalker drops, and is in Pell’s kitchen before you are. He gives you his running boots, a size too big. “I’ve grown out of them,” he says. He hasn’t.' },
+  },
+  /* -------------------------------------------------------- Lyra's orrery */
+  {
+    id: 'floatstone-hearts',
+    name: 'Floatstone Hearts',
+    giver: 'arcanist-lyra',
+    text: 'The stones that float over the wastes float because something in them remembers the other side of the Veil, and the shard golems that lumber round the Fallen Ward, west of Veilwatch, are made of the same stuff. Lyra wants their hearts for an orrery that will show where every stone over the wastes will be tomorrow. Four, please, still humming.',
+    objective: { kind: 'loot', region: 'riftscar', item: 'Floatstone Heart', from: ['shard-golem'], chance: 0.4, count: 4, label: 'Take Floatstone Hearts from shard golems' },
+    after: ['the-veil-torn'],
+    zone: 'riftscar',
+    level: 55,
+    reward: { xp: 1950, gold: 680 },
+  },
+  {
+    id: 'the-weavers-loom',
+    name: 'The Weavers’ Loom',
+    giver: 'arcanist-lyra',
+    text: 'The orrery turns, and what it shows is wrong: the floating stones are coming down, one by one, every night, toward the far north-west. The veil-weavers are pulling them out of the sky to build the Herald’s Spire higher. Lyra would like her sky left alone. Kill six veil-weavers, at the pilgrims’ camp in the far west or wherever they lead their flocks.',
+    objective: { kind: 'kill', region: 'riftscar', count: 6, enemies: ['veil-weaver'], label: 'Cut the veil-weavers’ threads' },
+    after: ['floatstone-hearts'],
+    zone: 'riftscar',
+    level: 55,
+    reward: { xp: 2200, gold: 1000, item: 'lyras-orrery', text: 'The stones stop falling. Lyra built two orreries, and gives you the one that’s wrong; no, she corrects herself, the one that’s right. She keeps the other to remind herself.' },
+  },
+  /* -------------------------------------------------------- Tamsin's Tear */
+  {
+    id: 'the-first-tear',
+    name: 'The First Tear',
+    giver: 'wardmage-tamsin',
+    text: 'Wardmage Tamsin keeps the oldest ward of all, on the First Tear, in the middle of the wastes north-west of Veilwatch: the place where the Rift first broke the world open, three hundred years ago. For a week the ward has been screaming, and wards don’t scream unless something is pushing on them from the other side. Go and look at the First Tear.',
+    objective: { kind: 'explore', spot: 'the-first-tear', label: 'Look at the First Tear in the middle of the wastes' },
+    after: ['the-veil-torn'],
+    zone: 'riftscar',
+    level: 55,
+    reward: { xp: 1950, gold: 680 },
+  },
+  {
+    id: 'horrors-of-the-tear',
+    name: 'Horrors of the Tear',
+    giver: 'wardmage-tamsin',
+    text: 'Things are coming through the First Tear, or halfway through: rift horrors, heaps of eyes and limbs with the rest of them still on the other side, which hurl themselves at anything and pull themselves back together if you let them. Kill six round the First Tear, north-west of Veilwatch, before more of them finish arriving.',
+    objective: { kind: 'kill', region: 'riftscar', count: 6, enemies: ['rift-horror'], label: 'Kill rift horrors round the First Tear' },
+    after: ['the-first-tear'],
+    zone: 'riftscar',
+    level: 56,
+    reward: { xp: 2000, gold: 700 },
+  },
+  {
+    id: 'the-unmade',
+    name: 'The Unmade',
+    giver: 'wardmage-tamsin',
+    text: 'What is pushing on Tamsin’s ward is the Unmade: the first thing that ever came through the Rift, three hundred years ago, that never finished arriving and has been standing in the Tear ever since. The Herald’s light woke it. It brings its whole weight down in a ring, calls void stalkers out of the Tear and knits itself back together when you let it be. Kill it at the First Tear, and stand well back when it comes apart.',
+    objective: { kind: 'kill', region: 'riftscar', count: 1, enemies: ['the-unmade'], label: 'Kill the Unmade at the First Tear' },
+    after: ['horrors-of-the-tear'],
+    zone: 'riftscar',
+    level: 56,
+    reward: { xp: 2800, gold: 1000, item: 'heart-of-the-unmade', text: 'The Unmade comes apart everywhere at once, and the First Tear goes quiet. In the glass where it stood lies the only part of it that was ever finished. Tamsin seals it in a ward and gives it to you. “It wants to be something,” she says. “Let it be yours.”' },
+  },
+];
+
+export const RIFTSCAR_NPCS: Record<string, NpcDef> = {
+  'archmage-orrin': {
+    id: 'archmage-orrin',
+    name: 'Archmage Orrin',
+    title: 'Archmage of Veilwatch',
+    sprite: 'villager',
+    talk: [
+      {
+        when: { quest: 'the-veil-torn', state: 'active' },
+        lines: ['Quell sent you. He writes to me every spring to ask whether the Rift is still there. I write back: yes.', 'Orrin. Veilwatch has held its wards round this place for three hundred years. This year, for the first time, the Rift is pushing back.'],
+      },
+      {
+        when: { quest: 'the-fallen-ward', state: 'active' },
+        lines: ['The west tower went dark three nights ago. The Fallen Ward, they’re calling it already. Mages are terrible for naming things early.', 'Two wardmages were in it. Go west and find out why I haven’t heard from them.'],
+      },
+      { when: { quest: 'tear-wraiths', state: 'active' }, lines: ['Tear-wraiths. The ones who fell into the Rift in the old war, blown back out as thin as cloth.', 'They aim where you’re going. Go somewhere else at the last moment. It’s a good rule generally.'] },
+      { when: { quest: 'the-pale-pilgrims', state: 'active' }, lines: ['Living people, walking on the glass at night. Singing. Nobody living has walked out there for a hundred years, and none of them sang.', 'They walk west. Follow them.'] },
+      { when: { quest: 'the-pale-acolytes', state: 'active' }, lines: ['They swallow Rift-glass for him. For the Herald. And when they die, it comes back out.', 'Break up the camp. Step back from every one that falls. I don’t want to have to write to anyone about you.'] },
+      { when: { quest: 'the-heralds-sermons', state: 'active' }, lines: ['The weavers read the Herald’s sermons to the flock every night. His own words, written down.', 'Bring me three. Every lie he’s told the world started as a sermon. I want to see where.'] },
+      { when: { quest: 'lyras-reading', state: 'active' }, lines: ['The writing moves when I look away. I have tried not looking away. That was worse.', 'Take them to Lyra. She reads that sort of thing for fun. I worry about her.'] },
+      {
+        when: { quest: 'the-spires-foot', state: 'active' },
+        lines: ['A lamp round a flame, Lyra says. The Spire is built round the Sigil of the Veil, and he burns it to hold the door open.', 'Far north-west, where the stones float thickest. Go to its foot and tell me what keeps the door.'],
+      },
+      {
+        when: { quest: 'the-veil-sentinel', state: 'active' },
+        lines: ['The Veil Sentinel. My grandmother helped make it, to keep the Rift shut. He has turned it round to keep it open.', 'Break it. I’ll tell her when I see her. She’ll want to know it took a hero.'],
+      },
+      {
+        when: { quest: 'the-pale-herald', state: 'active' },
+        lines: ['The Herald. Hollow gold in Thornvale, smugglers on the coast, the voidcallers in the Vale: all him. The King’s voice.', 'Climb the Spire and silence it. Then bring the Sigil of the Veil down where it belongs, which is anywhere but up there.'],
+      },
+      {
+        when: { quest: 'the-pale-herald', state: 'done' },
+        lines: ['The Rift is closing. I can feel the wards breathing out. Three hundred years of holding a door, and someone finally shut it.', 'One more sigil out of the King’s reach. When you have them all, go north, to the Pale Reach and Duskspire. And wear the mantle in the cold.'],
+      },
+      { lines: ['Veilwatch. A bastion, a ring of ward-towers, and three hundred years of mages arguing about the best way to hold a door shut.', 'Don’t touch the floating stones. They don’t like it, and they remember.'] },
+    ],
+  },
+  'steward-pell': {
+    id: 'steward-pell',
+    name: 'Steward Pell',
+    title: 'Innkeeper',
+    sprite: 'villager',
+    shop: 'inn',
+    shopName: 'The Warded Hearth',
+    talk: [
+      {
+        when: { quest: 'the-lost-runner', state: 'active' },
+        lines: ['Oswin, my sister’s boy. Fastest legs in Veilwatch, shortest attention in the north. He took oil to the north ward two days ago.', 'He hasn’t come back, and I’ve counted the spoons twice. Go north to the Glass Flats. Please. Before I count the forks.'],
+      },
+      {
+        when: { quest: 'stalkers-on-the-glass', state: 'active' },
+        lines: ['In a chalk circle? For two days? That’s the most patient he has ever been.', 'Kill the stalkers round him. Ten, you say? Kill eleven. I’ll pay for the extra.'],
+      },
+      { when: { quest: 'stalkers-on-the-glass', state: 'done' }, lines: ['He was in the kitchen before you were. Eating. Of course he was.', 'The boots are yours. He says he’s grown out of them. Look at him. He hasn’t grown at all.'] },
+      { when: { quest: 'the-pale-herald', state: 'done' }, lines: ['The wards are quiet, the mages are sleeping, and I have counted the spoons only once today. That is how I know the world is better.'] },
+      { lines: ['The Warded Hearth. Beds inside the inner ward, potions on the shelf, soup in the pot.', 'Every bed has a ward over it. The one by the window has two. Don’t ask.'] },
+    ],
+  },
+  'arcanist-lyra': {
+    id: 'arcanist-lyra',
+    name: 'Arcanist Lyra',
+    title: 'Arcanist',
+    sprite: 'villager',
+    shop: 'curios',
+    shopName: 'The Floatstone Cabinet',
+    talk: [
+      {
+        when: { quest: 'lyras-reading', state: 'active' },
+        lines: [
+          'Veil-silk! And the hand moves. Lovely. Hold still, sermon.',
+          '“The Veil is a door, the Sigil its keystone. I have built my Spire round it as a lamp round its flame, and while it burns the door stands open, and he shall walk through.”',
+          'He. The King, of course. The Herald is holding the Rift open for his master. Tell Orrin. And tell him I said “lovely”; it annoys him.',
+        ],
+      },
+      {
+        when: { quest: 'floatstone-hearts', state: 'active' },
+        lines: ['The floating stones remember the other side of the Veil. That’s why they float: they’re homesick.', 'The shard golems round the Fallen Ward, west of here, are made of the same stuff. Four hearts, please. Humming, not cracked.'],
+      },
+      {
+        when: { quest: 'the-weavers-loom', state: 'active' },
+        lines: ['My orrery says the stones are coming down. One a night, toward the Spire.', 'The weavers are pulling them out of my sky to build his tower higher. Six fewer weavers. My sky, my rules.'],
+      },
+      { when: { quest: 'the-weavers-loom', state: 'done' }, lines: ['The stones have stopped falling. The orrery’s yours; I kept the one that’s wrong, to keep myself humble. It isn’t working.'] },
+      { lines: ['The Floatstone Cabinet. Rings, charms and relics from the wastes, all of them examined and most of them harmless.', 'If something in here floats, put it back where it was. Exactly where it was.'] },
+    ],
+  },
+  'wardmage-tamsin': {
+    id: 'wardmage-tamsin',
+    name: 'Wardmage Tamsin',
+    title: 'Wardmage of the First Tear',
+    sprite: 'villager',
+    talk: [
+      {
+        when: { quest: 'the-first-tear', state: 'active' },
+        lines: ['I keep the ward on the First Tear, in the middle of the wastes, north-west of here. The oldest ward there is. My teacher kept it, and hers.', 'It has been screaming for a week. Wards don’t scream unless something is pushing. Go and look. Don’t touch the glass.'],
+      },
+      {
+        when: { quest: 'horrors-of-the-tear', state: 'active' },
+        lines: ['Horrors. Halfway through, the rest still on the other side. Hit them hard and don’t let them rest; they mend over there.', 'Six. Then I can think about what’s pushing them.'],
+      },
+      {
+        when: { quest: 'the-unmade', state: 'active' },
+        lines: ['The Unmade. It came through first, three hundred years ago, and never finished. My teacher used to sing to it. It used to stay still.', 'The Herald’s light woke it. Kill it. And when it comes apart, be somewhere else.'],
+      },
+      { when: { quest: 'the-unmade', state: 'done' }, lines: ['The Tear is quiet. The ward is only humming, the way it should. I may sleep tonight. I may sleep for a week.'] },
+      { when: { quest: 'the-veil-sentinel', state: 'active' }, lines: ['The Sentinel was made to shut the Rift. The Herald turned it inside out. Break it cleanly; it was a good guardian once.'] },
+      { lines: ['Wardmage Tamsin. I hold the oldest door in the world shut, and on a good day it doesn’t know I’m doing it.', 'Keep off the glass after dark. It reflects things that aren’t there.'] },
+    ],
+  },
+};

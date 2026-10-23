@@ -35,6 +35,7 @@ export const GLIMMERWOOD = wildRegion(
     exits: [
       { side: 'e', at: 0.5, to: 'grimward', label: 'East road to the Grimward Moors' },
       { side: 'w', at: 0.4, to: 'rimeheld', label: 'West road to Rimeheld', minLevel: 32 },
+      { side: 'n', at: 0.4, to: 'blightwood', label: 'North road to the Blightwood', minLevel: 41 },
     ],
     pois: [
       // the chain's end: the Prince holds his thorned court in the old Summer Hall
