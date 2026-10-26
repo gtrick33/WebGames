@@ -4,69 +4,19 @@
  * so content can grow without touching the simulation, and saves only ever store ids.
  */
 
-import type { ShopId } from "./vendors";
+import type { ShopId } from './vendors';
 
-export type ClassId =
-  "mage" | "warrior" | "ranger" | "warlock" | "priest" | "paladin" | "druid";
-export type DmgType =
-  | "physical"
-  | "fire"
-  | "frost"
-  | "lightning"
-  | "poison"
-  | "arcane"
-  | "shadow"
-  | "holy"
-  | "nature";
-export type StatusId =
-  | "burn"
-  | "poison"
-  | "chill"
-  | "freeze"
-  | "shock"
-  | "stun"
-  | "root"
-  | "armorBreak"
-  | "mark"
-  | "weaken"
-  | "bleed"
-  | "curse"
-  | "fear";
-export type SlotId =
-  | "weapon"
-  | "offhand"
-  | "head"
-  | "chest"
-  | "legs"
-  | "hands"
-  | "feet"
-  | "amulet"
-  | "ring"
-  | "relic";
-export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
+export type ClassId = 'mage' | 'warrior' | 'ranger' | 'warlock' | 'priest' | 'paladin' | 'druid';
+export type DmgType = 'physical' | 'fire' | 'frost' | 'lightning' | 'poison' | 'arcane' | 'shadow' | 'holy' | 'nature';
+export type StatusId = 'burn' | 'poison' | 'chill' | 'freeze' | 'shock' | 'stun' | 'root' | 'armorBreak' | 'mark' | 'weaken' | 'bleed' | 'curse' | 'fear';
+export type SlotId = 'weapon' | 'offhand' | 'head' | 'chest' | 'legs' | 'hands' | 'feet' | 'amulet' | 'ring' | 'relic';
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
-export const SLOTS: SlotId[] = [
-  "weapon",
-  "offhand",
-  "head",
-  "chest",
-  "legs",
-  "hands",
-  "feet",
-  "amulet",
-  "ring",
-  "relic",
-];
+export const SLOTS: SlotId[] = ['weapon', 'offhand', 'head', 'chest', 'legs', 'hands', 'feet', 'amulet', 'ring', 'relic'];
 
 /** What a worn piece is made of (it decides how it looks on the hero). */
-export type Material = "cloth" | "leather" | "mail" | "plate" | "gold";
-export const RARITIES: Rarity[] = [
-  "common",
-  "uncommon",
-  "rare",
-  "epic",
-  "legendary",
-];
+export type Material = 'cloth' | 'leather' | 'mail' | 'plate' | 'gold';
+export const RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
 
 /**
  * Character stats. Percentages are whole numbers (power 25 = +25% damage).
@@ -76,36 +26,14 @@ export const RARITIES: Rarity[] = [
  * - healing: % more from your heals and healing over time · pet: % more damage and health for companions
  * - fire / frost / lightning / poison / physical / arcane / shadow / holy / nature: % damage of that type
  */
-export type StatKey =
-  | "hp"
-  | "hpPct"
-  | "power"
-  | "crit"
-  | "critDmg"
-  | "haste"
-  | "armor"
-  | "speed"
-  | "regen"
-  | "ultCharge"
-  | "potion"
-  | "healing"
-  | "pet"
-  | DmgType;
+export type StatKey = 'hp' | 'hpPct' | 'power' | 'crit' | 'critDmg' | 'haste' | 'armor' | 'speed' | 'regen' | 'ultCharge' | 'potion' | 'healing' | 'pet' | DmgType;
 export type Stats = Record<StatKey, number>;
 
 /** Skill slots on the action bar. */
-export type SlotKey = "basic" | "s1" | "s2" | "s3" | "s4" | "ult" | "dodge";
-export const ACTION_SLOTS: SlotKey[] = [
-  "basic",
-  "s1",
-  "s2",
-  "s3",
-  "s4",
-  "ult",
-  "dodge",
-];
+export type SlotKey = 'basic' | 's1' | 's2' | 's3' | 's4' | 'ult' | 'dodge';
+export const ACTION_SLOTS: SlotKey[] = ['basic', 's1', 's2', 's3', 's4', 'ult', 'dodge'];
 /** The skill slots a player fills (four since blueprint V2.9; saves with three get an empty fourth). */
-export const SKILL_SLOTS = ["s1", "s2", "s3", "s4"] as const;
+export const SKILL_SLOTS = ['s1', 's2', 's3', 's4'] as const;
 export type SkillIndex = 0 | 1 | 2 | 3;
 
 /* ------------------------------------------------------------------ skills */
@@ -127,21 +55,7 @@ export type SkillIndex = 0 | 1 | 2 | 3;
  * - summon: like buff, its cast effects are the skill (a { kind: 'summon' } effect calls companions; casting again heals the ones that stay)
  * - form: takes on a shape (druids): the bar changes until the form is cast again
  */
-export type CastKind =
-  | "projectile"
-  | "melee"
-  | "nova"
-  | "chain"
-  | "blink"
-  | "dash"
-  | "ground"
-  | "trap"
-  | "channel"
-  | "mark"
-  | "buff"
-  | "drain"
-  | "summon"
-  | "form";
+export type CastKind = 'projectile' | 'melee' | 'nova' | 'chain' | 'blink' | 'dash' | 'ground' | 'trap' | 'channel' | 'mark' | 'buff' | 'drain' | 'summon' | 'form';
 
 /** A field left on the ground (burning ground, poison cloud, arrow rain). Damage is a share of the skill's hit. */
 export interface GroundSpec {
@@ -154,83 +68,49 @@ export interface GroundSpec {
   dmgType: DmgType;
   status?: { status: StatusId; dur: number; power: number };
   /** Visual style. */
-  look:
-    | "fire"
-    | "poison"
-    | "frost"
-    | "arrows"
-    | "lightning"
-    | "rift"
-    | "shadow"
-    | "holy"
-    | "nature";
+  look: 'fire' | 'poison' | 'frost' | 'arrows' | 'lightning' | 'rift' | 'shadow' | 'holy' | 'nature';
 }
 
 /** Something that happens because of a hit, an impact, a kill or a cast. */
 export type Effect =
   /** A status on the enemy hit. Damage over time (burn, poison, bleed, curse) is `power` × the hit per second; a curse deals `dmgType` (shadow unless set). */
-  | {
-      kind: "status";
-      status: StatusId;
-      dur: number;
-      power: number;
-      chance?: number;
-      dmgType?: DmgType;
-    }
+  | { kind: 'status'; status: StatusId; dur: number; power: number; chance?: number; dmgType?: DmgType }
   /** A burst at the impact point: `mul` of the skill's damage to every enemy within `radius`. */
-  | {
-      kind: "explode";
-      radius: number;
-      mul: number;
-      dmgType?: DmgType;
-      status?: { status: StatusId; dur: number; power: number };
-    }
+  | { kind: 'explode'; radius: number; mul: number; dmgType?: DmgType; status?: { status: StatusId; dur: number; power: number } }
   /** The projectile bursts into `count` smaller ones flying outward, each with `mul` of its damage. */
-  | { kind: "split"; count: number; mul: number }
+  | { kind: 'split'; count: number; mul: number }
   /** Lightning leaps to `jumps` more enemies within `range`, each hit `mul` of the last. */
-  | {
-      kind: "chain";
-      jumps: number;
-      range: number;
-      mul: number;
-      dmgType?: DmgType;
-    }
+  | { kind: 'chain'; jumps: number; range: number; mul: number; dmgType?: DmgType }
   /** Heals the caster for `pct`% of max health. */
-  | { kind: "heal"; pct: number }
+  | { kind: 'heal'; pct: number }
   /** A shield absorbing `pct`% of max health, for `dur` seconds. */
-  | { kind: "shield"; pct: number; dur: number }
+  | { kind: 'shield'; pct: number; dur: number }
   /** A burst around the caster. */
-  | {
-      kind: "nova";
-      radius: number;
-      mul: number;
-      dmgType?: DmgType;
-      status?: { status: StatusId; dur: number; power: number };
-    }
+  | { kind: 'nova'; radius: number; mul: number; dmgType?: DmgType; status?: { status: StatusId; dur: number; power: number } }
   /** A wave that rolls forward from the impact along the aim, through every enemy. */
-  | { kind: "shockwave"; length: number; width: number; mul: number }
+  | { kind: 'shockwave'; length: number; width: number; mul: number }
   /** Leaves a field on the ground. */
-  | { kind: "ground"; ground: GroundSpec }
+  | { kind: 'ground'; ground: GroundSpec }
   /** Pulls enemies within `radius` toward the point. */
-  | { kind: "pull"; radius: number; force: number }
+  | { kind: 'pull'; radius: number; force: number }
   /** Resets the cooldown of one skill (or a random skill on cooldown; never the ultimate). */
-  | { kind: "resetCd"; skill?: string }
+  | { kind: 'resetCd'; skill?: string }
   /** Takes `s` seconds off every cooldown (not the ultimate). */
-  | { kind: "cdr"; s: number }
+  | { kind: 'cdr'; s: number }
   /** Adds `pct` points of ultimate charge. */
-  | { kind: "charge"; pct: number }
+  | { kind: 'charge'; pct: number }
   /** Delayed burst at the point (the dodge's rift): `mul` of the class's reference damage after `delay` s. */
-  | { kind: "riftBurst"; radius: number; mul: number; delay: number }
+  | { kind: 'riftBurst'; radius: number; mul: number; delay: number }
   /** A buff on the caster for `dur` seconds (stats, damage taken cut, healing over time). */
-  | { kind: "buff"; buff: BuffDef }
+  | { kind: 'buff'; buff: BuffDef }
   /** Gains `n` of the class's resource (rage, holy power; mana in % of the maximum). */
-  | { kind: "resource"; n: number }
+  | { kind: 'resource'; n: number }
   /** Enemies within `radius` run away in fear for `dur` seconds (bosses are slowed instead). */
-  | { kind: "fear"; radius: number; dur: number }
+  | { kind: 'fear'; radius: number; dur: number }
   /** Calls `count` companions (PETS by id) for `dur` seconds (0 = until they fall). */
-  | { kind: "summon"; pet: string; count: number; dur: number }
+  | { kind: 'summon'; pet: string; count: number; dur: number }
   /** Costs the caster `pct`% of their max health (never below 1). */
-  | { kind: "sacrifice"; pct: number };
+  | { kind: 'sacrifice'; pct: number };
 
 /** A timed buff on the hero. The same id refreshes instead of stacking. */
 export interface BuffDef {
@@ -254,7 +134,7 @@ export interface SkillSpec {
   id: string;
   cast: CastKind;
   /** direction: aim a heading · ground: aim a point · self: no aim. */
-  aim: "direction" | "ground" | "self";
+  aim: 'direction' | 'ground' | 'self';
   /** Travel distance (projectiles, dashes, blink) or the farthest point a ground skill can be aimed. */
   range: number;
   cooldown: number;
@@ -285,7 +165,7 @@ export interface SkillSpec {
   onCast: Effect[];
   trail?: GroundSpec;
   /** Extra damage against enemies with a status, or below 30% health ('lowHp'). */
-  bonusVs: { status: StatusId | "lowHp"; pct: number }[];
+  bonusVs: { status: StatusId | 'lowHp'; pct: number }[];
   /** Extra damage when cast soon after a dodge. */
   afterDodge?: { window: number; pct: number };
   /** Skill-specific knobs: chain jumps and range, trap limit, echo waves, pull, mana per hit, etc. */
@@ -306,7 +186,7 @@ export interface SkillDef {
   id: string;
   name: string;
   cls: ClassId;
-  kind: "basic" | "skill" | "ultimate" | "dodge";
+  kind: 'basic' | 'skill' | 'ultimate' | 'dodge';
   /** Character level that unlocks it. */
   unlock: number;
   /** One line shown on the button's details. */
@@ -316,32 +196,32 @@ export interface SkillDef {
 
 /** What an item or talent does to one skill. Numbers add up across sources, then apply (see build.ts). */
 export type SkillOp =
-  | { op: "damage"; pct: number }
-  | { op: "cooldown"; pct: number }
-  | { op: "area"; pct: number }
-  | { op: "range"; pct: number }
-  | { op: "duration"; pct: number }
-  | { op: "arc"; pct: number }
-  | { op: "pierce"; n: number }
-  | { op: "bounce"; n: number }
-  | { op: "projectiles"; n: number; spread?: number }
-  | { op: "charges"; n: number }
-  | { op: "extra"; key: string; n: number; label: string }
-  | { op: "convert"; dmgType: DmgType; look?: string }
-  | { op: "onHit" | "onImpact" | "onKill" | "onCast"; effect: Effect }
-  | { op: "trail"; ground: GroundSpec }
-  | { op: "bonusVs"; status: StatusId | "lowHp"; pct: number }
-  | { op: "afterDodge"; window: number; pct: number }
+  | { op: 'damage'; pct: number }
+  | { op: 'cooldown'; pct: number }
+  | { op: 'area'; pct: number }
+  | { op: 'range'; pct: number }
+  | { op: 'duration'; pct: number }
+  | { op: 'arc'; pct: number }
+  | { op: 'pierce'; n: number }
+  | { op: 'bounce'; n: number }
+  | { op: 'projectiles'; n: number; spread?: number }
+  | { op: 'charges'; n: number }
+  | { op: 'extra'; key: string; n: number; label: string }
+  | { op: 'convert'; dmgType: DmgType; look?: string }
+  | { op: 'onHit' | 'onImpact' | 'onKill' | 'onCast'; effect: Effect }
+  | { op: 'trail'; ground: GroundSpec }
+  | { op: 'bonusVs'; status: StatusId | 'lowHp'; pct: number }
+  | { op: 'afterDodge'; window: number; pct: number }
   /** More of the resource gained when used. */
-  | { op: "gen"; n: number }
+  | { op: 'gen'; n: number }
   /** Costs `pct`% less of the resource. */
-  | { op: "cost"; pct: number };
+  | { op: 'cost'; pct: number };
 
 /** A triggered effect with its own chance and internal cooldown. */
 export interface ProcDef {
   /** Unique id: the internal cooldown is tracked per proc. */
   id: string;
-  on: "hit" | "crit" | "kill" | "dodge" | "hurt" | "ult";
+  on: 'hit' | 'crit' | 'kill' | 'dodge' | 'hurt' | 'ult';
   /** Only hits of this damage type / from this skill / against enemies with this status count. */
   dmgType?: DmgType;
   skill?: string;
@@ -357,40 +237,37 @@ export interface ProcDef {
  * What an item or talent changes. A stat mod with `when` counts only then (below half health, or for
  * 3 s after a dodge). A skill mod's `skill` is a skill id, or '*' for every skill the hero has.
  */
-export type Mod =
-  | { t: "stat"; stat: StatKey; v: number; when?: "lowHp" | "afterDodge" }
-  | { t: "skill"; skill: string; op: SkillOp }
-  | { t: "proc"; proc: ProcDef };
+export type Mod = { t: 'stat'; stat: StatKey; v: number; when?: 'lowHp' | 'afterDodge' } | { t: 'skill'; skill: string; op: SkillOp } | { t: 'proc'; proc: ProcDef };
 
 /* ------------------------------------------------------------------- items */
 
 /** The shape of a slot's artwork. */
 export type ItemIcon =
-  | "staff"
-  | "wand"
-  | "sword"
-  | "axe"
-  | "hammer"
-  | "bow"
-  | "orb"
-  | "tome"
-  | "shield"
-  | "quiver"
-  | "hood"
-  | "helm"
-  | "cap"
-  | "crown"
-  | "robe"
-  | "plate"
-  | "jerkin"
-  | "legs"
-  | "gloves"
-  | "boots"
-  | "amulet"
-  | "ring"
-  | "relic"
-  | "shard"
-  | "potion";
+  | 'staff'
+  | 'wand'
+  | 'sword'
+  | 'axe'
+  | 'hammer'
+  | 'bow'
+  | 'orb'
+  | 'tome'
+  | 'shield'
+  | 'quiver'
+  | 'hood'
+  | 'helm'
+  | 'cap'
+  | 'crown'
+  | 'robe'
+  | 'plate'
+  | 'jerkin'
+  | 'legs'
+  | 'gloves'
+  | 'boots'
+  | 'amulet'
+  | 'ring'
+  | 'relic'
+  | 'shard'
+  | 'potion';
 
 /** A hand-made item: fixed mods, stats that scale with the item level. */
 export interface ItemDef {
@@ -516,7 +393,7 @@ export interface FormDef {
  * - holy: Holy Power, 0-5 points built by some skills and spent by others; fades out of combat.
  */
 export interface ResourceDef {
-  kind: "mana" | "rage" | "energy" | "focus" | "holy";
+  kind: 'mana' | 'rage' | 'energy' | 'focus' | 'holy';
   name: string;
   color: string;
   /** Maximum at level 1, and per level after (mana); the fixed maximum otherwise (perLevel 0). */
@@ -559,15 +436,7 @@ export interface ClassDef {
  * Divers keep their distance, then swoop along a marked line. Exploders run at you, swell, and burst
  * (they die doing it).
  */
-export type EnemyAi =
-  | "melee"
-  | "hopper"
-  | "ranged"
-  | "charger"
-  | "armored"
-  | "caster"
-  | "diver"
-  | "exploder";
+export type EnemyAi = 'melee' | 'hopper' | 'ranged' | 'charger' | 'armored' | 'caster' | 'diver' | 'exploder';
 
 export interface EnemyDef {
   id: string;
@@ -592,17 +461,7 @@ export interface EnemyDef {
   /** Physical damage taken is cut by this share unless its armor is broken (armored). */
   armor?: number;
   /** Ranged and caster attacks. `lead` aims ahead of a moving target (0-1: how far ahead). */
-  shot?: {
-    speed: number;
-    radius: number;
-    count: number;
-    spread: number;
-    color: string;
-    homing?: number;
-    lead?: number;
-    look?: string;
-    status?: { status: StatusId; dur: number; power: number };
-  };
+  shot?: { speed: number; radius: number; count: number; spread: number; color: string; homing?: number; lead?: number; look?: string; status?: { status: StatusId; dur: number; power: number } };
   /** Melee packs circle in from the sides instead of walking straight at you. */
   flank?: boolean;
   /** Mends a hurt ally nearby (this share of its health) instead of attacking. */
@@ -645,97 +504,96 @@ export interface EnemyDef {
   blurb: string;
 }
 
-export type EliteAffix =
-  "frenzied" | "molten" | "vampiric" | "shielded" | "volatile";
+export type EliteAffix = 'frenzied' | 'molten' | 'vampiric' | 'shielded' | 'volatile';
 
 /* ----------------------------------------------------------------- regions */
 
 export type RegionId =
-  | "emberwick"
-  | "briarhollow"
-  | "whisperwood"
-  | "crypt"
-  | "thornvale"
-  | "gallows-keep"
-  | "saltmarsh"
-  | "smugglers-grotto"
+  | 'emberwick'
+  | 'briarhollow'
+  | 'whisperwood'
+  | 'crypt'
+  | 'thornvale'
+  | 'gallows-keep'
+  | 'saltmarsh'
+  | 'smugglers-grotto'
   /* Acts I and II of the Hollow King (see WORLD.md) */
-  | "brackenridge"
-  | "greyfen"
-  | "amberfield"
-  | "duskfen"
-  | "rotmother-cistern"
-  | "ironpeak"
-  | "deepforge-halls"
-  | "ashen-barrows"
-  | "barrow-of-kings"
-  | "stormwatch"
+  | 'brackenridge'
+  | 'greyfen'
+  | 'amberfield'
+  | 'duskfen'
+  | 'rotmother-cistern'
+  | 'ironpeak'
+  | 'deepforge-halls'
+  | 'ashen-barrows'
+  | 'barrow-of-kings'
+  | 'stormwatch'
   /* Act III */
-  | "grimward"
-  | "sunscorch"
-  | "tomb-of-the-sun-king"
-  | "glimmerwood"
-  | "rimeheld"
-  | "rimeheld-vault"
-  | "shattered-vale"
-  | "sablewind"
-  | "vinecoil"
-  | "highwall"
-  | "siege-of-highwall"
+  | 'grimward'
+  | 'sunscorch'
+  | 'tomb-of-the-sun-king'
+  | 'glimmerwood'
+  | 'rimeheld'
+  | 'rimeheld-vault'
+  | 'shattered-vale'
+  | 'sablewind'
+  | 'vinecoil'
+  | 'highwall'
+  | 'siege-of-highwall'
   /* Act IV */
-  | "blightwood"
-  | "blightheart"
-  | "frostfang"
-  | "sunken-reaches"
-  | "bonefields"
-  | "weeping-woods"
-  | "emberdeep"
-  | "molten-throne"
-  | "riftscar"
-  | "spire-of-the-rift"
-  | "gloamhollow"
-  | "hollowmere"
-  | "pale-reach"
-  | "duskspire";
+  | 'blightwood'
+  | 'blightheart'
+  | 'frostfang'
+  | 'sunken-reaches'
+  | 'bonefields'
+  | 'weeping-woods'
+  | 'emberdeep'
+  | 'molten-throne'
+  | 'riftscar'
+  | 'spire-of-the-rift'
+  | 'gloamhollow'
+  | 'hollowmere'
+  | 'pale-reach'
+  | 'duskspire';
 /** How a region looks (see data/themes.ts): outdoor biomes, and the stone of indoor places. */
 export type Theme =
-  | "village"
-  | "forest"
-  | "farm"
-  | "coast"
-  | "autumn"
-  | "marsh"
-  | "plague"
-  | "plains"
-  | "mountain"
-  | "barrow"
-  | "storm"
-  | "moor"
-  | "desert"
-  | "fey"
-  | "snow"
-  | "rift"
-  | "jungle"
-  | "warfront"
-  | "blight"
-  | "haunted"
-  | "volcanic"
-  | "deadlake"
-  | "peaks"
-  | "sunken"
-  | "bonefield"
-  | "gloam"
-  | "pale"
-  | "crypt"
-  | "cave"
-  | "keep"
-  | "icecave"
-  | "temple"
-  | "lavacave"
-  | "citadel"
-  | "cistern"
-  | "roots"
-  | "riftspire";
+  | 'village'
+  | 'forest'
+  | 'farm'
+  | 'coast'
+  | 'autumn'
+  | 'marsh'
+  | 'plague'
+  | 'plains'
+  | 'mountain'
+  | 'barrow'
+  | 'storm'
+  | 'moor'
+  | 'desert'
+  | 'fey'
+  | 'snow'
+  | 'rift'
+  | 'jungle'
+  | 'warfront'
+  | 'blight'
+  | 'haunted'
+  | 'volcanic'
+  | 'deadlake'
+  | 'peaks'
+  | 'sunken'
+  | 'bonefield'
+  | 'gloam'
+  | 'pale'
+  | 'crypt'
+  | 'cave'
+  | 'keep'
+  | 'icecave'
+  | 'temple'
+  | 'lavacave'
+  | 'citadel'
+  | 'cistern'
+  | 'roots'
+  | 'riftspire';
 
 /** What a letter on a region map stands for (the terrain under it is the region's floor). */
 /**
@@ -743,7 +601,7 @@ export type Theme =
  * quest its giver is waiting to hand over; `started` means offered, active or done.
  */
 export type StoryCond =
-  | { quest: string; is: "locked" | "offered" | "active" | "done" | "started" }
+  | { quest: string; is: 'locked' | 'offered' | 'active' | 'done' | 'started' }
   | { all: StoryCond[] }
   | { any: StoryCond[] }
   | { not: StoryCond };
@@ -762,7 +620,7 @@ export interface Bark {
 export interface StoryEventDef {
   id: string;
   region: RegionId;
-  kind: "raid" | "defend" | "rescue" | "arrival";
+  kind: 'raid' | 'defend' | 'rescue' | 'arrival';
   /** Where it happens (a spot id): it starts when the hero comes within `radius` tiles. */
   at: string;
   radius: number;
@@ -787,65 +645,30 @@ export interface StoryEventDef {
 }
 
 export type Marker =
-  | { kind: "start" }
-  | {
-      kind: "pack";
-      enemies: string[];
-      elite?: boolean;
-      named?: string;
-      level?: number;
-      rare?: boolean;
-    }
-  | {
-      kind: "chest";
-      id: string;
-      tier: "common" | "rare" | "epic";
-      once?: boolean;
-    }
-  | { kind: "npc"; npc: string }
-  | {
-      kind: "exit";
-      to: RegionId;
-      label: string;
-      minLevel?: number;
-      needs?: string;
-    }
-  | { kind: "waystone" }
-  | { kind: "boss"; boss: string }
-  | { kind: "secret"; id: string }
-  | { kind: "shrine"; id: string }
-  | { kind: "dummy"; shooter?: boolean }
-  | { kind: "prop"; prop: string; solid?: boolean }
-  | { kind: "torch" }
-  | { kind: "checkpoint" }
-  | { kind: "hazard"; hazard: "bramble" | "spore" }
+  | { kind: 'start' }
+  | { kind: 'pack'; enemies: string[]; elite?: boolean; named?: string; level?: number; rare?: boolean }
+  | { kind: 'chest'; id: string; tier: 'common' | 'rare' | 'epic'; once?: boolean }
+  | { kind: 'npc'; npc: string }
+  | { kind: 'exit'; to: RegionId; label: string; minLevel?: number; needs?: string }
+  | { kind: 'waystone' }
+  | { kind: 'boss'; boss: string }
+  | { kind: 'secret'; id: string }
+  | { kind: 'shrine'; id: string }
+  | { kind: 'dummy'; shooter?: boolean }
+  | { kind: 'prop'; prop: string; solid?: boolean }
+  | { kind: 'torch' }
+  | { kind: 'checkpoint' }
+  | { kind: 'hazard'; hazard: 'bramble' | 'spore' }
   /** A building drawn over its footprint (w x h tiles, the marker at its bottom-left), with a name over the door. */
-  | {
-      kind: "building";
-      style:
-        | "house"
-        | "tavern"
-        | "inn"
-        | "shop"
-        | "smithy"
-        | "temple"
-        | "keep"
-        | "tower"
-        | "hall"
-        | "lighthouse";
-      w: number;
-      h: number;
-      name?: string;
-      art?: string;
-    }
+  | { kind: 'building'; style: 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall' | 'lighthouse'; w: number; h: number; name?: string; art?: string }
   /** A place to discover (an explore objective, a line in the log): walking within `r` tiles finds it. */
-  | { kind: "spot"; id: string; name: string; r: number }
+  | { kind: 'spot'; id: string; name: string; r: number }
   /** A flame on a roof or a beam while the region burns (a world state's dressing). */
-  | { kind: "fire"; size: number }
+  | { kind: 'fire'; size: number }
   /** A plume of colored vapor while it shows: grieflight over a corrupted shrine, marsh-rot over a well. */
-  | { kind: "wisp"; color: string; size: number }
+  | { kind: 'wisp'; color: string; size: number }
   /** A named point the story uses (where an event happens, where raiders come from); nothing to find. */
-  | { kind: "place"; id: string };
+  | { kind: 'place'; id: string };
 
 /** A marker put at a tile by a zone generator, instead of a letter on the map. */
 export interface PlacedMarkerDef {
@@ -894,7 +717,7 @@ export interface RegionDef {
   subtitle: string;
   theme: Theme;
   /** A town (safe), the wilds, or a dungeon (rooms, a boss at the end, difficulty tiers). */
-  kind: "town" | "wild" | "dungeon";
+  kind: 'town' | 'wild' | 'dungeon';
   /** Enemy level on Normal (in the wilds, at the way in; packs carry their own). */
   level: number;
   /** The levels the region is for, shown on the world map. */
@@ -919,53 +742,26 @@ export interface RegionDef {
   blurb: string;
 }
 
-export type MusicTrack =
-  "village" | "forest" | "crypt" | "plains" | "coast" | "cave";
+export type MusicTrack = 'village' | 'forest' | 'crypt' | 'plains' | 'coast' | 'cave';
 
 /* ------------------------------------------------------------------ quests */
 
 export type Objective =
-  | {
-      kind: "tutorial";
-      step: "attack" | "skill" | "dodge";
-      count: number;
-      label: string;
-    }
-  | {
-      kind: "kill";
-      region: RegionId;
-      count: number;
-      label: string;
-      enemies?: string[];
-    }
+  | { kind: 'tutorial'; step: 'attack' | 'skill' | 'dodge'; count: number; label: string }
+  | { kind: 'kill'; region: RegionId; count: number; label: string; enemies?: string[] }
   /** Things carried by some enemies: each kill of one of `from` has `chance` to give one. */
-  | {
-      kind: "loot";
-      region: RegionId;
-      item: string;
-      from: string[];
-      chance: number;
-      count: number;
-      label: string;
-    }
-  | { kind: "talk"; npc: string; label: string }
-  | { kind: "boss"; boss: string; label: string }
-  | { kind: "collect"; item: "shard"; count: number; label: string }
-  | { kind: "explore"; spot: string; label: string }
-  | { kind: "clear"; region: RegionId; tier: number; label: string }
+  | { kind: 'loot'; region: RegionId; item: string; from: string[]; chance: number; count: number; label: string }
+  | { kind: 'talk'; npc: string; label: string }
+  | { kind: 'boss'; boss: string; label: string }
+  | { kind: 'collect'; item: 'shard'; count: number; label: string }
+  | { kind: 'explore'; spot: string; label: string }
+  | { kind: 'clear'; region: RegionId; tier: number; label: string }
   /** A story event (raid, defense, rescue) the hero plays through. */
-  | { kind: "event"; event: string; label: string };
+  | { kind: 'event'; event: string; label: string };
 
 /** Lasting gifts from the ends of quest chains; the seven sigils are the main story's. */
-export type PerkId = "mount" | "satchel" | "flask" | "hearth" | SigilId;
-export type SigilId =
-  | "sigil-embers"
-  | "sigil-tides"
-  | "sigil-stone"
-  | "sigil-sun"
-  | "sigil-frost"
-  | "sigil-thorns"
-  | "sigil-veil";
+export type PerkId = 'mount' | 'satchel' | 'flask' | 'hearth' | SigilId;
+export type SigilId = 'sigil-embers' | 'sigil-tides' | 'sigil-stone' | 'sigil-sun' | 'sigil-frost' | 'sigil-thorns' | 'sigil-veil';
 
 export interface QuestDef {
   id: string;
@@ -987,15 +783,7 @@ export interface QuestDef {
   auto?: boolean;
   /** What the giver says when offering it (else the quest's text). */
   offer?: string[];
-  reward: {
-    xp: number;
-    gold: number;
-    item?: string | { rarity: Rarity };
-    unlock?: RegionId;
-    tier?: number;
-    text?: string;
-    perk?: PerkId;
-  };
+  reward: { xp: number; gold: number; item?: string | { rarity: Rarity }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId };
 }
 
 /* -------------------------------------------------------------------- npcs */
@@ -1006,12 +794,9 @@ export interface NpcDef {
   title: string;
   sprite: string;
   /** Lines by quest state, first matching wins. */
-  talk: {
-    when?: { quest: string; state: "locked" | "active" | "done" };
-    lines: string[];
-  }[];
+  talk: { when?: { quest: string; state: 'locked' | 'active' | 'done' }; lines: string[] }[];
   /** What the NPC offers besides talk. */
-  service?: "respec" | "smith" | "waystone";
+  service?: 'respec' | 'smith' | 'waystone';
   /** A vendor: the shop they open, and its name over the door (else the shop's own name). */
   shop?: ShopId;
   shopName?: string;

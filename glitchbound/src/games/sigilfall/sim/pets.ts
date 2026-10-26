@@ -1,19 +1,10 @@
-import { angleDiff, dist, dist2, TAU } from "../core/math";
-import { CLASSES } from "../data/classes";
-import { PETS } from "../data/pets";
-import { effStats, hitEnemy } from "./combat";
-import {
-  castRay,
-  circleHitsWall,
-  flowField,
-  flowStep,
-  lineOfSight,
-  moveCircle,
-  pushOut,
-  TILE,
-} from "./map";
-import type { Enemy, Pet } from "./types";
-import type { World } from "./world";
+import { angleDiff, dist, dist2, TAU } from '../core/math';
+import { CLASSES } from '../data/classes';
+import { PETS } from '../data/pets';
+import { effStats, hitEnemy } from './combat';
+import { castRay, circleHitsWall, flowField, flowStep, lineOfSight, moveCircle, pushOut, TILE } from './map';
+import type { Enemy, Pet } from './types';
+import type { World } from './world';
 
 /**
  * Companions: the warlock's demons, the ranger's wolf, the druid's treants. A pet goes for the enemy
@@ -29,12 +20,7 @@ const MAX_PETS = 6;
 const petStat = (w: World): number => 1 + (effStats(w).pet ?? 0) / 100;
 
 /** Calls `count` pets of a kind. A pet that stays (dur 0) is called once: calling again heals it. */
-export function summonPet(
-  w: World,
-  id: string,
-  count: number,
-  dur: number,
-): void {
+export function summonPet(w: World, id: string, count: number, dur: number): void {
   const def = PETS[id];
   if (!def) return;
   const p = w.player;
@@ -43,20 +29,11 @@ export function summonPet(
   const dmg = CLASSES[w.hero.cls].refDamage * def.dmg * k;
   let made = 0;
   if (dur === 0) {
-    const have = w.pets.filter(
-      (x) => !x.dead && x.def.id === id && x.life === Infinity,
-    );
+    const have = w.pets.filter((x) => !x.dead && x.def.id === id && x.life === Infinity);
     for (const pet of have) {
       pet.hp = pet.maxHp = maxHp;
       pet.dmg = dmg;
-      w.addFx({
-        kind: "glow",
-        x: pet.x,
-        y: pet.y - 4,
-        life: 0.5,
-        size: 10,
-        color: "#8bff6a",
-      });
+      w.addFx({ kind: 'glow', x: pet.x, y: pet.y - 4, life: 0.5, size: 10, color: '#8bff6a' });
     }
     made = have.length;
   }
@@ -69,82 +46,22 @@ export function summonPet(
       if (!old) break;
       old.dead = true;
     }
-    w.pets.push({
-      id: w.nextId++,
-      def,
-      x: to.x,
-      y: to.y,
-      vx: 0,
-      vy: 0,
-      r: def.radius,
-      hp: maxHp,
-      maxHp,
-      dmg,
-      atkCd: 0.4,
-      life: dur > 0 ? dur : Infinity,
-      target: null,
-      face: 0,
-      walkT: 0,
-      flash: 0,
-      actT: 0,
-      dead: false,
-      deathT: 0,
-    });
-    w.addFx({
-      kind: "burst",
-      x: to.x,
-      y: to.y,
-      life: 0.35,
-      size: 10,
-      color:
-        def.dmgType === "fire"
-          ? "#ff9a4d"
-          : def.dmgType === "shadow"
-            ? "#b58aff"
-            : def.dmgType === "nature"
-              ? "#9cf07a"
-              : "#ffffff",
-    });
+    w.pets.push({ id: w.nextId++, def, x: to.x, y: to.y, vx: 0, vy: 0, r: def.radius, hp: maxHp, maxHp, dmg, atkCd: 0.4, life: dur > 0 ? dur : Infinity, target: null, face: 0, walkT: 0, flash: 0, actT: 0, dead: false, deathT: 0 });
+    w.addFx({ kind: 'burst', x: to.x, y: to.y, life: 0.35, size: 10, color: def.dmgType === 'fire' ? '#ff9a4d' : def.dmgType === 'shadow' ? '#b58aff' : def.dmgType === 'nature' ? '#9cf07a' : '#ffffff' });
   }
-  w.sfx("summon", 0.6);
+  w.sfx('summon', 0.6);
 }
 
 /**
  * Puts a story pet (a companion, a door to hold, a villager to lead out) at a place; it stays until the
  * story takes it away. Its health is a share of the hero's like any companion's.
  */
-export function placePet(
-  w: World,
-  id: string,
-  x: number,
-  y: number,
-): Pet | null {
+export function placePet(w: World, id: string, x: number, y: number): Pet | null {
   const def = PETS[id];
   if (!def) return null;
   const k = petStat(w);
   const maxHp = Math.max(10, Math.round(w.player.maxHp * def.hp * k));
-  const pet: Pet = {
-    id: w.nextId++,
-    def,
-    x,
-    y,
-    vx: 0,
-    vy: 0,
-    r: def.radius,
-    hp: maxHp,
-    maxHp,
-    dmg: CLASSES[w.hero.cls].refDamage * def.dmg * k,
-    atkCd: 0.6,
-    life: Infinity,
-    target: null,
-    face: 0,
-    walkT: 0,
-    flash: 0,
-    actT: 0,
-    dead: false,
-    deathT: 0,
-    story: true,
-  };
+  const pet: Pet = { id: w.nextId++, def, x, y, vx: 0, vy: 0, r: def.radius, hp: maxHp, maxHp, dmg: CLASSES[w.hero.cls].refDamage * def.dmg * k, atkCd: 0.6, life: Infinity, target: null, face: 0, walkT: 0, flash: 0, actT: 0, dead: false, deathT: 0, story: true };
   w.pets.push(pet);
   return pet;
 }
@@ -154,11 +71,11 @@ export function hurtPet(w: World, pet: Pet, dmg: number): boolean {
   if (pet.dead || pet.def.unhurt) return false;
   pet.hp -= dmg;
   pet.flash = 0.12;
-  w.text(pet.x, pet.y - 12, `-${Math.round(dmg)}`, "#ffb0b0", false);
+  w.text(pet.x, pet.y - 12, `-${Math.round(dmg)}`, '#ffb0b0', false);
   if (pet.hp <= 0) {
     pet.dead = true;
     pet.deathT = 0;
-    w.fxBurst(pet.x, pet.y, "#c9c3e6", 10, 10);
+    w.fxBurst(pet.x, pet.y, '#c9c3e6', 10, 10);
     return true;
   }
   return false;
@@ -178,15 +95,12 @@ export function refreshPets(w: World): void {
 
 function pickTarget(w: World, pet: Pet): Enemy | null {
   const p = w.player;
-  const cur =
-    pet.target !== null
-      ? w.enemies.find((e) => e.id === pet.target && !e.dead)
-      : undefined;
+  const cur = pet.target !== null ? w.enemies.find((e) => e.id === pet.target && !e.dead) : undefined;
   if (cur && dist(cur.x, cur.y, p.x, p.y) < 190) return cur;
   let best: Enemy | null = null;
   let bd = Infinity;
   for (const e of w.enemies) {
-    if (e.dead || e.dummy || e.state === "spawn") continue;
+    if (e.dead || e.dummy || e.state === 'spawn') continue;
     // only what is already fighting, or close to the hero
     const dh = dist(e.x, e.y, p.x, p.y);
     if (dh > 150 || (!e.aggro && dh > 90)) continue;
@@ -200,25 +114,10 @@ function pickTarget(w: World, pet: Pet): Enemy | null {
 }
 
 /** A pet with somewhere to be walks there around walls (a flow field from the goal, made once). */
-function walkTo(
-  w: World,
-  pet: Pet,
-  goal: { x: number; y: number },
-  dt: number,
-): void {
-  pet.flow ??= flowField(
-    w.map,
-    Math.floor(goal.x / TILE),
-    Math.floor(goal.y / TILE),
-    400,
-  );
+function walkTo(w: World, pet: Pet, goal: { x: number; y: number }, dt: number): void {
+  pet.flow ??= flowField(w.map, Math.floor(goal.x / TILE), Math.floor(goal.y / TILE), 400);
   const d = dist(goal.x, goal.y, pet.x, pet.y);
-  const step =
-    d < 2 * TILE
-      ? d > 3
-        ? { x: (goal.x - pet.x) / d, y: (goal.y - pet.y) / d }
-        : null
-      : flowStep(w.map, pet.flow, pet.x, pet.y);
+  const step = d < 2 * TILE ? (d > 3 ? { x: (goal.x - pet.x) / d, y: (goal.y - pet.y) / d } : null) : flowStep(w.map, pet.flow, pet.x, pet.y);
   const speed = pet.def.speed * 0.7;
   pet.vx += ((step?.x ?? 0) * speed - pet.vx) * Math.min(1, dt * 8);
   pet.vy += ((step?.y ?? 0) * speed - pet.vy) * Math.min(1, dt * 8);
@@ -243,20 +142,13 @@ export function updatePets(w: World, dt: number): void {
       pet.life -= dt;
       if (pet.life <= 0) {
         pet.dead = true;
-        w.addFx({
-          kind: "smoke",
-          x: pet.x,
-          y: pet.y,
-          life: 0.5,
-          size: 6,
-          color: "#c9c3e6",
-        });
+        w.addFx({ kind: 'smoke', x: pet.x, y: pet.y, life: 0.5, size: 6, color: '#c9c3e6' });
         continue;
       }
     }
     if (p.dead) continue;
     // a ward (a door, a gate) stands where it was put and only takes the blows
-    if (pet.def.role === "ward") continue;
+    if (pet.def.role === 'ward') continue;
     // someone walking in on their own (to the camp): along the roads, whatever the hero does
     if (pet.goal) {
       walkTo(w, pet, pet.goal, dt);
@@ -270,7 +162,7 @@ export function updatePets(w: World, dt: number): void {
       pet.target = null;
     }
     // people being led to safety follow and never fight
-    const e = pet.def.role === "follower" ? null : pickTarget(w, pet);
+    const e = pet.def.role === 'follower' ? null : pickTarget(w, pet);
     pet.target = e?.id ?? null;
     let mx = 0;
     let my = 0;
@@ -279,9 +171,7 @@ export function updatePets(w: World, dt: number): void {
       const d = dist(e.x, e.y, pet.x, pet.y);
       const a = Math.atan2(e.y - pet.y, e.x - pet.x);
       pet.face = Math.cos(a) < 0 ? Math.PI : 0;
-      const reach = pet.def.ranged
-        ? pet.def.reach
-        : pet.def.reach + e.r + pet.r;
+      const reach = pet.def.ranged ? pet.def.reach : pet.def.reach + e.r + pet.r;
       const see = !pet.def.ranged || lineOfSight(w.map, pet.x, pet.y, e.x, e.y);
       if (d > reach * (pet.def.ranged ? 0.9 : 1) || !see) {
         mx = Math.cos(a);
@@ -290,44 +180,10 @@ export function updatePets(w: World, dt: number): void {
         pet.atkCd = pet.def.attackCd;
         pet.actT = 0.2;
         if (pet.def.ranged) {
-          w.spawnProjectile({
-            x: pet.x,
-            y: pet.y - 4,
-            vx: Math.cos(a) * 200,
-            vy: Math.sin(a) * 200,
-            r: 2.5,
-            life: pet.def.reach + 30,
-            dmg: pet.dmg,
-            type: pet.def.dmgType,
-            spec: null,
-            depth: 1,
-            pierce: 0,
-            bounce: 0,
-            hit: [],
-            look: pet.def.shot ?? "ember",
-            color: "#ff9a4d",
-            child: true,
-            knock: 10,
-          });
+          w.spawnProjectile({ x: pet.x, y: pet.y - 4, vx: Math.cos(a) * 200, vy: Math.sin(a) * 200, r: 2.5, life: pet.def.reach + 30, dmg: pet.dmg, type: pet.def.dmgType, spec: null, depth: 1, pierce: 0, bounce: 0, hit: [], look: pet.def.shot ?? 'ember', color: '#ff9a4d', child: true, knock: 10 });
         } else {
-          w.addFx({
-            kind: "slash",
-            x: pet.x,
-            y: pet.y,
-            a,
-            a2: 1.4,
-            life: 0.14,
-            size: pet.def.reach + 6,
-            color: "#ffffff",
-            r2: 0,
-          });
-          hitEnemy(w, e, pet.dmg, pet.def.dmgType, {
-            depth: 1,
-            fromX: pet.x,
-            fromY: pet.y,
-            knock: 30,
-            charge: 0.5,
-          });
+          w.addFx({ kind: 'slash', x: pet.x, y: pet.y, a, a2: 1.4, life: 0.14, size: pet.def.reach + 6, color: '#ffffff', r2: 0 });
+          hitEnemy(w, e, pet.dmg, pet.def.dmgType, { depth: 1, fromX: pet.x, fromY: pet.y, knock: 30, charge: 0.5 });
         }
       }
     } else {
@@ -353,14 +209,7 @@ export function updatePets(w: World, dt: number): void {
         pet.y = to.y;
       }
     }
-    const res = moveCircle(
-      w.map,
-      pet.x,
-      pet.y,
-      pet.r,
-      pet.vx * dt,
-      pet.vy * dt,
-    );
+    const res = moveCircle(w.map, pet.x, pet.y, pet.r, pet.vx * dt, pet.vy * dt);
     pet.x = res.x;
     pet.y = res.y;
     if (Math.hypot(pet.vx, pet.vy) > 8) pet.walkT += dt;

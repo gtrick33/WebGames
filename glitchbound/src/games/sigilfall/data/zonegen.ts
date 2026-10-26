@@ -1,11 +1,5 @@
-import { clamp, hash2, noise2, rng } from "../core/math";
-import type {
-  Marker,
-  PlacedMarkerDef,
-  RegionDef,
-  RegionId,
-  StoryCond,
-} from "./types";
+import { clamp, hash2, noise2, rng } from '../core/math';
+import type { Marker, PlacedMarkerDef, RegionDef, RegionId, StoryCond } from './types';
 
 /*
  * The wilds are generated, not drawn: a zone is a seeded description (its size, how wooded it is, its
@@ -19,9 +13,8 @@ import type {
  * with distance from the way in), and finally a pass that connects anything cut off.
  */
 
-export type Side = "n" | "s" | "e" | "w";
-export type PoiKind =
-  "camp" | "den" | "ruin" | "farm" | "nest" | "wreck" | "grove" | "cave";
+export type Side = 'n' | 's' | 'e' | 'w';
+export type PoiKind = 'camp' | 'den' | 'ruin' | 'farm' | 'nest' | 'wreck' | 'grove' | 'cave';
 
 export interface HubSpec {
   /** Where, as fractions of the map. */
@@ -60,16 +53,11 @@ export interface PoiSpec {
   rare?: string;
   /** Discovering it counts for explore objectives. */
   spot?: { id: string; name: string };
-  chest?: "common" | "rare" | "epic";
+  chest?: 'common' | 'rare' | 'epic';
   /** A way down: a dungeon's door. */
   entrance?: { to: RegionId; label: string; minLevel?: number };
   /** A building standing at the sight (a lighthouse on its point, a watchtower), its door toward the middle. */
-  landmark?: {
-    style: Extract<Marker, { kind: "building" }>["style"];
-    w: number;
-    h: number;
-    name?: string;
-  };
+  landmark?: { style: Extract<Marker, { kind: 'building' }>['style']; w: number; h: number; name?: string };
   /** Its packs (and its named enemy) only while this holds: a blockade's guards, the dead at a shrine. */
   when?: StoryCond;
 }
@@ -104,12 +92,9 @@ export interface ZoneSpec {
   forest: number;
   /** Per 100 open tiles. */
   scatter: { trees: number; bushes: number; rocks: number; flowers: number };
-  water?:
-    | { kind: "lakes"; amount: number }
-    | { kind: "river"; from: Side; to: Side }
-    | { kind: "sea"; side: Side; depth: number };
+  water?: { kind: 'lakes'; amount: number } | { kind: 'river'; from: Side; to: Side } | { kind: 'sea'; side: Side; depth: number };
   /** Sand along the water; 'dunes' adds drifts inland; 'all' is desert. */
-  sand?: "shore" | "dunes" | "all";
+  sand?: 'shore' | 'dunes' | 'all';
   hubs: HubSpec[];
   exits: ExitSpec[];
   pois: PoiSpec[];
@@ -147,8 +132,7 @@ const WALKABLE = new Set([FLOOR, DECO, PATH, COBBLE, BRIDGE, SAND]);
 const OPEN = new Set([FLOOR, DECO, SAND]);
 
 /** Two octaves of value noise, 0..1. */
-const fbm = (x: number, y: number, seed: number): number =>
-  noise2(x, y, seed) * 0.7 + noise2(x * 2.3, y * 2.3, seed + 1) * 0.3;
+const fbm = (x: number, y: number, seed: number): number => noise2(x, y, seed) * 0.7 + noise2(x * 2.3, y * 2.3, seed + 1) * 0.3;
 
 export function generateZone(spec: ZoneSpec): GeneratedZone {
   return new ZoneBuilder(spec).build();
@@ -194,34 +178,16 @@ class ZoneBuilder {
     this.roads([...hubs, ...exits.map((e) => e.inner), ...pois]);
     s.hubs.forEach((hb, i) => this.town(hubs[i]![0], hubs[i]![1], hb));
     s.pois.forEach((p, i) => this.sight(pois[i]![0], pois[i]![1], p));
-    s.exits.forEach((e, i) =>
-      this.put(exits[i]!.edge[0], exits[i]!.edge[1], {
-        kind: "exit",
-        to: e.to,
-        label: e.label,
-        ...(e.minLevel ? { minLevel: e.minLevel } : {}),
-        ...(e.needs ? { needs: e.needs } : {}),
-      }),
-    );
+    s.exits.forEach((e, i) => this.put(exits[i]!.edge[0], exits[i]!.edge[1], { kind: 'exit', to: e.to, label: e.label, ...(e.minLevel ? { minLevel: e.minLevel } : {}), ...(e.needs ? { needs: e.needs } : {}) }));
     this.scatter();
     this.beaches();
     const start = hubs[0] ?? exits[0]!.inner;
-    this.put(start[0], start[1] + 3, { kind: "start" });
-    this.wildPacks(
-      hubs,
-      exits.map((e) => e.inner),
-    );
+    this.put(start[0], start[1] + 3, { kind: 'start' });
+    this.wildPacks(hubs, exits.map((e) => e.inner));
     this.connect(start);
-    this.story(
-      hubs,
-      pois,
-      exits.map((e) => e.inner),
-    );
+    this.story(hubs, pois, exits.map((e) => e.inner));
     const map: string[] = [];
-    for (let y = 0; y < this.h; y++)
-      map.push(
-        String.fromCharCode(...this.g.subarray(y * this.w, (y + 1) * this.w)),
-      );
+    for (let y = 0; y < this.h; y++) map.push(String.fromCharCode(...this.g.subarray(y * this.w, (y + 1) * this.w)));
     return { map, placed: this.placed };
   }
 
@@ -244,10 +210,7 @@ class ZoneBuilder {
   }
 
   private tileOf(at: [number, number]): [number, number] {
-    return [
-      Math.round(clamp(at[0], 0.04, 0.96) * (this.w - 1)),
-      Math.round(clamp(at[1], 0.04, 0.96) * (this.h - 1)),
-    ];
+    return [Math.round(clamp(at[0], 0.04, 0.96) * (this.w - 1)), Math.round(clamp(at[1], 0.04, 0.96) * (this.h - 1))];
   }
 
   private put(x: number, y: number, marker: Marker, when?: StoryCond): void {
@@ -258,11 +221,7 @@ class ZoneBuilder {
   /** Level of a pack at a tile: rising from `from` to the farthest corner. */
   private levelAt(x: number, y: number): number {
     const [fx, fy] = this.tileOf(this.spec.from);
-    const far = Math.max(
-      ...[0, this.w - 1].flatMap((cx) =>
-        [0, this.h - 1].map((cy) => Math.hypot(cx - fx, cy - fy)),
-      ),
-    );
+    const far = Math.max(...[0, this.w - 1].flatMap((cx) => [0, this.h - 1].map((cy) => Math.hypot(cx - fx, cy - fy))));
     const t = clamp(Math.hypot(x - fx, y - fy) / (far * 0.85), 0, 1);
     const [lo, hi] = this.spec.levels;
     return Math.round(lo + (hi - lo) * t);
@@ -279,9 +238,7 @@ class ZoneBuilder {
       for (let x = cx - r; x <= cx + r; x++) {
         if (!this.inside(x, y, 2)) continue;
         // a ragged edge, so clearings don't look stamped
-        const d =
-          Math.hypot(x - cx, y - cy) +
-          (hash2(x, y, this.spec.seed + 3) - 0.5) * 1.6;
+        const d = Math.hypot(x - cx, y - cy) + (hash2(x, y, this.spec.seed + 3) - 0.5) * 1.6;
         if (d > r) continue;
         const i = this.idx(x, y);
         if (this.g[i] !== WATER || d < r - 2) this.g[i] = FLOOR;
@@ -293,17 +250,12 @@ class ZoneBuilder {
   /* ---------------------------------------------------------------- terrain */
 
   private border(): void {
-    const sea = this.spec.water?.kind === "sea" ? this.spec.water.side : null;
+    const sea = this.spec.water?.kind === 'sea' ? this.spec.water.side : null;
     for (let y = 0; y < this.h; y++) {
       for (let x = 0; x < this.w; x++) {
-        const d: Record<Side, number> = {
-          w: x,
-          e: this.w - 1 - x,
-          n: y,
-          s: this.h - 1 - y,
-        };
+        const d: Record<Side, number> = { w: x, e: this.w - 1 - x, n: y, s: this.h - 1 - y };
         const thick = 2 + fbm(x / 7, y / 7, this.spec.seed + 11) * 5;
-        for (const side of ["n", "s", "e", "w"] as Side[]) {
+        for (const side of ['n', 's', 'e', 'w'] as Side[]) {
           if (d[side] >= thick) continue;
           // the sea side is open water to the edge instead
           this.g[this.idx(x, y)] = side === sea ? WATER : WALL;
@@ -316,31 +268,20 @@ class ZoneBuilder {
     const wt = this.spec.water;
     if (!wt) return;
     const seed = this.spec.seed + 21;
-    if (wt.kind === "sea") {
+    if (wt.kind === 'sea') {
       for (let y = 0; y < this.h; y++) {
         for (let x = 0; x < this.w; x++) {
-          const along = wt.side === "n" || wt.side === "s" ? x : y;
-          const depth =
-            wt.side === "w"
-              ? x
-              : wt.side === "e"
-                ? this.w - 1 - x
-                : wt.side === "n"
-                  ? y
-                  : this.h - 1 - y;
-          const size = wt.side === "n" || wt.side === "s" ? this.h : this.w;
-          const coast =
-            size * wt.depth +
-            (fbm(along / 16, 0.5, seed) - 0.5) * 26 +
-            (noise2(along / 5, 3.3, seed + 1) - 0.5) * 5;
+          const along = wt.side === 'n' || wt.side === 's' ? x : y;
+          const depth = wt.side === 'w' ? x : wt.side === 'e' ? this.w - 1 - x : wt.side === 'n' ? y : this.h - 1 - y;
+          const size = wt.side === 'n' || wt.side === 's' ? this.h : this.w;
+          const coast = size * wt.depth + (fbm(along / 16, 0.5, seed) - 0.5) * 26 + (noise2(along / 5, 3.3, seed + 1) - 0.5) * 5;
           if (depth < coast) this.g[this.idx(x, y)] = WATER;
         }
       }
-    } else if (wt.kind === "lakes") {
+    } else if (wt.kind === 'lakes') {
       for (let y = 3; y < this.h - 3; y++) {
         for (let x = 3; x < this.w - 3; x++) {
-          if (fbm(x / 13, y / 13, seed) > 1 - wt.amount * 0.55)
-            this.g[this.idx(x, y)] = WATER;
+          if (fbm(x / 13, y / 13, seed) > 1 - wt.amount * 0.55) this.g[this.idx(x, y)] = WATER;
         }
       }
     } else {
@@ -348,26 +289,14 @@ class ZoneBuilder {
       const b = this.sidePoint(wt.to, 0.3 + this.r() * 0.4);
       for (const [x, y] of this.meander(a, b, 0.22)) {
         const width = 1.3 + noise2(x / 9, y / 9, seed) * 1.4;
-        for (let dy = -3; dy <= 3; dy++)
-          for (let dx = -3; dx <= 3; dx++)
-            if (Math.hypot(dx, dy) <= width) this.set(x + dx, y + dy, WATER);
+        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (Math.hypot(dx, dy) <= width) this.set(x + dx, y + dy, WATER);
       }
     }
   }
 
   private sidePoint(side: Side, t: number): [number, number] {
-    const x =
-      side === "w"
-        ? 0
-        : side === "e"
-          ? this.w - 1
-          : Math.round(t * (this.w - 1));
-    const y =
-      side === "n"
-        ? 0
-        : side === "s"
-          ? this.h - 1
-          : Math.round(t * (this.h - 1));
+    const x = side === 'w' ? 0 : side === 'e' ? this.w - 1 : Math.round(t * (this.w - 1));
+    const y = side === 'n' ? 0 : side === 's' ? this.h - 1 : Math.round(t * (this.h - 1));
     return [x, y];
   }
 
@@ -396,11 +325,7 @@ class ZoneBuilder {
   }
 
   /** A wandering line of tiles from a to b. */
-  private meander(
-    a: [number, number],
-    b: [number, number],
-    wiggle: number,
-  ): [number, number][] {
+  private meander(a: [number, number], b: [number, number], wiggle: number): [number, number][] {
     let pts: [number, number][] = [a, b];
     for (let depth = 0; depth < 4; depth++) {
       const next: [number, number][] = [pts[0]!];
@@ -409,13 +334,7 @@ class ZoneBuilder {
         const [x1, y1] = pts[i]!;
         const len = Math.hypot(x1 - x0, y1 - y0);
         const off = (this.r() - 0.5) * len * wiggle;
-        next.push(
-          [
-            (x0 + x1) / 2 + (-(y1 - y0) / (len || 1)) * off,
-            (y0 + y1) / 2 + ((x1 - x0) / (len || 1)) * off,
-          ],
-          pts[i]!,
-        );
+        next.push([(x0 + x1) / 2 + (-(y1 - y0) / (len || 1)) * off, (y0 + y1) / 2 + ((x1 - x0) / (len || 1)) * off], pts[i]!);
       }
       pts = next;
     }
@@ -436,28 +355,15 @@ class ZoneBuilder {
 
   /* ------------------------------------------------------------------ roads */
 
-  private exitTiles(e: ExitSpec): {
-    edge: [number, number];
-    inner: [number, number];
-  } {
+  private exitTiles(e: ExitSpec): { edge: [number, number]; inner: [number, number] } {
     const edge = this.sidePoint(e.side, clamp(e.at, 0.08, 0.92));
-    const [dx, dy] =
-      e.side === "w"
-        ? [1, 0]
-        : e.side === "e"
-          ? [-1, 0]
-          : e.side === "n"
-            ? [0, 1]
-            : [0, -1];
+    const [dx, dy] = e.side === 'w' ? [1, 0] : e.side === 'e' ? [-1, 0] : e.side === 'n' ? [0, 1] : [0, -1];
     return { edge, inner: [edge[0] + dx * 10, edge[1] + dy * 10] };
   }
 
   /** A three-wide gap through the border from the edge to the inner point. */
   private corridor(edge: [number, number], inner: [number, number]): void {
-    const steps = Math.max(
-      Math.abs(inner[0] - edge[0]),
-      Math.abs(inner[1] - edge[1]),
-    );
+    const steps = Math.max(Math.abs(inner[0] - edge[0]), Math.abs(inner[1] - edge[1]));
     for (let k = 0; k <= steps; k++) {
       const x = Math.round(edge[0] + ((inner[0] - edge[0]) * k) / steps);
       const y = Math.round(edge[1] + ((inner[1] - edge[1]) * k) / steps);
@@ -481,10 +387,7 @@ class ZoneBuilder {
       let best = [-1, -1, Infinity];
       for (const a of inTree) {
         for (const b of rest) {
-          const d = Math.hypot(
-            nodes[a]![0] - nodes[b]![0],
-            nodes[a]![1] - nodes[b]![1],
-          );
+          const d = Math.hypot(nodes[a]![0] - nodes[b]![0], nodes[a]![1] - nodes[b]![1]);
           if (d < best[2]!) best = [a, b, d];
         }
       }
@@ -508,8 +411,7 @@ class ZoneBuilder {
         if (!this.inside(tx, ty, 2)) continue;
         const i = this.idx(tx, ty);
         const here = this.g[i]!;
-        if (here === COBBLE || here === HOUSE || here === HOUSE_ANCHOR)
-          continue;
+        if (here === COBBLE || here === HOUSE || here === HOUSE_ANCHOR) continue;
         this.g[i] = here === WATER || here === BRIDGE ? BRIDGE : PATH;
         this.lock[i] = 1;
       }
@@ -521,8 +423,7 @@ class ZoneBuilder {
           if (!this.inside(tx, ty, 2)) continue;
           const i = this.idx(tx, ty);
           const c = this.g[i]!;
-          if (c === WALL || c === TREE || c === BUSH || c === ROCK)
-            this.g[i] = FLOOR;
+          if (c === WALL || c === TREE || c === BUSH || c === ROCK) this.g[i] = FLOOR;
         }
       }
     }
@@ -532,19 +433,14 @@ class ZoneBuilder {
 
   private town(cx: number, cy: number, hub: HubSpec): void {
     // a cobbled square with the waystone in the middle
-    for (let y = cy - 5; y <= cy + 5; y++)
-      for (let x = cx - 6; x <= cx + 6; x++)
-        if (Math.hypot((x - cx) * 0.85, y - cy) <= 5.2) this.set(x, y, COBBLE);
-    this.put(cx, cy - 1, { kind: "waystone" });
+    for (let y = cy - 5; y <= cy + 5; y++) for (let x = cx - 6; x <= cx + 6; x++) if (Math.hypot((x - cx) * 0.85, y - cy) <= 5.2) this.set(x, y, COBBLE);
+    this.put(cx, cy - 1, { kind: 'waystone' });
     // the townsfolk stand around the square
     hub.npcs.forEach((npc, i) => {
-      const a =
-        -Math.PI / 2 +
-        Math.PI * 0.35 +
-        (i * Math.PI * 1.3) / Math.max(1, hub.npcs.length - 1 || 1);
+      const a = -Math.PI / 2 + Math.PI * 0.35 + (i * Math.PI * 1.3) / Math.max(1, hub.npcs.length - 1 || 1);
       const x = Math.round(cx + Math.cos(a) * 4.5);
       const y = Math.round(cy + 1 + Math.sin(a) * 3.2);
-      this.put(x, y, { kind: "npc", npc }, hub.when?.[npc]);
+      this.put(x, y, { kind: 'npc', npc }, hub.when?.[npc]);
     });
     // houses on a ring around it, where they fit
     let built = 0;
@@ -561,15 +457,14 @@ class ZoneBuilder {
     }
     // lamps and goods
     for (const [dx, dy, prop, solid] of [
-      [-6, -3, "lamp", true],
-      [6, -3, "lamp", true],
-      [-6, 3, "crate", true],
-      [7, 3, "barrel", true],
+      [-6, -3, 'lamp', true],
+      [6, -3, 'lamp', true],
+      [-6, 3, 'crate', true],
+      [7, 3, 'barrel', true],
     ] as const) {
       const x = cx + dx;
       const y = cy + dy;
-      if (this.at(x, y) !== WATER && !this.marked.has(this.idx(x, y)))
-        this.put(x, y, { kind: "prop", prop, solid });
+      if (this.at(x, y) !== WATER && !this.marked.has(this.idx(x, y))) this.put(x, y, { kind: 'prop', prop, solid });
     }
     if (hub.wall) this.palisade(cx, cy);
   }
@@ -580,21 +475,16 @@ class ZoneBuilder {
     const ry = 14;
     for (let y = cy - ry; y <= cy + ry; y++) {
       for (let x = cx - rx; x <= cx + rx; x++) {
-        if (x !== cx - rx && x !== cx + rx && y !== cy - ry && y !== cy + ry)
-          continue;
+        if (x !== cx - rx && x !== cx + rx && y !== cy - ry && y !== cy + ry) continue;
         const i = this.idx(x, y);
-        if (OPEN.has(this.at(x, y)) && !this.marked.has(i))
-          this.set(x, y, FENCE);
+        if (OPEN.has(this.at(x, y)) && !this.marked.has(i)) this.set(x, y, FENCE);
       }
     }
     // the north gate: the middle of the road's gap in the north wall nearest the square
     const gaps: number[] = [];
-    for (let x = cx - rx + 1; x < cx + rx; x++)
-      if (WALKABLE.has(this.at(x, cy - ry))) gaps.push(x);
+    for (let x = cx - rx + 1; x < cx + rx; x++) if (WALKABLE.has(this.at(x, cy - ry))) gaps.push(x);
     if (gaps.length) {
-      const near = gaps.reduce((a, b) =>
-        Math.abs(b - cx) < Math.abs(a - cx) ? b : a,
-      );
+      const near = gaps.reduce((a, b) => (Math.abs(b - cx) < Math.abs(a - cx) ? b : a));
       let lo = near;
       let hi = near;
       while (gaps.includes(lo - 1)) lo--;
@@ -608,221 +498,91 @@ class ZoneBuilder {
     for (let y = y0 - 1; y <= y0 + 3; y++) {
       for (let x = x0 - 1; x <= x0 + 4; x++) {
         const c = this.at(x, y);
-        if (
-          !this.inside(x, y, 3) ||
-          c === PATH ||
-          c === COBBLE ||
-          c === WATER ||
-          c === BRIDGE ||
-          c === HOUSE ||
-          c === HOUSE_ANCHOR ||
-          this.marked.has(this.idx(x, y))
-        )
-          return false;
+        if (!this.inside(x, y, 3) || c === PATH || c === COBBLE || c === WATER || c === BRIDGE || c === HOUSE || c === HOUSE_ANCHOR || this.marked.has(this.idx(x, y))) return false;
       }
     }
-    for (let y = y0; y < y0 + 3; y++)
-      for (let x = x0; x < x0 + 4; x++)
-        this.set(x, y, y === y0 + 2 && x === x0 ? HOUSE_ANCHOR : HOUSE);
+    for (let y = y0; y < y0 + 3; y++) for (let x = x0; x < x0 + 4; x++) this.set(x, y, y === y0 + 2 && x === x0 ? HOUSE_ANCHOR : HOUSE);
     return true;
   }
 
   private sight(cx: number, cy: number, p: PoiSpec): void {
     const r = p.r;
     const seed = this.spec.seed + cx * 31 + cy;
-    const ring = (
-      n: number,
-      rad: number,
-      fn: (x: number, y: number, k: number) => void,
-    ): void => {
+    const ring = (n: number, rad: number, fn: (x: number, y: number, k: number) => void): void => {
       for (let k = 0; k < n; k++) {
         const a = (k / n) * Math.PI * 2 + hash2(k, seed, 5) * 0.6;
-        fn(
-          Math.round(cx + Math.cos(a) * rad),
-          Math.round(cy + Math.sin(a) * rad * 0.8),
-          k,
-        );
+        fn(Math.round(cx + Math.cos(a) * rad), Math.round(cy + Math.sin(a) * rad * 0.8), k);
       }
     };
-    const free = (x: number, y: number): boolean =>
-      OPEN.has(this.at(x, y)) && !this.marked.has(this.idx(x, y));
+    const free = (x: number, y: number): boolean => OPEN.has(this.at(x, y)) && !this.marked.has(this.idx(x, y));
     switch (p.kind) {
-      case "camp":
-        if (free(cx, cy))
-          this.put(cx, cy, { kind: "prop", prop: "campfire", solid: true });
-        ring(
-          3,
-          r * 0.55,
-          (x, y) =>
-            free(x, y) &&
-            this.put(x, y, { kind: "prop", prop: "tent", solid: true }),
-        );
-        ring(
-          4,
-          r * 0.8,
-          (x, y, k) =>
-            free(x, y) &&
-            this.put(x, y, {
-              kind: "prop",
-              prop: k % 2 ? "crate" : "barrel",
-              solid: true,
-            }),
-        );
+      case 'camp':
+        if (free(cx, cy)) this.put(cx, cy, { kind: 'prop', prop: 'campfire', solid: true });
+        ring(3, r * 0.55, (x, y) => free(x, y) && this.put(x, y, { kind: 'prop', prop: 'tent', solid: true }));
+        ring(4, r * 0.8, (x, y, k) => free(x, y) && this.put(x, y, { kind: 'prop', prop: k % 2 ? 'crate' : 'barrel', solid: true }));
         break;
-      case "den":
-        ring(
-          Math.round(r * 2.2),
-          r - 0.5,
-          (x, y, k) => k % 3 !== 0 && free(x, y) && this.set(x, y, ROCK),
-        );
-        ring(
-          4,
-          r * 0.4,
-          (x, y) =>
-            free(x, y) && this.put(x, y, { kind: "prop", prop: "bones" }),
-        );
+      case 'den':
+        ring(Math.round(r * 2.2), r - 0.5, (x, y, k) => k % 3 !== 0 && free(x, y) && this.set(x, y, ROCK));
+        ring(4, r * 0.4, (x, y) => free(x, y) && this.put(x, y, { kind: 'prop', prop: 'bones' }));
         break;
-      case "ruin":
-        ring(
-          Math.round(r * 1.6),
-          r * 0.7,
-          (x, y, k) =>
-            free(x, y) && this.set(x, y, k % 3 === 0 ? ROCK : PILLAR),
-        );
-        for (let y = cy - 2; y <= cy + 2; y++)
-          for (let x = cx - 3; x <= cx + 3; x++)
-            if (free(x, y) && hash2(x, y, seed) < 0.7) this.set(x, y, COBBLE);
+      case 'ruin':
+        ring(Math.round(r * 1.6), r * 0.7, (x, y, k) => free(x, y) && this.set(x, y, k % 3 === 0 ? ROCK : PILLAR));
+        for (let y = cy - 2; y <= cy + 2; y++) for (let x = cx - 3; x <= cx + 3; x++) if (free(x, y) && hash2(x, y, seed) < 0.7) this.set(x, y, COBBLE);
         break;
-      case "farm": {
+      case 'farm': {
         // a fenced field of crops with a gate toward the middle of the map
         const fw = Math.max(4, r - 2);
         const fh = Math.max(3, r - 4);
         for (let y = cy - fh; y <= cy + fh; y++) {
           for (let x = cx - fw; x <= cx + fw; x++) {
             if (!free(x, y)) continue;
-            const edge =
-              y === cy - fh || y === cy + fh || x === cx - fw || x === cx + fw;
-            const gate =
-              (y === cy + fh && Math.abs(x - cx) <= 1) ||
-              (x === cx - fw && Math.abs(y - cy) <= 1);
+            const edge = y === cy - fh || y === cy + fh || x === cx - fw || x === cx + fw;
+            const gate = (y === cy + fh && Math.abs(x - cx) <= 1) || (x === cx - fw && Math.abs(y - cy) <= 1);
             this.set(x, y, edge ? (gate ? FLOOR : FENCE) : DECO);
           }
         }
         this.house(cx + fw + 2, cy - 2);
         break;
       }
-      case "nest":
-        ring(
-          Math.round(r * 2),
-          r - 1,
-          (x, y, k) =>
-            k % 2 === 0 && free(x, y) && this.set(x, y, k % 4 ? BUSH : ROCK),
-        );
-        ring(
-          3,
-          r * 0.3,
-          (x, y) =>
-            free(x, y) && this.put(x, y, { kind: "prop", prop: "eggs" }),
-        );
+      case 'nest':
+        ring(Math.round(r * 2), r - 1, (x, y, k) => k % 2 === 0 && free(x, y) && this.set(x, y, k % 4 ? BUSH : ROCK));
+        ring(3, r * 0.3, (x, y) => free(x, y) && this.put(x, y, { kind: 'prop', prop: 'eggs' }));
         break;
-      case "wreck":
-        if (free(cx, cy))
-          this.put(cx, cy, { kind: "prop", prop: "wreck", solid: true });
-        ring(
-          5,
-          r * 0.7,
-          (x, y, k) =>
-            free(x, y) &&
-            this.put(x, y, {
-              kind: "prop",
-              prop: k % 2 ? "crate" : "barrel",
-              solid: true,
-            }),
-        );
+      case 'wreck':
+        if (free(cx, cy)) this.put(cx, cy, { kind: 'prop', prop: 'wreck', solid: true });
+        ring(5, r * 0.7, (x, y, k) => free(x, y) && this.put(x, y, { kind: 'prop', prop: k % 2 ? 'crate' : 'barrel', solid: true }));
         break;
-      case "grove":
-        for (let y = cy - r; y <= cy + r; y++)
-          for (let x = cx - r; x <= cx + r; x++)
-            if (
-              free(x, y) &&
-              Math.hypot(x - cx, y - cy) < r - 1 &&
-              hash2(x, y, seed) < 0.45
-            )
-              this.set(x, y, DECO);
-        ring(
-          Math.round(r * 1.5),
-          r - 0.5,
-          (x, y, k) => k % 2 === 0 && free(x, y) && this.set(x, y, TREE),
-        );
+      case 'grove':
+        for (let y = cy - r; y <= cy + r; y++) for (let x = cx - r; x <= cx + r; x++) if (free(x, y) && Math.hypot(x - cx, y - cy) < r - 1 && hash2(x, y, seed) < 0.45) this.set(x, y, DECO);
+        ring(Math.round(r * 1.5), r - 0.5, (x, y, k) => k % 2 === 0 && free(x, y) && this.set(x, y, TREE));
         break;
-      case "cave":
-        ring(
-          Math.round(r * 2.6),
-          r - 0.5,
-          (x, y, k) => k % 4 !== 0 && free(x, y) && this.set(x, y, ROCK),
-        );
+      case 'cave':
+        ring(Math.round(r * 2.6), r - 0.5, (x, y, k) => k % 4 !== 0 && free(x, y) && this.set(x, y, ROCK));
         break;
     }
     if (p.landmark) {
       const { style, w, h, name } = p.landmark;
       const x0 = cx - Math.floor(w / 2);
       const y0 = cy - h - 1;
-      for (let y = y0; y < y0 + h; y++)
-        for (let x = x0; x < x0 + w; x++) this.set(x, y, HOUSE);
-      this.put(x0, y0 + h - 1, {
-        kind: "building",
-        style,
-        w,
-        h,
-        ...(name ? { name } : {}),
-      });
+      for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) this.set(x, y, HOUSE);
+      this.put(x0, y0 + h - 1, { kind: 'building', style, w, h, ...(name ? { name } : {}) });
     }
-    if (p.entrance)
-      this.put(cx, cy, {
-        kind: "exit",
-        to: p.entrance.to,
-        label: p.entrance.label,
-        ...(p.entrance.minLevel ? { minLevel: p.entrance.minLevel } : {}),
-      });
-    if (p.spot)
-      this.put(cx, cy + (p.entrance ? 2 : 0), {
-        kind: "spot",
-        id: p.spot.id,
-        name: p.spot.name,
-        r: Math.max(4, r - 1),
-      });
+    if (p.entrance) this.put(cx, cy, { kind: 'exit', to: p.entrance.to, label: p.entrance.label, ...(p.entrance.minLevel ? { minLevel: p.entrance.minLevel } : {}) });
+    if (p.spot) this.put(cx, cy + (p.entrance ? 2 : 0), { kind: 'spot', id: p.spot.id, name: p.spot.name, r: Math.max(4, r - 1) });
     if (p.chest) {
       const [x, y] = this.near(cx + 2, cy - 2);
-      this.put(x, y, { kind: "chest", id: `poi-${cx}-${cy}`, tier: p.chest });
+      this.put(x, y, { kind: 'chest', id: `poi-${cx}-${cy}`, tier: p.chest });
     }
     const level = p.level ?? this.levelAt(cx, cy);
     p.packs.forEach((enemies, k) => {
       const a = (k / Math.max(1, p.packs.length)) * Math.PI * 2 + 0.7;
-      const [x, y] = this.near(
-        Math.round(cx + Math.cos(a) * r * 0.5),
-        Math.round(cy + Math.sin(a) * r * 0.45),
-      );
-      this.put(
-        x,
-        y,
-        {
-          kind: "pack",
-          enemies,
-          level,
-          ...(p.elite && k === 0 ? { elite: true } : {}),
-        },
-        p.when,
-      );
+      const [x, y] = this.near(Math.round(cx + Math.cos(a) * r * 0.5), Math.round(cy + Math.sin(a) * r * 0.45));
+      this.put(x, y, { kind: 'pack', enemies, level, ...(p.elite && k === 0 ? { elite: true } : {}) }, p.when);
       this.packSpots.push([x, y]);
     });
     if (p.rare) {
       const [x, y] = this.near(cx, cy + 1);
-      this.put(
-        x,
-        y,
-        { kind: "pack", enemies: [p.rare], level: level + 1, rare: true },
-        p.when,
-      );
+      this.put(x, y, { kind: 'pack', enemies: [p.rare], level: level + 1, rare: true }, p.when);
       this.packSpots.push([x, y]);
     }
   }
@@ -835,12 +595,7 @@ class ZoneBuilder {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad) continue;
           const tx = x + dx;
           const ty = y + dy;
-          if (
-            this.inside(tx, ty, 2) &&
-            WALKABLE.has(this.at(tx, ty)) &&
-            !this.marked.has(this.idx(tx, ty))
-          )
-            return [tx, ty];
+          if (this.inside(tx, ty, 2) && WALKABLE.has(this.at(tx, ty)) && !this.marked.has(this.idx(tx, ty))) return [tx, ty];
         }
       }
     }
@@ -862,8 +617,7 @@ class ZoneBuilder {
         if (h < sc.trees) this.g[i] = TREE;
         else if (h < sc.trees + sc.bushes) this.g[i] = BUSH;
         else if (h < sc.trees + sc.bushes + sc.rocks) this.g[i] = ROCK;
-        else if (noise2(x / 5, y / 5, seed) > 1 - sc.flowers / 40)
-          this.g[i] = DECO;
+        else if (noise2(x / 5, y / 5, seed) > 1 - sc.flowers / 40) this.g[i] = DECO;
       }
     }
   }
@@ -877,25 +631,17 @@ class ZoneBuilder {
       for (let x = 1; x < this.w - 1; x++) {
         const i = this.idx(x, y);
         if (this.g[i] !== FLOOR && this.g[i] !== DECO) continue;
-        if (mode === "all") {
+        if (mode === 'all') {
           this.g[i] = SAND;
           continue;
         }
-        if (mode === "dunes" && fbm(x / 9, y / 9, seed + 7) > 0.66) {
+        if (mode === 'dunes' && fbm(x / 9, y / 9, seed + 7) > 0.66) {
           this.g[i] = SAND;
           continue;
         }
-        const reach =
-          2 +
-          Math.floor(noise2(x / 6, y / 6, seed) * (mode === "dunes" ? 7 : 4));
+        const reach = 2 + Math.floor(noise2(x / 6, y / 6, seed) * (mode === 'dunes' ? 7 : 4));
         let shore = false;
-        for (let dy = -reach; dy <= reach && !shore; dy++)
-          for (let dx = -reach; dx <= reach && !shore; dx++)
-            if (
-              this.at(x + dx, y + dy) === WATER &&
-              Math.hypot(dx, dy) <= reach
-            )
-              shore = true;
+        for (let dy = -reach; dy <= reach && !shore; dy++) for (let dx = -reach; dx <= reach && !shore; dx++) if (this.at(x + dx, y + dy) === WATER && Math.hypot(dx, dy) <= reach) shore = true;
         if (shore) this.g[i] = SAND;
       }
     }
@@ -904,33 +650,19 @@ class ZoneBuilder {
   private wildPacks(hubs: [number, number][], ways: [number, number][]): void {
     const s = this.spec;
     let made = 0;
-    for (
-      let tries = 0;
-      tries < s.wildCount * 60 && made < s.wildCount;
-      tries++
-    ) {
+    for (let tries = 0; tries < s.wildCount * 60 && made < s.wildCount; tries++) {
       const x = 3 + Math.floor(this.r() * (this.w - 6));
       const y = 3 + Math.floor(this.r() * (this.h - 6));
       const i = this.idx(x, y);
       if (!OPEN.has(this.g[i]!) || this.marked.has(i)) continue;
       if (hubs.some(([hx, hy]) => Math.hypot(hx - x, hy - y) < 18)) continue;
       if (ways.some(([ex, ey]) => Math.hypot(ex - x, ey - y) < 9)) continue;
-      if (this.packSpots.some(([px, py]) => Math.hypot(px - x, py - y) < 9))
-        continue;
+      if (this.packSpots.some(([px, py]) => Math.hypot(px - x, py - y) < 9)) continue;
       const t = this.gradient(x, y);
-      const bands = s.wild.filter(
-        (b) => t >= b.band[0] - 0.05 && t <= b.band[1] + 0.05,
-      );
-      const band = bands.length
-        ? bands[Math.floor(this.r() * bands.length)]!
-        : s.wild[0]!;
+      const bands = s.wild.filter((b) => t >= b.band[0] - 0.05 && t <= b.band[1] + 0.05);
+      const band = bands.length ? bands[Math.floor(this.r() * bands.length)]! : s.wild[0]!;
       const enemies = band.packs[Math.floor(this.r() * band.packs.length)]!;
-      this.put(x, y, {
-        kind: "pack",
-        enemies,
-        level: this.levelAt(x, y),
-        ...(this.r() < 0.06 ? { elite: true } : {}),
-      });
+      this.put(x, y, { kind: 'pack', enemies, level: this.levelAt(x, y), ...(this.r() < 0.06 ? { elite: true } : {}) });
       this.packSpots.push([x, y]);
       made++;
     }
@@ -941,8 +673,7 @@ class ZoneBuilder {
    * nearest reached ground, and open pockets nobody can get into are filled in.
    */
   private connect(start: [number, number]): void {
-    const walk = (i: number): boolean =>
-      WALKABLE.has(this.g[i]!) || this.marked.has(i);
+    const walk = (i: number): boolean => WALKABLE.has(this.g[i]!) || this.marked.has(i);
     const flood = (): Uint8Array => {
       const seen = new Uint8Array(this.w * this.h);
       const q = [this.idx(start[0], start[1])];
@@ -975,71 +706,51 @@ class ZoneBuilder {
       // walk toward the start until we meet reached ground, clearing as we go
       let x = m.tx;
       let y = m.ty;
-      for (
-        let guard = 0;
-        guard < this.w + this.h && !seen[this.idx(x, y)];
-        guard++
-      ) {
+      for (let guard = 0; guard < this.w + this.h && !seen[this.idx(x, y)]; guard++) {
         const c = this.g[this.idx(x, y)]!;
-        if (!walk(this.idx(x, y)))
-          this.g[this.idx(x, y)] = c === WATER ? BRIDGE : FLOOR;
-        if (Math.abs(start[0] - x) > Math.abs(start[1] - y))
-          x += Math.sign(start[0] - x);
+        if (!walk(this.idx(x, y))) this.g[this.idx(x, y)] = c === WATER ? BRIDGE : FLOOR;
+        if (Math.abs(start[0] - x) > Math.abs(start[1] - y)) x += Math.sign(start[0] - x);
         else y += Math.sign(start[1] - y);
       }
       seen = flood();
     }
-    for (let i = 0; i < seen.length; i++)
-      if (!seen[i] && WALKABLE.has(this.g[i]!))
-        this.g[i] = this.g[i] === BRIDGE ? WATER : WALL;
+    for (let i = 0; i < seen.length; i++) if (!seen[i] && WALKABLE.has(this.g[i]!)) this.g[i] = this.g[i] === BRIDGE ? WATER : WALL;
   }
 
   /* -------------------------------------------------------------- the story */
 
   /** Places the story's dressing near its anchors, on ground the land already left free. */
-  private story(
-    hubs: [number, number][],
-    pois: [number, number][],
-    ways: [number, number][],
-  ): void {
+  private story(hubs: [number, number][], pois: [number, number][], ways: [number, number][]): void {
     for (const sm of this.spec.story ?? []) {
       const base = this.anchor(sm.near, hubs, pois, ways);
       const x = base[0] + (sm.dx ?? 0);
       const y = base[1] + (sm.dy ?? 0);
       const m = sm.marker;
       // flames go on the roof itself
-      if (m.kind === "fire") {
+      if (m.kind === 'fire') {
         this.put(x, y, m, sm.when);
         continue;
       }
       const [tx, ty] = this.free(x, y);
       // nothing the story stands up may close a road
-      const marker =
-        m.kind === "prop" && m.solid && !OPEN.has(this.at(tx, ty))
-          ? { ...m, solid: false }
-          : m;
+      const marker = m.kind === 'prop' && m.solid && !OPEN.has(this.at(tx, ty)) ? { ...m, solid: false } : m;
       this.put(tx, ty, marker, sm.when);
     }
   }
 
-  private anchor(
-    near: string,
-    hubs: [number, number][],
-    pois: [number, number][],
-    ways: [number, number][],
-  ): [number, number] {
-    if (near === "hub" || near.startsWith("hub:")) {
-      const h = hubs[near === "hub" ? 0 : Number(near.slice(4))];
+  private anchor(near: string, hubs: [number, number][], pois: [number, number][], ways: [number, number][]): [number, number] {
+    if (near === 'hub' || near.startsWith('hub:')) {
+      const h = hubs[near === 'hub' ? 0 : Number(near.slice(4))];
       if (h) return h;
-    } else if (near.startsWith("house:")) {
+    } else if (near.startsWith('house:')) {
       const h = this.houses[Number(near.slice(6))];
       if (h) return [h[0] + 1, h[1]];
-    } else if (near.startsWith("exit:")) {
+    } else if (near.startsWith('exit:')) {
       const i = this.spec.exits.findIndex((e) => e.to === near.slice(5));
       if (i >= 0) return ways[i]!;
-    } else if (near === "gate") {
+    } else if (near === 'gate') {
       if (this.gate) return this.gate;
-    } else if (near.startsWith("shore:")) {
+    } else if (near.startsWith('shore:')) {
       return this.shore(this.anchor(near.slice(6), hubs, pois, ways));
     } else {
       const i = this.spec.pois.findIndex((p) => p.spot?.id === near);
@@ -1063,11 +774,7 @@ class ZoneBuilder {
         [x, y + 1],
         [x, y - 1],
       ];
-      if (
-        WALKABLE.has(this.g[i]!) &&
-        sides.some(([sx, sy]) => this.at(sx, sy) === WATER)
-      )
-        return [x, y];
+      if (WALKABLE.has(this.g[i]!) && sides.some(([sx, sy]) => this.at(sx, sy) === WATER)) return [x, y];
       for (const [sx, sy] of sides) {
         if (!this.inside(sx, sy, 1)) continue;
         const j = this.idx(sx, sy);
@@ -1087,12 +794,7 @@ class ZoneBuilder {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad) continue;
           const tx = x + dx;
           const ty = y + dy;
-          if (
-            this.inside(tx, ty, 2) &&
-            WALKABLE.has(this.at(tx, ty)) &&
-            !this.marked.has(this.idx(tx, ty))
-          )
-            return [tx, ty];
+          if (this.inside(tx, ty, 2) && WALKABLE.has(this.at(tx, ty)) && !this.marked.has(this.idx(tx, ty))) return [tx, ty];
         }
       }
     }
@@ -1101,32 +803,18 @@ class ZoneBuilder {
 }
 
 /** A wild region whose map is generated the first time something looks at it. */
-export function wildRegion(
-  base: Omit<
-    RegionDef,
-    "kind" | "map" | "markers" | "placed" | "encounters" | "level"
-  >,
-  spec: ZoneSpec,
-): RegionDef {
+export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'placed' | 'encounters' | 'level'>, spec: ZoneSpec): RegionDef {
   let made: GeneratedZone | null = null;
   const get = (): GeneratedZone => (made ??= generateZone(spec));
   return {
     ...base,
-    kind: "wild",
+    kind: 'wild',
     level: spec.levels[0],
     markers: {},
     encounters: [],
     holds: {
-      exits: [
-        ...spec.exits.map((e) => e.to),
-        ...spec.pois.flatMap((p) => (p.entrance ? [p.entrance.to] : [])),
-      ],
-      npcs: [
-        ...spec.hubs.flatMap((h) => h.npcs),
-        ...(spec.story ?? []).flatMap((m) =>
-          m.marker.kind === "npc" ? [m.marker.npc] : [],
-        ),
-      ],
+      exits: [...spec.exits.map((e) => e.to), ...spec.pois.flatMap((p) => (p.entrance ? [p.entrance.to] : []))],
+      npcs: [...spec.hubs.flatMap((h) => h.npcs), ...(spec.story ?? []).flatMap((m) => (m.marker.kind === 'npc' ? [m.marker.npc] : []))],
       spots: spec.pois.flatMap((p) => (p.spot ? [p.spot.id] : [])),
     },
     get map() {
