@@ -11,7 +11,8 @@ export const SCENES: SceneDef[] = [
     // the first dawn after the raid: the village alive in its square, and a camp now
     id: 'briar-dawn',
     region: 'briarhollow',
-    when: all(after('the-empty-tomb'), until('camp-scouts')),
+    // only that first morning: once Act I is under way (the orders from the north read) it has passed
+    when: all(after('the-empty-tomb'), until('camp-scouts'), until('orders-from-the-north')),
     near: 'briar-square',
     r: 150,
     steps: [
