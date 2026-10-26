@@ -5,9 +5,12 @@ import { BRACKENRIDGE_EVENTS } from './zones/brackenridge-quests';
 import { BRIARHOLLOW_EVENTS } from './zones/briarhollow';
 import { DUSKFEN_EVENTS } from './zones/duskfen-quests';
 import { EMBERWICK_EVENTS } from './zones/emberwick-story';
+import { GLIMMERWOOD_EVENTS } from './zones/glimmerwood-quests';
 import { GREYFEN_EVENTS } from './zones/greyfen-quests';
+import { HIGHWALL_EVENTS } from './zones/highwall-quests';
 import { IRONPEAK_EVENTS } from './zones/ironpeak-quests';
 import { SALTMARSH_EVENTS } from './zones/saltmarsh-quests';
+import { SHATTERED_VALE_EVENTS } from './zones/shattered-vale-quests';
 import { THORNVALE_EVENTS } from './zones/thornvale-quests';
 
 /** Every story event (raids, defenses, rescues, arrivals) by id: quests name them in an `event` objective. */
@@ -22,4 +25,7 @@ export const EVENTS: Record<string, StoryEventDef> = {
   ...IRONPEAK_EVENTS,
   ...ASHEN_BARROWS_EVENTS,
   ...EMBERWICK_EVENTS,
+  ...GLIMMERWOOD_EVENTS,
+  ...SHATTERED_VALE_EVENTS,
+  ...HIGHWALL_EVENTS,
 };

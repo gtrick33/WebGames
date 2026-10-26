@@ -3,7 +3,7 @@ import { wildRegion } from '../zonegen';
 /**
  * Frostfang Peaks (44-49): north of Rimeheld, the high passes between granite crags and snowfields.
  * Eagle's Rest, a stone town of eagle-wardens, clings to the southern slopes. Yetis den in the ice caves,
- * the Legion's pathfinders mark a road north below the crags, and above them all Skyrend, the great frost
+ * the Host's pathfinders mark a road north below the crags, and above them all Skyrend, the great frost
  * roc, nests in her eyrie on the highest peak.
  */
 export const FROSTFANG = wildRegion(
@@ -37,7 +37,7 @@ export const FROSTFANG = wildRegion(
       // Skyrend's eyrie on the highest peak
       { at: [0.5, 0.12], r: 12, kind: 'nest', level: 49, packs: [['ice-harpy', 'ice-harpy', 'ice-harpy'], ['frost-roc-hatchling', 'frost-roc-hatchling']], rare: 'skyrend', spot: { id: 'the-eyrie', name: 'Skyrend’s Eyrie' }, chest: 'rare' },
       { at: [0.2, 0.4], r: 11, kind: 'den', level: 46, packs: [['frostfang-yeti', 'frostfang-yeti'], ['frostfang-yeti', 'snow-stalker']], elite: true, rare: 'old-whitepelt', spot: { id: 'yeti-caves', name: 'The Yeti Caves' } },
-      { at: [0.75, 0.45], r: 11, kind: 'camp', level: 47, packs: [['legion-pathfinder', 'legion-pathfinder', 'legion-huscarl'], ['legion-bonecaller', 'legion-huscarl', 'legion-pathfinder']], spot: { id: 'legion-road', name: 'The Legion Road' }, chest: 'common' },
+      { at: [0.75, 0.45], r: 11, kind: 'camp', level: 47, packs: [['legion-pathfinder', 'legion-pathfinder', 'legion-huscarl'], ['legion-bonecaller', 'legion-huscarl', 'legion-pathfinder']], spot: { id: 'legion-road', name: 'The Host Road' }, chest: 'common' },
       { at: [0.62, 0.72], r: 9, kind: 'ruin', level: 45, packs: [['rime-wight', 'rime-wight'], ['rime-wight', 'snow-stalker']], spot: { id: 'frozen-watch', name: 'The Frozen Watch' }, landmark: { style: 'tower', w: 4, h: 4, name: 'The Frozen Watch' } },
       { at: [0.85, 0.85], r: 9, kind: 'grove', level: 44, packs: [['snow-stalker', 'snow-stalker'], ['ice-harpy', 'ice-harpy', 'snow-stalker']], spot: { id: 'eagles-shrine', name: 'The Eagles’ Shrine' } },
     ],

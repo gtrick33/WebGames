@@ -1,7 +1,7 @@
 import type { StoryCond } from './types';
 
 /** Story conditions, briefly (markers' and states' `when`: STORY_BIBLE.md §4). */
-export const is = (quest: string, state: 'offered' | 'active' | 'done' | 'started' | 'locked'): StoryCond => ({ quest, is: state });
+export const is = (quest: string, state: 'offered' | 'active' | 'done' | 'started' | 'locked' | 'taken'): StoryCond => ({ quest, is: state });
 export const not = (c: StoryCond): StoryCond => ({ not: c });
 export const any = (...c: StoryCond[]): StoryCond => ({ any: c });
 export const all = (...c: StoryCond[]): StoryCond => ({ all: c });

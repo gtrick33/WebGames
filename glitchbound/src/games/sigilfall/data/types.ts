@@ -601,14 +601,15 @@ export type Theme =
  * quest its giver is waiting to hand over; `started` means offered, active or done.
  */
 export type StoryCond =
-  | { quest: string; is: 'locked' | 'offered' | 'active' | 'done' | 'started' }
+  /** 'taken': done, and not a path closed by another answer to its choice. */
+  | { quest: string; is: 'locked' | 'offered' | 'active' | 'done' | 'started' | 'taken' }
   | { all: StoryCond[] }
   | { any: StoryCond[] }
   | { not: StoryCond };
 
 /** A line a person says over their head during play (a companion's bark, a villager's cry). */
 export interface Bark {
-  /** An NPC id, a companion's pet id, or 'hero'. */
+  /** An NPC id, a companion's pet id, an enemy id (a villain in the field), or 'hero'. */
   who: string;
   text: string;
 }
@@ -627,7 +628,11 @@ export interface StoryEventDef {
   /** Enemy level (else the region's). */
   level?: number;
   /** Waves, one after another: each comes from its spots once the last is beaten. */
-  waves: { enemies: string[]; from: string[]; barks?: Bark[] }[];
+  waves: { enemies: string[]; from: string[]; barks?: Bark[]; leave?: string[] }[];
+  /** A fight that is not won: it ends by itself this many seconds in, whatever is still standing. */
+  ends?: number;
+  /** Companions (pet ids) the event takes away at its end instead of letting them go (the one carried off). */
+  taken?: string[];
   /** Companions who fight beside the hero while it lasts (PETS ids). */
   allies?: string[];
   /** Defend: what must not fall (a PETS id standing at a spot). */
@@ -790,6 +795,12 @@ export interface QuestDef {
   auto?: boolean;
   /** What the giver says when offering it (else the quest's text). */
   offer?: string[];
+  /**
+   * One of a choice: the quests sharing this name are different answers to the same question, offered at
+   * once; taking one closes the others for good (they count as done, so what comes after opens either way,
+   * and the story remembers which was taken).
+   */
+  choice?: string;
   reward: { xp: number; gold: number; item?: string | { rarity: Rarity }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId };
 }
 
@@ -801,7 +812,7 @@ export interface NpcDef {
   title: string;
   sprite: string;
   /** Lines by quest state, first matching wins ('started': offered, active or done). */
-  talk: { when?: { quest: string; state: 'locked' | 'active' | 'done' | 'started' }; lines: string[] }[];
+  talk: { when?: { quest: string; state: 'locked' | 'offered' | 'active' | 'done' | 'started' | 'taken' }; lines: string[] }[];
   /** What the NPC offers besides talk. */
   service?: 'respec' | 'smith' | 'waystone';
   /** A vendor: the shop they open, and its name over the door (else the shop's own name). */

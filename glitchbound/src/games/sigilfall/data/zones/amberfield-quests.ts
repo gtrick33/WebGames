@@ -225,7 +225,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     name: 'The Amber Lancers',
     giver: 'old-gaius',
     text: 'The graves at Lancers’ Rest were dug open from below. Gaius’s friends ride with the Host now: the Ash Crown makes soldiers out of whatever is grieved for. He asks you to bring back their badges, five of them, and not to ask him what he will do with them.',
-    objective: { kind: 'loot', region: 'amberfield', item: 'Lancer Badge', from: ['legion-scout'], chance: 0.35, count: 5, label: 'Take Lancer Badges from Legion scouts' },
+    objective: { kind: 'loot', region: 'amberfield', item: 'Lancer Badge', from: ['legion-scout'], chance: 0.35, count: 5, label: 'Take Lancer Badges from Ashen scouts' },
     after: ['lancers-rest'],
     zone: 'amberfield',
     reward: { xp: 520, gold: 170 },

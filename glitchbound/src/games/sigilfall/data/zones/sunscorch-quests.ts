@@ -1,9 +1,10 @@
 import type { NpcDef, QuestDef } from '../types';
 
 /**
- * The Oasis of Ras and the quests of the Sunscorch Expanse (see WORLD.md). A thousand years ago the
- * Sun King was buried somewhere out in the sands with the Sigil of the Sun, and Corvane's map sent the
- * Legion after it. The main chain follows the raiders' grey gold to the Fallen Obelisk, the Legion's
+ * The Oasis of Ras and the quests of the Sunscorch Expanse (Act III, STORY_BIBLE.md §3, "The sun houses").
+ * A thousand years ago the Sun King was buried somewhere out in the sands with the Sigil of the Sun, and
+ * the oasis lords have sworn ever since that it stays there: a sigil in the light is a sigil someone can
+ * take. The Regent needs it anyway, and the Host is already digging. Corvane's map sent the Host after it. The main chain follows the raiders' grey gold to the Fallen Obelisk, the Host's
  * dig, the raider chief Khamsin and the Sunken Gate, then down into the Tomb of the Sun King. Old Kasim
  * has scorpions in his well, Merchant Zahra has lost her sand-ship to the wurms, and Sandscribe Ibbi
  * wants to know who exactly is walking out of the old kingdom's graves. Main chain first.
@@ -14,7 +15,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'the-sun-kings-tomb',
     name: 'The Sun King’s Tomb',
     giver: 'regent-elowen',
-    text: 'One mark on Corvane’s map lies far to the east, in the Sunscorch Expanse: the Sigil of the Sun, buried a thousand years ago with the Sun King, greatest of the old desert kings, in a tomb nobody has found since. The Legion is already digging for it. Take the east road down out of Ironpeak into the sands and find Oasis-keeper Sefu at the Oasis of Ras.',
+    text: 'Far to the east, in the Sunscorch Expanse, the Sigil of the Sun lies buried with the Sun King, greatest of the old desert kings, in a tomb nobody has found in a thousand years. The sun houses have sworn it stays buried forever. The Regent needs it, and the Host is already digging for it. Take the east road down out of Ironpeak into the sands and find Oasis-keeper Sefu at the Oasis of Ras, who keeps the oath and may be persuaded to break it.',
     objective: { kind: 'talk', npc: 'oasis-keeper-sefu', label: 'Talk to Oasis-keeper Sefu at the Oasis of Ras' },
     after: ['festival-the-champion'],
     level: 30,
@@ -23,7 +24,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
   /* ------------------------------------------------------- the Sun King */
   {
     id: 'hollow-coin',
-    name: 'Hollow Coin',
+    name: 'Ash Coin',
     giver: 'oasis-keeper-sefu',
     text: 'Sefu keeps the Oasis of Ras: its wells, its palms and its peace. The peace is going. The dune raiders, who used to steal goats, now hit the water caravans in packs, and they pay for everything in cold grey coin. Sefu wants to know who is buying the desert. Take the raiders’ purses off them in the sands around the oasis.',
     objective: { kind: 'loot', region: 'sunscorch', item: 'Raider’s Purse', from: ['dune-raider', 'dune-javelineer'], chance: 0.4, count: 5, label: 'Take Raiders’ Purses from dune raiders' },
@@ -35,7 +36,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'the-sandscribe',
     name: 'The Sandscribe',
     giver: 'oasis-keeper-sefu',
-    text: 'Hollow gold, as Sefu feared, and in every purse a scrap of linen inked with a sun and a line of the old kingdom’s script. Somebody is paying raiders to find something. Sandscribe Ibbi reads the old script better than anyone alive, and will tell you so. She works in the shade by the wells, in the oasis.',
+    text: 'ash-gold, as Sefu feared, and in every purse a scrap of linen inked with a sun and a line of the old kingdom’s script. Somebody is paying raiders to find something. Sandscribe Ibbi reads the old script better than anyone alive, and will tell you so. She works in the shade by the wells, in the oasis.',
     objective: { kind: 'talk', npc: 'sandscribe-ibbi', label: 'Show the linen scraps to Sandscribe Ibbi' },
     after: ['hollow-coin'],
     zone: 'sunscorch',
@@ -46,7 +47,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'the-fallen-obelisk',
     name: 'The Fallen Obelisk',
     giver: 'sandscribe-ibbi',
-    text: 'Ibbi knows the line: it is copied from the Fallen Obelisk, south-east of the oasis, where the old kings carved the way to the Sun King’s tomb as a riddle for the worthy. The Legion is copying it for the unworthy. Go and read the obelisk before they have finished, and bring Ibbi the end of the riddle.',
+    text: 'Ibbi knows the line: it is copied from the Fallen Obelisk, south-east of the oasis, where the old kings carved the way to the Sun King’s tomb as a riddle for the worthy. The Host is copying it for the unworthy. Go and read the obelisk before they have finished, and bring Ibbi the end of the riddle.',
     objective: { kind: 'explore', spot: 'fallen-obelisk', label: 'Read the Fallen Obelisk' },
     after: ['the-sandscribe'],
     zone: 'sunscorch',
@@ -55,10 +56,10 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
   },
   {
     id: 'the-hollow-dig',
-    name: 'The Hollow Dig',
+    name: 'The Ashen Dig',
     giver: 'oasis-keeper-sefu',
-    text: 'From the obelisk you could see the Legion’s dust, east of the oasis: dead miners shovelling sand day and night, bonecallers keeping time, a golem hauling the spoil. They are digging toward the Sun King. Break the Hollow Dig, and the Legion’s diggers wherever they wander in the sands.',
-    objective: { kind: 'kill', region: 'sunscorch', count: 10, enemies: ['legion-miner', 'legion-bonecaller', 'bone-golem'], label: 'Break the Legion’s diggers' },
+    text: 'From the obelisk you could see the Host’s dust, east of the oasis: dead miners shovelling sand day and night, bonecallers keeping time, a golem hauling the spoil. They are digging toward the Sun King. Break the Ashen Dig, and the Host’s diggers wherever they wander in the sands.',
+    objective: { kind: 'kill', region: 'sunscorch', count: 10, enemies: ['legion-miner', 'legion-bonecaller', 'bone-golem'], label: 'Break the Host’s diggers' },
     after: ['the-fallen-obelisk'],
     zone: 'sunscorch',
     level: 32,
@@ -79,18 +80,18 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'khamsin',
     name: 'Khamsin',
     giver: 'oasis-keeper-sefu',
-    text: 'The raiders guide the Legion’s diggers through the deep desert, and their chief sold them the way: Khamsin, named for the wind that strips the paint off wagons. He keeps his camp at the Raiders’ Rest, north-east of the oasis, with the best of his riders and all of his gold. Sefu wants him gone, and the desert’s roads back.',
+    text: 'The raiders guide the Host’s diggers through the deep desert, and their chief sold them the way: Khamsin, named for the wind that strips the paint off wagons. He keeps his camp at the Raiders’ Rest, north-east of the oasis, with the best of his riders and all of his gold. Sefu wants him gone, and the desert’s roads back.',
     objective: { kind: 'kill', region: 'sunscorch', count: 1, enemies: ['khamsin'], label: 'Defeat Khamsin at the Raiders’ Rest' },
     after: ['the-waking-dead'],
     zone: 'sunscorch',
     level: 33,
-    reward: { xp: 1700, gold: 450, item: { rarity: 'rare' }, text: 'Khamsin’s riders scatter into the dunes. In his tent you find the Legion’s map of the deep desert, and the way east.' },
+    reward: { xp: 1700, gold: 450, item: { rarity: 'rare' }, text: 'Khamsin’s riders scatter into the dunes. In his tent you find the Host’s map of the deep desert, and the way east.' },
   },
   {
     id: 'the-sunken-gate',
     name: 'The Sunken Gate',
     giver: 'oasis-keeper-sefu',
-    text: 'Khamsin’s map shows the way the riddle pointed: far to the east, where the sun first touches the sand, a door half buried in a dune, and the Legion’s tunnel running down to it. Find the Sunken Gate. The Legion got there first; see what it found.',
+    text: 'Khamsin’s map shows the way the riddle pointed: far to the east, where the sun first touches the sand, a door half buried in a dune, and the Host’s tunnel running down to it. Find the Sunken Gate. The Host got there first; see what it found.',
     objective: { kind: 'explore', spot: 'sunken-gate', label: 'Find the Sunken Gate' },
     after: ['khamsin'],
     zone: 'sunscorch',
@@ -101,7 +102,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'the-sand-warden',
     name: 'The Sand Warden',
     giver: 'sandscribe-ibbi',
-    text: 'The Legion broke the Sunken Gate open, and something inside broke the Legion: the Sand Warden, made by the old kings to keep thieves out of the Sun King’s halls. It cannot tell a thief from a hero, and Ibbi doubts it would care. Go down into the Tomb of the Sun King, through the gate in the far east, and get past it.',
+    text: 'The Host broke the Sunken Gate open, and something inside broke the Host: the Sand Warden, made by the old kings to keep thieves out of the Sun King’s halls. It cannot tell a thief from a hero, and Ibbi doubts it would care. Go down into the Tomb of the Sun King, through the gate in the far east, and get past it.',
     objective: { kind: 'boss', boss: 'the-sand-warden', label: 'Defeat the Sand Warden in the Tomb of the Sun King' },
     after: ['the-sunken-gate'],
     zone: 'sunscorch',
@@ -112,7 +113,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'the-sun-king',
     name: 'The Sun King',
     giver: 'oasis-keeper-sefu',
-    text: 'Beyond the Warden lies the Sun King’s burial hall, and the Sun King is not lying in it. He has risen from his sarcophagus with the Sigil of the Sun in his hands. He was a great king once, and he does not mean to give up anything that is his. Take the sigil from him before the Legion does.',
+    text: 'Beyond the Warden lies the Sun King’s burial hall, and the Sun King is not lying in it. The Host’s digging has woken him with the Sigil of the Sun in his hands. He was a great king once, and he does not mean to give up anything that is his. Sefu has made her choice: better in the Regent’s hands than the Hallow King’s. Take the sigil from him before the Host does.',
     objective: { kind: 'boss', boss: 'the-sun-king', label: 'Defeat the Sun King and take the Sigil of the Sun' },
     after: ['the-sand-warden'],
     zone: 'sunscorch',
@@ -122,7 +123,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
       gold: 1100,
       item: 'oasis-heart',
       perk: 'sigil-sun',
-      text: 'You take the Sigil of the Sun from the Sun King’s hands, still warm as noon, and he lies down again at last. Sefu fills a glass heart from the oldest well of Ras, so that something of the oasis goes with you.',
+      text: 'You take the Sigil of the Sun from the Sun King’s hands, still warm as noon, and he lies down again at last. Sefu breaks a thousand-year oath with a face like stone, and fills a glass heart from the oldest well of Ras so that something of the oasis goes with it. When the Regent marches, she says, the desert lancers will ride beside it.',
     },
   },
   /* ----------------------------------------------------- Kasim's scorpions */
@@ -254,7 +255,7 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-supply-road', state: 'active' },
-        lines: ['The Legion’s diggers did not walk here from nowhere. They came down the canyon road from the north, and the caravans from Sablewind say Legion wagons roll west along it every night.', 'Take the north road into Sablewind Canyon. Foreman Garrick in Dustcrown will know what goes up and down his canyon.'],
+        lines: ['The Host’s diggers did not walk here from nowhere. They came down the canyon road from the north, and the caravans from Sablewind say Host wagons roll west along it every night.', 'Take the north road into Sablewind Canyon. Foreman Garrick in Dustcrown will know what goes up and down his canyon.'],
       },
       {
         when: { quest: 'the-sun-king', state: 'done' },
@@ -299,7 +300,7 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-fallen-obelisk', state: 'active' },
-        lines: ['The Fallen Obelisk, south-east of the oasis. Read the end of the riddle before the Legion does. Read it carefully.', 'And do not lean on it. It has fallen once already.'],
+        lines: ['The Fallen Obelisk, south-east of the oasis. Read the end of the riddle before the Host does. Read it carefully.', 'And do not lean on it. It has fallen once already.'],
       },
       {
         when: { quest: 'the-waking-dead', state: 'active' },

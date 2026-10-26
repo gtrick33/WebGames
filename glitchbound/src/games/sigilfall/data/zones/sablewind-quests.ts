@@ -1,7 +1,7 @@
 import type { NpcDef, QuestDef } from '../types';
 
 /**
- * Dustcrown's people and the quests of Sablewind Canyon (see WORLD.md). The Hollow Legion's wagon road
+ * Dustcrown's people and the quests of Sablewind Canyon (see WORLD.md). The Ashen Host's wagon road
  * runs along the canyon floor below the town: bone-steel, blasting powder and the dead, hauled west
  * every night. The main chain watches the road from the Old Lookout, breaks the wagon teams, reads
  * their manifests with a scout from Highwall, stops the sappers widening the canyon and ends at the
@@ -15,7 +15,7 @@ export const SABLEWIND_QUESTS: QuestDef[] = [
     id: 'the-supply-road',
     name: 'The Supply Road',
     giver: 'oasis-keeper-sefu',
-    text: 'The Legion’s diggers did not walk into the Sunscorch from nowhere: they came down the canyon road from the north, and so did their pay. The caravans out of Sablewind Canyon say Legion wagons roll west along it every night, loaded to the axles. Take the north road out of the Sunscorch into the canyon and find Foreman Garrick in Dustcrown, the mining town on the rim.',
+    text: 'The Host’s diggers did not walk into the Sunscorch from nowhere: they came down the canyon road from the north, and so did their pay. The caravans out of Sablewind Canyon say Host wagons roll west along it every night, loaded to the axles. Take the north road out of the Sunscorch into the canyon and find Foreman Garrick in Dustcrown, the mining town on the rim.',
     objective: { kind: 'talk', npc: 'foreman-garrick', label: 'Talk to Foreman Garrick in Dustcrown' },
     after: ['the-sun-king'],
     level: 37,
@@ -36,8 +36,8 @@ export const SABLEWIND_QUESTS: QuestDef[] = [
     id: 'break-the-teams',
     name: 'Break the Teams',
     giver: 'foreman-garrick',
-    text: 'Forty wagons a night. Garrick has had enough of watching. Break the Legion’s wagon teams wherever you catch them on the canyon roads: the drivers with their whips, the bone-haulers under their crates, the wagon-guards riding on top.',
-    objective: { kind: 'kill', region: 'sablewind', count: 12, enemies: ['legion-teamster', 'bone-hauler', 'legion-wagon-guard'], label: 'Break the Legion’s wagon teams' },
+    text: 'Forty wagons a night. Garrick has had enough of watching. Break the Host’s wagon teams wherever you catch them on the canyon roads: the drivers with their whips, the bone-haulers under their crates, the wagon-guards riding on top.',
+    objective: { kind: 'kill', region: 'sablewind', count: 12, enemies: ['legion-teamster', 'bone-hauler', 'legion-wagon-guard'], label: 'Break the Host’s wagon teams' },
     after: ['the-old-lookout'],
     zone: 'sablewind',
     level: 38,
@@ -47,8 +47,8 @@ export const SABLEWIND_QUESTS: QuestDef[] = [
     id: 'the-manifests',
     name: 'The Manifests',
     giver: 'foreman-garrick',
-    text: 'Every Legion teamster carries a bone tube on its belt, and in every tube is a manifest: what is on the wagon, and where it is going. The dead are tidy that way. Bring Garrick five manifests from the teamsters on the canyon roads.',
-    objective: { kind: 'loot', region: 'sablewind', item: 'Wagon Manifest', from: ['legion-teamster'], chance: 0.4, count: 5, label: 'Take Wagon Manifests from Legion teamsters' },
+    text: 'Every Ashen teamster carries a bone tube on its belt, and in every tube is a manifest: what is on the wagon, and where it is going. The dead are tidy that way. Bring Garrick five manifests from the teamsters on the canyon roads.',
+    objective: { kind: 'loot', region: 'sablewind', item: 'Wagon Manifest', from: ['legion-teamster'], chance: 0.4, count: 5, label: 'Take Wagon Manifests from Ashen teamsters' },
     after: ['break-the-teams'],
     zone: 'sablewind',
     level: 38,
@@ -58,7 +58,7 @@ export const SABLEWIND_QUESTS: QuestDef[] = [
     id: 'a-scouts-eye',
     name: 'A Scout’s Eye',
     giver: 'foreman-garrick',
-    text: 'The manifests are written in the Legion’s army hand, all marks and numbers. Garrick can read an ore assay, not this. Scout Ilya, who came down out of the west a month ago and sells blades on the square, can read anything with a number in it. She won’t say where she learned. Take her the manifests.',
+    text: 'The manifests are written in the Host’s army hand, all marks and numbers. Garrick can read an ore assay, not this. Scout Ilya, who came down out of the west a month ago and sells blades on the square, can read anything with a number in it. She won’t say where she learned. Take her the manifests.',
     objective: { kind: 'talk', npc: 'scout-ilya', label: 'Take the manifests to Scout Ilya' },
     after: ['the-manifests'],
     zone: 'sablewind',
@@ -69,7 +69,7 @@ export const SABLEWIND_QUESTS: QuestDef[] = [
     id: 'the-broken-wagons',
     name: 'The Broken Wagons',
     giver: 'scout-ilya',
-    text: 'Pitch, ladders, bone-steel and powder: a siege train, Ilya says, and powder most of all. Garrick’s miners once ambushed a convoy at a bend east of town, now called the Broken Wagons. They broke four wagons and lost eleven men, and the Legion never came back for its wagons. Ilya says the Legion always comes back. Go and see what is still lying there.',
+    text: 'Pitch, ladders, bone-steel and powder: a siege train, Ilya says, and powder most of all. Garrick’s miners once ambushed a convoy at a bend east of town, now called the Broken Wagons. They broke four wagons and lost eleven men, and the Host never came back for its wagons. Ilya says the Host always comes back. Go and see what is still lying there.',
     objective: { kind: 'explore', spot: 'broken-wagons', label: 'Search the Broken Wagons' },
     after: ['a-scouts-eye'],
     zone: 'sablewind',
@@ -80,8 +80,8 @@ export const SABLEWIND_QUESTS: QuestDef[] = [
     id: 'the-sappers-cut',
     name: 'The Sappers’ Cut',
     giver: 'foreman-garrick',
-    text: 'The Legion’s sappers have been blasting the canyon wider north of town, at the Sappers’ Cut, so their siege engines can pass, and every blast shakes the dust off Dustcrown’s roofs. Stop the blasting. Kill the sappers, from as far away as you can manage, and don’t stand by the bodies.',
-    objective: { kind: 'kill', region: 'sablewind', count: 8, enemies: ['legion-sapper'], label: 'Stop the Legion’s sappers' },
+    text: 'The Host’s sappers have been blasting the canyon wider north of town, at the Sappers’ Cut, so their siege engines can pass, and every blast shakes the dust off Dustcrown’s roofs. Stop the blasting. Kill the sappers, from as far away as you can manage, and don’t stand by the bodies.',
+    objective: { kind: 'kill', region: 'sablewind', count: 8, enemies: ['legion-sapper'], label: 'Stop the Host’s sappers' },
     after: ['the-broken-wagons'],
     zone: 'sablewind',
     level: 40,
@@ -91,8 +91,8 @@ export const SABLEWIND_QUESTS: QuestDef[] = [
     id: 'the-supply-depot',
     name: 'The Supply Depot',
     giver: 'scout-ilya',
-    text: 'Every manifest is countersigned the same way: Q. M. Vane. Every wagon on the road is counted in at the Legion’s Supply Depot in the far north-west, where the canyon road turns west for Highwall, and Quartermaster Vane does the counting. Find the depot, and how well it is guarded.',
-    objective: { kind: 'explore', spot: 'supply-depot', label: 'Find the Legion’s Supply Depot' },
+    text: 'Every manifest is countersigned the same way: Q. M. Vane. Every wagon on the road is counted in at the Host’s Supply Depot in the far north-west, where the canyon road turns west for Highwall, and Quartermaster Vane does the counting. Find the depot, and how well it is guarded.',
+    objective: { kind: 'explore', spot: 'supply-depot', label: 'Find the Host’s Supply Depot' },
     after: ['the-sappers-cut'],
     zone: 'sablewind',
     level: 40,
@@ -130,7 +130,7 @@ export const SABLEWIND_QUESTS: QuestDef[] = [
     id: 'pack-hunters',
     name: 'Pack Hunters',
     giver: 'scout-ilya',
-    text: 'Too many, and they hunt the way the Legion fights: two from the sides while you watch the one in front. Thin out the canyon raptors west of Dustcrown and around Raptor Run, and watch your flanks while you do.',
+    text: 'Too many, and they hunt the way the Host fights: two from the sides while you watch the one in front. Thin out the canyon raptors west of Dustcrown and around Raptor Run, and watch your flanks while you do.',
     objective: { kind: 'kill', region: 'sablewind', count: 10, enemies: ['canyon-raptor'], label: 'Kill canyon raptors' },
     after: ['raptor-run'],
     zone: 'sablewind',
@@ -198,8 +198,8 @@ export const SABLEWIND_QUESTS: QuestDef[] = [
     id: 'tags-of-the-lost',
     name: 'Tags of the Lost',
     giver: 'foreman-garrick',
-    text: 'Garrick’s miners walk the wagon road now, whips in their hands. Every miner in Dustcrown wears a brass tag with their name on it, and the Legion’s teamsters still wear theirs. Garrick wants them back, so the names can go on the wall in the town hall where they belong.',
-    objective: { kind: 'loot', region: 'sablewind', item: 'Miner’s Tag', from: ['legion-teamster'], chance: 0.35, count: 5, label: 'Recover Miners’ Tags from Legion teamsters' },
+    text: 'Garrick’s miners walk the wagon road now, whips in their hands. Every miner in Dustcrown wears a brass tag with their name on it, and the Host’s teamsters still wear theirs. Garrick wants them back, so the names can go on the wall in the town hall where they belong.',
+    objective: { kind: 'loot', region: 'sablewind', item: 'Miner’s Tag', from: ['legion-teamster'], chance: 0.35, count: 5, label: 'Recover Miners’ Tags from Ashen teamsters' },
     after: ['the-lost-shift'],
     zone: 'sablewind',
     level: 39,
@@ -224,7 +224,7 @@ export const SABLEWIND_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'break-the-teams', state: 'active' },
-        lines: ['Forty wagons. Forty. I thought we’d hear about it if the whole Legion moved house past our door. Turns out we did. We just didn’t listen.', 'Break their teams. Drivers, haulers, the lot. Every wagon that doesn’t reach the end of the road is one less for whoever is waiting there.'],
+        lines: ['Forty wagons. Forty. I thought we’d hear about it if the whole Ashen moved house past our door. Turns out we did. We just didn’t listen.', 'Break their teams. Drivers, haulers, the lot. Every wagon that doesn’t reach the end of the road is one less for whoever is waiting there.'],
       },
       { when: { quest: 'the-manifests', state: 'active' }, lines: ['The drivers carry bone tubes on their belts. Papers. The dead keep papers.', 'Bring me five. I want to know what’s on those wagons.'] },
       {
@@ -245,14 +245,14 @@ export const SABLEWIND_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'tags-of-the-lost', state: 'active' },
-        lines: ['Our miners, driving the Legion’s wagons. I saw Old Tam on the road last night with a whip in his hand. Tam couldn’t stand to hit a mule.', 'Bring me their tags. Their names go on the wall, not on the road.'],
+        lines: ['Our miners, driving the Host’s wagons. I saw Old Tam on the road last night with a whip in his hand. Tam couldn’t stand to hit a mule.', 'Bring me their tags. Their names go on the wall, not on the road.'],
       },
       {
         when: { quest: 'the-wall-burns', state: 'active' },
         lines: ['Highwall. Every wagon we watched was going there, and Highwall’s been holding out alone.', 'Take the ledgers to the Regent. Dustcrown will keep the canyon. Somebody has to, and we’re already here.'],
       },
       { when: { quest: 'the-quartermasters-end', state: 'done' }, lines: ['The road is quiet. First quiet night in a month. I didn’t sleep a wink. Too quiet.', 'Wear the helm. The lamp still works. Mostly.'] },
-      { lines: ['Dustcrown. Copper, tin and red dust, since my grandfather’s day. The Legion hasn’t bothered with us yet. I try not to take it personally.', 'Mind the rim. It’s further down than it looks.'] },
+      { lines: ['Dustcrown. Copper, tin and red dust, since my grandfather’s day. The Host hasn’t bothered with us yet. I try not to take it personally.', 'Mind the rim. It’s further down than it looks.'] },
     ],
   },
   'dustcrown-dora': {
@@ -290,15 +290,15 @@ export const SABLEWIND_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'a-scouts-eye', state: 'active' },
-        lines: ['Let me see. …These are army marks. Highwall’s own supply marks, turned around and used against us.', 'Pitch. Ladders. Bone-steel. Powder, by the ton. The dead, by the cartload. This is a siege train. And every page is countersigned “Q. M. Vane.”', 'All right, yes. I’m a Highwall scout. I was cut off when the Legion closed the west road. Now you know.'],
+        lines: ['Let me see. …These are army marks. Highwall’s own supply marks, turned around and used against us.', 'Pitch. Ladders. Bone-steel. Powder, by the ton. The dead, by the cartload. This is a siege train. And every page is countersigned “Q. M. Vane.”', 'All right, yes. I’m a Highwall scout. I was cut off when the Host closed the west road. Now you know.'],
       },
       {
         when: { quest: 'the-broken-wagons', state: 'active' },
-        lines: ['The Legion never leaves a wagon behind without a reason. If Garrick’s wagons are still lying at the bend east of town, somebody wants them there.', 'Go and see why. Carefully.'],
+        lines: ['The Host never leaves a wagon behind without a reason. If Garrick’s wagons are still lying at the bend east of town, somebody wants them there.', 'Go and see why. Carefully.'],
       },
       {
         when: { quest: 'the-supply-depot', state: 'active' },
-        lines: ['Every wagon is counted in at a depot in the far north-west, where the road turns for Highwall. Vane keeps it.', 'Find it. Count the guards. Then count them again: the Legion doesn’t sleep.'],
+        lines: ['Every wagon is counted in at a depot in the far north-west, where the road turns for Highwall. Vane keeps it.', 'Find it. Count the guards. Then count them again: the Host doesn’t sleep.'],
       },
       {
         when: { quest: 'the-quartermasters-end', state: 'done' },
@@ -308,7 +308,7 @@ export const SABLEWIND_NPCS: Record<string, NpcDef> = {
         when: { quest: 'raptor-run', state: 'active' },
         lines: ['When this is done I’m going home, west through the gulches. The trail runs through Raptor Run, west of town.', 'How many raptors? I’d like to know before I find out.'],
       },
-      { when: { quest: 'pack-hunters', state: 'active' }, lines: ['They hunt like the Legion fights: two from the sides while you watch the one in front. Don’t watch the one in front.'] },
+      { when: { quest: 'pack-hunters', state: 'active' }, lines: ['They hunt like the Host fights: two from the sides while you watch the one in front. Don’t watch the one in front.'] },
       {
         when: { quest: 'the-red-matriarch', state: 'active' },
         lines: ['The Red Matriarch. Old, gold-crested, and every raptor in the Run is hers.', 'Kill her and the pack scatters for a season. Long enough for me to get home.'],

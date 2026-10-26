@@ -2,8 +2,8 @@ import type { NpcDef, QuestDef } from '../types';
 
 /**
  * Frostgate's people and the quests of Rimeheld Tundra (see WORLD.md). The Sigil of Frost sleeps in the
- * Rimeheld Vault under the ice, and the Legion has come for it: its dead northmen walk the sledge
- * roads, and Jarl Hrimfang of the frost giants, paid in Hollow gold, has broken the Vault Door open and
+ * Rimeheld Vault under the ice, and the Host has come for it: its dead northmen walk the sledge
+ * roads, and Jarl Hrimfang of the frost giants, paid in ash-gold, has broken the Vault Door open and
  * woken the Rime Wyrm below. The main chain runs from the Sledge Camp through the Giants' Hearth and
  * Hild's reading of the giants' torcs to the Vault Door and down into the vault. Brewer Olav wants his
  * mead back from the yetis, Huntress Ylva wants Old Whitefang's pelt, and Runecarver Hild wants to know
@@ -15,7 +15,7 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     id: 'the-frozen-road',
     name: 'The Frozen Road',
     giver: 'regent-elowen',
-    text: 'Corvane’s map puts the Sigil of Frost under the ice of Rimeheld, in a vault the Sigil-wardens sealed and the north forgot. The Legion has the same map. Frostgate stands between that vault and the rest of the world, and its jarl, Sigrun, owes Emberwick nothing at all. Take the west road through the Glimmerwood into Rimeheld Tundra, find Jarl Sigrun in Frostgate, and be polite.',
+    text: 'Corvane’s map puts the Sigil of Frost under the ice of Rimeheld, in a vault the Sigil-wardens sealed and the north forgot. The Host has the same map. Frostgate stands between that vault and the rest of the world, and its jarl, Sigrun, owes Emberwick nothing at all. Take the west road through the Glimmerwood into Rimeheld Tundra, find Jarl Sigrun in Frostgate, and be polite.',
     objective: { kind: 'talk', npc: 'jarl-sigrun', label: 'Talk to Jarl Sigrun in Frostgate' },
     after: ['festival-the-champion'],
     level: 33,
@@ -36,8 +36,8 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     id: 'bones-on-the-ice',
     name: 'Bones on the Ice',
     giver: 'jarl-sigrun',
-    text: 'The sledges were broken open and the drivers taken, and the tracks lead away across the snow beside the dead men who took them: northmen three hundred years dead, cut out of the ice of the old battlefields with Legion violet in their eyes. Sigrun’s grandmother’s grandmother fought beside some of them. She would like them put back. Defeat the Legion’s huscarls and spearmen wherever they march on the tundra.',
-    objective: { kind: 'kill', region: 'rimeheld', count: 12, enemies: ['legion-huscarl', 'legion-spearman'], label: 'Defeat the Legion’s dead northmen' },
+    text: 'The sledges were broken open and the drivers taken, and the tracks lead away across the snow beside the dead men who took them: northmen three hundred years dead, cut out of the ice of the old battlefields with Ashen violet in their eyes. Sigrun’s grandmother’s grandmother fought beside some of them. She would like them put back. Defeat the Host’s huscarls and spearmen wherever they march on the tundra.',
+    objective: { kind: 'kill', region: 'rimeheld', count: 12, enemies: ['legion-huscarl', 'legion-spearman'], label: 'Defeat the Host’s dead northmen' },
     after: ['the-last-sledges'],
     zone: 'rimeheld',
     level: 34,
@@ -59,7 +59,7 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     name: 'Torcs of Grey Gold',
     giver: 'jarl-sigrun',
     text: 'Hrimfang was not at his hearth, but his giants were, and every one wore a new torc of grey gold at its throat, cold to the touch. Giants do not wear what they did not earn. Bring Sigrun four of the torcs: she wants to know who has been paying her neighbours. The giants keep to the Giants’ Hearth and the high snow north and west of Frostgate.',
-    objective: { kind: 'loot', region: 'rimeheld', item: 'Hollow-Gold Torc', from: ['frost-giant'], chance: 0.4, count: 4, label: 'Take Hollow-Gold Torcs from frost giants' },
+    objective: { kind: 'loot', region: 'rimeheld', item: 'Ash-Gold Torc', from: ['frost-giant'], chance: 0.4, count: 4, label: 'Take Ash-Gold Torcs from frost giants' },
     after: ['the-giants-hearth'],
     zone: 'rimeheld',
     level: 35,
@@ -91,12 +91,12 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     id: 'the-traitor-jarl',
     name: 'The Traitor Jarl',
     giver: 'jarl-sigrun',
-    text: 'The Door stands open and the cold pours out of it. Hrimfang has gone down with his giants and the Legion’s dead to dig out the Sigil of Frost, and he has woken something down there doing it. Go into the Rimeheld Vault through the Vault Door, in the far west, and settle the treaty with Jarl Hrimfang. Sigrun says to tell him who sent you. She says to tell him twice.',
+    text: 'The Door stands open and the cold pours out of it. Hrimfang has gone down with his giants and the Host’s dead to dig out the Sigil of Frost, and he has woken something down there doing it. Go into the Rimeheld Vault through the Vault Door, in the far west, and settle the treaty with Jarl Hrimfang. Sigrun says to tell him who sent you. She says to tell him twice.',
     objective: { kind: 'boss', boss: 'jarl-hrimfang', label: 'Defeat Jarl Hrimfang in the Rimeheld Vault' },
     after: ['the-vault-door'],
     zone: 'rimeheld',
     level: 37,
-    reward: { xp: 3000, gold: 600, item: { rarity: 'rare' } },
+    reward: { xp: 3000, gold: 600, item: { rarity: 'rare' }, text: 'Hrimfang yields on his knees in the ice with the ash-gold spilling out of his coat. Sigrun could hang him and split the jarls in two, or let him live and swallow it. She lets him live. Exiled, unarmed, walking south with nothing. She does not watch him go.' },
   },
   {
     id: 'the-vault-of-rime',
@@ -112,7 +112,7 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
       gold: 1150,
       item: 'rimehelm-of-the-jarls',
       perk: 'sigil-frost',
-      text: 'In the wyrm’s hoard, under three hundred years of frost, lies the Sigil of Frost, so cold it burns. You carry it up into the light. Sigrun gives you the Rimehelm her mother wore, and says Frostgate owes Emberwick one thing now: a hero back, when one is asked for.',
+      text: 'In the wyrm’s hoard, under three hundred years of frost, lies the Sigil of Frost, so cold it burns. You carry it up into the light. Sigrun gives you the Rimehelm her mother wore, and says Frostgate owes the Crown one thing now: its huscarls and its giants, when the Regent marches.',
     },
   },
   /* ------------------------------------------------------- Olav's mead */
@@ -176,7 +176,7 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     id: 'whitefangs-pelt',
     name: 'Whitefang’s Pelt',
     giver: 'huntress-ylva',
-    text: 'Whitefang is alive, and bigger than a wolf has any right to be, and the Legion has been feeding him: bones by the cartload outside his den, picked clean. The Legion wants the tundra’s wolves at Frostgate’s gate, and Whitefang leads them wherever it points. Ylva would hunt him herself, but she has seen him. Go back to the den, south-west of Frostgate, and bring her his pelt.',
+    text: 'Whitefang is alive, and bigger than a wolf has any right to be, and the Host has been feeding him: bones by the cartload outside his den, picked clean. The Host wants the tundra’s wolves at Frostgate’s gate, and Whitefang leads them wherever it points. Ylva would hunt him herself, but she has seen him. Go back to the den, south-west of Frostgate, and bring her his pelt.',
     objective: { kind: 'kill', region: 'rimeheld', count: 1, enemies: ['old-whitefang'], label: 'Defeat Old Whitefang at his den' },
     after: ['whitefangs-den'],
     zone: 'rimeheld',
@@ -225,7 +225,7 @@ export const RIMEHELD_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'bones-on-the-ice', state: 'active' },
-        lines: ['Dead northmen. Out of the ice of the old battlefields, wearing the Legion’s violet like a borrowed cloak.', 'Some of them fought beside my grandmother’s grandmother. Put them back in the ice. Gently, if they let you.'],
+        lines: ['Dead northmen. Out of the ice of the old battlefields, wearing the Host’s violet like a borrowed cloak.', 'Some of them fought beside my grandmother’s grandmother. Put them back in the ice. Gently, if they let you.'],
       },
       {
         when: { quest: 'the-giants-hearth', state: 'active' },
@@ -289,7 +289,7 @@ export const RIMEHELD_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-runes-on-the-torcs', state: 'active' },
         lines: [
           'Let me see. This is Hrimfang’s oath-rune: a giant’s promise, cut into the gold. He has sworn something to somebody.',
-          'And under it, stamped, not carved: an empty crown. Hollow gold. The Legion bought the Jarl of the Giants, and he sold them the vault.',
+          'And under it, stamped, not carved: an empty crown. ash-gold. The Host bought the Jarl of the Giants, and he sold them the vault.',
           'Tell Sigrun. She will not be surprised. She will be furious, which is different.',
         ],
       },
@@ -321,7 +321,7 @@ export const RIMEHELD_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'whitefangs-pelt', state: 'active' },
-        lines: ['Bones outside his den, by the cartload, picked clean. The Legion is feeding him, and he leads the packs where it points.', 'I have seen him. I would like you to see him instead. Bring me his pelt.'],
+        lines: ['Bones outside his den, by the cartload, picked clean. The Host is feeding him, and he leads the packs where it points.', 'I have seen him. I would like you to see him instead. Bring me his pelt.'],
       },
       { when: { quest: 'whitefangs-pelt', state: 'done' }, lines: ['The packs have gone back to the hills, where wolves belong. The road is quiet. I almost miss them.'] },
       { lines: ['Keep to the roads after dark. Wolves keep to everything else.', 'Snow tells you everything, if you can read it. Mostly it says “wolves”.'] },

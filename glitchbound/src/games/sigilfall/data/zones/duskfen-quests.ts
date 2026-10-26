@@ -116,7 +116,7 @@ export const DUSKFEN_QUESTS: QuestDef[] = [
     id: 'the-rot-mother',
     name: 'The Rot-Mother',
     giver: 'healer-osk',
-    text: 'At the bottom of the cistern the Rot-Mother stirs her pot. Every sick village in Duskfen was ladled out of it, and every ghoul she makes marches north to join the Hollow King, whose lieutenant she is. End her, and Stilt Hollow might live to see a dry summer.',
+    text: 'At the bottom of the cistern the Rot-Mother stirs her pot. Every sick village in Duskfen was ladled out of it, and every ghoul she makes marches north to join the Hallow King, whose lieutenant she is. End her, and Stilt Hollow might live to see a dry summer.',
     objective: { kind: 'boss', boss: 'the-rot-mother', label: 'Defeat the Rot-Mother' },
     after: ['brother-pustule'],
     zone: 'duskfen',

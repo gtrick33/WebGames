@@ -2,7 +2,7 @@ import type { NpcDef, QuestDef } from '../types';
 
 /**
  * Vinehold's people and the quests of Vinecoil Jungle (see WORLD.md). The serpent cult's high queen,
- * the Coiled Queen, sold the Hollow King the venom the Rot-Mother brewed into her plague, and her
+ * the Coiled Queen, sold the Hallow King the venom the Rot-Mother brewed into her plague, and her
  * jars are still going north. Keeper Ansel found some on the quay at Stormwatch. The main chain runs
  * from the Cult Camp, where Vinehold's loggers were taken, by way of Shaman Tuoko's reading of the
  * jars and an antidote from the stranglers, up the Serpent Steps to the Coiled Temple. Trader Mabel
@@ -14,7 +14,7 @@ export const VINECOIL_QUESTS: QuestDef[] = [
     id: 'the-serpent-temples',
     name: 'The Serpent Temples',
     giver: 'keeper-ansel',
-    text: 'A letter from Keeper Ansel caught up with you after the Sun King’s tomb. A trading cutter put into Stormwatch with a hold full of sealed clay jars, bound north. One broke on the quay, and four gulls drank from the puddle. Ansel buried the gulls. The seal on every jar is a coiled serpent beside the Hollow King’s empty crown, and the cutter loaded them at Vinehold, in Vinecoil Jungle. Take the east road out of Stormwatch, or the south road out of the Sunscorch, and find Warden Kesh.',
+    text: 'A letter from Keeper Ansel caught up with you after the Sun King’s tomb. A trading cutter put into Stormwatch with a hold full of sealed clay jars, bound north. One broke on the quay, and four gulls drank from the puddle. Ansel buried the gulls. The seal on every jar is a coiled serpent beside the Hallow King’s empty crown, and the cutter loaded them at Vinehold, in Vinecoil Jungle. Take the east road out of Stormwatch, or the south road out of the Sunscorch, and find Warden Kesh.',
     objective: { kind: 'talk', npc: 'warden-kesh', label: 'Talk to Warden Kesh in Vinehold' },
     after: ['the-sun-king'],
     level: 39,
@@ -68,7 +68,7 @@ export const VINECOIL_QUESTS: QuestDef[] = [
     id: 'strangler-hearts',
     name: 'Strangler Hearts',
     giver: 'shaman-tuoko',
-    text: 'Tuoko read the seals: the Coiled Queen’s venom, a hundred jars of it, sold to the Hollow King for his plague. If you are going to see the Queen about it, Tuoko says, you will want an antidote first, because her venom kills in a breath. The vine stranglers in Strangler Grove, south-west of Vinehold, grow a heart that drinks poison and thrives on it. Bring four.',
+    text: 'Tuoko read the seals: the Coiled Queen’s venom, a hundred jars of it, sold to the Hallow King for his plague. If you are going to see the Queen about it, Tuoko says, you will want an antidote first, because her venom kills in a breath. The vine stranglers in Strangler Grove, south-west of Vinehold, grow a heart that drinks poison and thrives on it. Bring four.',
     objective: { kind: 'loot', region: 'vinecoil', item: 'Strangler Heart', from: ['vine-strangler'], chance: 0.35, count: 4, label: 'Cut Strangler Hearts from vine stranglers' },
     after: ['the-queens-bargain'],
     zone: 'vinecoil',
@@ -101,7 +101,7 @@ export const VINECOIL_QUESTS: QuestDef[] = [
     id: 'the-coiled-queen',
     name: 'The Coiled Queen',
     giver: 'warden-kesh',
-    text: 'The road is open, Tuoko’s antidote is in your belly and the loggers are somewhere inside the Coiled Temple, in the far north-east of the jungle. So is the Coiled Queen, high queen of the serpent cult, who sold the Hollow King the venom for his plague and is bottling more. Go up the steps and end her trade.',
+    text: 'The road is open, Tuoko’s antidote is in your belly and the loggers are somewhere inside the Coiled Temple, in the far north-east of the jungle. So is the Coiled Queen, high queen of the serpent cult, who sold the Ashen Host the venom for the Rot-Mother’s plague and is bottling more. Go up the steps and end her trade.',
     objective: { kind: 'kill', region: 'vinecoil', count: 1, enemies: ['the-coiled-queen'], label: 'Defeat the Coiled Queen in her temple' },
     after: ['the-scaled-guard'],
     zone: 'vinecoil',
@@ -110,8 +110,34 @@ export const VINECOIL_QUESTS: QuestDef[] = [
       xp: 6300,
       gold: 1400,
       item: 'coiled-queens-fang',
-      text: 'The Queen’s coils go slack. In the temple you find Kesh’s loggers, thin and furious, and the Queen’s ledger: a hundred jars to the Rot-Mother’s cistern, paid in Hollow gold, and the last load a month ago, north to General Morvain’s lines at the siege of Highwall. Kesh sets the Queen’s fang on a cord for you.',
+      text: 'The Queen’s coils go slack. In the temple you find Kesh’s loggers, thin and furious, and the Queen’s ledger: a hundred jars to the Rot-Mother’s cistern, paid in ash-gold, the last load north to General Morvain’s lines at Highwall. And on every page, the barges that carried them: Vinehold’s own timber barges, hired for the winter. Kesh reads it over your shoulder and goes grey.',
     },
+  },
+  {
+    id: 'kesh-the-secret',
+    name: 'Burn the Ledger',
+    giver: 'warden-kesh',
+    choice: 'vinehold',
+    offer: ['We carried it. Our barges. The Queen paid in grey coin and we were starving, and I told myself it was timber in the crates. It wasn’t.', 'If the Regent hears, Vinehold is a traitors’ town, and every warden here hangs. Take the ledger to Tuoko. She’ll burn it, and I’ll owe you Vinehold. (Taking this path closes Mabel’s.)'],
+    text: 'Vinehold’s own barges carried the Queen’s venom north, for ash-gold, the winter the town was starving. If the Regent learns it, Vinehold is a traitors’ town. Warden Kesh asks you to take the ledger to Shaman Tuoko to burn, and swears the marsh will pay the debt in boats and spears.',
+    objective: { kind: 'talk', npc: 'shaman-tuoko', label: 'Give the Queen’s ledger to Tuoko to burn' },
+    after: ['the-coiled-queen'],
+    zone: 'vinecoil',
+    level: 42,
+    reward: { xp: 1800, gold: 420, text: 'Tuoko burns it in her gourd and the smoke smells of nothing at all. Kesh doesn’t thank you. She shakes your hand as if she is signing something.' },
+  },
+  {
+    id: 'kesh-the-truth',
+    name: 'What the Barges Carried',
+    giver: 'trader-mabel',
+    choice: 'vinehold',
+    offer: ['I saw those barges go north. Everyone did. Nobody asked what was in the crates because the coin was good.', 'Duskfen died of what was in them. The Regent should know who carried it, and so should Duskfen. I can’t take it to her. You can. (Taking this path closes Kesh’s.)'],
+    text: 'Trader Mabel saw Vinehold’s barges go north with the Queen’s venom, and so did everyone; nobody asked. Duskfen died of what was in the crates. Mabel thinks the Regent should know who carried it. Take the ledger to the Crown City.',
+    objective: { kind: 'talk', npc: 'regent-elowen', label: 'Bring the Queen’s ledger to the Regent' },
+    after: ['the-coiled-queen'],
+    zone: 'vinecoil',
+    level: 42,
+    reward: { xp: 1800, gold: 420, text: 'The Regent reads it and sends for Kesh, not for a hangman. Vinehold will send its boats to the war, she says, and its wardens will row them. Kesh comes, and goes white, and agrees.' },
   },
   /* ---------------------------------------------------- Trader Mabel's pelts */
   {
@@ -212,7 +238,7 @@ export const VINECOIL_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'strangler-hearts', state: 'active' },
-        lines: ['A hundred jars to the Hollow King. For the plague that took Duskfen. Sold by a queen who lives a day’s walk from my gate.', 'Do what Tuoko says. If her brew can keep that venom out of you, it’s worth the smell.'],
+        lines: ['A hundred jars to the Ashen Host. For the plague that took Duskfen. Sold by a queen who lives a day’s walk from my gate.', 'Do what Tuoko says. If her brew can keep that venom out of you, it’s worth the smell.'],
       },
       {
         when: { quest: 'the-serpent-steps', state: 'active' },
@@ -226,9 +252,11 @@ export const VINECOIL_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-coiled-queen', state: 'active' },
         lines: ['The road’s open. The loggers are in the temple, if they’re anywhere. So is she: the Coiled Queen.', 'She sold the venom for the Duskfen plague, and she’s bottling more. Go up the steps, in the far north-east, and close her shop.'],
       },
+      { when: { quest: 'kesh-the-secret', state: 'taken' }, lines: ['The ledger’s ash and Vinehold owes you its neck. The marsh pays its debts. When the Regent marches, my boats will be on the river, and nobody will ask what was in them before.'] },
+      { when: { quest: 'kesh-the-truth', state: 'taken' }, lines: ['The Regent didn’t hang me. I keep waiting for her to change her mind.', 'You were right to take it to her. I hate that you were right. My boats will row for her, and I’ll be in the first one.'] },
       {
         when: { quest: 'the-coiled-queen', state: 'done' },
-        lines: ['Eight loggers and two wardens, home and complaining about the food. I’ve never been so glad to hear complaining.', 'The ledger says her last jars went north to the siege of Highwall. Whoever is drinking that venom up there, I’d like them to choke on it.'],
+        lines: ['Eight loggers and two wardens, home and complaining about the food. I’ve never been so glad to hear complaining.', 'The ledger. You’ve read it. So have I. We need to talk about the barges.'],
       },
       {
         when: { quest: 'the-serpent-temples', state: 'done' },
@@ -269,12 +297,13 @@ export const VINECOIL_NPCS: Record<string, NpcDef> = {
     shop: 'inn',
     shopName: 'The Smoking Gourd',
     talk: [
+      { when: { quest: 'kesh-the-secret', state: 'active' }, lines: ['Kesh sent you with that? Give it here. Paper burns like any other leaf.', 'I won’t tell. I’m old enough to know what a starving winter does. The jungle keeps worse secrets than this one.'] },
       {
         when: { quest: 'the-queens-bargain', state: 'active' },
         lines: [
           'Kesh’s jars. Put them on the table, gently. Gently. Thank you.',
           'The serpent on the seal is the Coiled Queen’s, high queen of the old temples. The glyphs under it say: “For the King with the empty crown. A hundred jars, paid in pale gold.”',
-          'Duskfen’s plague was brewed from this. The Queen sold the Hollow King the venom, and someone in a cistern turned it into a sickness. Tell Kesh. Then come back. You’ll need something from me.',
+          'Duskfen’s plague was brewed from this. The Queen sold the Hallow King the venom, and someone in a cistern turned it into a sickness. Tell Kesh. Then come back. You’ll need something from me.',
         ],
       },
       {

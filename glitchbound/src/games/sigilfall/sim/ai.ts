@@ -344,7 +344,7 @@ function victimOf(w: World, e: Enemy): Victim {
     let best = p.dead ? Infinity : dist(e.x, e.y, p.x, p.y);
     e.victim = 0;
     for (const pet of w.pets) {
-      if (pet.dead || pet.def.unhurt) continue;
+      if (pet.dead || pet.def.unhurt || pet.downT) continue;
       const d = dist(e.x, e.y, pet.x, pet.y);
       if (d > e.def.aggro) continue;
       const score = d * (pet.def.taunt ? 0.45 : 1.3);
@@ -354,7 +354,7 @@ function victimOf(w: World, e: Enemy): Victim {
       }
     }
   }
-  const pet = e.victim ? w.pets.find((x) => x.id === e.victim && !x.dead) : undefined;
+  const pet = e.victim ? w.pets.find((x) => x.id === e.victim && !x.dead && !x.downT) : undefined;
   if (!pet) {
     e.victim = 0;
     return hero;

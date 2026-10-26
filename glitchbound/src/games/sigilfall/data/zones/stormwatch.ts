@@ -4,7 +4,7 @@ import { wildRegion } from '../zonegen';
 /**
  * Stormwatch Cliffs (26-32): a stormy coast east of the Amberfield, all rain, pines and cliffs over a
  * grey sea. The town of Stormwatch huddles in the lee of Lantern Head, where the great lighthouse keeps
- * the last light on the coast. The Hollow King's drowned fleet comes ashore here: sailors and gunners
+ * the last light on the coast. The Hallow King's drowned fleet comes ashore here: sailors and gunners
  * off black ships, the Drowned Priestess's chanters singing more of them out of the surf, storm harpies
  * and elementals riding a gale somebody ordered. Admiral Blackwake means to put the light out and land
  * his army in the dark. Wrecks line the shore from the Landing Beach to the Shipbreaker Rocks.

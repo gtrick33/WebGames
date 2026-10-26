@@ -16,7 +16,7 @@ ROLL BACK.
 | 5 | Spell expansion: the 4th slot (**done**, `0fc10e2b`), 35 new skills, talent mutations, boss partial CC | after 4 |
 | 6 | Wardrobe + first mount | after 5 |
 | 7 | World art in region batches | after 6 |
-| 8 | Quest rewrite by act (QUEST_REWRITE_MAP.md) | **Act I done** (`06cf60a7`): every Vale village changes when saved, its people walk into Briarhollow's camp, the Defense of Hearthstead. **Act II done** (this commit): the refugee escort and Nyx, the occupied pass, Lantern Hill's gloom and vigil with Orren and Cael, Stormwatch's Light, the Crown City's traitor and the Starfall Festival. Acts III–IV next |
+| 8 | Quest rewrite by act (QUEST_REWRITE_MAP.md) | **Act I done** (`06cf60a7`): every Vale village changes when saved, its people walk into Briarhollow's camp, the Defense of Hearthstead. **Act II done** (`87ec2d24`): the refugee escort and Nyx, the occupied pass, Lantern Hill's gloom and vigil with Orren and Cael, Stormwatch's Light, the Crown City's traitor and the Starfall Festival. **Acts III–IV (built zones) done** (this commit): choices, the factions' dilemmas, the Tear, Fernstead lost and retaken, Highwall's relief under Mara and Cael's sortie |
 | 9 | Companions and cinematic staging | with 8 |
 | 10 | Battles and sieges (Defense of Hearthstead, Highwall) | Hearthstead **done** with Act I (raid, wall, ram); Highwall after 9 |
 | 11–15 | Loot, hubs and interiors, dungeons, endgame, audio/polish | in order |
@@ -96,6 +96,23 @@ Mage's spells; tests for states, events (including reload mid-event), the accept
   the Night of Knives (defend the Regent in the burning square), Crane's catacomb stair, Champion of Aster
   (`festival-*`); the city locks down after; tents and banners at war (Act IV). Act III opens from the
   Regent's champion. Save v5.
+
+## Acts III–IV in detail (done)
+
+- **Choices** (`QuestDef.choice`): the answers are offered together; taking one closes the others for good
+  (kept as done with n −1, "the path not taken", hidden from the log), and what comes after opens either
+  way. `taken` in story conditions and NPC lines tells which answer was chosen.
+- **Glimmerwood**: end Thistlemourn (Old Root) or hold the Summer Hall while Silvaine sings him back
+  (`silvaines-song`, defend her); the clans decide either way; the prince lives in Lumen Glade if saved.
+- **Vinecoil**: Vinehold's own barges carried the venom; burn the ledger for Kesh or take it to the Regent.
+- **The sun houses** keep their oath until Sefu breaks it; **Sigrun** spares Hrimfang into exile.
+- **The Tear**: the Pale Herald waits; a fight that is not won (`ends`), Nyx walks into the grey mid-fight
+  (`leave`), Elyra is taken (`taken`); the same night Fernstead falls (burning, the Host in the square, its
+  people in Briarhollow's camp) until Mara, Hollis and Dunmore's riders take it back (`fern-retaken`).
+  Elyra and Nyx are gone from the world until Act IV's Gloam Gate (future).
+- **Highwall**: Mara commands the relief (`mara-commands`), Cael leads the sortie before the Breach.
+- Companions (Mara, Elyra, Cael, Orren, Nyx) go down and get back up instead of dying (`rally`).
+- Old-story words swept from every built zone, dungeon and item (place names kept). Save v6.
 
 ## Rules carried through every phase
 

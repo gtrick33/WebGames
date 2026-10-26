@@ -5,7 +5,7 @@ import type { DungeonModule } from '.';
 /*
  * The Rimeheld Vault (levels 38-41): see WORLD.md. Under the ice of Rimeheld, the vault where the
  * Sigil-wardens hid the Sigil of Frost and set a great wyrm to guard it. Jarl Hrimfang, a frost giant
- * jarl, has sold the way in to the Legion; his giants and the Legion's dead fight their way through.
+ * jarl, has sold the way in to the Host; his giants and the Host's dead fight their way through.
  * From the tundra: the Frozen Gate, the Ice Galleries, the giants' camp, the Jarl's Longfire where
  * Hrimfang holds his hall, the Drowned Halls (frozen water, broken open in places), the Wardens' Crypt
  * (a sealed tomb behind a cracked wall), the Hoard Bridge over black water, and the Wyrm's Cavern. The
@@ -285,7 +285,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'He held the Vault Door for his people a hundred years. Then the Pale Herald came with Hollow gold, and he opened it.',
+    intro: 'He held the Vault Door for his people a hundred years. Then the Pale Herald came with ash-gold, and he opened it.',
   },
   'the-rime-wyrm': {
     id: 'the-rime-wyrm',
@@ -366,7 +366,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The Sigil-wardens set it over the Sigil of Frost and bade it sleep until someone came to steal it. The Legion woke it. It does not know them from you.',
+    intro: 'The Sigil-wardens set it over the Sigil of Frost and bade it sleep until someone came to steal it. The Host woke it. It does not know them from you.',
   },
 };
 

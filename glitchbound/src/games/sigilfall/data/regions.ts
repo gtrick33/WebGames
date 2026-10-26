@@ -210,11 +210,11 @@ const HAND_LAID: Record<string, RegionDef> = {
         title: 'The Ossuary',
         waves: [{ enemies: ['bone-hound', 'bone-hound', 'skeleton-archer', 'skeleton-archer'] }, { enemies: ['crypt-guardian', 'skeleton', 'skeleton'] }, { enemies: ['crypt-guardian'], elite: true }],
       },
-      { id: 'gate', floor: 'c', waves: [], boss: 'ossric', checkpoint: true, title: 'The Hollow Gate' },
+      { id: 'gate', floor: 'c', waves: [], boss: 'ossric', checkpoint: true, title: 'The Crypt Gate' },
       {
         id: 'chapel',
         floor: 'd',
-        title: 'The Rift Chapel',
+        title: 'The Tear Chapel',
         checkpoint: true,
         waves: [{ enemies: ['rift-acolyte', 'rift-acolyte', 'skeleton', 'skeleton'] }, { enemies: ['rift-acolyte', 'bone-hound', 'bone-hound', 'skeleton-archer'] }, { enemies: ['rift-acolyte', 'skeleton', 'skeleton'], elite: true }],
       },

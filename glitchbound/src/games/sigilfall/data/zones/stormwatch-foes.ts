@@ -1,7 +1,7 @@
 import type { EnemyDef, ItemDef } from '../types';
 
 /**
- * The enemies first met on Stormwatch Cliffs. The drowned fleet's crews are the Hollow Legion's (pale
+ * The enemies first met on Stormwatch Cliffs. The drowned fleet's crews are the Ashen Host's (pale
  * bone, grey-violet cloth, a dull violet glow in the eyes), with the sea still on them; the storm
  * brings its own creatures. Stats are at level 1 (see enemies.ts).
  */
@@ -244,7 +244,7 @@ export const STORMWATCH_FOES: Record<string, EnemyDef> = {
     named: true,
     scale: 1.25,
     resist: { poison: 0.5, frost: 0.25 },
-    blurb: 'Admiral of the Hollow King’s drowned fleet. He fires broadsides, calls the sea down where you stand and whistles a gun crew up out of the surf, and the tide carries him clear when you close in.',
+    blurb: 'Admiral of the Hallow King’s drowned fleet. He fires broadsides, calls the sea down where you stand and whistles a gun crew up out of the surf, and the tide carries him clear when you close in.',
   },
 };
 

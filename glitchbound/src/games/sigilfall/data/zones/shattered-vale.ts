@@ -1,10 +1,11 @@
+import { after } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
  * The Shattered Vale (35-41), Act III (see WORLD.md): a broken valley north of the Grimward Moors,
- * where shards of the Rift jut from the ground, the light goes purple and crystal spires grow like
+ * where shards of grief-glass jut from the ground, the light goes purple and crystal spires grow like
  * trees. Shardwatch, a camp of scholars and the Regent's soldiers, keeps its tower in the south and
- * watches the Tear at the top of the Vale, a wound that bleeds Rift-light. The Crystal Fields lie
+ * watches the Tear at the top of the Vale, a wound that bleeds grieflight. The Crystal Fields lie
  * west of camp, the voidcallers' Breach Camp east, the Wyrm Spires in the far north-east and the
  * abandoned Old Watch in the south-west.
  */
@@ -12,14 +13,14 @@ export const SHATTERED_VALE = wildRegion(
   {
     id: 'shattered-vale',
     name: 'The Shattered Vale',
-    subtitle: 'Where the Rift bleeds',
+    subtitle: 'Where the Tear bleeds',
     theme: 'rift',
     levels: [35, 41],
     at: [52, 4],
     dark: false,
     safe: false,
     music: 'plains',
-    blurb: 'Shards of the Rift jut from a broken valley; what comes through them is hungry.',
+    blurb: 'Shards of grief-glass jut from a broken valley around the Tear; what comes through it is hungry.',
   },
   {
     w: 150,
@@ -52,6 +53,8 @@ export const SHATTERED_VALE = wildRegion(
         elite: true,
         rare: 'the-tearborn',
         spot: { id: 'the-tear', name: 'The Tear' },
+        // the Tearborn holds the Tear open once the Herald has gone through it with Elyra
+        when: after('the-heralds-ambush'),
         chest: 'rare',
       },
       {
@@ -112,5 +115,13 @@ export const SHATTERED_VALE = wildRegion(
       { band: [0.6, 1], packs: [['shard-golem', 'rift-stalker'], ['voidcaller', 'voidcaller', 'rift-stalker'], ['rift-wyrm', 'rift-stalker', 'rift-shardling'], ['shard-golem', 'shard-golem']] },
     ],
     wildCount: 54,
+    story: [
+      // the lip of the Tear, where the Herald waits, and the ways his shades come up the Vale
+      { near: 'the-tear', dy: 4, marker: { kind: 'place', id: 'tear-top' } },
+      { near: 'the-tear', dy: -6, marker: { kind: 'place', id: 'tear-n' } },
+      { near: 'the-tear', dx: -10, dy: 3, marker: { kind: 'place', id: 'tear-w' } },
+      { near: 'the-tear', dx: 10, dy: 3, marker: { kind: 'place', id: 'tear-e' } },
+      { near: 'the-tear', dx: 0, dy: 1, marker: { kind: 'wisp', color: '#c9a0ff', size: 3 } },
+    ],
   },
 );

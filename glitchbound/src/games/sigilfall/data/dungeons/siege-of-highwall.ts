@@ -4,13 +4,13 @@ import type { DungeonModule } from '.';
 
 /*
  * The Siege of Highwall (levels 43-46): see WORLD.md. Highwall, the fortress-city that guards the road
- * north into the Hollow King's lands, is besieged by the Hollow Legion, and its gate has fallen. The
+ * north into the Hallow King's lands, is besieged by the Ashen Host, and its gate has fallen. The
  * hero comes in through the Breach in the outer wall and fights through the burning city to relieve
  * it: the Gatehouse Yard, the Burning Market, the Muster Field where the Siege-Breaker grinds toward
  * the barracks gate, the Barracks, the Chapel of the Wardens (a field hospital now), the Inner Wall's
  * Stair, and the Inner Ward, where General Morvain commands the siege from under his war banner. The
  * rooms seal while you fight in them (their floors are the letters below). In the Inner Ward the
- * Legion's archers line the walls: Morvain calls their volleys down in bands across the yard, and his
+ * Host's archers line the walls: Morvain calls their volleys down in bands across the yard, and his
  * squads come in through the north and east gates. A cracked wall in the Barracks hides the
  * quartermaster's strongbox.
  */
@@ -108,7 +108,7 @@ const markers: Record<string, Marker> = {
 const foes: Record<string, EnemyDef> = {
   'legion-shieldbearer': {
     id: 'legion-shieldbearer',
-    name: 'Legion Shieldbearer',
+    name: 'Ashen Shieldbearer',
     sprite: 'legion-shieldbearer',
     ai: 'armored',
     hp: 120,
@@ -126,11 +126,11 @@ const foes: Record<string, EnemyDef> = {
     armor: 0.55,
     slam: { radius: 30 },
     resist: { poison: 0.5, frost: 0.2 },
-    blurb: 'The Legion’s line, one dead soldier at a time behind a tower shield of bone and iron. It walks you down and drives the shield into the ground around it. Blades glance off; fire, frost and broken armor don’t.',
+    blurb: 'The Host’s line, one dead soldier at a time behind a tower shield of bone and iron. It walks you down and drives the shield into the ground around it. Blades glance off; fire, frost and broken armor don’t.',
   },
   'legion-arbalester': {
     id: 'legion-arbalester',
-    name: 'Legion Arbalester',
+    name: 'Ashen Arbalester',
     sprite: 'legion-arbalester',
     ai: 'ranged',
     hp: 48,
@@ -152,7 +152,7 @@ const foes: Record<string, EnemyDef> = {
   },
   'legion-standard-bearer': {
     id: 'legion-standard-bearer',
-    name: 'Legion Standard-Bearer',
+    name: 'Ashen Standard-Bearer',
     sprite: 'legion-standard-bearer',
     ai: 'caster',
     hp: 70,
@@ -171,7 +171,7 @@ const foes: Record<string, EnemyDef> = {
     heals: 0.2,
     slam: { radius: 26 },
     resist: { poison: 0.5 },
-    blurb: 'It carries the Legion’s colors into the streets. Its horn rallies the wounded back to their feet and points the archers on the walls at you: get out of the circle before the arrows land, then cut it down first.',
+    blurb: 'It carries the Host’s colors into the streets. Its horn rallies the wounded back to their feet and points the archers on the walls at you: get out of the circle before the arrows land, then cut it down first.',
   },
   'carrion-ghoul': {
     id: 'carrion-ghoul',
@@ -193,7 +193,7 @@ const foes: Record<string, EnemyDef> = {
     keep: 70,
     rush: { speed: 300, dist: 120 },
     resist: { poison: 0.6 },
-    blurb: 'The Legion lets its ghouls loose in the burning streets ahead of the soldiers. They circle in packs, crouch and pounce along a line: step out of it, and hit them while they pick themselves up.',
+    blurb: 'The Host lets its ghouls loose in the burning streets ahead of the soldiers. They circle in packs, crouch and pounce along a line: step out of it, and hit them while they pick themselves up.',
   },
   'death-knight-squire': {
     id: 'death-knight-squire',
@@ -216,7 +216,7 @@ const foes: Record<string, EnemyDef> = {
     regen: 0.06,
     armor: 0.2,
     resist: { shadow: 0.4, poison: 0.5 },
-    blurb: 'A knight-in-waiting of the Hollow Legion, sworn to General Morvain. Quick and cruel with its runeblade, and the dark knits its wounds the moment you look away: finish what you start.',
+    blurb: 'A knight-in-waiting of the Ashen Host, sworn to General Morvain. Quick and cruel with its runeblade, and the dark knits its wounds the moment you look away: finish what you start.',
   },
   'legion-war-banner': {
     id: 'legion-war-banner',
@@ -236,7 +236,7 @@ const foes: Record<string, EnemyDef> = {
     recover: 1,
     attackCd: 999,
     resist: { poison: 0.5, shadow: 0.5 },
-    blurb: 'General Morvain’s colors, planted in the stones of Highwall. While it stands the Legion around it is warded and fights harder. Break it.',
+    blurb: 'General Morvain’s colors, planted in the stones of Highwall. While it stands the Host around it is warded and fights harder. Break it.',
   },
 };
 
@@ -246,7 +246,7 @@ const bosses: Record<string, BossDef> = {
   'the-siege-breaker': {
     id: 'the-siege-breaker',
     name: 'The Siege-Breaker',
-    title: 'Ram of the Hollow Legion',
+    title: 'Ram of the Ashen Host',
     sprite: 'the-siege-breaker',
     hp: 2600,
     dmg: 38,
@@ -311,12 +311,12 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'Bone for a frame, iron for a hide, a ram for a head and a cauldron of pitch on its back. It walked here from the Legion’s lines, and every gate in Highwall has broken on it so far.',
+    intro: 'Bone for a frame, iron for a hide, a ram for a head and a cauldron of pitch on its back. It walked here from the Host’s lines, and every gate in Highwall has broken on it so far.',
   },
   'general-morvain': {
     id: 'general-morvain',
     name: 'General Morvain',
-    title: 'Lieutenant of the Hollow King',
+    title: 'Lieutenant of the Hallow King',
     sprite: 'general-morvain',
     hp: 4800,
     dmg: 44,
@@ -367,7 +367,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.33,
-        banner: 'Morvain plants the Legion’s colors: “Highwall falls with me! Archers, loose everything!”',
+        banner: 'Morvain plants the Host’s colors: “Highwall falls with me! Archers, loose everything!”',
         speed: 56,
         rest: [0.35, 0.6],
         enter: [
@@ -518,7 +518,7 @@ const items: ItemDef[] = [
         },
       },
     ],
-    lore: 'Torn down by the Legion, taken back from General Morvain’s squires. The city wants it flown again.',
+    lore: 'Torn down by the Host, taken back from General Morvain’s squires. The city wants it flown again.',
     minLevel: 44,
     special: true,
   },

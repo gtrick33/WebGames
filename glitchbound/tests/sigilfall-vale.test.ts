@@ -65,7 +65,8 @@ describe('Sigilfall: the Vale (Act I)', () => {
       if (def.kind !== 'escort') for (const wv of def.waves) expect(wv.from.length, def.id).toBeGreaterThan(0);
       for (const id of def.waves.flatMap((wv) => wv.enemies)) expect(ENEMIES[id], `${def.id}: ${id}`).toBeTruthy();
       // whoever speaks is there: a companion of the event, or someone standing in the region
-      const there = new Set([...people, ...region.placed!.flatMap((pm) => (pm.marker.kind === 'npc' ? [pm.marker.npc] : []))]);
+      // (a villain in the field may speak too)
+      const there = new Set([...people, ...def.waves.flatMap((wv) => wv.enemies), ...region.placed!.flatMap((pm) => (pm.marker.kind === 'npc' ? [pm.marker.npc] : []))]);
       for (const b of [...(def.start ?? []), ...(def.end ?? []), ...(def.retry ?? []), ...def.waves.flatMap((wv) => wv.barks ?? [])]) expect(there.has(b.who), `${def.id}: ${b.who}`).toBe(true);
     }
     for (const q of Object.values(QUEST_DEFS)) if (q.objective.kind === 'event') expect(EVENTS[q.objective.event], q.id).toBeTruthy();

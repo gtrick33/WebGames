@@ -2,17 +2,17 @@ import type { EnemyDef, ItemDef } from '../types';
 
 /**
  * The enemies first met in Highwall March: General Morvain's besieging army. Its rank and file are
- * Highwall's own dead, raised in the Hollow Legion's colors (pale bone, grey-violet cloth, a dull
+ * Highwall's own dead, raised in the Ashen Host's colors (pale bone, grey-violet cloth, a dull
  * violet glow in eyes and runes): shield-soldiers who hold a line, crossbowmen with a long heavy
  * draw, ensigns whose standards knit the dead back together, bone catapults that drop stones
  * from far off, death knights in training who charge shield-first, and the ghouls the burned
  * villages became. Stats are at level 1 (see enemies.ts).
  */
 export const HIGHWALL_FOES: Record<string, EnemyDef> = {
-  /* ------------------------------------------------------- the Hollow Legion */
+  /* ------------------------------------------------------- the Ashen Host */
   'legion-soldier': {
     id: 'legion-soldier',
-    name: 'Legion Soldier',
+    name: 'Ashen Soldier',
     sprite: 'legion-soldier',
     ai: 'melee',
     hp: 50,
@@ -33,7 +33,7 @@ export const HIGHWALL_FOES: Record<string, EnemyDef> = {
   },
   'legion-crossbowman': {
     id: 'legion-crossbowman',
-    name: 'Legion Crossbowman',
+    name: 'Ashen Crossbowman',
     sprite: 'legion-crossbowman',
     ai: 'ranged',
     hp: 36,
@@ -55,7 +55,7 @@ export const HIGHWALL_FOES: Record<string, EnemyDef> = {
   },
   'legion-ensign': {
     id: 'legion-ensign',
-    name: 'Legion Ensign',
+    name: 'Ashen Ensign',
     sprite: 'legion-ensign',
     ai: 'caster',
     hp: 44,
@@ -75,7 +75,7 @@ export const HIGHWALL_FOES: Record<string, EnemyDef> = {
     slam: { radius: 24 },
     shot: { speed: 85, radius: 4, count: 1, spread: 0, color: '#8a6ad8', homing: 1, look: 'skull' },
     resist: { poison: 0.5, shadow: 0.3 },
-    blurb: 'Carries the Legion’s black standard, and while it flies the dead stand back up: its violet light knits a hurt soldier together. Cut it down first.',
+    blurb: 'Carries the Host’s black standard, and while it flies the dead stand back up: its violet light knits a hurt soldier together. Cut it down first.',
   },
   'bone-catapult': {
     id: 'bone-catapult',
@@ -166,7 +166,7 @@ export const HIGHWALL_FOES: Record<string, EnemyDef> = {
     named: true,
     scale: 1.35,
     resist: { poison: 0.5, shadow: 0.3 },
-    blurb: 'Captain of the Legion’s trench before the Breach, in plate as grey as the smoke. He sweeps his halberd in a wide ring and blows a horn for another crossbowman whenever he has a moment.',
+    blurb: 'Captain of the Host’s trench before the Breach, in plate as grey as the smoke. He sweeps his halberd in a wide ring and blows a horn for another crossbowman whenever he has a moment.',
   },
 };
 

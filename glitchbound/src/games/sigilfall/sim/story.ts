@@ -2,7 +2,7 @@ import { dist, TAU } from '../core/math';
 import { EVENTS } from '../data/events';
 import { TIERS } from '../data/regions';
 import type { Bark, RegionDef, RegionStateDef, StoryCond, StoryEventDef } from '../data/types';
-import { activeQuests, questState, type Character } from '../progress/character';
+import { activeQuests, declined, questState, type Character } from '../progress/character';
 import { castRay, TILE } from './map';
 import { placePet } from './pets';
 import type { Pet } from './types';
@@ -22,6 +22,7 @@ export function holds(c: Character, cond: StoryCond): boolean {
   if ('any' in cond) return cond.any.some((x) => holds(c, x));
   if ('not' in cond) return !holds(c, cond.not);
   const s = questState(c, cond.quest);
+  if (cond.is === 'taken') return s === 'done' && !declined(c, cond.quest);
   return cond.is === 'started' ? s !== 'locked' : s === cond.is;
 }
 
@@ -52,6 +53,8 @@ interface Running {
   safe: Set<number>;
   /** Seconds before an interrupted event can start again. */
   cool: number;
+  /** Seconds since it began. */
+  t: number;
 }
 
 const BARK_TIME = 2.8;
@@ -154,7 +157,7 @@ export class StoryDirector {
     const w = this.w;
     // whoever stayed on from the last event to say goodbye makes way for this one's people
     w.pets = w.pets.filter((p) => !p.story || p.dead);
-    const run: Running = { def, wave: 0, ids: [], pause: 1.6, pets: [], ward: null, followers: [], safe: new Set(), cool: 0 };
+    const run: Running = { def, wave: 0, ids: [], pause: 1.6, pets: [], ward: null, followers: [], safe: new Set(), cool: 0, t: 0 };
     for (const id of def.allies ?? []) {
       const to = castRay(w.map, w.player.x, w.player.y, 6, w.rand() * TAU, 18);
       const pet = placePet(w, id, to.x, to.y);
@@ -224,6 +227,13 @@ export class StoryDirector {
     const w = this.w;
     const wave = run.def.waves[run.wave];
     if (!wave) return;
+    // someone leaves the fight as the wave comes (a betrayal, a flight)
+    for (const id of wave.leave ?? []) {
+      for (const p of run.pets) if (p.def.id === id && !p.dead) {
+        w.addFx({ kind: 'smoke', x: p.x, y: p.y, life: 0.6, size: 7, color: '#8a8494' });
+        p.dead = true;
+      }
+    }
     // an event's own level climbs with the difficulty like any pack's
     const level = run.def.level !== undefined ? run.def.level + TIERS[w.tier]!.levels : w.level;
     // on the road, they come at the wagon from wherever it has got to
@@ -242,6 +252,12 @@ export class StoryDirector {
   private step(run: Running, dt: number): void {
     const w = this.w;
     const def = run.def;
+    run.t += dt;
+    // a fight that is not won ends when the story says, with the hero still standing
+    if (def.ends && run.t >= def.ends) {
+      this.finish(run);
+      return;
+    }
     // the hero fell, or walked off: it all starts again when they come back
     // a rescue leads people somewhere else: the way there is part of it
     const places = [this.spot(def.at), def.rescue ? this.spot(def.rescue.to) : null].filter((p): p is { x: number; y: number } => !!p);
@@ -289,6 +305,11 @@ export class StoryDirector {
       this.finish(run);
       return;
     }
+    // a lost fight keeps coming until it ends
+    if (def.ends && run.wave + 1 >= def.waves.length) {
+      run.pause = 1.5;
+      return;
+    }
     if (run.wave + 1 < def.waves.length) {
       run.wave += 1;
       // on the road the next ambush waits further along
@@ -314,7 +335,10 @@ export class StoryDirector {
     // people who walked in stay (as the camp's own people, the moment the quest moves on); the rest go
     if (run.def.kind === 'arrival') w.pets = w.pets.filter((p) => !run.pets.includes(p));
     else for (const pet of run.pets) {
-      if (stay > 0 && !pet.dead) pet.life = Math.min(pet.life, stay);
+      // the one carried off goes at once, in a swirl of grey
+      const taken = run.def.taken?.includes(pet.def.id);
+      if (taken && !pet.dead) w.addFx({ kind: 'smoke', x: pet.x, y: pet.y, life: 1, size: 12, color: '#6a5a8a' });
+      if (stay > 0 && !pet.dead && !taken) pet.life = Math.min(pet.life, stay);
       else pet.dead = true;
     }
     for (const e of w.enemies) if (run.ids.includes(e.id) && !e.dead) {

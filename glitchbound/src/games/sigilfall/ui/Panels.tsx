@@ -593,7 +593,8 @@ function QuestsPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const here = engine.world?.region.id;
   const active = QUESTS.filter((q) => questState(h, q.id) === 'active');
-  const done = QUESTS.filter((q) => questState(h, q.id) === 'done');
+  // paths not taken aren't deeds
+  const done = QUESTS.filter((q) => questState(h, q.id) === 'done' && (h.quests[q.id]?.n ?? 0) >= 0);
   // grouped by where they are done, this region first
   const groups = new Map<string, QuestDef[]>();
   for (const q of active) {

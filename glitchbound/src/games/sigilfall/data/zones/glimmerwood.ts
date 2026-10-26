@@ -1,3 +1,4 @@
+import { is, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -38,7 +39,7 @@ export const GLIMMERWOOD = wildRegion(
     ],
     pois: [
       // the chain's end: the Prince holds his thorned court in the old Summer Hall
-      { at: [0.25, 0.3], r: 11, kind: 'ruin', level: 36, packs: [['fey-knight', 'thorn-archer', 'thornling'], ['blighted-dryad', 'fey-knight', 'thornling'], ['thorn-archer', 'thorn-archer', 'thornling']], elite: true, rare: 'prince-thistlemourn', spot: { id: 'thorn-court', name: 'The Thorn Court' }, chest: 'rare' },
+      { at: [0.25, 0.3], r: 11, kind: 'ruin', level: 36, packs: [['fey-knight', 'thorn-archer', 'thornling'], ['blighted-dryad', 'fey-knight', 'thornling'], ['thorn-archer', 'thorn-archer', 'thornling']], elite: true, rare: 'prince-thistlemourn', spot: { id: 'thorn-court', name: 'The Thorn Court' }, chest: 'rare', when: until('the-clans-decide') },
       { at: [0.4, 0.7], r: 10, kind: 'grove', level: 33, packs: [['blighted-dryad', 'thornling', 'thornling'], ['blight-bloom', 'blight-bloom', 'thornling']], spot: { id: 'withered-ring', name: 'The Withered Ring' } },
       { at: [0.6, 0.2], r: 9, kind: 'nest', level: 34, packs: [['glimmer-moth', 'glimmer-moth'], ['glimmer-moth', 'glimmer-moth', 'glimmer-moth']], rare: 'mother-of-moths', spot: { id: 'moth-glade', name: 'Moth Glade' } },
       { at: [0.15, 0.75], r: 10, kind: 'camp', level: 35, packs: [['fey-knight', 'fey-knight'], ['thorn-archer', 'fey-knight', 'thornling'], ['thorn-archer', 'thorn-archer']], elite: true, spot: { id: 'pale-pavilion', name: 'The Pale Pavilion' }, chest: 'common' },
@@ -52,5 +53,14 @@ export const GLIMMERWOOD = wildRegion(
       { band: [0.65, 1], packs: [['fey-knight', 'thorn-archer', 'thornling'], ['fey-knight', 'blighted-dryad', 'thorn-archer'], ['thorn-archer', 'thorn-archer', 'fey-knight'], ['blighted-stag', 'blighted-stag', 'thornling'], ['glimmer-moth', 'glimmer-moth', 'thorn-archer']] },
     ],
     wildCount: 56,
+    story: [
+      // the Summer Hall, where Silvaine sings (or where the prince is ended), and the doors his knights come through
+      { near: 'thorn-court', dy: -2, marker: { kind: 'place', id: 'thorn-hall' } },
+      { near: 'thorn-court', dy: -10, marker: { kind: 'place', id: 'thorn-hall-n' } },
+      { near: 'thorn-court', dx: -9, marker: { kind: 'place', id: 'thorn-hall-w' } },
+      { near: 'thorn-court', dx: 9, marker: { kind: 'place', id: 'thorn-hall-e' } },
+      // the prince home in Lumen Glade, if the song brought him back
+      { near: 'hub', dx: 5, dy: 4, marker: { kind: 'npc', npc: 'thistlemourn' }, when: is('silvaines-song', 'taken') },
+    ],
   },
 );

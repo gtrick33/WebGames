@@ -2,7 +2,7 @@ import { wildRegion } from '../zonegen';
 
 /**
  * Emberdeep Caldera (51-56): north of the Bonefields, a ring of black mountains around a lake of fire.
- * The Legion has chained the fire lord Ashkar on his own throne beneath it and set him to forging the
+ * The Host has chained the fire lord Ashkar on his own throne beneath it and set him to forging the
  * Pale Crown; their forge-slaves haul ore along the lava flows, and the caldera's fire-folk have gone
  * mad with their lord's pain. The dwarves of Cinderhold, an old fire-ward outpost on the southern rim,
  * still watch.
@@ -18,7 +18,7 @@ export const EMBERDEEP = wildRegion(
     dark: false,
     safe: false,
     music: 'cave',
-    blurb: 'A ring of black mountains round a lake of fire, where the Legion forges the Pale Crown.',
+    blurb: 'A ring of black mountains round a lake of fire, where the Host forges the Pale Crown.',
   },
   {
     w: 160,

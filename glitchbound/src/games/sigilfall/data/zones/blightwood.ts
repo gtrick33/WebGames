@@ -42,7 +42,7 @@ export const BLIGHTWOOD = wildRegion(
       { at: [0.3, 0.6], r: 10, kind: 'den', level: 43, packs: [['rotspore-shambler', 'rotspore-shambler'], ['rotspore-shambler', 'blight-wolf', 'blight-wolf']], spot: { id: 'spore-hollow', name: 'Spore Hollow' } },
       { at: [0.78, 0.62], r: 10, kind: 'farm', level: 43, packs: [['blight-wolf', 'blight-wolf', 'blight-wolf'], ['thornling', 'thornling', 'thornling', 'thornling']], spot: { id: 'greenhallow', name: 'Greenhallow Farmstead' }, chest: 'common' },
       { at: [0.48, 0.42], r: 10, kind: 'ruin', level: 44, packs: [['blight-witch', 'blighted-dryad'], ['blight-treant', 'thornling', 'thornling']], spot: { id: 'thorn-shrine', name: 'The Thorn Shrine' }, landmark: { style: 'temple', w: 5, h: 4, name: 'The Thorn Shrine' } },
-      { at: [0.88, 0.16], r: 10, kind: 'camp', level: 46, packs: [['legion-soldier', 'legion-soldier', 'legion-crossbowman'], ['legion-bonecaller', 'legion-soldier', 'legion-soldier']], spot: { id: 'legion-woodcamp', name: 'The Legion Woodcamp' } },
+      { at: [0.88, 0.16], r: 10, kind: 'camp', level: 46, packs: [['legion-soldier', 'legion-soldier', 'legion-crossbowman'], ['legion-bonecaller', 'legion-soldier', 'legion-soldier']], spot: { id: 'legion-woodcamp', name: 'The Host Woodcamp' } },
     ],
     wild: [
       { band: [0, 0.4], packs: [['blight-wolf', 'blight-wolf', 'blight-wolf'], ['thornling', 'thornling', 'thornling', 'thornling'], ['rotspore-shambler', 'blight-wolf'], ['blighted-dryad', 'thornling', 'thornling']] },

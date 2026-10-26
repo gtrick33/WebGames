@@ -1,8 +1,9 @@
+import { after, all, is, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
  * Highwall March (40-46): the war-torn country before the great fortress-city of Highwall, which
- * guards the road north into the Hollow King's own lands. General Morvain's Hollow Legion has it under
+ * guards the road north into the Hallow King's own lands. General Morvain's Ashen Host has it under
  * siege: trenches and bone catapults in the west, the Breach smashed in the walls north-west, burned
  * villages, trampled fields and the knights' old chapel with its graves dug open. Lord-Commander Varn
  * holds the relief camp in the east, where the road comes in from Sablewind Canyon.
@@ -18,7 +19,7 @@ export const HIGHWALL = wildRegion(
     dark: false,
     safe: false,
     music: 'plains',
-    blurb: 'Trenches, smoke and the great fortress of Highwall under siege by the Hollow Legion.',
+    blurb: 'Trenches, smoke and the great fortress of Highwall under siege by the Ashen Host.',
   },
   {
     w: 160,
@@ -37,7 +38,7 @@ export const HIGHWALL = wildRegion(
     pois: [
       // the way into besieged Highwall: the hole the Siege-Breaker smashed in its walls
       { at: [0.35, 0.3], r: 12, kind: 'cave', level: 44, packs: [['death-knight-initiate', 'legion-soldier'], ['legion-crossbowman', 'legion-soldier', 'legion-soldier'], ['bone-catapult', 'legion-ensign', 'legion-soldier']], entrance: { to: 'siege-of-highwall', label: 'The Breach: into besieged Highwall', minLevel: 42 }, spot: { id: 'the-breach', name: 'The Breach' }, landmark: { style: 'keep', w: 10, h: 5, name: 'Highwall' } },
-      { at: [0.16, 0.66], r: 11, kind: 'camp', level: 43, packs: [['legion-soldier', 'legion-soldier', 'legion-crossbowman'], ['bone-catapult', 'legion-soldier'], ['legion-ensign', 'legion-soldier', 'legion-soldier']], elite: true, rare: 'captain-hollowbane', spot: { id: 'legion-lines', name: 'The Legion Lines' }, chest: 'rare' },
+      { at: [0.16, 0.66], r: 11, kind: 'camp', level: 43, packs: [['legion-soldier', 'legion-soldier', 'legion-crossbowman'], ['bone-catapult', 'legion-soldier'], ['legion-ensign', 'legion-soldier', 'legion-soldier']], elite: true, rare: 'captain-hollowbane', spot: { id: 'legion-lines', name: 'The Host Lines' }, chest: 'rare' },
       { at: [0.42, 0.58], r: 10, kind: 'camp', level: 42, packs: [['bone-catapult', 'legion-crossbowman'], ['bone-catapult', 'legion-soldier', 'legion-soldier']], spot: { id: 'bone-batteries', name: 'The Bone Batteries' }, chest: 'common' },
       { at: [0.56, 0.84], r: 10, kind: 'ruin', level: 41, packs: [['ghoul-swarm', 'ghoul-swarm', 'ghoul-swarm'], ['ghoul-swarm', 'ghoul-swarm', 'ghoul-swarm', 'ghoul-swarm']], spot: { id: 'burned-village', name: 'Burned Ashby' } },
       { at: [0.62, 0.22], r: 9, kind: 'farm', level: 42, packs: [['legion-crossbowman', 'legion-crossbowman'], ['legion-crossbowman', 'legion-soldier', 'legion-soldier']], spot: { id: 'trampled-fields', name: 'The Trampled Fields' } },
@@ -49,5 +50,18 @@ export const HIGHWALL = wildRegion(
       { band: [0.65, 1], packs: [['death-knight-initiate', 'legion-soldier', 'legion-soldier'], ['bone-catapult', 'legion-crossbowman', 'legion-soldier', 'legion-soldier'], ['legion-ensign', 'death-knight-initiate', 'legion-soldier'], ['legion-soldier', 'legion-soldier', 'legion-soldier', 'legion-crossbowman']] },
     ],
     wildCount: 56,
+    story: [
+      // the ground before the Breach where Cael's riders go in
+      { near: 'the-breach', dx: 6, dy: 10, marker: { kind: 'place', id: 'sortie-ground' } },
+      { near: 'the-breach', dx: 2, dy: 2, marker: { kind: 'place', id: 'sortie-n' } },
+      { near: 'the-breach', dx: -6, dy: 12, marker: { kind: 'place', id: 'sortie-w' } },
+      { near: 'the-breach', dx: 16, dy: 8, marker: { kind: 'place', id: 'sortie-e' } },
+      // Mara at the relief camp from the day she takes command until Highwall is relieved
+      { near: 'hub', dx: 3, dy: -4, marker: { kind: 'npc', npc: 'captain-mara' }, when: all(is('the-wall-burns', 'done'), until('general-morvain')) },
+      // relieved: the Ninefold flag and the Crown's banners over the camp
+      { near: 'hub', dx: -3, dy: -5, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('general-morvain') },
+      { near: 'hub', dx: 3, dy: -5, marker: { kind: 'prop', prop: 'flag' }, when: after('general-morvain') },
+      { near: 'hub', dx: 0, dy: -6, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('cael-the-sortie') },
+    ],
   },
 );

@@ -2,9 +2,9 @@ import { wildRegion } from '../zonegen';
 
 /**
  * Sablewind Canyon (levels 37-43): red canyons north of the Sunscorch, a river cutting through them and
- * the Hollow Legion's wagon road running west along the canyon floor to the siege of Highwall, loaded
+ * the Ashen Host's wagon road running west along the canyon floor to the siege of Highwall, loaded
  * with bone-steel, blasting powder and the dead. Dustcrown, a mining town on the canyon rim, still
- * stands because the Legion hasn't bothered to take it. Its wagons are counted in at the Supply Depot
+ * stands because the Host hasn't bothered to take it. Its wagons are counted in at the Supply Depot
  * in the far north-west, where Quartermaster Vane keeps the books; its sappers blast the canyon wider
  * at the Sappers' Cut; the Old Lookout watches the road north-west of town. Raptors hunt Raptor Run to
  * the west, rocs nest on the Roc Eyrie to the north-east, the Broken Wagons lie east of town and the
@@ -14,14 +14,14 @@ export const SABLEWIND = wildRegion(
   {
     id: 'sablewind',
     name: 'Sablewind Canyon',
-    subtitle: 'The Legion’s supply road',
+    subtitle: 'The Host’s supply road',
     theme: 'desert',
     levels: [37, 43],
     at: [100, 22],
     dark: false,
     safe: false,
     music: 'plains',
-    blurb: 'Red canyons and the Legion’s wagon road, carrying bone-steel to the siege of Highwall.',
+    blurb: 'Red canyons and the Host’s wagon road, carrying bone-steel to the siege of Highwall.',
   },
   {
     w: 160,

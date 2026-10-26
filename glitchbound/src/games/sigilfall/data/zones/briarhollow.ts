@@ -6,7 +6,7 @@ import type { EnemyDef, NpcDef, QuestDef, RegionDef, StoryCond, StoryEventDef } 
  * thatch, orchards and a chapel whose bell has not rung in three weeks. The hero arrives at dusk; a king's
  * courier dies at the gate; at nightfall the Ashen Host burns the lanes, the hero pulls children out of the
  * burning inn and holds the chapel door with Mara and Elyra; the raiders dig under the chapel, and the
- * crypt below (the old Hollow Crypt) holds the first fragment of the Starlight Crown. At dawn the village
+ * crypt below (the old crypt) holds the first fragment of the Starlight Crown. At dawn the village
  * becomes the resistance camp, and every village saved later sends its people here.
  *
  * The map is drawn with the city builder; people, fires and the camp come and go with the story
@@ -129,6 +129,7 @@ function plan(): CityPlan {
     ['briar-forge', 56, 27],
     ['briar-riders', 42, 29],
     ['briar-dwarves', 42, 36],
+    ['briar-fern-camp', 16, 31],
   ] as const)
     c.marker(x, y, { kind: 'place', id });
 
@@ -155,7 +156,8 @@ function plan(): CityPlan {
   c.npc('smith-hollin', 44, 24, CALM);
   c.npc('trader-ilse', 50, 24, CALM);
   c.npc('goodwife-bramble', 18, 25, CALM);
-  c.npc('elyra', 28, 32, CAMP);
+  // Elyra keeps the camp with Thessa until the Pale Herald takes her at the Tear (Act III)
+  c.npc('elyra', 28, 32, all(CAMP, not(is('the-heralds-ambush', 'done'))));
   c.npc('mara-venn', 47, 20, NIGHT);
   c.npc('elyra', 43, 20, NIGHT);
   c.npc('briar-tam', 30, 27, CALM);
@@ -198,6 +200,14 @@ function plan(): CityPlan {
   c.prop('crate', 40, 36, true, is('camp-dwarves', 'done'));
   c.prop('blue-banner', 41, 34, true, is('camp-dwarves', 'done'));
   c.npc('dwarf-tova', 42, 36, all(is('camp-dwarves', 'done'), CALM));
+  // Fernstead's people under canvas, from the night it falls until it is taken back (Act III)
+  const FERN_CAMP = all(is('fall-of-fernstead', 'done'), not(is('fern-retaken', 'done')));
+  c.prop('tent', 15, 32, true, FERN_CAMP);
+  c.prop('tent', 19, 32, true, FERN_CAMP);
+  c.prop('campfire', 17, 33, true, FERN_CAMP);
+  c.npc('warden-hollis', 16, 31, FERN_CAMP);
+  c.npc('mother-alsa', 18, 31, FERN_CAMP);
+  c.npc('pip-tanner', 14, 31, FERN_CAMP);
   c.marker(32, 12, { kind: 'start' });
   return c;
 }
@@ -317,6 +327,9 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'first-dodge', state: 'active' }, lines: ['The one at the back throws stones. Get out of the way of one. If you can’t dodge a stone, you won’t dodge what comes out of those woods.'] },
       { when: { quest: 'briar-the-seal', state: 'active' }, lines: ['Hold. Rider on the north road.', 'That’s a king’s courier. That’s a king’s courier with an arrow in his back. Take him to the Elder. Go!'] },
       { when: { quest: 'briar-below', state: 'active' }, lines: ['They stopped fighting us. Did you see? They just stopped, and started digging.', 'Whatever is under that chapel, they want it more than they want us dead. I don’t like that.'] },
+      { when: { quest: 'fern-retaken', state: 'offered' }, lines: ['I have counted Fernstead’s tents every morning for a week. I am done counting.', 'Hollis’s rangers, Dunmore’s riders, you, and me. We take it back. Tonight, if you’ll come.'] },
+      { when: { quest: 'fern-retaken', state: 'active' }, lines: ['Fernstead square. They’ve left a garrison that thinks it’s won. Let’s explain.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['They took Elyra. Out of the middle of you. And Nyx walked away from it.', 'I don’t trust magic. I trusted Elyra. I’m going to get her back, and then I’m going to tell her I was wrong about the magic.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Half the roofs gone, but nobody we pulled out of that inn died. I keep counting. Still nobody.', 'Maren says we gather the Vale. Fine. I’ll keep the gate while you find us people worth gathering.'] },
       { lines: ['The gate stays shut after dark. That isn’t going to change.', 'I don’t trust magic. I trust walls and people who show up.'] },
     ],
@@ -357,6 +370,9 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'the-digging-dead', state: 'active' }, lines: ['Reedwater, out in the Greyfen marsh: their graves emptied from below, villagers taken into the reeds, the wells gone foul.', 'Find Marshwarden Tilde. Reedwater has the best healers in the Vale. We’ll need them.'] },
       { when: { quest: 'hollow-gold', state: 'active' }, lines: ['Ash-gold. It weighs nothing and it’s always cold. The Host pays its traitors with it.', 'Millbrook’s grain carts are already on the road to us. You did that. Look at the square tomorrow and you’ll see what it means.'] },
       { when: { quest: 'the-regents-council', state: 'active' }, lines: ['Sit. I’ve read Oskar Fell’s letter at last: I had to dry it by the fire first.', 'The king’s couriers have been warning the Crown City for months that the crown is being hunted. Every letter, lost. Someone in the city has been burying them.', 'We will have to go there ourselves, in the end. Not yet. First the Vale must hold.'] },
+      { when: { quest: 'fall-of-fernstead', state: 'active' }, lines: ['Fernstead is burning. Its people are on the west road with whatever they could carry.', 'Go and meet them. Let them see a face they know.'] },
+      { when: { quest: 'fall-of-fernstead', state: 'done' }, lines: ['The first village you saved. The Host knew exactly which one to take.', 'They’re learning us. We had better learn them faster.'] },
+      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Rangers, grain, healers, smiths, riders. A month ago this was a village that nailed its shutters closed.', 'The Crown City is next, whether it wants us or not. Someone there has been burying the king’s letters. Go and dig them up.'] },
       { lines: ['Every village that holds is one more wall.', 'The square fills up a little more every week. That’s your doing.'] },
     ],
   },
@@ -376,6 +392,7 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     title: 'Healer, Elyra’s teacher',
     sprite: 'villager',
     talk: [
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['I keep setting a cup out for her. Every morning. Brisa takes it away and doesn’t say anything.', 'She’ll be forgetting things, wherever she is. Our cat’s name is Burr. Tell her that, when you find her. Tell her first.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The infirmary is my kitchen now. Burns, mostly. Burns and grief.', 'Elyra won’t tell me what it costs her. I can see it anyway. Bring her back to me in one piece.'] },
       { lines: ['There’s an old grove in the north-west of the wood, behind a hedge that isn’t there. My grandmother picked starwort in it.', 'If you find it, I’ll make it worth your while.'] },
     ],

@@ -3,8 +3,8 @@ import { wildRegion } from '../zonegen';
 /**
  * The Grimward Moors (29-35), Act III (see WORLD.md): grey heath north of the Ashen Barrows, all
  * heather, tarns, gibbets and standing stones. The hunters' town of Grimward huddles behind its ditch
- * and stakes in the south-east. The Hollow King's curse has come to the moor: the wolves run bold,
- * bitten men turn, and the Legion's Hollow Hunters ride with the packs. The Wolfmoot lies north-east
+ * and stakes in the south-east. The Hallow King's curse has come to the moor: the wolves run bold,
+ * bitten men turn, and the Host's Ashen Hunters ride with the packs. The Wolfmoot lies north-east
  * of town, the Hunters' Camp west, Hob's Old Mill east, the Crow Gibbets at the crossroads north, the
  * Black Dog's Cairn south-west by the old road, and the Howling Stones, where Moonfang holds court, in
  * the far north-west.
@@ -77,7 +77,7 @@ export const GRIMWARD = wildRegion(
           ['hollow-hunter', 'werewolf'],
           ['hollow-hunter', 'hollow-hunter'],
         ],
-        spot: { id: 'hunters-camp', name: 'The Hollow Hunters’ Camp' },
+        spot: { id: 'hunters-camp', name: 'The Ashen Hunters’ Camp' },
         chest: 'common',
       },
       {

@@ -3,9 +3,9 @@ import { wildRegion } from '../zonegen';
 /**
  * Rimeheld Tundra (33-39): the frozen north-west, west of the Glimmerwood. Snow, frozen lakes, snowy
  * pines, and the hardy town of Frostgate under Jarl Sigrun. The Sigil of Frost sleeps in a vault the
- * Sigil-wardens sealed under the ice, and the Legion has come for it: dead northmen raised out of the
+ * Sigil-wardens sealed under the ice, and the Host has come for it: dead northmen raised out of the
  * old battlefields walk the sledge roads, and Jarl Hrimfang of the frost giants has sold them the vault
- * for Hollow gold. His giants keep the Giants' Hearth; the Legion digs at the Vault Door in the far
+ * for ash-gold. His giants keep the Giants' Hearth; the Host digs at the Vault Door in the far
  * west, near the Frozen Shrine where the wardens' runes are being written over in frost. Wolves and
  * yetis are bolder than they have ever been.
  */
@@ -36,7 +36,7 @@ export const RIMEHELD = wildRegion(
       { side: 'e', at: 0.5, to: 'glimmerwood', label: 'East road to the Glimmerwood' },
     ],
     pois: [
-      // the way down: the Legion and Hrimfang's giants have broken the wardens' seal
+      // the way down: the Host and Hrimfang's giants have broken the wardens' seal
       { at: [0.2, 0.3], r: 11, kind: 'cave', level: 38, packs: [['frost-giant', 'legion-huscarl'], ['rime-wraith', 'legion-spearman', 'legion-huscarl']], entrance: { to: 'rimeheld-vault', label: 'The Rimeheld Vault', minLevel: 37 }, spot: { id: 'vault-door', name: 'The Vault Door' } },
       { at: [0.45, 0.75], r: 11, kind: 'den', level: 36, packs: [['ice-wolf', 'ice-wolf', 'ice-wolf'], ['ice-wolf', 'ice-wolf']], rare: 'old-whitefang', spot: { id: 'whitefang-den', name: 'Whitefang’s Den' } },
       { at: [0.5, 0.25], r: 10, kind: 'camp', level: 36, packs: [['frost-giant', 'legion-huscarl'], ['frost-giant', 'ice-wolf'], ['legion-spearman', 'legion-huscarl']], elite: true, spot: { id: 'giants-hearth', name: 'The Giants’ Hearth' }, chest: 'rare' },

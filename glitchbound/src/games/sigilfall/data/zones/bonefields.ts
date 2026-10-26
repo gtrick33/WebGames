@@ -1,7 +1,7 @@
 import { wildRegion } from '../zonegen';
 
 /**
- * The Bonefields (48-53): north of Highwall, an ashen plain where the Hollow Legion musters for its
+ * The Bonefields (48-53): north of Highwall, an ashen plain where the Ashen Host musters for its
  * next march. Bone-pits where the dead are dug up and put back together, rows of tents and bone-banners,
  * raided farms and the old ossuary of the Sigil-wardens. At the heart of the muster stands the Bone
  * Colossus. Marshal Ardent holds the Forward Camp in the south, Highwall's first foothold beyond the wall.
@@ -10,14 +10,14 @@ export const BONEFIELDS = wildRegion(
   {
     id: 'bonefields',
     name: 'The Bonefields',
-    subtitle: 'Where the Legion musters',
+    subtitle: 'Where the Host musters',
     theme: 'bonefield',
     levels: [48, 53],
     at: [78, -20],
     dark: false,
     safe: false,
     music: 'plains',
-    blurb: 'An ashen plain of bone-pits and Legion tents, where the dead muster for the next march.',
+    blurb: 'An ashen plain of bone-pits and Ashen tents, where the dead muster for the next march.',
   },
   {
     w: 160,

@@ -1,9 +1,9 @@
 import type { EnemyDef, ItemDef } from '../types';
 
 /**
- * The enemies first met on the Grimward Moors. The Hollow King's curse has come to the heath: the
+ * The enemies first met on the Grimward Moors. The Hallow King's curse has come to the heath: the
  * moor's wolves run bolder with a violet light in their eyes, men bitten under it turn into
- * werewolves, and the Legion's Hollow Hunters (pale bone, grey-violet cloaks, the dull violet glow)
+ * werewolves, and the Host's Ashen Hunters (pale bone, grey-violet cloaks, the dull violet glow)
  * ride with the packs and blow their bone horns to call them. The gibbet crows grow fat on all of it,
  * and the moor's own Black Dog has woken hungry. Stats are at level 1 (see enemies.ts).
  */
@@ -75,10 +75,10 @@ export const GRIMWARD_FOES: Record<string, EnemyDef> = {
     resist: { shadow: 0.3 },
     blurb: 'Grey with age and heavy with the curse, it hangs back and howls: the ground shakes where you stand, and every wolf on the moor comes running. Silence it first.',
   },
-  /* ------------------------------------------------------------- the Legion */
+  /* ------------------------------------------------------------- the Host */
   'hollow-hunter': {
     id: 'hollow-hunter',
-    name: 'Hollow Hunter',
+    name: 'Ashen Hunter',
     sprite: 'hollow-hunter',
     ai: 'ranged',
     hp: 38,
@@ -96,7 +96,7 @@ export const GRIMWARD_FOES: Record<string, EnemyDef> = {
     keep: 125,
     shot: { speed: 200, radius: 2.5, count: 1, spread: 0, color: '#c9b8ff', lead: 0.7, look: 'enemyArrow' },
     resist: { poison: 0.5, frost: 0.3 },
-    blurb: 'A huntsman of the Hollow Legion in a grey-violet cloak, with a bone bow and a bone horn. Its arrows fly fast and aim where you are going: change course when it draws.',
+    blurb: 'A huntsman of the Ashen Host in a grey-violet cloak, with a bone bow and a bone horn. Its arrows fly fast and aim where you are going: change course when it draws.',
   },
   'gibbet-crow': {
     id: 'gibbet-crow',
@@ -220,7 +220,7 @@ export const GRIMWARD_FOES: Record<string, EnemyDef> = {
     named: true,
     scale: 1.3,
     resist: { shadow: 0.4, poison: 0.3 },
-    blurb: 'The first of the Hollow King’s cursed, crowned in bone with a shard of violet glass in his chest. He circles, pounces down a line you can see coming, howls his werewolves to him, and his wounds close whenever you give him room.',
+    blurb: 'The first of the Hallow King’s cursed, crowned in bone with a shard of violet glass in his chest. He circles, pounces down a line you can see coming, howls his werewolves to him, and his wounds close whenever you give him room.',
   },
 };
 

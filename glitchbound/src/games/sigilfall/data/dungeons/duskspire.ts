@@ -3,9 +3,9 @@ import type { BossDef } from '../bosses';
 import type { EnemyDef, ItemDef, Marker } from '../types';
 
 /*
- * Duskspire (level 60): see WORLD.md. The Hollow King's citadel at the top of the Pale Reach, and the end
+ * Duskspire (level 60): see WORLD.md. The Hallow King's citadel at the top of the Pale Reach, and the end
  * of the story. From the gate hall over the Bone Bridge, through the Hall of Kneeling Dead (a cracked wall
- * on its west side hides a vault), past the Hollow Guard's court and up the Stair of Ash to the throne
+ * on its west side hides a vault), past the Ashen Guard's court and up the Stair of Ash to the throne
  * room, where Vaelor waits on his throne between six pillars. The rooms seal while you fight in them
  * (their floors are the letters below); bones (n) mark the dead who kneel here.
  */
@@ -134,7 +134,7 @@ const markers: Record<string, Marker> = {
 const FOES: Record<string, EnemyDef> = {
   'hollow-guardsman': {
     id: 'hollow-guardsman',
-    name: 'Hollow Guardsman',
+    name: 'Ashen Guardsman',
     sprite: 'hollow-guardsman',
     ai: 'armored',
     hp: 130,
@@ -202,7 +202,7 @@ const FOES: Record<string, EnemyDef> = {
   },
   'hollow-ghoul': {
     id: 'hollow-ghoul',
-    name: 'Hollow Ghoul',
+    name: 'Ashen Ghoul',
     sprite: 'plague-ghoul',
     pal: { g: '#8a7aa8', G: '#5a4a78', l: '#c8b8e8' },
     ai: 'melee',
@@ -274,7 +274,7 @@ const FOES: Record<string, EnemyDef> = {
 const HOLLOW_GUARD: BossDef = {
   id: 'hollow-guard',
   name: 'Captain Ser Maltheus',
-  title: 'First of the Hollow Guard',
+  title: 'First of the Ashen Guard',
   sprite: 'hollow-guard',
   hp: 15000,
   dmg: 30,
@@ -319,7 +319,7 @@ const HOLLOW_GUARD: BossDef = {
 const VAELOR: BossDef = {
   id: 'vaelor',
   name: 'Vaelor',
-  title: 'The Hollow King',
+  title: 'The Hallow King',
   sprite: 'vaelor',
   hp: 40000,
   dmg: 52,
@@ -406,7 +406,7 @@ const VAELOR: BossDef = {
     items: { any: ['vaelors-heartstone', 'hollowbrand-shard', 'shroud-of-duskspire', 'oath-of-the-hollow-guard'] },
     chance: [1, 1, 1],
   },
-  intro: 'He bargained with the Rift for a life that would not end, and it hollowed him out. Three hundred years in the dark have not made him kinder. They have made him patient.',
+  intro: 'He bargained with the Ash Crown for a life that would not end, and it hollowed him out. Three hundred years in the dark have not made him kinder. They have made him patient.',
 };
 
 /* ------------------------------------------------------------ items */
@@ -414,7 +414,7 @@ const VAELOR: BossDef = {
 const ITEMS: ItemDef[] = [
   {
     id: 'oath-of-the-hollow-guard',
-    name: 'Oath of the Hollow Guard',
+    name: 'Oath of the Ashen Guard',
     slot: 'ring',
     rarity: 'legendary',
     icon: 'ring',
@@ -509,7 +509,7 @@ export const DUSKSPIRE: DungeonModule = {
   region: {
     id: 'duskspire',
     name: 'Duskspire',
-    subtitle: 'The Hollow King’s citadel',
+    subtitle: 'The Hallow King’s citadel',
     theme: 'citadel',
     kind: 'dungeon',
     level: 60,
@@ -542,7 +542,7 @@ export const DUSKSPIRE: DungeonModule = {
           { enemies: ['hollow-guardsman', 'hollow-guardsman', 'kneeling-dead', 'kneeling-dead'], elite: true },
         ],
       },
-      { id: 'court', floor: 'd', waves: [], boss: 'hollow-guard', checkpoint: true, title: 'The Court of the Hollow Guard' },
+      { id: 'court', floor: 'd', waves: [], boss: 'hollow-guard', checkpoint: true, title: 'The Court of the Ashen Guard' },
       {
         id: 'stair',
         floor: 'e',
@@ -556,7 +556,7 @@ export const DUSKSPIRE: DungeonModule = {
       },
       { id: 'throne', floor: 'g', waves: [], boss: 'vaelor', checkpoint: true, title: 'The Throne of Duskspire' },
     ],
-    blurb: 'The Hollow King’s citadel. Everything that ever knelt to him is here, and he is waiting.',
+    blurb: 'The Hallow King’s citadel. Everything that ever knelt to him is here, and he is waiting.',
   },
   bosses: { 'hollow-guard': HOLLOW_GUARD, vaelor: VAELOR },
   foes: FOES,

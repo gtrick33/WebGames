@@ -4,8 +4,8 @@ import type { EnemyDef, ItemDef, Marker } from '../types';
 
 /*
  * The Deepforge Halls (levels 25-28): see WORLD.md. The dwarves’ great forge under Ironpeak, seized by
- * the Hollow Legion to make bone-steel for its army. In through the Deepforge Gate from the highlands:
- * the gatehouse, the mine galleries, the bone-yards where the Legion renders the dead, the Rendering Pit
+ * the Ashen Host to make bone-steel for its army. In through the Deepforge Gate from the highlands:
+ * the gatehouse, the mine galleries, the bone-yards where the Host renders the dead, the Rendering Pit
  * where the Slag Colossus was poured, the quenching pools, the bellows hall, and at the top of the map
  * the Great Forge, where the Sigil of Stone once lay and Forgemaster Grold works for the King. The
  * rooms seal while you fight in them (their floors are the letters below). In the Great Forge four
@@ -127,7 +127,7 @@ const markers: Record<string, Marker> = {
 const FOES: Record<string, EnemyDef> = {
   'legion-smith': {
     id: 'legion-smith',
-    name: 'Legion Smith',
+    name: 'Ashen Smith',
     sprite: 'legion-smith',
     ai: 'melee',
     hp: 58,
@@ -144,7 +144,7 @@ const FOES: Record<string, EnemyDef> = {
     attackCd: 1.4,
     heals: 0.22,
     resist: { poison: 0.5, fire: 0.3 },
-    blurb: 'A dead smith at the Legion’s anvils. It hammers its hurt friends back into shape between blows: strike it down first.',
+    blurb: 'A dead smith at the Host’s anvils. It hammers its hurt friends back into shape between blows: strike it down first.',
   },
   'bone-steel-sentinel': {
     id: 'bone-steel-sentinel',
@@ -213,7 +213,7 @@ const FOES: Record<string, EnemyDef> = {
     shot: { speed: 80, radius: 4, count: 1, spread: 0, color: '#ffb04d', homing: 1.1, look: 'flame' },
     summons: { enemy: 'slag-imp', count: 1, max: 2 },
     resist: { fire: 0.6, poison: 0.5 },
-    blurb: 'Keeper of the Legion’s furnaces. Fire wells up where you stand, seeking embers follow you, and slag imps climb out of its censer.',
+    blurb: 'Keeper of the Host’s furnaces. Fire wells up where you stand, seeking embers follow you, and slag imps climb out of its censer.',
   },
   'slag-lump': {
     id: 'slag-lump',
@@ -297,7 +297,7 @@ const BOSSES: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'The Legion poured the dead of the bone-yards into the old slag pit with all the iron it could find. It got up.',
+    intro: 'The Host poured the dead of the bone-yards into the old slag pit with all the iron it could find. It got up.',
   },
   'forgemaster-grold': {
     id: 'forgemaster-grold',
@@ -379,7 +379,7 @@ const BOSSES: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'Three hundred years at the Deepforge’s anvil. The Hollow King promised him the fire would never go out.',
+    intro: 'Three hundred years at the Deepforge’s anvil. The Hallow King promised him the fire would never go out.',
   },
 };
 
@@ -469,7 +469,7 @@ const ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'Grold’s own make, for the Legion’s captains. It remembers every hammer blow.',
+    lore: 'Grold’s own make, for the Host’s captains. It remembers every hammer blow.',
     minLevel: 25,
     special: true,
   },
@@ -507,7 +507,7 @@ export const DEEPFORGE_HALLS: DungeonModule = {
   region: {
     id: 'deepforge-halls',
     name: 'The Deepforge Halls',
-    subtitle: 'The dwarves’ great forge, seized by the Legion',
+    subtitle: 'The dwarves’ great forge, seized by the Host',
     theme: 'keep',
     kind: 'dungeon',
     level: 26,
@@ -574,7 +574,7 @@ export const DEEPFORGE_HALLS: DungeonModule = {
       },
       { id: 'forge', floor: 'm', waves: [], boss: 'forgemaster-grold', checkpoint: true, title: 'The Great Forge' },
     ],
-    blurb: 'The Legion’s bone-steel works under the mountain, the thing it poured in the slag pit, and the master smith who serves the King.',
+    blurb: 'The Host’s bone-steel works under the mountain, the thing it poured in the slag pit, and the master smith who serves the King.',
   },
   bosses: BOSSES,
   foes: FOES,

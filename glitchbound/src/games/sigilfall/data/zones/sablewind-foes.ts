@@ -1,18 +1,18 @@
 import type { EnemyDef, ItemDef } from '../types';
 
 /**
- * The enemies first met in Sablewind Canyon: the Hollow Legion's supply train (dead teamsters with
+ * The enemies first met in Sablewind Canyon: the Ashen Host's supply train (dead teamsters with
  * long whips, bone-haulers built like pack beasts, sappers running at you with lit kegs, wagon-guards
  * riding the wagons with heavy crossbows, and Quartermaster Vane, who counts it all), and the beasts
  * of the red canyons (raptors that hunt in packs and come from both sides, rocs that stoop from the
- * rim). The Legion's dead are pale bone in grey-violet cloth with a dull violet glow, as everywhere.
+ * rim). The Host's dead are pale bone in grey-violet cloth with a dull violet glow, as everywhere.
  * Stats are at level 1 (see enemies.ts).
  */
 export const SABLEWIND_FOES: Record<string, EnemyDef> = {
-  /* ---------------------------------------------- the Legion's wagon train */
+  /* ---------------------------------------------- the Host's wagon train */
   'legion-teamster': {
     id: 'legion-teamster',
-    name: 'Legion Teamster',
+    name: 'Ashen Teamster',
     sprite: 'legion-teamster',
     ai: 'melee',
     hp: 48,
@@ -28,7 +28,7 @@ export const SABLEWIND_FOES: Record<string, EnemyDef> = {
     recover: 0.5,
     attackCd: 1.5,
     resist: { poison: 0.5 },
-    blurb: 'A dead wagon-driver of the Legion, still cracking the whip over the dead that pull its wagons. The lash reaches farther than you think.',
+    blurb: 'A dead wagon-driver of the Host, still cracking the whip over the dead that pull its wagons. The lash reaches farther than you think.',
   },
   'bone-hauler': {
     id: 'bone-hauler',
@@ -55,7 +55,7 @@ export const SABLEWIND_FOES: Record<string, EnemyDef> = {
   },
   'legion-sapper': {
     id: 'legion-sapper',
-    name: 'Legion Sapper',
+    name: 'Ashen Sapper',
     sprite: 'legion-sapper',
     ai: 'exploder',
     hp: 30,
@@ -76,7 +76,7 @@ export const SABLEWIND_FOES: Record<string, EnemyDef> = {
   },
   'legion-wagon-guard': {
     id: 'legion-wagon-guard',
-    name: 'Legion Wagon-Guard',
+    name: 'Ashen Wagon-Guard',
     sprite: 'legion-wagon-guard',
     ai: 'ranged',
     hp: 40,
@@ -188,7 +188,7 @@ export const SABLEWIND_FOES: Record<string, EnemyDef> = {
     named: true,
     scale: 1.25,
     resist: { poison: 0.5 },
-    blurb: 'Quartermaster of the Hollow Legion’s siege train, who counts every wagon that goes west. He fires a repeating crossbow, lobs powder charges where you stand, and whistles up sappers from the wagons.',
+    blurb: 'Quartermaster of the Ashen Host’s siege train, who counts every wagon that goes west. He fires a repeating crossbow, lobs powder charges where you stand, and whistles up sappers from the wagons.',
   },
 };
 

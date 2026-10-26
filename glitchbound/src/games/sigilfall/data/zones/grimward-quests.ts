@@ -1,11 +1,11 @@
 import type { NpcDef, QuestDef } from '../types';
 
 /**
- * Grimward's people and the quests of the Grimward Moors (see WORLD.md). The Hollow King's curse has
- * come to the heath: wolves bold as dogs, bitten men who turn on the full moon, and the Legion's
- * Hollow Hunters riding with the packs and blowing bone horns to call them. Huntmaster Orla follows
+ * Grimward's people and the quests of the Grimward Moors (see WORLD.md). The Hallow King's curse has
+ * come to the heath: wolves bold as dogs, bitten men who turn on the full moon, and the Host's
+ * Ashen Hunters riding with the packs and blowing bone horns to call them. Huntmaster Orla follows
  * the trail from Grimward's ditch to the Howling Stones and Moonfang, first of the King's cursed, and
- * the shard of Rift-glass in his chest points north to the Shattered Vale. Bram has lost his brother
+ * the shard of grief-glass in his chest points north to the Shattered Vale. Bram has lost his brother
  * to the curse, Tinker Vey wants silver, and Carter Joss has seen the Black Dog. Main chain first.
  */
 export const GRIMWARD_QUESTS: QuestDef[] = [
@@ -44,10 +44,10 @@ export const GRIMWARD_QUESTS: QuestDef[] = [
   },
   {
     id: 'the-hollow-hunt',
-    name: 'The Hollow Hunt',
+    name: 'The Ashen Hunt',
     giver: 'huntmaster-orla',
-    text: 'They are dead: huntsmen of the Hollow Legion, in grey-violet cloaks, with bone bows and eyes like barrow lamps gone wrong. The King has sent his hunters to the moors, and they are driving the wolves at Grimward the way beaters drive deer. Break up the hunt: put down the Hollow Hunters at their camp west of town and wherever they ride on the heath.',
-    objective: { kind: 'kill', region: 'grimward', count: 8, enemies: ['hollow-hunter'], label: 'Put down Hollow Hunters' },
+    text: 'They are dead: huntsmen of the Ashen Host, in grey-violet cloaks, with bone bows and eyes like barrow lamps gone wrong. The King has sent his hunters to the moors, and they are driving the wolves at Grimward the way beaters drive deer. Break up the hunt: put down the Ashen Hunters at their camp west of town and wherever they ride on the heath.',
+    objective: { kind: 'kill', region: 'grimward', count: 8, enemies: ['hollow-hunter'], label: 'Put down Ashen Hunters' },
     after: ['grey-riders'],
     zone: 'grimward',
     level: 30,
@@ -57,8 +57,8 @@ export const GRIMWARD_QUESTS: QuestDef[] = [
     id: 'horns-of-the-hunt',
     name: 'Horns of the Hunt',
     giver: 'huntmaster-orla',
-    text: 'Every Hollow Hunter carries a horn of bone, and every time one blows, something out on the moor answers. Orla wants to know what they are calling. Bring her four horns from the hunters, at their camp west of town or on the open heath.',
-    objective: { kind: 'loot', region: 'grimward', item: 'Bone Horn', from: ['hollow-hunter'], chance: 0.45, count: 4, label: 'Take Bone Horns from Hollow Hunters' },
+    text: 'Every Ashen Hunter carries a horn of bone, and every time one blows, something out on the moor answers. Orla wants to know what they are calling. Bring her four horns from the hunters, at their camp west of town or on the open heath.',
+    objective: { kind: 'loot', region: 'grimward', item: 'Bone Horn', from: ['hollow-hunter'], chance: 0.45, count: 4, label: 'Take Bone Horns from Ashen Hunters' },
     after: ['the-hollow-hunt'],
     zone: 'grimward',
     level: 31,
@@ -110,7 +110,7 @@ export const GRIMWARD_QUESTS: QuestDef[] = [
       xp: 4100,
       gold: 1000,
       item: 'moonfang-mantle',
-      text: 'Moonfang falls among the stones, and the curse goes out of the moor like a held breath. Orla cuts the shard from his chest: Rift-glass, still warm, the kind that comes from only one place. The scholars at Shardwatch in the Shattered Vale, north of the moors, have been writing to Grimward all year about a shard in the ground that bleeds. Now Orla knows where the curse came from. She gives you his pelt.',
+      text: 'Moonfang falls among the stones, and the curse goes out of the moor like a held breath. Orla cuts the shard from his chest: grief-glass, still warm, the kind that comes from only one place. The scholars at Shardwatch in the Shattered Vale, north of the moors, have been writing to Grimward all year about a shard in the ground that bleeds. Now Orla knows where the curse came from. She gives you his pelt.',
     },
   },
   /* ------------------------------------------------------ Bram's brother */
@@ -250,7 +250,7 @@ export const GRIMWARD_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'where-the-rift-bleeds', state: 'active' },
-        lines: ['That shard in his chest is Rift-glass. There is one place it grows: the Shattered Vale, north of the moors.', 'The scholars at Shardwatch have been writing to me about it all year. Take the north pass and find Magister Quell. Tell him I’m sorry I didn’t write back.'],
+        lines: ['That shard in his chest is grief-glass. There is one place it grows: the Shattered Vale, north of the moors.', 'The scholars at Shardwatch have been writing to me about it all year. Take the north pass and find Magister Quell. Tell him I’m sorry I didn’t write back.'],
       },
       { when: { quest: 'the-wolf-king', state: 'done' }, lines: ['The moor is quiet. Just wolves now, the ordinary kind. They even look embarrassed.', 'Grimward owes you a drink. Bram will tell you it’s on the house. It isn’t; I’m paying.'] },
       { lines: ['Grimward. A ditch, a ring of stakes and two hundred stubborn people. We have kept the moor out for three hundred years.', 'Stay on the roads after dark. If something follows you home, make sure it’s a dog.'] },

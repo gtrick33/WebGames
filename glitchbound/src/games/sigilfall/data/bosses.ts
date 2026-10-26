@@ -122,7 +122,7 @@ export const BOSSES: Record<string, BossDef> = {
   ossric: {
     id: 'ossric',
     name: 'Warden Ossric',
-    title: 'Keeper of the Hollow Gate',
+    title: 'Keeper of the Crypt Gate',
     sprite: 'ossric',
     hp: 1150,
     dmg: 18,
@@ -160,7 +160,7 @@ export const BOSSES: Record<string, BossDef> = {
   morgrave: {
     id: 'morgrave',
     name: 'Morgrave',
-    title: 'the Rift-Touched',
+    title: 'the Ash-Scholar',
     sprite: 'morgrave',
     hp: 2200,
     dmg: 18,
@@ -181,7 +181,7 @@ export const BOSSES: Record<string, BossDef> = {
       },
       {
         at: 0.65,
-        banner: 'The Rift tears open!',
+        banner: 'The Tear tears open!',
         speed: 34,
         rest: [0.6, 1.1],
         enter: [{ id: 'teleport', w: 1, cd: 0, p: { center: 1 } }, { id: 'riftSpiral', w: 1, cd: 0, p: { arms: 3, time: 3 } }],
@@ -213,7 +213,7 @@ export const BOSSES: Record<string, BossDef> = {
       items: { mage: ['heart-of-the-inferno', 'stormcaller-rod'], warrior: ['quakehammer', 'whirling-greaves'], ranger: ['galeheart-bow', 'splitwood-bow'], any: ['riftwalker-mantle', 'crown-of-the-hollow-king'] },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'A sorcerer who opened the Rift to live forever. It is working, sort of.',
+    intro: 'A scholar of the Ash Crown who came for the reliquary under the chapel. He has read every book about the Starlight Crown, and burned most of them.',
   },
   /* ------------------------------------------------------------ Gallows Keep */
   hangman: {

@@ -1,15 +1,15 @@
 import type { EnemyDef, ItemDef } from '../types';
 
 /**
- * The enemies first met in the Ironpeak Highlands: the Hollow Legion working the dwarves' stolen
+ * The enemies first met in the Ironpeak Highlands: the Ashen Host working the dwarves' stolen
  * Deepforge (miners, bone golems, bonecallers and slagthrowers), and the beasts of the high passes
  * (griffons and frost rams), with two old ones that have names.
  */
 export const IRONPEAK_FOES: Record<string, EnemyDef> = {
-  /* ------------------------------------------------------- the Hollow Legion */
+  /* ------------------------------------------------------- the Ashen Host */
   'legion-miner': {
     id: 'legion-miner',
-    name: 'Legion Miner',
+    name: 'Ashen Miner',
     sprite: 'legion-miner',
     ai: 'melee',
     hp: 46,
@@ -25,7 +25,7 @@ export const IRONPEAK_FOES: Record<string, EnemyDef> = {
     recover: 0.55,
     attackCd: 1.3,
     resist: { poison: 0.5 },
-    blurb: 'Dead miners still working the Legion’s shift. The pick comes down slowly, and it comes down hard.',
+    blurb: 'Dead miners still working the Host’s shift. The pick comes down slowly, and it comes down hard.',
   },
   'bone-golem': {
     id: 'bone-golem',
@@ -52,7 +52,7 @@ export const IRONPEAK_FOES: Record<string, EnemyDef> = {
   },
   'legion-bonecaller': {
     id: 'legion-bonecaller',
-    name: 'Legion Bonecaller',
+    name: 'Ashen Bonecaller',
     sprite: 'legion-bonecaller',
     ai: 'caster',
     hp: 38,
@@ -72,11 +72,11 @@ export const IRONPEAK_FOES: Record<string, EnemyDef> = {
     shot: { speed: 80, radius: 4, count: 1, spread: 0, color: '#b89aff', homing: 1.3, look: 'skull' },
     summons: { enemy: 'legion-miner', count: 1, max: 2 },
     resist: { poison: 0.5, shadow: 0.4 },
-    blurb: 'Calls the dead up out of the dwarves’ tombs to dig for the Legion. Kill it and its diggers stay down.',
+    blurb: 'Calls the dead up out of the dwarves’ tombs to dig for the Host. Kill it and its diggers stay down.',
   },
   'legion-slagthrower': {
     id: 'legion-slagthrower',
-    name: 'Legion Slagthrower',
+    name: 'Ashen Slagthrower',
     sprite: 'legion-slagthrower',
     ai: 'ranged',
     hp: 36,

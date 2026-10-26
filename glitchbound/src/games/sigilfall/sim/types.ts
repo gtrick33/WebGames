@@ -208,6 +208,8 @@ export interface Pet {
   flow?: Int16Array;
   /** Waits where it is for now (a wagon under attack). */
   paused?: boolean;
+  /** Seconds a companion stays down before getting back up (PetDef.rally). */
+  downT?: number;
 }
 
 export interface Projectile {

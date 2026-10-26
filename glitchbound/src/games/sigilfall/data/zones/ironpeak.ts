@@ -3,7 +3,7 @@ import { wildRegion } from '../zonegen';
 
 /**
  * The Ironpeak Highlands (levels 20-26): high passes north of the Amberfield. Kragholt, the dwarves'
- * town, still stands west of the river; the Hollow Legion holds the Deepforge in the mountain to the
+ * town, still stands west of the river; the Ashen Host holds the Deepforge in the mountain to the
  * north-east, digs the iron quarry south-west of town and empties the dwarves' tombs in the Hall of
  * Ancestors for the bones in its bone-steel. Frost rams graze the heights by the south road and
  * raid the frostmalt terraces that Kragholt brews from; griffons nest on the crags to the east.
@@ -19,7 +19,7 @@ export const IRONPEAK = wildRegion(
     dark: false,
     safe: false,
     music: 'cave',
-    blurb: 'High passes, frost rams, griffons, and the Legion’s miners at the dwarves’ stolen forge.',
+    blurb: 'High passes, frost rams, griffons, and the Host’s miners at the dwarves’ stolen forge.',
   },
   {
     w: 150,

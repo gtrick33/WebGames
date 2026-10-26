@@ -1,16 +1,16 @@
 import type { EnemyDef, ItemDef } from '../types';
 
 /**
- * The enemies first met in Rimeheld Tundra: the Hollow Legion's dead northmen (pale bone, grey-violet
- * cloth, the dull violet glow, with frost on them), Jarl Hrimfang's frost giants in the Legion's pay,
+ * The enemies first met in Rimeheld Tundra: the Ashen Host's dead northmen (pale bone, grey-violet
+ * cloth, the dull violet glow, with frost on them), Jarl Hrimfang's frost giants in the Host's pay,
  * the rime-wraiths of the old shrine, and the tundra's beasts (ice wolves and yetis), two of them old
  * enough to have names. Stats are at level 1 (see enemies.ts).
  */
 export const RIMEHELD_FOES: Record<string, EnemyDef> = {
-  /* ------------------------------------------------------- the Hollow Legion */
+  /* ------------------------------------------------------- the Ashen Host */
   'legion-huscarl': {
     id: 'legion-huscarl',
-    name: 'Legion Huscarl',
+    name: 'Ashen Huscarl',
     sprite: 'legion-huscarl',
     ai: 'melee',
     hp: 50,
@@ -27,11 +27,11 @@ export const RIMEHELD_FOES: Record<string, EnemyDef> = {
     attackCd: 1.35,
     armor: 0.3,
     resist: { poison: 0.5, frost: 0.4 },
-    blurb: 'A northman three hundred years dead, cut out of the ice of an old battlefield and raised by the Legion with his shield still on his arm. It turns a third of every blow; the axe comes down slow and heavy.',
+    blurb: 'A northman three hundred years dead, cut out of the ice of an old battlefield and raised by the Host with his shield still on his arm. It turns a third of every blow; the axe comes down slow and heavy.',
   },
   'legion-spearman': {
     id: 'legion-spearman',
-    name: 'Legion Spearman',
+    name: 'Ashen Spearman',
     sprite: 'legion-spearman',
     ai: 'ranged',
     hp: 36,
@@ -167,7 +167,7 @@ export const RIMEHELD_FOES: Record<string, EnemyDef> = {
     named: true,
     scale: 1.5,
     resist: { frost: 0.7, fire: -0.1 },
-    blurb: 'The old white wolf of the tundra, fed fat on the Legion’s leavings. He howls up his pack and circles in with it, and he does not tire.',
+    blurb: 'The old white wolf of the tundra, fed fat on the Host’s leavings. He howls up his pack and circles in with it, and he does not tire.',
   },
   grumbleback: {
     id: 'grumbleback',

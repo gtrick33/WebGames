@@ -127,7 +127,8 @@ function plan(): CityPlan {
   c.prop('anvil', 70, 49);
   c.building('shop', 74, 45, 5, 3, { npc: 'odo', name: 'Odo’s Armory' });
   c.building('shop', 82, 45, 5, 3, { npc: 'wren', name: 'Imelda’s Curios' });
-  c.npc('nyx', 87, 49, after('nyx-joins'));
+  // Nyx: from the day she joins until the night at the Tear
+  c.npc('nyx', 87, 49, all(after('nyx-joins'), until('the-heralds-ambush')));
   c.building('house', 66, 55, 4, 3);
   c.building('house', 72, 55, 4, 3);
   c.building('house', 80, 55, 4, 3);

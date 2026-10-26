@@ -69,9 +69,19 @@ export function placePet(w: World, id: string, x: number, y: number): Pet | null
 /** A pet takes a hit; returns whether it fell. */
 export function hurtPet(w: World, pet: Pet, dmg: number): boolean {
   if (pet.dead || pet.def.unhurt) return false;
+  if (pet.downT) return false;
   pet.hp -= dmg;
   pet.flash = 0.12;
   w.text(pet.x, pet.y - 12, `-${Math.round(dmg)}`, '#ffb0b0', false);
+  // a companion goes down, not out
+  if (pet.hp <= 0 && pet.def.rally) {
+    pet.hp = 0;
+    pet.downT = 6;
+    pet.vx = 0;
+    pet.vy = 0;
+    w.fxBurst(pet.x, pet.y, '#c9c3e6', 6, 8);
+    return false;
+  }
   if (pet.hp <= 0) {
     pet.dead = true;
     pet.deathT = 0;
@@ -147,6 +157,15 @@ export function updatePets(w: World, dt: number): void {
       }
     }
     if (p.dead) continue;
+    // a companion who was knocked down gets back up
+    if (pet.downT) {
+      pet.downT = Math.max(0, pet.downT - dt);
+      if (pet.downT === 0) {
+        pet.hp = pet.maxHp * 0.5;
+        w.text(pet.x, pet.y - 14, 'Up!', '#9cff9c', false);
+      }
+      continue;
+    }
     // someone walking on their own (into the camp, or a wagon on the road): whatever the hero does
     if (pet.goal) {
       walkTo(w, pet, pet.goal, dt);

@@ -2,10 +2,10 @@ import type { EnemyDef, ItemDef } from '../types';
 
 /**
  * The enemies first met in the Sunscorch Expanse: the beasts of the sand (scorpions that dart in to
- * sting, wurms that burst up along a line), the dune raiders the Pale Herald bought with Hollow gold
+ * sting, wurms that burst up along a line), the dune raiders the Pale Herald bought with ash-gold
  * (blades that come from two sides, javelins thrown where you are going), and the Sun King's court,
- * woken by the Legion's digging (linen-wrapped courtiers full of gold-backed scarabs). Two have names:
- * the Dune Tyrant and Khamsin, the raiders' chief. The Legion's own diggers come from Ironpeak
+ * woken by the Host's digging (linen-wrapped courtiers full of gold-backed scarabs). Two have names:
+ * the Dune Tyrant and Khamsin, the raiders' chief. The Host's own diggers come from Ironpeak
  * (legion-miner, legion-bonecaller, bone-golem). Stats are at level 1 (see enemies.ts).
  */
 export const SUNSCORCH_FOES: Record<string, EnemyDef> = {
@@ -73,7 +73,7 @@ export const SUNSCORCH_FOES: Record<string, EnemyDef> = {
     recover: 0.45,
     attackCd: 1.15,
     flank: true,
-    blurb: 'A desert bandit riding for the Hollow King’s grey gold. Raiders come at you from two sides at once, curved blades low and quick.',
+    blurb: 'A desert bandit riding for the Hallow King’s grey gold. Raiders come at you from two sides at once, curved blades low and quick.',
   },
   'dune-javelineer': {
     id: 'dune-javelineer',
@@ -139,7 +139,7 @@ export const SUNSCORCH_FOES: Record<string, EnemyDef> = {
     slam: { radius: 32 },
     summons: { enemy: 'tomb-scarab', count: 2, max: 2, cd: 10 },
     resist: { poison: 0.6, shadow: 0.4, fire: -0.3 },
-    blurb: 'A courtier of the Sun King, wrapped in linen and gold and woken by the Legion’s digging. Scarabs crawl out of its wrappings; its fists come down hard. It burns like old paper.',
+    blurb: 'A courtier of the Sun King, wrapped in linen and gold and woken by the Host’s digging. Scarabs crawl out of its wrappings; its fists come down hard. It burns like old paper.',
   },
   /* -------------------------------------------------------------- named */
   'the-dune-tyrant': {

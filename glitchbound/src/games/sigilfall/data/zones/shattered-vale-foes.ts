@@ -1,17 +1,17 @@
 import type { EnemyDef, ItemDef } from '../types';
 
 /**
- * The enemies first met in the Shattered Vale. The Tear in the Vale bleeds Rift-light, and things
+ * The enemies first met in the Shattered Vale. The Tear in the Vale bleeds grieflight, and things
  * come through it: crystal mites that hatch from the shards and burst like dropped glass, golems the
  * shards grow into, stalkers of glass and shadow that flicker from place to place, wyrms that swim
- * through the air. The voidcallers are living men, paid in the Pale Herald's hollow gold to sing the
- * Rift open. Stats are at level 1 (see enemies.ts).
+ * through the air. The voidcallers are living men, paid in the Pale Herald's ash-gold to sing the
+ * Tear open. Stats are at level 1 (see enemies.ts).
  */
 export const SHATTERED_VALE_FOES: Record<string, EnemyDef> = {
   /* ----------------------------------------------------------- out of the shards */
   'rift-shardling': {
     id: 'rift-shardling',
-    name: 'Rift Shardling',
+    name: 'Grief Shardling',
     sprite: 'rift-shardling',
     ai: 'exploder',
     hp: 22,
@@ -28,7 +28,7 @@ export const SHATTERED_VALE_FOES: Record<string, EnemyDef> = {
     attackCd: 1,
     burst: { radius: 30, pool: 0, color: '#d88aff' },
     resist: { poison: 0.6, arcane: 0.3 },
-    blurb: 'A crystal mite hatched from a Rift shard. It scuttles at anything warm, swells with light and bursts like a dropped lamp. Kill it before it gets there.',
+    blurb: 'A crystal mite hatched from a shard of grief-glass. It scuttles at anything warm, swells with light and bursts like a dropped lamp. Kill it before it gets there.',
   },
   'shard-golem': {
     id: 'shard-golem',
@@ -55,7 +55,7 @@ export const SHATTERED_VALE_FOES: Record<string, EnemyDef> = {
   },
   'rift-stalker': {
     id: 'rift-stalker',
-    name: 'Rift Stalker',
+    name: 'Tear Stalker',
     sprite: 'rift-stalker',
     ai: 'melee',
     hp: 46,
@@ -77,7 +77,7 @@ export const SHATTERED_VALE_FOES: Record<string, EnemyDef> = {
   },
   'rift-wyrm': {
     id: 'rift-wyrm',
-    name: 'Rift Wyrm',
+    name: 'Tear Wyrm',
     sprite: 'rift-wyrm',
     ai: 'diver',
     hp: 46,
@@ -120,7 +120,7 @@ export const SHATTERED_VALE_FOES: Record<string, EnemyDef> = {
     slam: { radius: 28 },
     shot: { speed: 72, radius: 4, count: 1, spread: 0, color: '#ff3fd2', homing: 1.3 },
     summons: { enemy: 'rift-shardling', count: 2, max: 2, cd: 9 },
-    blurb: 'A living man in violet robes, paid in hollow gold to sing the Rift open. Every verse tears the ground under you or sings a shardling out of it. Silence him first.',
+    blurb: 'A living man in violet robes, paid in ash-gold to sing the Tear open. Every verse tears the ground under you or sings a shardling out of it. Silence him first.',
   },
   /* ---------------------------------------------------------------- the named */
   'the-glass-matron': {
@@ -228,7 +228,7 @@ export const SHATTERED_VALE_FOES: Record<string, EnemyDef> = {
     named: true,
     scale: 1.3,
     resist: { arcane: 0.5, poison: 0.5 },
-    blurb: 'A thing the Rift made out of everything that came through the Tear, standing in the wound and holding it open. It throws fans of Rift-lightning, tears the ground open under you, sings shardlings up out of the glass and steps through the air when you close in.',
+    blurb: 'A thing the Tear made out of everything that came through the Tear, standing in the wound and holding it open. It throws fans of grief-lightning, tears the ground open under you, sings shardlings up out of the glass and steps through the air when you close in.',
   },
 };
 
@@ -255,7 +255,7 @@ export const SHATTERED_VALE_ITEMS: ItemDef[] = [
           chance: 0.3,
           icd: 3,
           effect: { kind: 'explode', radius: 34, mul: 1.2, dmgType: 'arcane', status: { status: 'shock', dur: 3, power: 12 } },
-          text: 'Critical hits have a 30% chance to crack the Rift open under the target: a burst of arcane light hits everything near it and leaves it taking 12% more damage for 3 s (at most once every 3 s).',
+          text: 'Critical hits have a 30% chance to crack grieflight open under the target: a burst of arcane light hits everything near it and leaves it taking 12% more damage for 3 s (at most once every 3 s).',
         },
       },
     ],

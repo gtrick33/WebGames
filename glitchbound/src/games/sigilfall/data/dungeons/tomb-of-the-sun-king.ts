@@ -4,7 +4,7 @@ import type { DungeonModule } from '.';
 
 /*
  * The Tomb of the Sun King (levels 34-37): see WORLD.md. The great king of the old desert kingdom was
- * buried under the Sunscorch with the Sigil of the Sun; the Hollow Legion has dug down to him, and its
+ * buried under the Sunscorch with the Sigil of the Sun; the Ashen Host has dug down to him, and its
  * spells have woken the dead. Down the Sunken Stair from the Sunken Gate: the Hall of Offerings (its
  * vault behind a cracked wall), the Scarab Galleries, the Warden's Hall where the Sand Warden guards the
  * way on, the Embalmers' Rooms, the Trap Corridor, the Hall of the Sun-Disc, and at the top of the map
@@ -268,7 +268,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'The old kingdom set it at the king’s door with one order: let no one pass. It has stood there three thousand years, and the Legion did not pass either. Then the king woke, and it let him out.',
+    intro: 'The old kingdom set it at the king’s door with one order: let no one pass. It has stood there three thousand years, and the Host did not pass either. Then the king woke, and it let him out.',
   },
   'the-sun-king': {
     id: 'the-sun-king',
@@ -345,7 +345,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'He ruled the desert when it was green, and was buried with the sun itself on his brow. He has woken angry, and the Legion’s spells are not what keeps him standing. He was always this bright.',
+    intro: 'He ruled the desert when it was green, and was buried with the sun itself on his brow. He has woken angry, and the Host’s spells are not what keeps him standing. He was always this bright.',
   },
 };
 

@@ -1,4 +1,4 @@
-import type { NpcDef, QuestDef } from '../types';
+import type { NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
  * Lumen Glade's people and the Glimmerwood's quests (see WORLD.md). The Withered Queen's blight has come
@@ -8,6 +8,12 @@ import type { NpcDef, QuestDef } from '../types';
  * Old Root's reading of the blight and the Pale Pavilion to the Thorn Court, where the Prince names the
  * Withered Queen. Pip wants the moths' dust back, Old Root his old friend the Pale Hart, and Silvaine
  * her Moonwell. Main chain first.
+ *
+ * In the new story (STORY_BIBLE.md §3, Act III "The forest clans"): the prince swore himself to the Host
+ * to save his court from the blight, and the hero must choose. Old Root says end him (`the-thorn-court`);
+ * Silvaine asks for the chance to sing him back while the hero holds his knights off her
+ * (`silvaines-song`). Taking one closes the other; either way the clans decide (`the-clans-decide`), and
+ * the choice changes who rides in the Last March.
  */
 export const GLIMMERWOOD_QUESTS: QuestDef[] = [
   /* ---------------------------------------------------------- the way in */
@@ -101,8 +107,10 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
   {
     id: 'the-thorn-court',
     name: 'The Thorn Court',
-    giver: 'lady-silvaine',
-    text: 'The seal is her brother’s. Prince Thistlemourn, heir of the Summer Court, rode north in the spring to see why the trees were dying, and came back crowned in thorns. Now he holds court in the old Summer Hall, north-west of Lumen Glade, and calls it the Thorn Court, and every summons ends the same way: come and be made new. Silvaine asks you to end it. She asks you to be quick, for his sake.',
+    giver: 'old-root',
+    choice: 'thistlemourn',
+    offer: ['The prince is gone, small one. What sits in the Summer Hall wears his face and the Host’s crown. Silvaine will ask you to try to save him. Do not.', 'End it. Quickly, for his sake. (Taking this path closes Silvaine’s.)'],
+    text: 'The seal is Silvaine’s brother’s. Prince Thistlemourn, heir of the Summer Court, rode north in the spring to see why the trees were dying, and swore himself to the Ashen Host to save his court from the blight. Now he holds court in the old Summer Hall, north-west of Lumen Glade, and every summons ends the same way: come and be made new. Old Root says end it, and be quick, for his sake.',
     objective: { kind: 'kill', region: 'glimmerwood', count: 1, enemies: ['prince-thistlemourn'], label: 'Defeat Prince Thistlemourn at the Thorn Court' },
     after: ['the-thorn-seals'],
     zone: 'glimmerwood',
@@ -111,8 +119,38 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
       xp: 4400,
       gold: 1050,
       item: 'lumen-circlet',
-      text: 'As he falls the thorns let go of the prince, and for a moment he knows his sister’s name. He gives you another: the Withered Queen, who rules the dead Blightwood north of the wood and sent her blight south to make the courts her own. She keeps the Sigil of Thorns, he says, close as a heart. Silvaine gives you the circlet of Lumen Glade, and a light to carry north.',
+      text: 'As he falls the thorns let go of the prince, and for a moment he knows his sister’s name. He gives you another: the Withered Queen, who rules the dead Blightwood north of the wood and sent her blight south to make the courts her own. She keeps the Sigil of Thorns, he says, close as a heart. Silvaine gives you the circlet of Lumen Glade, and does not speak to you for a day.',
     },
+  },
+  {
+    id: 'silvaines-song',
+    name: 'Silvaine’s Song',
+    giver: 'lady-silvaine',
+    choice: 'thistlemourn',
+    offer: ['Old Root will tell you he is gone. Old Root has never had a brother.', 'There is a song our mother sang him, the oldest of the Summer songs. If I sing it in the Summer Hall, and his knights do not stop me, he may remember who he is. Will you hold them off me? (Taking this path closes Old Root’s.)'],
+    text: 'Lady Silvaine will leave her glade, once, and sing her brother’s name in the Summer Hall: the oldest of the Summer songs, the one their mother sang him. His knights will try to stop her. Hold them off her until the song is done, and Thistlemourn may come back to himself.',
+    objective: { kind: 'event', event: 'thorn-song', label: 'Hold the Thorn Court’s knights off Silvaine while she sings' },
+    after: ['the-thorn-seals'],
+    zone: 'glimmerwood',
+    level: 36,
+    reward: {
+      xp: 4400,
+      gold: 1050,
+      item: 'lumen-circlet',
+      text: 'The last note, and the thorns fall out of the prince’s crown one by one. He sits down on the floor of the Summer Hall and weeps like a boy. He names the Withered Queen, who sent the blight from the Blightwood and keeps the Sigil of Thorns close as a heart. Silvaine gives you the circlet of Lumen Glade with both hands.',
+    },
+  },
+  {
+    id: 'the-clans-decide',
+    name: 'The Clans Decide',
+    giver: 'lady-silvaine',
+    auto: true,
+    text: 'Whatever became of the prince, the forest clans have seen with their own eyes what the Host offers and what it costs. Silvaine has called them to Lumen Glade to decide whether they will march with the Regent. She wants you there.',
+    objective: { kind: 'talk', npc: 'lady-silvaine', label: 'Stand with Silvaine when the clans decide' },
+    after: ['the-thorn-court', 'silvaines-song'],
+    zone: 'glimmerwood',
+    level: 36,
+    reward: { xp: 1600, gold: 400, text: 'The clans will march. Thorn archers and dryads, when the Regent calls, and not before. The wood keeps its own time.' },
   },
   /* ------------------------------------------------------ Silvaine's well */
   {
@@ -233,13 +271,19 @@ export const GLIMMERWOOD_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'the-thorn-seals', state: 'active' }, lines: ['They carry summonses, sealed with a thorn. Bring me three. I will tell you whose seal it is once I have read what is under it.', 'I already know. I would like to be wrong a little longer.'] },
       {
         when: { quest: 'the-thorn-court', state: 'active' },
-        lines: ['The seal is my brother’s. Thistlemourn. He rode north in the spring to see why the trees were dying, and came home crowned in thorns.', 'He holds court in the old Summer Hall, north-west of here. Go. Be quick, for his sake. Be careful, for yours.'],
+        lines: ['Old Root has told you to end him. I know. I asked him to; I could not ask it myself.', 'Go. Be quick, for his sake. Be careful, for yours.'],
       },
+      { when: { quest: 'silvaines-song', state: 'active' }, lines: ['The Summer Hall. I will sing, and I will not stop, whatever comes through the doors. That part is yours.'] },
+      {
+        when: { quest: 'the-clans-decide', state: 'active' },
+        lines: ['The clans are here. Every one, even the Dew Court, who have not spoken to us in a century.', 'They want to hear it from you. Tell them what the Host offered my brother, and what it cost.'],
+      },
+      { when: { quest: 'silvaines-song', state: 'taken' }, lines: ['He is sleeping. Properly sleeping, for the first time since spring. He talks in it, about our mother.', 'You held the door while I sang. Lumen Glade will not forget. Neither will I.'] },
       { when: { quest: 'the-moonwell', state: 'active' }, lines: ['My light comes from the Moonwell, north-east of the glade, and it dims by a candle a night.', 'I may not leave the glade while it still shines. Go and look for me.'] },
       { when: { quest: 'moonwater', state: 'active' }, lines: ['Choked with blight. My handmaids can clean it, if nothing keeps fouling it. Clear the dryads and moths around it.'] },
       {
-        when: { quest: 'the-thorn-court', state: 'done' },
-        lines: ['He knew me at the end. You gave me that. I will not forget it.', 'The Withered Queen, in the Blightwood. When you go north for her sigil, the light of Lumen Glade goes with you.'],
+        when: { quest: 'the-thorn-court', state: 'taken' },
+        lines: ['He knew me at the end. You gave me that. I will not forget it, and I will not forgive it, and both are true.', 'The Withered Queen, in the Blightwood. When you go north for her sigil, the light of Lumen Glade goes with you.'],
       },
       { lines: ['Welcome to Lumen Glade. Mind the mushrooms: the glowing ones are lamps, the others are guests.', 'The wood was all like this once. It will be again, if I have any say.'] },
     ],
@@ -293,5 +337,46 @@ export const GLIMMERWOOD_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'rest-for-the-hart', state: 'done' }, lines: ['He is at rest, then. Good. I will keep his pool clear. Somebody should still come to it.'] },
       { lines: ['The Dew & Honey. Dew in the morning, honey at night, potions all day. Sit. Take your time. I take mine.', 'This glade grew up around me. I did not mind.'] },
     ],
+  },
+  // the prince, if his sister's song brought him back (silvaines-song)
+  thistlemourn: {
+    id: 'thistlemourn',
+    name: 'Prince Thistlemourn',
+    title: 'Heir of the Summer Court, himself again',
+    sprite: 'villager',
+    talk: [
+      {
+        lines: [
+          'It offered me my court back, green and whole, forever. All I had to do was give it the grief of everyone who loved us. It seemed a small price. Grief always does, to the one who isn’t feeling it.',
+          'When the Regent marches, I will ride at the back, where the knights I led into the thorns can see me. I owe them that much looking at.',
+        ],
+      },
+    ],
+  },
+};
+
+/** Silvaine sings her brother back in the Summer Hall (one answer to the Thistlemourn choice). */
+export const GLIMMERWOOD_EVENTS: Record<string, StoryEventDef> = {
+  'thorn-song': {
+    id: 'thorn-song',
+    region: 'glimmerwood',
+    kind: 'defend',
+    at: 'thorn-hall',
+    radius: 10,
+    level: 36,
+    allies: ['orren'],
+    ward: { pet: 'silvaine-singing', at: 'thorn-hall', name: 'Lady Silvaine' },
+    banner: 'The Song',
+    start: [
+      { who: 'silvaine-singing', text: 'Thistle. Little Thistle. Do you remember the river?' },
+      { who: 'orren', text: 'Keep singing, my lady. We have the doors.' },
+    ],
+    waves: [
+      { enemies: ['fey-knight', 'thornling', 'thornling', 'thorn-archer'], from: ['thorn-hall-n', 'thorn-hall-w'] },
+      { enemies: ['fey-knight', 'fey-knight', 'blighted-dryad', 'thorn-archer'], from: ['thorn-hall-e', 'thorn-hall-n'], barks: [{ who: 'silvaine-singing', text: 'Mother sang it on the porch, when the moths came out. Do you remember?' }] },
+      { enemies: ['fey-knight', 'fey-knight', 'thorn-archer', 'thorn-archer', 'blighted-dryad', 'thornling'], from: ['thorn-hall-w', 'thorn-hall-e', 'thorn-hall-n'], barks: [{ who: 'orren', text: 'The thorns are loosening — I can see it in his crown!' }] },
+    ],
+    end: [{ who: 'silvaine-singing', text: 'Thistle. There you are. There you are.' }],
+    retry: [{ who: 'orren', text: 'She’s down — help her up — the song isn’t over until she says!' }],
   },
 };

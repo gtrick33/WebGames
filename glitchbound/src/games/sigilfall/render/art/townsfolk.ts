@@ -687,3 +687,6 @@ export const TOWNSFOLK_LOOKS: Record<string, HeroLook> = {
     cape: '#c9473b',
   },
 };
+
+// Mara Venn as the relief's captain at Highwall (Act IV): the same woman, the same mail
+TOWNSFOLK_LOOKS['captain-mara'] = TOWNSFOLK_LOOKS['mara-venn']!;

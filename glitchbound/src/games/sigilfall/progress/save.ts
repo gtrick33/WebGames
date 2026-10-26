@@ -28,7 +28,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -230,7 +230,9 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   for (const [id, entry] of Object.entries(q)) {
     const e = obj(entry);
     if (!QUEST_DEFS[id] || !e) continue;
-    c.quests[id] = { state: e.state === 'done' ? 'done' : e.state === 'offered' ? 'offered' : 'active', n: int(e.n, 0, 1e6, 0) };
+    // a path not taken is kept as done with n −1 (progress/character.ts, declined)
+    const notTaken = e.state === 'done' && e.n === -1;
+    c.quests[id] = { state: e.state === 'done' ? 'done' : e.state === 'offered' ? 'offered' : 'active', n: notTaken ? -1 : int(e.n, 0, 1e6, 0) };
   }
   if (Array.isArray(o.unlocked)) for (const r of o.unlocked) if (typeof r === 'string' && r in REGIONS && !c.unlocked.includes(r as RegionId)) c.unlocked.push(r as RegionId);
   // quests of the zones the hero has been to start once those are known
@@ -336,6 +338,18 @@ export function migrate(raw: unknown): SaveFile | null {
       if (quests) playedBefore(quests, ACT_TWO_BEATS);
     }
     o.v = 5;
+  }
+  // version 6: Act III's choices and its low point. A hero who already ended Thistlemourn took that answer
+  // (Silvaine's song is the path not taken); a hero past the Tear met the Pale Herald there
+  if (o.v === 5) {
+    for (const h of Array.isArray(o.heroes) ? o.heroes : []) {
+      const quests = obj(obj(h)?.quests);
+      if (!quests) continue;
+      playedBefore(quests, ['the-heralds-ambush', 'mara-commands', 'cael-the-sortie']);
+      const thorn = obj(quests['the-thorn-court'])?.state;
+      if ((thorn === 'active' || thorn === 'done') && !quests['silvaines-song']) quests['silvaines-song'] = { state: 'done', n: -1 };
+    }
+    o.v = 6;
   }
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];

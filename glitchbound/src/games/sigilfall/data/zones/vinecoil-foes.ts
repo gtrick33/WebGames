@@ -191,7 +191,7 @@ export const VINECOIL_FOES: Record<string, EnemyDef> = {
     named: true,
     scale: 1.3,
     resist: { poison: 0.75 },
-    blurb: 'High queen of the serpent cult, who sold the Hollow King the venom for his plague. She spits a fan of it, opens pools of it under your feet, calls her vipers out of the stones and slides away when you reach her.',
+    blurb: 'High queen of the serpent cult, who sold the Hallow King the venom for his plague. She spits a fan of it, opens pools of it under your feet, calls her vipers out of the stones and slides away when you reach her.',
   },
 };
 

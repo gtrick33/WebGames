@@ -220,7 +220,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
   },
   'rift-acolyte': {
     id: 'rift-acolyte',
-    name: 'Rift Acolyte',
+    name: 'Grieflight Acolyte',
     sprite: 'acolyte',
     ai: 'caster',
     hp: 42,

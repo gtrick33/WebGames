@@ -1,4 +1,4 @@
-import { after, until } from '../cond';
+import { after, all, not, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -11,6 +11,9 @@ import { wildRegion } from '../zonegen';
  * and the dead gather there until the hero holds the stones while Alsa's candles burn; then they are lit
  * and warm. Once the Grey Lady is laid to rest the barrows are quiet, with lanterns on the mounds.
  */
+/** Fernstead in the Host's hands: from the night of the Tear until it is retaken. */
+const FALLEN = all(after('the-heralds-ambush'), until('fern-retaken'));
+
 export const BRACKENRIDGE = wildRegion(
   {
     id: 'brackenridge',
@@ -23,6 +26,8 @@ export const BRACKENRIDGE = wildRegion(
     safe: false,
     music: 'plains',
     blurb: 'Golden hills, kobold diggings and barrows that should have stayed shut. Fernstead keeps watch.',
+    // the night of the Tear (Act III) the Host takes Fernstead, and holds it until the hero takes it back
+    states: [{ id: 'fernstead-fallen', when: FALLEN, burning: true }],
   },
   {
     w: 140,
@@ -34,7 +39,15 @@ export const BRACKENRIDGE = wildRegion(
     forest: 0.3,
     scatter: { trees: 2.2, bushes: 1.4, rocks: 1, flowers: 5 },
     water: { kind: 'river', from: 'n', to: 's' },
-    hubs: [{ at: [0.72, 0.42], npcs: ['warden-hollis', 'mother-alsa', 'pip-tanner'], houses: 5 }],
+    hubs: [
+      {
+        at: [0.72, 0.42],
+        npcs: ['warden-hollis', 'mother-alsa', 'pip-tanner'],
+        houses: 5,
+        // while Fernstead is the Host's, its people are in Briarhollow's camp
+        when: { 'warden-hollis': not(FALLEN), 'mother-alsa': not(FALLEN), 'pip-tanner': not(FALLEN) },
+      },
+    ],
     exits: [
       { side: 'e', at: 0.45, to: 'briarhollow', label: 'East road to Briarhollow' },
       { side: 's', at: 0.4, to: 'greyfen', label: 'South path to Greyfen', minLevel: 11 },
@@ -55,6 +68,17 @@ export const BRACKENRIDGE = wildRegion(
     ],
     wildCount: 48,
     story: [
+      // Fernstead fallen: roofs burning, the Host's riders in the square; retaken, the rangers' banners over it
+      ...[0, 1, 2, 3, 4].map((i) => ({ near: `house:${i}`, marker: { kind: 'fire' as const, size: 2 + (i % 2) } })),
+      { near: 'hub', marker: { kind: 'place', id: 'fern-square' } },
+      { near: 'hub', dy: -12, marker: { kind: 'place', id: 'fern-n' } },
+      { near: 'hub', dx: -14, marker: { kind: 'place', id: 'fern-w' } },
+      { near: 'hub', dx: 14, dy: 2, marker: { kind: 'place', id: 'fern-e' } },
+      { near: 'hub', dx: -3, dy: 2, marker: { kind: 'pack', enemies: ['legion-soldier', 'legion-soldier', 'legion-crossbowman'], level: 40 }, when: FALLEN },
+      { near: 'hub', dx: 4, dy: -2, marker: { kind: 'pack', enemies: ['legion-soldier', 'ash-raider', 'legion-crossbowman'], level: 40 }, when: FALLEN },
+      { near: 'hub', dx: 1, dy: -4, marker: { kind: 'prop', prop: 'skull-banner' }, when: FALLEN },
+      { near: 'hub', dx: -2, dy: -4, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('fern-retaken') },
+      { near: 'hub', dx: 2, dy: -4, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('fern-retaken') },
       // the Harvest Stones: grieflight in the cracks and bones in the grass, until they are held and lit
       { near: 'harvest-stones', marker: { kind: 'place', id: 'fern-stones' } },
       // the stones themselves, in their ring

@@ -4,8 +4,8 @@ import type { DungeonModule } from '.';
 
 /*
  * The Barrow of Kings (levels 28-31): the great burial mound of the old kings under the Ashen Barrows,
- * where Sir Corvane the Fallen, the Hollow King's first death knight, is raising the kings and their
- * courts to march for the Legion. From the mound's mouth: the Processional Way, the Halls of the
+ * where Sir Corvane the Fallen, the Hallow King's first death knight, is raising the kings and their
+ * courts to march for the Host. From the mound's mouth: the Processional Way, the Halls of the
  * Honored Dead, the Treasury (its vault behind a cracked wall), King Hrodric's Court, the Ossuary,
  * the Oathsworn Gallery, and Corvane's Chapel of Black Candles. The rooms seal while you fight in them
  * (the letters below are their floors); bones on the floor (y) are graves, and in the chapel Corvane's
@@ -270,7 +270,7 @@ const bosses: Record<string, BossDef> = {
   'sir-corvane': {
     id: 'sir-corvane',
     name: 'Sir Corvane the Fallen',
-    title: 'First Death Knight of the Hollow King',
+    title: 'First Death Knight of the Hallow King',
     sprite: 'sir-corvane',
     hp: 7380,
     dmg: 33,
@@ -462,7 +462,7 @@ const items: ItemDef[] = [
         },
       },
     ],
-    lore: 'A Sigil-warden’s mail, gone black at the edges. Corvane wore it to the Hollow King’s side and never took it off.',
+    lore: 'A Sigil-warden’s mail, gone black at the edges. Corvane wore it to the Hallow King’s side and never took it off.',
     minLevel: 29,
     special: true,
   },

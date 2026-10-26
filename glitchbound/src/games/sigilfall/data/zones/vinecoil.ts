@@ -5,7 +5,7 @@ import { wildRegion } from '../zonegen';
  * brown river. Vinehold is a stockade town of loggers and wardens on the west side, where the roads
  * come in. Panthers hunt the green, blood mosquitoes breed in the Mire Pools and the stranglers root
  * in their grove, and the serpent cult keeps temples older than any kingdom: the Serpent Steps east
- * of town, and the Coiled Temple in the far east, where the cult's high queen sold the Hollow King
+ * of town, and the Coiled Temple in the far east, where the cult's high queen sold the Hallow King
  * the venom he brewed into his plague.
  */
 export const VINECOIL = wildRegion(

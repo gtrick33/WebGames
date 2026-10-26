@@ -136,7 +136,7 @@ export const ITEMS: ItemDef[] = [
         proc: { id: 'inferno', on: 'kill', dmgType: 'fire', chance: 1, icd: 0.6, effect: { kind: 'explode', radius: 36, mul: 0.6, dmgType: 'fire' }, text: 'Enemies killed by fire explode, burning everything around them (at most once every 0.6 s).' },
       },
     ],
-    lore: 'Pulled from the Rift still beating.',
+    lore: 'Pulled from the Tear still beating.',
     minLevel: 6,
     special: true,
   },
@@ -430,7 +430,7 @@ export const ITEMS: ItemDef[] = [
   },
   {
     id: 'crown-of-the-hollow-king',
-    name: 'Crown of the Hollow King',
+    name: 'Crown of the Hallow King',
     slot: 'head',
     rarity: 'legendary',
     icon: 'crown',
@@ -1065,4 +1065,4 @@ export const STAT_WORD: Record<StatKey, string> = {
 };
 
 /** Suffixes for rare generated gear. */
-export const RARE_SUFFIX = ['of the Rift', 'of Embers', 'of the Grove', 'of Dusk', 'of the Wolf', 'of Echoes', 'of the Deep', 'of Dawn', 'of Storms', 'of the Hollow'];
+export const RARE_SUFFIX = ['of the Tear', 'of Embers', 'of the Grove', 'of Dusk', 'of the Wolf', 'of Echoes', 'of the Deep', 'of Dawn', 'of Storms', 'of the Ash'];

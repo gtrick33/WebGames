@@ -1,7 +1,7 @@
 import { wildRegion } from '../zonegen';
 
 /**
- * The Pale Reach (57-60): the Hollow King's own land, a frozen waste of grey snow under a violet sky,
+ * The Pale Reach (57-60): the Hallow King's own land, a frozen waste of grey snow under a violet sky,
  * where nothing living grows and the dead stand in ranks waiting for their master's word. Commander
  * Aldric's vanguard holds Dawn's Rest, a ruined waystation in the south. Duskspire, Vaelor's citadel,
  * rises in the north; its last door opens only for one who carries all seven sigils.
@@ -17,7 +17,7 @@ export const PALE_REACH = wildRegion(
     dark: false,
     safe: false,
     music: 'crypt',
-    blurb: 'The Hollow King’s frozen land, where the dead stand in ranks and Duskspire rises in the north.',
+    blurb: 'The Hallow King’s frozen land, where the dead stand in ranks and Duskspire rises in the north.',
   },
   {
     w: 160,

@@ -1,10 +1,10 @@
-import type { NpcDef, QuestDef } from '../types';
+import type { NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
- * The relief camp's people and the quests of Highwall March (see WORLD.md). General Morvain's Hollow
- * Legion has Highwall under siege, and Lord-Commander Varn holds the camp outside its walls with what
+ * The relief camp's people and the quests of Highwall March (see WORLD.md). General Morvain's half of the
+ * Ashen Host has Highwall under siege, and Lord-Commander Varn holds the camp outside its walls with what
  * is left of the field army. The main chain runs from burned Ashby through the Bone Batteries and the
- * Legion's trenches to the Breach, and through it into the besieged city (the Siege of Highwall),
+ * Host's trenches to the Breach, and through it into the besieged city (the Siege of Highwall),
  * where the Siege-Breaker batters the inner ward and Morvain commands. Quartermaster Bess wants bolts
  * and grain; Chaplain Ottis wants the names of the dead, and the knights in the chapel graves laid
  * back down. Main chain first.
@@ -15,12 +15,24 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'the-wall-burns',
     name: 'The Wall Burns',
     giver: 'regent-elowen',
-    text: 'The Regent’s rider found you on the road out of Sablewind with a letter in black wax. Highwall, the great fortress that guards the road north into the Hollow King’s lands, has been under siege for a season, and Quartermaster Vane’s wagons were what kept the besiegers fed. General Morvain’s Legion is camped around its walls. Lord-Commander Varn holds the relief camp in Highwall March with what is left of the field army. Take the west road out of Sablewind Canyon and report to him.',
+    text: 'The Regent’s rider found you on the road out of Sablewind with a letter in black wax. Highwall, the great fortress that guards the road north into the Hallow King’s lands, has been under siege for a season, and Quartermaster Vane’s wagons were what kept the besiegers fed. General Morvain’s half of the Ashen Host is camped around its walls. Lord-Commander Varn holds the relief camp in Highwall March with what is left of the field army. Take the west road out of Sablewind Canyon and report to him.',
     objective: { kind: 'talk', npc: 'lord-commander-varn', label: 'Report to Lord-Commander Varn in the relief camp' },
     after: ['the-quartermasters-end'],
     level: 40,
     reward: { xp: 1500, gold: 450 },
+  },  {
+    id: 'mara-commands',
+    name: 'The Captain of the Relief',
+    giver: 'lord-commander-varn',
+    auto: true,
+    text: 'The Regent has sent the relief its commander: not a lord, not a general, but the village guard of Briarhollow. Mara Venn arrived at the camp an hour after you, looked at Varn’s maps for a long time, and moved every tent. Varn is furious and agrees with all of it. Go and see her.',
+    objective: { kind: 'talk', npc: 'captain-mara', label: 'Report to Mara Venn at the relief camp' },
+    after: ['the-wall-burns'],
+    zone: 'highwall',
+    level: 41,
+    reward: { xp: 1400, gold: 320, text: 'Mara has a plan, and it has you in the middle of it. It also has Cael Varrow in front, leading the riders, which Cael says is the first sensible thing anyone has asked of him in ten years.' },
   },
+
   /* ------------------------------------------------------- the siege */
   {
     id: 'ashes-of-ashby',
@@ -36,7 +48,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'the-ashby-ghouls',
     name: 'The Ashby Ghouls',
     giver: 'lord-commander-varn',
-    text: 'Nobody alive. Ashby’s dead got up hungry, and the Legion lets them wander: every night a few more come scratching at the camp’s stakes. Varn would like the camp to get some sleep before the next assault. Put down the Ashby ghouls wherever they roam, from the ruins south-west of camp to the river.',
+    text: 'Nobody alive. Ashby’s dead got up hungry, and the Host lets them wander: every night a few more come scratching at the camp’s stakes. Varn would like the camp to get some sleep before the next assault. Put down the Ashby ghouls wherever they roam, from the ruins south-west of camp to the river.',
     objective: { kind: 'kill', region: 'highwall', count: 14, enemies: ['ghoul-swarm'], label: 'Put down Ashby ghouls' },
     after: ['ashes-of-ashby'],
     zone: 'highwall',
@@ -47,7 +59,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'stones-against-the-wall',
     name: 'Stones Against the Wall',
     giver: 'lord-commander-varn',
-    text: 'Day and night the bone catapults throw stones at Highwall’s walls, and some nights they throw worse than stones. The engines squat at the Bone Batteries west of camp and along the Legion lines beyond, and nobody crews them, which is the most unsettling thing about them. Break five. Varn says they burn well, and he would know.',
+    text: 'Day and night the bone catapults throw stones at Highwall’s walls, and some nights they throw worse than stones. The engines squat at the Bone Batteries west of camp and along the Host lines beyond, and nobody crews them, which is the most unsettling thing about them. Break five. Varn says they burn well, and he would know.',
     objective: { kind: 'kill', region: 'highwall', count: 5, enemies: ['bone-catapult'], label: 'Break bone catapults' },
     after: ['the-ashby-ghouls'],
     zone: 'highwall',
@@ -69,20 +81,32 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'captain-hollowbane',
     name: 'Captain Hollowbane',
     giver: 'lord-commander-varn',
-    text: 'The orders are short: “When the Siege-Breaker has opened the inner ward, the Legion goes in. Hollowbane holds the trench.” Captain Hollowbane commands the Legion lines in the far west of the March, with crossbowmen at his call and a halberd he swings like a scythe. As long as he holds the trench, nobody from the camp reaches the Breach. Take the trench.',
-    objective: { kind: 'kill', region: 'highwall', count: 1, enemies: ['captain-hollowbane'], label: 'Defeat Captain Hollowbane at the Legion Lines' },
+    text: 'The orders are short: “When the Siege-Breaker has opened the inner ward, the Host goes in. Hollowbane holds the trench.” Captain Hollowbane commands the Host lines in the far west of the March, with crossbowmen at his call and a halberd he swings like a scythe. As long as he holds the trench, nobody from the camp reaches the Breach. Take the trench.',
+    objective: { kind: 'kill', region: 'highwall', count: 1, enemies: ['captain-hollowbane'], label: 'Defeat Captain Hollowbane at the Host Lines' },
     after: ['the-generals-hand'],
     zone: 'highwall',
     level: 42,
     reward: { xp: 3000, gold: 700, item: { rarity: 'rare' } },
+  },  {
+    id: 'cael-the-sortie',
+    name: 'The Sortie',
+    giver: 'captain-mara',
+    auto: true,
+    text: 'Hollowbane’s trench is broken, and Mara will not give the Host a night to mend it. Cael leads the riders out of the camp and straight at the Host lines before the Breach; Hearthstead’s riders and Fernstead’s rangers go with him; you go in at his side. Open the way to the wall.',
+    objective: { kind: 'event', event: 'highwall-sortie', label: 'Ride out with Cael and break the lines before the Breach' },
+    after: ['captain-hollowbane'],
+    zone: 'highwall',
+    level: 42,
+    reward: { xp: 2800, gold: 600, item: { rarity: 'rare' }, text: 'The Host’s lines fold like wet paper. Cael rides back through the camp with his visor up, and the old soldiers of the field army stand and bang their shields as he goes by. He doesn’t know what to do with his face.' },
   },
+
   {
     id: 'the-breach',
     name: 'The Breach',
     giver: 'lord-commander-varn',
-    text: 'With Hollowbane down the trench is in disorder, and for the first time in a season there is a way to the walls. The Breach is the hole the Legion smashed in Highwall’s outer wall, north-west of the camp, and through it the Legion pours into the city. Varn means to go in by the same door. Find it, and find out what is guarding it.',
+    text: 'With Hollowbane down and the lines broken by Cael’s riders, for the first time in a season there is a way to the walls. The Breach is the hole the Host smashed in Highwall’s outer wall, north-west of the camp, and through it the Host pours into the city. Varn means to go in by the same door. Find it, and find out what is guarding it.',
     objective: { kind: 'explore', spot: 'the-breach', label: 'Find the Breach in Highwall’s walls' },
-    after: ['captain-hollowbane'],
+    after: ['cael-the-sortie'],
     zone: 'highwall',
     level: 42,
     reward: { xp: 1900, gold: 520 },
@@ -102,7 +126,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'general-morvain',
     name: 'General Morvain',
     giver: 'lord-commander-varn',
-    text: 'The inner ward holds, and its garrison has seen a friendly face for the first time in a season. General Morvain, the Hollow King’s lieutenant, who has commanded this siege from the start, has come down from the walls himself to finish it. Find him in the ruins of Highwall and end the siege. Varn will be right behind you, with every soldier who can still stand.',
+    text: 'The inner ward holds, and its garrison has seen a friendly face for the first time in a season. General Morvain, the Hallow King’s lieutenant, who has commanded this siege from the start, has come down from the walls himself to finish it. Find him in the ruins of Highwall and end the siege. Varn will be right behind you, with every soldier who can still stand.',
     objective: { kind: 'boss', boss: 'general-morvain', label: 'Defeat General Morvain in besieged Highwall' },
     after: ['the-siege-breaker'],
     zone: 'highwall',
@@ -111,7 +135,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
       xp: 6600,
       gold: 1600,
       item: 'highwall-greathelm',
-      text: 'Morvain falls in the rubble of the inner ward. The garrison sallies out to meet Varn’s column at the Breach, and the Legion outside the walls breaks and runs north. Varn takes off his old greathelm and gives it to you. “The walls are yours,” he says. “I’ll want it back when you’re done with them.”',
+      text: 'Morvain falls in the rubble of the inner ward. The garrison sallies out to meet Varn’s column at the Breach, and the Host outside the walls breaks and runs north. Varn takes off his old greathelm and gives it to you. “The walls are yours,” he says. “I’ll want it back when you’re done with them.”',
     },
   },
   /* -------------------------------------------- Quartermaster Bess's stores */
@@ -119,8 +143,8 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'bolts-for-the-wall',
     name: 'Bolts for the Wall',
     giver: 'quartermaster-bess',
-    text: 'The camp’s crossbows are down to their last bolts and the next wagon from the south is a rumour. Quartermaster Bess has found a supplier: the Legion’s crossbowmen carry bolts of the same gauge, which she has checked, twice, with a ruler. Six bundles from the Legion crossbowmen on the March, please.',
-    objective: { kind: 'loot', region: 'highwall', item: 'Bundle of Bolts', from: ['legion-crossbowman'], chance: 0.4, count: 6, label: 'Take Bundles of Bolts from Legion crossbowmen' },
+    text: 'The camp’s crossbows are down to their last bolts and the next wagon from the south is a rumour. Quartermaster Bess has found a supplier: the Host’s crossbowmen carry bolts of the same gauge, which she has checked, twice, with a ruler. Six bundles from the Host crossbowmen on the March, please.',
+    objective: { kind: 'loot', region: 'highwall', item: 'Bundle of Bolts', from: ['legion-crossbowman'], chance: 0.4, count: 6, label: 'Take Bundles of Bolts from Ashen crossbowmen' },
     after: ['the-wall-burns'],
     zone: 'highwall',
     level: 41,
@@ -130,7 +154,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'the-trampled-fields',
     name: 'The Trampled Fields',
     giver: 'quartermaster-bess',
-    text: 'Bolts are half the battle. The other half is bread. The camp ate from the farms north-west of here, the Trampled Fields, until the Legion trampled them. Bess wants to know whether the old granary there still stands, and whether there is anything in it besides rats. Go and look.',
+    text: 'Bolts are half the battle. The other half is bread. The camp ate from the farms north-west of here, the Trampled Fields, until the Host trampled them. Bess wants to know whether the old granary there still stands, and whether there is anything in it besides rats. Go and look.',
     objective: { kind: 'explore', spot: 'trampled-fields', label: 'Look over the Trampled Fields' },
     after: ['bolts-for-the-wall'],
     zone: 'highwall',
@@ -141,8 +165,8 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'fields-of-fire',
     name: 'Fields of Fire',
     giver: 'quartermaster-bess',
-    text: 'The granary stands, the grain is dry, and the Legion has put crossbowmen in the furrows to shoot anyone who comes for it. Bess would like her wagons to come back with grain in them instead of bolts. Clear the Legion out of the Trampled Fields and the country around: crossbowmen and soldiers both.',
-    objective: { kind: 'kill', region: 'highwall', count: 10, enemies: ['legion-crossbowman', 'legion-soldier'], label: 'Defeat Legion crossbowmen and soldiers' },
+    text: 'The granary stands, the grain is dry, and the Host has put crossbowmen in the furrows to shoot anyone who comes for it. Bess would like her wagons to come back with grain in them instead of bolts. Clear the Host out of the Trampled Fields and the country around: crossbowmen and soldiers both.',
+    objective: { kind: 'kill', region: 'highwall', count: 10, enemies: ['legion-crossbowman', 'legion-soldier'], label: 'Defeat Ashen crossbowmen and soldiers' },
     after: ['the-trampled-fields'],
     zone: 'highwall',
     level: 42,
@@ -153,8 +177,8 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     id: 'names-of-the-fallen',
     name: 'Names of the Fallen',
     giver: 'chaplain-ottis',
-    text: 'Under the rot, the Legion’s soldiers wear Highwall’s own tabards: they are the garrison’s dead, raised to besiege their own city. Every soldier of Highwall carried a tin tag with their name on it. Chaplain Ottis wants the tags back, so the families can stop waiting. Six, from the Legion soldiers anywhere on the March.',
-    objective: { kind: 'loot', region: 'highwall', item: 'Garrison Tag', from: ['legion-soldier'], chance: 0.35, count: 6, label: 'Recover Garrison Tags from Legion soldiers' },
+    text: 'Under the rot, the Host’s soldiers wear Highwall’s own tabards: they are the garrison’s dead, raised to besiege their own city. Every soldier of Highwall carried a tin tag with their name on it. Chaplain Ottis wants the tags back, so the families can stop waiting. Six, from the Host soldiers anywhere on the March.',
+    objective: { kind: 'loot', region: 'highwall', item: 'Garrison Tag', from: ['legion-soldier'], chance: 0.35, count: 6, label: 'Recover Garrison Tags from Ashen soldiers' },
     after: ['the-wall-burns'],
     zone: 'highwall',
     level: 41,
@@ -201,7 +225,7 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-ashby-ghouls', state: 'active' },
-        lines: ['Ghouls. Of course. The Legion burns a village and gets a regiment for free.', 'They come scratching at the stakes every night. Put them down. My lads haven’t slept in a week, and I’d like them to be awake for the next assault.'],
+        lines: ['Ghouls. Of course. The Host burns a village and gets a regiment for free.', 'They come scratching at the stakes every night. Put them down. My lads haven’t slept in a week, and I’d like them to be awake for the next assault.'],
       },
       {
         when: { quest: 'stones-against-the-wall', state: 'active' },
@@ -213,7 +237,7 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'captain-hollowbane', state: 'active' },
-        lines: ['“When the Siege-Breaker has opened the inner ward, the Legion goes in. Hollowbane holds the trench.” Short. Soldierly. I almost like him.', 'Hollowbane holds the Legion lines in the far west. As long as he does, we don’t reach the Breach. Take the trench.'],
+        lines: ['“When the Siege-Breaker has opened the inner ward, the Host goes in. Hollowbane holds the trench.” Short. Soldierly. I almost like him.', 'Hollowbane holds the Host lines in the far west. As long as he does, we don’t reach the Breach. Take the trench.'],
       },
       {
         when: { quest: 'the-breach', state: 'active' },
@@ -252,11 +276,11 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'bolts-for-the-wall', state: 'active' },
-        lines: ['We’re down to the last bolts, and the next wagon from the south is a rumour with a wheel off.', 'The Legion’s crossbowmen carry the same gauge. I’ve checked. Twice. With a ruler. Six bundles, please, and don’t bend them.'],
+        lines: ['We’re down to the last bolts, and the next wagon from the south is a rumour with a wheel off.', 'The Host’s crossbowmen carry the same gauge. I’ve checked. Twice. With a ruler. Six bundles, please, and don’t bend them.'],
       },
       {
         when: { quest: 'the-trampled-fields', state: 'active' },
-        lines: ['Bolts are half a war. The other half is bread.', 'We ate from the farms north-west of here, the Trampled Fields, until the Legion trampled them. See if the old granary’s still standing, and if anything’s in it but rats.'],
+        lines: ['Bolts are half a war. The other half is bread.', 'We ate from the farms north-west of here, the Trampled Fields, until the Host trampled them. See if the old granary’s still standing, and if anything’s in it but rats.'],
       },
       {
         when: { quest: 'fields-of-fire', state: 'active' },
@@ -276,7 +300,7 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'names-of-the-fallen', state: 'active' },
-        lines: ['Have you looked at them, the Legion’s soldiers? Under the rot they wear our tabards. They’re Highwall’s dead, raised to besiege their own homes.', 'Every soldier of the garrison wore a tin tag with their name on it. Bring me the tags, and the families can stop waiting. Six, to start.'],
+        lines: ['Have you looked at them, the Host’s soldiers? Under the rot they wear our tabards. They’re Highwall’s dead, raised to besiege their own homes.', 'Every soldier of the garrison wore a tin tag with their name on it. Bring me the tags, and the families can stop waiting. Six, to start.'],
       },
       {
         when: { quest: 'the-knights-chapel', state: 'active' },
@@ -290,5 +314,49 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'last-rites', state: 'done' }, lines: ['I rang the chapel bell myself. They heard it in the camp. Some of them took off their helmets.'] },
       { lines: ['The Field Hospital. Beds, bandages, potions, and prayers, in that order.', 'Potions are on the table by the door. Take what you need. Pay what you can. Come back on your feet.'] },
     ],
+  },
+  // Mara Venn, battlefield captain of the coalition (STORY_BIBLE.md §2), commanding the relief
+  'captain-mara': {
+    id: 'captain-mara',
+    name: 'Mara Venn',
+    title: 'Captain of the relief',
+    sprite: 'villager',
+    talk: [
+      {
+        when: { quest: 'mara-commands', state: 'active' },
+        lines: [
+          'Don’t look at me like that. I didn’t ask for it. The Regent said she wanted someone who shows up. I show up.',
+          'Varn’s army has been sitting in the mud for a season waiting for the wall to fall. It won’t. We’re going to go and get it.',
+        ],
+      },
+      { when: { quest: 'cael-the-sortie', state: 'active' }, lines: ['Cael leads. You go in at his side. I’ll be on the ridge watching the whole thing go wrong in a slightly different way to how I planned.', 'Open me a way to the Breach. That’s all I need.'] },
+      { when: { quest: 'general-morvain', state: 'done' }, lines: ['One gate. One gate of three, and half the field army in the infirmary. The other two will be worse.', 'I keep thinking about Briarhollow’s gate. It was so small. I thought it was the whole world.'] },
+      { lines: ['Shields together. Weight forward. Never step back first. Cael taught me that. Don’t tell him.', 'The wall stands because people keep standing on it. That’s all a wall is.'] },
+    ],
+  },
+};
+
+/** Cael's sortie before the Breach (Act IV, the first Gate). */
+export const HIGHWALL_EVENTS: Record<string, StoryEventDef> = {
+  'highwall-sortie': {
+    id: 'highwall-sortie',
+    region: 'highwall',
+    kind: 'raid',
+    at: 'sortie-ground',
+    radius: 12,
+    level: 43,
+    allies: ['cael', 'hearth-rider', 'hearth-rider', 'fern-ranger', 'fern-ranger'],
+    banner: 'The Sortie!',
+    start: [
+      { who: 'cael', text: 'Ninefold! For the Ninefold Watch, and for Corvane! With me!' },
+      { who: 'hearth-rider', text: 'Hearthstead rides! Go, go, go!' },
+    ],
+    waves: [
+      { enemies: ['legion-soldier', 'legion-soldier', 'legion-crossbowman', 'legion-crossbowman'], from: ['sortie-n', 'sortie-w'] },
+      { enemies: ['death-knight-initiate', 'legion-soldier', 'legion-soldier', 'legion-crossbowman', 'bone-catapult'], from: ['sortie-w', 'sortie-e'], barks: [{ who: 'cael', text: 'The catapult! Ride it down before it finds its range!' }] },
+      { enemies: ['legion-ensign', 'death-knight-initiate', 'legion-soldier', 'legion-soldier', 'legion-crossbowman', 'legion-crossbowman'], from: ['sortie-n', 'sortie-e', 'sortie-w'], barks: [{ who: 'fern-ranger', text: 'Their standard! Their standard’s going down!' }] },
+    ],
+    end: [{ who: 'cael', text: 'The way to the wall is open. Tell Mara. Tell her she was right, and then tell her I said it twice.' }],
+    retry: [{ who: 'cael', text: 'Rally! Rally on me! We go again!' }],
   },
 };

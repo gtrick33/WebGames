@@ -13,7 +13,7 @@ import { RIMEHELD_FOES, RIMEHELD_ITEMS } from './rimeheld-foes';
 import { RIMEHELD_NPCS, RIMEHELD_QUESTS } from './rimeheld-quests';
 import { SHATTERED_VALE } from './shattered-vale';
 import { SHATTERED_VALE_FOES, SHATTERED_VALE_ITEMS } from './shattered-vale-foes';
-import { SHATTERED_VALE_NPCS, SHATTERED_VALE_QUESTS } from './shattered-vale-quests';
+import { SHATTERED_VALE_NPCS, SHATTERED_VALE_QUESTS, SHATTERED_VALE_STORY_FOES } from './shattered-vale-quests';
 import { SABLEWIND } from './sablewind';
 import { SABLEWIND_FOES, SABLEWIND_ITEMS } from './sablewind-foes';
 import { SABLEWIND_NPCS, SABLEWIND_QUESTS } from './sablewind-quests';
@@ -83,7 +83,7 @@ export const ZONES: ZoneModule[] = [
   { region: SUNSCORCH, npcs: SUNSCORCH_NPCS, quests: SUNSCORCH_QUESTS, foes: SUNSCORCH_FOES, items: SUNSCORCH_ITEMS },
   { region: GLIMMERWOOD, npcs: GLIMMERWOOD_NPCS, quests: GLIMMERWOOD_QUESTS, foes: GLIMMERWOOD_FOES, items: GLIMMERWOOD_ITEMS },
   { region: RIMEHELD, npcs: RIMEHELD_NPCS, quests: RIMEHELD_QUESTS, foes: RIMEHELD_FOES, items: RIMEHELD_ITEMS },
-  { region: SHATTERED_VALE, npcs: SHATTERED_VALE_NPCS, quests: SHATTERED_VALE_QUESTS, foes: SHATTERED_VALE_FOES, items: SHATTERED_VALE_ITEMS },
+  { region: SHATTERED_VALE, npcs: SHATTERED_VALE_NPCS, quests: SHATTERED_VALE_QUESTS, foes: { ...SHATTERED_VALE_FOES, ...SHATTERED_VALE_STORY_FOES }, items: SHATTERED_VALE_ITEMS },
   { region: SABLEWIND, npcs: SABLEWIND_NPCS, quests: SABLEWIND_QUESTS, foes: SABLEWIND_FOES, items: SABLEWIND_ITEMS },
   { region: VINECOIL, npcs: VINECOIL_NPCS, quests: VINECOIL_QUESTS, foes: VINECOIL_FOES, items: VINECOIL_ITEMS },
   { region: HIGHWALL, npcs: HIGHWALL_NPCS, quests: HIGHWALL_QUESTS, foes: HIGHWALL_FOES, items: HIGHWALL_ITEMS },

@@ -36,6 +36,8 @@ export interface PetDef {
   role?: 'fighter' | 'ward' | 'follower';
   /** Doesn't take damage (rescued people are not a timer of their own). */
   unhurt?: boolean;
+  /** A companion of the story: knocked down, they get back up a few seconds later instead of dying. */
+  rally?: boolean;
 }
 
 export const PETS: Record<string, PetDef> = {
@@ -45,8 +47,8 @@ export const PETS: Record<string, PetDef> = {
   infernal: { id: 'infernal', name: 'Infernal', sprite: 'infernal', hp: 1.2, dmg: 1.1, dmgType: 'fire', speed: 70, radius: 9, reach: 22, ranged: false, attackCd: 1.1, taunt: true },
   wolf: { id: 'wolf', name: 'Wolf', sprite: 'wolf', hp: 0.6, dmg: 0.45, dmgType: 'physical', speed: 105, radius: 6, reach: 16, ranged: false, attackCd: 0.9, taunt: true },
   // the Prologue's companions and the people and door they protect (story pets: STORY_BIBLE.md §2)
-  mara: { id: 'mara', name: 'Mara Venn', sprite: 'villager', look: 'mara-venn', hp: 1.1, dmg: 0.45, dmgType: 'physical', speed: 84, radius: 6, reach: 20, ranged: false, attackCd: 1.0, taunt: true },
-  elyra: { id: 'elyra', name: 'Elyra', sprite: 'villager', look: 'elyra', hp: 0.6, dmg: 0.5, dmgType: 'holy', speed: 78, radius: 5, reach: 120, ranged: true, attackCd: 1.3, taunt: false, shot: 'holy' },
+  mara: { id: 'mara', name: 'Mara Venn', sprite: 'villager', look: 'mara-venn', hp: 1.1, dmg: 0.45, dmgType: 'physical', speed: 84, radius: 6, reach: 20, ranged: false, attackCd: 1.0, taunt: true, rally: true },
+  elyra: { id: 'elyra', name: 'Elyra', sprite: 'villager', look: 'elyra', hp: 0.6, dmg: 0.5, dmgType: 'holy', speed: 78, radius: 5, reach: 120, ranged: true, attackCd: 1.3, taunt: false, shot: 'holy', rally: true },
   'briar-child': { id: 'briar-child', name: 'Bramble child', sprite: 'villager', look: 'briar-child', hp: 1, dmg: 0, dmgType: 'physical', speed: 92, radius: 4, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
   'chapel-door': { id: 'chapel-door', name: 'The chapel door', sprite: 'villager', look: 'door', hp: 2.4, dmg: 0, dmgType: 'physical', speed: 0, radius: 9, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   // Act I: the Vale's people, who fight beside the hero, walk into the camp, or wait to be led home
@@ -64,13 +66,15 @@ export const PETS: Record<string, PetDef> = {
   'ines-boat': { id: 'ines-boat', name: 'The Patience', sprite: 'villager', look: 'boat', hp: 2.2, dmg: 0, dmgType: 'physical', speed: 0, radius: 12, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   'hearth-gate': { id: 'hearth-gate', name: 'Hearthstead’s gate', sprite: 'villager', look: 'gate', hp: 3, dmg: 0, dmgType: 'physical', speed: 0, radius: 14, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   // Act II: the companions met on the road to the Crown City (STORY_BIBLE.md §2), and what they guard
-  nyx: { id: 'nyx', name: 'Nyx', sprite: 'villager', look: 'nyx', hp: 0.7, dmg: 0.6, dmgType: 'physical', speed: 112, radius: 5, reach: 18, ranged: false, attackCd: 0.6, taunt: false },
-  cael: { id: 'cael', name: 'Cael Varrow', sprite: 'villager', look: 'cael-varrow', hp: 1.3, dmg: 0.55, dmgType: 'physical', speed: 88, radius: 7, reach: 22, ranged: false, attackCd: 1.1, taunt: true },
-  orren: { id: 'orren', name: 'Brother Orren', sprite: 'villager', look: 'brother-orren', hp: 0.7, dmg: 0.45, dmgType: 'holy', speed: 76, radius: 5, reach: 120, ranged: true, attackCd: 1.4, taunt: false, shot: 'holy' },
+  nyx: { id: 'nyx', name: 'Nyx', sprite: 'villager', look: 'nyx', hp: 0.7, dmg: 0.6, dmgType: 'physical', speed: 112, radius: 5, reach: 18, ranged: false, attackCd: 0.6, taunt: false, rally: true },
+  cael: { id: 'cael', name: 'Cael Varrow', sprite: 'villager', look: 'cael-varrow', hp: 1.3, dmg: 0.55, dmgType: 'physical', speed: 88, radius: 7, reach: 22, ranged: false, attackCd: 1.1, taunt: true, rally: true },
+  orren: { id: 'orren', name: 'Brother Orren', sprite: 'villager', look: 'brother-orren', hp: 0.7, dmg: 0.45, dmgType: 'holy', speed: 76, radius: 5, reach: 120, ranged: true, attackCd: 1.4, taunt: false, shot: 'holy', rally: true },
   'dwarf-carter': { id: 'dwarf-carter', name: 'Kragholt carter', sprite: 'villager', look: 'dwarf-carter', hp: 1, dmg: 0, dmgType: 'physical', speed: 60, radius: 5, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
   refugee: { id: 'refugee', name: 'Refugee', sprite: 'villager', look: 'refugee', hp: 1, dmg: 0, dmgType: 'physical', speed: 62, radius: 4, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
   'refugee-wagon': { id: 'refugee-wagon', name: 'The refugee wagon', sprite: 'villager', look: 'wagon', hp: 2.6, dmg: 0, dmgType: 'physical', speed: 34, radius: 6, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   'nyx-at-the-lock': { id: 'nyx-at-the-lock', name: 'Nyx, at the lock', sprite: 'villager', look: 'nyx', hp: 1.1, dmg: 0, dmgType: 'physical', speed: 0, radius: 5, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
+  // Act III: those who must not fall while they do what only they can
+  'silvaine-singing': { id: 'silvaine-singing', name: 'Lady Silvaine', sprite: 'villager', look: 'lady-silvaine', hp: 2, dmg: 0, dmgType: 'physical', speed: 0, radius: 5, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   regent: { id: 'regent', name: 'Regent Elowen', sprite: 'villager', look: 'regent-elowen', hp: 2.4, dmg: 0, dmgType: 'physical', speed: 0, radius: 6, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   'great-lamp': { id: 'great-lamp', name: 'The Great Lamp', sprite: 'villager', look: 'lantern', hp: 2.2, dmg: 0, dmgType: 'physical', speed: 0, radius: 7, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   treant: { id: 'treant', name: 'Treant', sprite: 'treant', hp: 0.3, dmg: 0.35, dmgType: 'nature', speed: 75, radius: 6, reach: 16, ranged: false, attackCd: 1.1, taunt: true },

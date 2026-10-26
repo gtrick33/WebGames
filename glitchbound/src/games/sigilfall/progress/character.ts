@@ -321,6 +321,8 @@ export function questState(c: Character, id: string): QuestState {
  * log uninvited (blueprint §8).
  */
 export function needsAccept(q: QuestDef): boolean {
+  // a choice is always the hero's to make
+  if (q.choice) return true;
   if (q.auto) return false;
   const after = q.after ?? [];
   return !after.some((id) => QUEST_DEFS[id]?.giver === q.giver);
@@ -352,14 +354,35 @@ export const offeredBy = (c: Character, npc: string): QuestDef[] => QUESTS.filte
 
 /** The hero accepts what an NPC offers; returns the quests that start. */
 export function acceptQuests(c: Character, npc: string): QuestDef[] {
-  const list = offeredBy(c, npc);
-  for (const q of list) c.quests[q.id] = { state: 'active', n: 0 };
-  return list;
+  const list = offeredBy(c, npc).filter((q) => questState(c, q.id) === 'offered');
+  const taken: QuestDef[] = [];
+  for (const q of list) {
+    // the other answer to a choice may have been closed by one taken a moment ago
+    if (questState(c, q.id) !== 'offered') continue;
+    c.quests[q.id] = { state: 'active', n: 0 };
+    closeChoice(c, q);
+    taken.push(q);
+  }
+  return taken;
 }
 
-/** Accepts every offered quest (the play-bot, and old saves' quests that were already running). */
+/** A path not taken: a quest closed by the other answer to its choice. */
+export const declined = (c: Character, id: string): boolean => c.quests[id]?.state === 'done' && c.quests[id]!.n < 0;
+
+/** Taking one answer to a choice closes the others. */
+function closeChoice(c: Character, q: QuestDef): void {
+  if (!q.choice) return;
+  for (const other of QUESTS) if (other.choice === q.choice && other.id !== q.id && (!c.quests[other.id] || c.quests[other.id]!.state === 'offered')) c.quests[other.id] = { state: 'done', n: -1 };
+}
+
+/** Accepts every offered quest (the play-bot, and old saves' quests that were already running); of a choice, the first. */
 export function acceptAll(c: Character): void {
-  for (const [id, s] of Object.entries(c.quests)) if (s.state === 'offered') c.quests[id] = { state: 'active', n: s.n };
+  for (const q of QUESTS) {
+    const s = c.quests[q.id];
+    if (s?.state !== 'offered') continue;
+    c.quests[q.id] = { state: 'active', n: s.n };
+    closeChoice(c, q);
+  }
 }
 
 export const activeQuests = (c: Character): QuestDef[] => QUESTS.filter((q) => questState(c, q.id) === 'active');

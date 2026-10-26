@@ -4,7 +4,7 @@ import { wildRegion } from '../zonegen';
 /**
  * Duskfen (levels 18-24): the plague swamp west of Greyfen, green water and sick villages. Stilt
  * Hollow, at the end of the causeway, is the last village still breathing on its own. The Rot-Mother,
- * one of the Hollow King's lieutenants, brews the sickness in the old cistern under the south of the
+ * one of the Hallow King's lieutenants, brews the sickness in the old cistern under the south of the
  * fen; her green sisters carry it to the wells, and what it makes of the villagers walks the reeds.
  */
 export const DUSKFEN = wildRegion(

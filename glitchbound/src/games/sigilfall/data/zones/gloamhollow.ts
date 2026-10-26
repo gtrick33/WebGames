@@ -2,7 +2,7 @@ import { wildRegion } from '../zonegen';
 
 /**
  * Gloamhollow (54-59): north of the Weeping Woods, the black fen where the living lands end and the
- * Hollow King's begin. The sun never quite rises over it; marsh-lights lure travelers off the causeways,
+ * Hallow King's begin. The sun never quite rises over it; marsh-lights lure travelers off the causeways,
  * bog-wights rise from the peat and the King's reavers ride the border. Lastlight, a village of lamp-
  * keepers who keep the road lit, is the last living place before Hollowmere. The Gloam Gate in the
  * north, kept by the Gatewarden, is the King's border.

@@ -932,7 +932,10 @@ export class Renderer {
       g.fill();
       if (pet.dead) g.globalAlpha = clamp(1 - pet.deathT / 0.5, 0, 1);
       const flip = Math.cos(pet.face) < 0;
-      g.drawImage(pet.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, Math.round(pet.x - sw / 2), Math.round(pet.y + 6 - sh + b), sw, sh);
+      // knocked down: on one knee, greyed, getting back up
+      const down = pet.downT ? 0.55 : 1;
+      if (pet.downT) g.globalAlpha = 0.6;
+      g.drawImage(pet.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, Math.round(pet.x - sw / 2), Math.round(pet.y + 6 - sh * down + b), sw, sh * down);
       g.globalAlpha = 1;
       return;
     }
@@ -1154,7 +1157,7 @@ export class Renderer {
     g.textBaseline = 'top';
     g.imageSmoothingEnabled = true;
     for (const s of speech) {
-      const who = s.who === 'hero' ? w.player : (w.pets.find((p) => !p.dead && p.def.id === s.who) ?? w.npcs.find((n) => n.id === s.who));
+      const who = s.who === 'hero' ? w.player : (w.pets.find((p) => !p.dead && p.def.id === s.who) ?? w.npcs.find((n) => n.id === s.who) ?? w.enemies.find((e) => !e.dead && e.def.id === s.who));
       if (!who) continue;
       // wrap at about 34 characters, at most three lines
       const words = s.text.split(' ');

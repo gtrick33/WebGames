@@ -3,8 +3,8 @@ import { wildRegion } from '../zonegen';
 /**
  * The Sunscorch Expanse (levels 30-36): sand to the horizon east of Ironpeak, red mesas, palms and
  * cacti. The Oasis of Ras keeps its wells in the west. A thousand years ago the Sun King was buried
- * out here with the Sigil of the Sun, and now the Hollow Legion is digging for his tomb: dead miners
- * at the Hollow Dig east of the oasis, dune raiders bought with Hollow gold to guide them from their
+ * out here with the Sigil of the Sun, and now the Ashen Host is digging for his tomb: dead miners
+ * at the Ashen Dig east of the oasis, dune raiders bought with ash-gold to guide them from their
  * camp at the Raiders' Rest, and the Sun King's own court walking out of the sand as they dig. The
  * Fallen Obelisk tells the way to the Sunken Gate, far in the east; the old royal Necropolis lies in
  * the south-east, the Dune Tyrant's hollow in the south-west, and Zahra's wrecked sand-ship north of
@@ -40,7 +40,7 @@ export const SUNSCORCH = wildRegion(
       { side: 's', at: 0.55, to: 'vinecoil', label: 'South road to Vinecoil Jungle', minLevel: 38 },
     ],
     pois: [
-      // the Sun King's door, dug open by the Legion; his court spills out of it
+      // the Sun King's door, dug open by the Host; his court spills out of it
       {
         at: [0.78, 0.55],
         r: 11,
@@ -54,7 +54,7 @@ export const SUNSCORCH = wildRegion(
         entrance: { to: 'tomb-of-the-sun-king', label: 'The Tomb of the Sun King', minLevel: 33 },
         spot: { id: 'sunken-gate', name: 'The Sunken Gate' },
       },
-      // the Legion's dead miners digging for the tomb
+      // the Host's dead miners digging for the tomb
       {
         at: [0.6, 0.42],
         r: 11,
@@ -67,9 +67,9 @@ export const SUNSCORCH = wildRegion(
         ],
         elite: true,
         chest: 'common',
-        spot: { id: 'hollow-dig', name: 'The Hollow Dig' },
+        spot: { id: 'hollow-dig', name: 'The Ashen Dig' },
       },
-      // Khamsin's raiders, paid in Hollow gold
+      // Khamsin's raiders, paid in ash-gold
       {
         at: [0.5, 0.2],
         r: 11,
