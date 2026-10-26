@@ -118,6 +118,7 @@ outline weight.
 | Glimmer Hart | Act III: the forest clans |
 | Frost Elk | Act III: Jarl Sigrun |
 | Ashen Nightmare | Heroic Barrow of Kings |
+| Crownfall Destrier | Postgame: clear Duskspire and the Crown's memory (Vaelmoor Remembered) on Heroic |
 | Starlit Charger | Mythic: clear every Act III dungeon on Mythic |
 
 ## 4. Validation (`validate:sigilfall`)
