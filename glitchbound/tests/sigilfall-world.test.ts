@@ -8,6 +8,7 @@ import type { QuestDef } from '../src/games/sigilfall/data/types';
 import { generateZone } from '../src/games/sigilfall/data/zonegen';
 import { bagSize, potionCap, startQuests, acceptQuests, offeredBy } from '../src/games/sigilfall/progress/character';
 import { validateCharacter } from '../src/games/sigilfall/progress/save';
+import { grantMounts } from '../src/games/sigilfall/progress/wardrobe';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { K, parseRegion } from '../src/games/sigilfall/sim/map';
 import { objectiveTarget } from '../src/games/sigilfall/sim/objective';
@@ -272,25 +273,34 @@ describe('sigilfall perks', () => {
     expect(back.potions).toBe(5);
   });
 
-  it('the mount is faster outside fights, and not in dungeons', () => {
-    const speed = (region: 'emberwick' | 'crypt', mount: boolean, calm: number) => {
+  it('the Gullport Strider is a mount to ride: faster in the saddle, no bonus on foot, no riding in dungeons', () => {
+    const speed = (region: 'emberwick' | 'crypt', perk: boolean, ride: boolean) => {
       const c = readyHero('mage', 8);
-      if (mount) c.perks.push('mount');
+      if (perk) c.perks.push('mount');
+      grantMounts(c);
       c.unlocked.push('crypt');
       const w = newWorld(region, c);
       w.enemies = [];
       const p = w.player;
+      p.calm = 10;
+      if (ride) {
+        w.toggleMount();
+        for (let i = 0; i < 40; i++) {
+          w.input = emptyInput();
+          w.step(1 / 60);
+        }
+      }
       const x0 = p.x;
       for (let i = 0; i < 30; i++) {
-        p.calm = calm;
         w.input = { ...emptyInput(), mx: 1, my: 0 };
         w.step(1 / 60);
       }
-      return p.x - x0;
+      return { d: p.x - x0, riding: p.riding };
     };
-    expect(speed('emberwick', true, 10)).toBeGreaterThan(speed('emberwick', false, 10) * 1.2);
-    expect(speed('emberwick', true, 0)).toBeCloseTo(speed('emberwick', false, 0), 0);
-    expect(speed('crypt', true, 10)).toBeCloseTo(speed('crypt', false, 10), 0);
+    expect(speed('emberwick', true, true).riding).toBe('gullport-strider');
+    expect(speed('emberwick', true, true).d).toBeGreaterThan(speed('emberwick', false, false).d * 1.2);
+    expect(speed('emberwick', true, false).d).toBeCloseTo(speed('emberwick', false, false).d, 0);
+    expect(speed('crypt', true, true).riding).toBeNull();
   });
 });
 

@@ -6,8 +6,9 @@ import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SkillIndex, SlotId } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
-import { acceptQuests, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
+import { acceptQuests, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
+import { chooseMount, grantMounts, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import type { ShopId } from './data/vendors';
@@ -23,7 +24,7 @@ import { emptyInput, World, type InputFrame } from './sim/world';
  * (reported to the arcade), the frame loop, sound, and the UI state the React layer shows.
  */
 
-export type PanelId = 'hero' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop';
+export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop';
 
 export interface Toast {
   id: number;
@@ -248,7 +249,7 @@ export class SigilEngine {
       let steps = 0;
       while (acc > 1e-6 && steps < 8) {
         const s = Math.min(acc, STEP);
-        w.input = first ? f : { ...f, casts: [], potion: false, interact: false };
+        w.input = first ? f : { ...f, casts: [], potion: false, interact: false, mount: false };
         w.step(s);
         acc -= s;
         first = false;
@@ -377,6 +378,14 @@ export class SigilEngine {
           break;
       }
     }
+    // mounts earned by what just happened (a quest's end, a dungeon cleared)
+    if (this.hero) {
+      for (const m of grantMounts(this.hero)) {
+        this.toast(`New mount: ${m.name}`, 'good', undefined, this.touchMode ? 'Tap the horseshoe to ride. Choose mounts in the Wardrobe.' : 'Press Y to ride. Choose mounts in the Wardrobe.');
+        this.sound.play('epic');
+        changed = true;
+      }
+    }
     if (newQuests.length === 1) {
       const q = QUEST_DEFS[newQuests[0]!]!;
       this.toast(`New quest: ${q.name}`, 'quest', undefined, q.objective.label);
@@ -434,6 +443,8 @@ export class SigilEngine {
   persist(): void {
     if (!this.canSave) return;
     if (this.hero) {
+      // whatever the hero carries now, its look is theirs for good
+      learnLooks(this.hero, allItems(this.hero));
       this.hero.updated = Date.now();
       this.save.heroes[this.slot] = this.hero;
       this.save.last = this.slot;
@@ -526,6 +537,8 @@ export class SigilEngine {
       w.run = prev.run;
     }
     if (prev) w.player.ult = prev.player.ult;
+    // riding on from one open land to the next (never into a dungeon)
+    if (prev?.player.riding && region.kind !== 'dungeon' && h.mounts.includes(prev.player.riding)) w.player.riding = prev.player.riding;
     // the quests of a land start when the hero first gets there
     for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
     this.world = w;
@@ -769,6 +782,28 @@ export class SigilEngine {
   drinkPotion(): void {
     this.world?.drinkPotion();
     this.bump();
+  }
+
+  /** The mount button: call the mount, or get down. */
+  toggleMount(): void {
+    this.world?.toggleMount();
+    this.bump();
+  }
+
+  /** Wears a Wardrobe look over a slot (null: the equipped item's own look). */
+  wearLook(slot: LookSlot, id: string | null): boolean {
+    if (!this.hero || !wearLook(this.hero, slot, id)) return false;
+    this.changed('equip');
+    return true;
+  }
+
+  /** Chooses the mount the mount key calls (and swaps it at once if riding). */
+  chooseMount(id: string): boolean {
+    const h = this.hero;
+    if (!h || !chooseMount(h, id)) return false;
+    if (this.world?.player.riding) this.world.player.riding = id;
+    this.changed('equip');
+    return true;
   }
 
   /* ------------------------------------------------------- death, rewards */

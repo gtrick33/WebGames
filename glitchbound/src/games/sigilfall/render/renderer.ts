@@ -10,9 +10,13 @@ import { K, TILE } from '../sim/map';
 import type { Enemy, Fx, Pet, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
 import { itemTint } from '../progress/items';
-import { canvas, ctx2d, DETAIL, pixelText, RES, rgba, type Cnv } from './pixel';
-import { creatureSprite, glowDisc, heldWeapon, heroLook, heroSprite, npcSprite, recolored, vendorSign, weaponSprite, type HeroDir } from './sprites';
-import type { HeroLook } from './art/hero';
+import { canvas, ctx2d, DETAIL, pixelText, RES, rgba, type Cnv, type Sprite } from './pixel';
+import { creatureSprite, glowDisc, heldWeapon, heroLook, heroSprite, mountSprites, npcSprite, recolored, riderLegsSprite, vendorSign, weaponSprite, type HeroDir } from './sprites';
+import { HERO_H, HERO_W, type HeroLook } from './art/hero';
+import { MOUNT_FRAMES, MOUNT_WALK_FRAMES, RIDER_HIP } from './art/mount';
+import { MOUNT_DEFS, type MountDef } from '../data/mounts';
+import { wornLooks } from '../progress/wardrobe';
+import { SUMMON_TIME } from '../sim/world';
 import { buildScenery, type Scenery } from './tiles';
 import { objectiveTarget } from '../sim/objective';
 
@@ -181,8 +185,9 @@ export class Renderer {
 
   /** Picks up the hero's gear: the weapon in hand and the look of everything worn. */
   setHeroWeapon(cls: ClassId, w: World): void {
-    this.weapon = heldWeapon(cls, w.hero.equip.weapon);
-    this.look = heroLook(cls, w.hero.equip);
+    const worn = wornLooks(w.hero);
+    this.weapon = heldWeapon(cls, w.hero.equip.weapon, worn.weapon);
+    this.look = heroLook(cls, w.hero.equip, worn);
   }
 
   /** The camera's lean toward the aim (and a boss), smoothed (see camera.ts). */
@@ -826,8 +831,12 @@ export class Renderer {
       return;
     }
     const blink = p.iframe > 0 && !p.dash && Math.floor(time * 20) % 2 === 0;
+    const mount = p.riding ? MOUNT_DEFS[p.riding] : undefined;
     if (p.form) this.drawShape(w, p.form, time, blink);
+    else if (mount) this.drawRider(w, mount, look, time);
     else {
+      // calling the mount: it fades in behind the hero, kicking up dust
+      if (p.summon > 0 && w.hero.mount && MOUNT_DEFS[w.hero.mount]) this.drawMountGhost(w, MOUNT_DEFS[w.hero.mount]!, clamp(p.summon / SUMMON_TIME, 0, 1));
       const dir: HeroDir = p.dir === 0 ? 'down' : p.dir === 3 ? 'up' : 'side';
       const flip = p.dir === 1;
       const moving = Math.hypot(p.vx, p.vy) > 10;
@@ -869,6 +878,88 @@ export class Renderer {
     }
     if (p.buffs.length) this.drawBuffs(w, time);
     if (hasStatus(p, 'stun')) this.drawStars(p.x, p.y - 18, time);
+  }
+
+  /** Where a mount picture goes for the hero's facing: its view, mirroring and top-left corner (world px). */
+  private mountPlace(w: World, view: HeroDir): { x: number; y: number; flip: boolean } {
+    const p = w.player;
+    const F = MOUNT_FRAMES[view];
+    const flip = p.dir === 1;
+    return { x: Math.round(p.x) - (flip ? F.w - F.gx : F.gx) / DETAIL, y: Math.round(p.y) + 6 - F.gy / DETAIL, flip };
+  }
+
+  /**
+   * The hero in the saddle (blueprint §6.5): the mount's back layer, the rider (their own paper doll down to
+   * the hips, so every piece and Wardrobe look shows) and the weapon, the mount's front layer, the rider's
+   * legs over the flank. The hero's place, collider and camera stay where they are on foot.
+   */
+  private drawRider(w: World, m: MountDef, look: HeroLook, time: number): void {
+    const g = this.g;
+    const p = w.player;
+    const view: HeroDir = p.dir === 0 ? 'down' : p.dir === 3 ? 'up' : 'side';
+    const moving = Math.hypot(p.vx, p.vy) > 10;
+    const frame = moving ? 1 + (Math.floor(p.walkT * 6) % MOUNT_WALK_FRAMES) : 0;
+    const bob = frame === 0 ? (Math.sin(time * 2) > 0.7 ? -0.5 : 0) : frame % 2 === 0 ? -0.5 : 0;
+    const F = MOUNT_FRAMES[view];
+    const at = this.mountPlace(w, view);
+    const { back, front } = mountSprites(m, view, frame);
+    const blink = p.iframe > 0 && Math.floor(time * 20) % 2 === 0;
+    // a soft shadow under the animal
+    g.fillStyle = 'rgba(10,8,20,0.22)';
+    g.beginPath();
+    g.ellipse(Math.round(p.x), Math.round(p.y) + 5, view === 'side' ? 17 : 10, view === 'side' ? 3.5 : 6, 0, 0, TAU);
+    g.fill();
+    g.globalAlpha = blink ? 0.45 : 1;
+    const put = (s: Sprite): void => g.drawImage(at.flip ? s.f : s.c, at.x, at.y, s.width / s.k, s.height / s.k);
+    put(back);
+    // the rider, cut at the hips, sitting on the seat
+    const hero = heroSprite(look, view, 0);
+    const [seatX, seatY] = F.seat[m.body];
+    const sx = at.x + (at.flip ? F.w - seatX : seatX) / DETAIL - HERO_W / DETAIL / 2;
+    const sy = at.y + (seatY - RIDER_HIP) / DETAIL + bob;
+    const cut = RIDER_HIP + 1;
+    const lift = { x: sx + HERO_W / DETAIL / 2 - Math.round(p.x), y: sy - (Math.round(p.y) + 6.5 - HERO_H / DETAIL) };
+    const wpn = weaponSprite(this.weapon.kind, this.weapon.tint);
+    g.translate(lift.x, lift.y);
+    if (p.dir === 3) this.drawWeapon(w, wpn, time);
+    g.translate(-lift.x, -lift.y);
+    g.drawImage(at.flip ? hero.f : hero.c, 0, 0, HERO_W, cut, sx, sy, HERO_W / DETAIL, cut / DETAIL);
+    g.translate(lift.x, lift.y);
+    if (p.dir !== 3) this.drawWeapon(w, wpn, time);
+    if (w.hero.cls === 'warrior' || w.hero.cls === 'paladin') this.drawShield(w, p.dir, Math.round(p.x) - 9, Math.round(p.y) - 17);
+    g.translate(-lift.x, -lift.y);
+    put(front);
+    put(riderLegsSprite(view, m.body, look));
+    g.globalAlpha = 1;
+    // a prestige mount's touch: a few embers off the mane or stars round the hooves
+    if (m.glow) {
+      g.fillStyle = m.glow.color;
+      for (let i = 0; i < 5; i++) {
+        const k = (time * 0.7 + i / 5) % 1;
+        const ox = Math.sin(i * 2.4 + time) * (view === 'side' ? 14 : 8);
+        const y = m.glow.kind === 'embers' ? Math.round(p.y) - 10 - k * 12 : Math.round(p.y) + 5 - k * 5;
+        g.globalAlpha = (1 - k) * 0.8;
+        g.fillRect(Math.round(p.x + ox), Math.round(y), 1, 1);
+      }
+      g.globalAlpha = 1;
+    }
+  }
+
+  /** The mount fading in while it is called. */
+  private drawMountGhost(w: World, m: MountDef, k: number): void {
+    const g = this.g;
+    const p = w.player;
+    const view: HeroDir = p.dir === 0 ? 'down' : p.dir === 3 ? 'up' : 'side';
+    const at = this.mountPlace(w, view);
+    const { back, front } = mountSprites(m, view, 0);
+    g.globalAlpha = k * 0.55;
+    for (const s of [back, front]) g.drawImage(at.flip ? s.f : s.c, at.x, at.y, s.width / s.k, s.height / s.k);
+    g.globalAlpha = 1;
+    g.strokeStyle = `rgba(255,236,190,${0.35 + k * 0.4})`;
+    g.lineWidth = 1;
+    g.beginPath();
+    g.arc(Math.round(p.x), Math.round(p.y) - 6, 15, -Math.PI / 2, -Math.PI / 2 + k * TAU);
+    g.stroke();
   }
 
   /** A druid in cat or bear form: the beast instead of the hero, turned the way they face. */

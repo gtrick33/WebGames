@@ -1,6 +1,8 @@
 import { CLASSES } from '../data/classes';
-import type { ClassId, Item, ItemIcon, SlotId } from '../data/types';
+import type { ClassId, Item, ItemIcon, Material, Rarity, SlotId } from '../data/types';
 import { itemIcon, itemMat, itemTint } from '../progress/items';
+import type { MountDef } from '../data/mounts';
+import { MOUNT_FRAMES, paintMount, paintRiderLegs, RIDER_HIP } from './art/mount';
 import { HERO_H, HERO_W, paintHero, type ChestStyle, type FeetStyle, type HandStyle, type HeadStyle, type HeroLook, type LegStyle, type Piece } from './art/hero';
 import { NPCS } from '../data/quests';
 import { CREATURE_ART, ITEM_ICON_PAL, ITEM_ICONS, type Art, type Pal } from './artdata';
@@ -121,34 +123,56 @@ const BARE: Record<ClassId, HeroLook> = {
   },
 };
 
-function piece<S extends string>(it: Item, style: S): Piece<S> {
-  return { style, mat: itemMat(it), tint: itemTint(it), r: it.r };
+/** What shows of a piece: its icon, material, color and rarity (an item's, or a Wardrobe look's). */
+interface Shown {
+  icon: ItemIcon;
+  mat: Material;
+  tint: string;
+  r: Rarity;
 }
 
-/** What a hero looks like in the gear they wear: every armor piece shows. */
-export function heroLook(cls: ClassId, equip: Partial<Record<SlotId, Item>> = {}): HeroLook {
+const shownOf = (it: Item): Shown => ({ icon: itemIcon(it), mat: itemMat(it), tint: itemTint(it), r: it.r });
+
+function piece<S extends string>(it: Shown, style: S): Piece<S> {
+  return { style, mat: it.mat, tint: it.tint, r: it.r };
+}
+
+/** Wardrobe looks worn over the gear (progress/wardrobe.ts wornLooks): a look, or the class's bare look. */
+export type WornLooks = Partial<Record<'head' | 'chest' | 'weapon', Shown | 'bare'>>;
+
+/**
+ * What a hero looks like in the gear they wear: every armor piece shows. A Wardrobe look worn over the
+ * head, chest or weapon is drawn instead of the equipped piece there (stats never see it).
+ */
+export function heroLook(cls: ClassId, equip: Partial<Record<SlotId, Item>> = {}, worn: WornLooks = {}): HeroLook {
   const bare = BARE[cls];
-  const { head, chest, legs, hands, feet, offhand } = equip;
-  const metal = (it: Item): boolean => itemMat(it) === 'plate' || itemMat(it) === 'mail';
-  const headStyle = (it: Item): HeadStyle => {
-    const icon = itemIcon(it);
-    return icon === 'hood' || icon === 'helm' || icon === 'crown' ? icon : 'cap';
+  const { legs, hands, feet, offhand } = equip;
+  const pick = (slot: 'head' | 'chest'): Shown | null | 'bare' => {
+    const w = worn[slot];
+    if (w) return w;
+    const it = equip[slot];
+    return it ? shownOf(it) : null;
   };
-  const chestStyle = (it: Item): ChestStyle => (itemIcon(it) === 'robe' ? 'robe' : itemIcon(it) === 'plate' ? 'plate' : 'tunic');
-  const legStyle = (it: Item): LegStyle => (metal(it) ? 'greaves' : 'trousers');
-  const handStyle = (it: Item): HandStyle => (metal(it) ? 'gauntlets' : 'gloves');
-  const feetStyle = (it: Item): FeetStyle => (metal(it) ? 'sabatons' : itemMat(it) === 'cloth' ? 'shoes' : 'boots');
-  const chestPiece = chest ? piece(chest, chestStyle(chest)) : bare.chest;
+  const head = pick('head');
+  const chest = pick('chest');
+  const metal = (it: Shown): boolean => it.mat === 'plate' || it.mat === 'mail';
+  const headStyle = (it: Shown): HeadStyle => (it.icon === 'hood' || it.icon === 'helm' || it.icon === 'crown' ? it.icon : 'cap');
+  const chestStyle = (it: Shown): ChestStyle => (it.icon === 'robe' ? 'robe' : it.icon === 'plate' ? 'plate' : 'tunic');
+  const legStyle = (it: Shown): LegStyle => (metal(it) ? 'greaves' : 'trousers');
+  const handStyle = (it: Shown): HandStyle => (metal(it) ? 'gauntlets' : 'gloves');
+  const feetStyle = (it: Shown): FeetStyle => (metal(it) ? 'sabatons' : it.mat === 'cloth' ? 'shoes' : 'boots');
+  const chestPiece = chest && chest !== 'bare' ? piece(chest, chestStyle(chest)) : bare.chest;
+  const caped = chest && chest !== 'bare' && chestPiece.style !== 'robe' && (chest.r === 'epic' || chest.r === 'legendary');
   return {
     ...bare,
-    head: head ? piece(head, headStyle(head)) : bare.head,
+    head: head && head !== 'bare' ? piece(head, headStyle(head)) : bare.head,
     chest: chestPiece,
-    legs: legs ? piece(legs, legStyle(legs)) : bare.legs,
-    hands: hands ? piece(hands, handStyle(hands)) : bare.hands,
-    feet: feet ? piece(feet, feetStyle(feet)) : bare.feet,
+    legs: legs ? piece(shownOf(legs), legStyle(shownOf(legs))) : bare.legs,
+    hands: hands ? piece(shownOf(hands), handStyle(shownOf(hands))) : bare.hands,
+    feet: feet ? piece(shownOf(feet), feetStyle(shownOf(feet))) : bare.feet,
     quiver: offhand && itemIcon(offhand) === 'quiver' ? itemTint(offhand) : bare.quiver,
     // epic and legendary armor comes with a cape
-    cape: chest && chestPiece.style !== 'robe' && (chest.r === 'epic' || chest.r === 'legendary') ? (chest.r === 'legendary' ? '#a8262e' : '#5a2a8a') : null,
+    cape: caped ? (chest.r === 'legendary' ? '#a8262e' : '#5a2a8a') : null,
   };
 }
 
@@ -192,6 +216,49 @@ export function heroDollUrl(look: HeroLook, view: HeroDir, scale = 4): string {
 }
 
 export { HERO_H, HERO_W };
+
+/** A mount's back and front layers for a view and frame (render/art/mount.ts), at art resolution. */
+export function mountSprites(m: MountDef, view: HeroDir, frame: number): { back: Sprite; front: Sprite } {
+  const key = `mount:${m.id}:${view}:${frame}`;
+  const make = (): { back: Cnv; front: Cnv } => {
+    const l = paintMount(m, view, frame);
+    return { back: l.back.toCanvas(), front: l.front.toCanvas() };
+  };
+  let made: { back: Cnv; front: Cnv } | null = null;
+  const once = (): { back: Cnv; front: Cnv } => (made ??= make());
+  return { back: memo(`${key}:b`, () => once().back), front: memo(`${key}:f`, () => once().front) };
+}
+
+/**
+ * A mount standing side-on for the collection page, with the hero in the saddle when a look is given
+ * (the same layers the game draws), as a data URL (cached).
+ */
+export function mountPictureUrl(m: MountDef, look: HeroLook | null, scale = 3): string {
+  const key = `mountpic:${m.id}:${look ? lookKey(look) : '-'}:${scale}`;
+  const hit = iconCache.get(key);
+  if (hit) return hit;
+  const F = MOUNT_FRAMES.side;
+  const top = look ? Math.max(0, RIDER_HIP - F.seat[m.body][1]) : 0;
+  const c = canvas(F.w, F.h + top);
+  const g = ctx2d(c);
+  const { back, front } = mountSprites(m, 'side', 0);
+  g.drawImage(back.c, 0, top);
+  if (look) {
+    const hero = heroSprite(look, 'side', 0);
+    const [sx, sy] = F.seat[m.body];
+    g.drawImage(hero.c, 0, 0, HERO_W, RIDER_HIP + 1, sx - HERO_W / 2, top + sy - RIDER_HIP, HERO_W, RIDER_HIP + 1);
+  }
+  g.drawImage(front.c, 0, top);
+  if (look) g.drawImage(riderLegsSprite('side', m.body, look).c, 0, top);
+  const url = scaled(c, scale).toDataURL();
+  iconCache.set(key, url);
+  return url;
+}
+
+/** The rider's legs over the saddle, in the colors of what they wear (cached by those colors). */
+export function riderLegsSprite(view: HeroDir, body: MountDef['body'], look: HeroLook): Sprite {
+  return memo(`riderlegs:${view}:${body}:${look.legs.tint}:${look.feet.tint}`, () => paintRiderLegs(view, body, look.legs, look.feet).toCanvas());
+}
 
 /** Every creature drawing: the first ones, companions, the new lands' enemies, each zone's own. */
 const ALL_ART: Record<string, Art> = Object.assign({}, CREATURE_ART, COMPANION_ART, FOE_ART, ...ZONE_ART.map((z) => z.foes));
@@ -244,10 +311,11 @@ export function weaponSprite(kind: string, tint?: string): Sprite {
   });
 }
 
-/** Which weapon art a hero shows. */
-export function heldWeapon(cls: ClassId, weapon: Item | undefined): { kind: string; tint?: string } {
-  const icon = weapon ? itemIcon(weapon) : undefined;
-  const tint = weapon ? itemTint(weapon) : undefined;
+/** Which weapon art a hero shows: the equipped weapon's, or a Wardrobe look worn over it. */
+export function heldWeapon(cls: ClassId, weapon: Item | undefined, look?: Shown | 'bare'): { kind: string; tint?: string } {
+  const shown = look && look !== 'bare' ? look : weapon ? shownOf(weapon) : undefined;
+  const icon = shown?.icon;
+  const tint = shown?.tint;
   switch (cls) {
     case 'mage':
     case 'warlock':

@@ -533,6 +533,8 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   p.flash = 0.18;
   p.lastHurt = w.time;
   p.calm = 0;
+  // a hit knocks the hero out of the saddle (and stops a mount being called)
+  if (p.riding || p.summon) w.dismount();
   w.text(p.x, p.y - 18, `-${Math.round(dmg * (1 - reduction) * (1 - dr / 100))}`, '#ff5a5a', false);
   // rage: being hit makes you angry (10% of your health in one blow is 6 Rage)
   if (w.build.resource?.kind === 'rage') gainResource(w, (d / p.maxHp) * 60 + 1);

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { ClassId, Item, Rarity } from '../data/types';
 import type { Character } from '../progress/character';
-import { heroLook, heroPortraitUrl, itemIconUrl, portraitUrl, skillIconUrl } from '../render/sprites';
+import { heroLook, heroPortraitUrl, itemIconUrl, portraitUrl, skillIconUrl, type WornLooks } from '../render/sprites';
 import { rarityColor } from '../render/renderer';
 
 /** Small shared pieces of the Sigilfall UI. */
@@ -22,8 +22,8 @@ export function SkillIcon({ id, size = 40 }: { id: string; size?: number }) {
 }
 
 /** A portrait; for a hero, pass their gear to show what they wear. */
-export function Portrait({ kind, id, size = 48, equip }: { kind: 'hero' | 'creature' | 'npc'; id: string; size?: number; equip?: Character['equip'] }) {
-  const src = kind === 'hero' && equip ? heroPortraitUrl(heroLook(id as ClassId, equip), 3) : portraitUrl(kind, id, 4);
+export function Portrait({ kind, id, size = 48, equip, worn }: { kind: 'hero' | 'creature' | 'npc'; id: string; size?: number; equip?: Character['equip']; worn?: WornLooks }) {
+  const src = kind === 'hero' && equip ? heroPortraitUrl(heroLook(id as ClassId, equip, worn), 3) : portraitUrl(kind, id, 4);
   return <img className="rb-portrait" src={src} alt="" style={{ height: size }} draggable={false} />;
 }
 

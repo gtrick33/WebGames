@@ -7,7 +7,7 @@ import type { InputFrame } from '../sim/world';
  * Input adapters. Gameplay never reads the keyboard or the touch screen directly: each adapter fills
  * the same InputFrame. Desktop: WASD/arrows, mouse aim, left button attacks, Q E R and C (or another
  * key) skills, Space
- * dodges, the ultimate on a key you choose. Touch: the on-screen controls write into TouchState.
+ * dodges, the ultimate on a key you choose, Y rides. Touch: the on-screen controls write into TouchState.
  */
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
@@ -25,6 +25,7 @@ export class KeyboardMouse {
   private mouse: { x: number; y: number } | null = null;
   private potion = false;
   private interact = false;
+  private mount = false;
   /** Last time the mouse or keyboard was used (to switch the controls shown). */
   lastUsed = 0;
   ultKey: UltKey = 'f';
@@ -84,6 +85,7 @@ export class KeyboardMouse {
         else if (k === ' ') this.queued.push('dodge');
         else if ((this.ultKey === 'f' && code === 'KeyF') || (this.ultKey === 't' && code === 'KeyT') || (this.ultKey === 'shift' && k === 'Shift')) this.queued.push('ult');
         else if (code === 'Digit1' || code === 'KeyH') this.potion = true;
+        else if (code === 'KeyY') this.mount = true;
         else if (code === 'KeyG' || k === 'Enter' || (this.ultKey !== 'f' && code === 'KeyF')) this.interact = true;
         else if (k === 'Escape' || code === 'KeyP') this.onUi?.('pause');
         else if (code === 'KeyI' || code === 'KeyB' || code === 'KeyC') this.onUi?.('hero');
@@ -134,8 +136,10 @@ export class KeyboardMouse {
     if (this.lmb && this.mouse) f.holdBasic = { slot: 'basic', angle, dist: null, assist: 0 };
     if (this.potion) f.potion = true;
     if (this.interact) f.interact = true;
+    if (this.mount) f.mount = true;
     this.potion = false;
     this.interact = false;
+    this.mount = false;
   }
 
   /** The mouse on the input element, -0.5 to 0.5 from its center (for the camera's lean). */
@@ -166,6 +170,7 @@ export class TouchState {
   holdBasic: CastRequest | null = null;
   potion = false;
   interact = false;
+  mount = false;
   aim: AimPreview | null = null;
   lastUsed = 0;
 
@@ -195,8 +200,10 @@ export class TouchState {
     if (this.holdBasic) f.holdBasic = this.holdBasic;
     if (this.potion) f.potion = true;
     if (this.interact) f.interact = true;
+    if (this.mount) f.mount = true;
     this.potion = false;
     this.interact = false;
+    this.mount = false;
   }
 
   release(): void {

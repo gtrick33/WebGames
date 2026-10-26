@@ -12,6 +12,7 @@ const ART: Record<string, string[]> = {
   gear: ['...ww...', '.w.ww.w.', '..wwww..', 'www..www', 'www..www', '..wwww..', '.w.ww.w.', '...ww...'],
   potion: ['..kkk..', '..sws..', '..sws..', '.swwws.', 'srrrrrs', 'srwrrrs', 'srrrrrs', 'srrrrrs', '.sssss.'],
   skills: ['pp...pp', 'pccpccp', '.pcccp.', '..pcp..', '.pcccp.', 'pccpccp', 'pp...pp'],
+  horseshoe: ['.SSSSS.', 'SsykysS', 'Sk...kS', 'Sy...yS', 'Sk...kS', 'Ss...sS', 'SS...SS'],
   hand: ['..ww....', '..ww....', '..wwww..', '..wwwwww', 'wwwwwwww', 'wwwwwww.', '.wwwwww.', '..wwww..'],
 };
 

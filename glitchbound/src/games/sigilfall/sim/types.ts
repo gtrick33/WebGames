@@ -82,6 +82,10 @@ export interface Player {
   actBig: boolean;
   /** Seconds left on the hit flash. */
   flash: number;
+  /** The mount ridden (a MountDef id), or null on foot. */
+  riding: string | null;
+  /** Seconds into calling the mount (0: not calling). */
+  summon: number;
 }
 
 export type AiState = 'idle' | 'chase' | 'windup' | 'act' | 'recover' | 'spawn' | 'return' | 'dead';

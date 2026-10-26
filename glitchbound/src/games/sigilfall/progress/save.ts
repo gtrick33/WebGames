@@ -7,8 +7,10 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME } from './character';
+import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems } from './character';
 import { itemClass, itemSlot, newUid } from './items';
+import { grantMounts, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
+import { MOUNT_DEFS } from '../data/mounts';
 
 /**
  * The save: up to three heroes and the settings, versioned and validated field by field on load.
@@ -28,7 +30,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -177,6 +179,10 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     clears: {},
     opened: [],
     perks: Array.isArray(o.perks) ? [...new Set(o.perks.filter((x): x is PerkId => typeof x === 'string' && x in PERKS))] : [],
+    looks: Array.isArray(o.looks) ? o.looks.filter((x): x is string => typeof x === 'string' && x.length <= 64).slice(0, 4000) : [],
+    worn: {},
+    mounts: Array.isArray(o.mounts) ? [...new Set(o.mounts.filter((x): x is string => typeof x === 'string' && !!MOUNT_DEFS[x]))] : [],
+    mount: typeof o.mount === 'string' && MOUNT_DEFS[o.mount] ? o.mount : null,
     stats: { kills: 0, deaths: 0, time: 0, runs: 0, bestRun: 0 },
     created: int(o.created, 0, 4e12, Date.now()),
     updated: int(o.updated, 0, 4e12, Date.now()),
@@ -243,6 +249,15 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     for (const [k, n] of Object.entries(m).slice(0, 200)) if (/^[a-z0-9:-]{1,32}$/.test(k)) c[key][k] = int(n, 0, 1e6, 0);
   }
   if (Array.isArray(o.opened)) c.opened = [...new Set(o.opened.filter((x): x is string => typeof x === 'string' && /^[a-z0-9:-]{1,48}$/.test(x)))].slice(0, 600);
+  // the Wardrobe: looks of everything worn or carried are owned (the only ownership that can be proven);
+  // worn looks stay only where they are owned and fit the class (the item under them is never touched)
+  const worn = obj(o.worn) ?? {};
+  for (const slot of LOOK_SLOTS) if (typeof worn[slot] === 'string') c.worn[slot] = worn[slot] as string;
+  learnLooks(c, allItems(c));
+  tidyWardrobe(c);
+  // mounts: earned ones are owned (the Gullport Strider for anyone who has its perk); the chosen one must be owned
+  grantMounts(c);
+  if (c.mount && !c.mounts.includes(c.mount)) c.mount = c.mounts[0] ?? null;
   const s = obj(o.stats) ?? {};
   c.stats = { kills: int(s.kills, 0, 1e9, 0), deaths: int(s.deaths, 0, 1e9, 0), time: int(s.time, 0, 1e10, 0), runs: int(s.runs, 0, 1e9, 0), bestRun: int(s.bestRun, 0, 1e9, 0) };
   return c;
@@ -362,6 +377,9 @@ export function migrate(raw: unknown): SaveFile | null {
     }
     o.v = 7;
   }
+  // version 8: the Wardrobe and mounts (blueprint §6). Nothing to change in the file: on load every hero owns
+  // the looks of what they wear and carry, and the mounts they have earned (validateCharacter)
+  if (o.v === 7) o.v = 8;
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];
   const list = Array.isArray(o.heroes) ? o.heroes : [];

@@ -4,6 +4,7 @@ import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS, talentNode } from '../data/talents';
 import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SigilId, SkillIndex, SlotId } from '../data/types';
 import { itemClass, itemSlot, salvageValue } from './items';
+import { learnLooks, type LookSlot } from './wardrobe';
 
 /**
  * A hero and everything that persists about them, plus the rules that change it: experience and
@@ -27,7 +28,7 @@ export const potionCap = (c: Pick<Character, 'perks'>): number => POTION_CAP + (
 export const PERKS: Record<PerkId, { name: string; text: string }> = {
   satchel: { name: 'Millbrook Satchel', text: '6 more bag slots' },
   flask: { name: 'Tobin’s Flask', text: 'carry one more potion' },
-  mount: { name: 'Gullport Strider', text: 'move 30% faster outside fights' },
+  mount: { name: 'Gullport Strider', text: 'a horse to ride outside fights (30% faster)' },
   hearth: { name: 'Hearthstone', text: 'return to the last waystone from anywhere' },
   'sigil-embers': { name: 'Sigil of Embers', text: '+4% health and power' },
   'sigil-tides': { name: 'Sigil of Tides', text: '+4% health and power' },
@@ -85,6 +86,12 @@ export interface Character {
   opened: string[];
   /** Gifts from the ends of quest chains (a bigger bag, a mount...). */
   perks: PerkId[];
+  /** The Wardrobe (blueprint §6.2): looks owned for good (progress/wardrobe.ts), and those worn over gear by slot. */
+  looks: string[];
+  worn: Partial<Record<LookSlot, string>>;
+  /** Mounts owned for good, and the one the mount key summons. */
+  mounts: string[];
+  mount: string | null;
   stats: { kills: number; deaths: number; time: number; runs: number; bestRun: number };
   created: number;
   updated: number;
@@ -116,6 +123,10 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     clears: {},
     opened: [],
     perks: [],
+    looks: [],
+    worn: {},
+    mounts: [],
+    mount: null,
     stats: { kills: 0, deaths: 0, time: 0, runs: 0, bestRun: 0 },
     created: now,
     updated: now,
@@ -276,6 +287,7 @@ export function addItem(c: Character, item: Item): boolean {
   if (bagFull(c)) return false;
   if (allItems(c).some((i) => i.uid === item.uid)) return false;
   c.bag.push(item);
+  learnLooks(c, [item]);
   return true;
 }
 
@@ -315,6 +327,8 @@ export function unequip(c: Character, slot: SlotId): boolean {
 export function salvage(c: Character, uid: string): number {
   const i = c.bag.findIndex((x) => x.uid === uid);
   if (i < 0) return 0;
+  // a look is kept once owned, even when the piece is melted down
+  learnLooks(c, [c.bag[i]!]);
   const value = salvageValue(c.bag[i]!);
   c.bag.splice(i, 1);
   c.gold += value;

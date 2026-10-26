@@ -8,6 +8,7 @@ import type { ResourceDef } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { freePoints, questProgress, trackedQuest } from '../progress/character';
 import { modLines } from '../progress/describe';
+import { wornLooks } from '../progress/wardrobe';
 import { itemMods, itemName, usableBy } from '../progress/items';
 import { rarityColor } from '../render/renderer';
 import type { World } from '../sim/world';
@@ -112,7 +113,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
     <>
       <div className="rb-hud-hero">
         <div className="rb-hud-face">
-          <Portrait kind="hero" id={h.cls} equip={h.equip} size={34} />
+          <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} size={34} />
           <span className="rb-lvl">{h.level}</span>
         </div>
         <div className="rb-hud-bars">

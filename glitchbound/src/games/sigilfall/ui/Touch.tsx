@@ -6,7 +6,7 @@ import type { SlotKey } from '../data/types';
 import type { SigilEngine } from '../engine';
 import type { AimPreview } from '../render/renderer';
 import { skillIconUrl } from '../render/sprites';
-import type { World } from '../sim/world';
+import { SUMMON_TIME, type World } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { uiIcon } from './uiIcons';
 
@@ -37,6 +37,7 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
         <SkillButton engine={engine} slot="ult" />
         <SkillButton engine={engine} slot="dodge" />
         <PotionButton engine={engine} />
+        <MountButton engine={engine} />
       </div>
       <InteractButton engine={engine} />
     </>
@@ -300,6 +301,33 @@ function PotionButton({ engine }: { engine: SigilEngine }) {
     >
       <img src={uiIcon('potion', 3)} alt="" draggable={false} />
       <span className="rb-sb-charges">{h.potions}</span>
+    </button>
+  );
+}
+
+/** The mount: call it (the ring fills while it comes) or get down. Shown once the hero owns one. */
+function MountButton({ engine }: { engine: SigilEngine }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useFrame(engine, (w) => {
+    const b = ref.current;
+    if (!b) return;
+    const p = w.player;
+    b.classList.toggle('is-on', !!p.riding);
+    b.style.setProperty('--fill', `${p.riding ? 100 : Math.round((p.summon / SUMMON_TIME) * 100)}%`);
+  });
+  if (!engine.hero?.mounts.length) return null;
+  return (
+    <button
+      ref={ref}
+      className="rb-sb rb-sb-mount"
+      aria-label="Ride or get down"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        engine.toggleMount();
+      }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <img src={uiIcon('horseshoe', 3)} alt="" draggable={false} />
     </button>
   );
 }

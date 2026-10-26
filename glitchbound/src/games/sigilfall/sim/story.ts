@@ -155,6 +155,8 @@ export class StoryDirector {
 
   private start(def: StoryEventDef): void {
     const w = this.w;
+    // nobody rides into the story's fights
+    w.dismount();
     // whoever stayed on from the last event to say goodbye makes way for this one's people
     w.pets = w.pets.filter((p) => !p.story || p.dead);
     const run: Running = { def, wave: 0, ids: [], pause: 1.6, pets: [], ward: null, followers: [], safe: new Set(), cool: 0, t: 0 };

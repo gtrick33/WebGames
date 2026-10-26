@@ -49,7 +49,7 @@ interface Wardrobe {
 ### Unlocks
 
 - Permanently obtaining an item (looting, buying, quest reward, crafting) adds its appearance. Previewing doesn't.
-- Migration (save v3): backfill from items **equipped or in the bag** at load. Nothing else is invented.
+- Migration (save v8): backfill from items **equipped or in the bag** at load (every load, so nothing owned is missed). Nothing else is invented.
 
 ### Save rules
 
@@ -66,7 +66,7 @@ A **Wardrobe** tab in the hero panel: slot filter, owned looks first, locked loo
 ### Rules
 
 - Mounts are **cosmetic traversal**: one baseline speed bonus for every mount (the existing `MOUNT_SPEED`), no stats.
-- **Mount/dismount**: a button (touch) and a key (desktop, `H`); summoning takes 0.6 s and is refused in dungeons,
+- **Mount/dismount**: a button (touch, the horseshoe in the thumb cluster) and a key (desktop, `Y`: `H` was already the potion); summoning takes 0.6 s and is refused in dungeons,
   interiors, boss rooms, cinematics, while in combat or where the mounted collider would overlap a wall.
 - **Auto-dismount** on taking damage, casting anything but the dodge, entering a dungeon or interior, or a scripted
   event starting.
@@ -121,3 +121,22 @@ outline weight.
 
 Duplicate appearance ids, overrides pointing at unknown or incompatible appearances, weapon families with no art,
 mounts without seats for every view and frame, mount sources that name a missing quest, boss or perk.
+
+## 5. As built (Prompt 6, save v8)
+
+| Piece | Where |
+| --- | --- |
+| Look ids, names, sources, unlocks, worn-look resolution, mount grants | `progress/wardrobe.ts` |
+| Save fields `looks`, `worn`, `mounts`, `mount`; validation and backfill | `progress/character.ts`, `progress/save.ts` (v8) |
+| Effective visual: `heroLook(cls, equip, worn)`, `heldWeapon(cls, weapon, look)` — every animation, portrait and doll reads it | `render/sprites.ts` |
+| The Wardrobe tab (Head / Chest / Weapon / Mounts; Equipped, Bare, owned looks, locked silhouettes with sources; preview, Apply, Clear) | `ui/Panels.tsx` |
+| Mount roster (8: two travel, four story, two prestige) and sources | `data/mounts.ts` |
+| Painted mounts in layers (horse, deer, boar bodies; three views; standing + four walking frames; rider's legs layer) | `render/art/mount.ts` |
+| Drawing: shadow → back → rider (cut at the hips) and weapon → front → rider's legs → prestige motes; the call fades the mount in | `render/renderer.ts` `drawRider`, `drawMountGhost` |
+| Riding rules: 0.6 s call standing still; refused in dungeons, fights, beast form; down on a hit, any action, a story event; rides on between open lands | `sim/world.ts` (`toggleMount`, `mountRefusal`, `dismount`), `sim/combat.ts`, `sim/story.ts`, `engine.ts` |
+| Controls: `Y`, the desktop bar's horseshoe slot, the touch horseshoe button | `input/input.ts`, `ui/DesktopBar.tsx`, `ui/Touch.tsx` |
+| Tests | `tests/sigilfall-collection.test.ts`, `tests/sigilfall-world.test.ts` (perks) |
+
+The mounts are painted in code in the paper doll's language (no local mount art exists); the production brief in §3
+stands for replacement art. Evidence: `docs/review/phase-06/` (the Chestnut in four facings, the Royal Warhorse
+with a Wardrobe hat, the mount sheet).

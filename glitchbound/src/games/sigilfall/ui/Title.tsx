@@ -7,6 +7,7 @@ import { SPEC_LEVEL } from '../data/talents';
 import type { ClassId, RegionId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { cleanName } from '../progress/character';
+import { wornLooks } from '../progress/wardrobe';
 import { Portrait, SkillIcon } from './common';
 import { SettingsPanel } from './Panels';
 
@@ -40,7 +41,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
           {heroes.map((h, i) =>
             h ? (
               <div key={i} className="rb-slot">
-                <Portrait kind="hero" id={h.cls} equip={h.equip} size={52} />
+                <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} size={52} />
                 <div className="rb-slot-text">
                   <strong>{h.name}</strong>
                   <span>

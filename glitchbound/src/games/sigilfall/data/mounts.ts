@@ -1,0 +1,155 @@
+import type { PerkId, RegionId } from './types';
+
+/**
+ * Mounts (blueprint §6.4–6.6, COLLECTION_SYSTEM_DESIGN.md §3): ground mounts the hero summons outside fights.
+ * Every mount moves at the same speed (no "best mount"); they differ in how they look and where they come
+ * from. Each is a painted quadruped (render/art/mount.ts) built from one body with its own proportions,
+ * coat, tack and extras, drawn in layers around the rider so the hero's gear and Wardrobe looks show.
+ */
+
+export type MountBody = 'horse' | 'deer' | 'boar';
+
+/** Where a mount comes from. Every source is deterministic: no mount is a random drop. */
+export type MountSource =
+  | { kind: 'quest'; quest: string }
+  | { kind: 'perk'; perk: PerkId }
+  /** Clear every one of these dungeons on this difficulty tier (or higher). */
+  | { kind: 'clears'; regions: RegionId[]; tier: number };
+
+export interface MountDef {
+  id: string;
+  name: string;
+  /** One line of lore for the collection page. */
+  lore: string;
+  /** Where it comes from, as the collection page says it (never spoils a story beat). */
+  from: string;
+  source: MountSource;
+  body: MountBody;
+  coat: string;
+  /** Mane, tail and hooves. */
+  mane: string;
+  /** Saddle and bridle. */
+  tack: string;
+  /** Barding over the body (warhorses), or none. */
+  barding?: string;
+  /** Antlers (deer), tusks (boar), a blaze down the face, socks on the legs. */
+  antlers?: 'hart' | 'elk';
+  tusks?: boolean;
+  blaze?: boolean;
+  socks?: boolean;
+  /** A prestige mount's touch: embers off the mane, stars round the hooves (kept small). */
+  glow?: { kind: 'embers' | 'stars'; color: string };
+  /** The collection's grouping: an everyday mount, a story mount or a challenge's prize. */
+  tier: 'travel' | 'story' | 'prestige';
+}
+
+export const MOUNTS: MountDef[] = [
+  {
+    id: 'briarhollow-chestnut',
+    name: 'Briarhollow Chestnut',
+    lore: 'A plough horse from Dunmore’s farms, steady as a fence post. She has carried grain, children and one very surprised priest.',
+    from: 'Act I: when Dunmore’s riders join the camp',
+    source: { kind: 'quest', quest: 'camp-riders' },
+    body: 'horse',
+    coat: '#8a4a26',
+    mane: '#3a2216',
+    tack: '#6a4428',
+    blaze: true,
+    tier: 'travel',
+  },
+  {
+    id: 'gullport-strider',
+    name: 'Gullport Strider',
+    lore: 'A grey cob that grew up on the quay and is afraid of nothing except gulls.',
+    from: 'Gullport: the harbor’s gift after Captain Saltbeard',
+    source: { kind: 'perk', perk: 'mount' },
+    body: 'horse',
+    coat: '#9a9aa4',
+    mane: '#e8e6e0',
+    tack: '#2a4a6a',
+    socks: true,
+    tier: 'travel',
+  },
+  {
+    id: 'royal-warhorse',
+    name: 'Royal Warhorse',
+    lore: 'Bred in the Ember Keep’s stables for the Regent’s champions, and barded in the colors of Aster.',
+    from: 'Act II: the champion of the Starfall Festival',
+    source: { kind: 'quest', quest: 'festival-the-champion' },
+    body: 'horse',
+    coat: '#2a2026',
+    mane: '#141016',
+    tack: '#8a1a2a',
+    barding: '#c8ccd8',
+    tier: 'story',
+  },
+  {
+    id: 'mirefen-boar',
+    name: 'Mirefen Boar',
+    lore: 'The Low Wick folk ride them through mud no horse would cross. This one bites, but only people it dislikes.',
+    from: 'Act II: Low Wick, once the plague is burned out',
+    source: { kind: 'quest', quest: 'low-wick-fires' },
+    body: 'boar',
+    coat: '#5a4636',
+    mane: '#2a2018',
+    tack: '#4a5a2a',
+    tusks: true,
+    tier: 'story',
+  },
+  {
+    id: 'glimmer-hart',
+    name: 'Glimmer Hart',
+    lore: 'The forest clans do not tame their harts. They ask, and sometimes a hart says yes.',
+    from: 'Act III: the forest clans’ answer',
+    source: { kind: 'quest', quest: 'the-clans-decide' },
+    body: 'deer',
+    coat: '#b07a46',
+    mane: '#f0e0c0',
+    tack: '#3a6a3a',
+    antlers: 'hart',
+    tier: 'story',
+  },
+  {
+    id: 'frost-elk',
+    name: 'Rimeheld Elk',
+    lore: 'A jarl’s elk, broad as a door, with frost in its beard from the first snow to the last.',
+    from: 'Act III: the jarls of Rimeheld',
+    source: { kind: 'quest', quest: 'the-vault-of-rime' },
+    body: 'deer',
+    coat: '#c8c0b0',
+    mane: '#7a6a5a',
+    tack: '#2a4a7a',
+    antlers: 'elk',
+    tier: 'story',
+  },
+  {
+    id: 'ashen-nightmare',
+    name: 'Ashen Nightmare',
+    lore: 'A charger of the Barrow’s honor guard that would not lie down when its rider did. Its mane still smolders.',
+    from: 'Challenge: clear the Barrow of Kings on Heroic',
+    source: { kind: 'clears', regions: ['barrow-of-kings'], tier: 1 },
+    body: 'horse',
+    coat: '#24202a',
+    mane: '#3a3440',
+    tack: '#4a3a5a',
+    barding: '#5a5262',
+    glow: { kind: 'embers', color: '#ff9a4a' },
+    tier: 'prestige',
+  },
+  {
+    id: 'starlit-charger',
+    name: 'Starlit Charger',
+    lore: 'They say the first king of Aster rode it out of the night sky. They say a lot of things about the first king.',
+    from: 'Challenge: clear every dungeon of Acts II and III on Mythic',
+    source: { kind: 'clears', regions: ['rotmother-cistern', 'deepforge-halls', 'barrow-of-kings', 'tomb-of-the-sun-king', 'rimeheld-vault', 'siege-of-highwall'], tier: 2 },
+    body: 'horse',
+    coat: '#e8ecf4',
+    mane: '#8ab0ff',
+    tack: '#2a3a7a',
+    barding: '#d8dcf0',
+    glow: { kind: 'stars', color: '#cfe0ff' },
+    tier: 'prestige',
+  },
+];
+
+export const MOUNT_DEFS: Record<string, MountDef> = Object.fromEntries(MOUNTS.map((m) => [m.id, m]));

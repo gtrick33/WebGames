@@ -16,6 +16,7 @@ import { buildHero, type HeroBuild } from '../progress/build';
 import { addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME } from '../progress/character';
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
+import { learnLooks } from '../progress/wardrobe';
 import { separate, updateEnemy } from './ai';
 import { refreshPets, summonPet, updatePets } from './pets';
 import { updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
@@ -39,6 +40,8 @@ export interface InputFrame {
   holdBasic: CastRequest | null;
   potion: boolean;
   interact: boolean;
+  /** The mount key or button was pressed. */
+  mount?: boolean;
 }
 
 export const emptyInput = (): InputFrame => ({ mx: 0, my: 0, aim: null, aimX: null, aimY: null, casts: [], holdBasic: null, potion: false, interact: false });
@@ -95,8 +98,10 @@ const EXPLORE_XP = 0.03;
  * 20 at level 3, 28 at 30, 32 from 50. The charge budget refills at one bar per this many seconds.
  */
 export const ultFloor = (level: number): number => (level <= 3 ? 20 : level <= 30 ? 20 + ((level - 3) * 8) / 27 : Math.min(32, 28 + ((level - 30) * 4) / 20));
-/** The mount: faster outside fights. */
-const MOUNT_SPEED = 1.3;
+/** Riding: one speed for every mount (blueprint §6.4: no "best mount"). */
+export const MOUNT_SPEED = 1.3;
+/** Calling a mount takes this long, standing still. */
+export const SUMMON_TIME = 0.6;
 /**
  * The packs of the open lands are tougher than a dungeon's and pay less each: they come back, and the
  * road to 60 is meant to be long (quests and dungeons are the way up, not standing in a field).
@@ -288,6 +293,8 @@ export class World {
       actKind: null,
       actBig: false,
       flash: 0,
+      riding: null,
+      summon: 0,
     };
     this.player = p;
     this.syncCooldowns(true);
@@ -961,6 +968,23 @@ export class World {
     const moving = Math.hypot(inp.mx, inp.my) > 0.15;
     if (inp.aim !== null) p.aim = inp.aim;
     else if (moving && p.actT <= 0 && !p.windup) p.aim = Math.atan2(inp.my, inp.mx);
+    // the mount: called standing still; moving, acting or a fight stops the call. Acting while riding
+    // gets the hero down first, and the action happens
+    if (inp.mount) this.toggleMount();
+    const acting = inp.casts.length > 0 || !!inp.holdBasic;
+    if (p.summon > 0) {
+      if (moving || acting || this.mountRefusal()) p.summon = 0;
+      else {
+        p.summon += dt;
+        if (p.summon >= SUMMON_TIME) {
+          p.summon = 0;
+          p.riding = this.hero.mount;
+          this.sfx('mount');
+          this.addFx({ kind: 'ring', x: p.x, y: p.y + 4, life: 0.35, size: 14, color: 'rgba(232,220,190,0.7)' });
+        }
+      }
+    }
+    if (p.riding && acting) this.dismount();
     // skills
     for (const req of inp.casts) {
       const r = this.withMouse(req);
@@ -976,7 +1000,7 @@ export class World {
     } else {
       const stunned = playerStunned(this);
       let speed = 78 * (1 + stats.speed / 100) * playerSlow(this);
-      if (this.hero.perks.includes('mount') && p.calm > CALM_AFTER && this.region.kind !== 'dungeon') speed *= MOUNT_SPEED;
+      if (p.riding) speed *= MOUNT_SPEED;
       if (p.channel) speed *= 0.8;
       if (p.windup) speed *= 0.35;
       if (stunned) speed = 0;
@@ -1158,6 +1182,7 @@ export class World {
         if (h.bag.some((i) => i.uid === item.uid)) continue;
         if (h.bag.length < bagSize(h) + BAG_OVERFLOW) {
           h.bag.push(item);
+          learnLooks(h, [item]);
           this.run.items.push(item);
           items += 1;
         } else {
@@ -1814,6 +1839,48 @@ export class World {
       const spec = id ? this.build.skills[this.build.bar[id] ?? '']?.spec : undefined;
       if (spec && (spec.cast === 'blink' || spec.cast === 'trap' || spec.cast === 'channel')) this.questProgress((o) => o.kind === 'tutorial' && o.step === 'skill');
     }
+  }
+
+  /** Why the hero can't call their mount right now, or null. */
+  mountRefusal(): string | null {
+    const p = this.player;
+    const h = this.hero;
+    if (!h.mount || !h.mounts.includes(h.mount)) return h.mounts.length ? 'Choose a mount in the Wardrobe.' : 'You have no mount yet.';
+    if (p.dead || p.channel || p.windup || p.dash) return 'Not now.';
+    if (this.region.kind === 'dungeon') return 'There is no room to ride down here.';
+    if (p.form) return 'Not in beast form.';
+    if (this.story.fighting || p.calm < CALM_AFTER) return 'Not in the middle of a fight.';
+    return null;
+  }
+
+  /** The mount key: call the mount, stop calling it, or get down. */
+  toggleMount(): void {
+    const p = this.player;
+    if (p.riding) {
+      this.dismount();
+      return;
+    }
+    if (p.summon > 0) {
+      p.summon = 0;
+      return;
+    }
+    const why = this.mountRefusal();
+    if (why) {
+      this.emit({ t: 'toast', text: why, tone: 'warn' });
+      return;
+    }
+    p.summon = 0.001;
+    this.sfx('whistle');
+  }
+
+  /** Off the mount (a hit, an action, the story's fight), and any call stops. */
+  dismount(): void {
+    const p = this.player;
+    p.summon = 0;
+    if (!p.riding) return;
+    p.riding = null;
+    this.sfx('dismount');
+    for (let i = 0; i < 6; i++) this.addFx({ kind: 'smoke', x: p.x + (this.rand() - 0.5) * 16, y: p.y + 5, vx: (this.rand() - 0.5) * 20, vy: -6, life: 0.5, size: 3, color: 'rgba(200,184,150,0.55)' });
   }
 
   dodgedSomething(): void {

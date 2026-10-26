@@ -1,121 +1,62 @@
-# Sigilfall — Execution Plan (Blueprint V2.9 §13 order)
+# Sigilfall — Execution Plan (Blueprint V2.9, the whole game)
 
-Planning artifacts (Prompt 0): REFACTOR_AUDIT.md, ASSET_AUDIT.md, STORY_BIBLE.md, QUEST_REWRITE_MAP.md,
-VISUAL_BIBLE.md, COLLECTION_SYSTEM_DESIGN.md, PROGRESSION_BALANCE.md, this file. The owner has asked for the whole
-plan to be carried out; each phase still ends with a review packet in `docs/review/phase-XX/PHASE_REVIEW.md`
-(screenshots, commands, risks, rollback commit) and is reviewable with APPROVE / APPROVE + COMMENT / REVISE /
-ROLL BACK.
+The owner has asked for the whole blueprint to be carried out, not only the vertical slice it was first proving:
+every point of Prompts 1–16 (and what Section 15 asks of the build before launch), the full story of STORY_BIBLE.md
+through the Finale and Epilogue, and the Wardrobe and mounts. Planning artifacts (Prompt 0): REFACTOR_AUDIT.md,
+ASSET_AUDIT.md, STORY_BIBLE.md, QUEST_REWRITE_MAP.md, VISUAL_BIBLE.md, COLLECTION_SYSTEM_DESIGN.md,
+PROGRESSION_BALANCE.md, this file. Review evidence lives in `docs/review/phase-XX/`.
 
-| Phase | Blueprint | Status |
+Status words: **done** (built, tested, screenshot-checked), **partial** (what is missing is listed), **open**.
+
+## Prompt by prompt
+
+| # | Blueprint point | Status |
 | --- | --- | --- |
-| 0 | Audit and planning documents | **done** (this commit) |
-| 1 | Stabilization | camera jitter **fixed** (`6943aa45`); Open Barrow **fixed** (`0995dd35`); registry/quest integrity **guarded**; ultimate spam **measured, fix in Phase 3**; quest auto-activation **in Phase 2** (needs the accept step) |
-| 2 | Vertical slice: Briarhollow + Prologue chain + Chapel Crypt + the Mage, the world-event system, the art re-layering | **in progress**: art re-layering (`d0082a62`), world states + events + accept step + Briarhollow and its Prologue (this commit); next the Mage's new skills |
-| 3 | Progression rebalance (PROGRESSION_BALANCE.md Part 2) | **done** (`17208eeb`) |
-| 4 | Master hero (Mage) smooth re-render, then the other six | after 3 |
-| 5 | Spell expansion: the 4th slot (**done**, `0fc10e2b`), 35 new skills, talent mutations, boss partial CC | **done** (this commit; PROGRESSION_BALANCE.md Part 2½) |
-| 6 | Wardrobe + first mount | after 5 |
-| 7 | World art in region batches | after 6 |
-| 8 | Quest rewrite by act (QUEST_REWRITE_MAP.md) | **Act I done** (`06cf60a7`): every Vale village changes when saved, its people walk into Briarhollow's camp, the Defense of Hearthstead. **Act II done** (`87ec2d24`): the refugee escort and Nyx, the occupied pass, Lantern Hill's gloom and vigil with Orren and Cael, Stormwatch's Light, the Crown City's traitor and the Starfall Festival. **Acts III–IV (built zones) done** (this commit): choices, the factions' dilemmas, the Tear, Fernstead lost and retaken, Highwall's relief under Mara and Cael's sortie |
-| 9 | Companions and cinematic staging | with 8 |
-| 10 | Battles and sieges (Defense of Hearthstead, Highwall) | Hearthstead **done** with Act I (raid, wall, ram); Highwall after 9 |
-| 11–15 | Loot, hubs and interiors, dungeons, endgame, audio/polish | in order |
-| 16 | Full regression and release gate | last |
+| 1 | Stabilization: joystick/multitouch, camera vs shake, depth sorting, Open Barrow, registry (incl. Duskspire), ultimate spam, quest activation, save migrations, HUD clipping, SIGILFALL_QA.md | camera, Open Barrow, registry, ultimate, activation, migrations **done**. Joystick and depth sorting **not reproduced** (REFACTOR_AUDIT.md). **Open**: SIGILFALL_QA.md, a multitouch regression test, HUD screenshots at phone/tablet sizes |
+| 2 | Briarhollow + Prologue + Chapel Crypt + one class with the 4th slot; world states and events; accept step | **done**, except **open**: the village's interiors (the inn, the chapel, a cottage) |
+| 3 | Progression rebalance | **done** (`17208eeb`) |
+| 4 | Master hero (Mage) re-render + CHARACTER_ART_BIBLE.md, then the other six; portraits | **open** |
+| 5 | Spell expansion: the 4th slot, 35 new skills, talent mutations, boss partial CC | **done** (`a409df85`) |
+| 6 | Wardrobe (HEAD/CHEST/WEAPON) + one production mount, then the roster | **done**: the Wardrobe, eight mounts with deterministic sources, riding rules, save v8 (COLLECTION_SYSTEM_DESIGN.md §5). Wardrobe-only story looks (not tied to an item) come with Prompt 11 |
+| 7 | World art in region batches: landmark, routes, palette identity, credible entrances | **partial** (Briarhollow and Act I dressing); **open** for the other regions |
+| 8 | Quest rewrite by act: setup → escalation → complication → climax → aftermath; saved people reappear; side quests contribute | Prologue, Acts I–III and Highwall **done**; audit of every chain's five beats and side-quest payoffs **open**; Acts IV (two gates), V, VI, Finale **open** (Prompt 14) |
+| 9 | Companions and cinematic staging: camera focus, move-to, wait, emote, spawn/despawn, gate state, dialogue beat; skippable; debug presets | barks, arrivals, escorts, companions in events **done**; **open**: the beat primitives with skip, the debug preset menu |
+| 10 | Siege system: one representative Three Gates siege (intact → under siege → breached/liberated), then the others and the finale | Hearthstead's defense **done**; **open**: Highwall's three states as the representative siege, then the Gloam Gate and the Muster Hall |
+| 11 | Loot: less clutter, quest-item protection, rarity visuals, authored story rewards; cosmetic reward sources | **open** (sources for mounts and looks come with Prompt 6) |
+| 12 | Crown City districts and interiors; war-state variants; Three Gates fortresses share the kingdom language | war states of the Crown City **done**; **open**: the districts' interiors (inn, smithy, story hall), the muster-ground variant |
+| 13 | Dungeons: identity, an encounter mechanic, a multi-phase boss each; registry tests | nine shipped dungeons have phased bosses and registry tests; **open**: Blightheart, the Molten Throne, the Spire of the Rift, Duskspire (in the frozen `sigilfall-4b-wip` branch, to be retold) |
+| 14 | Dead Kingdom (Act V), Last March (Act VI), Crownfall, Epilogue (rebuilt Briarhollow, the bell), postgame Heroic/Mythic, a prestige mount | **open**; the zones, foes, art and three dungeon patterns of the old Act IV are on `sigilfall-4b-wip` and are reused under the new story |
+| 15 | Audio conventions, reduced motion and screen shake, volume, final art review | volume and screen-shake settings exist; **open**: reduced motion, quest stingers, the visual review backlog |
+| 16 | Full regression, validate:sigilfall, SIGILFALL_RELEASE_CHECKLIST.md | **open** (last) |
 
-## Phase 2 in detail (the vertical slice)
+## Order of work
 
-**2a — Render grid and art re-layering** (ASSET_AUDIT.md)
-- Renderer at 4 art px per world px (`RES`), procedural art unchanged (drawn at world size).
-- Art build: CraftPix Simple Summer and Poison Swamp ground (corner-transition sets analysed into a corner-Wang
-  lookup at build time), CraftPix props and towers; Greenvale and Gloomvault Level B pieces with normalization
-  grades; Royal Keep architecture smoothed ×2; VFX unchanged. A scale table per pack.
-- Ground painter: corner-Wang for CraftPix and Worlds-bundle transitions (dual grid), Royal Keep 47-blob only for
-  castle walls, moats and cliffs in fortified places.
-- Scenery: CraftPix trees, bushes, rocks, fences and props; Greenvale cottages; Royal Keep only for keeps, walls,
-  gatehouses, towers and the chapel; Gloomvault crypt dressing.
-- People: townsfolk back to the paper-doll figures (Royal Keep folk are Level C); companions get their own looks.
+1. **Prompt 6 — the Wardrobe and the mounts** (COLLECTION_SYSTEM_DESIGN.md): appearance ids, unlocks and backfill,
+   the Wardrobe tab, save v8; the Briarhollow Chestnut drawn in layers with the rider's own gear, summon/dismount
+   (key and touch button), the rules (no dungeons, fights, events), then the roster with its sources.
+2. **Prompts 10 and 14 — the rest of the story**: Highwall's siege states; the Gloam Gate (Elyra rescued, Nyx's
+   redemption) and the Muster Hall (the Bone Colossus); the Dead Kingdom's frozen villages and Queen Ysane's echoes;
+   the Last March where every helped faction arrives; Crownfall in four stages with Elyra's choice; the Epilogue.
+   Zones and dungeons from `sigilfall-4b-wip` are retold, registered and given the story layer.
+3. **Prompts 1, 2, 9, 11, 12 leftovers**: SIGILFALL_QA.md, interiors (Briarhollow, the Crown City), the
+   cinematic beat primitives with skip and the debug presets, loot clutter and quest-item protection.
+4. **Prompt 4 and 7 — art**: the master hero and the other six, then the remaining regions.
+5. **Prompt 15 and 16**: reduced motion, audio stingers, the visual review, the release checklist.
 
-**2b — World states and events** (STORY_BIBLE.md §4)
-- `RegionState`: a region declares named states with conditions on quest progress; a state adds/removes markers
-  (props, NPCs, spawns), swaps prop variants (roof → burned roof), sets ambience (smoke, embers, night tint) and
-  music. Chosen when the region is entered, and re-chosen when a quest changes.
-- `StoryEvent` objectives on quests: `raid` (waves into an area), `defend` (hold a point; allies on screen; a gate
-  with health), `rescue` (reach people; they follow to a safe point), `escort` (a group walks a path), `ambush`,
-  `arrival`. Events are driven by the existing waves/telegraph/enemy systems and resume after a reload from the
-  quest's saved step.
-- Companion **barks** and short in-engine **dialogue beats** (camera focus, NPC move-to, emote) with skip.
-- The quest **accept step**: story and side quests are offered by their giver ("!"), accepted in dialogue, then
-  tracked (fixes the auto-activation bug).
+## What already shipped, by act
 
-**2c — Briarhollow** (new region, a hand-authored village map in the Section 7 recipe) with dusk, raid,
-aftermath and camp states; the Prologue chain (QUEST_REWRITE_MAP.md "New quests"); the Chapel Crypt (the old crypt
-region, retold); new heroes start in Briarhollow, existing heroes keep Emberwick (save v3 marks the Prologue done for
-anyone past `close-the-rift`).
-
-**2d — The slice's class**: the Mage with the 4th slot and two of its new skills (Gravity Well, Purge), Magic Spells
-VFX.
-
-**2e — Evidence**: desktop, phone and tablet screenshots of Briarhollow in each state, the raid, the crypt and the
-Mage's spells; tests for states, events (including reload mid-event), the accept step and the save migration.
-
-## Act I in detail (done)
-
-- **Zone story layer** (`ZoneSpec.story`, `PoiSpec.when`, `HubSpec.when/wall`): generated zones place people,
-  props, fires, plumes and named places near a town, a sight, a house, a walled town's gate or the shore,
-  each shown only while its condition holds; packs that the story sends away leave while the hero watches.
-- **Event kinds**: `arrival` (people walk into the camp along the roads and become its NPCs); siege enemies
-  (`siege`) that go for the gate and nothing else; companions stay to say their last lines.
-- **Fernstead**: the Harvest Stones fouled with grieflight until held (`fern-stones`, defend the stone), then
-  lit; the barrows quiet after the Grey Lady; rangers to the camp's watchfire (`camp-scouts`).
-- **Millbrook**: the gang's blockade at the mill until broken with Sefa and the militia (`mill-the-bridge`),
-  the barricade burns; Nyx reads the cipher for Pim (cameo); grain carts and Tobin's hens (`camp-grain`).
-- **Reedwater**: wells reek of marsh-rot until Mire falls; the abducted led home (`reed-bring-them-home`,
-  rescue across the marsh) and stand in the square after; healers to the camp (`camp-healers`).
-- **Gullport**: the cove held, then abandoned; the drowned come for the Patience (`gull-the-slip`); the forge
-  to the camp (`camp-smiths`).
-- **Hearthstead**: a walled town; refugees camped by the road; the picket empties; the Defense
-  (`hearth-the-riders-come`, `hearth-hold-the-wall`, `hearth-the-ram`), the empty shrine, Vosk's orders read
-  by Gaius; Dunmore's riders to the camp (`camp-riders`).
-- Save v4: a hero already past an inserted beat has played it.
-
-## Act II in detail (done)
-
-- **Escort** events: a wagon (a walking ward) and its people go down a road, stop while foes are near, and
-  the waves find them where they are. **Gloom** state: a cold early dark (lighter than night).
-- **Duskfen**: `the-sick-villages` is now the refugee wagon through the fen (the roads office closed the
-  King's Road); Nyx joins at Stilt Hollow (`nyx-joins`) and gives `the-dwarves-plea`; Low Wick is green
-  with plague until the cure, then burns (`low-wick-fires`) and its people come home.
-- **Ironpeak**: the Deepforge is the Host's toll fortress (banners, toll-board, garrison) until Grold falls;
-  Nyx opens the postern while the hero holds the garrison (`nyx-the-back-door`); Hearthstead's stone is in
-  the Sigil of Stone; dwarven banners return; Tova brings dwarf-steel to the camp (`camp-dwarves`).
-- **Lantern Hill**: gloom until Orren's vigil relights the great lamp (`orren-the-last-chapel`,
-  `the-last-lamp`); Cael in the hostel as "Wat" (`cael-the-hostel`, before the Kings' Mound); after
-  Corvane, his banner on the mound and the Ninefold flag on the hill.
-- **Stormwatch**: the Light burns after Blackwake.
-- **The Crown City**: the treasury, the roads office and Crane's cellar (`city-*`), the Starfall Festival,
-  the Night of Knives (defend the Regent in the burning square), Crane's catacomb stair, Champion of Aster
-  (`festival-*`); the city locks down after; tents and banners at war (Act IV). Act III opens from the
-  Regent's champion. Save v5.
-
-## Acts III–IV in detail (done)
-
-- **Choices** (`QuestDef.choice`): the answers are offered together; taking one closes the others for good
-  (kept as done with n −1, "the path not taken", hidden from the log), and what comes after opens either
-  way. `taken` in story conditions and NPC lines tells which answer was chosen.
-- **Glimmerwood**: end Thistlemourn (Old Root) or hold the Summer Hall while Silvaine sings him back
-  (`silvaines-song`, defend her); the clans decide either way; the prince lives in Lumen Glade if saved.
-- **Vinecoil**: Vinehold's own barges carried the venom; burn the ledger for Kesh or take it to the Regent.
-- **The sun houses** keep their oath until Sefu breaks it; **Sigrun** spares Hrimfang into exile.
-- **The Tear**: the Pale Herald waits; a fight that is not won (`ends`), Nyx walks into the grey mid-fight
-  (`leave`), Elyra is taken (`taken`); the same night Fernstead falls (burning, the Host in the square, its
-  people in Briarhollow's camp) until Mara, Hollis and Dunmore's riders take it back (`fern-retaken`).
-  Elyra and Nyx are gone from the world until Act IV's Gloam Gate (future).
-- **Highwall**: Mara commands the relief (`mara-commands`), Cael leads the sortie before the Breach.
-- Companions (Mara, Elyra, Cael, Orren, Nyx) go down and get back up instead of dying (`rally`).
-- Old-story words swept from every built zone, dungeon and item (place names kept). Save v6.
+- **Prologue** (`d0082a62` and after): Briarhollow's dusk, raid, crypt and camp states; Elyra and Mara.
+- **Act I** (`06cf60a7`): the story layer for generated zones; Fernstead's stones, Millbrook's blockade, Reedwater's
+  abducted, Gullport's slip, the Defense of Hearthstead; the camp's arrivals. Save v4.
+- **Act II** (`87ec2d24`): the refugee escort and Nyx, the occupied pass, Lantern Hill's vigil, Orren and Cael,
+  Stormwatch's Light, the Crown City's traitor and the Night of Knives. Save v5.
+- **Acts III–IV, built zones** (`0a9e1520`): choices that close the other path, the factions' dilemmas, the Pale
+  Herald at the Tear, Fernstead lost and retaken, Highwall's relief under Mara and Cael's sortie. Save v6.
+- **Progression** (`17208eeb`) and **skills** (`a409df85`): XP that follows the story, a slower ultimate, cheaper
+  respec, 35 new skills with talent mutations, boss partial CC. Save v7.
 
 ## Rules carried through every phase
 
-Save migrations are versioned and tested; ids are never renamed; raw packs never enter the bundle; every phase runs
-typecheck, lint, the Sigilfall tests and the production build before its packet; commits by pathspec, pushed to
-`pre-release`.
+Save migrations are versioned and tested; ids are never renamed; raw packs never enter the bundle; every batch runs
+typecheck, lint, the Sigilfall tests and the production build before it is committed by pathspec and pushed to
+`pre-release`; the project's formatting is hand-kept (never run Prettier over it).

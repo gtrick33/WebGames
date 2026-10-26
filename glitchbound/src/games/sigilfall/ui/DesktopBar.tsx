@@ -5,7 +5,9 @@ import { SKILLS } from '../data/skills';
 import type { SlotKey } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { skillIconUrl } from '../render/sprites';
+import { SUMMON_TIME } from '../sim/world';
 import { useFrame } from './GameScreen';
+import { uiIcon } from './uiIcons';
 
 /** The desktop action bar: keys on every slot, cooldowns, the ultimate's charge, and the interact prompt. */
 export function DesktopBar({ engine }: { engine: SigilEngine }) {
@@ -34,8 +36,26 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
         {slots.map((s) => (
           <Slot key={s.slot} engine={engine} slot={s.slot} keyLabel={s.key} />
         ))}
+        {!!engine.hero?.mounts.length && <MountSlot engine={engine} />}
       </div>
     </>
+  );
+}
+
+/** Ride or get down (Y), once the hero owns a mount; it fills while the mount is called. */
+function MountSlot({ engine }: { engine: SigilEngine }) {
+  const el = useRef<HTMLButtonElement>(null);
+  useFrame(engine, (w) => {
+    const b = el.current;
+    if (!b) return;
+    b.classList.toggle('is-ready', !!w.player.riding);
+    b.style.setProperty('--fill', `${w.player.riding ? 100 : Math.round((w.player.summon / SUMMON_TIME) * 100)}%`);
+  });
+  return (
+    <button ref={el} className="rb-slot6 is-mount" title="Ride your mount (or get down)" onClick={() => engine.toggleMount()} tabIndex={-1}>
+      <img src={uiIcon('horseshoe', 3)} alt="" />
+      <kbd>Y</kbd>
+    </button>
   );
 }
 
