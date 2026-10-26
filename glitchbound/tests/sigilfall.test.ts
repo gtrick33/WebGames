@@ -290,16 +290,20 @@ describe('sigilfall character', () => {
     expect(learnedSkills(c)).toEqual(['heavy-strike']);
     levelTo(c, 6);
     expect(learnedSkills(c)).toHaveLength(4);
-    expect(c.skills.filter(Boolean)).toHaveLength(3);
+    // four slots: the first four skills fill the bar by themselves
+    expect(c.skills.filter(Boolean)).toHaveLength(4);
     expect(setSkill(c, 0, 'nope')).toBe(false);
-    const fourth = learnedSkills(c).find((id) => !c.skills.includes(id))!;
-    expect(setSkill(c, 2, fourth)).toBe(true);
-    expect(c.skills[2]).toBe(fourth);
+    levelTo(c, 20);
+    // more skills than slots: the bar is a choice
+    expect(learnedSkills(c).length).toBeGreaterThan(4);
+    const fifth = learnedSkills(c).find((id) => !c.skills.includes(id))!;
+    expect(setSkill(c, 3, fifth)).toBe(true);
+    expect(c.skills[3]).toBe(fifth);
     // putting a slotted skill in another slot swaps the two
     const first = c.skills[0];
     setSkill(c, 1, first);
     expect(c.skills[1]).toBe(first);
-    expect(new Set(c.skills).size).toBe(3);
+    expect(new Set(c.skills).size).toBe(4);
   });
 
   it('talents open at level 10 with a specialization; rows need points, some talents need others', () => {
@@ -316,7 +320,7 @@ describe('sigilfall character', () => {
     expect(chooseSpec(c, 0)).toBe(true);
     expect(learnedSkills(c)).toContain('flamestrike');
     // the bar was full: the new ability takes the last slot
-    expect(c.skills[2]).toBe('flamestrike');
+    expect(c.skills[3]).toBe('flamestrike');
     expect(buildHero(c).stats.fire).toBe(CLASSES.mage.base.fire + 10);
     // the other trees wait for 31 points in this one
     expect(cantLearn(c, 'conduction')).toMatch(new RegExp(`${SPEC_FOCUS} points in Pyromancer`));
@@ -518,6 +522,17 @@ describe('sigilfall saves', () => {
     expect(migrate({ v: SAVE_VERSION + 1 })).toBeNull();
     expect(migrate(null)).toBeNull();
     expect(migrate({ heroes: [] })).toBeNull();
+  });
+
+  it('gives a three-slot save a fourth slot, filled with a learned skill that was off the bar', () => {
+    const c = validateCharacter({ cls: 'mage', level: 20, skills: ['fireball', 'frost-nova', null] }, 0)!;
+    expect(c.skills).toHaveLength(4);
+    expect(c.skills.slice(0, 2)).toEqual(['fireball', 'frost-nova']);
+    expect(c.skills[3]).not.toBeNull();
+    expect(new Set(c.skills.filter(Boolean)).size).toBe(c.skills.filter(Boolean).length);
+    // a four-slot save keeps exactly what it had
+    const d = validateCharacter({ cls: 'mage', level: 20, skills: ['fireball', null, null, 'frost-nova'] }, 0)!;
+    expect(d.skills).toEqual(['fireball', null, null, 'frost-nova']);
   });
 
   it('cleans up a tampered hero instead of trusting it', () => {

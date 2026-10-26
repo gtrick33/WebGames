@@ -3,7 +3,7 @@ import { CLASSES } from './data/classes';
 import { NPCS, QUEST_DEFS } from './data/quests';
 import { REGIONS, TIERS, type RiftMod } from './data/regions';
 import { SKILLS } from './data/skills';
-import type { ClassId, Item, RegionId, SlotId } from './data/types';
+import type { ClassId, Item, RegionId, SkillIndex, SlotId } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { bagSize, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
@@ -168,6 +168,7 @@ export class SigilEngine {
   attach(input: HTMLElement): void {
     this.kbm = new KeyboardMouse(input);
     this.kbm.ultKey = this.settings.ultKey;
+    this.kbm.skill4Key = this.settings.skill4Key;
     this.kbm.onUi = (k) => this.uiKey(k);
     this.last = performance.now();
     const loop = (t: number): void => {
@@ -452,7 +453,10 @@ export class SigilEngine {
   private applySettings(): void {
     const s = this.settings;
     this.sound.setVolumes({ master: s.master, music: s.music, sfx: s.sfx, muted: s.muted });
-    if (this.kbm) this.kbm.ultKey = s.ultKey;
+    if (this.kbm) {
+      this.kbm.ultKey = s.ultKey;
+      this.kbm.skill4Key = s.skill4Key;
+    }
     if (this.world) this.world.settings = s;
   }
 
@@ -749,7 +753,7 @@ export class SigilEngine {
     return true;
   }
 
-  assignSkill(slot: 0 | 1 | 2, id: string | null): void {
+  assignSkill(slot: SkillIndex, id: string | null): void {
     if (!this.hero || !setSkill(this.hero, slot, id)) return;
     this.changed('click');
   }

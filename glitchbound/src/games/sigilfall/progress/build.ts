@@ -3,7 +3,7 @@ import { CLASSES, emptyStats } from '../data/classes';
 import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { Effect, FormDef, GroundSpec, Mod, ProcDef, Rarity, ResourceDef, SkillOp, SkillSpec, SlotKey, Stats, StatKey } from '../data/types';
-import { SLOTS } from '../data/types';
+import { SKILL_SLOTS, SLOTS } from '../data/types';
 import { hasUltimate, SIGIL_BONUS, sigilCount, type Character } from './character';
 import { opText } from './describe';
 import { itemMods, itemName, itemStats } from './items';
@@ -443,6 +443,7 @@ export function buildHero(c: Character, formId: string | null = null): HeroBuild
     s1: c.skills[0],
     s2: c.skills[1],
     s3: c.skills[2],
+    s4: c.skills[3],
     ult: hasUltimate(c) ? def.ult : null,
     dodge: def.dodge,
   };
@@ -451,7 +452,7 @@ export function buildHero(c: Character, formId: string | null = null): HeroBuild
     bar.dodge = form.dodge;
     const extra = formSkills(c, form);
     let k = 0;
-    for (const slot of ['s1', 's2', 's3'] as const) if (bar[slot] !== form.skill) bar[slot] = extra[k++] ?? null;
+    for (const slot of SKILL_SLOTS) if (bar[slot] !== form.skill) bar[slot] = extra[k++] ?? null;
   }
   const skills: Record<string, ResolvedSkill> = {};
   for (const id of classSkillIds(c)) if (SKILLS[id]) skills[id] = resolveSkill(c, id, mods);

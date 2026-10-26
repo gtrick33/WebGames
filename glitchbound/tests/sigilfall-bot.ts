@@ -5,7 +5,7 @@
  * its boss, a person can too.
  */
 import { xpToNext } from '../src/games/sigilfall/data/classes';
-import { SLOTS, type ClassId, type RegionId, type SlotKey } from '../src/games/sigilfall/data/types';
+import { SKILL_SLOTS, SLOTS, type ClassId, type RegionId, type SlotKey } from '../src/games/sigilfall/data/types';
 import { chooseSpec, learnTalent, newCharacter, addXp, freePoints, type Character } from '../src/games/sigilfall/progress/character';
 import { rollGear } from '../src/games/sigilfall/progress/items';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
@@ -193,7 +193,7 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           const spec = w.build.skills[w.build.bar[slot] ?? '']?.spec;
           return !spec ? 0 : spec.cast === 'channel' || spec.cast === 'drain' ? -1 : spec.cooldown;
         };
-        for (const slot of (['s1', 's2', 's3'] as const).slice().sort((x, y) => cd(y) - cd(x))) if (p.cds[slot].charges > 0 && reach(slot)) f.casts.push({ slot, angle: a, dist: null, assist: 0 });
+        for (const slot of [...SKILL_SLOTS].sort((x, y) => cd(y) - cd(x))) if (p.cds[slot].charges > 0 && reach(slot)) f.casts.push({ slot, angle: a, dist: null, assist: 0 });
       }
       if (p.hp < p.maxHp * 0.4 && w.hero.potions > 0) f.potion = true;
     }

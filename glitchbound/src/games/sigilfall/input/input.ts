@@ -5,13 +5,15 @@ import type { InputFrame } from '../sim/world';
 
 /**
  * Input adapters. Gameplay never reads the keyboard or the touch screen directly: each adapter fills
- * the same InputFrame. Desktop: WASD/arrows, mouse aim, left button attacks, Q E R skills, Space
+ * the same InputFrame. Desktop: WASD/arrows, mouse aim, left button attacks, Q E R and C (or another
+ * key) skills, Space
  * dodges, the ultimate on a key you choose. Touch: the on-screen controls write into TouchState.
  */
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 
 export type UltKey = 'f' | 't' | 'shift' | 'rmb';
+export type Skill4Key = 'c' | 'v' | 'z' | 'x';
 
 /** Menu shortcuts the keyboard adapter reports to the UI. */
 export type UiKey = 'pause' | 'hero' | 'skills' | 'talents' | 'quests' | 'map';
@@ -26,6 +28,7 @@ export class KeyboardMouse {
   /** Last time the mouse or keyboard was used (to switch the controls shown). */
   lastUsed = 0;
   ultKey: UltKey = 'f';
+  skill4Key: Skill4Key = 'c';
   onUi: ((k: UiKey) => void) | null = null;
   private target: HTMLElement;
   private off: (() => void)[] = [];
@@ -77,6 +80,7 @@ export class KeyboardMouse {
         if (code === 'KeyQ') this.queued.push('s1');
         else if (code === 'KeyE') this.queued.push('s2');
         else if (code === 'KeyR') this.queued.push('s3');
+        else if (code === `Key${this.skill4Key.toUpperCase()}`) this.queued.push('s4');
         else if (k === ' ') this.queued.push('dodge');
         else if ((this.ultKey === 'f' && code === 'KeyF') || (this.ultKey === 't' && code === 'KeyT') || (this.ultKey === 'shift' && k === 'Shift')) this.queued.push('ult');
         else if (code === 'Digit1' || code === 'KeyH') this.potion = true;

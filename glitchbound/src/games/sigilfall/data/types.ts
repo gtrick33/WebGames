@@ -30,8 +30,11 @@ export type StatKey = 'hp' | 'hpPct' | 'power' | 'crit' | 'critDmg' | 'haste' | 
 export type Stats = Record<StatKey, number>;
 
 /** Skill slots on the action bar. */
-export type SlotKey = 'basic' | 's1' | 's2' | 's3' | 'ult' | 'dodge';
-export const ACTION_SLOTS: SlotKey[] = ['basic', 's1', 's2', 's3', 'ult', 'dodge'];
+export type SlotKey = 'basic' | 's1' | 's2' | 's3' | 's4' | 'ult' | 'dodge';
+export const ACTION_SLOTS: SlotKey[] = ['basic', 's1', 's2', 's3', 's4', 'ult', 'dodge'];
+/** The skill slots a player fills (four since blueprint V2.9; saves with three get an empty fourth). */
+export const SKILL_SLOTS = ['s1', 's2', 's3', 's4'] as const;
+export type SkillIndex = 0 | 1 | 2 | 3;
 
 /* ------------------------------------------------------------------ skills */
 

@@ -2,7 +2,7 @@ import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { QUESTS, QUEST_DEFS } from '../data/quests';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS, talentNode } from '../data/talents';
-import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SigilId, SlotId } from '../data/types';
+import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SigilId, SkillIndex, SlotId } from '../data/types';
 import { itemClass, itemSlot, salvageValue } from './items';
 
 /**
@@ -65,7 +65,7 @@ export interface Character {
   /** The chosen specialization (a talent tree, 0-2), from level 10; null before choosing. */
   spec: 0 | 1 | 2 | null;
   /** Skills in slots 1-3 (null = empty). */
-  skills: [string | null, string | null, string | null];
+  skills: [string | null, string | null, string | null, string | null];
   equip: Partial<Record<SlotId, Item>>;
   bag: Item[];
   potions: number;
@@ -100,7 +100,7 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     sold: [],
     talents: {},
     spec: null,
-    skills: [...def.start],
+    skills: [...def.start, null],
     equip: {},
     bag: [],
     potions: START_POTIONS,
@@ -156,7 +156,7 @@ export function learnedSkills(c: Character): string[] {
 export const hasUltimate = (c: Character): boolean => (SKILLS[CLASSES[c.cls].ult]?.unlock ?? 99) <= c.level;
 
 /** New skills go into an empty slot by themselves, so a new player never has to visit a menu to use them. */
-function autoSlotSkills(c: Character): void {
+export function autoSlotSkills(c: Character): void {
   for (const id of learnedSkills(c)) {
     if (c.skills.includes(id)) continue;
     const free = c.skills.indexOf(null);
@@ -165,7 +165,7 @@ function autoSlotSkills(c: Character): void {
 }
 
 /** Puts a skill in a slot; if it was in another slot, the two swap. */
-export function setSkill(c: Character, slot: 0 | 1 | 2, id: string | null): boolean {
+export function setSkill(c: Character, slot: SkillIndex, id: string | null): boolean {
   if (id !== null && !learnedSkills(c).includes(id)) return false;
   const other = id === null ? -1 : c.skills.indexOf(id);
   if (other >= 0) c.skills[other] = c.skills[slot];
@@ -229,7 +229,7 @@ export function chooseSpec(c: Character, tree: 0 | 1 | 2): boolean {
   // the specialization's ability goes on the bar even when it is full (in the last slot; what was there
   // stays learned and can go back from the Skills screen)
   const skill = def.trees[tree].skill;
-  if (!def.trees[tree].formOnly && !c.skills.includes(skill)) c.skills[2] = skill;
+  if (!def.trees[tree].formOnly && !c.skills.includes(skill)) c.skills[3] = skill;
   return true;
 }
 

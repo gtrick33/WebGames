@@ -8,7 +8,7 @@ import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { THEMES } from '../data/themes';
 import { BOSS_MARKS } from '../data/vendors';
 import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey } from '../data/types';
-import { ACTION_SLOTS } from '../data/types';
+import { ACTION_SLOTS, SKILL_SLOTS } from '../data/types';
 import { buildHero, type HeroBuild } from '../progress/build';
 import { addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character } from '../progress/character';
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
@@ -204,7 +204,7 @@ export class World {
 
   /** Companions that stay (the wolf, the imp) come along into every region: the ones on the bar are called at once. */
   private callCompanions(): void {
-    for (const slot of ['s1', 's2', 's3'] as const) {
+    for (const slot of SKILL_SLOTS) {
       const id = this.build.bar[slot];
       const spec = id ? this.build.skills[id]?.spec : undefined;
       if (spec?.cast !== 'summon') continue;
@@ -601,7 +601,7 @@ export class World {
 
   resetCooldown(skill?: string): void {
     const p = this.player;
-    const slots = (['s1', 's2', 's3'] as SlotKey[]).filter((s) => this.build.bar[s] && p.cds[s].charges < p.cds[s].max);
+    const slots = ([...SKILL_SLOTS] as SlotKey[]).filter((s) => this.build.bar[s] && p.cds[s].charges < p.cds[s].max);
     const pick = skill ? slots.find((s) => this.build.bar[s] === skill) : slots[Math.floor(this.rand() * slots.length)];
     if (!pick) return;
     const cd = p.cds[pick];
@@ -613,7 +613,7 @@ export class World {
 
   reduceCooldowns(s: number): void {
     const p = this.player;
-    for (const slot of ['s1', 's2', 's3', 'dodge'] as SlotKey[]) {
+    for (const slot of [...SKILL_SLOTS, 'dodge'] as SlotKey[]) {
       const cd = p.cds[slot];
       if (cd.charges >= cd.max) continue;
       cd.t -= s;

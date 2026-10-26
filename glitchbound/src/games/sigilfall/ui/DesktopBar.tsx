@@ -15,6 +15,7 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
     { slot: 's1', key: 'Q' },
     { slot: 's2', key: 'E' },
     { slot: 's3', key: 'R' },
+    { slot: 's4', key: engine.settings.skill4Key.toUpperCase() },
     { slot: 'ult', key: ult === 'rmb' ? 'RMB' : ult === 'shift' ? 'Shift' : ult.toUpperCase() },
     { slot: 'dodge', key: 'Space' },
   ];

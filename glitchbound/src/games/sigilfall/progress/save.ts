@@ -7,7 +7,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character } from './character';
+import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 
 /**
@@ -50,6 +50,8 @@ export interface Settings {
   shake: boolean;
   numbers: boolean;
   ultKey: 'f' | 't' | 'shift' | 'rmb';
+  /** The fourth skill's key (the slot added in blueprint V2.9). */
+  skill4Key: 'c' | 'v' | 'z' | 'x';
   /** Mirror the touch controls (skills on the left). */
   lefty: boolean;
   /** The rotate-your-phone hint was dismissed. */
@@ -70,6 +72,7 @@ export const DEFAULT_SETTINGS: Settings = {
   shake: true,
   numbers: true,
   ultKey: 'f',
+  skill4Key: 'c',
   lefty: false,
   rotateSeen: false,
 };
@@ -113,6 +116,7 @@ export function validateSettings(v: unknown): Settings {
     shake: bool(o.shake, d.shake),
     numbers: bool(o.numbers, d.numbers),
     ultKey: o.ultKey === 't' || o.ultKey === 'shift' || o.ultKey === 'rmb' ? o.ultKey : 'f',
+    skill4Key: o.skill4Key === 'v' || o.skill4Key === 'z' || o.skill4Key === 'x' ? o.skill4Key : 'c',
     lefty: bool(o.lefty, d.lefty),
     rotateSeen: bool(o.rotateSeen, d.rotateSeen),
   };
@@ -162,7 +166,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     sold: Array.isArray(o.sold) ? o.sold.filter((x): x is string => typeof x === 'string' && x.length <= 24).slice(0, 80) : [],
     talents: {},
     spec: level >= SPEC_LEVEL && (o.spec === 0 || o.spec === 1 || o.spec === 2) ? o.spec : null,
-    skills: [null, null, null],
+    skills: [null, null, null, null],
     equip: {},
     bag: [],
     potions: int(o.potions, 0, POTION_CAP + 1, START_POTIONS),
@@ -193,9 +197,12 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   // skills: only learned skills of this class
   const learned = learnedSkills(c);
   if (Array.isArray(o.skills)) {
-    o.skills.slice(0, 3).forEach((id, i) => {
+    // three slots before blueprint V2.9: the fourth comes in empty (and fills with the next skill learned)
+    o.skills.slice(0, 4).forEach((id, i) => {
       if (typeof id === 'string' && learned.includes(id) && SKILLS[id] && !c.skills.includes(id)) c.skills[i] = id;
     });
+    // a three-slot save: the new slot takes a learned skill that wasn't on the bar, if there is one
+    if (o.skills.length < 4) autoSlotSkills(c);
   }
   // items: unique ids, worn ones in the right slot and wearable
   const seen = new Set<string>();

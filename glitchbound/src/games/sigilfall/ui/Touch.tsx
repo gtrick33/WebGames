@@ -13,7 +13,7 @@ import { uiIcon } from './uiIcons';
 /**
  * Two-thumb touch controls. Left: a joystick that appears where the thumb lands (or stays fixed),
  * follows the thumb if it slides far, and lets go on release, cancel or lost capture, so it never
- * sticks. Right: attack, three skills, the ultimate and dodge. Attack aims at the nearest enemy (no aim
+ * sticks. Right: attack, four skills, the ultimate and dodge. Attack aims at the nearest enemy (no aim
  * line); a tapped spell goes where the hero faces (the facing marker); drag a spell to aim it yourself
  * (drag back to the button to cancel). Every control captures its own finger, so moving and casting at
  * once just works.
@@ -33,6 +33,7 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
         <SkillButton engine={engine} slot="s1" />
         <SkillButton engine={engine} slot="s2" />
         <SkillButton engine={engine} slot="s3" />
+        <SkillButton engine={engine} slot="s4" />
         <SkillButton engine={engine} slot="ult" />
         <SkillButton engine={engine} slot="dodge" />
         <PotionButton engine={engine} />

@@ -6,7 +6,7 @@ import { mapColors } from '../data/themes';
 import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/talents';
-import type { ClassId, Item, QuestDef, RegionDef, RegionId, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
+import type { ClassId, Item, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
 import { bagSize, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character } from '../progress/character';
@@ -374,15 +374,15 @@ function SkillCard({ engine, id, slotLabel, active, onClick }: { engine: SigilEn
 function SkillsPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const cls = CLASSES[h.cls];
-  const [slot, setSlot] = useState<0 | 1 | 2>(0);
+  const [slot, setSlot] = useState<SkillIndex>(0);
   const learned = learnedSkills(h);
-  const keys = engine.touchMode ? ['Skill 1', 'Skill 2', 'Skill 3'] : ['Q', 'E', 'R'];
+  const keys = engine.touchMode ? ['Skill 1', 'Skill 2', 'Skill 3', 'Skill 4'] : ['Q', 'E', 'R', engine.settings.skill4Key.toUpperCase()];
   return (
     <div className="rb-skills">
       <section>
-        <span className="rb-kicker">Your three skill slots: pick a slot, then a skill</span>
+        <span className="rb-kicker">Your four skill slots: pick a slot, then a skill. You learn more skills than fit: the bar is your build.</span>
         <div className="rb-skill-slots">
-          {([0, 1, 2] as const).map((i) => {
+          {([0, 1, 2, 3] as const).map((i) => {
             const id = h.skills[i];
             return (
               <button key={i} className={`rb-skillslot${slot === i ? ' is-on' : ''}`} onClick={() => setSlot(i)}>
@@ -903,7 +903,14 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
               </button>
             ))}
           </div>
-          <span className="rb-small rb-dim">WASD move · mouse aim · left click attack · Q E R skills · Space dodge · 1 potion · {s.ultKey === 'f' ? 'G' : 'F'} talk/travel · I bag · K talents · U skills · J quests · M map · Esc pause</span>
+          <div className="rb-seg" role="group" aria-label="Fourth skill key">
+            {(['c', 'v', 'z', 'x'] as const).map((k) => (
+              <button key={k} className={s.skill4Key === k ? 'is-on' : ''} onClick={() => set({ skill4Key: k })}>
+                Fourth skill: {k.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <span className="rb-small rb-dim">WASD move · mouse aim · left click attack · Q E R {s.skill4Key.toUpperCase()} skills · Space dodge · 1 potion · {s.ultKey === 'f' ? 'G' : 'F'} talk/travel · I bag · K talents · U skills · J quests · M map · Esc pause</span>
         </section>
         <section>
           <span className="rb-kicker">Display</span>
