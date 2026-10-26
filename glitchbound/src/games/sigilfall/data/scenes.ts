@@ -93,6 +93,53 @@ export const SCENES: SceneDef[] = [
     ],
   },
   {
+    // Act I: the morning after the Defense of Hearthstead, the gate still standing and the shrine dark
+    id: 'hearth-morning',
+    region: 'amberfield',
+    when: during('hearth-the-shrine'),
+    near: 'hearth-square',
+    r: 150,
+    steps: [
+      { look: 'hearth-gate' },
+      { say: 'marshal-dunmore', line: 'The gate held. I didn’t think it would. I’ve stopped telling people that.' },
+      { look: 'tess-hearthkeeper' },
+      { emote: 'tess-hearthkeeper', icon: 'dots' },
+      { say: 'tess-hearthkeeper', line: 'The shrine fire went out in the night. Not blown out. Taken. Come and look.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // Act II: the great lamp of Lantern Hill alight again
+    id: 'lantern-relit',
+    region: 'ashen-barrows',
+    when: all(after('the-last-lamp'), until('sir-corvane')),
+    near: 'lantern-hill',
+    r: 160,
+    steps: [
+      { look: 'lantern-hill' },
+      { emote: 'lamplighter-ivo', icon: 'heart' },
+      { say: 'lamplighter-ivo', line: 'Look at it. Forty years I trimmed that wick and never once saw it from the road.' },
+      { say: 'sister-maud', line: 'The dead see it too. Tonight they will stay where they are.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // Act III: Fernstead taken back, its people home in their own square
+    id: 'fern-home',
+    region: 'brackenridge',
+    when: after('fern-retaken'),
+    near: 'fern-square',
+    r: 160,
+    steps: [
+      { look: 'fern-square' },
+      { say: 'warden-hollis', line: 'Home. They left their banners on our roofs. We’ll burn them on the Harvest Stones tonight.' },
+      { emote: 'pip-tanner', icon: 'alert' },
+      { say: 'pip-tanner', line: 'My room’s still there! Something slept in my bed. A skeleton. I’m keeping the bed.' },
+      { say: 'mother-alsa', line: 'Then you’re washing it first, Pip.' },
+      { look: 'hero' },
+    ],
+  },
+  {
     // Act IV: Nyx back in Mara's camp under a white rag, the Herald's map under her arm
     id: 'highwall-nyx-returns',
     region: 'highwall',
