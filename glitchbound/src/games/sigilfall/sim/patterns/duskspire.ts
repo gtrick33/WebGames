@@ -104,7 +104,7 @@ function tick(w: World, e: Enemy): void {
     }
     return true;
   });
-  // torn souls drift home to the King; each that reaches him mends him
+  // torn souls drift home to Vaelor; each that reaches him mends him
   s.souls = s.souls.filter((so) => {
     const m = w.enemies.find((x) => x.id === so.id);
     if (!m || m.dead) return false;
@@ -145,7 +145,7 @@ function tick(w: World, e: Enemy): void {
       if (p.hp <= 0) w.playerDies();
     }
   }
-  // the rot creeps outward, a little every second, and never dries while the King stands
+  // the rot creeps outward, a little every second, and never dries while Vaelor stands
   for (const r of s.rots) if (r.f.r < r.max) r.f.r = Math.min(r.max, r.f.r + r.grow * dt);
   // the oath: while any of its guardsmen stand, the Hollow Guard's shield mends
   if (s.oath) {
@@ -167,7 +167,7 @@ function tick(w: World, e: Enemy): void {
     }
     if (w.time >= s.doom.at) {
       s.doom = null;
-      w.emit({ t: 'banner', text: 'The Hollow King is eternal', sub: 'His doom has fallen' });
+      w.emit({ t: 'banner', text: 'The Hallow King is eternal', sub: 'His doom has fallen' });
       w.shake(10);
       w.fxBurst(p.x, p.y, '#ff4a8a', 40, 80);
       if (!p.dead) hurtPlayer(w, p.maxHp * 50, {});
@@ -176,7 +176,7 @@ function tick(w: World, e: Enemy): void {
   w.after(0, () => tick(w, e));
 }
 
-/** Pillars standing in the boss's room (tile centres). */
+/** Pillars standing in the boss's room (tile centers). */
 function pillars(w: World, e: Enemy): { x: number; y: number }[] {
   const out: { x: number; y: number }[] = [];
   for (const i of w.map.roomTiles[e.room] ?? []) {
@@ -284,7 +284,7 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
   },
 
   /**
-   * The Hollowing: from now on the hero loses `pct` of their health every second while the King stands,
+   * The Hollowing: from now on the hero loses `pct` of their health every second while Vaelor stands,
    * and their healing is cut by `cut` (each phase sets both anew; it stops only with him).
    */
   'dusk:hollowing': (w, e, _dt, k) => {
@@ -327,7 +327,7 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
   },
 
   /**
-   * Souls torn from the hero: `count` of them rise round the hero and drift back to the King; each that
+   * Souls torn from the hero: `count` of them rise round the hero and drift back to Vaelor; each that
    * reaches him mends `heal` of his health. Knobs: count, heal, speed, far (least distance from him).
    */
   'dusk:harvest': (w, e, _dt, k) => {

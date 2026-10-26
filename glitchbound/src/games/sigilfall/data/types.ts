@@ -526,6 +526,9 @@ export type EliteAffix = 'frenzied' | 'molten' | 'vampiric' | 'shielded' | 'vola
 /* ----------------------------------------------------------------- regions */
 
 export type RegionId =
+  /** The finale's memory of Vaelmoor and the postgame's catacombs. */
+  | 'vaelmoor-remembered'
+  | 'crown-catacombs'
   | 'emberwick'
   | 'briarhollow'
   /** Interiors (data/interiors.ts). */
@@ -662,6 +665,8 @@ export interface StoryEventDef {
   taken?: string[];
   /** Companions who fight beside the hero while it lasts (PETS ids). */
   allies?: string[];
+  /** Allies who come only if the story says so (a faction the hero helped, the answer they chose). */
+  alliesIf?: { pet: string; when: StoryCond }[];
   /** Defend: what must not fall (a PETS id standing at a spot). */
   ward?: { pet: string; at: string; name: string };
   /** Rescue: people (PETS ids) found at a spot, who follow the hero to another. */

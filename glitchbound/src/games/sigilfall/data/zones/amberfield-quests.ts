@@ -272,6 +272,7 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
     title: 'Marshal of Hearthstead',
     sprite: 'villager',
     talk: [
+      { when: { quest: 'epilogue-the-camp-goes-home', state: 'done' }, lines: ['Hearthstead’s wall is mended, and the refugee road is a road again: people go both ways on it now.', 'My riders came home. Most of them. The ones who didn’t, we ride past their stones every morning, and we slow down.'] },
       {
         when: { quest: 'refugees-on-the-road', state: 'active' },
         lines: [

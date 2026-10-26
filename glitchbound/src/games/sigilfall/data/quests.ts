@@ -218,6 +218,7 @@ export const NPCS: Record<string, NpcDef> = {
     title: 'Regent of Aster',
     sprite: 'elder',
     talk: [
+      { when: { quest: 'epilogue-the-camp-goes-home', state: 'done' }, lines: ['My uncle the King died in his sleep the week the bell rang. Peacefully, they tell me. I believe them. I want to believe one thing they tell me.', 'I am to be crowned in the spring, with the old crown and no sigils in it. It will be the first time in three hundred years the Crown of Aster is only a hat. I find I am looking forward to it.'] },
       { when: { quest: 'the-third-gate', state: 'active' }, lines: ['Mara Venn. And you. Standing in my muster ground with the soot of the Muster Hall still on you.', 'Tell me. All three. Tell me slowly; I want to remember exactly how it sounded.'] },
       { when: { quest: 'into-vaelmoor', state: 'active' }, lines: ['Past the Gates is his country. Nobody living has walked it in three hundred years. Orren went first, alone, of course.', 'Two sigils are still out there, and him. Go and get them before he does.'] },
       { when: { quest: 'gate-nyx-returns', state: 'active' }, lines: ['A letter from Mara: someone walked into her camp under a white rag. She has not killed them yet, she writes, underlined twice.', 'Go back to Highwall. I would like to know who can make Mara Venn hesitate.'] },

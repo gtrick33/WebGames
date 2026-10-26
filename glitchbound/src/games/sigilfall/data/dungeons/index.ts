@@ -9,6 +9,9 @@ import { SIEGE_OF_HIGHWALL } from './siege-of-highwall';
 import { BLIGHTHEART } from './blightheart';
 import { MOLTEN_THRONE } from './molten-throne';
 import { SPIRE_OF_THE_RIFT } from './spire-of-the-rift';
+import { DUSKSPIRE } from './duskspire';
+import { VAELMOOR_REMEMBERED } from './vaelmoor-remembered';
+import { CROWN_CATACOMBS } from './crown-catacombs';
 
 /**
  * Dungeons with everything that is theirs: the rooms (a hand-laid map), the bosses, the enemies first
@@ -23,4 +26,4 @@ export interface DungeonModule {
   items?: ItemDef[];
 }
 
-export const DUNGEONS: DungeonModule[] = [ROTMOTHER_CISTERN, DEEPFORGE_HALLS, BARROW_OF_KINGS, TOMB_OF_THE_SUN_KING, RIMEHELD_VAULT, SIEGE_OF_HIGHWALL, BLIGHTHEART, MOLTEN_THRONE, SPIRE_OF_THE_RIFT];
+export const DUNGEONS: DungeonModule[] = [ROTMOTHER_CISTERN, DEEPFORGE_HALLS, BARROW_OF_KINGS, TOMB_OF_THE_SUN_KING, RIMEHELD_VAULT, SIEGE_OF_HIGHWALL, BLIGHTHEART, MOLTEN_THRONE, SPIRE_OF_THE_RIFT, DUSKSPIRE, VAELMOOR_REMEMBERED, CROWN_CATACOMBS];

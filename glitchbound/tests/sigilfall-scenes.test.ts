@@ -122,4 +122,24 @@ describe('Sigilfall: scenes', () => {
     expect(w.scene).toBeNull();
     expect(c.opened).not.toContain(`scene:${def.id}`);
   });
+
+  it('a sound step plays its sound as it begins and the scene goes straight on', () => {
+    const def = SCENES.find((d) => d.steps.some((st) => 'sfx' in st))!;
+    expect(def).toBeDefined();
+    const w = newWorld(def.region, atScene(def.id));
+    const heard: string[] = [];
+    const sfx = w.sfx.bind(w);
+    w.sfx = (id: string, vol?: number): void => {
+      heard.push(id);
+      sfx(id, vol);
+    };
+    startAt(w, def.id);
+    expect(w.scene?.def.id).toBe(def.id);
+    const first = def.steps.findIndex((st) => 'sfx' in st);
+    for (let i = 0; i < 6000 && w.scene && w.scene.step <= first; i++) run(w, DT);
+    const step = def.steps[first]!;
+    expect(heard).toContain('sfx' in step ? step.sfx : '');
+    // the step took no time of its own: the next one is already under way
+    expect(w.scene!.step).toBe(first + 1);
+  });
 });

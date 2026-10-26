@@ -221,6 +221,7 @@ export const IRONPEAK_NPCS: Record<string, NpcDef> = {
     title: 'Thane of Kragholt',
     sprite: 'villager',
     talk: [
+      { when: { quest: 'epilogue-the-camp-goes-home', state: 'done' }, lines: ['The Deepforge burns for us again. Tova brought the dwarf-steel home and we are making plows of it. Plows! My father would have wept.', 'Kragholt remembers who opened the pass. You will never pay for a drink in this town again. Do not test me on this.'] },
       {
         when: { quest: 'the-dwarves-plea', state: 'active' },
         lines: ['Dunmore’s letter, and only you? He held the Kragholt road with my father one winter, and he still thinks one good fighter is an army. Well. You’ll have to be.', 'The Host took the Deepforge in one night. The dead came up through the ore tunnels. We dug those tunnels. We were very proud of them.', 'Now they charge a toll at our own gate. A toll! To dwarves!'],

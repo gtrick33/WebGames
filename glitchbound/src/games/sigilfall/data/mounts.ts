@@ -192,6 +192,21 @@ export const MOUNTS: MountDef[] = [
     glow: { kind: 'stars', color: '#cfe0ff' },
     tier: 'prestige',
   },
+  {
+    id: 'crownfall-destrier',
+    name: 'Crownfall Destrier',
+    lore: 'The Hallow King’s own warhorse, which waited in Duskspire’s stable for three hundred years for someone worth carrying. Ash on its barding, starlight in its mane.',
+    from: 'Challenge: clear Duskspire and the Crown’s memory on Heroic, after the story’s end',
+    source: { kind: 'clears', regions: ['duskspire', 'vaelmoor-remembered'], tier: 1 },
+    body: 'horse',
+    coat: '#1a1822',
+    mane: '#e8dca8',
+    tack: '#8a6a2a',
+    barding: '#6a6478',
+    blaze: true,
+    glow: { kind: 'stars', color: '#ffe8a8' },
+    tier: 'prestige',
+  },
 ];
 
 export const MOUNT_DEFS: Record<string, MountDef> = Object.fromEntries(MOUNTS.map((m) => [m.id, m]));

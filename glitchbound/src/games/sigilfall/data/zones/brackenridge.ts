@@ -68,6 +68,11 @@ export const BRACKENRIDGE = wildRegion(
     ],
     wildCount: 48,
     story: [
+      // the Epilogue: Fernstead's first harvest festival since the barrows woke
+      { near: 'hub', dx: -3, dy: 2, marker: { kind: 'prop', prop: 'lantern' }, when: after('epilogue-the-camp-goes-home') },
+      { near: 'hub', dx: 3, dy: 2, marker: { kind: 'prop', prop: 'lantern' }, when: after('epilogue-the-camp-goes-home') },
+      { near: 'hub', dx: 0, dy: 4, marker: { kind: 'prop', prop: 'market-cart', solid: true }, when: after('epilogue-the-camp-goes-home') },
+      { near: 'hub', dx: -5, dy: 4, marker: { kind: 'prop', prop: 'hay', solid: true }, when: after('epilogue-the-camp-goes-home') },
       // Fernstead fallen: roofs burning, the Host's riders in the square; retaken, the rangers' banners over it
       ...[0, 1, 2, 3, 4].map((i) => ({ near: `house:${i}`, marker: { kind: 'fire' as const, size: 2 + (i % 2) } })),
       { near: 'hub', marker: { kind: 'place', id: 'fern-square' } },

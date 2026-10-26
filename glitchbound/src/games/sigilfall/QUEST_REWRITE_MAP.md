@@ -357,7 +357,22 @@ chains open from quests the shipped game already has.
 | Act V · the Riftscar | `the-veil-torn` … `the-pale-herald` (the Spire of the Tear; Sigil of the Veil; the Herald's voice survives for Act VI) | | |
 | Act V · end | `the-seventh-sigil` | Elyra at Lastlight takes the last two and cannot find the hero's name | Act VI |
 
-Still unregistered: the Pale Reach, Duskspire (Act VI and the finale) and Frostfang.
+## Act VI, Crownfall, the Epilogue and the postgame
+
+The Pale Reach and Duskspire came from the same branch; the old ids `the-last-road`, `the-kings-kennels`,
+`the-drake-graves`, `the-kings-host`, `the-pale-standard`, `the-duskspire-gate`, `the-hollow-guard`,
+`the-hollow-king` and the side chains are kept (never shipped, so no save holds them); their people were renamed
+(Commander Aldric's role is Mara's, Brother Cael's is Orren's).
+
+| Act / place | Chain (in order) | Kind of beats | Ends with |
+| --- | --- | --- | --- |
+| Act VI · the Pale Reach | `the-last-march`, `the-last-road` (event: the banners come in), `the-kings-kennels`, `the-drake-graves`, `the-kings-host`, `the-pale-standard`, `march-vosk`, `march-the-siege-mages` (event: defend the mages, faction allies by `alliesIf`), `march-the-breach` (event: raid), `march-the-voice`, `the-duskspire-gate` | the coalition assembled, champions met before, the wall | the gate opened with seven sigils |
+| Act VI · side | `the-hollowing`, `old-wintersend`, `the-watchers-of-wintersend` (Orren); `cold-iron`, `riveted-coats` (Holt); `a-hound-named-bran`, `gravejaw` (Maeve) | | |
+| Crownfall | `the-hollow-guard`, `the-hollow-king` (Duskspire), `crownfall-vaelmoor`, choice `crownfall-one-hour` / `crownfall-break-it`, `crownfall-the-ash-crown` (Vaelmoor Remembered) | duel, the memory, the choice, the final form | |
+| Epilogue | `epilogue-the-camp-goes-home` (event: arrival, outward), `epilogue-the-bell` (opens Heroic and Mythic everywhere) | | the story's end |
+| Postgame | `postgame-crownfall-heroic`, `postgame-crownfall-mythic`; threads `thread-wren`, `thread-the-chancellor` (the catacombs), `thread-under-the-tear` | | |
+
+Frostfang stays unregistered (no beat needs it).
 
 ## The five-beat audit (blueprint Prompt 8)
 

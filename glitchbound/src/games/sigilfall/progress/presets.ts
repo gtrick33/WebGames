@@ -43,6 +43,13 @@ export const PRESETS: Preset[] = [
   { id: 'muster-hall', label: 'Act IV: the field before the Muster Hall', region: 'bonefields', active: 'muster-the-field', level: 50 },
   { id: 'ysane-echo', label: 'Act V: the queen at the door (scene)', region: 'weeping-woods', active: 'wood-the-children', level: 49 },
   { id: 'orren-shore', label: 'Act V: the lake answers Orren', region: 'hollowmere', active: 'orren-on-the-shore', level: 55 },
+  { id: 'last-march', label: 'Act VI: every banner (scene)', region: 'pale-reach', active: 'the-kings-kennels', level: 56 },
+  { id: 'siege-mages', label: 'Act VI: the siege mages before the wall', region: 'pale-reach', active: 'march-the-siege-mages', level: 58 },
+  { id: 'keep-the-door', label: 'Act VI: Mara keeps the door (scene)', region: 'pale-reach', active: 'the-duskspire-gate', level: 59 },
+  { id: 'crownfall-throne', label: 'Crownfall: the throne', region: 'duskspire', active: 'the-hollow-king', level: 60 },
+  { id: 'crownfall-memory', label: 'Crownfall: Vaelmoor whole (scene)', region: 'vaelmoor-remembered', active: 'crownfall-vaelmoor', level: 60 },
+  { id: 'crownfall-ash-crown', label: 'Crownfall: the Ash Crown', region: 'vaelmoor-remembered', active: 'crownfall-the-ash-crown', done: ['crownfall-break-it'], level: 60 },
+  { id: 'the-bell', label: 'Epilogue: the bell (scene)', region: 'briarhollow', active: 'epilogue-the-bell', level: 60 },
 ];
 
 /** Puts a hero at a preset's beat: its story done, the beat under way, raised to its level, its lands open. */

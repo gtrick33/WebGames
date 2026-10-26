@@ -14,7 +14,7 @@ import type { EnemyDef, NpcDef, QuestDef, RegionDef, StoryCond, StoryEventDef } 
  * (each marker's `when`), and the region's states set night, flames and smoke.
  */
 
-const is = (quest: string, state: 'offered' | 'active' | 'done' | 'started' | 'locked'): StoryCond => ({ quest, is: state });
+const is = (quest: string, state: 'offered' | 'active' | 'done' | 'started' | 'locked' | 'taken'): StoryCond => ({ quest, is: state });
 const not = (c: StoryCond): StoryCond => ({ not: c });
 const any = (...c: StoryCond[]): StoryCond => ({ any: c });
 const all = (...c: StoryCond[]): StoryCond => ({ all: c });
@@ -27,6 +27,10 @@ const NIGHT = any(is('briar-below', 'active'), is('the-warden', 'active'), is('c
 const CAMP = is('the-empty-tomb', 'done');
 /** Village life (people out in the lanes): before the raid, and again after dawn. */
 const CALM = not(any(RAID, NIGHT));
+/** The Epilogue: the camp has gone home and Briarhollow is rebuilt (STORY_BIBLE.md §3, §4). */
+const HOME = is('epilogue-the-camp-goes-home', 'done');
+/** The camp while it stands: from the first dawn until it goes home. */
+const CAMPED = (c: StoryCond): StoryCond => all(c, not(HOME));
 
 function plan(): CityPlan {
   const c = new CityPlan(64, 54, 4417);
@@ -159,48 +163,50 @@ function plan(): CityPlan {
   c.npc('goodwife-bramble', 18, 25, CALM);
   // Elyra keeps the camp with Thessa until the Pale Herald takes her at the Tear (Act III)
   c.npc('elyra', 28, 32, all(CAMP, not(is('the-heralds-ambush', 'done'))));
+  // home with Thessa after it is all over
+  c.npc('elyra', 24, 36, HOME);
   c.npc('mara-venn', 47, 20, NIGHT);
   c.npc('elyra', 43, 20, NIGHT);
   c.npc('briar-tam', 30, 27, CALM);
   c.npc('briar-oda', 24, 44, CALM);
   // the camp at dawn: tents and a cookfire in the square, the burned inn's guests under canvas
-  c.prop('tent', 27, 28, true, CAMP);
-  c.prop('tent', 36, 28, true, CAMP);
-  c.prop('campfire', 30, 30, true, CAMP);
-  c.prop('tent', 24, 30, true, CAMP);
+  c.prop('tent', 27, 28, true, CAMPED(CAMP));
+  c.prop('tent', 36, 28, true, CAMPED(CAMP));
+  c.prop('campfire', 30, 30, true, CAMPED(CAMP));
+  c.prop('tent', 24, 30, true, CAMPED(CAMP));
 
   // the camp grows (Act I): every village the hero saves sends its people, and they stay
   // Fernstead's rangers keep a watchfire by the gate
-  c.prop('campfire', 40, 15, true, is('camp-scouts', 'done'));
-  c.prop('tent', 37, 17, true, is('camp-scouts', 'done'));
-  c.npc('ranger-cole', 39, 16, all(is('camp-scouts', 'done'), CALM));
+  c.prop('campfire', 40, 15, true, CAMPED(is('camp-scouts', 'done')));
+  c.prop('tent', 37, 17, true, CAMPED(is('camp-scouts', 'done')));
+  c.npc('ranger-cole', 39, 16, all(is('camp-scouts', 'done'), CALM, not(HOME)));
   // Millbrook's grain carts by the west road, and Tobin's hens (the sheep would not come)
-  c.prop('cart', 8, 17, true, is('camp-grain', 'done'));
-  c.prop('cart', 10, 19, true, is('camp-grain', 'done'));
-  c.prop('hay', 7, 19, true, is('camp-grain', 'done'));
-  c.prop('hay', 12, 16, true, is('camp-grain', 'done'));
-  c.prop('chickens', 9, 21, false, is('camp-grain', 'done'));
-  c.npc('carter-wenna', 11, 18, all(is('camp-grain', 'done'), CALM));
+  c.prop('cart', 8, 17, true, CAMPED(is('camp-grain', 'done')));
+  c.prop('cart', 10, 19, true, CAMPED(is('camp-grain', 'done')));
+  c.prop('hay', 7, 19, true, CAMPED(is('camp-grain', 'done')));
+  c.prop('hay', 12, 16, true, CAMPED(is('camp-grain', 'done')));
+  c.prop('chickens', 9, 21, false, CAMPED(is('camp-grain', 'done')));
+  c.npc('carter-wenna', 11, 18, all(is('camp-grain', 'done'), CALM, not(HOME)));
   // Reedwater's healers under canvas by Thessa's cottage
-  c.prop('tent', 14, 29, true, is('camp-healers', 'done'));
-  c.prop('tent', 18, 29, true, is('camp-healers', 'done'));
-  c.prop('clay-pot', 16, 28, true, is('camp-healers', 'done'));
-  c.npc('healer-brisa', 16, 30, all(is('camp-healers', 'done'), CALM));
+  c.prop('tent', 14, 29, true, CAMPED(is('camp-healers', 'done')));
+  c.prop('tent', 18, 29, true, CAMPED(is('camp-healers', 'done')));
+  c.prop('clay-pot', 16, 28, true, CAMPED(is('camp-healers', 'done')));
+  c.npc('healer-brisa', 16, 30, all(is('camp-healers', 'done'), CALM, not(HOME)));
   // Gullport's forge and a cart of powder kegs, east of Hollin's
-  c.prop('anvil', 57, 27, true, is('camp-smiths', 'done'));
-  c.prop('barrel', 55, 29, true, is('camp-smiths', 'done'));
-  c.prop('barrel', 56, 29, true, is('camp-smiths', 'done'));
-  c.prop('cart', 55, 25, true, is('camp-smiths', 'done'));
-  c.npc('forgewife-runa', 56, 27, all(is('camp-smiths', 'done'), CALM));
+  c.prop('anvil', 57, 27, true, CAMPED(is('camp-smiths', 'done')));
+  c.prop('barrel', 55, 29, true, CAMPED(is('camp-smiths', 'done')));
+  c.prop('barrel', 56, 29, true, CAMPED(is('camp-smiths', 'done')));
+  c.prop('cart', 55, 25, true, CAMPED(is('camp-smiths', 'done')));
+  c.npc('forgewife-runa', 56, 27, all(is('camp-smiths', 'done'), CALM, not(HOME)));
   // Hearthstead's riders and their banners south-east of the square
-  c.prop('flag', 41, 28, true, is('camp-riders', 'done'));
-  c.prop('blue-banner', 44, 28, true, is('camp-riders', 'done'));
-  c.npc('rider-alder', 42, 29, all(is('camp-riders', 'done'), CALM));
+  c.prop('flag', 41, 28, true, CAMPED(is('camp-riders', 'done')));
+  c.prop('blue-banner', 44, 28, true, CAMPED(is('camp-riders', 'done')));
+  c.npc('rider-alder', 42, 29, all(is('camp-riders', 'done'), CALM, not(HOME)));
   // Kragholt's dwarf-steel and Brenna's apprentice, beside the Elder's hall (Act II)
-  c.prop('anvil', 44, 36, true, is('camp-dwarves', 'done'));
-  c.prop('crate', 40, 36, true, is('camp-dwarves', 'done'));
-  c.prop('blue-banner', 41, 34, true, is('camp-dwarves', 'done'));
-  c.npc('dwarf-tova', 42, 36, all(is('camp-dwarves', 'done'), CALM));
+  c.prop('anvil', 44, 36, true, CAMPED(is('camp-dwarves', 'done')));
+  c.prop('crate', 40, 36, true, CAMPED(is('camp-dwarves', 'done')));
+  c.prop('blue-banner', 41, 34, true, CAMPED(is('camp-dwarves', 'done')));
+  c.npc('dwarf-tova', 42, 36, all(is('camp-dwarves', 'done'), CALM, not(HOME)));
   // Fernstead's people under canvas, from the night it falls until it is taken back (Act III)
   const FERN_CAMP = all(is('fall-of-fernstead', 'done'), not(is('fern-retaken', 'done')));
   c.prop('tent', 15, 32, true, FERN_CAMP);
@@ -209,6 +215,16 @@ function plan(): CityPlan {
   c.npc('warden-hollis', 16, 31, FERN_CAMP);
   c.npc('mother-alsa', 18, 31, FERN_CAMP);
   c.npc('pip-tanner', 14, 31, FERN_CAMP);
+  // rebuilt (the Epilogue): market carts back in the square, lanterns on the lanes, new thatch by the inn
+  c.prop('market-cart', 27, 27, true, HOME);
+  c.prop('market-cart', 37, 27, true, HOME);
+  c.prop('bench', 30, 30, true, HOME);
+  c.prop('lantern', 25, 24, false, HOME);
+  c.prop('lantern', 39, 24, false, HOME);
+  c.prop('hay', 20, 23, true, HOME);
+  c.prop('crate', 12, 24, true, HOME);
+  // the answer Elyra was given at the end: the hour leaves four names on a stone by the chapel
+  c.prop('standing-stone', 49, 22, true, all(HOME, is('crownfall-one-hour', 'taken')));
   // the doors into the inn, the chapel and the Elder's hall (data/interiors.ts)
   for (const d of doorsOf('briarhollow')) c.marker(d.tx, d.ty, d.marker, d.when);
   c.marker(32, 12, { kind: 'start' });
@@ -241,6 +257,7 @@ export const BRIARHOLLOW: RegionDef = {
   states: [
     { id: 'raid', when: RAID, night: true, burning: true, music: 'crypt' },
     { id: 'night', when: NIGHT, night: true, smoke: true },
+    { id: 'rebuilt', when: HOME },
     { id: 'camp', when: CAMP },
     // the day the hero arrives: late light until nightfall
     { id: 'dusk', when: not(is('briar-nightfall', 'started')), dusk: true },
@@ -343,6 +360,8 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     title: 'Hedge-mage, Thessa’s apprentice',
     sprite: 'villager',
     talk: [
+      { when: { quest: 'crownfall-break-it', state: 'taken' }, lines: ['I still forget things. Small things. The name of the third cat, the second verse of things. But I know yours. I say it in the mornings to check. It’s always there.', 'Thessa says I’m allowed to be a hedge-witch again. Just a hedge-witch. Milk and wasps and plums. I’ve never wanted anything more.'] },
+      { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['Thessa says I knew you. I believe her. You have a face I trust before I know why.', 'There’s a stone by the chapel with four names on it, from a kingdom nobody remembers. I go and sit by it. I don’t know why that either. It feels like the right kind of not knowing.'] },
       { when: { quest: 'briar-below', state: 'active' }, lines: ['I can feel it. Down there, under the chapel. Something warm, like a hearth in a cold house.', 'Thessa says I mustn’t say things like that out loud. I’m saying it anyway.'] },
       { when: { quest: 'the-empty-tomb', state: 'active' }, lines: ['It’s in me now. The fragment. When I touched it, it — went in. Like light through a window.', 'I can see better in the dark. I can hear the bell that isn’t ringing. Tell Maren. Please. Before I lose my nerve.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Every time I use it, I forget something small. This morning it was the name of Thessa’s cat.', 'I’ll come when you need me. Just — tell me the cat’s name if I ask, will you? It’s Burr.'] },
@@ -362,6 +381,9 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     title: 'Elder of Briarhollow',
     sprite: 'elder',
     talk: [
+      { when: { quest: 'epilogue-the-camp-goes-home', state: 'active' }, lines: ['Look at them. They came here with nothing, and they’re leaving with carts. Stand with me. I want them to see us waving.'] },
+      { when: { quest: 'epilogue-the-bell', state: 'active' }, lines: ['Haldor has been under that bell since dawn. Go up to him. I think he’s waiting for permission, and I think it has to be you.'] },
+      { when: { quest: 'epilogue-the-bell', state: 'done' }, lines: ['Every village that held was one more wall. And then they went home and took the walls with them, and it’s just us, and it’s enough.', 'If you ever come back this way, the inn has a new roof. The beer is exactly as bad as it was.'] },
       { when: { quest: 'briar-the-seal', state: 'active' }, lines: ['A royal seal. Broken. And the man who carried it…', 'He died on my floor with the letter in his fist. The Crown City must know, he said. As if the Crown City ever listened to a border village.'] },
       { when: { quest: 'into-the-wood', state: 'active' }, lines: ['Whatever shot that courier came out of the Whisperwood. So do the ones who take our people after dark.', 'Go north before the light goes. Thin them out on the trails. Find out what they are.'] },
       { when: { quest: 'alpha', state: 'active' }, lines: ['The beasts of the wood have gone mad together, following one great boar with grey light in its eyes. Grimtusk, the woodcutters called it, before they stopped coming back.', 'It dens at the east end of the wood. Kill it and the wood calms, and we have one less thing at the door tonight.'] },
@@ -385,6 +407,8 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     title: 'Bell-ringer',
     sprite: 'elder',
     talk: [
+      { when: { quest: 'epilogue-the-bell', state: 'active' }, lines: ['It’s over, then. I said I would ring her when it was over. Pip won’t hear it. I know that. I’ve known it a while.', 'Stand with me. Somebody should be standing with me.'] },
+      { when: { quest: 'epilogue-the-bell', state: 'done' }, lines: ['Once for the dead, once for the living, and the rest because my arms remembered. They heard it in Fernstead. Hollis sent a rider to ask what was wrong.', 'Nothing’s wrong. That’s what it means. Nothing’s wrong.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The rope’s still there. I go up every morning and hold it.', 'My grandson Pip went out after the lamps were lit, three weeks gone. The bell won’t ring for me until he’s home. Or until it’s all over.'] },
       { lines: ['Three weeks I haven’t rung it. Not since Pip went out after dark.', 'A bell calls people home. I won’t call them home to this.'] },
     ],
@@ -519,6 +543,19 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
 /* ----------------------------------------------------------------- events */
 
 export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
+  // the Epilogue: the camp packs up and every village's people go home down the south road
+  'epilogue-the-camp': {
+    id: 'epilogue-the-camp',
+    region: 'briarhollow',
+    kind: 'arrival',
+    at: 'briar-square',
+    radius: 16,
+    arrive: { pets: ['fern-ranger', 'mill-carter', 'reed-healer', 'gull-smith', 'hearth-rider', 'dwarf-carter'], from: 'briar-square', to: 'briar-south' },
+    banner: 'Going home',
+    start: [{ who: 'maren', text: 'Fernstead, Millbrook, Reedwater, Gullport, Hearthstead, Kragholt. Go home. Go home and be ordinary. That’s an order.' }],
+    waves: [],
+    end: [{ who: 'mara-venn', text: 'That’s the last of them. The gate’s still sticking. I’m going to fix the gate.' }],
+  },
   'briar-raid': {
     id: 'briar-raid',
     region: 'briarhollow',

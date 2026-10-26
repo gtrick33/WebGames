@@ -29,6 +29,7 @@ export const MAIN_STORY_ENDS = [
   'the-long-night-ends',
   'the-third-gate',
   'the-seventh-sigil',
+  'epilogue-the-bell',
 ];
 
 /** Side quests pay this share of their reward. */
@@ -61,6 +62,7 @@ export const MAIN_XP: Partial<Record<RegionId, number>> = {
   emberdeep: 0.6,
   hollowmere: 0.6,
   riftscar: 0.5,
+  'pale-reach': 1.8,
 };
 
 /** How much less content pays for every level the hero is past it (beyond a grace), down to a fifth. */

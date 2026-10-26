@@ -37,6 +37,8 @@ export const HOLLOWMERE = wildRegion(
     exits: [
       { side: 's', at: 0.4, to: 'weeping-woods', label: 'South road to the Weeping Woods' },
       { side: 'e', at: 0.7, to: 'emberdeep', label: 'East road to Emberdeep Caldera' },
+      // the Last March (Act VI): north to the Pale Reach once all seven sigils are won
+      { side: 'n', at: 0.5, to: 'pale-reach', label: 'North road to the Pale Reach', minLevel: 56, needs: 'the-seventh-sigil' },
     ],
     pois: [
       // the necropolis on the water, where the Lich makes the Hallow King's dead

@@ -1,4 +1,4 @@
-import { after, all, during, not, until } from './cond';
+import { after, all, during, is, not, until } from './cond';
 import type { SceneDef } from '../sim/scene';
 
 /**
@@ -65,7 +65,7 @@ export const SCENES: SceneDef[] = [
     // the Herald has taken Elyra: her teacher alone in the camp
     id: 'briar-elyra-gone',
     region: 'briarhollow',
-    when: all(after('the-heralds-ambush'), not(after('fern-retaken'))),
+    when: all(after('the-heralds-ambush'), not(after('fern-retaken')), until('gloam-out-of-the-cells')),
     near: 'herbwife-thessa',
     r: 130,
     steps: [
@@ -81,7 +81,7 @@ export const SCENES: SceneDef[] = [
     // Highwall held: Haldor at the chapel door, not yet ringing the bell
     id: 'briar-highwall-holds',
     region: 'briarhollow',
-    when: after('the-long-night-ends'),
+    when: all(after('the-long-night-ends'), until('epilogue-the-camp-goes-home')),
     near: 'old-haldor',
     r: 140,
     steps: [
@@ -189,6 +189,82 @@ export const SCENES: SceneDef[] = [
       { say: 'echo-of-ysane', line: 'He went to get the star. For the fever. He promised.' },
       { look: 'hollow-wood' },
       { say: 'orren-in-vaelmoor', line: 'She has said that every night for three hundred years. They are still out there. Go and bring them home.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // Act VI: every banner the hero earned, coming into Dawn's Rest
+    id: 'reach-the-banners',
+    region: 'pale-reach',
+    when: all(after('the-last-road'), until('the-kings-kennels')),
+    near: 'mara-at-the-reach',
+    r: 150,
+    steps: [
+      { look: 'reach-camp' },
+      { say: 'mara-at-the-reach', line: 'I stopped counting. There are more banners in this camp than there were people in Briarhollow.' },
+      { look: 'cael-at-the-reach' },
+      { say: 'cael-at-the-reach', line: 'Ten years ago I was told relief wasn’t coming. Look at it. Look at all of it.' },
+      { emote: 'nyx-at-the-reach', icon: 'note' },
+      { say: 'nyx-at-the-reach', line: 'I’ve stolen from at least four of these flags. They don’t seem to mind today.' },
+      { say: 'orren-at-the-reach', line: 'Every one of them is somebody you went back for. Remember that when it gets loud.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // Act VI: before the gate, Mara stays to keep the door
+    id: 'reach-the-door',
+    region: 'pale-reach',
+    when: all(after('march-the-voice'), until('the-duskspire-gate')),
+    near: 'mara-at-the-reach',
+    r: 150,
+    steps: [
+      { look: 'mara-at-the-reach' },
+      { say: 'mara-at-the-reach', line: 'Somebody has to keep the door. I always do. Bring her back out.' },
+      { move: 'elyra-at-the-reach', to: 'mara-at-the-reach' },
+      { say: 'elyra-at-the-reach', line: 'Seven locks, seven lights. I can feel the door from here. It’s waiting for us.' },
+      { emote: 'mara-at-the-reach', icon: 'heart' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // Crownfall: the Crown's memory of Vaelmoor, whole and beautiful
+    id: 'memory-the-square',
+    region: 'vaelmoor-remembered',
+    when: is('crownfall-vaelmoor', 'active'),
+    near: 'elyra-in-the-memory',
+    r: 160,
+    steps: [
+      { look: 'memory-square' },
+      { say: 'vaelmoor-herald-boy', line: 'A star has fallen in the north! The King rides at dawn to see it!' },
+      { look: 'echo-of-ysane-whole' },
+      { say: 'echo-of-ysane-whole', line: 'Aldis, leave the cake alone. Your father will be home by supper.' },
+      { look: 'vaelor-remembered' },
+      { say: 'vaelor-remembered', line: 'I am home. I am home. Why can none of them see me?' },
+      { look: 'elyra-in-the-memory' },
+      { say: 'elyra-in-the-memory', line: 'This is what he wanted back. It’s beautiful. Come here. I have to ask you something.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // the Epilogue: Old Haldor rings the bell at last
+    id: 'briar-the-bell',
+    region: 'briarhollow',
+    when: is('epilogue-the-bell', 'active'),
+    near: 'old-haldor',
+    r: 150,
+    steps: [
+      { look: 'briar-chapel' },
+      { move: 'old-haldor', to: 'briar-chapel' },
+      { say: 'old-haldor', line: 'It’s over, old girl. I said I’d ring you myself.' },
+      { sfx: 'bell' },
+      { wait: 1.4 },
+      { sfx: 'bell' },
+      { wait: 1.4 },
+      { sfx: 'bell' },
+      { look: 'maren' },
+      { say: 'maren', line: 'Once for the dead. Once for the living. And the rest because his arms remember how.' },
+      { look: 'elyra' },
+      { say: 'elyra', line: 'They’ll hear it in Fernstead. They’ll hear it all the way to the Crown City.' },
       { look: 'hero' },
     ],
   },

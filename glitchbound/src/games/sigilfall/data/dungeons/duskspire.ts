@@ -152,7 +152,7 @@ const FOES: Record<string, EnemyDef> = {
     armor: 0.5,
     slam: { radius: 32 },
     resist: { poison: 0.6, shadow: 0.4 },
-    blurb: 'The King’s own guard, sworn to him in life and held to it after. Black plate with violet runes; the oath is what moves it.',
+    blurb: 'The Hallow King’s own guard, sworn to him in life and held to it after. Black plate with violet runes; the oath is what moves it.',
   },
   'kneeling-dead': {
     id: 'kneeling-dead',
@@ -173,7 +173,7 @@ const FOES: Record<string, EnemyDef> = {
     attackCd: 0.9,
     flank: true,
     resist: { poison: 0.6 },
-    blurb: 'They knelt to the King for three hundred years. They get up quickly when he asks.',
+    blurb: 'They knelt to Vaelor for three hundred years. They get up quickly when he asks.',
   },
   'wailing-soul': {
     id: 'wailing-soul',
@@ -198,7 +198,7 @@ const FOES: Record<string, EnemyDef> = {
     slam: { radius: 28 },
     shot: { speed: 100, radius: 3.5, count: 3, spread: 0.5, color: '#c8a8ff', homing: 0.4, look: 'skull', status: { status: 'chill', dur: 1.5, power: 0.25 } },
     resist: { physical: 0.25, poison: 0.6 },
-    blurb: 'A soul the King kept. It wails at the living for still having what it lost.',
+    blurb: 'A soul Vaelor kept. It wails at the living for still having what it lost.',
   },
   'hollow-ghoul': {
     id: 'hollow-ghoul',
@@ -220,9 +220,9 @@ const FOES: Record<string, EnemyDef> = {
     attackCd: 0.8,
     flank: true,
     resist: { poison: 0.6 },
-    blurb: 'They climb out of the walls of the throne room whenever the King is hurt. There are always more.',
+    blurb: 'They climb out of the walls of the throne room whenever Vaelor is hurt. There are always more.',
   },
-  // torn from the hero by the King's harvest: it drifts home to him (sim/patterns/duskspire.ts moves it)
+  // torn from the hero by the Hallow King's harvest: it drifts home to him (sim/patterns/duskspire.ts moves it)
   'torn-soul': {
     id: 'torn-soul',
     name: 'Torn Soul',
@@ -276,8 +276,8 @@ const HOLLOW_GUARD: BossDef = {
   name: 'Captain Ser Maltheus',
   title: 'First of the Ashen Guard',
   sprite: 'hollow-guard',
-  hp: 15000,
-  dmg: 30,
+  hp: 6500,
+  dmg: 29,
   radius: 11,
   xp: 2400,
   gold: [600, 900],
@@ -321,14 +321,14 @@ const VAELOR: BossDef = {
   name: 'Vaelor',
   title: 'The Hallow King',
   sprite: 'vaelor',
-  hp: 40000,
-  dmg: 52,
+  hp: 11000,
+  dmg: 32,
   radius: 14,
   xp: 9000,
   gold: [2000, 3000],
   phases: [
     {
-      // The King on the Throne: he does not stand for you, yet
+      // Vaelor on the Throne: he does not stand for you, yet
       at: 1,
       speed: 0,
       rest: [0.8, 1.2],
@@ -451,7 +451,20 @@ const ITEMS: ItemDef[] = [
       { stat: 'hp', base: 20, per: 4 },
       { stat: 'power', base: 5, per: 1 },
     ],
-    mods: [{ t: 'stat', stat: 'shadow', v: 20 }],
+    mods: [
+      { t: 'stat', stat: 'shadow', v: 20 },
+      {
+        t: 'proc',
+        proc: {
+          id: 'shroud-of-duskspire',
+          on: 'kill',
+          chance: 1,
+          icd: 6,
+          effect: { kind: 'shield', pct: 8, dur: 4 },
+          text: 'Every foe you fell draws the dusk around you: a shield of 8% of your health for 4 s (at most once every 6 s).',
+        },
+      },
+    ],
     lore: 'Woven from the dusk itself, the stories say. The stories were written by people who never touched it.',
     minLevel: 58,
     special: true,
@@ -480,7 +493,7 @@ const ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'A sliver of the King’s sword. It is cold, and it is listening.',
+    lore: 'A sliver of the Hallow King’s sword. It is cold, and it is listening.',
     minLevel: 58,
     special: true,
   },
@@ -498,6 +511,17 @@ const ITEMS: ItemDef[] = [
     mods: [
       { t: 'stat', stat: 'ultCharge', v: 25 },
       { t: 'stat', stat: 'hpPct', v: 8 },
+      {
+        t: 'proc',
+        proc: {
+          id: 'vaelors-heartstone',
+          on: 'kill',
+          chance: 1,
+          icd: 8,
+          effect: { kind: 'shield', pct: 10, dur: 5 },
+          text: 'The heart remembers its king: every foe you fell gives a shield of 10% of your health for 5 s (at most once every 8 s).',
+        },
+      },
     ],
     lore: 'The heart the Sigil-wardens tore out of him and hid. You have carried it all this way without knowing.',
     minLevel: 60,

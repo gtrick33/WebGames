@@ -214,6 +214,7 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
     title: 'Reeve of Millbrook',
     sprite: 'villager',
     talk: [
+      { when: { quest: 'epilogue-the-camp-goes-home', state: 'done' }, lines: ['The mill turns, the bridge is ours, and the carts came home from Briarhollow lighter than they went. Good. That’s what grain is for.', 'Tobin’s hens came back too. All of them. Nobody can explain it.'] },
       {
         when: { quest: 'south-road', state: 'active' },
         lines: [

@@ -23,6 +23,8 @@ export type SceneStep =
   | { move: string; to: string }
   /** A sign over someone's head. */
   | { emote: string; icon: Emote }
+  /** A sound (audio/sound.ts), played as the step begins; the scene goes straight on. */
+  | { sfx: string }
   | { wait: number };
 
 export interface SceneDef {
@@ -127,6 +129,9 @@ export function updateScene(w: World, dt: number): void {
   } else if ('emote' in step) {
     if (first) s.emotes.push({ who: step.emote, icon: step.icon, t: 0 });
     done = s.t >= 0.8;
+  } else if ('sfx' in step) {
+    if (first) w.sfx(step.sfx);
+    done = true;
   } else done = s.t >= step.wait;
   if (done) {
     s.step += 1;

@@ -11,6 +11,7 @@ import { GLOAMHOLLOW_EVENTS } from './zones/gloamhollow-quests';
 import { GREYFEN_EVENTS } from './zones/greyfen-quests';
 import { HIGHWALL_EVENTS } from './zones/highwall-quests';
 import { HOLLOWMERE_EVENTS } from './zones/hollowmere-quests';
+import { PALE_REACH_EVENTS } from './zones/pale-reach-quests';
 import { IRONPEAK_EVENTS } from './zones/ironpeak-quests';
 import { RIMEHELD_EVENTS } from './zones/rimeheld-quests';
 import { SALTMARSH_EVENTS } from './zones/saltmarsh-quests';
@@ -40,4 +41,5 @@ export const EVENTS: Record<string, StoryEventDef> = {
   ...WEEPING_WOODS_EVENTS,
   ...SUNKEN_REACHES_EVENTS,
   ...HOLLOWMERE_EVENTS,
+  ...PALE_REACH_EVENTS,
 };

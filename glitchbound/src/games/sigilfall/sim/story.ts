@@ -171,7 +171,8 @@ export class StoryDirector {
     // whoever stayed on from the last event to say goodbye makes way for this one's people
     w.pets = w.pets.filter((p) => !p.story || p.dead);
     const run: Running = { def, wave: 0, ids: [], pause: 1.6, pets: [], ward: null, followers: [], safe: new Set(), cool: 0, t: 0 };
-    for (const id of def.allies ?? []) {
+    const allies = [...(def.allies ?? []), ...(def.alliesIf ?? []).filter((a) => holds(w.hero, a.when)).map((a) => a.pet)];
+    for (const id of allies) {
       const to = castRay(w.map, w.player.x, w.player.y, 6, w.rand() * TAU, 18);
       const pet = placePet(w, id, to.x, to.y);
       if (pet) run.pets.push(pet);

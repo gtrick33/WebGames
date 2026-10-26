@@ -59,7 +59,7 @@ describe('Sigilfall: the Vale (Act I)', () => {
       const named = new Set(region.placed!.flatMap((pm) => (pm.marker.kind === 'place' || pm.marker.kind === 'spot' ? [pm.marker.id] : [])));
       const places = [def.at, ...def.waves.flatMap((wv) => wv.from), def.ward?.at, def.rescue?.at, def.rescue?.to, def.arrive?.from, def.arrive?.to, def.escort?.from, def.escort?.to].filter((x): x is string => !!x);
       for (const p of places) expect(named.has(p), `${def.id}: ${p}`).toBe(true);
-      const people = [...(def.allies ?? []), def.ward?.pet, ...(def.rescue?.pets ?? []), ...(def.arrive?.pets ?? []), def.escort?.wagon, ...(def.escort?.walkers ?? [])].filter((x): x is string => !!x);
+      const people = [...(def.allies ?? []), ...(def.alliesIf ?? []).map((a) => a.pet), def.ward?.pet, ...(def.rescue?.pets ?? []), ...(def.arrive?.pets ?? []), def.escort?.wagon, ...(def.escort?.walkers ?? [])].filter((x): x is string => !!x);
       for (const id of people) expect(PETS[id], `${def.id}: ${id}`).toBeTruthy();
       // an escort's waves find the wagon on the road; everyone else's come from named places
       if (def.kind !== 'escort') for (const wv of def.waves) expect(wv.from.length, def.id).toBeGreaterThan(0);

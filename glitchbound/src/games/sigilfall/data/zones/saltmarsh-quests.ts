@@ -192,6 +192,7 @@ export const SALTMARSH_NPCS: Record<string, NpcDef> = {
     title: 'Harbormaster',
     sprite: 'villager',
     talk: [
+      { when: { quest: 'epilogue-the-camp-goes-home', state: 'done' }, lines: ['Isolde came home by the coast road with a cutter she stole from a salvager. I gave her a harbor. She gave me a lecture about my moorings.', 'Ines has the Patience on the water again. She says she’s never selling it. She says it every morning.'] },
       {
         when: { quest: 'east-to-gullport', state: 'active' },
         lines: ['Millbrook’s reeve sent you? About powder? Sit down. No, stand. You’ll be going out again.', 'Varric Blackhand was buying it. Captain Saltbeard is selling it. And I have a coast full of fishfolk who’ve forgotten to be afraid of us.'],

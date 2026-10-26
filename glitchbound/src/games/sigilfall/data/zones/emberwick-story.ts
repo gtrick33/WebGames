@@ -12,6 +12,18 @@ import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
  * opens from her.
  */
 export const EMBERWICK_QUESTS: QuestDef[] = [
+  /* --------------------------------------------- postgame: the Chancellor in the catacombs */
+  {
+    id: 'thread-the-chancellor',
+    name: 'Under His House',
+    giver: 'regent-elowen',
+    zone: 'emberwick',
+    text: 'The war is over and Maelis Crane is still under the city. The Regent has had the cellar stair opened at last, and the door at the bottom with it. She does not want him in a cell. She wants to know what he found down there that was worth all of it. Go down the catacomb stair under his house.',
+    objective: { kind: 'boss', boss: 'maelis-crane', label: 'Find Maelis Crane in the catacombs' },
+    after: ['epilogue-the-bell'],
+    level: 60,
+    reward: { xp: 9000, gold: 4000, item: { rarity: 'legendary' }, text: 'Crane falls among his coins and they do not ring; they weigh nothing. “I counted it,” he says. “All of it. Do you know how much grief it takes to make a coin that weighs nothing?” The Regent has the stair bricked up behind you, and for the first time in nine years she sleeps the whole night.' },
+  },
   /* ------------------------------------------------------------ the traitor */
   {
     id: 'city-the-treasury',

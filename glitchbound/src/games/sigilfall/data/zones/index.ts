@@ -73,6 +73,9 @@ import { HOLLOWMERE_NPCS, HOLLOWMERE_QUESTS } from './hollowmere-quests';
 import { RIFTSCAR } from './riftscar';
 import { RIFTSCAR_FOES, RIFTSCAR_ITEMS } from './riftscar-foes';
 import { RIFTSCAR_NPCS, RIFTSCAR_QUESTS } from './riftscar-quests';
+import { PALE_REACH } from './pale-reach';
+import { PALE_REACH_FOES, PALE_REACH_ITEMS } from './pale-reach-foes';
+import { PALE_REACH_NPCS, PALE_REACH_QUESTS, PALE_REACH_STORY_FOES, POSTGAME_FOES } from './pale-reach-quests';
 import { BRIARHOLLOW, BRIARHOLLOW_FOES, BRIARHOLLOW_NPCS, BRIARHOLLOW_QUESTS } from './briarhollow';
 import { EMBERWICK } from './emberwick';
 import { EMBERWICK_FOES, EMBERWICK_NPCS, EMBERWICK_QUESTS } from './emberwick-story';
@@ -121,6 +124,8 @@ export const ZONES: ZoneModule[] = [
   { region: EMBERDEEP, npcs: EMBERDEEP_NPCS, quests: EMBERDEEP_QUESTS, foes: EMBERDEEP_FOES, items: EMBERDEEP_ITEMS },
   { region: HOLLOWMERE, npcs: HOLLOWMERE_NPCS, quests: HOLLOWMERE_QUESTS, foes: HOLLOWMERE_FOES, items: HOLLOWMERE_ITEMS },
   { region: RIFTSCAR, npcs: RIFTSCAR_NPCS, quests: RIFTSCAR_QUESTS, foes: RIFTSCAR_FOES, items: RIFTSCAR_ITEMS },
+  // Act VI, the Last March, and the finale played from it (and the postgame's thread at the Tear)
+  { region: PALE_REACH, npcs: PALE_REACH_NPCS, quests: PALE_REACH_QUESTS, foes: { ...PALE_REACH_FOES, ...PALE_REACH_STORY_FOES, ...POSTGAME_FOES }, items: PALE_REACH_ITEMS },
 ];
 
 // the buildings' interiors, walked into from their towns (data/interiors.ts)

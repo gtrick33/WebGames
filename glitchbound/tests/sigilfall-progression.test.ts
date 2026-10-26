@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLASS_IDS, xpToNext } from '../src/games/sigilfall/data/classes';
+import { CLASS_IDS, MAX_LEVEL, xpToNext } from '../src/games/sigilfall/data/classes';
 import { EVENTS } from '../src/games/sigilfall/data/events';
 import { mainStory, outlevelled, questBand, SIDE_XP } from '../src/games/sigilfall/data/progression';
 import { QUESTS, QUEST_DEFS } from '../src/games/sigilfall/data/quests';
@@ -35,7 +35,8 @@ function campaign(full: boolean): Record<string, number> {
   let xp = 0;
   const add = (n: number): void => {
     xp += n;
-    while (xp >= xpToNext(level)) {
+    // the level cap holds in the game, so it holds here
+    while (level < MAX_LEVEL && xp >= xpToNext(level)) {
       xp -= xpToNext(level);
       level++;
     }
@@ -53,7 +54,7 @@ function campaign(full: boolean): Record<string, number> {
     const b = band(q);
     const R = REGIONS[b]!;
     // a gate quest with its own level (Heroic, Mythic) doesn't mark the hero arriving in the band
-    if (!(q.level && q.level > R.levels[1])) entry[b] ??= level + xp / xpToNext(level);
+    if (!(q.level && q.level > R.levels[1])) entry[b] ??= level >= MAX_LEVEL ? MAX_LEVEL : level + xp / xpToNext(level);
     const mid = Math.round((R.levels[0] + R.levels[1]) / 2);
     const o = q.objective;
     const kills = o.kind === 'kill' ? o.count : o.kind === 'loot' ? Math.ceil(o.count / o.chance) : 6;

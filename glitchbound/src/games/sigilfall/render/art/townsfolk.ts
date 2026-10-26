@@ -727,6 +727,86 @@ export const TOWNSFOLK_LOOKS: Record<string, HeroLook> = {
     quiver: null,
     cape: '#8a6a4a',
   },
+  /* ------------------------------------------- Act VI: the Last March, every faction's colors */
+  // the forest clans' archers (Lady Silvaine's): leaf-green, a hood of moth-grey
+  'clan-archer': {
+    skin: '#e8d0b8',
+    hair: '#d8d0a0',
+    hairStyle: 'long',
+    head: { style: 'hood', mat: 'cloth', tint: '#8a9a8a', r: 'common' },
+    chest: { style: 'tunic', mat: 'leather', tint: '#4a7a4a', r: 'rare' },
+    legs: { style: 'trousers', mat: 'leather', tint: '#3a5a3a', r: 'common' },
+    hands: { style: 'gloves', mat: 'leather', tint: '#5a4a2a', r: 'common' },
+    feet: { style: 'boots', mat: 'leather', tint: '#3a2a1a', r: 'common' },
+    quiver: '#6a4a2a',
+    cape: '#6a8a5a',
+  },
+  // Prince Thistlemourn's knights, sung back: bark-plate with the thorns filed down
+  'thorn-knight': {
+    skin: '#e0c8b0',
+    hair: '#3a2a3a',
+    hairStyle: 'long',
+    head: { style: 'helm', mat: 'leather', tint: '#5a4a2a', r: 'rare' },
+    chest: { style: 'plate', mat: 'plate', tint: '#6a7a4a', r: 'rare' },
+    legs: { style: 'greaves', mat: 'leather', tint: '#4a3a24', r: 'common' },
+    hands: { style: 'gauntlets', mat: 'leather', tint: '#5a4a2a', r: 'common' },
+    feet: { style: 'boots', mat: 'leather', tint: '#2a2014', r: 'common' },
+    quiver: null,
+    cape: '#8a3a6a',
+  },
+  // Jarl Sigrun's huscarls: furs over mail, a bearded axe
+  'jarl-huscarl': {
+    skin: '#e8c8b0',
+    hair: '#d8b878',
+    hairStyle: 'pony',
+    beard: '#d8b878',
+    head: { style: 'helm', mat: 'mail', tint: '#9aa0ac', r: 'common' },
+    chest: { style: 'plate', mat: 'mail', tint: '#8a8e98', r: 'rare' },
+    legs: { style: 'trousers', mat: 'leather', tint: '#5a4a3a', r: 'common' },
+    hands: { style: 'gloves', mat: 'leather', tint: '#6a5a4a', r: 'common' },
+    feet: { style: 'boots', mat: 'leather', tint: '#4a3a2a', r: 'common' },
+    quiver: null,
+    cape: '#d8d0c0',
+  },
+  // the sun houses' lancers: white linen and gold scale
+  'sun-lancer': {
+    skin: '#a87048',
+    hair: '#1a1410',
+    hairStyle: 'short',
+    head: { style: 'hood', mat: 'cloth', tint: '#e8dcc0', r: 'common' },
+    chest: { style: 'plate', mat: 'gold', tint: '#d8a840', r: 'rare' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#e8dcc0', r: 'common' },
+    hands: { style: 'gloves', mat: 'leather', tint: '#8a5a2a', r: 'common' },
+    feet: { style: 'boots', mat: 'leather', tint: '#6a4424', r: 'common' },
+    quiver: null,
+    cape: '#c84a2a',
+  },
+  // the marsh boats' skirmishers: reed-green wraps, a fishing spear
+  'marsh-skirmisher': {
+    skin: '#c89870',
+    hair: '#3a2a1a',
+    hairStyle: 'pony',
+    head: { style: 'cap', mat: 'cloth', tint: '#5a6a3a', r: 'common' },
+    chest: { style: 'tunic', mat: 'cloth', tint: '#4a6a4a', r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#3a4a30', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'leather', tint: '#4a3a24', r: 'common' },
+    quiver: null,
+    cape: '#6a7a3a',
+  },
+  // Veilwatch's siege mages: night-blue robes and a ward-staff of brass
+  'veilwatch-mage': {
+    skin: '#e0c0a8',
+    hair: '#c8c4d8',
+    hairStyle: 'long',
+    head: { style: 'wizard', mat: 'cloth', tint: '#2a3a7a', r: 'rare' },
+    chest: { style: 'robe', mat: 'cloth', tint: '#2a3a7a', r: 'rare' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#1e2a5a', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'cloth', tint: '#2a2440', r: 'common' },
+    quiver: null,
+    cape: '#c8a050',
+  },
   // echoes of Vaelmoor: the Ash Crown's memories, grey and soft-edged
   'queen-ysane': {
     skin: '#d8d4e0',
@@ -776,6 +856,18 @@ TOWNSFOLK_LOOKS['nyx-lastlight'] = TOWNSFOLK_LOOKS.nyx!;
 TOWNSFOLK_LOOKS['elyra-lastlight'] = TOWNSFOLK_LOOKS.elyra!;
 TOWNSFOLK_LOOKS['orren-in-vaelmoor'] = TOWNSFOLK_LOOKS['brother-orren']!;
 TOWNSFOLK_LOOKS['orren-at-the-mere'] = TOWNSFOLK_LOOKS['brother-orren']!;
+// Act VI and the finale: the companions at Dawn's Rest, and Elyra in the Crown's memory
+TOWNSFOLK_LOOKS['mara-at-the-reach'] = TOWNSFOLK_LOOKS['mara-venn']!;
+TOWNSFOLK_LOOKS['cael-at-the-reach'] = TOWNSFOLK_LOOKS['cael-varrow']!;
+TOWNSFOLK_LOOKS['nyx-at-the-reach'] = TOWNSFOLK_LOOKS.nyx!;
+TOWNSFOLK_LOOKS['orren-at-the-reach'] = TOWNSFOLK_LOOKS['brother-orren']!;
+TOWNSFOLK_LOOKS['elyra-at-the-reach'] = TOWNSFOLK_LOOKS.elyra!;
+TOWNSFOLK_LOOKS['elyra-in-the-memory'] = TOWNSFOLK_LOOKS.elyra!;
+TOWNSFOLK_LOOKS['vaelor-remembered'] = { ...TOWNSFOLK_LOOKS['queen-ysane']!, hair: '#6a6478', hairStyle: 'short', beard: '#6a6478', chest: { style: 'plate', mat: 'plate', tint: '#8a86a0', r: 'epic' }, cape: '#5a5470' };
+TOWNSFOLK_LOOKS['echo-of-ysane-whole'] = TOWNSFOLK_LOOKS['queen-ysane']!;
+TOWNSFOLK_LOOKS['echo-of-the-children'] = TOWNSFOLK_LOOKS['vaelmoor-child']!;
+TOWNSFOLK_LOOKS['vaelmoor-baker'] = TOWNSFOLK_LOOKS['vaelmoor-echo']!;
+TOWNSFOLK_LOOKS['vaelmoor-herald-boy'] = TOWNSFOLK_LOOKS['vaelmoor-child']!;
 // Queen Ysane's echoes, one at each of the frozen places
 for (const id of ['echo-of-ysane', 'echo-of-ysane-quay', 'echo-of-ysane-mere']) TOWNSFOLK_LOOKS[id] = TOWNSFOLK_LOOKS['queen-ysane']!;
 

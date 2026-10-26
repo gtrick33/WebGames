@@ -10,6 +10,18 @@ import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
  * Main chain first.
  */
 export const SHATTERED_VALE_QUESTS: QuestDef[] = [
+  /* --------------------------------------------- postgame: what was under the Tear */
+  {
+    id: 'thread-under-the-tear',
+    name: 'What Was Under the Tear',
+    giver: 'magister-quell',
+    zone: 'shattered-vale',
+    text: 'The Tear is closing now that the Crown is broken, and as it closes it has let go of something it was holding at the very bottom: a man in a white coat, kneeling, with his face in his hands. Quell’s rods all point at him. Quell would like to know who he was before he lets the Tear close over him for good.',
+    objective: { kind: 'kill', region: 'shattered-vale', count: 1, enemies: ['the-heralds-first-face'], label: 'Face the man at the bottom of the Tear' },
+    after: ['epilogue-the-bell'],
+    level: 60,
+    reward: { xp: 8000, gold: 3000, item: { rarity: 'legendary' }, text: 'He was Aurel, Vaelor’s younger brother, who rode down to the harbor with the King’s order to open it, and watched the plague ship come in, and walked into the Tear the next winter so that he would never have to remember it. The Crown made a herald out of what was left. Quell lets the Tear close over him gently, and writes his name in the Watch’s book.' },
+  },
   /* ---------------------------------------------------------- the way in */
   {
     id: 'where-the-rift-bleeds',

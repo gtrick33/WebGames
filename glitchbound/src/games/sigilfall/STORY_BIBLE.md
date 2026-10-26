@@ -205,20 +205,27 @@ children, the winter of plague. Major dungeons each hold a Crown Sigil (Blighthe
 of the Rift). Brother Orren meets his own dead and holds. Elyra, with most sigils bonded to her, starts forgetting
 the hero's name.
 
-### Act VI — The Last March (levels 56–60) · future
+### Act VI — The Last March (levels 56–59) · built
 
 With enough sigils the coalition marches. Every faction the hero helped **arrives with its own troops**: Hollis's
 scouts, Dunmore's riders, the dwarves, the forest clans (as chosen), the jarls, the desert lancers, the marsh
 boats. The battlefield of the Pale Reach: protect the siege mages, break the outer wall, descend into Duskspire,
 face corrupted champions met earlier (Vosk, the Pale Herald). Companion lines change with completed side arcs.
 
-### Finale — Crownfall (level 60) · future
+### Finale — Crownfall (level 60) · built
 
 1. **The throne room duel** with Vaelor.
 2. **The shattered realm**: the Ash Crown pulls the battle into a memory of Vaelmoor whole and beautiful.
 3. **The rescue and the choice**: Elyra, holding the relit sigils, can give Vaelor his family back for one hour
    before the end, or break the crown at once. Both end the Ash Crown; the first changes what the epilogue shows.
 4. **The final form**: the Ash Crown itself.
+
+**As built.** Stage 1 is Duskspire's throne room; stage 2 is a second arena, *Vaelmoor Remembered*, reached through a
+tear over Duskspire once Vaelor falls; stage 3 is the `crownfall` choice (go to Vaelor to give him the hour, or tell
+Elyra to break it: the hour costs Elyra the last of her memory of the hero, breaking it at once keeps her name for
+him); stage 4 is the Ash Crown in the memory's palace garden. Act VI's corrupted champions are Vosk (hollowed, at the
+head of the Host) and the Herald's voice in the Duskspire Gate; the Herald was Vaelor's brother Aurel, who carried the
+order to open the harbor (told in Act VI, met in the postgame).
 
 **Epilogue.** Concrete consequences across the saved villages and allies; the camp packs up; the hero walks back
 into **rebuilt Briarhollow**, and Old Haldor **rings the bell**. Postgame: Heroic and Mythic remixes and the

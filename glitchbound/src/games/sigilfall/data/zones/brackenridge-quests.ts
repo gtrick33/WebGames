@@ -213,6 +213,7 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
     title: 'Warden of Fernstead',
     sprite: 'villager',
     talk: [
+      { when: { quest: 'epilogue-the-camp-goes-home', state: 'done' }, lines: ['Fernstead has a harvest festival this year. The first since the barrows woke. The Stones are lit, and every ranger I have is home.', 'We heard Briarhollow’s bell. I sent a rider to ask what was wrong. Nothing, he said. That’s what it means now.'] },
       {
         when: { quest: 'west-road', state: 'active' },
         lines: [

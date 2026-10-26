@@ -217,6 +217,7 @@ export const GREYFEN_NPCS: Record<string, NpcDef> = {
     title: 'Marshwarden of Reedwater',
     sprite: 'villager',
     talk: [
+      { when: { quest: 'epilogue-the-camp-goes-home', state: 'done' }, lines: ['The wells glint. The herb-boats are back on the water. Brisa is teaching the children the healing songs.', 'We buried the drowned properly this spring. All of them. It took a week, and it was worth every day.'] },
       {
         when: { quest: 'the-digging-dead', state: 'active' },
         lines: [

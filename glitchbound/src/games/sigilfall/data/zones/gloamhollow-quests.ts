@@ -160,6 +160,18 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     },
   },
 
+  /* ------------------------------------------------- postgame: Wren's fate */
+  {
+    id: 'thread-wren',
+    name: 'Wren’s First Night',
+    giver: 'wren',
+    text: 'Wren has asked Brin for a lamp-keeper’s hook, and Nyx has said over her dead body, and Brin has said that can be arranged. Tonight is his first night on the causeway. The marsh-lights know it. Walk the unlit mile with him and snuff whatever leans on his lamps.',
+    objective: { kind: 'kill', region: 'gloamhollow', count: 12, enemies: ['marsh-light'], label: 'Keep Wren’s lamps lit: snuff marsh-lights' },
+    after: ['epilogue-the-bell'],
+    zone: 'gloamhollow',
+    level: 60,
+    reward: { xp: 4000, gold: 1200, item: { rarity: 'epic' }, text: 'Every lamp is lit at dawn, and Wren is asleep against the last one with his hook across his knees. Nyx carries him home over her shoulder like a sack of flour and does not say anything at all, which Brin says is the nicest thing she has ever seen her do.' },
+  },
   /* ------------------------------------------------- Widow Marrow's son */
   {
     id: 'the-black-pool',
@@ -336,6 +348,8 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'the-gloam-gate', state: 'done' }, lines: ['You’re the one she talks about. She talks about you like you’re weather. Big, unavoidable, probably wet.', 'I’m going to keep lamps. Brin says I can. Nyx says over her dead body. I think that means yes.'] },
+      { when: { quest: 'thread-wren', state: 'offered' }, lines: ['Brin says I can have a hook. Nyx says over her dead body. Will you walk the causeway with me tonight? Before she finds out?'] },
+      { when: { quest: 'thread-wren', state: 'done' }, lines: ['Lamp-keeper Wren. Say it again. No, say it the way Brin says it, like it’s a real thing.', 'Nyx cried. Don’t tell her I saw.'] },
       { lines: ['Two years in a cell. You know what I missed? Soup. Not freedom, not sky. Soup. Brin makes very good soup.'] },
     ],
   },

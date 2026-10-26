@@ -1,4 +1,4 @@
-import { after } from '../cond';
+import { after, all, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -116,6 +116,8 @@ export const SHATTERED_VALE = wildRegion(
     ],
     wildCount: 54,
     story: [
+      // postgame: the Tear lets go of what it held at the bottom (STORY_BIBLE.md §3, Epilogue)
+      { near: 'the-tear', dy: 2, marker: { kind: 'pack', enemies: ['the-heralds-first-face'], level: 60, rare: true }, when: all(after('epilogue-the-bell'), until('thread-under-the-tear')) },
       // the lip of the Tear, where the Herald waits, and the ways his shades come up the Vale
       { near: 'the-tear', dy: 4, marker: { kind: 'place', id: 'tear-top' } },
       { near: 'the-tear', dy: -6, marker: { kind: 'place', id: 'tear-n' } },

@@ -1,6 +1,6 @@
 import type { ZoneArt } from '.';
 
-/** Duskspire: the Hollow King, his guard and the dead who kneel in his halls. */
+/** Duskspire: the Hallow King, his guard and the dead who kneel in his halls. */
 export const DUSKSPIRE_ART: ZoneArt = {
   foes: {
     vaelor: {

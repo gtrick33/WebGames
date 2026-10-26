@@ -82,6 +82,10 @@ export const AMBERFIELD = wildRegion(
     ],
     wildCount: 58,
     story: [
+      // the Epilogue: the refugee road is a road again, and the riders' stones by the gate
+      { near: 'hub', dx: -4, dy: 3, marker: { kind: 'prop', prop: 'market-cart', solid: true }, when: after('epilogue-the-camp-goes-home') },
+      { near: 'hub', dx: 4, dy: 3, marker: { kind: 'prop', prop: 'standing-stone', solid: true }, when: after('epilogue-the-camp-goes-home') },
+      { near: 'hub', dx: 0, dy: -5, marker: { kind: 'prop', prop: 'flag' }, when: after('epilogue-the-camp-goes-home') },
       // where the defense happens: the square, the north gate, and the roads the riders come down
       { near: 'hub', marker: { kind: 'place', id: 'hearth-square' } },
       { near: 'gate', marker: { kind: 'place', id: 'hearth-gate' } },

@@ -108,6 +108,8 @@ function plan(): CityPlan {
   c.fill(41, 28, 45, 29, 'cobble');
   c.marker(46, 29, { kind: 'spot', id: 'crane-catacombs', name: 'The Catacomb Stair', r: 2 }, is('festival-the-catacombs', 'started'));
   c.prop('danger-sign', 42, 29, false, after('festival-the-knives'));
+  // after the story's end the Regent has the stair opened: down to the catacombs, where Crane went (postgame)
+  c.marker(44, 29, { kind: 'exit', to: 'crown-catacombs', label: 'The catacomb stair, under the Chancellor’s house' }, after('epilogue-the-bell'));
 
   // the tavern quarter: the Drunken Wyvern and the Ember Hearth
   c.fill(12, 51, 39, 52, 'cobble');
