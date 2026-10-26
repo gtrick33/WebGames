@@ -1308,8 +1308,15 @@ export class World {
     const big = e.elite.length > 0 || !!e.def.named;
     const gold = goldDrop(e.def.gold, e.level, this.rand) * (big ? 3 : 1);
     if (gold > 0) this.dropGold(e.x, e.y, gold);
+    // fewer, better things to pick up (blueprint Prompt 11): of the rank and file's drops, the plain pieces and
+    // one in five of the rest come as their worth in coin; elites, chests and bosses drop as before
     const chance = (big ? 1 : 0.075) * tier.loot * bonus;
-    if (this.rand() < chance) this.dropItem(e.x, e.y, this.rollItem(big ? 'elite' : 'enemy', e.level));
+    const roll = this.rand();
+    if (roll < chance) {
+      const item = this.rollItem(big ? 'elite' : 'enemy', e.level);
+      if (big || (item.r !== 'common' && roll < chance * 0.8)) this.dropItem(e.x, e.y, item);
+      else this.dropAt('gold', e.x, e.y, salvageValue(item));
+    }
     if (this.rand() < (e.elite.length ? 0.4 : 0.07)) this.dropAt('orb', e.x, e.y, 1);
     if (e.elite.length && h.quests['rift-shards']?.state === 'active' && h.shards < 3) this.dropAt('shard', e.x, e.y, 1);
     if (e.elite.includes('volatile') || this.mods.includes('volatile')) {

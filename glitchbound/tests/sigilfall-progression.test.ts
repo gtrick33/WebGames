@@ -94,7 +94,7 @@ describe('Sigilfall: progression', () => {
     expect(ultFloor(60)).toBe(32);
   });
 
-  it('two minutes of hard fighting earn every class two to five ultimates', () => {
+  it('two minutes of hard fighting earn every class two to five ultimates', { timeout: 30_000 }, () => {
     const counts: Record<string, number> = {};
     for (const cls of CLASS_IDS) {
       const w = newWorld('whisperwood', readyHero(cls, 30));

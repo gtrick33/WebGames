@@ -190,3 +190,18 @@ Normal (loot clutter, Section 8). Act milestones get one guaranteed rare-or-bett
 
 No id changes. Levels, XP, talents and bars load as they are. Over-levelled heroes stay over-levelled (we never take
 levels away). Respec is offered free once after the rebalance ships, so changed talents can be re-chosen.
+
+## Part 3 — Loot clutter (blueprint Prompt 11)
+
+Measured with the play-bot (a warrior in rare gear, five minutes of fighting, about 210 kills):
+
+| Zone | Items before | Items after | Plain (common) pieces after |
+| --- | --- | --- | --- |
+| Thornvale (level 9) | 22 | 15 | 0 |
+| Duskfen (level 20) | 19 | 11 | 0 |
+| Glimmerwood (level 33) | 21 | 13 | 1 (an elite's) |
+
+The rank and file's plain pieces, and one roll in five of their other drops, now come as a coin worth the
+piece's salvage value; elites, chests, bosses and quest rewards drop as before. The random sequence of a fight
+is unchanged, so every play-through stays as it was. Story and dungeon rewards (hand-made items, boss
+first-kill items, mounts, Wardrobe looks) are untouched, so they stand out more against fewer random drops.
