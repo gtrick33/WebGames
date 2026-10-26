@@ -3,7 +3,7 @@ import { BOSSES } from '../data/bosses';
 import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
 import { ITEM_DEFS, ITEMS } from '../data/items';
-import { QUEST_DEFS } from '../data/quests';
+import { QUEST_DEFS, QUESTS } from '../data/quests';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { THEMES } from '../data/themes';
 import { BOSS_MARKS } from '../data/vendors';
@@ -1218,6 +1218,17 @@ export class World {
     this.emit({ t: 'save' });
   }
 
+  /**
+   * A place found before its quest asked for it: going back there still counts (found once, a quest given
+   * later could otherwise never be finished).
+   */
+  private revisit(spot: string): void {
+    const h = this.hero;
+    if (!QUESTS.some((q) => q.objective.kind === 'explore' && q.objective.spot === spot && h.quests[q.id]?.state === 'active')) return;
+    this.questProgress((o) => o.kind === 'explore' && o.spot === spot);
+    this.emit({ t: 'save' });
+  }
+
   /** An enemy is gone (killed, or burst by itself): when the last of its pack is gone, the pack comes back in a while. */
   enemyGone(e: Enemy): void {
     const st = e.pack > 0 ? this.packs[e.pack - 1] : undefined;
@@ -1419,7 +1430,11 @@ export class World {
     // shrines: discovered by walking up to them
     for (const s of this.shrines) {
       const key = `found:${s.id}`;
-      if (this.hero.opened.includes(key) || dist(p.x, p.y, s.x, s.y) > 34) continue;
+      if (dist(p.x, p.y, s.x, s.y) > 34) continue;
+      if (this.hero.opened.includes(key)) {
+        this.revisit(s.id);
+        continue;
+      }
       this.hero.opened.push(key);
       this.fxBurst(s.x, s.y, '#9cffd0', 30, 30);
       this.sfx('discover');
@@ -1431,7 +1446,11 @@ export class World {
     // sights in the wilds: found by walking near; exploring pays a little
     for (const sp of this.spots) {
       const key = `spot:${this.region.id}:${sp.id}`;
-      if (this.hero.opened.includes(key) || dist(p.x, p.y, sp.x, sp.y) > sp.r * TILE) continue;
+      if (dist(p.x, p.y, sp.x, sp.y) > sp.r * TILE) continue;
+      if (this.hero.opened.includes(key)) {
+        this.revisit(sp.id);
+        continue;
+      }
       this.hero.opened.push(key);
       this.sfx('discover');
       this.emit({ t: 'banner', text: sp.name, sub: 'Discovered' });

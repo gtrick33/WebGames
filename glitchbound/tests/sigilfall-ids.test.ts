@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { DUNGEONS } from '../src/games/sigilfall/data/dungeons';
 import { ITEMS } from '../src/games/sigilfall/data/items';
 import { QUESTS } from '../src/games/sigilfall/data/quests';
+import { REGIONS } from '../src/games/sigilfall/data/regions';
 import { ZONES } from '../src/games/sigilfall/data/zones';
 
 function once(ids: [string, string][]): void {
@@ -28,5 +29,12 @@ describe('sigilfall ids', () => {
   it('no two zones or dungeons define the same enemy, boss or person', () => {
     once(modules.flatMap((m) => [...Object.keys(m.foes), ...Object.keys(m.bosses)].map((id): [string, string] => [id, m.name])));
     once(modules.flatMap((m) => Object.keys(m.npcs).map((id): [string, string] => [id, m.name])));
+  });
+
+  it('every road and dungeon door leads to a region that exists', () => {
+    for (const r of Object.values(REGIONS)) {
+      const marks = [...Object.values(r.markers), ...(r.placed ?? []).map((p) => p.marker)];
+      for (const m of marks) if (m.kind === 'exit') expect(REGIONS[m.to], `${r.id} has a way to ${m.to}, which isn't registered`).toBeTruthy();
+    }
   });
 });
