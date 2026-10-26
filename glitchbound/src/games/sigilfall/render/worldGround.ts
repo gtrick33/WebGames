@@ -143,9 +143,23 @@ export class WorldGround {
     const cy1 = Math.floor((oy + vh - 1) / CW);
     const smooth = g.imageSmoothingEnabled;
     g.imageSmoothingEnabled = true;
-    // a canvas pixel of overlap, so a scaled chunk's soft edge never shows as a seam
-    const pad = 1 / Math.max(1, g.getTransform().a);
-    for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) g.drawImage(this.chunk(cx, cy), cx * CW - ox, cy * CW - oy, CW + pad, CW + pad);
+    // chunks meet on whole canvas pixels (a fractional scale, as in a small window, would leave a hairline
+    // between them); scaled, each is sampled half a pixel in from its edge so its border never blends with
+    // the transparent outside
+    const a = g.getTransform().a;
+    const snap = (v: number): number => Math.round(v * a) / a;
+    for (let cy = cy0; cy <= cy1; cy++) {
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const c = this.chunk(cx, cy);
+        const x0 = snap(cx * CW - ox);
+        const y0 = snap(cy * CW - oy);
+        const w = snap((cx + 1) * CW - ox) - x0;
+        const h = snap((cy + 1) * CW - oy) - y0;
+        const k = c.width / CW;
+        const inset = Math.abs(a - k) > 1e-3 ? 0.5 : 0;
+        g.drawImage(c, inset, inset, c.width - inset * 2, c.height - inset * 2, x0, y0, w, h);
+      }
+    }
     g.imageSmoothingEnabled = smooth;
   }
 
