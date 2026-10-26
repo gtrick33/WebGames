@@ -49,7 +49,7 @@ export const VINECOIL_FOES: Record<string, EnemyDef> = {
     keep: 64,
     floats: true,
     rush: { speed: 310, dist: 115 },
-    blurb: 'The size of a sparrow and the colour of what it last drank. A swarm hangs back over the water, then darts in one after another along marked lines.',
+    blurb: 'The size of a sparrow and the color of what it last drank. A swarm hangs back over the water, then darts in one after another along marked lines.',
   },
   'vine-strangler': {
     id: 'vine-strangler',
@@ -268,7 +268,7 @@ export const VINECOIL_ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'Viper venom, fever-blood and something Tuoko won’t name, smouldering in a gourd that never goes out. It smells like a wet dog on fire. It works.',
+    lore: 'Viper venom, fever-blood and something Tuoko won’t name, smoldering in a gourd that never goes out. It smells like a wet dog on fire. It works.',
     minLevel: 41,
     special: true,
   },

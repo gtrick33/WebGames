@@ -475,6 +475,14 @@ describe('sigilfall wild zones, played', () => {
     { region: 'sablewind', level: 38 },
     { region: 'vinecoil', level: 40 },
     { region: 'highwall', level: 41 },
+    { region: 'gloamhollow', level: 45 },
+    { region: 'bonefields', level: 47 },
+    { region: 'weeping-woods', level: 49 },
+    { region: 'sunken-reaches', level: 50 },
+    { region: 'blightwood', level: 51 },
+    { region: 'emberdeep', level: 52 },
+    { region: 'hollowmere', level: 54 },
+    { region: 'riftscar', level: 55 },
   ] as const;
   for (const z of ZONES) {
     for (const cls of CLASS_IDS) {

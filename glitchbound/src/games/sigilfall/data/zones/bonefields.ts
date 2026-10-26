@@ -1,52 +1,145 @@
+import { after, all, is, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
- * The Bonefields (48-53): north of Highwall, an ashen plain where the Ashen Host musters for its
- * next march. Bone-pits where the dead are dug up and put back together, rows of tents and bone-banners,
+ * The Bonefields (46-50), Act IV: north of Highwall, an ashen plain where the Ashen Host musters around
+ * the Muster Hall, the oldest of the Three Gates (STORY_BIBLE.md §3). Bone-pits where the dead are dug up and put back together, rows of tents and bone-banners,
  * raided farms and the old ossuary of the Sigil-wardens. At the heart of the muster stands the Bone
- * Colossus. Marshal Ardent holds the Forward Camp in the south, Highwall's first foothold beyond the wall.
+ * Colossus. Marshal Ardent holds the Forward Camp in the south, Highwall's first foothold beyond the
+ * wall; Haldren's Farm lies west of it and Gallows Hill east, the Bone Pits in the north-west, the
+ * Wardens' Ossuary in the north-east and the Muster Hall in the north.
+ *
+ * What changes: smoke and the Host's banners over the Hall until the Colossus falls; the Hall burns the day
+ * it does; after, the coalition's banners stand on the field and Mara's army camps beside Ardent's.
  */
+/** The Muster Hall in the Host's hands. */
+const HELD = until('the-bone-colossus');
+
 export const BONEFIELDS = wildRegion(
   {
     id: 'bonefields',
     name: 'The Bonefields',
-    subtitle: 'Where the Host musters',
+    subtitle: 'The third Gate',
     theme: 'bonefield',
-    levels: [48, 53],
+    levels: [46, 50],
     at: [78, -20],
     dark: false,
     safe: false,
     music: 'plains',
-    blurb: 'An ashen plain of bone-pits and Ashen tents, where the dead muster for the next march.',
+    blurb: 'An ashen plain of bone-pits and Ashen tents around the Muster Hall, the third Gate, where the dead muster for the next march.',
+    states: [
+      { id: 'muster-held', when: HELD, smoke: true },
+      { id: 'hall-burning', when: all(after('the-bone-colossus'), until('the-third-gate')), burning: true },
+    ],
   },
   {
     w: 160,
     h: 104,
     seed: 26681,
-    levels: [48, 53],
+    levels: [46, 50],
     from: [0.5, 0.95],
     forest: 0.18,
     scatter: { trees: 0.8, bushes: 0.8, rocks: 2, flowers: 0.6 },
-    water: { kind: 'lakes', amount: 0.2 },
-    hubs: [{ at: [0.48, 0.84], npcs: ['marshal-ardent', 'cook-brannoc', 'armorer-jessa'], houses: 5 }],
+    water: { kind: 'lakes', amount: 0.14 },
+    hubs: [{ at: [0.48, 0.84], npcs: ['marshal-ardent', 'cook-brannoc', 'armorer-jessa', 'farmer-haldren'], houses: 5 }],
     exits: [
       { side: 's', at: 0.5, to: 'highwall', label: 'South road to Highwall' },
-      { side: 'e', at: 0.6, to: 'sunken-reaches', label: 'East road to the Sunken Reaches' },
-      { side: 'w', at: 0.45, to: 'weeping-woods', label: 'West road to the Weeping Woods', minLevel: 49 },
-      { side: 'n', at: 0.7, to: 'emberdeep', label: 'North road to Emberdeep Caldera', minLevel: 50 },
+      { side: 'w', at: 0.35, to: 'gloamhollow', label: 'West along the gate line to Gloamhollow' },
+      // past the Three Gates, into Vaelmoor (Act V)
+      { side: 'w', at: 0.15, to: 'weeping-woods', label: 'North-west road into Vaelmoor: the Weeping Woods', minLevel: 48, needs: 'the-third-gate' },
+      { side: 'e', at: 0.6, to: 'sunken-reaches', label: 'East road to the Sunken Reaches', minLevel: 49, needs: 'the-third-gate' },
+      { side: 'n', at: 0.7, to: 'emberdeep', label: 'North road to Emberdeep Caldera', minLevel: 51, needs: 'the-third-gate' },
     ],
     pois: [
-      // the heart of the muster
-      { at: [0.5, 0.18], r: 14, kind: 'camp', level: 53, packs: [['death-knight', 'legion-soldier', 'legion-soldier'], ['legion-necromancer', 'bone-giant'], ['legion-lancer', 'legion-lancer', 'legion-crossbowman'], ['death-knight', 'legion-necromancer']], rare: 'the-bone-colossus', spot: { id: 'the-muster', name: 'The Muster' }, chest: 'epic', landmark: { style: 'keep', w: 8, h: 5, name: 'The Muster Hall' } },
-      { at: [0.2, 0.42], r: 11, kind: 'den', level: 50, packs: [['abomination', 'carrion-crow', 'carrion-crow'], ['legion-necromancer', 'carrion-crow', 'carrion-crow']], elite: true, rare: 'butcher-krogg', spot: { id: 'bone-pits', name: 'The Bone Pits' }, chest: 'rare' },
-      { at: [0.8, 0.4], r: 10, kind: 'ruin', level: 51, packs: [['death-knight', 'legion-soldier'], ['legion-necromancer', 'legion-soldier', 'legion-soldier']], spot: { id: 'the-ossuary', name: 'The Wardens’ Ossuary' }, landmark: { style: 'temple', w: 5, h: 4, name: 'The Wardens’ Ossuary' } },
-      { at: [0.24, 0.74], r: 10, kind: 'farm', level: 48, packs: [['carrion-crow', 'carrion-crow', 'carrion-crow'], ['legion-lancer', 'legion-soldier']], spot: { id: 'raided-farm', name: 'Haldren’s Farm' }, chest: 'common' },
-      { at: [0.74, 0.7], r: 9, kind: 'ruin', level: 49, packs: [['legion-soldier', 'legion-soldier', 'legion-crossbowman'], ['abomination', 'legion-soldier']], spot: { id: 'gallows-hill', name: 'Gallows Hill' } },
+      // the heart of the muster, where the Colossus stands
+      {
+        at: [0.5, 0.18],
+        r: 14,
+        kind: 'camp',
+        level: 50,
+        packs: [
+          ['death-knight', 'legion-soldier', 'legion-soldier'],
+          ['legion-necromancer', 'bone-giant'],
+          ['legion-lancer', 'legion-lancer', 'legion-crossbowman'],
+          ['death-knight', 'legion-necromancer'],
+        ],
+        rare: 'the-bone-colossus',
+        spot: { id: 'the-muster', name: 'The Muster Hall' },
+        chest: 'epic',
+        landmark: { style: 'keep', w: 8, h: 5, name: 'The Muster Hall' },
+      },
+      // where the dead are dug up and stitched together, and Krogg does the stitching
+      {
+        at: [0.2, 0.42],
+        r: 11,
+        kind: 'den',
+        level: 48,
+        packs: [
+          ['abomination', 'carrion-crow', 'carrion-crow'],
+          ['legion-necromancer', 'carrion-crow', 'carrion-crow'],
+          ['abomination', 'legion-necromancer'],
+        ],
+        elite: true,
+        rare: 'butcher-krogg',
+        spot: { id: 'bone-pits', name: 'The Bone Pits' },
+        chest: 'rare',
+      },
+      { at: [0.8, 0.4], r: 10, kind: 'ruin', level: 48, packs: [['death-knight', 'legion-soldier'], ['legion-necromancer', 'legion-soldier', 'legion-soldier'], ['death-knight', 'grave-hound', 'grave-hound']], spot: { id: 'the-ossuary', name: 'The Wardens’ Ossuary' }, landmark: { style: 'temple', w: 5, h: 4, name: 'The Wardens’ Ossuary' } },
+      { at: [0.24, 0.74], r: 10, kind: 'farm', level: 46, packs: [['carrion-crow', 'carrion-crow', 'carrion-crow'], ['legion-lancer', 'legion-soldier'], ['grave-hound', 'grave-hound', 'grave-hound']], spot: { id: 'raided-farm', name: 'Haldren’s Farm' }, chest: 'common' },
+      { at: [0.74, 0.7], r: 9, kind: 'ruin', level: 47, packs: [['legion-soldier', 'legion-soldier', 'legion-crossbowman'], ['abomination', 'legion-soldier'], ['grave-hound', 'grave-hound', 'legion-crossbowman']], spot: { id: 'gallows-hill', name: 'Gallows Hill' } },
     ],
     wild: [
-      { band: [0, 0.4], packs: [['carrion-crow', 'carrion-crow', 'carrion-crow'], ['legion-soldier', 'legion-soldier', 'legion-crossbowman'], ['legion-lancer', 'legion-soldier'], ['grave-hound', 'grave-hound', 'legion-soldier']] },
-      { band: [0.35, 0.7], packs: [['legion-lancer', 'legion-lancer', 'legion-soldier'], ['abomination', 'carrion-crow', 'carrion-crow'], ['legion-necromancer', 'legion-soldier', 'legion-soldier'], ['death-knight', 'legion-crossbowman']] },
-      { band: [0.65, 1], packs: [['bone-giant', 'legion-soldier', 'legion-soldier'], ['death-knight', 'legion-necromancer', 'legion-soldier'], ['legion-lancer', 'legion-lancer', 'legion-crossbowman', 'legion-crossbowman'], ['abomination', 'legion-necromancer']] },
+      {
+        band: [0, 0.4],
+        packs: [
+          ['carrion-crow', 'carrion-crow', 'carrion-crow'],
+          ['legion-soldier', 'legion-soldier', 'legion-crossbowman'],
+          ['legion-lancer', 'legion-soldier'],
+          ['grave-hound', 'grave-hound', 'legion-soldier'],
+          ['grave-hound', 'grave-hound', 'grave-hound'],
+          ['abomination', 'carrion-crow'],
+        ],
+      },
+      {
+        band: [0.35, 0.7],
+        packs: [
+          ['legion-lancer', 'legion-lancer', 'legion-soldier'],
+          ['abomination', 'carrion-crow', 'carrion-crow'],
+          ['legion-necromancer', 'legion-soldier', 'legion-soldier'],
+          ['death-knight', 'legion-crossbowman'],
+          ['grave-hound', 'grave-hound', 'legion-lancer'],
+        ],
+      },
+      {
+        band: [0.65, 1],
+        packs: [
+          ['bone-giant', 'legion-soldier', 'legion-soldier'],
+          ['death-knight', 'legion-necromancer', 'legion-soldier'],
+          ['legion-lancer', 'legion-lancer', 'legion-crossbowman', 'legion-crossbowman'],
+          ['abomination', 'legion-necromancer'],
+          ['bone-giant', 'death-knight'],
+        ],
+      },
+    ],
+    story: [
+      // the field before the Hall, where the coalition meets the Host
+      { near: 'the-muster', dy: 22, marker: { kind: 'place', id: 'muster-field' } },
+      { near: 'the-muster', dy: 12, marker: { kind: 'place', id: 'muster-n' } },
+      { near: 'the-muster', dx: -14, dy: 20, marker: { kind: 'place', id: 'muster-w' } },
+      { near: 'the-muster', dx: 14, dy: 20, marker: { kind: 'place', id: 'muster-e' } },
+      // held: the Host's banners and the bone-smoke over the Hall
+      { near: 'the-muster', dx: -5, dy: 6, marker: { kind: 'prop', prop: 'skull-banner' }, when: HELD },
+      { near: 'the-muster', dx: 5, dy: 6, marker: { kind: 'prop', prop: 'skull-banner' }, when: HELD },
+      { near: 'the-muster', dx: 0, dy: -2, marker: { kind: 'wisp', color: '#9a8aa8', size: 3 }, when: HELD },
+      // the day it falls the Hall burns
+      ...[-6, -2, 2, 6].map((dx, i) => ({ near: 'the-muster', dx, dy: -3 + (i % 2) * 2, marker: { kind: 'fire' as const, size: 3 } })),
+      // the coalition's camp: Mara from the day she brings the army north; banners on the field after
+      { near: 'hub', dx: 4, dy: -4, marker: { kind: 'npc', npc: 'mara-at-the-muster' }, when: all(is('the-gloam-gate', 'done'), until('the-third-gate')) },
+      { near: 'hub', dx: -6, dy: -2, marker: { kind: 'prop', prop: 'tent' }, when: after('into-the-bonefields') },
+      { near: 'hub', dx: 8, dy: -1, marker: { kind: 'prop', prop: 'tent' }, when: after('into-the-bonefields') },
+      { near: 'hub', dx: 0, dy: -6, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('into-the-bonefields') },
+      { near: 'the-muster', dx: -3, dy: 18, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('the-bone-colossus') },
+      { near: 'the-muster', dx: 3, dy: 18, marker: { kind: 'prop', prop: 'flag' }, when: after('the-bone-colossus') },
     ],
     wildCount: 58,
   },

@@ -218,6 +218,9 @@ export const NPCS: Record<string, NpcDef> = {
     title: 'Regent of Aster',
     sprite: 'elder',
     talk: [
+      { when: { quest: 'the-third-gate', state: 'active' }, lines: ['Mara Venn. And you. Standing in my muster ground with the soot of the Muster Hall still on you.', 'Tell me. All three. Tell me slowly; I want to remember exactly how it sounded.'] },
+      { when: { quest: 'into-vaelmoor', state: 'active' }, lines: ['Past the Gates is his country. Nobody living has walked it in three hundred years. Orren went first, alone, of course.', 'Two sigils are still out there, and him. Go and get them before he does.'] },
+      { when: { quest: 'gate-nyx-returns', state: 'active' }, lines: ['A letter from Mara: someone walked into her camp under a white rag. She has not killed them yet, she writes, underlined twice.', 'Go back to Highwall. I would like to know who can make Mara Venn hesitate.'] },
       { when: { quest: 'the-long-night-ends', state: 'active' }, lines: ['Highwall holds? Then the Hallow King has lost his first real battle, and he lost it to you.', 'One gate of three. Mara Venn says the other two will be harder. I believe her. I have started believing Mara Venn about everything.'] },
       { when: { quest: 'the-wall-burns', state: 'active' }, lines: ['Highwall is under siege: the first of the Three Gates. If it falls, the Host is on the road to every city in the south.', 'Lord-Commander Varn holds the March outside its walls. Go to him, and take whatever he needs to you, from me. Mara Venn will command the relief.'] },
       { when: { quest: 'the-frozen-road', state: 'active' }, lines: ['The Sigil of Frost sleeps in a vault under the Rimeheld ice, in the far north-west, and the jarls are at each other’s throats over it.', 'Jarl Sigrun of Frostgate keeps the way. She owes the Crown nothing, so be polite. We need her huscarls more than she needs us.'] },

@@ -49,6 +49,30 @@ import { SALTMARSH } from './saltmarsh';
 import { SALTMARSH_NPCS, SALTMARSH_QUESTS } from './saltmarsh-quests';
 import { THORNVALE } from './thornvale';
 import { THORNVALE_NPCS, THORNVALE_QUESTS } from './thornvale-quests';
+import { GLOAMHOLLOW } from './gloamhollow';
+import { GLOAMHOLLOW_FOES, GLOAMHOLLOW_ITEMS } from './gloamhollow-foes';
+import { GLOAMHOLLOW_NPCS, GLOAMHOLLOW_QUESTS } from './gloamhollow-quests';
+import { BONEFIELDS } from './bonefields';
+import { BONEFIELDS_FOES, BONEFIELDS_ITEMS } from './bonefields-foes';
+import { BONEFIELDS_NPCS, BONEFIELDS_QUESTS } from './bonefields-quests';
+import { WEEPING_WOODS } from './weeping-woods';
+import { WEEPING_WOODS_FOES, WEEPING_WOODS_ITEMS } from './weeping-woods-foes';
+import { WEEPING_WOODS_NPCS, WEEPING_WOODS_QUESTS } from './weeping-woods-quests';
+import { SUNKEN_REACHES } from './sunken-reaches';
+import { SUNKEN_REACHES_FOES, SUNKEN_REACHES_ITEMS } from './sunken-reaches-foes';
+import { SUNKEN_REACHES_NPCS, SUNKEN_REACHES_QUESTS } from './sunken-reaches-quests';
+import { BLIGHTWOOD } from './blightwood';
+import { BLIGHTWOOD_FOES, BLIGHTWOOD_ITEMS } from './blightwood-foes';
+import { BLIGHTWOOD_NPCS, BLIGHTWOOD_QUESTS } from './blightwood-quests';
+import { EMBERDEEP } from './emberdeep';
+import { EMBERDEEP_FOES, EMBERDEEP_ITEMS } from './emberdeep-foes';
+import { EMBERDEEP_NPCS, EMBERDEEP_QUESTS } from './emberdeep-quests';
+import { HOLLOWMERE } from './hollowmere';
+import { HOLLOWMERE_FOES, HOLLOWMERE_ITEMS } from './hollowmere-foes';
+import { HOLLOWMERE_NPCS, HOLLOWMERE_QUESTS } from './hollowmere-quests';
+import { RIFTSCAR } from './riftscar';
+import { RIFTSCAR_FOES, RIFTSCAR_ITEMS } from './riftscar-foes';
+import { RIFTSCAR_NPCS, RIFTSCAR_QUESTS } from './riftscar-quests';
 import { BRIARHOLLOW, BRIARHOLLOW_FOES, BRIARHOLLOW_NPCS, BRIARHOLLOW_QUESTS } from './briarhollow';
 import { EMBERWICK } from './emberwick';
 import { EMBERWICK_FOES, EMBERWICK_NPCS, EMBERWICK_QUESTS } from './emberwick-story';
@@ -88,6 +112,15 @@ export const ZONES: ZoneModule[] = [
   { region: SABLEWIND, npcs: SABLEWIND_NPCS, quests: SABLEWIND_QUESTS, foes: SABLEWIND_FOES, items: SABLEWIND_ITEMS },
   { region: VINECOIL, npcs: VINECOIL_NPCS, quests: VINECOIL_QUESTS, foes: VINECOIL_FOES, items: VINECOIL_ITEMS },
   { region: HIGHWALL, npcs: HIGHWALL_NPCS, quests: HIGHWALL_QUESTS, foes: HIGHWALL_FOES, items: HIGHWALL_ITEMS },
+  // Act IV, the other two Gates, and Act V, the Dead Kingdom
+  { region: GLOAMHOLLOW, npcs: GLOAMHOLLOW_NPCS, quests: GLOAMHOLLOW_QUESTS, foes: GLOAMHOLLOW_FOES, items: GLOAMHOLLOW_ITEMS },
+  { region: BONEFIELDS, npcs: BONEFIELDS_NPCS, quests: BONEFIELDS_QUESTS, foes: BONEFIELDS_FOES, items: BONEFIELDS_ITEMS },
+  { region: WEEPING_WOODS, npcs: WEEPING_WOODS_NPCS, quests: WEEPING_WOODS_QUESTS, foes: WEEPING_WOODS_FOES, items: WEEPING_WOODS_ITEMS },
+  { region: SUNKEN_REACHES, npcs: SUNKEN_REACHES_NPCS, quests: SUNKEN_REACHES_QUESTS, foes: SUNKEN_REACHES_FOES, items: SUNKEN_REACHES_ITEMS },
+  { region: BLIGHTWOOD, npcs: BLIGHTWOOD_NPCS, quests: BLIGHTWOOD_QUESTS, foes: BLIGHTWOOD_FOES, items: BLIGHTWOOD_ITEMS },
+  { region: EMBERDEEP, npcs: EMBERDEEP_NPCS, quests: EMBERDEEP_QUESTS, foes: EMBERDEEP_FOES, items: EMBERDEEP_ITEMS },
+  { region: HOLLOWMERE, npcs: HOLLOWMERE_NPCS, quests: HOLLOWMERE_QUESTS, foes: HOLLOWMERE_FOES, items: HOLLOWMERE_ITEMS },
+  { region: RIFTSCAR, npcs: RIFTSCAR_NPCS, quests: RIFTSCAR_QUESTS, foes: RIFTSCAR_FOES, items: RIFTSCAR_ITEMS },
 ];
 
 // the buildings' interiors, walked into from their towns (data/interiors.ts)

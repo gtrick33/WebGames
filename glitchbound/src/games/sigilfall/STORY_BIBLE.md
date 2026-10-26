@@ -184,20 +184,20 @@ party's road in exchange for her brother — and the Herald keeps neither promis
 time; **Elyra is taken**, and in the same night **Fernstead falls** (the first village the hero saved). The camp at
 Briarhollow fills with Fernstead's people. Nyx disappears.
 
-### Act IV — War of the Three Gates (levels 40–50) · Highwall built; two gates future
+### Act IV — War of the Three Gates (levels 40–50) · built
 
 The hero stops reacting and starts leading. Three fortresses guard the road to Vaelmoor.
 
 | Gate | State | Chain |
 | --- | --- | --- |
 | **Highwall** (Highwall March, Siege of Highwall) | built | Scouting, the bone batteries, the Breach, the Siege-Breaker, General Morvain. Mara commands the relief; Cael leads the sortie |
-| **The Gloam Gate** (Gloamhollow) | future | Nyx returns with the Herald's prison map: **rescue Elyra** from the gate's cells (her redemption) |
-| **The Muster Hall** (the Bonefields) | future | The field battle: allied squads, artillery, the Bone Colossus |
+| **The Gloam Gate** (Gloamhollow) | built | Nyx returns with the Herald's prison map: **rescue Elyra** from the gate's cells (her redemption) |
+| **The Muster Hall** (the Bonefields) | built | The field battle: allied squads, artillery, the Bone Colossus |
 
 Between sieges **Emberwick visibly changes**: the market becomes a muster ground, smiths work through the night,
 the festival lanterns are replaced by war banners, refugees are housed in the outer district.
 
-### Act V — The Dead Kingdom (levels 48–56) · future
+### Act V — The Dead Kingdom (levels 48–57) · built
 
 Beyond the gates lies Vaelmoor, warped: **villages frozen in the moment of their destruction** (the Weeping Woods,
 the Sunken Reaches, Hollowmere's drowned town). The party learns Vaelor's story from echoes: Queen Ysane, the two

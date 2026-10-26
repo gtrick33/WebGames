@@ -92,4 +92,57 @@ export const SCENES: SceneDef[] = [
       { look: 'hero' },
     ],
   },
+  {
+    // Act IV: Nyx back in Mara's camp under a white rag, the Herald's map under her arm
+    id: 'highwall-nyx-returns',
+    region: 'highwall',
+    when: all(after('gate-nyx-returns'), until('gate-the-prison-map')),
+    near: 'nyx-returned',
+    r: 140,
+    steps: [
+      { look: 'nyx-returned' },
+      { emote: 'captain-mara', icon: 'alert' },
+      { say: 'captain-mara', line: 'You sold her. You sold Elyra to that thing, and you walk into my camp asking for soup.' },
+      { emote: 'nyx-returned', icon: 'dots' },
+      { say: 'nyx-returned', line: 'I didn’t ask for soup. You gave me soup. I brought his map. Look at it before you hit me.' },
+      { say: 'captain-mara', line: 'I’ll look. Then I’ll decide.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // Act IV: Elyra out of the Gloam Gate's cells, by Lastlight's fire
+    id: 'gloam-elyra-free',
+    region: 'gloamhollow',
+    when: all(after('gloam-out-of-the-cells'), until('the-gloam-gate')),
+    near: 'elyra-lastlight',
+    r: 140,
+    steps: [
+      { look: 'elyra-lastlight' },
+      { say: 'elyra-lastlight', line: 'It’s warm. Everything is warm. I forgot things could be warm.' },
+      { move: 'wren', to: 'elyra-lastlight' },
+      { say: 'wren', line: 'Brin says you have to drink this. All of it. She says it’s soup. It isn’t soup.' },
+      { emote: 'nyx-lastlight', icon: 'dots' },
+      { say: 'nyx-lastlight', line: 'Elyra. I’m sorry. I know that isn’t worth anything. I’m saying it anyway.' },
+      { emote: 'elyra-lastlight', icon: 'heart' },
+      { say: 'elyra-lastlight', line: 'You came back for me. That’s worth something. Sit down, you’re blocking the fire.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // Act V: Lark's Hollow, the first of Queen Ysane's echoes, calling her children in from the snow
+    id: 'wood-ysane-echo',
+    region: 'weeping-woods',
+    when: all(after('the-frozen-hamlet'), until('wood-the-children')),
+    near: 'echo-of-ysane',
+    r: 140,
+    steps: [
+      { look: 'echo-of-ysane' },
+      { say: 'echo-of-ysane', line: 'Aldis! Wenna! Come in now, it’s snowing. Your father will be home by morning.' },
+      { wait: 0.8 },
+      { say: 'echo-of-ysane', line: 'He went to get the star. For the fever. He promised.' },
+      { look: 'hollow-wood' },
+      { say: 'orren-in-vaelmoor', line: 'She has said that every night for three hundred years. They are still out there. Go and bring them home.' },
+      { look: 'hero' },
+    ],
+  },
 ];

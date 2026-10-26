@@ -181,7 +181,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     after: ['a-matter-of-anatomy'],
     zone: 'shattered-vale',
     level: 37,
-    reward: { xp: 2300, gold: 500, item: 'matrons-heartglass', text: 'Ennis files most of the Matron in his cabinet, labelled in three colours of ink, and hangs a sliver of her heart on a chain for you.' },
+    reward: { xp: 2300, gold: 500, item: 'matrons-heartglass', text: 'Ennis files most of the Matron in his cabinet, labelled in three colors of ink, and hangs a sliver of her heart on a chain for you.' },
   },
   /* -------------------------------------------------------- Hesk's husband */
   {

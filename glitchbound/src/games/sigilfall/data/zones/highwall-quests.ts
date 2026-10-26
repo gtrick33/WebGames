@@ -33,6 +33,36 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     reward: { xp: 1400, gold: 320, text: 'Mara has a plan, and it has you in the middle of it. It also has Cael Varrow in front, leading the riders, which Cael says is the first sensible thing anyone has asked of him in ten years.' },
   },
 
+  /* ------------------------------------------- after the first Gate: Nyx comes back */
+  {
+    id: 'gate-nyx-returns',
+    name: 'Under a White Rag',
+    giver: 'regent-elowen',
+    auto: true,
+    text: 'A rider from Highwall, with a letter in Mara’s square hand: “Someone walked into my camp at dawn under a white rag, and asked for you by name. I have not killed her yet. Come quickly.” Go back to the relief camp in Highwall March.',
+    objective: { kind: 'event', event: 'nyx-returns', label: 'Go back to the relief camp at Highwall' },
+    after: ['the-long-night-ends'],
+    zone: 'highwall',
+    level: 44,
+    reward: { xp: 900, gold: 200, text: 'Nyx, thinner, with a split lip and a rolled map under her arm, between two of Varn’s soldiers. She doesn’t look at Mara. She looks at you.' },
+  },
+  {
+    id: 'gate-the-prison-map',
+    name: 'The Herald’s Map',
+    giver: 'captain-mara',
+    auto: true,
+    text: 'Mara has given Nyx a tent, two guards and a bowl of soup she hasn’t touched. Nyx says she has something the hero must see before anyone decides anything about her. Mara says she has already decided. Go and hear Nyx out.',
+    objective: { kind: 'talk', npc: 'nyx-returned', label: 'Hear Nyx out in the relief camp' },
+    after: ['gate-nyx-returns'],
+    zone: 'highwall',
+    level: 44,
+    reward: {
+      xp: 1800,
+      gold: 400,
+      text: 'The map is the Pale Herald’s own: north from the Shattered Vale, over a black fen, to the Gloam Gate, the second of the Three Gates. A gatehouse marked KEPT. “That’s where she is,” Nyx says. “Elyra. I know because he told me, and he told me because he wants you to go.” Mara: “Then we go. And if this is another sale, I will finish what the Herald started.”',
+    },
+  },
+
   /* ------------------------------------------------------- the siege */
   {
     id: 'ashes-of-ashby',
@@ -315,6 +345,25 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
       { lines: ['The Field Hospital. Beds, bandages, potions, and prayers, in that order.', 'Potions are on the table by the door. Take what you need. Pay what you can. Come back on your feet.'] },
     ],
   },
+  // Nyx after Highwall: come back to Mara's camp with the Herald's map, to make it right (STORY_BIBLE.md §2)
+  'nyx-returned': {
+    id: 'nyx-returned',
+    name: 'Nyx',
+    title: 'Under guard',
+    sprite: 'villager',
+    talk: [
+      {
+        when: { quest: 'gate-the-prison-map', state: 'active' },
+        lines: [
+          'Hello. Don’t. Mara’s already said it, and she said it better, and she had a spear.',
+          'I sold your road to the Herald for my brother. He took Elyra, and he kept Wren, and then he came back and offered me the same deal again.',
+          'This is his map. Where he keeps her. I want you to look at it before you decide anything about me.',
+        ],
+      },
+      { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['North from the Vale, over the fen. There’s a village of people who light lamps. They’re going to hate me. Everybody does that eventually; it saves time if it’s early.'] },
+      { lines: ['Mara says I can have a tent and a guard and soup. I said I’d take the soup. I haven’t taken the soup.'] },
+    ],
+  },
   // Mara Venn, battlefield captain of the coalition (STORY_BIBLE.md §2), commanding the relief
   'captain-mara': {
     id: 'captain-mara',
@@ -329,6 +378,9 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
           'Varn’s army has been sitting in the mud for a season waiting for the wall to fall. It won’t. We’re going to go and get it.',
         ],
       },
+      { when: { quest: 'gate-nyx-returns', state: 'active' }, lines: ['She walked in at dawn with her hands up and a white rag on a stick. My sentries nearly shot her. I nearly let them.'] },
+      { when: { quest: 'gate-the-prison-map', state: 'active' }, lines: ['She sold us to him. She sold Elyra to him. And she walked back in here knowing exactly what I’d want to do.', 'That’s either very brave or very clever, and I can’t tell which, so you go and listen to her. I can’t. I’ll put my spear through the table.'] },
+      { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['North from the Vale, then. The Gloam Gate. Cael and Orren will follow you up the causeway when you need them.', 'Bring her back. Bring both of them back, if you must. I don’t have to like it to want it.'] },
       { when: { quest: 'cael-the-sortie', state: 'active' }, lines: ['Cael leads. You go in at his side. I’ll be on the ridge watching the whole thing go wrong in a slightly different way to how I planned.', 'Open me a way to the Breach. That’s all I need.'] },
       { when: { quest: 'general-morvain', state: 'done' }, lines: ['One gate. One gate of three, and half the field army in the infirmary. The other two will be worse.', 'I keep thinking about Briarhollow’s gate. It was so small. I thought it was the whole world.'] },
       { lines: ['Shields together. Weight forward. Never step back first. Cael taught me that. Don’t tell him.', 'The wall stands because people keep standing on it. That’s all a wall is.'] },
@@ -358,5 +410,20 @@ export const HIGHWALL_EVENTS: Record<string, StoryEventDef> = {
     ],
     end: [{ who: 'cael', text: 'The way to the wall is open. Tell Mara. Tell her she was right, and then tell her I said it twice.' }],
     retry: [{ who: 'cael', text: 'Rally! Rally on me! We go again!' }],
+  },
+  'nyx-returns': {
+    id: 'nyx-returns',
+    region: 'highwall',
+    kind: 'arrival',
+    at: 'relief-camp',
+    radius: 16,
+    arrive: { pets: ['nyx', 'highwall-soldier', 'highwall-soldier'], from: 'relief-road', to: 'relief-tents' },
+    banner: 'Under a white rag',
+    start: [{ who: 'highwall-soldier', text: 'Hold! One of yours, Captain? She says she’s one of yours.' }],
+    waves: [],
+    end: [
+      { who: 'nyx', text: 'Hello. I brought something. Don’t shoot me before you see it.' },
+      { who: 'captain-mara', text: 'Give her a tent. Give her a guard. Give her soup. Nobody gives her a knife.' },
+    ],
   },
 };

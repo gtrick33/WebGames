@@ -27,6 +27,8 @@ export const MAIN_STORY_ENDS = [
   'the-heart-of-the-tear',
   'fern-retaken',
   'the-long-night-ends',
+  'the-third-gate',
+  'the-seventh-sigil',
 ];
 
 /** Side quests pay this share of their reward. */
@@ -51,6 +53,14 @@ export const MAIN_XP: Partial<Record<RegionId, number>> = {
   sablewind: 1.1,
   vinecoil: 0.45,
   highwall: 1,
+  gloamhollow: 0.7,
+  bonefields: 0.5,
+  'weeping-woods': 0.55,
+  'sunken-reaches': 0.55,
+  blightwood: 0.6,
+  emberdeep: 0.6,
+  hollowmere: 0.6,
+  riftscar: 0.5,
 };
 
 /** How much less content pays for every level the hero is past it (beyond a grace), down to a fifth. */

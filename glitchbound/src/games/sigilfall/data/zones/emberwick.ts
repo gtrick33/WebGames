@@ -208,6 +208,9 @@ function plan(): CityPlan {
     c.prop('tent', x, y, true, WAR);
   for (const x of [46, 57]) c.prop('blue-banner', x, 33, false, WAR);
   c.prop('anvil', 63, 40, true, WAR);
+  // between the second Gate and the third: the war's own banners, and campfires by the south gate
+  c.prop('red-banner', 51, 33, false, after('the-gloam-gate'));
+  for (const x of [49, 55]) c.prop('campfire', x, 70, false, after('the-gloam-gate'));
 
   // the park and the pond to the south, where Pell keeps his chickens
   c.pond(33, 64, 5, 3);

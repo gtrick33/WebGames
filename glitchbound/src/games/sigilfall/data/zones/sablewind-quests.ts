@@ -175,7 +175,7 @@ export const SABLEWIND_QUESTS: QuestDef[] = [
     id: 'roc-plumes',
     name: 'Roc Plumes',
     giver: 'dustcrown-dora',
-    text: 'Three mules, Dora says, is a debt, and the rocs can pay it in feathers. A roc plume pillow is worth a night’s walk for a tired traveller, and the Dust-Up needs a reason for travellers to stop. Bring her six good plumes from the rocs of the canyon rim.',
+    text: 'Three mules, Dora says, is a debt, and the rocs can pay it in feathers. A roc plume pillow is worth a night’s walk for a tired traveler, and the Dust-Up needs a reason for travelers to stop. Bring her six good plumes from the rocs of the canyon rim.',
     objective: { kind: 'loot', region: 'sablewind', item: 'Roc Plume', from: ['cliff-roc'], chance: 0.4, count: 6, label: 'Collect Roc Plumes from cliff rocs' },
     after: ['mules-on-the-wing'],
     zone: 'sablewind',
@@ -273,7 +273,7 @@ export const SABLEWIND_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'roc-plumes', state: 'active' },
-        lines: ['Three mules is a debt. The rocs can pay it in feathers.', 'Six plumes for the pillows. A roc plume pillow will bring travellers in from the next canyon. Or at least keep them in bed till noon.'],
+        lines: ['Three mules is a debt. The rocs can pay it in feathers.', 'Six plumes for the pillows. A roc plume pillow will bring travelers in from the next canyon. Or at least keep them in bed till noon.'],
       },
       { when: { quest: 'roc-plumes', state: 'done' }, lines: ['The pillows are a sensation! Two miners overslept and missed a shift. Garrick is furious. I’m delighted.'] },
       { when: { quest: 'the-quartermasters-end', state: 'done' }, lines: ['The wagons have stopped! I can hear the river at night again. I’d forgotten it was there.'] },

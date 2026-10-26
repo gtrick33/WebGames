@@ -686,10 +686,84 @@ export const TOWNSFOLK_LOOKS: Record<string, HeroLook> = {
     quiver: null,
     cape: '#c9473b',
   },
+  /* ------------------------------------------- Acts IV-V: the Gates and the Dead Kingdom */
+  // Highwall's garrison: mail, a kettle helm, the Crown's blue cloak
+  'highwall-soldier': {
+    skin: '#d0a07c',
+    hair: '#4a3a2a',
+    hairStyle: 'short',
+    head: { style: 'helm', mat: 'mail', tint: '#9aa0ac', r: 'common' },
+    chest: { style: 'tunic', mat: 'mail', tint: '#8a8e98', r: 'rare' },
+    legs: { style: 'greaves', mat: 'mail', tint: '#6a6e78', r: 'common' },
+    hands: { style: 'gauntlets', mat: 'mail', tint: '#7a7e88', r: 'common' },
+    feet: { style: 'boots', mat: 'leather', tint: '#2a2018', r: 'common' },
+    quiver: null,
+    cape: '#3a4a8a',
+  },
+  // Wren, Nyx's brother: two years in a cell, a borrowed blanket for a cloak, his sister's black hair
+  wren: {
+    skin: '#dcb898',
+    hair: '#1a1420',
+    hairStyle: 'short',
+    head: null,
+    chest: { style: 'tunic', mat: 'cloth', tint: '#6a6458', r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#4a4640', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'cloth', tint: '#3a3430', r: 'common' },
+    quiver: null,
+    cape: '#8a6a4a',
+  },
+  // echoes of Vaelmoor: the Ash Crown's memories, grey and soft-edged
+  'queen-ysane': {
+    skin: '#d8d4e0',
+    hair: '#a8a4b8',
+    hairStyle: 'long',
+    head: { style: 'crown', mat: 'gold', tint: '#c8c4d8', r: 'epic' },
+    chest: { style: 'robe', mat: 'cloth', tint: '#8a86a0', r: 'epic' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#6a6680', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'cloth', tint: '#5a5670', r: 'common' },
+    quiver: null,
+    cape: '#b8b4cc',
+  },
+  'vaelmoor-child': {
+    skin: '#dcd8e4',
+    hair: '#9a96aa',
+    hairStyle: 'short',
+    head: null,
+    chest: { style: 'tunic', mat: 'cloth', tint: '#9a96ac', r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#7a7690', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'cloth', tint: '#6a6680', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
+  'vaelmoor-echo': {
+    skin: '#d0ccd8',
+    hair: '#8a8698',
+    hairStyle: 'pony',
+    apron: '#b0acbc',
+    head: null,
+    chest: { style: 'robe', mat: 'cloth', tint: '#7a768c', r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#6a6678', r: 'common' },
+    hands: null,
+    feet: { style: 'shoes', mat: 'cloth', tint: '#5a5668', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
 };
 
 // Mara Venn as the relief's captain at Highwall (Act IV): the same woman, the same mail
 TOWNSFOLK_LOOKS['captain-mara'] = TOWNSFOLK_LOOKS['mara-venn']!;
+// the companions where Acts IV and V find them (their own NPC ids, so every quest points at one place)
+TOWNSFOLK_LOOKS['mara-at-the-muster'] = TOWNSFOLK_LOOKS['mara-venn']!;
+TOWNSFOLK_LOOKS['nyx-returned'] = TOWNSFOLK_LOOKS.nyx!;
+TOWNSFOLK_LOOKS['nyx-lastlight'] = TOWNSFOLK_LOOKS.nyx!;
+TOWNSFOLK_LOOKS['elyra-lastlight'] = TOWNSFOLK_LOOKS.elyra!;
+TOWNSFOLK_LOOKS['orren-in-vaelmoor'] = TOWNSFOLK_LOOKS['brother-orren']!;
+TOWNSFOLK_LOOKS['orren-at-the-mere'] = TOWNSFOLK_LOOKS['brother-orren']!;
+// Queen Ysane's echoes, one at each of the frozen places
+for (const id of ['echo-of-ysane', 'echo-of-ysane-quay', 'echo-of-ysane-mere']) TOWNSFOLK_LOOKS[id] = TOWNSFOLK_LOOKS['queen-ysane']!;
 
 /* ------------------------------------------------------------- interiors */
 

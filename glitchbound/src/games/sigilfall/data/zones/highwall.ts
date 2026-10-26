@@ -7,7 +7,17 @@ import { wildRegion } from '../zonegen';
  * siege: trenches and bone catapults in the west, the Breach smashed in the walls north-west, burned
  * villages, trampled fields and the knights' old chapel with its graves dug open. Lord-Commander Varn
  * holds the relief camp in the east, where the road comes in from Sablewind Canyon.
+ *
+ * The representative siege of the Three Gates (blueprint Prompt 10): Highwall is **besieged** (smoke over
+ * the walls, the Host's banners on its lines) until the Siege-Breaker falls, **breached** (the walls burn
+ * while the fight goes on inside) until Morvain falls, and **liberated** after (the Crown's banners on the
+ * Breach, the garrison's tents in the camp). Each state is chosen from quest progress alone, so a reload
+ * mid-siege comes back to the same state, and no wave or reward can run twice.
  */
+/** Highwall under siege, then breached: the city's two states before it is relieved. */
+const BESIEGED = until('the-siege-breaker');
+const BREACHED = all(after('the-siege-breaker'), until('general-morvain'));
+
 export const HIGHWALL = wildRegion(
   {
     id: 'highwall',
@@ -20,6 +30,10 @@ export const HIGHWALL = wildRegion(
     safe: false,
     music: 'plains',
     blurb: 'Trenches, smoke and the great fortress of Highwall under siege by the Ashen Host.',
+    states: [
+      { id: 'besieged', when: BESIEGED, smoke: true },
+      { id: 'breached', when: BREACHED, burning: true },
+    ],
   },
   {
     w: 160,
@@ -34,6 +48,8 @@ export const HIGHWALL = wildRegion(
     exits: [
       { side: 'e', at: 0.6, to: 'sablewind', label: 'East road to Sablewind Canyon' },
       { side: 'w', at: 0.5, to: 'shattered-vale', label: 'West road to the Shattered Vale' },
+      // the third Gate: open once the second is taken (Act IV)
+      { side: 'n', at: 0.8, to: 'bonefields', label: 'North road to the Bonefields and the Muster Hall', minLevel: 46, needs: 'the-gloam-gate' },
     ],
     pois: [
       // the way into besieged Highwall: the hole the Siege-Breaker smashed in its walls
@@ -56,8 +72,24 @@ export const HIGHWALL = wildRegion(
       { near: 'the-breach', dx: 2, dy: 2, marker: { kind: 'place', id: 'sortie-n' } },
       { near: 'the-breach', dx: -6, dy: 12, marker: { kind: 'place', id: 'sortie-w' } },
       { near: 'the-breach', dx: 16, dy: 8, marker: { kind: 'place', id: 'sortie-e' } },
-      // Mara at the relief camp from the day she takes command until Highwall is relieved
-      { near: 'hub', dx: 3, dy: -4, marker: { kind: 'npc', npc: 'captain-mara' }, when: all(is('the-wall-burns', 'done'), until('general-morvain')) },
+      // Mara at the relief camp from the day she takes command until the second Gate is taken
+      { near: 'hub', dx: 3, dy: -4, marker: { kind: 'npc', npc: 'captain-mara' }, when: all(is('the-wall-burns', 'done'), until('the-gloam-gate')) },
+      // besieged and breached: the Host's banners on its lines, smoke and fire on the walls by the Breach
+      { near: 'legion-lines', dx: 0, dy: -3, marker: { kind: 'prop', prop: 'skull-banner' }, when: until('general-morvain') },
+      { near: 'bone-batteries', dx: 2, dy: -2, marker: { kind: 'prop', prop: 'skull-banner' }, when: until('general-morvain') },
+      ...[-6, -2, 3, 7].map((dx, i) => ({ near: 'the-breach', dx, dy: -6 + (i % 2), marker: { kind: 'fire' as const, size: 2 + (i % 2) }, when: BREACHED })),
+      { near: 'the-breach', dx: -3, dy: -2, marker: { kind: 'wisp', color: '#8a8a9a', size: 2 }, when: BESIEGED },
+      { near: 'the-breach', dx: 4, dy: -3, marker: { kind: 'wisp', color: '#7a7a8a', size: 2 }, when: BESIEGED },
+      // liberated: the Crown's banners on the Breach and the garrison camped beside the relief
+      { near: 'the-breach', dx: -2, dy: 3, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('general-morvain') },
+      { near: 'the-breach', dx: 3, dy: 3, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('general-morvain') },
+      { near: 'hub', dx: -7, dy: 3, marker: { kind: 'prop', prop: 'tent' }, when: after('general-morvain') },
+      { near: 'hub', dx: -9, dy: -1, marker: { kind: 'prop', prop: 'tent' }, when: after('general-morvain') },
+      // Nyx walks back into the camp under a white rag (Act IV), and stays until the second Gate
+      { near: 'hub', marker: { kind: 'place', id: 'relief-camp' } },
+      { near: 'hub', dx: 18, dy: 2, marker: { kind: 'place', id: 'relief-road' } },
+      { near: 'hub', dx: -2, dy: 4, marker: { kind: 'place', id: 'relief-tents' } },
+      { near: 'hub', dx: -3, dy: 4, marker: { kind: 'npc', npc: 'nyx-returned' }, when: all(is('gate-nyx-returns', 'done'), until('gloam-the-lamp-road')) },
       // relieved: the Ninefold flag and the Crown's banners over the camp
       { near: 'hub', dx: -3, dy: -5, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('general-morvain') },
       { near: 'hub', dx: 3, dy: -5, marker: { kind: 'prop', prop: 'flag' }, when: after('general-morvain') },

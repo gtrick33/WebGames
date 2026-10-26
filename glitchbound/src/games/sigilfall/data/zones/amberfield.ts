@@ -10,7 +10,7 @@ import { wildRegion } from '../zonegen';
  * The Act I finale happens here (STORY_BIBLE.md §3, "The Defense of Hearthstead"): the picket empties,
  * Rider-Captain Vosk's riders strike the town at nightfall, the gate is held and the ram broken, and in
  * the smoke Vosk rides north with the second Crown fragment from the shrine by the well. Hearthstead
- * burns that night, smoulders the next morning, and flies new banners after.
+ * burns that night, smolders the next morning, and flies new banners after.
  */
 
 /** The night of the attack: the raid in the streets, the wall, the ram. */

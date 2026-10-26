@@ -34,6 +34,12 @@ export const PRESETS: Preset[] = [
   { id: 'elyra-gone', label: 'Act III: Elyra taken (scene)', region: 'briarhollow', active: 'fern-retaken', level: 41 },
   { id: 'highwall', label: 'Act IV: Highwall’s relief', region: 'highwall', active: 'mara-commands', level: 44 },
   { id: 'highwall-holds', label: 'Act IV: Highwall holds (scene)', region: 'briarhollow', done: ['the-long-night-ends'], level: 48 },
+  { id: 'nyx-returns', label: 'Act IV: Nyx comes back (scene)', region: 'highwall', active: 'gate-the-prison-map', level: 44 },
+  { id: 'gloam-cells', label: 'Act IV: the cells under the Gloam Gate', region: 'gloamhollow', active: 'gloam-the-cells', level: 47 },
+  { id: 'elyra-free', label: 'Act IV: Elyra out of the dark (scene)', region: 'gloamhollow', active: 'the-gatewarden', level: 48 },
+  { id: 'muster-hall', label: 'Act IV: the field before the Muster Hall', region: 'bonefields', active: 'muster-the-field', level: 50 },
+  { id: 'ysane-echo', label: 'Act V: the queen at the door (scene)', region: 'weeping-woods', active: 'wood-the-children', level: 49 },
+  { id: 'orren-shore', label: 'Act V: the lake answers Orren', region: 'hollowmere', active: 'orren-on-the-shore', level: 55 },
 ];
 
 /** Puts a hero at a preset's beat: its story done, the beat under way, raised to its level, its lands open. */

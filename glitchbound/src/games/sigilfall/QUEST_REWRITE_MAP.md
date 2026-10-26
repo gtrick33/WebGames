@@ -335,8 +335,26 @@ Retired quests: none. Zoneless quests given by Elder Maren move with her to Bria
 | Act IV · First Gate | `the-knights-chapel` | The Knights’ Chapel | chaplain-ottis | KEEP (retold) | Village life quest kept; its giver reappears at the camp after the chain |
 | Act IV · First Gate | `last-rites` | Last Rites | chaplain-ottis | KEEP (retold) | Village life quest kept; its giver reappears at the camp after the chain |
 
-## Future content (old Act IV data, unregistered)
+## Acts IV–V (built from the old Act IV data)
 
-Blightwood, Frostfang, Sunken Reaches, Bonefields, Weeping Woods, Emberdeep, Riftscar, Gloamhollow, Hollowmere, the
-Pale Reach and their dungeons (Blightheart, Molten Throne, Spire of the Rift, Duskspire) become Acts IV–VI and the
-Finale as STORY_BIBLE.md §3 lays out, when they are built. Their quest ids are mapped when their phase starts.
+The zones of the frozen `sigilfall-4b-wip` branch, retold in the new story and registered. Their quest ids were
+never in a shipped build, so no save holds them; three were renamed before shipping to avoid clashes
+(`hounds-of-the-barrow` → `hounds-of-the-wolf-barrow`, `lyras-reading` → `sabines-reading`, and the Spire's boss
+`the-pale-herald` → `herald-in-the-spire`, the story foe keeping the old id). No save migration is needed: the new
+chains open from quests the shipped game already has.
+
+| Act / place | Chain (in order) | Kind of beats | Ends with |
+| --- | --- | --- | --- |
+| Act IV · after Highwall | `gate-nyx-returns` (event: arrival), `gate-the-prison-map` | Nyx walks into Mara's camp under a white rag with the Herald's map | the road north from the Vale |
+| Act IV · the Gloam Gate (Gloamhollow) | `gloam-the-lamp-road`, `gloam-the-unlit-mile`, `gloam-the-reavers-ford`, `gloam-border-reavers`, `gloam-sir-morrow`, `gloam-nyx-confesses`, `gloam-the-gate`, `gloam-the-cells` (event: defend Nyx at the lock), `gloam-out-of-the-cells` (event: rescue Elyra and Wren), `the-gatewarden`, `the-gloam-gate` | setup, roster twist (Wren in the next cell), confession, infiltration, rescue, boss, aftermath by Lastlight's fire | the second Gate; Elyra back |
+| Act IV · side (Gloamhollow) | `the-black-pool`, `gloam-lurkers`, `the-drowned-mother`; `peat-and-pitch`, `bog-wights`, `mire-horrors` | Marrow's son; Gale's pitch (oil and lamps sent to the Gate and Highwall) | |
+| Act IV · the Muster Hall (Bonefields) | `into-the-bonefields`, `haldrens-farm` … `break-the-giants`, `muster-the-field` (event: field battle), `the-bone-colossus`, `the-third-gate` | the dead dug up, the wardens' bones, the coalition's battle, the Colossus | the Three Gates taken; Vaelmoor open |
+| Act V · the Weeping Woods | `into-vaelmoor`, `the-candle-road` … `the-wardens-rest`, `the-frozen-hamlet`, `wood-the-children` (event: rescue the queen's children, Ysane's first echo), `the-kings-call` … `the-weeping-lord` | Candlewick alive behind the Gates; Edric's oath | Edric points to Hollowmere |
+| Act V · the Sunken Reaches | `the-drowned-harbor`, `the-drowned-light`, `the-queens-quay` (Ysane's second echo: the plague ship let in on the King's order) … `the-tide-lord`, `the-fireships` (event: defend) | | the drowned fleet burned |
+| Act V · Hollowmere | `the-dead-lake` … `the-lichs-seal`, `orren-on-the-shore` (event: defend Orren; his brother Davin), `across-the-mere`, `the-necropolis`, `ysanes-last-echo` | | Ysane asks to be let go |
+| Act V · the Blightwood | `the-withering` … `the-withered-queen` (Blightheart; Sigil of Thorns) | | |
+| Act V · Emberdeep | `the-pale-crown` … `ashkar-the-bound` (the Molten Throne; the Pale Crown broken and forged into the band that holds the sigils) | | |
+| Act V · the Riftscar | `the-veil-torn` … `the-pale-herald` (the Spire of the Tear; Sigil of the Veil; the Herald's voice survives for Act VI) | | |
+| Act V · end | `the-seventh-sigil` | Elyra at Lastlight takes the last two and cannot find the hero's name | Act VI |
+
+Still unregistered: the Pale Reach, Duskspire (Act VI and the finale) and Frostfang.

@@ -53,7 +53,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     id: 'heartwood-and-blight',
     name: 'Heartwood and Blight',
     giver: 'lady-silvaine',
-    text: 'The dryads were the wood’s healers. Now they heal the thornlings, and the blight grows out of them like mould out of bread. Each blighted dryad carries a heartseed gone black at the core, and Silvaine wants four, to learn what was done to them. The dryads walk with the thornlings all through the wood, thickest around the Withered Ring, south-west of Lumen Glade.',
+    text: 'The dryads were the wood’s healers. Now they heal the thornlings, and the blight grows out of them like mold out of bread. Each blighted dryad carries a heartseed gone black at the core, and Silvaine wants four, to learn what was done to them. The dryads walk with the thornlings all through the wood, thickest around the Withered Ring, south-west of Lumen Glade.',
     objective: { kind: 'loot', region: 'glimmerwood', item: 'Blighted Heartseed', from: ['blighted-dryad'], chance: 0.4, count: 4, label: 'Take Blighted Heartseeds from blighted dryads' },
     after: ['songs-into-thorns'],
     zone: 'glimmerwood',
