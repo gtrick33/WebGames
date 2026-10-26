@@ -40,7 +40,7 @@ a story beat.
 | P3 | The arcade's startup JavaScript is at 119.9 of its 120 KB budget (none of it is Sigilfall's: the game loads on its own page) | watch |
 | — | Stuck joystick | not reproduced; now regression-tested (`sigilfall-touch`) |
 | — | Tree/roof depth sorting | not reproduced; needs the place and a screenshot |
-| P2 | Loot clutter | open (Prompt 11) |
+| — | Loot clutter | fixed: a third fewer pickups, no plain junk (PROGRESSION_BALANCE.md Part 3) |
 
 ## Manual checks done in the browser (this batch)
 

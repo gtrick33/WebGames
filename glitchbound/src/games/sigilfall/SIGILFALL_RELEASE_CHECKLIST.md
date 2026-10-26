@@ -9,7 +9,7 @@ browser this cycle), **UNVERIFIED** (not checked, with the reason).
 | --- | --- |
 | Typecheck `npx tsc --noEmit -p .` | VERIFIED (clean) |
 | Lint `npx eslint src/games/sigilfall tests/sigilfall*` | VERIFIED (clean) |
-| Sigilfall tests `npx vitest run --no-fsModuleCache tests/sigilfall*` | VERIFIED (counts in the last commit message of the release batch) |
+| Sigilfall tests `npx vitest run --no-fsModuleCache tests/sigilfall*` | VERIFIED (40 files, 1,087 tests, all passing) |
 | Production build `npm run build` | VERIFIED (the arcade's startup JS stays under its 120 KB budget) |
 | `validate:sigilfall` | the registry, quest, art and collection validations run as tests (`sigilfall-ids`, `sigilfall-quests-doable`, `sigilfall-dungeons`, `sigilfall-art`, `sigilfall-collection`, `sigilfall-words`) — VERIFIED |
 
@@ -19,7 +19,7 @@ browser this cycle), **UNVERIFIED** (not checked, with the reason).
 | --- | --- | --- |
 | All seven classes clear the opening dungeons on every tier (bot) | VERIFIED | `sigilfall-sim`, `sigilfall-dungeon-*` |
 | Every zone's quests can be finished; no road to an unregistered region | VERIFIED | `sigilfall-quests-doable`, `sigilfall-ids` |
-| Every act's story events played on the simulation, reload mid-event | VERIFIED | `sigilfall-vale`, `-road`, `-alliance`, `-gates` |
+| Every act's story events played on the simulation, reload mid-event | VERIFIED | `sigilfall-vale`, `-road`, `-alliance`, `-gates`, `-rimeheld`, `-finale` |
 | Old saves 1 → 8 migrate, keep level, talents, loadouts, items; injected data rejected | VERIFIED | `sigilfall-world`, `sigilfall-collection`, `sigilfall-progression` |
 | Touch: two thumbs, ownership, release on cancel/blur/unmount | VERIFIED | `sigilfall-touch` |
 | Touch HUD on a phone on its side (inside the page) and a tablet | MANUALLY VERIFIED | SIGILFALL_QA.md |
@@ -35,9 +35,21 @@ browser this cycle), **UNVERIFIED** (not checked, with the reason).
 | Interiors: doors in and out, barred on the raid night | VERIFIED | `sigilfall-interiors` |
 | Scenes: skip, once only, reload-safe, an attack stops one | VERIFIED | `sigilfall-scenes` |
 | American spelling, no old-story words in player text | VERIFIED | `sigilfall-words` |
-| Act VI, Crownfall, the Epilogue, postgame | PENDING | in progress |
+| Act VI (every faction's troop by what was done), Crownfall's four stages and Elyra's choice, the Epilogue, the postgame threads and Heroic/Mythic | VERIFIED | `sigilfall-finale`, `sigilfall-dungeon-duskspire`, `-vaelmoor-remembered`, `-crown-catacombs` |
+| The Last March camp, the memory of Vaelmoor, Haldor's bell in rebuilt Briarhollow, Elyra by Lastlight's fire, Ysane's echo | MANUALLY VERIFIED | review presets in the dev browser; docs/review/phase-14 |
 | Frame time on a real phone in the heaviest battle | UNVERIFIED | no device in this cycle; dev-browser figures in docs/review/README.md |
 | Audio (volumes, mute, the new stingers and the bell) | UNVERIFIED | synthesized; not listened to in this cycle |
+
+## Known issues accepted for release
+
+| Severity | Issue |
+| --- | --- |
+| P3 | The bot's warrior wins Mythic Morgrave about half the time once its potions are gone; the test gives it a second try |
+| P3 | New dungeons' foes and the finale's bosses are recolors of the approved art, not bespoke drawings |
+| P3 | Mounts are painted in code (a production brief for drawn art is in COLLECTION_SYSTEM_DESIGN.md) |
+| P3 | Frostfang is built but unregistered: no beat of the story needs it |
+
+No known P0 or P1 issue remains.
 
 ## Rollback
 
