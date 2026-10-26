@@ -77,6 +77,10 @@ export const PETS: Record<string, PetDef> = {
   'silvaine-singing': { id: 'silvaine-singing', name: 'Lady Silvaine', sprite: 'villager', look: 'lady-silvaine', hp: 2, dmg: 0, dmgType: 'physical', speed: 0, radius: 5, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   regent: { id: 'regent', name: 'Regent Elowen', sprite: 'villager', look: 'regent-elowen', hp: 2.4, dmg: 0, dmgType: 'physical', speed: 0, radius: 6, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   'great-lamp': { id: 'great-lamp', name: 'The Great Lamp', sprite: 'villager', look: 'lantern', hp: 2.2, dmg: 0, dmgType: 'physical', speed: 0, radius: 7, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
+  // summoned by the new class skills (PROGRESSION_BALANCE.md Part 2, B)
+  'mirror-image': { id: 'mirror-image', name: 'Mirror Image', sprite: 'storm-wisp', pal: { b: '#c58cff', B: '#8a5ad6', w: '#f2e8ff' }, hp: 0.5, dmg: 0.15, dmgType: 'arcane', speed: 90, radius: 6, reach: 110, ranged: true, attackCd: 1.2, taunt: true, shot: 'arcane-bolt' },
+  hawk: { id: 'hawk', name: 'Hawk', sprite: 'gibbet-crow', pal: { k: '#8a5a2a', K: '#5a3a1a', w: '#f2e0b0' }, hp: 0.35, dmg: 0.5, dmgType: 'physical', speed: 150, radius: 5, reach: 18, ranged: false, attackCd: 0.7, taunt: false },
+  'shadow-fiend': { id: 'shadow-fiend', name: 'Shadow Fiend', sprite: 'imp', pal: { r: '#3a2a5a', R: '#241a3a', y: '#c9a0ff' }, hp: 0.5, dmg: 0.6, dmgType: 'shadow', speed: 88, radius: 5, reach: 120, ranged: true, attackCd: 1.1, taunt: false, shot: 'shadowbolt' },
   treant: { id: 'treant', name: 'Treant', sprite: 'treant', hp: 0.3, dmg: 0.35, dmgType: 'nature', speed: 75, radius: 6, reach: 16, ranged: false, attackCd: 1.1, taunt: true },
 };
 

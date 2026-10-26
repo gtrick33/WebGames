@@ -14,7 +14,7 @@ export const DRUID: Kit = {
     base: stats({ hp: 110, armor: 4 }),
     hpPer: 11,
     basic: 'wrath',
-    skills: ['moonfire', 'entangling-roots', 'cat-form', 'bear-form', 'rejuvenation', 'starfire'],
+    skills: ['moonfire', 'entangling-roots', 'cat-form', 'bear-form', 'rejuvenation', 'starfire', 'gale', 'thornhide', 'vine-vortex', 'bloom', 'stampede'],
     ult: 'starfall',
     dodge: 'wild-dash',
     start: ['moonfire', null, null],
@@ -56,6 +56,12 @@ export const DRUID: Kit = {
     colors: { main: '#d07a2a', dark: '#6a3a14', accent: '#7bd65a' },
   },
   skills: [
+    // the second half of the kit (PROGRESSION_BALANCE.md Part 2, B): utility and control, one every few levels
+    sk('skill', 9, 'Gale', 'A gust that bowls every enemy in its path backward.', spec({ id: 'gale', cast: 'projectile', range: 120, cooldown: 10, damage: 8, dmgType: 'nature', speed: 210, radius: 10, pierce: 99, knock: 150, cost: 10, look: 'vines', tags: ['projectile', 'nature', 'control'] })),
+    sk('skill', 18, 'Thornhide', 'Bark and thorns: a shield worth 15% of your health, and anything that strikes you is struck back.', spec({ id: 'thornhide', cast: 'buff', aim: 'self', cooldown: 18, cost: 12, dmgType: 'nature', onCast: [{ kind: 'shield', pct: 15, dur: 6 }, { kind: 'buff', buff: { id: 'thornhide', name: 'Thornhide', dur: 6, thorns: 0.6, color: '#7bd65a' } }], tags: ['defense', 'buff', 'nature'] })),
+    sk('skill', 28, 'Vine Vortex', 'Vines whirl up from the ground and drag enemies together for 3 seconds.', spec({ id: 'vine-vortex', cast: 'ground', aim: 'ground', range: 120, cooldown: 14, damage: 4, dmgType: 'nature', area: 46, duration: 3, tick: 0.4, cost: 14, extra: { pull: 50 }, look: 'nature', tags: ['aoe', 'nature', 'control'] })),
+    sk('skill', 36, 'Bloom', 'Clears every harmful effect on you, heals you, and leaves a bloom that keeps healing you while you stand in it.', spec({ id: 'bloom', cast: 'buff', aim: 'self', cooldown: 20, cost: 14, dmgType: 'nature', onCast: [{ kind: 'cleanse' }, { kind: 'heal', pct: 10 }, { kind: 'ground', ground: { radius: 46, dur: 5, tick: 0.5, mul: 0, dmgType: 'nature', look: 'nature', heal: 2 } }], tags: ['heal', 'nature'] })),
+    sk('skill', 46, 'Stampede', 'Charge as a stampeding herd, trampling everything in your path.', spec({ id: 'stampede', cast: 'dash', range: 120, cooldown: 12, damage: 22, dmgType: 'nature', duration: 0.4, radius: 10, knock: 80, cost: 12, tags: ['movement', 'nature'] })),
     sk('basic', 1, 'Wrath', 'A bolt of living nature. Each hit gives back a little mana.', spec({ id: 'wrath', cast: 'projectile', range: 150, cooldown: 0.45, damage: 11, dmgType: 'nature', speed: 220, radius: 3, extra: { manaOnHit: 2 }, look: 'wrath', tags: ['projectile', 'basic', 'nature'] })),
     sk(
       'skill',
@@ -316,5 +322,16 @@ export const DRUID: Kit = {
       'Thrash first drags in enemies from twice as far as it reaches, and Maul sweeps all the way around you.',
       [K('thrash', { op: 'onCast', effect: { kind: 'pull', radius: 76, force: 170 } }), K('maul', { op: 'arc', pct: 270 })],
     ),
+    /* --------------------------------------------- mutations of the new skills */
+    T(0, 1, 3, 'cyclone', 'Cyclone', 1, 'storm', 'Gale Chills what it bowls over.', [onHit('gale', { kind: 'status', status: 'chill', dur: 2, power: 0.4 })]),
+    T(0, 2, 3, 'thunder-gale', 'Thunder Gale', 1, 'shock', 'Gale turns to lightning and Shocks: +10% damage taken for 3 s.', [K('gale', { op: 'convert', dmgType: 'lightning', look: 'lightning' }), onHit('gale', { kind: 'status', status: 'shock', dur: 3, power: 10 })]),
+    T(2, 2, 3, 'iron-bark', 'Iron Bark', 1, 'shield', 'Thornhide also cuts the damage you take by 15%.', [K('thornhide', { op: 'onCast', effect: { kind: 'buff', buff: { id: 'iron-bark', name: 'Iron Bark', dur: 6, dr: 15, color: '#b9c2cc' } } })]),
+    T(2, 1, 3, 'brambleguard', 'Brambleguard', 2, 'clock', 'Thornhide recharges 12% faster per rank.', [cdr('thornhide', 12)]),
+    T(0, 4, 3, 'strangling-vines', 'Strangling Vines', 1, 'root', 'Vine Vortex may root what it holds (30% chance each tick).', [onHit('vine-vortex', { kind: 'status', status: 'root', dur: 0.6, power: 1, chance: 0.3 })]),
+    T(0, 5, 1, 'overgrowth', 'Overgrowth', 2, 'clock', 'Vine Vortex lasts 20% longer per rank.', [K('vine-vortex', { op: 'duration', pct: 20 })]),
+    T(2, 4, 3, 'full-bloom', 'Full Bloom', 1, 'heal', 'Bloom heals 6% more of your health at once.', [K('bloom', { op: 'onCast', effect: { kind: 'heal', pct: 6 } })]),
+    T(2, 5, 1, 'evergreen', 'Evergreen', 2, 'clock', 'Bloom recharges 12% faster per rank.', [cdr('bloom', 12)]),
+    T(1, 5, 1, 'trample', 'Trample', 1, 'bleed', 'Stampede makes what it tramples bleed.', [onHit('stampede', { kind: 'status', status: 'bleed', dur: 4, power: 0.3 })]),
+    T(1, 5, 3, 'wild-run', 'Wild Run', 2, 'speed', 'Stampede runs 15% farther per rank.', [K('stampede', { op: 'range', pct: 15 })]),
   ],
 };

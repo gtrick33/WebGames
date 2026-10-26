@@ -93,8 +93,8 @@ function statusText(s: StatusId, dur: number, power: number): string {
 }
 
 function groundText(g: GroundSpec): string {
-  const what = g.look === 'fire' ? 'burning ground' : g.look === 'poison' ? 'a poison cloud' : g.look === 'frost' ? 'a patch of frost' : 'a hazard';
-  return `leaves ${what} for ${secs(g.dur)}`;
+  const what = g.heal ? 'healing ground' : g.look === 'fire' ? 'burning ground' : g.look === 'poison' ? 'a poison cloud' : g.look === 'frost' ? 'a patch of frost' : 'a hazard';
+  return `leaves ${what} for ${secs(g.dur)}${g.pull ? ' that drags enemies in' : ''}`;
 }
 
 export function effectText(e: Effect): string {
@@ -137,6 +137,12 @@ export function effectText(e: Effect): string {
       return `calls ${e.count === 1 ? `a ${PETS[e.pet]?.name ?? 'companion'}` : `${e.count} ${PETS[e.pet]?.name ?? 'companion'}s`}${e.dur ? ` for ${secs(e.dur)}` : ''}`;
     case 'sacrifice':
       return `costs you ${Math.round(e.pct)}% of your health`;
+    case 'cleanse':
+      return 'clears every harmful effect on you';
+    case 'taunt':
+      return `makes enemies around it turn on you for ${secs(e.dur)}`;
+    case 'yank':
+      return 'drags the enemy hit to you';
   }
 }
 
@@ -146,6 +152,7 @@ export function buffText(b: BuffDef): string {
   for (const [k, v] of Object.entries(b.stats ?? {})) if (v) parts.push(fmtStat(k as StatKey, v));
   if (b.dr) parts.push(`${Math.round(b.dr)}% less damage taken`);
   if (b.hot) parts.push(`heals ${b.hot}% of your health per second`);
+  if (b.thorns) parts.push('strikes back at whatever hits you');
   return `${b.name} for ${secs(b.dur)}: ${parts.join(', ')}`;
 }
 

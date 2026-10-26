@@ -177,6 +177,13 @@ Normal (loot clutter, Section 8). Act milestones get one guaranteed rare-or-bett
   (priest 1.8, paladin/ranger 1.35, druid 1.3). Benchmark: every class earns 2–5 ultimates in 120 s.
 - Found on the way: a specialization now takes the other specs' druid forms off the bar (a Balance
   druid had Cat Form slotted instead of a spell); the Chapel Crypt is levels 5–7 (the Prologue's).
+- **B (the dead stretch)**: shipped as proposed, 35 skills (five per class at 9, 18, 28, 36, 46) with 70
+  talent mutations (two each, in free cells of the matching tree, never in a capstone row). One rename:
+  the Warlock's 18 is **Blood Pact** (the kit already had a Dark Pact). New engine pieces: `cleanse`,
+  `taunt` and `yank` effects, ground that drags (`pull`) or mends the hero (`heal`), `thorns` on buffs, a
+  blink that returns (`recall`), and the mirror image, hawk and shadow fiend companions.
+- **Partial control on bosses**: stun, freeze, root and fear on a boss become a 50% slow for a third of the
+  time, then 6 s of immunity.
 - Not yet: F (gear steps) and G (gates shown in the log) stay as they are.
 
 ## Part 3 — Migration

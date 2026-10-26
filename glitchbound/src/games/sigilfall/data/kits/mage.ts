@@ -14,7 +14,7 @@ export const MAGE: Kit = {
     base: stats({ hp: 90, armor: 0 }),
     hpPer: 9,
     basic: 'arcane-bolt',
-    skills: ['fireball', 'frost-nova', 'chain-lightning', 'blink', 'ice-lance', 'arcane-barrier'],
+    skills: ['fireball', 'frost-nova', 'chain-lightning', 'blink', 'ice-lance', 'arcane-barrier', 'gravity-well', 'purge', 'mirror-self', 'frost-ring', 'starfall-lance'],
     ult: 'meteor',
     dodge: 'phase-step',
     start: ['fireball', null, null],
@@ -53,6 +53,12 @@ export const MAGE: Kit = {
     colors: { main: '#6b4bd6', dark: '#3b2a8a', accent: '#ffcf5a' },
   },
   skills: [
+    // the second half of the kit (PROGRESSION_BALANCE.md Part 2, B): utility and control, one every few levels
+    sk('skill', 9, 'Gravity Well', 'Opens a well of gravity that drags enemies to its middle for 3 seconds.', spec({ id: 'gravity-well', cast: 'ground', aim: 'ground', range: 120, cooldown: 12, damage: 5, dmgType: 'arcane', area: 44, duration: 3, tick: 0.3, cost: 14, extra: { pull: 55 }, look: 'rift', tags: ['aoe', 'arcane', 'control'] })),
+    sk('skill', 18, 'Purge', 'Burn away every harmful effect on you, with a moment’s shield and speed.', spec({ id: 'purge', cast: 'buff', aim: 'self', cooldown: 14, cost: 8, onCast: [{ kind: 'cleanse' }, { kind: 'shield', pct: 12, dur: 3 }, { kind: 'buff', buff: { id: 'purge', name: 'Purge', dur: 2, stats: { speed: 25 }, color: '#c58cff' } }], tags: ['defense', 'buff'] })),
+    sk('skill', 28, 'Mirror Self', 'Leaves a mirror image of you that enemies attack instead, for 6 seconds.', spec({ id: 'mirror-self', cast: 'summon', aim: 'self', cooldown: 18, cost: 12, onCast: [{ kind: 'summon', pet: 'mirror-image', count: 1, dur: 6 }], tags: ['summon', 'defense'] })),
+    sk('skill', 36, 'Frost Ring', 'A ring of ice that roots everything standing in it for 3 seconds.', spec({ id: 'frost-ring', cast: 'ground', aim: 'ground', range: 120, cooldown: 14, damage: 6, dmgType: 'frost', area: 40, duration: 3, tick: 0.5, cost: 14, onHit: [{ kind: 'status', status: 'root', dur: 1, power: 1 }], look: 'frost', tags: ['aoe', 'frost', 'control'] })),
+    sk('skill', 46, 'Starfall Lance', 'A lance of starlight through every enemy in a line, far heavier against the badly wounded.', spec({ id: 'starfall-lance', cast: 'projectile', range: 230, cooldown: 10, damage: 34, dmgType: 'arcane', speed: 420, radius: 4, pierce: 99, cost: 16, bonusVs: [{ status: 'lowHp', pct: 100 }], look: 'arcane-bolt', tags: ['projectile', 'arcane', 'execute'] })),
     sk('basic', 1, 'Arcane Bolt', 'A quick bolt of raw arcana. Each hit gives back a little mana.', spec({ id: 'arcane-bolt', cast: 'projectile', range: 150, cooldown: 0.42, damage: 10, dmgType: 'arcane', speed: 235, radius: 3, extra: { manaOnHit: 2 }, tags: ['projectile', 'basic'] })),
     sk('skill', 1, 'Fireball', 'Hurls a ball of fire that bursts on the first enemy it hits.', spec({ id: 'fireball', cast: 'projectile', range: 160, cooldown: 3.2, damage: 28, dmgType: 'fire', speed: 165, radius: 5, knock: 40, cost: 12, tags: ['projectile', 'fire'] })),
     sk(
@@ -243,5 +249,16 @@ export const MAGE: Kit = {
     T(2, 5, 0, 'hailstorm', 'Hailstorm', 2, 'frost', 'Blizzard deals +20% damage per rank.', [dmg('blizzard', 20)]),
     T(2, 5, 2, 'glacial-heart', 'Glacial Heart', 3, 'heart', '+5% max health per rank.', [S('hpPct', 5)]),
     T(2, 6, 1, 'absolute-zero', 'Absolute Zero', 1, 'freeze', 'Meteor becomes a comet of ice: frost damage, and it freezes everything it hits for 1.5 s.', [K('meteor', { op: 'convert', dmgType: 'frost', look: 'comet' }), onHit('meteor', { kind: 'status', status: 'freeze', dur: 1.5, power: 1 })]),
+    /* --------------------------------------------- mutations of the new skills */
+    T(1, 1, 3, 'event-horizon', 'Event Horizon', 2, 'clock', 'Gravity Well lasts 20% longer per rank.', [K('gravity-well', { op: 'duration', pct: 20 })]),
+    T(1, 2, 3, 'charged-well', 'Charged Well', 1, 'shock', 'Gravity Well Shocks what it holds: +10% damage taken for 3 s.', [onHit('gravity-well', { kind: 'status', status: 'shock', dur: 3, power: 10 })]),
+    T(2, 2, 3, 'cold-clarity', 'Cold Clarity', 1, 'frost', 'Purge also bursts with frost around you (60% damage) and Chills.', [K('purge', { op: 'onCast', effect: { kind: 'nova', radius: 36, mul: 0.6, dmgType: 'frost', status: { status: 'chill', dur: 2, power: 0.4 } } })]),
+    T(2, 3, 3, 'purity', 'Purity', 2, 'clock', 'Purge recharges 15% faster per rank.', [cdr('purge', 15)]),
+    T(1, 3, 3, 'hall-of-mirrors', 'Hall of Mirrors', 1, 'split', 'Mirror Self leaves two images.', [K('mirror-self', { op: 'onCast', effect: { kind: 'summon', pet: 'mirror-image', count: 1, dur: 6 } })]),
+    T(1, 4, 3, 'mirror-veil', 'Mirror Veil', 1, 'shield', 'Mirror Self also cuts the damage you take by 20% for 3 s.', [K('mirror-self', { op: 'onCast', effect: { kind: 'buff', buff: { id: 'mirror-veil', name: 'Mirror Veil', dur: 3, dr: 20, color: '#c58cff' } } })]),
+    T(2, 4, 3, 'rime-ring', 'Rime Ring', 2, 'aoe', 'Frost Ring covers 15% more area per rank.', [K('frost-ring', { op: 'area', pct: 15 })]),
+    T(2, 5, 1, 'brittle-ice', 'Brittle Ice', 1, 'frost', 'Frost Ring also Chills, and keeps chilling after it melts.', [onHit('frost-ring', { kind: 'status', status: 'chill', dur: 2.5, power: 0.4 })]),
+    T(0, 5, 1, 'burning-star', 'Burning Star', 1, 'fire', 'Starfall Lance turns to fire and sets what it pierces Burning.', [K('starfall-lance', { op: 'convert', dmgType: 'fire', look: 'fireball' }), onHit('starfall-lance', { kind: 'status', status: 'burn', dur: 3, power: 0.25 })]),
+    T(0, 5, 3, 'twin-lances', 'Twin Lances', 1, 'split', 'Starfall Lance fires two lances.', [K('starfall-lance', { op: 'projectiles', n: 1, spread: 0.18 })]),
   ],
 };

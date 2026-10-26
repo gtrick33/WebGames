@@ -112,6 +112,10 @@ export interface BossState {
 }
 
 export interface Enemy {
+  /** Taunted: it turns on the hero until this time (Effect taunt). */
+  tauntUntil?: number;
+  /** A boss shrugs off hard control until this time (after a partial stun, root or fear). */
+  ccImmuneUntil?: number;
   /** A siege engine's way to the gate it wants (a flow field from the gate, made once). */
   siegeFlow?: Int16Array;
   id: number;
@@ -265,6 +269,10 @@ export interface Field {
   spec: SkillSpec | null;
   /** Hits apply the skill's on-hit effects (arrow rain marks). */
   onHit: boolean;
+  /** Drags enemies inside toward the middle each tick (GroundSpec.pull). */
+  pull?: number;
+  /** Heals the hero standing in it each tick, % of max health (GroundSpec.heal). */
+  heal?: number;
 }
 
 /** A warning shape on the ground that deals its damage when it fills up. */

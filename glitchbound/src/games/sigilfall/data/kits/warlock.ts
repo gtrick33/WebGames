@@ -14,7 +14,7 @@ export const WARLOCK: Kit = {
     base: stats({ hp: 95, armor: 2 }),
     hpPer: 10,
     basic: 'shadow-bolt',
-    skills: ['corruption', 'drain-life', 'fear', 'summon-imp', 'life-tap', 'rain-of-fire'],
+    skills: ['corruption', 'drain-life', 'fear', 'summon-imp', 'life-tap', 'rain-of-fire', 'soul-tether', 'blood-pact', 'shadow-snare', 'harvest', 'gate-step'],
     ult: 'summon-infernal',
     dodge: 'demonic-step',
     start: ['corruption', null, null],
@@ -49,6 +49,12 @@ export const WARLOCK: Kit = {
     colors: { main: '#7a3ab0', dark: '#3a1a5a', accent: '#8bff6a' },
   },
   skills: [
+    // the second half of the kit (PROGRESSION_BALANCE.md Part 2, B): utility and control, one every few levels
+    sk('skill', 9, 'Soul Tether', 'Hooks a soul and reels it in, drinking a little of its life.', spec({ id: 'soul-tether', cast: 'mark', range: 150, cooldown: 10, damage: 10, dmgType: 'shadow', cost: 8, onHit: [{ kind: 'yank', dist: 70 }, { kind: 'heal', pct: 4 }], tags: ['mark', 'shadow', 'control'] })),
+    sk('skill', 18, 'Blood Pact', 'Trade 10% of your health for a shield worth 28% of it.', spec({ id: 'blood-pact', cast: 'buff', aim: 'self', cooldown: 18, dmgType: 'shadow', onCast: [{ kind: 'sacrifice', pct: 10 }, { kind: 'shield', pct: 28, dur: 6 }], tags: ['defense', 'shadow'] })),
+    sk('skill', 28, 'Shadow Snare', 'A snare of shadow on the ground: the first enemy to step on it is stunned.', spec({ id: 'shadow-snare', cast: 'trap', aim: 'ground', range: 110, cooldown: 12, damage: 12, dmgType: 'shadow', area: 30, duration: 12, cost: 10, onHit: [{ kind: 'status', status: 'stun', dur: 1.5, power: 1 }], extra: { maxTraps: 2, arm: 0.3 }, tags: ['trap', 'shadow', 'control'] })),
+    sk('skill', 36, 'Harvest', 'Reaps a soul: far heavier against enemies below 30% health, and a kill heals you.', spec({ id: 'harvest', cast: 'mark', range: 150, cooldown: 8, damage: 26, dmgType: 'shadow', cost: 10, bonusVs: [{ status: 'lowHp', pct: 120 }], onKill: [{ kind: 'heal', pct: 8 }], tags: ['mark', 'shadow', 'execute'] })),
+    sk('skill', 46, 'Gate Step', 'Step through a gate and back: you blink away, and 3 seconds later you return to where you stood.', spec({ id: 'gate-step', cast: 'blink', range: 90, cooldown: 12, cost: 8, dmgType: 'shadow', extra: { recall: 3 }, onCast: [{ kind: 'riftBurst', radius: 40, mul: 1.2, delay: 0.6 }], tags: ['movement', 'shadow'] })),
     sk('basic', 1, 'Shadow Bolt', 'A bolt of shadow. Each hit gives back a little mana.', spec({ id: 'shadow-bolt', cast: 'projectile', range: 150, cooldown: 0.45, damage: 11, dmgType: 'shadow', speed: 210, radius: 3, extra: { manaOnHit: 2 }, look: 'shadowbolt', tags: ['projectile', 'basic'] })),
     sk(
       'skill',
@@ -274,5 +280,16 @@ export const WARLOCK: Kit = {
       'Chaos Bolt explodes on every enemy it hits: 80% of its damage to everything around it, setting them Burning (30% of the burst as fire damage every second for 3 s).',
       [onHit('chaos-bolt', { kind: 'explode', radius: 40, mul: 0.8, dmgType: 'fire', status: { status: 'burn', dur: 3, power: 0.3 } })],
     ),
+    /* --------------------------------------------- mutations of the new skills */
+    T(0, 1, 3, 'tethered-curse', 'Tethered Curse', 1, 'curse', 'Soul Tether curses the enemy: 30% of its hit as shadow damage every second for 6 s.', [onHit('soul-tether', { kind: 'status', status: 'curse', dur: 6, power: 0.3 })]),
+    T(0, 2, 3, 'soul-thirst', 'Soul Thirst', 1, 'heal', 'Soul Tether drinks twice as much life.', [onHit('soul-tether', { kind: 'heal', pct: 4 })]),
+    T(1, 2, 3, 'demonic-pact', 'Demonic Pact', 1, 'demon', 'Blood Pact also calls an imp for 10 s.', [K('blood-pact', { op: 'onCast', effect: { kind: 'summon', pet: 'imp', count: 1, dur: 10 } })]),
+    T(1, 1, 3, 'blood-price', 'Blood Price', 2, 'clock', 'Blood Pact recharges 12% faster per rank.', [cdr('blood-pact', 12)]),
+    T(2, 4, 3, 'hellfire-snare', 'Hellfire Snare', 1, 'fire', 'Shadow Snare turns to fire and sets what it catches Burning.', [K('shadow-snare', { op: 'convert', dmgType: 'fire', look: 'fire' }), onHit('shadow-snare', { kind: 'status', status: 'burn', dur: 3, power: 0.3 })]),
+    T(2, 2, 3, 'web-of-shadow', 'Web of Shadow', 1, 'trap', 'You can lay one more Shadow Snare at a time.', [K('shadow-snare', { op: 'extra', key: 'maxTraps', n: 1, label: 'snares at a time' })]),
+    T(0, 4, 3, 'reaper', 'Reaper', 1, 'skull', 'A kill with Harvest makes it ready again.', [K('harvest', { op: 'onKill', effect: { kind: 'resetCd', skill: 'harvest' } })]),
+    T(0, 5, 1, 'grim-harvest', 'Grim Harvest', 2, 'crit', 'Harvest deals +25% more per rank to enemies below 30% health.', [K('harvest', { op: 'bonusVs', status: 'lowHp', pct: 25 })]),
+    T(2, 5, 1, 'unstable-gate', 'Unstable Gate', 1, 'explode', 'Gate Step lands in a burst of shadow (100% damage).', [K('gate-step', { op: 'onImpact', effect: { kind: 'nova', radius: 36, mul: 1, dmgType: 'shadow' } })]),
+    T(2, 5, 3, 'long-way-round', 'Long Way Round', 1, 'clock', 'Gate Step keeps you away 1 s longer.', [K('gate-step', { op: 'extra', key: 'recall', n: 1, label: 'seconds away' })]),
   ],
 };

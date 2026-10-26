@@ -224,6 +224,21 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
       chain(w, spec, angle, target);
       break;
     case 'blink': {
+      // a gate that pulls the hero back to where they stood a few seconds later (Gate Step)
+      if (spec.extra.recall) {
+        const home = { x: p.x, y: p.y };
+        w.addFx({ kind: 'rift', x: home.x, y: home.y, life: spec.extra.recall, size: 8, color: '#a87aff' });
+        w.after(spec.extra.recall, () => {
+          const q = w.player;
+          if (q.dead) return;
+          w.addFx({ kind: 'burst', x: q.x, y: q.y, life: 0.3, size: 10, color: '#a87aff' });
+          q.x = home.x;
+          q.y = home.y;
+          q.iframe = Math.max(q.iframe, 0.25);
+          w.addFx({ kind: 'burst', x: q.x, y: q.y, life: 0.3, size: 12, color: '#a87aff' });
+          w.sfx('blink');
+        });
+      }
       const to = castRay(w.map, p.x, p.y, p.r, angle, spec.range);
       w.addFx({ kind: 'burst', x: p.x, y: p.y, life: 0.3, size: 10, color: '#c58cff' });
       p.x = to.x;
@@ -453,7 +468,7 @@ function ground(w: World, spec: SkillSpec, angle: number, tx: number, ty: number
   if (spec.duration > 0 && spec.tick > 0) {
     // a field: arrow rain, blizzard, consecration, rain of fire
     const look = fieldLook(spec);
-    w.spawnField({ x: tx, y: ty, r: spec.area, dur: spec.duration, tick: spec.tick, dmg: spec.damage, type: spec.dmgType, look, hostile: false, depth: 0, spec, onHit: true });
+    w.spawnField({ x: tx, y: ty, r: spec.area, dur: spec.duration, tick: spec.tick, dmg: spec.damage, type: spec.dmgType, look, hostile: false, depth: 0, spec, onHit: true, ...(spec.extra.pull ? { pull: spec.extra.pull } : {}), ...(spec.extra.heal ? { heal: spec.extra.heal } : {}) });
     w.sfx(look === 'arrows' ? 'volley' : 'fieldCast');
     return;
   }
@@ -837,7 +852,19 @@ export function updateFields(w: World, dt: number): void {
       if (f.hostile) {
         if (!p.dead && dist2(p.x, p.y, f.x, f.y) < (f.r + p.r * 0.5) ** 2) hurtPlayer(w, f.dmg, { status: f.status });
       } else {
-        for (const e of enemiesIn(w, f.x, f.y, f.r)) {
+        // a well that drags, a grove that mends
+        if (f.pull) {
+          for (const e of enemiesIn(w, f.x, f.y, f.r + 8)) {
+            if (e.boss) continue;
+            const a = Math.atan2(f.y - e.y, f.x - e.x);
+            const k = e.elite.length ? 0.5 : 1;
+            e.vx += Math.cos(a) * f.pull * k;
+            e.vy += Math.sin(a) * f.pull * k;
+          }
+        }
+        if (f.heal && !p.dead && dist2(p.x, p.y, f.x, f.y) < f.r * f.r) healPlayer(w, f.heal, false);
+        // a field that only mends (a bloom) hurts nobody
+        for (const e of f.dmg > 0 ? enemiesIn(w, f.x, f.y, f.r) : []) {
           const d = hitEnemy(w, e, f.dmg, f.type, { spec: f.depth === 0 ? f.spec : null, depth: f.depth, isDot: f.look !== 'arrows', fromX: f.x, fromY: f.y, knock: 0, charge: f.look === 'arrows' ? 0.6 : 0.25 });
           if (f.status) applyStatus(w, e, f.status, d);
           if (f.onHit && f.spec) applyEffects(w, f.spec.onHit, { x: e.x, y: e.y, angle: 0, spec: f.spec, base: f.dmg, type: f.type, depth: f.depth, target: e, hitDmg: d, when: 'hit' });

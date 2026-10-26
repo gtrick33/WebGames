@@ -114,13 +114,14 @@ describe('sigilfall content', () => {
         expect(seen.has(id), id).toBe(false);
         seen.add(id);
       }
-      expect(d.skills).toHaveLength(6);
+      // six skills, and five more for the second half of the campaign (PROGRESSION_BALANCE.md Part 2, B)
+      expect(d.skills).toHaveLength(11);
       expect(d.trees).toHaveLength(3);
       expect(SKILLS[d.ult]!.kind).toBe('ultimate');
       expect(SKILLS[d.dodge]!.kind).toBe('dodge');
       // skills arrive over the levels; the specialization's at 10
       for (const t of d.trees) expect(SKILLS[t.skill]!.unlock).toBe(SPEC_LEVEL);
-      expect(d.skills.map((id) => SKILLS[id]!.unlock)).toEqual([1, 2, 4, 6, 14, 22]);
+      expect(d.skills.map((id) => SKILLS[id]!.unlock)).toEqual([1, 2, 4, 6, 14, 22, 9, 18, 28, 36, 46]);
       for (const f of d.forms ?? []) expect(d.skills).toContain(f.skill);
       // every skill's text exists and every resource cost makes sense for the class
       for (const id of kit) {

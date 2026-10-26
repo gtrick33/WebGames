@@ -181,7 +181,7 @@ export const BOSSES: Record<string, BossDef> = {
       },
       {
         at: 0.65,
-        banner: 'The Tear tears open!',
+        banner: 'Grieflight floods the crypt!',
         speed: 34,
         rest: [0.6, 1.1],
         enter: [{ id: 'teleport', w: 1, cd: 0, p: { center: 1 } }, { id: 'riftSpiral', w: 1, cd: 0, p: { arms: 3, time: 3 } }],

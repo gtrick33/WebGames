@@ -14,7 +14,7 @@ export const WARRIOR: Kit = {
     base: stats({ hp: 150, armor: 12 }),
     hpPer: 15,
     basic: 'cleave',
-    skills: ['heavy-strike', 'whirlwind', 'shield-bash', 'charge', 'battle-shout', 'thunder-clap'],
+    skills: ['heavy-strike', 'whirlwind', 'shield-bash', 'charge', 'battle-shout', 'thunder-clap', 'hookchain', 'rallying-roar', 'ground-breaker', 'last-word', 'challenge'],
     ult: 'earthsplitter',
     dodge: 'sidestep',
     start: ['heavy-strike', null, null],
@@ -57,6 +57,12 @@ export const WARRIOR: Kit = {
     colors: { main: '#c9473b', dark: '#6e2420', accent: '#d8dce6' },
   },
   skills: [
+    // the second half of the kit (PROGRESSION_BALANCE.md Part 2, B): utility and control, one every few levels
+    sk('skill', 9, 'Hookchain', 'Hurls a chained hook that drags the first enemy it hits to you.', spec({ id: 'hookchain', cast: 'projectile', range: 150, cooldown: 9, damage: 14, dmgType: 'physical', speed: 280, radius: 4, cost: 10, onHit: [{ kind: 'yank', dist: 90 }], look: 'arrow', tags: ['projectile', 'control'] })),
+    sk('skill', 18, 'Rallying Roar', 'A roar that shakes off every harmful effect and shields you for 18% of your health.', spec({ id: 'rallying-roar', cast: 'buff', aim: 'self', cooldown: 18, gen: 20, onCast: [{ kind: 'cleanse' }, { kind: 'shield', pct: 18, dur: 6 }], tags: ['defense', 'buff'] })),
+    sk('skill', 28, 'Ground Breaker', 'Leap at a spot and crash down, stunning everything around the landing.', spec({ id: 'ground-breaker', cast: 'dash', range: 96, cooldown: 10, damage: 16, dmgType: 'physical', duration: 0.32, radius: 6, cost: 15, onImpact: [{ kind: 'nova', radius: 44, mul: 1.5, status: { status: 'stun', dur: 0.8, power: 1 } }], tags: ['movement', 'aoe'] })),
+    sk('skill', 36, 'Last Word', 'A finishing blow: far heavier against enemies below 30% health.', spec({ id: 'last-word', cast: 'melee', cooldown: 8, damage: 30, dmgType: 'physical', area: 30, arc: 1.3, cost: 20, bonusVs: [{ status: 'lowHp', pct: 150 }], tags: ['melee', 'execute'] })),
+    sk('skill', 46, 'Challenge', 'Bellow a challenge: every enemy around you turns on you for 4 seconds while you take 20% less damage.', spec({ id: 'challenge', cast: 'nova', aim: 'self', cooldown: 20, damage: 10, dmgType: 'physical', area: 70, gen: 30, onCast: [{ kind: 'taunt', radius: 80, dur: 4 }, { kind: 'buff', buff: { id: 'challenge', name: 'Challenge', dur: 4, dr: 20, color: '#ff6a5a' } }], look: 'quake', tags: ['aoe', 'defense', 'control'] })),
     sk('basic', 1, 'Cleave', 'A wide swing that builds Rage. Every third swing in a row hits harder.', spec({ id: 'cleave', cast: 'melee', cooldown: 0.46, damage: 15, area: 27, arc: 1.95, knock: 50, gen: 6, extra: { combo: 3, comboMul: 0.6 }, tags: ['melee', 'basic'] })),
     sk('skill', 1, 'Heavy Strike', 'A crushing overhead blow in front of you.', spec({ id: 'heavy-strike', cast: 'melee', cooldown: 4, damage: 44, windup: 0.18, area: 34, arc: 1.3, knock: 150, cost: 20, tags: ['melee'] })),
     sk('skill', 2, 'Whirlwind', 'Spin with your blade out, hitting everything around you. You can move while spinning.', spec({ id: 'whirlwind', cast: 'channel', aim: 'self', cooldown: 8, damage: 9, area: 34, duration: 1.6, tick: 0.25, knock: 20, cost: 30, tags: ['melee', 'aoe'] })),
@@ -200,5 +206,16 @@ export const WARRIOR: Kit = {
     T(2, 5, 0, 'executioner-w', 'Executioner', 2, 'skull', 'Every skill deals +12% damage per rank to enemies below 30% health.', [K('*', { op: 'bonusVs', status: 'lowHp', pct: 12 })]),
     T(2, 5, 2, 'skull-splitter', 'Skull Splitter', 3, 'power', 'Heavy Strike deals +8% damage per rank.', [dmg('heavy-strike', 8)]),
     T(2, 6, 1, 'bladestorm', 'Bladestorm', 1, 'storm', 'Whirlwind lasts 80% longer and makes everything it hits Bleed.', [K('whirlwind', { op: 'duration', pct: 80 }), onHit('whirlwind', { kind: 'status', status: 'bleed', dur: 3, power: 0.25 })]),
+    /* --------------------------------------------- mutations of the new skills */
+    T(1, 1, 3, 'barbed-hook', 'Barbed Hook', 1, 'bleed', 'Hookchain makes the enemy bleed: 25% of its hit every second for 4 s.', [onHit('hookchain', { kind: 'status', status: 'bleed', dur: 4, power: 0.25 })]),
+    T(1, 0, 3, 'iron-reel', 'Iron Reel', 2, 'clock', 'Hookchain recharges 15% faster per rank.', [cdr('hookchain', 15)]),
+    T(1, 3, 3, 'war-cry', 'War Cry', 1, 'fear', 'Rallying Roar also makes enemies around you turn on you for 3 s.', [K('rallying-roar', { op: 'onCast', effect: { kind: 'taunt', radius: 70, dur: 3 } })]),
+    T(1, 4, 3, 'steady-nerves', 'Steady Nerves', 2, 'clock', 'Rallying Roar recharges 15% faster per rank.', [cdr('rallying-roar', 15)]),
+    T(0, 3, 3, 'aftershock', 'Aftershock', 1, 'quake', 'Ground Breaker’s landing sends a shockwave rolling on (80% damage).', [K('ground-breaker', { op: 'onImpact', effect: { kind: 'shockwave', length: 90, width: 18, mul: 0.8 } })]),
+    T(0, 4, 3, 'long-leap', 'Long Leap', 2, 'speed', 'Ground Breaker leaps 15% farther per rank.', [K('ground-breaker', { op: 'range', pct: 15 })]),
+    T(2, 4, 3, 'final-say', 'Final Say', 1, 'skull', 'A kill with Last Word makes it ready again.', [K('last-word', { op: 'onKill', effect: { kind: 'resetCd', skill: 'last-word' } })]),
+    T(2, 5, 1, 'executioner', 'Executioner', 2, 'crit', 'Last Word deals +25% more per rank to enemies below 30% health.', [K('last-word', { op: 'bonusVs', status: 'lowHp', pct: 25 })]),
+    T(1, 5, 3, 'unbowed', 'Unbowed', 1, 'heal', 'Challenge also heals you for 10% of your health.', [K('challenge', { op: 'onCast', effect: { kind: 'heal', pct: 10 } })]),
+    T(2, 5, 3, 'loud-challenge', 'Loud Challenge', 2, 'aoe', 'Challenge reaches 15% farther per rank.', [K('challenge', { op: 'area', pct: 15 })]),
   ],
 };

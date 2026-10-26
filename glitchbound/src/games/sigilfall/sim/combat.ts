@@ -3,6 +3,7 @@ import { CLASSES, levelPower } from '../data/classes';
 import type { BuffDef, DmgType, Effect, ProcDef, SkillSpec, StatKey, Stats, StatusId } from '../data/types';
 import { typeBonus } from '../progress/build';
 import { bossHidden } from './boss';
+import { moveCircle } from './map';
 import { summonPet } from './pets';
 import type { Enemy, Projectile } from './types';
 import type { World } from './world';
@@ -144,12 +145,16 @@ export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: numb
   let id = s.status;
   let dur = s.dur;
   let power = s.power;
-  // bosses shrug off hard control, elites halve it
+  // bosses take hard control as a heavy slow for a third of the time, then shrug it off for 6 s (blueprint
+  // §5.2); elites halve it
   if (id === 'stun' || id === 'freeze' || id === 'root' || id === 'fear') {
     if (e.boss) {
+      if ((e.ccImmuneUntil ?? 0) > w.time) return;
       id = 'chill';
-      power = 0.3;
-      dur *= 0.5;
+      power = 0.5;
+      dur /= 3;
+      e.ccImmuneUntil = w.time + dur + 6;
+      w.text(e.x, e.y - e.r - 10, 'SLOWED', '#9be7ff', false);
     } else if (e.elite.length) dur *= 0.5;
   }
   if (isDot(id)) power = Math.max(1, s.power * Math.max(hitDmg, 1));
@@ -345,8 +350,41 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
       w.shake(2);
       break;
     case 'ground':
-      w.spawnField({ x: c.x, y: c.y, r: e.ground.radius, dur: e.ground.dur, tick: e.ground.tick, dmg: c.base * e.ground.mul, type: e.ground.dmgType, status: e.ground.status, look: e.ground.look, hostile: false, depth: c.depth + 1, spec: null, onHit: false });
+      w.spawnField({ x: c.x, y: c.y, r: e.ground.radius, dur: e.ground.dur, tick: e.ground.tick, dmg: c.base * e.ground.mul, type: e.ground.dmgType, status: e.ground.status, look: e.ground.look, hostile: false, depth: c.depth + 1, spec: null, onHit: false, ...(e.ground.pull ? { pull: e.ground.pull } : {}), ...(e.ground.heal ? { heal: e.ground.heal } : {}) });
       break;
+    case 'cleanse': {
+      const p = w.player;
+      if (p.statuses.length) w.text(p.x, p.y - 20, 'Cleansed', '#e8ffd8', false);
+      p.statuses = [];
+      w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.4, size: 18, color: '#e8ffd8' });
+      break;
+    }
+    case 'taunt':
+      w.addFx({ kind: 'ring', x: c.x, y: c.y, life: 0.45, size: e.radius, color: '#ff6a5a' });
+      for (const en of enemiesIn(w, c.x, c.y, e.radius)) {
+        en.tauntUntil = w.time + e.dur;
+        en.aggro = true;
+        en.victim = 0;
+        w.text(en.x, en.y - en.r - 10, '!', '#ff6a5a', false);
+      }
+      w.sfx('roar', 0.5);
+      break;
+    case 'yank': {
+      const en = c.target;
+      if (!en || en.dead || en.boss) break;
+      const p = w.player;
+      const d = Math.hypot(p.x - en.x, p.y - en.y);
+      // to just in front of the caster, no farther
+      const go = Math.min(e.dist * (en.elite.length ? 0.5 : 1), Math.max(0, d - p.r - en.r - 6));
+      if (go <= 0) break;
+      const res = moveCircle(w.map, en.x, en.y, en.r, ((p.x - en.x) / d) * go, ((p.y - en.y) / d) * go);
+      w.addFx({ kind: 'zap', x: en.x, y: en.y, x2: res.x, y2: res.y, life: 0.2, size: 1, color: '#d8dce6' });
+      en.x = res.x;
+      en.y = res.y;
+      en.vx = 0;
+      en.vy = 0;
+      break;
+    }
     case 'pull':
       for (const en of enemiesIn(w, c.x, c.y, e.radius)) {
         if (en.boss) continue;
@@ -518,6 +556,9 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
     w.text(o.source.x, o.source.y - o.source.r - 6, '+', '#ff5a7a', false);
   }
   runProcs(w, 'hurt', { x: p.x, y: p.y, base: 0, type: 'physical', depth: 1, hitDmg: d });
+  // thorns: whoever struck the hero is struck back
+  const thorns = p.buffs.reduce((a, b) => a + (b.def.thorns ?? 0), 0);
+  if (thorns > 0 && o.source && !o.source.dead) hitEnemy(w, o.source, CLASSES[w.hero.cls].refDamage * thorns, 'nature', { depth: 1, fromX: p.x, fromY: p.y, knock: 20, charge: 0.4 });
   if (p.hp <= 0) w.playerDies();
   return true;
 }

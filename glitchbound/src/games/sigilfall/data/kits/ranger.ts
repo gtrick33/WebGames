@@ -14,7 +14,7 @@ export const RANGER: Kit = {
     base: stats({ hp: 110, armor: 4, speed: 4 }),
     hpPer: 11,
     basic: 'arrow',
-    skills: ['piercing-arrow', 'multishot', 'poison-trap', 'hunters-mark', 'explosive-shot', 'concussive-shot'],
+    skills: ['piercing-arrow', 'multishot', 'poison-trap', 'hunters-mark', 'explosive-shot', 'concussive-shot', 'grapple-line', 'tar-pit', 'snare-net', 'finishing-shot', 'hawk-call'],
     ult: 'arrow-rain',
     dodge: 'tumble',
     start: ['piercing-arrow', null, null],
@@ -50,6 +50,12 @@ export const RANGER: Kit = {
     colors: { main: '#3f8f5a', dark: '#22553a', accent: '#c9a35a' },
   },
   skills: [
+    // the second half of the kit (PROGRESSION_BALANCE.md Part 2, B): utility and control, one every few levels
+    sk('skill', 9, 'Grapple Line', 'Fires a grappling line and hauls you to where it bites.', spec({ id: 'grapple-line', cast: 'dash', range: 110, cooldown: 9, duration: 0.24, cost: 10, tags: ['movement'] })),
+    sk('skill', 18, 'Tar Pit', 'Splashes a pool of tar that slows everything in it to a crawl.', spec({ id: 'tar-pit', cast: 'ground', aim: 'ground', range: 120, cooldown: 14, damage: 3, dmgType: 'physical', area: 40, duration: 5, tick: 0.5, cost: 15, onHit: [{ kind: 'status', status: 'chill', dur: 1, power: 0.6 }], look: 'poison', tags: ['aoe', 'control', 'trap'] })),
+    sk('skill', 28, 'Snare Net', 'A weighted net that drags enemies together where it lands and roots them.', spec({ id: 'snare-net', cast: 'projectile', range: 140, cooldown: 12, damage: 8, dmgType: 'physical', speed: 200, radius: 6, cost: 15, onImpact: [{ kind: 'pull', radius: 40, force: 140 }, { kind: 'explode', radius: 36, mul: 0.3, status: { status: 'root', dur: 1.5, power: 1 } }], look: 'needle', tags: ['projectile', 'control'] })),
+    sk('skill', 36, 'Finishing Shot', 'An arrow for the end of a fight: far heavier against enemies below 30% health.', spec({ id: 'finishing-shot', cast: 'projectile', range: 190, cooldown: 7, damage: 28, dmgType: 'physical', speed: 380, radius: 3, cost: 25, bonusVs: [{ status: 'lowHp', pct: 120 }], look: 'piercing-arrow', tags: ['projectile', 'execute'] })),
+    sk('skill', 46, 'Hawk Call', 'Whistles down a hunting hawk that fights beside you for 20 seconds.', spec({ id: 'hawk-call', cast: 'summon', aim: 'self', cooldown: 25, cost: 20, onCast: [{ kind: 'summon', pet: 'hawk', count: 1, dur: 20 }], tags: ['summon'] })),
     sk('basic', 1, 'Arrow', 'A fast, long-range arrow.', spec({ id: 'arrow', cast: 'projectile', range: 175, cooldown: 0.4, damage: 11, speed: 285, radius: 2.5, tags: ['projectile', 'basic'] })),
     sk('skill', 1, 'Piercing Arrow', 'A heavy arrow that passes through every enemy in a line.', spec({ id: 'piercing-arrow', cast: 'projectile', range: 210, cooldown: 4, damage: 30, speed: 345, radius: 3, pierce: 99, knock: 30, cost: 25, tags: ['projectile'] })),
     sk('skill', 2, 'Multishot', 'Loose a fan of five arrows.', spec({ id: 'multishot', cast: 'projectile', range: 145, cooldown: 5, damage: 12, speed: 265, radius: 2.5, count: 5, spread: 0.75, cost: 30, tags: ['projectile'] })),
@@ -209,5 +215,16 @@ export const RANGER: Kit = {
     T(2, 5, 0, 'ferocious-inspiration', 'Ferocious Inspiration', 2, 'power', '+3% damage per rank.', [S('power', 3)]),
     T(2, 5, 2, 'intimidation', 'Intimidation', 3, 'wolf', '+6% companion damage and health per rank.', [S('pet', 6)]),
     T(2, 6, 1, 'beast-mastery', 'Beast Mastery', 1, 'wolf', 'Your companions deal and take as if 25% stronger, and Call Wolf calls a second wolf.', [S('pet', 25), K('call-wolf', { op: 'onCast', effect: { kind: 'summon', pet: 'wolf', count: 2, dur: 0 } })]),
+    /* --------------------------------------------- mutations of the new skills */
+    T(0, 1, 3, 'grapple-shot', 'Grapple Shot', 1, 'arrow', 'Grapple Line lands with a burst of arrows around you (80% damage).', [K('grapple-line', { op: 'onImpact', effect: { kind: 'nova', radius: 34, mul: 0.8, dmgType: 'physical' } })]),
+    T(0, 2, 3, 'second-line', 'Second Line', 1, 'speed', 'Grapple Line holds 2 charges.', [K('grapple-line', { op: 'charges', n: 1 })]),
+    T(1, 2, 3, 'burning-tar', 'Burning Tar', 1, 'fire', 'Tar Pit catches fire: fire damage, and it sets enemies Burning.', [K('tar-pit', { op: 'convert', dmgType: 'fire', look: 'fire' }), onHit('tar-pit', { kind: 'status', status: 'burn', dur: 2, power: 0.3 })]),
+    T(1, 3, 3, 'deep-tar', 'Deep Tar', 2, 'clock', 'Tar Pit lasts 20% longer per rank.', [K('tar-pit', { op: 'duration', pct: 20 })]),
+    T(1, 4, 3, 'barbed-net', 'Barbed Net', 1, 'bleed', 'Snare Net makes what it catches bleed.', [onHit('snare-net', { kind: 'status', status: 'bleed', dur: 4, power: 0.3 })]),
+    T(1, 5, 1, 'heavy-net', 'Heavy Net', 2, 'clock', 'Snare Net recharges 12% faster per rank.', [cdr('snare-net', 12)]),
+    T(0, 4, 3, 'no-escape', 'No Escape', 1, 'arrow', 'Finishing Shot passes through 2 enemies.', [K('finishing-shot', { op: 'pierce', n: 2 })]),
+    T(0, 5, 1, 'killing-blow', 'Killing Blow', 1, 'skull', 'A kill with Finishing Shot makes it ready again.', [K('finishing-shot', { op: 'onKill', effect: { kind: 'resetCd', skill: 'finishing-shot' } })]),
+    T(2, 5, 1, 'pair-of-hawks', 'Pair of Hawks', 1, 'wings', 'Hawk Call brings two hawks.', [K('hawk-call', { op: 'onCast', effect: { kind: 'summon', pet: 'hawk', count: 1, dur: 20 } })]),
+    T(2, 5, 3, 'keen-talons', 'Keen Talons', 2, 'claw', '+8% companion damage and health per rank.', [S('pet', 8)]),
   ],
 };

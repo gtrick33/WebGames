@@ -69,6 +69,10 @@ export interface GroundSpec {
   status?: { status: StatusId; dur: number; power: number };
   /** Visual style. */
   look: 'fire' | 'poison' | 'frost' | 'arrows' | 'lightning' | 'rift' | 'shadow' | 'holy' | 'nature';
+  /** Each tick drags enemies inside toward the middle by this much (a gravity well, a vine vortex). */
+  pull?: number;
+  /** Each tick heals the hero standing in it this share (%) of max health (a sanctuary, a bloom). */
+  heal?: number;
 }
 
 /** Something that happens because of a hit, an impact, a kill or a cast. */
@@ -110,7 +114,13 @@ export type Effect =
   /** Calls `count` companions (PETS by id) for `dur` seconds (0 = until they fall). */
   | { kind: 'summon'; pet: string; count: number; dur: number }
   /** Costs the caster `pct`% of their max health (never below 1). */
-  | { kind: 'sacrifice'; pct: number };
+  | { kind: 'sacrifice'; pct: number }
+  /** Clears every harmful status from the hero (burning, poison, chill, curses, stuns). */
+  | { kind: 'cleanse' }
+  /** Enemies within `radius` turn on the hero for `dur` seconds, whatever else they wanted. */
+  | { kind: 'taunt'; radius: number; dur: number }
+  /** Drags the enemy hit `dist` toward the caster (elites half as far, bosses not at all). */
+  | { kind: 'yank'; dist: number };
 
 /** A timed buff on the hero. The same id refreshes instead of stacking. */
 export interface BuffDef {
@@ -123,6 +133,8 @@ export interface BuffDef {
   dr?: number;
   /** Healing per second, as a share (%) of max health. */
   hot?: number;
+  /** Strikes back at whatever hits the hero for this share of the class's reference damage. */
+  thorns?: number;
   color: string;
 }
 

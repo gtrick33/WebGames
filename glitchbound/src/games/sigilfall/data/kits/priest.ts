@@ -14,7 +14,7 @@ export const PRIEST: Kit = {
     base: stats({ hp: 95, armor: 2 }),
     hpPer: 10,
     basic: 'smite',
-    skills: ['power-word-shield', 'holy-nova', 'shadow-word-pain', 'psychic-scream', 'renew', 'mind-blast'],
+    skills: ['power-word-shield', 'holy-nova', 'shadow-word-pain', 'psychic-scream', 'renew', 'mind-blast', 'grasp-of-faith', 'purify', 'chastise', 'shadow-fiend', 'sanctuary'],
     ult: 'halo',
     dodge: 'angelic-feather',
     start: ['power-word-shield', null, null],
@@ -57,6 +57,12 @@ export const PRIEST: Kit = {
     colors: { main: '#e8e0c8', dark: '#8a7a5a', accent: '#ffd84d' },
   },
   skills: [
+    // the second half of the kit (PROGRESSION_BALANCE.md Part 2, B): utility and control, one every few levels
+    sk('skill', 9, 'Grasp of Faith', 'A hand of light that drags an enemy to you.', spec({ id: 'grasp-of-faith', cast: 'projectile', range: 150, cooldown: 9, damage: 10, dmgType: 'holy', speed: 260, radius: 4, cost: 8, onHit: [{ kind: 'yank', dist: 80 }], look: 'holy', tags: ['projectile', 'holy', 'control'] })),
+    sk('skill', 18, 'Purify', 'Clears every harmful effect on you and heals 18% of your health.', spec({ id: 'purify', cast: 'buff', aim: 'self', cooldown: 14, cost: 10, onCast: [{ kind: 'cleanse' }, { kind: 'heal', pct: 18 }], tags: ['heal', 'buff'] })),
+    sk('skill', 28, 'Chastise', 'A rebuke of light that stuns the enemy it strikes.', spec({ id: 'chastise', cast: 'projectile', range: 160, cooldown: 12, damage: 18, dmgType: 'holy', speed: 300, radius: 4, cost: 10, onHit: [{ kind: 'status', status: 'stun', dur: 1.2, power: 1 }], look: 'holy', tags: ['projectile', 'holy', 'control'] })),
+    sk('skill', 36, 'Shadow Fiend', 'Calls a shadow fiend that fights for you for 15 seconds.', spec({ id: 'shadow-fiend', cast: 'summon', aim: 'self', cooldown: 30, cost: 14, dmgType: 'shadow', onCast: [{ kind: 'summon', pet: 'shadow-fiend', count: 1, dur: 15 }], tags: ['summon', 'shadow'] })),
+    sk('skill', 46, 'Sanctuary', 'Hallows ground for 6 seconds: it burns your enemies and heals you while you stand in it.', spec({ id: 'sanctuary', cast: 'ground', aim: 'ground', range: 120, cooldown: 24, damage: 4, dmgType: 'holy', area: 50, duration: 6, tick: 0.5, cost: 18, extra: { heal: 1.5 }, look: 'holy', tags: ['aoe', 'holy', 'heal'] })),
     sk('basic', 1, 'Smite', 'A bolt of holy light. Each hit gives back a little mana.', spec({ id: 'smite', cast: 'projectile', range: 140, cooldown: 0.45, damage: 11, dmgType: 'holy', speed: 230, radius: 3, extra: { manaOnHit: 2 }, look: 'smite', tags: ['projectile', 'basic'] })),
     sk(
       'skill',
@@ -325,5 +331,16 @@ export const PRIEST: Kit = {
       'Cursed enemies burst when they die: shadow damage around them (80% of a typical hit) that Curses everything it touches for 100% of the burst every second for 6 s.',
       [P({ id: 'unfurling-darkness', on: 'kill', status: 'curse', chance: 1, icd: 0.25, effect: { kind: 'explode', radius: 40, mul: 0.8, dmgType: 'shadow', status: { status: 'curse', dur: 6, power: 1 } }, text: 'Cursed enemies spread their curse when they die.' })],
     ),
+    /* --------------------------------------------- mutations of the new skills */
+    T(0, 1, 3, 'humbling-grasp', 'Humbling Grasp', 1, 'curse', 'Grasp of Faith weakens the enemy’s blows by 15% for 4 s.', [onHit('grasp-of-faith', { kind: 'status', status: 'weaken', dur: 4, power: 15 })]),
+    T(0, 2, 3, 'firm-grasp', 'Firm Grasp', 2, 'clock', 'Grasp of Faith recharges 12% faster per rank.', [cdr('grasp-of-faith', 12)]),
+    T(1, 2, 3, 'lasting-purity', 'Lasting Purity', 1, 'heal', 'Purify keeps healing you: 2% of your health per second for 5 s.', [K('purify', { op: 'onCast', effect: { kind: 'buff', buff: { id: 'lasting-purity', name: 'Lasting Purity', dur: 5, hot: 2, color: '#e8ffd8' } } })]),
+    T(1, 1, 3, 'quick-prayer', 'Quick Prayer', 2, 'clock', 'Purify recharges 12% faster per rank.', [cdr('purify', 12)]),
+    T(0, 4, 3, 'stern-rebuke', 'Stern Rebuke', 1, 'explode', 'Chastise bursts on impact (50% damage around it).', [onHit('chastise', { kind: 'explode', radius: 30, mul: 0.5, dmgType: 'holy' })]),
+    T(0, 5, 1, 'chastening', 'Chastening', 2, 'power', 'Chastise deals +15% damage per rank.', [dmg('chastise', 15)]),
+    T(2, 4, 3, 'fiendish-hunger', 'Fiendish Hunger', 2, 'demon', '+10% companion damage and health per rank.', [S('pet', 10)]),
+    T(2, 5, 1, 'twin-fiends', 'Twin Fiends', 1, 'demon', 'Shadow Fiend calls two fiends.', [K('shadow-fiend', { op: 'onCast', effect: { kind: 'summon', pet: 'shadow-fiend', count: 1, dur: 15 } })]),
+    T(1, 5, 1, 'wide-sanctuary', 'Wide Sanctuary', 2, 'aoe', 'Sanctuary covers 15% more area per rank.', [K('sanctuary', { op: 'area', pct: 15 })]),
+    T(1, 5, 3, 'holy-ground', 'Holy Ground', 1, 'heal', 'Sanctuary heals twice as much.', [K('sanctuary', { op: 'extra', key: 'heal', n: 1.5, label: 'healing per tick' })]),
   ],
 };

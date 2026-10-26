@@ -11,9 +11,9 @@ ROLL BACK.
 | 0 | Audit and planning documents | **done** (this commit) |
 | 1 | Stabilization | camera jitter **fixed** (`6943aa45`); Open Barrow **fixed** (`0995dd35`); registry/quest integrity **guarded**; ultimate spam **measured, fix in Phase 3**; quest auto-activation **in Phase 2** (needs the accept step) |
 | 2 | Vertical slice: Briarhollow + Prologue chain + Chapel Crypt + the Mage, the world-event system, the art re-layering | **in progress**: art re-layering (`d0082a62`), world states + events + accept step + Briarhollow and its Prologue (this commit); next the Mage's new skills |
-| 3 | Progression rebalance (PROGRESSION_BALANCE.md Part 2) | after 2 |
+| 3 | Progression rebalance (PROGRESSION_BALANCE.md Part 2) | **done** (`17208eeb`) |
 | 4 | Master hero (Mage) smooth re-render, then the other six | after 3 |
-| 5 | Spell expansion: the 4th slot (**done**, `0fc10e2b`), 35 new skills, talent mutations, boss partial CC | after 4 |
+| 5 | Spell expansion: the 4th slot (**done**, `0fc10e2b`), 35 new skills, talent mutations, boss partial CC | **done** (this commit; PROGRESSION_BALANCE.md Part 2½) |
 | 6 | Wardrobe + first mount | after 5 |
 | 7 | World art in region batches | after 6 |
 | 8 | Quest rewrite by act (QUEST_REWRITE_MAP.md) | **Act I done** (`06cf60a7`): every Vale village changes when saved, its people walk into Briarhollow's camp, the Defense of Hearthstead. **Act II done** (`87ec2d24`): the refugee escort and Nyx, the occupied pass, Lantern Hill's gloom and vigil with Orren and Cael, Stormwatch's Light, the Crown City's traitor and the Starfall Festival. **Acts III–IV (built zones) done** (this commit): choices, the factions' dilemmas, the Tear, Fernstead lost and retaken, Highwall's relief under Mara and Cael's sortie |

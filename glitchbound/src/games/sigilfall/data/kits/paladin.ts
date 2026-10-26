@@ -14,7 +14,7 @@ export const PALADIN: Kit = {
     base: stats({ hp: 145, armor: 12 }),
     hpPer: 14,
     basic: 'crusader-strike',
-    skills: ['judgment', 'consecration', 'divine-storm', 'hammer-of-justice', 'word-of-glory', 'avengers-shield'],
+    skills: ['judgment', 'consecration', 'divine-storm', 'hammer-of-justice', 'word-of-glory', 'avengers-shield', 'oath-chain', 'cleansing-light', 'bulwark', 'sentence', 'dawn-leap'],
     ult: 'avenging-wrath',
     dodge: 'divine-steed',
     start: ['judgment', null, null],
@@ -50,6 +50,12 @@ export const PALADIN: Kit = {
     colors: { main: '#e8b84a', dark: '#8a6a2a', accent: '#fff2b0' },
   },
   skills: [
+    // the second half of the kit (PROGRESSION_BALANCE.md Part 2, B): utility and control, one every few levels
+    sk('skill', 9, 'Oath Chain', 'A chain of light that drags an enemy to you and weakens its blows.', spec({ id: 'oath-chain', cast: 'projectile', range: 150, cooldown: 10, damage: 12, dmgType: 'holy', speed: 260, radius: 4, gen: 1, onHit: [{ kind: 'yank', dist: 80 }, { kind: 'status', status: 'weaken', dur: 4, power: 15 }], look: 'holy', tags: ['projectile', 'holy', 'control'] })),
+    sk('skill', 18, 'Cleansing Light', 'Light that washes away every harmful effect and heals 15% of your health.', spec({ id: 'cleansing-light', cast: 'buff', aim: 'self', cooldown: 16, cost: 3, onCast: [{ kind: 'cleanse' }, { kind: 'heal', pct: 15 }], tags: ['heal', 'buff'] })),
+    sk('skill', 28, 'Bulwark', 'A dome of holy light: a shield worth 30% of your health and 15% less damage taken for 5 seconds.', spec({ id: 'bulwark', cast: 'buff', aim: 'self', cooldown: 22, onCast: [{ kind: 'shield', pct: 30, dur: 5 }, { kind: 'buff', buff: { id: 'bulwark', name: 'Bulwark', dur: 5, dr: 15, color: '#ffd84d' } }], tags: ['defense', 'buff'] })),
+    sk('skill', 36, 'Sentence', 'Pronounce sentence: a holy strike that falls far harder on enemies below 30% health.', spec({ id: 'sentence', cast: 'melee', cooldown: 9, damage: 32, dmgType: 'holy', area: 30, arc: 1.3, cost: 3, bonusVs: [{ status: 'lowHp', pct: 120 }], tags: ['melee', 'holy', 'execute'] })),
+    sk('skill', 46, 'Dawn Leap', 'Leap in a blaze of dawn and land in a burst of holy light.', spec({ id: 'dawn-leap', cast: 'dash', range: 100, cooldown: 12, damage: 18, dmgType: 'holy', duration: 0.34, radius: 6, gen: 1, onImpact: [{ kind: 'nova', radius: 46, mul: 1.3, dmgType: 'holy' }], tags: ['movement', 'holy', 'aoe'] })),
     sk('basic', 1, 'Crusader Strike', 'A quick hammer blow. Every swing that lands gives 1 Holy Power.', spec({ id: 'crusader-strike', cast: 'melee', cooldown: 0.5, damage: 14, area: 27, arc: 1.6, knock: 40, gen: 1, tags: ['melee', 'basic'] })),
     sk(
       'skill',
@@ -321,5 +327,16 @@ export const PALADIN: Kit = {
     T(2, 5, 0, 'avenging-crusader', 'Avenging Crusader', 2, 'sun', 'Avenging Wrath deals +25% damage per rank.', [dmg('avenging-wrath', 25)]),
     T(2, 5, 2, 'relentless-inquisitor', 'Relentless Inquisitor', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
     T(2, 6, 1, 'final-verdict', 'Final Verdict', 1, 'explode', 'Templar’s Verdict bursts with holy light where it lands, striking everything around for 30% of its damage.', [K('templars-verdict', { op: 'onImpact', effect: { kind: 'explode', radius: 36, mul: 0.3, dmgType: 'holy' } })]),
+    /* --------------------------------------------- mutations of the new skills */
+    T(1, 1, 3, 'binding-oath', 'Binding Oath', 1, 'fear', 'Oath Chain makes the enemy turn on you for 4 s.', [onHit('oath-chain', { kind: 'taunt', radius: 24, dur: 4 })]),
+    T(1, 0, 3, 'long-oath', 'Long Oath', 2, 'speed', 'Oath Chain reaches 15% farther per rank.', [K('oath-chain', { op: 'range', pct: 15 })]),
+    T(0, 2, 3, 'radiance', 'Radiance', 1, 'holy', 'Cleansing Light also bursts around you (80% holy damage).', [K('cleansing-light', { op: 'onCast', effect: { kind: 'nova', radius: 40, mul: 0.8, dmgType: 'holy' } })]),
+    T(0, 3, 3, 'grace-of-light', 'Grace of Light', 2, 'clock', 'Cleansing Light recharges 12% faster per rank.', [cdr('cleansing-light', 12)]),
+    T(1, 3, 3, 'sanctified-wall', 'Sanctified Wall', 1, 'fear', 'Bulwark makes enemies around you turn on you for 3 s.', [K('bulwark', { op: 'onCast', effect: { kind: 'taunt', radius: 60, dur: 3 } })]),
+    T(1, 4, 3, 'unbreaking', 'Unbreaking', 2, 'clock', 'Bulwark recharges 12% faster per rank.', [cdr('bulwark', 12)]),
+    T(2, 4, 3, 'judges-mercy', 'Judge’s Mercy', 1, 'heal', 'A kill with Sentence heals you for 6% of your health.', [K('sentence', { op: 'onKill', effect: { kind: 'heal', pct: 6 } })]),
+    T(2, 5, 1, 'last-judgment', 'Last Judgment', 2, 'crit', 'Sentence deals +25% more per rank to enemies below 30% health.', [K('sentence', { op: 'bonusVs', status: 'lowHp', pct: 25 })]),
+    T(2, 5, 3, 'sunburst', 'Sunburst', 1, 'sun', 'Dawn Leap leaves hallowed ground where it lands for 3 s.', [K('dawn-leap', { op: 'onImpact', effect: { kind: 'ground', ground: { radius: 34, dur: 3, tick: 0.5, mul: 0.15, dmgType: 'holy', look: 'holy' } } })]),
+    T(2, 3, 3, 'swift-dawn', 'Swift Dawn', 2, 'clock', 'Dawn Leap recharges 12% faster per rank.', [cdr('dawn-leap', 12)]),
   ],
 };

@@ -338,6 +338,8 @@ function victimOf(w: World, e: Enemy): Victim {
   // a siege engine only wants the gate
   const ward = e.def.siege ? w.story.run?.ward : null;
   if (ward && !ward.dead) return { x: ward.x, y: ward.y, r: ward.r, dead: false, pet: ward };
+  // taunted: the hero, and nobody else
+  if ((e.tauntUntil ?? 0) > w.time && !p.dead) return hero;
   if (e.boss || !w.pets.length) return hero;
   if (e.victimT <= 0) {
     e.victimT = 1;
