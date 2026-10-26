@@ -239,6 +239,7 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
     case 'explode': {
       w.fxBurst(c.x, c.y, e.dmgType === 'poison' ? '#8be36b' : e.dmgType === 'lightning' ? '#9ad8ff' : '#ffb04d', 14, e.radius);
       w.addFx({ kind: 'ring', x: c.x, y: c.y, life: 0.3, size: e.radius, color: e.dmgType === 'poison' ? '#8be36b' : '#ffcf6a' });
+      w.vfx(`blast:${e.dmgType}`, c.x, c.y, e.radius);
       w.sfx('explode');
       w.shake(1.5);
       damageArea(w, c.x, c.y, e.radius, c.base * e.mul, e.dmgType ?? c.type, c.depth + 1, null, e.status ? [e.status] : []);
@@ -310,6 +311,7 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
     }
     case 'nova': {
       w.addFx({ kind: 'ring', x: c.x, y: c.y, life: 0.35, size: e.radius, color: e.dmgType === 'frost' ? '#9be7ff' : e.dmgType === 'lightning' ? '#bfe9ff' : '#ffffff' });
+      w.vfx(e.dmgType === 'frost' ? 'shatter:frost' : e.dmgType === 'lightning' ? 'thunder:lightning' : `blast:${e.dmgType}`, c.x, c.y, e.radius);
       if (e.dmgType === 'lightning') for (let i = 0; i < 5; i++) w.addFx({ kind: 'zap', x: c.x, y: c.y, x2: c.x + Math.cos((TAU * i) / 5) * e.radius, y2: c.y + Math.sin((TAU * i) / 5) * e.radius, life: 0.2, size: 1, color: '#bfe9ff' });
       damageArea(w, c.x, c.y, e.radius, c.base * e.mul, e.dmgType ?? c.type, c.depth + 1, null, e.status ? [e.status] : []);
       break;

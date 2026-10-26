@@ -3,7 +3,11 @@ import { REGIONS } from '../data/regions';
 import { THEMES, type TreeKind } from '../data/themes';
 import type { RegionDef, Theme } from '../data/types';
 import { K, TILE, type TileMap } from '../sim/map';
-import { Ground } from './ground';
+import { buildArtObjects, type ArtOverlay } from './artScenery';
+import type { AnimInfo, Rect, WorldArt } from './art/atlas';
+import { BIOMES } from './art/biomes';
+import { buildDecals, Ground } from './ground';
+import { TileGround } from './tileGround';
 import { building } from './art/buildings';
 import { bushArt, cactus, crystalSpire, deadTree, edgeTrunk, jungleTree, mushroomTree, oakTree, palmTree, pineTree, rockArt, willowTree } from './art/flora';
 import type { Painter } from './art/kit';
@@ -28,11 +32,28 @@ export interface StaticObject {
   /** Fades when the hero walks behind it. */
   fade: boolean;
   kind: string;
+  /** Drawn from an atlas: the source rectangle in `c` (art pixels). */
+  src?: Rect;
+  /** An animated prop: its frames run left to right in `src`. */
+  anim?: AnimInfo;
+}
+
+/** The ground under everything: painted procedurally, or laid from the pack's tiles. */
+export interface GroundLayer {
+  draw(g: CanvasRenderingContext2D, ox: number, oy: number, vw: number, vh: number): void;
+  prefetch(ox: number, oy: number, vw: number, vh: number): void;
+  dispose(): void;
+  /** Animated water, drawn over the painted ground each frame (tile art only). */
+  drawWater?(g: CanvasRenderingContext2D, ox: number, oy: number, vw: number, vh: number, time: number): void;
 }
 
 export interface Scenery {
-  ground: Ground;
+  ground: GroundLayer;
   objects: StaticObject[];
+  /** Animated things over the scene that don't sort (chimney smoke). */
+  overlays: ArtOverlay[];
+  /** The packed art this scenery was built from (null: all procedural). */
+  art: WorldArt | null;
   torches: { x: number; y: number }[];
   braziers: { x: number; y: number }[];
   water: number[];
@@ -40,15 +61,30 @@ export interface Scenery {
   theme: Theme;
 }
 
-export function buildScenery(map: TileMap, region: RegionDef): Scenery {
+/**
+ * Builds a region's scenery. With the packed art loaded (and a look for the land in biomes.ts), the
+ * ground and most standing things come from the Royal Keep pieces; without it, everything is painted
+ * procedurally, as before the packs (tests, a failed download, indoor places for now).
+ */
+export function buildScenery(map: TileMap, region: RegionDef, art: WorldArt | null = null): Scenery {
   const water: number[] = [];
   const illusions: number[] = [];
   for (let i = 0; i < map.w * map.h; i++) {
     if (map.kind[i] === K.Water) water.push(i);
     if (map.kind[i] === K.Illusion) illusions.push(i);
   }
-  const sc: Scenery = { ground: new Ground(map, region), objects: [], torches: [], braziers: [], water, illusions, theme: region.theme };
-  buildObjects(sc, map, region);
+  const biome = BIOMES[region.theme];
+  const useArt = art && biome && !THEMES[region.theme].indoor ? art : null;
+  const ground: GroundLayer = useArt && biome ? new TileGround(map, useArt, biome, buildDecals(map, region)) : new Ground(map, region);
+  const sc: Scenery = { ground, objects: [], overlays: [], art: useArt, torches: [], braziers: [], water, illusions, theme: region.theme };
+  let handled = new Set<number>();
+  if (useArt && biome) {
+    const built = buildArtObjects(map, useArt, biome);
+    sc.objects.push(...built.objects);
+    sc.overlays.push(...built.overlays);
+    handled = built.handled;
+  }
+  buildObjects(sc, map, region, !!useArt, handled);
   sc.objects.sort((a, b) => a.y - b.y);
   return sc;
 }
@@ -99,12 +135,16 @@ function treeArt(kind: TreeKind, theme: Theme, seed: number): Cnv {
   });
 }
 
-function buildObjects(sc: Scenery, map: TileMap, region: RegionDef): void {
+/**
+ * The procedural standing things. With the packed art (`artMode`), the tiles' trees, bushes, rocks,
+ * fences and houses are already placed, so only the markers the art didn't take are drawn here.
+ */
+function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = false, handled = new Set<number>()): void {
   const theme = region.theme;
   const look = THEMES[theme];
   // woods have trunks where the canopy meets a clearing; bare lands (desert, crystal wastes) have cliffs
   const woody = !look.cliffs && look.trees.filter((t) => t !== 'cactus' && t !== 'crystal').length * 2 > look.trees.length;
-  for (let i = 0; i < map.w * map.h; i++) {
+  for (let i = 0; i < (artMode ? 0 : map.w * map.h); i++) {
     const tx = i % map.w;
     const ty = Math.floor(i / map.w);
     const k = map.kind[i]!;
@@ -170,6 +210,7 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef): void {
     }
   }
   for (const pm of map.markers) {
+    if (handled.has(pm.ty * map.w + pm.tx)) continue;
     const m = pm.marker;
     const x = (pm.tx + 0.5) * TILE;
     const bottom = (pm.ty + 1) * TILE;

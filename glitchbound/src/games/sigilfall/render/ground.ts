@@ -167,7 +167,7 @@ export class Ground {
 
 /* -------------------------------------------------------------- decals */
 
-function buildDecals(map: TileMap, region: RegionDef): Decal[] {
+export function buildDecals(map: TileMap, region: RegionDef): Decal[] {
   const out: Decal[] = [];
   for (const pm of map.markers) {
     const x = (pm.tx + 0.5) * TILE * D;

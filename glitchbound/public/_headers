@@ -11,6 +11,10 @@
 /games/launch-control/cosmo/*
   Cache-Control: public, max-age=86400
 
+# Sigilfall's atlases: always asked for with ?v=<build> (render/art/artVersion.ts), so a new build is a new address.
+/games/sigilfall/art/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # Game photo library: files are named by their source id and never change.
 /photos/*
   Cache-Control: public, max-age=31536000, immutable

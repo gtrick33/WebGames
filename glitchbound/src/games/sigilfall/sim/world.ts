@@ -524,6 +524,13 @@ export class World {
     if (this.fx.length > 420) return;
     this.fx.push({ vx: 0, vy: 0, t: 0, size: 2, color: '#fff', a: 0, a2: 0, r2: 0, x2: 0, y2: 0, ...f });
   }
+  /**
+   * A drawn spell effect (`impact:fire`, `blast:frost`, `cast:holy`...: render/art/vfx.ts). Only a
+   * picture: it touches nothing, and without the art it isn't drawn.
+   */
+  vfx(sprite: string, x: number, y: number, size = 0, life = 0.9): void {
+    this.addFx({ kind: 'glow', x, y, life, size, color: 'rgba(0,0,0,0)', sprite });
+  }
   fxBurst(x: number, y: number, color: string, n: number, radius = 12): void {
     for (let i = 0; i < n; i++) {
       const a = this.rand() * TAU;

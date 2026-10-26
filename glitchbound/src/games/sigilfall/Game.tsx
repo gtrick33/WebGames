@@ -26,7 +26,22 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
     e.attach(stage);
     setEngine(e);
     // a handle for automated play-testing on the dev server only (never in a build)
-    if (import.meta.env.DEV) (window as unknown as { __rb?: SigilEngine }).__rb = e;
+    if (import.meta.env.DEV) {
+      (window as unknown as { __rb?: SigilEngine }).__rb = e;
+      // review screenshots: the game view at k times its art resolution, saved by the dev server
+      (window as unknown as { __rbShot?: (name: string, k?: number) => Promise<string> }).__rbShot = async (name, k = 1) => {
+        const src = e.renderer.canvas;
+        const out = document.createElement('canvas');
+        out.width = src.width * k;
+        out.height = src.height * k;
+        const g = out.getContext('2d')!;
+        g.imageSmoothingEnabled = false;
+        g.drawImage(src, 0, 0, out.width, out.height);
+        const blob = await new Promise<Blob | null>((r) => out.toBlob(r, name.endsWith('.jpg') ? 'image/jpeg' : 'image/png', 0.86));
+        const res = await fetch(`/__sigilfall/shot?name=${encodeURIComponent(name)}`, { method: 'POST', body: blob });
+        return res.text();
+      };
+    }
     host.report({ type: 'ready' });
     // the canvas follows the stage's size; the view picks a crisp whole-number pixel scale
     const fit = (): void => {

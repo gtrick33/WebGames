@@ -68,12 +68,41 @@ function seoPages(siteUrl: string, adsenseClient: string): Plugin {
   };
 }
 
+/**
+ * Dev server only: Sigilfall's review screenshots (`window.__rbShot` on the dev page) are POSTed here
+ * as PNG data and saved under docs/review/, so a phase's screenshots are reproducible files.
+ */
+function reviewShots(): Plugin {
+  return {
+    name: 'sigilfall-review-shots',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/__sigilfall/shot', (req, res) => {
+        const name = new URL(req.url ?? '', 'http://x').searchParams.get('name') ?? '';
+        if (req.method !== 'POST' || !/^[a-z0-9-]+\/[a-z0-9-]+\.(png|jpg)$/.test(name)) {
+          res.statusCode = 400;
+          res.end('bad request');
+          return;
+        }
+        const chunks: Buffer[] = [];
+        req.on('data', (c: Buffer) => chunks.push(c));
+        req.on('end', () => {
+          const file = join(server.config.root, 'docs/review', name);
+          mkdirSync(dirname(file), { recursive: true });
+          writeFileSync(file, Buffer.concat(chunks));
+          res.end('saved');
+        });
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   const siteUrl = (env.VITE_SITE_URL || 'https://glitchboundstudio.com').replace(/\/+$/, '');
   return {
     base: '/',
-    plugins: [react(), seoPages(siteUrl, env.VITE_ADSENSE_CLIENT ?? '')],
+    plugins: [react(), seoPages(siteUrl, env.VITE_ADSENSE_CLIENT ?? ''), reviewShots()],
     // `npm run dev` proxies /api (and live-room sockets) to the Pages Functions (`npm run dev:api`,
     // port 8788). GB_API points it at another one, e.g. when several copies run side by side.
     server: { proxy: { '/api': { target: process.env.GB_API || 'http://127.0.0.1:8788', ws: true } } },

@@ -187,6 +187,9 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
   p.aim = angle;
   const ctx = { x: p.x, y: p.y, angle, spec, base: spec.damage, type: spec.dmgType, depth: 0, hitDmg: 0, when: 'cast' as const };
   applyEffects(w, spec.onCast, ctx);
+  // a spell's glow at the caster's feet (the ultimate charges a bigger one)
+  if (slot === 'ult') w.vfx(`charge:${spec.dmgType}`, p.x, p.y + 6, 0, 1);
+  else if (slot !== 'basic' && slot !== 'dodge' && spec.cast !== 'melee') w.vfx(`cast:${spec.dmgType}`, p.x, p.y + 6, 0, 0.7);
   // the resource some skills give (a melee swing only when it connects: see melee)
   if (spec.gen > 0 && spec.cast !== 'melee') gainResource(w, spec.gen);
   switch (spec.cast) {
@@ -207,6 +210,7 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
       p.actT = 0.25;
       const [ring, shard] = NOVA_TINT[spec.look ?? ''] ?? NOVA_TINT[spec.dmgType] ?? NOVA_TINT.frost!;
       w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.4, size: spec.area, color: ring });
+      w.vfx(`blast:${spec.dmgType}`, p.x, p.y, spec.area);
       for (let i = 0; i < 14; i++) {
         const a = (TAU * i) / 14;
         w.addFx({ kind: 'shard', x: p.x + Math.cos(a) * 6, y: p.y + Math.sin(a) * 6, vx: Math.cos(a) * spec.area * 2.2, vy: Math.sin(a) * spec.area * 2.2, life: 0.35, size: 2, color: shard });
@@ -270,6 +274,7 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
       p.actT = 0.25;
       p.actAngle = angle;
       w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.35, size: 14, color: buffColor(spec) });
+      w.vfx(`${spec.tags.includes('heal') ? 'heal' : spec.tags.includes('defense') ? 'shield' : 'buff'}:${spec.dmgType}`, p.x, p.y + 6, 0, 1);
       if (spec.cast === 'buff') w.sfx('buff');
       break;
     case 'form': {
@@ -816,6 +821,7 @@ function impact(w: World, pr: Projectile, e: Enemy | null): void {
   // walls: step back so bursts aren't inside the stone
   const x = e ? e.x : pr.x - Math.cos(angle) * 3;
   const y = e ? e.y : pr.y - Math.sin(angle) * 3;
+  w.vfx(`impact:${pr.type}`, x, y);
   w.addFx({ kind: 'burst', x, y, life: 0.2, size: pr.r + 3, color: pr.type === 'fire' ? '#ffb04d' : pr.type === 'frost' ? '#bdf1ff' : pr.type === 'lightning' ? '#cdeeff' : pr.type === 'poison' ? '#9be36b' : pr.type === 'arcane' ? '#d2a8ff' : '#ffffff' });
   if (pr.spec && pr.spec.onImpact.length) applyEffects(w, pr.spec.onImpact, { x, y, angle, spec: pr.spec, base: pr.dmg, type: pr.type, depth: pr.depth, target: e ?? undefined, hitDmg: 0, proj: pr, when: 'impact' });
 }

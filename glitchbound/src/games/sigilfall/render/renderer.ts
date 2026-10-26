@@ -1,5 +1,9 @@
 import { clamp, damp, dist, hash2, TAU } from '../core/math';
 import { LEAD, leanTarget, LIFT, placeCamera } from './camera';
+import { worldArt } from './art/atlas';
+import { dirOf, FOE_FOLK, FOLK_FEET, folkFor, folkSprite } from './art/folk';
+import { drawBolt, drawVfx } from './art/vfx';
+import { BIOMES } from './art/biomes';
 import { THEMES } from '../data/themes';
 import type { ClassId } from '../data/types';
 import { bossHidden } from '../sim/boss';
@@ -214,12 +218,18 @@ export class Renderer {
   }
 
   draw(w: World, dt: number, time: number): void {
-    if (this.sceneryFor !== w) {
+    // the packed art for this land (null while it loads, or indoors): the scenery is rebuilt once it is in
+    const look = BIOMES[w.region.theme]?.look;
+    const art = look ? worldArt(look) : null;
+    if (this.sceneryFor !== w || (art && this.scenery?.art !== art)) {
+      const fresh = this.sceneryFor !== w;
       this.scenery?.ground.dispose();
-      this.scenery = buildScenery(w.map, w.region);
+      this.scenery = buildScenery(w.map, w.region, art);
       this.sceneryFor = w;
-      this.setHeroWeapon(w.hero.cls, w);
-      this.snap(w);
+      if (fresh) {
+        this.setHeroWeapon(w.hero.cls, w);
+        this.snap(w);
+      }
     }
     const sc = this.scenery!;
     const g = this.g;
@@ -264,10 +274,16 @@ export class Renderer {
       items.push({
         y: o.y,
         draw: () => {
-          const ow = o.c.width / DETAIL;
+          const ow = (o.src ? (o.anim ? o.anim.w : o.src[2]) : o.c.width) / DETAIL;
           const behind = o.fade && !p.dead && p.y < o.y && p.y > o.y + o.dy + 4 && Math.abs(p.x - o.x) < ow / 2 - 2;
           if (behind) g.globalAlpha = 0.55;
-          g.drawImage(o.c, Math.round(o.x + o.dx), Math.round(o.y + o.dy), ow, o.c.height / DETAIL);
+          if (o.src) {
+            // from an atlas, placed on its art pixel; animated props step through their frames
+            const [sx, sy, sw, sh] = o.src;
+            const fw = o.anim ? o.anim.w : sw;
+            const f = o.anim ? Math.floor((time * 1000) / o.anim.ms + o.x * 0.37) % o.anim.n : 0;
+            g.drawImage(o.c, sx + f * fw, sy, fw, sh, Math.round((o.x + o.dx) * DETAIL) / DETAIL, Math.round((o.y + o.dy) * DETAIL) / DETAIL, fw / DETAIL, sh / DETAIL);
+          } else g.drawImage(o.c, Math.round(o.x + o.dx), Math.round(o.y + o.dy), ow, o.c.height / DETAIL);
           g.globalAlpha = 1;
         },
       });
@@ -295,6 +311,14 @@ export class Renderer {
     items.sort((a, b) => a.y - b.y);
     for (const it of items) it.draw();
 
+    for (const ov of sc.overlays) {
+      if (ov.x < ox - 20 || ov.x > ox + this.vw + 20 || ov.y < oy - 40 || ov.y > oy + this.vh + 20) continue;
+      const a = ov.anim;
+      const f = Math.floor((time * 1000) / a.ms + ov.phase * a.n) % a.n;
+      g.globalAlpha = 0.75;
+      g.drawImage(sc.art!.props, a.r[0] + f * a.w, a.r[1], a.w, a.h, Math.round(ov.x - a.w / DETAIL / 2), Math.round(ov.y - a.h / DETAIL), a.w / DETAIL, a.h / DETAIL);
+      g.globalAlpha = 1;
+    }
     for (const pr of w.projectiles) this.drawProjectile(pr, time);
     for (const f of w.fx) this.drawFx(f, w);
     if (w.portal) this.drawPortal(w.portal.x, w.portal.y, time);
@@ -355,12 +379,15 @@ export class Renderer {
     const ty0 = Math.max(0, Math.floor(oy / TILE));
     const tx1 = Math.min(m.w - 1, Math.floor((ox + this.vw) / TILE));
     const ty1 = Math.min(m.h - 1, Math.floor((oy + this.vh) / TILE));
+    // the pack's water moves by itself; the painted water gets glints
+    const tiled = !!sc.ground.drawWater;
+    sc.ground.drawWater?.(g, ox, oy, this.vw, this.vh, time);
     g.fillStyle = 'rgba(220,240,255,0.75)';
     for (let ty = ty0; ty <= ty1; ty++) {
       for (let tx = tx0; tx <= tx1; tx++) {
         const i = ty * m.w + tx;
         const k = m.kind[i];
-        if (k === K.Water) {
+        if (k === K.Water && !tiled) {
           const h = hash2(tx, ty, 3);
           const phase = (time * 0.8 + h * 5) % 3;
           if (phase < 0.6) g.fillRect(tx * TILE + Math.floor(h * 12) + 2, ty * TILE + Math.floor(h * 97) % 12 + 2, phase < 0.3 ? 2 : 3, 1);
@@ -950,8 +977,17 @@ export class Renderer {
     if (e.boss && bossHidden(e)) return;
     const moving = e.state === 'chase' || e.state === 'act' || e.state === 'return';
     const frame = moving ? Math.floor(e.walkT * 6) % 2 : Math.floor(time * 2 + e.id) % 2;
-    const sprite = e.def.pal ? recolored(e.def.sprite, frame, e.def.pal, `en:${e.def.id}`) : e.boss?.def.id === 'grimtusk' ? recolored('grimtusk', frame, {}, 'grimtusk') : creatureSprite(e.def.sprite, frame);
-    const flip = Math.cos(e.face) < 0;
+    let sprite = e.def.pal ? recolored(e.def.sprite, frame, e.def.pal, `en:${e.def.id}`) : e.boss?.def.id === 'grimtusk' ? recolored('grimtusk', frame, {}, 'grimtusk') : creatureSprite(e.def.sprite, frame);
+    let flip = Math.cos(e.face) < 0;
+    // foes the townsfolk sheet has a figure for: walking, swinging and facing four ways
+    const who = FOE_FOLK[e.def.sprite];
+    if (who) {
+      const fs = folkSprite(who, e.state === 'windup' || e.state === 'act' ? 'attack' : moving ? 'walk' : 'idle', dirOf(e.face), time + e.id * 0.13);
+      if (fs) {
+        sprite = fs;
+        flip = false;
+      }
+    }
     let sx = 1;
     let sy = 1;
     if (e.def.ai === 'hopper') {
@@ -1095,18 +1131,30 @@ export class Renderer {
 
   private drawNpc(w: World, id: string, x: number, y: number, face: number, bob: number): void {
     const g = this.g;
-    const sprite = npcSprite(id);
-    const b = Math.sin(bob * 2) > 0.7 ? -1 : 0;
+    const def = NPCS[id];
     g.fillStyle = 'rgba(0,0,0,0.25)';
     g.beginPath();
     g.ellipse(x, y + 6, 6, 2.5, 0, 0, TAU);
     g.fill();
-    const sw = sprite.width / sprite.k;
-    const sh = sprite.height / sprite.k;
-    g.drawImage(face < 0 ? sprite.f : sprite.c, Math.round(x) - sw / 2, Math.round(y + 7 - sh + b), sw, sh);
+    let top: number;
+    // a townsfolk figure from the pack, turned toward the hero when they come close
+    const p = w.player;
+    const near = Math.hypot(p.x - x, p.y - y) < 48;
+    const fs = folkSprite(folkFor(def, id), 'idle', near ? dirOf(Math.atan2(p.y - y, p.x - x)) : face < 0 ? 'left' : 'down', bob * 0.5);
+    if (fs) {
+      const sw = fs.width / fs.k;
+      const sh = fs.height / fs.k;
+      g.drawImage(fs.c, Math.round((x - FOLK_FEET[0] / fs.k) * 2) / 2, Math.round((y + 6.5 - FOLK_FEET[1] / fs.k) * 2) / 2, sw, sh);
+      top = Math.round(y + 6.5 - FOLK_FEET[1] / fs.k + 4);
+    } else {
+      const sprite = npcSprite(id);
+      const b = Math.sin(bob * 2) > 0.7 ? -1 : 0;
+      const sw = sprite.width / sprite.k;
+      const sh = sprite.height / sprite.k;
+      g.drawImage(face < 0 ? sprite.f : sprite.c, Math.round(x) - sw / 2, Math.round(y + 7 - sh + b), sw, sh);
+      top = Math.round(y + 4 - sh);
+    }
     // vendors carry a sign of what they sell; quests use "!" (yours) and "?" (talk to them) above it
-    let top = Math.round(y + 4 - sh);
-    const def = NPCS[id];
     const sign = def ? vendorSign(def.shop ?? (def.service === 'respec' ? 'respec' : '')) : null;
     if (sign) {
       const bw = sign.width / sign.k;
@@ -1448,7 +1496,8 @@ export class Renderer {
       g.restore();
       return;
     }
-    // bolts, fireballs, embers: a glowing core with a short tail
+    // bolts, fireballs, embers: a bolt of their element from the spell pack, or a glowing core with a short tail
+    if (drawBolt(g, look, pr.type, pr.x, pr.y, a, pr.age, pr.r)) return;
     const r = Math.max(1.5, pr.r);
     g.globalAlpha = 0.5;
     g.drawImage(glowDisc(c1, Math.ceil(r * 2.5)), x - Math.ceil(r * 2.5), y - Math.ceil(r * 2.5));
@@ -1493,6 +1542,11 @@ export class Renderer {
 
   private drawFx(f: Fx, w: World): void {
     const g = this.g;
+    // the packed spell effects (an impact, a cast, a blast): only a picture, nothing to fall back to
+    if (f.sprite && f.sprite.includes(':')) {
+      drawVfx(g, f.sprite, f.x, f.y, f.t, f.size);
+      return;
+    }
     const k = f.t / f.life;
     const x = Math.round(f.x);
     const y = Math.round(f.y);
