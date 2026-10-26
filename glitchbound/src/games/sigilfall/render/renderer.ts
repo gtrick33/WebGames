@@ -259,8 +259,15 @@ export class Renderer {
       lx = lx * 0.8 + (boss.x - p.x) * 0.2;
       ly = ly * 0.8 + (boss.y - p.y) * 0.2;
     }
-    this.leanX = damp(this.leanX, lx, 4, dt);
-    this.leanY = damp(this.leanY, ly, 4, dt);
+    // a scene looks where it says (a person, a place), easing there and back
+    const focus = w.scene?.focus;
+    if (focus) {
+      lx = focus.x - p.x;
+      ly = focus.y - p.y + LIFT;
+    }
+    const rate = w.scene ? 2.6 : 4;
+    this.leanX = damp(this.leanX, lx, rate, dt);
+    this.leanY = damp(this.leanY, ly, rate, dt);
     this.placeCamera(w);
     const shake = this.reducedMotion ? 0 : w.shakeAmt;
     const ox = this.drawX + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
@@ -1238,8 +1245,40 @@ export class Renderer {
     g.fillRect(Math.round(x + Math.sin(time * 3 + x) * 5), Math.round(y - 12 - size * 3 - sp * 3), 1, 1);
   }
 
+  /** A scene's signs over heads: surprise, a question, a pause, affection, a tune. */
+  private drawEmotes(w: World): void {
+    const s = w.scene;
+    if (!s?.emotes.length) return;
+    const g = this.g;
+    const GLYPH: Record<string, [string, string]> = { alert: ['!', '#ffcf5a'], question: ['?', '#9fd8ff'], dots: ['…', '#f2ead8'], heart: ['♥', '#ff6a8a'], note: ['♪', '#c8f0a0'] };
+    g.save();
+    g.font = '800 7px "Bricolage Grotesque Variable", system-ui, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.imageSmoothingEnabled = true;
+    for (const e of s.emotes) {
+      const who = e.who === 'hero' ? w.player : (w.npcs.find((n) => n.id === e.who) ?? w.pets.find((p) => !p.dead && p.def.id === e.who));
+      if (!who) continue;
+      const [ch, col] = GLYPH[e.icon] ?? GLYPH.alert!;
+      // pops up, bobs, fades
+      const k = clamp(e.t / 0.15, 0, 1);
+      const fade = clamp((1.4 - e.t) / 0.3, 0, 1);
+      const x = Math.round(who.x);
+      const y = Math.round(who.y - 36 - k * 3 + Math.sin(e.t * 9) * 0.6);
+      g.globalAlpha = fade;
+      g.fillStyle = 'rgba(27,20,40,0.9)';
+      g.beginPath();
+      g.arc(x, y, 5.5, 0, TAU);
+      g.fill();
+      g.fillStyle = col;
+      g.fillText(ch, x, y + 0.5);
+    }
+    g.restore();
+  }
+
   /** Lines over people's heads (companions shouting in a fight, villagers crying out). */
   private drawSpeech(w: World): void {
+    this.drawEmotes(w);
     const speech = w.story.speech;
     if (!speech.length) return;
     const g = this.g;

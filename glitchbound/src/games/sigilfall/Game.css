@@ -1552,6 +1552,55 @@
 .rb-bslot.is-sel {
   box-shadow: 0 0 0 3px var(--rb-gold);
 }
+.rb-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+/* a scene playing: letterbox bars, a skip button */
+.rb-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.rb-scene-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 9%;
+  background: #0b0812;
+  transform: translateY(-100%);
+  transition: transform 0.35s ease;
+}
+.rb-scene-bar.is-low {
+  top: auto;
+  bottom: 0;
+  transform: translateY(100%);
+}
+.rb-scene.is-on .rb-scene-bar {
+  transform: none;
+}
+.rb-scene-skip {
+  position: absolute;
+  right: calc(14px + var(--sa-r));
+  bottom: calc(10px + var(--sa-b));
+  padding: 6px 14px;
+  border: 2px solid #5a4a82;
+  border-radius: 8px;
+  background: rgb(27 20 40 / 0.85);
+  color: #f2ead8;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.rb-scene.is-on .rb-scene-skip {
+  opacity: 1;
+  pointer-events: auto;
+}
 /* the Wardrobe */
 .rb-look-tile {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--rc, #6a5a8a) 55%, transparent);

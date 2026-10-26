@@ -139,7 +139,7 @@ function eldersHall(): CityPlan {
   c.prop('bookshelf', 9, 2);
   c.prop('cupboard', 8, 2);
   c.prop('block', 10, 2);
-  // the elder's long table; from dawn on, the camp's war table with Pell's ledger beside it
+  // the elder's long table; from dawn on, the camp's war table with Rook's ledger beside it
   wide(c, 'longtable', 9, 6, 3, not(CAMP));
   wide(c, 'war-table', 9, 6, 3, CAMP);
   for (const x of [7, 11]) c.prop('chair', x, 8, false);
@@ -147,7 +147,7 @@ function eldersHall(): CityPlan {
   c.prop('candles', 3, 8);
   c.prop('candles', 15, 8);
   c.prop('rug:#5a3a2a', 9, 9, false);
-  c.npc('clerk-pell', 13, 6);
+  c.npc('ledger-rook', 13, 6);
   c.marker(9, 11, { kind: 'start' });
   return c;
 }
@@ -285,9 +285,9 @@ const NPCS: Record<string, NpcDef> = {
       { lines: ['The bell hasn’t rung in three weeks. The rope still swings at night, with nobody on it.', 'Sit if you need to. The pews are hard. That’s on purpose; you’re meant to stay awake in here.'] },
     ],
   },
-  'clerk-pell': {
-    id: 'clerk-pell',
-    name: 'Pell',
+  'ledger-rook': {
+    id: 'ledger-rook',
+    name: 'Rook',
     title: 'Keeps the camp’s ledger',
     sprite: 'villager',
     talk: [
@@ -353,7 +353,7 @@ const build = (c: CityPlan): ReturnType<CityPlan['build']> => c.build();
 export const INTERIORS: ZoneModule[] = [
   { region: region('bramble-and-barrel', 'The Bramble & Barrel', 'Briarhollow’s inn', 'tavern', 'briarhollow', build(brambleAndBarrel()), ['hob-bramble', 'fiddler-wil', 'old-jory'], 'A low warm room of casks and gossip, its hearth always lit.'), npcs: { 'hob-bramble': NPCS['hob-bramble']!, 'fiddler-wil': NPCS['fiddler-wil']!, 'old-jory': NPCS['old-jory']! }, quests: [] },
   { region: region('chapel-of-the-bell', 'Chapel of the Bell', 'Briarhollow’s chapel', 'greathall', 'briarhollow', build(chapelOfTheBell()), ['sister-anwen'], 'Pews, candles and a bell rope that swings with nobody on it.'), npcs: { 'sister-anwen': NPCS['sister-anwen']! }, quests: [] },
-  { region: region('elders-hall', 'The Elder’s Hall', 'Briarhollow’s council room', 'tavern', 'briarhollow', build(eldersHall()), ['clerk-pell'], 'Where the village argued about harvests, and the camp plans a war.'), npcs: { 'clerk-pell': NPCS['clerk-pell']! }, quests: [] },
+  { region: region('elders-hall', 'The Elder’s Hall', 'Briarhollow’s council room', 'tavern', 'briarhollow', build(eldersHall()), ['ledger-rook'], 'Where the village argued about harvests, and the camp plans a war.'), npcs: { 'ledger-rook': NPCS['ledger-rook']! }, quests: [] },
   { region: region('ember-hearth', 'The Ember Hearth', 'An inn of the Crown City', 'tavern', 'emberwick', build(emberHearth()), ['minstrel-corra', 'merchant-dace'], 'The city’s best hearth and its worst gossip.'), npcs: { 'minstrel-corra': NPCS['minstrel-corra']!, 'merchant-dace': NPCS['merchant-dace']! }, quests: [] },
   { region: region('great-hall', 'The Great Hall', 'The Ember Keep', 'greathall', 'emberwick', build(greatHall()), ['steward-aldous'], 'The king’s court hall; the Regent’s war room.'), npcs: { 'steward-aldous': NPCS['steward-aldous']! }, quests: [] },
   { region: region('brannocs-forge', 'Brannoc’s Forge', 'A smithy of the Crown City', 'tavern', 'emberwick', build(brannocsForge()), ['apprentice-kit'], 'Bellows, quench and the ring of the anvil.'), npcs: { 'apprentice-kit': NPCS['apprentice-kit']! }, quests: [] },

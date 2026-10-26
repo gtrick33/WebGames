@@ -716,8 +716,8 @@ Object.assign(TOWNSFOLK_LOOKS, {
   'old-jory': folk('#d8a888', '#d8d4cc', 'short', ['tunic', '#5a4a3a'], '#3a3028', { beard: '#d8d4cc' }),
   // Sister Anwen: undyed wool with the blue of the bell
   'sister-anwen': folk('#e8c0a0', '#4a3428', 'long', ['robe', '#d8d0b8'], '#4a4a5a', { head: { style: 'hood', mat: 'cloth', tint: '#2a4a7a', r: 'common' } }),
-  // Pell: ink on the fingers, spectacles in the pocket
-  'clerk-pell': folk('#c89068', '#2a2420', 'short', ['tunic', '#3a4a5a'], '#2a2a34'),
+  // Rook: ink on the fingers, spectacles in the pocket
+  'ledger-rook': folk('#c89068', '#2a2420', 'short', ['tunic', '#3a4a5a'], '#2a2a34'),
   // Corra of the Nine Strings: a minstrel's crimson and gold
   'minstrel-corra': folk('#b87858', '#1a1418', 'pony', ['tunic', '#a82a3a'], '#2a1e2a', { cape: '#d8a040' }),
   // Dace Woolwright: his own best wool, three layers of it

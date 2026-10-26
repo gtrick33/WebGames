@@ -20,6 +20,23 @@ import { TouchControls } from './Touch';
 import { uiIcon } from './uiIcons';
 
 /** Registers a per-frame DOM update (no React render per frame). */
+/** A scene playing (sim/scene.ts): bars top and bottom, and a way to skip it. */
+function SceneBars({ engine }: { engine: SigilEngine }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useFrame(engine, (w) => {
+    if (ref.current) ref.current.classList.toggle('is-on', !!w.scene);
+  });
+  return (
+    <div className="rb-scene" ref={ref} aria-hidden={!engine.world?.scene}>
+      <div className="rb-scene-bar" />
+      <div className="rb-scene-bar is-low" />
+      <button className="rb-scene-skip" onClick={() => engine.skipScene()}>
+        Skip {engine.touchMode ? '›' : '(Space)'}
+      </button>
+    </div>
+  );
+}
+
 export function useFrame(engine: SigilEngine, fn: (w: World) => void): void {
   const ref = useRef(fn);
   useEffect(() => {
@@ -54,6 +71,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       )}
       {ui.levelUp && <LevelUp engine={engine} />}
       {!overlay && (engine.touchMode ? <TouchControls engine={engine} /> : <DesktopBar engine={engine} />)}
+      <SceneBars engine={engine} />
       {ui.dialogue && <Dialogue engine={engine} />}
       {ui.travel && <TravelConfirm engine={engine} />}
       {ui.pause && <PauseMenu engine={engine} />}

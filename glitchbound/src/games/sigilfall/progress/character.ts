@@ -89,6 +89,8 @@ export interface Character {
   /** The Wardrobe (blueprint §6.2): looks owned for good (progress/wardrobe.ts), and those worn over gear by slot. */
   looks: string[];
   worn: Partial<Record<LookSlot, string>>;
+  /** Has been jumped to a story beat with a review preset (progress/presets.ts): sends no arcade scores. */
+  review?: boolean;
   /** Mounts owned for good, and the one the mount key summons. */
   mounts: string[];
   mount: string | null;

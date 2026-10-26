@@ -18,6 +18,8 @@ import { Renderer } from './render/renderer';
 import { Sound, type MusicId } from './audio/sound';
 import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
+import { endScene } from './sim/scene';
+import { applyPreset, PRESETS } from './progress/presets';
 
 /**
  * The game around the simulation: heroes and the save, travelling between regions, expeditions
@@ -111,6 +113,8 @@ export class SigilEngine {
     const loaded = loadSave();
     this.save = loaded.save;
     this.loadStatus = loaded.status;
+    // a first visit takes the device's reduced-motion setting
+    if (loaded.status === 'new' && typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) this.save.settings.reducedMotion = true;
     this.canSave = loaded.status !== 'newer' && loaded.status !== 'blocked';
     this.touchMode = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     this.defaultName = playerName;
@@ -242,6 +246,14 @@ export class SigilEngine {
         f.aimX = null;
         f.aimY = null;
       }
+      // a scene playing: the hero's keys skip it (Space, Enter, a click or a tap on attack)
+      if (w.scene) {
+        if (f.interact || f.casts.some((c) => c.slot === 'dodge' || c.slot === 'basic')) endScene(w, true);
+        f.casts = [];
+        f.holdBasic = null;
+        f.interact = false;
+        f.mount = false;
+      }
       for (const c of f.casts) if (c.angle !== null && this.touchMode) c.assist = this.settings.aimAssist;
       if (f.holdBasic && this.touchMode && f.holdBasic.angle !== null) f.holdBasic.assist = this.settings.aimAssist;
       let acc = dt;
@@ -369,6 +381,7 @@ export class SigilEngine {
           this.scheduleSave(1200);
           changed = true;
           break;
+        case 'scene':
         case 'hero':
         case 'quest':
         case 'discover':
@@ -464,6 +477,7 @@ export class SigilEngine {
   private applySettings(): void {
     const s = this.settings;
     this.sound.setVolumes({ master: s.master, music: s.music, sfx: s.sfx, muted: s.muted });
+    this.renderer.reducedMotion = s.reducedMotion;
     if (this.kbm) {
       this.kbm.ultKey = s.ultKey;
       this.kbm.skill4Key = s.skill4Key;
@@ -579,7 +593,8 @@ export class SigilEngine {
     const s = this.summary(false);
     const score = Math.round(s.xp + s.gold * 2 + s.bosses * 250);
     this.hero.stats.bestRun = Math.max(this.hero.stats.bestRun, score);
-    this.host.report({ type: 'end', score, stats: { level: this.hero.level, kills: s.kills, bosses: s.bosses } });
+    // a review hero (jumped to a story beat) plays for looking, not for the leaderboard
+    if (!this.hero.review) this.host.report({ type: 'end', score, stats: { level: this.hero.level, kills: s.kills, bosses: s.bosses } });
     // the vendors have new stock when you come back
     restock(this.hero);
     if (toast && (s.kills || s.items.length)) this.toast(`Expedition over: +${s.xp} XP, +${s.gold} gold`, 'good', undefined, `${s.kills} foes defeated${s.items.length ? ` · ${s.items.length} items` : ''}`);
@@ -787,6 +802,28 @@ export class SigilEngine {
 
   drinkPotion(): void {
     this.world?.drinkPotion();
+    this.bump();
+  }
+
+  /** Review presets are offered on the dev server and with `?review` in the address. */
+  get reviewTools(): boolean {
+    return import.meta.env.DEV || (typeof location !== 'undefined' && new URLSearchParams(location.search).has('review'));
+  }
+
+  /** Jumps the hero to a story beat (progress/presets.ts) and takes them there. */
+  usePreset(id: string): void {
+    const p = PRESETS.find((x) => x.id === id);
+    if (!p || !this.hero || !this.reviewTools) return;
+    applyPreset(this.hero, p);
+    this.world?.rebuild();
+    this.ui = { ...this.ui, panel: null, pause: false };
+    this.travel(p.region, 0, []);
+    this.toast(`Review: ${p.label}`, 'info', undefined, 'This hero now plays for review and sends no arcade scores.');
+  }
+
+  /** Skips the scene playing (its walks end where they were going). */
+  skipScene(): void {
+    if (this.world?.scene) endScene(this.world, true);
     this.bump();
   }
 

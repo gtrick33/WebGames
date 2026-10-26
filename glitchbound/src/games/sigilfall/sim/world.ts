@@ -12,6 +12,7 @@ import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionD
 import { ACTION_SLOTS, SKILL_SLOTS } from '../data/types';
 import type { Marker, RegionStateDef, StoryCond } from '../data/types';
 import { holds, regionState, StoryDirector } from './story';
+import { maybeStartScene, updateScene, type ScenePlay } from './scene';
 import { buildHero, type HeroBuild } from '../progress/build';
 import { addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME } from '../progress/character';
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
@@ -178,6 +179,9 @@ export class World {
   private exitInside = -1;
   /** The hero just stepped onto an exit: the engine offers to travel. */
   pendingExit: Interactable | null = null;
+  /** The scene playing (sim/scene.ts), or null. */
+  scene: ScenePlay | null = null;
+  private sceneCheck = 0;
   waystones: { x: number; y: number }[] = [];
   exits: { x: number; y: number; to: RegionId; label: string; minLevel?: number; needs?: string; door?: boolean }[] = [];
   shrines: { x: number; y: number; id: string }[] = [];
@@ -833,6 +837,13 @@ export class World {
     if (this.player.dead) dt *= 0.35;
     this.time += dt;
     this.shakeAmt = Math.max(0, this.shakeAmt - rawDt * 18);
+    // the story's staged beats: looked for twice a second, played while the hero stands still
+    this.sceneCheck -= rawDt;
+    if (!this.scene && this.sceneCheck <= 0) {
+      this.sceneCheck = 0.5;
+      maybeStartScene(this);
+    }
+    if (this.scene) updateScene(this, rawDt);
     this.updatePlayer(dt);
     this.updateFlow(dt);
     // in the wilds, enemies far away and minding their own business sleep (a zone holds hundreds)
@@ -894,7 +905,8 @@ export class World {
 
   private updatePlayer(dt: number): void {
     const p = this.player;
-    const inp = this.input;
+    // nobody acts while a scene plays
+    const inp = this.scene ? emptyInput() : this.input;
     // the ultimate's charge budget refills at one full bar per ultFloor seconds, and never holds more than one
     const ultRate = 100 / ultFloor(this.hero.level);
     p.ultBudget = Math.min(100, p.ultBudget + dt * ultRate);
@@ -1689,6 +1701,8 @@ export class World {
     const sx = p.x + (this.rand() - 0.5) * 380;
     const sy = p.y + (this.rand() - 0.5) * 230;
     const a = this.rand() * TAU;
+    // reduced motion: a third of the weather
+    if (this.settings.reducedMotion && this.rand() > 0.35) return;
     switch (look.ambient) {
       case 'leaves':
         if (this.rand() < dt * 2.2) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: 12 + this.rand() * 10, vy: 18 + this.rand() * 10, life: 6, size: 1, color: pick([look.leaves[3], look.leaves[4], '#d8b44a']), a });

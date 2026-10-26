@@ -51,6 +51,8 @@ export interface Settings {
   autoTarget: boolean;
   shake: boolean;
   numbers: boolean;
+  /** Calmer screen: no shake, lighter weather (a new save starts from the device's own setting). */
+  reducedMotion: boolean;
   ultKey: 'f' | 't' | 'shift' | 'rmb';
   /** The fourth skill's key (the slot added in blueprint V2.9). */
   skill4Key: 'c' | 'v' | 'z' | 'x';
@@ -73,6 +75,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoTarget: true,
   shake: true,
   numbers: true,
+  reducedMotion: false,
   ultKey: 'f',
   skill4Key: 'c',
   lefty: false,
@@ -117,6 +120,7 @@ export function validateSettings(v: unknown): Settings {
     autoTarget: bool(o.autoTarget, d.autoTarget),
     shake: bool(o.shake, d.shake),
     numbers: bool(o.numbers, d.numbers),
+    reducedMotion: bool(o.reducedMotion, d.reducedMotion),
     ultKey: o.ultKey === 't' || o.ultKey === 'shift' || o.ultKey === 'rmb' ? o.ultKey : 'f',
     skill4Key: o.skill4Key === 'v' || o.skill4Key === 'z' || o.skill4Key === 'x' ? o.skill4Key : 'c',
     lefty: bool(o.lefty, d.lefty),
@@ -200,6 +204,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   }
   if (spent > talentPoints(c) || !talentsLegal(c)) c.talents = {};
   if (o.freeRespec === true) c.freeRespec = true;
+  if (o.review === true) c.review = true;
   c.potions = Math.min(c.potions, potionCap(c));
   // skills: only learned skills of this class
   const learned = learnedSkills(c);

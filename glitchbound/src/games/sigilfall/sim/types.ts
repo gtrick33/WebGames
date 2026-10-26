@@ -402,6 +402,8 @@ export type WorldEvent =
   | { t: 'sfx'; id: string; vol?: number }
   | { t: 'shake'; amount: number }
   | { t: 'toast'; text: string; tone?: 'info' | 'good' | 'warn' | 'loot'; item?: Item }
+  /** A scene began or ended (sim/scene.ts). */
+  | { t: 'scene'; id: string; playing: boolean }
   | { t: 'loot'; item: Item }
   | { t: 'levelup'; level: number }
   | { t: 'questDone'; quest: string }

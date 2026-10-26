@@ -23,6 +23,7 @@ import { objectiveTarget } from '../sim/objective';
 import { npcRegion, regionLinks } from '../sim/routes';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
 import { ShopPanel } from './Shop';
+import { PRESETS } from '../progress/presets';
 
 const TABS: { id: PanelId; label: string }[] = [
   { id: 'hero', label: 'Hero' },
@@ -928,6 +929,10 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             <input type="checkbox" checked={s.numbers} onChange={(e) => set({ numbers: e.target.checked })} />
             <span>Damage numbers</span>
           </label>
+          <label className="rb-check">
+            <input type="checkbox" checked={s.reducedMotion} onChange={(e) => set({ reducedMotion: e.target.checked })} />
+            <span>Reduced motion (no shake, calmer weather and effects)</span>
+          </label>
           <button className="rb-btn is-small is-ghost" onClick={() => engine.resetSettings()}>
             Reset settings
           </button>
@@ -935,6 +940,19 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             {engine.canSave ? 'Your heroes are saved on this device. Sign in on GlitchBound and they follow you to your other devices.' : 'Saving is off on this device right now.'}
           </span>
         </section>
+        {engine.reviewTools && engine.hero && (
+          <section>
+            <span className="rb-kicker">Review presets</span>
+            <span className="rb-small rb-dim">Jumps this hero to a story beat. The hero then plays for review only and sends no arcade scores.</span>
+            <div className="rb-presets">
+              {PRESETS.map((p) => (
+                <button key={p.id} className="rb-btn is-small is-ghost" onClick={() => engine.usePreset(p.id)}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </Frame>
   );

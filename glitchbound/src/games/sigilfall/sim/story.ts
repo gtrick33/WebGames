@@ -86,6 +86,17 @@ export class StoryDirector {
     if (lines) this.queue.push(...lines);
   }
 
+  /** A line said at once, for as long as given (a scene's: sim/scene.ts paces them itself). */
+  speakNow(b: Bark, dur: number): void {
+    this.speech = this.speech.filter((s) => s.who !== b.who);
+    this.speech.push({ who: b.who, text: b.text, t: 0, dur });
+  }
+
+  /** These people stop talking (a skipped scene's lines are not left hanging). */
+  hush(who: string[]): void {
+    this.speech = this.speech.filter((s) => !who.includes(s.who));
+  }
+
   update(dt: number): void {
     const w = this.w;
     // lines over heads
