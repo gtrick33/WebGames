@@ -81,3 +81,24 @@ No hero, companion or Hallow King is an untouched store sprite.
 
 Every visual phase saves desktop, phone and tablet screenshots in `docs/review/phase-XX/` (the dev page's
 `window.__rbShot`), plus a before/after where a baseline exists.
+
+## Feedback conventions: sound and effects (blueprint Prompt 15)
+
+Every sound is synthesized (audio/sound.ts), on one bus per kind, under the master, music and effects volumes
+(Settings, saved). The same moment always sounds the same way:
+
+| Moment | Sound | Effect on screen |
+| --- | --- | --- |
+| A hero's hit, crit | `hit`, `crit` (a sharper top) | white numbers (gold for crits), hit-stop on heavy blows |
+| A hero's spell | its school's voice (`bolt`, `fireball`, `freeze`, `zap`, `holy`, `shadow`, `nature`) | the class's colors, Magic Spells VFX |
+| An enemy winding up | `enemyWindup` | a red/orange telegraph on the ground, always the danger colors |
+| A boss's big attack | `roar`, `slam`, `beamCharge` | a larger telegraph, a screen shake (off with reduced motion) |
+| Loot | `pickup`; `epic`, `legendary` for those rarities | a beam in the rarity's color |
+| A quest offered / finished | `quest` / `questDone` | a toast; the "!" over the giver |
+| A story fight begins | `roar` (an arrival: `quest`) | a banner with the quest's name |
+| A scene begins | `scene` | letterbox bars |
+| Level up, talent | `levelup`, `talent` | the level-up card |
+| A bell (the Epilogue) | `bell` | — |
+| Riding | `whistle` (calling), `mount`, `dismount` | the mount fading in; dust where the hero gets down |
+
+Reduced motion (Settings) turns off screen shake and canopy shimmer and thins the weather to a third.

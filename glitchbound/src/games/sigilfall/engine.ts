@@ -339,6 +339,7 @@ export class SigilEngine {
         case 'questDone': {
           const q = QUEST_DEFS[ev.quest];
           if (q) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, q.reward.text);
+          this.sound.play('questDone');
           break;
         }
         case 'questStart':
@@ -382,6 +383,9 @@ export class SigilEngine {
           changed = true;
           break;
         case 'scene':
+          if (ev.playing) this.sound.play('scene');
+          changed = true;
+          break;
         case 'hero':
         case 'quest':
         case 'discover':

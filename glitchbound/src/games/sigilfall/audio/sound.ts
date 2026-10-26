@@ -104,6 +104,12 @@ const SFX: Record<string, (s: Sound) => void> = {
   open: (s) => s.tones([{ f: 520, dur: 0.05, gain: 0.025, type: 'triangle' }, { f: 780, dur: 0.06, gain: 0.02, type: 'triangle', at: 0.04 }]),
   close: (s) => s.tones([{ f: 780, dur: 0.05, gain: 0.02, type: 'triangle' }, { f: 520, dur: 0.06, gain: 0.02, type: 'triangle', at: 0.04 }]),
   talent: (s) => s.tones([0, 7, 12].map((n, i) => ({ f: hz(76 + n), dur: 0.12, gain: 0.03, type: 'sine' as OscillatorType, at: i * 0.05 }))),
+  // a quest finished: a short brass-like fanfare that resolves (distinct from the level-up's run)
+  questDone: (s) => s.tones([0, 7, 12, 16].map((n, i) => ({ f: hz(67 + n), dur: i === 3 ? 0.5 : 0.14, gain: 0.035, type: 'triangle' as OscillatorType, at: i * 0.11 }))),
+  // a scene begins: two soft low notes under the letterbox
+  scene: (s) => s.tones([{ f: hz(55), dur: 0.6, gain: 0.03, type: 'sine' }, { f: hz(62), dur: 0.8, gain: 0.025, type: 'sine', at: 0.25 }]),
+  // a church bell: a struck fundamental with its out-of-tune partials, ringing long
+  bell: (s) => s.tones([1, 2, 2.4, 3, 4.2, 5.4].map((k, i) => ({ f: 196 * k, dur: 2.8 - i * 0.35, gain: [0.05, 0.035, 0.025, 0.02, 0.012, 0.008][i]!, type: 'sine' as OscillatorType }))),
   checkpoint: (s) => s.tones([{ f: hz(79), dur: 0.2, gain: 0.03, type: 'sine' }, { f: hz(86), dur: 0.3, gain: 0.03, type: 'sine', at: 0.12 }]),
 };
 
