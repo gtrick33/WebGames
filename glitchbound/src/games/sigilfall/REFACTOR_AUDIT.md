@@ -31,7 +31,7 @@ repository is an open licensing risk (ASSET_AUDIT.md, escalations).
 | Quests that can never finish | **Guarded.** All 296 quests are checked: sight on the map in the quest's zone, kill/loot targets living there, the person standing somewhere, the boss having a room, prerequisites existing. All pass. | same file |
 | Duskspire / dungeon registry mismatch | **Guarded.** No road or door in the shipped build leads to an unregistered region; Duskspire's files are inert until Act IV registers them. | `tests/sigilfall-ids.test.ts` |
 | Ultimate spam (multi-hit/DoT) | Fixed in Act III: charge normalized to the class's reference damage and rate-limited by a level-scaled token bucket (`ultFloor`, sim/world.ts); DoT ticks charge at 40 %. | economy/sim tests |
-| Stuck joystick / pointer ownership | **Not reproduced.** The stick releases on pointerup, pointercancel, lostpointercapture, window blur, tab hide, and when the controls unmount (a menu opening). Needs the device, browser and steps that reproduce it. | ui/Touch.tsx |
+| Stuck joystick / pointer ownership | **Not reproduced; regression-tested.** The stick releases on pointerup, pointercancel, lostpointercapture, window blur, tab hide, and when the controls unmount (a menu opening); a second finger can't take the stick over. | `tests/sigilfall-touch.test.tsx` |
 | Camera jitter vs shake | **Fixed** (`6943aa45`). Root cause: the camera leaned on the aim, and the mouse aim is measured from the camera, so each camera move changed the next lean; the view also stepped a whole world pixel (6 device px). Lean now follows the cursor's place on screen; the camera moves a device pixel at a time. | `tests/sigilfall-camera.test.ts` |
 | Tree/roof depth sorting | Not reproduced. Needs the place and screenshot. | — |
 | Loot frequency / clutter | Open (P2). To be retuned with the progression pass (Prompt 3). | — |
@@ -41,4 +41,4 @@ repository is an open licensing risk (ASSET_AUDIT.md, escalations).
 
 ## Next phases
 
-See EXECUTION_PLAN.md (Section 13 order). Phase 2, the vertical slice, is next.
+See EXECUTION_PLAN.md (the whole game, prompt by prompt) and SIGILFALL_QA.md (how a build is checked, coverage, known issues).

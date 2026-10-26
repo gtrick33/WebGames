@@ -12,7 +12,7 @@ Status words: **done** (built, tested, screenshot-checked), **partial** (what is
 
 | # | Blueprint point | Status |
 | --- | --- | --- |
-| 1 | Stabilization: joystick/multitouch, camera vs shake, depth sorting, Open Barrow, registry (incl. Duskspire), ultimate spam, quest activation, save migrations, HUD clipping, SIGILFALL_QA.md | camera, Open Barrow, registry, ultimate, activation, migrations **done**. Joystick and depth sorting **not reproduced** (REFACTOR_AUDIT.md). **Open**: SIGILFALL_QA.md, a multitouch regression test, HUD screenshots at phone/tablet sizes |
+| 1 | Stabilization: joystick/multitouch, camera vs shake, depth sorting, Open Barrow, registry (incl. Duskspire), ultimate spam, quest activation, save migrations, HUD clipping, SIGILFALL_QA.md | camera, Open Barrow, registry, ultimate, activation, migrations **done**. joystick **regression-tested** (`sigilfall-touch`), depth sorting **not reproduced** (REFACTOR_AUDIT.md); SIGILFALL_QA.md **done**. **Open**: HUD screenshots at phone/tablet sizes (with Prompt 16) |
 | 2 | Briarhollow + Prologue + Chapel Crypt + one class with the 4th slot; world states and events; accept step | **done**, with interiors: the Bramble & Barrel, the Chapel of the Bell and the Elder’s Hall (data/interiors.ts), barred on the raid night, furnished by the camp’s progress |
 | 3 | Progression rebalance | **done** (`17208eeb`) |
 | 4 | Master hero (Mage) re-render + CHARACTER_ART_BIBLE.md, then the other six; portraits | **open** |
