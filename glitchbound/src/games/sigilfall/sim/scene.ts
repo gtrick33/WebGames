@@ -71,8 +71,8 @@ export function maybeStartScene(w: World): void {
       const at = where(w, def.near);
       if (!at || dist(at.x, at.y, w.player.x, w.player.y) > (def.r ?? 90)) continue;
     }
-    // never with an enemy about
-    if (w.enemies.some((e) => !e.dead && !e.dummy && dist(e.x, e.y, w.player.x, w.player.y) < 200)) return;
+    // never in a fight, nor with an enemy at the hero's elbow (idle packs further off may watch)
+    if (w.player.calm < 3 || w.enemies.some((e) => !e.dead && !e.dummy && (e.aggro || dist(e.x, e.y, w.player.x, w.player.y) < 100))) return;
     w.scene = { def, step: 0, t: 0, begun: false, focus: null, emotes: [] };
     w.dismount();
     w.emit({ t: 'scene', id: def.id, playing: true });
@@ -84,6 +84,13 @@ export function maybeStartScene(w: World): void {
 export function updateScene(w: World, dt: number): void {
   const s = w.scene;
   if (!s) return;
+  // something attacks: the scene stops (it plays again another time) and the fight is the hero's
+  if (w.enemies.some((e) => !e.dead && !e.dummy && e.aggro)) {
+    w.story.hush(s.def.steps.flatMap((st) => ('say' in st ? [st.say] : [])));
+    w.scene = null;
+    w.emit({ t: 'scene', id: s.def.id, playing: false });
+    return;
+  }
   for (const e of s.emotes) e.t += dt;
   s.emotes = s.emotes.filter((e) => e.t < 1.4);
   const step = s.def.steps[s.step];

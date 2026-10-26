@@ -109,4 +109,17 @@ describe('Sigilfall: scenes', () => {
     startAt(back, def.id);
     expect(back.scene?.step).toBe(0);
   });
+
+  it('an attack stops a scene, which then plays another time', () => {
+    const def = SCENES[0]!;
+    const c = atScene(def.id);
+    const w = newWorld(def.region, c);
+    startAt(w, def.id);
+    expect(w.scene).not.toBeNull();
+    const foe = w.addEnemy('skeleton', w.player.x + 140, w.player.y, 5, { room: -1, pack: 0 });
+    foe.aggro = true;
+    run(w, 0.1);
+    expect(w.scene).toBeNull();
+    expect(c.opened).not.toContain(`scene:${def.id}`);
+  });
 });
