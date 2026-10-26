@@ -52,6 +52,8 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* the controls fit the stage they are in (a phone on its side keeps the site's bars round a short stage) */
+  container: rb-stage / size;
 }
 .rb-ui button,
 .rb-ui .rb-modal,
@@ -2509,4 +2511,54 @@
   border-color: var(--rb-ink);
   background: var(--sigil);
   box-shadow: 0 0 6px var(--sigil);
+}
+
+/* a short stage (a phone on its side inside the page): the thumb cluster shrinks to fit under the top bar,
+   and the quest tracker and minimap make room */
+@container rb-stage (max-height: 340px) {
+  .rb-cluster {
+    transform: scale(0.8);
+    transform-origin: bottom right;
+  }
+  .is-lefty .rb-cluster {
+    transform: scale(0.8) scaleX(-1);
+    transform-origin: bottom left;
+  }
+  .rb-tracker {
+    display: none;
+  }
+}
+@container rb-stage (max-height: 280px) {
+  .rb-cluster {
+    transform: scale(0.66);
+  }
+  .is-lefty .rb-cluster {
+    transform: scale(0.66) scaleX(-1);
+  }
+  .rb-minimap-hud {
+    display: none;
+  }
+  /* the interact button beside the cluster, low, out of the top bar's way */
+  .rb-interact {
+    right: calc(196px + var(--sa-r));
+    bottom: calc(10px + var(--sa-b));
+  }
+  .is-lefty .rb-interact {
+    right: auto;
+    left: calc(196px + var(--sa-l));
+  }
+}
+@container rb-stage (max-height: 230px) {
+  .rb-cluster {
+    transform: scale(0.56);
+  }
+  .is-lefty .rb-cluster {
+    transform: scale(0.56) scaleX(-1);
+  }
+  .rb-interact {
+    right: calc(166px + var(--sa-r));
+  }
+  .is-lefty .rb-interact {
+    left: calc(166px + var(--sa-l));
+  }
 }

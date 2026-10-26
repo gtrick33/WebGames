@@ -48,3 +48,9 @@ a story beat.
 - Riding the Briarhollow Chestnut and the Royal Warhorse in four facings, with a Wardrobe hat on the rider.
 - All six interiors entered through their doors; the camp's banners and cots show by progress.
 - The first-dawn scene in Briarhollow through the review preset.
+- A phone on its side (740 × 360) inside the page: the site's bars leave the game a 192 px stage; the thumb
+  cluster now scales to the stage's own height (container queries in Game.css) and the tracker, minimap and
+  interact button make room. A tablet (768 × 1024) shows the turn-sideways hint over a HUD that fits.
+- Every land toured at 640 × 360: hairlines between ground chunks in small windows (fixed), one cave mouth for
+  every dungeon (each has its own door now), the same pillar ring in every ruin (each land's own stones now),
+  the fey wood's noisy paving (plain cobble now), sparse meadows (plants in clumps now).

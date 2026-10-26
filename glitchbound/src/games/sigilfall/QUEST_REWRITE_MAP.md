@@ -358,3 +358,19 @@ chains open from quests the shipped game already has.
 | Act V · end | `the-seventh-sigil` | Elyra at Lastlight takes the last two and cannot find the hero's name | Act VI |
 
 Still unregistered: the Pale Reach, Duskspire (Act VI and the finale) and Frostfang.
+
+## The five-beat audit (blueprint Prompt 8)
+
+Run over every chain (a quest nothing comes after, walked back to its root), counting its beats by kind and
+checking what in the world remembers each quest (region states, story markers, people's lines):
+
+- **Main story**: every chain opens with a setup beat (a talk or a place found), escalates through fights
+  and things carried home, and closes on a boss or a story event, then a talk; every main quest is named by at
+  least one state, marker or line that changes when it is done. The Vale (Act I), the camp's arrivals, the road
+  (Act II), the Tear and Fernstead (Act III), Highwall and the Gates (Act IV) and the Dead Kingdom (Act V) all
+  have playable story events at their turns.
+- **Weakest main chain**: Rimeheld (Act III, Sigrun). It is talk, search, fights, the vault's two bosses; its
+  turn (Sigrun sparing Hrimfang) is told, not played. Backlog: a story event at the sledge camp (lead the
+  survivors to Frostgate) and Frostgate's state after the vault.
+- **Side quests**: every one pays an item, a perk or a way on, or is remembered by someone; the hunts (a named
+  beast at the end of a short chain) are the plainest, and are kept short on purpose.
