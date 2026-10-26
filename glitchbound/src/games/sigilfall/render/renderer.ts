@@ -1,4 +1,5 @@
 import { clamp, damp, dist, hash2, TAU } from '../core/math';
+import { LEAD, leanTarget, LIFT, placeCamera } from './camera';
 import { THEMES } from '../data/themes';
 import type { ClassId } from '../data/types';
 import { bossHidden } from '../sim/boss';
@@ -131,8 +132,11 @@ export class Renderer {
     let s = Math.max(1, Math.round((landscape ? devH : devW * 1.25) / target));
     if (shortSide / s < 150 * DETAIL) s = Math.max(1, Math.floor(shortSide / (150 * DETAIL)));
     this.scale = s;
-    const aw = Math.ceil(devW / s / DETAIL) * DETAIL;
-    const ah = Math.ceil(devH / s / DETAIL) * DETAIL;
+    this.dpr = dpr;
+    // one world pixel more than the element on each axis: the canvas slides by the camera's
+    // fraction of an art pixel (see placeCamera), and the extra column and row fill the gap
+    const aw = Math.ceil(devW / s / DETAIL) * DETAIL + DETAIL;
+    const ah = Math.ceil(devH / s / DETAIL) * DETAIL + DETAIL;
     this.vw = aw / DETAIL;
     this.vh = ah / DETAIL;
     if (this.canvas.width !== aw || this.canvas.height !== ah) {
@@ -143,6 +147,7 @@ export class Renderer {
     // the canvas is shown a touch larger than the element when the division isn't exact
     this.canvas.style.width = `${(aw * s) / dpr}px`;
     this.canvas.style.height = `${(ah * s) / dpr}px`;
+    this.slideX = this.slideY = NaN;
     if (this.light.width !== aw || this.light.height !== ah) {
       this.light.width = aw;
       this.light.height = ah;
@@ -164,29 +169,43 @@ export class Renderer {
     this.look = heroLook(cls, w.hero.equip);
   }
 
-  /** The camera's lean toward the aim (and a boss), smoothed; the camera itself is pinned to the hero's pixel. */
+  /** The camera's lean toward the aim (and a boss), smoothed (see camera.ts). */
   private leanX = 0;
-  private leanY = -8;
+  private leanY = LIFT;
+  /** The mouse on the view, -0.5 to 0.5 from its center on each axis (null: no mouse in use). */
+  pointer: { x: number; y: number } | null = null;
+  private dpr = 1;
+  /** The CSS slide last given to the canvas, in device pixels. */
+  private slideX = NaN;
+  private slideY = NaN;
+  /** Where the world is drawn from this frame: the camera rounded down to an art pixel. */
+  private drawX = 0;
+  private drawY = 0;
 
   /** Puts the camera on the hero at once (after loading a region or respawning). */
   snap(w: World): void {
     this.leanX = 0;
-    this.leanY = -8;
+    this.leanY = LIFT;
     this.placeCamera(w);
   }
 
-  /**
-   * The camera follows the hero's rounded position exactly, plus the smoothed lean, so the hero never
-   * wobbles a pixel against the ground while walking (rounding the two separately made them shimmer).
-   */
+  /** The hero's position rounded to an art pixel: the camera is pinned to it, so the hero never wobbles. */
+  private heroPos(w: World): { x: number; y: number } {
+    return { x: Math.round(w.player.x * DETAIL) / DETAIL, y: Math.round(w.player.y * DETAIL) / DETAIL };
+  }
+
   private placeCamera(w: World): void {
-    const p = w.player;
-    const mapW = w.map.w * TILE;
-    const mapH = w.map.h * TILE;
-    const x = Math.round(p.x) + Math.round(this.leanX - this.vw / 2);
-    const y = Math.round(p.y) + Math.round(this.leanY - this.vh / 2);
-    this.camX = mapW <= this.vw ? Math.round((mapW - this.vw) / 2) : clamp(x, 0, mapW - this.vw);
-    this.camY = mapH <= this.vh ? Math.round((mapH - this.vh) / 2) : clamp(y, 0, mapH - this.vh);
+    // what is actually on screen: the drawn view less its spare world pixel
+    const c = placeCamera(w.player.x, w.player.y, { x: this.leanX, y: this.leanY }, this.vw - 1, this.vh - 1, w.map.w * TILE, w.map.h * TILE, DETAIL, this.scale);
+    this.camX = c.camX;
+    this.camY = c.camY;
+    this.drawX = c.drawX;
+    this.drawY = c.drawY;
+    if (c.slideX !== this.slideX || c.slideY !== this.slideY) {
+      this.slideX = c.slideX;
+      this.slideY = c.slideY;
+      this.canvas.style.transform = c.slideX || c.slideY ? `translate(${-c.slideX / this.dpr}px, ${-c.slideY / this.dpr}px)` : '';
+    }
   }
 
   /** Lets go of the region's ground painter (a worker). */
@@ -206,9 +225,8 @@ export class Renderer {
     const g = this.g;
     const p = w.player;
     // camera: on the hero, leaning a little toward where they aim (and toward a boss)
-    const lead = p.dead ? 0 : 14;
-    let lx = Math.cos(p.aim) * lead;
-    let ly = Math.sin(p.aim) * lead * 0.7 - 8;
+    const lead = p.dead ? 0 : LEAD;
+    let { x: lx, y: ly } = leanTarget(this.touchMode ? null : this.pointer, p.aim, lead);
     const boss = w.boss();
     if (boss && !boss.dead) {
       lx = lx * 0.8 + (boss.x - p.x) * 0.2;
@@ -218,8 +236,8 @@ export class Renderer {
     this.leanY = damp(this.leanY, ly, 4, dt);
     this.placeCamera(w);
     const shake = this.reducedMotion ? 0 : w.shakeAmt;
-    const ox = this.camX + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
-    const oy = this.camY + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
+    const ox = this.drawX + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
+    const oy = this.drawY + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
 
     // everything is drawn in world pixels; the transform turns them into art pixels
     g.setTransform(DETAIL, 0, 0, DETAIL, 0, 0);
@@ -261,7 +279,18 @@ export class Renderer {
     for (const d of w.drops) if (inView(d.x, d.y)) items.push({ y: d.y, draw: () => this.drawDrop(d.kind, d.x, d.y, d.z, d.item?.r, time, d.t) });
     for (const e of w.enemies) if (inView(e.x, e.y)) items.push({ y: e.y + e.r * 0.6, draw: () => this.drawEnemy(e, time) });
     for (const pet of w.pets) if (inView(pet.x, pet.y)) items.push({ y: pet.y + pet.r * 0.6, draw: () => this.drawPet(pet, time) });
-    items.push({ y: p.y + 5, draw: () => this.drawHero(w, time) });
+    items.push({
+      y: p.y + 5,
+      draw: () => {
+        // the hero's art is placed on whole world pixels: shift it to the art pixel the camera follows
+        const h = this.heroPos(w);
+        const hx = h.x - Math.round(p.x);
+        const hy = h.y - Math.round(p.y);
+        g.translate(hx, hy);
+        this.drawHero(w, time);
+        g.translate(-hx, -hy);
+      },
+    });
     this.drawDoors(w, items);
     items.sort((a, b) => a.y - b.y);
     for (const it of items) it.draw();

@@ -9,6 +9,8 @@ import type { InputFrame } from '../sim/world';
  * dodges, the ultimate on a key you choose. Touch: the on-screen controls write into TouchState.
  */
 
+const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
+
 export type UltKey = 'f' | 't' | 'shift' | 'rmb';
 
 /** Menu shortcuts the keyboard adapter reports to the UI. */
@@ -130,6 +132,14 @@ export class KeyboardMouse {
     if (this.interact) f.interact = true;
     this.potion = false;
     this.interact = false;
+  }
+
+  /** The mouse on the input element, -0.5 to 0.5 from its center (for the camera's lean). */
+  view(): { x: number; y: number } | null {
+    const wd = this.target.clientWidth;
+    const ht = this.target.clientHeight;
+    if (!this.mouse || !wd || !ht) return null;
+    return { x: clamp01(this.mouse.x / wd) - 0.5, y: clamp01(this.mouse.y / ht) - 0.5 };
   }
 
   /** Casts a slot from the desktop skill bar (clicked with the mouse). */

@@ -259,6 +259,7 @@ export class SigilEngine {
     this.handleEvents(w);
     this.renderer.aim = paused ? null : this.touch.aim;
     this.renderer.touchMode = this.touchMode;
+    this.renderer.pointer = this.kbm?.view() ?? null;
     this.renderer.draw(w, paused ? 0 : dt, now / 1000);
     for (const fn of this.frameHooks) fn(w, this);
     // timers that run in real time
