@@ -167,7 +167,8 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
         building(capital ? pick(STYLE.house.capital, h) : pick(r.houses, h), tx, ty, 4);
         break;
       case K.Pillar:
-        stand(pick(['rk:pillar', 'rk:pillar_broken'], h), cx, bottom - 3, 'pillar', true);
+        // a ruin's standing stones are the land's own (graves on the moors, crystals in the fey wood)
+        stand(pick(r.ruins ?? ['rk:pillar', 'rk:pillar_broken'], h), cx, bottom - 3, 'pillar', true);
         break;
       case K.Wall: {
         // woods and boulder fields: a piece on every other tile, more along the clearing

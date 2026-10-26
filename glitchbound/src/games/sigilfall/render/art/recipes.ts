@@ -42,6 +42,8 @@ export interface Recipe {
   /** Map edges and woods: a forest of trees, or a field of boulders (bare lands). */
   edge: 'forest' | 'rocks';
   houses: string[];
+  /** What a ruin's standing stones are in this land (pillars by default): graves, crystals, urns, rubble. */
+  ruins?: string[];
 }
 
 const TREES = ['cps:tree-medium', 'cps:tree-small', 'cps:tree-medium~dark', 'cps:tree-small~dark', 'cps:tree-medium~mint'];
@@ -87,27 +89,27 @@ export const RECIPES: Partial<Record<Theme, Recipe>> = {
   forest: vale({ trees: ['cps:tree-medium~dark', 'cps:tree-medium', 'cps:tree-small~dark', 'cps:tree-medium~teal', 'cps:tree-small~teal'], bushes: ['cps:bushes-large~dark', 'cps:bushes-medium~teal', 'cps:bushes-small'], grade: { bright: -0.03 } }),
   coast: vale({ grade: { tint: ['#d8f0e0', 0.06] }, trees: ['cps:tree-small~mint', 'cps:tree-medium~mint'], flora: ['gv:grass_tuft', 'mf:cattail_reeds'] }, { patches: { set: 'sand', share: 0.3 } }),
   autumn: vale({ trees: ['cps:tree-medium~amber', 'cps:tree-medium~coral', 'cps:tree-small~amber', 'cps:tree-small~coral', 'cps:tree-medium'], bushes: ['cps:bushes-large~amber', 'cps:bushes-medium~coral', 'cps:bushes-small~amber'], grade: { tint: ['#e8b060', 0.08] } }),
-  fey: vale({ trees: ['cps:tree-medium~blossom', 'cps:tree-medium~mint', 'cps:tree-small~blossom', 'cps:tree-medium~teal'], bushes: ['cps:bushes-large~blossom', 'cps:bushes-medium~mint'], flora: ['sr:toadstools', 'sr:blue_bellflowers', 'sr:mushroom_cluster', 'sr:fern'], grade: { hue: -10, sat: 1.08 } }, { water: 'stream', cobble: 'moonstone' }),
-  jungle: vale({ trees: ['cps:tree-medium~dark', 'cps:tree-medium~teal', 'cps:tree-small~dark'], bushes: ['cps:bushes-large~dark', 'cps:bushes-medium~teal'], grade: { sat: 1.1, bright: -0.05 } }),
-  mountain: bare({ grade: { sat: 0.85, tint: ['#9ab0c0', 0.1] }, trees: ['cps:tree-small~dark', 'cps:tree-medium~dark'] }),
-  storm: bare({ grade: { sat: 0.75, bright: -0.12, tint: ['#5a7aa0', 0.16] }, water: { tint: ['#2a4a7a', 0.4], bright: -0.1 } }),
-  desert: bare({ grade: { tint: ['#f0c070', 0.14] } }),
-  barrow: vale({ edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~dead'], bushes: ['cps:bushes-small~dead'], rocks: [...ROCKS, ...BOULDERS], grade: { sat: 0.5, bright: -0.1, tint: ['#8a8a9a', 0.14] } }),
-  moor: vale({ edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~dark'], rocks: [...ROCKS, ...BOULDERS], grade: { sat: 0.6, bright: -0.1, tint: ['#8a6a9a', 0.18] } }),
-  rift: vale({ edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~coral'], rocks: BOULDERS, grade: { hue: 60, sat: 0.8, bright: -0.08, tint: ['#7a4ab0', 0.22] } }),
-  warfront: vale({ edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~dead', 'cps:tree-medium~amber'], rocks: [...ROCKS, ...BOULDERS], grade: { sat: 0.65, bright: -0.06, tint: ['#9a7a5a', 0.14] } }, { patches: { set: 'sand', share: 0.25 } }),
-  snow: vale({ trees: ['cps:tree-medium~snow', 'cps:tree-small~snow', 'cps:tree-medium~dark'], bushes: ['cps:bushes-medium~snow', 'cps:bushes-small~snow'], flora: [], grade: { sat: 0.25, bright: 0.18, tint: ['#e8f4ff', 0.55] }, water: { tint: ['#a8d8f0', 0.5], bright: 0.1 } }),
-  marsh: swamp(),
-  plague: swamp({ grade: { tint: ['#a8b040', 0.14], sat: 0.9 }, water: { tint: ['#8ad04a', 0.4] } }),
-  blight: swamp({ grade: { sat: 0.5, bright: -0.12, tint: ['#6a4a7a', 0.18] } }),
-  sunken: swamp({ grade: { sat: 0.75, bright: -0.08, tint: ['#3a8a8a', 0.2] } }),
-  gloam: swamp({ grade: { sat: 0.6, bright: -0.2, tint: ['#2a6a5a', 0.26] } }),
-  haunted: vale({ edge: 'rocks', trees: ['cps:tree-medium~dead'], grade: { sat: 0.4, bright: -0.16, tint: ['#4a6a8a', 0.22] } }),
-  volcanic: bare({ grade: { sat: 0.5, bright: -0.2, tint: ['#5a3a30', 0.3] }, water: { hue: 150, tint: ['#ff7a2a', 0.7], bright: 0.06, sat: 1.4 } }),
-  deadlake: vale({ edge: 'rocks', trees: ['cps:tree-medium~dead'], grade: { sat: 0.35, bright: -0.16, tint: ['#5a6a7a', 0.2] } }),
-  peaks: vale({ edge: 'rocks', trees: ['cps:tree-medium~snow', 'cps:tree-small~snow'], rocks: BOULDERS, flora: [], grade: { sat: 0.25, bright: 0.2, tint: ['#e8f4ff', 0.6] } }),
-  bonefield: bare({ grade: { sat: 0.4, tint: ['#c0b08a', 0.2] }, flora: [] }),
-  pale: vale({ edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~snow'], flora: [], grade: { sat: 0.3, bright: 0.05, tint: ['#9a9ac0', 0.25] } }),
+  fey: vale({ ruins: ['gc:cyan_crystals', 'rk:pillar', 'rk:pillar_broken'], trees: ['cps:tree-medium~blossom', 'cps:tree-medium~mint', 'cps:tree-small~blossom', 'cps:tree-medium~teal'], bushes: ['cps:bushes-large~blossom', 'cps:bushes-medium~mint'], flora: ['sr:toadstools', 'sr:blue_bellflowers', 'sr:mushroom_cluster', 'sr:fern'], grade: { hue: -10, sat: 1.08 } }, { water: 'stream' }),
+  jungle: vale({ ruins: ['rk:pillar_broken', 'gc:cyan_crystals', 'rk:pillar'], trees: ['cps:tree-medium~dark', 'cps:tree-medium~teal', 'cps:tree-small~dark'], bushes: ['cps:bushes-large~dark', 'cps:bushes-medium~teal'], grade: { sat: 1.1, bright: -0.05 } }),
+  mountain: bare({ ruins: ['rk:pillar_broken', 'cpw:boulder-1', 'rk:pillar'], grade: { sat: 0.85, tint: ['#9ab0c0', 0.1] }, trees: ['cps:tree-small~dark', 'cps:tree-medium~dark'] }),
+  storm: bare({ ruins: ['rk:pillar_broken', 'rk:pillar', 'gc:rubble'], grade: { sat: 0.75, bright: -0.12, tint: ['#5a7aa0', 0.16] }, water: { tint: ['#2a4a7a', 0.4], bright: -0.1 } }),
+  desert: bare({ ruins: ['rk:pillar_broken', 'rk:pillar', 'gc:ceramic_urn'], grade: { tint: ['#f0c070', 0.14] } }),
+  barrow: vale({ ruins: ['gc:stone_coffin', 'rk:pillar_broken', 'gc:skulls', 'gc:stone_coffin'], edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~dead'], bushes: ['cps:bushes-small~dead'], rocks: [...ROCKS, ...BOULDERS], grade: { sat: 0.5, bright: -0.1, tint: ['#8a8a9a', 0.14] } }),
+  moor: vale({ ruins: ['rk:pillar_broken', 'gc:stone_coffin', 'rk:pillar'], edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~dark'], rocks: [...ROCKS, ...BOULDERS], grade: { sat: 0.6, bright: -0.1, tint: ['#8a6a9a', 0.18] } }),
+  rift: vale({ ruins: ['gc:cyan_crystals', 'gc:cyan_crystals', 'rk:pillar_broken'], edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~coral'], rocks: BOULDERS, grade: { hue: 60, sat: 0.8, bright: -0.08, tint: ['#7a4ab0', 0.22] } }),
+  warfront: vale({ ruins: ['gc:rubble', 'rk:pillar_broken', 'gc:rubble'], edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~dead', 'cps:tree-medium~amber'], rocks: [...ROCKS, ...BOULDERS], grade: { sat: 0.65, bright: -0.06, tint: ['#9a7a5a', 0.14] } }, { patches: { set: 'sand', share: 0.25 } }),
+  snow: vale({ ruins: ['rk:pillar_broken', 'rk:pillar', 'cpw:boulder-1'], trees: ['cps:tree-medium~snow', 'cps:tree-small~snow', 'cps:tree-medium~dark'], bushes: ['cps:bushes-medium~snow', 'cps:bushes-small~snow'], flora: [], grade: { sat: 0.25, bright: 0.18, tint: ['#e8f4ff', 0.55] }, water: { tint: ['#a8d8f0', 0.5], bright: 0.1 } }),
+  marsh: swamp({ ruins: ['rk:pillar_broken', 'gc:rubble', 'rk:pillar_broken'] }),
+  plague: swamp({ ruins: ['rk:pillar_broken', 'gc:skulls', 'gc:rubble'], grade: { tint: ['#a8b040', 0.14], sat: 0.9 }, water: { tint: ['#8ad04a', 0.4] } }),
+  blight: swamp({ ruins: ['gc:stone_coffin', 'gc:skulls', 'rk:pillar_broken'], grade: { sat: 0.5, bright: -0.12, tint: ['#6a4a7a', 0.18] } }),
+  sunken: swamp({ ruins: ['rk:pillar_broken', 'gc:rubble', 'rk:pillar'], grade: { sat: 0.75, bright: -0.08, tint: ['#3a8a8a', 0.2] } }),
+  gloam: swamp({ ruins: ['rk:pillar_broken', 'gc:skulls', 'gc:rubble'], grade: { sat: 0.6, bright: -0.2, tint: ['#2a6a5a', 0.26] } }),
+  haunted: vale({ ruins: ['gc:stone_coffin', 'rk:pillar_broken', 'gc:skulls'], edge: 'rocks', trees: ['cps:tree-medium~dead'], grade: { sat: 0.4, bright: -0.16, tint: ['#4a6a8a', 0.22] } }),
+  volcanic: bare({ ruins: ['gc:rubble', 'rk:pillar_broken', 'cpw:boulder-3'], grade: { sat: 0.5, bright: -0.2, tint: ['#5a3a30', 0.3] }, water: { hue: 150, tint: ['#ff7a2a', 0.7], bright: 0.06, sat: 1.4 } }),
+  deadlake: vale({ ruins: ['rk:pillar_broken', 'gc:stone_coffin', 'gc:rubble'], edge: 'rocks', trees: ['cps:tree-medium~dead'], grade: { sat: 0.35, bright: -0.16, tint: ['#5a6a7a', 0.2] } }),
+  peaks: vale({ ruins: ['rk:pillar_broken', 'cpw:boulder-2', 'rk:pillar'], edge: 'rocks', trees: ['cps:tree-medium~snow', 'cps:tree-small~snow'], rocks: BOULDERS, flora: [], grade: { sat: 0.25, bright: 0.2, tint: ['#e8f4ff', 0.6] } }),
+  bonefield: bare({ ruins: ['rk:pillar_broken', 'gc:scattered_bones', 'rk:pillar_broken'], grade: { sat: 0.4, tint: ['#c0b08a', 0.2] }, flora: [] }),
+  pale: vale({ ruins: ['gc:cyan_crystals', 'rk:pillar_broken', 'gc:rubble'], edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~snow'], flora: [], grade: { sat: 0.3, bright: 0.05, tint: ['#9a9ac0', 0.25] } }),
 };
 
 /** The prop atlases a recipe draws from. */
