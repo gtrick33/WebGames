@@ -348,7 +348,7 @@ describe('sigilfall character', () => {
     expect(freePoints(c)).toBe(11);
     // changing the specialization costs the same and resets talents; its ability leaves the bar
     learnTalent(c, 'kindling');
-    c.skills = ['fireball', 'flamestrike', null];
+    c.skills = ['fireball', 'flamestrike', null, null];
     c.gold = 500;
     expect(chooseSpec(c, 2)).toBe(true);
     expect(c.gold).toBe(0);

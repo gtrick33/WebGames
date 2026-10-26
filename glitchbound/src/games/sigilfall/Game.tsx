@@ -28,16 +28,13 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
     // a handle for automated play-testing on the dev server only (never in a build)
     if (import.meta.env.DEV) {
       (window as unknown as { __rb?: SigilEngine }).__rb = e;
-      // review screenshots: the game view at k times its art resolution, saved by the dev server
-      (window as unknown as { __rbShot?: (name: string, k?: number) => Promise<string> }).__rbShot = async (name, k = 1) => {
-        const src = e.renderer.canvas;
-        const out = document.createElement('canvas');
-        out.width = src.width * k;
-        out.height = src.height * k;
-        const g = out.getContext('2d')!;
-        g.imageSmoothingEnabled = false;
-        g.drawImage(src, 0, 0, out.width, out.height);
-        const blob = await new Promise<Blob | null>((r) => out.toBlob(r, name.endsWith('.jpg') ? 'image/jpeg' : 'image/png', 0.86));
+      // review screenshots: the game view drawn at a chosen screen size (CSS px, at 1×), saved by the dev server
+      (window as unknown as { __rbShot?: (name: string, size?: [number, number], touch?: boolean) => Promise<string> }).__rbShot = async (name, size, touch) => {
+        const r = e.renderer;
+        if (size) r.resize(size[0], size[1], 1, touch ?? e.touchMode);
+        if (e.world) r.draw(e.world, 0.016, performance.now() / 1000);
+        const blob = await new Promise<Blob | null>((ok) => r.canvas.toBlob(ok, name.endsWith('.jpg') ? 'image/jpeg' : 'image/png', 0.88));
+        if (size) fit();
         const res = await fetch(`/__sigilfall/shot?name=${encodeURIComponent(name)}`, { method: 'POST', body: blob });
         return res.text();
       };

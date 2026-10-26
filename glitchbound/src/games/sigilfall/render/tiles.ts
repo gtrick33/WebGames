@@ -3,11 +3,11 @@ import { REGIONS } from '../data/regions';
 import { THEMES, type TreeKind } from '../data/themes';
 import type { RegionDef, Theme } from '../data/types';
 import { K, TILE, type TileMap } from '../sim/map';
-import { buildArtObjects, type ArtOverlay } from './artScenery';
-import type { AnimInfo, Rect, WorldArt } from './art/atlas';
-import { BIOMES } from './art/biomes';
+import type { AnimInfo, Rect } from './art/atlas';
+import type { WorldLook } from './art/world';
 import { buildDecals, Ground } from './ground';
-import { TileGround } from './tileGround';
+import { WorldGround } from './worldGround';
+import { buildWorldObjects } from './worldScenery';
 import { building } from './art/buildings';
 import { bushArt, cactus, crystalSpire, deadTree, edgeTrunk, jungleTree, mushroomTree, oakTree, palmTree, pineTree, rockArt, willowTree } from './art/flora';
 import type { Painter } from './art/kit';
@@ -36,6 +36,8 @@ export interface StaticObject {
   src?: Rect;
   /** An animated prop: its frames run left to right in `src`. */
   anim?: AnimInfo;
+  /** Atlas pixels per world pixel (default DETAIL: art painted at the old grid). */
+  k?: number;
 }
 
 /** The ground under everything: painted procedurally, or laid from the pack's tiles. */
@@ -50,10 +52,8 @@ export interface GroundLayer {
 export interface Scenery {
   ground: GroundLayer;
   objects: StaticObject[];
-  /** Animated things over the scene that don't sort (chimney smoke). */
-  overlays: ArtOverlay[];
   /** The packed art this scenery was built from (null: all procedural). */
-  art: WorldArt | null;
+  art: WorldLook | null;
   torches: { x: number; y: number }[];
   braziers: { x: number; y: number }[];
   water: number[];
@@ -66,25 +66,24 @@ export interface Scenery {
  * ground and most standing things come from the Royal Keep pieces; without it, everything is painted
  * procedurally, as before the packs (tests, a failed download, indoor places for now).
  */
-export function buildScenery(map: TileMap, region: RegionDef, art: WorldArt | null = null): Scenery {
+export function buildScenery(map: TileMap, region: RegionDef, look: WorldLook | null = null): Scenery {
   const water: number[] = [];
   const illusions: number[] = [];
   for (let i = 0; i < map.w * map.h; i++) {
     if (map.kind[i] === K.Water) water.push(i);
     if (map.kind[i] === K.Illusion) illusions.push(i);
   }
-  const biome = BIOMES[region.theme];
-  const useArt = art && biome && !THEMES[region.theme].indoor ? art : null;
-  const ground: GroundLayer = useArt && biome ? new TileGround(map, useArt, biome, buildDecals(map, region)) : new Ground(map, region);
-  const sc: Scenery = { ground, objects: [], overlays: [], art: useArt, torches: [], braziers: [], water, illusions, theme: region.theme };
+  const art = look && !THEMES[region.theme].indoor ? look : null;
+  const ground: GroundLayer = art ? new WorldGround(map, { ground: art.ground, over: art.over, rk: art.rk }, art.recipe, buildDecals(map, region)) : new Ground(map, region);
+  const sc: Scenery = { ground, objects: [], art, torches: [], braziers: [], water, illusions, theme: region.theme };
   let handled = new Set<number>();
-  if (useArt && biome) {
-    const built = buildArtObjects(map, useArt, biome);
+  if (art) {
+    // the capital is built from the architecture pack; everywhere else is CraftPix-led
+    const built = buildWorldObjects(map, { props: art.props, rk: art.rk }, art.recipe, region.kind === 'town');
     sc.objects.push(...built.objects);
-    sc.overlays.push(...built.overlays);
     handled = built.handled;
   }
-  buildObjects(sc, map, region, !!useArt, handled);
+  buildObjects(sc, map, region, !!art, handled);
   sc.objects.sort((a, b) => a.y - b.y);
   return sc;
 }

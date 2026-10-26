@@ -1,9 +1,7 @@
 import { clamp, damp, dist, hash2, TAU } from '../core/math';
 import { LEAD, leanTarget, LIFT, placeCamera } from './camera';
-import { worldArt } from './art/atlas';
-import { dirOf, FOE_FOLK, FOLK_FEET, folkFor, folkSprite } from './art/folk';
 import { drawBolt, drawVfx } from './art/vfx';
-import { BIOMES } from './art/biomes';
+import { worldLook } from './art/world';
 import { THEMES } from '../data/themes';
 import type { ClassId } from '../data/types';
 import { bossHidden } from '../sim/boss';
@@ -12,7 +10,7 @@ import { K, TILE } from '../sim/map';
 import type { Enemy, Fx, Pet, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
 import { itemTint } from '../progress/items';
-import { canvas, ctx2d, DETAIL, pixelText, rgba, type Cnv } from './pixel';
+import { canvas, ctx2d, DETAIL, pixelText, RES, rgba, type Cnv } from './pixel';
 import { creatureSprite, glowDisc, heldWeapon, heroLook, heroSprite, npcSprite, recolored, vendorSign, weaponSprite, type HeroDir } from './sprites';
 import type { HeroLook } from './art/hero';
 import { buildScenery, type Scenery } from './tiles';
@@ -123,34 +121,37 @@ export class Renderer {
   }
 
   /**
-   * Fits the view to the element: an integer number of device pixels per art pixel, chosen so the
-   * view is about 200 art pixels tall on phones (bigger sprites) and 240 on desktops.
+   * Fits the view to the element: about 196 world pixels tall on phones (bigger figures) and 236 on
+   * desktops. The canvas holds up to RES pixels per world pixel (64 per tile, the art's own grid) and
+   * is scaled smoothly to the screen; on a small screen it is drawn at the screen's own resolution.
    */
   resize(cssW: number, cssH: number, dpr: number, touch: boolean): void {
     const devW = Math.max(1, Math.round(cssW * dpr));
     const devH = Math.max(1, Math.round(cssH * dpr));
-    // the view is about this many world pixels tall; art pixels are DETAIL to a world pixel
-    const target = (touch ? 196 : 236) * DETAIL;
-    const shortSide = Math.min(devW, devH);
     const landscape = devW >= devH;
-    let s = Math.max(1, Math.round((landscape ? devH : devW * 1.25) / target));
-    if (shortSide / s < 150 * DETAIL) s = Math.max(1, Math.floor(shortSide / (150 * DETAIL)));
-    this.scale = s;
+    // device pixels per world pixel for the target view, never showing less than 150 world pixels
+    let total = (landscape ? devH : devW * 1.25) / (touch ? 196 : 236);
+    total = Math.min(total, Math.min(devW, devH) / 150);
+    total = Math.max(0.5, total);
+    const res = Math.min(RES, total);
+    this.res = res;
+    this.scale = total / res;
     this.dpr = dpr;
     // one world pixel more than the element on each axis: the canvas slides by the camera's
-    // fraction of an art pixel (see placeCamera), and the extra column and row fill the gap
-    const aw = Math.ceil(devW / s / DETAIL) * DETAIL + DETAIL;
-    const ah = Math.ceil(devH / s / DETAIL) * DETAIL + DETAIL;
-    this.vw = aw / DETAIL;
-    this.vh = ah / DETAIL;
+    // fraction of a canvas pixel (see placeCamera), and the extra column and row fill the gap
+    const worldW = Math.ceil(devW / total) + 1;
+    const worldH = Math.ceil(devH / total) + 1;
+    const aw = Math.ceil(worldW * res);
+    const ah = Math.ceil(worldH * res);
+    this.vw = aw / res;
+    this.vh = ah / res;
     if (this.canvas.width !== aw || this.canvas.height !== ah) {
       this.canvas.width = aw;
       this.canvas.height = ah;
       this.g = ctx2d(this.canvas);
     }
-    // the canvas is shown a touch larger than the element when the division isn't exact
-    this.canvas.style.width = `${(aw * s) / dpr}px`;
-    this.canvas.style.height = `${(ah * s) / dpr}px`;
+    this.canvas.style.width = `${(aw * this.scale) / dpr}px`;
+    this.canvas.style.height = `${(ah * this.scale) / dpr}px`;
     this.slideX = this.slideY = NaN;
     if (this.light.width !== aw || this.light.height !== ah) {
       this.light.width = aw;
@@ -159,9 +160,12 @@ export class Renderer {
     }
   }
 
+  /** Canvas pixels per world pixel (at most RES). */
+  res = RES;
+
   /** Screen (CSS px relative to the canvas) to world coordinates. */
   toWorld(cx: number, cy: number, dpr: number): { x: number; y: number } {
-    const k = dpr / this.scale / DETAIL;
+    const k = dpr / this.scale / this.res;
     return { x: this.camX + cx * k, y: this.camY + cy * k };
   }
 
@@ -195,12 +199,12 @@ export class Renderer {
 
   /** The hero's position rounded to an art pixel: the camera is pinned to it, so the hero never wobbles. */
   private heroPos(w: World): { x: number; y: number } {
-    return { x: Math.round(w.player.x * DETAIL) / DETAIL, y: Math.round(w.player.y * DETAIL) / DETAIL };
+    return { x: Math.round(w.player.x * this.res) / this.res, y: Math.round(w.player.y * this.res) / this.res };
   }
 
   private placeCamera(w: World): void {
     // what is actually on screen: the drawn view less its spare world pixel
-    const c = placeCamera(w.player.x, w.player.y, { x: this.leanX, y: this.leanY }, this.vw - 1, this.vh - 1, w.map.w * TILE, w.map.h * TILE, DETAIL, this.scale);
+    const c = placeCamera(w.player.x, w.player.y, { x: this.leanX, y: this.leanY }, this.vw - 1, this.vh - 1, w.map.w * TILE, w.map.h * TILE, this.res, this.scale);
     this.camX = c.camX;
     this.camY = c.camY;
     this.drawX = c.drawX;
@@ -219,8 +223,7 @@ export class Renderer {
 
   draw(w: World, dt: number, time: number): void {
     // the packed art for this land (null while it loads, or indoors): the scenery is rebuilt once it is in
-    const look = BIOMES[w.region.theme]?.look;
-    const art = look ? worldArt(look) : null;
+    const art = worldLook(w.region.theme);
     if (this.sceneryFor !== w || (art && this.scenery?.art !== art)) {
       const fresh = this.sceneryFor !== w;
       this.scenery?.ground.dispose();
@@ -250,7 +253,7 @@ export class Renderer {
     const oy = this.drawY + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
 
     // everything is drawn in world pixels; the transform turns them into art pixels
-    g.setTransform(DETAIL, 0, 0, DETAIL, 0, 0);
+    g.setTransform(this.res, 0, 0, this.res, 0, 0);
     g.fillStyle = THEMES[sc.theme].bg;
     g.fillRect(0, 0, this.vw, this.vh);
     sc.ground.draw(g, ox, oy, this.vw, this.vh);
@@ -274,7 +277,7 @@ export class Renderer {
       items.push({
         y: o.y,
         draw: () => {
-          const ow = (o.src ? (o.anim ? o.anim.w : o.src[2]) : o.c.width) / DETAIL;
+          const ow = (o.src ? (o.anim ? o.anim.w : o.src[2]) : o.c.width) / (o.k ?? DETAIL);
           const behind = o.fade && !p.dead && p.y < o.y && p.y > o.y + o.dy + 4 && Math.abs(p.x - o.x) < ow / 2 - 2;
           if (behind) g.globalAlpha = 0.55;
           if (o.src) {
@@ -282,7 +285,7 @@ export class Renderer {
             const [sx, sy, sw, sh] = o.src;
             const fw = o.anim ? o.anim.w : sw;
             const f = o.anim ? Math.floor((time * 1000) / o.anim.ms + o.x * 0.37) % o.anim.n : 0;
-            g.drawImage(o.c, sx + f * fw, sy, fw, sh, Math.round((o.x + o.dx) * DETAIL) / DETAIL, Math.round((o.y + o.dy) * DETAIL) / DETAIL, fw / DETAIL, sh / DETAIL);
+            g.drawImage(o.c, sx + f * fw, sy, fw, sh, Math.round((o.x + o.dx) * this.res) / this.res, Math.round((o.y + o.dy) * this.res) / this.res, fw / (o.k ?? DETAIL), sh / (o.k ?? DETAIL));
           } else g.drawImage(o.c, Math.round(o.x + o.dx), Math.round(o.y + o.dy), ow, o.c.height / DETAIL);
           g.globalAlpha = 1;
         },
@@ -311,14 +314,6 @@ export class Renderer {
     items.sort((a, b) => a.y - b.y);
     for (const it of items) it.draw();
 
-    for (const ov of sc.overlays) {
-      if (ov.x < ox - 20 || ov.x > ox + this.vw + 20 || ov.y < oy - 40 || ov.y > oy + this.vh + 20) continue;
-      const a = ov.anim;
-      const f = Math.floor((time * 1000) / a.ms + ov.phase * a.n) % a.n;
-      g.globalAlpha = 0.75;
-      g.drawImage(sc.art!.props, a.r[0] + f * a.w, a.r[1], a.w, a.h, Math.round(ov.x - a.w / DETAIL / 2), Math.round(ov.y - a.h / DETAIL), a.w / DETAIL, a.h / DETAIL);
-      g.globalAlpha = 1;
-    }
     for (const pr of w.projectiles) this.drawProjectile(pr, time);
     for (const f of w.fx) this.drawFx(f, w);
     if (w.portal) this.drawPortal(w.portal.x, w.portal.y, time);
@@ -351,7 +346,7 @@ export class Renderer {
     }
     this.drawInteractMarker(w, time);
     this.drawObjectiveArrow(w, ox, oy, time);
-    g.setTransform(DETAIL, 0, 0, DETAIL, 0, 0);
+    g.setTransform(this.res, 0, 0, this.res, 0, 0);
     // hurt vignette
     if (!p.dead && p.hp < p.maxHp * 0.3) {
       const a = 0.25 + Math.sin(time * 6) * 0.08;
@@ -977,17 +972,8 @@ export class Renderer {
     if (e.boss && bossHidden(e)) return;
     const moving = e.state === 'chase' || e.state === 'act' || e.state === 'return';
     const frame = moving ? Math.floor(e.walkT * 6) % 2 : Math.floor(time * 2 + e.id) % 2;
-    let sprite = e.def.pal ? recolored(e.def.sprite, frame, e.def.pal, `en:${e.def.id}`) : e.boss?.def.id === 'grimtusk' ? recolored('grimtusk', frame, {}, 'grimtusk') : creatureSprite(e.def.sprite, frame);
-    let flip = Math.cos(e.face) < 0;
-    // foes the townsfolk sheet has a figure for: walking, swinging and facing four ways
-    const who = FOE_FOLK[e.def.sprite];
-    if (who) {
-      const fs = folkSprite(who, e.state === 'windup' || e.state === 'act' ? 'attack' : moving ? 'walk' : 'idle', dirOf(e.face), time + e.id * 0.13);
-      if (fs) {
-        sprite = fs;
-        flip = false;
-      }
-    }
+    const sprite = e.def.pal ? recolored(e.def.sprite, frame, e.def.pal, `en:${e.def.id}`) : e.boss?.def.id === 'grimtusk' ? recolored('grimtusk', frame, {}, 'grimtusk') : creatureSprite(e.def.sprite, frame);
+    const flip = Math.cos(e.face) < 0;
     let sx = 1;
     let sy = 1;
     if (e.def.ai === 'hopper') {
@@ -1136,24 +1122,12 @@ export class Renderer {
     g.beginPath();
     g.ellipse(x, y + 6, 6, 2.5, 0, 0, TAU);
     g.fill();
-    let top: number;
-    // a townsfolk figure from the pack, turned toward the hero when they come close
-    const p = w.player;
-    const near = Math.hypot(p.x - x, p.y - y) < 48;
-    const fs = folkSprite(folkFor(def, id), 'idle', near ? dirOf(Math.atan2(p.y - y, p.x - x)) : face < 0 ? 'left' : 'down', bob * 0.5);
-    if (fs) {
-      const sw = fs.width / fs.k;
-      const sh = fs.height / fs.k;
-      g.drawImage(fs.c, Math.round((x - FOLK_FEET[0] / fs.k) * 2) / 2, Math.round((y + 6.5 - FOLK_FEET[1] / fs.k) * 2) / 2, sw, sh);
-      top = Math.round(y + 6.5 - FOLK_FEET[1] / fs.k + 4);
-    } else {
-      const sprite = npcSprite(id);
-      const b = Math.sin(bob * 2) > 0.7 ? -1 : 0;
-      const sw = sprite.width / sprite.k;
-      const sh = sprite.height / sprite.k;
-      g.drawImage(face < 0 ? sprite.f : sprite.c, Math.round(x) - sw / 2, Math.round(y + 7 - sh + b), sw, sh);
-      top = Math.round(y + 4 - sh);
-    }
+    const sprite = npcSprite(id);
+    const b = Math.sin(bob * 2) > 0.7 ? -1 : 0;
+    const sw = sprite.width / sprite.k;
+    const sh = sprite.height / sprite.k;
+    g.drawImage(face < 0 ? sprite.f : sprite.c, Math.round(x) - sw / 2, Math.round(y + 7 - sh + b), sw, sh);
+    let top = Math.round(y + 4 - sh);
     // vendors carry a sign of what they sell; quests use "!" (yours) and "?" (talk to them) above it
     const sign = def ? vendorSign(def.shop ?? (def.service === 'respec' ? 'respec' : '')) : null;
     if (sign) {
@@ -1718,7 +1692,7 @@ export class Renderer {
 
   private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number): void {
     const lg = this.lg;
-    lg.setTransform(DETAIL, 0, 0, DETAIL, 0, 0);
+    lg.setTransform(this.res, 0, 0, this.res, 0, 0);
     lg.globalCompositeOperation = 'source-over';
     // a fresh layer every frame (a translucent fill drawn over last frame's would stack up to black)
     lg.clearRect(0, 0, this.vw, this.vh);
@@ -1755,7 +1729,7 @@ export class Renderer {
     g.save();
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.drawImage(this.light, 0, 0);
-    g.setTransform(DETAIL, 0, 0, DETAIL, 0, 0);
+    g.setTransform(this.res, 0, 0, this.res, 0, 0);
     // warm glow around flames
     g.globalCompositeOperation = 'lighter';
     g.globalAlpha = 0.18;

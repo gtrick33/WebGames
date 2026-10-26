@@ -6,14 +6,13 @@
  *
  * Writes packed atlases and their JSON indexes to public/games/sigilfall/art/:
  *
- *   rk-<season>.png        the Royal Keep ground tiles (summer, autumn, winter), 32 px, 16 columns
- *   rk-tiles.json          tile name -> index in those atlases (the same for every season)
- *   rk-props-<season>.png  every Royal Keep prop and animated prop, packed; + .json (rects, origins,
- *                          footprints, chimney points, frame counts)
- *   rk-folk.png            the 27 Royal Keep characters (48 x 64 cells); + .json
- *   interior.png           the castle-interior tiles, props and folk, doubled to the 32 px grid; + .json
+ *   rk-<season>-hd.png     Royal Keep's tiles (summer, autumn, winter) smoothed to 64 px (EPX), for
+ *                          architecture only; rk-tiles.json names them (the same for every season)
+ *   rk-props-<season>-hd.png  its props and animated props, packed and smoothed; rk-props-<season>.json
+ *                          holds their 32 px rects, origins, footprints and chimney points (doubled at load)
  *   vfx.png                the Magic Spells effects (64 px frames), one strip per effect; + .json
  *   circles.png            the Magic Circles (96 px frames); + .json
+ *   cp-*, wb-ground, props-*  the 64 px world art (sigilfall-art-world.mjs)
  *
  * Only what the game draws goes in, losslessly recompressed. The art direction and what each pack is
  * allowed to do are in src/games/sigilfall/VISUAL_BIBLE.md; sources and licenses in ASSET_AUDIT.md.
@@ -23,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { buildWorld } from './sigilfall-art-world.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'assets/sigilfall');
@@ -31,7 +31,6 @@ const RK = path.join(SRC, 'royal_keep_tileset_v1');
 const SEASONS = { summer: RK, autumn: path.join(SRC, 'royal_keep_seasons_v1/autumn'), winter: path.join(SRC, 'royal_keep_seasons_v1/winter') };
 const VFX = path.join(SRC, 'magic-spells-vfx');
 const CIRCLES = path.join(SRC, 'magic-circles-vfx-lite');
-const INTERIOR = path.join(SRC, 'Pixel_Castle_Interior_Tileset_v1/PNG/native');
 
 const PAD = 1;
 
@@ -85,6 +84,45 @@ const json = (name, obj) => write(name, `${JSON.stringify(obj)}\n`);
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 const report = [];
 
+/**
+ * Scale2x (EPX) on raw RGBA: each pixel becomes four, and a corner takes its neighbours' color where two
+ * of them agree, so Royal Keep's diagonals come out smooth on the 64 px grid instead of as 2x2 blocks
+ * (the normalization its pixel art needs beside CraftPix's vector edges, VISUAL_BIBLE.md §2).
+ */
+async function epx(buf) {
+  const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const w = info.width;
+  const h = info.height;
+  const src = new Uint32Array(data.buffer, data.byteOffset, w * h);
+  const out = new Uint32Array(w * h * 4);
+  const at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : src[y * w + x]);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const E = at(x, y);
+      const B = at(x, y - 1);
+      const D = at(x - 1, y);
+      const F = at(x + 1, y);
+      const H = at(x, y + 1);
+      let e0 = E;
+      let e1 = E;
+      let e2 = E;
+      let e3 = E;
+      if (B !== H && D !== F) {
+        if (D === B) e0 = D;
+        if (B === F) e1 = F;
+        if (D === H) e2 = D;
+        if (H === F) e3 = F;
+      }
+      const i = y * 2 * w * 2 + x * 2;
+      out[i] = e0;
+      out[i + 1] = e1;
+      out[i + w * 2] = e2;
+      out[i + w * 2 + 1] = e3;
+    }
+  }
+  return png(sharp(Buffer.from(out.buffer), { raw: { width: w * 2, height: h * 2, channels: 4 } })).toBuffer();
+}
+
 /* ------------------------------------------------------------ Royal Keep */
 
 // tile names -> atlas index (tiles.txt: id column row name)
@@ -106,9 +144,11 @@ for (const line of fs.readFileSync(path.join(RK, 'animated/frames.txt'), 'utf8')
 }
 
 for (const [season, dir] of Object.entries(SEASONS)) {
+  // Royal Keep ships only in its smoothed 64 px build (architecture beside CraftPix, ASSET_AUDIT.md)
   const atlas = await png(sharp(path.join(dir, 'tileset/royal_keep_tiles.png'))).toBuffer();
-  write(`rk-${season}.png`, atlas);
-  report.push([`rk-${season}.png`, atlas.length]);
+  const atlasHd = await epx(atlas);
+  write(`rk-${season}-hd.png`, atlasHd);
+  report.push([`rk-${season}-hd.png`, atlasHd.length]);
 
   const entries = [];
   for (const [name, m] of Object.entries(propsMeta)) {
@@ -120,8 +160,9 @@ for (const [season, dir] of Object.entries(SEASONS)) {
     entries.push(await entry(`anim:${a.name}`, fs.existsSync(f) ? f : path.join(RK, 'animated', `${a.name}_strip.png`)));
   }
   const packed = await pack(entries, 1024);
-  write(`rk-props-${season}.png`, packed.buf);
-  report.push([`rk-props-${season}.png`, packed.buf.length]);
+  const propsHd = await epx(packed.buf);
+  write(`rk-props-${season}-hd.png`, propsHd);
+  report.push([`rk-props-${season}-hd.png`, propsHd.length]);
   const props = {};
   for (const [name, m] of Object.entries(propsMeta)) {
     props[name] = { r: packed.rects[name], o: m.origin, ...(m.footprint ? { fp: m.footprint } : {}), ...(m.smoke ? { smoke: m.smoke } : {}) };
@@ -129,40 +170,6 @@ for (const [season, dir] of Object.entries(SEASONS)) {
   const anims = {};
   for (const a of animated) anims[a.name] = { r: packed.rects[`anim:${a.name}`], n: a.frames, w: a.w, h: a.h, ms: a.ms, loop: a.loop };
   json(`rk-props-${season}.json`, { props, anims });
-}
-
-// the folk: one sheet, a row per character (characters.txt)
-{
-  const rows = [];
-  const anims = {};
-  for (const line of fs.readFileSync(path.join(RK, 'characters/characters.txt'), 'utf8').split('\n')) {
-    if (!line || line.startsWith('#')) continue;
-    const parts = line.split('\t');
-    if (parts.length === 5) anims[`${parts[0]}_${parts[1]}`] = { col: +parts[2], n: +parts[3], ms: +parts[4] };
-    else if (parts.length === 2) rows[+parts[0]] = parts[1];
-  }
-  const buf = await png(sharp(path.join(RK, 'characters/royal_keep_characters.png'))).toBuffer();
-  write('rk-folk.png', buf);
-  report.push(['rk-folk.png', buf.length]);
-  json('rk-folk.json', { cell: [48, 64], feet: [24, 60], rows, anims });
-}
-
-/* -------------------------------------------------------- castle interior */
-
-{
-  const entries = [];
-  const kinds = {};
-  for (const group of ['floor', 'walls', 'props', 'characters']) {
-    for (const f of fs.readdirSync(path.join(INTERIOR, group)).filter((n) => n.endsWith('.png')).sort()) {
-      const key = `${group}/${f.replace(/\.png$/, '')}`;
-      entries.push(await entry(key, path.join(INTERIOR, group, f), 2));
-      kinds[key] = group;
-    }
-  }
-  const packed = await pack(entries, 512);
-  write('interior.png', packed.buf);
-  report.push(['interior.png', packed.buf.length]);
-  json('interior.json', { rects: packed.rects });
 }
 
 /* ------------------------------------------------------------------ VFX */
@@ -201,6 +208,8 @@ for (const [season, dir] of Object.entries(SEASONS)) {
   for (const k of Object.keys(fx)) fx[k].r = packed.rects[k];
   json('circles.json', { frame: 96, fx });
 }
+
+await buildWorld({ SRC, write, json, png, pack, report });
 
 // the game asks for every file with this version, so a rebuilt atlas is never mixed with an old index
 const hash = crypto.createHash('sha256');

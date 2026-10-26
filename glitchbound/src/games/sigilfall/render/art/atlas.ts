@@ -59,14 +59,10 @@ export interface WorldArt {
   tileAt: (index: number) => [number, number];
   prop: Record<string, PropInfo>;
   anim: Record<string, AnimInfo>;
-}
-
-export interface FolkArt {
-  img: Cnv;
-  cell: [number, number];
-  feet: [number, number];
-  rows: string[];
-  anims: Record<string, { col: number; n: number; ms: number }>;
+  /** Atlas px per world px: 2 for the pack's own 32 px art, 4 for its smoothed 64 px build. */
+  k: number;
+  /** Tile size in the atlas. */
+  T: number;
 }
 
 export interface FxArt {
@@ -75,10 +71,6 @@ export interface FxArt {
   fx: Record<string, { r: Rect; n: number; ms: number; loop: boolean }>;
 }
 
-export interface InteriorArt {
-  img: Cnv;
-  rects: Record<string, Rect>;
-}
 
 const BASE = `${(import.meta.env?.BASE_URL as string | undefined) ?? '/'}games/sigilfall/art/`;
 const url = (f: string): string => `${BASE}${f}?v=${ART_VERSION}`;
@@ -209,6 +201,8 @@ export interface LookKey {
   /** A grade for the water tiles only (murk, lava, ice), over the main one. */
   water?: Grade;
   derived?: Derived[];
+  /** The smoothed 64 px build (Royal Keep as architecture beside CraftPix). */
+  hd?: boolean;
 }
 
 const lookId = (k: LookKey): string => JSON.stringify(k);
@@ -216,13 +210,29 @@ const lookId = (k: LookKey): string => JSON.stringify(k);
 /** The world art for a look, or null while it loads (it calls onArt listeners when ready). */
 export function worldArt(k: LookKey): WorldArt | null {
   return once(`world:${lookId(k)}`, async () => {
+    const hd = k.hd ? '-hd' : '';
     const [tiles, json, props, pj] = await Promise.all([
-      image(`rk-${k.season}.png`),
+      image(`rk-${k.season}${hd}.png`),
       data<TilesJson>('rk-tiles.json'),
-      image(`rk-props-${k.season}.png`),
+      image(`rk-props-${k.season}${hd}.png`),
       data<{ props: Record<string, PropInfo>; anims: Record<string, AnimInfo> }>(`rk-props-${k.season}.json`),
     ]);
-    const T = json.size;
+    // the smoothed build is the same layout at twice the size
+    const m = k.hd ? 2 : 1;
+    if (m !== 1) {
+      for (const p of Object.values(pj.props)) {
+        p.r = p.r.map((v) => v * m) as Rect;
+        p.o = [p.o[0] * m, p.o[1] * m];
+        if (p.fp) p.fp = [p.fp[0] * m, p.fp[1] * m];
+        if (p.smoke) p.smoke = p.smoke.map(([x, y]) => [x * m, y * m]);
+      }
+      for (const a of Object.values(pj.anims)) {
+        a.r = a.r.map((v) => v * m) as Rect;
+        a.w *= m;
+        a.h *= m;
+      }
+    }
+    const T = json.size * m;
     const cols = json.cols;
     const rows0 = Math.ceil(Math.max(...Object.values(json.tiles)) / cols) + 1;
     const tile = { ...json.tiles };
@@ -257,14 +267,7 @@ export function worldArt(k: LookKey): WorldArt | null {
       }
     }
     applyGrade(props, k.grade);
-    return { tiles: t, props, tile, tileAt: at, prop: pj.props, anim: pj.anims } satisfies WorldArt;
-  });
-}
-
-export function folkArt(): FolkArt | null {
-  return once('folk', async () => {
-    const [img, j] = await Promise.all([image('rk-folk.png'), data<Omit<FolkArt, 'img'>>('rk-folk.json')]);
-    return { img, ...j };
+    return { tiles: t, props, tile, tileAt: at, prop: pj.props, anim: pj.anims, k: 2 * m, T } satisfies WorldArt;
   });
 }
 
@@ -282,10 +285,75 @@ export function circleArt(): FxArt | null {
   });
 }
 
-export function interiorArt(grade: Grade = {}): InteriorArt | null {
-  return once(`interior:${JSON.stringify(grade)}`, async () => {
-    const [img, j] = await Promise.all([image('interior.png'), data<{ rects: Record<string, Rect> }>('interior.json')]);
+
+/* ------------------------------------------------- the 64 px world art */
+
+const T64 = 64;
+
+/** A grid of 64 px ground tiles (k 4): CraftPix blob sets, or the Worlds-bundle overlays. */
+export interface TileGrid {
+  img: Cnv;
+  cols: number;
+  /** Top-left of a tile in the image. */
+  at: (i: number) => [number, number];
+}
+
+/** CraftPix ground: blob sets (mask -> tiles) for the inside and outside grounds, and whole tiles. */
+export interface GroundSet extends TileGrid {
+  inside: string;
+  outside: string;
+  sets: Record<string, Record<string, number[]>>;
+  fill: Record<string, number[]>;
+}
+
+/** Worlds-bundle overlays: 16 corner (Wang) tiles each (index 8·TL + 4·TR + 2·BL + 1·BR) plus whole variants. */
+export interface Overlays extends TileGrid {
+  overlays: Record<string, { wang: number[]; full: number[] }>;
+  fills: Record<string, number[]>;
+}
+
+/** Props at the world scale (k atlas px per world px), each with its ground point. */
+export interface PropAtlas {
+  img: Cnv;
+  k: number;
+  props: Record<string, { r: Rect; o: [number, number] }>;
+}
+
+const grid = (cols: number): ((i: number) => [number, number]) => (i) => [(i % cols) * T64, Math.floor(i / cols) * T64];
+
+export function groundSet(id: 'cp-summer' | 'cp-swamp', grade: Grade): GroundSet | null {
+  return once(`ground:${id}:${JSON.stringify(grade)}`, async () => {
+    const [img, j] = await Promise.all([image(`${id}.png`), data<Omit<GroundSet, 'img' | 'at'>>(`${id}.json`)]);
     applyGrade(img, grade);
-    return { img, rects: j.rects };
+    return { ...j, img, at: grid(j.cols) };
   });
 }
+
+/** The overlays, with the land's grade and (on water and slime) its water grade. */
+export function overlays(grade: Grade, water?: Grade): Overlays | null {
+  return once(`overlays:${JSON.stringify(grade)}:${JSON.stringify(water ?? {})}`, async () => {
+    const [img, j] = await Promise.all([image('wb-ground.png'), data<Omit<Overlays, 'img' | 'at'>>('wb-ground.json')]);
+    const at = grid(j.cols);
+    applyGrade(img, grade);
+    if (water) {
+      for (const name of ['water', 'swampwater', 'stream', 'slime']) {
+        const o = j.overlays[name];
+        if (!o) continue;
+        for (const i of [...o.wang, ...o.full]) {
+          const [x, y] = at(i);
+          applyGrade(img, water, x, y, T64, T64);
+        }
+      }
+    }
+    return { ...j, img, at };
+  });
+}
+
+export function propAtlas(id: string, grade: Grade): PropAtlas | null {
+  return once(`props:${id}:${JSON.stringify(grade)}`, async () => {
+    const [img, j] = await Promise.all([image(`props-${id}.png`), data<Omit<PropAtlas, 'img'>>(`props-${id}.json`)]);
+    applyGrade(img, grade);
+    return { ...j, img };
+  });
+}
+

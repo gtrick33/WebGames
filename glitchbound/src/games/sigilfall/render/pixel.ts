@@ -14,6 +14,13 @@ export const OUTLINE = '#1b1428';
  */
 export const DETAIL = 2;
 
+/**
+ * Canvas pixels per world pixel at most (64 per tile): the grid the packed art is drawn for. The renderer
+ * draws everything in world units, so procedural pictures (painted at DETAIL) simply show their pixels
+ * larger, and atlas pictures carry their own pixels-per-world-pixel (`k`).
+ */
+export const RES = 4;
+
 export type Cnv = HTMLCanvasElement;
 
 export function canvas(w: number, h: number): Cnv {

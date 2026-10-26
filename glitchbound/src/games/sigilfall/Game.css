@@ -43,8 +43,9 @@
   position: absolute;
   left: 0;
   top: 0;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  /* the canvas holds up to 64 px per tile and is scaled smoothly the rest of the way (VISUAL_BIBLE.md) */
+  image-rendering: auto;
+  transform-origin: 0 0;
   touch-action: none;
 }
 .rb-ui {

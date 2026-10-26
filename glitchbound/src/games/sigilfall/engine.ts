@@ -10,8 +10,8 @@ import { itemName } from './progress/items';
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import type { ShopId } from './data/vendors';
-import { folkArt, fxArt, worldArt } from './render/art/atlas';
-import { BIOMES } from './render/art/biomes';
+import { fxArt } from './render/art/atlas';
+import { worldLook } from './render/art/world';
 import { Renderer } from './render/renderer';
 import { Sound, type MusicId } from './audio/sound';
 import type { Interactable } from './sim/types';
@@ -102,10 +102,9 @@ export class SigilEngine {
   constructor(canvas: HTMLCanvasElement, host: GameHost, playerName: string) {
     this.host = host;
     this.renderer = new Renderer(canvas);
-    // start fetching the packed art while the title screen shows: the capital's look, the folk and the spells
-    const home = BIOMES.village?.look;
-    if (home) worldArt(home);
-    folkArt();
+    // start fetching the packed art while the title screen shows: the first lands' looks and the spells
+    worldLook('village');
+    worldLook('forest');
     fxArt();
     const loaded = loadSave();
     this.save = loaded.save;
