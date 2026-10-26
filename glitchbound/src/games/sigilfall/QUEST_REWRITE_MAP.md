@@ -369,8 +369,9 @@ checking what in the world remembers each quest (region states, story markers, p
   least one state, marker or line that changes when it is done. The Vale (Act I), the camp's arrivals, the road
   (Act II), the Tear and Fernstead (Act III), Highwall and the Gates (Act IV) and the Dead Kingdom (Act V) all
   have playable story events at their turns.
-- **Weakest main chain**: Rimeheld (Act III, Sigrun). It is talk, search, fights, the vault's two bosses; its
-  turn (Sigrun sparing Hrimfang) is told, not played. Backlog: a story event at the sledge camp (lead the
-  survivors to Frostgate) and Frostgate's state after the vault.
+- **Weakest main chain**: Rimeheld (Act III, Sigrun) was talk, search, fights and the vault's two bosses.
+  Now *The Last Sledges* is played: the drivers are led home from the Sledge Camp through two waves of the
+  dead northmen (`rime-sledges`), their sledges stand in Frostgate's square after, and Frostgate raises its
+  banners and a fire for the dead once the vault is sealed (`tests/sigilfall-rimeheld.test.ts`).
 - **Side quests**: every one pays an item, a perk or a way on, or is remembered by someone; the hunts (a named
   beast at the end of a short chain) are the plainest, and are kept short on purpose.

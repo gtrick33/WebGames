@@ -12,6 +12,7 @@ import { GREYFEN_EVENTS } from './zones/greyfen-quests';
 import { HIGHWALL_EVENTS } from './zones/highwall-quests';
 import { HOLLOWMERE_EVENTS } from './zones/hollowmere-quests';
 import { IRONPEAK_EVENTS } from './zones/ironpeak-quests';
+import { RIMEHELD_EVENTS } from './zones/rimeheld-quests';
 import { SALTMARSH_EVENTS } from './zones/saltmarsh-quests';
 import { SHATTERED_VALE_EVENTS } from './zones/shattered-vale-quests';
 import { SUNKEN_REACHES_EVENTS } from './zones/sunken-reaches-quests';
@@ -25,6 +26,7 @@ export const EVENTS: Record<string, StoryEventDef> = {
   ...THORNVALE_EVENTS,
   ...GREYFEN_EVENTS,
   ...SALTMARSH_EVENTS,
+  ...RIMEHELD_EVENTS,
   ...AMBERFIELD_EVENTS,
   ...DUSKFEN_EVENTS,
   ...IRONPEAK_EVENTS,

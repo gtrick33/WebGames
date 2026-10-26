@@ -479,6 +479,20 @@ export const TOWNSFOLK_LOOKS: Record<string, HeroLook> = {
     quiver: null,
     cape: null,
   },
+  // Frostgate's sledge drivers: fur hoods, quilted coats, mittens
+  'sledge-driver': {
+    skin: '#e8c0a0',
+    hair: '#c8a878',
+    hairStyle: 'short',
+    beard: '#c8a878',
+    head: { style: 'hood', mat: 'leather', tint: '#8a7a64', r: 'common' },
+    chest: { style: 'tunic', mat: 'leather', tint: '#2a4a7a', r: 'common' },
+    legs: { style: 'trousers', mat: 'leather', tint: '#4a3a2a', r: 'common' },
+    hands: { style: 'gloves', mat: 'leather', tint: '#8a7a64', r: 'common' },
+    feet: { style: 'boots', mat: 'leather', tint: '#3a2a1e', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
   // Kragholt's carters: leather aprons over mail, braided beards
   'dwarf-carter': {
     skin: '#d89a70',

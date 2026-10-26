@@ -1,4 +1,4 @@
-import type { NpcDef, QuestDef } from '../types';
+import type { NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
  * Frostgate's people and the quests of Rimeheld Tundra (see WORLD.md). The Sigil of Frost sleeps in the
@@ -26,8 +26,8 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     id: 'the-last-sledges',
     name: 'The Last Sledges',
     giver: 'jarl-sigrun',
-    text: 'Frostgate lives on what its sledges bring in from the outlying steads. Three sledge-trains went out last week; none came back, and the dogs that did would not say why. The last fire anyone saw was at the Sledge Camp, north-east of Frostgate, where the trains stop for the night. Sigrun wants to know who put it out.',
-    objective: { kind: 'explore', spot: 'sledge-camp', label: 'Search the Sledge Camp' },
+    text: 'Frostgate lives on what its sledges bring in from the outlying steads. Three sledge-trains went out last week; none came back, and the dogs that did would not say why. The last fire anyone saw was at the Sledge Camp, north-east of Frostgate, where the trains stop for the night. Someone is still alive out there, under the overturned sledges, and the dead northmen who put the fire out are waiting for them to move.',
+    objective: { kind: 'event', event: 'rime-sledges', label: 'Bring the sledge drivers home to Frostgate' },
     after: ['the-frozen-road'],
     zone: 'rimeheld',
     reward: { xp: 1000, gold: 290 },
@@ -221,7 +221,11 @@ export const RIMEHELD_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-last-sledges', state: 'active' },
-        lines: ['Three sledge-trains out, none back. The dogs came home. Dogs do not lie, but they do not talk either.', 'The trains stop for the night at the Sledge Camp, north-east of here. Find out who put the fire out.'],
+        lines: ['Three sledge-trains out, none back. The dogs came home. Dogs do not lie, but they do not talk either.', 'The trains stop for the night at the Sledge Camp, north-east of here. If anyone is alive under those sledges, bring them home. All of them.'],
+      },
+      {
+        when: { quest: 'the-last-sledges', state: 'done' },
+        lines: ['Eleven drivers home, and every one of them says the same thing: the dead knew the sledge roads. They knew where the trains stop.', 'Somebody in Frostgate told them. Somebody who wears a torc.'],
       },
       {
         when: { quest: 'bones-on-the-ice', state: 'active' },
@@ -326,5 +330,29 @@ export const RIMEHELD_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'whitefangs-pelt', state: 'done' }, lines: ['The packs have gone back to the hills, where wolves belong. The road is quiet. I almost miss them.'] },
       { lines: ['Keep to the roads after dark. Wolves keep to everything else.', 'Snow tells you everything, if you can read it. Mostly it says “wolves”.'] },
     ],
+  },
+};
+
+/** The sledge drivers led home through the snow, the Host's dead northmen after them. */
+export const RIMEHELD_EVENTS: Record<string, StoryEventDef> = {
+  'rime-sledges': {
+    id: 'rime-sledges',
+    region: 'rimeheld',
+    kind: 'rescue',
+    at: 'sledge-fire',
+    radius: 9,
+    level: 34,
+    rescue: { pets: ['sledge-driver', 'sledge-driver', 'sledge-driver'], at: 'sledge-fire', to: 'frostgate-square' },
+    banner: 'The sledge road',
+    start: [
+      { who: 'sledge-driver', text: 'Is that a living voice? Gods. Gods, it is. Get us out of here before they come back.' },
+      { who: 'sledge-driver', text: 'They knew where we would stop. They were waiting at the fire.' },
+    ],
+    waves: [
+      { enemies: ['legion-huscarl', 'legion-spearman', 'legion-spearman'], from: ['sledge-ne', 'sledge-w'] },
+      { enemies: ['legion-huscarl', 'legion-huscarl', 'ice-wolf', 'ice-wolf'], from: ['sledge-w', 'sledge-ne'], barks: [{ who: 'sledge-driver', text: 'That one drove the Hollin train. He waved at me last winter. Don’t let him wave.' }] },
+    ],
+    end: [{ who: 'sledge-driver', text: 'The gate. Frostgate’s gate. I never thought I’d be glad of that ugly old gate.' }],
+    retry: [{ who: 'sledge-driver', text: 'They took Arne. They took Arne and you were right there —' }],
   },
 };

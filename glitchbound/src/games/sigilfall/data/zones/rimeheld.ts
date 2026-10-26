@@ -1,3 +1,4 @@
+import { after, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -50,5 +51,21 @@ export const RIMEHELD = wildRegion(
       { band: [0.65, 1], packs: [['frost-giant', 'legion-huscarl', 'legion-spearman'], ['frost-giant', 'frost-giant'], ['rime-wraith', 'rime-wraith', 'legion-huscarl'], ['yeti', 'yeti', 'ice-wolf'], ['legion-spearman', 'legion-spearman', 'legion-huscarl']] },
     ],
     wildCount: 56,
+    story: [
+      // the sledge road: the drivers hidden under the overturned sledges, smoke over the dead fire
+      { near: 'sledge-camp', marker: { kind: 'place', id: 'sledge-fire' } },
+      { near: 'sledge-camp', dx: -9, dy: 5, marker: { kind: 'place', id: 'sledge-w' } },
+      { near: 'sledge-camp', dx: 7, dy: -6, marker: { kind: 'place', id: 'sledge-ne' } },
+      { near: 'sledge-camp', dx: 2, dy: 1, marker: { kind: 'wisp', color: '#b8c0d0', size: 2 }, when: until('the-last-sledges') },
+      { near: 'sledge-camp', dx: -2, dy: 2, marker: { kind: 'prop', prop: 'cart', solid: true }, when: until('the-last-sledges') },
+      { near: 'hub', marker: { kind: 'place', id: 'frostgate-square' } },
+      // the drivers home: their sledges in the square
+      { near: 'hub', dx: -4, dy: 3, marker: { kind: 'prop', prop: 'cart', solid: true }, when: after('the-last-sledges') },
+      { near: 'hub', dx: -6, dy: 4, marker: { kind: 'prop', prop: 'hay', solid: true }, when: after('the-last-sledges') },
+      // the vault sealed again and Hrimfang gone: Frostgate's banners up, a fire for the dead
+      { near: 'hub', dx: -2, dy: -3, marker: { kind: 'prop', prop: 'blue-banner', solid: true }, when: after('the-vault-of-rime') },
+      { near: 'hub', dx: 2, dy: -3, marker: { kind: 'prop', prop: 'blue-banner', solid: true }, when: after('the-vault-of-rime') },
+      { near: 'hub', dx: 5, dy: 3, marker: { kind: 'prop', prop: 'campfire', solid: true }, when: after('the-vault-of-rime') },
+    ],
   },
 );
