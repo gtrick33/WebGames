@@ -5,14 +5,23 @@ Baseline: `4013e1b` (Acts I–III, live on pre-release). The Act IV work in prog
 Ash and Starlight*) rewrites the quest narrative, so finishing the old Act IV text first would be wasted work. Both
 keep their zones, enemies, dungeons and systems for reuse under the new story (IDs preserved for save safety).
 
-## Assets — BLOCKED
+## Assets — unblocked
 
-The approved stack (Section 3: Royal Keep, Willosuna Magic Spells VFX, the Top-Down RPG Worlds bundle, the CraftPix
-village/swamp/towers/bosses packs, Magic Circles Lite, reodesuxz castle interior) is on the developer's desktop
-("Sigilfall Assets"), which this cloud build environment cannot read. Every art phase (Prompts 2, 4, 6, 7, 12–15)
-waits on it. To unblock: commit the folder to the repository (outside the runtime bundle, e.g.
-`glitchbound/assets-src/sigilfall/`, Git LFS if large) or attach the packs to the session. ASSET_AUDIT.md and
-CREDITS_AND_LICENSES.md are written at import, from the licence files that ship with each pack.
+The packs are in `glitchbound/assets/sigilfall/` (`82c38567`). ASSET_AUDIT.md maps every pack to its §3.4 level and
+role; two listed packs are missing (CraftPix village buildings, boss creatures). The packs being in a **public**
+repository is an open licensing risk (ASSET_AUDIT.md, escalations).
+
+## Prompt 0 findings (2026-10-26, measured)
+
+- **Code map**: `sim/` (world, cast, combat, AI, bosses, map) never reads the DOM; `render/` draws; `progress/`
+  holds saves and builds; `data/` is content. Large files to split only when touched: `sim/world.ts` (1.7k lines),
+  `render/renderer.ts` (1.8k).
+- **Skills**: six per class, unlocking at 1, 2, 4, 6, 14, 22 — nothing new from 22 to 60 (PROGRESSION_BALANCE.md).
+- **XP**: quest XP alone over-levels a completionist by ~5–6 levels by Highwall.
+- **Ultimate**: the charge floor is 1.5–6 s per full bar.
+- **Story**: the old Hollow King telling is replaced by *The Crown of Ash and Starlight* (STORY_BIBLE.md); all 296
+  quest ids are kept and mapped (QUEST_REWRITE_MAP.md).
+- **Art**: the game is drawn on a 32 px pixel grid; the approved style needs 64 px per tile (ASSET_AUDIT.md).
 
 ## Section 8 bugs — status
 
@@ -23,15 +32,13 @@ CREDITS_AND_LICENSES.md are written at import, from the licence files that ship 
 | Duskspire / dungeon registry mismatch | **Guarded.** No road or door in the shipped build leads to an unregistered region; Duskspire's files are inert until Act IV registers them. | `tests/sigilfall-ids.test.ts` |
 | Ultimate spam (multi-hit/DoT) | Fixed in Act III: charge normalized to the class's reference damage and rate-limited by a level-scaled token bucket (`ultFloor`, sim/world.ts); DoT ticks charge at 40 %. | economy/sim tests |
 | Stuck joystick / pointer ownership | **Not reproduced.** The stick releases on pointerup, pointercancel, lostpointercapture, window blur, tab hide, and when the controls unmount (a menu opening). Needs the device, browser and steps that reproduce it. | ui/Touch.tsx |
-| Camera jitter vs shake | Not reproduced at baseline (camera pinned to the hero's pixel since Phase 1). Needs a repro. | — |
+| Camera jitter vs shake | **Fixed** (`6943aa45`). Root cause: the camera leaned on the aim, and the mouse aim is measured from the camera, so each camera move changed the next lean; the view also stepped a whole world pixel (6 device px). Lean now follows the cursor's place on screen; the camera moves a device pixel at a time. | `tests/sigilfall-camera.test.ts` |
 | Tree/roof depth sorting | Not reproduced. Needs the place and screenshot. | — |
 | Loot frequency / clutter | Open (P2). To be retuned with the progression pass (Prompt 3). | — |
 | Quest auto-activation | **Open (P1, design).** A quest starts as soon as its prerequisites are done and the hero has been to its zone, without talking to its giver. Fixing it means an accept step at the giver, which changes the quest log and the test bot; scheduled with the quest rewrite (Prompt 8). | progress/character.ts `startQuests` |
-| HUD clipping with a new spell button | Waits for Prompt 5 (the extra button). | — |
+| HUD clipping with a new spell button | The 4th button is in the thumb cluster (`0fc10e2b`); the potion moved beside the ultimate. Phone/tablet screenshots pending (Phase 2 evidence). | — |
 | Save migration tests | Present for v1 to v2 (`tests/sigilfall-*`); new fields (Riftstones) validated in their branch. | — |
 
-## Next phases (blueprint order)
+## Next phases
 
-1. Asset import + ASSET_AUDIT (needs the packs) → Prompt 2 vertical slice (Briarhollow + one dungeon + one hero).
-2. Prompt 3 progression design table (no assets needed): can run now if approved.
-3. Prompt 5 extra spell button (no assets needed for the system; VFX later).
+See EXECUTION_PLAN.md (Section 13 order). Phase 2, the vertical slice, is next.

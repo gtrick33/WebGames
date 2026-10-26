@@ -1,74 +1,83 @@
 # Sigilfall — Visual Bible
 
-The rules every piece of art follows so the kingdom looks made by one team. Tables live in code:
-`render/art/biomes.ts` (lands), `render/art/folk.ts` (people), `render/art/vfx.ts` (spells).
+The rules that make the kingdom look authored by one team (blueprint §3.3–3.7, §7). The hierarchy and the pack
+roles are in ASSET_AUDIT.md; the tables that implement this live in `render/art/` (biomes, folk, vfx).
 
-## 1. One family: Royal Keep pixel art
+## 1. The look
 
-- **Grid.** World tiles are 16 world px, drawn at DETAIL 2: **32 art px per tile**, exactly Royal Keep's grid. Art is
-  never resampled except by whole numbers with nearest-neighbour (the 16 px castle-interior pieces are doubled).
-- **View.** 3/4 top-down: roofs and wall tops seen from above, south faces visible. Light from the **upper left**;
-  shadows fall down and to the right in a cool translucent dark (the pack's own `shade_*` and baked prop shadows).
-- **Edges.** Hard pixels with a dark, coloured outline (never pure black). Anti-aliased, painted or vector art is
-  rejected at gameplay zoom; this is why the painted Worlds-bundle packs and the vector CraftPix packs are not
-  shipped (ASSET_AUDIT.md).
-- **Why Royal Keep leads the world, not only the castles.** The blueprint makes CraftPix the world authority and Royal
-  Keep the architecture authority, assuming a CraftPix village pack that would fit. The CraftPix packs on disk are
-  256 px vector art; the game is pixel art. Royal Keep already holds wilds, villages, a market town, a keep, camps and
-  seasons on the renderer's own grid, so one family covers both roles. Recorded for creative approval.
+**Colorful, smooth, dense fantasy** led by the approved CraftPix packs: flat cel-shaded vector shapes with one soft
+highlight, a warm dark-brown outline (never pure black), saturated but not neon greens, warm sand and wood, slate
+and stone a little desaturated so people and danger read on top. Royal Keep supplies the kingdom's **architecture**;
+the Worlds bundle fills gaps after normalization; nothing else enters without approval.
 
-## 2. Lands: season + grade + vegetation
+- **Grid**: 16 world px per tile, drawn at **4 art px per world px (64 px per tile)**.
+- **View**: top-down 3/4. Roofs and wall tops from above, south faces visible, doors on the south face.
+- **Light**: from the **upper left**. Shadows fall down-right, a soft translucent cool brown-violet
+  (`rgba(40, 24, 48, 0.28)`), and every standing thing has a ground-contact shadow.
+- **Outline**: CraftPix weight (about 2 px at 64 px per tile) in a dark tone of the object's own color.
 
-A land is a Royal Keep **season** (summer, autumn, winter), a **grade** (saturation, contrast, brightness, hue, tint)
-applied to its tiles and props, a **base ground** (grass, snow, sand or ash), **patches** of a second ground, its
-**trees, bushes, rocks and flora**, and what its **water** is (clear, murk, toxic, deep, lava). Grades never touch
-people: characters stay a readability tier above the world.
+## 2. Normalization gate (every non-CraftPix piece)
 
-| Region family | Season | Identity in one screenshot |
+Before a Level B or Royal Keep piece ships it is placed in the engine beside CraftPix pieces at gameplay zoom and
+compared (screenshots in `docs/review/phase-XX/`). It must match:
+
+| Check | Rule | Tooling |
 | --- | --- | --- |
-| Vale villages (village, farm, plains) | summer | warm green, thatch and tile roofs, orchards, hay, flowers |
-| Forests (forest, jungle, fey) | summer | dark grass under dense teal canopies; fey turns hue to mint and coral blossoms |
-| Coast | summer | sand patches, mint trees, reeds |
-| Marsh, plague, sunken, gloam | summer/autumn | desaturated green-brown, mud patches, murk or toxic water, reeds, dead trees |
-| Autumn lands, moor, barrow, rift | autumn | amber and coral trees; moors purple-grey; the Rift hue-shifted violet |
-| Highlands, storm coast | summer | cool grey-blue grade, pines, rock ledges with cliff faces |
-| Snow, peaks, pale, haunted, deadlake | winter | snow ground, snowy pines; haunted and deadlake darker and bluer |
-| Desert, bonefield | summer/autumn | sand base, dirt flats, sandstone rocks, dead trees |
-| Warfront, volcanic | autumn | ash patches, dead trees; volcanic water becomes lava |
+| Scale | a door is ~1.6 world tiles tall, a cottage 3–4 tiles wide, a tree canopy 2–3 tiles, the hero ~1.7 tiles | per-pack scale factors in the art build |
+| Palette | greens, stone, wood, water inside the bible palette; saturation within ±10 % of CraftPix | per-pack grade (saturation, contrast, tint) at build time |
+| Edges | smooth edges; pixel art is smoothed (EPX + soft resample) or rejected | Royal Keep smoothing pass |
+| Light | upper-left; matching shadow hue and ground contact | shadow pass for pieces without one |
+| Perspective | same 3/4; a piece with a different roof angle is rejected, not hidden | review |
+| Readability | doors, enemies, projectiles, pickups and quest marks obvious on a phone | phone screenshot |
 
-Indoor places use the castle-interior floors and walls with their own grade (crypt violet, cave earth, cistern
-green, keep warm stone, ice blue, temple gold).
+If a reviewer can point at a piece and say "that is from another pack", it has not passed.
 
-## 3. Composition and density
+## 3. Biomes (blueprint §7)
 
-Layer order: base ground → patches → roads and squares → water → cliff and wall tops/faces → decals → standing
-things sorted by their ground line → effects → foreground fades (a tree or roof fades when the hero walks behind
-it). Woods are a tree on every other tile with more along the clearing, so a forest edge reads as a forest. Flora is
-small and flat, thicker along woods and water, **never solid and never in a combat lane**. A cliff's face is drawn on
-the cliff's own southern rows, inside its collision, never over walkable ground. A rock spine one tile thick is
-boulders, not a cliff.
+| Region | Recipe | Identity in one screenshot |
+| --- | --- | --- |
+| **Briarhollow and the Vale villages** (Brackenridge, Thornvale, Greyfen edges, Saltmarsh, Amberfield) | CraftPix Simple Summer ground and props + Greenvale cottages, cobbles, water, farm props | warm grass, timber and thatch homes, orchards, fences, flowers, market stalls; **visible repair after rescue** |
+| **Emberwick, the Crown City, and allied keeps** | Royal Keep walls, gatehouse, keep, towers, moat, market + CraftPix dressing | concentric layers: refugee approach → market town → moat and gatehouse → districts → inner wall → keep; banners in the Regent's blue and gold |
+| **Forests** (Whisperwood, Glimmerwood = Sylvanreach recipe) | CraftPix trees and bushes; Sylvanreach floor, moss, ancient trees for the enchanted wood | dense layered canopies; the Glimmerwood teal, glowing, misty |
+| **Swamps** (Greyfen, Duskfen, Mirefen recipe) | CraftPix Poison Swamp ground and dressing + Mirefen water, boardwalks, stilt huts | lime-toxic water, twisted trees, mushrooms, reeds, fog; Duskfen sickly yellow-green |
+| **Crypts and caves** (Chapel Crypt, Barrow of Kings, Gallows Keep, Smugglers' Grotto) | Gloomvault floors, walls, props (primary) + CraftPix rocks, lanterns, skeletons | cold stone, torchlight pools, bones, cobwebs; the Barrow gold-and-grey, the grotto wet and blue |
+| **Highlands** (Ironpeak, Stormwatch) | CraftPix rocks and pines, Royal Keep cliff faces smoothed, grey-blue grade | ledges, pines, wind |
+| **Frozen** (Rimeheld) | CraftPix summer derived: snow grade on ground, frosted trees, ice decals, Royal Keep winter fortress pieces | white, blue shadows, snow particles |
+| **Desert** (Sunscorch, Sablewind) | CraftPix sand ground as the base, sandstone grade on rocks, dry vegetation | sand dunes, ruins, camps, dust |
+| **Haunted / blighted** (Ashen Barrows, Grimward, the Shattered Vale) | primary language with grieflight overlays (violet), dead trees, mist | grey-violet, lanterns, gibbets, crystals |
+| **Warfront** (Highwall) | Royal Keep fortress in damaged/besieged states + CraftPix camp props, ash patches | smoke, tents, siege engines, broken walls |
+| **Sanctuary** (future) | Blossom Shrine + Magic Circles | bright, petals, rune circles |
+| **Dead Kingdom** (future) | Royal Keep skeleton, recolored black and ash; Gloomvault; CraftPix dark props; bespoke Hallow King art | monumental, ashen, frozen moments |
 
-## 4. Characters
+Snow, desert and volcanic lands are **derived from the primary language** (grades, decals, particles) before any
+backup piece is used.
 
-- **Heroes** (seven classes): the paper-doll hero, painted at art resolution, every worn piece visible (the base of
-  the Wardrobe). Scale: 34 × 60 art px canvas, feet one row above the bottom, a soft elliptical contact shadow.
-  Royal Keep figures (48 × 64 cells, feet at 24, 60) stand at the same height, so doorways, props and people agree.
-- **Companions and story figures** have their own figure (`STORY_FOLK`) and portrait, never a recolored villager.
-- **Townsfolk** by role: guard, captain, knight, smith, innkeeper, merchant, elder, monk, wizard, ranger, farmer,
-  bard, noble, king, queen; anyone else is a commoner picked by id.
-- **Foes**: the pack's bandit, skeleton, goblin and dark knight where they truly match; every other foe keeps its
-  procedural art. Elites glow gold; bosses are larger and have their own art.
+## 4. World states
 
-## 5. Spells and danger
+Places change with the story (STORY_BIBLE.md §4): a state swaps props (burned roof / scaffolding / repaired roof),
+adds or removes people and decals (rubble, banners, blood-free scorch marks), and changes ambient effects (smoke,
+embers, fireflies). Occupation always reads at a glance: enemy banners, barricades, braziers, patrols.
 
-- Player effects come from Magic Spells VFX by **element colour**: fire orange, frost/ice pale blue, lightning
-  violet-white, arcane magenta, nature green, poison yellow-green, holy gold, shadow purple, water blue, blood red.
-- Effects are drawn **at most at their 64 px frame size** (2 tiles) for ordinary skills, larger only for ultimates.
-- **Enemy danger is always red and outlined** (telegraph arcs, rings and lanes) and drawn above the ground, below
-  player effects' brightest layer, so a player effect can never hide a telegraph. Rune circles from Magic Circles
-  mark charging boss abilities.
+## 5. Characters (§3.7)
 
-## 6. Acceptance at gameplay zoom
+| Tier | Treatment |
+| --- | --- |
+| **Playable heroes** (7) | Our paper-doll designs kept (every worn piece shows), re-rendered smooth at 64 px per tile: stronger silhouette, class accents on trim/cloak/weapon, soft elliptical contact shadow. Height ~1.7 tiles. **Master hero first: the Mage** (the most iconic silhouette: hat, staff, robe), approved before the other six |
+| **Hallow King, lieutenants** | Bespoke, larger, own ambient VFX |
+| **Companions** (Mara, Elyra, Cael, Nyx, Orren) | Own figures and portraits; never shared with townsfolk |
+| **Townsfolk** | Modular paper-doll variants in the same smooth treatment (clothing, hair, props by role) |
+| **Foes** | Families with readable silhouettes; Worlds-bundle creatures as Level B bases where they match (slimes, boars, goblins, skeletons, bats, spiders, wasps, frogs, wolves), procedural art meanwhile |
 
-Before a piece ships: beside Royal Keep pieces in the engine, at phone and desktop zoom, nobody can point at it and
-say "that came from another pack". Screenshots go in `docs/review/phase-XX/` (the dev page's `window.__rbShot`).
+No hero, companion or Hallow King is an untouched store sprite.
+
+## 6. Spells and danger
+
+- Player effects by element color: fire orange, frost pale blue, lightning violet-white, arcane magenta, nature
+  green, poison lime, holy gold, shadow purple.
+- Enemy danger is **always red-rimmed** (arcs, rings, lanes) and drawn so player effects never cover it.
+- Ordinary skills at one 64 px frame (one tile); ultimates and boss mechanics at ×2; rune circles for wind-ups.
+
+## 7. Review
+
+Every visual phase saves desktop, phone and tablet screenshots in `docs/review/phase-XX/` (the dev page's
+`window.__rbShot`), plus a before/after where a baseline exists.

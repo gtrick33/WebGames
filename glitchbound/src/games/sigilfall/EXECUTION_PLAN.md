@@ -1,0 +1,65 @@
+# Sigilfall — Execution Plan (Blueprint V2.9 §13 order)
+
+Planning artifacts (Prompt 0): REFACTOR_AUDIT.md, ASSET_AUDIT.md, STORY_BIBLE.md, QUEST_REWRITE_MAP.md,
+VISUAL_BIBLE.md, COLLECTION_SYSTEM_DESIGN.md, PROGRESSION_BALANCE.md, this file. The owner has asked for the whole
+plan to be carried out; each phase still ends with a review packet in `docs/review/phase-XX/PHASE_REVIEW.md`
+(screenshots, commands, risks, rollback commit) and is reviewable with APPROVE / APPROVE + COMMENT / REVISE /
+ROLL BACK.
+
+| Phase | Blueprint | Status |
+| --- | --- | --- |
+| 0 | Audit and planning documents | **done** (this commit) |
+| 1 | Stabilization | camera jitter **fixed** (`6943aa45`); Open Barrow **fixed** (`0995dd35`); registry/quest integrity **guarded**; ultimate spam **measured, fix in Phase 3**; quest auto-activation **in Phase 2** (needs the accept step) |
+| 2 | Vertical slice: Briarhollow + Prologue chain + Chapel Crypt + the Mage, the world-event system, the art re-layering | next |
+| 3 | Progression rebalance (PROGRESSION_BALANCE.md Part 2) | after 2 |
+| 4 | Master hero (Mage) smooth re-render, then the other six | after 3 |
+| 5 | Spell expansion: the 4th slot (**done**, `0fc10e2b`), 35 new skills, talent mutations, boss partial CC | after 4 |
+| 6 | Wardrobe + first mount | after 5 |
+| 7 | World art in region batches | after 6 |
+| 8 | Quest rewrite by act (QUEST_REWRITE_MAP.md) | Act by act after 7 |
+| 9 | Companions and cinematic staging | with 8 |
+| 10 | Battles and sieges (Defense of Hearthstead, Highwall) | after 9 |
+| 11–15 | Loot, hubs and interiors, dungeons, endgame, audio/polish | in order |
+| 16 | Full regression and release gate | last |
+
+## Phase 2 in detail (the vertical slice)
+
+**2a — Render grid and art re-layering** (ASSET_AUDIT.md)
+- Renderer at 4 art px per world px (`RES`), procedural art unchanged (drawn at world size).
+- Art build: CraftPix Simple Summer and Poison Swamp ground (corner-transition sets analysed into a corner-Wang
+  lookup at build time), CraftPix props and towers; Greenvale and Gloomvault Level B pieces with normalization
+  grades; Royal Keep architecture smoothed ×2; VFX unchanged. A scale table per pack.
+- Ground painter: corner-Wang for CraftPix and Worlds-bundle transitions (dual grid), Royal Keep 47-blob only for
+  castle walls, moats and cliffs in fortified places.
+- Scenery: CraftPix trees, bushes, rocks, fences and props; Greenvale cottages; Royal Keep only for keeps, walls,
+  gatehouses, towers and the chapel; Gloomvault crypt dressing.
+- People: townsfolk back to the paper-doll figures (Royal Keep folk are Level C); companions get their own looks.
+
+**2b — World states and events** (STORY_BIBLE.md §4)
+- `RegionState`: a region declares named states with conditions on quest progress; a state adds/removes markers
+  (props, NPCs, spawns), swaps prop variants (roof → burned roof), sets ambience (smoke, embers, night tint) and
+  music. Chosen when the region is entered, and re-chosen when a quest changes.
+- `StoryEvent` objectives on quests: `raid` (waves into an area), `defend` (hold a point; allies on screen; a gate
+  with health), `rescue` (reach people; they follow to a safe point), `escort` (a group walks a path), `ambush`,
+  `arrival`. Events are driven by the existing waves/telegraph/enemy systems and resume after a reload from the
+  quest's saved step.
+- Companion **barks** and short in-engine **dialogue beats** (camera focus, NPC move-to, emote) with skip.
+- The quest **accept step**: story and side quests are offered by their giver ("!"), accepted in dialogue, then
+  tracked (fixes the auto-activation bug).
+
+**2c — Briarhollow** (new region, a hand-authored village map in the Section 7 recipe) with dusk, raid,
+aftermath and camp states; the Prologue chain (QUEST_REWRITE_MAP.md "New quests"); the Chapel Crypt (the old crypt
+region, retold); new heroes start in Briarhollow, existing heroes keep Emberwick (save v3 marks the Prologue done for
+anyone past `close-the-rift`).
+
+**2d — The slice's class**: the Mage with the 4th slot and two of its new skills (Gravity Well, Purge), Magic Spells
+VFX.
+
+**2e — Evidence**: desktop, phone and tablet screenshots of Briarhollow in each state, the raid, the crypt and the
+Mage's spells; tests for states, events (including reload mid-event), the accept step and the save migration.
+
+## Rules carried through every phase
+
+Save migrations are versioned and tested; ids are never renamed; raw packs never enter the bundle; every phase runs
+typecheck, lint, the Sigilfall tests and the production build before its packet; commits by pathspec, pushed to
+`pre-release`.
