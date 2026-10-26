@@ -838,7 +838,7 @@ export function updateFields(w: World, dt: number): void {
         if (!p.dead && dist2(p.x, p.y, f.x, f.y) < (f.r + p.r * 0.5) ** 2) hurtPlayer(w, f.dmg, { status: f.status });
       } else {
         for (const e of enemiesIn(w, f.x, f.y, f.r)) {
-          const d = hitEnemy(w, e, f.dmg, f.type, { spec: f.depth === 0 ? f.spec : null, depth: f.depth, isDot: f.look !== 'arrows', fromX: f.x, fromY: f.y, knock: 0, charge: f.look === 'arrows' ? 0.8 : 0.3 });
+          const d = hitEnemy(w, e, f.dmg, f.type, { spec: f.depth === 0 ? f.spec : null, depth: f.depth, isDot: f.look !== 'arrows', fromX: f.x, fromY: f.y, knock: 0, charge: f.look === 'arrows' ? 0.6 : 0.25 });
           if (f.status) applyStatus(w, e, f.status, d);
           if (f.onHit && f.spec) applyEffects(w, f.spec.onHit, { x: e.x, y: e.y, angle: 0, spec: f.spec, base: f.dmg, type: f.type, depth: f.depth, target: e, hitDmg: d, when: 'hit' });
         }

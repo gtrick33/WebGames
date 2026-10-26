@@ -52,6 +52,7 @@ export const PRIEST: Kit = {
       },
     ],
     refDamage: 19,
+    ultRate: 1.8,
     resource: { kind: 'mana', name: 'Mana', color: '#7ab8ff', base: 110, perLevel: 7, regen: 3.5 },
     colors: { main: '#e8e0c8', dark: '#8a7a5a', accent: '#ffd84d' },
   },

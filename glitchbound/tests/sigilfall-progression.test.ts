@@ -1,0 +1,135 @@
+import { describe, expect, it } from 'vitest';
+import { CLASS_IDS, xpToNext } from '../src/games/sigilfall/data/classes';
+import { EVENTS } from '../src/games/sigilfall/data/events';
+import { mainStory, outlevelled, questBand, SIDE_XP } from '../src/games/sigilfall/data/progression';
+import { QUESTS, QUEST_DEFS } from '../src/games/sigilfall/data/quests';
+import { REGIONS } from '../src/games/sigilfall/data/regions';
+import type { QuestDef, RegionId } from '../src/games/sigilfall/data/types';
+import { ZONES } from '../src/games/sigilfall/data/zones';
+import { respecCost } from '../src/games/sigilfall/progress/character';
+import { migrate } from '../src/games/sigilfall/progress/save';
+import { ultFloor } from '../src/games/sigilfall/sim/world';
+import { newWorld, play, readyHero } from './sigilfall-bot';
+
+/**
+ * The progression rebalance (PROGRESSION_BALANCE.md Part 2): the campaign model for XP (a main-story-only
+ * hero enters every region at its floor; a completionist stays inside each region's band), the ultimate's
+ * pace in sustained combat, and the respec price.
+ */
+
+const NPC_REGION: Record<string, RegionId> = Object.fromEntries(ZONES.flatMap((z) => Object.keys(z.npcs).map((id) => [id, z.region.id] as const)));
+const band = (q: QuestDef): RegionId => questBand(q, QUEST_DEFS, REGIONS, NPC_REGION, EVENTS);
+const floor = (r: RegionId): number => REGIONS[r]!.levels[0];
+
+/**
+ * Plays the campaign on paper: quests in the order they open (lowest band first), about six kills on the
+ * way to each (or what its objective asks), XP as the game pays it (rewards already rebalanced, falloff
+ * for content the hero has out-grown). Returns the hero's level on first reaching each band.
+ */
+function campaign(full: boolean): Record<string, number> {
+  const main = mainStory(QUEST_DEFS);
+  const list = QUESTS.filter((q) => full || main.has(q.id));
+  const ids = new Set(list.map((q) => q.id));
+  const done = new Set<string>();
+  let level = 1;
+  let xp = 0;
+  const add = (n: number): void => {
+    xp += n;
+    while (xp >= xpToNext(level)) {
+      xp -= xpToNext(level);
+      level++;
+    }
+  };
+  const entry: Record<string, number> = {};
+  while (done.size < list.length) {
+    const open = list.filter((q) => !done.has(q.id) && (q.after ?? []).every((a) => done.has(a) || !ids.has(a)));
+    // what the hero is level for (a quest with a level waits for it, and nobody goes to a land far above
+    // them while there is something nearer to do), lowest band first
+    const fit = open.filter((q) => (!q.level || q.level <= level) && floor(band(q)) <= level + 1);
+    const ready = (fit.length ? fit : open).sort((a, b) => floor(band(a)) - floor(band(b)) || (a.level ?? 0) - (b.level ?? 0));
+    const q = ready[0];
+    if (!q) break;
+    done.add(q.id);
+    const b = band(q);
+    const R = REGIONS[b]!;
+    // a gate quest with its own level (Heroic, Mythic) doesn't mark the hero arriving in the band
+    if (!(q.level && q.level > R.levels[1])) entry[b] ??= level + xp / xpToNext(level);
+    const mid = Math.round((R.levels[0] + R.levels[1]) / 2);
+    const o = q.objective;
+    const kills = o.kind === 'kill' ? o.count : o.kind === 'loot' ? Math.ceil(o.count / o.chance) : 6;
+    add(kills * 11 * (1 + 0.15 * (mid - 1)) * 0.5 * outlevelled(level, mid, 2));
+    add(q.reward.xp * outlevelled(level, q.xpLevel ?? level, 1));
+  }
+  return entry;
+}
+
+describe('Sigilfall: progression', () => {
+  it('a hero who plays only the main story enters every region at its floor (±1)', () => {
+    const entry = campaign(false);
+    const bands = Object.keys(entry).filter((b) => b !== 'whisperwood');
+    expect(bands.length).toBeGreaterThan(12);
+    for (const b of bands) expect(Math.abs(entry[b]! - floor(b as RegionId) - 0.5), `${b}: L${entry[b]!.toFixed(1)} for floor ${floor(b as RegionId)}`).toBeLessThanOrEqual(1.5);
+  });
+
+  it('a hero who does everything stays inside each region’s band', () => {
+    const entry = campaign(true);
+    for (const [b, lv] of Object.entries(entry)) {
+      if (b === 'whisperwood') continue;
+      const [lo, hi] = REGIONS[b as RegionId]!.levels;
+      expect(lv, `${b}: L${lv.toFixed(1)} for ${lo}-${hi}`).toBeLessThanOrEqual(hi);
+    }
+  });
+
+  it('side quests pay less than they used to; out-grown content pays less still', () => {
+    expect(SIDE_XP).toBeLessThan(1);
+    expect(outlevelled(30, 30, 1)).toBe(1);
+    expect(outlevelled(30, 20, 1)).toBeCloseTo(0.2);
+    expect(outlevelled(30, 27, 2)).toBeCloseTo(0.8);
+  });
+
+  it('the ultimate takes 20 s a bar at level 3, 28 s at 30 and 32 s from 50', () => {
+    expect(ultFloor(3)).toBe(20);
+    expect(ultFloor(30)).toBeCloseTo(28);
+    expect(ultFloor(50)).toBe(32);
+    expect(ultFloor(60)).toBe(32);
+  });
+
+  it('two minutes of hard fighting earn every class two to five ultimates', () => {
+    const counts: Record<string, number> = {};
+    for (const cls of CLASS_IDS) {
+      const w = newWorld('whisperwood', readyHero(cls, 30));
+      // a crowd of tough foes around the hero, who is kept on their feet
+      for (const e of w.enemies) e.dead = true;
+      for (let i = 0; i < 6; i++) {
+        const e = w.addEnemy('moss-slime', w.player.x + Math.cos(i) * 40, w.player.y + Math.sin(i) * 40, 30, { room: -1, pack: -1 });
+        e.hp = e.maxHp = 1e8;
+        e.aggro = true;
+      }
+      let casts = 0;
+      let prev = w.player.ult;
+      for (let i = 0; i < 240; i++) {
+        play(w, { seconds: 0.5, done: () => false });
+        w.player.hp = w.player.maxHp;
+        w.player.dead = false;
+        if (prev >= 99 && w.player.ult < prev - 40) casts++;
+        prev = w.player.ult;
+      }
+      counts[cls] = casts;
+    }
+    for (const [cls, casts] of Object.entries(counts)) {
+      expect(casts, `${cls}: ${JSON.stringify(counts)}`).toBeGreaterThanOrEqual(2);
+      expect(casts, `${cls}: ${JSON.stringify(counts)}`).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it('respec is free below 20, then level × 10 gold up to 400, and owed once after the rebalance', () => {
+    const c = readyHero('mage', 15);
+    expect(respecCost(c)).toBe(0);
+    c.level = 30;
+    expect(respecCost(c)).toBe(300);
+    c.level = 55;
+    expect(respecCost(c)).toBe(400);
+    const save = migrate({ v: 6, heroes: [{ cls: 'mage', level: 30, quests: {}, talents: { 'mage-a1': 1 } }], last: 0 })!;
+    expect((save.heroes[0] as { freeRespec?: boolean }).freeRespec).toBe(true);
+  });
+});

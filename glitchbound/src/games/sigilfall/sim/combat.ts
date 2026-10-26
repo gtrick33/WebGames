@@ -112,9 +112,14 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   if (w.settings.numbers || crit) w.text(e.x + (w.rand() - 0.5) * 6, e.y - e.r - 6, String(shown), crit ? '#ffe14d' : o.isDot ? DOT_COLOR[type] : '#ffffff', crit);
   if (!o.isDot) w.sfx(crit ? 'crit' : 'hit');
   // ultimate charge: hits worth a typical attack fill about 1/30th, but never faster than the charge budget
-  // allows (it refills over seconds), so a hero with great gear doesn't cast the ultimate every few hits
+  // allows (it refills over seconds), so a hero with great gear doesn't cast the ultimate every few hits.
+  // Normalized at the hit (PROGRESSION_BALANCE.md Part 2, E): the first enemy a direct hit strikes in a
+  // step counts in full and every further one a third; chained, split and proc hits 0.4; damage over time
+  // 0.25 (its own `charge`); the ultimate's own hits nothing
   const ref = CLASSES[w.hero.cls].refDamage * levelPower(w.hero.level);
-  const rate = (o.charge ?? (o.depth === 0 ? 1 : 0.5)) * (1 + stats.ultCharge / 100);
+  const ownUlt = !!spec && spec.id === w.build.bar.ult;
+  const spread = o.depth === 0 && !o.isDot ? (w.ultHits++ === 0 ? 1 : 0.35) : 1;
+  const rate = ownUlt ? 0 : (o.charge ?? (o.depth === 0 ? 1 : 0.4)) * spread * (CLASSES[w.hero.cls].ultRate ?? 1) * (1 + stats.ultCharge / 100);
   if (!e.dummy && w.player.ult < 100) {
     const gain = Math.min((shown / (ref * 30)) * 100 * rate, w.player.ultBudget);
     w.player.ultBudget -= gain;
@@ -184,7 +189,7 @@ export function tickStatuses(w: World, e: Enemy, dt: number): void {
         s.tick += 0.5;
         // the per-second power was sized from a finished hit; take it back to a base for the multipliers
         const per = (s.power * 0.5) / Math.max(0.01, levelPower(w.hero.level) * typeBonus(effStats(w), type));
-        hitEnemy(w, e, per, type, { depth: 1, isDot: true, charge: 0.4 });
+        hitEnemy(w, e, per, type, { depth: 1, isDot: true, charge: 0.25 });
         if (e.dead) return;
       }
     }

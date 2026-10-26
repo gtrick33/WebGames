@@ -4,6 +4,7 @@ import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
 import { ITEM_DEFS, ITEMS } from '../data/items';
 import { QUEST_DEFS, QUESTS } from '../data/quests';
+import { outlevelled } from '../data/progression';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { THEMES } from '../data/themes';
 import { BOSS_MARKS } from '../data/vendors';
@@ -89,7 +90,11 @@ const EXPLORE_XP = 0.03;
  * typical attack of the hero's level, and from the 20s on gear and talents make hits far bigger than that:
  * without a floor the ultimate would come every couple of hits. Early on the floor is out of the way.
  */
-export const ultFloor = (level: number): number => Math.min(6, Math.max(1.5, (level - 14) * 0.25));
+/**
+ * The fewest seconds a full ultimate bar can take in sustained combat (PROGRESSION_BALANCE.md Part 2, E):
+ * 20 at level 3, 28 at 30, 32 from 50. The charge budget refills at one bar per this many seconds.
+ */
+export const ultFloor = (level: number): number => (level <= 3 ? 20 : level <= 30 ? 20 + ((level - 3) * 8) / 27 : Math.min(32, 28 + ((level - 30) * 4) / 20));
 /** The mount: faster outside fights. */
 const MOUNT_SPEED = 1.3;
 /**
@@ -190,6 +195,8 @@ export class World {
   fires: { x: number; y: number; size: number }[] = [];
   /** Flocks of hens already let out (by marker tile). */
   private readonly flocks = new Set<number>();
+  /** Enemies hit so far this step (an area that strikes many charges the ultimate for the first one only). */
+  ultHits = 0;
   /** Plumes the story shows (wisp markers): grieflight, marsh-rot. */
   wisps: { x: number; y: number; color: string; size: number }[] = [];
   /** Named points the story uses (events' places). */
@@ -263,7 +270,7 @@ export class World {
       form: null,
       cds,
       ult: 0,
-      ultBudget: 200,
+      ultBudget: 100,
       combo: 0,
       comboT: 0,
       lastDodge: -99,
@@ -881,9 +888,10 @@ export class World {
   private updatePlayer(dt: number): void {
     const p = this.player;
     const inp = this.input;
-    // the ultimate's charge budget refills at one full bar per ultFloor seconds (two seconds' worth at most)
+    // the ultimate's charge budget refills at one full bar per ultFloor seconds, and never holds more than one
     const ultRate = 100 / ultFloor(this.hero.level);
-    p.ultBudget = Math.min(ultRate * 2, p.ultBudget + dt * ultRate);
+    p.ultBudget = Math.min(100, p.ultBudget + dt * ultRate);
+    this.ultHits = 0;
     if (p.dead) {
       p.deadT += dt / 0.35;
       return;
@@ -1257,7 +1265,8 @@ export class World {
     const bonus = 1 + this.mods.reduce((a, m) => a + RIFT_MODS[m].bonus, 0);
     // raised minions are worth little: a necromancer is not a farm
     const wild = e.pack >= 0 && this.region.holds ? WILD.xp : 1;
-    const xp = e.def.xp * enemyScale(e.level).xp * tier.xp * (e.elite.length ? 4 : 1) * (e.master ? 0.25 : 1) * bonus * wild;
+    // and so does an enemy far below the hero
+    const xp = e.def.xp * enemyScale(e.level).xp * tier.xp * (e.elite.length ? 4 : 1) * (e.master ? 0.25 : 1) * bonus * wild * outlevelled(h.level, e.level, 2);
     this.giveXp(xp);
     const big = e.elite.length > 0 || !!e.def.named;
     const gold = goldDrop(e.def.gold, e.level, this.rand) * (big ? 3 : 1);
@@ -1781,7 +1790,8 @@ export class World {
         this.emit({ t: 'toast', text: `${PERKS[r.perk].name}: ${PERKS[r.perk].text}`, tone: 'good' });
         this.rebuild();
       }
-      this.giveXp(r.xp);
+      // a quest the hero has long out-grown pays less (data/progression.ts)
+      this.giveXp(Math.round(r.xp * outlevelled(h.level, q.xpLevel ?? h.level, 1)));
       if (q.id === 'rift-shards') h.shards = Math.max(0, h.shards - 3);
     }
     for (const q of startQuests(h)) this.emit({ t: 'questStart', quest: q.id });

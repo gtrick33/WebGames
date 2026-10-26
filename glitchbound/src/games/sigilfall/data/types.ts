@@ -425,6 +425,11 @@ export interface ClassDef {
   forms?: FormDef[];
   /** Damage a typical hit deals at level 1 (scales item procs and ultimate charge). */
   refDamage: number;
+  /**
+   * Ultimate charge per hit against refDamage (default 1): classes that spend their time mending or
+   * striking one foe at a time earn more from each hit, so every class's ultimate comes about as often.
+   */
+  ultRate?: number;
   /** A spell resource (mana): skills cost a share of it. Classes without one cast on cooldowns alone. */
   resource?: ResourceDef;
   colors: { main: string; dark: string; accent: string };
@@ -788,6 +793,8 @@ export interface QuestDef {
   zone?: RegionId;
   /** Only from this level. */
   level?: number;
+  /** The level it pays its full XP to (set by the rebalance, data/progression.ts; the hero past it gets less). */
+  xpLevel?: number;
   /**
    * Starts by itself (the story's own beats, tutorials) instead of waiting for the hero to accept it from
    * its giver.

@@ -1,5 +1,8 @@
+import { EVENTS } from './events';
+import { balanceQuestXp } from './progression';
+import { REGIONS } from './regions';
 import { STORY_QUESTS } from './story';
-import type { NpcDef, QuestDef } from './types';
+import type { NpcDef, QuestDef, RegionId } from './types';
 import { ZONES } from './zones';
 
 /**
@@ -129,6 +132,11 @@ export const QUESTS: QuestDef[] = [
 QUESTS.push(...STORY_QUESTS, ...ZONES.flatMap((z) => z.quests));
 
 export const QUEST_DEFS: Record<string, QuestDef> = Object.fromEntries(QUESTS.map((q) => [q.id, q]));
+
+// the rebalance (PROGRESSION_BALANCE.md Part 2, A): main-story rewards by region, side quests less, and
+// each quest's level for the out-levelled falloff (QUESTS and QUEST_DEFS hold the same objects)
+const NPC_REGION: Record<string, RegionId> = Object.fromEntries(ZONES.flatMap((z) => Object.keys(z.npcs).map((id) => [id, z.region.id] as const)));
+balanceQuestXp(QUEST_DEFS, REGIONS, NPC_REGION, EVENTS);
 
 export const NPCS: Record<string, NpcDef> = {
   brannoc: {

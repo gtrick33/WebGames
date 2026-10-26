@@ -45,6 +45,7 @@ export const PALADIN: Kit = {
       },
     ],
     refDamage: 22,
+    ultRate: 1.35,
     resource: { kind: 'holy', name: 'Holy Power', color: '#ffd84d', base: 5, perLevel: 0, regen: 0.5 },
     colors: { main: '#e8b84a', dark: '#8a6a2a', accent: '#fff2b0' },
   },

@@ -67,6 +67,8 @@ export interface Character {
   talents: Record<string, number>;
   /** The chosen specialization (a talent tree, 0-2), from level 10; null before choosing. */
   spec: 0 | 1 | 2 | null;
+  /** One free respec owed (the talents were rebalanced after the hero chose them). */
+  freeRespec?: boolean;
   /** Skills in slots 1-3 (null = empty). */
   skills: [string | null, string | null, string | null, string | null];
   equip: Partial<Record<SlotId, Item>>;
@@ -160,8 +162,11 @@ export const hasUltimate = (c: Character): boolean => (SKILLS[CLASSES[c.cls].ult
 
 /** New skills go into an empty slot by themselves, so a new player never has to visit a menu to use them. */
 export function autoSlotSkills(c: Character): void {
+  // a shape that belongs to another specialization (a Balance druid's Cat Form) stays learned, off the bar
+  const forms = CLASSES[c.cls].forms ?? [];
+  const offSpec = (id: string): boolean => c.spec !== null && forms.some((f) => f.skill === id && f.specSwap !== undefined && f.specSwap.tree !== c.spec);
   for (const id of learnedSkills(c)) {
-    if (c.skills.includes(id)) continue;
+    if (c.skills.includes(id) || offSpec(id)) continue;
     const free = c.skills.indexOf(null);
     if (free >= 0) c.skills[free] = id;
   }
@@ -224,10 +229,14 @@ export function chooseSpec(c: Character, tree: 0 | 1 | 2): boolean {
   if (c.spec !== null) {
     c.gold -= specCost(c);
     c.talents = {};
+    delete c.freeRespec;
     const old = def.trees[c.spec].skill;
     c.skills = c.skills.map((id) => (id === old ? null : id)) as Character['skills'];
   }
   c.spec = tree;
+  // the other specializations' shapes come off the bar (still learned); their slots fill from what's left
+  const others = (def.forms ?? []).filter((f) => f.specSwap && f.specSwap.tree !== tree).map((f) => f.skill);
+  c.skills = c.skills.map((id) => (id && others.includes(id) ? null : id)) as Character['skills'];
   autoSlotSkills(c);
   // the specialization's ability goes on the bar even when it is full (in the last slot; what was there
   // stays learned and can go back from the Skills screen)
@@ -243,13 +252,18 @@ export function learnTalent(c: Character, id: string): boolean {
 }
 
 /** Resetting talents is free up to level 15, then costs a little gold per level. */
-export const respecCost = (c: Character): number => (c.level < 15 ? 0 : c.level * 25);
+/**
+ * What re-choosing talents costs (PROGRESSION_BALANCE.md Part 2, D): free below level 20, then level × 10
+ * gold up to 400; free once when the game owes it (a rebalance changed the talents after they were chosen).
+ */
+export const respecCost = (c: Character): number => (c.freeRespec || c.level < 20 ? 0 : Math.min(400, c.level * 10));
 
 export function respec(c: Character): boolean {
   const cost = respecCost(c);
   if (c.gold < cost || spentPoints(c) === 0) return false;
   c.gold -= cost;
   c.talents = {};
+  delete c.freeRespec;
   return true;
 }
 

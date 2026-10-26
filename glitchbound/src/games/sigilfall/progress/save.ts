@@ -28,7 +28,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -193,6 +193,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     }
   }
   if (spent > talentPoints(c) || !talentsLegal(c)) c.talents = {};
+  if (o.freeRespec === true) c.freeRespec = true;
   c.potions = Math.min(c.potions, potionCap(c));
   // skills: only learned skills of this class
   const learned = learnedSkills(c);
@@ -350,6 +351,16 @@ export function migrate(raw: unknown): SaveFile | null {
       if ((thorn === 'active' || thorn === 'done') && !quests['silvaines-song']) quests['silvaines-song'] = { state: 'done', n: -1 };
     }
     o.v = 6;
+  }
+  // version 7: the progression rebalance (PROGRESSION_BALANCE.md Part 2). Levels and talents load as they
+  // are (nobody loses a level); every hero who had spent points gets one free respec to re-choose them
+  if (o.v === 6) {
+    for (const h of Array.isArray(o.heroes) ? o.heroes : []) {
+      const hero = obj(h);
+      const talents = hero ? obj(hero.talents) : null;
+      if (hero && talents && Object.keys(talents).length) hero.freeRespec = true;
+    }
+    o.v = 7;
   }
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];

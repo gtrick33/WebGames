@@ -51,6 +51,7 @@ export const DRUID: Kit = {
       { id: 'bear', name: 'Bear Form', skill: 'bear-form', basic: 'maul', skills: ['thrash', 'frenzied-regeneration'], specSwap: { tree: 2, slot: 1, skill: 'ironfur' }, dodge: 'bear-charge', stats: { armor: 40 }, hpPct: 30 },
     ],
     refDamage: 20,
+    ultRate: 1.3,
     resource: { kind: 'mana', name: 'Mana', color: '#4aa8ff', base: 100, perLevel: 6, regen: 3 },
     colors: { main: '#d07a2a', dark: '#6a3a14', accent: '#7bd65a' },
   },

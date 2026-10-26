@@ -162,6 +162,23 @@ Normal (loot clutter, Section 8). Act milestones get one guaranteed rare-or-bett
 - **Mythic**: clear the Chapel Crypt on Heroic and reach level 17 (the `mythic` quest).
 - Both shown in the quest log with their requirements from the moment they exist.
 
+## Part 2½ — What shipped
+
+- **A (XP)**: main story = everything the act-ending chains need (`data/progression.ts`, MAIN_STORY_ENDS);
+  main rewards scaled per region (MAIN_XP, fitted by a campaign model), side quests ×0.6, and quests/kills
+  well below the hero pay less (−20 % per level past a grace of 1/2, floor 20 %). The model
+  (`tests/sigilfall-progression.test.ts`) asserts: main-story-only enters every region at its floor ±1;
+  a completionist stays inside every region's band. The proposal's "+3" was not reachable without
+  starving side content; staying inside the band (≤ +6) is the shipped target.
+- **D (respec)**: free below 20, then level × 10 gold up to 400; one free respec for every hero with spent
+  points (save v7).
+- **E (ultimate)**: 20 s per bar at 3 → 28 s at 30 → 32 s at 50+; per-step hit normalization (first enemy
+  ×1, further ×0.35, chained/split ×0.4, DoT ×0.25, the ultimate's own hits ×0); per-class `ultRate`
+  (priest 1.8, paladin/ranger 1.35, druid 1.3). Benchmark: every class earns 2–5 ultimates in 120 s.
+- Found on the way: a specialization now takes the other specs' druid forms off the bar (a Balance
+  druid had Cat Form slotted instead of a spell); the Chapel Crypt is levels 5–7 (the Prologue's).
+- Not yet: F (gear steps) and G (gates shown in the log) stay as they are.
+
 ## Part 3 — Migration
 
 No id changes. Levels, XP, talents and bars load as they are. Over-levelled heroes stay over-levelled (we never take

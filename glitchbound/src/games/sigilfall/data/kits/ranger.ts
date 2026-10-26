@@ -45,6 +45,7 @@ export const RANGER: Kit = {
       },
     ],
     refDamage: 20,
+    ultRate: 1.35,
     resource: { kind: 'focus', name: 'Focus', color: '#e8b04a', base: 100, perLevel: 0, regen: 12 },
     colors: { main: '#3f8f5a', dark: '#22553a', accent: '#c9a35a' },
   },

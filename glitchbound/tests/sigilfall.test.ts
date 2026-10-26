@@ -339,17 +339,17 @@ describe('sigilfall character', () => {
     expect(learnTalent(c, 'ignition')).toBe(true);
     expect(learnTalent(c, 'wildfire')).toBe(false); // no points left
     expect(freePoints(c)).toBe(0);
-    // resetting costs gold from level 15 and gives every point back
-    expect(respecCost(c)).toBe(500);
+    // resetting costs gold from level 20 (level × 10) and gives every point back
+    expect(respecCost(c)).toBe(200);
     expect(respec(c)).toBe(false);
-    c.gold = 600;
+    c.gold = 300;
     expect(respec(c)).toBe(true);
     expect(c.gold).toBe(100);
     expect(freePoints(c)).toBe(11);
     // changing the specialization costs the same and resets talents; its ability leaves the bar
     learnTalent(c, 'kindling');
     c.skills = ['fireball', 'flamestrike', null, null];
-    c.gold = 500;
+    c.gold = 200;
     expect(chooseSpec(c, 2)).toBe(true);
     expect(c.gold).toBe(0);
     expect(c.talents).toEqual({});
