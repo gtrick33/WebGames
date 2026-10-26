@@ -111,7 +111,10 @@ outline weight.
 | Briarhollow Chestnut | Act I: the camp's first horse (after the Defense of Hearthstead) |
 | Gullport Strider | the old `mount` perk (Captain Saltbeard): existing owners get it |
 | Royal Warhorse | Act II: the Regent's champion (after the Starfall Festival) |
-| Mirefen Boar | Duskfen: Bogmaw's salvage |
+| Mirefen Boar | Duskfen: Low Wick, once the plague is burned out |
+| Deepforge War-Boar | Act II: the dwarves, once their forge is theirs again |
+| Sun-House Courser | Act III: the sun houses (gold barding) |
+| Lastlight Hart | Act IV: the night under the Gloam Gate |
 | Glimmer Hart | Act III: the forest clans |
 | Frost Elk | Act III: Jarl Sigrun |
 | Ashen Nightmare | Heroic Barrow of Kings |
