@@ -1,4 +1,4 @@
-import { hash2 } from '../core/math';
+import { hash2, noise2 } from '../core/math';
 import { REGIONS } from '../data/regions';
 import type { Marker } from '../data/types';
 import { K, TILE, type TileMap } from '../sim/map';
@@ -194,7 +194,10 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
           const nk = kindAt(tx + dx, ty + dy);
           if (nk === K.Wall || nk === K.Tree || nk === K.Water || nk === K.Rock) rim = true;
         }
-        if (h > (rim ? 0.74 : 0.965)) stand(pick(r.flora, hash2(tx, ty, 95)), cx + (hash2(tx, ty, 96) - 0.5) * 10, bottom - 3 - hash2(tx, ty, 97) * 8, 'flora');
+        // plants gather in soft clumps across the open land (a meadow, not an even sprinkle), thicker at the
+        // foot of woods, rocks and water
+        const clump = noise2(tx / 7, ty / 7, 191) > 0.64;
+        if (h > (rim ? 0.74 : clump ? 0.82 : 0.975)) stand(pick(r.flora, hash2(tx, ty, 95)), cx + (hash2(tx, ty, 96) - 0.5) * 10, bottom - 3 - hash2(tx, ty, 97) * 8, 'flora');
         break;
       }
       default:
