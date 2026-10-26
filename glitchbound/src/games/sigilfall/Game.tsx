@@ -28,12 +28,22 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
     // a handle for automated play-testing on the dev server only (never in a build)
     if (import.meta.env.DEV) {
       (window as unknown as { __rb?: SigilEngine }).__rb = e;
-      // review screenshots: the game view drawn at a chosen screen size (CSS px, at 1×), saved by the dev server
-      (window as unknown as { __rbShot?: (name: string, size?: [number, number], touch?: boolean) => Promise<string> }).__rbShot = async (name, size, touch) => {
+      // review screenshots: the game view drawn at a chosen screen size (CSS px, at 1×), saved by the dev server;
+      // `crop` keeps only a box of that many canvas pixels round the middle (a close look at the hero)
+      (window as unknown as { __rbShot?: (name: string, size?: [number, number], touch?: boolean, crop?: [number, number]) => Promise<string> }).__rbShot = async (name, size, touch, crop) => {
         const r = e.renderer;
         if (size) r.resize(size[0], size[1], 1, touch ?? e.touchMode);
         if (e.world) r.draw(e.world, 0.016, performance.now() / 1000);
-        const blob = await new Promise<Blob | null>((ok) => r.canvas.toBlob(ok, name.endsWith('.jpg') ? 'image/jpeg' : 'image/png', 0.88));
+        let src: HTMLCanvasElement = r.canvas;
+        if (crop) {
+          src = document.createElement('canvas');
+          src.width = crop[0];
+          src.height = crop[1];
+          const g = src.getContext('2d')!;
+          g.imageSmoothingEnabled = false;
+          g.drawImage(r.canvas, (r.canvas.width - crop[0]) / 2, (r.canvas.height - crop[1]) / 2 - crop[1] * 0.08, crop[0], crop[1], 0, 0, crop[0], crop[1]);
+        }
+        const blob = await new Promise<Blob | null>((ok) => src.toBlob(ok, name.endsWith('.jpg') ? 'image/jpeg' : 'image/png', 0.88));
         if (size) fit();
         const res = await fetch(`/__sigilfall/shot?name=${encodeURIComponent(name)}`, { method: 'POST', body: blob });
         return res.text();

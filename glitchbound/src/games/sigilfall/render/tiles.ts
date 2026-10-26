@@ -10,6 +10,7 @@ import { WorldGround } from './worldGround';
 import { buildWorldObjects } from './worldScenery';
 import { building } from './art/buildings';
 import { FLAT_FURNITURE, furniture } from './art/furniture';
+import { dungeonEntrance } from './art/entrances';
 import { bushArt, cactus, crystalSpire, deadTree, edgeTrunk, jungleTree, mushroomTree, oakTree, palmTree, pineTree, rockArt, willowTree } from './art/flora';
 import type { Painter } from './art/kit';
 import { canvas, ctx2d, DETAIL, outlined, smooth2x, type Cnv } from './pixel';
@@ -239,8 +240,11 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
           // the Hollow Crypt's gate, drawn once for the pair of gate tiles
           const c = cryptGate();
           if (!sc.objects.some((o) => o.kind === 'gate')) sc.objects.push({ x: x + 8, y: bottom + 1, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 4, fade: false, kind: 'gate' });
-        } else {
-          const c = caveMouth();
+        } else if (!sc.objects.some((o) => o.kind === 'gate' && Math.abs(o.x - x) < 2.5 * TILE && Math.abs(o.y - bottom) < 2.5 * TILE)) {
+          // its own door for each dungeon (render/art/entrances.ts), once for a wide doorway
+          const to = REGIONS[m.to];
+          const raw = dungeonEntrance(to.theme, to.id);
+          const c = raw ? outline(raw) : caveMouth();
           sc.objects.push({ x, y: bottom + 1, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 4, fade: false, kind: 'gate' });
         }
       } else if (!sc.objects.some((o) => o.kind === 'sign' && Math.abs(o.x - (x - 10)) < 3 * TILE && Math.abs(o.y - (bottom - 14)) < 3 * TILE)) {
