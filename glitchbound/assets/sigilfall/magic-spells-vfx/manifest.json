@@ -1,0 +1,1995 @@
+{
+  "pack": "Magic Spells VFX",
+  "version": "2.0",
+  "animations": 248,
+  "frame_size": [
+    64,
+    64
+  ],
+  "effects_list": {
+    "charge": {
+      "sheet": "charge/charge_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "charge"
+    },
+    "cast": {
+      "sheet": "cast/cast_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "cast"
+    },
+    "bolt": {
+      "sheet": "bolt/bolt_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "original",
+      "base_effect": "bolt"
+    },
+    "impact": {
+      "sheet": "impact/impact_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "original",
+      "base_effect": "impact"
+    },
+    "fizzle": {
+      "sheet": "fizzle/fizzle_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "original",
+      "base_effect": "fizzle"
+    },
+    "fire_cast": {
+      "sheet": "fire_cast/fire_cast_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "fire_cast"
+    },
+    "fire_impact": {
+      "sheet": "fire_impact/fire_impact_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "fire_impact"
+    },
+    "ice_cast": {
+      "sheet": "ice_cast/ice_cast_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "ice_cast"
+    },
+    "ice_shatter": {
+      "sheet": "ice_shatter/ice_shatter_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "ice_shatter"
+    },
+    "zap": {
+      "sheet": "zap/zap_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "original",
+      "base_effect": "zap"
+    },
+    "thunder": {
+      "sheet": "thunder/thunder_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "original",
+      "base_effect": "thunder"
+    },
+    "wind": {
+      "sheet": "wind/wind_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "original",
+      "base_effect": "wind"
+    },
+    "poison": {
+      "sheet": "poison/poison_sheet.png",
+      "frames": 12,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "original",
+      "base_effect": "poison"
+    },
+    "holy": {
+      "sheet": "holy/holy_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "holy"
+    },
+    "shadow": {
+      "sheet": "shadow/shadow_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "shadow"
+    },
+    "arcane_blast": {
+      "sheet": "arcane_blast/arcane_blast_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "original",
+      "base_effect": "arcane_blast"
+    },
+    "enchant": {
+      "sheet": "enchant/enchant_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "original",
+      "base_effect": "enchant"
+    },
+    "rune": {
+      "sheet": "rune/rune_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "rune"
+    },
+    "dispel": {
+      "sheet": "dispel/dispel_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "dispel"
+    },
+    "heal": {
+      "sheet": "heal/heal_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "original",
+      "base_effect": "heal"
+    },
+    "buff": {
+      "sheet": "buff/buff_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "original",
+      "base_effect": "buff"
+    },
+    "debuff": {
+      "sheet": "debuff/debuff_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "original",
+      "base_effect": "debuff"
+    },
+    "mana": {
+      "sheet": "mana/mana_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "original",
+      "base_effect": "mana"
+    },
+    "shield_up": {
+      "sheet": "shield_up/shield_up_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "shield_up"
+    },
+    "shield_break": {
+      "sheet": "shield_break/shield_break_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "shield_break"
+    },
+    "teleport": {
+      "sheet": "teleport/teleport_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "teleport"
+    },
+    "portal": {
+      "sheet": "portal/portal_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "original",
+      "base_effect": "portal"
+    },
+    "summon": {
+      "sheet": "summon/summon_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "original",
+      "base_effect": "summon"
+    },
+    "time_warp": {
+      "sheet": "time_warp/time_warp_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "original",
+      "base_effect": "time_warp"
+    },
+    "spell_ready": {
+      "sheet": "spell_ready/spell_ready_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "original",
+      "base_effect": "spell_ready"
+    },
+    "elements/fire/charge_fire": {
+      "sheet": "elements/fire/charge_fire/charge_fire_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "charge"
+    },
+    "elements/fire/cast_fire": {
+      "sheet": "elements/fire/cast_fire/cast_fire_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "cast"
+    },
+    "elements/fire/bolt_fire": {
+      "sheet": "elements/fire/bolt_fire/bolt_fire_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "fire",
+      "base_effect": "bolt"
+    },
+    "elements/fire/impact_fire": {
+      "sheet": "elements/fire/impact_fire/impact_fire_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "impact"
+    },
+    "elements/fire/fizzle_fire": {
+      "sheet": "elements/fire/fizzle_fire/fizzle_fire_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "fizzle"
+    },
+    "elements/fire/ice_shatter_fire": {
+      "sheet": "elements/fire/ice_shatter_fire/ice_shatter_fire_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "ice_shatter"
+    },
+    "elements/fire/thunder_fire": {
+      "sheet": "elements/fire/thunder_fire/thunder_fire_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "thunder"
+    },
+    "elements/fire/enchant_fire": {
+      "sheet": "elements/fire/enchant_fire/enchant_fire_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "fire",
+      "base_effect": "enchant"
+    },
+    "elements/fire/rune_fire": {
+      "sheet": "elements/fire/rune_fire/rune_fire_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "rune"
+    },
+    "elements/fire/dispel_fire": {
+      "sheet": "elements/fire/dispel_fire/dispel_fire_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "dispel"
+    },
+    "elements/fire/buff_fire": {
+      "sheet": "elements/fire/buff_fire/buff_fire_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "fire",
+      "base_effect": "buff"
+    },
+    "elements/fire/debuff_fire": {
+      "sheet": "elements/fire/debuff_fire/debuff_fire_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "fire",
+      "base_effect": "debuff"
+    },
+    "elements/fire/shield_up_fire": {
+      "sheet": "elements/fire/shield_up_fire/shield_up_fire_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "shield_up"
+    },
+    "elements/fire/shield_break_fire": {
+      "sheet": "elements/fire/shield_break_fire/shield_break_fire_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "shield_break"
+    },
+    "elements/fire/teleport_fire": {
+      "sheet": "elements/fire/teleport_fire/teleport_fire_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "teleport"
+    },
+    "elements/fire/portal_fire": {
+      "sheet": "elements/fire/portal_fire/portal_fire_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "fire",
+      "base_effect": "portal"
+    },
+    "elements/fire/summon_fire": {
+      "sheet": "elements/fire/summon_fire/summon_fire_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "summon"
+    },
+    "elements/fire/spell_ready_fire": {
+      "sheet": "elements/fire/spell_ready_fire/spell_ready_fire_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "fire",
+      "base_effect": "spell_ready"
+    },
+    "elements/fire/arcane_blast_fire": {
+      "sheet": "elements/fire/arcane_blast_fire/arcane_blast_fire_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "fire",
+      "base_effect": "arcane_blast"
+    },
+    "elements/ice/charge_ice": {
+      "sheet": "elements/ice/charge_ice/charge_ice_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "charge"
+    },
+    "elements/ice/cast_ice": {
+      "sheet": "elements/ice/cast_ice/cast_ice_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "cast"
+    },
+    "elements/ice/bolt_ice": {
+      "sheet": "elements/ice/bolt_ice/bolt_ice_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "ice",
+      "base_effect": "bolt"
+    },
+    "elements/ice/impact_ice": {
+      "sheet": "elements/ice/impact_ice/impact_ice_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "impact"
+    },
+    "elements/ice/fizzle_ice": {
+      "sheet": "elements/ice/fizzle_ice/fizzle_ice_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "fizzle"
+    },
+    "elements/ice/fire_impact_ice": {
+      "sheet": "elements/ice/fire_impact_ice/fire_impact_ice_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "fire_impact"
+    },
+    "elements/ice/thunder_ice": {
+      "sheet": "elements/ice/thunder_ice/thunder_ice_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "thunder"
+    },
+    "elements/ice/enchant_ice": {
+      "sheet": "elements/ice/enchant_ice/enchant_ice_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "ice",
+      "base_effect": "enchant"
+    },
+    "elements/ice/rune_ice": {
+      "sheet": "elements/ice/rune_ice/rune_ice_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "rune"
+    },
+    "elements/ice/buff_ice": {
+      "sheet": "elements/ice/buff_ice/buff_ice_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "ice",
+      "base_effect": "buff"
+    },
+    "elements/ice/debuff_ice": {
+      "sheet": "elements/ice/debuff_ice/debuff_ice_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "ice",
+      "base_effect": "debuff"
+    },
+    "elements/ice/shield_up_ice": {
+      "sheet": "elements/ice/shield_up_ice/shield_up_ice_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "shield_up"
+    },
+    "elements/ice/shield_break_ice": {
+      "sheet": "elements/ice/shield_break_ice/shield_break_ice_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "shield_break"
+    },
+    "elements/ice/teleport_ice": {
+      "sheet": "elements/ice/teleport_ice/teleport_ice_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "teleport"
+    },
+    "elements/ice/portal_ice": {
+      "sheet": "elements/ice/portal_ice/portal_ice_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "ice",
+      "base_effect": "portal"
+    },
+    "elements/ice/summon_ice": {
+      "sheet": "elements/ice/summon_ice/summon_ice_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "summon"
+    },
+    "elements/ice/spell_ready_ice": {
+      "sheet": "elements/ice/spell_ready_ice/spell_ready_ice_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "ice",
+      "base_effect": "spell_ready"
+    },
+    "elements/ice/arcane_blast_ice": {
+      "sheet": "elements/ice/arcane_blast_ice/arcane_blast_ice_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "ice",
+      "base_effect": "arcane_blast"
+    },
+    "elements/lightning/charge_lightning": {
+      "sheet": "elements/lightning/charge_lightning/charge_lightning_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "charge"
+    },
+    "elements/lightning/cast_lightning": {
+      "sheet": "elements/lightning/cast_lightning/cast_lightning_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "cast"
+    },
+    "elements/lightning/bolt_lightning": {
+      "sheet": "elements/lightning/bolt_lightning/bolt_lightning_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "lightning",
+      "base_effect": "bolt"
+    },
+    "elements/lightning/impact_lightning": {
+      "sheet": "elements/lightning/impact_lightning/impact_lightning_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "impact"
+    },
+    "elements/lightning/fizzle_lightning": {
+      "sheet": "elements/lightning/fizzle_lightning/fizzle_lightning_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "fizzle"
+    },
+    "elements/lightning/fire_impact_lightning": {
+      "sheet": "elements/lightning/fire_impact_lightning/fire_impact_lightning_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "fire_impact"
+    },
+    "elements/lightning/ice_shatter_lightning": {
+      "sheet": "elements/lightning/ice_shatter_lightning/ice_shatter_lightning_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "ice_shatter"
+    },
+    "elements/lightning/enchant_lightning": {
+      "sheet": "elements/lightning/enchant_lightning/enchant_lightning_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "lightning",
+      "base_effect": "enchant"
+    },
+    "elements/lightning/rune_lightning": {
+      "sheet": "elements/lightning/rune_lightning/rune_lightning_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "rune"
+    },
+    "elements/lightning/dispel_lightning": {
+      "sheet": "elements/lightning/dispel_lightning/dispel_lightning_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "dispel"
+    },
+    "elements/lightning/buff_lightning": {
+      "sheet": "elements/lightning/buff_lightning/buff_lightning_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "lightning",
+      "base_effect": "buff"
+    },
+    "elements/lightning/debuff_lightning": {
+      "sheet": "elements/lightning/debuff_lightning/debuff_lightning_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "lightning",
+      "base_effect": "debuff"
+    },
+    "elements/lightning/shield_up_lightning": {
+      "sheet": "elements/lightning/shield_up_lightning/shield_up_lightning_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "shield_up"
+    },
+    "elements/lightning/shield_break_lightning": {
+      "sheet": "elements/lightning/shield_break_lightning/shield_break_lightning_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "shield_break"
+    },
+    "elements/lightning/teleport_lightning": {
+      "sheet": "elements/lightning/teleport_lightning/teleport_lightning_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "teleport"
+    },
+    "elements/lightning/portal_lightning": {
+      "sheet": "elements/lightning/portal_lightning/portal_lightning_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "lightning",
+      "base_effect": "portal"
+    },
+    "elements/lightning/summon_lightning": {
+      "sheet": "elements/lightning/summon_lightning/summon_lightning_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "summon"
+    },
+    "elements/lightning/spell_ready_lightning": {
+      "sheet": "elements/lightning/spell_ready_lightning/spell_ready_lightning_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "lightning",
+      "base_effect": "spell_ready"
+    },
+    "elements/lightning/arcane_blast_lightning": {
+      "sheet": "elements/lightning/arcane_blast_lightning/arcane_blast_lightning_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "lightning",
+      "base_effect": "arcane_blast"
+    },
+    "elements/arcane/charge_arcane": {
+      "sheet": "elements/arcane/charge_arcane/charge_arcane_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "arcane",
+      "base_effect": "charge"
+    },
+    "elements/arcane/cast_arcane": {
+      "sheet": "elements/arcane/cast_arcane/cast_arcane_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "arcane",
+      "base_effect": "cast"
+    },
+    "elements/arcane/bolt_arcane": {
+      "sheet": "elements/arcane/bolt_arcane/bolt_arcane_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "arcane",
+      "base_effect": "bolt"
+    },
+    "elements/arcane/impact_arcane": {
+      "sheet": "elements/arcane/impact_arcane/impact_arcane_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "arcane",
+      "base_effect": "impact"
+    },
+    "elements/arcane/fizzle_arcane": {
+      "sheet": "elements/arcane/fizzle_arcane/fizzle_arcane_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "arcane",
+      "base_effect": "fizzle"
+    },
+    "elements/arcane/fire_impact_arcane": {
+      "sheet": "elements/arcane/fire_impact_arcane/fire_impact_arcane_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "arcane",
+      "base_effect": "fire_impact"
+    },
+    "elements/arcane/ice_shatter_arcane": {
+      "sheet": "elements/arcane/ice_shatter_arcane/ice_shatter_arcane_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "arcane",
+      "base_effect": "ice_shatter"
+    },
+    "elements/arcane/thunder_arcane": {
+      "sheet": "elements/arcane/thunder_arcane/thunder_arcane_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "arcane",
+      "base_effect": "thunder"
+    },
+    "elements/arcane/enchant_arcane": {
+      "sheet": "elements/arcane/enchant_arcane/enchant_arcane_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "arcane",
+      "base_effect": "enchant"
+    },
+    "elements/arcane/dispel_arcane": {
+      "sheet": "elements/arcane/dispel_arcane/dispel_arcane_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "arcane",
+      "base_effect": "dispel"
+    },
+    "elements/arcane/buff_arcane": {
+      "sheet": "elements/arcane/buff_arcane/buff_arcane_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "arcane",
+      "base_effect": "buff"
+    },
+    "elements/arcane/debuff_arcane": {
+      "sheet": "elements/arcane/debuff_arcane/debuff_arcane_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "arcane",
+      "base_effect": "debuff"
+    },
+    "elements/arcane/shield_up_arcane": {
+      "sheet": "elements/arcane/shield_up_arcane/shield_up_arcane_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "arcane",
+      "base_effect": "shield_up"
+    },
+    "elements/arcane/shield_break_arcane": {
+      "sheet": "elements/arcane/shield_break_arcane/shield_break_arcane_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "arcane",
+      "base_effect": "shield_break"
+    },
+    "elements/arcane/portal_arcane": {
+      "sheet": "elements/arcane/portal_arcane/portal_arcane_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "arcane",
+      "base_effect": "portal"
+    },
+    "elements/arcane/spell_ready_arcane": {
+      "sheet": "elements/arcane/spell_ready_arcane/spell_ready_arcane_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "arcane",
+      "base_effect": "spell_ready"
+    },
+    "elements/nature/charge_nature": {
+      "sheet": "elements/nature/charge_nature/charge_nature_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "charge"
+    },
+    "elements/nature/cast_nature": {
+      "sheet": "elements/nature/cast_nature/cast_nature_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "cast"
+    },
+    "elements/nature/bolt_nature": {
+      "sheet": "elements/nature/bolt_nature/bolt_nature_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "nature",
+      "base_effect": "bolt"
+    },
+    "elements/nature/impact_nature": {
+      "sheet": "elements/nature/impact_nature/impact_nature_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "impact"
+    },
+    "elements/nature/fizzle_nature": {
+      "sheet": "elements/nature/fizzle_nature/fizzle_nature_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "fizzle"
+    },
+    "elements/nature/fire_impact_nature": {
+      "sheet": "elements/nature/fire_impact_nature/fire_impact_nature_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "fire_impact"
+    },
+    "elements/nature/ice_shatter_nature": {
+      "sheet": "elements/nature/ice_shatter_nature/ice_shatter_nature_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "ice_shatter"
+    },
+    "elements/nature/thunder_nature": {
+      "sheet": "elements/nature/thunder_nature/thunder_nature_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "thunder"
+    },
+    "elements/nature/enchant_nature": {
+      "sheet": "elements/nature/enchant_nature/enchant_nature_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "nature",
+      "base_effect": "enchant"
+    },
+    "elements/nature/rune_nature": {
+      "sheet": "elements/nature/rune_nature/rune_nature_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "rune"
+    },
+    "elements/nature/dispel_nature": {
+      "sheet": "elements/nature/dispel_nature/dispel_nature_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "dispel"
+    },
+    "elements/nature/buff_nature": {
+      "sheet": "elements/nature/buff_nature/buff_nature_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "nature",
+      "base_effect": "buff"
+    },
+    "elements/nature/debuff_nature": {
+      "sheet": "elements/nature/debuff_nature/debuff_nature_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "nature",
+      "base_effect": "debuff"
+    },
+    "elements/nature/shield_up_nature": {
+      "sheet": "elements/nature/shield_up_nature/shield_up_nature_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "shield_up"
+    },
+    "elements/nature/shield_break_nature": {
+      "sheet": "elements/nature/shield_break_nature/shield_break_nature_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "shield_break"
+    },
+    "elements/nature/teleport_nature": {
+      "sheet": "elements/nature/teleport_nature/teleport_nature_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "teleport"
+    },
+    "elements/nature/portal_nature": {
+      "sheet": "elements/nature/portal_nature/portal_nature_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "nature",
+      "base_effect": "portal"
+    },
+    "elements/nature/summon_nature": {
+      "sheet": "elements/nature/summon_nature/summon_nature_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "summon"
+    },
+    "elements/nature/spell_ready_nature": {
+      "sheet": "elements/nature/spell_ready_nature/spell_ready_nature_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "nature",
+      "base_effect": "spell_ready"
+    },
+    "elements/nature/arcane_blast_nature": {
+      "sheet": "elements/nature/arcane_blast_nature/arcane_blast_nature_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "nature",
+      "base_effect": "arcane_blast"
+    },
+    "elements/poison/charge_poison": {
+      "sheet": "elements/poison/charge_poison/charge_poison_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "charge"
+    },
+    "elements/poison/cast_poison": {
+      "sheet": "elements/poison/cast_poison/cast_poison_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "cast"
+    },
+    "elements/poison/bolt_poison": {
+      "sheet": "elements/poison/bolt_poison/bolt_poison_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "poison",
+      "base_effect": "bolt"
+    },
+    "elements/poison/impact_poison": {
+      "sheet": "elements/poison/impact_poison/impact_poison_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "impact"
+    },
+    "elements/poison/fizzle_poison": {
+      "sheet": "elements/poison/fizzle_poison/fizzle_poison_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "fizzle"
+    },
+    "elements/poison/fire_impact_poison": {
+      "sheet": "elements/poison/fire_impact_poison/fire_impact_poison_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "fire_impact"
+    },
+    "elements/poison/ice_shatter_poison": {
+      "sheet": "elements/poison/ice_shatter_poison/ice_shatter_poison_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "ice_shatter"
+    },
+    "elements/poison/thunder_poison": {
+      "sheet": "elements/poison/thunder_poison/thunder_poison_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "thunder"
+    },
+    "elements/poison/enchant_poison": {
+      "sheet": "elements/poison/enchant_poison/enchant_poison_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "poison",
+      "base_effect": "enchant"
+    },
+    "elements/poison/rune_poison": {
+      "sheet": "elements/poison/rune_poison/rune_poison_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "rune"
+    },
+    "elements/poison/dispel_poison": {
+      "sheet": "elements/poison/dispel_poison/dispel_poison_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "dispel"
+    },
+    "elements/poison/buff_poison": {
+      "sheet": "elements/poison/buff_poison/buff_poison_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "poison",
+      "base_effect": "buff"
+    },
+    "elements/poison/debuff_poison": {
+      "sheet": "elements/poison/debuff_poison/debuff_poison_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "poison",
+      "base_effect": "debuff"
+    },
+    "elements/poison/shield_up_poison": {
+      "sheet": "elements/poison/shield_up_poison/shield_up_poison_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "shield_up"
+    },
+    "elements/poison/shield_break_poison": {
+      "sheet": "elements/poison/shield_break_poison/shield_break_poison_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "shield_break"
+    },
+    "elements/poison/teleport_poison": {
+      "sheet": "elements/poison/teleport_poison/teleport_poison_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "teleport"
+    },
+    "elements/poison/portal_poison": {
+      "sheet": "elements/poison/portal_poison/portal_poison_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "poison",
+      "base_effect": "portal"
+    },
+    "elements/poison/summon_poison": {
+      "sheet": "elements/poison/summon_poison/summon_poison_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "summon"
+    },
+    "elements/poison/spell_ready_poison": {
+      "sheet": "elements/poison/spell_ready_poison/spell_ready_poison_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "poison",
+      "base_effect": "spell_ready"
+    },
+    "elements/poison/arcane_blast_poison": {
+      "sheet": "elements/poison/arcane_blast_poison/arcane_blast_poison_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "poison",
+      "base_effect": "arcane_blast"
+    },
+    "elements/holy/charge_holy": {
+      "sheet": "elements/holy/charge_holy/charge_holy_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "charge"
+    },
+    "elements/holy/cast_holy": {
+      "sheet": "elements/holy/cast_holy/cast_holy_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "cast"
+    },
+    "elements/holy/bolt_holy": {
+      "sheet": "elements/holy/bolt_holy/bolt_holy_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "holy",
+      "base_effect": "bolt"
+    },
+    "elements/holy/impact_holy": {
+      "sheet": "elements/holy/impact_holy/impact_holy_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "impact"
+    },
+    "elements/holy/fizzle_holy": {
+      "sheet": "elements/holy/fizzle_holy/fizzle_holy_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "fizzle"
+    },
+    "elements/holy/fire_impact_holy": {
+      "sheet": "elements/holy/fire_impact_holy/fire_impact_holy_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "fire_impact"
+    },
+    "elements/holy/ice_shatter_holy": {
+      "sheet": "elements/holy/ice_shatter_holy/ice_shatter_holy_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "ice_shatter"
+    },
+    "elements/holy/thunder_holy": {
+      "sheet": "elements/holy/thunder_holy/thunder_holy_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "thunder"
+    },
+    "elements/holy/rune_holy": {
+      "sheet": "elements/holy/rune_holy/rune_holy_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "rune"
+    },
+    "elements/holy/dispel_holy": {
+      "sheet": "elements/holy/dispel_holy/dispel_holy_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "dispel"
+    },
+    "elements/holy/buff_holy": {
+      "sheet": "elements/holy/buff_holy/buff_holy_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "holy",
+      "base_effect": "buff"
+    },
+    "elements/holy/debuff_holy": {
+      "sheet": "elements/holy/debuff_holy/debuff_holy_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "holy",
+      "base_effect": "debuff"
+    },
+    "elements/holy/shield_up_holy": {
+      "sheet": "elements/holy/shield_up_holy/shield_up_holy_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "shield_up"
+    },
+    "elements/holy/shield_break_holy": {
+      "sheet": "elements/holy/shield_break_holy/shield_break_holy_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "shield_break"
+    },
+    "elements/holy/teleport_holy": {
+      "sheet": "elements/holy/teleport_holy/teleport_holy_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "teleport"
+    },
+    "elements/holy/portal_holy": {
+      "sheet": "elements/holy/portal_holy/portal_holy_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "holy",
+      "base_effect": "portal"
+    },
+    "elements/holy/summon_holy": {
+      "sheet": "elements/holy/summon_holy/summon_holy_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "summon"
+    },
+    "elements/holy/arcane_blast_holy": {
+      "sheet": "elements/holy/arcane_blast_holy/arcane_blast_holy_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "holy",
+      "base_effect": "arcane_blast"
+    },
+    "elements/shadow/charge_shadow": {
+      "sheet": "elements/shadow/charge_shadow/charge_shadow_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "charge"
+    },
+    "elements/shadow/cast_shadow": {
+      "sheet": "elements/shadow/cast_shadow/cast_shadow_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "cast"
+    },
+    "elements/shadow/bolt_shadow": {
+      "sheet": "elements/shadow/bolt_shadow/bolt_shadow_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "shadow",
+      "base_effect": "bolt"
+    },
+    "elements/shadow/impact_shadow": {
+      "sheet": "elements/shadow/impact_shadow/impact_shadow_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "impact"
+    },
+    "elements/shadow/fizzle_shadow": {
+      "sheet": "elements/shadow/fizzle_shadow/fizzle_shadow_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "fizzle"
+    },
+    "elements/shadow/fire_impact_shadow": {
+      "sheet": "elements/shadow/fire_impact_shadow/fire_impact_shadow_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "fire_impact"
+    },
+    "elements/shadow/ice_shatter_shadow": {
+      "sheet": "elements/shadow/ice_shatter_shadow/ice_shatter_shadow_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "ice_shatter"
+    },
+    "elements/shadow/thunder_shadow": {
+      "sheet": "elements/shadow/thunder_shadow/thunder_shadow_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "thunder"
+    },
+    "elements/shadow/enchant_shadow": {
+      "sheet": "elements/shadow/enchant_shadow/enchant_shadow_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "shadow",
+      "base_effect": "enchant"
+    },
+    "elements/shadow/rune_shadow": {
+      "sheet": "elements/shadow/rune_shadow/rune_shadow_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "rune"
+    },
+    "elements/shadow/dispel_shadow": {
+      "sheet": "elements/shadow/dispel_shadow/dispel_shadow_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "dispel"
+    },
+    "elements/shadow/buff_shadow": {
+      "sheet": "elements/shadow/buff_shadow/buff_shadow_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "shadow",
+      "base_effect": "buff"
+    },
+    "elements/shadow/debuff_shadow": {
+      "sheet": "elements/shadow/debuff_shadow/debuff_shadow_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "shadow",
+      "base_effect": "debuff"
+    },
+    "elements/shadow/shield_up_shadow": {
+      "sheet": "elements/shadow/shield_up_shadow/shield_up_shadow_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "shield_up"
+    },
+    "elements/shadow/shield_break_shadow": {
+      "sheet": "elements/shadow/shield_break_shadow/shield_break_shadow_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "shield_break"
+    },
+    "elements/shadow/teleport_shadow": {
+      "sheet": "elements/shadow/teleport_shadow/teleport_shadow_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "teleport"
+    },
+    "elements/shadow/summon_shadow": {
+      "sheet": "elements/shadow/summon_shadow/summon_shadow_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "summon"
+    },
+    "elements/shadow/spell_ready_shadow": {
+      "sheet": "elements/shadow/spell_ready_shadow/spell_ready_shadow_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "shadow",
+      "base_effect": "spell_ready"
+    },
+    "elements/shadow/arcane_blast_shadow": {
+      "sheet": "elements/shadow/arcane_blast_shadow/arcane_blast_shadow_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "shadow",
+      "base_effect": "arcane_blast"
+    },
+    "elements/water/charge_water": {
+      "sheet": "elements/water/charge_water/charge_water_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "water",
+      "base_effect": "charge"
+    },
+    "elements/water/cast_water": {
+      "sheet": "elements/water/cast_water/cast_water_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "water",
+      "base_effect": "cast"
+    },
+    "elements/water/bolt_water": {
+      "sheet": "elements/water/bolt_water/bolt_water_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "water",
+      "base_effect": "bolt"
+    },
+    "elements/water/impact_water": {
+      "sheet": "elements/water/impact_water/impact_water_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "water",
+      "base_effect": "impact"
+    },
+    "elements/water/fizzle_water": {
+      "sheet": "elements/water/fizzle_water/fizzle_water_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "water",
+      "base_effect": "fizzle"
+    },
+    "elements/water/fire_impact_water": {
+      "sheet": "elements/water/fire_impact_water/fire_impact_water_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "water",
+      "base_effect": "fire_impact"
+    },
+    "elements/water/ice_shatter_water": {
+      "sheet": "elements/water/ice_shatter_water/ice_shatter_water_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "water",
+      "base_effect": "ice_shatter"
+    },
+    "elements/water/thunder_water": {
+      "sheet": "elements/water/thunder_water/thunder_water_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "water",
+      "base_effect": "thunder"
+    },
+    "elements/water/enchant_water": {
+      "sheet": "elements/water/enchant_water/enchant_water_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "water",
+      "base_effect": "enchant"
+    },
+    "elements/water/rune_water": {
+      "sheet": "elements/water/rune_water/rune_water_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "water",
+      "base_effect": "rune"
+    },
+    "elements/water/dispel_water": {
+      "sheet": "elements/water/dispel_water/dispel_water_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "water",
+      "base_effect": "dispel"
+    },
+    "elements/water/buff_water": {
+      "sheet": "elements/water/buff_water/buff_water_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "water",
+      "base_effect": "buff"
+    },
+    "elements/water/debuff_water": {
+      "sheet": "elements/water/debuff_water/debuff_water_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "water",
+      "base_effect": "debuff"
+    },
+    "elements/water/shield_up_water": {
+      "sheet": "elements/water/shield_up_water/shield_up_water_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "water",
+      "base_effect": "shield_up"
+    },
+    "elements/water/shield_break_water": {
+      "sheet": "elements/water/shield_break_water/shield_break_water_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "water",
+      "base_effect": "shield_break"
+    },
+    "elements/water/teleport_water": {
+      "sheet": "elements/water/teleport_water/teleport_water_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "water",
+      "base_effect": "teleport"
+    },
+    "elements/water/portal_water": {
+      "sheet": "elements/water/portal_water/portal_water_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "water",
+      "base_effect": "portal"
+    },
+    "elements/water/summon_water": {
+      "sheet": "elements/water/summon_water/summon_water_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "water",
+      "base_effect": "summon"
+    },
+    "elements/water/spell_ready_water": {
+      "sheet": "elements/water/spell_ready_water/spell_ready_water_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "water",
+      "base_effect": "spell_ready"
+    },
+    "elements/water/arcane_blast_water": {
+      "sheet": "elements/water/arcane_blast_water/arcane_blast_water_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "water",
+      "base_effect": "arcane_blast"
+    },
+    "elements/blood/charge_blood": {
+      "sheet": "elements/blood/charge_blood/charge_blood_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "charge"
+    },
+    "elements/blood/cast_blood": {
+      "sheet": "elements/blood/cast_blood/cast_blood_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "cast"
+    },
+    "elements/blood/bolt_blood": {
+      "sheet": "elements/blood/bolt_blood/bolt_blood_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "blood",
+      "base_effect": "bolt"
+    },
+    "elements/blood/impact_blood": {
+      "sheet": "elements/blood/impact_blood/impact_blood_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "impact"
+    },
+    "elements/blood/fizzle_blood": {
+      "sheet": "elements/blood/fizzle_blood/fizzle_blood_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "fizzle"
+    },
+    "elements/blood/fire_impact_blood": {
+      "sheet": "elements/blood/fire_impact_blood/fire_impact_blood_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "fire_impact"
+    },
+    "elements/blood/ice_shatter_blood": {
+      "sheet": "elements/blood/ice_shatter_blood/ice_shatter_blood_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "ice_shatter"
+    },
+    "elements/blood/thunder_blood": {
+      "sheet": "elements/blood/thunder_blood/thunder_blood_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "thunder"
+    },
+    "elements/blood/enchant_blood": {
+      "sheet": "elements/blood/enchant_blood/enchant_blood_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "blood",
+      "base_effect": "enchant"
+    },
+    "elements/blood/rune_blood": {
+      "sheet": "elements/blood/rune_blood/rune_blood_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "rune"
+    },
+    "elements/blood/dispel_blood": {
+      "sheet": "elements/blood/dispel_blood/dispel_blood_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "dispel"
+    },
+    "elements/blood/buff_blood": {
+      "sheet": "elements/blood/buff_blood/buff_blood_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "blood",
+      "base_effect": "buff"
+    },
+    "elements/blood/shield_up_blood": {
+      "sheet": "elements/blood/shield_up_blood/shield_up_blood_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "shield_up"
+    },
+    "elements/blood/shield_break_blood": {
+      "sheet": "elements/blood/shield_break_blood/shield_break_blood_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "shield_break"
+    },
+    "elements/blood/teleport_blood": {
+      "sheet": "elements/blood/teleport_blood/teleport_blood_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "teleport"
+    },
+    "elements/blood/portal_blood": {
+      "sheet": "elements/blood/portal_blood/portal_blood_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "blood",
+      "base_effect": "portal"
+    },
+    "elements/blood/summon_blood": {
+      "sheet": "elements/blood/summon_blood/summon_blood_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "summon"
+    },
+    "elements/blood/spell_ready_blood": {
+      "sheet": "elements/blood/spell_ready_blood/spell_ready_blood_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "blood",
+      "base_effect": "spell_ready"
+    },
+    "elements/blood/arcane_blast_blood": {
+      "sheet": "elements/blood/arcane_blast_blood/arcane_blast_blood_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "blood",
+      "base_effect": "arcane_blast"
+    },
+    "white/charge_white": {
+      "sheet": "white/charge_white/charge_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "charge"
+    },
+    "white/cast_white": {
+      "sheet": "white/cast_white/cast_white_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "cast"
+    },
+    "white/bolt_white": {
+      "sheet": "white/bolt_white/bolt_white_sheet.png",
+      "frames": 8,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "white",
+      "base_effect": "bolt"
+    },
+    "white/impact_white": {
+      "sheet": "white/impact_white/impact_white_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "white",
+      "base_effect": "impact"
+    },
+    "white/fizzle_white": {
+      "sheet": "white/fizzle_white/fizzle_white_sheet.png",
+      "frames": 9,
+      "frame_ms": 80,
+      "loop": false,
+      "element": "white",
+      "base_effect": "fizzle"
+    },
+    "white/fire_cast_white": {
+      "sheet": "white/fire_cast_white/fire_cast_white_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "fire_cast"
+    },
+    "white/fire_impact_white": {
+      "sheet": "white/fire_impact_white/fire_impact_white_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "fire_impact"
+    },
+    "white/ice_cast_white": {
+      "sheet": "white/ice_cast_white/ice_cast_white_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "ice_cast"
+    },
+    "white/ice_shatter_white": {
+      "sheet": "white/ice_shatter_white/ice_shatter_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "ice_shatter"
+    },
+    "white/zap_white": {
+      "sheet": "white/zap_white/zap_white_sheet.png",
+      "frames": 8,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "white",
+      "base_effect": "zap"
+    },
+    "white/thunder_white": {
+      "sheet": "white/thunder_white/thunder_white_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "white",
+      "base_effect": "thunder"
+    },
+    "white/wind_white": {
+      "sheet": "white/wind_white/wind_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": true,
+      "element": "white",
+      "base_effect": "wind"
+    },
+    "white/poison_white": {
+      "sheet": "white/poison_white/poison_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "white",
+      "base_effect": "poison"
+    },
+    "white/holy_white": {
+      "sheet": "white/holy_white/holy_white_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "holy"
+    },
+    "white/shadow_white": {
+      "sheet": "white/shadow_white/shadow_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "shadow"
+    },
+    "white/arcane_blast_white": {
+      "sheet": "white/arcane_blast_white/arcane_blast_white_sheet.png",
+      "frames": 10,
+      "frame_ms": 60,
+      "loop": false,
+      "element": "white",
+      "base_effect": "arcane_blast"
+    },
+    "white/enchant_white": {
+      "sheet": "white/enchant_white/enchant_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "white",
+      "base_effect": "enchant"
+    },
+    "white/rune_white": {
+      "sheet": "white/rune_white/rune_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "rune"
+    },
+    "white/dispel_white": {
+      "sheet": "white/dispel_white/dispel_white_sheet.png",
+      "frames": 9,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "dispel"
+    },
+    "white/heal_white": {
+      "sheet": "white/heal_white/heal_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "white",
+      "base_effect": "heal"
+    },
+    "white/buff_white": {
+      "sheet": "white/buff_white/buff_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "white",
+      "base_effect": "buff"
+    },
+    "white/debuff_white": {
+      "sheet": "white/debuff_white/debuff_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "white",
+      "base_effect": "debuff"
+    },
+    "white/mana_white": {
+      "sheet": "white/mana_white/mana_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "white",
+      "base_effect": "mana"
+    },
+    "white/shield_up_white": {
+      "sheet": "white/shield_up_white/shield_up_white_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "shield_up"
+    },
+    "white/shield_break_white": {
+      "sheet": "white/shield_break_white/shield_break_white_sheet.png",
+      "frames": 10,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "shield_break"
+    },
+    "white/teleport_white": {
+      "sheet": "white/teleport_white/teleport_white_sheet.png",
+      "frames": 11,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "teleport"
+    },
+    "white/portal_white": {
+      "sheet": "white/portal_white/portal_white_sheet.png",
+      "frames": 8,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "white",
+      "base_effect": "portal"
+    },
+    "white/summon_white": {
+      "sheet": "white/summon_white/summon_white_sheet.png",
+      "frames": 13,
+      "frame_ms": 70,
+      "loop": false,
+      "element": "white",
+      "base_effect": "summon"
+    },
+    "white/time_warp_white": {
+      "sheet": "white/time_warp_white/time_warp_white_sheet.png",
+      "frames": 12,
+      "frame_ms": 80,
+      "loop": true,
+      "element": "white",
+      "base_effect": "time_warp"
+    },
+    "white/spell_ready_white": {
+      "sheet": "white/spell_ready_white/spell_ready_white_sheet.png",
+      "frames": 8,
+      "frame_ms": 90,
+      "loop": true,
+      "element": "white",
+      "base_effect": "spell_ready"
+    }
+  }
+}

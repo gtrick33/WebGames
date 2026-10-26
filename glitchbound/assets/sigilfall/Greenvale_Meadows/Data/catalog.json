@@ -1,0 +1,2289 @@
+{
+ "pack": "Greenvale Meadows - Top-Down Village RPG Asset Pack",
+ "version": "1.0",
+ "publisher": "Certainity",
+ "tile_size": {
+  "Game": 64,
+  "HD": 128
+ },
+ "notes": "Pixels. Character pivot = feet point (same in every frame of a character animation). Item/effect pivot = centre. Prop/building pivot = bottom centre. {size} = Game or HD.",
+ "characters": {
+  "Finn": {
+   "kind": "hero",
+   "animations": {
+    "walk_down": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/walk_down",
+       "sheet": "Characters/Finn/Game/walk_down_sheet.png",
+       "frame_w": 71,
+       "frame_h": 85,
+       "pivot": [
+        35,
+        83
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/walk_down",
+       "sheet": "Characters/Finn/HD/walk_down_sheet.png",
+       "frame_w": 143,
+       "frame_h": 171,
+       "pivot": [
+        71,
+        166
+       ]
+      }
+     }
+    },
+    "walk_up": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/walk_up",
+       "sheet": "Characters/Finn/Game/walk_up_sheet.png",
+       "frame_w": 72,
+       "frame_h": 89,
+       "pivot": [
+        36,
+        87
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/walk_up",
+       "sheet": "Characters/Finn/HD/walk_up_sheet.png",
+       "frame_w": 144,
+       "frame_h": 178,
+       "pivot": [
+        72,
+        174
+       ]
+      }
+     }
+    },
+    "walk_right": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/walk_right",
+       "sheet": "Characters/Finn/Game/walk_right_sheet.png",
+       "frame_w": 79,
+       "frame_h": 85,
+       "pivot": [
+        39,
+        82
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/walk_right",
+       "sheet": "Characters/Finn/HD/walk_right_sheet.png",
+       "frame_w": 159,
+       "frame_h": 171,
+       "pivot": [
+        79,
+        164
+       ]
+      }
+     }
+    },
+    "walk_left": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/walk_left",
+       "sheet": "Characters/Finn/Game/walk_left_sheet.png",
+       "frame_w": 79,
+       "frame_h": 85,
+       "pivot": [
+        39,
+        82
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/walk_left",
+       "sheet": "Characters/Finn/HD/walk_left_sheet.png",
+       "frame_w": 159,
+       "frame_h": 171,
+       "pivot": [
+        79,
+        164
+       ]
+      }
+     }
+    },
+    "idle_down": {
+     "frames": 8,
+     "ms_per_frame": 130,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/idle_down",
+       "sheet": "Characters/Finn/Game/idle_down_sheet.png",
+       "frame_w": 71,
+       "frame_h": 82,
+       "pivot": [
+        35,
+        80
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/idle_down",
+       "sheet": "Characters/Finn/HD/idle_down_sheet.png",
+       "frame_w": 143,
+       "frame_h": 165,
+       "pivot": [
+        71,
+        160
+       ]
+      }
+     }
+    },
+    "idle_up": {
+     "frames": 8,
+     "ms_per_frame": 130,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/idle_up",
+       "sheet": "Characters/Finn/Game/idle_up_sheet.png",
+       "frame_w": 73,
+       "frame_h": 87,
+       "pivot": [
+        36,
+        84
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/idle_up",
+       "sheet": "Characters/Finn/HD/idle_up_sheet.png",
+       "frame_w": 146,
+       "frame_h": 174,
+       "pivot": [
+        73,
+        169
+       ]
+      }
+     }
+    },
+    "idle_right": {
+     "frames": 8,
+     "ms_per_frame": 130,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/idle_right",
+       "sheet": "Characters/Finn/Game/idle_right_sheet.png",
+       "frame_w": 78,
+       "frame_h": 81,
+       "pivot": [
+        39,
+        79
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/idle_right",
+       "sheet": "Characters/Finn/HD/idle_right_sheet.png",
+       "frame_w": 157,
+       "frame_h": 163,
+       "pivot": [
+        78,
+        158
+       ]
+      }
+     }
+    },
+    "idle_left": {
+     "frames": 8,
+     "ms_per_frame": 130,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/idle_left",
+       "sheet": "Characters/Finn/Game/idle_left_sheet.png",
+       "frame_w": 78,
+       "frame_h": 81,
+       "pivot": [
+        39,
+        79
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/idle_left",
+       "sheet": "Characters/Finn/HD/idle_left_sheet.png",
+       "frame_w": 157,
+       "frame_h": 163,
+       "pivot": [
+        78,
+        158
+       ]
+      }
+     }
+    },
+    "attack_down": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/attack_down",
+       "sheet": "Characters/Finn/Game/attack_down_sheet.png",
+       "frame_w": 111,
+       "frame_h": 100,
+       "pivot": [
+        55,
+        96
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/attack_down",
+       "sheet": "Characters/Finn/HD/attack_down_sheet.png",
+       "frame_w": 223,
+       "frame_h": 200,
+       "pivot": [
+        111,
+        192
+       ]
+      }
+     }
+    },
+    "attack_up": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/attack_up",
+       "sheet": "Characters/Finn/Game/attack_up_sheet.png",
+       "frame_w": 128,
+       "frame_h": 99,
+       "pivot": [
+        64,
+        95
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/attack_up",
+       "sheet": "Characters/Finn/HD/attack_up_sheet.png",
+       "frame_w": 257,
+       "frame_h": 199,
+       "pivot": [
+        128,
+        191
+       ]
+      }
+     }
+    },
+    "attack_right": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/attack_right",
+       "sheet": "Characters/Finn/Game/attack_right_sheet.png",
+       "frame_w": 131,
+       "frame_h": 88,
+       "pivot": [
+        65,
+        85
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/attack_right",
+       "sheet": "Characters/Finn/HD/attack_right_sheet.png",
+       "frame_w": 262,
+       "frame_h": 176,
+       "pivot": [
+        131,
+        170
+       ]
+      }
+     }
+    },
+    "attack_left": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/attack_left",
+       "sheet": "Characters/Finn/Game/attack_left_sheet.png",
+       "frame_w": 131,
+       "frame_h": 88,
+       "pivot": [
+        65,
+        85
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/attack_left",
+       "sheet": "Characters/Finn/HD/attack_left_sheet.png",
+       "frame_w": 262,
+       "frame_h": 176,
+       "pivot": [
+        131,
+        170
+       ]
+      }
+     }
+    },
+    "hurt": {
+     "frames": 8,
+     "ms_per_frame": 70,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/hurt",
+       "sheet": "Characters/Finn/Game/hurt_sheet.png",
+       "frame_w": 97,
+       "frame_h": 79,
+       "pivot": [
+        48,
+        76
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/hurt",
+       "sheet": "Characters/Finn/HD/hurt_sheet.png",
+       "frame_w": 194,
+       "frame_h": 159,
+       "pivot": [
+        97,
+        152
+       ]
+      }
+     }
+    },
+    "death": {
+     "frames": 8,
+     "ms_per_frame": 110,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Finn/Game/death",
+       "sheet": "Characters/Finn/Game/death_sheet.png",
+       "frame_w": 110,
+       "frame_h": 78,
+       "pivot": [
+        55,
+        73
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Finn/HD/death",
+       "sheet": "Characters/Finn/HD/death_sheet.png",
+       "frame_w": 221,
+       "frame_h": 156,
+       "pivot": [
+        110,
+        146
+       ]
+      }
+     }
+    }
+   }
+  },
+  "Sproutslime": {
+   "kind": "enemy_hop",
+   "animations": {
+    "hop_down": {
+     "frames": 8,
+     "ms_per_frame": 90,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Sproutslime/Game/hop_down",
+       "sheet": "Characters/Sproutslime/Game/hop_down_sheet.png",
+       "frame_w": 66,
+       "frame_h": 72,
+       "pivot": [
+        33,
+        67
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Sproutslime/HD/hop_down",
+       "sheet": "Characters/Sproutslime/HD/hop_down_sheet.png",
+       "frame_w": 132,
+       "frame_h": 144,
+       "pivot": [
+        66,
+        135
+       ]
+      }
+     }
+    },
+    "hop_up": {
+     "frames": 8,
+     "ms_per_frame": 90,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Sproutslime/Game/hop_up",
+       "sheet": "Characters/Sproutslime/Game/hop_up_sheet.png",
+       "frame_w": 66,
+       "frame_h": 72,
+       "pivot": [
+        33,
+        66
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Sproutslime/HD/hop_up",
+       "sheet": "Characters/Sproutslime/HD/hop_up_sheet.png",
+       "frame_w": 132,
+       "frame_h": 144,
+       "pivot": [
+        66,
+        133
+       ]
+      }
+     }
+    },
+    "hop_right": {
+     "frames": 8,
+     "ms_per_frame": 90,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Sproutslime/Game/hop_right",
+       "sheet": "Characters/Sproutslime/Game/hop_right_sheet.png",
+       "frame_w": 66,
+       "frame_h": 61,
+       "pivot": [
+        33,
+        55
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Sproutslime/HD/hop_right",
+       "sheet": "Characters/Sproutslime/HD/hop_right_sheet.png",
+       "frame_w": 133,
+       "frame_h": 123,
+       "pivot": [
+        66,
+        111
+       ]
+      }
+     }
+    },
+    "hop_left": {
+     "frames": 8,
+     "ms_per_frame": 90,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Sproutslime/Game/hop_left",
+       "sheet": "Characters/Sproutslime/Game/hop_left_sheet.png",
+       "frame_w": 66,
+       "frame_h": 61,
+       "pivot": [
+        33,
+        55
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Sproutslime/HD/hop_left",
+       "sheet": "Characters/Sproutslime/HD/hop_left_sheet.png",
+       "frame_w": 133,
+       "frame_h": 123,
+       "pivot": [
+        66,
+        111
+       ]
+      }
+     }
+    },
+    "attack_down": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Sproutslime/Game/attack_down",
+       "sheet": "Characters/Sproutslime/Game/attack_down_sheet.png",
+       "frame_w": 63,
+       "frame_h": 63,
+       "pivot": [
+        31,
+        59
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Sproutslime/HD/attack_down",
+       "sheet": "Characters/Sproutslime/HD/attack_down_sheet.png",
+       "frame_w": 126,
+       "frame_h": 127,
+       "pivot": [
+        63,
+        119
+       ]
+      }
+     }
+    },
+    "attack_up": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Sproutslime/Game/attack_up",
+       "sheet": "Characters/Sproutslime/Game/attack_up_sheet.png",
+       "frame_w": 63,
+       "frame_h": 60,
+       "pivot": [
+        31,
+        57
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Sproutslime/HD/attack_up",
+       "sheet": "Characters/Sproutslime/HD/attack_up_sheet.png",
+       "frame_w": 127,
+       "frame_h": 121,
+       "pivot": [
+        63,
+        115
+       ]
+      }
+     }
+    },
+    "attack_right": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Sproutslime/Game/attack_right",
+       "sheet": "Characters/Sproutslime/Game/attack_right_sheet.png",
+       "frame_w": 67,
+       "frame_h": 50,
+       "pivot": [
+        33,
+        47
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Sproutslime/HD/attack_right",
+       "sheet": "Characters/Sproutslime/HD/attack_right_sheet.png",
+       "frame_w": 134,
+       "frame_h": 101,
+       "pivot": [
+        67,
+        95
+       ]
+      }
+     }
+    },
+    "attack_left": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Sproutslime/Game/attack_left",
+       "sheet": "Characters/Sproutslime/Game/attack_left_sheet.png",
+       "frame_w": 67,
+       "frame_h": 50,
+       "pivot": [
+        33,
+        47
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Sproutslime/HD/attack_left",
+       "sheet": "Characters/Sproutslime/HD/attack_left_sheet.png",
+       "frame_w": 134,
+       "frame_h": 101,
+       "pivot": [
+        67,
+        95
+       ]
+      }
+     }
+    },
+    "hurt": {
+     "frames": 8,
+     "ms_per_frame": 70,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Sproutslime/Game/hurt",
+       "sheet": "Characters/Sproutslime/Game/hurt_sheet.png",
+       "frame_w": 58,
+       "frame_h": 46,
+       "pivot": [
+        29,
+        42
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Sproutslime/HD/hurt",
+       "sheet": "Characters/Sproutslime/HD/hurt_sheet.png",
+       "frame_w": 117,
+       "frame_h": 93,
+       "pivot": [
+        58,
+        84
+       ]
+      }
+     }
+    },
+    "death": {
+     "frames": 8,
+     "ms_per_frame": 110,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Sproutslime/Game/death",
+       "sheet": "Characters/Sproutslime/Game/death_sheet.png",
+       "frame_w": 56,
+       "frame_h": 43,
+       "pivot": [
+        28,
+        40
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Sproutslime/HD/death",
+       "sheet": "Characters/Sproutslime/HD/death_sheet.png",
+       "frame_w": 113,
+       "frame_h": 86,
+       "pivot": [
+        56,
+        81
+       ]
+      }
+     }
+    }
+   }
+  },
+  "Tuskling": {
+   "kind": "enemy_walk",
+   "animations": {
+    "walk_down": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Tuskling/Game/walk_down",
+       "sheet": "Characters/Tuskling/Game/walk_down_sheet.png",
+       "frame_w": 45,
+       "frame_h": 68,
+       "pivot": [
+        22,
+        66
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Tuskling/HD/walk_down",
+       "sheet": "Characters/Tuskling/HD/walk_down_sheet.png",
+       "frame_w": 91,
+       "frame_h": 137,
+       "pivot": [
+        45,
+        132
+       ]
+      }
+     }
+    },
+    "walk_up": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Tuskling/Game/walk_up",
+       "sheet": "Characters/Tuskling/Game/walk_up_sheet.png",
+       "frame_w": 43,
+       "frame_h": 68,
+       "pivot": [
+        21,
+        65
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Tuskling/HD/walk_up",
+       "sheet": "Characters/Tuskling/HD/walk_up_sheet.png",
+       "frame_w": 86,
+       "frame_h": 136,
+       "pivot": [
+        43,
+        131
+       ]
+      }
+     }
+    },
+    "walk_right": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Tuskling/Game/walk_right",
+       "sheet": "Characters/Tuskling/Game/walk_right_sheet.png",
+       "frame_w": 73,
+       "frame_h": 55,
+       "pivot": [
+        36,
+        52
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Tuskling/HD/walk_right",
+       "sheet": "Characters/Tuskling/HD/walk_right_sheet.png",
+       "frame_w": 146,
+       "frame_h": 110,
+       "pivot": [
+        73,
+        105
+       ]
+      }
+     }
+    },
+    "walk_left": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Tuskling/Game/walk_left",
+       "sheet": "Characters/Tuskling/Game/walk_left_sheet.png",
+       "frame_w": 73,
+       "frame_h": 55,
+       "pivot": [
+        36,
+        52
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Tuskling/HD/walk_left",
+       "sheet": "Characters/Tuskling/HD/walk_left_sheet.png",
+       "frame_w": 146,
+       "frame_h": 110,
+       "pivot": [
+        73,
+        105
+       ]
+      }
+     }
+    },
+    "attack_down": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Tuskling/Game/attack_down",
+       "sheet": "Characters/Tuskling/Game/attack_down_sheet.png",
+       "frame_w": 82,
+       "frame_h": 73,
+       "pivot": [
+        41,
+        70
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Tuskling/HD/attack_down",
+       "sheet": "Characters/Tuskling/HD/attack_down_sheet.png",
+       "frame_w": 165,
+       "frame_h": 147,
+       "pivot": [
+        82,
+        140
+       ]
+      }
+     }
+    },
+    "attack_up": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Tuskling/Game/attack_up",
+       "sheet": "Characters/Tuskling/Game/attack_up_sheet.png",
+       "frame_w": 82,
+       "frame_h": 70,
+       "pivot": [
+        41,
+        65
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Tuskling/HD/attack_up",
+       "sheet": "Characters/Tuskling/HD/attack_up_sheet.png",
+       "frame_w": 165,
+       "frame_h": 140,
+       "pivot": [
+        82,
+        131
+       ]
+      }
+     }
+    },
+    "attack_right": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Tuskling/Game/attack_right",
+       "sheet": "Characters/Tuskling/Game/attack_right_sheet.png",
+       "frame_w": 78,
+       "frame_h": 56,
+       "pivot": [
+        39,
+        53
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Tuskling/HD/attack_right",
+       "sheet": "Characters/Tuskling/HD/attack_right_sheet.png",
+       "frame_w": 156,
+       "frame_h": 112,
+       "pivot": [
+        78,
+        107
+       ]
+      }
+     }
+    },
+    "attack_left": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Tuskling/Game/attack_left",
+       "sheet": "Characters/Tuskling/Game/attack_left_sheet.png",
+       "frame_w": 78,
+       "frame_h": 56,
+       "pivot": [
+        39,
+        53
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Tuskling/HD/attack_left",
+       "sheet": "Characters/Tuskling/HD/attack_left_sheet.png",
+       "frame_w": 156,
+       "frame_h": 112,
+       "pivot": [
+        78,
+        107
+       ]
+      }
+     }
+    },
+    "hurt": {
+     "frames": 8,
+     "ms_per_frame": 70,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Tuskling/Game/hurt",
+       "sheet": "Characters/Tuskling/Game/hurt_sheet.png",
+       "frame_w": 65,
+       "frame_h": 65,
+       "pivot": [
+        32,
+        60
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Tuskling/HD/hurt",
+       "sheet": "Characters/Tuskling/HD/hurt_sheet.png",
+       "frame_w": 131,
+       "frame_h": 131,
+       "pivot": [
+        65,
+        120
+       ]
+      }
+     }
+    },
+    "death": {
+     "frames": 8,
+     "ms_per_frame": 110,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Tuskling/Game/death",
+       "sheet": "Characters/Tuskling/Game/death_sheet.png",
+       "frame_w": 64,
+       "frame_h": 70,
+       "pivot": [
+        32,
+        67
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Tuskling/HD/death",
+       "sheet": "Characters/Tuskling/HD/death_sheet.png",
+       "frame_w": 129,
+       "frame_h": 141,
+       "pivot": [
+        64,
+        135
+       ]
+      }
+     }
+    }
+   }
+  },
+  "Hoodgob": {
+   "kind": "enemy_walk",
+   "animations": {
+    "walk_down": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Hoodgob/Game/walk_down",
+       "sheet": "Characters/Hoodgob/Game/walk_down_sheet.png",
+       "frame_w": 62,
+       "frame_h": 69,
+       "pivot": [
+        31,
+        66
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Hoodgob/HD/walk_down",
+       "sheet": "Characters/Hoodgob/HD/walk_down_sheet.png",
+       "frame_w": 125,
+       "frame_h": 139,
+       "pivot": [
+        62,
+        132
+       ]
+      }
+     }
+    },
+    "walk_up": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Hoodgob/Game/walk_up",
+       "sheet": "Characters/Hoodgob/Game/walk_up_sheet.png",
+       "frame_w": 58,
+       "frame_h": 73,
+       "pivot": [
+        29,
+        69
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Hoodgob/HD/walk_up",
+       "sheet": "Characters/Hoodgob/HD/walk_up_sheet.png",
+       "frame_w": 117,
+       "frame_h": 147,
+       "pivot": [
+        58,
+        139
+       ]
+      }
+     }
+    },
+    "walk_right": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Hoodgob/Game/walk_right",
+       "sheet": "Characters/Hoodgob/Game/walk_right_sheet.png",
+       "frame_w": 67,
+       "frame_h": 65,
+       "pivot": [
+        33,
+        62
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Hoodgob/HD/walk_right",
+       "sheet": "Characters/Hoodgob/HD/walk_right_sheet.png",
+       "frame_w": 135,
+       "frame_h": 130,
+       "pivot": [
+        67,
+        125
+       ]
+      }
+     }
+    },
+    "walk_left": {
+     "frames": 8,
+     "ms_per_frame": 95,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Hoodgob/Game/walk_left",
+       "sheet": "Characters/Hoodgob/Game/walk_left_sheet.png",
+       "frame_w": 67,
+       "frame_h": 65,
+       "pivot": [
+        33,
+        62
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Hoodgob/HD/walk_left",
+       "sheet": "Characters/Hoodgob/HD/walk_left_sheet.png",
+       "frame_w": 135,
+       "frame_h": 130,
+       "pivot": [
+        67,
+        125
+       ]
+      }
+     }
+    },
+    "attack_down": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Hoodgob/Game/attack_down",
+       "sheet": "Characters/Hoodgob/Game/attack_down_sheet.png",
+       "frame_w": 87,
+       "frame_h": 82,
+       "pivot": [
+        43,
+        72
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Hoodgob/HD/attack_down",
+       "sheet": "Characters/Hoodgob/HD/attack_down_sheet.png",
+       "frame_w": 174,
+       "frame_h": 165,
+       "pivot": [
+        87,
+        144
+       ]
+      }
+     }
+    },
+    "attack_up": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Hoodgob/Game/attack_up",
+       "sheet": "Characters/Hoodgob/Game/attack_up_sheet.png",
+       "frame_w": 88,
+       "frame_h": 81,
+       "pivot": [
+        44,
+        77
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Hoodgob/HD/attack_up",
+       "sheet": "Characters/Hoodgob/HD/attack_up_sheet.png",
+       "frame_w": 177,
+       "frame_h": 163,
+       "pivot": [
+        88,
+        155
+       ]
+      }
+     }
+    },
+    "attack_right": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Hoodgob/Game/attack_right",
+       "sheet": "Characters/Hoodgob/Game/attack_right_sheet.png",
+       "frame_w": 96,
+       "frame_h": 77,
+       "pivot": [
+        48,
+        72
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Hoodgob/HD/attack_right",
+       "sheet": "Characters/Hoodgob/HD/attack_right_sheet.png",
+       "frame_w": 193,
+       "frame_h": 155,
+       "pivot": [
+        96,
+        145
+       ]
+      }
+     }
+    },
+    "attack_left": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Hoodgob/Game/attack_left",
+       "sheet": "Characters/Hoodgob/Game/attack_left_sheet.png",
+       "frame_w": 96,
+       "frame_h": 77,
+       "pivot": [
+        48,
+        72
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Hoodgob/HD/attack_left",
+       "sheet": "Characters/Hoodgob/HD/attack_left_sheet.png",
+       "frame_w": 193,
+       "frame_h": 155,
+       "pivot": [
+        96,
+        145
+       ]
+      }
+     }
+    },
+    "hurt": {
+     "frames": 8,
+     "ms_per_frame": 70,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Hoodgob/Game/hurt",
+       "sheet": "Characters/Hoodgob/Game/hurt_sheet.png",
+       "frame_w": 64,
+       "frame_h": 71,
+       "pivot": [
+        32,
+        66
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Hoodgob/HD/hurt",
+       "sheet": "Characters/Hoodgob/HD/hurt_sheet.png",
+       "frame_w": 129,
+       "frame_h": 143,
+       "pivot": [
+        64,
+        133
+       ]
+      }
+     }
+    },
+    "death": {
+     "frames": 8,
+     "ms_per_frame": 110,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Hoodgob/Game/death",
+       "sheet": "Characters/Hoodgob/Game/death_sheet.png",
+       "frame_w": 77,
+       "frame_h": 77,
+       "pivot": [
+        38,
+        70
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Hoodgob/HD/death",
+       "sheet": "Characters/Hoodgob/HD/death_sheet.png",
+       "frame_w": 155,
+       "frame_h": 154,
+       "pivot": [
+        77,
+        140
+       ]
+      }
+     }
+    }
+   }
+  },
+  "Chief Gnarlhorn": {
+   "kind": "boss",
+   "animations": {
+    "idle": {
+     "frames": 8,
+     "ms_per_frame": 130,
+     "loop": true,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Chief_Gnarlhorn/Game/idle",
+       "sheet": "Characters/Chief_Gnarlhorn/Game/idle_sheet.png",
+       "frame_w": 175,
+       "frame_h": 188,
+       "pivot": [
+        87,
+        182
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Chief_Gnarlhorn/HD/idle",
+       "sheet": "Characters/Chief_Gnarlhorn/HD/idle_sheet.png",
+       "frame_w": 350,
+       "frame_h": 376,
+       "pivot": [
+        175,
+        364
+       ]
+      }
+     }
+    },
+    "attack": {
+     "frames": 8,
+     "ms_per_frame": 65,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Chief_Gnarlhorn/Game/attack",
+       "sheet": "Characters/Chief_Gnarlhorn/Game/attack_sheet.png",
+       "frame_w": 186,
+       "frame_h": 227,
+       "pivot": [
+        93,
+        207
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Chief_Gnarlhorn/HD/attack",
+       "sheet": "Characters/Chief_Gnarlhorn/HD/attack_sheet.png",
+       "frame_w": 373,
+       "frame_h": 455,
+       "pivot": [
+        186,
+        415
+       ]
+      }
+     }
+    },
+    "hurt": {
+     "frames": 8,
+     "ms_per_frame": 70,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Chief_Gnarlhorn/Game/hurt",
+       "sheet": "Characters/Chief_Gnarlhorn/Game/hurt_sheet.png",
+       "frame_w": 168,
+       "frame_h": 202,
+       "pivot": [
+        84,
+        195
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Chief_Gnarlhorn/HD/hurt",
+       "sheet": "Characters/Chief_Gnarlhorn/HD/hurt_sheet.png",
+       "frame_w": 336,
+       "frame_h": 405,
+       "pivot": [
+        168,
+        391
+       ]
+      }
+     }
+    },
+    "death": {
+     "frames": 8,
+     "ms_per_frame": 110,
+     "loop": false,
+     "sizes": {
+      "Game": {
+       "folder": "Characters/Chief_Gnarlhorn/Game/death",
+       "sheet": "Characters/Chief_Gnarlhorn/Game/death_sheet.png",
+       "frame_w": 185,
+       "frame_h": 219,
+       "pivot": [
+        92,
+        212
+       ]
+      },
+      "HD": {
+       "folder": "Characters/Chief_Gnarlhorn/HD/death",
+       "sheet": "Characters/Chief_Gnarlhorn/HD/death_sheet.png",
+       "frame_w": 371,
+       "frame_h": 438,
+       "pivot": [
+        185,
+        425
+       ]
+      }
+     }
+    }
+   }
+  }
+ },
+ "items": {
+  "coin": {
+   "frames": 8,
+   "ms_per_frame": 90,
+   "loop": true,
+   "sizes": {
+    "Game": {
+     "folder": "Items/Game/coin",
+     "frame_w": 29,
+     "frame_h": 28,
+     "pivot": [
+      14,
+      14
+     ]
+    },
+    "HD": {
+     "folder": "Items/HD/coin",
+     "frame_w": 58,
+     "frame_h": 57,
+     "pivot": [
+      29,
+      28
+     ]
+    }
+   }
+  },
+  "gem": {
+   "frames": 8,
+   "ms_per_frame": 90,
+   "loop": true,
+   "sizes": {
+    "Game": {
+     "folder": "Items/Game/gem",
+     "frame_w": 32,
+     "frame_h": 30,
+     "pivot": [
+      16,
+      15
+     ]
+    },
+    "HD": {
+     "folder": "Items/HD/gem",
+     "frame_w": 64,
+     "frame_h": 61,
+     "pivot": [
+      32,
+      30
+     ]
+    }
+   }
+  },
+  "heart": {
+   "frames": 8,
+   "ms_per_frame": 100,
+   "loop": true,
+   "sizes": {
+    "Game": {
+     "folder": "Items/Game/heart",
+     "frame_w": 29,
+     "frame_h": 25,
+     "pivot": [
+      14,
+      12
+     ]
+    },
+    "HD": {
+     "folder": "Items/HD/heart",
+     "frame_w": 58,
+     "frame_h": 51,
+     "pivot": [
+      29,
+      25
+     ]
+    }
+   }
+  }
+ },
+ "effects": {
+  "hit_spark": {
+   "frames": 8,
+   "ms_per_frame": 50,
+   "loop": false,
+   "sizes": {
+    "Game": {
+     "folder": "Effects/Game/hit_spark",
+     "frame_w": 53,
+     "frame_h": 48,
+     "pivot": [
+      26,
+      24
+     ]
+    },
+    "HD": {
+     "folder": "Effects/HD/hit_spark",
+     "frame_w": 106,
+     "frame_h": 96,
+     "pivot": [
+      53,
+      48
+     ]
+    }
+   }
+  },
+  "chest_open": {
+   "frames": 8,
+   "ms_per_frame": 90,
+   "loop": false,
+   "sizes": {
+    "Game": {
+     "folder": "Effects/Game/chest_open",
+     "frame_w": 51,
+     "frame_h": 56,
+     "pivot": [
+      25,
+      28
+     ]
+    },
+    "HD": {
+     "folder": "Effects/HD/chest_open",
+     "frame_w": 103,
+     "frame_h": 113,
+     "pivot": [
+      51,
+      56
+     ]
+    }
+   }
+  },
+  "magic_poof": {
+   "frames": 8,
+   "ms_per_frame": 70,
+   "loop": false,
+   "sizes": {
+    "Game": {
+     "folder": "Effects/Game/magic_poof",
+     "frame_w": 78,
+     "frame_h": 64,
+     "pivot": [
+      39,
+      32
+     ]
+    },
+    "HD": {
+     "folder": "Effects/HD/magic_poof",
+     "frame_w": 156,
+     "frame_h": 128,
+     "pivot": [
+      78,
+      64
+     ]
+    }
+   }
+  },
+  "dust_puff": {
+   "frames": 8,
+   "ms_per_frame": 60,
+   "loop": false,
+   "sizes": {
+    "Game": {
+     "folder": "Effects/Game/dust_puff",
+     "frame_w": 38,
+     "frame_h": 29,
+     "pivot": [
+      19,
+      14
+     ]
+    },
+    "HD": {
+     "folder": "Effects/HD/dust_puff",
+     "frame_w": 76,
+     "frame_h": 58,
+     "pivot": [
+      38,
+      29
+     ]
+    }
+   }
+  },
+  "explosion": {
+   "frames": 8,
+   "ms_per_frame": 60,
+   "loop": false,
+   "sizes": {
+    "Game": {
+     "folder": "Effects/Game/explosion",
+     "frame_w": 84,
+     "frame_h": 71,
+     "pivot": [
+      42,
+      35
+     ]
+    },
+    "HD": {
+     "folder": "Effects/HD/explosion",
+     "frame_w": 169,
+     "frame_h": 143,
+     "pivot": [
+      84,
+      71
+     ]
+    }
+   }
+  }
+ },
+ "tiles": {
+  "green_grass": {
+   "variants": [
+    "Tiles/{size}/green_grass/green_grass_1.png",
+    "Tiles/{size}/green_grass/green_grass_2.png",
+    "Tiles/{size}/green_grass/green_grass_3.png",
+    "Tiles/{size}/green_grass/green_grass_4.png"
+   ],
+   "seamless": "Tiles/{size}/green_grass/green_grass_seamless_4x4.png",
+   "liquid": false
+  },
+  "dirt_path": {
+   "variants": [
+    "Tiles/{size}/dirt_path/dirt_path_1.png",
+    "Tiles/{size}/dirt_path/dirt_path_2.png",
+    "Tiles/{size}/dirt_path/dirt_path_3.png",
+    "Tiles/{size}/dirt_path/dirt_path_4.png"
+   ],
+   "seamless": "Tiles/{size}/dirt_path/dirt_path_seamless_4x4.png",
+   "liquid": false
+  },
+  "cobblestone_pavement": {
+   "variants": [
+    "Tiles/{size}/cobblestone_pavement/cobblestone_pavement_1.png",
+    "Tiles/{size}/cobblestone_pavement/cobblestone_pavement_2.png",
+    "Tiles/{size}/cobblestone_pavement/cobblestone_pavement_3.png",
+    "Tiles/{size}/cobblestone_pavement/cobblestone_pavement_4.png"
+   ],
+   "seamless": "Tiles/{size}/cobblestone_pavement/cobblestone_pavement_seamless_4x4.png",
+   "liquid": false
+  },
+  "pond_water": {
+   "variants": [
+    "Tiles/{size}/pond_water/pond_water_1.png",
+    "Tiles/{size}/pond_water/pond_water_2.png",
+    "Tiles/{size}/pond_water/pond_water_3.png",
+    "Tiles/{size}/pond_water/pond_water_4.png"
+   ],
+   "seamless": "Tiles/{size}/pond_water/pond_water_seamless_4x4.png",
+   "liquid": true
+  },
+  "meadow_grass": {
+   "variants": [
+    "Tiles/{size}/meadow_grass/meadow_grass_1.png",
+    "Tiles/{size}/meadow_grass/meadow_grass_2.png",
+    "Tiles/{size}/meadow_grass/meadow_grass_3.png",
+    "Tiles/{size}/meadow_grass/meadow_grass_4.png"
+   ],
+   "seamless": "Tiles/{size}/meadow_grass/meadow_grass_seamless_4x4.png",
+   "liquid": false
+  },
+  "golden_sand": {
+   "variants": [
+    "Tiles/{size}/golden_sand/golden_sand_1.png",
+    "Tiles/{size}/golden_sand/golden_sand_2.png",
+    "Tiles/{size}/golden_sand/golden_sand_3.png",
+    "Tiles/{size}/golden_sand/golden_sand_4.png"
+   ],
+   "seamless": "Tiles/{size}/golden_sand/golden_sand_seamless_4x4.png",
+   "liquid": false
+  },
+  "floor_planks": {
+   "variants": [
+    "Tiles/{size}/floor_planks/floor_planks_1.png",
+    "Tiles/{size}/floor_planks/floor_planks_2.png",
+    "Tiles/{size}/floor_planks/floor_planks_3.png",
+    "Tiles/{size}/floor_planks/floor_planks_4.png"
+   ],
+   "seamless": "Tiles/{size}/floor_planks/floor_planks_seamless_4x4.png",
+   "liquid": false
+  },
+  "soil_rows": {
+   "variants": [
+    "Tiles/{size}/soil_rows/soil_rows_1.png",
+    "Tiles/{size}/soil_rows/soil_rows_2.png",
+    "Tiles/{size}/soil_rows/soil_rows_3.png",
+    "Tiles/{size}/soil_rows/soil_rows_4.png"
+   ],
+   "seamless": "Tiles/{size}/soil_rows/soil_rows_seamless_4x4.png",
+   "liquid": false
+  },
+  "green_grass_to_dirt_path": {
+   "folder": "Tiles/{size}/transitions/green_grass_to_dirt_path",
+   "kind": "corner (Wang) transition, 16 tiles",
+   "index": "file number = 8*TL + 4*TR + 2*BL + 1*BR, a corner is 1 when it is dirt path, 0 when green grass"
+  },
+  "green_grass_to_cobblestone_pavement": {
+   "folder": "Tiles/{size}/transitions/green_grass_to_cobblestone_pavement",
+   "kind": "corner (Wang) transition, 16 tiles",
+   "index": "file number = 8*TL + 4*TR + 2*BL + 1*BR, a corner is 1 when it is cobblestone pavement, 0 when green grass"
+  },
+  "green_grass_to_pond_water": {
+   "folder": "Tiles/{size}/transitions/green_grass_to_pond_water",
+   "kind": "corner (Wang) transition, 16 tiles",
+   "index": "file number = 8*TL + 4*TR + 2*BL + 1*BR, a corner is 1 when it is pond water, 0 when green grass"
+  },
+  "green_grass_to_meadow_grass": {
+   "folder": "Tiles/{size}/transitions/green_grass_to_meadow_grass",
+   "kind": "corner (Wang) transition, 16 tiles",
+   "index": "file number = 8*TL + 4*TR + 2*BL + 1*BR, a corner is 1 when it is meadow grass, 0 when green grass"
+  },
+  "green_grass_to_golden_sand": {
+   "folder": "Tiles/{size}/transitions/green_grass_to_golden_sand",
+   "kind": "corner (Wang) transition, 16 tiles",
+   "index": "file number = 8*TL + 4*TR + 2*BL + 1*BR, a corner is 1 when it is golden sand, 0 when green grass"
+  },
+  "green_grass_to_floor_planks": {
+   "folder": "Tiles/{size}/transitions/green_grass_to_floor_planks",
+   "kind": "corner (Wang) transition, 16 tiles",
+   "index": "file number = 8*TL + 4*TR + 2*BL + 1*BR, a corner is 1 when it is floor planks, 0 when green grass"
+  },
+  "green_grass_to_soil_rows": {
+   "folder": "Tiles/{size}/transitions/green_grass_to_soil_rows",
+   "kind": "corner (Wang) transition, 16 tiles",
+   "index": "file number = 8*TL + 4*TR + 2*BL + 1*BR, a corner is 1 when it is soil rows, 0 when green grass"
+  }
+ },
+ "props": {
+  "oak_tree": {
+   "file": "Props/{size}/oak_tree.png",
+   "label": "round leafy oak tree",
+   "sizes": {
+    "Game": {
+     "w": 164,
+     "h": 180,
+     "pivot": [
+      82,
+      179
+     ]
+    },
+    "HD": {
+     "w": 329,
+     "h": 360,
+     "pivot": [
+      164,
+      359
+     ]
+    }
+   }
+  },
+  "pine_tree": {
+   "file": "Props/{size}/pine_tree.png",
+   "label": "tall pine tree",
+   "sizes": {
+    "Game": {
+     "w": 124,
+     "h": 180,
+     "pivot": [
+      62,
+      179
+     ]
+    },
+    "HD": {
+     "w": 249,
+     "h": 360,
+     "pivot": [
+      124,
+      359
+     ]
+    }
+   }
+  },
+  "green_bush": {
+   "file": "Props/{size}/green_bush.png",
+   "label": "round green bush",
+   "sizes": {
+    "Game": {
+     "w": 58,
+     "h": 54,
+     "pivot": [
+      29,
+      53
+     ]
+    },
+    "HD": {
+     "w": 116,
+     "h": 108,
+     "pivot": [
+      58,
+      107
+     ]
+    }
+   }
+  },
+  "pink_bush": {
+   "file": "Props/{size}/pink_bush.png",
+   "label": "flowering pink bush",
+   "sizes": {
+    "Game": {
+     "w": 62,
+     "h": 54,
+     "pivot": [
+      31,
+      53
+     ]
+    },
+    "HD": {
+     "w": 124,
+     "h": 108,
+     "pivot": [
+      62,
+      107
+     ]
+    }
+   }
+  },
+  "grey_boulder": {
+   "file": "Props/{size}/grey_boulder.png",
+   "label": "big grey boulder",
+   "sizes": {
+    "Game": {
+     "w": 65,
+     "h": 48,
+     "pivot": [
+      32,
+      47
+     ]
+    },
+    "HD": {
+     "w": 130,
+     "h": 96,
+     "pivot": [
+      65,
+      95
+     ]
+    }
+   }
+  },
+  "rocks": {
+   "file": "Props/{size}/rocks.png",
+   "label": "cluster of small rocks",
+   "sizes": {
+    "Game": {
+     "w": 46,
+     "h": 34,
+     "pivot": [
+      23,
+      33
+     ]
+    },
+    "HD": {
+     "w": 93,
+     "h": 68,
+     "pivot": [
+      46,
+      67
+     ]
+    }
+   }
+  },
+  "tree_stump": {
+   "file": "Props/{size}/tree_stump.png",
+   "label": "tree stump",
+   "sizes": {
+    "Game": {
+     "w": 49,
+     "h": 40,
+     "pivot": [
+      24,
+      39
+     ]
+    },
+    "HD": {
+     "w": 99,
+     "h": 80,
+     "pivot": [
+      49,
+      79
+     ]
+    }
+   }
+  },
+  "fallen_log": {
+   "file": "Props/{size}/fallen_log.png",
+   "label": "fallen log",
+   "sizes": {
+    "Game": {
+     "w": 56,
+     "h": 34,
+     "pivot": [
+      28,
+      33
+     ]
+    },
+    "HD": {
+     "w": 113,
+     "h": 68,
+     "pivot": [
+      56,
+      67
+     ]
+    }
+   }
+  },
+  "mushroom_cluster": {
+   "file": "Props/{size}/mushroom_cluster.png",
+   "label": "red mushroom cluster",
+   "sizes": {
+    "Game": {
+     "w": 42,
+     "h": 40,
+     "pivot": [
+      21,
+      39
+     ]
+    },
+    "HD": {
+     "w": 84,
+     "h": 80,
+     "pivot": [
+      42,
+      79
+     ]
+    }
+   }
+  },
+  "grass_tuft": {
+   "file": "Props/{size}/grass_tuft.png",
+   "label": "tall grass tuft",
+   "sizes": {
+    "Game": {
+     "w": 36,
+     "h": 34,
+     "pivot": [
+      18,
+      33
+     ]
+    },
+    "HD": {
+     "w": 72,
+     "h": 68,
+     "pivot": [
+      36,
+      67
+     ]
+    }
+   }
+  },
+  "sunflowers": {
+   "file": "Props/{size}/sunflowers.png",
+   "label": "sunflowers",
+   "sizes": {
+    "Game": {
+     "w": 48,
+     "h": 54,
+     "pivot": [
+      24,
+      53
+     ]
+    },
+    "HD": {
+     "w": 97,
+     "h": 108,
+     "pivot": [
+      48,
+      107
+     ]
+    }
+   }
+  },
+  "lily_pads": {
+   "file": "Props/{size}/lily_pads.png",
+   "label": "lily pads with a pink flower",
+   "sizes": {
+    "Game": {
+     "w": 34,
+     "h": 26,
+     "pivot": [
+      17,
+      25
+     ]
+    },
+    "HD": {
+     "w": 69,
+     "h": 52,
+     "pivot": [
+      34,
+      51
+     ]
+    }
+   }
+  },
+  "wooden_barrel": {
+   "file": "Props/{size}/wooden_barrel.png",
+   "label": "wooden barrel",
+   "sizes": {
+    "Game": {
+     "w": 41,
+     "h": 50,
+     "pivot": [
+      20,
+      49
+     ]
+    },
+    "HD": {
+     "w": 82,
+     "h": 100,
+     "pivot": [
+      41,
+      99
+     ]
+    }
+   }
+  },
+  "wooden_crate": {
+   "file": "Props/{size}/wooden_crate.png",
+   "label": "wooden crate",
+   "sizes": {
+    "Game": {
+     "w": 47,
+     "h": 50,
+     "pivot": [
+      23,
+      49
+     ]
+    },
+    "HD": {
+     "w": 95,
+     "h": 100,
+     "pivot": [
+      47,
+      99
+     ]
+    }
+   }
+  },
+  "fence_section": {
+   "file": "Props/{size}/fence_section.png",
+   "label": "horizontal wooden fence section",
+   "sizes": {
+    "Game": {
+     "w": 82,
+     "h": 50,
+     "pivot": [
+      41,
+      49
+     ]
+    },
+    "HD": {
+     "w": 164,
+     "h": 100,
+     "pivot": [
+      82,
+      99
+     ]
+    }
+   }
+  },
+  "fence_post": {
+   "file": "Props/{size}/fence_post.png",
+   "label": "single wooden fence post",
+   "sizes": {
+    "Game": {
+     "w": 32,
+     "h": 50,
+     "pivot": [
+      16,
+      49
+     ]
+    },
+    "HD": {
+     "w": 64,
+     "h": 100,
+     "pivot": [
+      32,
+      99
+     ]
+    }
+   }
+  },
+  "wooden_signpost": {
+   "file": "Props/{size}/wooden_signpost.png",
+   "label": "wooden signpost with a blank sign",
+   "sizes": {
+    "Game": {
+     "w": 55,
+     "h": 66,
+     "pivot": [
+      27,
+      65
+     ]
+    },
+    "HD": {
+     "w": 111,
+     "h": 132,
+     "pivot": [
+      55,
+      131
+     ]
+    }
+   }
+  },
+  "treasure_chest": {
+   "file": "Props/{size}/treasure_chest.png",
+   "label": "closed wooden treasure chest with gold trim",
+   "sizes": {
+    "Game": {
+     "w": 53,
+     "h": 48,
+     "pivot": [
+      26,
+      47
+     ]
+    },
+    "HD": {
+     "w": 106,
+     "h": 96,
+     "pivot": [
+      53,
+      95
+     ]
+    }
+   }
+  },
+  "clay_pot": {
+   "file": "Props/{size}/clay_pot.png",
+   "label": "clay pot",
+   "sizes": {
+    "Game": {
+     "w": 36,
+     "h": 40,
+     "pivot": [
+      18,
+      39
+     ]
+    },
+    "HD": {
+     "w": 72,
+     "h": 80,
+     "pivot": [
+      36,
+      79
+     ]
+    }
+   }
+  },
+  "hay_bale": {
+   "file": "Props/{size}/hay_bale.png",
+   "label": "hay bale",
+   "sizes": {
+    "Game": {
+     "w": 62,
+     "h": 50,
+     "pivot": [
+      31,
+      49
+     ]
+    },
+    "HD": {
+     "w": 124,
+     "h": 100,
+     "pivot": [
+      62,
+      99
+     ]
+    }
+   }
+  },
+  "lamp_post": {
+   "file": "Props/{size}/lamp_post.png",
+   "label": "iron lamp post with a warm light",
+   "sizes": {
+    "Game": {
+     "w": 43,
+     "h": 104,
+     "pivot": [
+      21,
+      103
+     ]
+    },
+    "HD": {
+     "w": 86,
+     "h": 208,
+     "pivot": [
+      43,
+      207
+     ]
+    }
+   }
+  },
+  "wooden_bench": {
+   "file": "Props/{size}/wooden_bench.png",
+   "label": "wooden bench",
+   "sizes": {
+    "Game": {
+     "w": 56,
+     "h": 40,
+     "pivot": [
+      28,
+      39
+     ]
+    },
+    "HD": {
+     "w": 113,
+     "h": 80,
+     "pivot": [
+      56,
+      79
+     ]
+    }
+   }
+  },
+  "market_cart": {
+   "file": "Props/{size}/market_cart.png",
+   "label": "small wooden market cart with apples",
+   "sizes": {
+    "Game": {
+     "w": 65,
+     "h": 66,
+     "pivot": [
+      32,
+      65
+     ]
+    },
+    "HD": {
+     "w": 130,
+     "h": 132,
+     "pivot": [
+      65,
+      131
+     ]
+    }
+   }
+  },
+  "scarecrow": {
+   "file": "Props/{size}/scarecrow.png",
+   "label": "scarecrow",
+   "sizes": {
+    "Game": {
+     "w": 75,
+     "h": 96,
+     "pivot": [
+      37,
+      95
+     ]
+    },
+    "HD": {
+     "w": 150,
+     "h": 192,
+     "pivot": [
+      75,
+      191
+     ]
+    }
+   }
+  }
+ },
+ "buildings": {
+  "cosy_cottage": {
+   "file": "Buildings/{size}/cosy_cottage.png",
+   "label": "cosy cottage with a thatched roof, wooden door and flower boxes",
+   "sizes": {
+    "Game": {
+     "w": 250,
+     "h": 230,
+     "pivot": [
+      125,
+      229
+     ]
+    },
+    "HD": {
+     "w": 501,
+     "h": 460,
+     "pivot": [
+      250,
+      459
+     ]
+    }
+   }
+  },
+  "blacksmith_hut": {
+   "file": "Buildings/{size}/blacksmith_hut.png",
+   "label": "blacksmith hut with a stone chimney and an anvil outside",
+   "sizes": {
+    "Game": {
+     "w": 224,
+     "h": 210,
+     "pivot": [
+      112,
+      209
+     ]
+    },
+    "HD": {
+     "w": 448,
+     "h": 420,
+     "pivot": [
+      224,
+      419
+     ]
+    }
+   }
+  },
+  "stone_well": {
+   "file": "Buildings/{size}/stone_well.png",
+   "label": "round stone well with a wooden roof and bucket",
+   "sizes": {
+    "Game": {
+     "w": 116,
+     "h": 130,
+     "pivot": [
+      58,
+      129
+     ]
+    },
+    "HD": {
+     "w": 233,
+     "h": 260,
+     "pivot": [
+      116,
+      259
+     ]
+    }
+   }
+  },
+  "wooden_windmill": {
+   "file": "Buildings/{size}/wooden_windmill.png",
+   "label": "small wooden windmill",
+   "sizes": {
+    "Game": {
+     "w": 215,
+     "h": 280,
+     "pivot": [
+      107,
+      279
+     ]
+    },
+    "HD": {
+     "w": 430,
+     "h": 560,
+     "pivot": [
+      215,
+      559
+     ]
+    }
+   }
+  }
+ },
+ "walls": {
+  "wall": {
+   "segments": [
+    "Walls/{size}/wall_1.png",
+    "Walls/{size}/wall_2.png",
+    "Walls/{size}/wall_3.png",
+    "Walls/{size}/wall_4.png"
+   ],
+   "strip": "Walls/{size}/wall_strip_seamless.png",
+   "tile_w": 1,
+   "tile_h": 2,
+   "note": "each segment is 1 tile wide and 2 tiles tall (front face + top); any segment fits next to any other",
+   "pillar": "Walls/{size}/wall_pillar.png"
+  }
+ }
+}

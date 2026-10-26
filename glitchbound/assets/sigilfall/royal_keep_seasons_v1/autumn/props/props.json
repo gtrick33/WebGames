@@ -1,0 +1,3222 @@
+{
+ "anvil": {
+  "group": "yard",
+  "origin": [
+   11,
+   24
+  ],
+  "size": [
+   23,
+   24
+  ]
+ },
+ "archery_target": {
+  "group": "yard",
+  "origin": [
+   13,
+   39
+  ],
+  "size": [
+   27,
+   39
+  ]
+ },
+ "armor_stand": {
+  "group": "yard",
+  "origin": [
+   11,
+   42
+  ],
+  "size": [
+   22,
+   42
+  ]
+ },
+ "barrel": {
+  "group": "containers",
+  "origin": [
+   10,
+   25
+  ],
+  "size": [
+   20,
+   25
+  ]
+ },
+ "barrel_apples": {
+  "group": "containers",
+  "origin": [
+   10,
+   27
+  ],
+  "size": [
+   20,
+   27
+  ]
+ },
+ "barrel_fish": {
+  "group": "containers",
+  "origin": [
+   10,
+   26
+  ],
+  "size": [
+   20,
+   26
+  ]
+ },
+ "barrel_water": {
+  "group": "containers",
+  "origin": [
+   10,
+   25
+  ],
+  "size": [
+   20,
+   25
+  ]
+ },
+ "barrels": {
+  "group": "containers",
+  "origin": [
+   22,
+   35
+  ],
+  "size": [
+   45,
+   35
+  ]
+ },
+ "basket": {
+  "group": "containers",
+  "origin": [
+   10,
+   14
+  ],
+  "size": [
+   20,
+   14
+  ]
+ },
+ "basket_apples": {
+  "group": "containers",
+  "origin": [
+   10,
+   15
+  ],
+  "size": [
+   20,
+   15
+  ]
+ },
+ "basket_bread": {
+  "group": "containers",
+  "origin": [
+   10,
+   15
+  ],
+  "size": [
+   20,
+   15
+  ]
+ },
+ "basket_eggs": {
+  "group": "containers",
+  "origin": [
+   10,
+   15
+  ],
+  "size": [
+   20,
+   15
+  ]
+ },
+ "bedroll_blue": {
+  "group": "camp",
+  "origin": [
+   19,
+   14
+  ],
+  "size": [
+   38,
+   14
+  ]
+ },
+ "bedroll_red": {
+  "group": "camp",
+  "origin": [
+   19,
+   14
+  ],
+  "size": [
+   38,
+   14
+  ]
+ },
+ "bench": {
+  "group": "town",
+  "origin": [
+   17,
+   18
+  ],
+  "size": [
+   34,
+   18
+  ]
+ },
+ "bench_stone": {
+  "group": "town",
+  "origin": [
+   17,
+   18
+  ],
+  "size": [
+   34,
+   18
+  ]
+ },
+ "boat": {
+  "group": "town",
+  "origin": [
+   26,
+   24
+  ],
+  "size": [
+   53,
+   24
+  ]
+ },
+ "bucket": {
+  "group": "containers",
+  "origin": [
+   7,
+   17
+  ],
+  "size": [
+   15,
+   17
+  ]
+ },
+ "bucket_water": {
+  "group": "containers",
+  "origin": [
+   7,
+   17
+  ],
+  "size": [
+   15,
+   17
+  ]
+ },
+ "bush_amber": {
+  "group": "plants",
+  "origin": [
+   15,
+   23
+  ],
+  "size": [
+   30,
+   23
+  ]
+ },
+ "bush_berry": {
+  "group": "plants",
+  "origin": [
+   15,
+   23
+  ],
+  "size": [
+   30,
+   23
+  ]
+ },
+ "bush_blue": {
+  "group": "plants",
+  "origin": [
+   15,
+   24
+  ],
+  "size": [
+   30,
+   24
+  ]
+ },
+ "bush_coral": {
+  "group": "plants",
+  "origin": [
+   15,
+   23
+  ],
+  "size": [
+   30,
+   23
+  ]
+ },
+ "bush_leaf": {
+  "group": "plants",
+  "origin": [
+   15,
+   23
+  ],
+  "size": [
+   30,
+   23
+  ]
+ },
+ "bush_mint": {
+  "group": "plants",
+  "origin": [
+   15,
+   23
+  ],
+  "size": [
+   30,
+   23
+  ]
+ },
+ "bush_rose": {
+  "group": "plants",
+  "origin": [
+   15,
+   24
+  ],
+  "size": [
+   30,
+   24
+  ]
+ },
+ "bush_small_amber": {
+  "group": "plants",
+  "origin": [
+   9,
+   17
+  ],
+  "size": [
+   19,
+   17
+  ]
+ },
+ "bush_small_coral": {
+  "group": "plants",
+  "origin": [
+   9,
+   17
+  ],
+  "size": [
+   19,
+   17
+  ]
+ },
+ "bush_small_leaf": {
+  "group": "plants",
+  "origin": [
+   9,
+   17
+  ],
+  "size": [
+   19,
+   17
+  ]
+ },
+ "bush_small_mint": {
+  "group": "plants",
+  "origin": [
+   9,
+   17
+  ],
+  "size": [
+   19,
+   17
+  ]
+ },
+ "bush_small_teal": {
+  "group": "plants",
+  "origin": [
+   9,
+   17
+  ],
+  "size": [
+   19,
+   17
+  ]
+ },
+ "bush_teal": {
+  "group": "plants",
+  "origin": [
+   15,
+   23
+  ],
+  "size": [
+   30,
+   23
+  ]
+ },
+ "bush_wide": {
+  "group": "plants",
+  "origin": [
+   22,
+   25
+  ],
+  "size": [
+   44,
+   25
+  ]
+ },
+ "cart": {
+  "group": "town",
+  "origin": [
+   30,
+   40
+  ],
+  "size": [
+   60,
+   40
+  ]
+ },
+ "cart_goods": {
+  "group": "town",
+  "origin": [
+   30,
+   50
+  ],
+  "size": [
+   60,
+   50
+  ]
+ },
+ "cart_hay": {
+  "group": "town",
+  "origin": [
+   30,
+   43
+  ],
+  "size": [
+   60,
+   43
+  ]
+ },
+ "cauldron": {
+  "group": "camp",
+  "origin": [
+   11,
+   22
+  ],
+  "size": [
+   22,
+   22
+  ]
+ },
+ "chapel": {
+  "footprint": [
+   58,
+   70
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   154
+  ],
+  "size": [
+   78,
+   161
+  ]
+ },
+ "chest": {
+  "group": "pickups",
+  "origin": [
+   14,
+   26
+  ],
+  "size": [
+   29,
+   26
+  ]
+ },
+ "chest_empty": {
+  "group": "pickups",
+  "origin": [
+   14,
+   37
+  ],
+  "size": [
+   29,
+   37
+  ]
+ },
+ "chest_gold": {
+  "group": "pickups",
+  "origin": [
+   14,
+   37
+  ],
+  "size": [
+   29,
+   37
+  ]
+ },
+ "chopping_block": {
+  "group": "town",
+  "origin": [
+   11,
+   28
+  ],
+  "size": [
+   22,
+   28
+  ]
+ },
+ "cottage_moss": {
+  "footprint": [
+   72,
+   42
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   91
+  ],
+  "size": [
+   92,
+   98
+  ],
+  "smoke": [
+   [
+    55,
+    2
+   ]
+  ]
+ },
+ "cottage_slate": {
+  "footprint": [
+   80,
+   44
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   93
+  ],
+  "size": [
+   100,
+   100
+  ],
+  "smoke": [
+   [
+    63,
+    2
+   ]
+  ]
+ },
+ "cottage_stone": {
+  "footprint": [
+   80,
+   44
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   93
+  ],
+  "size": [
+   100,
+   100
+  ],
+  "smoke": [
+   [
+    63,
+    2
+   ]
+  ]
+ },
+ "cottage_thatch": {
+  "footprint": [
+   78,
+   44
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   94
+  ],
+  "size": [
+   98,
+   101
+  ],
+  "smoke": [
+   [
+    61,
+    2
+   ]
+  ]
+ },
+ "cottage_tile": {
+  "footprint": [
+   76,
+   42
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   91
+  ],
+  "size": [
+   96,
+   98
+  ],
+  "smoke": [
+   [
+    59,
+    2
+   ]
+  ]
+ },
+ "crate": {
+  "group": "containers",
+  "origin": [
+   13,
+   25
+  ],
+  "size": [
+   26,
+   25
+  ]
+ },
+ "crate_apples": {
+  "group": "containers",
+  "origin": [
+   13,
+   26
+  ],
+  "size": [
+   26,
+   26
+  ]
+ },
+ "crate_big": {
+  "group": "containers",
+  "origin": [
+   16,
+   32
+  ],
+  "size": [
+   33,
+   32
+  ]
+ },
+ "crate_cabbage": {
+  "group": "containers",
+  "origin": [
+   13,
+   26
+  ],
+  "size": [
+   26,
+   26
+  ]
+ },
+ "crate_carrots": {
+  "group": "containers",
+  "origin": [
+   13,
+   26
+  ],
+  "size": [
+   26,
+   26
+  ]
+ },
+ "crates": {
+  "group": "containers",
+  "origin": [
+   27,
+   44
+  ],
+  "size": [
+   55,
+   44
+  ]
+ },
+ "fence_0": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_1": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_10": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_11": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_12": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_13": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_14": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_15": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_2": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_3": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_4": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_5": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_6": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_7": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_8": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_9": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_gate": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_0": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_1": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_10": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_11": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_12": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_13": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_14": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_15": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_2": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_3": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_4": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_5": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_6": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_7": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_8": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "fence_iron_9": {
+  "cell": true,
+  "group": "fences",
+  "origin": [
+   0,
+   32
+  ],
+  "size": [
+   32,
+   32
+  ]
+ },
+ "flowerbed_blue": {
+  "group": "garden",
+  "origin": [
+   16,
+   20
+  ],
+  "size": [
+   32,
+   20
+  ]
+ },
+ "flowerbed_gold": {
+  "group": "garden",
+  "origin": [
+   16,
+   20
+  ],
+  "size": [
+   32,
+   20
+  ]
+ },
+ "flowerbed_red": {
+  "group": "garden",
+  "origin": [
+   16,
+   20
+  ],
+  "size": [
+   32,
+   20
+  ]
+ },
+ "flowerbed_violet": {
+  "group": "garden",
+  "origin": [
+   16,
+   20
+  ],
+  "size": [
+   32,
+   20
+  ]
+ },
+ "flowers_blue": {
+  "group": "plants",
+  "origin": [
+   4,
+   11
+  ],
+  "size": [
+   9,
+   11
+  ]
+ },
+ "flowers_pink": {
+  "group": "plants",
+  "origin": [
+   4,
+   11
+  ],
+  "size": [
+   9,
+   11
+  ]
+ },
+ "flowers_red": {
+  "group": "plants",
+  "origin": [
+   8,
+   13
+  ],
+  "size": [
+   17,
+   13
+  ]
+ },
+ "flowers_violet": {
+  "group": "plants",
+  "origin": [
+   7,
+   11
+  ],
+  "size": [
+   14,
+   11
+  ]
+ },
+ "flowers_white": {
+  "group": "plants",
+  "origin": [
+   4,
+   11
+  ],
+  "size": [
+   9,
+   11
+  ]
+ },
+ "flowers_yellow": {
+  "group": "plants",
+  "origin": [
+   7,
+   11
+  ],
+  "size": [
+   14,
+   11
+  ]
+ },
+ "gatehouse": {
+  "footprint": [
+   128,
+   40
+  ],
+  "group": "castle",
+  "origin": [
+   3,
+   155
+  ],
+  "size": [
+   149,
+   162
+  ]
+ },
+ "gold_pile": {
+  "group": "containers",
+  "origin": [
+   14,
+   18
+  ],
+  "size": [
+   29,
+   18
+  ]
+ },
+ "grave_cross": {
+  "group": "garden",
+  "origin": [
+   10,
+   24
+  ],
+  "size": [
+   20,
+   24
+  ]
+ },
+ "gravestone_1": {
+  "group": "garden",
+  "origin": [
+   10,
+   24
+  ],
+  "size": [
+   20,
+   24
+  ]
+ },
+ "gravestone_2": {
+  "group": "garden",
+  "origin": [
+   10,
+   25
+  ],
+  "size": [
+   20,
+   25
+  ]
+ },
+ "grindstone": {
+  "group": "yard",
+  "origin": [
+   15,
+   27
+  ],
+  "size": [
+   30,
+   27
+  ]
+ },
+ "hay_bale": {
+  "group": "town",
+  "origin": [
+   14,
+   25
+  ],
+  "size": [
+   29,
+   25
+  ]
+ },
+ "hay_pile": {
+  "group": "town",
+  "origin": [
+   19,
+   23
+  ],
+  "size": [
+   39,
+   23
+  ]
+ },
+ "heart": {
+  "group": "pickups",
+  "origin": [
+   6,
+   15
+  ],
+  "size": [
+   13,
+   15
+  ]
+ },
+ "hedge_block": {
+  "group": "plants",
+  "origin": [
+   10,
+   27
+  ],
+  "size": [
+   20,
+   27
+  ]
+ },
+ "hedge_h": {
+  "group": "plants",
+  "origin": [
+   16,
+   27
+  ],
+  "size": [
+   32,
+   27
+  ]
+ },
+ "hedge_h_rose": {
+  "group": "plants",
+  "origin": [
+   16,
+   27
+  ],
+  "size": [
+   32,
+   27
+  ]
+ },
+ "hedge_long": {
+  "group": "plants",
+  "origin": [
+   32,
+   27
+  ],
+  "size": [
+   64,
+   27
+  ]
+ },
+ "hedge_v": {
+  "group": "plants",
+  "origin": [
+   9,
+   45
+  ],
+  "size": [
+   18,
+   45
+  ]
+ },
+ "house_gable_plum": {
+  "footprint": [
+   62,
+   50
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   120
+  ],
+  "size": [
+   82,
+   127
+  ],
+  "smoke": [
+   [
+    54,
+    33
+   ]
+  ]
+ },
+ "house_gable_slate": {
+  "footprint": [
+   64,
+   52
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   123
+  ],
+  "size": [
+   84,
+   130
+  ],
+  "smoke": [
+   [
+    56,
+    35
+   ]
+  ]
+ },
+ "house_gable_tile": {
+  "footprint": [
+   66,
+   54
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   126
+  ],
+  "size": [
+   86,
+   133
+  ],
+  "smoke": [
+   [
+    58,
+    37
+   ]
+  ]
+ },
+ "house_tall_slate": {
+  "footprint": [
+   88,
+   44
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   119
+  ],
+  "size": [
+   108,
+   126
+  ],
+  "smoke": [
+   [
+    25,
+    2
+   ]
+  ]
+ },
+ "house_tall_tile": {
+  "footprint": [
+   92,
+   46
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   121
+  ],
+  "size": [
+   112,
+   128
+  ],
+  "smoke": [
+   [
+    25,
+    2
+   ]
+  ]
+ },
+ "inn": {
+  "footprint": [
+   128,
+   62
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   138
+  ],
+  "size": [
+   148,
+   145
+  ],
+  "smoke": [
+   [
+    18,
+    2
+   ],
+   [
+    116,
+    2
+   ]
+  ]
+ },
+ "keep": {
+  "footprint": [
+   160,
+   80
+  ],
+  "group": "castle",
+  "origin": [
+   2,
+   212
+  ],
+  "size": [
+   186,
+   220
+  ]
+ },
+ "keg": {
+  "group": "containers",
+  "origin": [
+   14,
+   22
+  ],
+  "size": [
+   28,
+   22
+  ]
+ },
+ "key_gold": {
+  "group": "pickups",
+  "origin": [
+   5,
+   18
+  ],
+  "size": [
+   10,
+   18
+  ]
+ },
+ "key_iron": {
+  "group": "pickups",
+  "origin": [
+   5,
+   18
+  ],
+  "size": [
+   10,
+   18
+  ]
+ },
+ "lantern_post": {
+  "group": "town",
+  "origin": [
+   8,
+   46
+  ],
+  "size": [
+   17,
+   46
+  ]
+ },
+ "lantern_post_double": {
+  "group": "town",
+  "origin": [
+   13,
+   46
+  ],
+  "size": [
+   27,
+   46
+  ]
+ },
+ "lilypad": {
+  "group": "town",
+  "origin": [
+   6,
+   9
+  ],
+  "size": [
+   13,
+   9
+  ]
+ },
+ "lilypad_flower": {
+  "group": "town",
+  "origin": [
+   6,
+   9
+  ],
+  "size": [
+   13,
+   9
+  ]
+ },
+ "log": {
+  "group": "plants",
+  "origin": [
+   18,
+   19
+  ],
+  "size": [
+   37,
+   19
+  ]
+ },
+ "market_arms": {
+  "group": "market",
+  "origin": [
+   24,
+   28
+  ],
+  "size": [
+   48,
+   28
+  ]
+ },
+ "market_cloth": {
+  "group": "market",
+  "origin": [
+   24,
+   28
+  ],
+  "size": [
+   48,
+   28
+  ]
+ },
+ "market_fish": {
+  "group": "market",
+  "origin": [
+   24,
+   28
+  ],
+  "size": [
+   48,
+   28
+  ]
+ },
+ "market_pots": {
+  "group": "market",
+  "origin": [
+   24,
+   28
+  ],
+  "size": [
+   48,
+   28
+  ]
+ },
+ "market_veg": {
+  "group": "market",
+  "origin": [
+   24,
+   28
+  ],
+  "size": [
+   48,
+   28
+  ]
+ },
+ "mushroom_blue": {
+  "group": "plants",
+  "origin": [
+   6,
+   12
+  ],
+  "size": [
+   12,
+   12
+  ]
+ },
+ "mushroom_brown": {
+  "group": "plants",
+  "origin": [
+   6,
+   12
+  ],
+  "size": [
+   12,
+   12
+  ]
+ },
+ "mushroom_red": {
+  "group": "plants",
+  "origin": [
+   6,
+   12
+  ],
+  "size": [
+   12,
+   12
+  ]
+ },
+ "notice_board": {
+  "group": "town",
+  "origin": [
+   19,
+   38
+  ],
+  "size": [
+   38,
+   38
+  ]
+ },
+ "pavilion_blue": {
+  "footprint": [
+   45,
+   31
+  ],
+  "group": "camp",
+  "origin": [
+   4,
+   82
+  ],
+  "size": [
+   60,
+   87
+  ]
+ },
+ "pavilion_red": {
+  "footprint": [
+   41,
+   29
+  ],
+  "group": "camp",
+  "origin": [
+   4,
+   81
+  ],
+  "size": [
+   55,
+   86
+  ]
+ },
+ "pillar": {
+  "group": "garden",
+  "origin": [
+   10,
+   50
+  ],
+  "size": [
+   20,
+   50
+  ]
+ },
+ "pillar_broken": {
+  "group": "garden",
+  "origin": [
+   12,
+   30
+  ],
+  "size": [
+   25,
+   30
+  ]
+ },
+ "pine_big": {
+  "group": "trees",
+  "origin": [
+   20,
+   82
+  ],
+  "size": [
+   41,
+   82
+  ]
+ },
+ "pine_big_green": {
+  "group": "trees",
+  "origin": [
+   20,
+   82
+  ],
+  "size": [
+   41,
+   82
+  ]
+ },
+ "pine_mid": {
+  "group": "trees",
+  "origin": [
+   17,
+   62
+  ],
+  "size": [
+   35,
+   62
+  ]
+ },
+ "pine_mid_green": {
+  "group": "trees",
+  "origin": [
+   16,
+   62
+  ],
+  "size": [
+   32,
+   62
+  ]
+ },
+ "pine_small": {
+  "group": "trees",
+  "origin": [
+   11,
+   41
+  ],
+  "size": [
+   23,
+   41
+  ]
+ },
+ "pine_snowy": {
+  "group": "trees",
+  "origin": [
+   19,
+   70
+  ],
+  "size": [
+   39,
+   70
+  ]
+ },
+ "planter_blue": {
+  "group": "garden",
+  "origin": [
+   12,
+   26
+  ],
+  "size": [
+   24,
+   26
+  ]
+ },
+ "planter_gold": {
+  "group": "garden",
+  "origin": [
+   12,
+   26
+  ],
+  "size": [
+   24,
+   26
+  ]
+ },
+ "planter_red": {
+  "group": "garden",
+  "origin": [
+   12,
+   26
+  ],
+  "size": [
+   24,
+   26
+  ]
+ },
+ "planter_violet": {
+  "group": "garden",
+  "origin": [
+   12,
+   26
+  ],
+  "size": [
+   24,
+   26
+  ]
+ },
+ "portcullis_closed": {
+  "group": "castle",
+  "origin": [
+   19,
+   54
+  ],
+  "size": [
+   38,
+   54
+  ]
+ },
+ "pot_big": {
+  "group": "containers",
+  "origin": [
+   10,
+   24
+  ],
+  "size": [
+   20,
+   24
+  ]
+ },
+ "pot_blue": {
+  "group": "containers",
+  "origin": [
+   8,
+   19
+  ],
+  "size": [
+   16,
+   19
+  ]
+ },
+ "pot_clay": {
+  "group": "containers",
+  "origin": [
+   8,
+   19
+  ],
+  "size": [
+   16,
+   19
+  ]
+ },
+ "potion_blue": {
+  "group": "pickups",
+  "origin": [
+   6,
+   16
+  ],
+  "size": [
+   12,
+   16
+  ]
+ },
+ "potion_green": {
+  "group": "pickups",
+  "origin": [
+   6,
+   16
+  ],
+  "size": [
+   12,
+   16
+  ]
+ },
+ "potion_red": {
+  "group": "pickups",
+  "origin": [
+   6,
+   16
+  ],
+  "size": [
+   12,
+   16
+  ]
+ },
+ "rack_shields": {
+  "group": "yard",
+  "origin": [
+   19,
+   37
+  ],
+  "size": [
+   38,
+   37
+  ]
+ },
+ "rack_spears": {
+  "group": "yard",
+  "origin": [
+   19,
+   42
+  ],
+  "size": [
+   38,
+   42
+  ]
+ },
+ "rack_swords": {
+  "group": "yard",
+  "origin": [
+   19,
+   41
+  ],
+  "size": [
+   38,
+   41
+  ]
+ },
+ "reeds": {
+  "group": "town",
+  "origin": [
+   7,
+   26
+  ],
+  "size": [
+   14,
+   26
+  ]
+ },
+ "reeds_2": {
+  "group": "town",
+  "origin": [
+   8,
+   27
+  ],
+  "size": [
+   16,
+   27
+  ]
+ },
+ "rock_1": {
+  "group": "rocks",
+  "origin": [
+   5,
+   9
+  ],
+  "size": [
+   11,
+   9
+  ]
+ },
+ "rock_2": {
+  "group": "rocks",
+  "origin": [
+   7,
+   11
+  ],
+  "size": [
+   15,
+   11
+  ]
+ },
+ "rock_3": {
+  "group": "rocks",
+  "origin": [
+   10,
+   15
+  ],
+  "size": [
+   20,
+   15
+  ]
+ },
+ "rock_4": {
+  "group": "rocks",
+  "origin": [
+   15,
+   20
+  ],
+  "size": [
+   30,
+   20
+  ]
+ },
+ "rock_5": {
+  "group": "rocks",
+  "origin": [
+   20,
+   28
+  ],
+  "size": [
+   40,
+   28
+  ]
+ },
+ "rock_mossy_1": {
+  "group": "rocks",
+  "origin": [
+   10,
+   16
+  ],
+  "size": [
+   20,
+   16
+  ]
+ },
+ "rock_mossy_2": {
+  "group": "rocks",
+  "origin": [
+   16,
+   25
+  ],
+  "size": [
+   32,
+   25
+  ]
+ },
+ "rock_sand": {
+  "group": "rocks",
+  "origin": [
+   12,
+   17
+  ],
+  "size": [
+   25,
+   17
+  ]
+ },
+ "rock_tall": {
+  "group": "rocks",
+  "origin": [
+   11,
+   25
+  ],
+  "size": [
+   22,
+   25
+  ]
+ },
+ "sack": {
+  "group": "containers",
+  "origin": [
+   9,
+   22
+  ],
+  "size": [
+   19,
+   22
+  ]
+ },
+ "sack_flour": {
+  "group": "containers",
+  "origin": [
+   9,
+   22
+  ],
+  "size": [
+   19,
+   22
+  ]
+ },
+ "sack_grain": {
+  "group": "containers",
+  "origin": [
+   9,
+   19
+  ],
+  "size": [
+   19,
+   19
+  ]
+ },
+ "sacks": {
+  "group": "containers",
+  "origin": [
+   19,
+   32
+  ],
+  "size": [
+   39,
+   32
+  ]
+ },
+ "sign_arms": {
+  "group": "town",
+  "origin": [
+   13,
+   42
+  ],
+  "size": [
+   26,
+   42
+  ]
+ },
+ "sign_inn": {
+  "group": "town",
+  "origin": [
+   13,
+   42
+  ],
+  "size": [
+   26,
+   42
+  ]
+ },
+ "sign_shop": {
+  "group": "town",
+  "origin": [
+   13,
+   42
+  ],
+  "size": [
+   26,
+   42
+  ]
+ },
+ "sign_smith": {
+  "group": "town",
+  "origin": [
+   13,
+   42
+  ],
+  "size": [
+   26,
+   42
+  ]
+ },
+ "signpost": {
+  "group": "town",
+  "origin": [
+   15,
+   35
+  ],
+  "size": [
+   30,
+   35
+  ]
+ },
+ "smithy": {
+  "footprint": [
+   84,
+   46
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   104
+  ],
+  "size": [
+   104,
+   111
+  ],
+  "smoke": [
+   [
+    13,
+    14
+   ]
+  ]
+ },
+ "stable": {
+  "footprint": [
+   104,
+   46
+  ],
+  "group": "buildings",
+  "origin": [
+   4,
+   88
+  ],
+  "size": [
+   124,
+   95
+  ]
+ },
+ "stall_blue": {
+  "footprint": [
+   46,
+   26
+  ],
+  "group": "market",
+  "origin": [
+   4,
+   70
+  ],
+  "size": [
+   57,
+   72
+  ]
+ },
+ "stall_green": {
+  "footprint": [
+   46,
+   26
+  ],
+  "group": "market",
+  "origin": [
+   4,
+   70
+  ],
+  "size": [
+   57,
+   72
+  ]
+ },
+ "stall_red": {
+  "footprint": [
+   46,
+   26
+  ],
+  "group": "market",
+  "origin": [
+   4,
+   70
+  ],
+  "size": [
+   57,
+   72
+  ]
+ },
+ "statue_archer": {
+  "group": "garden",
+  "origin": [
+   17,
+   73
+  ],
+  "size": [
+   35,
+   73
+  ]
+ },
+ "statue_king": {
+  "group": "garden",
+  "origin": [
+   18,
+   74
+  ],
+  "size": [
+   36,
+   74
+  ]
+ },
+ "statue_knight": {
+  "group": "garden",
+  "origin": [
+   17,
+   73
+  ],
+  "size": [
+   35,
+   73
+  ]
+ },
+ "statue_queen": {
+  "group": "garden",
+  "origin": [
+   18,
+   74
+  ],
+  "size": [
+   36,
+   74
+  ]
+ },
+ "stool": {
+  "group": "town",
+  "origin": [
+   7,
+   15
+  ],
+  "size": [
+   15,
+   15
+  ]
+ },
+ "stump": {
+  "group": "plants",
+  "origin": [
+   12,
+   18
+  ],
+  "size": [
+   24,
+   18
+  ]
+ },
+ "table": {
+  "group": "town",
+  "origin": [
+   20,
+   28
+  ],
+  "size": [
+   40,
+   28
+  ]
+ },
+ "table_food": {
+  "group": "town",
+  "origin": [
+   20,
+   28
+  ],
+  "size": [
+   40,
+   28
+  ]
+ },
+ "table_map": {
+  "group": "town",
+  "origin": [
+   23,
+   30
+  ],
+  "size": [
+   47,
+   30
+  ]
+ },
+ "table_small": {
+  "group": "town",
+  "origin": [
+   13,
+   26
+  ],
+  "size": [
+   26,
+   26
+  ]
+ },
+ "tall_grass_1": {
+  "group": "plants",
+  "origin": [
+   5,
+   13
+  ],
+  "size": [
+   11,
+   13
+  ]
+ },
+ "tall_grass_2": {
+  "group": "plants",
+  "origin": [
+   7,
+   13
+  ],
+  "size": [
+   14,
+   13
+  ]
+ },
+ "tall_grass_3": {
+  "group": "plants",
+  "origin": [
+   7,
+   13
+  ],
+  "size": [
+   15,
+   13
+  ]
+ },
+ "tent_blue": {
+  "footprint": [
+   44,
+   42
+  ],
+  "group": "camp",
+  "origin": [
+   1,
+   76
+  ],
+  "size": [
+   46,
+   79
+  ]
+ },
+ "tent_red": {
+  "footprint": [
+   44,
+   42
+  ],
+  "group": "camp",
+  "origin": [
+   1,
+   76
+  ],
+  "size": [
+   46,
+   79
+  ]
+ },
+ "tent_small": {
+  "footprint": [
+   34,
+   34
+  ],
+  "group": "camp",
+  "origin": [
+   1,
+   60
+  ],
+  "size": [
+   36,
+   63
+  ]
+ },
+ "topiary": {
+  "group": "plants",
+  "origin": [
+   18,
+   46
+  ],
+  "size": [
+   37,
+   46
+  ]
+ },
+ "tower_mid": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   12,
+   144
+  ],
+  "size": [
+   65,
+   156
+  ]
+ },
+ "tower_mid_slate": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   71,
+   182
+  ]
+ },
+ "tower_mid_tile": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   71,
+   182
+  ]
+ },
+ "tower_ne": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   12,
+   144
+  ],
+  "size": [
+   67,
+   156
+  ]
+ },
+ "tower_ne_slate": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   73,
+   182
+  ]
+ },
+ "tower_ne_tile": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   73,
+   182
+  ]
+ },
+ "tower_nw": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   12,
+   144
+  ],
+  "size": [
+   65,
+   156
+  ]
+ },
+ "tower_nw_slate": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   71,
+   182
+  ]
+ },
+ "tower_nw_tile": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   70,
+   182
+  ]
+ },
+ "tower_round": {
+  "footprint": [
+   41,
+   31
+  ],
+  "group": "castle",
+  "origin": [
+   3,
+   129
+  ],
+  "size": [
+   58,
+   135
+  ]
+ },
+ "tower_round_slate": {
+  "footprint": [
+   37,
+   27
+  ],
+  "group": "castle",
+  "origin": [
+   6,
+   146
+  ],
+  "size": [
+   60,
+   154
+  ]
+ },
+ "tower_round_tile": {
+  "footprint": [
+   37,
+   27
+  ],
+  "group": "castle",
+  "origin": [
+   6,
+   146
+  ],
+  "size": [
+   60,
+   154
+  ]
+ },
+ "tower_se": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   12,
+   144
+  ],
+  "size": [
+   67,
+   156
+  ]
+ },
+ "tower_se_slate": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   73,
+   182
+  ]
+ },
+ "tower_se_tile": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   73,
+   182
+  ]
+ },
+ "tower_side": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   12,
+   144
+  ],
+  "size": [
+   67,
+   156
+  ]
+ },
+ "tower_side_slate": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   73,
+   182
+  ]
+ },
+ "tower_side_tile": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   73,
+   182
+  ]
+ },
+ "tower_square": {
+  "footprint": [
+   46,
+   34
+  ],
+  "group": "castle",
+  "origin": [
+   3,
+   131
+  ],
+  "size": [
+   64,
+   137
+  ]
+ },
+ "tower_square_roof": {
+  "footprint": [
+   44,
+   34
+  ],
+  "group": "castle",
+  "origin": [
+   6,
+   145
+  ],
+  "size": [
+   68,
+   153
+  ]
+ },
+ "tower_sw": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   12,
+   144
+  ],
+  "size": [
+   65,
+   156
+  ]
+ },
+ "tower_sw_slate": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   70,
+   182
+  ]
+ },
+ "tower_sw_tile": {
+  "footprint": [
+   32,
+   32
+  ],
+  "group": "castle",
+  "origin": [
+   15,
+   168
+  ],
+  "size": [
+   70,
+   182
+  ]
+ },
+ "training_dummy": {
+  "group": "yard",
+  "origin": [
+   13,
+   44
+  ],
+  "size": [
+   27,
+   44
+  ]
+ },
+ "tree_apple": {
+  "group": "trees",
+  "origin": [
+   28,
+   66
+  ],
+  "size": [
+   56,
+   66
+  ]
+ },
+ "tree_big2_coral": {
+  "group": "trees",
+  "origin": [
+   39,
+   84
+  ],
+  "size": [
+   79,
+   84
+  ]
+ },
+ "tree_big2_leaf": {
+  "group": "trees",
+  "origin": [
+   39,
+   83
+  ],
+  "size": [
+   79,
+   83
+  ]
+ },
+ "tree_big2_mint": {
+  "group": "trees",
+  "origin": [
+   39,
+   82
+  ],
+  "size": [
+   79,
+   82
+  ]
+ },
+ "tree_big_amber": {
+  "group": "trees",
+  "origin": [
+   38,
+   87
+  ],
+  "size": [
+   76,
+   87
+  ]
+ },
+ "tree_big_coral": {
+  "group": "trees",
+  "origin": [
+   38,
+   88
+  ],
+  "size": [
+   76,
+   88
+  ]
+ },
+ "tree_big_leaf": {
+  "group": "trees",
+  "origin": [
+   38,
+   88
+  ],
+  "size": [
+   76,
+   88
+  ]
+ },
+ "tree_big_mint": {
+  "group": "trees",
+  "origin": [
+   38,
+   88
+  ],
+  "size": [
+   76,
+   88
+  ]
+ },
+ "tree_big_teal": {
+  "group": "trees",
+  "origin": [
+   38,
+   88
+  ],
+  "size": [
+   76,
+   88
+  ]
+ },
+ "tree_blossom": {
+  "group": "trees",
+  "origin": [
+   28,
+   66
+  ],
+  "size": [
+   56,
+   66
+  ]
+ },
+ "tree_dead": {
+  "group": "trees",
+  "origin": [
+   23,
+   63
+  ],
+  "size": [
+   47,
+   63
+  ]
+ },
+ "tree_mid_amber": {
+  "group": "trees",
+  "origin": [
+   27,
+   66
+  ],
+  "size": [
+   55,
+   66
+  ]
+ },
+ "tree_mid_coral": {
+  "group": "trees",
+  "origin": [
+   28,
+   66
+  ],
+  "size": [
+   56,
+   66
+  ]
+ },
+ "tree_mid_leaf": {
+  "group": "trees",
+  "origin": [
+   27,
+   66
+  ],
+  "size": [
+   55,
+   66
+  ]
+ },
+ "tree_mid_mint": {
+  "group": "trees",
+  "origin": [
+   28,
+   66
+  ],
+  "size": [
+   56,
+   66
+  ]
+ },
+ "tree_mid_teal": {
+  "group": "trees",
+  "origin": [
+   28,
+   66
+  ],
+  "size": [
+   56,
+   66
+  ]
+ },
+ "tree_orange": {
+  "group": "trees",
+  "origin": [
+   28,
+   65
+  ],
+  "size": [
+   56,
+   65
+  ]
+ },
+ "tree_small_amber": {
+  "group": "trees",
+  "origin": [
+   19,
+   46
+  ],
+  "size": [
+   38,
+   46
+  ]
+ },
+ "tree_small_coral": {
+  "group": "trees",
+  "origin": [
+   18,
+   46
+  ],
+  "size": [
+   37,
+   46
+  ]
+ },
+ "tree_small_leaf": {
+  "group": "trees",
+  "origin": [
+   18,
+   45
+  ],
+  "size": [
+   37,
+   45
+  ]
+ },
+ "tree_small_mint": {
+  "group": "trees",
+  "origin": [
+   19,
+   46
+  ],
+  "size": [
+   38,
+   46
+  ]
+ },
+ "tree_small_teal": {
+  "group": "trees",
+  "origin": [
+   18,
+   46
+  ],
+  "size": [
+   37,
+   46
+  ]
+ },
+ "tree_tall_coral": {
+  "group": "trees",
+  "origin": [
+   24,
+   82
+  ],
+  "size": [
+   48,
+   82
+  ]
+ },
+ "tree_tall_leaf": {
+  "group": "trees",
+  "origin": [
+   24,
+   81
+  ],
+  "size": [
+   48,
+   81
+  ]
+ },
+ "tree_tall_mint": {
+  "group": "trees",
+  "origin": [
+   24,
+   81
+  ],
+  "size": [
+   48,
+   81
+  ]
+ },
+ "trough": {
+  "group": "town",
+  "origin": [
+   22,
+   23
+  ],
+  "size": [
+   45,
+   23
+  ]
+ },
+ "turret": {
+  "footprint": [
+   27,
+   21
+  ],
+  "group": "castle",
+  "origin": [
+   6,
+   94
+  ],
+  "size": [
+   51,
+   102
+  ]
+ },
+ "wall_banner_blue": {
+  "group": "walls",
+  "origin": [
+   10,
+   39
+  ],
+  "size": [
+   20,
+   39
+  ]
+ },
+ "wall_banner_green": {
+  "group": "walls",
+  "origin": [
+   10,
+   39
+  ],
+  "size": [
+   20,
+   39
+  ]
+ },
+ "wall_banner_purple": {
+  "group": "walls",
+  "origin": [
+   10,
+   39
+  ],
+  "size": [
+   20,
+   39
+  ]
+ },
+ "wall_banner_red": {
+  "group": "walls",
+  "origin": [
+   10,
+   39
+  ],
+  "size": [
+   20,
+   39
+  ]
+ },
+ "wall_crack_a": {
+  "group": "walls",
+  "origin": [
+   9,
+   18
+  ],
+  "size": [
+   18,
+   18
+  ]
+ },
+ "wall_crack_b": {
+  "group": "walls",
+  "origin": [
+   9,
+   18
+  ],
+  "size": [
+   18,
+   18
+  ]
+ },
+ "wall_drain": {
+  "group": "walls",
+  "origin": [
+   8,
+   14
+  ],
+  "size": [
+   16,
+   14
+  ]
+ },
+ "wall_moss_a": {
+  "group": "walls",
+  "origin": [
+   11,
+   16
+  ],
+  "size": [
+   22,
+   16
+  ]
+ },
+ "wall_moss_b": {
+  "group": "walls",
+  "origin": [
+   11,
+   16
+  ],
+  "size": [
+   22,
+   16
+  ]
+ },
+ "wall_rubble": {
+  "group": "walls",
+  "origin": [
+   9,
+   11
+  ],
+  "size": [
+   18,
+   11
+  ]
+ },
+ "wall_shield_blue": {
+  "group": "walls",
+  "origin": [
+   10,
+   22
+  ],
+  "size": [
+   20,
+   22
+  ]
+ },
+ "wall_shield_red": {
+  "group": "walls",
+  "origin": [
+   10,
+   22
+  ],
+  "size": [
+   20,
+   22
+  ]
+ },
+ "well": {
+  "footprint": [
+   25,
+   19
+  ],
+  "group": "town",
+  "origin": [
+   5,
+   54
+  ],
+  "size": [
+   36,
+   56
+  ]
+ },
+ "woodpile": {
+  "group": "town",
+  "origin": [
+   19,
+   30
+  ],
+  "size": [
+   39,
+   30
+  ]
+ }
+}
