@@ -508,6 +508,7 @@ export type EliteAffix = 'frenzied' | 'molten' | 'vampiric' | 'shielded' | 'vola
 
 export type RegionId =
   | 'emberwick'
+  | 'briarhollow'
   | 'whisperwood'
   | 'crypt'
   | 'thornvale'
@@ -593,12 +594,56 @@ export type Theme =
   | 'riftspire';
 
 /** What a letter on a region map stands for (the terrain under it is the region's floor). */
+/**
+ * A condition on the story (STORY_BIBLE.md §4): a quest's state, or a combination. `offered` is a
+ * quest its giver is waiting to hand over; `started` means offered, active or done.
+ */
+export type StoryCond =
+  | { quest: string; is: 'locked' | 'offered' | 'active' | 'done' | 'started' }
+  | { all: StoryCond[] }
+  | { any: StoryCond[] }
+  | { not: StoryCond };
+
+/** A line a person says over their head during play (a companion's bark, a villager's cry). */
+export interface Bark {
+  /** An NPC id, a companion's pet id, or 'hero'. */
+  who: string;
+  text: string;
+}
+
+/**
+ * A scripted moment a quest asks for, played with the ordinary fighting (blueprint §4.2, no fake
+ * cutscenes): raiders pour in, a door must hold, people must be led to safety.
+ */
+export interface StoryEventDef {
+  id: string;
+  region: RegionId;
+  kind: 'raid' | 'defend' | 'rescue';
+  /** Where it happens (a spot id): it starts when the hero comes within `radius` tiles. */
+  at: string;
+  radius: number;
+  /** Enemy level (else the region's). */
+  level?: number;
+  /** Waves, one after another: each comes from its spots once the last is beaten. */
+  waves: { enemies: string[]; from: string[]; barks?: Bark[] }[];
+  /** Companions who fight beside the hero while it lasts (PETS ids). */
+  allies?: string[];
+  /** Defend: what must not fall (a PETS id standing at a spot). */
+  ward?: { pet: string; at: string; name: string };
+  /** Rescue: people (PETS ids) found at a spot, who follow the hero to another. */
+  rescue?: { pets: string[]; at: string; to: string };
+  start?: Bark[];
+  end?: Bark[];
+  /** Said when the ward falls or the hero does, before the event starts over. */
+  retry?: Bark[];
+}
+
 export type Marker =
   | { kind: 'start' }
   | { kind: 'pack'; enemies: string[]; elite?: boolean; named?: string; level?: number; rare?: boolean }
   | { kind: 'chest'; id: string; tier: 'common' | 'rare' | 'epic'; once?: boolean }
   | { kind: 'npc'; npc: string }
-  | { kind: 'exit'; to: RegionId; label: string; minLevel?: number }
+  | { kind: 'exit'; to: RegionId; label: string; minLevel?: number; needs?: string }
   | { kind: 'waystone' }
   | { kind: 'boss'; boss: string }
   | { kind: 'secret'; id: string }
@@ -609,15 +654,40 @@ export type Marker =
   | { kind: 'checkpoint' }
   | { kind: 'hazard'; hazard: 'bramble' | 'spore' }
   /** A building drawn over its footprint (w x h tiles, the marker at its bottom-left), with a name over the door. */
-  | { kind: 'building'; style: 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall' | 'lighthouse'; w: number; h: number; name?: string }
+  | { kind: 'building'; style: 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall' | 'lighthouse'; w: number; h: number; name?: string; art?: string }
   /** A place to discover (an explore objective, a line in the log): walking within `r` tiles finds it. */
-  | { kind: 'spot'; id: string; name: string; r: number };
+  | { kind: 'spot'; id: string; name: string; r: number }
+  /** A flame on a roof or a beam while the region burns (a world state's dressing). */
+  | { kind: 'fire'; size: number }
+  /** A named point the story uses (where an event happens, where raiders come from); nothing to find. */
+  | { kind: 'place'; id: string };
 
 /** A marker put at a tile by a zone generator, instead of a letter on the map. */
 export interface PlacedMarkerDef {
   tx: number;
   ty: number;
   marker: Marker;
+  /** Only while this story condition holds (a person who comes later, a fire, a tent at the camp). */
+  when?: StoryCond;
+}
+
+/**
+ * A region's state by the story (STORY_BIBLE.md §4): the first whose condition holds is the one the
+ * hero sees. Markers can carry `when` (MarkerWhen) to appear only in some states.
+ */
+export interface RegionStateDef {
+  id: string;
+  when: StoryCond;
+  /** Night falls: the land is dark but for lamps, fires and the hero's light. */
+  night?: boolean;
+  /** Fire markers burn; embers and smoke drift. */
+  burning?: boolean;
+  /** After a fire: scorched ground and smoke from the ruins. */
+  smoke?: boolean;
+  /** Late light: a warm low sun over everything. */
+  dusk?: boolean;
+  /** The music while it lasts. */
+  music?: MusicTrack;
 }
 
 /** A room that seals its doors and spawns waves when the player walks in (dungeons). */
@@ -653,6 +723,10 @@ export interface RegionDef {
   markers: Record<string, Marker>;
   /** Markers a generator put at tiles (wild zones). */
   placed?: PlacedMarkerDef[];
+  /** Markers (by map letter) that appear only while a story condition holds. */
+  when?: Record<string, StoryCond>;
+  /** The region's states by the story, first match wins (none: always as built). */
+  states?: RegionStateDef[];
   /** What a generated zone holds, known without generating it (for routes between regions). */
   holds?: { exits: RegionId[]; npcs: string[]; spots: string[] };
   encounters: Encounter[];
@@ -673,7 +747,9 @@ export type Objective =
   | { kind: 'boss'; boss: string; label: string }
   | { kind: 'collect'; item: 'shard'; count: number; label: string }
   | { kind: 'explore'; spot: string; label: string }
-  | { kind: 'clear'; region: RegionId; tier: number; label: string };
+  | { kind: 'clear'; region: RegionId; tier: number; label: string }
+  /** A story event (raid, defense, rescue) the hero plays through. */
+  | { kind: 'event'; event: string; label: string };
 
 /** Lasting gifts from the ends of quest chains; the seven sigils are the main story's. */
 export type PerkId = 'mount' | 'satchel' | 'flask' | 'hearth' | SigilId;
@@ -692,6 +768,13 @@ export interface QuestDef {
   zone?: RegionId;
   /** Only from this level. */
   level?: number;
+  /**
+   * Starts by itself (the story's own beats, tutorials) instead of waiting for the hero to accept it from
+   * its giver.
+   */
+  auto?: boolean;
+  /** What the giver says when offering it (else the quest's text). */
+  offer?: string[];
   reward: { xp: number; gold: number; item?: string | { rarity: Rarity }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId };
 }
 

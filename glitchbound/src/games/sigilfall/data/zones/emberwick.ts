@@ -22,9 +22,10 @@ function plan(): CityPlan {
   // the avenues: north-south from the keep to the south gate, east-west from the west wall to the east gate
   c.fill(50, 19, 53, 72, 'cobble');
   c.fill(10, 39, 93, 42, 'cobble');
-  c.gate('e', 41, 4, 94, 95, { to: 'whisperwood', label: 'East gate: the road to the Whisperwood' });
-  c.gate('s', 52, 4, 73, 74, { to: 'thornvale', label: 'South gate: the road to Thornvale', minLevel: 7 });
-  c.gate('w', 41, 4, 8, 9, { to: 'brackenridge', label: 'West gate: the road to Brackenridge', minLevel: 5 });
+  // the Crown City opens to the hero in Act II, at the end of the King's Road (STORY_BIBLE.md §3)
+  c.gate('e', 41, 4, 94, 95, { to: 'ashen-barrows', label: 'East gate: the King’s Road to Lantern Hill' });
+  c.gate('s', 52, 4, 73, 74, { to: 'amberfield', label: 'South gate: the refugee road to Hearthstead' });
+  c.gate('w', 41, 4, 8, 9, { to: 'ironpeak', label: 'West gate: the mountain road to Kragholt' });
   c.building('tower', 93, 35, 3, 3, { pave: false });
   c.building('tower', 93, 44, 3, 3, { pave: false });
   c.building('tower', 45, 72, 3, 3, { pave: false });
@@ -69,7 +70,6 @@ function plan(): CityPlan {
   c.marker(24, 16, { kind: 'dummy' });
   c.marker(29, 18, { kind: 'dummy' });
   c.marker(30, 24, { kind: 'dummy', shooter: true });
-  c.npc('maren', 26, 31);
   c.npc('guard-gate', 89, 37);
 
   // the temple of the Sigil-wardens

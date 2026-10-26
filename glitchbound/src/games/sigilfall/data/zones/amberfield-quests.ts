@@ -14,8 +14,8 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
   {
     id: 'refugees-on-the-road',
     name: 'Refugees on the Road',
-    giver: 'regent-elowen',
-    text: 'Since the council, the roads north of the Saltmarsh have filled with carts going the wrong way: whole villages fleeing the east with their grandmothers and their goats. They gather at Hearthstead, a camp town on the Amberfield Steppes. The Regent wants to know what they are running from. Take the north road out of the Saltmarsh and find Marshal Dunmore.',
+    giver: 'maren',
+    text: 'The Crown City has said nothing, and the roads north of the Saltmarsh are full of carts going the wrong way: whole villages fleeing the east with their grandmothers and their goats. They gather at Hearthstead, a walled camp town on the Amberfield Steppes, and Marshal Dunmore has sent to Briarhollow for help. Take the north road out of the Saltmarsh and find him.',
     objective: { kind: 'talk', npc: 'marshal-dunmore', label: 'Talk to Marshal Dunmore in Hearthstead' },
     after: ['the-regents-council'],
     level: 16,

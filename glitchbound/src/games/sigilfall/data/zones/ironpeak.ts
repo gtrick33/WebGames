@@ -34,6 +34,7 @@ export const IRONPEAK = wildRegion(
       { side: 's', at: 0.5, to: 'amberfield', label: 'South road to the Amberfield' },
       { side: 'w', at: 0.55, to: 'ashen-barrows', label: 'West pass to the Ashen Barrows', minLevel: 22 },
       { side: 'e', at: 0.5, to: 'sunscorch', label: 'East road down to the Sunscorch', minLevel: 29 },
+      { side: 'n', at: 0.7, to: 'emberwick', label: 'The mountain road to the Crown City', needs: 'sir-corvane' },
     ],
     pois: [
       {

@@ -1,7 +1,7 @@
 import { dist } from '../core/math';
 import { QUEST_DEFS } from '../data/quests';
 import type { QuestDef, RegionId } from '../data/types';
-import { questRegion } from '../progress/character';
+import { questRegion, HOME } from '../progress/character';
 import { TILE } from './map';
 import { bossRegion, nextRegion, npcRegion, spotRegion } from './routes';
 import type { World } from './world';
@@ -59,7 +59,7 @@ export function objectiveTarget(w: World): Objective | null {
     let t: Objective | null = null;
     switch (o.kind) {
       case 'tutorial':
-        if (here === 'emberwick') {
+        if (here === HOME) {
           const d = w.enemies.find((e) => e.dummy === (o.step === 'dodge' ? 2 : 1));
           if (d) t = place(d.x, d.y);
         }

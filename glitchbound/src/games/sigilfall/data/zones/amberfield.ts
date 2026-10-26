@@ -33,6 +33,7 @@ export const AMBERFIELD = wildRegion(
       { side: 's', at: 0.5, to: 'saltmarsh', label: 'South road to the Saltmarsh' },
       { side: 'n', at: 0.4, to: 'ironpeak', label: 'North road to Ironpeak', minLevel: 19 },
       { side: 'e', at: 0.55, to: 'stormwatch', label: 'East road to Stormwatch', minLevel: 25 },
+      { side: 'w', at: 0.35, to: 'emberwick', label: 'The refugee road to the Crown City', needs: 'sir-corvane' },
     ],
     pois: [
       // a refugee wagon train the Legion caught on the east road

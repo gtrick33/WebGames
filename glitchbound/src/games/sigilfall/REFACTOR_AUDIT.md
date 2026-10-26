@@ -35,7 +35,7 @@ repository is an open licensing risk (ASSET_AUDIT.md, escalations).
 | Camera jitter vs shake | **Fixed** (`6943aa45`). Root cause: the camera leaned on the aim, and the mouse aim is measured from the camera, so each camera move changed the next lean; the view also stepped a whole world pixel (6 device px). Lean now follows the cursor's place on screen; the camera moves a device pixel at a time. | `tests/sigilfall-camera.test.ts` |
 | Tree/roof depth sorting | Not reproduced. Needs the place and screenshot. | — |
 | Loot frequency / clutter | Open (P2). To be retuned with the progression pass (Prompt 3). | — |
-| Quest auto-activation | **Open (P1, design).** A quest starts as soon as its prerequisites are done and the hero has been to its zone, without talking to its giver. Fixing it means an accept step at the giver, which changes the quest log and the test bot; scheduled with the quest rewrite (Prompt 8). | progress/character.ts `startQuests` |
+| Quest auto-activation | **Fixed.** The first quest of a giver's chain is offered ("!" over them) and starts when the hero talks to them; later steps of the same giver's chain and the story's own beats continue by themselves (`needsAccept`). Saves keep offers. | `tests/sigilfall-world.test.ts` |
 | HUD clipping with a new spell button | The 4th button is in the thumb cluster (`0fc10e2b`); the potion moved beside the ultimate. Phone/tablet screenshots pending (Phase 2 evidence). | — |
 | Save migration tests | Present for v1 to v2 (`tests/sigilfall-*`); new fields (Riftstones) validated in their branch. | — |
 

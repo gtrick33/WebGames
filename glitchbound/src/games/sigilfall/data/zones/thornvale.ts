@@ -29,7 +29,7 @@ export const THORNVALE = wildRegion(
     water: { kind: 'lakes', amount: 0.3 },
     hubs: [{ at: [0.38, 0.3], npcs: ['reeve-aldous', 'hanna', 'tobin', 'sefa', 'pim'], houses: 6 }],
     exits: [
-      { side: 'n', at: 0.36, to: 'emberwick', label: 'North road to Emberwick' },
+      { side: 'n', at: 0.36, to: 'briarhollow', label: 'North road to Briarhollow' },
       { side: 'e', at: 0.58, to: 'saltmarsh', label: 'The coast road', minLevel: 13 },
       { side: 'w', at: 0.62, to: 'greyfen', label: 'West road to Greyfen', minLevel: 11 },
     ],

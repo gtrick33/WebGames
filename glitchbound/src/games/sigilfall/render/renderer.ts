@@ -104,6 +104,8 @@ export class Renderer {
   camY = 0;
   private scenery: Scenery | null = null;
   private sceneryFor: World | null = null;
+  /** The story state the scenery was built for (World.stateVersion). */
+  private sceneryVersion = -1;
   private light: Cnv;
   private lg: CanvasRenderingContext2D;
   aim: AimPreview | null = null;
@@ -224,10 +226,11 @@ export class Renderer {
   draw(w: World, dt: number, time: number): void {
     // the packed art for this land (null while it loads, or indoors): the scenery is rebuilt once it is in
     const art = worldLook(w.region.theme);
-    if (this.sceneryFor !== w || (art && this.scenery?.art !== art)) {
+    if (this.sceneryFor !== w || (art && this.scenery?.art !== art) || this.sceneryVersion !== w.stateVersion) {
       const fresh = this.sceneryFor !== w;
+      this.sceneryVersion = w.stateVersion;
       this.scenery?.ground.dispose();
-      this.scenery = buildScenery(w.map, w.region, art);
+      this.scenery = buildScenery(w.map, w.region, art, (pm) => w.isShown(pm));
       this.sceneryFor = w;
       if (fresh) {
         this.setHeroWeapon(w.hero.cls, w);
@@ -319,11 +322,23 @@ export class Renderer {
     if (w.portal) this.drawPortal(w.portal.x, w.portal.y, time);
 
     // the crypt is dark: light comes from the hero, torches and spells
-    if (w.region.dark) this.drawLighting(w, sc, ox, oy, time);
+    // late light: a low sun warms everything (the Prologue's first evening)
+    if (w.storyState?.dusk) {
+      g.globalAlpha = 0.16;
+      g.fillStyle = '#ff9a4a';
+      g.fillRect(ox, oy, this.vw, this.vh);
+      g.globalAlpha = 0.1;
+      g.fillStyle = '#5a2a6a';
+      g.fillRect(ox, oy, this.vw, this.vh);
+      g.globalAlpha = 1;
+    }
+    // flames on the roofs while the village burns (above the roofs, under the light)
+    for (const f of w.fires) this.drawFire(f.x, f.y, f.size, time);
+    if (w.dark) this.drawLighting(w, sc, ox, oy, time);
     else if (sc.theme === 'forest' || sc.theme === 'jungle') this.drawCanopyShade(ox, oy, time);
     // gloomy lands lie under a cold veil
     const veil = THEMES[sc.theme].tint;
-    if (veil && !w.region.dark) {
+    if (veil && !w.dark) {
       g.globalAlpha = 0.26;
       g.fillStyle = veil;
       g.fillRect(ox, oy, this.vw, this.vh);
@@ -344,6 +359,7 @@ export class Renderer {
       g.drawImage(img, Math.round(t.x - (img.width * k) / 2), Math.round(t.y - (img.height * k) / 2), img.width * k, img.height * k);
       g.globalAlpha = 1;
     }
+    this.drawSpeech(w);
     this.drawInteractMarker(w, time);
     this.drawObjectiveArrow(w, ox, oy, time);
     g.setTransform(this.res, 0, 0, this.res, 0, 0);
@@ -711,7 +727,7 @@ export class Renderer {
   /** Touch: a small arrow ahead of the hero, where a tapped spell will fly. */
   private drawFacing(w: World, time: number): void {
     const p = w.player;
-    if (!this.touchMode || this.aim || p.dead || w.region.safe) return;
+    if (!this.touchMode || this.aim || p.dead || w.safe) return;
     const g = this.g;
     const d = 17 + Math.sin(time * 5) * 1.2;
     g.save();
@@ -881,6 +897,28 @@ export class Renderer {
 
   private drawPet(pet: Pet, time: number): void {
     const g = this.g;
+    if (pet.def.look === 'door') {
+      this.drawWard(pet, time);
+      return;
+    }
+    if (pet.def.look) {
+      // a companion or someone being led to safety: drawn as the person they are
+      const s = npcSprite(pet.def.look);
+      const small = pet.def.role === 'follower' ? 0.72 : 1;
+      const sw = (s.width / s.k) * small;
+      const sh = (s.height / s.k) * small;
+      const moving = Math.hypot(pet.vx, pet.vy) > 8;
+      const b = moving && Math.floor(pet.walkT * 7) % 2 ? -1 : 0;
+      g.fillStyle = 'rgba(0,0,0,0.25)';
+      g.beginPath();
+      g.ellipse(pet.x, pet.y + 5, 5 * small, 2 * small, 0, 0, TAU);
+      g.fill();
+      if (pet.dead) g.globalAlpha = clamp(1 - pet.deathT / 0.5, 0, 1);
+      const flip = Math.cos(pet.face) < 0;
+      g.drawImage(pet.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, Math.round(pet.x - sw / 2), Math.round(pet.y + 6 - sh + b), sw, sh);
+      g.globalAlpha = 1;
+      return;
+    }
     const moving = Math.hypot(pet.vx, pet.vy) > 8;
     const frame = moving ? Math.floor(pet.walkT * 7) % 2 : Math.floor(time * 2 + pet.id) % 2;
     const sprite = pet.def.pal ? recolored(pet.def.sprite, frame, pet.def.pal, `pet:${pet.def.id}`) : creatureSprite(pet.def.sprite, frame);
@@ -898,10 +936,122 @@ export class Renderer {
     g.globalAlpha = 1;
   }
 
-  /** A companion's health, in green, once it has been hit. */
-  private drawPetBar(pet: Pet): void {
-    if (pet.dead || pet.hp >= pet.maxHp) return;
+  /** The door the hero must hold (a defend event): a barred door in its frame, splintering as it is hit. */
+  private drawWard(pet: Pet, time: number): void {
     const g = this.g;
+    const x = Math.round(pet.x);
+    const y = Math.round(pet.y);
+    const k = pet.hp / pet.maxHp;
+    const shake = pet.flash > 0 ? Math.round(Math.sin(time * 60) * 1) : 0;
+    g.fillStyle = 'rgba(0,0,0,0.3)';
+    g.fillRect(x - 11, y + 3, 22, 4);
+    g.fillStyle = '#3a2a1c';
+    g.fillRect(x - 10 + shake, y - 18, 20, 22);
+    g.fillStyle = k > 0.5 ? '#8a5a34' : k > 0.25 ? '#7a4a2a' : '#5a3420';
+    g.fillRect(x - 9 + shake, y - 17, 18, 20);
+    g.fillStyle = '#5a3a20';
+    for (const px of [-5, 0, 5]) g.fillRect(x + px + shake, y - 17, 1, 20);
+    // iron bars across
+    g.fillStyle = '#4a4a5a';
+    g.fillRect(x - 10 + shake, y - 12, 20, 2);
+    g.fillRect(x - 10 + shake, y - 3, 20, 2);
+    // a ward of light while Elyra holds it
+    if (k > 0.25) {
+      g.globalAlpha = 0.25 + Math.sin(time * 4) * 0.08;
+      g.strokeStyle = '#ffe9a0';
+      g.lineWidth = 1;
+      g.strokeRect(x - 12, y - 20, 24, 26);
+      g.globalAlpha = 1;
+    }
+  }
+
+  /** A fire on a roof or a beam: tongues of flame and a few sparks, flickering. */
+  private drawFire(x: number, y: number, size: number, time: number): void {
+    const g = this.g;
+    const n = 2 + size;
+    for (let i = 0; i < n; i++) {
+      const fx = x + (i - (n - 1) / 2) * 4 + Math.sin(time * 5 + i * 2.1 + x) * 1.5;
+      const h = 6 + size * 2 + Math.sin(time * 11 + i * 1.7 + y) * 2.5;
+      g.fillStyle = '#ff5a2a';
+      g.beginPath();
+      g.moveTo(fx - 3, y);
+      g.quadraticCurveTo(fx - 2, y - h * 0.6, fx, y - h);
+      g.quadraticCurveTo(fx + 2, y - h * 0.6, fx + 3, y);
+      g.fill();
+      g.fillStyle = '#ffc24a';
+      g.beginPath();
+      g.moveTo(fx - 1.5, y);
+      g.quadraticCurveTo(fx - 1, y - h * 0.4, fx, y - h * 0.65);
+      g.quadraticCurveTo(fx + 1, y - h * 0.4, fx + 1.5, y);
+      g.fill();
+    }
+    const sp = Math.floor(time * 6 + x) % 3;
+    g.fillStyle = '#ffd86b';
+    g.fillRect(Math.round(x + Math.sin(time * 3 + x) * 5), Math.round(y - 12 - size * 3 - sp * 3), 1, 1);
+  }
+
+  /** Lines over people's heads (companions shouting in a fight, villagers crying out). */
+  private drawSpeech(w: World): void {
+    const speech = w.story.speech;
+    if (!speech.length) return;
+    const g = this.g;
+    g.save();
+    g.font = '600 5.5px "Bricolage Grotesque Variable", system-ui, sans-serif';
+    g.textBaseline = 'top';
+    g.imageSmoothingEnabled = true;
+    for (const s of speech) {
+      const who = s.who === 'hero' ? w.player : (w.pets.find((p) => !p.dead && p.def.id === s.who) ?? w.npcs.find((n) => n.id === s.who));
+      if (!who) continue;
+      // wrap at about 34 characters, at most three lines
+      const words = s.text.split(' ');
+      const lines: string[] = [];
+      let cur = '';
+      for (const wd of words) {
+        if ((cur + ' ' + wd).trim().length > 34 && cur) {
+          lines.push(cur);
+          cur = wd;
+        } else cur = (cur + ' ' + wd).trim();
+      }
+      if (cur) lines.push(cur);
+      const shown = lines.slice(0, 3);
+      const wdt = Math.max(...shown.map((l) => g.measureText(l).width)) + 6;
+      const hgt = shown.length * 6.5 + 4;
+      const fade = clamp(Math.min(s.t / 0.15, (s.dur - s.t) / 0.3), 0, 1);
+      const x = Math.round(who.x - wdt / 2);
+      const y = Math.round(who.y - 34 - hgt);
+      g.globalAlpha = fade * 0.92;
+      g.fillStyle = 'rgba(27,20,40,0.88)';
+      g.beginPath();
+      g.roundRect(x, y, wdt, hgt, 3);
+      g.fill();
+      g.beginPath();
+      g.moveTo(who.x - 2, y + hgt);
+      g.lineTo(who.x, y + hgt + 3);
+      g.lineTo(who.x + 2, y + hgt);
+      g.fill();
+      g.globalAlpha = fade;
+      g.fillStyle = '#f8f2e4';
+      shown.forEach((l, i) => g.fillText(l, x + 3, y + 2.5 + i * 6.5));
+    }
+    g.restore();
+  }
+
+  /** A companion's health, in green, once it has been hit (a door's always). */
+  private drawPetBar(pet: Pet): void {
+    if (pet.dead || (pet.hp >= pet.maxHp && pet.def.role !== 'ward') || pet.def.unhurt) return;
+    const g = this.g;
+    if (pet.def.look) {
+      const wdt = pet.def.role === 'ward' ? 22 : 12;
+      const x = Math.round(pet.x - wdt / 2);
+      const y = Math.round(pet.y - (pet.def.role === 'ward' ? 24 : 32));
+      g.fillStyle = '#1b1428';
+      g.fillRect(x - 1, y - 1, wdt + 2, 4);
+      g.fillStyle = '#1e3a1a';
+      g.fillRect(x, y, wdt, 2);
+      g.fillStyle = pet.def.role === 'ward' ? '#ffcf5a' : '#7bd65a';
+      g.fillRect(x, y, Math.round(wdt * (pet.hp / pet.maxHp)), 2);
+      return;
+    }
     const s = creatureSprite(pet.def.sprite, 0);
     const wdt = 12;
     const x = Math.round(pet.x - wdt / 2);
@@ -1714,6 +1864,10 @@ export class Renderer {
     hole(p.x, p.y - 4, 70);
     for (const t of sc.torches) hole(t.x, t.y + 6, 58 + Math.sin(time * 9 + t.x) * 2, 0.9);
     for (const b of sc.braziers) hole(b.x, b.y + 4, 72 + Math.sin(time * 8 + b.x) * 2);
+    // a village at night: burning roofs, lamps and cookfires
+    for (const f of w.fires) hole(f.x, f.y, 40 + f.size * 22 + Math.sin(time * 7 + f.x) * 4, 0.95);
+    for (const pr of w.props) if (pr.prop === 'lamp' || pr.prop === 'campfire') hole(pr.x, pr.y - 6, pr.prop === 'lamp' ? 54 : 70, 0.85);
+    for (const ws of w.waystones) hole(ws.x, ws.y - 10, 40, 0.6);
     for (const pr of w.projectiles) if (!pr.hostile || pr.look === 'riftOrb' || pr.look === 'skull') hole(pr.x, pr.y, pr.hostile ? 16 : 22, 0.8);
     for (const f of w.fields) hole(f.x, f.y, f.r + 10, 0.5);
     for (const t of w.telegraphs) if (t.tone !== 'player') hole(t.x, t.y, Math.max(20, t.r + 8), 0.6);
@@ -1735,6 +1889,10 @@ export class Renderer {
     g.globalAlpha = 0.18;
     for (const t of sc.torches) g.drawImage(glowDisc('#ff9a3d', 22), Math.round(t.x - ox - 22), Math.round(t.y - oy - 18));
     for (const b of sc.braziers) g.drawImage(glowDisc('#ff9a3d', 30), Math.round(b.x - ox - 30), Math.round(b.y - oy - 24));
+    for (const f of w.fires) {
+      const r = 24 + f.size * 14;
+      g.drawImage(glowDisc('#ff7a2a', r), Math.round(f.x - ox - r), Math.round(f.y - oy - r));
+    }
     g.restore();
   }
 
@@ -1855,10 +2013,12 @@ export const rarityColor = (r: string | undefined): string => (r === 'legendary'
 
 
 /** Whether an NPC is the giver of an active quest (shows a "!"). */
+/** "!" over someone with a quest to offer, "?" over someone a quest asks you to speak to. */
 function npcMark(w: World, id: string): '?' | '!' | null {
-  const active = Object.entries(w.hero.quests).filter(([, s]) => s.state === 'active');
-  if (active.some(([q]) => QUEST_DEFS[q]?.objective.kind === 'talk' && (QUEST_DEFS[q]!.objective as { npc: string }).npc === id)) return '?';
-  return active.some(([q]) => questGiver(q) === id) ? '!' : null;
+  const qs = Object.entries(w.hero.quests);
+  if (qs.some(([q, s]) => s.state === 'offered' && questGiver(q) === id)) return '!';
+  const talk = qs.some(([q, s]) => s.state === 'active' && QUEST_DEFS[q]?.objective.kind === 'talk' && (QUEST_DEFS[q]!.objective as { npc: string }).npc === id);
+  return talk ? '?' : null;
 }
 
 import { NPCS, QUEST_DEFS } from '../data/quests';

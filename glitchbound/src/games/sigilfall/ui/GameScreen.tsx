@@ -355,7 +355,7 @@ function PauseMenu({ engine }: { engine: SigilEngine }) {
         <button className="rb-btn" onClick={() => engine.openPanel('settings')}>
           Settings
         </button>
-        {!w.region.safe &&
+        {!w.safe &&
           (leaving ? (
             <button className="rb-btn is-danger" onClick={() => engine.returnHome()}>
               Leave the expedition? You keep everything you found.
@@ -384,7 +384,7 @@ function DeathScreen({ engine }: { engine: SigilEngine }) {
         <button className="rb-btn is-gold is-big" onClick={() => engine.respawn()} autoFocus>
           Rise again
         </button>
-        {!w.region.safe && (
+        {!w.safe && (
           <button className="rb-btn" onClick={() => engine.returnHome()}>
             Return to Emberwick
           </button>

@@ -341,7 +341,7 @@ function victimOf(w: World, e: Enemy): Victim {
     let best = p.dead ? Infinity : dist(e.x, e.y, p.x, p.y);
     e.victim = 0;
     for (const pet of w.pets) {
-      if (pet.dead) continue;
+      if (pet.dead || pet.def.unhurt) continue;
       const d = dist(e.x, e.y, pet.x, pet.y);
       if (d > e.def.aggro) continue;
       const score = d * (pet.def.taunt ? 0.45 : 1.3);

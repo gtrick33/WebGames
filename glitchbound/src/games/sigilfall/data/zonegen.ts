@@ -30,6 +30,8 @@ export interface ExitSpec {
   to: RegionId;
   label: string;
   minLevel?: number;
+  /** A quest that must be done before the road opens (the King's Road to the Crown City). */
+  needs?: string;
 }
 
 export interface PoiSpec {
@@ -145,7 +147,7 @@ class ZoneBuilder {
     this.roads([...hubs, ...exits.map((e) => e.inner), ...pois]);
     s.hubs.forEach((hb, i) => this.town(hubs[i]![0], hubs[i]![1], hb));
     s.pois.forEach((p, i) => this.sight(pois[i]![0], pois[i]![1], p));
-    s.exits.forEach((e, i) => this.put(exits[i]!.edge[0], exits[i]!.edge[1], { kind: 'exit', to: e.to, label: e.label, ...(e.minLevel ? { minLevel: e.minLevel } : {}) }));
+    s.exits.forEach((e, i) => this.put(exits[i]!.edge[0], exits[i]!.edge[1], { kind: 'exit', to: e.to, label: e.label, ...(e.minLevel ? { minLevel: e.minLevel } : {}), ...(e.needs ? { needs: e.needs } : {}) }));
     this.scatter();
     this.beaches();
     const start = hubs[0] ?? exits[0]!.inner;

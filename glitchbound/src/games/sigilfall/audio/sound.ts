@@ -65,6 +65,8 @@ const SFX: Record<string, (s: Sound) => void> = {
   reset: (s) => s.tones([{ f: 900, to: 1800, dur: 0.1, gain: 0.03, type: 'sine' }]),
   rift: (s) => (s.noise(0.3, 0.07, 1500, 'bandpass'), s.tones([{ f: 300, to: 900, dur: 0.25, gain: 0.03, type: 'sawtooth' }])),
   crumble: (s) => s.noise(0.5, 0.1, 400, 'lowpass'),
+  // a quest taken on: two rising notes and a bright third
+  quest: (s) => s.tones([0, 5, 12].map((n, i) => ({ f: hz(69 + n), dur: 0.18, gain: 0.03, type: 'triangle' as OscillatorType, at: i * 0.09 }))),
   discover: (s) => s.tones([0, 7, 12, 19].map((n, i) => ({ f: hz(72 + n), dur: 0.3, gain: 0.03, type: 'sine' as OscillatorType, at: i * 0.12 }))),
   doorSlam: (s) => (s.noise(0.25, 0.1, 300, 'lowpass'), s.tones([{ f: 80, to: 50, dur: 0.2, gain: 0.07, type: 'square' }])),
   doorOpen: (s) => s.tones([{ f: 200, to: 400, dur: 0.3, gain: 0.03, type: 'triangle' }]),

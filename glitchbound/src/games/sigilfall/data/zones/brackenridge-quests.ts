@@ -16,7 +16,7 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     giver: 'maren',
     text: 'A shepherd from Fernstead came to the west gate with a story nobody believed: lights moving on the hills at night, and graves that won’t stay shut. Elder Maren believes him. Take the west road out of Emberwick into the Brackenridge Hills and find Warden Hollis in Fernstead.',
     objective: { kind: 'talk', npc: 'warden-hollis', label: 'Talk to Warden Hollis in Fernstead' },
-    after: ['alpha'],
+    after: ['the-empty-tomb'],
     level: 5,
     reward: { xp: 55, gold: 25 },
   },

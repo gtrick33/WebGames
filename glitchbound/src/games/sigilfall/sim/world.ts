@@ -9,8 +9,10 @@ import { THEMES } from '../data/themes';
 import { BOSS_MARKS } from '../data/vendors';
 import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey } from '../data/types';
 import { ACTION_SLOTS, SKILL_SLOTS } from '../data/types';
+import type { RegionStateDef, StoryCond } from '../data/types';
+import { holds, regionState, StoryDirector } from './story';
 import { buildHero, type HeroBuild } from '../progress/build';
-import { addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character } from '../progress/character';
+import { addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME } from '../progress/character';
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
 import { separate, updateEnemy } from './ai';
@@ -164,7 +166,7 @@ export class World {
   /** The hero just stepped onto an exit: the engine offers to travel. */
   pendingExit: Interactable | null = null;
   waystones: { x: number; y: number }[] = [];
-  exits: { x: number; y: number; to: RegionId; label: string; minLevel?: number }[] = [];
+  exits: { x: number; y: number; to: RegionId; label: string; minLevel?: number; needs?: string }[] = [];
   shrines: { x: number; y: number; id: string }[] = [];
   /** Places to discover (sights in the wilds). */
   spots: { x: number; y: number; id: string; name: string; r: number }[] = [];
@@ -174,6 +176,17 @@ export class World {
   chickens: { x: number; y: number; vx: number; vy: number; t: number; face: number }[] = [];
   /** This run's tallies (for the report and the reward screen). */
   run = { xp: 0, gold: 0, kills: 0, bosses: 0, items: [] as Item[] };
+  /** The story here: the region's state, its events, the lines people say (sim/story.ts). */
+  story!: StoryDirector;
+  storyState: RegionStateDef | null = null;
+  /** Goes up whenever the story changes what stands in the region (the renderer rebuilds its scenery). */
+  stateVersion = 0;
+  /** Which conditional markers are showing (by map letter), so a change is noticed. */
+  private shownKey = '';
+  /** Flames on roofs and beams while the region burns. */
+  fires: { x: number; y: number; size: number }[] = [];
+  /** Named points the story uses (events' places). */
+  places: Record<string, { x: number; y: number }> = {};
   private bramble = 0;
   private hpBefore = 0;
 
@@ -197,6 +210,9 @@ export class World {
       if (back) spawn = this.insideOf(markerPos(back));
     }
     this.checkpoint = { ...spawn };
+    this.storyState = regionState(this.region, this.hero);
+    this.story = new StoryDirector(this);
+    this.shownKey = this.shownMarkers();
     this.player = this.newPlayer(spawn.x, spawn.y);
     this.spawnContent();
     this.callCompanions();
@@ -290,11 +306,79 @@ export class World {
     return pt;
   }
 
+  /** Whether a marker shows in the story's current state (markers without a condition always do). */
+  /** Whether a marker stands in the story's current state (the renderer asks too). */
+  isShown(pm: { ch: string; when?: StoryCond }): boolean {
+    return this.shown(pm);
+  }
+
+  private shown(pm: { ch: string; when?: StoryCond }): boolean {
+    const cond = pm.when ?? this.region.when?.[pm.ch];
+    return !cond || holds(this.hero, cond);
+  }
+
+  private shownMarkers(): string {
+    return this.map.markers.map((pm) => (pm.when || this.region.when?.[pm.ch] ? (this.shown(pm) ? '1' : '0') : '')).join('');
+  }
+
+  /**
+   * The story moved on: the region's state and which conditional markers show. People come and go at
+   * once; what is built (props, fires, ruins) is redrawn by the renderer when `stateVersion` changes.
+   */
+  refreshStoryState(): void {
+    const s = regionState(this.region, this.hero);
+    const key = this.shownMarkers();
+    if (s?.id === this.storyState?.id && key === this.shownKey) return;
+    this.storyState = s;
+    this.shownKey = key;
+    this.stateVersion += 1;
+    this.npcs = [];
+    this.fires = [];
+    for (const pm of this.map.markers) {
+      const m = pm.marker;
+      const on = this.shown(pm);
+      // a conditional prop blocks only while it stands
+      if (m.kind === 'prop' && m.solid && (pm.when || this.region.when?.[pm.ch])) {
+        const i = pm.ty * this.map.w + pm.tx;
+        this.map.solid[i] = on ? 1 : 0;
+        this.map.block[i] = on ? 1 : 0;
+      }
+      if (!on) continue;
+      const pos = markerPos(pm);
+      if (m.kind === 'npc') this.npcs.push({ id: m.npc, x: pos.x, y: pos.y, face: 0, bob: this.rand() * TAU });
+      if (m.kind === 'fire' && s?.burning) this.fires.push({ ...pos, size: m.size });
+    }
+  }
+
+  /** Is the region at peace right now? (A village under attack is not.) */
+  get safe(): boolean {
+    return this.region.safe && !this.story.fighting;
+  }
+
+  /** Night has fallen here (the story's state), or the place is dark anyway. */
+  get dark(): boolean {
+    return this.region.dark || !!this.storyState?.night;
+  }
+
+  /** The label of the quest objective an event belongs to (for its banner). */
+  questLabel(event: string): string {
+    const q = Object.keys(this.hero.quests).map((id) => QUEST_DEFS[id]).find((d) => d?.objective.kind === 'event' && d.objective.event === event);
+    return q?.objective.label ?? '';
+  }
+
   private spawnContent(): void {
     let pack = 0;
     for (const pm of this.map.markers) {
       const m = pm.marker;
       const pos = markerPos(pm);
+      if (!this.shown(pm)) {
+        // a conditional prop that isn't standing doesn't block
+        if (m.kind === 'prop' && m.solid) {
+          this.map.solid[pm.ty * this.map.w + pm.tx] = 0;
+          this.map.block[pm.ty * this.map.w + pm.tx] = 0;
+        }
+        continue;
+      }
       switch (m.kind) {
         case 'npc':
           this.npcs.push({ id: m.npc, x: pos.x, y: pos.y, face: 0, bob: this.rand() * TAU });
@@ -329,7 +413,7 @@ export class World {
           this.waystones.push(pos);
           break;
         case 'exit':
-          this.exits.push({ ...pos, to: m.to, label: m.label, ...(m.minLevel ? { minLevel: m.minLevel } : {}) });
+          this.exits.push({ ...pos, to: m.to, label: m.label, ...(m.minLevel ? { minLevel: m.minLevel } : {}), ...(m.needs ? { needs: m.needs } : {}) });
           break;
         case 'shrine':
           this.shrines.push({ ...pos, id: m.id });
@@ -340,6 +424,12 @@ export class World {
           break;
         case 'hazard':
           if (m.hazard === 'spore') this.spores.push({ ...pos, ripe: true, t: 0, fuse: 0, friendly: false });
+          break;
+        case 'fire':
+          if (this.storyState?.burning) this.fires.push({ ...pos, size: m.size });
+          break;
+        case 'place':
+          this.places[m.id] = pos;
           break;
         default:
           break;
@@ -711,6 +801,7 @@ export class World {
     this.updateEncounters(dt);
     this.updateHazards(dt);
     this.updateAmbient(dt);
+    this.story.update(dt);
     // delayed actions (meteors, echoes, rift bursts)
     if (this.delayed.length) {
       const due: (() => void)[] = [];
@@ -1583,7 +1674,7 @@ export class World {
       }
     });
     // the portal after the final boss
-    if (this.portal && dist(p.x, p.y, this.portal.x, this.portal.y) < 22) best = { kind: 'exit', to: 'emberwick', x: this.portal.x, y: this.portal.y, label: 'Portal to Emberwick', locked: null };
+    if (this.portal && dist(p.x, p.y, this.portal.x, this.portal.y) < 22) best = { kind: 'exit', to: HOME, x: this.portal.x, y: this.portal.y, label: 'Portal to Briarhollow', locked: null };
     this.interactable = p.dead ? null : best;
     // walking onto an exit offers to travel once; stepping off and back on offers again
     if (onExit !== this.exitInside) {
@@ -1595,7 +1686,9 @@ export class World {
   /** Why an exit won't take the hero yet (the old roads need a quest, Duskspire all seven sigils; new lands warn the too-young), or null. */
   private exitLock(x: World['exits'][number]): string | null {
     const h = this.hero;
-    if ((x.to === 'whisperwood' || x.to === 'crypt') && !h.unlocked.includes(x.to)) return x.to === 'crypt' ? 'Sealed. Defeat Grimtusk for the key.' : 'Not open yet.';
+    if ((x.to === 'whisperwood' || x.to === 'crypt') && !h.unlocked.includes(x.to)) return x.to === 'crypt' ? 'The crypt stair is sealed under the chapel floor.' : 'Not open yet.';
+    // roads the story opens (the King’s Road to the Crown City)
+    if (x.needs && questState(h, x.needs) !== 'done') return `The way is shut: ${QUEST_DEFS[x.needs]?.name ?? 'the story'} first.`;
     // Duskspire's last door: seven locks, one for each sigil
     if (x.to === 'duskspire' && sigilCount(h) < SIGILS.length) return `Seven locks bar the gate, one for each sigil. You carry ${sigilCount(h)} of ${SIGILS.length}.`;
     if (x.minLevel && h.level < x.minLevel) {

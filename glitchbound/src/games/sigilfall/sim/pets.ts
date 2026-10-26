@@ -52,9 +52,23 @@ export function summonPet(w: World, id: string, count: number, dur: number): voi
   w.sfx('summon', 0.6);
 }
 
+/**
+ * Puts a story pet (a companion, a door to hold, a villager to lead out) at a place; it stays until the
+ * story takes it away. Its health is a share of the hero's like any companion's.
+ */
+export function placePet(w: World, id: string, x: number, y: number): Pet | null {
+  const def = PETS[id];
+  if (!def) return null;
+  const k = petStat(w);
+  const maxHp = Math.max(10, Math.round(w.player.maxHp * def.hp * k));
+  const pet: Pet = { id: w.nextId++, def, x, y, vx: 0, vy: 0, r: def.radius, hp: maxHp, maxHp, dmg: CLASSES[w.hero.cls].refDamage * def.dmg * k, atkCd: 0.6, life: Infinity, target: null, face: 0, walkT: 0, flash: 0, actT: 0, dead: false, deathT: 0, story: true };
+  w.pets.push(pet);
+  return pet;
+}
+
 /** A pet takes a hit; returns whether it fell. */
 export function hurtPet(w: World, pet: Pet, dmg: number): boolean {
-  if (pet.dead) return false;
+  if (pet.dead || pet.def.unhurt) return false;
   pet.hp -= dmg;
   pet.flash = 0.12;
   w.text(pet.x, pet.y - 12, `-${Math.round(dmg)}`, '#ffb0b0', false);
@@ -118,6 +132,8 @@ export function updatePets(w: World, dt: number): void {
       }
     }
     if (p.dead) continue;
+    // a ward (a door, a gate) stands where it was put and only takes the blows
+    if (pet.def.role === 'ward') continue;
     // too far behind: it catches up in a puff
     if (dist(pet.x, pet.y, p.x, p.y) > 260) {
       const to = castRay(w.map, p.x, p.y, pet.r, w.rand() * TAU, 16);
@@ -125,7 +141,8 @@ export function updatePets(w: World, dt: number): void {
       pet.y = to.y;
       pet.target = null;
     }
-    const e = pickTarget(w, pet);
+    // people being led to safety follow and never fight
+    const e = pet.def.role === 'follower' ? null : pickTarget(w, pet);
     pet.target = e?.id ?? null;
     let mx = 0;
     let my = 0;

@@ -15,7 +15,7 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     giver: 'maren',
     text: 'A rider from Millbrook brought a letter: bandits are bleeding the village dry, and its reeve has run out of ideas. Elder Maren is sending you. Take the south road out of Emberwick and find Reeve Aldous.',
     objective: { kind: 'talk', npc: 'reeve-aldous', label: 'Talk to Reeve Aldous in Millbrook' },
-    after: ['alpha'],
+    after: ['the-empty-tomb'],
     level: 7,
     reward: { xp: 110, gold: 40 },
   },

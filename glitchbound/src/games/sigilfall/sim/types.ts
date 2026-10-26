@@ -199,6 +199,8 @@ export interface Pet {
   actT: number;
   dead: boolean;
   deathT: number;
+  /** Put there by the story (an event's companion, ward or rescued villager): it leaves with the event. */
+  story?: boolean;
 }
 
 export interface Projectile {

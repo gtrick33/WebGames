@@ -46,7 +46,10 @@ export const sigilCount = (c: Pick<Character, 'perks'>): number => c.perks.filte
 /** Health and power each sigil adds, in percent. */
 export const SIGIL_BONUS = 4;
 
-export type QuestState = 'locked' | 'active' | 'done';
+export type QuestState = 'locked' | 'offered' | 'active' | 'done';
+
+/** Where every hero starts and returns: Briarhollow, the village of the Prologue and the resistance camp after it. */
+export const HOME = 'briarhollow' as const;
 
 export interface Character {
   id: string;
@@ -69,7 +72,7 @@ export interface Character {
   equip: Partial<Record<SlotId, Item>>;
   bag: Item[];
   potions: number;
-  quests: Record<string, { state: 'active' | 'done'; n: number }>;
+  quests: Record<string, { state: 'offered' | 'active' | 'done'; n: number }>;
   unlocked: RegionId[];
   /** Highest difficulty tier open (0 Normal, 1 Heroic, 2 Mythic). */
   tier: number;
@@ -105,7 +108,7 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     bag: [],
     potions: START_POTIONS,
     quests: {},
-    unlocked: ['emberwick'],
+    unlocked: [HOME],
     tier: 0,
     bosses: {},
     clears: {},
@@ -312,8 +315,20 @@ export function questState(c: Character, id: string): QuestState {
 }
 
 /**
- * Starts every quest whose prerequisites are done, once the hero has been to its zone and is of its
- * level. Returns the quests that just started.
+ * Whether a quest waits for the hero to accept it from its giver: the first quest of a giver's chain
+ * does (a "!" over their head), the next steps of the same giver's chain carry on by themselves, and the
+ * story's own beats and the tutorials (`auto`) always start at once. This ends quests turning up in the
+ * log uninvited (blueprint §8).
+ */
+export function needsAccept(q: QuestDef): boolean {
+  if (q.auto) return false;
+  const after = q.after ?? [];
+  return !after.some((id) => QUEST_DEFS[id]?.giver === q.giver);
+}
+
+/**
+ * Opens every quest whose prerequisites are done, once the hero has been to its zone and is of its
+ * level: offered, or started at once (needsAccept). Returns the quests that just started.
  */
 export function startQuests(c: Character): QuestDef[] {
   const started: QuestDef[] = [];
@@ -322,11 +337,29 @@ export function startQuests(c: Character): QuestDef[] {
     if (q.zone && !c.unlocked.includes(q.zone)) continue;
     if (q.level && c.level < q.level) continue;
     if ((q.after ?? []).every((id) => questState(c, id) === 'done')) {
-      c.quests[q.id] = { state: 'active', n: 0 };
-      started.push(q);
+      if (needsAccept(q)) c.quests[q.id] = { state: 'offered', n: 0 };
+      else {
+        c.quests[q.id] = { state: 'active', n: 0 };
+        started.push(q);
+      }
     }
   }
   return started;
+}
+
+/** The quests an NPC is offering. */
+export const offeredBy = (c: Character, npc: string): QuestDef[] => QUESTS.filter((q) => q.giver === npc && questState(c, q.id) === 'offered');
+
+/** The hero accepts what an NPC offers; returns the quests that start. */
+export function acceptQuests(c: Character, npc: string): QuestDef[] {
+  const list = offeredBy(c, npc);
+  for (const q of list) c.quests[q.id] = { state: 'active', n: 0 };
+  return list;
+}
+
+/** Accepts every offered quest (the play-bot, and old saves' quests that were already running). */
+export function acceptAll(c: Character): void {
+  for (const [id, s] of Object.entries(c.quests)) if (s.state === 'offered') c.quests[id] = { state: 'active', n: s.n };
 }
 
 export const activeQuests = (c: Character): QuestDef[] => QUESTS.filter((q) => questState(c, q.id) === 'active');

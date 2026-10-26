@@ -5,7 +5,7 @@ import { REGIONS, TIERS, type RiftMod } from './data/regions';
 import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SkillIndex, SlotId } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
-import { bagSize, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
+import { acceptQuests, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
@@ -293,7 +293,7 @@ export class SigilEngine {
     if (this.ui.banner && t - this.ui.banner.id > 2600) this.setUi({ banner: null });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
     const boss = w.boss();
-    this.sound.setMusic(boss && !boss.dead ? 'boss' : (REGIONS[w.region.id].music as MusicId));
+    this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
   }
 
   private handleEvents(w: World): void {
@@ -490,10 +490,10 @@ export class SigilEngine {
     this.hero = h;
     this.save.last = slot;
     this.ui = { ...this.ui, screen: 'game', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [] };
-    this.travel('emberwick', 0, []);
+    this.travel(HOME, 0, []);
     this.sound.unlock();
-    // a brand-new hero meets the elder first
-    if (questState(h, 'first-steps') === 'active' && h.quests['first-steps']?.n === 0 && h.level === 1 && h.stats.time < 1) this.talk('maren');
+    // a brand-new hero arrives at Briarhollow's gate at dusk, and the guard stops them there
+    if (questState(h, 'briar-dusk') === 'active' && h.level === 1 && h.stats.time < 1) this.talk('mara-venn');
     this.bump();
   }
 
@@ -606,11 +606,19 @@ export class SigilEngine {
     const npc = NPCS[npcId];
     const h = this.hero;
     if (!npc || !h) return;
+    // what they offer comes first: the hero takes it on by talking to them
+    const offers = acceptQuests(h, npcId);
     const entry = npc.talk.find((t) => !t.when || questState(h, t.when.quest) === t.when.state) ?? npc.talk[npc.talk.length - 1]!;
+    const lines = offers.length ? offers.flatMap((q) => q.offer ?? [q.text]) : entry.lines;
+    for (const q of offers) {
+      this.world?.emit({ t: 'questStart', quest: q.id });
+      this.toast(`New quest: ${q.name}`, 'info', undefined, q.objective.label);
+    }
+    if (offers.length) startQuests(h).forEach((q) => this.world?.emit({ t: 'questStart', quest: q.id }));
     this.kbm?.release();
     this.touch.release();
-    this.sound.play('open');
-    this.setUi({ dialogue: { npc: npcId, lines: entry.lines, i: 0 } });
+    this.sound.play(offers.length ? 'quest' : 'open');
+    this.setUi({ dialogue: { npc: npcId, lines, i: 0 } });
     // a message delivered, a question asked: talking is the objective
     this.world?.questProgress((o) => o.kind === 'talk' && o.npc === npcId);
   }
@@ -775,7 +783,7 @@ export class SigilEngine {
 
   returnHome(): void {
     this.setUi({ death: false, reward: null });
-    this.travel('emberwick', 0, []);
+    this.travel(HOME, 0, []);
   }
 
   closeReward(): void {

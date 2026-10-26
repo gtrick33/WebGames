@@ -2,7 +2,7 @@ import { hash2 } from '../core/math';
 import { REGIONS } from '../data/regions';
 import { THEMES, type TreeKind } from '../data/themes';
 import type { RegionDef, Theme } from '../data/types';
-import { K, TILE, type TileMap } from '../sim/map';
+import { K, TILE, type PlacedMarker, type TileMap } from '../sim/map';
 import type { AnimInfo, Rect } from './art/atlas';
 import type { WorldLook } from './art/world';
 import { buildDecals, Ground } from './ground';
@@ -66,7 +66,9 @@ export interface Scenery {
  * ground and most standing things come from the Royal Keep pieces; without it, everything is painted
  * procedurally, as before the packs (tests, a failed download, indoor places for now).
  */
-export function buildScenery(map: TileMap, region: RegionDef, look: WorldLook | null = null): Scenery {
+export function buildScenery(map: TileMap, region: RegionDef, look: WorldLook | null = null, shown: (pm: PlacedMarker) => boolean = () => true): Scenery {
+  // what the story has standing right now (a camp's tents only after the night, say)
+  map = { ...map, markers: map.markers.filter(shown) };
   const water: number[] = [];
   const illusions: number[] = [];
   for (let i = 0; i < map.w * map.h; i++) {

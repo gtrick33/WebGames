@@ -1,4 +1,4 @@
-import type { Marker, RegionDef } from '../data/types';
+import type { Marker, RegionDef, StoryCond } from '../data/types';
 
 /**
  * A region's tile map at runtime: terrain kinds, which room each floor tile belongs to, what is solid
@@ -67,6 +67,8 @@ const BLOCK_KINDS = new Set<K>([K.Wall, K.Tree, K.Rock, K.House, K.HouseAnchor, 
 
 export interface PlacedMarker {
   ch: string;
+  /** Shown only while this story condition holds. */
+  when?: StoryCond;
   marker: Marker;
   tx: number;
   ty: number;
@@ -156,7 +158,7 @@ export function parseRegion(def: RegionDef): TileMap {
     const { tx, ty, marker } = pm;
     if (tx < 0 || ty < 0 || tx >= w || ty >= h) continue;
     const i = ty * w + tx;
-    markers.push({ ch: '', marker, tx, ty });
+    markers.push({ ch: '', marker, tx, ty, ...(pm.when ? { when: pm.when } : {}) });
     if ((marker.kind === 'prop' && marker.solid) || marker.kind === 'waystone' || marker.kind === 'dummy') kind[i] = K.Prop;
     // buildings stand on their own footprint, which stays solid
     else if (marker.kind !== 'building' && SOLID_KINDS.has(kind[i] as K)) kind[i] = K.Floor;

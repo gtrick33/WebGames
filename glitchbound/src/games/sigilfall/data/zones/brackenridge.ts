@@ -31,7 +31,7 @@ export const BRACKENRIDGE = wildRegion(
     water: { kind: 'river', from: 'n', to: 's' },
     hubs: [{ at: [0.72, 0.42], npcs: ['warden-hollis', 'mother-alsa', 'pip-tanner'], houses: 5 }],
     exits: [
-      { side: 'e', at: 0.45, to: 'emberwick', label: 'East road to Emberwick' },
+      { side: 'e', at: 0.45, to: 'briarhollow', label: 'East road to Briarhollow' },
       { side: 's', at: 0.4, to: 'greyfen', label: 'South path to Greyfen', minLevel: 11 },
     ],
     pois: [

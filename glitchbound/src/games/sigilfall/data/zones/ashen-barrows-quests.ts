@@ -99,7 +99,7 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     id: 'sir-corvane',
     name: 'Sir Corvane the Fallen',
     giver: 'sister-maud',
-    text: 'Below Hrodric’s hall, at the bottom of the barrow, Sir Corvane waits: the Hollow King’s first death knight, who held the Rift’s gate for a night and a day when he was a Sigil-warden. Lantern Hill’s lamps can’t reach that far down. You will have to.',
+    text: 'Below Hrodric’s hall, at the bottom of the barrow, Sir Corvane waits: the Ashen Host’s first knight, who taught Cael Varrow to hold a line, and who held the Ninefold Watch for a night and a day before it fell. Lantern Hill’s lamps can’t reach that far down. You will have to.',
     objective: { kind: 'boss', boss: 'sir-corvane', label: 'Defeat Sir Corvane the Fallen' },
     after: ['the-barrow-king'],
     zone: 'ashen-barrows',
@@ -108,7 +108,8 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
       xp: 3300,
       gold: 900,
       item: 'corvanes-broken-sigil',
-      text: 'Corvane falls, and two things fall with him: his broken warden’s sigil, and a map he carried under his breastplate. Sister Maud gives you the sigil. The map, she says, is for the Regent.',
+      unlock: 'emberwick',
+      text: 'Corvane falls asking Cael’s forgiveness, and gives him a paper: the Ninefold Watch’s relief order, countermanded by the Lord Chancellor himself. The King’s Road to the Crown City is open.',
     },
   },
   /* ------------------------------------------------------ Kell's graves */

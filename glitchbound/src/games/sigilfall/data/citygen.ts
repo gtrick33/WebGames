@@ -1,5 +1,5 @@
 import { hash2, noise2 } from '../core/math';
-import type { Marker, PlacedMarkerDef, RegionId } from './types';
+import type { Marker, PlacedMarkerDef, RegionId, StoryCond } from './types';
 
 /*
  * Cities are laid out by a short script rather than drawn letter by letter: walls with gates and the
@@ -60,8 +60,8 @@ export class CityPlan {
     return this;
   }
 
-  private mark(x: number, y: number, marker: Marker): void {
-    this.placed.push({ tx: x, ty: y, marker });
+  private mark(x: number, y: number, marker: Marker, when?: StoryCond): void {
+    this.placed.push({ tx: x, ty: y, marker, ...(when ? { when } : {}) });
     this.taken.add(this.i(x, y));
   }
 
@@ -108,9 +108,9 @@ export class CityPlan {
    * A building on a footprint whose top-left tile is (x, y). Its keeper stands at the door (in front of
    * the middle of the front wall), with the street paved up to it.
    */
-  building(style: Style, x: number, y: number, w: number, h: number, o: { npc?: string; name?: string; pave?: boolean } = {}): this {
+  building(style: Style, x: number, y: number, w: number, h: number, o: { npc?: string; name?: string; pave?: boolean; art?: string } = {}): this {
     this.fill(x, y, x + w - 1, y + h - 1, 'house');
-    this.mark(x, y + h - 1, { kind: 'building', style, w, h, ...(o.name ? { name: o.name } : {}) });
+    this.mark(x, y + h - 1, { kind: 'building', style, w, h, ...(o.name ? { name: o.name } : {}), ...(o.art ? { art: o.art } : {}) });
     const door = x + Math.floor(w / 2);
     if (o.pave !== false) this.fill(door - 1, y + h, door + 1, y + h + 1, 'cobble');
     // the keeper stands beside the door, out of the doorway
@@ -118,18 +118,18 @@ export class CityPlan {
     return this;
   }
 
-  npc(id: string, x: number, y: number): this {
-    this.mark(x, y, { kind: 'npc', npc: id });
+  npc(id: string, x: number, y: number, when?: StoryCond): this {
+    this.mark(x, y, { kind: 'npc', npc: id }, when);
     return this;
   }
 
-  prop(prop: string, x: number, y: number, solid = true): this {
-    this.mark(x, y, { kind: 'prop', prop, solid });
+  prop(prop: string, x: number, y: number, solid = true, when?: StoryCond): this {
+    this.mark(x, y, { kind: 'prop', prop, solid }, when);
     return this;
   }
 
-  marker(x: number, y: number, marker: Marker): this {
-    this.mark(x, y, marker);
+  marker(x: number, y: number, marker: Marker, when?: StoryCond): this {
+    this.mark(x, y, marker, when);
     return this;
   }
 

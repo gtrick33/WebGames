@@ -6,7 +6,7 @@ import { NPCS, QUEST_DEFS, QUESTS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import type { QuestDef } from '../src/games/sigilfall/data/types';
 import { generateZone } from '../src/games/sigilfall/data/zonegen';
-import { bagSize, potionCap, startQuests } from '../src/games/sigilfall/progress/character';
+import { bagSize, potionCap, startQuests, acceptQuests, offeredBy } from '../src/games/sigilfall/progress/character';
 import { validateCharacter } from '../src/games/sigilfall/progress/save';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { K, parseRegion } from '../src/games/sigilfall/sim/map';
@@ -53,7 +53,7 @@ describe('sigilfall zone generator', () => {
     expect(kinds.filter((k) => k === 'waystone')).toHaveLength(1);
     for (const npc of ['reeve-aldous', 'hanna', 'tobin', 'sefa', 'pim']) expect(m.markers.some((x) => x.marker.kind === 'npc' && x.marker.npc === npc), npc).toBe(true);
     const exits = m.markers.filter((x) => x.marker.kind === 'exit');
-    expect(exits.map((x) => (x.marker as { to: string }).to).sort()).toEqual(['emberwick', 'gallows-keep', 'greyfen', 'saltmarsh']);
+    expect(exits.map((x) => (x.marker as { to: string }).to).sort()).toEqual(['briarhollow', 'gallows-keep', 'greyfen', 'saltmarsh']);
     // ways out to other zones sit on the edge of the map
     for (const x of exits) if ((x.marker as { to: string }).to !== 'gallows-keep') expect(x.tx === 0 || x.ty === 0 || x.tx === m.w - 1 || x.ty === m.h - 1).toBe(true);
     const packs = m.markers.filter((x) => x.marker.kind === 'pack').map((x) => ({ ...x, level: (x.marker as { level: number }).level }));
@@ -95,19 +95,24 @@ describe('sigilfall zone generator', () => {
 
 describe('sigilfall routes between regions', () => {
   it('knows the way across the world and where people and places are', () => {
-    expect(nextRegion('emberwick', 'saltmarsh')).toBe('thornvale');
+    expect(nextRegion('briarhollow', 'saltmarsh')).toBe('thornvale');
     expect(nextRegion('thornvale', 'saltmarsh')).toBe('saltmarsh');
     expect(nextRegion('saltmarsh', 'crypt')).toBe('thornvale');
-    expect(nextRegion('emberwick', 'emberwick')).toBeNull();
+    expect(nextRegion('briarhollow', 'briarhollow')).toBeNull();
+    // the Crown City is reached by the King's Road in Act II
+    expect(nextRegion('ashen-barrows', 'emberwick')).toBe('emberwick');
     expect(npcRegion('reeve-aldous')).toBe('thornvale');
-    expect(npcRegion('maren')).toBe('emberwick');
+    expect(npcRegion('maren')).toBe('briarhollow');
     expect(spotRegion('gull-cliffs')).toBe('saltmarsh');
     // secrets are not on the map
     expect(spotRegion('hidden-grove')).toBeUndefined();
   });
 
   it('points the quest marker at the way out toward a quest in another region', () => {
-    const w = newWorld('emberwick', readyHero('mage', 9));
+    const hero = readyHero('mage', 9);
+    // the roads out of Briarhollow open at dawn, after the Prologue
+    hero.quests['the-empty-tomb'] = { state: 'done', n: 1 };
+    const w = newWorld('briarhollow', hero);
     const h = w.hero;
     for (const id of Object.keys(h.quests)) h.quests[id]!.state = 'done';
     addQuest({ id: 't-talk', name: 'T', giver: 'maren', text: '', objective: { kind: 'talk', npc: 'reeve-aldous', label: 'Talk' }, reward: { xp: 1, gold: 1 } });
@@ -203,14 +208,18 @@ describe('sigilfall in the wilds', () => {
   });
 
   it('roads to new lands warn heroes who are too young; old roads still need their quests', () => {
-    const young = newWorld('emberwick', readyHero('mage', 5));
+    const youngHero = readyHero('mage', 5);
+    youngHero.quests['the-empty-tomb'] = { state: 'done', n: 1 };
+    const young = newWorld('briarhollow', youngHero);
     const south = young.exits.find((e) => e.to === 'thornvale')!;
     young.player.x = south.x;
     young.player.y = south.y - 4;
     young.step(1 / 60);
     expect(young.interactable).toMatchObject({ kind: 'exit', to: 'thornvale' });
     expect((young.interactable as { locked: string }).locked).toMatch(/level 7/);
-    const ready = newWorld('emberwick', readyHero('mage', 8));
+    const readyH = readyHero('mage', 8);
+    readyH.quests['the-empty-tomb'] = { state: 'done', n: 1 };
+    const ready = newWorld('briarhollow', readyH);
     ready.player.x = south.x;
     ready.player.y = south.y - 4;
     ready.step(1 / 60);
@@ -227,7 +236,26 @@ describe('sigilfall in the wilds', () => {
     expect(c.quests[q.id]).toBeUndefined();
     c.level = 9;
     startQuests(c);
+    // a new chain waits for the hero at its giver ("!"), and starts when they talk
+    expect(c.quests[q.id]?.state).toBe('offered');
+    expect(offeredBy(c, 'maren').map((x) => x.id)).toContain(q.id);
+    expect(acceptQuests(c, 'maren').map((x) => x.id)).toContain(q.id);
     expect(c.quests[q.id]?.state).toBe('active');
+  });
+
+  it('the next step of the same giver’s chain carries on by itself; story beats never wait', () => {
+    const c = readyHero('mage', 9);
+    const a = addQuest({ id: 't-a', name: 'A', giver: 'maren', text: '', objective: { kind: 'talk', npc: 'maren', label: 'x' }, reward: { xp: 1, gold: 1 } });
+    const b = addQuest({ id: 't-b', name: 'B', giver: 'maren', text: '', after: [a.id], objective: { kind: 'talk', npc: 'maren', label: 'x' }, reward: { xp: 1, gold: 1 } });
+    const other = addQuest({ id: 't-c', name: 'C', giver: 'brannoc', text: '', after: [a.id], objective: { kind: 'talk', npc: 'maren', label: 'x' }, reward: { xp: 1, gold: 1 } });
+    const beat = addQuest({ id: 't-d', name: 'D', giver: 'brannoc', text: '', auto: true, after: [a.id], objective: { kind: 'talk', npc: 'maren', label: 'x' }, reward: { xp: 1, gold: 1 } });
+    c.quests[a.id] = { state: 'done', n: 1 };
+    startQuests(c);
+    expect(c.quests[b.id]?.state).toBe('active');
+    expect(c.quests[other.id]?.state).toBe('offered');
+    expect(c.quests[beat.id]?.state).toBe('active');
+    // saves keep an offer as an offer
+    expect(validateCharacter(JSON.parse(JSON.stringify(c)), 0)!.quests[other.id]?.state).toBe('offered');
   });
 });
 

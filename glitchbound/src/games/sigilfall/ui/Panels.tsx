@@ -9,7 +9,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/
 import type { ClassId, Item, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { bagSize, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character } from '../progress/character';
+import { bagSize, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
@@ -597,7 +597,7 @@ function QuestsPanel({ engine }: { engine: SigilEngine }) {
   // grouped by where they are done, this region first
   const groups = new Map<string, QuestDef[]>();
   for (const q of active) {
-    const r = questRegion(q) ?? npcRegion(q.giver) ?? 'emberwick';
+    const r = questRegion(q) ?? npcRegion(q.giver) ?? HOME;
     groups.set(r, [...(groups.get(r) ?? []), q]);
   }
   const order = [...groups.keys()].sort((a, b) => Number(b === here) - Number(a === here));
@@ -663,7 +663,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const w = engine.world!;
   const atStone = !!w.interactable && w.interactable.kind === 'waystone';
-  const canTravel = atStone || w.region.safe;
+  const canTravel = atStone || w.safe;
   const [sel, setSel] = useState<RegionId>(w.region.id);
   const [tier, setTier] = useState(Math.min(h.tier, w.tier || h.tier));
   const [mods, setMods] = useState<RiftMod[]>([]);

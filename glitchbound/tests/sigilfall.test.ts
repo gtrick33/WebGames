@@ -166,7 +166,7 @@ describe('sigilfall maps', () => {
       const open = { ...m, solid: m.solid.map((s, i) => (m.kind[i] === K.Cracked ? 0 : s)) };
       const f = flowField(open, start!.tx, start!.ty, 30000);
       for (const pm of m.markers) {
-        if (pm.marker.kind === 'prop' || pm.marker.kind === 'hazard' || pm.marker.kind === 'building') continue;
+        if (pm.marker.kind === 'prop' || pm.marker.kind === 'hazard' || pm.marker.kind === 'building' || pm.marker.kind === 'fire' || pm.marker.kind === 'place') continue;
         // solid markers (waystones, dummies) are used from the tile next to them
         const near = [0, 1, -1, m.w, -m.w].map((d) => f[pm.ty * m.w + pm.tx + d] ?? -1);
         expect(Math.max(...near), `${pm.marker.kind} at ${pm.tx},${pm.ty}`).toBeGreaterThanOrEqual(0);
@@ -563,7 +563,7 @@ describe('sigilfall saves', () => {
     expect(c.equip.weapon).toBeUndefined();
     expect(c.bag.map((i) => i.base).sort()).toEqual(['cleaverfang', 'ember-staff']);
     expect(new Set(c.bag.map((i) => i.uid)).size).toBe(2);
-    expect(c.unlocked).toEqual(['emberwick', 'crypt']);
+    expect(c.unlocked).toEqual(['briarhollow', 'crypt']);
     expect(c.spec).toBe(0);
     // talents the rules can't reach (another tree before 31 points in the specialization) are reset
     const d = validateCharacter({ cls: 'mage', level: 30, spec: 0, talents: { conduction: 3, kindling: 1 } }, 0)!;

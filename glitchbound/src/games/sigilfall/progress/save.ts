@@ -7,7 +7,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character } from './character';
+import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 
 /**
@@ -28,7 +28,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -171,7 +171,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     bag: [],
     potions: int(o.potions, 0, POTION_CAP + 1, START_POTIONS),
     quests: {},
-    unlocked: ['emberwick'],
+    unlocked: [HOME],
     tier: int(o.tier, 0, 2, 0),
     bosses: {},
     clears: {},
@@ -230,7 +230,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   for (const [id, entry] of Object.entries(q)) {
     const e = obj(entry);
     if (!QUEST_DEFS[id] || !e) continue;
-    c.quests[id] = { state: e.state === 'done' ? 'done' : 'active', n: int(e.n, 0, 1e6, 0) };
+    c.quests[id] = { state: e.state === 'done' ? 'done' : e.state === 'offered' ? 'offered' : 'active', n: int(e.n, 0, 1e6, 0) };
   }
   if (Array.isArray(o.unlocked)) for (const r of o.unlocked) if (typeof r === 'string' && r in REGIONS && !c.unlocked.includes(r as RegionId)) c.unlocked.push(r as RegionId);
   // quests of the zones the hero has been to start once those are known
@@ -278,6 +278,23 @@ export function migrate(raw: unknown): SaveFile | null {
       }
     }
     o.v = 2;
+  }
+  // version 3: the Crown of Ash and Starlight. Heroes start in Briarhollow; a hero who had begun the old
+  // opening keeps their place in it: the Prologue's new beats before where they are count as done
+  if (o.v === 2) {
+    for (const h of Array.isArray(o.heroes) ? o.heroes : []) {
+      const hero = obj(h);
+      const quests = hero ? obj(hero.quests) : null;
+      if (!hero || !quests) continue;
+      const state = (id: string): string | undefined => obj(quests[id])?.state as string | undefined;
+      const done = (id: string): void => {
+        if (!quests[id]) quests[id] = { state: 'done', n: 1 };
+      };
+      if (state('first-steps')) done('briar-dusk');
+      if (state('first-dodge') === 'done') done('briar-the-seal');
+      if (state('the-warden') || state('close-the-rift')) for (const id of ['briar-nightfall', 'briar-the-inn', 'briar-hold-the-door', 'briar-below']) done(id);
+    }
+    o.v = 3;
   }
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];

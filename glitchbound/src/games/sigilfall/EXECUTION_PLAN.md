@@ -10,7 +10,7 @@ ROLL BACK.
 | --- | --- | --- |
 | 0 | Audit and planning documents | **done** (this commit) |
 | 1 | Stabilization | camera jitter **fixed** (`6943aa45`); Open Barrow **fixed** (`0995dd35`); registry/quest integrity **guarded**; ultimate spam **measured, fix in Phase 3**; quest auto-activation **in Phase 2** (needs the accept step) |
-| 2 | Vertical slice: Briarhollow + Prologue chain + Chapel Crypt + the Mage, the world-event system, the art re-layering | next |
+| 2 | Vertical slice: Briarhollow + Prologue chain + Chapel Crypt + the Mage, the world-event system, the art re-layering | **in progress**: art re-layering (`d0082a62`), world states + events + accept step + Briarhollow and its Prologue (this commit); next the Mage's new skills |
 | 3 | Progression rebalance (PROGRESSION_BALANCE.md Part 2) | after 2 |
 | 4 | Master hero (Mage) smooth re-render, then the other six | after 3 |
 | 5 | Spell expansion: the 4th slot (**done**, `0fc10e2b`), 35 new skills, talent mutations, boss partial CC | after 4 |

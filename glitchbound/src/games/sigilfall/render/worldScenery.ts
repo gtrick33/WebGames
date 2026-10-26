@@ -190,7 +190,7 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
         const off = (m.w * TILE) / 2 - 22;
         building('rk:tower_round_tile', pm.tx, pm.ty, m.w, -off);
         building('rk:tower_round_tile', pm.tx, pm.ty, m.w, off);
-      } else building(pick(capital ? s.capital : s.wild, h), pm.tx, pm.ty, m.w);
+      } else building(m.art && find(m.art) ? m.art : pick(capital ? s.capital : s.wild, h), pm.tx, pm.ty, m.w);
       handled.add(idx);
     }
     if (m.kind === 'exit' && REGIONS[m.to]?.kind !== 'dungeon') {
