@@ -54,8 +54,18 @@ function blocks(g: G, x: number, y: number, w: number, h: number, base: string, 
 }
 
 const PAINT: Partial<Record<Theme, (g: G, id: string) => void>> = {
-  // a barrow: a grassy mound, a trilithon door of old stone, standing stones beside it
-  crypt: (g) => {
+  // a barrow: a grassy mound, a trilithon door of old stone, standing stones beside it (the Chapel Crypt
+  // under Briarhollow's chapel: a stone stair going down instead)
+  crypt: (g, id) => {
+    if (id === 'crypt') {
+      blocks(g, 8, 14, 28, 22, '#8a8698', '#b8b4c4', '#5a5668', 7);
+      for (let i = 0; i < 5; i++) {
+        rect(g, 12 + i, 18 + i * 3, 20 - i * 2, 3, i % 2 ? '#3a3648' : '#4a4658');
+        rect(g, 12 + i, 18 + i * 3, 20 - i * 2, 1, '#6e6a80');
+      }
+      rect(g, 16, 33, 12, 3, '#0e0a18');
+      return;
+    }
     mound(g, 6, '#6a9a4a', '#4e7e3a', '#3a5e2a');
     rect(g, 13, 13, 18, 3, '#8a8698');
     rect(g, 13, 13, 18, 1, '#b8b4c4');
@@ -200,7 +210,7 @@ export function dungeonEntrance(theme: Theme, id: string): Cnv | null {
   const g = ctx2d(c);
   paint(g, id);
   // torches either side of the ones that are lived in or guarded
-  if (theme === 'keep' || theme === 'temple' || theme === 'crypt') {
+  if (theme === 'keep' || theme === 'temple' || (theme === 'crypt' && id !== 'crypt')) {
     torch(g, theme === 'keep' ? 15 : 9, 20);
     torch(g, theme === 'keep' ? 28 : 34, 20);
   }
