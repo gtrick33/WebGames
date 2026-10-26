@@ -9,6 +9,7 @@ import { buildDecals, Ground } from './ground';
 import { WorldGround } from './worldGround';
 import { buildWorldObjects } from './worldScenery';
 import { building } from './art/buildings';
+import { FLAT_FURNITURE, furniture } from './art/furniture';
 import { bushArt, cactus, crystalSpire, deadTree, edgeTrunk, jungleTree, mushroomTree, oakTree, palmTree, pineTree, rockArt, willowTree } from './art/flora';
 import type { Painter } from './art/kit';
 import { canvas, ctx2d, DETAIL, OUTLINE, type Cnv } from './pixel';
@@ -216,8 +217,12 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
     const x = (pm.tx + 0.5) * TILE;
     const bottom = (pm.ty + 1) * TILE;
     if (m.kind === 'prop') {
-      const c = prop(m.prop);
-      if (c) sc.objects.push({ x, y: bottom - 3, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: m.prop === 'well', kind: m.prop });
+      const own = prop(m.prop);
+      const raw = own ? null : furniture(m.prop);
+      const c = own ?? (raw ? outline(raw) : null);
+      // a rug lies under whoever stands on it
+      const flat = FLAT_FURNITURE.has(m.prop.split(':')[0]!);
+      if (c) sc.objects.push({ x, y: flat ? bottom - TILE - 6 : bottom - 3, c, dx: -(c.width / D) / 2, dy: (flat ? TILE + 6 : 3) - c.height / D - 1, fade: m.prop === 'well', kind: m.prop });
     }
     if (m.kind === 'waystone') {
       const c = waystone();
@@ -228,7 +233,7 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
       // the marker is the footprint's bottom-left tile; the picture's bottom edge is the footprint's
       sc.objects.push({ x: (pm.tx + m.w / 2) * TILE, y: bottom - 2, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 3, fade: true, kind: 'building' });
     }
-    if (m.kind === 'exit' && !look.indoor) {
+    if (m.kind === 'exit' && !look.indoor && !m.door) {
       if (REGIONS[m.to]?.kind === 'dungeon') {
         if (region.id === 'whisperwood') {
           // the Hollow Crypt's gate, drawn once for the pair of gate tiles

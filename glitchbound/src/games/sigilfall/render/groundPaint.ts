@@ -147,7 +147,8 @@ export class GroundPainter {
         let g = groundOf(raw);
         if (g === K.Floor && (raw !== K.Floor || marked.has(ty * map.w + tx))) {
           const around = [this.kindAt(tx + 1, ty), this.kindAt(tx - 1, ty), this.kindAt(tx, ty + 1), this.kindAt(tx, ty - 1)];
-          for (const want of [K.Cobble, K.Path]) if (around.filter((k) => k === want).length >= 2) g = want;
+          // (indoors, the planks of a wooden floor run on under the furniture)
+          for (const want of [K.Cobble, K.Path, K.Bridge]) if (around.filter((k) => k === want).length >= 2) g = want;
         }
         this.gk[(ty + 1) * pw + tx + 1] = g;
       }
@@ -614,7 +615,8 @@ export class GroundPainter {
   private cryptPixel(P: Indoor, ax: number, ay: number): RGB {
     const tx = Math.floor(ax / T);
     const ty = Math.floor(ay / T);
-    const k = this.kindAt(tx, ty);
+    // the ground under the tile (a plank floor goes on under a table)
+    const k = tx < 0 || ty < 0 || tx >= this.map.w || ty >= this.map.h ? K.Wall : this.gk[(ty + 1) * this.pw + tx + 1]!;
     const lx = ax - tx * T;
     const ly = ay - ty * T;
     // water underground (flooded tunnels, a sea cave): darker, with a stone lip where the floor ends

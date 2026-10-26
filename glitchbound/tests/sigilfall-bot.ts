@@ -57,8 +57,8 @@ export function brokenNumbers(w: World): string | null {
   return null;
 }
 
-export function newWorld(region: RegionId, hero: Character, seed = 1, tier = 0): World {
-  return new World({ region, tier, mods: [], hero, settings: { ...DEFAULT_SETTINGS }, seed });
+export function newWorld(region: RegionId, hero: Character, seed = 1, tier = 0, from?: RegionId): World {
+  return new World({ region, tier, mods: [], hero, settings: { ...DEFAULT_SETTINGS }, seed, ...(from ? { from } : {}) });
 }
 
 const tileOf = (w: World, x: number, y: number): number => Math.floor(y / TILE) * w.map.w + Math.floor(x / TILE);

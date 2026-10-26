@@ -179,7 +179,7 @@ export class World {
   /** The hero just stepped onto an exit: the engine offers to travel. */
   pendingExit: Interactable | null = null;
   waystones: { x: number; y: number }[] = [];
-  exits: { x: number; y: number; to: RegionId; label: string; minLevel?: number; needs?: string }[] = [];
+  exits: { x: number; y: number; to: RegionId; label: string; minLevel?: number; needs?: string; door?: boolean }[] = [];
   shrines: { x: number; y: number; id: string }[] = [];
   /** Places to discover (sights in the wilds). */
   spots: { x: number; y: number; id: string; name: string; r: number }[] = [];
@@ -226,7 +226,7 @@ export class World {
     // arriving through an exit: appear just inside the exit that leads back where we came from
     if (o.from) {
       const back = this.map.markers.find((m) => m.marker.kind === 'exit' && m.marker.to === o.from);
-      if (back) spawn = this.insideOf(markerPos(back));
+      if (back) spawn = this.insideOf(markerPos(back), back.marker.kind === 'exit' && back.marker.door ? (this.region.interior ? [0, -1] : [0, 1]) : undefined);
     }
     this.checkpoint = { ...spawn };
     this.storyState = regionState(this.region, this.hero);
@@ -303,7 +303,7 @@ export class World {
 
   /** A walkable spot a tile or so in from an exit tile. */
   /** A free spot a step from an exit, toward the middle of the map (so arriving doesn't stand on it). */
-  private insideOf(pt: { x: number; y: number }): { x: number; y: number } {
+  private insideOf(pt: { x: number; y: number }, first?: [number, number]): { x: number; y: number } {
     const cx = (this.map.w * TILE) / 2 - pt.x;
     const cy = (this.map.h * TILE) / 2 - pt.y;
     const dirs = (
@@ -314,7 +314,7 @@ export class World {
         [1, 0],
       ] as const
     )
-      .map(([dx, dy]) => ({ dx, dy, toward: dx * cx + dy * cy }))
+      .map(([dx, dy]) => ({ dx, dy, toward: first && dx === first[0] && dy === first[1] ? Infinity : dx * cx + dy * cy }))
       .sort((a, b) => b.toward - a.toward);
     for (const step of [2.5, 1.5]) {
       for (const { dx, dy } of dirs) {
@@ -374,7 +374,7 @@ export class World {
       if (m.kind === 'prop') this.addProp(pm, pos);
       // a stair that opens, a road that comes with the story, a place to find
       if (m.kind === 'spot') this.spots.push({ ...pos, id: m.id, name: m.name, r: m.r });
-      if (m.kind === 'exit') this.exits.push({ ...pos, to: m.to, label: m.label, ...(m.minLevel ? { minLevel: m.minLevel } : {}), ...(m.needs ? { needs: m.needs } : {}) });
+      if (m.kind === 'exit') this.exits.push({ ...pos, to: m.to, label: m.label, ...(m.minLevel ? { minLevel: m.minLevel } : {}), ...(m.needs ? { needs: m.needs } : {}), ...(m.door ? { door: true } : {}) });
       if (m.kind === 'fire' && s?.burning) this.fires.push({ ...pos, size: m.size });
       if (m.kind === 'wisp') this.wisps.push({ ...pos, color: m.color, size: m.size });
     }
@@ -455,7 +455,7 @@ export class World {
           this.waystones.push(pos);
           break;
         case 'exit':
-          this.exits.push({ ...pos, to: m.to, label: m.label, ...(m.minLevel ? { minLevel: m.minLevel } : {}), ...(m.needs ? { needs: m.needs } : {}) });
+          this.exits.push({ ...pos, to: m.to, label: m.label, ...(m.minLevel ? { minLevel: m.minLevel } : {}), ...(m.needs ? { needs: m.needs } : {}), ...(m.door ? { door: true } : {}) });
           break;
         case 'shrine':
           this.shrines.push({ ...pos, id: m.id });
@@ -1745,9 +1745,10 @@ export class World {
     let onExit = -1;
     this.exits.forEach((x, i) => {
       const d = dist(p.x, p.y, x.x, x.y);
-      if (d < 20) {
+      // a door is a step away, a road's end a little further
+      if (d < (x.door ? 11 : 20)) {
         onExit = i;
-        best = { kind: 'exit', to: x.to, x: x.x, y: x.y, label: x.label, locked: this.exitLock(x) };
+        best = { kind: 'exit', to: x.to, x: x.x, y: x.y, label: x.label, locked: this.exitLock(x), ...(x.door ? { door: true } : {}) };
       }
     });
     // the portal after the final boss
@@ -1848,6 +1849,7 @@ export class World {
     if (!h.mount || !h.mounts.includes(h.mount)) return h.mounts.length ? 'Choose a mount in the Wardrobe.' : 'You have no mount yet.';
     if (p.dead || p.channel || p.windup || p.dash) return 'Not now.';
     if (this.region.kind === 'dungeon') return 'There is no room to ride down here.';
+    if (this.region.interior) return 'Not indoors.';
     if (p.form) return 'Not in beast form.';
     if (this.story.fighting || p.calm < CALM_AFTER) return 'Not in the middle of a fight.';
     return null;

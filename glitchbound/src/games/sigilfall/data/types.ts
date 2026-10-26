@@ -528,6 +528,13 @@ export type EliteAffix = 'frenzied' | 'molten' | 'vampiric' | 'shielded' | 'vola
 export type RegionId =
   | 'emberwick'
   | 'briarhollow'
+  /** Interiors (data/interiors.ts). */
+  | 'bramble-and-barrel'
+  | 'chapel-of-the-bell'
+  | 'elders-hall'
+  | 'ember-hearth'
+  | 'great-hall'
+  | 'brannocs-forge'
   | 'whisperwood'
   | 'crypt'
   | 'thornvale'
@@ -610,7 +617,10 @@ export type Theme =
   | 'citadel'
   | 'cistern'
   | 'roots'
-  | 'riftspire';
+  | 'riftspire'
+  /** Interiors: timber and plaster (inns, houses, a forge), and a lord's stone hall. */
+  | 'tavern'
+  | 'greathall';
 
 /** What a letter on a region map stands for (the terrain under it is the region's floor). */
 /**
@@ -676,7 +686,8 @@ export type Marker =
   | { kind: 'pack'; enemies: string[]; elite?: boolean; named?: string; level?: number; rare?: boolean }
   | { kind: 'chest'; id: string; tier: 'common' | 'rare' | 'epic'; once?: boolean }
   | { kind: 'npc'; npc: string }
-  | { kind: 'exit'; to: RegionId; label: string; minLevel?: number; needs?: string }
+  /** A way to another region; a `door` is walked straight through (into or out of a building), no road sign. */
+  | { kind: 'exit'; to: RegionId; label: string; minLevel?: number; needs?: string; door?: boolean }
   | { kind: 'waystone' }
   | { kind: 'boss'; boss: string }
   | { kind: 'secret'; id: string }
@@ -747,6 +758,8 @@ export interface RegionDef {
   theme: Theme;
   /** A town (safe), the wilds, or a dungeon (rooms, a boss at the end, difficulty tiers). */
   kind: 'town' | 'wild' | 'dungeon';
+  /** Inside a building of a town (safe, entered by its door, never on the world map; no riding). */
+  interior?: boolean;
   /** Enemy level on Normal (in the wilds, at the way in; packs carry their own). */
   level: number;
   /** The levels the region is for, shown on the world map. */

@@ -1,4 +1,5 @@
 import { CityPlan } from '../citygen';
+import { doorsOf } from '../interiors';
 import type { EnemyDef, NpcDef, QuestDef, RegionDef, StoryCond, StoryEventDef } from '../types';
 
 /**
@@ -149,7 +150,7 @@ function plan(): CityPlan {
   // the people: who stands where depends on the night
   c.npc('mara-venn', 31, 14, CALM);
   c.npc('oskar-fell', 33, 15, is('briar-the-seal', 'active'));
-  c.npc('maren', 36, 37, CALM);
+  c.npc('maren', 38, 37, CALM);
   c.npc('maren', 45, 20, NIGHT);
   c.npc('old-haldor', 43, 18, CALM);
   c.npc('herbwife-thessa', 22, 37, CALM);
@@ -208,6 +209,8 @@ function plan(): CityPlan {
   c.npc('warden-hollis', 16, 31, FERN_CAMP);
   c.npc('mother-alsa', 18, 31, FERN_CAMP);
   c.npc('pip-tanner', 14, 31, FERN_CAMP);
+  // the doors into the inn, the chapel and the Elder's hall (data/interiors.ts)
+  for (const d of doorsOf('briarhollow')) c.marker(d.tx, d.ty, d.marker, d.when);
   c.marker(32, 12, { kind: 'start' });
   return c;
 }

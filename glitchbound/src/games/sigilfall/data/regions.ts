@@ -233,8 +233,8 @@ export const REGIONS = {
   ...Object.fromEntries(DUNGEONS.map((d) => [d.region.id, d.region])),
 } as Record<RegionId, RegionDef>;
 
-/** Every region, in the order the world map lists them. */
-export const REGION_IDS = Object.keys(REGIONS) as RegionId[];
+/** Every region of the world map, in the order it lists them (interiors are inside their towns, not on it). */
+export const REGION_IDS = (Object.keys(REGIONS) as RegionId[]).filter((id) => !REGIONS[id].interior);
 
 /** Difficulty tiers: enemy level bonus, health and damage on top, loot and experience bonus. */
 export const TIERS = [

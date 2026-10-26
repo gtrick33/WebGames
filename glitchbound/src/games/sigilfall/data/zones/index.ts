@@ -1,4 +1,5 @@
 import type { EnemyDef, ItemDef, NpcDef, QuestDef, RegionDef } from '../types';
+import { INTERIORS } from '../interiors';
 import { GRIMWARD } from './grimward';
 import { GRIMWARD_FOES, GRIMWARD_ITEMS } from './grimward-foes';
 import { GRIMWARD_NPCS, GRIMWARD_QUESTS } from './grimward-quests';
@@ -88,3 +89,6 @@ export const ZONES: ZoneModule[] = [
   { region: VINECOIL, npcs: VINECOIL_NPCS, quests: VINECOIL_QUESTS, foes: VINECOIL_FOES, items: VINECOIL_ITEMS },
   { region: HIGHWALL, npcs: HIGHWALL_NPCS, quests: HIGHWALL_QUESTS, foes: HIGHWALL_FOES, items: HIGHWALL_ITEMS },
 ];
+
+// the buildings' interiors, walked into from their towns (data/interiors.ts)
+ZONES.push(...INTERIORS);

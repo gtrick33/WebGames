@@ -538,7 +538,7 @@ export class SigilEngine {
     }
     if (prev) w.player.ult = prev.player.ult;
     // riding on from one open land to the next (never into a dungeon)
-    if (prev?.player.riding && region.kind !== 'dungeon' && h.mounts.includes(prev.player.riding)) w.player.riding = prev.player.riding;
+    if (prev?.player.riding && region.kind !== 'dungeon' && !region.interior && h.mounts.includes(prev.player.riding)) w.player.riding = prev.player.riding;
     // the quests of a land start when the hero first gets there
     for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
     this.world = w;
@@ -590,7 +590,13 @@ export class SigilEngine {
   interact(it: Interactable): void {
     if (it.kind === 'npc') this.talk(it.id);
     else if (it.kind === 'waystone') this.openPanel('map');
-    else if (it.kind === 'exit') {
+    else if (it.kind === 'exit' && it.door && !it.locked && this.world) {
+      // a door: straight through, no question asked
+      const w = this.world;
+      if (this.hero && !this.hero.unlocked.includes(it.to as RegionId)) this.hero.unlocked.push(it.to as RegionId);
+      this.sound.play('open');
+      this.travel(it.to as RegionId, w.tier, w.mods, w.region.id);
+    } else if (it.kind === 'exit') {
       this.kbm?.release();
       this.touch.release();
       this.setUi({ travel: { to: it.to as RegionId, label: it.label, locked: it.locked } });

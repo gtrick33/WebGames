@@ -690,3 +690,40 @@ export const TOWNSFOLK_LOOKS: Record<string, HeroLook> = {
 
 // Mara Venn as the relief's captain at Highwall (Act IV): the same woman, the same mail
 TOWNSFOLK_LOOKS['captain-mara'] = TOWNSFOLK_LOOKS['mara-venn']!;
+
+/* ------------------------------------------------------------- interiors */
+
+const folk = (skin: string, hair: string, hairStyle: HeroLook['hairStyle'], chest: [HeroLook['chest']['style'], string], legs: string, extra: Partial<HeroLook> = {}): HeroLook => ({
+  skin,
+  hair,
+  hairStyle,
+  head: null,
+  chest: { style: chest[0], mat: chest[0] === 'robe' ? 'cloth' : 'leather', tint: chest[1], r: 'common' },
+  legs: { style: 'trousers', mat: 'cloth', tint: legs, r: 'common' },
+  hands: null,
+  feet: { style: 'boots', mat: 'leather', tint: '#4a3020', r: 'common' },
+  quiver: null,
+  cape: null,
+  ...extra,
+});
+
+Object.assign(TOWNSFOLK_LOOKS, {
+  // Hob Bramble: his mother's son, sleeves rolled, a bar towel for an apron
+  'hob-bramble': folk('#e0a880', '#8a4a24', 'short', ['tunic', '#6a7a4a'], '#4a3a2a', { apron: '#d8d0c0', beard: '#8a4a24' }),
+  // Wil Tanglefoot: patched motley, a feather in his hat
+  'fiddler-wil': folk('#f0c8a0', '#d8b060', 'long', ['tunic', '#8a3a6a'], '#3a4a7a', { head: { style: 'cap', mat: 'cloth', tint: '#2a6a5a', r: 'common' } }),
+  // Old Jory: a greatcoat older than the inn
+  'old-jory': folk('#d8a888', '#d8d4cc', 'short', ['tunic', '#5a4a3a'], '#3a3028', { beard: '#d8d4cc' }),
+  // Sister Anwen: undyed wool with the blue of the bell
+  'sister-anwen': folk('#e8c0a0', '#4a3428', 'long', ['robe', '#d8d0b8'], '#4a4a5a', { head: { style: 'hood', mat: 'cloth', tint: '#2a4a7a', r: 'common' } }),
+  // Pell: ink on the fingers, spectacles in the pocket
+  'clerk-pell': folk('#c89068', '#2a2420', 'short', ['tunic', '#3a4a5a'], '#2a2a34'),
+  // Corra of the Nine Strings: a minstrel's crimson and gold
+  'minstrel-corra': folk('#b87858', '#1a1418', 'pony', ['tunic', '#a82a3a'], '#2a1e2a', { cape: '#d8a040' }),
+  // Dace Woolwright: his own best wool, three layers of it
+  'merchant-dace': folk('#f0c8a8', '#6a4a2a', 'short', ['robe', '#8a7a5a'], '#5a4a3a', { head: { style: 'cap', mat: 'leather', tint: '#5a3a24', r: 'common' } }),
+  // Steward Aldous: the keep's red over a pressed black coat, a chain of office
+  'steward-aldous': folk('#e8c0a0', '#a8a4b0', 'short', ['tunic', '#8a1a2a'], '#1a1820', { beard: '#a8a4b0', cape: '#1a1820' }),
+  // Kit: soot to the elbows, a leather apron too big for him
+  'apprentice-kit': folk('#d8a07a', '#3a2418', 'short', ['tunic', '#7a6a5a'], '#3a3028', { apron: '#5a3a24' }),
+} satisfies Record<string, HeroLook>);

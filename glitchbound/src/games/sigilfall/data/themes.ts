@@ -771,6 +771,31 @@ export const THEMES: Record<Theme, ThemeLook> = {
     'spores',
   ),
   // the Pale Herald's spire: black glass and rift-crystal, the Veil showing through the seams
+  // interiors: limewashed plaster over a timber dado, dark beams above; and a lord's hall of pale ashlar
+  tavern: indoor('#140e0a', {
+    slab: ['#7a5a3e', '#82603f', '#74553a', '#7e5c40'],
+    mortar: '#4a3424',
+    top: '#2a1c14',
+    topHi: '#36261a',
+    lip: '#6a4a30',
+    lip2: '#4a3222',
+    brick: ['#d8ccb0', '#cfc2a4', '#e0d4b8'],
+    brickMortar: '#8a6a48',
+    moss: '#b8a888',
+    crack: '#3a2a1e',
+  }),
+  greathall: indoor('#100e14', {
+    slab: ['#8a8698', '#928ea0', '#84808f', '#8e8a9c'],
+    mortar: '#5a5668',
+    top: '#24202e',
+    topHi: '#302a3a',
+    lip: '#6e6a80',
+    lip2: '#4a4658',
+    brick: ['#b8b2c4', '#aea8ba', '#c2bccc'],
+    brickMortar: '#7a748a',
+    moss: '#a8a2b4',
+    crack: '#3a3448',
+  }),
   riftspire: indoor(
     '#0a0614',
     {

@@ -1,5 +1,6 @@
 import { after, all, during, is, not, until } from '../cond';
 import { CityPlan } from '../citygen';
+import { doorsOf } from '../interiors';
 import type { RegionDef } from '../types';
 
 /**
@@ -218,6 +219,8 @@ function plan(): CityPlan {
   // lamps down the avenue
   c.lamps(49, 24, 49, 71, 8);
   c.lamps(54, 24, 54, 71, 8);
+  // the doors into the Ember Hearth, the Great Hall and Brannoc's forge (data/interiors.ts)
+  for (const d of doorsOf('emberwick')) c.marker(d.tx, d.ty, d.marker, d.when);
   return c;
 }
 

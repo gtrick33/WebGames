@@ -65,7 +65,8 @@ describe('sigilfall play-throughs', () => {
       }
       expect(mythic.cleared).toBe(true);
       expect(m.stuck).toBe(false);
-    });
+      // up to three whole play-throughs: more than the default 5 s when the other test files share the machine
+    }, 30_000);
   }
 
   it('each difficulty hits harder and lasts longer than the one before', () => {

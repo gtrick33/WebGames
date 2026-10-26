@@ -422,4 +422,4 @@ export type WorldEvent =
 export type Interactable =
   | { kind: 'npc'; id: string; x: number; y: number; label: string }
   | { kind: 'waystone'; x: number; y: number; label: string }
-  | { kind: 'exit'; to: string; x: number; y: number; label: string; locked: string | null };
+  | { kind: 'exit'; to: string; x: number; y: number; label: string; locked: string | null; door?: boolean };

@@ -13,7 +13,7 @@ Status words: **done** (built, tested, screenshot-checked), **partial** (what is
 | # | Blueprint point | Status |
 | --- | --- | --- |
 | 1 | Stabilization: joystick/multitouch, camera vs shake, depth sorting, Open Barrow, registry (incl. Duskspire), ultimate spam, quest activation, save migrations, HUD clipping, SIGILFALL_QA.md | camera, Open Barrow, registry, ultimate, activation, migrations **done**. Joystick and depth sorting **not reproduced** (REFACTOR_AUDIT.md). **Open**: SIGILFALL_QA.md, a multitouch regression test, HUD screenshots at phone/tablet sizes |
-| 2 | Briarhollow + Prologue + Chapel Crypt + one class with the 4th slot; world states and events; accept step | **done**, except **open**: the village's interiors (the inn, the chapel, a cottage) |
+| 2 | Briarhollow + Prologue + Chapel Crypt + one class with the 4th slot; world states and events; accept step | **done**, with interiors: the Bramble & Barrel, the Chapel of the Bell and the Elder’s Hall (data/interiors.ts), barred on the raid night, furnished by the camp’s progress |
 | 3 | Progression rebalance | **done** (`17208eeb`) |
 | 4 | Master hero (Mage) re-render + CHARACTER_ART_BIBLE.md, then the other six; portraits | **open** |
 | 5 | Spell expansion: the 4th slot, 35 new skills, talent mutations, boss partial CC | **done** (`a409df85`) |
@@ -23,7 +23,7 @@ Status words: **done** (built, tested, screenshot-checked), **partial** (what is
 | 9 | Companions and cinematic staging: camera focus, move-to, wait, emote, spawn/despawn, gate state, dialogue beat; skippable; debug presets | barks, arrivals, escorts, companions in events **done**; **open**: the beat primitives with skip, the debug preset menu |
 | 10 | Siege system: one representative Three Gates siege (intact → under siege → breached/liberated), then the others and the finale | Hearthstead's defense **done**; **open**: Highwall's three states as the representative siege, then the Gloam Gate and the Muster Hall |
 | 11 | Loot: less clutter, quest-item protection, rarity visuals, authored story rewards; cosmetic reward sources | **open** (sources for mounts and looks come with Prompt 6) |
-| 12 | Crown City districts and interiors; war-state variants; Three Gates fortresses share the kingdom language | war states of the Crown City **done**; **open**: the districts' interiors (inn, smithy, story hall), the muster-ground variant |
+| 12 | Crown City districts and interiors; war-state variants; Three Gates fortresses share the kingdom language | war states of the Crown City **done**; interiors **done**: the Ember Hearth, the Great Hall of the Ember Keep (court table → war council after the Night of Knives), Brannoc’s Forge; **open**: the muster-ground variant (with Act IV) |
 | 13 | Dungeons: identity, an encounter mechanic, a multi-phase boss each; registry tests | nine shipped dungeons have phased bosses and registry tests; **open**: Blightheart, the Molten Throne, the Spire of the Rift, Duskspire (in the frozen `sigilfall-4b-wip` branch, to be retold) |
 | 14 | Dead Kingdom (Act V), Last March (Act VI), Crownfall, Epilogue (rebuilt Briarhollow, the bell), postgame Heroic/Mythic, a prestige mount | **open**; the zones, foes, art and three dungeon patterns of the old Act IV are on `sigilfall-4b-wip` and are reused under the new story |
 | 15 | Audio conventions, reduced motion and screen shake, volume, final art review | volume and screen-shake settings exist; **open**: reduced motion, quest stingers, the visual review backlog |
