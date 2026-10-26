@@ -1,6 +1,16 @@
-import type { BossDef, PatternUse } from '../data/bosses';
-import type { PetDef } from '../data/pets';
-import type { BuffDef, DmgType, EliteAffix, EnemyDef, GroundSpec, Item, SkillSpec, SlotKey, StatusId } from '../data/types';
+import type { BossDef, PatternUse } from "../data/bosses";
+import type { PetDef } from "../data/pets";
+import type {
+  BuffDef,
+  DmgType,
+  EliteAffix,
+  EnemyDef,
+  GroundSpec,
+  Item,
+  SkillSpec,
+  SlotKey,
+  StatusId,
+} from "../data/types";
 
 /** Runtime state of everything in a region. Positions are pixels; times are seconds. */
 
@@ -48,10 +58,30 @@ export interface Player {
   shield: number;
   shieldT: number;
   iframe: number;
-  dash: { vx: number; vy: number; t: number; spec: SkillSpec | null; hit: Set<number>; dodge: boolean } | null;
-  windup: { slot: SlotKey; spec: SkillSpec; t: number; total: number; angle: number; tx: number; ty: number } | null;
+  dash: {
+    vx: number;
+    vy: number;
+    t: number;
+    spec: SkillSpec | null;
+    hit: Set<number>;
+    dodge: boolean;
+  } | null;
+  windup: {
+    slot: SlotKey;
+    spec: SkillSpec;
+    t: number;
+    total: number;
+    angle: number;
+    tx: number;
+    ty: number;
+  } | null;
   /** A channel: whirlwinds around the hero, or a drain on one enemy (`target`). */
-  channel: { spec: SkillSpec; t: number; tickT: number; target?: number } | null;
+  channel: {
+    spec: SkillSpec;
+    t: number;
+    tickT: number;
+    target?: number;
+  } | null;
   /** Timed buffs (shouts, walls, wings, healing over time). */
   buffs: { def: BuffDef; t: number }[];
   /** A druid's shape (a FormDef id), or null. */
@@ -77,21 +107,27 @@ export interface Player {
   /** Attack animation: seconds left and its angle. */
   actT: number;
   actAngle: number;
-  actKind: 'swing' | 'cast' | 'shoot' | 'heavy' | 'spin' | null;
+  actKind: "swing" | "cast" | "shoot" | "heavy" | "spin" | null;
   /** Bigger swing for the combo finisher. */
   actBig: boolean;
   /** Seconds left on the hit flash. */
   flash: number;
 }
 
-export type AiState = 'idle' | 'chase' | 'windup' | 'act' | 'recover' | 'spawn' | 'return' | 'dead';
+export type AiState =
+  "idle" | "chase" | "windup" | "act" | "recover" | "spawn" | "return" | "dead";
 
 export interface BossState {
   def: BossDef;
   phase: number;
   /** Seconds of rest before the next pattern. */
   rest: number;
-  pattern: { use: PatternUse; t: number; step: number; data: Record<string, number> } | null;
+  pattern: {
+    use: PatternUse;
+    t: number;
+    step: number;
+    data: Record<string, number>;
+  } | null;
   /** Seconds until each pattern may come again. */
   cds: Record<string, number>;
   /** Patterns queued by a phase start. */
@@ -112,6 +148,8 @@ export interface BossState {
 }
 
 export interface Enemy {
+  /** A siege engine's way to the gate it wants (a flow field from the gate, made once). */
+  siegeFlow?: Int16Array;
   id: number;
   def: EnemyDef;
   level: number;
@@ -201,6 +239,9 @@ export interface Pet {
   deathT: number;
   /** Put there by the story (an event's companion, ward or rescued villager): it leaves with the event. */
   story?: boolean;
+  /** Walks there on its own (people arriving at the camp), along `flow`. */
+  goal?: { x: number; y: number };
+  flow?: Int16Array;
 }
 
 export interface Projectile {
@@ -250,7 +291,7 @@ export interface Field {
   dmg: number;
   type: DmgType;
   status?: { status: StatusId; dur: number; power: number };
-  look: GroundSpec['look'];
+  look: GroundSpec["look"];
   hostile: boolean;
   depth: number;
   spec: SkillSpec | null;
@@ -261,7 +302,7 @@ export interface Field {
 /** A warning shape on the ground that deals its damage when it fills up. */
 export interface Telegraph {
   id: number;
-  shape: 'circle' | 'ring' | 'line' | 'cone' | 'donut';
+  shape: "circle" | "ring" | "line" | "cone" | "donut";
   x: number;
   y: number;
   /** Circle/cone radius, ring/donut outer radius. */
@@ -276,7 +317,7 @@ export interface Telegraph {
   status?: { status: StatusId; dur: number; power: number };
   knock: number;
   /** Visual: enemy attacks are red; the rift is magenta. */
-  tone: 'enemy' | 'rift' | 'player';
+  tone: "enemy" | "rift" | "player";
   /** For a moving owner: the shape follows it (slams). */
   owner: number;
   /** Friendly telegraphs (meteor) hit enemies instead, via `then`. */
@@ -312,7 +353,7 @@ export interface Trap {
 
 export interface Drop {
   id: number;
-  kind: 'gold' | 'item' | 'orb' | 'shard';
+  kind: "gold" | "item" | "orb" | "shard";
   x: number;
   y: number;
   vx: number;
@@ -332,7 +373,7 @@ export interface Chest {
   key: string;
   x: number;
   y: number;
-  tier: 'common' | 'rare' | 'epic';
+  tier: "common" | "rare" | "epic";
   once: boolean;
   open: boolean;
   openT: number;
@@ -358,7 +399,24 @@ export interface FloatText {
 
 /** Visual-only particles and flashes (never affect play). */
 export interface Fx {
-  kind: 'spark' | 'smoke' | 'ring' | 'slash' | 'bolt' | 'burst' | 'ember' | 'shard' | 'rubble' | 'ghost' | 'coin' | 'beam' | 'text' | 'rift' | 'leaf' | 'zap' | 'glow';
+  kind:
+    | "spark"
+    | "smoke"
+    | "ring"
+    | "slash"
+    | "bolt"
+    | "burst"
+    | "ember"
+    | "shard"
+    | "rubble"
+    | "ghost"
+    | "coin"
+    | "beam"
+    | "text"
+    | "rift"
+    | "leaf"
+    | "zap"
+    | "glow";
   x: number;
   y: number;
   vx: number;
@@ -378,27 +436,39 @@ export interface Fx {
 
 /** What the world tells the engine and the UI after a step. */
 export type WorldEvent =
-  | { t: 'sfx'; id: string; vol?: number }
-  | { t: 'shake'; amount: number }
-  | { t: 'toast'; text: string; tone?: 'info' | 'good' | 'warn' | 'loot'; item?: Item }
-  | { t: 'loot'; item: Item }
-  | { t: 'levelup'; level: number }
-  | { t: 'questDone'; quest: string }
-  | { t: 'questStart'; quest: string }
-  | { t: 'quest' }
-  | { t: 'bossStart'; boss: string }
-  | { t: 'bossPhase'; banner: string }
-  | { t: 'bossDown'; boss: string }
-  | { t: 'banner'; text: string; sub?: string }
-  | { t: 'death' }
-  | { t: 'cleared' }
-  | { t: 'hero' }
-  | { t: 'save' }
-  | { t: 'checkpoint' }
-  | { t: 'hint'; id: 'equip' | 'talent' | 'skill' | 'ult' | 'potion' }
-  | { t: 'discover'; spot: string };
+  | { t: "sfx"; id: string; vol?: number }
+  | { t: "shake"; amount: number }
+  | {
+      t: "toast";
+      text: string;
+      tone?: "info" | "good" | "warn" | "loot";
+      item?: Item;
+    }
+  | { t: "loot"; item: Item }
+  | { t: "levelup"; level: number }
+  | { t: "questDone"; quest: string }
+  | { t: "questStart"; quest: string }
+  | { t: "quest" }
+  | { t: "bossStart"; boss: string }
+  | { t: "bossPhase"; banner: string }
+  | { t: "bossDown"; boss: string }
+  | { t: "banner"; text: string; sub?: string }
+  | { t: "death" }
+  | { t: "cleared" }
+  | { t: "hero" }
+  | { t: "save" }
+  | { t: "checkpoint" }
+  | { t: "hint"; id: "equip" | "talent" | "skill" | "ult" | "potion" }
+  | { t: "discover"; spot: string };
 
 export type Interactable =
-  | { kind: 'npc'; id: string; x: number; y: number; label: string }
-  | { kind: 'waystone'; x: number; y: number; label: string }
-  | { kind: 'exit'; to: string; x: number; y: number; label: string; locked: string | null };
+  | { kind: "npc"; id: string; x: number; y: number; label: string }
+  | { kind: "waystone"; x: number; y: number; label: string }
+  | {
+      kind: "exit";
+      to: string;
+      x: number;
+      y: number;
+      label: string;
+      locked: string | null;
+    };

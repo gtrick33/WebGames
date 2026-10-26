@@ -19,11 +19,14 @@ Retired quests: none. Zoneless quests given by Elder Maren move with her to Bria
 | `briar-below` | Prologue | explore | The raiders dig under the chapel: the crypt stair (leads into the old Hollow Crypt chain) |
 | `briar-the-reliquary` | Prologue | talk | After Morgrave: the fragment bonds to Elyra; the mark of the Ashen Host |
 | `briar-dawn` | Prologue | talk | Aftermath; Briarhollow becomes the camp (village in aftermath state) |
-| `camp-*` (one per village) | Act I | event: arrival | Each saved village’s people arrive at the camp (scouts, grain, healers, smiths, riders) |
-| `hearth-the-riders-come` | Act I finale | event: raid | Vosk’s first wave on Hearthstead |
-| `hearth-hold-the-wall` | Act I finale | event: defend | Mara on the wall, riders on the field, three waves |
-| `hearth-the-ram` | Act I finale | event: defend + boss | The battering ram at the gate; Elyra breaks it |
-| `hearth-the-shrine` | Act I finale | explore | Vosk is gone with the second fragment |
+| `camp-scouts`, `camp-grain`, `camp-healers`, `camp-smiths`, `camp-riders` | Act I | event: arrival | Each saved village’s people walk into the camp and stay (built) |
+| `mill-the-bridge` | Act I · Millbrook | event: raid | Break the gang’s blockade at the mill with Sefa and the militia; before `hollow-gold` (built) |
+| `reed-bring-them-home` | Act I · Reedwater | event: rescue | Lead the three abducted home from Mire’s cage (built) |
+| `gull-the-slip` | Act I · Gullport | event: defend | The drowned come up the beach for the Patience; before `the-drowned-fleet` (built) |
+| `hearth-the-riders-come` | Act I finale | event: raid | Vosk’s riders in Hearthstead’s square (built) |
+| `hearth-hold-the-wall` | Act I finale | event: defend | Mara on the wall, Fernstead rangers and Dunmore’s riders, three waves at the gate (built) |
+| `hearth-the-ram` | Act I finale | event: defend + siege enemy | The ashen ram at the gate; Elyra breaks it (built) |
+| `hearth-the-shrine` | Act I finale | explore | Vosk is gone with the second fragment; `orders-from-the-north` is now Gaius reading his dropped orders (built) |
 | `nyx-*` | Act II | talk / infiltrate | Nyx joins at Stilt Hollow; the smugglers’ path; the Deepforge infiltration |
 | `orren-*`, `cael-*` | Act II | talk / defend | Lantern Hill: meet Orren and Cael; Cael’s shame; the Ninefold Watch |
 | `city-*` | Act II | investigate | The countermanded order through the treasury, roads office and the Chancellor’s cellar |
@@ -78,7 +81,7 @@ Retired quests: none. Zoneless quests given by Elder Maren move with her to Bria
 | Act I · Fernstead | `old-rustback` | Old Rustback | pip-tanner | KEEP (retold) | Local threat kept; text retold in the new tone, ash-gold/grieflight replaces Hollow/Rift |
 | Act I · Fernstead | `appleby-apples` | Cider Apples | mother-alsa | KEEP (retold) | Village life quest kept; its giver reappears at the camp after the chain |
 | Act I · Fernstead | `stolen-light` | Stolen Light | mother-alsa | KEEP (retold) | Village life quest kept; its giver reappears at the camp after the chain |
-| Act I · Fernstead | `the-harvest-stones` | The Harvest Stones | mother-alsa | REWRITE | Act I WORLD EVENT: the corrupted shrine is cleansed |
+| Act I · Fernstead | `the-harvest-stones` | The Harvest Stones | mother-alsa | REWRITE (built) | Act I WORLD EVENT: hold the fouled stones while the candles take (event `fern-stones`) |
 | Act I · Millbrook | `hollow-gold` | Hollow Gold | reeve-aldous | REWRITE | Act I: the gang was paid in ash-gold; report to Maren at the camp |
 | Act I · Millbrook | `kettle-farm` | Ashes at Kettle Farm | reeve-aldous | KEEP (retold) | Village life quest kept; its giver reappears at the camp after the chain |
 | Act I · Millbrook | `redcap-camp` | Red Caps | sefa | KEEP (retold) | Village life quest kept; its giver reappears at the camp after the chain |

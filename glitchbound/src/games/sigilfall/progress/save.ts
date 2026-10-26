@@ -1,14 +1,35 @@
-import { CLASS_IDS, MAX_LEVEL, xpToNext } from '../data/classes';
-import { BASE_DEFS, ITEM_DEFS, MINOR_MODS } from '../data/items';
-import { QUEST_DEFS } from '../data/quests';
-import { REGIONS } from '../data/regions';
-import { SKILLS } from '../data/skills';
-import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
-import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
-import { RARITIES, SLOTS } from '../data/types';
-import { STAT_ROLL } from '../data/items';
-import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME } from './character';
-import { itemClass, itemSlot, newUid } from './items';
+import { CLASS_IDS, MAX_LEVEL, xpToNext } from "../data/classes";
+import { BASE_DEFS, ITEM_DEFS, MINOR_MODS } from "../data/items";
+import { QUEST_DEFS } from "../data/quests";
+import { REGIONS } from "../data/regions";
+import { SKILLS } from "../data/skills";
+import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from "../data/talents";
+import type {
+  ClassId,
+  Item,
+  PerkId,
+  RegionId,
+  SlotId,
+  StatKey,
+} from "../data/types";
+import { RARITIES, SLOTS } from "../data/types";
+import { STAT_ROLL } from "../data/items";
+import {
+  autoSlotSkills,
+  BAG_OVERFLOW,
+  bagSize,
+  learnedSkills,
+  PERKS,
+  pointsInTree,
+  POTION_CAP,
+  potionCap,
+  START_POTIONS,
+  startQuests,
+  talentPoints,
+  type Character,
+  HOME,
+} from "./character";
+import { itemClass, itemSlot, newUid } from "./items";
 
 /**
  * The save: up to three heroes and the settings, versioned and validated field by field on load.
@@ -23,12 +44,12 @@ import { itemClass, itemSlot, newUid } from './items';
  *   none under the new ones, and the old keys go once the save is written under the new name.
  */
 
-export const SAVE_KEY = 'glitchbound.sigilfall';
-const BACKUP_KEY = 'glitchbound.sigilfall.bak';
-const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
-const OLD_SAVE_KEY = 'glitchbound.riftbound';
-const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 3;
+export const SAVE_KEY = "glitchbound.sigilfall";
+const BACKUP_KEY = "glitchbound.sigilfall.bak";
+const CORRUPT_KEY = "glitchbound.sigilfall.corrupt";
+const OLD_SAVE_KEY = "glitchbound.riftbound";
+const OLD_BACKUP_KEY = "glitchbound.riftbound.bak";
+export const SAVE_VERSION = 4;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -38,7 +59,7 @@ export interface Settings {
   muted: boolean;
   /** Joystick radius in CSS px. */
   joystick: number;
-  joyMode: 'float' | 'fixed';
+  joyMode: "float" | "fixed";
   /** Share of the joystick radius ignored around its center. */
   deadzone: number;
   /** Movement response: 1 = linear. Higher reaches full speed with a shorter push. */
@@ -49,9 +70,9 @@ export interface Settings {
   autoTarget: boolean;
   shake: boolean;
   numbers: boolean;
-  ultKey: 'f' | 't' | 'shift' | 'rmb';
+  ultKey: "f" | "t" | "shift" | "rmb";
   /** The fourth skill's key (the slot added in blueprint V2.9). */
-  skill4Key: 'c' | 'v' | 'z' | 'x';
+  skill4Key: "c" | "v" | "z" | "x";
   /** Mirror the touch controls (skills on the left). */
   lefty: boolean;
   /** The rotate-your-phone hint was dismissed. */
@@ -64,15 +85,15 @@ export const DEFAULT_SETTINGS: Settings = {
   sfx: 0.8,
   muted: false,
   joystick: 58,
-  joyMode: 'float',
+  joyMode: "float",
   deadzone: 0.14,
   sensitivity: 1.15,
   aimAssist: 1,
   autoTarget: true,
   shake: true,
   numbers: true,
-  ultKey: 'f',
-  skill4Key: 'c',
+  ultKey: "f",
+  skill4Key: "c",
   lefty: false,
   rotateSeen: false,
 };
@@ -86,18 +107,32 @@ export interface SaveFile {
   saved: number;
 }
 
-export type LoadStatus = 'new' | 'ok' | 'recovered' | 'reset' | 'newer' | 'blocked';
+export type LoadStatus =
+  "new" | "ok" | "recovered" | "reset" | "newer" | "blocked";
 
-export const emptySave = (): SaveFile => ({ v: SAVE_VERSION, heroes: Array(HERO_SLOTS).fill(null), last: 0, settings: { ...DEFAULT_SETTINGS }, saved: 0 });
+export const emptySave = (): SaveFile => ({
+  v: SAVE_VERSION,
+  heroes: Array(HERO_SLOTS).fill(null),
+  last: 0,
+  settings: { ...DEFAULT_SETTINGS },
+  saved: 0,
+});
 
 /* ------------------------------------------------------------ validation */
 
 type Raw = Record<string, unknown>;
-const obj = (v: unknown): Raw | null => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Raw) : null);
-const num = (v: unknown, lo: number, hi: number, dflt: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : dflt);
-const int = (v: unknown, lo: number, hi: number, dflt: number): number => Math.round(num(v, lo, hi, dflt));
-const str = (v: unknown, max: number, dflt: string): string => (typeof v === 'string' ? v.slice(0, max) : dflt);
-const bool = (v: unknown, dflt: boolean): boolean => (typeof v === 'boolean' ? v : dflt);
+const obj = (v: unknown): Raw | null =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Raw) : null;
+const num = (v: unknown, lo: number, hi: number, dflt: number): number =>
+  typeof v === "number" && Number.isFinite(v)
+    ? Math.min(hi, Math.max(lo, v))
+    : dflt;
+const int = (v: unknown, lo: number, hi: number, dflt: number): number =>
+  Math.round(num(v, lo, hi, dflt));
+const str = (v: unknown, max: number, dflt: string): string =>
+  typeof v === "string" ? v.slice(0, max) : dflt;
+const bool = (v: unknown, dflt: boolean): boolean =>
+  typeof v === "boolean" ? v : dflt;
 
 export function validateSettings(v: unknown): Settings {
   const o = obj(v) ?? {};
@@ -108,15 +143,21 @@ export function validateSettings(v: unknown): Settings {
     sfx: num(o.sfx, 0, 1, d.sfx),
     muted: bool(o.muted, d.muted),
     joystick: int(o.joystick, 40, 84, d.joystick),
-    joyMode: o.joyMode === 'fixed' ? 'fixed' : 'float',
+    joyMode: o.joyMode === "fixed" ? "fixed" : "float",
     deadzone: num(o.deadzone, 0.04, 0.4, d.deadzone),
     sensitivity: num(o.sensitivity, 0.6, 1.8, d.sensitivity),
     aimAssist: int(o.aimAssist, 0, 2, d.aimAssist),
     autoTarget: bool(o.autoTarget, d.autoTarget),
     shake: bool(o.shake, d.shake),
     numbers: bool(o.numbers, d.numbers),
-    ultKey: o.ultKey === 't' || o.ultKey === 'shift' || o.ultKey === 'rmb' ? o.ultKey : 'f',
-    skill4Key: o.skill4Key === 'v' || o.skill4Key === 'z' || o.skill4Key === 'x' ? o.skill4Key : 'c',
+    ultKey:
+      o.ultKey === "t" || o.ultKey === "shift" || o.ultKey === "rmb"
+        ? o.ultKey
+        : "f",
+    skill4Key:
+      o.skill4Key === "v" || o.skill4Key === "z" || o.skill4Key === "x"
+        ? o.skill4Key
+        : "c",
     lefty: bool(o.lefty, d.lefty),
     rotateSeen: bool(o.rotateSeen, d.rotateSeen),
   };
@@ -125,25 +166,42 @@ export function validateSettings(v: unknown): Settings {
 /** An item from a save, or null when it can't be trusted. Values are clamped to what the item level allows. */
 export function validateItem(v: unknown): Item | null {
   const o = obj(v);
-  if (!o || typeof o.base !== 'string' || typeof o.uid !== 'string') return null;
+  if (!o || typeof o.base !== "string" || typeof o.uid !== "string")
+    return null;
   const authored = ITEM_DEFS[o.base];
   const base = BASE_DEFS[o.base];
   if (!authored && !base) return null;
   const il = int(o.il, 1, 70, 1);
-  const r = authored ? authored.rarity : RARITIES.includes(o.r as never) ? (o.r as Item['r']) : 'common';
-  if (!authored && (r === 'epic' || r === 'legendary')) return null;
+  const r = authored
+    ? authored.rarity
+    : RARITIES.includes(o.r as never)
+      ? (o.r as Item["r"])
+      : "common";
+  if (!authored && (r === "epic" || r === "legendary")) return null;
   const item: Item = { uid: o.uid.slice(0, 24), base: o.base, r, il, st: [] };
   if (!authored && Array.isArray(o.st)) {
     for (const pair of o.st.slice(0, 4)) {
-      if (!Array.isArray(pair) || typeof pair[0] !== 'string' || !(pair[0] in STAT_ROLL)) continue;
+      if (
+        !Array.isArray(pair) ||
+        typeof pair[0] !== "string" ||
+        !(pair[0] in STAT_ROLL)
+      )
+        continue;
       const k = pair[0] as StatKey;
       const roll = STAT_ROLL[k];
       const ceiling = (roll.base + roll.per * il) * 1.45 * 1.25 + 1;
       item.st.push([k, num(pair[1], 0, roll.max ?? ceiling, 0)]);
     }
   }
-  if (!authored && typeof o.sm === 'number' && Number.isInteger(o.sm) && MINOR_MODS[o.sm] && r === 'rare') item.sm = o.sm;
-  if (!authored && typeof o.n === 'string') item.n = o.n.slice(0, 48);
+  if (
+    !authored &&
+    typeof o.sm === "number" &&
+    Number.isInteger(o.sm) &&
+    MINOR_MODS[o.sm] &&
+    r === "rare"
+  )
+    item.sm = o.sm;
+  if (!authored && typeof o.n === "string") item.n = o.n.slice(0, 48);
   if (o.fresh === true) item.fresh = true;
   return item;
 }
@@ -155,7 +213,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   const level = int(o.level, 1, MAX_LEVEL, 1);
   const c: Character = {
     id: `hero${slot}`,
-    name: str(o.name, 16, 'Hero').trim() || 'Hero',
+    name: str(o.name, 16, "Hero").trim() || "Hero",
     cls,
     level,
     xp: level >= MAX_LEVEL ? 0 : int(o.xp, 0, xpToNext(level) - 1, 0),
@@ -163,9 +221,16 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     shards: int(o.shards, 0, 99, 0),
     marks: int(o.marks, 0, 1e6, 0),
     restock: int(o.restock, 0, 1e6, 0),
-    sold: Array.isArray(o.sold) ? o.sold.filter((x): x is string => typeof x === 'string' && x.length <= 24).slice(0, 80) : [],
+    sold: Array.isArray(o.sold)
+      ? o.sold
+          .filter((x): x is string => typeof x === "string" && x.length <= 24)
+          .slice(0, 80)
+      : [],
     talents: {},
-    spec: level >= SPEC_LEVEL && (o.spec === 0 || o.spec === 1 || o.spec === 2) ? o.spec : null,
+    spec:
+      level >= SPEC_LEVEL && (o.spec === 0 || o.spec === 1 || o.spec === 2)
+        ? o.spec
+        : null,
     skills: [null, null, null, null],
     equip: {},
     bag: [],
@@ -176,7 +241,15 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     bosses: {},
     clears: {},
     opened: [],
-    perks: Array.isArray(o.perks) ? [...new Set(o.perks.filter((x): x is PerkId => typeof x === 'string' && x in PERKS))] : [],
+    perks: Array.isArray(o.perks)
+      ? [
+          ...new Set(
+            o.perks.filter(
+              (x): x is PerkId => typeof x === "string" && x in PERKS,
+            ),
+          ),
+        ]
+      : [],
     stats: { kills: 0, deaths: 0, time: 0, runs: 0, bestRun: 0 },
     created: int(o.created, 0, 4e12, Date.now()),
     updated: int(o.updated, 0, 4e12, Date.now()),
@@ -199,7 +272,13 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   if (Array.isArray(o.skills)) {
     // three slots before blueprint V2.9: the fourth comes in empty (and fills with the next skill learned)
     o.skills.slice(0, 4).forEach((id, i) => {
-      if (typeof id === 'string' && learned.includes(id) && SKILLS[id] && !c.skills.includes(id)) c.skills[i] = id;
+      if (
+        typeof id === "string" &&
+        learned.includes(id) &&
+        SKILLS[id] &&
+        !c.skills.includes(id)
+      )
+        c.skills[i] = id;
     });
     // a three-slot save: the new slot takes a learned skill that wasn't on the bar, if there is one
     if (o.skills.length < 4) autoSlotSkills(c);
@@ -216,7 +295,8 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     const item = validateItem(eq[slot]);
     if (!item) continue;
     const cls2 = itemClass(item);
-    if (itemSlot(item) === slot && (!cls2 || cls2 === cls)) c.equip[slot as SlotId] = unique(item);
+    if (itemSlot(item) === slot && (!cls2 || cls2 === cls))
+      c.equip[slot as SlotId] = unique(item);
     else c.bag.push(unique(item));
   }
   if (Array.isArray(o.bag)) {
@@ -230,18 +310,48 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   for (const [id, entry] of Object.entries(q)) {
     const e = obj(entry);
     if (!QUEST_DEFS[id] || !e) continue;
-    c.quests[id] = { state: e.state === 'done' ? 'done' : e.state === 'offered' ? 'offered' : 'active', n: int(e.n, 0, 1e6, 0) };
+    c.quests[id] = {
+      state:
+        e.state === "done"
+          ? "done"
+          : e.state === "offered"
+            ? "offered"
+            : "active",
+      n: int(e.n, 0, 1e6, 0),
+    };
   }
-  if (Array.isArray(o.unlocked)) for (const r of o.unlocked) if (typeof r === 'string' && r in REGIONS && !c.unlocked.includes(r as RegionId)) c.unlocked.push(r as RegionId);
+  if (Array.isArray(o.unlocked))
+    for (const r of o.unlocked)
+      if (
+        typeof r === "string" &&
+        r in REGIONS &&
+        !c.unlocked.includes(r as RegionId)
+      )
+        c.unlocked.push(r as RegionId);
   // quests of the zones the hero has been to start once those are known
   startQuests(c);
-  for (const key of ['bosses', 'clears'] as const) {
+  for (const key of ["bosses", "clears"] as const) {
     const m = obj(o[key]) ?? {};
-    for (const [k, n] of Object.entries(m).slice(0, 200)) if (/^[a-z0-9:-]{1,32}$/.test(k)) c[key][k] = int(n, 0, 1e6, 0);
+    for (const [k, n] of Object.entries(m).slice(0, 200))
+      if (/^[a-z0-9:-]{1,32}$/.test(k)) c[key][k] = int(n, 0, 1e6, 0);
   }
-  if (Array.isArray(o.opened)) c.opened = [...new Set(o.opened.filter((x): x is string => typeof x === 'string' && /^[a-z0-9:-]{1,48}$/.test(x)))].slice(0, 600);
+  if (Array.isArray(o.opened))
+    c.opened = [
+      ...new Set(
+        o.opened.filter(
+          (x): x is string =>
+            typeof x === "string" && /^[a-z0-9:-]{1,48}$/.test(x),
+        ),
+      ),
+    ].slice(0, 600);
   const s = obj(o.stats) ?? {};
-  c.stats = { kills: int(s.kills, 0, 1e9, 0), deaths: int(s.deaths, 0, 1e9, 0), time: int(s.time, 0, 1e10, 0), runs: int(s.runs, 0, 1e9, 0), bestRun: int(s.bestRun, 0, 1e9, 0) };
+  c.stats = {
+    kills: int(s.kills, 0, 1e9, 0),
+    deaths: int(s.deaths, 0, 1e9, 0),
+    time: int(s.time, 0, 1e10, 0),
+    runs: int(s.runs, 0, 1e9, 0),
+    bestRun: int(s.bestRun, 0, 1e9, 0),
+  };
   return c;
 }
 
@@ -251,11 +361,16 @@ function talentsLegal(c: Character): boolean {
   if (!spent) return true;
   if (c.spec === null) return false;
   for (const tree of [0, 1, 2] as const) {
-    const nodes = TALENTS[c.cls].filter((n) => n.tree === tree && (c.talents[n.id] ?? 0) > 0);
-    if (nodes.length && tree !== c.spec && pointsInTree(c, c.spec) < SPEC_FOCUS) return false;
+    const nodes = TALENTS[c.cls].filter(
+      (n) => n.tree === tree && (c.talents[n.id] ?? 0) > 0,
+    );
+    if (nodes.length && tree !== c.spec && pointsInTree(c, c.spec) < SPEC_FOCUS)
+      return false;
     // each taken row needs the points below it in the same tree
     for (const n of nodes) {
-      const below = TALENTS[c.cls].filter((m) => m.tree === tree && m.row < n.row).reduce((a, m) => a + (c.talents[m.id] ?? 0), 0);
+      const below = TALENTS[c.cls]
+        .filter((m) => m.tree === tree && m.row < n.row)
+        .reduce((a, m) => a + (c.talents[m.id] ?? 0), 0);
       if (below < n.row * ROW_COST) return false;
       if (n.requires && !(c.talents[n.requires] ?? 0)) return false;
     }
@@ -263,10 +378,45 @@ function talentsLegal(c: Character): boolean {
   return true;
 }
 
+/** Quests added in front of ones that already existed (save version 4). */
+const ACT_ONE_BEATS = [
+  "mill-the-bridge",
+  "reed-bring-them-home",
+  "camp-grain",
+  "camp-healers",
+  "gull-the-slip",
+  "hearth-the-riders-come",
+  "hearth-hold-the-wall",
+  "hearth-the-ram",
+  "hearth-the-shrine",
+];
+
+/**
+ * New quests put in front of old ones: each counts as done for a hero who has started anything that
+ * comes after it (along the chain, so a hero past the end of a run of new beats has played them all).
+ */
+function playedBefore(quests: Record<string, unknown>, ids: string[]): void {
+  const started = (id: string): boolean => !!obj(quests[id])?.state;
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const id of ids) {
+      if (started(id)) continue;
+      if (
+        !Object.values(QUEST_DEFS).some(
+          (q) => q.after?.includes(id) && started(q.id),
+        )
+      )
+        continue;
+      quests[id] = { state: "done", n: 1 };
+      changed = true;
+    }
+  }
+}
+
 /** Brings an older save up to date. Returns null for something that is not a Sigilfall save. */
 export function migrate(raw: unknown): SaveFile | null {
   const o = obj(raw);
-  if (!o || typeof o.v !== 'number') return null;
+  if (!o || typeof o.v !== "number") return null;
   // version 2: three talent trees and specializations replaced the two old trees; every hero gets
   // their points back (talents open at level 10 now, with the specialization)
   if (o.v === 1) {
@@ -286,21 +436,46 @@ export function migrate(raw: unknown): SaveFile | null {
       const hero = obj(h);
       const quests = hero ? obj(hero.quests) : null;
       if (!hero || !quests) continue;
-      const state = (id: string): string | undefined => obj(quests[id])?.state as string | undefined;
+      const state = (id: string): string | undefined =>
+        obj(quests[id])?.state as string | undefined;
       const done = (id: string): void => {
-        if (!quests[id]) quests[id] = { state: 'done', n: 1 };
+        if (!quests[id]) quests[id] = { state: "done", n: 1 };
       };
-      if (state('first-steps')) done('briar-dusk');
-      if (state('first-dodge') === 'done') done('briar-the-seal');
-      if (state('the-warden') || state('close-the-rift')) for (const id of ['briar-nightfall', 'briar-the-inn', 'briar-hold-the-door', 'briar-below']) done(id);
+      if (state("first-steps")) done("briar-dusk");
+      if (state("first-dodge") === "done") done("briar-the-seal");
+      if (state("the-warden") || state("close-the-rift"))
+        for (const id of [
+          "briar-nightfall",
+          "briar-the-inn",
+          "briar-hold-the-door",
+          "briar-below",
+        ])
+          done(id);
     }
     o.v = 3;
+  }
+  // version 4: Act I in the new story. Beats were put into the villages' chains (the mill road, the
+  // abducted brought home, the Defense of Hearthstead, the camp's arrivals); a hero already past one
+  // has played it
+  if (o.v === 3) {
+    for (const h of Array.isArray(o.heroes) ? o.heroes : []) {
+      const quests = obj(obj(h)?.quests);
+      if (quests) playedBefore(quests, ACT_ONE_BEATS);
+    }
+    o.v = 4;
   }
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];
   const list = Array.isArray(o.heroes) ? o.heroes : [];
-  for (let i = 0; i < HERO_SLOTS; i++) heroes.push(validateCharacter(list[i], i));
-  return { v: SAVE_VERSION, heroes, last: int(o.last, 0, HERO_SLOTS - 1, 0), settings: validateSettings(o.settings), saved: int(o.saved, 0, 4e12, 0) };
+  for (let i = 0; i < HERO_SLOTS; i++)
+    heroes.push(validateCharacter(list[i], i));
+  return {
+    v: SAVE_VERSION,
+    heroes,
+    last: int(o.last, 0, HERO_SLOTS - 1, 0),
+    settings: validateSettings(o.settings),
+    saved: int(o.saved, 0, 4e12, 0),
+  };
 }
 
 /* --------------------------------------------------------------- storage */
@@ -315,8 +490,8 @@ function read(key: string): string | null {
 
 export function storageWorks(): boolean {
   try {
-    const k = 'glitchbound.sigilfall.probe';
-    localStorage.setItem(k, '1');
+    const k = "glitchbound.sigilfall.probe";
+    localStorage.setItem(k, "1");
     localStorage.removeItem(k);
     return true;
   } catch {
@@ -324,12 +499,12 @@ export function storageWorks(): boolean {
   }
 }
 
-function parse(text: string | null): SaveFile | null | 'newer' {
+function parse(text: string | null): SaveFile | null | "newer" {
   if (!text) return null;
   try {
     const raw = JSON.parse(text) as unknown;
     const v = obj(raw)?.v;
-    if (typeof v === 'number' && v > SAVE_VERSION) return 'newer';
+    if (typeof v === "number" && v > SAVE_VERSION) return "newer";
     return migrate(raw);
   } catch {
     return null;
@@ -337,11 +512,11 @@ function parse(text: string | null): SaveFile | null | 'newer' {
 }
 
 export function loadSave(): { save: SaveFile; status: LoadStatus } {
-  if (!storageWorks()) return { save: emptySave(), status: 'blocked' };
+  if (!storageWorks()) return { save: emptySave(), status: "blocked" };
   const main = read(SAVE_KEY) ?? read(OLD_SAVE_KEY);
   const parsed = parse(main);
-  if (parsed === 'newer') return { save: emptySave(), status: 'newer' };
-  if (parsed) return { save: parsed, status: 'ok' };
+  if (parsed === "newer") return { save: emptySave(), status: "newer" };
+  if (parsed) return { save: parsed, status: "ok" };
   const backup = parse(read(BACKUP_KEY) ?? read(OLD_BACKUP_KEY));
   if (main) {
     try {
@@ -350,8 +525,9 @@ export function loadSave(): { save: SaveFile; status: LoadStatus } {
       /* best effort */
     }
   }
-  if (backup && backup !== 'newer') return { save: backup, status: 'recovered' };
-  return { save: emptySave(), status: main ? 'reset' : 'new' };
+  if (backup && backup !== "newer")
+    return { save: backup, status: "recovered" };
+  return { save: emptySave(), status: main ? "reset" : "new" };
 }
 
 /** Writes the save (and the device-only backup). False when storage refused it. */

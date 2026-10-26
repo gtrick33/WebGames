@@ -16,9 +16,9 @@ ROLL BACK.
 | 5 | Spell expansion: the 4th slot (**done**, `0fc10e2b`), 35 new skills, talent mutations, boss partial CC | after 4 |
 | 6 | Wardrobe + first mount | after 5 |
 | 7 | World art in region batches | after 6 |
-| 8 | Quest rewrite by act (QUEST_REWRITE_MAP.md) | Act by act after 7 |
+| 8 | Quest rewrite by act (QUEST_REWRITE_MAP.md) | **Act I done** (this commit): every Vale village changes when saved, its people walk into Briarhollow's camp, the Defense of Hearthstead; Acts II–IV next |
 | 9 | Companions and cinematic staging | with 8 |
-| 10 | Battles and sieges (Defense of Hearthstead, Highwall) | after 9 |
+| 10 | Battles and sieges (Defense of Hearthstead, Highwall) | Hearthstead **done** with Act I (raid, wall, ram); Highwall after 9 |
 | 11–15 | Loot, hubs and interiors, dungeons, endgame, audio/polish | in order |
 | 16 | Full regression and release gate | last |
 
@@ -57,6 +57,26 @@ VFX.
 
 **2e — Evidence**: desktop, phone and tablet screenshots of Briarhollow in each state, the raid, the crypt and the
 Mage's spells; tests for states, events (including reload mid-event), the accept step and the save migration.
+
+## Act I in detail (done)
+
+- **Zone story layer** (`ZoneSpec.story`, `PoiSpec.when`, `HubSpec.when/wall`): generated zones place people,
+  props, fires, plumes and named places near a town, a sight, a house, a walled town's gate or the shore,
+  each shown only while its condition holds; packs that the story sends away leave while the hero watches.
+- **Event kinds**: `arrival` (people walk into the camp along the roads and become its NPCs); siege enemies
+  (`siege`) that go for the gate and nothing else; companions stay to say their last lines.
+- **Fernstead**: the Harvest Stones fouled with grieflight until held (`fern-stones`, defend the stone), then
+  lit; the barrows quiet after the Grey Lady; rangers to the camp's watchfire (`camp-scouts`).
+- **Millbrook**: the gang's blockade at the mill until broken with Sefa and the militia (`mill-the-bridge`),
+  the barricade burns; Nyx reads the cipher for Pim (cameo); grain carts and Tobin's hens (`camp-grain`).
+- **Reedwater**: wells reek of marsh-rot until Mire falls; the abducted led home (`reed-bring-them-home`,
+  rescue across the marsh) and stand in the square after; healers to the camp (`camp-healers`).
+- **Gullport**: the cove held, then abandoned; the drowned come for the Patience (`gull-the-slip`); the forge
+  to the camp (`camp-smiths`).
+- **Hearthstead**: a walled town; refugees camped by the road; the picket empties; the Defense
+  (`hearth-the-riders-come`, `hearth-hold-the-wall`, `hearth-the-ram`), the empty shrine, Vosk's orders read
+  by Gaius; Dunmore's riders to the camp (`camp-riders`).
+- Save v4: a hero already past an inserted beat has played it.
 
 ## Rules carried through every phase
 
