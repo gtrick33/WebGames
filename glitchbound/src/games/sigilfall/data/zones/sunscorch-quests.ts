@@ -16,7 +16,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     giver: 'regent-elowen',
     text: 'One mark on Corvane’s map lies far to the east, in the Sunscorch Expanse: the Sigil of the Sun, buried a thousand years ago with the Sun King, greatest of the old desert kings, in a tomb nobody has found since. The Legion is already digging for it. Take the east road down out of Ironpeak into the sands and find Oasis-keeper Sefu at the Oasis of Ras.',
     objective: { kind: 'talk', npc: 'oasis-keeper-sefu', label: 'Talk to Oasis-keeper Sefu at the Oasis of Ras' },
-    after: ['the-kings-design'],
+    after: ['festival-the-champion'],
     level: 30,
     reward: { xp: 850, gold: 260 },
   },

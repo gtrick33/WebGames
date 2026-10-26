@@ -63,6 +63,16 @@ export const PETS: Record<string, PetDef> = {
   'harvest-stone': { id: 'harvest-stone', name: 'The Harvest Stone', sprite: 'villager', look: 'stone', hp: 2, dmg: 0, dmgType: 'physical', speed: 0, radius: 8, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   'ines-boat': { id: 'ines-boat', name: 'The Patience', sprite: 'villager', look: 'boat', hp: 2.2, dmg: 0, dmgType: 'physical', speed: 0, radius: 12, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   'hearth-gate': { id: 'hearth-gate', name: 'Hearthstead’s gate', sprite: 'villager', look: 'gate', hp: 3, dmg: 0, dmgType: 'physical', speed: 0, radius: 14, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
+  // Act II: the companions met on the road to the Crown City (STORY_BIBLE.md §2), and what they guard
+  nyx: { id: 'nyx', name: 'Nyx', sprite: 'villager', look: 'nyx', hp: 0.7, dmg: 0.6, dmgType: 'physical', speed: 112, radius: 5, reach: 18, ranged: false, attackCd: 0.6, taunt: false },
+  cael: { id: 'cael', name: 'Cael Varrow', sprite: 'villager', look: 'cael-varrow', hp: 1.3, dmg: 0.55, dmgType: 'physical', speed: 88, radius: 7, reach: 22, ranged: false, attackCd: 1.1, taunt: true },
+  orren: { id: 'orren', name: 'Brother Orren', sprite: 'villager', look: 'brother-orren', hp: 0.7, dmg: 0.45, dmgType: 'holy', speed: 76, radius: 5, reach: 120, ranged: true, attackCd: 1.4, taunt: false, shot: 'holy' },
+  'dwarf-carter': { id: 'dwarf-carter', name: 'Kragholt carter', sprite: 'villager', look: 'dwarf-carter', hp: 1, dmg: 0, dmgType: 'physical', speed: 60, radius: 5, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
+  refugee: { id: 'refugee', name: 'Refugee', sprite: 'villager', look: 'refugee', hp: 1, dmg: 0, dmgType: 'physical', speed: 62, radius: 4, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
+  'refugee-wagon': { id: 'refugee-wagon', name: 'The refugee wagon', sprite: 'villager', look: 'wagon', hp: 2.6, dmg: 0, dmgType: 'physical', speed: 34, radius: 6, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
+  'nyx-at-the-lock': { id: 'nyx-at-the-lock', name: 'Nyx, at the lock', sprite: 'villager', look: 'nyx', hp: 1.1, dmg: 0, dmgType: 'physical', speed: 0, radius: 5, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
+  regent: { id: 'regent', name: 'Regent Elowen', sprite: 'villager', look: 'regent-elowen', hp: 2.4, dmg: 0, dmgType: 'physical', speed: 0, radius: 6, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
+  'great-lamp': { id: 'great-lamp', name: 'The Great Lamp', sprite: 'villager', look: 'lantern', hp: 2.2, dmg: 0, dmgType: 'physical', speed: 0, radius: 7, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   treant: { id: 'treant', name: 'Treant', sprite: 'treant', hp: 0.3, dmg: 0.35, dmgType: 'nature', speed: 75, radius: 6, reach: 16, ranged: false, attackCd: 1.1, taunt: true },
 };
 

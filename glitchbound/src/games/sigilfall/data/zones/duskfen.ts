@@ -1,3 +1,4 @@
+import { after, during, not, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -18,6 +19,8 @@ export const DUSKFEN = wildRegion(
     safe: false,
     music: 'forest',
     blurb: 'Green water, sick villages and the cistern where the Rot-Mother stirs her pot.',
+    // Low Wick's plague houses burn the day the cure is in the water
+    states: [{ id: 'low-wick-burns', when: during('low-wick-fires'), burning: true }],
   },
   {
     w: 150,
@@ -28,11 +31,11 @@ export const DUSKFEN = wildRegion(
     forest: 0.28,
     scatter: { trees: 1.8, bushes: 2, rocks: 0.4, flowers: 3 },
     water: { kind: 'lakes', amount: 0.55 },
-    hubs: [{ at: [0.78, 0.34], npcs: ['healer-osk', 'brother-wendel', 'mags'], houses: 5 }],
+    hubs: [{ at: [0.78, 0.34], npcs: ['healer-osk', 'brother-wendel', 'mags'], houses: 5, when: { 'healer-osk': not(during('low-wick-fires')) } }],
     exits: [{ side: 'e', at: 0.5, to: 'greyfen', label: 'East causeway to Greyfen' }],
     pois: [
       // the first village to sicken
-      { at: [0.84, 0.7], r: 10, kind: 'ruin', packs: [['plague-ghoul', 'plague-ghoul'], ['plaguebearer', 'plague-ghoul'], ['bloated-corpse', 'plague-ghoul', 'plaguebearer']], chest: 'common', spot: { id: 'low-wick', name: 'Low Wick' } },
+      { at: [0.84, 0.7], r: 10, kind: 'ruin', packs: [['plague-ghoul', 'plague-ghoul'], ['plaguebearer', 'plague-ghoul'], ['bloated-corpse', 'plague-ghoul', 'plaguebearer']], chest: 'common', spot: { id: 'low-wick', name: 'Low Wick' }, when: until('the-rot-mother') },
       // where the plague crows bring what they steal
       { at: [0.55, 0.13], r: 9, kind: 'nest', packs: [['plague-crow', 'plague-crow'], ['plague-crow', 'plague-crow', 'plague-crow']], spot: { id: 'carrion-nest', name: 'Carrion Nest' } },
       // the trolls' wallow, and Bogmaw on his heap of salvage
@@ -50,5 +53,26 @@ export const DUSKFEN = wildRegion(
       { band: [0.35, 1], packs: [['plaguebearer', 'plague-ghoul', 'plague-ghoul'], ['bloated-corpse', 'bloated-corpse', 'plague-ghoul'], ['swamp-troll'], ['rot-sister', 'plague-ghoul', 'plague-ghoul'], ['plague-crow', 'plague-crow', 'plague-crow']] },
     ],
     wildCount: 52,
+    story: [
+      // the causeway road the refugee wagon takes to Stilt Hollow
+      { near: 'exit:greyfen', dx: -2, marker: { kind: 'place', id: 'dusk-causeway' } },
+      { near: 'hub', dy: 4, marker: { kind: 'place', id: 'dusk-stilt' } },
+      // the refugees camped in Stilt Hollow once they're through, and Nyx waiting for them
+      { near: 'hub', dx: -8, dy: 6, marker: { kind: 'prop', prop: 'tent', solid: true }, when: after('the-sick-villages') },
+      { near: 'hub', dx: -11, dy: 4, marker: { kind: 'prop', prop: 'tent', solid: true }, when: after('the-sick-villages') },
+      { near: 'hub', dx: -9, dy: 3, marker: { kind: 'prop', prop: 'cart', solid: true }, when: after('the-sick-villages') },
+      { near: 'hub', dx: -10, dy: 6, marker: { kind: 'prop', prop: 'campfire', solid: true }, when: after('the-sick-villages') },
+      { near: 'hub', dx: 5, dy: 5, marker: { kind: 'npc', npc: 'nyx' }, when: during('nyx-joins') },
+      // Low Wick: a plague-green haze until the cure, its houses burned after, and its people back under canvas
+      { near: 'low-wick', dx: -2, marker: { kind: 'wisp', color: '#a8c84a', size: 2 }, when: until('the-rot-mother') },
+      { near: 'low-wick', dx: 3, dy: 2, marker: { kind: 'wisp', color: '#a8c84a', size: 1 }, when: until('the-rot-mother') },
+      { near: 'low-wick', dx: -4, dy: -2, marker: { kind: 'fire', size: 3 } },
+      { near: 'low-wick', dx: 2, dy: -3, marker: { kind: 'fire', size: 2 } },
+      { near: 'low-wick', dx: 4, dy: 1, marker: { kind: 'fire', size: 3 } },
+      { near: 'low-wick', dx: -1, dy: 3, marker: { kind: 'npc', npc: 'healer-osk' }, when: during('low-wick-fires') },
+      { near: 'low-wick', dx: -3, dy: 4, marker: { kind: 'prop', prop: 'debris' }, when: after('low-wick-fires') },
+      { near: 'low-wick', dx: 3, dy: 4, marker: { kind: 'prop', prop: 'tent', solid: true }, when: after('low-wick-fires') },
+      { near: 'low-wick', dx: 1, dy: 5, marker: { kind: 'npc', npc: 'low-wick-ada' }, when: after('low-wick-fires') },
+    ],
   },
 );

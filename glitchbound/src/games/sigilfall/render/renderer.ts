@@ -67,6 +67,9 @@ const PROJECTILE_COLORS: Record<string, [string, string]> = {
   starsurge: ['#ff8ad8', '#ffffff'],
 };
 
+/** Wards drawn as the thing itself (others, like a person at a lock, are drawn as people). */
+const WARD_LOOKS = new Set(['door', 'gate', 'stone', 'boat', 'wagon', 'lantern']);
+
 /** Props that light the dark around them (radius in world px). */
 const LIGHTS: Record<string, number> = { lamp: 54, campfire: 70, 'iron-torch': 46, lantern: 40 };
 
@@ -332,6 +335,16 @@ export class Renderer {
       g.fillRect(ox, oy, this.vw, this.vh);
       g.globalAlpha = 0.1;
       g.fillStyle = '#5a2a6a';
+      g.fillRect(ox, oy, this.vw, this.vh);
+      g.globalAlpha = 1;
+    }
+    // the lamps are out: a cold, early dark over the land (not night; the way is still seen)
+    if (w.storyState?.gloom) {
+      g.globalAlpha = 0.3;
+      g.fillStyle = '#2a2440';
+      g.fillRect(ox, oy, this.vw, this.vh);
+      g.globalAlpha = 0.08;
+      g.fillStyle = '#8a7ac8';
       g.fillRect(ox, oy, this.vw, this.vh);
       g.globalAlpha = 1;
     }
@@ -900,7 +913,8 @@ export class Renderer {
 
   private drawPet(pet: Pet, time: number): void {
     const g = this.g;
-    if (pet.def.role === 'ward') {
+    // things to hold (a door, a gate, a wagon) are drawn as themselves; a person holding a lock is a person
+    if (pet.def.role === 'ward' && WARD_LOOKS.has(pet.def.look ?? 'door')) {
       this.drawWard(pet, time);
       return;
     }
@@ -949,6 +963,8 @@ export class Renderer {
     if (pet.def.look === 'gate') return this.drawGate(x + shake, y, k);
     if (pet.def.look === 'stone') return this.drawStone(x + shake, y, k, time);
     if (pet.def.look === 'boat') return this.drawBoat(x + shake, y, k);
+    if (pet.def.look === 'wagon') return this.drawWagon(x + shake, y, k, pet.walkT, pet.vx < -1);
+    if (pet.def.look === 'lantern') return this.drawLamp(x + shake, y, k, time);
     g.fillStyle = 'rgba(0,0,0,0.3)';
     g.fillRect(x - 11, y + 3, 22, 4);
     g.fillStyle = '#3a2a1c';
@@ -1013,6 +1029,69 @@ export class Renderer {
     g.fillRect(x - 3, y - 17, 1, 9);
     g.fillRect(x - 2, y - 9, 4, 1);
     g.fillRect(x + 2, y - 14, 1, 6);
+    g.globalAlpha = 1;
+  }
+
+  /** A covered refugee wagon: canvas over hoops, a plank bed, wheels that turn as it rolls. */
+  private drawWagon(x: number, y: number, k: number, roll: number, left: boolean): void {
+    const g = this.g;
+    const f = left ? -1 : 1;
+    g.fillStyle = 'rgba(0,0,0,0.3)';
+    g.fillRect(x - 17, y + 3, 34, 4);
+    // the bed and the shaft
+    g.fillStyle = '#6a4a2c';
+    g.fillRect(x - 15, y - 8, 30, 6);
+    g.fillStyle = '#4a3220';
+    g.fillRect(x + f * 15 - (left ? 8 : 0), y - 5, 8, 2);
+    // the canvas, patched and greying as it takes blows
+    g.fillStyle = k > 0.5 ? '#e8e0cc' : k > 0.25 ? '#c8c0aa' : '#a8a08a';
+    g.beginPath();
+    g.moveTo(x - 14, y - 8);
+    g.quadraticCurveTo(x - 14, y - 24, x, y - 24);
+    g.quadraticCurveTo(x + 14, y - 24, x + 14, y - 8);
+    g.closePath();
+    g.fill();
+    g.fillStyle = '#b8a888';
+    for (const hx of [-8, 0, 8]) g.fillRect(x + hx, y - 22, 1, 14);
+    if (k < 0.6) {
+      g.fillStyle = '#8a7a5a';
+      g.fillRect(x - 6, y - 17, 5, 4);
+    }
+    // wheels: a spoke turns with the rolling
+    for (const wx of [-10, 10]) {
+      g.fillStyle = '#3a2614';
+      g.beginPath();
+      g.arc(x + wx, y - 1, 4.5, 0, TAU);
+      g.fill();
+      g.fillStyle = '#8a6a44';
+      g.beginPath();
+      g.arc(x + wx, y - 1, 3, 0, TAU);
+      g.fill();
+      const a = roll * 6;
+      g.strokeStyle = '#3a2614';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(x + wx - Math.cos(a) * 3, y - 1 - Math.sin(a) * 3);
+      g.lineTo(x + wx + Math.cos(a) * 3, y - 1 + Math.sin(a) * 3);
+      g.stroke();
+    }
+  }
+
+  /** Lantern Hill's great lamp on its iron post: it burns brighter as it is relit, and gutters when struck. */
+  private drawLamp(x: number, y: number, k: number, time: number): void {
+    const g = this.g;
+    g.fillStyle = 'rgba(0,0,0,0.3)';
+    g.fillRect(x - 6, y + 2, 12, 3);
+    g.fillStyle = '#2e2a34';
+    g.fillRect(x - 1, y - 26, 3, 28);
+    g.fillRect(x - 5, y, 11, 2);
+    g.fillRect(x - 6, y - 30, 13, 2);
+    g.fillStyle = '#4a4452';
+    g.fillRect(x - 5, y - 28, 11, 9);
+    const flick = 0.75 + Math.sin(time * 9) * 0.15 + Math.sin(time * 23) * 0.08;
+    g.globalAlpha = Math.max(0.2, k) * flick;
+    g.fillStyle = '#ffd27a';
+    g.fillRect(x - 4, y - 27, 9, 7);
     g.globalAlpha = 1;
   }
 
@@ -1956,6 +2035,8 @@ export class Renderer {
     // a village at night: burning roofs, lamps and cookfires
     for (const f of w.fires) hole(f.x, f.y, 40 + f.size * 22 + Math.sin(time * 7 + f.x) * 4, 0.95);
     for (const pr of w.props) if (LIGHTS[pr.prop]) hole(pr.x, pr.y - 6, LIGHTS[pr.prop]!, 0.85);
+    // a lamp being relit pushes the dark back as it takes
+    for (const pet of w.pets) if (!pet.dead && pet.def.look === 'lantern') hole(pet.x, pet.y - 24, 40 + 70 * (pet.hp / pet.maxHp), 0.9);
     for (const ws of w.waystones) hole(ws.x, ws.y - 10, 40, 0.6);
     for (const pr of w.projectiles) if (!pr.hostile || pr.look === 'riftOrb' || pr.look === 'skull') hole(pr.x, pr.y, pr.hostile ? 16 : 22, 0.8);
     for (const f of w.fields) hole(f.x, f.y, f.r + 10, 0.5);

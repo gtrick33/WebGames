@@ -128,6 +128,7 @@ function plan(): CityPlan {
     ['briar-infirmary', 16, 29],
     ['briar-forge', 56, 27],
     ['briar-riders', 42, 29],
+    ['briar-dwarves', 42, 36],
   ] as const)
     c.marker(x, y, { kind: 'place', id });
 
@@ -192,6 +193,11 @@ function plan(): CityPlan {
   c.prop('flag', 41, 28, true, is('camp-riders', 'done'));
   c.prop('blue-banner', 44, 28, true, is('camp-riders', 'done'));
   c.npc('rider-alder', 42, 29, all(is('camp-riders', 'done'), CALM));
+  // Kragholt's dwarf-steel and Brenna's apprentice, beside the Elder's hall (Act II)
+  c.prop('anvil', 44, 36, true, is('camp-dwarves', 'done'));
+  c.prop('crate', 40, 36, true, is('camp-dwarves', 'done'));
+  c.prop('blue-banner', 41, 34, true, is('camp-dwarves', 'done'));
+  c.npc('dwarf-tova', 42, 36, all(is('camp-dwarves', 'done'), CALM));
   c.marker(32, 12, { kind: 'start' });
   return c;
 }
@@ -215,7 +221,7 @@ export const BRIARHOLLOW: RegionDef = {
   placed: built.placed,
   holds: {
     exits: ['whisperwood', 'brackenridge', 'thornvale', 'crypt'],
-    npcs: ['mara-venn', 'maren', 'old-haldor', 'herbwife-thessa', 'smith-hollin', 'trader-ilse', 'goodwife-bramble', 'elyra', 'oskar-fell', 'ranger-cole', 'carter-wenna', 'healer-brisa', 'forgewife-runa', 'rider-alder'],
+    npcs: ['mara-venn', 'maren', 'old-haldor', 'herbwife-thessa', 'smith-hollin', 'trader-ilse', 'goodwife-bramble', 'elyra', 'oskar-fell', 'ranger-cole', 'carter-wenna', 'healer-brisa', 'forgewife-runa', 'rider-alder', 'dwarf-tova'],
     spots: ['briar-crypt-stair'],
   },
   encounters: [],
@@ -468,6 +474,17 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'hearth-the-ram', state: 'done' }, lines: ['An ashen ram, they say. Bones and a beam. Next time, bring me a piece. I want to know what it’s lashed with.'] },
       { lines: ['Gullport’s forge, two apprentices and a cart of powder kegs. Hollin and I have agreed not to touch each other’s anvils.', 'Quill says the drowned have ships now. Then they’ll need fighting at sea, and that takes iron. Buy something.'] },
+    ],
+  },
+  'dwarf-tova': {
+    id: 'dwarf-tova',
+    name: 'Tova Brightanvil',
+    title: 'Brenna’s apprentice, from Kragholt',
+    sprite: 'smith',
+    shop: 'armor',
+    shopName: 'Tova’s Dwarf-Steel',
+    talk: [
+      { lines: ['Brenna says the camp is to have the best steel the Deepforge makes, and that I’m to stay till it’s paid for. It will never be paid for. She knows.', 'Human anvils. So small. So brave.'] },
     ],
   },
   'rider-alder': {

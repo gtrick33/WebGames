@@ -17,7 +17,7 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     giver: 'regent-elowen',
     text: 'Corvane’s map puts the Sigil of Frost under the ice of Rimeheld, in a vault the Sigil-wardens sealed and the north forgot. The Legion has the same map. Frostgate stands between that vault and the rest of the world, and its jarl, Sigrun, owes Emberwick nothing at all. Take the west road through the Glimmerwood into Rimeheld Tundra, find Jarl Sigrun in Frostgate, and be polite.',
     objective: { kind: 'talk', npc: 'jarl-sigrun', label: 'Talk to Jarl Sigrun in Frostgate' },
-    after: ['the-kings-design'],
+    after: ['festival-the-champion'],
     level: 33,
     reward: { xp: 800, gold: 280 },
   },

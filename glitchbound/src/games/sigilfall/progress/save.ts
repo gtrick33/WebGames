@@ -28,7 +28,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -265,6 +265,8 @@ function talentsLegal(c: Character): boolean {
 
 /** Quests added in front of ones that already existed (save version 4). */
 const ACT_ONE_BEATS = ['mill-the-bridge', 'reed-bring-them-home', 'camp-grain', 'camp-healers', 'gull-the-slip', 'hearth-the-riders-come', 'hearth-hold-the-wall', 'hearth-the-ram', 'hearth-the-shrine'];
+/** Quests added in front of ones that already existed (save version 5). */
+const ACT_TWO_BEATS = ['nyx-joins', 'nyx-the-back-door', 'orren-the-last-chapel', 'the-last-lamp', 'cael-the-hostel', 'city-the-treasury', 'city-the-roads-office', 'city-the-cellar', 'festival-the-lanterns', 'festival-the-knives', 'festival-the-catacombs', 'festival-the-champion'];
 
 /**
  * New quests put in front of old ones: each counts as done for a hero who has started anything that
@@ -325,6 +327,15 @@ export function migrate(raw: unknown): SaveFile | null {
       if (quests) playedBefore(quests, ACT_ONE_BEATS);
     }
     o.v = 4;
+  }
+  // version 5: Act II in the new story (Nyx joins, Lantern Hill's vigil and Cael, the Crown City's
+  // traitor and the Starfall Festival): the same rule
+  if (o.v === 4) {
+    for (const h of Array.isArray(o.heroes) ? o.heroes : []) {
+      const quests = obj(obj(h)?.quests);
+      if (quests) playedBefore(quests, ACT_TWO_BEATS);
+    }
+    o.v = 5;
   }
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];

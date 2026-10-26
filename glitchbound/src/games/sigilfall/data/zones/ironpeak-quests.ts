@@ -1,21 +1,24 @@
-import type { NpcDef, QuestDef } from '../types';
+import type { NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
- * Kragholt's people and the Ironpeak Highlands' quests (see WORLD.md). The Hollow Legion has taken the
- * dwarves' Deepforge and makes bone-steel there: iron from the quarry, bones from the dwarves' own
- * tombs, and Forgemaster Grold, Kragholt's best smith, at the anvil for the Hollow King. The main
- * chain runs from the quarry to the Deepforge's heart, where the Sigil of Stone lies; Hilda and Oz
- * have troubles of their own, with rams and griffons. Main chain first.
+ * Kragholt's people and the Ironpeak Highlands' quests (Act II, STORY_BIBLE.md §3, "The mountain pass").
+ * The Ashen Host has taken the dwarves' Deepforge and made it a toll fortress on the only pass north: it
+ * takes a cut of everything that moves and lets nothing pass it doesn't like, and makes bone-steel there
+ * from the quarry's iron, the dwarves' own honored dead, and Forgemaster Grold at the anvil. Vosk carried
+ * Hearthstead's stone here, to be fused back into the Sigil of Stone in the forge's heart. Nyx gets the
+ * hero in by the back way; the chain runs from the quarry to the forge's heart, and when Grold falls the
+ * pass opens, the dwarves' banners go back up and Brenna's steel goes to Briarhollow. Hilda and Oz have
+ * troubles of their own, with rams and griffons. Main chain first.
  */
 export const IRONPEAK_QUESTS: QuestDef[] = [
   /* ---------------------------------------------------------- the way in */
   {
     id: 'the-dwarves-plea',
     name: 'The Dwarves’ Plea',
-    giver: 'marshal-dunmore',
-    text: 'The Legion’s orders were plain: bone-steel from the Deepforge, as much as it can make. The Deepforge is the dwarves’ great forge in the Ironpeak Highlands, and Kragholt’s thane has written to Marshal Dunmore for help the marshal can’t spare. You, he can. Take the road north into the mountains and find Thane Borrik in Kragholt.',
+    giver: 'nyx',
+    text: 'Vosk carried Hearthstead’s stone to the Deepforge, the dwarves’ great forge in the Ironpeak Highlands, and the Host holds it now as a toll fortress on the only pass north. Kragholt’s thane has written to Marshal Dunmore for help the marshal can’t spare. Nyx says she knows a back way into anything dwarves have built. Take the road north into the mountains and find Thane Borrik in Kragholt.',
     objective: { kind: 'talk', npc: 'thane-borrik', label: 'Talk to Thane Borrik in Kragholt' },
-    after: ['orders-from-the-north'],
+    after: ['nyx-joins'],
     level: 20,
     reward: { xp: 500, gold: 160 },
   },
@@ -81,14 +84,26 @@ export const IRONPEAK_QUESTS: QuestDef[] = [
     zone: 'ironpeak',
     level: 23,
     reward: { xp: 750, gold: 200 },
+  },  {
+    id: 'nyx-the-back-door',
+    name: 'The Back Door',
+    giver: 'nyx',
+    auto: true,
+    text: 'The great doors are barred from inside and the toll-garrison is on the walls. Nyx has found what Borrik’s grandfather never mentioned: a postern in the rock, east of the gate, locked with a dwarf-lock older than the thane. She can open it. It will take a while, and she cannot fight while she does it.',
+    objective: { kind: 'event', event: 'iron-postern', label: 'Keep the garrison off Nyx while she opens the postern' },
+    after: ['the-deepforge-gate'],
+    zone: 'ironpeak',
+    level: 24,
+    reward: { xp: 900, gold: 220, text: '“Done.” The lock clicks. Nyx blows on her fingers. “Nine hundred years old, and it still sulked.”' },
   },
+
   {
     id: 'the-slag-colossus',
     name: 'The Slag Colossus',
     giver: 'thane-borrik',
-    text: 'The gate stands open and the forge’s heat pours out of it. Deep inside, the Legion has been pouring the dead of its bone-yards into the old slag pit with every scrap of iron it could find, and something has climbed out: the Slag Colossus. Go down into the Deepforge Halls and break it.',
+    text: 'The postern is open and the forge’s heat pours out of it. Deep inside, the Host has been pouring the dead of its bone-yards into the old slag pit with every scrap of iron it could find, and something has climbed out: the Slag Colossus. Go down into the Deepforge Halls and break it.',
     objective: { kind: 'boss', boss: 'slag-colossus', label: 'Defeat the Slag Colossus in the Deepforge Halls' },
-    after: ['the-deepforge-gate'],
+    after: ['nyx-the-back-door'],
     zone: 'ironpeak',
     level: 24,
     reward: { xp: 1300, gold: 260, item: { rarity: 'rare' } },
@@ -97,7 +112,7 @@ export const IRONPEAK_QUESTS: QuestDef[] = [
     id: 'forgemaster-grold',
     name: 'Forgemaster Grold',
     giver: 'brenna',
-    text: 'At the bottom of the Deepforge, at the great anvil, Forgemaster Grold still works, and the Hollow King tells him what to make. The Sigil of Stone lies in the forge’s heart, and Grold has been beating bone-steel on it. Brenna asks one thing: that it is you who stops him, not the thane’s axes.',
+    text: 'At the bottom of the Deepforge, at the great anvil, Forgemaster Grold still works, and a voice out of the grieflight tells him what to make. The Sigil of Stone lies in the forge’s heart, and Grold has been hammering Hearthstead’s stone back into it, to make it whole for the Hallow King. Brenna asks one thing: that it is you who stops him, not the thane’s axes.',
     objective: { kind: 'boss', boss: 'forgemaster-grold', label: 'Defeat Forgemaster Grold' },
     after: ['the-slag-colossus'],
     zone: 'ironpeak',
@@ -107,9 +122,20 @@ export const IRONPEAK_QUESTS: QuestDef[] = [
       gold: 700,
       item: 'deepforge-gauntlets',
       perk: 'sigil-stone',
-      text: 'From the forge’s heart you lift the Sigil of Stone, still warm from Grold’s anvil. Brenna lights the Deepforge again, for Kragholt this time, and the first thing she makes in it is for you.',
+      text: 'From the forge’s heart you lift the Sigil of Stone, Hearthstead’s stone already fused into its point and still warm from Grold’s anvil. Vosk is long gone up the pass; the Host will not have this one. Brenna lights the Deepforge again, for Kragholt this time, and the first thing she makes in it is for you.',
     },
+  },  {
+    id: 'camp-dwarves',
+    name: 'Steel for Briarhollow',
+    giver: 'brenna',
+    auto: true,
+    text: 'The Deepforge burns for Kragholt again, and Brenna has sent her best apprentice down the mountain with a cart of dwarf-steel for Briarhollow’s camp. Meet Tova in Briarhollow.',
+    objective: { kind: 'event', event: 'camp-dwarves', label: 'Meet Brenna’s apprentice in Briarhollow' },
+    after: ['forgemaster-grold'],
+    zone: 'briarhollow',
+    reward: { xp: 500, gold: 150, text: 'Dwarf-steel in Briarhollow. Hollin and Runa stand side by side and look at it without speaking for a long time.' },
   },
+
   {
     id: 'the-old-watch',
     name: 'The Old Watch',
@@ -197,7 +223,7 @@ export const IRONPEAK_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-dwarves-plea', state: 'active' },
-        lines: ['Dunmore sent you? Only you? He held the Kragholt road with my father one winter, and he still thinks one good fighter is an army. Well. You’ll have to be.', 'The Hollow Legion took the Deepforge in one night. The dead came up through the ore tunnels. We dug those tunnels. We were very proud of them.'],
+        lines: ['Dunmore’s letter, and only you? He held the Kragholt road with my father one winter, and he still thinks one good fighter is an army. Well. You’ll have to be.', 'The Host took the Deepforge in one night. The dead came up through the ore tunnels. We dug those tunnels. We were very proud of them.', 'Now they charge a toll at our own gate. A toll! To dwarves!'],
       },
       {
         when: { quest: 'the-hollow-quarry', state: 'active' },
@@ -217,9 +243,10 @@ export const IRONPEAK_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-deepforge-gate', state: 'active' },
         lines: ['The Deepforge Gate, north-east, in the mountain’s face. My grandfather hung those doors.', 'If they still stand, I want to know. If they don’t, I want to know who’s standing in them.'],
       },
+      { when: { quest: 'nyx-the-back-door', state: 'active' }, lines: ['The old postern? There’s a postern? Grandfather never told me about a postern.', '…Of course he didn’t. Go. Before I think about who else knows.'] },
       {
         when: { quest: 'the-slag-colossus', state: 'active' },
-        lines: ['The old slag pit. The Legion has been pouring its dead into it, with every scrap of iron it could steal. Last night something climbed out.', 'My grandfather dug that pit for the slag. He’d be appalled. He was appalled by most things, but he’d be right this time.'],
+        lines: ['The old slag pit. The Host has been pouring its dead into it, with every scrap of iron it could steal. Last night something climbed out.', 'My grandfather dug that pit for the slag. He’d be appalled. He was appalled by most things, but he’d be right this time.'],
       },
       {
         when: { quest: 'forgemaster-grold', state: 'active' },
@@ -228,11 +255,11 @@ export const IRONPEAK_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'the-old-watch', state: 'active' }, lines: ['The Old Watch, up on the peaks north of town. Five wardens and a horn.', 'The horn didn’t blow. I want to know why. I suspect I won’t like it.'] },
       {
         when: { quest: 'the-lanterns-dim', state: 'active' },
-        lines: ['My lookouts on the west pass say the lamps on Lantern Hill are going out, one a night. And the Legion’s carts roll west, loaded with my steel.', 'Take the west pass to the Ashen Barrows and find the lamplighter. Find out who’s buying my forge.'],
+        lines: ['My lookouts on the west pass say the lamps on Lantern Hill are going out, one a night. And the Host’s carts roll west, loaded with my steel.', 'Take the west pass to the Ashen Barrows and find the lamplighter. Find out who’s buying my forge.'],
       },
       {
         when: { quest: 'forgemaster-grold', state: 'done' },
-        lines: ['The Deepforge burns again, and it burns for us. Kragholt owes you more than a thane can pay. I’ll pay it anyway. Slowly.', 'Whatever the Hollow King wanted with our sigil, he’ll have to want it.'],
+        lines: ['The Deepforge burns again, and it burns for us. The pass is open and the banners are up. Kragholt owes you more than a thane can pay. I’ll pay it anyway. Slowly.', 'Whatever the Hallow King wanted with our sigil, he’ll have to want it.'],
       },
       { lines: ['Kragholt has stood on this mountain for nine hundred years. It will stand a while yet, if I have anything to say about it. I usually do.', 'Wipe your boots, stranger. The dead never do.'] },
     ],
@@ -310,5 +337,40 @@ export const IRONPEAK_NPCS: Record<string, NpcDef> = {
       },
       { lines: ['I keep the little forge on the square while the big one is… occupied. Hinges, horseshoes, the odd sword.', 'My father was forgemaster of the Deepforge. He went in the night it fell.'] },
     ],
+  },
+};
+
+/** Nyx at the postern lock, and Brenna's steel reaching the camp. */
+export const IRONPEAK_EVENTS: Record<string, StoryEventDef> = {
+  'iron-postern': {
+    id: 'iron-postern',
+    region: 'ironpeak',
+    kind: 'defend',
+    at: 'iron-postern',
+    radius: 9,
+    level: 24,
+    ward: { pet: 'nyx-at-the-lock', at: 'iron-postern', name: 'Nyx, at the lock' },
+    start: [
+      { who: 'nyx-at-the-lock', text: 'Dwarf-lock. Twelve pins and a temper. Keep them off my back and don’t talk to me.' },
+    ],
+    waves: [
+      { enemies: ['legion-miner', 'legion-miner', 'legion-slagthrower'], from: ['iron-postern-n', 'iron-postern-w'], barks: [{ who: 'nyx-at-the-lock', text: 'Company. I said don’t talk to me, I didn’t say let them.' }] },
+      { enemies: ['bone-golem', 'legion-miner', 'legion-bonecaller'], from: ['iron-postern-w', 'iron-postern-s'], barks: [{ who: 'nyx-at-the-lock', text: 'Seven pins. Eight. Is that a golem? That’s a golem.' }] },
+      { enemies: ['legion-slagthrower', 'legion-slagthrower', 'bone-golem', 'legion-miner', 'legion-miner'], from: ['iron-postern-n', 'iron-postern-s', 'iron-postern-w'], barks: [{ who: 'nyx-at-the-lock', text: 'Last pin. Last pin. Come on, you old miser…' }] },
+    ],
+    end: [{ who: 'nyx-at-the-lock', text: 'Open. After you. I insist. No, really.' }],
+    retry: [{ who: 'nyx-at-the-lock', text: 'Ow. Ow. They’ve bent my picks. Give me a moment and we go again.' }],
+  },
+  'camp-dwarves': {
+    id: 'camp-dwarves',
+    region: 'briarhollow',
+    kind: 'arrival',
+    at: 'briar-square',
+    radius: 18,
+    arrive: { pets: ['dwarf-carter', 'dwarf-carter'], from: 'briar-north', to: 'briar-dwarves' },
+    banner: 'Dwarf-steel',
+    start: [{ who: 'dwarf-carter', text: 'Steel from the Deepforge, for the Elder! Where’s your anvil? You have an anvil?' }],
+    waves: [],
+    end: [{ who: 'forgewife-runa', text: 'Two anvils. Over here. Don’t touch the kegs.' }],
   },
 };

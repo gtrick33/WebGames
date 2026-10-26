@@ -117,7 +117,7 @@ function pickTarget(w: World, pet: Pet): Enemy | null {
 function walkTo(w: World, pet: Pet, goal: { x: number; y: number }, dt: number): void {
   pet.flow ??= flowField(w.map, Math.floor(goal.x / TILE), Math.floor(goal.y / TILE), 400);
   const d = dist(goal.x, goal.y, pet.x, pet.y);
-  const step = d < 2 * TILE ? (d > 3 ? { x: (goal.x - pet.x) / d, y: (goal.y - pet.y) / d } : null) : flowStep(w.map, pet.flow, pet.x, pet.y);
+  const step = pet.paused ? null : d < 2 * TILE ? (d > 3 ? { x: (goal.x - pet.x) / d, y: (goal.y - pet.y) / d } : null) : flowStep(w.map, pet.flow, pet.x, pet.y);
   const speed = pet.def.speed * 0.7;
   pet.vx += ((step?.x ?? 0) * speed - pet.vx) * Math.min(1, dt * 8);
   pet.vy += ((step?.y ?? 0) * speed - pet.vy) * Math.min(1, dt * 8);
@@ -147,13 +147,13 @@ export function updatePets(w: World, dt: number): void {
       }
     }
     if (p.dead) continue;
-    // a ward (a door, a gate) stands where it was put and only takes the blows
-    if (pet.def.role === 'ward') continue;
-    // someone walking in on their own (to the camp): along the roads, whatever the hero does
+    // someone walking on their own (into the camp, or a wagon on the road): whatever the hero does
     if (pet.goal) {
       walkTo(w, pet, pet.goal, dt);
       continue;
     }
+    // a ward (a door, a gate) stands where it was put and only takes the blows
+    if (pet.def.role === 'ward') continue;
     // too far behind: it catches up in a puff
     if (dist(pet.x, pet.y, p.x, p.y) > 260) {
       const to = castRay(w.map, p.x, p.y, pet.r, w.rand() * TAU, 16);

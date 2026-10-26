@@ -17,7 +17,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     giver: 'maren',
     text: 'The fey of the Glimmerwood keep to themselves and like it that way. So when a moth-dusted letter from Lady Silvaine of Lumen Glade landed on Elder Maren’s table asking for help, Maren read it twice. No songs have come out of the wood since spring, and the lights under its trees are going out one by one. Take the road west across the Grimward Moors into the Glimmerwood and find Lady Silvaine in Lumen Glade.',
     objective: { kind: 'talk', npc: 'lady-silvaine', label: 'Talk to Lady Silvaine in Lumen Glade' },
-    after: ['the-kings-design'],
+    after: ['festival-the-champion'],
     level: 31,
     reward: { xp: 800, gold: 260 },
   },

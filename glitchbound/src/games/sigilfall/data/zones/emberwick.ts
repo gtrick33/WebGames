@@ -1,13 +1,28 @@
+import { after, all, during, is, not, until } from '../cond';
 import { CityPlan } from '../citygen';
 import type { RegionDef } from '../types';
 
 /**
- * Emberwick, the Ember City: where every hero starts. Walls with gates east (the Whisperwood) and south
- * (Thornvale); the Regent's keep at the head of the main avenue; the market square with the waystone;
- * the training grounds and the barracks to the north-west, the temple of the Sigil-wardens to the
- * north-east; taverns and the inn to the south-west; the forge, the armory and the curio shop to the
- * south-east; houses, gardens and a pond between.
+ * Emberwick, the Crown City of Aster (STORY_BIBLE.md §3, Act II): walls with gates east (the King's Road
+ * to Lantern Hill), south (the refugee road) and west (the mountain road); the Regent's keep at the head of
+ * the main avenue; the market square with the waystone; the training grounds and the barracks to the
+ * north-west, the temple of the Sigil-wardens to the north-east; taverns and the inn to the south-west;
+ * the forge, the armory and the curio shop to the south-east; houses, gardens and a pond between.
+ *
+ * The story changes it: the treasury, the roads office and the Lord Chancellor's house are where the
+ * countermanded order leads; the Starfall Festival fills the square with lanterns and stalls; the night
+ * of the attack on the Regent burns them; the city is locked down after, Crane's house sealed; in Act IV
+ * the market becomes a muster ground.
  */
+
+/** The festival: lanterns and stalls in the square, from the evening it begins to the night it ends. */
+const FESTIVAL = during('festival-the-lanterns', 'festival-the-knives');
+/** The night of the knives in the square. */
+const KNIVES = during('festival-the-knives');
+/** The morning after: broken stalls, the city locked down. */
+const AFTER = all(after('festival-the-knives'), until('festival-the-champion'));
+/** At war (Act IV): the market is a muster ground. */
+const WAR = is('the-wall-burns', 'started');
 function plan(): CityPlan {
   const c = new CityPlan(104, 82, 2207);
   c.woods(3, 6);
@@ -56,7 +71,11 @@ function plan(): CityPlan {
   // the Regent's keep at the head of the avenue, its courtyard, the barracks beside it
   c.building('keep', 45, 10, 14, 8, { pave: false });
   c.fill(43, 18, 60, 22, 'cobble');
-  c.npc('regent-elowen', 51, 20);
+  // the Regent in her courtyard, the Lord Chancellor at her side until the night he runs
+  c.npc('regent-elowen', 51, 20, not(KNIVES));
+  c.npc('chancellor-crane', 54, 20, until('festival-the-knives'));
+  // her companions in the city: Cael at the keep stair, Orren at the temple, Nyx where the money is
+  c.npc('cael-varrow', 48, 21, after('sir-corvane'));
   c.prop('lamp', 44, 19);
   c.prop('lamp', 59, 19);
   c.building('hall', 63, 13, 7, 4, { npc: 'hale', name: 'The Barracks' });
@@ -77,12 +96,26 @@ function plan(): CityPlan {
   c.fill(71, 17, 80, 20, 'cobble');
   c.fill(74, 21, 76, 38, 'path');
   c.npc('ysolde', 73, 19);
+  c.npc('brother-orren', 77, 19, after('sir-corvane'));
+
+  // the treasury, where the Ninefold Watch's pay was drawn ten years ago
+  c.building('hall', 83, 11, 6, 4, { name: 'The Treasury', art: 'rk:house_tall_slate' });
+  c.fill(83, 15, 88, 16, 'cobble');
+  c.npc('clerk-amsel', 85, 16);
+  // the Lord Chancellor's house, west of the avenue; its cellar, and the catacomb stair under it
+  c.building('house', 41, 24, 5, 4, { name: 'The Chancellor’s House', art: 'rk:house_tall_slate' });
+  c.fill(41, 28, 45, 29, 'cobble');
+  c.marker(46, 29, { kind: 'spot', id: 'crane-catacombs', name: 'The Catacomb Stair', r: 2 }, is('festival-the-catacombs', 'started'));
+  c.prop('danger-sign', 42, 29, false, after('festival-the-knives'));
 
   // the tavern quarter: the Drunken Wyvern and the Ember Hearth
   c.fill(12, 51, 39, 52, 'cobble');
   c.building('tavern', 14, 46, 6, 4, { npc: 'gorran', name: 'The Drunken Wyvern' });
   c.building('inn', 24, 46, 6, 4, { npc: 'tamsin', name: 'The Ember Hearth' });
   c.building('house', 33, 46, 4, 3);
+  // the roads office, which closed the King's Road to refugees
+  c.building('shop', 37, 55, 5, 3, { name: 'The Roads Office' });
+  c.npc('roadwarden-hesk', 39, 58);
   c.building('house', 14, 55, 4, 3);
   c.building('house', 20, 55, 4, 3);
   c.building('house', 14, 63, 4, 3);
@@ -93,7 +126,8 @@ function plan(): CityPlan {
   c.building('smithy', 65, 45, 5, 3, { npc: 'brannoc', name: 'Brannoc’s Forge' });
   c.prop('anvil', 70, 49);
   c.building('shop', 74, 45, 5, 3, { npc: 'odo', name: 'Odo’s Armory' });
-  c.building('shop', 82, 45, 5, 3, { npc: 'wren', name: 'Wren’s Curios' });
+  c.building('shop', 82, 45, 5, 3, { npc: 'wren', name: 'Imelda’s Curios' });
+  c.npc('nyx', 87, 49, after('nyx-joins'));
   c.building('house', 66, 55, 4, 3);
   c.building('house', 72, 55, 4, 3);
   c.building('house', 80, 55, 4, 3);
@@ -109,6 +143,69 @@ function plan(): CityPlan {
   c.building('house', 37, 21, 4, 3);
   c.building('house', 14, 32, 4, 3);
   c.building('house', 36, 30, 4, 3);
+
+  // where the story happens in the city (silent places)
+  for (const [id, x, y] of [
+    ['ember-dais', 56, 35],
+    ['ember-n', 51, 25],
+    ['ember-w', 38, 40],
+    ['ember-e', 65, 40],
+    ['ember-s', 51, 53],
+    ['crane-door', 43, 28],
+    ['crane-w', 35, 27],
+    ['crane-e', 49, 27],
+    ['crane-s', 43, 33],
+  ] as const)
+    c.marker(x, y, { kind: 'place', id });
+  // the Starfall Festival: lanterns round the square, stalls, banners down the avenue, the parade route
+  for (const [x, y] of [
+    [41, 33],
+    [47, 33],
+    [56, 33],
+    [62, 33],
+    [41, 48],
+    [47, 48],
+    [56, 48],
+    [62, 48],
+  ] as const)
+    c.prop('lantern', x, y, false, FESTIVAL);
+  for (const [x, y] of [
+    [44, 38],
+    [59, 38],
+    [44, 43],
+    [59, 43],
+  ] as const)
+    c.prop('market-cart', x, y, true, all(FESTIVAL, not(after('festival-the-knives'))));
+  // the star-lantern the Regent comes down to light
+  c.prop('lantern', 56, 34, false, FESTIVAL);
+  for (const y of [26, 34, 56, 64])
+    for (const x of [48, 55]) c.prop('red-banner', x, y, false, FESTIVAL);
+  c.marker(51, 62, { kind: 'spot', id: 'festival-parade', name: 'The Starfall Parade', r: 4 }, is('festival-the-lanterns', 'started'));
+  // the night of the knives: the stalls burn; the morning after, what's left of them
+  for (const [x, y, sz] of [
+    [44, 37, 2],
+    [59, 37, 3],
+    [44, 42, 3],
+    [59, 42, 2],
+  ] as const)
+    c.marker(x, y, { kind: 'fire', size: sz });
+  for (const [x, y] of [
+    [44, 38],
+    [59, 38],
+    [44, 43],
+    [59, 43],
+  ] as const)
+    c.prop('debris', x, y, false, AFTER);
+  // at war (Act IV): a muster ground of tents and banners in the market
+  for (const [x, y] of [
+    [43, 36],
+    [60, 36],
+    [43, 45],
+    [60, 45],
+  ] as const)
+    c.prop('tent', x, y, true, WAR);
+  for (const x of [46, 57]) c.prop('blue-banner', x, 33, false, WAR);
+  c.prop('anvil', 63, 40, true, WAR);
 
   // the park and the pond to the south, where Pell keeps his chickens
   c.pond(33, 64, 5, 3);
@@ -141,5 +238,10 @@ export const EMBERWICK: RegionDef = {
   markers: {},
   placed: built.placed,
   encounters: [],
-  blurb: 'The capital: the Regent’s keep, the market, taverns and the inn, the forge, the temple and the training grounds.',
+  states: [
+    { id: 'festival', when: during('festival-the-lanterns'), dusk: true },
+    { id: 'night-of-knives', when: KNIVES, night: true, burning: true, music: 'crypt' },
+    { id: 'lockdown', when: AFTER, smoke: true },
+  ],
+  blurb: 'The Crown City: the Regent’s keep, the market, taverns and the inn, the forge, the temple and the training grounds.',
 };

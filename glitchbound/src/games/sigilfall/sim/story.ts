@@ -193,9 +193,28 @@ export class StoryDirector {
         });
       }
     }
+    if (def.escort) {
+      const from = this.spot(def.escort.from);
+      const to = this.spot(def.escort.to);
+      if (from && to) {
+        run.ward = placePet(w, def.escort.wagon, from.x, from.y);
+        if (run.ward) {
+          run.ward.goal = { ...to };
+          run.pets.push(run.ward);
+        }
+        (def.escort.walkers ?? []).forEach((id, i) => {
+          // the people walk alongside and behind the wagon
+          const pet = placePet(w, id, from.x + ((i % 2) * 2 - 1) * 14, from.y + 10 + Math.floor(i / 2) * 12);
+          if (!pet) return;
+          pet.goal = { x: to.x + ((i % 2) * 2 - 1) * 14, y: to.y + 10 + Math.floor(i / 2) * 10 };
+          run.followers.push(pet);
+          run.pets.push(pet);
+        });
+      }
+    }
     this.run = run;
     this.say(def.start);
-    const banner = def.banner ?? (def.kind === 'raid' ? 'Raid!' : def.kind === 'defend' ? 'Hold!' : def.kind === 'rescue' ? 'Rescue!' : 'Arrivals');
+    const banner = def.banner ?? (def.kind === 'raid' ? 'Raid!' : def.kind === 'defend' ? 'Hold!' : def.kind === 'rescue' ? 'Rescue!' : def.kind === 'escort' ? 'Escort!' : 'Arrivals');
     w.emit({ t: 'banner', text: banner, sub: w.questLabel(def.id) });
     if (def.kind === 'arrival') w.sfx('quest', 0.7);
     else w.sfx('roar', 0.7);
@@ -207,8 +226,10 @@ export class StoryDirector {
     if (!wave) return;
     // an event's own level climbs with the difficulty like any pack's
     const level = run.def.level !== undefined ? run.def.level + TIERS[w.tier]!.levels : w.level;
+    // on the road, they come at the wagon from wherever it has got to
+    const wagon = run.def.escort ? run.ward : null;
     run.ids = wave.enemies.map((id, i) => {
-      const from = this.spot(wave.from[i % wave.from.length]!) ?? { x: w.player.x, y: w.player.y - 80 };
+      const from = wagon ? castRay(w.map, wagon.x, wagon.y, 6, w.rand() * TAU, 150) : (this.spot(wave.from[i % wave.from.length]!) ?? { x: w.player.x, y: w.player.y - 80 });
       const a = w.rand() * TAU;
       const to = castRay(w.map, from.x, from.y, 6, a, 8 + w.rand() * 18);
       const e = w.addEnemy(id, to.x, to.y, level, { room: -1, pack: -1, spawn: true });
@@ -224,7 +245,8 @@ export class StoryDirector {
     // the hero fell, or walked off: it all starts again when they come back
     // a rescue leads people somewhere else: the way there is part of it
     const places = [this.spot(def.at), def.rescue ? this.spot(def.rescue.to) : null].filter((p): p is { x: number; y: number } => !!p);
-    // (people being led home keep up with the hero, however far home is)
+    // (people being led home keep up with the hero, however far home is; a wagon is wherever it has got to)
+    if (run.ward && def.escort) places.splice(0, places.length, run.ward);
     const away = !def.rescue && places.length > 0 && places.every((p) => dist(w.player.x, w.player.y, p.x, p.y) > (def.radius + 14) * TILE);
     if (def.kind === 'arrival') {
       this.arriving(run, dt);
@@ -238,6 +260,11 @@ export class StoryDirector {
     if (run.ward && run.ward.dead) {
       this.abort(run, def.retry);
       return;
+    }
+    // the wagon stops while foes are close to it, and the people with it
+    if (def.escort && run.ward) {
+      const threat = w.enemies.some((e) => !e.dead && e.state !== 'spawn' && dist(e.x, e.y, run.ward!.x, run.ward!.y) < 100);
+      for (const p of [run.ward, ...run.followers]) p.paused = threat;
     }
     // the people being led out: found when the hero reaches them, safe at the far spot
     if (def.rescue) {
@@ -256,12 +283,20 @@ export class StoryDirector {
     }
     const alive = run.ids.some((id) => w.enemies.some((e) => e.id === id && !e.dead));
     if (alive) return;
+    // a wagon on the road: done once it is in and nothing is on it, whatever waves were still to come
+    const wagonIn = !def.escort || (!!run.ward?.goal && dist(run.ward.x, run.ward.y, run.ward.goal.x, run.ward.goal.y) <= 2 * TILE);
+    if (def.escort && wagonIn) {
+      this.finish(run);
+      return;
+    }
     if (run.wave + 1 < def.waves.length) {
       run.wave += 1;
-      run.pause = 2.2;
+      // on the road the next ambush waits further along
+      run.pause = def.escort ? 7 : 2.2;
       return;
     }
     if (def.rescue && run.safe.size < run.followers.length) return;
+    if (!wagonIn) return;
     this.finish(run);
   }
 

@@ -206,6 +206,8 @@ export interface Pet {
   /** Walks there on its own (people arriving at the camp), along `flow`. */
   goal?: { x: number; y: number };
   flow?: Int16Array;
+  /** Waits where it is for now (a wagon under attack). */
+  paused?: boolean;
 }
 
 export interface Projectile {

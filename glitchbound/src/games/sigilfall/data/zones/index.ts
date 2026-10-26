@@ -49,6 +49,8 @@ import { SALTMARSH_NPCS, SALTMARSH_QUESTS } from './saltmarsh-quests';
 import { THORNVALE } from './thornvale';
 import { THORNVALE_NPCS, THORNVALE_QUESTS } from './thornvale-quests';
 import { BRIARHOLLOW, BRIARHOLLOW_FOES, BRIARHOLLOW_NPCS, BRIARHOLLOW_QUESTS } from './briarhollow';
+import { EMBERWICK } from './emberwick';
+import { EMBERWICK_FOES, EMBERWICK_NPCS, EMBERWICK_QUESTS } from './emberwick-story';
 
 /**
  * Every generated zone with its people, quests and enemies (see WORLD.md for the whole world). Adding
@@ -67,6 +69,7 @@ export interface ZoneModule {
 
 export const ZONES: ZoneModule[] = [
   { region: BRIARHOLLOW, npcs: BRIARHOLLOW_NPCS, quests: BRIARHOLLOW_QUESTS, foes: BRIARHOLLOW_FOES },
+  { region: EMBERWICK, npcs: EMBERWICK_NPCS, quests: EMBERWICK_QUESTS, foes: EMBERWICK_FOES },
   { region: THORNVALE, npcs: THORNVALE_NPCS, quests: THORNVALE_QUESTS },
   { region: SALTMARSH, npcs: SALTMARSH_NPCS, quests: SALTMARSH_QUESTS },
   { region: BRACKENRIDGE, npcs: BRACKENRIDGE_NPCS, quests: BRACKENRIDGE_QUESTS, foes: BRACKENRIDGE_FOES, items: BRACKENRIDGE_ITEMS },

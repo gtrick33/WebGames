@@ -1,3 +1,4 @@
+import { after, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -20,6 +21,8 @@ export const STORMWATCH = wildRegion(
     safe: false,
     music: 'coast',
     blurb: 'Rain, cliffs and the great lighthouse, under siege by the drowned and the storm they bring.',
+    // once Blackwake falls the Light burns at the top of Lantern Head, every night after
+    states: [{ id: 'the-light-burns', when: after('the-last-light'), burning: true }],
   },
   {
     w: 160,
@@ -54,5 +57,13 @@ export const STORMWATCH = wildRegion(
       { band: [0.65, 1], packs: [['drowned-chanter', 'drowned-sailor', 'drowned-sailor', 'drowned-gunner'], ['barnacle-brute', 'drowned-gunner', 'drowned-gunner'], ['storm-elemental', 'storm-elemental', 'storm-harpy', 'storm-wisp'], ['drowned-gunner', 'drowned-gunner', 'drowned-sailor', 'drowned-sailor']] },
     ],
     wildCount: 58,
+    story: [
+      // the Stormwatch Light: dark while the drowned hold the point, a beacon after
+      { near: 'lighthouse-point', dy: -3, marker: { kind: 'fire', size: 4 } },
+      { near: 'lighthouse-point', dx: -2, dy: 2, marker: { kind: 'prop', prop: 'iron-torch' }, when: after('the-last-light') },
+      { near: 'lighthouse-point', dx: 2, dy: 2, marker: { kind: 'prop', prop: 'iron-torch' }, when: after('the-last-light') },
+      { near: 'hub', dx: 0, dy: -5, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('the-last-light') },
+      { near: 'lighthouse-point', dx: 3, dy: -1, marker: { kind: 'prop', prop: 'skull-banner' }, when: until('the-last-light') },
+    ],
   },
 );

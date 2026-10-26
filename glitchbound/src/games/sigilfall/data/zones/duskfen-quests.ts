@@ -1,24 +1,41 @@
-import type { NpcDef, QuestDef } from '../types';
+import type { NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
- * Stilt Hollow's people and Duskfen's quests. The sickness that turns villagers into ghouls is not a
- * sickness at all but a brew: the Rot-Mother, one of the Hollow King's lieutenants, stirs it in the
- * old cistern under the south of the fen, and her green sisters carry it to the wells in jars. Healer
- * Osk works it out from the bile; Mags the scavenger has seen the sisters; the trail leads down into
- * the Rotmother's Cistern, past Brother Pustule, to the Rot-Mother herself. Brother Wendel and Mags
- * have chains of their own. The chain opens once Mother Mire is dead in Greyfen.
+ * Stilt Hollow's people and Duskfen's quests: Act II opens here (STORY_BIBLE.md §3, "Escort the
+ * refugees"). The roads office in the Crown City has closed the King's Road to refugees, so Hearthstead's
+ * people take the long way west, and the hero brings their wagon through the fen to Stilt Hollow. Nyx is
+ * waiting there: she knows the smugglers' paths and joins the hero. The sickness that turns villagers
+ * into ghouls is not a sickness at all but a brew: the Rot-Mother stirs grief into fever in the old
+ * cistern under the south of the fen, and her green sisters carry it to the wells in jars. Healer Osk
+ * works it out from the bile; Mags the scavenger has seen the sisters; the trail leads down into the
+ * Rotmother's Cistern, past Brother Pustule, to the Rot-Mother herself. Once the cure is in the water,
+ * Low Wick burns its plague houses and its people come home. Brother Wendel and Mags have chains of
+ * their own.
  */
 export const DUSKFEN_QUESTS: QuestDef[] = [
   /* ------------------------------------------------------------ the way in */
   {
     id: 'the-sick-villages',
     name: 'The Sick Villages',
-    giver: 'marshwarden-tilde',
-    text: 'Mother Mire is dead, and Tilde knows now what made her: not a curse but a sickness, come up the river from Duskfen, the plague swamp west of Greyfen, where it is turning whole villages into ghouls. Tilde’s old friend Healer Osk is still fighting it in Stilt Hollow. Take the west causeway out of Greyfen and find her.',
-    objective: { kind: 'talk', npc: 'healer-osk', label: 'Talk to Healer Osk in Stilt Hollow' },
-    after: ['the-ghoul-mother'],
+    giver: 'marshal-dunmore',
+    auto: true,
+    text: 'A letter from the Crown City’s roads office, under the Lord Chancellor’s seal: the King’s Road is closed to refugees. Two hundred of Hearthstead’s people need somewhere to go, and the only road west runs over Tilde’s boardwalks and down the Duskfen causeway to Stilt Hollow, where Healer Osk turns nobody away. The fen is full of the sick. Bring the wagon through.',
+    objective: { kind: 'event', event: 'dusk-caravan', label: 'Bring the refugee wagon through the fen to Stilt Hollow' },
+    after: ['orders-from-the-north'],
     level: 18,
-    reward: { xp: 400, gold: 140 },
+    reward: { xp: 900, gold: 220, text: 'The wagon rolls into Stilt Hollow on three wheels and a prayer. A woman in a dark coat is sitting on the jetty, eating an apple, as if she has been waiting all day.' },
+  },
+  {
+    id: 'nyx-joins',
+    name: 'Pim’s Friend',
+    giver: 'healer-osk',
+    auto: true,
+    text: 'It is the woman who read the Gallows Gang’s cipher in Millbrook. Nyx, she says, like the night, and she knows the smugglers’ paths around every plague village between here and the mountains. She has heard what you did at Hearthstead. She wants to come with you. She wants to talk about it first.',
+    objective: { kind: 'talk', npc: 'nyx', label: 'Talk to Nyx on the jetty at Stilt Hollow' },
+    after: ['the-sick-villages'],
+    zone: 'duskfen',
+    level: 18,
+    reward: { xp: 400, gold: 100, text: 'Nyx is coming with you. She will not say why, which is how you know there is a reason.' },
   },
   /* ------------------------------------------------------------ the plague */
   {
@@ -104,7 +121,18 @@ export const DUSKFEN_QUESTS: QuestDef[] = [
     after: ['brother-pustule'],
     zone: 'duskfen',
     reward: { xp: 2350, gold: 700, item: 'plaguewarden-hood', text: 'Osk pours the last of the brew into the fire. She gives you the hood she wore on the worst nights in Stilt Hollow, made over to fit you.' },
+  },  {
+    id: 'low-wick-fires',
+    name: 'The Cleansing Fires',
+    giver: 'healer-osk',
+    auto: true,
+    text: 'The cure is in the water. Before anyone moves back to Low Wick, Osk wants its plague houses burned to the ground, every one. The villagers will do it themselves. She asks you to stand with them while they do.',
+    objective: { kind: 'talk', npc: 'healer-osk', label: 'Stand with Osk while Low Wick burns' },
+    after: ['the-rot-mother'],
+    zone: 'duskfen',
+    reward: { xp: 600, gold: 150, text: 'Low Wick burns all afternoon. In the evening its people put up tents in the ash, and Ada plants something.' },
   },
+
   /* -------------------------------------------- the chapel of St. Ilse */
   {
     id: 'the-rotting-chapel',
@@ -194,7 +222,7 @@ export const DUSKFEN_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-sick-villages', state: 'active' },
-        lines: ['Tilde sent you? Then you’ve seen what the sickness makes. Good. I won’t have to describe it.', 'Stilt Hollow is the last village in Duskfen still breathing on its own. I mean to keep it that way.'],
+        lines: ['Hearthstead’s people, coming here? Through this? Then bring them. Stilt Hollow is the last village in Duskfen still breathing on its own, and I turn nobody away.'],
       },
       {
         when: { quest: 'low-wick', state: 'active' },
@@ -223,12 +251,13 @@ export const DUSKFEN_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-rot-mother', state: 'active' },
-        lines: ['She’s at the bottom, stirring. Every ghoul in this fen came out of her pot, and every one of them marches north to the Hollow King.', 'End her. I’ll have the water boiled by the time you’re back.'],
+        lines: ['She’s at the bottom, stirring. She doesn’t brew it from rot, you know. She brews it from grief. Every widow in this fen has been weeping into her pot without knowing it.', 'End her. I’ll have the water boiled by the time you’re back.'],
       },
       {
         when: { quest: 'clean-water', state: 'active' },
         lines: ['Stillwater Spring, north-east of the village. The only clean water left in the fen.', 'If the plague has reached it, don’t tell me. Just come back looking brave.'],
       },
+      { when: { quest: 'low-wick-fires', state: 'active' }, lines: ['Burn them. Every plague house. There’s nothing in them the sick will want back, and everything in them the fever does.', 'Ada’s family lived in that one. She asked to light it herself.'] },
       { when: { quest: 'the-rot-mother', state: 'done' }, lines: ['The wells are running clear. Clearish. The fever has broken in half the beds.', 'I’m going to sleep for a week. If anyone gets sick, tell them to wait.'] },
       { lines: ['Stilt Hollow. Mind the planks: the ones that creak are the safe ones.', 'If you’re sick, see me. If you’re not, see me anyway, so I remember what healthy looks like.'] },
     ],
@@ -279,5 +308,37 @@ export const DUSKFEN_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'hunt-bogmaw', state: 'done' }, lines: ['It was a harpsichord. Close enough. Look after those boots: they’re the only thing in this fen that ever got better.'] },
       { lines: ['Mags. I find things. Rings, charms, little treasures the swamp is done with.', 'Everything’s for sale except my boat. Especially not my boat.'] },
     ],
+  },
+  // one of Low Wick's people, home in a tent in the ash
+  'low-wick-ada': {
+    id: 'low-wick-ada',
+    name: 'Ada Thatch',
+    title: 'Of Low Wick',
+    sprite: 'villager',
+    talk: [{ lines: ['I lit our house myself. Osk said I didn’t have to. I did, though.', 'I’ve planted beans where the door was. Beans don’t care what happened to a place.'] }],
+  },
+};
+
+/** Hearthstead's refugees brought through the fen to Stilt Hollow (Act II opens). */
+export const DUSKFEN_EVENTS: Record<string, StoryEventDef> = {
+  'dusk-caravan': {
+    id: 'dusk-caravan',
+    region: 'duskfen',
+    kind: 'escort',
+    at: 'dusk-causeway',
+    radius: 9,
+    level: 19,
+    escort: { wagon: 'refugee-wagon', walkers: ['refugee', 'refugee', 'refugee', 'refugee'], from: 'dusk-causeway', to: 'dusk-stilt' },
+    start: [
+      { who: 'refugee', text: 'Is it far? The children are asking if it’s far.' },
+      { who: 'refugee', text: 'Keep the wagon moving. Grandmother’s in the back and she’s not getting out to walk.' },
+    ],
+    waves: [
+      { enemies: ['plague-ghoul', 'plague-ghoul', 'plague-ghoul'], from: [], barks: [{ who: 'refugee', text: 'Something in the reeds! Stop the wagon!' }] },
+      { enemies: ['plaguebearer', 'plague-ghoul', 'bloated-corpse'], from: [], barks: [{ who: 'refugee', text: 'Don’t let that swollen one near the wagon!' }] },
+      { enemies: ['plague-crow', 'plague-crow', 'plague-ghoul', 'plague-ghoul', 'plaguebearer'], from: [], barks: [{ who: 'refugee', text: 'I can see lights! Is that Stilt Hollow? Tell me that’s Stilt Hollow!' }] },
+    ],
+    end: [{ who: 'refugee', text: 'We’re here. We’re all here. Somebody count the children.' }],
+    retry: [{ who: 'refugee', text: 'The wagon’s gone over! Get it up, get everyone back in — we go again!' }],
   },
 };

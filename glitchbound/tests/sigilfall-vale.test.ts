@@ -57,12 +57,15 @@ describe('Sigilfall: the Vale (Act I)', () => {
       expect(asked.has(def.id), def.id).toBe(true);
       const region = REGIONS[def.region];
       const named = new Set(region.placed!.flatMap((pm) => (pm.marker.kind === 'place' || pm.marker.kind === 'spot' ? [pm.marker.id] : [])));
-      const places = [def.at, ...def.waves.flatMap((wv) => wv.from), def.ward?.at, def.rescue?.at, def.rescue?.to, def.arrive?.from, def.arrive?.to].filter((x): x is string => !!x);
+      const places = [def.at, ...def.waves.flatMap((wv) => wv.from), def.ward?.at, def.rescue?.at, def.rescue?.to, def.arrive?.from, def.arrive?.to, def.escort?.from, def.escort?.to].filter((x): x is string => !!x);
       for (const p of places) expect(named.has(p), `${def.id}: ${p}`).toBe(true);
-      for (const id of [...(def.allies ?? []), def.ward?.pet, ...(def.rescue?.pets ?? []), ...(def.arrive?.pets ?? [])].filter((x): x is string => !!x)) expect(PETS[id], `${def.id}: ${id}`).toBeTruthy();
+      const people = [...(def.allies ?? []), def.ward?.pet, ...(def.rescue?.pets ?? []), ...(def.arrive?.pets ?? []), def.escort?.wagon, ...(def.escort?.walkers ?? [])].filter((x): x is string => !!x);
+      for (const id of people) expect(PETS[id], `${def.id}: ${id}`).toBeTruthy();
+      // an escort's waves find the wagon on the road; everyone else's come from named places
+      if (def.kind !== 'escort') for (const wv of def.waves) expect(wv.from.length, def.id).toBeGreaterThan(0);
       for (const id of def.waves.flatMap((wv) => wv.enemies)) expect(ENEMIES[id], `${def.id}: ${id}`).toBeTruthy();
       // whoever speaks is there: a companion of the event, or someone standing in the region
-      const there = new Set([...(def.allies ?? []), ...(def.rescue?.pets ?? []), ...(def.arrive?.pets ?? []), ...region.placed!.flatMap((pm) => (pm.marker.kind === 'npc' ? [pm.marker.npc] : []))]);
+      const there = new Set([...people, ...region.placed!.flatMap((pm) => (pm.marker.kind === 'npc' ? [pm.marker.npc] : []))]);
       for (const b of [...(def.start ?? []), ...(def.end ?? []), ...(def.retry ?? []), ...def.waves.flatMap((wv) => wv.barks ?? [])]) expect(there.has(b.who), `${def.id}: ${b.who}`).toBe(true);
     }
     for (const q of Object.values(QUEST_DEFS)) if (q.objective.kind === 'event') expect(EVENTS[q.objective.event], q.id).toBeTruthy();

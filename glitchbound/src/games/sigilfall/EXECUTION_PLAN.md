@@ -16,7 +16,7 @@ ROLL BACK.
 | 5 | Spell expansion: the 4th slot (**done**, `0fc10e2b`), 35 new skills, talent mutations, boss partial CC | after 4 |
 | 6 | Wardrobe + first mount | after 5 |
 | 7 | World art in region batches | after 6 |
-| 8 | Quest rewrite by act (QUEST_REWRITE_MAP.md) | **Act I done** (this commit): every Vale village changes when saved, its people walk into Briarhollow's camp, the Defense of Hearthstead; Acts II–IV next |
+| 8 | Quest rewrite by act (QUEST_REWRITE_MAP.md) | **Act I done** (`06cf60a7`): every Vale village changes when saved, its people walk into Briarhollow's camp, the Defense of Hearthstead. **Act II done** (this commit): the refugee escort and Nyx, the occupied pass, Lantern Hill's gloom and vigil with Orren and Cael, Stormwatch's Light, the Crown City's traitor and the Starfall Festival. Acts III–IV next |
 | 9 | Companions and cinematic staging | with 8 |
 | 10 | Battles and sieges (Defense of Hearthstead, Highwall) | Hearthstead **done** with Act I (raid, wall, ram); Highwall after 9 |
 | 11–15 | Loot, hubs and interiors, dungeons, endgame, audio/polish | in order |
@@ -77,6 +77,25 @@ Mage's spells; tests for states, events (including reload mid-event), the accept
   (`hearth-the-riders-come`, `hearth-hold-the-wall`, `hearth-the-ram`), the empty shrine, Vosk's orders read
   by Gaius; Dunmore's riders to the camp (`camp-riders`).
 - Save v4: a hero already past an inserted beat has played it.
+
+## Act II in detail (done)
+
+- **Escort** events: a wagon (a walking ward) and its people go down a road, stop while foes are near, and
+  the waves find them where they are. **Gloom** state: a cold early dark (lighter than night).
+- **Duskfen**: `the-sick-villages` is now the refugee wagon through the fen (the roads office closed the
+  King's Road); Nyx joins at Stilt Hollow (`nyx-joins`) and gives `the-dwarves-plea`; Low Wick is green
+  with plague until the cure, then burns (`low-wick-fires`) and its people come home.
+- **Ironpeak**: the Deepforge is the Host's toll fortress (banners, toll-board, garrison) until Grold falls;
+  Nyx opens the postern while the hero holds the garrison (`nyx-the-back-door`); Hearthstead's stone is in
+  the Sigil of Stone; dwarven banners return; Tova brings dwarf-steel to the camp (`camp-dwarves`).
+- **Lantern Hill**: gloom until Orren's vigil relights the great lamp (`orren-the-last-chapel`,
+  `the-last-lamp`); Cael in the hostel as "Wat" (`cael-the-hostel`, before the Kings' Mound); after
+  Corvane, his banner on the mound and the Ninefold flag on the hill.
+- **Stormwatch**: the Light burns after Blackwake.
+- **The Crown City**: the treasury, the roads office and Crane's cellar (`city-*`), the Starfall Festival,
+  the Night of Knives (defend the Regent in the burning square), Crane's catacomb stair, Champion of Aster
+  (`festival-*`); the city locks down after; tents and banners at war (Act IV). Act III opens from the
+  Regent's champion. Save v5.
 
 ## Rules carried through every phase
 

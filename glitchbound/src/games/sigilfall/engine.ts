@@ -608,7 +608,7 @@ export class SigilEngine {
     if (!npc || !h) return;
     // what they offer comes first: the hero takes it on by talking to them
     const offers = acceptQuests(h, npcId);
-    const entry = npc.talk.find((t) => !t.when || questState(h, t.when.quest) === t.when.state) ?? npc.talk[npc.talk.length - 1]!;
+    const entry = npc.talk.find((t) => !t.when || (t.when.state === 'started' ? questState(h, t.when.quest) !== 'locked' : questState(h, t.when.quest) === t.when.state)) ?? npc.talk[npc.talk.length - 1]!;
     const lines = offers.length ? offers.flatMap((q) => q.offer ?? [q.text]) : entry.lines;
     for (const q of offers) {
       this.world?.emit({ t: 'questStart', quest: q.id });

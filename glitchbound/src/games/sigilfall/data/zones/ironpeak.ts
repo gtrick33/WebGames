@@ -1,3 +1,4 @@
+import { after, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -49,6 +50,8 @@ export const IRONPEAK = wildRegion(
         elite: true,
         entrance: { to: 'deepforge-halls', label: 'The Deepforge Halls', minLevel: 24 },
         spot: { id: 'deepforge-gate', name: 'The Deepforge Gate' },
+        // the toll-garrison holds the gate until the forge is Kragholt's again
+        when: until('forgemaster-grold'),
       },
       { at: [0.8, 0.66], r: 10, kind: 'nest', packs: [['griffon', 'griffon'], ['griffon', 'griffon', 'griffon'], ['griffon', 'griffon']], rare: 'stormwing', spot: { id: 'griffon-crags', name: 'Griffon Crags' } },
       { at: [0.44, 0.84], r: 10, kind: 'den', packs: [['frost-ram', 'frost-ram'], ['frost-ram', 'frost-ram', 'frost-ram'], ['frost-ram', 'frost-ram']], rare: 'old-horn', spot: { id: 'ram-heights', name: 'Ram Heights' } },
@@ -86,5 +89,22 @@ export const IRONPEAK = wildRegion(
       { band: [0.6, 1], packs: [['bone-golem', 'legion-slagthrower'], ['legion-miner', 'legion-miner', 'legion-bonecaller'], ['legion-slagthrower', 'legion-slagthrower', 'bone-golem'], ['griffon', 'griffon']] },
     ],
     wildCount: 50,
+    story: [
+      // the toll fortress: the Host's banners on the dwarves' gate, and its toll-board
+      { near: 'deepforge-gate', dx: -3, dy: 3, marker: { kind: 'prop', prop: 'skull-banner' }, when: until('forgemaster-grold') },
+      { near: 'deepforge-gate', dx: 3, dy: 3, marker: { kind: 'prop', prop: 'skull-banner' }, when: until('forgemaster-grold') },
+      { near: 'deepforge-gate', dx: -5, dy: 4, marker: { kind: 'prop', prop: 'danger-sign' }, when: until('forgemaster-grold') },
+      { near: 'deepforge-gate', dx: 0, dy: 5, marker: { kind: 'prop', prop: 'cage' }, when: until('forgemaster-grold') },
+      // the postern in the rock, east of the gate, and the ways the garrison comes round to it
+      { near: 'deepforge-gate', dx: 8, dy: 2, marker: { kind: 'place', id: 'iron-postern' } },
+      { near: 'deepforge-gate', dx: 8, dy: -6, marker: { kind: 'place', id: 'iron-postern-n' } },
+      { near: 'deepforge-gate', dx: 1, dy: 2, marker: { kind: 'place', id: 'iron-postern-w' } },
+      { near: 'deepforge-gate', dx: 9, dy: 9, marker: { kind: 'place', id: 'iron-postern-s' } },
+      // after: the dwarves' banners on their own gate, and over Kragholt
+      { near: 'deepforge-gate', dx: -3, dy: 3, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('forgemaster-grold') },
+      { near: 'deepforge-gate', dx: 3, dy: 3, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('forgemaster-grold') },
+      { near: 'hub', dx: -4, dy: -4, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('forgemaster-grold') },
+      { near: 'hub', dx: 4, dy: -4, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('forgemaster-grold') },
+    ],
   },
 );

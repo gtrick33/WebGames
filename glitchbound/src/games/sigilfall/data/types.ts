@@ -620,7 +620,7 @@ export interface Bark {
 export interface StoryEventDef {
   id: string;
   region: RegionId;
-  kind: 'raid' | 'defend' | 'rescue' | 'arrival';
+  kind: 'raid' | 'defend' | 'rescue' | 'arrival' | 'escort';
   /** Where it happens (a spot id): it starts when the hero comes within `radius` tiles. */
   at: string;
   radius: number;
@@ -636,6 +636,11 @@ export interface StoryEventDef {
   rescue?: { pets: string[]; at: string; to: string };
   /** Arrival: people (PETS ids) who walk in from one spot to another on their own (a camp filling up). */
   arrive?: { pets: string[]; from: string; to: string };
+  /**
+   * Escort: a wagon (a ward that walks, PETS id) and the people walking with it go from one spot to
+   * another; they stop while foes are near, and the waves find them on the road.
+   */
+  escort?: { wagon: string; walkers?: string[]; from: string; to: string };
   /** The banner when it begins (else by kind: Raid!, Hold!, Rescue!). */
   banner?: string;
   start?: Bark[];
@@ -694,6 +699,8 @@ export interface RegionStateDef {
   smoke?: boolean;
   /** Late light: a warm low sun over everything. */
   dusk?: boolean;
+  /** The lamps are out: a cold early dark over everything (lighter than night). */
+  gloom?: boolean;
   /** The music while it lasts. */
   music?: MusicTrack;
 }
@@ -793,8 +800,8 @@ export interface NpcDef {
   name: string;
   title: string;
   sprite: string;
-  /** Lines by quest state, first matching wins. */
-  talk: { when?: { quest: string; state: 'locked' | 'active' | 'done' }; lines: string[] }[];
+  /** Lines by quest state, first matching wins ('started': offered, active or done). */
+  talk: { when?: { quest: string; state: 'locked' | 'active' | 'done' | 'started' }; lines: string[] }[];
   /** What the NPC offers besides talk. */
   service?: 'respec' | 'smith' | 'waystone';
   /** A vendor: the shop they open, and its name over the door (else the shop's own name). */

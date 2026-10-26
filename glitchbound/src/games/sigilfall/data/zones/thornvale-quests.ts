@@ -359,6 +359,18 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       {
+        when: { quest: 'nyx-joins', state: 'active' },
+        lines: [
+          'Hello again. You owe me a favor, if you remember. I’m calling it in: I’m coming with you.',
+          'Why? You keep going places the Host goes. I’m looking for somebody the Host has. My little brother. Wren.',
+          'I know the smugglers’ paths round every plague village from here to the mountains, I can open any door that was made by a person, and I’m funny. That’s three things more than most people bring.',
+        ],
+      },
+      {
+        when: { quest: 'the-dwarves-plea', state: 'active' },
+        lines: ['The dwarves’ forge under Ironpeak is a toll fortress now. The Host takes a cut of everything going north, and lets nothing go north it doesn’t like.', 'Thane Borrik in Kragholt wants it back. So do I, for reasons. Let’s go and be useful.'],
+      },
+      {
         lines: [
           'You’re Pim’s hero? Huh. Taller in the story. Give it here.',
           'That’s not the gang’s cipher. The Gallows Gang can barely spell “gallows”. Somebody taught them this, and paid them in something cold. Pim has the rest.',
