@@ -1,4 +1,34 @@
 import type { EnemyDef, ItemDef, NpcDef, QuestDef, RegionDef } from '../types';
+import { BLIGHTWOOD } from './blightwood';
+import { BLIGHTWOOD_FOES, BLIGHTWOOD_ITEMS } from './blightwood-foes';
+import { BLIGHTWOOD_NPCS, BLIGHTWOOD_QUESTS } from './blightwood-quests';
+import { FROSTFANG } from './frostfang';
+import { FROSTFANG_FOES, FROSTFANG_ITEMS } from './frostfang-foes';
+import { FROSTFANG_NPCS, FROSTFANG_QUESTS } from './frostfang-quests';
+import { SUNKEN_REACHES } from './sunken-reaches';
+import { SUNKEN_REACHES_FOES, SUNKEN_REACHES_ITEMS } from './sunken-reaches-foes';
+import { SUNKEN_REACHES_NPCS, SUNKEN_REACHES_QUESTS } from './sunken-reaches-quests';
+import { BONEFIELDS } from './bonefields';
+import { BONEFIELDS_FOES, BONEFIELDS_ITEMS } from './bonefields-foes';
+import { BONEFIELDS_NPCS, BONEFIELDS_QUESTS } from './bonefields-quests';
+import { WEEPING_WOODS } from './weeping-woods';
+import { WEEPING_WOODS_FOES, WEEPING_WOODS_ITEMS } from './weeping-woods-foes';
+import { WEEPING_WOODS_NPCS, WEEPING_WOODS_QUESTS } from './weeping-woods-quests';
+import { EMBERDEEP } from './emberdeep';
+import { EMBERDEEP_FOES, EMBERDEEP_ITEMS } from './emberdeep-foes';
+import { EMBERDEEP_NPCS, EMBERDEEP_QUESTS } from './emberdeep-quests';
+import { RIFTSCAR } from './riftscar';
+import { RIFTSCAR_FOES, RIFTSCAR_ITEMS } from './riftscar-foes';
+import { RIFTSCAR_NPCS, RIFTSCAR_QUESTS } from './riftscar-quests';
+import { GLOAMHOLLOW } from './gloamhollow';
+import { GLOAMHOLLOW_FOES, GLOAMHOLLOW_ITEMS } from './gloamhollow-foes';
+import { GLOAMHOLLOW_NPCS, GLOAMHOLLOW_QUESTS } from './gloamhollow-quests';
+import { HOLLOWMERE } from './hollowmere';
+import { HOLLOWMERE_FOES, HOLLOWMERE_ITEMS } from './hollowmere-foes';
+import { HOLLOWMERE_NPCS, HOLLOWMERE_QUESTS } from './hollowmere-quests';
+import { PALE_REACH } from './pale-reach';
+import { PALE_REACH_FOES, PALE_REACH_ITEMS } from './pale-reach-foes';
+import { PALE_REACH_NPCS, PALE_REACH_QUESTS } from './pale-reach-quests';
 import { GRIMWARD } from './grimward';
 import { GRIMWARD_FOES, GRIMWARD_ITEMS } from './grimward-foes';
 import { GRIMWARD_NPCS, GRIMWARD_QUESTS } from './grimward-quests';
@@ -82,4 +112,14 @@ export const ZONES: ZoneModule[] = [
   { region: SABLEWIND, npcs: SABLEWIND_NPCS, quests: SABLEWIND_QUESTS, foes: SABLEWIND_FOES, items: SABLEWIND_ITEMS },
   { region: VINECOIL, npcs: VINECOIL_NPCS, quests: VINECOIL_QUESTS, foes: VINECOIL_FOES, items: VINECOIL_ITEMS },
   { region: HIGHWALL, npcs: HIGHWALL_NPCS, quests: HIGHWALL_QUESTS, foes: HIGHWALL_FOES, items: HIGHWALL_ITEMS },
+  { region: BLIGHTWOOD, npcs: BLIGHTWOOD_NPCS, quests: BLIGHTWOOD_QUESTS, foes: BLIGHTWOOD_FOES, items: BLIGHTWOOD_ITEMS },
+  { region: FROSTFANG, npcs: FROSTFANG_NPCS, quests: FROSTFANG_QUESTS, foes: FROSTFANG_FOES, items: FROSTFANG_ITEMS },
+  { region: SUNKEN_REACHES, npcs: SUNKEN_REACHES_NPCS, quests: SUNKEN_REACHES_QUESTS, foes: SUNKEN_REACHES_FOES, items: SUNKEN_REACHES_ITEMS },
+  { region: BONEFIELDS, npcs: BONEFIELDS_NPCS, quests: BONEFIELDS_QUESTS, foes: BONEFIELDS_FOES, items: BONEFIELDS_ITEMS },
+  { region: WEEPING_WOODS, npcs: WEEPING_WOODS_NPCS, quests: WEEPING_WOODS_QUESTS, foes: WEEPING_WOODS_FOES, items: WEEPING_WOODS_ITEMS },
+  { region: EMBERDEEP, npcs: EMBERDEEP_NPCS, quests: EMBERDEEP_QUESTS, foes: EMBERDEEP_FOES, items: EMBERDEEP_ITEMS },
+  { region: RIFTSCAR, npcs: RIFTSCAR_NPCS, quests: RIFTSCAR_QUESTS, foes: RIFTSCAR_FOES, items: RIFTSCAR_ITEMS },
+  { region: GLOAMHOLLOW, npcs: GLOAMHOLLOW_NPCS, quests: GLOAMHOLLOW_QUESTS, foes: GLOAMHOLLOW_FOES, items: GLOAMHOLLOW_ITEMS },
+  { region: HOLLOWMERE, npcs: HOLLOWMERE_NPCS, quests: HOLLOWMERE_QUESTS, foes: HOLLOWMERE_FOES, items: HOLLOWMERE_ITEMS },
+  { region: PALE_REACH, npcs: PALE_REACH_NPCS, quests: PALE_REACH_QUESTS, foes: PALE_REACH_FOES, items: PALE_REACH_ITEMS },
 ];

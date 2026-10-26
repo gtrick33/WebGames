@@ -21,6 +21,20 @@ import { HIGHWALL_ART } from './highwall';
 import { TOMB_OF_THE_SUN_KING_ART } from './tomb-of-the-sun-king';
 import { RIMEHELD_VAULT_ART } from './rimeheld-vault';
 import { SIEGE_OF_HIGHWALL_ART } from './siege-of-highwall';
+import { DUSKSPIRE_ART } from './duskspire';
+import { BLIGHTWOOD_ART } from './blightwood';
+import { FROSTFANG_ART } from './frostfang';
+import { SUNKEN_REACHES_ART } from './sunken-reaches';
+import { BONEFIELDS_ART } from './bonefields';
+import { WEEPING_WOODS_ART } from './weeping-woods';
+import { EMBERDEEP_ART } from './emberdeep';
+import { RIFTSCAR_ART } from './riftscar';
+import { GLOAMHOLLOW_ART } from './gloamhollow';
+import { HOLLOWMERE_ART } from './hollowmere';
+import { PALE_REACH_ART } from './pale-reach';
+import { BLIGHTHEART_ART } from './blightheart';
+import { MOLTEN_THRONE_ART } from './molten-throne';
+import { SPIRE_OF_THE_RIFT_ART } from './spire-of-the-rift';
 
 /**
  * Each zone's art: its enemies (text art, like the creatures) and how its townsfolk dress. Adding a
@@ -31,4 +45,4 @@ export interface ZoneArt {
   looks: Record<string, HeroLook>;
 }
 
-export const ZONE_ART: ZoneArt[] = [BRACKENRIDGE_ART, GREYFEN_ART, AMBERFIELD_ART, DUSKFEN_ART, IRONPEAK_ART, ASHEN_BARROWS_ART, STORMWATCH_ART, ROTMOTHER_CISTERN_ART, DEEPFORGE_HALLS_ART, BARROW_OF_KINGS_ART, GRIMWARD_ART, SUNSCORCH_ART, GLIMMERWOOD_ART, RIMEHELD_ART, SHATTERED_VALE_ART, SABLEWIND_ART, VINECOIL_ART, HIGHWALL_ART, TOMB_OF_THE_SUN_KING_ART, RIMEHELD_VAULT_ART, SIEGE_OF_HIGHWALL_ART];
+export const ZONE_ART: ZoneArt[] = [BRACKENRIDGE_ART, GREYFEN_ART, AMBERFIELD_ART, DUSKFEN_ART, IRONPEAK_ART, ASHEN_BARROWS_ART, STORMWATCH_ART, ROTMOTHER_CISTERN_ART, DEEPFORGE_HALLS_ART, BARROW_OF_KINGS_ART, GRIMWARD_ART, SUNSCORCH_ART, GLIMMERWOOD_ART, RIMEHELD_ART, SHATTERED_VALE_ART, SABLEWIND_ART, VINECOIL_ART, HIGHWALL_ART, TOMB_OF_THE_SUN_KING_ART, RIMEHELD_VAULT_ART, SIEGE_OF_HIGHWALL_ART, BLIGHTWOOD_ART, FROSTFANG_ART, SUNKEN_REACHES_ART, BONEFIELDS_ART, WEEPING_WOODS_ART, EMBERDEEP_ART, RIFTSCAR_ART, GLOAMHOLLOW_ART, HOLLOWMERE_ART, PALE_REACH_ART, BLIGHTHEART_ART, MOLTEN_THRONE_ART, SPIRE_OF_THE_RIFT_ART, DUSKSPIRE_ART];

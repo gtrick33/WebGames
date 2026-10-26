@@ -34,6 +34,7 @@ export const RIMEHELD = wildRegion(
     hubs: [{ at: [0.72, 0.55], npcs: ['jarl-sigrun', 'brewer-olav', 'runecarver-hild', 'huntress-ylva'], houses: 5 }],
     exits: [
       { side: 'e', at: 0.5, to: 'glimmerwood', label: 'East road to the Glimmerwood' },
+      { side: 'n', at: 0.45, to: 'frostfang', label: 'North pass to Frostfang Peaks', minLevel: 43 },
     ],
     pois: [
       // the way down: the Legion and Hrimfang's giants have broken the wardens' seal

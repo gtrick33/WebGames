@@ -37,6 +37,7 @@ export const SABLEWIND = wildRegion(
     exits: [
       { side: 's', at: 0.6, to: 'sunscorch', label: 'South road to the Sunscorch' },
       { side: 'w', at: 0.45, to: 'highwall', label: 'West road to Highwall March', minLevel: 39 },
+      { side: 'n', at: 0.5, to: 'sunken-reaches', label: 'North road to the Sunken Reaches', minLevel: 45 },
     ],
     pois: [
       // the end of the road: Vane's depot, with his escort

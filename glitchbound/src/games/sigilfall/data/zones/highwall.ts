@@ -33,6 +33,7 @@ export const HIGHWALL = wildRegion(
     exits: [
       { side: 'e', at: 0.6, to: 'sablewind', label: 'East road to Sablewind Canyon' },
       { side: 'w', at: 0.5, to: 'shattered-vale', label: 'West road to the Shattered Vale' },
+      { side: 'n', at: 0.8, to: 'bonefields', label: 'North road to the Bonefields', minLevel: 47 },
     ],
     pois: [
       // the way into besieged Highwall: the hole the Siege-Breaker smashed in its walls

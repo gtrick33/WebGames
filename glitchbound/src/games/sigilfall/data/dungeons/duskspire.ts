@@ -514,7 +514,7 @@ export const DUSKSPIRE: DungeonModule = {
     kind: 'dungeon',
     level: 60,
     levels: [60, 60],
-    at: [56, -70],
+    at: [56, -78],
     dark: true,
     safe: false,
     music: 'crypt',
