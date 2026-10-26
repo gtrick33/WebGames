@@ -13,7 +13,7 @@ import { ZONE_ART } from './art/zones';
 import { glyphIcon } from './art/icons';
 import { DMG_COLOR, SKILL_GLYPH } from './art/skillGlyphs';
 import { SKILLS } from '../data/skills';
-import { canvas, ctx2d, makeSprite, paint, scale2x, scaled, shade, type Cnv, type Sprite } from './pixel';
+import { canvas, ctx2d, DETAIL, makeSprite, outlined, paint, scale2x, scaled, shade, smooth2x, type Cnv, type Sprite } from './pixel';
 
 /** Every sprite the game draws, built once on first use. */
 
@@ -183,8 +183,13 @@ const lookKey = (l: HeroLook): string => JSON.stringify(l);
  * face right.
  */
 export function heroSprite(look: HeroLook, dir: HeroDir, frame: number): Sprite {
-  return memo(`hero:${lookKey(look)}:${dir}:${frame}`, () => paintHero(look, dir, frame).toCanvas());
+  // painted at twice the world's size, then smoothed to the world's own four (CHARACTER_ART_BIBLE.md): curves
+  // and diagonals come out clean, and the outline is one fine pixel at that size, like the scenery's
+  return memo(`hero:${lookKey(look)}:${dir}:${frame}`, () => outlined(smooth2x(paintHero(look, dir, frame, false).toCanvas())), HERO_K);
 }
+
+/** Art pixels per world pixel of a hero (and every paper-doll person) picture. */
+export const HERO_K = 4;
 
 /** The top of a hero (head and shoulders) for portraits. */
 function heroBust(look: HeroLook): Cnv {
@@ -210,7 +215,7 @@ export function heroDollUrl(look: HeroLook, view: HeroDir, scale = 4): string {
   const key = `doll:${lookKey(look)}:${view}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
-  const url = scaled(heroSprite(look, view, 0).c, scale).toDataURL();
+  const url = scaled(heroSprite(look, view, 0).c, Math.max(1, Math.round((scale * DETAIL) / HERO_K))).toDataURL();
   iconCache.set(key, url);
   return url;
 }
@@ -220,13 +225,14 @@ export { HERO_H, HERO_W };
 /** A mount's back and front layers for a view and frame (render/art/mount.ts), at art resolution. */
 export function mountSprites(m: MountDef, view: HeroDir, frame: number): { back: Sprite; front: Sprite } {
   const key = `mount:${m.id}:${view}:${frame}`;
+  // smoothed to the hero's own scale like the paper doll, so rider and mount share one line
   const make = (): { back: Cnv; front: Cnv } => {
-    const l = paintMount(m, view, frame);
-    return { back: l.back.toCanvas(), front: l.front.toCanvas() };
+    const l = paintMount(m, view, frame, false);
+    return { back: outlined(smooth2x(l.back.toCanvas())), front: outlined(smooth2x(l.front.toCanvas())) };
   };
   let made: { back: Cnv; front: Cnv } | null = null;
   const once = (): { back: Cnv; front: Cnv } => (made ??= make());
-  return { back: memo(`${key}:b`, () => once().back), front: memo(`${key}:f`, () => once().front) };
+  return { back: memo(`${key}:b`, () => once().back, HERO_K), front: memo(`${key}:f`, () => once().front, HERO_K) };
 }
 
 /**
@@ -237,27 +243,30 @@ export function mountPictureUrl(m: MountDef, look: HeroLook | null, scale = 3): 
   const key = `mountpic:${m.id}:${look ? lookKey(look) : '-'}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
+  // composed at the hero's scale (twice the layout's art pixels)
+  const f = HERO_K / DETAIL;
   const F = MOUNT_FRAMES.side;
-  const top = look ? Math.max(0, RIDER_HIP - F.seat[m.body][1]) : 0;
-  const c = canvas(F.w, F.h + top);
+  const top = (look ? Math.max(0, RIDER_HIP - F.seat[m.body][1]) : 0) * f;
+  const c = canvas(F.w * f + 2, F.h * f + top + 2);
   const g = ctx2d(c);
   const { back, front } = mountSprites(m, 'side', 0);
   g.drawImage(back.c, 0, top);
   if (look) {
     const hero = heroSprite(look, 'side', 0);
     const [sx, sy] = F.seat[m.body];
-    g.drawImage(hero.c, 0, 0, HERO_W, RIDER_HIP + 1, sx - HERO_W / 2, top + sy - RIDER_HIP, HERO_W, RIDER_HIP + 1);
+    const rows = (RIDER_HIP + 1) * f + 1;
+    g.drawImage(hero.c, 0, 0, hero.width, rows, sx * f - hero.width / 2 + 1, top + (sy - RIDER_HIP) * f, hero.width, rows);
   }
   g.drawImage(front.c, 0, top);
   if (look) g.drawImage(riderLegsSprite('side', m.body, look).c, 0, top);
-  const url = scaled(c, scale).toDataURL();
+  const url = scaled(c, Math.max(1, Math.round(scale / f))).toDataURL();
   iconCache.set(key, url);
   return url;
 }
 
 /** The rider's legs over the saddle, in the colors of what they wear (cached by those colors). */
 export function riderLegsSprite(view: HeroDir, body: MountDef['body'], look: HeroLook): Sprite {
-  return memo(`riderlegs:${view}:${body}:${look.legs.tint}:${look.feet.tint}`, () => paintRiderLegs(view, body, look.legs, look.feet).toCanvas());
+  return memo(`riderlegs:${view}:${body}:${look.legs.tint}:${look.feet.tint}`, () => outlined(smooth2x(paintRiderLegs(view, body, look.legs, look.feet, false).toCanvas())), HERO_K);
 }
 
 /** Every creature drawing: the first ones, companions, the new lands' enemies, each zone's own. */

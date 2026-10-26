@@ -93,12 +93,12 @@ interface Pose {
   f: number;
 }
 
-export function paintHero(look: HeroLook, view: View, frame: number): Painter {
+export function paintHero(look: HeroLook, view: View, frame: number, outline = true): Painter {
   const p = new Painter(HERO_W, HERO_H);
   const pose: Pose = { view, f: frame };
   if (view === 'side') side(p, look, pose);
   else front(p, look, pose);
-  p.outline(OUTLINE_RGB);
+  if (outline) p.outline(OUTLINE_RGB);
   return p;
 }
 

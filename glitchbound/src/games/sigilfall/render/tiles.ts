@@ -12,7 +12,7 @@ import { building } from './art/buildings';
 import { FLAT_FURNITURE, furniture } from './art/furniture';
 import { bushArt, cactus, crystalSpire, deadTree, edgeTrunk, jungleTree, mushroomTree, oakTree, palmTree, pineTree, rockArt, willowTree } from './art/flora';
 import type { Painter } from './art/kit';
-import { canvas, ctx2d, DETAIL, OUTLINE, type Cnv } from './pixel';
+import { canvas, ctx2d, DETAIL, outlined, smooth2x, type Cnv } from './pixel';
 
 /** Art pixels per world pixel: every object picture is at art resolution. */
 const D = DETAIL;
@@ -273,70 +273,6 @@ function disc(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, co
 function outline(c: Cnv): Cnv {
   return outlined(smooth2x(c));
 }
-
-/** Scale2x (EPX) on a canvas: each pixel becomes four, corners take the color of matching neighbours. */
-function smooth2x(c: Cnv): Cnv {
-  const w = c.width;
-  const h = c.height;
-  const src = new Uint32Array(ctx2d(c).getImageData(0, 0, w, h).data.buffer);
-  const o = canvas(w * 2, h * 2);
-  const g = ctx2d(o);
-  const img = g.createImageData(w * 2, h * 2);
-  const dst = new Uint32Array(img.data.buffer);
-  const at = (x: number, y: number): number => (x < 0 || y < 0 || x >= w || y >= h ? 0 : src[y * w + x]!);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const E = at(x, y);
-      const B = at(x, y - 1);
-      const D = at(x - 1, y);
-      const F = at(x + 1, y);
-      const H = at(x, y + 1);
-      let e0 = E;
-      let e1 = E;
-      let e2 = E;
-      let e3 = E;
-      if (B !== H && D !== F) {
-        if (D === B) e0 = D;
-        if (B === F) e1 = F;
-        if (D === H) e2 = D;
-        if (H === F) e3 = F;
-      }
-      const i = y * 2 * w * 2 + x * 2;
-      dst[i] = e0;
-      dst[i + 1] = e1;
-      dst[i + w * 2] = e2;
-      dst[i + w * 2 + 1] = e3;
-    }
-  }
-  g.putImageData(img, 0, 0);
-  return o;
-}
-
-/** A one-pixel outline around everything drawn (the canvas grows a pixel on every side). */
-function outlined(c: Cnv): Cnv {
-  const o = canvas(c.width + 2, c.height + 2);
-  const g = ctx2d(o);
-  const sil = canvas(c.width, c.height);
-  const sg = ctx2d(sil);
-  sg.drawImage(c, 0, 0);
-  sg.globalCompositeOperation = 'source-in';
-  sg.fillStyle = OUTLINE;
-  sg.fillRect(0, 0, sil.width, sil.height);
-  for (const [dx, dy] of [
-    [0, 1],
-    [2, 1],
-    [1, 0],
-    [1, 2],
-  ] as const)
-    g.drawImage(sil, dx, dy);
-  g.drawImage(c, 1, 1);
-  return o;
-}
-
-
-
-
-
 
 function fence(map: TileMap, tx: number, ty: number): Cnv {
   const at = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < map.w && y < map.h && map.kind[y * map.w + x] === K.Fence;

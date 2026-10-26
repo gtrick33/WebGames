@@ -833,7 +833,7 @@ export class Renderer {
       g.globalAlpha = clamp(1 - p.deadT * 0.5, 0.3, 1);
       g.translate(Math.round(p.x), Math.round(p.y + 4));
       g.rotate(Math.min(1.4, p.deadT * 3));
-      g.drawImage(s.c, -s.width / DETAIL / 2, -s.height / DETAIL + 3, s.width / DETAIL, s.height / DETAIL);
+      g.drawImage(s.c, -s.width / s.k / 2, -s.height / s.k + 3, s.width / s.k, s.height / s.k);
       g.restore();
       return;
     }
@@ -851,8 +851,8 @@ export class Renderer {
       const s = heroSprite(look, dir, frame);
       const bob = moving ? (Math.floor(p.walkT * 7) % 2 === 0 ? 0 : -0.5) : Math.sin(time * 2.5) > 0.6 ? -0.5 : 0;
       // the picture is at art resolution: its feet (one row above the bottom) stand at p.y + 6
-      const sw = s.width / DETAIL;
-      const sh = s.height / DETAIL;
+      const sw = s.width / s.k;
+      const sh = s.height / s.k;
       const x = Math.round(p.x) - sw / 2;
       const y = Math.round(p.y) + 6.5 - sh + bob;
       // the held weapon behind the body when facing up or away from the aim
@@ -930,7 +930,9 @@ export class Renderer {
     g.translate(lift.x, lift.y);
     if (p.dir === 3) this.drawWeapon(w, wpn, time);
     g.translate(-lift.x, -lift.y);
-    g.drawImage(at.flip ? hero.f : hero.c, 0, 0, HERO_W, cut, sx, sy, HERO_W / DETAIL, cut / DETAIL);
+    // the picture is at the hero's own art scale (one pixel of outline round it)
+    const hk = hero.k;
+    g.drawImage(at.flip ? hero.f : hero.c, 0, 0, hero.width, (cut * hk) / DETAIL + 1, sx - 1 / hk, sy - 1 / hk, hero.width / hk, cut / DETAIL + 1 / hk);
     g.translate(lift.x, lift.y);
     if (p.dir !== 3) this.drawWeapon(w, wpn, time);
     if (w.hero.cls === 'warrior' || w.hero.cls === 'paladin') this.drawShield(w, p.dir, Math.round(p.x) - 9, Math.round(p.y) - 17);

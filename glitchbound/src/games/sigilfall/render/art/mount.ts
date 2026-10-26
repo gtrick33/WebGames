@@ -93,7 +93,7 @@ const ball = (p: Painter, cx: number, cy: number, rx: number, ry: number, R: Ram
 
 /* ------------------------------------------------------------------- side */
 
-function sideLayers(m: MountDef, f: number): { back: Painter; front: Painter } {
+function sideLayers(m: MountDef, f: number, outline: boolean): { back: Painter; front: Painter } {
   const F = MOUNT_FRAMES.side;
   const b = BODIES[m.body];
   const back = new Painter(F.w, F.h);
@@ -276,8 +276,10 @@ function sideLayers(m: MountDef, f: number): { back: Painter; front: Painter } {
   front.rect(sx + 5, sy - 3, 3, 3, LEATHER[1]);
   front.rect(sx - 7, sy - 2, 2, 2, LEATHER[3]);
   front.rect(sx + 3, sy + 2, 2, belly - sy - 1, LEATHER[3]);
-  front.outline(OUTLINE_RGB);
-  back.outline(OUTLINE_RGB);
+  if (outline) {
+    front.outline(OUTLINE_RGB);
+    back.outline(OUTLINE_RGB);
+  }
   return { back, front };
 }
 
@@ -307,7 +309,7 @@ function antlersSide(p: Painter, x: number, y: number, kind: 'hart' | 'elk'): vo
 /* ------------------------------------------------------------- down & up */
 
 /** The animal coming toward the viewer (down) or going away (up). */
-function frontLayers(m: MountDef, view: 'down' | 'up', f: number): { back: Painter; front: Painter } {
+function frontLayers(m: MountDef, view: 'down' | 'up', f: number, outline: boolean): { back: Painter; front: Painter } {
   const F = MOUNT_FRAMES[view];
   const b = BODIES[m.body];
   const back = new Painter(F.w, F.h);
@@ -470,8 +472,10 @@ function frontLayers(m: MountDef, view: 'down' | 'up', f: number): { back: Paint
     } else if (deer) ball(front, cx, ry - 6, 2, 3, WHITE, 0.2);
     else front.rect(cx, ry - 7, 1, 3, C[3]);
   }
-  front.outline(OUTLINE_RGB);
-  back.outline(OUTLINE_RGB);
+  if (outline) {
+    front.outline(OUTLINE_RGB);
+    back.outline(OUTLINE_RGB);
+  }
   return { back, front };
 }
 
@@ -499,16 +503,16 @@ function antlersFront(p: Painter, cx: number, y: number, kind: 'hart' | 'elk'): 
   }
 }
 
-/** The mount's two layers for a view and frame (0 standing, 1–4 walking). */
-export function paintMount(m: MountDef, view: MountView, frame: number): { back: Painter; front: Painter } {
-  return view === 'side' ? sideLayers(m, frame) : frontLayers(m, view, frame);
+/** The mount's two layers for a view and frame (0 standing, 1–4 walking); unoutlined to be smoothed first. */
+export function paintMount(m: MountDef, view: MountView, frame: number, outline = true): { back: Painter; front: Painter } {
+  return view === 'side' ? sideLayers(m, frame, outline) : frontLayers(m, view, frame, outline);
 }
 
 /**
  * The rider's legs where the saddle shows them: one leg bent over the near flank (side), or both astride
  * (down and up), in the colors of what the hero wears on their legs and feet.
  */
-export function paintRiderLegs(view: MountView, body: MountDef['body'], legs: Piece, feet: Piece): Painter {
+export function paintRiderLegs(view: MountView, body: MountDef['body'], legs: Piece, feet: Piece, outline = true): Painter {
   const F = MOUNT_FRAMES[view];
   const p = new Painter(F.w, F.h);
   const L = ramp(legs.tint);
@@ -537,7 +541,7 @@ export function paintRiderLegs(view: MountView, body: MountDef['body'], legs: Pi
       p.rect(x - (s < 0 ? 1 : 2), sy + 4, 4, 4, B[s < 0 ? 1 : 2]);
     }
   }
-  p.outline(OUTLINE_RGB);
+  if (outline) p.outline(OUTLINE_RGB);
   return p;
 }
 
