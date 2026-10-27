@@ -16,7 +16,7 @@ export type UltKey = 'f' | 't' | 'shift' | 'rmb';
 export type Skill4Key = 'c' | 'v' | 'z' | 'x';
 
 /** Menu shortcuts the keyboard adapter reports to the UI. */
-export type UiKey = 'pause' | 'hero' | 'skills' | 'talents' | 'quests' | 'map';
+export type UiKey = 'pause' | 'hero' | 'skills' | 'talents' | 'quests' | 'map' | 'party';
 
 export class KeyboardMouse {
   private keys = new Set<string>();
@@ -93,6 +93,7 @@ export class KeyboardMouse {
         else if (code === 'KeyJ' || code === 'KeyL') this.onUi?.('quests');
         else if (code === 'KeyM') this.onUi?.('map');
         else if (code === 'KeyU') this.onUi?.('skills');
+        else if (code === 'KeyO') this.onUi?.('party');
       }
       this.keys.add(k);
     } else this.keys.delete(k);

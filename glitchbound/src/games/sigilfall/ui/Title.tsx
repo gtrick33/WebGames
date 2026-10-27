@@ -174,7 +174,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
       {engine.ui.notice && <p className="rb-notice" role="status">{engine.ui.notice}</p>}
       {engine.invite && (
         <p className="rb-notice is-invite" role="status">
-          A friend invited you to their party (code {engine.invite}). Choose a level-60 hero to run a Riftstone with them.
+          A friend invited you to their party (code {engine.invite}). Choose a hero, or make one, to join them.
         </p>
       )}
       {settings && (

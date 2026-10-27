@@ -1,6 +1,6 @@
 import { paint, scaled } from '../render/pixel';
 
-/** Pixel glyphs for the HUD buttons (bag, talents, quests, map, pause, gear, potion). */
+/** Pixel glyphs for the HUD buttons (bag, talents, quests, map, party, pause, gear, potion). */
 const PAL = { k: '#1b1428', w: '#ffffff', y: '#ffcf5a', Y: '#b08a2a', b: '#a8784a', B: '#6a4424', r: '#ff5a7a', R: '#b8304a', p: '#d2a8ff', c: '#9be7ff', g: '#8be36b', s: '#ece6d4', S: '#b8b09a' };
 
 const ART: Record<string, string[]> = {
@@ -14,6 +14,7 @@ const ART: Record<string, string[]> = {
   skills: ['pp...pp', 'pccpccp', '.pcccp.', '..pcp..', '.pcccp.', 'pccpccp', 'pp...pp'],
   horseshoe: ['.SSSSS.', 'SsykysS', 'Sk...kS', 'Sy...yS', 'Sk...kS', 'Ss...sS', 'SS...SS'],
   hand: ['..ww....', '..ww....', '..wwww..', '..wwwwww', 'wwwwwwww', 'wwwwwww.', '.wwwwww.', '..wwww..'],
+  party: ['.yy....cc.', 'yyyy..cccc', 'yyyy..cccc', '.yy....cc.', '..........', '.yyy..ccc.', 'yyyyy.cccc', 'yyyyy.cccc', 'yyyyy.cccc'],
 };
 
 const cache = new Map<string, string>();

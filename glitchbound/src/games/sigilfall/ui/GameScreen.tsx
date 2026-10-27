@@ -182,10 +182,13 @@ function Hud({ engine }: { engine: SigilEngine }) {
       </div>
       {w.coop && <PartyFrames engine={engine} />}
       <div className="rb-hud-menu">
-        {engine.party && (
-          <button className="rb-hudbtn rb-party-chip" onClick={() => engine.openPanel('party')} aria-label="Your party">
+        {/* in a party, how many are here; otherwise the way to start one or join a friend's (any level) */}
+        {engine.party ? (
+          <button className="rb-hudbtn rb-party-chip" onClick={() => engine.openPanel('party')} aria-label="Your party" title={engine.touchMode ? 'Your party' : 'Your party (O)'}>
             Party {engine.party.view ? engine.party.view.seats.filter((x) => x.online).length : '…'}
           </button>
+        ) : (
+          <HudButton icon="party" label="Play together" onClick={() => engine.openPanel('party')} kbd="O" engine={engine} />
         )}
         <HudButton icon="bag" label="Hero & bag" badge={fresh || undefined} onClick={() => engine.openPanel('hero')} kbd="I" engine={engine} />
         <HudButton icon="star" label="Talents" badge={points || undefined} onClick={() => engine.openPanel('talents')} kbd="K" engine={engine} />

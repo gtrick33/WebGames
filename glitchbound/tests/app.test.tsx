@@ -148,7 +148,8 @@ describe('routing', () => {
   it('navigates client-side through links', async () => {
     renderAt('/');
     fireEvent.click(screen.getAllByRole('link', { name: 'Daily Challenge' })[0]!);
-    expect(window.location.pathname).toBe('/daily');
+    // the switch waits for the daily page's code, so it shows whole (no empty page between)
+    await waitFor(() => expect(window.location.pathname).toBe('/daily'), { timeout: 5000 });
     // The daily page loads lazily; under a busy parallel test run that can take over a second.
     expect(await screen.findByRole('heading', { level: 1, name: 'Daily Challenge' }, { timeout: 5000 })).toBeTruthy();
   });
@@ -195,7 +196,7 @@ describe('game page', () => {
     // the whole card is the link's tap area
     expect(card.closest('.live-card')).not.toBeNull();
     fireEvent.click(card);
-    expect(window.location.pathname).toBe('/games/backgammon');
+    await waitFor(() => expect(window.location.pathname).toBe('/games/backgammon'), { timeout: 5000 });
     // the address is the game's own again, so a refresh or a shared link shows the poster
     expect(window.location.search).toBe('');
     expect(screen.queryByRole('button', { name: /Play Backgammon/ })).toBeNull();

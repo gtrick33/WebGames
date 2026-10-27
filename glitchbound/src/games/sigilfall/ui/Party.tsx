@@ -24,28 +24,34 @@ export function PartyPanel({ engine }: { engine: SigilEngine }) {
 function NoParty({ engine }: { engine: SigilEngine }) {
   const [code, setCode] = useState('');
   const why = engine.partyReady();
+  const riftstone = (
+    <section className="rb-party-mode" key="rift">
+      <strong>Riftstone together</strong>
+      <p className="rb-small">
+        Up to {MAX_PLAYERS} level-{COOP_LEVEL} heroes run a Riftstone, each on their own device: the same enemies, the same clock, and every hero takes their own experience and loot from each kill.
+      </p>
+      <button className="rb-btn is-gold" disabled={!!why} onClick={() => void engine.createParty('rift')}>
+        Start a Riftstone party
+      </button>
+      {why && <span className="rb-small rb-dim">{why}</span>}
+    </section>
+  );
+  const questing = (
+    <section className="rb-party-mode" key="quest">
+      <strong>Quest together</strong>
+      <p className="rb-small">
+        Level up with friends at any level. The hero furthest behind in the story leads, and the others see their world and follow them. Quests a hero has already finished give them nothing
+        again; everything else counts for everyone.
+      </p>
+      <button className={`rb-btn${why ? ' is-gold' : ''}`} onClick={() => void engine.createParty('party')}>
+        Start a questing party
+      </button>
+    </section>
+  );
   return (
     <div className="rb-party">
-      <section className="rb-party-mode">
-        <strong>Riftstone together</strong>
-        <p className="rb-small">
-          Up to {MAX_PLAYERS} level-{COOP_LEVEL} heroes run a Riftstone, each on their own device: the same enemies, the same clock, and every hero takes their own experience and loot from each kill.
-        </p>
-        <button className="rb-btn is-gold" disabled={!!why} onClick={() => void engine.createParty('rift')}>
-          Start a Riftstone party
-        </button>
-        {why && <span className="rb-small rb-dim">{why}</span>}
-      </section>
-      <section className="rb-party-mode">
-        <strong>Quest together</strong>
-        <p className="rb-small">
-          Level up with friends at any level. The hero furthest behind in the story leads, and the others see their world and follow them. Quests a hero has already finished give them nothing
-          again; everything else counts for everyone.
-        </p>
-        <button className="rb-btn" onClick={() => void engine.createParty('party')}>
-          Start a questing party
-        </button>
-      </section>
+      {/* the one this hero can start comes first */}
+      {why ? [questing, riftstone] : [riftstone, questing]}
       <form
         className="rb-party-join"
         onSubmit={(e) => {

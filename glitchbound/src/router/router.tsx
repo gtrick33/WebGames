@@ -75,6 +75,27 @@ export function useLocation(): { pathname: string; search: string; hash: string 
   return { pathname: window.location.pathname, search: window.location.search, hash: window.location.hash };
 }
 
+/** Loads a page's code (App.tsx), undefined once it is here: set by the app, nothing to load in tests of the router alone. */
+let pageCode: (pathname: string) => Promise<unknown> | undefined = () => undefined;
+export function setPagePreloader(fn: (pathname: string) => Promise<unknown> | undefined): void {
+  pageCode = fn;
+}
+
+/** Starts loading the code of the page a link leads to (hovered, focused or touched), so the click shows it at once. */
+export function prefetchPage(href: string): void {
+  try {
+    const url = new URL(href, window.location.href);
+    if (url.origin === window.location.origin && url.pathname !== window.location.pathname) void pageCode(url.pathname)?.catch(() => undefined);
+  } catch {
+    /* not a URL */
+  }
+}
+
+/** How long a page switch waits for the next page's code before showing its placeholder instead. */
+const PAGE_WAIT_MS = 800;
+/** Counts page switches: a switch still waiting for code is dropped when a newer one starts. */
+let switches = 0;
+
 const reducedMotion = (): boolean => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarsePointer = (): boolean => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
 
@@ -85,6 +106,18 @@ export function navigate(to: string, opts: { replace?: boolean; scroll?: boolean
     return;
   }
   const samePage = url.pathname === window.location.pathname;
+  if (samePage) return go(url, opts, true);
+  const turn = ++switches;
+  // The next page's code first (at most a moment): the switch then shows the finished page, not an empty one.
+  const code = pageCode(url.pathname);
+  if (!code) return go(url, opts, false);
+  const timeout = new Promise((done) => window.setTimeout(done, PAGE_WAIT_MS));
+  void Promise.race([code.catch(() => undefined), timeout]).then(() => {
+    if (turn === switches) go(url, opts, false);
+  });
+}
+
+function go(url: URL, opts: { replace?: boolean; scroll?: boolean }, samePage: boolean): void {
   const apply = (): void => {
     if (opts.replace) window.history.replaceState(null, '', url);
     else window.history.pushState(null, '', url);
@@ -127,7 +160,22 @@ export function Link({ href, onClick, ...rest }: LinkProps) {
     e.preventDefault();
     navigate(href);
   };
-  return <a href={href} onClick={handle} {...rest} />;
+  const warm = (): void => prefetchPage(href);
+  return (
+    <a
+      href={href}
+      onClick={handle}
+      {...rest}
+      onPointerEnter={(e) => {
+        rest.onPointerEnter?.(e);
+        warm();
+      }}
+      onFocus={(e) => {
+        rest.onFocus?.(e);
+        warm();
+      }}
+    />
+  );
 }
 
 /** On first load, honor a #hash once the page has rendered. */
