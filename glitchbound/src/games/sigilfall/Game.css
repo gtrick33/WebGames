@@ -1531,6 +1531,43 @@
   }
 }
 
+/* touch: the minimap in the top corner with the quest under it, the menu to its left with only what has no
+   other way in (the tracker opens the quests, the minimap the map, the Hero panel's tabs the rest), and the
+   interact button beside the hero (placed by ui/Touch.tsx), clear of the menus and the thumbs */
+.is-touch .rb-hudbtn.is-spare {
+  display: none;
+}
+.is-touch .rb-minimap-hud {
+  top: calc(6px + var(--sa-t));
+  right: calc(8px + var(--sa-r));
+  width: 84px;
+  height: 84px;
+}
+.is-touch .rb-hud-menu {
+  right: calc(100px + var(--sa-r));
+}
+.is-touch .rb-tracker {
+  top: calc(96px + var(--sa-t));
+  right: calc(8px + var(--sa-r));
+  max-width: min(220px, 34cqw);
+}
+/* two lines of objective at most, so it never reaches the skills below it */
+.is-touch .rb-tracker > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.rb-ui.is-touch .rb-interact {
+  top: 0;
+  left: 0;
+  right: auto;
+  bottom: auto;
+  /* dark on gold (the panel's button rule would make it the pale text color) */
+  color: var(--rb-ink);
+  font-weight: 800;
+}
+
 /* ---------------------------------------------------------- desktop bar */
 .rb-bar6 {
   position: absolute;
@@ -2866,7 +2903,7 @@
     transform-origin: bottom right;
   }
   .is-lefty .rb-cluster {
-    transform: scale(0.86) scaleX(-1);
+    transform: translateX(86%) scale(-0.86, 0.86);
     transform-origin: bottom left;
   }
   .rb-interact {
@@ -2911,7 +2948,7 @@
     transform-origin: bottom right;
   }
   .is-lefty .rb-cluster {
-    transform: scale(0.8) scaleX(-1);
+    transform: translateX(80%) scale(-0.8, 0.8);
     transform-origin: bottom left;
   }
   .rb-tracker {
@@ -2946,10 +2983,14 @@
     transform: scale(0.66);
   }
   .is-lefty .rb-cluster {
-    transform: scale(0.66) scaleX(-1);
+    transform: translateX(66%) scale(-0.66, 0.66);
   }
   .rb-minimap-hud {
     display: none;
+  }
+  /* no minimap: the menu takes its corner (the map is a tab of the Hero panel) */
+  .is-touch .rb-hud-menu {
+    right: calc(8px + var(--sa-r));
   }
   /* the interact button beside the cluster, low, out of the top bar's way */
   .rb-interact {
@@ -2966,7 +3007,7 @@
     transform: scale(0.56);
   }
   .is-lefty .rb-cluster {
-    transform: scale(0.56) scaleX(-1);
+    transform: translateX(56%) scale(-0.56, 0.56);
   }
   .rb-interact {
     right: calc(166px + var(--sa-r));
