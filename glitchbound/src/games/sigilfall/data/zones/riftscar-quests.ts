@@ -20,7 +20,7 @@ export const RIFTSCAR_QUESTS: QuestDef[] = [
     text: 'Since the Tearborn fell, every brass rod in Shardwatch has pointed the same way: north, past the Blightwood, to the Riftscar Wastes, where the Tear first tore the world open in the old war. Something there is still feeding the crack in the Vale, and Quell is sure what: the Pale Herald, the Hallow King’s own voice, who took Elyra into the Tear and keeps the last Crown Sigil, the Veil, at the top of his spire. With the Sigil of Thorns in hand, it is the only one left. The mages of Veilwatch have held their wards up in the south-east of the wastes for three hundred years. Take the north track out of the Blightwood to Veilwatch and find Archmage Halloran.',
     objective: { kind: 'talk', npc: 'archmage-halloran', label: 'Talk to Archmage Halloran in Veilwatch' },
     after: ['the-withered-queen'],
-    zone: 'riftscar',
+    // the hand-off that sends the hero to riftscar: it starts when the last chapter ends, not on arrival
     level: 54,
     reward: { xp: 1850, gold: 650 },
   },

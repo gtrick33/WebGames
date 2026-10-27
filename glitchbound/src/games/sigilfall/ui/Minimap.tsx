@@ -7,6 +7,8 @@ import { K, TILE, type TileMap } from '../sim/map';
 import { objectiveTarget } from '../sim/objective';
 import type { World } from '../sim/world';
 import { useFrame } from './GameScreen';
+import { drawMapIcon, type MapIcon } from './mapIcons';
+import { FOG_CELL, fogSeen, type Fog } from '../progress/fog';
 
 /**
  * A small, quiet map in the corner: the ground around the hero, the waystone, exits, vendors, chests,
@@ -19,6 +21,33 @@ const SPAN = 44;
 const SIZE = 88;
 
 const base = new WeakMap<TileMap, HTMLCanvasElement>();
+const fogs = new WeakMap<Fog, { c: HTMLCanvasElement; count: number }>();
+
+/** One pixel per fog cell: dark where unexplored (redrawn when more is seen). */
+function fogLayer(fog: Fog): HTMLCanvasElement {
+  let hit = fogs.get(fog);
+  if (!hit) {
+    const c = document.createElement('canvas');
+    c.width = fog.w;
+    c.height = fog.h;
+    hit = { c, count: -1 };
+    fogs.set(fog, hit);
+  }
+  if (hit.count !== fog.count) {
+    hit.count = fog.count;
+    const g = hit.c.getContext('2d')!;
+    const img = g.createImageData(fog.w, fog.h);
+    for (let i = 0; i < fog.cells.length; i++) {
+      if (fog.cells[i]) continue;
+      img.data[i * 4] = 13;
+      img.data[i * 4 + 1] = 10;
+      img.data[i * 4 + 2] = 24;
+      img.data[i * 4 + 3] = 225;
+    }
+    g.putImageData(img, 0, 0);
+  }
+  return hit.c;
+}
 
 /** One pixel per tile, colored by what the tile is. */
 function baseLayer(map: TileMap, theme: Theme): HTMLCanvasElement {
@@ -92,6 +121,14 @@ function draw(c: HTMLCanvasElement, w: World): void {
   g.globalAlpha = 0.92;
   g.drawImage(baseLayer(w.map, w.region.theme), ox, oy, SPAN, SPAN, 0, 0, S, S);
   g.globalAlpha = 1;
+  // the fog of war: what the hero has not been near yet stays dark (soft at its edge)
+  if (!w.fog.all) {
+    g.save();
+    g.imageSmoothingEnabled = true;
+    g.drawImage(fogLayer(w.fog), ox / FOG_CELL, oy / FOG_CELL, SPAN / FOG_CELL, SPAN / FOG_CELL, 0, 0, S, S);
+    g.restore();
+  }
+  const seen = (x: number, y: number): boolean => fogSeen(w.fog, x / TILE, y / TILE);
   const at = (x: number, y: number): [number, number] => [(x / TILE - ox) * px, (y / TILE - oy) * px];
   const dot = (x: number, y: number, col: string, r: number): void => {
     const [sx, sy] = at(x, y);
@@ -101,15 +138,22 @@ function draw(c: HTMLCanvasElement, w: World): void {
     g.fillStyle = col;
     g.fillRect(Math.round(sx - r), Math.round(sy - r), r * 2, r * 2);
   };
-  // enemies close by: small red dots, bosses bigger
+  const icon = (x: number, y: number, name: MapIcon): void => {
+    if (!seen(x, y)) return;
+    const [sx, sy] = at(x, y);
+    if (sx < -12 || sy < -12 || sx > S + 12 || sy > S + 12) return;
+    drawMapIcon(g, name, sx, sy, 2);
+  };
+  // enemies close by: small red dots (elites orange); a boss is a skull
   for (const e of w.enemies) {
-    if (e.dead || e.dummy) continue;
-    dot(e.x, e.y, e.boss ? '#ff3fd2' : e.elite.length ? '#ffb02e' : '#ff4a4a', e.boss ? 4 : 2);
+    if (e.dead || e.dummy || e.boss || !seen(e.x, e.y)) continue;
+    dot(e.x, e.y, e.elite.length ? '#ffb02e' : '#ff4a4a', 2);
   }
-  for (const ch of w.chests) if (!ch.open) dot(ch.x, ch.y, '#ffcf5a', 3);
-  for (const x of w.exits) dot(x.x, x.y, '#ff3fd2', 4);
-  for (const ws of w.waystones) dot(ws.x, ws.y, '#22e4ff', 4);
-  for (const n of w.npcs) dot(n.x, n.y, NPCS[n.id]?.shop ? '#ffd84d' : '#ffffff', 3);
+  for (const ch of w.chests) if (!ch.open) icon(ch.x, ch.y, 'chest');
+  for (const x of w.exits) icon(x.x, x.y, x.door ? 'door' : 'road');
+  for (const ws of w.waystones) icon(ws.x, ws.y, 'waystone');
+  for (const n of w.npcs) icon(n.x, n.y, NPCS[n.id]?.shop ? 'merchant' : 'person');
+  for (const e of w.enemies) if (e.boss && !e.dead) icon(e.x, e.y, 'boss');
   g.restore();
   // the hero, pointing where they face
   g.save();
@@ -138,32 +182,16 @@ function draw(c: HTMLCanvasElement, w: World): void {
     let [sx, sy] = at(t.x, t.y);
     const cx = S / 2;
     const cy = S / 2;
-    const rim = S / 2 - 9;
+    const rim = S / 2 - 12;
     const d = Math.hypot(sx - cx, sy - cy);
     if (d > rim) {
       sx = cx + ((sx - cx) / d) * rim;
       sy = cy + ((sy - cy) / d) * rim;
     }
-    const pulse = 1 + Math.sin(performance.now() / 200) * 0.15;
+    // the quest's "!" (it breathes a little, so it is the first thing the eye finds)
     g.save();
-    g.translate(sx, sy);
-    g.scale(pulse, pulse);
-    g.fillStyle = '#0d0a18';
-    g.beginPath();
-    g.moveTo(0, -9);
-    g.lineTo(8, 0);
-    g.lineTo(0, 9);
-    g.lineTo(-8, 0);
-    g.closePath();
-    g.fill();
-    g.fillStyle = '#ffe066';
-    g.beginPath();
-    g.moveTo(0, -6);
-    g.lineTo(5.5, 0);
-    g.lineTo(0, 6);
-    g.lineTo(-5.5, 0);
-    g.closePath();
-    g.fill();
+    g.globalAlpha = 0.85 + Math.sin(performance.now() / 200) * 0.15;
+    drawMapIcon(g, 'quest', sx, sy, 2);
     g.restore();
   }
   // a thin rim

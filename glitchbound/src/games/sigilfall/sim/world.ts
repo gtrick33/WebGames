@@ -14,7 +14,8 @@ import type { Marker, RegionStateDef, StoryCond } from '../data/types';
 import { holds, regionState, StoryDirector } from './story';
 import { maybeStartScene, updateScene, type ScenePlay } from './scene';
 import { buildHero, type HeroBuild } from '../progress/build';
-import { addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME } from '../progress/character';
+import { fogOpen, fogShare, loadFog, revealFog, storeFog, type Fog } from '../progress/fog';
+import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME } from '../progress/character';
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
 import { learnLooks } from '../progress/wardrobe';
@@ -87,6 +88,8 @@ const RESPAWN_CLEAR_Y = 220;
 /** Seconds before a wiped-out pack comes back (named enemies take longer). */
 const RESPAWN_TIME = 100;
 const RESPAWN_RARE = 300;
+/** A named foe a quest is waiting for (killed before the quest asked) is back this soon. */
+const RESPAWN_WANTED = 20;
 /** Discovering a sight pays this share of a level. */
 const EXPLORE_XP = 0.03;
 /**
@@ -124,6 +127,8 @@ interface PackState {
   /** Only while the story allows (a blockade, the dead at a shrine): once not, it is gone for good. */
   cond?: StoryCond;
   gone?: boolean;
+  /** A quest wants it back: it returns soon, and even in sight of the hero (it rises out of the ground). */
+  called?: boolean;
 }
 /** Out of combat: health and mana regained per second, as a share of the maximum. */
 const OUT_OF_COMBAT_HP = 0.1;
@@ -189,6 +194,12 @@ export class World {
   spots: { x: number; y: number; id: string; name: string; r: number }[] = [];
   /** Packs in the open, so they can come back a while after they are killed. */
   packs: PackState[] = [];
+  /** The maps' fog of war here (progress/fog.ts), and the cells with ground under them. */
+  fog!: Fog;
+  private fogOpen!: Uint8Array;
+  private fogT = 0;
+  /** The pack markers that have their enemies (a conditional one gets them when it first shows). */
+  private readonly packed = new Set<TileMap['markers'][number]>();
   props: { x: number; y: number; prop: string }[] = [];
   chickens: { x: number; y: number; vx: number; vy: number; t: number; face: number }[] = [];
   /** This run's tallies (for the report and the reward screen). */
@@ -239,6 +250,21 @@ export class World {
     this.player = this.newPlayer(spawn.x, spawn.y);
     this.spawnContent();
     this.callCompanions();
+    // the maps' fog of war: rooms indoors are small enough to know at a glance
+    this.fog = loadFog(this.hero, this.region.id, this.map.w, this.map.h);
+    if (this.region.interior) this.fog.all = true;
+    this.fogOpen = fogOpen(this.fog, this.map.solid, this.map.w);
+    this.lookAround();
+  }
+
+  /** Lifts the maps' fog round the hero, and keeps what was seen on the hero (saved with them). */
+  private lookAround(): void {
+    if (revealFog(this.fog, this.player.x / TILE, this.player.y / TILE)) storeFog(this.hero, this.region.id, this.fog);
+  }
+
+  /** How much of this land the hero has explored (0..1). */
+  explored(): number {
+    return fogShare(this.fog, this.fogOpen);
   }
 
   /** Companions that stay (the wolf, the imp) come along into every region: the ones on the bar are called at once. */
@@ -381,6 +407,8 @@ export class World {
       if (m.kind === 'exit') this.exits.push({ ...pos, to: m.to, label: m.label, ...(m.minLevel ? { minLevel: m.minLevel } : {}), ...(m.needs ? { needs: m.needs } : {}), ...(m.door ? { door: true } : {}) });
       if (m.kind === 'fire' && s?.burning) this.fires.push({ ...pos, size: m.size });
       if (m.kind === 'wisp') this.wisps.push({ ...pos, color: m.color, size: m.size });
+      // a foe the story brings in now (Vosk at the head of the Host, once the Standard falls)
+      if (m.kind === 'pack' && !this.packed.has(pm)) this.addPack(pm, pos, true);
     }
     // those the story has sent away (the blockade broken, the dead laid to rest) go now
     for (const st of this.packs) {
@@ -411,8 +439,18 @@ export class World {
     return q?.objective.label ?? '';
   }
 
+  /** A pack marker's enemies, kept track of so they come back (rising out of the ground when the story calls them in). */
+  private addPack(pm: TileMap['markers'][number], pos: { x: number; y: number }, rise: boolean): void {
+    const m = pm.marker as Extract<Marker, { kind: 'pack' }>;
+    const level = m.level !== undefined ? m.level + TIERS[this.tier]!.levels : this.level;
+    const cond = pm.when ?? this.region.when?.[pm.ch];
+    const st: PackState = { index: this.packs.length + 1, enemies: m.enemies, x: pos.x, y: pos.y, level, elite: !!m.elite, rare: !!m.rare, ids: [], respawnT: -1, ...(cond ? { cond } : {}) };
+    this.packs.push(st);
+    this.packed.add(pm);
+    this.spawnPack(st, rise);
+  }
+
   private spawnContent(): void {
-    let pack = 0;
     for (const pm of this.map.markers) {
       const m = pm.marker;
       const pos = markerPos(pm);
@@ -434,15 +472,9 @@ export class World {
           this.chests.push({ id: m.id, key, x: pos.x, y: pos.y, tier: m.tier, once: !!m.once, open: !!done, openT: done ? 1 : 0 });
           break;
         }
-        case 'pack': {
-          pack += 1;
-          const level = m.level !== undefined ? m.level + TIERS[this.tier]!.levels : this.level;
-          const cond = pm.when ?? this.region.when?.[pm.ch];
-          const st: PackState = { index: pack, enemies: m.enemies, x: pos.x, y: pos.y, level, elite: !!m.elite, rare: !!m.rare, ids: [], respawnT: -1, ...(cond ? { cond } : {}) };
-          this.packs.push(st);
-          this.spawnPack(st);
+        case 'pack':
+          this.addPack(pm, pos, false);
           break;
-        }
         case 'spot':
           this.spots.push({ ...pos, id: m.id, name: m.name, r: m.r });
           break;
@@ -499,12 +531,12 @@ export class World {
   }
 
   /** A pack's enemies, around its spot (again, when it comes back). */
-  private spawnPack(st: PackState): void {
+  private spawnPack(st: PackState, rise = false): void {
     st.ids = st.enemies.map((id, i) => {
       const a = (TAU * i) / st.enemies.length + this.rand();
       const r = st.enemies.length > 1 ? 10 + this.rand() * 10 : 0;
       const lvl = st.level + (!st.rare && this.rand() < 0.3 ? 1 : 0);
-      return this.addEnemy(id, st.x + Math.cos(a) * r, st.y + Math.sin(a) * r, lvl, { elite: st.elite && i === 0, room: -1, pack: st.index }).id;
+      return this.addEnemy(id, st.x + Math.cos(a) * r, st.y + Math.sin(a) * r, lvl, { elite: st.elite && i === 0, room: -1, pack: st.index, ...(rise ? { spawn: true } : {}) }).id;
     });
     st.respawnT = -1;
   }
@@ -514,12 +546,21 @@ export class World {
     // the generated wilds; the first wood, with its boss at the end, stays cleared once cleared
     if (this.region.kind !== 'wild' || !this.region.holds) return;
     const p = this.player;
+    // once a second: a named foe some quest still wants doesn't keep the hero waiting five minutes
+    const look = Math.floor(this.time) !== Math.floor(this.time - dt);
+    const wanted = look && this.packs.some((st) => st.rare && st.respawnT > RESPAWN_WANTED) ? new Set(activeQuests(this.hero).flatMap((q) => (q.objective.kind === 'kill' ? (q.objective.enemies ?? []) : q.objective.kind === 'loot' ? q.objective.from : []))) : null;
     for (const st of this.packs) {
       if (st.respawnT < 0 || st.gone) continue;
+      if (wanted && st.rare && st.enemies.some((id) => wanted.has(id))) {
+        st.respawnT = Math.min(st.respawnT, RESPAWN_WANTED);
+        st.called = true;
+      }
       // the timer stops at zero (−1 means the pack is alive), waiting for the hero to look away
       st.respawnT = Math.max(0, st.respawnT - dt);
-      if (st.respawnT > 0 || (Math.abs(p.x - st.x) < RESPAWN_CLEAR_X && Math.abs(p.y - st.y) < RESPAWN_CLEAR_Y)) continue;
-      this.spawnPack(st);
+      if (st.respawnT > 0 || (!st.called && Math.abs(p.x - st.x) < RESPAWN_CLEAR_X && Math.abs(p.y - st.y) < RESPAWN_CLEAR_Y)) continue;
+      const rise = !!st.called;
+      st.called = false;
+      this.spawnPack(st, rise);
     }
   }
 
@@ -859,6 +900,11 @@ export class World {
     updatePets(this, dt);
     separate(this, dt, awake);
     this.updatePacks(dt);
+    this.fogT -= dt;
+    if (this.fogT <= 0) {
+      this.fogT = 0.25;
+      this.lookAround();
+    }
     updateProjectiles(this, dt);
     updateFields(this, dt);
     updateTraps(this, dt);
@@ -1841,8 +1887,20 @@ export class World {
       this.giveXp(Math.round(r.xp * outlevelled(h.level, q.xpLevel ?? h.level, 1)));
       if (q.id === 'rift-shards') h.shards = Math.max(0, h.shards - 3);
     }
-    for (const q of startQuests(h)) this.emit({ t: 'questStart', quest: q.id });
+    const started = startQuests(h);
+    for (const q of started) this.emit({ t: 'questStart', quest: q.id });
+    this.creditEarly(started);
     this.emit({ t: 'save' });
+  }
+
+  /**
+   * A boss beaten before its quest asked for it (Grimtusk felled before the fifteenth kill in the wood) still
+   * counts, a moment after the quest begins: its den is empty now, and the hero did what was asked.
+   */
+  creditEarly(started: QuestDef[]): void {
+    const h = this.hero;
+    const early = started.filter((q) => q.objective.kind === 'boss' && (h.bosses[q.objective.boss] ?? 0) > 0);
+    if (early.length) this.after(1, () => this.questProgress((o) => early.some((q) => q.objective === o)));
   }
 
   /* -------------------------------------------------- tutorial hooks */

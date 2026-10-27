@@ -783,7 +783,7 @@ export interface RegionDef {
   /** The region's states by the story, first match wins (none: always as built). */
   states?: RegionStateDef[];
   /** What a generated zone holds, known without generating it (for routes between regions). */
-  holds?: { exits: RegionId[]; npcs: string[]; spots: string[] };
+  holds?: { exits: RegionId[]; npcs: string[]; spots: string[]; needs?: Partial<Record<RegionId, string>> };
   encounters: Encounter[];
   /** Where the camera starts when entering from the waystone / another region. */
   blurb: string;

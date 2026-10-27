@@ -1583,7 +1583,8 @@
 .rb-scene.is-on .rb-scene-bar {
   transform: none;
 }
-.rb-scene-skip {
+/* (.rb-ui: it outranks `.rb-ui button`, so the hidden button takes no taps meant for the basic attack under it) */
+.rb-ui .rb-scene-skip {
   position: absolute;
   right: calc(14px + var(--sa-r));
   bottom: calc(10px + var(--sa-b));
@@ -2071,11 +2072,21 @@
   border: 3px solid var(--rb-ink);
   border-radius: 8px;
 }
-.rb-minimap span i {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin: 0 3px 0 6px;
+.rb-map-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 4px;
+}
+.rb-map-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.rb-map-key img {
+  height: 14px;
+  image-rendering: pixelated;
 }
 .rb-dest {
   display: flex;
@@ -2103,13 +2114,18 @@
   gap: 6px;
   margin-top: 6px;
 }
-.rb-world {
-  display: block;
-  width: 100%;
+.rb-world-scroll {
+  max-height: min(56cqh, 420px);
   margin-bottom: 8px;
+  overflow: auto;
   border: 3px solid var(--rb-ink);
   border-radius: 8px;
   background: #1a2a3a;
+  overscroll-behavior: contain;
+}
+.rb-world {
+  display: block;
+  width: 100%;
   font-family: var(--font);
 }
 .rb-world-sea {
@@ -2131,17 +2147,18 @@
 .rb-world-node:focus {
   outline: none;
 }
-.rb-world-node > rect,
-.rb-world-node > circle:not(.rb-world-here) {
-  stroke: #1b1428;
-  stroke-width: 0.7;
+.rb-world-mark {
+  fill: #1b1428;
+  stroke-width: 0.6;
 }
-.rb-world-node.is-sel > rect,
-.rb-world-node.is-sel > circle:not(.rb-world-here),
-.rb-world-node:focus-visible > rect,
-.rb-world-node:focus-visible > circle:not(.rb-world-here) {
+.rb-world-node.is-sel > .rb-world-mark,
+.rb-world-node:focus-visible > .rb-world-mark {
   stroke: #ffffff;
   stroke-width: 0.9;
+}
+.rb-world-icon {
+  image-rendering: pixelated;
+  pointer-events: none;
 }
 .rb-world-here {
   fill: none;
@@ -2149,11 +2166,14 @@
   stroke-width: 0.8;
   animation: rb-pulse 1.6s ease-in-out infinite;
 }
+.rb-world-q,
+.rb-world-goal {
+  text-anchor: middle;
+}
 .rb-world-name,
 .rb-world-lvl,
 .rb-world-q,
 .rb-world-goal {
-  text-anchor: middle;
   font-weight: 700;
   paint-order: stroke;
   stroke: #1b1428;
@@ -2161,11 +2181,11 @@
   pointer-events: none;
 }
 .rb-world-name {
-  font-size: 2.7px;
+  font-size: 3.1px;
   fill: #f2ead8;
 }
 .rb-world-lvl {
-  font-size: 2.2px;
+  font-size: 2.6px;
   fill: #b8b0cc;
 }
 .rb-world-q {
@@ -2246,6 +2266,34 @@
   border: 4px solid var(--rb-text);
   border-radius: 7px;
   animation: rb-rotate 2s ease-in-out infinite;
+}
+/* a phone held upright gives the stage only about 200px: the card fits it, its button always in reach */
+.rb-rotate {
+  max-height: 100%;
+  overflow: auto;
+}
+@container rb-stage (max-height: 340px) {
+  .rb-rotate {
+    gap: 4px;
+    padding: 10px 14px;
+  }
+  .rb-rotate h2 {
+    margin: 0;
+    font-size: 17px;
+  }
+  .rb-rotate p {
+    margin: 0;
+    font-size: 12px;
+  }
+  .rb-rotate .rb-btn {
+    padding-block: 6px;
+  }
+  .rb-rotate-phone {
+    width: 18px;
+    height: 30px;
+    border-width: 3px;
+    border-radius: 5px;
+  }
 }
 @keyframes rb-rotate {
   40%,
@@ -2350,7 +2398,7 @@
   width: 42px;
   image-rendering: pixelated;
 }
-@media (max-width: 760px), (max-height: 430px) {
+@container (max-width: 760px) or (max-height: 430px) {
   .rb-shop-body {
     grid-template-columns: 1fr;
   }
@@ -2360,7 +2408,8 @@
 }
 
 /* ------------------------------------------------------- small screens */
-@media (max-width: 760px), (max-height: 430px) {
+/* (by the stage's own size, not the page's: beside the arcade's side column a wide window has a narrow stage) */
+@container (max-width: 760px) or (max-height: 430px) {
   .rb-hero {
     grid-template-columns: minmax(190px, 230px) minmax(0, 1fr);
     position: relative;
@@ -2429,7 +2478,7 @@
     max-width: 34vw;
   }
 }
-@media (max-width: 560px) {
+@container (max-width: 560px) {
   .rb-title-main,
   .rb-map,
   .rb-skills,
@@ -2451,26 +2500,37 @@
   .rb-trees {
     grid-template-columns: 1fr;
   }
+}
+/* a narrow stage (a phone held upright, a small window): one row along the top, the hero frame and the menu
+   a little smaller, the menu's spare buttons (tabs of the Hero panel anyway) set aside */
+@container rb-stage (max-width: 560px) {
   .rb-hud-bars {
-    width: 120px;
+    width: 104px;
+  }
+  .rb-hud-hero {
+    transform: scale(0.82);
+    transform-origin: top left;
   }
   .rb-hud-menu {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    max-width: 50vw;
+    gap: 4px;
+    transform: scale(0.78);
+    transform-origin: top right;
+  }
+  .rb-hudbtn.is-spare {
+    display: none;
   }
   .rb-minimap-hud {
-    top: calc(104px + var(--sa-t));
+    top: calc(46px + var(--sa-t));
     width: 78px;
     height: 78px;
   }
   .rb-tracker {
-    top: calc(188px + var(--sa-t));
+    top: calc(130px + var(--sa-t));
     right: calc(8px + var(--sa-r));
   }
 }
 /* short landscape phones: shrink the cluster so the view stays open */
-@media (max-height: 400px) {
+@container (max-height: 400px) {
   .rb-cluster {
     transform: scale(0.86);
     transform-origin: bottom right;

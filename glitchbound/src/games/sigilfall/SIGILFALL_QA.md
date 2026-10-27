@@ -19,8 +19,11 @@ a story beat.
 
 | Area | Tests |
 | --- | --- |
-| Save versions 1→8, field validation, migrations of every act, Wardrobe and mount backfill | `sigilfall-world`, `sigilfall-story`, `sigilfall-vale`, `sigilfall-road`, `sigilfall-alliance`, `sigilfall-collection`, `sigilfall-progression` |
-| Quests can be finished (places, foes, people, bosses, prerequisites) | `sigilfall-quests-doable` |
+| Save versions 1→9, field validation, the fog-of-war backfill, migrations of every act, Wardrobe and mount backfill | `sigilfall-world`, `sigilfall-story`, `sigilfall-vale`, `sigilfall-road`, `sigilfall-alliance`, `sigilfall-collection`, `sigilfall-progression` |
+| Quests can be finished (places, foes, people, bosses, prerequisites, givers who stand somewhere) | `sigilfall-quests-doable` |
+| The whole campaign from a new save by the quest arrow: all 515 quests, no quest the arrow can't point at, no chapter waiting in a land nothing leads to | `sigilfall-campaign` |
+| The quest arrow for story events, raiders who don't give up, bosses felled early, foes the story sends in, shut roads and two-way roads, fog of war | `sigilfall-guidance` |
+| One land per place id (the arrow and what counts would go to the other) | `sigilfall-ids` |
 | Region, dungeon and id integrity (no road to an unregistered region) | `sigilfall-ids`, `sigilfall-dungeons` |
 | Every act's events played on the simulation | `sigilfall-vale` (Act I), `sigilfall-road` (Act II), `sigilfall-alliance` (Acts III–IV) |
 | Classes, skills, talents, ultimate charge and its exploits | `sigilfall`, `sigilfall-classes`, `sigilfall-new-skills`, `sigilfall-economy`, `sigilfall-sim` |
@@ -54,3 +57,45 @@ a story beat.
 - Every land toured at 640 × 360: hairlines between ground chunks in small windows (fixed), one cave mouth for
   every dungeon (each has its own door now), the same pillar ring in every ruin (each land's own stones now),
   the fey wood's noisy paving (plain cobble now), sparse meadows (plants in clumps now).
+
+## Hardening pass (2026-10-27)
+
+A walk-through of the whole campaign on the simulation (`tests/sigilfall-campaign.test.ts`): a new hero goes
+wherever the quest arrow points, takes every "!" quest, fights every story event, and must finish all 515
+quests. It found, and these are fixed:
+
+| Severity | What a player met | Fix |
+| --- | --- | --- |
+| P1 | The Ironpeak chain (a Crown Sigil) could never start: Nyx offers it, and she left Stilt Hollow the moment her own quest ended | whoever you talk to hands over what that conversation opened, in the same breath (engine `talk`) |
+| P1 | After Nyx came back with the Herald's map, nothing led on: "The Lamp Road" only started once already in Gloamhollow, and the Shattered Vale had no road north to it | the hand-off starts with the map; the Vale's north causeway (and Sablewind's road to the Sunken Reaches) added; the same zone-gated hand-off fixed for the Bonefields, the Pale Crown, the Dead Lake, the Veil Torn, the Last March and Crownfall |
+| P1 | Story events (39 quests: raids, rescues, sieges, escorts) had no arrow or minimap mark at all; between waves the arrow led off to another quest | the arrow points at the event, then its raiders, then the way to safety |
+| P1 | Raiders gave up and walked home when the hero led the rescued away (the Burning Inn could not be finished), or stood outside a town wall beyond the enemies' pathing reach (Hearthstead) | story raiders hunt the hero and find their own way in |
+| P1 | On touch, an invisible Skip button sat over the basic-attack button and took its taps | it takes no taps unless a scene plays |
+| P2 | A boss or a named foe killed before its quest asked: the quest pointed at an empty den (Grimtusk), or waited five minutes (Mother Mire) | an early boss kill counts; a wanted named foe is back within 20 s and the minimap shows its den |
+| P2 | Vosk (and every foe the story sends into a land the hero is in) only appeared after leaving and coming back | story packs rise when the story calls them |
+| P2 | Two lands shared the place ids `old-watch` and `gallows-hill`: the arrow led to the wrong land, and the wrong one counted | renamed; ids are now tested unique |
+| P2 | Routes ignored roads the story keeps shut (the arrow led to Highwall's barred north gate) | routes walk round them |
+| P2 | Heroic and Mythic clears pointed into a dungeon that walking in always opens on Normal | the arrow points to a waystone, where the difficulty is chosen |
+| P2 | Inside a boss's dungeon the arrow could point back out to another quest | quests are ranked by where their objective is, not their home land |
+| P2 | Warden Faelan was written but never placed: three Blightwood quests could never be taken | placed in the Blightwood's village; givers are now tested to stand somewhere |
+| P2 | Vaelor beat the mage bot on some seeds and the CI run (Linux) by attrition | his health 11,000 → 9,500; his rot pools are capped at seven (the oldest dries) |
+| P2 | The arcade's CI had failed since the source art landed: ESLint parsed Tiled's `.tsx` tilesets as TypeScript | `assets/` ignored by lint |
+
+The UI pass, with an in-page audit (overlapping text, text cut off or off the stage, type under 9 px, hidden
+buttons that still take taps, anything of the site's over the stage) at 1440 × 900, 1024 × 768, 844 × 390,
+667 × 375 and 390 × 844, and in the immersive full screen:
+
+- The world map: names were 4.5–5.5 px and 44 of them collided. It is drawn at a readable scale (about
+  10 px names) in a box that scrolls and opens on the hero's land, spread out, with each name placed where it
+  clears the others; lands are marked with icons (a house, a tree, a gate, a "?").
+- The land map and the corner minimap use icons (waystone, chest, person, merchant, road, door, quest, the
+  hero, a boss's skull) with an icon legend, and fog of war: what the hero has not been near stays dark,
+  remembered per land on the save (`progress/fog.ts`, save v9; heroes from before see the lands they knew).
+- A phone on its side: the site's floating tab bar and its settings button sat over the bottom third of every
+  game's stage; on a game page they step aside, and the stage height counts the game's own bar.
+- Desktop: every game's stage ended under the site's settings button; it now ends above it.
+- A phone held upright: the turn-sideways card was cut off; the HUD's menu wrapped onto the skill buttons.
+  The card fits; the HUD keeps one row on a narrow stage (Skills and Quests are tabs of the Hero panel there).
+- Beside the arcade's side column a wide window has a narrow stage: the Hero panel's bag column was squeezed
+  to nothing. The game's layouts now follow the stage's size, not the page's.
+- Sunscorch's emptiest sands got two places, the Dead Caravan and the Sun Steles.

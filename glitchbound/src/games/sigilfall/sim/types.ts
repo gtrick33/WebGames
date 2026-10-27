@@ -120,6 +120,11 @@ export interface Enemy {
   tauntUntil?: number;
   /** A boss shrugs off hard control until this time (after a partial stun, root or fear). */
   ccImmuneUntil?: number;
+  /** A story event's raider: it hunts the hero wherever they go and never gives up and walks home. */
+  hunts?: boolean;
+  /** A raider's own way to whoever it hunts, past the reach of the shared field (and when it was made). */
+  huntFlow?: Int16Array;
+  huntAt?: number;
   /** A siege engine's way to the gate it wants (a flow field from the gate, made once). */
   siegeFlow?: Int16Array;
   id: number;

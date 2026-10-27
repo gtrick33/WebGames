@@ -22,7 +22,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     text: 'In the wreck of the Muster Hall Marshal Ardent found what the Host was guarding there: wagons of pale ore bound north for Emberdeep Caldera, and a forge-order in the Herald’s grey hand. “Seven points. Leave them empty. They will be filled.” A crown for the seven sigils: the setting the Ash Crown needs to be relit as a Crown of Ash and Starlight. Emberdeep is a ring of black mountains round a lake of fire, and the dwarves of Cinderhold have watched it from the southern rim for a thousand years. Take the north road out of the Bonefields to Cinderhold and find Thane Hroki.',
     objective: { kind: 'talk', npc: 'thane-hroki', label: 'Talk to Thane Hroki in Cinderhold' },
     after: ['the-third-gate'],
-    zone: 'emberdeep',
+    // the hand-off that sends the hero to emberdeep: it starts when the last chapter ends, not on arrival
     level: 51,
     reward: { xp: 1750, gold: 600 },
   },

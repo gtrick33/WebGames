@@ -648,18 +648,27 @@ export class SigilEngine {
     // what they offer comes first: the hero takes it on by talking to them
     const offers = acceptQuests(h, npcId);
     const entry = npc.talk.find((t) => !t.when || holds(h, { quest: t.when.quest, is: t.when.state })) ?? npc.talk[npc.talk.length - 1]!;
-    const lines = offers.length ? offers.flatMap((q) => q.offer ?? [q.text]) : entry.lines;
-    for (const q of offers) {
+    const lines = offers.length ? offers.flatMap((q) => q.offer ?? [q.text]) : [...entry.lines];
+    // a message delivered, a question asked: talking is the objective
+    this.world?.questProgress((o) => o.kind === 'talk' && o.npc === npcId);
+    // and what that opened, the same person asks in the same breath (someone who leaves once their own
+    // quest is done, like Nyx on the jetty, would otherwise take their next request away with them)
+    const next = acceptQuests(h, npcId);
+    lines.push(...next.flatMap((q) => q.offer ?? [q.text]));
+    const taken = [...offers, ...next];
+    for (const q of taken) {
       this.world?.emit({ t: 'questStart', quest: q.id });
       this.toast(`New quest: ${q.name}`, 'info', undefined, q.objective.label);
     }
-    if (offers.length) startQuests(h).forEach((q) => this.world?.emit({ t: 'questStart', quest: q.id }));
+    if (taken.length) {
+      const started = startQuests(h);
+      started.forEach((q) => this.world?.emit({ t: 'questStart', quest: q.id }));
+      this.world?.creditEarly([...taken, ...started]);
+    }
     this.kbm?.release();
     this.touch.release();
-    this.sound.play(offers.length ? 'quest' : 'open');
+    this.sound.play(taken.length ? 'quest' : 'open');
     this.setUi({ dialogue: { npc: npcId, lines, i: 0 } });
-    // a message delivered, a question asked: talking is the objective
-    this.world?.questProgress((o) => o.kind === 'talk' && o.npc === npcId);
   }
 
   nextLine(): void {

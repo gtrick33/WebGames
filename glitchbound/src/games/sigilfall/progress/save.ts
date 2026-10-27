@@ -30,7 +30,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -185,6 +185,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     perks: Array.isArray(o.perks) ? [...new Set(o.perks.filter((x): x is PerkId => typeof x === 'string' && x in PERKS))] : [],
     looks: Array.isArray(o.looks) ? o.looks.filter((x): x is string => typeof x === 'string' && x.length <= 64).slice(0, 4000) : [],
     worn: {},
+    seen: Object.fromEntries(Object.entries(obj(o.seen) ?? {}).filter(([k, v]) => k in REGIONS && typeof v === 'string' && v.length <= 4000 && /^([A-Za-z0-9+/]*={0,2}|\*)$/.test(v))),
     mounts: Array.isArray(o.mounts) ? [...new Set(o.mounts.filter((x): x is string => typeof x === 'string' && !!MOUNT_DEFS[x]))] : [],
     mount: typeof o.mount === 'string' && MOUNT_DEFS[o.mount] ? o.mount : null,
     stats: { kills: 0, deaths: 0, time: 0, runs: 0, bestRun: 0 },
@@ -385,6 +386,15 @@ export function migrate(raw: unknown): SaveFile | null {
   // version 8: the Wardrobe and mounts (blueprint §6). Nothing to change in the file: on load every hero owns
   // the looks of what they wear and carry, and the mounts they have earned (validateCharacter)
   if (o.v === 7) o.v = 8;
+  // version 9: fog of war on the maps (progress/fog.ts). The lands a hero already knew are seen whole: only
+  // what they find from now on starts dark
+  if (o.v === 8) {
+    for (const h of Array.isArray(o.heroes) ? o.heroes : []) {
+      const hero = obj(h);
+      if (hero && Array.isArray(hero.unlocked)) hero.seen = Object.fromEntries(hero.unlocked.filter((r): r is string => typeof r === 'string').map((r) => [r, '*']));
+    }
+    o.v = 9;
+  }
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];
   const list = Array.isArray(o.heroes) ? o.heroes : [];

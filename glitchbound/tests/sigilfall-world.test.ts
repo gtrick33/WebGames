@@ -120,7 +120,7 @@ describe('sigilfall routes between regions', () => {
     h.quests['t-talk'] = { state: 'active', n: 0 };
     const t = objectiveTarget(w)!;
     const south = w.exits.find((e) => e.to === 'thornvale')!;
-    expect(t).toEqual({ x: south.x, y: south.y, soft: false });
+    expect(t).toMatchObject({ x: south.x, y: south.y, soft: false });
   });
 });
 

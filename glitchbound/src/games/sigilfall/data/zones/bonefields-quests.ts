@@ -22,7 +22,7 @@ export const BONEFIELDS_QUESTS: QuestDef[] = [
     text: 'The last of the Three Gates is the Muster Hall, north of Highwall on an ashen plain the old maps call the Bonefields: the oldest of the fortresses the Sigil-wardens built, and the one the Host holds hardest. Mara has marched the field army out of Highwall to a Forward Camp a bowshot from it. Take the road east along the gate line, or north out of Highwall March, and report to her.',
     objective: { kind: 'talk', npc: 'mara-at-the-muster', label: 'Report to Mara at the Forward Camp' },
     after: ['the-gloam-gate'],
-    zone: 'bonefields',
+    // the hand-off that sends the hero to bonefields: it starts when the last chapter ends, not on arrival
     level: 46,
     reward: { xp: 1650, gold: 560, text: 'Mara has three hundred soldiers, a ditch, a lot of stakes, and Marshal Ardent, Varn’s best officer, who runs the camp like a ledger. “The Muster Hall,” Mara says, pointing north at a black block on the horizon. “And in its yard, the thing they’re building. Ardent will tell you. She likes telling people.”' },
   },

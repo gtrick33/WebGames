@@ -9,6 +9,7 @@ import { ENEMIES } from '../src/games/sigilfall/data/enemies';
 import { NPCS, QUEST_DEFS, QUESTS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import type { Marker, RegionDef } from '../src/games/sigilfall/data/types';
+import { needsAccept } from '../src/games/sigilfall/progress/character';
 
 const allMarkers = (r: RegionDef): Marker[] => [
   ...Object.values(r.markers),
@@ -56,6 +57,9 @@ describe('sigilfall quests can be finished', () => {
         ).toBeTruthy();
       if (q.giver)
         expect(NPCS[q.giver], `${q.id}: unknown giver ${q.giver}`).toBeTruthy();
+      // a quest taken from its giver's "!" needs the giver standing somewhere
+      if (needsAccept(q))
+        expect(npcs.has(q.giver), `${q.id}: its giver ${q.giver} stands nowhere, so it can never be taken`).toBe(true);
       const o = q.objective;
       if (o.kind === 'explore') {
         const where = spots.get(o.spot) ?? [];

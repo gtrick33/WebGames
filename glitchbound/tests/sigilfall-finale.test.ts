@@ -43,13 +43,16 @@ function goTo(w: World, place: string): void {
   w.player.x = at.x;
   w.player.y = at.y + 8;
 }
+/** Strikes down the foes: a story event's own raiders while one runs (what else stands waits its turn), else all. */
 function smite(w: World): void {
-  for (const e of w.enemies) if (!e.dead && e.state !== 'spawn') hitEnemy(w, e, 1e7, 'physical', { depth: 0 });
+  const raid = w.story.run?.ids;
+  for (const e of w.enemies) if (!e.dead && e.state !== 'spawn' && (!raid || raid.includes(e.id))) hitEnemy(w, e, 1e7, 'physical', { depth: 0 });
 }
 function beat(w: World, quest: string, rounds = 40): void {
   for (let i = 0; i < rounds && questState(w.hero, quest) === 'active'; i++) {
     run(w, 2.5);
     w.player.hp = w.player.maxHp;
+    if (questState(w.hero, quest) !== 'active') break;
     smite(w);
   }
 }
@@ -92,7 +95,8 @@ describe('Sigilfall: the Last March (Act VI)', () => {
 
   it('the mages bring the wall down, the breach is taken, and the champions the Crown kept wait where they should', () => {
     expect(newWorld('pale-reach', heroAt('march-vosk')).enemies.some((e) => e.def.id === 'vosk-the-hollowed' && !e.dead)).toBe(true);
-    const w = newWorld('pale-reach', heroAt('march-the-siege-mages'));
+    // (of the Voice's level: it waits for a hero of 59)
+    const w = newWorld('pale-reach', heroAt('march-the-siege-mages', 59));
     expect(w.storyState?.id).toBe('host-waits');
     goTo(w, 'wall-field');
     run(w, 0.3);
@@ -105,6 +109,9 @@ describe('Sigilfall: the Last March (Act VI)', () => {
     expect(w.story.run?.def.id).toBe('reach-the-breach');
     beat(w, 'march-the-breach');
     expect(questState(w.hero, 'march-the-voice')).toBe('active');
+    // the Voice comes out to meet the hero at once, not on the next visit
+    run(w, 2);
+    expect(w.enemies.some((e) => e.def.id === 'the-heralds-voice' && !e.dead)).toBe(true);
     const after = newWorld('pale-reach', w.hero);
     expect(after.storyState?.id).toBe('storming');
     expect(after.fires.length).toBeGreaterThanOrEqual(4);

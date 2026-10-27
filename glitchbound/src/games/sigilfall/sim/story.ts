@@ -258,6 +258,7 @@ export class StoryDirector {
       const to = castRay(w.map, from.x, from.y, 6, a, 8 + w.rand() * 18);
       const e = w.addEnemy(id, to.x, to.y, level, { room: -1, pack: -1, spawn: true });
       e.aggro = true;
+      e.hunts = true;
       return e.id;
     });
     this.say(wave.barks);

@@ -105,7 +105,7 @@ export const CROWN_CATACOMBS: DungeonModule = {
     kind: 'dungeon',
     level: 60,
     levels: [60, 60],
-    at: [40, 70],
+    at: [35, 71],
     dark: true,
     safe: false,
     music: 'crypt',

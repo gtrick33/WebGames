@@ -91,6 +91,8 @@ export interface Character {
   worn: Partial<Record<LookSlot, string>>;
   /** Has been jumped to a story beat with a review preset (progress/presets.ts): sends no arcade scores. */
   review?: boolean;
+  /** Fog of war: each land's explored parts (progress/fog.ts). */
+  seen: Partial<Record<RegionId, string>>;
   /** Mounts owned for good, and the one the mount key summons. */
   mounts: string[];
   mount: string | null;
@@ -127,6 +129,7 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     perks: [],
     looks: [],
     worn: {},
+    seen: {},
     mounts: [],
     mount: null,
     stats: { kills: 0, deaths: 0, time: 0, runs: 0, bestRun: 0 },

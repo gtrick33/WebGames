@@ -150,7 +150,7 @@ export const VAELMOOR_REMEMBERED: DungeonModule = {
     kind: 'dungeon',
     level: 60,
     levels: [60, 60],
-    at: [56, -74],
+    at: [68, -78],
     dark: false,
     safe: false,
     music: 'village',

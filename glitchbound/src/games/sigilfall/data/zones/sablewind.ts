@@ -37,6 +37,8 @@ export const SABLEWIND = wildRegion(
     exits: [
       { side: 's', at: 0.6, to: 'sunscorch', label: 'South road to the Sunscorch' },
       { side: 'w', at: 0.45, to: 'highwall', label: 'West road to Highwall March', minLevel: 39 },
+      // the Sunken Reaches' south road, walked the other way once the Gates are taken
+      { side: 'n', at: 0.6, to: 'sunken-reaches', label: 'North road to the Sunken Reaches', minLevel: 49, needs: 'the-third-gate' },
     ],
     pois: [
       // the end of the road: Vane's depot, with his escort

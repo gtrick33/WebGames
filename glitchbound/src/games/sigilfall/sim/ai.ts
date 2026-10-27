@@ -125,7 +125,7 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
         break;
       }
       // leash: packs in the open give up when you run far away; room enemies never do
-      if (e.room < 0 && d > e.def.aggro * 2.6) {
+      if (e.room < 0 && !e.hunts && d > e.def.aggro * 2.6) {
         e.lostT += dt;
         if (e.lostT > 3) {
           e.state = 'return';
@@ -385,7 +385,14 @@ function steer(w: World, e: Enemy, los: boolean): { x: number; y: number } {
     e.siegeFlow ??= flowField(w.map, Math.floor(p.x / TILE), Math.floor(p.y / TILE), 300);
     return flowStep(w.map, e.siegeFlow, e.x, e.y) ?? { x: 0, y: 0 };
   }
-  return flowStep(w.map, w.flow, e.x, e.y) ?? { x: 0, y: 0 };
+  const step = flowStep(w.map, w.flow, e.x, e.y);
+  if (step || !e.hunts) return step ?? { x: 0, y: 0 };
+  // a story raider beyond the shared field's reach (outside a town wall, across the fields) finds its own way in
+  if (!e.huntFlow || w.time - (e.huntAt ?? 0) > 1.5) {
+    e.huntFlow = flowField(w.map, Math.floor(p.x / TILE), Math.floor(p.y / TILE), 400, e.huntFlow);
+    e.huntAt = w.time;
+  }
+  return flowStep(w.map, e.huntFlow, e.x, e.y) ?? { x: 0, y: 0 };
 }
 
 /** Whether a circle of radius r can slide straight from one point to another. */

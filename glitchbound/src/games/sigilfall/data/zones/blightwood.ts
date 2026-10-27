@@ -33,7 +33,7 @@ export const BLIGHTWOOD = wildRegion(
     forest: 0.42,
     scatter: { trees: 2, bushes: 1.6, rocks: 0.8, flowers: 1.2 },
     water: { kind: 'lakes', amount: 0.35 },
-    hubs: [{ at: [0.52, 0.8], npcs: ['elder-thessaly', 'hearthwife-rowan', 'thornsmith-edda'], houses: 5 }],
+    hubs: [{ at: [0.52, 0.8], npcs: ['elder-thessaly', 'hearthwife-rowan', 'thornsmith-edda', 'warden-faelan'], houses: 5 }],
     exits: [
       { side: 's', at: 0.5, to: 'glimmerwood', label: 'South road to the Glimmerwood' },
       { side: 'e', at: 0.35, to: 'weeping-woods', label: 'East road to the Weeping Woods' },

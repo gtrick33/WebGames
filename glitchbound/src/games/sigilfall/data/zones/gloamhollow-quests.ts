@@ -20,7 +20,7 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     text: 'The Herald’s map shows a causeway north from the Shattered Vale across a black fen, and at the end of it a gatehouse marked with one word in a neat grey hand: KEPT. The fen is Gloamhollow, and the only people who still live on it are the lamp-keepers of Lastlight, who keep the causeway lit. Nyx says they will not like her. Take the north road out of the Shattered Vale and find their head keeper.',
     objective: { kind: 'talk', npc: 'lamp-keeper-brin', label: 'Find the head lamp-keeper at Lastlight' },
     after: ['gate-the-prison-map'],
-    zone: 'gloamhollow',
+    // it is how the hero hears of Gloamhollow: it starts with the map in hand, not on arrival
     level: 44,
     reward: { xp: 1500, gold: 420, text: 'Brin looks at Nyx for a long time and then hands her a lamp to carry. “On this road,” she says, “everybody carries one. Even you.”' },
   },

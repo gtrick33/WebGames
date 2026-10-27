@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CLASSES, levelPower, xpToNext } from '../data/classes';
 import { ITEM_DEFS } from '../data/items';
-import { QUESTS } from '../data/quests';
+import { NPCS, QUESTS } from '../data/quests';
 import { mapColors } from '../data/themes';
 import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { SKILLS } from '../data/skills';
@@ -22,6 +22,8 @@ import { K, TILE } from '../sim/map';
 import { objectiveTarget } from '../sim/objective';
 import { npcRegion, regionLinks } from '../sim/routes';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
+import { drawMapIcon, mapIconUrl, type MapIcon } from './mapIcons';
+import { FOG_CELL, fogSeen, type Fog } from '../progress/fog';
 import { ShopPanel } from './Shop';
 import { PRESETS } from '../progress/presets';
 
@@ -684,7 +686,10 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   return (
     <div className="rb-map">
       <section className="rb-map-left">
-        <span className="rb-kicker">{w.region.name}</span>
+        <span className="rb-kicker">
+          {w.region.name}
+          {!w.fog.all && ` · ${Math.floor(w.explored() * 100)}% explored`}
+        </span>
         <MiniMap engine={engine} />
       </section>
       <section className="rb-map-right">
@@ -735,59 +740,145 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
 
 const KIND_COLOR: Record<RegionDef['kind'], string> = { town: '#ffcf5a', wild: '#6ad06a', dungeon: '#c58cff' };
 
+/** World-map units for its names (the map is drawn at least WORLD_PX screen pixels a unit, so they stay readable). */
+const NAME_SIZE = 3.1;
+const LVL_SIZE = 2.6;
+const WORLD_PX = 3.4;
+/** The world is drawn this much wider than its coordinates, so the names fit between the lands. */
+const SPREAD = 1.8;
+const worldAt = (id: RegionId): [number, number] => [REGIONS[id].at[0] * SPREAD, REGIONS[id].at[1] * SPREAD];
+/** A rough width of a name in map units (the bold game font is about this wide). */
+const nameWidth = (s: string, size: number): number => s.length * size * 0.64 + 0.8;
+
+/**
+ * Where each region's name goes: under its mark if there is room, else above, to the right or to the left,
+ * whichever first clears the marks and the names already placed (crowded corners of the world stay legible).
+ */
+function placeNames(names: Map<RegionId, string>): Map<RegionId, { x: number; y: number; anchor: 'middle' | 'start' | 'end' }> {
+  type Box = [number, number, number, number];
+  const hits = (a: Box, b: Box): boolean => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  const taken: Box[] = REGION_IDS.map((id) => {
+    const [x, y] = worldAt(id);
+    return [x - 3.8, y - 3.8, x + 3.8, y + 3.8];
+  });
+  const out = new Map<RegionId, { x: number; y: number; anchor: 'middle' | 'start' | 'end' }>();
+  // towns first, then the open lands, then the dungeons: the places a player looks for keep the best spots
+  const order = [...REGION_IDS].sort((a, b) => ['town', 'wild', 'dungeon'].indexOf(REGIONS[a].kind) - ['town', 'wild', 'dungeon'].indexOf(REGIONS[b].kind));
+  for (const id of order) {
+    const name = names.get(id);
+    // a land not found yet shows only its "?"
+    if (!name) continue;
+    const [x, y] = worldAt(id);
+    const w = nameWidth(name, NAME_SIZE);
+    const h = NAME_SIZE * 1.25;
+    const spots: { x: number; y: number; anchor: 'middle' | 'start' | 'end'; box: Box }[] = [
+      { x, y: y + 4 + h * 0.75, anchor: 'middle', box: [x - w / 2, y + 4, x + w / 2, y + 4 + h] },
+      { x, y: y - 4.4, anchor: 'middle', box: [x - w / 2, y - 4 - h, x + w / 2, y - 4] },
+      { x: x + 4.6, y: y + h * 0.3, anchor: 'start', box: [x + 4.2, y - h / 2, x + 4.6 + w, y + h / 2] },
+      { x: x - 4.6, y: y + h * 0.3, anchor: 'end', box: [x - 4.6 - w, y - h / 2, x - 4.2, y + h / 2] },
+    ];
+    const pick = spots.find((sp) => !taken.some((t) => hits(t, sp.box))) ?? spots[0]!;
+    taken.push(pick.box);
+    out.set(id, { x: pick.x, y: pick.y, anchor: pick.anchor });
+  }
+  return out;
+}
+
 /** The world at a glance: every region where it lies, the ways between them, what is still unknown. */
 function WorldMap({ hero, here, sel, goal, onSel }: { hero: Character; here: RegionId; sel: RegionId; goal?: RegionId; onSel: (r: RegionId) => void }) {
   const links = useMemo(() => regionLinks(), []);
-  // the box fits the world, with room for the names under the edge regions
+  // the box fits the world, with room for the names round the edge regions
   const box = useMemo(() => {
-    const xs = REGION_IDS.map((id) => REGIONS[id].at[0]);
-    const ys = REGION_IDS.map((id) => REGIONS[id].at[1]);
-    const x0 = Math.min(...xs) - 12;
-    const y0 = Math.min(...ys) - 6;
-    return { x0, y0, w: Math.max(...xs) + 12 - x0, h: Math.max(...ys) + 12 - y0 };
+    const xs = REGION_IDS.map((id) => worldAt(id)[0]);
+    const ys = REGION_IDS.map((id) => worldAt(id)[1]);
+    const x0 = Math.min(...xs) - 16;
+    const y0 = Math.min(...ys) - 8;
+    return { x0, y0, w: Math.max(...xs) + 16 - x0, h: Math.max(...ys) + 10 - y0 };
   }, []);
   const known = (id: RegionId): boolean => hero.unlocked.includes(id) || REGIONS[id].kind === 'town';
+  const names = new Map(REGION_IDS.map((id) => [id, known(id) ? REGIONS[id].name.replace(/^The /, '') : '']));
+  const nameKey = [...names.values()].join('|');
+  const spots = useMemo(() => placeNames(new Map(nameKey.split('|').map((n, i) => [REGION_IDS[i]!, n]))), [nameKey]);
+  // the map opens on the hero's own corner of the world
+  const scroller = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scroller.current;
+    const svg = el?.firstElementChild;
+    if (!el || !svg) return;
+    const k = svg.getBoundingClientRect().width / box.w;
+    const [x, y] = worldAt(here);
+    el.scrollLeft = (x - box.x0) * k - el.clientWidth / 2;
+    el.scrollTop = (y - box.y0) * k - el.clientHeight / 2;
+  }, [here, box]);
   return (
-    <svg className="rb-world" viewBox={`${box.x0} ${box.y0} ${box.w} ${box.h}`} role="group" aria-label="World map">
-      <rect x={box.x0} y={box.y0} width={box.w} height={box.h} rx="3" className="rb-world-sea" />
-      {links.map(([a, b]) => {
-        const A = REGIONS[a].at;
-        const B = REGIONS[b].at;
-        return <line key={`${a}-${b}`} x1={A[0]} y1={A[1]} x2={B[0]} y2={B[1]} className={known(a) && known(b) ? 'is-known' : ''} />;
-      })}
-      {REGION_IDS.map((id) => {
-        const r = REGIONS[id];
-        const [x, y] = r.at;
-        const k = known(id);
-        const col = k ? KIND_COLOR[r.kind] : '#6a6480';
-        return (
-          <g key={id} className={`rb-world-node${id === sel ? ' is-sel' : ''}`} onClick={() => onSel(id)} role="button" aria-label={k ? r.name : 'Unknown land'} tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSel(id)}>
-            {id === here && <circle cx={x} cy={y} r="5.2" className="rb-world-here" />}
-            {r.kind === 'town' ? <rect x={x - 2.6} y={y - 2.6} width="5.2" height="5.2" rx="1" fill={col} /> : r.kind === 'dungeon' ? <rect x={x - 2.2} y={y - 2.2} width="4.4" height="4.4" fill={col} transform={`rotate(45 ${x} ${y})`} /> : <circle cx={x} cy={y} r="3.1" fill={col} />}
-            {!k && (
-              <text x={x} y={y + 1.1} className="rb-world-q">
-                ?
-              </text>
-            )}
-            {id === goal && (
-              <text x={x + 3.2} y={y - 2.6} className="rb-world-goal">
-                !
-              </text>
-            )}
-            <text x={x} y={y + 6.4} className="rb-world-name">
-              {k ? r.name.replace(/^The /, '') : '???'}
-            </text>
-            <text x={x} y={y + 9} className="rb-world-lvl">
-              {r.kind === 'town' ? 'town' : `${r.levels[0]}-${r.levels[1]}`}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+    <div className="rb-world-scroll" ref={scroller}>
+      <svg className="rb-world" viewBox={`${box.x0} ${box.y0} ${box.w} ${box.h}`} style={{ minWidth: `${Math.round(box.w * WORLD_PX)}px` }} role="group" aria-label="World map">
+        <rect x={box.x0} y={box.y0} width={box.w} height={box.h} rx="3" className="rb-world-sea" />
+        {links.map(([a, b]) => {
+          const A = worldAt(a);
+          const B = worldAt(b);
+          return <line key={`${a}-${b}`} x1={A[0]} y1={A[1]} x2={B[0]} y2={B[1]} className={known(a) && known(b) ? 'is-known' : ''} />;
+        })}
+        {REGION_IDS.map((id) => {
+          const r = REGIONS[id];
+          const [x, y] = worldAt(id);
+          const k = known(id);
+          const col = k ? KIND_COLOR[r.kind] : '#6a6480';
+          const at = spots.get(id);
+          return (
+            <g key={id} className={`rb-world-node${id === sel ? ' is-sel' : ''}`} onClick={() => onSel(id)} role="button" aria-label={k ? r.name : 'Unknown land'} tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSel(id)}>
+              {id === here && <circle cx={x} cy={y} r="5.2" className="rb-world-here" />}
+              {/* a house, a tree, a gate; a grey "?" where the hero has not been */}
+              <circle cx={x} cy={y} r="3.4" className="rb-world-mark" stroke={col} />
+              <image href={mapIconUrl(k ? (r.kind === 'town' ? 'town' : r.kind === 'dungeon' ? 'dungeon' : 'wild') : 'unknown', 3)} x={x - 3} y={y - 3} width="6" height="6" className="rb-world-icon" />
+              {id === goal && (
+                <text x={x + 3.2} y={y - 2.6} className="rb-world-goal">
+                  !
+                </text>
+              )}
+              {at && (
+                <text x={at.x} y={at.y} textAnchor={at.anchor} className="rb-world-name">
+                  {names.get(id)}
+                </text>
+              )}
+              {/* the selected land's levels (the card under the map has them all) */}
+              {at && id === sel && r.kind !== 'town' && (
+                <text x={at.x} y={at.y + LVL_SIZE * 1.15} textAnchor={at.anchor} className="rb-world-lvl">
+                  {`levels ${r.levels[0]}-${r.levels[1]}`}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
 
 /** A small overview of the current region with the hero on it. */
+/** The fog of war over a map drawn `k` canvas pixels a tile: dark where unexplored, soft at its edge. */
+function drawFog(g: CanvasRenderingContext2D, fog: Fog, k: number): void {
+  if (fog.all) return;
+  const f = document.createElement('canvas');
+  f.width = fog.w;
+  f.height = fog.h;
+  const fg = f.getContext('2d')!;
+  const img = fg.createImageData(fog.w, fog.h);
+  for (let i = 0; i < fog.cells.length; i++) {
+    if (fog.cells[i]) continue;
+    img.data[i * 4] = 13;
+    img.data[i * 4 + 1] = 10;
+    img.data[i * 4 + 2] = 24;
+    img.data[i * 4 + 3] = 235;
+  }
+  fg.putImageData(img, 0, 0);
+  g.save();
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(f, 0, 0, fog.w * FOG_CELL * k, fog.h * FOG_CELL * k);
+  g.restore();
+}
+
 function MiniMap({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const w = engine.world!;
@@ -795,49 +886,65 @@ function MiniMap({ engine }: { engine: SigilEngine }) {
     const c = ref.current;
     if (!c) return;
     const m = w.map;
-    c.width = m.w * 2;
-    c.height = m.h * 2;
-    const g = c.getContext('2d')!;
+    // drawn at the size it shows (the ground scaled up, the icons at a steady size on top)
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const cssW = c.clientWidth || m.w * 4;
+    c.width = Math.round(cssW * dpr);
+    c.height = Math.round((cssW * dpr * m.h) / m.w);
+    const k = c.width / m.w;
+    const ground = document.createElement('canvas');
+    ground.width = m.w;
+    ground.height = m.h;
+    const gg = ground.getContext('2d')!;
     const pal = mapColors(w.region.theme);
-    const color = (k: number): string => {
-      if (k === K.Wall || k === K.Illusion) return pal.wall;
-      if (k === K.Water) return pal.water;
-      if (k === K.Path || k === K.Bridge) return pal.path;
-      if (k === K.Cobble) return pal.cobble;
-      if (k === K.Sand) return pal.sand;
-      if (k === K.Tree || k === K.Bush) return pal.wall;
-      if (k === K.House || k === K.HouseAnchor) return pal.house;
-      if (k === K.Door) return '#8a6a3a';
+    const color = (t: number): string => {
+      if (t === K.Wall || t === K.Illusion) return pal.wall;
+      if (t === K.Water) return pal.water;
+      if (t === K.Path || t === K.Bridge) return pal.path;
+      if (t === K.Cobble) return pal.cobble;
+      if (t === K.Sand) return pal.sand;
+      if (t === K.Tree || t === K.Bush) return pal.wall;
+      if (t === K.House || t === K.HouseAnchor) return pal.house;
+      if (t === K.Door) return '#8a6a3a';
       return pal.floor;
     };
     for (let i = 0; i < m.w * m.h; i++) {
-      g.fillStyle = color(m.kind[i]!);
-      g.fillRect((i % m.w) * 2, Math.floor(i / m.w) * 2, 2, 2);
+      gg.fillStyle = color(m.kind[i]!);
+      gg.fillRect(i % m.w, Math.floor(i / m.w), 1, 1);
     }
-    const dot = (x: number, y: number, col: string, s = 3): void => {
-      g.fillStyle = '#000';
-      g.fillRect(Math.round((x / TILE) * 2) - s / 2 - 1, Math.round((y / TILE) * 2) - s / 2 - 1, s + 2, s + 2);
-      g.fillStyle = col;
-      g.fillRect(Math.round((x / TILE) * 2) - s / 2, Math.round((y / TILE) * 2) - s / 2, s, s);
-    };
-    for (const ws of w.waystones) dot(ws.x, ws.y, '#22e4ff', 4);
-    for (const c2 of w.chests) if (!c2.open) dot(c2.x, c2.y, '#ffcf5a', 3);
-    for (const n of w.npcs) dot(n.x, n.y, '#ffffff', 3);
-    for (const x of w.exits) dot(x.x, x.y, '#ff3fd2', 4);
+    const g = c.getContext('2d')!;
+    g.imageSmoothingEnabled = false;
+    g.drawImage(ground, 0, 0, c.width, c.height);
+    drawFog(g, w.fog, k);
+    const s = Math.max(1, Math.round(dpr * 1.5));
+    const icon = (x: number, y: number, name: MapIcon): void => drawMapIcon(g, name, (x / TILE) * k, (y / TILE) * k, s);
+    // what stands in the fog is not on the map yet
+    const seen = (x: number, y: number): boolean => fogSeen(w.fog, x / TILE, y / TILE);
+    for (const ws of w.waystones) if (seen(ws.x, ws.y)) icon(ws.x, ws.y, 'waystone');
+    for (const c2 of w.chests) if (!c2.open && seen(c2.x, c2.y)) icon(c2.x, c2.y, 'chest');
+    for (const n of w.npcs) if (seen(n.x, n.y)) icon(n.x, n.y, NPCS[n.id]?.shop ? 'merchant' : 'person');
+    for (const x of w.exits) if (seen(x.x, x.y)) icon(x.x, x.y, x.door ? 'door' : 'road');
     const goal = objectiveTarget(w);
-    if (goal) dot(goal.x, goal.y, '#ffe066', 5);
-    dot(w.player.x, w.player.y, '#ff4a4a', 4);
+    if (goal) icon(goal.x, goal.y, 'quest');
+    icon(w.player.x, w.player.y, 'you');
   }, [w, engine.version]);
+  const key = (name: MapIcon, label: string) => (
+    <span className="rb-map-key">
+      <img src={mapIconUrl(name, 2)} alt="" /> {label}
+    </span>
+  );
   return (
     <div className="rb-minimap">
       <canvas ref={ref} aria-label={`Map of ${w.region.name}`} />
-      <span className="rb-small rb-dim">
-        <i style={{ background: '#ff4a4a' }} /> you <i style={{ background: '#22e4ff' }} /> waystone <i style={{ background: '#ffcf5a' }} /> chest <i style={{ background: '#ff3fd2' }} /> exit <i style={{ background: '#ffe066' }} /> quest{w.npcs.length > 0 && (
-          <>
-            {' '}
-            <i style={{ background: '#ffffff' }} /> villager
-          </>
-        )}
+      <span className="rb-small rb-dim rb-map-keys">
+        {key('you', 'you')}
+        {key('quest', 'quest')}
+        {w.waystones.length > 0 && key('waystone', 'waystone')}
+        {key('road', 'road')}
+        {w.exits.some((x) => x.door) && key('door', 'door')}
+        {w.chests.length > 0 && key('chest', 'chest')}
+        {w.npcs.length > 0 && key('person', 'people')}
+        {w.npcs.some((n) => NPCS[n.id]?.shop) && key('merchant', 'merchant')}
       </span>
     </div>
   );

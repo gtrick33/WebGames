@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { DUNGEONS } from '../src/games/sigilfall/data/dungeons';
 import { ITEMS } from '../src/games/sigilfall/data/items';
 import { QUESTS } from '../src/games/sigilfall/data/quests';
-import { REGIONS } from '../src/games/sigilfall/data/regions';
+import { REGION_IDS, REGIONS } from '../src/games/sigilfall/data/regions';
 import { ZONES } from '../src/games/sigilfall/data/zones';
 
 function once(ids: [string, string][]): void {
@@ -36,5 +36,16 @@ describe('sigilfall ids', () => {
       const marks = [...Object.values(r.markers), ...(r.placed ?? []).map((p) => p.marker)];
       for (const m of marks) if (m.kind === 'exit') expect(REGIONS[m.to], `${r.id} has a way to ${m.to}, which isn't registered`).toBeTruthy();
     }
+  });
+
+  it('every place to find is in one land only (the quest arrow, and what counts, would go to the other)', () => {
+    const ids: [string, string][] = [];
+    for (const id of REGION_IDS) {
+      const r = REGIONS[id];
+      const marks = [...Object.values(r.markers), ...(r.placed ?? []).map((p) => p.marker)];
+      const own = new Set(marks.flatMap((m) => (m.kind === 'spot' || m.kind === 'secret' || m.kind === 'shrine' ? [m.id] : [])));
+      for (const s of own) ids.push([s, id]);
+    }
+    once(ids);
   });
 });

@@ -1,7 +1,7 @@
 import { dist } from '../core/math';
-import { QUEST_DEFS } from '../data/quests';
+import { EVENTS } from '../data/events';
 import type { QuestDef, RegionId } from '../data/types';
-import { questRegion, HOME } from '../progress/character';
+import { activeQuests, questRegion, questState, HOME } from '../progress/character';
 import { TILE } from './map';
 import { bossRegion, nextRegion, npcRegion, spotRegion } from './routes';
 import type { World } from './world';
@@ -16,6 +16,8 @@ export interface Objective {
   x: number;
   y: number;
   soft: boolean;
+  /** The quest it is for. */
+  quest?: string;
 }
 
 export function objectiveTarget(w: World): Objective | null {
@@ -39,21 +41,32 @@ export function objectiveTarget(w: World): Objective | null {
     }
     return best;
   };
+  /** Where a foe the hero hunts camps while none of its kind are about (they come back there; the minimap shows the place). */
+  const den = (ids: string[]): Objective | null => {
+    const st = w.packs.find((s) => !s.gone && s.enemies.some((id) => ids.includes(id)));
+    return st ? { x: st.x, y: st.y, soft: true } : null;
+  };
   /** In the quest's region: what `inside` finds; elsewhere: the exit toward it. */
   const goTo = (region: RegionId | undefined, inside: () => Objective | null): Objective | null => {
     if (!region) return null;
     if (region === here) return inside();
-    const next = nextRegion(here, region);
+    const next = nextRegion(here, region, (q) => questState(h, q) === 'done');
     const x = next ? w.exits.find((e) => e.to === next) : undefined;
     return x ? place(x.x, x.y) : null;
   };
 
-  const active = Object.entries(h.quests)
-    .filter(([, s]) => s.state === 'active')
-    .map(([id]) => QUEST_DEFS[id])
-    .filter((q): q is QuestDef => !!q);
-  // the ones done here first, the story order otherwise
-  active.sort((a, b) => Number(questRegion(b) === here) - Number(questRegion(a) === here));
+  // the ones done here first, the story order otherwise (the order the quest tracker reads them in)
+  const active = activeQuests(h);
+  // (where the objective itself is: a boss in its dungeon, a person where they stand, the story where it happens)
+  const where = (q: QuestDef): RegionId | undefined => {
+    const o = q.objective;
+    if (o.kind === 'boss') return bossRegion(o.boss) ?? questRegion(q);
+    if (o.kind === 'talk') return npcRegion(o.npc) ?? questRegion(q);
+    if (o.kind === 'explore') return spotRegion(o.spot) ?? questRegion(q);
+    if (o.kind === 'event') return EVENTS[o.event]?.region ?? questRegion(q);
+    return questRegion(q);
+  };
+  active.sort((a, b) => Number(where(b) === here) - Number(where(a) === here));
   for (const q of active) {
     const o = q.objective;
     let t: Objective | null = null;
@@ -65,10 +78,10 @@ export function objectiveTarget(w: World): Objective | null {
         }
         break;
       case 'kill':
-        t = goTo(o.region, () => nearest((e) => !o.enemies || o.enemies.includes(e.def.id)));
+        t = goTo(o.region, () => nearest((e) => !o.enemies || o.enemies.includes(e.def.id)) ?? (o.enemies ? den(o.enemies) : null));
         break;
       case 'loot':
-        t = goTo(o.region, () => nearest((e) => o.from.includes(e.def.id)));
+        t = goTo(o.region, () => nearest((e) => o.from.includes(e.def.id)) ?? den(o.from));
         break;
       case 'collect':
         // Rift Shards: the glowing elites of the Whisperwood
@@ -90,16 +103,43 @@ export function objectiveTarget(w: World): Objective | null {
         t = goTo(bossRegion(o.boss), () => markerOf((pm) => pm.marker.kind === 'boss' && pm.marker.boss === o.boss));
         break;
       case 'clear':
+        // a harder difficulty is chosen at a waystone's map: walking in by the road is always Normal
+        if (o.tier > 0 && w.tier !== o.tier) {
+          let best: Objective | null = null;
+          for (const s of w.waystones) if (!best || dist(s.x, s.y, w.player.x, w.player.y) < dist(best.x, best.y, w.player.x, w.player.y)) best = place(s.x, s.y);
+          t = here === o.region ? null : best;
+          break;
+        }
         t = goTo(o.region, () => {
           // the next room still to fight, then the last
           const enc = w.encounters.find((e) => e.state !== 'cleared');
-          const tiles = enc ? (w.map.roomTiles[enc.index] ?? []).filter((i) => !w.map.solid[i]) : [];
+          // its floor, not its doorways (a door shuts on whoever stands in it)
+          const doors = new Set(enc ? (w.map.doors[enc.index] ?? []) : []);
+          const tiles = enc ? (w.map.roomTiles[enc.index] ?? []).filter((i) => !w.map.solid[i] && !doors.has(i)) : [];
           const i = tiles[Math.floor(tiles.length / 2)];
           return i !== undefined ? place(((i % w.map.w) + 0.5) * TILE, (Math.floor(i / w.map.w) + 0.5) * TILE) : null;
         });
         break;
+      case 'event': {
+        // where the story happens; once it does, the fight (on the minimap) or the way to safety
+        const def = EVENTS[o.event];
+        t = goTo(def?.region, () => {
+          if (!def) return null;
+          const spot = (id: string): Objective | null => {
+            const s = w.places[id] ?? w.spots.find((x) => x.id === id);
+            return s ? place(s.x, s.y) : null;
+          };
+          if (w.story.run?.def.id !== def.id) return spot(def.at);
+          const run = w.story.run;
+          if (def.rescue && run.safe.size < run.followers.length) return spot(def.rescue.to);
+          // between waves the fight is still here: its place stays on the minimap, the arrow never leads off
+          const hold = spot(def.escort ? def.escort.to : def.at);
+          return nearest((e) => run.ids.includes(e.id)) ?? (hold && { ...hold, soft: true });
+        });
+        break;
+      }
     }
-    if (t) return t;
+    if (t) return { ...t, quest: q.id };
   }
   if (w.portal) return place(w.portal.x, w.portal.y);
   return null;

@@ -88,6 +88,10 @@ export const SUNSCORCH = wildRegion(
       { at: [0.18, 0.82], r: 10, kind: 'den', packs: [['sand-scorpion', 'sand-scorpion'], ['sand-scorpion', 'sand-scorpion', 'sand-scorpion'], ['sand-scorpion', 'sand-wurm']], rare: 'the-dune-tyrant', spot: { id: 'scorpion-hollow', name: 'Scorpion Hollow' } },
       { at: [0.42, 0.78], r: 9, kind: 'ruin', level: 32, packs: [['sun-mummy', 'tomb-scarab', 'tomb-scarab'], ['dune-raider', 'dune-javelineer']], chest: 'rare', spot: { id: 'fallen-obelisk', name: 'The Fallen Obelisk' } },
       { at: [0.3, 0.16], r: 9, kind: 'wreck', packs: [['sand-wurm', 'sand-wurm'], ['dune-raider', 'dune-javelineer']], spot: { id: 'sand-ship', name: 'The Sand-Ship' } },
+      // the open sands are not empty: a caravan the raiders caught in the north-east, and the old kings'
+      // waymarks in the far south-east, where the scarabs nest under them
+      { at: [0.84, 0.18], r: 9, kind: 'wreck', packs: [['dune-raider', 'dune-javelineer'], ['sand-scorpion', 'sand-scorpion']], chest: 'common', spot: { id: 'dead-caravan', name: 'The Dead Caravan' } },
+      { at: [0.9, 0.82], r: 8, kind: 'ruin', level: 34, packs: [['tomb-scarab', 'tomb-scarab', 'tomb-scarab'], ['sun-mummy', 'tomb-scarab']], spot: { id: 'sun-steles', name: 'The Sun Steles' } },
       // the old kings' burial ground and its temple
       {
         at: [0.66, 0.84],

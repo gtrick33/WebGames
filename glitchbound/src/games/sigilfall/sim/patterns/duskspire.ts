@@ -37,6 +37,8 @@ interface Rot {
   max: number;
   grow: number;
 }
+/** The most rot pools on the floor at once. */
+const ROT_MOST = 7;
 interface Fight {
   last: number;
   shackles: Shackle[];
@@ -257,7 +259,8 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
   },
 
   /**
-   * Hollowbrand's rot: pools land on circles and stay for the rest of the fight, creeping outward.
+   * Hollowbrand's rot: pools land on circles and stay for the rest of the fight, creeping outward; past
+   * ROT_MOST the oldest dries as a new one lands, so the hall never rots wall to wall.
    * Knobs: count, r (start), max, grow (px a second), mul (damage per tick), spread (px from the hero).
    */
   'dusk:rot': (w, e, _dt, k) => {
@@ -275,6 +278,7 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
           if (!alive(w, e)) return;
           const f = w.spawnField({ x: to.x, y: to.y, r, dur: 9999, tick: 0.5, dmg: e.dmg * k.num('mul', 0.22), type: 'shadow', status: { status: 'chill', dur: 0.8, power: 0.3 }, look: 'poison', hostile: true, depth: 0, spec: null, onHit: false });
           s.rots.push({ f, max: k.num('max', 34), grow: k.num('grow', 1.2) });
+          for (const old of s.rots.splice(0, Math.max(0, s.rots.length - ROT_MOST))) old.f.t = Math.min(old.f.t, 0.6);
           w.fxBurst(to.x, to.y, ROT, 10, r);
         });
       }

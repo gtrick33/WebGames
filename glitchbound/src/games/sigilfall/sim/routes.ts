@@ -8,6 +8,8 @@ import type { RegionId } from '../data/types';
  */
 interface Links {
   exits: Map<RegionId, RegionId[]>;
+  /** The quest a road needs done before it opens, by `from>to`. */
+  needs: Map<string, string>;
   npc: Map<string, RegionId>;
   spot: Map<string, RegionId>;
   boss: Map<string, RegionId>;
@@ -16,7 +18,7 @@ interface Links {
 let links: Links | null = null;
 
 function build(): Links {
-  const L: Links = { exits: new Map(), npc: new Map(), spot: new Map(), boss: new Map() };
+  const L: Links = { exits: new Map(), needs: new Map(), npc: new Map(), spot: new Map(), boss: new Map() };
   for (const id of REGION_IDS) {
     const r = REGIONS[id];
     const out: RegionId[] = [];
@@ -24,12 +26,15 @@ function build(): Links {
       out.push(...r.holds.exits);
       for (const n of r.holds.npcs) L.npc.set(n, id);
       for (const s of r.holds.spots) L.spot.set(s, id);
+      for (const [to, q] of Object.entries(r.holds.needs ?? {})) L.needs.set(`${id}>${to}`, q!);
     } else {
       const used = new Set(r.map.join(''));
       const all = [...Object.entries(r.markers).flatMap(([ch, m]) => (used.has(ch) ? [m] : [])), ...(r.placed ?? []).map((p) => p.marker)];
       for (const m of all) {
-        if (m.kind === 'exit') out.push(m.to);
-        else if (m.kind === 'npc') L.npc.set(m.npc, id);
+        if (m.kind === 'exit') {
+          out.push(m.to);
+          if (m.needs) L.needs.set(`${id}>${m.to}`, m.needs);
+        } else if (m.kind === 'npc') L.npc.set(m.npc, id);
         // secrets (shrines) are left out on purpose: nothing points at them
         else if (m.kind === 'spot') L.spot.set(m.id, id);
         else if (m.kind === 'boss') L.boss.set(m.boss, id);
@@ -47,8 +52,11 @@ export const npcRegion = (npc: string): RegionId | undefined => get().npc.get(np
 export const spotRegion = (spot: string): RegionId | undefined => get().spot.get(spot);
 export const bossRegion = (boss: string): RegionId | undefined => get().boss.get(boss);
 
-/** The next region on the shortest walk from one region to another (null when already there or no way). */
-export function nextRegion(from: RegionId, to: RegionId): RegionId | null {
+/**
+ * The next region on the shortest walk from one region to another (null when already there or no way);
+ * `done` says which quests are finished, so roads the story still keeps shut are walked round.
+ */
+export function nextRegion(from: RegionId, to: RegionId, done?: (quest: string) => boolean): RegionId | null {
   if (from === to) return null;
   const L = get();
   const prev = new Map<RegionId, RegionId>([[from, from]]);
@@ -58,6 +66,8 @@ export function nextRegion(from: RegionId, to: RegionId): RegionId | null {
     if (r === to) break;
     for (const n of L.exits.get(r) ?? []) {
       if (prev.has(n)) continue;
+      const needs = done && L.needs.get(`${r}>${n}`);
+      if (needs && !done(needs)) continue;
       prev.set(n, r);
       q.push(n);
     }

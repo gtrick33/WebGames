@@ -35,6 +35,8 @@ export const SHATTERED_VALE = wildRegion(
     exits: [
       { side: 's', at: 0.5, to: 'grimward', label: 'South pass to the Grimward Moors' },
       { side: 'e', at: 0.4, to: 'highwall', label: 'East road to Highwall March', minLevel: 39 },
+      // the causeway the Herald's map shows (Gloamhollow's own south road comes back this way)
+      { side: 'n', at: 0.25, to: 'gloamhollow', label: 'North causeway into Gloamhollow', minLevel: 44, needs: 'gate-the-prison-map' },
     ],
     pois: [
       // the Regent's soldiers camp under their watchtower beside Shardwatch
@@ -105,7 +107,7 @@ export const SHATTERED_VALE = wildRegion(
           ['rift-stalker', 'rift-shardling', 'rift-shardling'],
         ],
         rare: 'the-flicker',
-        spot: { id: 'old-watch', name: 'The Old Watch' },
+        spot: { id: 'vale-old-watch', name: 'The Old Watch' },
         landmark: { style: 'tower', w: 3, h: 3, name: 'The Old Watch' },
       },
     ],

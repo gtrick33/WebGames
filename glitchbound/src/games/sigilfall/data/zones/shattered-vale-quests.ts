@@ -246,7 +246,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     name: 'The Old Watch',
     giver: 'sergeant-dace',
     text: 'Before Shardwatch there was the Old Watch, a tower in the south-west of the Vale that the Regent’s soldiers held for a hundred years and left in a single night. Dace’s missing sentries were last seen walking toward it, and his scouts say something there flickers. Go and look at the Old Watch.',
-    objective: { kind: 'explore', spot: 'old-watch', label: 'Search the Old Watch in the south-west' },
+    objective: { kind: 'explore', spot: 'vale-old-watch', label: 'Search the Old Watch in the south-west' },
     after: ['stalkers-in-the-dark'],
     zone: 'shattered-vale',
     level: 37,

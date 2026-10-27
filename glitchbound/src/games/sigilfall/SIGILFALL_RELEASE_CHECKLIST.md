@@ -9,7 +9,7 @@ browser this cycle), **UNVERIFIED** (not checked, with the reason).
 | --- | --- |
 | Typecheck `npx tsc --noEmit -p .` | VERIFIED (clean) |
 | Lint `npx eslint src/games/sigilfall tests/sigilfall*` | VERIFIED (clean) |
-| Sigilfall tests `npx vitest run --no-fsModuleCache tests/sigilfall*` | VERIFIED (40 files, 1,087 tests, all passing) |
+| Sigilfall tests `npx vitest run --no-fsModuleCache tests/sigilfall*` | VERIFIED (42 files, 1,096 tests, all passing; the whole project: 121 files, 1,988 tests) |
 | Production build `npm run build` | VERIFIED (the arcade's startup JS stays under its 120 KB budget) |
 | `validate:sigilfall` | the registry, quest, art and collection validations run as tests (`sigilfall-ids`, `sigilfall-quests-doable`, `sigilfall-dungeons`, `sigilfall-art`, `sigilfall-collection`, `sigilfall-words`) — VERIFIED |
 
@@ -19,8 +19,11 @@ browser this cycle), **UNVERIFIED** (not checked, with the reason).
 | --- | --- | --- |
 | All seven classes clear the opening dungeons on every tier (bot) | VERIFIED | `sigilfall-sim`, `sigilfall-dungeon-*` |
 | Every zone's quests can be finished; no road to an unregistered region | VERIFIED | `sigilfall-quests-doable`, `sigilfall-ids` |
+| The whole campaign plays from a new save by the quest arrow, all 515 quests, no dead end | VERIFIED | `sigilfall-campaign` |
+| Fog of war on the maps, kept on the save; map icons | VERIFIED | `sigilfall-guidance`; seen in the browser |
+| UI at 1440 × 900, 1024 × 768, phones on their side and upright, full screen: no overlap, nothing over the stage | MANUALLY VERIFIED | SIGILFALL_QA.md, hardening pass |
 | Every act's story events played on the simulation, reload mid-event | VERIFIED | `sigilfall-vale`, `-road`, `-alliance`, `-gates`, `-rimeheld`, `-finale` |
-| Old saves 1 → 8 migrate, keep level, talents, loadouts, items; injected data rejected | VERIFIED | `sigilfall-world`, `sigilfall-collection`, `sigilfall-progression` |
+| Old saves 1 → 9 migrate, keep level, talents, loadouts, items; injected data rejected | VERIFIED | `sigilfall-world`, `sigilfall-collection`, `sigilfall-progression` |
 | Touch: two thumbs, ownership, release on cancel/blur/unmount | VERIFIED | `sigilfall-touch` |
 | Touch HUD on a phone on its side (inside the page) and a tablet | MANUALLY VERIFIED | SIGILFALL_QA.md |
 | Desktop keys: `Y` calls the mount, `Q` gets the hero down and casts in one press | MANUALLY VERIFIED | real key presses in the dev browser, the engine stepped frame by frame |

@@ -173,8 +173,9 @@ function Hud({ engine }: { engine: SigilEngine }) {
       <div className="rb-hud-menu">
         <HudButton icon="bag" label="Hero & bag" badge={fresh || undefined} onClick={() => engine.openPanel('hero')} kbd="I" engine={engine} />
         <HudButton icon="star" label="Talents" badge={points || undefined} onClick={() => engine.openPanel('talents')} kbd="K" engine={engine} />
-        <HudButton icon="skills" label="Skills" onClick={() => engine.openPanel('skills')} kbd="U" engine={engine} />
-        <HudButton icon="scroll" label="Quests" onClick={() => engine.openPanel('quests')} kbd="J" engine={engine} />
+        {/* spare: a tab of the Hero panel too, so a narrow screen can do without the button */}
+        <HudButton icon="skills" label="Skills" onClick={() => engine.openPanel('skills')} kbd="U" engine={engine} spare />
+        <HudButton icon="scroll" label="Quests" onClick={() => engine.openPanel('quests')} kbd="J" engine={engine} spare />
         <HudButton icon="map" label="Map" onClick={() => engine.openPanel('map')} kbd="M" engine={engine} />
         <HudButton icon="pause" label="Pause" onClick={() => engine.togglePause()} kbd="Esc" engine={engine} />
         <GameMenuButton className="rb-hudbtn" />
@@ -185,9 +186,9 @@ function Hud({ engine }: { engine: SigilEngine }) {
   );
 }
 
-function HudButton({ icon, label, badge, onClick, kbd, engine }: { icon: string; label: string; badge?: number; onClick: () => void; kbd: string; engine: SigilEngine }) {
+function HudButton({ icon, label, badge, onClick, kbd, engine, spare }: { icon: string; label: string; badge?: number; onClick: () => void; kbd: string; engine: SigilEngine; spare?: boolean }) {
   return (
-    <button className="rb-hudbtn" onClick={onClick} aria-label={badge ? `${label} (${badge} new)` : label} title={engine.touchMode ? label : `${label} (${kbd})`}>
+    <button className={`rb-hudbtn${spare ? ' is-spare' : ''}`} onClick={onClick} aria-label={badge ? `${label} (${badge} new)` : label} title={engine.touchMode ? label : `${label} (${kbd})`}>
       <img src={uiIcon(icon, 3)} alt="" />
       {badge ? <span className="rb-badge">{badge}</span> : null}
     </button>

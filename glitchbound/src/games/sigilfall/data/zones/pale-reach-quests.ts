@@ -38,7 +38,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     text: 'Seven of seven. The Regent’s riders went out the same night with one word for every banner that ever owed the hero a favor: north. The coalition gathers at Dawn’s Rest, a ruined waystation at the southern edge of the Pale Reach, beyond Hollowmere, and Mara has gone ahead to command it. Take the north road out of Hollowmere and find her.',
     objective: { kind: 'talk', npc: 'mara-at-the-reach', label: 'Find Mara at Dawn’s Rest' },
     after: ['the-seventh-sigil'],
-    zone: 'pale-reach',
+    // the hand-off that sends the hero to pale-reach: it starts when the last chapter ends, not on arrival
     level: 56,
     reward: { xp: 2000, gold: 700, text: 'Dawn’s Rest is a roofless waystation full of tents, and the tents are full of people you know.' },
   },
@@ -196,7 +196,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     text: 'The Ash Crown has pulled the throne room into the only thing it has left: its memory of Vaelmoor as it was the summer before the plague. Warm stone, banners, a market, people. Through the tear over Duskspire the hero can walk into it. Elyra is already there, standing in the square with all seven sigils lit in her hands, waiting for you.',
     objective: { kind: 'talk', npc: 'elyra-in-the-memory', label: 'Find Elyra in the Crown’s memory of Vaelmoor' },
     after: ['the-hollow-king'],
-    zone: 'vaelmoor-remembered',
+    // the hand-off that sends the hero to vaelmoor-remembered: it starts when the last chapter ends, not on arrival
     level: 60,
     reward: { xp: 3000, gold: 600, text: 'Elyra holds the sigils, and the sigils hold the Crown, and the Crown holds everything else. “I can break it now,” she says. “Or I can give him one hour first. With them. Then break it. It’s yours to say. I don’t think I should say it. I don’t think I remember enough to.”' },
   },
