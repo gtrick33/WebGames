@@ -11,7 +11,7 @@ import { shareOrCopy } from '../../platform/share';
 import { choosePlay, LEVELS, type Level } from './ai';
 import { Board, moveMs } from './Board';
 import { LiveBoard } from './live';
-import { bookGame, endTurn, newMatch, nextGame, pips, rng, roll, step, TARGETS, turnDone, type Match, type Step } from './logic';
+import { bookGame, endTurn, newMatch, nextGame, pips, planStep, posKey, rng, roll, step, TARGETS, turnDone, type Match, type Step } from './logic';
 import { createSfx, type Sfx } from './sound';
 import { WORDS, type Words } from './text';
 import './Game.css';
@@ -201,18 +201,14 @@ function Backgammon({ host, pauseKey, challenge, playerName }: { host: GameHost;
       const t = window.setTimeout(() => update((r) => ({ ...r, match: { ...r.match, game: roll(r.match.game) } })), 700);
       return () => window.clearTimeout(t);
     }
-    // a move: plan the whole play once, then make it step by step
-    const k = `${run.match.games}:${g.rolls}`;
+    // a move: plan the whole play once, then make it step by step. The plan belongs to this game's roll:
+    // a match started after going back to the menu has its own (an old plan for the same roll count
+    // left the computer stuck on a step it could not make, issue #26)
+    const k = `${g.seed}:${g.rolls}:${posKey(g.turnStart)}`;
     if (plan.current?.key !== k) plan.current = { key: k, steps: choosePlay(g.turnStart, 1, g.roll![0] === g.roll![1] ? [g.roll![0], g.roll![0], g.roll![0], g.roll![0]] : [g.roll![0], g.roll![1]], level, rng(hashString(`${g.seed}:${g.rolls}`))) };
     const next = plan.current.steps[g.steps.length];
     const t = window.setTimeout(
-      () =>
-        update((r) => {
-          const cur = r.match.game;
-          const ng = next ? step(cur, next) : endTurn(cur);
-          // a plan that no longer fits (never expected): end the turn
-          return { ...r, match: { ...r.match, game: next && ng === cur ? endTurn(cur) : ng } };
-        }),
+      () => update((r) => ({ ...r, match: { ...r.match, game: planStep(r.match.game, next) } })),
       // each step once the one before has bounced its way there
       g.steps.length === 0 ? 900 : moveMs(1, g.steps[g.steps.length - 1]!) + 260,
     );

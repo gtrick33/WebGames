@@ -13,6 +13,8 @@ import { ARCADE_SAVE_KEY } from './syncKeys';
  *   got further wins whole: cleared/solved over settled over in progress, then more filled in, then this device.
  * - An object with a `day` (a half-played round's snapshot) is never mixed: the later day wins, then the one
  *   played further (more filled in), then this device.
+ * - A game in progress (`current`: a board game's match, its dice and whose turn it is) is never mixed either:
+ *   this device's copy wins whole (a mix of two boards could leave a game that cannot go on, issue #26).
  * - Numbers keep the larger (counts and bests); names like "fastest" keep the smaller one set.
  * - Lists of words (e.g. questions already seen) are joined; any other value is this device's.
  * - Lists of records stamped `updated` (Sigilfall's hero slots) keep, slot by slot, the copy played last:
@@ -67,6 +69,7 @@ export function mergeJson(local: Json, remote: Json, key = ''): Json {
       // The same day's round on both: the one played further (a round just restarted here has little filled in).
       return filled(remote) > filled(local) ? remote : local;
     }
+    if (key === 'current') return local;
     const out: Record<string, Json> = { ...remote, ...local };
     for (const k of Object.keys(local)) if (k in remote) out[k] = mergeJson(local[k], remote[k], k);
     return out;

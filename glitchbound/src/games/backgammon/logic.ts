@@ -368,6 +368,18 @@ function finishGame(g: Game): Game {
   return { ...g, phase: 'over', winner: w, points, left: [], lastTurn: { side: w, roll: g.roll!, steps: g.steps } };
 }
 
+/**
+ * The next step of a play planned ahead (the computer's, shown a checker at a time): the planned step, or,
+ * when there is none left or it no longer fits the board, the first legal one, and the end of the turn
+ * once nothing is left. The game always moves on, so the computer's turn can never hang (issue #26).
+ */
+export function planStep(g: Game, planned: Step | undefined): Game {
+  const n = planned ? step(g, planned) : g;
+  if (n !== g) return n;
+  const first = nextSteps(g)[0];
+  return first ? step(g, first) : endTurn(g);
+}
+
 /** A whole play at once (the computer's): each step in turn, then the turn ends. */
 export function playAll(g: Game, steps: readonly Step[]): Game {
   let n = g;

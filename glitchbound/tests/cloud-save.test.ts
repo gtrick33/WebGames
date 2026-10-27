@@ -58,6 +58,14 @@ describe('merging two copies of a save', () => {
     expect(mergeJson({}, { progress: theirs })).toEqual({ progress: theirs });
   });
 
+  it('never mixes two games in progress: this device’s match wins whole (#26)', () => {
+    const mine = { mode: 'match', match: { score: [1, 0], game: { turn: 0, phase: 'roll', rolls: 9, pos: { pts: [0, 2], bar: [0, 0] } } } };
+    const theirs = { mode: 'match', match: { score: [0, 2], game: { turn: 1, phase: 'move', rolls: 4, pos: { pts: [0, -1], bar: [1, 0] } } } };
+    expect(mergeJson({ wins: 1, current: mine }, { wins: 3, current: theirs })).toEqual({ wins: 3, current: mine });
+    expect(mergeJson({ current: null }, { current: theirs })).toEqual({ current: null });
+    expect(mergeJson({}, { current: theirs })).toEqual({ current: theirs });
+  });
+
   it('keeps the smaller "fastest" time that is set, and joins lists of seen words', () => {
     expect(mergeJson({ fastest: 0, best: 3 }, { fastest: 12, best: 1 })).toEqual({ fastest: 12, best: 3 });
     expect(mergeJson({ fastest: 9 }, { fastest: 12 })).toEqual({ fastest: 9 });
