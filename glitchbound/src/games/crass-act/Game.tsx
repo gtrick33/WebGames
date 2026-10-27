@@ -314,7 +314,7 @@ type Send = ReturnType<typeof useRoom>['send'];
 function invite(code: string, u: Ui): void {
   const app = embedHost()?.invite;
   if (app) return app();
-  void shareOrCopy({ title: 'Crass Act', text: u.inviteText(code), url: `${location.origin}/r/${code}` });
+  void shareOrCopy({ title: 'Crass Act', text: u.inviteText(code).replace(/ ?\u{1F608}/u, ''), url: `${location.origin}/r/${code}` });
 }
 
 function Players({ view, send, compact = false }: { view: RoomView; send: Send; compact?: boolean }) {

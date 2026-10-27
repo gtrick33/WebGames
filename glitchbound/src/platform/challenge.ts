@@ -94,6 +94,29 @@ export interface ChallengeListItem {
   closesAt: number;
 }
 
+/**
+ * A challenge in a player's history (every challenge they started, joined or played, while the
+ * server keeps it: see CHALLENGE_KEEP_MS), with how it stands or how it ended.
+ */
+export interface ChallengeHistoryItem {
+  id: string;
+  game: string;
+  mode: ChallengeMode;
+  /** The round it is on (or ended on). */
+  round: number;
+  createdAt: number;
+  updatedAt: number;
+  closed: boolean;
+  /** You started it. */
+  host: boolean;
+  /** You left it (your scores stay on its board). */
+  left: boolean;
+  /** Everyone who sat in it, leaders first: round wins, and their score in the last round anyone played (null: not played). */
+  players: { name: string; you: boolean; wins: number; score: number | null }[];
+  /** Who won (closed) or leads (open): most round wins, else the best score so far. Empty until someone played. */
+  leaders: string[];
+}
+
 /** Ranks a round's scores (higher first, or lower first for games where lower is better); returns winners. */
 export function roundWinners(scores: { name: string; score: number }[], lowerIsBetter = false): string[] {
   if (scores.length < 2) return [];

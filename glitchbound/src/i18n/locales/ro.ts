@@ -2061,6 +2061,19 @@ const ro: string[] = [
   "Un jucător desenează, toți ceilalți se întrec să ghicească cuvântul. Cuvinte mai grele, puncte mai multe.",
   "Desenează live, toți ghicesc pe propriul telefon",
   "Lista de camere nu e disponibilă acum. Încearcă din nou peste un minut.",
+  '{name} te provoacă să bați {score} în {game}',
+  '{name} te provoacă la {game}',
+  'Încă nu sunt scoruri',
+  'Egalitate: {names}',
+  'Ai câștigat',
+  'Conduci',
+  'contra {names}',
+  'Nu s-a mai alăturat nimeni',
+  'Provocări trecute',
+  'Încă niciuna. Provocările care se termină, sau pe care le părăsești, apar aici cu scorurile lor.',
+  'Provocările încheiate rămân aici {n} zile.',
+  'Încă nu ai provocări. Provoacă-ți prietenii din orice joc: aceeași rundă, o încercare fiecare.',
+  'Toate provocările tale',
 ];
 
 export default ro;

@@ -1,4 +1,4 @@
-/* Your challenges (/c): the open ones, and starting a new one. Each challenge itself lives in its game. */
+/* Your challenges (/c): the open ones, starting a new one, and past ones (also on /me). Each challenge itself lives in its game. */
 .chal-list,
 .chal-games {
   margin: 0;
@@ -45,12 +45,20 @@
 }
 .chal-badge {
   flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--well);
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
+}
+.chal-scores {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .chal-badge.is-turn {
   background: #c4f034;

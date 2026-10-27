@@ -2061,6 +2061,19 @@ const it: string[] = [
   "Un giocatore disegna, tutti gli altri fanno a gara per indovinare la parola. Parole più difficili, più punti.",
   "Disegna dal vivo, tutti indovinano sul proprio telefono",
   "L’elenco delle stanze non è disponibile al momento. Riprova tra un minuto.",
+  '{name} ti sfida a battere {score} a {game}',
+  '{name} ti sfida a {game}',
+  'Ancora nessun punteggio',
+  'Pareggio: {names}',
+  'Hai vinto',
+  'Sei in testa',
+  'contro {names}',
+  'Non si è unito nessun altro',
+  'Sfide passate',
+  'Ancora nessuna. Le sfide finite, o che lasci, compaiono qui con i loro punteggi.',
+  'Le sfide finite restano qui per {n} giorni.',
+  'Ancora nessuna sfida. Sfida gli amici da qualsiasi gioco: stesso round, un tentativo a testa.',
+  'Tutte le tue sfide',
 ];
 
 export default it;

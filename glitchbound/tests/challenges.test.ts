@@ -8,8 +8,10 @@ import { onRequestPost as score } from '../functions/api/challenges/[id]/score';
 import { onRequestGet as list, onRequestPost as create } from '../functions/api/challenges/index';
 import type { Ctx, Env } from '../server/http';
 import { signIn } from '../server/signin';
+import { standing } from '../src/components/ChallengeHistory';
 import { GAMES } from '../src/catalog/games';
-import { CHALLENGE_IDLE_MS, CHALLENGE_LOBBY_MS, cleanName, dailySeed, NAME_MAX, roundSeed, roundWinners, type ChallengeListItem, type ChallengeView } from '../src/platform/challenge';
+import { t } from '../src/i18n';
+import { CHALLENGE_IDLE_MS, CHALLENGE_KEEP_MS, CHALLENGE_LOBBY_MS, cleanName, dailySeed, NAME_MAX, roundSeed, roundWinners, type ChallengeHistoryItem, type ChallengeListItem, type ChallengeView } from '../src/platform/challenge';
 import { newsBetween } from '../src/platform/useChallengeRun';
 import { decodeReplay, encodeReplay } from '../src/games/mini-racer/ghost';
 import { challengeSpecOf } from '../src/platform/useChallengeRun';
@@ -268,5 +270,68 @@ describe('a guest who signs in keeps their challenges', () => {
     expect(quiet.closed).toBe(true);
     expect(await mine(ANA)).toEqual([]);
     expect((await call(score, `/api/challenges/${busy}/score`, { id: busy, key: ANA, body: { round: 1, score: 99 } })).status).toBe(409);
+  });
+
+  /* ------------------------------------------------ history (#28) */
+
+  const history = async (key: string, cookie?: string): Promise<ChallengeHistoryItem[]> => {
+    const headers: Record<string, string> = cookie ? { cookie } : {};
+    const res = await list({ request: new Request(`${ORIGIN}/api/challenges?history&key=${key}`, { headers }), env, params: {} });
+    return ((await res.json()) as { history: ChallengeHistoryItem[] }).history;
+  };
+
+  it('keeps a history of every challenge, with scores and who leads or won, for guests and members', async () => {
+    const id = await playedAsGuests();
+    const ana = (await history(ANA))[0]!;
+    expect(ana).toMatchObject({ id, game: 'wing-it', round: 1, host: true, left: false, closed: false, leaders: ['Ana'] });
+    expect(ana.players).toEqual([
+      { name: 'Ana', you: true, wins: 1, score: 40 },
+      { name: 'Bo', you: false, wins: 0, score: 30 },
+    ]);
+    expect(standing(ana, t).text).toBe('You lead');
+    // Bo, a guest, sees it by this device's key; it leaves his open list when he leaves, but not his history.
+    await call(closeIt, `/api/challenges/${id}/close`, { id, key: BO, body: {} });
+    expect(await mine(BO)).toEqual([]);
+    const bo = (await history(BO))[0]!;
+    expect(bo).toMatchObject({ id, left: true, host: false, leaders: ['Ana'] });
+    expect(standing(bo, t).text).toBe('Ana leads');
+    // The host ends it: the result is final.
+    await call(closeIt, `/api/challenges/${id}/close`, { id, key: ANA, body: {} });
+    expect(standing((await history(ANA))[0]!, t).text).toBe('You won');
+    expect(standing((await history(BO))[0]!, t).text).toBe('Ana won');
+    // Signed in, the account has it on any device; nobody's device key is in it.
+    const member = await signInAs('ana@example.com');
+    await history(ANA, member.cookie);
+    const anywhere = await history('', member.cookie);
+    expect(anywhere.map((c) => c.id)).toEqual([id]);
+    expect(JSON.stringify(anywhere)).not.toContain(BO);
+    expect(JSON.stringify(await history(BO))).not.toContain(ANA);
+  });
+
+  it('names a tie, counts round wins over rematches, and forgets ended challenges after a month', async () => {
+    const id = await playedAsGuests();
+    await call(join, `/api/challenges/${id}/join`, { id, key: 'cy-device-key-00000000003', body: { name: 'Cy' } });
+    await call(score, `/api/challenges/${id}/score`, { id, key: 'cy-device-key-00000000003', body: { round: 1, score: 40 } });
+    let ana = (await history(ANA))[0]!;
+    expect(ana.leaders).toEqual(['Ana', 'Cy']);
+    expect(standing(ana, t).text).toBe('Tied: Ana, Cy');
+    await call(rematch, `/api/challenges/${id}/rematch`, { id, key: ANA, body: { round: 1 } });
+    await call(score, `/api/challenges/${id}/score`, { id, key: BO, body: { round: 2, score: 9 } });
+    await call(score, `/api/challenges/${id}/score`, { id, key: ANA, body: { round: 2, score: 5 } });
+    ana = (await history(ANA))[0]!;
+    // Round 2: Bo 9 beats Ana 5 (Cy has not played it); round wins: Ana 1, Cy 1, Bo 1.
+    expect(ana.round).toBe(2);
+    expect(ana.players.map((p) => [p.name, p.wins, p.score])).toEqual([
+      ['Bo', 1, 9],
+      ['Ana', 1, 5],
+      ['Cy', 1, null],
+    ]);
+    expect(ana.leaders).toEqual(['Bo', 'Ana', 'Cy']);
+    // A lobby nobody joined shows up too, with no scores yet.
+    const lobby = await start(ANA);
+    expect(standing((await history(ANA)).find((c) => c.id === lobby)!, t).text).toBe('No scores yet');
+    await call(closeIt, `/api/challenges/${id}/close`, { id, key: ANA, body: {} });
+    now += CHALLENGE_KEEP_MS + 60_000;
+    expect(await history(ANA)).toEqual([]);
   });
 });

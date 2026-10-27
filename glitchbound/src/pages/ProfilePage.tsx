@@ -5,6 +5,7 @@ import { Icon } from '../components/Icon';
 import { NotifyForm } from '../components/Notify';
 import { QuestBoard } from '../components/Quests';
 import { Avatar } from '../components/Avatar';
+import { ChallengeHistoryList, useChallengeHistory } from '../components/ChallengeHistory';
 import { openSignIn } from '../components/openSignIn';
 import { account, ApiError, useAccount } from '../platform/account';
 import { fmt } from '../platform/daily';
@@ -142,6 +143,8 @@ export function ProfilePage() {
 
       <BestResults me={me} />
 
+      <ChallengeHistorySection />
+
       <section aria-labelledby="favs-title">
         <h2 id="favs-title" className="profile-h2">
           {t('Favorites')}
@@ -198,6 +201,31 @@ export function ProfilePage() {
         )}
       </section>
     </div>
+  );
+}
+
+/** The latest friends' challenges with their results; the full list is on /c. */
+function ChallengeHistorySection() {
+  const t = useT();
+  const list = useChallengeHistory();
+  return (
+    <section aria-labelledby="chal-history-title">
+      <h2 id="chal-history-title" className="profile-h2">
+        {t('Your challenges')}
+      </h2>
+      {list === null ? (
+        <p className="info-small">{t('Loading…')}</p>
+      ) : list.length === 0 ? (
+        <p className="info-lead">{t('No challenges yet. Challenge friends from any game: same round, one try each.')}</p>
+      ) : (
+        <ChallengeHistoryList items={list.slice(0, 5)} />
+      )}
+      <p>
+        <Link href="/c" className="btn btn-ghost btn-sm">
+          {t('All your challenges')}
+        </Link>
+      </p>
+    </section>
   );
 }
 

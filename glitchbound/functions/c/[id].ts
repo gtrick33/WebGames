@@ -1,28 +1,15 @@
-import { challengeRow, viewOf } from '../../server/challenges';
 import type { Ctx } from '../../server/http';
+import { cardUrl, challengeInvite } from '../../server/invites';
 import { previewPage } from '../../server/shares';
-import { getGame } from '../../src/catalog/catalog';
-import { MAX_PLAYERS } from '../../src/platform/challenge';
 
-/** GET /c/<id>: a challenge invite. Chats show who challenged you; people land on the challenge page. */
+/** GET /c/<id>: a challenge invite. Chats show who challenged you (as a picture); people land on the challenge page. */
 export async function onRequestGet({ request, env, params }: Ctx): Promise<Response> {
   const id = String(params?.id ?? '');
-  const row = await challengeRow(env, id).catch(() => null);
-  if (!row) {
+  const invite = await challengeInvite(env, id).catch(() => null);
+  if (!invite) {
     // A challenge that is over (deleted): the app says so, instead of dropping people on the home page unexplained.
     if (!/^[A-Za-z0-9]{5,12}$/.test(id)) return Response.redirect(new URL('/', request.url).toString(), 302);
     return previewPage(env, request, '/challenge', { title: 'This challenge has closed · GlitchBound', description: 'Start a new one and send the link to your friends.', replaceUrl: `/c/${id}` });
   }
-  const game = getGame(row.game);
-  const view = await viewOf(env, row, null);
-  const host = view.players[0]?.name ?? 'A friend';
-  const top = view.rounds[0]?.scores[0];
-  const title = `${host} challenged you in ${game?.title ?? 'GlitchBound'}! ⚔️`;
-  const description = [
-    top ? `${top.name} leads with ${top.score.toLocaleString('en-US')}` : 'Be the first to set a score',
-    `${view.players.length}/${MAX_PLAYERS} players`,
-    `Round ${view.round}`,
-    'Tap to play, free in your browser',
-  ].join(' · ');
-  return previewPage(env, request, '/challenge', { title, description, image: game ? `/games/${game.slug}/og.jpg` : undefined, replaceUrl: `/c/${row.id}` });
+  return previewPage(env, request, invite.page, { title: invite.title, description: invite.description, image: cardUrl('c', id, invite.card), imageAlt: invite.card.headline, replaceUrl: invite.replaceUrl });
 }

@@ -40,6 +40,7 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
     const outcome = await shareOrCopy({
       title: `GlitchBound Daily #${c.number}`,
       text: dailyShareText(c, best, streak, week, `${SITE_URL}/daily`),
+      url: `${SITE_URL}/daily`,
     });
     setShareMsg(outcome === 'copied' ? t('Result copied. Paste it anywhere.') : outcome === 'shared' ? t('Shared!') : outcome === 'failed' ? t('Could not share from this browser.') : '');
   };

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { getGame } from '../catalog/catalog';
 import type { GameEntry } from '../catalog/types';
+import { ChallengeHistoryList, useChallengeHistory } from '../components/ChallengeHistory';
 import { Icon } from '../components/Icon';
 import { useT } from '../i18n';
 import { ApiError } from '../platform/account';
-import { MAX_PLAYERS, type ChallengeListItem, type ChallengeMode } from '../platform/challenge';
+import { CHALLENGE_KEEP_MS, MAX_PLAYERS, type ChallengeListItem, type ChallengeMode } from '../platform/challenge';
 import { closeChallenge, createChallenge, getChallenge, myChallenges } from '../platform/challenges';
 import { dayKey } from '../platform/dates';
 import { useLiveCatalog } from '../platform/liveCatalog';
@@ -67,6 +68,9 @@ export function ChallengesPage() {
   const player = usePlayerName();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  // The open ones are listed above; the rest (ended, or left) are the history.
+  const [ended, setEnded] = useState(0);
+  const past = useChallengeHistory(ended)?.filter((c) => c.closed || c.left) ?? null;
   useEffect(() => {
     myChallenges().then(
       (r) => setList(r.challenges),
@@ -90,6 +94,7 @@ export function ChallengesPage() {
     try {
       await closeChallenge(c.id);
       setList((l) => l?.filter((x) => x.id !== c.id) ?? null);
+      setEnded((n) => n + 1);
     } catch {
       setMsg(t('Network error. Try again.'));
     } finally {
@@ -136,6 +141,18 @@ export function ChallengesPage() {
           </ul>
         )}
         <p className="info-small">{t('Challenges nobody joins close after a day; the rest close after a week without play.')}</p>
+      </section>
+
+      <section className="panel info-block" aria-labelledby="chal-past">
+        <h2 id="chal-past">{t('Past challenges')}</h2>
+        {past === null ? (
+          <p className="info-small">{t('Loading…')}</p>
+        ) : past.length === 0 ? (
+          <p className="info-small">{t('None yet. Challenges that end, or that you leave, show up here with their scores.')}</p>
+        ) : (
+          <ChallengeHistoryList items={past} />
+        )}
+        <p className="info-small">{t('Ended challenges stay here for {n} days.', { n: Math.round(CHALLENGE_KEEP_MS / 86400_000) })}</p>
       </section>
 
       <section className="panel info-block" aria-labelledby="chal-new">
