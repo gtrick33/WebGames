@@ -232,7 +232,7 @@ function Connected<V extends FrameView, A>({
     return () => window.clearTimeout(t);
   }, [error, clearError]);
   const invite = (): void => {
-    void shareOrCopy({ title: t('{game} room', { game: t(meta.title) }), text: `${meta.emoji} ${t(meta.invite)} ${t('Room {code}:', { code })}`, url: `${location.origin}/r/${code}` });
+    void shareOrCopy({ title: t('{game} room', { game: t(meta.title) }), text: `${t(meta.invite)}\n${t('Room code')} ${code}`, url: `${location.origin}/r/${code}` });
   };
 
   const bar = <ModeBar title={`${t(meta.title)} · ${code}`} progress={view && !gone ? progress?.(view) : undefined} onExit={onLeave} />;

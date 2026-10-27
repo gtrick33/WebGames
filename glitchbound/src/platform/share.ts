@@ -1,12 +1,15 @@
 /**
- * Shares text + link with the native share sheet when available, otherwise copies to the clipboard.
- * Returns what happened so the UI can confirm it.
+ * Shares a link with the share sheet, the native one, or by copying it. Only the link is sent (no
+ * text, no emoji): what it says is drawn on its preview picture (server/ogImage.ts) and on the
+ * sheet's picture card. Returns what happened so the UI can confirm it.
  */
 export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
 
 export interface ShareData {
   title: string;
+  /** What the pictures say (the first line as the headline). Never sent as a message. */
   text: string;
+  /** The link that is sent (this page when missing). */
   url?: string;
   /** What the picture card shows, when it should differ from the text. */
   card?: ShareCard;
@@ -81,20 +84,20 @@ export async function shareDirect(data: ShareData): Promise<ShareOutcome> {
   const nav = typeof navigator !== 'undefined' ? navigator : undefined;
   // Native sheets are best on touch devices; desktop share dialogs are clumsy, so copy there.
   const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+  const url = data.url ?? location.href;
   if (nav?.share && coarse) {
     try {
-      await nav.share({ title: data.title, text: data.text, url: data.url });
+      await nav.share({ title: data.title, url });
       return 'shared';
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
     }
   }
-  const text = data.url && !data.text.includes(data.url) ? `${data.text}\n${data.url}` : data.text;
   try {
-    await nav?.clipboard.writeText(text);
+    await nav?.clipboard.writeText(url);
     return 'copied';
   } catch {
-    return legacyCopy(text) ? 'copied' : 'failed';
+    return legacyCopy(url) ? 'copied' : 'failed';
   }
 }
 

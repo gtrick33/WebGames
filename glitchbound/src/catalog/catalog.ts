@@ -34,6 +34,9 @@ export function sectionGame(path: string): GameEntry | undefined {
 /** Where a game's page lives: its section, or /games/<slug>. */
 export const gamePath = (g: GameEntry): string => g.section?.path ?? `/games/${g.slug}`;
 
+/** A banner's Play button: the game's page, with the game started on arrival as its own Play would (GamePage). */
+export const playPath = (g: Pick<GameEntry, 'slug'>): string => `/games/${g.slug}?play=1`;
+
 export function isCategory(value: string | null | undefined): value is CategoryId {
   return !!value && Object.hasOwn(CATEGORIES, value);
 }

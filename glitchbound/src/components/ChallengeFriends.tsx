@@ -20,11 +20,13 @@ export function inviteToChallenge(game: GameEntry, view: Pick<ChallengeView, 'id
   const app = embedHost()?.invite;
   if (app) return app();
   const mine = view.rounds.find((r) => r.round === view.round)?.scores.find((s) => s.you);
-  void shareOrCopy({
-    title: tr('{game} challenge', { game: game.title }),
-    text: `⚔️ ${mine ? tr('I scored {score} in {game}. Beat me!', { score: fmt(mine.score), game: game.title }) : tr('I challenged you in {game}!', { game: game.title })}\n${tGame(game.challenge?.label ?? '')}`,
-    url: `${location.origin}/c/${view.id}`,
-  });
+  const name = view.players.find((p) => p.you)?.name ?? '';
+  const vars = { name, score: mine ? fmt(mine.score) : '', game: game.title };
+  const headline = mine
+    ? tr(name ? '{name} challenges you to beat {score} in {game}' : 'I scored {score} in {game}. Beat me!', vars)
+    : tr(name ? '{name} challenges you in {game}' : 'I challenged you in {game}!', vars);
+  // Only the link is sent; this is what its picture card says (the chat preview says the same).
+  void shareOrCopy({ title: tr('{game} challenge', { game: game.title }), text: `${headline}\n${tGame(game.challenge?.label ?? '')}`, url: `${location.origin}/c/${view.id}` });
 }
 
 /**

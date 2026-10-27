@@ -5,6 +5,7 @@ import { SAVE_KEY } from '../src/platform/save';
 import { saveStore } from '../src/platform/store';
 import { TodaysDailies } from '../src/components/TodaysDailies';
 import { fakeGame } from './fixtures';
+import { GAMES } from '../src/catalog/games';
 import { loadGamePage } from '../src/pages/loadGamePage';
 
 // The game page's code is a chunk of its own; like main.tsx on a game page, render once it is here.
@@ -12,8 +13,10 @@ beforeAll(async () => {
   await loadGamePage();
 });
 
-function renderAt(path: string) {
+function renderAt(path: string, { howToSeen = true } = {}) {
   saveStore.reload(); // the store is a singleton; pick up whatever this test put in localStorage
+  // a player who has seen every game's How to play (it opens by itself only the first time; see its own test)
+  if (howToSeen) localStorage.setItem('glitchbound.howto', JSON.stringify(GAMES.map((g) => g.slug)));
   window.history.replaceState(null, '', path);
   return render(<App />);
 }
@@ -28,7 +31,8 @@ describe('homepage', () => {
     const start = screen.getByRole('region', { name: 'Our best games' });
     const flagships = within(start).getAllByRole('link').map((a) => a.getAttribute('href'));
     expect(flagships).toHaveLength(4);
-    expect(flagships.sort()).toEqual(['/games/color-recall', '/games/launch-control', '/games/letter-pinch', '/games/wait-what']);
+    // Their Play starts the game on arrival (#24).
+    expect(flagships.sort()).toEqual(['/games/color-recall?play=1', '/games/launch-control?play=1', '/games/letter-pinch?play=1', '/games/wait-what?play=1']);
     // The hero's side: the day's theme and the daily challenge (and the free promise on wide screens).
     const hero = screen.getByRole('region', { name: /Small games\./ });
     expect(within(hero).getByText('Today is')).toBeTruthy();
@@ -37,7 +41,7 @@ describe('homepage', () => {
     expect(within(hero).getByRole('region', { name: /100% free\./ })).toBeTruthy();
     // Live multiplayer games, right under the best games.
     const together = screen.getByRole('region', { name: 'Live multiplayer games' });
-    expect(within(together).getAllByRole('link').map((a) => a.getAttribute('href')).sort()).toEqual(['/games/backgammon', '/games/belot', '/games/launch-control']);
+    expect(within(together).getAllByRole('link').map((a) => a.getAttribute('href')).sort()).toEqual(['/games/backgammon?play=1', '/games/belot?play=1', '/games/launch-control?play=1']);
     // Today: the link to every daily.
     const today = screen.getByRole('region', { name: 'Today' });
     expect(within(today).getByRole('link', { name: /All dailies/ }).getAttribute('href')).toBe('/daily');
@@ -163,6 +167,29 @@ describe('game page', () => {
     expect(save.games['neon-rush']).toMatchObject({ plays: 1, best: { score: 321, meters: 250, coins: 7, nearMisses: 1 } });
   });
 
+  it('a banner’s Play opens the game already started and full screen, like the Play on its poster (#24)', () => {
+    renderAt('/');
+    const together = screen.getByRole('region', { name: 'Live multiplayer games' });
+    const card = within(together).getByRole('link', { name: 'Backgammon' });
+    // the Play button is a picture inside the card: the card's link takes the tap
+    expect(card.closest('.flagship')!.querySelector('.flagship-play')).not.toBeNull();
+    fireEvent.click(card);
+    expect(window.location.pathname).toBe('/games/backgammon');
+    // the address is the game's own again, so a refresh or a shared link shows the poster
+    expect(window.location.search).toBe('');
+    expect(screen.queryByRole('button', { name: /Play Backgammon/ })).toBeNull();
+    expect(document.querySelector('.stage')!.getAttribute('data-phase')).toBe('ready');
+    // jsdom has no Fullscreen API: the immersive mode, as the poster's Play gives
+    expect(document.querySelector('.stage-immersive')).not.toBeNull();
+    expect(document.documentElement.classList.contains('game-focus')).toBe(true);
+  });
+
+  it('an embedded game opened from a Play link loads at once', () => {
+    renderAt('/games/neon-rush?play=1');
+    expect(document.querySelector('iframe')?.getAttribute('src')).toBe('/play/neon-rush/');
+    expect(window.location.search).toBe('');
+  });
+
   it('in full screen, the game\'s own menu button pauses it and offers a way out in a pop-up (#21, #22)', () => {
     renderAt('/games/neon-rush');
     // jsdom has no Fullscreen API, so Play falls back to the immersive mode.
@@ -184,7 +211,7 @@ describe('game page', () => {
     openFromGame();
     expect(post).toHaveBeenCalledWith(expect.objectContaining({ source: 'glitchbound-host', type: 'pause' }), window.location.origin);
     const menu = screen.getByRole('dialog', { name: 'Game menu' });
-    expect(within(menu).getAllByRole('button').map((b) => b.textContent?.trim())).toEqual(['Continue', 'Exit full screen', 'Exit game', 'Report a bug']);
+    expect(within(menu).getAllByRole('button').map((b) => b.textContent?.trim())).toEqual(['Continue', 'How to play', 'Exit full screen', 'Exit game', 'Report a bug']);
     fireEvent.click(within(menu).getByRole('button', { name: /Continue/ }));
     expect(screen.queryByRole('dialog', { name: 'Game menu' })).toBeNull();
     expect(document.querySelector('.stage-immersive')).not.toBeNull();
@@ -237,9 +264,56 @@ describe('game page', () => {
     expect(post).toHaveBeenCalledWith(expect.objectContaining({ source: 'glitchbound-host', type: 'pause' }), window.location.origin);
   });
 
-  it('shows how to play and the restart action once playing', () => {
+  it('How to play opens over the game the first time it starts, once per game, and from the menu (#27)', () => {
+    renderAt('/games/neon-rush', { howToSeen: false });
+    // no how-to text on the page any more: a button by the game opens the wizard instead
+    expect(screen.queryByRole('heading', { name: 'How to play' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: /How to play/ })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Neon Rush' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Play Neon Rush/ }));
+    const wizard = screen.getByRole('dialog', { name: 'Neon Rush' });
+    expect(wizard.closest('.stage')).not.toBeNull(); // over the game, so full screen shows it too
+    fireEvent.click(within(wizard).getByRole('button', { name: 'Skip' }));
+    expect(screen.queryByRole('dialog', { name: 'Neon Rush' })).toBeNull();
+    expect(JSON.parse(localStorage.getItem('glitchbound.howto')!)).toEqual(['neon-rush']);
+    // in full screen, the game menu opens it again
+    const frame = document.querySelector('iframe')!;
+    act(() => {
+      window.dispatchEvent(new MessageEvent('message', { data: { source: 'glitchbound-game', version: 1, type: 'menu' }, origin: window.location.origin, source: frame.contentWindow }));
+    });
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Game menu' })).getByRole('button', { name: /How to play/ }));
+    expect(screen.queryByRole('dialog', { name: 'Game menu' })).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Neon Rush' })).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Neon Rush' })).toBeNull();
+    // still in the game: Escape went to the wizard, not to leaving full screen
+    expect(document.querySelector('.stage-immersive')).not.toBeNull();
+  });
+
+  it('seen once, How to play waits to be asked for; its last step starts the game', () => {
+    renderAt('/games/gloop');
+    fireEvent.click(screen.getByRole('button', { name: /Play Gloop/ }));
+    expect(screen.queryByRole('dialog', { name: 'Gloop' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Exit game/ }));
+    // from the button by the game, while it shows its poster: the last step's button is Play
+    fireEvent.click(screen.getByRole('button', { name: 'How to play' }));
+    const wizard = screen.getByRole('dialog', { name: 'Gloop' });
+    for (let i = 0; i < 3 && within(wizard).queryByRole('button', { name: 'Next' }); i++) fireEvent.click(within(wizard).getByRole('button', { name: 'Next' }));
+    fireEvent.click(within(wizard).getByRole('button', { name: 'Let’s play!' }));
+    expect(screen.queryByRole('dialog', { name: 'Gloop' })).toBeNull();
+    expect(document.querySelector('.stage')!.getAttribute('data-phase')).toBe('ready');
+    expect(document.querySelector('.stage-immersive')).not.toBeNull();
+  });
+
+  it('a game that teaches itself, or has a section of its own, does not open the wizard by itself', () => {
+    renderAt('/games/crosswire', { howToSeen: false });
+    fireEvent.click(screen.getByRole('button', { name: /Play Crosswire/ }));
+    expect(screen.queryByRole('dialog', { name: 'Crosswire' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'How to play' })).toBeTruthy();
+  });
+
+  it('shows the restart action once playing', () => {
     renderAt('/games/neon-rush');
-    expect(screen.getByRole('heading', { name: 'How to play' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Restart/ })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Play Neon Rush/ }));
     fireEvent.load(document.querySelector('iframe')!);

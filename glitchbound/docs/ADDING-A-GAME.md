@@ -166,7 +166,7 @@ Commit and push to `pre-release`; CI deploys. The new page is live at `/games/<s
 - [ ] Registry entry added; slug final
 - [ ] (module) loader added to `modules.ts`
 - [ ] Three artwork files, original
-- [ ] Controls listed for keyboard and touch
+- [ ] Controls listed for keyboard and touch (they are the How to play wizard's steps; a game with its own first-time walkthrough sets `ownTutorial: true`)
 - [ ] `<GameMenuButton>` in the top row of the menu screen and the play HUD (check in full screen)
 - [ ] `npm run check` passes
 - [ ] Played a round on the dev server and saw "Last round" + "Your bests" update

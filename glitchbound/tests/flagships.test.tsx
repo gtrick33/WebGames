@@ -69,11 +69,11 @@ describe('the Start here row', () => {
     render(<FlagshipRow />);
     const row = screen.getByRole('region', { name: 'Our best games' });
     const links = within(row).getAllByRole('link');
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/games/letter-pinch', '/games/wait-what', '/games/launch-control', '/games/color-recall']);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/games/letter-pinch?play=1', '/games/wait-what?play=1', '/games/launch-control?play=1', '/games/color-recall?play=1']);
     const stickers = row.querySelectorAll('.flagship-sticker');
     expect(stickers).toHaveLength(1);
     expect(stickers[0]!.textContent).toContain('Word Wednesday');
-    expect(stickers[0]!.closest('.flagship')!.querySelector('a')!.getAttribute('href')).toBe('/games/letter-pinch');
+    expect(stickers[0]!.closest('.flagship')!.querySelector('a')!.getAttribute('href')).toBe('/games/letter-pinch?play=1');
   });
 });
 

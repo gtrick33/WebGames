@@ -372,13 +372,14 @@ describe('room invite links (/r/CODE)', () => {
     return { title: /<title>([^<]*)<\/title>/.exec(html)![1]!, to: /replaceState\(null, '', "([^"]*)"/.exec(html)![1]! };
   };
 
+  // Titles carry no emoji: a shared link is sent bare, and its picture says the rest (#43).
   it('sends each room to its own page, with who is waiting', async () => {
-    expect(await open('KQTRA', { KQTRA: { game: 'nhie', host: 'Ann', players: 3 } })).toEqual({ title: 'Ann wants you in a Never Have I Ever room 🙊', to: '/party?room=KQTRA' });
-    expect(await open('KQTRA', { KQTRA: { host: 'Bo', players: 3 } })).toEqual({ title: 'Bo wants you in a Crass Act room 😈', to: '/games/crass-act?room=KQTRA' });
+    expect(await open('KQTRA', { KQTRA: { game: 'nhie', host: 'Ann', players: 3 } })).toEqual({ title: 'Ann wants you in a Never Have I Ever room', to: '/party?room=KQTRA' });
+    expect(await open('KQTRA', { KQTRA: { host: 'Bo', players: 3 } })).toEqual({ title: 'Bo wants you in a Crass Act room', to: '/games/crass-act?room=KQTRA' });
   });
 
   it('never sends a closed or mistyped room to the 18+ game', async () => {
-    expect(await open('KQTRA')).toEqual({ title: 'Join my party room 🎉', to: '/party?room=KQTRA' });
-    expect(await open('nope!')).toEqual({ title: 'Join my party room 🎉', to: '/party' });
+    expect(await open('KQTRA')).toEqual({ title: 'Join my party room', to: '/party?room=KQTRA' });
+    expect(await open('nope!')).toEqual({ title: 'Join my party room', to: '/party' });
   });
 });

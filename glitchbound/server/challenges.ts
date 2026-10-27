@@ -1,5 +1,5 @@
 import { getGame } from '../src/catalog/catalog';
-import { CHALLENGE_IDLE_MS, CHALLENGE_KEEP_MS, CHALLENGE_LOBBY_MS, closesAt, dailySeed, MAX_PLAYERS, roundWinners, type ChallengeListItem, type ChallengeMode, type ChallengeView } from '../src/platform/challenge';
+import { CHALLENGE_IDLE_MS, CHALLENGE_KEEP_MS, CHALLENGE_LOBBY_MS, closesAt, dailySeed, MAX_PLAYERS, roundWinners, type ChallengeHistoryItem, type ChallengeListItem, type ChallengeMode, type ChallengeView } from '../src/platform/challenge';
 import type { Ctx, D1PreparedStatement, Env } from './http';
 import { currentUser } from './session';
 import { newCode } from './shares';
@@ -254,6 +254,59 @@ export async function viewOf(env: Env, row: Row, player: string | null): Promise
     closed,
     closesAt: closed ? 0 : closesAt(row.updated_at, lobby),
   };
+}
+
+/**
+ * A player's challenge history: every challenge they have a seat in (also ones they left or that
+ * ended, until sweep() deletes them), newest activity first, with scores and who won or leads. Three
+ * reads for the whole list.
+ */
+export async function historyFor(env: Env, player: string, now = Date.now()): Promise<ChallengeHistoryItem[]> {
+  const mine = 'SELECT p.challenge_id FROM challenge_players p JOIN challenges c ON c.id = p.challenge_id WHERE p.player = ?1 ORDER BY c.updated_at DESC LIMIT 50';
+  const [list, seats, scores] = await Promise.all([
+    env.DB.prepare(`SELECT id, game, mode, day, seed, round, host, created_at, updated_at, closed_at FROM challenges WHERE id IN (${mine}) ORDER BY updated_at DESC`).bind(player).all<Row>(),
+    env.DB.prepare(`SELECT challenge_id, player, name, left_at FROM challenge_players WHERE challenge_id IN (${mine}) ORDER BY joined_at`)
+      .bind(player)
+      .all<{ challenge_id: string; player: string; name: string; left_at: number | null }>(),
+    env.DB.prepare(`SELECT challenge_id, round, player, score FROM challenge_scores WHERE challenge_id IN (${mine}) ORDER BY at`)
+      .bind(player)
+      .all<{ challenge_id: string; round: number; player: string; score: number }>(),
+  ]);
+  return list.results.map((c) => {
+    const lower = !!getGame(c.game)?.challenge?.lowerIsBetter;
+    const sits = seats.results.filter((s) => s.challenge_id === c.id);
+    const played = scores.results.filter((s) => s.challenge_id === c.id);
+    const nameOf = new Map(sits.map((s) => [s.player, s.name]));
+    const wins = new Map<string, number>();
+    for (const round of new Set(played.map((s) => s.round)))
+      for (const w of roundWinners(
+        played.filter((s) => s.round === round).map((s) => ({ name: s.player, score: s.score })),
+        lower,
+      ))
+        wins.set(w, (wins.get(w) ?? 0) + 1);
+    const lastRound = Math.max(0, ...played.map((s) => s.round));
+    const last = new Map(played.filter((s) => s.round === lastRound).map((s) => [s.player, s.score]));
+    const better = (a: number | null, b: number | null): number => (a === null ? (b === null ? 0 : 1) : b === null ? -1 : lower ? a - b : b - a);
+    const players = [...nameOf.keys()].sort((a, b) => (wins.get(b) ?? 0) - (wins.get(a) ?? 0) || better(last.get(a) ?? null, last.get(b) ?? null));
+    // Most round wins; before anyone won a round against someone, the best score so far (players[0] has it).
+    const most = Math.max(0, ...wins.values());
+    const best = players[0] === undefined ? undefined : last.get(players[0]);
+    const top = most > 0 ? players.filter((p) => wins.get(p) === most) : best === undefined ? [] : players.filter((p) => last.get(p) === best);
+    const lobby = sits.filter((s) => s.left_at === null).length <= 1 && played.length === 0;
+    return {
+      id: c.id,
+      game: c.game,
+      mode: c.mode,
+      round: c.round,
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
+      closed: !!c.closed_at || now > closesAt(c.updated_at, lobby),
+      host: c.host === player,
+      left: sits.some((s) => s.player === player && s.left_at !== null),
+      players: players.map((p) => ({ name: nameOf.get(p)!, you: p === player, wins: wins.get(p) ?? 0, score: last.get(p) ?? null })),
+      leaders: top.map((p) => nameOf.get(p)!),
+    };
+  });
 }
 
 /** Challenges a player is in, most recently active first. */

@@ -3,7 +3,7 @@
  * Members are recognized by their account; guests by a random key kept on this device.
  */
 import { api } from './account';
-import type { ChallengeListItem, ChallengeMode, ChallengeView } from './challenge';
+import type { ChallengeHistoryItem, ChallengeListItem, ChallengeMode, ChallengeView } from './challenge';
 
 const KEY = 'glitchbound.playerKey';
 
@@ -61,5 +61,8 @@ export const submitChallengeScore = (id: string, round: number, score: number, s
 export const rematch = (id: string, round: number): Promise<ChallengeView> => api<ChallengeView>(`/api/challenges/${id}/rematch`, { body: { round, key: playerKey() } });
 
 export const myChallenges = (): Promise<{ challenges: ChallengeListItem[] }> => api<{ challenges: ChallengeListItem[] }>(`/api/challenges?${q()}`);
+
+/** Every challenge this player (account, or this device as a guest) had a seat in, newest first, with results. */
+export const challengeHistory = (): Promise<{ history: ChallengeHistoryItem[] }> => api<{ history: ChallengeHistoryItem[] }>(`/api/challenges?history&${q()}`);
 
 export const challengeReplays = (id: string): Promise<{ round: number; replays: { name: string; replay: string }[] }> => api(`/api/challenges/${id}/replays`);

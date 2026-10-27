@@ -511,6 +511,7 @@ export const GAMES: GameEntry[] = [
       alt: 'A crossword grid with yellow clue squares and arrows, letters filled in white squares',
       bg: '#fbf6ec',
     },
+    ownTutorial: true,
     runtime: { kind: 'module' },
     aspect: 'portrait',
     controls: {
@@ -718,6 +719,7 @@ export const GAMES: GameEntry[] = [
       alt: 'Fat colorful arrows packed on a mint grid, one shooting off the edge, with the Outta Here logo',
       bg: '#19b3c9',
     },
+    ownTutorial: true,
     runtime: { kind: 'module' },
     aspect: 'portrait',
     controls: {
@@ -828,6 +830,7 @@ export const GAMES: GameEntry[] = [
       alt: 'A pastel patchwork grid with gold stars, one in each row, column and color, on a starry night background',
       bg: '#2a2878',
     },
+    ownTutorial: true,
     runtime: { kind: 'module' },
     aspect: 'square',
     controls: {
@@ -866,6 +869,7 @@ export const GAMES: GameEntry[] = [
       alt: 'A purple box robot with a green smile between liked and hated cards',
       bg: '#0f766e',
     },
+    ownTutorial: true,
     runtime: { kind: 'module' },
     aspect: 'portrait',
     controls: {
@@ -905,6 +909,7 @@ export const GAMES: GameEntry[] = [
       alt: 'A brown-paper parcel with peeking eyes and a question mark, between word cards',
       bg: '#c2410c',
     },
+    ownTutorial: true,
     runtime: { kind: 'module' },
     aspect: 'portrait',
     controls: {
