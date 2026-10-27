@@ -148,13 +148,20 @@ export function shortStack(stack: string | undefined): string {
 }
 
 /**
+ * Browser noise, not a crash: a ResizeObserver whose work moved something it watches again, which the
+ * browser delivers on the next frame ("loop completed with undelivered notifications", or "loop limit
+ * exceeded" in older browsers). Nothing breaks, so it files no issue (#23).
+ */
+export const isBenignError = (message: string): boolean => /ResizeObserver loop/.test(message);
+
+/**
  * Sends a crash to /api/errors (production only). Errors while a game runs are filed on the GitHub
  * issues board by the server (issue #7); the same message is only sent once per page load.
  */
 export function reportError(kind: string, message: string, game = activeGame, stack = ''): void {
   if (typeof window === 'undefined' || !import.meta.env.PROD || reported >= 8) return;
-  // A stale tab after a deploy is not a bug (the page reloads into the new build).
-  if (isStaleBuildError(message)) return;
+  // A stale tab after a deploy is not a bug (the page reloads into the new build), nor is browser noise.
+  if (isStaleBuildError(message) || isBenignError(message)) return;
   const key = `${kind}|${game}|${message}`;
   if (seen.has(key)) return;
   seen.add(key);

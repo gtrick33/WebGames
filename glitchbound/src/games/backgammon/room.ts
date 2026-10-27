@@ -9,7 +9,7 @@
  */
 import { joinSeat, kickSeat, leaveSeat, nextRandom, seatByN, seatOf, seatViews, summaryOf, type RoomBase, type SeatView } from '../../party/rooms/seats';
 import { choosePlay, LEVELS, type Level } from './ai';
-import { bookGame, endTurn, newMatch, nextGame, nextSteps, playAll, roll, rng, step, TARGETS, turnDone, type Match, type Side } from './logic';
+import { bookGame, endTurn, mustPass, newMatch, nextGame, nextSteps, passTurn, playAll, roll, rng, step, TARGETS, turnDone, type Match, type Side } from './logic';
 
 export { validKey } from '../../party/rooms/seats';
 
@@ -17,7 +17,8 @@ export { validKey } from '../../party/rooms/seats';
 export const MAX_PLAYERS = 6;
 export const BOT_MS = 1100;
 export const AWAY_MS = 5000;
-/** A roll with no legal move shows for this long before the turn passes. */
+/** A roll with no legal move, or a turn with no roll at all (a checker on the bar, the board closed), shows
+ *  for this long before the turn passes. */
 export const STUCK_MS = 1800;
 /** A played-out turn passes this long after its last step if the player's board has not passed it already
  *  (it does, once the last checker lands: this only covers a lost message). */
@@ -106,11 +107,12 @@ function schedule(s: State, now: number): void {
   const a = actor(s);
   const g = s.match?.game;
   if (a && g) {
-    if (a.bot) s.moveAt = now + BOT_MS;
+    if (a.bot) s.moveAt = now + (mustPass(g) ? STUCK_MS : BOT_MS);
     else if (a.away) {
       s.awaySince ??= now;
       s.moveAt = s.awaySince + AWAY_MS;
     } else if (g.phase === 'move' && turnDone(g)) s.moveAt = now + (g.steps.length ? DONE_MS : STUCK_MS);
+    else if (mustPass(g)) s.moveAt = now + STUCK_MS;
     if (!a.away) s.awaySince = null;
   } else s.awaySince = null;
   s.deadline = s.phase === 'gameEnd' ? s.sheetUntil : s.moveAt;
@@ -145,7 +147,8 @@ function afterMove(s: State, now: number): void {
 function computerMove(s: State, level: Level): void {
   const m = s.match!;
   let g = m.game;
-  if (g.phase === 'opening' || g.phase === 'roll') g = roll(g);
+  if (mustPass(g)) g = passTurn(g);
+  else if (g.phase === 'opening' || g.phase === 'roll') g = roll(g);
   else if (g.phase === 'move') {
     if (turnDone(g)) g = endTurn(g);
     else g = playAll(g, choosePlay(g.pos, g.turn, g.left, level, rng(nextRandom(s))));
@@ -173,6 +176,9 @@ export function tick(s: State, now: number): void {
     } else if (a && g.phase === 'move' && turnDone(g)) {
       // a roll with nothing (left) to play: the turn passes by itself
       s.match = { ...s.match, game: endTurn(g) };
+    } else if (a && mustPass(g)) {
+      // shut out (a checker on the bar, the board closed): no roll, the turn passes
+      s.match = { ...s.match, game: passTurn(g) };
     }
   }
   schedule(s, now);

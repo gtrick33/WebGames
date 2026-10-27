@@ -2061,6 +2061,19 @@ const tr: string[] = [
   "Bir oyuncu çizer, diğer herkes kelimeyi bilmek için yarışır. Zor kelime, büyük puan.",
   "Canlı çiz, herkes kendi telefonunda tahmin etsin",
   "Oda listesi şu anda kullanılamıyor. Bir dakika sonra yeniden dene.",
+  '{name} sana {game} oyununda {score} puanı geçmen için meydan okuyor',
+  '{name} sana {game} oyununda meydan okuyor',
+  'Henüz skor yok',
+  'Berabere: {names}',
+  'Kazandın',
+  'Öndesin',
+  'rakipler: {names}',
+  'Başka kimse katılmadı',
+  'Geçmiş meydan okumalar',
+  'Henüz yok. Biten ya da ayrıldığın meydan okumalar skorlarıyla burada görünür.',
+  'Biten meydan okumalar {n} gün burada kalır.',
+  'Henüz meydan okuman yok. Herhangi bir oyundan arkadaşlarına meydan oku: aynı tur, herkese tek deneme.',
+  'Tüm meydan okumaların',
 ];
 
 export default tr;

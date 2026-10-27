@@ -1458,10 +1458,15 @@ const PIXEL_BUDGET = 2_100_000;
 /** Where the garage turntable parks the car: down the strip, clear of the gantries. */
 const SHOW_X = 70;
 /**
- * How far across the strip the turntable camera may go: between the barriers (5.5 m out, the
- * grandstands from 10 m). Along the strip it is clear for a long way.
+ * How far across the strip the turntable camera may go: past the tyre walls (6 m out), short of the
+ * grandstands (from 10 m). Along the strip it is clear for a long way.
  */
-const SHOW_Z_MAX = LANE_W + 1;
+const SHOW_Z_MAX = LANE_W + 5;
+/** Out past the tyre walls and their boards the camera stays at least this high, to see over them. */
+const WALL_Z = LANE_W + 1.2;
+const OVER_WALL = 1.9;
+/** Out to the side, this share of the distance the camera can't go across the strip it goes up instead. */
+const SIDE_LIFT = 0.5;
 
 const lookKeyOf = (look: CarLook): string => `${look.def.id}|${JSON.stringify(look.levels)}|${look.paint}|${look.livery}|${look.wheels}|${look.helmet.join()}|${look.suit}`;
 export const lookKey = lookKeyOf;
@@ -1871,18 +1876,22 @@ export class Stage3D {
       sh.ax += (goal.ax - sh.ax) * k;
       sh.ay += (goal.ay - sh.ay) * k;
     }
-    // The camera goes round the car only as far as the strip is clear: a tall phone's view puts it some
-    // 20 m back, which out to the side is in the grandstands (their roofs filled the view). It stays
-    // between the barriers and the car turns the rest of the way on its spot: the same view of the car.
-    const camA = Math.asin(clamp((SHOW_Z_MAX / sh.d) * Math.sin(sh.a), -1, 1));
-    const turn = sh.a - camA;
-    if (rig) rig.group.rotation.y = turn;
-    // the aim (and the camera's lean toward it) is a point on the car, so it turns with it
-    const aimX = sh.ax * Math.cos(turn);
-    const aimZ = -sh.ax * Math.sin(turn);
-    // never under the strip, however low the player turns the camera
-    this.camera.position.set(SHOW_X + aimX * 0.5 + Math.cos(camA) * sh.d, Math.max(0.3, 0.75 + sh.d * sh.h), aimZ * 0.5 + Math.sin(camA) * sh.d);
-    this.camera.lookAt(SHOW_X + aimX, sh.ay, aimZ);
+    // The car stays put and the camera goes all the way round it (issue #44: a turning car looked like
+    // it was spinning out). A tall phone's view puts the camera some 20 m back, which out to the side is
+    // in the grandstands, so there it comes in to the clear strip by the tyre walls, rises a little and
+    // widens its lens by as much: the car stays the same size on screen.
+    if (rig) rig.group.rotation.y = 0;
+    const side = Math.abs(Math.sin(sh.a));
+    const reach = side * sh.d > SHOW_Z_MAX ? SHOW_Z_MAX / side : sh.d;
+    const camZ = Math.sin(sh.a) * reach;
+    // never under the strip, however low the player turns the camera, and over the tyre walls
+    const camY = Math.max(Math.abs(camZ) > WALL_Z ? OVER_WALL : 0.3, 0.75 + reach * sh.h + (sh.d - reach) * SIDE_LIFT);
+    this.camera.position.set(SHOW_X + sh.ax * 0.5 + Math.cos(sh.a) * reach, camY, camZ);
+    this.camera.lookAt(SHOW_X + sh.ax, sh.ay, 0);
+    if (reach < sh.d) {
+      const wide = Math.hypot(sh.d, 0.75 + sh.d * sh.h - sh.ay) / Math.hypot(reach, camY - sh.ay);
+      this.camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * wide));
+    }
     const spot = this.markerPart ? rig?.anchors?.[this.markerPart] : undefined;
     if (spot && rig && framing !== 'thumb') {
       if (!this.marker) {

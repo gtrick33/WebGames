@@ -9,6 +9,7 @@ import { claimCoins } from '../../platform/coins';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
+import { takeSavesLive } from '../../platform/syncGate';
 import { CARS, getCar, TIER_NAME, TRAIT_INFO, type CarDef } from './cars';
 import { COSMETICS, DEFAULTS, getCosmetic, KIND_NAME, type Cosmetic, type CosmeticKind } from './cosmetics';
 import { addMats, avgLevel, botsFor, botSpec, crateFor, difficultyOf, DIVISIONS, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, hasMats, idleIncome, idleRate, LADDER, loanerFor, materialsFor, PER_DIVISION, PINK_SLIP, pinkSlipCash, PLAYER_SKILL, RACE_SIZE, rivalBot, rivalCarId, settle, STAKE_SHARES, typicalEt, type Bot, type Forecast, type Opponent } from './economy';
@@ -165,6 +166,17 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     setSave(next);
     writeSave(next);
   }, []);
+  // A copy from the player's other device (a car bought on the phone) is merged into the stored save
+  // while the game runs, and taken in here: a garage left open never misses it (platform/syncGate.ts).
+  useEffect(
+    () =>
+      takeSavesLive(SLUG, () => {
+        const next = loadSave();
+        saveRef.current = next;
+        setSave(next);
+      }),
+    [],
+  );
   /** A live room with a friend: its code (from an invite link, or one you opened). */
   const [liveCode, setLiveCode] = useState<string | null>(() => (challenge ? null : linkedRoom()));
   const [liveRacing, setLiveRacing] = useState(false);
@@ -687,11 +699,19 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       Object.assign(box.style, { left: `${v.left - r.left}px`, top: `${v.top - r.top}px`, width: `${v.width}px`, height: `${v.height}px`, right: 'auto', bottom: 'auto' });
     };
     place();
-    const ro = new ResizeObserver(place);
+    // Moved on the next frame, not inside the observer: resizing the stage there (which has an observer
+    // of its own) is a layout change the browser can't deliver in the same pass, and Safari reports it
+    // as an error ("ResizeObserver loop completed with undelivered notifications", issue #23).
+    let raf = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(place);
+    });
     ro.observe(viewEl);
     ro.observe(root);
     return () => {
       ro.disconnect();
+      cancelAnimationFrame(raf);
       box.removeAttribute('style');
     };
   }, [viewEl]);
@@ -1949,8 +1969,10 @@ function InspectCard({ part, mode, car, levels, cond, save, preview, setPreview,
   const can = next ? save.cash >= next.cash && hasMats(save.mats, next.mats) : false;
   const nextLook = PART_VISUALS[part].find(([lv]) => lv > level);
   const fix = repairCost(car, part, cond[part]);
+  // on a phone the card folds down to its top row, so the car shows: Details opens the rest
+  const [open, setOpen] = useState(false);
   return (
-    <div className="lc-inspect" role="region" aria-label={`Inspecting the ${info.name.toLowerCase()}`}>
+    <div className={`lc-inspect${open ? ' is-open' : ''}`} role="region" aria-label={`Inspecting the ${info.name.toLowerCase()}`}>
       <div className="lc-part-top">
         <span className="lc-part-icon" aria-hidden="true">
           <Icon name={PART_ICON[part]} />
@@ -1961,55 +1983,60 @@ function InspectCard({ part, mode, car, levels, cond, save, preview, setPreview,
             Lv {level}/{MAX_LEVEL} · {info.look}
           </span>
         </div>
+        <button className="btn btn-sm lc-inspect-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+          {open ? 'Hide' : 'Details'}
+        </button>
         <button className="btn btn-sm" onClick={onDone}>
           Done
         </button>
       </div>
-      {mode === 'upgrade' ? (
-        <>
-          <LevelTrack level={level} marks={PART_VISUALS[part].map(([lv]) => lv)} />
-          {nextLook && <p className="lc-sub">Next on the car: {nextLook[1]} (Lv {nextLook[0]})</p>}
-          {!maxed && (
-            <div className="lc-seg" role="radiogroup" aria-label="Show on the car">
-              <button role="radio" aria-checked={!preview} className={`lc-seg-btn${!preview ? ' is-on' : ''}`} onClick={() => setPreview(false)}>
-                Now · Lv {level}
-              </button>
-              <button role="radio" aria-checked={preview} className={`lc-seg-btn${preview ? ' is-on' : ''}`} onClick={() => setPreview(true)}>
-                Lv {level + 1}
-              </button>
-            </div>
-          )}
-          {next ? (
-            <button className={`btn lc-upgrade${can ? ' lc-cta' : ''}`} onClick={onUpgrade} disabled={!can}>
-              <span>Upgrade to Lv {level + 1}</span>
-              <Cash n={next.cash} />
-              <MatsLine mats={next.mats} have={save.mats} />
-            </button>
-          ) : (
-            <Sticker tone="lime" flat>
-              Maxed
-            </Sticker>
-          )}
-        </>
-      ) : (
-        wears(part) ? (
+      <div className="lc-inspect-more">
+        {mode === 'upgrade' ? (
           <>
-            <div className="lc-cond">
-              <span className="lc-cond-bar">
-                <i style={{ width: `${cond[part]}%` }} className={cond[part] < RISKY ? 'is-bad' : cond[part] < 60 ? 'is-mid' : ''} />
-              </span>
-              <span className="mono">{Math.round(cond[part])}% condition</span>
-            </div>
-            <button className={`btn lc-upgrade${cond[part] < 100 && save.cash >= fix ? ' lc-cta' : ''}`} onClick={onRepair} disabled={cond[part] >= 100 || save.cash < fix}>
-              {cond[part] >= 100 ? 'Like new' : fix <= 0 ? 'New tyres · free' : <>New tyres <Cash n={fix} /></>}
-            </button>
+            <LevelTrack level={level} marks={PART_VISUALS[part].map(([lv]) => lv)} />
+            {nextLook && <p className="lc-sub">Next on the car: {nextLook[1]} (Lv {nextLook[0]})</p>}
+            {!maxed && (
+              <div className="lc-seg" role="radiogroup" aria-label="Show on the car">
+                <button role="radio" aria-checked={!preview} className={`lc-seg-btn${!preview ? ' is-on' : ''}`} onClick={() => setPreview(false)}>
+                  Now · Lv {level}
+                </button>
+                <button role="radio" aria-checked={preview} className={`lc-seg-btn${preview ? ' is-on' : ''}`} onClick={() => setPreview(true)}>
+                  Lv {level + 1}
+                </button>
+              </div>
+            )}
+            {next ? (
+              <button className={`btn lc-upgrade${can ? ' lc-cta' : ''}`} onClick={onUpgrade} disabled={!can}>
+                <span>Upgrade to Lv {level + 1}</span>
+                <Cash n={next.cash} />
+                <MatsLine mats={next.mats} have={save.mats} />
+              </button>
+            ) : (
+              <Sticker tone="lime" flat>
+                Maxed
+              </Sticker>
+            )}
           </>
         ) : (
-          <Sticker tone="lime" flat>
-            Never wears
-          </Sticker>
-        )
-      )}
+          wears(part) ? (
+            <>
+              <div className="lc-cond">
+                <span className="lc-cond-bar">
+                  <i style={{ width: `${cond[part]}%` }} className={cond[part] < RISKY ? 'is-bad' : cond[part] < 60 ? 'is-mid' : ''} />
+                </span>
+                <span className="mono">{Math.round(cond[part])}% condition</span>
+              </div>
+              <button className={`btn lc-upgrade${cond[part] < 100 && save.cash >= fix ? ' lc-cta' : ''}`} onClick={onRepair} disabled={cond[part] >= 100 || save.cash < fix}>
+                {cond[part] >= 100 ? 'Like new' : fix <= 0 ? 'New tyres · free' : <>New tyres <Cash n={fix} /></>}
+              </button>
+            </>
+          ) : (
+            <Sticker tone="lime" flat>
+              Never wears
+            </Sticker>
+          )
+        )}
+      </div>
     </div>
   );
 }

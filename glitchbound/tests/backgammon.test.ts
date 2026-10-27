@@ -8,16 +8,19 @@ import {
   endTurn,
   legalSteps,
   maxDice,
+  mustPass,
   newGame,
   newMatch,
   nextGame,
   nextSteps,
+  passTurn,
   pips,
   playAll,
   posKey,
   roll,
   rollAt,
   rng,
+  shutOut,
   startPos,
   step,
   turnDone,
@@ -89,6 +92,35 @@ describe('backgammon: the board and the moves', () => {
     expect(steps2.map((s) => s.to).sort()).toEqual([24]);
     const closed = pos([[6, 14], [19, -2], [20, -2], [21, -2], [22, -2], [23, -2], [24, -2]], [1, 0]);
     expect(legalSteps(closed, 0, [3, 5])).toEqual([]);
+  });
+
+  it('a checker on the bar against a closed board: no roll, the turn passes (#25)', () => {
+    const closed = pos([[6, 14], [19, -2], [20, -2], [21, -2], [22, -2], [23, -2], [24, -2], [1, -3]], [1, 0]);
+    expect(shutOut(closed, 0)).toBe(true);
+    expect(shutOut(closed, 1)).toBe(false); // nothing of theirs on the bar
+    // one way in still open (a single checker there can be hit): roll as usual
+    const open = pos([[6, 14], [19, -2], [20, -2], [21, -2], [22, -2], [23, -2], [24, -1], [1, -4]], [1, 0]);
+    expect(shutOut(open, 0)).toBe(false);
+    // player 1 shut out by player 0's home board
+    expect(shutOut(pos([[1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [13, 3], [24, -14]], [0, 1]), 1)).toBe(true);
+
+    const g: Game = { ...newGame(7), pos: closed, turnStart: closed, turn: 0, phase: 'roll', roll: [4, 2], rolls: 6, lastTurn: { side: 1, roll: [4, 2], steps: [] } };
+    expect(mustPass(g)).toBe(true);
+    const passed = passTurn(g);
+    expect(passed).toMatchObject({ turn: 1, phase: 'roll', rolls: 6, lastTurn: { side: 0, roll: null, steps: [] } });
+    expect(passed.pos).toBe(closed);
+    // pressing Roll anyway passes too, and uses no dice: the seeded rolls stay everyone's
+    expect(roll(g)).toEqual(passed);
+    // nothing to pass otherwise
+    expect(passTurn(passed)).toBe(passed);
+    expect(mustPass({ ...g, phase: 'move', left: [4, 2] })).toBe(false);
+  });
+
+  it('a roll with no legal move ends cleanly: the other side rolls next', () => {
+    const p = pos([[6, 5], [8, 3], [13, 5], [1, -2], [12, -5], [17, -3], [19, -2], [20, -2], [21, -2]], [1, 0]);
+    const g: Game = { ...newGame(3), pos: p, turnStart: p, turn: 0, phase: 'move', roll: [6, 5], left: [6, 5], rolls: 5 };
+    expect(turnDone(g)).toBe(true);
+    expect(endTurn(g)).toMatchObject({ turn: 1, phase: 'roll', left: [], steps: [], lastTurn: { side: 0, roll: [6, 5], steps: [] } });
   });
 
   it('both numbers must be used when they can; with only one, the larger', () => {

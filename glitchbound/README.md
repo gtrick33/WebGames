@@ -36,7 +36,8 @@ All commands run from this folder (`glitchbound/`). Requires Node 20+ (developed
 | `/leaderboards` | Hall of Fame (crowns, podiums, records) and per-game boards (all time, last 24 h) |
 | `/signin` | Sign in or sign up: Google, or any email with a 6-digit code / magic link |
 | `/play/<slug>/` | In-repo games built into the site (NEON RUSH), shown inside the game page |
-| `/me` | Profile: level, quests, badges, bests, favorites, email notifications, delete account |
+| `/c` | Your friends' challenges: the open ones, starting one, and past ones with their scores (members also see the latest on `/me`) |
+| `/me` | Profile: level, quests, badges, bests, favorites, challenges, email notifications, delete account |
 | `/admin` | Admin dashboard (ADMIN_EMAILS only): members, plays per game, funnel, searches, crashes, email announcements |
 | `/privacy` | What is stored and a button to delete it |
 | anything else | A real 404 page (HTTP 404) |
@@ -104,6 +105,17 @@ on GlitchBound counts. A streak is consecutive cleared days. The share text show
 link to `/daily`, with no personal data. If no game had daily templates, the feature would hide itself instead of
 showing a fake countdown.
 
+### Sharing
+
+Everything is shared as a bare link: no text, no emoji (`src/platform/share.ts`, `components/ShareSheet.tsx`).
+What the link says is a picture: chat apps preview `/c/<id>` (a friends' challenge), `/r/<code>` (a room) and
+`/s/<code>` (a result, a short link the sheet makes) with an `og:image` drawn by the server from what it knows,
+e.g. "Ana challenges you to beat 1,234 in Wing It" (`server/invites.ts` says what each link says,
+`server/ogImage.ts` draws it, `functions/og/` serves it, edge-cached per version). The drawing is a palette PNG made
+without a font engine, so it fits a free-plan Worker's CPU time: the letters (Latin and Cyrillic, Inter) are drawn
+once by `node scripts/og-font.mjs` into `server/ogFont.ts`. The share sheet also draws a picture card in the browser
+(`shareCard.ts`) to save or send as a file.
+
 ### Player names, music and play mode
 
 - Players race under their account nickname (it starts as their Google name) or, as guests, a random name such as
@@ -128,7 +140,8 @@ player and save, replaced in place (96 KB at most); a save is sent only when it 
 `/api/me`'s `savesAt` says nothing is newer) and after 5 minutes away from the tab. Each write carries the version it
 grew from, so a device that was offline never overwrites newer progress: the two copies are merged instead
 (`cloudMerge.ts`; the arcade save merges field by field). A game's stage waits for the download before the game reads
-its save (`syncGate.ts`), and a copy that arrives while that game runs is applied when it closes. Saves nobody changed
+its save (`syncGate.ts`), and a copy that arrives while that game runs is applied when it closes (or at once, for a game
+that reloads its save then: Launch Control, whose garage stays open for hours). Saves nobody changed
 for 180 days are deleted. Removing a save in the app (Privacy page, QA tools) removes the account's copy too; a browser
 clearing its own storage does not. `www.` and the `pages.dev` address send visitors without saves there to the main
 address (`canonical.ts`), since each address keeps its own storage and sign-in.
@@ -155,4 +168,4 @@ it); game previews load as separate chunks only when their tile is on screen. Th
 ## Credits
 
 Original design and code. Fonts: Bricolage Grotesque and Space Mono (SIL Open Font License), self-hosted via
-Fontsource. NEON RUSH artwork comes from the NEON RUSH project.
+Fontsource; link-preview pictures are set in Inter (SIL Open Font License). NEON RUSH artwork comes from the NEON RUSH project.

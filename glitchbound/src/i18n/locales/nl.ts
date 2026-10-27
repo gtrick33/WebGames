@@ -2061,6 +2061,19 @@ const nl: string[] = [
   "Eén speler tekent, de rest raadt om het snelst het woord. Moeilijkere woorden, meer punten.",
   "Live tekenen, iedereen raadt op zijn eigen telefoon",
   "De kamerlijst is nu niet beschikbaar. Probeer het over een minuut opnieuw.",
+  '{name} daagt je uit om {score} te verslaan in {game}',
+  '{name} daagt je uit in {game}',
+  'Nog geen scores',
+  'Gelijkspel: {names}',
+  'Jij hebt gewonnen',
+  'Jij staat voor',
+  'tegen {names}',
+  'Niemand anders deed mee',
+  'Eerdere uitdagingen',
+  'Nog geen. Uitdagingen die eindigen, of die je verlaat, verschijnen hier met hun scores.',
+  'Afgelopen uitdagingen blijven hier {n} dagen staan.',
+  'Nog geen uitdagingen. Daag vrienden uit vanuit elk spel: dezelfde ronde, één poging per persoon.',
+  'Al je uitdagingen',
 ];
 
 export default nl;

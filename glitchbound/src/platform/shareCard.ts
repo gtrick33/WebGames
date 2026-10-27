@@ -2,24 +2,11 @@
  * Picture cards for sharing: a square image with the game's artwork, the result (title, score
  * lines, emoji grids) and the site, drawn on a canvas in the player's browser. No server work.
  */
-import type { Accent, GameEntry } from '../catalog/types';
+import type { GameEntry } from '../catalog/types';
 import { t } from '../i18n';
+import { CARD_ACCENTS as ACCENTS, CARD_INK as INK } from './accents';
 
 export const CARD_SIZE = 1080;
-
-const ACCENTS: Record<Accent, [string, string]> = {
-  cyan: ['#2ad1f0', '#3d5bff'],
-  magenta: ['#ff4fc8', '#7b4dff'],
-  blue: ['#3d5bff', '#2ad1f0'],
-  orange: ['#ff6a1a', '#ffc928'],
-  lime: ['#b6e62c', '#12c6b3'],
-  coral: ['#ff5a6c', '#ff6a1a'],
-  yellow: ['#ffc928', '#ff6a1a'],
-  teal: ['#12c6b3', '#3d5bff'],
-  violet: ['#7b4dff', '#ff4fc8'],
-};
-
-const INK = '#1d1238';
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {

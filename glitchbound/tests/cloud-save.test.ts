@@ -8,8 +8,10 @@ import type { Me } from '../src/platform/apiTypes';
 import { mergeJson, mergeSaveText } from '../src/platform/cloudMerge';
 import { hashText, startCloudSave, stopCloudSave } from '../src/platform/cloudSave';
 import { emptySave, mergeSaves, sanitizeSave, SAVE_KEY } from '../src/platform/save';
-import { holdGame, savesReady, setSavesGate } from '../src/platform/syncGate';
+import { holdGame, savesReady, setSavesGate, takeSavesLive } from '../src/platform/syncGate';
 import { isSyncedKey, MAX_SYNCED_SAVE, slugOfKey } from '../src/platform/syncKeys';
+import { CARS, DEFAULT_CAR } from '../src/games/launch-control/cars';
+import { emptySave as emptyGarage, KEY as GARAGE_KEY, newCar, sanitize as sanitizeGarage } from '../src/games/launch-control/storage';
 import { memoryD1 } from './d1';
 
 const ORIGIN = 'http://localhost:8788';
@@ -56,10 +58,48 @@ describe('merging two copies of a save', () => {
     expect(mergeJson({}, { progress: theirs })).toEqual({ progress: theirs });
   });
 
+  it('never mixes two games in progress: this device’s match wins whole (#26)', () => {
+    const mine = { mode: 'match', match: { score: [1, 0], game: { turn: 0, phase: 'roll', rolls: 9, pos: { pts: [0, 2], bar: [0, 0] } } } };
+    const theirs = { mode: 'match', match: { score: [0, 2], game: { turn: 1, phase: 'move', rolls: 4, pos: { pts: [0, -1], bar: [1, 0] } } } };
+    expect(mergeJson({ wins: 1, current: mine }, { wins: 3, current: theirs })).toEqual({ wins: 3, current: mine });
+    expect(mergeJson({ current: null }, { current: theirs })).toEqual({ current: null });
+    expect(mergeJson({}, { current: theirs })).toEqual({ current: theirs });
+  });
+
   it('keeps the smaller "fastest" time that is set, and joins lists of seen words', () => {
     expect(mergeJson({ fastest: 0, best: 3 }, { fastest: 12, best: 1 })).toEqual({ fastest: 12, best: 3 });
     expect(mergeJson({ fastest: 9 }, { fastest: 12 })).toEqual({ fastest: 9 });
     expect(mergeJson({ seen: ['a', 'b'] }, { seen: ['b', 'c'] })).toEqual({ seen: ['a', 'b', 'c'] });
+  });
+
+  it('never loses a car bought on either device: garages join, coins follow the larger copy (issue #44)', () => {
+    const [phoneCar, deskCar] = CARS.filter((c) => c.id !== DEFAULT_CAR).map((c) => c.id);
+    // Both played from the same start, then each bought a car and some paint.
+    const phone = emptyGarage();
+    phone.cars[phoneCar!] = newCar();
+    phone.car = phoneCar!;
+    phone.cash = 150;
+    phone.owned = ['p-red'];
+    const desk = emptyGarage();
+    desk.cars[deskCar!] = { ...newCar(), levels: { ...newCar().levels, engine: 3 } };
+    desk.cars[DEFAULT_CAR] = { ...newCar(), levels: { ...newCar().levels, tyres: 2 } };
+    desk.cash = 4200;
+    desk.owned = ['p-blue'];
+    desk.runs = 9;
+    for (const [local, remote] of [
+      [phone, desk],
+      [desk, phone],
+    ]) {
+      const m = sanitizeGarage(JSON.parse(mergeSaveText(GARAGE_KEY, JSON.stringify(local), JSON.stringify(remote))));
+      expect(Object.keys(m.cars).sort()).toEqual([DEFAULT_CAR, phoneCar!, deskCar!].sort());
+      expect(m.cars[deskCar!]!.levels.engine).toBe(3);
+      expect(m.cars[DEFAULT_CAR]!.levels.tyres).toBe(2);
+      expect(m.owned.sort()).toEqual(['p-blue', 'p-red']);
+      expect(m.cash).toBe(4200);
+      expect(m.runs).toBe(9);
+      // the car this device had picked stays picked
+      expect(m.car).toBe(local!.car);
+    }
   });
 
   it('merges the arcade save field by field: rounds, bests in the right direction, dailies and game dailies', () => {
@@ -315,6 +355,52 @@ describe('cloud saves', () => {
       const local = JSON.parse(localStorage.getItem('glitchbound.gut-check')!) as { best: number; muted: boolean; daily: Record<string, unknown> };
       expect(local).toEqual({ best: 8, daily: { [TODAY]: { best: 8, tries: 1 } }, muted: true });
       expect(JSON.parse(row('glitchbound.gut-check')!.data)).toEqual(local);
+    });
+
+    it('a game that takes copies while it runs gets the other device’s car at once, and its own purchases still go out (issue #44)', async () => {
+      const [phoneCar, deskCar] = CARS.filter((c) => c.id !== DEFAULT_CAR).map((c) => c.id);
+      const garage = (cars: string[], cash: number): string => JSON.stringify({ ...emptyGarage(), cash, cars: Object.fromEntries(cars.map((id) => [id, newCar()])) });
+      await startCloudSave(userId, 0);
+      localStorage.setItem(GARAGE_KEY, garage([DEFAULT_CAR], 800));
+      await settle(() => !!row(GARAGE_KEY));
+      // The garage is open on this device (a phone's tab is put away, not closed: the game never closes)...
+      const release = holdGame('launch-control');
+      let reloads = 0;
+      const stop = takeSavesLive('launch-control', () => reloads++);
+      // ...while the desk buys a car.
+      await call(postSaves, '/api/saves', { items: [{ key: GARAGE_KEY, data: garage([DEFAULT_CAR, deskCar!], 300), base: row(GARAGE_KEY)!.at }] });
+      // Back to the tab: the desk's copy goes in under the running game, which reloads it.
+      stopCloudSave();
+      await startCloudSave(userId, savesAt());
+      expect(reloads).toBe(1);
+      expect(Object.keys(sanitizeGarage(JSON.parse(localStorage.getItem(GARAGE_KEY)!)).cars)).toContain(deskCar);
+      // The phone buys one too, with the game still running: it reaches the account, the desk's car kept.
+      const mine = sanitizeGarage(JSON.parse(localStorage.getItem(GARAGE_KEY)!));
+      localStorage.setItem(GARAGE_KEY, JSON.stringify({ ...mine, cars: { ...mine.cars, [phoneCar!]: newCar() }, cash: mine.cash - 100 }));
+      await settle(() => !!row(GARAGE_KEY)?.data.includes(phoneCar!));
+      expect(Object.keys(sanitizeGarage(JSON.parse(row(GARAGE_KEY)!.data)).cars).sort()).toEqual([DEFAULT_CAR, phoneCar!, deskCar!].sort());
+      stop();
+      release();
+    });
+
+    it('a copy that arrived before the game began taking them goes in as it does', async () => {
+      const [, deskCar] = CARS.filter((c) => c.id !== DEFAULT_CAR).map((c) => c.id);
+      await startCloudSave(userId, 0);
+      localStorage.setItem(GARAGE_KEY, JSON.stringify(emptyGarage()));
+      await settle(() => !!row(GARAGE_KEY));
+      await call(postSaves, '/api/saves', { items: [{ key: GARAGE_KEY, data: JSON.stringify({ ...emptyGarage(), cars: { [DEFAULT_CAR]: newCar(), [deskCar!]: newCar() } }), base: row(GARAGE_KEY)!.at }] });
+      const release = holdGame('launch-control');
+      stopCloudSave();
+      await startCloudSave(userId, savesAt());
+      // held for the running game...
+      expect(localStorage.getItem(GARAGE_KEY)).not.toContain(deskCar);
+      let reloads = 0;
+      const stop = takeSavesLive('launch-control', () => reloads++);
+      // ...until it says it can take it
+      expect(reloads).toBe(1);
+      expect(localStorage.getItem(GARAGE_KEY)).toContain(deskCar);
+      stop();
+      release();
     });
 
     it('guest progress joins the account at the first sign-in; deleting data in the app deletes the copy', async () => {

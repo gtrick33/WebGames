@@ -2061,6 +2061,19 @@ const pt: string[] = [
   "Um jogador desenha, todos os outros correm para adivinhar a palavra. Palavras mais difíceis, mais pontos.",
   "Desenha ao vivo, todos adivinham no seu telemóvel",
   "A lista de salas não está disponível agora. Tenta outra vez daqui a um minuto.",
+  '{name} desafia-te a bater {score} em {game}',
+  '{name} desafia-te em {game}',
+  'Ainda sem pontuações',
+  'Empate: {names}',
+  'Ganhaste',
+  'Estás na frente',
+  'contra {names}',
+  'Mais ninguém entrou',
+  'Desafios anteriores',
+  'Ainda nenhum. Os desafios que terminam, ou que deixas, aparecem aqui com as pontuações.',
+  'Os desafios terminados ficam aqui durante {n} dias.',
+  'Ainda não tens desafios. Desafia os teus amigos a partir de qualquer jogo: a mesma ronda, uma tentativa cada.',
+  'Todos os teus desafios',
 ];
 
 export default pt;
