@@ -3,9 +3,12 @@ import type { BugReportView } from '../../src/platform/apiTypes';
 import { bugIssue, createIssue, DAILY_BUG_ISSUES, githubEnabled, later } from '../../server/github';
 import { bad, json, readJson, sameOrigin, type Ctx, type Env } from '../../server/http';
 import type { BugInput } from '../../server/reports';
-import { countToday, parseBug } from '../../server/reports';
+import { countSince, parseBug } from '../../server/reports';
 import { currentUser, requireUser } from '../../server/session';
 import { browserFamily, visitorKey } from '../../server/visitor';
+
+/** The least time between two reports from one player (a flood guard, not a limit). */
+const BUG_GAP_MS = 15_000;
 
 const MESSAGES = {
   title: 'Give the bug a short title (4+ characters).',
@@ -20,7 +23,9 @@ export async function onRequestPost({ request, env, waitUntil }: Ctx): Promise<R
   if (typeof input === 'string') return bad(input, 400, { message: MESSAGES[input] });
   const now = Date.now();
   const [visitor, user] = await Promise.all([visitorKey(request, now), currentUser(env, request)]);
-  if ((await countToday(env, 'bug_reports', visitor, user?.id ?? null, now)) >= 10) return bad('too_many', 429, { message: 'Thanks for all the reports! Please try again tomorrow.' });
+  // Players report as many bugs as they find (the owner, 2026-10-28); only a flood is held back: one report
+  // per BUG_GAP_MS from the same player, which no person filling in the form ever meets.
+  if ((await countSince(env, 'bug_reports', visitor, user?.id ?? null, now - BUG_GAP_MS)) > 0) return bad('too_fast', 429, { message: 'Got it! Give it a few seconds before sending the next one.' });
   const device = `${browserFamily(request.headers.get('user-agent') ?? '')}${input.device ? ` · ${input.device}` : ''}`.slice(0, 200);
   const res = await env.DB.prepare(
     'INSERT INTO bug_reports (ts, title, description, game, category, severity, device, page, contact, visitor, user_id, status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id',

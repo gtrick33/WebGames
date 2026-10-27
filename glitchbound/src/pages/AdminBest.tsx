@@ -1,5 +1,5 @@
 import { useMemo, useState, type DragEvent } from 'react';
-import { chosenFlagships, FLAGSHIP_FALLBACK, flagshipGames, flagshipSlugs, toggleFlagship } from '../catalog/flagships';
+import { chosenFlagships, FLAGSHIP_FALLBACK, flagshipGames, flagshipSlugs } from '../catalog/flagships';
 import { GAMES } from '../catalog/games';
 import { applySettings, orderByLayout } from '../catalog/settings';
 import type { GameEntry } from '../catalog/types';
@@ -9,12 +9,10 @@ import { themeOf } from '../platform/themes';
 import './AdminLayout.css';
 
 /**
- * Admin › Games › Our best games: the four big "Start here" cards under the hero, edited as a row of
- * their own. Drag a card onto another (or use the arrows) to reorder, pick any game from a card's menu
- * to swap it in. Nothing changes for players until "Publish".
+ * Admin › Home page › Our best games: the four big cards right under the hero, edited as a row of their own.
+ * Drag a card onto another (or use the arrows) to reorder, pick any game from a card's menu to swap it in.
+ * It edits the home page's draft (admin/homeDraft.ts): nothing changes for players until Publish.
  */
-
-type Send = (body: Record<string, unknown>, done?: string) => Promise<boolean>;
 
 /** The arcade games players can see, in the banners' order (what the best games are picked from). */
 export function bestPool(data: AdminCatalog): GameEntry[] {
@@ -30,24 +28,17 @@ export const savedBest = (data: AdminCatalog): string[] => {
   return flagshipSlugs(pool, chosenFlagships(data, pool));
 };
 
-/** Switches one game in or out of the saved list (used by the banner and game-list switches). */
-export function sendBestToggle(data: AdminCatalog, send: Send, game: GameEntry, on: boolean): void {
-  const pool = bestPool(data);
-  const before = savedBest(data);
-  const next = toggleFlagship(pool, before, game.slug, on);
-  const out = before.find((s) => !next.includes(s));
-  const title = (slug: string | undefined): string => pool.find((g) => g.slug === slug)?.title ?? slug ?? '';
-  const msg = on ? (out ? `${game.title} replaces ${title(out)} in Our best games` : `${game.title} is a best game`) : `${game.title} is out of Our best games${next.length ? `, ${title(next[next.length - 1])} fills in` : ''}`;
-  void send({ action: 'flagships', list: next }, msg);
-}
 
-export function BestGamesEditor({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
-  const pool = useMemo(() => bestPool(data), [data]);
-  const saved = useMemo(() => savedBest(data), [data]);
-  const custom = Array.isArray(data.flagships) || saved.join() !== flagshipSlugs(pool, []).join();
-  const [draft, setDraft] = useState<string[]>(saved);
+/**
+ * `catalog`: the draft as players would get it (hidden games are not offered); `value` and `onChange`: the row
+ * in the draft; `custom`: a list has been published (else the house picks show).
+ */
+export function BestGamesEditor({ catalog, value, onChange, custom, busy }: { catalog: AdminCatalog; value: string[]; onChange: (list: string[]) => void; custom: boolean; busy: boolean }) {
+  const pool = useMemo(() => bestPool(catalog), [catalog]);
+  const draft = value;
+  const setDraft = (fn: (d: string[]) => string[]): void => onChange(fn(draft));
   const [dragFrom, setDragFrom] = useState<number | null>(null);
-  const dirty = draft.join() !== saved.join();
+  const house = flagshipSlugs(pool, []);
   const game = (slug: string): GameEntry | undefined => pool.find((g) => g.slug === slug);
   const theme = themeOf(dayKey());
   const today = flagshipGames(pool, draft, theme);
@@ -81,17 +72,15 @@ export function BestGamesEditor({ data, send, busy }: { data: AdminCatalog; send
     <section className="panel info-block" aria-labelledby="ag-best">
       <div className="admin-row">
         <h2 id="ag-best">Our best games</h2>
-        <span className="mono info-small">{custom ? 'Your picks live' : 'House picks'}</span>
+        <span className="mono info-small">{custom ? 'Your picks live' : 'House picks live'}</span>
       </div>
-      <p className="info-small">
-        The four big “Start here” cards under the hero. Drag a card onto another, or use the arrows, to change the order. Pick any game from a card’s menu to swap it in. Players see the change after you publish.
-      </p>
+      <p className="info-small">The four big cards right under the hero. Drag a card onto another, or use the arrows, to change the order; pick any game from a card’s menu to swap it in.</p>
 
       <ol className="ab-row" aria-label="Our best games, in order">
         {draft.map((slug, i) => {
           const g = game(slug);
           if (!g) return null;
-          const isHouse = FLAGSHIP_FALLBACK.includes(slug) && !custom && !dirty;
+          const isHouse = FLAGSHIP_FALLBACK.includes(slug) && !custom && draft.join() === house.join();
           return (
             <li
               key={slug}
@@ -149,17 +138,9 @@ export function BestGamesEditor({ data, send, busy }: { data: AdminCatalog; send
       )}
 
       <div className="reset-row">
-        <button className="btn btn-sm btn-primary" disabled={busy || !dirty} onClick={() => void send({ action: 'flagships', list: draft }, 'Our best games published')}>
-          Publish
+        <button className="btn btn-sm btn-ghost" disabled={busy || draft.join() === house.join()} onClick={() => onChange(house)}>
+          Use the house picks
         </button>
-        <button className="btn btn-sm btn-ghost" disabled={busy || !dirty} onClick={() => setDraft(saved)}>
-          Undo changes
-        </button>
-        {Array.isArray(data.flagships) && (
-          <button className="btn btn-sm btn-ghost" disabled={busy} onClick={() => void send({ action: 'flagships', list: null }, 'Our best games: back to the house picks')}>
-            Back to house picks
-          </button>
-        )}
       </div>
     </section>
   );

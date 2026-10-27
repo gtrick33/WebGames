@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { GAMES } from '../catalog/games';
 import { Icon } from '../components/Icon';
 import { openSignIn } from '../components/openSignIn';
@@ -7,12 +7,12 @@ import type { AdminStats } from '../platform/apiTypes';
 import { fmt } from '../platform/daily';
 import { usePageMeta } from '../platform/meta';
 import './InfoPages.css';
-import { AdminGames } from './AdminGames';
+import { AdminNav, CatalogSection, SECTIONS, sectionOf, type SectionId } from './admin/sections';
 import { CloudPanel, ReportsPanels } from './AdminReports';
 import { QaJoinPage } from './QaJoinPage';
 import { QaPanel } from './QaPanel';
 import { QaTeam } from './QaTeam';
-import { Link, useLocation } from '../router/router';
+import { useLocation } from '../router/router';
 import './AdminPage.css';
 
 const when = (ms: number): string => new Date(ms).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -127,25 +127,26 @@ function Announce({ stats, onSent }: { stats: AdminStats; onSent: () => void }) 
   );
 }
 
-type AdminTab = 'dashboard' | 'games' | 'qa' | 'team';
-
-const TABS: { id: AdminTab; label: string; icon: 'chart' | 'gamepad' | 'bug' | 'user'; href: string }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'chart', href: '/admin' },
-  { id: 'games', label: 'Games', icon: 'gamepad', href: '/admin?tab=games' },
-  { id: 'qa', label: 'QA', icon: 'bug', href: '/admin?tab=qa' },
-  { id: 'team', label: 'QA team', icon: 'user', href: '/admin?tab=team' },
-];
-
-/** Admins switch between Dashboard, Games, QA and the QA team (?tab=…). QA testers only have the QA tab. */
-function AdminTabs({ tab }: { tab: AdminTab }) {
+/** The admin's frame: the sections on the side, the current one's title and purpose, then its content. */
+function AdminShell({ section, aside, children }: { section: SectionId; aside?: ReactNode; children: ReactNode }) {
+  const current = SECTIONS.find((x) => x.id === section)!;
   return (
-    <nav className="seg seg-lg admin-tabs" aria-label="Admin sections">
-      {TABS.map((t) => (
-        <Link key={t.id} href={t.href} className={tab === t.id ? 'is-on' : ''} aria-current={tab === t.id ? 'page' : undefined}>
-          <Icon name={t.icon} size={16} /> {t.label}
-        </Link>
-      ))}
-    </nav>
+    <div className="wrap info-page admin admin-shell">
+      <AdminNav current={section} />
+      <div className="admin-main">
+        <div className="admin-head">
+          <div>
+            <p className="eyebrow">
+              <Icon name={current.icon} size={16} /> Admin
+            </p>
+            <h1 className="info-title">{current.label}</h1>
+            <p className="info-small admin-blurb">{current.blurb}</p>
+          </div>
+          {aside}
+        </div>
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -156,8 +157,7 @@ export function AdminPage() {
   const join = query.get('join');
   usePageMeta({ title: join === null ? 'Admin' : 'Join the QA team', path: '/admin' });
   const { me, status } = useAccount();
-  const asked = query.get('tab');
-  const tab: AdminTab = me?.role === 'qa' ? 'qa' : TABS.find((t) => t.id === asked)?.id ?? 'dashboard';
+  const tab: SectionId = me?.role === 'qa' ? 'qa' : sectionOf(query.get('tab'));
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState('');
 
@@ -214,39 +214,25 @@ export function AdminPage() {
     );
   }
   if (tab !== 'dashboard') {
-    const current = TABS.find((t) => t.id === tab)!;
-    return (
-      <div className="wrap info-page admin">
-        <div className="admin-head">
-          <div>
-            <p className="eyebrow">
-              <Icon name={current.icon} size={16} /> Admin
-            </p>
-            <h1 className="info-title">{current.label}</h1>
-          </div>
-          <AdminTabs tab={tab} />
-        </div>
-        {tab === 'games' ? <AdminGames /> : tab === 'qa' ? <QaPanel me={me} /> : <QaTeam />}
-      </div>
-    );
+    return <AdminShell section={tab}>{tab === 'qa' ? <QaPanel me={me} /> : tab === 'team' ? <QaTeam /> : <CatalogSection id={tab} />}</AdminShell>;
   }
-  if (!stats) return <div className="wrap info-page"><AdminTabs tab="dashboard" /><p className="info-lead">{error ? 'Could not load stats.' : 'Loading stats…'}</p></div>;
+  if (!stats)
+    return (
+      <AdminShell section="dashboard">
+        <p className="info-lead">{error ? 'Could not load stats.' : 'Loading stats…'}</p>
+      </AdminShell>
+    );
 
   const week = stats.daily.slice(-7);
   const sum = (k: 'visitors' | 'returning' | 'dailyPlayers'): number => week.reduce((n, d) => n + d[k], 0);
   const pct = (n: number, of: number): string | undefined => (of ? `${Math.round((n / of) * 100)}% of visitors` : undefined);
   const totals = stats.games.reduce((a, g) => ({ views: a.views + g.views, starts: a.starts + g.starts, ends: a.ends + g.ends }), { views: 0, starts: 0, ends: 0 });
   return (
-    <div className="wrap info-page admin">
-      <div className="admin-head">
-        <div>
-          <p className="eyebrow">
-            <Icon name="chart" size={16} /> Admin · updated {when(stats.generatedAt)}
-          </p>
-          <h1 className="info-title">Dashboard</h1>
-        </div>
-        <AdminTabs tab="dashboard" />
+    <AdminShell
+      section="dashboard"
+      aside={
         <div className="reset-row">
+          <span className="mono info-small">updated {when(stats.generatedAt)}</span>
           <button className="btn btn-sm" onClick={load}>
             <Icon name="restart" size={16} /> Refresh
           </button>
@@ -254,8 +240,8 @@ export function AdminPage() {
             <Icon name="mail" size={16} /> Export subscribers (CSV)
           </a>
         </div>
-      </div>
-
+      }
+    >
       <div className="stat-tiles">
         <Tile label="Members" value={fmt(stats.users.total)} sub={`+${stats.users.new7d} this week · ${stats.users.active7d} active`} />
         <Tile label="Game views (30d)" value={fmt(totals.views)} />
@@ -414,6 +400,6 @@ export function AdminPage() {
       <p className="info-small">
         Privacy: visitor counts use a daily-rotating anonymous key (no cookies, no stored IPs). &ldquo;Returning&rdquo; comes from the visitor&rsquo;s own browser (it only reports new/returning and days since the last visit). Only members' rounds are tied to an account.
       </p>
-    </div>
+    </AdminShell>
   );
 }

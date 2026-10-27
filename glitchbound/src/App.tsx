@@ -27,6 +27,7 @@ import { useLiveCatalog } from './platform/liveCatalog';
 import { visitInfo } from './platform/visit';
 import { Link, matchRoute, setPagePreloader, useLocation, type Route } from './router/router';
 import { fresh } from './platform/freshBuild';
+import { previewing } from './platform/preview';
 import { lazyPage } from './platform/lazyPage';
 
 // Pages most visitors never open are separate chunks, so the first load stays small on any phone.
@@ -148,6 +149,11 @@ export function App() {
       {!embedded && <ArcadeEntrance />}
       {embedded ? <DiscordBar /> : <Header />}
       <NoticeBanner />
+      {previewing && (
+        <p className="preview-badge" role="status">
+          Preview · not published yet
+        </p>
+      )}
       <ShareHost />
       <main id="main" tabIndex={-1}>
         <ErrorBoundary

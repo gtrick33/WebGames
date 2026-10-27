@@ -1,16 +1,17 @@
 /* Holiday skins on the arcade and party pages (art in seasonSkins.ts). SeasonDecor sets html[data-skin]
    and the images (--skin-card, --skin-button, and for garlands --skin-card-r and --skin-card-edge).
    They dress the edges, never the content, and never take a click:
-   - cards (game tiles and party cards): a garland along the whole top edge (cobwebs, snow that also
-     slides down the sides), or one small ornament on a corner (half outside);
+   - cards (game tiles, the best games and the moving wall on the home page, the live and party cards,
+     and the Party page's game cards): a garland along the whole top edge (cobwebs, snow that also slides
+     down the sides), or one small ornament on a corner (half outside);
    - every button: a soft glow ring just outside its outline;
    - main buttons (.btn-primary, .pt-btn-go): one extra (a spider dangling below, a heart, snow...). */
 
 /* ------------------------------------------------------------------ Cards */
-html[data-skin] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-game)) {
+html[data-skin] :is(#main :is(.tile, .flagship, .wall-tile, .live-card, .party-banner), .party :is(.pt-feature, .pt-mode, .pt-online-game)) {
   position: relative;
 }
-html[data-skin] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-game))::after {
+html[data-skin] :is(#main :is(.tile, .flagship, .wall-tile, .live-card, .party-banner), .party :is(.pt-feature, .pt-mode, .pt-online-game))::after {
   content: '';
   position: absolute;
   top: var(--skc-top, auto);
@@ -30,7 +31,7 @@ html[data-skin] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-ga
 html[data-skin] .party .pt-feature-sticker {
   z-index: 2;
 }
-html[data-skin] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-game)):hover::after {
+html[data-skin] :is(#main :is(.tile, .flagship, .wall-tile, .live-card, .party-banner), .party :is(.pt-feature, .pt-mode, .pt-online-game)):hover::after {
   animation: var(--skc-hover, var(--skc-anim, none));
 }
 
@@ -98,7 +99,7 @@ html[data-skin='halloween'] {
 }
 /* Cobwebs strung along the whole top of every card, spun into both top corners. They are drawn in
    the page's soft text colour (dark by day, light at night) and kept inside the card's rounded top. */
-html[data-skin='halloween'] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-game))::after {
+html[data-skin='halloween'] :is(#main :is(.tile, .flagship, .wall-tile, .live-card, .party-banner), .party :is(.pt-feature, .pt-mode, .pt-online-game))::after {
   top: 0;
   left: 0;
   right: 0;
@@ -124,7 +125,7 @@ html[data-skin='winter'] {
 }
 /* A lumpy drift along the whole top that wraps over both corners and slides down the sides
    (three pieces: corners and a repeating middle, so it never stretches). */
-html[data-skin='winter'] :is(#main .tile, .party :is(.pt-feature, .pt-mode, .pt-online-game))::after {
+html[data-skin='winter'] :is(#main :is(.tile, .flagship, .wall-tile, .live-card, .party-banner), .party :is(.pt-feature, .pt-mode, .pt-online-game))::after {
   top: -10px;
   left: -6px;
   right: -6px;

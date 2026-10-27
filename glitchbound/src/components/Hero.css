@@ -220,6 +220,10 @@
   transform: scale(1.06) rotate(2deg);
   box-shadow: 8px 8px 0 var(--ink);
 }
+/* the live preview over the card's art (GamePreview), under its name */
+.wall-preview {
+  z-index: 0;
+}
 .wall-tile:hover .wall-name {
   opacity: 1;
   transform: none;

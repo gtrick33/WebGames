@@ -344,37 +344,187 @@
   overflow-x: auto;
 }
 
-/* ---------------------------------------------------------- Admin tabs */
-.admin-tabs a {
+/* ---------------------------------------------------------- Admin shell */
+/* The sections in a column beside the content on wide screens, a row that scrolls on phones (admin/sections.tsx). */
+.admin-shell {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.admin-main {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+.admin .info-title {
+  font-size: clamp(30px, 4vw, 46px);
+  letter-spacing: -0.03em;
+}
+.admin-blurb {
+  max-width: 70ch;
+  margin: 6px 0 0;
+}
+.admin-nav {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.admin-nav-group {
+  display: contents;
+}
+.admin-nav-title {
+  display: none;
+}
+.admin-nav-link {
   display: inline-flex;
+  flex: none;
   align-items: center;
-  gap: 6px;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 999px;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
   color: var(--fg-2);
   font-weight: 700;
+  font-size: 14px;
   text-decoration: none;
+  white-space: nowrap;
 }
-.admin-tabs a:hover {
+.admin-nav-link:hover {
+  background: var(--well);
   color: var(--fg);
 }
-.admin-tabs a.is-on {
+.admin-nav-link.is-on {
+  background: var(--ink);
+  color: #fff;
+}
+@media (min-width: 960px) {
+  .admin-shell {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 28px;
+  }
+  .admin-nav {
+    position: sticky;
+    top: calc(var(--header-h) + 16px);
+    flex-direction: column;
+    padding: 10px;
+    overflow: visible;
+  }
+  .admin-nav-group {
+    display: grid;
+    gap: 2px;
+  }
+  .admin-nav-group + .admin-nav-group {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .admin-nav-title {
+    display: block;
+    padding: 4px 12px 6px;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+  }
+}
+:root[data-theme='dark'] .admin-nav-link.is-on {
   background: var(--cyan);
   color: var(--ink);
-  box-shadow: var(--hard-sm);
 }
-/* Phones: the four tabs as an even two-by-two block instead of a pill that wraps unevenly. */
-@media (max-width: 560px) {
-  .admin-tabs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-    border-radius: 24px;
-  }
-  .admin-tabs a {
-    justify-content: center;
-  }
+
+/* ------------------------------------------------- Admin › Home page */
+.ah {
+  display: grid;
+  gap: 16px;
+}
+/* The publishing bar stays in view while the draft is edited. */
+.ah-bar {
+  position: sticky;
+  top: calc(var(--header-h) + 8px);
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.08);
+}
+.ah-bar.is-dirty {
+  border-color: var(--orange);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--orange) 22%, transparent),
+    0 8px 24px rgb(0 0 0 / 0.1);
+}
+.ah-bar-state {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ah-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ah-changes {
+  flex-basis: 100%;
+  display: grid;
+  gap: 4px;
+  max-height: 200px;
+  margin: 0;
+  padding: 10px 12px 10px 28px;
+  overflow: auto;
+  border-radius: 10px;
+  background: var(--well);
+  font-size: 13.5px;
+}
+/* The preview: the real home page in a frame, scaled to the window. */
+.ah-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: rgb(10 6 24 / 0.82);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.ah-preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--line);
+}
+.ah-preview-stage {
+  display: grid;
+  justify-items: center;
+  min-height: 0;
+  padding: 8px;
+  overflow: hidden;
+}
+.ah-preview-frame {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.5);
+}
+.ah-preview-frame iframe {
+  display: block;
+  border: 0;
+  transform-origin: 0 0;
+  background: var(--bg);
 }
 
 /* ------------------------------------------------------ Admin › Games */

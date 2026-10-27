@@ -1,5 +1,5 @@
 import { loadCatalog, logAdmin } from '../../../server/catalogSettings';
-import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
+import { bad, json, readJson, sameOrigin, type Ctx, type D1PreparedStatement, type Env } from '../../../server/http';
 import { requireAdmin } from '../../../server/session';
 import { getGame } from '../../../src/catalog/catalog';
 import { GAMES } from '../../../src/catalog/games';
@@ -39,12 +39,17 @@ const who = (u: { nickname: string; email: string }): string => u.nickname || u.
  *   { action: 'multiplayer', list | null } the home page's live multiplayer games, in order (null = every live game, [] = hidden)
  *   { action: 'season', season }           holiday look: 'auto' (by the calendar), 'off' or a holiday id
  *   { action: 'party', id, patch | null }  a Party Mode game's settings (null = back to the defaults)
+ *   { action: 'publish', games?, layout?, flagships?, multiplayer? }
+ *                                          Admin › Home page's draft in one go: per-game patches ({ slug: patch }),
+ *                                          and the banners, best games and live games row when they changed
+ *                                          (each as its own action above: null = back to the default)
  */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('forbidden', 403);
   const admin = await requireAdmin(env, request);
   if (admin instanceof Response) return admin;
-  const body = await readJson(request, 16384);
+  // a home page draft can carry many games' texts at once
+  const body = await readJson(request, 65536);
   const now = Date.now();
   const by = who(admin);
   switch (body?.action) {
@@ -191,9 +196,66 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
       await logAdmin(env, by, 'party', `Party · ${name}: ${detail}`);
       return json({ ok: true });
     }
+    case 'publish':
+      return publish(env, body as Record<string, unknown>, by, now);
     default:
       return bad('unknown_action');
   }
+}
+
+const upsertSetting = (env: Env, key: string, value: unknown, now: number, by: string) =>
+  env.DB.prepare('INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES (?, ?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by').bind(key, JSON.stringify(value), now, by);
+
+/**
+ * Admin › Home page's Publish: every game patch, and the banners, best games and live games row that changed,
+ * written in one batch (all or nothing) and logged as one change. One spotlight at a time, as for 'game'.
+ */
+async function publish(env: Env, body: Record<string, unknown>, by: string, now: number): Promise<Response> {
+  const cat = await loadCatalog(env, today(), today());
+  const statements: D1PreparedStatement[] = [];
+  const lines: string[] = [];
+  const raw = body.games && typeof body.games === 'object' ? (body.games as Record<string, unknown>) : {};
+  const next: Record<string, GameSettings> = {};
+  for (const [slug, p] of Object.entries(raw)) {
+    const game = getGame(slug);
+    const patch = sanitizePatch(p);
+    if (!game || game.slug !== slug || !Object.keys(patch).length) continue;
+    next[slug] = { ...settingsFor(cat, slug), ...patch };
+    lines.push(`${game.title}: ${describe(patch)}`);
+  }
+  // the spotlight: the one this publish turns on, and no other
+  const lit = Object.keys(next).find((slug) => raw[slug] && (raw[slug] as Partial<GameSettings>).spotlight === true && next[slug]!.spotlight);
+  if (lit) {
+    for (const [slug, s] of Object.entries(cat.settings)) if (slug !== lit && s.spotlight && !next[slug]) next[slug] = { ...settingsFor(cat, slug), spotlight: false };
+    for (const slug of Object.keys(next)) if (slug !== lit) next[slug] = { ...next[slug]!, spotlight: false };
+  }
+  for (const [slug, s] of Object.entries(next)) {
+    statements.push(
+      env.DB.prepare('INSERT INTO game_settings (slug, data, updated_at, updated_by) VALUES (?, ?, ?, ?) ON CONFLICT (slug) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, updated_by = excluded.updated_by').bind(slug, JSON.stringify(compactSettings(s)), now, by),
+    );
+  }
+  if ('layout' in body) {
+    const layout = body.layout === null ? null : sanitizeLayout(body.layout, GAMES);
+    statements.push(layout ? upsertSetting(env, 'layout', layout, now, by) : env.DB.prepare("DELETE FROM site_settings WHERE key = 'layout'"));
+    lines.push(layout ? 'Home page banners updated' : 'Home page banners: back to automatic');
+  }
+  if ('flagships' in body) {
+    const list = body.flagships === null ? null : sanitizeFlagships(body.flagships, GAMES);
+    if (body.flagships !== null && !list) return bad('invalid_flagships');
+    statements.push(list ? upsertSetting(env, 'flagships', list, now, by) : env.DB.prepare("DELETE FROM site_settings WHERE key = 'flagships'"));
+    lines.push(list ? `Our best games: ${list.map((slug) => getGame(slug)?.title ?? slug).join(', ')}` : 'Our best games: back to the house picks');
+  }
+  if ('multiplayer' in body) {
+    const hide = Array.isArray(body.multiplayer) && body.multiplayer.length === 0;
+    const list = body.multiplayer === null ? null : hide ? [] : sanitizeFlagships(body.multiplayer, GAMES, MULTIPLAYER_MAX);
+    if (body.multiplayer !== null && !list) return bad('invalid_multiplayer');
+    statements.push(list ? upsertSetting(env, 'multiplayer', list, now, by) : env.DB.prepare("DELETE FROM site_settings WHERE key = 'multiplayer'"));
+    lines.push(!list ? 'Live games row: every live game' : list.length ? `Live games row: ${list.map((slug) => getGame(slug)?.title ?? slug).join(', ')}` : 'Live games row: hidden');
+  }
+  if (!statements.length) return bad('nothing_to_change');
+  await env.DB.batch(statements);
+  await logAdmin(env, by, 'publish', `Home page published: ${lines.join('; ')}`.slice(0, 1000));
+  return json({ ok: true, changes: lines.length });
 }
 
 const LABELS: Record<keyof GameSettings, string> = {

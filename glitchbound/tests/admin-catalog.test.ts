@@ -128,6 +128,42 @@ describe('admin API', () => {
     expect(cat.multiplayer).toBeUndefined();
   });
 
+  it('publishes the home page draft in one go: game patches, one spotlight, banners, best games and live games', async () => {
+    const { env, cookie } = await asAdmin();
+    const post = async (body: unknown) => {
+      const request = new Request('http://localhost/api/admin/catalog', { method: 'POST', headers: { origin: 'http://localhost', cookie, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      return changeCatalog({ request, env });
+    };
+    expect((await post({ action: 'game', slug: 'gloop', patch: { spotlight: true } })).status).toBe(200);
+    expect((await post({ action: 'publish', games: {} })).status).toBe(400);
+    const res = await post({
+      action: 'publish',
+      games: { 'neon-rush': { hidden: true, title: '  Neon Rush DX  ' }, whatsit: { spotlight: true, bogus: 1 }, nope: { pinned: true } },
+      layout: { order: ['whatsit', 'gloop'], sizes: { whatsit: 'xl' }, accents: {}, stickers: { whatsit: '🔥 Hot' } },
+      flagships: ['whatsit', 'gloop', 'fussbox', 'neon-rush'],
+      multiplayer: [],
+    });
+    expect(res.status).toBe(200);
+    const cat = await loadCatalog(env, '2026-01-01', '2026-01-02');
+    expect(cat.settings['neon-rush']).toEqual({ hidden: true, title: 'Neon Rush DX' });
+    // the new spotlight, and the old one switched off in the same batch
+    expect(cat.settings.whatsit).toEqual({ spotlight: true });
+    expect(cat.settings.gloop).toEqual({});
+    expect(cat.settings.nope).toBeUndefined();
+    expect(cat.layout?.order.slice(0, 2)).toEqual(['whatsit', 'gloop']);
+    expect(cat.layout?.stickers.whatsit).toBe('🔥 Hot');
+    expect(cat.flagships).toEqual(['whatsit', 'gloop', 'fussbox', 'neon-rush']);
+    expect(cat.multiplayer).toEqual([]);
+    // one line in the change log for the whole publish
+    const log = await env.DB.prepare("SELECT detail FROM admin_log WHERE action = 'publish'").all<{ detail: string }>();
+    expect(log.results).toHaveLength(1);
+    expect(log.results[0]!.detail).toContain('Neon Rush: hidden: on, title: Neon Rush DX');
+    // back to the defaults in one publish
+    expect((await post({ action: 'publish', games: {}, layout: null, flagships: null, multiplayer: null })).status).toBe(200);
+    const back = await loadCatalog(env, '2026-01-01', '2026-01-02');
+    expect([back.layout ?? null, back.flagships, back.multiplayer]).toEqual([null, undefined, undefined]);
+  });
+
   it('refuses a notice link it would drop, instead of saving the notice without it', async () => {
     const { env, cookie } = await asAdmin();
     const post = async (notice: unknown) => {

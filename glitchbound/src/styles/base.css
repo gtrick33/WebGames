@@ -24,7 +24,8 @@ body {
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
   overflow-x: clip;
-  background: var(--bg);
+  /* no background of its own: html paints the page color, so the layers behind the content (the blobs below, the
+     holiday decorations and scenery) show; a body background covered them all */
 }
 /* Soft colour blobs + a faint dot grid on one fixed, composited layer (painted once, never on scroll). */
 body::before {
@@ -468,4 +469,28 @@ ol {
 .page-loading {
   min-height: 100vh;
   min-height: 100svh;
+}
+
+/* Admin › Home page shows the unpublished home page in a frame: say so on it. */
+.preview-badge {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  z-index: 400;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--ink, #1d1238);
+  color: #fff;
+  font: 700 12px/1.4 var(--mono);
+  letter-spacing: 0.04em;
+  transform: translateX(-50%);
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
+}
+/* above the bottom tabs on phones */
+@media (max-width: 900px) {
+  .preview-badge {
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  }
 }

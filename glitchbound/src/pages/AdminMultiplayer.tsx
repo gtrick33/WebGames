@@ -6,31 +6,29 @@ import { bestPool } from './AdminBest';
 import './AdminLayout.css';
 
 /**
- * Admin › Games › Live multiplayer games: the home page's row of games friends play together live,
- * right under Our best games. Same tools as that row (drag or arrows to reorder, a card's menu to swap
- * a game in), plus add and remove. Without a saved list every game with a live room shows; publishing
- * an empty list hides the section. Nothing changes for players until "Publish".
+ * Admin › Home page › Live games: the home page's row of games friends play together live ("Better with
+ * friends"). Same tools as Our best games (drag or arrows to reorder, a card's menu to swap a game in), plus
+ * add and remove. Without a published list every game with a live room shows; an empty list hides the row.
+ * It edits the home page's draft (admin/homeDraft.ts): nothing changes for players until Publish.
  */
 
-type Send = (body: Record<string, unknown>, done?: string) => Promise<boolean>;
-
-/** The list as saved (every live game when none was). */
+/** The list as published (every live game when none was). */
 export const savedMultiplayer = (data: AdminCatalog): string[] => multiplayerSlugs(bestPool(data), data.multiplayer);
 
-export function MultiplayerEditor({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
+/** `catalog`: the draft as players would get it; `value` and `onChange`: the row in the draft; `custom`: a list has been published. */
+export function MultiplayerEditor({ catalog, value, onChange, custom, busy }: { catalog: AdminCatalog; value: string[]; onChange: (list: string[]) => void; custom: boolean; busy: boolean }) {
   // live games first in the menus: they are the ones that belong here
   const pool = useMemo(() => {
-    const all = bestPool(data);
+    const all = bestPool(catalog);
     return [...all.filter((g) => g.live), ...all.filter((g) => !g.live)];
-  }, [data]);
-  const saved = useMemo(() => savedMultiplayer(data), [data]);
-  const custom = Array.isArray(data.multiplayer);
-  const [draft, setDraft] = useState<string[]>(saved);
+  }, [catalog]);
+  const draft = value;
+  const setDraft = (fn: (d: string[]) => string[]): void => onChange(fn(draft));
   const [dragFrom, setDragFrom] = useState<number | null>(null);
-  const dirty = draft.join() !== saved.join();
+  const everyLive = multiplayerSlugs(bestPool(catalog), null);
   const game = (slug: string): GameEntry | undefined => pool.find((g) => g.slug === slug);
   const label = (g: GameEntry): string => (g.live ? `${g.title} · live` : g.title);
-  const status = !custom ? 'Every live game' : saved.length ? 'Your list live' : 'Hidden on the home page';
+  const status = !draft.length ? 'Hidden on the home page' : custom ? 'Your list live' : 'Every live game';
 
   const swap = (i: number, j: number): void =>
     setDraft((d) => {
@@ -61,13 +59,10 @@ export function MultiplayerEditor({ data, send, busy }: { data: AdminCatalog; se
   return (
     <section className="panel info-block" aria-labelledby="ag-multiplayer">
       <div className="admin-row">
-        <h2 id="ag-multiplayer">Live multiplayer games</h2>
+        <h2 id="ag-multiplayer">Live games · Better with friends</h2>
         <span className="mono info-small">{status}</span>
       </div>
-      <p className="info-small">
-        The row of games friends play together live, right under Our best games on the home page. Drag a card onto another, or use the arrows, to change the order. Pick a game from a card’s menu to swap it in, add one with the
-        menu at the end, or remove one. Remove them all and publish to hide the row. Players see the change after you publish.
-      </p>
+      <p className="info-small">The games friends play together live, in the home page’s Better with friends section. Reorder, swap, add or remove cards; remove them all to hide the row.</p>
 
       <ol className="ab-row am-row" aria-label="Live multiplayer games, in order">
         {draft.map((slug, i) => {
@@ -151,17 +146,9 @@ export function MultiplayerEditor({ data, send, busy }: { data: AdminCatalog; se
       </ol>
 
       <div className="reset-row">
-        <button className="btn btn-sm btn-primary" disabled={busy || !dirty} onClick={() => void send({ action: 'multiplayer', list: draft }, draft.length ? 'Live multiplayer games published' : 'Live multiplayer games hidden')}>
-          Publish
+        <button className="btn btn-sm btn-ghost" disabled={busy || draft.join() === everyLive.join()} onClick={() => onChange(everyLive)}>
+          Every live game
         </button>
-        <button className="btn btn-sm btn-ghost" disabled={busy || !dirty} onClick={() => setDraft(saved)}>
-          Undo changes
-        </button>
-        {custom && (
-          <button className="btn btn-sm btn-ghost" disabled={busy} onClick={() => void send({ action: 'multiplayer', list: null }, 'Live multiplayer games: back to every live game')}>
-            Back to every live game
-          </button>
-        )}
       </div>
     </section>
   );
