@@ -28,7 +28,8 @@ describe('homepage', () => {
     const start = screen.getByRole('region', { name: 'Our best games' });
     const flagships = within(start).getAllByRole('link').map((a) => a.getAttribute('href'));
     expect(flagships).toHaveLength(4);
-    expect(flagships.sort()).toEqual(['/games/color-recall', '/games/launch-control', '/games/letter-pinch', '/games/wait-what']);
+    // Their Play starts the game on arrival (#24).
+    expect(flagships.sort()).toEqual(['/games/color-recall?play=1', '/games/launch-control?play=1', '/games/letter-pinch?play=1', '/games/wait-what?play=1']);
     // The hero's side: the day's theme and the daily challenge (and the free promise on wide screens).
     const hero = screen.getByRole('region', { name: /Small games\./ });
     expect(within(hero).getByText('Today is')).toBeTruthy();
@@ -37,7 +38,7 @@ describe('homepage', () => {
     expect(within(hero).getByRole('region', { name: /100% free\./ })).toBeTruthy();
     // Live multiplayer games, right under the best games.
     const together = screen.getByRole('region', { name: 'Live multiplayer games' });
-    expect(within(together).getAllByRole('link').map((a) => a.getAttribute('href')).sort()).toEqual(['/games/backgammon', '/games/belot', '/games/launch-control']);
+    expect(within(together).getAllByRole('link').map((a) => a.getAttribute('href')).sort()).toEqual(['/games/backgammon?play=1', '/games/belot?play=1', '/games/launch-control?play=1']);
     // Today: the link to every daily.
     const today = screen.getByRole('region', { name: 'Today' });
     expect(within(today).getByRole('link', { name: /All dailies/ }).getAttribute('href')).toBe('/daily');
@@ -161,6 +162,29 @@ describe('game page', () => {
     if (nextUp.tagName === 'A') expect(nextUp.getAttribute('href')).toMatch(/^\/games\/(?!neon-rush)/);
     const save = JSON.parse(localStorage.getItem(SAVE_KEY)!);
     expect(save.games['neon-rush']).toMatchObject({ plays: 1, best: { score: 321, meters: 250, coins: 7, nearMisses: 1 } });
+  });
+
+  it('a banner’s Play opens the game already started and full screen, like the Play on its poster (#24)', () => {
+    renderAt('/');
+    const together = screen.getByRole('region', { name: 'Live multiplayer games' });
+    const card = within(together).getByRole('link', { name: 'Backgammon' });
+    // the Play button is a picture inside the card: the card's link takes the tap
+    expect(card.closest('.flagship')!.querySelector('.flagship-play')).not.toBeNull();
+    fireEvent.click(card);
+    expect(window.location.pathname).toBe('/games/backgammon');
+    // the address is the game's own again, so a refresh or a shared link shows the poster
+    expect(window.location.search).toBe('');
+    expect(screen.queryByRole('button', { name: /Play Backgammon/ })).toBeNull();
+    expect(document.querySelector('.stage')!.getAttribute('data-phase')).toBe('ready');
+    // jsdom has no Fullscreen API: the immersive mode, as the poster's Play gives
+    expect(document.querySelector('.stage-immersive')).not.toBeNull();
+    expect(document.documentElement.classList.contains('game-focus')).toBe(true);
+  });
+
+  it('an embedded game opened from a Play link loads at once', () => {
+    renderAt('/games/neon-rush?play=1');
+    expect(document.querySelector('iframe')?.getAttribute('src')).toBe('/play/neon-rush/');
+    expect(window.location.search).toBe('');
   });
 
   it('in full screen, the game\'s own menu button pauses it and offers a way out in a pop-up (#21, #22)', () => {

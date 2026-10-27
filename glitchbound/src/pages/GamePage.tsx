@@ -330,10 +330,13 @@ export function GamePage({ game }: { game: GameEntry }) {
   // With a mouse and keyboard a module game opens straight on its own menu (one click fewer; full screen
   // stays a button away). Phones keep the Play poster: that tap is what takes the game full screen.
   // Embeds and challenge rounds keep it too.
-  const [stageRun, setStageRun] = useState(() => ({
-    key: 0,
-    autoStart: game.runtime.kind === 'module' && !challengeId && typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches,
-  }));
+  const [arrival] = useState(() => {
+    const ownMenu = game.runtime.kind === 'module' && !challengeId && typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches;
+    // A banner's Play (/games/<slug>?play=1, catalog playPath) already was the press on the poster (issue #24).
+    const pressedPlay = !ownMenu && !challengeId && new URLSearchParams(search).get('play') === '1';
+    return { ownMenu, pressedPlay };
+  });
+  const [stageRun, setStageRun] = useState(() => ({ key: 0, autoStart: arrival.ownMenu || arrival.pressedPlay }));
   const [playing, setPlaying] = useState(stageRun.autoStart);
   const [last, setLast] = useState<LastRound | null>(null);
   const [burst, setBurst] = useState(0);
@@ -377,6 +380,24 @@ export function GamePage({ game }: { game: GameEntry }) {
   useEffect(() => {
     track('game_view', { game: game.slug });
   }, [game.slug]);
+
+  // Arrived from a banner's Play: the game is already starting; it goes full screen as the poster's Play
+  // takes it, while the tap that brought the player here still counts (a link opened in a new tab just plays
+  // in the page). The address loses `play`, so a refresh or a shared link shows the poster again.
+  const enterPlay = useRef(play.enter);
+  useEffect(() => {
+    enterPlay.current = play.enter;
+  });
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('play')) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('play');
+      window.history.replaceState(window.history.state, '', url);
+    }
+    if (!arrival.pressedPlay) return;
+    const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
+    if (!activation || activation.isActive) enterPlay.current();
+  }, [arrival]);
 
   // The lobby music steps aside while a game is loaded on this page.
   useEffect(() => {
