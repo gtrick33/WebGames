@@ -59,11 +59,18 @@ export function matchRoute(pathname: string): Route {
 const listeners = new Set<() => void>();
 const emit = (): void => listeners.forEach((fn) => fn());
 
+/** Back and forward are page switches too (no entrance pop-ins, as after a click). */
+const onPop = (): void => {
+  document.documentElement.dataset.paged = '';
+};
+
 function subscribe(fn: () => void): () => void {
   listeners.add(fn);
+  window.addEventListener('popstate', onPop);
   window.addEventListener('popstate', fn);
   return () => {
     listeners.delete(fn);
+    window.removeEventListener('popstate', onPop);
     window.removeEventListener('popstate', fn);
   };
 }
@@ -119,6 +126,8 @@ export function navigate(to: string, opts: { replace?: boolean; scroll?: boolean
 
 function go(url: URL, opts: { replace?: boolean; scroll?: boolean }, samePage: boolean): void {
   const apply = (): void => {
+    // from the second page on, cards are just there (base.css: no entrance pop-ins after a tab switch)
+    if (!samePage) document.documentElement.dataset.paged = '';
     if (opts.replace) window.history.replaceState(null, '', url);
     else window.history.pushState(null, '', url);
     emit();

@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { cardImg } from '../platform/cardImg';
 import { tGame, useT } from '../i18n';
 import { isNewLive, useLiveCatalog } from '../platform/liveCatalog';
 import type { TileSize } from '../catalog/settings';
@@ -19,7 +20,7 @@ import { gameUrl } from '../catalog/catalog';
 export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEntry; size?: TileSize; index?: number; best?: number }) {
   const live = useLiveCatalog();
   const t = useT();
-  const style = { '--i': index, viewTransitionName: `tile-${game.slug}` } as CSSProperties;
+  const style = { '--i': index } as CSSProperties;
   const preview = hasPreview(game.slug);
   const [hover, setHover] = useState(false);
   const art = size === 'xl' || size === 'wide' ? game.art.wide : game.art.tile;
@@ -38,7 +39,7 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
         <picture>
           {/* On wide screens a big banner is two rows tall: the square artwork fills it best. */}
           {size === 'xl' && art !== game.art.tile && <source media="(min-width: 1021px)" srcSet={game.art.tile} />}
-          <img src={art} alt={game.art.alt} loading="lazy" decoding="async" />
+          <img src={art} alt={game.art.alt} {...cardImg(false, index < 12)} />
         </picture>
         {hover && <GamePreview slug={game.slug} className="tile-preview" />}
         {hover && (

@@ -11,6 +11,7 @@ import { gamePath, latestGame, playPath, SECTION_GAMES } from '../catalog/catalo
 import type { GameEntry } from '../catalog/types';
 import { useFlagships } from '../platform/useFlagships';
 import { activeHoliday } from '../platform/seasons';
+import { cardImg } from '../platform/cardImg';
 import './Hero.css';
 
 /** Re-triggers the glitch class every few seconds. */
@@ -49,7 +50,7 @@ function GameWall({ games }: { games: GameEntry[] }) {
             <div className="wall-track">
               {[...col, ...col].map((g, i) => (
                 <Link key={`${g.slug}-${i}`} href={gamePath(g)} className="wall-tile" data-accent={g.accent} tabIndex={-1}>
-                  <img src={g.art.tile} alt="" width={512} height={512} decoding="async" loading={i < 3 ? 'eager' : 'lazy'} style={{ background: g.art.bg }} />
+                  <img src={g.art.tile} alt="" width={512} height={512} {...cardImg(i < 3, i < 4)} style={{ background: g.art.bg }} />
                   <span className="wall-name">{g.title}</span>
                 </Link>
               ))}
