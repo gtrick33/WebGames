@@ -294,10 +294,18 @@ export function GamePage({ game }: { game: GameEntry }) {
   const save = useSave();
   const record = save.games[game.slug];
   const stageRef = useRef<HTMLDivElement>(null);
-  // Leaving full screen (Escape, the browser's own exit, or the menu) pauses the game and its music.
+  // Leaving full screen (Escape, the browser's own exit, or the menu) pauses the game and its music, and
+  // closes the game menu (left open, it would come back over the game the next time it went full screen).
   const [pauseSignal, setPauseSignal] = useState(0);
-  const play = usePlayMode(stageRef, () => setPauseSignal((n) => n + 1), game?.aspect === 'landscape');
   const [menuOpen, setMenuOpen] = useState(false);
+  const play = usePlayMode(
+    stageRef,
+    () => {
+      setPauseSignal((n) => n + 1);
+      setMenuOpen(false);
+    },
+    game?.aspect === 'landscape',
+  );
   const openMenu = useCallback(() => {
     setPauseSignal((n) => n + 1);
     setMenuOpen(true);

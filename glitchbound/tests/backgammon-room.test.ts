@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ENGINES } from '../rooms/engines';
-import { nextSteps, turnDone } from '../src/games/backgammon/logic';
-import { act, AWAY_MS, BOT_MS, DONE_MS, join, leave, newRoom, SHEET_MS, tick, viewFor, type State } from '../src/games/backgammon/room';
+import { newGame, nextSteps, turnDone, type Pos } from '../src/games/backgammon/logic';
+import { act, AWAY_MS, BOT_MS, DONE_MS, join, leave, newRoom, SHEET_MS, STUCK_MS, tick, viewFor, type State } from '../src/games/backgammon/room';
 
 const A = 'player-key-aaaaaaaaaaaaaaaa';
 const B = 'player-key-bbbbbbbbbbbbbbbb';
@@ -92,6 +92,47 @@ describe('backgammon live room', () => {
     tick(s, t + DONE_MS);
     expect(s.match!.game.turn).not.toBe(g.turn);
     expect(s.match!.game.phase).toBe('roll');
+  });
+
+  it('a player shut out (on the bar, the board closed) does not roll: the turn passes for both phones to see (#25)', () => {
+    const s = newRoom('ABCDE', 0, 9);
+    join(s, A, 'Ana', 1);
+    join(s, B, 'Bo', 2);
+    act(s, A, { t: 'start' }, 4);
+    // Ana (place 0) has a checker on the bar; Bo holds every point she could come in on
+    const pts = Array<number>(25).fill(0);
+    pts[6] = 14;
+    for (const i of [19, 20, 21, 22, 23, 24]) pts[i] = -2;
+    pts[1] = -3;
+    const closed: Pos = { pts, bar: [1, 0], off: [0, 0] };
+    s.match!.game = { ...newGame(1), pos: closed, turnStart: closed, turn: 0, phase: 'roll', roll: [3, 1], rolls: 8 };
+    expect(act(s, B, { t: 'roll' }, 9)).toBeNull(); // not Bo's turn: nothing happens
+    expect(s.match!.game.turn).toBe(0);
+    tick(s, 10); // sets the room's clock again
+    expect(s.deadline).toBe(10 + STUCK_MS);
+    tick(s, 10 + STUCK_MS);
+    expect(s.match!.game).toMatchObject({ turn: 1, phase: 'roll', rolls: 8, lastTurn: { side: 0, roll: null, steps: [] } });
+    expect(viewFor(s, A)!.match!.game.turn).toBe(1);
+    // Bo plays on as usual
+    act(s, B, { t: 'roll' }, 11 + STUCK_MS);
+    expect(s.match!.game).toMatchObject({ turn: 1, phase: 'move', rolls: 9 });
+  });
+
+  it('a computer that is shut out passes too, after the same pause', () => {
+    const s = newRoom('ABCDE', 0, 13);
+    join(s, A, 'Ana', 1);
+    act(s, A, { t: 'bot', level: 'hard' }, 3);
+    act(s, A, { t: 'start' }, 4);
+    const pts = Array<number>(25).fill(0);
+    for (const i of [1, 2, 3, 4, 5, 6]) pts[i] = 2;
+    pts[13] = 3;
+    pts[24] = -14;
+    const closed: Pos = { pts, bar: [0, 1], off: [0, 0] };
+    s.match!.game = { ...newGame(1), pos: closed, turnStart: closed, turn: 1, phase: 'roll', roll: [3, 1], rolls: 8 };
+    tick(s, 5); // sets the clock again
+    expect(s.deadline).toBe(5 + STUCK_MS);
+    tick(s, 5 + STUCK_MS);
+    expect(s.match!.game).toMatchObject({ turn: 0, phase: 'roll', rolls: 8 });
   });
 
   it('the computer plays the second place on its clock; someone who leaves is played for', () => {

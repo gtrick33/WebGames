@@ -13,7 +13,9 @@ home and in cafés).
   you can; when only one can be used, the larger one if possible. You may land on an empty point, your own, or an
   opponent's single checker (a blot: it is hit and goes to the bar). Points with two or more opposing checkers are
   closed.
-- The bar: a hit checker must come back in, into the opponent's home board, before anything else moves.
+- The bar: a hit checker must come back in, into the opponent's home board, before anything else moves. When
+  every point it could come in on is closed, no roll can help: that side does not roll, the board says "Board
+  closed" and the turn passes by itself (vs the computer and at a live table alike).
 - Bearing off: once all fifteen are home, take them off with exact numbers, or with a higher number from the highest
   point you hold.
 - Winning: the first to bear off all fifteen. 1 point; a gammon (the loser has not borne any off) 2; a backgammon

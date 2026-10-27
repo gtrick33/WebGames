@@ -9,7 +9,7 @@
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Level } from './ai';
-import { applyStep, BAR, mine, nextSteps, OFF, pips, posKey, routesFrom, startPos, stepsBetween, turnDone, type Game, type Pos, type Route, type Side, type Step } from './logic';
+import { applyStep, BAR, mine, mustPass, nextSteps, OFF, pips, posKey, routesFrom, startPos, stepsBetween, turnDone, type Game, type Pos, type Route, type Side, type Step } from './logic';
 import type { Sfx } from './sound';
 import type { Words } from './text';
 
@@ -353,7 +353,10 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
   const selected = sel !== null && sources.includes(sel) ? sel : sources.length === 1 ? sources[0]! : null;
   const routes = useMemo(() => (selected !== null ? routesFrom(game, selected) : []), [game, selected]);
   const routeTo = (to: number): Route | undefined => routes.find((r) => r.to === to);
-  const myRoll = canAct && !busy && (game.phase === 'roll' || game.phase === 'opening');
+  // a checker on the bar and every way in closed: nothing to roll for, the turn passes by itself (the
+  // game, or the live room, passes it a moment later; issue #25)
+  const shutOut = mustPass(game);
+  const myRoll = canAct && !busy && !shutOut && (game.phase === 'roll' || game.phase === 'opening');
   const stuck = canAct && !busy && game.phase === 'move' && game.steps.length === 0 && turnDone(game);
   const turnOver = canAct && !busy && game.phase === 'move' && game.steps.length > 0 && turnDone(game);
   useEffect(() => {
@@ -564,6 +567,7 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
             </g>
           )}
         </svg>
+        {shutOut && !busy && <p className="tb-toast">{game.turn === me ? w.boardClosed : w.boardClosedThem(names[game.turn])}</p>}
         {overlay}
       </div>
 

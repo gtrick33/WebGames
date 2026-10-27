@@ -17,6 +17,9 @@ export interface Words {
   rollFirst: string;
   opening: (a: number, b: number, youStart: boolean) => string;
   noMoves: string;
+  /** A checker on the bar and every way in closed: no roll, the turn passes. */
+  boardClosed: string;
+  boardClosedThem: (name: string) => string;
   yourTurn: string;
   theirTurn: (name: string) => string;
   /** On an upright phone: the board is laid out for landscape. */
@@ -99,6 +102,8 @@ const en: Words = {
   rollFirst: 'Roll to see who starts',
   opening: (a, b, youStart) => `You ${a} · them ${b}: ${youStart ? 'you start' : 'they start'}`,
   noMoves: 'No legal move with that roll',
+  boardClosed: 'Board closed: your turn passes',
+  boardClosedThem: (name) => `Board closed: ${name} passes`,
   yourTurn: 'Your turn',
   turnSideways: 'Turn your phone sideways for a bigger board',
   theirTurn: (name) => `${name} is playing…`,
@@ -187,6 +192,8 @@ const bg: Words = {
   rollFirst: 'Хвърли, за да видим кой започва',
   opening: (a, b, youStart) => `Ти ${a} · те ${b}: ${youStart ? 'ти започваш' : 'те започват'}`,
   noMoves: 'Няма възможен ход с тези зарове',
+  boardClosed: 'Дъската е затворена: пропускаш хода',
+  boardClosedThem: (name) => `Дъската е затворена: ${name} пропуска хода`,
   yourTurn: 'Твой ред',
   turnSideways: 'Завърти телефона хоризонтално за по-голяма дъска',
   theirTurn: (name) => `${name} играе…`,

@@ -152,6 +152,24 @@ describe('backgammon: choosing a move on the board', () => {
     expect([label(12), label(17), label(20)]).toEqual(['4 Them', '3 Them', '1 Them']);
   });
 
+  it('shut out (on the bar, the board closed): no Roll button, the board says the turn passes (#25)', () => {
+    const pts = Array<number>(25).fill(0);
+    pts[6] = 14;
+    for (const i of [19, 20, 21, 22, 23, 24]) pts[i] = -2;
+    pts[1] = -3;
+    const closed: Pos = { pts, bar: [1, 0], off: [0, 0] };
+    const g: Game = { ...newGame(1), pos: closed, turnStart: closed, turn: 0, phase: 'roll', roll: [3, 1], rolls: 8 };
+    const onRoll = vi.fn();
+    const view = render(<Board w={WORDS.en} game={g} me={0} names={['You', 'Them']} canAct onRoll={onRoll} sfx={() => quiet} score={[0, 0]} target={5} />);
+    expect(document.querySelector('.tb-btn.is-roll')).toBeNull();
+    expect(document.querySelector('.tb-toast')!.textContent).toBe('Board closed: your turn passes');
+    fireEvent.keyDown(window, { key: 'r' });
+    expect(onRoll).not.toHaveBeenCalled();
+    // the other phone (or the screen across the table) sees who passes
+    view.rerender(<Board w={WORDS.en} game={g} me={1} names={['Ana', 'You']} canAct={false} sfx={() => quiet} score={[0, 0]} target={5} />);
+    expect(document.querySelector('.tb-toast')!.textContent).toBe('Board closed: Ana passes');
+  });
+
   it('the dice shake before they land, and no checker moves until they have', () => {
     const view = show({ ...moving([5, 3]), rolls: 2 });
     view.rerender(<Board w={WORDS.en} game={(game = { ...game, rolls: 3 })} me={0} names={['You', 'Them']} canAct onStep={() => undefined} sfx={() => quiet} score={[0, 0]} target={5} />);
