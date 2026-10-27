@@ -2061,6 +2061,8 @@ const pl: string[] = [
   "Jeden gracz rysuje, reszta na wyścigi zgaduje słowo. Trudniejsze słowa, więcej punktów.",
   "Rysuj na żywo, wszyscy zgadują na swoich telefonach",
   "Lista pokojów jest teraz niedostępna. Spróbuj ponownie za minutę.",
+  '{name} wyzywa cię do pobicia wyniku {score} w {game}',
+  '{name} wyzywa cię w {game}',
 ];
 
 export default pl;

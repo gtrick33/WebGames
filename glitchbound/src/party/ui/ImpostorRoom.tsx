@@ -93,7 +93,7 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
   const left = useLeft(view?.deadline ?? null, skew);
   const screen = useTopOnPhase(view?.phase);
   const invite = (): void => {
-    void shareOrCopy({ title: t('Impostor room'), text: t('🕵️ Join my Impostor room (code {code}): one of us gets a different card. Find them!', { code }), url: `${location.origin}/r/${code}` });
+    void shareOrCopy({ title: t('Impostor room'), text: `${t('Impostor room')}\n${t('Room code')} ${code}`, url: `${location.origin}/r/${code}` });
   };
   useEffect(() => {
     if (!error) return;

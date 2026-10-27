@@ -2061,6 +2061,8 @@ const it: string[] = [
   "Un giocatore disegna, tutti gli altri fanno a gara per indovinare la parola. Parole più difficili, più punti.",
   "Disegna dal vivo, tutti indovinano sul proprio telefono",
   "L’elenco delle stanze non è disponibile al momento. Riprova tra un minuto.",
+  '{name} ti sfida a battere {score} a {game}',
+  '{name} ti sfida a {game}',
 ];
 
 export default it;

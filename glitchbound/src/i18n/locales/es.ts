@@ -2061,6 +2061,8 @@ const es: string[] = [
   "Un jugador dibuja y los demás compiten por adivinar la palabra. Palabras más difíciles, más puntos.",
   "Dibuja en directo, todos adivinan en su móvil",
   "La lista de salas no está disponible ahora mismo. Inténtalo de nuevo en un minuto.",
+  '{name} te reta a superar {score} en {game}',
+  '{name} te reta en {game}',
 ];
 
 export default es;

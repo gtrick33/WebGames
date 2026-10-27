@@ -2061,6 +2061,8 @@ const fr: string[] = [
   "Un joueur dessine, tous les autres foncent pour deviner le mot. Mots plus durs, plus de points.",
   "Dessine en direct, chacun devine sur son téléphone",
   "La liste des salons n’est pas disponible pour le moment. Réessaie dans une minute.",
+  '{name} te défie de battre {score} à {game}',
+  '{name} te défie à {game}',
 ];
 
 export default fr;

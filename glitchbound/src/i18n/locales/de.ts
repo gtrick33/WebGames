@@ -2061,6 +2061,8 @@ const de: string[] = [
   "Eine Person zeichnet, alle anderen raten um die Wette. Schwerere Wörter, mehr Punkte.",
   "Live zeichnen, alle raten auf dem eigenen Handy",
   "Die Raumliste ist gerade nicht verfügbar. Versuch es in einer Minute noch mal.",
+  '{name} fordert dich heraus, {score} in {game} zu schlagen',
+  '{name} fordert dich in {game} heraus',
 ];
 
 export default de;

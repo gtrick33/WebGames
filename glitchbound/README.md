@@ -104,6 +104,17 @@ on GlitchBound counts. A streak is consecutive cleared days. The share text show
 link to `/daily`, with no personal data. If no game had daily templates, the feature would hide itself instead of
 showing a fake countdown.
 
+### Sharing
+
+Everything is shared as a bare link: no text, no emoji (`src/platform/share.ts`, `components/ShareSheet.tsx`).
+What the link says is a picture: chat apps preview `/c/<id>` (a friends' challenge), `/r/<code>` (a room) and
+`/s/<code>` (a result, a short link the sheet makes) with an `og:image` drawn by the server from what it knows,
+e.g. "Ana challenges you to beat 1,234 in Wing It" (`server/invites.ts` says what each link says,
+`server/ogImage.ts` draws it, `functions/og/` serves it, edge-cached per version). The drawing is a palette PNG made
+without a font engine, so it fits a free-plan Worker's CPU time: the letters (Latin and Cyrillic, Inter) are drawn
+once by `node scripts/og-font.mjs` into `server/ogFont.ts`. The share sheet also draws a picture card in the browser
+(`shareCard.ts`) to save or send as a file.
+
 ### Player names, music and play mode
 
 - Players race under their account nickname (it starts as their Google name) or, as guests, a random name such as
@@ -155,4 +166,4 @@ it); game previews load as separate chunks only when their tile is on screen. Th
 ## Credits
 
 Original design and code. Fonts: Bricolage Grotesque and Space Mono (SIL Open Font License), self-hosted via
-Fontsource. NEON RUSH artwork comes from the NEON RUSH project.
+Fontsource; link-preview pictures are set in Inter (SIL Open Font License). NEON RUSH artwork comes from the NEON RUSH project.

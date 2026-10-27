@@ -2061,6 +2061,8 @@ const tr: string[] = [
   "Bir oyuncu çizer, diğer herkes kelimeyi bilmek için yarışır. Zor kelime, büyük puan.",
   "Canlı çiz, herkes kendi telefonunda tahmin etsin",
   "Oda listesi şu anda kullanılamıyor. Bir dakika sonra yeniden dene.",
+  '{name} sana {game} oyununda {score} puanı geçmen için meydan okuyor',
+  '{name} sana {game} oyununda meydan okuyor',
 ];
 
 export default tr;

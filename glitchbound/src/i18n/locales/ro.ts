@@ -2061,6 +2061,8 @@ const ro: string[] = [
   "Un jucător desenează, toți ceilalți se întrec să ghicească cuvântul. Cuvinte mai grele, puncte mai multe.",
   "Desenează live, toți ghicesc pe propriul telefon",
   "Lista de camere nu e disponibilă acum. Încearcă din nou peste un minut.",
+  '{name} te provoacă să bați {score} în {game}',
+  '{name} te provoacă la {game}',
 ];
 
 export default ro;

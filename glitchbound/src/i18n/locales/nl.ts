@@ -2061,6 +2061,8 @@ const nl: string[] = [
   "Eén speler tekent, de rest raadt om het snelst het woord. Moeilijkere woorden, meer punten.",
   "Live tekenen, iedereen raadt op zijn eigen telefoon",
   "De kamerlijst is nu niet beschikbaar. Probeer het over een minuut opnieuw.",
+  '{name} daagt je uit om {score} te verslaan in {game}',
+  '{name} daagt je uit in {game}',
 ];
 
 export default nl;

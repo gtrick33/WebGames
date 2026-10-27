@@ -2067,6 +2067,8 @@ export const KEYS: string[] = [
   "One player draws, everyone else races to guess the word. Harder words, bigger points.",
   "Draw live, everyone guesses on their phone",
   "The room list is not available right now. Try again in a minute.",
+  "{name} challenges you to beat {score} in {game}",
+  "{name} challenges you in {game}",
 ];
 
 export const UI_COUNT = 311;

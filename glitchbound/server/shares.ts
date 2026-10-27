@@ -4,6 +4,7 @@ import type { Env } from './http';
 /**
  * Short share links (/s/<code>, /c/<code> for challenges): the page a link leads to, with the
  * link-preview tags (title, description, image) rewritten so chats show the result or challenge.
+ * What each link says is in server/invites.ts.
  */
 
 const ALPHABET = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -40,7 +41,7 @@ export function shareText(title: unknown, description: unknown): { title: string
 const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** The static page for `path` with the link-preview tags replaced. */
-export async function previewPage(env: Env, request: Request, path: string, meta: { title: string; description: string; image?: string; replaceUrl: string }): Promise<Response> {
+export async function previewPage(env: Env, request: Request, path: string, meta: { title: string; description: string; image?: string; imageAlt?: string; replaceUrl: string }): Promise<Response> {
   const origin = new URL(request.url).origin;
   const pagePath = path.split('?')[0]!;
   const asset = pagePath === '/' ? '/' : pagePath;
@@ -56,6 +57,7 @@ export async function previewPage(env: Env, request: Request, path: string, meta
   set('og:description', meta.description || 'Small games, big obsessions. Free in your browser.');
   set('og:url', `${origin}${meta.replaceUrl}`);
   if (meta.image) set('og:image', meta.image.startsWith('http') ? meta.image : `${origin}${meta.image}`);
+  if (meta.imageAlt) set('og:image:alt', meta.imageAlt);
   set('twitter:card', 'summary_large_image', 'name');
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${esc(meta.title)}</title>`);
   // The app should see the real address (its router does not know /s/ and /c/).

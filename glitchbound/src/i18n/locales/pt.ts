@@ -2061,6 +2061,8 @@ const pt: string[] = [
   "Um jogador desenha, todos os outros correm para adivinhar a palavra. Palavras mais difíceis, mais pontos.",
   "Desenha ao vivo, todos adivinham no seu telemóvel",
   "A lista de salas não está disponível agora. Tenta outra vez daqui a um minuto.",
+  '{name} desafia-te a bater {score} em {game}',
+  '{name} desafia-te em {game}',
 ];
 
 export default pt;
