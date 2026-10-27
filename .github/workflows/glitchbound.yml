@@ -5,7 +5,8 @@ on:
     branches: [pre-release]
     paths: ['glitchbound/**', 'neon-rush/**', '.github/workflows/glitchbound.yml']
   pull_request:
-    paths: ['glitchbound/**', 'neon-rush/**']
+    branches: [pre-release]
+    paths: ['glitchbound/**', 'neon-rush/**', '.github/workflows/glitchbound.yml']
   workflow_dispatch:
 
 concurrency:
