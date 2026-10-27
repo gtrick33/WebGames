@@ -158,6 +158,24 @@ export class CityPlan {
     return this;
   }
 
+  /**
+   * A copse: trees thick at its heart and thinning toward a ragged edge, bushes as undergrowth around it,
+   * on the open grass only. Groves give a place its shape (trees sprinkled one by one over a whole area
+   * read as a toy box).
+   */
+  grove(cx: number, cy: number, r: number, density = 0.6): this {
+    for (let y = Math.floor(cy - r - 1); y <= cy + r + 1; y++) {
+      for (let x = Math.floor(cx - r - 1); x <= cx + r + 1; x++) {
+        if (this.at(x, y) !== C.floor || this.taken.has(this.i(x, y))) continue;
+        const d = Math.hypot(x - cx, y - cy) / r + (noise2(x / 2, y / 2, this.seed + 23) - 0.5) * 0.5;
+        const h = hash2(x, y, this.seed + 29);
+        if (d < 1 && h < density * (1 - d * 0.55)) this.set(x, y, 'tree');
+        else if (d < 1.35 && h < 0.22) this.set(x, y, 'bush');
+      }
+    }
+    return this;
+  }
+
   /** Lamps along a line of tiles, every `step`. */
   lamps(x0: number, y0: number, x1: number, y1: number, step: number): this {
     const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
@@ -247,6 +265,10 @@ export class SpreadPlan {
   }
   plant(x0: number, y0: number, x1: number, y1: number, trees: number, flowers: number): this {
     this.plan.plant(this.a(x0), this.a(y0), this.a(x1 + 1) - 1, this.a(y1 + 1) - 1, trees, flowers);
+    return this;
+  }
+  grove(cx: number, cy: number, r: number, density?: number): this {
+    this.plan.grove(this.m(cx), this.m(cy), r * this.s, density);
     return this;
   }
   lamps(x0: number, y0: number, x1: number, y1: number, step: number): this {

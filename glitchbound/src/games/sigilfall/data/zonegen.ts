@@ -123,6 +123,7 @@ const TREE = 84; // 'T'
 const BUSH = 116; // 't'
 const ROCK = 114; // 'r'
 const FENCE = 102; // 'f'
+const RAMPART = 124; // '|'
 const HOUSE = 104; // 'h'
 const HOUSE_ANCHOR = 72; // 'H'
 const PILLAR = 106; // 'j'
@@ -469,7 +470,7 @@ class ZoneBuilder {
     if (hub.wall) this.palisade(cx, cy);
   }
 
-  /** A square of stakes around a town (straight runs read as a wall), left open wherever a road crosses it. */
+  /** A stone wall around a town (a place that expects to be attacked), left open wherever a road crosses it. */
   private palisade(cx: number, cy: number): void {
     const rx = 18;
     const ry = 14;
@@ -477,7 +478,7 @@ class ZoneBuilder {
       for (let x = cx - rx; x <= cx + rx; x++) {
         if (x !== cx - rx && x !== cx + rx && y !== cy - ry && y !== cy + ry) continue;
         const i = this.idx(x, y);
-        if (OPEN.has(this.at(x, y)) && !this.marked.has(i)) this.set(x, y, FENCE);
+        if (OPEN.has(this.at(x, y)) && !this.marked.has(i)) this.set(x, y, RAMPART);
       }
     }
     // the north gate: the middle of the road's gap in the north wall nearest the square
@@ -490,6 +491,8 @@ class ZoneBuilder {
       while (gaps.includes(lo - 1)) lo--;
       while (gaps.includes(hi + 1)) hi++;
       this.gate = [Math.round((lo + hi) / 2), cy - ry];
+      // a watchtower on either side of the gate
+      for (const x of [lo - 1, hi + 1]) if (this.at(x, cy - ry) === RAMPART && !this.marked.has(this.idx(x, cy - ry))) this.put(x, cy - ry, { kind: 'prop', prop: 'watchtower', solid: true });
     }
   }
 
@@ -605,6 +608,13 @@ class ZoneBuilder {
 
   /* ----------------------------------------------------------- the open land */
 
+  /**
+   * What stands in the open land, placed the way land grows rather than sprinkled: trees gather in copses
+   * (where a slow noise field is high; the clearings between stay open), bushes grow as undergrowth along
+   * a copse's edge, rocks break out in clusters, and flowers lie in meadows away from the trees. The
+   * spec's numbers keep meaning about the same share of the land; only where things stand changes (a
+   * playtester's "goofy" look was mostly lone trees and rocks dotted evenly everywhere).
+   */
   private scatter(): void {
     const sc = this.spec.scatter;
     const seed = this.spec.seed + 41;
@@ -613,11 +623,19 @@ class ZoneBuilder {
         const i = this.idx(x, y);
         if (this.g[i] !== FLOOR || this.lock[i] || this.marked.has(i)) continue;
         const h = hash2(x, y, seed) * 100;
-        // flowers and ferns come in patches
-        if (h < sc.trees) this.g[i] = TREE;
-        else if (h < sc.trees + sc.bushes) this.g[i] = BUSH;
-        else if (h < sc.trees + sc.bushes + sc.rocks) this.g[i] = ROCK;
-        else if (noise2(x / 5, y / 5, seed) > 1 - sc.flowers / 40) this.g[i] = DECO;
+        const copse = fbm(x / 7, y / 7, seed + 3);
+        // 0 over the clearings, rising toward a copse's heart
+        const inCopse = clamp((copse - 0.5) / 0.22, 0, 1);
+        // the band where a copse meets the open: its undergrowth
+        const edge = clamp(1 - Math.abs(copse - 0.47) / 0.07, 0, 1);
+        const outcrop = clamp((fbm(x / 5, y / 5, seed + 7) - 0.62) / 0.2, 0, 1);
+        const pTree = sc.trees * 3.4 * inCopse;
+        const pBush = sc.bushes * 3 * edge;
+        const pRock = sc.rocks * 6 * outcrop;
+        if (h < pTree) this.g[i] = TREE;
+        else if (h < pTree + pBush) this.g[i] = BUSH;
+        else if (h < pTree + pBush + pRock) this.g[i] = ROCK;
+        else if (copse < 0.42 && noise2(x / 5, y / 5, seed) > 1 - sc.flowers / 34) this.g[i] = DECO;
       }
     }
   }

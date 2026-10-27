@@ -47,8 +47,11 @@ function plan(): SpreadPlan {
   c.marker(0, 26, { kind: 'exit', to: 'brackenridge', label: 'West road: Fernstead and the Brackenridge Hills', minLevel: 5 }, is('the-empty-tomb', 'done'));
   c.marker(31, 53, { kind: 'exit', to: 'thornvale', label: 'South road: Millbrook and Thornvale', minLevel: 7 }, is('the-empty-tomb', 'done'));
 
-  // the palisade along the north, with its gate where Mara keeps watch
-  for (let x = 9; x <= 55; x++) if (x < 30 || x > 34) c.set(x, 12, 'fence');
+  // the old stone wall along the north, toward the woods, with its gate where Mara keeps watch and a
+  // watchtower on either side of it
+  for (let x = 9; x <= 55; x++) if (x < 30 || x > 34) c.set(x, 12, 'rampart');
+  c.prop('watchtower', 27, 12);
+  c.prop('watchtower', 37, 12);
   c.marker(29, 13, { kind: 'prop', prop: 'lamp', solid: true });
   c.marker(35, 13, { kind: 'prop', prop: 'lamp', solid: true });
 
@@ -70,6 +73,14 @@ function plan(): SpreadPlan {
     [37, 25, 'crate'],
   ] as const)
     c.prop(p, x, y);
+  // a market square, not an empty yard: the Regent's banners by the waystone, a bench by the well, and the
+  // stall carts out while the village is calm
+  c.prop('blue-banner', 29, 21);
+  c.prop('blue-banner', 35, 21);
+  c.prop('bench', 34, 30);
+
+  c.prop('market-cart', 28, 26, true, CALM);
+  c.prop('market-cart', 36, 26, true, CALM);
 
   // the guard yard by the gate: Mara's dummies
   c.fill(18, 14, 26, 18, 'cobble');
@@ -118,7 +129,20 @@ function plan(): SpreadPlan {
   c.fill(23, 42, 28, 47, 'deco');
   c.set(29, 44, 'floor');
   c.pond(13, 45, 4, 2);
-  c.plant(6, 13, 58, 50, 0.025, 0.12);
+  // copses where a village's trees would be: between the outer houses, round the pond, along the edges, and
+  // outside the wall toward the woods; flowers in the yards between (no more lone trees dotted everywhere)
+  for (const [x, y, r] of [
+    [4, 34, 3],
+    [5, 43, 2.5],
+    [19, 50, 3],
+    [59, 36, 3],
+    [60, 21, 2.5],
+    [15, 8, 3],
+    [47, 8, 3.5],
+    [39, 50, 2.5],
+  ] as const)
+    c.grove(x, y, r);
+  c.plant(6, 13, 58, 50, 0, 0.12);
 
   // where the story happens (silent places)
   for (const [id, x, y] of [
