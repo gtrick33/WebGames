@@ -2079,6 +2079,10 @@ const tr: string[] = [
   'Bilmekte fayda var',
   'Hadi oynayalım!',
   'Adım {n}/{total}',
+  'En iyi parti oyunları',
+  'Tüm parti oyunları',
+  'Bir odaya katıl',
+  '{game} başlat',
 ];
 
 export default tr;

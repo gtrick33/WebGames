@@ -2079,6 +2079,10 @@ const it: string[] = [
   'Buono a sapersi',
   'Si gioca!',
   'Passo {n} di {total}',
+  'I migliori giochi di gruppo',
+  'Tutti i giochi di gruppo',
+  'Entra in una stanza',
+  'Inizia {game}',
 ];
 
 export default it;

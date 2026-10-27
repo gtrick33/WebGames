@@ -2360,3 +2360,127 @@ img.pt-feature-art {
 .pt-game-ctas .pt-btn.is-waiting {
   opacity: 0.85;
 }
+
+/* The lobby, laid out like the arcade: wide sections with an eyebrow and a big title, big game cards
+   (FlagshipRow.css). Its buttons are the arcade's own. */
+.pt-lobby {
+  width: min(100% - 2 * var(--gutter, 16px), 1180px);
+  gap: 6px;
+}
+/* Grid children may shrink below their content (the swipe row would otherwise widen the page). */
+.pt-lobby > * {
+  min-width: 0;
+}
+.party .btn {
+  color: var(--btn-fg);
+}
+.pt-lobby .flagships {
+  margin: 14px 0 10px;
+}
+.pt-all .flagship-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.pt-top .flagship-row {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+.pt-gamecard .flagship-body {
+  gap: 6px;
+}
+.pt-gamecard .flagship-sticker {
+  top: auto;
+  bottom: 10px;
+  left: 10px;
+}
+.pt-gamecard .adult-label {
+  justify-self: start;
+}
+.pt-card-emoji {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 84px;
+}
+.pt-card-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-self: end;
+  margin-top: 4px;
+}
+.pt-card-ctas .btn {
+  flex: 1 1 auto;
+  padding-inline: 12px;
+}
+.flagship.is-found {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.pt-all-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pt-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--magenta);
+  color: #1d1238;
+  font: 700 12px/1 var(--mono);
+}
+.pt-online-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.pt-online-row .pt-panel {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+.pt-online-row h3 {
+  margin: 0;
+}
+.pt-sheet .pt-who {
+  display: grid;
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  .pt-top .flagship-row,
+  .pt-all .flagship-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .pt-all .flagship-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* The top games swipe sideways on phones, like the arcade's live multiplayer row. */
+  .pt-top .flagship-row {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(200px, 64%);
+    overflow-x: auto;
+    margin-inline: calc(-1 * var(--gutter, 16px));
+    padding: 2px var(--gutter, 16px) 10px;
+    scroll-padding-inline: var(--gutter, 16px);
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .pt-top .flagship-row::-webkit-scrollbar {
+    display: none;
+  }
+  .pt-top .flagship {
+    scroll-snap-align: start;
+  }
+  .pt-card-ctas .btn {
+    flex-basis: 100%;
+    font-size: 14px;
+  }
+  .pt-online-row {
+    grid-template-columns: 1fr;
+  }
+}

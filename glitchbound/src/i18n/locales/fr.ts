@@ -2079,6 +2079,10 @@ const fr: string[] = [
   'Bon à savoir',
   'C’est parti !',
   'Étape {n} sur {total}',
+  'Meilleurs jeux de soirée',
+  'Tous les jeux de soirée',
+  'Rejoindre un salon',
+  'Lancer {game}',
 ];
 
 export default fr;

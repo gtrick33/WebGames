@@ -2086,6 +2086,11 @@ export const KEYS: string[] = [
   "Good to know",
   "Let’s play!",
   "Step {n} of {total}",
+  // Party Mode laid out like the arcade (party/ui/PartyPage.tsx)
+  "Top party games",
+  "All party games",
+  "Join a room",
+  "Start {game}",
 ];
 
 export const UI_COUNT = 311;

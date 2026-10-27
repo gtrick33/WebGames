@@ -172,30 +172,15 @@ export function Results({ title, players, scores, awards, children, onAgain, onM
   );
 }
 
-/** Top bar of a running mode. */
+/** Top bar of a running mode. Back leaves at once: one-phone games are saved and resume, and a room can be joined again. */
 export function ModeBar({ title, progress, onExit }: { title: string; progress?: string; onExit: () => void }) {
-  const [confirm, setConfirm] = useState(false);
   return (
     <div className="pt-modebar">
-      {confirm ? (
-        <>
-          <span className="pt-muted">{t('Leave this game?')}</span>
-          <button className="pt-btn pt-btn-sm" onClick={onExit}>
-            {t('Leave')}
-          </button>
-          <button className="pt-btn pt-btn-sm pt-btn-ghost" onClick={() => setConfirm(false)}>
-            {t('Stay')}
-          </button>
-        </>
-      ) : (
-        <>
-          <button className="pt-icon" onClick={() => setConfirm(true)} aria-label={t('Back to the party menu')}>
-            ←
-          </button>
-          <span className="pt-modebar-title">{title}</span>
-          {progress && <span className="pt-pill">{progress}</span>}
-        </>
-      )}
+      <button className="pt-icon" onClick={onExit} aria-label={t('Back to the party menu')}>
+        ←
+      </button>
+      <span className="pt-modebar-title">{title}</span>
+      {progress && <span className="pt-pill">{progress}</span>}
     </div>
   );
 }
