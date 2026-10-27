@@ -54,9 +54,14 @@ const FLORA = ['gv:grass_tuft', 'gv:sunflowers', 'gv:mushroom_cluster', 'cps:bus
 /** The CraftPix house with roof recolors, and the Greenvale cottage and smithy filling the missing CraftPix village pack. */
 const HOUSES = ['cps:house', 'cps:house', 'gv:cosy_cottage', 'cps:house', 'gv:blacksmith_hut'];
 
+/**
+ * The Vale's own treatment: the summer pack's candy greens taken deeper and richer (a painted land, not a
+ * toy one; VISUAL_BIBLE.md §1). The atmosphere pass (render/atmosphere.ts) lays the light over it.
+ */
+const VALE_GRADE = { sat: 0.92, contrast: 1.1, bright: -0.07, tint: ['#3a5a2a', 0.08] as [string, number] };
+
 const vale = (over: Partial<Recipe> = {}, ground: Partial<Recipe['ground']> = {}): Recipe => ({
   ground: { set: 'cp-summer', base: 'grass', path: 'sand', sand: 'sand', water: 'water', cobble: 'cobble', bridge: 'planks', ...ground },
-  grade: {},
   trees: TREES,
   bushes: BUSHES,
   rocks: ROCKS,
@@ -64,6 +69,8 @@ const vale = (over: Partial<Recipe> = {}, ground: Partial<Recipe['ground']> = {}
   edge: 'forest',
   houses: HOUSES,
   ...over,
+  // a land's own treatment goes on top of the Vale's (its keys win)
+  grade: { ...VALE_GRADE, ...over.grade },
 });
 
 const swamp = (over: Partial<Recipe> = {}): Recipe => ({
@@ -86,7 +93,7 @@ export const RECIPES: Partial<Record<Theme, Recipe>> = {
   village: vale({}, { cobble: 'rk' }),
   farm: vale({ grade: { tint: ['#ffe080', 0.06] }, flora: [...FLORA, 'gv:hay_bale'] }, { field: 'soil' }),
   plains: vale({ grade: { tint: ['#f0d860', 0.12], sat: 1.02 }, flora: [...FLORA, 'gv:hay_bale'] }, { patches: { set: 'sand', share: 0.12 }, field: 'soil' }),
-  forest: vale({ trees: ['cps:tree-medium~dark', 'cps:tree-medium', 'cps:tree-small~dark', 'cps:tree-medium~teal', 'cps:tree-small~teal'], bushes: ['cps:bushes-large~dark', 'cps:bushes-medium~teal', 'cps:bushes-small'], grade: { bright: -0.03 } }),
+  forest: vale({ trees: ['cps:tree-medium~dark', 'cps:tree-medium', 'cps:tree-small~dark', 'cps:tree-medium~teal', 'cps:tree-small~teal'], bushes: ['cps:bushes-large~dark', 'cps:bushes-medium~teal', 'cps:bushes-small'], grade: { bright: -0.12, tint: ['#163a2a', 0.14] } }),
   coast: vale({ grade: { tint: ['#d8f0e0', 0.06] }, trees: ['cps:tree-small~mint', 'cps:tree-medium~mint'], flora: ['gv:grass_tuft', 'mf:cattail_reeds'] }, { patches: { set: 'sand', share: 0.3 } }),
   autumn: vale({ trees: ['cps:tree-medium~amber', 'cps:tree-medium~coral', 'cps:tree-small~amber', 'cps:tree-small~coral', 'cps:tree-medium'], bushes: ['cps:bushes-large~amber', 'cps:bushes-medium~coral', 'cps:bushes-small~amber'], grade: { tint: ['#e8b060', 0.08] } }),
   fey: vale({ ruins: ['gc:cyan_crystals', 'rk:pillar', 'rk:pillar_broken'], trees: ['cps:tree-medium~blossom', 'cps:tree-medium~mint', 'cps:tree-small~blossom', 'cps:tree-medium~teal'], bushes: ['cps:bushes-large~blossom', 'cps:bushes-medium~mint'], flora: ['sr:toadstools', 'sr:blue_bellflowers', 'sr:mushroom_cluster', 'sr:fern'], grade: { hue: -10, sat: 1.08 } }, { water: 'stream' }),
