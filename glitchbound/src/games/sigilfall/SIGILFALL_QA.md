@@ -167,3 +167,18 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
 - Not verified: two real phones on mobile networks (latency, a phone locking mid-run). A leader's phone that
   locks stops the enemies for everyone until it comes back.
 
+## Questing together (2026-10-27)
+
+- The room picks the leader at the start: the hero with the fewest main-story quests done (the room's host on a
+  tie). Only the leader's `go` moves the party; every game follows `plan.region` when `trip` changes.
+- `tests/sigilfall-coop.test.ts` adds: the hero furthest behind leads and only they choose the way; a guest ahead in
+  the story shows the leader's Briarhollow (its own quests untouched); a story event won on the leader's game
+  completes the guest's quest for it; an open land's frame holds only the enemies near a hero.
+- Checked live (two browsers, the local room worker): a level-60 hero who finished the story made a questing party
+  and a new level-1 hero joined by the invite; the new hero led, the veteran's Briarhollow turned to the newcomer's
+  dusk with the veteran's quests still done; the veteran's own travel was refused ("You travel with your party's
+  leader"); the leader's road to the Whisperwood took both games there, with the leader's packs mirrored near the
+  veteran.
+- Known limits: the leader's story companions (allies in an event, people a rescue leads) show only on the
+  leader's game; a veteran phased into a newer hero's world may find someone their own quest wants elsewhere.
+

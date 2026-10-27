@@ -259,6 +259,16 @@ dodge. Every kill pays every hero their own experience and loot; a fall costs th
 draws in a hero still outside (sealed doors shut nobody out), and a hero comes back inside a fight their friends
 are still in. The world never pauses in a party. The leader going home ends the run for everyone.
 
+**Questing together** uses the same machinery at any level. When the party sets out, the room makes the hero furthest
+behind in the main story the leader (`lead`): their game runs the land's enemies and the story's events, and the
+others are phased into their world (`World.layer`: who stands where, what is built and which foes are out follow
+the leader's quests; the leader's game sends its packed quests whenever they change). Everything else stays each
+hero's own: their quests, talk, hand-ins, experience and loot, so a quest a hero has already finished gives them
+nothing again, and a newer hero plays as they would alone. A story event the leader's game wins counts for every
+hero whose quest waits on it. The party travels as one: the leader's roads and waystones take everyone (`go`), the
+others can't wander off without leaving the party, and a frame in an open land holds only the enemies near a hero.
+A leader who drops out is waited for twenty seconds.
+
 **Paragon** (`progress/paragon.ts`): experience past 60 earns Paragon levels, each a point for Might (+1% damage),
 Vigor (+1% health), Precision (crit, up to 50 points) or Toughness (armor and regeneration, up to 50), taken back
 for free. With Riftstone loot it is what lets a hero climb further every week.

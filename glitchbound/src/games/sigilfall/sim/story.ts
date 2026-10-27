@@ -134,6 +134,8 @@ export class StoryDirector {
       if (w.rand() < dt * (2 + p.size)) w.addFx({ kind: 'ember', x: p.x + (w.rand() - 0.5) * 16, y: p.y - 2, vx: (w.rand() - 0.5) * 8, vy: -12 - w.rand() * 10, life: 1.4, size: 1, color: p.color });
     }
     this.cool = Math.max(0, this.cool - dt);
+    // questing together, the story's fights are the leader's (a guest sees their foes, mirrored)
+    if (w.puppet) return;
     if (this.run) this.step(this.run, dt);
     else if (this.cool <= 0) this.maybeStart();
   }
@@ -381,6 +383,8 @@ export class StoryDirector {
     this.clear(run, stay);
     this.say(run.def.end);
     w.questProgress((o) => o.kind === 'event' && o.event === run.def.id);
+    // questing together: the party's other heroes were there too (their quests for it count)
+    if (w.coop?.role === 'host') w.coop.out.push({ t: 'event', id: run.def.id });
     w.refreshStoryState();
     w.emit({ t: 'save' });
   }

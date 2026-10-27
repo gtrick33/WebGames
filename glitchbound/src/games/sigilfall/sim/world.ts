@@ -257,6 +257,18 @@ export class World {
   keyRun: KeyRun | null = null;
   /** A co-op party (net/coop.ts): the other heroes, and what to send them. Null playing alone. */
   coop: CoopSide | null = null;
+  /**
+   * Questing together (net/coop.ts): the leader's story, which this world shows (who stands where, what is
+   * built, which foes are out), so a hero ahead in the story is phased into the world of the one behind.
+   * Null: the hero's own. Only what is shown follows it; quests, rewards and talk stay the hero's own.
+   */
+  layer: Character | null = null;
+
+  /** Whose story the land shows: the leader's when questing together, else the hero's. */
+  get storyHero(): Character {
+    return this.layer ?? this.hero;
+  }
+
   /** A co-op guest's world: its enemies are the host's, mirrored (none of its own spawn, think or strike). */
   get puppet(): boolean {
     return this.coop?.role === 'guest';
@@ -296,7 +308,7 @@ export class World {
       if (back) spawn = this.insideOf(markerPos(back), back.marker.kind === 'exit' && back.marker.door ? (this.region.interior ? [0, -1] : [0, 1]) : undefined);
     }
     this.checkpoint = { ...spawn };
-    this.storyState = regionState(this.region, this.hero);
+    this.storyState = regionState(this.region, this.storyHero);
     this.story = new StoryDirector(this);
     this.shownKey = this.shownMarkers();
     this.player = this.newPlayer(spawn.x, spawn.y);
@@ -418,7 +430,7 @@ export class World {
 
   private shown(pm: { ch: string; when?: StoryCond }): boolean {
     const cond = pm.when ?? this.region.when?.[pm.ch];
-    return !cond || holds(this.hero, cond);
+    return !cond || holds(this.storyHero, cond);
   }
 
   private shownMarkers(): string {
@@ -430,7 +442,7 @@ export class World {
    * once; what is built (props, fires, ruins) is redrawn by the renderer when `stateVersion` changes.
    */
   refreshStoryState(): void {
-    const s = regionState(this.region, this.hero);
+    const s = regionState(this.region, this.storyHero);
     const key = this.shownMarkers();
     if (s?.id === this.storyState?.id && key === this.shownKey) return;
     this.storyState = s;
@@ -465,7 +477,7 @@ export class World {
     }
     // those the story has sent away (the blockade broken, the dead laid to rest) go now
     for (const st of this.packs) {
-      if (!st.cond || st.gone || holds(this.hero, st.cond)) continue;
+      if (!st.cond || st.gone || holds(this.storyHero, st.cond)) continue;
       st.gone = true;
       for (const e of this.enemies) {
         if (!st.ids.includes(e.id) || e.dead || e.aggro) continue;
@@ -972,7 +984,7 @@ export class World {
     if (this.puppet) for (const e of this.enemies) updatePuppet(this, e, dt);
     else
       for (const e of this.enemies) {
-        if (wild && !e.aggro && !e.dead && e.state === 'idle' && (Math.abs(e.x - px) > SLEEP_X || Math.abs(e.y - py) > SLEEP_Y)) continue;
+        if (wild && !e.aggro && !e.dead && e.state === 'idle' && (Math.abs(e.x - px) > SLEEP_X || Math.abs(e.y - py) > SLEEP_Y) && !this.nearGhost(e.x, e.y)) continue;
         updateEnemy(this, e, dt);
         awake.push(e);
       }
@@ -994,7 +1006,7 @@ export class World {
     if (!this.puppet) this.updateEncounters(dt);
     this.updateHazards(dt);
     this.updateAmbient(dt);
-    if (!this.puppet) this.story.update(dt);
+    this.story.update(dt);
     // delayed actions (meteors, echoes, rift bursts)
     if (this.delayed.length) {
       const due: (() => void)[] = [];
@@ -1583,6 +1595,12 @@ export class World {
   ghostHit(g: Ghost, dmg: number, o: { fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; src?: number } = {}): void {
     if (!this.coop || g.dead || g.untouchable || dmg <= 0) return;
     this.coop.out.push({ t: 'hit', n: g.n, dmg: Math.round(dmg), ...o });
+  }
+
+  /** Whether another hero of the party is near (enemies in the wilds wake for them as for the hero). */
+  nearGhost(x: number, y: number): boolean {
+    for (const g of this.coop?.ghosts ?? []) if (!g.dead && Math.abs(x - g.x) <= SLEEP_X && Math.abs(y - g.y) <= SLEEP_Y) return true;
+    return false;
   }
 
   /** Where a hero in a party comes back: the checkpoint, or inside the fight their friends are still in. */

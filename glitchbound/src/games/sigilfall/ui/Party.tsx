@@ -26,16 +26,26 @@ function NoParty({ engine }: { engine: SigilEngine }) {
   const why = engine.partyReady();
   return (
     <div className="rb-party">
-      <p>
-        Run a Riftstone with up to {MAX_PLAYERS - 1} friends, each on their own device. The party leader chooses the dungeon and the level; everyone fights the same enemies against the
-        same clock, and every hero takes their own experience and loot from each kill. Every hero needs level {COOP_LEVEL}.
-      </p>
-      <div className="rb-party-actions">
-        <button className="rb-btn is-gold" disabled={!!why} onClick={() => void engine.createParty()}>
-          Start a party
+      <section className="rb-party-mode">
+        <strong>Riftstone together</strong>
+        <p className="rb-small">
+          Up to {MAX_PLAYERS} level-{COOP_LEVEL} heroes run a Riftstone, each on their own device: the same enemies, the same clock, and every hero takes their own experience and loot from each kill.
+        </p>
+        <button className="rb-btn is-gold" disabled={!!why} onClick={() => void engine.createParty('rift')}>
+          Start a Riftstone party
         </button>
         {why && <span className="rb-small rb-dim">{why}</span>}
-      </div>
+      </section>
+      <section className="rb-party-mode">
+        <strong>Quest together</strong>
+        <p className="rb-small">
+          Level up with friends at any level. The hero furthest behind in the story leads, and the others see their world and follow them. Quests a hero has already finished give them nothing
+          again; everything else counts for everyone.
+        </p>
+        <button className="rb-btn" onClick={() => void engine.createParty('party')}>
+          Start a questing party
+        </button>
+      </section>
       <form
         className="rb-party-join"
         onSubmit={(e) => {
@@ -65,7 +75,9 @@ function Lobby({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const link = `${location.origin}/r/${v.code}`;
   const here = v.seats.filter((s) => s.online);
-  const notReady = here.find((s) => !s.card || s.card.level < COOP_LEVEL);
+  const rift = v.mode === 'rift';
+  const notReady = here.find((s) => !s.card || (rift && s.card.level < COOP_LEVEL));
+  const lead = v.seats.find((s) => s.n === v.lead);
   const share = async (): Promise<void> => {
     try {
       if (navigator.share) await navigator.share({ title: 'Sigilfall party', text: `Join my Sigilfall party: code ${v.code}`, url: link });
@@ -93,7 +105,8 @@ function Lobby({ engine }: { engine: SigilEngine }) {
               {s.you && <span className="rb-dim"> (you)</span>}
             </span>
             <span className="rb-small rb-dim">
-              {s.card ? `Level ${s.card.level}${s.card.para ? ` · P${s.card.para}` : ''} ${CLASSES[s.card.cls as ClassId]?.name ?? ''} · Riftstone +${s.card.keystone}` : 'choosing a hero…'}
+              {s.card ? `Level ${s.card.level}${s.card.para ? ` · P${s.card.para}` : ''} ${CLASSES[s.card.cls as ClassId]?.name ?? ''}${rift ? ` · Riftstone +${s.card.keystone}` : ` · ${s.card.story} story quests`}` : 'choosing a hero…'}
+              {v.phase === 'run' && s.n === v.lead && ' · leads'}
               {!s.online && ' · away'}
             </span>
             {host && !s.you && (
@@ -104,24 +117,43 @@ function Lobby({ engine }: { engine: SigilEngine }) {
           </li>
         ))}
       </ul>
+      {host && v.phase === 'lobby' && (
+        <div className="rb-seg" role="group" aria-label="What the party does">
+          <button className={rift ? 'is-on' : ''} onClick={() => engine.setPartyMode('rift')}>
+            Riftstone run
+          </button>
+          <button className={!rift ? 'is-on' : ''} onClick={() => engine.setPartyMode('party')}>
+            Quest together
+          </button>
+        </div>
+      )}
       {v.phase === 'run' ? (
         <p className="rb-gold">
-          In a run: {v.plan ? `${REGIONS[v.plan.region as RegionId]?.name ?? v.plan.region} · Riftstone +${v.plan.key}` : ''}. Close this to fight.
+          {rift
+            ? `In a run: ${v.plan ? `${REGIONS[v.plan.region as RegionId]?.name ?? v.plan.region} · Riftstone +${v.plan.key}` : ''}. Close this to fight.`
+            : `Questing together, led by ${lead?.card?.name ?? lead?.name ?? 'the party'}${lead && !lead.online ? ' (reconnecting…)' : ''}. Everyone travels with them, in their story.`}
         </p>
+      ) : !rift ? (
+        <p className="rb-small">Questing together: when the run starts, the hero furthest behind in the story leads, the others follow them in their world. Quests a hero already finished give them nothing again.</p>
       ) : host ? (
         <PlanPicker engine={engine} />
       ) : (
         <p className="rb-small">{v.plan ? `The leader chose ${REGIONS[v.plan.region as RegionId]?.name ?? v.plan.region} at Riftstone +${v.plan.key}. Waiting for them to start.` : 'Waiting for the leader to choose the dungeon.'}</p>
       )}
-      {me?.card && me.card.level < COOP_LEVEL && <p className="rb-warn">Riftstone runs are for level-{COOP_LEVEL} heroes: this one can’t go along. Choose another hero, or level this one up.</p>}
+      {rift && me?.card && me.card.level < COOP_LEVEL && <p className="rb-warn">Riftstone runs are for level-{COOP_LEVEL} heroes: this one can’t go along. Choose another hero, or level this one up.</p>}
       {party.error && <p className="rb-warn">{party.error}</p>}
       <div className="rb-party-actions">
         {host && v.phase === 'lobby' && (
-          <button className="rb-btn is-gold" disabled={!v.plan || !!notReady || here.length < 1} onClick={() => engine.startPartyRun()}>
-            Start the run
+          <button className="rb-btn is-gold" disabled={(rift && !v.plan) || !!notReady} onClick={() => engine.startPartyRun()}>
+            {rift ? 'Start the run' : 'Set out together'}
           </button>
         )}
         {host && notReady && <span className="rb-small rb-dim">{notReady.card ? `${notReady.card.name} needs level ${COOP_LEVEL}.` : `${notReady.name} is choosing a hero.`}</span>}
+        {v.phase === 'run' && !rift && (
+          <button className="rb-btn is-ghost" onClick={() => engine.leaveParty()}>
+            Go my own way
+          </button>
+        )}
         <button className="rb-btn is-ghost" onClick={() => engine.leaveParty()}>
           Leave the party
         </button>

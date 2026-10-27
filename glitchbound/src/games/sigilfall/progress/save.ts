@@ -478,7 +478,7 @@ export function loadSave(): { save: SaveFile; status: LoadStatus } {
  * under way, r[.<step>] waiting to be handed in. Five hundred of them as objects made a save too big to
  * follow the player between devices (platform/syncKeys.ts).
  */
-function packQuest(e: Character['quests'][string]): string {
+export function packQuest(e: Character['quests'][string]): string {
   const step = e.step ? `.${e.step}` : '';
   if (e.state === 'done') return e.n < 0 ? 'x' : 'd';
   if (e.state === 'offered') return 'o';
@@ -486,7 +486,7 @@ function packQuest(e: Character['quests'][string]): string {
   return `a${Math.max(0, Math.round(e.n))}${step}`;
 }
 
-function unpackQuest(s: string): Record<string, unknown> | null {
+export function unpackQuest(s: string): Record<string, unknown> | null {
   const m = /^([dxora])(\d{0,7})(?:\.(\d{1,2}))?$/.exec(s);
   if (!m) return null;
   const step = m[3] ? Number(m[3]) : 0;
