@@ -40,7 +40,7 @@ a story beat.
 | Severity | Issue | State |
 | --- | --- | --- |
 | P3 | The bot's warrior loses Mythic Morgrave about half the time once its potions are gone (the test gives it a second try, as a player would restock) | accepted; the play-through test allows 30 s for its three runs |
-| P2 | The bot's mage is a coin flip against the late bosses (the Herald, Corvane, Vaelor): it clears on some seeds and dies over and over on others, and small changes anywhere flip which | dungeon tests give every class up to three runs (`clearsWithRetry`); the mage's survival wants a real balance look |
+| — | The bot's mage is a coin flip against the late bosses (the Herald, Corvane, Vaelor): it clears on some seeds and dies over and over on others | closed by the owner (2026-10-27): the late bosses are meant to be hard; dungeon tests give every class up to three runs (`clearsWithRetry`) |
 | P3 | The arcade's startup JavaScript is at 119.9 of its 120 KB budget (none of it is Sigilfall's: the game loads on its own page) | watch |
 | — | Stuck joystick | not reproduced; now regression-tested (`sigilfall-touch`) |
 | — | Tree/roof depth sorting | not reproduced; needs the place and a screenshot |
