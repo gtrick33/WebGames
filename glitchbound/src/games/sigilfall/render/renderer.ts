@@ -15,7 +15,6 @@ import type { Enemy, Fx, Ghost, Pet, Projectile, Telegraph } from '../sim/types'
 import type { World } from '../sim/world';
 import { itemTint } from '../progress/items';
 import { canvas, ctx2d, DETAIL, pixelText, RES, rgba, type Cnv, type Sprite } from './pixel';
-import { drawAtmosphere, moodOf } from './atmosphere';
 import { creatureSprite, glowDisc, heldWeapon, itemIconCanvas, heroLook, heroSprite, mountSprites, npcSprite, recolored, riderLegsSprite, vendorSign, weaponSprite, type HeroDir } from './sprites';
 import { HERO_H, HERO_W, type HeroLook } from './art/hero';
 import { MOUNT_FRAMES, MOUNT_WALK_FRAMES, RIDER_HIP } from './art/mount';
@@ -398,12 +397,6 @@ export class Renderer {
       g.fillRect(ox, oy, this.vw, this.vh);
       g.globalAlpha = 1;
     }
-
-    // the land's air over all of it: cloud shadows, low sun, mist, the grade and the vignette (render/atmosphere.ts)
-    g.save();
-    g.setTransform(this.res, 0, 0, this.res, 0, 0);
-    drawAtmosphere(g, moodOf(sc.theme, THEMES[sc.theme].indoor), { vw: this.vw, vh: this.vh, ox, oy, time: this.reducedMotion ? 0 : time, dark: w.dark });
-    g.restore();
 
     // collapse ring (Morgrave's last phase)
     const bz = w.boss();

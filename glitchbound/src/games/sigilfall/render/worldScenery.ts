@@ -6,6 +6,22 @@ import type { PropAtlas, Rect, WorldArt } from './art/atlas';
 import type { Recipe } from './art/recipes';
 import type { Cnv } from './pixel';
 
+/** What a small plant is for: where it may grow (worldScenery's flora rule). */
+type FloraRole = 'shade' | 'field' | 'garden' | 'bloom' | 'bush' | 'grass';
+const floraRole = (ref: string): FloraRole =>
+  /mushroom|toadstool|fern|sticks|log/.test(ref)
+    ? 'shade'
+    : /hay/.test(ref)
+      ? 'field'
+      : /sunflower/.test(ref)
+        ? 'garden'
+        : /flower|bellflower|rafflesia|blossom/.test(ref)
+          ? 'bloom'
+          : /bush|shrub/.test(ref)
+            ? 'bush'
+            : 'grass';
+const floraFor = (list: string[], roles: FloraRole[]): string[] => list.filter((ref) => roles.includes(floraRole(ref)));
+
 /** The low rocks of a land's set (boulders stand only in boulder fields, which are walls). */
 const lowRocks = (rocks: string[]): string[] => {
   const low = rocks.filter((id) => !id.includes('boulder'));
@@ -151,12 +167,13 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
     const bottom = (ty + 1) * TILE;
     const h = hash2(tx, ty, 77);
     switch (k) {
+      // off the tile grid a little, so a copse reads as grown, not planted in rows
       case K.Tree:
-        stand(pick(r.trees, hash2(tx, ty, 91)), cx + (h - 0.5) * 4, bottom - 2, 'tree', true);
+        stand(pick(r.trees, hash2(tx, ty, 91)), cx + (h - 0.5) * 10, bottom - 2 + (hash2(tx, ty, 95) - 0.5) * 5, 'tree', true);
         break;
       case K.Bush:
       case K.Bramble:
-        stand(pick(r.bushes, h), cx, bottom - 3, 'bush');
+        stand(pick(r.bushes, h), cx + (hash2(tx, ty, 96) - 0.5) * 7, bottom - 3, 'bush');
         break;
       case K.Rock:
         // a lone rock is low (shots fly over it, sim/map.ts): never one of the land's boulders
@@ -178,12 +195,13 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
         stand(pick(r.ruins ?? ['rk:pillar', 'rk:pillar_broken'], h), cx, bottom - 3, 'pillar', true);
         break;
       case K.Wall: {
-        // woods and boulder fields: a piece on every other tile, more along the clearing
+        // woods and boulder fields: about half the tiles carry a piece (thicker along the clearing), at random
+        // and well off the grid (it was every other tile, which read as a checkerboard of trees)
         const edge = open(kindAt(tx, ty + 1)) || open(kindAt(tx, ty - 1)) || open(kindAt(tx - 1, ty)) || open(kindAt(tx + 1, ty));
         const near = edge || open(kindAt(tx, ty + 2)) || open(kindAt(tx + 2, ty)) || open(kindAt(tx - 2, ty));
-        if (!((tx + ty) % 2 === 0 || (near && h < 0.55))) break;
-        const jx = (hash2(tx, ty, 92) - 0.5) * 9;
-        const jy = (hash2(tx, ty, 93) - 0.5) * 6;
+        if (hash2(tx, ty, 90) > (near ? 0.8 : 0.52)) break;
+        const jx = (hash2(tx, ty, 92) - 0.5) * 14;
+        const jy = (hash2(tx, ty, 93) - 0.5) * 9;
         if (r.edge === 'forest') stand(pick(r.trees, hash2(tx, ty, 94)), cx + jx, bottom - 2 + jy, 'tree', near);
         else stand(pick(h < 0.25 ? r.trees : r.rocks, hash2(tx, ty, 94)), cx + jx, bottom - 2 + jy, 'rock', near);
         break;
@@ -201,10 +219,26 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
           const nk = kindAt(tx + dx, ty + dy);
           if (nk === K.Wall || nk === K.Tree || nk === K.Water || nk === K.Rock) rim = true;
         }
-        // plants gather in soft clumps across the open land (a meadow, not an even sprinkle), thicker at the
-        // foot of woods, rocks and water
+        // plants grow where they would: mushrooms, ferns and undergrowth at the foot of woods, rocks and water;
+        // flowers and hay by houses, fences and fields; flowers in the meadows; only grass out in the open
+        // (sunflowers and toadstools sprinkled over every field looked like a toy box)
+        let field = k === K.Deco;
+        let garden = false;
+        for (const [dx, dy] of [
+          [0, -1],
+          [1, 0],
+          [0, 1],
+          [-1, 0],
+          [0, 2],
+        ] as const) {
+          const nk = kindAt(tx + dx, ty + dy);
+          if (nk === K.Fence) field = true;
+          if (nk === K.House || nk === K.HouseAnchor) garden = true;
+        }
+        const tended = field || garden;
         const clump = noise2(tx / 7, ty / 7, 191) > 0.64;
-        if (h > (rim ? 0.74 : clump ? 0.82 : 0.975)) stand(pick(r.flora, hash2(tx, ty, 95)), cx + (hash2(tx, ty, 96) - 0.5) * 10, bottom - 3 - hash2(tx, ty, 97) * 8, 'flora');
+        const fits = floraFor(r.flora, rim ? ['shade', 'bush', 'grass'] : field ? ['field', 'garden', 'grass'] : garden ? ['garden', 'bloom', 'grass'] : clump ? ['bloom', 'grass'] : ['grass']);
+        if (fits.length && h > (rim ? 0.8 : tended ? 0.82 : clump ? 0.84 : 0.975)) stand(pick(fits, hash2(tx, ty, 95)), cx + (hash2(tx, ty, 96) - 0.5) * 10, bottom - 3 - hash2(tx, ty, 97) * 8, 'flora');
         break;
       }
       default:

@@ -5,25 +5,25 @@ roles are in ASSET_AUDIT.md; the tables that implement this live in `render/art/
 
 ## 1. The look
 
-**Epic, atmospheric fantasy** (since 2026-10-27: a playtester found the bright look goofy; the owner asked for the
-mood of the great fantasy worlds, WoW, Elden Ring, the Lord of the Rings, without copying any of them). The approved
-CraftPix packs still draw the land (cel-shaded shapes with one soft highlight, a warm dark-brown outline, never pure
-black), but the picture is **lit like a place**: deep greens rather than candy ones, warm low sun from the upper left
-against cool shadows, weather moving over the ground, mist in the old places, and a frame that draws the eye in.
-Royal Keep supplies the kingdom's **architecture**; the Worlds bundle fills gaps after normalization; nothing else
-enters without approval.
+**A fantasy world, composed like one** (since 2026-10-28). The owner asked for the feel of the great fantasy
+worlds (WoW, Elden Ring, the Lord of the Rings; their feel only, nothing of theirs) and was clear that it comes
+from **where things stand**, not from light or glow laid over the screen (a screen-wide lighting pass was tried
+and removed). The approved CraftPix packs still draw the land: cel-shaded shapes with one soft highlight, a warm
+dark-brown outline (never pure black). Royal Keep supplies the kingdom's **architecture**; the Worlds bundle fills
+gaps after normalization; nothing else enters without approval.
 
-- **Atmosphere** (`render/atmosphere.ts`, each frame, under bars and numbers): a land's mood is its depth (a multiply
-  toward the land's color), drifting cloud shadows, slanting sun shafts with motes in them, banks of mist, a
-  warm-to-cool grade, a little color taken out of the whole picture (people included, so they belong to the land),
-  and a vignette. Golden in the Vale, cold and blue in the highlands, overcast and misty in the dead lands, smoky
-  orange at the warfront; indoors only the grade and the vignette (the torches do the rest).
-- **Grades**: the Vale's lands are graded deeper and richer at load (`VALE_GRADE` in `render/art/recipes.ts`); a
-  land's own grade goes on top.
+- **Land grows, it isn't sprinkled**: trees stand in copses with clearings between, bushes as undergrowth along a
+  copse's edge, rocks in outcrops, flowers in meadows (`zonegen.ts` scatter; `CityPlan.grove` in towns). Never
+  lone trees or rocks dotted evenly over a field.
+- **Plants where they would grow** (`worldScenery.ts`): mushrooms, ferns and undergrowth at the foot of woods,
+  rocks and water; hay and sunflowers by fences and fields; garden flowers by houses; only grass in the open.
+  Woods are drawn off the tile grid, never as a checkerboard.
+- **Places that expect trouble are walled in stone**, with a watchtower either side of the gate (Briarhollow's
+  north wall; every walled village of the open lands). Squares are dressed like squares: banners, stalls, a
+  bench by the well.
 - **People**: wanderers' colors, not costume colors: the mage in storm-grey and slate.
 - **Interface**: dark iron and leather with antique gold, double gold rules on panels, serif titles (Georgia),
   deep red and blue bars in bronze frames, a gold-ringed portrait and minimap (`Game.css`, "epic chrome").
-
 - **Grid**: 16 world px per tile, drawn at **4 art px per world px (64 px per tile)**.
 - **View**: top-down 3/4. Roofs and wall tops from above, south faces visible, doors on the south face.
 - **Light**: from the **upper left**. Shadows fall down-right, a soft translucent cool brown-violet
