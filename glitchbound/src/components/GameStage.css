@@ -1,5 +1,7 @@
 .stage {
-  --stage-h: clamp(520px, calc(100svh - var(--header-h) - 110px), 1080px);
+  /* below the header and the game's own bar (about 75px), ending above the settings button docked in the
+     screen's bottom-left corner (16px + 46px) */
+  --stage-h: clamp(520px, calc(100svh - var(--header-h) - 150px), 1080px);
   position: relative;
   border: 2px solid var(--cyan);
   border-radius: var(--r-lg);
@@ -240,24 +242,18 @@
   }
 }
 
-/* Phones on their side and other short screens: the stage fits the screen below the header (and above
-   the bottom tab bar where there is one) instead of running past it. Full screen still pins it over all. */
+/* Phones on their side and other short screens: the stage fits the screen below the header and the game's
+   own bar (back, title, restart, exit: about 72px) instead of running past it; the floating tab bar steps
+   aside on a game page (Header.css). Full screen still pins it over all. */
 @media (orientation: landscape) and (max-height: 560px) {
   .stage-portrait,
   .stage-square,
   .stage-landscape {
     width: 100%;
-    height: calc(100svh - var(--header-h) - 16px);
+    height: calc(100svh - var(--header-h) - 84px - env(safe-area-inset-bottom));
     min-height: 0;
     max-height: none;
     aspect-ratio: auto;
-  }
-}
-@media (orientation: landscape) and (max-height: 560px) and (max-width: 900px) {
-  .stage-portrait,
-  .stage-square,
-  .stage-landscape {
-    height: calc(100svh - var(--header-h) - 96px - env(safe-area-inset-bottom));
   }
 }
 
