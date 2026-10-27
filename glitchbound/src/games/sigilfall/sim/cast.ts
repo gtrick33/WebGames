@@ -755,6 +755,17 @@ export function updateProjectiles(w: World, dt: number): void {
           pr.dead = true;
           continue;
         }
+        // the host's shots strike the party's other heroes (their games take the hit)
+        const g = w.coop?.role === 'host' ? w.coop.ghosts.find((x) => !x.dead && dist2(pr.x, pr.y, x.x, x.y) < (pr.r + x.r) ** 2) : undefined;
+        if (g) {
+          if (!g.untouchable) {
+            w.ghostHit(g, pr.dmg, { fromX: pr.x - pr.vx * 0.05, fromY: pr.y - pr.vy * 0.05, knock: 40, ...(pr.status ? { status: pr.status } : {}) });
+            pr.dead = true;
+          }
+          continue;
+        }
+        // a co-op guest's copy of the host's shot only flies
+        if (pr.remote) continue;
         if (!p.dead && dist2(pr.x, pr.y, p.x, p.y) < (pr.r + p.r) ** 2) {
           if (p.iframe > 0) {
             if (!pr.hit.includes(-1)) {
@@ -850,7 +861,8 @@ export function updateFields(w: World, dt: number): void {
     if (f.tickT <= 0) {
       f.tickT += f.tick;
       if (f.hostile) {
-        if (!p.dead && dist2(p.x, p.y, f.x, f.y) < (f.r + p.r * 0.5) ** 2) hurtPlayer(w, f.dmg, { status: f.status });
+        if (w.coop?.role === 'host') for (const g of w.coop.ghosts) if (!g.dead && dist2(g.x, g.y, f.x, f.y) < (f.r + g.r * 0.5) ** 2) w.ghostHit(g, f.dmg, f.status ? { status: f.status } : {});
+        if (!f.remote && !p.dead && dist2(p.x, p.y, f.x, f.y) < (f.r + p.r * 0.5) ** 2) hurtPlayer(w, f.dmg, { status: f.status });
       } else {
         // a well that drags, a grove that mends
         if (f.pull) {

@@ -149,3 +149,21 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
   stage, where it moves to a line at the top middle), the results card with "Riftstone +N here", the Paragon
   box and badge, and a reload keeping the stone and Paragon (save v11).
 - Also fixed: the death, pause and results screens said "Return to Emberwick"; home is Briarhollow.
+
+## Co-op Riftstone runs (2026-10-27)
+
+- Party: `net/room.ts` on the room server (private rooms only, four seats, cards with name, class, level and
+  look; the leader plans and starts; a run takes nobody new; level 60 for a Riftstone run). The fight's traffic
+  goes through the room's relay unstored (`relay.save: false`; messages up to 24 KB for this game).
+- `tests/sigilfall-coop.test.ts` wires a host's and a guest's world together: the guest mirrors the host's
+  enemies, its hit kills one on the host and both heroes are paid; what the host's enemies throw reaches the guest
+  (a dodging guest isn't struck; the guest's copies never strike); enemies chase whoever is nearest; a guest's
+  fall costs the clock; the boss's fall ends the run for both on the host's time and opens each hero's levels.
+- Checked live with the room worker, the Pages functions and two browsers on different origins: the invite link
+  joins the party after a hero is chosen; the leader's plan and start take both games into the same run; the
+  rooms seal on both and the guest is drawn in; the guest's hit kills the host's enemy and both take its 170 XP;
+  the host's enemies kill the guest; the clock counts both falls; the guest sees the leader with a name, health
+  and a party frame; the leader going home ends the run for both, who stay in the party.
+- Not verified: two real phones on mobile networks (latency, a phone locking mid-run). A leader's phone that
+  locks stops the enemies for everyone until it comes back.
+

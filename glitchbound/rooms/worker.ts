@@ -284,8 +284,10 @@ export class Room {
   }
 
   async webSocketMessage(ws: Socket, message: string | ArrayBuffer): Promise<void> {
-    if (typeof message !== 'string' || message.length > MAX_MESSAGE || isWatcher(ws)) return;
+    if (typeof message !== 'string' || isWatcher(ws)) return;
     const s = await this.load();
+    // a game whose players stream more (Sigilfall's co-op frames) says how much
+    if (message.length > (s ? (engineFor(s).maxMessage ?? MAX_MESSAGE) : MAX_MESSAGE)) return;
     const key = (ws.deserializeAttachment() as { key?: string } | null)?.key;
     if (!s || !key) return ws.close(4004, 'gone');
     let action: never;
@@ -321,7 +323,7 @@ export class Room {
               /* closing */
             }
       }
-      if (relay.save || now - this.savedAt >= RELAY_SAVE_MS) await this.ctx.storage.put('state', s).then(() => (this.savedAt = now));
+      if (relay.save || (relay.save !== false && now - this.savedAt >= RELAY_SAVE_MS)) await this.ctx.storage.put('state', s).then(() => (this.savedAt = now));
       return;
     }
     engine.tick(s, now);

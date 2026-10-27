@@ -81,6 +81,7 @@ const GAMES: Record<string, { slug: string; title: (host: string) => string; pit
   drag: { slug: 'launch-control', title: (h) => (h ? `${h} wants to race you in Launch Control` : 'Race me in Launch Control'), pitch: 'Head-to-head drag race, live on your own phone.' },
   backgammon: { slug: 'backgammon', title: (h) => (h ? `${h} wants a game of backgammon with you` : 'Play backgammon with me'), pitch: 'A live match on your own phone, to 3, 5 or 7 points.' },
   belot: { slug: 'belot', title: (h) => (h ? `${h} saved you a seat at the Belot table` : 'Join my Belot table'), pitch: 'Four players, two teams, first to 151. Live on your own phone.' },
+  sigilfall: { slug: 'sigilfall', title: (h) => (h ? `${h} wants you in their Sigilfall party` : 'Join my Sigilfall party'), pitch: 'Riftstone runs and questing together, every hero on their own device.' },
   'crass-act': { slug: 'crass-act', title: (h) => (h ? `${h} wants you in a Crass Act room` : 'Join my Crass Act room'), pitch: 'Fill-in-the-blank party cards for adults. 18+, free in your browser.' },
 };
 

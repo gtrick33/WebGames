@@ -4,7 +4,7 @@ import { hurtPet } from './pets';
 import { castRay, circleHitsWall, flowField, flowStep, lineOfSight, moveCircle, pushOut, TILE } from './map';
 import { updateBoss } from './boss';
 import type { StatusId } from '../data/types';
-import type { Enemy, Pet } from './types';
+import type { Enemy, Ghost, Pet } from './types';
 import type { World } from './world';
 
 /**
@@ -15,6 +15,20 @@ import type { World } from './world';
 
 /** How strongly enemies push away from each other. */
 const SEPARATION = 60;
+
+/**
+ * A co-op guest's copy of one of the host's enemies (net/coop.ts moves it): only what shows here, and its
+ * damage over time (whose ticks go to the host as hits). Its thinking is the host's.
+ */
+export function updatePuppet(w: World, e: Enemy, dt: number): void {
+  if (e.dead) {
+    e.deathT += dt;
+    return;
+  }
+  tickStatuses(w, e, dt);
+  e.flash = Math.max(0, e.flash - dt);
+  e.hurtT += dt;
+}
 
 export function updateEnemy(w: World, e: Enemy, dt: number): void {
   if (e.dead) {
@@ -318,13 +332,14 @@ function applyMove(w: World, e: Enemy, vx: number, vy: number, dt: number): void
   e.y = res.y;
 }
 
-/** Who an enemy is after: the hero, or a companion. */
+/** Who an enemy is after: the hero, a companion, or (on a co-op host's game) another player's hero. */
 interface Victim {
   x: number;
   y: number;
   r: number;
   dead: boolean;
   pet: Pet | null;
+  ghost?: Ghost;
 }
 
 /**
@@ -340,11 +355,21 @@ function victimOf(w: World, e: Enemy): Victim {
   if (ward && !ward.dead) return { x: ward.x, y: ward.y, r: ward.r, dead: false, pet: ward };
   // taunted: the hero, and nobody else
   if ((e.tauntUntil ?? 0) > w.time && !p.dead) return hero;
-  if (e.boss || !w.pets.length) return hero;
+  const ghosts = w.coop?.role === 'host' ? w.coop.ghosts : [];
+  if (e.boss || (!w.pets.length && !ghosts.length)) return hero;
   if (e.victimT <= 0) {
     e.victimT = 1;
     let best = p.dead ? Infinity : dist(e.x, e.y, p.x, p.y);
     e.victim = 0;
+    // the party: whoever is nearest (other heroes count as negative ids)
+    for (const g of ghosts) {
+      if (g.dead) continue;
+      const d = dist(e.x, e.y, g.x, g.y);
+      if (d < best) {
+        best = d;
+        e.victim = -g.n;
+      }
+    }
     for (const pet of w.pets) {
       if (pet.dead || pet.def.unhurt || pet.downT) continue;
       const d = dist(e.x, e.y, pet.x, pet.y);
@@ -356,6 +381,12 @@ function victimOf(w: World, e: Enemy): Victim {
       }
     }
   }
+  if (e.victim < 0) {
+    const g = ghosts.find((x) => x.n === -e.victim && !x.dead);
+    if (g) return { x: g.x, y: g.y, r: g.r, dead: false, pet: null, ghost: g };
+    e.victim = 0;
+    return hero;
+  }
   const pet = e.victim ? w.pets.find((x) => x.id === e.victim && !x.dead && !x.downT) : undefined;
   if (!pet) {
     e.victim = 0;
@@ -366,7 +397,8 @@ function victimOf(w: World, e: Enemy): Victim {
 
 /** An enemy's blow lands on whoever it was after. */
 function hurtVictim(w: World, v: Victim, dmg: number, o: Parameters<typeof hurtPlayer>[2]): void {
-  if (v.pet) hurtPet(w, v.pet, dmg);
+  if (v.ghost) w.ghostHit(v.ghost, dmg, { fromX: o?.fromX, fromY: o?.fromY, knock: o?.knock, ...(o?.status ? { status: o.status } : {}), ...(o?.source ? { src: o.source.id } : {}) });
+  else if (v.pet) hurtPet(w, v.pet, dmg);
   else hurtPlayer(w, dmg, o);
 }
 
@@ -410,7 +442,7 @@ function clearPath(w: World, x0: number, y0: number, x1: number, y1: number, r: 
  */
 function aimAt(w: World, e: Enemy, v: Victim): number {
   const lead = e.def.shot?.lead ?? 0;
-  if (!lead || v.pet) return Math.atan2(v.y - e.y, v.x - e.x);
+  if (!lead || v.pet || v.ghost) return Math.atan2(v.y - e.y, v.x - e.x);
   const p = w.player;
   const t = dist(e.x, e.y, p.x, p.y) / (e.def.shot?.speed ?? 150);
   return Math.atan2(p.y + p.vy * t * lead - e.y, p.x + p.vx * t * lead - e.x);

@@ -9,7 +9,7 @@ import { outlevelled } from '../data/progression';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { THEMES } from '../data/themes';
 import { BOSS_MARKS } from '../data/vendors';
-import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey } from '../data/types';
+import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey, StatusId } from '../data/types';
 import { ACTION_SLOTS, SKILL_SLOTS } from '../data/types';
 import type { Marker, RegionStateDef, StoryCond } from '../data/types';
 import { holds, regionState, StoryDirector } from './story';
@@ -22,12 +22,12 @@ import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource }
 import type { Settings } from '../progress/save';
 import { learnLooks } from '../progress/wardrobe';
 import { addParagonXp, paragonXp } from '../progress/paragon';
-import { separate, updateEnemy } from './ai';
+import { separate, updateEnemy, updatePuppet } from './ai';
 import { refreshPets, summonPet, updatePets } from './pets';
 import { updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type TileMap } from './map';
-import type { Chest, Drop, Enemy, Field, FloatText, Fx, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent } from './types';
+import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent } from './types';
 import { inCone, inLine } from '../core/math';
 
 /** What the input adapters hand the world every frame. */
@@ -65,6 +65,8 @@ export interface WorldOptions {
   /** A Riftstone run at this stone level (dungeons only), with the week's affixes for it. */
   key?: number;
   affixes?: KeyAffix[];
+  /** In a co-op party (net/coop.ts): the host's world runs the enemies; a guest's mirrors them. */
+  coop?: 'host' | 'guest';
 }
 
 /** Seconds as m:ss. */
@@ -253,6 +255,12 @@ export class World {
   private hpBefore = 0;
   /** A Riftstone run, if this is one. */
   keyRun: KeyRun | null = null;
+  /** A co-op party (net/coop.ts): the other heroes, and what to send them. Null playing alone. */
+  coop: CoopSide | null = null;
+  /** A co-op guest's world: its enemies are the host's, mirrored (none of its own spawn, think or strike). */
+  get puppet(): boolean {
+    return this.coop?.role === 'guest';
+  }
   /** Festering pools: blood that heals enemies standing in it. */
   private pools: { x: number; y: number; r: number; t: number }[] = [];
   /** Enemies already in a rage (Cornered). */
@@ -260,6 +268,7 @@ export class World {
 
   constructor(o: WorldOptions) {
     this.handIns = o.handIns ?? true;
+    if (o.coop) this.coop = { role: o.coop, ghosts: [], out: [] };
     this.region = REGIONS[o.region];
     this.map = parseRegion(this.region);
     this.tier = this.region.safe ? 0 : o.tier;
@@ -527,6 +536,7 @@ export class World {
           this.spots.push({ ...pos, id: m.id, name: m.name, r: m.r });
           break;
         case 'dummy': {
+          if (this.puppet) break;
           const e = this.addEnemy('moss-slime', pos.x, pos.y, 1, { room: -1, pack: -1, post: true });
           e.dummy = m.shooter ? 2 : 1;
           e.name = m.shooter ? 'Bolt Dummy' : 'Training Dummy';
@@ -580,6 +590,10 @@ export class World {
 
   /** A pack's enemies, around its spot (again, when it comes back). */
   private spawnPack(st: PackState, rise = false): void {
+    if (this.puppet) {
+      st.ids = [];
+      return;
+    }
     st.ids = st.enemies.map((id, i) => {
       const a = (TAU * i) / st.enemies.length + this.rand();
       const r = st.enemies.length > 1 ? 10 + this.rand() * 10 : 0;
@@ -941,7 +955,8 @@ export class World {
     this.shakeAmt = Math.max(0, this.shakeAmt - rawDt * 18);
     // the story's staged beats: looked for twice a second, played while the hero stands still
     this.sceneCheck -= rawDt;
-    if (!this.scene && this.sceneCheck <= 0) {
+    // a staged scene stops one world while the others play on: none in a co-op party
+    if (!this.scene && !this.coop && this.sceneCheck <= 0) {
       this.sceneCheck = 0.5;
       maybeStartScene(this);
     }
@@ -953,14 +968,17 @@ export class World {
     const wild = this.region.kind === 'wild';
     const px = this.player.x;
     const py = this.player.y;
-    for (const e of this.enemies) {
-      if (wild && !e.aggro && !e.dead && e.state === 'idle' && (Math.abs(e.x - px) > SLEEP_X || Math.abs(e.y - py) > SLEEP_Y)) continue;
-      updateEnemy(this, e, dt);
-      awake.push(e);
-    }
+    // a co-op guest's enemies are the host's: they move by its frames (net/coop.ts), not here
+    if (this.puppet) for (const e of this.enemies) updatePuppet(this, e, dt);
+    else
+      for (const e of this.enemies) {
+        if (wild && !e.aggro && !e.dead && e.state === 'idle' && (Math.abs(e.x - px) > SLEEP_X || Math.abs(e.y - py) > SLEEP_Y)) continue;
+        updateEnemy(this, e, dt);
+        awake.push(e);
+      }
     updatePets(this, dt);
     separate(this, dt, awake);
-    this.updatePacks(dt);
+    if (!this.puppet) this.updatePacks(dt);
     this.fogT -= dt;
     if (this.fogT <= 0) {
       this.fogT = 0.25;
@@ -973,10 +991,10 @@ export class World {
     this.updateWaves(dt);
     this.updateDrops(dt);
     this.updateChests(dt);
-    this.updateEncounters(dt);
+    if (!this.puppet) this.updateEncounters(dt);
     this.updateHazards(dt);
     this.updateAmbient(dt);
-    this.story.update(dt);
+    if (!this.puppet) this.story.update(dt);
     // delayed actions (meteors, echoes, rift bursts)
     if (this.delayed.length) {
       const due: (() => void)[] = [];
@@ -1201,7 +1219,14 @@ export class World {
         }
       }
       if (t.t < t.dur) continue;
-      if (t.tone !== 'player' && t.dmg > 0 && !p.dead && (t.t - dt < t.dur || t.linger > 0) && !t.dead) {
+      // the host's attacks strike the other heroes too (their games take the hit)
+      if (this.coop?.role === 'host' && t.tone !== 'player' && t.dmg > 0 && (t.t - dt < t.dur || t.linger > 0) && !t.dead)
+        for (const g of this.coop.ghosts) {
+          if (g.dead || t.struck?.includes(g.n) || !inside(t, g.x, g.y, g.r)) continue;
+          (t.struck ??= []).push(g.n);
+          this.ghostHit(g, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, ...(t.status ? { status: t.status } : {}), ...(t.owner >= 0 ? { src: t.owner } : {}) });
+        }
+      if (t.tone !== 'player' && !t.remote && t.dmg > 0 && !p.dead && (t.t - dt < t.dur || t.linger > 0) && !t.dead) {
         if (inside(t, p.x, p.y, p.r)) {
           if (hurtPlayer(this, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, status: t.status, source: t.owner >= 0 ? this.enemyById(t.owner) : undefined })) t.dmg = 0;
         }
@@ -1219,7 +1244,13 @@ export class World {
     for (const w of this.waves) {
       w.r += w.speed * dt;
       if (w.r > w.max) w.dead = true;
-      if (w.hitPlayer || p.dead) continue;
+      if (this.coop?.role === 'host')
+        for (const g of this.coop.ghosts) {
+          if (g.dead || w.struck?.includes(g.n) || Math.abs(dist(g.x, g.y, w.x, w.y) - w.r) >= w.width / 2 + g.r * 0.6) continue;
+          (w.struck ??= []).push(g.n);
+          this.ghostHit(g, w.dmg, { fromX: w.x, fromY: w.y, knock: 120 });
+        }
+      if (w.hitPlayer || w.remote || p.dead) continue;
       const d = dist(p.x, p.y, w.x, w.y);
       if (Math.abs(d - w.r) < w.width / 2 + p.r * 0.6) {
         if (hurtPlayer(this, w.dmg, { fromX: w.x, fromY: w.y, knock: 120 })) w.hitPlayer = true;
@@ -1390,6 +1421,7 @@ export class World {
   /** An enemy just died (called by combat). */
   onKill(e: Enemy): void {
     const h = this.hero;
+    if (this.coop?.role === 'host') this.coop.out.push({ t: 'kill', id: e.id });
     this.fxBurst(e.x, e.y, e.elite.length ? '#ffd36b' : '#e8e0ff', e.elite.length ? 18 : 9, e.r);
     this.sfx(e.boss ? 'bossDie' : 'die', 0.6);
     if (e.boss) {
@@ -1430,13 +1462,14 @@ export class World {
     }
     if (this.rand() < (e.elite.length ? 0.4 : 0.07)) this.dropAt('orb', e.x, e.y, 1);
     if (e.elite.length && h.quests['rift-shards']?.state === 'active' && h.shards < 3) this.dropAt('shard', e.x, e.y, 1);
-    if (e.elite.includes('volatile') || this.mods.includes('volatile')) {
+    // what a death throws at the heroes is the host's (a guest sees its copy)
+    if (!this.puppet && (e.elite.includes('volatile') || this.mods.includes('volatile'))) {
       const r = e.elite.includes('volatile') ? 34 : 24;
       this.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r, r2: 0, angle: 0, len: 0, dur: 1, dmg: e.dmg * (e.elite.length ? 1.6 : 0.9), knock: 120, tone: 'enemy', owner: -1, linger: 0 });
     }
     // things that burst when they die (a bloated corpse): step away from the body
     const b = e.def.burst;
-    if (b?.onDeath) {
+    if (b?.onDeath && !this.puppet) {
       this.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r: b.radius, r2: 0, angle: 0, len: 0, dur: 0.8, dmg: e.dmg * 1.6, knock: 120, tone: 'enemy', owner: -1, linger: 0 });
       if (b.pool > 0) this.after(0.8, () => this.spawnField({ x: e.x, y: e.y, r: b.radius * 0.8, dur: b.pool, tick: 0.5, dmg: e.dmg * 0.3, type: 'poison', status: { status: 'poison', dur: 2, power: e.dmg * 0.3 }, look: 'poison', hostile: true, depth: 0, spec: null, onHit: false }));
     }
@@ -1480,6 +1513,7 @@ export class World {
   bossFinished(e: Enemy): void {
     const def = e.boss!.def;
     const h = this.hero;
+    if (this.coop?.role === 'host') this.coop.out.push({ t: 'bossDone', id: e.id });
     e.dead = true;
     e.deathT = 0;
     this.bossId = null;
@@ -1525,7 +1559,8 @@ export class World {
       const key = `${this.region.id}:${this.tier}`;
       h.clears[key] = (h.clears[key] ?? 0) + 1;
       this.questProgress((o) => o.kind === 'clear' && o.region === this.region.id && o.tier <= this.tier);
-      if (this.keyRun) this.endKeyRun(e.x, e.y);
+      // a guest's clock stops when the host's does (applyKeyEnd)
+      if (this.keyRun && !this.puppet) this.endKeyRun(e.x, e.y);
       this.emit({ t: 'cleared' });
     }
     this.emit({ t: 'save' });
@@ -1540,6 +1575,89 @@ export class World {
     if (!QUESTS.some((q) => { if (h.quests[q.id]?.state !== 'active') return false; const o = currentObjective(h, q); return o.kind === 'explore' && o.spot === spot; })) return;
     this.questProgress((o) => o.kind === 'explore' && o.spot === spot);
     this.emit({ t: 'save' });
+  }
+
+  /* ------------------------------------------------------------ co-op */
+
+  /** On the host: one of the enemies' attacks struck another player's hero (their game takes the hit). */
+  ghostHit(g: Ghost, dmg: number, o: { fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; src?: number } = {}): void {
+    if (!this.coop || g.dead || g.untouchable || dmg <= 0) return;
+    this.coop.out.push({ t: 'hit', n: g.n, dmg: Math.round(dmg), ...o });
+  }
+
+  /** Where a hero in a party comes back: the checkpoint, or inside the fight their friends are still in. */
+  private coopRespawnAt(): { x: number; y: number } {
+    const active = this.encounters.find((enc) => enc.state === 'active');
+    if (!active) return this.checkpoint;
+    return this.freeTileIn(active.index, this.checkpoint.x, this.checkpoint.y);
+  }
+
+  /** The free tile of a room nearest a point. */
+  freeTileIn(room: number, x: number, y: number): { x: number; y: number } {
+    let best = { x, y };
+    let bd = Infinity;
+    for (const i of this.map.roomTiles[room] ?? []) {
+      if (this.map.solid[i]) continue;
+      const tx = ((i % this.map.w) + 0.5) * TILE;
+      const ty = (Math.floor(i / this.map.w) + 0.5) * TILE;
+      const d = dist2(tx, ty, x, y);
+      if (d < bd && !wallNear(this.map, tx, ty, 6)) {
+        bd = d;
+        best = { x: tx, y: ty };
+      }
+    }
+    return best;
+  }
+
+  /**
+   * A co-op guest's rooms follow the host's (net/coop.ts): a fight starting seals the doors (and draws
+   * in a hero still outside, so nobody is shut out), a cleared one opens them and sets the checkpoint.
+   */
+  mirrorEncounter(index: number, state: 'idle' | 'active' | 'cleared'): void {
+    const enc = this.encounters[index];
+    if (!enc || enc.state === state) return;
+    if (state === 'active') {
+      enc.state = 'active';
+      setDoors(this.map, enc.index, true);
+      const p = this.player;
+      const here = this.map.room[tileAt(this.map, p.x, p.y)] ?? 0;
+      if (here !== enc.index + 1 || circleHitsWall(this.map, p.x, p.y, p.r)) {
+        const host = this.coop?.ghosts[0];
+        const to = this.freeTileIn(enc.index, host?.x ?? p.x, host?.y ?? p.y);
+        p.x = to.x;
+        p.y = to.y;
+        this.addFx({ kind: 'rift', x: p.x, y: p.y, life: 0.6, size: 12, color: '#7fd8ff' });
+      }
+      this.sfx('doorSlam');
+      if (enc.def.title && !enc.def.boss) this.emit({ t: 'banner', text: enc.def.title, sub: `${enc.def.waves.length} waves` });
+    } else if (state === 'cleared') this.clearEncounter(enc);
+    else {
+      enc.state = 'idle';
+      setDoors(this.map, enc.index, false);
+    }
+  }
+
+  /**
+   * A co-op guest's copy of one of the host's enemies, under the host's id (its hits and death come and go
+   * by it). A boss gets its bar.
+   */
+  puppetEnemy(id: number, def: string, boss: boolean, x: number, y: number, level: number, room: number): Enemy | null {
+    if (boss ? !BOSSES[def] : !ENEMIES[def]) return null;
+    const e = boss ? this.addBoss(def, x, y, room) : this.addEnemy(def, x, y, level, { room, pack: -1 });
+    e.id = id;
+    e.x = x;
+    e.y = y;
+    e.aggro = true;
+    if (boss) {
+      this.bossId = id;
+      this.emit({ t: 'bossStart', boss: def });
+    }
+    return e;
+  }
+
+  /** Each room's state in one letter (i idle, a active, c cleared), as the host sends it. */
+  encounterCode(): string {
+    return this.encounters.map((e) => (e.state === 'active' ? 'a' : e.state === 'cleared' ? 'c' : 'i')).join('');
   }
 
   /* ---------------------------------------------------------- Riftstone */
@@ -1599,9 +1717,21 @@ export class World {
   private endKeyRun(x: number, y: number): void {
     const k = this.keyRun!;
     if (k.end) return;
-    const h = this.hero;
     const time = k.t + k.deaths * KEY_DEATH;
     const up = keyUpgrade(time, k.par);
+    if (this.coop?.role === 'host') this.coop.out.push({ t: 'end', time, up });
+    this.finishKeyRun(time, up, x, y);
+  }
+
+  /** A co-op guest's run ends with the host's clock: the same time, its own rewards. */
+  applyKeyEnd(time: number, up: number): void {
+    if (!this.keyRun || this.keyRun.end) return;
+    this.finishKeyRun(time, up, this.player.x, this.player.y);
+  }
+
+  private finishKeyRun(time: number, up: number, x: number, y: number): void {
+    const k = this.keyRun!;
+    const h = this.hero;
     const marks = keyMarks(k.key, up > 0);
     // beaten in time, the levels above it open (as in Diablo's rifts, nothing is lost by being late)
     const before = h.keystone;
@@ -1635,6 +1765,8 @@ export class World {
     p.channel = null;
     p.windup = null;
     this.hero.stats.deaths += 1;
+    // a guest's fall costs the host's clock (which everyone's shows)
+    if (this.puppet) this.coop!.out.push({ t: 'died' });
     if (this.keyRun && !this.keyRun.end) {
       this.keyRun.deaths += 1;
       this.text(p.x, p.y - 30, `-${KEY_DEATH} s`, '#ff4a8a', true);
@@ -1646,6 +1778,15 @@ export class World {
 
   /** Back at the last checkpoint: the room you died in resets (potions don't come back: buy more). */
   respawn(): void {
+    // with friends still fighting, the room stays as it is and the hero comes back into it
+    if (this.coop) {
+      const at = this.coopRespawnAt();
+      const p = this.newPlayer(at.x, at.y);
+      p.ult = 0;
+      p.iframe = 1.5;
+      this.emit({ t: 'hero' });
+      return;
+    }
     for (const enc of this.encounters) {
       if (enc.state !== 'active') continue;
       enc.state = 'idle';
@@ -1672,10 +1813,13 @@ export class World {
 
   private updateEncounters(dt: number): void {
     const p = this.player;
-    if (p.dead) return;
-    const here = this.map.room[tileAt(this.map, p.x, p.y)] ?? 0;
+    // in a party a room starts with whichever hero walks in first
+    const rooms = new Set<number>();
+    if (!p.dead) rooms.add(this.map.room[tileAt(this.map, p.x, p.y)] ?? 0);
+    for (const g of this.coop?.ghosts ?? []) if (!g.dead) rooms.add(this.map.room[tileAt(this.map, g.x, g.y)] ?? 0);
+    if (!rooms.size) return;
     for (const enc of this.encounters) {
-      if (enc.state === 'idle' && here === enc.index + 1) this.startEncounter(enc);
+      if (enc.state === 'idle' && rooms.has(enc.index + 1)) this.startEncounter(enc);
       if (enc.state !== 'active') continue;
       if (enc.def.boss) continue;
       const alive = this.enemies.some((e) => e.room === enc.index && !e.dead);

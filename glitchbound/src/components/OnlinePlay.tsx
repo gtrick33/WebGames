@@ -31,6 +31,7 @@ export const ROOM_GAME_INFO: Record<RoomGame, { title: string; emoji: string }> 
   drag: { title: 'Launch Control', emoji: '🏁' },
   belot: { title: 'Belot', emoji: '🃏' },
   backgammon: { title: 'Backgammon', emoji: '🎲' },
+  sigilfall: { title: 'Sigilfall', emoji: '⚔️' },
 };
 
 const OPEN = new Set(['lobby', 'waiting', 'over', 'result']);

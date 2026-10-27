@@ -257,6 +257,8 @@ export interface Projectile {
   zapT?: number;
   /** An enemy shot's status on the hero (a web slows). */
   status?: { status: StatusId; dur: number; power: number };
+  /** A co-op guest's copy of the host's shot: drawn, never hits (the host's game decides). */
+  remote?: boolean;
   dead: boolean;
 }
 
@@ -282,6 +284,8 @@ export interface Field {
   pull?: number;
   /** Heals the hero standing in it each tick, % of max health (GroundSpec.heal). */
   heal?: number;
+  /** A co-op guest's copy of the host's: drawn, never hits. */
+  remote?: boolean;
 }
 
 /** A warning shape on the ground that deals its damage when it fills up. */
@@ -309,6 +313,10 @@ export interface Telegraph {
   then?: () => void;
   /** After resolving, leave a lingering beam this long (hits each frame). */
   linger: number;
+  /** A co-op guest's copy of the host's: drawn, never hits. */
+  remote?: boolean;
+  /** On the host: the co-op heroes this one already struck. */
+  struck?: number[];
   dead: boolean;
 }
 
@@ -323,7 +331,68 @@ export interface Wave {
   width: number;
   dmg: number;
   hitPlayer: boolean;
+  /** A co-op guest's copy of the host's: drawn, never hits. */
+  remote?: boolean;
+  /** On the host: the co-op heroes this one already struck. */
+  struck?: number[];
   dead: boolean;
+}
+
+/**
+ * Another player's hero in a co-op party (net/coop.ts). Every game draws them; on the host's game the
+ * enemies also chase them, and what strikes them is sent to their game, which takes the hit itself
+ * (its own armor, dodge and health).
+ */
+export interface Ghost {
+  /** Their seat in the room. */
+  n: number;
+  name: string;
+  cls: string;
+  /** Drawn place, easing toward the last one sent (tx, ty). */
+  x: number;
+  y: number;
+  tx: number;
+  ty: number;
+  vx: number;
+  vy: number;
+  dir: number;
+  walkT: number;
+  r: number;
+  hp: number;
+  maxHp: number;
+  dead: boolean;
+  /** Dodging or otherwise untouchable: the host doesn't send what would hit them. */
+  untouchable: boolean;
+  /** The drawn look and weapon (render/sprites HeroLook; from the room card). */
+  look: unknown;
+  weapon: unknown;
+  /** Their own shots in flight, drawn only. */
+  shots: { x: number; y: number; vx: number; vy: number; r: number; color: string }[];
+  /** World time of their last message. */
+  seen: number;
+}
+
+/** What the world asks the co-op session to send (net/coop.ts drains `World.coop.out`). */
+export type CoopOut =
+  /** Host: something of the enemies' struck another player's hero. */
+  | { t: 'hit'; n: number; dmg: number; fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; src?: number }
+  /** Host: an enemy died (everyone takes its experience and rolls its loot). */
+  | { t: 'kill'; id: number }
+  /** Host: a boss's fall played out (its rewards, the way out). */
+  | { t: 'bossDone'; id: number }
+  /** Host: the Riftstone run's clock stopped. */
+  | { t: 'end'; time: number; up: number }
+  /** Guest: a hit on one of the host's enemies (already worked out: crit, armor, resistances). */
+  | { t: 'dmg'; id: number; dmg: number; kx: number; ky: number }
+  /** Guest: control on one of the host's enemies (stun, chill, a mark...). */
+  | { t: 'st'; id: number; status: StatusId; dur: number; power: number }
+  /** Guest: their hero fell (the clock takes its penalty). */
+  | { t: 'died' };
+
+export interface CoopSide {
+  role: 'host' | 'guest';
+  ghosts: Ghost[];
+  out: CoopOut[];
 }
 
 export interface Trap {
