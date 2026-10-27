@@ -113,10 +113,14 @@ anything blobby, off-centre or cropped before moving on. Then stop the server.
 
 ## 8. Ship
 
-Follow the project's standing rule: once checks pass, commit only the new game's files (plus `games.ts`,
-`modules.ts`, `themes.ts` if touched) - **never** sweep in unrelated working-tree changes - with a message like
-`GlitchBound: <Title>, <one-line pitch>` and a short bullet body, ending with the Co-Authored-By line, then push
-to `pre-release` (CI deploys). If a GitHub issue asked for this game, close it with a comment linking the commit.
+Follow the project's pull-request rule (CLAUDE.md at the repository root): do the work on a
+`claude/<game-slug>` branch in its own worktree, cut from `origin/pre-release`. Once checks pass, commit only
+the new game's files (plus `games.ts`, `modules.ts`, `themes.ts` if touched) - **never** sweep in unrelated
+working-tree changes - with a message like `GlitchBound: <Title>, <one-line pitch>` and a short bullet body,
+ending with the Co-Authored-By line. Push the branch and open a pull request into `pre-release` with
+`gh pr create --base pre-release`: what the game is, how it was checked (with screenshots), what could not be
+verified, and `Closes #<n>` if a GitHub issue asked for it. **Never merge it**: the owner reviews and merges
+every pull request, and the merge deploys.
 
 Finish with a short report: what the game is, its modes, the files added, test and check results, screenshots,
 and anything you could not verify.
