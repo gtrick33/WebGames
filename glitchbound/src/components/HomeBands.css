@@ -252,8 +252,10 @@
 .sf-sigil::after {
   transform: none;
 }
+/* The gradient only paints inside the box, so the padding makes room for the g's tail (the margin takes it back). */
 .sf-title {
-  margin: 0;
+  margin: 0 0 -0.2em;
+  padding-bottom: 0.2em;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(48px, 7vw, 92px);
   font-weight: 700;
