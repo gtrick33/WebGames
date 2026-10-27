@@ -2079,6 +2079,10 @@ const nl: string[] = [
   'Goed om te weten',
   'Spelen maar!',
   'Stap {n} van {total}',
+  'Top partyspellen',
+  'Alle partyspellen',
+  'Doe mee in een kamer',
+  '{game} starten',
 ];
 
 export default nl;

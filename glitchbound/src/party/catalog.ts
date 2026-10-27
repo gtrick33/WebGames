@@ -52,5 +52,5 @@ export const PARTY_GAMES: PartyGame[] = [
 export const PARTY_IDS = PARTY_GAMES.map((g) => g.id);
 export const isPartyId = (v: unknown): v is PartyGameId => typeof v === 'string' && (PARTY_IDS as string[]).includes(v);
 
-/** Featured when no admin has chosen: the two big ones. */
-export const DEFAULT_FEATURED: PartyGameId[] = ['impostor', 'crass-act'];
+/** The top party games, first on the party page (games an admin features come after them). */
+export const DEFAULT_FEATURED: PartyGameId[] = ['impostor', 'crass-act', 'scribble'];

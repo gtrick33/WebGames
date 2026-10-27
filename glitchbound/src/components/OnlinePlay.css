@@ -1,13 +1,21 @@
 /* Online play: chunky toy-box buttons with ink outlines and hard shadows, like the rest of the arcade. */
-.op {
-  --op-ink: var(--ink, #1d1238);
+/* Text follows the theme (--fg), outlines are the theme's line color, and only the hard shadows use --ink
+   (which stays dark at night). Bright buttons keep dark text in both themes. */
+.op,
+.op-veil,
+.op-bar {
+  --op-text: var(--fg, #1d1238);
+  --op-edge: var(--line, #1d1238);
+  --op-shadow: var(--ink, #1d1238);
   --op-card: var(--card, #fff);
   --op-paper: var(--paper-2, #fff2df);
+}
+.op {
   --op-go: var(--op-accent, var(--cyan, #2ad1f0));
   display: grid;
   gap: 10px;
   font-family: var(--font, system-ui, sans-serif);
-  color: var(--op-ink);
+  color: var(--op-text);
   text-align: left;
 }
 .op button {
@@ -21,21 +29,21 @@
   gap: 8px;
   min-height: 46px;
   padding: 10px 16px;
-  border: 2px solid var(--op-ink);
+  border: 2px solid var(--op-edge);
   border-radius: 14px;
   background: var(--op-card);
-  color: var(--op-ink);
+  color: var(--op-text);
   font-weight: 800;
-  box-shadow: 3px 3px 0 var(--op-ink);
+  box-shadow: 3px 3px 0 var(--op-shadow);
   transition: transform 0.12s var(--spring, ease), box-shadow 0.12s;
 }
 .op-btn:hover:not(:disabled) {
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--op-ink);
+  box-shadow: 4px 4px 0 var(--op-shadow);
 }
 .op-btn:active:not(:disabled) {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--op-ink);
+  box-shadow: 1px 1px 0 var(--op-shadow);
 }
 .op-btn:disabled {
   opacity: 0.55;
@@ -46,14 +54,15 @@
   outline: 3px solid var(--magenta, #ff4fc8);
   outline-offset: 2px;
 }
-.op-quick {
+.op-btn.op-quick {
+  color: #1d1238;
   flex-direction: column;
   gap: 0;
   min-height: 62px;
   background: var(--yellow, #ffc928);
   font-size: 1.1rem;
 }
-.op-quick small {
+.op-btn.op-quick small {
   font-size: 0.78rem;
   font-weight: 600;
   opacity: 0.8;
@@ -64,10 +73,11 @@
   gap: 8px;
   align-items: center;
   padding: 10px;
-  border: 2px dashed color-mix(in srgb, var(--op-ink) 35%, transparent);
+  border: 2px dashed color-mix(in srgb, var(--op-text) 35%, transparent);
   border-radius: 16px;
 }
-.op-make {
+.op-btn.op-make {
+  color: #1d1238;
   background: var(--op-go);
 }
 .op-note {
@@ -78,7 +88,7 @@
 }
 .op-seg {
   display: flex;
-  border: 2px solid var(--op-ink);
+  border: 2px solid var(--op-edge);
   border-radius: 999px;
   overflow: hidden;
   background: var(--op-paper);
@@ -89,12 +99,12 @@
   padding: 6px 12px;
   border: 0;
   background: none;
-  color: var(--op-ink);
+  color: var(--op-text);
   font-weight: 700;
   white-space: nowrap;
 }
 .op-seg button.is-on {
-  background: var(--op-ink);
+  background: var(--op-text);
   color: var(--op-card);
 }
 .op-browse {
@@ -134,11 +144,11 @@
   max-height: min(86vh, 720px);
   overflow: auto;
   padding: 18px;
-  border: 2px solid var(--ink, #1d1238);
+  border: 2px solid var(--op-edge);
   border-radius: 24px;
-  background: var(--card, #fff);
-  color: var(--ink, #1d1238);
-  box-shadow: 8px 8px 0 var(--ink, #1d1238);
+  background: var(--op-card);
+  color: var(--op-text);
+  box-shadow: 8px 8px 0 var(--op-shadow);
   font-family: var(--font, system-ui, sans-serif);
   animation: op-pop 0.25s var(--spring, ease-out);
   outline: none;
@@ -164,9 +174,9 @@
   width: 44px;
   height: 44px;
   flex: none;
-  border: 2px solid var(--ink, #1d1238);
+  border: 2px solid var(--op-edge);
   border-radius: 50%;
-  background: var(--paper-2, #fff2df);
+  background: var(--op-paper);
   color: inherit;
   font: inherit;
   font-weight: 800;
@@ -186,10 +196,10 @@
   align-items: center;
   gap: 2px 10px;
   padding: 10px;
-  border: 2px solid var(--ink, #1d1238);
+  border: 2px solid var(--op-edge);
   border-radius: 16px;
-  background: var(--paper-2, #fff2df);
-  color: var(--ink, #1d1238);
+  background: var(--op-paper);
+  color: var(--op-text);
 }
 .op-room-face {
   grid-area: face;
@@ -198,8 +208,8 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--card, #fff);
-  border: 2px solid var(--ink, #1d1238);
+  background: var(--op-card);
+  border: 2px solid var(--op-edge);
   font-size: 1.4rem;
 }
 .op-room-text {
@@ -222,7 +232,7 @@
   justify-self: end;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ink, #1d1238) 12%, transparent);
+  background: color-mix(in srgb, var(--op-text) 14%, transparent);
   font-size: 0.72rem;
   font-weight: 800;
 }
@@ -235,7 +245,7 @@
   justify-self: end;
   font-size: 0.8rem;
 }
-.op-join {
+.op-btn.op-join {
   grid-area: join;
   min-height: 42px;
   padding: 8px 14px;
@@ -281,7 +291,7 @@
   place-items: center;
   width: 110px;
   height: 110px;
-  border: 3px solid var(--ink, #1d1238);
+  border: 3px solid var(--op-edge);
   border-radius: 50%;
   background: var(--yellow, #ffc928);
   font-size: 2.6rem;
@@ -316,10 +326,10 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border: 2px solid var(--ink, #1d1238);
+  border: 2px solid var(--op-edge);
   border-radius: 16px;
-  background: var(--card, #fff);
-  color: var(--ink, #1d1238);
+  background: var(--op-card);
+  color: var(--op-text);
   font-family: var(--font, system-ui, sans-serif);
   text-align: left;
 }
@@ -343,13 +353,13 @@
   min-height: 38px;
   padding: 6px 12px;
   font-size: 0.85rem;
-  border: 2px solid var(--ink, #1d1238);
+  border: 2px solid var(--op-edge);
   border-radius: 12px;
-  background: var(--paper-2, #fff2df);
+  background: var(--op-paper);
   color: inherit;
   font-family: inherit;
   font-weight: 800;
-  box-shadow: 2px 2px 0 var(--ink, #1d1238);
+  box-shadow: 2px 2px 0 var(--op-shadow);
   cursor: pointer;
 }
 .op-dots::after {

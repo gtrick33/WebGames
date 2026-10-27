@@ -100,8 +100,9 @@ describe('routing', () => {
     expect(heading.textContent).toContain('18+Adults only');
     page.unmount();
     renderAt('/party');
-    const feature = (await screen.findByRole('heading', { level: 2, name: 'Crass Act' }, { timeout: 5000 })).closest('section')!;
-    expect(feature.textContent).toContain('18+Adults only');
+    // Its card in the top party games (and again in the full list).
+    const card = (await screen.findAllByRole('heading', { level: 3, name: 'Crass Act' }, { timeout: 5000 }))[0]!.closest('li')!;
+    expect(card.textContent).toContain('18+Adults only');
   });
 
   it('opens the About and Contact pages from the footer', async () => {

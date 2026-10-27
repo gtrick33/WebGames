@@ -2079,6 +2079,10 @@ const ro: string[] = [
   'Bine de știut',
   'Hai să jucăm!',
   'Pasul {n} din {total}',
+  'Cele mai bune jocuri de petrecere',
+  'Toate jocurile de petrecere',
+  'Intră într-o cameră',
+  'Începe {game}',
 ];
 
 export default ro;
