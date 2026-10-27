@@ -1,0 +1,413 @@
+/* Online play: chunky toy-box buttons with ink outlines and hard shadows, like the rest of the arcade. */
+.op {
+  --op-ink: var(--ink, #1d1238);
+  --op-card: var(--card, #fff);
+  --op-paper: var(--paper-2, #fff2df);
+  --op-go: var(--op-accent, var(--cyan, #2ad1f0));
+  display: grid;
+  gap: 10px;
+  font-family: var(--font, system-ui, sans-serif);
+  color: var(--op-ink);
+  text-align: left;
+}
+.op button {
+  font: inherit;
+  cursor: pointer;
+}
+.op-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 2px solid var(--op-ink);
+  border-radius: 14px;
+  background: var(--op-card);
+  color: var(--op-ink);
+  font-weight: 800;
+  box-shadow: 3px 3px 0 var(--op-ink);
+  transition: transform 0.12s var(--spring, ease), box-shadow 0.12s;
+}
+.op-btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--op-ink);
+}
+.op-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--op-ink);
+}
+.op-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.op-btn:focus-visible,
+.op-seg button:focus-visible {
+  outline: 3px solid var(--magenta, #ff4fc8);
+  outline-offset: 2px;
+}
+.op-quick {
+  flex-direction: column;
+  gap: 0;
+  min-height: 62px;
+  background: var(--yellow, #ffc928);
+  font-size: 1.1rem;
+}
+.op-quick small {
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.op-create {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 2px dashed color-mix(in srgb, var(--op-ink) 35%, transparent);
+  border-radius: 16px;
+}
+.op-make {
+  background: var(--op-go);
+}
+.op-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+.op-seg {
+  display: flex;
+  border: 2px solid var(--op-ink);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--op-paper);
+}
+.op-seg button {
+  flex: 1;
+  min-height: 42px;
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  color: var(--op-ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.op-seg button.is-on {
+  background: var(--op-ink);
+  color: var(--op-card);
+}
+.op-browse {
+  background: var(--op-paper);
+}
+.op-err {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--coral, #ff5a6c) 20%, transparent);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* The room list window */
+.op-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(13 5 34 / 0.55);
+  animation: op-fade 0.15s ease-out;
+}
+.op-window {
+  width: min(560px, 100%);
+  max-height: min(86vh, 720px);
+  overflow: auto;
+  padding: 18px;
+  border: 2px solid var(--ink, #1d1238);
+  border-radius: 24px;
+  background: var(--card, #fff);
+  color: var(--ink, #1d1238);
+  box-shadow: 8px 8px 0 var(--ink, #1d1238);
+  font-family: var(--font, system-ui, sans-serif);
+  animation: op-pop 0.25s var(--spring, ease-out);
+  outline: none;
+}
+.op-window-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.op-window-head h2 {
+  display: grid;
+  margin: 0;
+  font-size: 1.35rem;
+}
+.op-window-head h2 small {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+.op-x {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 2px solid var(--ink, #1d1238);
+  border-radius: 50%;
+  background: var(--paper-2, #fff2df);
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.op-rooms {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.op-room {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  grid-template-areas: 'face text chip join' 'face text count join';
+  align-items: center;
+  gap: 2px 10px;
+  padding: 10px;
+  border: 2px solid var(--ink, #1d1238);
+  border-radius: 16px;
+  background: var(--paper-2, #fff2df);
+  color: var(--ink, #1d1238);
+}
+.op-room-face {
+  grid-area: face;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--card, #fff);
+  border: 2px solid var(--ink, #1d1238);
+  font-size: 1.4rem;
+}
+.op-room-text {
+  grid-area: text;
+  display: grid;
+  min-width: 0;
+}
+.op-room-text b,
+.op-room-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.op-room-text small {
+  opacity: 0.75;
+  font-size: 0.8rem;
+}
+.op-chip {
+  grid-area: chip;
+  justify-self: end;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink, #1d1238) 12%, transparent);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.op-chip.is-open {
+  background: var(--lime, #b6e62c);
+  color: #1d1238;
+}
+.op-count {
+  grid-area: count;
+  justify-self: end;
+  font-size: 0.8rem;
+}
+.op-join {
+  grid-area: join;
+  min-height: 42px;
+  padding: 8px 14px;
+  background: var(--cyan, #2ad1f0);
+  color: #1d1238;
+}
+.op-mono {
+  font-family: var(--mono, ui-monospace, monospace);
+}
+.op-empty {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 18px 8px;
+  text-align: center;
+  opacity: 0.85;
+}
+.op-empty span {
+  font-size: 2rem;
+}
+.op-empty p {
+  margin: 0;
+}
+
+/* Quick match */
+.op-search {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(360px, 100%);
+  padding: 26px 20px;
+  text-align: center;
+}
+.op-search-line {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+.op-radar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 110px;
+  height: 110px;
+  border: 3px solid var(--ink, #1d1238);
+  border-radius: 50%;
+  background: var(--yellow, #ffc928);
+  font-size: 2.6rem;
+}
+.op-radar::before,
+.op-radar::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 3px solid var(--magenta, #ff4fc8);
+  border-radius: 50%;
+  animation: op-ping 1.4s ease-out infinite;
+}
+.op-radar::after {
+  animation-delay: 0.7s;
+}
+.op-radar span {
+  animation: op-bob 0.9s ease-in-out infinite alternate;
+}
+.op-radar.is-done {
+  background: var(--lime, #b6e62c);
+}
+.op-radar.is-done::before,
+.op-radar.is-done::after {
+  animation: none;
+  opacity: 0;
+}
+
+/* Inside a room's lobby */
+.op-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 2px solid var(--ink, #1d1238);
+  border-radius: 16px;
+  background: var(--card, #fff);
+  color: var(--ink, #1d1238);
+  font-family: var(--font, system-ui, sans-serif);
+  text-align: left;
+}
+.op-bar > span:first-child {
+  font-size: 1.4rem;
+}
+.op-bar > span:nth-child(2) {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.op-bar small {
+  opacity: 0.75;
+  font-size: 0.8rem;
+}
+.op-bar.is-matched {
+  background: var(--yellow, #ffc928);
+  color: #1d1238;
+}
+.op-mini {
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border: 2px solid var(--ink, #1d1238);
+  border-radius: 12px;
+  background: var(--paper-2, #fff2df);
+  color: inherit;
+  font-family: inherit;
+  font-weight: 800;
+  box-shadow: 2px 2px 0 var(--ink, #1d1238);
+  cursor: pointer;
+}
+.op-dots::after {
+  content: '•••';
+  letter-spacing: 2px;
+  animation: op-blink 1.2s steps(4) infinite;
+}
+
+@keyframes op-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes op-pop {
+  from {
+    transform: scale(0.9) rotate(-1deg);
+    opacity: 0;
+  }
+}
+@keyframes op-ping {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+@keyframes op-bob {
+  to {
+    transform: translateY(-6px) rotate(6deg);
+  }
+}
+@keyframes op-blink {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@media (max-width: 420px) {
+  .op-create {
+    grid-template-columns: 1fr;
+  }
+  .op-room {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: 'face text join' 'face chip count';
+  }
+  .op-chip,
+  .op-count {
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .op-veil,
+  .op-window,
+  .op-radar::before,
+  .op-radar::after,
+  .op-radar span,
+  .op-dots::after {
+    animation: none;
+  }
+  .op-btn {
+    transition: none;
+  }
+}

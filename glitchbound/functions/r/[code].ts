@@ -12,6 +12,7 @@ const PARTY: Record<string, { name: string; emoji: string; pitch: string }> = {
   dial: { name: 'Dial It In', emoji: '📻', pitch: 'One player sees the secret spot on the dial and gives one clue. Turn the needle together.' },
   unique: { name: 'One of a Kind', emoji: '🦄', pitch: 'Everyone writes a one-word clue in secret. Matching clues cancel out. Can the guesser still get it?' },
   hues: { name: 'Hue Knew?', emoji: '🎨', pitch: 'Describe a secret color in one word. Whoever taps closest on the color board scores.' },
+  scribble: { name: 'Scribble Scramble', emoji: '🖍️', pitch: 'One player draws, everyone else races to guess the word. The faster you guess, the more you score.' },
 };
 
 /** Arcade games with their own live rooms: where the invite lands and how it reads. */

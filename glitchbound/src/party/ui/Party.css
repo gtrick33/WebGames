@@ -2333,3 +2333,11 @@ img.pt-feature-art {
   display: grid;
   gap: 8px;
 }
+
+/* The public room list, above the room games */
+.pt-browse-all {
+  width: 100%;
+  margin: 4px 0 12px;
+  background: var(--yellow, #ffc928);
+  color: #1d1238;
+}

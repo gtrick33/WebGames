@@ -5,6 +5,7 @@ import { embedHost } from '../../platform/embed';
 import { shareOrCopy } from '../../platform/share';
 import { fill, MAX_PLAYERS, MIN_PLAYERS, TARGETS, TIMERS, type Deck, type RoomView } from './engine';
 import { createRoom, roomInfo, useRoom } from './net';
+import { OnlinePlay, RoomListingBar } from '../../components/OnlinePlay';
 import { UI, type Ui } from './ui';
 import './Game.css';
 import { GameMenuButton } from '../../components/GameMenuButton';
@@ -182,23 +183,18 @@ function Home({ name, invite, onName, onEnter }: { name: string; invite: string;
           </button>
         </div>
         <div className="uh-or">{u.or}</div>
-        <button
-          className="uh-btn uh-btn-wide"
-          disabled={!ready || busy}
-          onClick={() => {
-            setBusy(true);
-            setMsg('');
-            createRoom().then(
-              (c) => onEnter(c),
-              (e: unknown) => {
-                setBusy(false);
-                setMsg(e instanceof Error ? e.message : u.cannotOpen);
-              },
-            );
-          }}
-        >
-          {u.openRoom}
-        </button>
+        <OnlinePlay
+          game="crass-act"
+          className="uh-online"
+          disabled={!ready}
+          onCreate={(listed) =>
+            createRoom(listed).then(
+              (c) => (onEnter(c), null),
+              (e: unknown) => (e instanceof Error ? e.message : u.cannotOpen),
+            )
+          }
+          onJoin={(c) => join(c)}
+        />
         {!ready && <p className="uh-hint">{u.pickName}</p>}
         {msg && (
           <p className="uh-msg" role="alert">
@@ -224,7 +220,7 @@ function useNow(skew: number): number {
 }
 
 function Room({ code, name, host, onLeave }: { code: string; name: string; host: GameHost; onLeave: () => void }) {
-  const { view, conn, error, clearError, gone, skew, send } = useRoom(code, name);
+  const { view, conn, error, clearError, gone, skew, send, listing, setListed } = useRoom(code, name);
   const now = useNow(skew);
   const u = useUi();
   const reported = useRef<{ started: boolean; over: number }>({ started: false, over: -1 });
@@ -300,7 +296,10 @@ function Room({ code, name, host, onLeave }: { code: string; name: string; host:
         </div>
       )}
       {view.phase === 'lobby' ? (
-        <Lobby view={view} send={send} onLeave={onLeave} />
+        <>
+          <RoomListingBar listing={listing} host={view.you === view.host} players={view.players.filter((p) => p.online).length} min={MIN_PLAYERS} skew={skew} onListed={setListed} />
+          <Lobby view={view} send={send} onLeave={onLeave} />
+        </>
       ) : view.phase === 'over' ? (
         <Over view={view} send={send} onLeave={onLeave} />
       ) : (

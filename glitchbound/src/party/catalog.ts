@@ -3,8 +3,8 @@
  * room with everyone on their own phone, or both) and its card text. The party page and the admin's
  * Party view both read this list; admins can hide, feature or relabel a game (src/catalog/settings.ts).
  */
-export type PartyGameId = 'impostor' | 'prompts' | 'nhie' | 'charades' | 'board' | 'auction' | 'rps' | 'crass-act' | 'dial' | 'unique' | 'hues';
-export type PartyRoomGame = 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'crass-act' | 'dial' | 'unique' | 'hues';
+export type PartyGameId = 'impostor' | 'prompts' | 'nhie' | 'charades' | 'board' | 'auction' | 'rps' | 'crass-act' | 'dial' | 'unique' | 'hues' | 'scribble';
+export type PartyRoomGame = 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'crass-act' | 'dial' | 'unique' | 'hues' | 'scribble';
 
 export interface PartyGame {
   id: PartyGameId;
@@ -36,6 +36,7 @@ const art = (id: PartyGameId): { tile: string; wide: string } => ({ tile: `/part
 
 export const PARTY_GAMES: PartyGame[] = [
   { id: 'impostor', title: 'Impostor', emoji: '🕵️', blurb: 'Everyone gets the secret word, except one. Say one word each, then vote out the faker.', time: '10–40 min', players: '3–16', color: '#7b4dff', onePhone: true, room: 'impostor', roomPlayers: '3–12', roomBlurb: 'Secret cards on each phone', sticker: 'New', art: art('impostor') },
+  { id: 'scribble', title: 'Scribble Scramble', emoji: '🖍️', blurb: 'One player draws, everyone else races to guess the word. Harder words, bigger points.', time: '10–30 min', players: '2–10', color: '#ff8a1f', onePhone: false, room: 'scribble', roomPlayers: '2–10', roomBlurb: 'Draw live, everyone guesses on their phone', sticker: 'New', art: art('scribble') },
   { id: 'crass-act', title: 'Crass Act', emoji: '😈', blurb: 'Fill in the blank with the rudest card in your hand. The funniest answer wins the round.', time: '15–45 min', players: '3–10', color: '#ff5a6c', onePhone: false, room: 'crass-act', roomPlayers: '3–10', roomBlurb: 'Fill-in-the-blank cards for adults', adult: true },
   { id: 'prompts', title: 'Party Prompts', emoji: '🃏', blurb: 'Truths, dares and “most likely to”, with your names on every card.', time: '15–45 min', players: '2–16', color: '#ff5a6c', onePhone: true, room: null, art: art('prompts') },
   { id: 'nhie', title: 'Never Have I Ever', emoji: '🙊', blurb: 'Five fingers up, reveal together. Last one standing wins.', time: '10–30 min', players: '3–16', color: '#a45cff', onePhone: true, room: 'nhie', roomPlayers: '3–16', roomBlurb: 'Answer in secret, reveal together', art: art('nhie') },

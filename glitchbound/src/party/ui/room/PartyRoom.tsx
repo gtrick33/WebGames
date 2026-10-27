@@ -9,6 +9,7 @@ import { DialRoomPage } from './DialRoom';
 import { HuesRoomPage } from './HuesRoom';
 import { NhieRoomPage } from './NhieRoom';
 import { RpsRoomPage } from './RpsRoom';
+import { ScribbleRoomPage } from './ScribbleRoom';
 import { UniqueRoomPage } from './UniqueRoom';
 import { t, useT } from '../../../i18n';
 
@@ -55,11 +56,17 @@ export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => 
   if (game === 'dial') return <DialRoomPage code={code} onLeave={onLeave} />;
   if (game === 'unique') return <UniqueRoomPage code={code} onLeave={onLeave} />;
   if (game === 'hues') return <HuesRoomPage code={code} onLeave={onLeave} />;
+  if (game === 'scribble') return <ScribbleRoomPage code={code} onLeave={onLeave} />;
   return <ImpostorRoomPage code={code} onLeave={onLeave} />;
 }
 
-/** Opens a new room for a Party Mode game and goes into it. */
-export async function openPartyRoom(game: RoomGame): Promise<void> {
-  const code = await createRoom(game);
+/** Opens a new room for a Party Mode game (public when `listed`) and goes into it. */
+export async function openPartyRoom(game: RoomGame, listed = false): Promise<void> {
+  const code = await createRoom(game, listed);
   navigate(`/party?room=${code}`);
+}
+
+/** Goes into a room from the room list or quick match (which skips asking for a name). */
+export function goToRoom(game: RoomGame, code: string, matched = false): void {
+  navigate(`${GAME_ROOM_PAGE[game] ?? '/party'}?room=${code}${matched ? '&match=1' : ''}`);
 }

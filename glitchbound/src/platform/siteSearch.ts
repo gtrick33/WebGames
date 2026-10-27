@@ -60,6 +60,7 @@ const PARTY_WORDS: Partial<Record<PartyGame['id'], string[]>> = {
   board: ['dice', 'board game', 'snakes and ladders', 'ladders', 'roll'],
   auction: ['bid', 'bidding', 'auction', 'money', 'collection', 'price'],
   rps: ['rock paper scissors', 'rock', 'paper', 'scissors', 'rps', 'roshambo'],
+  scribble: ['draw', 'drawing', 'sketch', 'doodle', 'guess the drawing', 'scribble', 'paint'],
   dial: ['dial', 'spectrum', 'scale', 'clue', 'mind reading', 'tune in', 'frequency'],
   unique: ['one word', 'clue', 'clues', 'cooperative', 'guess the word', 'word game', 'team'],
   hues: ['colour', 'color', 'colours', 'colors', 'shade', 'guess the colour', 'clue'],

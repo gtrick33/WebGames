@@ -8,6 +8,7 @@ import { navigate } from '../../router/router';
 import { ModeBar } from './shared';
 import { SecretCard } from './Impostor';
 import { RoomNotice, useTopOnPhase } from './room/RoomFrame';
+import { matchedName, RoomListingBar } from '../../components/OnlinePlay';
 import { t } from '../../i18n';
 
 const COLORS = ['#ff5a6c', '#ffb020', '#2fd1a0', '#3d7bff', '#a45cff', '#ff7eb6', '#12c6b3', '#ff8a1f', '#8ad13b', '#5b6cff', '#e64c9a', '#00a6d6'];
@@ -35,7 +36,7 @@ function useLeft(deadline: number | null, skew: number): number | null {
 /** /party?room=CODE: asks for a name once, then connects. */
 export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () => void }) {
   const player = usePlayerName();
-  const [name, setName] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(() => matchedName(player.name));
   const [draft, setDraft] = useState(player.name);
   const [missing, setMissing] = useState(false);
   useEffect(() => {
@@ -88,7 +89,7 @@ export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () 
 }
 
 function Room({ code, name, onLeave }: { code: string; name: string; onLeave: () => void }) {
-  const { view, conn, error, clearError, gone, skew, send } = useRoom<RoomView, Action>(code, name);
+  const { view, conn, error, clearError, gone, skew, send, listing, setListed } = useRoom<RoomView, Action>(code, name);
   const left = useLeft(view?.deadline ?? null, skew);
   const screen = useTopOnPhase(view?.phase);
   const invite = (): void => {
@@ -133,6 +134,7 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
 
       {view.phase === 'lobby' && (
         <>
+          <RoomListingBar listing={listing} host={view.host} players={view.players.filter((p) => p.online).length} min={MIN_PLAYERS} skew={skew} onListed={setListed} />
           <section className="pt-panel">
             <div className="pt-panel-head">
               <h2>{t('Who’s here')}</h2>
@@ -388,8 +390,8 @@ function HostSettings({ view, send }: { view: RoomView; send: (a: Action) => voi
   );
 }
 
-/** Opens a new Impostor room and goes into it. */
-export async function openImpostorRoom(): Promise<void> {
-  const code = await createRoom('impostor');
+/** Opens a new Impostor room (public when `listed`) and goes into it. */
+export async function openImpostorRoom(listed = false): Promise<void> {
+  const code = await createRoom('impostor', listed);
   navigate(`/party?room=${code}`);
 }

@@ -6,6 +6,7 @@ import { basicLang, type BasicLang } from '../../platform/contentLang';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { createRoom, roomInfo } from '../../platform/rooms';
+import { OnlinePlay } from '../../components/OnlinePlay';
 import { shareOrCopy } from '../../platform/share';
 import { applyBot, LEVELS, type Level } from './ai';
 import { CardDefs, CardFace, SuitIcon } from './cards';
@@ -272,10 +273,10 @@ function Belot({ host, pauseKey, challenge, playerName }: { host: GameHost; paus
     sfx().click();
   };
 
-  const openRoom = async (): Promise<string | null> => {
+  const openRoom = async (listed: boolean): Promise<string | null> => {
     sfx().unlock();
     try {
-      const code = await createRoom('belot');
+      const code = await createRoom('belot', listed);
       setRoomInUrl(code);
       setRoom(code);
       return null;
@@ -471,7 +472,7 @@ function Menu({
   onBegin: (m: Mode, l: Level) => void;
   onResume: () => void;
   onRules: () => void;
-  onOpenRoom: () => Promise<string | null>;
+  onOpenRoom: (listed: boolean) => Promise<string | null>;
   onJoinRoom: (code: string) => Promise<string | null>;
 }) {
   const [level, setLevel] = useState<Level>(save.level);
@@ -544,17 +545,7 @@ function Menu({
             <b>{w.friends}</b>
             <small>{w.friendsSub}</small>
           </div>
-          <button
-            className="bl-btn is-go"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              setErr((await onOpenRoom()) ?? '');
-              setBusy(false);
-            }}
-          >
-            {busy ? w.opening : w.openRoom}
-          </button>
+          <OnlinePlay game="belot" className="bl-online" busyLabel={w.opening} onCreate={onOpenRoom} onJoin={(c) => onJoinRoom(c)} />
           <form
             className="bl-join"
             onSubmit={async (e) => {

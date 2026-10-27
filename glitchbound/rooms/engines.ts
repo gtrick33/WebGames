@@ -14,9 +14,10 @@ import * as dial from '../src/party/rooms/dialRoom';
 import * as hues from '../src/party/rooms/huesRoom';
 import * as nhie from '../src/party/rooms/nhieRoom';
 import * as rps from '../src/party/rooms/rpsRoom';
+import * as scribble from '../src/party/rooms/scribbleRoom';
 import * as unique from '../src/party/rooms/uniqueRoom';
 
-export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon';
+export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon' | 'scribble';
 
 /** What every room engine provides (`State` stays opaque to the server). */
 export interface Engine {
@@ -26,8 +27,20 @@ export interface Engine {
   tick(s: RoomState, now: number): void;
   act(s: RoomState, key: string, action: never, now: number): string | null;
   viewFor(s: RoomState, key: string): unknown;
+  /**
+   * Optional: actions that stream (a drawing's strokes) instead of changing what everyone's view shows.
+   * Returns null for an ordinary action; otherwise the room sends `others` to everyone else and `self`
+   * back to the sender as they are, without sending everyone a new view. `save`: worth storing now.
+   */
+  relay?(s: RoomState, key: string, action: never, now: number): Relay | null;
   summary(s: RoomState): unknown;
   validKey(k: unknown): k is string;
+}
+
+export interface Relay {
+  others?: unknown;
+  self?: unknown;
+  save?: boolean;
 }
 
 /** The fields the server itself reads from any room. */
@@ -35,6 +48,9 @@ export interface RoomState {
   game?: string;
   updated: number;
   deadline: number | null;
+  /** Every room seats players by their private key, one of them the host. */
+  seats?: { key: string; n: number; online: boolean }[];
+  host?: number;
 }
 
 export const ENGINES: Record<GameId, Engine> = {
@@ -50,6 +66,30 @@ export const ENGINES: Record<GameId, Engine> = {
   drag: drag as unknown as Engine,
   belot: belot as unknown as Engine,
   backgammon: backgammon as unknown as Engine,
+  scribble: scribble as unknown as Engine,
+};
+
+/**
+ * Public rooms and quick match: how many it takes to start, how many make a full game (a quick-match
+ * room then starts in a few seconds), and how many seats quick match fills. `start: false`: the game
+ * starts by itself when everyone is ready (Launch Control's races), so a quick-match room never needs
+ * the host's Start.
+ */
+export const QUICK: Record<GameId, { min: number; full: number; seats: number; start?: false }> = {
+  'crass-act': { min: 3, full: 6, seats: 10 },
+  impostor: { min: 3, full: 6, seats: 12 },
+  nhie: { min: 3, full: 6, seats: 12 },
+  auction: { min: 2, full: 5, seats: 8 },
+  board: { min: 2, full: 4, seats: 8 },
+  rps: { min: 2, full: 6, seats: 12 },
+  dial: { min: 2, full: 6, seats: 12 },
+  unique: { min: 3, full: 6, seats: 10 },
+  hues: { min: 2, full: 6, seats: 12 },
+  drag: { min: 2, full: 2, seats: 2, start: false },
+  // Empty places at the table are dealt to the computer.
+  belot: { min: 2, full: 4, seats: 4 },
+  backgammon: { min: 2, full: 2, seats: 2 },
+  scribble: { min: 2, full: 6, seats: 10 },
 };
 
 export const isGameId = (v: unknown): v is GameId => typeof v === 'string' && Object.hasOwn(ENGINES, v);

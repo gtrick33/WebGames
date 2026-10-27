@@ -5,6 +5,7 @@
  */
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { useRoom } from '../../platform/rooms';
+import { RoomListingBar } from '../../components/OnlinePlay';
 import { shareOrCopy } from '../../platform/share';
 import { getCar } from './cars';
 import { Icon } from './icons';
@@ -50,7 +51,7 @@ export function LiveRoom({
   onRacing: (on: boolean) => void;
   onLeave: () => void;
 }) {
-  const { view, conn, error, clearError, gone, skew, send } = useRoom<RoomView, Action>(code, name);
+  const { view, conn, error, clearError, gone, skew, send, listing, setListed } = useRoom<RoomView, Action>(code, name);
   const [carId, setCarId] = useState(defaultCar);
   const [shownRound, setShownRound] = useState(0);
   const [copied, setCopied] = useState('');
@@ -140,6 +141,7 @@ export function LiveRoom({
       >
         {conn !== 'open' && <p className="lc-warn">{conn === 'connecting' ? 'Connecting to the room…' : 'Reconnecting…'}</p>}
         {error && <p className="lc-warn">{error}</p>}
+        {!friend && view && <RoomListingBar listing={listing} host={view.host} players={view.players.filter((p) => p.online).length} min={2} skew={skew} onListed={setListed} />}
         {result && mineT && (
           <div className="lc-live-score">
             <div>

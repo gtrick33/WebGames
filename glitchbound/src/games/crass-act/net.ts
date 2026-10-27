@@ -5,6 +5,6 @@ import type { Action, RoomView } from './engine';
 export type { Connection } from '../../platform/rooms';
 export { roomInfo };
 
-export const createRoom = (): Promise<string> => create('crass-act');
+export const createRoom = (listed = false): Promise<string> => create('crass-act', listed);
 
 export const useRoom = (code: string, name: string) => useAnyRoom<RoomView, Action>(code, name);

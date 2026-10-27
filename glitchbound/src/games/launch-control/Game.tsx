@@ -4,6 +4,7 @@ import { ResultLine } from '../../components/ResultLine';
 import { useAccount } from '../../platform/account';
 import { openChallengeScores, type ChallengeSpec } from '../../platform/challenge';
 import { createRoom } from '../../platform/rooms';
+import { OnlinePlay, OnlineWindow } from '../../components/OnlinePlay';
 import { claimCoins } from '../../platform/coins';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
@@ -235,17 +236,23 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     const l = lookOf(s, getCar(id));
     return { id, levels: PARTS.map((p) => l.levels[p]), paint: l.paint, livery: l.livery, wheels: l.wheels, helmet: l.helmet, suit: l.suit };
   }, []);
-  const openLive = async (): Promise<void> => {
-    if (opening) return;
+  // Racing online: quick match, a public or private room, or a public one from the list (in a window).
+  const [online, setOnline] = useState(false);
+  const enterLive = (code: string): void => {
+    setOnline(false);
+    setRoomInUrl(code);
+    setLiveCode(code);
+    setScreen('live');
+  };
+  const openLive = async (listed: boolean): Promise<string | null> => {
+    if (opening) return null;
     sfx().click();
     setOpening(true);
     try {
-      const code = await createRoom('drag');
-      setRoomInUrl(code);
-      setLiveCode(code);
-      setScreen('live');
+      enterLive(await createRoom('drag', listed));
+      return null;
     } catch (e) {
-      setToast(e instanceof Error ? e.message : 'Could not open a room. Try again.');
+      return e instanceof Error ? e.message : 'Could not open a room. Try again.';
     } finally {
       setOpening(false);
     }
@@ -1123,13 +1130,25 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 </span>
                 {save.rank < GAUNTLET_UNLOCK && <Icon name="lock" size={18} className="lc-mode-lock" />}
               </button>
-              <button className="lc-mode is-wide" data-tone="lime" onClick={() => void openLive()} disabled={opening}>
+              <button
+                className="lc-mode is-wide"
+                data-tone="lime"
+                onClick={() => {
+                  sfx().click();
+                  setOnline(true);
+                }}
+              >
                 <Icon name="users" />
                 <span className="lc-mode-text">
-                  <b>Race a friend</b>
-                  <small>{opening ? 'Opening a room…' : 'Live, head to head, on their phone'}</small>
+                  <b>Race online</b>
+                  <small>Quick match, or a friend on their phone</small>
                 </span>
               </button>
+              {online && (
+                <OnlineWindow label="Race online" title="🏁 Race online" sub="Live, head to head" onClose={() => setOnline(false)}>
+                  <OnlinePlay game="drag" inlineList busyLabel="Opening a room…" onCreate={openLive} onJoin={(code) => enterLive(code)} />
+                </OnlineWindow>
+              )}
             </div>
             <nav className="lc-rail" aria-label="Garage and shops">
               <button className="lc-tile" onClick={() => go('garage')} aria-label="My garage">

@@ -6,6 +6,7 @@ import { basicLang, type BasicLang } from '../../platform/contentLang';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { createRoom, roomInfo } from '../../platform/rooms';
+import { OnlinePlay } from '../../components/OnlinePlay';
 import { shareOrCopy } from '../../platform/share';
 import { choosePlay, LEVELS, type Level } from './ai';
 import { Board, moveMs } from './Board';
@@ -257,10 +258,10 @@ function Backgammon({ host, pauseKey, challenge, playerName }: { host: GameHost;
     sfx().click();
   };
 
-  const openRoom = async (): Promise<string | null> => {
+  const openRoom = async (listed: boolean): Promise<string | null> => {
     sfx().unlock();
     try {
-      const code = await createRoom('backgammon');
+      const code = await createRoom('backgammon', listed);
       setRoomInUrl(code);
       setRoom(code);
       return null;
@@ -483,7 +484,7 @@ function Menu({
   onBegin: (m: Mode, l: Level, target: number) => void;
   onResume: () => void;
   onRules: () => void;
-  onOpenRoom: () => Promise<string | null>;
+  onOpenRoom: (listed: boolean) => Promise<string | null>;
   onJoinRoom: (code: string) => Promise<string | null>;
 }) {
   const [level, setLevel] = useState<Level>(save.level);
@@ -563,17 +564,7 @@ function Menu({
             <b>{w.friends}</b>
             <small>{w.friendsSub}</small>
           </div>
-          <button
-            className="tb-btn is-go"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              setErr((await onOpenRoom()) ?? '');
-              setBusy(false);
-            }}
-          >
-            {busy ? w.opening2 : w.openRoom}
-          </button>
+          <OnlinePlay game="backgammon" className="tb-online" busyLabel={w.opening2} onCreate={onOpenRoom} onJoin={(c) => onJoinRoom(c)} />
           <form
             className="tb-join"
             onSubmit={async (e) => {

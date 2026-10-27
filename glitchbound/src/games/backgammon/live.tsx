@@ -5,6 +5,7 @@
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { useRoom } from '../../platform/rooms';
+import { RoomListingBar } from '../../components/OnlinePlay';
 import { shareOrCopy } from '../../platform/share';
 import { LEVELS, type Level } from './ai';
 import { Board } from './Board';
@@ -16,7 +17,7 @@ import type { Words } from './text';
 export const inviteLink = (code: string): string => `${location.origin}/r/${code}`;
 
 export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; code: string; name: string; sfx: () => Sfx; tools: ReactNode; onLeave: () => void }) {
-  const { view, conn, error, clearError, gone, send } = useRoom<RoomView, Action>(code, name || w.you);
+  const { view, conn, error, clearError, gone, send, skew, listing, setListed } = useRoom<RoomView, Action>(code, name || w.you);
   useEffect(() => {
     if (!error) return;
     const id = window.setTimeout(clearError, 3000);
@@ -49,7 +50,7 @@ export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; co
 
   const names = view.places.map((p) => p.player?.name ?? (p.bot ? `${w.computer} · ${w.level[p.bot]}` : w.empty)) as [string, string];
   const notice = error || (conn !== 'open' ? w.connecting : '');
-  if (view.phase === 'lobby' || !view.match) return <Lobby w={w} view={view} code={code} send={send} tools={tools} onLeave={onLeave} notice={notice} names={names} />;
+  if (view.phase === 'lobby' || !view.match) return <Lobby w={w} view={view} code={code} send={send} tools={tools} onLeave={onLeave} notice={notice} bar={<RoomListingBar listing={listing} host={view.host} players={view.players.filter((p) => p.online).length} min={2} skew={skew} onListed={setListed} />} names={names} />;
 
   const me = (view.you >= 0 ? view.you : 0) as Side;
   const g = view.match.game;
@@ -125,7 +126,7 @@ export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; co
   );
 }
 
-function Lobby({ w, view, code, send, tools, onLeave, notice, names }: { w: Words; view: RoomView; code: string; send: (a: Action) => void; tools: ReactNode; onLeave: () => void; notice: string; names: [string, string] }) {
+function Lobby({ w, view, code, send, tools, onLeave, notice, bar, names }: { w: Words; view: RoomView; code: string; send: (a: Action) => void; tools: ReactNode; onLeave: () => void; notice: string; bar: ReactNode; names: [string, string] }) {
   const [copied, setCopied] = useState('');
   const link = inviteLink(code);
   const ready = view.places[0]?.player && (view.places[1]?.player || view.places[1]?.bot);
@@ -139,6 +140,7 @@ function Lobby({ w, view, code, send, tools, onLeave, notice, names }: { w: Word
           <div className="tb-tools">{tools}</div>
         </div>
         <h2 className="tb-h">{w.room(code)}</h2>
+        {bar}
         {notice && <p className="tb-err">{notice}</p>}
         <div className="tb-lobby">
           {[0, 1].map((place) => {

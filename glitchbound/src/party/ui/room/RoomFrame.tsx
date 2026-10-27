@@ -4,6 +4,7 @@ import { roomInfo, useRoom } from '../../../platform/rooms';
 import { shareOrCopy } from '../../../platform/share';
 import type { SeatView } from '../../rooms/seats';
 import { ModeBar } from '../shared';
+import { matchedName, RoomListingBar } from '../../../components/OnlinePlay';
 import { t } from '../../../i18n';
 
 const COLORS = ['#ff5a6c', '#ffb020', '#2fd1a0', '#3d7bff', '#a45cff', '#ff7eb6', '#12c6b3', '#ff8a1f', '#8ad13b', '#5b6cff', '#e64c9a', '#00a6d6'];
@@ -113,6 +114,8 @@ export interface RoomContext<V, A> {
   send: (a: A) => void;
   /** Seconds left on the current clock. */
   left: number | null;
+  /** The room's clock minus this phone's (for clocks of its own). */
+  skew: number;
   me: SeatView;
   byN: (n: number | null | undefined) => SeatView | undefined;
 }
@@ -129,6 +132,7 @@ export function RoomFrame<V extends FrameView, A>({
   kick,
   progress,
   settings,
+  onRelay,
   children,
 }: {
   code: string;
@@ -137,10 +141,12 @@ export function RoomFrame<V extends FrameView, A>({
   kick: (n: number) => A;
   progress?: (v: V) => string | undefined;
   settings: (ctx: RoomContext<V, A>) => ReactNode;
+  /** Streamed messages from the room (Scribble Scramble's strokes). */
+  onRelay?: (data: unknown) => void;
   children: (ctx: RoomContext<V, A>) => ReactNode;
 }) {
   const player = usePlayerName();
-  const [name, setName] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(() => matchedName(player.name));
   const [draft, setDraft] = useState(player.name);
   const [missing, setMissing] = useState(false);
   useEffect(() => {
@@ -190,7 +196,7 @@ export function RoomFrame<V extends FrameView, A>({
       </div>
     );
   return (
-    <Connected code={code} name={name} meta={meta} onLeave={onLeave} kick={kick} progress={progress} settings={settings}>
+    <Connected code={code} name={name} meta={meta} onLeave={onLeave} kick={kick} progress={progress} settings={settings} onRelay={onRelay}>
       {children}
     </Connected>
   );
@@ -204,6 +210,7 @@ function Connected<V extends FrameView, A>({
   kick,
   progress,
   settings,
+  onRelay,
   children,
 }: {
   code: string;
@@ -213,9 +220,10 @@ function Connected<V extends FrameView, A>({
   kick: (n: number) => A;
   progress?: (v: V) => string | undefined;
   settings: (ctx: RoomContext<V, A>) => ReactNode;
+  onRelay?: (data: unknown) => void;
   children: (ctx: RoomContext<V, A>) => ReactNode;
 }) {
-  const { view, conn, error, clearError, gone, skew, send } = useRoom<V, A>(code, name);
+  const { view, conn, error, clearError, gone, skew, send, listing, setListed } = useRoom<V, A>(code, name, onRelay);
   const left = useLeft(view?.deadline ?? null, skew);
   const screen = useTopOnPhase(view?.phase);
   useEffect(() => {
@@ -249,7 +257,7 @@ function Connected<V extends FrameView, A>({
     );
 
   const me = view.players.find((p) => p.you)!;
-  const ctx: RoomContext<V, A> = { view, send, left, me, byN: (n) => view.players.find((p) => p.n === n) };
+  const ctx: RoomContext<V, A> = { view, send, left, skew, me, byN: (n) => view.players.find((p) => p.n === n) };
   const here = view.players.filter((p) => p.online).length;
   return (
     <div className="pt-screen" ref={screen}>
@@ -257,6 +265,7 @@ function Connected<V extends FrameView, A>({
       <RoomNotice error={error} conn={conn} />
       {view.phase === 'lobby' ? (
         <>
+          <RoomListingBar listing={listing} host={view.host} players={here} min={meta.min} skew={skew} onListed={setListed} />
           <section className="pt-panel">
             <div className="pt-panel-head">
               <h2>{t('Who’s here')}</h2>
@@ -289,7 +298,7 @@ function Connected<V extends FrameView, A>({
               {settings(ctx)}
               {here < meta.min && <p className="pt-muted pt-center">{t('Waiting for {n} more to join…', { n: meta.min - here })}</p>}
             </section>
-          ) : (
+          ) : listing?.matched ? null : (
             <p className="pt-muted pt-center">{t('Waiting for the host to start…')}</p>
           )}
         </>

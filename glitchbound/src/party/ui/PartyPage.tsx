@@ -16,7 +16,8 @@ import { HuesMode } from './Hues';
 import { UniqueMode } from './Unique';
 import { NeverMode } from './Never';
 import { dealPrompt, PromptsMode } from './Prompts';
-import { openPartyRoom, PartyRoomPage } from './room/PartyRoom';
+import { goToRoom, openPartyRoom, PartyRoomPage } from './room/PartyRoom';
+import { OnlinePlay, OnlineWindow, RoomBrowser, ROOM_GAME_INFO } from '../../components/OnlinePlay';
 import { Avatar } from './shared';
 import { AdultLabel } from '../../components/AdultLabel';
 import type { RoomGame } from '../../platform/rooms';
@@ -144,7 +145,6 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
     target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }, [focus]);
   const [joinCode, setJoinCode] = useState('');
-  const [roomMsg, setRoomMsg] = useState('');
   const [joinMsg, setJoinMsg] = useState('');
   const [nudge, setNudge] = useState(0);
   const whoRef = useRef<HTMLElement>(null);
@@ -188,10 +188,21 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
   const customCount = session.custom.challenges.length + session.custom.nhie.length;
   const crassAct = getGame('crass-act');
   const { modes, rooms, featured } = usePartyLineup();
+  // A game's way online (quick match, a public or private room, its public rooms) opens in a window.
+  const [online, setOnline] = useState<RoomGame | null>(null);
+  const [browseAll, setBrowseAll] = useState(false);
   const openRoom = (game: RoomGame = 'impostor'): void => {
+    // Crass Act asks for the player's age on its own page first.
     if (game === 'crass-act') return navigate('/games/crass-act');
-    setRoomMsg('Opening a room…');
-    (game === 'impostor' ? openImpostorRoom() : openPartyRoom(game)).catch((e: unknown) => setRoomMsg(e instanceof Error ? e.message : 'Could not open a room. Try again.'));
+    setOnline(game);
+  };
+  const createIn = async (game: RoomGame, listed: boolean): Promise<string | null> => {
+    try {
+      await (game === 'impostor' ? openImpostorRoom(listed) : openPartyRoom(game, listed));
+      return null;
+    } catch (e) {
+      return e instanceof Error ? t(e.message) : t('Could not open a room. Try again.');
+    }
   };
   // "Pick for us": a random game that suits the group's size.
   const surprise = (): void => {
@@ -204,6 +215,12 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
 
   return (
     <div className="pt-lobby">
+      {online && (
+        <OnlineWindow label={t(ROOM_GAME_INFO[online].title)} title={<>{ROOM_GAME_INFO[online].emoji} {t(ROOM_GAME_INFO[online].title)}</>} sub={t('Play online')} onClose={() => setOnline(null)}>
+          <OnlinePlay game={online} inlineList onCreate={(listed) => createIn(online, listed)} onJoin={(code, matched) => goToRoom(online, code, matched)} />
+        </OnlineWindow>
+      )}
+      {browseAll && <RoomBrowser onClose={() => setBrowseAll(false)} onJoin={(code, r) => goToRoom(r.game, code)} />}
       <header className="pt-hero">
         <p className="pt-kicker">{t('GlitchBound')}</p>
         <h1 className="pt-title">
@@ -233,6 +250,9 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
           <section className="pt-panel pt-online">
             <h2>{t('Play on everyone’s own phone')}</h2>
             <p className="pt-muted">{t('Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.')}</p>
+            <button className="pt-btn pt-btn-big pt-browse-all" onClick={() => setBrowseAll(true)}>
+              🔎 {t('Browse public rooms')}
+            </button>
             <div className="pt-online-games">
               {rooms.map((r) => {
                 // Crass Act keeps its arcade art and adults-only label; its room opens on its own page (name and age check first).
@@ -257,14 +277,13 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
                         {t('{n} players', { n: r.roomPlayers ?? '' })} · {t(r.roomBlurb ?? '')}
                       </span>
                       <button className="pt-btn pt-btn-go pt-btn-sm" onClick={() => openRoom(r.room!)}>
-                        {t('Open a room')}
+                        {t('Play online')}
                       </button>
                     </div>
                   </div>
                 );
               })}
             </div>
-            {roomMsg && <p className="pt-muted">{roomMsg}</p>}
           </section>
           <form
             className="pt-panel pt-join"
@@ -552,7 +571,7 @@ function Feature({ g, where, art, onPlay, onRoom }: { g: ShownGame; where: 'one'
           {both ? (
             <>
               <button className="pt-btn pt-btn-go" onClick={where === 'one' ? onPlay : onRoom}>
-                {where === 'one' ? t('Play on this phone') : t('Open a room')}
+                {where === 'one' ? t('Play on this phone') : t('Play online')}
               </button>
               <button className="pt-btn" onClick={where === 'one' ? onRoom : onPlay}>
                 {where === 'one' ? t('🌐 Own phones') : t('📱 One phone')}
@@ -560,7 +579,7 @@ function Feature({ g, where, art, onPlay, onRoom }: { g: ShownGame; where: 'one'
             </>
           ) : g.room ? (
             <button className="pt-btn pt-btn-go" onClick={onRoom}>
-              {t('Open a room')}
+              {t('Play online')}
             </button>
           ) : (
             <button className="pt-btn pt-btn-go" onClick={onPlay}>
