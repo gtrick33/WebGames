@@ -99,7 +99,7 @@ const RESOURCE_HELP: Record<ResourceDef['kind'], string> = {
   rage: 'Rage: hitting and being hit build it, your big skills spend it, it fades out of combat',
   energy: 'Energy: skills spend it, it comes back quickly',
   focus: 'Focus: shots spend it, it comes back quickly',
-  holy: 'Holy Power: some skills build it (up to 5), others spend 3',
+  holy: 'Zeal: some skills build it (up to 5), others spend 3',
 };
 
 function Hud({ engine }: { engine: SigilEngine }) {
@@ -151,7 +151,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
             <em ref={hpText} />
           </span>
           {res?.kind === 'holy' ? (
-            <span ref={pips} className="rb-pips" title={RESOURCE_HELP.holy} aria-label="Holy Power">
+            <span ref={pips} className="rb-pips" title={RESOURCE_HELP.holy} aria-label="Zeal">
               {Array.from({ length: res.base }, (_, i) => (
                 <i key={i} />
               ))}
@@ -169,7 +169,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
           </span>
           <span className="rb-region">
             {region.name}
-            {w.keyRun ? <b className="rb-mplus"> · Mythic +{w.keyRun.key}</b> : w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
+            {w.keyRun ? <b className="rb-mplus"> · Riftstone +{w.keyRun.key}</b> : w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
           </span>
         </div>
         {!engine.touchMode && (
@@ -229,7 +229,7 @@ function BossBar({ engine }: { engine: SigilEngine }) {
   );
 }
 
-/** A Mythic+ run's clock: time so far (falls included) against the dungeon's, the rooms done, the week's affixes. */
+/** A Riftstone run's clock: time so far (falls included) against the dungeon's, the rooms done, the week's affixes. */
 function KeyClock({ engine }: { engine: SigilEngine }) {
   const k = engine.world!.keyRun!;
   const time = useRef<HTMLElement>(null);
@@ -250,8 +250,8 @@ function KeyClock({ engine }: { engine: SigilEngine }) {
     }
   });
   return (
-    <div className="rb-tracker rb-keyclock" role="timer" aria-label={`Mythic +${k.key} clock`}>
-      <strong>Mythic +{k.key}</strong>
+    <div className="rb-tracker rb-keyclock" role="timer" aria-label={`Riftstone +${k.key} clock`}>
+      <strong>Riftstone +{k.key}</strong>
       <b ref={time} className="rb-keytime" />
       <span className="rb-keybar">
         <i ref={bar} />
@@ -539,7 +539,7 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
   return (
     <div className="rb-modal">
       <div className="rb-card rb-reward" role="dialog" aria-modal="true" aria-label="Dungeon cleared">
-        <span className="rb-kicker">{r.key ? `Mythic +${r.key.key}` : TIERS[r.tier]!.name} · {REGIONS[r.region].name}</span>
+        <span className="rb-kicker">{r.key ? `Riftstone +${r.key.key}` : TIERS[r.tier]!.name} · {REGIONS[r.region].name}</span>
         <h2>{r.key ? (r.key.up > 0 ? 'In time!' : 'Out of time') : r.region === 'crypt' ? 'The Rift is closed!' : `${REGIONS[r.region].name} cleared!`}</h2>
         {r.key && (
           <div className={`rb-keyend${r.key.up > 0 ? ' is-in' : ' is-late'}`}>
@@ -548,7 +548,7 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
             </span>
             <span>
               {r.key.up > 0
-                ? `${r.key.up === 3 ? 'Under 60% of the clock' : r.key.up === 2 ? 'Under 80% of the clock' : 'Inside the clock'}: Mythic +${r.key.key + r.key.up} is open${r.key.stone > r.key.key + r.key.up ? ` (your highest is +${r.key.stone})` : ''}.`
+                ? `${r.key.up === 3 ? 'Under 60% of the clock' : r.key.up === 2 ? 'Under 80% of the clock' : 'Inside the clock'}: Riftstone +${r.key.key + r.key.up} is open${r.key.stone > r.key.key + r.key.up ? ` (your highest is +${r.key.stone})` : ''}.`
                 : 'Late: the run still pays, and nothing is lost. Try it again, or a level lower.'}
               {r.key.best ? ' A new best here.' : ''}
             </span>
@@ -590,7 +590,7 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
           </button>
           {r.key && (
             <button className="rb-btn" onClick={() => engine.keyAgain()}>
-              Mythic +{h.keystone} here
+              Riftstone +{h.keystone} here
             </button>
           )}
           <button className="rb-btn is-gold" onClick={() => engine.returnHome()} autoFocus>

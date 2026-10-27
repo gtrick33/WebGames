@@ -233,7 +233,7 @@ describe('Sigilfall: the Vale (Act I)', () => {
     const [a, b, c] = save.heroes as Character[];
     expect(questState(a!, 'mill-the-bridge')).toBe('done');
     for (const id of ['hearth-the-riders-come', 'hearth-hold-the-wall', 'hearth-the-ram', 'hearth-the-shrine']) expect(questState(b!, id), id).toBe('done');
-    // a hero who had just beaten Varric plays the mill road
+    // a hero who had just beaten Harlan plays the mill road
     expect(questState(c!, 'mill-the-bridge')).not.toBe('done');
     expect(questState(c!, 'mill-the-bridge')).not.toBe('locked');
   });

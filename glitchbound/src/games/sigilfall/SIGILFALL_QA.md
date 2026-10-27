@@ -34,7 +34,7 @@ a story beat.
 | Interiors: doors in and out, raid-night bars, everyone reachable, nobody rides indoors | `sigilfall-interiors` |
 | Scenes and review presets: everyone named is there, skip, once only, reload-safe | `sigilfall-scenes` |
 | Art integrity (every named piece exists), the ground painter, the hero's look | `sigilfall-art`, `sigilfall-ground`, `sigilfall-look` |
-| Mythic+ (scaling, the week's affixes, the clock, levels opening, nothing lost when late, the Riftstone's source) and Paragon (levels, points, caps, stats, saves) | `sigilfall-keystones` |
+| Riftstone (scaling, the week's affixes, the clock, levels opening, nothing lost when late, the Riftstone's source) and Paragon (levels, points, caps, stats, saves) | `sigilfall-keystones` |
 
 ## Known issues
 
@@ -128,10 +128,10 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
 - **Lands**: Briarhollow is laid out 35% roomier (`SpreadPlan`) with farms, an orchard and two cottages in
   the new room; the Whisperwood is drawn 1.4 times larger (120 × 70) with twelve more packs.
 
-## Endgame: Mythic+ and Paragon (2026-10-27)
+## Endgame: Riftstone and Paragon (2026-10-27)
 
-- **Mythic+** (`data/keystones.ts`), climbed as Diablo's rifts are: clearing Duskspire on Mythic hands over a
-  Riftstone and opens Mythic +1. At a waystone any dungeon can be run at any level opened so far ("Mythic +"
+- **The Riftstone** (`data/keystones.ts`), climbed as Diablo's rifts are: clearing Duskspire on Mythic hands over a
+  Riftstone and opens Riftstone +1. At a waystone any dungeon can be run at any level opened so far ("Riftstone +"
   next to the tiers, a − / + picker). Enemies are at level 72 with ×4·1.08ᵏ health and ×2.1·1.05ᵏ damage;
   the week's affixes join at +2, +4, +7 and +10. The clock is each dungeon's own (about 1.3 times the bot
   priest's time on +1); falls cost 10 s. Under 60/80/100% of the clock opens three, two or one more levels;
@@ -146,6 +146,6 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
   vat-spawn are a damage check that stalls the bot from +5. The bot never spends Paragon points or plays
   around affixes, so a person should climb further.
 - Checked in the browser: the picker and the week's affixes, the clock in a run (and on a short landscape
-  stage, where it moves to a line at the top middle), the results card with "Mythic +N here", the Paragon
+  stage, where it moves to a line at the top middle), the results card with "Riftstone +N here", the Paragon
   box and badge, and a reload keeping the stone and Paragon (save v11).
 - Also fixed: the death, pause and results screens said "Return to Emberwick"; home is Briarhollow.

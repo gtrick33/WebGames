@@ -167,7 +167,7 @@ export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: numb
     } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true });
     return;
   }
-  // curses of different kinds (shadow, arcane, holy) or from different skills (Corruption and Unstable
+  // curses of different kinds (shadow, arcane, holy) or from different skills (Rotting Curse and Unstable
   // Affliction) are separate; the same skill's curse refreshes
   const dtype = id === 'curse' ? (s.dmgType ?? 'shadow') : undefined;
   const from = id === 'curse' ? src : undefined;

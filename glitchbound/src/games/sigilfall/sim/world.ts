@@ -62,7 +62,7 @@ export interface WorldOptions {
   from?: RegionId;
   /** Finished quests wait to be handed in (the game); false pays them out at once (story tests that skip the talk). */
   handIns?: boolean;
-  /** A Mythic+ run at this stone level (dungeons only), with the week's affixes for it. */
+  /** A Riftstone run at this stone level (dungeons only), with the week's affixes for it. */
   key?: number;
   affixes?: KeyAffix[];
 }
@@ -70,7 +70,7 @@ export interface WorldOptions {
 /** Seconds as m:ss. */
 export const clockText = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
-/** A Mythic+ run: its clock (seconds so far and falls), and how it ended. */
+/** A Riftstone run: its clock (seconds so far and falls), and how it ended. */
 export interface KeyRun {
   key: number;
   affixes: KeyAffix[];
@@ -251,11 +251,11 @@ export class World {
   places: Record<string, { x: number; y: number }> = {};
   private bramble = 0;
   private hpBefore = 0;
-  /** A Mythic+ run, if this is one. */
+  /** A Riftstone run, if this is one. */
   keyRun: KeyRun | null = null;
-  /** Sanguine pools: blood that heals enemies standing in it. */
+  /** Festering pools: blood that heals enemies standing in it. */
   private pools: { x: number; y: number; r: number; t: number }[] = [];
-  /** Enemies already in a rage (Raging). */
+  /** Enemies already in a rage (Cornered). */
   private raged = new WeakSet<Enemy>();
 
   constructor(o: WorldOptions) {
@@ -265,7 +265,7 @@ export class World {
     this.tier = this.region.safe ? 0 : o.tier;
     this.mods = this.region.safe ? [] : o.mods;
     this.level = this.region.level + TIERS[this.tier]!.levels;
-    // Mythic+: the dungeon at Mythic's top level, the stone's might and the week's affixes
+    // Riftstone: the dungeon at Mythic's top level, the stone's might and the week's affixes
     if (o.key && o.key >= KEY_MIN && this.region.kind === 'dungeon') {
       const affixes = o.affixes ?? [];
       this.keyRun = { key: o.key, affixes, par: keyPar(this.region), t: 0, deaths: 0, end: null };
@@ -335,7 +335,7 @@ export class World {
       dir: 0,
       hp: this.build.maxHp,
       maxHp: this.build.maxHp,
-      // mana, energy and focus start full; rage and Holy Power are earned in the fight
+      // mana, energy and focus start full; rage and Zeal are earned in the fight
       mana: this.build.resource?.kind === 'rage' || this.build.resource?.kind === 'holy' ? 0 : this.build.maxMana,
       maxMana: this.build.maxMana,
       shield: 0,
@@ -612,7 +612,7 @@ export class World {
     }
   }
 
-  /** Health on top of an enemy's level: the difficulty tier and rift modifiers, or a Mythic+ stone's might. */
+  /** Health on top of an enemy's level: the difficulty tier and rift modifiers, or a Riftstone level's might. */
   private hpMul(boss: boolean): number {
     const k = this.keyRun;
     if (!k) return TIERS[this.tier]!.hp * (this.mods.includes('fortified') ? 1.4 : 1);
@@ -1059,7 +1059,7 @@ export class World {
     const regen = stats.regen + (calm ? p.maxHp * (this.region.safe ? 0.3 : OUT_OF_COMBAT_HP) : 0);
     if (regen > 0 && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + regen * dt);
     // the resource: mana trickles back (fast out of combat), energy and focus come back at a fixed rate,
-    // rage and Holy Power fade once the fight is over
+    // rage and Zeal fade once the fight is over
     const res = this.build.resource;
     if (res && p.maxMana > 0) {
       if (res.kind === 'mana') {
@@ -1542,7 +1542,7 @@ export class World {
     this.emit({ t: 'save' });
   }
 
-  /* ---------------------------------------------------------- Mythic+ */
+  /* ---------------------------------------------------------- Riftstone */
 
   /** The clock runs (at full speed even while the hero is down), enemies rage, blood pools heal. */
   private updateKeyRun(rawDt: number, dt: number): void {
@@ -1567,7 +1567,7 @@ export class World {
     }
   }
 
-  /** An enemy falls in a Mythic+ run: what the week's affixes do with it. */
+  /** An enemy falls in a Riftstone run: what the week's affixes do with it. */
   private keyOnKill(e: Enemy): void {
     const k = this.keyRun!;
     const p = this.player;
@@ -1615,7 +1615,7 @@ export class World {
     this.emit({
       t: 'banner',
       text: up > 0 ? `In time: ${clockText(time)}` : `Out of time: ${clockText(time)}`,
-      sub: up > 0 ? (h.keystone > before ? `Mythic +${k.key} · up to Mythic +${h.keystone} open` : `Mythic +${k.key}`) : `Mythic +${k.key} · the clock was ${clockText(k.par)}`,
+      sub: up > 0 ? (h.keystone > before ? `Riftstone +${k.key} · up to Riftstone +${h.keystone} open` : `Riftstone +${k.key}`) : `Riftstone +${k.key} · the clock was ${clockText(k.par)}`,
     });
   }
 
@@ -2016,10 +2016,10 @@ export class World {
       this.run.gold += r.gold;
       if (r.unlock && !h.unlocked.includes(r.unlock)) h.unlocked.push(r.unlock);
       if (r.tier !== undefined) h.tier = Math.max(h.tier, r.tier);
-      // the Riftstone (data/keystones.ts): Mythic+ opens
+      // the Riftstone (data/keystones.ts): Riftstone opens
       if (r.keystone && h.keystone < r.keystone) {
         h.keystone = r.keystone;
-        this.emit({ t: 'toast', text: `Riftstone: Mythic +${h.keystone}. Any dungeon, against the clock: choose it at a waystone`, tone: 'good' });
+        this.emit({ t: 'toast', text: `Riftstone +${h.keystone} is open: any dungeon, against the clock. Choose it at a waystone`, tone: 'good' });
       }
       if (r.item) {
         let item: Item | null;

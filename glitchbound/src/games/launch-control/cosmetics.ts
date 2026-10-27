@@ -56,7 +56,7 @@ export const LIVERIES: Cosmetic[] = [
   { id: 'l-none', kind: 'livery', name: 'Clean', price: 0, colors: [] },
   { id: 'l-stripes', kind: 'livery', name: 'Racing Stripes', price: 700, colors: ['#ffffff'] },
   { id: 'l-roundel', kind: 'livery', name: 'Number 7', price: 900, colors: ['#ffffff', '#1d1238'] },
-  { id: 'l-swoosh', kind: 'livery', name: 'Side Swoosh', price: 1800, colors: ['#1d1238'], rank: 6 },
+  { id: 'l-swoosh', kind: 'livery', name: 'Side Sweep', price: 1800, colors: ['#1d1238'], rank: 6 },
   { id: 'l-flames', kind: 'livery', name: 'Hot Rod Flames', price: 3500, colors: ['#ff8500', '#ffd23f'], rank: 10 },
   { id: 'l-checker', kind: 'livery', name: 'Checker Tail', price: 3500, colors: ['#ffffff', '#1d1238'], rank: 10 },
   { id: 'l-camo', kind: 'livery', name: 'Splatter Camo', price: 8000, colors: ['#1d3557', '#06d6a0'], rank: 18 },

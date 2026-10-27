@@ -50,7 +50,7 @@ export const PRESETS: Preset[] = [
   { id: 'crownfall-memory', label: 'Crownfall: Vaelmoor whole (scene)', region: 'vaelmoor-remembered', active: 'crownfall-vaelmoor', level: 60 },
   { id: 'crownfall-ash-crown', label: 'Crownfall: the Ash Crown', region: 'vaelmoor-remembered', active: 'crownfall-the-ash-crown', done: ['crownfall-break-it'], level: 60 },
   { id: 'the-bell', label: 'Epilogue: the bell (scene)', region: 'briarhollow', active: 'epilogue-the-bell', level: 60 },
-  { id: 'mythic-plus', label: 'Postgame: Mythic+ (a Riftstone at +1)', region: 'briarhollow', done: ['postgame-crownfall-mythic'], level: 60 },
+  { id: 'mythic-plus', label: 'Postgame: the Riftstone (+1)', region: 'briarhollow', done: ['postgame-crownfall-mythic'], level: 60 },
 ];
 
 /** Puts a hero at a preset's beat: its story done, the beat under way, raised to its level, its lands open. */

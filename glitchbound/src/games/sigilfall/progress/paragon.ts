@@ -3,7 +3,7 @@ import type { Stats } from '../data/types';
 /**
  * Paragon levels: experience past level 60 keeps counting. Every Paragon level is a point to put into one of
  * four lines (the Hero panel): Might and Vigor without end, Precision and Toughness up to PARA_CAP points each.
- * With Mythic+ loot it is what lets a hero climb a stone further every week. Points are free to take back.
+ * With Riftstone loot it is what lets a hero climb a stone further every week. Points are free to take back.
  */
 
 export type ParaStat = 'might' | 'vigor' | 'precision' | 'toughness';

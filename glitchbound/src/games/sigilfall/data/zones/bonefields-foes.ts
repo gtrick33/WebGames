@@ -13,7 +13,7 @@ export const BONEFIELDS_FOES: Record<string, EnemyDef> = {
   /* ------------------------------------------------------- the Hallow King's own */
   'death-knight': {
     id: 'death-knight',
-    name: 'Death Knight',
+    name: 'Grave Knight',
     sprite: 'death-knight',
     ai: 'caster',
     hp: 125,

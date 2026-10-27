@@ -101,7 +101,7 @@ export const HIGHWALL_FOES: Record<string, EnemyDef> = {
   },
   'death-knight-initiate': {
     id: 'death-knight-initiate',
-    name: 'Death Knight Initiate',
+    name: 'Grave Knight Initiate',
     sprite: 'death-knight-initiate',
     ai: 'charger',
     hp: 110,

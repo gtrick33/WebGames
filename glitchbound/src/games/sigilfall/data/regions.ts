@@ -322,7 +322,7 @@ export const TIERS = [
 
 /** Optional modifiers for Heroic and Mythic runs: harder enemies, more rewards. */
 export const RIFT_MODS = {
-  fortified: { name: 'Fortified', text: 'Enemies have 40% more health.', bonus: 0.25 },
+  fortified: { name: 'Hardened', text: 'Enemies have 40% more health.', bonus: 0.25 },
   hasted: { name: 'Hasted', text: 'Enemies move and attack 20% faster.', bonus: 0.25 },
   volatile: { name: 'Volatile', text: 'Enemies explode a moment after they die.', bonus: 0.2 },
 } as const;

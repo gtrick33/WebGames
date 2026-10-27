@@ -41,13 +41,13 @@ export const MODEL_FILE: Record<string, string> = {
   falkon: 'rg/Car_2_F',
   monarch: 'cosmo/mobil',
   // legend: modern muscle, an electric and a V12
-  hellion: 'cosmo/kamaro',
+  hellion: 'cosmo/brawler',
   elektra: 'cosmo/coupe',
-  'stallone-812': 'cosmo/italia',
+  'stallone-812': 'cosmo/sprinter',
   // kings: the hypercar last
-  peregrine: 'cosmo/ghini',
-  toro: 'cosmo/lamb',
-  rail: 'cosmo/fenyr',
+  peregrine: 'cosmo/raptor',
+  toro: 'cosmo/wedge',
+  rail: 'cosmo/arrow',
 };
 
 /** RG cars whose factory colour another car already wears: their stock paint is their roster colour instead. */

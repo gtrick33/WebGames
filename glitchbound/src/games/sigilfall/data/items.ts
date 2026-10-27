@@ -179,7 +179,7 @@ export const ITEMS: ItemDef[] = [
   },
   {
     id: 'bloodthirst-blade',
-    name: 'Bloodthirst Blade',
+    name: 'Blood Hunger Blade',
     slot: 'weapon',
     rarity: 'rare',
     cls: 'warrior',
@@ -399,7 +399,7 @@ export const ITEMS: ItemDef[] = [
   },
   {
     id: 'thornmail',
-    name: 'Thornmail',
+    name: 'Bramble Hauberk',
     slot: 'chest',
     rarity: 'rare',
     icon: 'plate',
@@ -513,7 +513,7 @@ export const ITEMS: ItemDef[] = [
   /* ------------------------------------------------------------- paladin */
   {
     id: 'dawnbreaker',
-    name: 'Dawnbreaker',
+    name: 'Daybringer',
     slot: 'weapon',
     rarity: 'epic',
     cls: 'paladin',
@@ -752,7 +752,7 @@ export const ITEMS: ItemDef[] = [
   /* ------------------------------------- quest rewards: Thornvale, the Saltmarsh */
   {
     id: 'blackhand-coat',
-    name: 'Blackhand’s Coat',
+    name: 'Blackglove’s Coat',
     slot: 'chest',
     rarity: 'epic',
     icon: 'jerkin',
@@ -776,7 +776,7 @@ export const ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'Varric never fought fair. Now neither do you.',
+    lore: 'Harlan never fought fair. Now neither do you.',
     minLevel: 14,
     special: true,
   },

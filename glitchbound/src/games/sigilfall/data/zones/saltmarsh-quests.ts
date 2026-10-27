@@ -2,7 +2,7 @@ import type { NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
  * Gullport's people and the Saltmarsh's quests. Captain Saltbeard's smugglers run grieflight powder
- * through Smugglers' Cove (the same powder Varric Blackhand was buying), the mirefin fishfolk have
+ * through Smugglers' Cove (the same powder Harlan Blackglove was buying), the mirefin fishfolk have
  * come up out of the shoals, and something under the grotto's water is calling them: a priestess who
  * drowned with her chapel. Ines, Marla and Dorran have errands of their own. The story opens once the
  * hero is halfway through Thornvale's and has been to the coast.
@@ -37,7 +37,7 @@ export const SALTMARSH_QUESTS: QuestDef[] = [
     id: 'rift-powder',
     name: 'Grieflight Powder',
     giver: 'harbormaster-quill',
-    text: 'The smugglers’ bombers throw kegs that burn purple. That is grieflight powder, the same powder Varric Blackhand was buying, ground from glass that the Ash Crown has touched. Quill wants five kegs as evidence, preferably not on fire.',
+    text: 'The smugglers’ bombers throw kegs that burn purple. That is grieflight powder, the same powder Harlan Blackglove was buying, ground from glass that the Ash Crown has touched. Quill wants five kegs as evidence, preferably not on fire.',
     objective: { kind: 'loot', region: 'saltmarsh', item: 'Powder Keg', from: ['smuggler-bomber'], chance: 0.4, count: 5, label: 'Take Powder Kegs from smuggler bombers' },
     after: ['fish-out-of-water'],
     zone: 'saltmarsh',
@@ -195,7 +195,7 @@ export const SALTMARSH_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'epilogue-the-camp-goes-home', state: 'done' }, lines: ['Isolde came home by the coast road with a cutter she stole from a salvager. I gave her a harbor. She gave me a lecture about my moorings.', 'Ines has the Patience on the water again. She says she’s never selling it. She says it every morning.'] },
       {
         when: { quest: 'east-to-gullport', state: 'active' },
-        lines: ['Millbrook’s reeve sent you? About powder? Sit down. No, stand. You’ll be going out again.', 'Varric Blackhand was buying it. Captain Saltbeard is selling it. And I have a coast full of fishfolk who’ve forgotten to be afraid of us.'],
+        lines: ['Millbrook’s reeve sent you? About powder? Sit down. No, stand. You’ll be going out again.', 'Harlan Blackglove was buying it. Captain Saltbeard is selling it. And I have a coast full of fishfolk who’ve forgotten to be afraid of us.'],
       },
       {
         when: { quest: 'chapel-on-the-road', state: 'active' },

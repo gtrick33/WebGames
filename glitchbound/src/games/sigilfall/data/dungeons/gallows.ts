@@ -3,7 +3,7 @@ import type { Marker, RegionDef } from '../types';
 /*
  * Gallows Keep (levels 13-16): the Gallows Gang's hideout, dug into Gallows Hill in Thornvale. A tunnel
  * in from the hillside, the cellars where they keep the loot, the barracks yard, the gallows where the
- * Hangman works, the kennels, and the King's Hall where Varric Blackhand holds court. The rooms seal
+ * Hangman works, the kennels, and the King's Hall where Harlan Blackglove holds court. The rooms seal
  * while you fight in them (the letters below are their floors); a cracked wall by the way in hides the
  * gang's strongbox.
  */

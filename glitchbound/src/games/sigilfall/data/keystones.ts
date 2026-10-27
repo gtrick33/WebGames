@@ -2,21 +2,21 @@ import { BOSSES } from './bosses';
 import type { RegionDef, RegionId } from './types';
 
 /**
- * Mythic+ and the Riftstone: the endgame past Mythic, climbed as Diablo's rifts are. Clearing Duskspire on
- * Mythic earns a Riftstone and opens Mythic +1; any dungeon can be run at any level the stone has opened,
+ * Riftstone and the Riftstone: the endgame past Mythic, climbed as Diablo's rifts are. Clearing Duskspire on
+ * Mythic earns a Riftstone and opens Riftstone +1; any dungeon can be run at any level the stone has opened,
  * against the clock. Every level makes its enemies tougher (without end), and affixes join at +2, +4, +7 and
  * +10, a new set each week. Beat the clock and the next one, two or three levels open (by how fast); late, the
  * run still pays, and nothing is lost. Loot grows with the level, one item level a level past Mythic's, so
  * higher levels make better gear, and better gear (with Paragon points) the next level.
  */
 
-/** The enemy level every Mythic+ run is fought at: a level-60 dungeon on Mythic (bosses one more). */
+/** The enemy level every Riftstone run is fought at: a level-60 dungeon on Mythic (bosses one more). */
 export const KEY_LEVEL = 72;
 /** The lowest level. */
 export const KEY_MIN = 1;
 /** Seconds each fall costs on the clock. */
 export const KEY_DEATH = 10;
-/** The highest item level loot is ever made at (Mythic+ +28 and up). */
+/** The highest item level loot is ever made at (Riftstone +28 and up). */
 export const MAX_IL = 100;
 
 /** Health and damage on top of an enemy's level at a stone's level: Mythic's, and more with every level. */
@@ -36,12 +36,12 @@ export const keyCache = (key: number): number => 2 + Math.floor(key / 3);
 export type KeyAffix = 'fortified' | 'tyrannical' | 'bolstering' | 'sanguine' | 'raging' | 'bursting' | 'volatile' | 'hasted';
 
 export const KEY_AFFIXES: Record<KeyAffix, { name: string; text: string }> = {
-  fortified: { name: 'Fortified', text: 'Enemies other than bosses have 30% more health and deal 15% more damage.' },
-  tyrannical: { name: 'Tyrannical', text: 'Bosses have 30% more health and deal 15% more damage.' },
-  bolstering: { name: 'Bolstering', text: 'When an enemy dies, the others near it grow stronger.' },
-  sanguine: { name: 'Sanguine', text: 'Fallen enemies leave a pool of blood that heals their friends and hurts you.' },
-  raging: { name: 'Raging', text: 'Enemies other than bosses fly into a rage below 30% health.' },
-  bursting: { name: 'Bursting', text: 'Every enemy that dies makes you bleed a little for a few seconds; the bleeding stacks.' },
+  fortified: { name: 'Hardened', text: 'Enemies other than bosses have 30% more health and deal 15% more damage.' },
+  tyrannical: { name: 'Crowned', text: 'Bosses have 30% more health and deal 15% more damage.' },
+  bolstering: { name: 'Grieving', text: 'When an enemy dies, the others near it grow stronger.' },
+  sanguine: { name: 'Festering', text: 'Fallen enemies leave a pool of blood that heals their friends and hurts you.' },
+  raging: { name: 'Cornered', text: 'Enemies other than bosses fly into a rage below 30% health.' },
+  bursting: { name: 'Splintering', text: 'Every enemy that dies makes you bleed a little for a few seconds; the bleeding stacks.' },
   volatile: { name: 'Volatile', text: 'Enemies explode a moment after they die.' },
   hasted: { name: 'Hasted', text: 'Enemies move and attack 20% faster.' },
 };
@@ -55,7 +55,7 @@ export function weekAffixes(week: number): { at: number; affix: KeyAffix }[] {
     { at: 2, affix: a[0]! },
     { at: 4, affix: b[week % b.length]! },
     { at: 7, affix: c[Math.floor(week / 2) % c.length]! },
-    // from +10 both Fortified and Tyrannical
+    // from +10 both Hardened and Crowned
     { at: 10, affix: a[1]! },
   ];
 }
@@ -68,7 +68,7 @@ export const weekOf = (ms: number): number => Math.floor((ms / 86_400_000 + 3) /
 
 /**
  * Each dungeon's clock, in seconds: about 1.3 times what the play-bot's priest (the steadier of the slower
- * classes) takes on Mythic +1 in Mythic gear (item level 72), rounded to 15 s. Measured on 2026-10-27; the
+ * classes) takes on Riftstone +1 in Mythic gear (item level 72), rounded to 15 s. Measured on 2026-10-27; the
  * warrior is faster almost everywhere, so a quick class beats +1 by enough to open +4.
  */
 const KEY_PARS: Partial<Record<RegionId, number>> = {

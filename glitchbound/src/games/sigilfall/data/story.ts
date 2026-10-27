@@ -24,7 +24,7 @@ export const STORY_QUESTS: QuestDef[] = [
     name: 'Ash-Gold',
     giver: 'reeve-aldous',
     zone: 'thornvale',
-    text: 'Varric’s strongbox was full of coins no mint ever struck: grey, weightless, always cold, stamped with a crown of grey hands. Ash-gold: the Host pays its traitors in it. Elder Maren must see it, and Millbrook’s grain carts can follow you to Briarhollow.',
+    text: 'Harlan’s strongbox was full of coins no mint ever struck: grey, weightless, always cold, stamped with a crown of grey hands. Ash-gold: the Host pays its traitors in it. Elder Maren must see it, and Millbrook’s grain carts can follow you to Briarhollow.',
     objective: { kind: 'talk', npc: 'maren', label: 'Bring the ash-gold to Elder Maren' },
     after: ['mill-the-bridge'],
     reward: { xp: 1500, gold: 200, text: 'Maren weighs a coin on her palm: nothing. “The Host buys traitors with this,” she says. “Then it has been buying them here.”' },
@@ -207,6 +207,6 @@ export const STORY_QUESTS: QuestDef[] = [
     objective: { kind: 'clear', region: 'duskspire', tier: 2, label: 'Clear Duskspire on Mythic' },
     after: ['postgame-crownfall-heroic'],
     level: 60,
-    reward: { xp: 12000, gold: 5000, item: 'glitch-shard', keystone: 1, text: 'The bell in Briarhollow rings on its own that night, once. Haldor says it was the wind. Haldor is lying. In the morning there is a stone on its rope, warm as a hand, with the Tear still turning in it: a Riftstone. Mythic +1, and every dungeon in the Vale again, against the clock.' },
+    reward: { xp: 12000, gold: 5000, item: 'glitch-shard', keystone: 1, text: 'The bell in Briarhollow rings on its own that night, once. Haldor says it was the wind. Haldor is lying. In the morning there is a stone on its rope, warm as a hand, with the Tear still turning in it: a Riftstone. Riftstone +1, and every dungeon in the Vale again, against the clock.' },
   },
 ];

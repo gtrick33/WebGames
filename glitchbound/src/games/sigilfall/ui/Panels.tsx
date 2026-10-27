@@ -751,7 +751,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   const [sel, setSel] = useState<RegionId>(w.region.id);
   const [tier, setTier] = useState(Math.min(h.tier, w.tier || h.tier));
   const [mods, setMods] = useState<RiftMod[]>([]);
-  // Mythic+: any level the Riftstone has opened (0: the tiers instead)
+  // Riftstone: any level the Riftstone has opened (0: the tiers instead)
   const [stone, setStone] = useState(w.keyRun ? Math.min(w.keyRun.key, h.keystone) : 0);
   const r = REGIONS[sel];
   const open = h.unlocked.includes(sel);
@@ -780,7 +780,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
           <div>
             <strong>
               {open || r.kind === 'town' ? r.name : 'Unknown land'}{' '}
-              <span className="rb-dim rb-small">{r.kind === 'town' ? 'Town' : useKey ? `Dungeon · level ${KEY_LEVEL} · Mythic +${stone}` : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0] + TIERS[pick]!.levels}-${r.levels[1] + TIERS[pick]!.levels}`}</span>
+              <span className="rb-dim rb-small">{r.kind === 'town' ? 'Town' : useKey ? `Dungeon · level ${KEY_LEVEL} · Riftstone +${stone}` : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0] + TIERS[pick]!.levels}-${r.levels[1] + TIERS[pick]!.levels}`}</span>
             </strong>
             <span className="rb-small rb-dim">{open ? r.blurb : sel === 'whisperwood' ? 'Finish your training with Elder Maren.' : sel === 'crypt' ? 'Defeat Grimtusk in the Whisperwood.' : 'Not discovered yet: walk there to find it.'}</span>
           </div>
@@ -811,7 +811,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
               ))}
               {keyed && (
                 <button className={useKey ? 'is-on rb-mplus' : 'rb-mplus'} onClick={() => setStone(stone || h.keystone)}>
-                  Mythic +
+                  Riftstone
                 </button>
               )}
             </div>
@@ -841,7 +841,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   );
 }
 
-/** Mythic+ at a waystone: the level (any the Riftstone has opened), what it does, the clock, this week's affixes. */
+/** Riftstone at a waystone: the level (any the Riftstone has opened), what it does, the clock, this week's affixes. */
 function KeyPicker({ region, stone, top, best, week, onPick }: { region: RegionDef; stone: number; top: number; best: number; week: number; onPick: (n: number) => void }) {
   const sc = keyScale(stone);
   const on = keyAffixes(stone, week);
@@ -851,7 +851,7 @@ function KeyPicker({ region, stone, top, best, week, onPick }: { region: RegionD
         <button className="rb-btn is-small" aria-label="One level lower" disabled={stone <= KEY_MIN} onClick={() => onPick(stone - 1)}>
           −
         </button>
-        <strong className="rb-key-lvl">Mythic +{stone}</strong>
+        <strong className="rb-key-lvl">Riftstone +{stone}</strong>
         <button className="rb-btn is-small" aria-label="One level higher" disabled={stone >= top} onClick={() => onPick(stone + 1)}>
           +
         </button>

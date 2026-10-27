@@ -157,7 +157,7 @@ export function skillCost(w: World, spec: SkillSpec, slot: SlotKey): number {
   if (slot === 'ult' || spec.cost <= 0 || p.maxMana <= 0) return 0;
   const kind = w.build.resource?.kind;
   if (kind === 'mana') return (spec.cost * p.maxMana) / 100;
-  // Holy Power comes in whole points
+  // Zeal comes in whole points
   return kind === 'holy' ? Math.max(0, Math.round(spec.cost)) : spec.cost;
 }
 

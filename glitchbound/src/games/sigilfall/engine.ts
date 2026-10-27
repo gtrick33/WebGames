@@ -57,7 +57,7 @@ export interface RunSummary {
   items: Item[];
   seconds: number;
   cleared: boolean;
-  /** A Mythic+ run's end: the stone run, the clock against the dungeon's, and the stone after it. */
+  /** A Riftstone run's end: the stone run, the clock against the dungeon's, and the stone after it. */
   key?: { key: number; time: number; par: number; up: number; stone: number; best: boolean; marks: number; deaths: number };
 }
 
@@ -109,7 +109,7 @@ export class SigilEngine {
   private deathAt = 0;
   private rewardAt = 0;
   private nextToast = 1;
-  /** The expedition under way: where, on which tier, and the stone's level for a Mythic+ run (else 0). */
+  /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
   private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number } | null = null;
   private hidden = false;
   /** Pause asked for by the arcade (left full screen, scrolled away). */
@@ -575,11 +575,11 @@ export class SigilEngine {
     if (!h) return;
     const region = REGIONS[to];
     if (!h.unlocked.includes(to)) return;
-    // a Mythic+ run is a stone the hero holds (never above it), in a dungeon
+    // a Riftstone run is a stone the hero holds (never above it), in a dungeon
     if (key > 0 && (region.kind !== 'dungeon' || key > h.keystone)) return;
     const prev = this.world;
     if (prev) this.collectLeftovers(prev, true);
-    // expeditions: leaving the village starts one, coming back ends it; a Mythic+ run is always its own
+    // expeditions: leaving the village starts one, coming back ends it; a Riftstone run is always its own
     if (region.safe) this.endRun(true);
     else if (key > 0) {
       this.endRun(false);
@@ -616,7 +616,7 @@ export class SigilEngine {
     for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
     this.world = w;
     this.renderer.snap(w);
-    const sub = region.safe ? region.subtitle : w.keyRun ? `Mythic +${w.keyRun.key} · the clock is running` : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`;
+    const sub = region.safe ? region.subtitle : w.keyRun ? `Riftstone +${w.keyRun.key} · the clock is running` : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`;
     this.ui = { ...this.ui, panel: null, travel: null, dialogue: null, boss: null, death: false, reward: null, banner: { text: region.name, sub, id: performance.now() } };
     this.persist();
     this.bump();
@@ -653,7 +653,7 @@ export class SigilEngine {
       return;
     }
     const s = this.summary(false);
-    // a Mythic+ stone beaten in time is worth the most: higher stones climb the board
+    // a Riftstone level beaten in time is worth the most: higher stones climb the board
     const score = Math.round(s.xp + s.gold * 2 + s.bosses * 250 + (s.key && s.key.up > 0 ? s.key.key * 1000 : 0));
     this.hero.stats.bestRun = Math.max(this.hero.stats.bestRun, score);
     // a review hero (jumped to a story beat) plays for looking, not for the leaderboard
@@ -977,7 +977,7 @@ export class SigilEngine {
     this.setUi({ reward: null });
   }
 
-  /** From a Mythic+ run's end: the same dungeon again, at the stone the hero holds now. */
+  /** From a Riftstone run's end: the same dungeon again, at the stone the hero holds now. */
   keyAgain(): void {
     const w = this.world;
     const h = this.hero;

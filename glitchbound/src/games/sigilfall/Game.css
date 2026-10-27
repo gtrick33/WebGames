@@ -915,7 +915,7 @@
   height: 12px;
   image-rendering: pixelated;
 }
-/* a Mythic+ run's clock, where the quest tracker goes (and kept on short screens, where the tracker hides) */
+/* a Riftstone run's clock, where the quest tracker goes (and kept on short screens, where the tracker hides) */
 .rb-tracker.rb-keyclock {
   gap: 2px;
   min-width: 150px;

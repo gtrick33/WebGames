@@ -33,7 +33,7 @@ export interface Cooldown {
 export interface Player {
   x: number;
   y: number;
-  /** The class's resource (mana, rage, energy, focus or Holy Power; 0 / 0 for a class without one). */
+  /** The class's resource (mana, rage, energy, focus or Zeal; 0 / 0 for a class without one). */
   mana: number;
   maxMana: number;
   vx: number;

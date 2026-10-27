@@ -116,7 +116,7 @@ export const RIFTSCAR_QUESTS: QuestDef[] = [
     id: 'the-pale-herald',
     name: 'The Pale Herald',
     giver: 'archmage-halloran',
-    text: 'At the top of the Spire the Pale Herald stands in the light of the Sigil of the Veil, feeding the Tear. He bought Varric with ash-gold, paid the Saltmarsh smugglers and the voidcallers who sang the Vale open, sold Nyx her own brother twice and carried Elyra into the Tear: the Hallow King’s voice, in every lie since the crypt. Climb the Spire of the Tear, silence him, and take back the Sigil of the Veil.',
+    text: 'At the top of the Spire the Pale Herald stands in the light of the Sigil of the Veil, feeding the Tear. He bought Harlan with ash-gold, paid the Saltmarsh smugglers and the voidcallers who sang the Vale open, sold Nyx her own brother twice and carried Elyra into the Tear: the Hallow King’s voice, in every lie since the crypt. Climb the Spire of the Tear, silence him, and take back the Sigil of the Veil.',
     objective: { kind: 'boss', boss: 'herald-in-the-spire', label: 'Defeat the Pale Herald at the top of the Spire' },
     after: ['the-veil-sentinel'],
     zone: 'riftscar',

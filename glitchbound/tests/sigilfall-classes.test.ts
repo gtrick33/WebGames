@@ -72,7 +72,7 @@ describe('sigilfall holy power', () => {
     p.cds.basic.charges = p.cds.basic.max;
     expect(cast(w, 'basic', 0)).toBe(true);
     expect(p.mana).toBe(1);
-    // Divine Storm costs 3
+    // Radiant Sweep costs 3
     p.mana = 2.9;
     expect(cast(w, 's1')).toBe(false);
     p.mana = 3;
@@ -206,7 +206,7 @@ describe('sigilfall fear', () => {
 });
 
 describe('sigilfall druid forms', () => {
-  it('Cat Form swaps the bar for claws and back again; Bear Form adds health', () => {
+  it('Lynx Shape swaps the bar for claws and back again; Bear Shape adds health', () => {
     const w = heroWith('druid', 8, 'cat-form');
     const p = w.player;
     const plainHp = p.maxHp;
@@ -230,7 +230,7 @@ describe('sigilfall druid forms', () => {
     expect(p.maxHp).toBeGreaterThan(plainHp * 1.2);
   });
 
-  it('a Feral druid’s Rip is a cat skill: it replaces Ferocious Bite in Cat Form and never sits on the caster bar', () => {
+  it('a Wildclaw druid’s Rip is a cat skill: it replaces Savage Bite in Lynx Shape and never sits on the caster bar', () => {
     const c = readyHero('druid', 12, 'uncommon', 7, 1);
     expect(c.spec).toBe(1);
     expect(learnedSkills(c)).not.toContain('rip');

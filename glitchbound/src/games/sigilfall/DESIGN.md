@@ -89,10 +89,10 @@ three talent trees. `classes.ts`, `skills.ts` and `talents.ts` gather them.
 | Warrior | Rage | earned by landing swings and taking hits, spent by heavy skills, fades after a fight; shield |
 | Mage | Mana | elemental bolts, novas and fields; Fire, Storm and Frost |
 | Ranger | Focus | refills steadily (faster with haste); arrows, traps and a wolf |
-| Paladin | Holy Power | 0 to 5 whole points: builders give one each, finishers spend three; heals from its own strikes |
+| Paladin | Zeal | 0 to 5 whole points: builders give one each, finishers spend three; heals from its own strikes |
 | Priest | Mana | holy bolts and heals over time, or shadow curses, a drain and fear |
-| Warlock | Mana | curses that tick, a life drain, fear, and demons that fight beside them (Life Tap trades health for mana) |
-| Druid | Mana | spells in caster form; Cat Form and Bear Form swap the whole bar for claws or paws |
+| Warlock | Mana | curses that tick, a life drain, fear, and demons that fight beside them (Blood Tithe trades health for mana) |
+| Druid | Mana | spells in caster form; Lynx Shape and Bear Shape swap the whole bar for claws or paws |
 
 Damage types: physical, fire, frost, lightning, poison, arcane, shadow, holy, nature. Statuses add bleed (a
 physical DoT that ignores armor), curse (a DoT of the caster's type; different types stack) and fear (the enemy
@@ -100,7 +100,7 @@ runs from the hero and attacks nothing; bosses are only slowed, elites for half 
 poison and bleeding tick, chill slows, stun stops, and a curse cuts the healing taken (Vaelor's Hollowing).
 
 - **Specializations and talents.** At level 10 a hero picks one of their class's three trees as a
-  specialization: it gives that tree's ability (Bloodthirst, Flamestrike, Holy Shock, Rip in Cat Form…) and a
+  specialization: it gives that tree's ability (Blood Hunger, Flame Pillar, Sun Spark, Rip in Lynx Shape…) and a
   passive. One talent point per level from 10 (51 at 60). A tree has seven rows, each opening after 5 more
   points in it; the other two trees stay shut until 31 points are in the specialization. Changing
   specialization resets talents (free below level 15).
@@ -113,14 +113,14 @@ poison and bleeding tick, chill slows, stun stops, and a curse cuts the healing 
   the hero).
 - **Drains** channel on one enemy and heal by a share of the damage (`extra.drainHeal`).
 - **Forms** (`ClassDef.forms`): a shape swaps the basic attack, dodge and the other skill slots (the shape's
-  own skill stays, to change back), and adds stats; Bear Form adds health.
+  own skill stays, to change back), and adds stats; Bear Shape adds health.
 
 ## Mana, regeneration, potions
 
 Every class has a resource (`ClassDef.resource`): mana skills cost a share of the maximum (`SkillSpec.cost`),
 the others whole points; `SkillSpec.gen` gives some back on use (on a hit, for melee). Mana comes back slowly in
 a fight and the basic bolts return a little per hit (`extra.manaOnHit`). After 3 s without fighting, health and
-mana come back fast (10 % and 20 % a second), so potions are for trouble inside a fight; rage and Holy Power
+mana come back fast (10 % and 20 % a second), so potions are for trouble inside a fight; rage and Zeal
 fade instead. Potions (40 % health) are bought at the inn, five at most; nothing refills them for free. Dodges
 have real cooldowns (4.5 to 5.5 s).
 
@@ -212,7 +212,7 @@ shows them, and Duskspire's last door will open only for all seven. Acts I and I
 Regent's council), Tides (the drowned fleet) and Stone (the Deepforge).
 
 Dungeons are chains of rooms that seal while you fight their waves, with checkpoints and phased bosses: the
-Hollow Crypt (Warden Ossric, Morgrave), Gallows Keep (the Hangman, Varric Blackhand), the Smugglers' Grotto (the
+Hollow Crypt (Warden Ossric, Morgrave), Gallows Keep (the Hangman, Harlan Blackglove), the Smugglers' Grotto (the
 Drowned Priestess, Captain Saltbeard), the Rotmother's Cistern (Brother Pustule, the Rot-Mother), the Deepforge
 Halls (the Slag Colossus, Forgemaster Grold) and the Barrow of Kings (King Hrodric, Sir Corvane the Fallen). A
 dungeon module (`data/dungeons/<id>.ts`) holds its map, bosses, enemies and items; its own boss attacks are in
@@ -241,16 +241,16 @@ charges only along a clear lane; with a pillar in the way it walks round it.
 Difficulty: Normal, Heroic (+6 enemy levels, ×1.9 health, ×1.4 damage) and Mythic (+12, ×4, ×2.1), each opened
 by clearing the crypt on the tier below, with optional modifiers for more loot.
 
-**Mythic+** (the endgame past Mythic, `data/keystones.ts`), climbed as Diablo's rifts are: clearing Duskspire on
-Mythic earns a Riftstone and opens Mythic +1. Any dungeon can then be run at any level opened, against its clock
+**The Riftstone** (the endgame past Mythic, `data/keystones.ts`), climbed as Diablo's rifts are: clearing Duskspire on
+Mythic earns a Riftstone and opens Riftstone +1. Any dungeon can then be run at any level opened, against its clock
 (each fall costs 10 s): enemies at level 72 with ×4·1.08ᵏ health and ×2.1·1.05ᵏ damage, without end, and the week's
-affixes from +2 (Fortified or Tyrannical), +4 (Bolstering, Sanguine, Raging or Bursting), +7 (Volatile or Hasted)
+affixes from +2 (Hardened or Crowned), +4 (Grieving, Festering, Cornered or Splintering), +7 (Volatile or Hasted)
 and +10 (both of the first). Beaten under 100/80/60% of the clock, the next one, two or three levels open; late,
 nothing is lost. Loot is made at item level 72 + the level (at most 100), so higher levels make better gear.
 
 **Paragon** (`progress/paragon.ts`): experience past 60 earns Paragon levels, each a point for Might (+1% damage),
 Vigor (+1% health), Precision (crit, up to 50 points) or Toughness (armor and regeneration, up to 50), taken back
-for free. With Mythic+ loot it is what lets a hero climb further every week.
+for free. With Riftstone loot it is what lets a hero climb further every week.
 
 ## Saves
 
@@ -273,7 +273,7 @@ cloud saves (up to 96 KB); the backup stays on the device.
 - `tests/sigilfall-look.test.ts`: every armor piece changes the hero's look; dyes; the legs slot rolls, sells
   and saves; Scale2x.
 - `tests/sigilfall-economy.test.ts`: mana, rage, regeneration, potions, shops, aiming and dodge cooldowns.
-- `tests/sigilfall-classes.test.ts`: the version 1 migration, Holy Power, drains, heals over time, Shield
+- `tests/sigilfall-classes.test.ts`: the version 1 migration, Zeal, drains, heals over time, Shield
   Wall, companions (staying, healing, taunting, fading), fear and the druid's forms.
 - `tests/sigilfall-world.test.ts`: the zone generator, routes across the world, respawns, sleeping enemies,
   sights, loot and kill objectives, level warnings, perks, enemy tricks, and every class fighting its way through
@@ -282,7 +282,7 @@ cloud saves (up to 96 KB); the backup stays on the device.
   `tests/sigilfall-dungeon-<id>.test.ts` the same for each newer dungeon, plus its own boss mechanics.
 - `tests/sigilfall-world.test.ts` also plays every class through every open zone at its first levels, and checks
   that every sprite and townsfolk look is drawn once (zone art tables are merged).
-- `tests/sigilfall-keystones.test.ts`: Mythic+ (scaling, affixes, the clock with its falls, levels opening, every
+- `tests/sigilfall-keystones.test.ts`: Riftstone (scaling, affixes, the clock with its falls, levels opening, every
   affix at work, saves) and Paragon (levels, points, caps, stats); a level-60 hero in Mythic gear beats +1.
 - `tests/sigilfall-ids.test.ts`: every quest and item id is used once, and no two zones or dungeons define the same
   enemy, boss or person (their tables are merged, so a repeated id would quietly replace another).
@@ -298,4 +298,4 @@ cloud saves (up to 96 KB); the backup stays on the device.
 - Measured with the bot at level 60 in rare gear, the damage specializations deal about 20-44k a second
   (Retribution and the Beastmaster were cut back from 55-67k; each skill's curse is now its own, so Affliction's
   stack). The bot plays the default bar with the specialization's skill on it, so specs that want another bar
-  (Shadow casts, Cat and Bear Form) measure low; giving each specialization a bar of its own is still to come.
+  (Shadow casts, Cat and Bear Shape) measure low; giving each specialization a bar of its own is still to come.

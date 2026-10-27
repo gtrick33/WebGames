@@ -260,7 +260,7 @@ export const BOSSES: Record<string, BossDef> = {
   },
   varric: {
     id: 'varric',
-    name: 'Varric Blackhand',
+    name: 'Harlan Blackglove',
     title: 'King of the Gallows Gang',
     sprite: 'varric',
     hp: 3000,
@@ -284,7 +284,7 @@ export const BOSSES: Record<string, BossDef> = {
       },
       {
         at: 0.6,
-        banner: 'Blackhand whistles for his cutthroats!',
+        banner: 'Blackglove whistles for his cutthroats!',
         speed: 50,
         rest: [0.5, 0.9],
         enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['bandit-cutthroat', 'bandit-cutthroat'] } }, { id: 'vanish', w: 1, cd: 0, p: { r: 44, arc: 1, wind: 0.6, mul: 1.3 } }],

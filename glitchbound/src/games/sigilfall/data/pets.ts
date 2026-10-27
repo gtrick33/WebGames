@@ -43,7 +43,7 @@ export interface PetDef {
 export const PETS: Record<string, PetDef> = {
   imp: { id: 'imp', name: 'Imp', sprite: 'imp', hp: 0.35, dmg: 0.55, dmgType: 'fire', speed: 80, radius: 4, reach: 110, ranged: true, attackCd: 1.4, taunt: false, shot: 'firebolt' },
   voidwalker: { id: 'voidwalker', name: 'Voidwalker', sprite: 'voidwalker', hp: 0.9, dmg: 0.35, dmgType: 'shadow', speed: 70, radius: 7, reach: 18, ranged: false, attackCd: 1.2, taunt: true },
-  felguard: { id: 'felguard', name: 'Felguard', sprite: 'felguard', hp: 0.75, dmg: 0.95, dmgType: 'physical', speed: 82, radius: 7, reach: 20, ranged: false, attackCd: 1.1, taunt: true },
+  felguard: { id: 'felguard', name: 'Pit Knight', sprite: 'felguard', hp: 0.75, dmg: 0.95, dmgType: 'physical', speed: 82, radius: 7, reach: 20, ranged: false, attackCd: 1.1, taunt: true },
   infernal: { id: 'infernal', name: 'Infernal', sprite: 'infernal', hp: 1.2, dmg: 1.1, dmgType: 'fire', speed: 70, radius: 9, reach: 22, ranged: false, attackCd: 1.1, taunt: true },
   wolf: { id: 'wolf', name: 'Wolf', sprite: 'wolf', hp: 0.6, dmg: 0.45, dmgType: 'physical', speed: 105, radius: 6, reach: 16, ranged: false, attackCd: 0.9, taunt: true },
   // the Prologue's companions and the people and door they protect (story pets: STORY_BIBLE.md §2)
@@ -97,7 +97,7 @@ export const PETS: Record<string, PetDef> = {
   'echo-child': { id: 'echo-child', name: 'A child of Vaelmoor', sprite: 'villager', look: 'vaelmoor-child', hp: 1, dmg: 0, dmgType: 'physical', speed: 80, radius: 4, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
   'mirror-image': { id: 'mirror-image', name: 'Mirror Image', sprite: 'storm-wisp', pal: { b: '#c58cff', B: '#8a5ad6', w: '#f2e8ff' }, hp: 0.5, dmg: 0.15, dmgType: 'arcane', speed: 90, radius: 6, reach: 110, ranged: true, attackCd: 1.2, taunt: true, shot: 'arcane-bolt' },
   hawk: { id: 'hawk', name: 'Hawk', sprite: 'gibbet-crow', pal: { k: '#8a5a2a', K: '#5a3a1a', w: '#f2e0b0' }, hp: 0.35, dmg: 0.5, dmgType: 'physical', speed: 150, radius: 5, reach: 18, ranged: false, attackCd: 0.7, taunt: false },
-  'shadow-fiend': { id: 'shadow-fiend', name: 'Shadow Fiend', sprite: 'imp', pal: { r: '#3a2a5a', R: '#241a3a', y: '#c9a0ff' }, hp: 0.5, dmg: 0.6, dmgType: 'shadow', speed: 88, radius: 5, reach: 120, ranged: true, attackCd: 1.1, taunt: false, shot: 'shadowbolt' },
+  'shadow-fiend': { id: 'shadow-fiend', name: 'Dusk Shade', sprite: 'imp', pal: { r: '#3a2a5a', R: '#241a3a', y: '#c9a0ff' }, hp: 0.5, dmg: 0.6, dmgType: 'shadow', speed: 88, radius: 5, reach: 120, ranged: true, attackCd: 1.1, taunt: false, shot: 'shadowbolt' },
   treant: { id: 'treant', name: 'Treant', sprite: 'treant', hp: 0.3, dmg: 0.35, dmgType: 'nature', speed: 75, radius: 6, reach: 16, ranged: false, attackCd: 1.1, taunt: true },
 };
 

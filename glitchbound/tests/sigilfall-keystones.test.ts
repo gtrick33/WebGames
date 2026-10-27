@@ -1,5 +1,5 @@
 /**
- * Mythic+ (data/keystones.ts) and Paragon levels (progress/paragon.ts), the endgame: any dungeon at Mythic's
+ * Riftstone (data/keystones.ts) and Paragon levels (progress/paragon.ts), the endgame: any dungeon at Mythic's
  * top level, tougher with every level, with the week's affixes, against the clock. Beaten in time, the next
  * levels open (as in Diablo's rifts; nothing is lost by being late). Experience past 60 earns Paragon points.
  */
@@ -65,7 +65,7 @@ function finish(w: World, at: number, deaths = 0): void {
   expect(w.cleared).toBe(true);
 }
 
-describe('sigilfall: Mythic+', () => {
+describe('sigilfall: Riftstone', () => {
   it('every level is tougher, without end; affixes join at +2, +4, +7 and +10 and change with the week', () => {
     for (let k = KEY_MIN; k < 40; k++) {
       expect(keyScale(k + 1).hp).toBeGreaterThan(keyScale(k).hp);
@@ -91,7 +91,7 @@ describe('sigilfall: Mythic+', () => {
     for (const id of DUNGEONS) expect(keyPar(REGIONS[id]), id).toBeGreaterThanOrEqual(180);
   });
 
-  it('a run is fought at Mythic’s top level, harder with the level; Fortified and Tyrannical do as they say', () => {
+  it('a run is fought at Mythic’s top level, harder with the level; Hardened and Crowned do as they say', () => {
     const lo = keyRun('deepforge-halls', 1);
     const hi = keyRun('deepforge-halls', 8);
     expect(lo.level).toBe(KEY_LEVEL);
@@ -149,7 +149,7 @@ describe('sigilfall: Mythic+', () => {
     expect(back.keystone).toBe(KEY_MIN);
   });
 
-  it('the affixes: Bolstering, Bursting, Sanguine and Raging', () => {
+  it('the affixes: Grieving, Splintering, Festering and Cornered', () => {
     const w = keyRun('deepforge-halls', 6, ['bolstering', 'bursting', 'sanguine', 'raging']);
     const room = 5;
     const [a, b, c] = [0, 1, 2].map((i) => w.addEnemy('skeleton', w.player.x + 40 + i * 12, w.player.y, KEY_LEVEL, { room, pack: -1 }));
@@ -187,7 +187,7 @@ describe('sigilfall: Mythic+', () => {
   });
 
   for (const region of ['crypt', 'deepforge-halls'] as const) {
-    it(`a level-60 hero in Mythic gear beats the clock on Mythic +1 of ${region}`, { timeout: 90_000 }, () => {
+    it(`a level-60 hero in Mythic gear beats the clock on Riftstone +1 of ${region}`, { timeout: 90_000 }, () => {
       const w = keyRun(region, 1);
       const r = play(w, { seconds: 1500, done: (x) => x.cleared, goal: nextRoom, maxDeaths: 3 });
       expect(r.stuck).toBe(false);

@@ -266,7 +266,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     const m = obj(o[key]) ?? {};
     for (const [k, n] of Object.entries(m).slice(0, 200)) if (/^[a-z0-9:-]{1,32}$/.test(k)) c[key][k] = int(n, 0, 1e6, 0);
   }
-  // Mythic+: whoever has cleared Duskspire on Mythic holds a Riftstone
+  // Riftstone: whoever has cleared Duskspire on Mythic holds a Riftstone
   if (c.quests['postgame-crownfall-mythic']?.state === 'done') c.keystone = Math.max(KEY_MIN, c.keystone);
   if (Array.isArray(o.opened)) c.opened = [...new Set(o.opened.filter((x): x is string => typeof x === 'string' && /^[a-z0-9:-]{1,48}$/.test(x)))].slice(0, 600);
   // the Wardrobe: looks of everything worn or carried are owned (the only ownership that can be proven);
@@ -411,7 +411,7 @@ export function migrate(raw: unknown): SaveFile | null {
   }
   // version 10: quests stored packed (packQuest); both forms are read
   if (o.v === 9) o.v = 10;
-  // version 11: Mythic+ (the Riftstone, the best stones) and Paragon levels; older heroes start with none
+  // version 11: Riftstone (the Riftstone, the best stones) and Paragon levels; older heroes start with none
   // (validateCharacter gives a stone to whoever cleared Duskspire on Mythic)
   if (o.v === 10) o.v = 11;
   if (o.v !== SAVE_VERSION) return null;

@@ -51,7 +51,7 @@ The main story runs through the main chain of every zone below, from level 1 to 
 with side quests and dungeons). Each zone's main chain ends by pointing to the next.
 
 1. **Act I, The King Stirs (levels 1-16).** Emberwick, the Whisperwood, the Hollow Crypt (the empty
-   sarcophagus), Brackenridge, Thornvale and Gallows Keep (Varric was paid in Hollow gold; letters
+   sarcophagus), Brackenridge, Thornvale and Gallows Keep (Harlan was paid in Hollow gold; letters
    signed by the Pale Herald), Greyfen (the first ghouls). Ends with the Regent of Emberwick naming
    the enemy.
 2. **Act II, The Tide of Bones (14-32).** The Saltmarsh and the drowned fleet, the Amberfield Steppes
@@ -74,7 +74,7 @@ and the story depend on them.
 | Zone | First quest of its chain | Last quest of its chain |
 | --- | --- | --- |
 | Brackenridge | `west-road`: after `alpha`, from Maren, level 5 (talk to Warden Hollis in Fernstead) | `lay-the-grey-lady`: kill the Grey Lady, a Sigil-warden's widow who woke when the King did; her last words: he calls all the dead |
-| Thornvale | `south-road`: after `alpha`, from Maren | `the-bandit-king` (Varric) → story `hollow-gold` |
+| Thornvale | `south-road`: after `alpha`, from Maren | `the-bandit-king` (Harlan) → story `hollow-gold` |
 | Greyfen | `the-digging-dead`: after `the-empty-tomb`, from Maren, level 11 (talk to Marshwarden Tilde in Reedwater) | `the-ghoul-mother`: kill Mother Mire; the ghouls were made by a sickness brewed in Duskfen |
 | **Act I ends** | `the-regents-council` (story): after `hollow-gold` and `the-ghoul-mother`, the Regent names the enemy | the Sigil of Embers |
 | Saltmarsh | `east-to-gullport`: after `hunt-black-bess` | `captain-saltbeard` → story `the-drowned-fleet` (the Sigil of Tides) |

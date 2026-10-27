@@ -1,9 +1,9 @@
 import type { NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
- * Millbrook's people and Thornvale's quests (Act I, STORY_BIBLE.md §3). The Gallows Gang under Varric
- * Blackhand is bleeding Millbrook dry with its "rope tax" (pay in silver or hang on Gallows Hill) and
- * holds the mill on Miller's Pond so that no grain leaves the vale. Varric is paid in ash-gold: the
+ * Millbrook's people and Thornvale's quests (Act I, STORY_BIBLE.md §3). The Gallows Gang under Harlan
+ * Blackglove is bleeding Millbrook dry with its "rope tax" (pay in silver or hang on Gallows Hill) and
+ * holds the mill on Miller's Pond so that no grain leaves the vale. Harlan is paid in ash-gold: the
  * Ashen Host wants the Vale hungry. The story runs from the Burnt Farm through Redcap Camp and the Old
  * Watchtower down into Gallows Keep, then back to break the blockade at the mill; Nyx turns up to read
  * the gang's cipher for Pim, and is gone. Tobin and Hanna have side errands, and the gang's powder trail
@@ -47,7 +47,7 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     id: 'blackhand-orders',
     name: 'Orders in Black',
     giver: 'sefa',
-    text: 'The enforcers carry sealed orders, stamped with a black hand. Sefa wants to know what Varric Blackhand is telling his gang. Take the orders off the enforcers, and off the hedge witches who pass them around like gossip.',
+    text: 'The enforcers carry sealed orders, stamped with a black glove. Sefa wants to know what Harlan Blackglove is telling his gang. Take the orders off the enforcers, and off the hedge witches who pass them around like gossip.',
     objective: { kind: 'loot', region: 'thornvale', item: 'Sealed Order', from: ['bandit-enforcer', 'hedge-witch'], chance: 0.5, count: 3, label: 'Take Sealed Orders from enforcers and hedge witches' },
     after: ['redcap-camp'],
     zone: 'thornvale',
@@ -89,17 +89,17 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     id: 'the-bandit-king',
     name: 'The Bandit King',
     giver: 'reeve-aldous',
-    text: 'Varric Blackhand waits at the bottom of Gallows Keep, on a throne built from Millbrook’s savings. End him and the rope tax ends with him. The Reeve has promised you something for it. He has promised it twice, which for Aldous is a vow.',
-    objective: { kind: 'boss', boss: 'varric', label: 'Defeat Varric Blackhand' },
+    text: 'Harlan Blackglove waits at the bottom of Gallows Keep, on a throne built from Millbrook’s savings. End him and the rope tax ends with him. The Reeve has promised you something for it. He has promised it twice, which for Aldous is a vow.',
+    objective: { kind: 'boss', boss: 'varric', label: 'Defeat Harlan Blackglove' },
     after: ['the-hangman'],
     zone: 'thornvale',
-    reward: { xp: 900, gold: 320, item: 'blackhand-coat', perk: 'satchel', text: 'Millbrook’s thanks: Varric’s coat, and a satchel with room for six more things. Behind his throne, a strongbox of grey coins that weigh nothing and are cold as a well.' },
+    reward: { xp: 900, gold: 320, item: 'blackhand-coat', perk: 'satchel', text: 'Millbrook’s thanks: Harlan’s coat, and a satchel with room for six more things. Behind his throne, a strongbox of grey coins that weigh nothing and are cold as a well.' },
   },
   {
     id: 'mill-the-bridge',
     name: 'The Mill Road',
     giver: 'reeve-aldous',
-    text: 'Varric is dead, but nobody has told the blades he hired. They still hold the mill on Miller’s Pond behind a barricade of carts, and no grain moves. Sefa has gathered the Millbrook lads. Break the blockade with them, and burn the barricade so everyone can see it from the road.',
+    text: 'Harlan is dead, but nobody has told the blades he hired. They still hold the mill on Miller’s Pond behind a barricade of carts, and no grain moves. Sefa has gathered the Millbrook lads. Break the blockade with them, and burn the barricade so everyone can see it from the road.',
     objective: { kind: 'event', event: 'mill-the-mill', label: 'Break the blockade at the mill on Miller’s Pond' },
     after: ['the-bandit-king'],
     zone: 'thornvale',
@@ -110,7 +110,7 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     id: 'east-to-gullport',
     name: 'Powder from the Coast',
     giver: 'reeve-aldous',
-    text: 'Varric’s orders mention powder kegs, bought on the coast and paid for in Millbrook silver. Gullport should know who is selling. Take the coast road east and tell Harbormaster Quill.',
+    text: 'Harlan’s orders mention powder kegs, bought on the coast and paid for in Millbrook silver. Gullport should know who is selling. Take the coast road east and tell Harbormaster Quill.',
     objective: { kind: 'talk', npc: 'harbormaster-quill', label: 'Talk to Harbormaster Quill in Gullport' },
     after: ['hunt-black-bess'],
     zone: 'thornvale',
@@ -233,16 +233,16 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-bandit-king', state: 'active' },
-        lines: ['The Hangman is dead? Then only Varric is left. Varric Blackhand, the bandit king. Never beaten. Never tried.', 'End him, and I’ll give you the best thing Millbrook has. It’s a satchel. You’d be amazed what fits in it.'],
+        lines: ['The Hangman is dead? Then only Harlan is left. Harlan Blackglove, the bandit king. Never beaten. Never tried.', 'End him, and I’ll give you the best thing Millbrook has. It’s a satchel. You’d be amazed what fits in it.'],
       },
       {
         when: { quest: 'east-to-gullport', state: 'active' },
-        lines: ['Varric has been buying powder from the coast. Gullport’s harbormaster ought to know who’s selling it.', 'Take the coast road east. Quill’s the name. Sharp woman. Don’t let her charge you a toll.'],
+        lines: ['Harlan has been buying powder from the coast. Gullport’s harbormaster ought to know who’s selling it.', 'Take the coast road east. Quill’s the name. Sharp woman. Don’t let her charge you a toll.'],
       },
       { when: { quest: 'redcap-camp', state: 'active' }, lines: ['Sefa’s going after the camp. Help her. I’d help too, but someone has to stay here and be nervous.'] },
       { when: { quest: 'hunt-black-bess', state: 'active' }, lines: ['Black Bess! She stopped my cart on the Millbrook road, years ago. Very polite about it. She took my hat.', 'It was a good hat. Bring it back if you see it. No? No.'] },
       { when: { quest: 'the-hangman', state: 'active' }, lines: ['Gallows Keep. I can see the hill from my window. I’ve moved my bed.'] },
-      { when: { quest: 'mill-the-bridge', state: 'active' }, lines: ['Varric’s strongbox was full of coins no mint ever struck. Grey. Cold. They weigh nothing. Somebody was paying him to keep us hungry.', 'His blades still hold the mill. Sefa has the lads. Go with them, and burn that barricade high.'] },
+      { when: { quest: 'mill-the-bridge', state: 'active' }, lines: ['Harlan’s strongbox was full of coins no mint ever struck. Grey. Cold. They weigh nothing. Somebody was paying him to keep us hungry.', 'His blades still hold the mill. Sefa has the lads. Go with them, and burn that barricade high.'] },
       { when: { quest: 'mill-the-bridge', state: 'done' }, lines: ['Millbrook sleeps with its doors unlocked again. Well, most doors. I’ve kept a lock on the treasury. Old habits.', 'The grain goes north to Maren’s camp. Show her those grey coins. She’ll know what they are. I don’t want to.'] },
       { lines: ['Welcome to Millbrook. We grow wheat, barley and worry.', 'Mind the Gallows Gang if you go out. Red caps. You’ll hear them before you see them, because they sing.'] },
     ],
@@ -308,7 +308,7 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'blackhand-orders', state: 'active' },
-        lines: ['The enforcers carry Varric’s orders, sealed with a black hand. Subtle man.', 'Bring me three. The hedge witches carry them too. They pass them round like gossip.'],
+        lines: ['The enforcers carry Harlan’s orders, sealed with a black glove. Subtle man.', 'Bring me three. The hedge witches carry them too. They pass them round like gossip.'],
       },
       {
         when: { quest: 'hunt-black-bess', state: 'active' },
@@ -322,7 +322,7 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'wanted-posters', state: 'active' },
         lines: ['I nail up wanted posters. They tear them down and keep them, like trophies.', 'Get them back. The cutthroats and archers carry them. And yes, I drew them myself.'],
       },
-      { when: { quest: 'mill-the-bridge', state: 'active' }, lines: ['The lads are ready. Six of them, two pitchforks, one sword between them, and me.', 'Their blades don’t know Varric’s dead. Let’s tell them.'] },
+      { when: { quest: 'mill-the-bridge', state: 'active' }, lines: ['The lads are ready. Six of them, two pitchforks, one sword between them, and me.', 'Their blades don’t know Harlan’s dead. Let’s tell them.'] },
       { when: { quest: 'mill-the-bridge', state: 'done' }, lines: ['Thornvale is quiet. I don’t know what to do with quiet. I’ll learn.'] },
       { lines: ['I’m the warden. One warden, one bow, one very large gang. I’ve done the sums.'] },
     ],
@@ -393,7 +393,7 @@ export const THORNVALE_EVENTS: Record<string, StoryEventDef> = {
     level: 12,
     allies: ['sefa', 'mill-militia', 'mill-militia'],
     start: [
-      { who: 'sefa', text: 'Varric’s dead! Did nobody tell you? Then we’ll tell you!' },
+      { who: 'sefa', text: 'Harlan’s dead! Did nobody tell you? Then we’ll tell you!' },
       { who: 'mill-militia', text: 'For Millbrook! Er — for the mill!' },
     ],
     waves: [

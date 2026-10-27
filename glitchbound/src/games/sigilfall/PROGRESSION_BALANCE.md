@@ -119,7 +119,7 @@ By level 46 a hero knows **12 skills for 4 slots**. Proposed kits (ids new; name
 | Mage | **Gravity Well** (terrain zone that pulls) | **Purge** (cleanse + short ward) | **Mirror Self** (decoy that draws attacks) | **Frost Ring** (root zone) | **Starfall Lance** (piercing execute beam) |
 | Ranger | **Grapple Line** (mobility to a point) | **Tar Pit** (slowing terrain) | **Snare Net** (root + pull) | **Finishing Shot** (execute) | **Hawk Call** (summon) |
 | Paladin | **Oath Chain** (pull + taunt) | **Cleansing Light** (cleanse + heal) | **Bulwark** (dome shield) | **Sentence** (execute strike) | **Dawn Leap** (mobility strike) |
-| Priest | **Grasp of Faith** (pull) | **Purify** (cleanse + heal) | **Chastise** (stun) | **Shadow Fiend** (summon) | **Sanctuary** (terrain: heal zone) |
+| Priest | **Grasp of Faith** (pull) | **Purify** (cleanse + heal) | **Chastise** (stun) | **Dusk Shade** (summon) | **Sanctuary** (terrain: heal zone) |
 | Warlock | **Soul Tether** (pull + drain) | **Dark Pact** (shield from health) | **Shadow Snare** (stun zone) | **Harvest** (execute) | **Gate Step** (blink + portal back) |
 | Druid | **Gale** (knockback wave) | **Thornhide** (shield + thorns) | **Vine Vortex** (pull zone) | **Bloom** (cleanse + heal zone) | **Stampede** (mobility strike) |
 
@@ -176,7 +176,7 @@ Normal (loot clutter, Section 8). Act milestones get one guaranteed rare-or-bett
   ×1, further ×0.35, chained/split ×0.4, DoT ×0.25, the ultimate's own hits ×0); per-class `ultRate`
   (priest 1.8, paladin/ranger 1.35, druid 1.3). Benchmark: every class earns 2–5 ultimates in 120 s.
 - Found on the way: a specialization now takes the other specs' druid forms off the bar (a Balance
-  druid had Cat Form slotted instead of a spell); the Chapel Crypt is levels 5–7 (the Prologue's).
+  druid had Lynx Shape slotted instead of a spell); the Chapel Crypt is levels 5–7 (the Prologue's).
 - **B (the dead stretch)**: shipped as proposed, 35 skills (five per class at 9, 18, 28, 36, 46) with 70
   talent mutations (two each, in free cells of the matching tree, never in a capstone row). One rename:
   the Warlock's 18 is **Blood Pact** (the kit already had a Dark Pact). New engine pieces: `cleanse`,

@@ -402,7 +402,7 @@ export interface FormDef {
  *   refills fast out of one.
  * - rage: 0-100, earned by hitting and being hit, spent on skills, fades out of combat.
  * - energy / focus: 0-100, comes back quickly at a fixed rate; skills spend it.
- * - holy: Holy Power, 0-5 points built by some skills and spent by others; fades out of combat.
+ * - holy: Zeal, 0-5 points built by some skills and spent by others; fades out of combat.
  */
 export interface ResourceDef {
   kind: 'mana' | 'rage' | 'energy' | 'focus' | 'holy';

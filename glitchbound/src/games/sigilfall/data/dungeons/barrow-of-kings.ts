@@ -270,7 +270,7 @@ const bosses: Record<string, BossDef> = {
   'sir-corvane': {
     id: 'sir-corvane',
     name: 'Sir Corvane the Fallen',
-    title: 'First Death Knight of the Hallow King',
+    title: 'First Grave Knight of the Hallow King',
     sprite: 'sir-corvane',
     hp: 6300,
     dmg: 33,

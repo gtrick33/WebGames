@@ -31,7 +31,7 @@ export const PERKS: Record<PerkId, { name: string; text: string }> = {
   satchel: { name: 'Millbrook Satchel', text: '6 more bag slots' },
   flask: { name: 'Tobin’s Flask', text: 'carry one more potion' },
   mount: { name: 'Gullport Strider', text: 'a horse to ride outside fights (30% faster)' },
-  hearth: { name: 'Hearthstone', text: 'return to the last waystone from anywhere' },
+  hearth: { name: 'Homestone', text: 'return to the last waystone from anywhere' },
   'sigil-embers': { name: 'Sigil of Embers', text: '+4% health and power' },
   'sigil-tides': { name: 'Sigil of Tides', text: '+4% health and power' },
   'sigil-stone': { name: 'Sigil of Stone', text: '+4% health and power' },
@@ -87,7 +87,7 @@ export interface Character {
   bosses: Record<string, number>;
   /** Region clears by "region:tier". */
   clears: Record<string, number>;
-  /** The Riftstone's Mythic+ level (0 before the hero earns one; data/keystones.ts). */
+  /** The Riftstone's Riftstone level (0 before the hero earns one; data/keystones.ts). */
   keystone: number;
   /** The highest stone finished in time, by dungeon. */
   bestKeys: Record<string, number>;
@@ -188,7 +188,7 @@ export function addXp(c: Character, n: number): number[] {
 export function learnedSkills(c: Character): string[] {
   const def = CLASSES[c.cls];
   const pool = def.skills.filter((id) => (SKILLS[id]?.unlock ?? 99) <= c.level);
-  // a shape's specialization ability (the druid's Rip, Ironfur) lives on that shape's bar instead
+  // a shape's specialization ability (the druid's Rip, Ironpelt) lives on that shape's bar instead
   if (c.spec !== null && c.level >= SPEC_LEVEL && !def.trees[c.spec].formOnly) pool.push(def.trees[c.spec].skill);
   return pool;
 }
@@ -203,7 +203,7 @@ export const slotOpen = (c: Character, slot: SkillIndex): boolean => c.level >= 
 export const slotLevel = (slot: string): number => ({ s1: SLOT_LEVELS[0], s2: SLOT_LEVELS[1], s3: SLOT_LEVELS[2], s4: SLOT_LEVELS[3] })[slot] ?? 0;
 
 export function autoSlotSkills(c: Character): void {
-  // a shape that belongs to another specialization (a Balance druid's Cat Form) stays learned, off the bar
+  // a shape that belongs to another specialization (a Balance druid's Lynx Shape) stays learned, off the bar
   const forms = CLASSES[c.cls].forms ?? [];
   const offSpec = (id: string): boolean => c.spec !== null && forms.some((f) => f.skill === id && f.specSwap !== undefined && f.specSwap.tree !== c.spec);
   for (const id of learnedSkills(c)) {
