@@ -4,6 +4,7 @@ import { orderByLayout } from '../catalog/settings';
 import { tGame, useT } from '../i18n';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { Link } from '../router/router';
+import { playPath } from '../catalog/catalog';
 import { Icon } from './Icon';
 import { LiveBadge } from './LiveBadge';
 import './FlagshipRow.css';
@@ -40,7 +41,7 @@ export function MultiplayerRow() {
             </div>
             <div className="flagship-body">
               <h3 className="flagship-title">
-                <Link href={`/games/${g.slug}`} className="flagship-link">
+                <Link href={playPath(g)} className="flagship-link">
                   {g.title}
                 </Link>
               </h3>

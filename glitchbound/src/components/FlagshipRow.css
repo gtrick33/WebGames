@@ -97,10 +97,12 @@
   color: inherit;
   text-decoration: none;
 }
-/* The whole card opens the game. */
+/* The whole card opens the game, its Play button too: the link's cover sits above the card's own
+   positioned parts (the button is a picture of one; under the cover a tap on it did nothing, issue #24). */
 .flagship-link::after {
   content: '';
   position: absolute;
+  z-index: 2;
   inset: 0;
   border-radius: var(--r-lg);
 }

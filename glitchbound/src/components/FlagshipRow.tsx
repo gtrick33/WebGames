@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { tGame, useT } from '../i18n';
 import { useFlagships } from '../platform/useFlagships';
 import { Link } from '../router/router';
+import { playPath } from '../catalog/catalog';
 import { Icon } from './Icon';
 import { LiveBadge } from './LiveBadge';
 import './FlagshipRow.css';
@@ -41,7 +42,7 @@ export function FlagshipRow() {
             )}
             <div className="flagship-body">
               <h3 className="flagship-title">
-                <Link href={`/games/${g.slug}`} className="flagship-link">
+                <Link href={playPath(g)} className="flagship-link">
                   {g.title}
                 </Link>
               </h3>

@@ -10,7 +10,7 @@ import { DailyCard } from './DailyCard';
 import { FreeBanner } from './FreeBanner';
 import { SurpriseButton } from './Surprise';
 import { ThemeStrip } from './ThemeStrip';
-import { latestGame } from '../catalog/catalog';
+import { latestGame, playPath } from '../catalog/catalog';
 import { activeHoliday } from '../platform/seasons';
 import './Hero.css';
 
@@ -67,7 +67,7 @@ export function Hero() {
         <p className="intro-sub">{t('Five minutes, endless replayability. Every game starts in a second, no installs. Beat your best, then come back for tomorrow’s challenge.')}</p>
         <div className="intro-ctas">
           {pick && (
-            <Link href={`/games/${pick.slug}`} className="btn btn-primary btn-lg intro-pick" data-accent={pick.accent}>
+            <Link href={playPath(pick)} className="btn btn-primary btn-lg intro-pick" data-accent={pick.accent}>
               <img src={pick.art.tile} alt="" width={34} height={34} style={{ background: pick.art.bg }} />
               <span>
                 <small className="mono">{t('Today’s pick')}</small>
