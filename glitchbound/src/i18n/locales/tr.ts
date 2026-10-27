@@ -2074,6 +2074,11 @@ const tr: string[] = [
   'Biten meydan okumalar {n} gün burada kalır.',
   'Henüz meydan okuman yok. Herhangi bir oyundan arkadaşlarına meydan oku: aynı tur, herkese tek deneme.',
   'Tüm meydan okumaların',
+  'Geri',
+  'İleri',
+  'Bilmekte fayda var',
+  'Hadi oynayalım!',
+  'Adım {n}/{total}',
 ];
 
 export default tr;

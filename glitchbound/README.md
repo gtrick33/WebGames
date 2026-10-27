@@ -31,7 +31,7 @@ All commands run from this folder (`glitchbound/`). Requires Node 20+ (developed
 | Route | What it is |
 | --- | --- |
 | `/` | Hero with a live NEON RUSH preview, the daily challenge, "Continue playing" (only after you have played), the latest release, and the arcade (search, category filters, sort; state lives in the URL, e.g. `/?category=racing`) |
-| `/games/<slug>` | Game page: the game viewport first, then your bests, how to play, today's challenge, share and friend challenge links (`?beat=<score>`), related games |
+| `/games/<slug>` | Game page: the game viewport first (a short How to play wizard over it the first time, built from the registry's tagline, controls and highlights; again from the game menu), then the leaderboard and your bests, today's challenge, share and friend challenge links (`?beat=<score>`), related games. `?play=1` (the home page's Play buttons) starts the game on arrival |
 | `/daily` | Today's challenge, how it works, the last 4 weeks |
 | `/leaderboards` | Hall of Fame (crowns, podiums, records) and per-game boards (all time, last 24 h) |
 | `/signin` | Sign in or sign up: Google, or any email with a 6-digit code / magic link |

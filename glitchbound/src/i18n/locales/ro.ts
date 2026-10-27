@@ -2074,6 +2074,11 @@ const ro: string[] = [
   'Provocările încheiate rămân aici {n} zile.',
   'Încă nu ai provocări. Provoacă-ți prietenii din orice joc: aceeași rundă, o încercare fiecare.',
   'Toate provocările tale',
+  'Înapoi',
+  'Înainte',
+  'Bine de știut',
+  'Hai să jucăm!',
+  'Pasul {n} din {total}',
 ];
 
 export default ro;

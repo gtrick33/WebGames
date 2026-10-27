@@ -2074,6 +2074,11 @@ const pl: string[] = [
   'Zakończone wyzwania zostają tu przez {n} dni.',
   'Nie masz jeszcze wyzwań. Wyzwij znajomych w dowolnej grze: ta sama runda, jedna próba na osobę.',
   'Wszystkie twoje wyzwania',
+  'Wstecz',
+  'Dalej',
+  'Warto wiedzieć',
+  'Gramy!',
+  'Krok {n} z {total}',
 ];
 
 export default pl;

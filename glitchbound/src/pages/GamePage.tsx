@@ -8,6 +8,7 @@ import { DailyCard } from '../components/DailyCard';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { GameStage } from '../components/GameStage';
 import { GameTile } from '../components/GameTile';
+import { HowTo, howToSeen, markHowToSeen } from '../components/HowTo';
 import { Icon } from '../components/Icon';
 import { reportError, track } from '../platform/analytics';
 import { account, api, ApiError, useAccount } from '../platform/account';
@@ -208,10 +209,10 @@ function SafariBarsHandle() {
 
 /**
  * In full screen: a menu button on the left edge (where game HUDs rarely sit) that pauses the game and
- * opens a pop-up with the ways out: continue, leave full screen, close the game, report a bug. It used
+ * opens a pop-up with the ways out: continue, how to play, leave full screen, close the game, report a bug. It used
  * to be a faint tab that folded away, which players on phones couldn't find (issues #21, #22).
  */
-function StageMenu({ slug, title, placement, open, setOpen, onOpen, onExitFullscreen, onExitGame }: { slug: string; title: string; placement: GameEntry['menu']; open: boolean; setOpen: (open: boolean) => void; onOpen: () => void; onExitFullscreen: () => void; onExitGame: () => void }) {
+function StageMenu({ slug, title, placement, open, setOpen, onOpen, onExitFullscreen, onExitGame, onHowTo }: { slug: string; title: string; placement: GameEntry['menu']; open: boolean; setOpen: (open: boolean) => void; onOpen: () => void; onExitFullscreen: () => void; onExitGame: () => void; onHowTo?: () => void }) {
   const t = useT();
   // games draw the button in their own UI (the default); a corner in the registry makes the arcade draw one instead
   const spot = placement && placement !== 'own' ? placement : null;
@@ -251,6 +252,17 @@ function StageMenu({ slug, title, placement, open, setOpen, onOpen, onExitFullsc
             <button className="btn btn-primary" onClick={() => setOpen(false)} autoFocus>
               <Icon name="play" size={18} /> {t('Continue')}
             </button>
+            {onHowTo && (
+              <button
+                className="btn"
+                onClick={() => {
+                  setOpen(false);
+                  onHowTo();
+                }}
+              >
+                <Icon name="gamepad" size={18} /> {t('How to play')}
+              </button>
+            )}
             <button
               className="btn"
               onClick={() => {
@@ -338,6 +350,27 @@ export function GamePage({ game }: { game: GameEntry }) {
   });
   const [stageRun, setStageRun] = useState(() => ({ key: 0, autoStart: arrival.ownMenu || arrival.pressedPlay }));
   const [playing, setPlaying] = useState(stageRun.autoStart);
+
+  // How to play (issue #27): a short wizard over the game, the first time a game starts on this device
+  // (unless the game walks players through itself), and whenever asked for. Sigilfall teaches itself
+  // throughout, so a game with a section of its own has none.
+  const hasHowTo = !game.section;
+  const [howTo, setHowTo] = useState(false);
+  const [howToDue, setHowToDue] = useState(() => hasHowTo && !game.ownTutorial && !howToSeen(game.slug));
+  const startPlay = useRef<(() => void) | null>(null);
+  const openHowTo = (): void => {
+    setPauseSignal((n) => n + 1);
+    setHowTo(true);
+    stageRef.current?.scrollIntoView?.({ block: 'nearest' });
+  };
+  const closeHowTo = (): void => {
+    markHowToSeen(game.slug);
+    setHowTo(false);
+  };
+  if (howToDue && playing) {
+    setHowToDue(false);
+    setHowTo(true);
+  }
   const [last, setLast] = useState<LastRound | null>(null);
   const [burst, setBurst] = useState(0);
   // The round the stage plays. Before Play it follows the challenge; a running game keeps its round
@@ -602,15 +635,17 @@ export function GamePage({ game }: { game: GameEntry }) {
             playerName={player.name}
             onPlayClick={play.enter}
             openMenu={play.active && (game.menu ?? 'own') === 'own' ? openMenu : undefined}
+            playRef={startPlay}
             overlay={
               <>
+                {howTo && <HowTo game={game} onClose={closeHowTo} onPlay={() => startPlay.current?.()} />}
                 {challengeId && scoresOpen && (
                   <Suspense fallback={null}>
                     <ChallengeScores run={chal} game={game} onClose={() => setScoresOpen(false)} />
                   </Suspense>
                 )}
                 {play.immersive && <SafariBarsHandle />}
-                {play.active && <StageMenu slug={game.slug} title={game.title} placement={game.menu} open={menuOpen} setOpen={setMenuOpen} onOpen={() => setPauseSignal((n) => n + 1)} onExitFullscreen={play.exit} onExitGame={close} />}
+                {play.active && <StageMenu slug={game.slug} title={game.title} placement={game.menu} open={menuOpen} setOpen={setMenuOpen} onOpen={() => setPauseSignal((n) => n + 1)} onExitFullscreen={play.exit} onExitGame={close} onHowTo={hasHowTo ? openHowTo : undefined} />}
               </>
             }
             onPhase={(p) => {
@@ -752,6 +787,11 @@ export function GamePage({ game }: { game: GameEntry }) {
           </div>
 
           <div className="game-help">
+            {hasHowTo && (
+              <button className="game-help-btn" onClick={openHowTo}>
+                <Icon name="gamepad" size={16} /> {t('How to play')}
+              </button>
+            )}
             <button className="game-help-btn" onClick={() => openFeedback(game.slug)}>
               <Icon name="star" size={16} /> {t('Rate this game')}
             </button>
@@ -795,17 +835,16 @@ export function GamePage({ game }: { game: GameEntry }) {
   );
 }
 
-type InfoTab = 'how' | 'board' | 'bests';
+type InfoTab = 'board' | 'bests';
 
 /**
- * How to play, the leaderboard and your bests share one panel with tabs, so the column next to the
- * game stays short: newcomers start on How to play, returning players on the leaderboard.
+ * The leaderboard and your bests share one panel with tabs, so the column next to the game stays short.
+ * How to play is a wizard over the game (components/HowTo.tsx), not text here (issue #27).
  */
 function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRecord | undefined; boardKey: number }) {
   const t = useT();
-  const [tab, setTab] = useState<InfoTab>(record ? 'board' : 'how');
-  const tabs: { id: InfoTab; icon: 'keyboard' | 'crown' | 'trophy'; label: string }[] = [
-    { id: 'how', icon: 'keyboard', label: t('How to play') },
+  const [tab, setTab] = useState<InfoTab>('board');
+  const tabs: { id: InfoTab; icon: 'crown' | 'trophy'; label: string }[] = [
     { id: 'board', icon: 'crown', label: t('Leaderboard') },
     { id: 'bests', icon: 'trophy', label: t('Your bests') },
   ];
@@ -819,35 +858,6 @@ function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRec
         ))}
       </div>
       <div key={tab} id="gi-panel" role="tabpanel" className="gi-panel">
-        {tab === 'how' && (
-          <>
-            <h2 className="sr-only">{t('How to play')}</h2>
-            {game.controls.keyboard && (
-              <div className="controls">
-                <p className="controls-head">
-                  <Icon name="keyboard" /> {t('Keyboard')}
-                </p>
-                <ul>
-                  {game.controls.keyboard.map((c) => (
-                    <li key={c}>{tGame(c)}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {game.controls.touch && (
-              <div className="controls">
-                <p className="controls-head">
-                  <Icon name="touch" /> {t('Touch')}
-                </p>
-                <ul>
-                  {game.controls.touch.map((c) => (
-                    <li key={c}>{tGame(c)}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </>
-        )}
         {tab === 'board' && (
           // If the board's code can't load (offline), only this tab says so: the game keeps running.
           <ErrorBoundary fallback={() => <p className="side-muted">{t('The leaderboard is offline right now. Your game still works.')}</p>}>

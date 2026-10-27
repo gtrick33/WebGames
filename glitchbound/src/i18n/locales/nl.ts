@@ -2074,6 +2074,11 @@ const nl: string[] = [
   'Afgelopen uitdagingen blijven hier {n} dagen staan.',
   'Nog geen uitdagingen. Daag vrienden uit vanuit elk spel: dezelfde ronde, één poging per persoon.',
   'Al je uitdagingen',
+  'Terug',
+  'Volgende',
+  'Goed om te weten',
+  'Spelen maar!',
+  'Stap {n} van {total}',
 ];
 
 export default nl;

@@ -2074,6 +2074,11 @@ const es: string[] = [
   'Los desafíos terminados se quedan aquí {n} días.',
   'Aún no tienes desafíos. Reta a tus amigos desde cualquier juego: la misma ronda, un intento cada uno.',
   'Todos tus desafíos',
+  'Atrás',
+  'Siguiente',
+  'Conviene saber',
+  '¡A jugar!',
+  'Paso {n} de {total}',
 ];
 
 export default es;

@@ -1,0 +1,203 @@
+/* How to play: a short wizard over the game, inside its stage (so full screen shows it too). */
+.howto {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  overflow: auto;
+  background: rgb(7 2 26 / 0.62);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: howto-fade 0.2s ease both;
+  touch-action: pan-y;
+}
+@keyframes howto-fade {
+  from {
+    opacity: 0;
+  }
+}
+.howto-card {
+  display: grid;
+  gap: 10px;
+  width: min(380px, 100%);
+  padding: 14px 18px 18px;
+  border: 2.5px solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--fg);
+  text-align: center;
+  box-shadow: var(--hard);
+  animation: howto-pop 0.4s var(--spring) both;
+}
+@keyframes howto-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94) rotate(-1.5deg);
+  }
+}
+.howto-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 30px;
+}
+.howto-kicker {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.howto-skip {
+  min-height: 30px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--fg-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.howto-skip:hover {
+  color: var(--fg);
+}
+.howto-step {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  animation: howto-in 0.35s var(--out) both;
+}
+@keyframes howto-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+/* the big picture: an emoji on an accent disc with a hard shadow, bobbing a little */
+.howto-pic {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--accent, var(--cyan));
+  box-shadow: var(--hard-sm);
+  font-size: 50px;
+  line-height: 1;
+  animation: howto-bob 2.4s ease-in-out infinite alternate;
+}
+@keyframes howto-bob {
+  from {
+    transform: translateY(-3px) rotate(-6deg);
+  }
+  to {
+    transform: translateY(3px) rotate(6deg);
+  }
+}
+.howto-title {
+  margin: 0;
+  font-size: clamp(21px, 2.4vw, 26px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.howto-lines {
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--fg-2);
+}
+ul.howto-lines {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  text-align: left;
+}
+ul.howto-lines li {
+  position: relative;
+  padding: 8px 12px 8px 30px;
+  border-radius: 12px;
+  background: var(--well);
+  color: var(--fg);
+  font-size: 15px;
+}
+ul.howto-lines li::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 12px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--accent, var(--cyan));
+}
+.howto-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.howto-dots i {
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--surface);
+  transition: width 0.25s var(--out);
+}
+.howto-dots i.is-on {
+  width: 24px;
+  border-radius: 999px;
+  background: var(--accent, var(--cyan));
+}
+.howto-row {
+  display: flex;
+  gap: 10px;
+}
+.howto-row .btn {
+  flex: 1;
+  justify-content: center;
+}
+.howto-next {
+  flex: 2 !important;
+}
+
+/* a small stage (a phone held upright): tighter, so the whole step fits */
+@media (max-height: 520px), (max-width: 420px) {
+  .howto-card {
+    gap: 8px;
+    padding: 10px 14px 14px;
+  }
+  .howto-pic {
+    width: 68px;
+    height: 68px;
+    font-size: 36px;
+  }
+  .howto-lines,
+  ul.howto-lines li {
+    font-size: 14px;
+  }
+  ul.howto-lines li {
+    padding: 6px 10px 6px 28px;
+  }
+  ul.howto-lines li::before {
+    top: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .howto,
+  .howto-card,
+  .howto-step,
+  .howto-pic {
+    animation: none;
+  }
+  .howto-dots i {
+    transition: none;
+  }
+}

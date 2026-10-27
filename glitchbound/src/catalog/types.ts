@@ -111,6 +111,12 @@ export interface GameEntry {
   stats: StatDef[];
   /** Factual feature bullets for the game page. */
   highlights?: string[];
+  /**
+   * The game walks new players through itself the first time it opens (components/Coach.tsx): the
+   * arcade's How to play wizard (built from `tagline`, `controls` and `highlights`) then opens only when
+   * asked for, instead of by itself as well.
+   */
+  ownTutorial?: boolean;
   daily?: DailyTemplate[];
   /**
    * The game has its own daily puzzle (same for everyone on a date). It is listed in "Today's dailies"
