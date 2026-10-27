@@ -497,7 +497,7 @@ export type WorldEvent =
   | { t: 'hero' }
   | { t: 'save' }
   | { t: 'checkpoint' }
-  | { t: 'hint'; id: 'equip' | 'talent' | 'skill' | 'ult' | 'potion' }
+  | { t: 'hint'; id: 'equip' | 'spec' | 'skill' | 'ult' | 'potion' }
   | { t: 'discover'; spot: string };
 
 export type Interactable =

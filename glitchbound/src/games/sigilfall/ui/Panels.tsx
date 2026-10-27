@@ -465,7 +465,7 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
             </button>
           ) : (
             <button className="rb-btn is-small is-ghost" onClick={() => setAsk('reset')} disabled={talentPoints(h) === free}>
-              Reset talents{cost ? ` (${cost} gold)` : ' (free until level 15)'}
+              Reset talents{cost ? ` (${cost} gold)` : ' (free until level 20)'}
             </button>
           )}
           <button className="rb-btn is-small is-ghost" onClick={() => setAsk('spec')}>
