@@ -1,7 +1,7 @@
 import { api } from './account';
 import { mergeSaveText } from './cloudMerge';
 import { saveStore } from './store';
-import { isHeld, onRelease } from './syncGate';
+import { isHeld, onRelease, saveArrived } from './syncGate';
 import { ARCADE_SAVE_KEY, isSyncedKey, MAX_SYNCED_SAVE, slugOfKey } from './syncKeys';
 
 /**
@@ -143,7 +143,10 @@ function receive(state: SyncState, s: ServerSave): void {
   const unchanged = local === null || (!!e && e.h === hashText(local));
   const next = unchanged ? s.data : mergeSaveText(s.key, local, s.data);
   // Only remember the version once it is really stored here (storage can be full).
-  if (writeRaw(s.key, next)) state.keys[s.key] = { at: s.at, h: hashText(s.data) };
+  if (!writeRaw(s.key, next)) return;
+  state.keys[s.key] = { at: s.at, h: hashText(s.data) };
+  // a game that takes copies while it runs reloads its save
+  saveArrived(slugOfKey(s.key));
 }
 
 async function pull(): Promise<void> {
@@ -253,11 +256,12 @@ function install(): boolean {
     else if (Date.now() - lastCheck > RECHECK_MS) void pull().then(() => flush(), () => undefined);
   });
   window.addEventListener('pagehide', () => void flush(true));
-  // A game closed: take in what other devices sent meanwhile, then send what the game saved.
+  // A game closed (or began taking copies while it runs): take in what other devices sent meanwhile,
+  // then send what the game saved.
   onRelease((slug) => {
     if (!user) return;
     const state = readState();
-    for (const [key, s] of waiting)
+    for (const [key, s] of [...waiting])
       if (slugOfKey(key) === slug) {
         waiting.delete(key);
         receive(state, s);

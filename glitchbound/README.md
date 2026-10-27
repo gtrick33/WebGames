@@ -128,7 +128,8 @@ player and save, replaced in place (96 KB at most); a save is sent only when it 
 `/api/me`'s `savesAt` says nothing is newer) and after 5 minutes away from the tab. Each write carries the version it
 grew from, so a device that was offline never overwrites newer progress: the two copies are merged instead
 (`cloudMerge.ts`; the arcade save merges field by field). A game's stage waits for the download before the game reads
-its save (`syncGate.ts`), and a copy that arrives while that game runs is applied when it closes. Saves nobody changed
+its save (`syncGate.ts`), and a copy that arrives while that game runs is applied when it closes (or at once, for a game
+that reloads its save then: Launch Control, whose garage stays open for hours). Saves nobody changed
 for 180 days are deleted. Removing a save in the app (Privacy page, QA tools) removes the account's copy too; a browser
 clearing its own storage does not. `www.` and the `pages.dev` address send visitors without saves there to the main
 address (`canonical.ts`), since each address keeps its own storage and sign-in.

@@ -2,7 +2,8 @@
  * The small part of cloud saves that every page loads (the engine, platform/cloudSave.ts, loads only
  * for signed-in players). The game stage waits here so a game reads its save only after this device
  * has the account's latest copy, and it marks the game that is running, so a copy arriving from another
- * device is never written underneath a game in play (it is applied when the game closes).
+ * device is never written underneath a game in play (it is applied when the game closes, or at once for
+ * a game that takes copies while it runs: takeSavesLive).
  */
 
 let open = true;
@@ -41,6 +42,8 @@ export function savesReady(ms = 4000): Promise<void> {
 
 const held = new Map<string, number>();
 const listeners = new Set<(slug: string) => void>();
+/** Running games that take other devices' copies of their save live (takeSavesLive): how each reloads it. */
+const live = new Map<string, () => void>();
 
 /** Marks a game as running; the returned function ends that. */
 export function holdGame(slug: string): () => void {
@@ -58,10 +61,30 @@ export function holdGame(slug: string): () => void {
   };
 }
 
-export const isHeld = (slug: string | null): boolean => !!slug && held.has(slug);
+/** Whether a copy from another device must wait for this game to close: it runs and can't take one live. */
+export const isHeld = (slug: string | null): boolean => !!slug && held.has(slug) && !live.has(slug);
 
-/** Called with a game's slug when it stops running. */
+/** Called with a game's slug when copies held back for it can go in: it stopped running, or it takes them live. */
 export function onRelease(fn: (slug: string) => void): () => void {
   listeners.add(fn);
   return () => listeners.delete(fn);
 }
+
+/**
+ * A running game that can take another device's copy of its save while it plays: the copy is merged
+ * into its stored save at once and `fn` reloads it. A copy that waits for the game to close also keeps
+ * this device's own changes to that save from going out until then, which a long session never does
+ * (Launch Control's garage stays open, and a phone's tab is put away rather than closed): a car bought
+ * there never reached the account (issue #44). Returns the function that ends it.
+ */
+export function takeSavesLive(slug: string, fn: () => void): () => void {
+  live.set(slug, fn);
+  // copies that waited for this game go in now
+  for (const l of listeners) l(slug);
+  return () => {
+    if (live.get(slug) === fn) live.delete(slug);
+  };
+}
+
+/** A newer copy of a game's save was put in place (platform/cloudSave.ts): the running game reloads it. */
+export const saveArrived = (slug: string | null): void => live.get(slug ?? '')?.();
