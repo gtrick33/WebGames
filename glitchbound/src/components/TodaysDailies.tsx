@@ -14,6 +14,7 @@ import { Link } from '../router/router';
 import { useFlagships } from '../platform/useFlagships';
 import { Icon } from './Icon';
 import './TodaysDailies.css';
+import { gameUrl } from '../catalog/catalog';
 
 /**
  * Every game's own daily puzzle in one strip, with what this player has finished today, and the streak
@@ -54,7 +55,7 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
     const done = finished.has(g.slug);
     return (
       <li key={g.slug}>
-        <Link href={`/games/${g.slug}`} className={`today-chip${done ? ' is-done' : ''}`} data-accent={g.accent} title={`${g.title}: ${t(g.ownDaily!.label)}`}>
+        <Link href={gameUrl(g.slug)} className={`today-chip${done ? ' is-done' : ''}`} data-accent={g.accent} title={`${g.title}: ${t(g.ownDaily!.label)}`}>
           <span className="today-icon">
             <img src={g.art.tile} alt="" width={60} height={60} loading="lazy" style={{ background: g.art.bg }} />
             {done && (
@@ -206,7 +207,7 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
           const done = finished.has(g.slug);
           return (
             <li key={g.slug}>
-              <Link href={`/games/${g.slug}`} className={`daily-chip${done ? ' is-done' : ''}`} data-accent={g.accent}>
+              <Link href={gameUrl(g.slug)} className={`daily-chip${done ? ' is-done' : ''}`} data-accent={g.accent}>
                 <img src={g.art.tile} alt="" width={56} height={56} loading="lazy" style={{ background: g.art.bg }} />
                 <span className="daily-chip-text">
                   <strong>{g.title}</strong>

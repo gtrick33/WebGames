@@ -11,12 +11,13 @@ import { Link } from '../router/router';
 import { Icon } from './Icon';
 import { Star } from './Shapes';
 import './DailyCard.css';
+import { gameUrl } from '../catalog/catalog';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /**
- * The daily challenge, in four densities: `band` (a full-width band), `hero` (the home page hero's side
- * column), `page` (/daily) and `compact` (game page). Renders nothing if no game in the catalog supports
+ * The daily challenge, in four densities: `band` (a full-width band), `hero` (beside the quick dailies
+ * in the home page's Today band), `page` (/daily) and `compact` (game page). Renders nothing if no game in the catalog supports
  * daily challenges.
  */
 export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'band' | 'hero' | 'page' | 'compact'; headingLevel?: 2 | 3 }) {
@@ -38,7 +39,7 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
   const share = async (): Promise<void> => {
     track('share_click', { what: 'daily', day: c.number });
     const outcome = await shareOrCopy({
-      title: `GlitchBound Daily #${c.number}`,
+      title: `GlitchBound Challenge #${c.number}`,
       text: dailyShareText(c, best, streak, week, `${SITE_URL}/daily`),
       url: `${SITE_URL}/daily`,
     });
@@ -50,7 +51,8 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
       <div className="daily-badge" aria-hidden="true">
         <Star className="daily-star" fill={done ? '#ffffff' : '#ffd12e'} />
         <span className="daily-badge-text">
-          <span className="mono">{t('Daily')}</span>
+          {/* "Challenge", not "Daily": the games' own dailies count from their own first day (Quiz #10) */}
+          <span className="mono">{t('Challenge')}</span>
           <b>#{c.number}</b>
         </span>
       </div>
@@ -99,7 +101,7 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
         </p>
         <div className="daily-actions">
           {variant !== 'compact' && (
-            <Link href={`/games/${c.game.slug}`} className={`btn ${done ? '' : 'btn-ink'}`}>
+            <Link href={gameUrl(c.game.slug)} className={`btn ${done ? '' : 'btn-ink'}`}>
               <Icon name="play" /> {done ? t('Play again') : t('Play today’s challenge')}
             </Link>
           )}

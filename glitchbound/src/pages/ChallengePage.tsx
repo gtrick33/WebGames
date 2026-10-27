@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getGame } from '../catalog/catalog';
+import { gameUrl, getGame } from '../catalog/catalog';
 import type { GameEntry } from '../catalog/types';
 import { ChallengeHistoryList, useChallengeHistory } from '../components/ChallengeHistory';
 import { Icon } from '../components/Icon';
@@ -26,7 +26,7 @@ export function ChallengePage({ id }: { id: string }) {
   useEffect(() => {
     let live = true;
     getChallenge(id).then(
-      (v) => live && navigate(`/games/${v.game}?challenge=${v.id}`, { replace: true }),
+      (v) => live && navigate(`${gameUrl(v.game)}?challenge=${v.id}`, { replace: true }),
       (e: unknown) => live && setError(e instanceof ApiError && e.status === 404 ? 'gone' : 'failed'),
     );
     return () => {
@@ -82,7 +82,7 @@ export function ChallengesPage() {
     setBusy(true);
     try {
       const v = await createChallenge(game.slug, mode, player.name, dayKey());
-      navigate(`/games/${game.slug}?challenge=${v.id}`);
+      navigate(`${gameUrl(game.slug)}?challenge=${v.id}`);
     } catch (e) {
       setMsg(e instanceof ApiError ? (e.message !== e.code ? e.message : t('Could not start a challenge.')) : t('Network error. Try again.'));
       setBusy(false);
@@ -117,7 +117,7 @@ export function ChallengesPage() {
               const g = getGame(c.game, live.all);
               return (
                 <li key={c.id} className="chal-item">
-                  <Link href={`/games/${c.game}?challenge=${c.id}`} className="chal-row" data-accent={g?.accent}>
+                  <Link href={`${gameUrl(c.game)}?challenge=${c.id}`} className="chal-row" data-accent={g?.accent}>
                     {g && <img src={g.art.tile} alt="" width={48} height={48} style={{ background: g.art.bg }} />}
                     <span className="chal-row-main">
                       <b>{g?.title ?? c.game}</b>

@@ -105,7 +105,7 @@ export function dailyShareText(c: DailyChallenge, best: number, streak: number, 
   const row = lastWeek.map((d) => (d ? '■' : '□')).join('');
   const unit = c.unit ? ` ${c.unit}` : '';
   return [
-    `GlitchBound Daily #${c.number} · ${c.game.title}`,
+    `GlitchBound Challenge #${c.number} · ${c.game.title}`,
     `Cleared: ${fmt(best)}${unit} (target ${fmt(c.target)}${unit})`,
     `${row}  streak ${streak}`,
     url,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { getGame } from '../catalog/catalog';
-import { BoardEmpty, BoardError, HallTable, LeaderTable, useBoard, useHall } from '../components/Leaderboard';
+import { BoardEmpty, BoardError, HallTable, LeaderTable, RivalsNote, useBoard, useHall } from '../components/Leaderboard';
 import { Icon } from '../components/Icon';
 import { usePageMeta } from '../platform/meta';
 import { navigate, useLocation } from '../router/router';
@@ -18,6 +18,7 @@ function GameBoard({ slug }: { slug: string }) {
   const t = useT();
   const board = useBoard(slug, period);
   const game = getGame(slug, useLiveCatalog().all)!;
+  const unit = game.stats.find((s) => s.key === 'score')?.unit;
   return (
     <div className="panel info-block">
       <div className="board-head">
@@ -36,7 +37,8 @@ function GameBoard({ slug }: { slug: string }) {
       </div>
       {board.status === 'loading' && <p className="info-small">{t('Loading…')}</p>}
       {board.status === 'error' && <BoardError text={t('The leaderboard is offline right now.')} onRetry={board.retry} />}
-      {board.status === 'ok' && (board.rows.length ? <LeaderTable rows={board.rows} mine={board.mine} /> : <BoardEmpty text={t('No ranked scores in this period yet.')} />)}
+      {board.status === 'ok' && (board.rows.length ? <LeaderTable rows={board.rows} mine={board.mine} unit={unit ? ` ${t(unit)}` : ''} /> : <BoardEmpty text={t('No ranked scores in this period yet.')} />)}
+      {board.status === 'ok' && board.rows.some((r) => r.rival) && <RivalsNote />}
       <p className="info-small">{t('Best score per member. Scores are checked against real play time; rounds played as a guest are not ranked.')}</p>
     </div>
   );
@@ -53,7 +55,7 @@ function Hall() {
         </h2>
       </div>
       <p className="info-small">
-        {t('Across every game: crowns are #1 spots, podiums are top-3 spots, records are personal bests a player has beaten.')}
+        {t('Members only, across every game: crowns are the members’ #1 spots, podiums their top-3 spots, records the personal bests they have beaten.')}
       </p>
       {hall.status === 'loading' && <p className="info-small">{t('Loading…')}</p>}
       {hall.status === 'error' && <BoardError text={t('The Hall of Fame is offline right now.')} onRetry={hall.retry} />}

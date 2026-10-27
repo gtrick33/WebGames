@@ -9,6 +9,7 @@ import { useLiveCatalog } from '../platform/liveCatalog';
 import { clearDeviceAll, clearDeviceGame, debugInfo, deviceKeysFor, logQa } from '../platform/qa';
 import { Link } from '../router/router';
 import './QaPanel.css';
+import { gameUrl } from '../catalog/catalog';
 
 /**
  * Admin › QA: the tools QA testers (and admins) use. Look up a player and give them coins for a
@@ -494,7 +495,7 @@ function TestingTools({ me, flash, onOpenSelf }: { me: Me; flash: Flash; onOpenS
             <ul className="qa-links">
               {closed.map((g) => (
                 <li key={g.slug}>
-                  <Link href={`/games/${g.slug}`} onClick={() => logQa('open_closed_game', { game: g.slug })}>
+                  <Link href={gameUrl(g.slug)} onClick={() => logQa('open_closed_game', { game: g.slug })}>
                     {g.title}
                   </Link>{' '}
                   <span className="qa-pill">{live.settings(g.slug).hidden ? 'hidden' : 'paused'}</span>
@@ -511,7 +512,7 @@ function TestingTools({ me, flash, onOpenSelf }: { me: Me; flash: Flash; onOpenS
                 </option>
               ))}
             </select>
-            <Link className="btn btn-sm" href={`/games/${open}`}>
+            <Link className="btn btn-sm" href={gameUrl(open)}>
               Open
             </Link>
           </div>

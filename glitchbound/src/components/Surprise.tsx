@@ -8,6 +8,7 @@ import { useLiveCatalog } from '../platform/liveCatalog';
 import { useSave } from '../platform/store';
 import { navigate } from '../router/router';
 import './Surprise.css';
+import { gameUrl } from '../catalog/catalog';
 
 /** Spins through the games like a slot machine, slowing down, and lands on one. */
 function Spinner({ games, pick, onDone }: { games: GameEntry[]; pick: GameEntry; onDone: () => void }) {
@@ -88,7 +89,7 @@ export function SurpriseButton({ className = 'btn', label }: { className?: strin
           onDone={() => {
             const slug = spin.pick.slug;
             setSpin(null);
-            navigate(`/games/${slug}`);
+            navigate(gameUrl(slug));
           }}
         />
       )}

@@ -9,6 +9,7 @@ import { GamePreview, hasPreview } from './GamePreview';
 import { Icon } from './Icon';
 import { LiveBadge } from './LiveBadge';
 import './GameTile.css';
+import { gameUrl } from '../catalog/catalog';
 
 /**
  * A game "cabinet" in the catalogue: its logo artwork, title, categories, favorite heart and play
@@ -57,7 +58,7 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
           ))}
         </div>
         <h3 className="tile-title">
-          <Link href={`/games/${game.slug}`} className="tile-link">
+          <Link href={gameUrl(game.slug)} className="tile-link">
             {game.title}
           </Link>
         </h3>

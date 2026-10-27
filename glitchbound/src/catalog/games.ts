@@ -1013,13 +1013,13 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'sigilfall',
     title: 'Sigilfall',
-    tagline: 'A pixel-art action RPG: three heroes, gear that changes your skills, dungeons and bosses.',
+    tagline: 'An epic pixel-art fantasy RPG: seven heroes, five acts, a dozen dungeons and friends at your side.',
     description:
-      'A top-down pixel-art action RPG made for phones first (a joystick and skill buttons), with WASD and the mouse on a computer. Pick a Mage, Warrior or Ranger and fight through the Whisperwood and the Hollow Crypt to close the Rift. ' +
-      'Gear changes how your skills work: a staff that splits your Fireball, a hammer whose Heavy Strike sends a shockwave, a bow whose arrows split. Level up, pick talents in two trees, beat three bosses, then go back on Heroic and Mythic for legendary loot. Your heroes are saved, and follow you to other devices when you sign in.',
+      'A top-down pixel-art action RPG made for phones first (a joystick and skill buttons), with WASD and the mouse on a computer. Choose one of seven heroes, from Warrior and Mage to Druid and Warlock, and follow the story through five acts, from the villages of the Vale to the Dead Kingdom, to close the Rift. ' +
+      'Gear changes how your skills work: a staff that splits your Fireball, a hammer whose Heavy Strike sends a shockwave. A dozen dungeons wait, with bosses that telegraph their blows. Reach level 60, then climb the endless Riftstone, alone or with up to three friends on their own devices. Your heroes are saved, and follow you to other devices when you sign in.',
     categories: ['arcade', 'strategy'],
     moods: ['action'],
-    tags: ['rpg', 'action rpg', 'pixel art', 'dungeon', 'boss', 'loot', 'mage', 'warrior', 'ranger', 'fantasy'],
+    tags: ['rpg', 'action rpg', 'pixel art', 'dungeon', 'boss', 'loot', 'mage', 'warrior', 'ranger', 'paladin', 'priest', 'warlock', 'druid', 'fantasy', 'co-op', 'adventure'],
     released: '2026-10-22',
     accent: 'magenta',
     emoji: '⚔️',
@@ -1043,11 +1043,11 @@ export const GAMES: GameEntry[] = [
       { key: 'kills', label: 'Most foes in one expedition' },
     ],
     highlights: [
-      'Three classes that play differently: Mage, Warrior and Ranger',
-      '31 hand-made items that change how skills behave, plus generated gear',
-      'Two talent trees per class, each ending in a signature talent',
-      'Three regions and three bosses with telegraphed attacks and phases',
-      'Heroic and Mythic difficulty for better loot, and up to three saved heroes',
+      'Seven classes that play differently, each with its own specializations',
+      'Five acts of story, hundreds of quests and a dozen dungeons with bosses',
+      'Gear that changes how skills behave, plus mounts and a wardrobe',
+      'Normal, Heroic and Mythic, then the endless Riftstone climb',
+      'Co-op: quest and run Riftstones with up to three friends',
     ],
     limits: { scorePerSecond: 400, minSeconds: 20 },
   },

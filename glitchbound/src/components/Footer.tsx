@@ -5,6 +5,7 @@ import { openFeedback } from '../platform/feedback';
 import { Link } from '../router/router';
 import { LogoMark } from './Logo';
 import './Footer.css';
+import { gameUrl } from '../catalog/catalog';
 
 export function Footer() {
   const games = useGames();
@@ -16,7 +17,7 @@ export function Footer() {
         <div className="footer-top">
           <div className="footer-pitch">
             <LogoMark size={56} />
-            <p>{t('An independent studio making small, original browser games. No installs and nothing to buy. Play as a guest, or sign in for quests and leaderboards.')}</p>
+            <p>{t('An independent studio making small browser games and one big adventure. No installs and nothing to buy. Play as a guest, or sign in for quests and leaderboards.')}</p>
             <LangPicker variant="footer" />
           </div>
           <nav className="footer-cols" aria-label="Footer">
@@ -26,7 +27,7 @@ export function Footer() {
               <Link href="/daily">{t('Daily Challenge')}</Link>
               <Link href="/leaderboards">{t('Leaderboards')}</Link>
               {games.slice(0, 4).map((g) => (
-                <Link key={g.slug} href={`/games/${g.slug}`}>
+                <Link key={g.slug} href={gameUrl(g.slug)}>
                   {g.title}
                 </Link>
               ))}
@@ -48,7 +49,7 @@ export function Footer() {
         <p className="footer-word glitch" data-text="GlitchBound" aria-hidden="true">
           GlitchBound
         </p>
-        <p className="footer-legal mono">© {new Date().getFullYear()} GlitchBound · {t('All games are original works.')}</p>
+        <p className="footer-legal mono">© {new Date().getFullYear()} GlitchBound · {t('Every game is made by GlitchBound.')}</p>
       </div>
     </footer>
   );

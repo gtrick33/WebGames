@@ -5,29 +5,13 @@ import { openSignIn } from './openSignIn';
 import './FreeBanner.css';
 
 /**
- * The promise, in big letters: everything is free and needs no account. Signing in is optional
- * and only adds things (synced progress, leaderboards, quests), which the right side spells out.
- * `mini` is the one-line version for the home page hero's side column.
+ * The promise, in big letters: everything is free and needs no account. An account is optional and only
+ * adds things (synced progress, leaderboards, quests), which the right side spells out; its button says
+ * what it does ("Save my progress") so it never reads as the sign-up the promise says isn't needed.
  */
-export function FreeBanner({ mini = false }: { mini?: boolean }) {
+export function FreeBanner() {
   const t = useT();
   const { me, status } = useAccount();
-  // The small one: the three words in a row and, for guests, the optional sign-in.
-  if (mini)
-    return (
-      <section className="free-mini" aria-label={`${t('100% free.')} ${t('No sign-up.')} ${t('No downloads.')}`}>
-        <p className="free-mini-words" aria-hidden="true">
-          <span className="free-w free-w1">{t('100% free.')}</span>
-          <span className="free-w free-w2">{t('No sign-up.')}</span>
-          <span className="free-w free-w3">{t('No downloads.')}</span>
-        </p>
-        {!me && (
-          <button className="btn btn-sm btn-primary free-mini-cta" onClick={() => openSignIn()} disabled={status === 'loading'}>
-            <Icon name="star" size={15} /> {t('Sign in free')}
-          </button>
-        )}
-      </section>
-    );
   const perks = [t('Your bests and streaks on every device'), t('Leaderboards and the Hall of Fame'), t('Daily quests, XP and levels'), t('Favorites that follow you')];
   return (
     <section className={`wrap free-band${me ? ' is-member' : ''}`} aria-labelledby="free-title">
@@ -45,7 +29,7 @@ export function FreeBanner({ mini = false }: { mini?: boolean }) {
       {/* Members already have the extras, so their banner is just the promise. */}
       {!me && (
         <div className="free-extra">
-          <p className="free-kicker mono">{t('Want more? Sign in, optional')}</p>
+          <p className="free-kicker mono">{t('Optional: your streaks on every device')}</p>
           <ul className="free-perks">
             {perks.map((p) => (
               <li key={p}>
@@ -57,7 +41,7 @@ export function FreeBanner({ mini = false }: { mini?: boolean }) {
             ))}
           </ul>
           <button className="btn btn-sm btn-primary" onClick={() => openSignIn()} disabled={status === 'loading'}>
-            <Icon name="star" size={16} /> {t('Sign in free')}
+            <Icon name="star" size={16} /> {t('Save my progress')}
           </button>
         </div>
       )}

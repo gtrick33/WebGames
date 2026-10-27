@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { autoNewSlugs, inArcade, SECTION_GAMES } from '../catalog/catalog';
+import { autoNewSlugs, gameUrl, inArcade, SECTION_GAMES } from '../catalog/catalog';
 import { GAMES } from '../catalog/games';
 import { applySettings, dailyRules, partySettingsFor, settingsFor, STICKER_MAX, TEXT_LIMITS, type DailyPick, type GameSettings, type NewBadge, type NoticeTone, type PartySettings, type PublicCatalog } from '../catalog/settings';
 import type { GameEntry } from '../catalog/types';
@@ -586,7 +586,7 @@ function GameEditor({ game, s, send, busy }: { game: GameEntry; s: GameSettings;
           <button className="btn btn-sm btn-primary" disabled={busy || (title === s.title && tagline === s.tagline && description === s.description)}>
             Save text
           </button>
-          <Link href={`/games/${game.slug}`} className="btn btn-sm btn-ghost">
+          <Link href={gameUrl(game.slug)} className="btn btn-sm btn-ghost">
             <Icon name="external" size={14} /> Open page
           </Link>
           <button

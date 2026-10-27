@@ -6,6 +6,7 @@
  */
 import { GAMES } from '../src/catalog/games.ts';
 import { validateCatalog } from '../src/catalog/catalog.ts';
+import { gameUrl } from '../src/catalog/urls.ts';
 import { CATEGORIES, type CategoryId, type GameEntry } from '../src/catalog/types.ts';
 import { ABOUT_DESCRIPTION, CONTACT_DESCRIPTION, CONTACT_PATH } from '../src/pages/infoText.ts';
 
@@ -39,7 +40,7 @@ const ADULT = 'Adults only (18+)';
  * Site links under every page's readable fallback, so crawlers and visitors without JavaScript can
  * reach the info pages too (the app replaces all of it with its own footer).
  */
-const SSR_FOOTER = `<footer class="ssr ssr-foot"><nav aria-label="Site"><a href="/">Arcade</a> · <a href="/party">Party Mode</a> · ${GAMES.filter((g) => g.section).map((g) => `<a href="${g.section!.path}">${g.section!.label}</a> · `).join('')}<a href="/daily">Daily Challenge</a> · <a href="/leaderboards">Leaderboards</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></nav><p>© ${new Date().getFullYear()} ${SITE} · All games are original works.</p></footer>`;
+const SSR_FOOTER = `<footer class="ssr ssr-foot"><nav aria-label="Site"><a href="/">Arcade</a> · <a href="/party">Party Mode</a> · ${GAMES.filter((g) => g.section).map((g) => `<a href="${g.section!.path}">${g.section!.label}</a> · `).join('')}<a href="/daily">Daily Challenge</a> · <a href="/leaderboards">Leaderboards</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></nav><p>© ${new Date().getFullYear()} ${SITE} · Every game is made by GlitchBound.</p></footer>`;
 
 export const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -47,7 +48,7 @@ export const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g,
 const taglineOf = (g: GameEntry): string => (g.adult ? g.tagline.replace(/\s*18\+\.?$/, '') : g.tagline);
 
 /** Where a game's page lives: its own section (Sigilfall at /sigilfall), or /games/<slug>. */
-const pathOf = (g: GameEntry): string => g.section?.path ?? `/games/${g.slug}`;
+const pathOf = (g: GameEntry): string => g.section?.path ?? gameUrl(g.slug);
 
 function gameItem(g: GameEntry): string {
   return `<li><a href="${pathOf(g)}">${esc(g.title)}</a>${g.adult ? ` <strong>${ADULT}</strong>` : ''}: ${esc(taglineOf(g))}</li>`;
@@ -91,8 +92,8 @@ ${g.highlights ? `<ul>${list(g.highlights)}</ul>` : ''}
 function gameSpec(g: GameEntry, siteUrl: string): PageSpec {
   const url = `${siteUrl}${pathOf(g)}`;
   return {
-    path: `/games/${g.slug}`,
-    file: `games/${g.slug}.html`,
+    path: gameUrl(g.slug),
+    file: `${gameUrl(g.slug).slice(1)}.html`,
     gamePage: true,
     title: `Play ${g.title} · ${SITE}`,
     description: `${taglineOf(g)}${g.adult ? ` ${ADULT}.` : ''} Free to play in your browser on ${SITE}.`,
@@ -191,7 +192,7 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       image: '/og.png',
       imageAlt: SITE,
       jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: SITE, url: `${siteUrl}/` },
-      body: `<section class="ssr"><h1>About ${SITE}</h1><p>${SITE} is an independent browser arcade: original games that start in a second, plus Party Mode for groups. No installs, nothing to buy and no account needed.</p><h2>Who makes it</h2><p>${SITE} is an independent studio. Every game is designed and built here.</p><h2>Something new every day</h2><p>Most games have a daily round: the same puzzle for everyone, new at midnight your time.</p><h2>For all ages, with one exception</h2><p>The arcade is made for everyone. Crass Act and the After Dark party cards are for adults only: they carry an 18+ label and ask players to confirm their age before they start.</p><p><a href="/contact">Contact us</a> · <a href="/privacy">Privacy &amp; your data</a></p></section>`,
+      body: `<section class="ssr"><h1>About ${SITE}</h1><p>${SITE} is an independent browser arcade: quick games that start in a second, plus Party Mode for groups. No installs, nothing to buy and no account needed.</p><h2>Who makes it</h2><p>${SITE} is an independent studio. Every game is designed and built here, code and art. Some start from a classic idea, like a card game or a word puzzle, and give it a twist of our own.</p><h2>Something new every day</h2><p>Most games have a daily round: the same puzzle for everyone, new at midnight your time.</p><h2>For all ages, with one exception</h2><p>The arcade is made for everyone. Crass Act and the After Dark party cards are for adults only: they carry an 18+ label and ask players to confirm their age before they start.</p><p><a href="/contact">Contact us</a> · <a href="/privacy">Privacy &amp; your data</a></p></section>`,
     },
     {
       path: '/contact',

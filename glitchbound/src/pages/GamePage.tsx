@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { tGame, useT } from '../i18n';
-import { gamePath, relatedGames } from '../catalog/catalog';
+import { gamePath, gameUrl, relatedGames } from '../catalog/catalog';
 import { CATEGORIES, type GameEntry } from '../catalog/types';
 import { AdSlot } from '../components/AdSlot';
 import { Burst } from '../components/Burst';
@@ -39,6 +39,7 @@ import { openFeedback } from '../platform/feedback';
 import type { EndEvent, GameEvent } from '../platform/contract';
 import { challengeForDay, fmt } from '../platform/daily';
 import { dayKey } from '../platform/dates';
+import { boardRank } from '../platform/rivals';
 import { SITE_URL } from '../platform/env';
 import { usePageMeta } from '../platform/meta';
 import type { GameRecord, RoundResult } from '../platform/save';
@@ -359,26 +360,24 @@ export function GamePage({ game }: { game: GameEntry }) {
   const [stageRun, setStageRun] = useState(() => ({ key: 0, autoStart: arrival.ownMenu || arrival.pressedPlay }));
   const [playing, setPlaying] = useState(stageRun.autoStart);
 
-  // How to play (issue #27): a short wizard over the game, the first time a game starts on this device
-  // (unless the game walks players through itself), and whenever asked for. Sigilfall teaches itself
-  // throughout, so a game with a section of its own has none.
+  // How to play (issue #27): a short wizard over the game, only when the player asks for it (the info
+  // button in the toolbar, or the game menu in full screen). Nothing pops up by itself: Play means play.
+  // Until this device has opened it once, the info button glows. Sigilfall teaches itself throughout, so
+  // a game with a section of its own has none.
   const hasHowTo = !game.section;
   const [howTo, setHowTo] = useState(false);
-  const [howToDue, setHowToDue] = useState(() => hasHowTo && !game.ownTutorial && !howToSeen(game.slug));
+  const [howToNew, setHowToNew] = useState(() => hasHowTo && !game.ownTutorial && !howToSeen(game.slug));
   const startPlay = useRef<(() => void) | null>(null);
   const openHowTo = (): void => {
     setPauseSignal((n) => n + 1);
     setHowTo(true);
+    setHowToNew(false);
     stageRef.current?.scrollIntoView?.({ block: 'nearest' });
   };
   const closeHowTo = (): void => {
     markHowToSeen(game.slug);
     setHowTo(false);
   };
-  if (howToDue && playing) {
-    setHowToDue(false);
-    setHowTo(true);
-  }
   const [last, setLast] = useState<LastRound | null>(null);
   const [burst, setBurst] = useState(0);
   // The round the stage plays. Before Play it follows the challenge; a running game keeps its round
@@ -430,15 +429,18 @@ export function GamePage({ game }: { game: GameEntry }) {
     enterPlay.current = play.enter;
   });
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has('play')) {
-      const url = new URL(window.location.href);
+    const url = new URL(window.location.href);
+    // An old address (/games/wait-what) shows the game's own one (/games/quizbelief), so it is what gets shared.
+    const own = game.section ? null : gameUrl(game.slug);
+    if (url.searchParams.has('play') || (own && url.pathname !== own)) {
       url.searchParams.delete('play');
+      if (own) url.pathname = own;
       window.history.replaceState(window.history.state, '', url);
     }
     if (!arrival.pressedPlay) return;
     const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
     if (!activation || activation.isActive) enterPlay.current();
-  }, [arrival]);
+  }, [arrival, game.section, game.slug]);
 
   // The lobby music steps aside while a game is loaded on this page.
   useEffect(() => {
@@ -571,7 +573,7 @@ export function GamePage({ game }: { game: GameEntry }) {
     : null;
 
   return (
-    <div className="game-page" data-accent={game.accent}>
+    <div className="game-page" data-accent={game.accent} data-world={game.section ? game.slug : undefined}>
       <div className="wrap game-toolbar">
         <Link href="/#arcade" className="btn btn-sm btn-ghost back-link" aria-label={t('Back to the arcade')}>
           <Icon name="arrowLeft" size={18} /> <span className="hide-sm">{t('Arcade')}</span>
@@ -583,8 +585,13 @@ export function GamePage({ game }: { game: GameEntry }) {
           {game.adult && <AdultLabel text={t('Adults only')} />}
           <LiveBadge game={game} />
         </div>
-        <div className="game-actions">
+        <div className={`game-actions${playing ? ' is-playing' : ''}`}>
           <FavoriteButton slug={game.slug} title={game.title} />
+          {hasHowTo && (
+            <button className={`btn btn-sm btn-icon game-info-btn${howToNew ? ' is-new' : ''}`} onClick={openHowTo} aria-label={t('How to play')} title={t('How to play')}>
+              <Icon name="info" size={18} />
+            </button>
+          )}
           {playing && (
             <button className="btn btn-sm" onClick={restart} title={t('Reload the game')}>
               <Icon name="restart" size={18} /> <span className="hide-sm">{t('Restart')}</span>
@@ -600,7 +607,7 @@ export function GamePage({ game }: { game: GameEntry }) {
               <Icon name="close" size={18} /> <span className="hide-sm">{t('Exit game')}</span>
             </button>
           )}
-          <button className="btn btn-sm btn-icon" onClick={() => void share('game')} aria-label={t('Share {game}', { game: game.title })} title={t('Share')}>
+          <button className="btn btn-sm btn-icon share-btn" onClick={() => void share('game')} aria-label={t('Share {game}', { game: game.title })} title={t('Share')}>
             <Icon name="share" size={18} />
           </button>
         </div>
@@ -693,7 +700,7 @@ export function GamePage({ game }: { game: GameEntry }) {
               <ul className="last-tags">
                 {last.server?.rank && (
                   <li className="sticker" data-tone="cyan">
-                    {t('Rank #{n}', { n: last.server.rank })}
+                    {t('Rank #{n}', { n: boardRank(game.slug, dayKey(), last.event.score, last.server.rank) })}
                   </li>
                 )}
                 {last.result.newBests.includes('score') && <li className="sticker" data-tone="lime">{t('New best')}</li>}
@@ -729,7 +736,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                       <Icon name="restart" size={18} /> {next.daily ? t('One more try at today’s challenge') : t('Play again')}
                     </button>
                   ) : (
-                    <Link href={`/games/${next.game.slug}`} className="next-up-link" data-accent={next.game.accent} onClick={() => track('next_up', { from: game.slug, to: next.game.slug, why: next.kind })}>
+                    <Link href={gameUrl(next.game.slug)} className="next-up-link" data-accent={next.game.accent} onClick={() => track('next_up', { from: game.slug, to: next.game.slug, why: next.kind })}>
                       <img src={next.game.art.tile} alt="" width={48} height={48} style={{ background: next.game.art.bg }} />
                       <span className="next-up-text">
                         <strong>{next.game.title}</strong>
@@ -795,11 +802,6 @@ export function GamePage({ game }: { game: GameEntry }) {
           </div>
 
           <div className="game-help">
-            {hasHowTo && (
-              <button className="game-help-btn" onClick={openHowTo}>
-                <Icon name="gamepad" size={16} /> {t('How to play')}
-              </button>
-            )}
             <button className="game-help-btn" onClick={() => openFeedback(game.slug)}>
               <Icon name="star" size={16} /> {t('Rate this game')}
             </button>

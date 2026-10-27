@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { GAMES } from '../src/catalog/games';
 import { multiplayerGames } from '../src/catalog/multiplayer';
 import { EMPTY_CATALOG } from '../src/catalog/settings';
-import { MultiplayerRow } from '../src/components/MultiplayerRow';
+import { PlayTogether } from '../src/components/HomeBands';
 import { setCatalog } from '../src/platform/liveCatalog';
 
 const slugs = (chosen?: string[] | null): string[] => multiplayerGames(GAMES, chosen).map((g) => g.slug);
@@ -18,15 +18,20 @@ describe('live multiplayer games', () => {
     expect(slugs([])).toEqual([]);
   });
 
-  it('the home row lists them as big cards with the live label and player count, and hides when emptied', () => {
-    const { unmount } = render(<MultiplayerRow />);
-    expect(screen.getByRole('heading', { name: 'Live multiplayer games' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Launch Control' })).toBeTruthy();
-    expect(screen.getAllByText('Live multiplayer').length).toBe(slugs().length);
-    expect(screen.getAllByText('2 players').length).toBe(GAMES.filter((g) => g.live?.players === '2').length);
+  it('Play together lists them (the best games, big cards above, left out) beside Party Mode', () => {
+    const { unmount } = render(<PlayTogether />);
+    expect(screen.getByRole('heading', { name: 'Better with friends' })).toBeTruthy();
+    // Launch Control is one of the best games: its own card above already carries the live label
+    expect(screen.queryByRole('link', { name: 'Launch Control' })).toBeNull();
+    const online = slugs().filter((s) => s !== 'launch-control');
+    expect(screen.getByRole('link', { name: 'Belot' }).getAttribute('href')).toBe('/games/belot?play=1');
+    expect(screen.getAllByText('Live multiplayer').length).toBe(online.length);
+    expect(screen.getByRole('link', { name: /Got friends over\? Pass the phone\./ }).getAttribute('href')).toBe('/party');
     unmount();
+    // Emptied by the admins: Party Mode stays, the live list goes
     setCatalog({ ...EMPTY_CATALOG, multiplayer: [] });
-    const { container } = render(<MultiplayerRow />);
-    expect(container.innerHTML).toBe('');
+    render(<PlayTogether />);
+    expect(screen.queryByRole('heading', { name: 'Live online' })).toBeNull();
+    expect(screen.getByRole('link', { name: /Got friends over\? Pass the phone\./ })).toBeTruthy();
   });
 });

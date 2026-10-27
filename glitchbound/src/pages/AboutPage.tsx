@@ -15,13 +15,13 @@ export function AboutPage() {
       <p className="eyebrow">{t('About')}</p>
       <h1 className="info-title">{t('Small games. Big obsessions.')}</h1>
       <p className="info-lead">
-        {t('GlitchBound is an independent browser arcade: {n} original games that start in a second, plus Party Mode for groups. No installs, nothing to buy and no account needed.', { n: games.length })}
+        {t('GlitchBound is an independent browser arcade: {n} quick games that start in a second, a fantasy RPG, and Party Mode for groups. No installs, nothing to buy and no account needed.', { n: games.length })}
       </p>
 
       <div className="info-cols">
         <section className="panel info-block" aria-labelledby="a-who">
           <h2 id="a-who">{t('Who makes it')}</h2>
-          <p>{t('GlitchBound is an independent studio. Every game is designed and built here: no clones, no reskins, no games bought in from elsewhere.')}</p>
+          <p>{t('GlitchBound is an independent studio. Every game is designed and built here, code and art. Some start from a classic idea, like a card game or a word puzzle, and give it a twist of our own.')}</p>
         </section>
 
         <section className="panel info-block" aria-labelledby="a-play">

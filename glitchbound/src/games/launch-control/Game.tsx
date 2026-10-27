@@ -1267,22 +1267,22 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                   <span className="lc-eyebrow mono">Your odds of winning</span>
                   <b className="mono">{Math.round(plan.forecast.pWin * 100)}%</b>
                   <span>
-                    A win pays <b>{plan.forecast.mult}×</b> your stake plus the <Cash n={plan.rival.purse} /> purse. Lose and the stake is gone (second still gets a small consolation).
+                    Back yourself with garage coins: win and they come back <b>{plan.forecast.mult}×</b>, plus the <Cash n={plan.rival.purse} /> purse. Lose and they go to your rival (second still gets a small consolation). Or just race.
                   </span>
                 </div>
-                <div className="lc-stakes" role="radiogroup" aria-label="Stake">
+                <div className="lc-stakes" role="radiogroup" aria-label="Coins to back yourself with">
                   {STAKE_SHARES.map((sh) => {
                     const amt = Math.floor(save.cash * sh);
                     return (
                       <button key={sh} role="radio" aria-checked={plan.stake === amt} className={`lc-stake${plan.stake === amt ? ' is-on' : ''}`} onClick={() => setPlan({ ...plan, stake: amt })} disabled={save.cash === 0 && sh > 0}>
-                        <b>{sh === 0 ? 'No bet' : sh === 1 ? 'All in' : `${sh * 100}%`}</b>
+                        <b>{sh === 0 ? 'Just race' : `${sh * 100}%`}</b>
                         {sh > 0 && <small className="mono">${fmtShort(amt)}</small>}
                       </button>
                     );
                   })}
                 </div>
                 <p className="lc-foot mono">
-                  Stake ${fmtCash(plan.stake)} → ${fmtCash(Math.round(plan.stake * plan.forecast.mult))} back on a win
+                  {plan.stake > 0 ? `Backing yourself with $${fmtCash(plan.stake)} → $${fmtCash(Math.round(plan.stake * plan.forecast.mult))} if you win` : 'Racing for the purse alone'}
                 </p>
               </div>
             )}
@@ -2322,7 +2322,7 @@ function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onCla
           </li>
           {p.stake > 0 && (
             <li>
-              <span>Wager</span>
+              <span>Backed yourself</span>
               <Cash n={o.cash.wager} sign />
             </li>
           )}

@@ -11,6 +11,7 @@ import { melodyLength, morseText, playMorse, playTune } from './sound';
 import { UI, type Ui } from './ui';
 import './Game.css';
 import { GameMenuButton } from '../../components/GameMenuButton';
+import { gameUrl } from '../../catalog/urls';
 
 const STORE = 'glitchbound.wait-what';
 const STRIKES = 3;
@@ -510,7 +511,7 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
     return share >= 0.9 ? d0 : share >= 0.7 ? d1 : share >= 0.5 ? d2 : share >= 0.3 ? d3 : d4;
   }, [correct, run.picks.length, mode, u]);
 
-  const shareText = `Quizbelief #${dailyNumber(today)} 🤯\n${grid(qs, run)}\n${u.shareLine(correct, qs.length, total.toLocaleString(p.locale))}\n${window.location.origin}/games/wait-what`;
+  const shareText = `Quizbelief #${dailyNumber(today)} 🤯\n${grid(qs, run)}\n${u.shareLine(correct, qs.length, total.toLocaleString(p.locale))}\n${window.location.origin}${gameUrl('wait-what')}`;
   return (
     <div className="ww ww-results">
       <p className="ww-eyebrow">{mode === 'daily' ? u.dailyQuiz(dailyNumber(today)) : mode === 'challenge' ? u.challengeRound(challenge?.round ?? 1) : u.endlessRun}</p>

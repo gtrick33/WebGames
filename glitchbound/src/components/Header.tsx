@@ -8,7 +8,7 @@ import { streakState } from '../platform/engage';
 import { useNow } from '../platform/hooks';
 import { useStreakDays } from '../platform/streak';
 import { useLiveCatalog } from '../platform/liveCatalog';
-import { SECTION_GAMES } from '../catalog/catalog';
+import { gameUrl, SECTION_GAMES } from '../catalog/catalog';
 import { Link, useLocation } from '../router/router';
 import { Icon, type IconName } from './Icon';
 import { LogoMark, Wordmark } from './Logo';
@@ -182,7 +182,7 @@ export function Header() {
 
   const tabs = useTabs();
   // A section game's own /games/<slug> address belongs to its tab, not the arcade's.
-  const sectionAt = SECTION_GAMES.find((g) => pathname === g.section!.path || pathname === `/games/${g.slug}`);
+  const sectionAt = SECTION_GAMES.find((g) => pathname === g.section!.path || pathname === gameUrl(g.slug));
   const active = (href: string): boolean => (sectionAt ? href === sectionAt.section!.path : href === '/' ? pathname === '/' || pathname.startsWith('/games/') : pathname.startsWith(href));
 
   return (

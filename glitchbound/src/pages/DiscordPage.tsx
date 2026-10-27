@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getGame } from '../catalog/catalog';
+import { gameUrl, getGame } from '../catalog/catalog';
 import { Icon } from '../components/Icon';
 import { callGames, playInCall, startDiscord, watchParticipants, type CallGames, type DiscordSession, type Participant } from '../discord/session';
 import { useT } from '../i18n';
@@ -126,7 +126,7 @@ export function Picker({ session }: { session: DiscordSession }) {
     setMsg('');
     try {
       const r = await playInCall(session.instanceId, slug, session.user.name, playerKey());
-      if (r.challenge) return navigate(`/games/wait-what?challenge=${r.challenge}`);
+      if (r.challenge) return navigate(`${gameUrl('wait-what')}?challenge=${r.challenge}`);
       if (r.room) return navigate(`/games/crass-act?room=${r.room}`);
       throw new Error('empty');
     } catch (e) {

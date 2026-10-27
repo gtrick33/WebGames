@@ -14,8 +14,9 @@ html[data-season] .brand::after {
 }
 
 /* Highlight colours: the hero's second line and the greeting. */
-html[data-season] .intro-hl {
+html[data-season] .hero-hl {
   background: linear-gradient(90deg, var(--season-1), var(--season-2));
+  animation: none;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
