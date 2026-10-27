@@ -83,6 +83,8 @@ export interface UiState {
 }
 
 const STEP = 1 / 60;
+/** On touch screens the hero stands this share of the view's width off the middle (render/renderer.ts frameShift). */
+const FRAME_SHIFT = 0.1;
 
 export class SigilEngine {
   save: SaveFile;
@@ -296,6 +298,7 @@ export class SigilEngine {
     this.handleEvents(w);
     this.renderer.aim = paused ? null : this.touch.aim;
     this.renderer.touchMode = this.touchMode;
+    this.renderer.frameShift = this.touchMode ? (this.settings.lefty ? -FRAME_SHIFT : FRAME_SHIFT) : 0;
     this.renderer.pointer = this.kbm?.view() ?? null;
     this.renderer.draw(w, paused ? 0 : dt, now / 1000);
     for (const fn of this.frameHooks) fn(w, this);

@@ -185,8 +185,9 @@ function Hud({ engine }: { engine: SigilEngine }) {
         <HudButton icon="star" label="Talents" badge={points || undefined} onClick={() => engine.openPanel('talents')} kbd="K" engine={engine} />
         {/* spare: a tab of the Hero panel too, so a narrow screen can do without the button */}
         <HudButton icon="skills" label="Skills" onClick={() => engine.openPanel('skills')} kbd="U" engine={engine} spare />
+        {/* on touch the tracker opens the quests and the minimap the map (and both are tabs of the Hero panel) */}
         <HudButton icon="scroll" label="Quests" onClick={() => engine.openPanel('quests')} kbd="J" engine={engine} spare />
-        <HudButton icon="map" label="Map" onClick={() => engine.openPanel('map')} kbd="M" engine={engine} />
+        <HudButton icon="map" label="Map" onClick={() => engine.openPanel('map')} kbd="M" engine={engine} spare />
         <HudButton icon="pause" label="Pause" onClick={() => engine.togglePause()} kbd="Esc" engine={engine} />
         <GameMenuButton className="rb-hudbtn" />
       </div>

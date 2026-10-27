@@ -262,6 +262,8 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
     else cast(null, null);
   };
 
+  // a slot with nothing in it yet (it opens at a later level) takes no room on the thumbs' side
+  if (locked) return null;
   const label = slot === 'basic' ? 'Attack' : slot === 'dodge' ? 'Dodge' : slot === 'ult' ? 'Ultimate' : `Skill ${slot.slice(1)}`;
   // a slot not open yet shows the level it opens at; an open one the level of the next skill to learn
   const opens = slotLevel(slot);
@@ -334,7 +336,10 @@ function MountButton({ engine }: { engine: SigilEngine }) {
   );
 }
 
-/** Talk / travel: a big button when something is in reach. */
+/**
+ * Talk / travel: a big button over the hero when something is in reach, where the eye already is (the
+ * open middle of the screen, the hero framed left of it), not in the crowded corner of the menus.
+ */
 function InteractButton({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLButtonElement>(null);
   const text = useRef<HTMLSpanElement>(null);
@@ -343,7 +348,22 @@ function InteractButton({ engine }: { engine: SigilEngine }) {
     if (!b) return;
     const it = w.interactable;
     b.hidden = !it;
-    if (it && text.current) text.current.textContent = it.label;
+    if (!it) return;
+    if (text.current && text.current.textContent !== it.label) text.current.textContent = it.label;
+    // pinned over the hero's head, where the eye already is (a person or a door is usually beside them),
+    // kept inside the view
+    const p = w.player;
+    const at = engine.renderer.toScreen(p.x, p.y - 30);
+    const host = b.offsetParent as HTMLElement | null;
+    const bw = b.offsetWidth;
+    const bh = b.offsetHeight;
+    const maxX = (host?.clientWidth ?? 800) - bw - 8;
+    const maxY = (host?.clientHeight ?? 400) - bh - 8;
+    const x = Math.max(8, Math.min(maxX, at.x - bw / 2));
+    const y = Math.max(8, Math.min(maxY, at.y - bh));
+    // left and top, not a transform: the button bobs with one
+    b.style.left = `${Math.round(x)}px`;
+    b.style.top = `${Math.round(y)}px`;
   });
   return (
     <button

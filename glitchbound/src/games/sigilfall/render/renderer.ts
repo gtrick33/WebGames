@@ -187,6 +187,19 @@ export class Renderer {
     return { x: this.camX + cx * k, y: this.camY + cy * k };
   }
 
+  /** World coordinates to the screen (CSS px relative to the canvas): where to pin a button to the hero. */
+  toScreen(x: number, y: number): { x: number; y: number } {
+    const k = this.dpr / this.scale / this.res;
+    return { x: (x - this.camX) / k, y: (y - this.camY) / k };
+  }
+
+  /**
+   * On touch screens the hero stands left of the middle (right of it, left-handed), as many phone games
+   * frame them: the thumb buttons and the menus on that side cover open ground instead of the fight.
+   * A share of the view's width.
+   */
+  frameShift = 0;
+
   private look: HeroLook | null = null;
 
   /** Picks up the hero's gear: the weapon in hand and the look of everything worn. */
@@ -223,7 +236,9 @@ export class Renderer {
 
   private placeCamera(w: World): void {
     // what is actually on screen: the drawn view less its spare world pixel
-    const c = placeCamera(w.player.x, w.player.y, { x: this.leanX, y: this.leanY }, this.vw - 1, this.vh - 1, w.map.w * TILE, w.map.h * TILE, this.res, this.scale);
+    // only on a wide view: upright, the thumbs are below the hero, not beside them
+    const shift = this.vw > this.vh * 1.2 ? this.frameShift * (this.vw - 1) : 0;
+    const c = placeCamera(w.player.x, w.player.y, { x: this.leanX + shift, y: this.leanY }, this.vw - 1, this.vh - 1, w.map.w * TILE, w.map.h * TILE, this.res, this.scale);
     this.camX = c.camX;
     this.camY = c.camY;
     this.drawX = c.drawX;
@@ -2235,7 +2250,8 @@ export class Renderer {
   /** A bobbing hint over what you can interact with. */
   private drawInteractMarker(w: World, time: number): void {
     const it = w.interactable;
-    if (!it) return;
+    // on touch the Talk button itself stands beside the hero (ui/Touch.tsx)
+    if (!it || this.touchMode) return;
     const g = this.g;
     const img = pixelText(it.kind === 'npc' ? 'TALK' : it.kind === 'waystone' ? 'TRAVEL' : 'EXIT', '#ffffff');
     const y = Math.round(it.y - 34 + Math.sin(time * 4) * 1.5);
