@@ -1,14 +1,15 @@
-/* Sigilfall: dusk-violet panels with gold trim, chunky pixel-game buttons, crisp pixels on the canvas. */
+/* Sigilfall: dark iron and leather with antique gold, serif titles (VISUAL_BIBLE.md §1); crisp pixels on the canvas. */
 .rb {
-  --rb-ink: #1b1428;
-  --rb-panel: #2b2040;
-  --rb-panel-2: #3a2c56;
-  --rb-panel-3: #4a3a6a;
-  --rb-trim: #8a6a3a;
-  --rb-gold: #ffcf5a;
-  --rb-gold-2: #b08a2a;
-  --rb-text: #f4ecff;
-  --rb-dim: #b9a9d6;
+  --rb-ink: #120c08;
+  --rb-panel: #221a14;
+  --rb-panel-2: #2c2219;
+  --rb-panel-3: #3c2e22;
+  --rb-trim: #a8823a;
+  --rb-gold: #e9c46a;
+  --rb-gold-2: #a8823a;
+  --rb-serif: Georgia, 'Times New Roman', serif;
+  --rb-text: #f3ead8;
+  --rb-dim: #bba98c;
   --rb-red: #ff4a5a;
   --rb-cyan: #22e4ff;
   --rb-green: #6dff8f;
@@ -111,7 +112,7 @@
   border-radius: 3px;
   background: var(--rb-ink);
   color: var(--rb-dim);
-  border: 1px solid #4a3a6a;
+  border: 1px solid #5a4630;
 }
 
 /* ------------------------------------------------------------ buttons */
@@ -152,7 +153,7 @@
 .rb-btn.is-ghost {
   background: transparent;
   box-shadow: none;
-  border-color: #5a4a7a;
+  border-color: #6a5236;
   color: var(--rb-dim);
 }
 .rb-btn.is-small {
@@ -180,7 +181,7 @@
   height: 42px;
   border: 2px solid var(--rb-ink);
   border-radius: 8px;
-  background: rgb(43 32 64 / 0.88);
+  background: rgb(34 26 20 / 0.88);
   box-shadow:
     inset 0 2px 0 rgb(255 255 255 / 0.1),
     0 2px 0 var(--rb-ink);
@@ -232,7 +233,7 @@
   display: grid;
   place-items: center;
   padding: calc(8px + var(--sa-t)) calc(8px + var(--sa-r)) calc(8px + var(--sa-b)) calc(8px + var(--sa-l));
-  background: rgb(10 6 20 / 0.55);
+  background: rgb(10 7 4 / 0.55);
   pointer-events: auto;
   animation: rb-fade 0.15s ease-out;
 }
@@ -248,7 +249,7 @@
 .rb-card {
   border: 3px solid var(--rb-ink);
   border-radius: 10px;
-  background: linear-gradient(180deg, #33264b, #261c3a);
+  background: linear-gradient(180deg, #2c2219, #1c150f);
   box-shadow:
     inset 0 0 0 2px var(--rb-trim),
     inset 0 0 0 4px rgb(0 0 0 / 0.25),
@@ -358,7 +359,7 @@
   height: 6px;
   border: 1px solid var(--rb-ink);
   border-radius: 3px;
-  background: #1b1428;
+  background: #120c08;
   overflow: hidden;
 }
 .rb-bar i {
@@ -382,7 +383,7 @@
   flex: none;
   border: 2px solid var(--rc, #888);
   border-radius: 6px;
-  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc) 28%, #1b1428), #1b1428);
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc) 28%, #120c08), #120c08);
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5);
 }
 .rb-itemicon img,
@@ -508,14 +509,14 @@
     text-shadow:
       3px 0 0 #ff3fd2,
       -3px 0 0 #22e4ff,
-      0 4px 0 #1b1428;
+      0 4px 0 #120c08;
     transform: none;
   }
   93% {
     text-shadow:
       7px 0 0 #ff3fd2,
       -7px 0 0 #22e4ff,
-      0 4px 0 #1b1428;
+      0 4px 0 #120c08;
     transform: skewX(-6deg);
   }
   95% {
@@ -541,7 +542,7 @@
   padding: 10px 12px;
   border: 3px solid var(--rb-ink);
   border-radius: 10px;
-  background: rgb(43 32 64 / 0.92);
+  background: rgb(34 26 20 / 0.92);
   box-shadow: inset 0 0 0 2px var(--rb-trim);
   text-align: left;
 }
@@ -550,7 +551,7 @@
   justify-content: center;
   gap: 10px;
   border-style: dashed;
-  background: rgb(43 32 64 / 0.5);
+  background: rgb(34 26 20 / 0.5);
   box-shadow: none;
   color: var(--rb-dim);
   font-weight: 800;
@@ -1041,7 +1042,7 @@
   padding: 12px 8px;
   border: 3px solid var(--rb-ink);
   border-radius: 10px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cc) 35%, #2b2040), #2b2040);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cc) 35%, #221a14), #221a14);
   box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.06);
   transition: transform 0.12s;
 }
@@ -1066,7 +1067,7 @@
   width: 9px;
   height: 9px;
   border: 2px solid var(--rb-ink);
-  background: #4a3a6a;
+  background: #5a4630;
 }
 .rb-dots i.is-on {
   background: var(--rb-gold);
@@ -1079,7 +1080,7 @@
   padding: 12px 14px;
   border: 3px solid var(--rb-ink);
   border-radius: 10px;
-  background: rgb(43 32 64 / 0.9);
+  background: rgb(34 26 20 / 0.9);
 }
 .rb-create-detail p {
   margin: 0;
@@ -1108,7 +1109,7 @@
   padding: 0 12px;
   border: 2px solid var(--rb-ink);
   border-radius: 7px;
-  background: #1b1428;
+  background: #120c08;
   color: var(--rb-text);
   font: 700 17px var(--font);
   user-select: text;
@@ -1132,7 +1133,7 @@
   height: 46px;
   border: 3px solid var(--rb-ink);
   border-radius: 9px;
-  background: rgb(43 32 64 / 0.92);
+  background: rgb(34 26 20 / 0.92);
   box-shadow: inset 0 0 0 2px var(--rb-trim);
 }
 .rb-lvl {
@@ -1306,7 +1307,7 @@
   height: 44px;
   border: 2px solid var(--rb-ink);
   border-radius: 8px;
-  background: rgb(43 32 64 / 0.88);
+  background: rgb(34 26 20 / 0.88);
 }
 .rb-potion img {
   width: 21px;
@@ -1342,9 +1343,9 @@
   display: grid;
   max-width: min(240px, 40vw);
   padding: 6px 10px;
-  border: 2px solid rgb(27 20 40 / 0.8);
+  border: 2px solid rgb(18 12 8 / 0.8);
   border-radius: 8px;
-  background: rgb(27 20 40 / 0.62);
+  background: rgb(18 12 8 / 0.62);
   text-align: left;
   font-size: 12.5px;
 }
@@ -1399,7 +1400,7 @@
   padding: 8px 12px;
   border: 2px solid var(--rb-ink);
   border-radius: 8px;
-  background: rgb(27 20 40 / 0.5);
+  background: rgb(18 12 8 / 0.5);
   text-align: center;
   font-size: 13.5px;
 }
@@ -1481,7 +1482,7 @@
   transform: translateX(-50%);
   padding: 4px 12px;
   border-radius: 8px;
-  background: rgb(27 20 40 / 0.75);
+  background: rgb(18 12 8 / 0.75);
   border: 2px solid #ff4a5a;
   font-size: 13px;
   font-weight: 800;
@@ -1577,7 +1578,7 @@
   padding: 7px 9px;
   border: 2px solid var(--rb-ink);
   border-radius: 8px;
-  background: rgb(43 32 64 / 0.94);
+  background: rgb(34 26 20 / 0.94);
   box-shadow: 0 3px 0 rgb(0 0 0 / 0.35);
   animation: rb-slide 0.22s ease-out;
 }
@@ -1757,7 +1758,7 @@
   place-items: center;
   border: 3px solid var(--rb-ink);
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #5a4a82, #3a2c56 70%);
+  background: radial-gradient(circle at 40% 35%, #4a3a28, #2c2219 70%);
   box-shadow:
     inset 0 -4px 0 rgb(0 0 0 / 0.3),
     inset 0 3px 0 rgb(255 255 255 / 0.12),
@@ -1849,14 +1850,14 @@
   width: 70px;
   height: 70px;
   border-color: #3a2a10;
-  background: conic-gradient(from 180deg, #ffcf5a var(--fill, 0%), #3a2c56 0);
+  background: conic-gradient(from 180deg, #ffcf5a var(--fill, 0%), #2c2219 0);
 }
 .rb-sb-ult::before {
   content: '';
   position: absolute;
   inset: 5px;
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #5a4a82, #2b2040 70%);
+  background: radial-gradient(circle at 40% 35%, #4a3a28, #221a14 70%);
 }
 .rb-sb-ult img,
 .rb-sb-ult .rb-sb-num,
@@ -2026,7 +2027,7 @@
   padding: 6px;
   border: 3px solid var(--rb-ink);
   border-radius: 10px;
-  background: rgb(27 20 40 / 0.82);
+  background: rgb(18 12 8 / 0.82);
   box-shadow: inset 0 0 0 2px var(--rb-trim);
 }
 .rb-slot6 {
@@ -2037,7 +2038,7 @@
   height: 52px;
   border: 2px solid var(--rb-ink);
   border-radius: 8px;
-  background: radial-gradient(circle at 40% 35%, #5a4a82, #3a2c56 70%);
+  background: radial-gradient(circle at 40% 35%, #4a3a28, #2c2219 70%);
   overflow: hidden;
 }
 .rb-slot6 img {
@@ -2060,14 +2061,14 @@
 }
 .rb-slot6.is-ult {
   border-color: #3a2a10;
-  background: conic-gradient(from 180deg, #ffcf5a var(--fill, 0%), #3a2c56 0);
+  background: conic-gradient(from 180deg, #ffcf5a var(--fill, 0%), #2c2219 0);
 }
 .rb-slot6.is-ult::before {
   content: '';
   position: absolute;
   inset: 4px;
   border-radius: 5px;
-  background: radial-gradient(circle at 40% 35%, #5a4a82, #2b2040 70%);
+  background: radial-gradient(circle at 40% 35%, #4a3a28, #221a14 70%);
 }
 .rb-slot6.is-mount {
   width: 40px;
@@ -2144,7 +2145,7 @@
   transform: translateX(-50%);
   border: 3px solid var(--rb-ink);
   border-radius: 10px;
-  background: linear-gradient(180deg, #33264b, #261c3a);
+  background: linear-gradient(180deg, #2c2219, #1c150f);
   box-shadow:
     inset 0 0 0 2px var(--rb-trim),
     0 6px 0 rgb(0 0 0 / 0.35);
@@ -2158,7 +2159,7 @@
   height: 70px;
   border: 2px solid var(--rb-ink);
   border-radius: 8px;
-  background: #1b1428;
+  background: #120c08;
 }
 .rb-dialogue-body {
   display: grid;
@@ -2362,9 +2363,9 @@
   right: calc(14px + var(--sa-r));
   bottom: calc(10px + var(--sa-b));
   padding: 6px 14px;
-  border: 2px solid #5a4a82;
+  border: 2px solid #4a3a28;
   border-radius: 8px;
-  background: rgb(27 20 40 / 0.85);
+  background: rgb(18 12 8 / 0.85);
   color: #f2ead8;
   font: inherit;
   font-weight: 700;
@@ -2792,7 +2793,7 @@
   padding: 0 3px;
   border: 2px solid var(--rb-ink);
   border-radius: 5px;
-  background: #1b1428;
+  background: #120c08;
   font: 700 10px/13px var(--mono);
 }
 .rb-talent-detail {
@@ -2962,7 +2963,7 @@
   outline: none;
 }
 .rb-world-mark {
-  fill: #1b1428;
+  fill: #120c08;
   stroke-width: 0.6;
 }
 .rb-world-node.is-sel > .rb-world-mark,
@@ -2990,7 +2991,7 @@
 .rb-world-goal {
   font-weight: 700;
   paint-order: stroke;
-  stroke: #1b1428;
+  stroke: #120c08;
   stroke-width: 0.7;
   pointer-events: none;
 }
@@ -3238,7 +3239,7 @@
     width: min(320px, 100%);
     overflow: auto;
     z-index: 2;
-    background: #261c3a;
+    background: #1c150f;
     border: 3px solid var(--rb-ink);
     box-shadow: -6px 0 0 rgb(0 0 0 / 0.3);
   }
@@ -3248,7 +3249,7 @@
     bottom: -8px;
     margin: 0 -8px -8px;
     padding: 8px;
-    background: #261c3a;
+    background: #1c150f;
     box-shadow: 0 -6px 8px rgb(38 28 58 / 0.9);
   }
   .rb-frame.is-wide {
@@ -3471,7 +3472,7 @@
   padding: 0 10px;
   border: 2px solid var(--rb-ink);
   border-radius: 7px;
-  background: #1b1428;
+  background: #120c08;
   color: var(--rb-text);
   font: 700 15px var(--font);
   user-select: text;
@@ -3489,7 +3490,7 @@
   padding: 10px;
   border: 2px solid var(--rb-ink);
   border-radius: 8px;
-  background: rgb(27 20 40 / 0.5);
+  background: rgb(18 12 8 / 0.5);
 }
 .rb-party-mode p {
   margin: 0;
@@ -3539,7 +3540,7 @@
   padding: 6px 10px;
   border: 2px solid var(--rb-ink);
   border-radius: 8px;
-  background: rgb(27 20 40 / 0.5);
+  background: rgb(18 12 8 / 0.5);
 }
 .rb-party-seats li .rb-small {
   grid-column: 1;
@@ -3609,4 +3610,230 @@
   display: block;
   height: 100%;
   background: #6ad06a;
+}
+
+/* ------------------------------------------------------- epic chrome */
+/*
+ * The interface of an old kingdom, not a toy (a playtester found the look goofy, 2026-10-27): gold-edged iron
+ * buttons, leather panels with a double gold rule, serif titles, deep red and blue bars in bronze frames.
+ */
+.rb-btn {
+  border: 1px solid #0d0906;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #4a3a2a, #2c2118 70%, #241a12);
+  color: var(--rb-text);
+  font-family: var(--rb-serif);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow:
+    inset 0 0 0 1px rgb(201 160 90 / 0.45),
+    inset 0 1px 0 rgb(255 230 180 / 0.18),
+    0 2px 0 #0d0906,
+    0 3px 8px rgb(0 0 0 / 0.4);
+}
+.rb-btn:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 1px rgb(201 160 90 / 0.45),
+    0 1px 0 #0d0906;
+}
+.rb-btn.is-gold {
+  background: linear-gradient(180deg, #fbe7a8, #e1b65a 45%, #a8752e);
+  color: #1a1008;
+  text-shadow: 0 1px 0 rgb(255 240 200 / 0.6);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 245 210 / 0.6),
+    0 2px 0 #0d0906,
+    0 3px 10px rgb(0 0 0 / 0.45);
+}
+.rb-btn.is-danger {
+  background: linear-gradient(180deg, #a83228, #6a1810);
+}
+.rb-btn.is-ghost {
+  background: rgb(18 12 8 / 0.35);
+  border-color: rgb(168 130 58 / 0.5);
+  box-shadow: none;
+}
+.rb-iconbtn,
+.rb-hudbtn {
+  border: 1px solid #0d0906;
+  border-radius: 6px;
+  background: radial-gradient(circle at 50% 30%, #3e3022, #1a130d 75%);
+  box-shadow:
+    inset 0 0 0 1px rgb(201 160 90 / 0.55),
+    inset 0 0 8px rgb(0 0 0 / 0.6),
+    0 2px 6px rgb(0 0 0 / 0.5);
+}
+.rb-hudbtn:hover {
+  box-shadow:
+    inset 0 0 0 1px var(--rb-gold),
+    inset 0 0 8px rgb(0 0 0 / 0.5),
+    0 0 10px rgb(233 196 106 / 0.35);
+}
+.rb-x {
+  border: 1px solid #0d0906;
+  border-radius: 5px;
+  background: linear-gradient(#3c2e22, #22190f);
+  box-shadow: inset 0 0 0 1px rgb(201 160 90 / 0.5);
+  color: var(--rb-gold);
+}
+.rb-badge {
+  border: 1px solid #0d0906;
+  background: radial-gradient(circle at 40% 35%, #e0545a, #8a121c);
+  box-shadow: 0 0 0 1px rgb(233 196 106 / 0.8);
+}
+/* panels: dark leather, a double gold rule, a warm light from above */
+.rb-frame,
+.rb-card,
+.rb-dialogue {
+  border: 1px solid #0d0906;
+  border-radius: 6px;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgb(233 196 106 / 0.07), transparent 60%),
+    linear-gradient(180deg, #2e241a, #1a130d);
+  box-shadow:
+    inset 0 0 0 1px #a8823a,
+    inset 0 0 0 4px #160f0a,
+    inset 0 0 0 5px rgb(168 130 58 / 0.4),
+    0 18px 40px rgb(0 0 0 / 0.6);
+}
+.rb-frame-head {
+  border-bottom: 1px solid rgb(168 130 58 / 0.4);
+  background: linear-gradient(180deg, rgb(233 196 106 / 0.08), transparent);
+}
+.rb-frame-head h2 {
+  font-family: var(--rb-serif);
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow:
+    0 1px 0 #000,
+    0 0 12px rgb(233 196 106 / 0.25);
+}
+.rb-dialogue-face {
+  border: 1px solid #0d0906;
+  box-shadow: inset 0 0 0 1px rgb(168 130 58 / 0.6);
+}
+.rb-dialogue-body strong,
+.rb-tracker strong,
+.rb-toast-text strong,
+.rb-kicker {
+  font-family: var(--rb-serif);
+  letter-spacing: 0.02em;
+}
+/* the hero's frame: a gold-ringed portrait, bars in bronze frames */
+.rb-hud-face {
+  border: 1px solid #0d0906;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #3e3022, #140e09);
+  box-shadow:
+    0 0 0 2px #a8823a,
+    0 0 0 3px #0d0906,
+    0 3px 8px rgb(0 0 0 / 0.55);
+  overflow: hidden;
+}
+.rb-lvl {
+  border: 1px solid #0d0906;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fbe7a8, #c9963e 60%, #8a6224);
+  font-family: var(--rb-serif);
+  font-weight: 700;
+}
+.rb-hp,
+.rb-mp,
+.rb-pips i {
+  border: 1px solid #0d0906;
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 1px rgb(168 130 58 / 0.75),
+    inset 0 2px 4px rgb(0 0 0 / 0.6);
+}
+.rb-hp {
+  background: #24070b;
+}
+.rb-hp i {
+  background: linear-gradient(180deg, #f07a6a, #b81e28 45%, #6a0a12);
+}
+.rb-mp {
+  background: #07122a;
+}
+.rb-mp i {
+  background: linear-gradient(180deg, #8ab8ff, #2a5ad8 45%, #102a7a);
+}
+.rb-region,
+.rb-hud-hero .rb-region {
+  font-family: var(--rb-serif);
+}
+/* the skill bar: an iron strip with gold rules, slots like set stones */
+.rb-bar6 {
+  border: 1px solid #0d0906;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgb(46 36 26 / 0.92), rgb(20 14 9 / 0.92));
+  box-shadow:
+    inset 0 0 0 1px rgb(168 130 58 / 0.7),
+    0 6px 16px rgb(0 0 0 / 0.5);
+}
+.rb-slot6,
+.rb-sb {
+  border: 1px solid #0d0906;
+  background: radial-gradient(circle at 50% 35%, #3a2d20, #120c08 75%);
+  box-shadow:
+    inset 0 0 0 1px rgb(168 130 58 / 0.55),
+    inset 0 0 10px rgb(0 0 0 / 0.7);
+}
+.rb-slot6.is-ult {
+  background: conic-gradient(from 180deg, #e9c46a var(--fill, 0%), #2a2017 0);
+}
+.rb-slot6.is-ult::before {
+  background: radial-gradient(circle at 50% 35%, #3a2d20, #120c08 75%);
+}
+.rb-minimap-hud canvas {
+  box-shadow:
+    0 0 0 2px #a8823a,
+    0 0 0 3px #0d0906,
+    0 4px 10px rgb(0 0 0 / 0.55);
+}
+/* news across the screen: carved gold, in the serif */
+.rb-banner strong {
+  font-family: var(--rb-serif);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow:
+    0 2px 0 #000,
+    0 0 22px rgb(233 196 106 / 0.45);
+}
+.rb-banner span {
+  font-family: var(--rb-serif);
+  font-style: italic;
+  letter-spacing: 0.03em;
+}
+.rb-levelup {
+  border: 1px solid #0d0906;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #2e241a, #1a130d);
+  color: var(--rb-text);
+  box-shadow:
+    inset 0 0 0 1px #a8823a,
+    0 0 24px rgb(233 196 106 / 0.35),
+    0 8px 20px rgb(0 0 0 / 0.5);
+}
+.rb-levelup strong {
+  font-family: var(--rb-serif);
+  color: var(--rb-gold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 0 14px rgb(233 196 106 / 0.5);
+}
+.rb-toast {
+  border: 1px solid #0d0906;
+  border-radius: 5px;
+  background: linear-gradient(180deg, rgb(44 34 25 / 0.95), rgb(24 17 11 / 0.95));
+  box-shadow:
+    inset 0 0 0 1px rgb(168 130 58 / 0.45),
+    0 4px 12px rgb(0 0 0 / 0.4);
+}
+.rb-tracker {
+  border: 1px solid rgb(13 9 6 / 0.8);
+  border-radius: 5px;
+  background: linear-gradient(90deg, rgb(20 14 9 / 0.78), rgb(20 14 9 / 0.5));
+  box-shadow: inset 0 0 0 1px rgb(168 130 58 / 0.35);
 }

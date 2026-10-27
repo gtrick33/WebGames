@@ -5,10 +5,24 @@ roles are in ASSET_AUDIT.md; the tables that implement this live in `render/art/
 
 ## 1. The look
 
-**Colorful, smooth, dense fantasy** led by the approved CraftPix packs: flat cel-shaded vector shapes with one soft
-highlight, a warm dark-brown outline (never pure black), saturated but not neon greens, warm sand and wood, slate
-and stone a little desaturated so people and danger read on top. Royal Keep supplies the kingdom's **architecture**;
-the Worlds bundle fills gaps after normalization; nothing else enters without approval.
+**Epic, atmospheric fantasy** (since 2026-10-27: a playtester found the bright look goofy; the owner asked for the
+mood of the great fantasy worlds, WoW, Elden Ring, the Lord of the Rings, without copying any of them). The approved
+CraftPix packs still draw the land (cel-shaded shapes with one soft highlight, a warm dark-brown outline, never pure
+black), but the picture is **lit like a place**: deep greens rather than candy ones, warm low sun from the upper left
+against cool shadows, weather moving over the ground, mist in the old places, and a frame that draws the eye in.
+Royal Keep supplies the kingdom's **architecture**; the Worlds bundle fills gaps after normalization; nothing else
+enters without approval.
+
+- **Atmosphere** (`render/atmosphere.ts`, each frame, under bars and numbers): a land's mood is its depth (a multiply
+  toward the land's color), drifting cloud shadows, slanting sun shafts with motes in them, banks of mist, a
+  warm-to-cool grade, a little color taken out of the whole picture (people included, so they belong to the land),
+  and a vignette. Golden in the Vale, cold and blue in the highlands, overcast and misty in the dead lands, smoky
+  orange at the warfront; indoors only the grade and the vignette (the torches do the rest).
+- **Grades**: the Vale's lands are graded deeper and richer at load (`VALE_GRADE` in `render/art/recipes.ts`); a
+  land's own grade goes on top.
+- **People**: wanderers' colors, not costume colors: the mage in storm-grey and slate.
+- **Interface**: dark iron and leather with antique gold, double gold rules on panels, serif titles (Georgia),
+  deep red and blue bars in bronze frames, a gold-ringed portrait and minimap (`Game.css`, "epic chrome").
 
 - **Grid**: 16 world px per tile, drawn at **4 art px per world px (64 px per tile)**.
 - **View**: top-down 3/4. Roofs and wall tops from above, south faces visible, doors on the south face.

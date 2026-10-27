@@ -42,9 +42,10 @@ const BARE: Record<ClassId, HeroLook> = {
     skin: '#f5c9a0',
     hair: '#e8e4f0',
     hairStyle: 'short',
-    head: { style: 'wizard', mat: 'cloth', tint: '#7a5ae6', r: 'common' },
-    chest: { style: 'robe', mat: 'cloth', tint: '#6a4ad0', r: 'common' },
-    legs: { style: 'trousers', mat: 'cloth', tint: '#4a3a7a', r: 'common' },
+    // a wanderer's storm-grey and slate, not a costume-shop purple (VISUAL_BIBLE.md §1)
+    head: { style: 'wizard', mat: 'cloth', tint: '#4a5472', r: 'common' },
+    chest: { style: 'robe', mat: 'cloth', tint: '#3a4564', r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: '#272d42', r: 'common' },
     hands: null,
     feet: { style: 'shoes', mat: 'leather', tint: '#6a4428', r: 'common' },
     quiver: null,
