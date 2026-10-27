@@ -36,6 +36,7 @@ function usePartyLineup() {
   });
   const chosen = games.filter((g) => g.featured);
   return {
+    all: games,
     modes: games.filter((g) => g.onePhone),
     rooms: games.filter((g) => g.room),
     featured: chosen.length ? chosen : games.filter((g) => DEFAULT_FEATURED.includes(g.id)),
@@ -136,8 +137,6 @@ export function PartyPage() {
 function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: string; session: PartySession; update: (fn: (s: PartySession) => PartySession) => void; problem: string | null; onOpen: (m: ModeId) => void; onAdult: () => void }) {
   const [newName, setNewName] = useState('');
   const [sheet, setSheet] = useState<'rules' | 'custom' | null>(null);
-  // Games you can only play in a room open on the rooms tab.
-  const [where, setWhere] = useState<'one' | 'online'>(() => (focus === 'online' || PARTY_GAMES.some((g) => g.id === focus && !g.onePhone) ? 'online' : 'one'));
   // Opened from a link to one game: bring its card into view (it is highlighted for a moment).
   useEffect(() => {
     if (!focus) return;
@@ -187,7 +186,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
   ].join(' · ');
   const customCount = session.custom.challenges.length + session.custom.nhie.length;
   const crassAct = getGame('crass-act');
-  const { modes, rooms, featured } = usePartyLineup();
+  const { all, modes, featured } = usePartyLineup();
   // A game's way online (quick match, a public or private room, its public rooms) opens in a window.
   const [online, setOnline] = useState<RoomGame | null>(null);
   const [browseAll, setBrowseAll] = useState(false);
@@ -226,96 +225,17 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
         <h1 className="pt-title">
           <PartyTitle text={t('Party Mode')} />
         </h1>
-        <p className="pt-sub">{t('Friends over, or on a call? {n} games, no sign-up.', { n: modes.length + rooms.filter((r) => !r.onePhone).length })}</p>
-        <div className="pt-where" role="tablist" aria-label={t('How you play')}>
-          <button role="tab" aria-selected={where === 'one'} className={where === 'one' ? 'is-on' : ''} onClick={() => setWhere('one')}>
-            {t('📱 Pass one phone')}
-          </button>
-          <button role="tab" aria-selected={where === 'online'} className={where === 'online' ? 'is-on' : ''} onClick={() => setWhere('online')}>
-            {t('🌐 Everyone’s phone')}
-          </button>
-        </div>
+        <p className="pt-sub">{t('Friends over, or on a call? {n} games, no sign-up.', { n: all.length })}</p>
       </header>
 
       {featured.length > 0 && (
         <div className="pt-stars">
           {featured.map((g) => (
-            <Feature key={g.id} g={g} where={where} art={g.id === 'crass-act' ? crassAct?.art : g.art && { tile: g.art.tile, bg: g.color }} onPlay={() => pick(g.id as ModeId)} onRoom={() => g.room && openRoom(g.room)} />
+            <Feature key={g.id} g={g} art={g.id === 'crass-act' ? crassAct?.art : g.art && { tile: g.art.tile, bg: g.color }} onPlay={() => pick(g.id as ModeId)} onRoom={() => g.room && openRoom(g.room)} />
           ))}
         </div>
       )}
 
-      {where === 'online' && (
-        <>
-          <section className="pt-panel pt-online">
-            <h2>{t('Play on everyone’s own phone')}</h2>
-            <p className="pt-muted">{t('Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.')}</p>
-            <button className="pt-btn pt-btn-big pt-browse-all" onClick={() => setBrowseAll(true)}>
-              🔎 {t('Browse public rooms')}
-            </button>
-            <div className="pt-online-games">
-              {rooms.map((r) => {
-                // Crass Act keeps its arcade art and adults-only label; its room opens on its own page (name and age check first).
-                const art = r.id === 'crass-act' ? crassAct?.art : r.art && { tile: r.art.tile, bg: r.color };
-                const sticker = r.label;
-                return (
-                  <div key={r.id} data-party-game={r.id} className={`pt-online-game${focus === r.id ? ' is-found' : ''}`} style={{ ['--mc' as string]: r.color }}>
-                    {art ? (
-                      <img src={art.tile} alt="" width={84} height={84} style={{ background: art.bg }} />
-                    ) : (
-                      <span className="pt-mode-art" aria-hidden="true">
-                        {r.emoji}
-                      </span>
-                    )}
-                    <div>
-                      <b>
-                        {t(r.title)}
-                        {sticker && <em className="pt-mode-sticker">{sticker}</em>}
-                        {r.adult && <AdultLabel text={t('Adults only')} />}
-                      </b>
-                      <span>
-                        {t('{n} players', { n: r.roomPlayers ?? '' })} · {t(r.roomBlurb ?? '')}
-                      </span>
-                      <button className="pt-btn pt-btn-go pt-btn-sm" onClick={() => openRoom(r.room!)}>
-                        {t('Play online')}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-          <form
-            className="pt-panel pt-join"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const code = joinCode.trim().toUpperCase();
-              // /party?room= opens any room (Crass Act ones go on to their own page). /r/ links only work from outside the app.
-              if (ROOM_CODE.test(code)) navigate(`/party?room=${code}`);
-              else setJoinMsg('Check the code: five letters, like KQTRA (codes never use I, L or O).');
-            }}
-          >
-            <h2>{t('Got a code?')}</h2>
-            <div className="pt-add">
-              <input className="pt-input pt-code" value={joinCode} onChange={(e) => {
-                  setJoinCode(e.target.value.toUpperCase());
-                  setJoinMsg('');
-                }} placeholder={t('ABCDE')} maxLength={5} aria-label={t('Room code')} autoCapitalize="characters" />
-              <button className="pt-btn pt-btn-go" disabled={joinCode.trim().length !== 5}>
-                {t('Join')}
-              </button>
-            </div>
-            {joinMsg && (
-              <p className="pt-muted" role="alert">
-                {joinMsg}
-              </p>
-            )}
-          </form>
-        </>
-      )}
-
-      {where === 'one' && (
-      <>
       <section ref={whoRef} key={nudge} className={`pt-panel pt-who${problem && nudge ? ' is-nudged' : ''}`} aria-labelledby="pt-players">
         <div className="pt-panel-head">
           <h2 id="pt-players">
@@ -361,7 +281,8 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
             {t('+ Add')}
           </button>
         </form>
-        {problem && <p className="pt-warn">{problem}</p>}
+        {/* Names matter only for the one-phone games: the reminder shows once one is picked. */}
+        {problem && nudge > 0 && <p className="pt-warn">{problem}</p>}
       </section>
 
       <div className="pt-h2-row">
@@ -373,29 +294,79 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
         </button>
       </div>
       <div className="pt-modes pt-modes-lobby">
-        {modes.map((m) => (
-          <button key={m.id} data-party-game={m.id} className={`pt-mode${problem ? ' is-waiting' : ''}${focus === m.id ? ' is-found' : ''}`} style={{ ['--mc' as string]: m.color }} onClick={() => pick(m.id as ModeId)}>
-            {m.art ? (
-              <img className="pt-mode-art" src={m.art.wide} alt="" width={750} height={300} loading="lazy" decoding="async" />
-            ) : (
-              <span className="pt-mode-art" aria-hidden="true">
-                {m.emoji}
+        {all.map((m) => {
+          // Crass Act keeps its arcade art and adults-only label; its room opens on its own page (name and age check first).
+          const wide = m.id === 'crass-act' ? crassAct?.art.wide : m.art?.wide;
+          return (
+            <div key={m.id} data-party-game={m.id} className={`pt-mode pt-game${focus === m.id ? ' is-found' : ''}`} style={{ ['--mc' as string]: m.color }}>
+              {wide ? (
+                <img className="pt-mode-art" src={wide} alt="" width={750} height={300} loading="lazy" decoding="async" />
+              ) : (
+                <span className="pt-mode-art" aria-hidden="true">
+                  {m.emoji}
+                </span>
+              )}
+              <span className="pt-mode-body">
+                <b>
+                  {t(m.title)}
+                  {m.label && <em className="pt-mode-sticker">{t(m.label)}</em>}
+                </b>
+                {m.adult && <AdultLabel text={t('Adults only')} />}
+                <span>{t(m.blurb)}</span>
+                <small>
+                  👥 {m.onePhone ? m.players : m.roomPlayers} · ⏱ {m.time}
+                </small>
               </span>
-            )}
-            <span className="pt-mode-body">
-              <b>
-                {t(m.title)}
-                {m.label && <em className="pt-mode-sticker">{t(m.label)}</em>}
-              </b>
-              <span>{t(m.blurb)}</span>
-              <small>
-                👥 {m.players} · ⏱ {m.time}
-                {m.room ? t(' · 🌐 own phones too') : ''}
-              </small>
-            </span>
-          </button>
-        ))}
+              <span className="pt-game-ctas">
+                {m.onePhone && (
+                  <button className={`pt-btn pt-btn-sm${m.room ? '' : ' pt-btn-go'}${problem ? ' is-waiting' : ''}`} onClick={() => pick(m.id as ModeId)}>
+                    {t('📱 One phone')}
+                  </button>
+                )}
+                {m.room && (
+                  <button className="pt-btn pt-btn-sm pt-btn-go" onClick={() => openRoom(m.room!)}>
+                    🌐 {t('Play online')}
+                  </button>
+                )}
+              </span>
+            </div>
+          );
+        })}
       </div>
+
+      <section className="pt-panel pt-online">
+        <h2>{t('Play on everyone’s own phone')}</h2>
+        <p className="pt-muted">{t('Open a room, send the link, and everyone joins from their phone: no app, no sign-up. Great on a video call too.')}</p>
+        <button className="pt-btn pt-btn-big pt-browse-all" onClick={() => setBrowseAll(true)}>
+          🔎 {t('Browse public rooms')}
+        </button>
+      </section>
+      <form
+        className="pt-panel pt-join"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const code = joinCode.trim().toUpperCase();
+          // /party?room= opens any room (Crass Act ones go on to their own page). /r/ links only work from outside the app.
+          if (ROOM_CODE.test(code)) navigate(`/party?room=${code}`);
+          else setJoinMsg('Check the code: five letters, like KQTRA (codes never use I, L or O).');
+        }}
+      >
+        <h2>{t('Got a code?')}</h2>
+        <div className="pt-add">
+          <input className="pt-input pt-code" value={joinCode} onChange={(e) => {
+              setJoinCode(e.target.value.toUpperCase());
+              setJoinMsg('');
+            }} placeholder={t('ABCDE')} maxLength={5} aria-label={t('Room code')} autoCapitalize="characters" />
+          <button className="pt-btn pt-btn-go" disabled={joinCode.trim().length !== 5}>
+            {t('Join')}
+          </button>
+        </div>
+        {joinMsg && (
+          <p className="pt-muted" role="alert">
+            {joinMsg}
+          </p>
+        )}
+      </form>
 
       <div className="pt-extras">
         <button className="pt-extra" onClick={() => setSheet('rules')}>
@@ -408,8 +379,6 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
         </button>
       </div>
       <p className="pt-muted pt-center">{t('Everything stays on this phone. Refreshing is safe: your game picks up where you left off.')}</p>
-      </>
-      )}
 
       {sheet === 'rules' && (
         <Sheet title={t('House rules')} onClose={() => setSheet(null)}>
@@ -550,9 +519,8 @@ function CustomPrompts({ session, update }: { session: PartySession; update: (fn
 }
 
 /** A big featured card at the top of the lobby. */
-function Feature({ g, where, art, onPlay, onRoom }: { g: ShownGame; where: 'one' | 'online'; art?: { tile: string; bg: string }; onPlay: () => void; onRoom: () => void }) {
+function Feature({ g, art, onPlay, onRoom }: { g: ShownGame; art?: { tile: string; bg: string }; onPlay: () => void; onRoom: () => void }) {
   const sticker = g.label || g.sticker;
-  const both = g.onePhone && !!g.room;
   return (
     <section className={`pt-feature${g.id === 'crass-act' ? ' is-crass-act' : ''}`} style={g.id === 'crass-act' || g.id === 'impostor' ? undefined : { background: `linear-gradient(130deg, ${g.color}, #ff4fa3 75%)` }} aria-labelledby={`pt-feature-${g.id}`}>
       {sticker && <span className="pt-feature-sticker">{sticker}</span>}
@@ -568,22 +536,14 @@ function Feature({ g, where, art, onPlay, onRoom }: { g: ShownGame; where: 'one'
         {g.adult && <AdultLabel text={t('Adults only')} />}
         <p>{t(g.blurb)}</p>
         <div className="pt-row pt-feature-ctas">
-          {both ? (
-            <>
-              <button className="pt-btn pt-btn-go" onClick={where === 'one' ? onPlay : onRoom}>
-                {where === 'one' ? t('Play on this phone') : t('Play online')}
-              </button>
-              <button className="pt-btn" onClick={where === 'one' ? onRoom : onPlay}>
-                {where === 'one' ? t('🌐 Own phones') : t('📱 One phone')}
-              </button>
-            </>
-          ) : g.room ? (
-            <button className="pt-btn pt-btn-go" onClick={onRoom}>
-              {t('Play online')}
+          {g.onePhone && (
+            <button className={`pt-btn${g.room ? '' : ' pt-btn-go'}`} onClick={onPlay}>
+              {t('📱 One phone')}
             </button>
-          ) : (
-            <button className="pt-btn pt-btn-go" onClick={onPlay}>
-              {t('Play on this phone')}
+          )}
+          {g.room && (
+            <button className="pt-btn pt-btn-go" onClick={onRoom}>
+              🌐 {t('Play online')}
             </button>
           )}
         </div>
