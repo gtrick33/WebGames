@@ -8,3 +8,6 @@
 dist
 node_modules
 .dev.vars
+
+# Licensed art packs: kept on this machine only (the licenses forbid sharing the files; see src/games/sigilfall/CREDITS_AND_LICENSES.md)
+assets/sigilfall/
