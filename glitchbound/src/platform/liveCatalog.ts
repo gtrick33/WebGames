@@ -10,8 +10,18 @@ import { GAMES } from '../catalog/games';
 import { applySettings, dailyRules, EMPTY_CATALOG, settingsFor, spotlightGame, type GameSettings, type HomeLayout, type PublicCatalog } from '../catalog/settings';
 import type { GameEntry } from '../catalog/types';
 import { setDefaultDailyRules } from './daily';
+import { PREVIEW_KEY, previewing } from './preview';
 
 const KEY = 'glitchbound.catalog';
+
+function readPreview(): PublicCatalog | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(PREVIEW_KEY) ?? 'null') as PublicCatalog | null;
+    return v && typeof v === 'object' && v.settings && v.picks ? v : null;
+  } catch {
+    return null;
+  }
+}
 
 export interface LiveCatalog {
   raw: PublicCatalog;
@@ -47,23 +57,26 @@ function readCache(): PublicCatalog {
   return EMPTY_CATALOG;
 }
 
-let state: LiveCatalog = derive(typeof window === 'undefined' ? EMPTY_CATALOG : readCache());
+let state: LiveCatalog = derive(typeof window === 'undefined' ? EMPTY_CATALOG : ((previewing && readPreview()) || readCache()));
 const listeners = new Set<() => void>();
 
 export function setCatalog(raw: PublicCatalog): void {
   state = derive(raw);
+  for (const fn of listeners) fn();
+  // a preview's draft is never kept as the real catalog
+  if (previewing) return;
   try {
     localStorage.setItem(KEY, JSON.stringify(raw));
   } catch {
     /* blocked storage */
   }
-  for (const fn of listeners) fn();
 }
 
 let inflight: Promise<void> | null = null;
 
 /** Fetches the latest settings (never throws; the cached copy stays on failure). */
 export function refreshCatalog(): Promise<void> {
+  if (previewing) return Promise.resolve();
   inflight ??= fetch('/api/catalog', { credentials: 'same-origin', cache: 'no-store' })
     .then((r) => (r.ok ? (r.json() as Promise<PublicCatalog>) : null))
     .then((raw) => {
@@ -79,6 +92,14 @@ export function refreshCatalog(): Promise<void> {
 /** Starts fetching and keeps the copy fresh when the player returns to the tab. */
 export function startLiveCatalog(): void {
   if (typeof window === 'undefined') return;
+  if (previewing) {
+    // the admin edits the draft in the other page: follow it
+    window.addEventListener('storage', (e) => {
+      const draft = e.key === PREVIEW_KEY ? readPreview() : null;
+      if (draft) setCatalog(draft);
+    });
+    return;
+  }
   void refreshCatalog();
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void refreshCatalog();

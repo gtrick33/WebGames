@@ -31,7 +31,7 @@
       (function () {
         try {
           var p = location.pathname;
-          if ((p === '/' || p === '/index.html') && location.search.indexOf('frame_id=') < 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          if ((p === '/' || p === '/index.html') && location.search.indexOf('frame_id=') < 0 && location.search.indexOf('preview') < 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
             document.documentElement.classList.add('entrance-pending');
             setTimeout(function () { document.documentElement.classList.remove('entrance-pending'); }, 4000);
           }

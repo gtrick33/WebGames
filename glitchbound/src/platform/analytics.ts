@@ -1,5 +1,6 @@
 import { ANALYTICS } from './env';
 import { isStaleBuildError } from './freshBuild';
+import { previewing } from './preview';
 
 /**
  * Privacy-friendly analytics. Call `track()` from anywhere. Events go to our own /api/events
@@ -106,6 +107,8 @@ export function track(event: AnalyticsEvent, props: Props = {}): void {
   recent.push({ event, props, t: Date.now() });
   if (recent.length > 100) recent.shift();
   if (typeof window === 'undefined') return;
+  // the admin's preview of an unpublished home page is not a visit
+  if (previewing) return;
   window.__glitchbound = { events: recent };
   try {
     sinks ??= createSinks();

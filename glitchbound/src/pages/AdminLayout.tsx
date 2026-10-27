@@ -1,23 +1,25 @@
 import { useMemo, useState } from 'react';
-import { queryGames } from '../catalog/catalog';
+import { autoNewSlugs, gameUrl, queryGames } from '../catalog/catalog';
 import { GAMES } from '../catalog/games';
-import { ACCENTS, applySettings, orderByLayout, settingsFor, STICKER_MAX, tileSizeFor, type GameSettings, type HomeLayout, type TileSize } from '../catalog/settings';
+import { ACCENTS, applySettings, DEFAULT_SETTINGS, orderByLayout, settingsFor, STICKER_MAX, TEXT_LIMITS, tileSizeFor, type GameSettings, type HomeLayout, type NewBadge, type TileSize } from '../catalog/settings';
 import type { Accent, GameEntry } from '../catalog/types';
+import { Icon } from '../components/Icon';
 import type { AdminCatalog } from '../platform/apiTypes';
 import { dayKey } from '../platform/dates';
 import { refreshCatalog } from '../platform/liveCatalog';
 import { activeHoliday, autoHoliday, HOLIDAYS, type SeasonSetting } from '../platform/seasons';
-import { savedBest, sendBestToggle } from './AdminBest';
+import { Link } from '../router/router';
+import { editableGames, emptyLayout, withBest, withGame, type HomeDraft } from './admin/homeDraft';
 import './AdminLayout.css';
 
-/**
- * Admin › Games › Home page banners: the arcade grid in miniature. Click a banner to move it, resize
- * it, recolor it, give it a sticker, or flip its switches (visible, pinned, spotlight, best game);
- * presets restyle the whole grid in one click. The order and looks go live on "Publish"; the switches
- * save right away (Best game edits the same list as Our best games, above).
- */
-
 type Send = (body: Record<string, unknown>, done?: string) => Promise<boolean>;
+
+/**
+ * Admin › Home page › Arcade banners: the arcade grid in miniature. Click a banner to move, resize, recolor or
+ * label it, and to change everything about its game: visible, pinned, today's pick, best game, NEW badge, the
+ * daily rotation, its texts and a pause message. Presets restyle the whole grid in one click. It all edits the
+ * home page's draft (admin/homeDraft.ts): nothing changes for players until Publish.
+ */
 
 const SIZE_LABEL: Record<TileSize | 'auto', string> = { auto: 'Auto', md: 'Small', wide: 'Wide', tall: 'Tall', xl: 'Big' };
 const STICKERS = ['🔥 Hot', '✨ Updated', '⭐ Staff pick', '🎉 Event', '👑 Top rated'];
@@ -30,31 +32,31 @@ const PRESETS: { id: string; label: string; hint: string; sizes: (i: number) => 
   { id: 'wide', label: 'Wide rows', hint: 'Two wide banners per row', sizes: () => 'wide' },
 ];
 
-const emptyLayout = (): HomeLayout => ({ order: [], sizes: {}, accents: {}, stickers: {} });
-
-export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
+/**
+ * `catalog`: the draft as players would get it; `draft` and `onChange`: the home page's draft; `live`: what is
+ * published (for the "custom layout live" note).
+ */
+export function LayoutEditor({ catalog, draft, onChange, live, busy }: { catalog: AdminCatalog; draft: HomeDraft; onChange: (d: HomeDraft) => void; live: AdminCatalog; busy: boolean }) {
   // Every arcade game, newest first (the arcade's order before any layout). Hidden games stay in the
   // editor, dimmed, so they can be switched back on from here; players never see them.
-  const editable = useMemo(() => queryGames({ sort: 'newest' }, applySettings(GAMES, data, true).filter((g) => !g.partyOnly && !g.section)), [data]);
-  const saved = data.layout ?? null;
-  const [draft, setDraft] = useState<HomeLayout>(() => {
-    const base = saved ?? emptyLayout();
-    return { ...base, order: orderByLayout(editable, base).map((g) => g.slug) };
-  });
+  const editable = useMemo(() => editableGames(catalog), [catalog]);
+  const layout = draft.layout ?? emptyLayout();
   const [sel, setSel] = useState<string | null>(null);
 
   // What the arcade will show: draft order, with pinned games still first.
   const shown = useMemo(() => {
-    const ordered = orderByLayout(editable, draft);
-    const pinned = (g: GameEntry): boolean => settingsFor(data, g.slug).pinned;
+    const ordered = orderByLayout(editable, layout);
+    const pinned = (g: GameEntry): boolean => !!draft.games[g.slug]?.pinned;
     return [...ordered.filter(pinned), ...ordered.filter((g) => !pinned(g))];
-  }, [editable, draft, data]);
+  }, [editable, layout, draft.games]);
   const selected = shown.find((g) => g.slug === sel) ?? null;
-  const flags = (slug: string): GameSettings => settingsFor(data, slug);
-  const best = savedBest(data);
-  const dirty = JSON.stringify(normal(draft, editable)) !== JSON.stringify(normal(saved ?? emptyLayout(), editable));
+  const flags = (slug: string): GameSettings => draft.games[slug] ?? settingsFor(catalog, slug);
 
-  const update = (fn: (l: HomeLayout) => HomeLayout): void => setDraft((l) => fn({ ...l, sizes: { ...l.sizes }, accents: { ...l.accents }, stickers: { ...l.stickers }, order: [...l.order] }));
+  // any change to the order or looks makes the layout an explicit one (from the automatic order it showed)
+  const update = (fn: (l: HomeLayout) => HomeLayout): void => {
+    const base = { ...layout, order: orderByLayout(editable, layout).map((g) => g.slug) };
+    onChange({ ...draft, layout: fn({ ...base, sizes: { ...base.sizes }, accents: { ...base.accents }, stickers: { ...base.stickers }, order: [...base.order] }) });
+  };
 
   const move = (slug: string, to: 'first' | 'up' | 'down' | 'last'): void =>
     update((l) => {
@@ -88,11 +90,10 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
   return (
     <section className="panel info-block" aria-labelledby="ag-layout">
       <div className="admin-row">
-        <h2 id="ag-layout">Home page banners</h2>
-        <span className="mono info-small">{saved ? 'Custom layout live' : 'Automatic'}</span>
+        <h2 id="ag-layout">Arcade banners · {shown.length}</h2>
+        <span className="mono info-small">{live.layout ? 'Custom layout live' : 'Automatic layout live'}</span>
       </div>
-      <p className="info-small">Click a banner to move, resize, recolor or label it, or to switch it on or off, pin it, spotlight it or make it a best game. Order and looks go live when you publish; the switches save right away. On phones banners show two per row in this order; big and wide ones take the whole row.</p>
-
+      <p className="info-small">The arcade grid on the home page, in order. Click a banner to arrange it and to change anything about its game. On phones banners show two per row in this order; big and wide ones take the whole row.</p>
 
       <div className="al-presets">
         <span className="al-label">Look</span>
@@ -108,13 +109,18 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
         <button className="btn btn-sm" onClick={() => sortBy('az')} disabled={busy}>
           A to Z
         </button>
+        {draft.layout && (
+          <button className="btn btn-sm btn-ghost" onClick={() => onChange({ ...draft, layout: null })} disabled={busy}>
+            Back to automatic
+          </button>
+        )}
       </div>
 
       <div className="al-grid" role="listbox" aria-label="Arcade banners in order">
         {shown.map((g, i) => {
-          const size = tileSizeFor(draft, g.slug, i);
-          const accent = draft.accents[g.slug] ?? g.accent;
-          const sticker = draft.stickers[g.slug];
+          const size = tileSizeFor(layout, g.slug, i);
+          const accent = layout.accents[g.slug] ?? g.accent;
+          const sticker = layout.stickers[g.slug];
           const art = size === 'xl' || size === 'wide' ? g.art.wide : g.art.tile;
           const f = flags(g.slug);
           return (
@@ -127,12 +133,12 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
               onClick={() => setSel(sel === g.slug ? null : g.slug)}
             >
               <span className="al-n mono">{i + 1}</span>
-              {f.hidden ? <span className="al-badge">Hidden</span> : sticker && <span className="al-sticker">{sticker}</span>}
+              {f.hidden ? <span className="al-badge">Hidden</span> : f.maintenance ? <span className="al-badge">Paused</span> : sticker && <span className="al-sticker">{sticker}</span>}
               <span className="al-name">
                 {f.pinned && '📌 '}
                 {f.spotlight && '🔦 '}
-                {best.includes(g.slug) && '⭐ '}
-                {g.title}
+                {draft.flagships.includes(g.slug) && '⭐ '}
+                {f.title || g.title}
               </span>
             </button>
           );
@@ -145,12 +151,13 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
           game={selected}
           index={shown.indexOf(selected)}
           count={shown.length}
-          layout={draft}
+          layout={layout}
           settings={flags(selected.slug)}
-          best={best.includes(selected.slug)}
-          onBest={(on) => sendBestToggle(data, send, selected, on)}
+          autoNew={autoNewSlugs(applySettings(GAMES, catalog)).has(selected.slug)}
+          best={draft.flagships.includes(selected.slug)}
           busy={busy}
-          onFlag={(patch, msg) => void send({ action: 'game', slug: selected.slug, patch }, msg)}
+          onBest={(on) => onChange(withBest(live, draft, selected.slug, on))}
+          onSettings={(patch) => onChange(withGame(draft, selected.slug, patch))}
           onMove={(to) => move(selected.slug, to)}
           onSize={(s) => setSize(selected.slug, s)}
           onAccent={(a) =>
@@ -172,34 +179,8 @@ export function LayoutEditor({ data, send, busy }: { data: AdminCatalog; send: S
       ) : (
         <p className="info-small al-hint">Pick a banner above to change it.</p>
       )}
-
-      <div className="reset-row">
-        <button className="btn btn-sm btn-primary" disabled={busy || !dirty} onClick={() => void send({ action: 'layout', layout: normal(draft, editable) }, 'Banners published')}>
-          Publish
-        </button>
-        <button
-          className="btn btn-sm btn-ghost"
-          disabled={busy || !dirty}
-          onClick={() => {
-            const base = saved ?? emptyLayout();
-            setDraft({ ...base, order: orderByLayout(editable, base).map((g) => g.slug) });
-          }}
-        >
-          Undo changes
-        </button>
-        {saved && (
-          <button className="btn btn-sm btn-ghost" disabled={busy} onClick={() => void send({ action: 'layout', layout: null }, 'Back to the automatic layout')}>
-            Back to automatic
-          </button>
-        )}
-      </div>
     </section>
   );
-}
-
-/** The stored form: the full order of the games shown, and only real choices in the maps. */
-function normal(l: HomeLayout, editable: GameEntry[]): HomeLayout {
-  return { order: orderByLayout(editable, l).map((g) => g.slug), sizes: l.sizes, accents: l.accents, stickers: l.stickers };
 }
 
 function TileTools(props: {
@@ -208,12 +189,14 @@ function TileTools(props: {
   count: number;
   layout: HomeLayout;
   settings: GameSettings;
-  /** In Our best games (the four Start here cards). */
+  /** The automatic NEW badge would show now. */
+  autoNew: boolean;
+  /** In Our best games (the four big cards under the hero). */
   best: boolean;
   onBest: (on: boolean) => void;
   busy: boolean;
-  /** Flips one of the game's switches (saved right away, unlike the layout). */
-  onFlag: (patch: Partial<GameSettings>, msg?: string) => void;
+  /** Changes the game's settings in the draft. */
+  onSettings: (patch: Partial<GameSettings>) => void;
   onMove: (to: 'first' | 'up' | 'down' | 'last') => void;
   onSize: (s: TileSize | 'auto') => void;
   onAccent: (a: Accent | null) => void;
@@ -224,14 +207,29 @@ function TileTools(props: {
   const accent = layout.accents[game.slug] ?? null;
   const sticker = layout.stickers[game.slug] ?? '';
   const [custom, setCustom] = useState(STICKERS.includes(sticker) ? '' : sticker);
+  const set = props.onSettings;
   return (
     <div className="al-tools">
       <div className="al-tools-head">
         <img src={game.art.tile} alt="" width={40} height={40} />
-        <b>{game.title}</b>
+        <b>{s.title || game.title}</b>
         <span className="mono info-small">
           #{index + 1} of {count}
         </span>
+        <Link href={gameUrl(game.slug)} className="btn btn-sm btn-ghost al-open">
+          <Icon name="external" size={14} /> Open page
+        </Link>
+      </div>
+
+      <div className="al-row">
+        <span className="al-label">Show</span>
+        <div className="al-flags">
+          <Switch on={!s.hidden} label="Visible" hint="Hidden games disappear from the arcade, search and dailies; the page is closed to players." disabled={props.busy} onChange={(v) => set({ hidden: !v })} />
+          <Switch on={s.pinned} label="Pinned" hint="Shown first in the arcade grid." disabled={props.busy} onChange={(v) => set({ pinned: v })} />
+          <Switch on={s.spotlight} label="Today’s pick" hint="The Today’s pick button in the hero (one game at a time)." disabled={props.busy || s.hidden} onChange={(v) => set({ spotlight: v })} />
+          <Switch on={props.best} label="Best game" hint="One of the four big cards under the hero. Switching one on takes the last card." disabled={props.busy || s.hidden} onChange={props.onBest} />
+          {game.daily?.length ? <Switch on={s.inDaily} label="In daily rotation" hint="May be picked as Today’s challenge." disabled={props.busy} onChange={(v) => set({ inDaily: v })} /> : null}
+        </div>
       </div>
       <div className="al-row">
         <span className="al-label">Position</span>
@@ -249,17 +247,7 @@ function TileTools(props: {
             Last ⇥
           </button>
         </div>
-        {s.pinned && <span className="info-small">📌 Pinned games always come first (switch it off below to move it freely).</span>}
-      </div>
-      <div className="al-row">
-        <span className="al-label">Show as</span>
-        <div className="al-flags">
-          <Switch on={!s.hidden} label="Visible" hint="Hidden games disappear from the arcade, search and dailies; the page is closed to players." disabled={props.busy} onChange={(v) => props.onFlag({ hidden: !v }, v ? `${game.title} is visible` : `${game.title} is hidden`)} />
-          <Switch on={s.pinned} label="Pinned" hint="Shown first in the arcade grid." disabled={props.busy} onChange={(v) => props.onFlag({ pinned: v })} />
-          <Switch on={s.spotlight} label="Spotlight" hint="Today’s pick in the hero (one game at a time)." disabled={props.busy} onChange={(v) => props.onFlag({ spotlight: v })} />
-          <Switch on={props.best} label="Best game" hint="One of the four Start here cards under the hero. Switching one on takes the last card; order them in Our best games." disabled={props.busy || s.hidden} onChange={props.onBest} />
-        </div>
-        <span className="info-small">Saved right away, no publish needed.</span>
+        {s.pinned && <span className="info-small">📌 Pinned games always come first (unpin it to move it freely).</span>}
       </div>
       <div className="al-row">
         <span className="al-label">Size</span>
@@ -299,11 +287,45 @@ function TileTools(props: {
             value={custom}
             maxLength={STICKER_MAX}
             placeholder="Your own…"
+            aria-label="Your own sticker"
             onChange={(e) => {
               setCustom(e.target.value);
               props.onSticker(e.target.value);
             }}
           />
+        </div>
+      </div>
+      <div className="al-row">
+        <span className="al-label">NEW badge</span>
+        <select className="field al-select" aria-label="NEW badge" value={s.newBadge} disabled={props.busy} onChange={(e) => set({ newBadge: e.target.value as NewBadge })}>
+          <option value="auto">Automatic ({props.autoNew ? 'new now' : 'not new'})</option>
+          <option value="on">Always show</option>
+          <option value="off">Never show</option>
+        </select>
+      </div>
+
+      <div className="al-texts">
+        <label className="ag-field">
+          <span>Title</span>
+          <input className="field" value={s.title} onChange={(e) => set({ title: e.target.value })} maxLength={TEXT_LIMITS.title} placeholder={game.title} />
+        </label>
+        <label className="ag-field ag-wide">
+          <span>Tagline (cards and search)</span>
+          <input className="field" value={s.tagline} onChange={(e) => set({ tagline: e.target.value })} maxLength={TEXT_LIMITS.tagline} placeholder={game.tagline} />
+        </label>
+        <label className="ag-field ag-wide">
+          <span>Description (game page)</span>
+          <textarea className="field" rows={3} value={s.description} onChange={(e) => set({ description: e.target.value })} maxLength={TEXT_LIMITS.description} placeholder={game.description} />
+        </label>
+        <label className="ag-field ag-wide">
+          <span>Pause message (players see it instead of the game; empty = playable)</span>
+          <input className="field" value={s.maintenance} onChange={(e) => set({ maintenance: e.target.value })} maxLength={TEXT_LIMITS.maintenance} placeholder="We’re fixing a bug in this game. Back very soon!" />
+        </label>
+        <p className="info-small ag-wide">Leave a text empty to use the original. Search pages for crawlers keep the original until the next deploy.</p>
+        <div className="reset-row ag-wide">
+          <button type="button" className="btn btn-sm btn-ghost" disabled={props.busy} onClick={() => set({ ...DEFAULT_SETTINGS, flagship: s.flagship })}>
+            Reset this game’s settings
+          </button>
         </div>
       </div>
     </div>
@@ -321,8 +343,8 @@ export function Switch({ on, label, hint, disabled, onChange }: { on: boolean; l
 }
 
 /**
- * Admin › Games › Holiday look: one click switches the site's holiday touches (greeting, logo
- * sticker, floating decorations, highlight colors). Automatic follows the calendar.
+ * Admin › Notice & holidays › Holiday look: one click switches the site's holiday touches (greeting, logo
+ * sticker, colors, card art, scenery and its little events). Automatic follows the calendar.
  */
 export function SeasonPicker({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
   const current: SeasonSetting = data.season ?? 'auto';
@@ -343,7 +365,10 @@ export function SeasonPicker({ data, send, busy }: { data: AdminCatalog; send: S
         <h2 id="ag-season">Holiday look</h2>
         <span className="mono info-small">{now ? `Live now: ${now.emoji} ${now.name}` : 'No holiday look live'}</span>
       </div>
-      <p className="info-small">A greeting on the home page, a sticker on the logo, a few floating decorations and festive colors. Automatic switches them on around Halloween, Diwali, the winter holidays, Lunar New Year, Valentine’s Day and Easter.</p>
+      <p className="info-small">
+        A greeting on the home page, a sticker on the logo, festive colors, the holiday’s art on every card (cobwebs, snow…), scenery behind the page (a moon, lanterns, lamps…) and now and then a little event crossing it (bats and a witch,
+        a sleigh, fireworks…). It never covers text or takes a click, and stays out of games. Automatic switches it on around Halloween, Diwali, the winter holidays, Lunar New Year, Valentine’s Day and Easter.
+      </p>
       <div className="as-grid" role="radiogroup" aria-label="Holiday look">
         <button role="radio" aria-checked={current === 'auto'} className={`as-card${current === 'auto' ? ' is-on' : ''}`} style={{ ['--c1' as string]: '#2ad1f0', ['--c2' as string]: '#b6e62c' }} onClick={() => pick('auto')} disabled={busy}>
           <span className="as-emoji">🗓️</span>

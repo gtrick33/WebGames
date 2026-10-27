@@ -1,112 +1,98 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { BestGamesEditor } from '../src/pages/AdminBest';
-import { MultiplayerEditor } from '../src/pages/AdminMultiplayer';
-import { LayoutEditor } from '../src/pages/AdminLayout';
+import { HomeEditor } from '../src/pages/admin/HomeSection';
 import type { AdminCatalog } from '../src/platform/apiTypes';
 
-const data = (settings: AdminCatalog['settings'] = {}, flagships?: string[]): AdminCatalog => ({ settings, picks: {}, notice: null, layout: null, log: [], ...(flagships ? { flagships } : {}) });
-const cards = () => within(screen.getByRole('list', { name: 'Our best games, in order' })).getAllByRole('listitem');
-const titles = () => cards().map((li) => li.querySelector('.ab-title')!.textContent);
+/**
+ * Admin › Home page (the owner, 2026-10-28): one draft of everything the home page shows, every game's
+ * settings in its banner, and nothing saved until Publish, which sends it all in one { action: 'publish' }.
+ */
 
-describe('Our best games editor', () => {
-  it('starts from the house picks and publishes a reordered, swapped row', () => {
-    const send = vi.fn(async () => true);
-    render(<BestGamesEditor data={data()} send={send} busy={false} />);
-    expect(titles()).toEqual(['Quizbelief', 'Launch Control', 'Color Recall', 'Letter Pinch']);
+const data = (settings: AdminCatalog['settings'] = {}, extra: Partial<AdminCatalog> = {}): AdminCatalog => ({ settings, picks: {}, notice: null, layout: null, log: [], ...extra });
+const setup = (d = data()) => {
+  const send = vi.fn(async () => true);
+  render(<HomeEditor data={d} send={send} busy={false} />);
+  return send;
+};
+const publish = () => fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+const banner = (name: RegExp) => within(screen.getByRole('listbox', { name: 'Arcade banners in order' })).getByRole('option', { name });
+const best = () => [...screen.getByRole('list', { name: 'Our best games, in order' }).querySelectorAll('.ab-title')].map((b) => b.textContent);
+const live = () => [...document.querySelectorAll('.am-row .ab-title')].map((b) => b.textContent);
+
+describe('Admin › Home page', () => {
+  it('starts with everything published, and Publish does nothing until something changes', () => {
+    const send = setup();
+    expect(screen.getByText('Everything is published')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Publish' })).toHaveProperty('disabled', true);
-    // Move Color Recall to the front with the arrows.
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('reorders and swaps Our best games in the draft, then publishes them with everything else', () => {
+    const send = setup();
+    expect(best()).toEqual(['Quizbelief', 'Launch Control', 'Color Recall', 'Letter Pinch']);
     fireEvent.click(screen.getByRole('button', { name: 'Move Color Recall earlier' }));
     fireEvent.click(screen.getByRole('button', { name: 'Move Color Recall earlier' }));
-    expect(titles()).toEqual(['Color Recall', 'Quizbelief', 'Launch Control', 'Letter Pinch']);
-    // Swap the last card for Neon Rush.
-    fireEvent.change(within(cards()[3]!).getByRole('combobox'), { target: { value: 'neon-rush' } });
-    expect(titles()).toEqual(['Color Recall', 'Quizbelief', 'Launch Control', 'Neon Rush']);
-    // Picking a game already on another card swaps the two.
-    fireEvent.change(within(cards()[0]!).getByRole('combobox'), { target: { value: 'neon-rush' } });
-    expect(titles()).toEqual(['Neon Rush', 'Quizbelief', 'Launch Control', 'Color Recall']);
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
-    expect(send).toHaveBeenCalledWith({ action: 'flagships', list: ['neon-rush', 'wait-what', 'launch-control', 'color-recall'] }, 'Our best games published');
+    const cards = screen.getByRole('list', { name: 'Our best games, in order' }).querySelectorAll('li');
+    fireEvent.change(within(cards[3] as HTMLElement).getByRole('combobox'), { target: { value: 'neon-rush' } });
+    expect(best()).toEqual(['Color Recall', 'Quizbelief', 'Launch Control', 'Neon Rush']);
+    expect(send).not.toHaveBeenCalled();
+    expect(screen.getByText('1 unpublished change')).toBeTruthy();
+    publish();
+    expect(send).toHaveBeenCalledWith({ action: 'publish', games: {}, flagships: ['color-recall', 'wait-what', 'launch-control', 'neon-rush'] }, 'Home page published (1 change)');
   });
 
-  it('reorders by dragging one card onto another', () => {
-    render(<BestGamesEditor data={data({}, ['gloop', 'whatsit', 'fussbox', 'neon-rush'])} send={vi.fn(async () => true)} busy={false} />);
-    const [first, , , last] = cards();
-    const dataTransfer = { setData: () => undefined, effectAllowed: '' };
-    fireEvent.dragStart(first!, { dataTransfer });
-    fireEvent.dragOver(last!, { dataTransfer });
-    fireEvent.drop(last!, { dataTransfer });
-    expect(titles()).toEqual(['Neon Rush', 'Whatsit', 'Fussbox', 'Gloop']);
-  });
-
-  it('offers going back to the house picks once a list is saved', () => {
-    const send = vi.fn(async () => true);
-    render(<BestGamesEditor data={data({}, ['gloop'])} send={send} busy={false} />);
-    expect(titles()).toEqual(['Gloop', 'Quizbelief', 'Launch Control', 'Color Recall']);
-    fireEvent.click(screen.getByRole('button', { name: 'Back to house picks' }));
-    expect(send).toHaveBeenCalledWith({ action: 'flagships', list: null }, 'Our best games: back to the house picks');
-  });
-});
-
-describe('Live multiplayer games editor', () => {
-  const list = () => within(screen.getByRole('list', { name: 'Live multiplayer games, in order' }));
-  const mtitles = () => [...document.querySelectorAll('.am-row .ab-title')].map((b) => b.textContent);
-
-  it('starts from every live game; add, remove and reorder, then publish', () => {
-    const send = vi.fn(async () => true);
-    render(<MultiplayerEditor data={data()} send={send} busy={false} />);
-    expect(mtitles()).toEqual(['Launch Control', 'Belot', 'Backgammon']);
-    expect(screen.getByText('Every live game')).toBeTruthy();
+  it('edits the live games row: remove all of them to hide it', () => {
+    const send = setup(data({}, { multiplayer: ['belot'] }));
+    expect(live()).toEqual(['Belot']);
     fireEvent.click(screen.getByRole('button', { name: 'Remove Belot' }));
-    fireEvent.change(list().getByRole('combobox', { name: 'Add a game' }), { target: { value: 'gloop' } });
-    expect(screen.getByText('not live')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Move Backgammon earlier' }));
-    expect(mtitles()).toEqual(['Backgammon', 'Launch Control', 'Gloop']);
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
-    expect(send).toHaveBeenCalledWith({ action: 'multiplayer', list: ['backgammon', 'launch-control', 'gloop'] }, 'Live multiplayer games published');
+    publish();
+    expect(send).toHaveBeenCalledWith({ action: 'publish', games: {}, multiplayer: [] }, 'Home page published (1 change)');
   });
 
-  it('removing every game and publishing hides the row; a saved list can go back to every live game', () => {
-    const send = vi.fn(async () => true);
-    render(<MultiplayerEditor data={{ ...data(), multiplayer: ['belot'] }} send={send} busy={false} />);
-    expect(mtitles()).toEqual(['Belot']);
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Belot' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
-    expect(send).toHaveBeenCalledWith({ action: 'multiplayer', list: [] }, 'Live multiplayer games hidden');
-    fireEvent.click(screen.getByRole('button', { name: 'Back to every live game' }));
-    expect(send).toHaveBeenLastCalledWith({ action: 'multiplayer', list: null }, 'Live multiplayer games: back to every live game');
-  });
-});
-
-describe('home page banners editor', () => {
-  it('shows hidden games dimmed, and a banner’s switches save right away', () => {
-    const send = vi.fn(async () => true);
-    render(<LayoutEditor data={data({ 'neon-rush': { hidden: true } })} send={send} busy={false} />);
-    const grid = screen.getByRole('listbox', { name: 'Arcade banners in order' });
-    const tile = within(grid).getByRole('option', { name: /Neon Rush/ });
+  it('a banner holds all of its game’s settings, kept in the draft until Publish', () => {
+    const send = setup(data({ 'neon-rush': { hidden: true } }));
+    const tile = banner(/Neon Rush/);
     expect(tile.className).toContain('is-hidden');
-    expect(within(tile).getByText('Hidden')).toBeTruthy();
     fireEvent.click(tile);
     expect(screen.getByRole('switch', { name: 'Visible' }).getAttribute('aria-checked')).toBe('false');
-    // A hidden game cannot be a best game until it is visible again.
+    // a hidden game can't be a best game or today's pick
     expect(screen.getByRole('switch', { name: 'Best game' })).toHaveProperty('disabled', true);
     fireEvent.click(screen.getByRole('switch', { name: 'Visible' }));
-    expect(send).toHaveBeenCalledWith({ action: 'game', slug: 'neon-rush', patch: { hidden: false } }, 'Neon Rush is visible');
-    fireEvent.click(screen.getByRole('switch', { name: 'Spotlight' }));
-    expect(send).toHaveBeenCalledWith({ action: 'game', slug: 'neon-rush', patch: { spotlight: true } }, undefined);
+    fireEvent.click(screen.getByRole('switch', { name: 'Pinned' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'NEW badge' }), { target: { value: 'on' } });
+    fireEvent.change(screen.getByPlaceholderText('Neon Rush'), { target: { value: 'Neon Rush DX' } });
+    expect(send).not.toHaveBeenCalled();
+    expect(banner(/Neon Rush DX/).className).not.toContain('is-hidden');
+    publish();
+    expect(send).toHaveBeenCalledWith({ action: 'publish', games: { 'neon-rush': { hidden: false, pinned: true, newBadge: 'on', title: 'Neon Rush DX' } } }, 'Home page published (1 change)');
   });
 
-  it('the Best game switch edits the same list: on takes the last card, off lets a house pick fill in', () => {
-    const send = vi.fn(async () => true);
-    const { unmount } = render(<LayoutEditor data={data()} send={send} busy={false} />);
-    fireEvent.click(within(screen.getByRole('listbox', { name: 'Arcade banners in order' })).getByRole('option', { name: /Gloop/ }));
+  it('one today’s pick at a time: choosing another game turns the old one off in the same publish', () => {
+    const send = setup(data({ gloop: { spotlight: true } }));
+    fireEvent.click(banner(/Whatsit/));
+    fireEvent.click(screen.getByRole('switch', { name: 'Today’s pick' }));
+    publish();
+    expect(send).toHaveBeenCalledWith({ action: 'publish', games: { gloop: { spotlight: false }, whatsit: { spotlight: true } } }, 'Home page published (2 changes)');
+  });
+
+  it('the Best game switch edits Our best games: on takes the last card', () => {
+    const send = setup();
+    fireEvent.click(banner(/Gloop/));
     fireEvent.click(screen.getByRole('switch', { name: 'Best game' }));
-    expect(send).toHaveBeenCalledWith({ action: 'flagships', list: ['wait-what', 'launch-control', 'color-recall', 'gloop'] }, 'Gloop replaces Letter Pinch in Our best games');
-    unmount();
-    render(<LayoutEditor data={data({}, ['gloop', 'whatsit', 'fussbox', 'neon-rush'])} send={send} busy={false} />);
-    fireEvent.click(within(screen.getByRole('listbox', { name: 'Arcade banners in order' })).getByRole('option', { name: /Whatsit/ }));
-    expect(screen.getByRole('switch', { name: 'Best game' }).getAttribute('aria-checked')).toBe('true');
-    fireEvent.click(screen.getByRole('switch', { name: 'Best game' }));
-    expect(send).toHaveBeenLastCalledWith({ action: 'flagships', list: ['gloop', 'fussbox', 'neon-rush', 'wait-what'] }, 'Whatsit is out of Our best games, Quizbelief fills in');
+    expect(best()).toEqual(['Quizbelief', 'Launch Control', 'Color Recall', 'Gloop']);
+    publish();
+    expect(send).toHaveBeenCalledWith({ action: 'publish', games: {}, flagships: ['wait-what', 'launch-control', 'color-recall', 'gloop'] }, 'Home page published (1 change)');
+  });
+
+  it('moving a banner makes the layout part of the publish; Discard throws the draft away', () => {
+    const send = setup();
+    fireEvent.click(banner(/Gloop/));
+    fireEvent.click(screen.getByRole('button', { name: 'Move to the front' }));
+    expect(screen.getByRole('listbox', { name: 'Arcade banners in order' }).querySelector('.al-name')!.textContent).toContain('Gloop');
+    fireEvent.click(screen.getByRole('button', { name: 'Show changes' }));
+    expect(screen.getByRole('list', { name: 'Unpublished changes' }).textContent).toContain('Banners: order and looks');
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
+    expect(screen.getByText('Everything is published')).toBeTruthy();
+    expect(send).not.toHaveBeenCalled();
   });
 });

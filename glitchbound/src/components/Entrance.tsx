@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import './Entrance.css';
+import { previewing } from '../platform/preview';
 
 const DURATION_MS = 1900;
 
 function shouldPlay(): boolean {
   if (typeof window === 'undefined') return false;
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  // never in the admin's preview of the home page
+  if (previewing) return false;
   // Only when a visitor arrives at (or reloads) the arcade itself; deep links to games load straight in.
   return window.location.pathname === '/' || window.location.pathname === '/index.html';
 }
