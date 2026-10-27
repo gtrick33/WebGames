@@ -6,6 +6,7 @@ import { ITEM_DEFS, ITEMS } from '../data/items';
 import { KEY_DEATH, KEY_LEVEL, KEY_MIN, keyCache, keyLoot, keyMarks, keyPar, keyScale, keyUpgrade, type KeyAffix } from '../data/keystones';
 import { QUEST_DEFS, QUESTS } from '../data/quests';
 import { outlevelled } from '../data/progression';
+import { SPEC_LEVEL } from '../data/talents';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { THEMES } from '../data/themes';
 import { BOSS_MARKS } from '../data/vendors';
@@ -1517,7 +1518,8 @@ export class World {
     this.fxBurst(this.player.x, this.player.y, '#ffe066', 24, 20);
     this.sfx('levelup');
     for (const l of levels) this.emit({ t: 'levelup', level: l });
-    if (before < 2 && this.hero.level >= 2) this.emit({ t: 'hint', id: 'talent' });
+    // talents open with the specialization at level 10, not before
+    if (before < SPEC_LEVEL && this.hero.level >= SPEC_LEVEL) this.emit({ t: 'hint', id: 'spec' });
     this.emit({ t: 'save' });
   }
 

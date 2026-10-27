@@ -11,7 +11,8 @@ production numbers change only after the proposal is approved (EXECUTION_PLAN.md
 - Level cap **60**. XP to next level: `floor(40 · level^1.55 + 20)`; **526,582 XP** from 1 to 60.
 - Talent points: **one per level from 10** (51 at 60). The specialization is chosen at 10 and takes the first 31
   points before the other two trees open (rows cost 5 points each, 7 rows).
-- Respec: free below level 15, then `level × 25` gold. Changing specialization resets talents (same cost).
+- Respec: free below level 20, then `level × 10` gold (at most 400; Part 2, D). Changing specialization resets
+  talents (same cost).
 
 | Level | XP to next | Cumulative | Talent points | Ultimate floor (s per full bar) |
 | --- | --- | --- | --- | --- |

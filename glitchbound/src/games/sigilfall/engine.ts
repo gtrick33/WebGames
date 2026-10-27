@@ -517,10 +517,10 @@ export class SigilEngine {
         ? touch
           ? 'New gear! Tap the bag to look at it and equip it.'
           : 'New gear! Press I (or click the bag) to equip it.'
-        : id === 'talent'
+        : id === 'spec'
           ? touch
-            ? 'You have a talent point: tap the star.'
-            : 'You have a talent point: press K.'
+            ? 'Level 10: talents open! Tap the star to choose your specialization.'
+            : 'Level 10: talents open! Press K to choose your specialization.'
           : id === 'ult'
             ? touch
               ? 'Ultimate unlocked! It charges as you deal damage: the big golden button.'

@@ -293,7 +293,6 @@ export function learnTalent(c: Character, id: string): boolean {
   return true;
 }
 
-/** Resetting talents is free up to level 15, then costs a little gold per level. */
 /**
  * What re-choosing talents costs (PROGRESSION_BALANCE.md Part 2, D): free below level 20, then level × 10
  * gold up to 400; free once when the game owes it (a rebalance changed the talents after they were chosen).

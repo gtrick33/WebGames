@@ -103,7 +103,8 @@ poison and bleeding tick, chill slows, stun stops, and a curse cuts the healing 
   specialization: it gives that tree's ability (Blood Hunger, Flame Pillar, Sun Spark, Rip in Lynx Shape…) and a
   passive. One talent point per level from 10 (51 at 60). A tree has seven rows, each opening after 5 more
   points in it; the other two trees stay shut until 31 points are in the specialization. Changing
-  specialization resets talents (free below level 15).
+  specialization resets talents (free below level 20). No talent point comes before level 10: the level-ups
+  before it bring health and skills, and the level-10 one opens the specialization and the first point.
 - **Buffs** (`BuffDef`): timed stats, damage reduction (capped at 75 % with everything else) and healing over
   time; shown as rising motes around the hero.
 - **Companions** (`data/pets.ts`, `sim/pets.ts`): the warlock's imp, voidwalker, felguard and infernal, the
@@ -173,9 +174,9 @@ on the rim, pointing, when it is far). The full map shows the same marker.
 ## Progression
 
 Levels 1 to 60 (`xpToNext`). Skills unlock at levels 1, 2, 4, 6, 14 and 22 and slot themselves into empty
-slots; the ultimate at level 3; the specialization's ability at 10. Talents are described under Classes; some
-nodes need another first, and each tree ends in a capstone. Resetting talents is free below level 15, then
-costs 25 gold per level.
+slots; the ultimate at level 8; the specialization's ability at 10. Talents are described under Classes; some
+nodes need another first, and each tree ends in a capstone. Resetting talents is free below level 20, then
+costs 10 gold per level (at most 400).
 
 ## World
 

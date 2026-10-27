@@ -7,7 +7,8 @@ import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { ResourceDef } from '../data/types';
 import type { SigilEngine } from '../engine';
-import { currentObjective, freePoints, HOME, questProgress, questState, trackedQuest } from '../progress/character';
+import { currentObjective, freePoints, HOME, questProgress, questState, SLOT_LEVELS, trackedQuest } from '../progress/character';
+import { SPEC_LEVEL } from '../data/talents';
 import { modLines } from '../progress/describe';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
@@ -74,7 +75,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
           {ui.banner.sub && <span>{ui.banner.sub}</span>}
         </div>
       )}
-      {ui.levelUp && <LevelUp engine={engine} />}
+      {ui.levelUp && <LevelUpBanner engine={engine} />}
       {!overlay && (engine.touchMode ? <TouchControls engine={engine} /> : <DesktopBar engine={engine} />)}
       <SceneBars engine={engine} />
       {ui.dialogue && <Dialogue engine={engine} />}
@@ -370,12 +371,19 @@ function Toasts({ engine }: { engine: SigilEngine }) {
   );
 }
 
-function LevelUp({ engine }: { engine: SigilEngine }) {
+export function LevelUpBanner({ engine }: { engine: SigilEngine }) {
   const l = engine.ui.levelUp!;
+  // talent points start with the specialization at level 10 (data/talents.ts): before that a level brings
+  // health and new skills, never a point
+  const gains = [
+    l.level === SPEC_LEVEL ? 'Talents open: choose your specialization' : l.level > SPEC_LEVEL ? '+1 talent point' : '',
+    l.skills.length ? `New: ${l.skills.map((s) => SKILLS[s]!.name).join(', ')}` : '',
+    (SLOT_LEVELS as readonly number[]).includes(l.level) ? 'New skill slot' : '',
+  ].filter(Boolean);
   return (
     <div className="rb-levelup" key={l.id} aria-live="polite">
       <strong>Level {l.level}</strong>
-      <span>+1 talent point{l.skills.length ? ` · New: ${l.skills.map((s) => SKILLS[s]!.name).join(', ')}` : ''}</span>
+      <span>{gains.length ? gains.join(' · ') : 'More health'}</span>
     </div>
   );
 }
