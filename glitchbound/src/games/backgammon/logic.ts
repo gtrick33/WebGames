@@ -243,8 +243,8 @@ export interface Game {
   winner: Side | null;
   /** Points the game is worth: 1, 2 (gammon) or 3 (backgammon). */
   points: 0 | 1 | 2 | 3;
-  /** The last finished turn (for the other screen to replay it). */
-  lastTurn: { side: Side; roll: [number, number]; steps: Step[] } | null;
+  /** The last finished turn (for the other screen to replay it); no roll when it was passed (shutOut). */
+  lastTurn: { side: Side; roll: [number, number] | null; steps: Step[] } | null;
 }
 
 export function newGame(seed: number): Game {
@@ -252,8 +252,28 @@ export function newGame(seed: number): Game {
 }
 
 /**
+ * Side `s` has a checker on the bar and every point it could come in on is closed (two or more of
+ * theirs): no roll can bring it in, so there is nothing to roll for.
+ */
+export function shutOut(p: Pos, s: Side): boolean {
+  if (!p.bar[s]) return false;
+  for (let d = 1; d <= 6; d++) if (theirs(p, s, target(s, BAR[s], d)) < 2) return false;
+  return true;
+}
+
+/** The side to roll is shut out: its turn passes without a roll (passTurn). */
+export const mustPass = (g: Game): boolean => g.phase === 'roll' && shutOut(g.pos, g.turn);
+
+/** Passes a shut-out side's turn: no dice, and the other side rolls (refused otherwise). */
+export function passTurn(g: Game): Game {
+  if (!mustPass(g)) return g;
+  return { ...g, turn: (1 - g.turn) as Side, left: [], steps: [], turnStart: g.pos, lastTurn: { side: g.turn, roll: null, steps: [] } };
+}
+
+/**
  * Rolls: the opening (one die each until they differ; the higher side plays both numbers), or the
- * side to move's two dice. A roll that cannot be played at all passes the turn at once.
+ * side to move's two dice. A side that is shut out does not roll: its turn passes. A roll that cannot
+ * be played shows, and the turn passes once it is ended (endTurn).
  */
 export function roll(g: Game): Game {
   if (g.phase === 'opening') {
@@ -264,6 +284,7 @@ export function roll(g: Game): Game {
     return startTurn({ ...g, rolls: n, turn }, [a, b]);
   }
   if (g.phase !== 'roll') return g;
+  if (mustPass(g)) return passTurn(g);
   const r = rollAt(g.seed, g.rolls);
   return startTurn({ ...g, rolls: g.rolls + 1 }, r);
 }

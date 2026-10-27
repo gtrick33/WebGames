@@ -11,7 +11,7 @@ import { shareOrCopy } from '../../platform/share';
 import { choosePlay, LEVELS, type Level } from './ai';
 import { Board, moveMs } from './Board';
 import { LiveBoard } from './live';
-import { bookGame, endTurn, newMatch, nextGame, pips, planStep, posKey, rng, roll, step, TARGETS, turnDone, type Match, type Step } from './logic';
+import { bookGame, endTurn, mustPass, newMatch, nextGame, passTurn, pips, planStep, posKey, rng, roll, step, TARGETS, turnDone, type Match, type Step } from './logic';
 import { createSfx, type Sfx } from './sound';
 import { WORDS, type Words } from './text';
 import './Game.css';
@@ -189,6 +189,11 @@ function Backgammon({ host, pauseKey, challenge, playerName }: { host: GameHost;
         const booked = bookGame(r.match);
         update(() => ({ ...r, match: booked, sheet: { winner: r.match.game.winner!, points: r.match.game.points } }));
       }, 1300);
+      return () => window.clearTimeout(t);
+    }
+    // shut out (a checker on the bar, the board closed): no roll, the turn passes once that has been said
+    if (mustPass(g)) {
+      const t = window.setTimeout(() => update((r) => ({ ...r, match: { ...r.match, game: passTurn(r.match.game) } })), 1800);
       return () => window.clearTimeout(t);
     }
     if (g.turn === 0 && g.phase === 'move' && !g.steps.length && turnDone(g)) {
