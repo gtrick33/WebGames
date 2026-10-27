@@ -83,7 +83,8 @@ export default function Game({ host, challenge }: GameModuleProps) {
   );
   const [typed, setTyped] = useState('');
   // A challenge opens on its own board, even when today's daily is already done.
-  const [panel, setPanel] = useState<Panel>(() => (!save.seenHelp ? 'help' : isOver(daily) && !challenge ? 'stats' : 'none'));
+  // The rules open only when asked for (the ? glows until the first time); a finished daily opens on its stats.
+  const [panel, setPanel] = useState<Panel>(() => (isOver(daily) && !challenge ? 'stats' : 'none'));
   const [toast, setToast] = useState<{ text: string; id: number } | null>(null);
   const [shake, setShake] = useState(0);
   const [, setTick] = useState(0);
@@ -288,7 +289,7 @@ export default function Game({ host, challenge }: GameModuleProps) {
               <FlameIcon /> {streak}
             </span>
           )}
-          <IconButton label="How to play" onClick={() => setPanel('help')}>
+          <IconButton label="How to play" onClick={() => setPanel('help')} glow={!save.seenHelp}>
             <HelpIcon />
           </IconButton>
           <IconButton label="Statistics" onClick={() => setPanel('stats')}>
@@ -558,9 +559,9 @@ const Num = ({ n, label }: { n: number; label: string }) => (
   </div>
 );
 
-function IconButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+function IconButton({ label, onClick, children, glow = false }: { label: string; onClick: () => void; children: ReactNode; glow?: boolean }) {
   return (
-    <button className="lp-icon" onClick={onClick} aria-label={label} title={label} onMouseDown={(e) => e.preventDefault()}>
+    <button className={`lp-icon${glow ? ' is-new' : ''}`} onClick={onClick} aria-label={label} title={label} onMouseDown={(e) => e.preventDefault()}>
       {children}
     </button>
   );

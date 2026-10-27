@@ -15,44 +15,63 @@ beforeAll(async () => {
 
 function renderAt(path: string, { howToSeen = true } = {}) {
   saveStore.reload(); // the store is a singleton; pick up whatever this test put in localStorage
-  // a player who has seen every game's How to play (it opens by itself only the first time; see its own test)
+  // a player who has opened every game's How to play (its info button glows until then; see its own test)
   if (howToSeen) localStorage.setItem('glitchbound.howto', JSON.stringify(GAMES.map((g) => g.slug)));
   window.history.replaceState(null, '', path);
   return render(<App />);
 }
 
 describe('homepage', () => {
-  it('renders the hero with today at a glance, the flagships, the live multiplayer games, Today and the arcade', async () => {
+  it('renders the hero, the best games, Sigilfall, Today, the arcade and Play together, each game once up top', async () => {
     renderAt('/');
     expect(screen.getByRole('heading', { level: 1, name: /Small games\.\s*Big obsessions\./ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Today’s pick/ }).getAttribute('href')).toMatch(/^\/games\//);
     expect(screen.getAllByRole('button', { name: /Surprise me/ }).length).toBeGreaterThan(0);
+    // The promise, without a sign-in button up top
+    const hero = screen.getByRole('region', { name: /Small games\./ });
+    expect(within(screen.getByRole('list', { name: 'The GlitchBound promise' })).getAllByRole('listitem').map((li) => li.textContent?.trim())).toEqual(['Free, always', 'No sign-up', 'Nothing to install', 'Phone or computer']);
+    expect(within(hero).queryByRole('button', { name: /Sign in/ })).toBeNull();
     // Start here: the four flagships, each one link.
     const start = screen.getByRole('region', { name: 'Our best games' });
     const flagships = within(start).getAllByRole('link').map((a) => a.getAttribute('href'));
     expect(flagships).toHaveLength(4);
-    // Their Play starts the game on arrival (#24).
-    expect(flagships.sort()).toEqual(['/games/color-recall?play=1', '/games/launch-control?play=1', '/games/letter-pinch?play=1', '/games/wait-what?play=1']);
-    // The hero's side: the day's theme and the daily challenge (and the free promise on wide screens).
-    const hero = screen.getByRole('region', { name: /Small games\./ });
-    expect(within(hero).getByText('Today is')).toBeTruthy();
-    expect(within(hero).getByText(/^Today’s challenge/)).toBeTruthy();
-    expect(within(hero).getByRole('link', { name: /Play today’s challenge|Play again/ }).getAttribute('href')).toMatch(/^\/games\//);
-    expect(within(hero).getByRole('region', { name: /100% free\./ })).toBeTruthy();
-    // Live multiplayer games, right under the best games.
-    const together = screen.getByRole('region', { name: 'Live multiplayer games' });
-    expect(within(together).getAllByRole('link').map((a) => a.getAttribute('href')).sort()).toEqual(['/games/backgammon?play=1', '/games/belot?play=1', '/games/launch-control?play=1']);
-    // Today: the link to every daily.
+    // Their Play starts the game on arrival (#24); Quizbelief lives at its own name.
+    expect(flagships.sort()).toEqual(['/games/color-recall?play=1', '/games/launch-control?play=1', '/games/letter-pinch?play=1', '/games/quizbelief?play=1']);
+    // Sigilfall's doorway and Today arrive right after the first paint.
+    const sigilfall = await screen.findByRole('region', { name: 'Sigilfall' });
+    expect(within(sigilfall).getByRole('link').getAttribute('href')).toBe('/sigilfall');
     const today = screen.getByRole('region', { name: 'Today' });
-    expect(within(today).getByRole('link', { name: /All dailies/ }).getAttribute('href')).toBe('/daily');
-    // Party Mode shows its two featured games (their cards load after the first paint).
-    const party = screen.getByRole('region', { name: 'Party Mode' });
-    await waitFor(() => expect(within(party).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/party?play=impostor'));
+    expect(within(today).getByText('Today is')).toBeTruthy();
+    expect(within(today).getByText(/^Today’s challenge/)).toBeTruthy();
+    expect(within(today).getByRole('link', { name: /Play today’s challenge|Play again/ }).getAttribute('href')).toMatch(/^\/games\//);
+    expect(within(today).getByRole('link', { name: /See all \d+ dailies/ }).getAttribute('href')).toBe('/daily');
+    // The quick dailies repeat neither the best games nor the challenge's game.
+    const quick = within(today).getByRole('heading', { name: 'Quick dailies' }).parentElement!;
+    const quickLinks = within(quick).getAllByRole('link').map((a) => a.getAttribute('href')).filter((h) => h !== '/daily');
+    expect(quickLinks.length).toBeGreaterThan(0);
+    expect(quickLinks.length).toBeLessThanOrEqual(4);
+    for (const h of quickLinks) expect(flagships).not.toContain(`${h}?play=1`);
+    // Play together: live games and Party Mode, which shows its two featured games after the first paint.
+    const together = await screen.findByRole('region', { name: 'Better with friends' });
+    expect(within(together).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(expect.arrayContaining(['/games/backgammon?play=1', '/games/belot?play=1', '/party']));
+    await waitFor(() => expect(within(together).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/party?play=impostor'));
+    // The arcade opens on its first rows; the best games come last, so it doesn't open by repeating them.
     const arcade = screen.getByRole('region', { name: 'The arcade' });
+    const firstRows = within(arcade).getAllByRole('article');
+    expect(firstRows).toHaveLength(12);
+    expect(firstRows.map((a) => a.querySelector('.tile-link')!.textContent)).not.toContain('Quizbelief');
+    fireEvent.click(within(arcade).getByRole('button', { name: /Show all \d+ games/ }));
     expect(within(arcade).getByRole('link', { name: 'Neon Rush' }).getAttribute('href')).toBe('/games/neon-rush');
+    expect(within(arcade).getByRole('link', { name: 'Quizbelief' }).getAttribute('href')).toBe('/games/quizbelief');
     // Games friends can play together live carry the label, and only those.
     const liveTiles = [...arcade.querySelectorAll('.live-badge')].map((b) => b.closest('article')!.querySelector('.tile-link')!.textContent);
     expect(liveTiles.sort()).toEqual(['Backgammon', 'Belot', 'Launch Control']);
+  });
+
+  it('Quizbelief opens at its own name, and its old address still works', () => {
+    renderAt('/games/wait-what?challenge=');
+    expect(screen.getByRole('heading', { level: 1, name: 'Quizbelief' })).toBeTruthy();
+    expect(window.location.pathname).toBe('/games/quizbelief');
   });
 
   it('picks games by mood, keeping the mood in the URL', () => {
@@ -63,6 +82,7 @@ describe('homepage', () => {
     expect(within(arcade).getByRole('link', { name: 'Neon Rush' })).toBeTruthy();
     expect(within(arcade).queryByRole('link', { name: 'Letter Pinch' })).toBeNull();
     fireEvent.click(within(arcade).getByRole('button', { name: /Everything/ }));
+    fireEvent.click(within(arcade).getByRole('button', { name: /Show all \d+ games/ }));
     expect(within(arcade).getByRole('link', { name: 'Letter Pinch' })).toBeTruthy();
     // Crass Act lives in Party Mode, not the arcade.
     expect(within(arcade).queryByRole('link', { name: 'Crass Act' })).toBeNull();
@@ -168,12 +188,12 @@ describe('game page', () => {
     expect(save.games['neon-rush']).toMatchObject({ plays: 1, best: { score: 321, meters: 250, coins: 7, nearMisses: 1 } });
   });
 
-  it('a banner’s Play opens the game already started and full screen, like the Play on its poster (#24)', () => {
+  it('a banner’s Play opens the game already started and full screen, like the Play on its poster (#24)', async () => {
     renderAt('/');
-    const together = screen.getByRole('region', { name: 'Live multiplayer games' });
+    const together = await screen.findByRole('region', { name: 'Better with friends' });
     const card = within(together).getByRole('link', { name: 'Backgammon' });
-    // the Play button is a picture inside the card: the card's link takes the tap
-    expect(card.closest('.flagship')!.querySelector('.flagship-play')).not.toBeNull();
+    // the whole card is the link's tap area
+    expect(card.closest('.live-card')).not.toBeNull();
     fireEvent.click(card);
     expect(window.location.pathname).toBe('/games/backgammon');
     // the address is the game's own again, so a refresh or a shared link shows the poster
@@ -265,19 +285,24 @@ describe('game page', () => {
     expect(post).toHaveBeenCalledWith(expect.objectContaining({ source: 'glitchbound-host', type: 'pause' }), window.location.origin);
   });
 
-  it('How to play opens over the game the first time it starts, once per game, and from the menu (#27)', () => {
+  it('How to play never opens by itself: the info button glows until first opened, and the menu opens it too (#27)', () => {
     renderAt('/games/neon-rush', { howToSeen: false });
-    // no how-to text on the page any more: a button by the game opens the wizard instead
+    // no how-to text on the page: the info button in the toolbar opens the wizard
     expect(screen.queryByRole('heading', { name: 'How to play' })).toBeNull();
-    expect(screen.queryByRole('tab', { name: /How to play/ })).toBeNull();
-    expect(screen.queryByRole('dialog', { name: 'Neon Rush' })).toBeNull();
+    const info = screen.getByRole('button', { name: 'How to play' });
+    expect(info.classList.contains('is-new')).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: /Play Neon Rush/ }));
+    // Play means play: no wizard in the way
+    expect(screen.queryByRole('dialog', { name: 'Neon Rush' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'How to play' }));
     const wizard = screen.getByRole('dialog', { name: 'Neon Rush' });
     expect(wizard.closest('.stage')).not.toBeNull(); // over the game, so full screen shows it too
+    expect(screen.getByRole('button', { name: 'How to play' }).classList.contains('is-new')).toBe(false);
     fireEvent.click(within(wizard).getByRole('button', { name: 'Skip' }));
     expect(screen.queryByRole('dialog', { name: 'Neon Rush' })).toBeNull();
     expect(JSON.parse(localStorage.getItem('glitchbound.howto')!)).toEqual(['neon-rush']);
     // in full screen, the game menu opens it again
+    fireEvent.click(screen.getByRole('button', { name: 'Fullscreen' }));
     const frame = document.querySelector('iframe')!;
     act(() => {
       window.dispatchEvent(new MessageEvent('message', { data: { source: 'glitchbound-game', version: 1, type: 'menu' }, origin: window.location.origin, source: frame.contentWindow }));
@@ -306,11 +331,11 @@ describe('game page', () => {
     expect(document.querySelector('.stage-immersive')).not.toBeNull();
   });
 
-  it('a game that teaches itself, or has a section of its own, does not open the wizard by itself', () => {
+  it('a game that teaches itself keeps a quiet info button (it walks players through itself)', () => {
     renderAt('/games/crosswire', { howToSeen: false });
     fireEvent.click(screen.getByRole('button', { name: /Play Crosswire/ }));
     expect(screen.queryByRole('dialog', { name: 'Crosswire' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'How to play' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'How to play' }).classList.contains('is-new')).toBe(false);
   });
 
   it('shows the restart action once playing', () => {
@@ -339,6 +364,7 @@ describe('members features as a guest (API unreachable in tests)', () => {
   it('keeps favorites on the device and filters the arcade by them', () => {
     renderAt('/');
     const arcade = screen.getByRole('region', { name: 'The arcade' });
+    fireEvent.click(within(arcade).getByRole('button', { name: /Show all \d+ games/ }));
     fireEvent.click(within(arcade).getByRole('button', { name: 'Add Neon Rush to favorites' }));
     expect(within(arcade).getByRole('button', { name: 'Remove Neon Rush from favorites' }).getAttribute('aria-pressed')).toBe('true');
     expect(JSON.parse(localStorage.getItem('glitchbound.favorites')!)).toEqual(['neon-rush']);
@@ -353,8 +379,8 @@ describe('members features as a guest (API unreachable in tests)', () => {
   it('tells guests it is free with no sign-up, and opens the sign-in dialog when they want more', async () => {
     renderAt('/');
     expect(screen.getByRole('heading', { level: 2, name: /100% free\.\s*No sign-up\.\s*No downloads\./ })).toBeTruthy();
-    // the hero's mini banner and the big one both offer it
-    fireEvent.click(screen.getAllByRole('button', { name: /Sign in free/ })[0]!);
+    // optional, and named for what it does
+    fireEvent.click(screen.getByRole('button', { name: /Save my progress/ }));
     // The dialog loads on first use, then opens.
     const dialog = (await screen.findByRole('heading', { name: 'Join the arcade' }, { timeout: 3000 })).closest('dialog') as HTMLDialogElement;
     await waitFor(() => expect(dialog.open).toBe(true));

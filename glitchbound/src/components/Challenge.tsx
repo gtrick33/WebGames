@@ -7,6 +7,7 @@ import { Link, navigate } from '../router/router';
 import { inviteToChallenge } from './ChallengeFriends';
 import { Icon } from './Icon';
 import './Challenge.css';
+import { gameUrl } from '../catalog/catalog';
 
 const SEAT_COLORS = ['#ff4fc8', '#2ad1f0', '#ffc928', '#b6e62c', '#ff6a1a', '#7b4dff'];
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -123,7 +124,7 @@ export function ChallengeDock({ run, game, stageRound, onPlayRound, onScores, sc
     const ask = view?.host ? t('End this challenge for everyone? The results stay readable.') : t('Leave this challenge? Your scores stay on the board.');
     if (!window.confirm(ask)) return;
     const r = await run.close();
-    if (r === 'left' || r === 'deleted') navigate(`/games/${game.slug}`, { replace: true });
+    if (r === 'left' || r === 'deleted') navigate(gameUrl(game.slug), { replace: true });
   };
 
   return (
@@ -169,7 +170,7 @@ export function ChallengeDock({ run, game, stageRound, onPlayRound, onScores, sc
           </button>
         )}
         {(state.status === 'gone' || state.status === 'closed') && (
-          <Link href={`/games/${game.slug}`} className="btn btn-sm btn-primary">
+          <Link href={gameUrl(game.slug)} className="btn btn-sm btn-primary">
             <Icon name="bolt" size={16} /> {t('New challenge')}
           </Link>
         )}
@@ -232,7 +233,7 @@ export function ChallengeScores({ run, game, onClose }: { run: ChallengeRun; gam
           <h2 className="chs-title">{t('This challenge has closed.')}</h2>
           <p className="chs-note">{t('Challenges nobody joins close after a day. Start a new one and send the link.')}</p>
           <div className="chs-actions">
-            <Link href={`/games/${game.slug}`} className="btn btn-primary">
+            <Link href={gameUrl(game.slug)} className="btn btn-primary">
               <Icon name="bolt" /> {t('New challenge')}
             </Link>
             <button className="btn" onClick={onClose}>
@@ -310,7 +311,7 @@ export function ChallengeScores({ run, game, onClose }: { run: ChallengeRun; gam
             </button>
           )}
           {view.closed && (
-            <Link href={`/games/${game.slug}`} className="btn btn-primary">
+            <Link href={gameUrl(game.slug)} className="btn btn-primary">
               <Icon name="bolt" /> {t('New challenge')}
             </Link>
           )}

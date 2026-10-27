@@ -65,11 +65,23 @@
 .howto-skip:hover {
   color: var(--fg);
 }
+.howto-steps {
+  display: grid;
+}
 .howto-step {
+  grid-area: 1 / 1;
   display: grid;
   justify-items: center;
+  align-content: start;
   gap: 8px;
   animation: howto-in 0.35s var(--out) both;
+}
+.howto-step.is-sizer {
+  visibility: hidden;
+  animation: none;
+}
+.howto-step.is-sizer .howto-pic {
+  animation: none;
 }
 @keyframes howto-in {
   from {

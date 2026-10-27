@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getGame } from '../catalog/catalog';
+import { gameUrl, getGame } from '../catalog/catalog';
 import { getLang, useT } from '../i18n';
 import type { ChallengeHistoryItem } from '../platform/challenge';
 import { challengeHistory } from '../platform/challenges';
@@ -50,7 +50,7 @@ export function ChallengeHistoryList({ items }: { items: ChallengeHistoryItem[] 
         const result = standing(c, t);
         return (
           <li key={c.id} className="chal-item">
-            <Link href={`/games/${c.game}?challenge=${c.id}`} className="chal-row" data-accent={g?.accent}>
+            <Link href={`${gameUrl(c.game)}?challenge=${c.id}`} className="chal-row" data-accent={g?.accent}>
               {g && <img src={g.art.tile} alt="" width={48} height={48} style={{ background: g.art.bg }} />}
               <span className="chal-row-main">
                 <b>{g?.title ?? c.game}</b>

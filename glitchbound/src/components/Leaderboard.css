@@ -198,3 +198,48 @@
   font-weight: 700;
   text-decoration: none;
 }
+
+/* House rivals (platform/rivals.ts): computer players, tagged so nobody takes them for members. */
+.board-rival {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--fg-3);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.board-row.is-rival .board-nick {
+  color: var(--fg-2);
+}
+.board-rivals-note {
+  margin: 8px 2px 0;
+  color: var(--fg-3);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+/* A guest's best on this device: where it would land, and the way to claim it. */
+.board-claim {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1.5px dashed var(--magenta);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+.board-claim svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--yellow-text);
+}

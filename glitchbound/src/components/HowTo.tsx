@@ -1,8 +1,8 @@
 /**
  * How to play, as a short wizard over the game (issue #27): two to four steps with a big picture each,
  * Next / Back / Skip, arrow keys and swipes. Every game gets one from its registry entry (what it is,
- * the controls for this device, what is good to know), so no game needs code for it. It opens by itself
- * the first time a game starts on this device and again from the game menu or the button by the game.
+ * the controls for this device, what is good to know), so no game needs code for it. It never opens by
+ * itself: the info button in the game's toolbar (glowing until first opened) and the game menu open it.
  */
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { t as translate, tGame, useT } from '../i18n';
@@ -144,21 +144,19 @@ export function HowTo({ game, onClose, onPlay }: { game: GameEntry; onClose: () 
             </button>
           )}
         </div>
-        <div key={i} className="howto-step" aria-live="polite">
-          <span className="howto-pic" aria-hidden="true">
-            {step.emoji}
-          </span>
-          <h2 id="howto-title" className="howto-title">
-            {step.title}
-          </h2>
-          {step.lines.length === 1 ? (
-            <p className="howto-lines">{step.lines[0]}</p>
-          ) : (
-            <ul className="howto-lines">
-              {step.lines.map((l) => (
-                <li key={l}>{l}</li>
-              ))}
-            </ul>
+        {/* Every step sits in the same cell (the others invisible), so the card is as tall as its
+            longest step and Next never moves under the player's finger. */}
+        <div className="howto-steps">
+          {steps.map((s, k) =>
+            k === i ? (
+              <div key={`on-${k}`} className="howto-step" aria-live="polite">
+                <StepBody step={step} heading />
+              </div>
+            ) : (
+              <div key={k} className="howto-step is-sizer" aria-hidden="true">
+                <StepBody step={s} />
+              </div>
+            ),
           )}
         </div>
         <div className="howto-dots" role="img" aria-label={t('Step {n} of {total}', { n: i + 1, total: steps.length })}>
@@ -178,5 +176,31 @@ export function HowTo({ game, onClose, onPlay }: { game: GameEntry; onClose: () 
         </div>
       </div>
     </div>
+  );
+}
+
+function StepBody({ step, heading = false }: { step: HowToStep; heading?: boolean }) {
+  return (
+    <>
+      <span className="howto-pic" aria-hidden="true">
+        {step.emoji}
+      </span>
+      {heading ? (
+        <h2 id="howto-title" className="howto-title">
+          {step.title}
+        </h2>
+      ) : (
+        <p className="howto-title">{step.title}</p>
+      )}
+      {step.lines.length === 1 ? (
+        <p className="howto-lines">{step.lines[0]}</p>
+      ) : (
+        <ul className="howto-lines">
+          {step.lines.map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }

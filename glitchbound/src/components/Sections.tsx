@@ -8,6 +8,7 @@ import { Link } from '../router/router';
 import { Icon } from './Icon';
 import { Star } from './Shapes';
 import './Sections.css';
+import { gameUrl } from '../catalog/catalog';
 
 /** Editorial spread for the most recent release. */
 export function LatestRelease({ game }: { game: GameEntry }) {
@@ -18,7 +19,7 @@ export function LatestRelease({ game }: { game: GameEntry }) {
   return (
     <section className="section latest" aria-labelledby="latest-title" data-accent={game.accent}>
       <div className="wrap latest-grid">
-        <Link href={`/games/${game.slug}`} className="latest-art" tabIndex={-1} aria-hidden="true">
+        <Link href={gameUrl(game.slug)} className="latest-art" tabIndex={-1} aria-hidden="true">
           <img src={game.art.wide} alt="" loading="lazy" decoding="async" width={1000} height={400} style={{ background: game.art.bg }} />
           <img src={game.art.tile} alt="" loading="lazy" decoding="async" className="latest-art-tile" width={512} height={512} />
           {fresh && <span className="sticker latest-sticker">{t('New release')}</span>}
@@ -39,7 +40,7 @@ export function LatestRelease({ game }: { game: GameEntry }) {
             </ul>
           )}
           <div className="latest-ctas">
-            <Link href={`/games/${game.slug}`} className="btn btn-primary btn-lg">
+            <Link href={gameUrl(game.slug)} className="btn btn-primary btn-lg">
               <Icon name="play" /> {t('Play now')}
             </Link>
             <span className="chip" data-accent="yellow">
@@ -75,7 +76,7 @@ export function YourArcade() {
           {recent.map((g) => {
             const rec = save.games[g.slug]!;
             return (
-              <Link key={g.slug} href={`/games/${g.slug}`} className="yours-card" data-accent={g.accent}>
+              <Link key={g.slug} href={gameUrl(g.slug)} className="yours-card" data-accent={g.accent}>
                 <img src={g.art.tile} alt="" width={96} height={96} style={{ background: g.art.bg }} />
                 <span className="yours-text">
                   <strong>{g.title}</strong>

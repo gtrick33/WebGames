@@ -1,17 +1,19 @@
-.intro-band {
+/* The first screen: the line and the promise on the left, the game wall on the right. */
+.hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   align-items: center;
-  gap: 28px 48px;
-  padding-top: clamp(22px, 4vw, 48px);
-  padding-bottom: clamp(10px, 2vw, 18px);
+  gap: 24px clamp(24px, 4vw, 64px);
+  min-height: min(640px, calc(100svh - var(--header-h) - 24px));
+  padding-top: clamp(18px, 3vw, 40px);
+  padding-bottom: clamp(18px, 3vw, 36px);
 }
-.intro-copy {
+.hero-copy {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: grid;
-  gap: 14px;
+  gap: 16px;
   justify-items: start;
 }
 .live-dot {
@@ -22,132 +24,317 @@
   box-shadow: 0 0 10px var(--lime);
   animation: blink 1.6s steps(2, end) infinite;
 }
-.intro-title {
-  font-size: clamp(42px, 6vw, 84px);
-  line-height: 0.92;
-  letter-spacing: -0.045em;
+.hero-title {
+  font-size: clamp(46px, 5.7vw, 92px);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
   text-shadow: none;
   animation: title-in 0.8s var(--out) both;
 }
 @keyframes title-in {
-  from { opacity: 0; transform: translateY(0.3em); }
+  from {
+    opacity: 0;
+    transform: translateY(0.3em);
+  }
 }
-.intro-hl {
-  color: var(--cyan-text);
+/* "Big obsessions." in a moving candy gradient, the glitch pulse on top */
+.hero-hl {
+  display: inline-block;
+  background: linear-gradient(100deg, var(--orange), var(--magenta) 35%, var(--violet) 60%, var(--cyan) 85%, var(--orange));
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: hl-flow 9s linear infinite;
   text-shadow: none;
 }
-.intro-hl::before,
-.intro-hl::after {
+.hero-hl::before,
+.hero-hl::after {
   text-shadow: none;
 }
-.intro-sub {
-  max-width: 46ch;
-  font-size: clamp(16px, 1.4vw, 19px);
+@keyframes hl-flow {
+  to {
+    background-position: -220% 0;
+  }
+}
+.hero-sub {
+  max-width: 44ch;
+  font-size: clamp(17px, 1.45vw, 20px);
+  line-height: 1.45;
   color: var(--fg-2);
 }
-.intro-ctas {
+.hero-ctas {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
-}
-.intro-pick {
   gap: 12px;
-  padding-left: 10px;
+  margin-top: 6px;
 }
-.intro-pick img {
+.hero-pick {
+  gap: 12px;
+  min-height: 64px;
+  padding-left: 10px;
+  padding-right: 22px;
+}
+.hero-pick img {
   flex: none;
   border: 2px solid var(--ink);
-  border-radius: 10px;
+  border-radius: 11px;
 }
-.intro-pick span {
+.hero-pick span {
   display: grid;
   line-height: 1.1;
   text-align: left;
+  font-size: 20px;
 }
-.intro-pick small {
+.hero-pick small {
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   opacity: 0.8;
 }
-.intro-surprise {
+.hero-surprise {
+  min-height: 64px;
   background: var(--yellow);
   color: #1d1238;
   border-color: var(--ink);
 }
+/* The promise, as four ticked chips (no sign-in button up here: nothing needs one). */
+.hero-promise {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.hero-promise li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 700;
+}
+.hero-promise svg {
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--lime);
+  color: var(--ink);
+}
 
-.intro-side {
+/* ------------------------------------------------------------- the game wall */
+.hero-wall {
   position: relative;
   z-index: 1;
+  align-self: stretch;
+  min-height: 520px;
+  overflow: hidden;
+  /* the columns fade out at the top and bottom instead of being cut */
+  -webkit-mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
+}
+.wall-tilt {
+  position: absolute;
+  inset: -18% -6%;
   display: grid;
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 20px);
+  transform: rotate(-9deg);
 }
-/* Today at a glance: the theme strip, the daily challenge and the mini free banner, a little tighter. */
-.intro-side .theme-strip {
-  gap: 10px 14px;
-  padding: 12px 14px;
+.wall-col {
+  overflow: hidden;
 }
-.intro-side .theme-emoji {
-  width: 48px;
-  height: 48px;
-  border-radius: 15px;
-  font-size: 26px;
+.wall-col:nth-child(2) {
+  margin-top: -40px;
 }
-.intro-side .theme-copy {
-  flex-basis: 180px;
+.wall-track {
+  display: grid;
+  gap: clamp(12px, 1.4vw, 20px);
+  animation: wall-up var(--dur, 40s) linear infinite;
 }
-.intro-side .theme-name {
-  font-size: clamp(20px, 1.9vw, 26px);
+.wall-col:nth-child(2) .wall-track {
+  animation-name: wall-down;
 }
-.intro-side .theme-tag {
-  font-size: 13.5px;
+/* the track holds the column twice, so moving it by half loops without a seam */
+@keyframes wall-up {
+  to {
+    transform: translateY(calc(-50% - clamp(6px, 0.7vw, 10px)));
+  }
 }
-.intro-side .theme-games img {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
+@keyframes wall-down {
+  from {
+    transform: translateY(calc(-50% - clamp(6px, 0.7vw, 10px)));
+  }
 }
-.intro-side .theme-cta {
-  padding-block: 8px;
+.hero-wall:hover .wall-track {
+  animation-play-state: paused;
+}
+.wall-tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  border: 2.5px solid var(--ink);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: 5px 5px 0 var(--ink);
+  transition: transform 0.3s var(--spring), box-shadow 0.3s var(--out);
+}
+.wall-tile:nth-child(3n + 1) {
+  box-shadow: 5px 5px 0 var(--magenta);
+}
+.wall-tile:nth-child(3n + 2) {
+  box-shadow: 5px 5px 0 var(--cyan);
+}
+.wall-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wall-name {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  max-width: calc(100% - 16px);
+  padding: 4px 9px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--accent, var(--yellow));
+  color: var(--on-accent, var(--ink));
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s, transform 0.25s var(--out);
+}
+.wall-tile:hover {
+  z-index: 1;
+  transform: scale(1.06) rotate(2deg);
+  box-shadow: 8px 8px 0 var(--ink);
+}
+.wall-tile:hover .wall-name {
+  opacity: 1;
+  transform: none;
 }
 
-.intro-deco {
+.hero-deco {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: 3;
 }
 .deco {
   position: absolute;
   filter: drop-shadow(3px 3px 0 var(--ink));
   animation: bob 7s ease-in-out infinite alternate;
-  opacity: 0.9;
+  opacity: 0.95;
 }
-.d1 { width: 44px; right: calc(var(--gutter) - 4px); top: 6px; --r: 14deg; }
-.d2 { width: 28px; right: calc(var(--gutter) + 140px); top: 14px; animation-delay: -3s; }
-.d3 { width: 36px; right: calc(var(--gutter) + 70px); top: -6px; animation-delay: -5s; }
+.d1 { width: 46px; left: 48%; top: 10px; --r: 14deg; }
+.d2 { width: 28px; left: 44%; bottom: 40px; animation-delay: -3s; }
+.d3 { width: 40px; right: calc(var(--gutter) - 6px); bottom: 18px; animation-delay: -5s; }
 
+@media (prefers-reduced-motion: reduce) {
+  .wall-track,
+  .hero-hl {
+    animation: none;
+  }
+}
+
+/* Tablets and phones: the copy first, then the wall as two rows sliding past each other. */
 @media (max-width: 900px) {
-  .intro-band {
+  .hero {
     grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
+    min-height: 0;
+    gap: 18px;
+    padding-bottom: 8px;
   }
-  .intro-title {
-    font-size: clamp(34px, 9vw, 52px);
+  .hero-copy {
+    gap: 12px;
   }
-  .intro-sub {
-    display: none;
+  .hero-title {
+    font-size: clamp(40px, 11vw, 64px);
   }
-  .intro-ctas {
-    margin-top: 12px;
+  .hero-sub {
+    font-size: 16.5px;
   }
-  .intro-ctas .btn {
+  .hero-ctas {
+    width: 100%;
+    margin-top: 2px;
+  }
+  .hero-ctas .btn {
     flex: 1 1 auto;
     justify-content: center;
   }
+  .hero-promise li {
+    padding: 5px 10px 5px 6px;
+    font-size: 13px;
+  }
+  .hero-wall {
+    min-height: 0;
+    margin-inline: calc(-1 * var(--gutter));
+    padding-block: 10px 14px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .wall-tilt {
+    position: static;
+    display: grid;
+    grid-template-columns: none;
+    gap: 12px;
+    transform: rotate(-3deg);
+  }
+  .wall-col:nth-child(2) {
+    margin-top: 0;
+  }
+  .wall-col:nth-child(3) {
+    display: none;
+  }
+  .wall-track {
+    display: flex;
+    width: max-content;
+    gap: 12px;
+    animation-name: wall-left;
+  }
+  .wall-col:nth-child(2) .wall-track {
+    animation-name: wall-right;
+  }
+  .wall-tile {
+    width: 104px;
+    border-radius: 18px;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .wall-tile:nth-child(3n + 1) {
+    box-shadow: 3px 3px 0 var(--magenta);
+  }
+  .wall-tile:nth-child(3n + 2) {
+    box-shadow: 3px 3px 0 var(--cyan);
+  }
   .deco {
+    display: none;
+  }
+}
+@keyframes wall-left {
+  to {
+    transform: translateX(calc(-50% - 6px));
+  }
+}
+@keyframes wall-right {
+  from {
+    transform: translateX(calc(-50% - 6px));
+  }
+}
+
+/* Small phones: one row of games is enough to say "look how much is here". */
+@media (max-width: 480px) {
+  .wall-col:nth-child(2) {
     display: none;
   }
 }

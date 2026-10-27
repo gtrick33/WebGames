@@ -3,6 +3,8 @@
   top: 0;
   z-index: 50;
   background: var(--bar);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -274,6 +276,10 @@
   }
 }
 @media (max-width: 900px) {
+  /* a phone's header is solid: bright cards scrolling under a see-through bar showed through the logo */
+  .site-header {
+    background: var(--bg);
+  }
   .tabs {
     display: none;
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useT } from '../i18n';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { useNow } from '../platform/hooks';
@@ -6,11 +6,10 @@ import { dayKey } from '../platform/dates';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
 import { Dot, Star, Tri } from './Shapes';
-import { DailyCard } from './DailyCard';
-import { FreeBanner } from './FreeBanner';
 import { SurpriseButton } from './Surprise';
-import { ThemeStrip } from './ThemeStrip';
-import { latestGame, playPath } from '../catalog/catalog';
+import { gamePath, latestGame, playPath, SECTION_GAMES } from '../catalog/catalog';
+import type { GameEntry } from '../catalog/types';
+import { useFlagships } from '../platform/useFlagships';
 import { activeHoliday } from '../platform/seasons';
 import './Hero.css';
 
@@ -32,10 +31,40 @@ function useGlitchPulse(): boolean {
   return on;
 }
 
+const WALL_COLUMNS = 3;
+
 /**
- * The intro above the catalogue: brand line, today's pick and Surprise me on the left; on the right
- * today at a glance (the day's theme, the daily challenge and the free promise). The
- * games themselves start right below (the flagship row).
+ * The game wall: every game's art in three tilted columns drifting past each other (two rows sliding
+ * sideways on a phone). It says "look how much is here" before a word is read. A shortcut for the
+ * mouse; keyboards and screen readers get the same games, properly, in the sections below.
+ */
+function GameWall({ games }: { games: GameEntry[] }) {
+  const columns = Array.from({ length: WALL_COLUMNS }, (_, c) => games.filter((_, i) => i % WALL_COLUMNS === c));
+  return (
+    <div className="hero-wall" aria-hidden="true">
+      <div className="wall-tilt">
+        {columns.map((col, c) => (
+          <div key={c} className="wall-col" style={{ '--dur': `${38 + c * 9}s` } as CSSProperties}>
+            {/* the column twice over, so the loop never shows a seam */}
+            <div className="wall-track">
+              {[...col, ...col].map((g, i) => (
+                <Link key={`${g.slug}-${i}`} href={gamePath(g)} className="wall-tile" data-accent={g.accent} tabIndex={-1}>
+                  <img src={g.art.tile} alt="" width={512} height={512} decoding="async" loading={i < 3 ? 'eager' : 'lazy'} style={{ background: g.art.bg }} />
+                  <span className="wall-name">{g.title}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The first screen says what GlitchBound is in one breath: the line, one sentence, today's pick and
+ * Surprise me, and the promise (free, no sign-up, nothing to install). Beside it the game wall. Today
+ * (the day's theme and the daily challenge) is a section of its own further down.
  */
 export function Hero() {
   const t = useT();
@@ -44,31 +73,36 @@ export function Hero() {
   // Today's pick: an admin's spotlight, else the newest game.
   const pick = live.spotlight ?? latestGame(live.games);
   const glitching = useGlitchPulse();
-  const now = useNow(1000);
+  const now = useNow(60_000);
   const holiday = activeHoliday(live.raw.season, dayKey(now));
+  // The wall: the best games spread over the columns first, then every other game, then the RPG.
+  const best = useFlagships().list.map((f) => f.game);
+  const playable = live.games.filter((g) => !live.settings(g.slug).maintenance);
+  const sections = SECTION_GAMES.filter((g) => !live.settings(g.slug).hidden);
+  const wall = [...best, ...sections, ...playable.filter((g) => !best.includes(g))];
 
   return (
-    <section className="intro-band wrap" aria-labelledby="hero-title">
-      <div className="intro-copy">
+    <section className="hero wrap" aria-labelledby="hero-title">
+      <div className="hero-copy">
         {holiday && (
           <p className="season-greeting">
             <span aria-hidden="true">{holiday.emoji}</span> {t(holiday.greeting)}
           </p>
         )}
         <p className="eyebrow">
-          <span className="live-dot" /> {t('Independent browser arcade')} · {gameCount === 1 ? t('1 game') : t('{n} games', { n: gameCount })}
+          <span className="live-dot" /> {t('Free browser arcade')} · {gameCount === 1 ? t('1 game') : t('{n} games', { n: gameCount })}
         </p>
-        <h1 id="hero-title" className="intro-title">
+        <h1 id="hero-title" className="hero-title">
           {t('Small games.')}{' '}
-          <span className={`glitch intro-hl${glitching ? ' is-glitching' : ''}`} data-text={t('Big obsessions.')}>
+          <span className={`glitch hero-hl${glitching ? ' is-glitching' : ''}`} data-text={t('Big obsessions.')}>
             {t('Big obsessions.')}
           </span>
         </h1>
-        <p className="intro-sub">{t('Five minutes, endless replayability. Every game starts in a second, no installs. Beat your best, then come back for tomorrow’s challenge.')}</p>
-        <div className="intro-ctas">
+        <p className="hero-sub">{t('Quick games that start in a second: trivia, word puzzles, racing, card games and a whole fantasy RPG. Right here in your browser.')}</p>
+        <div className="hero-ctas">
           {pick && (
-            <Link href={playPath(pick)} className="btn btn-primary btn-lg intro-pick" data-accent={pick.accent}>
-              <img src={pick.art.tile} alt="" width={34} height={34} style={{ background: pick.art.bg }} />
+            <Link href={playPath(pick)} className="btn btn-primary btn-lg hero-pick" data-accent={pick.accent}>
+              <img src={pick.art.tile} alt="" width={40} height={40} style={{ background: pick.art.bg }} />
               <span>
                 <small className="mono">{t('Today’s pick')}</small>
                 {pick.title}
@@ -76,18 +110,20 @@ export function Hero() {
               <Icon name="play" />
             </Link>
           )}
-          <SurpriseButton className="btn btn-lg intro-surprise" />
+          <SurpriseButton className="btn btn-lg hero-surprise" />
         </div>
+        <ul className="hero-promise" aria-label={t('The GlitchBound promise')}>
+          {[t('Free, always'), t('No sign-up'), t('Nothing to install'), t('Phone or computer')].map((p) => (
+            <li key={p}>
+              <Icon name="check" size={16} /> {p}
+            </li>
+          ))}
+        </ul>
       </div>
 
-      {/* Today, at a glance: the day's theme, the daily challenge and the free promise. */}
-      <div className="intro-side">
-        <ThemeStrip embedded />
-        <DailyCard variant="hero" />
-        <FreeBanner mini />
-      </div>
+      <GameWall games={wall} />
 
-      <div className="intro-deco" aria-hidden="true">
+      <div className="hero-deco" aria-hidden="true">
         <Tri className="deco d1" fill="#b6e62c" />
         <Dot className="deco d2" fill="#ff4fc8" />
         <Star className="deco d3" fill="#ffc928" />

@@ -340,3 +340,16 @@
     transition: none;
   }
 }
+
+/* "Show all 22 games" under the first rows of the unfiltered grid. */
+.arcade-more {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(22px, 3vw, 34px);
+}
+/* On a phone the folded grid is four rows of two. */
+@media (max-width: 600px) {
+  .arcade-grid.is-folded > :nth-child(n + 9) {
+    display: none;
+  }
+}

@@ -9,6 +9,7 @@ import type { BugReportView } from '../platform/apiTypes';
 import { usePageMeta } from '../platform/meta';
 import { Link, useLocation } from '../router/router';
 import './InfoPages.css';
+import { gameUrl } from '../catalog/catalog';
 
 const CATEGORIES: { id: string; label: string; hint: string }[] = [
   { id: 'bug', label: 'Something broke', hint: 'A button, a level or a rule did not work' },
@@ -138,7 +139,7 @@ export function BugReportPage() {
             <button className="btn" onClick={() => setSentId(0)}>
               {t('Open another')}
             </button>
-            <Link href={game ? `/games/${game}` : '/'} className="btn btn-primary">
+            <Link href={game ? gameUrl(game) : '/'} className="btn btn-primary">
               {t('Back to {place}', { place: GAMES.find((g) => g.slug === game)?.title ?? t('the arcade') })}
             </Link>
           </div>

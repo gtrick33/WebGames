@@ -72,7 +72,7 @@ describe('share text', () => {
   it('shows the result, streak and a clean link, with no personal data', () => {
     const c = challengeForDay('2026-10-20', GAMES)!;
     const text = dailyShareText(c, c.target + 5, 4, [false, true, true, false, true, true, true], 'https://example.test/daily');
-    expect(text).toContain(`GlitchBound Daily #${c.number}`);
+    expect(text).toContain(`GlitchBound Challenge #${c.number}`);
     expect(text).toContain('□■■□■■■');
     expect(text).toContain('streak 4');
     expect(text.trim().endsWith('https://example.test/daily')).toBe(true);

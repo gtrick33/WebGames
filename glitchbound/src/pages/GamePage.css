@@ -246,17 +246,22 @@
   }
   /* While a game runs (Restart, Fullscreen and Exit join the toolbar), the heart and Share step
      aside so the game's name isn't cut down to its first letter. */
-  .game-actions:has(> :nth-child(3)) > :is(.fav-btn, :last-child) {
+  .game-actions.is-playing > :is(.fav-btn, .share-btn) {
     display: none;
   }
   /* ...and a slightly smaller name fits the longest ones ("Where’s the Ball?") at 375 px. */
-  .game-toolbar:has(.game-actions > :nth-child(3)) .game-heading h1 {
+  .game-toolbar:has(.game-actions.is-playing) .game-heading h1 {
     font-size: 19px;
   }
   /* Restart and Exit show only their icons here: make them as narrow as the icon buttons. */
   .game-actions .btn-sm:not(.btn-icon) {
     width: 40px;
     padding: 0;
+  }
+  /* Info, Restart, Fullscreen and Exit side by side: a touch narrower so the name keeps its room. */
+  .game-actions.is-playing > .btn-sm {
+    width: 38px;
+    height: 38px;
   }
 }
 
@@ -284,6 +289,39 @@
 .game-actions .fav-btn {
   width: 40px;
   height: 40px;
+}
+
+/* How to play lives behind this button and never opens by itself. Until the player has opened it once
+   for a game, it glows softly so a newcomer knows where the rules are. */
+.game-info-btn.is-new {
+  position: relative;
+  background: var(--yellow);
+  color: var(--ink);
+}
+.game-info-btn.is-new::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border: 2.5px solid var(--yellow);
+  border-radius: inherit;
+  animation: info-glow 1.8s var(--out) infinite;
+  pointer-events: none;
+}
+@keyframes info-glow {
+  from {
+    opacity: 0.9;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-info-btn.is-new::after {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 
 /* "Playing as" is one quiet line under the info tabs. */
@@ -498,5 +536,62 @@
 @media (prefers-reduced-motion: reduce) {
   .next-up-link {
     transition: none;
+  }
+}
+
+/* Sigilfall's page: its tab is a door out of the arcade into its night. The page wears the game's sky
+   (violet dusk, a glow from the Rift below, a few stars) and its gold, and panels turn to dusk with it. */
+.game-page[data-world='sigilfall'] {
+  --fg: #f4ecff;
+  --fg-2: #d8ccf0;
+  --fg-3: #a99bc9;
+  --surface: #1d1338;
+  --surface-2: #281b4c;
+  --well: #22163f;
+  --line: #5a4590;
+  --cyan-text: #7fe8ff;
+  --magenta-text: #ff8be6;
+  --yellow-text: #ffcf5a;
+  position: relative;
+  isolation: isolate;
+  color: var(--fg);
+}
+.game-page[data-world='sigilfall']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(1.5px 1.5px at 8% 6%, #fff 50%, transparent 52%),
+    radial-gradient(1px 1px at 22% 14%, #fff 50%, transparent 52%),
+    radial-gradient(2px 2px at 63% 4%, #ffe7a3 50%, transparent 52%),
+    radial-gradient(1px 1px at 78% 11%, #fff 50%, transparent 52%),
+    radial-gradient(1.5px 1.5px at 92% 3%, #cfe6ff 50%, transparent 52%),
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgb(123 77 255 / 0.45), transparent 70%),
+    radial-gradient(ellipse 70% 30% at 50% 62%, rgb(255 120 50 / 0.16), transparent 70%),
+    linear-gradient(180deg, #0a0620 0%, #170d34 40%, #1d1036 85%, var(--bg) 100%);
+  animation: world-in 0.9s ease-out both;
+}
+@keyframes world-in {
+  from {
+    opacity: 0;
+  }
+}
+.game-page[data-world='sigilfall'] .game-heading h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #fff6d8, #ffcf5a 55%, #c27a2a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 0 #2a1406);
+}
+.game-page[data-world='sigilfall'] .stage {
+  border-color: #ffcf5a;
+  box-shadow: 0 0 0 2px #ffcf5a, 0 0 50px rgb(123 77 255 / 0.4), var(--hard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-page[data-world='sigilfall']::before {
+    animation: none;
   }
 }

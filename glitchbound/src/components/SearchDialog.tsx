@@ -14,6 +14,7 @@ import { AdultLabel } from './AdultLabel';
 import { Icon } from './Icon';
 import { openSignIn } from './openSignIn';
 import './SearchDialog.css';
+import { gameUrl } from '../catalog/catalog';
 
 /** One row of the results, whatever it is. */
 interface Hit {
@@ -74,7 +75,7 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
         hits: group.items.map((g) => ({
           key: `g:${g.slug}`,
           accent: g.accent,
-          run: () => go(`/games/${g.slug}`),
+          run: () => go(gameUrl(g.slug)),
           view: (
             <>
               <img src={g.art.tile} alt="" width={56} height={56} style={{ background: g.art.bg }} />

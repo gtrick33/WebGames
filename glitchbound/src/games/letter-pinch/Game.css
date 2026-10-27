@@ -97,6 +97,36 @@
 .lp-icon:hover {
   background: rgb(29 16 54 / 0.08);
 }
+/* The rules never open by themselves: until the first look, the ? glows so a newcomer finds them. */
+.lp-icon.is-new {
+  position: relative;
+  background: #ffd12e;
+  box-shadow: 2px 2px 0 var(--lp-ink);
+}
+.lp-icon.is-new::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2.5px solid #ffd12e;
+  border-radius: 14px;
+  animation: lp-glow 1.8s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes lp-glow {
+  from {
+    opacity: 0.9;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-icon.is-new::after {
+    animation: none;
+  }
+}
 .lp-streak {
   display: inline-flex;
   align-items: center;

@@ -5,23 +5,23 @@ import { Arcade } from '../components/Arcade';
 import { FlagshipRow } from '../components/FlagshipRow';
 import { FreeBanner } from '../components/FreeBanner';
 import { Hero } from '../components/Hero';
-import { MultiplayerRow } from '../components/MultiplayerRow';
-import { PartyBanner } from '../components/PartyBanner';
-import { TodaysDailies } from '../components/TodaysDailies';
 import { YourArcade } from '../components/Sections';
 import { usePageMeta } from '../platform/meta';
 import { useInitialHashScroll } from '../router/router';
 import { fresh } from '../platform/freshBuild';
 
-// Below the fold (and the quests are for members only): their code loads after the first paint.
+// Below the fold: their code loads after the first paint (the quests are for members only).
+const bands = fresh(() => import('../components/HomeBands'));
+const HomeTop = lazy(() => bands().then((m) => ({ default: m.HomeTop })));
+const PlayTogether = lazy(() => bands().then((m) => ({ default: m.PlayTogether })));
 const QuestBoard = lazy(fresh(() => import('../components/Quests').then((m) => ({ default: m.QuestBoard }))));
 const NotifyForm = lazy(fresh(() => import('../components/Notify').then((m) => ({ default: m.NotifyForm }))));
 
 /**
- * One clear path for a newcomer: the hero (today's pick, Surprise me, and today at a glance: the day's
- * theme and the daily challenge), the four flagship games, the live multiplayer games, then Today (the
- * flagship dailies still open), then every game by mood and Party Mode. Returning devices get "Continue playing" below; guests the free-and-no-sign-up
- * promise, members their quests. The daily challenge in full lives on /daily.
+ * One clear path for a newcomer, each thing once: the hero (what GlitchBound is, today's pick, Surprise
+ * me, the promise and the game wall), then where returning players left off, the best games, Sigilfall's
+ * doorway, Today (the day's theme over the daily challenge and a few quick dailies), the whole arcade,
+ * playing together (live games and Party Mode), and the free promise with the optional account.
  */
 export function Home() {
   usePageMeta({ path: '/' });
@@ -30,13 +30,16 @@ export function Home() {
   return (
     <>
       <Hero />
-      <FlagshipRow />
-      <MultiplayerRow />
-      <TodaysDailies variant="featured" headingLevel={2} />
-      <Arcade />
-      <PartyBanner />
-      {!me && <FreeBanner />}
       <YourArcade />
+      <FlagshipRow />
+      <Suspense fallback={null}>
+        <HomeTop />
+      </Suspense>
+      <Arcade />
+      <Suspense fallback={null}>
+        <PlayTogether />
+      </Suspense>
+      {!me && <FreeBanner />}
       <Suspense fallback={null}>
         {me && (
           <div className="wrap section">

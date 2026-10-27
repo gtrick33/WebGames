@@ -11,6 +11,7 @@ import { shareOrCopy } from '../platform/share';
 import { Link, navigate } from '../router/router';
 import { Icon } from './Icon';
 import './ChallengeFriends.css';
+import { gameUrl } from '../catalog/catalog';
 
 const fmt = (n: number): string => n.toLocaleString('en-US');
 
@@ -36,7 +37,7 @@ export function inviteToChallenge(game: GameEntry, view: Pick<ChallengeView, 'id
 export async function startChallenge(game: GameEntry, mode: ChallengeMode, name: string, tr: ReturnType<typeof useT>): Promise<string> {
   try {
     const v = await createChallenge(game.slug, mode, name, dayKey());
-    navigate(`/games/${game.slug}?challenge=${v.id}`, { scroll: false });
+    navigate(`${gameUrl(game.slug)}?challenge=${v.id}`, { scroll: false });
     inviteToChallenge(game, v, tr);
     return '';
   } catch (e) {

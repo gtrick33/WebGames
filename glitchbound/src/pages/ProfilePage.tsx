@@ -16,6 +16,7 @@ import { Link } from '../router/router';
 import { getLang, useT } from '../i18n';
 import { ProfileTabs } from './BugReportPage';
 import './InfoPages.css';
+import { gameUrl } from '../catalog/catalog';
 
 export function ProfilePage() {
   usePageMeta({ title: 'Your profile', path: '/me' });
@@ -257,7 +258,7 @@ function BestResults({ me }: { me: Me }) {
           {top.map((e) => {
             const tag = topLabel(e);
             return (
-              <Link key={e.game.slug} href={`/games/${e.game.slug}`} className="panel best-card best-card-link" data-accent={e.game.accent}>
+              <Link key={e.game.slug} href={gameUrl(e.game.slug)} className="panel best-card best-card-link" data-accent={e.game.accent}>
                 <span className="best-card-art" style={{ background: e.game.art.bg }} aria-hidden="true">
                   <img src={e.game.art.wide} alt="" loading="lazy" decoding="async" />
                   {tag && <span className={`best-tag mono${e.best.rank === 1 ? ' is-crown' : ''}`}>{e.best.rank === 1 ? '👑 #1' : tag}</span>}
@@ -302,7 +303,7 @@ function BestResults({ me }: { me: Me }) {
               {rest.map((e) => (
                 <tr key={e.game.slug}>
                   <td>
-                    <Link href={`/games/${e.game.slug}`}>{e.game.title}</Link>
+                    <Link href={gameUrl(e.game.slug)}>{e.game.title}</Link>
                   </td>
                   <td className="mono">{fmt(e.best.score)}</td>
                   <td className="mono">{e.best.rank ? `#${e.best.rank}${e.best.players ? ` / ${fmt(e.best.players)}` : ''}` : '–'}</td>
@@ -317,7 +318,7 @@ function BestResults({ me }: { me: Me }) {
         <div className="untried">
           <p className="info-small">{t('Not tried yet:')}</p>
           {untried.slice(0, 6).map((g) => (
-            <Link key={g.slug} href={`/games/${g.slug}`} className="untried-chip" data-accent={g.accent}>
+            <Link key={g.slug} href={gameUrl(g.slug)} className="untried-chip" data-accent={g.accent}>
               <img src={g.art.tile} alt="" width={28} height={28} style={{ background: g.art.bg }} />
               {g.title}
             </Link>

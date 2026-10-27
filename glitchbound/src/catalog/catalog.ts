@@ -1,5 +1,6 @@
 import { GAMES } from './games.ts';
 import { CATEGORIES, type CategoryId, type GameEntry } from './types.ts';
+import { gameUrl, slugOfUrl } from './urls.ts';
 
 export type SortId = 'newest' | 'az';
 export const SORTS: Record<SortId, string> = { newest: 'Newest', az: 'A to Z' };
@@ -13,6 +14,10 @@ export const NEW_FOR_DAYS = 30;
  */
 export const RENAMED_SLUGS: Readonly<Record<string, string>> = { unhinged: 'crass-act', riftbound: 'sigilfall' };
 export const currentSlug = (slug: string): string => RENAMED_SLUGS[slug] ?? slug;
+export { gameUrl, URL_SLUGS } from './urls.ts';
+
+/** The slug a /games/<name> address means (its address name, an old name, or the slug itself). */
+export const slugFromUrl = (name: string): string => currentSlug(slugOfUrl(name));
 
 export function getGame(slug: string, games: GameEntry[] = GAMES): GameEntry | undefined {
   return games.find((g) => g.slug === slug);
@@ -32,10 +37,10 @@ export function sectionGame(path: string): GameEntry | undefined {
 }
 
 /** Where a game's page lives: its section, or /games/<slug>. */
-export const gamePath = (g: GameEntry): string => g.section?.path ?? `/games/${g.slug}`;
+export const gamePath = (g: GameEntry): string => g.section?.path ?? gameUrl(g.slug);
 
 /** A banner's Play button: the game's page, with the game started on arrival as its own Play would (GamePage). */
-export const playPath = (g: Pick<GameEntry, 'slug'>): string => `/games/${g.slug}?play=1`;
+export const playPath = (g: Pick<GameEntry, 'slug'>): string => `${gameUrl(g.slug)}?play=1`;
 
 export function isCategory(value: string | null | undefined): value is CategoryId {
   return !!value && Object.hasOwn(CATEGORIES, value);

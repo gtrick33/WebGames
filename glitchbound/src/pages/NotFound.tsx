@@ -1,4 +1,4 @@
-import { latestGame } from '../catalog/catalog';
+import { gameUrl, latestGame } from '../catalog/catalog';
 import { t as tr, useT } from '../i18n';
 import { Icon } from '../components/Icon';
 import { Dot, Ring, Tri } from '../components/Shapes';
@@ -32,7 +32,7 @@ export function NotFound() {
           {tr('Back to the arcade')} <Icon name="arrowRight" />
         </Link>
         {game && (
-          <Link href={`/games/${game.slug}`} className="btn btn-lg">
+          <Link href={gameUrl(game.slug)} className="btn btn-lg">
             <Icon name="play" /> {tr('Play {game}', { game: game.title })}
           </Link>
         )}

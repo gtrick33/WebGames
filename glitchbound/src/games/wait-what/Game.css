@@ -15,6 +15,8 @@
   color: var(--ww-ink);
   font-family: var(--font);
   -webkit-tap-highlight-color: transparent;
+  /* sizes follow the stage, not the window: a short stage (a laptop, a phone on its side) gets the compact layout */
+  container-type: size;
 }
 .ww button,
 .ww a {
@@ -204,6 +206,18 @@
   gap: 10px;
   padding: 12px 14px 8px;
   font-weight: 800;
+}
+/* the score, the dots and the clock stay in view while a long answer card scrolls */
+.ww-play > .ww-top {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: linear-gradient(180deg, rgb(255 224 110 / 0.96) 70%, rgb(255 224 110 / 0));
+}
+.ww-play > .ww-timer {
+  position: sticky;
+  top: 52px;
+  z-index: 3;
 }
 .ww-top-mode {
   padding: 4px 10px;
@@ -809,6 +823,62 @@
   opacity: 0.8;
 }
 
+/* A short stage (under ~640 px tall): everything a notch tighter, so a question, its four answers and the
+   reveal fit without scrolling on a 1280×800 laptop. */
+@container (max-height: 640px) {
+  .ww-menu {
+    gap: 9px;
+    padding: 14px 16px 18px;
+  }
+  .ww-logo {
+    font-size: clamp(40px, 11cqh, 84px);
+  }
+  .ww-tag {
+    font-size: 15px;
+  }
+  .ww-card {
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .ww-stage {
+    gap: 8px;
+    padding: 8px 14px 14px;
+  }
+  .ww-q-card {
+    gap: 6px;
+    padding: 12px 14px 14px;
+  }
+  .ww-q {
+    font-size: 19px;
+  }
+  .ww-answers {
+    gap: 7px;
+  }
+  .ww-answer {
+    min-height: 44px;
+    padding: 6px 12px;
+    border-radius: 14px;
+    font-size: 15.5px;
+  }
+  .is-two .ww-answer {
+    min-height: 56px;
+  }
+  .ww-letter {
+    width: 28px;
+    height: 28px;
+  }
+  .ww-reveal {
+    gap: 6px;
+    padding: 10px 14px 12px;
+  }
+  .ww-verdict {
+    font-size: 19px;
+  }
+  .ww-fact {
+    font-size: 14.5px;
+    line-height: 1.4;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .ww *,
   .ww *::before {

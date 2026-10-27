@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore, type AnchorHTMLAttributes, type MouseEvent } from 'react';
 import { flushSync } from 'react-dom';
-import { currentSlug, getGame, sectionGame } from '../catalog/catalog';
+import { getGame, sectionGame, slugFromUrl } from '../catalog/catalog';
 
 /**
  * A deliberately tiny client router: four routes do not need a routing library. Paths are real
@@ -50,7 +50,7 @@ export function matchRoute(pathname: string): Route {
   if (c?.[1]) return { name: 'challenge', id: c[1] };
   const m = /^\/games\/([a-z0-9-]+)$/.exec(path);
   if (m?.[1]) {
-    const slug = currentSlug(m[1]);
+    const slug = slugFromUrl(m[1]);
     return getGame(slug)?.section ? { name: 'section', slug } : { name: 'game', slug };
   }
   return { name: 'notfound' };

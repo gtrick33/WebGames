@@ -341,7 +341,7 @@ describe('Launch Control: daily, garage and wager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm race' }));
     expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBe(600);
     driveRace({ tapWhenHot: false });
-    expect(document.querySelector('.lc-ledger')?.textContent).toMatch(/Wager/);
+    expect(document.querySelector('.lc-ledger')?.textContent).toMatch(/Backed yourself/);
     expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBeLessThan(800);
   });
 });
