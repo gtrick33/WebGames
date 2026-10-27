@@ -455,7 +455,8 @@ ol {
   }
 }
 
-/* Placeholder while a lazily loaded page chunk arrives (keeps the footer from jumping up). */
+/* Placeholder while a lazily loaded page chunk arrives: a full screen, so the footer never jumps up into view. */
 .page-loading {
-  min-height: 60vh;
+  min-height: 100vh;
+  min-height: 100svh;
 }

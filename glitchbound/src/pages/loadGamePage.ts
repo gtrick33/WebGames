@@ -10,6 +10,9 @@ let loaded: typeof GamePage | undefined;
 
 export const loadGamePage = fresh(() => import('./GamePage').then((m) => (loaded = m.GamePage)));
 
+/** For the router: loads the game page's code before switching to it; undefined once it is here. */
+export const preloadGamePage = (): Promise<unknown> | undefined => (loaded ? undefined : loadGamePage());
+
 type GamePageModule = { default: typeof GamePage };
 
 /** For React.lazy: the game page, at once when its code is already here, else once it loads. */
