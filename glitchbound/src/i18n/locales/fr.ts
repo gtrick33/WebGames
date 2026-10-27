@@ -2074,6 +2074,11 @@ const fr: string[] = [
   'Les défis terminés restent ici {n} jours.',
   'Pas encore de défi. Défie tes amis depuis n’importe quel jeu : la même manche, un essai chacun.',
   'Tous tes défis',
+  'Retour',
+  'Suivant',
+  'Bon à savoir',
+  'C’est parti !',
+  'Étape {n} sur {total}',
 ];
 
 export default fr;

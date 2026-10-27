@@ -2074,6 +2074,11 @@ const it: string[] = [
   'Le sfide finite restano qui per {n} giorni.',
   'Ancora nessuna sfida. Sfida gli amici da qualsiasi gioco: stesso round, un tentativo a testa.',
   'Tutte le tue sfide',
+  'Indietro',
+  'Avanti',
+  'Buono a sapersi',
+  'Si gioca!',
+  'Passo {n} di {total}',
 ];
 
 export default it;

@@ -2080,6 +2080,12 @@ export const KEYS: string[] = [
   "Ended challenges stay here for {n} days.",
   "No challenges yet. Challenge friends from any game: same round, one try each.",
   "All your challenges",
+  // How to play wizard (components/HowTo.tsx)
+  "Back",
+  "Next",
+  "Good to know",
+  "Let’s play!",
+  "Step {n} of {total}",
 ];
 
 export const UI_COUNT = 311;
