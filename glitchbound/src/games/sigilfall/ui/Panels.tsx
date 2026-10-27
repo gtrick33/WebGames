@@ -1190,6 +1190,12 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             {engine.canSave ? 'Your heroes are saved on this device. Sign in on GlitchBound and they follow you to your other devices.' : 'Saving is off on this device right now.'}
           </span>
         </section>
+        <section>
+          <span className="rb-kicker">Art credits</span>
+          <span className="rb-small rb-dim">
+            {ART_CREDITS.join(' · ')}. Heroes, monsters, bosses, icons, sound and music are made for the game.
+          </span>
+        </section>
         {engine.reviewTools && engine.hero && (
           <section>
             <span className="rb-kicker">Review presets</span>
@@ -1207,6 +1213,14 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
     </Frame>
   );
 }
+
+/** The art packs the game is built with (CREDITS_AND_LICENSES.md): credit is optional under each license, given anyway. */
+const ART_CREDITS = [
+  'Royal Keep and Royal Keep Seasons by bubbabba',
+  'Magic Spells VFX and Magic Circles VFX by Willosuna',
+  'Simple Summer, Poison Swamp and Guard & Magic Towers by CraftPix.net',
+  'Greenvale Meadows, Gloomvault Crypt, Mirefen Bog, Sylvanreach Grove and Blossom Shrine by Certainity',
+];
 
 /** The hero in everything they wear (and the Wardrobe looks over it); tap to turn them around. */
 function HeroDoll({ look, area = 'doll' }: { look: HeroLook; area?: string }) {
