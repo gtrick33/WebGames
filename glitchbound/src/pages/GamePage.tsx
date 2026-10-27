@@ -70,7 +70,7 @@ function lockZoom(on: boolean): void {
  * "immersive" mode that pins the stage over the whole screen. Either way the page stops scrolling
  * and zooming while playing.
  */
-function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): { active: boolean; immersive: boolean; enter: () => void; exit: () => void } {
+function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void, landscape = false): { active: boolean; immersive: boolean; enter: () => void; exit: () => void } {
   const [mode, setMode] = useState<'none' | 'fullscreen' | 'immersive'>('none');
   const modeRef = useRef(mode);
   const onLeaveRef = useRef(onLeave);
@@ -121,7 +121,14 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void): 
     if (!el) return;
     // Must run inside the click handler: browsers only allow fullscreen from a user gesture.
     if (document.fullscreenEnabled && el.requestFullscreen) {
-      el.requestFullscreen({ navigationUI: 'hide' }).catch(() => apply('immersive'));
+      el.requestFullscreen({ navigationUI: 'hide' })
+        .then(() => {
+          // a landscape game on a phone held upright: turn the screen (Android; an iPhone can't be turned,
+          // and a game may turn itself instead)
+          const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+          if (landscape && matchMedia('(pointer: coarse)').matches) o?.lock?.('landscape').catch(() => undefined);
+        })
+        .catch(() => apply('immersive'));
     } else {
       apply('immersive');
     }
@@ -289,7 +296,7 @@ export function GamePage({ game }: { game: GameEntry }) {
   const stageRef = useRef<HTMLDivElement>(null);
   // Leaving full screen (Escape, the browser's own exit, or the menu) pauses the game and its music.
   const [pauseSignal, setPauseSignal] = useState(0);
-  const play = usePlayMode(stageRef, () => setPauseSignal((n) => n + 1));
+  const play = usePlayMode(stageRef, () => setPauseSignal((n) => n + 1), game?.aspect === 'landscape');
   const [menuOpen, setMenuOpen] = useState(false);
   const openMenu = useCallback(() => {
     setPauseSignal((n) => n + 1);
