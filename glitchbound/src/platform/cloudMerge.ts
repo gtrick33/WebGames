@@ -15,6 +15,8 @@ import { ARCADE_SAVE_KEY } from './syncKeys';
  *   played further (more filled in), then this device.
  * - Numbers keep the larger (counts and bests); names like "fastest" keep the smaller one set.
  * - Lists of words (e.g. questions already seen) are joined; any other value is this device's.
+ * - Lists of records stamped `updated` (Sigilfall's hero slots) keep, slot by slot, the copy played last:
+ *   a hero levelled on the phone isn't lost to the desktop's older copy.
  */
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -24,6 +26,9 @@ type Json = unknown;
 const isObj = (v: Json): v is Record<string, Json> => !!v && typeof v === 'object' && !Array.isArray(v);
 const isDayMap = (v: Json): v is Record<string, Json> => isObj(v) && Object.keys(v).length > 0 && Object.keys(v).every((k) => DAY.test(k));
 const isWords = (v: Json): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string');
+/** A list of slots, each empty or a record stamped with when it last changed. */
+const isStamped = (v: Json): v is (Record<string, Json> | null)[] => Array.isArray(v) && v.some((x) => isObj(x)) && v.every((x) => x === null || (isObj(x) && typeof x.updated === 'number'));
+const stamp = (x: Json): number => (isObj(x) && typeof x.updated === 'number' ? x.updated : -1);
 
 /** How much of a record is filled in: its non-zero numbers, true flags and non-empty strings (a fresh round has few). */
 function filled(v: Json): number {
@@ -72,6 +77,7 @@ export function mergeJson(local: Json, remote: Json, key = ''): Json {
     return local > 0 && remote > 0 ? Math.min(local, remote) : Math.max(local, remote);
   }
   if (isWords(local) && isWords(remote)) return [...local, ...remote.filter((w) => !local.includes(w))];
+  if (isStamped(local) && isStamped(remote)) return Array.from({ length: Math.max(local.length, remote.length) }, (_, i) => (stamp(remote[i]) > stamp(local[i]) ? remote[i] : (local[i] ?? remote[i] ?? null)));
   return local === undefined ? remote : local;
 }
 
