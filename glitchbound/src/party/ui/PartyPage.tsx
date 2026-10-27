@@ -26,6 +26,7 @@ import { useLiveCatalog } from '../../platform/liveCatalog';
 import { DEFAULT_FEATURED, PARTY_GAMES } from '../catalog';
 import './Party.css';
 import { t, useT } from '../../i18n';
+import { cardImg } from '../../platform/cardImg';
 
 /** The party line-up as players see it: the admins' Party settings applied (hidden, featured, texts, rooms). */
 function usePartyLineup() {
@@ -540,7 +541,7 @@ function PartyCard({ g, i, art, found, onPlay, onRoom }: { g: ShownGame; i: numb
     <li data-party-game={g.id} className={`flagship pop-in pt-gamecard${found ? ' is-found' : ''}`} style={{ '--i': i, '--accent': g.color } as CSSProperties}>
       <div className="flagship-art" style={{ background: art?.bg ?? g.color }}>
         {art ? (
-          <img src={art.tile} alt="" width={512} height={512} decoding="async" loading={i < 4 ? 'eager' : 'lazy'} />
+          <img src={art.tile} alt="" width={512} height={512} {...cardImg(i < 4, i < 8)} />
         ) : (
           <span className="pt-card-emoji" aria-hidden="true">
             {g.emoji}

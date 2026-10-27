@@ -418,23 +418,25 @@ ol {
 }
 
 /* ------------------------------------------------------------------ Page transitions */
-::view-transition-old(root) {
-  animation: vt-out 0.18s var(--out) both;
-}
+/*
+ * A tab switch swaps the page at once: the next page's code is already here (router.tsx), so any fade only
+ * reads as the cards blinking (the owner, 2026-10-28). The view transition still swaps old for new in one
+ * step, with the new page already scrolled to its top.
+ */
+::view-transition-old(root),
 ::view-transition-new(root) {
-  animation: vt-in 0.32s var(--out) both;
-}
-@keyframes vt-out {
-  to { opacity: 0; transform: translateY(-6px); filter: hue-rotate(40deg); }
-}
-@keyframes vt-in {
-  from { opacity: 0; transform: translateY(10px); clip-path: inset(0 0 12% 0); }
+  animation: none;
 }
 
 .pop-in {
   animation: pop-in 0.55s var(--spring) both;
   animation-delay: calc(var(--i, 0) * 60ms);
 }
+/* Cards, board rows and badges pop in on the first page of a visit only: after a tab switch they are simply there. */
+:root[data-paged] :is(.pop-in, .board-row, .badge, .hero-title) {
+  animation: none;
+}
+
 @keyframes pop-in {
   from { opacity: 0; transform: translateY(18px) scale(0.96) rotate(-1deg); }
 }
