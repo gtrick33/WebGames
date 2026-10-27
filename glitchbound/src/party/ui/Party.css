@@ -2383,16 +2383,48 @@ img.pt-feature-art {
 .pt-top .flagship-row {
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
 }
+/* Every card in a row lines up: fixed slots for the name and the line, buttons at the bottom. */
 .pt-gamecard .flagship-body {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+}
+.pt-gamecard .flagship-title {
+  min-height: 2.2em;
+  display: flex;
+  align-items: flex-end;
+}
+.pt-gamecard .flagship-tag {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  min-height: calc(3 * 1.35em);
+}
+.pt-gamecard .flagship-players {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .pt-gamecard .flagship-sticker {
   top: auto;
   bottom: 10px;
   left: 10px;
 }
-.pt-gamecard .adult-label {
-  justify-self: start;
+/* "18+ Adults only" sits on the art; a long translation wraps instead of leaving the card. */
+.pt-gamecard .flagship-art .adult-label {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  max-width: calc(100% - 20px);
+  height: auto;
+  min-height: 26px;
+  padding: 3px 10px 3px 3px;
+  line-height: 1.2;
+  white-space: normal;
+}
+.pt-gamecard .flagship-art .adult-label b {
+  flex: none;
 }
 .pt-card-emoji {
   display: grid;
@@ -2404,8 +2436,8 @@ img.pt-feature-art {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  align-self: end;
-  margin-top: 4px;
+  margin-top: auto;
+  padding-top: 4px;
 }
 .pt-card-ctas .btn {
   flex: 1 1 auto;
@@ -2478,6 +2510,25 @@ img.pt-feature-art {
   }
   .pt-card-ctas .btn {
     flex-basis: 100%;
+    font-size: 14px;
+  }
+  .pt-gamecard .flagship-tag {
+    -webkit-line-clamp: 2;
+    min-height: calc(2 * 1.35em);
+  }
+  /* Narrow cards: the player count fits one line; the time is on the game's own screen. */
+  .pt-card-time {
+    display: none;
+  }
+  .pt-gamecard .flagship-art .adult-label {
+    right: 8px;
+    bottom: 8px;
+    max-width: calc(100% - 16px);
+    font-size: 10px;
+  }
+  .pt-all-tools .btn {
+    min-height: 38px;
+    padding: 0 12px;
     font-size: 14px;
   }
   .pt-online-row {

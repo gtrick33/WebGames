@@ -533,7 +533,6 @@ function CustomPrompts({ session, update }: { session: PartySession; update: (fn
   );
 }
 
-/** A big featured card at the top of the lobby. */
 /** A party game in the arcade's big card: its art, name, line, players, and the ways to play it. */
 function PartyCard({ g, i, art, found, onPlay, onRoom }: { g: ShownGame; i: number; art?: { tile: string; bg: string }; found: boolean; onPlay: () => void; onRoom: () => void }) {
   const sticker = g.label || g.sticker;
@@ -547,19 +546,20 @@ function PartyCard({ g, i, art, found, onPlay, onRoom }: { g: ShownGame; i: numb
             {g.emoji}
           </span>
         )}
-        {/* Bottom corner of the art: the logos are at the top. */}
+        {/* Bottom corners of the art (the logos are at the top), so every card's text lines up. */}
         {sticker && (
           <span className="sticker flagship-sticker" data-tone="magenta">
             {t(sticker)}
           </span>
         )}
+        {g.adult && <AdultLabel text={t('Adults only')} />}
       </div>
       <div className="flagship-body">
         <h3 className="flagship-title">{t(g.title)}</h3>
-        {g.adult && <AdultLabel text={t('Adults only')} />}
         <p className="flagship-tag">{t(g.blurb)}</p>
         <p className="flagship-players mono">
-          👥 {g.onePhone ? g.players : g.roomPlayers} · ⏱ {g.time}
+          <span>👥 {g.onePhone ? g.players : g.roomPlayers}</span>
+          <span className="pt-card-time"> · ⏱ {g.time}</span>
         </p>
         <div className="pt-card-ctas">
           {g.onePhone && (
