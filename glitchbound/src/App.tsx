@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { getGame } from './catalog/catalog';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 // The game page's code loads on its own (pages/loadGamePage.ts); its styles stay in the main sheet, in their usual order.
 import './components/Burst.css';
@@ -31,6 +30,8 @@ import { fresh } from './platform/freshBuild';
 
 // Pages most visitors never open are separate chunks, so the first load stays small on any phone.
 // Not needed for the first paint: loads right after it (it registers the "Rate this game" opener).
+// The footer sits below every page: it loads right after the page itself.
+const Footer = lazy(fresh(() => import('./components/Footer').then((m) => ({ default: m.Footer }))));
 const FeedbackPrompt = lazy(fresh(() => import('./components/FeedbackPrompt').then((m) => ({ default: m.FeedbackPrompt }))));
 // Preloaded wherever it is likely next, so a game page doesn't wait for it (pages/loadGamePage.ts).
 const GamePage = lazy(gamePageModule);
@@ -143,7 +144,11 @@ export function App() {
           </Suspense>
         </ErrorBoundary>
       </main>
-      {!embedded && <Footer />}
+      {!embedded && (
+        <Suspense fallback={null}>
+          <Footer />
+        </Suspense>
+      )}
       <MusicControl />
       <Suspense fallback={null}>
         <FeedbackPrompt />

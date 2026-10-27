@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
 import { listRooms, quickMatch, type ListedRoom, type RoomGame, type RoomListing } from '../platform/rooms';
 import { t } from '../i18n';
 import './OnlinePlay.css';
@@ -155,13 +154,29 @@ export function OnlinePlay({
   );
 }
 
-/** The dimmed layer under a window: over everything, in the full-screen element when a game is full screen. */
+/**
+ * The dimmed layer under a window: a modal <dialog>, so it shows in the browser's top layer, over the
+ * game stage and in full screen too.
+ */
 function Veil({ onClose, children }: { onClose?: () => void; children: ReactNode }) {
-  return createPortal(
-    <div className="op-veil" onClick={(e) => onClose && e.target === e.currentTarget && onClose()}>
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (d && !d.open) d.showModal?.();
+    return () => d?.close?.();
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className="op-veil"
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose?.();
+      }}
+      onClick={(e) => onClose && e.target === e.currentTarget && onClose()}
+    >
       {children}
-    </div>,
-    document.fullscreenElement ?? document.body,
+    </dialog>
   );
 }
 
