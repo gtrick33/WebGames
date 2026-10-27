@@ -26,6 +26,8 @@ const PAL = {
   T: '#3a8a3a',
   v: '#c58cff',
   V: '#6a4a9a',
+  q: '#6cc4ff',
+  Q: '#2a6ab8',
 };
 
 const ART = {
@@ -36,6 +38,11 @@ const ART = {
   road: ['.mmmmmm..', '.mwwwwwm.', '.mmmmmm..', '...BB....', '...BB....', '...BB....', '..BBBB...'],
   door: ['..mmm..', '.mMMMm.', 'mMbbbMm', 'mMbbbMm', 'mMbbyMm', 'mMbbbMm', 'mmmmmmm'],
   quest: ['.yyy.', '.yyy.', '.yyy.', '.yyy.', '..y..', '.....', '.yyy.', '.yyy.'],
+  /** Quest marks over people (and on the maps): "!" a quest to take, "?" one to hand in; gold the story, blue a side quest. */
+  offer: ['.yyy.', '.yyy.', '.yYy.', '.yyy.', '..y..', '.....', '.yyy.', '.yYy.'],
+  offerSide: ['.qqq.', '.qqq.', '.qQq.', '.qqq.', '..q..', '.....', '.qqq.', '.qQq.'],
+  handin: ['.yyyy.', 'yy..yy', '....yy', '...yy.', '..yy..', '......', '..yy..', '..yY..'],
+  handinSide: ['.qqqq.', 'qq..qq', '....qq', '...qq.', '..qq..', '......', '..qq..', '..qQ..'],
   you: ['..www..', '.wrrrw.', 'wrrrrrw', 'wrrwrrw', '.wrrrw.', '..wrw..', '...w...'],
   boss: ['.wwwww.', 'wwwwwww', 'wkwwwkw', 'wwwkwww', '.wwwww.', '.w.w.w.'],
   town: ['....h....', '...hhh...', '..hhhhh..', '.hhhhhhh.', 'HHHHHHHHH', '.sssssss.', '.ssBssys.', '.ssBssss.'],

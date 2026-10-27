@@ -51,6 +51,8 @@ const get = (): Links => (links ??= build());
 export const npcRegion = (npc: string): RegionId | undefined => get().npc.get(npc);
 export const spotRegion = (spot: string): RegionId | undefined => get().spot.get(spot);
 export const bossRegion = (boss: string): RegionId | undefined => get().boss.get(boss);
+/** The regions a region has roads (or doors, or a dungeon's way in) to. */
+export const roadsFrom = (r: RegionId): RegionId[] => get().exits.get(r) ?? [];
 
 /**
  * The next region on the shortest walk from one region to another (null when already there or no way);

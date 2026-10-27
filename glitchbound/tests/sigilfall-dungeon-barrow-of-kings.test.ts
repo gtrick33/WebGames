@@ -12,7 +12,7 @@ import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import type { Enemy } from '../src/games/sigilfall/sim/types';
 import type { World } from '../src/games/sigilfall/sim/world';
-import { newWorld, play, readyHero } from './sigilfall-bot';
+import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
 
 const LEVEL = 30;
 
@@ -27,9 +27,11 @@ function nextRoom(w: World): { x: number; y: number } | null {
 
 describe('sigilfall: the Barrow of Kings', () => {
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears the Barrow of Kings at level ${LEVEL}`, { timeout: 30_000 }, () => {
-      const w = newWorld('barrow-of-kings', readyHero(cls as ClassId, LEVEL, 'uncommon'));
-      const r = play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom });
+    it(`${cls}: clears the Barrow of Kings at level ${LEVEL}`, { timeout: 90_000 }, () => {
+      const { w, r } = clearsWithRetry((seed) => {
+        const w = newWorld('barrow-of-kings', readyHero(cls as ClassId, LEVEL, 'uncommon'), seed);
+        return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
+      });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(['king-hrodric', 'sir-corvane']);

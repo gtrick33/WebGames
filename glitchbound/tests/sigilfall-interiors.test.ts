@@ -97,9 +97,11 @@ describe('Sigilfall: interiors', () => {
       const inside = newWorld(d.to, c, 1, 0, d.town);
       expect(walkInto(inside, d.town, 1), `${d.to} → ${d.town}`).toBe(d.town);
       const back = newWorld(d.town, c, 1, 0, d.to);
-      // just below the door, not inside the house and not on the door again
-      expect(back.player.y).toBeGreaterThan(d.y * TILE + 8);
-      expect(Math.abs(back.player.x - (d.x + 0.5) * TILE)).toBeLessThan(TILE);
+      // just below the door (where the town's plan put it: Briarhollow is laid out spread), not inside the
+      // house and not on the door again
+      const door = back.exits.find((x) => x.to === d.to)!;
+      expect(back.player.y).toBeGreaterThan(door.y + 8);
+      expect(Math.abs(back.player.x - door.x)).toBeLessThan(TILE);
       expect(back.map.solid[Math.floor(back.player.y / TILE) * back.map.w + Math.floor(back.player.x / TILE)]).toBe(0);
     }
   });

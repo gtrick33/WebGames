@@ -30,7 +30,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -185,6 +185,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     perks: Array.isArray(o.perks) ? [...new Set(o.perks.filter((x): x is PerkId => typeof x === 'string' && x in PERKS))] : [],
     looks: Array.isArray(o.looks) ? o.looks.filter((x): x is string => typeof x === 'string' && x.length <= 64).slice(0, 4000) : [],
     worn: {},
+    body: o.body === 'f' ? 'f' : 'm',
     seen: Object.fromEntries(Object.entries(obj(o.seen) ?? {}).filter(([k, v]) => k in REGIONS && typeof v === 'string' && v.length <= 4000 && /^([A-Za-z0-9+/]*={0,2}|\*)$/.test(v))),
     mounts: Array.isArray(o.mounts) ? [...new Set(o.mounts.filter((x): x is string => typeof x === 'string' && !!MOUNT_DEFS[x]))] : [],
     mount: typeof o.mount === 'string' && MOUNT_DEFS[o.mount] ? o.mount : null,
@@ -241,12 +242,18 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   // quests
   const q = obj(o.quests) ?? {};
   for (const [id, entry] of Object.entries(q)) {
-    const e = obj(entry);
+    const e = typeof entry === 'string' ? unpackQuest(entry) : obj(entry);
     if (!QUEST_DEFS[id] || !e) continue;
     // a path not taken is kept as done with n −1 (progress/character.ts, declined)
     const notTaken = e.state === 'done' && e.n === -1;
-    c.quests[id] = { state: e.state === 'done' ? 'done' : e.state === 'offered' ? 'offered' : 'active', n: notTaken ? -1 : int(e.n, 0, 1e6, 0) };
+    const state = e.state === 'done' ? 'done' : e.state === 'offered' ? 'offered' : e.state === 'ready' ? 'ready' : 'active';
+    const steps = 1 + (QUEST_DEFS[id]!.then?.length ?? 0);
+    const step = int(e.step, 0, steps - 1, 0);
+    c.quests[id] = { state, n: notTaken ? -1 : int(e.n, 0, 1e6, 0), ...(step ? { step } : {}) };
   }
+  // the three training quests became one: whoever finished it has the north road
+  if (c.quests['first-steps']?.state === 'done' && !c.unlocked.includes('whisperwood')) c.unlocked.push('whisperwood');
+  if (typeof o.tracked === 'string' && (c.quests[o.tracked]?.state === 'active' || c.quests[o.tracked]?.state === 'ready')) c.tracked = o.tracked;
   if (Array.isArray(o.unlocked)) for (const r of o.unlocked) if (typeof r === 'string' && r in REGIONS && !c.unlocked.includes(r as RegionId)) c.unlocked.push(r as RegionId);
   // quests of the zones the hero has been to start once those are known
   startQuests(c);
@@ -337,7 +344,7 @@ export function migrate(raw: unknown): SaveFile | null {
         if (!quests[id]) quests[id] = { state: 'done', n: 1 };
       };
       if (state('first-steps')) done('briar-dusk');
-      if (state('first-dodge') === 'done') done('briar-the-seal');
+      if (state('first-dodge') === 'done' || state('briar-the-seal')) done('briar-the-seal');
       if (state('the-warden') || state('close-the-rift')) for (const id of ['briar-nightfall', 'briar-the-inn', 'briar-hold-the-door', 'briar-below']) done(id);
     }
     o.v = 3;
@@ -395,6 +402,8 @@ export function migrate(raw: unknown): SaveFile | null {
     }
     o.v = 9;
   }
+  // version 10: quests stored packed (packQuest); both forms are read
+  if (o.v === 9) o.v = 10;
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];
   const list = Array.isArray(o.heroes) ? o.heroes : [];
@@ -454,10 +463,39 @@ export function loadSave(): { save: SaveFile; status: LoadStatus } {
 }
 
 /** Writes the save (and the device-only backup). False when storage refused it. */
+/**
+ * A quest's state in a few letters (version 10): d done, x a path not taken, o offered, a<n>[.<step>]
+ * under way, r[.<step>] waiting to be handed in. Five hundred of them as objects made a save too big to
+ * follow the player between devices (platform/syncKeys.ts).
+ */
+function packQuest(e: Character['quests'][string]): string {
+  const step = e.step ? `.${e.step}` : '';
+  if (e.state === 'done') return e.n < 0 ? 'x' : 'd';
+  if (e.state === 'offered') return 'o';
+  if (e.state === 'ready') return `r${step}`;
+  return `a${Math.max(0, Math.round(e.n))}${step}`;
+}
+
+function unpackQuest(s: string): Record<string, unknown> | null {
+  const m = /^([dxora])(\d{0,7})(?:\.(\d{1,2}))?$/.exec(s);
+  if (!m) return null;
+  const step = m[3] ? Number(m[3]) : 0;
+  if (m[1] === 'd') return { state: 'done', n: 1 };
+  if (m[1] === 'x') return { state: 'done', n: -1 };
+  if (m[1] === 'o') return { state: 'offered', n: 0 };
+  if (m[1] === 'r') return { state: 'ready', n: 1e6, step };
+  return { state: 'active', n: Number(m[2] || 0), step };
+}
+
+/** The save as stored: quests packed (packQuest). */
+export function saveText(save: SaveFile): string {
+  return JSON.stringify(save, (key, value: unknown) => (key === 'quests' && value && typeof value === 'object' && !Array.isArray(value) ? Object.fromEntries(Object.entries(value as Character['quests']).map(([id, e]) => [id, packQuest(e)])) : value));
+}
+
 export function writeSave(save: SaveFile): boolean {
   try {
     save.saved = Date.now();
-    const text = JSON.stringify(save);
+    const text = saveText(save);
     // never store something we could not read back
     if (!migrate(JSON.parse(text))) return false;
     localStorage.setItem(SAVE_KEY, text);

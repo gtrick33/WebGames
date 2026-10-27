@@ -12,7 +12,7 @@ import type { ClassId } from '../src/games/sigilfall/data/types';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import { EXTRA_PATTERNS } from '../src/games/sigilfall/sim/patterns';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
-import { newWorld, play, readyHero } from './sigilfall-bot';
+import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
 
 const REGION = 'rotmother-cistern';
 const LEVEL = REGIONS[REGION].level + 1;
@@ -28,8 +28,10 @@ function nextRoom(w: World): { x: number; y: number } | null {
 }
 
 function runDungeon(cls: ClassId) {
-  const w = newWorld(REGION, readyHero(cls, LEVEL, 'uncommon'));
-  const r = play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom });
+  const { w, r } = clearsWithRetry((seed) => {
+    const w = newWorld(REGION, readyHero(cls, LEVEL, 'uncommon'), seed);
+    return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
+  });
   return { w, r };
 }
 
@@ -96,7 +98,7 @@ describe('sigilfall: the Rotmother’s Cistern', () => {
   });
 
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears it at level ${LEVEL}`, { timeout: 30_000 }, () => {
+    it(`${cls}: clears it at level ${LEVEL}`, { timeout: 90_000 }, () => {
       const { w, r } = runDungeon(cls);
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);

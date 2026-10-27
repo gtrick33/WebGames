@@ -1,9 +1,13 @@
 import { clamp, damp, dist, hash2, TAU } from '../core/math';
+import { currentObjective } from '../progress/character';
+import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
+import { isMainQuest, turnInNpc } from '../progress/handin';
+import { chestArt, CHEST_H, CHEST_W, coinArt, orbArt, shardArt } from './art/loot';
 import { LEAD, leanTarget, LIFT, placeCamera } from './camera';
 import { drawBolt, drawVfx } from './art/vfx';
 import { worldLook } from './art/world';
 import { THEMES } from '../data/themes';
-import type { ClassId } from '../data/types';
+import type { ClassId, Item } from '../data/types';
 import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
 import { K, TILE } from '../sim/map';
@@ -11,7 +15,7 @@ import type { Enemy, Fx, Pet, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
 import { itemTint } from '../progress/items';
 import { canvas, ctx2d, DETAIL, pixelText, RES, rgba, type Cnv, type Sprite } from './pixel';
-import { creatureSprite, glowDisc, heldWeapon, heroLook, heroSprite, mountSprites, npcSprite, recolored, riderLegsSprite, vendorSign, weaponSprite, type HeroDir } from './sprites';
+import { creatureSprite, glowDisc, heldWeapon, itemIconCanvas, heroLook, heroSprite, mountSprites, npcSprite, recolored, riderLegsSprite, vendorSign, weaponSprite, type HeroDir } from './sprites';
 import { HERO_H, HERO_W, type HeroLook } from './art/hero';
 import { MOUNT_FRAMES, MOUNT_WALK_FRAMES, RIDER_HIP } from './art/mount';
 import { MOUNT_DEFS, type MountDef } from '../data/mounts';
@@ -110,6 +114,8 @@ export class Renderer {
   vh = 180;
   /** Device pixels per art pixel. */
   scale = 4;
+  /** The last frame drawn was of a paused world. */
+  private still = false;
   camX = 0;
   camY = 0;
   private scenery: Scenery | null = null;
@@ -187,7 +193,7 @@ export class Renderer {
   setHeroWeapon(cls: ClassId, w: World): void {
     const worn = wornLooks(w.hero);
     this.weapon = heldWeapon(cls, w.hero.equip.weapon, worn.weapon);
-    this.look = heroLook(cls, w.hero.equip, worn);
+    this.look = heroLook(cls, w.hero.equip, worn, w.hero.body);
   }
 
   /** The camera's lean toward the aim (and a boss), smoothed (see camera.ts). */
@@ -235,6 +241,8 @@ export class Renderer {
   }
 
   draw(w: World, dt: number, time: number): void {
+    // a paused world (a dialogue, a panel) holds still: nothing blinks on in it
+    this.still = dt === 0;
     // the packed art for this land (null while it loads, or indoors): the scenery is rebuilt once it is in
     const art = worldLook(w.region.theme);
     if (this.sceneryFor !== w || (art && this.scenery?.art !== art) || this.sceneryVersion !== w.stateVersion) {
@@ -316,7 +324,7 @@ export class Renderer {
     for (const s of w.spores) if (inView(s.x, s.y)) items.push({ y: s.y + 3, draw: () => this.drawSpore(s.x, s.y, s.ripe, s.fuse, time) });
     for (const n of w.npcs) if (inView(n.x, n.y)) items.push({ y: n.y + 6, draw: () => this.drawNpc(w, n.id, n.x, n.y, n.face, n.bob) });
     for (const c of w.chickens) if (inView(c.x, c.y)) items.push({ y: c.y, draw: () => this.drawChicken(c.x, c.y, c.face, time) });
-    for (const d of w.drops) if (inView(d.x, d.y)) items.push({ y: d.y, draw: () => this.drawDrop(d.kind, d.x, d.y, d.z, d.item?.r, time, d.t) });
+    for (const d of w.drops) if (inView(d.x, d.y)) items.push({ y: d.y, draw: () => this.drawDrop(d.kind, d.x, d.y, d.z, d.item, time, d.t) });
     for (const e of w.enemies) if (inView(e.x, e.y)) items.push({ y: e.y + e.r * 0.6, draw: () => this.drawEnemy(e, time) });
     for (const pet of w.pets) if (inView(pet.x, pet.y)) items.push({ y: pet.y + pet.r * 0.6, draw: () => this.drawPet(pet, time) });
     items.push({
@@ -837,7 +845,7 @@ export class Renderer {
       g.restore();
       return;
     }
-    const blink = p.iframe > 0 && !p.dash && Math.floor(time * 20) % 2 === 0;
+    const blink = p.iframe > 0 && !p.dash && !this.still && Math.floor(time * 20) % 2 === 0;
     const mount = p.riding ? MOUNT_DEFS[p.riding] : undefined;
     if (p.form) this.drawShape(w, p.form, time, blink);
     else if (mount) this.drawRider(w, mount, look, time);
@@ -910,7 +918,7 @@ export class Renderer {
     const F = MOUNT_FRAMES[view];
     const at = this.mountPlace(w, view);
     const { back, front } = mountSprites(m, view, frame);
-    const blink = p.iframe > 0 && Math.floor(time * 20) % 2 === 0;
+    const blink = p.iframe > 0 && !this.still && Math.floor(time * 20) % 2 === 0;
     // a soft shadow under the animal
     g.fillStyle = 'rgba(10,8,20,0.22)';
     g.beginPath();
@@ -1581,10 +1589,7 @@ export class Renderer {
       top = by - 2;
     }
     const mark = npcMark(w, id);
-    if (mark) {
-      const img = pixelText(mark, '#ffe066');
-      g.drawImage(img, Math.round(x - img.width / 2), Math.round(top + Math.sin(bob * 3) * 1.5) - 4);
-    }
+    if (mark) drawMapIcon(g, mark, x, Math.round(top + Math.sin(bob * 3) * 1.5) - 8, 1);
   }
 
   private drawChicken(x: number, y: number, face: number, time: number): void {
@@ -1606,31 +1611,13 @@ export class Renderer {
 
   private drawChest(x: number, y: number, open: boolean, tier: string, time: number): void {
     const g = this.g;
-    const X = Math.round(x - 7);
-    const Y = Math.round(y - 6);
     const trim = tier === 'epic' ? '#c58cff' : tier === 'rare' ? '#5ab0ff' : '#ffcf5a';
     if (!open && tier !== 'common') {
       g.globalAlpha = 0.35 + Math.sin(time * 3) * 0.15;
       g.drawImage(glowDisc(trim, 12), x - 12, y - 14);
       g.globalAlpha = 1;
     }
-    g.fillStyle = '#1b1428';
-    g.fillRect(X - 1, Y - 1, 16, 13);
-    g.fillStyle = '#8a5a34';
-    g.fillRect(X, Y + 4, 14, 7);
-    g.fillStyle = open ? '#2a1a14' : '#a8703f';
-    g.fillRect(X, Y, 14, 4);
-    if (open) {
-      g.fillStyle = '#6a4424';
-      g.fillRect(X, Y - 4, 14, 4);
-      g.fillStyle = '#1b1428';
-      g.fillRect(X - 1, Y - 5, 16, 1);
-    }
-    g.fillStyle = trim;
-    g.fillRect(X, Y + 4, 14, 1);
-    g.fillRect(X + 6, Y + 3, 2, 3);
-    g.fillRect(X, Y, 1, 11);
-    g.fillRect(X + 13, Y, 1, 11);
+    g.drawImage(chestArt(tier, open), Math.round(x - CHEST_W / 2), Math.round(y - CHEST_H + 5), CHEST_W, CHEST_H);
   }
 
   private drawSpore(x: number, y: number, ripe: boolean, fuse: number, time: number): void {
@@ -1654,36 +1641,26 @@ export class Renderer {
     g.fillRect(X + 2, Y - 6, 1, 1);
   }
 
-  private drawDrop(kind: string, x: number, y: number, z: number, rarity: string | undefined, time: number, age: number): void {
+  private drawDrop(kind: string, x: number, y: number, z: number, item: Item | undefined, time: number, age: number): void {
     const g = this.g;
     const X = Math.round(x);
     const Y = Math.round(y - z);
     if (kind === 'gold') {
-      g.fillStyle = '#1b1428';
-      g.fillRect(X - 2, Y - 3, 5, 5);
-      g.fillStyle = Math.floor(time * 6 + x) % 4 === 0 ? '#fff2b0' : '#ffcf5a';
-      g.fillRect(X - 1, Y - 2, 3, 3);
+      g.drawImage(coinArt(Math.floor(time * 3 + x) % 5 === 0), X - 3.5, Y - 4, 7, 5);
       return;
     }
     if (kind === 'orb') {
       g.drawImage(glowDisc('rgba(255,90,122,0.8)', 6), X - 6, Y - 9);
-      g.fillStyle = '#ff5a7a';
-      g.fillRect(X - 2, Y - 5, 4, 4);
-      g.fillStyle = '#ffd0da';
-      g.fillRect(X - 1, Y - 4, 1, 1);
+      g.drawImage(orbArt(), X - 4, Y - 7 + Math.round(Math.sin(time * 5)), 8, 8);
       return;
     }
     if (kind === 'shard') {
       g.drawImage(glowDisc('rgba(255,63,210,0.8)', 8), X - 8, Y - 12);
-      g.fillStyle = '#1b1428';
-      g.fillRect(X - 2, Y - 8, 5, 8);
-      g.fillStyle = '#ff3fd2';
-      g.fillRect(X - 1, Y - 7, 3, 6);
-      g.fillStyle = '#22e4ff';
-      g.fillRect(X, Y - 6, 1, 3);
+      g.drawImage(shardArt(), X - 3, Y - 10, 6, 10);
       return;
     }
-    // items: a bag with a beam in the rarity's color
+    // an item: what it is, over a pool of its rarity's light (and a beam for the good ones)
+    const rarity = item?.r;
     const color = rarityColor(rarity);
     if (rarity === 'rare' || rarity === 'epic' || rarity === 'legendary') {
       const h = rarity === 'legendary' ? 60 : rarity === 'epic' ? 44 : 28;
@@ -1693,14 +1670,23 @@ export class Renderer {
       g.fillStyle = grd;
       g.fillRect(X - 2, Y - h, 4, h);
     }
+    g.fillStyle = rgba(color, 0.32 + Math.sin(time * 4 + x) * 0.08);
+    g.beginPath();
+    g.ellipse(X, Y, 7, 2.4, 0, 0, Math.PI * 2);
+    g.fill();
     const bounce = age < 0.6 ? 0 : Math.round(Math.sin(time * 4) * 1);
+    if (item) {
+      const icon = itemIconCanvas(item);
+      const s = 11 / Math.max(icon.width, icon.height);
+      const w = icon.width * s;
+      const h = icon.height * s;
+      g.drawImage(icon, Math.round(X - w / 2), Math.round(Y - h - 1 + bounce), w, h);
+      return;
+    }
     g.fillStyle = '#1b1428';
     g.fillRect(X - 4, Y - 8 + bounce, 9, 9);
-    g.fillStyle = '#a8784a';
-    g.fillRect(X - 3, Y - 6 + bounce, 7, 6);
     g.fillStyle = color;
-    g.fillRect(X - 3, Y - 7 + bounce, 7, 2);
-    g.fillRect(X - 1, Y - 4 + bounce, 3, 2);
+    g.fillRect(X - 3, Y - 7 + bounce, 7, 7);
   }
 
   /** Closed room doors: bars (crypt) or a palisade (the den). */
@@ -2317,15 +2303,23 @@ function pixelDisc(g: CanvasRenderingContext2D, x: number, y: number, r: number,
 export const rarityColor = (r: string | undefined): string => (r === 'legendary' ? '#ff9a2a' : r === 'epic' ? '#c58cff' : r === 'rare' ? '#5ab0ff' : r === 'uncommon' ? '#6dff8f' : '#e8e0d0');
 
 
-/** Whether an NPC is the giver of an active quest (shows a "!"). */
-/** "!" over someone with a quest to offer, "?" over someone a quest asks you to speak to. */
-function npcMark(w: World, id: string): '?' | '!' | null {
-  const qs = Object.entries(w.hero.quests);
-  if (qs.some(([q, s]) => s.state === 'offered' && questGiver(q) === id)) return '!';
-  const talk = qs.some(([q, s]) => s.state === 'active' && QUEST_DEFS[q]?.objective.kind === 'talk' && (QUEST_DEFS[q]!.objective as { npc: string }).npc === id);
-  return talk ? '?' : null;
+/**
+ * The mark over someone: "?" when they take a quest back (handed in, or a talk the quest is for), "!" when they
+ * have one to give; gold for the main story, blue for a side quest (the handing-in comes first).
+ */
+export function npcMark(w: World, id: string): MapIcon | null {
+  const h = w.hero;
+  let side: MapIcon | null = null;
+  for (const [q, s] of Object.entries(h.quests)) {
+    const def = QUEST_DEFS[q];
+    if (!def) continue;
+    const main = isMainQuest(q);
+    const handIn = (s.state === 'ready' && turnInNpc(def) === id) || (s.state === 'active' && (() => { const o = currentObjective(h, def); return o.kind === 'talk' && o.npc === id; })());
+    if (handIn) return main ? 'handin' : 'handinSide';
+    if (s.state === 'offered' && def.giver === id && (!side || main)) side = main ? 'offer' : 'offerSide';
+  }
+  return side;
 }
 
 import { NPCS, QUEST_DEFS } from '../data/quests';
-const questGiver = (q: string): string | undefined => QUEST_DEFS[q]?.giver;
 

@@ -36,6 +36,8 @@ export interface HeroLook {
   quiver: string | null;
   /** A cape (its color), worn with epic and legendary armor. */
   cape: string | null;
+  /** A woman's face (eyelashes, a rosy mouth) and her hair worn long: chosen at the start (Character.body). */
+  female?: boolean;
   /** Townsfolk extras: a beard, an apron (their colors). */
   beard?: string | null;
   apron?: string | null;
@@ -437,7 +439,7 @@ function headFront(p: Painter, l: HeroLook, skin: Ramp, hair: Ramp, back: boolea
     p.rect(9, 19, 2, 5, hair[2]);
     p.rect(24, 19, 2, 5, hair[3]);
   }
-  if (!back) face(p, skin, 0);
+  if (!back) face(p, skin, 0, !!l.female);
   if (l.beard && !back) {
     const B = ramp(l.beard);
     p.ellipse(CX, 28, 5.6, 4.6, (dx, dy) => (dy < -0.4 ? B[1] : dx > 0.4 ? B[3] : B[2]));
@@ -551,7 +553,7 @@ function hoodFront(p: Painter, l: HeroLook, H: Piece, skin: Ramp, back: boolean)
   if (!back) {
     // the face in the opening, shadowed under the brim
     p.ellipse(CX, 23, 5.6, 5.4, (dx, dy) => (dy < -0.45 ? skin[4] : dy < -0.1 ? skin[3] : dx < -0.5 ? skin[1] : skin[2]));
-    face(p, skin, 1);
+    face(p, skin, 1, !!l.female);
     const t = trimOf(H);
     if (t) p.ellipse(CX, 23, 6.4, 6.2, (dx, dy) => (Math.sqrt(dx * dx + dy * dy) > 0.86 ? t : null));
   } else {
@@ -562,14 +564,25 @@ function hoodFront(p: Painter, l: HeroLook, H: Piece, skin: Ramp, back: boolean)
 }
 
 /** Eyes, a mouth and a little blush. `dy` moves the face down (under a hood). */
-function face(p: Painter, skin: Ramp, dy: number): void {
+function face(p: Painter, skin: Ramp, dy: number, female = false): void {
   for (const ex of [13, 20]) {
     p.rect(ex, 22 + dy, 2, 3, EYE);
     p.set(ex + 1, 22 + dy, EYE_HI);
   }
-  p.set(CX - 1, 26 + dy, skin[4]);
-  p.set(CX, 26 + dy, skin[4]);
-  const blush = mixRGB(skin[2], [230, 110, 110], 0.35);
+  if (female) {
+    // lashes at the outer corners, and a mouth with some color
+    p.set(12, 22 + dy, EYE);
+    p.set(22, 22 + dy, EYE);
+    p.set(12, 21 + dy, EYE);
+    p.set(22, 21 + dy, EYE);
+    const lip = mixRGB(skin[3], [200, 80, 90], 0.55);
+    p.set(CX - 1, 26 + dy, lip);
+    p.set(CX, 26 + dy, lip);
+  } else {
+    p.set(CX - 1, 26 + dy, skin[4]);
+    p.set(CX, 26 + dy, skin[4]);
+  }
+  const blush = mixRGB(skin[2], [230, 110, 110], female ? 0.45 : 0.35);
   p.set(11, 25 + dy, blush);
   p.set(23, 25 + dy, blush);
 }
@@ -710,7 +723,8 @@ function side(p: Painter, l: HeroLook, pose: Pose): void {
     // the eye and the mouth
     p.rect(21, 22, 2, 3, EYE);
     p.set(22, 22, EYE_HI);
-    p.set(23, 26, skin[4]);
+    if (l.female) p.set(23, 21, EYE);
+    p.set(23, 26, l.female ? mixRGB(skin[3], [200, 80, 90], 0.55) : skin[4]);
     p.set(20, 25, mixRGB(skin[2], [230, 110, 110], 0.35));
     if (l.beard) {
       const B = ramp(l.beard);

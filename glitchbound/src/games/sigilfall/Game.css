@@ -39,6 +39,16 @@
 .rb button:disabled {
   cursor: default;
 }
+/* turned to landscape inside a portrait screen (ui/turn.ts): laid out the other way round, rotated a quarter turn */
+.rb.is-turned {
+  inset: auto;
+  top: 0;
+  left: 0;
+  width: var(--turn-h);
+  height: var(--turn-w);
+  transform-origin: top left;
+  transform: translateX(var(--turn-w)) rotate(90deg);
+}
 .rb-canvas {
   position: absolute;
   left: 0;
@@ -376,9 +386,25 @@
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5);
 }
 .rb-itemicon img,
-.rb-skillicon,
+.rb-skillicon {
+  image-rendering: pixelated;
+}
 .rb-portrait {
   image-rendering: pixelated;
+}
+/* a person's portrait is the smoothed figure: drawn smooth too */
+.rb-portrait.is-smooth {
+  image-rendering: auto;
+}
+.rb-class-doll {
+  /* the picture has room round the figure for a raised weapon: the figure itself fills the card's top */
+  height: 118px;
+  margin: -18px 0 -14px;
+  image-rendering: auto;
+  pointer-events: none;
+}
+.rb-body {
+  align-self: end;
 }
 .rb-itemicon.is-legendary {
   box-shadow:
@@ -852,8 +878,18 @@
   font-size: 12.5px;
 }
 .rb-tracker strong {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   color: var(--rb-gold);
   font-size: 13px;
+}
+.rb-tracker.is-side strong {
+  color: #8fd0ff;
+}
+.rb-tracker strong img {
+  height: 12px;
+  image-rendering: pixelated;
 }
 .rb-encounter {
   position: absolute;
@@ -1520,6 +1556,87 @@
   justify-content: flex-end;
   gap: 8px;
 }
+/* a quest's page in a conversation: its name and kind, its story, its steps, what it pays */
+.rb-dialogue.is-quest {
+  max-height: calc(100% - 20px - var(--sa-b));
+}
+.rb-dialogue.is-quest .rb-dialogue-body {
+  max-height: 100%;
+  overflow: auto;
+}
+.rb-qpage {
+  display: grid;
+  gap: 6px;
+  animation: rb-fade 0.25s;
+}
+.rb-qpage-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--rb-gold);
+}
+.rb-qpage-title.is-side {
+  color: #8fd0ff;
+}
+.rb-qpage-title img {
+  height: 16px;
+  image-rendering: pixelated;
+}
+.rb-qpage-title em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--rb-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rb-qpage-text p {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.rb-qpage-steps {
+  margin: 2px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.rb-qpage-rewards {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 6px 8px;
+  border: 2px solid rgb(0 0 0 / 0.3);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.2);
+}
+.rb-qpage-rewards .rb-kicker {
+  margin: 0 4px 0 0;
+}
+.rb-reward {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.06);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.rb-reward.is-xp {
+  color: #c9a8ff;
+}
+.rb-reward.is-gold {
+  color: var(--rb-gold);
+}
+.rb-reward.is-item {
+  color: var(--rc, #e8e0d0);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #e8e0d0) 50%, transparent);
+}
+.rb-reward.is-perk,
+.rb-reward.is-unlock,
+.rb-reward.is-tier {
+  color: #9cff9c;
+}
 
 /* -------------------------------------------------------------- panels */
 .rb-hero {
@@ -2071,6 +2188,47 @@
   display: grid;
   gap: 8px;
   max-width: 720px;
+}
+.rb-quest-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rb-quest-head img {
+  height: 14px;
+  image-rendering: pixelated;
+}
+.rb-quest-head strong {
+  flex: 1;
+  min-width: 0;
+}
+.rb-quest.is-side .rb-quest-head strong {
+  color: #8fd0ff;
+}
+.rb-quest-kind {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--rb-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rb-quest.is-tracked {
+  box-shadow: inset 0 0 0 2px var(--rb-gold);
+}
+.rb-quest-steps {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12.5px;
+}
+.rb-quest-steps .is-done {
+  color: var(--rb-dim);
+  text-decoration: line-through;
+}
+.rb-quest-steps .is-now {
+  font-weight: 700;
+}
+.rb-quest-steps .is-later {
+  color: var(--rb-dim);
 }
 .rb-quest {
   display: grid;

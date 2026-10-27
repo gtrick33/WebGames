@@ -1,4 +1,6 @@
 import type { GameHost } from '../../platform/contract';
+import { turnInNpc } from './progress/handin';
+import { rewardSummary } from './progress/rewards';
 import { CLASSES } from './data/classes';
 import { NPCS, QUEST_DEFS } from './data/quests';
 import { REGIONS, TIERS, type RiftMod } from './data/regions';
@@ -6,7 +8,7 @@ import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SkillIndex, SlotId } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
-import { acceptQuests, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
+import { acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
 import { chooseMount, grantMounts, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
@@ -25,6 +27,12 @@ import { applyPreset, PRESETS } from './progress/presets';
  * The game around the simulation: heroes and the save, travelling between regions, expeditions
  * (reported to the arcade), the frame loop, sound, and the UI state the React layer shows.
  */
+
+/** A quest page in a dialogue: one offered (Accept), one to hand in (Complete), one just paid (a talk quest). */
+export interface DialoguePage {
+  kind: 'offer' | 'handin' | 'paid';
+  quest: string;
+}
 
 export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop';
 
@@ -57,7 +65,8 @@ export interface UiState {
   shop: ShopId | null;
   shopNpc?: string;
   pause: boolean;
-  dialogue: { npc: string; lines: string[]; i: number } | null;
+  /** Someone's lines, then their quest pages (one at a time: `i` counts the lines, then the pages). */
+  dialogue: { npc: string; lines: string[]; i: number; pages: DialoguePage[] } | null;
   travel: { to: RegionId; label: string; locked: string | null } | null;
   toasts: Toast[];
   banner: { text: string; sub?: string; id: number } | null;
@@ -101,6 +110,8 @@ export class SigilEngine {
   /** Pause asked for by the arcade (left full screen, scrolled away). */
   private toWorldFn: (x: number, y: number) => { x: number; y: number } = (x, y) => ({ x, y });
   touchMode: boolean;
+  /** The game is turned to landscape on a phone held upright (ui/turn.ts). */
+  turned = false;
   dpr = 1;
 
   constructor(canvas: HTMLCanvasElement, host: GameHost, playerName: string) {
@@ -338,8 +349,21 @@ export class SigilEngine {
         }
         case 'questDone': {
           const q = QUEST_DEFS[ev.quest];
-          if (q) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, q.reward.text);
+          if (q && this.hero) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, rewardSummary(this.hero, q) || q.reward.text);
           this.sound.play('questDone');
+          break;
+        }
+        case 'questStep': {
+          const q = QUEST_DEFS[ev.quest];
+          if (q && this.hero) this.toast(`${q.name}: next`, 'quest', undefined, currentObjective(this.hero, q).label);
+          this.sound.play('quest', 0.6);
+          break;
+        }
+        case 'questReady': {
+          const q = QUEST_DEFS[ev.quest];
+          const who = q ? turnInNpc(q) : null;
+          if (q && who) this.toast(`${q.name}: done`, 'quest', undefined, `Return to ${NPCS[who]?.name ?? 'them'}`);
+          this.sound.play('questDone', 0.7);
           break;
         }
         case 'questStart':
@@ -499,8 +523,8 @@ export class SigilEngine {
     this.setUi({ screen: 'create', createSlot: slot });
   }
 
-  createHero(slot: number, cls: ClassId, name: string): void {
-    const c = newCharacter(cls, name || this.defaultName, `hero${slot}`);
+  createHero(slot: number, cls: ClassId, name: string, body: Body = 'm'): void {
+    const c = newCharacter(cls, name || this.defaultName, `hero${slot}`, Date.now(), body);
     this.save.heroes[slot] = c;
     this.persist();
     this.play(slot);
@@ -554,7 +578,10 @@ export class SigilEngine {
       // carry this expedition's tallies across regions
       w.run = prev.run;
     }
-    if (prev) w.player.ult = prev.player.ult;
+    if (prev) {
+      w.player.ult = prev.player.ult;
+      w.player.ultBudget = prev.player.ultBudget;
+    }
     // riding on from one open land to the next (never into a dungeon)
     if (prev?.player.riding && region.kind !== 'dungeon' && !region.interior && h.mounts.includes(prev.player.riding)) w.player.riding = prev.player.riding;
     // the quests of a land start when the hero first gets there
@@ -645,41 +672,77 @@ export class SigilEngine {
     const npc = NPCS[npcId];
     const h = this.hero;
     if (!npc || !h) return;
-    // what they offer comes first: the hero takes it on by talking to them
-    const offers = acceptQuests(h, npcId);
     const entry = npc.talk.find((t) => !t.when || holds(h, { quest: t.when.quest, is: t.when.state })) ?? npc.talk[npc.talk.length - 1]!;
-    const lines = offers.length ? offers.flatMap((q) => q.offer ?? [q.text]) : [...entry.lines];
-    // a message delivered, a question asked: talking is the objective
+    // a message delivered, a question asked: talking is the objective (and its hand-in)
+    const wasDone = new Set(Object.keys(h.quests).filter((id) => h.quests[id]!.state === 'done'));
+    const spoke = activeQuests(h).some((q) => { const o = currentObjective(h, q); return o.kind === 'talk' && o.npc === npcId; });
     this.world?.questProgress((o) => o.kind === 'talk' && o.npc === npcId);
-    // and what that opened, the same person asks in the same breath (someone who leaves once their own
-    // quest is done, like Nyx on the jetty, would otherwise take their next request away with them)
-    const next = acceptQuests(h, npcId);
-    lines.push(...next.flatMap((q) => q.offer ?? [q.text]));
-    const taken = [...offers, ...next];
-    for (const q of taken) {
-      this.world?.emit({ t: 'questStart', quest: q.id });
-      this.toast(`New quest: ${q.name}`, 'info', undefined, q.objective.label);
-    }
-    if (taken.length) {
-      const started = startQuests(h);
-      started.forEach((q) => this.world?.emit({ t: 'questStart', quest: q.id }));
-      this.world?.creditEarly([...taken, ...started]);
-    }
+    const paid = Object.keys(h.quests).filter((id) => h.quests[id]!.state === 'done' && !wasDone.has(id) && QUEST_DEFS[id]!.objective.kind !== 'tutorial');
+    // then what they take back, and what they ask (each a page of its own: Complete, Accept)
+    const pages: DialoguePage[] = [...paid.map((quest) => ({ kind: 'paid' as const, quest })), ...handInsFor(h, npcId).map((q) => ({ kind: 'handin' as const, quest: q.id })), ...offeredBy(h, npcId).map((q) => ({ kind: 'offer' as const, quest: q.id }))];
+    // what they say first: always when the talk was the point; otherwise only when there is nothing to hand over
+    const lines = spoke || !pages.length ? [...entry.lines] : [];
     this.kbm?.release();
     this.touch.release();
-    this.sound.play(taken.length ? 'quest' : 'open');
-    this.setUi({ dialogue: { npc: npcId, lines, i: 0 } });
+    this.sound.play(pages.length ? 'quest' : 'open');
+    this.setUi({ dialogue: { npc: npcId, lines, i: 0, pages } });
+  }
+
+  /** The dialogue's page now: a line (null) or a quest page. */
+  dialoguePage(): DialoguePage | null {
+    const d = this.ui.dialogue;
+    return d && d.i >= d.lines.length ? (d.pages[d.i - d.lines.length] ?? null) : null;
   }
 
   nextLine(): void {
     const d = this.ui.dialogue;
     if (!d) return;
-    if (d.i + 1 < d.lines.length) this.setUi({ dialogue: { ...d, i: d.i + 1 } });
+    if (d.i + 1 < d.lines.length + d.pages.length) this.setUi({ dialogue: { ...d, i: d.i + 1 } });
     else this.setUi({ dialogue: null });
+  }
+
+  /** Takes the quest on the page now; on to the next page. */
+  acceptOffer(): void {
+    const page = this.dialoguePage();
+    const h = this.hero;
+    if (!h || page?.kind !== 'offer') return;
+    const q = acceptQuest(h, page.quest);
+    if (q) {
+      this.world?.emit({ t: 'questStart', quest: q.id });
+      const started = startQuests(h);
+      started.forEach((s) => this.world?.emit({ t: 'questStart', quest: s.id }));
+      this.world?.creditEarly([q, ...started]);
+      this.sound.play('quest');
+      this.persist();
+    }
+    this.nextLine();
+  }
+
+  /** Hands in the quest on the page now: the reward, and whatever the giver has next joins the pages. */
+  completeHandIn(): void {
+    const page = this.dialoguePage();
+    const h = this.hero;
+    const d = this.ui.dialogue;
+    if (!h || !d || page?.kind !== 'handin') return;
+    const q = handInQuest(h, page.quest);
+    if (q) this.world?.completeQuests([q]);
+    const known = new Set(d.pages.map((p) => p.quest));
+    const more = offeredBy(h, d.npc).filter((x) => !known.has(x.id)).map((x) => ({ kind: 'offer' as const, quest: x.id }));
+    this.persist();
+    this.setUi({ dialogue: { ...d, pages: [...d.pages, ...more] } });
+    this.nextLine();
   }
 
   closeDialogue(): void {
     this.setUi({ dialogue: null });
+  }
+
+  /** Follows a quest with the arrow and the tracker (null: back to the story's own order). */
+  trackQuest(id: string | null): void {
+    if (!this.hero) return;
+    trackQuest(this.hero, id);
+    this.persist();
+    this.bump();
   }
 
   /* -------------------------------------------------------------- panels */

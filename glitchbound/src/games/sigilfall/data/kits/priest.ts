@@ -150,7 +150,7 @@ export const PRIEST: Kit = {
     ),
     sk(
       'ultimate',
-      3,
+      8,
       'Halo',
       'A ring of holy light rolls out around you, burning every enemy it crosses and healing you for 25% of your health.',
       spec({ id: 'halo', cast: 'nova', aim: 'self', cooldown: 0, damage: 75, dmgType: 'holy', area: 72, knock: 60, onCast: [{ kind: 'heal', pct: 25 }], look: 'halo', tags: ['aoe', 'holy', 'heal', 'ultimate'] }),

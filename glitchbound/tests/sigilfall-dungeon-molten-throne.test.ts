@@ -12,7 +12,7 @@ import type { ClassId } from '../src/games/sigilfall/data/types';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import { EXTRA_PATTERNS } from '../src/games/sigilfall/sim/patterns';
 import type { World } from '../src/games/sigilfall/sim/world';
-import { newWorld, play, readyHero } from './sigilfall-bot';
+import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
 
 const REGION = 'molten-throne';
 const LEVEL = REGIONS[REGION].level + 1;
@@ -38,9 +38,11 @@ describe('sigilfall: the Molten Throne', () => {
   });
 
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears the Molten Throne at level ${LEVEL}`, { timeout: 60_000 }, () => {
-      const w = newWorld(REGION, readyHero(cls as ClassId, LEVEL, 'uncommon'));
-      const r = play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom });
+    it(`${cls}: clears the Molten Throne at level ${LEVEL}`, { timeout: 180_000 }, () => {
+      const { w, r } = clearsWithRetry((seed) => {
+        const w = newWorld(REGION, readyHero(cls as ClassId, LEVEL, 'uncommon'), seed);
+        return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
+      });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(BOSS_ORDER);

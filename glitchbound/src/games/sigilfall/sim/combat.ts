@@ -399,9 +399,13 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
     case 'cdr':
       w.reduceCooldowns(e.s);
       break;
-    case 'charge':
-      w.player.ult = Math.min(100, w.player.ult + e.pct);
+    case 'charge': {
+      // from the same budget as charge from hits: a fast attacker with these can't skip the ultimate's pace
+      const gain = Math.min(e.pct, w.player.ultBudget);
+      w.player.ultBudget -= gain;
+      w.player.ult = Math.min(100, w.player.ult + gain);
       break;
+    }
     case 'buff':
       addBuff(w, e.buff);
       break;

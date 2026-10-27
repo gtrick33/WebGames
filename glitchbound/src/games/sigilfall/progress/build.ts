@@ -4,7 +4,7 @@ import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { Effect, FormDef, GroundSpec, Mod, ProcDef, Rarity, ResourceDef, SkillOp, SkillSpec, SlotKey, Stats, StatKey } from '../data/types';
 import { SKILL_SLOTS, SLOTS } from '../data/types';
-import { hasUltimate, SIGIL_BONUS, sigilCount, type Character } from './character';
+import { hasUltimate, SIGIL_BONUS, sigilCount, slotOpen, type Character } from './character';
 import { opText } from './describe';
 import { itemMods, itemName, itemStats } from './items';
 
@@ -440,10 +440,11 @@ export function buildHero(c: Character, formId: string | null = null): HeroBuild
   const form = (formId && def.forms?.find((f) => f.id === formId)) || null;
   const bar: Record<SlotKey, string | null> = {
     basic: def.basic,
-    s1: c.skills[0],
-    s2: c.skills[1],
-    s3: c.skills[2],
-    s4: c.skills[3],
+    // a slot works from its level (SLOT_LEVELS); a skill left in one that has not opened yet waits there
+    s1: slotOpen(c, 0) ? c.skills[0] : null,
+    s2: slotOpen(c, 1) ? c.skills[1] : null,
+    s3: slotOpen(c, 2) ? c.skills[2] : null,
+    s4: slotOpen(c, 3) ? c.skills[3] : null,
     ult: hasUltimate(c) ? def.ult : null,
     dodge: def.dodge,
   };

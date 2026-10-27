@@ -1,7 +1,7 @@
 import { DUNGEONS } from './dungeons';
 import { GALLOWS_KEEP } from './dungeons/gallows';
 import { SMUGGLERS_GROTTO } from './dungeons/grotto';
-import type { Marker, RegionDef, RegionId } from './types';
+import type { Marker, RegionDef, RegionId, PlacedMarkerDef } from './types';
 import { EMBERWICK } from './zones/emberwick';
 import { ZONES } from './zones';
 
@@ -163,6 +163,82 @@ const cryptMarkers: Record<string, Marker> = {
   M: { kind: 'boss', boss: 'morgrave' },
 };
 
+/**
+ * A hand-laid map drawn larger (`s` times on each side): every tile becomes a block, each marker stays
+ * once, on its block's first tile, on the ground around it (a den's floor, a road).
+ */
+function spreadMap(rows: string[], markers: Set<string>, s: number): string[] {
+  const H = Math.round(rows.length * s);
+  const W = Math.round(rows[0]!.length * s);
+  const out: string[][] = [];
+  for (let y = 0; y < H; y++) {
+    const oy = Math.min(rows.length - 1, Math.floor(y / s));
+    const line: string[] = [];
+    for (let x = 0; x < W; x++) {
+      const ox = Math.min(rows[0]!.length - 1, Math.floor(x / s));
+      const ch = rows[oy]![ox]!;
+      if (!markers.has(ch)) {
+        line.push(ch);
+        continue;
+      }
+      // the marker on its block's first tile; the rest of the block is the ground beside it
+      const mid = Math.ceil(ox * s - 1e-9) === x && Math.ceil(oy * s - 1e-9) === y;
+      const ground = [rows[oy]![ox - 1], rows[oy]![ox + 1], rows[oy - 1]?.[ox], rows[oy + 1]?.[ox]].find((c) => c && !markers.has(c) && c !== '#') ?? '.';
+      line.push(mid ? ch : ground);
+    }
+    out.push(line);
+  }
+  return out.map((l) => l.join(''));
+}
+
+/**
+ * More of the wood's packs on open ground the map left empty (it was drawn small): one every so often, well
+ * away from the others, from the packs of its own `band` of the wood.
+ */
+function morePacks(map: string[], markers: Record<string, Marker>, bands: { from: number; to: number; packs: string[] }[], gap: number, seed: number): PlacedMarkerDef[] {
+  const taken: [number, number][] = [];
+  // where the hero arrives, travels from and leaves stays quiet: no pack within reach of it
+  const calm: [number, number][] = [];
+  for (let y = 0; y < map.length; y++) {
+    for (let x = 0; x < map[y]!.length; x++) {
+      const m = markers[map[y]![x]!];
+      if (!m) continue;
+      taken.push([x, y]);
+      if (m.kind === 'start' || m.kind === 'waystone' || m.kind === 'exit') calm.push([x, y]);
+    }
+  }
+  const out: PlacedMarkerDef[] = [];
+  let r = seed;
+  const rand = (): number => ((r = (r * 1103515245 + 12345) % 2147483648) / 2147483648);
+  for (let tries = 0; tries < 4000; tries++) {
+    const x = 2 + Math.floor(rand() * (map[0]!.length - 4));
+    const y = 2 + Math.floor(rand() * (map.length - 4));
+    const open = (dx: number, dy: number): boolean => '.,'.includes(map[y + dy]?.[x + dx] ?? '#');
+    if (!open(0, 0) || !open(1, 0) || !open(-1, 0) || !open(0, 1) || !open(0, -1)) continue;
+    if (taken.some(([tx, ty]) => Math.hypot(tx - x, ty - y) < gap)) continue;
+    if (calm.some(([tx, ty]) => Math.hypot(tx - x, ty - y) < 20)) continue;
+    const band = bands.find((b) => x / map[0]!.length >= b.from && x / map[0]!.length < b.to) ?? bands[0]!;
+    const pack = markers[band.packs[Math.floor(rand() * band.packs.length)]!]!;
+    out.push({ tx: x, ty: y, marker: pack });
+    taken.push([x, y]);
+  }
+  return out;
+}
+
+/** The first wood, drawn small and laid out larger, with more of its creatures in the new room. */
+const WHISPERWOOD_SPREAD = 1.4;
+const WHISPERWOOD_BIG = spreadMap(WHISPERWOOD_MAP, new Set(Object.keys(forestMarkers)), WHISPERWOOD_SPREAD);
+const WHISPERWOOD_MORE = morePacks(
+  WHISPERWOOD_BIG,
+  forestMarkers,
+  [
+    { from: 0, to: 0.4, packs: ['1', '2', '3', '5'] },
+    { from: 0.4, to: 1, packs: ['5', '6', '7', '9'] },
+  ],
+  10,
+  7717,
+);
+
 /** The hand-laid regions: the town, the first wood, and the dungeons. */
 const HAND_LAID: Record<string, RegionDef> = {
   emberwick: EMBERWICK,
@@ -178,8 +254,9 @@ const HAND_LAID: Record<string, RegionDef> = {
     dark: false,
     safe: false,
     music: 'forest',
-    map: WHISPERWOOD_MAP,
+    map: WHISPERWOOD_BIG,
     markers: forestMarkers,
+    placed: WHISPERWOOD_MORE,
     encounters: [{ id: 'den', floor: 'g', waves: [], boss: 'grimtusk', title: 'Grimtusk’s Den' }],
     blurb: 'Slimes, goblins, boars and worse, maddened by grieflight. Somewhere in the east, the alpha that leads them.',
   },

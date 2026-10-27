@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGION_IDS, REGIONS } from '../src/games/sigilfall/data/regions';
 import type { RegionId } from '../src/games/sigilfall/data/types';
-import { newCharacter, questState, type Character } from '../src/games/sigilfall/progress/character';
+import { acceptQuest, currentObjective, handInQuest, handInsFor, newCharacter, offeredBy, questState, startQuests, trackQuest, type Character } from '../src/games/sigilfall/progress/character';
+import { turnInNpc } from '../src/games/sigilfall/progress/handin';
 import { FOG_CELL, fogSeen, loadFog, revealFog, SEEN_ALL, storeFog } from '../src/games/sigilfall/progress/fog';
-import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
+import { migrate, SAVE_VERSION, saveText } from '../src/games/sigilfall/progress/save';
+import { mergeSaveText } from '../src/platform/cloudMerge';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import { objectiveTarget } from '../src/games/sigilfall/sim/objective';
@@ -143,5 +145,96 @@ describe('Sigilfall: fog of war on the maps', () => {
     expect(v8.seen).toEqual({ briarhollow: SEEN_ALL, whisperwood: SEEN_ALL });
     expect(newWorld('whisperwood', v8).fog.all).toBe(true);
     expect(newWorld('thornvale', v8).fog.all).toBe(false);
+  });
+});
+
+describe('Sigilfall: quests taken and handed in, like WoW', () => {
+  it('a quest is accepted, steps through, waits to be handed in, and pays at its giver; the arrow follows the tracked one', () => {
+    const c = heroAt('into-the-wood', 6);
+    c.quests['rift-shards'] = { state: 'offered', n: 0 };
+    expect(offeredBy(c, 'smith-hollin').map((q) => q.id)).toContain('rift-shards');
+    expect(acceptQuest(c, 'rift-shards')?.id).toBe('rift-shards');
+    expect(turnInNpc(QUEST_DEFS['rift-shards']!)).toBe('smith-hollin');
+    const wood = newWorld('whisperwood', c, 1, 0, undefined, true);
+    wood.questProgress((o) => o.kind === 'collect', 3);
+    expect(questState(c, 'rift-shards')).toBe('ready');
+    // two quests under way here; the one tracked leads, and a finished one leads home to its giver
+    trackQuest(c, 'rift-shards');
+    const t = objectiveTarget(wood);
+    expect(t?.quest).toBe('rift-shards');
+    const road = wood.exits.find((x) => x.to === 'briarhollow')!;
+    expect(Math.hypot(t!.x - road.x, t!.y - road.y)).toBeLessThan(TILE);
+    const village = newWorld('briarhollow', c, 1, 0, undefined, true);
+    const hollin = village.npcs.find((n) => n.id === 'smith-hollin')!;
+    const there = objectiveTarget(village);
+    expect(Math.hypot(there!.x - hollin.x, there!.y - hollin.y)).toBeLessThan(TILE);
+    expect(handInsFor(c, 'smith-hollin').map((q) => q.id)).toEqual(['rift-shards']);
+    const gold = c.gold;
+    village.completeQuests([handInQuest(c, 'rift-shards')!]);
+    expect(questState(c, 'rift-shards')).toBe('done');
+    expect(c.gold).toBe(gold + QUEST_DEFS['rift-shards']!.reward.gold);
+    expect(c.tracked).toBeUndefined();
+  });
+
+  it('the training is one quest of three steps, handed in to Mara', () => {
+    const c = newCharacter('ranger', 'Yard', 'yard', 0);
+    c.quests['briar-dusk'] = { state: 'done', n: 1 };
+    startQuests(c);
+    const w = newWorld('briarhollow', c, 1, 0, undefined, true);
+    expect(questState(c, 'first-steps')).toBe('active');
+    w.questProgress((o) => o.kind === 'tutorial' && o.step === 'attack', 5);
+    expect(currentObjective(c, QUEST_DEFS['first-steps']!).kind === 'tutorial' && (currentObjective(c, QUEST_DEFS['first-steps']!) as { step: string }).step).toBe('skill');
+    w.questProgress((o) => o.kind === 'tutorial' && o.step === 'skill', 2);
+    w.questProgress((o) => o.kind === 'tutorial' && o.step === 'dodge', 1);
+    expect(questState(c, 'first-steps')).toBe('ready');
+    expect(c.unlocked).not.toContain('whisperwood');
+    w.completeQuests([handInQuest(c, 'first-steps')!]);
+    expect(c.unlocked).toContain('whisperwood');
+  });
+});
+
+describe('Sigilfall: the save follows the hero between devices', () => {
+  it('quests are stored packed and read back the same, steps and hand-ins included', () => {
+    const c = newCharacter('warrior', 'Sync', 'sync', 0);
+    c.quests['first-steps'] = { state: 'active', n: 3, step: 1 };
+    c.quests['into-the-wood'] = { state: 'ready', n: 15 };
+    c.quests['hidden-grove'] = { state: 'offered', n: 0 };
+    c.quests['briar-dusk'] = { state: 'done', n: 1 };
+    const text = saveText({ v: SAVE_VERSION, heroes: [c, null, null], last: 0, settings: {} as never, saved: 0 });
+    expect(text).toContain('"first-steps":"a3.1"');
+    const back = migrate(JSON.parse(text))!.heroes[0]!;
+    expect(back.quests['first-steps']).toEqual({ state: 'active', n: 3, step: 1 });
+    expect(back.quests['into-the-wood']?.state).toBe('ready');
+    expect(back.quests['hidden-grove']?.state).toBe('offered');
+    expect(back.quests['briar-dusk']?.state).toBe('done');
+  });
+
+  it('when two devices both played, each hero slot keeps the copy played last', () => {
+    const phone = newCharacter('mage', 'Phone', 'p', 0);
+    phone.level = 12;
+    phone.updated = 2000;
+    const desk = newCharacter('mage', 'Phone', 'p', 0);
+    desk.level = 8;
+    desk.updated = 1000;
+    const other = newCharacter('priest', 'Desk', 'd', 0);
+    other.updated = 3000;
+    const local = JSON.stringify({ v: SAVE_VERSION, heroes: [desk, other, null], last: 1, settings: {}, saved: 3000 });
+    const remote = JSON.stringify({ v: SAVE_VERSION, heroes: [phone, null, null], last: 0, settings: {}, saved: 2000 });
+    const merged = JSON.parse(mergeSaveText('glitchbound.sigilfall', local, remote)) as { heroes: (Character | null)[] };
+    expect(merged.heroes[0]!.level).toBe(12);
+    expect(merged.heroes[1]!.name).toBe('Desk');
+    expect(merged.heroes[2]).toBe(null);
+  });
+});
+
+describe('Sigilfall: the first lands, laid out larger', () => {
+  it('the Whisperwood keeps every marker of its drawing, once, and has more packs; Briarhollow has room', () => {
+    const wood = REGIONS.whisperwood;
+    expect(wood.map[0]!.length).toBeGreaterThanOrEqual(110);
+    const n: Record<string, number> = {};
+    for (const l of wood.map) for (const ch of l) if (ch in wood.markers) n[ch] = (n[ch] ?? 0) + 1;
+    for (const ch of ['P', 'R', 'S', 'G', 'e', '1', '2', '3', '4', '5', '6', '7', '8', '9']) expect(n[ch], ch).toBe(1);
+    expect((wood.placed ?? []).filter((p) => p.marker.kind === 'pack').length).toBeGreaterThanOrEqual(8);
+    expect(REGIONS.briarhollow.map[0]!.length).toBeGreaterThanOrEqual(80);
   });
 });

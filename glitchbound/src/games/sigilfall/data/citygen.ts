@@ -175,3 +175,85 @@ export class CityPlan {
     return { map, placed: this.placed };
   }
 }
+
+/**
+ * A plan written at one size and laid out `s` times larger: every position spreads out by `s` (roads and
+ * yards grow with it, places keep their places), while buildings, people and props keep their own size, so
+ * a cramped village gets room between its houses without redrawing it.
+ */
+export class SpreadPlan {
+  readonly plan: CityPlan;
+
+  constructor(
+    w: number,
+    h: number,
+    seed: number,
+    readonly s: number,
+  ) {
+    this.plan = new CityPlan(Math.round(w * s), Math.round(h * s), seed);
+  }
+
+  /** The first tile of an old tile's block, and the tile at its middle. */
+  private a(v: number): number {
+    return Math.floor(v * this.s + 1e-6);
+  }
+  private m(v: number): number {
+    return Math.floor((v + 0.5) * this.s);
+  }
+
+  get w(): number {
+    return this.plan.w;
+  }
+  get h(): number {
+    return this.plan.h;
+  }
+
+  woods(min: number, max: number): this {
+    this.plan.woods(min * this.s, max * this.s);
+    return this;
+  }
+  set(x: number, y: number, ch: Parameters<CityPlan['set']>[2]): void {
+    this.plan.fill(this.a(x), this.a(y), this.a(x + 1) - 1, this.a(y + 1) - 1, ch);
+  }
+  fill(x0: number, y0: number, x1: number, y1: number, ch: Parameters<CityPlan['set']>[2]): this {
+    this.plan.fill(this.a(x0), this.a(y0), this.a(x1 + 1) - 1, this.a(y1 + 1) - 1, ch);
+    return this;
+  }
+  building(style: Style, x: number, y: number, w: number, h: number, o: Parameters<CityPlan['building']>[5] = {}): this {
+    // its door (the middle of its front, where the street and any interior's way in meet it) is where the
+    // old door's tile spreads to
+    const half = Math.floor(w / 2);
+    this.plan.building(style, this.m(x + half) - half, this.m(y + h) - h, w, h, o);
+    return this;
+  }
+  npc(id: string, x: number, y: number, when?: StoryCond): this {
+    this.plan.npc(id, this.m(x), this.m(y), when);
+    return this;
+  }
+  prop(prop: string, x: number, y: number, solid = true, when?: StoryCond): this {
+    this.plan.prop(prop, this.m(x), this.m(y), solid, when);
+    return this;
+  }
+  marker(x: number, y: number, marker: Marker, when?: StoryCond): this {
+    // a way out stays on the map's edge
+    const ex = marker.kind === 'exit' ? (x <= 0 ? 0 : x >= this.plan.w / this.s - 1 ? this.plan.w - 1 : this.m(x)) : this.m(x);
+    const ey = marker.kind === 'exit' ? (y <= 0 ? 0 : y >= this.plan.h / this.s - 1 ? this.plan.h - 1 : this.m(y)) : this.m(y);
+    this.plan.marker(ex, ey, marker, when);
+    return this;
+  }
+  pond(cx: number, cy: number, rx: number, ry: number): this {
+    this.plan.pond(this.m(cx), this.m(cy), Math.round(rx * this.s), Math.round(ry * this.s));
+    return this;
+  }
+  plant(x0: number, y0: number, x1: number, y1: number, trees: number, flowers: number): this {
+    this.plan.plant(this.a(x0), this.a(y0), this.a(x1 + 1) - 1, this.a(y1 + 1) - 1, trees, flowers);
+    return this;
+  }
+  lamps(x0: number, y0: number, x1: number, y1: number, step: number): this {
+    this.plan.lamps(this.m(x0), this.m(y0), this.m(x1), this.m(y1), Math.max(1, Math.round(step * this.s)));
+    return this;
+  }
+  build(): ReturnType<CityPlan['build']> {
+    return this.plan.build();
+  }
+}

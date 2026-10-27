@@ -1,7 +1,8 @@
 import { dist } from '../core/math';
 import { EVENTS } from '../data/events';
 import type { QuestDef, RegionId } from '../data/types';
-import { activeQuests, questRegion, questState, HOME } from '../progress/character';
+import { activeQuests, currentObjective, questRegion, questState, readyQuests, HOME } from '../progress/character';
+import { turnInNpc } from '../progress/handin';
 import { TILE } from './map';
 import { bossRegion, nextRegion, npcRegion, spotRegion } from './routes';
 import type { World } from './world';
@@ -55,20 +56,38 @@ export function objectiveTarget(w: World): Objective | null {
     return x ? place(x.x, x.y) : null;
   };
 
-  // the ones done here first, the story order otherwise (the order the quest tracker reads them in)
-  const active = activeQuests(h);
-  // (where the objective itself is: a boss in its dungeon, a person where they stand, the story where it happens)
+  // the quest the hero follows first; then the ones done here; the story order otherwise (the tracker's order)
+  const active = [...activeQuests(h), ...readyQuests(h)];
+  // (where the objective itself is: a boss in its dungeon, a person where they stand, the story where it happens;
+  // a finished quest, where it is handed in)
   const where = (q: QuestDef): RegionId | undefined => {
-    const o = q.objective;
+    if (questState(h, q.id) === 'ready') {
+      const who = turnInNpc(q);
+      return who ? npcRegion(who) : undefined;
+    }
+    const o = currentObjective(h, q);
     if (o.kind === 'boss') return bossRegion(o.boss) ?? questRegion(q);
     if (o.kind === 'talk') return npcRegion(o.npc) ?? questRegion(q);
     if (o.kind === 'explore') return spotRegion(o.spot) ?? questRegion(q);
     if (o.kind === 'event') return EVENTS[o.event]?.region ?? questRegion(q);
     return questRegion(q);
   };
-  active.sort((a, b) => Number(where(b) === here) - Number(where(a) === here));
+  const rank = (q: QuestDef): number => (q.id === h.tracked ? 2 : 0) + (where(q) === here ? 1 : 0);
+  active.sort((a, b) => rank(b) - rank(a));
   for (const q of active) {
-    const o = q.objective;
+    // handed in: to the one who takes it back
+    if (questState(h, q.id) === 'ready') {
+      const who = turnInNpc(q);
+      const t = who
+        ? goTo(npcRegion(who), () => {
+            const n = w.npcs.find((x) => x.id === who);
+            return n ? place(n.x, n.y) : null;
+          })
+        : null;
+      if (t) return { ...t, quest: q.id };
+      continue;
+    }
+    const o = currentObjective(h, q);
     let t: Objective | null = null;
     switch (o.kind) {
       case 'tutorial':

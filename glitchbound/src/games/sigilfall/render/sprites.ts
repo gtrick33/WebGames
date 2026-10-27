@@ -1,4 +1,5 @@
 import { CLASSES } from '../data/classes';
+import type { Body } from '../progress/character';
 import type { ClassId, Item, ItemIcon, Material, Rarity, SlotId } from '../data/types';
 import { itemIcon, itemMat, itemTint } from '../progress/items';
 import type { MountDef } from '../data/mounts';
@@ -144,8 +145,10 @@ export type WornLooks = Partial<Record<'head' | 'chest' | 'weapon', Shown | 'bar
  * What a hero looks like in the gear they wear: every armor piece shows. A Wardrobe look worn over the
  * head, chest or weapon is drawn instead of the equipped piece there (stats never see it).
  */
-export function heroLook(cls: ClassId, equip: Partial<Record<SlotId, Item>> = {}, worn: WornLooks = {}): HeroLook {
-  const bare = BARE[cls];
+export function heroLook(cls: ClassId, equip: Partial<Record<SlotId, Item>> = {}, worn: WornLooks = {}, body: Body = 'm'): HeroLook {
+  const base = BARE[cls];
+  // a woman wears her hair long (a class that ties it back keeps the ponytail)
+  const bare: HeroLook = body === 'f' ? { ...base, female: true, hairStyle: base.hairStyle === 'short' ? 'long' : base.hairStyle } : base;
   const { legs, hands, feet, offhand } = equip;
   const pick = (slot: 'head' | 'chest'): Shown | null | 'bare' => {
     const w = worn[slot];
@@ -193,10 +196,12 @@ export const HERO_K = 4;
 
 /** The top of a hero (head and shoulders) for portraits. */
 function heroBust(look: HeroLook): Cnv {
-  const full = paintHero(look, 'down', 0).toCanvas();
+  // head and shoulders of the smoothed figure the world shows (not the raw paint): portraits match the hero
+  const full = heroSprite(look, 'down', 0).c;
+  const f = full.width / HERO_W;
   const top = look.head?.style === 'wizard' ? 0 : look.head?.style === 'helm' && look.head.r !== 'common' && look.head.r !== 'uncommon' ? 6 : 9;
-  const c = canvas(HERO_W, 44 - top);
-  ctx2d(c).drawImage(full, 0, -top);
+  const c = canvas(full.width, Math.round((44 - top) * f));
+  ctx2d(c).drawImage(full, 0, -Math.round(top * f));
   return c;
 }
 
@@ -205,7 +210,7 @@ export function heroPortraitUrl(look: HeroLook, scale = 3): string {
   const key = `portrait:hero:${lookKey(look)}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
-  const url = scaled(heroBust(look), scale).toDataURL();
+  const url = scaled(heroBust(look), Math.max(1, Math.round(scale / HERO_K))).toDataURL();
   iconCache.set(key, url);
   return url;
 }
@@ -362,6 +367,13 @@ export function vendorSign(kind: string): Sprite | null {
 /* ----------------------------------------------------------------- icons */
 
 /** An item's icon tinted in its color, as a data URL for the UI (cached). */
+/** An item's icon as a picture at its own pixel size (a dropped item shows what it is). */
+export function itemIconCanvas(item: Item): Cnv {
+  const icon = itemIcon(item);
+  const tint = itemTint(item);
+  return memo(`itemicon:${icon}:${tint}`, () => paint(ITEM_ICONS[icon] ?? ITEM_ICONS.relic!, { ...ITEM_ICON_PAL, t: tint, T: shade(tint, -0.4), l: shade(tint, 0.6) }), 1).c;
+}
+
 export function itemIconUrl(item: Item | { icon: ItemIcon; tint: string }, scale = 4): string {
   const icon = 'uid' in item ? itemIcon(item) : item.icon;
   const tint = 'uid' in item ? itemTint(item) : item.tint;
@@ -508,6 +520,9 @@ export function npcSprite(id: string, frame = 0): Sprite {
 }
 
 /** A hero (in class colors, no gear), creature or NPC portrait for the UI. */
+/** Whether a townsperson is drawn as a paper-doll person (else a pixel sprite). */
+export const hasPersonLook = (id: string): boolean => !!NPC_LOOKS[id];
+
 export function portraitUrl(kind: 'hero' | 'creature' | 'npc', id: string, scale = 4): string {
   if (kind === 'hero') return heroPortraitUrl(heroLook(id as ClassId), Math.max(1, Math.round(scale * 0.75)));
   if (kind === 'npc' && NPC_LOOKS[id]) return heroPortraitUrl(NPC_LOOKS[id], Math.max(1, Math.round(scale * 0.75)));

@@ -114,7 +114,7 @@ export const WARLOCK: Kit = {
     ),
     sk(
       'ultimate',
-      3,
+      8,
       'Summon Infernal',
       'An Infernal crashes down on a spot, stunning what it lands on, then fights for you for 20 seconds.',
       spec({

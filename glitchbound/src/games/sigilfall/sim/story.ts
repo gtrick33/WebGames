@@ -2,7 +2,7 @@ import { dist, TAU } from '../core/math';
 import { EVENTS } from '../data/events';
 import { TIERS } from '../data/regions';
 import type { Bark, RegionDef, RegionStateDef, StoryCond, StoryEventDef } from '../data/types';
-import { activeQuests, declined, questState, type Character } from '../progress/character';
+import { activeQuests, declined, questState, type Character, currentObjective } from '../progress/character';
 import { castRay, TILE } from './map';
 import { placePet } from './pets';
 import type { Pet } from './types';
@@ -23,6 +23,8 @@ export function holds(c: Character, cond: StoryCond): boolean {
   if ('not' in cond) return !holds(c, cond.not);
   const s = questState(c, cond.quest);
   if (cond.is === 'taken') return s === 'done' && !declined(c, cond.quest);
+  // a quest waiting to be handed in is still under way: whoever stands for it stays until it is
+  if (cond.is === 'active') return s === 'active' || s === 'ready';
   return cond.is === 'started' ? s !== 'locked' : s === cond.is;
 }
 
@@ -150,8 +152,9 @@ export class StoryDirector {
     const w = this.w;
     if (w.player.dead) return;
     for (const q of activeQuests(w.hero)) {
-      if (q.objective.kind !== 'event') continue;
-      const def = EVENTS[q.objective.event];
+      const o = currentObjective(w.hero, q);
+      if (o.kind !== 'event') continue;
+      const def = EVENTS[o.event];
       if (!def || def.region !== w.region.id) continue;
       const at = this.spot(def.at);
       if (!at || dist(w.player.x, w.player.y, at.x, at.y) > def.radius * TILE) continue;

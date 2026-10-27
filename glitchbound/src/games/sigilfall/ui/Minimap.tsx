@@ -8,6 +8,7 @@ import { objectiveTarget } from '../sim/objective';
 import type { World } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { drawMapIcon, type MapIcon } from './mapIcons';
+import { npcMark } from '../render/renderer';
 import { FOG_CELL, fogSeen, type Fog } from '../progress/fog';
 
 /**
@@ -152,7 +153,7 @@ function draw(c: HTMLCanvasElement, w: World): void {
   for (const ch of w.chests) if (!ch.open) icon(ch.x, ch.y, 'chest');
   for (const x of w.exits) icon(x.x, x.y, x.door ? 'door' : 'road');
   for (const ws of w.waystones) icon(ws.x, ws.y, 'waystone');
-  for (const n of w.npcs) icon(n.x, n.y, NPCS[n.id]?.shop ? 'merchant' : 'person');
+  for (const n of w.npcs) icon(n.x, n.y, npcMark(w, n.id) ?? (NPCS[n.id]?.shop ? 'merchant' : 'person'));
   for (const e of w.enemies) if (e.boss && !e.dead) icon(e.x, e.y, 'boss');
   g.restore();
   // the hero, pointing where they face

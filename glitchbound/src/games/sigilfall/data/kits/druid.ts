@@ -157,7 +157,7 @@ export const DRUID: Kit = {
     ),
     sk(
       'ultimate',
-      3,
+      8,
       'Starfall',
       'Stars rain down on an area for 4 seconds, striking everything beneath them again and again.',
       spec({ id: 'starfall', cast: 'ground', aim: 'ground', range: 130, cooldown: 0, damage: 9, dmgType: 'arcane', area: 56, duration: 4, tick: 0.25, look: 'rift', tags: ['aoe', 'arcane', 'ultimate'] }),

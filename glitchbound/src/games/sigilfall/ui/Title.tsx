@@ -6,7 +6,8 @@ import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL } from '../data/talents';
 import type { ClassId, RegionId } from '../data/types';
 import type { SigilEngine } from '../engine';
-import { cleanName } from '../progress/character';
+import { cleanName, type Body } from '../progress/character';
+import { heroDollUrl, heroLook } from '../render/sprites';
 import { wornLooks } from '../progress/wardrobe';
 import { Portrait, SkillIcon } from './common';
 import { SettingsPanel } from './Panels';
@@ -41,7 +42,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
           {heroes.map((h, i) =>
             h ? (
               <div key={i} className="rb-slot">
-                <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} size={52} />
+                <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={52} />
                 <div className="rb-slot-text">
                   <strong>{h.name}</strong>
                   <span>
@@ -97,6 +98,7 @@ const farthest = (unlocked: RegionId[]) => unlocked.map((id) => REGIONS[id]).red
 /** Choosing a class and a name. */
 export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const [cls, setCls] = useState<ClassId>('mage');
+  const [body, setBody] = useState<Body>('m');
   const [name, setName] = useState(() => cleanName(engine.defaultName));
   const def = CLASSES[cls];
   return (
@@ -113,7 +115,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           const c = CLASSES[id];
           return (
             <button key={id} role="radio" aria-checked={cls === id} className={`rb-class${cls === id ? ' is-on' : ''}`} style={{ ['--cc' as string]: c.colors.main }} onClick={() => setCls(id)}>
-              <Portrait kind="hero" id={id} size={64} />
+              <img className="rb-class-doll" src={heroDollUrl(heroLook(id, {}, {}, body), 'down', 2)} alt="" draggable={false} />
               <strong>{c.name}</strong>
               <span className="rb-dim">{c.role}</span>
               <span className="rb-dots" aria-label={DIFFICULTY[c.difficulty]}>
@@ -148,9 +150,16 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           className="rb-create-go"
           onSubmit={(e) => {
             e.preventDefault();
-            engine.createHero(engine.ui.createSlot, cls, cleanName(name));
+            engine.createHero(engine.ui.createSlot, cls, cleanName(name), body);
           }}
         >
+          <div className="rb-seg rb-body" role="radiogroup" aria-label="Hero">
+            {(['m', 'f'] as const).map((b) => (
+              <button key={b} type="button" role="radio" aria-checked={body === b} className={body === b ? 'is-on' : ''} onClick={() => setBody(b)}>
+                {b === 'm' ? 'Man' : 'Woman'}
+              </button>
+            ))}
+          </div>
           <label>
             <span>Name</span>
             <input value={name} onChange={(e) => setName(e.target.value.slice(0, 16))} maxLength={16} placeholder={def.name} autoComplete="off" spellCheck={false} />

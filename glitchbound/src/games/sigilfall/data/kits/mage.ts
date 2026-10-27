@@ -117,7 +117,7 @@ export const MAGE: Kit = {
     ),
     sk(
       'ultimate',
-      3,
+      8,
       'Meteor',
       'Calls a meteor down on a spot. It leaves the ground burning.',
       spec({

@@ -9,11 +9,11 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/
 import type { Item, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { bagSize, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
+import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
-import { rarityColor } from '../render/renderer';
+import { npcMark, rarityColor } from '../render/renderer';
 import { glyphIconUrl, heroDollUrl, heroLook, itemIconUrl, mountPictureUrl } from '../render/sprites';
 import type { HeroLook } from '../render/art/hero';
 import { MOUNT_DEFS, MOUNTS } from '../data/mounts';
@@ -23,6 +23,8 @@ import { objectiveTarget } from '../sim/objective';
 import { npcRegion, regionLinks } from '../sim/routes';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
 import { drawMapIcon, mapIconUrl, type MapIcon } from './mapIcons';
+import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
+import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, type Fog } from '../progress/fog';
 import { ShopPanel } from './Shop';
 import { PRESETS } from '../progress/presets';
@@ -106,7 +108,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
     <div className="rb-hero">
       <section className="rb-hero-left" aria-label="Equipment and stats">
         <div className="rb-hero-id">
-          <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} size={48} />
+          <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={48} />
           <div>
             <strong>{h.name}</strong>
             <span>
@@ -133,7 +135,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
               </button>
             );
           })}
-          <HeroDoll look={heroLook(h.cls, h.equip, wornLooks(h))} />
+          <HeroDoll look={heroLook(h.cls, h.equip, wornLooks(h), h.body)} />
         </div>
         <dl className="rb-stats">
           <div>
@@ -392,10 +394,11 @@ function SkillsPanel({ engine }: { engine: SigilEngine }) {
         <div className="rb-skill-slots">
           {([0, 1, 2, 3] as const).map((i) => {
             const id = h.skills[i];
+            const open = slotOpen(h, i);
             return (
-              <button key={i} className={`rb-skillslot${slot === i ? ' is-on' : ''}`} onClick={() => setSlot(i)}>
+              <button key={i} className={`rb-skillslot${slot === i ? ' is-on' : ''}${open ? '' : ' is-locked'}`} onClick={() => setSlot(i)} disabled={!open} title={open ? undefined : `Opens at level ${SLOT_LEVELS[i]}`}>
                 <span className="rb-kbd">{keys[i]}</span>
-                {id ? <SkillIcon id={id} size={32} /> : <span className="rb-dim">empty</span>}
+                {!open ? <span className="rb-dim">Lv {SLOT_LEVELS[i]}</span> : id ? <SkillIcon id={id} size={32} /> : <span className="rb-dim">empty</span>}
                 <span className="rb-small">{id ? SKILLS[id]!.name : ''}</span>
               </button>
             );
@@ -600,7 +603,8 @@ function scaleMod(m: TalentNode['mods'][number], rank: number): TalentNode['mods
 function QuestsPanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const here = engine.world?.region.id;
-  const active = QUESTS.filter((q) => questState(h, q.id) === 'active');
+  const active = QUESTS.filter((q) => questState(h, q.id) === 'active' || questState(h, q.id) === 'ready');
+  const tracked = trackedQuest(h, here);
   // paths not taken aren't deeds
   const done = QUESTS.filter((q) => questState(h, q.id) === 'done' && (h.quests[q.id]?.n ?? 0) >= 0);
   // grouped by where they are done, this region first
@@ -621,20 +625,34 @@ function QuestsPanel({ engine }: { engine: SigilEngine }) {
           </span>
           {groups.get(r)!.map((q) => {
             const pr = questProgress(h, q);
+            const ready = questState(h, q.id) === 'ready';
+            const main = isMainQuest(q.id);
+            const steps = questSteps(q);
+            const at = ready ? steps.length : (h.quests[q.id]?.step ?? 0);
+            const who = turnInNpc(q);
+            const isTracked = tracked?.id === q.id;
             return (
-              <article key={q.id} className="rb-quest">
-                <strong>{q.name}</strong>
+              <article key={q.id} className={`rb-quest${main ? ' is-main' : ' is-side'}${isTracked ? ' is-tracked' : ''}`}>
+                <div className="rb-quest-head">
+                  <img src={mapIconUrl(ready ? (main ? 'handin' : 'handinSide') : main ? 'offer' : 'offerSide', 2)} alt="" />
+                  <strong>{q.name}</strong>
+                  <span className="rb-quest-kind">{main ? 'Story' : 'Side'}</span>
+                  <button className={`rb-btn is-small${isTracked ? ' is-gold' : ''}`} onClick={() => engine.trackQuest(isTracked ? null : q.id)} aria-pressed={isTracked}>
+                    {isTracked ? 'Tracking' : 'Track'}
+                  </button>
+                </div>
                 <p>{q.text}</p>
-                <span className="rb-small">
-                  {q.objective.label}
-                  {pr.of > 1 ? `: ${pr.n} / ${pr.of}` : ''}
-                </span>
-                {pr.of > 1 && <Bar value={pr.n} max={pr.of} color="#ffcf5a" />}
-                <span className="rb-small rb-dim">
-                  Reward: {q.reward.xp} XP · {q.reward.gold} gold{q.reward.item ? ' · an item' : ''}
-                  {q.reward.unlock ? ` · opens ${REGIONS[q.reward.unlock].name}` : ''}
-                  {q.reward.perk ? <b className="rb-gold"> · {PERKS[q.reward.perk].name}: {PERKS[q.reward.perk].text}</b> : null}
-                </span>
+                <ol className="rb-quest-steps">
+                  {steps.map((o, i) => (
+                    <li key={i} className={i < at ? 'is-done' : i === at ? 'is-now' : 'is-later'}>
+                      {o.label}
+                      {i === at && pr.of > 1 ? `: ${pr.n} / ${pr.of}` : ''}
+                    </li>
+                  ))}
+                  {who && <li className={ready ? 'is-now' : 'is-later'}>Return to {NPCS[who]?.name ?? who}</li>}
+                </ol>
+                {!ready && pr.of > 1 && <Bar value={pr.n} max={pr.of} color={main ? '#ffcf5a' : '#6cc4ff'} />}
+                <span className="rb-small rb-dim">Reward: {questRewards(h, q).map((x) => x.text).join(' · ')}</span>
               </article>
             );
           })}
@@ -805,7 +823,8 @@ function WorldMap({ hero, here, sel, goal, onSel }: { hero: Character; here: Reg
     const el = scroller.current;
     const svg = el?.firstElementChild;
     if (!el || !svg) return;
-    const k = svg.getBoundingClientRect().width / box.w;
+    // its own layout width (the game may be turned to landscape: ui/turn.ts)
+    const k = ((svg as SVGSVGElement).clientWidth || svg.getBoundingClientRect().width) / box.w;
     const [x, y] = worldAt(here);
     el.scrollLeft = (x - box.x0) * k - el.clientWidth / 2;
     el.scrollTop = (y - box.y0) * k - el.clientHeight / 2;
@@ -922,7 +941,7 @@ function MiniMap({ engine }: { engine: SigilEngine }) {
     const seen = (x: number, y: number): boolean => fogSeen(w.fog, x / TILE, y / TILE);
     for (const ws of w.waystones) if (seen(ws.x, ws.y)) icon(ws.x, ws.y, 'waystone');
     for (const c2 of w.chests) if (!c2.open && seen(c2.x, c2.y)) icon(c2.x, c2.y, 'chest');
-    for (const n of w.npcs) if (seen(n.x, n.y)) icon(n.x, n.y, NPCS[n.id]?.shop ? 'merchant' : 'person');
+    for (const n of w.npcs) if (seen(n.x, n.y)) icon(n.x, n.y, npcMark(w, n.id) ?? (NPCS[n.id]?.shop ? 'merchant' : 'person'));
     for (const x of w.exits) if (seen(x.x, x.y)) icon(x.x, x.y, x.door ? 'door' : 'road');
     const goal = objectiveTarget(w);
     if (goal) icon(goal.x, goal.y, 'quest');
@@ -1111,7 +1130,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
   if (slot && pick === 'equipped') delete previewWorn[slot];
   else if (slot && pick === BARE_LOOK && slot !== 'weapon') previewWorn[slot] = 'bare';
   else if (slot && picked) previewWorn[slot] = picked.look;
-  const look = heroLook(h.cls, h.equip, previewWorn);
+  const look = heroLook(h.cls, h.equip, previewWorn, h.body);
   const equipped = slot ? h.equip[slot] : undefined;
   const current = slot ? h.worn[slot] : undefined;
   const mount = tab === 'mounts' && pick ? MOUNT_DEFS[pick] : undefined;
@@ -1120,7 +1139,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
     <div className="rb-hero rb-wardrobe">
       <section className="rb-hero-left" aria-label="Preview">
         {tab === 'mounts' ? (
-          <div className="rb-mount-pic">{(mount ?? ridden) && <img src={mountPictureUrl((mount ?? ridden)!, mount && !h.mounts.includes(mount.id) ? null : heroLook(h.cls, h.equip, worn), 3)} alt="" className={mount && !h.mounts.includes(mount.id) ? 'is-locked' : ''} draggable={false} />}</div>
+          <div className="rb-mount-pic">{(mount ?? ridden) && <img src={mountPictureUrl((mount ?? ridden)!, mount && !h.mounts.includes(mount.id) ? null : heroLook(h.cls, h.equip, worn, h.body), 3)} alt="" className={mount && !h.mounts.includes(mount.id) ? 'is-locked' : ''} draggable={false} />}</div>
         ) : (
           <HeroDoll look={look} area="auto" />
         )}

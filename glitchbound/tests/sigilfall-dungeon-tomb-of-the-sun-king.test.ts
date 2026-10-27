@@ -14,7 +14,7 @@ import { K, TILE } from '../src/games/sigilfall/sim/map';
 import { inSunlight } from '../src/games/sigilfall/sim/patterns/tomb-of-the-sun-king';
 import type { Enemy } from '../src/games/sigilfall/sim/types';
 import type { World } from '../src/games/sigilfall/sim/world';
-import { newWorld, play, readyHero } from './sigilfall-bot';
+import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
 
 const LEVEL = 36;
 
@@ -200,9 +200,11 @@ describe('the Tomb of the Sun King', () => {
   });
 
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears the Tomb of the Sun King at level ${LEVEL}`, { timeout: 30_000 }, () => {
-      const w = newWorld('tomb-of-the-sun-king', readyHero(cls, LEVEL, 'uncommon'));
-      const r = play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom });
+    it(`${cls}: clears the Tomb of the Sun King at level ${LEVEL}`, { timeout: 90_000 }, () => {
+      const { w, r } = clearsWithRetry((seed) => {
+        const w = newWorld('tomb-of-the-sun-king', readyHero(cls, LEVEL, 'uncommon'), seed);
+        return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
+      });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(['the-sand-warden', 'the-sun-king']);

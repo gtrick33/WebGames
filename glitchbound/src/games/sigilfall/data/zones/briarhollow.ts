@@ -1,4 +1,4 @@
-import { CityPlan } from '../citygen';
+import { SpreadPlan } from '../citygen';
 import { doorsOf } from '../interiors';
 import type { EnemyDef, NpcDef, QuestDef, RegionDef, StoryCond, StoryEventDef } from '../types';
 
@@ -32,8 +32,11 @@ const HOME = is('epilogue-the-camp-goes-home', 'done');
 /** The camp while it stands: from the first dawn until it goes home. */
 const CAMPED = (c: StoryCond): StoryCond => all(c, not(HOME));
 
-function plan(): CityPlan {
-  const c = new CityPlan(64, 54, 4417);
+/** How much roomier the village is than it was first drawn (64 × 54): houses keep their size, the lanes widen. */
+const SPREAD = 1.35;
+
+function plan(): SpreadPlan {
+  const c = new SpreadPlan(64, 54, 4417, SPREAD);
   c.woods(3, 6);
   // the roads: north to the Whisperwood, west to Fernstead, south to Millbrook
   c.fill(31, 0, 33, 19, 'path');
@@ -225,6 +228,35 @@ function plan(): CityPlan {
   c.prop('crate', 12, 24, true, HOME);
   // the answer Elyra was given at the end: the hour leaves four names on a stone by the chapel
   c.prop('standing-stone', 49, 22, true, all(HOME, is('crownfall-one-hour', 'taken')));
+  // the farms outside the palisade, now the village has room: a fenced field with its hay and cart, a farmhouse,
+  // the orchard along the north road and the mill beyond it
+  c.fill(8, 6, 22, 9, 'deco');
+  for (let x = 7; x <= 23; x++) {
+    c.set(x, 5, 'fence');
+    c.set(x, 10, 'fence');
+  }
+  for (let y = 6; y <= 9; y++) c.set(7, y, 'fence');
+  c.set(23, 7, 'floor');
+  c.prop('hay', 11, 7);
+  c.prop('hay', 17, 8);
+  c.prop('hay', 20, 6);
+  c.prop('cart', 25, 9);
+  c.building('house', 25, 4, 4, 3, { name: 'Wenna’s Farm' });
+  c.plant(38, 4, 58, 10, 0.16, 0.18);
+  c.prop('windmill', 54, 6);
+  c.prop('barrel', 36, 9);
+  c.prop('crate', 37, 10);
+  // two more cottages in the south-east, with their gardens
+  c.building('house', 49, 41, 4, 3, { name: 'Brisa’s House' });
+  c.fill(48, 45, 53, 46, 'deco');
+  c.prop('clay-pot', 48, 44);
+  c.building('house', 54, 46, 4, 3);
+  c.fill(53, 50, 58, 50, 'deco');
+  c.prop('barrel', 58, 48);
+  // a woodpile and a bench by the west road
+  c.prop('crate', 8, 29);
+  c.prop('crate', 9, 29);
+  c.prop('bench', 18, 28, true);
   // the doors into the inn, the chapel and the Elder's hall (data/interiors.ts)
   for (const d of doorsOf('briarhollow')) c.marker(d.tx, d.ty, d.marker, d.when);
   c.marker(32, 12, { kind: 'start' });
@@ -342,9 +374,7 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'briar-dusk', state: 'active' }, lines: ['Stop there. Nobody comes through after the lamps are lit. Nobody goes out, either.', 'You’re not one of them, at least. They don’t talk.', 'Mara Venn. I keep the gate, since there’s nobody else left to keep it. If you’re staying, you’d better be able to swing that.'] },
-      { when: { quest: 'first-steps', state: 'active' }, lines: ['The dummies in the yard. Hit one. Three times, properly.'] },
-      { when: { quest: 'first-spell', state: 'active' }, lines: ['Fine arm. You have some trick of your own, I can see it on you. Show me on the dummy.'] },
-      { when: { quest: 'first-dodge', state: 'active' }, lines: ['The one at the back throws stones. Get out of the way of one. If you can’t dodge a stone, you won’t dodge what comes out of those woods.'] },
+      { when: { quest: 'first-steps', state: 'active' }, lines: ['The dummies in the yard. Hit one, properly, five times. Then show me that trick of yours I can see on you.', 'The one at the back throws stones. Get out of the way of one. If you can’t dodge a stone, you won’t dodge what comes out of those woods. Then come back to me.'] },
       { when: { quest: 'briar-the-seal', state: 'active' }, lines: ['Hold. Rider on the north road.', 'That’s a king’s courier. That’s a king’s courier with an arrow in his back. Take him to the Elder. Go!'] },
       { when: { quest: 'briar-below', state: 'active' }, lines: ['They stopped fighting us. Did you see? They just stopped, and started digging.', 'Whatever is under that chapel, they want it more than they want us dead. I don’t like that.'] },
       { when: { quest: 'fern-retaken', state: 'offered' }, lines: ['I have counted Fernstead’s tents every morning for a week. I am done counting.', 'Hollis’s rangers, Dunmore’s riders, you, and me. We take it back. Tonight, if you’ll come.'] },
@@ -651,7 +681,7 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
     zone: 'briarhollow',
     text: 'A king’s courier rode in on the north road with a grey arrow in his back and a broken royal seal in his fist. Get him to the Elder.',
     objective: { kind: 'talk', npc: 'maren', label: 'Bring the courier’s seal to Elder Maren' },
-    after: ['first-dodge'],
+    after: ['first-steps'],
     reward: { xp: 60, gold: 15, text: 'Oskar Fell dies on the Elder’s floor. The letter is soaked through; Maren sets it by the fire to dry.' },
   },
   {

@@ -15,7 +15,8 @@ import { holds, regionState, StoryDirector } from './story';
 import { maybeStartScene, updateScene, type ScenePlay } from './scene';
 import { buildHero, type HeroBuild } from '../progress/build';
 import { fogOpen, fogShare, loadFog, revealFog, storeFog, type Fog } from '../progress/fog';
-import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME } from '../progress/character';
+import { turnInNpc } from '../progress/handin';
+import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME, currentObjective } from '../progress/character';
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
 import { learnLooks } from '../progress/wardrobe';
@@ -57,6 +58,8 @@ export interface WorldOptions {
   seed: number;
   /** The region the hero came from (arrive at the exit that leads back there). */
   from?: RegionId;
+  /** Finished quests wait to be handed in (the game); false pays them out at once (story tests that skip the talk). */
+  handIns?: boolean;
 }
 
 interface EncounterState {
@@ -99,9 +102,14 @@ const EXPLORE_XP = 0.03;
  */
 /**
  * The fewest seconds a full ultimate bar can take in sustained combat (PROGRESSION_BALANCE.md Part 2, E):
- * 20 at level 3, 28 at 30, 32 from 50. The charge budget refills at one bar per this many seconds.
+ * 26 at level 3, 36 at 30, 42 from 50 (30% slower than the first balance pass). The charge budget refills at
+ * one bar per this many seconds.
  */
-export const ultFloor = (level: number): number => (level <= 3 ? 20 : level <= 30 ? 20 + ((level - 3) * 8) / 27 : Math.min(32, 28 + ((level - 30) * 4) / 20));
+export const ultFloor = (level: number): number => 1.3 * (level <= 3 ? 20 : level <= 30 ? 20 + ((level - 3) * 8) / 27 : Math.min(32, 28 + ((level - 30) * 4) / 20));
+/** The most of a bar of ultimate charge (%) a lull banks for the next fight (the rest is earned at the usual pace). */
+export const ULT_BANK = 70;
+/** The most haste (%) speeds the basic attack. */
+export const BASIC_HASTE = 60;
 /** Riding: one speed for every mount (blueprint §6.4: no "best mount"). */
 export const MOUNT_SPEED = 1.3;
 /** Calling a mount takes this long, standing still. */
@@ -194,6 +202,8 @@ export class World {
   spots: { x: number; y: number; id: string; name: string; r: number }[] = [];
   /** Packs in the open, so they can come back a while after they are killed. */
   packs: PackState[] = [];
+  /** Finished quests wait to be handed in (WorldOptions.handIns). */
+  readonly handIns: boolean;
   /** The maps' fog of war here (progress/fog.ts), and the cells with ground under them. */
   fog!: Fog;
   private fogOpen!: Uint8Array;
@@ -225,6 +235,7 @@ export class World {
   private hpBefore = 0;
 
   constructor(o: WorldOptions) {
+    this.handIns = o.handIns ?? true;
     this.region = REGIONS[o.region];
     this.map = parseRegion(this.region);
     this.tier = this.region.safe ? 0 : o.tier;
@@ -305,7 +316,8 @@ export class World {
       form: null,
       cds,
       ult: 0,
-      ultBudget: 100,
+      // what a hero carries into a land (the engine passes on what was left from the last one)
+      ultBudget: ULT_BANK,
       combo: 0,
       comboT: 0,
       lastDodge: -99,
@@ -435,8 +447,12 @@ export class World {
 
   /** The label of the quest objective an event belongs to (for its banner). */
   questLabel(event: string): string {
-    const q = Object.keys(this.hero.quests).map((id) => QUEST_DEFS[id]).find((d) => d?.objective.kind === 'event' && d.objective.event === event);
-    return q?.objective.label ?? '';
+    for (const id of Object.keys(this.hero.quests)) {
+      const d = QUEST_DEFS[id];
+      const o = d && [d.objective, ...(d.then ?? [])].find((x) => x.kind === 'event' && x.event === event);
+      if (o) return o.label;
+    }
+    return '';
   }
 
   /** A pack marker's enemies, kept track of so they come back (rising out of the ground when the story calls them in). */
@@ -548,7 +564,7 @@ export class World {
     const p = this.player;
     // once a second: a named foe some quest still wants doesn't keep the hero waiting five minutes
     const look = Math.floor(this.time) !== Math.floor(this.time - dt);
-    const wanted = look && this.packs.some((st) => st.rare && st.respawnT > RESPAWN_WANTED) ? new Set(activeQuests(this.hero).flatMap((q) => (q.objective.kind === 'kill' ? (q.objective.enemies ?? []) : q.objective.kind === 'loot' ? q.objective.from : []))) : null;
+    const wanted = look && this.packs.some((st) => st.rare && st.respawnT > RESPAWN_WANTED) ? new Set(activeQuests(this.hero).flatMap((q) => { const o = currentObjective(this.hero, q); return o.kind === 'kill' ? (o.enemies ?? []) : o.kind === 'loot' ? o.from : []; })) : null;
     for (const st of this.packs) {
       if (st.respawnT < 0 || st.gone) continue;
       if (wanted && st.rare && st.enemies.some((id) => wanted.has(id))) {
@@ -953,9 +969,10 @@ export class World {
     const p = this.player;
     // nobody acts while a scene plays
     const inp = this.scene ? emptyInput() : this.input;
-    // the ultimate's charge budget refills at one full bar per ultFloor seconds, and never holds more than one
+    // the ultimate's charge budget refills at one full bar per ultFloor seconds, and banks at most ULT_BANK of
+    // a bar: after a lull, a stream of fast hits fills that much at once and earns the rest at the usual pace
     const ultRate = 100 / ultFloor(this.hero.level);
-    p.ultBudget = Math.min(100, p.ultBudget + dt * ultRate);
+    p.ultBudget = Math.min(ULT_BANK, p.ultBudget + dt * ultRate);
     this.ultHits = 0;
     if (p.dead) {
       p.deadT += dt / 0.35;
@@ -1009,12 +1026,14 @@ export class World {
         p.mana = Math.max(0, p.mana - res.regen * dt);
       }
     }
-    // cooldowns recharge faster with haste
+    // cooldowns recharge faster with haste; the basic attack only up to BASIC_HASTE (held down, it would
+    // otherwise turn into a stream of bolts)
     const haste = 1 + stats.haste / 100;
+    const basicHaste = 1 + Math.min(stats.haste, BASIC_HASTE) / 100;
     for (const slot of ACTION_SLOTS) {
       const cd = p.cds[slot];
       if (slot === 'ult' || cd.charges >= cd.max) continue;
-      cd.t -= dt * haste;
+      cd.t -= dt * (slot === 'basic' ? basicHaste : haste);
       if (cd.t <= 0) {
         cd.charges += 1;
         cd.t = cd.charges < cd.max ? cd.t + cd.cd : 0;
@@ -1381,7 +1400,8 @@ export class World {
     // quest items some enemies carry
     for (const [id, q] of Object.entries(h.quests)) {
       if (q.state !== 'active') continue;
-      const o = QUEST_DEFS[id]?.objective;
+      const d = QUEST_DEFS[id];
+      const o = d ? currentObjective(h, d) : undefined;
       if (o?.kind !== 'loot' || o.region !== here || !o.from.includes(e.def.id) || this.rand() >= o.chance) continue;
       this.text(e.x, e.y - e.r - 12, `+ ${o.item}`, '#ffe066', false);
       this.sfx('pickup', 0.5);
@@ -1464,7 +1484,7 @@ export class World {
    */
   private revisit(spot: string): void {
     const h = this.hero;
-    if (!QUESTS.some((q) => q.objective.kind === 'explore' && q.objective.spot === spot && h.quests[q.id]?.state === 'active')) return;
+    if (!QUESTS.some((q) => { if (h.quests[q.id]?.state !== 'active') return false; const o = currentObjective(h, q); return o.kind === 'explore' && o.spot === spot; })) return;
     this.questProgress((o) => o.kind === 'explore' && o.spot === spot);
     this.emit({ t: 'save' });
   }
@@ -1846,9 +1866,11 @@ export class World {
   /* ----------------------------------------------------- quests */
 
   questProgress(match: (o: Objective) => boolean, amount = 1): void {
-    const done = questEvent(this.hero, match, amount);
+    const news = questEvent(this.hero, match, amount, this.handIns ? turnInNpc : () => null);
     this.emit({ t: 'quest' });
-    if (done.length) this.completeQuests(done);
+    for (const q of news.stepped) this.emit({ t: 'questStep', quest: q.id });
+    for (const q of news.ready) this.emit({ t: 'questReady', quest: q.id });
+    if (news.done.length) this.completeQuests(news.done);
   }
 
   completeQuests(list: QuestDef[]): void {
@@ -1899,8 +1921,8 @@ export class World {
    */
   creditEarly(started: QuestDef[]): void {
     const h = this.hero;
-    const early = started.filter((q) => q.objective.kind === 'boss' && (h.bosses[q.objective.boss] ?? 0) > 0);
-    if (early.length) this.after(1, () => this.questProgress((o) => early.some((q) => q.objective === o)));
+    const early = started.filter((q) => { const o = currentObjective(h, q); return o.kind === 'boss' && (h.bosses[o.boss] ?? 0) > 0; });
+    if (early.length) this.after(1, () => this.questProgress((o) => early.some((q) => currentObjective(h, q) === o)));
   }
 
   /* -------------------------------------------------- tutorial hooks */
@@ -1914,7 +1936,9 @@ export class World {
   private tutorialSkillCast(): void {
     // skills that don't hit (blink, a trap) still count when used near a dummy
     const near = this.enemies.some((e) => e.dummy && dist(e.x, e.y, this.player.x, this.player.y) < 120);
-    if (near && this.hero.quests['first-spell']?.state === 'active') {
+    const yard = QUEST_DEFS['first-steps'];
+    const o = yard && this.hero.quests[yard.id]?.state === 'active' ? currentObjective(this.hero, yard) : null;
+    if (near && o?.kind === 'tutorial' && o.step === 'skill') {
       const id = this.input.casts.find((c) => c.slot !== 'basic' && c.slot !== 'dodge')?.slot;
       const spec = id ? this.build.skills[this.build.bar[id] ?? '']?.spec : undefined;
       if (spec && (spec.cast === 'blink' || spec.cast === 'trap' || spec.cast === 'channel')) this.questProgress((o) => o.kind === 'tutorial' && o.step === 'skill');

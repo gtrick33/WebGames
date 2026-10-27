@@ -321,7 +321,7 @@ const VAELOR: BossDef = {
   name: 'Vaelor',
   title: 'The Hallow King',
   sprite: 'vaelor',
-  hp: 9500,
+  hp: 8300,
   dmg: 32,
   radius: 14,
   xp: 9000,

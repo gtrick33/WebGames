@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { SigilEngine } from './engine';
 import { GameScreen } from './ui/GameScreen';
+import { setTurned } from './ui/turn';
 import { CreateScreen, TitleScreen } from './ui/Title';
 import './Game.css';
 
@@ -52,7 +53,18 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
     host.report({ type: 'ready' });
     // the canvas follows the stage's size; the view picks a crisp whole-number pixel scale
     const fit = (): void => {
-      const r = stage.getBoundingClientRect();
+      // a phone held upright with the game filling it: the game turns itself to landscape (ui/turn.ts)
+      const box = stage.parentElement ?? stage;
+      const pw = box.clientWidth;
+      const ph = box.clientHeight;
+      const turn = e.touchMode && ph > pw * 1.15 && pw > 0;
+      stage.classList.toggle('is-turned', turn);
+      stage.style.setProperty('--turn-w', `${pw}px`);
+      stage.style.setProperty('--turn-h', `${ph}px`);
+      setTurned(turn ? stage : null);
+      e.turned = turn;
+      // its own layout size (a turned box's on-screen rectangle is the other way round)
+      const r = { width: stage.offsetWidth, height: stage.offsetHeight };
       const dpr = Math.min(3, window.devicePixelRatio || 1);
       e.dpr = dpr;
       e.renderer.resize(r.width, r.height, dpr, e.touchMode);
@@ -62,6 +74,7 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(stage);
+    if (stage.parentElement) ro.observe(stage.parentElement);
     window.addEventListener('orientationchange', fit);
     // switch between touch and mouse controls by what the player actually uses
     const onPointer = (ev: PointerEvent): void => {
@@ -81,6 +94,7 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
       stage.removeEventListener('pointerdown', onPointer, true);
       window.removeEventListener('keydown', onKey);
       e.detach();
+      setTurned(null);
     };
     // the engine lives for this mount (restartKey remounts)
     // eslint-disable-next-line react-hooks/exhaustive-deps

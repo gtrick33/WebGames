@@ -89,10 +89,11 @@ describe('Sigilfall: progression', () => {
   });
 
   it('the ultimate takes 20 s a bar at level 3, 28 s at 30 and 32 s from 50', () => {
-    expect(ultFloor(3)).toBe(20);
-    expect(ultFloor(30)).toBeCloseTo(28);
-    expect(ultFloor(50)).toBe(32);
-    expect(ultFloor(60)).toBe(32);
+    // (30% slower since the hardening pass: a held basic attack shouldn't bring the ultimate round in 20 s)
+    expect(ultFloor(3)).toBeCloseTo(26);
+    expect(ultFloor(30)).toBeCloseTo(36.4);
+    expect(ultFloor(50)).toBeCloseTo(41.6);
+    expect(ultFloor(60)).toBeCloseTo(41.6);
   });
 
   it('two minutes of hard fighting earn every class two to five ultimates', { timeout: 30_000 }, () => {
@@ -112,7 +113,8 @@ describe('Sigilfall: progression', () => {
         play(w, { seconds: 0.5, done: () => false });
         w.player.hp = w.player.maxHp;
         w.player.dead = false;
-        if (prev >= 99 && w.player.ult < prev - 40) casts++;
+        // a cast empties the bar (the fill may cross 100 and fire within the same half second)
+        if (w.player.ult < prev - 40) casts++;
         prev = w.player.ult;
       }
       counts[cls] = casts;

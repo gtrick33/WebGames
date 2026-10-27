@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { slotLevel } from '../progress/character';
 import { skillCost } from '../sim/cast';
 import { CLASSES } from '../data/classes';
 import { SKILLS } from '../data/skills';
@@ -85,7 +86,8 @@ function Slot({ engine, slot, keyLabel }: { engine: SigilEngine; slot: SlotKey; 
     if (cd.current) cd.current.style.background = empty ? `conic-gradient(rgba(10,6,20,0.72) ${share * 100}%, transparent 0)` : 'transparent';
     if (num.current) num.current.textContent = empty && c.t > 0.95 ? String(Math.ceil(c.t / (1 + world.build.stats.haste / 100))) : c.max > 1 ? String(c.charges) : '';
   });
-  const unlock = slot === 'ult' ? SKILLS[CLASSES[h.cls].ult]!.unlock : 0;
+  const opens = slotLevel(slot);
+  const unlock = slot === 'ult' ? SKILLS[CLASSES[h.cls].ult]!.unlock : h.level < opens ? opens : 0;
   return (
     <button ref={el} className={`rb-slot6 is-${slot}${id ? '' : ' is-locked'}`} title={def ? `${def.name}: ${def.blurb}` : 'Locked'} onClick={() => id && engine.kbm?.queue(slot)} tabIndex={-1}>
       {def ? <img src={skillIconUrl(def.id, 3)} alt="" /> : <span className="rb-sb-lock">{unlock ? `Lv ${unlock}` : '—'}</span>}

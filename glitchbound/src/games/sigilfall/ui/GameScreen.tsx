@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { xpToNext } from '../data/classes';
-import { NPCS } from '../data/quests';
+import { NPCS, QUEST_DEFS } from '../data/quests';
 import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { ResourceDef } from '../data/types';
 import type { SigilEngine } from '../engine';
-import { freePoints, questProgress, trackedQuest } from '../progress/character';
+import { currentObjective, freePoints, questProgress, questState, trackedQuest } from '../progress/character';
 import { modLines } from '../progress/describe';
+import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
+import { questRewards } from '../progress/rewards';
 import { wornLooks } from '../progress/wardrobe';
 import { itemMods, itemName, usableBy } from '../progress/items';
 import { rarityColor } from '../render/renderer';
@@ -18,6 +20,7 @@ import { Panels } from './Panels';
 import { Minimap } from './Minimap';
 import { TouchControls } from './Touch';
 import { uiIcon } from './uiIcons';
+import { mapIconUrl } from './mapIcons';
 
 /** Registers a per-frame DOM update (no React render per frame). */
 /** A scene playing (sim/scene.ts): bars top and bottom, and a way to skip it. */
@@ -131,7 +134,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
     <>
       <div className="rb-hud-hero">
         <div className="rb-hud-face">
-          <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} size={34} />
+          <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={34} />
           <span className="rb-lvl">{h.level}</span>
         </div>
         <div className="rb-hud-bars">
@@ -224,12 +227,18 @@ function Tracker({ engine }: { engine: SigilEngine }) {
   const q = trackedQuest(h, engine.world?.region.id);
   if (!q || engine.ui.boss) return null;
   const pr = questProgress(h, q);
+  const ready = questState(h, q.id) === 'ready';
+  const who = ready ? turnInNpc(q) : null;
+  const main = isMainQuest(q.id);
   return (
-    <button className="rb-tracker" onClick={() => engine.openPanel('quests')}>
-      <strong>{q.name}</strong>
+    <button className={`rb-tracker${main ? ' is-main' : ' is-side'}`} onClick={() => engine.openPanel('quests')}>
+      <strong>
+        <img src={mapIconUrl(ready ? (main ? 'handin' : 'handinSide') : main ? 'offer' : 'offerSide', 2)} alt="" />
+        {q.name}
+      </strong>
       <span>
-        {q.objective.label}
-        {pr.of > 1 ? ` ${pr.n}/${pr.of}` : ''}
+        {ready ? `Return to ${who ? NPCS[who]?.name : 'them'}` : currentObjective(h, q).label}
+        {!ready && pr.of > 1 ? ` ${pr.n}/${pr.of}` : ''}
       </span>
     </button>
   );
@@ -297,9 +306,10 @@ function LevelUp({ engine }: { engine: SigilEngine }) {
 function Dialogue({ engine }: { engine: SigilEngine }) {
   const d = engine.ui.dialogue!;
   const npc = NPCS[d.npc]!;
-  const last = d.i + 1 >= d.lines.length;
+  const page = engine.dialoguePage();
+  const last = d.i + 1 >= d.lines.length + d.pages.length;
   return (
-    <div className="rb-dialogue" onClick={() => !last && engine.nextLine()}>
+    <div className={`rb-dialogue${page ? ' is-quest' : ''}`} onClick={() => !last && !page && engine.nextLine()}>
       <div className="rb-dialogue-face">
         <Portrait kind="npc" id={d.npc} size={56} />
       </div>
@@ -307,22 +317,89 @@ function Dialogue({ engine }: { engine: SigilEngine }) {
         <strong>
           {npc.name} <span className="rb-dim">· {npc.title}</span>
         </strong>
-        <p key={d.i}>{d.lines[d.i]}</p>
-        <div className="rb-dialogue-actions">
-          {npc.shop && (
-            <button className="rb-btn is-small is-gold" onClick={() => engine.openShop(npc.shop!, npc.id)}>
-              Trade
+        {page ? <QuestPage engine={engine} kind={page.kind} id={page.quest} last={last} /> : <p key={d.i}>{d.lines[d.i]}</p>}
+        {!page && (
+          <div className="rb-dialogue-actions">
+            {npc.shop && (
+              <button className="rb-btn is-small is-gold" onClick={() => engine.openShop(npc.shop!, npc.id)}>
+                Trade
+              </button>
+            )}
+            {last && npc.service === 'respec' && (
+              <button className="rb-btn is-small" onClick={() => engine.openPanel('talents')}>
+                Talents
+              </button>
+            )}
+            <button className={`rb-btn is-small${npc.shop ? '' : ' is-gold'}`} onClick={() => (last ? engine.closeDialogue() : engine.nextLine())} autoFocus={!npc.shop}>
+              {last ? 'Farewell' : 'Next ▸'}
             </button>
-          )}
-          {last && npc.service === 'respec' && (
-            <button className="rb-btn is-small" onClick={() => engine.openPanel('talents')}>
-              Talents
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A quest in a conversation, as WoW shows it: offered (its story, its steps, what it pays; Accept), handed in
+ * (the thanks and the reward; Complete), or a talk quest just paid.
+ */
+function QuestPage({ engine, kind, id, last }: { engine: SigilEngine; kind: 'offer' | 'handin' | 'paid'; id: string; last: boolean }) {
+  const h = engine.hero!;
+  const q = QUEST_DEFS[id]!;
+  const main = isMainQuest(id);
+  const rewards = questRewards(h, q);
+  const lines = kind === 'offer' ? (q.offer ?? [q.text]) : kind === 'handin' ? (q.thanks ?? [q.reward.text ?? 'You did what was asked. Thank you.']) : [q.reward.text ?? 'That is what I needed to hear.'];
+  return (
+    <div className="rb-qpage" key={`${kind}:${id}`}>
+      <span className={`rb-qpage-title${main ? ' is-main' : ' is-side'}`}>
+        <img src={mapIconUrl(kind === 'offer' ? (main ? 'offer' : 'offerSide') : main ? 'handin' : 'handinSide', 2)} alt="" />
+        {kind === 'offer' ? '' : 'Complete: '}
+        {q.name}
+        <em>{main ? 'Story' : 'Side quest'}</em>
+      </span>
+      <div className="rb-qpage-text">
+        {lines.map((l, i) => (
+          <p key={i}>{l}</p>
+        ))}
+        {kind === 'offer' && (
+          <ul className="rb-qpage-steps">
+            {questSteps(q).map((o, i) => (
+              <li key={i}>{o.label}</li>
+            ))}
+            {turnInNpc(q) && <li className="rb-dim">Return to {NPCS[turnInNpc(q)!]?.name}</li>}
+          </ul>
+        )}
+      </div>
+      {rewards.length > 0 && (
+        <div className="rb-qpage-rewards">
+          <span className="rb-kicker">{kind === 'offer' ? 'Reward' : 'You receive'}</span>
+          {rewards.map((r, i) => (
+            <span key={i} className={`rb-reward is-${r.kind}`} style={r.rarity ? { ['--rc' as string]: rarityColor(r.rarity) } : undefined}>
+              {r.text}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="rb-dialogue-actions">
+        {kind === 'offer' ? (
+          <>
+            <button className="rb-btn is-small" onClick={() => (last ? engine.closeDialogue() : engine.nextLine())}>
+              Not now
             </button>
-          )}
-          <button className={`rb-btn is-small${npc.shop ? '' : ' is-gold'}`} onClick={() => (last ? engine.closeDialogue() : engine.nextLine())} autoFocus={!npc.shop}>
+            <button className="rb-btn is-small is-gold" onClick={() => engine.acceptOffer()} autoFocus>
+              Accept
+            </button>
+          </>
+        ) : kind === 'handin' ? (
+          <button className="rb-btn is-small is-gold" onClick={() => engine.completeHandIn()} autoFocus>
+            Complete quest
+          </button>
+        ) : (
+          <button className="rb-btn is-small is-gold" onClick={() => (last ? engine.closeDialogue() : engine.nextLine())} autoFocus>
             {last ? 'Farewell' : 'Next ▸'}
           </button>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -472,7 +549,7 @@ function RotateHint({ engine }: { engine: SigilEngine }) {
     m.addEventListener('change', on);
     return () => m.removeEventListener('change', on);
   }, []);
-  if (!portrait || !engine.touchMode || engine.settings.rotateSeen) return null;
+  if (!portrait || !engine.touchMode || engine.turned || engine.settings.rotateSeen) return null;
   return (
     <div className="rb-modal is-dark">
       <div className="rb-card rb-rotate" role="dialog" aria-modal="true" aria-label="Turn your phone">

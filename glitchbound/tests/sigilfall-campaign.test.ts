@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { REGION_IDS, REGIONS } from '../src/games/sigilfall/data/regions';
 import { QUESTS } from '../src/games/sigilfall/data/quests';
 import type { RegionId } from '../src/games/sigilfall/data/types';
-import { acceptQuests, activeQuests, HOME, newCharacter, offeredBy, questState, startQuests, type Character } from '../src/games/sigilfall/progress/character';
+import { acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, HOME, newCharacter, offeredBy, questState, readyQuests, startQuests, type Character } from '../src/games/sigilfall/progress/character';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { flowField, flowStep, TILE } from '../src/games/sigilfall/sim/map';
@@ -51,10 +51,10 @@ function enter(walk: Walk, to: RegionId, from?: RegionId, tier = 0): void {
 
 function talk(walk: Walk, npc: string): void {
   const h = walk.hero;
-  // as the engine's talk: what they offer, the objective, then what that opened from the same person
-  const offers = acceptQuests(h, npc);
+  // as the engine's talk: the talk itself, then the pages: Complete on every hand-in, Accept on every offer
   walk.w.questProgress((o) => o.kind === 'talk' && o.npc === npc);
-  const taken = [...offers, ...acceptQuests(h, npc)];
+  for (const q of handInsFor(h, npc)) if (handInQuest(h, q.id)) walk.w.completeQuests([q]);
+  const taken = offeredBy(h, npc).flatMap((q) => acceptQuest(h, q.id) ?? []);
   if (taken.length) walk.w.creditEarly([...taken, ...startQuests(h)]);
 }
 
@@ -96,33 +96,37 @@ function beat(walk: Walk): boolean {
   const { hero: h } = walk;
   let w = walk.w;
   // tutorials are the training yard's: their own tests play them
-  for (const q of activeQuests(h)) if (q.objective.kind === 'tutorial') w.questProgress((o) => o === q.objective, q.objective.count);
+  for (const q of activeQuests(h)) {
+    const o = currentObjective(h, q);
+    if (o.kind === 'tutorial') w.questProgress((x) => x === o, o.count);
+  }
   // whoever has a "!" here is talked to
-  for (const n of w.npcs) if (offeredBy(h, n.id).length) {
+  for (const n of w.npcs) if (offeredBy(h, n.id).length || handInsFor(h, n.id).length) {
     walkTo(w, n.x, n.y + 10, 4000);
     talk(walk, n.id);
   }
   const t = objectiveTarget(w);
   if (t) walk.blank = 0;
   if (!t && !w.story.run) {
-    const active = activeQuests(h).filter((q) => q.objective.kind !== 'tutorial');
+    // (a quest waiting to be handed in counts: the arrow must lead to whoever takes it back)
+    const active = [...activeQuests(h).filter((q) => currentObjective(h, q).kind !== 'tutorial'), ...readyQuests(h)];
     if (active.length) {
       // talk quests: standing beside the person is the objective
-      const tq = active.find((q) => q.objective.kind === 'talk' && w.npcs.some((n) => n.id === (q.objective as { npc: string }).npc));
-      if (tq && tq.objective.kind === 'talk') {
-        talk(walk, tq.objective.npc);
+      const tq = active.map((q) => currentObjective(h, q)).find((o) => o.kind === 'talk' && w.npcs.some((n) => n.id === o.npc));
+      if (tq && tq.kind === 'talk') {
+        talk(walk, tq.npc);
         return true;
       }
       // a harder difficulty: the hero opens the map (any waystone) and picks it
-      const hard = active.find((q) => q.objective.kind === 'clear' && q.objective.tier > w.tier && q.objective.tier <= h.tier);
-      if (hard && hard.objective.kind === 'clear') {
-        enter(walk, hard.objective.region, undefined, hard.objective.tier);
+      const hard = active.map((q) => currentObjective(h, q)).find((o) => o.kind === 'clear' && o.tier > w.tier && o.tier <= h.tier);
+      if (hard && hard.kind === 'clear') {
+        enter(walk, hard.region, undefined, hard.tier);
         return true;
       }
       // a secret the arrow never shows (the Hidden Grove): the hero goes by the giver's hint
-      const secret = active.find((q) => q.objective.kind === 'explore' && !spotRegion(q.objective.spot));
-      if (secret && secret.objective.kind === 'explore') {
-        const id = secret.objective.spot;
+      const secretStep = active.map((q) => currentObjective(h, q)).find((o) => o.kind === 'explore' && !spotRegion(o.spot));
+      if (secretStep && secretStep.kind === 'explore') {
+        const id = secretStep.spot;
         const where = REGION_IDS.find((r) => [...Object.values(REGIONS[r].markers), ...(REGIONS[r].holds ? [] : (REGIONS[r].placed ?? []).map((m) => m.marker))].some((m) => 'id' in m && m.id === id));
         if (where && where !== w.region.id) {
           enter(walk, where, undefined);
@@ -190,13 +194,13 @@ function beat(walk: Walk): boolean {
     }
     // at a waystone the arrow led to: the map, and the difficulty a quest wants
     const stone = w.waystones.find((s) => Math.hypot(s.x - w.player.x, s.y - w.player.y) < 30);
-    const hard = activeQuests(h).find((q) => q.objective.kind === 'clear' && q.objective.tier > w.tier && q.objective.tier <= h.tier);
-    if (stone && hard && hard.objective.kind === 'clear') {
-      enter(walk, hard.objective.region, undefined, hard.objective.tier);
+    const hardStep = activeQuests(h).map((q) => currentObjective(h, q)).find((o) => o.kind === 'clear' && o.tier > w.tier && o.tier <= h.tier);
+    if (stone && hardStep && hardStep.kind === 'clear') {
+      enter(walk, hardStep.region, undefined, hardStep.tier);
       return true;
     }
     // at the person the arrow points to: the hero talks
-    const by = w.npcs.find((n) => Math.hypot(n.x - w.player.x, n.y - w.player.y) < 26 && activeQuests(h).some((q) => q.objective.kind === 'talk' && q.objective.npc === n.id));
+    const by = w.npcs.find((n) => Math.hypot(n.x - w.player.x, n.y - w.player.y) < 26 && (handInsFor(h, n.id).length > 0 || activeQuests(h).some((q) => { const o = currentObjective(h, q); return o.kind === 'talk' && o.npc === n.id; })));
     if (by) talk(walk, by.id);
   }
   // followers keep up (their own walking is the rescue tests')

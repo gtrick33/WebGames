@@ -412,6 +412,8 @@ export type WorldEvent =
   | { t: 'loot'; item: Item }
   | { t: 'levelup'; level: number }
   | { t: 'questDone'; quest: string }
+  | { t: 'questStep'; quest: string }
+  | { t: 'questReady'; quest: string }
   | { t: 'questStart'; quest: string }
   | { t: 'quest' }
   | { t: 'bossStart'; boss: string }

@@ -1,4 +1,6 @@
 import { useEffect, useRef, type PointerEvent as RPointerEvent } from 'react';
+import { toLocal, toLocalDelta } from './turn';
+import { slotLevel } from '../progress/character';
 import { skillCost } from '../sim/cast';
 import { CLASSES } from '../data/classes';
 import { SKILLS } from '../data/skills';
@@ -62,9 +64,8 @@ function Joystick({ engine }: { engine: SigilEngine }) {
   const rest = (): void => {
     const z = zone.current;
     if (!z) return;
-    const r = z.getBoundingClientRect();
     const bx = R + 28;
-    const by = r.height - R - 28;
+    const by = z.clientHeight - R - 28;
     place(bx, by, bx, by, false);
   };
   useEffect(rest);
@@ -113,17 +114,16 @@ function Joystick({ engine }: { engine: SigilEngine }) {
     e.preventDefault();
     const z = zone.current!;
     z.setPointerCapture(e.pointerId);
-    const r = z.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
+    // in the zone's own box (the game may be turned to landscape on a phone held upright: ui/turn.ts)
+    const { x, y } = toLocal(z, e.clientX, e.clientY);
     const fixed = s.joyMode === 'fixed';
-    st.current = { id: e.pointerId, bx: fixed ? R + 28 : x, by: fixed ? r.height - R - 28 : y };
+    st.current = { id: e.pointerId, bx: fixed ? R + 28 : x, by: fixed ? z.clientHeight - R - 28 : y };
     update(x, y);
   };
   const move = (e: RPointerEvent<HTMLDivElement>): void => {
     if (!st.current || e.pointerId !== st.current.id) return;
-    const r = zone.current!.getBoundingClientRect();
-    update(e.clientX - r.left, e.clientY - r.top);
+    const { x, y } = toLocal(zone.current!, e.clientX, e.clientY);
+    update(x, y);
   };
   const up = (e: RPointerEvent<HTMLDivElement>): void => {
     if (st.current && e.pointerId === st.current.id) release();
@@ -223,8 +223,8 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
   const move = (e: RPointerEvent<HTMLButtonElement>): void => {
     const pr = press.current;
     if (!pr || e.pointerId !== pr.id || slot === 'dodge') return;
-    const dx = e.clientX - pr.cx;
-    const dy = e.clientY - pr.cy;
+    // the drag in the game's own axes (turned to landscape, a finger's "up" on the glass is the game's left)
+    const { x: dx, y: dy } = toLocalDelta(e.clientX - pr.cx, e.clientY - pr.cy);
     const d = Math.hypot(dx, dy);
     if (!pr.aimed && d < AIM_DEADZONE) return;
     const spec = id ? w.build.skills[id]?.spec : undefined;
@@ -263,7 +263,9 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
   };
 
   const label = slot === 'basic' ? 'Attack' : slot === 'dodge' ? 'Dodge' : slot === 'ult' ? 'Ultimate' : `Skill ${slot.slice(1)}`;
-  const unlockAt = !id && slot === 'ult' ? SKILLS[cls.ult]!.unlock : !id ? Math.min(...cls.skills.map((s) => SKILLS[s]!.unlock).filter((u) => u > h.level).concat([99])) : 0;
+  // a slot not open yet shows the level it opens at; an open one the level of the next skill to learn
+  const opens = slotLevel(slot);
+  const unlockAt = !id && slot === 'ult' ? SKILLS[cls.ult]!.unlock : !id && h.level < opens ? opens : !id ? Math.min(...cls.skills.map((s) => SKILLS[s]!.unlock).filter((u) => u > h.level).concat([99])) : 0;
   return (
     <button
       ref={btn}

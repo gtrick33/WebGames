@@ -117,7 +117,7 @@ export const WARRIOR: Kit = {
     ),
     sk(
       'ultimate',
-      3,
+      8,
       'Earthsplitter',
       'Split the ground: a quake rolls forward and stuns everything in its path.',
       spec({ id: 'earthsplitter', cast: 'projectile', range: 165, cooldown: 0, damage: 90, windup: 0.25, speed: 230, radius: 13, pierce: 99, knock: 60, look: 'quake', onHit: [{ kind: 'status', status: 'stun', dur: 1.2, power: 1 }], tags: ['aoe', 'ultimate', 'melee'] }),

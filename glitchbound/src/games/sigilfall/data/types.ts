@@ -632,7 +632,7 @@ export type Theme =
  */
 export type StoryCond =
   /** 'taken': done, and not a path closed by another answer to its choice. */
-  | { quest: string; is: 'locked' | 'offered' | 'active' | 'done' | 'started' | 'taken' }
+  | { quest: string; is: 'locked' | 'offered' | 'active' | 'ready' | 'done' | 'started' | 'taken' }
   | { all: StoryCond[] }
   | { any: StoryCond[] }
   | { not: StoryCond };
@@ -817,6 +817,12 @@ export interface QuestDef {
   /** Shown in the quest log. */
   text: string;
   objective: Objective;
+  /** Further steps after the objective, one at a time (the quest log shows each as it comes). */
+  then?: Objective[];
+  /** Who it is handed in to (else the giver, when the giver is near where it is done: progress/handin.ts); false: it pays out at once. */
+  turnIn?: string | false;
+  /** What the one it is handed in to says, before the reward. */
+  thanks?: string[];
   /** Quests that must be done first (it starts by itself once they are). */
   after?: string[];
   /** Only once the hero has been to this region (its quests start when they first arrive). */
@@ -849,7 +855,7 @@ export interface NpcDef {
   title: string;
   sprite: string;
   /** Lines by quest state, first matching wins ('started': offered, active or done). */
-  talk: { when?: { quest: string; state: 'locked' | 'offered' | 'active' | 'done' | 'started' | 'taken' }; lines: string[] }[];
+  talk: { when?: { quest: string; state: 'locked' | 'offered' | 'active' | 'ready' | 'done' | 'started' | 'taken' }; lines: string[] }[];
   /** What the NPC offers besides talk. */
   service?: 'respec' | 'smith' | 'waystone';
   /** A vendor: the shop they open, and its name over the door (else the shop's own name). */

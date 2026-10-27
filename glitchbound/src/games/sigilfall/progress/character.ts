@@ -5,6 +5,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS, talentNode } from '../data/t
 import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SigilId, SkillIndex, SlotId } from '../data/types';
 import { itemClass, itemSlot, salvageValue } from './items';
 import { learnLooks, type LookSlot } from './wardrobe';
+import { questSteps, turnInNpc } from './handin';
 
 /**
  * A hero and everything that persists about them, plus the rules that change it: experience and
@@ -47,7 +48,8 @@ export const sigilCount = (c: Pick<Character, 'perks'>): number => c.perks.filte
 /** Health and power each sigil adds, in percent. */
 export const SIGIL_BONUS = 4;
 
-export type QuestState = 'locked' | 'offered' | 'active' | 'done';
+/** ready: the work is done, waiting to be handed in (progress/handin.ts). */
+export type QuestState = 'locked' | 'offered' | 'active' | 'ready' | 'done';
 
 /** Where every hero starts and returns: Briarhollow, the village of the Prologue and the resistance camp after it. */
 export const HOME = 'briarhollow' as const;
@@ -75,7 +77,9 @@ export interface Character {
   equip: Partial<Record<SlotId, Item>>;
   bag: Item[];
   potions: number;
-  quests: Record<string, { state: 'offered' | 'active' | 'done'; n: number }>;
+  quests: Record<string, { state: 'offered' | 'active' | 'ready' | 'done'; n: number; step?: number }>;
+  /** The quest the hero follows (the arrow and the tracker show it first). */
+  tracked?: string;
   unlocked: RegionId[];
   /** Highest difficulty tier open (0 Normal, 1 Heroic, 2 Mythic). */
   tier: number;
@@ -91,6 +95,8 @@ export interface Character {
   worn: Partial<Record<LookSlot, string>>;
   /** Has been jumped to a story beat with a review preset (progress/presets.ts): sends no arcade scores. */
   review?: boolean;
+  /** Man or woman, chosen at the start (the hero's face and hair; nothing else changes). */
+  body: Body;
   /** Fog of war: each land's explored parts (progress/fog.ts). */
   seen: Partial<Record<RegionId, string>>;
   /** Mounts owned for good, and the one the mount key summons. */
@@ -101,7 +107,9 @@ export interface Character {
   updated: number;
 }
 
-export function newCharacter(cls: ClassId, name: string, id: string, now = Date.now()): Character {
+export type Body = 'm' | 'f';
+
+export function newCharacter(cls: ClassId, name: string, id: string, now = Date.now(), body: Body = 'm'): Character {
   const def = CLASSES[cls];
   const c: Character = {
     id,
@@ -129,6 +137,7 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     perks: [],
     looks: [],
     worn: {},
+    body,
     seen: {},
     mounts: [],
     mount: null,
@@ -177,13 +186,19 @@ export function learnedSkills(c: Character): string[] {
 export const hasUltimate = (c: Character): boolean => (SKILLS[CLASSES[c.cls].ult]?.unlock ?? 99) <= c.level;
 
 /** New skills go into an empty slot by themselves, so a new player never has to visit a menu to use them. */
+/** The level each skill slot opens at (Q, E, R and the fourth): the bar grows with the hero, not all at once. */
+export const SLOT_LEVELS = [1, 5, 10, 15] as const;
+export const slotOpen = (c: Character, slot: SkillIndex): boolean => c.level >= SLOT_LEVELS[slot];
+/** The level a bar slot opens at (0 for the ones always there). */
+export const slotLevel = (slot: string): number => ({ s1: SLOT_LEVELS[0], s2: SLOT_LEVELS[1], s3: SLOT_LEVELS[2], s4: SLOT_LEVELS[3] })[slot] ?? 0;
+
 export function autoSlotSkills(c: Character): void {
   // a shape that belongs to another specialization (a Balance druid's Cat Form) stays learned, off the bar
   const forms = CLASSES[c.cls].forms ?? [];
   const offSpec = (id: string): boolean => c.spec !== null && forms.some((f) => f.skill === id && f.specSwap !== undefined && f.specSwap.tree !== c.spec);
   for (const id of learnedSkills(c)) {
     if (c.skills.includes(id) || offSpec(id)) continue;
-    const free = c.skills.indexOf(null);
+    const free = c.skills.findIndex((s, i) => s === null && slotOpen(c, i as SkillIndex));
     if (free >= 0) c.skills[free] = id;
   }
 }
@@ -191,6 +206,7 @@ export function autoSlotSkills(c: Character): void {
 /** Puts a skill in a slot; if it was in another slot, the two swap. */
 export function setSkill(c: Character, slot: SkillIndex, id: string | null): boolean {
   if (id !== null && !learnedSkills(c).includes(id)) return false;
+  if (id !== null && !slotOpen(c, slot)) return false;
   const other = id === null ? -1 : c.skills.indexOf(id);
   if (other >= 0) c.skills[other] = c.skills[slot];
   c.skills[slot] = id;
@@ -348,17 +364,18 @@ export function questState(c: Character, id: string): QuestState {
 }
 
 /**
- * Whether a quest waits for the hero to accept it from its giver: the first quest of a giver's chain
- * does (a "!" over their head), the next steps of the same giver's chain carry on by themselves, and the
- * story's own beats and the tutorials (`auto`) always start at once. This ends quests turning up in the
- * log uninvited (blueprint §8).
+ * Whether a quest waits for the hero to accept it from its giver (a "!" over their head, the quest's page with
+ * its reward, Accept): every quest the giver hands out in person (blueprint §8, "like WoW"). The story's own
+ * beats and the tutorials (`auto`) start at once, and so does a next step whose giver is far away when the
+ * last one ends (a chain carried on by letter), so nobody has to walk back across the world to say yes.
  */
 export function needsAccept(q: QuestDef): boolean {
   // a choice is always the hero's to make
   if (q.choice) return true;
   if (q.auto) return false;
-  const after = q.after ?? [];
-  return !after.some((id) => QUEST_DEFS[id]?.giver === q.giver);
+  const before = (q.after ?? []).map((id) => QUEST_DEFS[id]).filter((p): p is QuestDef => !!p && p.giver === q.giver);
+  // the first of a giver's chain is offered; the next, if the last one was handed back to them
+  return before.length === 0 || before.some((p) => turnInNpc(p) === q.giver);
 }
 
 /**
@@ -419,30 +436,81 @@ export function acceptAll(c: Character): void {
 }
 
 export const activeQuests = (c: Character): QuestDef[] => QUESTS.filter((q) => questState(c, q.id) === 'active');
+/** Quests whose work is done, waiting to be handed in. */
+export const readyQuests = (c: Character): QuestDef[] => QUESTS.filter((q) => questState(c, q.id) === 'ready');
 
-/** How far along a quest is, and its goal. */
+/** The step a quest is on (its objective, or one of its further steps). */
+export function currentObjective(c: Character, q: QuestDef): Objective {
+  const steps = questSteps(q);
+  return steps[Math.min(steps.length - 1, c.quests[q.id]?.step ?? 0)]!;
+}
+
+/** How far along a quest's current step is, and its goal. */
 export function questProgress(c: Character, q: QuestDef): { n: number; of: number } {
   const n = c.quests[q.id]?.n ?? 0;
-  const o = q.objective;
+  const o = currentObjective(c, q);
   const of = o.kind === 'kill' || o.kind === 'tutorial' || o.kind === 'collect' || o.kind === 'loot' ? o.count : 1;
   return { n: Math.min(n, of), of };
 }
 
-/** Something happened that quests may count. Returns the quests it completed (rewards are the caller's job). */
-export function questEvent(c: Character, match: (o: Objective) => boolean, amount = 1): QuestDef[] {
-  const done: QuestDef[] = [];
+export interface QuestNews {
+  /** Finished, to be paid now. */
+  done: QuestDef[];
+  /** Finished, to be handed in. */
+  ready: QuestDef[];
+  /** On to their next step. */
+  stepped: QuestDef[];
+}
+
+/**
+ * Something happened that quests may count, on their current step. A finished step leads to the next; the
+ * last one finishes the quest: ready to hand in (`handIn`: turnInNpc) or done at once. Rewards are the caller's.
+ */
+export function questEvent(c: Character, match: (o: Objective) => boolean, amount = 1, handIn: (q: QuestDef) => string | null = turnInNpc): QuestNews {
+  const news: QuestNews = { done: [], ready: [], stepped: [] };
   for (const q of activeQuests(c)) {
-    if (!match(q.objective)) continue;
+    if (!match(currentObjective(c, q))) continue;
     const entry = c.quests[q.id]!;
     entry.n += amount;
     const { of } = questProgress(c, q);
-    if (entry.n >= of) {
+    if (entry.n < of) continue;
+    const step = (entry.step ?? 0) + 1;
+    if (step < questSteps(q).length) {
+      entry.step = step;
+      entry.n = 0;
+      news.stepped.push(q);
+    } else if (handIn(q)) {
+      entry.state = 'ready';
+      entry.n = of;
+      news.ready.push(q);
+    } else {
       entry.state = 'done';
       entry.n = of;
-      done.push(q);
+      news.done.push(q);
     }
   }
-  return done;
+  return news;
+}
+
+/** Hands a finished quest in: it is done (the caller pays the reward). */
+export function handInQuest(c: Character, id: string): QuestDef | null {
+  const e = c.quests[id];
+  if (e?.state !== 'ready') return null;
+  e.state = 'done';
+  if (c.tracked === id) delete c.tracked;
+  return QUEST_DEFS[id] ?? null;
+}
+
+/** The quests an NPC takes back (finished, to be handed in to them). */
+export const handInsFor = (c: Character, npc: string): QuestDef[] => readyQuests(c).filter((q) => turnInNpc(q) === npc);
+
+/** Accepts one quest an NPC offers; returns it, or null when it is no longer offered. */
+export function acceptQuest(c: Character, id: string): QuestDef | null {
+  const q = QUEST_DEFS[id];
+  if (!q || questState(c, id) !== 'offered') return null;
+  c.quests[id] = { state: 'active', n: 0 };
+  closeChoice(c, q);
+  return q;
 }
 
 export const questDef = (id: string): QuestDef | undefined => QUEST_DEFS[id];
@@ -459,6 +527,15 @@ export function questRegion(q: QuestDef): RegionId | undefined {
  * (the story comes first in the list).
  */
 export function trackedQuest(c: Character, here?: RegionId): QuestDef | undefined {
-  const list = activeQuests(c);
+  // the one the hero chose to follow, while it lasts
+  const chosen = c.tracked ? QUEST_DEFS[c.tracked] : undefined;
+  if (chosen && (questState(c, chosen.id) === 'active' || questState(c, chosen.id) === 'ready')) return chosen;
+  const list = QUESTS.filter((q) => questState(c, q.id) === 'active' || questState(c, q.id) === 'ready');
   return (here && list.find((q) => questRegion(q) === here)) || list[0];
+}
+
+/** Follows a quest (null: back to following the story). */
+export function trackQuest(c: Character, id: string | null): void {
+  if (id && (questState(c, id) === 'active' || questState(c, id) === 'ready')) c.tracked = id;
+  else delete c.tracked;
 }

@@ -143,7 +143,7 @@ export const PALADIN: Kit = {
     ),
     sk(
       'ultimate',
-      3,
+      8,
       'Avenging Wrath',
       'Wings of light: a holy blast around you, then +30% damage and 2% of your health back every second for 15 seconds.',
       spec({

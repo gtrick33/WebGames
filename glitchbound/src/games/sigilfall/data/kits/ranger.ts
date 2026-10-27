@@ -122,7 +122,7 @@ export const RANGER: Kit = {
       }),
     ),
     sk('skill', 10, 'Call Wolf', 'Whistle up your wolf. It fights at your side until it falls; calling again heals it.', spec({ id: 'call-wolf', cast: 'summon', aim: 'self', cooldown: 12, onCast: [{ kind: 'summon', pet: 'wolf', count: 1, dur: 0 }], tags: ['pet'] })),
-    sk('ultimate', 3, 'Rain of Arrows', 'Arrows pour down on an area for a few seconds.', spec({ id: 'arrow-rain', cast: 'ground', aim: 'ground', range: 135, cooldown: 0, damage: 10, area: 42, duration: 2.4, tick: 0.2, look: 'arrows', tags: ['aoe', 'ultimate'] })),
+    sk('ultimate', 8, 'Rain of Arrows', 'Arrows pour down on an area for a few seconds.', spec({ id: 'arrow-rain', cast: 'ground', aim: 'ground', range: 135, cooldown: 0, damage: 10, area: 42, duration: 2.4, tick: 0.2, look: 'arrows', tags: ['aoe', 'ultimate'] })),
     sk('dodge', 1, 'Tumble', 'Roll out of the way. Two charges.', spec({ id: 'tumble', cast: 'dash', range: 56, cooldown: 4.5, charges: 2, duration: 0.2, tags: ['movement', 'dodge'] })),
   ],
   talents: [

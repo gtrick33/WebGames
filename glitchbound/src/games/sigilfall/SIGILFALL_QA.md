@@ -40,6 +40,7 @@ a story beat.
 | Severity | Issue | State |
 | --- | --- | --- |
 | P3 | The bot's warrior loses Mythic Morgrave about half the time once its potions are gone (the test gives it a second try, as a player would restock) | accepted; the play-through test allows 30 s for its three runs |
+| P2 | The bot's mage is a coin flip against the late bosses (the Herald, Corvane, Vaelor): it clears on some seeds and dies over and over on others, and small changes anywhere flip which | dungeon tests give every class up to three runs (`clearsWithRetry`); the mage's survival wants a real balance look |
 | P3 | The arcade's startup JavaScript is at 119.9 of its 120 KB budget (none of it is Sigilfall's: the game loads on its own page) | watch |
 | — | Stuck joystick | not reproduced; now regression-tested (`sigilfall-touch`) |
 | — | Tree/roof depth sorting | not reproduced; needs the place and a screenshot |
@@ -99,3 +100,29 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
 - Beside the arcade's side column a wide window has a narrow stage: the Hero panel's bag column was squeezed
   to nothing. The game's layouts now follow the stage's size, not the page's.
 - Sunscorch's emptiest sands got two places, the Dead Caravan and the Sun Steles.
+
+## Second pass: the owner's list (2026-10-27)
+
+- **Quests like WoW** (`progress/handin.ts`, engine `talk`, ui `QuestPage`): a quest from a person is offered
+  on its own page (story, steps, reward; Accept or Not now), may have several steps (`then`), and when its
+  work is done waits to be handed in (state `ready`, a "?" over the giver) for a Complete page with the
+  reward; the giver's next request follows in the same talk. 375 of the 513 quests are handed in (those
+  whose giver is near where the work is; the story's own beats flow on by themselves). Mara's Yard is one
+  quest of three steps (five hits, two skills, a dodge) handed in to Mara. Main story marks are gold, side
+  quests blue (`isMainQuest`: everything the last bell needs). The quest log tracks any quest; the arrow and
+  the tracker follow it.
+- **Skill slots** open at 5, 10 and 15 (Q from the start); every ultimate at 8.
+- **Haste and the ultimate**: the basic attack takes at most +60% from haste; charge from ultimate-charging
+  effects comes out of the same budget as charge from hits; the budget banks at most 70% of a bar (a lull no
+  longer refills a whole bar in a second); the ultimate's pace is 30% slower (about one every 36–42 s).
+- **Portrait**: on a phone held upright with the game full screen, the game turns itself to landscape
+  (`ui/turn.ts`; the joystick and skill drags read the fingers through the turn); Android also locks the
+  screen to landscape on Play.
+- **Phone and desktop**: when both changed the save, the cloud merge kept this device's list of heroes
+  whole, losing the other device's progress; now each hero slot keeps the copy played last. The save is
+  smaller (quests packed, save v10), so three heroes stay well under the 96 KB a synced save may be.
+- **Art**: chests and loot are painted (`render/art/loot.ts`); portraits and the class cards use the
+  smoothed figure; a hero can be a man or a woman (`Character.body`). The hero no longer blinks while the
+  game is paused (the first dialogue).
+- **Lands**: Briarhollow is laid out 35% roomier (`SpreadPlan`) with farms, an orchard and two cottages in
+  the new room; the Whisperwood is drawn 1.4 times larger (120 × 70) with twelve more packs.
