@@ -2341,3 +2341,22 @@ img.pt-feature-art {
   background: var(--yellow, #ffc928);
   color: #1d1238;
 }
+
+/* One list of every party game: each card carries the ways it can be played. */
+.pt-game .pt-mode-body {
+  align-content: start;
+  flex: 1;
+}
+.pt-game-ctas {
+  display: grid;
+  gap: 6px;
+}
+.pt-game-ctas .pt-btn {
+  width: 100%;
+  min-height: 42px;
+  padding: 6px 10px;
+  font-size: 15px;
+}
+.pt-game-ctas .pt-btn.is-waiting {
+  opacity: 0.85;
+}
