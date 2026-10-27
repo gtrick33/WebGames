@@ -29,7 +29,10 @@ import { recentSlugs } from '../platform/save';
 // The leaderboard tab loads its data from the network anyway, so its code comes with it (its styles stay
 // in the main sheet: admin tables share them).
 import '../components/Leaderboard.css';
-const MiniLeaderboard = lazy(fresh(() => import('../components/Leaderboard').then((m) => ({ default: m.MiniLeaderboard }))));
+// Its code starts loading with the game page's own, so the board is there at the first paint instead of
+// growing into the column a moment later and pushing everything under it down.
+const MiniLeaderboard = lazyPage(() => import('../components/Leaderboard').then((m) => m.MiniLeaderboard));
+void MiniLeaderboard.preload()?.catch(() => undefined);
 const DailyCompare = lazy(fresh(() => import('../components/DailyCompare').then((m) => ({ default: m.DailyCompare }))));
 import { openSignIn } from '../components/openSignIn';
 import { setGuestName, usePlayerName } from '../platform/playerName';
@@ -50,6 +53,7 @@ import { Link, navigate, useLocation } from '../router/router';
 import { AdultLabel } from '../components/AdultLabel';
 import './GamePage.css';
 import { fresh } from '../platform/freshBuild';
+import { lazyPage } from '../platform/lazyPage';
 
 interface LastRound {
   event: EndEvent;
@@ -862,22 +866,23 @@ function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRec
     <section className="panel side-block game-info" aria-labelledby={`gi-${tab}`}>
       <div className="gi-tabs" role="tablist" aria-label={t('{game} details', { game: game.title })}>
         {tabs.map((x) => (
-          <button key={x.id} id={`gi-${x.id}`} role="tab" aria-selected={tab === x.id} aria-controls="gi-panel" className={`gi-tab${tab === x.id ? ' is-on' : ''}`} onClick={() => setTab(x.id)}>
+          <button key={x.id} id={`gi-${x.id}`} role="tab" aria-selected={tab === x.id} aria-controls={`gi-panel-${x.id}`} className={`gi-tab${tab === x.id ? ' is-on' : ''}`} onClick={() => setTab(x.id)}>
             <Icon name={x.icon} size={16} /> {x.label}
           </button>
         ))}
       </div>
-      <div key={tab} id="gi-panel" role="tabpanel" className="gi-panel">
-        {tab === 'board' && (
-          // If the board's code can't load (offline), only this tab says so: the game keeps running.
+      {/* Both panels share one spot, so the box is as tall as the taller one and switching tabs moves nothing under it. */}
+      <div className="gi-panels">
+        <div id="gi-panel-board" role="tabpanel" aria-labelledby="gi-board" aria-hidden={tab !== 'board'} inert={tab !== 'board'} className={`gi-panel${tab === 'board' ? ' is-on' : ''}`}>
+          {/* If the board's code can't load (offline), only this tab says so: the game keeps running. */}
           <ErrorBoundary fallback={() => <p className="side-muted">{t('The leaderboard is offline right now. Your game still works.')}</p>}>
             <Suspense fallback={<p className="side-muted">{t('Loading…')}</p>}>
               <MiniLeaderboard game={game} refreshKey={boardKey} embedded />
             </Suspense>
           </ErrorBoundary>
-        )}
-        {tab === 'bests' &&
-          (record ? (
+        </div>
+        <div id="gi-panel-bests" role="tabpanel" aria-labelledby="gi-bests" aria-hidden={tab !== 'bests'} inert={tab !== 'bests'} className={`gi-panel${tab === 'bests' ? ' is-on' : ''}`}>
+          {record ? (
             <dl className="bests">
               {game.stats.map((st) => (
                 <div key={st.key}>
@@ -895,7 +900,8 @@ function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRec
             </dl>
           ) : (
             <p className="side-muted">{t('Finish a round to set your first record. Bests are saved on this device only.')}</p>
-          ))}
+          )}
+        </div>
       </div>
     </section>
   );

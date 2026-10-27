@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { t, useT } from '../i18n';
 import type { GameEntry } from '../catalog/types';
 import type { HallRow, LeaderRow } from '../platform/apiTypes';
@@ -47,13 +47,20 @@ function useRequest<T>(path: string, deps: unknown[], pick: (data: unknown) => {
   return { ...state, retry };
 }
 
-/** A game's board: the members' best scores and the house rivals (platform/rivals.ts), ranked together. */
+/**
+ * A game's board: the members' best scores and the house rivals (platform/rivals.ts), ranked together. The
+ * rivals need no server, so until the members' scores arrive (or when they can't) the board holds the rivals
+ * alone: it shows at once, at its full height, and nothing below it jumps when the scores come in.
+ */
 export function useBoard(game: string, period: Period, refreshKey = 0): BoardState<BoardRow> {
   const { me } = useAccount();
-  return useRequest<BoardRow>(`/api/leaderboard?game=${encodeURIComponent(game)}&period=${period}`, [refreshKey, me?.id], (r) => {
+  const day = dayKey();
+  const board = useRequest<BoardRow>(`/api/leaderboard?game=${encodeURIComponent(game)}&period=${period}`, [refreshKey, me?.id], (r) => {
     const d = r as { rows: LeaderRow[]; mine: LeaderRow | null };
-    return withRivals(game, period, dayKey(), d.rows, d.mine);
+    return withRivals(game, period, day, d.rows, d.mine);
   });
+  const field = useMemo(() => withRivals(game, period, day, [], null).rows, [game, period, day]);
+  return board.status === 'ok' ? board : { ...board, rows: field, mine: null };
 }
 
 export function useHall(): BoardState<HallRow> {
@@ -194,18 +201,18 @@ export function MiniLeaderboard({ game, refreshKey, embedded = false }: { game: 
   const { me } = useAccount();
   const board = useBoard(game.slug, 'all', refreshKey);
   const best = useSave().games[game.slug]?.best.score ?? 0;
+  const top = board.rows.slice(0, 5);
   const body = (
     <>
-      {board.status === 'loading' && <p className="side-muted">{t('Loading…')}</p>}
+      {board.status === 'loading' && !top.length && <p className="side-muted">{t('Loading…')}</p>}
+      {top.length ? (
+        <LeaderTable rows={top} mine={top.some((r) => r.you) ? null : (board.rows.find((r) => r.you) ?? board.mine)} compact />
+      ) : (
+        board.status === 'ok' && <BoardEmpty text="No ranked scores yet. The first one takes the crown." />
+      )}
       {board.status === 'error' && <BoardError text="The leaderboard is offline right now. Your game still works." onRetry={board.retry} />}
-      {board.status === 'ok' &&
-        (board.rows.length ? (
-          <LeaderTable rows={board.rows.slice(0, 5)} mine={board.rows.slice(0, 5).some((r) => r.you) ? null : (board.rows.find((r) => r.you) ?? board.mine)} compact />
-        ) : (
-          <BoardEmpty text="No ranked scores yet. The first one takes the crown." />
-        ))}
-      {board.status === 'ok' && board.rows.some((r) => r.rival) && <RivalsNote />}
-      {board.status === 'ok' && !me && best > 0 && (
+      {board.rows.some((r) => r.rival) && <RivalsNote />}
+      {top.length > 0 && !me && best > 0 && (
         <button className="board-claim" onClick={() => openSignIn(t('Sign in to put your scores on the leaderboard.'))}>
           <Icon name="crown" size={16} /> {t('Your best, {n}, would be #{rank} here. Sign in to claim it.', { n: fmt(best), rank: fmt(wouldRank(game.slug, dayKey(), best)) })}
         </button>

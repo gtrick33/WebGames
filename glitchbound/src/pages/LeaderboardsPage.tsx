@@ -35,10 +35,15 @@ function GameBoard({ slug }: { slug: string }) {
           </button>
         </div>
       </div>
-      {board.status === 'loading' && <p className="info-small">{t('Loading…')}</p>}
+      {board.status === 'loading' && !board.rows.length && <p className="info-small">{t('Loading…')}</p>}
+      {/* the rivals show while the members' scores load (useBoard), so the board never jumps */}
+      {board.rows.length ? (
+        <LeaderTable rows={board.rows} mine={board.mine} unit={unit ? ` ${t(unit)}` : ''} />
+      ) : (
+        board.status === 'ok' && <BoardEmpty text={t('No ranked scores in this period yet.')} />
+      )}
       {board.status === 'error' && <BoardError text={t('The leaderboard is offline right now.')} onRetry={board.retry} />}
-      {board.status === 'ok' && (board.rows.length ? <LeaderTable rows={board.rows} mine={board.mine} unit={unit ? ` ${t(unit)}` : ''} /> : <BoardEmpty text={t('No ranked scores in this period yet.')} />)}
-      {board.status === 'ok' && board.rows.some((r) => r.rival) && <RivalsNote />}
+      {board.rows.some((r) => r.rival) && <RivalsNote />}
       <p className="info-small">{t('Best score per member. Scores are checked against real play time; rounds played as a guest are not ranked.')}</p>
     </div>
   );
