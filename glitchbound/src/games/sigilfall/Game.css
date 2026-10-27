@@ -915,6 +915,42 @@
   width: min(290px, 40cqw);
   pointer-events: none;
 }
+/* on touch the left thumb owns the bottom-left and the hero the middle: news shows in the gap at the top
+   between the hero's frame and the menu, a line each, lets touches through (it goes by itself) and keeps to
+   the two newest */
+.rb-ui.is-touch .rb-toasts {
+  top: calc(6px + var(--sa-t));
+  left: 50%;
+  gap: 3px;
+  width: min(200px, 23cqw);
+  transform: translateX(-50%);
+}
+.rb-ui.is-touch .rb-toast {
+  padding: 3px 7px;
+  pointer-events: none;
+}
+.rb-ui.is-touch .rb-toast:nth-last-child(n + 3) {
+  display: none;
+}
+.rb-ui.is-touch .rb-toast-text > * {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+}
+.rb-ui.is-touch .rb-toast-text > strong {
+  font-size: 12px;
+}
+.rb-ui.is-touch .rb-toast img {
+  width: 20px;
+  height: 20px;
+}
+@container rb-stage (max-width: 560px) {
+  .rb-ui.is-touch .rb-toasts {
+    top: calc(44px + var(--sa-t));
+    width: calc(100% - 16px);
+  }
+}
 .rb-toast {
   display: flex;
   align-items: center;
