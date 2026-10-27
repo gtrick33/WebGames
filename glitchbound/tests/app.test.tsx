@@ -102,7 +102,7 @@ describe('routing', () => {
 
   it('opens the About and Contact pages from the footer', async () => {
     renderAt('/');
-    const footer = screen.getByRole('navigation', { name: 'Footer' });
+    const footer = await screen.findByRole('navigation', { name: 'Footer' });
     fireEvent.click(within(footer).getByRole('link', { name: 'About' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Small games. Big obsessions.' })).toBeTruthy();
     fireEvent.click(within(screen.getByRole('navigation', { name: 'Footer' })).getByRole('link', { name: 'Contact' }));
