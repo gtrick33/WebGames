@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Holiday } from '../platform/seasons';
 import { matchRoute, useLocation } from '../router/router';
 import { SKINS } from './seasonSkins';
+import { SeasonScene } from './SeasonScene';
 import './SeasonDecor.css';
 import './SeasonSkins.css';
 
@@ -18,7 +19,8 @@ const SPOTS: [number, number, number, number][] = [
 ];
 
 /**
- * The holiday's floating decorations (and Halloween's bats). Loaded only while a holiday is on.
+ * The holiday's scenery and its little events (SeasonScene.tsx), its floating decorations, and Halloween's
+ * bats. Loaded only while a holiday is on.
  * On the arcade and party pages, cards and buttons get the holiday's art too (seasonSkins.ts).
  */
 export default function SeasonDecor({ holiday }: { holiday: Holiday }) {
@@ -38,6 +40,7 @@ export default function SeasonDecor({ holiday }: { holiday: Holiday }) {
   }, [holiday.id, skin]);
   return (
     <>
+      <SeasonScene id={holiday.id} />
       <div className="season-decor" aria-hidden="true">
         {SPOTS.map(([left, delay, dur, size], i) => (
           <span key={i} style={{ left: `${left}%`, animationDelay: `-${delay}s`, animationDuration: `${dur}s`, fontSize: size }}>

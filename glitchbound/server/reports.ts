@@ -75,7 +75,11 @@ export function parseBug(body: Record<string, unknown> | null): BugInput | BugEr
 
 /** How many rows this visitor (or member) added to a table today. */
 export async function countToday(env: Env, table: 'feedback' | 'bug_reports', visitor: string, userId: string | null, now: number): Promise<number> {
-  const since = now - 86400_000;
+  return countSince(env, table, visitor, userId, now - 86400_000);
+}
+
+/** How many rows this visitor (or member) added to a table since a moment. */
+export async function countSince(env: Env, table: 'feedback' | 'bug_reports', visitor: string, userId: string | null, since: number): Promise<number> {
   const row = await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE ts > ? AND (visitor = ? OR (user_id IS NOT NULL AND user_id = ?))`)
     .bind(since, visitor, userId ?? '')
     .first<{ n: number }>();

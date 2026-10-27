@@ -1,0 +1,332 @@
+/* Holiday scenery (SeasonScene.tsx): a fixed layer behind the page content, over the background blobs
+   and under the floating decorations. Nothing here ever takes a click. */
+.season-scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.season-scene > * {
+  position: absolute;
+}
+
+/* ------------------------------------------------------------------ backdrops */
+.sc-glow {
+  inset: 0;
+}
+.sc-glow-dusk {
+  background:
+    radial-gradient(1200px 380px at 50% 112%, rgb(255 122 26 / 0.22), transparent 70%),
+    radial-gradient(900px 420px at 15% -8%, rgb(157 78 221 / 0.16), transparent 70%);
+}
+.sc-glow-rose {
+  background:
+    radial-gradient(700px 500px at 0% 100%, rgb(255 79 154 / 0.16), transparent 70%),
+    radial-gradient(700px 500px at 100% 0%, rgb(255 143 184 / 0.16), transparent 70%);
+}
+.sc-glow-gold {
+  background: radial-gradient(1300px 420px at 50% 110%, rgb(255 183 3 / 0.2), transparent 70%);
+}
+
+/* Halloween: a big pale moon rising at the right edge (in the margin, not behind the content), its glow spilling */
+.sc-moon {
+  top: calc(var(--header-h, 68px) + 40px);
+  right: -48px;
+  width: clamp(90px, 11vw, 150px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 38%, rgb(0 0 0 / 0.07) 0 9%, transparent 10%),
+    radial-gradient(circle at 62% 64%, rgb(0 0 0 / 0.06) 0 12%, transparent 13%),
+    radial-gradient(circle at 70% 30%, rgb(0 0 0 / 0.05) 0 6%, transparent 7%),
+    radial-gradient(circle at 40% 35%, #fffbe6, #ffe9a8 60%, #f4c46a);
+  box-shadow:
+    0 0 40px 10px rgb(255 214 120 / 0.35),
+    0 0 120px 40px rgb(255 150 60 / 0.15);
+  opacity: 0.75;
+}
+
+/* Winter: northern lights along the top, a snowdrift along the bottom */
+.sc-aurora {
+  top: var(--header-h, 68px);
+  left: -10%;
+  right: -10%;
+  height: 46vh;
+  background:
+    radial-gradient(60% 50% at 30% 20%, rgb(80 255 200 / 0.18), transparent 70%),
+    radial-gradient(50% 45% at 70% 30%, rgb(120 160 255 / 0.16), transparent 70%),
+    radial-gradient(40% 40% at 50% 10%, rgb(190 120 255 / 0.12), transparent 70%);
+  filter: blur(8px);
+  animation: sc-aurora 18s ease-in-out infinite alternate;
+}
+@keyframes sc-aurora {
+  to { transform: translateX(6%) skewX(-6deg); opacity: 0.7; }
+}
+.sc-drift {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 70px;
+  background:
+    radial-gradient(60px 34px at 6% 100%, #fff 98%, transparent) ,
+    radial-gradient(90px 40px at 20% 100%, #f4f9ff 98%, transparent),
+    radial-gradient(70px 30px at 36% 100%, #fff 98%, transparent),
+    radial-gradient(110px 44px at 54% 100%, #f4f9ff 98%, transparent),
+    radial-gradient(80px 34px at 72% 100%, #fff 98%, transparent),
+    radial-gradient(100px 42px at 90% 100%, #f4f9ff 98%, transparent),
+    linear-gradient(transparent 70%, #fff 70%);
+  filter: drop-shadow(0 -2px 3px rgb(80 130 200 / 0.25));
+  opacity: 0.9;
+}
+
+/* Lunar New Year: red lanterns hanging under the header, swaying */
+.sc-lantern {
+  top: var(--header-h, 68px);
+  width: 34px;
+  height: 92px;
+  margin-left: -17px;
+  transform-origin: top center;
+  animation: sc-sway 4.5s ease-in-out infinite alternate;
+  background:
+    linear-gradient(#c8961e, #c8961e) 50% 0 / 1.5px 38px no-repeat,
+    radial-gradient(ellipse 17px 21px at 50% 62%, #ff5a4a, #c81e2a 70%, #8a0e18 100%) 50% 100% / 34px 46px no-repeat,
+    linear-gradient(#ffc928, #ffc928) 50% 44px / 18px 4px no-repeat,
+    linear-gradient(#ffc928, #ffc928) 50% 90px / 18px 4px no-repeat;
+  filter: drop-shadow(0 0 10px rgb(255 90 60 / 0.55));
+  opacity: 0.85;
+}
+@keyframes sc-sway {
+  from { transform: rotate(-5deg); }
+  to { transform: rotate(5deg); }
+}
+
+/* Diwali: a row of little oil lamps along the bottom, their flames flickering */
+.sc-lamps {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40px;
+}
+.sc-lamp {
+  position: absolute;
+  bottom: 6px;
+  width: 26px;
+  height: 12px;
+  border-radius: 0 0 14px 14px;
+  background: linear-gradient(#e0904a, #a8582a);
+  box-shadow: inset 0 2px 0 rgb(255 220 160 / 0.6);
+}
+.sc-lamp::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  width: 8px;
+  height: 14px;
+  border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
+  background: radial-gradient(ellipse at 50% 70%, #fff6c8, #ffc928 45%, #ff7a1a 90%);
+  box-shadow: 0 0 14px 4px rgb(255 183 3 / 0.55);
+  transform: translateX(-50%);
+  transform-origin: bottom center;
+  animation: sc-flicker 1.4s ease-in-out infinite alternate;
+  animation-delay: inherit;
+}
+@keyframes sc-flicker {
+  0% { transform: translateX(-50%) scale(1, 1) rotate(-3deg); }
+  50% { transform: translateX(-50%) scale(0.9, 1.12) rotate(2deg); }
+  100% { transform: translateX(-50%) scale(1.06, 0.94) rotate(-1deg); }
+}
+
+/* Easter: a strip of meadow with flowers along the bottom */
+.sc-meadow {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 54px;
+  background:
+    radial-gradient(4px 4px at 8% 40%, #ffd23f 98%, transparent),
+    radial-gradient(4px 4px at 23% 55%, #ff8fb8 98%, transparent),
+    radial-gradient(4px 4px at 41% 35%, #b8a1ff 98%, transparent),
+    radial-gradient(4px 4px at 58% 50%, #fff 98%, transparent),
+    radial-gradient(4px 4px at 77% 38%, #ffd23f 98%, transparent),
+    radial-gradient(4px 4px at 92% 52%, #ff8fb8 98%, transparent),
+    radial-gradient(120px 40px at 10% 100%, #8fd65a 98%, transparent),
+    radial-gradient(160px 46px at 35% 100%, #9be15d 98%, transparent),
+    radial-gradient(140px 40px at 62% 100%, #8fd65a 98%, transparent),
+    radial-gradient(170px 48px at 88% 100%, #9be15d 98%, transparent),
+    linear-gradient(transparent 62%, #8fd65a 62%);
+  opacity: 0.8;
+}
+
+/* Summer: a warm sun in the corner and the sea along the bottom */
+.sc-sun {
+  top: calc(var(--header-h, 68px) - 60px);
+  left: -60px;
+  width: 260px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 230 120 / 0.55), rgb(255 210 63 / 0.18) 50%, transparent 70%);
+}
+.sc-waves {
+  left: -5%;
+  right: -5%;
+  bottom: 0;
+  height: 46px;
+  background:
+    radial-gradient(30px 14px at 50% 0, transparent 96%, rgb(18 198 179 / 0.5)) 0 0 / 60px 46px repeat-x,
+    linear-gradient(transparent 14px, rgb(18 198 179 / 0.5) 14px);
+  animation: sc-waves 6s linear infinite;
+}
+@keyframes sc-waves {
+  to { transform: translateX(60px); }
+}
+
+/* ------------------------------------------------------------------ events */
+.sc-ev {
+  top: var(--y);
+  left: 0;
+  display: block;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  will-change: transform;
+}
+.sc-art {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  fill: currentColor;
+}
+/* crossing the sky, one way or the other */
+.sc-witch,
+.sc-sleigh,
+.sc-gulls {
+  animation-name: sc-cross-rtl;
+}
+.sc-witch.is-ltr,
+.sc-sleigh.is-ltr,
+.sc-gulls.is-ltr {
+  animation-name: sc-cross-ltr;
+}
+.sc-witch:not(.is-ltr) .sc-art,
+.sc-sleigh:not(.is-ltr) .sc-art,
+.sc-gulls:not(.is-ltr) .sc-art {
+  transform: scaleX(-1);
+}
+@keyframes sc-cross-ltr {
+  from { transform: translate(-20vw, 0) rotate(-2deg); }
+  50% { transform: translate(50vw, -3vh) rotate(1deg); }
+  to { transform: translate(115vw, 1vh) rotate(-2deg); }
+}
+@keyframes sc-cross-rtl {
+  from { transform: translate(115vw, 0) rotate(2deg); }
+  50% { transform: translate(50vw, -3vh) rotate(-1deg); }
+  to { transform: translate(-20vw, 1vh) rotate(2deg); }
+}
+.sc-witch {
+  width: 96px;
+  color: #2a1440;
+  filter: drop-shadow(0 0 2px rgb(255 140 40 / 0.9)) drop-shadow(0 0 12px rgb(255 122 26 / 0.5));
+}
+.sc-sleigh {
+  width: 140px;
+  color: #23325a;
+  filter: drop-shadow(0 0 2px rgb(200 230 255 / 0.9)) drop-shadow(0 0 10px rgb(127 215 255 / 0.5));
+}
+.sc-gulls {
+  width: 80px;
+  color: #5a6a7a;
+}
+/* heart balloons rising, swaying a little */
+.sc-balloon {
+  top: auto;
+  bottom: -70px;
+  left: var(--x);
+  width: 22px;
+  color: #ff4f9a;
+  animation-name: sc-rise;
+  filter: drop-shadow(0 2px 4px rgb(160 20 80 / 0.3));
+}
+@keyframes sc-rise {
+  25% { transform: translate(14px, -30vh) rotate(4deg); }
+  50% { transform: translate(-10px, -60vh) rotate(-4deg); }
+  to { transform: translate(8px, calc(-100vh - 90px)) rotate(3deg); }
+}
+/* a bunny hopping along the meadow */
+.sc-bunny {
+  top: auto;
+  bottom: 18px;
+  width: 38px;
+  color: #c8a47e;
+  animation-name: sc-cross-rtl;
+}
+.sc-bunny.is-ltr {
+  animation-name: sc-cross-ltr;
+}
+.sc-bunny:not(.is-ltr) .sc-art {
+  transform: scaleX(-1);
+}
+.sc-bunny .sc-art {
+  animation: sc-hop 0.55s ease-in-out infinite;
+}
+.sc-bunny:not(.is-ltr) .sc-art {
+  animation-name: sc-hop-flip;
+}
+.sc-tail {
+  fill: #fff;
+}
+@keyframes sc-hop {
+  50% { transform: translateY(-16px) rotate(-6deg); }
+}
+@keyframes sc-hop-flip {
+  0%, 100% { transform: scaleX(-1); }
+  50% { transform: scaleX(-1) translateY(-16px) rotate(-6deg); }
+}
+/* fireworks: a ring of sparks flying out and fading */
+.sc-firework {
+  left: var(--x);
+  width: 0;
+  height: 0;
+  animation-name: sc-fade;
+}
+.sc-burst i {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--season-2, #ffc928);
+  box-shadow: 0 0 6px 1px var(--season-1, #ff4f9a);
+  transform: rotate(var(--a)) translateX(0);
+  animation: sc-spark 1.9s cubic-bezier(0.1, 0.7, 0.3, 1) forwards;
+}
+.sc-burst i:nth-child(odd) {
+  background: var(--season-1, #ff4f9a);
+  box-shadow: 0 0 6px 1px var(--season-2, #ffc928);
+}
+@keyframes sc-spark {
+  70% { opacity: 1; }
+  to { transform: rotate(var(--a)) translateX(70px) translateY(14px); opacity: 0; }
+}
+@keyframes sc-fade {
+  to { opacity: 1; }
+}
+
+/* Night mode: the scenery glows a little more against the dark */
+:root[data-theme='dark'] .sc-moon {
+  opacity: 0.9;
+}
+:root[data-theme='dark'] .sc-drift,
+:root[data-theme='dark'] .sc-meadow {
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .season-scene *,
+  .season-scene *::after {
+    animation: none !important;
+  }
+}
+/* A game filling the screen: nothing moves underneath it. */
+html.game-focus .season-scene {
+  display: none;
+}

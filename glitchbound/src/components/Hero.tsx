@@ -7,6 +7,7 @@ import { Link } from '../router/router';
 import { Icon } from './Icon';
 import { Dot, Star, Tri } from './Shapes';
 import { SurpriseButton } from './Surprise';
+import { GamePreview, hasPreview } from './GamePreview';
 import { gamePath, latestGame, playPath, SECTION_GAMES } from '../catalog/catalog';
 import type { GameEntry } from '../catalog/types';
 import { useFlagships } from '../platform/useFlagships';
@@ -37,10 +38,13 @@ const WALL_COLUMNS = 3;
 /**
  * The game wall: every game's art in three tilted columns drifting past each other (two rows sliding
  * sideways on a phone). It says "look how much is here" before a word is read. A shortcut for the
- * mouse; keyboards and screen readers get the same games, properly, in the sections below.
+ * mouse (a card under it plays its game's live preview); keyboards and screen readers get the same games,
+ * properly, in the sections below.
  */
 function GameWall({ games }: { games: GameEntry[] }) {
   const columns = Array.from({ length: WALL_COLUMNS }, (_, c) => games.filter((_, i) => i % WALL_COLUMNS === c));
+  // the card under the mouse plays its game's live preview, as the arcade's cards do (the wall stands still meanwhile)
+  const [hover, setHover] = useState<string | null>(null);
   return (
     <div className="hero-wall" aria-hidden="true">
       <div className="wall-tilt">
@@ -49,8 +53,17 @@ function GameWall({ games }: { games: GameEntry[] }) {
             {/* the column twice over, so the loop never shows a seam */}
             <div className="wall-track">
               {[...col, ...col].map((g, i) => (
-                <Link key={`${g.slug}-${i}`} href={gamePath(g)} className="wall-tile" data-accent={g.accent} tabIndex={-1}>
+                <Link
+                  key={`${g.slug}-${i}`}
+                  href={gamePath(g)}
+                  className="wall-tile"
+                  data-accent={g.accent}
+                  tabIndex={-1}
+                  onPointerEnter={(e) => e.pointerType === 'mouse' && hasPreview(g.slug) && setHover(`${c}:${i}`)}
+                  onPointerLeave={() => setHover(null)}
+                >
                   <img src={g.art.tile} alt="" width={512} height={512} {...cardImg(i < 3, i < 4)} style={{ background: g.art.bg }} />
+                  {hover === `${c}:${i}` && <GamePreview slug={g.slug} className="wall-preview" />}
                   <span className="wall-name">{g.title}</span>
                 </Link>
               ))}
