@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Game from '../src/games/launch-control/Game';
 import { emptySave, KEY, newCar } from '../src/games/launch-control/storage';
+import { saveArrived } from '../src/platform/syncGate';
 
 /**
  * The whole game in jsdom (no WebGL: the 3D stage is skipped, everything else runs): menus, a real
@@ -239,6 +240,11 @@ describe('Launch Control: daily, garage and wager', () => {
     expect(document.querySelector('.lc-modal')?.classList.contains('is-inspect')).toBe(true);
     const card = screen.getByRole('region', { name: 'Inspecting the engine' });
     expect(card.textContent).toMatch(/Under the hood/);
+    // on a phone the card folds to its top row so the car shows; Details opens the rest
+    const details = within(card).getByRole('button', { name: 'Details' });
+    fireEvent.click(details);
+    expect(details.getAttribute('aria-expanded')).toBe('true');
+    expect(card.classList.contains('is-open')).toBe(true);
     // another part's tab inspects that one
     fireEvent.click(screen.getByRole('tab', { name: /Aero/ }));
     const aero = screen.getByRole('region', { name: 'Inspecting the aerodynamics' });
@@ -293,6 +299,23 @@ describe('Launch Control: daily, garage and wager', () => {
     fireEvent.click(screen.getByRole('button', { name: /Pico Pop.*Change/ }));
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Your cars' })).toBeNull();
+  });
+
+  it('a car bought on the player’s other device shows up in the garage open here (issue #44)', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: 'My garage' }));
+    expect(screen.queryByRole('button', { name: /cars owned/ })).toBeNull();
+    // cloud saves merged the other device's copy into the stored save while the game runs
+    act(() => {
+      localStorage.setItem(KEY, JSON.stringify({ ...JSON.parse(localStorage.getItem(KEY)!), cars: { bumble: newCar(), 'pico-pop': newCar() } }));
+      saveArrived('launch-control');
+    });
+    expect(screen.getByRole('button', { name: /2 cars owned.*Change/ })).toBeTruthy();
+    // and the next purchase here builds on it
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Parts shop/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Upgrade to Lv 1/ }));
+    expect(Object.keys(JSON.parse(localStorage.getItem(KEY)!).cars)).toEqual(['bumble', 'pico-pop']);
   });
 
   it('the rival picker shows big cards with one selected, and races the pick', () => {
