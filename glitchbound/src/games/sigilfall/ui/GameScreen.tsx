@@ -180,7 +180,13 @@ function Hud({ engine }: { engine: SigilEngine }) {
           </button>
         )}
       </div>
+      {w.coop && <PartyFrames engine={engine} />}
       <div className="rb-hud-menu">
+        {engine.party && (
+          <button className="rb-hudbtn rb-party-chip" onClick={() => engine.openPanel('party')} aria-label="Your party">
+            Party {engine.party.view ? engine.party.view.seats.filter((x) => x.online).length : '…'}
+          </button>
+        )}
         <HudButton icon="bag" label="Hero & bag" badge={fresh || undefined} onClick={() => engine.openPanel('hero')} kbd="I" engine={engine} />
         <HudButton icon="star" label="Talents" badge={points || undefined} onClick={() => engine.openPanel('talents')} kbd="K" engine={engine} />
         {/* spare: a tab of the Hero panel too, so a narrow screen can do without the button */}
@@ -194,6 +200,35 @@ function Hud({ engine }: { engine: SigilEngine }) {
       <Minimap engine={engine} />
       <div className="rb-encounter" ref={enc} hidden />
     </>
+  );
+}
+
+/** The party's other heroes: a name and a health bar each, under the hero's own. */
+function PartyFrames({ engine }: { engine: SigilEngine }) {
+  const bars = useRef<(HTMLElement | null)[]>([]);
+  useFrame(engine, (w) => {
+    const list = w.coop?.ghosts ?? [];
+    list.forEach((g, i) => {
+      const b = bars.current[i];
+      if (b) b.style.width = `${g.dead ? 0 : Math.max(0, Math.min(1, g.hp / g.maxHp)) * 100}%`;
+    });
+  });
+  const ghosts = engine.world?.coop?.ghosts ?? [];
+  return (
+    <ul className="rb-party-frames" aria-label="Your party">
+      {ghosts.map((g, i) => (
+        <li key={g.n}>
+          <span>{g.name}</span>
+          <span className="rb-party-hp">
+            <i
+              ref={(el) => {
+                bars.current[i] = el;
+              }}
+            />
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -589,7 +624,7 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
           <button className="rb-btn" onClick={() => engine.closeReward()}>
             Look around
           </button>
-          {r.key && (
+          {r.key && !engine.party && (
             <button className="rb-btn" onClick={() => engine.keyAgain()}>
               Riftstone +{h.keystone} here
             </button>

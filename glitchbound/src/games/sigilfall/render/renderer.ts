@@ -11,7 +11,7 @@ import type { ClassId, Item } from '../data/types';
 import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
 import { K, TILE } from '../sim/map';
-import type { Enemy, Fx, Pet, Projectile, Telegraph } from '../sim/types';
+import type { Enemy, Fx, Ghost, Pet, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
 import { itemTint } from '../progress/items';
 import { canvas, ctx2d, DETAIL, pixelText, RES, rgba, type Cnv, type Sprite } from './pixel';
@@ -342,6 +342,8 @@ export class Renderer {
     for (const d of w.drops) if (inView(d.x, d.y)) items.push({ y: d.y, draw: () => this.drawDrop(d.kind, d.x, d.y, d.z, d.item, time, d.t) });
     for (const e of w.enemies) if (inView(e.x, e.y)) items.push({ y: e.y + e.r * 0.6, draw: () => this.drawEnemy(e, time) });
     for (const pet of w.pets) if (inView(pet.x, pet.y)) items.push({ y: pet.y + pet.r * 0.6, draw: () => this.drawPet(pet, time) });
+    // the party's other heroes (net/coop.ts)
+    for (const gh of w.coop?.ghosts ?? []) if (gh.seen > 0 && inView(gh.x, gh.y)) items.push({ y: gh.y + 5, draw: () => this.drawGhost(gh, time) });
     items.push({
       y: p.y + 5,
       draw: () => {
@@ -908,6 +910,66 @@ export class Renderer {
     }
     if (p.buffs.length) this.drawBuffs(w, time);
     if (hasStatus(p, 'stun')) this.drawStars(p.x, p.y - 18, time);
+  }
+
+  /**
+   * Another player's hero in a co-op party: their look and weapon at rest, walking as they move, their
+   * name and health over them, and their shots in flight.
+   */
+  private drawGhost(gh: Ghost, time: number): void {
+    const g = this.g;
+    const look = gh.look as HeroLook;
+    const wpn = gh.weapon as { kind: string; tint?: string };
+    for (const sh of gh.shots) {
+      g.fillStyle = sh.color;
+      g.beginPath();
+      g.arc(sh.x, sh.y, Math.max(1.5, sh.r), 0, TAU);
+      g.fill();
+    }
+    const dir: HeroDir = gh.dir === 0 ? 'down' : gh.dir === 3 ? 'up' : 'side';
+    const s = heroSprite(look, gh.dead ? 'down' : dir, 0);
+    const sw = s.width / s.k;
+    const sh = s.height / s.k;
+    if (gh.dead) {
+      g.save();
+      g.globalAlpha = 0.5;
+      g.translate(Math.round(gh.x), Math.round(gh.y + 4));
+      g.rotate(1.4);
+      g.drawImage(s.c, -sw / 2, -sh + 3, sw, sh);
+      g.restore();
+    } else {
+      const moving = Math.hypot(gh.vx, gh.vy) > 10;
+      const frame = moving ? (Math.floor(gh.walkT * 7) % 2) + 1 : 0;
+      const body = heroSprite(look, dir, frame);
+      const flip = gh.dir === 1;
+      const x = Math.round(gh.x) - sw / 2;
+      const y = Math.round(gh.y) + 6.5 - sh + (moving && Math.floor(gh.walkT * 7) % 2 ? -0.5 : 0);
+      const ws = weaponSprite(wpn.kind, wpn.tint);
+      const pose = REST_POSE[gh.dir] ?? REST_POSE[0]!;
+      const drawW = (): void => {
+        g.save();
+        g.translate(Math.round(gh.x) + Math.round(pose.x), Math.round(gh.y) - 3 + Math.round(pose.y));
+        g.rotate(pose.lean);
+        const ww = ws.width / ws.k;
+        const wh = ws.height / ws.k;
+        g.drawImage(ws.c, -ww / 2, wpn.kind === 'bow' ? -wh / 2 : -wh + 3, ww, wh);
+        g.restore();
+      };
+      if (gh.dir === 3) drawW();
+      g.globalAlpha = gh.untouchable && Math.floor(time * 20) % 2 === 0 ? 0.6 : 1;
+      g.drawImage(flip ? body.f : body.c, x, y, sw, sh);
+      g.globalAlpha = 1;
+      if (gh.dir !== 3) drawW();
+    }
+    // name and health, small, over the head
+    const name = pixelText(gh.name, '#bfe8ff');
+    const top = Math.round(gh.y) - 30;
+    g.drawImage(name, Math.round(gh.x - name.width / 2), top - name.height - 2);
+    const bw = 18;
+    g.fillStyle = 'rgba(20,14,32,0.85)';
+    g.fillRect(Math.round(gh.x - bw / 2) - 1, top - 1, bw + 2, 4);
+    g.fillStyle = '#6ad06a';
+    g.fillRect(Math.round(gh.x - bw / 2), top, Math.round(bw * clamp(gh.hp / gh.maxHp, 0, 1)), 2);
   }
 
   /** Where a mount picture goes for the hero's facing: its view, mirroring and top-left corner (world px). */

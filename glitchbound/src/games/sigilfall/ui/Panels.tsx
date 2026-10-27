@@ -28,6 +28,7 @@ import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, type Fog } from '../progress/fog';
 import { ShopPanel } from './Shop';
+import { PartyPanel } from './Party';
 import { PRESETS } from '../progress/presets';
 import { clockText } from '../sim/world';
 import { PARA_STATS, PARAGON, paragonFree, paragonSpent, paragonXp } from '../progress/paragon';
@@ -45,6 +46,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
   const p = engine.ui.panel;
   if (p === 'settings') return <SettingsPanel engine={engine} onClose={() => engine.closePanel()} />;
   if (p === 'shop' && engine.ui.shop) return <ShopPanel engine={engine} shop={engine.ui.shop} />;
+  if (p === 'party') return <PartyPanel engine={engine} />;
   const h = engine.hero!;
   const title = (
     <span className="rb-tabs" role="tablist">
@@ -816,7 +818,20 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
               )}
             </div>
             {useKey ? (
-              <KeyPicker region={r} stone={stone} top={h.keystone} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
+              <>
+                <KeyPicker region={r} stone={stone} top={h.keystone} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
+                <button
+                  className="rb-btn is-small"
+                  onClick={() => {
+                    // the party's plan starts where this picker is
+                    if (!engine.party) void engine.createParty().then(() => engine.setPartyPlan(sel, stone));
+                    else engine.setPartyPlan(sel, stone);
+                    engine.openPanel('party');
+                  }}
+                >
+                  {engine.party ? 'Party: run this' : 'Play with friends'}
+                </button>
+              </>
             ) : (
               <span className="rb-small rb-dim">
                 {TIERS[tier]!.name}: enemies +{TIERS[tier]!.levels} levels, ×{TIERS[tier]!.loot} loot, ×{TIERS[tier]!.xp} XP{tier > 0 ? ', elites with more affixes' : ''}.

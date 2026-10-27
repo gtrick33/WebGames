@@ -16,8 +16,9 @@ import * as nhie from '../src/party/rooms/nhieRoom';
 import * as rps from '../src/party/rooms/rpsRoom';
 import * as scribble from '../src/party/rooms/scribbleRoom';
 import * as unique from '../src/party/rooms/uniqueRoom';
+import * as sigilfall from '../src/games/sigilfall/net/room';
 
-export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon' | 'scribble';
+export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon' | 'scribble' | 'sigilfall';
 
 /** What every room engine provides (`State` stays opaque to the server). */
 export interface Engine {
@@ -30,11 +31,14 @@ export interface Engine {
   /**
    * Optional: actions that stream (a drawing's strokes) instead of changing what everyone's view shows.
    * Returns null for an ordinary action; otherwise the room sends `others` to everyone else and `self`
-   * back to the sender as they are, without sending everyone a new view. `save`: worth storing now.
+   * back to the sender as they are, without sending everyone a new view. `save`: worth storing now
+   * (false: nothing in the state changed, so it is not stored at all).
    */
   relay?(s: RoomState, key: string, action: never, now: number): Relay | null;
   summary(s: RoomState): unknown;
   validKey(k: unknown): k is string;
+  /** Optional: the largest message this game's players send (MAX_MESSAGE otherwise). */
+  maxMessage?: number;
 }
 
 export interface Relay {
@@ -67,6 +71,7 @@ export const ENGINES: Record<GameId, Engine> = {
   belot: belot as unknown as Engine,
   backgammon: backgammon as unknown as Engine,
   scribble: scribble as unknown as Engine,
+  sigilfall: sigilfall as unknown as Engine,
 };
 
 /**
@@ -90,6 +95,8 @@ export const QUICK: Record<GameId, { min: number; full: number; seats: number; s
   belot: { min: 2, full: 4, seats: 4 },
   backgammon: { min: 2, full: 2, seats: 2 },
   scribble: { min: 2, full: 6, seats: 10 },
+  // a party of heroes: never matched with strangers (the game opens private rooms only)
+  sigilfall: { min: 2, full: 4, seats: 4, start: false },
 };
 
 export const isGameId = (v: unknown): v is GameId => typeof v === 'string' && Object.hasOwn(ENGINES, v);

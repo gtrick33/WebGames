@@ -785,7 +785,7 @@
 .rb-mp.is-energy i {
   background: linear-gradient(#ffe0a0, #e8b04a 60%, #b07a20);
 }
-/* Holy Power: five gems that light up */
+/* Zeal: five gems that light up */
 .rb-pips {
   display: flex;
   gap: 3px;
@@ -3015,4 +3015,139 @@
   .is-lefty .rb-interact {
     left: calc(166px + var(--sa-l));
   }
+}
+
+/* ------------------------------------------------------ co-op party */
+
+.rb-input {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 7px;
+  background: #1b1428;
+  color: var(--rb-text);
+  font: 700 15px var(--font);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.rb-party {
+  display: grid;
+  gap: 10px;
+  max-width: 560px;
+}
+.rb-party-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.rb-party-join {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.rb-party-join label {
+  flex-basis: 100%;
+}
+.rb-party-join .rb-input {
+  width: 8em;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.rb-party-code {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rb-party-code strong {
+  color: var(--rb-gold);
+  font: 700 26px var(--mono);
+  letter-spacing: 0.12em;
+}
+.rb-party-seats {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rb-party-seats li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 6px 10px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 8px;
+  background: rgb(27 20 40 / 0.5);
+}
+.rb-party-seats li .rb-small {
+  grid-column: 1;
+}
+.rb-party-seats li button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.rb-party-seats li.is-you {
+  box-shadow: inset 0 0 0 2px var(--rb-cyan);
+}
+.rb-party-seats li.is-away {
+  opacity: 0.55;
+}
+.rb-party-name {
+  font-weight: 800;
+}
+.rb-party-lead {
+  color: var(--rb-gold);
+}
+.rb-party-plan {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.rb-warn {
+  margin: 0;
+  color: #ff9a8a;
+  font-size: 13.5px;
+}
+.rb-hudbtn.rb-party-chip {
+  width: auto;
+  padding: 0 10px;
+  color: #bfe8ff;
+  font: 800 12px var(--font);
+  white-space: nowrap;
+}
+/* the other heroes' health, under the hero's own */
+.rb-party-frames {
+  position: absolute;
+  top: calc(64px + var(--sa-t));
+  left: calc(8px + var(--sa-l));
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+.rb-party-frames li {
+  display: grid;
+  gap: 1px;
+  width: 96px;
+  font: 700 11px var(--font);
+  color: #bfe8ff;
+  text-shadow: 1px 1px 0 var(--rb-ink);
+}
+.rb-party-hp {
+  display: block;
+  height: 5px;
+  border: 1px solid var(--rb-ink);
+  border-radius: 3px;
+  background: #2a1a1a;
+  overflow: hidden;
+}
+.rb-party-hp i {
+  display: block;
+  height: 100%;
+  background: #6ad06a;
 }

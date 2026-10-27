@@ -95,7 +95,16 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
       w.sfx('shieldBreak');
     }
   }
-  if (!e.dummy) e.hp -= dmg;
+  // a co-op guest's enemies are the host's: the hit goes to the host's game, which takes it off (and
+  // says when it dies); here the bar dips at once, never to nothing
+  const mirror = w.puppet;
+  if (mirror) {
+    const knockTo = (o.knock ?? spec?.knock ?? 0) * (crit ? 1.3 : 1);
+    const a = o.fromX !== undefined && o.fromY !== undefined ? Math.atan2(e.y - o.fromY, e.x - o.fromX) : 0;
+    const k = knockTo > 0 && !e.boss && o.fromX !== undefined ? knockTo / Math.max(0.6, e.def.mass) : 0;
+    w.coop!.out.push({ t: 'dmg', id: e.id, dmg, kx: Math.round(Math.cos(a) * k), ky: Math.round(Math.sin(a) * k) });
+    e.hp = Math.max(1, e.hp - dmg);
+  } else if (!e.dummy) e.hp -= dmg;
   e.flash = 0.12;
   e.hurtT = 0;
   // some attacks give mana back (the Mage's bolt): only the direct hit, never splits or chains
@@ -104,7 +113,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   e.aggro = true;
   // knockback, softened by mass; bosses and rooted enemies stand firm
   const knock = (o.knock ?? spec?.knock ?? 0) * (crit ? 1.3 : 1);
-  if (knock > 0 && !e.boss && !hasStatus(e, 'root') && o.fromX !== undefined && o.fromY !== undefined) {
+  if (!mirror && knock > 0 && !e.boss && !hasStatus(e, 'root') && o.fromX !== undefined && o.fromY !== undefined) {
     const a = Math.atan2(e.y - o.fromY, e.x - o.fromX);
     const k = knock / Math.max(0.6, e.def.mass);
     e.vx += Math.cos(a) * k;
@@ -132,8 +141,34 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
     runProcs(w, 'hit', { x: e.x, y: e.y, target: e, base, type, depth: o.depth, hitDmg: shown, skill: spec?.id });
     if (crit) runProcs(w, 'crit', { x: e.x, y: e.y, target: e, base, type, depth: o.depth, hitDmg: shown, skill: spec?.id });
   }
-  if (e.hp <= 0 && !e.dummy) killEnemy(w, e, type, o.depth, spec ?? null);
+  if (e.hp <= 0 && !e.dummy && !mirror) killEnemy(w, e, type, o.depth, spec ?? null);
   return shown;
+}
+
+/** Control and marks a co-op guest puts on the host's enemies go to the host (damage over time stays: its ticks are hits). */
+const SHARED_STATUS = new Set<StatusId>(['chill', 'freeze', 'shock', 'stun', 'root', 'armorBreak', 'mark', 'weaken', 'fear']);
+
+/**
+ * On the host: a hit a guest's game worked out (crit, armor and resistances included) lands on the real
+ * enemy. Bosses between phases stay immune, as they would to the host.
+ */
+export function remoteHit(w: World, e: Enemy, dmg: number, kx: number, ky: number): void {
+  if (e.dead || e.state === 'spawn' || dmg <= 0) return;
+  if (e.boss && (e.boss.shift > 0 || e.boss.dying > 0 || bossHidden(e))) return;
+  if (e.shield > 0) {
+    const took = Math.min(e.shield, dmg);
+    e.shield -= took;
+    dmg -= took;
+  }
+  if (!e.dummy) e.hp -= dmg;
+  e.flash = 0.12;
+  e.hurtT = 0;
+  e.aggro = true;
+  if ((kx || ky) && !e.boss && !hasStatus(e, 'root')) {
+    e.vx += kx;
+    e.vy += ky;
+  }
+  if (e.hp <= 0 && !e.dummy) killEnemy(w, e, 'physical', 1, null);
 }
 
 export const DOT_COLOR: Record<DmgType, string> = { physical: '#ffffff', fire: '#ff9a4d', frost: '#9be7ff', lightning: '#9ad8ff', poison: '#8be36b', arcane: '#d2a8ff', shadow: '#b58aff', holy: '#ffe9a0', nature: '#9cf07a' };
@@ -142,6 +177,8 @@ export const DOT_COLOR: Record<DmgType, string> = { physical: '#ffffff', fire: '
 export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: number; power: number; chance?: number; dmgType?: DmgType }, hitDmg: number, src?: string): void {
   if (e.dead || e.dummy === 2) return;
   if (s.chance !== undefined && s.chance < 1 && w.rand() > s.chance) return;
+  // a co-op guest's control reaches the host's enemy (worked out there: a boss shrugs a stun off)
+  if (w.puppet && SHARED_STATUS.has(s.status)) w.coop!.out.push({ t: 'st', id: e.id, status: s.status, dur: s.dur, power: s.power });
   let id = s.status;
   let dur = s.dur;
   let power = s.power;

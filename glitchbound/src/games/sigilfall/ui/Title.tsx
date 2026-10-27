@@ -81,6 +81,11 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
         </div>
       </div>
       {engine.ui.notice && <p className="rb-notice" role="status">{engine.ui.notice}</p>}
+      {engine.invite && (
+        <p className="rb-notice is-invite" role="status">
+          A friend invited you to their party (code {engine.invite}). Choose a level-60 hero to run a Riftstone with them.
+        </p>
+      )}
       {settings && (
         <div className="rb-modal">
           <SettingsPanel engine={engine} onClose={() => setSettings(false)} />

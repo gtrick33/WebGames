@@ -248,6 +248,17 @@ affixes from +2 (Hardened or Crowned), +4 (Grieving, Festering, Cornered or Spli
 and +10 (both of the first). Beaten under 100/80/60% of the clock, the next one, two or three levels open; late,
 nothing is lost. Loot is made at item level 72 + the level (at most 100), so higher levels make better gear.
 
+**Co-op** (`net/room.ts`, `net/coop.ts`, `net/link.ts`): a party of up to four level-60 heroes runs a Riftstone
+together, each on their own device. The party lives in a live room on the arcade's room server (a code and an
+invite link, `/r/<code>`); the leader picks the dungeon and the level and starts. The leader's game runs the
+enemies, the rooms, the bosses and the clock, and sends a frame ten times a second (every enemy, the attacks in the
+air, the rooms, the clock, and kills, a boss's fall, a hit on someone). Every game runs its own hero and sends its
+place and its hits; a guest's world mirrors the leader's enemies and attacks (`World.puppet`: drawn, struck,
+never striking). What strikes a guest comes from the leader's game and is taken with the guest's own armor and
+dodge. Every kill pays every hero their own experience and loot; a fall costs the shared clock; a fight starting
+draws in a hero still outside (sealed doors shut nobody out), and a hero comes back inside a fight their friends
+are still in. The world never pauses in a party. The leader going home ends the run for everyone.
+
 **Paragon** (`progress/paragon.ts`): experience past 60 earns Paragon levels, each a point for Might (+1% damage),
 Vigor (+1% health), Precision (crit, up to 50 points) or Toughness (armor and regeneration, up to 50), taken back
 for free. With Riftstone loot it is what lets a hero climb further every week.

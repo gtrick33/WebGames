@@ -24,6 +24,11 @@ import { emptyInput, World, type InputFrame } from './sim/world';
 import { endScene } from './sim/scene';
 import { applyPreset, PRESETS } from './progress/presets';
 import { resetParagon, spendParagon, type ParaStat } from './progress/paragon';
+import { CoopSession, type Role } from './net/coop';
+import { Link, type LinkState } from './net/link';
+import { COOP_LEVEL, type Card, type View as PartyView } from './net/room';
+import { heldWeapon, heroLook } from './render/sprites';
+import { wornLooks } from './progress/wardrobe';
 
 /**
  * The game around the simulation: heroes and the save, travelling between regions, expeditions
@@ -36,7 +41,15 @@ export interface DialoguePage {
   quest: string;
 }
 
-export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop';
+export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop' | 'party';
+
+/** A co-op party (net/room.ts): the live connection, the room's latest view, and what went wrong. */
+export interface PartyState {
+  link: Link;
+  view: PartyView | null;
+  state: LinkState;
+  error: string;
+}
 
 export interface Toast {
   id: number;
@@ -83,6 +96,16 @@ export interface UiState {
 }
 
 const STEP = 1 / 60;
+
+/** What the party's room answers, in words (net/room.ts act). */
+const PARTY_ERRORS: Record<string, string> = {
+  not_host: 'Only the party leader can do that.',
+  no_plan: 'Choose a dungeon first.',
+  no_hero: 'Everyone needs to pick a hero first.',
+  level: `Every hero needs level ${COOP_LEVEL} for a Riftstone run.`,
+  bad_card: 'Your hero could not be shown to the party.',
+  full: 'That party is full, or already in a run.',
+};
 /** On touch screens the hero stands this share of the view's width off the middle (render/renderer.ts frameShift). */
 const FRAME_SHIFT = 0.1;
 
@@ -114,6 +137,13 @@ export class SigilEngine {
   /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
   private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number } | null = null;
   private hidden = false;
+  /** The co-op party this hero is in, and the run it is fighting (null playing alone). */
+  party: PartyState | null = null;
+  coop: CoopSession | null = null;
+  /** The party's run this game last started (a new one in the room's view starts the next). */
+  private partyRun = 0;
+  /** An invite this page was opened with (?room=CODE): joined once a hero is chosen. */
+  invite = typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('room')?.toUpperCase() ?? '') : '';
   /** Pause asked for by the arcade (left full screen, scrolled away). */
   private toWorldFn: (x: number, y: number) => { x: number; y: number } = (x, y) => ({ x, y });
   touchMode: boolean;
@@ -207,6 +237,7 @@ export class SigilEngine {
     cancelAnimationFrame(this.raf);
     document.removeEventListener('visibilitychange', this.onVisibility);
     window.removeEventListener('pagehide', this.onPageHide);
+    this.leaveParty();
     this.endRun(false);
     this.persist();
     this.kbm?.dispose();
@@ -253,11 +284,15 @@ export class SigilEngine {
       if (this.ui.screen !== 'game') this.sound.setMusic('title');
       return;
     }
-    const paused = this.isPaused();
+    // in a co-op run the world never stops for a menu: the others are still fighting (the hero stands)
+    const uiPaused = this.isPaused();
+    const paused = uiPaused && !(this.coop && !this.hidden);
     const f: InputFrame = emptyInput();
     if (!paused) {
-      this.touch.fill(f);
-      this.kbm?.fill(f, this.toWorldFn, w.player.x, w.player.y);
+      if (!uiPaused) {
+        this.touch.fill(f);
+        this.kbm?.fill(f, this.toWorldFn, w.player.x, w.player.y);
+      }
       // touch: aim with the stick when the mouse isn't in use
       if (this.touchMode) {
         f.aim = null;
@@ -286,6 +321,7 @@ export class SigilEngine {
         steps += 1;
       }
       if (this.hero) this.hero.stats.time += dt;
+      this.coop?.frame(dt * 1000);
       if (f.interact && w.interactable) this.interact(w.interactable);
       if (w.pendingExit) {
         const ex = w.pendingExit;
@@ -348,6 +384,7 @@ export class SigilEngine {
           if (this.hero && !this.hero.opened.includes('hint:equip') && Object.keys(this.hero.equip).length < 2) this.hint('equip');
           break;
         case 'levelup': {
+          this.refreshPartyCard();
           const h = this.hero!;
           const skills = [...learnedSkills(h), CLASSES[h.cls].ult].filter((id) => SKILLS[id]?.unlock === ev.level);
           this.ui = { ...this.ui, levelUp: { level: ev.level, skills, id: performance.now() } };
@@ -558,12 +595,27 @@ export class SigilEngine {
     this.ui = { ...this.ui, screen: 'game', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [] };
     this.travel(HOME, 0, []);
     this.sound.unlock();
+    // invited by a link: into the friend's party (its panel says if this hero can't run with it)
+    if (this.invite) {
+      const code = this.invite;
+      this.invite = '';
+      this.joinParty(code);
+      this.ui = { ...this.ui, panel: 'party' };
+      try {
+        const url = new URL(location.href);
+        url.searchParams.delete('room');
+        history.replaceState(history.state, '', url);
+      } catch {
+        /* no history (tests) */
+      }
+    }
     // a brand-new hero arrives at Briarhollow's gate at dusk, and the guard stops them there
     if (questState(h, 'briar-dusk') === 'active' && h.level === 1 && h.stats.time < 1) this.talk('mara-venn');
     this.bump();
   }
 
   toTitle(): void {
+    this.leaveParty();
     this.endRun(false);
     this.persist();
     this.world = null;
@@ -573,13 +625,16 @@ export class SigilEngine {
 
   /* ------------------------------------------------------------- travel */
 
-  travel(to: RegionId, tier: number, mods: RiftMod[], from?: RegionId, key = 0): void {
+  travel(to: RegionId, tier: number, mods: RiftMod[], from?: RegionId, key = 0, party?: { role: Role; seed: number; week: number }): void {
     const h = this.hero;
     if (!h) return;
     const region = REGIONS[to];
-    if (!h.unlocked.includes(to)) return;
-    // a Riftstone run is a stone the hero holds (never above it), in a dungeon
-    if (key > 0 && (region.kind !== 'dungeon' || key > h.keystone)) return;
+    // a party's run goes where the host chose: a friend who hasn't found the way yet is taken along
+    if (!h.unlocked.includes(to) && !party) return;
+    // a Riftstone run is a stone the hero holds (never above it; a party runs the host's), in a dungeon
+    if (key > 0 && (region.kind !== 'dungeon' || (key > h.keystone && !party))) return;
+    // leaving a party's run (home, the way out): the others go on without this hero
+    if (this.coop && !party) this.leaveCoopRun();
     const prev = this.world;
     if (prev) this.collectLeftovers(prev, true);
     // expeditions: leaving the village starts one, coming back ends it; a Riftstone run is always its own
@@ -601,10 +656,12 @@ export class SigilEngine {
       mods: region.safe ? [] : (this.run?.mods ?? mods),
       hero: h,
       settings: this.settings,
-      seed: (Math.random() * 2 ** 32) >>> 0,
+      seed: party ? party.seed : (Math.random() * 2 ** 32) >>> 0,
       from,
-      ...(stone ? { key: stone, affixes: keyAffixes(stone, weekOf(Date.now())) } : {}),
+      ...(stone ? { key: stone, affixes: keyAffixes(stone, party ? party.week : weekOf(Date.now())) } : {}),
+      ...(party ? { coop: party.role } : {}),
     });
+    if (party) this.coop?.attach(w);
     if (prev && !prev.region.safe && this.run) {
       // carry this expedition's tallies across regions
       w.run = prev.run;
@@ -847,6 +904,7 @@ export class SigilEngine {
 
   private changed(sound = 'equip'): void {
     this.world?.rebuild();
+    this.refreshPartyCard();
     if (this.world && this.hero) this.renderer.setHeroWeapon(this.hero.cls, this.world);
     this.sound.play(sound);
     this.scheduleSave(300);
@@ -930,6 +988,7 @@ export class SigilEngine {
     this.ui = { ...this.ui, panel: null, pause: false };
     this.travel(p.region, 0, []);
     this.toast(`Review: ${p.label}`, 'info', undefined, 'This hero now plays for review and sends no arcade scores.');
+    this.refreshPartyCard();
   }
 
   /** Skips the scene playing (its walks end where they were going). */
@@ -969,6 +1028,153 @@ export class SigilEngine {
     this.renderer.snap(w);
     this.setUi({ death: false, boss: null });
     this.persist();
+  }
+
+  /* ------------------------------------------------------------ co-op */
+
+  /** This hero as the party sees them (net/room.ts Card): drawn from it, nothing else. */
+  partyCard(): Card | null {
+    const h = this.hero;
+    if (!h) return null;
+    const worn = wornLooks(h);
+    return { name: h.name, cls: h.cls, level: h.level, para: h.para.l, keystone: h.keystone, look: heroLook(h.cls, h.equip, worn, h.body), weapon: heldWeapon(h.cls, h.equip.weapon, worn.weapon) };
+  }
+
+  /** The card the party last got from this game (sent again only when it changes). */
+  private cardSent = '';
+
+  /** Tells the party how this hero looks now (a new level, new gear). */
+  refreshPartyCard(force = false): void {
+    const party = this.party;
+    const card = this.partyCard();
+    if (!party || !card || !party.link.open) return;
+    const json = JSON.stringify(card);
+    if (!force && json === this.cardSent) return;
+    this.cardSent = json;
+    party.link.send({ t: 'card', card });
+  }
+
+  /** Whether this hero can start a party for a Riftstone run (and why not). */
+  partyReady(): string {
+    const h = this.hero;
+    if (!h) return 'Choose a hero first.';
+    if (h.level < COOP_LEVEL) return `Riftstone runs with friends are for heroes at level ${COOP_LEVEL}.`;
+    if (h.keystone < 1) return 'Clear Duskspire on Mythic to earn the Riftstone first.';
+    return '';
+  }
+
+  /** Opens a new party room and joins it (the host). */
+  async createParty(): Promise<void> {
+    if (this.party || this.partyReady()) return;
+    try {
+      const link = await Link.create(this.hero!.name, this.partyHandlers());
+      this.party = { link, view: null, state: 'connecting', error: '' };
+    } catch (e) {
+      this.toast((e as Error).message || 'Could not open a party right now.', 'warn');
+    }
+    this.bump();
+  }
+
+  /** Joins a friend's party by its code. */
+  joinParty(code: string): void {
+    const c = code.trim().toUpperCase();
+    if (!this.hero || !/^[A-Z]{4,6}$/.test(c)) return;
+    this.leaveParty();
+    this.party = { link: new Link(c, this.hero.name, this.partyHandlers()), view: null, state: 'connecting', error: '' };
+    this.bump();
+  }
+
+  leaveParty(): void {
+    if (!this.party) return;
+    if (this.coop) this.leaveCoopRun();
+    this.party.link.close();
+    this.party = null;
+    this.partyRun = 0;
+    this.bump();
+  }
+
+  /** The host's choice: which dungeon, which Riftstone level (kept until the room is there to take it). */
+  setPartyPlan(region: RegionId, key: number): void {
+    const party = this.party;
+    if (!party) return;
+    if (party.link.open && party.view) party.link.send({ t: 'plan', region, key });
+    else this.planWanted = { region, key };
+  }
+
+  private planWanted: { region: RegionId; key: number } | null = null;
+
+  /** The host starts the run: everyone's game goes there together. */
+  startPartyRun(): void {
+    this.party?.link.send({ t: 'start', week: weekOf(Date.now()) });
+  }
+
+  kickFromParty(n: number): void {
+    this.party?.link.send({ t: 'kick', n });
+  }
+
+  private partyHandlers() {
+    return {
+      onView: (v: PartyView) => this.onPartyView(v),
+      onRelay: (n: number, d: unknown) => this.coop?.receive(n, d),
+      onState: (st: LinkState, reason?: string) => {
+        if (!this.party) return;
+        this.party.state = st;
+        if (st === 'open') this.refreshPartyCard(true);
+        if (st === 'gone') {
+          this.toast(reason ?? 'The party has closed.', 'warn');
+          this.leaveParty();
+        }
+        this.bump();
+      },
+      onError: (message: string) => {
+        if (!this.party) return;
+        this.party.error = PARTY_ERRORS[message] ?? message;
+        this.bump();
+      },
+    };
+  }
+
+  private onPartyView(v: PartyView): void {
+    const party = this.party;
+    if (!party) return;
+    party.view = v;
+    party.error = '';
+    const me = v.seats.find((x) => x.you);
+    // the room lost this hero's card (it was kicked and came back, or never got it): send it again
+    if (me && !me.card) this.refreshPartyCard(true);
+    if (this.planWanted && v.you === v.host && v.phase === 'lobby') {
+      party.link.send({ t: 'plan', ...this.planWanted });
+      this.planWanted = null;
+    }
+    const members = v.seats.filter((x) => x.card && x.online).map((x) => ({ n: x.n, card: x.card! }));
+    if (v.phase === 'run' && v.run !== this.partyRun && v.plan) {
+      // the host started: everyone goes, together
+      this.partyRun = v.run;
+      const role: Role = v.you === v.host ? 'host' : 'guest';
+      this.coop = new CoopSession(role, v.you, v.host, (d) => party.link.relay(d));
+      this.coop.setMembers(members);
+      this.setUi({ panel: null, reward: null, death: false, dialogue: null, travel: null, pause: false });
+      this.travel(v.plan.region as RegionId, 2, [], undefined, v.plan.key, { role, seed: v.runSeed, week: v.week });
+      this.toast(role === 'host' ? 'The party is in: the clock is running' : 'Your party leader has started the run', 'good');
+    } else if (this.coop) {
+      if (v.phase !== 'run' || v.host !== this.coop.host) {
+        // the run ended (the host went home or left): back to town, still in the party
+        const why = v.host !== this.coop.host ? 'Your party leader left: the run is over.' : '';
+        this.leaveCoopRun();
+        if (why) this.toast(why, 'warn');
+        if (this.world && !this.world.region.safe) this.travel(HOME, 0, []);
+      } else this.coop.setMembers(members);
+    }
+    this.bump();
+  }
+
+  /** This hero leaves the party's run (the host's leaving ends it for everyone). */
+  private leaveCoopRun(): void {
+    const c = this.coop;
+    if (!c) return;
+    this.coop = null;
+    if (this.world) this.world.coop = null;
+    if (c.role === 'host') this.party?.link.send({ t: 'end' });
   }
 
   returnHome(): void {

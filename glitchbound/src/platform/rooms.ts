@@ -8,10 +8,10 @@ import { playerKey } from './challenges';
 
 export type Connection = 'connecting' | 'open' | 'reconnecting' | 'gone';
 
-export type RoomGame = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon' | 'scribble';
+export type RoomGame = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon' | 'scribble' | 'sigilfall';
 
 /** Rooms that belong to an arcade game (not Party Mode): the game page that opens them. */
-export const GAME_ROOM_PAGE: Partial<Record<RoomGame, string>> = { 'crass-act': '/games/crass-act', drag: '/games/launch-control', belot: '/games/belot', backgammon: '/games/backgammon' };
+export const GAME_ROOM_PAGE: Partial<Record<RoomGame, string>> = { 'crass-act': '/games/crass-act', drag: '/games/launch-control', belot: '/games/belot', backgammon: '/games/backgammon', sigilfall: '/games/sigilfall' };
 
 /** Creates a room for a game on the server; returns its code. A public (`listed`) room shows in the room list and quick match. */
 export async function createRoom(game: RoomGame = 'crass-act', listed = false): Promise<string> {
