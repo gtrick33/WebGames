@@ -1,5 +1,8 @@
 import { applyStatus, hurtPlayer, remoteHit } from '../sim/combat';
+import { QUEST_DEFS } from '../data/quests';
 import type { EliteAffix, StatusId } from '../data/types';
+import type { Character } from '../progress/character';
+import { packQuest, unpackQuest } from '../progress/save';
 import type { CoopOut, Enemy, Field, Ghost, Projectile, Telegraph, Wave } from '../sim/types';
 import type { World } from '../sim/world';
 import type { Card } from './room';
@@ -67,7 +70,16 @@ type ShotRow = [x: number, y: number, vx: number, vy: number, r: number, look: s
 type TeleRow = [id: number, shape: Telegraph['shape'], x: number, y: number, r: number, r2: number, angle: number, len: number, dur: number, t: number, tone: Telegraph['tone'], linger: number];
 type FieldRow = [x: number, y: number, r: number, look: Field['look'], t: number, dur: number];
 type WaveRow = [x: number, y: number, r: number, speed: number, max: number, width: number];
-type Event = ['h', number, number, number, number, number, StatusId | '', number, number, number] | ['k', number] | ['b', number] | ['end', number, number];
+type Event = ['h', number, number, number, number, number, StatusId | '', number, number, number] | ['k', number] | ['b', number] | ['end', number, number] | ['ev', string];
+
+/** Questing together: the leader's story (packed quests, progress/save packQuest), which the others' worlds show. */
+interface StoryMsg {
+  t: 'q';
+  q: Record<string, string>;
+}
+
+/** In the wilds and in towns a frame holds only the enemies this near a hero (a land holds hundreds). */
+const NEAR = 520;
 
 /** The host's frame. */
 interface FrameMsg {
@@ -124,6 +136,45 @@ export class CoopSession {
     this.events = [];
     this.hits = { t: 'g', h: [], st: [], died: 0 };
     this.setMembers([...this.members.values()]);
+    this.storySent = '';
+    // a guest shows the leader's story from the start (the last one heard, until the next comes)
+    if (this.role === 'guest' && this.layerQuests) this.applyLayer(w);
+  }
+
+  /** Questing together: the leader's story was sent when it last changed (packed, as JSON). */
+  private storySent = '';
+  private storyT = 0;
+  /** A guest: the leader's quests, last heard. */
+  private layerQuests: Character['quests'] | null = null;
+
+  /** The leader: its story to the others, when it changed (checked twice a second). */
+  private shareStory(w: World, dtMs: number): void {
+    this.storyT -= dtMs;
+    if (this.storyT > 0) return;
+    this.storyT = 500;
+    const q: Record<string, string> = {};
+    for (const [id, e] of Object.entries(w.hero.quests)) q[id] = packQuest(e);
+    const json = JSON.stringify(q);
+    if (json === this.storySent) return;
+    this.storySent = json;
+    this.send({ t: 'q', q } satisfies StoryMsg);
+  }
+
+  private onStory(w: World, m: StoryMsg): void {
+    const quests: Character['quests'] = {};
+    for (const [id, packed] of Object.entries(m.q ?? {})) {
+      if (!QUEST_DEFS[id] || typeof packed !== 'string') continue;
+      const e = unpackQuest(packed) as Character['quests'][string] | null;
+      if (e) quests[id] = e;
+    }
+    this.layerQuests = quests;
+    this.applyLayer(w);
+  }
+
+  /** A guest's world shows the leader's story: who stands where, what is built, which foes are out. */
+  private applyLayer(w: World): void {
+    w.layer = { ...w.hero, quests: this.layerQuests! };
+    w.refreshStoryState();
   }
 
   private ghostFor(m: Member, w: World): Ghost {
@@ -165,6 +216,7 @@ export class CoopSession {
         }
       }
     this.drain(w);
+    if (this.role === 'host' && this.members.size) this.shareStory(w, dtMs);
     this.frameT -= dtMs;
     this.hitT -= dtMs;
     if (this.frameT <= 0) {
@@ -192,6 +244,7 @@ export class CoopSession {
         else if (o.t === 'kill') this.events.push(['k', o.id]);
         else if (o.t === 'bossDone') this.events.push(['b', o.id]);
         else if (o.t === 'end') this.events.push(['end', r1(o.time), o.up]);
+        else if (o.t === 'event') this.events.push(['ev', o.id]);
       } else if (o.t === 'dmg') this.hits.h.push([o.id, o.dmg, o.kx, o.ky]);
       else if (o.t === 'st') this.hits.st.push([o.id, o.status, r1(o.dur), r1(o.power)]);
       else if (o.t === 'died') this.hits.died += 1;
@@ -208,8 +261,12 @@ export class CoopSession {
 
   private sendFrame(w: World): void {
     const e: EnemyRow[] = [];
+    // a land's hundreds of enemies: only those near a hero (a dungeon's rooms all go)
+    const open = w.region.kind !== 'dungeon';
+    const heroes = [w.player, ...w.coop!.ghosts.filter((g) => !g.dead)];
     for (const x of w.enemies) {
       if (x.dead || x.dummy) continue;
+      if (open && !heroes.some((h) => Math.abs(h.x - x.x) < NEAR && Math.abs(h.y - x.y) < NEAR)) continue;
       const flags = (x.boss ? 2 : 0) | (x.elite.length ? 1 : 0) | (x.state === 'spawn' ? 4 : 0);
       e.push([x.id, x.boss ? x.boss.def.id : x.def.id, r1(x.x), r1(x.y), Math.round(x.hp), Math.round(x.maxHp), flags, x.level, r1(x.face), x.state, x.elite.length || x.def.named ? x.name : '', x.elite.join(','), x.room]);
     }
@@ -235,6 +292,7 @@ export class CoopSession {
     if (m.t === 'p') this.onHero(w, n, m as HeroMsg);
     else if (m.t === 's' && this.role === 'guest' && n === this.host) this.onFrame(w, m as FrameMsg);
     else if (m.t === 'g' && this.role === 'host') this.onHits(w, m as GuestMsg);
+    else if (m.t === 'q' && this.role === 'guest' && n === this.host) this.onStory(w, m as StoryMsg);
   }
 
   private onHero(w: World, n: number, m: HeroMsg): void {
@@ -328,6 +386,11 @@ export class CoopSession {
       const e = w.enemyById(ev[1]);
       if (e?.boss) w.bossFinished(e);
     } else if (ev[0] === 'end') w.applyKeyEnd(ev[1], ev[2]);
+    // a story event the party won: this hero's quest for it counts too
+    else if (ev[0] === 'ev') {
+      const id = ev[1];
+      w.questProgress((o) => o.kind === 'event' && o.event === id);
+    }
   }
 
   /** Guest: the host's attacks in the air, as copies that only show (remote). */

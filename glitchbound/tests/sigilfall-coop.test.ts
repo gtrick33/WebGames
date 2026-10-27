@@ -10,7 +10,7 @@ import { KEY_DEATH } from '../src/games/sigilfall/data/keystones';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { SLOTS, type ClassId, type RegionId } from '../src/games/sigilfall/data/types';
 import { rng } from '../src/games/sigilfall/core/math';
-import { SIGILS } from '../src/games/sigilfall/progress/character';
+import { newCharacter, SIGILS, type Character } from '../src/games/sigilfall/progress/character';
 import { rollGear } from '../src/games/sigilfall/progress/items';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { CoopSession } from '../src/games/sigilfall/net/coop';
@@ -34,12 +34,14 @@ function hero(cls: ClassId) {
   return h;
 }
 
-const card = (name: string, cls: ClassId): room.Card => ({ name, cls, level: 60, para: 0, keystone: 5, look: { any: true }, weapon: { kind: 'staff' } });
+const card = (name: string, cls: ClassId, story = 200): room.Card => ({ name, cls, level: 60, para: 0, keystone: 5, story, look: { any: true }, weapon: { kind: 'staff' } });
 
-/** A host's and a guest's game in the same Riftstone run, joined by their sessions. */
-function pair(region: RegionId = 'crypt', key = 2) {
-  const hw = new World({ region, tier: 2, mods: [], hero: hero('warrior'), settings: { ...DEFAULT_SETTINGS }, seed: 7, key, affixes: [], handIns: false, coop: 'host' });
-  const gw = new World({ region, tier: 2, mods: [], hero: hero('mage'), settings: { ...DEFAULT_SETTINGS }, seed: 7, key, affixes: [], handIns: false, coop: 'guest' });
+/** A host's and a guest's game in the same run (a Riftstone's, or questing in a land), joined by their sessions. */
+function pair(region: RegionId = 'crypt', key = 2, heroes: { host?: Character; guest?: Character; tier?: number } = {}) {
+  const tier = heroes.tier ?? 2;
+  const run = key ? { key, affixes: [] } : {};
+  const hw = new World({ region, tier, mods: [], hero: heroes.host ?? hero('warrior'), settings: { ...DEFAULT_SETTINGS }, seed: 7, ...run, handIns: false, coop: 'host' });
+  const gw = new World({ region, tier, mods: [], hero: heroes.guest ?? hero('mage'), settings: { ...DEFAULT_SETTINGS }, seed: 7, ...run, handIns: false, coop: 'guest' });
   const queue: { to: CoopSession; n: number; d: unknown }[] = [];
   const to: { hs?: CoopSession; gs?: CoopSession } = {};
   const hs = new CoopSession('host', 1, 1, (d) => queue.push({ to: to.gs!, n: 1, d: JSON.parse(JSON.stringify(d)) }));
@@ -219,3 +221,60 @@ describe('sigilfall: a co-op Riftstone run', () => {
     expect(gw.hero.keystone).toBe(Math.max(5, 2 + gw.keyRun!.end!.up));
   });
 });
+
+describe('sigilfall: questing together', () => {
+  it('the hero furthest behind in the story leads; only they choose the way, and the party follows', () => {
+    const s = room.newRoom('QUEST', 0, 1);
+    room.join(s, KEY_A, 'Ash', 0);
+    room.join(s, KEY_B, 'Bea', 0);
+    room.act(s, KEY_A, { t: 'mode', mode: 'party' }, 1);
+    room.act(s, KEY_A, { t: 'card', card: { ...card('Ash', 'warrior', 140), level: 41 } }, 1);
+    room.act(s, KEY_B, { t: 'card', card: { ...card('Bea', 'mage', 12), level: 9 } }, 1);
+    // any level goes questing
+    expect(room.act(s, KEY_A, { t: 'start', week: 1 }, 2)).toBeNull();
+    const v = room.viewFor(s, KEY_A)!;
+    expect(v.lead).toBe(2);
+    expect(room.act(s, KEY_A, { t: 'go', region: 'amberfield', tier: 0 }, 3)).toBe('not_lead');
+    expect(room.act(s, KEY_B, { t: 'go', region: 'amberfield', tier: 0 }, 3)).toBeNull();
+    expect(room.viewFor(s, KEY_A)!.trip).toBe(1);
+    expect(room.viewFor(s, KEY_A)!.plan).toEqual({ region: 'amberfield', key: 0 });
+  });
+
+  it('a hero ahead in the story is phased into the world of the one behind', () => {
+    const behind = newCharacter('ranger', 'Cal', 'c', 0);
+    const ahead = hero('mage');
+    const { hw, gw, step } = pair('briarhollow', 0, { host: behind, guest: ahead, tier: 0 });
+    // before a word from the leader, the guest's own story shows (the village rebuilt)
+    const own = gw.storyState?.id;
+    step(60);
+    expect(hw.storyState?.id).not.toBe(own);
+    expect(gw.storyState?.id).toBe(hw.storyState?.id);
+    // what the guest has done stays theirs: their quests, their rewards
+    expect(gw.hero.quests['briar-dusk']?.state).toBe('done');
+    expect(gw.layer?.quests['briar-dusk']?.state ?? 'locked').not.toBe('done');
+  });
+
+  it('a story event the leader’s game wins counts for every hero whose quest waits on it', () => {
+    const lead = hero('warrior');
+    const friend = hero('priest');
+    for (const h of [lead, friend]) {
+      delete h.quests['hearth-the-riders-come'];
+      h.quests['hearth-the-riders-come'] = { state: 'active', n: 0 };
+    }
+    const { hw, gw, step } = pair('amberfield', 0, { host: lead, guest: friend, tier: 0 });
+    step(20);
+    hw.coop!.out.push({ t: 'event', id: 'hearth-riders' });
+    step(10);
+    expect(gw.hero.quests['hearth-the-riders-come']?.state).toBe('done');
+  });
+
+  it('in an open land a frame holds only the enemies near a hero', () => {
+    const { hw, gw, step } = pair('whisperwood', 0, { tier: 0 });
+    step(40);
+    const near = (x: number, y: number): boolean => [hw.player, ...hw.coop!.ghosts].some((h) => Math.abs(h.x - x) < 520 && Math.abs(h.y - y) < 520);
+    const hostNear = hw.enemies.filter((e) => !e.dead && !e.dummy && near(e.x, e.y)).map((e) => e.id);
+    expect(hw.enemies.length).toBeGreaterThan(hostNear.length);
+    expect(gw.enemies.filter((e) => !e.dead).map((e) => e.id).sort()).toEqual(hostNear.sort());
+  });
+});
+

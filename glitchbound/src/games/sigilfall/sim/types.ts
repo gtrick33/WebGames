@@ -382,6 +382,8 @@ export type CoopOut =
   | { t: 'bossDone'; id: number }
   /** Host: the Riftstone run's clock stopped. */
   | { t: 'end'; time: number; up: number }
+  /** Host: a story event here was won (questing together: every hero's quest for it counts). */
+  | { t: 'event'; id: string }
   /** Guest: a hit on one of the host's enemies (already worked out: crit, armor, resistances). */
   | { t: 'dmg'; id: number; dmg: number; kx: number; ky: number }
   /** Guest: control on one of the host's enemies (stun, chill, a mark...). */

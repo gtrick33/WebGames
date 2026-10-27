@@ -3035,6 +3035,18 @@
   gap: 10px;
   max-width: 560px;
 }
+.rb-party-mode {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  padding: 10px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 8px;
+  background: rgb(27 20 40 / 0.5);
+}
+.rb-party-mode p {
+  margin: 0;
+}
 .rb-party-actions {
   display: flex;
   flex-wrap: wrap;

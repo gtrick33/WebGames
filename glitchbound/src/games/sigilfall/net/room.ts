@@ -31,6 +31,8 @@ export interface Card {
   para: number;
   /** The highest Riftstone level opened. */
   keystone: number;
+  /** Main-story quests done: questing together, the hero furthest behind leads (and the others see their world). */
+  story: number;
   /** The drawn look (render/sprites HeroLook) and held weapon, opaque to the room. */
   look: unknown;
   weapon: unknown;
@@ -53,6 +55,13 @@ export interface State extends RoomBase {
   runSeed: number;
   /** The host's week (Riftstone affixes), fixed when the run starts so everyone fights the same ones. */
   week: number;
+  /**
+   * Whose game runs the world: the host for a Riftstone run; questing together, the hero furthest behind in
+   * the story, so the others are phased into their world (and not the other way round).
+   */
+  lead: number;
+  /** Questing together: counts the leader's travels (every game follows to `plan.region` when it changes). */
+  trip: number;
 }
 
 export interface View {
@@ -67,6 +76,8 @@ export interface View {
   run: number;
   runSeed: number;
   week: number;
+  lead: number;
+  trip: number;
 }
 
 export type Action =
@@ -76,10 +87,12 @@ export type Action =
   | { t: 'start'; week: number }
   | { t: 'end' }
   | { t: 'kick'; n: number }
+  /** Questing together: the leader goes somewhere (a region, the tier for a dungeon) and the party follows. */
+  | { t: 'go'; region: string; tier: number }
   | { t: 'r'; d: unknown };
 
 export function newRoom(code: string, now: number, seed: number): State {
-  return { game: 'sigilfall', code, created: now, updated: now, phase: 'lobby', mode: 'rift', seats: [], nextSeat: 1, host: 0, deadline: null, seed, cards: {}, plan: null, run: 0, runSeed: 0, week: 0 };
+  return { game: 'sigilfall', code, created: now, updated: now, phase: 'lobby', mode: 'rift', seats: [], nextSeat: 1, host: 0, deadline: null, seed, cards: {}, plan: null, run: 0, runSeed: 0, week: 0, lead: 0, trip: 0 };
 }
 
 export function join(s: State, key: string, name: string, now: number): string | null {
@@ -91,7 +104,7 @@ export function join(s: State, key: string, name: string, now: number): string |
 export function leave(s: State, key: string, now: number): void {
   const seat = leaveSeat(s, key, now);
   if (seat && !s.seats.some((x) => x.n === seat.n)) delete s.cards[seat.n];
-  // nobody left to run with: back to the lobby
+  // nobody left to run with: back to the lobby (a leader who drops out for a moment is waited for)
   if (s.phase === 'run' && !s.seats.some((x) => x.online)) s.phase = 'lobby';
 }
 
@@ -107,9 +120,10 @@ export function cleanCard(v: unknown): Card | null {
   const level = int(c.level, 1, 99);
   const para = int(c.para, 0, 100_000);
   const keystone = int(c.keystone, 0, 999);
+  const story = int(c.story, 0, 10_000) ?? 0;
   if (typeof c.cls !== 'string' || !ID.test(c.cls) || level === null || para === null || keystone === null) return null;
   if (typeof c.name !== 'string' || !c.look || typeof c.look !== 'object' || !c.weapon || typeof c.weapon !== 'object') return null;
-  const card: Card = { name: c.name.slice(0, 20), cls: c.cls, level, para, keystone, look: c.look, weapon: c.weapon };
+  const card: Card = { name: c.name.slice(0, 20), cls: c.cls, level, para, keystone, story, look: c.look, weapon: c.weapon };
   return JSON.stringify(card).length <= CARD_MAX ? card : null;
 }
 
@@ -138,7 +152,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
     }
     case 'start': {
       if (!host || s.phase !== 'lobby') return 'not_host';
-      if (!s.plan) return 'no_plan';
+      if (s.mode === 'rift' && !s.plan) return 'no_plan';
       const here = s.seats.filter((x) => x.online);
       // everyone who is here has a hero chosen; a Riftstone run is for heroes at the level cap
       if (here.some((x) => !s.cards[x.n])) return 'no_hero';
@@ -147,6 +161,21 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       s.run += 1;
       s.runSeed = nextRandom(s);
       s.week = int(a.week, 0, 1e6) ?? 0;
+      // questing together: the hero furthest behind in the story leads (the leader on a tie); their game
+      // says where the party starts (`go`)
+      s.lead = s.mode === 'rift' ? s.host : here.reduce((best, x) => (s.cards[x.n]!.story < s.cards[best]!.story || (s.cards[x.n]!.story === s.cards[best]!.story && x.n === s.host) ? x.n : best), here[0]!.n);
+      if (s.mode === 'party') {
+        s.plan = null;
+        s.trip = 0;
+      }
+      break;
+    }
+    case 'go': {
+      if (me.n !== s.lead || s.phase !== 'run' || s.mode !== 'party') return 'not_lead';
+      const tier = int(a.tier, 0, 2);
+      if (typeof a.region !== 'string' || !ID.test(a.region) || tier === null) return 'bad_plan';
+      s.plan = { region: a.region, key: tier };
+      s.trip += 1;
       break;
     }
     case 'end':
@@ -187,6 +216,8 @@ export function viewFor(s: State, key: string): View | null {
     run: s.run,
     runSeed: s.runSeed,
     week: s.week,
+    lead: s.lead,
+    trip: s.trip,
   };
 }
 
