@@ -192,6 +192,38 @@ export function orbArt(): Cnv {
   });
 }
 
+/** A healing potion on the ground, 6 × 9 world pixels: a corked flask of red. */
+export function potionArt(): Cnv {
+  return once('potion', () => {
+    const k = LOOT_K;
+    const c = canvas(6 * k, 9 * k);
+    const g = ctx2d(c);
+    g.scale(k, k);
+    // the flask: a round body and a neck, outlined
+    g.fillStyle = INK;
+    g.beginPath();
+    g.arc(3, 5.8, 2.9, 0, Math.PI * 2);
+    g.fill();
+    g.fillRect(1.9, 1.2, 2.2, 3);
+    const r = g.createRadialGradient(2.4, 5.2, 0.3, 3, 6, 2.6);
+    r.addColorStop(0, '#ffd0d8');
+    r.addColorStop(0.4, '#ff4a6a');
+    r.addColorStop(1, '#8a1a32');
+    g.fillStyle = r;
+    g.beginPath();
+    g.arc(3, 5.8, 2.3, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#d8e6f0';
+    g.fillRect(2.4, 1.8, 1.2, 2.2);
+    // the cork and a glint
+    g.fillStyle = '#a8784a';
+    g.fillRect(2.2, 0.4, 1.6, 1.2);
+    g.fillStyle = 'rgba(255,255,255,0.9)';
+    g.fillRect(1.6, 4.6, 0.7, 1.1);
+    return c;
+  });
+}
+
 /** A rift shard, 6 × 10 world pixels. */
 export function shardArt(): Cnv {
   return once('shard', () => {

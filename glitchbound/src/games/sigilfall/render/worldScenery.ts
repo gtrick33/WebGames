@@ -6,6 +6,12 @@ import type { PropAtlas, Rect, WorldArt } from './art/atlas';
 import type { Recipe } from './art/recipes';
 import type { Cnv } from './pixel';
 
+/** The low rocks of a land's set (boulders stand only in boulder fields, which are walls). */
+const lowRocks = (rocks: string[]): string[] => {
+  const low = rocks.filter((id) => !id.includes('boulder'));
+  return low.length ? low : ['cps:rock-01'];
+};
+
 /**
  * The standing things of an outdoor land in the approved hierarchy: CraftPix trees, bushes, rocks,
  * fences, houses, wells, tents, banners and towers lead; Worlds-bundle pieces stand in only for what
@@ -153,7 +159,8 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
         stand(pick(r.bushes, h), cx, bottom - 3, 'bush');
         break;
       case K.Rock:
-        stand(pick(r.rocks, h), cx, bottom - 4, 'rock');
+        // a lone rock is low (shots fly over it, sim/map.ts): never one of the land's boulders
+        stand(pick(lowRocks(r.rocks), h), cx, bottom - 4, 'rock');
         break;
       case K.Fence: {
         // CraftPix fence runs: a rail east-west, a rail north-south, and a post where they turn

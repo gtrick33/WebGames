@@ -31,7 +31,7 @@ export const keyLoot = (key: number): number => Math.min(MAX_IL, KEY_LEVEL + key
 export const keyMarks = (key: number, inTime: boolean): number => (inTime ? 4 + key : 1 + Math.floor(key / 2));
 
 /** Items in the Rift's cache at the end of a run in time. */
-export const keyCache = (key: number): number => 2 + Math.floor(key / 3);
+export const keyCache = (key: number): number => 3 + Math.floor(key / 3);
 
 export type KeyAffix = 'fortified' | 'tyrannical' | 'bolstering' | 'sanguine' | 'raging' | 'bursting' | 'volatile' | 'hasted';
 

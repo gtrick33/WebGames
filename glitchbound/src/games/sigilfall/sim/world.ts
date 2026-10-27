@@ -18,8 +18,9 @@ import { maybeStartScene, updateScene, type ScenePlay } from './scene';
 import { buildHero, type HeroBuild } from '../progress/build';
 import { fogOpen, fogShare, loadFog, revealFog, storeFog, type Fog } from '../progress/fog';
 import { turnInNpc } from '../progress/handin';
-import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME, currentObjective } from '../progress/character';
-import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
+import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, potionCap, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME, currentObjective } from '../progress/character';
+import { potionPrice } from '../progress/shop';
+import { goldDrop, itemName, makeItem, rollLoot, rollRarity, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
 import { learnLooks } from '../progress/wardrobe';
 import { addParagonXp, paragonXp } from '../progress/paragon';
@@ -921,7 +922,35 @@ export class World {
     }
     this.syncCooldowns(false);
     refreshPets(this);
+    this.dropLeftovers();
   }
+
+  /**
+   * What a skill keeps going (its companions, its buffs, the shape it took, its channel) ends when the skill
+   * leaves the bar: a warlock who swaps Summon Imp for another skill loses the imp. "On the bar" means the
+   * skills the hero chose plus the bar of the shape they are in, so shapeshifting itself drops nothing.
+   */
+  private dropLeftovers(): void {
+    const p = this.player;
+    const kept = new Set<string>(this.hero.skills.filter((id): id is string => !!id));
+    for (const id of Object.values(this.build.bar)) if (id) kept.add(id);
+    const before = this.barSkills;
+    this.barSkills = kept;
+    for (const pet of this.pets) {
+      if (pet.dead || !pet.skill || kept.has(pet.skill)) continue;
+      pet.dead = true;
+      pet.deathT = 0;
+      this.fxBurst(pet.x, pet.y, '#b58aff', 10, 10);
+    }
+    p.buffs = p.buffs.filter((b) => !b.skill || kept.has(b.skill));
+    if (p.channel && !kept.has(p.channel.spec.id)) p.channel = null;
+    const shape = p.form ? CLASSES[this.hero.cls].forms?.find((f) => f.id === p.form) : undefined;
+    // the shape's own skill was on the bar and has been taken off: back to the hero's own shape (rebuilds again)
+    if (shape && before.has(shape.skill) && !kept.has(shape.skill)) this.setForm(null);
+  }
+
+  /** The skills on the bar at the last rebuild (dropLeftovers). */
+  private barSkills = new Set<string>();
 
   /** A druid takes a shape (or returns to their own, null): the bar changes with it. */
   setForm(form: string | null): void {
@@ -1297,8 +1326,13 @@ export class World {
     else if (item.r === 'epic') this.sfx('epic');
   }
 
+  /** A piece of gear; one the hero already carries (bag or worn) rolls again, twice at most. */
   private rollItem(source: LootSource, level: number): Item {
-    return rollLoot(this.hero.cls as ClassId, level, source, this.tier, this.rand);
+    const h = this.hero;
+    const have = new Set([...h.bag, ...Object.values(h.equip)].flatMap((i) => (i ? [itemName(i)] : [])));
+    let item = rollLoot(h.cls as ClassId, level, source, this.tier, this.rand);
+    for (let i = 0; i < 2 && have.has(itemName(item)); i++) item = rollLoot(h.cls as ClassId, level, source, this.tier, this.rand);
+    return item;
   }
 
   private updateDrops(dt: number): void {
@@ -1317,7 +1351,7 @@ export class World {
       }
       if (p.dead || d.t < 0.35) continue;
       const dd = dist(d.x, d.y, p.x, p.y);
-      const magnet = d.kind === 'gold' || d.kind === 'orb' || d.kind === 'shard' ? 40 : 0;
+      const magnet = d.kind === 'gold' || d.kind === 'orb' || d.kind === 'shard' || d.kind === 'potion' ? 40 : 0;
       if (dd < magnet) {
         const a = Math.atan2(p.y - d.y, p.x - d.x);
         const sp = 160 * dt;
@@ -1341,7 +1375,7 @@ export class World {
     let salvaged = 0;
     for (const d of this.drops) {
       if (d.dead) continue;
-      if (d.kind === 'gold' || d.kind === 'shard') this.pickUp(d);
+      if (d.kind === 'gold' || d.kind === 'shard' || d.kind === 'potion') this.pickUp(d);
       else if (d.kind === 'item') {
         const item = d.item!;
         d.dead = true;
@@ -1377,6 +1411,22 @@ export class World {
         this.sfx('orb');
         d.dead = true;
         break;
+      case 'potion': {
+        d.dead = true;
+        // a full belt takes it as its price in coin
+        if (h.potions >= potionCap(h)) {
+          const g = potionPrice(h.level);
+          h.gold += g;
+          this.run.gold += g;
+          this.sfx('coin', 0.6);
+          break;
+        }
+        h.potions += 1;
+        this.sfx('potion', 0.5);
+        this.emit({ t: 'toast', text: `Potion (${h.potions}/${potionCap(h)})`, tone: 'loot' });
+        this.emit({ t: 'save' });
+        break;
+      }
       case 'shard': {
         h.shards += 1;
         d.dead = true;
@@ -1464,15 +1514,15 @@ export class World {
     const big = e.elite.length > 0 || !!e.def.named;
     const gold = goldDrop(e.def.gold, e.level, this.rand) * (big ? 3 : 1);
     if (gold > 0) this.dropGold(e.x, e.y, gold);
-    // fewer, better things to pick up (blueprint Prompt 11): of the rank and file's drops, the plain pieces and
-    // one in five of the rest come as their worth in coin; elites, chests and bosses drop as before
+    // Gear comes from chests, bosses, quests and shops, never from the enemies on the way (a playtester had
+    // the same staff drop six times). What a piece would have been worth comes as a purse of coin instead,
+    // every time from an elite or a named foe, now and then from the rest; and a potion now and then.
     const chance = (big ? 1 : 0.075) * tier.loot * bonus;
-    const roll = this.rand();
-    if (roll < chance) {
-      const item = this.rollItem(big ? 'elite' : 'enemy', this.keyRun ? keyLoot(this.keyRun.key) : e.level);
-      if (big || (item.r !== 'common' && roll < chance * 0.8)) this.dropItem(e.x, e.y, item);
-      else this.dropAt('gold', e.x, e.y, salvageValue(item));
+    if (this.rand() < chance) {
+      const r = rollRarity(big ? 'elite' : 'enemy', this.tier, this.rand);
+      this.dropAt('gold', e.x, e.y, salvageValue({ il: this.keyRun ? keyLoot(this.keyRun.key) : e.level, r }));
     }
+    if (this.rand() < (big ? 0.5 : 0.04)) this.dropAt('potion', e.x, e.y, 1);
     if (this.rand() < (e.elite.length ? 0.4 : 0.07)) this.dropAt('orb', e.x, e.y, 1);
     if (e.elite.length && h.quests['rift-shards']?.state === 'active' && h.shards < 3) this.dropAt('shard', e.x, e.y, 1);
     // what a death throws at the heroes is the host's (a guest sees its copy)

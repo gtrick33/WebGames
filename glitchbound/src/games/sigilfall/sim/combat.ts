@@ -444,7 +444,8 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
       break;
     }
     case 'buff':
-      addBuff(w, e.buff);
+      // a skill's own buff belongs to it (procs from talents and items belong to no skill)
+      addBuff(w, e.buff, c.when === 'cast' ? c.spec?.id : undefined);
       break;
     case 'resource':
       gainResource(w, e.n, 'pct');
@@ -454,7 +455,7 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
       for (const en of enemiesIn(w, c.x, c.y, e.radius)) applyStatus(w, en, { status: 'fear', dur: e.dur, power: 1 }, 0);
       break;
     case 'summon':
-      summonPet(w, e.pet, e.count, e.dur);
+      summonPet(w, e.pet, e.count, e.dur, c.when === 'cast' ? c.spec?.id : undefined);
       break;
     case 'sacrifice': {
       const p = w.player;
@@ -516,13 +517,14 @@ export function killEnemy(w: World, e: Enemy, type: DmgType, depth: number, spec
 }
 
 /** A buff on the hero: the same buff refreshes (the longer time, the stronger numbers). */
-export function addBuff(w: World, def: BuffDef): void {
+export function addBuff(w: World, def: BuffDef, skill?: string): void {
   const p = w.player;
   const cur = p.buffs.find((b) => b.def.id === def.id);
   if (cur) {
     cur.t = Math.max(cur.t, def.dur);
     cur.def = def;
-  } else p.buffs.push({ def, t: def.dur });
+    cur.skill = skill;
+  } else p.buffs.push({ def, t: def.dur, skill });
   w.addFx({ kind: 'glow', x: p.x, y: p.y - 6, life: 0.5, size: 14, color: def.color });
   w.sfx('buff', 0.6);
 }

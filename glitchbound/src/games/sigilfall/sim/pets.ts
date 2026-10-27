@@ -19,8 +19,11 @@ const MAX_PETS = 6;
 
 const petStat = (w: World): number => 1 + (effStats(w).pet ?? 0) / 100;
 
-/** Calls `count` pets of a kind. A pet that stays (dur 0) is called once: calling again heals it. */
-export function summonPet(w: World, id: string, count: number, dur: number): void {
+/**
+ * Calls `count` pets of a kind. A pet that stays (dur 0) is called once: calling again heals it. `skill` is
+ * the skill whose cast calls them: they leave when it leaves the bar.
+ */
+export function summonPet(w: World, id: string, count: number, dur: number, skill?: string): void {
   const def = PETS[id];
   if (!def) return;
   const p = w.player;
@@ -31,6 +34,7 @@ export function summonPet(w: World, id: string, count: number, dur: number): voi
   if (dur === 0) {
     const have = w.pets.filter((x) => !x.dead && x.def.id === id && x.life === Infinity);
     for (const pet of have) {
+      pet.skill = skill;
       pet.hp = pet.maxHp = maxHp;
       pet.dmg = dmg;
       w.addFx({ kind: 'glow', x: pet.x, y: pet.y - 4, life: 0.5, size: 10, color: '#8bff6a' });
@@ -46,7 +50,7 @@ export function summonPet(w: World, id: string, count: number, dur: number): voi
       if (!old) break;
       old.dead = true;
     }
-    w.pets.push({ id: w.nextId++, def, x: to.x, y: to.y, vx: 0, vy: 0, r: def.radius, hp: maxHp, maxHp, dmg, atkCd: 0.4, life: dur > 0 ? dur : Infinity, target: null, face: 0, walkT: 0, flash: 0, actT: 0, dead: false, deathT: 0 });
+    w.pets.push({ id: w.nextId++, def, x: to.x, y: to.y, vx: 0, vy: 0, r: def.radius, hp: maxHp, maxHp, dmg, atkCd: 0.4, life: dur > 0 ? dur : Infinity, target: null, face: 0, walkT: 0, flash: 0, actT: 0, dead: false, deathT: 0, skill });
     w.addFx({ kind: 'burst', x: to.x, y: to.y, life: 0.35, size: 10, color: def.dmgType === 'fire' ? '#ff9a4d' : def.dmgType === 'shadow' ? '#b58aff' : def.dmgType === 'nature' ? '#9cf07a' : '#ffffff' });
   }
   w.sfx('summon', 0.6);
