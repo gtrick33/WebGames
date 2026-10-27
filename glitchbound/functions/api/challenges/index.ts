@@ -1,4 +1,4 @@
-import { challengeRow, listFor, newChallenge, playerOf, startStatements, sweep, tooManyToday, viewOf } from '../../../server/challenges';
+import { challengeRow, historyFor, listFor, newChallenge, playerOf, startStatements, sweep, tooManyToday, viewOf } from '../../../server/challenges';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { getGame } from '../../../src/catalog/catalog';
 import { cleanName } from '../../../src/platform/challenge';
@@ -21,10 +21,12 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   return json(await viewOf(env, row!, player));
 }
 
-/** GET /api/challenges?key=…: the challenges this player is in. */
+/** GET /api/challenges?key=…: the open challenges this player is in; with &history, every one they had a seat in, with results. */
 export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
+  const history = new URL(request.url).searchParams.has('history');
   const player = await playerOf(env, request, null);
-  if (!player) return json({ challenges: [] });
+  if (!player) return json(history ? { history: [] } : { challenges: [] });
   await sweep(env);
+  if (history) return json({ history: await historyFor(env, player) }, 200, { 'cache-control': 'no-store' });
   return json({ challenges: await listFor(env, player) }, 200, { 'cache-control': 'no-store' });
 }

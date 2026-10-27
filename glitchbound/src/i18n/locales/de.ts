@@ -2063,6 +2063,17 @@ const de: string[] = [
   "Die Raumliste ist gerade nicht verfügbar. Versuch es in einer Minute noch mal.",
   '{name} fordert dich heraus, {score} in {game} zu schlagen',
   '{name} fordert dich in {game} heraus',
+  'Noch keine Punkte',
+  'Gleichstand: {names}',
+  'Du hast gewonnen',
+  'Du führst',
+  'gegen {names}',
+  'Sonst ist niemand beigetreten',
+  'Vergangene Herausforderungen',
+  'Noch keine. Herausforderungen, die enden oder die du verlässt, erscheinen hier mit ihren Punkten.',
+  'Beendete Herausforderungen bleiben {n} Tage hier.',
+  'Noch keine Herausforderungen. Fordere Freunde in jedem Spiel heraus: dieselbe Runde, ein Versuch pro Person.',
+  'Alle deine Herausforderungen',
 ];
 
 export default de;

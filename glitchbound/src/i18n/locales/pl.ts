@@ -2063,6 +2063,17 @@ const pl: string[] = [
   "Lista pokojów jest teraz niedostępna. Spróbuj ponownie za minutę.",
   '{name} wyzywa cię do pobicia wyniku {score} w {game}',
   '{name} wyzywa cię w {game}',
+  'Jeszcze brak wyników',
+  'Remis: {names}',
+  'Wygrywasz',
+  'Prowadzisz',
+  'przeciw {names}',
+  'Nikt inny nie dołączył',
+  'Poprzednie wyzwania',
+  'Jeszcze brak. Wyzwania, które się kończą lub które opuścisz, pojawiają się tu z wynikami.',
+  'Zakończone wyzwania zostają tu przez {n} dni.',
+  'Nie masz jeszcze wyzwań. Wyzwij znajomych w dowolnej grze: ta sama runda, jedna próba na osobę.',
+  'Wszystkie twoje wyzwania',
 ];
 
 export default pl;

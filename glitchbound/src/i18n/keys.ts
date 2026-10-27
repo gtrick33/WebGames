@@ -2069,6 +2069,17 @@ export const KEYS: string[] = [
   "The room list is not available right now. Try again in a minute.",
   "{name} challenges you to beat {score} in {game}",
   "{name} challenges you in {game}",
+  "No scores yet",
+  "Tied: {names}",
+  "You won",
+  "You lead",
+  "vs {names}",
+  "Nobody else joined",
+  "Past challenges",
+  "None yet. Challenges that end, or that you leave, show up here with their scores.",
+  "Ended challenges stay here for {n} days.",
+  "No challenges yet. Challenge friends from any game: same round, one try each.",
+  "All your challenges",
 ];
 
 export const UI_COUNT = 311;

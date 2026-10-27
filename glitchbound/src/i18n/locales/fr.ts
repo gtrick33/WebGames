@@ -2063,6 +2063,17 @@ const fr: string[] = [
   "La liste des salons n’est pas disponible pour le moment. Réessaie dans une minute.",
   '{name} te défie de battre {score} à {game}',
   '{name} te défie à {game}',
+  'Pas encore de score',
+  'Égalité : {names}',
+  'Tu as gagné',
+  'Tu mènes',
+  'contre {names}',
+  'Personne d’autre n’a rejoint',
+  'Défis passés',
+  'Aucun pour l’instant. Les défis terminés, ou que tu quittes, apparaissent ici avec leurs scores.',
+  'Les défis terminés restent ici {n} jours.',
+  'Pas encore de défi. Défie tes amis depuis n’importe quel jeu : la même manche, un essai chacun.',
+  'Tous tes défis',
 ];
 
 export default fr;

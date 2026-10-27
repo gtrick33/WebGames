@@ -2063,6 +2063,17 @@ const es: string[] = [
   "La lista de salas no está disponible ahora mismo. Inténtalo de nuevo en un minuto.",
   '{name} te reta a superar {score} en {game}',
   '{name} te reta en {game}',
+  'Aún no hay puntuaciones',
+  'Empate: {names}',
+  'Has ganado',
+  'Vas en cabeza',
+  'contra {names}',
+  'Nadie más se unió',
+  'Desafíos anteriores',
+  'Aún no hay. Los desafíos que terminan, o que dejas, aparecen aquí con sus puntuaciones.',
+  'Los desafíos terminados se quedan aquí {n} días.',
+  'Aún no tienes desafíos. Reta a tus amigos desde cualquier juego: la misma ronda, un intento cada uno.',
+  'Todos tus desafíos',
 ];
 
 export default es;

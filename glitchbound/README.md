@@ -36,7 +36,8 @@ All commands run from this folder (`glitchbound/`). Requires Node 20+ (developed
 | `/leaderboards` | Hall of Fame (crowns, podiums, records) and per-game boards (all time, last 24 h) |
 | `/signin` | Sign in or sign up: Google, or any email with a 6-digit code / magic link |
 | `/play/<slug>/` | In-repo games built into the site (NEON RUSH), shown inside the game page |
-| `/me` | Profile: level, quests, badges, bests, favorites, email notifications, delete account |
+| `/c` | Your friends' challenges: the open ones, starting one, and past ones with their scores (members also see the latest on `/me`) |
+| `/me` | Profile: level, quests, badges, bests, favorites, challenges, email notifications, delete account |
 | `/admin` | Admin dashboard (ADMIN_EMAILS only): members, plays per game, funnel, searches, crashes, email announcements |
 | `/privacy` | What is stored and a button to delete it |
 | anything else | A real 404 page (HTTP 404) |
