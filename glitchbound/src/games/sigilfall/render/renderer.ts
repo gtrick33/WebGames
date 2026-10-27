@@ -2,7 +2,7 @@ import { clamp, damp, dist, hash2, TAU } from '../core/math';
 import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
-import { chestArt, CHEST_H, CHEST_W, coinArt, orbArt, shardArt } from './art/loot';
+import { chestArt, CHEST_H, CHEST_W, coinArt, orbArt, potionArt, shardArt } from './art/loot';
 import { LEAD, leanTarget, LIFT, placeCamera } from './camera';
 import { drawBolt, drawVfx } from './art/vfx';
 import { worldLook } from './art/world';
@@ -1729,6 +1729,11 @@ export class Renderer {
     if (kind === 'orb') {
       g.drawImage(glowDisc('rgba(255,90,122,0.8)', 6), X - 6, Y - 9);
       g.drawImage(orbArt(), X - 4, Y - 7 + Math.round(Math.sin(time * 5)), 8, 8);
+      return;
+    }
+    if (kind === 'potion') {
+      g.drawImage(glowDisc('rgba(255,74,106,0.7)', 7), X - 7, Y - 11);
+      g.drawImage(potionArt(), X - 3, Y - 9 + Math.round(Math.sin(time * 4 + x)), 6, 9);
       return;
     }
     if (kind === 'shard') {

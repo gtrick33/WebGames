@@ -62,8 +62,11 @@ const TERRAIN: Record<string, K> = {
 
 /** Kinds you can't walk through. */
 const SOLID_KINDS = new Set<K>([K.Water, K.Wall, K.Tree, K.Bush, K.Rock, K.Fence, K.House, K.HouseAnchor, K.Pillar, K.Brazier, K.Cracked, K.Prop, K.Rampart]);
-/** Kinds that stop projectiles (water and fences don't, low enough to shoot over). */
-const BLOCK_KINDS = new Set<K>([K.Wall, K.Tree, K.Rock, K.House, K.HouseAnchor, K.Pillar, K.Cracked, K.Rampart]);
+/**
+ * Kinds that stop projectiles. Water, fences and the lone rocks of the open land don't: they are low enough to
+ * shoot over (a playtester's spells kept catching on pebbles a third of a tile wide). Boulder fields are walls.
+ */
+const BLOCK_KINDS = new Set<K>([K.Wall, K.Tree, K.House, K.HouseAnchor, K.Pillar, K.Cracked, K.Rampart]);
 
 export interface PlacedMarker {
   ch: string;

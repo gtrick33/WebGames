@@ -53,7 +53,8 @@ export interface Player {
   /** A channel: whirlwinds around the hero, or a drain on one enemy (`target`). */
   channel: { spec: SkillSpec; t: number; tickT: number; target?: number } | null;
   /** Timed buffs (shouts, walls, wings, healing over time). */
-  buffs: { def: BuffDef; t: number }[];
+  /** Timed buffs; `skill` is the skill whose cast gave it (it ends when that skill leaves the bar). */
+  buffs: { def: BuffDef; t: number; skill?: string }[];
   /** A druid's shape (a FormDef id), or null. */
   form: string | null;
   cds: Record<SlotKey, Cooldown>;
@@ -223,6 +224,8 @@ export interface Pet {
   paused?: boolean;
   /** Seconds a companion stays down before getting back up (PetDef.rally). */
   downT?: number;
+  /** The skill whose cast called it: it leaves when that skill leaves the bar (World.dropLeftovers). */
+  skill?: string;
 }
 
 export interface Projectile {
@@ -409,7 +412,7 @@ export interface Trap {
 
 export interface Drop {
   id: number;
-  kind: 'gold' | 'item' | 'orb' | 'shard';
+  kind: 'gold' | 'item' | 'orb' | 'shard' | 'potion';
   x: number;
   y: number;
   vx: number;

@@ -109,7 +109,7 @@ export function itemScore(item: Item): number {
   return item.il * 10 + rank * 25 + itemStats(item).length * 3 + itemMods(item).length * 15;
 }
 
-export const salvageValue = (item: Item): number => Math.round((4 + item.il * 2) * [1, 1.6, 3, 6, 12][RARITIES.indexOf(item.r)]!);
+export const salvageValue = (item: Pick<Item, 'il' | 'r'>): number => Math.round((4 + item.il * 2) * [1, 1.6, 3, 6, 12][RARITIES.indexOf(item.r)]!);
 
 /* -------------------------------------------------------------- generation */
 
