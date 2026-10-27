@@ -11,6 +11,8 @@ import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTr
 import { itemClass, itemSlot, newUid } from './items';
 import { grantMounts, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
 import { MOUNT_DEFS } from '../data/mounts';
+import { KEY_MIN, MAX_IL } from '../data/keystones';
+import { validateParagon } from './paragon';
 
 /**
  * The save: up to three heroes and the settings, versioned and validated field by field on load.
@@ -30,7 +32,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -135,7 +137,7 @@ export function validateItem(v: unknown): Item | null {
   const authored = ITEM_DEFS[o.base];
   const base = BASE_DEFS[o.base];
   if (!authored && !base) return null;
-  const il = int(o.il, 1, 70, 1);
+  const il = int(o.il, 1, MAX_IL, 1);
   const r = authored ? authored.rarity : RARITIES.includes(o.r as never) ? (o.r as Item['r']) : 'common';
   if (!authored && (r === 'epic' || r === 'legendary')) return null;
   const item: Item = { uid: o.uid.slice(0, 24), base: o.base, r, il, st: [] };
@@ -181,6 +183,9 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     tier: int(o.tier, 0, 2, 0),
     bosses: {},
     clears: {},
+    keystone: int(o.keystone, 0, 999, 0),
+    bestKeys: {},
+    para: validateParagon(o.para),
     opened: [],
     perks: Array.isArray(o.perks) ? [...new Set(o.perks.filter((x): x is PerkId => typeof x === 'string' && x in PERKS))] : [],
     looks: Array.isArray(o.looks) ? o.looks.filter((x): x is string => typeof x === 'string' && x.length <= 64).slice(0, 4000) : [],
@@ -257,10 +262,12 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   if (Array.isArray(o.unlocked)) for (const r of o.unlocked) if (typeof r === 'string' && r in REGIONS && !c.unlocked.includes(r as RegionId)) c.unlocked.push(r as RegionId);
   // quests of the zones the hero has been to start once those are known
   startQuests(c);
-  for (const key of ['bosses', 'clears'] as const) {
+  for (const key of ['bosses', 'clears', 'bestKeys'] as const) {
     const m = obj(o[key]) ?? {};
     for (const [k, n] of Object.entries(m).slice(0, 200)) if (/^[a-z0-9:-]{1,32}$/.test(k)) c[key][k] = int(n, 0, 1e6, 0);
   }
+  // Mythic+: whoever has cleared Duskspire on Mythic holds a Riftstone
+  if (c.quests['postgame-crownfall-mythic']?.state === 'done') c.keystone = Math.max(KEY_MIN, c.keystone);
   if (Array.isArray(o.opened)) c.opened = [...new Set(o.opened.filter((x): x is string => typeof x === 'string' && /^[a-z0-9:-]{1,48}$/.test(x)))].slice(0, 600);
   // the Wardrobe: looks of everything worn or carried are owned (the only ownership that can be proven);
   // worn looks stay only where they are owned and fit the class (the item under them is never touched)
@@ -404,6 +411,9 @@ export function migrate(raw: unknown): SaveFile | null {
   }
   // version 10: quests stored packed (packQuest); both forms are read
   if (o.v === 9) o.v = 10;
+  // version 11: Mythic+ (the Riftstone, the best stones) and Paragon levels; older heroes start with none
+  // (validateCharacter gives a stone to whoever cleared Duskspire on Mythic)
+  if (o.v === 10) o.v = 11;
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];
   const list = Array.isArray(o.heroes) ? o.heroes : [];

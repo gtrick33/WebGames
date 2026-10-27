@@ -701,6 +701,24 @@
   font: 700 11px/16px var(--mono);
   text-align: center;
 }
+.rb-para {
+  position: absolute;
+  bottom: -7px;
+  left: -7px;
+  height: 20px;
+  padding: 0 4px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 6px;
+  background: #c58cff;
+  color: var(--rb-ink);
+  font: 700 10px/16px var(--mono);
+}
+.rb-para.is-free {
+  box-shadow: 0 0 0 2px var(--rb-gold);
+}
+.rb-para-name {
+  color: #d8b4ff;
+}
 .rb-hud-bars {
   display: grid;
   gap: 3px;
@@ -820,6 +838,12 @@
   height: 100%;
   background: linear-gradient(#ffe88a, #e0a82a);
 }
+.rb-xp.is-paragon i {
+  background: linear-gradient(#e2c4ff, #9a5ae0);
+}
+.rb-mplus {
+  color: #ff8a3d;
+}
 .rb-region {
   font-size: 11.5px;
   font-weight: 700;
@@ -890,6 +914,118 @@
 .rb-tracker strong img {
   height: 12px;
   image-rendering: pixelated;
+}
+/* a Mythic+ run's clock, where the quest tracker goes (and kept on short screens, where the tracker hides) */
+.rb-tracker.rb-keyclock {
+  gap: 2px;
+  min-width: 150px;
+  border-color: rgb(255 138 61 / 0.7);
+}
+.rb-keyclock strong {
+  color: #ff8a3d;
+}
+.rb-keytime {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  color: #e8f6ff;
+}
+.rb-keytime.is-late {
+  color: #ff6a6a;
+}
+.rb-keybar {
+  display: block;
+  height: 5px;
+  border: 1px solid var(--rb-ink);
+  border-radius: 3px;
+  background: #2a2010;
+  overflow: hidden;
+}
+.rb-keybar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ffcf5a, #ff8a3d);
+}
+.rb-keyend {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 8px 12px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 8px;
+  background: rgb(27 20 40 / 0.5);
+  text-align: center;
+  font-size: 13.5px;
+}
+.rb-keyend.is-in {
+  box-shadow: inset 0 0 0 2px #ffcf5a;
+}
+.rb-keyend.is-late {
+  box-shadow: inset 0 0 0 2px #ff6a6a;
+}
+.rb-keyend .rb-keytime {
+  font-size: 24px;
+}
+.rb-key {
+  display: grid;
+  gap: 6px;
+}
+.rb-key-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.rb-key-lvl {
+  min-width: 96px;
+  color: #ff8a3d;
+  font-size: 16px;
+  text-align: center;
+}
+.rb-affixes {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+}
+.rb-affixes li {
+  margin: 2px 0;
+}
+.rb-paragon {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 8px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 8px;
+  background: rgb(197 140 255 / 0.08);
+}
+.rb-paragon-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 10px;
+  font-size: 13px;
+}
+.rb-paragon-head strong {
+  color: #d8b4ff;
+}
+.rb-paragon-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.rb-paragon-line {
+  display: grid;
+  line-height: 1.25;
+}
+.rb-paragon-n {
+  min-width: 34px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.rb-paragon-reset {
+  justify-self: start;
 }
 .rb-encounter {
   position: absolute;
@@ -2779,6 +2915,29 @@
     transform-origin: bottom left;
   }
   .rb-tracker {
+    display: none;
+  }
+  /* the clock moves to a line at the top middle, clear of the thumbs */
+  .rb-tracker.rb-keyclock {
+    top: calc(34px + var(--sa-t));
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: none;
+    padding: 2px 8px;
+    white-space: nowrap;
+  }
+  .rb-keyclock .rb-keytime {
+    font-size: 14px;
+  }
+  .rb-keyclock .rb-keybar {
+    width: 48px;
+  }
+  .rb-keyclock .rb-small {
     display: none;
   }
 }

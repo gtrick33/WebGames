@@ -28,6 +28,7 @@ export function questRewards(c: Character, q: QuestDef): RewardLine[] {
   if (r.perk) out.push({ kind: 'perk', text: `${PERKS[r.perk].name}: ${PERKS[r.perk].text}` });
   if (r.unlock) out.push({ kind: 'unlock', text: `The way to ${REGIONS[r.unlock].name}` });
   if (r.tier) out.push({ kind: 'tier', text: r.tier >= 2 ? 'Mythic difficulty' : 'Heroic difficulty' });
+  if (r.keystone) out.push({ kind: 'tier', text: `A Riftstone: Mythic +${r.keystone}` });
   return out;
 }
 

@@ -241,6 +241,17 @@ charges only along a clear lane; with a pillar in the way it walks round it.
 Difficulty: Normal, Heroic (+6 enemy levels, ×1.9 health, ×1.4 damage) and Mythic (+12, ×4, ×2.1), each opened
 by clearing the crypt on the tier below, with optional modifiers for more loot.
 
+**Mythic+** (the endgame past Mythic, `data/keystones.ts`), climbed as Diablo's rifts are: clearing Duskspire on
+Mythic earns a Riftstone and opens Mythic +1. Any dungeon can then be run at any level opened, against its clock
+(each fall costs 10 s): enemies at level 72 with ×4·1.08ᵏ health and ×2.1·1.05ᵏ damage, without end, and the week's
+affixes from +2 (Fortified or Tyrannical), +4 (Bolstering, Sanguine, Raging or Bursting), +7 (Volatile or Hasted)
+and +10 (both of the first). Beaten under 100/80/60% of the clock, the next one, two or three levels open; late,
+nothing is lost. Loot is made at item level 72 + the level (at most 100), so higher levels make better gear.
+
+**Paragon** (`progress/paragon.ts`): experience past 60 earns Paragon levels, each a point for Might (+1% damage),
+Vigor (+1% health), Precision (crit, up to 50 points) or Toughness (armor and regeneration, up to 50), taken back
+for free. With Mythic+ loot it is what lets a hero climb further every week.
+
 ## Saves
 
 `glitchbound.sigilfall` holds three hero slots and settings: versioned (`SAVE_VERSION`), validated field by field
@@ -271,6 +282,8 @@ cloud saves (up to 96 KB); the backup stays on the device.
   `tests/sigilfall-dungeon-<id>.test.ts` the same for each newer dungeon, plus its own boss mechanics.
 - `tests/sigilfall-world.test.ts` also plays every class through every open zone at its first levels, and checks
   that every sprite and townsfolk look is drawn once (zone art tables are merged).
+- `tests/sigilfall-keystones.test.ts`: Mythic+ (scaling, affixes, the clock with its falls, levels opening, every
+  affix at work, saves) and Paragon (levels, points, caps, stats); a level-60 hero in Mythic gear beats +1.
 - `tests/sigilfall-ids.test.ts`: every quest and item id is used once, and no two zones or dungeons define the same
   enemy, boss or person (their tables are merged, so a repeated id would quietly replace another).
 

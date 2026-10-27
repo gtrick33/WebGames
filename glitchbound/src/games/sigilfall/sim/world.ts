@@ -3,6 +3,7 @@ import { BOSSES } from '../data/bosses';
 import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
 import { ITEM_DEFS, ITEMS } from '../data/items';
+import { KEY_DEATH, KEY_LEVEL, KEY_MIN, keyCache, keyLoot, keyMarks, keyPar, keyScale, keyUpgrade, type KeyAffix } from '../data/keystones';
 import { QUEST_DEFS, QUESTS } from '../data/quests';
 import { outlevelled } from '../data/progression';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
@@ -20,6 +21,7 @@ import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, qu
 import { goldDrop, itemName, makeItem, rollLoot, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
 import { learnLooks } from '../progress/wardrobe';
+import { addParagonXp, paragonXp } from '../progress/paragon';
 import { separate, updateEnemy } from './ai';
 import { refreshPets, summonPet, updatePets } from './pets';
 import { updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
@@ -60,6 +62,22 @@ export interface WorldOptions {
   from?: RegionId;
   /** Finished quests wait to be handed in (the game); false pays them out at once (story tests that skip the talk). */
   handIns?: boolean;
+  /** A Mythic+ run at this stone level (dungeons only), with the week's affixes for it. */
+  key?: number;
+  affixes?: KeyAffix[];
+}
+
+/** Seconds as m:ss. */
+export const clockText = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+
+/** A Mythic+ run: its clock (seconds so far and falls), and how it ended. */
+export interface KeyRun {
+  key: number;
+  affixes: KeyAffix[];
+  par: number;
+  t: number;
+  deaths: number;
+  end: { time: number; up: number; marks: number; stone: number; best: boolean } | null;
 }
 
 interface EncounterState {
@@ -233,6 +251,12 @@ export class World {
   places: Record<string, { x: number; y: number }> = {};
   private bramble = 0;
   private hpBefore = 0;
+  /** A Mythic+ run, if this is one. */
+  keyRun: KeyRun | null = null;
+  /** Sanguine pools: blood that heals enemies standing in it. */
+  private pools: { x: number; y: number; r: number; t: number }[] = [];
+  /** Enemies already in a rage (Raging). */
+  private raged = new WeakSet<Enemy>();
 
   constructor(o: WorldOptions) {
     this.handIns = o.handIns ?? true;
@@ -241,6 +265,14 @@ export class World {
     this.tier = this.region.safe ? 0 : o.tier;
     this.mods = this.region.safe ? [] : o.mods;
     this.level = this.region.level + TIERS[this.tier]!.levels;
+    // Mythic+: the dungeon at Mythic's top level, the stone's might and the week's affixes
+    if (o.key && o.key >= KEY_MIN && this.region.kind === 'dungeon') {
+      const affixes = o.affixes ?? [];
+      this.keyRun = { key: o.key, affixes, par: keyPar(this.region), t: 0, deaths: 0, end: null };
+      this.tier = 2;
+      this.level = KEY_LEVEL;
+      this.mods = affixes.filter((a): a is 'volatile' | 'hasted' => a === 'volatile' || a === 'hasted');
+    }
     this.hero = o.hero;
     this.settings = o.settings;
     this.rand = rng(o.seed);
@@ -458,7 +490,7 @@ export class World {
   /** A pack marker's enemies, kept track of so they come back (rising out of the ground when the story calls them in). */
   private addPack(pm: TileMap['markers'][number], pos: { x: number; y: number }, rise: boolean): void {
     const m = pm.marker as Extract<Marker, { kind: 'pack' }>;
-    const level = m.level !== undefined ? m.level + TIERS[this.tier]!.levels : this.level;
+    const level = this.keyRun ? KEY_LEVEL : m.level !== undefined ? m.level + TIERS[this.tier]!.levels : this.level;
     const cond = pm.when ?? this.region.when?.[pm.ch];
     const st: PackState = { index: this.packs.length + 1, enemies: m.enemies, x: pos.x, y: pos.y, level, elite: !!m.elite, rare: !!m.rare, ids: [], respawnT: -1, ...(cond ? { cond } : {}) };
     this.packs.push(st);
@@ -580,11 +612,24 @@ export class World {
     }
   }
 
+  /** Health on top of an enemy's level: the difficulty tier and rift modifiers, or a Mythic+ stone's might. */
+  private hpMul(boss: boolean): number {
+    const k = this.keyRun;
+    if (!k) return TIERS[this.tier]!.hp * (this.mods.includes('fortified') ? 1.4 : 1);
+    return keyScale(k.key).hp * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.3 : 1);
+  }
+
+  /** Damage on top of an enemy's level, likewise. */
+  private dmgMul(boss: boolean): number {
+    const k = this.keyRun;
+    if (!k) return TIERS[this.tier]!.dmg;
+    return keyScale(k.key).dmg * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.15 : 1);
+  }
+
   /** Creates an enemy (scaled to its level, the difficulty tier and rift modifiers). */
   addEnemy(id: string, x: number, y: number, level: number, o: { elite?: boolean; room: number; pack: number; spawn?: boolean; post?: boolean }): Enemy {
     const def = ENEMIES[id] ?? ENEMIES['moss-slime']!;
     const sc = enemyScale(level);
-    const tier = TIERS[this.tier]!;
     const elite: EliteAffix[] = [];
     if (o.elite) {
       const pool: EliteAffix[] = ['frenzied', 'molten', 'vampiric', 'shielded', ...(this.tier > 0 ? (['volatile'] as EliteAffix[]) : [])];
@@ -596,7 +641,7 @@ export class World {
     }
     const hasted = this.mods.includes('hasted') ? 1.2 : 1;
     const wild = o.pack >= 0 && !!this.region.holds;
-    const hp = Math.round(def.hp * sc.hp * tier.hp * (this.mods.includes('fortified') ? 1.4 : 1) * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1));
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(false) * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1));
     const e: Enemy = {
       id: this.nextId++,
       def,
@@ -608,7 +653,7 @@ export class World {
       r: def.radius * (def.scale ?? 1) * (o.elite ? 1.25 : 1),
       hp,
       maxHp: hp,
-      dmg: def.dmg * sc.dmg * tier.dmg * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1),
+      dmg: def.dmg * sc.dmg * this.dmgMul(false) * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1),
       speedMul: hasted * (elite.includes('frenzied') ? 1.35 : 1),
       atkMul: hasted * (elite.includes('frenzied') ? 1.4 : 1),
       shield: elite.includes('shielded') ? hp * 0.4 : 0,
@@ -665,13 +710,12 @@ export class World {
     const def = BOSSES[id]!;
     const level = this.level + 1;
     const sc = enemyScale(level);
-    const tier = TIERS[this.tier]!;
-    const hp = Math.round(def.hp * sc.hp * tier.hp * (this.mods.includes('fortified') ? 1.4 : 1));
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(true));
     const e = this.addEnemy('skeleton', x, y, level, { room, pack: -1 });
     e.def = { ...ENEMIES.skeleton!, id: def.id, name: def.name, sprite: def.sprite, radius: def.radius, mass: 99, resist: {}, armor: 0, xp: def.xp, gold: def.gold, scale: 1 };
     e.r = def.radius;
     e.hp = e.maxHp = hp;
-    e.dmg = def.dmg * sc.dmg * tier.dmg;
+    e.dmg = def.dmg * sc.dmg * this.dmgMul(true);
     e.name = def.name;
     e.scale = 1;
     e.state = 'chase';
@@ -893,6 +937,7 @@ export class World {
     }
     if (this.player.dead) dt *= 0.35;
     this.time += dt;
+    if (this.keyRun) this.updateKeyRun(rawDt, dt);
     this.shakeAmt = Math.max(0, this.shakeAmt - rawDt * 18);
     // the story's staged beats: looked for twice a second, played while the hero stands still
     this.sceneCheck -= rawDt;
@@ -1363,6 +1408,7 @@ export class World {
     }
     h.stats.kills += 1;
     this.run.kills += 1;
+    if (this.keyRun && !e.master) this.keyOnKill(e);
     const tier = TIERS[this.tier]!;
     const bonus = 1 + this.mods.reduce((a, m) => a + RIFT_MODS[m].bonus, 0);
     // raised minions are worth little: a necromancer is not a farm
@@ -1378,7 +1424,7 @@ export class World {
     const chance = (big ? 1 : 0.075) * tier.loot * bonus;
     const roll = this.rand();
     if (roll < chance) {
-      const item = this.rollItem(big ? 'elite' : 'enemy', e.level);
+      const item = this.rollItem(big ? 'elite' : 'enemy', this.keyRun ? keyLoot(this.keyRun.key) : e.level);
       if (big || (item.r !== 'common' && roll < chance * 0.8)) this.dropItem(e.x, e.y, item);
       else this.dropAt('gold', e.x, e.y, salvageValue(item));
     }
@@ -1411,6 +1457,12 @@ export class World {
 
   giveXp(n: number): void {
     const before = this.hero.level;
+    // past the cap, experience goes to Paragon levels (progress/paragon.ts)
+    if (before >= MAX_LEVEL && this.hero.para) {
+      this.run.xp += Math.round(n);
+      for (const l of addParagonXp(this.hero.para, n)) this.emit({ t: 'paragon', level: l });
+      return;
+    }
     const levels = addXp(this.hero, n);
     this.run.xp += Math.round(n);
     if (!levels.length) return;
@@ -1446,7 +1498,7 @@ export class World {
     this.giveXp(def.xp * enemyScale(e.level).xp * tier.xp);
     this.dropGold(e.x, e.y, Math.round((def.gold[0] + this.rand() * (def.gold[1] - def.gold[0])) * (1 + 0.2 * (e.level - 1))));
     const cls = h.cls as ClassId;
-    const il = e.level;
+    const il = this.keyRun ? keyLoot(this.keyRun.key) : e.level;
     if (first) {
       for (const id of [...(def.first[cls] ?? []), ...(def.first.any ?? [])]) {
         const it = makeItem(id, il, this.rand);
@@ -1473,6 +1525,7 @@ export class World {
       const key = `${this.region.id}:${this.tier}`;
       h.clears[key] = (h.clears[key] ?? 0) + 1;
       this.questProgress((o) => o.kind === 'clear' && o.region === this.region.id && o.tier <= this.tier);
+      if (this.keyRun) this.endKeyRun(e.x, e.y);
       this.emit({ t: 'cleared' });
     }
     this.emit({ t: 'save' });
@@ -1487,6 +1540,83 @@ export class World {
     if (!QUESTS.some((q) => { if (h.quests[q.id]?.state !== 'active') return false; const o = currentObjective(h, q); return o.kind === 'explore' && o.spot === spot; })) return;
     this.questProgress((o) => o.kind === 'explore' && o.spot === spot);
     this.emit({ t: 'save' });
+  }
+
+  /* ---------------------------------------------------------- Mythic+ */
+
+  /** The clock runs (at full speed even while the hero is down), enemies rage, blood pools heal. */
+  private updateKeyRun(rawDt: number, dt: number): void {
+    const k = this.keyRun!;
+    if (!k.end) k.t += rawDt;
+    if (k.affixes.includes('raging')) {
+      for (const e of this.enemies) {
+        if (e.dead || e.boss || e.dummy || this.raged.has(e) || e.hp > e.maxHp * 0.3) continue;
+        this.raged.add(e);
+        e.dmg *= 1.5;
+        e.atkMul *= 1.2;
+        this.text(e.x, e.y - e.r - 10, 'ENRAGED', '#ff4a4a', false);
+        this.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.4, size: e.r + 10, color: '#ff4a4a' });
+      }
+    }
+    if (this.pools.length) {
+      for (const pl of this.pools) {
+        pl.t -= dt;
+        for (const e of this.enemies) if (!e.dead && !e.boss && dist(e.x, e.y, pl.x, pl.y) < pl.r + e.r && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.05 * dt);
+      }
+      this.pools = this.pools.filter((pl) => pl.t > 0);
+    }
+  }
+
+  /** An enemy falls in a Mythic+ run: what the week's affixes do with it. */
+  private keyOnKill(e: Enemy): void {
+    const k = this.keyRun!;
+    const p = this.player;
+    if (k.affixes.includes('bolstering')) {
+      for (const o of this.enemies) {
+        if (o === e || o.dead || o.boss || o.dummy || o.room !== e.room || dist(o.x, o.y, e.x, e.y) > 140) continue;
+        o.maxHp *= 1.15;
+        o.hp *= 1.15;
+        o.dmg *= 1.1;
+        this.addFx({ kind: 'zap', x: e.x, y: e.y - 4, x2: o.x, y2: o.y - 6, life: 0.25, size: 1, color: '#ffb04d' });
+      }
+    }
+    if (k.affixes.includes('sanguine') && !e.boss) {
+      this.pools.push({ x: e.x, y: e.y, r: 26, t: 10 });
+      this.spawnField({ x: e.x, y: e.y, r: 26, dur: 10, tick: 0.5, dmg: e.dmg * 0.15, type: 'shadow', look: 'shadow', hostile: true, depth: 0, spec: null, onHit: false });
+    }
+    if (k.affixes.includes('bursting') && !p.dead && dist(p.x, p.y, e.x, e.y) < 400) {
+      // a stack of bleeding: 1.5% of the hero's health a second, for 4 s from the last
+      const per = p.maxHp * 0.015;
+      const cur = p.statuses.find((x) => x.id === 'bleed');
+      if (cur) {
+        cur.t = 4;
+        cur.power += per;
+      } else p.statuses.push({ id: 'bleed', t: 4, power: per, tick: 0.5 });
+    }
+  }
+
+  /** The last boss falls: the clock stops, the stone grows or drops, and the Rift's cache opens. */
+  private endKeyRun(x: number, y: number): void {
+    const k = this.keyRun!;
+    if (k.end) return;
+    const h = this.hero;
+    const time = k.t + k.deaths * KEY_DEATH;
+    const up = keyUpgrade(time, k.par);
+    const marks = keyMarks(k.key, up > 0);
+    // beaten in time, the levels above it open (as in Diablo's rifts, nothing is lost by being late)
+    const before = h.keystone;
+    if (up > 0) h.keystone = Math.max(h.keystone, k.key + up);
+    const best = up > 0 && k.key > (h.bestKeys[this.region.id] ?? 0);
+    if (best) h.bestKeys[this.region.id] = k.key;
+    k.end = { time, up, marks, stone: h.keystone, best };
+    h.marks += marks;
+    // the Rift's cache: more the higher the stone, and only in time
+    if (up > 0) for (let i = 0; i < keyCache(k.key); i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key)));
+    this.emit({
+      t: 'banner',
+      text: up > 0 ? `In time: ${clockText(time)}` : `Out of time: ${clockText(time)}`,
+      sub: up > 0 ? (h.keystone > before ? `Mythic +${k.key} · up to Mythic +${h.keystone} open` : `Mythic +${k.key}`) : `Mythic +${k.key} · the clock was ${clockText(k.par)}`,
+    });
   }
 
   /** An enemy is gone (killed, or burst by itself): when the last of its pack is gone, the pack comes back in a while. */
@@ -1505,6 +1635,10 @@ export class World {
     p.channel = null;
     p.windup = null;
     this.hero.stats.deaths += 1;
+    if (this.keyRun && !this.keyRun.end) {
+      this.keyRun.deaths += 1;
+      this.text(p.x, p.y - 30, `-${KEY_DEATH} s`, '#ff4a8a', true);
+    }
     this.sfx('playerDie');
     this.shake(5);
     this.emit({ t: 'death' });
@@ -1882,6 +2016,11 @@ export class World {
       this.run.gold += r.gold;
       if (r.unlock && !h.unlocked.includes(r.unlock)) h.unlocked.push(r.unlock);
       if (r.tier !== undefined) h.tier = Math.max(h.tier, r.tier);
+      // the Riftstone (data/keystones.ts): Mythic+ opens
+      if (r.keystone && h.keystone < r.keystone) {
+        h.keystone = r.keystone;
+        this.emit({ t: 'toast', text: `Riftstone: Mythic +${h.keystone}. Any dungeon, against the clock: choose it at a waystone`, tone: 'good' });
+      }
       if (r.item) {
         let item: Item | null;
         if (r.item === 'class-epic') {
@@ -1995,7 +2134,9 @@ export class World {
 
   /** How full the experience bar is. */
   xpShare(): number {
-    return this.hero.level >= MAX_LEVEL ? 1 : this.hero.xp / xpToNext(this.hero.level);
+    const h = this.hero;
+    if (h.level >= MAX_LEVEL) return h.para ? h.para.x / paragonXp(h.para.l) : 1;
+    return h.xp / xpToNext(h.level);
   }
 
   /** The current boss (for the health bar). */

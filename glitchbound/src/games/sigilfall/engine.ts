@@ -2,6 +2,7 @@ import type { GameHost } from '../../platform/contract';
 import { turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
 import { CLASSES } from './data/classes';
+import { keyAffixes, weekOf } from './data/keystones';
 import { NPCS, QUEST_DEFS } from './data/quests';
 import { REGIONS, TIERS, type RiftMod } from './data/regions';
 import { SKILLS } from './data/skills';
@@ -22,6 +23,7 @@ import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
 import { endScene } from './sim/scene';
 import { applyPreset, PRESETS } from './progress/presets';
+import { resetParagon, spendParagon, type ParaStat } from './progress/paragon';
 
 /**
  * The game around the simulation: heroes and the save, travelling between regions, expeditions
@@ -55,6 +57,8 @@ export interface RunSummary {
   items: Item[];
   seconds: number;
   cleared: boolean;
+  /** A Mythic+ run's end: the stone run, the clock against the dungeon's, and the stone after it. */
+  key?: { key: number; time: number; par: number; up: number; stone: number; best: boolean; marks: number; deaths: number };
 }
 
 export interface UiState {
@@ -105,7 +109,8 @@ export class SigilEngine {
   private deathAt = 0;
   private rewardAt = 0;
   private nextToast = 1;
-  private run: { start: number; region: RegionId; tier: number; mods: RiftMod[] } | null = null;
+  /** The expedition under way: where, on which tier, and the stone's level for a Mythic+ run (else 0). */
+  private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number } | null = null;
   private hidden = false;
   /** Pause asked for by the arcade (left full screen, scrolled away). */
   private toWorldFn: (x: number, y: number) => { x: number; y: number } = (x, y) => ({ x, y });
@@ -383,6 +388,10 @@ export class SigilEngine {
           this.ui = { ...this.ui, boss: null, banner: { text: 'Victory!', sub: `${w.region.name}`, id: performance.now() } };
           changed = true;
           break;
+        case 'paragon':
+          this.toast(`Paragon ${ev.level}`, 'good', undefined, 'A point to spend in the Hero panel');
+          this.sound.play('levelup');
+          break;
         case 'banner':
           this.ui = { ...this.ui, banner: { text: ev.text, sub: ev.sub, id: performance.now() } };
           changed = true;
@@ -561,19 +570,38 @@ export class SigilEngine {
 
   /* ------------------------------------------------------------- travel */
 
-  travel(to: RegionId, tier: number, mods: RiftMod[], from?: RegionId): void {
+  travel(to: RegionId, tier: number, mods: RiftMod[], from?: RegionId, key = 0): void {
     const h = this.hero;
     if (!h) return;
     const region = REGIONS[to];
     if (!h.unlocked.includes(to)) return;
+    // a Mythic+ run is a stone the hero holds (never above it), in a dungeon
+    if (key > 0 && (region.kind !== 'dungeon' || key > h.keystone)) return;
     const prev = this.world;
     if (prev) this.collectLeftovers(prev, true);
-    // expeditions: leaving the village starts one, coming back ends it
+    // expeditions: leaving the village starts one, coming back ends it; a Mythic+ run is always its own
     if (region.safe) this.endRun(true);
-    else if (!this.run) this.startRun(to, tier, mods);
-    else this.run.region = to;
+    else if (key > 0) {
+      this.endRun(false);
+      this.startRun(to, 2, [], key);
+    } else if (!this.run) this.startRun(to, tier, mods, 0);
+    else {
+      // the stone is for the dungeon it was set in: walking out ends that run
+      if (this.run.key && to !== this.run.region) this.run.key = 0;
+      this.run.region = to;
+    }
+    const stone = this.run?.key ?? 0;
     const keepTier = this.run ? this.run.tier : tier;
-    const w = new World({ region: to, tier: region.safe ? 0 : keepTier, mods: region.safe ? [] : (this.run?.mods ?? mods), hero: h, settings: this.settings, seed: (Math.random() * 2 ** 32) >>> 0, from });
+    const w = new World({
+      region: to,
+      tier: region.safe ? 0 : keepTier,
+      mods: region.safe ? [] : (this.run?.mods ?? mods),
+      hero: h,
+      settings: this.settings,
+      seed: (Math.random() * 2 ** 32) >>> 0,
+      from,
+      ...(stone ? { key: stone, affixes: keyAffixes(stone, weekOf(Date.now())) } : {}),
+    });
     if (prev && !prev.region.safe && this.run) {
       // carry this expedition's tallies across regions
       w.run = prev.run;
@@ -588,13 +616,14 @@ export class SigilEngine {
     for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
     this.world = w;
     this.renderer.snap(w);
-    this.ui = { ...this.ui, panel: null, travel: null, dialogue: null, boss: null, death: false, banner: { text: region.name, sub: region.safe ? region.subtitle : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`, id: performance.now() } };
+    const sub = region.safe ? region.subtitle : w.keyRun ? `Mythic +${w.keyRun.key} · the clock is running` : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`;
+    this.ui = { ...this.ui, panel: null, travel: null, dialogue: null, boss: null, death: false, reward: null, banner: { text: region.name, sub, id: performance.now() } };
     this.persist();
     this.bump();
   }
 
-  private startRun(region: RegionId, tier: number, mods: RiftMod[]): void {
-    this.run = { start: performance.now(), region, tier, mods };
+  private startRun(region: RegionId, tier: number, mods: RiftMod[], key: number): void {
+    this.run = { start: performance.now(), region, tier, mods, key };
     if (this.hero) this.hero.stats.runs += 1;
     this.host.report({ type: 'start' });
   }
@@ -612,7 +641,9 @@ export class SigilEngine {
   private summary(cleared: boolean): RunSummary {
     const w = this.world;
     const r = w?.run ?? { xp: 0, gold: 0, kills: 0, bosses: 0, items: [] };
-    return { region: this.run?.region ?? w?.region.id ?? 'emberwick', tier: this.run?.tier ?? 0, xp: r.xp, gold: r.gold, kills: r.kills, bosses: r.bosses, items: r.items, seconds: this.run ? (performance.now() - this.run.start) / 1000 : 0, cleared };
+    const k = w?.keyRun;
+    const key = k?.end ? { key: k.key, time: k.end.time, par: k.par, up: k.end.up, stone: k.end.stone, best: k.end.best, marks: k.end.marks, deaths: k.deaths } : undefined;
+    return { region: this.run?.region ?? w?.region.id ?? 'emberwick', tier: this.run?.tier ?? 0, xp: r.xp, gold: r.gold, kills: r.kills, bosses: r.bosses, items: r.items, seconds: this.run ? (performance.now() - this.run.start) / 1000 : 0, cleared, ...(key ? { key } : {}) };
   }
 
   /** An expedition ends (home, or the game closes): its score goes to the arcade. */
@@ -622,10 +653,11 @@ export class SigilEngine {
       return;
     }
     const s = this.summary(false);
-    const score = Math.round(s.xp + s.gold * 2 + s.bosses * 250);
+    // a Mythic+ stone beaten in time is worth the most: higher stones climb the board
+    const score = Math.round(s.xp + s.gold * 2 + s.bosses * 250 + (s.key && s.key.up > 0 ? s.key.key * 1000 : 0));
     this.hero.stats.bestRun = Math.max(this.hero.stats.bestRun, score);
     // a review hero (jumped to a story beat) plays for looking, not for the leaderboard
-    if (!this.hero.review) this.host.report({ type: 'end', score, stats: { level: this.hero.level, kills: s.kills, bosses: s.bosses } });
+    if (!this.hero.review) this.host.report({ type: 'end', score, stats: { level: this.hero.level, kills: s.kills, bosses: s.bosses, ...(this.hero.para.l ? { paragon: this.hero.para.l } : {}), ...(s.key ? { mythicPlus: s.key.up > 0 ? s.key.key : 0 } : {}) } });
     // the vendors have new stock when you come back
     restock(this.hero);
     if (toast && (s.kills || s.items.length)) this.toast(`Expedition over: +${s.xp} XP, +${s.gold} gold`, 'good', undefined, `${s.kills} foes defeated${s.items.length ? ` · ${s.items.length} items` : ''}`);
@@ -943,6 +975,28 @@ export class SigilEngine {
 
   closeReward(): void {
     this.setUi({ reward: null });
+  }
+
+  /** From a Mythic+ run's end: the same dungeon again, at the stone the hero holds now. */
+  keyAgain(): void {
+    const w = this.world;
+    const h = this.hero;
+    if (!w || !h || !w.keyRun?.end || h.keystone < 1) return;
+    this.travel(w.region.id, 2, [], undefined, h.keystone);
+  }
+
+  /** A Paragon point into a line (the Hero panel). */
+  paragonPoint(stat: ParaStat, n = 1): boolean {
+    if (!this.hero || !spendParagon(this.hero.para, stat, n)) return false;
+    this.changed('talent');
+    return true;
+  }
+
+  /** Every Paragon point back (free). */
+  paragonReset(): void {
+    if (!this.hero) return;
+    resetParagon(this.hero.para);
+    this.changed('reset');
   }
 
   /** Heroes in the save, for the title screen. */

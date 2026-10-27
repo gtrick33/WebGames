@@ -844,7 +844,7 @@ export interface QuestDef {
    * and the story remembers which was taken).
    */
   choice?: string;
-  reward: { xp: number; gold: number; item?: string | { rarity: Rarity }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId };
+  reward: { xp: number; gold: number; item?: string | { rarity: Rarity }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId; keystone?: number };
 }
 
 /* -------------------------------------------------------------------- npcs */

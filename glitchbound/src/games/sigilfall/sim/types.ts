@@ -411,6 +411,7 @@ export type WorldEvent =
   | { t: 'scene'; id: string; playing: boolean }
   | { t: 'loot'; item: Item }
   | { t: 'levelup'; level: number }
+  | { t: 'paragon'; level: number }
   | { t: 'questDone'; quest: string }
   | { t: 'questStep'; quest: string }
   | { t: 'questReady'; quest: string }

@@ -50,6 +50,7 @@ export const PRESETS: Preset[] = [
   { id: 'crownfall-memory', label: 'Crownfall: Vaelmoor whole (scene)', region: 'vaelmoor-remembered', active: 'crownfall-vaelmoor', level: 60 },
   { id: 'crownfall-ash-crown', label: 'Crownfall: the Ash Crown', region: 'vaelmoor-remembered', active: 'crownfall-the-ash-crown', done: ['crownfall-break-it'], level: 60 },
   { id: 'the-bell', label: 'Epilogue: the bell (scene)', region: 'briarhollow', active: 'epilogue-the-bell', level: 60 },
+  { id: 'mythic-plus', label: 'Postgame: Mythic+ (a Riftstone at +1)', region: 'briarhollow', done: ['postgame-crownfall-mythic'], level: 60 },
 ];
 
 /** Puts a hero at a preset's beat: its story done, the beat under way, raised to its level, its lands open. */
@@ -71,6 +72,12 @@ export function applyPreset(c: Character, p: Preset): void {
   if (!c.unlocked.includes(p.region)) c.unlocked.push(p.region);
   // the scenes of the beat play again
   c.opened = c.opened.filter((o) => !o.startsWith('scene:'));
+  // the story's gifts that the beats done would have paid (the tier, the Riftstone)
+  for (const [id, e] of Object.entries(c.quests)) {
+    const r = e.state === 'done' ? QUEST_DEFS[id]?.reward : undefined;
+    if (r?.tier !== undefined) c.tier = Math.max(c.tier, r.tier);
+    if (r?.keystone) c.keystone = Math.max(c.keystone, r.keystone);
+  }
   c.review = true;
   startQuests(c);
 }

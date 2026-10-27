@@ -6,6 +6,7 @@ import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SigilId, Ski
 import { itemClass, itemSlot, salvageValue } from './items';
 import { learnLooks, type LookSlot } from './wardrobe';
 import { questSteps, turnInNpc } from './handin';
+import { newParagon, type Paragon } from './paragon';
 
 /**
  * A hero and everything that persists about them, plus the rules that change it: experience and
@@ -86,6 +87,12 @@ export interface Character {
   bosses: Record<string, number>;
   /** Region clears by "region:tier". */
   clears: Record<string, number>;
+  /** The Riftstone's Mythic+ level (0 before the hero earns one; data/keystones.ts). */
+  keystone: number;
+  /** The highest stone finished in time, by dungeon. */
+  bestKeys: Record<string, number>;
+  /** Paragon levels past 60 and their points (progress/paragon.ts). */
+  para: Paragon;
   /** One-time things done: once-only chests, discovered spots. */
   opened: string[];
   /** Gifts from the ends of quest chains (a bigger bag, a mount...). */
@@ -133,6 +140,9 @@ export function newCharacter(cls: ClassId, name: string, id: string, now = Date.
     tier: 0,
     bosses: {},
     clears: {},
+    keystone: 0,
+    bestKeys: {},
+    para: newParagon(),
     opened: [],
     perks: [],
     looks: [],

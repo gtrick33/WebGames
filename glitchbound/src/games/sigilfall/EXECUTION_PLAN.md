@@ -51,6 +51,8 @@ Status words: **done** (built, tested, screenshot-checked), **partial** (what is
   respec, 35 new skills with talent mutations, boss partial CC. Save v7.
 - **Wardrobe and mounts** (`1c10c246`): save v8. **Interiors** (`c6880065`). **Scenes and presets** (`780f6ca8`).
 - **Act IV's Gates and Act V** (`26ee957e`), **Act VI, Crownfall, the Epilogue and the postgame** (`61ed6e92`).
+- **Mythic+ and Paragon** (2026-10-27): the old Riftstone branch (`sigilfall-phase5`) brought into the new story
+  as an endless ladder past Mythic, climbed as Diablo's rifts are, with Paragon levels past 60. Save v11.
 
 ## Rules carried through every phase
 

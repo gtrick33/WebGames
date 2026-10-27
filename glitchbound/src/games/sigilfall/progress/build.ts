@@ -7,6 +7,7 @@ import { SKILL_SLOTS, SLOTS } from '../data/types';
 import { hasUltimate, SIGIL_BONUS, sigilCount, slotOpen, type Character } from './character';
 import { opText } from './describe';
 import { itemMods, itemName, itemStats } from './items';
+import { paragonStats } from './paragon';
 
 /**
  * Turns a hero (class, level, talents, gear) into what the simulation runs: final stats, the procs
@@ -394,6 +395,8 @@ export function heroStats(c: Character, mods: Entry[] = collectMods(c)): { stats
     else if (e.mod.when === 'afterDodge') afterDodge[e.mod.stat] = (afterDodge[e.mod.stat] ?? 0) + v;
     else stats[e.mod.stat] += v;
   }
+  // Paragon points (past level 60)
+  if (c.para) for (const [k, v] of Object.entries(paragonStats(c.para)) as [StatKey, number][]) stats[k] += v;
   const sigils = sigilCount(c) * SIGIL_BONUS;
   stats.hpPct += sigils;
   stats.power += sigils;

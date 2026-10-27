@@ -1,19 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { xpToNext } from '../data/classes';
+import { MAX_LEVEL, xpToNext } from '../data/classes';
+import { KEY_AFFIXES, KEY_DEATH } from '../data/keystones';
 import { NPCS, QUEST_DEFS } from '../data/quests';
 import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { ResourceDef } from '../data/types';
 import type { SigilEngine } from '../engine';
-import { currentObjective, freePoints, questProgress, questState, trackedQuest } from '../progress/character';
+import { currentObjective, freePoints, HOME, questProgress, questState, trackedQuest } from '../progress/character';
 import { modLines } from '../progress/describe';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
 import { wornLooks } from '../progress/wardrobe';
+import { paragonFree, paragonXp } from '../progress/paragon';
 import { itemMods, itemName, usableBy } from '../progress/items';
 import { rarityColor } from '../render/renderer';
-import type { World } from '../sim/world';
+import { clockText, type World } from '../sim/world';
 import { fmt, ItemIcon, Portrait } from './common';
 import { DesktopBar } from './DesktopBar';
 import { Panels } from './Panels';
@@ -64,7 +66,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
     <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}`}>
       <Hud engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
-      <Tracker engine={engine} />
+      {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
       <Toasts engine={engine} />
       {ui.banner && (
         <div className="rb-banner" key={ui.banner.id} aria-live="polite">
@@ -136,6 +138,11 @@ function Hud({ engine }: { engine: SigilEngine }) {
         <div className="rb-hud-face">
           <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={34} />
           <span className="rb-lvl">{h.level}</span>
+          {h.para.l > 0 && (
+            <span className={`rb-para${paragonFree(h.para) > 0 ? ' is-free' : ''}`} title={`Paragon ${h.para.l}`}>
+              P{h.para.l}
+            </span>
+          )}
         </div>
         <div className="rb-hud-bars">
           <span className="rb-hp">
@@ -157,12 +164,12 @@ function Hud({ engine }: { engine: SigilEngine }) {
               </span>
             )
           )}
-          <span className="rb-xp" title={`${fmt(h.xp)} / ${fmt(xpToNext(h.level))} XP`}>
+          <span className={`rb-xp${h.level >= MAX_LEVEL ? ' is-paragon' : ''}`} title={h.level >= MAX_LEVEL ? `Paragon ${h.para.l}: ${fmt(h.para.x)} / ${fmt(paragonXp(h.para.l))} XP` : `${fmt(h.xp)} / ${fmt(xpToNext(h.level))} XP`}>
             <i ref={xp} />
           </span>
           <span className="rb-region">
             {region.name}
-            {w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
+            {w.keyRun ? <b className="rb-mplus"> · Mythic +{w.keyRun.key}</b> : w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
           </span>
         </div>
         {!engine.touchMode && (
@@ -218,6 +225,39 @@ function BossBar({ engine }: { engine: SigilEngine }) {
         <i ref={lag} className="rb-boss-lag" />
         <i ref={bar} className="rb-boss-fill" />
       </span>
+    </div>
+  );
+}
+
+/** A Mythic+ run's clock: time so far (falls included) against the dungeon's, the rooms done, the week's affixes. */
+function KeyClock({ engine }: { engine: SigilEngine }) {
+  const k = engine.world!.keyRun!;
+  const time = useRef<HTMLElement>(null);
+  const bar = useRef<HTMLElement>(null);
+  const rooms = useRef<HTMLElement>(null);
+  useFrame(engine, (world) => {
+    const run = world.keyRun;
+    if (!run) return;
+    const t = run.end ? run.end.time : run.t + run.deaths * KEY_DEATH;
+    if (time.current) {
+      time.current.textContent = `${clockText(t)} / ${clockText(run.par)}`;
+      time.current.classList.toggle('is-late', t > run.par);
+    }
+    if (bar.current) bar.current.style.width = `${Math.min(100, (t / run.par) * 100)}%`;
+    if (rooms.current) {
+      const done = world.encounters.filter((e) => e.state === 'cleared').length;
+      rooms.current.textContent = `Rooms ${done}/${world.encounters.length}${run.deaths ? ` · ${run.deaths} fall${run.deaths === 1 ? '' : 's'} (−${run.deaths * KEY_DEATH} s)` : ''}`;
+    }
+  });
+  return (
+    <div className="rb-tracker rb-keyclock" role="timer" aria-label={`Mythic +${k.key} clock`}>
+      <strong>Mythic +{k.key}</strong>
+      <b ref={time} className="rb-keytime" />
+      <span className="rb-keybar">
+        <i ref={bar} />
+      </span>
+      <span ref={rooms} className="rb-small" />
+      {k.affixes.length > 0 && <span className="rb-small rb-dim">{k.affixes.map((a) => KEY_AFFIXES[a].name).join(' · ')}</span>}
     </div>
   );
 }
@@ -459,7 +499,7 @@ function PauseMenu({ engine }: { engine: SigilEngine }) {
             </button>
           ) : (
             <button className="rb-btn" onClick={() => setLeaving(true)}>
-              Return to Emberwick
+              Return to {REGIONS[HOME].name}
             </button>
           ))}
         <button className="rb-btn is-ghost" onClick={() => engine.toTitle()}>
@@ -483,7 +523,7 @@ function DeathScreen({ engine }: { engine: SigilEngine }) {
         </button>
         {!w.safe && (
           <button className="rb-btn" onClick={() => engine.returnHome()}>
-            Return to Emberwick
+            Return to {REGIONS[HOME].name}
           </button>
         )}
       </div>
@@ -499,8 +539,24 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
   return (
     <div className="rb-modal">
       <div className="rb-card rb-reward" role="dialog" aria-modal="true" aria-label="Dungeon cleared">
-        <span className="rb-kicker">{TIERS[r.tier]!.name} · {REGIONS[r.region].name}</span>
-        <h2>{r.region === 'crypt' ? 'The Rift is closed!' : `${REGIONS[r.region].name} cleared!`}</h2>
+        <span className="rb-kicker">{r.key ? `Mythic +${r.key.key}` : TIERS[r.tier]!.name} · {REGIONS[r.region].name}</span>
+        <h2>{r.key ? (r.key.up > 0 ? 'In time!' : 'Out of time') : r.region === 'crypt' ? 'The Rift is closed!' : `${REGIONS[r.region].name} cleared!`}</h2>
+        {r.key && (
+          <div className={`rb-keyend${r.key.up > 0 ? ' is-in' : ' is-late'}`}>
+            <span className="rb-keytime">
+              {clockText(r.key.time)} <span className="rb-dim">/ {clockText(r.key.par)}</span>
+            </span>
+            <span>
+              {r.key.up > 0
+                ? `${r.key.up === 3 ? 'Under 60% of the clock' : r.key.up === 2 ? 'Under 80% of the clock' : 'Inside the clock'}: Mythic +${r.key.key + r.key.up} is open${r.key.stone > r.key.key + r.key.up ? ` (your highest is +${r.key.stone})` : ''}.`
+                : 'Late: the run still pays, and nothing is lost. Try it again, or a level lower.'}
+              {r.key.best ? ' A new best here.' : ''}
+            </span>
+            <span className="rb-small rb-dim">
+              {r.key.deaths ? `${r.key.deaths} fall${r.key.deaths === 1 ? '' : 's'} (−${r.key.deaths * KEY_DEATH} s) · ` : ''}+{r.key.marks} Sigil Marks
+            </span>
+          </div>
+        )}
         <div className="rb-reward-stats">
           <span>
             <b>{fmt(r.xp)}</b> XP
@@ -511,12 +567,14 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
           <span>
             <b>{r.kills}</b> foes
           </span>
-          <span>
-            <b>
-              {mins}:{String(secs).padStart(2, '0')}
-            </b>{' '}
-            time
-          </span>
+          {!r.key && (
+            <span>
+              <b>
+                {mins}:{String(secs).padStart(2, '0')}
+              </b>{' '}
+              time
+            </span>
+          )}
         </div>
         {r.items.length > 0 && (
           <div className="rb-reward-items">
@@ -530,8 +588,13 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
           <button className="rb-btn" onClick={() => engine.closeReward()}>
             Look around
           </button>
+          {r.key && (
+            <button className="rb-btn" onClick={() => engine.keyAgain()}>
+              Mythic +{h.keystone} here
+            </button>
+          )}
           <button className="rb-btn is-gold" onClick={() => engine.returnHome()} autoFocus>
-            Return to Emberwick
+            Return to {REGIONS[HOME].name}
           </button>
         </div>
       </div>

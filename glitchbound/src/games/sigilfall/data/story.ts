@@ -207,6 +207,6 @@ export const STORY_QUESTS: QuestDef[] = [
     objective: { kind: 'clear', region: 'duskspire', tier: 2, label: 'Clear Duskspire on Mythic' },
     after: ['postgame-crownfall-heroic'],
     level: 60,
-    reward: { xp: 12000, gold: 5000, item: 'glitch-shard', text: 'The bell in Briarhollow rings on its own that night, once. Haldor says it was the wind. Haldor is lying.' },
+    reward: { xp: 12000, gold: 5000, item: 'glitch-shard', keystone: 1, text: 'The bell in Briarhollow rings on its own that night, once. Haldor says it was the wind. Haldor is lying. In the morning there is a stone on its rope, warm as a hand, with the Tear still turning in it: a Riftstone. Mythic +1, and every dungeon in the Vale again, against the clock.' },
   },
 ];

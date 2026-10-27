@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { CLASSES, levelPower, xpToNext } from '../data/classes';
+import { CLASSES, levelPower, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ITEM_DEFS } from '../data/items';
+import { KEY_AFFIXES, KEY_DEATH, KEY_LEVEL, KEY_MIN, keyAffixes, keyLoot, keyPar, keyScale, weekAffixes, weekOf } from '../data/keystones';
 import { NPCS, QUESTS } from '../data/quests';
 import { mapColors } from '../data/themes';
 import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
@@ -28,6 +29,8 @@ import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, type Fog } from '../progress/fog';
 import { ShopPanel } from './Shop';
 import { PRESETS } from '../progress/presets';
+import { clockText } from '../sim/world';
+import { PARA_STATS, PARAGON, paragonFree, paragonSpent, paragonXp } from '../progress/paragon';
 
 const TABS: { id: PanelId; label: string }[] = [
   { id: 'hero', label: 'Hero' },
@@ -113,11 +116,23 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
             <strong>{h.name}</strong>
             <span>
               Level {h.level} {CLASSES[h.cls].name}
+              {h.para.l > 0 && <b className="rb-para-name"> · Paragon {h.para.l}</b>}
             </span>
-            <Bar value={h.xp} max={xpToNext(h.level)} color="#ffe066" label="Experience" />
-            <span className="rb-dim rb-small">
-              {fmt(h.xp)} / {fmt(xpToNext(h.level))} XP · {fmt(h.gold)} gold
-            </span>
+            {h.level >= MAX_LEVEL ? (
+              <>
+                <Bar value={h.para.x} max={paragonXp(h.para.l)} color="#c58cff" label="Paragon experience" />
+                <span className="rb-dim rb-small">
+                  {fmt(h.para.x)} / {fmt(paragonXp(h.para.l))} to Paragon {h.para.l + 1} · {fmt(h.gold)} gold
+                </span>
+              </>
+            ) : (
+              <>
+                <Bar value={h.xp} max={xpToNext(h.level)} color="#ffe066" label="Experience" />
+                <span className="rb-dim rb-small">
+                  {fmt(h.xp)} / {fmt(xpToNext(h.level))} XP · {fmt(h.gold)} gold
+                </span>
+              </>
+            )}
           </div>
         </div>
         <div className="rb-equip">
@@ -159,6 +174,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
             Sigils {SIGILS.filter((id) => h.perks.includes(id)).length} / {SIGILS.length}
           </span>
         </div>
+        {h.level >= MAX_LEVEL && <ParagonBox engine={engine} />}
       </section>
       <section className="rb-bag" aria-label="Bag">
         <div className="rb-bag-head">
@@ -684,6 +700,47 @@ function QuestsPanel({ engine }: { engine: SigilEngine }) {
   );
 }
 
+/** Paragon points (past level 60): four lines to put them in, and all of them back for free. */
+function ParagonBox({ engine }: { engine: SigilEngine }) {
+  const p = engine.hero!.para;
+  const free = paragonFree(p);
+  return (
+    <div className="rb-paragon" aria-label="Paragon">
+      <div className="rb-paragon-head">
+        <strong>Paragon {p.l}</strong>
+        <span className={free ? 'rb-gold' : 'rb-dim'}>{free ? `${free} point${free === 1 ? '' : 's'} to spend` : p.l ? 'Every point spent' : 'Experience past level 60 earns Paragon levels'}</span>
+      </div>
+      {PARA_STATS.map((s) => {
+        const d = PARAGON[s];
+        const full = d.cap !== undefined && p.p[s] >= d.cap;
+        return (
+          <div key={s} className="rb-paragon-row">
+            <span className="rb-paragon-line">
+              <b>{d.name}</b>
+              <span className="rb-dim rb-small">{d.text} a point</span>
+            </span>
+            <span className="rb-paragon-n">
+              {p.p[s]}
+              {d.cap !== undefined && <span className="rb-dim">/{d.cap}</span>}
+            </span>
+            <button className="rb-btn is-small" aria-label={`A point into ${d.name}`} disabled={!free || full} onClick={() => engine.paragonPoint(s)}>
+              +
+            </button>
+            <button className="rb-btn is-small" aria-label={`Ten points into ${d.name}`} disabled={free < 2 || full} onClick={() => engine.paragonPoint(s, 10)}>
+              +10
+            </button>
+          </div>
+        );
+      })}
+      {paragonSpent(p) > 0 && (
+        <button className="rb-btn is-small rb-paragon-reset" onClick={() => engine.paragonReset()}>
+          Take every point back
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ----------------------------------------------------------------- map */
 
 function MapPanel({ engine }: { engine: SigilEngine }) {
@@ -694,12 +751,18 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   const [sel, setSel] = useState<RegionId>(w.region.id);
   const [tier, setTier] = useState(Math.min(h.tier, w.tier || h.tier));
   const [mods, setMods] = useState<RiftMod[]>([]);
+  // Mythic+: any level the Riftstone has opened (0: the tiers instead)
+  const [stone, setStone] = useState(w.keyRun ? Math.min(w.keyRun.key, h.keystone) : 0);
   const r = REGIONS[sel];
   const open = h.unlocked.includes(sel);
   const here = w.region.id === sel;
+  const keyed = h.keystone >= KEY_MIN && r.kind === 'dungeon';
+  const useKey = keyed && stone > 0;
   // difficulty tiers are for dungeons (and the old wood)
   const tiered = h.tier > 0 && (r.kind === 'dungeon' || sel === 'whisperwood');
-  const pick = tiered ? tier : 0;
+  const pick = tiered && !useKey ? tier : 0;
+  // this week's affixes (read once: the panel isn't open across a Monday)
+  const [week] = useState(() => weekOf(Date.now()));
   const goal = trackedQuest(h, w.region.id);
   return (
     <div className="rb-map">
@@ -716,12 +779,17 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
         <div className={`rb-dest${open ? '' : ' is-locked'}${here ? ' is-here' : ''}`}>
           <div>
             <strong>
-              {open || r.kind === 'town' ? r.name : 'Unknown land'} <span className="rb-dim rb-small">{r.kind === 'town' ? 'Town' : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0] + TIERS[pick]!.levels}-${r.levels[1] + TIERS[pick]!.levels}`}</span>
+              {open || r.kind === 'town' ? r.name : 'Unknown land'}{' '}
+              <span className="rb-dim rb-small">{r.kind === 'town' ? 'Town' : useKey ? `Dungeon · level ${KEY_LEVEL} · Mythic +${stone}` : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0] + TIERS[pick]!.levels}-${r.levels[1] + TIERS[pick]!.levels}`}</span>
             </strong>
             <span className="rb-small rb-dim">{open ? r.blurb : sel === 'whisperwood' ? 'Finish your training with Elder Maren.' : sel === 'crypt' ? 'Defeat Grimtusk in the Whisperwood.' : 'Not discovered yet: walk there to find it.'}</span>
           </div>
-          <button className="rb-btn is-small is-gold" disabled={!open || !canTravel || (here && (r.safe || pick === w.tier))} onClick={() => engine.travel(sel, pick, mods, undefined)}>
-            {here ? 'Here' : 'Go'}
+          <button
+            className="rb-btn is-small is-gold"
+            disabled={!open || !canTravel || (here && !useKey && (r.safe || (pick === w.tier && !w.keyRun)))}
+            onClick={() => (useKey ? engine.travel(sel, 2, [], undefined, stone) : engine.travel(sel, pick, mods, undefined))}
+          >
+            {useKey ? (here ? 'Start again' : 'Start') : here ? 'Here' : 'Go'}
           </button>
         </div>
         {tiered && (
@@ -729,15 +797,32 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
             <span className="rb-kicker">Difficulty</span>
             <div className="rb-seg">
               {TIERS.slice(0, h.tier + 1).map((t, i) => (
-                <button key={t.name} className={tier === i ? 'is-on' : ''} style={{ color: t.color }} onClick={() => setTier(i)}>
+                <button
+                  key={t.name}
+                  className={tier === i && !useKey ? 'is-on' : ''}
+                  style={{ color: t.color }}
+                  onClick={() => {
+                    setTier(i);
+                    setStone(0);
+                  }}
+                >
                   {t.name}
                 </button>
               ))}
+              {keyed && (
+                <button className={useKey ? 'is-on rb-mplus' : 'rb-mplus'} onClick={() => setStone(stone || h.keystone)}>
+                  Mythic +
+                </button>
+              )}
             </div>
-            <span className="rb-small rb-dim">
-              {TIERS[tier]!.name}: enemies +{TIERS[tier]!.levels} levels, ×{TIERS[tier]!.loot} loot, ×{TIERS[tier]!.xp} XP{tier > 0 ? ', elites with more affixes' : ''}.
-            </span>
-            {tier > 0 && (
+            {useKey ? (
+              <KeyPicker region={r} stone={stone} top={h.keystone} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
+            ) : (
+              <span className="rb-small rb-dim">
+                {TIERS[tier]!.name}: enemies +{TIERS[tier]!.levels} levels, ×{TIERS[tier]!.loot} loot, ×{TIERS[tier]!.xp} XP{tier > 0 ? ', elites with more affixes' : ''}.
+              </span>
+            )}
+            {tier > 0 && !useKey && (
               <div className="rb-mods">
                 {(Object.keys(RIFT_MODS) as RiftMod[]).map((m) => (
                   <label key={m} className="rb-check">
@@ -752,6 +837,45 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+/** Mythic+ at a waystone: the level (any the Riftstone has opened), what it does, the clock, this week's affixes. */
+function KeyPicker({ region, stone, top, best, week, onPick }: { region: RegionDef; stone: number; top: number; best: number; week: number; onPick: (n: number) => void }) {
+  const sc = keyScale(stone);
+  const on = keyAffixes(stone, week);
+  return (
+    <div className="rb-key">
+      <div className="rb-key-row">
+        <button className="rb-btn is-small" aria-label="One level lower" disabled={stone <= KEY_MIN} onClick={() => onPick(stone - 1)}>
+          −
+        </button>
+        <strong className="rb-key-lvl">Mythic +{stone}</strong>
+        <button className="rb-btn is-small" aria-label="One level higher" disabled={stone >= top} onClick={() => onPick(stone + 1)}>
+          +
+        </button>
+        {stone < top && (
+          <button className="rb-btn is-small" onClick={() => onPick(top)}>
+            Highest (+{top})
+          </button>
+        )}
+      </div>
+      <span className="rb-small">
+        Enemies at level {KEY_LEVEL} with ×{sc.hp.toFixed(1)} health and ×{sc.dmg.toFixed(1)} damage. The clock: <b className="rb-gold">{clockText(keyPar(region))}</b> (each fall costs {KEY_DEATH} s). Beat it to
+        open the next levels (up to three, by how fast); late, nothing is lost. Loot of item level {keyLoot(stone)}
+        {best ? `; your best here is +${best}` : ''}.
+      </span>
+      <ul className="rb-affixes">
+        {weekAffixes(week).map((a) => (
+          <li key={a.at} className={on.includes(a.affix) && stone >= a.at ? '' : 'rb-dim'}>
+            <b>
+              +{a.at} {KEY_AFFIXES[a.affix].name}
+            </b>{' '}
+            {KEY_AFFIXES[a.affix].text}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
