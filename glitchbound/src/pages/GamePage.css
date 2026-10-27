@@ -395,10 +395,21 @@
   color: var(--fg);
   box-shadow: var(--hard-sm);
 }
-.gi-panel {
+.gi-panels {
   display: grid;
-  gap: 12px;
   min-height: 120px;
+}
+/* both panels in the same cell: the hidden one still holds its height */
+.gi-panel {
+  grid-area: 1 / 1;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+.gi-panel:not(.is-on) {
+  visibility: hidden;
+}
+.gi-panel.is-on {
   animation: pop-in 0.25s var(--out) both;
 }
 @media (max-width: 380px) {

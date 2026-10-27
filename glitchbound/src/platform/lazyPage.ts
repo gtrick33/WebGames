@@ -7,9 +7,9 @@ export type LazyPage<P> = LazyExoticComponent<ComponentType<P>> & {
 };
 
 /**
- * A page that is a code chunk of its own (React.lazy). Its code can load ahead of time (a link hovered
- * or focused, the router waiting on it before switching pages): the page then renders in the same pass,
- * with no empty frame between the old page and the new one.
+ * A page (or a piece of one) that is a code chunk of its own (React.lazy). Its code can load ahead of time
+ * (a link hovered or focused, the router waiting on it before switching pages): it then renders in the same
+ * pass, with no empty frame or loading line before it.
  */
 export function lazyPage<P extends object>(load: () => Promise<ComponentType<P>>): LazyPage<P> {
   let loaded: ComponentType<P> | undefined;

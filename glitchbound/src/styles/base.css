@@ -455,6 +455,13 @@ ol {
   }
 }
 
+/* Every page fills at least the screen below the header, so the footer never shows above the fold while a page
+   waits for its data (the Hall of Fame, a profile) and then drops away when it arrives. */
+#main {
+  min-height: calc(100vh - var(--header-h));
+  min-height: calc(100svh - var(--header-h));
+}
+
 /* Placeholder while a lazily loaded page chunk arrives: a full screen, so the footer never jumps up into view. */
 .page-loading {
   min-height: 100vh;
