@@ -1535,15 +1535,18 @@
   width: min(290px, 40cqw);
   pointer-events: none;
 }
-/* on touch the left thumb owns the bottom-left and the hero the middle: news shows in the gap at the top
-   between the hero's frame and the menu, a line each, lets touches through (it goes by itself) and keeps to
-   the two newest */
+/* on touch the left thumb owns the bottom-left, the hero the middle and the top row the hero's frame, the
+   menu and the minimap: news shows under the hero's frame, clear of the top row and of the quest on the
+   right, a line each, lets touches through (it goes by itself) and keeps to the two newest */
 .rb-ui.is-touch .rb-toasts {
-  top: calc(6px + var(--sa-t));
-  left: 50%;
+  top: calc(66px + var(--sa-t));
+  left: calc(8px + var(--sa-l));
   gap: 3px;
-  width: min(200px, 23cqw);
-  transform: translateX(-50%);
+  width: min(250px, 30cqw);
+}
+/* (a wave's count, under the top row too) */
+.rb-ui.is-touch .rb-encounter {
+  top: calc(66px + var(--sa-t));
 }
 .rb-ui.is-touch .rb-toast {
   padding: 3px 7px;
@@ -1565,10 +1568,18 @@
   width: 20px;
   height: 20px;
 }
+/* a phone held upright: under the hero's frame on the left, beside the minimap and the quest; the wave's
+   count and the banners under those */
 @container rb-stage (max-width: 560px) {
   .rb-ui.is-touch .rb-toasts {
-    top: calc(44px + var(--sa-t));
-    width: calc(100% - 16px);
+    top: calc(54px + var(--sa-t));
+    width: calc(100% - 172px);
+  }
+  .rb-ui.is-touch .rb-encounter {
+    top: calc(214px + var(--sa-t));
+  }
+  .rb-ui.is-touch .rb-banner {
+    top: calc(250px + var(--sa-t));
   }
 }
 .rb-toast {
