@@ -44,6 +44,7 @@ a story beat.
 | — | The bot's mage is a coin flip against the late bosses (the Herald, Corvane, Vaelor): it clears on some seeds and dies over and over on others | closed by the owner (2026-10-27): the late bosses are meant to be hard; dungeon tests give every class up to three runs (`clearsWithRetry`) |
 | P3 | The arcade's startup JavaScript is at 119.9 of its 120 KB budget (none of it is Sigilfall's: the game loads on its own page) | watch |
 | — | Stuck joystick | not reproduced; now regression-tested (`sigilfall-touch`) |
+| — | Joystick jitters and jumps (playtester, 2026-10-28) | fixed: every redraw of the controls (a toast, a cooldown) put a held stick back at rest; regression-tested (`sigilfall-touch`) |
 | — | Tree/roof depth sorting | not reproduced; needs the place and a screenshot |
 | — | Loot clutter | fixed: a third fewer pickups, no plain junk (PROGRESSION_BALANCE.md Part 3) |
 
@@ -182,4 +183,45 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
   veteran.
 - Known limits: the leader's story companions (allies in an event, people a rescue leads) show only on the
   leader's game; a veteran phased into a newer hero's world may find someone their own quest wants elsewhere.
+
+## The opening, scenes and phones: the owner's list (2026-10-28)
+
+- **The first minutes run on.** A new hero sees the gate at dusk (faded up from dark once the land's art is in)
+  for a moment before Mara speaks; nothing is said over a dark screen. Allies no longer pop in beside the hero
+  as each beat starts (`sim/story.ts` `ally`):
+  - Mara steps out from where she stood at the gate when the fight starts;
+  - she stays with the hero through the bell and into the lanes (the same companion, not a new one);
+  - she keeps the square after the lanes, and comes running up from it for the door;
+  - Elyra is found at the burning inn and stays on from the inn to the door.
+  - The rescued children walk in at the chapel door instead of vanishing.
+  - Anyone else an event brings runs in from just beyond the view, from the side named by the event's `enter`.
+- **The chapel door is held at the chapel.** The door being defended stood two tiles out on the cobbles; it now
+  bars the chapel's own door (`briar-chapel-door`, 46,17).
+- **A scene is a clean picture.** The HUD, the tracker, the minimap, the bar, toasts, health bars and the
+  objective arrow step aside under the letterbox. A banner or toast that comes during a scene waits for it to end.
+- **Quests point to the map.** A click on the tracker, or a quest's Map button in the log, follows that quest
+  and opens the map with its objective ringed, the quest's step over the map and a way back to the log.
+- **Phones.** Toasts sit under the hero's frame, clear of the top row, the minimap and the quest. On a phone
+  held upright, the wave count and banners sit under the quest.
+- **The site.**
+  - A game playing in the page on a phone goes full screen at the next touch on it. Only the player's own
+    "Exit full screen" keeps it in the page.
+  - On iPhone Safari (no element full screen), the page under the pinned game is emptied while it is pinned,
+    so a swipe can't carry the page down to the footer.
+- **Icons.** The ultimates of the ranger (Rain of Arrows), the warrior (Earthsplitter), the priest (Halo)
+  and the warlock (Summon Brimstone Golem) had the same icon as one of their own skills; each has its own now.
+  Piercing Arrow no longer shares the basic Arrow's icon. Other skills within a class still share icons; a
+  free icon pack is to replace them all once itch.io can be reached from the build environment.
+- Checked in the browser (Chromium; the phone checks by emulation):
+  - the arrival before Mara's first line;
+  - Mara stepping out at the gate, and still the same companion in the lanes;
+  - the children going in at the door, and Mara running up from the square;
+  - the bell scene with the UI gone;
+  - toasts and banners at 915×412, 740×360 and 412×860;
+  - the map from the tracker on desktop and phone;
+  - a phone game going back to full screen after the browser left it, and staying in the page after the
+    player's own exit;
+  - the pinned page's scroll room on an iPhone-like setup (Safari's user agent, no element full screen).
+- Not verified: a real iPhone. The emptied page under the pinned game is the fix for the footer showing; Safari's
+  own rendering of a fixed stage while its bar moves was not reproduced here.
 
