@@ -1860,9 +1860,12 @@
   background: radial-gradient(circle at 40% 35%, #4a3a28, #221a14 70%);
 }
 .rb-sb-ult img,
-.rb-sb-ult .rb-sb-num,
 .rb-sb-ult .rb-sb-lock {
   position: relative;
+}
+/* the charge over the icon, above the button's inner disc (in the grid's flow it fell below the icon, cut off) */
+.rb-sb-ult .rb-sb-num {
+  z-index: 1;
 }
 .rb-sb-ult.is-ready {
   animation: rb-ult 1s ease-in-out infinite;
@@ -2092,9 +2095,12 @@
   width: 21px;
   height: 21px;
 }
-.rb-slot6.is-ult img,
-.rb-slot6.is-ult .rb-sb-num {
+.rb-slot6.is-ult img {
   position: relative;
+}
+/* the charge over the icon, above the slot's inner disc (in the grid's flow it fell below the icon, cut off) */
+.rb-slot6.is-ult .rb-sb-num {
+  z-index: 1;
 }
 .rb-slot6.is-ult.is-ready {
   animation: rb-ult 1s ease-in-out infinite;
