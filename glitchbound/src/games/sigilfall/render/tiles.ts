@@ -83,7 +83,7 @@ export function buildScenery(map: TileMap, region: RegionDef, look: WorldLook | 
   let handled = new Set<number>();
   if (art) {
     // every outdoor land is drawn from the one pack (VISUAL_BIBLE.md §1)
-    const built = buildWorldObjects(map, { rk: art.rk, gc: art.gc }, art.recipe);
+    const built = buildWorldObjects(map, { rk: art.rk, gc: art.gc }, art.recipe, region.kind === 'town');
     sc.objects.push(...built.objects);
     handled = built.handled;
   }

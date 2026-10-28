@@ -128,7 +128,7 @@ const STYLE: Record<Style, { town: string[]; wild: string[] }> = {
 
 /** What stands in a building's yard, by kind: the first fits first (Royal Keep props). */
 const YARD: Record<Style, string[]> = {
-  house: ['barrel', 'planter_red', 'woodpile', 'crate', 'flowerbed_gold', 'sacks', 'bench', 'planter_blue', 'barrel_water', 'flowerbed_violet'],
+  house: ['lantern_post', 'barrel', 'planter_red', 'woodpile', 'flowerbed_gold', 'lantern_post', 'crate', 'sacks', 'bench', 'planter_blue', 'barrel_water', 'flowerbed_violet'],
   tavern: ['barrels', 'keg', 'bench', 'table_food', 'barrel'],
   inn: ['barrels', 'bench', 'keg', 'table_small', 'barrel'],
   shop: ['crates', 'sacks', 'barrel_apples', 'crate_cabbage', 'basket_bread'],

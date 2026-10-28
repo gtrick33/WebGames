@@ -81,13 +81,16 @@ function walkTo(w: World, x: number, y: number, far: number): void {
   }
 }
 
+/** How near a foe is for the hero to hit it. */
+const REACH = 140;
+
 function strike(w: World): void {
   const p = w.player;
   p.hp = p.maxHp;
   const near = [p, ...w.pets.filter((x) => !x.dead && x.story)];
   for (const e of w.enemies) {
     if (e.dead || e.dummy || e.state === 'spawn') continue;
-    if (near.some((a) => Math.hypot(e.x - a.x, e.y - a.y) < 140)) hitEnemy(w, e, 1e7, 'physical', { depth: 0 });
+    if (near.some((a) => Math.hypot(e.x - a.x, e.y - a.y) < REACH)) hitEnemy(w, e, 1e7, 'physical', { depth: 0 });
   }
 }
 
@@ -181,8 +184,9 @@ function beat(walk: Walk): boolean {
     const fight = w.encounters.find((e) => e.state === 'active');
     const foe = fight && w.enemies.filter((e) => !e.dead && !e.dummy && e.state !== 'spawn' && (e.room === fight.index || e.aggro)).sort((a, b) => Math.hypot(a.x - w.player.x, a.y - w.player.y) - Math.hypot(b.x - w.player.x, b.y - w.player.y))[0];
     if (foe && Math.hypot(foe.x - w.player.x, foe.y - w.player.y) > 100) walkTo(w, foe.x, foe.y, 60);
-    // at a den with nothing in it: the hero roams a while (packs come back out of sight)
-    if (t.soft && !w.story.run && Math.hypot(t.x - w.player.x, t.y - w.player.y) < 24 && !w.enemies.some((e) => !e.dead && Math.hypot(e.x - w.player.x, e.y - w.player.y) < 200)) {
+    // at a den with nothing in reach: the hero roams a while (packs come back out of sight; an archer standing
+    // off past the hero's reach would otherwise keep it waiting there for good)
+    if (t.soft && !w.story.run && Math.hypot(t.x - w.player.x, t.y - w.player.y) < 24 && !w.enemies.some((e) => !e.dead && Math.hypot(e.x - w.player.x, e.y - w.player.y) < REACH)) {
       walk.roam = walk.roam ?? { x: (w.rand() * w.map.w) | 0, y: (w.rand() * w.map.h) | 0, n: 40 };
     }
     if (foe) {

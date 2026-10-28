@@ -5,7 +5,7 @@ import { K, TILE, type TileMap } from '../sim/map';
 import type { AnimInfo, PropAtlas, Rect, WorldArt } from './art/atlas';
 import type { Recipe } from './art/recipes';
 import type { Cnv } from './pixel';
-import { farmFields } from './worldGround';
+import { faces, farmFields } from './worldGround';
 
 /** What a small plant is for: where it may grow (the flora rule below). */
 type FloraRole = 'shade' | 'field' | 'bloom' | 'water' | 'grass';
@@ -96,12 +96,29 @@ const PROPS: Record<string, string[]> = {
   statue: ['statue_king', 'statue_queen', 'statue_knight'],
   target: ['archery_target'],
   'armor-stand': ['armor_stand'],
+  woodpile: ['woodpile'],
+  'chopping-block': ['chopping_block'],
+  log: ['log'],
+  bedroll: ['bedroll_red', 'bedroll_blue'],
+  cauldron: ['cauldron'],
+  gravestone: ['gravestone_1', 'gravestone_2'],
+  'grave-cross': ['grave_cross'],
+  sacks: ['sacks', 'sack_grain', 'sack_flour'],
+  bucket: ['bucket_water', 'bucket'],
+  // the land's own dressing (zonegen.ts scenes), named apart from the story's
+  'camp-tent': ['tent_red', 'tent_blue', 'tent_small'],
+  wagon: ['cart', 'cart_goods', 'cart_hay'],
+  torch: ['anim:torch_post'],
+  menhir: ['rock_tall'],
 };
 
-/** Every piece the fixed tables name (for the art-integrity test). */
-export const sceneryRefs = (): string[] => [...Object.values(PROPS).flat(), 'signpost', 'pillar', 'pillar_broken', 'anim:smoke', 'lilypad', 'lilypad_flower', 'reeds', 'reeds_2', 'bush_small_leaf', 'bush_small_mint', 'hedge_block', 'planter_red', ...Array.from({ length: 16 }, (_, n) => `fence_${n}`)];
+/** Tall props the hero fades when walking behind. */
+const FADE = new Set(['well', 'tent', 'camp-tent', 'torch', 'menhir', 'market-cart', 'watchtower', 'fountain', 'statue', 'lamp', 'lantern', 'scarecrow', 'red-banner', 'blue-banner', 'skull-banner', 'standing-stone']);
 
-export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe): { objects: SceneObject[]; handled: Set<number> } {
+/** Every piece the fixed tables name (for the art-integrity test). */
+export const sceneryRefs = (): string[] => [...Object.values(PROPS).flat(), 'signpost', 'pillar', 'pillar_broken', 'anim:smoke', 'lilypad', 'lilypad_flower', 'reeds', 'reeds_2', 'bush_small_leaf', 'bush_small_mint', 'hedge_block', 'planter_red', 'anim:wall_torch', 'wall_banner_blue', 'wall_banner_red', 'wall_moss_a', 'wall_crack_a', ...Array.from({ length: 16 }, (_, n) => `fence_${n}`)];
+
+export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town = false): { objects: SceneObject[]; handled: Set<number> } {
   const objects: SceneObject[] = [];
   const handled = new Set<number>();
   const rk = art.rk;
@@ -136,6 +153,8 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe): { obj
   const fenceAt = (x: number, y: number): boolean => kindAt(x, y) === K.Fence;
   const field = farmFields(map);
   const calm = !r.water?.hue;
+  // a bare land's rock is drawn as cliffs (worldGround.ts): nothing stands on their faces
+  const cliff = r.edge === 'rocks' ? faces(map, K.Wall, 3) : null;
 
   for (let i = 0; i < map.w * map.h; i++) {
     const tx = i % map.w;
@@ -183,7 +202,10 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe): { obj
         if (r.edge === 'forest') {
           const deep = near ? r.trees : r.trees.filter((t) => /big|tall|pine_big/.test(t));
           stand(pick(deep.length ? deep : r.trees, hash2(tx, ty, 94)), cx + jx, bottom - 2 + jy, 'tree', near);
-        } else stand(pick(h < 0.25 ? r.trees : r.rocks, hash2(tx, ty, 94)), cx + jx, bottom - 2 + jy, 'rock', near);
+        } else if (!cliff?.[i] && !cliff?.[i + map.w] && hash2(tx, ty, 98) < 0.5) {
+          // on top of the cliffs, away from their edge: a tree now and then, a boulder
+          stand(pick(h < 0.55 ? r.trees : r.rocks, hash2(tx, ty, 94)), cx + jx * 0.5, bottom - 2, h < 0.55 ? 'tree' : 'rock', true);
+        }
         break;
       }
       case K.Water: {
@@ -250,6 +272,32 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe): { obj
     }
   }
 
+  // a long wall is kept: torches and banners along its face (the Regent's blue in a town); a short one is a
+  // ruin: moss and cracks
+  const wallFace = faces(map, K.Rampart);
+  for (let ty = 0; ty < map.h; ty++) {
+    for (let tx = 0; tx < map.w; tx++) {
+      if (wallFace[ty * map.w + tx] !== 1 || (tx > 0 && wallFace[ty * map.w + tx - 1] === 1)) continue;
+      let len = 0;
+      while (tx + len < map.w && wallFace[ty * map.w + tx + len] === 1) len++;
+      const tall = ty > 0 && wallFace[(ty - 1) * map.w + tx] === 2;
+      const foot = (ty + 1) * TILE - 1;
+      if (len >= 8) {
+        for (let k = 3, n = 0; k < len - 1; k += 5, n++) {
+          const x = (tx + k + 0.5) * TILE;
+          if (n % 2 === 0) stand('anim:wall_torch', x, foot - (tall ? 10 : 2), 'decor', false, foot);
+          else stand(town ? 'wall_banner_blue' : 'wall_banner_red', x, foot - (tall ? 4 : 0), 'decor', false, foot);
+        }
+      } else {
+        for (let k = 0; k < len; k++) {
+          const hh = hash2(tx + k, ty, 99);
+          if (hh < 0.3) stand(hh < 0.15 ? 'wall_moss_a' : 'wall_crack_a', (tx + k + 0.5) * TILE, foot - 2, 'decor', false, foot);
+        }
+      }
+      tx += len;
+    }
+  }
+
   // the buildings where the map stands them (sim/map.ts), each with its yard and its chimneys smoking
   for (const b of map.buildings) {
     for (const pic of b.pics) {
@@ -271,7 +319,7 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe): { obj
     const idx = pm.ty * map.w + pm.tx;
     const h = hash2(pm.tx, pm.ty, 51);
     if (m.kind === 'prop' && PROPS[m.prop]?.length) {
-      if (stand(pick(PROPS[m.prop]!, h), cx, bottom - 3, m.prop, m.prop === 'well' || m.prop === 'tent' || m.prop === 'market-cart' || m.prop === 'watchtower' || m.prop === 'fountain' || m.prop === 'statue')) handled.add(idx);
+      if (stand(pick(PROPS[m.prop]!, h), cx + (m.prop === 'bench' || m.prop === 'flowerbed' || m.prop === 'log' ? 0 : (hash2(pm.tx, pm.ty, 53) - 0.5) * 3), bottom - 3, m.prop, FADE.has(m.prop))) handled.add(idx);
     }
     if (m.kind === 'building') handled.add(idx);
     // a signpost by the road out (one for a wide gateway); doors are marked where they are (the renderer)

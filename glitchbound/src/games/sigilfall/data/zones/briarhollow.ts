@@ -33,7 +33,11 @@ const HOME = is('epilogue-the-camp-goes-home', 'done');
 const CAMPED = (c: StoryCond): StoryCond => all(c, not(HOME));
 
 /** How much roomier the village is than it was first drawn (64 × 54): houses keep their size, the lanes widen. */
-const SPREAD = 1.35;
+/**
+ * The plan's own scale: the village was once laid out 35% roomier, and the owner found it "vast": houses far
+ * apart with open grass between. It is built at its plan's size again, with more houses along its roads.
+ */
+const SPREAD = 1;
 
 function plan(): SpreadPlan {
   const c = new SpreadPlan(64, 54, 4417, SPREAD);
@@ -105,7 +109,7 @@ function plan(): SpreadPlan {
   // the elder's hall and the herbwife's cottage south of the square
   c.building('hall', 34, 33, 5, 3, { name: 'The Elder’s Hall' });
   c.building('house', 20, 34, 4, 3, { name: 'Thessa’s Cottage', art: 'gv:cosy_cottage' });
-  // houses
+  // houses: along the west road and down the south road too, shoulder to shoulder as a village is built
   for (const [x, y] of [
     [8, 30],
     [8, 37],
@@ -114,8 +118,25 @@ function plan(): SpreadPlan {
     [45, 38],
     [53, 14],
     [13, 14],
+    [25, 34],
+    [38, 41],
+    [37, 46],
+    [49, 34],
+    [8, 14],
   ] as const)
     c.building('house', x, y, 4, 3);
+  // lamps along the roads out of the square, flowers and benches by the doors
+  for (const [x, y] of [
+    [23, 28],
+    [16, 28],
+    [9, 28],
+    [30, 36],
+    [30, 43],
+    [33, 49],
+    [41, 28],
+    [47, 28],
+  ] as const)
+    c.prop('lamp', x, y);
   // the orchard, the fields and the pond
   c.plant(42, 42, 58, 49, 0.18, 0.12);
   for (let x = 22; x <= 29; x++) {

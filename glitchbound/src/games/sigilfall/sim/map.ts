@@ -275,7 +275,7 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
     }
     free.sort((a, b) => hash2(a % w, Math.floor(a / w), 57) - hash2(b % w, Math.floor(b / w), 57));
     const yard: MapBuilding['yard'] = [];
-    for (const prop of yardProps(lot.style, lot, Math.min(3, Math.floor(free.length / 3)))) {
+    for (const prop of yardProps(lot.style, lot, Math.min(3, Math.ceil(free.length / 2)))) {
       const i = free.shift()!;
       kind[i] = K.Prop;
       yard.push({ prop, tx: i % w, ty: Math.floor(i / w) });

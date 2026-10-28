@@ -54,6 +54,36 @@ function maskOf(same: (dx: number, dy: number) => boolean): string {
   return [n, e, s, w, bit[4] && n && e, bit[5] && s && e, bit[6] && s && w, bit[7] && n && w].map((b) => (b ? '1' : '0')).join('');
 }
 
+/**
+ * The rows of a raised block (a castle wall, a cliff) that show its south face: 1 the bottom row, 2 the row above
+ * it where the block is tall enough; 0 its top. `kind` is the block's tile kind.
+ */
+export function faces(map: TileMap, kind: number, rows = 2): Uint8Array {
+  const n = map.w * map.h;
+  const out = new Uint8Array(n);
+  const is = (i: number): boolean => i >= 0 && i < n && map.kind[i] === kind;
+  // from the bottom up: a face row is the block's bottom row, or the row above a face row, as long as the
+  // block keeps a row of top above it (a block two rows deep shows one row of face)
+  for (let r = 1; r <= rows; r++) {
+    for (let i = 0; i < n; i++) {
+      if (!is(i) || out[i]) continue;
+      const y = Math.floor(i / map.w);
+      const below = y + 1 < map.h ? i + map.w : -1;
+      if (r === 1 ? below === -1 || !is(below) : below !== -1 && out[below] === r - 1 && is(i - map.w)) out[i] = r;
+    }
+  }
+  return out;
+}
+
+/** Which row of its face a face tile is: 'tb' a face one row tall, else 't', 'm' or 'b'. */
+function faceRow(faceOf: Uint8Array, w: number, i: number): 'tb' | 't' | 'm' | 'b' {
+  let k = i;
+  while (k - w >= 0 && faceOf[k - w]! > 0) k -= w;
+  const height = faceOf[k]!;
+  const f = faceOf[i]!;
+  return height === 1 ? 'tb' : f === height ? 't' : f === 1 ? 'b' : 'm';
+}
+
 /** Farm fields: Deco tiles fenced in on three sides or more (the generator's farms). */
 export function farmFields(map: TileMap): Uint8Array {
   const out = new Uint8Array(map.w * map.h);
@@ -93,6 +123,8 @@ export class WorldGround {
   readonly field: Uint8Array;
   /** Castle-wall faces: 1 bottom row, 2 the row above it. */
   private readonly face: Uint8Array;
+  /** Cliff faces of a bare land's rock (its woods are cliffs: VISUAL_BIBLE.md §3), or null in a wooded land. */
+  private readonly cliff: Uint8Array | null;
   /** Water tiles' mask names, and bridges' piece names, by tile. */
   private readonly water = new Map<number, string>();
   private readonly bridges = new Map<number, string>();
@@ -105,7 +137,6 @@ export class WorldGround {
     const n = map.w * map.h;
     this.lie = new Uint8Array(n);
     this.under = new Uint8Array(n);
-    this.face = new Uint8Array(n);
     this.patches = recipe.ground.patches.map(() => new Uint8Array(n));
     const kindAt = (x: number, y: number): number => (x < 0 || y < 0 || x >= map.w || y >= map.h ? K.Wall : map.kind[y * map.w + x]!);
     for (let i = 0; i < n; i++) {
@@ -125,12 +156,9 @@ export class WorldGround {
         for (const [dx, dy] of NB.slice(0, 4)) if (WOODS.has(kindAt(x + dx, y + dy))) near++;
         if (near && hash2(x, y, 523) < 0.3 + near * 0.15) this.under[i] = 1;
       }
-      if (k === K.Rampart) {
-        const below = y + 1 < map.h ? map.kind[i + map.w] : k;
-        if (below !== k) this.face[i] = 1;
-        else if (y + 2 < map.h && map.kind[i + map.w * 2] !== k && y > 0 && map.kind[i - map.w] === k) this.face[i] = 2;
-      }
     }
+    this.face = faces(map, K.Rampart);
+    this.cliff = recipe.edge === 'rocks' ? faces(map, K.Wall, 3) : null;
     // rounded off: a tile joins its patch where most of the 3 x 3 round it is in it (no lone specks or slivers)
     for (const layer of [...this.patches, this.under]) {
       for (let pass = 0; pass < 2; pass++) {
@@ -294,9 +322,11 @@ export class WorldGround {
       for (let ty = ty0; ty < ty0 + CHUNK; ty++) for (let tx = tx0; tx < tx0 + CHUNK; tx++) if (tx < this.map.w && ty < this.map.h) fn(tx, ty, (tx - tx0) * T, (ty - ty0) * T);
     };
     each((tx, ty, x, y) => this.paintTile(g, tx, ty, x, y));
-    // castle walls over everything flat
+    // castle walls and cliffs over everything flat
     each((tx, ty, x, y) => {
-      if (this.map.kind[ty * this.map.w + tx] === K.Rampart) this.paintWall(g, tx, ty, x, y);
+      const k = this.map.kind[ty * this.map.w + tx];
+      if (k === K.Rampart) this.paintWall(g, tx, ty, x, y, 'wall', this.face);
+      else if (k === K.Wall && this.cliff) this.paintWall(g, tx, ty, x, y, 'cliff', this.cliff);
     });
     const x0 = cx * CA;
     const y0 = cy * CA;
@@ -357,7 +387,9 @@ export class WorldGround {
       const layer = this.patches[j]!;
       if (layer[i] && p.set !== gr.base) this.putSet(g, p.set, tx, ty, x, y, (nx, ny) => layer[ny * m.w + nx] === 1);
     });
-    if (this.under[i] && gr.under !== gr.base) this.putSet(g, gr.under, tx, ty, x, y, (nx, ny) => this.under[ny * m.w + nx] === 1);
+    // the woods' floor (under a cliff's top the land's own ground: the rock's foot is scree)
+    const underAt = (j: number): boolean => this.under[j] === 1 && !(this.cliff && m.kind[j] === K.Wall);
+    if (underAt(i) && gr.under !== gr.base) this.putSet(g, gr.under, tx, ty, x, y, (nx, ny) => underAt(ny * m.w + nx));
     const lie = this.lie[i];
     const lieAt = (nx: number, ny: number): number => this.lie[ny * m.w + nx]!;
     if (lie === K.Sand) this.putSet(g, gr.sand, tx, ty, x, y, (nx, ny) => lieAt(nx, ny) === K.Sand);
@@ -379,30 +411,52 @@ export class WorldGround {
     }
   }
 
-  /** A castle wall: Royal Keep's wall top, and its face on the southern rows (inside the wall's tiles). */
-  private paintWall(g: CanvasRenderingContext2D, tx: number, ty: number, x: number, y: number): void {
+  /**
+   * A castle wall (`wall`: Royal Keep's wall top and face) or a cliff (`cliff`: the rock's grassy top ringed by
+   * its ledge, and its rock face): the top auto-tiles, the face hangs on the southern rows inside the block.
+   */
+  private paintWall(g: CanvasRenderingContext2D, tx: number, ty: number, x: number, y: number, set: 'wall' | 'cliff', faceOf: Uint8Array): void {
     const m = this.map;
     const i = ty * m.w + tx;
+    const kind = m.kind[i]!;
     const kindAt = (nx: number, ny: number): number => (nx < 0 || ny < 0 || nx >= m.w || ny >= m.h ? -1 : m.kind[ny * m.w + nx]!);
-    const face = this.face[i]!;
+    const face = faceOf[i]!;
+    const top = set === 'wall' ? 'wall' : 'ledge';
     if (!face) {
       const mask = maskOf((dx, dy) => {
         const k = kindAt(tx + dx, ty + dy);
-        return k === -1 || (k === K.Rampart && !this.face[(ty + dy) * m.w + tx + dx]);
+        return k === -1 || (k === kind && !faceOf[(ty + dy) * m.w + tx + dx]);
       });
-      if (!this.put(g, `wall_${mask}`, x, y)) this.put(g, 'wall_11111111', x, y);
+      if (!this.put(g, `${top}_${mask}`, x, y)) this.put(g, `${top}_11111111`, x, y);
       return;
     }
     const left = kindAt(tx - 1, ty);
     const right = kindAt(tx + 1, ty);
-    const l = left !== K.Rampart && left !== -1;
-    const r = right !== K.Rampart && right !== -1;
+    const l = left !== kind && left !== -1;
+    const r = right !== kind && right !== -1;
     const col = l && r ? 'lr' : l ? 'l' : r ? 'r' : 'm';
-    const tall = face === 2 || this.face[i - m.w] === 2;
-    const row = !tall ? 'tb' : face === 2 ? 't' : 'b';
-    // the long runs get the pack's variants: a second stone pattern, a crack, moss at the foot
+    const row = faceRow(faceOf, m.w, i);
+    // the long runs get the pack's variants: a second (and third) stone pattern, a crack, moss
     const h = hash2(tx, ty, 351);
-    const v = col === 'm' && row !== 'tb' ? (h < 0.1 ? (row === 'b' ? '_moss' : '_crack') : h < 0.3 ? '_2' : '') : '';
-    if (!this.put(g, `wall_${row}_${col}${v}`, x, y) && !this.put(g, `wall_${row}_${col}`, x, y)) this.put(g, `wall_${row}_m`, x, y);
+    const v =
+      col !== 'm'
+        ? ''
+        : set === 'wall'
+          ? row !== 'tb' && h < 0.1
+            ? row === 'b'
+              ? '_moss'
+              : '_crack'
+            : row !== 'tb' && h < 0.3
+              ? '_2'
+              : ''
+          : h < 0.08 && row === 'm'
+            ? '_moss'
+            : h < 0.4
+              ? '_2'
+              : h < 0.65
+                ? '_3'
+                : '';
+    if (!this.put(g, `${set}_${row}_${col}${v}`, x, y) && !this.put(g, `${set}_${row}_${col}`, x, y)) this.put(g, `${set}_${row}_m`, x, y);
   }
+
 }

@@ -76,3 +76,42 @@ describe('Sigilfall buildings', () => {
     expect(swing('bramble-and-barrel')).toBe(false);
   });
 });
+
+describe('Sigilfall villages and their people', () => {
+  it('builds a village along streets: ten houses or more round its square, every door on a path', () => {
+    for (const id of ['thornvale', 'saltmarsh', 'greyfen', 'ironpeak', 'sunscorch'] as RegionId[]) {
+      const m = parseRegion(REGIONS[id]);
+      const square = m.markers.find((pm) => pm.marker.kind === 'waystone')!;
+      const near = m.buildings.filter((b) => b.style === 'house' && Math.hypot(b.lot.tx + 2 - square.tx, b.lot.ty + 2 - square.ty) < 30);
+      expect(near.length, id).toBeGreaterThanOrEqual(10);
+      for (const b of near) {
+        // the tile in front of the door is walkable ground
+        const i = (b.lot.ty + b.lot.h) * m.w + b.lot.tx + 2;
+        expect(m.solid[i], `${id} house at ${b.lot.tx},${b.lot.ty}`).toBe(0);
+      }
+    }
+  });
+
+  it('has people walking about a calm town, nobody at night, and leaves the fight alone', () => {
+    const w = new World({ region: 'emberwick', tier: 0, mods: [], hero: newCharacter('mage', 'Test', 'hero0', 0), settings: { ...DEFAULT_SETTINGS }, seed: 3 });
+    expect(w.folk.length).toBeGreaterThanOrEqual(12);
+    const before = w.folk.map((f) => [f.x, f.y]);
+    // the same town with nobody in its streets
+    const empty = new World({ region: 'emberwick', tier: 0, mods: [], hero: newCharacter('mage', 'Test', 'hero0', 0), settings: { ...DEFAULT_SETTINGS }, seed: 3 });
+    empty.folk = [];
+    w.input = emptyInput();
+    empty.input = emptyInput();
+    for (let i = 0; i < 600; i++) {
+      w.step(1 / 60);
+      empty.step(1 / 60);
+    }
+    // they walk (and keep to ground anyone can walk on)
+    expect(w.folk.some((f, k) => Math.hypot(f.x - before[k]![0]!, f.y - before[k]![1]!) > 16)).toBe(true);
+    for (const f of w.folk) expect(w.map.solid[Math.floor(f.y / TILE) * w.map.w + Math.floor(f.x / TILE)]).toBe(0);
+    // on their own random numbers: the world's draw the same with or without them
+    expect(w.rand()).toBe(empty.rand());
+    // nobody about in a dungeon
+    const d = new World({ region: 'crypt', tier: 0, mods: [], hero: newCharacter('mage', 'Test', 'hero0', 0), settings: { ...DEFAULT_SETTINGS }, seed: 3 });
+    expect(d.folk).toHaveLength(0);
+  });
+});

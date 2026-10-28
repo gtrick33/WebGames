@@ -13,6 +13,8 @@ import { hasStatus } from '../sim/combat';
 import { K, TILE } from '../sim/map';
 import type { Enemy, Fx, Ghost, Pet, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
+import type { Folk } from '../sim/folk';
+import { passerbyLook } from './art/townsfolk';
 import { itemTint } from '../progress/items';
 import { canvas, ctx2d, DETAIL, pixelText, RES, rgba, type Cnv, type Sprite } from './pixel';
 import { creatureSprite, glowDisc, heldWeapon, itemIconCanvas, heroLook, heroSprite, mountSprites, npcSprite, recolored, riderLegsSprite, vendorSign, weaponSprite, type HeroDir } from './sprites';
@@ -340,6 +342,8 @@ export class Renderer {
     for (const s of w.spores) if (inView(s.x, s.y)) items.push({ y: s.y + 3, draw: () => this.drawSpore(s.x, s.y, s.ripe, s.fuse, time) });
     for (const n of w.npcs) if (inView(n.x, n.y)) items.push({ y: n.y + 6, draw: () => this.drawNpc(w, n.id, n.x, n.y, n.face, n.bob) });
     for (const c of w.chickens) if (inView(c.x, c.y)) items.push({ y: c.y, draw: () => this.drawChicken(c.x, c.y, c.face, time) });
+    // the people of the place (they keep indoors while the story fights in the streets)
+    if (!w.story.fighting) for (const f of w.folk) if (inView(f.x, f.y)) items.push({ y: f.y + 5, draw: () => this.drawFolk(f, time) });
     for (const d of w.drops) if (inView(d.x, d.y)) items.push({ y: d.y, draw: () => this.drawDrop(d.kind, d.x, d.y, d.z, d.item, time, d.t) });
     for (const e of w.enemies) if (inView(e.x, e.y)) items.push({ y: e.y + e.r * 0.6, draw: () => this.drawEnemy(e, time) });
     for (const pet of w.pets) if (inView(pet.x, pet.y)) items.push({ y: pet.y + pet.r * 0.6, draw: () => this.drawPet(pet, time) });
@@ -1668,6 +1672,22 @@ export class Renderer {
     }
     const mark = npcMark(w, id);
     if (mark) drawMapIcon(g, mark, x, Math.round(top + Math.sin(bob * 3) * 1.5) - 8, 1);
+  }
+
+  /** A villager walking about (sim/folk.ts), drawn like the people of the story. */
+  private drawFolk(f: Folk, time: number): void {
+    const g = this.g;
+    g.fillStyle = 'rgba(0,0,0,0.22)';
+    g.beginPath();
+    g.ellipse(f.x, f.y + 6, 5.5, 2.2, 0, 0, TAU);
+    g.fill();
+    const dir: HeroDir = f.dir === 0 ? 'down' : f.dir === 3 ? 'up' : 'side';
+    const frame = f.moving ? (Math.floor(f.walkT * 6) % 2) + 1 : 0;
+    const s = heroSprite(passerbyLook(f.look), dir, frame);
+    const sw = s.width / s.k;
+    const sh = s.height / s.k;
+    const bob = f.moving ? (Math.floor(f.walkT * 6) % 2 === 0 ? 0 : -0.5) : Math.sin(time * 2 + f.look) > 0.8 ? -0.5 : 0;
+    g.drawImage(f.dir === 1 ? s.f : s.c, Math.round(f.x) - sw / 2, Math.round(f.y) + 6.5 - sh + bob, sw, sh);
   }
 
   private drawChicken(x: number, y: number, face: number, time: number): void {

@@ -88,8 +88,20 @@ function plan(): CityPlan {
     [47, 35],
     [47, 46],
     [56, 46],
+    [44, 40],
+    [59, 40],
+    [56, 35],
   ] as const)
     c.prop('market-cart', x, y, true, MARKET);
+  for (const [x, y, p] of [
+    [45, 35, 'crate'],
+    [48, 36, 'sacks'],
+    [55, 36, 'barrel'],
+    [57, 36, 'crate'],
+    [43, 41, 'barrel'],
+    [60, 41, 'sacks'],
+  ] as const)
+    c.prop(p, x, y, true, MARKET);
 
   // the Regent's keep at the head of the avenue, its courtyard, the barracks beside it
   c.building('keep', 45, 10, 14, 8, { pave: false });
@@ -182,6 +194,14 @@ function plan(): CityPlan {
   c.building('house', 37, 21, 4, 3);
   c.building('house', 14, 32, 4, 3);
   c.building('house', 36, 30, 4, 3);
+
+  // a city lives shoulder to shoulder: rows of houses along the avenue, a street of them in the north-east, two
+  // in the south (the open grass between a few big buildings read as a field, not a capital)
+  c.row(10, 37, 38).row(64, 93, 38);
+  c.fill(63, 27, 81, 28, 'cobble').row(63, 81, 27);
+  c.fill(10, 58, 48, 59, 'path').row(24, 36, 58);
+  c.fill(56, 58, 92, 59, 'path').row(56, 92, 58);
+  c.fill(56, 66, 92, 67, 'path').row(56, 92, 66);
 
   // where the story happens in the city (silent places)
   for (const [id, x, y] of [

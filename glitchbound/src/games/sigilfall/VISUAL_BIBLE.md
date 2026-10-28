@@ -31,6 +31,27 @@ effects are Willosuna's. Nothing else enters without approval.
 - **Indoors is peaceful**: no spells or blows in an inn or a chapel, and the skill bar is put away, so nothing
   covers a room's door.
 
+**Close, not vast** (since 2026-10-28, the second pass). The owner held up two scenes from the pack's own maps (a
+castle courtyard and a village, each about 30 × 20 tiles) against ours: "look at how they make you feel, while the
+zones in our game feel separated and vast". What makes theirs: houses shoulder to shoulder along streets, a
+garden or a barrel at every step, people everywhere, cliffs and walls that frame the scene. So:
+
+- **Villages are built along streets** (`zonegen.ts` town): a square with the waystone, the well, stalls and a
+  notice board; streets out of it; houses side by side fronting the main street and the lane behind (a tile of
+  garden between neighbors), more beside the side streets; fenced vegetable gardens, an orchard, a pond; lamps
+  and planters by the doors. Briarhollow is built at its plan's own size again (it had been spread 35% roomier)
+  with more houses on its roads; Emberwick has rows of houses along its avenue and its southern streets and a
+  market of stalls.
+- **People live there** (`sim/folk.ts`): villagers walk between their doors, the square and the streets, stop, and
+  walk on (a third about the square); they stay in at night, while a place burns and while the story fights.
+- **The lands are smaller** (`ZONE_SCALE` 0.8 a side) with denser copses, and the open land between the sights is
+  dressed with small scenes of its kind (a woodcutter's clearing, a camp, a pen, a field with its scarecrow, a
+  shrine, graves, a broken wagon, standing stones, a pond, a ruined wall, a meadow, bones, a war camp, a well) and
+  stones and flowers along the roads.
+- **Bare lands stand on cliffs**: their rock is the pack's ledge and cliff face, three rows tall, with pines and
+  boulders on top, instead of a field of boulders. Long walls carry torches and banners (the Regent's blue in a
+  town); short ones are ruins, mossy and cracked.
+
 - **Land grows, it isn't sprinkled**: trees stand in copses with clearings between, bushes as undergrowth along a
   copse's edge, rocks in outcrops, flowers in meadows (`zonegen.ts` scatter; `CityPlan.grove` in towns). Never
   lone trees or rocks dotted evenly over a field.

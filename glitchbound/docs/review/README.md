@@ -17,7 +17,7 @@ rollback point.
 | `phase-13/` | Each dungeon's own entrance | `b48c132f` |
 | `phase-14/` | Act IV–V beats: Elyra by Lastlight's fire, Ysane's echo at the frozen lodge, the Muster Hall field, Hollowmere | `26ee957e`, `d2748d90` |
 | `review-tour/` | Every land at 640 × 360 (the visual review; `*-fixed.png` after the ground-seam fix) | `59d5e978` |
-| `one-pack/` | Before and after, side by side: the world in Royal Keep alone (Briarhollow's gate, square, chapel and inn, Thornvale, Emberwick's market, Greyfen, Rimeheld); the marked doors; the chapel with the skill bar put away | the one-pack branch |
+| `one-pack/` | Before and after, side by side: the world in Royal Keep alone (Briarhollow's gate, square, chapel and inn, Thornvale, Emberwick's market, Greyfen, Rimeheld); the marked doors; the chapel with the skill bar put away. `dense-*`: the second pass (villages along streets, townsfolk, Briarhollow at its plan's size, Emberwick's streets) | the one-pack branch |
 
 ## Heavy scene (Prompt 16)
 

@@ -55,6 +55,9 @@ Status words: **done** (built, tested, screenshot-checked), **partial** (what is
   as an endless ladder past Mythic, climbed as Diablo's rifts are, with Paragon levels past 60. Save v11.
 - **One art language** (2026-10-28): every outdoor land drawn in Royal Keep alone (ASSET_AUDIT.md); buildings solid
   where drawn, entered through their painted doors (marked); straight roads; indoors peaceful, the skill bar put away.
+- **Close, not vast** (2026-10-28): villages along streets, townsfolk walking about, Briarhollow at its plan's
+  size, Emberwick's rows of houses and market, smaller lands with scenes in their open ground, cliffs in the bare
+  lands, torches and banners on the walls (VISUAL_BIBLE.md §1).
 
 ## Rules carried through every phase
 
