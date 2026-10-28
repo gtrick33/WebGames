@@ -2120,6 +2120,10 @@ const es: string[] = [
   'Las filas marcadas como «rival» son jugadores por ordenador de GlitchBound con puntuaciones reales. Supéralos para subir.',
   'Tu récord, {n}, estaría en el puesto {rank}. Inicia sesión para reclamarlo.',
   'Solo miembros, en todos los juegos: las coronas son los primeros puestos entre miembros, los podios sus top 3 y los récords las mejores marcas personales superadas.',
+  'Casa',
+  'Las filas marcadas con 🤖 Casa son jugadores por ordenador de GlitchBound con puntuaciones reales. Supéralos para subir.',
+  'Los jugadores de la casa ocupan los puestos libres del Salón de la Fama. Cada uno cede su puesto cuando un miembro lo toma.',
+  'En todos los juegos: las coronas son los primeros puestos, los podios los top 3 y los récords las mejores marcas personales superadas.',
 ];
 
 export default es;

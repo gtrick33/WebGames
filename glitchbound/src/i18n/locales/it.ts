@@ -2120,6 +2120,10 @@ const it: string[] = [
   'Le righe con «rivale» sono giocatori computer di GlitchBound, con punteggi reali. Superali per salire.',
   'Il tuo record, {n}, sarebbe al n. {rank} qui. Accedi per prendertelo.',
   'Solo membri, in tutti i giochi: le corone sono i primi posti tra i membri, i podi i loro piazzamenti nei primi 3, i record i primati personali battuti.',
+  'Casa',
+  'Le righe con 🤖 Casa sono giocatori computer di GlitchBound, con punteggi reali. Superali per salire.',
+  'I giocatori della casa occupano i posti liberi dell’Albo d’oro. Ognuno cede il suo posto quando un membro lo prende.',
+  'In tutti i giochi: le corone sono i primi posti, i podi i piazzamenti nei primi 3, i record i primati personali battuti.',
 ];
 
 export default it;

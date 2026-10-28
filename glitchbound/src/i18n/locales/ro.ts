@@ -2120,6 +2120,10 @@ const ro: string[] = [
   'Rândurile marcate „rival” sunt jucătorii-computer ai GlitchBound, cu scoruri reale. Depășește-i ca să urci.',
   'Recordul tău, {n}, ar fi pe locul {rank} aici. Conectează-te ca să-l revendici.',
   'Doar membri, în toate jocurile: coroanele sunt locurile 1 între membri, podiumurile locurile lor din top 3, recordurile cele personale pe care le-au doborât.',
+  'Casa',
+  'Rândurile marcate 🤖 Casa sunt jucătorii-computer ai GlitchBound, cu scoruri reale. Depășește-i ca să urci.',
+  'Jucătorii casei țin locurile libere din Galeria celebrităților. Fiecare își cedează locul când un membru îl ocupă.',
+  'În toate jocurile: coroanele sunt locurile 1, podiumurile locurile din top 3, recordurile cele personale doborâte.',
 ];
 
 export default ro;

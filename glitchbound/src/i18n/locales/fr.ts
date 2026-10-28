@@ -2120,6 +2120,10 @@ const fr: string[] = [
   'Les lignes marquées « rival » sont des joueurs ordinateur de GlitchBound, réglés sur de vrais scores. Dépasse-les pour grimper.',
   'Ton record, {n}, serait n° {rank} ici. Connecte-toi pour le revendiquer.',
   'Membres uniquement, sur tous les jeux : les couronnes sont les 1res places entre membres, les podiums leurs places dans le top 3, les records les meilleurs scores personnels battus.',
+  'Maison',
+  'Les lignes marquées 🤖 Maison sont des joueurs ordinateur de GlitchBound, réglés sur de vrais scores. Dépasse-les pour grimper.',
+  'Les joueurs maison occupent les places libres du Panthéon. Chacun cède sa place dès qu’un membre la prend.',
+  'Sur tous les jeux : les couronnes sont les 1res places, les podiums les places dans le top 3, les records les meilleurs scores personnels battus.',
 ];
 
 export default fr;

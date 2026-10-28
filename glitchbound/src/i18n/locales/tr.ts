@@ -2120,6 +2120,10 @@ const tr: string[] = [
   '“Rakip” işaretli satırlar GlitchBound’un gerçek skorlara ayarlı bilgisayar oyuncularıdır. Yükselmek için onları geç.',
   'Rekorun {n} burada {rank}. sırada olurdu. Almak için giriş yap.',
   'Yalnızca üyeler, tüm oyunlarda: taçlar üyeler arasındaki 1. sıralar, kürsüler ilk 3 sıralar, rekorlar ise kırdıkları kişisel rekorlardır.',
+  'Bot',
+  '🤖 Bot işaretli satırlar GlitchBound’un gerçek skorlara ayarlı bilgisayar oyuncularıdır. Yükselmek için onları geç.',
+  'Botlar Şöhretler Salonu’ndaki boş yerleri tutar. Bir üye yerini aldığında her biri yerini bırakır.',
+  'Tüm oyunlarda: taçlar 1. sıralar, kürsüler ilk 3 sıralar, rekorlar kırılan kişisel rekorlardır.',
 ];
 
 export default tr;

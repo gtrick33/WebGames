@@ -10,9 +10,6 @@ import './InfoPages.css';
 
 type Tab = 'hall' | string;
 
-/** Below this many players the Hall of Fame invites people to claim the empty spots. */
-const EARLY_DAYS = 10;
-
 function GameBoard({ slug }: { slug: string }) {
   const [period, setPeriod] = useState<'all' | '24h'>('all');
   const t = useT();
@@ -51,7 +48,9 @@ function GameBoard({ slug }: { slug: string }) {
 
 function Hall() {
   const t = useT();
-  const hall = useHall();
+  const live = useLiveCatalog();
+  const hall = useHall(live.games.filter((g) => !g.partyOnly).map((g) => g.slug));
+  const house = hall.rows.some((r) => r.house);
   return (
     <div className="panel info-block">
       <div className="board-head">
@@ -60,13 +59,14 @@ function Hall() {
         </h2>
       </div>
       <p className="info-small">
-        {t('Members only, across every game: crowns are the members’ #1 spots, podiums their top-3 spots, records the personal bests they have beaten.')}
+        {t('Across every game: crowns are #1 spots, podiums top-3 spots, records the personal bests beaten.')}
       </p>
-      {hall.status === 'loading' && <p className="info-small">{t('Loading…')}</p>}
+      {/* the house team shows while the members load (useHall), so the table never jumps */}
+      {hall.rows.length ? <HallTable rows={hall.rows} /> : hall.status === 'ok' && <BoardEmpty text={t('Nobody is in the Hall of Fame yet. Sign in and set the first record.')} />}
       {hall.status === 'error' && <BoardError text={t('The Hall of Fame is offline right now.')} onRetry={hall.retry} />}
-      {hall.status === 'ok' && (hall.rows.length ? <HallTable rows={hall.rows} /> : <BoardEmpty text={t('Nobody is in the Hall of Fame yet. Sign in and set the first record.')} />)}
-      {/* A young arcade: say the thin board is an opening, not a ghost town. */}
-      {hall.status === 'ok' && hall.rows.length > 0 && hall.rows.length < EARLY_DAYS && (
+      {/* A young arcade: the house team holds the seats members have not taken yet. */}
+      {house && <p className="board-rivals-note">{t('House players hold the Hall’s empty seats. Each one gives up its seat when a member takes it.')}</p>}
+      {house && (
         <p className="info-small board-early">
           <b>{t('Early days.')}</b> {t('The boards are still fresh, so a crown is well within reach. Sign in, set a best and claim one.')}
         </p>

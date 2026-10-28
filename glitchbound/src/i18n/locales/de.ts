@@ -2120,6 +2120,10 @@ const de: string[] = [
   'Zeilen mit „Rivale“ sind Computerspieler von GlitchBound mit echten Punktzahlen. Überhol sie, um aufzusteigen.',
   'Dein Rekord, {n}, wäre hier Platz {rank}. Melde dich an, um ihn zu sichern.',
   'Nur Mitglieder, über alle Spiele: Kronen sind Platz 1 unter den Mitgliedern, Podien Plätze in den Top 3, Rekorde geschlagene persönliche Bestleistungen.',
+  'Hausteam',
+  'Zeilen mit 🤖 Hausteam sind Computerspieler von GlitchBound mit echten Punktzahlen. Überhol sie, um aufzusteigen.',
+  'Das Hausteam hält die freien Plätze der Ruhmeshalle. Jeder räumt seinen Platz, sobald ein Mitglied ihn einnimmt.',
+  'Über alle Spiele: Kronen sind Platz 1, Podien Plätze in den Top 3, Rekorde geschlagene persönliche Bestleistungen.',
 ];
 
 export default de;
