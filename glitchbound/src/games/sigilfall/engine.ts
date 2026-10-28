@@ -150,6 +150,8 @@ export class SigilEngine {
   private nextToast = 1;
   /** Toasts wait while a dialogue is open (their time starts when it closes). */
   private toastsHeld = false;
+  /** A banner waits out a scene (its time starts when the scene ends). */
+  private bannerHeld = false;
   /** Seconds of the world in view before a new hero is greeted at the gate (0: no greeting due). */
   private greetIn = 0;
   /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
@@ -399,13 +401,20 @@ export class SigilEngine {
       this.autosaveAt = t + 20_000;
       if (!paused) this.persist();
     }
-    // what happens while someone is talking waits until they have finished (a toast behind a dialogue is missed)
-    if (this.ui.dialogue) this.toastsHeld = true;
+    // what happens while someone is talking, or a scene plays (the HUD stepped aside), waits until they have
+    // finished: a toast behind them is missed
+    if (this.ui.dialogue || w.scene) this.toastsHeld = true;
     else if (this.toastsHeld) {
       this.toastsHeld = false;
       this.setUi({ toasts: this.ui.toasts.map((x) => ({ ...x, until: t + toastTime(x.tone) })) });
     } else if (this.ui.toasts.some((x) => x.until < t)) this.setUi({ toasts: this.ui.toasts.filter((x) => x.until >= t) });
-    if (this.ui.banner && t - this.ui.banner.id > 2600) this.setUi({ banner: null });
+    // (and a banner, which a scene hides, shows in full once it is over)
+    if (w.scene) this.bannerHeld = true;
+    else if (this.bannerHeld) {
+      this.bannerHeld = false;
+      if (this.ui.banner) this.setUi({ banner: { ...this.ui.banner, id: t } });
+    }
+    if (this.ui.banner && !this.bannerHeld && t - this.ui.banner.id > 2600) this.setUi({ banner: null });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
     const boss = w.boss();
     this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));

@@ -2410,7 +2410,14 @@
   flex-wrap: wrap;
   gap: 6px;
 }
-/* a scene playing: letterbox bars, a skip button */
+/* a scene playing: letterbox bars, a skip button; the HUD, the bar and the tracker step aside for it */
+.rb-ui > :not(.rb-scene, .rb-dialogue, .rb-modal) {
+  transition: opacity 0.3s ease;
+}
+.rb-ui.is-scene > :not(.rb-scene, .rb-dialogue, .rb-modal) {
+  opacity: 0;
+  pointer-events: none;
+}
 .rb-scene {
   position: absolute;
   inset: 0;

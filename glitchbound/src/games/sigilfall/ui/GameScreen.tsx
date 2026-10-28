@@ -26,11 +26,13 @@ import { uiIcon } from './uiIcons';
 import { mapIconUrl } from './mapIcons';
 
 /** Registers a per-frame DOM update (no React render per frame). */
-/** A scene playing (sim/scene.ts): bars top and bottom, and a way to skip it. */
+/** A scene playing (sim/scene.ts): bars top and bottom over a clean picture (the HUD steps aside), and a way to skip it. */
 function SceneBars({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLDivElement>(null);
   useFrame(engine, (w) => {
-    if (ref.current) ref.current.classList.toggle('is-on', !!w.scene);
+    if (!ref.current) return;
+    ref.current.classList.toggle('is-on', !!w.scene);
+    ref.current.parentElement?.classList.toggle('is-scene', !!w.scene);
   });
   return (
     <div className="rb-scene" ref={ref} aria-hidden={!engine.world?.scene}>

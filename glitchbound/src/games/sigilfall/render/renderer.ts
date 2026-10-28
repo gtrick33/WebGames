@@ -337,7 +337,7 @@ export class Renderer {
     for (const wv of w.waves) this.drawWave(wv);
     this.drawEnemyWarnings(w);
     for (const tr of w.traps) this.drawTrap(tr.x, tr.y, tr.arm > 0, time);
-    this.drawAim(w);
+    if (!w.scene) this.drawAim(w);
     this.drawFacing(w, time);
     this.drawRings(w);
     this.drawEntrances(w, time);
@@ -451,8 +451,10 @@ export class Renderer {
     const bz = w.boss();
     if (bz?.boss && bz.boss.collapse > 0) this.drawCollapse(bz.boss.cx, bz.boss.cy, bz.boss.collapse, time);
 
-    for (const e of w.enemies) if (inView(e.x, e.y)) this.drawEnemyBar(e, w);
-    for (const pet of w.pets) if (inView(pet.x, pet.y)) this.drawPetBar(pet);
+    // (a scene is a clean picture: no bars, markers or arrows over it)
+    const ui = !w.scene;
+    if (ui) for (const e of w.enemies) if (inView(e.x, e.y)) this.drawEnemyBar(e, w);
+    if (ui) for (const pet of w.pets) if (inView(pet.x, pet.y)) this.drawPetBar(pet);
     for (const t of w.texts) {
       const img = pixelText(t.text, t.color);
       const a = clamp(1.6 - t.t / (t.big ? 0.75 : 0.55), 0, 1);
@@ -462,8 +464,8 @@ export class Renderer {
       g.globalAlpha = 1;
     }
     this.drawSpeech(w);
-    this.drawInteractMarker(w, time);
-    this.drawObjectiveArrow(w, ox, oy, time);
+    if (ui) this.drawInteractMarker(w, time);
+    if (ui) this.drawObjectiveArrow(w, ox, oy, time);
     g.setTransform(this.res, 0, 0, this.res, 0, 0);
     // hurt vignette
     if (!p.dead && p.hp < p.maxHp * 0.3) {
