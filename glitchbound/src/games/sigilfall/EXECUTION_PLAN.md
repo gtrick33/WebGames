@@ -61,6 +61,9 @@ Status words: **done** (built, tested, screenshot-checked), **partial** (what is
 - **Villages small, full and each its own** (2026-10-28): four village plans (crossroads, market street, green,
   walled hold) with inns, smithies, stables, chapels and keeps among the houses, props at every step; Briarhollow's
   square and Emberwick's market filled, their lawns built on (VISUAL_BIBLE.md §1).
+- **Every heart its own, nothing without a reason, no bare ground** (2026-10-28): a centerpiece and square by
+  land, stalls with their goods, each building's things by its front, people at their work; twice the scenes in
+  the wilds and eight new kinds; Briarhollow's gate towers set into the wall (VISUAL_BIBLE.md §1).
 - **Lands that frighten, a song for every land** (2026-10-28): fens, the haunted wood, barrows, the dead lake, the
   blight and the moors under a dusk of their own with lamps along their roads, iron-walled graveyards and mist; a
   song of its own for every land (and the inns, the chapel, the Great Hall, a siege night, five dungeons), with

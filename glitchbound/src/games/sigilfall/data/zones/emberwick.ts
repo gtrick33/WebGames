@@ -98,8 +98,8 @@ function plan(): CityPlan {
     [48, 36, 'sacks'],
     [55, 36, 'barrel'],
     [57, 36, 'crate'],
-    [43, 41, 'barrel'],
-    [60, 41, 'sacks'],
+    [43, 40, 'barrel'],
+    [60, 40, 'sacks'],
   ] as const)
     c.prop(p, x, y, true, MARKET);
   // a capital's market is crowded: more stalls down its sides and goods between them
@@ -112,15 +112,14 @@ function plan(): CityPlan {
     [53, 48],
   ] as const)
     c.prop('market-cart', x, y, true, MARKET);
+  // each stall's goods beside it
   for (const [x, y, p] of [
-    [42, 38, 'market-goods'],
-    [61, 38, 'market-goods'],
-    [42, 45, 'basket'],
-    [61, 45, 'basket'],
-    [46, 41, 'market-goods'],
-    [57, 41, 'market-goods'],
-    [49, 47, 'crate'],
-    [54, 34, 'sacks'],
+    [42, 37, 'market-goods'],
+    [61, 37, 'market-goods'],
+    [42, 44, 'basket'],
+    [61, 44, 'basket'],
+    [49, 34, 'sacks'],
+    [54, 48, 'crate'],
   ] as const)
     c.prop(p, x, y, true, MARKET);
 

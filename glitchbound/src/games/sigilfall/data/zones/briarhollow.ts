@@ -54,10 +54,11 @@ function plan(): SpreadPlan {
   // the old stone wall along the north, toward the woods, with its gate where Mara keeps watch and a
   // watchtower on either side of it
   for (let x = 9; x <= 55; x++) if (x < 30 || x > 34) c.set(x, 12, 'rampart');
-  c.prop('watchtower', 27, 12);
-  c.prop('watchtower', 37, 12);
-  c.marker(29, 13, { kind: 'prop', prop: 'lamp', solid: true });
-  c.marker(35, 13, { kind: 'prop', prop: 'lamp', solid: true });
+  // (the towers are the gate's posts: the wall ends at each, the road between them)
+  c.prop('watchtower', 29, 12);
+  c.prop('watchtower', 35, 12);
+  c.marker(30, 13, { kind: 'prop', prop: 'lamp', solid: true });
+  c.marker(34, 13, { kind: 'prop', prop: 'lamp', solid: true });
 
   // the square: the waystone, the well, the market (small, and full: the owner's references)
   c.fill(27, 22, 37, 29, 'cobble');
@@ -82,11 +83,10 @@ function plan(): SpreadPlan {
     [38, 28, 'bench'],
   ] as const)
     c.prop(p, x, y);
+  // the stalls' goods, set beside them (the stalls themselves stand out on calm days, below)
   for (const [x, y, p] of [
-    [27, 24, 'crate'],
-    [27, 25, 'barrel'],
-    [37, 24, 'barrel'],
-    [37, 25, 'crate'],
+    [27, 26, 'crate'],
+    [37, 26, 'barrel'],
   ] as const)
     c.prop(p, x, y);
   // a market square, not an empty yard: the Regent's banners by the waystone, a bench by the well, and the
@@ -94,17 +94,8 @@ function plan(): SpreadPlan {
   c.prop('blue-banner', 29, 21);
   c.prop('blue-banner', 35, 21);
   c.prop('bench', 34, 30);
-  // goods out on the cobbles every day of the year
-  for (const [x, y, p] of [
-    [28, 22, 'market-goods'],
-    [36, 22, 'market-goods'],
-    [29, 24, 'basket'],
-    [35, 24, 'basket'],
-    [34, 27, 'wagon'],
-    [28, 29, 'sacks'],
-    [36, 29, 'barrel'],
-  ] as const)
-    c.prop(p, x, y);
+  // a bucket at the well
+  c.prop('bucket', 31, 29, false);
 
   c.prop('market-cart', 28, 26, true, CALM);
   c.prop('market-cart', 36, 26, true, CALM);

@@ -145,66 +145,163 @@ const VY = 13;
 const PLANS: VillagePlan[] = ['cross', 'street', 'green'];
 type BuildingStyle = Extract<Marker, { kind: 'building' }>['style'];
 
-/** What stands in each plan's square (plan coordinates: east, south of the waystone's tile). */
-const SQUARE_CROSS: [number, number, string][] = [
-  [-3, -2, 'well'],
-  [-2, -4, 'market-cart'],
-  [3, -4, 'market-cart'],
-  [-3, -4, 'crate'],
-  [4, -4, 'barrel'],
-  [-4, -3, 'lamp'],
-  [5, -3, 'lamp'],
-  [4, -2, 'notice'],
-  [3, -3, 'market-goods'],
-  [-3, 2, 'wagon'],
-  [-4, -1, 'sacks'],
-  [5, -1, 'bench'],
-  [4, 2, 'hay'],
-];
-const SQUARE_STREET: [number, number, string][] = [
-  [-3, 1, 'fountain'],
-  [4, 1, 'well'],
-  [-6, 0, 'lamp'],
-  [7, 0, 'lamp'],
-  [-10, 0, 'bench'],
-  [11, 0, 'bench'],
-  [2, -1, 'notice'],
-];
-const SQUARE_GREEN: [number, number, string][] = [
-  [-1, -2, 'well'],
-  [3, -2, 'notice'],
-  [-4, -4, 'statue'],
-  [-6, -4, 'flowerbed'],
-  [-2, -4, 'flowerbed'],
-  [-7, -2, 'bench'],
-  [-5, 3, 'market-cart'],
-  [-7, 3, 'market-cart'],
-  [-3, 4, 'crate'],
-  [-6, 5, 'barrel'],
-  [-8, 4, 'market-goods'],
-  [6, 2, 'bench'],
-  [-8, -5, 'lamp'],
-  [9, -5, 'lamp'],
-  [-8, 5, 'lamp'],
-  [9, 5, 'lamp'],
-  [7, -1, 'flowerbed'],
-];
-const SQUARE_COURT: [number, number, string][] = [
-  [-3, -2, 'fountain'],
-  [4, -2, 'well'],
-  [-4, 2, 'market-cart'],
-  [3, 2, 'market-cart'],
-  [-5, -3, 'lamp'],
-  [6, -3, 'lamp'],
-  [-5, 0, 'crate'],
-  [5, 2, 'barrel'],
-  [-2, 2, 'market-goods'],
+/**
+ * What a village's heart is, by its kind of land (the owner: "the center of each zone looks very similar"): the
+ * square's ground, the thing it is gathered round, the stalls of its market and what they sell. A farm village
+ * draws water at its well; a harbor sells fish round a statue of the sea's lady; a fen mends the sick round the
+ * healer's cauldron; a desert town keeps its oasis pool, with pavilions for stalls; a snow hold sits round its
+ * bonfire; the haunted and the grieving keep a shrine of candles; a war camp musters round its banner.
+ */
+interface Heart {
+  ground: number;
+  /** The centerpiece and what stands with it, about its spot (east, south). */
+  centre: [number, number, string][];
+  /** A pool of water at the centerpiece's spot (the oasis). */
+  pool?: boolean;
+  stall: string;
+  goods: string[];
+}
+const HEARTS: Record<string, Heart> = {
+  well: { ground: COBBLE, centre: [[0, 0, 'well'], [-1, 0, 'bucket'], [1, 0, 'bench']], stall: 'market-cart', goods: ['market-goods', 'basket', 'crate', 'sacks'] },
+  harvest: { ground: PATH, centre: [[0, 0, 'tree'], [-1, 1, 'bench'], [1, 1, 'bench'], [1, -1, 'hay']], stall: 'market-cart', goods: ['basket', 'sacks', 'crate', 'hay'] },
+  harbor: { ground: COBBLE, centre: [[0, 0, 'statue'], [-1, 0, 'fish'], [1, 0, 'fish']], stall: 'market-cart', goods: ['fish', 'barrel', 'crate', 'basket'] },
+  healer: { ground: PATH, centre: [[0, 0, 'cauldron'], [-1, 0, 'clay-pot'], [1, 0, 'basket'], [0, -1, 'torch']], stall: 'market-cart', goods: ['pot', 'basket', 'clay-pot', 'sacks'] },
+  forge: { ground: COBBLE, centre: [[0, 0, 'brazier'], [-1, 0, 'anvil'], [1, 0, 'weapon-rack']], stall: 'market-cart', goods: ['crate', 'barrel', 'rack', 'sacks'] },
+  bonfire: { ground: PATH, centre: [[0, 0, 'campfire'], [-1, 1, 'bench'], [1, 1, 'bench'], [1, -1, 'keg']], stall: 'market-cart', goods: ['keg', 'barrel', 'crate', 'sacks'] },
+  oasis: { ground: SAND, centre: [[-1, -1, 'clay-pot'], [2, 0, 'pot'], [-1, 1, 'bench']], pool: true, stall: 'pavilion', goods: ['pot', 'basket', 'clay-pot', 'sacks'] },
+  shrine: { ground: COBBLE, centre: [[0, 0, 'statue'], [-1, 0, 'candles'], [1, 0, 'candles']], stall: 'market-cart', goods: ['pot', 'crate', 'sacks', 'basket'] },
+  muster: { ground: PATH, centre: [[0, 0, 'red-banner'], [-1, 0, 'weapon-rack'], [1, 0, 'armor-stand']], stall: 'market-cart', goods: ['crate', 'barrel', 'rack', 'sacks'] },
+  flowers: { ground: DECO, centre: [[0, 0, 'topiary'], [-1, 0, 'flowerbed'], [1, 0, 'flowerbed'], [0, 1, 'flowerbed']], stall: 'market-cart', goods: ['flowers', 'basket', 'pot'] },
+  totem: { ground: PATH, centre: [[0, 0, 'standing-stone'], [-1, 0, 'torch'], [1, 0, 'torch']], stall: 'market-cart', goods: ['basket', 'pot', 'clay-pot'] },
+  crystal: { ground: COBBLE, centre: [[0, 0, 'crystals'], [-1, 0, 'statue'], [1, 0, 'lamp']], stall: 'market-cart', goods: ['pot', 'crate', 'basket'] },
+};
+const HEART_OF: Partial<Record<Theme, string>> = {
+  farm: 'well',
+  plains: 'well',
+  village: 'well',
+  autumn: 'harvest',
+  coast: 'harbor',
+  sunken: 'harbor',
+  storm: 'harbor',
+  marsh: 'healer',
+  plague: 'healer',
+  gloam: 'healer',
+  blight: 'healer',
+  mountain: 'forge',
+  peaks: 'forge',
+  volcanic: 'forge',
+  snow: 'bonfire',
+  desert: 'oasis',
+  barrow: 'shrine',
+  haunted: 'shrine',
+  deadlake: 'shrine',
+  pale: 'shrine',
+  moor: 'shrine',
+  warfront: 'muster',
+  bonefield: 'muster',
+  fey: 'flowers',
+  forest: 'flowers',
+  jungle: 'totem',
+  rift: 'crystal',
+};
+
+/** Who stands where in a village, by their name: at their trade's door, behind a stall, or about the waystone. */
+const ROLES: [RegExp, BuildingStyle | 'market' | 'lord'][] = [
+  [/smith|forge|armor|gemcutter|runesmith/, 'smithy'],
+  [/innkeep|brewer|brew|cook|hearth/, 'tavern'],
+  [/merchant|trader|tinker|chandler|quartermaster|carter|salvager|furrier|scribe|dustcrown/, 'market'],
+  [/sister|brother|chaplain|sexton|candlewife|pilgrim|priest|healer|lamp-keeper|lamplighter|gravedigger|digger/, 'temple'],
+  [/marshal|captain|lord|thane|jarl|commander|steward|archmage|magister|reeve|harbormaster/, 'lord'],
 ];
 
 /**
+ * Where each plan's heart stands, where its stalls stand (each with its goods set against the side `side` of it),
+ * and its fixed furniture: lamps at the square's corners, benches, the notice board where a road comes in
+ * (plan coordinates: east, south of the waystone's tile; the roads cross on columns 0-1 and rows 0-1).
+ */
+interface Square {
+  heart: [number, number];
+  stalls: [number, number, 1 | -1][];
+  furniture: [number, number, string][];
+}
+const SQUARES: Record<VillagePlan, Square> = {
+  cross: {
+    heart: [-2, -2],
+    stalls: [
+      [-3, -4, -1],
+      [4, -4, 1],
+    ],
+    furniture: [
+      [-4, -3, 'lamp'],
+      [5, -3, 'lamp'],
+      [-3, 2, 'lamp'],
+      [4, 2, 'lamp'],
+      [5, -1, 'notice'],
+      [3, -2, 'wagon'],
+      [-2, 2, 'bench'],
+      [3, 2, 'bench'],
+    ],
+  },
+  street: {
+    heart: [-3, 1],
+    stalls: [
+      [-12, 3, 1],
+      [-9, 3, 1],
+      [-5, 3, 1],
+      [3, 3, 1],
+      [6, 3, 1],
+      [10, 3, 1],
+    ],
+    furniture: [
+      [-7, 3, 'lamp'],
+      [8, 3, 'lamp'],
+      [-13, 0, 'lamp'],
+      [14, 0, 'lamp'],
+      [2, -1, 'notice'],
+      [-10, 1, 'bench'],
+      [12, 1, 'bench'],
+      [4, 1, 'wagon'],
+    ],
+  },
+  green: {
+    heart: [3, -2],
+    stalls: [
+      [-7, 3, -1],
+      [-4, 3, 1],
+    ],
+    furniture: [
+      [-8, -5, 'lamp'],
+      [9, -5, 'lamp'],
+      [-8, 5, 'lamp'],
+      [9, 5, 'lamp'],
+      [-2, -2, 'notice'],
+      [-5, -4, 'statue'],
+      [-6, -4, 'flowerbed'],
+      [-4, -4, 'flowerbed'],
+      [-6, 5, 'wagon'],
+    ],
+  },
+  court: {
+    heart: [-3, -2],
+    stalls: [
+      [-4, 2, -1],
+      [4, 2, 1],
+    ],
+    furniture: [
+      [-5, -3, 'lamp'],
+      [6, -3, 'lamp'],
+      [5, -1, 'notice'],
+      [2, -2, 'well'],
+      [-1, 2, 'bench'],
+    ],
+  },
+};
+
+/**
  * Small scenes for the open land between the sights, so the wilds read as land people use rather than an empty
- * field: a woodcutter's clearing, a travellers' camp, a sheep pen, a fenced field, a wayside shrine, graves, a
- * broken-down wagon, standing stones, a pond, a ruined wall, a flower meadow, bones, a war camp, an old well.
+ * field: a woodcutter's clearing, a travelers' camp, a sheep pen, a fenced field, a farmstead, an orchard, a
+ * hunters' camp, a quarry, a lookout post, a wayside shrine, graves, a broken-down wagon, standing stones, a cairn,
+ * a witch's circle, a pond, a ruined wall, a flower meadow, bones, an old battlefield, a war camp, an old well.
  * Each is drawn as rows of tiles: '.' stays open ground; a key is a prop (solid or not) or a ground kind. Their
  * props have names of their own (a 'camp-tent', a 'wagon', a 'menhir'), so they are never taken for the story's.
  */
@@ -226,16 +323,24 @@ const SCENES: Record<string, { rows: string[]; key: Record<string, SceneCell> }>
   bones: { rows: ['k...s', '..d..', 's.k..'], key: { k: P('skulls'), s: P('bone-heap'), d: P('debris') } },
   warcamp: { rows: ['T...T', '..F..', 'r.R.x'], key: { T: P('camp-tent', true), F: P('campfire', true), r: P('weapon-rack', true), R: P('red-banner', true), x: P('crate', true) } },
   well: { rows: ['.b.', 'xWx'], key: { W: P('well', true), b: P('bucket'), x: P('barrel', true) } },
+  farmstead: { rows: ['ffffff..', 'f,,,,f.h', 'f,S,,f..', 'f,,,,f.W', 'ff.fff..'], key: { f: FENCE, ',': DECO, S: P('scarecrow', true), h: P('hay', true), W: P('wagon', true) } },
+  orchard: { rows: ['T.T.T', '.....', 'T.T.T', '..b..'], key: { T: TREE, b: P('basket') } },
+  hunters: { rows: ['.T.r.', '..F..', 'b.L.x'], key: { T: P('camp-tent', true), r: P('rack', true), F: P('campfire', true), b: P('bedroll'), L: P('log'), x: P('crate', true) } },
+  quarry: { rows: ['rr.rr', 'r.k.r', '.x.W.'], key: { r: ROCK, k: P('rubble'), x: P('crate', true), W: P('wagon', true) } },
+  outpost: { rows: ['.F.T.', 'w...x', '..O..'], key: { O: P('watchtower', true), T: P('camp-tent', true), F: P('campfire', true), w: P('weapon-rack', true), x: P('barrel', true) } },
+  battlefield: { rows: ['k.d.s', '.r...', 's..k.', '..d.r'], key: { k: P('skulls'), d: P('debris'), s: P('bone-heap'), r: P('rack', true) } },
+  witch: { rows: ['.c.c.', 'c.C.c', '.c.c.'], key: { C: P('cauldron', true), c: P('candles') } },
+  cairn: { rows: ['.R.', 'RlR', '.R.'], key: { R: P('menhir', true), l: P('torch', true) } },
 };
 /** Which scenes belong in which kind of land (a woodcutter in the wood, graves on the moor, a war camp at the front). */
 const SCENES_FOR: Record<'vale' | 'wood' | 'high' | 'dry' | 'wet' | 'grim' | 'war', string[]> = {
-  vale: ['woodcut', 'camp', 'pen', 'field', 'shrine', 'wagon', 'pond', 'meadow', 'well', 'meadow'],
-  wood: ['woodcut', 'camp', 'shrine', 'stones', 'pond', 'meadow', 'ruin', 'woodcut'],
-  high: ['camp', 'stones', 'ruin', 'wagon', 'woodcut', 'pond'],
-  dry: ['camp', 'ruin', 'stones', 'wagon', 'bones', 'ruin'],
-  wet: ['camp', 'pond', 'ruin', 'wagon', 'stones', 'graves', 'pond'],
-  grim: ['graveyard', 'stones', 'ruin', 'graves', 'camp', 'bones', 'graveyard'],
-  war: ['warcamp', 'bones', 'ruin', 'wagon', 'graves', 'warcamp'],
+  vale: ['farmstead', 'woodcut', 'camp', 'pen', 'orchard', 'field', 'shrine', 'wagon', 'pond', 'hunters', 'meadow', 'well'],
+  wood: ['woodcut', 'hunters', 'camp', 'shrine', 'stones', 'cairn', 'pond', 'meadow', 'ruin', 'witch'],
+  high: ['camp', 'quarry', 'stones', 'outpost', 'ruin', 'cairn', 'wagon', 'hunters', 'woodcut', 'pond'],
+  dry: ['camp', 'quarry', 'ruin', 'outpost', 'stones', 'wagon', 'bones', 'cairn'],
+  wet: ['camp', 'pond', 'witch', 'ruin', 'hunters', 'wagon', 'stones', 'graves', 'pond'],
+  grim: ['graveyard', 'witch', 'stones', 'battlefield', 'ruin', 'cairn', 'graves', 'camp', 'bones'],
+  war: ['warcamp', 'battlefield', 'outpost', 'bones', 'ruin', 'wagon', 'graves', 'quarry'],
 };
 const sceneLand = (t: Theme | null): keyof typeof SCENES_FOR => {
   switch (t) {
@@ -680,6 +785,7 @@ class ZoneBuilder {
       return true;
     };
     const pick = (list: readonly string[], x: number, y: number, salt: number): string => list[Math.floor(hash2(x, y, seed + salt) * list.length) % list.length]!;
+    const made: { style: BuildingStyle; x0: number; y0: number; w: number; h: number }[] = [];
     /** A building on a lot `w` by `h` whose front row is `front`, its door on the street below; false if it won't fit. */
     const build = (style: BuildingStyle, dx: number, front: number, w: number, h = 3, art?: string): boolean => {
       const [x0] = xs(dx, dx + w - 1);
@@ -692,6 +798,7 @@ class ZoneBuilder {
       for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) this.set(x, y, HOUSE);
       this.put(x0, y0 + h - 1, { kind: 'building', style, w, h, ...(art ? { art: `rk:${art}` } : {}) });
       if (style === 'house') this.houses.push([x0, y0]);
+      made.push({ style, x0, y0, w, h });
       return true;
     };
     /** Houses side by side along a street from `dx` outward (east for 1, west for -1), up to `count`. */
@@ -705,9 +812,12 @@ class ZoneBuilder {
         x += dir * w;
       }
     };
-    /** A small cobbled square, its corners cut like the pack's own. */
+    // the land's heart: what its square is paved with and gathered round (a market street is always paved)
+    const heart = HEARTS[HEART_OF[theme] ?? 'well']!;
+    const ground = plan === 'street' && (heart.ground === SAND || heart.ground === DECO) ? PATH : heart.ground;
+    /** The square, its corners cut like the pack's own, in the land's own ground. */
     const square = (dx0: number, dy0: number, dx1: number, dy1: number): void => {
-      for (let dy = dy0; dy <= dy1; dy++) for (let dx = dx0; dx <= dx1; dx++) if (!((dx === dx0 || dx === dx1) && (dy === dy0 || dy === dy1))) pave(dx, dy, dx, dy, COBBLE);
+      for (let dy = dy0; dy <= dy1; dy++) for (let dx = dx0; dx <= dx1; dx++) if (!((dx === dx0 || dx === dx1) && (dy === dy0 || dy === dy1))) pave(dx, dy, dx, dy, ground);
     };
     /** A fenced garden in rows of greens, with a scarecrow and a gate in its south side. */
     const garden = (dx0: number, dy0: number, dx1: number, dy1: number): void => {
@@ -753,21 +863,8 @@ class ZoneBuilder {
       }
       if (open(gate - 1, y1 + 1)) this.put(gate - 1, y1 + 1, { kind: 'prop', prop: 'lamp', solid: true });
     };
-    // the waystone, and the people the story put here around it
+    // the waystone at the heart of it
     this.put(cx, cy - 1, { kind: 'waystone' });
-    const crowd: [number, number][] = [
-      [-2, 1],
-      [3, 1],
-      [-3, -1],
-      [4, -1],
-      [-1, 2],
-      [2, -2],
-    ];
-    hub.npcs.forEach((npc, i) => {
-      const [dx, dy] = crowd[i % crowd.length]!;
-      const [tx, ty] = this.free(X(dx), Y(dy));
-      this.put(tx, ty, { kind: 'npc', npc }, hub.when?.[npc]);
-    });
     // the roads in (the land's own roads arrive along these lines from the square)
     pave(0, -VY, 1, VY);
     pave(-VX, 0, VX + 1, 1);
@@ -792,7 +889,6 @@ class ZoneBuilder {
         orchard(-6, 8, -2, 12);
         pond(6, 8, 13, 11);
         orchard(-15, -12, 16, -10);
-        for (const [dx, dy, name] of SQUARE_CROSS) prop(dx, dy, name);
         break;
       }
       case 'street': {
@@ -810,11 +906,9 @@ class ZoneBuilder {
         row(-1, -1, 7, 4);
         build('smithy', 2, 7, 4);
         row(6, 1, 7, 4);
-        for (let dx = -12; dx <= 13; dx += 3) prop(dx, 3, (dx / 3) % 2 === 0 ? 'market-cart' : pick(['market-goods', 'basket', 'crate', 'barrel', 'sacks'], X(dx), cy, 87));
         garden(-16, 10, -9, 13);
         pond(7, 10, 14, 13);
         orchard(-15, -12, 16, -10);
-        for (const [dx, dy, name] of SQUARE_STREET) prop(dx, dy, name);
         break;
       }
       case 'green': {
@@ -841,7 +935,6 @@ class ZoneBuilder {
         build('house', -15, 4, 4, 3, pick(looks.big, cx - 15, cy + 4, 77));
         build('smithy', 13, 4, 4);
         orchard(-15, -12, 16, -11);
-        for (const [dx, dy, name] of SQUARE_GREEN) prop(dx, dy, name);
         break;
       }
       case 'court': {
@@ -884,19 +977,54 @@ class ZoneBuilder {
           prop(dx, dy, name);
         row(-1, -1, 5, 5);
         row(2, 1, 5, 5);
-        for (const [dx, dy, name] of SQUARE_COURT) prop(dx, dy, name);
-        for (const [dx, dy, name] of [
-          [-14, 8, 'hay'],
-          [-10, 8, 'woodpile'],
-          [-5, 8, 'well'],
-          [6, 8, 'crate'],
-          [11, 8, 'hay'],
-          [15, 8, 'woodpile'],
-        ] as const)
-          prop(dx, dy, name);
+        // stores stacked against the inside of the south wall: firewood, barrels, hay by the stable's end
+        for (let dx = -15; dx <= 16; dx += 4) if (dx < -1 || dx > 2) prop(dx, 8, dx > 8 ? 'hay' : dx % 8 === 1 ? 'barrel' : 'woodpile');
         break;
       }
     }
+    // the heart: its centerpiece (a pool for an oasis), the market's stalls each with its goods against its side,
+    // the square's lamps, benches and notice board
+    const sq = SQUARES[plan];
+    const [hx, hy] = sq.heart;
+    if (heart.pool) for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) if (free(X(hx + dx), Y(hy + dy))) this.set(X(hx + dx), Y(hy + dy), WATER);
+    for (const [dx, dy, name] of heart.centre) {
+      if (name === 'tree') {
+        if (free(X(hx + dx), Y(hy + dy))) this.set(X(hx + dx), Y(hy + dy), TREE);
+      } else prop(hx + dx, hy + dy, name);
+    }
+    const stalls: [number, number][] = [];
+    sq.stalls.forEach(([dx, dy, side], i) => {
+      if (!prop(dx, dy, heart.stall)) return;
+      stalls.push([dx, dy]);
+      prop(dx + side, dy, heart.goods[(i + Math.floor(hash2(cx, cy, seed + 87) * 4)) % heart.goods.length]!);
+    });
+    for (const [dx, dy, name] of sq.furniture) prop(dx, dy, name);
+    // the people stand where they work: the smith at the smithy, the brewer at the inn, the trader behind a stall,
+    // the priest at the chapel, the lord at the keep; everyone else about the waystone
+    const doorOf = (style: BuildingStyle | 'lord'): [number, number] | null => {
+      const b = made.find((m) => (style === 'lord' ? m.style === 'keep' || m.style === 'hall' : m.style === style));
+      return b ? [b.x0 + Math.floor(b.w / 2) + 1, b.y0 + b.h] : null;
+    };
+    const crowd: [number, number][] = [
+      [-1, 2],
+      [2, -2],
+      [-2, 1],
+      [3, 1],
+      [-3, -1],
+      [4, -1],
+    ];
+    let k = 0;
+    let s = 0;
+    hub.npcs.forEach((npc) => {
+      const role = ROLES.find(([re]) => re.test(npc))?.[1];
+      const stall = role === 'market' ? stalls[s++ % Math.max(1, stalls.length)] : undefined;
+      const at = role === 'market' ? (stall ? [X(stall[0]), Y(stall[1] - 1)] : null) : role ? doorOf(role) : null;
+      const [dx, dy] = crowd[k % crowd.length]!;
+      if (!at) k++;
+      const [tx, ty] = this.free(at ? at[0]! : X(dx), at ? at[1]! : Y(dy));
+      this.put(tx, ty, { kind: 'npc', npc }, hub.when?.[npc]);
+    });
+    this.villageFronts(made, seed);
     this.villageStreets(cx, cy, seed);
     // the green: flowers in drifts on the open ground, the clearing's edge planted
     for (let y = cy - VY; y <= cy + VY; y++) {
@@ -917,16 +1045,48 @@ class ZoneBuilder {
   }
 
   /**
-   * Something at every step along a village's streets (the references: never a bare wall or an empty verge):
-   * barrels, crates, sacks, woodpiles and flowerbeds by the houses, benches and lamps along the street, flowers
-   * at the foot of the walls. Never two side by side, so nothing walls a lane off, and never before a door.
+   * Each building's frontage dressed with what belongs to it (the owner: "supporting assets... need to be
+   * logically placed"): flowers under a house's window and its firewood or water barrel at its corner, the inn's
+   * barrels and a bench, the smithy's firewood and weapon rack, the stable's hay and trough, the shop's crates and
+   * sacks, the chapel's planters, the keep's flags. On the free tiles beside the front of the lot, never before a door.
+   */
+  private villageFronts(made: { style: BuildingStyle; x0: number; y0: number; w: number; h: number }[], seed: number): void {
+    const FRONTS: Partial<Record<BuildingStyle, [string[], string[]]>> = {
+      house: [
+        ['flowerbed', 'planter', 'flowerbed'],
+        ['woodpile', 'barrel', 'bucket', 'sacks'],
+      ],
+      tavern: [['barrel'], ['bench']],
+      inn: [['barrel'], ['bench']],
+      smithy: [['woodpile'], ['weapon-rack']],
+      hall: [['hay'], ['trough']],
+      shop: [['crate'], ['sacks']],
+      temple: [['planter'], ['planter']],
+      keep: [['flag'], ['flag']],
+    };
+    for (const b of made) {
+      const set = FRONTS[b.style];
+      if (!set) continue;
+      const front = b.y0 + b.h - 1;
+      [b.x0 - 1, b.x0 + b.w].forEach((x, side) => {
+        const i = this.idx(x, front);
+        if (!this.inside(x, front, 3) || this.marked.has(i) || !OPEN.has(this.at(x, front))) return;
+        const list = set[side]!;
+        if (b.style === 'house' && hash2(x, front, seed + 99) < 0.25) return;
+        this.put(x, front, { kind: 'prop', prop: list[Math.floor(hash2(x, front, seed + 101) * list.length) % list.length]!, solid: true });
+      });
+    }
+  }
+
+  /**
+   * Lamps down a village's streets, one every six tiles or so on the house side, and flowers at the foot of its
+   * walls. Never before a door, never against another thing (nothing walls a lane off).
    */
   private villageStreets(cx: number, cy: number, seed: number): void {
-    const BY_HOUSE = ['barrel', 'crate', 'sacks', 'woodpile', 'flowerbed', 'planter', 'basket', 'pot', 'barrel', 'bench', 'keg', 'flowerbed'];
     const near = (x: number, y: number, kinds: number[]): boolean => [[0, -1], [1, 0], [0, 1], [-1, 0]].some(([dx, dy]) => kinds.includes(this.at(x + dx!, y + dy!)));
     const crowded = (x: number, y: number): boolean => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => (dx || dy) && this.marked.has(this.idx(x + dx, y + dy))));
-    let lampAt = -99;
     for (let y = cy - VY; y <= cy + VY; y++) {
+      let lampAt = -99;
       for (let x = cx - VX; x <= cx + VX; x++) {
         if (!this.inside(x, y, 3) || this.marked.has(this.idx(x, y)) || this.at(x, y) !== FLOOR) continue;
         // before a door: the tile under a lot's middle (the step) and its sides stay clear
@@ -934,12 +1094,10 @@ class ZoneBuilder {
         if (crowded(x, y)) continue;
         const street = near(x, y, [PATH, COBBLE]);
         const house = near(x, y, [HOUSE]);
-        const h = hash2(x, y, seed + 91);
-        if (house && street && h < 0.55) this.put(x, y, { kind: 'prop', prop: BY_HOUSE[Math.floor(hash2(x, y, seed + 93) * BY_HOUSE.length)]!, solid: true });
-        else if (street && x - lampAt > 5 && h < 0.3) {
+        if (street && house && x - lampAt > 6) {
           this.put(x, y, { kind: 'prop', prop: 'lamp', solid: true });
           lampAt = x;
-        } else if (house && h < 0.5) this.put(x, y, { kind: 'prop', prop: h < 0.3 ? 'flowers' : 'hedge' });
+        } else if (house && !street && hash2(x, y, seed + 91) < 0.35) this.put(x, y, { kind: 'prop', prop: 'flowers' });
       }
     }
   }
@@ -1121,7 +1279,7 @@ class ZoneBuilder {
 
   /**
    * The open land dressed: small scenes (SCENES) in the land's kind scattered between the sights, well clear of
-   * the roads, the villages and each other, about one to every 240 open tiles; and the roads' shoulders with a
+   * the roads, the villages and each other, about one to every 120 open tiles; and the roads' shoulders with a
    * stone, a flower clump or a bush now and then.
    */
   private dress(pois: [number, number][]): void {
@@ -1129,7 +1287,7 @@ class ZoneBuilder {
     const rand = rng(this.spec.seed + 913);
     let openTiles = 0;
     for (let i = 0; i < this.g.length; i++) if (OPEN.has(this.g[i]!) && !this.lock[i]) openTiles++;
-    const want = Math.round(openTiles / 240);
+    const want = Math.round(openTiles / 120);
     const done: [number, number][] = [];
     const BUSY = new Set([PATH, BRIDGE, COBBLE, HOUSE, HOUSE_ANCHOR, FENCE, RAMPART]);
     const start = Math.floor(rand() * kinds.length);
@@ -1143,7 +1301,7 @@ class ZoneBuilder {
       const cy = y0 + h / 2;
       if (this.hubAt.some(([hx, hy]) => ((cx - hx) / (VX + 6)) ** 2 + ((cy - hy) / (VY + 5)) ** 2 < 1)) continue;
       if (pois.some(([px, py], k) => Math.hypot(px - cx, py - cy) < this.spec.pois[k]!.r + 5)) continue;
-      if (done.some(([px, py]) => Math.hypot(px - cx, py - cy) < 13)) continue;
+      if (done.some(([px, py]) => Math.hypot(px - cx, py - cy) < 10)) continue;
       let ok = true;
       for (let dy = -2; dy < h + 2 && ok; dy++) {
         for (let dx = -2; dx < w + 2 && ok; dx++) {
@@ -1181,7 +1339,7 @@ class ZoneBuilder {
       const x = i % this.w;
       const y = (i - x) / this.w;
       const hh = hash2(x, y, this.spec.seed + 917);
-      if (hh > 0.06) continue;
+      if (hh > 0.09) continue;
       for (const [dx, dy] of [
         [0, -1],
         [1, 0],

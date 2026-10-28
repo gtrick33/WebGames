@@ -121,6 +121,8 @@ const PROPS: Record<string, string[]> = {
   pavilion: ['pavilion_blue', 'pavilion_red'],
   keg: ['keg'],
   pot: ['pot_clay', 'pot_blue', 'pot_big'],
+  fish: ['barrel_fish'],
+  brazier: ['anim:brazier'],
 };
 
 /** The pieces that give light: how far it reaches, and how high its flame or lamp is over its foot (world px). */
@@ -135,7 +137,7 @@ const LIGHT: Record<string, [number, number]> = {
 };
 
 /** Tall props the hero fades when walking behind. */
-const FADE = new Set(['pavilion', 'well', 'tent', 'camp-tent', 'torch', 'menhir', 'market-cart', 'watchtower', 'fountain', 'statue', 'lamp', 'lantern', 'scarecrow', 'red-banner', 'blue-banner', 'skull-banner', 'standing-stone']);
+const FADE = new Set(['pavilion', 'brazier', 'well', 'tent', 'camp-tent', 'torch', 'menhir', 'market-cart', 'watchtower', 'fountain', 'statue', 'lamp', 'lantern', 'scarecrow', 'red-banner', 'blue-banner', 'skull-banner', 'standing-stone']);
 
 /** Every piece the fixed tables name (for the art-integrity test). */
 export const sceneryRefs = (): string[] => [...Object.values(PROPS).flat(), 'signpost', 'pillar', 'pillar_broken', 'anim:smoke', 'lilypad', 'lilypad_flower', 'reeds', 'reeds_2', 'bush_small_leaf', 'bush_small_mint', 'hedge_block', 'planter_red', 'anim:wall_torch', 'wall_banner_blue', 'wall_banner_red', 'wall_moss_a', 'wall_crack_a', ...Array.from({ length: 16 }, (_, n) => `fence_${n}`), ...Array.from({ length: 16 }, (_, n) => `fence_iron_${n}`)];
@@ -146,7 +148,7 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town =
   const lights: { x: number; y: number; r: number }[] = [];
   const rk = art.rk;
   /** A piece by name ('tree_big_leaf', 'anim:campfire', 'gc:skulls'): its picture, ground point and scale. */
-  const find = (ref: string): { c: Cnv; r: Rect; o: [number, number]; k: number; anim?: AnimInfo; smoke?: [number, number][] } | null => {
+  const find = (ref: string): { c: Cnv; r: Rect; o: [number, number]; k: number; fp?: [number, number]; anim?: AnimInfo; smoke?: [number, number][] } | null => {
     if (ref.startsWith('gc:')) {
       const p = art.gc?.props[ref.slice(3)];
       return p && art.gc ? { c: art.gc.img, r: p.r, o: p.o, k: art.gc.k } : null;
@@ -156,7 +158,7 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town =
       return a ? { c: rk.props, r: [a.r[0], a.r[1], a.w, a.h], o: [a.w / 2, a.h], k: rk.k, anim: a } : null;
     }
     const p = rk.prop[ref];
-    return p ? { c: rk.props, r: p.r, o: p.o, k: rk.k, ...(p.smoke ? { smoke: p.smoke } : {}) } : null;
+    return p ? { c: rk.props, r: p.r, o: p.o, k: rk.k, ...(p.fp ? { fp: p.fp } : {}), ...(p.smoke ? { smoke: p.smoke } : {}) } : null;
   };
   const pick = (list: string[], h: number): string | undefined => {
     const have = list.filter((ref) => find(ref));
@@ -166,7 +168,10 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town =
   const stand = (ref: string | undefined, x: number, y: number, kind: string, fade = false, sortY = y): SceneObject | null => {
     const p = ref ? find(ref) : null;
     if (!p) return null;
-    const ob: SceneObject = { x, y: sortY, c: p.c, dx: -p.o[0] / p.k, dy: y - sortY - p.o[1] / p.k, fade, kind, src: p.r, k: p.k, ...(p.anim ? { anim: p.anim } : {}) };
+    // a piece with walls (a stall, a well, a tower, a tent) has its origin at its south-west corner: centered on
+    // its footprint, so it stands on its tile, not half a tile east of it
+    const ox = p.fp ? p.o[0] + p.fp[0] / 2 : p.o[0];
+    const ob: SceneObject = { x, y: sortY, c: p.c, dx: -ox / p.k, dy: y - sortY - p.o[1] / p.k, fade, kind, src: p.r, k: p.k, ...(p.anim ? { anim: p.anim } : {}) };
     objects.push(ob);
     // a flame or a lamp lights the dark around it (the crypt, a night, a frightening land)
     const glow = ref ? LIGHT[ref] : undefined;
@@ -251,8 +256,11 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town =
         if (bank) stand(h < 0.025 ? 'lilypad_flower' : 'lilypad', cx + (hash2(tx, ty, 98) - 0.5) * 8, bottom - 4, 'lily', false, ty * TILE);
         break;
       }
+      case K.Sand:
       case K.Floor:
       case K.Deco: {
+        // a desert's sand grows what the desert grows (a beach's stays bare)
+        if (k === K.Sand && r.ground.base !== 'sand') break;
         // crops in rows on the tilled fields
         if (field[i]) {
           if (ty % 2 === 0) stand(hash2(tx, ty, 99) < 0.5 ? 'bush_small_leaf' : 'bush_small_mint', cx + (hash2(tx, ty, 97) - 0.5) * 3, bottom - 5, 'crop');
@@ -291,9 +299,10 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town =
           if (nk === K.Fence) fenced = true;
           if (nk === K.House) garden = true;
         }
-        const clump = noise2(tx / 7, ty / 7, 191) > 0.6;
+        const clump = noise2(tx / 7, ty / 7, 191) > 0.52;
         const fits = floraFor(r.flora, rim ? ['shade', 'grass'] : fenced ? ['field', 'bloom', 'grass'] : garden ? ['bloom', 'grass'] : clump ? ['bloom', 'grass'] : ['grass']);
-        if (fits.length && h > (rim ? 0.78 : fenced || garden ? 0.8 : clump ? 0.8 : 0.95)) stand(pick(fits, hash2(tx, ty, 95)), cx + (hash2(tx, ty, 96) - 0.5) * 10, bottom - 3 - hash2(tx, ty, 97) * 8, 'flora');
+        // the open land is never bare: grass in tufts everywhere, meadows thick where they grow
+        if (fits.length && h > (rim ? 0.66 : fenced || garden ? 0.8 : clump ? 0.62 : 0.88)) stand(pick(fits, hash2(tx, ty, 95)), cx + (hash2(tx, ty, 96) - 0.5) * 10, bottom - 3 - hash2(tx, ty, 97) * 8, 'flora');
         break;
       }
       default:

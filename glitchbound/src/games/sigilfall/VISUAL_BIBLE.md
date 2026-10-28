@@ -50,17 +50,34 @@ garden or a barrel at every step, people everywhere, cliffs and walls that frame
   - a **walled hold** (the thanes, jarls, lords and archmages): a stone wall with a tower at each corner, the
     keep, a cobbled courtyard with a fountain and stalls, the smithy, the stable, the inn, a training yard with
     dummies and butts, a row of houses by the south wall.
-  Every building has its door on a street; tall roofs never stand over one. Between them, something at every
-  step: barrels, crates, sacks, woodpiles, flowerbeds and benches by the doors, lamps along the streets, flowers
-  and hedges at the foot of the walls. Briarhollow's square is small and full (goods out every day, its edge
-  planted) with more cottages on its old grass; Emberwick's market is crowded with stalls, and streets of houses
-  fill its lawns. Both keep every place their story stands on.
+  Every building has its door on a street; tall roofs never stand over one. Briarhollow's square is small and full
+  with more cottages on its old grass; Emberwick's market is crowded with stalls, and streets of houses fill its
+  lawns. Both keep every place their story stands on.
+- **Every heart its own** (`zonegen.ts` HEARTS; the owner: "the center of each zone looks very similar"): what a
+  village's square is paved with and gathered round comes from its land. A farm village's well with its bucket; a
+  harbor's fish market round a statue of the sea's lady; a fen's healer's cauldron with her pots; a hold's forge
+  brazier with its anvil and rack; a snow hold's bonfire with benches round it; a desert town's oasis pool, with
+  pavilions for stalls, on sand; the barrows' and haunted lands' shrine of candles; a war camp's banner between
+  its racks, on beaten earth; the fey green's flower ring on grass; the jungle's totem stone between torches; the
+  rift's crystals.
+- **Nothing stands without a reason** (the owner: "randomly placed... serve no real purpose"): stalls stand in a
+  row with their goods set against their side and a walkway between; each building has what belongs to it by
+  its front: flowers under a house's window and its firewood or water barrel at its corner, the inn's barrels and
+  a bench, the smithy's firewood and weapon rack, the stable's hay and trough, the shop's crates and sacks, the
+  chapel's planters, the keep's flags; lamps go down the streets one every six tiles, benches face the well or
+  the fire, the notice board stands where a road comes in, stores are stacked against a hold's wall. The people
+  stand at their work: the smith at the smithy, the brewer at the inn, the trader behind a stall, the priest at
+  the chapel, the lord at the keep. Props with walls (stalls, wells, towers, tents) stand centered on their tile
+  (the pack's origin for them is their south-west corner).
 - **People live there** (`sim/folk.ts`): villagers walk between their doors, the square and the streets, stop, and
   walk on (a third about the square); they stay in at night, while a place burns and while the story fights.
 - **The lands are smaller** (`ZONE_SCALE` 0.8 a side) with denser copses, and the open land between the sights is
-  dressed with small scenes of its kind (a woodcutter's clearing, a camp, a pen, a field with its scarecrow, a
-  shrine, graves, a broken wagon, standing stones, a pond, a ruined wall, a meadow, bones, a war camp, a well) and
-  stones and flowers along the roads.
+  dressed with small scenes of its kind, one to every 120 open tiles (a farmstead, an orchard, a woodcutter's
+  clearing, a hunters' camp, a pen, a field with its scarecrow, a quarry, a lookout post, a shrine, graves, a
+  cairn, a witch's circle, a broken wagon, standing stones, a pond, a ruined wall, a meadow, bones, an old
+  battlefield, a war camp, a well) and stones and flowers along the roads. The open ground is never bare: tufts
+  everywhere and thick meadows where they grow, and each bare land strews its own (bones in the Bonefields,
+  scrub and sand rocks in the deserts, old gravestones in the barrows, crystals in the rift).
 - **Bare lands stand on cliffs**: their rock is the pack's ledge and cliff face, three rows tall, with pines and
   boulders on top, instead of a field of boulders. Long walls carry torches and banners (the Regent's blue in a
   town); short ones are ruins, mossy and cracked.
