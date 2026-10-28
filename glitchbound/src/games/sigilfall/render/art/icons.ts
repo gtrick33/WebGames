@@ -625,6 +625,137 @@ const GLYPHS: Record<string, Draw> = {
       rgb('#ffffff'),
     );
   },
+  // an arrow through two foes in a line (Piercing Arrow)
+  pierce: (p, c) => {
+    for (const x of [8, 14]) p.disc(x, 12, 3.4, rgb('#a83a3a'));
+    stroke(
+      p,
+      [
+        [3, 12],
+        [18, 12],
+      ],
+      1.8,
+      rgb('#c8a878'),
+    );
+    p.poly(
+      [
+        [23, 12],
+        [17, 8],
+        [17, 16],
+      ],
+      c,
+    );
+    p.poly(
+      [
+        [4, 12],
+        [1, 8],
+        [1, 16],
+      ],
+      rgb('#ffffff'),
+    );
+  },
+  // arrows coming down on one spot (Rain of Arrows)
+  volley: (p, c) => {
+    for (const [x, y] of [
+      [7, 1],
+      [13, 5],
+      [19, 0],
+    ] as const) {
+      stroke(
+        p,
+        [
+          [x + 3, y],
+          [x - 1, y + 11],
+        ],
+        1.6,
+        rgb('#c8a878'),
+      );
+      p.poly(
+        [
+          [x + 1, y + 11.7],
+          [x - 3, y + 10.3],
+          [x - 2.4, y + 15],
+        ],
+        c,
+      );
+      p.rect(x + 2, y, 3, 1, rgb('#ffffff'));
+    }
+    p.rect(2, 22, 20, 1, c);
+  },
+  // a ring of light going out (Halo)
+  halo: (p, c) => {
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4 + Math.PI / 8;
+      stroke(
+        p,
+        [
+          [12 + Math.cos(a) * 9.5, 12 + Math.sin(a) * 9.5],
+          [12 + Math.cos(a) * 11.5, 12 + Math.sin(a) * 11.5],
+        ],
+        1.6,
+        c,
+      );
+    }
+    p.ellipse(12, 12, 7.5, 7.5, (dx, dy) => (Math.hypot(dx, dy) > 0.62 ? c : null));
+    p.disc(12, 12, 2, rgb('#ffffff'));
+  },
+  // a stone giant's head crowned in fire (Summon Infernal)
+  infernal: (p, c) => {
+    flame(p, c);
+    for (const k of [1, -1])
+      p.poly(
+        [
+          [12 + k * 8, 21],
+          [12 + k * 10, 12],
+          [12 + k * 7, 7],
+          [12 + k * 5, 14],
+        ],
+        c,
+      );
+    p.disc(12, 16, 5.5, rgb('#6a5a50'));
+    p.rect(8, 17, 8, 5, rgb('#6a5a50'));
+    p.rect(9, 14, 2, 2, rgb('#8bff6a'));
+    p.rect(13, 14, 2, 2, rgb('#8bff6a'));
+    p.rect(10, 19, 4, 1, OUTLINE_RGB);
+  },
+  // the ground torn open, fire in the crack (Earthsplitter)
+  fissure: (p, c) => {
+    p.poly(
+      [
+        [1, 22],
+        [1, 14],
+        [10, 11],
+        [12, 22],
+      ],
+      c,
+    );
+    p.poly(
+      [
+        [23, 22],
+        [23, 14],
+        [14, 11],
+        [12, 22],
+      ],
+      c,
+    );
+    stroke(
+      p,
+      [
+        [12, 21],
+        [11, 17],
+        [13, 14],
+        [12, 11],
+      ],
+      1.6,
+      rgb('#ffb04d'),
+    );
+    for (const [x, y, s] of [
+      [5, 5, 3],
+      [17, 3, 3],
+      [11, 2, 2],
+    ] as const)
+      p.rect(x, y, s, s, c);
+  },
   sword: (p, c) => {
     p.poly(
       [

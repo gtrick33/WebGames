@@ -49,7 +49,7 @@ export const SKILL_GLYPH: Record<string, [glyph: string, color?: string]> = {
   bloodthirst: ['bleed', '#e0403a'],
   'shield-wall': ['shield', '#ffd34d'],
   'mortal-strike': ['skull', '#c9a35a'],
-  earthsplitter: ['quake', '#c9a35a'],
+  earthsplitter: ['fissure', '#c9a35a'],
   sidestep: ['dodge', '#d8dce6'],
   // mage
   'arcane-bolt': ['star'],
@@ -66,7 +66,7 @@ export const SKILL_GLYPH: Record<string, [glyph: string, color?: string]> = {
   'phase-step': ['dodge', '#c58cff'],
   // ranger
   arrow: ['arrow', '#e8b04a'],
-  'piercing-arrow': ['arrow', '#ffe066'],
+  'piercing-arrow': ['pierce', '#ffe066'],
   multishot: ['split', '#e8b04a'],
   'poison-trap': ['trap', '#8be36b'],
   'hunters-mark': ['mark', '#ffe066'],
@@ -75,7 +75,7 @@ export const SKILL_GLYPH: Record<string, [glyph: string, color?: string]> = {
   'aimed-shot': ['eye', '#ffe066'],
   'bear-trap': ['trap', '#c9a35a'],
   'call-wolf': ['wolf', '#c98a4a'],
-  'arrow-rain': ['arrow', '#f5e6c8'],
+  'arrow-rain': ['volley', '#ffd84d'],
   tumble: ['dodge', '#3f8f5a'],
   // paladin
   'crusader-strike': ['hammer', '#ffd84d'],
@@ -101,7 +101,7 @@ export const SKILL_GLYPH: Record<string, [glyph: string, color?: string]> = {
   penance: ['drain', '#ffe9a0'],
   'holy-fire': ['fire', '#ffd84d'],
   'vampiric-touch': ['drain'],
-  halo: ['holy', '#fff2b0'],
+  halo: ['halo', '#fff2b0'],
   'angelic-feather': ['wings', '#ffe9a0'],
   // warlock
   'shadow-bolt': ['shadow'],
@@ -114,7 +114,7 @@ export const SKILL_GLYPH: Record<string, [glyph: string, color?: string]> = {
   'unstable-affliction': ['skull', '#8bff6a'],
   'summon-felguard': ['demon', '#8bff6a'],
   'chaos-bolt': ['explode', '#8bff6a'],
-  'summon-infernal': ['meteor', '#8bff6a'],
+  'summon-infernal': ['infernal', '#ff7a3d'],
   'demonic-step': ['dodge', '#9a5aff'],
   // druid
   wrath: ['nature'],
