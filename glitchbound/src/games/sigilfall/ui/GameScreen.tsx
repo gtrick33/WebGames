@@ -313,7 +313,7 @@ function Tracker({ engine }: { engine: SigilEngine }) {
   const who = ready ? turnInNpc(q) : null;
   const main = isMainQuest(q.id);
   return (
-    <button className={`rb-tracker${main ? ' is-main' : ' is-side'}`} onClick={() => engine.openPanel('quests')}>
+    <button className={`rb-tracker${main ? ' is-main' : ' is-side'}`} onClick={() => engine.showOnMap(q.id)} title="Show on the map">
       <strong>
         <img src={mapIconUrl(ready ? (main ? 'handin' : 'handinSide') : main ? 'offer' : 'offerSide', 2)} alt="" />
         {q.name}

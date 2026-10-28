@@ -2975,6 +2975,33 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
+/* the quest the map was opened for (a click on the tracker or the log), over the land's map */
+.rb-map-quest {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border: 1px solid rgb(168 130 58 / 0.6);
+  border-radius: 6px;
+  background: rgb(20 14 9 / 0.6);
+}
+.rb-map-quest img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+.rb-map-quest > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.rb-map-quest strong {
+  color: var(--rb-gold);
+}
+.rb-map-quest.is-side strong {
+  color: #9fd6ff;
+}
 .rb-minimap canvas {
   display: block;
   width: 100%;

@@ -10,7 +10,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/
 import type { Item, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
+import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
@@ -655,6 +655,9 @@ function QuestsPanel({ engine }: { engine: SigilEngine }) {
                   <img src={mapIconUrl(ready ? (main ? 'handin' : 'handinSide') : main ? 'offer' : 'offerSide', 2)} alt="" />
                   <strong>{q.name}</strong>
                   <span className="rb-quest-kind">{main ? 'Story' : 'Side'}</span>
+                  <button className="rb-btn is-small" onClick={() => engine.showOnMap(q.id)} aria-label={`Show ${q.name} on the map`}>
+                    Map
+                  </button>
                   <button className={`rb-btn is-small${isTracked ? ' is-gold' : ''}`} onClick={() => engine.trackQuest(isTracked ? null : q.id)} aria-pressed={isTracked}>
                     {isTracked ? 'Tracking' : 'Track'}
                   </button>
@@ -766,9 +769,28 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   // this week's affixes (read once: the panel isn't open across a Monday)
   const [week] = useState(() => weekOf(Date.now()));
   const goal = trackedQuest(h, w.region.id);
+  const goalAt = goal ? questRegion(goal) : undefined;
+  const ready = goal && questState(h, goal.id) === 'ready';
+  const giver = goal && ready ? turnInNpc(goal) : null;
   return (
     <div className="rb-map">
       <section className="rb-map-left">
+        {goal && (
+          <div className={`rb-map-quest${isMainQuest(goal.id) ? ' is-main' : ' is-side'}`}>
+            <img src={mapIconUrl('quest', 2)} alt="" />
+            <span>
+              <strong>{goal.name}</strong>
+              <span className="rb-small">
+                {ready ? `Return to ${giver ? NPCS[giver]?.name : 'them'}` : currentObjective(h, goal).label}
+                {/* (elsewhere: the map marks the way out toward it) */}
+                {goalAt && goalAt !== w.region.id ? ` · in ${REGIONS[goalAt].name}: the road there is marked` : ''}
+              </span>
+            </span>
+            <button className="rb-btn is-small" onClick={() => engine.openPanel('quests')}>
+              Quest log
+            </button>
+          </div>
+        )}
         <span className="rb-kicker">
           {w.region.name}
           {!w.fog.all && ` · ${Math.floor(w.explored() * 100)}% explored`}
@@ -1083,7 +1105,15 @@ function MiniMap({ engine }: { engine: SigilEngine }) {
     for (const n of w.npcs) if (seen(n.x, n.y)) icon(n.x, n.y, npcMark(w, n.id) ?? (NPCS[n.id]?.shop ? 'merchant' : 'person'));
     for (const x of w.exits) if (seen(x.x, x.y)) icon(x.x, x.y, x.door ? 'door' : 'road');
     const goal = objectiveTarget(w);
-    if (goal) icon(goal.x, goal.y, 'quest');
+    if (goal) {
+      // ringed, so it is the first thing seen
+      g.strokeStyle = '#ffcf5a';
+      g.lineWidth = Math.max(1.5, dpr * 1.5);
+      g.beginPath();
+      g.arc((goal.x / TILE) * k, (goal.y / TILE) * k, s * 9, 0, Math.PI * 2);
+      g.stroke();
+      icon(goal.x, goal.y, 'quest');
+    }
     icon(w.player.x, w.player.y, 'you');
   }, [w, engine.version]);
   const key = (name: MapIcon, label: string) => (

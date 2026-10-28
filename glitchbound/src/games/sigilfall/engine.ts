@@ -923,6 +923,12 @@ export class SigilEngine {
     this.bump();
   }
 
+  /** A quest on the map: followed by the arrow and the tracker, and the map opened where it is done. */
+  showOnMap(id: string): void {
+    this.trackQuest(id);
+    this.openPanel('map');
+  }
+
   /* -------------------------------------------------------------- panels */
 
   openPanel(p: PanelId): void {
