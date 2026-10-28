@@ -72,6 +72,19 @@ const SFX: Record<string, (s: Sound) => void> = {
   rift: (s) => (s.noise(0.3, 0.07, 1500, 'bandpass'), s.tones([{ f: 300, to: 900, dur: 0.25, gain: 0.03, type: 'sawtooth' }])),
   crumble: (s) => s.noise(0.5, 0.1, 400, 'lowpass'),
   // a quest taken on: two rising notes and a bright third
+  // the chapel bell, struck once: a deep strike and the long, beating hum of a bell's partials
+  'bell-toll': (s) => (
+    s.noise(0.06, 0.05, 1800, 'bandpass'),
+    s.tones([
+      { f: 98, dur: 5, gain: 0.09, type: 'sine' },
+      { f: 98.9, dur: 4.6, gain: 0.05, type: 'sine' },
+      { f: 196, dur: 3.6, gain: 0.05, type: 'sine' },
+      { f: 235, dur: 3.2, gain: 0.045, type: 'sine' },
+      { f: 294, dur: 2.6, gain: 0.03, type: 'sine' },
+      { f: 412, dur: 2, gain: 0.022, type: 'sine' },
+      { f: 529, dur: 1.4, gain: 0.016, type: 'triangle' },
+    ])
+  ),
   quest: (s) => s.tones([0, 5, 12].map((n, i) => ({ f: hz(69 + n), dur: 0.18, gain: 0.03, type: 'triangle' as OscillatorType, at: i * 0.09 }))),
   discover: (s) => s.tones([0, 7, 12, 19].map((n, i) => ({ f: hz(72 + n), dur: 0.3, gain: 0.03, type: 'sine' as OscillatorType, at: i * 0.12 }))),
   doorSlam: (s) => (s.noise(0.25, 0.1, 300, 'lowpass'), s.tones([{ f: 80, to: 50, dur: 0.2, gain: 0.07, type: 'square' }])),

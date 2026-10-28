@@ -66,7 +66,8 @@ describe('Sigilfall: scenes', () => {
       startAt(w, def.id);
       expect(w.scene?.def.id, def.id).toBe(def.id);
       const named = new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : 'move' in s ? [s.move] : 'emote' in s ? [s.emote] : [])));
-      for (const who of named) expect(w.npcs.some((n) => n.id === who) || who === 'hero', `${def.id}: ${who}`).toBe(true);
+      // a villager of the place, the hero, or a companion of the story at their side
+      for (const who of named) expect(w.npcs.some((n) => n.id === who) || w.pets.some((p) => !p.dead && p.def.id === who) || who === 'hero', `${def.id}: ${who}`).toBe(true);
       for (const s of def.steps) if ('look' in s && s.look !== 'hero') expect(!!w.places[s.look] || w.npcs.some((n) => n.id === s.look), `${def.id}: ${s.look}`).toBe(true);
       run(w, 60);
       expect(w.scene, def.id).toBeNull();

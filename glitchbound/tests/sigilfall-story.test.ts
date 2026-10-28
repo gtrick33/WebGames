@@ -60,9 +60,13 @@ describe('Sigilfall: the story in the world', () => {
 
   it('Briarhollow burns on the night of the raid, smoulders after it, and becomes the camp at dawn', () => {
     const b = REGIONS.briarhollow;
-    // the hero arrives as the lamps are lit; from the fight at the gate to the chapel door it is the raid's night
+    // the hero arrives as the lamps are lit; the fight at the gate is night with nothing burning yet; from the
+    // bell on to the chapel door it is the raid's burning night
     expect(regionState(b, heroAt('briar-dusk'))?.dusk).toBe(true);
-    for (const q of ['first-steps', 'briar-nightfall', 'briar-the-rider', 'briar-the-seal', 'briar-the-inn', 'briar-hold-the-door']) {
+    const gate = regionState(b, heroAt('first-steps'));
+    expect(gate?.id).toBe('gate');
+    expect(gate?.night && !gate.burning).toBe(true);
+    for (const q of ['briar-nightfall', 'briar-the-rider', 'briar-the-seal', 'briar-the-inn', 'briar-hold-the-door']) {
       const raid = regionState(b, heroAt(q));
       expect(raid?.id, q).toBe('raid');
       expect(raid?.night && raid.burning, q).toBe(true);
@@ -114,11 +118,14 @@ describe('Sigilfall: the story in the world', () => {
     expect(QUEST_DEFS['first-steps']!.objective).toMatchObject({ kind: 'event', event: 'briar-gate' });
     // no yard and no dummies: the raiders come down the north road, and Mara stands with the hero
     run(w, 0.8);
-    expect(w.storyState?.id).toBe('raid');
+    expect(w.storyState?.id).toBe('gate');
+    expect(w.fires).toHaveLength(0);
     expect(w.story.run?.def.id).toBe('briar-gate');
     expect(w.pets.some((p) => p.def.id === 'mara' && !p.dead)).toBe(true);
+    let rage = -1;
     for (let i = 0; i < 40 && questState(c, 'first-steps') === 'active'; i++) {
       run(w, 2.5);
+      if (rage < 0 && w.events.some((e) => e.t === 'hint' && e.id === 'skill')) rage = w.player.mana;
       smite(w);
     }
     expect(questState(c, 'first-steps')).toBe('done');
@@ -128,6 +135,53 @@ describe('Sigilfall: the story in the world', () => {
     // and the raid in the lanes follows straight on
     expect(questState(c, 'briar-nightfall')).toBe('active');
     expect(c.unlocked).not.toContain('whisperwood');
+    // (a ranger's skill costs mana, which a hero starts with; rage is the warrior's test below)
+    expect(rage).toBeGreaterThan(0);
+  });
+
+  it('the skill lesson works for a warrior: rage enough for the skill as the wave that asks for it comes', () => {
+    const c = newCharacter('warrior', 'Rage', 'rage', 0);
+    const w = newWorld('briarhollow', c);
+    w.questProgress((o) => o.kind === 'talk' && o.npc === 'mara-venn');
+    run(w, 0.8);
+    expect(w.player.mana).toBe(0);
+    let rage = -1;
+    for (let i = 0; i < 40 && rage < 0; i++) {
+      run(w, 1);
+      if (w.events.some((e) => e.t === 'hint' && e.id === 'skill')) rage = w.player.mana;
+      else smite(w);
+    }
+    const s1 = w.build.skills[w.build.bar.s1!]!.spec;
+    expect(rage).toBeGreaterThanOrEqual(s1.cost);
+  });
+
+  it('when the gate has held, the bell nobody rings tolls by itself and the roofs catch one by one', () => {
+    const w = newWorld('briarhollow', heroAt('first-steps'));
+    w.hero.level = 30;
+    goTo(w, 'briar-gate');
+    for (let i = 0; i < 40 && questState(w.hero, 'first-steps') === 'active'; i++) {
+      run(w, 2.5);
+      smite(w);
+    }
+    expect(questState(w.hero, 'briar-nightfall')).toBe('active');
+    // the raid waits for the hero at the square: at the gate there is time for the bell
+    run(w, 0.6);
+    expect(w.storyState?.id).toBe('raid');
+    expect(w.story.run).toBeNull();
+    const caught = (): number => w.fires.filter((f) => w.fireLit(f) > 0).length;
+    expect(caught()).toBe(0);
+    let scene = false;
+    for (let t = 0; t < 30 && !scene; t += 0.5) {
+      run(w, 0.5);
+      scene ||= w.scene?.def.id === 'briar-the-toll';
+    }
+    expect(scene).toBe(true);
+    run(w, 2);
+    expect(w.events.some((e) => e.t === 'sfx' && e.id === 'bell-toll')).toBe(true);
+    run(w, 16);
+    // all of the village's roofs but the inn's, which catches when its beat comes
+    expect(caught()).toBe(6);
+    expect(w.fires.every((f) => w.fireLit(f) === 1)).toBe(true);
   });
 
   it('the raid: Mara fights beside you, three waves come, and the quest moves on to the rider at the gate', () => {
@@ -139,11 +193,18 @@ describe('Sigilfall: the story in the world', () => {
     expect(w.safe).toBe(false);
     expect(w.pets.some((p) => p.def.id === 'mara' && !p.dead)).toBe(true);
     let waves = 0;
+    // each wave comes in just beyond sight (where each raider appears), not from the village's far roads
+    const far = new Map<number, number>();
+    const note = (): void => {
+      for (const e of w.enemies) if (!e.dummy && !far.has(e.id)) far.set(e.id, Math.hypot(e.x - w.player.x, e.y - w.player.y));
+    };
     for (let i = 0; i < 40 && questState(w.hero, 'briar-nightfall') === 'active'; i++) {
-      run(w, 2.5);
+      run(w, 2.5, note);
       if (w.enemies.some((e) => !e.dead)) waves++;
       smite(w);
     }
+    expect(far.size).toBeGreaterThanOrEqual(12);
+    expect(Math.max(...far.values())).toBeLessThanOrEqual(150 + 26);
     expect(waves).toBeGreaterThanOrEqual(EVENTS['briar-raid']!.waves.length);
     expect(questState(w.hero, 'briar-nightfall')).toBe('done');
     expect(questState(w.hero, 'briar-the-rider')).toBe('active');

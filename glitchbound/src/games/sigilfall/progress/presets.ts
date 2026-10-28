@@ -25,6 +25,8 @@ export interface Preset {
 export const PRESETS: Preset[] = [
   { id: 'prologue-dusk', label: 'Prologue: dusk at the gate', region: 'briarhollow', active: 'briar-dusk', level: 1 },
   { id: 'prologue-raid', label: 'Prologue: the raid', region: 'briarhollow', active: 'briar-nightfall', level: 3 },
+  { id: 'prologue-toll', label: 'Prologue: the bell tolls by itself (scene)', region: 'briarhollow', active: 'briar-nightfall', level: 2 },
+  { id: 'prologue-rider', label: 'Prologue: the courier comes up the road (scene)', region: 'briarhollow', active: 'briar-the-rider', level: 3 },
   { id: 'camp-dawn', label: 'Prologue: dawn, the camp (scene)', region: 'briarhollow', active: 'camp-scouts', level: 7 },
   { id: 'hearthstead', label: 'Act I: the Defense of Hearthstead', region: 'amberfield', active: 'hearth-the-riders-come', level: 17 },
   { id: 'hearth-morning', label: 'Act I: Hearthstead the morning after (scene)', region: 'amberfield', active: 'hearth-the-shrine', level: 18 },

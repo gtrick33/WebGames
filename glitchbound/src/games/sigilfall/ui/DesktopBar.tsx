@@ -37,6 +37,12 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
       <div className="rb-prompt" ref={prompt} hidden />
       {!indoors && (
         <div className="rb-bar6" role="toolbar" aria-label="Skills">
+          {engine.ui.teach && (
+            // over the key it teaches (each slot 52 px and a 6 px gap, after the bar's 9 px of edge)
+            <div className="rb-teach" role="status" style={{ left: `${9 + Math.max(0, slots.findIndex((s) => s.slot === engine.ui.teach!.slot)) * 58 + 26}px` }}>
+              {engine.ui.teach.text}
+            </div>
+          )}
           {slots.map((s) => (
             <Slot key={s.slot} engine={engine} slot={s.slot} keyLabel={s.key} />
           ))}
@@ -93,7 +99,7 @@ function Slot({ engine, slot, keyLabel }: { engine: SigilEngine; slot: SlotKey; 
   const opens = slotLevel(slot);
   const unlock = slot === 'ult' ? SKILLS[CLASSES[h.cls].ult]!.unlock : h.level < opens ? opens : 0;
   return (
-    <button ref={el} className={`rb-slot6 is-${slot}${id ? '' : ' is-locked'}`} title={def ? `${def.name}: ${def.blurb}` : 'Locked'} onClick={() => id && engine.kbm?.queue(slot)} tabIndex={-1}>
+    <button ref={el} className={`rb-slot6 is-${slot}${id ? '' : ' is-locked'}${engine.ui.teach?.slot === slot ? ' is-teach' : ''}`} title={def ? `${def.name}: ${def.blurb}` : 'Locked'} onClick={() => id && engine.kbm?.queue(slot)} tabIndex={-1}>
       {def ? <img src={skillIconUrl(def.id, 3)} alt="" /> : <span className="rb-sb-lock">{unlock ? `Lv ${unlock}` : '—'}</span>}
       <span className="rb-sb-cd" ref={cd} />
       <span className="rb-sb-num" ref={num} />

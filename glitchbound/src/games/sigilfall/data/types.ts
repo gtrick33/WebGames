@@ -666,6 +666,13 @@ export interface StoryEventDef {
   ends?: number;
   /** Companions (pet ids) the event takes away at its end instead of letting them go (the one carried off). */
   taken?: string[];
+  /** Its companions stay on this many seconds after its last words (a scene that follows has them speak). */
+  stay?: number;
+  /**
+   * Its waves come in from just beyond the hero's view, from the way of their spots, rather than from the
+   * spots themselves: a fight with no walk in it.
+   */
+  close?: boolean;
   /** Companions who fight beside the hero while it lasts (PETS ids). */
   allies?: string[];
   /** Allies who come only if the story says so (a faction the hero helped, the answer they chose). */
@@ -709,8 +716,11 @@ export type Marker =
   | { kind: 'building'; style: 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall' | 'lighthouse'; w: number; h: number; name?: string; art?: string }
   /** A place to discover (an explore objective, a line in the log): walking within `r` tiles finds it. */
   | { kind: 'spot'; id: string; name: string; r: number }
-  /** A flame on a roof or a beam while the region burns (a world state's dressing). */
-  | { kind: 'fire'; size: number }
+  /**
+   * A flame on a roof or a beam while the region burns (a world state's dressing). A roof that starts
+   * burning while the hero is there catches `delay` seconds after the burning begins.
+   */
+  | { kind: 'fire'; size: number; delay?: number }
   /** A plume of colored vapor while it shows: grieflight over a corrupted shrine, marsh-rot over a well. */
   | { kind: 'wisp'; color: string; size: number }
   /** A named point the story uses (where an event happens, where raiders come from); nothing to find. */
@@ -859,6 +869,8 @@ export interface QuestDef {
   id: string;
   name: string;
   giver: string;
+  /** Comes and goes without a toast: a beat its own talk or banner already announces (the Prologue's first moments). */
+  quiet?: boolean;
   /** Shown in the quest log. */
   text: string;
   objective: Objective;

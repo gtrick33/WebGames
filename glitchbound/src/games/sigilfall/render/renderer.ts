@@ -413,7 +413,14 @@ export class Renderer {
       g.globalAlpha = 1;
     }
     // flames on the roofs while the village burns (above the roofs, under the light)
-    for (const f of w.fires) this.drawFire(f.x, f.y, f.size, time);
+    for (const f of w.fires) {
+      // a roof catching grows into its flames
+      const lit = w.fireLit(f);
+      if (!lit) continue;
+      g.globalAlpha = Math.min(1, lit * 1.5);
+      this.drawFire(f.x, f.y, f.size * lit, time);
+      g.globalAlpha = 1;
+    }
     // a frightening land: an evening that never lifts there (lamps and fires light pools in it)
     const dread = sc.art ? THEMES[sc.theme].dread : undefined;
     const dusk = !w.dark && !!dread && dread.dark > 0;
@@ -2297,11 +2304,13 @@ export class Renderer {
     for (const b of sc.braziers) hole(b.x, b.y + 4, 72 + Math.sin(time * 8 + b.x) * 2);
     for (const l of sc.lights) hole(l.x, l.y, l.r + Math.sin(time * 7 + l.x) * 2, 0.9);
     // a village at night: burning roofs, lamps and cookfires
-    for (const f of w.fires) hole(f.x, f.y, 40 + f.size * 22 + Math.sin(time * 7 + f.x) * 4, 0.95);
+    for (const f of w.fires) if (w.fireLit(f)) hole(f.x, f.y, (40 + f.size * 22) * w.fireLit(f) + Math.sin(time * 7 + f.x) * 4, 0.95);
     // (with the pack's art a lamp's own piece lights it, in sc.lights: counted once, not twice)
     if (!sc.art) for (const pr of w.props) if (LIGHTS[pr.prop]) hole(pr.x, pr.y - 6, LIGHTS[pr.prop]!, 0.85);
     // a lamp being relit pushes the dark back as it takes
     for (const pet of w.pets) if (!pet.dead && pet.def.look === 'lantern') hole(pet.x, pet.y - 24, 40 + 70 * (pet.hp / pet.maxHp), 0.9);
+    // someone carrying a light (the courier coming up the road)
+    for (const pet of w.pets) if (!pet.dead && pet.def.light) hole(pet.x, pet.y - 8, pet.def.light + Math.sin(time * 8 + pet.x) * 2, 0.9);
     for (const ws of w.waystones) hole(ws.x, ws.y - 10, 40, 0.6);
     for (const pr of w.projectiles) if (!pr.hostile || pr.look === 'riftOrb' || pr.look === 'skull') hole(pr.x, pr.y, pr.hostile ? 16 : 22, 0.8);
     for (const f of w.fields) hole(f.x, f.y, f.r + 10, 0.5);
@@ -2329,7 +2338,8 @@ export class Renderer {
       g.drawImage(glowDisc('#ffb45a', 20), Math.round(l.x - ox - 20), Math.round(l.y - oy - 20));
     }
     for (const f of w.fires) {
-      const r = 24 + f.size * 14;
+      if (!w.fireLit(f)) continue;
+      const r = Math.max(4, Math.round((24 + f.size * 14) * w.fireLit(f)));
       g.drawImage(glowDisc('#ff7a2a', r), Math.round(f.x - ox - r), Math.round(f.y - oy - r));
     }
     g.restore();

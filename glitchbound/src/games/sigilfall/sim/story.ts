@@ -3,6 +3,7 @@ import { EVENTS } from '../data/events';
 import { TIERS } from '../data/regions';
 import type { Bark, RegionDef, RegionStateDef, StoryCond, StoryEventDef } from '../data/types';
 import { activeQuests, declined, questState, type Character, currentObjective } from '../progress/character';
+import { skillCost } from './cast';
 import { castRay, TILE } from './map';
 import { placePet } from './pets';
 import type { Pet } from './types';
@@ -124,7 +125,9 @@ export class StoryDirector {
     if (st?.smoke) this.smoulder(dt);
     if (st?.burning) {
       for (const f of w.fires) {
-        if (w.rand() < dt * (1.5 + f.size)) w.addFx({ kind: 'ember', x: f.x + (w.rand() - 0.5) * 8, y: f.y - 6, vx: (w.rand() - 0.5) * 14, vy: -26 - w.rand() * 20, life: 0.9 + w.rand() * 0.6, size: 1, color: w.rand() < 0.5 ? '#ffb04d' : '#ff6a2a' });
+        const lit = w.fireLit(f);
+        if (!lit) continue;
+        if (w.rand() < dt * (1.5 + f.size) * lit) w.addFx({ kind: 'ember', x: f.x + (w.rand() - 0.5) * 8, y: f.y - 6, vx: (w.rand() - 0.5) * 14, vy: -26 - w.rand() * 20, life: 0.9 + w.rand() * 0.6, size: 1, color: w.rand() < 0.5 ? '#ffb04d' : '#ff6a2a' });
         if (w.rand() < dt * 1.2) w.addFx({ kind: 'smoke', x: f.x + (w.rand() - 0.5) * 6, y: f.y - 12, vx: 6 + w.rand() * 6, vy: -14 - w.rand() * 8, life: 1.6, size: 5 + Math.floor(w.rand() * 4), color: '#4a4450' });
       }
     }
@@ -258,7 +261,8 @@ export class StoryDirector {
     // on the road, they come at the wagon from wherever it has got to
     const wagon = run.def.escort ? run.ward : null;
     run.ids = wave.enemies.map((id, i) => {
-      const from = wagon ? castRay(w.map, wagon.x, wagon.y, 6, w.rand() * TAU, 150) : (this.spot(wave.from[i % wave.from.length]!) ?? { x: w.player.x, y: w.player.y - 80 });
+      const spot = this.spot(wave.from[i % wave.from.length]!);
+      const from = wagon ? castRay(w.map, wagon.x, wagon.y, 6, w.rand() * TAU, 150) : run.def.close && spot ? offscreen(w, Math.atan2(spot.y - w.player.y, spot.x - w.player.x)) : (spot ?? { x: w.player.x, y: w.player.y - 80 });
       const a = w.rand() * TAU;
       const to = castRay(w.map, from.x, from.y, 6, a, 8 + w.rand() * 18);
       const e = w.addEnemy(id, to.x, to.y, level, { room: -1, pack: -1, spawn: true });
@@ -268,6 +272,12 @@ export class StoryDirector {
     });
     this.say(wave.barks);
     if (wave.hint) w.emit({ t: 'hint', id: wave.hint });
+    // the skill's lesson works the first time: a hero whose skill costs what striking builds (rage, holy
+    // power) has enough for it as the wave that asks for it comes
+    const s1 = w.build.bar.s1;
+    const spec = s1 ? w.build.skills[s1]?.spec : undefined;
+    const kind = w.build.resource?.kind;
+    if (wave.hint === 'skill' && spec && (kind === 'rage' || kind === 'holy')) w.player.mana = Math.max(w.player.mana, skillCost(w, spec, 's1'));
   }
 
   private step(run: Running, dt: number): void {
@@ -380,7 +390,7 @@ export class StoryDirector {
   private finish(run: Running): void {
     const w = this.w;
     // the lines still to be said, then the event's own last words, then they go
-    const stay = Math.max(0, this.gap) + [...this.queue, ...(run.def.end ?? [])].reduce((t, b) => t + barkTime(b), 0) + 0.8;
+    const stay = Math.max(0, this.gap) + [...this.queue, ...(run.def.end ?? [])].reduce((t, b) => t + barkTime(b), 0) + 0.8 + (run.def.stay ?? 0);
     this.clear(run, stay);
     this.say(run.def.end);
     w.questProgress((o) => o.kind === 'event' && o.event === run.def.id);
@@ -389,4 +399,23 @@ export class StoryDirector {
     w.refreshStoryState();
     w.emit({ t: 'save' });
   }
+}
+
+/**
+ * A point just beyond the hero's view in about this direction (a wave of a `close` event comes from there):
+ * of a few rays round it, the one that runs furthest before a wall, so no one appears at the hero's elbow.
+ */
+function offscreen(w: World, toward: number): { x: number; y: number } {
+  let best = { x: w.player.x, y: w.player.y };
+  let far = -1;
+  for (const da of [0, 0.5, -0.5, 1, -1]) {
+    const p = castRay(w.map, w.player.x, w.player.y, 6, toward + da + (w.rand() - 0.5) * 0.3, 150);
+    const d = Math.hypot(p.x - w.player.x, p.y - w.player.y);
+    if (d > far) {
+      far = d;
+      best = p;
+    }
+    if (d >= 140) break;
+  }
+  return best;
 }

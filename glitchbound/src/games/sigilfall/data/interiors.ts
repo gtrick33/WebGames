@@ -282,7 +282,7 @@ const NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Haldor climbs the tower every morning and puts his hand on the bell. He hasn’t rung it. He says it isn’t over yet.', 'He’s right. But he goes up anyway.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['A candle for every one of the taken. Elyra’s is the one by the door. I light it last, so it burns longest.', 'She sat on that pew as a girl and argued with the hymns. I miss the arguing.'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The crypt is quiet now. Quiet the way a held breath is quiet.', 'The bell stopped because something below it woke. If it rings again, it will be because something has been put back to sleep.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The crypt is quiet now. Quiet the way a held breath is quiet.', 'The bell stopped because something below it woke, and it rang by itself the night they came for it: three times, and no one at the rope. When it rings for us, it will be because that something has been put back to sleep.'] },
       { lines: ['The bell hasn’t rung in three weeks. The rope still swings at night, with nobody on it.', 'Sit if you need to. The pews are hard. That’s on purpose; you’re meant to stay awake in here.'] },
     ],
   },

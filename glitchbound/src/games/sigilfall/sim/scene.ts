@@ -1,6 +1,9 @@
-import { dist } from '../core/math';
+import { dist, TAU } from '../core/math';
+import { PETS } from '../data/pets';
 import { SCENES } from '../data/scenes';
 import type { RegionId, StoryCond } from '../data/types';
+import { castRay } from './map';
+import { placePet } from './pets';
 import { holds } from './story';
 import type { World } from './world';
 
@@ -25,6 +28,8 @@ export type SceneStep =
   | { emote: string; icon: Emote }
   /** A sound (audio/sound.ts), played as the step begins; the scene goes straight on. */
   | { sfx: string }
+  /** The screen shakes (a bell's blow, a roof falling in); the scene goes straight on. */
+  | { shake: number }
   | { wait: number };
 
 export interface SceneDef {
@@ -76,6 +81,12 @@ export function maybeStartScene(w: World): void {
     // never in a fight, nor with an enemy at the hero's elbow (idle packs further off may watch)
     if (w.player.calm < 3 || w.enemies.some((e) => !e.dead && !e.dummy && (e.aggro || dist(e.x, e.y, w.player.x, w.player.y) < 100))) return;
     w.scene = { def, step: 0, t: 0, begun: false, focus: null, emotes: [] };
+    // a companion of the story who speaks in it (Mara, after a fight) is at the hero's side, even after a reload
+    for (const who of new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : [])))) {
+      if (!PETS[who] || w.npcs.some((n) => n.id === who) || w.pets.some((p) => !p.dead && p.def.id === who)) continue;
+      const at = castRay(w.map, w.player.x, w.player.y, 6, w.rand() * TAU, 18);
+      placePet(w, who, at.x, at.y);
+    }
     w.dismount();
     w.emit({ t: 'scene', id: def.id, playing: true });
     return;
@@ -131,6 +142,9 @@ export function updateScene(w: World, dt: number): void {
     done = s.t >= 0.8;
   } else if ('sfx' in step) {
     if (first) w.sfx(step.sfx);
+    done = true;
+  } else if ('shake' in step) {
+    if (first) w.shake(step.shake);
     done = true;
   } else done = s.t >= step.wait;
   if (done) {

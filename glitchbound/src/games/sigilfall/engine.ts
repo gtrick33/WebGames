@@ -6,7 +6,7 @@ import { keyAffixes, weekOf } from './data/keystones';
 import { NPCS, QUEST_DEFS } from './data/quests';
 import { REGIONS, TIERS, type RiftMod } from './data/regions';
 import { SKILLS } from './data/skills';
-import type { ClassId, Item, RegionId, SkillIndex, SlotId } from './data/types';
+import type { ClassId, Item, RegionId, SkillIndex, SlotId, SlotKey } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
 import { acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
@@ -91,6 +91,11 @@ export interface UiState {
   reward: RunSummary | null;
   boss: { name: string; title: string } | null;
   levelUp: { level: number; skills: string[]; id: number } | null;
+  /**
+   * A control being taught (the Prologue's first fight): its key on the bar pulses, with these words over
+   * the bar, until the hero uses it (`shown` is when it began) or the time runs out.
+   */
+  teach: { slot: SlotKey; text: string; shown: number; until: number } | null;
   /** The load went wrong in a way the player should know about. */
   notice: string;
 }
@@ -189,6 +194,7 @@ export class SigilEngine {
       reward: null,
       boss: null,
       levelUp: null,
+      teach: null,
       notice:
         loaded.status === 'recovered'
           ? 'Your last save could not be read, so your previous save was restored.'
@@ -305,6 +311,14 @@ export class SigilEngine {
       if (!uiPaused) {
         this.touch.fill(f);
         this.kbm?.fill(f, this.toWorldFn, w.player.x, w.player.y);
+        // a control being taught is learned once it is used (after a moment to be seen), or its time is up
+        const teach = this.ui.teach;
+        if (teach) {
+          const t = performance.now();
+          const used = f.casts.some((c) => c.slot === teach.slot) || (teach.slot === 'basic' && !!f.holdBasic);
+          // (and a scene's staging is no time for a lesson)
+          if (t > teach.until || (used && t > teach.shown + 1500) || w.scene) this.setUi({ teach: null });
+        }
       }
       // touch: aim with the stick when the mouse isn't in use
       if (this.touchMode) {
@@ -418,7 +432,7 @@ export class SigilEngine {
         }
         case 'questDone': {
           const q = QUEST_DEFS[ev.quest];
-          if (q && this.hero) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, rewardSummary(this.hero, q) || q.reward.text);
+          if (q && this.hero && !q.quiet) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, rewardSummary(this.hero, q) || q.reward.text);
           this.sound.play('questDone');
           break;
         }
@@ -436,7 +450,7 @@ export class SigilEngine {
           break;
         }
         case 'questStart':
-          newQuests.push(ev.quest);
+          if (!QUEST_DEFS[ev.quest]?.quiet) newQuests.push(ev.quest);
           break;
         case 'bossStart': {
           const b = w.boss();
@@ -526,6 +540,13 @@ export class SigilEngine {
     if (!h || h.opened.includes(`hint:${id}`)) return;
     h.opened.push(`hint:${id}`);
     const touch = this.touchMode;
+    // the Prologue's first fight teaches by fighting (its waves ask for these): on the bar itself, the key lit
+    if (id === 'attack' || id === 'skill' || id === 'dodge') {
+      const slot: SlotKey = id === 'attack' ? 'basic' : id === 'skill' ? 's1' : 'dodge';
+      const now = performance.now();
+      this.setUi({ teach: { slot, text: this.teachText(id), shown: now, until: now + 10_000 } });
+      return;
+    }
     const text =
       id === 'equip'
         ? touch
@@ -543,21 +564,22 @@ export class SigilEngine {
               ? touch
                 ? 'Low health! Tap the red potion.'
                 : 'Low health! Press 1 to drink a potion.'
-              : // the Prologue's first fight teaches by fighting (its waves ask for these)
-                id === 'attack'
-                ? touch
-                  ? 'Tap the big button to strike: it aims for you.'
-                  : 'Left-click to strike where the mouse points.'
-                : id === 'skill'
-                  ? touch
-                    ? 'Tap your skill, beside the big button.'
-                    : 'Press Q for your skill.'
-                  : id === 'dodge'
-                    ? touch
-                      ? 'Tap dodge when it draws: you pass through arrows and blows.'
-                      : 'Press Space when it draws: you dodge through arrows and blows.'
-                    : '';
+              : '';
     if (text) this.toast(text, 'hint');
+  }
+
+  /** The words over the bar for a control being taught (by input, and by what the skill costs). */
+  private teachText(id: 'attack' | 'skill' | 'dodge'): string {
+    const touch = this.touchMode;
+    if (id === 'attack') return touch ? 'Tap the big button to strike: it aims for you' : 'Left-click to strike where the mouse points';
+    if (id === 'dodge') return touch ? 'Tap Dodge as it draws: you pass through arrows and blows' : 'Space as it draws: you dodge through arrows and blows';
+    const w = this.world;
+    const skill = w?.build.bar.s1 ? SKILLS[w.build.bar.s1] : undefined;
+    const name = skill?.name ?? 'your skill';
+    const res = w?.build.resource;
+    // rage and holy power are built by striking, not waiting: say so, or the first try says "not enough"
+    const built = res && (res.kind === 'rage' || res.kind === 'holy') ? `: your strikes build the ${res.name} it costs` : '';
+    return touch ? `Tap ${name}${built}` : `Q · ${name}${built}`;
   }
 
   /* ------------------------------------------------------------- saving */
@@ -629,7 +651,7 @@ export class SigilEngine {
     this.slot = slot;
     this.hero = h;
     this.save.last = slot;
-    this.ui = { ...this.ui, screen: 'game', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [] };
+    this.ui = { ...this.ui, screen: 'game', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null };
     this.travel(HOME, 0, []);
     this.sound.unlock();
     // invited by a link: into the friend's party (its panel says if this hero can't run with it)
@@ -657,7 +679,7 @@ export class SigilEngine {
     this.persist();
     this.world = null;
     this.hero = null;
-    this.setUi({ screen: 'title', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null });
+    this.setUi({ screen: 'title', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null });
   }
 
   /* ------------------------------------------------------------- travel */
