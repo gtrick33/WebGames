@@ -18,7 +18,7 @@ import { newWorld, readyHero } from './sigilfall-bot';
 /** A hero at a point in the Prologue: everything before `quest` done, `quest` itself active. */
 function heroAt(quest: string, level = 5): Character {
   const c = readyHero('mage', level);
-  const order = ['briar-dusk', 'first-steps', 'first-spell', 'first-dodge', 'briar-the-seal', 'into-the-wood', 'alpha', 'briar-nightfall', 'briar-the-inn', 'briar-hold-the-door', 'briar-below', 'the-warden', 'close-the-rift', 'the-empty-tomb'];
+  const order = ['briar-dusk', 'first-steps', 'briar-nightfall', 'briar-the-rider', 'briar-the-seal', 'briar-the-inn', 'briar-hold-the-door', 'briar-below', 'the-warden', 'close-the-rift', 'the-empty-tomb', 'into-the-wood', 'alpha'];
   for (const id of order) {
     if (id === quest) {
       c.quests[id] = { state: 'active', n: 0 };
@@ -60,11 +60,13 @@ describe('Sigilfall: the story in the world', () => {
 
   it('Briarhollow burns on the night of the raid, smoulders after it, and becomes the camp at dawn', () => {
     const b = REGIONS.briarhollow;
-    // the day the hero arrives is all late light
-    expect(regionState(b, heroAt('briar-the-seal'))?.dusk).toBe(true);
-    const raid = regionState(b, heroAt('briar-nightfall'));
-    expect(raid?.id).toBe('raid');
-    expect(raid?.night && raid.burning).toBe(true);
+    // the hero arrives as the lamps are lit; from the fight at the gate to the chapel door it is the raid's night
+    expect(regionState(b, heroAt('briar-dusk'))?.dusk).toBe(true);
+    for (const q of ['first-steps', 'briar-nightfall', 'briar-the-rider', 'briar-the-seal', 'briar-the-inn', 'briar-hold-the-door']) {
+      const raid = regionState(b, heroAt(q));
+      expect(raid?.id, q).toBe('raid');
+      expect(raid?.night && raid.burning, q).toBe(true);
+    }
     expect(regionState(b, heroAt('the-warden'))?.id).toBe('night');
     const dawn = heroAt('the-empty-tomb');
     dawn.quests['the-empty-tomb'] = { state: 'done', n: 1 };
@@ -76,8 +78,11 @@ describe('Sigilfall: the story in the world', () => {
   });
 
   it('people and roads come with the story', () => {
-    const early = newWorld('briarhollow', heroAt('first-dodge'));
+    const early = newWorld('briarhollow', heroAt('briar-dusk'));
     expect(early.npcs.some((n) => n.id === 'oskar-fell')).toBe(false);
+    expect(early.npcs.some((n) => n.id === 'mara-venn')).toBe(true);
+    // the courier is on the road until he has walked in
+    expect(newWorld('briarhollow', heroAt('briar-the-rider')).npcs.some((n) => n.id === 'oskar-fell')).toBe(false);
     expect(early.exits.some((x) => x.to === 'crypt')).toBe(false);
     expect(early.exits.some((x) => x.to === 'thornvale')).toBe(false);
     const courier = newWorld('briarhollow', heroAt('briar-the-seal'));
@@ -96,7 +101,36 @@ describe('Sigilfall: the story in the world', () => {
     expect(w.npcs.some((n) => n.id === 'oskar-fell')).toBe(false);
   });
 
-  it('the raid: Mara fights beside you, three waves come, and the quest moves on to the burning inn', () => {
+  it('the story opens on the night: Mara at the gate, then the Host on the road, and the first fight teaches the controls', () => {
+    const c = newCharacter('ranger', 'Gate', 'gate', 0);
+    const w = newWorld('briarhollow', c);
+    // the hero arrives at the gate as the lamps are lit, and Mara stops them there
+    const gate = w.places['briar-gate']!;
+    expect(Math.hypot(w.player.x - gate.x, w.player.y - gate.y)).toBeLessThan(4 * 16);
+    expect(w.storyState?.dusk).toBe(true);
+    w.questProgress((o) => o.kind === 'talk' && o.npc === 'mara-venn');
+    expect(questState(c, 'briar-dusk')).toBe('done');
+    expect(questState(c, 'first-steps')).toBe('active');
+    expect(QUEST_DEFS['first-steps']!.objective).toMatchObject({ kind: 'event', event: 'briar-gate' });
+    // no yard and no dummies: the raiders come down the north road, and Mara stands with the hero
+    run(w, 0.8);
+    expect(w.storyState?.id).toBe('raid');
+    expect(w.story.run?.def.id).toBe('briar-gate');
+    expect(w.pets.some((p) => p.def.id === 'mara' && !p.dead)).toBe(true);
+    for (let i = 0; i < 40 && questState(c, 'first-steps') === 'active'; i++) {
+      run(w, 2.5);
+      smite(w);
+    }
+    expect(questState(c, 'first-steps')).toBe('done');
+    // each wave showed the control it asks for, in order: strike, the skill, the dodge
+    const controls = new Set(['attack', 'skill', 'dodge']);
+    expect(w.events.flatMap((e) => (e.t === 'hint' && controls.has(e.id) ? [e.id] : []))).toEqual(['attack', 'skill', 'dodge']);
+    // and the raid in the lanes follows straight on
+    expect(questState(c, 'briar-nightfall')).toBe('active');
+    expect(c.unlocked).not.toContain('whisperwood');
+  });
+
+  it('the raid: Mara fights beside you, three waves come, and the quest moves on to the rider at the gate', () => {
     const w = newWorld('briarhollow', heroAt('briar-nightfall'));
     w.hero.level = 30; // a sturdy hero: the test is the event, not the fight
     goTo(w, 'briar-square');
@@ -112,11 +146,44 @@ describe('Sigilfall: the story in the world', () => {
     }
     expect(waves).toBeGreaterThanOrEqual(EVENTS['briar-raid']!.waves.length);
     expect(questState(w.hero, 'briar-nightfall')).toBe('done');
-    expect(questState(w.hero, 'briar-the-inn')).toBe('active');
-    // the event's companions leave with it (once they've said their piece), and the village is the inn's fight now
+    expect(questState(w.hero, 'briar-the-rider')).toBe('active');
+    // the event's companions leave with it (once they've said their piece)
     run(w, 12);
     expect(w.pets.some((p) => p.def.id === 'mara' && !p.dead)).toBe(false);
     expect(w.story.run).toBeNull();
+  });
+
+  it('the courier walks in from the north road in the middle of the raid, and dies in the gateway', () => {
+    const w = newWorld('briarhollow', heroAt('briar-the-rider'));
+    goTo(w, 'briar-gate');
+    run(w, 0.3);
+    expect(w.story.run?.def.id).toBe('briar-courier');
+    const courier = w.pets.find((p) => p.def.id === 'courier')!;
+    expect(courier).toBeTruthy();
+    const from = courier.y;
+    run(w, 1);
+    // he is walking in, toward the gate
+    expect(courier.y).toBeGreaterThan(from);
+    for (let i = 0; i < 30 && questState(w.hero, 'briar-the-rider') === 'active'; i++) run(w, 1);
+    expect(questState(w.hero, 'briar-the-rider')).toBe('done');
+    expect(questState(w.hero, 'briar-the-seal')).toBe('active');
+    // where he fell, he can be knelt by; the seal taken, the inn's fight is next
+    run(w, 0.6);
+    expect(w.npcs.some((n) => n.id === 'oskar-fell')).toBe(true);
+    w.questProgress((o) => o.kind === 'talk' && o.npc === 'oskar-fell');
+    expect(questState(w.hero, 'briar-the-seal')).toBe('done');
+    expect(questState(w.hero, 'briar-the-inn')).toBe('active');
+  });
+
+  it('dawn opens the north road: the Whisperwood comes after the night', () => {
+    const c = heroAt('the-empty-tomb');
+    expect(c.unlocked).not.toContain('whisperwood');
+    expect(questState(c, 'into-the-wood')).toBe('locked');
+    const w = newWorld('briarhollow', c);
+    w.questProgress((o) => o.kind === 'talk' && o.npc === 'maren');
+    expect(questState(c, 'the-empty-tomb')).toBe('done');
+    expect(c.unlocked).toContain('whisperwood');
+    expect(questState(c, 'into-the-wood')).toBe('active');
   });
 
   it('the inn: the children follow you and the rescue is done only when all three are safe', () => {

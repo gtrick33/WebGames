@@ -50,6 +50,8 @@ export const PETS: Record<string, PetDef> = {
   mara: { id: 'mara', name: 'Mara Venn', sprite: 'villager', look: 'mara-venn', hp: 1.1, dmg: 0.45, dmgType: 'physical', speed: 84, radius: 6, reach: 20, ranged: false, attackCd: 1.0, taunt: true, rally: true },
   elyra: { id: 'elyra', name: 'Elyra', sprite: 'villager', look: 'elyra', hp: 0.6, dmg: 0.5, dmgType: 'holy', speed: 78, radius: 5, reach: 120, ranged: true, attackCd: 1.3, taunt: false, shot: 'holy', rally: true },
   'briar-child': { id: 'briar-child', name: 'Bramble child', sprite: 'villager', look: 'briar-child', hp: 1, dmg: 0, dmgType: 'physical', speed: 92, radius: 4, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
+  // the king's courier, his horse dead on the road, staggering in with an arrow in his back
+  courier: { id: 'courier', name: 'Oskar Fell', sprite: 'villager', look: 'oskar-fell', hp: 1, dmg: 0, dmgType: 'physical', speed: 34, radius: 5, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
   'chapel-door': { id: 'chapel-door', name: 'The chapel door', sprite: 'villager', look: 'door', hp: 2.4, dmg: 0, dmgType: 'physical', speed: 0, radius: 9, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   // Act I: the Vale's people, who fight beside the hero, walk into the camp, or wait to be led home
   'fern-ranger': { id: 'fern-ranger', name: 'Fernstead ranger', sprite: 'villager', look: 'fern-ranger', hp: 0.6, dmg: 0.35, dmgType: 'physical', speed: 86, radius: 5, reach: 130, ranged: true, attackCd: 1.2, taunt: false, shot: 'arrow' },

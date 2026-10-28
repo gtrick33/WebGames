@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGION_IDS, REGIONS } from '../src/games/sigilfall/data/regions';
 import type { RegionId } from '../src/games/sigilfall/data/types';
-import { acceptQuest, currentObjective, handInQuest, handInsFor, newCharacter, offeredBy, questState, startQuests, trackQuest, type Character } from '../src/games/sigilfall/progress/character';
+import { acceptQuest, handInQuest, handInsFor, newCharacter, offeredBy, questState, startQuests, trackQuest, type Character } from '../src/games/sigilfall/progress/character';
 import { turnInNpc } from '../src/games/sigilfall/progress/handin';
 import { FOG_CELL, fogSeen, loadFog, revealFog, SEEN_ALL, storeFog } from '../src/games/sigilfall/progress/fog';
-import { migrate, SAVE_VERSION, saveText } from '../src/games/sigilfall/progress/save';
+import { migrate, packQuest, SAVE_VERSION, saveText, unpackQuest } from '../src/games/sigilfall/progress/save';
 import { mergeSaveText } from '../src/platform/cloudMerge';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { parseRegion, TILE } from '../src/games/sigilfall/sim/map';
@@ -176,34 +176,37 @@ describe('Sigilfall: quests taken and handed in, like WoW', () => {
     expect(c.tracked).toBeUndefined();
   });
 
-  it('the training is one quest of three steps, handed in to Mara', () => {
-    const c = newCharacter('ranger', 'Yard', 'yard', 0);
+  it('the first fight is at the gate: the arrow points there, and nothing is handed in', () => {
+    const c = newCharacter('ranger', 'Gate', 'gate', 0);
     c.quests['briar-dusk'] = { state: 'done', n: 1 };
     startQuests(c);
     const w = newWorld('briarhollow', c, 1, 0, undefined, true);
     expect(questState(c, 'first-steps')).toBe('active');
-    w.questProgress((o) => o.kind === 'tutorial' && o.step === 'attack', 5);
-    expect(currentObjective(c, QUEST_DEFS['first-steps']!).kind === 'tutorial' && (currentObjective(c, QUEST_DEFS['first-steps']!) as { step: string }).step).toBe('skill');
-    w.questProgress((o) => o.kind === 'tutorial' && o.step === 'skill', 2);
-    w.questProgress((o) => o.kind === 'tutorial' && o.step === 'dodge', 1);
-    expect(questState(c, 'first-steps')).toBe('ready');
+    expect(QUEST_DEFS['first-steps']!.turnIn).toBeUndefined();
+    const gate = w.places['briar-gate']!;
+    w.player.x = 32 * TILE;
+    w.player.y = 30 * TILE;
+    const t = objectiveTarget(w);
+    expect(t?.quest).toBe('first-steps');
+    expect(Math.hypot(t!.x - gate.x, t!.y - gate.y)).toBeLessThan(TILE);
+    // the north road stays shut until the night is over
     expect(c.unlocked).not.toContain('whisperwood');
-    w.completeQuests([handInQuest(c, 'first-steps')!]);
-    expect(c.unlocked).toContain('whisperwood');
   });
 });
 
 describe('Sigilfall: the save follows the hero between devices', () => {
   it('quests are stored packed and read back the same, steps and hand-ins included', () => {
     const c = newCharacter('warrior', 'Sync', 'sync', 0);
-    c.quests['first-steps'] = { state: 'active', n: 3, step: 1 };
+    c.quests['first-steps'] = { state: 'active', n: 3 };
     c.quests['into-the-wood'] = { state: 'ready', n: 15 };
     c.quests['hidden-grove'] = { state: 'offered', n: 0 };
     c.quests['briar-dusk'] = { state: 'done', n: 1 };
     const text = saveText({ v: SAVE_VERSION, heroes: [c, null, null], last: 0, settings: {} as never, saved: 0 });
-    expect(text).toContain('"first-steps":"a3.1"');
+    expect(text).toContain('"first-steps":"a3"');
     const back = migrate(JSON.parse(text))!.heroes[0]!;
-    expect(back.quests['first-steps']).toEqual({ state: 'active', n: 3, step: 1 });
+    expect(back.quests['first-steps']).toEqual({ state: 'active', n: 3 });
+    // a quest of several steps keeps its step
+    expect(unpackQuest(packQuest({ state: 'active', n: 3, step: 1 }))).toEqual({ state: 'active', n: 3, step: 1 });
     expect(back.quests['into-the-wood']?.state).toBe('ready');
     expect(back.quests['hidden-grove']?.state).toBe('offered');
     expect(back.quests['briar-dusk']?.state).toBe('done');

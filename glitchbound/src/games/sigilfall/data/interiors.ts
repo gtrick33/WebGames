@@ -12,7 +12,7 @@ import type { ZoneModule } from './zones';
  */
 
 /** Briarhollow's night of the raid and the dark after it: the doors are barred (the inn is burning). */
-const BRIAR_NIGHT = any(is('briar-nightfall', 'active'), is('briar-the-inn', 'active'), is('briar-hold-the-door', 'active'), is('briar-below', 'active'), is('the-warden', 'active'), is('close-the-rift', 'active'), is('the-empty-tomb', 'active'));
+const BRIAR_NIGHT = any(is('first-steps', 'active'), is('briar-nightfall', 'active'), is('briar-the-rider', 'active'), is('briar-the-seal', 'active'), is('briar-the-inn', 'active'), is('briar-hold-the-door', 'active'), is('briar-below', 'active'), is('the-warden', 'active'), is('close-the-rift', 'active'), is('the-empty-tomb', 'active'));
 /** The Briarhollow doors open: before the raid, and from dawn on. */
 export const BRIAR_DOORS_OPEN = not(BRIAR_NIGHT);
 const CAMP = after('the-empty-tomb');

@@ -399,6 +399,8 @@ export class Renderer {
     // closer in: the burning roofs and the lamps are what the village is seen by
     if (w.dark && !w.region.dark) this.drawLighting(w, sc, ox, oy, time, 0.84, '#05071a', 0.7);
     else if (w.dark) this.drawLighting(w, sc, ox, oy, time);
+    // the evening the hero arrives: the light going, the lamps lit
+    else if (w.storyState?.dusk) this.drawLighting(w, sc, ox, oy, time, 0.56, '#24123a', 0.85);
     else if (dusk) this.drawLighting(w, sc, ox, oy, time, dread.dark, dread.shade);
     else if (sc.theme === 'forest' || sc.theme === 'jungle') this.drawCanopyShade(ox, oy, time);
     // gloomy lands lie under a cold veil (light: with the packed art the land's own grade carries its mood)

@@ -68,7 +68,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       <Hud engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
-      <Toasts engine={engine} />
+      {!ui.dialogue && <Toasts engine={engine} />}
       {ui.banner && (
         <div className="rb-banner" key={ui.banner.id} aria-live="polite">
           <strong>{ui.banner.text}</strong>
@@ -417,7 +417,16 @@ function Dialogue({ engine }: { engine: SigilEngine }) {
                 Talents
               </button>
             )}
-            <button className={`rb-btn is-small${npc.shop ? '' : ' is-gold'}`} onClick={() => (last ? engine.closeDialogue() : engine.nextLine())} autoFocus={!npc.shop}>
+            {/* (the box itself also turns the page on a click: the button's click stops here, or it would turn two) */}
+            <button
+              className={`rb-btn is-small${npc.shop ? '' : ' is-gold'}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (last) engine.closeDialogue();
+                else engine.nextLine();
+              }}
+              autoFocus={!npc.shop}
+            >
               {last ? 'Farewell' : 'Next ▸'}
             </button>
           </div>

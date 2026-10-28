@@ -267,6 +267,7 @@ export class StoryDirector {
       return e.id;
     });
     this.say(wave.barks);
+    if (wave.hint) w.emit({ t: 'hint', id: wave.hint });
   }
 
   private step(run: Running, dt: number): void {

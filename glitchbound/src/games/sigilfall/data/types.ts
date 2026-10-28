@@ -657,8 +657,11 @@ export interface StoryEventDef {
   radius: number;
   /** Enemy level (else the region's). */
   level?: number;
-  /** Waves, one after another: each comes from its spots once the last is beaten. */
-  waves: { enemies: string[]; from: string[]; barks?: Bark[]; leave?: string[] }[];
+  /**
+   * Waves, one after another: each comes from its spots once the last is beaten. A `hint` shows the hero the
+   * control the wave asks for (the Prologue's first fight teaches by fighting).
+   */
+  waves: { enemies: string[]; from: string[]; barks?: Bark[]; leave?: string[]; hint?: 'attack' | 'skill' | 'dodge' }[];
   /** A fight that is not won: it ends by itself this many seconds in, whatever is still standing. */
   ends?: number;
   /** Companions (pet ids) the event takes away at its end instead of letting them go (the one carried off). */
