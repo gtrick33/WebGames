@@ -395,7 +395,10 @@ export class Renderer {
     // a frightening land: an evening that never lifts there (lamps and fires light pools in it)
     const dread = sc.art ? THEMES[sc.theme].dread : undefined;
     const dusk = !w.dark && !!dread && dread.dark > 0;
-    if (w.dark) this.drawLighting(w, sc, ox, oy, time);
+    // a night out of doors (the Prologue's raid) is deeper than the crypt's dark and the hero's own light
+    // closer in: the burning roofs and the lamps are what the village is seen by
+    if (w.dark && !w.region.dark) this.drawLighting(w, sc, ox, oy, time, 0.84, '#05071a', 0.7);
+    else if (w.dark) this.drawLighting(w, sc, ox, oy, time);
     else if (dusk) this.drawLighting(w, sc, ox, oy, time, dread.dark, dread.shade);
     else if (sc.theme === 'forest' || sc.theme === 'jungle') this.drawCanopyShade(ox, oy, time);
     // gloomy lands lie under a cold veil (light: with the packed art the land's own grade carries its mood)
@@ -2238,8 +2241,11 @@ export class Renderer {
 
   /* -------------------------------------------------------------- light */
 
-  /** The dark (the crypt's, a night's, or a frightening land's own evening: `dark` and `shade`) and the light in it. */
-  private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number, dark = 0.72, shade = '#0a061a'): void {
+  /**
+   * The dark (the crypt's, a night's, or a frightening land's own evening: `dark` and `shade`) and the light in
+   * it; `reach` is how far the hero's own light goes.
+   */
+  private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number, dark = 0.72, shade = '#0a061a', reach = 1): void {
     const lg = this.lg;
     lg.setTransform(this.res, 0, 0, this.res, 0, 0);
     lg.globalCompositeOperation = 'source-over';
@@ -2261,14 +2267,15 @@ export class Renderer {
       lg.drawImage(glowDisc('#ffffff', r), Math.round(sx - r), Math.round(sy - r));
     };
     const p = w.player;
-    hole(p.x, p.y - 4, 120);
-    hole(p.x, p.y - 4, 70);
+    hole(p.x, p.y - 4, 120 * reach);
+    hole(p.x, p.y - 4, 70 * reach);
     for (const t of sc.torches) hole(t.x, t.y + 6, 58 + Math.sin(time * 9 + t.x) * 2, 0.9);
     for (const b of sc.braziers) hole(b.x, b.y + 4, 72 + Math.sin(time * 8 + b.x) * 2);
     for (const l of sc.lights) hole(l.x, l.y, l.r + Math.sin(time * 7 + l.x) * 2, 0.9);
     // a village at night: burning roofs, lamps and cookfires
     for (const f of w.fires) hole(f.x, f.y, 40 + f.size * 22 + Math.sin(time * 7 + f.x) * 4, 0.95);
-    for (const pr of w.props) if (LIGHTS[pr.prop]) hole(pr.x, pr.y - 6, LIGHTS[pr.prop]!, 0.85);
+    // (with the pack's art a lamp's own piece lights it, in sc.lights: counted once, not twice)
+    if (!sc.art) for (const pr of w.props) if (LIGHTS[pr.prop]) hole(pr.x, pr.y - 6, LIGHTS[pr.prop]!, 0.85);
     // a lamp being relit pushes the dark back as it takes
     for (const pet of w.pets) if (!pet.dead && pet.def.look === 'lantern') hole(pet.x, pet.y - 24, 40 + 70 * (pet.hp / pet.maxHp), 0.9);
     for (const ws of w.waystones) hole(ws.x, ws.y - 10, 40, 0.6);
