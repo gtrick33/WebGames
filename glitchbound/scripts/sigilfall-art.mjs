@@ -6,13 +6,13 @@
  *
  * Writes packed atlases and their JSON indexes to public/games/sigilfall/art/:
  *
- *   rk-<season>-hd.png     Royal Keep's tiles (summer, autumn, winter) smoothed to 64 px (EPX), for
- *                          architecture only; rk-tiles.json names them (the same for every season)
+ *   rk-<season>-hd.png     Royal Keep's tiles (summer, autumn, winter) smoothed to 64 px (EPX): the ground
+ *                          of every outdoor land; rk-tiles.json names them (the same for every season)
  *   rk-props-<season>-hd.png  its props and animated props, packed and smoothed; rk-props-<season>.json
  *                          holds their 32 px rects, origins, footprints and chimney points (doubled at load)
  *   vfx.png                the Magic Spells effects (64 px frames), one strip per effect; + .json
  *   circles.png            the Magic Circles (96 px frames); + .json
- *   cp-*, wb-ground, props-*  the 64 px world art (sigilfall-art-world.mjs)
+ *   props-gc               the few story pieces Royal Keep lacks (sigilfall-art-world.mjs)
  *
  * Only what the game draws goes in, losslessly recompressed. The art direction and what each pack is
  * allowed to do are in src/games/sigilfall/VISUAL_BIBLE.md; sources and licenses in ASSET_AUDIT.md.
@@ -39,6 +39,8 @@ if (!fs.existsSync(SRC)) {
   process.exit(1);
 }
 fs.mkdirSync(OUT, { recursive: true });
+// the folder holds only this build's output: what the game no longer draws goes with the rebuild
+for (const f of fs.readdirSync(OUT)) fs.rmSync(path.join(OUT, f));
 
 /** Lossless PNG, as small as sharp makes it. */
 const png = (img) => img.png({ compressionLevel: 9, effort: 10, adaptiveFiltering: true });
@@ -144,7 +146,7 @@ for (const line of fs.readFileSync(path.join(RK, 'animated/frames.txt'), 'utf8')
 }
 
 for (const [season, dir] of Object.entries(SEASONS)) {
-  // Royal Keep ships only in its smoothed 64 px build (architecture beside CraftPix, ASSET_AUDIT.md)
+  // Royal Keep ships only in its smoothed 64 px build (the world's one art language, ASSET_AUDIT.md)
   const atlas = await png(sharp(path.join(dir, 'tileset/royal_keep_tiles.png'))).toBuffer();
   const atlasHd = await epx(atlas);
   write(`rk-${season}-hd.png`, atlasHd);

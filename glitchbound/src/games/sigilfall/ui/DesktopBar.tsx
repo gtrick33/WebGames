@@ -30,15 +30,19 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
     el.hidden = !it;
     if (it) el.textContent = `${ult === 'f' ? 'G' : 'F'} · ${it.kind === 'npc' ? 'Talk' : it.label}`;
   });
+  // indoors is peaceful (sim/world.ts): the bar is put away, and nothing covers a room's door
+  const indoors = !!engine.world?.region.interior;
   return (
     <>
       <div className="rb-prompt" ref={prompt} hidden />
-      <div className="rb-bar6" role="toolbar" aria-label="Skills">
-        {slots.map((s) => (
-          <Slot key={s.slot} engine={engine} slot={s.slot} keyLabel={s.key} />
-        ))}
-        {!!engine.hero?.mounts.length && <MountSlot engine={engine} />}
-      </div>
+      {!indoors && (
+        <div className="rb-bar6" role="toolbar" aria-label="Skills">
+          {slots.map((s) => (
+            <Slot key={s.slot} engine={engine} slot={s.slot} keyLabel={s.key} />
+          ))}
+          {!!engine.hero?.mounts.length && <MountSlot engine={engine} />}
+        </div>
+      )}
     </>
   );
 }

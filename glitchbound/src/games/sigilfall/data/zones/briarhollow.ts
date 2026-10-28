@@ -33,7 +33,11 @@ const HOME = is('epilogue-the-camp-goes-home', 'done');
 const CAMPED = (c: StoryCond): StoryCond => all(c, not(HOME));
 
 /** How much roomier the village is than it was first drawn (64 × 54): houses keep their size, the lanes widen. */
-const SPREAD = 1.35;
+/**
+ * The plan's own scale: the village was once laid out 35% roomier, and the owner found it "vast": houses far
+ * apart with open grass between. It is built at its plan's size again, with more houses along its roads.
+ */
+const SPREAD = 1;
 
 function plan(): SpreadPlan {
   const c = new SpreadPlan(64, 54, 4417, SPREAD);
@@ -50,13 +54,14 @@ function plan(): SpreadPlan {
   // the old stone wall along the north, toward the woods, with its gate where Mara keeps watch and a
   // watchtower on either side of it
   for (let x = 9; x <= 55; x++) if (x < 30 || x > 34) c.set(x, 12, 'rampart');
-  c.prop('watchtower', 27, 12);
-  c.prop('watchtower', 37, 12);
-  c.marker(29, 13, { kind: 'prop', prop: 'lamp', solid: true });
-  c.marker(35, 13, { kind: 'prop', prop: 'lamp', solid: true });
+  // (the towers are the gate's posts: the wall ends at each, the road between them)
+  c.prop('watchtower', 29, 12);
+  c.prop('watchtower', 35, 12);
+  c.marker(30, 13, { kind: 'prop', prop: 'lamp', solid: true });
+  c.marker(34, 13, { kind: 'prop', prop: 'lamp', solid: true });
 
-  // the square: the waystone, the well, the market
-  c.fill(25, 20, 39, 31, 'cobble');
+  // the square: the waystone, the well, the market (small, and full: the owner's references)
+  c.fill(27, 22, 37, 29, 'cobble');
   c.marker(32, 22, { kind: 'waystone' });
   c.marker(32, 29, { kind: 'prop', prop: 'well', solid: true });
   for (const [x, y] of [
@@ -66,11 +71,22 @@ function plan(): SpreadPlan {
     [38, 30],
   ] as const)
     c.prop('lamp', x, y);
+  // its edge planted: flowerbeds and planters, a bench at each side
   for (const [x, y, p] of [
-    [27, 24, 'crate'],
-    [27, 25, 'barrel'],
-    [37, 24, 'barrel'],
-    [37, 25, 'crate'],
+    [26, 23, 'flowerbed'],
+    [38, 23, 'flowerbed'],
+    [26, 25, 'planter'],
+    [38, 25, 'planter'],
+    [28, 30, 'flowerbed'],
+    [36, 30, 'planter'],
+    [26, 28, 'bench'],
+    [38, 28, 'bench'],
+  ] as const)
+    c.prop(p, x, y);
+  // the stalls' goods, set beside them (the stalls themselves stand out on calm days, below)
+  for (const [x, y, p] of [
+    [27, 26, 'crate'],
+    [37, 26, 'barrel'],
   ] as const)
     c.prop(p, x, y);
   // a market square, not an empty yard: the Regent's banners by the waystone, a bench by the well, and the
@@ -78,6 +94,8 @@ function plan(): SpreadPlan {
   c.prop('blue-banner', 29, 21);
   c.prop('blue-banner', 35, 21);
   c.prop('bench', 34, 30);
+  // a bucket at the well
+  c.prop('bucket', 31, 29, false);
 
   c.prop('market-cart', 28, 26, true, CALM);
   c.prop('market-cart', 36, 26, true, CALM);
@@ -105,7 +123,7 @@ function plan(): SpreadPlan {
   // the elder's hall and the herbwife's cottage south of the square
   c.building('hall', 34, 33, 5, 3, { name: 'The Elder’s Hall' });
   c.building('house', 20, 34, 4, 3, { name: 'Thessa’s Cottage', art: 'gv:cosy_cottage' });
-  // houses
+  // houses: along the west road and down the south road too, shoulder to shoulder as a village is built
   for (const [x, y] of [
     [8, 30],
     [8, 37],
@@ -114,8 +132,34 @@ function plan(): SpreadPlan {
     [45, 38],
     [53, 14],
     [13, 14],
+    [25, 34],
+    [38, 41],
+    [37, 46],
+    [49, 34],
+    [8, 14],
+    // and on what was open grass: by the gate yard, on the west road, by the forge, in the south
+    [27, 16],
+    [34, 14],
+    [8, 22],
+    [54, 20],
+    [14, 38],
+    [40, 38],
+    [33, 43],
+    [26, 49],
   ] as const)
     c.building('house', x, y, 4, 3);
+  // lamps along the roads out of the square, flowers and benches by the doors
+  for (const [x, y] of [
+    [23, 28],
+    [16, 28],
+    [9, 28],
+    [30, 36],
+    [30, 43],
+    [33, 49],
+    [41, 28],
+    [47, 28],
+  ] as const)
+    c.prop('lamp', x, y);
   // the orchard, the fields and the pond
   c.plant(42, 42, 58, 49, 0.18, 0.12);
   for (let x = 22; x <= 29; x++) {
@@ -300,7 +344,7 @@ export const BRIARHOLLOW: RegionDef = {
   at: [56, 70],
   dark: false,
   safe: true,
-  music: 'village',
+  music: 'briarhollow',
   map: built.map,
   markers: {},
   placed: built.placed,
@@ -311,7 +355,7 @@ export const BRIARHOLLOW: RegionDef = {
   },
   encounters: [],
   states: [
-    { id: 'raid', when: RAID, night: true, burning: true, music: 'crypt' },
+    { id: 'raid', when: RAID, night: true, burning: true, music: 'siege' },
     { id: 'night', when: NIGHT, night: true, smoke: true },
     { id: 'rebuilt', when: HOME },
     { id: 'camp', when: CAMP },

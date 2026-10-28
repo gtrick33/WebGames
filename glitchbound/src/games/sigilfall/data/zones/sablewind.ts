@@ -20,7 +20,7 @@ export const SABLEWIND = wildRegion(
     at: [100, 22],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'sablewind',
     blurb: 'Red canyons and the Host’s wagon road, carrying bone-steel to the siege of Highwall.',
   },
   {
@@ -33,7 +33,7 @@ export const SABLEWIND = wildRegion(
     scatter: { trees: 0.6, bushes: 0.6, rocks: 2.4, flowers: 0.3 },
     water: { kind: 'river', from: 'n', to: 'e' },
     sand: 'all',
-    hubs: [{ at: [0.55, 0.75], npcs: ['foreman-garrick', 'dustcrown-dora', 'scout-ilya'], houses: 5 }],
+    hubs: [{ at: [0.55, 0.75], plan: 'street', npcs: ['foreman-garrick', 'dustcrown-dora', 'scout-ilya'], houses: 5 }],
     exits: [
       { side: 's', at: 0.6, to: 'sunscorch', label: 'South road to the Sunscorch' },
       { side: 'w', at: 0.45, to: 'highwall', label: 'West road to Highwall March', minLevel: 39 },

@@ -1,3 +1,5 @@
+import { hash2 } from '../core/math';
+import { picBody, placeBuilding, yardProps, type PlacedPic } from '../data/buildingArt';
 import type { Marker, RegionDef, StoryCond } from '../data/types';
 
 /**
@@ -92,6 +94,20 @@ export interface TileMap {
   doors: number[][];
   /** Room floor tiles per encounter index. */
   roomTiles: number[][];
+  /** The buildings standing on their lots (data/buildingArt.ts): what is drawn is what is solid. */
+  buildings: MapBuilding[];
+}
+
+export interface MapBuilding {
+  style: Extract<Marker, { kind: 'building' }>['style'] | 'house';
+  name?: string;
+  /** The lot the plan gave it (its top-left tile and size). */
+  lot: { tx: number; ty: number; w: number; h: number };
+  pics: PlacedPic[];
+  /** The things standing in its yard: a Royal Keep prop on a (solid) tile. */
+  yard: { prop: string; tx: number; ty: number }[];
+  /** The tile of its way in (a door into an interior), if it has one. */
+  door: [number, number] | null;
 }
 
 export function parseRegion(def: RegionDef): TileMap {
@@ -168,7 +184,124 @@ export function parseRegion(def: RegionDef): TileMap {
     solid[i] = SOLID_KINDS.has(kind[i] as K) ? 1 : 0;
     block[i] = BLOCK_KINDS.has(kind[i] as K) ? 1 : 0;
   }
-  return { w, h, kind, room, solid, block, markers, doors, roomTiles };
+  const over: [number, number][] = [];
+  const buildings = standBuildings(def, w, h, kind, markers, over);
+  const settle = (): void => {
+    for (let i = 0; i < w * h; i++) {
+      solid[i] = SOLID_KINDS.has(kind[i] as K) ? 1 : 0;
+      block[i] = BLOCK_KINDS.has(kind[i] as K) ? 1 : 0;
+    }
+  };
+  settle();
+  const map: TileMap = { w, h, kind, room, solid, block, markers, doors, roomTiles, buildings };
+  // a tall roof over the ground behind its lot is wall only if that cuts nobody off
+  const start = markers.find((m) => m.marker.kind === 'start');
+  if (over.length && start) {
+    const f = flowField({ ...map, solid: solid.map((v, i) => (kind[i] === K.Cracked ? 0 : v)) }, start.tx, start.ty, 30000);
+    const cut = markers.some((pm) => !PASSIVE.has(pm.marker.kind) && Math.max(...[0, 1, -1, w, -w].map((d) => f[pm.ty * w + pm.tx + d] ?? -1)) < 0);
+    if (cut) {
+      for (const [i, k] of over) kind[i] = k;
+      settle();
+    }
+  }
+  return map;
+}
+
+/** Markers that are not somewhere to get to (props, scenery, fires on roofs). */
+const PASSIVE = new Set<string>(['prop', 'hazard', 'building', 'fire', 'wisp', 'place']);
+
+/** Open ground a picture may stand over (a roof's peak over the grass behind its lot). */
+const OVER = new Set<number>([K.Floor, K.Deco, K.Sand, K.Path, K.Cobble]);
+
+/**
+ * Stands each building's picture on its lot (a plan's building, or a generated village's house): the
+ * tiles its walls and roof cover are solid, the rest of the lot is its yard, open ground with a few things
+ * standing in it. So the hero meets a wall where a wall is drawn, never walks into a picture, and comes in
+ * through the painted door.
+ */
+function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, markers: PlacedMarker[], over: [number, number][]): MapBuilding[] {
+  const out: MapBuilding[] = [];
+  const lots: { style: MapBuilding['style']; tx: number; ty: number; w: number; h: number; name?: string; art?: string }[] = [];
+  for (const pm of markers) {
+    const m = pm.marker;
+    if (m.kind === 'building') lots.push({ style: m.style, tx: pm.tx, ty: pm.ty - m.h + 1, w: m.w, h: m.h, ...(m.name ? { name: m.name } : {}), ...(m.art ? { art: m.art } : {}) });
+  }
+  for (let i = 0; i < w * h; i++) if (kind[i] === K.HouseAnchor) lots.push({ style: 'house', tx: i % w, ty: Math.floor(i / w) - 2, w: 4, h: 3 });
+  if (!lots.length) return out;
+  // the tiles markers stand on stay open (a fire is not one: it goes on the roof, below)
+  const taken = new Set(markers.filter((m) => m.marker.kind !== 'building' && m.marker.kind !== 'fire').map((m) => m.ty * w + m.tx));
+  const ways = markers.filter((m) => m.marker.kind === 'exit' && m.marker.door);
+  for (const lot of lots) {
+    const inLot = (x: number, y: number): boolean => x >= lot.tx && x < lot.tx + lot.w && y >= lot.ty && y < lot.ty + lot.h;
+    const col = lot.tx + Math.floor(lot.w / 2);
+    const way = ways.find((d) => d.ty === lot.ty + lot.h && Math.abs(d.tx - col) <= 1) ?? null;
+    const pics = placeBuilding(lot.style, lot, def.theme, def.kind === 'town', lot.art, way ? way.tx : null);
+    for (let y = lot.ty; y < lot.ty + lot.h; y++) {
+      for (let x = lot.tx; x < lot.tx + lot.w; x++) {
+        if (x < 0 || y < 0 || x >= w || y >= h) continue;
+        const i = y * w + x;
+        if (kind[i] === K.House || kind[i] === K.HouseAnchor) kind[i] = K.Floor;
+      }
+    }
+    // a tile is wall where the picture's walls and roof cover a good part of it
+    for (const p of pics) {
+      const [x0, y0, x1, y1] = picBody(p);
+      for (let ty = Math.floor(y0 / TILE); ty <= Math.floor((y1 - 1) / TILE); ty++) {
+        for (let tx = Math.floor(x0 / TILE); tx <= Math.floor((x1 - 1) / TILE); tx++) {
+          if (tx < 0 || ty < 0 || tx >= w || ty >= h) continue;
+          const ox = Math.min(x1, (tx + 1) * TILE) - Math.max(x0, tx * TILE);
+          const oy = Math.min(y1, (ty + 1) * TILE) - Math.max(y0, ty * TILE);
+          if (ox < 4 || oy < 6) continue;
+          const i = ty * w + tx;
+          // a story marker on the lot (a fire on the roof) keeps its tile
+          if (taken.has(i)) continue;
+          if (inLot(tx, ty)) kind[i] = K.House;
+          else if (OVER.has(kind[i]!)) {
+            over.push([i, kind[i]!]);
+            kind[i] = K.House;
+          }
+        }
+      }
+    }
+    // its yard: a few things on the free tiles of the lot's front rows, clear of the doorway
+    const free: number[] = [];
+    for (let y = Math.max(lot.ty, lot.ty + lot.h - 2); y < lot.ty + lot.h; y++) {
+      for (let x = lot.tx; x < lot.tx + lot.w; x++) {
+        if (x < 0 || y < 0 || x >= w || y >= h) continue;
+        const i = y * w + x;
+        if (kind[i] !== K.Floor || taken.has(i) || (way && Math.abs(x - way.tx) <= 1)) continue;
+        free.push(i);
+      }
+    }
+    free.sort((a, b) => hash2(a % w, Math.floor(a / w), 57) - hash2(b % w, Math.floor(b / w), 57));
+    const yard: MapBuilding['yard'] = [];
+    for (const prop of yardProps(lot.style, lot, Math.min(3, Math.ceil(free.length / 2)))) {
+      const i = free.shift()!;
+      kind[i] = K.Prop;
+      yard.push({ prop, tx: i % w, ty: Math.floor(i / w) });
+    }
+    out.push({ style: lot.style, ...(lot.name ? { name: lot.name } : {}), lot: { tx: lot.tx, ty: lot.ty, w: lot.w, h: lot.h }, pics, yard, door: way ? [way.tx, way.ty] : null });
+  }
+  // flames the story puts on a roof burn on the roof the picture has (the plan knew only the lot)
+  const bodies = out.flatMap((b) => b.pics.map(picBody));
+  for (const pm of markers) {
+    if (pm.marker.kind !== 'fire') continue;
+    const fx = (pm.tx + 0.5) * TILE;
+    const fy = (pm.ty + 0.5) * TILE;
+    let best: [number, number, number, number] | null = null;
+    let bd = TILE * 2.5;
+    for (const r of bodies) {
+      const d = Math.hypot(Math.max(r[0] - fx, 0, fx - r[2]), Math.max(r[1] - fy, 0, fy - r[3]));
+      if (d < bd) [best, bd] = [r, d];
+    }
+    if (!best) continue;
+    const [x0, y0, x1, y1] = best;
+    // somewhere along the roof, keeping which side of it the fire was on
+    const rx = Math.min(x1 - 6, Math.max(x0 + 6, fx));
+    pm.tx = Math.floor(rx / TILE);
+    pm.ty = Math.floor((y0 + (y1 - y0) * 0.3) / TILE);
+  }
+  return out;
 }
 
 export const tileAt = (m: TileMap, px: number, py: number): number => {

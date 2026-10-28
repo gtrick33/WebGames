@@ -553,7 +553,7 @@ export const RIMEHELD_VAULT: DungeonModule = {
     at: [2, 4],
     dark: true,
     safe: false,
-    music: 'cave',
+    music: 'frost-vault',
     map: MAP,
     markers,
     encounters: [

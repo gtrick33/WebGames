@@ -605,7 +605,7 @@ export const BLIGHTHEART: DungeonModule = {
     at: [18, -18],
     dark: true,
     safe: false,
-    music: 'cave',
+    music: 'rootdeep',
     map: MAP,
     markers,
     encounters: [

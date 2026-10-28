@@ -112,9 +112,43 @@ export class CityPlan {
     this.fill(x, y, x + w - 1, y + h - 1, 'house');
     this.mark(x, y + h - 1, { kind: 'building', style, w, h, ...(o.name ? { name: o.name } : {}), ...(o.art ? { art: o.art } : {}) });
     const door = x + Math.floor(w / 2);
-    if (o.pave !== false) this.fill(door - 1, y + h, door + 1, y + h + 1, 'cobble');
+    if (o.pave !== false) this.step(door, y + h);
     // the keeper stands beside the door, out of the doorway
     if (o.npc) this.mark(door + 2 <= x + w - 1 ? door + 2 : door - 2, y + h, { kind: 'npc', npc: o.npc });
+    return this;
+  }
+
+  /**
+   * A path from a door down to the street it faces: cobbled when the street is, trodden earth otherwise (a pad of
+   * cobbles in the grass before every door read as a stamp). Two tiles of path where no street is near.
+   */
+  private step(x: number, y0: number): void {
+    let reach = -1;
+    for (let k = 0; k <= 8; k++) {
+      const at = this.at(x, y0 + k);
+      if (at === C.path || at === C.cobble) {
+        reach = k;
+        break;
+      }
+      if (at !== C.floor && at !== C.deco) break;
+    }
+    const kind = reach >= 0 && this.at(x, y0 + reach) === C.cobble ? 'cobble' : 'path';
+    for (let k = 0; k < (reach >= 0 ? reach : 2); k++) {
+      const at = this.at(x, y0 + k);
+      if (at === C.floor || at === C.deco || at === C.path) this.set(x, y0 + k, kind);
+    }
+  }
+
+  /**
+   * A row of houses side by side whose doors open on row `door` (a street), from x0 to x1: a house wherever
+   * its lot (and the row behind it, under its roof) is still open ground.
+   */
+  row(x0: number, x1: number, door: number): this {
+    for (let x = x0; x + 3 <= x1; x += 4) {
+      let free = true;
+      for (let y = door - 4; y < door && free; y++) for (let xx = x; xx < x + 4 && free; xx++) free = (this.at(xx, y) === C.floor || this.at(xx, y) === C.deco) && !this.taken.has(this.i(xx, y));
+      if (free) this.building('house', x, door - 3, 4, 3);
+    }
     return this;
   }
 

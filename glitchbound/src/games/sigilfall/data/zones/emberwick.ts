@@ -24,6 +24,8 @@ const KNIVES = during('festival-the-knives');
 const AFTER = all(after('festival-the-knives'), until('festival-the-champion'));
 /** At war (Act IV): the market is a muster ground. */
 const WAR = is('the-wall-burns', 'started');
+/** An ordinary day: the market's own stalls stand (the festival, the night after and the war clear them). */
+const MARKET = all(not(FESTIVAL), not(KNIVES), not(AFTER), not(WAR));
 function plan(): CityPlan {
   const c = new CityPlan(104, 82, 2207);
   c.woods(3, 6);
@@ -50,7 +52,10 @@ function plan(): CityPlan {
   // the market square, the waystone in its middle
   c.fill(40, 32, 63, 49, 'cobble');
   c.marker(51, 37, { kind: 'waystone' });
-  c.marker(52, 45, { kind: 'prop', prop: 'well', solid: true });
+  // the city's fountain (three tiles wide), below the waystone
+  c.prop('fountain', 52, 45);
+  c.prop('block', 51, 45);
+  c.prop('block', 53, 45);
   c.marker(51, 43, { kind: 'start' });
   for (const [x, y] of [
     [42, 34],
@@ -66,8 +71,57 @@ function plan(): CityPlan {
     [59, 46, 'barrel'],
     [44, 34, 'barrel'],
     [59, 34, 'crate'],
+    // clipped trees at the square's corners, flowers and benches along its edges
+    [40, 32, 'topiary'],
+    [63, 32, 'topiary'],
+    [40, 49, 'topiary'],
+    [63, 49, 'topiary'],
+    [45, 32, 'flowerbed'],
+    [58, 32, 'flowerbed'],
+    [45, 49, 'flowerbed'],
+    [58, 49, 'flowerbed'],
+    [48, 47, 'bench'],
+    [55, 47, 'bench'],
   ] as const)
     c.prop(p, x, y);
+  for (const [x, y] of [
+    [47, 35],
+    [47, 46],
+    [56, 46],
+    [44, 40],
+    [59, 40],
+    [56, 35],
+  ] as const)
+    c.prop('market-cart', x, y, true, MARKET);
+  for (const [x, y, p] of [
+    [45, 35, 'crate'],
+    [48, 36, 'sacks'],
+    [55, 36, 'barrel'],
+    [57, 36, 'crate'],
+    [43, 40, 'barrel'],
+    [60, 40, 'sacks'],
+  ] as const)
+    c.prop(p, x, y, true, MARKET);
+  // a capital's market is crowded: more stalls down its sides and goods between them
+  for (const [x, y] of [
+    [41, 37],
+    [62, 37],
+    [41, 44],
+    [62, 44],
+    [50, 34],
+    [53, 48],
+  ] as const)
+    c.prop('market-cart', x, y, true, MARKET);
+  // each stall's goods beside it
+  for (const [x, y, p] of [
+    [42, 37, 'market-goods'],
+    [61, 37, 'market-goods'],
+    [42, 44, 'basket'],
+    [61, 44, 'basket'],
+    [49, 34, 'sacks'],
+    [54, 48, 'crate'],
+  ] as const)
+    c.prop(p, x, y, true, MARKET);
 
   // the Regent's keep at the head of the avenue, its courtyard, the barracks beside it
   c.building('keep', 45, 10, 14, 8, { pave: false });
@@ -84,6 +138,19 @@ function plan(): CityPlan {
 
   // the training grounds: a fenced yard of dummies, Elder Maren at its gate
   c.fill(14, 12, 34, 12, 'fence').fill(14, 28, 34, 28, 'fence').fill(14, 12, 14, 28, 'fence').fill(34, 12, 34, 28, 'fence');
+  // its ground beaten to dirt, racks and archery butts along its fence
+  c.fill(16, 14, 32, 26, 'path');
+  for (const [x, y, p] of [
+    [16, 14, 'weapon-rack'],
+    [18, 14, 'weapon-rack'],
+    [21, 14, 'armor-stand'],
+    [32, 15, 'target'],
+    [32, 19, 'target'],
+    [32, 23, 'target'],
+    [16, 26, 'barrel'],
+    [17, 26, 'crate'],
+  ] as const)
+    c.prop(p, x, y);
   c.fill(23, 28, 25, 28, 'floor');
   c.fill(23, 29, 25, 38, 'path');
   c.marker(19, 17, { kind: 'dummy' });
@@ -147,6 +214,24 @@ function plan(): CityPlan {
   c.building('house', 37, 21, 4, 3);
   c.building('house', 14, 32, 4, 3);
   c.building('house', 36, 30, 4, 3);
+
+  // a city lives shoulder to shoulder: rows of houses along the avenue, a street of them in the north-east, two
+  // in the south (the open grass between a few big buildings read as a field, not a capital)
+  c.row(10, 37, 38).row(64, 93, 38);
+  c.fill(63, 27, 81, 28, 'cobble').row(63, 81, 27);
+  c.fill(10, 58, 48, 59, 'path').row(24, 36, 58);
+  c.fill(56, 58, 92, 59, 'path').row(56, 92, 58);
+  c.fill(56, 66, 92, 67, 'path').row(56, 92, 66);
+  // and the lawns that were left: streets of houses below the training ground, by the barracks, south of the
+  // market and down in the south-west
+  c.fill(19, 33, 34, 33, 'cobble').row(19, 34, 33);
+  c.fill(55, 31, 63, 31, 'cobble').row(55, 62, 31);
+  c.fill(64, 33, 73, 33, 'cobble').row(64, 73, 33);
+  c.fill(42, 53, 49, 53, 'path').row(42, 49, 53);
+  c.fill(10, 70, 30, 70, 'path').row(10, 30, 70);
+  c.fill(61, 22, 72, 22, 'cobble').row(61, 72, 22);
+  c.fill(59, 72, 92, 72, 'path').row(59, 92, 72);
+  c.building('house', 39, 17, 4, 3);
 
   // where the story happens in the city (silent places)
   for (const [id, x, y] of [
@@ -242,14 +327,14 @@ export const EMBERWICK: RegionDef = {
   at: [44, 68],
   dark: false,
   safe: true,
-  music: 'village',
+  music: 'emberwick',
   map: built.map,
   markers: {},
   placed: built.placed,
   encounters: [],
   states: [
     { id: 'festival', when: during('festival-the-lanterns'), dusk: true },
-    { id: 'night-of-knives', when: KNIVES, night: true, burning: true, music: 'crypt' },
+    { id: 'night-of-knives', when: KNIVES, night: true, burning: true, music: 'siege' },
     { id: 'lockdown', when: AFTER, smoke: true },
   ],
   blurb: 'The Crown City: the Regent’s keep, the market, taverns and the inn, the forge, the temple and the training grounds.',

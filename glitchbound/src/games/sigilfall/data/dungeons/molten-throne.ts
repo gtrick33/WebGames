@@ -611,7 +611,7 @@ export const MOLTEN_THRONE: DungeonModule = {
     at: [108, -52],
     dark: true,
     safe: false,
-    music: 'cave',
+    music: 'molten',
     map: MAP,
     markers,
     encounters: [

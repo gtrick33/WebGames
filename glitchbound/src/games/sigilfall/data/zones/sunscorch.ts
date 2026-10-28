@@ -20,7 +20,7 @@ export const SUNSCORCH = wildRegion(
     at: [100, 48],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'sunscorch',
     blurb: 'Sand to the horizon, raiders and scorpions, and the sunken tomb where the Sun King keeps his sigil.',
   },
   {
@@ -33,7 +33,7 @@ export const SUNSCORCH = wildRegion(
     scatter: { trees: 0.8, bushes: 0.6, rocks: 1.8, flowers: 0.5 },
     water: { kind: 'lakes', amount: 0.15 },
     sand: 'all',
-    hubs: [{ at: [0.28, 0.5], npcs: ['oasis-keeper-sefu', 'merchant-zahra', 'sandscribe-ibbi', 'old-kasim'], houses: 5 }],
+    hubs: [{ at: [0.28, 0.5], plan: 'green', npcs: ['oasis-keeper-sefu', 'merchant-zahra', 'sandscribe-ibbi', 'old-kasim'], houses: 5 }],
     exits: [
       { side: 'w', at: 0.5, to: 'ironpeak', label: 'West road to Ironpeak' },
       { side: 'n', at: 0.6, to: 'sablewind', label: 'North road to Sablewind Canyon', minLevel: 36 },

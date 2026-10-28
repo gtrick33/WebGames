@@ -24,7 +24,7 @@ export const WEEPING_WOODS = wildRegion(
     at: [54, -26],
     dark: false,
     safe: false,
-    music: 'forest',
+    music: 'weeping-woods',
     blurb: 'A grey wood of the Dead Kingdom where the Sigil-wardens of the old war still walk, and every window in Candlewick holds a candle.',
     states: [{ id: 'weeping', when: until('the-weeping-lord'), gloom: true }],
   },
@@ -37,7 +37,7 @@ export const WEEPING_WOODS = wildRegion(
     forest: 0.46,
     scatter: { trees: 2.2, bushes: 1.4, rocks: 1, flowers: 0.8 },
     water: { kind: 'river', from: 'n', to: 'w' },
-    hubs: [{ at: [0.8, 0.62], npcs: ['candlewife-hesper', 'sexton-abel', 'chandler-miro', 'woodward-fenn'], houses: 6 }],
+    hubs: [{ at: [0.8, 0.62], plan: 'cross', npcs: ['candlewife-hesper', 'sexton-abel', 'chandler-miro', 'woodward-fenn'], houses: 6 }],
     exits: [
       { side: 's', at: 0.7, to: 'gloamhollow', label: 'South through the Gloam Gate to Lastlight' },
       { side: 'e', at: 0.6, to: 'bonefields', label: 'East road to the Bonefields' },

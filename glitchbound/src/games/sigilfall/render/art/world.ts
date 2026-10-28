@@ -1,56 +1,56 @@
 import type { Theme } from '../../data/types';
-import { groundSet, overlays, propAtlas, worldArt, type GroundSet, type Overlays, type PropAtlas, type Season, type WorldArt } from './atlas';
-import { atlasesOf, RECIPES, type Recipe } from './recipes';
+import { forgetArt, propAtlas, propAtlasKey, worldArt, worldArtKey, type LookKey, type PropAtlas, type WorldArt } from './atlas';
+import { DERIVED, RECIPES, type Recipe } from './recipes';
 
 /**
- * Everything an outdoor land draws, loaded: its recipe, the CraftPix ground set, the overlays, the prop
- * atlases it names, and Royal Keep's smoothed build for its architecture (in the land's season and grade).
+ * Everything an outdoor land draws, loaded: its recipe, and Royal Keep's smoothed build in the land's season
+ * and grade (ground tiles, the derived sets, every prop), plus the few story pieces the pack lacks (`gc`).
  * Null while any piece is still loading (the procedural art stands in), or for a land without a recipe.
  */
 export interface WorldLook {
   recipe: Recipe;
-  ground: GroundSet;
-  over: Overlays;
-  props: Record<string, PropAtlas>;
-  rk: WorldArt | null;
+  rk: WorldArt;
+  /** Gloomvault's story pieces (skulls, bones, cages, crystals), graded like the land. */
+  gc: PropAtlas | null;
 }
 
-const SEASON: Partial<Record<Theme, Season>> = {
-  snow: 'winter',
-  peaks: 'winter',
-  pale: 'winter',
-  haunted: 'winter',
-  deadlake: 'winter',
-  autumn: 'autumn',
-  barrow: 'autumn',
-  moor: 'autumn',
-  plague: 'autumn',
-  warfront: 'autumn',
-  rift: 'autumn',
-  blight: 'autumn',
-  bonefield: 'autumn',
-  volcanic: 'autumn',
+const looks = new Map<Theme, WorldLook>();
+/** How many lands' art stays loaded (each is two large atlases, graded): the one here and the last ones left. */
+const KEEP = 3;
+
+const lookKey = (recipe: Recipe): LookKey => {
+  const g = recipe.ground;
+  const used = new Set([g.base, g.under, g.path, g.sand, g.cobble, g.field, ...g.patches.map((p) => p.set)]);
+  return { season: recipe.season, grade: recipe.grade, ...(recipe.water ? { water: recipe.water } : {}), derived: DERIVED.filter((d) => used.has(d.name)), hd: true };
 };
 
-const looks = new Map<Theme, WorldLook>();
+let latest: Theme | null = null;
 
 export function worldLook(theme: Theme): WorldLook | null {
   const hit = looks.get(theme);
-  if (hit) return hit;
+  if (hit) {
+    // the land here is the last one left behind
+    if (latest !== theme) {
+      looks.delete(theme);
+      looks.set(theme, hit);
+      latest = theme;
+    }
+    return hit;
+  }
   const recipe = RECIPES[theme];
   if (!recipe) return null;
-  const ground = groundSet(recipe.ground.set, recipe.grade);
-  const over = overlays(recipe.grade, recipe.water);
-  const rk = worldArt({ season: SEASON[theme] ?? 'summer', grade: recipe.grade, hd: true });
-  const props: Record<string, PropAtlas> = {};
-  let ready = !!ground && !!over && !!rk;
-  for (const id of atlasesOf(recipe)) {
-    const a = propAtlas(id, recipe.grade);
-    if (a) props[id] = a;
-    else ready = false;
-  }
-  if (!ready || !ground || !over) return null;
-  const look: WorldLook = { recipe, ground, over, props, rk };
+  const rk = worldArt(lookKey(recipe));
+  const gc = propAtlas('gc', recipe.grade);
+  if (!rk || !gc) return null;
+  const look: WorldLook = { recipe, rk, gc };
   looks.set(theme, look);
+  latest = theme;
+  // the land longest left behind lets its art go (it loads again if the hero comes back)
+  while (looks.size > KEEP) {
+    const [old, l] = looks.entries().next().value!;
+    looks.delete(old);
+    if (![...looks.values()].some((o) => JSON.stringify(lookKey(o.recipe)) === JSON.stringify(lookKey(l.recipe)))) forgetArt(worldArtKey(lookKey(l.recipe)));
+    if (![...looks.values()].some((o) => JSON.stringify(o.recipe.grade) === JSON.stringify(l.recipe.grade))) forgetArt(propAtlasKey('gc', l.recipe.grade));
+  }
   return look;
 }

@@ -13,6 +13,8 @@ import { hasStatus } from '../sim/combat';
 import { K, TILE } from '../sim/map';
 import type { Enemy, Fx, Ghost, Pet, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
+import type { Folk } from '../sim/folk';
+import { passerbyLook } from './art/townsfolk';
 import { itemTint } from '../progress/items';
 import { canvas, ctx2d, DETAIL, pixelText, RES, rgba, type Cnv, type Sprite } from './pixel';
 import { creatureSprite, glowDisc, heldWeapon, itemIconCanvas, heroLook, heroSprite, mountSprites, npcSprite, recolored, riderLegsSprite, vendorSign, weaponSprite, type HeroDir } from './sprites';
@@ -312,6 +314,7 @@ export class Renderer {
     this.drawAim(w);
     this.drawFacing(w, time);
     this.drawRings(w);
+    this.drawEntrances(w, time);
 
     // everything standing, sorted by depth
     const items: { y: number; draw: () => void }[] = [];
@@ -339,6 +342,8 @@ export class Renderer {
     for (const s of w.spores) if (inView(s.x, s.y)) items.push({ y: s.y + 3, draw: () => this.drawSpore(s.x, s.y, s.ripe, s.fuse, time) });
     for (const n of w.npcs) if (inView(n.x, n.y)) items.push({ y: n.y + 6, draw: () => this.drawNpc(w, n.id, n.x, n.y, n.face, n.bob) });
     for (const c of w.chickens) if (inView(c.x, c.y)) items.push({ y: c.y, draw: () => this.drawChicken(c.x, c.y, c.face, time) });
+    // the people of the place (they keep indoors while the story fights in the streets)
+    if (!w.story.fighting) for (const f of w.folk) if (inView(f.x, f.y)) items.push({ y: f.y + 5, draw: () => this.drawFolk(f, time) });
     for (const d of w.drops) if (inView(d.x, d.y)) items.push({ y: d.y, draw: () => this.drawDrop(d.kind, d.x, d.y, d.z, d.item, time, d.t) });
     for (const e of w.enemies) if (inView(e.x, e.y)) items.push({ y: e.y + e.r * 0.6, draw: () => this.drawEnemy(e, time) });
     for (const pet of w.pets) if (inView(pet.x, pet.y)) items.push({ y: pet.y + pet.r * 0.6, draw: () => this.drawPet(pet, time) });
@@ -387,16 +392,22 @@ export class Renderer {
     }
     // flames on the roofs while the village burns (above the roofs, under the light)
     for (const f of w.fires) this.drawFire(f.x, f.y, f.size, time);
+    // a frightening land: an evening that never lifts there (lamps and fires light pools in it)
+    const dread = sc.art ? THEMES[sc.theme].dread : undefined;
+    const dusk = !w.dark && !!dread && dread.dark > 0;
     if (w.dark) this.drawLighting(w, sc, ox, oy, time);
+    else if (dusk) this.drawLighting(w, sc, ox, oy, time, dread.dark, dread.shade);
     else if (sc.theme === 'forest' || sc.theme === 'jungle') this.drawCanopyShade(ox, oy, time);
-    // gloomy lands lie under a cold veil
+    // gloomy lands lie under a cold veil (light: with the packed art the land's own grade carries its mood)
     const veil = THEMES[sc.theme].tint;
-    if (veil && !w.dark) {
-      g.globalAlpha = 0.26;
+    if (veil && !w.dark && !dusk) {
+      g.globalAlpha = sc.art ? 0.12 : 0.26;
       g.fillStyle = veil;
       g.fillRect(ox, oy, this.vw, this.vh);
       g.globalAlpha = 1;
     }
+    // mist over it all, pale in the dark as it is under a moon
+    if (sc.mist.length) this.drawMist(sc, ox, oy, time);
 
     // collapse ring (Morgrave's last phase)
     const bz = w.boss();
@@ -1669,6 +1680,22 @@ export class Renderer {
     if (mark) drawMapIcon(g, mark, x, Math.round(top + Math.sin(bob * 3) * 1.5) - 8, 1);
   }
 
+  /** A villager walking about (sim/folk.ts), drawn like the people of the story. */
+  private drawFolk(f: Folk, time: number): void {
+    const g = this.g;
+    g.fillStyle = 'rgba(0,0,0,0.22)';
+    g.beginPath();
+    g.ellipse(f.x, f.y + 6, 5.5, 2.2, 0, 0, TAU);
+    g.fill();
+    const dir: HeroDir = f.dir === 0 ? 'down' : f.dir === 3 ? 'up' : 'side';
+    const frame = f.moving ? (Math.floor(f.walkT * 6) % 2) + 1 : 0;
+    const s = heroSprite(passerbyLook(f.look), dir, frame);
+    const sw = s.width / s.k;
+    const sh = s.height / s.k;
+    const bob = f.moving ? (Math.floor(f.walkT * 6) % 2 === 0 ? 0 : -0.5) : Math.sin(time * 2 + f.look) > 0.8 ? -0.5 : 0;
+    g.drawImage(f.dir === 1 ? s.f : s.c, Math.round(f.x) - sw / 2, Math.round(f.y) + 6.5 - sh + bob, sw, sh);
+  }
+
   private drawChicken(x: number, y: number, face: number, time: number): void {
     const g = this.g;
     const X = Math.round(x);
@@ -2211,15 +2238,18 @@ export class Renderer {
 
   /* -------------------------------------------------------------- light */
 
-  private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number): void {
+  /** The dark (the crypt's, a night's, or a frightening land's own evening: `dark` and `shade`) and the light in it. */
+  private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number, dark = 0.72, shade = '#0a061a'): void {
     const lg = this.lg;
     lg.setTransform(this.res, 0, 0, this.res, 0, 0);
     lg.globalCompositeOperation = 'source-over';
     // a fresh layer every frame (a translucent fill drawn over last frame's would stack up to black)
     lg.clearRect(0, 0, this.vw, this.vh);
     // moody, not murky: the room stays readable outside the pools of light
-    lg.fillStyle = 'rgba(10,6,26,0.72)';
+    lg.globalAlpha = dark;
+    lg.fillStyle = shade;
     lg.fillRect(0, 0, this.vw, this.vh);
+    lg.globalAlpha = 1;
     lg.globalCompositeOperation = 'destination-out';
     const hole = (x: number, y: number, r0: number, a = 1): void => {
       // in steps of 4 px and at most 240 (each size of light is a canvas kept for good)
@@ -2235,6 +2265,7 @@ export class Renderer {
     hole(p.x, p.y - 4, 70);
     for (const t of sc.torches) hole(t.x, t.y + 6, 58 + Math.sin(time * 9 + t.x) * 2, 0.9);
     for (const b of sc.braziers) hole(b.x, b.y + 4, 72 + Math.sin(time * 8 + b.x) * 2);
+    for (const l of sc.lights) hole(l.x, l.y, l.r + Math.sin(time * 7 + l.x) * 2, 0.9);
     // a village at night: burning roofs, lamps and cookfires
     for (const f of w.fires) hole(f.x, f.y, 40 + f.size * 22 + Math.sin(time * 7 + f.x) * 4, 0.95);
     for (const pr of w.props) if (LIGHTS[pr.prop]) hole(pr.x, pr.y - 6, LIGHTS[pr.prop]!, 0.85);
@@ -2262,9 +2293,29 @@ export class Renderer {
     g.globalAlpha = 0.18;
     for (const t of sc.torches) g.drawImage(glowDisc('#ff9a3d', 22), Math.round(t.x - ox - 22), Math.round(t.y - oy - 18));
     for (const b of sc.braziers) g.drawImage(glowDisc('#ff9a3d', 30), Math.round(b.x - ox - 30), Math.round(b.y - oy - 24));
+    for (const l of sc.lights) {
+      if (l.x < ox - 40 || l.y < oy - 40 || l.x > ox + this.vw + 40 || l.y > oy + this.vh + 40) continue;
+      g.drawImage(glowDisc('#ffb45a', 20), Math.round(l.x - ox - 20), Math.round(l.y - oy - 20));
+    }
     for (const f of w.fires) {
       const r = 24 + f.size * 14;
       g.drawImage(glowDisc('#ff7a2a', r), Math.round(f.x - ox - r), Math.round(f.y - oy - r));
+    }
+    g.restore();
+  }
+
+  /** Mist banks over a frightening land's water and hollows, drifting slowly (still, with reduced motion). */
+  private drawMist(sc: Scenery, ox: number, oy: number, time: number): void {
+    const g = this.g;
+    const puff = glowDisc('#e4ecf4', 32);
+    const t = this.reducedMotion ? 0 : time;
+    g.save();
+    for (const m of sc.mist) {
+      const x = m.x + Math.sin(t * 0.05 + m.ph) * 24;
+      const y = m.y + Math.sin(t * 0.03 + m.ph * 1.7) * 6;
+      if (x + m.w < ox || x - m.w > ox + this.vw || y + m.h < oy || y - m.h > oy + this.vh) continue;
+      g.globalAlpha = 0.13 + Math.sin(t * 0.2 + m.ph) * 0.04;
+      g.drawImage(puff, Math.round(x - m.w), Math.round(y - m.h), Math.round(m.w * 2), Math.round(m.h * 2));
     }
     g.restore();
   }
@@ -2314,13 +2365,58 @@ export class Renderer {
     void w;
   }
 
+  /**
+   * The ways into buildings, and back out: a warm pool of light on the step and a gold chevron pointing through
+   * the door (in, under a painted door; out, at a room's door), so a door you can use never looks like one
+   * you can't. Walking onto it goes through.
+   */
+  private drawEntrances(w: World, time: number): void {
+    const g = this.g;
+    const inside = !!w.region.interior;
+    for (const x of w.exits) {
+      if (!x.door) continue;
+      const pulse = 0.5 + Math.sin(time * 3 + x.x * 0.1) * 0.5;
+      // the step: on the tile in front of a painted door, on the door tile itself indoors
+      const cy = inside ? x.y : x.y - 4;
+      g.save();
+      const grd = g.createRadialGradient(x.x, cy, 0, x.x, cy, 14);
+      grd.addColorStop(0, rgba('#ffe08a', 0.6 + pulse * 0.2));
+      grd.addColorStop(0.6, rgba('#ffc84a', 0.25 + pulse * 0.1));
+      grd.addColorStop(1, rgba('#ffc84a', 0));
+      g.fillStyle = grd;
+      g.beginPath();
+      g.ellipse(x.x, cy, 14, 7, 0, 0, Math.PI * 2);
+      g.fill();
+      // two chevrons, nudging the way through
+      const dir = inside ? 1 : -1;
+      const bob = Math.round(Math.sin(time * 4) * 1.5) * dir;
+      g.lineJoin = 'round';
+      g.lineCap = 'round';
+      for (const step of [0, 4]) {
+        const tip = cy + dir * (3 - step) + bob;
+        const back = tip - dir * 4;
+        g.beginPath();
+        g.moveTo(x.x - 5, back);
+        g.lineTo(x.x, tip);
+        g.lineTo(x.x + 5, back);
+        g.strokeStyle = 'rgba(40, 24, 16, 0.75)';
+        g.lineWidth = 3.4;
+        g.stroke();
+        g.strokeStyle = step ? 'rgba(255, 244, 196, 0.75)' : '#fff4c4';
+        g.lineWidth = 1.8;
+        g.stroke();
+      }
+      g.restore();
+    }
+  }
+
   /** A bobbing hint over what you can interact with. */
   private drawInteractMarker(w: World, time: number): void {
     const it = w.interactable;
     // on touch the Talk button itself stands beside the hero (ui/Touch.tsx)
     if (!it || this.touchMode) return;
     const g = this.g;
-    const img = pixelText(it.kind === 'npc' ? 'TALK' : it.kind === 'waystone' ? 'TRAVEL' : 'EXIT', '#ffffff');
+    const img = pixelText(it.kind === 'npc' ? 'TALK' : it.kind === 'waystone' ? 'TRAVEL' : it.kind === 'exit' && it.door && !w.region.interior ? 'ENTER' : 'EXIT', '#ffffff');
     const y = Math.round(it.y - 34 + Math.sin(time * 4) * 1.5);
     g.drawImage(img, Math.round(it.x - img.width / 2), y);
   }

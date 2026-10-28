@@ -26,6 +26,7 @@ import { learnLooks } from '../progress/wardrobe';
 import { addParagonXp, paragonXp } from '../progress/paragon';
 import { separate, updateEnemy, updatePuppet } from './ai';
 import { refreshPets, summonPet, updatePets } from './pets';
+import { spawnFolk, updateFolk, type Folk } from './folk';
 import { updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type TileMap } from './map';
@@ -234,6 +235,10 @@ export class World {
   private readonly packed = new Set<TileMap['markers'][number]>();
   props: { x: number; y: number; prop: string }[] = [];
   chickens: { x: number; y: number; vx: number; vy: number; t: number; face: number }[] = [];
+  /** The people of the place going about their day (sim/folk.ts): decoration, on their own random numbers. */
+  folk: Folk[] = [];
+  private folkRand: () => number = () => 0.5;
+  private readonly folkSeed: number;
   /** This run's tallies (for the report and the reward screen). */
   run = { xp: 0, gold: 0, kills: 0, bosses: 0, items: [] as Item[] };
   /** The story here: the region's state, its events, the lines people say (sim/story.ts). */
@@ -299,6 +304,7 @@ export class World {
     this.hero = o.hero;
     this.settings = o.settings;
     this.rand = rng(o.seed);
+    this.folkSeed = o.seed;
     this.build = buildHero(o.hero);
     this.flow = new Int16Array(this.map.w * this.map.h);
     this.encounters = this.region.encounters.map((def, index) => ({ def, index, state: 'idle', wave: 0, waveT: 0 }));
@@ -315,6 +321,7 @@ export class World {
     this.shownKey = this.shownMarkers();
     this.player = this.newPlayer(spawn.x, spawn.y);
     this.spawnContent();
+    this.resetFolk();
     this.callCompanions();
     // the maps' fog of war: rooms indoors are small enough to know at a glance
     this.fog = loadFog(this.hero, this.region.id, this.map.w, this.map.h);
@@ -477,6 +484,7 @@ export class World {
       // a foe the story brings in now (Vosk at the head of the Host, once the Standard falls)
       if (m.kind === 'pack' && !this.packed.has(pm)) this.addPack(pm, pos, true);
     }
+    this.resetFolk();
     // those the story has sent away (the blockade broken, the dead laid to rest) go now
     for (const st of this.packs) {
       if (!st.cond || st.gone || holds(this.storyHero, st.cond)) continue;
@@ -488,6 +496,23 @@ export class World {
         this.addFx({ kind: 'smoke', x: e.x, y: e.y, life: 0.6, size: 8, color: '#8a8494' });
       }
     }
+  }
+
+  /**
+   * The people come out (or go in): in a town, or round a village's square, while the place is calm (not at
+   * night, burning or under a gloom; never indoors or underground).
+   */
+  private resetFolk(): void {
+    const st = this.storyState;
+    const calm = !this.region.interior && this.region.kind !== 'dungeon' && !this.dark && !st?.burning && !st?.gloom;
+    if (!calm) {
+      this.folk = [];
+      return;
+    }
+    const squares = this.map.markers.filter((pm) => pm.marker.kind === 'waystone').map(markerPos);
+    const r = spawnFolk(this.map, this.folkSeed, this.region.kind === 'town', this.region.kind === 'town' ? null : squares);
+    this.folk = r.folk;
+    this.folkRand = r.rand;
   }
 
   /** Is the region at peace right now? (A village under attack is not.) */
@@ -1153,7 +1178,9 @@ export class World {
     // the mount: called standing still; moving, acting or a fight stops the call. Acting while riding
     // gets the hero down first, and the action happens
     if (inp.mount) this.toggleMount();
-    const acting = inp.casts.length > 0 || !!inp.holdBasic;
+    // indoors is peaceful: no spells or blows in an inn or a chapel (the skill bar is put away: ui/DesktopBar.tsx, ui/Touch.tsx)
+    const peace = !!this.region.interior;
+    const acting = !peace && (inp.casts.length > 0 || !!inp.holdBasic);
     if (p.summon > 0) {
       if (moving || acting || this.mountRefusal()) p.summon = 0;
       else {
@@ -1168,11 +1195,11 @@ export class World {
     }
     if (p.riding && acting) this.dismount();
     // skills
-    for (const req of inp.casts) {
+    for (const req of peace ? [] : inp.casts) {
       const r = this.withMouse(req);
       if (tryCast(this, r) && req.slot !== 'basic' && req.slot !== 'dodge') this.tutorialSkillCast();
     }
-    if (inp.holdBasic && p.cds.basic.charges > 0) tryCast(this, this.withMouse(inp.holdBasic));
+    if (!peace && inp.holdBasic && p.cds.basic.charges > 0) tryCast(this, this.withMouse(inp.holdBasic));
     updateWindup(this, dt);
     updateChannel(this, dt);
     if (inp.potion) this.drinkPotion();
@@ -2087,6 +2114,8 @@ export class World {
   }
 
   private updateAmbient(dt: number): void {
+    // villagers keep indoors while the story fights in the streets
+    if (this.folk.length && !this.story.fighting) updateFolk(this.folk, this.map, this.folkRand, dt);
     for (const c of this.chickens) {
       c.t -= dt;
       if (c.t <= 0) {

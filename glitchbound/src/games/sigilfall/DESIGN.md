@@ -39,8 +39,8 @@ touch run exactly the same game.
 `requestAnimationFrame` measures real time, clamped to 0.1 s (a suspended tab never simulates a jump), and the
 world steps in fixed 1/60 s slices. Heavy hits apply a short hit-stop. The world pauses when a menu, dialogue,
 death or reward screen is open, when the tab is hidden, and when the arcade asks for a pause (`pauseKey`).
-Sound is synthesized with Web Audio (effects and a small procedural score with a boss theme), starts on the
-first tap or key, and has master, music and effects volumes and a mute switch.
+Sound is synthesized with Web Audio (effects, and a procedural score with a song for every land and a boss
+theme: audio/songs.ts), starts on the first tap or key, and has master, music and effects volumes and a mute switch.
 
 ## Controls
 

@@ -907,3 +907,39 @@ Object.assign(TOWNSFOLK_LOOKS, {
   // Kit: soot to the elbows, a leather apron too big for him
   'apprentice-kit': folk('#d8a07a', '#3a2418', 'short', ['tunic', '#7a6a5a'], '#3a3028', { apron: '#5a3a24' }),
 } satisfies Record<string, HeroLook>);
+
+/* -------------------------------------------------------------- passers-by */
+
+const SKINS = ['#f2c8a0', '#e0a87e', '#c88a64', '#8a5a3a'];
+const HAIRS = ['#2a1a14', '#5a3a24', '#8a5a2a', '#c9a35a', '#d8d0c0', '#7a2a1a'];
+/** Homespun colors: wool, linen, dyed blues, greens and reds, all a little faded. */
+const CLOTH = ['#6a8a3a', '#3a6a8a', '#8a3a3a', '#c9a35a', '#6a4a7a', '#8a6a4a', '#4a6a5a', '#a8a090', '#5a5a7a', '#9a5a3a'];
+const LEGS = ['#5a4a3a', '#3a3a4a', '#4a3a2a', '#6a5a4a'];
+const passers = new Map<number, HeroLook>();
+
+/** A villager walking about a town (sim/folk.ts): one of 64 made from homespun colors, the same each time. */
+export function passerbyLook(n: number): HeroLook {
+  const hit = passers.get(n);
+  if (hit) return hit;
+  // a small, fixed shuffle of n so neighbouring numbers don't look alike
+  const pick = <T>(list: T[], k: number): T => list[Math.abs((n * 2654435761 + k * 40503) >>> 7) % list.length]!;
+  const female = pick([true, false], 1);
+  const hat = pick([null, null, 'cap', 'hood'] as const, 2);
+  const look: HeroLook = {
+    skin: pick(SKINS, 3),
+    hair: pick(HAIRS, 4),
+    hairStyle: female ? pick(['long', 'pony'] as const, 5) : 'short',
+    head: hat ? { style: hat, mat: 'cloth', tint: pick(CLOTH, 6), r: 'common' } : null,
+    chest: { style: female && pick([true, false], 7) ? 'robe' : 'tunic', mat: 'cloth', tint: pick(CLOTH, 8), r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: pick(LEGS, 9), r: 'common' },
+    hands: null,
+    feet: { style: pick(['shoes', 'boots'] as const, 10), mat: 'leather', tint: '#5a3a24', r: 'common' },
+    quiver: null,
+    cape: null,
+    female,
+    beard: !female && pick([true, false, false], 11) ? pick(HAIRS, 4) : null,
+    apron: pick([true, false, false], 12) ? pick(['#e8e0d0', '#c9b896', '#8a6a4a'], 13) : null,
+  };
+  passers.set(n, look);
+  return look;
+}

@@ -1233,8 +1233,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
 const ART_CREDITS = [
   'Royal Keep and Royal Keep Seasons by bubbabba',
   'Magic Spells VFX and Magic Circles VFX by Willosuna',
-  'Simple Summer, Poison Swamp and Guard & Magic Towers by CraftPix.net',
-  'Greenvale Meadows, Gloomvault Crypt, Mirefen Bog, Sylvanreach Grove and Blossom Shrine by Certainity',
+  'Gloomvault Crypt by Certainity',
 ];
 
 /** The hero in everything they wear (and the Wardrobe looks over it); tap to turn them around. */

@@ -16,7 +16,7 @@ export const THORNVALE = wildRegion(
     at: [40, 79],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'thornvale',
     blurb: 'Farms, wolf hills, spider woods and a bandit gang dug in under Gallows Hill. Millbrook needs help.',
     states: [
       // the night the blockade at the mill burns, and the morning after
@@ -32,7 +32,7 @@ export const THORNVALE = wildRegion(
     forest: 0.3,
     scatter: { trees: 2, bushes: 1.4, rocks: 0.6, flowers: 6 },
     water: { kind: 'lakes', amount: 0.3 },
-    hubs: [{ at: [0.38, 0.3], npcs: ['reeve-aldous', 'hanna', 'tobin', 'sefa', 'pim'], houses: 6 }],
+    hubs: [{ at: [0.38, 0.3], plan: 'cross', npcs: ['reeve-aldous', 'hanna', 'tobin', 'sefa', 'pim'], houses: 6 }],
     exits: [
       { side: 'n', at: 0.36, to: 'briarhollow', label: 'North road to Briarhollow' },
       { side: 'e', at: 0.58, to: 'saltmarsh', label: 'The coast road', minLevel: 13 },

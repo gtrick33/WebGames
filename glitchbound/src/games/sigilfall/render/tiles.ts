@@ -58,6 +58,10 @@ export interface Scenery {
   art: WorldLook | null;
   torches: { x: number; y: number }[];
   braziers: { x: number; y: number }[];
+  /** What the packed art stands that gives light (lamps, torches, campfires), and how far it reaches. */
+  lights: { x: number; y: number; r: number }[];
+  /** Mist banks lying over a frightening land's water and hollows (THEMES dread): where, how big, and a phase. */
+  mist: { x: number; y: number; w: number; h: number; ph: number }[];
   water: number[];
   illusions: number[];
   theme: Theme;
@@ -78,18 +82,41 @@ export function buildScenery(map: TileMap, region: RegionDef, look: WorldLook | 
     if (map.kind[i] === K.Illusion) illusions.push(i);
   }
   const art = look && !THEMES[region.theme].indoor ? look : null;
-  const ground: GroundLayer = art ? new WorldGround(map, { ground: art.ground, over: art.over, rk: art.rk }, art.recipe, buildDecals(map, region)) : new Ground(map, region);
-  const sc: Scenery = { ground, objects: [], art, torches: [], braziers: [], water, illusions, theme: region.theme };
+  const ground: GroundLayer = art ? new WorldGround(map, art.rk, art.recipe, buildDecals(map, region)) : new Ground(map, region);
+  const sc: Scenery = { ground, objects: [], art, torches: [], braziers: [], lights: [], mist: mistBanks(map, THEMES[region.theme].dread?.mist ?? 0), water, illusions, theme: region.theme };
   let handled = new Set<number>();
   if (art) {
-    // the capital is built from the architecture pack; everywhere else is CraftPix-led
-    const built = buildWorldObjects(map, { props: art.props, rk: art.rk }, art.recipe, region.kind === 'town');
+    // every outdoor land is drawn from the one pack (VISUAL_BIBLE.md §1)
+    const built = buildWorldObjects(map, { rk: art.rk, gc: art.gc }, art.recipe, region.kind === 'town');
     sc.objects.push(...built.objects);
+    sc.lights = built.lights;
     handled = built.handled;
   }
   buildObjects(sc, map, region, !!art, handled);
   sc.objects.sort((a, b) => a.y - b.y);
   return sc;
+}
+
+/**
+ * Mist in a frightening land: banks lying over still water and along its banks, and in the open hollows
+ * between the woods, more of them the mistier the land. Placed by the map, so the same banks lie in the same
+ * places every visit.
+ */
+function mistBanks(map: TileMap, amount: number): Scenery['mist'] {
+  const banks: Scenery['mist'] = [];
+  if (amount <= 0) return banks;
+  for (let ty = 2; ty < map.h - 2; ty += 3) {
+    for (let tx = 2; tx < map.w - 2; tx += 3) {
+      const k = map.kind[ty * map.w + tx]!;
+      const wet = k === K.Water;
+      const low = k === K.Floor || k === K.Deco || k === K.Path || k === K.Bridge;
+      if (!wet && !low) continue;
+      if (hash2(tx, ty, 404) > amount * (wet ? 0.3 : 0.07)) continue;
+      const h = hash2(tx, ty, 405);
+      banks.push({ x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, w: 70 + h * 90, h: 26 + h * 26, ph: hash2(tx, ty, 406) * 100 });
+    }
+  }
+  return banks;
 }
 
 /* -------------------------------------------------------------- objects */
@@ -176,12 +203,6 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
         sc.objects.push({ x, y: bottom - 4, c, dx: -8, dy: -(c.height / D) + 4 + (TILE - (c.height / D) < 0 ? 0 : 0), fade: false, kind: 'fence' });
         break;
       }
-      case K.HouseAnchor: {
-        const c = building('house', 4, 3, Math.floor(h * 1000)).toCanvas();
-        // the anchor is the footprint's bottom-left: 4 tiles wide, 3 tall
-        sc.objects.push({ x: tx * TILE + 32, y: bottom - 2, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: true, kind: 'house' });
-        break;
-      }
       case K.Pillar: {
         const c = pillar();
         sc.objects.push({ x, y: bottom - 3, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: true, kind: 'pillar' });
@@ -212,6 +233,12 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
         break;
     }
   }
+  // without the packed art, each building painted over the part of its lot the pack's picture would stand on
+  for (const b of artMode ? [] : map.buildings) {
+    const { lot } = b;
+    const c = building(b.style, lot.w, lot.h, lot.tx * 31 + lot.ty + lot.h - 1).toCanvas();
+    sc.objects.push({ x: (lot.tx + lot.w / 2) * TILE, y: (lot.ty + lot.h) * TILE - 2, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 3, fade: true, kind: 'building' });
+  }
   for (const pm of map.markers) {
     if (handled.has(pm.ty * map.w + pm.tx)) continue;
     const m = pm.marker;
@@ -228,11 +255,6 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
     if (m.kind === 'waystone') {
       const c = waystone();
       sc.objects.push({ x, y: bottom - 5, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: false, kind: 'waystone' });
-    }
-    if (m.kind === 'building') {
-      const c = building(m.style, m.w, m.h, pm.tx * 31 + pm.ty).toCanvas();
-      // the marker is the footprint's bottom-left tile; the picture's bottom edge is the footprint's
-      sc.objects.push({ x: (pm.tx + m.w / 2) * TILE, y: bottom - 2, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 3, fade: true, kind: 'building' });
     }
     if (m.kind === 'exit' && !look.indoor && !m.door) {
       if (REGIONS[m.to]?.kind === 'dungeon') {

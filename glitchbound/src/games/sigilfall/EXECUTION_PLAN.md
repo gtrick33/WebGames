@@ -53,6 +53,21 @@ Status words: **done** (built, tested, screenshot-checked), **partial** (what is
 - **Act IV's Gates and Act V** (`26ee957e`), **Act VI, Crownfall, the Epilogue and the postgame** (`61ed6e92`).
 - **Riftstone and Paragon** (2026-10-27): the old Riftstone branch (`sigilfall-phase5`) brought into the new story
   as an endless ladder past Mythic, climbed as Diablo's rifts are, with Paragon levels past 60. Save v11.
+- **One art language** (2026-10-28): every outdoor land drawn in Royal Keep alone (ASSET_AUDIT.md); buildings solid
+  where drawn, entered through their painted doors (marked); straight roads; indoors peaceful, the skill bar put away.
+- **Close, not vast** (2026-10-28): villages along streets, townsfolk walking about, Briarhollow at its plan's
+  size, Emberwick's rows of houses and market, smaller lands with scenes in their open ground, cliffs in the bare
+  lands, torches and banners on the walls (VISUAL_BIBLE.md §1).
+- **Villages small, full and each its own** (2026-10-28): four village plans (crossroads, market street, green,
+  walled hold) with inns, smithies, stables, chapels and keeps among the houses, props at every step; Briarhollow's
+  square and Emberwick's market filled, their lawns built on (VISUAL_BIBLE.md §1).
+- **Every heart its own, nothing without a reason, no bare ground** (2026-10-28): a centerpiece and square by
+  land, stalls with their goods, each building's things by its front, people at their work; twice the scenes in
+  the wilds and eight new kinds; Briarhollow's gate towers set into the wall (VISUAL_BIBLE.md §1).
+- **Lands that frighten, a song for every land** (2026-10-28): fens, the haunted wood, barrows, the dead lake, the
+  blight and the moors under a dusk of their own with lamps along their roads, iron-walled graveyards and mist; a
+  song of its own for every land (and the inns, the chapel, the Great Hall, a siege night, five dungeons), with
+  the land's creatures in the dark (VISUAL_BIBLE.md §1, sound).
 
 ## Rules carried through every phase
 

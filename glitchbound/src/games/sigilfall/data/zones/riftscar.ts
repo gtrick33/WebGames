@@ -19,7 +19,7 @@ export const RIFTSCAR = wildRegion(
     at: [30, -34],
     dark: false,
     safe: false,
-    music: 'cave',
+    music: 'riftscar',
     states: [{ id: 'tear-open', when: until('the-pale-herald'), gloom: true }],
     blurb: 'Glass plains under a torn sky, where the Pale Herald feeds the Tear from his spire.',
   },
@@ -32,7 +32,7 @@ export const RIFTSCAR = wildRegion(
     forest: 0.26,
     scatter: { trees: 1, bushes: 0.6, rocks: 2, flowers: 1 },
     water: { kind: 'lakes', amount: 0.3 },
-    hubs: [{ at: [0.78, 0.8], npcs: ['archmage-halloran', 'steward-pell', 'arcanist-sabine', 'wardmage-tamsin'], houses: 5 }],
+    hubs: [{ at: [0.78, 0.8], plan: 'court', npcs: ['archmage-halloran', 'steward-pell', 'arcanist-sabine', 'wardmage-tamsin'], houses: 5 }],
     exits: [
       { side: 's', at: 0.6, to: 'blightwood', label: 'South track to the Blightwood' },
       { side: 'e', at: 0.62, to: 'weeping-woods', label: 'East track to the Weeping Woods' },

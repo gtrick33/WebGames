@@ -26,7 +26,7 @@ export const PALE_REACH = wildRegion(
     at: [56, -66],
     dark: false,
     safe: false,
-    music: 'crypt',
+    music: 'pale-reach',
     blurb: 'The Hallow King’s frozen land, where the dead stand in ranks and Duskspire rises in the north.',
     states: [
       { id: 'host-waits', when: until('march-the-breach'), gloom: true },
@@ -42,7 +42,7 @@ export const PALE_REACH = wildRegion(
     forest: 0.26,
     scatter: { trees: 1, bushes: 0.6, rocks: 2, flowers: 0.4 },
     water: { kind: 'lakes', amount: 0.25 },
-    hubs: [{ at: [0.5, 0.84], npcs: ['mara-at-the-reach', 'orren-at-the-reach', 'quartermaster-holt', 'outrider-maeve'], houses: 4 }],
+    hubs: [{ at: [0.5, 0.84], plan: 'cross', npcs: ['mara-at-the-reach', 'orren-at-the-reach', 'quartermaster-holt', 'outrider-maeve'], houses: 4 }],
     exits: [{ side: 's', at: 0.5, to: 'hollowmere', label: 'South road to Hollowmere' }],
     pois: [
       // the King's citadel: the way in needs all seven sigils (sim/world.ts exitLock)

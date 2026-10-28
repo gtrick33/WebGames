@@ -8,7 +8,7 @@ import { FOG_CELL, fogSeen, loadFog, revealFog, SEEN_ALL, storeFog } from '../sr
 import { migrate, SAVE_VERSION, saveText } from '../src/games/sigilfall/progress/save';
 import { mergeSaveText } from '../src/platform/cloudMerge';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
-import { TILE } from '../src/games/sigilfall/sim/map';
+import { parseRegion, TILE } from '../src/games/sigilfall/sim/map';
 import { objectiveTarget } from '../src/games/sigilfall/sim/objective';
 import { nextRegion } from '../src/games/sigilfall/sim/routes';
 import type { World } from '../src/games/sigilfall/sim/world';
@@ -227,14 +227,17 @@ describe('Sigilfall: the save follows the hero between devices', () => {
   });
 });
 
-describe('Sigilfall: the first lands, laid out larger', () => {
-  it('the Whisperwood keeps every marker of its drawing, once, and has more packs; Briarhollow has room', () => {
+describe('Sigilfall: the first lands', () => {
+  it('the Whisperwood keeps every marker of its drawing, once, and has more packs; Briarhollow is built close', () => {
     const wood = REGIONS.whisperwood;
     expect(wood.map[0]!.length).toBeGreaterThanOrEqual(110);
     const n: Record<string, number> = {};
     for (const l of wood.map) for (const ch of l) if (ch in wood.markers) n[ch] = (n[ch] ?? 0) + 1;
     for (const ch of ['P', 'R', 'S', 'G', 'e', '1', '2', '3', '4', '5', '6', '7', '8', '9']) expect(n[ch], ch).toBe(1);
     expect((wood.placed ?? []).filter((p) => p.marker.kind === 'pack').length).toBeGreaterThanOrEqual(8);
-    expect(REGIONS.briarhollow.map[0]!.length).toBeGreaterThanOrEqual(80);
+    // the village at its plan's own size (the owner found it "vast" laid out roomier), its houses along its roads
+    const briar = parseRegion(REGIONS.briarhollow);
+    expect(briar.w).toBeLessThanOrEqual(64);
+    expect(briar.buildings.length).toBeGreaterThanOrEqual(20);
   });
 });

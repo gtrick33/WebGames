@@ -18,7 +18,7 @@ export const IRONPEAK = wildRegion(
     at: [80, 52],
     dark: false,
     safe: false,
-    music: 'cave',
+    music: 'ironpeak',
     blurb: 'High passes, frost rams, griffons, and the Host’s miners at the dwarves’ stolen forge.',
   },
   {
@@ -30,7 +30,7 @@ export const IRONPEAK = wildRegion(
     forest: 0.34,
     scatter: { trees: 1.6, bushes: 0.6, rocks: 3, flowers: 1.6 },
     water: { kind: 'river', from: 'n', to: 's' },
-    hubs: [{ at: [0.3, 0.55], npcs: ['thane-borrik', 'hilda-stoutbrew', 'gemcutter-oz', 'brenna'], houses: 6 }],
+    hubs: [{ at: [0.3, 0.55], plan: 'court', npcs: ['thane-borrik', 'hilda-stoutbrew', 'gemcutter-oz', 'brenna'], houses: 6 }],
     exits: [
       { side: 's', at: 0.5, to: 'amberfield', label: 'South road to the Amberfield' },
       { side: 'w', at: 0.55, to: 'ashen-barrows', label: 'West pass to the Ashen Barrows', minLevel: 22 },

@@ -19,7 +19,7 @@ export const GRIMWARD = wildRegion(
     at: [52, 22],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'grimward',
     blurb: 'Grey heath, gibbets and standing stones, and wolves that walk like men under the King’s curse.',
   },
   {
@@ -31,7 +31,7 @@ export const GRIMWARD = wildRegion(
     forest: 0.16,
     scatter: { trees: 1.1, bushes: 2.4, rocks: 1.8, flowers: 2.2 },
     water: { kind: 'lakes', amount: 0.35 },
-    hubs: [{ at: [0.55, 0.7], npcs: ['huntmaster-orla', 'innkeep-bram', 'tinker-vey', 'carter-joss'], houses: 6 }],
+    hubs: [{ at: [0.55, 0.7], plan: 'cross', npcs: ['huntmaster-orla', 'innkeep-bram', 'tinker-vey', 'carter-joss'], houses: 6 }],
     exits: [
       { side: 's', at: 0.6, to: 'ashen-barrows', label: 'South road to the Ashen Barrows' },
       { side: 'w', at: 0.45, to: 'glimmerwood', label: 'West road to the Glimmerwood', minLevel: 30 },

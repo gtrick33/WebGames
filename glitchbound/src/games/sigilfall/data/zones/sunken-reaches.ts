@@ -24,7 +24,7 @@ export const SUNKEN_REACHES = wildRegion(
     at: [104, -6],
     dark: false,
     safe: false,
-    music: 'coast',
+    music: 'sunken-reaches',
     blurb: 'Vaelmoor’s drowned harbor city under the tide, where the drowned fleet makes its home.',
     states: [{ id: 'fleet-burned', when: after('the-fireships'), smoke: true }],
   },
@@ -38,7 +38,7 @@ export const SUNKEN_REACHES = wildRegion(
     scatter: { trees: 1, bushes: 1.2, rocks: 1.6, flowers: 0.6 },
     water: { kind: 'sea', side: 'e', depth: 0.28 },
     sand: 'shore',
-    hubs: [{ at: [0.24, 0.78], npcs: ['captain-isolde', 'mother-kelp', 'salvager-finn', 'diver-mabry'], houses: 5 }],
+    hubs: [{ at: [0.24, 0.78], plan: 'street', npcs: ['captain-isolde', 'mother-kelp', 'salvager-finn', 'diver-mabry'], houses: 5 }],
     exits: [
       { side: 's', at: 0.3, to: 'sablewind', label: 'South road to Sablewind Canyon' },
       { side: 'w', at: 0.45, to: 'bonefields', label: 'West road to the Bonefields' },
