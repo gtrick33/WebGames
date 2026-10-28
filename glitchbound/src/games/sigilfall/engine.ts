@@ -288,6 +288,9 @@ export class SigilEngine {
   private frame(now: number): void {
     const dt = Math.min(0.1, Math.max(0, (now - this.last) / 1000));
     this.last = now;
+    // sound follows the pause, however it was left (the pause menu, a panel opened from it, the title): a
+    // minimized game paused itself and used to come back silent
+    this.sound.suspend(this.hidden || (this.ui.screen === 'game' && this.ui.pause));
     const w = this.world;
     if (!w || this.ui.screen !== 'game') {
       if (this.ui.screen !== 'game') this.sound.setMusic('title');
