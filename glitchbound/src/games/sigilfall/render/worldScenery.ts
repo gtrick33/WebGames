@@ -1,39 +1,30 @@
+import { buildingPic } from '../data/buildingArt';
 import { hash2, noise2 } from '../core/math';
 import { REGIONS } from '../data/regions';
-import type { Marker } from '../data/types';
 import { K, TILE, type TileMap } from '../sim/map';
-import type { PropAtlas, Rect, WorldArt } from './art/atlas';
+import type { AnimInfo, PropAtlas, Rect, WorldArt } from './art/atlas';
 import type { Recipe } from './art/recipes';
 import type { Cnv } from './pixel';
+import { farmFields } from './worldGround';
 
-/** What a small plant is for: where it may grow (worldScenery's flora rule). */
-type FloraRole = 'shade' | 'field' | 'garden' | 'bloom' | 'bush' | 'grass';
+/** What a small plant is for: where it may grow (the flora rule below). */
+type FloraRole = 'shade' | 'field' | 'bloom' | 'water' | 'grass';
 const floraRole = (ref: string): FloraRole =>
-  /mushroom|toadstool|fern|sticks|log/.test(ref)
-    ? 'shade'
-    : /hay/.test(ref)
-      ? 'field'
-      : /sunflower/.test(ref)
-        ? 'garden'
-        : /flower|bellflower|rafflesia|blossom/.test(ref)
-          ? 'bloom'
-          : /bush|shrub/.test(ref)
-            ? 'bush'
-            : 'grass';
+  /mushroom|stump|log/.test(ref) ? 'shade' : /hay/.test(ref) ? 'field' : /flower/.test(ref) ? 'bloom' : /reeds/.test(ref) ? 'water' : 'grass';
 const floraFor = (list: string[], roles: FloraRole[]): string[] => list.filter((ref) => roles.includes(floraRole(ref)));
 
 /** The low rocks of a land's set (boulders stand only in boulder fields, which are walls). */
 const lowRocks = (rocks: string[]): string[] => {
-  const low = rocks.filter((id) => !id.includes('boulder'));
-  return low.length ? low : ['cps:rock-01'];
+  const low = rocks.filter((id) => !/rock_5|rock_tall|mossy_2/.test(id));
+  return low.length ? low : ['rock_3'];
 };
 
 /**
- * The standing things of an outdoor land in the approved hierarchy: CraftPix trees, bushes, rocks,
- * fences, houses, wells, tents, banners and towers lead; Worlds-bundle pieces stand in only for what
- * CraftPix lacks (crates, lamps, signposts, cottages, reeds); Royal Keep (smoothed) builds the capital's
- * houses and every keep and chapel. Placed on the tiles the simulation blocks, so what you see stops you.
- * Things the packs don't have (waystones, shrines, dungeon mouths) keep their procedural pictures.
+ * The standing things of an outdoor land, all of them Royal Keep's (VISUAL_BIBLE.md §1): its trees, bushes,
+ * rocks, flowers, fences (joined to their neighbours), houses and castles (where the map stands them, so what
+ * you see stops you), carts, stalls, tents, lamps and banners. The few story pieces the pack has nothing for
+ * (skulls, bones, cages, crystals) are Gloomvault's; waystones, shrines and dungeon doors keep their own
+ * pictures.
  */
 
 export interface SceneObject {
@@ -46,86 +37,86 @@ export interface SceneObject {
   kind: string;
   src: Rect;
   k: number;
+  anim?: AnimInfo;
 }
-
-type Style = Extract<Marker, { kind: 'building' }>['style'];
 
 export interface SceneArt {
-  props: Record<string, PropAtlas>;
-  /** Royal Keep's smoothed build (architecture), or null. */
-  rk: WorldArt | null;
+  rk: WorldArt;
+  gc: PropAtlas | null;
 }
 
-/** Map props in the packs' words, first one the land has wins per spot. */
+/** Map props in the pack's words (the first one the land has wins per spot). */
 const PROPS: Record<string, string[]> = {
-  crate: ['gv:wooden_crate'],
-  barrel: ['cps:wooden-barrel', 'gv:wooden_barrel'],
-  tent: ['cps:tent'],
-  well: ['cps:well'],
-  campfire: ['cps:campfire'],
-  wreck: ['cpw:broken-boat'],
-  lamp: ['gv:lamp_post'],
-  bones: ['cpw:animal-skeleton'],
-  chickens: [],
-  // the story's dressing (camps, blockades, shrines, aftermaths)
-  cart: ['cps:wooden-cart'],
-  'market-cart': ['gv:market_cart'],
-  hay: ['gv:hay_bale'],
-  'red-banner': ['cps:red-banner'],
-  'blue-banner': ['cps:blue-banner'],
-  flag: ['cps:flag'],
-  scarecrow: ['gv:scarecrow'],
-  bench: ['gv:wooden_bench'],
-  'danger-sign': ['cpw:danger-sign'],
-  windmill: ['cps:windmill'],
-  watchtower: ['cps:watchtower-short'],
-  debris: ['cpw:sticks-2', 'cpw:sticks-4', 'cpw:sticks-5'],
-  lantern: ['cpw:lantern'],
-  'clay-pot': ['gv:clay_pot'],
-  stump: ['cps:tree-stump-short'],
-  rubble: ['gc:rubble'],
+  crate: ['crate', 'crates', 'crate_apples', 'crate_big'],
+  barrel: ['barrel', 'barrels', 'barrel_water', 'keg'],
+  tent: ['tent_red', 'tent_blue', 'tent_small'],
+  well: ['well'],
+  campfire: ['anim:campfire'],
+  wreck: ['boat'],
+  lamp: ['lantern_post', 'lantern_post_double'],
+  cart: ['cart', 'cart_goods'],
+  'market-cart': ['stall_red', 'stall_blue', 'stall_green'],
+  hay: ['hay_bale', 'hay_pile'],
+  'red-banner': ['anim:banner_red'],
+  'blue-banner': ['anim:banner_blue'],
+  flag: ['anim:flag_blue', 'anim:flag_red'],
+  scarecrow: ['training_dummy'],
+  bench: ['bench', 'bench_stone'],
+  'danger-sign': ['notice_board'],
+  windmill: ['cart_hay'],
+  watchtower: ['turret'],
+  debris: ['log', 'wall_rubble', 'stump'],
+  lantern: ['anim:torch_post'],
+  'clay-pot': ['pot_clay', 'pot_big'],
+  stump: ['stump'],
+  rubble: ['wall_rubble', 'rock_3'],
   skulls: ['gc:skulls'],
   'bone-heap': ['gc:scattered_bones'],
   coffin: ['gc:stone_coffin'],
   cage: ['gc:iron_cage'],
-  urn: ['gc:ceramic_urn'],
+  urn: ['pot_big'],
   'skull-banner': ['gc:skull_banner'],
-  'iron-torch': ['gc:iron_torch'],
+  'iron-torch': ['anim:torch_post'],
   altar: ['gc:stone_altar'],
   crystals: ['gc:cyan_crystals'],
-  'standing-stone': ['cpw:boulder-1', 'cpw:boulder-2', 'cpw:boulder-3'],
-};
-
-/** Buildings by style: the capital is Royal Keep's (architecture), the wilds CraftPix-led. */
-const STYLE: Record<Style, { capital: string[]; wild: string[] }> = {
-  house: { capital: ['rk:house_gable_tile', 'rk:house_gable_slate', 'rk:cottage_tile'], wild: ['cps:house'] },
-  tavern: { capital: ['rk:inn'], wild: ['cps:house'] },
-  inn: { capital: ['rk:inn'], wild: ['cps:house'] },
-  shop: { capital: ['rk:house_tall_tile', 'rk:house_tall_slate'], wild: ['cps:house'] },
-  smithy: { capital: ['rk:smithy'], wild: ['gv:blacksmith_hut'] },
-  temple: { capital: ['rk:chapel'], wild: ['rk:chapel'] },
-  keep: { capital: ['rk:keep'], wild: ['rk:keep'] },
-  tower: { capital: ['rk:tower_square_roof'], wild: ['cpt:brick-watchtower-level-2', 'cpt:wooden-watchtower-level-3'] },
-  hall: { capital: ['rk:house_tall_tile'], wild: ['rk:stable'] },
-  lighthouse: { capital: ['cps:magic-stone-tower'], wild: ['cps:magic-stone-tower'] },
+  'standing-stone': ['rock_tall'],
+  anvil: ['anvil'],
+  'weapon-rack': ['rack_swords', 'rack_spears'],
+  stool: ['stool'],
+  table: ['table', 'table_food'],
+  casks: ['barrels'],
+  trough: ['trough'],
+  grindstone: ['grindstone'],
+  candles: ['anim:candelabra'],
+  fountain: ['anim:fountain'],
+  flowerbed: ['flowerbed_red', 'flowerbed_gold', 'flowerbed_violet', 'flowerbed_blue'],
+  planter: ['planter_red', 'planter_gold', 'planter_blue', 'planter_violet'],
+  topiary: ['topiary'],
+  notice: ['notice_board'],
+  statue: ['statue_king', 'statue_queen', 'statue_knight'],
+  target: ['archery_target'],
+  'armor-stand': ['armor_stand'],
 };
 
 /** Every piece the fixed tables name (for the art-integrity test). */
-export const sceneryRefs = (): string[] => [...Object.values(PROPS).flat(), ...Object.values(STYLE).flatMap((s) => [...s.capital, ...s.wild]), 'cps:wooden-fence-horizontal', 'cps:wooden-fence-vertical', 'gv:wooden_signpost', 'rk:pillar', 'rk:pillar_broken', 'rk:keep', 'rk:tower_round_tile'];
+export const sceneryRefs = (): string[] => [...Object.values(PROPS).flat(), 'signpost', 'pillar', 'pillar_broken', 'anim:smoke', 'lilypad', 'lilypad_flower', 'reeds', 'reeds_2', 'bush_small_leaf', 'bush_small_mint', 'hedge_block', 'planter_red', ...Array.from({ length: 16 }, (_, n) => `fence_${n}`)];
 
-export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capital: boolean): { objects: SceneObject[]; handled: Set<number> } {
+export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe): { objects: SceneObject[]; handled: Set<number> } {
   const objects: SceneObject[] = [];
   const handled = new Set<number>();
-  /** A piece by reference ("cps:tree-medium", "rk:keep"). */
-  const find = (ref: string): { c: Cnv; r: Rect; o: [number, number]; k: number; fp?: [number, number] } | null => {
-    const [atlas, name] = ref.split(':') as [string, string];
-    if (atlas === 'rk') {
-      const p = art.rk?.prop[name];
-      return p && art.rk ? { c: art.rk.props, r: p.r, o: p.o, k: art.rk.k, ...(p.fp ? { fp: p.fp } : {}) } : null;
+  const rk = art.rk;
+  /** A piece by name ('tree_big_leaf', 'anim:campfire', 'gc:skulls'): its picture, ground point and scale. */
+  const find = (ref: string): { c: Cnv; r: Rect; o: [number, number]; k: number; anim?: AnimInfo; smoke?: [number, number][] } | null => {
+    if (ref.startsWith('gc:')) {
+      const p = art.gc?.props[ref.slice(3)];
+      return p && art.gc ? { c: art.gc.img, r: p.r, o: p.o, k: art.gc.k } : null;
     }
-    const a = art.props[atlas];
-    const p = a?.props[name];
-    return p && a ? { c: a.img, r: p.r, o: p.o, k: a.k } : null;
+    if (ref.startsWith('anim:')) {
+      const a = rk.anim[ref.slice(5)];
+      return a ? { c: rk.props, r: [a.r[0], a.r[1], a.w, a.h], o: [a.w / 2, a.h], k: rk.k, anim: a } : null;
+    }
+    const p = rk.prop[ref];
+    return p ? { c: rk.props, r: p.r, o: p.o, k: rk.k, ...(p.smoke ? { smoke: p.smoke } : {}) } : null;
   };
   const pick = (list: string[], h: number): string | undefined => {
     const have = list.filter((ref) => find(ref));
@@ -135,29 +126,16 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
   const stand = (ref: string | undefined, x: number, y: number, kind: string, fade = false, sortY = y): SceneObject | null => {
     const p = ref ? find(ref) : null;
     if (!p) return null;
-    const ob: SceneObject = { x, y: sortY, c: p.c, dx: -p.o[0] / p.k, dy: y - sortY - p.o[1] / p.k, fade, kind, src: p.r, k: p.k };
+    const ob: SceneObject = { x, y: sortY, c: p.c, dx: -p.o[0] / p.k, dy: y - sortY - p.o[1] / p.k, fade, kind, src: p.r, k: p.k, ...(p.anim ? { anim: p.anim } : {}) };
     objects.push(ob);
     return ob;
-  };
-  /**
-   * A building on a footprint of `w` tiles whose bottom-left tile is (tx, ty): centered on it, standing on
-   * its bottom edge. Royal Keep buildings carry their own footprint and origin (south-west corner).
-   */
-  const building = (ref: string | undefined, tx: number, ty: number, w: number, shift = 0): void => {
-    const p = ref ? find(ref) : null;
-    if (!p) return;
-    const bottom = (ty + 1) * TILE;
-    const cx = tx * TILE + (w * TILE) / 2 + shift;
-    if (p.fp) {
-      const fpw = p.fp[0] / p.k;
-      const left = cx - fpw / 2;
-      objects.push({ x: cx, y: bottom - 2, c: p.c, dx: left - p.o[0] / p.k - cx, dy: 2 - p.o[1] / p.k, fade: true, kind: 'building', src: p.r, k: p.k });
-    } else objects.push({ x: cx, y: bottom - 2, c: p.c, dx: -p.o[0] / p.k, dy: 2 - p.o[1] / p.k, fade: true, kind: 'building', src: p.r, k: p.k });
   };
 
   const kindAt = (x: number, y: number): number => (x < 0 || y < 0 || x >= map.w || y >= map.h ? K.Wall : map.kind[y * map.w + x]!);
   const open = (k: number): boolean => k === K.Floor || k === K.Deco || k === K.Path || k === K.Cobble || k === K.Sand || k === K.Bridge;
   const fenceAt = (x: number, y: number): boolean => kindAt(x, y) === K.Fence;
+  const field = farmFields(map);
+  const calm = !r.water?.hue;
 
   for (let i = 0; i < map.w * map.h; i++) {
     const tx = i % map.w;
@@ -169,47 +147,69 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
     switch (k) {
       // off the tile grid a little, so a copse reads as grown, not planted in rows
       case K.Tree:
-        stand(pick(r.trees, hash2(tx, ty, 91)), cx + (h - 0.5) * 10, bottom - 2 + (hash2(tx, ty, 95) - 0.5) * 5, 'tree', true);
+        stand(pick(r.trees, hash2(tx, ty, 91)), cx + (h - 0.5) * 8, bottom - 2 + (hash2(tx, ty, 95) - 0.5) * 5, 'tree', true);
         break;
       case K.Bush:
       case K.Bramble:
-        stand(pick(r.bushes, h), cx + (hash2(tx, ty, 96) - 0.5) * 7, bottom - 3, 'bush');
+        stand(pick(r.bushes, h), cx + (hash2(tx, ty, 96) - 0.5) * 5, bottom - 3, 'bush');
+        break;
+      case K.Illusion:
+        // a hedge that isn't quite there (the secret way through)
+        stand('hedge_block', cx, bottom - 1, 'bush');
         break;
       case K.Rock:
         // a lone rock is low (shots fly over it, sim/map.ts): never one of the land's boulders
         stand(pick(lowRocks(r.rocks), h), cx, bottom - 4, 'rock');
         break;
       case K.Fence: {
-        // CraftPix fence runs: a rail east-west, a rail north-south, and a post where they turn
-        const ew = fenceAt(tx - 1, ty) || fenceAt(tx + 1, ty);
-        const ns = fenceAt(tx, ty - 1) || fenceAt(tx, ty + 1);
-        if (ew || !ns) stand('cps:wooden-fence-horizontal', cx, bottom - 3, 'fence');
-        if (ns) stand('cps:wooden-fence-vertical', cx, bottom - 1, 'fence');
+        // the pack's fences join themselves: 1 north, 2 east, 4 south, 8 west
+        const n = (fenceAt(tx, ty - 1) ? 1 : 0) + (fenceAt(tx + 1, ty) ? 2 : 0) + (fenceAt(tx, ty + 1) ? 4 : 0) + (fenceAt(tx - 1, ty) ? 8 : 0);
+        const p = find(`fence_${n}`);
+        if (p) objects.push({ x: cx, y: bottom - 3, c: p.c, dx: -TILE / 2, dy: 3 - p.o[1] / p.k, fade: false, kind: 'fence', src: p.r, k: p.k });
         break;
       }
-      case K.HouseAnchor:
-        building(capital ? pick(STYLE.house.capital, h) : pick(r.houses, h), tx, ty, 4);
-        break;
       case K.Pillar:
         // a ruin's standing stones are the land's own (graves on the moors, crystals in the fey wood)
-        stand(pick(r.ruins ?? ['rk:pillar', 'rk:pillar_broken'], h), cx, bottom - 3, 'pillar', true);
+        stand(pick(r.ruins ?? ['pillar', 'pillar_broken'], h), cx, bottom - 3, 'pillar', true);
         break;
       case K.Wall: {
         // woods and boulder fields: about half the tiles carry a piece (thicker along the clearing), at random
-        // and well off the grid (it was every other tile, which read as a checkerboard of trees)
+        // and well off the grid, big trees in the deep wood and every size at its edge
         const edge = open(kindAt(tx, ty + 1)) || open(kindAt(tx, ty - 1)) || open(kindAt(tx - 1, ty)) || open(kindAt(tx + 1, ty));
         const near = edge || open(kindAt(tx, ty + 2)) || open(kindAt(tx + 2, ty)) || open(kindAt(tx - 2, ty));
-        if (hash2(tx, ty, 90) > (near ? 0.8 : 0.52)) break;
-        const jx = (hash2(tx, ty, 92) - 0.5) * 14;
-        const jy = (hash2(tx, ty, 93) - 0.5) * 9;
-        if (r.edge === 'forest') stand(pick(r.trees, hash2(tx, ty, 94)), cx + jx, bottom - 2 + jy, 'tree', near);
-        else stand(pick(h < 0.25 ? r.trees : r.rocks, hash2(tx, ty, 94)), cx + jx, bottom - 2 + jy, 'rock', near);
+        if (hash2(tx, ty, 90) > (near ? 0.62 : 0.4)) break;
+        const jx = (hash2(tx, ty, 92) - 0.5) * 12;
+        const jy = (hash2(tx, ty, 93) - 0.5) * 8;
+        if (r.edge === 'forest') {
+          const deep = near ? r.trees : r.trees.filter((t) => /big|tall|pine_big/.test(t));
+          stand(pick(deep.length ? deep : r.trees, hash2(tx, ty, 94)), cx + jx, bottom - 2 + jy, 'tree', near);
+        } else stand(pick(h < 0.25 ? r.trees : r.rocks, hash2(tx, ty, 94)), cx + jx, bottom - 2 + jy, 'rock', near);
+        break;
+      }
+      case K.Water: {
+        // lily pads on still water, near its banks
+        if (!calm || h > 0.07) break;
+        let bank = false;
+        for (const [dx, dy] of [
+          [0, -1],
+          [1, 0],
+          [0, 1],
+          [-1, 0],
+        ] as const)
+          if (open(kindAt(tx + dx, ty + dy))) bank = true;
+        if (bank) stand(h < 0.025 ? 'lilypad_flower' : 'lilypad', cx + (hash2(tx, ty, 98) - 0.5) * 8, bottom - 4, 'lily', false, ty * TILE);
         break;
       }
       case K.Floor:
       case K.Deco: {
+        // crops in rows on the tilled fields
+        if (field[i]) {
+          if (ty % 2 === 0) stand(hash2(tx, ty, 99) < 0.5 ? 'bush_small_leaf' : 'bush_small_mint', cx + (hash2(tx, ty, 97) - 0.5) * 3, bottom - 5, 'crop');
+          break;
+        }
         if (!r.flora.length) break;
         let rim = false;
+        let shore = false;
         for (const [dx, dy] of [
           [0, -1],
           [1, 0],
@@ -217,12 +217,17 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
           [-1, 0],
         ] as const) {
           const nk = kindAt(tx + dx, ty + dy);
-          if (nk === K.Wall || nk === K.Tree || nk === K.Water || nk === K.Rock) rim = true;
+          if (nk === K.Wall || nk === K.Tree || nk === K.Rock) rim = true;
+          if (nk === K.Water) shore = true;
         }
-        // plants grow where they would: mushrooms, ferns and undergrowth at the foot of woods, rocks and water;
-        // flowers and hay by houses, fences and fields; flowers in the meadows; only grass out in the open
-        // (sunflowers and toadstools sprinkled over every field looked like a toy box)
-        let field = k === K.Deco;
+        // reeds where the land meets still water
+        if (shore && calm && h > 0.7) {
+          stand(h > 0.85 ? 'reeds' : 'reeds_2', cx + (hash2(tx, ty, 96) - 0.5) * 8, bottom - 2, 'flora');
+          break;
+        }
+        // plants grow where they would: mushrooms and stumps at the foot of woods and rocks, hay by fences,
+        // flowers in the meadows and by houses, only grass out in the open
+        let fenced = k === K.Deco;
         let garden = false;
         for (const [dx, dy] of [
           [0, -1],
@@ -232,18 +237,31 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
           [0, 2],
         ] as const) {
           const nk = kindAt(tx + dx, ty + dy);
-          if (nk === K.Fence) field = true;
-          if (nk === K.House || nk === K.HouseAnchor) garden = true;
+          if (nk === K.Fence) fenced = true;
+          if (nk === K.House) garden = true;
         }
-        const tended = field || garden;
-        const clump = noise2(tx / 7, ty / 7, 191) > 0.64;
-        const fits = floraFor(r.flora, rim ? ['shade', 'bush', 'grass'] : field ? ['field', 'garden', 'grass'] : garden ? ['garden', 'bloom', 'grass'] : clump ? ['bloom', 'grass'] : ['grass']);
-        if (fits.length && h > (rim ? 0.8 : tended ? 0.82 : clump ? 0.84 : 0.975)) stand(pick(fits, hash2(tx, ty, 95)), cx + (hash2(tx, ty, 96) - 0.5) * 10, bottom - 3 - hash2(tx, ty, 97) * 8, 'flora');
+        const clump = noise2(tx / 7, ty / 7, 191) > 0.6;
+        const fits = floraFor(r.flora, rim ? ['shade', 'grass'] : fenced ? ['field', 'bloom', 'grass'] : garden ? ['bloom', 'grass'] : clump ? ['bloom', 'grass'] : ['grass']);
+        if (fits.length && h > (rim ? 0.78 : fenced || garden ? 0.8 : clump ? 0.8 : 0.95)) stand(pick(fits, hash2(tx, ty, 95)), cx + (hash2(tx, ty, 96) - 0.5) * 10, bottom - 3 - hash2(tx, ty, 97) * 8, 'flora');
         break;
       }
       default:
         break;
     }
+  }
+
+  // the buildings where the map stands them (sim/map.ts), each with its yard and its chimneys smoking
+  for (const b of map.buildings) {
+    for (const pic of b.pics) {
+      const p = find(pic.id);
+      const m = buildingPic(pic.id);
+      if (!p || !m) continue;
+      const x = pic.x + m.ox + m.fpw / 2;
+      const top = pic.y - p.o[1] / p.k;
+      objects.push({ x, y: pic.y - 2, c: p.c, dx: pic.x - x, dy: top - (pic.y - 2), fade: true, kind: 'building', src: p.r, k: p.k });
+      for (const [sx, sy] of p.smoke ?? []) stand('anim:smoke', pic.x + sx / p.k, top + sy / p.k, 'smoke', false, pic.y - 1);
+    }
+    for (const y of b.yard) stand(y.prop, (y.tx + 0.5) * TILE, (y.ty + 1) * TILE - 3, 'yard');
   }
 
   for (const pm of map.markers) {
@@ -253,23 +271,15 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, capita
     const idx = pm.ty * map.w + pm.tx;
     const h = hash2(pm.tx, pm.ty, 51);
     if (m.kind === 'prop' && PROPS[m.prop]?.length) {
-      if (stand(pick(PROPS[m.prop]!, h), cx, bottom - 3, m.prop, m.prop === 'well' || m.prop === 'tent')) handled.add(idx);
+      if (stand(pick(PROPS[m.prop]!, h), cx, bottom - 3, m.prop, m.prop === 'well' || m.prop === 'tent' || m.prop === 'market-cart' || m.prop === 'watchtower' || m.prop === 'fountain' || m.prop === 'statue')) handled.add(idx);
     }
-    if (m.kind === 'building') {
-      const s = STYLE[m.style];
-      if (m.style === 'keep' && m.w >= 8) {
-        building('rk:keep', pm.tx, pm.ty, m.w);
-        const off = (m.w * TILE) / 2 - 22;
-        building('rk:tower_round_tile', pm.tx, pm.ty, m.w, -off);
-        building('rk:tower_round_tile', pm.tx, pm.ty, m.w, off);
-      } else building(m.art && find(m.art) ? m.art : pick(capital ? s.capital : s.wild, h), pm.tx, pm.ty, m.w);
+    if (m.kind === 'building') handled.add(idx);
+    // a signpost by the road out (one for a wide gateway); doors are marked where they are (the renderer)
+    if (m.kind === 'exit' && !m.door && REGIONS[m.to]?.kind !== 'dungeon') {
+      if (!objects.some((o) => o.kind === 'sign' && Math.abs(o.x - (cx - 10)) < 3 * TILE && Math.abs(o.y - (bottom - 14)) < 3 * TILE)) stand('signpost', cx - 10, bottom - 14, 'sign');
       handled.add(idx);
     }
-    if (m.kind === 'exit' && REGIONS[m.to]?.kind !== 'dungeon') {
-      if (!objects.some((o) => o.kind === 'sign' && Math.abs(o.x - (cx - 10)) < 3 * TILE && Math.abs(o.y - (bottom - 14)) < 3 * TILE)) {
-        if (stand('gv:wooden_signpost', cx - 10, bottom - 14, 'sign')) handled.add(idx);
-      } else handled.add(idx);
-    }
+    if (m.kind === 'exit' && m.door) handled.add(idx);
   }
   return { objects, handled };
 }

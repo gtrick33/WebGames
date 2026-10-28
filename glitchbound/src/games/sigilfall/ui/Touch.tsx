@@ -27,6 +27,15 @@ const AIM_RANGE = 70;
 export function TouchControls({ engine }: { engine: SigilEngine }) {
   // fingers are let go when the controls go away (a menu opened)
   useEffect(() => () => engine.touch.release(), [engine]);
+  // indoors is peaceful (sim/world.ts): only the stick and the Talk button
+  if (engine.world?.region.interior) {
+    return (
+      <>
+        <Joystick engine={engine} />
+        <InteractButton engine={engine} />
+      </>
+    );
+  }
   return (
     <>
       <Joystick engine={engine} />

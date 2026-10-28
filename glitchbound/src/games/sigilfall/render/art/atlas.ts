@@ -3,11 +3,11 @@ import { canvas, ctx2d, type Cnv } from '../pixel';
 
 /**
  * The packed art from the source packs (scripts/sigilfall-art.mjs builds it into
- * public/games/sigilfall/art): the Royal Keep ground tiles and props in three seasons, its townsfolk,
- * the castle-interior pieces, and the spell effects. Everything is fetched once, when first needed,
- * and drawn from the atlas with a source rectangle.
+ * public/games/sigilfall/art): the Royal Keep ground tiles and props in three seasons (the whole outdoor
+ * world), the few story pieces it lacks, and the spell effects. Everything is fetched once, when first
+ * needed, and drawn from the atlas with a source rectangle.
  *
- * A land's look is a season plus a grade (a color treatment, see biomes.ts) applied to the tiles and
+ * A land's look is a season plus a grade (a color treatment, see recipes.ts) applied to the tiles and
  * props, never to people: characters stay a readability tier above the world. Without a DOM or a
  * network (tests, a failed download) nothing loads, and the procedural art is drawn instead.
  */
@@ -187,6 +187,12 @@ function once<T>(key: string, load: () => Promise<T>): T | null {
   return null;
 }
 
+/** Lets go of a loaded piece of art (a land left behind), so a long journey never holds every land's atlases at once. */
+export function forgetArt(key: string): void {
+  ready.delete(key);
+  cache.delete(key);
+}
+
 const listeners = new Set<() => void>();
 /** Called whenever another piece of art has finished loading. */
 export function onArt(fn: () => void): () => void {
@@ -201,15 +207,16 @@ export interface LookKey {
   /** A grade for the water tiles only (murk, lava, ice), over the main one. */
   water?: Grade;
   derived?: Derived[];
-  /** The smoothed 64 px build (Royal Keep as architecture beside CraftPix). */
+  /** The smoothed 64 px build (the world's 4 art px per world px). */
   hd?: boolean;
 }
 
 const lookId = (k: LookKey): string => JSON.stringify(k);
+export const worldArtKey = (k: LookKey): string => `world:${lookId(k)}`;
 
 /** The world art for a look, or null while it loads (it calls onArt listeners when ready). */
 export function worldArt(k: LookKey): WorldArt | null {
-  return once(`world:${lookId(k)}`, async () => {
+  return once(worldArtKey(k), async () => {
     const hd = k.hd ? '-hd' : '';
     const [tiles, json, props, pj] = await Promise.all([
       image(`rk-${k.season}${hd}.png`),
@@ -286,74 +293,21 @@ export function circleArt(): FxArt | null {
 }
 
 
-/* ------------------------------------------------- the 64 px world art */
+/* ------------------------------------------------- story pieces */
 
-const T64 = 64;
-
-/** A grid of 64 px ground tiles (k 4): CraftPix blob sets, or the Worlds-bundle overlays. */
-export interface TileGrid {
-  img: Cnv;
-  cols: number;
-  /** Top-left of a tile in the image. */
-  at: (i: number) => [number, number];
-}
-
-/** CraftPix ground: blob sets (mask -> tiles) for the inside and outside grounds, and whole tiles. */
-export interface GroundSet extends TileGrid {
-  inside: string;
-  outside: string;
-  sets: Record<string, Record<string, number[]>>;
-  fill: Record<string, number[]>;
-}
-
-/** Worlds-bundle overlays: 16 corner (Wang) tiles each (index 8·TL + 4·TR + 2·BL + 1·BR) plus whole variants. */
-export interface Overlays extends TileGrid {
-  overlays: Record<string, { wang: number[]; full: number[] }>;
-  fills: Record<string, number[]>;
-}
-
-/** Props at the world scale (k atlas px per world px), each with its ground point. */
+/** Props at the world scale (k atlas px per world px), each with its ground point (Gloomvault's story pieces). */
 export interface PropAtlas {
   img: Cnv;
   k: number;
   props: Record<string, { r: Rect; o: [number, number] }>;
 }
 
-const grid = (cols: number): ((i: number) => [number, number]) => (i) => [(i % cols) * T64, Math.floor(i / cols) * T64];
-
-export function groundSet(id: 'cp-summer' | 'cp-swamp', grade: Grade): GroundSet | null {
-  return once(`ground:${id}:${JSON.stringify(grade)}`, async () => {
-    const [img, j] = await Promise.all([image(`${id}.png`), data<Omit<GroundSet, 'img' | 'at'>>(`${id}.json`)]);
-    applyGrade(img, grade);
-    return { ...j, img, at: grid(j.cols) };
-  });
-}
-
-/** The overlays, with the land's grade and (on water and slime) its water grade. */
-export function overlays(grade: Grade, water?: Grade): Overlays | null {
-  return once(`overlays:${JSON.stringify(grade)}:${JSON.stringify(water ?? {})}`, async () => {
-    const [img, j] = await Promise.all([image('wb-ground.png'), data<Omit<Overlays, 'img' | 'at'>>('wb-ground.json')]);
-    const at = grid(j.cols);
-    applyGrade(img, grade);
-    if (water) {
-      for (const name of ['water', 'swampwater', 'stream', 'slime']) {
-        const o = j.overlays[name];
-        if (!o) continue;
-        for (const i of [...o.wang, ...o.full]) {
-          const [x, y] = at(i);
-          applyGrade(img, water, x, y, T64, T64);
-        }
-      }
-    }
-    return { ...j, img, at };
-  });
-}
+export const propAtlasKey = (id: string, grade: Grade): string => `props:${id}:${JSON.stringify(grade)}`;
 
 export function propAtlas(id: string, grade: Grade): PropAtlas | null {
-  return once(`props:${id}:${JSON.stringify(grade)}`, async () => {
+  return once(propAtlasKey(id, grade), async () => {
     const [img, j] = await Promise.all([image(`props-${id}.png`), data<Omit<PropAtlas, 'img'>>(`props-${id}.json`)]);
     applyGrade(img, grade);
     return { ...j, img };
   });
 }
-

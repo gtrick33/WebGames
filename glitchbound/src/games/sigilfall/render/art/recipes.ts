@@ -1,128 +1,148 @@
 import type { Theme } from '../../data/types';
-import type { Grade } from './atlas';
+import type { Derived, Grade, Season } from './atlas';
 
 /**
- * Every outdoor land's recipe in the approved hierarchy (ASSET_AUDIT.md, VISUAL_BIBLE.md §3, blueprint §3.4
- * and §7): CraftPix ground and props lead (`cps` summer, `cpw` swamp, `cpt` towers); Worlds-bundle pieces
- * fill only what CraftPix lacks (`gv` Greenvale, `mf` Mirefen, `sr` Sylvanreach, `gc` Gloomvault; overlays for
- * water, cobbles, soil, planks); Royal Keep is architecture (keeps, walls, chapels), drawn later in its own
- * layer. Variety comes from CraftPix recolors (`tree-medium~teal`) before any second pack.
+ * Every outdoor land drawn in one art language: Royal Keep (VISUAL_BIBLE.md §1, §3). A land is the pack in a
+ * season (summer, its own autumn and winter repaints) with a grade over it (its color treatment), its ground
+ * sets, and its trees, plants and stones picked from the pack. Sand, tilled soil, ash and mud are the pack's
+ * dirt with a grade (`derived`), so a desert or a swamp is still the same hand.
  *
- * A prop is named `<atlas>:<key>`.
+ * A piece is a Royal Keep prop name ('tree_big_leaf'), 'anim:<name>' for its animated props, or 'gc:<name>'
+ * for the few things the pack doesn't have (skulls, bones, cages, crystals; Gloomvault, ASSET_AUDIT.md).
  */
 
 export interface Recipe {
-  /** The CraftPix ground set and how each map ground is drawn with it. */
-  ground: {
-    set: 'cp-summer' | 'cp-swamp';
-    /** Whole tiles for open land: the set's outside (grass, bog) or inside (sand, moss) ground. */
-    base: string;
-    /** Blob set for roads (Path tiles). */
-    path: string;
-    /** Blob set for Sand tiles (beaches, dunes). */
-    sand: string;
-    /** Low-noise patches of a blob set over the base. */
-    patches?: { set: string; share: number };
-    /** Overlays (Worlds-bundle, normalized) by map ground; cobble 'rk' is Royal Keep's own set (the capital). */
-    water: string;
-    cobble: string;
-    bridge: string;
-    /** Farm fields (Deco inside a fence) as tilled soil. */
-    field?: string;
-  };
+  season: Season;
   /** The land's palette treatment on its ground and props (never on people). */
   grade: Grade;
   /** On water only (murk, toxic, lava, ice). */
   water?: Grade;
+  ground: {
+    /** Open land: 'grass' (the pack's sixteen grass tiles), or a ground set's whole tiles ('sand', 'dgrass'). */
+    base: string;
+    /** Patches over the open land where a slow noise is high: a set and the share of the land it covers. */
+    patches: { set: string; share: number; size: number }[];
+    /** The ground under woods and boulder fields, spilling a little past their edge. */
+    under: string;
+    /** Roads, sand (beaches, dunes), squares, and farm fields (Deco inside a fence). */
+    path: string;
+    sand: string;
+    cobble: string;
+    field: string;
+    /** Wooden or stone bridges. */
+    bridge: 'bridge' | 'sbridge';
+    /** Small things in the grass (the pack's decals): which, and how many per 100 open tiles. */
+    decals: string[];
+    decalRate: number;
+  };
   trees: string[];
   bushes: string[];
   rocks: string[];
-  /** Small, never-solid plants about the open land. */
+  /** Small, never-solid plants about the open land (flowers, tall grass, mushrooms, hay). */
   flora: string[];
   /** Map edges and woods: a forest of trees, or a field of boulders (bare lands). */
   edge: 'forest' | 'rocks';
-  houses: string[];
-  /** What a ruin's standing stones are in this land (pillars by default): graves, crystals, urns, rubble. */
+  /** What a ruin's standing stones are in this land (pillars by default): graves, statues, crystals. */
   ruins?: string[];
 }
 
-const TREES = ['cps:tree-medium', 'cps:tree-small', 'cps:tree-medium~dark', 'cps:tree-small~dark', 'cps:tree-medium~mint'];
-const BUSHES = ['cps:bushes-large', 'cps:bushes-medium', 'cps:bushes-small'];
-const ROCKS = ['cps:rock-01', 'cps:rock-02', 'cps:rock-03', 'cps:rock-04', 'cps:rock-05'];
-const BOULDERS = ['cpw:boulder-1', 'cpw:boulder-2', 'cpw:boulder-3', 'cps:rock-01'];
-const FLORA = ['gv:grass_tuft', 'gv:sunflowers', 'gv:mushroom_cluster', 'cps:bushes-small'];
-/** The CraftPix house with roof recolors, and the Greenvale cottage and smithy filling the missing CraftPix village pack. */
-const HOUSES = ['cps:house', 'cps:house', 'gv:cosy_cottage', 'cps:house', 'gv:blacksmith_hut'];
+/** Ground sets made from the pack's dirt: sand, tilled soil, ash and mud. */
+export const DERIVED: Derived[] = [
+  { name: 'sand', from: 'dirt', grade: { tint: ['#f2dca4', 0.6], bright: 0.05, sat: 0.9 } },
+  { name: 'soil', from: 'dirt', grade: { tint: ['#6e4a2e', 0.45], bright: -0.1 } },
+  { name: 'ash', from: 'dirt', grade: { tint: ['#8a8480', 0.7], bright: -0.04 } },
+  { name: 'mud', from: 'dirt', grade: { tint: ['#5a5634', 0.55], bright: -0.12 } },
+];
 
-/**
- * The Vale's own treatment: the summer pack's candy greens taken deeper and richer (a painted land, not a
- * toy one; VISUAL_BIBLE.md §1). The atmosphere pass (render/atmosphere.ts) lays the light over it.
- */
-const VALE_GRADE = { sat: 0.92, contrast: 1.1, bright: -0.07, tint: ['#3a5a2a', 0.08] as [string, number] };
+const LEAFY = ['tree_big_leaf', 'tree_mid_leaf', 'tree_big2_leaf', 'tree_mid_mint', 'tree_big_mint', 'tree_small_leaf', 'tree_tall_leaf'];
+const BUSHES = ['bush_leaf', 'bush_mint', 'bush_berry', 'bush_leaf', 'bush_wide'];
+const ROCKS = ['rock_2', 'rock_3', 'rock_4', 'rock_mossy_1', 'rock_3'];
+const BOULDERS = ['rock_5', 'rock_tall', 'rock_mossy_2', 'rock_4'];
+const MEADOW = ['tall_grass_1', 'tall_grass_2', 'tall_grass_3', 'flowers_yellow', 'flowers_white', 'flowers_red', 'flowers_violet', 'flowers_blue', 'flowers_pink', 'mushroom_brown', 'mushroom_red', 'stump', 'log'];
+const DECALS = ['decal_tuft_1', 'decal_tuft_2', 'decal_tuft_3', 'decal_flowers_1', 'decal_flowers_2', 'decal_flowers_3', 'decal_clover_1', 'decal_clover_2', 'decal_pebbles_1', 'decal_leaves_1'];
+const BARE_DECALS = ['decal_pebbles_1', 'decal_pebbles_2', 'decal_pebbles_3', 'decal_crack_1', 'decal_tuft_1', 'decal_worn_1'];
+const DEAD = ['tree_dead', 'tree_dead', 'pine_mid', 'tree_small_amber'];
 
-const vale = (over: Partial<Recipe> = {}, ground: Partial<Recipe['ground']> = {}): Recipe => ({
-  ground: { set: 'cp-summer', base: 'grass', path: 'sand', sand: 'sand', water: 'water', cobble: 'cobble', bridge: 'planks', ...ground },
-  trees: TREES,
+const land = (season: Season, over: Partial<Omit<Recipe, 'ground'>> = {}, ground: Partial<Recipe['ground']> = {}): Recipe => ({
+  season,
+  grade: {},
+  trees: LEAFY,
   bushes: BUSHES,
   rocks: ROCKS,
-  flora: FLORA,
+  flora: MEADOW,
   edge: 'forest',
-  houses: HOUSES,
   ...over,
-  // a land's own treatment goes on top of the Vale's (its keys win)
-  grade: { ...VALE_GRADE, ...over.grade },
+  ground: {
+    base: 'grass',
+    patches: [
+      { set: 'lgrass', share: 0.2, size: 9 },
+      { set: 'dgrass', share: 0.07, size: 7 },
+    ],
+    under: 'dgrass',
+    path: 'dirt',
+    sand: 'sand',
+    cobble: 'cobble',
+    field: 'soil',
+    bridge: 'bridge',
+    decals: DECALS,
+    decalRate: 9,
+    ...ground,
+  },
 });
 
-const swamp = (over: Partial<Recipe> = {}): Recipe => ({
-  ground: { set: 'cp-swamp', base: 'bog', path: 'moss', sand: 'moss', patches: { set: 'moss', share: 0.22 }, water: 'swampwater', cobble: 'cobble', bridge: 'boardwalk' },
-  grade: {},
-  trees: ['cpw:tree-tower-short', 'cps:tree-medium~dark', 'cps:tree-small~dead', 'cps:tree-medium~dead'],
-  bushes: ['cpw:shrub-swamp-1', 'cpw:shrub-swamp-2', 'cpw:shrub-swamp-3', 'cpw:bushes-1'],
-  rocks: ['cpw:rock-1', 'cpw:rock-2', 'cpw:rock-3', 'cpw:boulder-3'],
-  flora: ['cpw:water-plant-1', 'cpw:water-plant-2', 'cpw:sticks-3', 'cpw:sticks-4', 'cpw:rafflesia', 'mf:cattail_reeds'],
-  edge: 'forest',
-  houses: ['cpw:house', 'mf:stilt_hut', 'cpw:house'],
-  ...over,
-});
+/** A wetland: dark grass and mud, still water, reeds and dead wood. */
+const wet = (season: Season, over: Partial<Omit<Recipe, 'ground'>> = {}, ground: Partial<Recipe['ground']> = {}): Recipe =>
+  land(
+    season,
+    {
+      trees: ['tree_dead', 'tree_tall_mint', 'tree_mid_teal', 'pine_mid_green', 'tree_dead', 'tree_big_teal'],
+      bushes: ['bush_teal', 'bush_mint', 'bush_small_teal', 'bush_wide'],
+      rocks: ['rock_mossy_1', 'rock_mossy_2', 'rock_3'],
+      flora: ['reeds', 'reeds_2', 'tall_grass_2', 'tall_grass_3', 'mushroom_brown', 'mushroom_blue', 'log', 'stump'],
+      ...over,
+    },
+    { base: 'dgrass', patches: [{ set: 'mud', share: 0.2, size: 7 }, { set: 'lgrass', share: 0.1, size: 9 }], under: 'dgrass', sand: 'mud', decals: ['decal_moss_1', 'decal_moss_2', 'decal_puddle_1', 'decal_tuft_2', 'decal_leaves_2'], decalRate: 8, ...ground },
+  );
 
-const bare = (over: Partial<Recipe> = {}): Recipe =>
-  vale({ edge: 'rocks', trees: ['cps:tree-small~dead', 'cps:tree-medium~dead'], bushes: ['cps:bushes-small~dead'], rocks: [...ROCKS, ...BOULDERS], flora: ['gv:grass_tuft'], ...over }, { base: 'sand', path: 'sand', sand: 'sand' });
+/** A bare land: stone and dry ground, boulders at the edges, a few hardy trees. */
+const bare = (season: Season, over: Partial<Omit<Recipe, 'ground'>> = {}, ground: Partial<Recipe['ground']> = {}): Recipe =>
+  land(
+    season,
+    { edge: 'rocks', trees: ['pine_big', 'pine_mid', 'pine_small', 'tree_dead'], bushes: ['bush_small_leaf', 'bush_amber'], rocks: [...ROCKS, ...BOULDERS], flora: ['tall_grass_1', 'tall_grass_3', 'rock_1', 'stump'], ...over },
+    { patches: [{ set: 'dirt', share: 0.2, size: 8 }, { set: 'lgrass', share: 0.08, size: 9 }], under: 'dirt', decals: BARE_DECALS, decalRate: 7, ...ground },
+  );
 
 export const RECIPES: Partial<Record<Theme, Recipe>> = {
-  // Emberwick, the Crown City: Royal Keep's yards and buildings (architecture authority), CraftPix dressing
-  village: vale({}, { cobble: 'rk' }),
-  farm: vale({ grade: { tint: ['#ffe080', 0.06] }, flora: [...FLORA, 'gv:hay_bale'] }, { field: 'soil' }),
-  plains: vale({ grade: { tint: ['#f0d860', 0.12], sat: 1.02 }, flora: [...FLORA, 'gv:hay_bale'] }, { patches: { set: 'sand', share: 0.12 }, field: 'soil' }),
-  forest: vale({ trees: ['cps:tree-medium~dark', 'cps:tree-medium', 'cps:tree-small~dark', 'cps:tree-medium~teal', 'cps:tree-small~teal'], bushes: ['cps:bushes-large~dark', 'cps:bushes-medium~teal', 'cps:bushes-small'], grade: { bright: -0.12, tint: ['#163a2a', 0.14] } }),
-  coast: vale({ grade: { tint: ['#d8f0e0', 0.06] }, trees: ['cps:tree-small~mint', 'cps:tree-medium~mint'], flora: ['gv:grass_tuft', 'mf:cattail_reeds'] }, { patches: { set: 'sand', share: 0.3 } }),
-  autumn: vale({ trees: ['cps:tree-medium~amber', 'cps:tree-medium~coral', 'cps:tree-small~amber', 'cps:tree-small~coral', 'cps:tree-medium'], bushes: ['cps:bushes-large~amber', 'cps:bushes-medium~coral', 'cps:bushes-small~amber'], grade: { tint: ['#e8b060', 0.08] } }),
-  fey: vale({ ruins: ['gc:cyan_crystals', 'rk:pillar', 'rk:pillar_broken'], trees: ['cps:tree-medium~blossom', 'cps:tree-medium~mint', 'cps:tree-small~blossom', 'cps:tree-medium~teal'], bushes: ['cps:bushes-large~blossom', 'cps:bushes-medium~mint'], flora: ['sr:toadstools', 'sr:blue_bellflowers', 'sr:mushroom_cluster', 'sr:fern'], grade: { hue: -10, sat: 1.08 } }, { water: 'stream' }),
-  jungle: vale({ ruins: ['rk:pillar_broken', 'gc:cyan_crystals', 'rk:pillar'], trees: ['cps:tree-medium~dark', 'cps:tree-medium~teal', 'cps:tree-small~dark'], bushes: ['cps:bushes-large~dark', 'cps:bushes-medium~teal'], grade: { sat: 1.1, bright: -0.05 } }),
-  mountain: bare({ ruins: ['rk:pillar_broken', 'cpw:boulder-1', 'rk:pillar'], grade: { sat: 0.85, tint: ['#9ab0c0', 0.1] }, trees: ['cps:tree-small~dark', 'cps:tree-medium~dark'] }),
-  storm: bare({ ruins: ['rk:pillar_broken', 'rk:pillar', 'gc:rubble'], grade: { sat: 0.75, bright: -0.12, tint: ['#5a7aa0', 0.16] }, water: { tint: ['#2a4a7a', 0.4], bright: -0.1 } }),
-  desert: bare({ ruins: ['rk:pillar_broken', 'rk:pillar', 'gc:ceramic_urn'], grade: { tint: ['#f0c070', 0.14] } }),
-  barrow: vale({ ruins: ['gc:stone_coffin', 'rk:pillar_broken', 'gc:skulls', 'gc:stone_coffin'], edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~dead'], bushes: ['cps:bushes-small~dead'], rocks: [...ROCKS, ...BOULDERS], grade: { sat: 0.5, bright: -0.1, tint: ['#8a8a9a', 0.14] } }),
-  moor: vale({ ruins: ['rk:pillar_broken', 'gc:stone_coffin', 'rk:pillar'], edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~dark'], rocks: [...ROCKS, ...BOULDERS], grade: { sat: 0.6, bright: -0.1, tint: ['#8a6a9a', 0.18] } }),
-  rift: vale({ ruins: ['gc:cyan_crystals', 'gc:cyan_crystals', 'rk:pillar_broken'], edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~coral'], rocks: BOULDERS, grade: { hue: 60, sat: 0.8, bright: -0.08, tint: ['#7a4ab0', 0.22] } }),
-  warfront: vale({ ruins: ['gc:rubble', 'rk:pillar_broken', 'gc:rubble'], edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~dead', 'cps:tree-medium~amber'], rocks: [...ROCKS, ...BOULDERS], grade: { sat: 0.65, bright: -0.06, tint: ['#9a7a5a', 0.14] } }, { patches: { set: 'sand', share: 0.25 } }),
-  snow: vale({ ruins: ['rk:pillar_broken', 'rk:pillar', 'cpw:boulder-1'], trees: ['cps:tree-medium~snow', 'cps:tree-small~snow', 'cps:tree-medium~dark'], bushes: ['cps:bushes-medium~snow', 'cps:bushes-small~snow'], flora: [], grade: { sat: 0.25, bright: 0.18, tint: ['#e8f4ff', 0.55] }, water: { tint: ['#a8d8f0', 0.5], bright: 0.1 } }),
-  marsh: swamp({ ruins: ['rk:pillar_broken', 'gc:rubble', 'rk:pillar_broken'] }),
-  plague: swamp({ ruins: ['rk:pillar_broken', 'gc:skulls', 'gc:rubble'], grade: { tint: ['#a8b040', 0.14], sat: 0.9 }, water: { tint: ['#8ad04a', 0.4] } }),
-  blight: swamp({ ruins: ['gc:stone_coffin', 'gc:skulls', 'rk:pillar_broken'], grade: { sat: 0.5, bright: -0.12, tint: ['#6a4a7a', 0.18] } }),
-  sunken: swamp({ ruins: ['rk:pillar_broken', 'gc:rubble', 'rk:pillar'], grade: { sat: 0.75, bright: -0.08, tint: ['#3a8a8a', 0.2] } }),
-  gloam: swamp({ ruins: ['rk:pillar_broken', 'gc:skulls', 'gc:rubble'], grade: { sat: 0.6, bright: -0.2, tint: ['#2a6a5a', 0.26] } }),
-  haunted: vale({ ruins: ['gc:stone_coffin', 'rk:pillar_broken', 'gc:skulls'], edge: 'rocks', trees: ['cps:tree-medium~dead'], grade: { sat: 0.4, bright: -0.16, tint: ['#4a6a8a', 0.22] } }),
-  volcanic: bare({ ruins: ['gc:rubble', 'rk:pillar_broken', 'cpw:boulder-3'], grade: { sat: 0.5, bright: -0.2, tint: ['#5a3a30', 0.3] }, water: { hue: 150, tint: ['#ff7a2a', 0.7], bright: 0.06, sat: 1.4 } }),
-  deadlake: vale({ ruins: ['rk:pillar_broken', 'gc:stone_coffin', 'gc:rubble'], edge: 'rocks', trees: ['cps:tree-medium~dead'], grade: { sat: 0.35, bright: -0.16, tint: ['#5a6a7a', 0.2] } }),
-  peaks: vale({ ruins: ['rk:pillar_broken', 'cpw:boulder-2', 'rk:pillar'], edge: 'rocks', trees: ['cps:tree-medium~snow', 'cps:tree-small~snow'], rocks: BOULDERS, flora: [], grade: { sat: 0.25, bright: 0.2, tint: ['#e8f4ff', 0.6] } }),
-  bonefield: bare({ ruins: ['rk:pillar_broken', 'gc:scattered_bones', 'rk:pillar_broken'], grade: { sat: 0.4, tint: ['#c0b08a', 0.2] }, flora: [] }),
-  pale: vale({ ruins: ['gc:cyan_crystals', 'rk:pillar_broken', 'gc:rubble'], edge: 'rocks', trees: ['cps:tree-medium~dead', 'cps:tree-small~snow'], flora: [], grade: { sat: 0.3, bright: 0.05, tint: ['#9a9ac0', 0.25] } }),
+  // Emberwick, the Crown City: the pack's own summer, as it was drawn
+  village: land('summer', { trees: ['tree_big_leaf', 'tree_mid_leaf', 'tree_apple', 'tree_mid_mint', 'tree_blossom', 'tree_small_leaf'], bushes: ['bush_rose', 'bush_leaf', 'bush_mint', 'bush_berry'] }, { bridge: 'sbridge' }),
+  // Briarhollow and the farms: orchards and hay
+  farm: land('summer', { trees: ['tree_apple', 'tree_big_leaf', 'tree_mid_leaf', 'tree_orange', 'tree_big2_leaf', 'tree_mid_mint'], flora: [...MEADOW, 'hay_pile', 'flowers_yellow'] }),
+  plains: land('summer', { grade: { tint: ['#f0d860', 0.1], sat: 1.02 }, trees: ['tree_big_leaf', 'tree_mid_mint', 'tree_apple', 'tree_small_leaf'], flora: [...MEADOW, 'hay_pile', 'hay_bale'] }, { patches: [{ set: 'lgrass', share: 0.3, size: 10 }, { set: 'dirt', share: 0.05, size: 6 }] }),
+  forest: land('summer', { grade: { bright: -0.06, tint: ['#1a4a30', 0.08] }, trees: ['tree_big_teal', 'tree_big2_leaf', 'tree_tall_leaf', 'pine_big_green', 'pine_mid_green', 'tree_big_leaf', 'tree_mid_teal'], bushes: ['bush_teal', 'bush_leaf', 'bush_mint', 'bush_wide'] }, { patches: [{ set: 'dgrass', share: 0.32, size: 8 }, { set: 'lgrass', share: 0.08, size: 9 }] }),
+  coast: land('summer', { trees: ['tree_mid_mint', 'tree_tall_mint', 'pine_mid_green', 'tree_small_mint'], flora: ['tall_grass_1', 'tall_grass_2', 'reeds', 'flowers_white', 'flowers_blue', 'rock_1'] }, { patches: [{ set: 'sand', share: 0.2, size: 8 }, { set: 'lgrass', share: 0.14, size: 9 }] }),
+  autumn: land('autumn', { trees: ['tree_big_amber', 'tree_big_coral', 'tree_mid_amber', 'tree_mid_coral', 'tree_orange', 'tree_tall_coral', 'tree_big2_coral'], bushes: ['bush_amber', 'bush_coral', 'bush_berry', 'bush_wide'] }),
+  fey: land('summer', { grade: { hue: -8, sat: 1.06 }, ruins: ['pillar', 'pillar_broken', 'gc:cyan_crystals'], trees: ['tree_blossom', 'tree_big_teal', 'tree_mid_teal', 'tree_big_mint', 'tree_blossom', 'tree_tall_mint'], bushes: ['bush_blue', 'bush_teal', 'bush_rose', 'bush_mint'], flora: ['flowers_violet', 'flowers_blue', 'flowers_pink', 'mushroom_blue', 'mushroom_red', 'tall_grass_2', 'flowers_white'] }),
+  jungle: land('summer', { grade: { sat: 1.1, bright: -0.04 }, ruins: ['pillar_broken', 'statue_archer', 'pillar'], trees: ['tree_big2_mint', 'tree_big_teal', 'tree_tall_mint', 'tree_big_leaf', 'tree_big2_leaf'], bushes: ['bush_teal', 'bush_mint', 'bush_wide', 'bush_leaf'] }, { patches: [{ set: 'dgrass', share: 0.35, size: 7 }] }),
+  mountain: bare('summer', { grade: { sat: 0.85, tint: ['#9ab0c0', 0.08] }, ruins: ['pillar_broken', 'rock_tall', 'pillar'] }),
+  storm: bare('summer', { grade: { sat: 0.76, bright: -0.04, tint: ['#6a8aa8', 0.14] }, ruins: ['pillar_broken', 'pillar', 'rock_tall'] }, {}),
+  desert: bare('summer', { grade: { tint: ['#f0c070', 0.08] }, ruins: ['pillar_broken', 'pillar', 'statue_king'], trees: ['tree_dead', 'tree_small_amber', 'tree_dead'], bushes: ['bush_amber', 'bush_small_amber'], rocks: ['rock_sand', 'rock_4', 'rock_3', 'rock_sand'], flora: ['tall_grass_1', 'rock_1', 'rock_sand'] }, { base: 'sand', patches: [{ set: 'dirt', share: 0.14, size: 9 }], under: 'dirt' }),
+  barrow: land('autumn', { grade: { sat: 0.62, bright: -0.03, tint: ['#8a8a9a', 0.12] }, edge: 'rocks', ruins: ['gravestone_1', 'grave_cross', 'gravestone_2', 'pillar_broken', 'gc:stone_coffin'], trees: DEAD, bushes: ['bush_small_amber', 'bush_amber'], rocks: [...ROCKS, ...BOULDERS] }, { decals: BARE_DECALS }),
+  moor: land('autumn', { grade: { sat: 0.66, bright: -0.03, tint: ['#8a6a9a', 0.14] }, edge: 'rocks', ruins: ['pillar_broken', 'gravestone_1', 'pillar'], trees: ['tree_dead', 'pine_mid', 'tree_small_coral'], rocks: [...ROCKS, ...BOULDERS] }),
+  rift: land('autumn', { grade: { sat: 0.74, bright: -0.04, tint: ['#7a5aa8', 0.2] }, edge: 'rocks', ruins: ['gc:cyan_crystals', 'gc:cyan_crystals', 'pillar_broken'], trees: ['tree_dead', 'tree_small_coral'], rocks: BOULDERS }, { decals: BARE_DECALS }),
+  warfront: land('autumn', { grade: { sat: 0.7, bright: -0.05, tint: ['#9a7a5a', 0.12] }, edge: 'rocks', ruins: ['pillar_broken', 'gravestone_1', 'pillar_broken'], trees: ['tree_dead', 'tree_mid_amber', 'tree_small_amber', 'tree_dead'], rocks: [...ROCKS, ...BOULDERS], flora: ['tall_grass_1', 'tall_grass_3', 'log', 'stump', 'rock_1'] }, { patches: [{ set: 'dirt', share: 0.22, size: 7 }, { set: 'ash', share: 0.06, size: 5 }], decals: BARE_DECALS }),
+  snow: land('winter', { grade: {}, water: { tint: ['#a8d8f0', 0.4], bright: 0.08 }, trees: ['pine_snowy', 'pine_big', 'pine_mid', 'tree_big_leaf', 'pine_snowy'], bushes: ['bush_leaf', 'bush_small_leaf'], flora: ['tall_grass_1', 'rock_1', 'stump', 'log'] }, { patches: [{ set: 'lgrass', share: 0.12, size: 9 }], decals: ['decal_pebbles_1', 'decal_tuft_1', 'decal_tuft_2'], decalRate: 4 }),
+  marsh: wet('summer', { grade: { sat: 0.85, bright: -0.04, tint: ['#4a6a3a', 0.12] }, water: { tint: ['#4a6a4a', 0.35], bright: -0.06 }, ruins: ['pillar_broken', 'rock_mossy_2'] }),
+  plague: wet('autumn', { grade: { tint: ['#a8b040', 0.14], sat: 0.85 }, water: { tint: ['#8ad04a', 0.45] }, ruins: ['pillar_broken', 'gc:skulls'] }),
+  blight: wet('autumn', { grade: { sat: 0.58, bright: -0.04, tint: ['#6a4a7a', 0.16] }, ruins: ['gravestone_2', 'gc:skulls', 'pillar_broken'], trees: ['tree_dead', 'tree_dead', 'tree_mid_coral', 'pine_mid'] }),
+  sunken: wet('summer', { grade: { sat: 0.75, bright: -0.06, tint: ['#3a8a8a', 0.18] }, water: { tint: ['#3a7a7a', 0.3] }, ruins: ['pillar_broken', 'statue_queen', 'pillar'] }),
+  gloam: wet('summer', { grade: { sat: 0.66, bright: -0.06, tint: ['#2a6a5a', 0.2] }, water: { tint: ['#2a5a4a', 0.4], bright: -0.08 }, ruins: ['pillar_broken', 'gc:skulls', 'gravestone_1'] }),
+  haunted: land('winter', { grade: { sat: 0.52, bright: -0.05, tint: ['#4a6a8a', 0.16] }, edge: 'forest', ruins: ['gravestone_1', 'grave_cross', 'gc:stone_coffin'], trees: ['tree_dead', 'pine_big', 'tree_dead', 'pine_mid', 'tree_big_leaf'], flora: ['tall_grass_1', 'mushroom_blue', 'stump', 'log'] }, { decals: ['decal_pebbles_1', 'decal_tuft_1', 'decal_leaves_2'], decalRate: 5 }),
+  volcanic: bare('autumn', { grade: { sat: 0.58, bright: -0.03, tint: ['#6a4436', 0.22] }, water: { hue: 150, tint: ['#ff7a2a', 0.7], bright: 0.08, sat: 1.4 }, ruins: ['pillar_broken', 'rock_tall', 'pillar_broken'], trees: ['tree_dead', 'tree_dead', 'pine_small'] }, { base: 'ash', patches: [{ set: 'dirt', share: 0.18, size: 8 }], under: 'ash' }),
+  deadlake: land('winter', { grade: { sat: 0.46, bright: -0.05, tint: ['#5a6a7a', 0.16] }, water: { tint: ['#3a4a5a', 0.4], bright: -0.1 }, edge: 'rocks', ruins: ['pillar_broken', 'gc:stone_coffin', 'gravestone_2'], trees: ['tree_dead', 'pine_mid', 'tree_dead'], rocks: [...ROCKS, ...BOULDERS] }, { decals: BARE_DECALS, decalRate: 5 }),
+  peaks: bare('winter', { ruins: ['pillar_broken', 'rock_tall', 'pillar'], trees: ['pine_snowy', 'pine_big', 'pine_mid', 'pine_snowy'], rocks: BOULDERS, flora: ['rock_1', 'stump'] }, { patches: [{ set: 'lgrass', share: 0.1, size: 9 }] }),
+  bonefield: bare('autumn', { grade: { sat: 0.45, tint: ['#c0b08a', 0.18] }, ruins: ['pillar_broken', 'gravestone_2', 'pillar_broken'], flora: ['tall_grass_1', 'rock_1', 'log'] }, { patches: [{ set: 'dirt', share: 0.3, size: 8 }] }),
+  pale: land('winter', { grade: { sat: 0.35, bright: 0.02, tint: ['#9a9ac0', 0.22] }, edge: 'rocks', ruins: ['gc:cyan_crystals', 'pillar_broken', 'statue_knight'], trees: ['tree_dead', 'pine_snowy', 'tree_dead'], rocks: BOULDERS, flora: ['rock_1', 'tall_grass_1'] }, { decals: BARE_DECALS, decalRate: 4 }),
 };
 
-/** The prop atlases a recipe draws from. */
-export function atlasesOf(r: Recipe): string[] {
-  // gc for the story's dressing (rubble, cages, altars) anywhere
-  const ids = new Set<string>(['cps', 'cpw', 'cpt', 'gv', 'gc']);
-  for (const ref of [...r.trees, ...r.bushes, ...r.rocks, ...r.flora, ...r.houses]) ids.add(ref.split(':')[0]!);
-  return [...ids];
-}
+/** Every piece a recipe names (for the art-integrity test). */
+export const recipeRefs = (r: Recipe): string[] => [...r.trees, ...r.bushes, ...r.rocks, ...r.flora, ...(r.ruins ?? [])];

@@ -4,6 +4,31 @@ Source packs: `glitchbound/assets/sigilfall/` (never bundled). Runtime derivativ
 built by `scripts/sigilfall-art.mjs`, requested with `?v=<ART_VERSION>` and cached as immutable. Licenses were read
 from the files shipped with each pack; terms are quoted in `CREDITS_AND_LICENSES.md`.
 
+## Since 2026-10-28: one pack (the owner's decision)
+
+The owner, looking at Briarhollow: Royal Keep's crates, stalls and watchtowers stood small and wrong on CraftPix
+grass and Greenvale's painted cobbles (stones the size of a hero's head), "those assets look bad together"; "stick
+to one type of assets, and use other packs only when necessary". This supersedes the hierarchy below (blueprint
+§3.4's CraftPix lead). Royal Keep is the only pack that covers a whole world in one hand (ground and its 47-piece
+sets, water, walls, cliffs, trees, plants, rocks, fences, fourteen buildings, a castle, market, camp and town props,
+animated torches, banners and water) and has its own autumn and winter repaints, so it draws the whole outdoor
+world now:
+
+| Pack | Role now | Ships as |
+| --- | --- | --- |
+| Royal Keep + Seasons (bubbabba) | **The world's one art language**: every outdoor land, in a season with a grade (`render/art/recipes.ts`); sand, soil, ash and mud are its dirt graded at load | `rk-*` (unchanged build: EPX ×2 to the 64 px grid) |
+| Gloomvault Crypt (Certainity) | Only seven story pieces Royal Keep has nothing for: skulls, scattered bones, a stone coffin, an iron cage, a skull banner, a stone altar, crystals | `props-gc` (those seven only) |
+| Magic Spells VFX, Magic Circles (Willosuna) | Spell effects and wind-ups, as before | `vfx`, `circles` |
+| CraftPix Simple Summer, Poison Swamp, Guard & Magic Towers; Greenvale, Mirefen, Sylvanreach, Blossom Shrine | **No longer shipped** (on disk only) | — |
+
+What it took beyond the recipes: buildings are placed by one table the simulation and the renderer share
+(`data/buildingArt.ts`: each picture's size, ground point, footprint and door, measured from the pack), so the
+painted walls are the solid ones and a way in is under its painted door; generated roads run straight with
+right-angle turns (the meander they used to follow made a staircase of the pack's road edges); the shipped art
+went from 5.5 MB to 2.9 MB.
+
+The sections below are the audit as it stood on 2026-10-26, kept for the record.
+
 > **Correction (2026-10-26).** Commit `5ce1737b` made Royal Keep the art for the whole outdoor world. That breaks
 > §3.4 (CraftPix is the world's visual authority; Royal Keep is architecture only). This audit replaces it. The
 > code from that commit (atlas loader, tile ground, scenery builder, folk, VFX) is reused, but its art assignments

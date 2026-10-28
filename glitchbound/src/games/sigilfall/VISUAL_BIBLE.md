@@ -1,16 +1,35 @@
 # Sigilfall — Visual Bible
 
-The rules that make the kingdom look authored by one team (blueprint §3.3–3.7, §7). The hierarchy and the pack
-roles are in ASSET_AUDIT.md; the tables that implement this live in `render/art/` (biomes, folk, vfx).
+The rules that make the kingdom look authored by one team (blueprint §3.3–3.7, §7). The pack and its roles are in
+ASSET_AUDIT.md; the tables that implement this live in `render/art/` (recipes, folk, vfx) and
+`data/buildingArt.ts`.
 
 ## 1. The look
 
 **A fantasy world, composed like one** (since 2026-10-28). The owner asked for the feel of the great fantasy
 worlds (WoW, Elden Ring, the Lord of the Rings; their feel only, nothing of theirs) and was clear that it comes
 from **where things stand**, not from light or glow laid over the screen (a screen-wide lighting pass was tried
-and removed). The approved CraftPix packs still draw the land: cel-shaded shapes with one soft highlight, a warm
-dark-brown outline (never pure black). Royal Keep supplies the kingdom's **architecture**; the Worlds bundle fills
-gaps after normalization; nothing else enters without approval.
+and removed).
+
+**One art language** (since 2026-10-28). The owner saw boxes, stalls and watchtowers from one pack standing small
+and wrong on another pack's ground, painted cobbles the size of a hero's head beside vector grass, and asked for
+one pack, with others only where it has nothing. **Royal Keep** (bubbabba) now draws the whole outdoor world: its
+grass, meadow and dark-grass patches, dirt roads, cobbled squares, animated water, bridges, castle walls; its trees,
+bushes, flowers, rocks, fences; its cottages, houses, inn, smithy, chapel, keep and towers; its carts, stalls,
+tents, crates, lamps and banners. Every land is that pack in one of its seasons (summer, autumn, winter) with a
+grade of its own (`render/art/recipes.ts`): a swamp is its dark grass and mud with murky water, a desert its dirt
+graded to sand, a volcano its dirt graded to ash with the water to lava. Only the few story pieces it has nothing
+for come from elsewhere (Gloomvault's skulls, bones, cage, coffin, skull banner, altar and crystals), and the spell
+effects are Willosuna's. Nothing else enters without approval.
+
+- **Roads run straight** with right-angle turns, as the pack's own maps lay them (a road stepping across the grid
+  tile by tile reads as a staircase); squares are paved rectangles with their corners cut.
+- **Buildings stand where they are drawn** (`data/buildingArt.ts`, `sim/map.ts`): the tiles the painted walls and
+  roof cover are solid, nothing else on the lot is; the rest of the lot is a yard with a few things in it. A
+  building with a way in stands with its painted door over the step, and the step is marked: a warm pool of
+  light and two gold chevrons pointing through the door (and back out, indoors). Walking onto it goes through.
+- **Indoors is peaceful**: no spells or blows in an inn or a chapel, and the skill bar is put away, so nothing
+  covers a room's door.
 
 - **Land grows, it isn't sprinkled**: trees stand in copses with clearings between, bushes as undergrowth along a
   copse's edge, rocks in outcrops, flowers in meadows (`zonegen.ts` scatter; `CityPlan.grove` in towns). Never
@@ -28,17 +47,17 @@ gaps after normalization; nothing else enters without approval.
 - **View**: top-down 3/4. Roofs and wall tops from above, south faces visible, doors on the south face.
 - **Light**: from the **upper left**. Shadows fall down-right, a soft translucent cool brown-violet
   (`rgba(40, 24, 48, 0.28)`), and every standing thing has a ground-contact shadow.
-- **Outline**: CraftPix weight (about 2 px at 64 px per tile) in a dark tone of the object's own color.
+- **Outline**: the pack's own pixel outline, smoothed with it (EPX, then the canvas's soft scaling) to the 64 px grid.
 
-## 2. Normalization gate (every non-CraftPix piece)
+## 2. Normalization gate (every piece from another pack)
 
-Before a Level B or Royal Keep piece ships it is placed in the engine beside CraftPix pieces at gameplay zoom and
+Before a piece from any other pack ships it is placed in the engine beside Royal Keep pieces at gameplay zoom and
 compared (screenshots in `docs/review/phase-XX/`). It must match:
 
 | Check | Rule | Tooling |
 | --- | --- | --- |
 | Scale | a door is ~1.6 world tiles tall, a cottage 3–4 tiles wide, a tree canopy 2–3 tiles, the hero ~1.7 tiles | per-pack scale factors in the art build |
-| Palette | greens, stone, wood, water inside the bible palette; saturation within ±10 % of CraftPix | per-pack grade (saturation, contrast, tint) at build time |
+| Palette | greens, stone, wood, water inside the bible palette; saturation within ±10 % of Royal Keep's | per-pack grade (saturation, contrast, tint) at build time |
 | Edges | smooth edges; pixel art is smoothed (EPX + soft resample) or rejected | Royal Keep smoothing pass |
 | Light | upper-left; matching shadow hue and ground contact | shadow pass for pieces without one |
 | Perspective | same 3/4; a piece with a different roof angle is rejected, not hidden | review |
@@ -48,23 +67,23 @@ If a reviewer can point at a piece and say "that is from another pack", it has n
 
 ## 3. Biomes (blueprint §7)
 
+Every land is Royal Keep in a season with a grade (`render/art/recipes.ts`); what makes one land not another is
+the season, the grade, the ground it lies on and what grows and stands on it.
+
 | Region | Recipe | Identity in one screenshot |
 | --- | --- | --- |
-| **Briarhollow and the Vale villages** (Brackenridge, Thornvale, Greyfen edges, Saltmarsh, Amberfield) | CraftPix Simple Summer ground and props + Greenvale cottages, cobbles, water, farm props | warm grass, timber and thatch homes, orchards, fences, flowers, market stalls; **visible repair after rescue** |
-| **Emberwick, the Crown City, and allied keeps** | Royal Keep walls, gatehouse, keep, towers, moat, market + CraftPix dressing | concentric layers: refugee approach → market town → moat and gatehouse → districts → inner wall → keep; banners in the Regent's blue and gold |
-| **Forests** (Whisperwood, Glimmerwood = Sylvanreach recipe) | CraftPix trees and bushes; Sylvanreach floor, moss, ancient trees for the enchanted wood | dense layered canopies; the Glimmerwood teal, glowing, misty |
-| **Swamps** (Greyfen, Duskfen, Mirefen recipe) | CraftPix Poison Swamp ground and dressing + Mirefen water, boardwalks, stilt huts | lime-toxic water, twisted trees, mushrooms, reeds, fog; Duskfen sickly yellow-green |
-| **Crypts and caves** (Chapel Crypt, Barrow of Kings, Gallows Keep, Smugglers' Grotto) | Gloomvault floors, walls, props (primary) + CraftPix rocks, lanterns, skeletons | cold stone, torchlight pools, bones, cobwebs; the Barrow gold-and-grey, the grotto wet and blue |
-| **Highlands** (Ironpeak, Stormwatch) | CraftPix rocks and pines, Royal Keep cliff faces smoothed, grey-blue grade | ledges, pines, wind |
-| **Frozen** (Rimeheld) | CraftPix summer derived: snow grade on ground, frosted trees, ice decals, Royal Keep winter fortress pieces | white, blue shadows, snow particles |
-| **Desert** (Sunscorch, Sablewind) | CraftPix sand ground as the base, sandstone grade on rocks, dry vegetation | sand dunes, ruins, camps, dust |
-| **Haunted / blighted** (Ashen Barrows, Grimward, the Shattered Vale) | primary language with grieflight overlays (violet), dead trees, mist | grey-violet, lanterns, gibbets, crystals |
-| **Warfront** (Highwall) | Royal Keep fortress in damaged/besieged states + CraftPix camp props, ash patches | smoke, tents, siege engines, broken walls |
-| **Sanctuary** (future) | Blossom Shrine + Magic Circles | bright, petals, rune circles |
-| **Dead Kingdom** (future) | Royal Keep skeleton, recolored black and ash; Gloomvault; CraftPix dark props; bespoke Hallow King art | monumental, ashen, frozen moments |
-
-Snow, desert and volcanic lands are **derived from the primary language** (grades, decals, particles) before any
-backup piece is used.
+| **Briarhollow and the Vale villages** (Thornvale, Saltmarsh, Amberfield) | summer; grass with meadow patches, dirt roads, orchards (apple and orange trees), thatch and tile cottages, hay, tilled fields with rows of greens | warm grass, timber and thatch homes, fences, flowers, market stalls; **visible repair after rescue** |
+| **Emberwick, the Crown City** | summer; the keep between round towers, castle walls with square towers at the gates, gable and tall houses, the inn, the smithy, the chapel, a fountain and stalls in the market, a dirt training yard with racks and butts | a town that is lived in: lamps down the avenues, clipped trees and flowerbeds at the square's corners |
+| **Forests** (Whisperwood, Glimmerwood, Vinecoil) | summer, darker; dark-grass floor under big and tall trees and pines; the Glimmerwood in blossom trees, blue and violet flowers, mushrooms | dense layered canopies; the Glimmerwood soft and bright |
+| **Autumn** (Brackenridge) | the pack's autumn: amber and coral trees, golden grass | a hillside in its fall colors |
+| **Swamps** (Greyfen, Duskfen, the Sunken Reaches, Gloamhollow, Blightwood) | dark grass, mud for sand, murky water, dead and tall trees, reeds, lily pads, moss-roofed cottages; each its own grade (olive, sickly lime, teal, dark green, violet) | still water, reeds and lily pads, twisted trees |
+| **Highlands** (Ironpeak, Stormwatch) | summer, cooled grey-blue; boulder fields for woods, pines, dirt patches, stone and slate cottages | ledges, pines, wind |
+| **Frozen** (Rimeheld, the high peaks, the Pale Reach) | the pack's winter: snow ground, frosted trees and roofs; pale violet on the Reach | white, blue shadows |
+| **Desert** (Sunscorch, Sablewind) | the pack's dirt graded to sand for the ground, sand rocks, dead and amber trees | sand, ruins, camps |
+| **Haunted / blighted** (Ashen Barrows, Grimward, the Shattered Vale, Riftscar, the Weeping Woods, Hollowmere) | autumn or winter, desaturated and tinted (grey, violet, cold blue); dead trees, gravestones, broken pillars; crystals in the rift | grey-violet, graves, broken stone |
+| **Warfront** (Highwall, the Bonefields) | autumn, smoky; dirt and ash patches, dead trees | smoke, tents, broken walls |
+| **Volcanic** (Emberdeep) | autumn, scorched; the dirt graded to ash, the water to lava | black ash, lava, dead trees |
+| **Crypts, caves and interiors** | drawn in code (render/ground.ts, art/furniture.ts) | cold stone, torchlight, bones; inns and halls of plank and flagstone |
 
 ## 4. World states
 

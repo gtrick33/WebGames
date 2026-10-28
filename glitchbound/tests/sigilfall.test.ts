@@ -722,7 +722,8 @@ describe('sigilfall combat', () => {
     for (const id of Object.keys(REGIONS) as RegionId[]) {
       const m = parseRegion(REGIONS[id]);
       for (const pm of m.markers) {
-        if (pm.marker.kind === 'prop' || pm.marker.kind === 'waystone' || pm.marker.kind === 'dummy' || pm.marker.kind === 'building') continue;
+        // fires burn on the roofs (sim/map.ts puts them there)
+        if (pm.marker.kind === 'prop' || pm.marker.kind === 'waystone' || pm.marker.kind === 'dummy' || pm.marker.kind === 'building' || pm.marker.kind === 'fire') continue;
         const { x, y } = markerPos(pm);
         expect(m.solid[Math.floor(y / TILE) * m.w + Math.floor(x / TILE)], `${id} ${pm.marker.kind} ${pm.tx},${pm.ty}`).toBe(0);
       }

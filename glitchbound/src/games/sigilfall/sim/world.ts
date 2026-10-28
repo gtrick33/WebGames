@@ -1153,7 +1153,9 @@ export class World {
     // the mount: called standing still; moving, acting or a fight stops the call. Acting while riding
     // gets the hero down first, and the action happens
     if (inp.mount) this.toggleMount();
-    const acting = inp.casts.length > 0 || !!inp.holdBasic;
+    // indoors is peaceful: no spells or blows in an inn or a chapel (the skill bar is put away: ui/DesktopBar.tsx, ui/Touch.tsx)
+    const peace = !!this.region.interior;
+    const acting = !peace && (inp.casts.length > 0 || !!inp.holdBasic);
     if (p.summon > 0) {
       if (moving || acting || this.mountRefusal()) p.summon = 0;
       else {
@@ -1168,11 +1170,11 @@ export class World {
     }
     if (p.riding && acting) this.dismount();
     // skills
-    for (const req of inp.casts) {
+    for (const req of peace ? [] : inp.casts) {
       const r = this.withMouse(req);
       if (tryCast(this, r) && req.slot !== 'basic' && req.slot !== 'dodge') this.tutorialSkillCast();
     }
-    if (inp.holdBasic && p.cds.basic.charges > 0) tryCast(this, this.withMouse(inp.holdBasic));
+    if (!peace && inp.holdBasic && p.cds.basic.charges > 0) tryCast(this, this.withMouse(inp.holdBasic));
     updateWindup(this, dt);
     updateChannel(this, dt);
     if (inp.potion) this.drinkPotion();

@@ -5,7 +5,7 @@ import type { ZoneModule } from './zones';
 
 /**
  * Interiors (blueprint §3.2 and Prompts 2 and 12): the buildings that a door leads into, so a door that looks
- * like a door is one. Each is a small hand-laid room in the Royal Keep / CraftPix language, furnished in
+ * like a door is one. Each is a small hand-laid room in the Royal Keep language, furnished in
  * the game's own style (render/art/furniture.ts), with people who talk about what has just happened in the
  * story, and furniture and banners that come and go with it. Interiors are safe, never on the world map,
  * and walked into and out of through their door.

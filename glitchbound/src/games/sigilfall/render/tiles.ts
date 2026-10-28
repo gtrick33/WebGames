@@ -78,12 +78,12 @@ export function buildScenery(map: TileMap, region: RegionDef, look: WorldLook | 
     if (map.kind[i] === K.Illusion) illusions.push(i);
   }
   const art = look && !THEMES[region.theme].indoor ? look : null;
-  const ground: GroundLayer = art ? new WorldGround(map, { ground: art.ground, over: art.over, rk: art.rk }, art.recipe, buildDecals(map, region)) : new Ground(map, region);
+  const ground: GroundLayer = art ? new WorldGround(map, art.rk, art.recipe, buildDecals(map, region)) : new Ground(map, region);
   const sc: Scenery = { ground, objects: [], art, torches: [], braziers: [], water, illusions, theme: region.theme };
   let handled = new Set<number>();
   if (art) {
-    // the capital is built from the architecture pack; everywhere else is CraftPix-led
-    const built = buildWorldObjects(map, { props: art.props, rk: art.rk }, art.recipe, region.kind === 'town');
+    // every outdoor land is drawn from the one pack (VISUAL_BIBLE.md §1)
+    const built = buildWorldObjects(map, { rk: art.rk, gc: art.gc }, art.recipe);
     sc.objects.push(...built.objects);
     handled = built.handled;
   }
@@ -176,12 +176,6 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
         sc.objects.push({ x, y: bottom - 4, c, dx: -8, dy: -(c.height / D) + 4 + (TILE - (c.height / D) < 0 ? 0 : 0), fade: false, kind: 'fence' });
         break;
       }
-      case K.HouseAnchor: {
-        const c = building('house', 4, 3, Math.floor(h * 1000)).toCanvas();
-        // the anchor is the footprint's bottom-left: 4 tiles wide, 3 tall
-        sc.objects.push({ x: tx * TILE + 32, y: bottom - 2, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: true, kind: 'house' });
-        break;
-      }
       case K.Pillar: {
         const c = pillar();
         sc.objects.push({ x, y: bottom - 3, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: true, kind: 'pillar' });
@@ -212,6 +206,12 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
         break;
     }
   }
+  // without the packed art, each building painted over the part of its lot the pack's picture would stand on
+  for (const b of artMode ? [] : map.buildings) {
+    const { lot } = b;
+    const c = building(b.style, lot.w, lot.h, lot.tx * 31 + lot.ty + lot.h - 1).toCanvas();
+    sc.objects.push({ x: (lot.tx + lot.w / 2) * TILE, y: (lot.ty + lot.h) * TILE - 2, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 3, fade: true, kind: 'building' });
+  }
   for (const pm of map.markers) {
     if (handled.has(pm.ty * map.w + pm.tx)) continue;
     const m = pm.marker;
@@ -228,11 +228,6 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
     if (m.kind === 'waystone') {
       const c = waystone();
       sc.objects.push({ x, y: bottom - 5, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: false, kind: 'waystone' });
-    }
-    if (m.kind === 'building') {
-      const c = building(m.style, m.w, m.h, pm.tx * 31 + pm.ty).toCanvas();
-      // the marker is the footprint's bottom-left tile; the picture's bottom edge is the footprint's
-      sc.objects.push({ x: (pm.tx + m.w / 2) * TILE, y: bottom - 2, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 3, fade: true, kind: 'building' });
     }
     if (m.kind === 'exit' && !look.indoor && !m.door) {
       if (REGIONS[m.to]?.kind === 'dungeon') {

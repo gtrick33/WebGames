@@ -24,6 +24,8 @@ const KNIVES = during('festival-the-knives');
 const AFTER = all(after('festival-the-knives'), until('festival-the-champion'));
 /** At war (Act IV): the market is a muster ground. */
 const WAR = is('the-wall-burns', 'started');
+/** An ordinary day: the market's own stalls stand (the festival, the night after and the war clear them). */
+const MARKET = all(not(FESTIVAL), not(KNIVES), not(AFTER), not(WAR));
 function plan(): CityPlan {
   const c = new CityPlan(104, 82, 2207);
   c.woods(3, 6);
@@ -50,7 +52,10 @@ function plan(): CityPlan {
   // the market square, the waystone in its middle
   c.fill(40, 32, 63, 49, 'cobble');
   c.marker(51, 37, { kind: 'waystone' });
-  c.marker(52, 45, { kind: 'prop', prop: 'well', solid: true });
+  // the city's fountain (three tiles wide), below the waystone
+  c.prop('fountain', 52, 45);
+  c.prop('block', 51, 45);
+  c.prop('block', 53, 45);
   c.marker(51, 43, { kind: 'start' });
   for (const [x, y] of [
     [42, 34],
@@ -66,8 +71,25 @@ function plan(): CityPlan {
     [59, 46, 'barrel'],
     [44, 34, 'barrel'],
     [59, 34, 'crate'],
+    // clipped trees at the square's corners, flowers and benches along its edges
+    [40, 32, 'topiary'],
+    [63, 32, 'topiary'],
+    [40, 49, 'topiary'],
+    [63, 49, 'topiary'],
+    [45, 32, 'flowerbed'],
+    [58, 32, 'flowerbed'],
+    [45, 49, 'flowerbed'],
+    [58, 49, 'flowerbed'],
+    [48, 47, 'bench'],
+    [55, 47, 'bench'],
   ] as const)
     c.prop(p, x, y);
+  for (const [x, y] of [
+    [47, 35],
+    [47, 46],
+    [56, 46],
+  ] as const)
+    c.prop('market-cart', x, y, true, MARKET);
 
   // the Regent's keep at the head of the avenue, its courtyard, the barracks beside it
   c.building('keep', 45, 10, 14, 8, { pave: false });
@@ -84,6 +106,19 @@ function plan(): CityPlan {
 
   // the training grounds: a fenced yard of dummies, Elder Maren at its gate
   c.fill(14, 12, 34, 12, 'fence').fill(14, 28, 34, 28, 'fence').fill(14, 12, 14, 28, 'fence').fill(34, 12, 34, 28, 'fence');
+  // its ground beaten to dirt, racks and archery butts along its fence
+  c.fill(16, 14, 32, 26, 'path');
+  for (const [x, y, p] of [
+    [16, 14, 'weapon-rack'],
+    [18, 14, 'weapon-rack'],
+    [21, 14, 'armor-stand'],
+    [32, 15, 'target'],
+    [32, 19, 'target'],
+    [32, 23, 'target'],
+    [16, 26, 'barrel'],
+    [17, 26, 'crate'],
+  ] as const)
+    c.prop(p, x, y);
   c.fill(23, 28, 25, 28, 'floor');
   c.fill(23, 29, 25, 38, 'path');
   c.marker(19, 17, { kind: 'dummy' });

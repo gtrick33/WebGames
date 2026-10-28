@@ -312,6 +312,7 @@ export class Renderer {
     this.drawAim(w);
     this.drawFacing(w, time);
     this.drawRings(w);
+    this.drawEntrances(w, time);
 
     // everything standing, sorted by depth
     const items: { y: number; draw: () => void }[] = [];
@@ -389,10 +390,10 @@ export class Renderer {
     for (const f of w.fires) this.drawFire(f.x, f.y, f.size, time);
     if (w.dark) this.drawLighting(w, sc, ox, oy, time);
     else if (sc.theme === 'forest' || sc.theme === 'jungle') this.drawCanopyShade(ox, oy, time);
-    // gloomy lands lie under a cold veil
+    // gloomy lands lie under a cold veil (light: with the packed art the land's own grade carries its mood)
     const veil = THEMES[sc.theme].tint;
     if (veil && !w.dark) {
-      g.globalAlpha = 0.26;
+      g.globalAlpha = sc.art ? 0.12 : 0.26;
       g.fillStyle = veil;
       g.fillRect(ox, oy, this.vw, this.vh);
       g.globalAlpha = 1;
@@ -2314,13 +2315,58 @@ export class Renderer {
     void w;
   }
 
+  /**
+   * The ways into buildings, and back out: a warm pool of light on the step and a gold chevron pointing through
+   * the door (in, under a painted door; out, at a room's door), so a door you can use never looks like one
+   * you can't. Walking onto it goes through.
+   */
+  private drawEntrances(w: World, time: number): void {
+    const g = this.g;
+    const inside = !!w.region.interior;
+    for (const x of w.exits) {
+      if (!x.door) continue;
+      const pulse = 0.5 + Math.sin(time * 3 + x.x * 0.1) * 0.5;
+      // the step: on the tile in front of a painted door, on the door tile itself indoors
+      const cy = inside ? x.y : x.y - 4;
+      g.save();
+      const grd = g.createRadialGradient(x.x, cy, 0, x.x, cy, 14);
+      grd.addColorStop(0, rgba('#ffe08a', 0.6 + pulse * 0.2));
+      grd.addColorStop(0.6, rgba('#ffc84a', 0.25 + pulse * 0.1));
+      grd.addColorStop(1, rgba('#ffc84a', 0));
+      g.fillStyle = grd;
+      g.beginPath();
+      g.ellipse(x.x, cy, 14, 7, 0, 0, Math.PI * 2);
+      g.fill();
+      // two chevrons, nudging the way through
+      const dir = inside ? 1 : -1;
+      const bob = Math.round(Math.sin(time * 4) * 1.5) * dir;
+      g.lineJoin = 'round';
+      g.lineCap = 'round';
+      for (const step of [0, 4]) {
+        const tip = cy + dir * (3 - step) + bob;
+        const back = tip - dir * 4;
+        g.beginPath();
+        g.moveTo(x.x - 5, back);
+        g.lineTo(x.x, tip);
+        g.lineTo(x.x + 5, back);
+        g.strokeStyle = 'rgba(40, 24, 16, 0.75)';
+        g.lineWidth = 3.4;
+        g.stroke();
+        g.strokeStyle = step ? 'rgba(255, 244, 196, 0.75)' : '#fff4c4';
+        g.lineWidth = 1.8;
+        g.stroke();
+      }
+      g.restore();
+    }
+  }
+
   /** A bobbing hint over what you can interact with. */
   private drawInteractMarker(w: World, time: number): void {
     const it = w.interactable;
     // on touch the Talk button itself stands beside the hero (ui/Touch.tsx)
     if (!it || this.touchMode) return;
     const g = this.g;
-    const img = pixelText(it.kind === 'npc' ? 'TALK' : it.kind === 'waystone' ? 'TRAVEL' : 'EXIT', '#ffffff');
+    const img = pixelText(it.kind === 'npc' ? 'TALK' : it.kind === 'waystone' ? 'TRAVEL' : it.kind === 'exit' && it.door && !w.region.interior ? 'ENTER' : 'EXIT', '#ffffff');
     const y = Math.round(it.y - 34 + Math.sin(time * 4) * 1.5);
     g.drawImage(img, Math.round(it.x - img.width / 2), y);
   }

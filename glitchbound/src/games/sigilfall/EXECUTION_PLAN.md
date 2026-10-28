@@ -53,6 +53,8 @@ Status words: **done** (built, tested, screenshot-checked), **partial** (what is
 - **Act IV's Gates and Act V** (`26ee957e`), **Act VI, Crownfall, the Epilogue and the postgame** (`61ed6e92`).
 - **Riftstone and Paragon** (2026-10-27): the old Riftstone branch (`sigilfall-phase5`) brought into the new story
   as an endless ladder past Mythic, climbed as Diablo's rifts are, with Paragon levels past 60. Save v11.
+- **One art language** (2026-10-28): every outdoor land drawn in Royal Keep alone (ASSET_AUDIT.md); buildings solid
+  where drawn, entered through their painted doors (marked); straight roads; indoors peaceful, the skill bar put away.
 
 ## Rules carried through every phase
 

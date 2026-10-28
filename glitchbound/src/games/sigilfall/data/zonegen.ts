@@ -154,12 +154,17 @@ class ZoneBuilder {
   private gate: [number, number] | null = null;
   /** Each town house's top-left tile, in the order built (story fires go on their roofs). */
   private readonly houses: [number, number][] = [];
+  /** The meandering roads' tiles, and the straight roads that replace them at the end (road(), straighten()). */
+  private readonly meandered: Uint8Array;
+  private readonly straight: Uint8Array;
 
   constructor(private readonly spec: ZoneSpec) {
     this.w = spec.w;
     this.h = spec.h;
     this.g = new Uint8Array(spec.w * spec.h).fill(FLOOR);
     this.lock = new Uint8Array(spec.w * spec.h);
+    this.meandered = new Uint8Array(spec.w * spec.h);
+    this.straight = new Uint8Array(spec.w * spec.h);
     this.r = rng(spec.seed);
   }
 
@@ -187,6 +192,9 @@ class ZoneBuilder {
     this.wildPacks(hubs, exits.map((e) => e.inner));
     this.connect(start);
     this.story(hubs, pois, exits.map((e) => e.inner));
+    this.straighten();
+    // the straight roads and the woods grown back: everyone is still reached
+    this.connect(start);
     const map: string[] = [];
     for (let y = 0; y < this.h; y++) map.push(String.fromCharCode(...this.g.subarray(y * this.w, (y + 1) * this.w)));
     return { map, placed: this.placed };
@@ -326,7 +334,7 @@ class ZoneBuilder {
   }
 
   /** A wandering line of tiles from a to b. */
-  private meander(a: [number, number], b: [number, number], wiggle: number): [number, number][] {
+  private meander(a: [number, number], b: [number, number], wiggle: number, turns?: [number, number][][]): [number, number][] {
     let pts: [number, number][] = [a, b];
     for (let depth = 0; depth < 4; depth++) {
       const next: [number, number][] = [pts[0]!];
@@ -338,6 +346,7 @@ class ZoneBuilder {
         next.push([(x0 + x1) / 2 + (-(y1 - y0) / (len || 1)) * off, (y0 + y1) / 2 + ((x1 - x0) / (len || 1)) * off], pts[i]!);
       }
       pts = next;
+      turns?.push(pts);
     }
     const out: [number, number][] = [];
     for (let i = 1; i < pts.length; i++) {
@@ -399,8 +408,16 @@ class ZoneBuilder {
     }
   }
 
+  /**
+   * A two-wide road from a to b. Everything placed after the roads (towns, sights, packs, the story) is placed
+   * along the meandering road the generator has always laid, so a land keeps its packs and people where they
+   * were; the road that is drawn and walked is the straight one, laid over it at the end (straighten()): straight
+   * runs with right-angle turns between the meander's few big turns, the way the art pack's own roads are laid
+   * (a road stepping across the grid tile by tile reads as a staircase).
+   */
   private road(a: [number, number], b: [number, number]): void {
-    for (const [x, y] of this.meander(a, b, 0.18)) {
+    const turns: [number, number][][] = [];
+    for (const [x, y] of this.meander(a, b, 0.18, turns)) {
       for (const [dx, dy] of [
         [0, 0],
         [1, 0],
@@ -415,6 +432,7 @@ class ZoneBuilder {
         if (here === COBBLE || here === HOUSE || here === HOUSE_ANCHOR) continue;
         this.g[i] = here === WATER || here === BRIDGE ? BRIDGE : PATH;
         this.lock[i] = 1;
+        this.meandered[i] = 1;
       }
       // the road's shoulders are cleared of trees
       for (let dy = -1; dy <= 2; dy++) {
@@ -428,13 +446,95 @@ class ZoneBuilder {
         }
       }
     }
+    // the straight road through the meander's big turns (two levels of them on a long road, one on a short)
+    const pts = (turns[Math.hypot(b[0] - a[0], b[1] - a[1]) > 24 ? 1 : 0] ?? [a, b]).map(([x, y]): [number, number] => [Math.round(clamp(x, 2, this.w - 3)), Math.round(clamp(y, 2, this.h - 3))]);
+    let [cx, cy] = a;
+    const mark = (): void => {
+      for (const [dx, dy] of [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+      ] as const)
+        if (this.inside(cx + dx, cy + dy, 2)) this.straight[this.idx(cx + dx, cy + dy)] = 1;
+    };
+    const toX = (x: number): void => {
+      while (cx !== x) {
+        cx += Math.sign(x - cx);
+        mark();
+      }
+    };
+    const toY = (y: number): void => {
+      while (cy !== y) {
+        cy += Math.sign(y - cy);
+        mark();
+      }
+    };
+    mark();
+    // a small sideways drift is carried to the next turn rather than taken as a one-tile jog
+    pts.slice(1).forEach(([qx, qy], k) => {
+      const last = k === pts.length - 2;
+      if (Math.abs(qx - cx) >= Math.abs(qy - cy)) {
+        toX(qx);
+        if (last || Math.abs(qy - cy) >= 3) toY(qy);
+      } else {
+        toY(qy);
+        if (last || Math.abs(qx - cx) >= 3) toX(qx);
+      }
+    });
+  }
+
+  /**
+   * The straight roads take the meandering ones' place: their tiles become road (a bridge over water, the
+   * shoulders cleared of trees), and the meander's become grass again, a trail through the trees it cleared.
+   * Nothing placed moves; a bridge the meander built stays, so no one is cut off.
+   */
+  private straighten(): void {
+    // nothing the story stands up may close a road (story()), the straight one included
+    for (const pm of this.placed) {
+      const m = pm.marker;
+      if (m.kind === 'prop' && m.solid && this.straight[this.idx(pm.tx, pm.ty)]) pm.marker = { ...m, solid: false };
+    }
+    const KEEP = new Set([COBBLE, HOUSE, HOUSE_ANCHOR, BRIDGE, FENCE, RAMPART, PILLAR]);
+    for (let i = 0; i < this.g.length; i++) {
+      const c = this.g[i]!;
+      if (this.straight[i]) {
+        if (c === WATER) this.g[i] = BRIDGE;
+        else if (!KEEP.has(c)) this.g[i] = PATH;
+      } else if (this.meandered[i] && c === PATH) this.g[i] = FLOOR;
+    }
+    for (let i = 0; i < this.g.length; i++) {
+      if (!this.straight[i]) continue;
+      const x = i % this.w;
+      const y = (i - x) / this.w;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (!this.inside(x + dx, y + dy, 2)) continue;
+          const j = this.idx(x + dx, y + dy);
+          const c = this.g[j]!;
+          if ((c === WALL || c === TREE || c === BUSH || c === ROCK) && !this.marked.has(j)) this.g[j] = FLOOR;
+        }
+      }
+    }
+    // the woods grow back over a trail no road keeps open (the land stays as close-set as it was laid out)
+    for (let pass = 0; pass < 2; pass++) {
+      const was = this.g.slice();
+      for (let i = 0; i < was.length; i++) {
+        if (!this.meandered[i] || this.straight[i] || was[i] !== FLOOR || this.marked.has(i)) continue;
+        const x = i % this.w;
+        const y = (i - x) / this.w;
+        let wood = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && (was[this.idx(x + dx, y + dy)] === WALL || was[this.idx(x + dx, y + dy)] === TREE)) wood++;
+        if (wood >= 4) this.g[i] = wood >= 6 ? WALL : TREE;
+      }
+    }
   }
 
   /* ------------------------------------------------------------ towns, sights */
 
   private town(cx: number, cy: number, hub: HubSpec): void {
-    // a cobbled square with the waystone in the middle
-    for (let y = cy - 5; y <= cy + 5; y++) for (let x = cx - 6; x <= cx + 6; x++) if (Math.hypot((x - cx) * 0.85, y - cy) <= 5.2) this.set(x, y, COBBLE);
+    // a cobbled square with the waystone in the middle (its corners cut, like the pack's own squares)
+    for (let y = cy - 4; y <= cy + 4; y++) for (let x = cx - 6; x <= cx + 6; x++) if (Math.abs(x - cx) < 6 || Math.abs(y - cy) < 4) this.set(x, y, COBBLE);
     this.put(cx, cy - 1, { kind: 'waystone' });
     // the townsfolk stand around the square
     hub.npcs.forEach((npc, i) => {
@@ -456,16 +556,24 @@ class ZoneBuilder {
         }
       }
     }
-    // lamps and goods
+    // lamps, goods, the market's stalls at the head of the square, flowers at its corners
     for (const [dx, dy, prop, solid] of [
       [-6, -3, 'lamp', true],
       [6, -3, 'lamp', true],
       [-6, 3, 'crate', true],
       [7, 3, 'barrel', true],
+      [-3, -4, 'market-cart', true],
+      [3, -4, 'market-cart', true],
+      [-7, -5, 'flowerbed', true],
+      [7, -5, 'flowerbed', true],
+      [-7, 5, 'planter', true],
+      [7, 5, 'planter', true],
     ] as const) {
       const x = cx + dx;
       const y = cy + dy;
-      if (this.at(x, y) !== WATER && !this.marked.has(this.idx(x, y))) this.put(x, y, { kind: 'prop', prop, solid });
+      // the dressing outside the square only on open ground (never on a road)
+      const ground = Math.abs(dx) > 6 || Math.abs(dy) > 4 ? OPEN.has(this.at(x, y)) : this.at(x, y) !== WATER;
+      if (ground && !this.marked.has(this.idx(x, y))) this.put(x, y, { kind: 'prop', prop, solid });
     }
     if (hub.wall) this.palisade(cx, cy);
   }
@@ -501,7 +609,7 @@ class ZoneBuilder {
     for (let y = y0 - 1; y <= y0 + 3; y++) {
       for (let x = x0 - 1; x <= x0 + 4; x++) {
         const c = this.at(x, y);
-        if (!this.inside(x, y, 3) || c === PATH || c === COBBLE || c === WATER || c === BRIDGE || c === HOUSE || c === HOUSE_ANCHOR || this.marked.has(this.idx(x, y))) return false;
+        if (!this.inside(x, y, 3) || c === PATH || c === COBBLE || c === WATER || c === BRIDGE || c === HOUSE || c === HOUSE_ANCHOR || this.marked.has(this.idx(x, y)) || this.straight[this.idx(x, y)]) return false;
       }
     }
     for (let y = y0; y < y0 + 3; y++) for (let x = x0; x < x0 + 4; x++) this.set(x, y, y === y0 + 2 && x === x0 ? HOUSE_ANCHOR : HOUSE);
@@ -517,7 +625,7 @@ class ZoneBuilder {
         fn(Math.round(cx + Math.cos(a) * rad), Math.round(cy + Math.sin(a) * rad * 0.8), k);
       }
     };
-    const free = (x: number, y: number): boolean => OPEN.has(this.at(x, y)) && !this.marked.has(this.idx(x, y));
+    const free = (x: number, y: number): boolean => OPEN.has(this.at(x, y)) && !this.marked.has(this.idx(x, y)) && !this.straight[this.idx(x, y)];
     switch (p.kind) {
       case 'camp':
         if (free(cx, cy)) this.put(cx, cy, { kind: 'prop', prop: 'campfire', solid: true });
@@ -530,7 +638,13 @@ class ZoneBuilder {
         break;
       case 'ruin':
         ring(Math.round(r * 1.6), r * 0.7, (x, y, k) => free(x, y) && this.set(x, y, k % 3 === 0 ? ROCK : PILLAR));
-        for (let y = cy - 2; y <= cy + 2; y++) for (let x = cx - 3; x <= cx + 3; x++) if (free(x, y) && hash2(x, y, seed) < 0.7) this.set(x, y, COBBLE);
+        // the old floor: whole in the middle, broken at its edge (single stones dotted about read as noise)
+        for (let y = cy - 2; y <= cy + 2; y++) {
+          for (let x = cx - 3; x <= cx + 3; x++) {
+            const rim = Math.abs(x - cx) === 3 || Math.abs(y - cy) === 2;
+            if (free(x, y) && (!rim || hash2(x, y, seed) < 0.55)) this.set(x, y, COBBLE);
+          }
+        }
         break;
       case 'farm': {
         // a fenced field of crops with a gate toward the middle of the map
