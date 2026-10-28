@@ -5,7 +5,7 @@ import { isMainQuest, turnInNpc } from '../progress/handin';
 import { chestArt, CHEST_H, CHEST_W, coinArt, orbArt, potionArt, shardArt } from './art/loot';
 import { LEAD, leanTarget, LIFT, placeCamera } from './camera';
 import { drawBolt, drawVfx } from './art/vfx';
-import { worldLook } from './art/world';
+import { hasLook, worldLook } from './art/world';
 import { THEMES } from '../data/themes';
 import type { ClassId, Item } from '../data/types';
 import { bossHidden } from '../sim/boss';
@@ -124,6 +124,10 @@ export class Renderer {
   private sceneryFor: World | null = null;
   /** The story state the scenery was built for (World.stateVersion). */
   private sceneryVersion = -1;
+  /** A land with the pack's look whose art is still loading: when the wait began (seconds), or -1. */
+  private artWait = -1;
+  /** Held dark while the land's art loads: the engine holds the world still meanwhile. */
+  waiting = false;
   private light: Cnv;
   private lg: CanvasRenderingContext2D;
   aim: AimPreview | null = null;
@@ -262,6 +266,24 @@ export class Renderer {
     this.still = dt === 0;
     // the packed art for this land (null while it loads, or indoors): the scenery is rebuilt once it is in
     const art = worldLook(w.region.theme);
+    // a land drawn with the pack waits for its art (a moment on a first visit, or one long left behind), held
+    // dark rather than drawn in stand-in tiles that change under the hero a few frames in; art that does not
+    // come in time (a failed download) gives way to the stand-in
+    if (!art && hasLook(w.region.theme) && this.sceneryFor !== w) {
+      if (this.artWait < 0) this.artWait = time;
+      if (time - this.artWait < 2.5) {
+        this.waiting = true;
+        const g = this.g;
+        g.save();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.fillStyle = '#07050d';
+        g.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        g.restore();
+        return;
+      }
+    }
+    this.artWait = -1;
+    this.waiting = false;
     if (this.sceneryFor !== w || (art && this.scenery?.art !== art) || this.sceneryVersion !== w.stateVersion) {
       const fresh = this.sceneryFor !== w;
       this.sceneryVersion = w.stateVersion;

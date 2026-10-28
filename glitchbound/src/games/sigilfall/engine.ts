@@ -298,7 +298,8 @@ export class SigilEngine {
     }
     // in a co-op run the world never stops for a menu: the others are still fighting (the hero stands)
     const uiPaused = this.isPaused();
-    const paused = uiPaused && !(this.coop && !this.hidden);
+    // (and while a land's art loads, held dark, nothing moves in it)
+    const paused = (uiPaused || this.renderer.waiting) && !(this.coop && !this.hidden);
     const f: InputFrame = emptyInput();
     if (!paused) {
       if (!uiPaused) {
@@ -779,6 +780,8 @@ export class SigilEngine {
     } else if (it.kind === 'exit') {
       this.kbm?.release();
       this.touch.release();
+      // the art of the land ahead starts loading while the road sign is read
+      worldLook(REGIONS[it.to as RegionId].theme);
       this.setUi({ travel: { to: it.to as RegionId, label: it.label, locked: it.locked } });
     }
   }

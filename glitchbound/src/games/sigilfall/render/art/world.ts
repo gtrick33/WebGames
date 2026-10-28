@@ -26,6 +26,9 @@ const lookKey = (recipe: Recipe): LookKey => {
 
 let latest: Theme | null = null;
 
+/** Is this land drawn with the pack (outdoors), so that it has a look to wait for? */
+export const hasLook = (theme: Theme): boolean => !!RECIPES[theme];
+
 export function worldLook(theme: Theme): WorldLook | null {
   const hit = looks.get(theme);
   if (hit) {
