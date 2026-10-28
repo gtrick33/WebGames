@@ -136,7 +136,9 @@
 .arcade-grid > .tile-tall { grid-column: span 3; grid-row: span 2; }
 .arcade-grid > .tile-md { grid-column: span 3; }
 @media (max-width: 1240px) {
-  .arcade-grid > .tile-xl { grid-column: span 8; }
+  /* Three across: big and wide take two of the three columns, so rows still come out whole. */
+  .arcade-grid > .tile-xl,
+  .arcade-grid > .tile-wide { grid-column: span 8; }
   .arcade-grid > .tile-tall,
   .arcade-grid > .tile-md { grid-column: span 4; }
 }
@@ -341,15 +343,3 @@
   }
 }
 
-/* "Show all 22 games" under the first rows of the unfiltered grid. */
-.arcade-more {
-  display: flex;
-  justify-content: center;
-  margin-top: clamp(22px, 3vw, 34px);
-}
-/* On a phone the folded grid is four rows of two. */
-@media (max-width: 600px) {
-  .arcade-grid.is-folded > :nth-child(n + 9) {
-    display: none;
-  }
-}

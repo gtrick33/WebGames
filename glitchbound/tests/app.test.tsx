@@ -55,12 +55,12 @@ describe('homepage', () => {
     const together = await screen.findByRole('region', { name: 'Better with friends' });
     expect(within(together).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(expect.arrayContaining(['/games/backgammon?play=1', '/games/belot?play=1', '/party']));
     await waitFor(() => expect(within(together).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/party?play=impostor'));
-    // The arcade opens on its first rows; the best games come last, so it doesn't open by repeating them.
+    // The arcade shows every game at once; the best games come last, so it doesn't open by repeating them.
     const arcade = screen.getByRole('region', { name: 'The arcade' });
-    const firstRows = within(arcade).getAllByRole('article');
-    expect(firstRows).toHaveLength(12);
-    expect(firstRows.map((a) => a.querySelector('.tile-link')!.textContent)).not.toContain('Quizbelief');
-    fireEvent.click(within(arcade).getByRole('button', { name: /Show all \d+ games/ }));
+    const tiles = within(arcade).getAllByRole('article').map((a) => a.querySelector('.tile-link')!.textContent);
+    expect(within(arcade).queryByRole('button', { name: /Show all \d+ games/ })).toBeNull();
+    expect(tiles.slice(0, 12)).not.toContain('Quizbelief');
+    expect(tiles).toContain('Quizbelief');
     expect(within(arcade).getByRole('link', { name: 'Neon Rush' }).getAttribute('href')).toBe('/games/neon-rush');
     expect(within(arcade).getByRole('link', { name: 'Quizbelief' }).getAttribute('href')).toBe('/games/quizbelief');
     // Games friends can play together live carry the label, and only those.
@@ -82,7 +82,6 @@ describe('homepage', () => {
     expect(within(arcade).getByRole('link', { name: 'Neon Rush' })).toBeTruthy();
     expect(within(arcade).queryByRole('link', { name: 'Letter Pinch' })).toBeNull();
     fireEvent.click(within(arcade).getByRole('button', { name: /Everything/ }));
-    fireEvent.click(within(arcade).getByRole('button', { name: /Show all \d+ games/ }));
     expect(within(arcade).getByRole('link', { name: 'Letter Pinch' })).toBeTruthy();
     // Crass Act lives in Party Mode, not the arcade.
     expect(within(arcade).queryByRole('link', { name: 'Crass Act' })).toBeNull();
@@ -365,7 +364,6 @@ describe('members features as a guest (API unreachable in tests)', () => {
   it('keeps favorites on the device and filters the arcade by them', () => {
     renderAt('/');
     const arcade = screen.getByRole('region', { name: 'The arcade' });
-    fireEvent.click(within(arcade).getByRole('button', { name: /Show all \d+ games/ }));
     fireEvent.click(within(arcade).getByRole('button', { name: 'Add Neon Rush to favorites' }));
     expect(within(arcade).getByRole('button', { name: 'Remove Neon Rush from favorites' }).getAttribute('aria-pressed')).toBe('true');
     expect(JSON.parse(localStorage.getItem('glitchbound.favorites')!)).toEqual(['neon-rush']);

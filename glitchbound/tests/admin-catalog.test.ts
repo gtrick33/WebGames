@@ -18,7 +18,7 @@ import {
   sanitizePick,
   settingsFor,
   spotlightGame,
-  TILE_RHYTHM,
+  autoBigCount,
   tileSizeFor,
   type PublicCatalog,
 } from '../src/catalog/settings';
@@ -263,11 +263,34 @@ describe('home page banner layout', () => {
     expect(orderByLayout(GAMES, null)).toEqual(GAMES);
   });
 
-  it('uses the chosen banner size, else the automatic rhythm', () => {
+  it('uses the chosen banner size, else the automatic one', () => {
     const layout = { order: [], sizes: { [b!.slug]: 'wide' as const }, accents: {}, stickers: {} };
-    expect(tileSizeFor(layout, b!.slug, 0)).toBe('wide');
-    expect(tileSizeFor(layout, a!.slug, 1)).toBe(TILE_RHYTHM[1]);
-    expect(tileSizeFor(null, a!.slug, 9)).toBe(TILE_RHYTHM[9 % TILE_RHYTHM.length]);
+    const slugs = GAMES.slice(0, 22).map((g) => g.slug);
+    expect(tileSizeFor(layout, [b!.slug, ...slugs], 0)).toBe('wide');
+    expect(tileSizeFor(null, slugs, 0)).toBe('xl');
+    expect(tileSizeFor(null, slugs, 1)).toBe('md');
+    expect(tileSizeFor(null, slugs, 7)).toBe('xl');
+    expect(tileSizeFor(null, slugs, 10)).toBe('md');
+  });
+
+  it('makes only as many automatic banners big as keep every row of four full, each with four small ones beside it', () => {
+    for (let n = 1; n <= 60; n++) {
+      const slugs = Array.from({ length: n }, (_, i) => `g${i}`);
+      const sizes = slugs.map((_, i) => tileSizeFor(null, slugs, i));
+      const big = sizes.filter((s) => s === 'xl').length;
+      expect(big, `${n}`).toBe(autoBigCount(n));
+      // a big banner covers four cells; a full grid is a multiple of four (when any is big)
+      if (big) expect((n + 3 * big) % 4, `${n}`).toBe(0);
+      // every big one has four games after it to sit beside
+      sizes.forEach((s, i) => s === 'xl' && expect(i + 4, `${n}`).toBeLessThan(n));
+    }
+    expect(autoBigCount(22)).toBe(2);
+    expect(autoBigCount(5)).toBe(1);
+    // a banner the admin made big counts too: 21 banners, one chosen big, one automatic big = 28 cells
+    const slugs = Array.from({ length: 21 }, (_, i) => `g${i}`);
+    const layout = { order: [], sizes: { g17: 'xl' as const }, accents: {}, stickers: {} };
+    const cells = slugs.reduce((n, _, i) => n + ({ md: 1, wide: 2, tall: 2, xl: 4 } as const)[tileSizeFor(layout, slugs, i)], 0);
+    expect(cells % 4).toBe(0);
   });
 });
 

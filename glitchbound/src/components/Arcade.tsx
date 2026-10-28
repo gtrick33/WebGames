@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLang, useT } from '../i18n';
 import { flushSync } from 'react-dom';
 import { categoryCounts, isCategory, queryGames, SORTS, type SortId } from '../catalog/catalog';
-import { LOCAL_FIRST, rankForHome } from '../catalog/flagships';
+import { homeOrder, LOCAL_FIRST } from '../catalog/flagships';
 import { orderByLayout, tileSizeFor } from '../catalog/settings';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { MOODS, type CategoryId, type MoodId } from '../catalog/types';
@@ -27,8 +27,6 @@ function withTransition(update: () => void): void {
 }
 
 const MOOD_IDS = Object.keys(MOODS) as MoodId[];
-/** How many tiles the unfiltered grid shows before "Show all": three rows on a wide screen. */
-const FOLD = 12;
 const isMood = (v: string | null): v is MoodId => !!v && v in MOODS;
 
 /**
@@ -60,24 +58,20 @@ export function Arcade() {
   // A dozen or so games: cheap enough to work out on every render (the compiler memoizes it).
   const hits = queryGames({ q, category, sort: sort === 'featured' ? 'newest' : sort }, live.games);
   const ordered = sort === 'featured' ? orderByLayout(hits, live.layout) : hits;
-  // The default view ranks the grid: the language's local games and any pinned game, the games this
-  // device has played, then the rest; the best games, already big cards above, come after those, so the
-  // grid doesn't open by repeating them. A search or a chosen sort shows exactly what it asked for.
+  // The default view: the admin's layout as arranged, or the automatic order (homeOrder). A search or a
+  // chosen sort shows exactly what it asked for.
   const flagships = useFlagships().list.map((f) => f.game.slug);
   const local = LOCAL_FIRST[useLang()] ?? [];
-  const pinned = games.filter((g) => live.settings(g.slug).pinned && !flagships.includes(g.slug)).map((g) => g.slug);
-  const ranked = rankForHome(ordered, [...local, ...pinned], recentSlugs(save));
-  const all = q.trim() ? hits : sortParam !== null ? ordered : [...ranked.filter((g) => !flagships.includes(g.slug)), ...ranked.filter((g) => flagships.includes(g.slug))];
+  const pinned = games.filter((g) => live.settings(g.slug).pinned).map((g) => g.slug);
+  const home = homeOrder(hits, featuredOn ? live.layout : null, { pinned, flagships, local, recent: recentSlugs(save) });
+  const all = q.trim() ? hits : sortParam !== null ? ordered : home;
   const results = (favOnly ? all.filter((g) => favorites.includes(g.slug)) : all).filter((g) => !mood || g.moods?.includes(mood));
   const filtered = q.trim() !== '' || category !== null || favOnly || mood !== null;
   // Search, categories and sort open by themselves when a link (or the player) is using them.
   const showMore = moreOpen || q.trim() !== '' || category !== null || favOnly || sortParam !== null;
   const moods = MOOD_IDS.filter((m) => games.some((g) => g.moods?.includes(m)));
   const firstRender = useRef(true);
-  // The unfiltered grid opens on its first rows; the rest are one tap away (any filter shows everything).
-  const [expanded, setExpanded] = useState(false);
-  const folded = !filtered && !expanded && results.length > FOLD + 2;
-  const shown = folded ? results.slice(0, FOLD) : results;
+  const slugs = results.map((g) => g.slug);
 
   const setParam = (key: string, value: string | null): void => {
     const next = new URLSearchParams(window.location.search);
@@ -212,9 +206,9 @@ export function Arcade() {
         </p>
 
         {results.length > 0 ? (
-          <div className={`arcade-grid${folded ? ' is-folded' : ''}`}>
-            {shown.map((g, i) => (
-              <GameTile key={g.slug} game={g} index={i} size={tileSizeFor(live.layout, g.slug, i)} best={save.games[g.slug]?.best.score} />
+          <div className="arcade-grid">
+            {results.map((g, i) => (
+              <GameTile key={g.slug} game={g} index={i} size={tileSizeFor(live.layout, slugs, i)} best={save.games[g.slug]?.best.score} />
             ))}
             {!filtered && games.length < 4 && (
               <aside className="workshop pop-in" style={{ ['--i' as string]: results.length }} aria-label="About upcoming games">
@@ -229,13 +223,6 @@ export function Arcade() {
             )}
           </div>
         ) : null}
-        {folded && (
-          <div className="arcade-more">
-            <button className="btn btn-lg btn-ink" onClick={() => withTransition(() => setExpanded(true))}>
-              {t('Show all {n} games', { n: results.length })} <Icon name="chevronDown" />
-            </button>
-          </div>
-        )}
         {results.length === 0 && (
           <div className="arcade-empty panel">
             <div className="empty-shapes" aria-hidden="true">

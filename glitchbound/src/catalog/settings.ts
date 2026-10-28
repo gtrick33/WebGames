@@ -71,8 +71,27 @@ export interface Notice {
 export type TileSize = 'md' | 'wide' | 'tall' | 'xl';
 export const TILE_SIZES: TileSize[] = ['md', 'wide', 'tall', 'xl'];
 
-/** Shape rhythm used for games without a chosen size, so the grid never looks like identical boxes. */
-export const TILE_RHYTHM: TileSize[] = ['xl', 'md', 'md', 'md', 'md', 'wide', 'md', 'md', 'md', 'md', 'md', 'tall', 'md', 'md'];
+/**
+ * The automatic layout (games without a chosen size): blocks of five, a big banner with four small ones
+ * beside it, the big one on alternate sides (at 0, 7, 10, 17, …), so the grid never looks like identical
+ * boxes. A big banner takes four cells of a four-across grid, so only as many are big as keep every row full
+ * (and each has its four small ones to sit beside): no holes, not even in the last row when it can be helped.
+ */
+const bigSlot = (i: number): boolean => i % 10 === 0 || i % 10 === 7;
+
+/** Cells a banner takes beyond one on a four-across grid. */
+const EXTRA_CELLS: Record<TileSize, number> = { md: 0, wide: 1, tall: 1, xl: 3 };
+
+/**
+ * How many big banners the automatic layout gives a grid of `count` banners, `chosen` extra cells already
+ * taken by sizes the admin picked.
+ */
+export function autoBigCount(count: number, chosen = 0): number {
+  let slots = 0;
+  for (let i = 0; i + 4 < count; i++) if (bigSlot(i)) slots++;
+  for (let k = slots; k > 0; k--) if ((count + chosen + 3 * k) % 4 === 0) return k;
+  return 0;
+}
 
 export const ACCENTS: Accent[] = ['cyan', 'magenta', 'blue', 'orange', 'lime', 'coral', 'yellow', 'teal', 'violet'];
 
@@ -136,8 +155,15 @@ export function orderByLayout<T extends { slug: string }>(games: readonly T[], l
     .map((x) => x.g);
 }
 
-/** The banner size for the game at position `index` of the grid. */
-export const tileSizeFor = (layout: HomeLayout | null | undefined, slug: string, index: number): TileSize => layout?.sizes[slug] ?? TILE_RHYTHM[index % TILE_RHYTHM.length]!;
+/** The banner size for `slugs[index]`, the banners of a grid in order: its chosen size, or the automatic one. */
+export function tileSizeFor(layout: HomeLayout | null | undefined, slugs: readonly string[], index: number): TileSize {
+  const chosen = layout?.sizes[slugs[index]!];
+  if (chosen) return chosen;
+  if (!bigSlot(index)) return 'md';
+  const nth = Math.floor(index / 10) * 2 + (index % 10 === 7 ? 1 : 0);
+  const extra = layout ? slugs.reduce((n, s) => n + EXTRA_CELLS[layout.sizes[s] ?? 'md'], 0) : 0;
+  return nth < autoBigCount(slugs.length, extra) ? 'xl' : 'md';
+}
 
 /** Rules for the daily challenge rotation. */
 export interface DailyRules {
