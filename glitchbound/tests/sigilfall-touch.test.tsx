@@ -40,7 +40,7 @@ function setup() {
   const view = render(<TouchControls engine={engine} />);
   const zone = view.container.querySelector('.rb-joyzone')! as HTMLElement;
   const attack = view.container.querySelector('.rb-sb-basic')! as HTMLElement;
-  return { touch, view, zone, attack };
+  return { touch, view, zone, attack, engine };
 }
 
 const finger = (el: HTMLElement, type: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel' | 'lostPointerCapture', id: number, x: number, y: number) =>
@@ -66,6 +66,22 @@ describe('Sigilfall: touch controls with two thumbs', () => {
     finger(zone, 'pointerUp', 1, 100, 140);
     expect(touch.mx).toBe(0);
     expect(touch.my).toBe(0);
+  });
+
+  it('a held stick stays under the thumb when the controls redraw (it used to jump back to rest and jitter)', () => {
+    const { zone, view, engine } = setup();
+    const joy = view.container.querySelector('.rb-joy') as HTMLElement;
+    const knob = view.container.querySelector('.rb-knob') as HTMLElement;
+    const rest = joy.style.transform;
+    finger(zone, 'pointerDown', 1, 100, 200);
+    finger(zone, 'pointerMove', 1, 130, 200);
+    const held = [joy.style.transform, knob.style.transform];
+    expect(held[0]).not.toBe(rest);
+    // a toast, a cooldown: the game redraws its controls while the thumb is down
+    view.rerender(<TouchControls engine={engine} />);
+    expect([joy.style.transform, knob.style.transform]).toEqual(held);
+    finger(zone, 'pointerUp', 1, 130, 200);
+    expect(joy.style.transform).toBe(rest);
   });
 
   it('a second finger on the stick does not take it over, and lifting it changes nothing', () => {
