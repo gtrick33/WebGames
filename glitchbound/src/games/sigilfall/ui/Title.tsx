@@ -252,7 +252,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           <div className="rb-seg rb-body" role="radiogroup" aria-label="Hero">
             {(['m', 'f'] as const).map((b) => (
               <button key={b} type="button" role="radio" aria-checked={body === b} className={body === b ? 'is-on' : ''} onClick={() => setBody(b)}>
-                {b === 'm' ? 'Man' : 'Woman'}
+                {b === 'm' ? 'Male' : 'Female'}
               </button>
             ))}
           </div>
