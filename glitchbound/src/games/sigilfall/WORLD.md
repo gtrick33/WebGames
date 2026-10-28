@@ -12,7 +12,7 @@ living as he rules the dead. The Sigil-wardens of the old kingdoms broke his arm
 with their seven sigils, and shut Vaelor in a crypt beneath the Whisperwood, his heart torn out and
 locked away so he could never wake.
 
-The sigils have fallen (the game's first line). Morgrave, a scholar who went looking for the King's
+The sigils have fallen. Morgrave, a scholar who went looking for the King's
 secret, opened the Hollow Crypt's heart, and though the hero stops him there, the sarcophagus at its
 center is empty: the Hollow King has already gone north. In the Pale Reach, at his old citadel of
 **Duskspire**, he is raising the **Hollow Legion**: the dead of every battlefield, drowned sailors,

@@ -256,8 +256,12 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     const step = int(e.step, 0, steps - 1, 0);
     c.quests[id] = { state, n: notTaken ? -1 : int(e.n, 0, 1e6, 0), ...(step ? { step } : {}) };
   }
-  // the three training quests became one: whoever finished it has the north road
-  if (c.quests['first-steps']?.state === 'done' && !c.unlocked.includes('whisperwood')) c.unlocked.push('whisperwood');
+  // the north road is open after the Prologue's dawn; a hero of the old opening went up it first, after the
+  // yard (the three training quests became one), so whoever started the wood has it
+  if ((c.quests['the-empty-tomb']?.state === 'done' || c.quests['into-the-wood']) && !c.unlocked.includes('whisperwood')) c.unlocked.push('whisperwood');
+  // the Prologue opens on the raid now: the courier walks in during it (briar-the-rider), where he once met a
+  // hero of the old opening in daylight. Whoever has met him has seen him come
+  if (c.quests['briar-the-seal'] && !c.quests['briar-the-rider']) c.quests['briar-the-rider'] = { state: 'done', n: 1 };
   if (typeof o.tracked === 'string' && (c.quests[o.tracked]?.state === 'active' || c.quests[o.tracked]?.state === 'ready')) c.tracked = o.tracked;
   if (Array.isArray(o.unlocked)) for (const r of o.unlocked) if (typeof r === 'string' && r in REGIONS && !c.unlocked.includes(r as RegionId)) c.unlocked.push(r as RegionId);
   // quests of the zones the hero has been to start once those are known

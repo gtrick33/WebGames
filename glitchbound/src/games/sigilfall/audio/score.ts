@@ -68,6 +68,12 @@ export class Score {
   /** Schedules every bar that starts before `until` (seconds, the context's clock). */
   schedule(until: number): void {
     const len = this.beat * this.song.meter;
+    // bars whose time went by unplayed (a hidden tab's timers sleep while its clock runs) are skipped, not all
+    // played at once when it wakes
+    while (this.next + len < this.ctx.currentTime) {
+      this.next += len;
+      this.bar++;
+    }
     while (this.next < until) {
       this.playBar(this.next);
       this.next += len;

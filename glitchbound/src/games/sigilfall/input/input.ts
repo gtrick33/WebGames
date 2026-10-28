@@ -15,6 +15,14 @@ const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 export type UltKey = 'f' | 't' | 'shift' | 'rmb';
 export type Skill4Key = 'c' | 'v' | 'z' | 'x';
 
+/**
+ * Movement keys by where they sit on the keyboard (`code`), not what they type: WASD walks on any layout
+ * (Cyrillic, AZERTY), and a key let go after the layout changed still stops. By letter only for a keyboard
+ * that gives no position.
+ */
+const MOVE_CODES: Record<string, 'up' | 'down' | 'left' | 'right'> = { KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right', ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+const MOVE_KEYS: Record<string, 'up' | 'down' | 'left' | 'right'> = { w: 'up', s: 'down', a: 'left', d: 'right', ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+
 /** Menu shortcuts the keyboard adapter reports to the UI. */
 export type UiKey = 'pause' | 'hero' | 'skills' | 'talents' | 'quests' | 'map' | 'party';
 
@@ -73,7 +81,9 @@ export class KeyboardMouse {
     if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const code = e.code;
-    const move = ['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(k);
+    // a held key is known by its place (its letter only if the keyboard gives none)
+    const id = code || k;
+    const move = !!(MOVE_CODES[id] ?? MOVE_KEYS[id]);
     if (move || k === ' ') e.preventDefault();
     if (down) {
       this.lastUsed = performance.now();
@@ -95,8 +105,8 @@ export class KeyboardMouse {
         else if (code === 'KeyU') this.onUi?.('skills');
         else if (code === 'KeyO') this.onUi?.('party');
       }
-      this.keys.add(k);
-    } else this.keys.delete(k);
+      this.keys.add(id);
+    } else this.keys.delete(id);
   }
 
   /** Lets go of everything (focus lost, menu opened): nothing stays held. */
@@ -108,12 +118,17 @@ export class KeyboardMouse {
 
   /** Movement from the keys. */
   move(): { x: number; y: number } {
+    const held = new Set<string>();
+    for (const id of this.keys) {
+      const dir = MOVE_CODES[id] ?? MOVE_KEYS[id];
+      if (dir) held.add(dir);
+    }
     let x = 0;
     let y = 0;
-    if (this.keys.has('a') || this.keys.has('ArrowLeft')) x -= 1;
-    if (this.keys.has('d') || this.keys.has('ArrowRight')) x += 1;
-    if (this.keys.has('w') || this.keys.has('ArrowUp')) y -= 1;
-    if (this.keys.has('s') || this.keys.has('ArrowDown')) y += 1;
+    if (held.has('left')) x -= 1;
+    if (held.has('right')) x += 1;
+    if (held.has('up')) y -= 1;
+    if (held.has('down')) y += 1;
     const l = Math.hypot(x, y);
     return l > 0 ? { x: x / l, y: y / l } : { x: 0, y: 0 };
   }

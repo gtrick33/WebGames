@@ -266,8 +266,9 @@ const HAND_LAID: Record<string, RegionDef> = {
     subtitle: 'Under Briarhollow’s chapel, older than the village',
     theme: 'crypt',
     kind: 'dungeon',
-    level: 5,
-    levels: [5, 7],
+    // the Prologue's night ends here: a hero comes down the stair at about level 4
+    level: 4,
+    levels: [4, 6],
     at: [61, 53],
     dark: true,
     safe: false,

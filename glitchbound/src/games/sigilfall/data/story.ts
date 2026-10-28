@@ -13,10 +13,10 @@ export const STORY_QUESTS: QuestDef[] = [
     giver: 'elyra',
     auto: true,
     zone: 'briarhollow',
-    text: 'Dawn over a village half burned. Elyra carries the fragment of the Starlight Crown inside her now, and the mark of the Ashen Host is painted on the crypt wall. Elder Maren must hear it all.',
+    text: 'Dawn over a village half burned. Elyra carries the fragment of the Starlight Crown inside her now, the mark of the Ashen Host is painted on the crypt wall, and you still carry a dead courier’s broken seal. Elder Maren must hear it all.',
     objective: { kind: 'talk', npc: 'maren', label: 'Tell Elder Maren what was under the chapel' },
     after: ['close-the-rift'],
-    reward: { xp: 900, gold: 150, text: 'Briarhollow will not run. It will gather the Vale: every village that holds is one more wall.' },
+    reward: { xp: 900, gold: 150, unlock: 'whisperwood', text: 'Briarhollow will not run. It will gather the Vale: every village that holds is one more wall. The north road into the Whisperwood is open.' },
   },
   /* --------------------------------------------- Act I: The Villages of the Vale */
   {

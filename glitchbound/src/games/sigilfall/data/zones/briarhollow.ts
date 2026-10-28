@@ -19,8 +19,8 @@ const not = (c: StoryCond): StoryCond => ({ not: c });
 const any = (...c: StoryCond[]): StoryCond => ({ any: c });
 const all = (...c: StoryCond[]): StoryCond => ({ all: c });
 
-/** The night of the raid, from nightfall to the door holding. */
-const RAID = any(is('briar-nightfall', 'active'), is('briar-the-inn', 'active'), is('briar-hold-the-door', 'active'));
+/** The night of the raid, from the fight at the gate to the door holding (the Prologue opens on it). */
+const RAID = any(is('first-steps', 'active'), is('briar-nightfall', 'active'), is('briar-the-rider', 'active'), is('briar-the-seal', 'active'), is('briar-the-inn', 'active'), is('briar-hold-the-door', 'active'));
 /** After the door held, until dawn: the raiders are below, the village is dark and smoking. */
 const NIGHT = any(is('briar-below', 'active'), is('the-warden', 'active'), is('close-the-rift', 'active'), is('the-empty-tomb', 'active'));
 /** Dawn: the camp. */
@@ -224,7 +224,8 @@ function plan(): SpreadPlan {
 
   // the people: who stands where depends on the night
   c.npc('mara-venn', 31, 14, CALM);
-  c.npc('oskar-fell', 33, 15, is('briar-the-seal', 'active'));
+  // the courier lies where he fell, just inside the gate
+  c.npc('oskar-fell', 32, 15, is('briar-the-seal', 'active'));
   c.npc('maren', 38, 37, CALM);
   c.npc('maren', 45, 20, NIGHT);
   c.npc('old-haldor', 43, 18, CALM);
@@ -359,8 +360,8 @@ export const BRIARHOLLOW: RegionDef = {
     { id: 'night', when: NIGHT, night: true, smoke: true },
     { id: 'rebuilt', when: HOME },
     { id: 'camp', when: CAMP },
-    // the day the hero arrives: late light until nightfall
-    { id: 'dusk', when: not(is('briar-nightfall', 'started')), dusk: true },
+    // the hero arrives as the lamps are lit; the Host is on the road behind them
+    { id: 'dusk', when: not(is('first-steps', 'started')), dusk: true },
   ],
   blurb: 'Thatch, orchards and a silent chapel bell on the edge of the Vale. People vanish after dark.',
 };
@@ -441,9 +442,7 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     title: 'Village guard of Briarhollow',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'briar-dusk', state: 'active' }, lines: ['Stop there. Nobody comes through after the lamps are lit. Nobody goes out, either.', 'You’re not one of them, at least. They don’t talk.', 'Mara Venn. I keep the gate, since there’s nobody else left to keep it. If you’re staying, you’d better be able to swing that.'] },
-      { when: { quest: 'first-steps', state: 'active' }, lines: ['The dummies in the yard. Hit one, properly, five times. Then show me that trick of yours I can see on you.', 'The one at the back throws stones. Get out of the way of one. If you can’t dodge a stone, you won’t dodge what comes out of those woods. Then come back to me.'] },
-      { when: { quest: 'briar-the-seal', state: 'active' }, lines: ['Hold. Rider on the north road.', 'That’s a king’s courier. That’s a king’s courier with an arrow in his back. Take him to the Elder. Go!'] },
+      { when: { quest: 'briar-dusk', state: 'active' }, lines: ['Stop there. Nobody comes through after the lamps are lit. Nobody goes out, either.', 'You’re not one of them, at least. They don’t talk.', 'Mara Venn. I keep the gate, since there’s nobody else left to keep it. If you’re staying, you’d better be able to swing that.', 'Wait. On the road behind you. Grey, and no torches. Turn around. Here they come.'] },
       { when: { quest: 'briar-below', state: 'active' }, lines: ['They stopped fighting us. Did you see? They just stopped, and started digging.', 'Whatever is under that chapel, they want it more than they want us dead. I don’t like that.'] },
       { when: { quest: 'fern-retaken', state: 'offered' }, lines: ['I have counted Fernstead’s tents every morning for a week. I am done counting.', 'Hollis’s rangers, Dunmore’s riders, you, and me. We take it back. Tonight, if you’ll come.'] },
       { when: { quest: 'fern-retaken', state: 'active' }, lines: ['Fernstead square. They’ve left a garrison that thinks it’s won. Let’s explain.'] },
@@ -469,7 +468,7 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
   'oskar-fell': {
     id: 'oskar-fell',
     name: 'Oskar Fell',
-    title: 'King’s courier, wounded',
+    title: 'King’s courier, dying',
     sprite: 'villager',
     talk: [{ lines: ['Take it. The seal. Broken, I know, they broke it. But the letter is still… inside.', 'They’re hunting the crown. The old one. The pieces of it. The Crown City must know. Someone there has been… losing our letters.', 'Tell them Oskar Fell rode the whole way. Tell them I didn’t stop.'] }],
   },
@@ -482,12 +481,11 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'epilogue-the-camp-goes-home', state: 'active' }, lines: ['Look at them. They came here with nothing, and they’re leaving with carts. Stand with me. I want them to see us waving.'] },
       { when: { quest: 'epilogue-the-bell', state: 'active' }, lines: ['Haldor has been under that bell since dawn. Go up to him. I think he’s waiting for permission, and I think it has to be you.'] },
       { when: { quest: 'epilogue-the-bell', state: 'done' }, lines: ['Every village that held was one more wall. And then they went home and took the walls with them, and it’s just us, and it’s enough.', 'If you ever come back this way, the inn has a new roof. The beer is exactly as bad as it was.'] },
-      { when: { quest: 'briar-the-seal', state: 'active' }, lines: ['A royal seal. Broken. And the man who carried it…', 'He died on my floor with the letter in his fist. The Crown City must know, he said. As if the Crown City ever listened to a border village.'] },
-      { when: { quest: 'into-the-wood', state: 'active' }, lines: ['Whatever shot that courier came out of the Whisperwood. So do the ones who take our people after dark.', 'Go north before the light goes. Thin them out on the trails. Find out what they are.'] },
+      { when: { quest: 'into-the-wood', state: 'active' }, lines: ['Whatever shot that courier came out of the Whisperwood. So did the ones who burned us.', 'Go north while it’s light. Thin them out on the trails. Find out what they are.'] },
       { when: { quest: 'alpha', state: 'active' }, lines: ['The beasts of the wood have gone mad together, following one great boar with grey light in its eyes. Grimtusk, the woodcutters called it, before they stopped coming back.', 'It dens at the east end of the wood. Kill it and the wood calms, and we have one less thing at the door tonight.'] },
       { when: { quest: 'the-warden', state: 'active' }, lines: ['The crypt under the chapel is older than the village. Older than the chapel. The old warden still keeps it, they say, though he’s been dead three hundred years.', 'If the raiders went down there, they went for something. Bring it back before they do.'] },
       { when: { quest: 'close-the-rift', state: 'active' }, lines: ['Past the warden is the reliquary. I was told, as a girl, what it holds, and told never to say. I’ll say it now: a piece of the Starlight Crown.', 'Whoever leads those raiders is down there with it. Stop them.'] },
-      { when: { quest: 'the-empty-tomb', state: 'active' }, lines: ['A fragment of the Starlight Crown, bonded to a hedge-witch’s apprentice. And the mark of the Ashen Host painted fresh on a crypt wall.', 'Three hundred years ago the Sigil-wardens broke that crown so no king could use it again. Someone is putting it back together.', 'Then we don’t run. We gather the Vale: Fernstead, Millbrook, Reedwater, Gullport. Every village that holds is one more wall.'] },
+      { when: { quest: 'the-empty-tomb', state: 'active' }, lines: ['A fragment of the Starlight Crown, bonded to a hedge-witch’s apprentice. And the mark of the Ashen Host painted fresh on a crypt wall.', 'And a king’s seal, broken, from a man who rode all that way to die at our gate. His letter is soaked through. I’ll dry it by the fire.', 'Three hundred years ago the Sigil-wardens broke that crown so no king could use it again. Someone is putting it back together.', 'Then we don’t run. We gather the Vale: Fernstead, Millbrook, Reedwater, Gullport. Every village that holds is one more wall.'] },
       { when: { quest: 'west-road', state: 'active' }, lines: ['West, in the Brackenridge Hills: Fernstead. Their shrine at the Harvest Stones has gone grey, and the barrow dead walk.', 'Find Warden Hollis. If her scouts join us, we’ll see the Host coming.'] },
       { when: { quest: 'south-road', state: 'active' }, lines: ['South, Millbrook: a gang holds the mill bridge and taxes every cart. Paid in grey coin, the carters say.', 'Find Reeve Aldous. Free that bridge and Millbrook’s grain comes to us instead of to them.'] },
       { when: { quest: 'the-digging-dead', state: 'active' }, lines: ['Reedwater, out in the Greyfen marsh: their graves emptied from below, villagers taken into the reeds, the wells gone foul.', 'Find Marshwarden Tilde. Reedwater has the best healers in the Vale. We’ll need them.'] },
@@ -654,18 +652,38 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     waves: [],
     end: [{ who: 'mara-venn', text: 'That’s the last of them. The gate’s still sticking. I’m going to fix the gate.' }],
   },
+  // the Prologue opens here: the Host comes down the north road behind the hero, and the first fight
+  // teaches the controls (each wave shows the one it asks for)
+  'briar-gate': {
+    id: 'briar-gate',
+    region: 'briarhollow',
+    kind: 'raid',
+    at: 'briar-gate',
+    radius: 8,
+    level: 1,
+    allies: ['mara'],
+    banner: 'Hold the gate!',
+    start: [{ who: 'mara', text: 'Stand by me. Whatever they are, they bleed grey.' }],
+    waves: [
+      { enemies: ['ash-raider', 'ash-raider'], from: ['briar-north'], hint: 'attack' },
+      { enemies: ['ash-raider', 'ash-raider', 'ash-raider'], from: ['briar-north'], hint: 'skill', barks: [{ who: 'mara', text: 'Three more! That trick I can see on you: use it!' }] },
+      { enemies: ['ash-archer', 'ash-raider'], from: ['briar-north'], hint: 'dodge', barks: [{ who: 'mara', text: 'Bowman! When it draws, get out of the way!' }] },
+    ],
+    retry: [{ who: 'mara', text: 'Up! Back to the gate, they’re coming again!' }],
+    end: [
+      { who: 'mara', text: 'That’s not all of them. Smoke, east: they came over the wall while we stood here.' },
+      { who: 'mara', text: 'Fire on the roofs. They’re in the lanes. With me!' },
+    ],
+  },
   'briar-raid': {
     id: 'briar-raid',
     region: 'briarhollow',
     kind: 'raid',
     at: 'briar-square',
     radius: 16,
-    level: 4,
+    level: 2,
     allies: ['mara'],
-    start: [
-      { who: 'mara', text: 'They’re in the lanes! With me!' },
-      { who: 'mara', text: 'Fire on the roofs! Keep them off the square!' },
-    ],
+    start: [{ who: 'mara', text: 'Keep them off the square! The square, and the chapel!' }],
     waves: [
       { enemies: ['ash-raider', 'ash-raider', 'ash-raider'], from: ['briar-north', 'briar-east'] },
       { enemies: ['ash-raider', 'ash-archer', 'ash-raider', 'ash-hound'], from: ['briar-west', 'briar-north'], barks: [{ who: 'mara', text: 'More from the west road! Keep them off the square!' }] },
@@ -673,9 +691,22 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     ],
     retry: [{ who: 'mara', text: 'Get up! Back to the square, we go again!' }],
     end: [
-      { who: 'mara', text: 'That’s the lanes. Wait — the inn. Elyra went in for the Bramble children.' },
-      { who: 'mara', text: 'The Bramble & Barrel, west of the square. Go! I’ll hold here.' },
+      { who: 'mara', text: 'That’s the lanes. Listen. Hooves on the north road… and now none.' },
+      { who: 'mara', text: 'Someone’s coming in on foot. The gate, go! I’ll keep the square.' },
     ],
+  },
+  // the king's courier: his horse dead on the road, he walks the last of it with an arrow in his back
+  'briar-courier': {
+    id: 'briar-courier',
+    region: 'briarhollow',
+    kind: 'arrival',
+    at: 'briar-gate',
+    radius: 6,
+    arrive: { pets: ['courier'], from: 'briar-north', to: 'briar-gate' },
+    banner: 'A rider',
+    start: [{ who: 'courier', text: 'In the king’s name… the gate… don’t close the gate…' }],
+    waves: [],
+    end: [{ who: 'oskar-fell', text: 'You. Come here. Take it…' }],
   },
   'briar-inn': {
     id: 'briar-inn',
@@ -683,7 +714,7 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     kind: 'rescue',
     at: 'briar-inn',
     radius: 7,
-    level: 4,
+    level: 2,
     allies: ['elyra'],
     rescue: { pets: ['briar-child', 'briar-child', 'briar-child'], at: 'briar-inn', to: 'briar-chapel' },
     start: [
@@ -706,7 +737,7 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     kind: 'defend',
     at: 'briar-chapel',
     radius: 9,
-    level: 5,
+    level: 3,
     allies: ['mara', 'elyra'],
     ward: { pet: 'chapel-door', at: 'briar-chapel', name: 'the chapel door' },
     start: [
@@ -737,9 +768,32 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
     name: 'The Night the Bells Stopped',
     giver: 'mara-venn',
     auto: true,
-    text: 'Briarhollow at dusk: half the shutters nailed shut, an empty market, a chapel bell that hasn’t rung in three weeks. Someone is waiting at the gate with a spear.',
+    text: 'Briarhollow as the lamps are lit: half the shutters nailed shut, an empty market, a chapel bell that hasn’t rung in three weeks. Someone is waiting at the gate with a spear.',
     objective: { kind: 'talk', npc: 'mara-venn', label: 'Speak to the guard at the gate' },
     reward: { xp: 20, gold: 5 },
+  },
+  {
+    id: 'briar-nightfall',
+    name: 'Nightfall',
+    giver: 'mara-venn',
+    auto: true,
+    zone: 'briarhollow',
+    text: 'The gate held, but the grey things came over the east wall while you fought. Briarhollow is burning, and they are in the lanes.',
+    objective: { kind: 'event', event: 'briar-raid', label: 'Drive the raiders out of the lanes' },
+    after: ['first-steps'],
+    // the night is where a new hero is armed (the Whisperwood's spoils come after it now)
+    reward: { xp: 220, gold: 40, item: { rarity: 'uncommon' } },
+  },
+  {
+    id: 'briar-the-rider',
+    name: 'A Rider in the Dark',
+    giver: 'mara-venn',
+    auto: true,
+    zone: 'briarhollow',
+    text: 'Hooves on the north road, then no hooves. Someone is coming the rest of the way on foot, very slowly.',
+    objective: { kind: 'event', event: 'briar-courier', label: 'Meet the rider at the north gate' },
+    after: ['briar-nightfall'],
+    reward: { xp: 40, gold: 10 },
   },
   {
     id: 'briar-the-seal',
@@ -747,21 +801,10 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
     giver: 'mara-venn',
     auto: true,
     zone: 'briarhollow',
-    text: 'A king’s courier rode in on the north road with a grey arrow in his back and a broken royal seal in his fist. Get him to the Elder.',
-    objective: { kind: 'talk', npc: 'maren', label: 'Bring the courier’s seal to Elder Maren' },
-    after: ['first-steps'],
-    reward: { xp: 60, gold: 15, text: 'Oskar Fell dies on the Elder’s floor. The letter is soaked through; Maren sets it by the fire to dry.' },
-  },
-  {
-    id: 'briar-nightfall',
-    name: 'Nightfall',
-    giver: 'maren',
-    auto: true,
-    zone: 'briarhollow',
-    text: 'The sun went down while you were in the wood. Briarhollow is burning, and things made of grey light are in the lanes.',
-    objective: { kind: 'event', event: 'briar-raid', label: 'Drive the raiders out of the lanes' },
-    after: ['alpha'],
-    reward: { xp: 220, gold: 40 },
+    text: 'A king’s courier walked the last mile in with a grey arrow in his back and a broken royal seal in his fist. He has fallen in the gateway.',
+    objective: { kind: 'talk', npc: 'oskar-fell', label: 'Kneel by the courier' },
+    after: ['briar-the-rider'],
+    reward: { xp: 60, gold: 15, text: 'Oskar Fell dies in the gateway with his seal in your hand. Behind you, the roof of the inn catches.' },
   },
   {
     id: 'briar-the-inn',
@@ -771,8 +814,8 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
     zone: 'briarhollow',
     text: 'The Bramble & Barrel is on fire with three children inside, and the hedge-mage Elyra holding the roof up over them with a ward she shouldn’t be able to cast.',
     objective: { kind: 'event', event: 'briar-inn', label: 'Lead the children from the inn to the chapel' },
-    after: ['briar-nightfall'],
-    reward: { xp: 240, gold: 40 },
+    after: ['briar-the-seal'],
+    reward: { xp: 240, gold: 40, item: { rarity: 'uncommon' } },
   },
   {
     id: 'briar-hold-the-door',
@@ -783,7 +826,7 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
     text: 'The village is in the chapel, and the raiders are coming for the door. Mara holds the step, Elyra wards the wood. Keep them standing.',
     objective: { kind: 'event', event: 'briar-door', label: 'Hold the chapel door with Mara and Elyra' },
     after: ['briar-the-inn'],
-    reward: { xp: 300, gold: 60, item: { rarity: 'uncommon' } },
+    reward: { xp: 300, gold: 60, item: { rarity: 'rare' } },
   },
   {
     id: 'briar-below',

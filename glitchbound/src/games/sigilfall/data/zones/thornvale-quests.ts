@@ -18,7 +18,8 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     giver: 'maren',
     text: 'A carter from Millbrook brought a letter to the camp: a gang holds the mill and taxes every cart, the village is being bled dry, and its reeve has run out of ideas. Briarhollow will starve this winter without Millbrook’s grain. Take the south road and find Reeve Aldous.',
     objective: { kind: 'talk', npc: 'reeve-aldous', label: 'Talk to Reeve Aldous in Millbrook' },
-    after: ['the-empty-tomb'],
+    // the Vale after the north road is safe: dawn, then the Whisperwood and Grimtusk (the Prologue's own order)
+    after: ['the-empty-tomb', 'alpha'],
     level: 7,
     reward: { xp: 110, gold: 40 },
   },

@@ -113,20 +113,21 @@ Act IV zones on the `sigilfall-4b-wip` branch).
 ### Prologue — The Night the Bells Stopped (levels 1–6) · built in the vertical slice
 
 Briarhollow is a border village of thatch, orchards and a chapel with a bell that has not rung in three weeks.
-People vanish after sunset. The hero arrives at dusk.
+People vanish after sunset. The hero arrives as the lamps are lit, with the Host on the road behind them: the story
+opens on the night, and the quiet beats (the Whisperwood, the courier's letter) come after it.
 
 | Beat | What happens | World event |
 | --- | --- | --- |
-| Cold open | The road into Briarhollow at dusk; half the shutters nailed closed; Old Haldor sits under a silent bell | Village in **dusk** state: empty market, nailed doors, lamps unlit |
-| Setup | **Mara Venn** stops the hero at the gate. A horse comes up the north road with **Ranger Oskar Fell** on it, an arrow of grey glass in his back. He presses a **broken royal seal** into the hero's hand: "They're looking for something under the chapel. The Crown City must know." | Oskar's horse at the gate; the seal is a quest item |
-| Training | Mara wants to see the hero fight before she trusts them: practice on the guard dummies (the old tutorial) | Dummies in the guard yard |
-| Escalation | **Nightfall.** Spectral raiders of the Ashen Host pour out of the Whisperwood. Fire in the thatch. | Village switches to **raid** state: burning roofs, raiders in the lanes, civilians running |
+| Cold open | The north gate as the lamps are lit; half the shutters nailed closed. **Mara Venn** stops the hero there, then sees grey shapes on the road behind them: "Turn around. Here they come." | Village in **dusk** state: evening, lamps lit |
+| First fight | The hero holds the gate beside Mara. The fight teaches the controls as it goes: each wave shows the one it asks for (strike, the skill, the dodge) | **Raid** event at the gate; the village switches to **raid** state |
+| Escalation | They came over the east wall while the gate held. Fire in the thatch, raiders in the lanes | Raid in the lanes: burning roofs, Mara fighting beside the hero |
+| The courier | Hooves on the north road, then none. **Ranger Oskar Fell** walks the last of it with an arrow of grey glass in his back and dies in the gateway, pressing a **broken royal seal** into the hero's hand: "The Crown City must know" | An arrival: he walks in from the north road |
 | Rescue | Help villagers to the chapel; break into the burning **Bramble & Barrel inn**: three children trapped upstairs. Elyra is already inside, holding a ward over them with shaking hands | Timed **rescue** objective; children follow the hero to the chapel |
 | Defend | Hold the chapel door with Mara and Elyra while the raiders try to break in | **Defend** objective with two allies on screen |
 | Complication | The raiders stop attacking and start **digging** under the chapel: they want what is below | Raiders retreat into the crypt stair |
 | Climax | Down into **the Chapel Crypt** (the old Hollow Crypt): the crypt warden (Ossric) and the Ash-scholar **Morgrave**, who opens the reliquary | Dungeon |
 | Reveal | In the reliquary: a **fragment of an ancient crown**, star-iron, warm. When Elyra touches it, it bonds to her. On the wall, painted fresh: **the mark of the Ashen Host** — a crown made of grey hands | Elyra gains her light |
-| Aftermath | Dawn. Half the village burned. Mara counts the missing. Maren decides: Briarhollow will not run, it will **gather the Vale**. The hero is sent to warn the villages. | Village switches to **aftermath** state (burned roofs, a refugee tent, the crater at the chapel); it becomes **the resistance camp** |
+| Aftermath | Dawn. Half the village burned. Mara counts the missing. Maren takes the seal and dries the soaked letter by the fire, and decides: Briarhollow will not run, it will **gather the Vale**. The north road opens: the hero first clears the Whisperwood the Host came out of (Grimtusk, Hollin's shards), then is sent to warn the villages. | Village switches to **aftermath** state (burned roofs, a refugee tent, the crater at the chapel); it becomes **the resistance camp** |
 
 ### Act I — The Villages of the Vale (levels 5–20) · built zones, story rewritten
 

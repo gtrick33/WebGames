@@ -5,7 +5,7 @@ import { isMainQuest, turnInNpc } from '../progress/handin';
 import { chestArt, CHEST_H, CHEST_W, coinArt, orbArt, potionArt, shardArt } from './art/loot';
 import { LEAD, leanTarget, LIFT, placeCamera } from './camera';
 import { drawBolt, drawVfx } from './art/vfx';
-import { worldLook } from './art/world';
+import { hasLook, worldLook } from './art/world';
 import { THEMES } from '../data/themes';
 import type { ClassId, Item } from '../data/types';
 import { bossHidden } from '../sim/boss';
@@ -124,6 +124,10 @@ export class Renderer {
   private sceneryFor: World | null = null;
   /** The story state the scenery was built for (World.stateVersion). */
   private sceneryVersion = -1;
+  /** A land with the pack's look whose art is still loading: when the wait began (seconds), or -1. */
+  private artWait = -1;
+  /** Held dark while the land's art loads: the engine holds the world still meanwhile. */
+  waiting = false;
   private light: Cnv;
   private lg: CanvasRenderingContext2D;
   aim: AimPreview | null = null;
@@ -262,6 +266,24 @@ export class Renderer {
     this.still = dt === 0;
     // the packed art for this land (null while it loads, or indoors): the scenery is rebuilt once it is in
     const art = worldLook(w.region.theme);
+    // a land drawn with the pack waits for its art (a moment on a first visit, or one long left behind), held
+    // dark rather than drawn in stand-in tiles that change under the hero a few frames in; art that does not
+    // come in time (a failed download) gives way to the stand-in
+    if (!art && hasLook(w.region.theme) && this.sceneryFor !== w) {
+      if (this.artWait < 0) this.artWait = time;
+      if (time - this.artWait < 2.5) {
+        this.waiting = true;
+        const g = this.g;
+        g.save();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.fillStyle = '#07050d';
+        g.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        g.restore();
+        return;
+      }
+    }
+    this.artWait = -1;
+    this.waiting = false;
     if (this.sceneryFor !== w || (art && this.scenery?.art !== art) || this.sceneryVersion !== w.stateVersion) {
       const fresh = this.sceneryFor !== w;
       this.sceneryVersion = w.stateVersion;
@@ -395,7 +417,12 @@ export class Renderer {
     // a frightening land: an evening that never lifts there (lamps and fires light pools in it)
     const dread = sc.art ? THEMES[sc.theme].dread : undefined;
     const dusk = !w.dark && !!dread && dread.dark > 0;
-    if (w.dark) this.drawLighting(w, sc, ox, oy, time);
+    // a night out of doors (the Prologue's raid) is deeper than the crypt's dark and the hero's own light
+    // closer in: the burning roofs and the lamps are what the village is seen by
+    if (w.dark && !w.region.dark) this.drawLighting(w, sc, ox, oy, time, 0.84, '#05071a', 0.7);
+    else if (w.dark) this.drawLighting(w, sc, ox, oy, time);
+    // the evening the hero arrives: the light going, the lamps lit
+    else if (w.storyState?.dusk) this.drawLighting(w, sc, ox, oy, time, 0.56, '#24123a', 0.85);
     else if (dusk) this.drawLighting(w, sc, ox, oy, time, dread.dark, dread.shade);
     else if (sc.theme === 'forest' || sc.theme === 'jungle') this.drawCanopyShade(ox, oy, time);
     // gloomy lands lie under a cold veil (light: with the packed art the land's own grade carries its mood)
@@ -2238,8 +2265,11 @@ export class Renderer {
 
   /* -------------------------------------------------------------- light */
 
-  /** The dark (the crypt's, a night's, or a frightening land's own evening: `dark` and `shade`) and the light in it. */
-  private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number, dark = 0.72, shade = '#0a061a'): void {
+  /**
+   * The dark (the crypt's, a night's, or a frightening land's own evening: `dark` and `shade`) and the light in
+   * it; `reach` is how far the hero's own light goes.
+   */
+  private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number, dark = 0.72, shade = '#0a061a', reach = 1): void {
     const lg = this.lg;
     lg.setTransform(this.res, 0, 0, this.res, 0, 0);
     lg.globalCompositeOperation = 'source-over';
@@ -2261,14 +2291,15 @@ export class Renderer {
       lg.drawImage(glowDisc('#ffffff', r), Math.round(sx - r), Math.round(sy - r));
     };
     const p = w.player;
-    hole(p.x, p.y - 4, 120);
-    hole(p.x, p.y - 4, 70);
+    hole(p.x, p.y - 4, 120 * reach);
+    hole(p.x, p.y - 4, 70 * reach);
     for (const t of sc.torches) hole(t.x, t.y + 6, 58 + Math.sin(time * 9 + t.x) * 2, 0.9);
     for (const b of sc.braziers) hole(b.x, b.y + 4, 72 + Math.sin(time * 8 + b.x) * 2);
     for (const l of sc.lights) hole(l.x, l.y, l.r + Math.sin(time * 7 + l.x) * 2, 0.9);
     // a village at night: burning roofs, lamps and cookfires
     for (const f of w.fires) hole(f.x, f.y, 40 + f.size * 22 + Math.sin(time * 7 + f.x) * 4, 0.95);
-    for (const pr of w.props) if (LIGHTS[pr.prop]) hole(pr.x, pr.y - 6, LIGHTS[pr.prop]!, 0.85);
+    // (with the pack's art a lamp's own piece lights it, in sc.lights: counted once, not twice)
+    if (!sc.art) for (const pr of w.props) if (LIGHTS[pr.prop]) hole(pr.x, pr.y - 6, LIGHTS[pr.prop]!, 0.85);
     // a lamp being relit pushes the dark back as it takes
     for (const pet of w.pets) if (!pet.dead && pet.def.look === 'lantern') hole(pet.x, pet.y - 24, 40 + 70 * (pet.hp / pet.maxHp), 0.9);
     for (const ws of w.waystones) hole(ws.x, ws.y - 10, 40, 0.6);

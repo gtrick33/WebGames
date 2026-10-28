@@ -127,13 +127,13 @@ const PROPS: Record<string, string[]> = {
 
 /** The pieces that give light: how far it reaches, and how high its flame or lamp is over its foot (world px). */
 const LIGHT: Record<string, [number, number]> = {
-  'anim:wall_torch': [46, 8],
-  'anim:torch_post': [52, 14],
+  'anim:wall_torch': [40, 8],
+  'anim:torch_post': [44, 14],
   'anim:campfire': [70, 4],
   'anim:brazier': [62, 8],
   'anim:candelabra': [40, 10],
-  lantern_post: [54, 16],
-  lantern_post_double: [60, 16],
+  lantern_post: [42, 16],
+  lantern_post_double: [48, 16],
 };
 
 /** Tall props the hero fades when walking behind. */

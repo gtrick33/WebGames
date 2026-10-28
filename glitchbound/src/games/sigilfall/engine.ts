@@ -113,6 +113,9 @@ const PARTY_ERRORS: Record<string, string> = {
 /** On touch screens the hero stands this share of the view's width off the middle (render/renderer.ts frameShift). */
 const FRAME_SHIFT = 0.1;
 
+/** How long a toast stays (ms): loot and hints longer, to be read. */
+const toastTime = (tone: Toast['tone']): number => (tone === 'loot' ? 5000 : tone === 'hint' ? 6000 : 3600);
+
 export class SigilEngine {
   save: SaveFile;
   loadStatus: LoadStatus;
@@ -138,6 +141,8 @@ export class SigilEngine {
   private deathAt = 0;
   private rewardAt = 0;
   private nextToast = 1;
+  /** Toasts wait while a dialogue is open (their time starts when it closes). */
+  private toastsHeld = false;
   /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
   private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number } | null = null;
   private hidden = false;
@@ -283,6 +288,9 @@ export class SigilEngine {
   private frame(now: number): void {
     const dt = Math.min(0.1, Math.max(0, (now - this.last) / 1000));
     this.last = now;
+    // sound follows the pause, however it was left (the pause menu, a panel opened from it, the title): a
+    // minimized game paused itself and used to come back silent
+    this.sound.suspend(this.hidden || (this.ui.screen === 'game' && this.ui.pause));
     const w = this.world;
     if (!w || this.ui.screen !== 'game') {
       if (this.ui.screen !== 'game') this.sound.setMusic('title');
@@ -290,7 +298,8 @@ export class SigilEngine {
     }
     // in a co-op run the world never stops for a menu: the others are still fighting (the hero stands)
     const uiPaused = this.isPaused();
-    const paused = uiPaused && !(this.coop && !this.hidden);
+    // (and while a land's art loads, held dark, nothing moves in it)
+    const paused = (uiPaused || this.renderer.waiting) && !(this.coop && !this.hidden);
     const f: InputFrame = emptyInput();
     if (!paused) {
       if (!uiPaused) {
@@ -368,7 +377,12 @@ export class SigilEngine {
       this.autosaveAt = t + 20_000;
       if (!paused) this.persist();
     }
-    if (this.ui.toasts.some((x) => x.until < t)) this.setUi({ toasts: this.ui.toasts.filter((x) => x.until >= t) });
+    // what happens while someone is talking waits until they have finished (a toast behind a dialogue is missed)
+    if (this.ui.dialogue) this.toastsHeld = true;
+    else if (this.toastsHeld) {
+      this.toastsHeld = false;
+      this.setUi({ toasts: this.ui.toasts.map((x) => ({ ...x, until: t + toastTime(x.tone) })) });
+    } else if (this.ui.toasts.some((x) => x.until < t)) this.setUi({ toasts: this.ui.toasts.filter((x) => x.until >= t) });
     if (this.ui.banner && t - this.ui.banner.id > 2600) this.setUi({ banner: null });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
     const boss = w.boss();
@@ -498,7 +512,7 @@ export class SigilEngine {
   }
 
   toast(text: string, tone: Toast['tone'], item?: Item, sub?: string): void {
-    const t: Toast = { id: this.nextToast++, text, tone, item, sub, until: performance.now() + (tone === 'loot' ? 5000 : tone === 'hint' ? 6000 : 3600) };
+    const t: Toast = { id: this.nextToast++, text, tone, item, sub, until: performance.now() + toastTime(tone) };
     this.ui = { ...this.ui, toasts: [...this.ui.toasts.slice(-2), t] };
     this.bump();
   }
@@ -529,7 +543,20 @@ export class SigilEngine {
               ? touch
                 ? 'Low health! Tap the red potion.'
                 : 'Low health! Press 1 to drink a potion.'
-              : '';
+              : // the Prologue's first fight teaches by fighting (its waves ask for these)
+                id === 'attack'
+                ? touch
+                  ? 'Tap the big button to strike: it aims for you.'
+                  : 'Left-click to strike where the mouse points.'
+                : id === 'skill'
+                  ? touch
+                    ? 'Tap your skill, beside the big button.'
+                    : 'Press Q for your skill.'
+                  : id === 'dodge'
+                    ? touch
+                      ? 'Tap dodge when it draws: you pass through arrows and blows.'
+                      : 'Press Space when it draws: you dodge through arrows and blows.'
+                    : '';
     if (text) this.toast(text, 'hint');
   }
 
@@ -753,6 +780,8 @@ export class SigilEngine {
     } else if (it.kind === 'exit') {
       this.kbm?.release();
       this.touch.release();
+      // the art of the land ahead starts loading while the road sign is read
+      worldLook(REGIONS[it.to as RegionId].theme);
       this.setUi({ travel: { to: it.to as RegionId, label: it.label, locked: it.locked } });
     }
   }

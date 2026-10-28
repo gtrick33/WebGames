@@ -13,31 +13,26 @@ import { ZONES } from './zones';
  */
 export const QUESTS: QuestDef[] = [
   /* The Prologue's first beats (STORY_BIBLE.md §3): the rest of it lives with Briarhollow. Ids are kept from
-     the old opening so saves keep their progress. */
+     the old opening so saves keep their progress. The night opens it: the first fight is at the gate, and it
+     teaches the controls as it goes (each wave shows the one it asks for). */
   {
     id: 'first-steps',
-    name: 'Mara’s Yard',
+    name: 'Ash at the Gate',
     giver: 'mara-venn',
     auto: true,
-    text: 'Mara Venn won’t let a stranger through her gate after dusk until she has seen them fight. The guard yard is just inside the palisade: show her your arm, your trick and your feet, then go back to her.',
-    objective: { kind: 'tutorial', step: 'attack', count: 5, label: 'Hit a training dummy' },
-    then: [
-      { kind: 'tutorial', step: 'skill', count: 2, label: 'Use your skill on a dummy' },
-      { kind: 'tutorial', step: 'dodge', count: 1, label: 'Dodge through a stone' },
-    ],
-    turnIn: 'mara-venn',
-    thanks: ['Fine arm, a trick worth carrying, and you can get out of the way of things. That’s more than most who come through here.', 'Take this. And the north road is yours, for what it’s worth now.'],
+    text: 'Grey shapes came down the north road out of the Whisperwood behind you, and Mara Venn is the only one at the gate. Stand with her: strike, use your skill, and dodge what they loose.',
+    objective: { kind: 'event', event: 'briar-gate', label: 'Hold the north gate with Mara' },
     after: ['briar-dusk'],
-    reward: { xp: 70, gold: 25, item: { rarity: 'uncommon' }, unlock: 'whisperwood', text: 'The north road into the Whisperwood is open.' },
+    reward: { xp: 70, gold: 25, item: { rarity: 'uncommon' } },
   },
   {
     id: 'into-the-wood',
-    name: 'Before the Light Goes',
+    name: 'Into the Whisperwood',
     giver: 'maren',
     auto: true,
-    text: 'Whatever shot the king’s courier came out of the Whisperwood, and so do the things that take Briarhollow’s people after dark. Go north before the light goes and thin them out on the trails.',
+    text: 'The arrow in Oskar Fell’s back came out of the Whisperwood, and so did the Ashen Host. The north road is open: go up it while it is light and thin out what hunts on the trails.',
     objective: { kind: 'kill', region: 'whisperwood', count: 15, label: 'Defeat creatures in the Whisperwood' },
-    after: ['briar-the-seal'],
+    after: ['the-empty-tomb'],
     reward: { xp: 140, gold: 40 },
   },
   {
@@ -46,7 +41,7 @@ export const QUESTS: QuestDef[] = [
     giver: 'smith-hollin',
     text: 'Hollin the smith has seen the shards the glowing beasts of the wood drop: grey glass that hums. Bring him three and he will forge something worth carrying.',
     objective: { kind: 'collect', item: 'shard', count: 3, label: 'Collect shards from glowing elites' },
-    after: ['first-steps'],
+    after: ['the-empty-tomb'],
     reward: { xp: 160, gold: 30, item: 'class-epic', text: 'Hollin forges you a weapon that changes how your skill works.' },
   },
   {
@@ -55,7 +50,7 @@ export const QUESTS: QuestDef[] = [
     giver: 'herbwife-thessa',
     text: 'Herbwife Thessa says an old grove hides in the north-west of the Whisperwood, behind a hedge that isn’t really there. Her grandmother picked starwort in it.',
     objective: { kind: 'explore', spot: 'hidden-grove', label: 'Find the Hidden Grove' },
-    after: ['first-steps'],
+    after: ['the-empty-tomb'],
     reward: { xp: 120, gold: 25, item: { rarity: 'rare' } },
   },
   {
@@ -63,10 +58,10 @@ export const QUESTS: QuestDef[] = [
     name: 'The Alpha',
     giver: 'maren',
     auto: true,
-    text: 'The beasts of the wood follow one great boar with grey light in its eyes: Grimtusk. It dens at the east end of the Whisperwood. Kill it before nightfall and there is one less thing at Briarhollow’s door.',
+    text: 'The beasts of the wood follow one great boar with grey light in its eyes: Grimtusk. It dens at the east end of the Whisperwood. Kill it and there is one less thing at Briarhollow’s door.',
     objective: { kind: 'boss', boss: 'grimtusk', label: 'Defeat Grimtusk' },
     after: ['into-the-wood'],
-    reward: { xp: 260, gold: 60, text: 'The sun is going down behind you. Briarhollow is a long way back.' },
+    reward: { xp: 260, gold: 60, text: 'One less thing at Briarhollow’s door. Mara will pretend not to be pleased.' },
   },
   {
     id: 'the-warden',

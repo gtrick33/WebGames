@@ -153,7 +153,9 @@ export class Sound {
       this.applyVolumes();
       this.timer = window.setInterval(() => this.schedule(), 90);
     }
-    if (this.ctx.state === 'suspended' && !this.suspended) void this.ctx.resume().catch(() => undefined);
+    // stopped by the browser rather than by the game (a phone's 'interrupted' after it was put away): a touch
+    // or a key starts it again
+    if (this.ctx.state !== 'running' && !this.suspended) void this.ctx.resume().catch(() => undefined);
     if (this.wanted !== this.music) this.setMusic(this.wanted);
   }
 
@@ -170,13 +172,23 @@ export class Sound {
     this.musicBus.gain.setTargetAtTime(this.volumes.music * 0.55, t, 0.05);
   }
 
-  /** Pauses all sound (game paused, tab hidden). */
+  /** Pauses all sound (game paused, tab hidden); called every frame with what should be, so only a change acts. */
   suspend(on: boolean): void {
+    if (on === this.suspended) {
+      // playing, but the browser stopped it (a phone put away): try again now and then (a touch also does)
+      if (!on && this.ctx && this.ctx.state !== 'running' && performance.now() - this.retried > 1000) {
+        this.retried = performance.now();
+        void this.ctx.resume().catch(() => undefined);
+      }
+      return;
+    }
     this.suspended = on;
     if (!this.ctx) return;
     if (on) void this.ctx.suspend().catch(() => undefined);
     else void this.ctx.resume().catch(() => undefined);
   }
+
+  private retried = 0;
 
   play(id: string, vol = 1): void {
     if (!this.ctx || this.volumes.muted || this.suspended) return;

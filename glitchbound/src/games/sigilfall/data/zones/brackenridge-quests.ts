@@ -17,7 +17,8 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     giver: 'maren',
     text: 'A shepherd from Fernstead came to Briarhollow’s gate with a story nobody would have believed a month ago: lights moving on the hills at night, graves that won’t stay shut, and the Harvest Stones gone grey. Elder Maren believes him. Take the west road into the Brackenridge Hills and find Warden Hollis in Fernstead. If her rangers join the camp, Briarhollow will see the Host coming.',
     objective: { kind: 'talk', npc: 'warden-hollis', label: 'Talk to Warden Hollis in Fernstead' },
-    after: ['the-empty-tomb'],
+    // the Vale after the north road is safe: dawn, then the Whisperwood and Grimtusk (the Prologue's own order)
+    after: ['the-empty-tomb', 'alpha'],
     level: 5,
     reward: { xp: 55, gold: 25 },
   },
