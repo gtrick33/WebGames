@@ -74,6 +74,16 @@ interface Aim {
 function resolveAim(w: World, spec: SkillSpec, req: CastRequest): Aim | null {
   const p = w.player;
   const reach = spec.cast === 'melee' ? spec.area + 30 : spec.cast === 'dash' ? spec.range + 20 : spec.range;
+  const targeted = spec.cast === 'chain' || spec.cast === 'mark' || spec.cast === 'drain';
+  // a spell that needs a target (a chain, a mark, a drain), aimed by the mouse or a drag, takes the enemy nearest
+  // the aimed line; with none in reach it is not cast at all (no mana or cooldown spent on nothing)
+  if (req.angle !== null && targeted) {
+    const target = autoTarget(w, reach, req.angle);
+    if (!target) return null;
+    const angle = Math.atan2(target.y - p.y, target.x - p.x);
+    const d = Math.min(spec.range, dist(p.x, p.y, target.x, target.y));
+    return { angle, tx: p.x + Math.cos(angle) * d, ty: p.y + Math.sin(angle) * d, target };
+  }
   if (req.angle !== null) {
     const angle = spec.aim === 'self' ? req.angle : assistAim(w, req.angle, reach, req.assist);
     const d = spec.aim === 'ground' ? (req.dist ?? 0.7) * spec.range : spec.range;
@@ -81,7 +91,6 @@ function resolveAim(w: World, spec: SkillSpec, req: CastRequest): Aim | null {
   }
   // a tap: the basic attack finds the nearest enemy (if the setting is on) and spells that need a target
   // (chains, marks, drains) always do; every other spell goes where the hero faces, shown by the facing marker
-  const targeted = spec.cast === 'chain' || spec.cast === 'mark' || spec.cast === 'drain';
   const target = targeted || (req.slot === 'basic' && w.settings.autoTarget) ? autoTarget(w, reach, p.aim) : null;
   if (target) {
     const angle = Math.atan2(target.y - p.y, target.x - p.x);

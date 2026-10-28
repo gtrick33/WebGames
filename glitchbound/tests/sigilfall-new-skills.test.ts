@@ -103,6 +103,20 @@ describe('Sigilfall: the new skills', () => {
     }
   });
 
+  it('a spell that needs a target, aimed with the mouse at nothing, is not cast (the warlock’s Corruption)', () => {
+    const w = heroWith('warlock', 'corruption');
+    const mana = w.player.mana;
+    const charges = w.player.cds.s1.charges;
+    expect(cast(w)).toBe(false);
+    expect(w.player.mana).toBe(mana);
+    expect(w.player.cds.s1.charges).toBe(charges);
+    // an enemy in reach near the aimed line is the one it takes
+    const e = target(w, 80, 10);
+    expect(cast(w)).toBe(true);
+    step(w, 0.3);
+    expect(e.hp).toBeLessThan(e.maxHp);
+  });
+
   it('pulling ground drags enemies to its middle; healing ground mends the hero standing in it', () => {
     const w = heroWith('mage', 'gravity-well');
     const e = target(w, 60, 30);
