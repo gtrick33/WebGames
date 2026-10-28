@@ -128,11 +128,11 @@ function pickTarget(w: World, pet: Pet): Enemy | null {
 }
 
 /** A pet with somewhere to be walks there around walls (a flow field from the goal, made once). */
-function walkTo(w: World, pet: Pet, goal: { x: number; y: number }, dt: number): void {
+function walkTo(w: World, pet: Pet, goal: { x: number; y: number }, dt: number, pace = 0.7): void {
   pet.flow ??= flowField(w.map, Math.floor(goal.x / TILE), Math.floor(goal.y / TILE), 400);
   const d = dist(goal.x, goal.y, pet.x, pet.y);
   const step = pet.paused ? null : d < 2 * TILE ? (d > 3 ? { x: (goal.x - pet.x) / d, y: (goal.y - pet.y) / d } : null) : flowStep(w.map, pet.flow, pet.x, pet.y);
-  const speed = pet.def.speed * 0.7;
+  const speed = pet.def.speed * pace;
   pet.vx += ((step?.x ?? 0) * speed - pet.vx) * Math.min(1, dt * 8);
   pet.vy += ((step?.y ?? 0) * speed - pet.vy) * Math.min(1, dt * 8);
   if (step) pet.face = step.x < 0 ? Math.PI : 0;
@@ -170,9 +170,31 @@ export function updatePets(w: World, dt: number): void {
       }
       continue;
     }
+    // an ally coming into the fight runs to the hero, and follows once beside them
+    if (pet.goal && pet.joinT !== undefined) {
+      pet.joinT -= dt;
+      if (pet.joinT <= 0 || dist(pet.x, pet.y, p.x, p.y) < 2.5 * TILE) {
+        pet.goal = undefined;
+        pet.flow = undefined;
+        pet.joinT = undefined;
+      } else {
+        // (the hero has moved on: after them)
+        if (dist(pet.goal.x, pet.goal.y, p.x, p.y) > 3 * TILE) {
+          pet.goal = { x: p.x, y: p.y };
+          pet.flow = undefined;
+        }
+        walkTo(w, pet, pet.goal, dt, 1);
+        continue;
+      }
+    }
     // someone walking on their own (into the camp, or a wagon on the road): whatever the hero does
     if (pet.goal) {
       walkTo(w, pet, pet.goal, dt);
+      // (going in at a door: gone once there)
+      if (pet.inside && dist(pet.x, pet.y, pet.goal.x, pet.goal.y) < 6) {
+        pet.dead = true;
+        pet.deathT = 0.5;
+      }
       continue;
     }
     // a ward (a door, a gate) stands where it was put and only takes the blows

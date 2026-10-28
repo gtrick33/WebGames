@@ -104,6 +104,8 @@ const STEP = 1 / 60;
 
 /** How long a party waits for a leader who dropped out (their game holds the enemies) before going home. */
 const LEAD_WAIT_MS = 20_000;
+/** Seconds a new hero sees the gate at dusk before the guard speaks. */
+const GREET_AFTER = 1.4;
 
 /** What the party's room answers, in words (net/room.ts act). */
 const PARTY_ERRORS: Record<string, string> = {
@@ -148,6 +150,8 @@ export class SigilEngine {
   private nextToast = 1;
   /** Toasts wait while a dialogue is open (their time starts when it closes). */
   private toastsHeld = false;
+  /** Seconds of the world in view before a new hero is greeted at the gate (0: no greeting due). */
+  private greetIn = 0;
   /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
   private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number } | null = null;
   private hidden = false;
@@ -348,6 +352,10 @@ export class SigilEngine {
         steps += 1;
       }
       if (this.hero) this.hero.stats.time += dt;
+      if (this.greetIn > 0) {
+        this.greetIn -= dt;
+        if (this.greetIn <= 0 && this.hero && questState(this.hero, 'briar-dusk') === 'active' && w.region.id === HOME) this.talk('mara-venn');
+      }
       this.coop?.frame(dt * 1000);
       if (this.leadAwayAt && performance.now() - this.leadAwayAt > LEAD_WAIT_MS) {
         this.leadAwayAt = 0;
@@ -668,12 +676,14 @@ export class SigilEngine {
         /* no history (tests) */
       }
     }
-    // a brand-new hero arrives at Briarhollow's gate at dusk, and the guard stops them there
-    if (questState(h, 'briar-dusk') === 'active' && h.level === 1 && h.stats.time < 1) this.talk('mara-venn');
+    // a brand-new hero arrives at Briarhollow's gate at dusk, and the guard stops them there: once the gate
+    // can be seen (its art in, a moment to look), not over a dark screen
+    this.greetIn = questState(h, 'briar-dusk') === 'active' && h.level === 1 && h.stats.time < 1 ? GREET_AFTER : 0;
     this.bump();
   }
 
   toTitle(): void {
+    this.greetIn = 0;
     this.leaveParty();
     this.endRun(false);
     this.persist();

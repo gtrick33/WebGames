@@ -1,5 +1,6 @@
 import { dist, TAU } from '../core/math';
 import { EVENTS } from '../data/events';
+import { PETS } from '../data/pets';
 import { TIERS } from '../data/regions';
 import type { Bark, RegionDef, RegionStateDef, StoryCond, StoryEventDef } from '../data/types';
 import { activeQuests, declined, questState, type Character, currentObjective } from '../progress/character';
@@ -176,13 +177,12 @@ export class StoryDirector {
     const w = this.w;
     // nobody rides into the story's fights
     w.dismount();
-    // whoever stayed on from the last event to say goodbye makes way for this one's people
-    w.pets = w.pets.filter((p) => !p.story || p.dead);
+    // the region turns to this event's state first: whoever it takes from where they stood steps out to fight
+    w.refreshStoryState();
     const run: Running = { def, wave: 0, ids: [], pause: 1.6, pets: [], ward: null, followers: [], safe: new Set(), cool: 0, t: 0 };
     const allies = [...(def.allies ?? []), ...(def.alliesIf ?? []).filter((a) => holds(w.hero, a.when)).map((a) => a.pet)];
     for (const id of allies) {
-      const to = castRay(w.map, w.player.x, w.player.y, 6, w.rand() * TAU, 18);
-      const pet = placePet(w, id, to.x, to.y);
+      const pet = this.ally(def, id, run.pets);
       if (pet) run.pets.push(pet);
     }
     if (def.ward) {
@@ -243,6 +243,38 @@ export class StoryDirector {
     w.emit({ t: 'banner', text: banner, sub: w.questLabel(def.id) });
     if (def.kind === 'arrival') w.sfx('quest', 0.7);
     else w.sfx('roar', 0.7);
+  }
+
+  /**
+   * One of an event's allies, without anyone popping up at the hero's elbow: whoever stayed on from the last
+   * event is already here; whoever the story just took from where they stood (Mara at the gate) steps out
+   * from there; anyone else comes running from the side they come from, from just beyond the hero's view
+   * (or, if that side is in view, is found there).
+   */
+  private ally(def: StoryEventDef, id: string, have: Pet[]): Pet | null {
+    const w = this.w;
+    const p = w.player;
+    const stayed = w.pets.find((q) => q.story && !q.dead && q.def.id === id && !have.includes(q));
+    if (stayed) {
+      stayed.life = Infinity;
+      stayed.goal = undefined;
+      stayed.flow = undefined;
+      stayed.inside = undefined;
+      if (dist(stayed.x, stayed.y, p.x, p.y) > 3 * TILE) join(stayed, p);
+      return stayed;
+    }
+    const look = PETS[id]?.look;
+    const stood = w.time - w.leftAt < 1.5 ? w.leftNpcs.find((n) => n.id === look && dist(n.x, n.y, p.x, p.y) < 10 * TILE) : undefined;
+    if (stood) {
+      w.leftNpcs = w.leftNpcs.filter((n) => n !== stood);
+      return placePet(w, id, stood.x, stood.y);
+    }
+    const from = this.spot(def.enter ?? def.at);
+    const seen = from && def.enter && dist(from.x, from.y, p.x, p.y) < 10 * TILE;
+    const at = seen ? castRay(w.map, from.x, from.y, 6, w.rand() * TAU, 12) : offscreen(w, from && dist(from.x, from.y, p.x, p.y) > 2 * TILE ? Math.atan2(from.y - p.y, from.x - p.x) : w.rand() * TAU);
+    const pet = placePet(w, id, at.x, at.y);
+    if (pet && !seen) join(pet, p);
+    return pet;
   }
 
   private spawnWave(run: Running): void {
@@ -365,12 +397,25 @@ export class StoryDirector {
     const w = this.w;
     // people who walked in stay (as the camp's own people, the moment the quest moves on); the rest go
     if (run.def.kind === 'arrival') w.pets = w.pets.filter((p) => !run.pets.includes(p));
-    else for (const pet of run.pets) {
-      // the one carried off goes at once, in a swirl of grey
-      const taken = run.def.taken?.includes(pet.def.id);
-      if (taken && !pet.dead) w.addFx({ kind: 'smoke', x: pet.x, y: pet.y, life: 1, size: 12, color: '#6a5a8a' });
-      if (stay > 0 && !pet.dead && !taken) pet.life = Math.min(pet.life, stay);
-      else pet.dead = true;
+    else {
+      const into = run.def.rescue?.into ? this.spot(run.def.rescue.into) : null;
+      for (const pet of run.pets) {
+        // the one carried off goes at once, in a swirl of grey
+        const taken = run.def.taken?.includes(pet.def.id);
+        if (taken && !pet.dead) w.addFx({ kind: 'smoke', x: pet.x, y: pet.y, life: 1, size: 12, color: '#6a5a8a' });
+        if (stay > 0 && !pet.dead && !taken) {
+          pet.life = Math.min(pet.life, stay);
+          pet.joinT = undefined;
+          // the saved go in where they are safe; the rest who aren't going on with the hero stand where they
+          // are to say their last words
+          if (into && run.followers.includes(pet)) {
+            pet.goal = { ...into };
+            pet.inside = true;
+          } else if (!run.def.stay && pet.def.role !== 'ward' && !run.followers.includes(pet)) pet.goal = { x: pet.x, y: pet.y };
+          else if (!run.followers.includes(pet)) pet.goal = undefined;
+          pet.flow = undefined;
+        } else pet.dead = true;
+      }
     }
     for (const e of w.enemies) if (run.ids.includes(e.id) && !e.dead) {
       e.dead = true;
@@ -399,6 +444,13 @@ export class StoryDirector {
     w.refreshStoryState();
     w.emit({ t: 'save' });
   }
+}
+
+/** An ally on their way to the hero: they walk there, and follow once beside them (or after a while anyway). */
+function join(pet: Pet, to: { x: number; y: number }): void {
+  pet.goal = { x: to.x, y: to.y };
+  pet.flow = undefined;
+  pet.joinT = 6;
 }
 
 /**
