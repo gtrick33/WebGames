@@ -20,7 +20,7 @@ export const HOLLOWMERE = wildRegion(
     at: [72, -54],
     dark: false,
     safe: false,
-    music: 'crypt',
+    music: 'hollowmere',
     blurb: 'A black, still lake at the heart of the Dead Kingdom, with a necropolis on an island in its middle, where the Hallow King’s dead are made.',
     states: [{ id: 'lich-holds', when: until('the-necropolis'), gloom: true }],
   },

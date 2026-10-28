@@ -16,7 +16,7 @@ export const FROSTFANG = wildRegion(
     at: [6, -16],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'ironpeak',
     blurb: 'Granite crags and snowfields on the high passes north, under the frost roc’s eyrie.',
   },
   {

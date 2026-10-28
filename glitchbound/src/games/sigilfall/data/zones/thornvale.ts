@@ -16,7 +16,7 @@ export const THORNVALE = wildRegion(
     at: [40, 79],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'thornvale',
     blurb: 'Farms, wolf hills, spider woods and a bandit gang dug in under Gallows Hill. Millbrook needs help.',
     states: [
       // the night the blockade at the mill burns, and the morning after

@@ -22,7 +22,7 @@ export const EMBERDEEP = wildRegion(
     at: [96, -42],
     dark: false,
     safe: false,
-    music: 'cave',
+    music: 'emberdeep',
     blurb: 'A ring of black mountains round a lake of fire, where the Host forges the Pale Crown.',
   },
   {

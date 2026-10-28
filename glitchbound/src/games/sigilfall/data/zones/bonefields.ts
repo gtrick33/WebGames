@@ -25,7 +25,7 @@ export const BONEFIELDS = wildRegion(
     at: [78, -20],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'bonefields',
     blurb: 'An ashen plain of bone-pits and Ashen tents around the Muster Hall, the third Gate, where the dead muster for the next march.',
     states: [
       { id: 'muster-held', when: HELD, smoke: true },

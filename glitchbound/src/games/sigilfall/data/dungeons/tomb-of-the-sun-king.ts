@@ -512,7 +512,7 @@ export const TOMB_OF_THE_SUN_KING: DungeonModule = {
     at: [112, 56],
     dark: true,
     safe: false,
-    music: 'cave',
+    music: 'tomb',
     map: MAP,
     markers,
     encounters: [

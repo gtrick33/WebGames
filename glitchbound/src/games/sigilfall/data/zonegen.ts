@@ -1,4 +1,5 @@
 import { clamp, hash2, noise2, rng } from '../core/math';
+import { THEMES } from './themes';
 import type { Marker, PlacedMarkerDef, RegionDef, RegionId, StoryCond, Theme } from './types';
 
 /*
@@ -151,6 +152,7 @@ const SCENES: Record<string, { rows: string[]; key: Record<string, SceneCell> }>
   field: { rows: ['fffffff', 'f,,,,,f', 'f,,S,,f', 'f,,,,,f', 'fff.fff'], key: { f: FENCE, ',': DECO, S: P('scarecrow', true) } },
   shrine: { rows: ['b.S.b', '.....', 'l.n.l'], key: { S: P('statue', true), b: P('flowerbed', true), l: P('torch', true), n: P('bench', true) } },
   graves: { rows: ['g.c.g', '.....', 'c.g.c', '..l..'], key: { g: P('gravestone', true), c: P('grave-cross', true), l: P('torch', true) } },
+  graveyard: { rows: ['fffffff', 'fg.c.gf', 'f.....f', 'fc.g.cf', 'f.....f', 'fff.fff', '.l...l.'], key: { f: FENCE, g: P('gravestone', true), c: P('grave-cross', true), l: P('lamp', true) } },
   wagon: { rows: ['.x..', 'kC.s', '.b..'], key: { C: P('wagon', true), x: P('crate', true), b: P('barrel', true), s: P('sacks'), k: P('debris') } },
   stones: { rows: ['..R..', 'R...R', '.....', 'R...R', '..R..'], key: { R: P('menhir', true) } },
   pond: { rows: ['.~~~.', '~~~~~', '~~~~~', '.~~~.'], key: { '~': WATER } },
@@ -167,7 +169,7 @@ const SCENES_FOR: Record<'vale' | 'wood' | 'high' | 'dry' | 'wet' | 'grim' | 'wa
   high: ['camp', 'stones', 'ruin', 'wagon', 'woodcut', 'pond'],
   dry: ['camp', 'ruin', 'stones', 'wagon', 'bones', 'ruin'],
   wet: ['camp', 'pond', 'ruin', 'wagon', 'stones', 'graves', 'pond'],
-  grim: ['graves', 'stones', 'ruin', 'camp', 'bones', 'graves'],
+  grim: ['graveyard', 'stones', 'ruin', 'graves', 'camp', 'bones', 'graveyard'],
   war: ['warcamp', 'bones', 'ruin', 'wagon', 'graves', 'warcamp'],
 };
 const sceneLand = (t: Theme | null): keyof typeof SCENES_FOR => {
@@ -270,6 +272,7 @@ class ZoneBuilder {
     this.scatter();
     this.beaches();
     this.dress(pois);
+    this.roadLamps();
     const start = hubs[0] ?? exits[0]!.inner;
     this.put(start[0], start[1] + 3, { kind: 'start' });
     this.wildPacks(hubs, exits.map((e) => e.inner), pois);
@@ -990,6 +993,44 @@ class ZoneBuilder {
         const j = this.idx(x + dx, y + dy);
         if (!this.inside(x + dx, y + dy, 3) || !OPEN.has(this.g[j]!) || this.lock[j] || this.marked.has(j)) continue;
         this.g[j] = hh < 0.015 ? ROCK : hh < 0.025 ? BUSH : DECO;
+        break;
+      }
+    }
+  }
+
+  /**
+   * A frightening land's roads are lit (THEMES dread): a lamp post every dozen tiles or so on a road's shoulder,
+   * out past the villages (they light their own), so a traveller walks from one pool of light to the next. Placed
+   * by position, not by the land's random numbers, so nothing else in the land moves for them.
+   */
+  private roadLamps(): void {
+    if (!this.theme || !THEMES[this.theme].dread?.lamps) return;
+    const lit: [number, number][] = [];
+    for (let i = 0; i < this.g.length; i++) {
+      if (this.g[i] !== PATH) continue;
+      const x = i % this.w;
+      const y = (i - x) / this.w;
+      if (this.hubAt.some(([hx, hy]) => ((x - hx) / (VX + 2)) ** 2 + ((y - hy) / (VY + 2)) ** 2 < 1)) continue;
+      if (lit.some(([lx, ly]) => Math.abs(lx - x) + Math.abs(ly - y) < 12)) continue;
+      // on the shoulder, one side or the other
+      const sides: [number, number][] = (x + y) % 2
+        ? [
+            [0, -1],
+            [0, 1],
+            [-1, 0],
+            [1, 0],
+          ]
+        : [
+            [0, 1],
+            [0, -1],
+            [1, 0],
+            [-1, 0],
+          ];
+      for (const [dx, dy] of sides) {
+        const j = this.idx(x + dx, y + dy);
+        if (!this.inside(x + dx, y + dy, 3) || !OPEN.has(this.g[j]!) || this.marked.has(j)) continue;
+        this.put(x + dx, y + dy, { kind: 'prop', prop: 'lamp', solid: false });
+        lit.push([x, y]);
         break;
       }
     }

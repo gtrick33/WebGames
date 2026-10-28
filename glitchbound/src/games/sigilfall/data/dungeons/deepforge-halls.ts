@@ -515,7 +515,7 @@ export const DEEPFORGE_HALLS: DungeonModule = {
     at: [90, 45],
     dark: true,
     safe: false,
-    music: 'cave',
+    music: 'deepforge',
     map: MAP,
     markers,
     encounters: [

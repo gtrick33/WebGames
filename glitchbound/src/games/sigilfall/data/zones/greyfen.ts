@@ -17,7 +17,7 @@ export const GREYFEN = wildRegion(
     at: [21, 72],
     dark: false,
     safe: false,
-    music: 'forest',
+    music: 'greyfen',
     blurb: 'Reeds, fog and villages lost to the water. Something has been digging up their dead.',
   },
   {

@@ -253,7 +253,7 @@ const HAND_LAID: Record<string, RegionDef> = {
     at: [54, 61],
     dark: false,
     safe: false,
-    music: 'forest',
+    music: 'whisperwood',
     map: WHISPERWOOD_BIG,
     markers: forestMarkers,
     placed: WHISPERWOOD_MORE,

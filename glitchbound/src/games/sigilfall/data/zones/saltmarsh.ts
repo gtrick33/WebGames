@@ -16,7 +16,7 @@ export const SALTMARSH = wildRegion(
     at: [57, 80],
     dark: false,
     safe: false,
-    music: 'coast',
+    music: 'saltmarsh',
     blurb: 'Fishfolk on the shoals, harpies on the cliffs, smugglers in the cove. Gullport keeps the lights on.',
   },
   {

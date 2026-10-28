@@ -392,16 +392,22 @@ export class Renderer {
     }
     // flames on the roofs while the village burns (above the roofs, under the light)
     for (const f of w.fires) this.drawFire(f.x, f.y, f.size, time);
+    // a frightening land: an evening that never lifts there (lamps and fires light pools in it)
+    const dread = sc.art ? THEMES[sc.theme].dread : undefined;
+    const dusk = !w.dark && !!dread && dread.dark > 0;
     if (w.dark) this.drawLighting(w, sc, ox, oy, time);
+    else if (dusk) this.drawLighting(w, sc, ox, oy, time, dread.dark, dread.shade);
     else if (sc.theme === 'forest' || sc.theme === 'jungle') this.drawCanopyShade(ox, oy, time);
     // gloomy lands lie under a cold veil (light: with the packed art the land's own grade carries its mood)
     const veil = THEMES[sc.theme].tint;
-    if (veil && !w.dark) {
+    if (veil && !w.dark && !dusk) {
       g.globalAlpha = sc.art ? 0.12 : 0.26;
       g.fillStyle = veil;
       g.fillRect(ox, oy, this.vw, this.vh);
       g.globalAlpha = 1;
     }
+    // mist over it all, pale in the dark as it is under a moon
+    if (sc.mist.length) this.drawMist(sc, ox, oy, time);
 
     // collapse ring (Morgrave's last phase)
     const bz = w.boss();
@@ -2232,15 +2238,18 @@ export class Renderer {
 
   /* -------------------------------------------------------------- light */
 
-  private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number): void {
+  /** The dark (the crypt's, a night's, or a frightening land's own evening: `dark` and `shade`) and the light in it. */
+  private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number, dark = 0.72, shade = '#0a061a'): void {
     const lg = this.lg;
     lg.setTransform(this.res, 0, 0, this.res, 0, 0);
     lg.globalCompositeOperation = 'source-over';
     // a fresh layer every frame (a translucent fill drawn over last frame's would stack up to black)
     lg.clearRect(0, 0, this.vw, this.vh);
     // moody, not murky: the room stays readable outside the pools of light
-    lg.fillStyle = 'rgba(10,6,26,0.72)';
+    lg.globalAlpha = dark;
+    lg.fillStyle = shade;
     lg.fillRect(0, 0, this.vw, this.vh);
+    lg.globalAlpha = 1;
     lg.globalCompositeOperation = 'destination-out';
     const hole = (x: number, y: number, r0: number, a = 1): void => {
       // in steps of 4 px and at most 240 (each size of light is a canvas kept for good)
@@ -2256,6 +2265,7 @@ export class Renderer {
     hole(p.x, p.y - 4, 70);
     for (const t of sc.torches) hole(t.x, t.y + 6, 58 + Math.sin(time * 9 + t.x) * 2, 0.9);
     for (const b of sc.braziers) hole(b.x, b.y + 4, 72 + Math.sin(time * 8 + b.x) * 2);
+    for (const l of sc.lights) hole(l.x, l.y, l.r + Math.sin(time * 7 + l.x) * 2, 0.9);
     // a village at night: burning roofs, lamps and cookfires
     for (const f of w.fires) hole(f.x, f.y, 40 + f.size * 22 + Math.sin(time * 7 + f.x) * 4, 0.95);
     for (const pr of w.props) if (LIGHTS[pr.prop]) hole(pr.x, pr.y - 6, LIGHTS[pr.prop]!, 0.85);
@@ -2283,9 +2293,29 @@ export class Renderer {
     g.globalAlpha = 0.18;
     for (const t of sc.torches) g.drawImage(glowDisc('#ff9a3d', 22), Math.round(t.x - ox - 22), Math.round(t.y - oy - 18));
     for (const b of sc.braziers) g.drawImage(glowDisc('#ff9a3d', 30), Math.round(b.x - ox - 30), Math.round(b.y - oy - 24));
+    for (const l of sc.lights) {
+      if (l.x < ox - 40 || l.y < oy - 40 || l.x > ox + this.vw + 40 || l.y > oy + this.vh + 40) continue;
+      g.drawImage(glowDisc('#ffb45a', 20), Math.round(l.x - ox - 20), Math.round(l.y - oy - 20));
+    }
     for (const f of w.fires) {
       const r = 24 + f.size * 14;
       g.drawImage(glowDisc('#ff7a2a', r), Math.round(f.x - ox - r), Math.round(f.y - oy - r));
+    }
+    g.restore();
+  }
+
+  /** Mist banks over a frightening land's water and hollows, drifting slowly (still, with reduced motion). */
+  private drawMist(sc: Scenery, ox: number, oy: number, time: number): void {
+    const g = this.g;
+    const puff = glowDisc('#e4ecf4', 32);
+    const t = this.reducedMotion ? 0 : time;
+    g.save();
+    for (const m of sc.mist) {
+      const x = m.x + Math.sin(t * 0.05 + m.ph) * 24;
+      const y = m.y + Math.sin(t * 0.03 + m.ph * 1.7) * 6;
+      if (x + m.w < ox || x - m.w > ox + this.vw || y + m.h < oy || y - m.h > oy + this.vh) continue;
+      g.globalAlpha = 0.13 + Math.sin(t * 0.2 + m.ph) * 0.04;
+      g.drawImage(puff, Math.round(x - m.w), Math.round(y - m.h), Math.round(m.w * 2), Math.round(m.h * 2));
     }
     g.restore();
   }

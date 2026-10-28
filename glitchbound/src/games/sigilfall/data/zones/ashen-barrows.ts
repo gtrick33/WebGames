@@ -18,7 +18,7 @@ export const ASHEN_BARROWS = wildRegion(
     at: [68, 40],
     dark: false,
     safe: false,
-    music: 'crypt',
+    music: 'ashen-barrows',
     blurb: 'Ash-grey downs of burial mounds, wights and banshees, and the death knight who leads them.',
     // the lamps are going out, one a night: a cold gloom until Orren's vigil relights them
     states: [{ id: 'lamps-out', when: until('the-last-lamp'), gloom: true }],

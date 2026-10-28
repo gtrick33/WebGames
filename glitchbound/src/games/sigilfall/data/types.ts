@@ -789,7 +789,49 @@ export interface RegionDef {
   blurb: string;
 }
 
-export type MusicTrack = 'village' | 'forest' | 'crypt' | 'plains' | 'coast' | 'cave';
+/** A place's song (audio/songs.ts): every land has its own; indoors, the story's nights and underground share a few. */
+export type MusicTrack =
+  | 'emberwick'
+  | 'briarhollow'
+  | 'whisperwood'
+  | 'thornvale'
+  | 'saltmarsh'
+  | 'brackenridge'
+  | 'greyfen'
+  | 'amberfield'
+  | 'duskfen'
+  | 'ironpeak'
+  | 'ashen-barrows'
+  | 'stormwatch'
+  | 'grimward'
+  | 'sunscorch'
+  | 'glimmerwood'
+  | 'rimeheld'
+  | 'shattered-vale'
+  | 'sablewind'
+  | 'vinecoil'
+  | 'highwall'
+  | 'gloamhollow'
+  | 'bonefields'
+  | 'weeping-woods'
+  | 'sunken-reaches'
+  | 'blightwood'
+  | 'emberdeep'
+  | 'hollowmere'
+  | 'riftscar'
+  | 'pale-reach'
+  | 'tavern'
+  | 'chapel'
+  | 'court'
+  | 'siege'
+  | 'village'
+  | 'crypt'
+  | 'cave'
+  | 'frost-vault'
+  | 'molten'
+  | 'rootdeep'
+  | 'tomb'
+  | 'deepforge';
 
 /* ------------------------------------------------------------------ quests */
 

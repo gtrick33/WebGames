@@ -50,7 +50,8 @@ const region = (id: RegionId, name: string, subtitle: string, theme: RegionDef['
   at: town === 'emberwick' ? [44, 68] : [56, 70],
   dark: false,
   safe: true,
-  music: 'village',
+  // an inn or a forge plays a jig; the chapel its hymn; the Great Hall a pavane
+  music: theme === 'tavern' ? 'tavern' : id === 'great-hall' ? 'court' : 'chapel',
   map: built.map,
   markers: {},
   placed: built.placed,

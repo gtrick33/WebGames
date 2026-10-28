@@ -24,7 +24,7 @@ export const BRACKENRIDGE = wildRegion(
     at: [31, 62],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'brackenridge',
     blurb: 'Golden hills, kobold diggings and barrows that should have stayed shut. Fernstead keeps watch.',
     // the night of the Tear (Act III) the Host takes Fernstead, and holds it until the hero takes it back
     states: [{ id: 'fernstead-fallen', when: FALLEN, burning: true }],

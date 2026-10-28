@@ -24,7 +24,7 @@ export const SUNKEN_REACHES = wildRegion(
     at: [104, -6],
     dark: false,
     safe: false,
-    music: 'coast',
+    music: 'sunken-reaches',
     blurb: 'Vaelmoor’s drowned harbor city under the tide, where the drowned fleet makes its home.',
     states: [{ id: 'fleet-burned', when: after('the-fireships'), smoke: true }],
   },

@@ -52,6 +52,23 @@ garden or a barrel at every step, people everywhere, cliffs and walls that frame
   boulders on top, instead of a field of boulders. Long walls carry torches and banners (the Regent's blue in a
   town); short ones are ruins, mossy and cracked.
 
+**Lands that frighten** (since 2026-10-28, the third pass). The owner asked for lands that are scary, each with
+its own music and feeling, as diverse as they can be: swamps, and a dark, lamp-lit haunted wood among them. The
+bright lands stay bright; the fens, the haunted wood, the barrows, the dead lake, the blight and the moors are
+given their own dread (`THEMES` `dread`, data/themes.ts):
+
+- **An evening that never lifts there**: the land under a dark of its own color (blue night in the Weeping Woods,
+  sick green in Duskfen, violet in the Blightwood), drawn with the crypt's light, so lamps, torches, campfires and
+  the waystone light pools in it. Only these lands; the rest are drawn as they stand.
+- **Lamps along the roads**, so a traveller walks from one pool of light to the next; **graveyards** walled in
+  wrought iron with a lamp at the gate; **mist** lying over still water and in the hollows, pale over the dark,
+  drifting (still with reduced motion).
+- **Their own palettes**: the haunted wood is black pines and dead oaks on dark grass (not snow); a fen is dead
+  trees and yellowed scrub over murky water; the plague fen's water is poison green; the moor is purple heather
+  round peat-dark pools.
+- **Their own sound** (below): a drone, a choir, a wavering flute or a music box, and owls, wolves, crows, frogs or
+  dripping water out in the dark.
+
 - **Land grows, it isn't sprinkled**: trees stand in copses with clearings between, bushes as undergrowth along a
   copse's edge, rocks in outcrops, flowers in meadows (`zonegen.ts` scatter; `CityPlan.grove` in towns). Never
   lone trees or rocks dotted evenly over a field.
@@ -97,11 +114,12 @@ the season, the grade, the ground it lies on and what grows and stands on it.
 | **Emberwick, the Crown City** | summer; the keep between round towers, castle walls with square towers at the gates, gable and tall houses, the inn, the smithy, the chapel, a fountain and stalls in the market, a dirt training yard with racks and butts | a town that is lived in: lamps down the avenues, clipped trees and flowerbeds at the square's corners |
 | **Forests** (Whisperwood, Glimmerwood, Vinecoil) | summer, darker; dark-grass floor under big and tall trees and pines; the Glimmerwood in blossom trees, blue and violet flowers, mushrooms | dense layered canopies; the Glimmerwood soft and bright |
 | **Autumn** (Brackenridge) | the pack's autumn: amber and coral trees, golden grass | a hillside in its fall colors |
-| **Swamps** (Greyfen, Duskfen, the Sunken Reaches, Gloamhollow, Blightwood) | dark grass, mud for sand, murky water, dead and tall trees, reeds, lily pads, moss-roofed cottages; each its own grade (olive, sickly lime, teal, dark green, violet) | still water, reeds and lily pads, twisted trees |
+| **Swamps** (Greyfen, Duskfen, the Sunken Reaches, Gloamhollow, Blightwood) | dark grass, mud for sand, murky water, dead trees, pines and yellowed scrub, reeds, lily pads; each its own grade and dusk (olive, sick green, teal, black-green, violet); mist on the water | still water, reeds, dead trees in the mist |
 | **Highlands** (Ironpeak, Stormwatch) | summer, cooled grey-blue; boulder fields for woods, pines, dirt patches, stone and slate cottages | ledges, pines, wind |
 | **Frozen** (Rimeheld, the high peaks, the Pale Reach) | the pack's winter: snow ground, frosted trees and roofs; pale violet on the Reach | white, blue shadows |
 | **Desert** (Sunscorch, Sablewind) | the pack's dirt graded to sand for the ground, sand rocks, dead and amber trees | sand, ruins, camps |
-| **Haunted / blighted** (Ashen Barrows, Grimward, the Shattered Vale, Riftscar, the Weeping Woods, Hollowmere) | autumn or winter, desaturated and tinted (grey, violet, cold blue); dead trees, gravestones, broken pillars; crystals in the rift | grey-violet, graves, broken stone |
+| **The haunted wood** (the Weeping Woods) | summer under a blue night: black pines and dead oaks on dark grass, lamps along the road, graveyards in iron, mist | a lamp-lit road through a black wood |
+| **Haunted / blighted** (Ashen Barrows, Grimward, the Shattered Vale, Riftscar, Hollowmere) | autumn or winter, desaturated and tinted (grey, violet, cold blue), most under a dusk of their own; dead trees, graveyards, broken pillars; crystals in the rift | grey-violet, graves, broken stone, mist |
 | **Warfront** (Highwall, the Bonefields) | autumn, smoky; dirt and ash patches, dead trees | smoke, tents, broken walls |
 | **Volcanic** (Emberdeep) | autumn, scorched; the dirt graded to ash, the water to lava | black ash, lava, dead trees |
 | **Crypts, caves and interiors** | drawn in code (render/ground.ts, art/furniture.ts) | cold stone, torchlight, bones; inns and halls of plank and flagstone |
@@ -139,7 +157,20 @@ Every visual phase saves desktop, phone and tablet screenshots in `docs/review/p
 ## Feedback conventions: sound and effects (blueprint Prompt 15)
 
 Every sound is synthesized (audio/sound.ts), on one bus per kind, under the master, music and effects volumes
-(Settings, saved). The same moment always sounds the same way:
+(Settings, saved).
+
+**A song for every land** (audio/songs.ts, played by audio/score.ts): each land has its own tune, key, meter and
+band. Briarhollow is a waltz on a soft flute with birds in the hedges; Emberwick a march; Brackenridge and the inns
+a jig; the steppes a gallop; the deserts an oud over a drone and hand drums; the Glimmerwood a bell over a harp in
+the lydian; the highlands a horn echoing off the rock; the Chapel of the Bell a hymn under a choir. The frightening
+lands are slow and breathe over a drone: a music box waltzing in the Weeping Woods with owls and wolves, a wavering
+flute over frogs and dripping water in the fens, a funeral drum and a knell in the barrows, a heartbeat in the
+Bonefields and the Blightwood. Dungeons with a character of their own have their own too (the frozen vault, the
+molten throne, the root-heart, the sun king's tomb, the dwarven forge), and a raid or a burning night plays the
+siege. Songs are balanced to one loudness (measured offline), and a new land's song fades in as the last one fades
+out.
+
+The same moment always sounds the same way:
 
 | Moment | Sound | Effect on screen |
 | --- | --- | --- |

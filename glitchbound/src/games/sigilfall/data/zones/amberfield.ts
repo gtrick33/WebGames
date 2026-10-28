@@ -31,10 +31,10 @@ export const AMBERFIELD = wildRegion(
     at: [72, 66],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'amberfield',
     blurb: 'Rolling plains, centaur clans, lions in the long grass, and the first riders of the Ashen Host.',
     states: [
-      { id: 'siege', when: SIEGE, night: true, burning: true, music: 'crypt' },
+      { id: 'siege', when: SIEGE, night: true, burning: true, music: 'siege' },
       { id: 'morning-after', when: MORNING, smoke: true },
     ],
   },

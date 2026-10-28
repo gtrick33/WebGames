@@ -18,7 +18,7 @@ export const IRONPEAK = wildRegion(
     at: [80, 52],
     dark: false,
     safe: false,
-    music: 'cave',
+    music: 'ironpeak',
     blurb: 'High passes, frost rams, griffons, and the Host’s miners at the dwarves’ stolen forge.',
   },
   {

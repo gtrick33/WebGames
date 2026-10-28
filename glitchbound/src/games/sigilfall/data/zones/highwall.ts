@@ -28,7 +28,7 @@ export const HIGHWALL = wildRegion(
     at: [78, 4],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'highwall',
     blurb: 'Trenches, smoke and the great fortress of Highwall under siege by the Ashen Host.',
     states: [
       { id: 'besieged', when: BESIEGED, smoke: true },

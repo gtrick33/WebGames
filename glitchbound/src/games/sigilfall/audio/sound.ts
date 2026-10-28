@@ -1,11 +1,14 @@
+import { Score } from './score';
+import { SONGS, type SongId } from './songs';
+
 /**
- * Sigilfall's sound: synthesized effects (no audio files) and a small procedural score per region,
- * with a boss theme. The AudioContext is created on the first tap or key (browsers block sound before
- * that), effects are rate-limited so a big fight never turns into noise, and everything follows the
- * master / music / effects volumes and the mute switch.
+ * Sigilfall's sound: synthesized effects (no audio files) and a procedural score, a song for every land
+ * (audio/songs.ts, played by audio/score.ts), with a boss theme. The AudioContext is created on the first
+ * tap or key (browsers block sound before that), effects are rate-limited so a big fight never turns into
+ * noise, and everything follows the master / music / effects volumes and the mute switch.
  */
 
-export type MusicId = 'village' | 'forest' | 'crypt' | 'plains' | 'coast' | 'cave' | 'boss' | 'title' | null;
+export type MusicId = SongId | null;
 
 interface Voice {
   f: number;
@@ -113,100 +116,6 @@ const SFX: Record<string, (s: Sound) => void> = {
   checkpoint: (s) => s.tones([{ f: hz(79), dur: 0.2, gain: 0.03, type: 'sine' }, { f: hz(86), dur: 0.3, gain: 0.03, type: 'sine', at: 0.12 }]),
 };
 
-/* -------------------------------------------------------------- music */
-
-interface Song {
-  bpm: number;
-  /** Bass notes per bar (MIDI). */
-  bass: number[];
-  /** Chord tones per bar for the arpeggio. */
-  chords: number[][];
-  /** Melody: per eighth note, scale index into `scale` or null. */
-  melody: (number | null)[];
-  scale: number[];
-  lead: OscillatorType;
-  drums: boolean;
-  /** Pad gain (dark songs lean on it). */
-  pad: number;
-}
-
-const SONGS: Record<Exclude<MusicId, null>, Song> = {
-  title: { bpm: 84, bass: [45, 41, 43, 40], chords: [[57, 60, 64], [53, 57, 60], [55, 59, 62], [52, 55, 59]], melody: [4, null, 3, null, 2, null, 0, null, 1, null, 2, 3, 2, null, null, null], scale: [69, 71, 72, 74, 76, 79, 81], lead: 'triangle', drums: false, pad: 0.6 },
-  village: {
-    bpm: 100,
-    bass: [48, 43, 45, 41],
-    chords: [[60, 64, 67], [59, 62, 67], [57, 60, 64], [57, 60, 65]],
-    melody: [0, 2, 4, null, 5, 4, 2, null, 3, null, 2, 0, 1, null, null, null, 4, null, 5, 4, 2, null, 0, 1, 2, null, 1, null, 0, null, null, null],
-    scale: [72, 74, 76, 77, 79, 81, 84],
-    lead: 'square',
-    drums: true,
-    pad: 0.3,
-  },
-  forest: {
-    bpm: 112,
-    bass: [45, 45, 41, 43],
-    chords: [[57, 60, 64], [57, 60, 64], [53, 57, 60], [55, 59, 62]],
-    melody: [4, null, 2, 4, 5, null, 4, 2, 3, null, null, 1, 2, null, 0, null, 4, null, 2, 4, 6, null, 5, 4, 3, 2, 1, null, 0, null, null, null],
-    scale: [69, 71, 72, 74, 76, 77, 79],
-    lead: 'triangle',
-    drums: true,
-    pad: 0.35,
-  },
-  crypt: {
-    bpm: 92,
-    bass: [40, 40, 41, 39],
-    chords: [[52, 55, 59], [52, 55, 58], [53, 56, 60], [51, 55, 58]],
-    melody: [0, null, null, 1, 0, null, null, null, 2, null, 1, null, 0, null, null, null, 3, null, 2, null, 1, null, 0, null, 1, null, null, null, null, null, null, null],
-    scale: [64, 65, 67, 68, 71, 72],
-    lead: 'sine',
-    drums: false,
-    pad: 0.75,
-  },
-  // Thornvale: open fields, a walking tune in G
-  plains: {
-    bpm: 104,
-    bass: [43, 48, 50, 43],
-    chords: [[55, 59, 62], [55, 60, 64], [57, 62, 66], [55, 59, 62]],
-    melody: [2, null, 4, 5, 4, null, 2, null, 1, 2, 4, null, 2, null, null, null, 4, null, 5, 7, 5, 4, 2, null, 1, null, 0, 1, 2, null, null, null],
-    scale: [67, 69, 71, 72, 74, 76, 78, 79],
-    lead: 'triangle',
-    drums: true,
-    pad: 0.3,
-  },
-  // the Saltmarsh: a shanty in D dorian, rolling like the swell
-  coast: {
-    bpm: 118,
-    bass: [38, 45, 36, 43],
-    chords: [[50, 53, 57], [57, 60, 64], [48, 52, 55], [55, 59, 62]],
-    melody: [0, null, 2, 3, 4, null, 3, 2, 1, null, 2, null, 0, null, null, null, 4, null, 5, 4, 3, null, 2, 1, 0, null, 1, 2, 0, null, null, null],
-    scale: [62, 64, 65, 67, 69, 71, 72],
-    lead: 'square',
-    drums: true,
-    pad: 0.35,
-  },
-  // caves and keeps: low, slow and echoing
-  cave: {
-    bpm: 86,
-    bass: [38, 38, 41, 36],
-    chords: [[50, 53, 57], [50, 53, 56], [53, 56, 60], [48, 51, 55]],
-    melody: [0, null, null, 2, 1, null, null, null, 0, null, 3, null, 2, null, null, null, 4, null, 3, null, 2, null, 1, null, 0, null, null, null, null, null, null, null],
-    scale: [62, 63, 65, 67, 68, 70],
-    lead: 'sine',
-    drums: false,
-    pad: 0.7,
-  },
-  boss: {
-    bpm: 148,
-    bass: [40, 40, 43, 38],
-    chords: [[52, 55, 59], [52, 55, 59], [55, 58, 62], [50, 53, 57]],
-    melody: [0, 0, 3, 0, 4, 3, 0, null, 0, 0, 5, 4, 3, null, 2, null, 0, 0, 3, 0, 4, 3, 5, null, 6, 5, 4, 3, 2, null, 1, null],
-    scale: [64, 66, 67, 69, 71, 72, 74],
-    lead: 'sawtooth',
-    drums: true,
-    pad: 0.25,
-  },
-};
-
 export class Sound {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -216,8 +125,7 @@ export class Sound {
   private last = new Map<string, number>();
   private music: MusicId = null;
   private wanted: MusicId = null;
-  private nextBar = 0;
-  private bar = 0;
+  private score: Score | null = null;
   private timer = 0;
   private suspended = false;
   volumes = { master: 0.8, music: 0.55, sfx: 0.8, muted: false };
@@ -325,86 +233,23 @@ export class Sound {
 
   setMusic(id: MusicId): void {
     this.wanted = id;
-    if (!this.ctx) return;
+    if (!this.ctx || !this.musicBus || !this.noiseBuf) return;
     if (this.music === id) return;
     this.music = id;
-    this.bar = 0;
-    this.nextBar = this.ctx.currentTime + 0.15;
+    const t = this.ctx.currentTime;
+    // the last land's song fades out under the new one, then lets go
+    const old = this.score;
+    if (old) {
+      old.stop(t);
+      window.setTimeout(() => old.out.disconnect(), 6000);
+    }
+    this.score = id ? new Score(this.ctx, this.musicBus, this.noiseBuf, SONGS[id], t + (old ? 0.5 : 0.1)) : null;
   }
 
   private schedule(): void {
     const c = this.ctx;
-    if (!c || !this.musicBus || !this.music || this.suspended) return;
-    const song = SONGS[this.music];
-    const beat = 60 / song.bpm;
-    const barLen = beat * 4;
-    while (this.nextBar < c.currentTime + 0.4) {
-      this.playBar(song, this.nextBar, beat);
-      this.nextBar += barLen;
-      this.bar += 1;
-    }
-  }
-
-  private note(f: number, t: number, dur: number, gain: number, type: OscillatorType): void {
-    const c = this.ctx!;
-    const o = c.createOscillator();
-    const g = c.createGain();
-    o.type = type;
-    o.frequency.setValueAtTime(f, t);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain, t + 0.015);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(this.musicBus!);
-    o.start(t);
-    o.stop(t + dur + 0.05);
-  }
-
-  private playBar(song: Song, t: number, beat: number): void {
-    const i = this.bar % song.bass.length;
-    const bass = song.bass[i]!;
-    const chord = song.chords[i]!;
-    // bass on the beats
-    for (let b = 0; b < 4; b++) this.note(hz(bass - 12), t + b * beat, beat * 0.9, 0.05, 'triangle');
-    // pad
-    if (song.pad > 0) for (const n of chord) this.note(hz(n), t, beat * 3.9, 0.012 * song.pad, 'sine');
-    // arpeggio on eighths
-    for (let e = 0; e < 8; e++) this.note(hz(chord[e % chord.length]! + (e >= 4 ? 12 : 0)), t + e * beat * 0.5, beat * 0.45, 0.014, 'square');
-    // melody: 8 eighths per bar, cycling through the phrase
-    const phraseBars = Math.ceil(song.melody.length / 8);
-    const start = (this.bar % phraseBars) * 8;
-    for (let e = 0; e < 8; e++) {
-      const m = song.melody[start + e];
-      if (m === null || m === undefined) continue;
-      this.note(hz(song.scale[m % song.scale.length]!), t + e * beat * 0.5, beat * 0.48, 0.022, song.lead);
-    }
-    // drums
-    if (song.drums && this.noiseBuf) {
-      for (let b = 0; b < 4; b++) {
-        const tt = t + b * beat;
-        // kick
-        const o = this.ctx!.createOscillator();
-        const g = this.ctx!.createGain();
-        o.frequency.setValueAtTime(140, tt);
-        o.frequency.exponentialRampToValueAtTime(45, tt + 0.12);
-        g.gain.setValueAtTime(b % 2 === 0 ? 0.08 : 0.0001, tt);
-        g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.14);
-        o.connect(g).connect(this.musicBus!);
-        o.start(tt);
-        o.stop(tt + 0.16);
-        // hat / snare
-        const src = this.ctx!.createBufferSource();
-        src.buffer = this.noiseBuf;
-        const f = this.ctx!.createBiquadFilter();
-        f.type = b % 2 ? 'bandpass' : 'highpass';
-        f.frequency.value = b % 2 ? 1800 : 7000;
-        const ng = this.ctx!.createGain();
-        ng.gain.setValueAtTime(b % 2 ? 0.03 : 0.012, tt);
-        ng.gain.exponentialRampToValueAtTime(0.0001, tt + (b % 2 ? 0.12 : 0.04));
-        src.connect(f).connect(ng).connect(this.musicBus!);
-        src.start(tt, Math.random() * 0.5);
-        src.stop(tt + 0.15);
-      }
-    }
+    if (!c || !this.score || this.suspended) return;
+    this.score.schedule(c.currentTime + 0.4);
   }
 
   dispose(): void {

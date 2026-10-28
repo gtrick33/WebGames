@@ -19,7 +19,7 @@ export const SHATTERED_VALE = wildRegion(
     at: [52, 4],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'shattered-vale',
     blurb: 'Shards of grief-glass jut from a broken valley around the Tear; what comes through it is hungry.',
   },
   {

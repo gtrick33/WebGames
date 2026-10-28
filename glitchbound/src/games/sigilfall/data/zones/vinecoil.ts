@@ -18,7 +18,7 @@ export const VINECOIL = wildRegion(
     at: [104, 74],
     dark: false,
     safe: false,
-    music: 'forest',
+    music: 'vinecoil',
     blurb: 'Steaming jungle, panthers and the serpent cult’s temples, older than any kingdom.',
   },
   {

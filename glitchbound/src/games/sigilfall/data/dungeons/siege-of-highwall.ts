@@ -567,7 +567,7 @@ export const SIEGE_OF_HIGHWALL: DungeonModule = {
     at: [86, -4],
     dark: true,
     safe: false,
-    music: 'cave',
+    music: 'siege',
     map: MAP,
     markers,
     encounters: [

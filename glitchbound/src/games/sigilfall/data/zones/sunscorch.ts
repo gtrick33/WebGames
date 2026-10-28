@@ -20,7 +20,7 @@ export const SUNSCORCH = wildRegion(
     at: [100, 48],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'sunscorch',
     blurb: 'Sand to the horizon, raiders and scorpions, and the sunken tomb where the Sun King keeps his sigil.',
   },
   {

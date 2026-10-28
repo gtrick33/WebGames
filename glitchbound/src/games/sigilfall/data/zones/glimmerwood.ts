@@ -20,7 +20,7 @@ export const GLIMMERWOOD = wildRegion(
     at: [30, 24],
     dark: false,
     safe: false,
-    music: 'forest',
+    music: 'glimmerwood',
     blurb: 'A wood of light and wonder, going sour: the fey courts have turned, and thorns grow where songs were.',
   },
   {

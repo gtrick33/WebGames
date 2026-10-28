@@ -20,7 +20,7 @@ export const SABLEWIND = wildRegion(
     at: [100, 22],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'sablewind',
     blurb: 'Red canyons and the Host’s wagon road, carrying bone-steel to the siege of Highwall.',
   },
   {

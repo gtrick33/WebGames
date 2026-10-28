@@ -17,7 +17,7 @@ export const DUSKFEN = wildRegion(
     at: [8, 64],
     dark: false,
     safe: false,
-    music: 'forest',
+    music: 'duskfen',
     blurb: 'Green water, sick villages and the cistern where the Rot-Mother stirs her pot.',
     // Low Wick's plague houses burn the day the cure is in the water
     states: [{ id: 'low-wick-burns', when: during('low-wick-fires'), burning: true }],

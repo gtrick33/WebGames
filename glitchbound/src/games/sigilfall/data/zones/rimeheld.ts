@@ -20,7 +20,7 @@ export const RIMEHELD = wildRegion(
     at: [10, 14],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'rimeheld',
     blurb: 'Snow, frost giants and the old vault where the Sigil of Frost sleeps under the ice.',
   },
   {

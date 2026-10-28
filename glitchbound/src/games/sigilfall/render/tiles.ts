@@ -58,6 +58,10 @@ export interface Scenery {
   art: WorldLook | null;
   torches: { x: number; y: number }[];
   braziers: { x: number; y: number }[];
+  /** What the packed art stands that gives light (lamps, torches, campfires), and how far it reaches. */
+  lights: { x: number; y: number; r: number }[];
+  /** Mist banks lying over a frightening land's water and hollows (THEMES dread): where, how big, and a phase. */
+  mist: { x: number; y: number; w: number; h: number; ph: number }[];
   water: number[];
   illusions: number[];
   theme: Theme;
@@ -79,17 +83,40 @@ export function buildScenery(map: TileMap, region: RegionDef, look: WorldLook | 
   }
   const art = look && !THEMES[region.theme].indoor ? look : null;
   const ground: GroundLayer = art ? new WorldGround(map, art.rk, art.recipe, buildDecals(map, region)) : new Ground(map, region);
-  const sc: Scenery = { ground, objects: [], art, torches: [], braziers: [], water, illusions, theme: region.theme };
+  const sc: Scenery = { ground, objects: [], art, torches: [], braziers: [], lights: [], mist: mistBanks(map, THEMES[region.theme].dread?.mist ?? 0), water, illusions, theme: region.theme };
   let handled = new Set<number>();
   if (art) {
     // every outdoor land is drawn from the one pack (VISUAL_BIBLE.md §1)
     const built = buildWorldObjects(map, { rk: art.rk, gc: art.gc }, art.recipe, region.kind === 'town');
     sc.objects.push(...built.objects);
+    sc.lights = built.lights;
     handled = built.handled;
   }
   buildObjects(sc, map, region, !!art, handled);
   sc.objects.sort((a, b) => a.y - b.y);
   return sc;
+}
+
+/**
+ * Mist in a frightening land: banks lying over still water and along its banks, and in the open hollows
+ * between the woods, more of them the mistier the land. Placed by the map, so the same banks lie in the same
+ * places every visit.
+ */
+function mistBanks(map: TileMap, amount: number): Scenery['mist'] {
+  const banks: Scenery['mist'] = [];
+  if (amount <= 0) return banks;
+  for (let ty = 2; ty < map.h - 2; ty += 3) {
+    for (let tx = 2; tx < map.w - 2; tx += 3) {
+      const k = map.kind[ty * map.w + tx]!;
+      const wet = k === K.Water;
+      const low = k === K.Floor || k === K.Deco || k === K.Path || k === K.Bridge;
+      if (!wet && !low) continue;
+      if (hash2(tx, ty, 404) > amount * (wet ? 0.3 : 0.07)) continue;
+      const h = hash2(tx, ty, 405);
+      banks.push({ x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, w: 70 + h * 90, h: 26 + h * 26, ph: hash2(tx, ty, 406) * 100 });
+    }
+  }
+  return banks;
 }
 
 /* -------------------------------------------------------------- objects */

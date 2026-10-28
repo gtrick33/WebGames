@@ -19,7 +19,7 @@ export const RIFTSCAR = wildRegion(
     at: [30, -34],
     dark: false,
     safe: false,
-    music: 'cave',
+    music: 'riftscar',
     states: [{ id: 'tear-open', when: until('the-pale-herald'), gloom: true }],
     blurb: 'Glass plains under a torn sky, where the Pale Herald feeds the Tear from his spire.',
   },

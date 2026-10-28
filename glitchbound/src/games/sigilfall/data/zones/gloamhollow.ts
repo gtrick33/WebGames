@@ -25,7 +25,7 @@ export const GLOAMHOLLOW = wildRegion(
     at: [48, -10],
     dark: true,
     safe: false,
-    music: 'forest',
+    music: 'gloamhollow',
     blurb: 'A black fen at the edge of the living lands, lit only by marsh-lights and Lastlight’s lamps, and the Gloam Gate at its end.',
     states: [{ id: 'gate-held', when: HELD, gloom: true }],
   },

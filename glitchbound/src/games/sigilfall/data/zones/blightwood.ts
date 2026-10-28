@@ -20,7 +20,7 @@ export const BLIGHTWOOD = wildRegion(
     at: [28, -8],
     dark: false,
     safe: false,
-    music: 'forest',
+    music: 'blightwood',
     states: [{ id: 'withering', when: until('the-withered-queen'), gloom: true }],
     blurb: 'A rotting forest of grey trees and spore-clouds, where the Withered Queen keeps her court.',
   },

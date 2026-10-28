@@ -24,7 +24,7 @@ export const WEEPING_WOODS = wildRegion(
     at: [54, -26],
     dark: false,
     safe: false,
-    music: 'forest',
+    music: 'weeping-woods',
     blurb: 'A grey wood of the Dead Kingdom where the Sigil-wardens of the old war still walk, and every window in Candlewick holds a candle.',
     states: [{ id: 'weeping', when: until('the-weeping-lord'), gloom: true }],
   },

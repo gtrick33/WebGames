@@ -321,7 +321,7 @@ export const BRIARHOLLOW: RegionDef = {
   at: [56, 70],
   dark: false,
   safe: true,
-  music: 'village',
+  music: 'briarhollow',
   map: built.map,
   markers: {},
   placed: built.placed,
@@ -332,7 +332,7 @@ export const BRIARHOLLOW: RegionDef = {
   },
   encounters: [],
   states: [
-    { id: 'raid', when: RAID, night: true, burning: true, music: 'crypt' },
+    { id: 'raid', when: RAID, night: true, burning: true, music: 'siege' },
     { id: 'night', when: NIGHT, night: true, smoke: true },
     { id: 'rebuilt', when: HOME },
     { id: 'camp', when: CAMP },

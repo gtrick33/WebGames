@@ -26,7 +26,7 @@ export const PALE_REACH = wildRegion(
     at: [56, -66],
     dark: false,
     safe: false,
-    music: 'crypt',
+    music: 'pale-reach',
     blurb: 'The Hallow King’s frozen land, where the dead stand in ranks and Duskspire rises in the north.',
     states: [
       { id: 'host-waits', when: until('march-the-breach'), gloom: true },

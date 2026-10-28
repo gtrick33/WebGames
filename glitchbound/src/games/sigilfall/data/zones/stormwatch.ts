@@ -19,7 +19,7 @@ export const STORMWATCH = wildRegion(
     at: [89, 72],
     dark: false,
     safe: false,
-    music: 'coast',
+    music: 'stormwatch',
     blurb: 'Rain, cliffs and the great lighthouse, under siege by the drowned and the storm they bring.',
     // once Blackwake falls the Light burns at the top of Lantern Head, every night after
     states: [{ id: 'the-light-burns', when: after('the-last-light'), burning: true }],

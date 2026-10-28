@@ -57,6 +57,12 @@ export interface ThemeLook {
   cliffs?: boolean;
   /** A color laid thin over everything (gloomy lands). */
   tint?: string;
+  /**
+   * A frightening land (the owner: "some biomes need to be scary"): an evening that never lifts there (how
+   * dark, 0 to 1, and the color of its dark; lamps, torches and fires light pools in it), mist lying in its
+   * hollows and over its water (how much, 0 to 1), and lamps along its roads.
+   */
+  dread?: { dark: number; shade: string; mist: number; lamps: boolean };
 }
 
 /* ---------------------------------------------------------------- shared */
@@ -210,6 +216,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     leaves: ['#14261c', '#1c3424', '#26442e', '#32563a', '#46704a', '#5e8a5e'],
     bark: '#4a3e2e',
     ambient: 'motes',
+    dread: { dark: 0.24, shade: '#0a120c', mist: 0.7, lamps: false },
   },
   plague: {
     indoor: false,
@@ -230,6 +237,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     leaves: ['#1a2412', '#243218', '#30421e', '#3e5426', '#566e30', '#748a3e'],
     bark: '#3e3424',
     ambient: 'spores',
+    dread: { dark: 0.34, shade: '#10140a', mist: 0.65, lamps: true },
   },
   plains: {
     indoor: false,
@@ -290,6 +298,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     bark: '#4a4440',
     ambient: 'ash',
     tint: '#1a2430',
+    dread: { dark: 0.36, shade: '#0e0e16', mist: 0.45, lamps: true },
   },
   storm: {
     indoor: false,
@@ -332,6 +341,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     bark: '#3a3434',
     ambient: 'motes',
     tint: '#1a1428',
+    dread: { dark: 0.24, shade: '#120c18', mist: 0.8, lamps: false },
   },
   desert: {
     indoor: false,
@@ -474,6 +484,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     bark: '#2e2630',
     ambient: 'spores',
     tint: '#1a1020',
+    dread: { dark: 0.4, shade: '#140818', mist: 0.55, lamps: true },
   },
   haunted: {
     indoor: false,
@@ -495,6 +506,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     bark: '#3a3e46',
     ambient: 'motes',
     tint: '#081420',
+    dread: { dark: 0.55, shade: '#070b1c', mist: 0.7, lamps: true },
   },
   volcanic: {
     indoor: false,
@@ -538,6 +550,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     bark: '#3a3c42',
     ambient: 'motes',
     tint: '#0a0c18',
+    dread: { dark: 0.42, shade: '#08101a', mist: 0.9, lamps: true },
   },
   // Frostfang: snowfields between granite crags, snowcapped
   peaks: {
@@ -582,6 +595,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     bark: '#3a3428',
     ambient: 'spray',
     tint: '#08202a',
+    dread: { dark: 0.14, shade: '#061418', mist: 0.5, lamps: false },
   },
   // the Bonefields: ashen plain where the Legion musters, bones for shells, bluffs for woods
   bonefield: {
@@ -605,6 +619,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     ambient: 'ash',
     tint: '#1a1610',
     cliffs: true,
+    dread: { dark: 0.18, shade: '#160f08', mist: 0.25, lamps: false },
   },
   // Gloamhollow: a black fen at the King's border, lit by marsh-lights
   gloam: {
@@ -627,6 +642,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     bark: '#2a2620',
     ambient: 'motes',
     tint: '#04100c',
+    dread: { dark: 0, shade: '#06100c', mist: 0.8, lamps: true },
   },
   // the Pale Reach: the King's frozen dead lands under a violet sky
   pale: {
@@ -650,6 +666,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     ambient: 'snow',
     tint: '#10102a',
     cliffs: true,
+    dread: { dark: 0.3, shade: '#10102a', mist: 0.5, lamps: true },
   },
   crypt: indoor('#0e0c18', CRYPT_STONE),
   cave: indoor('#0c0a08', {

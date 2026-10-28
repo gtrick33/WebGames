@@ -113,14 +113,26 @@ const PROPS: Record<string, string[]> = {
 };
 
 /** Tall props the hero fades when walking behind. */
+/** The pieces that give light: how far it reaches, and how high its flame or lamp is over its foot (world px). */
+const LIGHT: Record<string, [number, number]> = {
+  'anim:wall_torch': [46, 8],
+  'anim:torch_post': [52, 14],
+  'anim:campfire': [70, 4],
+  'anim:brazier': [62, 8],
+  'anim:candelabra': [40, 10],
+  lantern_post: [54, 16],
+  lantern_post_double: [60, 16],
+};
+
 const FADE = new Set(['well', 'tent', 'camp-tent', 'torch', 'menhir', 'market-cart', 'watchtower', 'fountain', 'statue', 'lamp', 'lantern', 'scarecrow', 'red-banner', 'blue-banner', 'skull-banner', 'standing-stone']);
 
 /** Every piece the fixed tables name (for the art-integrity test). */
-export const sceneryRefs = (): string[] => [...Object.values(PROPS).flat(), 'signpost', 'pillar', 'pillar_broken', 'anim:smoke', 'lilypad', 'lilypad_flower', 'reeds', 'reeds_2', 'bush_small_leaf', 'bush_small_mint', 'hedge_block', 'planter_red', 'anim:wall_torch', 'wall_banner_blue', 'wall_banner_red', 'wall_moss_a', 'wall_crack_a', ...Array.from({ length: 16 }, (_, n) => `fence_${n}`)];
+export const sceneryRefs = (): string[] => [...Object.values(PROPS).flat(), 'signpost', 'pillar', 'pillar_broken', 'anim:smoke', 'lilypad', 'lilypad_flower', 'reeds', 'reeds_2', 'bush_small_leaf', 'bush_small_mint', 'hedge_block', 'planter_red', 'anim:wall_torch', 'wall_banner_blue', 'wall_banner_red', 'wall_moss_a', 'wall_crack_a', ...Array.from({ length: 16 }, (_, n) => `fence_${n}`), ...Array.from({ length: 16 }, (_, n) => `fence_iron_${n}`)];
 
-export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town = false): { objects: SceneObject[]; handled: Set<number> } {
+export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town = false): { objects: SceneObject[]; handled: Set<number>; lights: { x: number; y: number; r: number }[] } {
   const objects: SceneObject[] = [];
   const handled = new Set<number>();
+  const lights: { x: number; y: number; r: number }[] = [];
   const rk = art.rk;
   /** A piece by name ('tree_big_leaf', 'anim:campfire', 'gc:skulls'): its picture, ground point and scale. */
   const find = (ref: string): { c: Cnv; r: Rect; o: [number, number]; k: number; anim?: AnimInfo; smoke?: [number, number][] } | null => {
@@ -145,12 +157,18 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town =
     if (!p) return null;
     const ob: SceneObject = { x, y: sortY, c: p.c, dx: -p.o[0] / p.k, dy: y - sortY - p.o[1] / p.k, fade, kind, src: p.r, k: p.k, ...(p.anim ? { anim: p.anim } : {}) };
     objects.push(ob);
+    // a flame or a lamp lights the dark around it (the crypt, a night, a frightening land)
+    const glow = ref ? LIGHT[ref] : undefined;
+    if (glow) lights.push({ x, y: y - glow[1], r: glow[0] });
     return ob;
   };
 
   const kindAt = (x: number, y: number): number => (x < 0 || y < 0 || x >= map.w || y >= map.h ? K.Wall : map.kind[y * map.w + x]!);
   const open = (k: number): boolean => k === K.Floor || k === K.Deco || k === K.Path || k === K.Cobble || k === K.Sand || k === K.Bridge;
   const fenceAt = (x: number, y: number): boolean => kindAt(x, y) === K.Fence;
+  // a fence round graves is wrought iron
+  const graves = map.markers.filter((pm) => pm.marker.kind === 'prop' && (pm.marker.prop === 'gravestone' || pm.marker.prop === 'grave-cross'));
+  const byGraves = (x: number, y: number): boolean => graves.some((pm) => Math.abs(pm.tx - x) <= 3 && Math.abs(pm.ty - y) <= 3);
   const field = farmFields(map);
   const calm = !r.water?.hue;
   // a bare land's rock is drawn as cliffs (worldGround.ts): nothing stands on their faces
@@ -183,7 +201,7 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town =
       case K.Fence: {
         // the pack's fences join themselves: 1 north, 2 east, 4 south, 8 west
         const n = (fenceAt(tx, ty - 1) ? 1 : 0) + (fenceAt(tx + 1, ty) ? 2 : 0) + (fenceAt(tx, ty + 1) ? 4 : 0) + (fenceAt(tx - 1, ty) ? 8 : 0);
-        const p = find(`fence_${n}`);
+        const p = find(byGraves(tx, ty) ? `fence_iron_${n}` : `fence_${n}`);
         if (p) objects.push({ x: cx, y: bottom - 3, c: p.c, dx: -TILE / 2, dy: 3 - p.o[1] / p.k, fade: false, kind: 'fence', src: p.r, k: p.k });
         break;
       }
@@ -329,5 +347,5 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town =
     }
     if (m.kind === 'exit' && m.door) handled.add(idx);
   }
-  return { objects, handled };
+  return { objects, handled, lights };
 }

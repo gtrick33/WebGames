@@ -19,7 +19,7 @@ export const GRIMWARD = wildRegion(
     at: [52, 22],
     dark: false,
     safe: false,
-    music: 'plains',
+    music: 'grimward',
     blurb: 'Grey heath, gibbets and standing stones, and wolves that walk like men under the King’s curse.',
   },
   {

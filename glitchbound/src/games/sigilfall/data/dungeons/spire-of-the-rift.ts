@@ -582,7 +582,7 @@ export const SPIRE_OF_THE_RIFT: DungeonModule = {
     at: [20, -44],
     dark: true,
     safe: false,
-    music: 'cave',
+    music: 'riftscar',
     map: MAP,
     markers,
     encounters: [
