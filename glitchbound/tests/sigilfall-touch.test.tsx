@@ -36,7 +36,7 @@ afterEach(cleanup);
 function setup() {
   const world = newWorld('whisperwood', readyHero('ranger', 12));
   const touch = new TouchState();
-  const engine = { settings: { ...DEFAULT_SETTINGS }, touch, hero: world.hero, world, frameHooks: new Set(), touchMode: true, drinkPotion: () => undefined, toggleMount: () => undefined, interact: () => undefined } as unknown as SigilEngine;
+  const engine = { settings: { ...DEFAULT_SETTINGS }, touch, hero: world.hero, world, frameHooks: new Set(), ui: { teach: null }, touchMode: true, drinkPotion: () => undefined, toggleMount: () => undefined, interact: () => undefined } as unknown as SigilEngine;
   const view = render(<TouchControls engine={engine} />);
   const zone = view.container.querySelector('.rb-joyzone')! as HTMLElement;
   const attack = view.container.querySelector('.rb-sb-basic')! as HTMLElement;

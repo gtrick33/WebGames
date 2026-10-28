@@ -22,10 +22,44 @@ export const SCENES: SceneDef[] = [
       { emote: 'elyra', icon: 'heart' },
       { say: 'elyra', line: 'Thessa says I talk too much when I’m frightened. I’m not frightened anymore. Mostly.' },
       { look: 'briar-chapel' },
-      { say: 'old-haldor', line: 'She’s quiet still. But she’s listening now. I can feel it in the rope.' },
+      { say: 'old-haldor', line: 'She rang three times last night, and no hand on the rope. Quiet again now. But listening. I can feel it.' },
       { look: 'hero' },
       { say: 'maren', line: 'This is a camp now. And a camp needs someone to go and bring the others in.' },
     ],
+  },
+  {
+    // the Prologue: the gate has held, and the chapel bell nobody has rung in three weeks tolls by itself;
+    // the roofs catch, the chapel's side first, then the east wall's, where the Host came over
+    id: 'briar-the-toll',
+    region: 'briarhollow',
+    when: during('briar-nightfall'),
+    near: 'briar-gate',
+    r: 220,
+    steps: [
+      { wait: 0.6 },
+      { sfx: 'bell-toll' },
+      { shake: 4 },
+      { look: 'briar-chapel' },
+      { wait: 2.4 },
+      { sfx: 'bell-toll' },
+      { shake: 3 },
+      { look: 'briar-east-roofs' },
+      { wait: 2.6 },
+      { look: 'hero' },
+      { say: 'mara', line: 'The chapel bell. Nobody has touched that rope in three weeks.' },
+      { sfx: 'bell-toll' },
+      { say: 'mara', line: 'And that’s fire. They came over the east wall while we held the gate. The square, with me!' },
+    ],
+  },
+  {
+    // the courier coming up the road out of the dark, the last of it on foot, carrying his light
+    id: 'briar-the-rider-comes',
+    region: 'briarhollow',
+    when: during('briar-the-rider'),
+    // (inside his arrival's six tiles, so he is on the road when the camera looks)
+    near: 'briar-gate',
+    r: 88,
+    steps: [{ look: 'briar-road' }, { wait: 2.6 }, { look: 'briar-north' }, { wait: 3.2 }, { look: 'hero' }],
   },
   {
     // the Crown City: the Regent meets the hero with the countermanded order, the Chancellor at her side

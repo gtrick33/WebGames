@@ -19,8 +19,10 @@ const not = (c: StoryCond): StoryCond => ({ not: c });
 const any = (...c: StoryCond[]): StoryCond => ({ any: c });
 const all = (...c: StoryCond[]): StoryCond => ({ all: c });
 
+/** The fight at the gate: night has come, and nothing burns yet (the bell and the fire come after it). */
+const GATE = is('first-steps', 'active');
 /** The night of the raid, from the fight at the gate to the door holding (the Prologue opens on it). */
-const RAID = any(is('first-steps', 'active'), is('briar-nightfall', 'active'), is('briar-the-rider', 'active'), is('briar-the-seal', 'active'), is('briar-the-inn', 'active'), is('briar-hold-the-door', 'active'));
+const RAID = any(GATE, is('briar-nightfall', 'active'), is('briar-the-rider', 'active'), is('briar-the-seal', 'active'), is('briar-the-inn', 'active'), is('briar-hold-the-door', 'active'));
 /** After the door held, until dawn: the raiders are below, the village is dark and smoking. */
 const NIGHT = any(is('briar-below', 'active'), is('the-warden', 'active'), is('close-the-rift', 'active'), is('the-empty-tomb', 'active'));
 /** Dawn: the camp. */
@@ -195,6 +197,10 @@ function plan(): SpreadPlan {
     ['briar-inn', 16, 25],
     ['briar-chapel', 46, 19],
     ['briar-north', 32, 8],
+    // up the north road, out of the lamps' reach: where the courier comes from
+    ['briar-road', 32, 3],
+    // the east wall's roofs, where the raiders came over
+    ['briar-east-roofs', 50, 31],
     ['briar-east', 56, 26],
     ['briar-west', 5, 26],
     ['briar-south', 31, 49],
@@ -209,18 +215,20 @@ function plan(): SpreadPlan {
   ] as const)
     c.marker(x, y, { kind: 'place', id });
 
-  // fires on the roofs while the village burns
-  for (const [x, y, s] of [
-    [15, 20, 3],
-    [17, 21, 2],
-    [10, 30, 2],
-    [46, 31, 3],
-    [54, 31, 2],
-    [9, 37, 2],
-    [47, 38, 2],
-    [43, 21, 2],
+  // fires on the roofs while the village burns, catching one after another once the bell has rung (seconds
+  // after the burning begins: the chapel's side while the camera is on the bell, the east wall's after);
+  // the inn catches when its beat comes
+  for (const [x, y, s, delay] of [
+    [43, 21, 2, 5],
+    [46, 31, 3, 8.5],
+    [54, 31, 2, 9.5],
+    [47, 38, 2, 11],
+    [10, 30, 2, 13],
+    [9, 37, 2, 14],
   ] as const)
-    c.marker(x, y, { kind: 'fire', size: s });
+    c.marker(x, y, { kind: 'fire', size: s, delay });
+  c.marker(15, 20, { kind: 'fire', size: 3 }, is('briar-the-inn', 'started'));
+  c.marker(17, 21, { kind: 'fire', size: 2, delay: 0.8 }, is('briar-the-inn', 'started'));
 
   // the people: who stands where depends on the night
   c.npc('mara-venn', 31, 14, CALM);
@@ -356,6 +364,7 @@ export const BRIARHOLLOW: RegionDef = {
   },
   encounters: [],
   states: [
+    { id: 'gate', when: GATE, night: true, music: 'siege' },
     { id: 'raid', when: RAID, night: true, burning: true, music: 'siege' },
     { id: 'night', when: NIGHT, night: true, smoke: true },
     { id: 'rebuilt', when: HOME },
@@ -670,20 +679,21 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
       { enemies: ['ash-archer', 'ash-raider'], from: ['briar-north'], hint: 'dodge', barks: [{ who: 'mara', text: 'Bowman! When it draws, get out of the way!' }] },
     ],
     retry: [{ who: 'mara', text: 'Up! Back to the gate, they’re coming again!' }],
-    end: [
-      { who: 'mara', text: 'That’s not all of them. Smoke, east: they came over the wall while we stood here.' },
-      { who: 'mara', text: 'Fire on the roofs. They’re in the lanes. With me!' },
-    ],
+    end: [{ who: 'mara', text: 'That’s the last of them on the road.' }],
+    // Mara stays for the bell (data/scenes.ts briar-the-toll); the raid's start sends her on
+    stay: 40,
   },
   'briar-raid': {
     id: 'briar-raid',
     region: 'briarhollow',
     kind: 'raid',
     at: 'briar-square',
-    radius: 16,
+    radius: 6,
     level: 2,
     allies: ['mara'],
-    start: [{ who: 'mara', text: 'Keep them off the square! The square, and the chapel!' }],
+    // they come out of the smoke at the edge of sight, from their roads' side: no standing about
+    close: true,
+    start: [{ who: 'mara', text: 'Here they come! Keep them off the square, and off the chapel!' }],
     waves: [
       { enemies: ['ash-raider', 'ash-raider', 'ash-raider'], from: ['briar-north', 'briar-east'] },
       { enemies: ['ash-raider', 'ash-archer', 'ash-raider', 'ash-hound'], from: ['briar-west', 'briar-north'], barks: [{ who: 'mara', text: 'More from the west road! Keep them off the square!' }] },
@@ -702,9 +712,12 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     kind: 'arrival',
     at: 'briar-gate',
     radius: 6,
-    arrive: { pets: ['courier'], from: 'briar-north', to: 'briar-gate' },
+    arrive: { pets: ['courier'], from: 'briar-road', to: 'briar-gate' },
     banner: 'A rider',
-    start: [{ who: 'courier', text: 'In the king’s name… the gate… don’t close the gate…' }],
+    start: [
+      { who: 'courier', text: 'In the king’s name… the gate…' },
+      { who: 'courier', text: 'Don’t close it. Don’t… close it…' },
+    ],
     waves: [],
     end: [{ who: 'oskar-fell', text: 'You. Come here. Take it…' }],
   },
@@ -768,6 +781,8 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
     name: 'The Night the Bells Stopped',
     giver: 'mara-venn',
     auto: true,
+    // the first moments speak for themselves: Mara's greeting, then the fight's own banner and lessons
+    quiet: true,
     text: 'Briarhollow as the lamps are lit: half the shutters nailed shut, an empty market, a chapel bell that hasn’t rung in three weeks. Someone is waiting at the gate with a spear.',
     objective: { kind: 'talk', npc: 'mara-venn', label: 'Speak to the guard at the gate' },
     reward: { xp: 20, gold: 5 },

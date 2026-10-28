@@ -39,6 +39,11 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
   return (
     <>
       <Joystick engine={engine} />
+      {engine.ui.teach && (
+        <div className="rb-teach is-touch" role="status">
+          {engine.ui.teach.text}
+        </div>
+      )}
       <div className="rb-cluster">
         <SkillButton engine={engine} slot="basic" />
         <SkillButton engine={engine} slot="s1" />
@@ -280,7 +285,7 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
   return (
     <button
       ref={btn}
-      className={`rb-sb rb-sb-${slot}${locked ? ' is-locked' : ''}`}
+      className={`rb-sb rb-sb-${slot}${locked ? ' is-locked' : ''}${engine.ui.teach?.slot === slot ? ' is-teach' : ''}`}
       aria-label={def ? `${label}: ${def.name}` : `${label} (locked)`}
       onPointerDown={down}
       onPointerMove={move}

@@ -20,6 +20,7 @@ export const QUESTS: QuestDef[] = [
     name: 'Ash at the Gate',
     giver: 'mara-venn',
     auto: true,
+    quiet: true,
     text: 'Grey shapes came down the north road out of the Whisperwood behind you, and Mara Venn is the only one at the gate. Stand with her: strike, use your skill, and dodge what they loose.',
     objective: { kind: 'event', event: 'briar-gate', label: 'Hold the north gate with Mara' },
     after: ['briar-dusk'],

@@ -29,7 +29,7 @@ import { refreshPets, summonPet, updatePets } from './pets';
 import { spawnFolk, updateFolk, type Folk } from './folk';
 import { updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
-import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type TileMap } from './map';
+import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
 import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent } from './types';
 import { inCone, inLine } from '../core/math';
 
@@ -249,7 +249,10 @@ export class World {
   /** Which conditional markers are showing (by map letter), so a change is noticed. */
   private shownKey = '';
   /** Flames on roofs and beams while the region burns. */
-  fires: { x: number; y: number; size: number }[] = [];
+  /** Burning roofs; `born` is when each caught (world seconds), so a roof catching is seen to catch. */
+  fires: { x: number; y: number; size: number; born: number }[] = [];
+  /** When each roof (by tile) first caught here: a story state rebuilt keeps a fire already burning. */
+  private fireBorn = new Map<number, number>();
   /** Flocks of hens already let out (by marker tile). */
   private readonly flocks = new Set<number>();
   /** Enemies hit so far this step (an area that strikes many charges the ultimate for the first one only). */
@@ -479,7 +482,7 @@ export class World {
       // a stair that opens, a road that comes with the story, a place to find
       if (m.kind === 'spot') this.spots.push({ ...pos, id: m.id, name: m.name, r: m.r });
       if (m.kind === 'exit') this.exits.push({ ...pos, to: m.to, label: m.label, ...(m.minLevel ? { minLevel: m.minLevel } : {}), ...(m.needs ? { needs: m.needs } : {}), ...(m.door ? { door: true } : {}) });
-      if (m.kind === 'fire' && s?.burning) this.fires.push({ ...pos, size: m.size });
+      if (m.kind === 'fire' && s?.burning) this.addFire(pm, pos, m.size, m.delay);
       if (m.kind === 'wisp') this.wisps.push({ ...pos, color: m.color, size: m.size });
       // a foe the story brings in now (Vosk at the head of the Host, once the Standard falls)
       if (m.kind === 'pack' && !this.packed.has(pm)) this.addPack(pm, pos, true);
@@ -600,7 +603,7 @@ export class World {
           if (m.hazard === 'spore') this.spores.push({ ...pos, ripe: true, t: 0, fuse: 0, friendly: false });
           break;
         case 'fire':
-          if (this.storyState?.burning) this.fires.push({ ...pos, size: m.size });
+          if (this.storyState?.burning) this.addFire(pm, pos, m.size, m.delay);
           break;
         case 'wisp':
           this.wisps.push({ ...pos, color: m.color, size: m.size });
@@ -812,6 +815,25 @@ export class World {
   sfx(id: string, vol?: number): void {
     this.events.push({ t: 'sfx', id, vol });
   }
+  /**
+   * A roof on fire. One that catches while the hero is here does so `delay` seconds after the burning begins;
+   * one burning when they came is burning already.
+   */
+  private addFire(pm: PlacedMarker, pos: { x: number; y: number }, size: number, delay = 0): void {
+    const key = pm.ty * this.map.w + pm.tx;
+    let born = this.fireBorn.get(key);
+    if (born === undefined) {
+      born = this.time < 0.5 ? -99 : this.time + delay;
+      this.fireBorn.set(key, born);
+    }
+    this.fires.push({ ...pos, size, born });
+  }
+
+  /** How far a fire has caught, 0 (not yet) to 1 (ablaze). */
+  fireLit(f: { born: number }): number {
+    return Math.max(0, Math.min(1, (this.time - f.born) / 1.4));
+  }
+
   shake(amount: number): void {
     if (this.settings.shake) this.shakeAmt = Math.min(8, Math.max(this.shakeAmt, amount));
   }
