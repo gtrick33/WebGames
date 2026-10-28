@@ -20,7 +20,8 @@ export const GREYFEN_QUESTS: QuestDef[] = [
     giver: 'maren',
     text: 'A letter from Reedwater, in Greyfen Marsh: the marsh’s graves are being emptied, and not by grave-robbers. Three villagers have been taken into the reeds, the wells have gone foul, and Marshwarden Tilde asks Briarhollow for someone who isn’t afraid of the dark. Reedwater has the best healers in the Vale; the camp will need them. Take the south path out of the Brackenridge Hills, or the west road out of Thornvale, and find her in Reedwater.',
     objective: { kind: 'talk', npc: 'marshwarden-tilde', label: 'Talk to Marshwarden Tilde in Reedwater' },
-    after: ['the-empty-tomb'],
+    // the Vale after the north road is safe: dawn, then the Whisperwood and Grimtusk (the Prologue's own order)
+    after: ['the-empty-tomb', 'alpha'],
     level: 11,
     reward: { xp: 220, gold: 70 },
   },

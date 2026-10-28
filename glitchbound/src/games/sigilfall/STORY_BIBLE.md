@@ -127,7 +127,7 @@ opens on the night, and the quiet beats (the Whisperwood, the courier's letter) 
 | Complication | The raiders stop attacking and start **digging** under the chapel: they want what is below | Raiders retreat into the crypt stair |
 | Climax | Down into **the Chapel Crypt** (the old Hollow Crypt): the crypt warden (Ossric) and the Ash-scholar **Morgrave**, who opens the reliquary | Dungeon |
 | Reveal | In the reliquary: a **fragment of an ancient crown**, star-iron, warm. When Elyra touches it, it bonds to her. On the wall, painted fresh: **the mark of the Ashen Host** — a crown made of grey hands | Elyra gains her light |
-| Aftermath | Dawn. Half the village burned. Mara counts the missing. Maren takes the seal and dries the soaked letter by the fire, and decides: Briarhollow will not run, it will **gather the Vale**. The north road opens (the Whisperwood, Grimtusk, Hollin's shards) and the hero is sent to warn the villages. | Village switches to **aftermath** state (burned roofs, a refugee tent, the crater at the chapel); it becomes **the resistance camp** |
+| Aftermath | Dawn. Half the village burned. Mara counts the missing. Maren takes the seal and dries the soaked letter by the fire, and decides: Briarhollow will not run, it will **gather the Vale**. The north road opens: the hero first clears the Whisperwood the Host came out of (Grimtusk, Hollin's shards), then is sent to warn the villages. | Village switches to **aftermath** state (burned roofs, a refugee tent, the crater at the chapel); it becomes **the resistance camp** |
 
 ### Act I — The Villages of the Vale (levels 5–20) · built zones, story rewritten
 
