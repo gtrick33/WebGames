@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { autoNewSlugs, gameUrl, queryGames } from '../catalog/catalog';
+import { homeOrder, LOCAL_FIRST } from '../catalog/flagships';
 import { GAMES } from '../catalog/games';
-import { ACCENTS, applySettings, DEFAULT_SETTINGS, orderByLayout, settingsFor, STICKER_MAX, TEXT_LIMITS, tileSizeFor, type GameSettings, type HomeLayout, type NewBadge, type TileSize } from '../catalog/settings';
+import { ACCENTS, applySettings, DEFAULT_SETTINGS, settingsFor, STICKER_MAX, TEXT_LIMITS, tileSizeFor, type GameSettings, type HomeLayout, type NewBadge, type TileSize } from '../catalog/settings';
 import type { Accent, GameEntry } from '../catalog/types';
 import { Icon } from '../components/Icon';
+import { useLang } from '../i18n';
 import type { AdminCatalog } from '../platform/apiTypes';
 import { dayKey } from '../platform/dates';
 import { refreshCatalog } from '../platform/liveCatalog';
@@ -21,12 +23,14 @@ type Send = (body: Record<string, unknown>, done?: string) => Promise<boolean>;
  * home page's draft (admin/homeDraft.ts): nothing changes for players until Publish.
  */
 
+const NONE: readonly string[] = [];
+
 const SIZE_LABEL: Record<TileSize | 'auto', string> = { auto: 'Auto', md: 'Small', wide: 'Wide', tall: 'Tall', xl: 'Big' };
 const STICKERS = ['🔥 Hot', '✨ Updated', '⭐ Staff pick', '🎉 Event', '👑 Top rated'];
 
 /** Whole-grid looks, applied to the games in their current order. */
 const PRESETS: { id: string; label: string; hint: string; sizes: (i: number) => TileSize | null }[] = [
-  { id: 'mosaic', label: 'Mosaic', hint: 'The automatic mix of big, tall and small banners', sizes: () => null },
+  { id: 'mosaic', label: 'Mosaic', hint: 'The automatic mix: a big banner with four small ones beside it, rows always full', sizes: () => null },
   { id: 'even', label: 'Even grid', hint: 'Every banner the same size, four per row', sizes: () => 'md' },
   { id: 'hero', label: 'Big first', hint: 'One big banner, then even rows', sizes: (i) => (i === 0 ? 'xl' : 'md') },
   { id: 'wide', label: 'Wide rows', hint: 'Two wide banners per row', sizes: () => 'wide' },
@@ -42,19 +46,24 @@ export function LayoutEditor({ catalog, draft, onChange, live, busy }: { catalog
   const editable = useMemo(() => editableGames(catalog), [catalog]);
   const layout = draft.layout ?? emptyLayout();
   const [sel, setSel] = useState<string | null>(null);
+  const local = LOCAL_FIRST[useLang()] ?? NONE;
 
-  // What the arcade will show: draft order, with pinned games still first.
+  // What the arcade will show, in the home page's own order (homeOrder): the layout as arranged, or the
+  // automatic order a first-time visitor in this language gets.
   const shown = useMemo(() => {
-    const ordered = orderByLayout(editable, layout);
-    const pinned = (g: GameEntry): boolean => !!draft.games[g.slug]?.pinned;
-    return [...ordered.filter(pinned), ...ordered.filter((g) => !pinned(g))];
-  }, [editable, layout, draft.games]);
+    const pinned = editable.filter((g) => draft.games[g.slug]?.pinned).map((g) => g.slug);
+    return homeOrder(editable, draft.layout, { pinned, flagships: draft.flagships, local, recent: [] });
+  }, [editable, draft.layout, draft.games, draft.flagships, local]);
+  // Banner sizes count only the games players see, as on the home page.
+  const visible = shown.filter((g) => !draft.games[g.slug]?.hidden);
+  const visibleSlugs = visible.map((g) => g.slug);
+  const sizeOf = (g: GameEntry): TileSize => (draft.games[g.slug]?.hidden ? (layout.sizes[g.slug] ?? 'md') : tileSizeFor(layout, visibleSlugs, visible.indexOf(g)));
   const selected = shown.find((g) => g.slug === sel) ?? null;
   const flags = (slug: string): GameSettings => draft.games[slug] ?? settingsFor(catalog, slug);
 
-  // any change to the order or looks makes the layout an explicit one (from the automatic order it showed)
+  // any change to the order or looks makes the layout an explicit one, starting from the order it showed
   const update = (fn: (l: HomeLayout) => HomeLayout): void => {
-    const base = { ...layout, order: orderByLayout(editable, layout).map((g) => g.slug) };
+    const base = { ...layout, order: shown.map((g) => g.slug) };
     onChange({ ...draft, layout: fn({ ...base, sizes: { ...base.sizes }, accents: { ...base.accents }, stickers: { ...base.stickers }, order: [...base.order] }) });
   };
 
@@ -78,7 +87,7 @@ export function LayoutEditor({ catalog, draft, onChange, live, busy }: { catalog
   const preset = (p: (typeof PRESETS)[number]): void =>
     update((l) => {
       const sizes: HomeLayout['sizes'] = {};
-      shown.forEach((g, i) => {
+      visible.forEach((g, i) => {
         const s = p.sizes(i);
         if (s) sizes[g.slug] = s;
       });
@@ -94,6 +103,12 @@ export function LayoutEditor({ catalog, draft, onChange, live, busy }: { catalog
         <span className="mono info-small">{live.layout ? 'Custom layout live' : 'Automatic layout live'}</span>
       </div>
       <p className="info-small">The arcade grid on the home page, in order. Click a banner to arrange it and to change anything about its game. On phones banners show two per row in this order; big and wide ones take the whole row.</p>
+      {!draft.layout && (
+        <p className="info-small">
+          Automatic order: the games of the visitor’s language and pinned games first, then the rest, newest first; Our best games come last, since they are big cards right above. Each player also sees the games they played first. Change anything here to
+          fix the order for everyone.
+        </p>
+      )}
 
       <div className="al-presets">
         <span className="al-label">Look</span>
@@ -118,7 +133,7 @@ export function LayoutEditor({ catalog, draft, onChange, live, busy }: { catalog
 
       <div className="al-grid" role="listbox" aria-label="Arcade banners in order">
         {shown.map((g, i) => {
-          const size = tileSizeFor(layout, g.slug, i);
+          const size = sizeOf(g);
           const accent = layout.accents[g.slug] ?? g.accent;
           const sticker = layout.stickers[g.slug];
           const art = size === 'xl' || size === 'wide' ? g.art.wide : g.art.tile;

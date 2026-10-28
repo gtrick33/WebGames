@@ -5,7 +5,7 @@
  * the end-of-round "next up" suggestion.
  */
 import { themeGames, type DayTheme } from '../platform/themes';
-import type { PublicCatalog } from './settings';
+import { orderByLayout, type HomeLayout, type PublicCatalog } from './settings';
 import type { GameEntry } from './types';
 
 /** The owner's flagships, in order: the row when admins have not chosen, and the fill when they chose fewer. */
@@ -91,4 +91,19 @@ export function rankForHome<T extends { slug: string }>(games: readonly T[], fir
     .map((g, i) => ({ g, i, k: rank.get(g.slug) ?? Infinity }))
     .sort((a, b) => a.k - b.k || a.i - b.i)
     .map((x) => x.g);
+}
+
+/**
+ * The arcade grid's own order on the home page (no search or sort chosen). With the admin's layout (Admin ›
+ * Home page › Arcade banners) it is exactly that, pinned games first: the same for every player, and what
+ * the editor shows. Without one: the language's local games and the pinned ones, the games played on this
+ * device, then the rest as given; the best games, already big cards above the grid, come last.
+ */
+export function homeOrder<T extends { slug: string }>(games: readonly T[], layout: HomeLayout | null | undefined, o: { pinned: readonly string[]; flagships: readonly string[]; local: readonly string[]; recent: readonly string[] }): T[] {
+  if (layout?.order.length) {
+    const ordered = orderByLayout(games, layout);
+    return [...ordered.filter((g) => o.pinned.includes(g.slug)), ...ordered.filter((g) => !o.pinned.includes(g.slug))];
+  }
+  const ranked = rankForHome(games, [...o.local, ...o.pinned], o.recent);
+  return [...ranked.filter((g) => !o.flagships.includes(g.slug)), ...ranked.filter((g) => o.flagships.includes(g.slug))];
 }

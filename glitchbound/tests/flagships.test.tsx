@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { chosenFlagships, FLAGSHIP_FALLBACK, flagshipGames, rankForHome, toggleFlagship } from '../src/catalog/flagships';
+import { chosenFlagships, FLAGSHIP_FALLBACK, flagshipGames, homeOrder, rankForHome, toggleFlagship } from '../src/catalog/flagships';
 import { GAMES } from '../src/catalog/games';
 import { FlagshipRow } from '../src/components/FlagshipRow';
 import { nextStep } from '../src/platform/nextStep';
@@ -86,6 +86,19 @@ describe('home grid order', () => {
   it('ignores unknown and repeated slugs', () => {
     const games = ['a', 'b'].map((slug) => ({ slug }));
     expect(rankForHome(games, ['zz', 'b', 'b'], ['b']).map((g) => g.slug)).toEqual(['b', 'a']);
+  });
+
+  it('follows the admin layout exactly, pinned games first, the same for every player', () => {
+    const games = ['a', 'b', 'c', 'd', 'e'].map((slug) => ({ slug }));
+    const layout = { order: ['c', 'e', 'a', 'b', 'd'], sizes: {}, accents: {}, stickers: {} };
+    const o = { pinned: ['b'], flagships: ['c'], local: ['d'], recent: ['a'] };
+    expect(homeOrder(games, layout, o).map((g) => g.slug)).toEqual(['b', 'c', 'e', 'a', 'd']);
+  });
+
+  it('without a layout: local and pinned games, then played ones, then the rest, the best games last', () => {
+    const games = ['a', 'b', 'c', 'd', 'e'].map((slug) => ({ slug }));
+    const o = { pinned: ['b'], flagships: ['c', 'd'], local: ['d'], recent: ['e'] };
+    expect(homeOrder(games, null, o).map((g) => g.slug)).toEqual(['b', 'e', 'a', 'd', 'c']);
   });
 });
 
