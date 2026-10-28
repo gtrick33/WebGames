@@ -107,9 +107,10 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
 - **Quests like WoW** (`progress/handin.ts`, engine `talk`, ui `QuestPage`): a quest from a person is offered
   on its own page (story, steps, reward; Accept or Not now), may have several steps (`then`), and when its
   work is done waits to be handed in (state `ready`, a "?" over the giver) for a Complete page with the
-  reward; the giver's next request follows in the same talk. 375 of the 513 quests are handed in (those
-  whose giver is near where the work is; the story's own beats flow on by themselves). Mara's Yard is one
-  quest of three steps (five hits, two skills, a dodge) handed in to Mara. Main story marks are gold, side
+  reward; the giver's next request follows in the same talk. 374 of the 514 quests are handed in (those
+  whose giver is near where the work is; the story's own beats flow on by themselves). The first fight, at
+  Briarhollow's gate, teaches the controls as it goes: its waves show the strike, the skill and the dodge
+  they ask for. Main story marks are gold, side
   quests blue (`isMainQuest`: everything the last bell needs). The quest log tracks any quest; the arrow and
   the tracker follow it.
 - **Skill slots** open at 5, 10 and 15 (Q from the start); every ultimate at 8.
