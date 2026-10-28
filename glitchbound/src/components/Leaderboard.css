@@ -199,7 +199,7 @@
   text-decoration: none;
 }
 
-/* House rivals (platform/rivals.ts): computer players, tagged so nobody takes them for members. */
+/* House players (platform/rivals.ts): computer players, tagged so nobody takes them for members. */
 .board-rival {
   flex: none;
   padding: 1px 6px;
@@ -210,7 +210,27 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.board-row.is-rival .board-nick {
+/* Narrow boards keep the name readable: the tag is just the robot (the word stays for screen readers). */
+@media (max-width: 520px) {
+  .board-rival-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+.board-compact .board-rival-word {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.board-row.is-rival .board-nick,
+.hall tr.is-rival .board-nick {
   color: var(--fg-2);
 }
 .board-rivals-note {

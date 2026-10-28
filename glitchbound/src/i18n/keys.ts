@@ -2128,6 +2128,10 @@ export const KEYS: string[] = [
   "Rows marked “rival” are GlitchBound’s computer players, set at real scores. Pass them to climb.",
   "Your best, {n}, would be #{rank} here. Sign in to claim it.",
   "Members only, across every game: crowns are the members’ #1 spots, podiums their top-3 spots, records the personal bests they have beaten.",
+  "House",
+  "Rows marked 🤖 House are GlitchBound’s computer players, set at real scores. Pass them to climb.",
+  "House players hold the Hall’s empty seats. Each one gives up its seat when a member takes it.",
+  "Across every game: crowns are #1 spots, podiums top-3 spots, records the personal bests beaten.",
 ];
 
 export const UI_COUNT = 311;

@@ -2120,6 +2120,10 @@ const pl: string[] = [
   'Wiersze oznaczone „rywal” to komputerowi gracze GlitchBound z prawdziwymi wynikami. Wyprzedź ich, by awansować.',
   'Twój rekord, {n}, byłby tu na miejscu {rank}. Zaloguj się, by go zgarnąć.',
   'Tylko członkowie, we wszystkich grach: korony to pierwsze miejsca wśród członków, podia ich miejsca w top 3, rekordy pobite rekordy osobiste.',
+  'Bot',
+  'Wiersze oznaczone 🤖 Bot to komputerowi gracze GlitchBound z prawdziwymi wynikami. Wyprzedź ich, by awansować.',
+  'Boty zajmują wolne miejsca w Galerii sław. Każdy ustępuje miejsca, gdy zajmie je członek.',
+  'We wszystkich grach: korony to pierwsze miejsca, podia miejsca w top 3, rekordy pobite rekordy osobiste.',
 ];
 
 export default pl;

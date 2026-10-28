@@ -5,7 +5,7 @@ import type { HallRow, LeaderRow } from '../platform/apiTypes';
 import { api, useAccount } from '../platform/account';
 import { fmt } from '../platform/daily';
 import { dayKey } from '../platform/dates';
-import { withRivals, wouldRank, type BoardRow } from '../platform/rivals';
+import { houseHall, withHouse, withRivals, wouldRank, type BoardRow, type HallBoardRow } from '../platform/rivals';
 import { useSave } from '../platform/store';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
@@ -63,9 +63,29 @@ export function useBoard(game: string, period: Period, refreshKey = 0): BoardSta
   return board.status === 'ok' ? board : { ...board, rows: field, mine: null };
 }
 
-export function useHall(): BoardState<HallRow> {
+/**
+ * The Hall of Fame: the members, and the house team in the seats members have not taken yet (counted over
+ * the all-time boards of `games`). Like a board, it shows the house team at once while the members load.
+ */
+export function useHall(games: readonly string[]): BoardState<HallBoardRow> {
   const { me } = useAccount();
-  return useRequest<HallRow>('/api/hall', [me?.id], (r) => ({ rows: (r as { rows: HallRow[] }).rows, mine: null }));
+  const day = dayKey();
+  const key = games.join(',');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const house = useMemo(() => houseHall(games, day), [key, day]);
+  const hall = useRequest<HallRow>('/api/hall', [me?.id], (r) => ({ rows: (r as { rows: HallRow[] }).rows, mine: null }));
+  const members = hall.status === 'ok' ? hall.rows : null;
+  const rows = useMemo(() => withHouse(members ?? [], house), [members, house]);
+  return { ...hall, rows, mine: null };
+}
+
+/** The tag on a house player's row. */
+function HouseTag() {
+  return (
+    <span className="board-rival mono" title={t('A house rival: one of GlitchBound’s computer players')}>
+      <span aria-hidden="true">🤖</span> <span className="board-rival-word">{t('House')}</span>
+    </span>
+  );
 }
 
 /** The offline message under a board, with a way to ask again. */
@@ -94,11 +114,7 @@ export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: 
           <span className="board-name">
             <span className="board-nick">{r.nickname}</span>
             {r.you && <span className="board-you mono">{t('you')}</span>}
-            {r.rival && (
-              <span className="board-rival mono" title={t('A house rival: one of GlitchBound’s computer players')}>
-                {t('rival')}
-              </span>
-            )}
+            {r.rival && <HouseTag />}
           </span>
           {!compact && <span className="board-lvl mono">LV {r.level}</span>}
           <span className="board-score mono">
@@ -121,7 +137,7 @@ export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: 
   );
 }
 
-export function HallTable({ rows }: { rows: HallRow[] }) {
+export function HallTable({ rows }: { rows: HallBoardRow[] }) {
   return (
     <div className="hall-wrap">
       <table className="hall">
@@ -143,7 +159,7 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.rank} className={r.you ? 'is-you' : ''}>
+            <tr key={r.rank} className={r.you ? 'is-you' : r.house ? 'is-rival' : ''}>
               <td>
                 <Medal rank={r.rank} />
               </td>
@@ -151,6 +167,7 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
                 <span className="board-name">
                   <span className="board-nick">{r.nickname}</span> <span className="board-lvl mono">LV {r.level}</span>
                   {r.you && <span className="board-you mono">{t('you')}</span>}
+                  {r.house && <HouseTag />}
                 </span>
               </td>
               <td className="mono hall-crowns hall-stat" data-label={t('Crowns')}>
@@ -192,7 +209,7 @@ export function BoardEmpty({ text }: { text: string }) {
 /** What the rival tags mean, under a board. */
 export function RivalsNote() {
   const t = useT();
-  return <p className="board-rivals-note">{t('Rows marked “rival” are GlitchBound’s computer players, set at real scores. Pass them to climb.')}</p>;
+  return <p className="board-rivals-note">{t('Rows marked 🤖 House are GlitchBound’s computer players, set at real scores. Pass them to climb.')}</p>;
 }
 
 /** Top 5 for a game page side panel; a guest with a best on this device sees where it would land. */

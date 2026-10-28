@@ -2120,6 +2120,10 @@ const nl: string[] = [
   'Regels met ‘rivaal’ zijn computerspelers van GlitchBound, op echte scores gezet. Haal ze in om te stijgen.',
   'Je record, {n}, zou hier op #{rank} staan. Log in om het te claimen.',
   'Alleen leden, over alle spellen: kronen zijn de #1-plekken onder leden, podia hun top-3-plekken, records de persoonlijke records die ze verbeterd hebben.',
+  'Huis',
+  'Regels met 🤖 Huis zijn computerspelers van GlitchBound, op echte scores gezet. Haal ze in om te stijgen.',
+  'Huisspelers bezetten de lege plekken in de Eregalerij. Elk geeft zijn plek op zodra een lid die inneemt.',
+  'Over alle spellen: kronen zijn #1-plekken, podia top-3-plekken, records verbeterde persoonlijke records.',
 ];
 
 export default nl;
