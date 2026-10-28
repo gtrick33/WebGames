@@ -30,7 +30,7 @@ export const VINECOIL = wildRegion(
     forest: 0.46,
     scatter: { trees: 2.6, bushes: 2.4, rocks: 0.6, flowers: 4 },
     water: { kind: 'river', from: 'n', to: 's' },
-    hubs: [{ at: [0.28, 0.5], npcs: ['warden-kesh', 'trader-mabel', 'shaman-tuoko'], houses: 5 }],
+    hubs: [{ at: [0.28, 0.5], plan: 'green', npcs: ['warden-kesh', 'trader-mabel', 'shaman-tuoko'], houses: 5 }],
     exits: [
       { side: 'w', at: 0.5, to: 'stormwatch', label: 'West road to Stormwatch' },
       { side: 'n', at: 0.5, to: 'sunscorch', label: 'North road to the Sunscorch' },

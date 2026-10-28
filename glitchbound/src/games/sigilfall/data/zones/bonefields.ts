@@ -41,7 +41,7 @@ export const BONEFIELDS = wildRegion(
     forest: 0.18,
     scatter: { trees: 0.8, bushes: 0.8, rocks: 2, flowers: 0.6 },
     water: { kind: 'lakes', amount: 0.14 },
-    hubs: [{ at: [0.48, 0.84], npcs: ['marshal-ardent', 'cook-brannoc', 'armorer-jessa', 'farmer-haldren'], houses: 5 }],
+    hubs: [{ at: [0.48, 0.84], plan: 'court', npcs: ['marshal-ardent', 'cook-brannoc', 'armorer-jessa', 'farmer-haldren'], houses: 5 }],
     exits: [
       { side: 's', at: 0.5, to: 'highwall', label: 'South road to Highwall' },
       { side: 'w', at: 0.35, to: 'gloamhollow', label: 'West along the gate line to Gloamhollow' },

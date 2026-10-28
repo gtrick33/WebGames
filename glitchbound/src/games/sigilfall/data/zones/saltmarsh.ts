@@ -29,7 +29,7 @@ export const SALTMARSH = wildRegion(
     scatter: { trees: 1.2, bushes: 2, rocks: 1, flowers: 3 },
     water: { kind: 'sea', side: 'e', depth: 0.24 },
     sand: 'dunes',
-    hubs: [{ at: [0.5, 0.42], npcs: ['harbormaster-quill', 'marla', 'dorran', 'ines'], houses: 6 }],
+    hubs: [{ at: [0.5, 0.42], plan: 'street', npcs: ['harbormaster-quill', 'marla', 'dorran', 'ines'], houses: 6 }],
     exits: [
       { side: 'w', at: 0.5, to: 'thornvale', label: 'The coast road to Thornvale' },
       { side: 'n', at: 0.4, to: 'amberfield', label: 'North road to the Amberfield', minLevel: 15 },

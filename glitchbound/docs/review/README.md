@@ -18,6 +18,8 @@ rollback point.
 | `phase-14/` | Act IV–V beats: Elyra by Lastlight's fire, Ysane's echo at the frozen lodge, the Muster Hall field, Hollowmere | `26ee957e`, `d2748d90` |
 | `review-tour/` | Every land at 640 × 360 (the visual review; `*-fixed.png` after the ground-seam fix) | `59d5e978` |
 | `one-pack/` | Before and after, side by side: the world in Royal Keep alone (Briarhollow's gate, square, chapel and inn, Thornvale, Emberwick's market, Greyfen, Rimeheld); the marked doors; the chapel with the skill bar put away. `dense-*`: the second pass (villages along streets, townsfolk, Briarhollow at its plan's size, Emberwick's streets) | the one-pack branch |
+| `villages/` | Villages small, full and each its own: one of each plan from above (crossroads, market street, green, walled hold), the views a player gets of their squares, Briarhollow and Emberwick whole | the one-pack branch, third pass |
+| `moods/` | The frightening lands: the Weeping Woods' lamp-lit road, village and graves, the Grimward graveyard, Duskfen's fen, the Ashen Barrows, the Blightwood | the one-pack branch, third pass |
 
 ## Heavy scene (Prompt 16)
 

@@ -31,7 +31,7 @@ export const GREYFEN = wildRegion(
     scatter: { trees: 1.6, bushes: 2.4, rocks: 0.4, flowers: 4 },
     water: { kind: 'lakes', amount: 0.6 },
     sand: 'shore',
-    hubs: [{ at: [0.62, 0.3], npcs: ['marshwarden-tilde', 'old-ferris', 'nella'], houses: 5 }],
+    hubs: [{ at: [0.62, 0.3], plan: 'green', npcs: ['marshwarden-tilde', 'old-ferris', 'nella'], houses: 5 }],
     exits: [
       { side: 'n', at: 0.5, to: 'brackenridge', label: 'North path to Brackenridge' },
       { side: 'e', at: 0.55, to: 'thornvale', label: 'East road to Thornvale' },

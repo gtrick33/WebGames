@@ -1,4 +1,5 @@
 import { clamp, hash2, noise2, rng } from '../core/math';
+import { buildingRows, villageHouses } from './buildingArt';
 import { THEMES } from './themes';
 import type { Marker, PlacedMarkerDef, RegionDef, RegionId, StoryCond, Theme } from './types';
 
@@ -25,9 +26,14 @@ export interface HubSpec {
   houses: number;
   /** People who stand here only while a condition holds (someone who leaves with the story). */
   when?: Record<string, StoryCond>;
-  /** A palisade around the village, open where the roads come in (a place that expects to be attacked). */
+  /** A wall round the village, open where the roads come in (a place that expects to be attacked): a walled hold. */
   wall?: boolean;
+  /** How the village is laid out (`town`); by default one of the open plans, chosen by its place. */
+  plan?: VillagePlan;
 }
+
+/** A crossroads with its square, a cobbled market street, houses round a green, or a walled hold. */
+export type VillagePlan = 'cross' | 'street' | 'green' | 'court';
 
 export interface ExitSpec {
   side: Side;
@@ -133,8 +139,67 @@ const SAND = 115; // 's'
 
 const WALKABLE = new Set([FLOOR, DECO, PATH, COBBLE, BRIDGE, SAND]);
 /** A village's reach from its square, in tiles (the half-axes of its clearing). */
-const VX = 28;
-const VY = 17;
+/** How far a village reaches from its square, east and west, north and south (tiles). */
+const VX = 20;
+const VY = 13;
+const PLANS: VillagePlan[] = ['cross', 'street', 'green'];
+type BuildingStyle = Extract<Marker, { kind: 'building' }>['style'];
+
+/** What stands in each plan's square (plan coordinates: east, south of the waystone's tile). */
+const SQUARE_CROSS: [number, number, string][] = [
+  [-3, -2, 'well'],
+  [-2, -4, 'market-cart'],
+  [3, -4, 'market-cart'],
+  [-3, -4, 'crate'],
+  [4, -4, 'barrel'],
+  [-4, -3, 'lamp'],
+  [5, -3, 'lamp'],
+  [4, -2, 'notice'],
+  [3, -3, 'market-goods'],
+  [-3, 2, 'wagon'],
+  [-4, -1, 'sacks'],
+  [5, -1, 'bench'],
+  [4, 2, 'hay'],
+];
+const SQUARE_STREET: [number, number, string][] = [
+  [-3, 1, 'fountain'],
+  [4, 1, 'well'],
+  [-6, 0, 'lamp'],
+  [7, 0, 'lamp'],
+  [-10, 0, 'bench'],
+  [11, 0, 'bench'],
+  [2, -1, 'notice'],
+];
+const SQUARE_GREEN: [number, number, string][] = [
+  [-1, -2, 'well'],
+  [3, -2, 'notice'],
+  [-4, -4, 'statue'],
+  [-6, -4, 'flowerbed'],
+  [-2, -4, 'flowerbed'],
+  [-7, -2, 'bench'],
+  [-5, 3, 'market-cart'],
+  [-7, 3, 'market-cart'],
+  [-3, 4, 'crate'],
+  [-6, 5, 'barrel'],
+  [-8, 4, 'market-goods'],
+  [6, 2, 'bench'],
+  [-8, -5, 'lamp'],
+  [9, -5, 'lamp'],
+  [-8, 5, 'lamp'],
+  [9, 5, 'lamp'],
+  [7, -1, 'flowerbed'],
+];
+const SQUARE_COURT: [number, number, string][] = [
+  [-3, -2, 'fountain'],
+  [4, -2, 'well'],
+  [-4, 2, 'market-cart'],
+  [3, 2, 'market-cart'],
+  [-5, -3, 'lamp'],
+  [6, -3, 'lamp'],
+  [-5, 0, 'crate'],
+  [5, 2, 'barrel'],
+  [-2, 2, 'market-goods'],
+];
 
 /**
  * Small scenes for the open land between the sights, so the wilds read as land people use rather than an empty
@@ -261,7 +326,7 @@ class ZoneBuilder {
     const exits = s.exits.map((e) => this.exitTiles(e));
     // clearings first, so roads and buildings have room
     this.hubAt.push(...hubs);
-    hubs.forEach(([x, y]) => this.clearVillage(x, y));
+    hubs.forEach(([x, y], i) => this.clearVillage(x, y, s.hubs[i]!));
     pois.forEach(([x, y], i) => this.clear(x, y, s.pois[i]!.r));
     exits.forEach((e) => this.corridor(e.edge, e.inner));
     // roads reach the towns, the ways out and every sight (trails to the wilder ones)
@@ -274,7 +339,8 @@ class ZoneBuilder {
     this.dress(pois);
     this.roadLamps();
     const start = hubs[0] ?? exits[0]!.inner;
-    this.put(start[0], start[1] + 3, { kind: 'start' });
+    // on the main road through the square (every village plan keeps it open)
+    this.put(start[0], start[1] + 1, { kind: 'start' });
     this.wildPacks(hubs, exits.map((e) => e.inner), pois);
     this.connect(start);
     this.story(hubs, pois, exits.map((e) => e.inner));
@@ -557,43 +623,45 @@ class ZoneBuilder {
 
   /* ------------------------------------------------------------ towns, sights */
 
-  /** How far a village reaches from its square (tiles): the ellipse its clearing fills. */
-  private villageD(x: number, y: number, cx: number, cy: number): number {
-    return ((x - cx) / VX) ** 2 + ((y - cy) / VY) ** 2 + (hash2(x, y, this.spec.seed + 4) - 0.5) * 0.14;
-  }
-
-  /** A village's ground: a wide, ragged clearing round its square for its streets, houses and gardens. */
-  private clearVillage(cx: number, cy: number): void {
+  /** A village's ground: a clearing round its square, near rectangular (its streets run straight to its edge); a hold's, the whole of its walls. */
+  private clearVillage(cx: number, cy: number, hub: HubSpec): void {
+    const walled = this.planOf(hub, cx, cy) === 'court';
     for (let y = cy - VY - 1; y <= cy + VY + 1; y++) {
       for (let x = cx - VX - 1; x <= cx + VX + 1; x++) {
         if (!this.inside(x, y, 2)) continue;
-        const d = this.villageD(x, y, cx, cy);
+        const d = walled && Math.abs(x - cx) <= 19 && y >= cy - 13 && y <= cy + 10 ? 0 : ((x - cx) / VX) ** 4 + ((y - cy) / VY) ** 4 + (hash2(x, y, this.spec.seed + 4) - 0.5) * 0.12;
         if (d > 1) continue;
         const i = this.idx(x, y);
-        if (this.g[i] !== WATER || d < 0.7) this.g[i] = FLOOR;
+        if (this.g[i] !== WATER || d < 0.5) this.g[i] = FLOOR;
         this.lock[i] = 1;
       }
     }
   }
 
   /**
-   * A village laid out the way people build one (the owner's references: houses shoulder to shoulder along the
-   * streets, gardens behind, a pond, an orchard, something at every step): a cobbled square with the waystone,
-   * the well and the market's stalls; streets out of it east, west, north and south; houses fronting the main
-   * street and the lane behind it, more beside the north and south streets, a few things between them; fenced
-   * vegetable gardens, an orchard and a pond in the quarters; flowers on the green and its edge planted. Lots
-   * that don't fit the ground are skipped, so a village by the sea or a river is just smaller.
+   * A village built the way the owner's references are (VISUAL_BIBLE.md §1): small, and full. Houses stand
+   * shoulder to shoulder along its streets, each with its door on one; a small square where the roads meet is
+   * crowded with stalls, a well, a cart and goods; an inn, a smithy, a stable, a chapel with its graveyard stand
+   * among the houses; gardens, an orchard and a pond fill the quarters; and something stands at every step,
+   * barrels and crates and benches by the doors, lamps along the streets. Villages are not alike: each is one of
+   * four plans (a crossroads, a market street, a village green, a walled hold), mirrored or not, in its land's
+   * own roofs. Lots that don't fit the ground are skipped, so a village by water or woods is just smaller.
    */
   private town(cx: number, cy: number, hub: HubSpec): void {
+    const seed = this.spec.seed;
+    const theme = this.theme ?? 'farm';
+    const plan = this.planOf(hub, cx, cy);
+    const flip = hash2(cx, cy, seed + 73) < 0.5 ? 1 : -1;
+    const looks = villageHouses(theme);
+    // plan coordinates: dx east (mirrored, about the middle of the two-wide road north and south), dy south
+    const X = (dx: number): number => (flip > 0 ? cx + dx : cx + 1 - dx);
+    const Y = (dy: number): number => cy + dy;
+    const xs = (d0: number, d1: number): [number, number] => [Math.min(X(d0), X(d1)), Math.max(X(d0), X(d1))];
     const free = (x: number, y: number): boolean => this.inside(x, y, 2) && !this.marked.has(this.idx(x, y));
     const open = (x: number, y: number): boolean => free(x, y) && OPEN.has(this.at(x, y));
-    const prop = (x: number, y: number, name: string, solid = true): boolean => {
-      if (!open(x, y) && !(free(x, y) && this.at(x, y) === COBBLE)) return false;
-      this.put(x, y, { kind: 'prop', prop: name, solid });
-      return true;
-    };
-    const pave = (x0: number, y0: number, x1: number, y1: number, c = PATH): void => {
-      for (let y = y0; y <= y1; y++) {
+    const pave = (dx0: number, dy0: number, dx1: number, dy1: number, c = PATH): void => {
+      const [x0, x1] = xs(dx0, dx1);
+      for (let y = Y(Math.min(dy0, dy1)); y <= Y(Math.max(dy0, dy1)); y++) {
         for (let x = x0; x <= x1; x++) {
           if (!this.inside(x, y, 2) || this.marked.has(this.idx(x, y))) continue;
           const k = this.at(x, y);
@@ -604,145 +672,275 @@ class ZoneBuilder {
         }
       }
     };
-    // a cobbled square with the waystone in the middle (its corners cut, like the pack's own squares)
-    for (let y = cy - 4; y <= cy + 4; y++) for (let x = cx - 6; x <= cx + 6; x++) if (Math.abs(x - cx) < 6 || Math.abs(y - cy) < 4) this.set(x, y, COBBLE);
-    this.put(cx, cy - 1, { kind: 'waystone' });
-    // the townsfolk stand around the square
-    hub.npcs.forEach((npc, i) => {
-      const a = -Math.PI / 2 + Math.PI * 0.35 + (i * Math.PI * 1.3) / Math.max(1, hub.npcs.length - 1 || 1);
-      const x = Math.round(cx + Math.cos(a) * 4.5);
-      const y = Math.round(cy + 1 + Math.sin(a) * 3.2);
-      this.put(x, y, { kind: 'npc', npc }, hub.when?.[npc]);
-    });
-    // the streets: east and west along the square's middle, north and south through it (each crossing where a
-    // wall would stand, so a walled village has its gates), and the lane the south row's doors open on
-    pave(cx + 7, cy, cx + VX + 1, cy + 1);
-    pave(cx - VX - 1, cy, cx - 7, cy + 1);
-    pave(cx, cy - VY - 1, cx + 1, cy - 5);
-    pave(cx, cy + 5, cx + 1, cy + VY + 1);
-    pave(cx + 2, cy + 6, cx + 23, cy + 6);
-    pave(cx - 23, cy + 6, cx - 1, cy + 6);
-    // the houses, in the order a village grows: the main street first, then the lane, then the side streets
-    // lots side by side (a cottage is about three tiles wide on its four: a tile of garden between neighbours)
-    const E = [8, 12, 16, 20];
-    const W = [-11, -15, -19, -23];
-    const lots: { x: number; y: number; row: 'n' | 's' | 'col' }[] = [];
-    for (let k = 0; k < 4; k++) {
-      lots.push({ x: cx + E[k]!, y: cy - 3, row: 'n' }, { x: cx + W[k]!, y: cy - 3, row: 'n' }, { x: cx + E[k]!, y: cy + 3, row: 's' }, { x: cx + W[k]!, y: cy + 3, row: 's' });
-      if (k < 2) lots.push({ x: cx + 3, y: cy - 9 - k * 5, row: 'col' }, { x: cx - 6, y: cy - 9 - k * 5, row: 'col' });
-      if (k === 0) lots.push({ x: cx + 3, y: cy + 8, row: 'col' }, { x: cx - 6, y: cy + 8, row: 'col' });
-    }
-    const want = Math.min(lots.length, Math.max(hub.houses + 8, 14));
-    const built: typeof lots = [];
-    for (const l of lots) {
-      if (built.length >= want) break;
-      if (!this.lot(l.x, l.y)) continue;
-      built.push(l);
-      this.houses.push([l.x, l.y]);
-      // a house beside a side street: a path from its door to the street
-      if (l.row === 'col') pave(Math.min(l.x + 2, cx + 2), l.y + 3, Math.max(l.x + 2, cx - 1), l.y + 3);
-    }
-    // the square: the well, benches, the market's stalls at its head, lamps and goods, flowers at its corners
-    for (const [dx, dy, name] of [
-      [-3, -2, 'well'],
-      [-3, -4, 'market-cart'],
-      [3, -4, 'market-cart'],
-      [-5, -4, 'crate'],
-      [5, -4, 'barrel'],
-      [4, -2, 'notice'],
-      [-6, -3, 'lamp'],
-      [6, -3, 'lamp'],
-      [-6, 3, 'crate'],
-      [6, 3, 'barrel'],
-      [-5, 3, 'sacks'],
-      [-2, 4, 'bench'],
-      [3, 4, 'bench'],
-      [-7, -5, 'flowerbed'],
-      [7, -5, 'flowerbed'],
-      [-7, 5, 'planter'],
-      [7, 5, 'planter'],
-      [-VX + 4, -1, 'wagon'],
-      [VX - 4, 2, 'hay'],
-    ] as const)
-      prop(cx + dx, cy + dy, name);
-    // vegetable gardens behind the main street's houses, fenced, a scarecrow in one
-    const garden = (x0: number, y0: number, x1: number, y1: number, scare: boolean): void => {
+    const prop = (dx: number, dy: number, name: string, solid = true): boolean => {
+      const x = X(dx);
+      const y = Y(dy);
+      if (!open(x, y) && !(free(x, y) && (this.at(x, y) === COBBLE || this.at(x, y) === PATH))) return false;
+      this.put(x, y, { kind: 'prop', prop: name, solid });
+      return true;
+    };
+    const pick = (list: readonly string[], x: number, y: number, salt: number): string => list[Math.floor(hash2(x, y, seed + salt) * list.length) % list.length]!;
+    /** A building on a lot `w` by `h` whose front row is `front`, its door on the street below; false if it won't fit. */
+    const build = (style: BuildingStyle, dx: number, front: number, w: number, h = 3, art?: string): boolean => {
+      const [x0] = xs(dx, dx + w - 1);
+      const y0 = Y(front) - h + 1;
+      for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (!open(x, y)) return false;
+      const step = this.at(x0 + Math.floor(w / 2), y0 + h);
+      if ((step !== PATH && step !== COBBLE && step !== BRIDGE) || this.marked.has(this.idx(x0 + Math.floor(w / 2), y0 + h))) return false;
+      // a steep roof rises over the ground behind its lot: that ground stays clear of streets and other houses
+      for (let y = y0 - (buildingRows(style, theme, art) - h); y < y0; y++) for (let x = x0; x < x0 + w; x++) if (!open(x, y)) return false;
+      for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) this.set(x, y, HOUSE);
+      this.put(x0, y0 + h - 1, { kind: 'building', style, w, h, ...(art ? { art: `rk:${art}` } : {}) });
+      if (style === 'house') this.houses.push([x0, y0]);
+      return true;
+    };
+    /** Houses side by side along a street from `dx` outward (east for 1, west for -1), up to `count`. */
+    const row = (dx: number, dir: 1 | -1, front: number, count: number): void => {
+      let x = dx;
+      for (let n = 0, k = 0; n < count && k < count * 2 + 2; k++) {
+        const big = hash2(X(x), Y(front), seed + 75) < 0.28;
+        const w = big || k % 2 === 1 ? 4 : 3;
+        const art = big ? pick(looks.big, X(x), Y(front), 77) : pick(looks.small, X(x), Y(front), 79);
+        if (build('house', dir > 0 ? x : x - w + 1, front, w, 3, art)) n++;
+        x += dir * w;
+      }
+    };
+    /** A small cobbled square, its corners cut like the pack's own. */
+    const square = (dx0: number, dy0: number, dx1: number, dy1: number): void => {
+      for (let dy = dy0; dy <= dy1; dy++) for (let dx = dx0; dx <= dx1; dx++) if (!((dx === dx0 || dx === dx1) && (dy === dy0 || dy === dy1))) pave(dx, dy, dx, dy, COBBLE);
+    };
+    /** A fenced garden in rows of greens, with a scarecrow and a gate in its south side. */
+    const garden = (dx0: number, dy0: number, dx1: number, dy1: number): void => {
+      const [x0, x1] = xs(dx0, dx1);
+      const [y0, y1] = [Y(dy0), Y(dy1)];
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (!open(x, y)) return;
+      const gate = Math.round((x0 + x1) / 2);
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) this.set(x, y, x === x0 || x === x1 || y === y0 || y === y1 ? (y === y1 && x === gate ? FLOOR : FENCE) : DECO);
+      this.put(gate, Math.round((y0 + y1) / 2), { kind: 'prop', prop: 'scarecrow', solid: true });
+    };
+    /** A pond with reeds at its edge and a boat drawn up beside it. */
+    const pond = (dx0: number, dy0: number, dx1: number, dy1: number): void => {
+      if (this.theme === 'volcanic') return;
+      const [x0, x1] = xs(dx0, dx1);
+      const [y0, y1] = [Y(dy0), Y(dy1)];
+      const mx = (x0 + x1) / 2;
+      const my = (y0 + y1) / 2;
+      const rx = (x1 - x0) / 2 + 0.5;
+      const ry = (y1 - y0) / 2 + 0.5;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (!open(x, y)) return;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (((x - mx) / rx) ** 2 + ((y - my) / ry) ** 2 <= 0.85) this.set(x, y, WATER);
+      if (open(x1, y0 - 1)) this.put(x1, y0 - 1, { kind: 'prop', prop: 'boat' });
+      if (open(x0, y1 + 1)) this.put(x0, y1 + 1, { kind: 'prop', prop: 'bench', solid: true });
+    };
+    /** Fruit trees in rows a little off true. */
+    const orchard = (dx0: number, dy0: number, dx1: number, dy1: number): void => {
+      for (let dy = dy0; dy <= dy1; dy += 2) for (let dx = dx0; dx <= dx1; dx += 3) if (open(X(dx), Y(dy)) && hash2(X(dx), Y(dy), seed + 83) < 0.85) this.set(X(dx), Y(dy), TREE);
+    };
+    /** A chapel on the street with its graveyard beside it, walled in iron (worldScenery.ts), a lamp at the gate. */
+    const chapel = (dx: number, front: number, dir: 1 | -1): void => {
+      if (!build('temple', dir > 0 ? dx : dx - 2, front, 3, 4)) return;
+      const gx = dir > 0 ? dx + 4 : dx - 9;
+      const [x0, x1] = xs(gx, gx + 5);
+      const [y0, y1] = [Y(front - 5), Y(front)];
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (!open(x, y)) return;
       const gate = Math.round((x0 + x1) / 2);
       for (let y = y0; y <= y1; y++) {
         for (let x = x0; x <= x1; x++) {
           const edge = x === x0 || x === x1 || y === y0 || y === y1;
-          this.set(x, y, edge ? (y === y1 && x === gate ? FLOOR : FENCE) : DECO);
+          if (edge) this.set(x, y, y === y1 && x === gate ? FLOOR : FENCE);
+          else if ((y - y0) % 2 === 1 && x !== gate) this.put(x, y, { kind: 'prop', prop: hash2(x, y, seed + 85) < 0.6 ? 'gravestone' : 'grave-cross', solid: true });
         }
       }
-      if (scare) prop(gate, Math.round((y0 + y1) / 2), 'scarecrow');
-      prop(gate + 2, y1 + 1, 'hay');
+      if (open(gate - 1, y1 + 1)) this.put(gate - 1, y1 + 1, { kind: 'prop', prop: 'lamp', solid: true });
     };
-    garden(cx + 8, cy - 11, cx + 17, cy - 6, true);
-    garden(cx - 17, cy - 11, cx - 8, cy - 6, false);
-    // an orchard in one quarter, a pond with a bench in the other
-    for (let y = cy + 9; y <= cy + 14; y += 3) {
-      for (let x = cx + 8; x <= cx + 22; x += 3) {
-        const tx = x + (hash2(x, y, 63) < 0.5 ? 0 : 1);
-        if (open(tx, y) && this.villageD(tx, y, cx, cy) < 0.92 && hash2(x, y, 65) < 0.85) this.set(tx, y, TREE);
+    // the waystone, and the people the story put here around it
+    this.put(cx, cy - 1, { kind: 'waystone' });
+    const crowd: [number, number][] = [
+      [-2, 1],
+      [3, 1],
+      [-3, -1],
+      [4, -1],
+      [-1, 2],
+      [2, -2],
+    ];
+    hub.npcs.forEach((npc, i) => {
+      const [dx, dy] = crowd[i % crowd.length]!;
+      const [tx, ty] = this.free(X(dx), Y(dy));
+      this.put(tx, ty, { kind: 'npc', npc }, hub.when?.[npc]);
+    });
+    // the roads in (the land's own roads arrive along these lines from the square)
+    pave(0, -VY, 1, VY);
+    pave(-VX, 0, VX + 1, 1);
+    switch (plan) {
+      case 'cross': {
+        // the square where the roads cross, the inn and the smithy west of it, the stable and a tall shop east
+        square(-4, -4, 5, 2);
+        pave(-17, -5, 18, -5);
+        pave(-17, 6, 18, 6);
+        build('tavern', -11, -1, 5);
+        build('smithy', -16, -1, 4);
+        build('hall', 7, -1, 4);
+        build('shop', 12, -1, 4);
+        // the rows of houses fronting the north street and the south street
+        row(-1, -1, -6, 4);
+        row(2, 1, -6, 2);
+        chapel(11, -6, 1);
+        row(-1, -1, 5, 5);
+        row(2, 1, 5, 5);
+        // the quarters behind: a garden, an orchard, a pond, fruit trees behind the north row
+        garden(-16, 8, -9, 12);
+        orchard(-6, 8, -2, 12);
+        pond(6, 8, 13, 11);
+        orchard(-15, -12, 16, -10);
+        for (const [dx, dy, name] of SQUARE_CROSS) prop(dx, dy, name);
+        break;
+      }
+      case 'street': {
+        // a cobbled market street, stalls along its south side, the houses fronting it and the lanes behind
+        square(-13, -1, 14, 3);
+        pave(-17, -6, 18, -6);
+        pave(-17, 8, 18, 8);
+        build('tavern', -7, -2, 5);
+        build('shop', 3, -2, 4);
+        row(-8, -1, -2, 4);
+        row(7, 1, -2, 4);
+        row(-1, -1, -7, 5);
+        row(2, 1, -7, 3);
+        chapel(12, -7, 1);
+        row(-1, -1, 7, 4);
+        build('smithy', 2, 7, 4);
+        row(6, 1, 7, 4);
+        for (let dx = -12; dx <= 13; dx += 3) prop(dx, 3, (dx / 3) % 2 === 0 ? 'market-cart' : pick(['market-goods', 'basket', 'crate', 'barrel', 'sacks'], X(dx), cy, 87));
+        garden(-16, 10, -9, 13);
+        pond(7, 10, 14, 13);
+        orchard(-15, -12, 16, -10);
+        for (const [dx, dy, name] of SQUARE_STREET) prop(dx, dy, name);
+        break;
+      }
+      case 'green': {
+        // a green where the roads cross, ringed by a road: four lawns (old trees, a pond, flowerbeds round a
+        // statue, a corner of market stalls) and a little cobbled plaza at the crossing; houses round it, facing
+        // it from the north and backing on it from the south; the inn and the hall on its sides
+        pave(-9, -6, 10, -6);
+        pave(-9, 6, 10, 6);
+        pave(-17, 10, 18, 10);
+        square(-2, -2, 3, 2);
+        pond(4, 3, 8, 5);
+        // old trees on the lawns, close set, and flowers in the grass under them
+        for (let dy = -5; dy <= 5; dy += 2) for (let dx = -9; dx <= 10; dx += 2) if (Math.abs(dx) > 3 && hash2(X(dx), Y(dy), seed + 95) < (dy < 0 ? 0.6 : 0.3)) if (open(X(dx), Y(dy))) this.set(X(dx), Y(dy), TREE);
+        for (let dy = -5; dy <= 5; dy++) for (let dx = -9; dx <= 10; dx++) if (open(X(dx), Y(dy)) && hash2(X(dx), Y(dy), seed + 97) < 0.25) this.put(X(dx), Y(dy), { kind: 'prop', prop: 'flowers' });
+        row(-1, -1, -7, 4);
+        row(2, 1, -7, 2);
+        chapel(9, -7, 1);
+        row(-1, -1, 9, 4);
+        row(2, 1, 9, 4);
+        build('tavern', -16, -1, 5);
+        build('hall', 12, -1, 4);
+        pave(-18, 5, -11, 5);
+        pave(12, 5, 19, 5);
+        build('house', -15, 4, 4, 3, pick(looks.big, cx - 15, cy + 4, 77));
+        build('smithy', 13, 4, 4);
+        orchard(-15, -12, 16, -11);
+        for (const [dx, dy, name] of SQUARE_GREEN) prop(dx, dy, name);
+        break;
+      }
+      case 'court': {
+        // a stone wall with a tower at each corner, open where the roads come in; the lord's keep and the
+        // workshops along the north street, the inn and a training yard either side of the courtyard with its
+        // fountain and stalls, a row of houses along the south street
+        const [wx0, wx1] = xs(-17, 18);
+        const [wy0, wy1] = [Y(-12), Y(9)];
+        for (let y = wy0; y <= wy1; y++) for (let x = wx0; x <= wx1; x++) if ((x === wx0 || x === wx1 || y === wy0 || y === wy1) && OPEN.has(this.at(x, y)) && !this.marked.has(this.idx(x, y))) this.set(x, y, RAMPART);
+        for (const [x, y] of [
+          [wx0, wy0],
+          [wx1, wy0],
+          [wx0, wy1],
+          [wx1, wy1],
+        ] as const)
+          if (this.at(x, y) === RAMPART) this.put(x, y, { kind: 'prop', prop: 'watchtower', solid: true });
+        if (WALKABLE.has(this.at(cx, wy0))) this.gate = [cx, wy0];
+        for (const x of [cx - 1, cx + 2]) if (this.at(x, wy0) === RAMPART && !this.marked.has(this.idx(x, wy0))) this.put(x, wy0, { kind: 'prop', prop: 'watchtower', solid: true });
+        pave(-16, -4, 17, -4);
+        pave(-16, 6, 17, 6);
+        square(-5, -3, 6, 2);
+        if (!build('keep', -16, -5, 9, 4)) build('hall', -12, -5, 5);
+        row(-1, -1, -5, 2);
+        build('tavern', 3, -5, 5);
+        build('hall', 9, -5, 4);
+        row(14, 1, -5, 1);
+        // under the north street only what stands three rows high (a tall roof would reach the street)
+        build('smithy', -11, -1, 4);
+        row(-12, -1, -1, 1);
+        // the training yard
+        pave(8, -3, 16, -1);
+        for (const [dx, dy, name] of [
+          [9, -2, 'scarecrow'],
+          [12, -2, 'scarecrow'],
+          [15, -3, 'target'],
+          [15, -1, 'target'],
+          [8, -3, 'weapon-rack'],
+          [11, -3, 'armor-stand'],
+        ] as const)
+          prop(dx, dy, name);
+        row(-1, -1, 5, 5);
+        row(2, 1, 5, 5);
+        for (const [dx, dy, name] of SQUARE_COURT) prop(dx, dy, name);
+        for (const [dx, dy, name] of [
+          [-14, 8, 'hay'],
+          [-10, 8, 'woodpile'],
+          [-5, 8, 'well'],
+          [6, 8, 'crate'],
+          [11, 8, 'hay'],
+          [15, 8, 'woodpile'],
+        ] as const)
+          prop(dx, dy, name);
+        break;
       }
     }
-    if (this.theme !== 'volcanic') {
-      const [px, py] = [cx - 15, cy + 11];
-      let fits = true;
-      for (let y = py - 3; y <= py + 3; y++) for (let x = px - 5; x <= px + 5; x++) if (((x - px) / 5) ** 2 + ((y - py) / 3) ** 2 <= 1 && !open(x, y)) fits = false;
-      if (fits) {
-        for (let y = py - 3; y <= py + 3; y++) for (let x = px - 5; x <= px + 5; x++) if (((x - px) / 4.4) ** 2 + ((y - py) / 2.3) ** 2 <= 1) this.set(x, y, WATER);
-        prop(px, py - 3, 'bench');
-      }
-    }
-    // the green: flowers in drifts, and the clearing's edge planted so the village sits in its land
+    this.villageStreets(cx, cy, seed);
+    // the green: flowers in drifts on the open ground, the clearing's edge planted
     for (let y = cy - VY; y <= cy + VY; y++) {
       for (let x = cx - VX; x <= cx + VX; x++) {
         if (!open(x, y) || this.at(x, y) !== FLOOR) continue;
-        const d = this.villageD(x, y, cx, cy);
-        if (d > 1) continue;
-        const nearRoad = [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => [PATH, COBBLE, BRIDGE, HOUSE, HOUSE_ANCHOR, FENCE].includes(this.at(x + dx, y + dy))));
+        const d = ((x - cx) / VX) ** 4 + ((y - cy) / VY) ** 4;
+        const nearRoad = [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => [PATH, COBBLE, BRIDGE, HOUSE, FENCE, RAMPART].includes(this.at(x + dx, y + dy))));
         if (nearRoad) continue;
-        const h = hash2(x, y, this.spec.seed + 67);
-        if (d > 0.78 && h < 0.16) this.set(x, y, h < 0.1 ? TREE : BUSH);
-        else if (noise2(x / 4, y / 4, this.spec.seed + 69) > 0.62) this.set(x, y, DECO);
+        const h = hash2(x, y, seed + 67);
+        if (d > 0.7 && h < 0.14) this.set(x, y, h < 0.09 ? TREE : BUSH);
+        else if (noise2(x / 4, y / 4, seed + 69) > 0.6) this.set(x, y, DECO);
       }
     }
-    if (hub.wall) this.palisade(cx, cy);
   }
 
-  /** A 4 × 3 house lot fronting a street (its door on the row below it), if the ground allows. */
-  private lot(x0: number, y0: number): boolean {
-    for (let y = y0 - 1; y <= y0 + 2; y++) for (let x = x0; x <= x0 + 3; x++) if (!this.inside(x, y, 3) || !OPEN.has(this.at(x, y)) || this.marked.has(this.idx(x, y))) return false;
-    if (!WALKABLE.has(this.at(x0 + 2, y0 + 3)) && !OPEN.has(this.at(x0 + 2, y0 + 3))) return false;
-    for (let y = y0; y < y0 + 3; y++) for (let x = x0; x < x0 + 4; x++) this.set(x, y, y === y0 + 2 && x === x0 ? HOUSE_ANCHOR : HOUSE);
-    return true;
+  private planOf(hub: HubSpec, cx: number, cy: number): VillagePlan {
+    return hub.plan ?? (hub.wall ? 'court' : PLANS[Math.floor(hash2(cx, cy, this.spec.seed + 71) * PLANS.length)]!);
   }
 
-  /** A stone wall around a town (a place that expects to be attacked), left open wherever a road crosses it. */
-  private palisade(cx: number, cy: number): void {
-    const rx = VX - 1;
-    const ry = VY - 1;
-    for (let y = cy - ry; y <= cy + ry; y++) {
-      for (let x = cx - rx; x <= cx + rx; x++) {
-        if (x !== cx - rx && x !== cx + rx && y !== cy - ry && y !== cy + ry) continue;
-        const i = this.idx(x, y);
-        if (OPEN.has(this.at(x, y)) && !this.marked.has(i)) this.set(x, y, RAMPART);
+  /**
+   * Something at every step along a village's streets (the references: never a bare wall or an empty verge):
+   * barrels, crates, sacks, woodpiles and flowerbeds by the houses, benches and lamps along the street, flowers
+   * at the foot of the walls. Never two side by side, so nothing walls a lane off, and never before a door.
+   */
+  private villageStreets(cx: number, cy: number, seed: number): void {
+    const BY_HOUSE = ['barrel', 'crate', 'sacks', 'woodpile', 'flowerbed', 'planter', 'basket', 'pot', 'barrel', 'bench', 'keg', 'flowerbed'];
+    const near = (x: number, y: number, kinds: number[]): boolean => [[0, -1], [1, 0], [0, 1], [-1, 0]].some(([dx, dy]) => kinds.includes(this.at(x + dx!, y + dy!)));
+    const crowded = (x: number, y: number): boolean => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => (dx || dy) && this.marked.has(this.idx(x + dx, y + dy))));
+    let lampAt = -99;
+    for (let y = cy - VY; y <= cy + VY; y++) {
+      for (let x = cx - VX; x <= cx + VX; x++) {
+        if (!this.inside(x, y, 3) || this.marked.has(this.idx(x, y)) || this.at(x, y) !== FLOOR) continue;
+        // before a door: the tile under a lot's middle (the step) and its sides stay clear
+        if (this.at(x, y - 1) === HOUSE && this.placed.some((p) => p.marker.kind === 'building' && p.ty === y - 1 && Math.abs(p.tx + Math.floor(p.marker.w / 2) - x) <= 1)) continue;
+        if (crowded(x, y)) continue;
+        const street = near(x, y, [PATH, COBBLE]);
+        const house = near(x, y, [HOUSE]);
+        const h = hash2(x, y, seed + 91);
+        if (house && street && h < 0.55) this.put(x, y, { kind: 'prop', prop: BY_HOUSE[Math.floor(hash2(x, y, seed + 93) * BY_HOUSE.length)]!, solid: true });
+        else if (street && x - lampAt > 5 && h < 0.3) {
+          this.put(x, y, { kind: 'prop', prop: 'lamp', solid: true });
+          lampAt = x;
+        } else if (house && h < 0.5) this.put(x, y, { kind: 'prop', prop: h < 0.3 ? 'flowers' : 'hedge' });
       }
-    }
-    // the north gate: the middle of the road's gap in the north wall nearest the square
-    const gaps: number[] = [];
-    for (let x = cx - rx + 1; x < cx + rx; x++) if (WALKABLE.has(this.at(x, cy - ry))) gaps.push(x);
-    if (gaps.length) {
-      const near = gaps.reduce((a, b) => (Math.abs(b - cx) < Math.abs(a - cx) ? b : a));
-      let lo = near;
-      let hi = near;
-      while (gaps.includes(lo - 1)) lo--;
-      while (gaps.includes(hi + 1)) hi++;
-      this.gate = [Math.round((lo + hi) / 2), cy - ry];
-      // a watchtower on either side of the gate
-      for (const x of [lo - 1, hi + 1]) if (this.at(x, cy - ry) === RAMPART && !this.marked.has(this.idx(x, cy - ry))) this.put(x, cy - ry, { kind: 'prop', prop: 'watchtower', solid: true });
     }
   }
 

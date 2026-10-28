@@ -36,12 +36,25 @@ castle courtyard and a village, each about 30 × 20 tiles) against ours: "look a
 zones in our game feel separated and vast". What makes theirs: houses shoulder to shoulder along streets, a
 garden or a barrel at every step, people everywhere, cliffs and walls that frame the scene. So:
 
-- **Villages are built along streets** (`zonegen.ts` town): a square with the waystone, the well, stalls and a
-  notice board; streets out of it; houses side by side fronting the main street and the lane behind (a tile of
-  garden between neighbors), more beside the side streets; fenced vegetable gardens, an orchard, a pond; lamps
-  and planters by the doors. Briarhollow is built at its plan's own size again (it had been spread 35% roomier)
-  with more houses on its roads; Emberwick has rows of houses along its avenue and its southern streets and a
-  market of stalls.
+- **Villages are small and full, and no two alike** (`zonegen.ts` town; the owner, holding up the pack's village
+  and castle scenes: "the different cities look identical... empty as heck"). A village is about 40 by 26 tiles,
+  built to one of four plans, mirrored or not, in its land's own roofs:
+  - a **crossroads** (the farm villages, the haunted and grey ones): a small square where the roads cross,
+    crowded with stalls, the well, a wagon and goods; three rows of houses on their streets; the inn, the smithy,
+    the stable and a tall shop round the square; a chapel with its graveyard walled in iron; a fenced garden with
+    its scarecrow, an orchard, a pond with a boat;
+  - a **market street** (the harbors, the mining towns, the fens): a long cobbled street with a fountain and the
+    well, stalls down one side, houses fronting it and back lanes behind both rows;
+  - a **green** (the woods, the oasis, the fey wood): lawns where the roads cross, under old trees round a pond,
+    flowerbeds and a statue, a corner of stalls; houses round it;
+  - a **walled hold** (the thanes, jarls, lords and archmages): a stone wall with a tower at each corner, the
+    keep, a cobbled courtyard with a fountain and stalls, the smithy, the stable, the inn, a training yard with
+    dummies and butts, a row of houses by the south wall.
+  Every building has its door on a street; tall roofs never stand over one. Between them, something at every
+  step: barrels, crates, sacks, woodpiles, flowerbeds and benches by the doors, lamps along the streets, flowers
+  and hedges at the foot of the walls. Briarhollow's square is small and full (goods out every day, its edge
+  planted) with more cottages on its old grass; Emberwick's market is crowded with stalls, and streets of houses
+  fill its lawns. Both keep every place their story stands on.
 - **People live there** (`sim/folk.ts`): villagers walk between their doors, the square and the streets, stop, and
   walk on (a third about the square); they stay in at night, while a place burns and while the story fights.
 - **The lands are smaller** (`ZONE_SCALE` 0.8 a side) with denser copses, and the open land between the sights is

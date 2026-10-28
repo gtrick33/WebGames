@@ -31,7 +31,7 @@ export const DUSKFEN = wildRegion(
     forest: 0.28,
     scatter: { trees: 1.8, bushes: 2, rocks: 0.4, flowers: 3 },
     water: { kind: 'lakes', amount: 0.55 },
-    hubs: [{ at: [0.78, 0.34], npcs: ['healer-osk', 'brother-wendel', 'mags'], houses: 5, when: { 'healer-osk': not(during('low-wick-fires')) } }],
+    hubs: [{ at: [0.78, 0.34], plan: 'street', npcs: ['healer-osk', 'brother-wendel', 'mags'], houses: 5, when: { 'healer-osk': not(during('low-wick-fires')) } }],
     exits: [{ side: 'e', at: 0.5, to: 'greyfen', label: 'East causeway to Greyfen' }],
     pois: [
       // the first village to sicken

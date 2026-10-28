@@ -112,6 +112,25 @@ const HOUSES: Record<Theme, string[]> = {
   riftspire: STONE,
 };
 
+/** A land's houses for a village: its cottages and gabled houses, and its big two-story houses. */
+export function villageHouses(theme: Theme): { small: string[]; big: string[] } {
+  const small = HOUSES[theme];
+  const cold = small.some((id) => id.includes('slate') || id.includes('stone') || id.includes('moss'));
+  return { small, big: cold ? ['house_tall_slate', 'house_tall_tile'] : ['house_tall_tile', 'house_tall_slate', 'house_tall_tile'] };
+}
+
+/**
+ * How many tile rows a building of a kind makes solid, from its front up, at most (its tallest picture: a
+ * steep roof rises over the ground behind its lot, so a plan leaves that ground clear of streets).
+ */
+export function buildingRows(style: Style | 'house', theme: Theme, art?: string): number {
+  const ids = art ? [art] : style === 'house' ? HOUSES[theme] : STYLE[style].wild;
+  return Math.max(...ids.map((id) => {
+    const oy = buildingPic(id)!.oy;
+    return Math.floor(oy / 16) + (oy % 16 >= 6 ? 1 : 0);
+  }));
+}
+
 /** Each kind of building in a town (the capital, Briarhollow) and out in the wilds. */
 const STYLE: Record<Style, { town: string[]; wild: string[] }> = {
   house: { town: [], wild: [] },
@@ -172,7 +191,8 @@ export function placeBuilding(style: Style | 'house', lot: Lot, theme: Theme, to
   let x = Math.round(middle - pic.ox - pic.fpw / 2);
   if (pic.door !== undefined) {
     x = Math.round(((door ?? lot.tx + Math.floor(lot.w / 2)) + 0.5) * 16 - pic.door);
-    if (door === null) x = Math.max(lot.tx * 16 - 6 - pic.ox, Math.min((lot.tx + lot.w) * 16 + 6 - pic.ox - pic.fpw, x));
+    // (never so far its walls stand on a neighbour's lot: a tile is solid where a wall covers 4 px of it)
+    if (door === null) x = Math.max(lot.tx * 16 - 3 - pic.ox, Math.min((lot.tx + lot.w) * 16 + 3 - pic.ox - pic.fpw, x));
   }
   const out: PlacedPic[] = [{ id, x, y: ground }];
   if (id === 'keep' && lot.w >= 8) {

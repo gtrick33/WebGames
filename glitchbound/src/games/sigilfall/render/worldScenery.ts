@@ -110,9 +110,19 @@ const PROPS: Record<string, string[]> = {
   wagon: ['cart', 'cart_goods', 'cart_hay'],
   torch: ['anim:torch_post'],
   menhir: ['rock_tall'],
+  // a village's street life (zonegen.ts village)
+  'market-goods': ['market_veg', 'market_fish', 'market_pots', 'market_cloth', 'market_arms'],
+  basket: ['basket_apples', 'basket_bread', 'basket_eggs', 'basket'],
+  hedge: ['hedge_h', 'hedge_h_rose', 'hedge_long'],
+  boat: ['boat'],
+  flowers: ['flowers_red', 'flowers_yellow', 'flowers_white', 'flowers_pink', 'flowers_blue', 'flowers_violet'],
+  'shop-sign': ['sign_inn', 'sign_shop', 'sign_smith', 'sign_arms'],
+  rack: ['rack_shields', 'rack_spears', 'rack_swords'],
+  pavilion: ['pavilion_blue', 'pavilion_red'],
+  keg: ['keg'],
+  pot: ['pot_clay', 'pot_blue', 'pot_big'],
 };
 
-/** Tall props the hero fades when walking behind. */
 /** The pieces that give light: how far it reaches, and how high its flame or lamp is over its foot (world px). */
 const LIGHT: Record<string, [number, number]> = {
   'anim:wall_torch': [46, 8],
@@ -124,7 +134,8 @@ const LIGHT: Record<string, [number, number]> = {
   lantern_post_double: [60, 16],
 };
 
-const FADE = new Set(['well', 'tent', 'camp-tent', 'torch', 'menhir', 'market-cart', 'watchtower', 'fountain', 'statue', 'lamp', 'lantern', 'scarecrow', 'red-banner', 'blue-banner', 'skull-banner', 'standing-stone']);
+/** Tall props the hero fades when walking behind. */
+const FADE = new Set(['pavilion', 'well', 'tent', 'camp-tent', 'torch', 'menhir', 'market-cart', 'watchtower', 'fountain', 'statue', 'lamp', 'lantern', 'scarecrow', 'red-banner', 'blue-banner', 'skull-banner', 'standing-stone']);
 
 /** Every piece the fixed tables name (for the art-integrity test). */
 export const sceneryRefs = (): string[] => [...Object.values(PROPS).flat(), 'signpost', 'pillar', 'pillar_broken', 'anim:smoke', 'lilypad', 'lilypad_flower', 'reeds', 'reeds_2', 'bush_small_leaf', 'bush_small_mint', 'hedge_block', 'planter_red', 'anim:wall_torch', 'wall_banner_blue', 'wall_banner_red', 'wall_moss_a', 'wall_crack_a', ...Array.from({ length: 16 }, (_, n) => `fence_${n}`), ...Array.from({ length: 16 }, (_, n) => `fence_iron_${n}`)];

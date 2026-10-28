@@ -28,7 +28,7 @@ export const FROSTFANG = wildRegion(
     forest: 0.36,
     scatter: { trees: 1.4, bushes: 0.6, rocks: 2.4, flowers: 0.4 },
     water: { kind: 'river', from: 'n', to: 's' },
-    hubs: [{ at: [0.4, 0.82], npcs: ['eagle-warden-brynn', 'old-hask', 'furrier-signe'], houses: 5 }],
+    hubs: [{ at: [0.4, 0.82], plan: 'court', npcs: ['eagle-warden-brynn', 'old-hask', 'furrier-signe'], houses: 5 }],
     exits: [
       { side: 's', at: 0.5, to: 'rimeheld', label: 'South road to Rimeheld' },
       { side: 'e', at: 0.55, to: 'blightwood', label: 'East pass to the Blightwood' },

@@ -102,6 +102,27 @@ function plan(): CityPlan {
     [60, 41, 'sacks'],
   ] as const)
     c.prop(p, x, y, true, MARKET);
+  // a capital's market is crowded: more stalls down its sides and goods between them
+  for (const [x, y] of [
+    [41, 37],
+    [62, 37],
+    [41, 44],
+    [62, 44],
+    [50, 34],
+    [53, 48],
+  ] as const)
+    c.prop('market-cart', x, y, true, MARKET);
+  for (const [x, y, p] of [
+    [42, 38, 'market-goods'],
+    [61, 38, 'market-goods'],
+    [42, 45, 'basket'],
+    [61, 45, 'basket'],
+    [46, 41, 'market-goods'],
+    [57, 41, 'market-goods'],
+    [49, 47, 'crate'],
+    [54, 34, 'sacks'],
+  ] as const)
+    c.prop(p, x, y, true, MARKET);
 
   // the Regent's keep at the head of the avenue, its courtyard, the barracks beside it
   c.building('keep', 45, 10, 14, 8, { pave: false });
@@ -202,6 +223,16 @@ function plan(): CityPlan {
   c.fill(10, 58, 48, 59, 'path').row(24, 36, 58);
   c.fill(56, 58, 92, 59, 'path').row(56, 92, 58);
   c.fill(56, 66, 92, 67, 'path').row(56, 92, 66);
+  // and the lawns that were left: streets of houses below the training ground, by the barracks, south of the
+  // market and down in the south-west
+  c.fill(19, 33, 34, 33, 'cobble').row(19, 34, 33);
+  c.fill(55, 31, 63, 31, 'cobble').row(55, 62, 31);
+  c.fill(64, 33, 73, 33, 'cobble').row(64, 73, 33);
+  c.fill(42, 53, 49, 53, 'path').row(42, 49, 53);
+  c.fill(10, 70, 30, 70, 'path').row(10, 30, 70);
+  c.fill(61, 22, 72, 22, 'cobble').row(61, 72, 22);
+  c.fill(59, 72, 92, 72, 'path').row(59, 92, 72);
+  c.building('house', 39, 17, 4, 3);
 
   // where the story happens in the city (silent places)
   for (const [id, x, y] of [

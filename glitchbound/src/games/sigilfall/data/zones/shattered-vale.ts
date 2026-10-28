@@ -31,7 +31,7 @@ export const SHATTERED_VALE = wildRegion(
     forest: 0.24,
     scatter: { trees: 1.6, bushes: 0.8, rocks: 2.2, flowers: 1.2 },
     water: { kind: 'lakes', amount: 0.3 },
-    hubs: [{ at: [0.5, 0.75], npcs: ['magister-quell', 'scholar-ennis', 'shardwife-hesk', 'sergeant-dace'], houses: 4 }],
+    hubs: [{ at: [0.5, 0.75], plan: 'cross', npcs: ['magister-quell', 'scholar-ennis', 'shardwife-hesk', 'sergeant-dace'], houses: 4 }],
     exits: [
       { side: 's', at: 0.5, to: 'grimward', label: 'South pass to the Grimward Moors' },
       { side: 'e', at: 0.4, to: 'highwall', label: 'East road to Highwall March', minLevel: 39 },

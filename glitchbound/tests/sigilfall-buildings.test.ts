@@ -78,18 +78,25 @@ describe('Sigilfall buildings', () => {
 });
 
 describe('Sigilfall villages and their people', () => {
-  it('builds a village along streets: ten houses or more round its square, every door on a path', () => {
-    for (const id of ['thornvale', 'saltmarsh', 'greyfen', 'ironpeak', 'sunscorch'] as RegionId[]) {
+  it('builds a village close round its square, every door on a street, and no two villages alike', () => {
+    const plans = new Set<string>();
+    for (const id of ['thornvale', 'saltmarsh', 'greyfen', 'ironpeak', 'sunscorch', 'weeping-woods', 'duskfen', 'rimeheld'] as RegionId[]) {
       const m = parseRegion(REGIONS[id]);
       const square = m.markers.find((pm) => pm.marker.kind === 'waystone')!;
-      const near = m.buildings.filter((b) => b.style === 'house' && Math.hypot(b.lot.tx + 2 - square.tx, b.lot.ty + 2 - square.ty) < 30);
-      expect(near.length, id).toBeGreaterThanOrEqual(10);
+      // houses, and the inn, the smithy, the chapel, the stable, a keep among them, within 20 tiles of the square
+      const near = m.buildings.filter((b) => Math.hypot(b.lot.tx + b.lot.w / 2 - square.tx, b.lot.ty + b.lot.h / 2 - square.ty) < 20);
+      expect(near.length, id).toBeGreaterThanOrEqual(12);
+      expect(near.filter((b) => b.style !== 'house').length, `${id}: an inn, a smithy, a chapel...`).toBeGreaterThanOrEqual(2);
       for (const b of near) {
-        // the tile in front of the door is walkable ground
-        const i = (b.lot.ty + b.lot.h) * m.w + b.lot.tx + 2;
-        expect(m.solid[i], `${id} house at ${b.lot.tx},${b.lot.ty}`).toBe(0);
+        // the tile in front of the door is a street
+        const i = (b.lot.ty + b.lot.h) * m.w + b.lot.tx + Math.floor(b.lot.w / 2);
+        expect(m.solid[i], `${id} ${b.style} at ${b.lot.tx},${b.lot.ty}`).toBe(0);
+        expect([K.Path, K.Cobble, K.Bridge], `${id} ${b.style} at ${b.lot.tx},${b.lot.ty}`).toContain(m.kind[i]);
       }
+      // what stands where: the layout's fingerprint (buildings relative to the square)
+      plans.add(near.map((b) => `${b.style}${b.lot.tx - square.tx},${b.lot.ty - square.ty}`).sort().join(' '));
     }
+    expect(plans.size).toBe(8);
   });
 
   it('has people walking about a calm town, nobody at night, and leaves the fight alone', () => {

@@ -38,7 +38,7 @@ export const GLOAMHOLLOW = wildRegion(
     forest: 0.34,
     scatter: { trees: 1.8, bushes: 1.6, rocks: 0.8, flowers: 1 },
     water: { kind: 'lakes', amount: 0.55 },
-    hubs: [{ at: [0.55, 0.8], npcs: ['lamp-keeper-brin', 'widow-marrow', 'tinker-gale'], houses: 5 }],
+    hubs: [{ at: [0.55, 0.8], plan: 'street', npcs: ['lamp-keeper-brin', 'widow-marrow', 'tinker-gale'], houses: 5 }],
     exits: [
       { side: 's', at: 0.55, to: 'shattered-vale', label: 'South road to the Shattered Vale' },
       { side: 'e', at: 0.45, to: 'bonefields', label: 'East along the gate line to the Bonefields', minLevel: 46, needs: 'the-gloam-gate' },

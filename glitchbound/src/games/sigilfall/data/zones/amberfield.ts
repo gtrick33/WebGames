@@ -50,6 +50,7 @@ export const AMBERFIELD = wildRegion(
     hubs: [
       {
         at: [0.4, 0.7],
+        plan: 'court',
         npcs: ['marshal-dunmore', 'tess-hearthkeeper', 'old-gaius', 'wynn'],
         houses: 7,
         wall: true,

@@ -34,7 +34,7 @@ export const STORMWATCH = wildRegion(
     scatter: { trees: 1.4, bushes: 1.2, rocks: 2.6, flowers: 1.5 },
     water: { kind: 'sea', side: 's', depth: 0.22 },
     sand: 'shore',
-    hubs: [{ at: [0.36, 0.46], npcs: ['keeper-ansel', 'captain-morra', 'bosun-pike', 'odile'], houses: 6 }],
+    hubs: [{ at: [0.36, 0.46], plan: 'street', npcs: ['keeper-ansel', 'captain-morra', 'bosun-pike', 'odile'], houses: 6 }],
     exits: [
       { side: 'w', at: 0.4, to: 'amberfield', label: 'West road to the Amberfield' },
       { side: 'e', at: 0.35, to: 'vinecoil', label: 'East road to Vinecoil Jungle', minLevel: 38 },

@@ -59,8 +59,8 @@ function plan(): SpreadPlan {
   c.marker(29, 13, { kind: 'prop', prop: 'lamp', solid: true });
   c.marker(35, 13, { kind: 'prop', prop: 'lamp', solid: true });
 
-  // the square: the waystone, the well, the market
-  c.fill(25, 20, 39, 31, 'cobble');
+  // the square: the waystone, the well, the market (small, and full: the owner's references)
+  c.fill(27, 22, 37, 29, 'cobble');
   c.marker(32, 22, { kind: 'waystone' });
   c.marker(32, 29, { kind: 'prop', prop: 'well', solid: true });
   for (const [x, y] of [
@@ -70,6 +70,18 @@ function plan(): SpreadPlan {
     [38, 30],
   ] as const)
     c.prop('lamp', x, y);
+  // its edge planted: flowerbeds and planters, a bench at each side
+  for (const [x, y, p] of [
+    [26, 23, 'flowerbed'],
+    [38, 23, 'flowerbed'],
+    [26, 25, 'planter'],
+    [38, 25, 'planter'],
+    [28, 30, 'flowerbed'],
+    [36, 30, 'planter'],
+    [26, 28, 'bench'],
+    [38, 28, 'bench'],
+  ] as const)
+    c.prop(p, x, y);
   for (const [x, y, p] of [
     [27, 24, 'crate'],
     [27, 25, 'barrel'],
@@ -82,6 +94,17 @@ function plan(): SpreadPlan {
   c.prop('blue-banner', 29, 21);
   c.prop('blue-banner', 35, 21);
   c.prop('bench', 34, 30);
+  // goods out on the cobbles every day of the year
+  for (const [x, y, p] of [
+    [28, 22, 'market-goods'],
+    [36, 22, 'market-goods'],
+    [29, 24, 'basket'],
+    [35, 24, 'basket'],
+    [34, 27, 'wagon'],
+    [28, 29, 'sacks'],
+    [36, 29, 'barrel'],
+  ] as const)
+    c.prop(p, x, y);
 
   c.prop('market-cart', 28, 26, true, CALM);
   c.prop('market-cart', 36, 26, true, CALM);
@@ -123,6 +146,15 @@ function plan(): SpreadPlan {
     [37, 46],
     [49, 34],
     [8, 14],
+    // and on what was open grass: by the gate yard, on the west road, by the forge, in the south
+    [27, 16],
+    [34, 14],
+    [8, 22],
+    [54, 20],
+    [14, 38],
+    [40, 38],
+    [33, 43],
+    [26, 49],
   ] as const)
     c.building('house', x, y, 4, 3);
   // lamps along the roads out of the square, flowers and benches by the doors
