@@ -28,9 +28,9 @@ function EpicSky() {
       <i className="rb-epic-aurora" />
       <i className="rb-epic-moon" />
       <svg className="rb-epic-land" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMax slice">
-        <path className="rb-range-3" d="M0 250 L90 190 L170 230 L260 160 L340 215 L430 150 L520 210 L600 170 L690 225 L780 140 L870 205 L960 165 L1050 215 L1130 175 L1200 200 L1200 400 L0 400 Z" />
-        {/* the castle on the far crag: keep, towers, banners */}
-        <g className="rb-castle">
+        <path className="rb-range-3" d="M0 250 L90 190 L170 230 L260 160 L340 215 L430 150 L520 210 L600 170 L690 225 L780 140 L870 205 L935 168 L950 158 L1066 158 L1130 186 L1200 200 L1200 400 L0 400 Z" />
+        {/* the castle on the far crag, right of the name and the line under it at every width: keep, towers, banners */}
+        <g className="rb-castle" transform="translate(150 0)">
           <path d="M800 160 L812 150 L812 98 L806 98 L806 86 L830 86 L830 98 L824 98 L824 150 L846 150 L846 112 L840 112 L840 100 L866 100 L866 112 L860 112 L860 150 L882 150 L882 92 L876 92 L876 78 L889 64 L902 78 L902 92 L896 92 L896 150 L912 160 Z" />
           <path className="rb-banner" d="M889 64 L889 44 L904 50 L889 56" />
           <rect className="rb-window" x="886" y="104" width="6" height="10" />
@@ -93,7 +93,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
             <h1 className="rb-logo-word" data-text="Sigilfall">
               Sigilfall
             </h1>
-            <p className="rb-logo-tag">The sigils have fallen and the Rift is open. Find the gear that changes how you fight.</p>
+            <p className="rb-logo-tag">The bell stopped ringing three weeks ago. Tonight, they come for what sleeps under the chapel.</p>
           </div>
           <div className="rb-gate-actions">
             {lastHero ? (
