@@ -231,8 +231,8 @@ export function RoomBrowser({ game, onJoin, onClose }: { game?: RoomGame; onJoin
   );
 }
 
-/** The public rooms with a free seat, open lobbies first. */
-export function RoomList({ game, onJoin }: { game?: RoomGame; onJoin: (code: string, room: ListedRoom) => void }) {
+/** The public rooms with a free seat, open lobbies first. `empty`: what to say when there are none (a page without Create and Quick match says its own). */
+export function RoomList({ game, onJoin, empty }: { game?: RoomGame; onJoin: (code: string, room: ListedRoom) => void; empty?: string }) {
   const [rooms, setRooms] = useState<ListedRoom[] | null>(null);
   const [err, setErr] = useState('');
   useEffect(() => {
@@ -260,7 +260,7 @@ export function RoomList({ game, onJoin }: { game?: RoomGame; onJoin: (code: str
     return (
       <div className="op-empty">
         <span aria-hidden="true">🦗</span>
-        <p>{t('No public rooms right now. Create one, or try Quick match: others searching will land in yours.')}</p>
+        <p>{empty ?? t('No public rooms right now. Create one, or try Quick match: others searching will land in yours.')}</p>
       </div>
     );
   return (

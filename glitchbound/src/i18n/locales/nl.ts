@@ -2124,6 +2124,15 @@ const nl: string[] = [
   'Regels met 🤖 Huis zijn computerspelers van GlitchBound, op echte scores gezet. Haal ze in om te stijgen.',
   'Huisspelers bezetten de lege plekken in de Eregalerij. Elk geeft zijn plek op zodra een lid die inneemt.',
   'Over alle spellen: kronen zijn #1-plekken, podia top-3-plekken, records verbeterde persoonlijke records.',
+  'Live kamers',
+  'Speel tegelijk met je vrienden, ieder op je eigen telefoon of computer. Open een kamer in een van de spellen hieronder en stuur de link, of doe mee in een kamer die wacht.',
+  'Spellen met live kamers',
+  'Kamers die nu open zijn',
+  'Vrienden in dezelfde ruimte? Geef één telefoon door in de Feestmodus.',
+  'Kamercodes hebben vijf letters.',
+  'Geen kamer heeft die code. Misschien is hij al gesloten.',
+  'Alle live spellen en open kamers',
+  'Er zijn nu geen openbare kamers. Open er een in een van de spellen hierboven en iedereen ziet hem hier.',
 ];
 
 export default nl;

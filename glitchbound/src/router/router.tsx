@@ -21,6 +21,7 @@ export type Route =
   | { name: 'me' }
   | { name: 'bugs' }
   | { name: 'party' }
+  | { name: 'live' }
   | { name: 'admin' }
   | { name: 'signin' }
   | { name: 'challenges' }
@@ -40,6 +41,7 @@ export function matchRoute(pathname: string): Route {
   if (path === '/me') return { name: 'me' };
   if (path === '/me/bugs') return { name: 'bugs' };
   if (path === '/party') return { name: 'party' };
+  if (path === '/live') return { name: 'live' };
   if (path === '/admin') return { name: 'admin' };
   if (path === '/signin') return { name: 'signin' };
   if (path === '/c') return { name: 'challenges' };

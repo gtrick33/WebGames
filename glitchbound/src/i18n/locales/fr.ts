@@ -2124,6 +2124,15 @@ const fr: string[] = [
   'Les lignes marquées 🤖 Maison sont des joueurs ordinateur de GlitchBound, réglés sur de vrais scores. Dépasse-les pour grimper.',
   'Les joueurs maison occupent les places libres du Panthéon. Chacun cède sa place dès qu’un membre la prend.',
   'Sur tous les jeux : les couronnes sont les 1res places, les podiums les places dans le top 3, les records les meilleurs scores personnels battus.',
+  'Salons en direct',
+  'Joue en même temps que tes amis, chacun sur son téléphone ou son ordinateur. Ouvre un salon dans l’un des jeux ci-dessous et envoie le lien, ou rejoins-en un qui attend.',
+  'Jeux avec salons en direct',
+  'Salons ouverts en ce moment',
+  'Tes amis sont dans la même pièce ? Faites tourner un seul téléphone en Mode soirée.',
+  'Les codes de salon font cinq lettres.',
+  'Aucun salon n’a ce code. Il est peut-être déjà fermé.',
+  'Tous les jeux en direct et les salons ouverts',
+  'Aucun salon public pour le moment. Ouvre-en un dans l’un des jeux ci-dessus et il apparaîtra ici pour tout le monde.',
 ];
 
 export default fr;

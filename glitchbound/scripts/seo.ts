@@ -40,7 +40,7 @@ const ADULT = 'Adults only (18+)';
  * Site links under every page's readable fallback, so crawlers and visitors without JavaScript can
  * reach the info pages too (the app replaces all of it with its own footer).
  */
-const SSR_FOOTER = `<footer class="ssr ssr-foot"><nav aria-label="Site"><a href="/">Arcade</a> · <a href="/party">Party Mode</a> · ${GAMES.filter((g) => g.section).map((g) => `<a href="${g.section!.path}">${g.section!.label}</a> · `).join('')}<a href="/daily">Daily Challenge</a> · <a href="/leaderboards">Leaderboards</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></nav><p>© ${new Date().getFullYear()} ${SITE} · Every game is made by GlitchBound.</p></footer>`;
+const SSR_FOOTER = `<footer class="ssr ssr-foot"><nav aria-label="Site"><a href="/">Arcade</a> · <a href="/party">Party Mode</a> · ${GAMES.filter((g) => g.section).map((g) => `<a href="${g.section!.path}">${g.section!.label}</a> · `).join('')}<a href="/daily">Daily Challenge</a> · <a href="/live">Live rooms</a> · <a href="/leaderboards">Leaderboards</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></nav><p>© ${new Date().getFullYear()} ${SITE} · Every game is made by GlitchBound.</p></footer>`;
 
 export const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -49,6 +49,7 @@ const taglineOf = (g: GameEntry): string => (g.adult ? g.tagline.replace(/\s*18\
 
 /** Where a game's page lives: its own section (Sigilfall at /sigilfall), or /games/<slug>. */
 const pathOf = (g: GameEntry): string => g.section?.path ?? gameUrl(g.slug);
+const LIVE_DESC = 'Play GlitchBound games live with friends, each on your own phone or computer: open a room and send the link, or join a public room that is waiting.';
 
 function gameItem(g: GameEntry): string {
   return `<li><a href="${pathOf(g)}">${esc(g.title)}</a>${g.adult ? ` <strong>${ADULT}</strong>` : ''}: ${esc(taglineOf(g))}</li>`;
@@ -145,6 +146,17 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       image: '/og.png',
       imageAlt: 'GlitchBound Daily Challenge',
       body: `<section class="ssr"><h1>Daily Challenge</h1><p>A new challenge unlocks every day at local midnight. Clear it in a single round on ${SITE} to build your streak.</p><p><a href="/">Back to the arcade</a></p></section>`,
+    },
+    {
+      path: '/live',
+      file: 'live.html',
+      title: `Live rooms · ${SITE}`,
+      description: LIVE_DESC,
+      image: '/og.png',
+      imageAlt: SITE,
+      body: `<section class="ssr"><h1>Live rooms</h1><p>${esc(LIVE_DESC)}</p><ul>${GAMES.filter((g) => g.live && !g.partyOnly)
+        .map((g) => `<li><a href="${pathOf(g)}">${esc(g.title)}</a>: ${esc(g.tagline)} (${esc(g.live!.players)} players)</li>`)
+        .join('')}</ul><p><a href="/party">Party Mode</a> · <a href="/">Back to the arcade</a></p></section>`,
     },
     {
       path: '/c',
@@ -324,6 +336,7 @@ export function sitemap(siteUrl: string): string {
     ...GAMES.map((g) => ({ loc: pathOf(g), lastmod: g.released, priority: '0.9' })),
     { loc: '/party', lastmod: '', priority: '0.8' },
     { loc: '/daily', lastmod: '', priority: '0.6' },
+    { loc: '/live', lastmod: '', priority: '0.6' },
     { loc: '/leaderboards', lastmod: '', priority: '0.5' },
     { loc: '/about', lastmod: '', priority: '0.3' },
     { loc: '/contact', lastmod: '', priority: '0.3' },

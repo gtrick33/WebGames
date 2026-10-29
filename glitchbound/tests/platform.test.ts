@@ -39,6 +39,7 @@ describe('routing', () => {
     expect(matchRoute('/games/neon-rush')).toEqual({ name: 'game', slug: 'neon-rush' });
     expect(matchRoute('/games/neon-rush/')).toEqual({ name: 'game', slug: 'neon-rush' });
     expect(matchRoute('/daily')).toEqual({ name: 'daily' });
+    expect(matchRoute('/live')).toEqual({ name: 'live' });
     expect(matchRoute('/privacy')).toEqual({ name: 'privacy' });
     expect(matchRoute('/games/')).toEqual({ name: 'notfound' });
     expect(matchRoute('/games/NEON')).toEqual({ name: 'notfound' });

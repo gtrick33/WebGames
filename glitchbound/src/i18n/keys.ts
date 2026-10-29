@@ -2132,6 +2132,16 @@ export const KEYS: string[] = [
   "Rows marked 🤖 House are GlitchBound’s computer players, set at real scores. Pass them to climb.",
   "House players hold the Hall’s empty seats. Each one gives up its seat when a member takes it.",
   "Across every game: crowns are #1 spots, podiums top-3 spots, records the personal bests beaten.",
+  // 1950
+  "Live rooms",
+  "Play at the same moment as your friends, each on your own phone or computer. Open a room in any game below and send the link, or join one that is waiting.",
+  "Games with live rooms",
+  "Rooms open right now",
+  "Got friends in the same room? Pass one phone around in Party Mode.",
+  "Room codes are five letters.",
+  "No room has that code. It may have closed.",
+  "All live games and open rooms",
+  "No public rooms right now. Open one in any game above and it shows up here for everyone.",
 ];
 
 export const UI_COUNT = 311;

@@ -183,7 +183,7 @@ export function Header() {
   const tabs = useTabs();
   // A section game's own /games/<slug> address belongs to its tab, not the arcade's.
   const sectionAt = SECTION_GAMES.find((g) => pathname === g.section!.path || pathname === gameUrl(g.slug));
-  const active = (href: string): boolean => (sectionAt ? href === sectionAt.section!.path : href === '/' ? pathname === '/' || pathname.startsWith('/games/') : pathname.startsWith(href));
+  const active = (href: string): boolean => (sectionAt ? href === sectionAt.section!.path : href === '/' ? pathname === '/' || pathname.startsWith('/games/') || pathname === '/live' : pathname.startsWith(href));
 
   return (
     <>

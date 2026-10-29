@@ -200,6 +200,9 @@ export function PlayTogether() {
                 <LiveCard key={g.slug} g={g} />
               ))}
             </ul>
+            <Link href="/live" className="together-more">
+              {t('All live games and open rooms')} <Icon name="arrowRight" size={16} />
+            </Link>
           </div>
         )}
         <div className="together-col" aria-label={t('Party Mode')}>

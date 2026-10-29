@@ -2124,6 +2124,15 @@ const pl: string[] = [
   'Wiersze oznaczone 🤖 Bot to komputerowi gracze GlitchBound z prawdziwymi wynikami. Wyprzedź ich, by awansować.',
   'Boty zajmują wolne miejsca w Galerii sław. Każdy ustępuje miejsca, gdy zajmie je członek.',
   'We wszystkich grach: korony to pierwsze miejsca, podia miejsca w top 3, rekordy pobite rekordy osobiste.',
+  'Pokoje na żywo',
+  'Graj w tym samym czasie co znajomi, każdy na swoim telefonie lub komputerze. Otwórz pokój w jednej z gier poniżej i wyślij link albo dołącz do pokoju, który czeka.',
+  'Gry z pokojami na żywo',
+  'Pokoje otwarte w tej chwili',
+  'Znajomi są w tym samym pomieszczeniu? Podawajcie sobie jeden telefon w Trybie imprezowym.',
+  'Kody pokoi mają pięć liter.',
+  'Żaden pokój nie ma tego kodu. Może został już zamknięty.',
+  'Wszystkie gry na żywo i otwarte pokoje',
+  'Teraz nie ma publicznych pokoi. Otwórz pokój w jednej z gier powyżej, a pojawi się tutaj dla wszystkich.',
 ];
 
 export default pl;

@@ -47,6 +47,7 @@ const LeaderboardsPage = lazyPage(() => import('./pages/LeaderboardsPage').then(
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage').then((m) => m.ProfilePage));
 const BugReportPage = lazyPage(() => import('./pages/BugReportPage').then((m) => m.BugReportPage));
 const PartyPage = lazyPage(() => import('./party/ui/PartyPage').then((m) => m.PartyPage));
+const LivePage = lazyPage(() => import('./pages/LivePage').then((m) => m.LivePage));
 const SignInPage = lazyPage(() => import('./pages/SignInPage').then((m) => m.SignInPage));
 const ChallengePage = lazyPage(() => import('./pages/ChallengePage').then((m) => m.ChallengePage));
 const ChallengesPage = lazyPage(() => import('./pages/ChallengePage').then((m) => m.ChallengesPage));
@@ -67,6 +68,7 @@ const PAGE_CODE: Partial<Record<Route['name'], () => Promise<unknown> | undefine
   me: ProfilePage.preload,
   bugs: BugReportPage.preload,
   party: PartyPage.preload,
+  live: LivePage.preload,
   signin: SignInPage.preload,
   challenge: ChallengePage.preload,
   challenges: ChallengesPage.preload,
@@ -99,6 +101,8 @@ function Page() {
       return <ProfilePage />;
     case 'party':
       return <PartyPage />;
+    case 'live':
+      return <LivePage />;
     case 'bugs':
       return <BugReportPage />;
     case 'admin':
