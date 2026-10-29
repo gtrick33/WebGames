@@ -6,7 +6,7 @@ import { TIERS } from '../data/regions';
 import type { Bark, RegionDef, RegionStateDef, StoryCond, StoryEventDef } from '../data/types';
 import { activeQuests, declined, questState, type Character, currentObjective } from '../progress/character';
 import { skillCost } from './cast';
-import { castRay, TILE } from './map';
+import { castRay, K, TILE } from './map';
 import { placePet } from './pets';
 import { openShot, shotDue } from './scene';
 import type { Pet } from './types';
@@ -199,7 +199,9 @@ export class StoryDirector {
       if (pet) run.pets.push(pet);
     }
     if (def.ward) {
-      const at = this.spot(def.ward.at);
+      const spot = this.spot(def.ward.at);
+      // (a boat is moored at the water's edge nearest its place, never left on dry land)
+      const at = spot && PETS[def.ward.pet]?.look === 'boat' ? moor(w, spot) : spot;
       if (at) run.ward = placePet(w, def.ward.pet, at.x, at.y);
       if (run.ward) run.pets.push(run.ward);
     }
@@ -208,7 +210,8 @@ export class StoryDirector {
       if (at) {
         def.rescue.pets.forEach((id, i) => {
           const a = (TAU * i) / def.rescue!.pets.length;
-          const pet = placePet(w, id, at.x + Math.cos(a) * 10, at.y + Math.sin(a) * 8);
+          const by = beside(w, at, Math.cos(a) * 10, Math.sin(a) * 8);
+          const pet = placePet(w, id, by.x, by.y);
           if (pet) {
             run.followers.push(pet);
             run.pets.push(pet);
@@ -222,13 +225,14 @@ export class StoryDirector {
       if (from && to) {
         def.arrive.pets.forEach((id, i) => {
           // in a loose line down the road, and a loose knot where they stop
-          const pet = placePet(w, id, from.x + ((i % 3) - 1) * 10, from.y - Math.floor(i / 3) * 14);
+          const by = beside(w, from, ((i % 3) - 1) * 10, -Math.floor(i / 3) * 14);
+          const pet = placePet(w, id, by.x, by.y);
           if (!pet) return;
           // (one alone goes to the spot itself: where they stop is where the place's own person stands)
           const n = def.arrive!.pets.length;
           const a = (TAU * i) / n;
           const k = n > 1 ? 1 : 0;
-          pet.goal = { x: to.x + Math.cos(a) * 14 * k, y: to.y + Math.sin(a) * 10 * k };
+          pet.goal = beside(w, to, Math.cos(a) * 14 * k, Math.sin(a) * 10 * k);
           run.followers.push(pet);
           run.pets.push(pet);
         });
@@ -245,9 +249,10 @@ export class StoryDirector {
         }
         (def.escort.walkers ?? []).forEach((id, i) => {
           // the people walk alongside and behind the wagon
-          const pet = placePet(w, id, from.x + ((i % 2) * 2 - 1) * 14, from.y + 10 + Math.floor(i / 2) * 12);
+          const by = beside(w, from, ((i % 2) * 2 - 1) * 14, 10 + Math.floor(i / 2) * 12);
+          const pet = placePet(w, id, by.x, by.y);
           if (!pet) return;
-          pet.goal = { x: to.x + ((i % 2) * 2 - 1) * 14, y: to.y + 10 + Math.floor(i / 2) * 10 };
+          pet.goal = beside(w, to, ((i % 2) * 2 - 1) * 14, 10 + Math.floor(i / 2) * 10);
           run.followers.push(pet);
           run.pets.push(pet);
         });
@@ -548,6 +553,56 @@ export class StoryDirector {
     }
     w.emit({ t: 'save' });
   }
+}
+
+/**
+ * A place a step from a spot, for someone standing in a knot or a line round it: the step as it is if the
+ * ground there is open, else the same step the other way or to the other side, else as far as the ground
+ * goes (nobody is put down in a wall or a house, to stand there for good: Duskfen's caravan lost its people so).
+ */
+function beside(w: World, at: { x: number; y: number }, dx: number, dy: number): { x: number; y: number } {
+  const d = Math.hypot(dx, dy);
+  if (!d) return { x: at.x, y: at.y };
+  for (const [x, y] of [[dx, dy], [-dx, -dy], [dx, -dy], [-dx, dy]] as const) {
+    const to = castRay(w.map, at.x, at.y, 5, Math.atan2(y, x), d);
+    if (Math.hypot(to.x - at.x, to.y - at.y) > d - 2.5) return { x: at.x + x, y: at.y + y };
+  }
+  return castRay(w.map, at.x, at.y, 5, Math.atan2(dy, dx), d);
+}
+
+/**
+ * Where a boat is moored near a point: a water tile with dry ground beside it, within eight tiles, best one with
+ * the bank to its north or south and open water at either end, so the whole hull lies in the water along the bank
+ * (a hull is three tiles long: moored on a bank running north and south, half of it lay on the sand); it rides
+ * a little off the bank either way. Else the point itself.
+ */
+function moor(w: World, at: { x: number; y: number }): { x: number; y: number } {
+  const m = w.map;
+  const tx = Math.floor(at.x / TILE);
+  const ty = Math.floor(at.y / TILE);
+  const water = (x: number, y: number): boolean => m.kind[y * m.w + x] === K.Water;
+  // (a bridge is no bank to tie up at)
+  const bank = (x: number, y: number): boolean => !m.solid[y * m.w + x] && !water(x, y) && m.kind[y * m.w + x] !== K.Bridge;
+  let best: { x: number; y: number } | null = null;
+  let bd = Infinity;
+  for (let y = ty - 8; y <= ty + 8; y++) {
+    for (let x = tx - 8; x <= tx + 8; x++) {
+      if (x < 2 || y < 2 || x >= m.w - 2 || y >= m.h - 2 || !water(x, y)) continue;
+      const north = bank(x, y - 1);
+      const south = bank(x, y + 1);
+      if (!north && !south && !bank(x - 1, y) && !bank(x + 1, y)) continue;
+      const along = (north || south) && water(x - 1, y) && water(x + 1, y);
+      const room = along && water(x - 2, y) && water(x + 2, y);
+      const d = (x - tx) ** 2 + (y - ty) ** 2 + (room ? 0 : along ? 12 : 40);
+      if (d < bd) {
+        bd = d;
+        // off the bank, into the open water (within its tile: the raiders' way to it is made to its tile)
+        const ox = bank(x - 1, y) || !water(x - 2, y) ? 7 : bank(x + 1, y) || !water(x + 2, y) ? -7 : 0;
+        best = { x: (x + 0.5) * TILE + ox, y: (y + 0.5) * TILE + (north ? 4 : south ? -4 : 0) };
+      }
+    }
+  }
+  return best ?? at;
 }
 
 /** An ally on their way to the hero: they walk there, and follow once beside them (or after a while anyway). */
