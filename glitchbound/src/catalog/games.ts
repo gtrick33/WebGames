@@ -1051,4 +1051,50 @@ export const GAMES: GameEntry[] = [
     ],
     limits: { scorePerSecond: 400, minSeconds: 20 },
   },
+  {
+    slug: 'crater-crew',
+    title: 'Crater Crew',
+    tagline: 'Turn-based artillery with critters on ground that breaks. Play live with up to six crews.',
+    description:
+      'Take turns walking, aiming and firing rockets, grenades, splitters and meteor showers across destructible ground, with the wind pushing your shots. Every crew is a different critter with its player’s name over it. ' +
+      'Play live in a room with friends (2 to 6 crews, computer crews to fill in), today’s daily battle (the same map and wind for everyone), or a skirmish against the computer on any of ten terrains, from Clover Hills to Moonbase Dust.',
+    categories: ['strategy', 'party', 'arcade'],
+    moods: ['friends', 'action'],
+    tags: ['artillery', 'worms', 'turn-based', 'tanks', 'rockets', 'grenades', 'destructible terrain', 'multiplayer', 'online', 'friends', 'live', 'party', 'critters', 'daily'],
+    released: '2026-10-29',
+    accent: 'lime',
+    emoji: '💥',
+    art: {
+      tile: '/games/crater-crew/tile.webp',
+      wide: '/games/crater-crew/wide.webp',
+      alt: 'A cartoon fox aiming a rocket launcher at a frog across grassy hills blown full of craters, with a penguin and a duck watching',
+      bg: '#3b2c6e',
+    },
+    runtime: { kind: 'module' },
+    aspect: 'landscape',
+    live: { players: '2–6' },
+    controls: {
+      keyboard: ['← →: walk, Enter: jump', '↑ ↓ or drag the mouse: aim', 'Hold Space for power, release to fire', '1–7 or Q / E: weapons', 'Z: whole map, Esc: pause'],
+      touch: ['◀ ▶ to walk, ⤒ to jump, drag on the map to aim', 'Hold the fire button for power, let go to shoot', 'Two fingers to look around and zoom'],
+    },
+    stats: [
+      { key: 'score', label: 'Best score' },
+      { key: 'damage', label: 'Most damage in a battle' },
+      { key: 'kills', label: 'Most knockouts in a battle' },
+    ],
+    highlights: [
+      'Live rooms for 2 to 6 crews, with computer crews at three levels',
+      'Ten terrains with their own landforms, from floating cake islands to low-gravity moon dust',
+      'Destructible ground, wind and seven weapons',
+      'Eight critters, each player’s name over their crew',
+      'The same daily battle for everyone',
+    ],
+    ownDaily: { label: 'Today’s battle' },
+    challenge: { label: 'The same battlefield and opponents for everyone: highest score wins.' },
+    daily: [
+      { metric: 'damage', targets: [100, 150, 200], label: 'Deal {n} damage in one Crater Crew battle' },
+      { metric: 'kills', targets: [2, 3], label: 'Knock out {n} critters in one Crater Crew battle', one: 'Knock out {n} critter in one Crater Crew battle' },
+    ],
+    limits: { scorePerSecond: 80, minSeconds: 15 },
+  },
 ];

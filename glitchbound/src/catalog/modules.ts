@@ -34,6 +34,7 @@ export const GAME_MODULES: Record<string, GameModuleLoader> = {
   'launch-control': () => import('../games/launch-control/Game'),
   belot: () => import('../games/belot/Game'),
   backgammon: () => import('../games/backgammon/Game'),
+  'crater-crew': () => import('../games/crater-crew/Game'),
   sigilfall: () => import('../games/sigilfall/Game'),
 };
 

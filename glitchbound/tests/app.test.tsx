@@ -65,7 +65,7 @@ describe('homepage', () => {
     expect(within(arcade).getByRole('link', { name: 'Quizbelief' }).getAttribute('href')).toBe('/games/quizbelief');
     // Games friends can play together live carry the label, and only those.
     const liveTiles = [...arcade.querySelectorAll('.live-badge')].map((b) => b.closest('article')!.querySelector('.tile-link')!.textContent);
-    expect(liveTiles.sort()).toEqual(['Backgammon', 'Belot', 'Launch Control']);
+    expect(liveTiles.sort()).toEqual(['Backgammon', 'Belot', 'Crater Crew', 'Launch Control']);
   });
 
   it('Quizbelief opens at its own name, and its old address still works', () => {
