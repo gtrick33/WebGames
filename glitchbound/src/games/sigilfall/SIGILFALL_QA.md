@@ -246,3 +246,53 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
   - In the browser: every class's skills in one sheet, the mage's three trees, the talents panel, the
     desktop bar, the phone's buttons, and the credits line in Settings.
 
+## Cinematics, no teleports, and the map: the owner's list (2026-10-29)
+
+- **The rider (A Rider in the Dark).** He no longer runs slowly, vanishes and reappears inside the town.
+  - He walks up the road at a steady pace, and the camera stays on him through the gate.
+  - He falls where he stops, and the one lying there is him (no swap, no jump).
+  - After the talk he dies and fades out over about three seconds; then the camera goes to the inn as its
+    roof catches.
+- **Nobody pops in or out, anywhere in the story.**
+  - The story's people fade in as they come and fade out as they go, unless they walk out of view.
+  - People who walk in to a spot become the person who stands there; no swap and no jump.
+  - A companion who has fallen far behind catches up out of sight, with a fade.
+  - The people of a place who leave as the story moves on fade out where they stood, and so do the props the
+    story takes away; townsfolk fade while a story fight is on.
+  - `sigilfall-continuity` plays all 40 story events frame by frame. It checks that nobody pops in, vanishes
+    without a fade, or moves more than 8 px in a frame. With the fade turned off, it catches 8 events.
+- **Shots for the great moments** (`data/scenes.ts`, `opens`). Each is a few seconds under the letterbox
+  before the fight. The wave musters in sight and waits, a title comes up in the lower bar, and the call to
+  arms (banner, lines, sound) follows. Each plays once, and never in a co-op party. Twelve of the 40 events
+  have one:
+  - the Defense of Hearthstead;
+  - the ram at its gate;
+  - Fernstead taken back;
+  - the Pale Herald stepping out of the grey, with his line;
+  - the Night of Knives;
+  - Fernstead's people coming in (the camera follows them);
+  - the Sortie;
+  - the Field Before the Hall;
+  - the Fireships;
+  - the Answering Water;
+  - every banner marching into Dawn's Rest;
+  - the Last March.
+- **A boss met for the first time** is shown before it comes on (its name and title in the lower bar, a roar),
+  except in a Riftstone run. Nobody notices the hero, and nothing attacks, while a shot plays. A new war-horn
+  sound opens the battles.
+- **The map.**
+  - The wheel, a pinch or the + / − buttons zoom both maps; a drag moves them; ⤢ shows the whole map again.
+  - A land picked on the world map shows its own map on the left, as far as the hero has explored it. Where
+    they haven't been is black, and a land they have never set foot in is all black ("Not explored yet").
+  - Another land shows its waystones and roads; "back to …" returns to the land the hero is in.
+- Checked:
+  - Tests: `sigilfall-continuity` (every story event); `sigilfall-scenes` (every shot holds its wave in sight,
+    lets it go after, calls to arms once, never twice; a boss met for the first time is shown, once); the
+    courier test in `sigilfall-story`.
+  - In the browser (Chromium; the phone by emulation): the rider's walk, fall, talk and fade; the shots for
+    Hearthstead, the Herald, the Field Before the Hall, the Last March, the Night of Knives, Fernstead's
+    people and every banner; Warden Ossric met; the map zoomed, dragged, another land, an unexplored land and
+    the world zoomed, on desktop and phone.
+- Not verified: a real phone's pinch (the two-finger zoom was checked in code and by the + / − buttons, not by
+  a real touch screen); the war horn by ear.
+
