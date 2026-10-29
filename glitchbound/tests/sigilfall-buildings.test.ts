@@ -32,8 +32,9 @@ describe('Sigilfall buildings', () => {
         const pic = b.pics[0]!;
         const art = buildingPic(pic.id)!;
         expect(art.door, what).toBeDefined();
-        // the painted door's middle within a pixel of the step's, the step open, the wall right behind it
-        expect(Math.abs(pic.x + art.door! - (dx + 0.5) * TILE), what).toBeLessThanOrEqual(1);
+        // the painted door's middle within a pixel of the step's (a picture drawn bigger has its door further in), the
+        // step open, the wall right behind it
+        expect(Math.abs(pic.x + art.door! * (pic.scale ?? 1) - (dx + 0.5) * TILE), what).toBeLessThanOrEqual(1);
         expect(m.solid[dy * m.w + dx], what).toBe(0);
         expect(m.solid[(dy - 1) * m.w + dx], what).toBe(1);
       }

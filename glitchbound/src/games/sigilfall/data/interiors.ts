@@ -187,28 +187,60 @@ function emberHearth(): CityPlan {
 
 /* ------------------------------------------------------ the Crown City: the Great Hall */
 
+/**
+ * The Great Hall of the Ember Keep (the owner: "inside also seems empty, make it feel glorious"): a long hall
+ * of columns under tall windows of colored glass, their light across the floor; a crimson runner from the
+ * door up the steps of the dais to the high throne between its braziers, the crown's banner over it; the kings
+ * and queens of old in stone along the walls, armor between them; the court's long tables in the aisles.
+ */
 function greatHall(): CityPlan {
-  const c = room(22, 18, 822, false, 11, { to: 'emberwick', label: 'Out into the Crown City' });
-  // the throne on its dais, the kingdom's banners
-  c.prop('throne', 11, 3);
-  c.prop('block', 10, 3);
-  c.prop('block', 12, 3);
-  for (const x of [3, 7, 15, 19]) c.prop('banner:#8a1a2a', x, 2, false);
-  c.prop('rug:#8a1a2a', 11, 6, false);
-  c.prop('rug:#8a1a2a', 11, 9, false);
-  c.prop('rug:#8a1a2a', 11, 12, false);
-  for (const y of [6, 10, 14]) {
-    c.prop('candles', 6, y);
-    c.prop('candles', 16, y);
+  const c = room(31, 26, 822, false, 15, { to: 'emberwick', label: 'Out into the Crown City' });
+  // the north wall: its windows, the crown's banner over the throne, banners either side of it
+  for (const x of [4, 9, 21, 26]) {
+    c.prop('window', x, 1);
+    c.prop('sunbeam', x, 7, false);
   }
-  // the long table of the court, and from the Night of Knives the war council's map
-  wide(c, 'longtable', 4, 9, 3, not(after('festival-the-knives')));
-  wide(c, 'war-table', 4, 9, 3, after('festival-the-knives'));
-  wide(c, 'longtable', 18, 9, 3);
-  c.prop('weapon-rack', 2, 14, true, after('festival-the-knives'));
-  c.prop('weapon-rack', 20, 14, true, after('festival-the-knives'));
-  c.npc('steward-aldous', 13, 5);
-  c.marker(11, 16, { kind: 'start' });
+  c.prop('great-banner', 15, 1);
+  for (const x of [12, 18]) c.prop('banner:#8a1a2a', x, 1);
+  // the dais and the high throne on it, between its braziers; the Steward at its foot
+  c.prop('dais', 15, 5, false);
+  wide(c, 'high-throne', 15, 3, 3);
+  c.set(10, 4, 'brazier');
+  c.set(20, 4, 'brazier');
+  c.npc('steward-aldous', 18, 6);
+  // the runner, from the door to the dais
+  for (let y = 6; y <= 24; y++) c.prop('runner:#8a1a2a', 15, y, false);
+  // the colonnades, the crown's banner on every column
+  for (const y of [8, 11, 14, 17, 20]) {
+    c.prop('column:#8a1a2a', 9, y);
+    c.prop('column:#8a1a2a', 21, y);
+  }
+  // the aisles: the kings and queens of old in stone along the walls, armor between them
+  for (const y of [9, 15, 21]) {
+    c.prop('statue', 3, y);
+    c.prop('statue', 27, y);
+  }
+  for (const y of [12, 18]) {
+    c.prop('armor-stand', 3, y);
+    c.prop('armor-stand', 27, y);
+  }
+  // the long tables of the court, and from the Night of Knives the war council's map and its racks of arms
+  wide(c, 'longtable', 6, 12, 3, not(after('festival-the-knives')));
+  wide(c, 'war-table', 6, 12, 3, after('festival-the-knives'));
+  wide(c, 'longtable', 24, 12, 3);
+  for (const [x, y] of [
+    [6, 10],
+    [24, 10],
+    [6, 15],
+    [24, 15],
+  ] as const)
+    c.prop('candles', x, y);
+  c.prop('weapon-rack', 6, 20, true, after('festival-the-knives'));
+  c.prop('weapon-rack', 24, 20, true, after('festival-the-knives'));
+  // braziers either side of the way in
+  c.set(12, 23, 'brazier');
+  c.set(18, 23, 'brazier');
+  c.marker(14, 23, { kind: 'start' });
   return c;
 }
 

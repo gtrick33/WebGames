@@ -75,6 +75,15 @@ export const SCENES: SceneDef[] = [
     steps: [{ wait: 1.8 }, { look: 'briar-inn' }, { sfx: 'roar' }, { wait: 3 }, { look: 'hero' }],
   },
   {
+    // the Crown City's keep, the first time the hero comes up the avenue to it: the camera climbs it, a horn
+    id: 'ember-the-keep',
+    region: 'emberwick',
+    when: not(during('festival-the-knives')),
+    near: 'regent-elowen',
+    r: 200,
+    steps: [{ look: 'The Ember Keep' }, { title: 'The Ember Keep', sub: 'Seat of the Regents of Aster' }, { sfx: 'warhorn' }, { wait: 3 }, { look: 'hero' }],
+  },
+  {
     // the Crown City: the Regent meets the hero with the countermanded order, the Chancellor at her side
     id: 'ember-the-regent',
     region: 'emberwick',

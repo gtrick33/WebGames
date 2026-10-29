@@ -719,7 +719,18 @@ export type Marker =
   | { kind: 'checkpoint' }
   | { kind: 'hazard'; hazard: 'bramble' | 'spore' }
   /** A building drawn over its footprint (w x h tiles, the marker at its bottom-left), with a name over the door. */
-  | { kind: 'building'; style: 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall' | 'lighthouse'; w: number; h: number; name?: string; art?: string }
+  | {
+      kind: 'building';
+      style: 'house' | 'tavern' | 'inn' | 'shop' | 'smithy' | 'temple' | 'keep' | 'tower' | 'hall' | 'lighthouse';
+      w: number;
+      h: number;
+      name?: string;
+      art?: string;
+      /** Drawn this many times its picture's size, and as solid (the capital's keep). */
+      scale?: number;
+      /** In dark stone, its windows lit and its banners red: a fortress to fear. */
+      grim?: boolean;
+    }
   /** A place to discover (an explore objective, a line in the log): walking within `r` tiles finds it. */
   | { kind: 'spot'; id: string; name: string; r: number }
   /**
