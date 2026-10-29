@@ -296,3 +296,53 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
 - Not verified: a real phone's pinch (the two-finger zoom was checked in code and by the + / − buttons, not by
   a real touch screen); the war horn by ear.
 
+## Every act told like a film (2026-10-29, second pass)
+
+The owner asked for all the quests in every act to have a cinematic feeling, checked for the same teleport and
+vanishing bugs, and running smoothly. There are 514 quests (219 on the main story): 161 kill, 113 explore, 85
+loot, 81 talk, 40 story events and 29 bosses. Writing 219 scenes by hand would wear thin, so the story is now told
+in a few layers that every act shares:
+
+- **Act titles** (`data/acts.ts`). As each act's first quest is taken, its title comes up over a darkened
+  screen and the HUD steps aside: Prologue · The Night the Bells Stopped, Act I · The Villages of the Vale,
+  Act II · Road to the Crown City, Act III · The Broken Alliance, Act IV · War of the Three Gates, Act V · The
+  Dead Kingdom, Act VI · The Last March, The Finale · Crownfall, and Epilogue · The Bell. Each shows once.
+  A hero whose current act hasn't had its title yet sees it on entering the game. A new hero sees the
+  Prologue's title over the gate at dusk before Mara speaks.
+- **Lands and places.** The first time the hero enters a land, its name, kind, levels and subtitle come up as
+  a title (later visits keep the banner). A place found (113 explore steps, and the hidden groves) comes up as
+  a "Discovered" title instead of a banner.
+- **Shots for 36 of the 40 story events** (data/scenes.ts `opens`), each its own way:
+  - battles: the enemy line with a title and a war horn;
+  - defenses: the thing to hold first (the chapel door, the Harvest Stone, the Patience, the great lamp, Nyx at
+    a lock), then what is coming for it;
+  - rescues: the people to save, some with their first line (the queen's children in the snow, Elyra in her
+    cell);
+  - arrivals and the caravan: the camera follows the column walking in (the six camp arrivals, Nyx under the
+    white rag, the sick villages' wagon, the camp going home).
+  - The four left are the Prologue's first fights, which have their own staging (the gate, the bell, the rider,
+    the inn).
+- **Slow motion.** A boss's last blow and the last foe of a story fight fall slowed, with the camera drawn to
+  them (not in a co-op party).
+- **Story conversations.** Talking to anyone in the story (anyone who isn't only trading, or anyone giving or
+  taking back a quest): the HUD steps aside, the top bar comes down, and the camera frames the hero and the
+  speaker above the words.
+- **Bugs found and fixed:**
+  - An arrival could begin during a scene in the same place and lose its shot. Maren's first-dawn scene and
+    the rangers walking in both fired in the square, so the rangers were already there when she said "a camp
+    needs someone to go and bring the others in". Now a story event with a shot waits for a scene that is
+    playing, and Maren's dawn scene starts from further out, so she speaks first and then the rangers walk in.
+  - The new title cards first came up squeezed into a side panel: their class name clashed with the panels'
+    `.rb-card`. They are `.rb-tcard` now.
+- Checked:
+  - `sigilfall-cinematics`: the acts open in story order; a boss's last blow slows time and then time runs on;
+    a story fight's last foe is slowed once; never in co-op.
+  - `sigilfall-scenes`: every shot holds its wave and lets it go; every event but the Prologue's four has one.
+  - `sigilfall-continuity`: all 40 events with their shots, nobody popping in or out.
+  - The whole Sigilfall suite.
+  - In the browser: the Prologue title before Mara, the Act II title, the Whisperwood's land title, Maren
+    speaking framed (phone), a place discovered (phone), the dawn scene then the rangers walking in (phone),
+    the shots at the cells, in the snow and at the ram, and Warden Ossric's last blow slowed.
+- Not verified: every one of the 36 shots by eye. The test plays each one and checks its people and places are
+  there; nine were looked at in the browser.
+
