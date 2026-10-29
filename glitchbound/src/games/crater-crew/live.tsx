@@ -69,7 +69,7 @@ export function LiveRoom({ code, name, sfx, muted, onMute, onLeave, tools }: { c
     <Battle
       match={m}
       mine={(c) => view.match?.crews[c]?.seat === view.me}
-      onTurn={(turn, input) => send({ t: 'turn', turn, walk: input.walk, fire: input.fire })}
+      onTurn={(turn, input) => send({ t: 'turn', turn, walk: input.walk, fire: input.fire, run: input.run })}
       onPos={(p) => send({ t: 'pos', ...p })}
       onShown={(s) => {
         if (s.over) {

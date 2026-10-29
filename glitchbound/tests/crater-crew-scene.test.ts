@@ -1,7 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { botTurn } from '../src/games/crater-crew/ai';
-import { newMatch, playTurn, type Match } from '../src/games/crater-crew/match';
+import { cleanInput, newMatch, playTurn, runInputs, type Match, type TurnInput } from '../src/games/crater-crew/match';
 import { Scene } from '../src/games/crater-crew/scene';
+import { STEP } from '../src/games/crater-crew/sim';
 import type { Sfx } from '../src/games/crater-crew/sound';
 
 // The scene paints the ground on canvases; jsdom has no 2D context, so it gets one that does nothing.
@@ -66,5 +67,54 @@ describe('Crater Crew battle screen', () => {
     s.push(m2);
     expect(s.shown.turn).toBe(2);
     expect(s.stage.k === 'aim' || s.stage.k === 'over').toBe(true);
+  });
+
+  it('after dropping dynamite you still run (walk and jump) while it burns, and the room replays the same run', () => {
+    const m0 = battle();
+    const m1 = playTurn(m0, botTurn(m0, 'easy', 1)).match;
+    const sent: TurnInput[] = [];
+    const s = new Scene({ match: m1, mine: (c) => c === m1.crewTurn, onTurn: (_t, i) => sent.push(i), onHud: noop, onShown: noop, sfx: () => sfx, botDelay: 0 });
+    expect(s.stage.k).toBe('aim');
+    s.pickWeapon('dynamite');
+    expect(s.weapon).toBe('dynamite');
+    s.pressFire();
+    for (let i = 0; i < 300 && s.stage.k === 'aim'; i++) s.step(STEP);
+    // dropped: the turn isn't sent yet, the critter can still move
+    expect(s.stage.k).toBe('run');
+    expect(sent).toHaveLength(0);
+    const me = () => s.world.units.find((u) => u.id === m1.active)!;
+    const x0 = me().x;
+    const away = x0 < 900 ? 'left' : 'right';
+    s.keys[away] = true;
+    for (let i = 0; i < 90; i++) s.step(STEP);
+    s.jump();
+    for (let i = 0; i < 200 && s.stage.k === 'run'; i++) s.step(STEP);
+    s.keys[away] = false;
+    expect(s.stage.k).toBe('shot');
+    expect(sent).toHaveLength(1);
+    const input = sent[0]!;
+    expect(runInputs(input)).toHaveLength(180);
+    expect(Math.abs(me().x - x0)).toBeGreaterThan(20);
+    // the dynamite goes off; the room's replay of the sent turn ends in exactly the same world
+    for (let i = 0; i < 2000 && s.stage.k === 'shot'; i++) s.step(STEP);
+    expect(s.stage.k).toBe('settle');
+    const room = playTurn(m1, cleanInput(JSON.parse(JSON.stringify(input)))!).world;
+    expect(JSON.stringify(s.world.units)).toBe(JSON.stringify(room.units));
+    expect(Buffer.compare(s.world.mask, room.mask)).toBe(0);
+
+    // someone watching gets the turn from the room and replays the drop and the run the same way
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const watcher = scene(m1);
+      watcher.push(playTurn(m1, cleanInput(JSON.parse(JSON.stringify(input)))!).match);
+      for (let i = 0; i < 3000 && watcher.stage.k !== 'settle'; i++) {
+        vi.setSystemTime(Date.now() + 1000 / 60);
+        watcher.step(STEP);
+      }
+      expect(watcher.stage.k).toBe('settle');
+      expect(JSON.stringify(watcher.world.units)).toBe(JSON.stringify(room.units));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

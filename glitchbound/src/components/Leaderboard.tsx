@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { t, useT } from '../i18n';
 import type { GameEntry } from '../catalog/types';
 import type { HallRow, LeaderRow } from '../platform/apiTypes';
 import { api, useAccount } from '../platform/account';
 import { fmt } from '../platform/daily';
-import { dayKey } from '../platform/dates';
-import { houseHall, withHouse, withRivals, wouldRank, type BoardRow, type HallBoardRow } from '../platform/rivals';
 import { useSave } from '../platform/store';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
@@ -47,45 +45,25 @@ function useRequest<T>(path: string, deps: unknown[], pick: (data: unknown) => {
   return { ...state, retry };
 }
 
-/**
- * A game's board: the members' best scores and the house rivals (platform/rivals.ts), ranked together. The
- * rivals need no server, so until the members' scores arrive (or when they can't) the board holds the rivals
- * alone: it shows at once, at its full height, and nothing below it jumps when the scores come in.
- */
-export function useBoard(game: string, period: Period, refreshKey = 0): BoardState<BoardRow> {
+/** The most rows a board holds (the server sends the top 50). */
+const BOARD_ROWS = 50;
+
+/** A game's board: the members' best scores, ranked by the server. */
+export function useBoard(game: string, period: Period, refreshKey = 0): BoardState<LeaderRow> {
   const { me } = useAccount();
-  const day = dayKey();
-  const board = useRequest<BoardRow>(`/api/leaderboard?game=${encodeURIComponent(game)}&period=${period}`, [refreshKey, me?.id], (r) => {
-    const d = r as { rows: LeaderRow[]; mine: LeaderRow | null };
-    return withRivals(game, period, day, d.rows, d.mine);
-  });
-  const field = useMemo(() => withRivals(game, period, day, [], null).rows, [game, period, day]);
-  return board.status === 'ok' ? board : { ...board, rows: field, mine: null };
+  return useRequest<LeaderRow>(`/api/leaderboard?game=${encodeURIComponent(game)}&period=${period}`, [refreshKey, me?.id], (r) => r as { rows: LeaderRow[]; mine: LeaderRow | null });
 }
 
-/**
- * The Hall of Fame: the members, and the house team in the seats members have not taken yet (counted over
- * the all-time boards of `games`). Like a board, it shows the house team at once while the members load.
- */
-export function useHall(games: readonly string[]): BoardState<HallBoardRow> {
+/** The Hall of Fame: the members with the most crowns, podiums and records across every game. */
+export function useHall(): BoardState<HallRow> {
   const { me } = useAccount();
-  const day = dayKey();
-  const key = games.join(',');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const house = useMemo(() => houseHall(games, day), [key, day]);
-  const hall = useRequest<HallRow>('/api/hall', [me?.id], (r) => ({ rows: (r as { rows: HallRow[] }).rows, mine: null }));
-  const members = hall.status === 'ok' ? hall.rows : null;
-  const rows = useMemo(() => withHouse(members ?? [], house), [members, house]);
-  return { ...hall, rows, mine: null };
+  return useRequest<HallRow>('/api/hall', [me?.id], (r) => ({ rows: (r as { rows: HallRow[] }).rows, mine: null }));
 }
 
-/** The tag on a house player's row. */
-function HouseTag() {
-  return (
-    <span className="board-rival mono" title={t('A house rival: one of GlitchBound’s computer players')}>
-      <span aria-hidden="true">🤖</span> <span className="board-rival-word">{t('House')}</span>
-    </span>
-  );
+/** Where a guest's best would land among the members' rows on the board (null: below the rows it holds). */
+function guestRank(rows: readonly LeaderRow[], best: number): number | null {
+  const ahead = rows.filter((r) => r.score > best).length;
+  return ahead < BOARD_ROWS ? ahead + 1 : null;
 }
 
 /** The offline message under a board, with a way to ask again. */
@@ -105,16 +83,15 @@ function Medal({ rank }: { rank: number }) {
   return <span className={`medal medal-${rank <= 3 ? rank : 'n'}`}>{rank}</span>;
 }
 
-export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: BoardRow[]; mine: BoardRow | null; unit?: string; compact?: boolean }) {
+export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: LeaderRow[]; mine: LeaderRow | null; unit?: string; compact?: boolean }) {
   return (
     <ol className={`board${compact ? ' board-compact' : ''}`}>
       {rows.map((r, i) => (
-        <li key={i} className={`board-row${r.you ? ' is-you' : ''}${r.rival ? ' is-rival' : ''}`} style={{ ['--i' as string]: i + 1 }}>
+        <li key={i} className={`board-row${r.you ? ' is-you' : ''}`} style={{ ['--i' as string]: i + 1 }}>
           <Medal rank={r.rank} />
           <span className="board-name">
             <span className="board-nick">{r.nickname}</span>
             {r.you && <span className="board-you mono">{t('you')}</span>}
-            {r.rival && <HouseTag />}
           </span>
           {!compact && <span className="board-lvl mono">LV {r.level}</span>}
           <span className="board-score mono">
@@ -137,7 +114,7 @@ export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: 
   );
 }
 
-export function HallTable({ rows }: { rows: HallBoardRow[] }) {
+export function HallTable({ rows }: { rows: HallRow[] }) {
   return (
     <div className="hall-wrap">
       <table className="hall">
@@ -159,7 +136,7 @@ export function HallTable({ rows }: { rows: HallBoardRow[] }) {
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.rank} className={r.you ? 'is-you' : r.house ? 'is-rival' : ''}>
+            <tr key={r.rank} className={r.you ? 'is-you' : ''}>
               <td>
                 <Medal rank={r.rank} />
               </td>
@@ -167,7 +144,6 @@ export function HallTable({ rows }: { rows: HallBoardRow[] }) {
                 <span className="board-name">
                   <span className="board-nick">{r.nickname}</span> <span className="board-lvl mono">LV {r.level}</span>
                   {r.you && <span className="board-you mono">{t('you')}</span>}
-                  {r.house && <HouseTag />}
                 </span>
               </td>
               <td className="mono hall-crowns hall-stat" data-label={t('Crowns')}>
@@ -206,12 +182,6 @@ export function BoardEmpty({ text }: { text: string }) {
   );
 }
 
-/** What the rival tags mean, under a board. */
-export function RivalsNote() {
-  const t = useT();
-  return <p className="board-rivals-note">{t('Rows marked 🤖 House are GlitchBound’s computer players, set at real scores. Pass them to climb.')}</p>;
-}
-
 /** Top 5 for a game page side panel; a guest with a best on this device sees where it would land. */
 export function MiniLeaderboard({ game, refreshKey, embedded = false }: { game: GameEntry; refreshKey: number; embedded?: boolean }) {
   const t = useT();
@@ -219,6 +189,7 @@ export function MiniLeaderboard({ game, refreshKey, embedded = false }: { game: 
   const board = useBoard(game.slug, 'all', refreshKey);
   const best = useSave().games[game.slug]?.best.score ?? 0;
   const top = board.rows.slice(0, 5);
+  const rank = !me && best > 0 && board.status === 'ok' && top.length > 0 ? guestRank(board.rows, best) : null;
   const body = (
     <>
       {board.status === 'loading' && !top.length && <p className="side-muted">{t('Loading…')}</p>}
@@ -228,10 +199,9 @@ export function MiniLeaderboard({ game, refreshKey, embedded = false }: { game: 
         board.status === 'ok' && <BoardEmpty text="No ranked scores yet. The first one takes the crown." />
       )}
       {board.status === 'error' && <BoardError text="The leaderboard is offline right now. Your game still works." onRetry={board.retry} />}
-      {board.rows.some((r) => r.rival) && <RivalsNote />}
-      {top.length > 0 && !me && best > 0 && (
+      {rank !== null && (
         <button className="board-claim" onClick={() => openSignIn(t('Sign in to put your scores on the leaderboard.'))}>
-          <Icon name="crown" size={16} /> {t('Your best, {n}, would be #{rank} here. Sign in to claim it.', { n: fmt(best), rank: fmt(wouldRank(game.slug, dayKey(), best)) })}
+          <Icon name="crown" size={16} /> {t('Your best, {n}, would be #{rank} here. Sign in to claim it.', { n: fmt(best), rank: fmt(rank) })}
         </button>
       )}
       <Link href={`/leaderboards?game=${game.slug}`} className="quests-link">

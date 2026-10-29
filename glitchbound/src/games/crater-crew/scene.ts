@@ -1,14 +1,15 @@
 /**
  * The battle on screen. It holds the turn being shown and its physics world, and moves through the
- * turn's stages: your own turn (your inputs drive the sim live and are recorded step by step), a
- * replay of someone else's turn (their walk, a swing of the aim, then the shot, all through the same
- * physics) and the pause while everything settles. Results that arrive early queue up. Also the
+ * turn's stages: your own turn (your inputs drive the sim live and are recorded step by step, and
+ * after dropping dynamite you still run while its fuse burns), a replay of someone else's turn (their
+ * walk, a swing of the aim, then the shot and any run, all through the same physics) and the pause
+ * while everything settles. Results that arrive early queue up. Also the
  * camera, the aim and power, and what the HUD shows. Drawing lives in draw.ts.
  */
 import { CHARS } from './characters';
-import { canFire, endTurn, hasAmmo, MAX_WALK, playWalk, worldFor, crewHealth, suddenDeath, type Match, type TurnInput } from './match';
+import { canFire, endTurn, hasAmmo, MAX_WALK, playWalk, runInputs, runSteps, worldFor, crewHealth, suddenDeath, type Match, type TurnInput } from './match';
 import { clamp } from './math';
-import { fire, IN_JUMP, IN_LEFT, IN_RIGHT, MAX_SHOT_STEPS, settled, settleUnit, stepWorld, walkStep, type Fire, type Unit, type World } from './sim';
+import { fire, IN_JUMP, IN_LEFT, IN_RIGHT, MAX_SHOT_STEPS, settled, settleUnit, STEP, stepWorld, walkStep, type Fire, type Unit, type World } from './sim';
 import { H, W } from './terrain';
 import { TERRAINS } from './terrains';
 import { WEAPONS, type WeaponId } from './weapons';
@@ -36,6 +37,8 @@ export interface Hud {
   stage: Stage['k'];
   /** Seconds left on the turn's clock (-1: not running). */
   secs: number;
+  /** Seconds left to run from your own dynamite (-1: not running). */
+  run: number;
   wind: number;
   weapon: WeaponId;
   ammo: Record<WeaponId, number> | null;
@@ -52,7 +55,8 @@ export type Stage =
   | { k: 'aim' }
   | { k: 'think'; until: number; next: Match }
   | { k: 'swing'; t: number; from: number; next: Match }
-  | { k: 'shot'; steps: number; next: Match | null; fired: boolean }
+  | { k: 'run'; steps: number; max: number; input: TurnInput }
+  | { k: 'shot'; steps: number; next: Match | null; fired: boolean; run?: number[] }
   | { k: 'settle'; until: number; next: Match | null }
   | { k: 'over' };
 
@@ -107,6 +111,8 @@ export class Scene {
   shownAim = 450;
   shownWeapon: WeaponId = 'rocket';
   private rec: number[] = [];
+  /** Your inputs while running from your dynamite. */
+  private runRec: number[] = [];
   private committed = -1;
   private clock: { turn: number; at: number } | null = null;
   clockAt = 0;
@@ -224,7 +230,7 @@ export class Scene {
   // ------------------------------------------------------------ input from the HUD and keyboard
 
   jump(): void {
-    if (this.myTurn) this.jumpQueued = true;
+    if (this.myTurn || this.stage.k === 'run') this.jumpQueued = true;
   }
 
   pressFire(): void {
@@ -358,6 +364,9 @@ export class Scene {
         if (s.t >= SWING_MS) this.replayFire(s.next);
         break;
       }
+      case 'run':
+        this.runStep();
+        break;
       case 'shot':
         this.shotStep();
         break;
@@ -416,15 +425,9 @@ export class Scene {
       this.opts.onPos({ x: Math.round(u.x), y: Math.round(u.y), f: this.dir, a: this.aim, w: this.weapon, p: Math.round(this.power), mv: u.air ? 2 : bits & (IN_LEFT | IN_RIGHT) ? 1 : 0, tx: Math.max(0, this.tx) });
   }
 
-  /** Ends my turn: the recorded walk and the shot (or none), sent off and played here at once. */
+  /** Ends my turn: the recorded walk and the shot (or none), played here at once and sent off (after the run, for dynamite). */
   private commit(f: Fire | null): void {
-    const walk: [number, number][] = [];
-    for (const b of this.rec) {
-      const last = walk[walk.length - 1];
-      if (last && last[0] === b) last[1]++;
-      else walk.push([b, 1]);
-    }
-    const input: TurnInput = { walk, fire: f };
+    const input: TurnInput = { walk: runs(this.rec), fire: f };
     const id = this.shown.active;
     settleUnit(this.world, id);
     const fired = canFire(this.shown, this.world, f);
@@ -432,8 +435,38 @@ export class Scene {
     this.committed = this.shown.turn;
     this.keys.charge = false;
     this.opts.sfx().chargeStop();
+    const max = fired ? runSteps(f!.w) : 0;
+    if (max > 0) {
+      this.runRec = [];
+      this.stage = { k: 'run', steps: 0, max, input };
+      this.drain();
+      return;
+    }
     this.stage = { k: 'shot', steps: 0, next: null, fired };
     this.drain();
+    this.opts.onTurn(this.shown.turn, input);
+  }
+
+  /** Running from my own dynamite: walk and jump while its fuse burns, then the turn goes off with the run. */
+  private runStep(): void {
+    const s = this.stage as Extract<Stage, { k: 'run' }>;
+    const u = this.activeUnit();
+    let bits = 0;
+    if (this.keys.left) bits |= IN_LEFT;
+    if (this.keys.right) bits |= IN_RIGHT;
+    if (this.jumpQueued) bits |= IN_JUMP;
+    this.jumpQueued = false;
+    const air = u?.air;
+    walkStep(this.world, this.shown.active, bits);
+    this.runRec.push(bits);
+    s.steps++;
+    if (u && !air && u.air && bits & IN_JUMP) this.opts.sfx().jump();
+    this.drain();
+    const left = this.clockAt + this.shown.turnSecs * 1000 - now();
+    // the run is over when its time is, when the turn's clock is (the room won't wait), or when there's nobody left to run
+    if (s.steps < s.max && left > 0 && u && !u.drowned && !u.dead && u.hp > 0) return;
+    const input: TurnInput = { ...s.input, run: runs(this.runRec) };
+    this.stage = { k: 'shot', steps: 0, next: null, fired: true };
     this.opts.onTurn(this.shown.turn, input);
   }
 
@@ -467,14 +500,17 @@ export class Scene {
     const f = next.last!.input.fire!;
     this.shownAim = f.aim;
     fire(this.world, this.shown.active, f);
-    this.stage = { k: 'shot', steps: 0, next, fired: true };
+    this.stage = { k: 'shot', steps: 0, next, fired: true, run: runInputs(next.last!.input) };
     this.drain();
   }
 
   private shotStep(): void {
     const s = this.stage as Extract<Stage, { k: 'shot' }>;
-    if (!settled(this.world) && s.steps < MAX_SHOT_STEPS) {
-      stepWorld(this.world);
+    const run = s.run?.length ?? 0;
+    // someone's run from their dynamite plays first, a step at a time like they ran it, then the rest settles
+    if (s.steps < run || (!settled(this.world) && s.steps - run < MAX_SHOT_STEPS)) {
+      if (s.steps < run) walkStep(this.world, this.shown.active, s.run![s.steps]!);
+      else stepWorld(this.world);
       s.steps++;
       for (const p of this.world.projs) if (p.kind === 'rocket' || p.kind === 'meteor' || p.kind === 'splitter') if (s.steps % 2 === 0) this.fx.trail(p.x, p.y, p.kind !== 'splitter');
       this.drain();
@@ -651,12 +687,14 @@ export class Scene {
       this.opts.sfx().tick();
     }
     const u = this.activeUnit();
+    const st = this.stage;
     const h: Hud = {
       turn: m.turn,
       crew: m.crewTurn,
       mine,
-      stage: this.stage.k,
+      stage: st.k,
       secs: Math.min(m.turnSecs, secs),
+      run: st.k === 'run' ? Math.ceil((st.max - st.steps) * STEP) : -1,
       wind: m.wind,
       weapon: this.weapon,
       ammo: mine ? (m.crews[m.crewTurn]?.ammo ?? null) : null,
@@ -681,3 +719,13 @@ export class Scene {
 
 }
 
+/** Inputs, one a step, as [input, steps] runs. */
+function runs(steps: readonly number[]): [number, number][] {
+  const out: [number, number][] = [];
+  for (const b of steps) {
+    const last = out[out.length - 1];
+    if (last && last[0] === b) last[1]++;
+    else out.push([b, 1]);
+  }
+  return out;
+}

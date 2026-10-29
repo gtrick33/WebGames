@@ -335,6 +335,22 @@ export function Battle(props: BattleProps) {
   const ammo = hud?.ammo;
   const max = match.crewSize * UNIT_HP;
   const aiming = !!hud?.mine && hud.stage === 'aim';
+  // after dropping dynamite: only walk and jump, while its fuse burns
+  const running = !!hud?.mine && hud.stage === 'run';
+  const movePad = (
+    <div className="cc-pad cc-move">
+      <button className="cc-btn" {...hold('left')} aria-label="Walk left">
+        ◀
+      </button>
+      <button className="cc-btn is-jump" onPointerDown={(e) => (e.preventDefault(), sceneBox.current?.jump())} aria-label="Jump">
+        <span aria-hidden="true">⤴</span>
+        <small>JUMP</small>
+      </button>
+      <button className="cc-btn" {...hold('right')} aria-label="Walk right">
+        ▶
+      </button>
+    </div>
+  );
   const shown = peek ?? weapon;
   return (
     <div className="cc-battle" ref={wrap}>
@@ -407,7 +423,7 @@ export function Battle(props: BattleProps) {
             ×
           </button>
           <p>
-            <b>Aim</b> {def.aim === 'target' ? (touch ? 'Tap the battlefield where the meteors should fall' : 'Click the battlefield where the meteors should fall') : def.aim === 'drop' ? 'No aiming needed: it drops at your feet' : touch ? 'Drag anywhere on the battlefield' : 'Drag on the battlefield, or ↑ ↓'}
+            <b>Aim</b> {def.aim === 'target' ? (touch ? 'Tap the battlefield where the meteors should fall' : 'Click the battlefield where the meteors should fall') : def.aim === 'drop' ? `No aiming: it drops at your feet, then you have ${def.retreat} seconds to run` : touch ? 'Drag anywhere on the battlefield' : 'Drag on the battlefield, or ↑ ↓'}
           </p>
           <p>
             <b>Fire</b> {def.aim === 'power' ? (touch ? 'Hold FIRE to power up, let go to shoot' : 'Hold Space (or FIRE) to power up, let go to shoot') : touch ? 'Tap FIRE' : 'Press Space or FIRE'}
@@ -417,25 +433,25 @@ export function Battle(props: BattleProps) {
           </p>
         </div>
       )}
-      {aiming ? (
+      {running ? (
         <div className="cc-controls">
-          <div className="cc-pad cc-move">
-            <button className="cc-btn" {...hold('left')} aria-label="Walk left">
-              ◀
-            </button>
-            <button className="cc-btn is-jump" onPointerDown={(e) => (e.preventDefault(), sceneBox.current?.jump())} aria-label="Jump">
-              <span aria-hidden="true">⤴</span>
-              <small>JUMP</small>
-            </button>
-            <button className="cc-btn" {...hold('right')} aria-label="Walk right">
-              ▶
-            </button>
+          {movePad}
+          <div className="cc-run" role="status">
+            <b>RUN!</b> <span>{touch ? 'Get clear with ◀ ▶ and JUMP' : 'Get clear with ← → and Enter'}</span> <em>{hud.run}</em>
           </div>
-          <button className={`cc-weapon${tray ? ' is-open' : ''}`} onClick={() => {
+        </div>
+      ) : aiming ? (
+        <div className="cc-controls">
+          {movePad}
+          <button
+            className={`cc-weapon${tray ? ' is-open' : ''}`}
+            onClick={() => {
               setPeek(null);
               setTray((v) => !v);
             }}
-            aria-expanded={tray} aria-label={`Weapon: ${def.name}. Change weapon`}>
+            aria-expanded={tray}
+            aria-label={`Weapon: ${def.name}. Change weapon`}
+          >
             <WeaponIcon w={weapon} size={36} />
             <span>
               <b>{def.name}</b>
