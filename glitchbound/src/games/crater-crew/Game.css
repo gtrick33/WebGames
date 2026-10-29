@@ -1021,6 +1021,55 @@
   pointer-events: none;
 }
 
+/* after dropping dynamite: run! */
+.cc-run {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 7px 6px 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ff7a4d, #e8332a);
+  border: 2.5px solid var(--cc-ink);
+  box-shadow: 0 4px 0 var(--cc-ink);
+  color: #fff;
+  font-weight: 800;
+  animation: cc-throb 0.45s ease-in-out infinite alternate;
+}
+.cc-run b {
+  flex: none;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.cc-run span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.cc-run em {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--cc-ink);
+  font-style: normal;
+  font-weight: 900;
+  font-size: 17px;
+}
+@keyframes cc-throb {
+  to {
+    transform: scale(1.06);
+  }
+}
+
 /* first battles: how to aim, fire and move */
 .cc-coach {
   position: absolute;
@@ -1317,6 +1366,11 @@
     justify-self: center;
     width: min(250px, 100%);
   }
+  .cc-run {
+    grid-area: weapon;
+    justify-self: center;
+    max-width: 100%;
+  }
   .cc-coach {
     bottom: 162px;
   }
@@ -1506,6 +1560,7 @@
   .cc-sheet,
   .cc-coach,
   .cc-tray,
+  .cc-run,
   .cc-clock.is-low {
     animation: none;
   }

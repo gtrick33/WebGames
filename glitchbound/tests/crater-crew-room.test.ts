@@ -3,7 +3,7 @@ import { ENGINES, QUICK } from '../rooms/engines';
 import { botTurn } from '../src/games/crater-crew/ai';
 import { playTurn } from '../src/games/crater-crew/match';
 import { act, AWAY_MS, BOT_MS, GRACE_MS, join, leave, maxMessage, newRoom, relay, tick, viewFor, type State } from '../src/games/crater-crew/room';
-import { IN_RIGHT } from '../src/games/crater-crew/sim';
+import { IN_JUMP, IN_LEFT, IN_RIGHT } from '../src/games/crater-crew/sim';
 
 const A = 'player-key-aaaaaaaaaaaaaaaa';
 const B = 'player-key-bbbbbbbbbbbbbbbb';
@@ -99,6 +99,20 @@ describe('crater crew live room', () => {
     }
     expect(s.match!.turn).toBeGreaterThan(5);
   }, 60_000);
+
+  it('takes the run after dropped dynamite with the turn, and keeps it for every phone to replay', () => {
+    const s = newRoom('ABCDE', 0, 33);
+    join(s, A, 'Ana', 1);
+    join(s, B, 'Bo', 2);
+    act(s, A, { t: 'start' }, 4);
+    const m = s.match!;
+    const dyn = { w: 'dynamite' as const, aim: 0, dir: 1 as const, power: 0, tx: 0 };
+    const run: [number, number][] = [[IN_LEFT, 120], [IN_LEFT | IN_JUMP, 1], [IN_LEFT, 400]];
+    const expected = playTurn(m, { walk: [], fire: dyn, run: [[IN_LEFT, 120], [IN_LEFT | IN_JUMP, 1], [IN_LEFT, 59]] }).match;
+    expect(act(s, keyOf(s, m.crews[m.crewTurn]!.seat), { t: 'turn', turn: m.turn, walk: [], fire: dyn, run }, s.turnAt + 10)).toBeNull();
+    expect(JSON.stringify(s.match)).toBe(JSON.stringify(expected));
+    expect(s.match!.last!.input.run).toEqual([[IN_LEFT, 120], [IN_LEFT | IN_JUMP, 1], [IN_LEFT, 59]]);
+  });
 
   it('passes the turn of a player who left, and of one whose clock ran out', () => {
     const s = newRoom('ABCDE', 0, 3);

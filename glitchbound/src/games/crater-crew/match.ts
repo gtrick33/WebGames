@@ -1,8 +1,8 @@
 /**
  * A Crater Crew battle as plain JSON: the map (seed, landform and every crater so far), the crews and
  * their units, whose turn it is and the wind. A turn is the active unit's walk (one input per sim step,
- * run-length coded) and at most one shot; playTurn() replays it through the physics and moves the
- * battle on. The room server and the single-player game both use it, and every phone replays the same
+ * run-length coded), at most one shot and, after dropped dynamite, the run to get clear; playTurn()
+ * replays it through the physics and moves the battle on. The room server and the single-player game both use it, and every phone replays the same
  * turn to animate it.
  */
 import type { CharId } from './characters';
@@ -10,7 +10,7 @@ import { hash01, rng } from './math';
 import { IN_JUMP, IN_LEFT, IN_RIGHT, fire, makeWorld, runToRest, settleUnit, walkStep, type Fire, type Unit, type World } from './sim';
 import { baseMask, findSpawns, maskFor, W } from './terrain';
 import { TERRAINS, type TerrainId } from './terrains';
-import { isWeaponId, startAmmo, type WeaponId } from './weapons';
+import { isWeaponId, startAmmo, WEAPONS, type WeaponId } from './weapons';
 
 export const LEVELS = ['easy', 'normal', 'hard'] as const;
 export type Level = (typeof LEVELS)[number];
@@ -27,6 +27,9 @@ const RISE = 18;
 export const MAX_TURNS = 240;
 /** The most walking (sim steps) one turn can hold: the longest turn plus some grace. */
 export const MAX_WALK = 60 * 50;
+/** Steps you can still walk and jump after using a weapon (60 a second): only dropped dynamite has any. */
+export const runSteps = (w: WeaponId): number => Math.round(WEAPONS[w].retreat * 60);
+const MAX_RUN = Math.max(...Object.values(WEAPONS).map((d) => Math.round(d.retreat * 60)));
 
 export interface Crew {
   name: string;
@@ -59,6 +62,8 @@ export interface TurnInput {
   /** [input bits, steps] runs: IN_LEFT | IN_RIGHT | IN_JUMP. */
   walk: [number, number][];
   fire: Fire | null;
+  /** The same, after the shot while the world goes on (getting clear of dropped dynamite). */
+  run?: [number, number][];
 }
 
 export interface LastTurn {
@@ -148,27 +153,40 @@ export function worldFor(m: Match): World {
 
 const int = (v: unknown, lo: number, hi: number): v is number => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
 
-/** A turn from the network, checked (null: not a turn). Walks are clipped to the longest allowed. */
-export function cleanInput(raw: unknown): TurnInput | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const r = raw as { walk?: unknown; fire?: unknown };
-  if (!Array.isArray(r.walk) || r.walk.length > 800) return null;
-  const walk: [number, number][] = [];
+/** Input runs from a phone, checked and cut to `max` steps in all (null: not runs at all). */
+function cleanRuns(raw: unknown, max: number): [number, number][] | null {
+  if (!Array.isArray(raw) || raw.length > 800) return null;
+  const out: [number, number][] = [];
   let total = 0;
-  for (const seg of r.walk) {
+  for (const seg of raw) {
     if (!Array.isArray(seg) || !int(seg[0], 0, IN_LEFT | IN_RIGHT | IN_JUMP) || !int(seg[1], 1, MAX_WALK)) return null;
-    const n = Math.min(seg[1], MAX_WALK - total);
+    const n = Math.min(seg[1], max - total);
     if (n <= 0) break;
-    walk.push([seg[0], n]);
+    out.push([seg[0], n]);
     total += n;
   }
+  return out;
+}
+
+/**
+ * A turn from the network, checked (null: not a turn). Walks are clipped to the longest allowed; a run
+ * after the shot is kept only for a weapon that allows one.
+ */
+export function cleanInput(raw: unknown): TurnInput | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as { walk?: unknown; fire?: unknown; run?: unknown };
+  const walk = cleanRuns(r.walk, MAX_WALK);
+  if (!walk) return null;
   let f: Fire | null = null;
   if (r.fire !== null && r.fire !== undefined) {
     const x = r.fire as Partial<Fire>;
     if (!isWeaponId(x.w) || !int(x.aim, -850, 850) || (x.dir !== 1 && x.dir !== -1) || !int(x.power, 0, 100) || !int(x.tx, 0, W)) return null;
     f = { w: x.w, aim: x.aim, dir: x.dir, power: x.power, tx: x.tx };
   }
-  return { walk, fire: f };
+  if (r.run === undefined || r.run === null || !f || !runSteps(f.w)) return { walk, fire: f };
+  const run = cleanRuns(r.run, MAX_RUN);
+  if (!run) return null;
+  return { walk, fire: f, run };
 }
 
 /** Whether a crew may fire this weapon now. */
@@ -178,6 +196,14 @@ export const hasAmmo = (m: Match, crew: number, w: WeaponId): boolean => (m.crew
 export function playWalk(w: World, unit: number, walk: readonly [number, number][]): void {
   for (const [bits, n] of walk) for (let i = 0; i < n; i++) walkStep(w, unit, bits);
   settleUnit(w, unit);
+}
+
+/** A run after the shot, one input a step as far as the weapon allows (the phone and the room alike). */
+export function runInputs(input: TurnInput): number[] {
+  const max = input.fire ? runSteps(input.fire.w) : 0;
+  const out: number[] = [];
+  for (const [bits, n] of input.run ?? []) for (let i = 0; i < n && out.length < max; i++) out.push(bits);
+  return out;
 }
 
 /** Whether the turn's shot goes off: the unit is still standing and the crew has the ammo. */
@@ -195,7 +221,10 @@ export function playTurn(m: Match, input: TurnInput): { match: Match; world: Wor
   playWalk(w, m.active, input.walk);
   const walkSteps = w.steps;
   const fired = canFire(m, w, input.fire);
-  if (fired) fire(w, m.active, input.fire!);
+  if (fired) {
+    fire(w, m.active, input.fire!);
+    for (const bits of runInputs(input)) walkStep(w, m.active, bits);
+  }
   runToRest(w);
   return { match: endTurn(m, w, input, fired), world: w, walkSteps, shotSteps: w.steps - walkSteps };
 }

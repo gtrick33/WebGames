@@ -446,7 +446,7 @@ function Menu({
               <li>
                 <b>Aim</b> by dragging on the map (or ↑ ↓). <b>Hold</b> Space or the fire button for power and let go to shoot.
               </li>
-              <li>Watch the wind: rockets, splitters and meteors drift with it. Grenades bounce and wait three seconds.</li>
+              <li>Watch the wind: rockets, splitters and meteors drift with it. Grenades bounce and wait three seconds. Drop dynamite and you get three seconds to run.</li>
               <li>Knock enemies into the water, lava or space for a quick knockout. After ten rounds the liquid starts rising.</li>
             </ul>
             <div className="cc-arsenal">
