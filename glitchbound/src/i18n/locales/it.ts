@@ -2124,6 +2124,15 @@ const it: string[] = [
   'Le righe con 🤖 Casa sono giocatori computer di GlitchBound, con punteggi reali. Superali per salire.',
   'I giocatori della casa occupano i posti liberi dell’Albo d’oro. Ognuno cede il suo posto quando un membro lo prende.',
   'In tutti i giochi: le corone sono i primi posti, i podi i piazzamenti nei primi 3, i record i primati personali battuti.',
+  'Stanze dal vivo',
+  'Gioca nello stesso momento dei tuoi amici, ognuno sul proprio telefono o computer. Apri una stanza in uno dei giochi qui sotto e invia il link, oppure entra in una che aspetta.',
+  'Giochi con stanze dal vivo',
+  'Stanze aperte in questo momento',
+  'Gli amici sono nella stessa stanza? Passatevi un solo telefono in Modalità party.',
+  'I codici stanza sono di cinque lettere.',
+  'Nessuna stanza ha questo codice. Potrebbe essere già chiusa.',
+  'Tutti i giochi dal vivo e le stanze aperte',
+  'Al momento non ci sono stanze pubbliche. Aprine una in uno dei giochi qui sopra e comparirà qui per tutti.',
 ];
 
 export default it;

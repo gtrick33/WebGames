@@ -2124,6 +2124,15 @@ const ro: string[] = [
   'Rândurile marcate 🤖 Casa sunt jucătorii-computer ai GlitchBound, cu scoruri reale. Depășește-i ca să urci.',
   'Jucătorii casei țin locurile libere din Galeria celebrităților. Fiecare își cedează locul când un membru îl ocupă.',
   'În toate jocurile: coroanele sunt locurile 1, podiumurile locurile din top 3, recordurile cele personale doborâte.',
+  'Camere live',
+  'Joacă în același timp cu prietenii, fiecare pe telefonul sau calculatorul lui. Deschide o cameră într-unul dintre jocurile de mai jos și trimite linkul sau intră într-una care așteaptă.',
+  'Jocuri cu camere live',
+  'Camere deschise chiar acum',
+  'Prietenii sunt în aceeași încăpere? Dați un singur telefon din mână în mână în Modul petrecere.',
+  'Codurile camerelor au cinci litere.',
+  'Nicio cameră nu are acest cod. Poate s-a închis deja.',
+  'Toate jocurile live și camerele deschise',
+  'Acum nu există camere publice. Deschide una într-unul dintre jocurile de mai sus și va apărea aici pentru toți.',
 ];
 
 export default ro;

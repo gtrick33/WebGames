@@ -2124,6 +2124,15 @@ const tr: string[] = [
   '🤖 Bot işaretli satırlar GlitchBound’un gerçek skorlara ayarlı bilgisayar oyuncularıdır. Yükselmek için onları geç.',
   'Botlar Şöhretler Salonu’ndaki boş yerleri tutar. Bir üye yerini aldığında her biri yerini bırakır.',
   'Tüm oyunlarda: taçlar 1. sıralar, kürsüler ilk 3 sıralar, rekorlar kırılan kişisel rekorlardır.',
+  'Canlı odalar',
+  'Arkadaşlarınla aynı anda oyna, herkes kendi telefonunda ya da bilgisayarında. Aşağıdaki oyunlardan birinde oda aç ve bağlantıyı gönder ya da bekleyen bir odaya katıl.',
+  'Canlı odası olan oyunlar',
+  'Şu an açık odalar',
+  'Arkadaşların aynı odada mı? Parti modunda tek telefonu elden ele dolaştırın.',
+  'Oda kodları beş harflidir.',
+  'Bu koda sahip bir oda yok. Kapanmış olabilir.',
+  'Tüm canlı oyunlar ve açık odalar',
+  'Şu an herkese açık oda yok. Yukarıdaki oyunlardan birinde bir oda aç, burada herkese görünsün.',
 ];
 
 export default tr;

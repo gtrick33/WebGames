@@ -2124,6 +2124,15 @@ const de: string[] = [
   'Zeilen mit 🤖 Hausteam sind Computerspieler von GlitchBound mit echten Punktzahlen. Überhol sie, um aufzusteigen.',
   'Das Hausteam hält die freien Plätze der Ruhmeshalle. Jeder räumt seinen Platz, sobald ein Mitglied ihn einnimmt.',
   'Über alle Spiele: Kronen sind Platz 1, Podien Plätze in den Top 3, Rekorde geschlagene persönliche Bestleistungen.',
+  'Live-Räume',
+  'Spiel zur selben Zeit wie deine Freunde, jeder auf dem eigenen Handy oder Computer. Öffne in einem der Spiele unten einen Raum und schick den Link, oder tritt einem wartenden Raum bei.',
+  'Spiele mit Live-Räumen',
+  'Gerade offene Räume',
+  'Freunde im selben Zimmer? Reicht im Partymodus ein Handy herum.',
+  'Raumcodes haben fünf Buchstaben.',
+  'Kein Raum hat diesen Code. Vielleicht ist er schon geschlossen.',
+  'Alle Live-Spiele und offenen Räume',
+  'Gerade gibt es keine öffentlichen Räume. Öffne einen in einem der Spiele oben, dann sehen ihn hier alle.',
 ];
 
 export default de;

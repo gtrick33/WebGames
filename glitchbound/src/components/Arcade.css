@@ -296,6 +296,25 @@
   font-size: 18px;
   line-height: 1;
 }
+/* Live rooms: a link to their page among the moods, marked only by the live dot. */
+.mood-live {
+  text-decoration: none;
+}
+.mood-live-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0 2px;
+  border-radius: 50%;
+  background: var(--coral);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--coral) 60%, transparent);
+  animation: live-pulse 1.8s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mood-live-dot {
+    animation: none;
+  }
+}
 .mood-btn:hover .mood-emoji {
   animation: mood-wiggle 0.5s ease-in-out;
 }

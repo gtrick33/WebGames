@@ -25,6 +25,7 @@ export function Footer() {
               <p className="eyebrow">{t('Play')}</p>
               <Link href="/#arcade">{t('The arcade')}</Link>
               <Link href="/daily">{t('Daily Challenge')}</Link>
+              <Link href="/live">{t('Live rooms')}</Link>
               <Link href="/leaderboards">{t('Leaderboards')}</Link>
               {games.slice(0, 4).map((g) => (
                 <Link key={g.slug} href={gameUrl(g.slug)}>

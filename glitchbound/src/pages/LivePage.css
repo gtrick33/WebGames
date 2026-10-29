@@ -1,0 +1,68 @@
+/* Live rooms (/live): the arcade's tiles for the live games, then the open rooms and a room code box. */
+.live-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.live-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--coral);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--coral) 60%, transparent);
+  animation: live-pulse 1.8s ease-out infinite;
+}
+.live-page .info-lead {
+  max-width: 60ch;
+}
+.live-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.live-rooms h2,
+.live-side h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 24px;
+}
+.live-code {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.live-code label {
+  flex: 1;
+  min-width: 0;
+}
+.live-code input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 2px solid var(--line, var(--ink));
+  border-radius: 14px;
+  background: var(--card, #fff);
+  color: var(--fg, var(--ink));
+  font-size: 18px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.live-err {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--coral);
+  font-weight: 700;
+}
+@media (max-width: 860px) {
+  .live-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+}

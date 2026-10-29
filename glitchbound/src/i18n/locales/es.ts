@@ -2124,6 +2124,15 @@ const es: string[] = [
   'Las filas marcadas con 🤖 Casa son jugadores por ordenador de GlitchBound con puntuaciones reales. Supéralos para subir.',
   'Los jugadores de la casa ocupan los puestos libres del Salón de la Fama. Cada uno cede su puesto cuando un miembro lo toma.',
   'En todos los juegos: las coronas son los primeros puestos, los podios los top 3 y los récords las mejores marcas personales superadas.',
+  'Salas en vivo',
+  'Juega al mismo tiempo que tus amigos, cada uno en su móvil u ordenador. Abre una sala en cualquiera de los juegos de abajo y envía el enlace, o únete a una que esté esperando.',
+  'Juegos con salas en vivo',
+  'Salas abiertas ahora mismo',
+  '¿Tus amigos están en la misma habitación? Pasaos un solo móvil en el Modo fiesta.',
+  'Los códigos de sala tienen cinco letras.',
+  'Ninguna sala tiene ese código. Puede que ya se haya cerrado.',
+  'Todos los juegos en vivo y salas abiertas',
+  'Ahora mismo no hay salas públicas. Abre una en cualquiera de los juegos de arriba y aparecerá aquí para todos.',
 ];
 
 export default es;

@@ -11,7 +11,7 @@ import { recentSlugs } from '../platform/save';
 import { useSave } from '../platform/store';
 import { useFlagships } from '../platform/useFlagships';
 import { useAccount } from '../platform/account';
-import { navigate, useLocation } from '../router/router';
+import { Link, navigate, useLocation } from '../router/router';
 import { GameTile } from './GameTile';
 import { Icon } from './Icon';
 import { Dot, Ring, Tri } from './Shapes';
@@ -159,6 +159,12 @@ export function Arcade() {
               {t(MOODS[m].label)}
             </button>
           ))}
+          {/* the live games and open rooms have a page of their own: a quiet way there, not a filter */}
+          {games.some((g) => g.live) && (
+            <Link href="/live" className="mood-btn mood-live">
+              <i className="mood-live-dot" aria-hidden="true" /> {t('Live rooms')}
+            </Link>
+          )}
           <SurpriseButton className="mood-btn mood-surprise" />
           <button className={`mood-btn mood-more${showMore ? ' is-on' : ''}`} aria-expanded={showMore} onClick={() => setMoreOpen((o) => !o)}>
             <Icon name="search" size={16} /> {t('Search & sort')}
