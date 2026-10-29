@@ -93,7 +93,8 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     expect(w.pets.some((p) => p.def.id === 'nyx' && !p.dead)).toBe(true);
     let nyxLeft = false;
     let heraldCame = false;
-    for (let i = 0; i < 60 && questState(w.hero, 'the-heralds-ambush') === 'active'; i++) {
+    // (its clock stops while the Herald is shown stepping out of the grey)
+    for (let i = 0; i < 75 && questState(w.hero, 'the-heralds-ambush') === 'active'; i++) {
       run(w, 1);
       if (!w.pets.some((p) => p.def.id === 'nyx' && !p.dead)) nyxLeft = true;
       if (w.enemies.some((e) => e.def.id === 'the-pale-herald' && !e.dead)) heraldCame = true;

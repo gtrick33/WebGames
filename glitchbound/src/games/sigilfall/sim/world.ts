@@ -14,7 +14,7 @@ import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionD
 import { ACTION_SLOTS, SKILL_SLOTS } from '../data/types';
 import type { Marker, RegionStateDef, StoryCond } from '../data/types';
 import { holds, regionState, StoryDirector } from './story';
-import { maybeStartScene, updateScene, type ScenePlay } from './scene';
+import { maybeStartScene, revealBoss, updateScene, type ScenePlay } from './scene';
 import { buildHero, type HeroBuild } from '../progress/build';
 import { fogOpen, fogShare, loadFog, revealFog, storeFog, type Fog } from '../progress/fog';
 import { turnInNpc } from '../progress/handin';
@@ -102,6 +102,10 @@ interface Spore {
   friendly: boolean;
 }
 
+/** Seconds the people the story takes away are remembered: long enough for the slowest fade (a death). */
+const LEFT_FOR = 4;
+/** How slow slow motion is. */
+const SLOW = 0.3;
 const POTION_HEAL = 40;
 /** Seconds without fighting before the fast out-of-combat regeneration starts. */
 const CALM_AFTER = 3;
@@ -187,9 +191,8 @@ export class World {
   drops: Drop[] = [];
   chests: Chest[] = [];
   npcs: NpcActor[] = [];
-  /** The people the story's last turn took from where they stood, and when (World.time). */
-  leftNpcs: NpcActor[] = [];
-  leftAt = -Infinity;
+  /** The people the story has just taken from where they stood, and when (World.time): they fade out. */
+  leftNpcs: (NpcActor & { left: number })[] = [];
   spores: Spore[] = [];
   texts: FloatText[] = [];
   fx: Fx[] = [];
@@ -206,6 +209,11 @@ export class World {
   rand: () => number;
   shakeAmt = 0;
   hitstopT = 0;
+  /** Slow motion (a boss's last blow, a story fight's last foe): seconds left (real time), and what it's on. */
+  slowT = 0;
+  slowAt: { x: number; y: number } | null = null;
+  /** Someone telling the hero their part of the story, face to face (the camera frames the two of them). */
+  talkTo: { x: number; y: number } | null = null;
   checkpoint: { x: number; y: number };
   /** The final boss is down: the exit portal is open. */
   cleared = false;
@@ -491,9 +499,16 @@ export class World {
       // a foe the story brings in now (Vosk at the head of the Host, once the Standard falls)
       if (m.kind === 'pack' && !this.packed.has(pm)) this.addPack(pm, pos, true);
     }
-    // who stood somewhere a moment ago and no longer does (stepping out to fight: sim/story.ts)
-    this.leftNpcs = was.filter((n) => !this.npcs.some((m) => m.id === n.id && m.x === n.x && m.y === n.y));
-    this.leftAt = this.time;
+    // who stays keeps their footing; who comes, comes in (a fade); who goes, goes out (sim/story.ts takes the
+    // ones stepping out to fight)
+    const same = (a: NpcActor, b: NpcActor): boolean => a.id === b.id && a.x === b.x && a.y === b.y;
+    for (const n of this.npcs) {
+      const kept = was.find((m) => same(m, n));
+      if (kept) Object.assign(n, { face: kept.face, bob: kept.bob, since: kept.since, fell: kept.fell });
+      else n.since = this.time;
+    }
+    const gone = was.filter((n) => !this.npcs.some((m) => same(m, n))).map((n) => ({ ...n, left: this.time }));
+    this.leftNpcs = [...this.leftNpcs.filter((n) => this.time - n.left < LEFT_FOR), ...gone];
     this.resetFolk();
     // those the story has sent away (the blockade broken, the dead laid to rest) go now
     for (const st of this.packs) {
@@ -847,6 +862,12 @@ export class World {
   hitstop(t: number): void {
     this.hitstopT = Math.max(this.hitstopT, t);
   }
+  /** Time slows for `t` seconds, the camera drawn to `at` (never in a co-op party: the worlds keep one pace). */
+  slowmo(t: number, at: { x: number; y: number } | null): void {
+    if (this.coop) return;
+    this.slowT = Math.max(this.slowT, t);
+    this.slowAt = at;
+  }
   after(t: number, fn: () => void): void {
     this.delayed.push({ t, fn });
   }
@@ -1046,6 +1067,11 @@ export class World {
       dt = rawDt * 0.08;
     }
     if (this.player.dead) dt *= 0.35;
+    if (this.slowT > 0) {
+      this.slowT -= rawDt;
+      dt *= SLOW;
+      if (this.slowT <= 0) this.slowAt = null;
+    }
     this.time += dt;
     if (this.keyRun) this.updateKeyRun(rawDt, dt);
     this.shakeAmt = Math.max(0, this.shakeAmt - rawDt * 18);
@@ -1552,6 +1578,8 @@ export class World {
       this.clearHostile();
       this.shake(6);
       this.hitstop(0.25);
+      // the last blow, slowed, the camera on it
+      this.slowmo(1.6, { x: e.x, y: e.y });
       // the other enemies in the room crumble with their master
       for (const o of this.enemies) if (!o.boss && !o.dead && o.room === e.room) o.hp = 0;
       for (const o of this.enemies) if (!o.boss && o.hp <= 0) o.dead = true;
@@ -1979,6 +2007,7 @@ export class World {
       const boss = this.addBoss(enc.def.boss, pos.x, pos.y, enc.index);
       this.addFx({ kind: 'rift', x: boss.x, y: boss.y, life: 1, size: 18, color: '#ff3fd2' });
       this.emit({ t: 'bossStart', boss: enc.def.boss });
+      revealBoss(this, boss);
     } else if (enc.def.title) this.emit({ t: 'banner', text: enc.def.title, sub: `${enc.def.waves.length} waves` });
   }
 
@@ -2102,7 +2131,7 @@ export class World {
       this.hero.opened.push(key);
       this.fxBurst(s.x, s.y, '#9cffd0', 30, 30);
       this.sfx('discover');
-      this.emit({ t: 'banner', text: 'The Hidden Grove', sub: 'You found a secret place' });
+      this.emit({ t: 'banner', text: 'The Hidden Grove', sub: 'A secret place', place: true });
       this.emit({ t: 'discover', spot: s.id });
       this.questProgress((o) => o.kind === 'explore' && o.spot === s.id);
       this.emit({ t: 'save' });
@@ -2117,7 +2146,7 @@ export class World {
       }
       this.hero.opened.push(key);
       this.sfx('discover');
-      this.emit({ t: 'banner', text: sp.name, sub: 'Discovered' });
+      this.emit({ t: 'banner', text: sp.name, sub: 'Discovered', place: true });
       this.emit({ t: 'discover', spot: sp.id });
       this.giveXp(Math.round(xpToNext(this.hero.level) * EXPLORE_XP));
       this.questProgress((o) => o.kind === 'explore' && o.spot === sp.id);

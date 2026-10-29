@@ -4,10 +4,13 @@
  * dodges) enemy telegraphs. It is not clever, which is the point: if it can clear a region and beat
  * its boss, a person can too.
  */
+import { BOSSES } from '../src/games/sigilfall/data/bosses';
 import { xpToNext } from '../src/games/sigilfall/data/classes';
+import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { SKILL_SLOTS, SLOTS, type ClassId, type RegionId, type SlotKey } from '../src/games/sigilfall/data/types';
 import { chooseSpec, learnTalent, newCharacter, addXp, freePoints, type Character } from '../src/games/sigilfall/progress/character';
 import { rollGear } from '../src/games/sigilfall/progress/items';
+import { questSteps } from '../src/games/sigilfall/progress/handin';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { SPEC_LEVEL, TALENTS } from '../src/games/sigilfall/data/talents';
 import { rng } from '../src/games/sigilfall/core/math';
@@ -17,7 +20,8 @@ import { emptyInput, inside, World } from '../src/games/sigilfall/sim/world';
 
 /**
  * A hero of a level with a full set of gear of that level, a specialization (from level 10) and every
- * talent point spent, down its tree first.
+ * talent point spent, down its tree first; one who has met every boss before (the shot of a boss met for the
+ * first time, sim/scene.ts, is tested on its own).
  */
 export function readyHero(cls: ClassId, level: number, rarity: 'common' | 'uncommon' | 'rare' | 'epic' = 'uncommon', seed = 7, spec: 0 | 1 | 2 = 0): Character {
   const c = newCharacter(cls, 'Bot', 'bot', 0);
@@ -30,6 +34,7 @@ export function readyHero(cls: ClassId, level: number, rarity: 'common' | 'uncom
     const node = [...TALENTS[cls]].sort((a, b) => (a.tree === spec ? 0 : 1) - (b.tree === spec ? 0 : 1) || a.row - b.row).find((n) => learnTalent(c, n.id));
     if (!node) break;
   }
+  for (const id of Object.keys(BOSSES)) c.opened.push(`scene:boss-${id}`);
   return c;
 }
 
@@ -55,6 +60,22 @@ export function brokenNumbers(w: World): string | null {
   for (const e of w.enemies) for (const [k, v] of Object.entries({ x: e.x, y: e.y, hp: e.hp })) if (!Number.isFinite(v)) return `${e.def.id}.${k}=${v}`;
   for (const pr of w.projectiles) if (!Number.isFinite(pr.x) || !Number.isFinite(pr.y)) return 'projectile position';
   return null;
+}
+
+/** A hero at a story event's moment: everything its quest needs done, and its quest at the event's step. */
+export function heroAtEvent(event: string, cls: ClassId = 'warrior'): Character {
+  const q = Object.values(QUEST_DEFS).find((d) => questSteps(d).some((o) => o.kind === 'event' && o.event === event));
+  if (!q) throw new Error(`no quest plays ${event}`);
+  const step = questSteps(q).findIndex((o) => o.kind === 'event' && o.event === event);
+  const c = readyHero(cls, 40);
+  const done = (id: string): void => {
+    if (c.quests[id]) return;
+    c.quests[id] = { state: 'done', n: 1 };
+    for (const a of QUEST_DEFS[id]?.after ?? []) done(a);
+  };
+  for (const a of q.after ?? []) done(a);
+  c.quests[q.id] = { state: 'active', n: 0, ...(step ? { step } : {}) };
+  return c;
 }
 
 /**

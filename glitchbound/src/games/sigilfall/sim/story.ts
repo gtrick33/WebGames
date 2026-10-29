@@ -1,12 +1,14 @@
 import { dist, TAU } from '../core/math';
 import { EVENTS } from '../data/events';
 import { PETS } from '../data/pets';
+import { NPCS } from '../data/quests';
 import { TIERS } from '../data/regions';
 import type { Bark, RegionDef, RegionStateDef, StoryCond, StoryEventDef } from '../data/types';
 import { activeQuests, declined, questState, type Character, currentObjective } from '../progress/character';
 import { skillCost } from './cast';
 import { castRay, TILE } from './map';
 import { placePet } from './pets';
+import { openShot, shotDue } from './scene';
 import type { Pet } from './types';
 import type { World } from './world';
 
@@ -59,6 +61,15 @@ interface Running {
   cool: number;
   /** Seconds since it began. */
   t: number;
+  /**
+   * A shot of it is playing (data/scenes.ts `opens`): what waits for it to be over (the call to arms, the
+   * wave's lines).
+   */
+  held: (() => void) | null;
+  /** Lines its shots have said (not said again after them). */
+  said: Set<string>;
+  /** Its last foe has fallen (the moment was slowed). */
+  won?: boolean;
 }
 
 const BARK_TIME = 2.8;
@@ -164,6 +175,8 @@ export class StoryDirector {
       if (!def || def.region !== w.region.id) continue;
       const at = this.spot(def.at);
       if (!at || dist(w.player.x, w.player.y, at.x, at.y) > def.radius * TILE) continue;
+      // (one with a shot of its own waits for a scene playing to end, and begins with it)
+      if (w.scene && shotDue(w, def.id, 0)) continue;
       this.start(def);
       return;
     }
@@ -179,7 +192,7 @@ export class StoryDirector {
     w.dismount();
     // the region turns to this event's state first: whoever it takes from where they stood steps out to fight
     w.refreshStoryState();
-    const run: Running = { def, wave: 0, ids: [], pause: 1.6, pets: [], ward: null, followers: [], safe: new Set(), cool: 0, t: 0 };
+    const run: Running = { def, wave: 0, ids: [], pause: 1.6, pets: [], ward: null, followers: [], safe: new Set(), cool: 0, t: 0, held: null, said: new Set() };
     const allies = [...(def.allies ?? []), ...(def.alliesIf ?? []).filter((a) => holds(w.hero, a.when)).map((a) => a.pet)];
     for (const id of allies) {
       const pet = this.ally(def, id, run.pets);
@@ -211,8 +224,11 @@ export class StoryDirector {
           // in a loose line down the road, and a loose knot where they stop
           const pet = placePet(w, id, from.x + ((i % 3) - 1) * 10, from.y - Math.floor(i / 3) * 14);
           if (!pet) return;
-          const a = (TAU * i) / def.arrive!.pets.length;
-          pet.goal = { x: to.x + Math.cos(a) * 14, y: to.y + Math.sin(a) * 10 };
+          // (one alone goes to the spot itself: where they stop is where the place's own person stands)
+          const n = def.arrive!.pets.length;
+          const a = (TAU * i) / n;
+          const k = n > 1 ? 1 : 0;
+          pet.goal = { x: to.x + Math.cos(a) * 14 * k, y: to.y + Math.sin(a) * 10 * k };
           run.followers.push(pet);
           run.pets.push(pet);
         });
@@ -238,11 +254,43 @@ export class StoryDirector {
       }
     }
     this.run = run;
-    this.say(def.start);
+    // a great moment opens with a shot of it (data/scenes.ts): its first wave mustered in sight, and the call
+    // to arms once the shot is over
+    if (this.shot(run, 0)) {
+      if (def.waves.length) {
+        this.spawnWave(run, true);
+        run.pause = 0;
+      }
+      run.held = () => {
+        this.callToArms(run);
+        if (def.waves.length) this.callWave(run);
+      };
+      return;
+    }
+    this.callToArms(run);
+  }
+
+  /** The event's first lines, its banner and its sound. */
+  private callToArms(run: Running): void {
+    const w = this.w;
+    const def = run.def;
+    this.say(this.unsaid(run, def.start));
     const banner = def.banner ?? (def.kind === 'raid' ? 'Raid!' : def.kind === 'defend' ? 'Hold!' : def.kind === 'rescue' ? 'Rescue!' : def.kind === 'escort' ? 'Escort!' : 'Arrivals');
     w.emit({ t: 'banner', text: banner, sub: w.questLabel(def.id) });
     if (def.kind === 'arrival') w.sfx('quest', 0.7);
     else w.sfx('roar', 0.7);
+  }
+
+  /** Plays the shot of this moment of the event (its start, or wave `wave`), if it has one not yet seen. */
+  private shot(run: Running, wave: number): boolean {
+    const w = this.w;
+    if (!openShot(w, run.def.id, wave)) return false;
+    for (const st of w.scene!.def.steps) if ('say' in st) run.said.add(st.line);
+    return true;
+  }
+
+  private unsaid(run: Running, lines: Bark[] | undefined): Bark[] | undefined {
+    return lines?.filter((b) => !run.said.has(b.text));
   }
 
   /**
@@ -264,10 +312,13 @@ export class StoryDirector {
       return stayed;
     }
     const look = PETS[id]?.look;
-    const stood = w.time - w.leftAt < 1.5 ? w.leftNpcs.find((n) => n.id === look && dist(n.x, n.y, p.x, p.y) < 10 * TILE) : undefined;
+    const stood = w.leftNpcs.find((n) => n.id === look && w.time - n.left < 1.5 && dist(n.x, n.y, p.x, p.y) < 10 * TILE);
     if (stood) {
       w.leftNpcs = w.leftNpcs.filter((n) => n !== stood);
-      return placePet(w, id, stood.x, stood.y);
+      // (the same person, there all along: no fade)
+      const pet = placePet(w, id, stood.x, stood.y);
+      if (pet) pet.born = undefined;
+      return pet;
     }
     const from = this.spot(def.enter ?? def.at);
     const seen = from && def.enter && dist(from.x, from.y, p.x, p.y) < 10 * TILE;
@@ -277,7 +328,19 @@ export class StoryDirector {
     return pet;
   }
 
-  private spawnWave(run: Running): void {
+  /** The next wave comes: seen coming in a shot of it, if that is a great moment; else straight in. */
+  private comes(run: Running): void {
+    if (run.wave > 0 && this.shot(run, run.wave)) {
+      this.spawnWave(run, true);
+      run.held = () => this.callWave(run);
+      return;
+    }
+    this.spawnWave(run);
+    this.callWave(run);
+  }
+
+  /** The wave's foes, hunting the hero (or, `held` in a shot of them, standing where they mustered). */
+  private spawnWave(run: Running, held = false): void {
     const w = this.w;
     const wave = run.def.waves[run.wave];
     if (!wave) return;
@@ -298,11 +361,19 @@ export class StoryDirector {
       const a = w.rand() * TAU;
       const to = castRay(w.map, from.x, from.y, 6, a, 8 + w.rand() * 18);
       const e = w.addEnemy(id, to.x, to.y, level, { room: -1, pack: -1, spawn: true });
-      e.aggro = true;
+      e.aggro = !held;
+      e.held = held || undefined;
       e.hunts = true;
       return e.id;
     });
-    this.say(wave.barks);
+  }
+
+  /** What the wave's coming says: its lines, the control it teaches. */
+  private callWave(run: Running): void {
+    const w = this.w;
+    const wave = run.def.waves[run.wave];
+    if (!wave) return;
+    this.say(this.unsaid(run, wave.barks));
     if (wave.hint) w.emit({ t: 'hint', id: wave.hint });
     // the skill's lesson works the first time: a hero whose skill costs what striking builds (rage, holy
     // power) has enough for it as the wave that asks for it comes
@@ -315,6 +386,13 @@ export class StoryDirector {
   private step(run: Running, dt: number): void {
     const w = this.w;
     const def = run.def;
+    // a shot of it playing: the fight waits for it to be over
+    if (run.held) {
+      if (w.scene) return;
+      const go = run.held;
+      run.held = null;
+      go();
+    }
     run.t += dt;
     // a fight that is not won ends when the story says, with the hero still standing
     if (def.ends && run.t >= def.ends) {
@@ -357,7 +435,7 @@ export class StoryDirector {
     }
     if (run.pause > 0) {
       run.pause -= dt;
-      if (run.pause <= 0) this.spawnWave(run);
+      if (run.pause <= 0) this.comes(run);
       return;
     }
     const alive = run.ids.some((id) => w.enemies.some((e) => e.id === id && !e.dead));
@@ -379,6 +457,12 @@ export class StoryDirector {
       run.pause = def.escort ? 7 : 2.2;
       return;
     }
+    // the last of them falls: a moment of slow motion on it
+    if (!run.won) {
+      run.won = true;
+      const last = w.enemies.filter((e) => e.dead && run.ids.includes(e.id)).sort((a, b) => a.deathT - b.deathT)[0];
+      if (last) w.slowmo(0.9, { x: last.x, y: last.y });
+    }
     if (def.rescue && run.safe.size < run.followers.length) return;
     if (!wagonIn) return;
     this.finish(run);
@@ -387,7 +471,12 @@ export class StoryDirector {
   /** People walking in: done when everyone is where they were going (or, held up, after a while anyway). */
   private arriving(run: Running, dt: number): void {
     run.pause -= dt;
-    const there = run.followers.every((f) => !f.goal || dist(f.x, f.y, f.goal.x, f.goal.y) < 2 * TILE);
+    // there: on the spot (or as near as they can get, and stopped)
+    const there = run.followers.every((f) => {
+      if (!f.goal) return true;
+      const d = dist(f.x, f.y, f.goal.x, f.goal.y);
+      return d < 6 || (d < 2 * TILE && Math.hypot(f.vx, f.vy) < 4);
+    });
     if (!there && run.pause > -45) return;
     this.finish(run);
   }
@@ -395,9 +484,14 @@ export class StoryDirector {
   /** Ends an event: its foes go, and its people too (after `stay` seconds, to say their last lines). */
   private clear(run: Running, stay = 0): void {
     const w = this.w;
-    // people who walked in stay (as the camp's own people, the moment the quest moves on); the rest go
-    if (run.def.kind === 'arrival') w.pets = w.pets.filter((p) => !run.pets.includes(p));
-    else {
+    // people who walked in stay, as the place's own people the moment the quest moves on (finish() hands each
+    // to the one standing where they stopped; the rest fade); the others go
+    if (run.def.kind === 'arrival') {
+      for (const pet of run.pets) {
+        pet.dead = true;
+        pet.deathT = 0;
+      }
+    } else {
       const into = run.def.rescue?.into ? this.spot(run.def.rescue.into) : null;
       for (const pet of run.pets) {
         // the one carried off goes at once, in a swirl of grey
@@ -434,6 +528,7 @@ export class StoryDirector {
 
   private finish(run: Running): void {
     const w = this.w;
+    const walkedIn = run.def.kind === 'arrival' ? run.followers.filter((f) => !f.dead) : [];
     // the lines still to be said, then the event's own last words, then they go
     const stay = Math.max(0, this.gap) + [...this.queue, ...(run.def.end ?? [])].reduce((t, b) => t + barkTime(b), 0) + 0.8 + (run.def.stay ?? 0);
     this.clear(run, stay);
@@ -442,6 +537,15 @@ export class StoryDirector {
     // questing together: the party's other heroes were there too (their quests for it count)
     if (w.coop?.role === 'host') w.coop.out.push({ t: 'event', id: run.def.id });
     w.refreshStoryState();
+    // whoever walked in to where the place's own person now stands simply is that person (no fade, no jump);
+    // one who lies where they fell (the courier) falls there
+    for (const pet of walkedIn) {
+      const n = w.npcs.find((m) => m.id === pet.def.look && m.since !== undefined && dist(m.x, m.y, pet.x, pet.y) < 1.5 * TILE);
+      if (!n) continue;
+      n.since = undefined;
+      if (NPCS[n.id]?.down) n.fell = w.time;
+      w.pets = w.pets.filter((p) => p !== pet);
+    }
     w.emit({ t: 'save' });
   }
 }

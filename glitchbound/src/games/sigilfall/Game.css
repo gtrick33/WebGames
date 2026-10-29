@@ -2435,6 +2435,110 @@
   opacity: 0;
   pointer-events: none;
 }
+/* someone telling the hero their part of the story: the HUD steps aside, the top bar comes down */
+.rb-ui.is-talk > :not(.rb-scene, .rb-dialogue, .rb-modal, .rb-tcard),
+.rb-ui.is-act > :not(.rb-scene, .rb-dialogue, .rb-modal, .rb-tcard) {
+  opacity: 0;
+  pointer-events: none;
+}
+.rb-ui.is-talk .rb-scene-bar:not(.is-low) {
+  transform: none;
+}
+/* a title over the world: an act beginning (the screen darkens behind it), a land seen for the first time */
+.rb-tcard {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  display: grid;
+  place-items: start center;
+  padding-top: 15%;
+  pointer-events: none;
+}
+.rb-tcard.is-act {
+  place-items: center;
+  padding-top: 0;
+  background: radial-gradient(ellipse at center, rgb(8 5 14 / 0.45), rgb(8 5 14 / 0.85));
+  animation: rb-card-dim 4.2s ease both;
+}
+.rb-tcard-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 32px);
+  color: #f8f2e4;
+  text-align: center;
+  text-shadow: 0 2px 0 rgb(0 0 0 / 0.7), 0 0 22px rgb(0 0 0 / 0.8);
+  animation: rb-card-in 3.4s ease both;
+}
+.rb-tcard.is-act .rb-tcard-text {
+  animation-duration: 4.2s;
+}
+.rb-tcard-over {
+  color: var(--rb-gold);
+  font-size: clamp(12px, 1.7vw, 16px);
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+.rb-tcard-text strong {
+  font-family: var(--rb-serif);
+  font-size: clamp(26px, 4.6vw, 52px);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+.rb-tcard.is-act .rb-tcard-text strong {
+  font-size: clamp(30px, 5.6vw, 64px);
+}
+.rb-tcard-rule {
+  width: min(380px, 60vw);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--rb-gold), transparent);
+}
+.rb-tcard-sub {
+  font-family: var(--rb-serif);
+  font-size: clamp(13px, 1.8vw, 18px);
+  font-style: italic;
+  color: #d8c8a0;
+}
+@keyframes rb-card-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    letter-spacing: 0.02em;
+  }
+  18% {
+    opacity: 1;
+    transform: none;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes rb-card-dim {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  12%,
+  82% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-tcard-text {
+    transform: none !important;
+  }
+}
+/* (a banner that comes up during a scene waits for it: its own entrance would show it through the fade) */
+.rb-ui.is-scene > .rb-banner,
+.rb-ui.is-scene > .rb-levelup {
+  visibility: hidden;
+}
 .rb-scene {
   position: absolute;
   inset: 0;
@@ -2457,6 +2561,42 @@
 }
 .rb-scene.is-on .rb-scene-bar {
   transform: none;
+}
+.rb-scene-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(9% + 18px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #f8f2e4;
+  text-align: center;
+  text-shadow: 0 2px 0 rgb(0 0 0 / 0.6), 0 0 18px rgb(0 0 0 / 0.7);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.6s ease, transform 0.9s ease;
+}
+.rb-scene-title.is-on {
+  opacity: 1;
+  transform: none;
+}
+.rb-scene-title strong {
+  font-size: clamp(22px, 4.2vw, 40px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rb-scene-title span {
+  font-size: clamp(12px, 1.8vw, 17px);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #d8c8a0;
+}
+.rb-scene-title span:empty {
+  display: none;
 }
 /* (.rb-ui: it outranks `.rb-ui button`, so the hidden button takes no taps meant for the basic attack under it) */
 .rb-ui .rb-scene-skip {
@@ -3007,12 +3147,61 @@
 .rb-map-quest.is-side strong {
   color: #9fd6ff;
 }
-.rb-minimap canvas {
-  display: block;
+/* a land's map and the world's: zoomed by the wheel, a pinch or the buttons, moved by a drag (ui/panZoom.ts) */
+.rb-landmap {
+  position: relative;
   width: 100%;
-  image-rendering: pixelated;
+  max-height: min(60cqh, 460px);
+  overflow: hidden;
   border: 3px solid var(--rb-ink);
   border-radius: 8px;
+  background: #07050c;
+  touch-action: none;
+  cursor: grab;
+}
+.rb-landmap:active,
+.rb-world-view:active {
+  cursor: grabbing;
+}
+.rb-landmap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.rb-landmap-dark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #6a6480;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rb-zoom {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rb-zoom .rb-btn {
+  min-width: 30px;
+  padding: 2px 0;
+  font-size: 16px;
+  line-height: 1.3;
+}
+.rb-map-back {
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--rb-cyan);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 .rb-map-keys {
   display: flex;
@@ -3056,18 +3245,21 @@
   gap: 6px;
   margin-top: 6px;
 }
-.rb-world-scroll {
-  max-height: min(56cqh, 420px);
+.rb-world-view {
+  position: relative;
+  height: min(56cqh, 420px);
   margin-bottom: 8px;
-  overflow: auto;
+  overflow: hidden;
   border: 3px solid var(--rb-ink);
   border-radius: 8px;
   background: #1a2a3a;
-  overscroll-behavior: contain;
+  touch-action: none;
+  cursor: grab;
 }
 .rb-world {
   display: block;
   width: 100%;
+  height: 100%;
   font-family: var(--font);
 }
 .rb-world-sea {

@@ -29,15 +29,30 @@ import { mapIconUrl } from './mapIcons';
 /** A scene playing (sim/scene.ts): bars top and bottom over a clean picture (the HUD steps aside), and a way to skip it. */
 function SceneBars({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLDivElement>(null);
+  const title = useRef<HTMLDivElement>(null);
+  const shown = useRef('');
   useFrame(engine, (w) => {
     if (!ref.current) return;
     ref.current.classList.toggle('is-on', !!w.scene);
     ref.current.parentElement?.classList.toggle('is-scene', !!w.scene);
+    // a battle's or a boss's name, over the lower bar (it fades out with the bars)
+    const t = w.scene?.title;
+    const key = t ? `${t.text}|${t.sub ?? ''}` : '';
+    if (title.current && key && key !== shown.current) {
+      shown.current = key;
+      title.current.firstElementChild!.textContent = t!.text;
+      title.current.lastElementChild!.textContent = t!.sub ?? '';
+    }
+    title.current?.classList.toggle('is-on', !!t);
   });
   return (
     <div className="rb-scene" ref={ref} aria-hidden={!engine.world?.scene}>
       <div className="rb-scene-bar" />
       <div className="rb-scene-bar is-low" />
+      <div className="rb-scene-title" ref={title}>
+        <strong />
+        <span />
+      </div>
       <button className="rb-scene-skip" onClick={() => engine.skipScene()}>
         Skip {engine.touchMode ? '›' : '(Space)'}
       </button>
@@ -66,7 +81,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
   if (!w || !h) return null;
   const overlay = ui.panel || ui.dialogue || ui.travel || ui.pause || ui.death || ui.reward;
   return (
-    <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}`}>
+    <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}${engine.storyTalk() ? ' is-talk' : ''}${ui.card?.act ? ' is-act' : ''}`}>
       <Hud engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
@@ -78,6 +93,16 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
         </div>
       )}
       {ui.levelUp && <LevelUpBanner engine={engine} />}
+      {ui.card && (
+        <div className={`rb-tcard${ui.card.act ? ' is-act' : ''}`} key={ui.card.id} aria-live="polite">
+          <div className="rb-tcard-text">
+            <span className="rb-tcard-over">{ui.card.over}</span>
+            <strong>{ui.card.text}</strong>
+            <i className="rb-tcard-rule" />
+            {ui.card.sub && <span className="rb-tcard-sub">{ui.card.sub}</span>}
+          </div>
+        </div>
+      )}
       {!overlay && (engine.touchMode ? <TouchControls engine={engine} /> : <DesktopBar engine={engine} />)}
       <SceneBars engine={engine} />
       {ui.dialogue && <Dialogue engine={engine} />}

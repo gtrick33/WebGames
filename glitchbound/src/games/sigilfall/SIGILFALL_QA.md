@@ -246,3 +246,103 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
   - In the browser: every class's skills in one sheet, the mage's three trees, the talents panel, the
     desktop bar, the phone's buttons, and the credits line in Settings.
 
+## Cinematics, no teleports, and the map: the owner's list (2026-10-29)
+
+- **The rider (A Rider in the Dark).** He no longer runs slowly, vanishes and reappears inside the town.
+  - He walks up the road at a steady pace, and the camera stays on him through the gate.
+  - He falls where he stops, and the one lying there is him (no swap, no jump).
+  - After the talk he dies and fades out over about three seconds; then the camera goes to the inn as its
+    roof catches.
+- **Nobody pops in or out, anywhere in the story.**
+  - The story's people fade in as they come and fade out as they go, unless they walk out of view.
+  - People who walk in to a spot become the person who stands there; no swap and no jump.
+  - A companion who has fallen far behind catches up out of sight, with a fade.
+  - The people of a place who leave as the story moves on fade out where they stood, and so do the props the
+    story takes away; townsfolk fade while a story fight is on.
+  - `sigilfall-continuity` plays all 40 story events frame by frame. It checks that nobody pops in, vanishes
+    without a fade, or moves more than 8 px in a frame. With the fade turned off, it catches 8 events.
+- **Shots for the great moments** (`data/scenes.ts`, `opens`). Each is a few seconds under the letterbox
+  before the fight. The wave musters in sight and waits, a title comes up in the lower bar, and the call to
+  arms (banner, lines, sound) follows. Each plays once, and never in a co-op party. Twelve of the 40 events
+  have one:
+  - the Defense of Hearthstead;
+  - the ram at its gate;
+  - Fernstead taken back;
+  - the Pale Herald stepping out of the grey, with his line;
+  - the Night of Knives;
+  - Fernstead's people coming in (the camera follows them);
+  - the Sortie;
+  - the Field Before the Hall;
+  - the Fireships;
+  - the Answering Water;
+  - every banner marching into Dawn's Rest;
+  - the Last March.
+- **A boss met for the first time** is shown before it comes on (its name and title in the lower bar, a roar),
+  except in a Riftstone run. Nobody notices the hero, and nothing attacks, while a shot plays. A new war-horn
+  sound opens the battles.
+- **The map.**
+  - The wheel, a pinch or the + / − buttons zoom both maps; a drag moves them; ⤢ shows the whole map again.
+  - A land picked on the world map shows its own map on the left, as far as the hero has explored it. Where
+    they haven't been is black, and a land they have never set foot in is all black ("Not explored yet").
+  - Another land shows its waystones and roads; "back to …" returns to the land the hero is in.
+- Checked:
+  - Tests: `sigilfall-continuity` (every story event); `sigilfall-scenes` (every shot holds its wave in sight,
+    lets it go after, calls to arms once, never twice; a boss met for the first time is shown, once); the
+    courier test in `sigilfall-story`.
+  - In the browser (Chromium; the phone by emulation): the rider's walk, fall, talk and fade; the shots for
+    Hearthstead, the Herald, the Field Before the Hall, the Last March, the Night of Knives, Fernstead's
+    people and every banner; Warden Ossric met; the map zoomed, dragged, another land, an unexplored land and
+    the world zoomed, on desktop and phone.
+- Not verified: a real phone's pinch (the two-finger zoom was checked in code and by the + / − buttons, not by
+  a real touch screen); the war horn by ear.
+
+## Every act told like a film (2026-10-29, second pass)
+
+The owner asked for all the quests in every act to have a cinematic feeling, checked for the same teleport and
+vanishing bugs, and running smoothly. There are 514 quests (219 on the main story): 161 kill, 113 explore, 85
+loot, 81 talk, 40 story events and 29 bosses. Writing 219 scenes by hand would wear thin, so the story is now told
+in a few layers that every act shares:
+
+- **Act titles** (`data/acts.ts`). As each act's first quest is taken, its title comes up over a darkened
+  screen and the HUD steps aside: Prologue · The Night the Bells Stopped, Act I · The Villages of the Vale,
+  Act II · Road to the Crown City, Act III · The Broken Alliance, Act IV · War of the Three Gates, Act V · The
+  Dead Kingdom, Act VI · The Last March, The Finale · Crownfall, and Epilogue · The Bell. Each shows once.
+  A hero whose current act hasn't had its title yet sees it on entering the game. A new hero sees the
+  Prologue's title over the gate at dusk before Mara speaks.
+- **Lands and places.** The first time the hero enters a land, its name, kind, levels and subtitle come up as
+  a title (later visits keep the banner). A place found (113 explore steps, and the hidden groves) comes up as
+  a "Discovered" title instead of a banner.
+- **Shots for 36 of the 40 story events** (data/scenes.ts `opens`), each its own way:
+  - battles: the enemy line with a title and a war horn;
+  - defenses: the thing to hold first (the chapel door, the Harvest Stone, the Patience, the great lamp, Nyx at
+    a lock), then what is coming for it;
+  - rescues: the people to save, some with their first line (the queen's children in the snow, Elyra in her
+    cell);
+  - arrivals and the caravan: the camera follows the column walking in (the six camp arrivals, Nyx under the
+    white rag, the sick villages' wagon, the camp going home).
+  - The four left are the Prologue's first fights, which have their own staging (the gate, the bell, the rider,
+    the inn).
+- **Slow motion.** A boss's last blow and the last foe of a story fight fall slowed, with the camera drawn to
+  them (not in a co-op party).
+- **Story conversations.** Talking to anyone in the story (anyone who isn't only trading, or anyone giving or
+  taking back a quest): the HUD steps aside, the top bar comes down, and the camera frames the hero and the
+  speaker above the words.
+- **Bugs found and fixed:**
+  - An arrival could begin during a scene in the same place and lose its shot. Maren's first-dawn scene and
+    the rangers walking in both fired in the square, so the rangers were already there when she said "a camp
+    needs someone to go and bring the others in". Now a story event with a shot waits for a scene that is
+    playing, and Maren's dawn scene starts from further out, so she speaks first and then the rangers walk in.
+  - The new title cards first came up squeezed into a side panel: their class name clashed with the panels'
+    `.rb-card`. They are `.rb-tcard` now.
+- Checked:
+  - `sigilfall-cinematics`: the acts open in story order; a boss's last blow slows time and then time runs on;
+    a story fight's last foe is slowed once; never in co-op.
+  - `sigilfall-scenes`: every shot holds its wave and lets it go; every event but the Prologue's four has one.
+  - `sigilfall-continuity`: all 40 events with their shots, nobody popping in or out.
+  - The whole Sigilfall suite.
+  - In the browser: the Prologue title before Mara, the Act II title, the Whisperwood's land title, Maren
+    speaking framed (phone), a place discovered (phone), the dawn scene then the rangers walking in (phone),
+    the shots at the cells, in the snow and at the ram, and Warden Ossric's last blow slowed.
+- Not verified: every one of the 36 shots by eye. The test plays each one and checks its people and places are
+  there; nine were looked at in the browser.
+

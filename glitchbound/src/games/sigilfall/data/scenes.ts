@@ -4,7 +4,9 @@ import type { SceneDef } from '../sim/scene';
 /**
  * The story's staged beats (sim/scene.ts): a few seconds each, in the world, at the moments the story
  * turns. Each one only stages what the markers already say — who stands where comes from the region —
- * and plays once.
+ * and plays once. The last of them are shots that open the story's fights and arrivals (`opens`): a title
+ * and the battle line for the great ones, a few seconds each its own way for the rest (the thing to hold,
+ * the people to save, the column walking in).
  */
 export const SCENES: SceneDef[] = [
   {
@@ -14,7 +16,8 @@ export const SCENES: SceneDef[] = [
     // only that first morning: once Act I is under way (the orders from the north read) it has passed
     when: all(after('the-empty-tomb'), until('camp-scouts'), until('orders-from-the-north')),
     near: 'briar-square',
-    r: 150,
+    // (from further out than the rangers' arrival begins: Maren speaks first, then they walk in)
+    r: 340,
     steps: [
       { look: 'briar-square' },
       { say: 'maren', line: 'Look at them. Every soul in Briarhollow, alive, in one square. I counted twice.' },
@@ -52,14 +55,24 @@ export const SCENES: SceneDef[] = [
     ],
   },
   {
-    // the courier coming up the road out of the dark, the last of it on foot, carrying his light
+    // the courier coming up the road out of the dark, the last of it on foot, carrying his light: the camera
+    // stays on him through the gate to where he falls, and on him there
     id: 'briar-the-rider-comes',
     region: 'briarhollow',
     when: during('briar-the-rider'),
     // (inside his arrival's six tiles, so he is on the road when the camera looks)
     near: 'briar-gate',
     r: 88,
-    steps: [{ look: 'briar-road' }, { wait: 2.6 }, { look: 'briar-north' }, { wait: 3.2 }, { look: 'hero' }],
+    steps: [{ look: 'briar-road' }, { wait: 1.6 }, { follow: 'courier', secs: 16 }, { look: 'briar-courier-falls' }, { wait: 2.6 }, { look: 'hero' }],
+  },
+  {
+    // the courier dead in the gateway, his seal in the hero's hand: and behind them the inn's roof catches
+    id: 'briar-the-inn-catches',
+    region: 'briarhollow',
+    when: during('briar-the-inn'),
+    near: 'briar-gate',
+    r: 160,
+    steps: [{ wait: 1.8 }, { look: 'briar-inn' }, { sfx: 'roar' }, { wait: 3 }, { look: 'hero' }],
   },
   {
     // the Crown City: the Regent meets the hero with the countermanded order, the Chancellor at her side
@@ -302,5 +315,286 @@ export const SCENES: SceneDef[] = [
       { say: 'elyra', line: 'They’ll hear it in Fernstead. They’ll hear it all the way to the Crown City.' },
       { look: 'hero' },
     ],
+  },
+
+  /* ------------------------------------------- the shots that open the great moments */
+  {
+    // Act I: the Defense of Hearthstead begins, the Host's riders already in the lanes
+    id: 'hearth-the-riders-come',
+    region: 'amberfield',
+    opens: { event: 'hearth-riders' },
+    steps: [{ look: 'foes' }, { title: 'The Defense of Hearthstead' }, { sfx: 'warhorn' }, { wait: 1.4 }, { shake: 3 }, { wait: 1.4 }, { look: 'hero' }],
+  },
+  {
+    // the ram comes up the road to Hearthstead's gate
+    id: 'hearth-the-ram-comes',
+    region: 'amberfield',
+    opens: { event: 'hearth-ram', wave: 1 },
+    steps: [{ look: 'foes' }, { sfx: 'slam' }, { shake: 5 }, { wait: 0.9 }, { sfx: 'slam' }, { shake: 6 }, { wait: 1.3 }, { look: 'hero' }],
+  },
+  {
+    // Act III: Fernstead taken back, its lanes full of the Legion
+    id: 'fern-the-retaking',
+    region: 'brackenridge',
+    opens: { event: 'fern-retake' },
+    steps: [{ look: 'foes' }, { title: 'Fernstead Again' }, { sfx: 'warhorn' }, { wait: 2.6 }, { look: 'hero' }],
+  },
+  {
+    // the Pale Herald steps out of the grey at the Tear, for Elyra
+    id: 'tear-the-herald',
+    region: 'shattered-vale',
+    opens: { event: 'herald-ambush', wave: 2 },
+    steps: [
+      { look: 'the-pale-herald' },
+      { title: 'The Pale Herald' },
+      { sfx: 'rift' },
+      { shake: 3 },
+      { say: 'the-pale-herald', line: 'Little light. You have been carrying something of my king’s. Come and give it back.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // the Night of Knives: the masks in the festival crowd, all moving toward the Regent
+    id: 'ember-the-knives',
+    region: 'emberwick',
+    opens: { event: 'festival-knives' },
+    steps: [{ look: 'foes' }, { title: 'The Night of Knives' }, { sfx: 'shadow' }, { wait: 2.2 }, { look: 'hero' }],
+  },
+  {
+    // the night Fernstead fell: what is left of it, coming up the west road to Briarhollow
+    id: 'briar-fernstead-comes',
+    region: 'briarhollow',
+    opens: { event: 'fern-refugees' },
+    steps: [{ title: 'The Night Fernstead Fell' }, { follow: 'fern-ranger', secs: 8 }, { look: 'hero' }],
+  },
+  {
+    // Act IV: Highwall's gate opens and the Ninefold ride out at the Legion's line
+    id: 'highwall-the-sortie',
+    region: 'highwall',
+    opens: { event: 'highwall-sortie' },
+    steps: [{ look: 'foes' }, { title: 'The Sortie' }, { sfx: 'warhorn' }, { wait: 1.6 }, { shake: 3 }, { wait: 1 }, { look: 'hero' }],
+  },
+  {
+    // Act V: the Legion drawn up on the field before the Muster Hall, and every ally beside the hero
+    id: 'bone-the-field',
+    region: 'bonefields',
+    opens: { event: 'muster-field' },
+    steps: [{ look: 'foes' }, { title: 'The Field Before the Hall' }, { sfx: 'warhorn' }, { wait: 1.4 }, { shake: 4 }, { wait: 1.4 }, { look: 'hero' }],
+  },
+  {
+    // the drowned crews of the fireships, coming up out of the harbor
+    id: 'sunken-the-fireships',
+    region: 'sunken-reaches',
+    opens: { event: 'the-fireships' },
+    steps: [{ look: 'foes' }, { title: 'Fireships' }, { sfx: 'roar' }, { wait: 2.2 }, { look: 'hero' }],
+  },
+  {
+    // the mere answers Orren's lantern: the drowned rise, and one of them is small
+    id: 'mere-the-water-answers',
+    region: 'hollowmere',
+    opens: { event: 'orren-on-the-shore' },
+    steps: [{ look: 'foes' }, { sfx: 'soul' }, { wait: 2.6 }, { look: 'hero' }],
+  },
+  {
+    // Act VI: every banner the hero earned, marching into Dawn's Rest
+    id: 'reach-the-columns',
+    region: 'pale-reach',
+    opens: { event: 'reach-the-banners' },
+    steps: [{ title: 'Every Banner' }, { follow: 'highwall-soldier', secs: 7 }, { look: 'hero' }],
+  },
+  {
+    // Act VI: the last march, the Pale Host before the wall and the siege mages behind the hero
+    id: 'reach-the-last-march',
+    region: 'pale-reach',
+    opens: { event: 'reach-the-mages' },
+    steps: [{ look: 'foes' }, { title: 'The Last March' }, { sfx: 'warhorn' }, { wait: 1.4 }, { shake: 4 }, { wait: 1.6 }, { look: 'hero' }],
+  },
+  /* ------------------------------------- every other story moment: a short shot, its own way */
+  {
+    // the Prologue's last stand: the chapel door, and what is coming for it
+    id: 'briar-the-door',
+    region: 'briarhollow',
+    opens: { event: 'briar-door' },
+    steps: [{ look: 'chapel-door' }, { title: 'Hold the Chapel Door' }, { wait: 0.6 }, { look: 'foes' }, { sfx: 'roar' }, { shake: 3 }, { wait: 1.2 }, { look: 'hero' }],
+  },
+  {
+    // Act I, the camp filling up: each village's people walking into Briarhollow, watched all the way in
+    id: 'briar-the-rangers-come',
+    region: 'briarhollow',
+    opens: { event: 'camp-scouts' },
+    steps: [{ title: 'Rangers for Briarhollow' }, { follow: 'fern-ranger', secs: 6 }, { look: 'hero' }],
+  },
+  {
+    id: 'briar-the-grain-comes',
+    region: 'briarhollow',
+    opens: { event: 'camp-grain' },
+    steps: [{ title: 'Grain for Briarhollow' }, { follow: 'mill-carter', secs: 6 }, { look: 'hero' }],
+  },
+  {
+    id: 'briar-the-healers-come',
+    region: 'briarhollow',
+    opens: { event: 'camp-healers' },
+    steps: [{ title: 'Healers for Briarhollow' }, { follow: 'reed-healer', secs: 6 }, { look: 'hero' }],
+  },
+  {
+    id: 'briar-the-forge-comes',
+    region: 'briarhollow',
+    opens: { event: 'camp-smiths' },
+    steps: [{ title: 'A Forge for Briarhollow' }, { follow: 'gull-smith', secs: 6 }, { look: 'hero' }],
+  },
+  {
+    id: 'briar-the-riders-come',
+    region: 'briarhollow',
+    opens: { event: 'camp-riders' },
+    steps: [{ title: 'Riders for Briarhollow' }, { follow: 'hearth-rider', secs: 6 }, { look: 'hero' }],
+  },
+  {
+    id: 'briar-the-steel-comes',
+    region: 'briarhollow',
+    opens: { event: 'camp-dwarves' },
+    steps: [{ title: 'Steel for Briarhollow' }, { follow: 'dwarf-carter', secs: 6 }, { look: 'hero' }],
+  },
+  {
+    // Act I: the Harvest Stone, and the restless dead coming for its candles
+    id: 'fern-the-stones',
+    region: 'brackenridge',
+    opens: { event: 'fern-stones' },
+    steps: [{ look: 'harvest-stone' }, { title: 'The Harvest Stones' }, { wait: 0.8 }, { look: 'foes' }, { sfx: 'soul' }, { wait: 1.4 }, { look: 'hero' }],
+  },
+  {
+    // Act I: the Gallows Gang at the mill, paid in ash-gold
+    id: 'mill-the-gang',
+    region: 'thornvale',
+    opens: { event: 'mill-the-mill' },
+    steps: [{ look: 'foes' }, { title: 'The Mill Road' }, { sfx: 'roar' }, { wait: 1.8 }, { look: 'hero' }],
+  },
+  {
+    // Act I: Reedwater's taken people, found in Mother Mire's cage
+    id: 'reed-the-cage',
+    region: 'greyfen',
+    opens: { event: 'reed-home' },
+    steps: [{ look: 'reed-villager' }, { title: 'Bring Them Home' }, { wait: 2 }, { look: 'hero' }],
+  },
+  {
+    // Act I: the Patience on the slip, and the grey tide coming up out of the water at her
+    id: 'gull-the-tide',
+    region: 'saltmarsh',
+    opens: { event: 'gull-tide' },
+    steps: [{ look: 'ines-boat' }, { title: 'The Grey Tide' }, { wait: 0.8 }, { look: 'foes' }, { sfx: 'roar' }, { wait: 1.4 }, { look: 'hero' }],
+  },
+  {
+    // the last sledges out of the snow, their drivers by a dying fire
+    id: 'rime-the-sledges',
+    region: 'rimeheld',
+    opens: { event: 'rime-sledges' },
+    steps: [{ look: 'sledge-driver' }, { title: 'The Last Sledges' }, { wait: 2 }, { look: 'hero' }],
+  },
+  {
+    // Act I's finale goes on: the only gate, and the second wave at it
+    id: 'hearth-the-wall',
+    region: 'amberfield',
+    opens: { event: 'hearth-wall' },
+    steps: [{ look: 'hearth-gate' }, { wait: 0.6 }, { look: 'foes' }, { sfx: 'warhorn' }, { shake: 3 }, { wait: 1.4 }, { look: 'hero' }],
+  },
+  {
+    // Act II begins on the road: the wagon of the sick setting out across the fen
+    id: 'dusk-the-caravan',
+    region: 'duskfen',
+    opens: { event: 'dusk-caravan' },
+    steps: [{ title: 'The Sick Villages' }, { follow: 'refugee-wagon', secs: 5 }, { look: 'hero' }],
+  },
+  {
+    // Act II: Nyx at the Deepforge's postern lock, and the guards coming down on her
+    id: 'iron-the-back-door',
+    region: 'ironpeak',
+    opens: { event: 'iron-postern' },
+    steps: [{ look: 'nyx-at-the-lock' }, { title: 'The Back Door' }, { wait: 0.8 }, { look: 'foes' }, { wait: 1.4 }, { look: 'hero' }],
+  },
+  {
+    // Act II: the great lamp of Lantern Hill lit for the vigil, and the dead coming up the downs to end it
+    id: 'lantern-the-vigil',
+    region: 'ashen-barrows',
+    opens: { event: 'lantern-vigil' },
+    steps: [{ look: 'great-lamp' }, { title: 'The Vigil' }, { wait: 1 }, { look: 'foes' }, { sfx: 'soul' }, { wait: 1.6 }, { look: 'hero' }],
+  },
+  {
+    // Act II: the Chancellor's cellar, and who was waiting in it
+    id: 'ember-the-cellar',
+    region: 'emberwick',
+    opens: { event: 'city-cellar' },
+    steps: [{ look: 'foes' }, { title: 'The Chancellor’s Cellar' }, { sfx: 'shadow' }, { wait: 1.8 }, { look: 'hero' }],
+  },
+  {
+    // Act III: Silvaine singing to the prince of thorns, and his knights coming to stop her
+    id: 'thorn-the-song',
+    region: 'glimmerwood',
+    opens: { event: 'thorn-song' },
+    steps: [
+      { look: 'silvaine-singing' },
+      { title: 'Silvaine’s Song' },
+      { say: 'silvaine-singing', line: 'Thistle. Little Thistle. Do you remember the river?' },
+      { look: 'foes' },
+      { wait: 1.2 },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // Act III's low point begins: the light wrong at the Tear
+    id: 'tear-the-light-is-wrong',
+    region: 'shattered-vale',
+    opens: { event: 'herald-ambush' },
+    steps: [{ look: 'tear-top' }, { sfx: 'rift' }, { wait: 1.6 }, { look: 'foes' }, { wait: 1.2 }, { look: 'hero' }],
+  },
+  {
+    // Act IV: someone coming up the road to the relief camp under a white rag
+    id: 'highwall-the-white-rag',
+    region: 'highwall',
+    opens: { event: 'nyx-returns' },
+    steps: [{ title: 'Under a White Rag' }, { follow: 'nyx', secs: 6 }, { look: 'hero' }],
+  },
+  {
+    // Act IV: Nyx at the Gloam Gate's cells, and the gate-guards on the stair
+    id: 'gloam-the-stair',
+    region: 'gloamhollow',
+    opens: { event: 'gloam-cells' },
+    steps: [{ look: 'nyx-at-the-lock' }, { title: 'The Cells' }, { wait: 0.8 }, { look: 'foes' }, { wait: 1.4 }, { look: 'hero' }],
+  },
+  {
+    // Act IV: Elyra on her feet in the open cell
+    id: 'gloam-out-of-the-dark',
+    region: 'gloamhollow',
+    opens: { event: 'gloam-out' },
+    steps: [
+      { look: 'elyra-freed' },
+      { title: 'Out of the Dark' },
+      { say: 'elyra-freed', line: 'I can walk. I can. Don’t carry me. If you carry me I’ll never stop being carried.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // Act V: the queen's two children, still out in the snow after three hundred years
+    id: 'wood-the-snow',
+    region: 'weeping-woods',
+    opens: { event: 'wood-the-children' },
+    steps: [
+      { look: 'echo-child' },
+      { title: 'Two Names in the Snow' },
+      { say: 'echo-child', line: 'Is it Papa? Papa, did you get the star? Mama says you went to get the star.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // Act VI: the second charge, through the gap in the wall
+    id: 'reach-through-the-gap',
+    region: 'pale-reach',
+    opens: { event: 'reach-the-breach' },
+    steps: [{ look: 'foes' }, { title: 'The Breach' }, { sfx: 'warhorn' }, { shake: 4 }, { wait: 1.6 }, { look: 'hero' }],
+  },
+  {
+    // the Epilogue: Maren sends the camp home, and the first of them take the south road
+    id: 'briar-going-home',
+    region: 'briarhollow',
+    opens: { event: 'epilogue-the-camp' },
+    steps: [{ title: 'The Camp Goes Home' }, { follow: 'fern-ranger', secs: 6 }, { look: 'hero' }],
   },
 ];

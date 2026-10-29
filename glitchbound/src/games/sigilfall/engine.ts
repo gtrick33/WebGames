@@ -1,6 +1,7 @@
 import type { GameHost } from '../../platform/contract';
 import { isMainQuest, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
+import { ACTS, type ActDef } from './data/acts';
 import { CLASSES } from './data/classes';
 import { keyAffixes, weekOf } from './data/keystones';
 import { NPCS, QUEST_DEFS } from './data/quests';
@@ -99,6 +100,20 @@ export interface UiState {
   teach: { slot: SlotKey; text: string; shown: number; until: number } | null;
   /** The load went wrong in a way the player should know about. */
   notice: string;
+  /**
+   * A title over the world: an act beginning, or a land seen for the first time (`id` is when it came up).
+   */
+  card: TitleCard | null;
+}
+
+export interface TitleCard {
+  /** Small, over the title: "Act II", "Wilds · levels 18–24". */
+  over: string;
+  text: string;
+  sub?: string;
+  /** An act's (the screen darkens behind it), else a land's. */
+  act: boolean;
+  id: number;
 }
 
 const STEP = 1 / 60;
@@ -107,6 +122,9 @@ const STEP = 1 / 60;
 const LEAD_WAIT_MS = 20_000;
 /** Seconds a new hero sees the gate at dusk before the guard speaks. */
 const GREET_AFTER = 1.4;
+/** How long a title card holds the screen (ms): an act's, a land's. */
+const ACT_CARD_MS = 4200;
+const LAND_CARD_MS = 3400;
 
 /** What the party's room answers, in words (net/room.ts act). */
 const PARTY_ERRORS: Record<string, string> = {
@@ -155,6 +173,8 @@ export class SigilEngine {
   private bannerHeld = false;
   /** Seconds of the world in view before a new hero is greeted at the gate (0: no greeting due). */
   private greetIn = 0;
+  /** Title cards waiting for their moment (no one talking, no scene, no panel open). */
+  private cards: Omit<TitleCard, 'id'>[] = [];
   /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
   private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number } | null = null;
   private hidden = false;
@@ -204,6 +224,7 @@ export class SigilEngine {
       boss: null,
       levelUp: null,
       teach: null,
+      card: null,
       notice:
         loaded.status === 'recovered'
           ? 'Your last save could not be read, so your previous save was restored.'
@@ -357,7 +378,8 @@ export class SigilEngine {
         steps += 1;
       }
       if (this.hero) this.hero.stats.time += dt;
-      if (this.greetIn > 0) {
+      // (the greeting waits for a title over the gate to have come and gone)
+      if (this.greetIn > 0 && !this.ui.card && !this.cards.length) {
         this.greetIn -= dt;
         if (this.greetIn <= 0 && this.hero && questState(this.hero, 'briar-dusk') === 'active' && w.region.id === HOME) this.talk('mara-venn');
       }
@@ -411,13 +433,22 @@ export class SigilEngine {
       this.toastsHeld = false;
       this.setUi({ toasts: this.ui.toasts.map((x) => ({ ...x, until: t + toastTime(x.tone) })) });
     } else if (this.ui.toasts.some((x) => x.until < t)) this.setUi({ toasts: this.ui.toasts.filter((x) => x.until >= t) });
-    // (and a banner, which a scene hides, shows in full once it is over)
+    // (and a banner, which a scene hides, shows in full once it is over: unless the scene played the moment
+    // it announced out, a long while ago)
     if (w.scene) this.bannerHeld = true;
     else if (this.bannerHeld) {
       this.bannerHeld = false;
-      if (this.ui.banner) this.setUi({ banner: { ...this.ui.banner, id: t } });
+      if (this.ui.banner) this.setUi({ banner: t - this.ui.banner.id < 4000 ? { ...this.ui.banner, id: t } : null });
     }
     if (this.ui.banner && !this.bannerHeld && t - this.ui.banner.id > 2600) this.setUi({ banner: null });
+    // a story told face to face: the camera frames the hero and whoever speaks (and the HUD steps aside)
+    const d = this.ui.dialogue;
+    const who = d && this.storyTalk() ? w.npcs.find((n) => n.id === d.npc) : undefined;
+    w.talkTo = who ? { x: who.x, y: who.y } : null;
+    // a title card waits for its moment, then holds the screen a few seconds
+    const card = this.ui.card;
+    if (card && t - card.id > (card.act ? ACT_CARD_MS : LAND_CARD_MS)) this.setUi({ card: null });
+    else if (!card && this.cards.length && !this.ui.dialogue && !this.ui.panel && !this.ui.death && !w.scene) this.setUi({ card: { ...this.cards.shift()!, id: t } });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
     const boss = w.boss();
     this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
@@ -469,12 +500,17 @@ export class SigilEngine {
           this.sound.play('questDone', 0.7);
           break;
         }
-        case 'questStart':
+        case 'questStart': {
           if (!QUEST_DEFS[ev.quest]?.quiet) newQuests.push(ev.quest);
+          // an act begins: its title, once
+          const act = ACTS.find((a) => a.opens === ev.quest);
+          if (act && !this.hero?.opened.includes(`act:${act.id}`)) this.actBegins(act);
           break;
+        }
         case 'bossStart': {
           const b = w.boss();
-          if (b?.boss) this.ui = { ...this.ui, boss: { name: b.boss.def.name, title: b.boss.def.title }, banner: { text: b.boss.def.name, sub: b.boss.def.title, id: performance.now() } };
+          // (met for the first time, its name is in the shot of it: no banner after)
+          if (b?.boss) this.ui = { ...this.ui, boss: { name: b.boss.def.name, title: b.boss.def.title }, banner: w.scene ? this.ui.banner : { text: b.boss.def.name, sub: b.boss.def.title, id: performance.now() } };
           changed = true;
           break;
         }
@@ -491,7 +527,9 @@ export class SigilEngine {
           this.sound.play('levelup');
           break;
         case 'banner':
-          this.ui = { ...this.ui, banner: { text: ev.text, sub: ev.sub, id: performance.now() } };
+          // a place found comes up as a title over the land; anything else is a banner
+          if (ev.place) this.cards.push({ over: ev.sub ?? 'Discovered', text: ev.text, act: false });
+          else this.ui = { ...this.ui, banner: { text: ev.text, sub: ev.sub, id: performance.now() } };
           changed = true;
           break;
         case 'death':
@@ -688,6 +726,8 @@ export class SigilEngine {
         /* no history (tests) */
       }
     }
+    // the act under way, if its title hasn't been seen (a brand-new hero's Prologue, over the gate at dusk)
+    for (const act of ACTS) if (questState(h, act.opens) === 'active' && !h.opened.includes(`act:${act.id}`)) this.actBegins(act);
     // a brand-new hero arrives at Briarhollow's gate at dusk, and the guard stops them there: once the gate
     // can be seen (its art in, a moment to look), not over a dark screen
     this.greetIn = questState(h, 'briar-dusk') === 'active' && h.level === 1 && h.stats.time < 1 ? GREET_AFTER : 0;
@@ -701,7 +741,8 @@ export class SigilEngine {
     this.persist();
     this.world = null;
     this.hero = null;
-    this.setUi({ screen: 'title', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null });
+    this.cards = [];
+    this.setUi({ screen: 'title', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null, card: null });
   }
 
   /* ------------------------------------------------------------- travel */
@@ -737,6 +778,10 @@ export class SigilEngine {
     }
     const stone = this.run?.key ?? 0;
     const keepTier = this.run ? this.run.tier : tier;
+    // a land seen for the first time comes up as a title over it; after that, a banner (asked before the world
+    // is made: its first look round already marks some of the land seen)
+    const first = !region.interior && !h.opened.includes(`land:${to}`) && !h.seen[to] && !stone;
+    if (!region.interior && !h.opened.includes(`land:${to}`)) h.opened.push(`land:${to}`);
     const w = new World({
       region: to,
       tier: region.safe ? 0 : keepTier,
@@ -764,7 +809,8 @@ export class SigilEngine {
     this.world = w;
     this.renderer.snap(w);
     const sub = region.safe ? region.subtitle : w.keyRun ? `Riftstone +${w.keyRun.key} · the clock is running` : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`;
-    this.ui = { ...this.ui, panel: null, travel: null, dialogue: null, boss: null, death: false, reward: null, banner: { text: region.name, sub, id: performance.now() } };
+    if (first) this.cards.push({ over: region.kind === 'town' ? 'Town' : `${region.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${region.levels[0] + TIERS[w.tier]!.levels}–${region.levels[1] + TIERS[w.tier]!.levels}`, text: region.name, sub: region.subtitle, act: false });
+    this.ui = { ...this.ui, panel: null, travel: null, dialogue: null, boss: null, death: false, reward: null, banner: first ? null : { text: region.name, sub, id: performance.now() } };
     this.persist();
     this.bump();
   }
@@ -867,6 +913,18 @@ export class SigilEngine {
     this.touch.release();
     this.sound.play(pages.length ? 'quest' : 'open');
     this.setUi({ dialogue: { npc: npcId, lines, i: 0, pages } });
+  }
+
+  /** An act's title, once (it stands for the land's own title, if that hasn't come up yet). */
+  private actBegins(act: ActDef): void {
+    this.hero?.opened.push(`act:${act.id}`);
+    this.cards = [{ over: act.over, text: act.name, act: true }, ...this.cards.filter((c) => c.act)];
+  }
+
+  /** Is the dialogue open a part of the story (anyone's who isn't only trading, or a quest given or taken back)? */
+  storyTalk(): boolean {
+    const d = this.ui.dialogue;
+    return !!d && (d.pages.length > 0 || !NPCS[d.npc]?.shop);
   }
 
   /** The dialogue's page now: a line (null) or a quest page. */

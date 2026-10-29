@@ -123,6 +123,8 @@ export interface Enemy {
   ccImmuneUntil?: number;
   /** A story event's raider: it hunts the hero wherever they go and never gives up and walks home. */
   hunts?: boolean;
+  /** Seen coming in a scene's shot (a story fight's foes mustering, a boss met): it stands until the shot is over. */
+  held?: boolean;
   /** A raider's own way to whoever it hunts, past the reach of the shared field (and when it was made). */
   huntFlow?: Int16Array;
   huntAt?: number;
@@ -226,6 +228,8 @@ export interface Pet {
   joinT?: number;
   /** Goes in where it is walking to (children into the chapel): gone once it is there. */
   inside?: boolean;
+  /** When the story put it where it stands (World.time): it fades in (render). Unset: no fade (it was there). */
+  born?: number;
   /** Seconds a companion stays down before getting back up (PetDef.rally). */
   downT?: number;
   /** The skill whose cast called it: it leaves when that skill leaves the bar (World.dropLeftovers). */
@@ -448,6 +452,10 @@ export interface NpcActor {
   y: number;
   face: number;
   bob: number;
+  /** When the story brought them here (World.time): they fade in. Unset: here since the land was entered. */
+  since?: number;
+  /** When they fell (World.time), if they fell in sight (a `down` NPC's collapse). */
+  fell?: number;
 }
 
 export interface FloatText {
@@ -498,7 +506,8 @@ export type WorldEvent =
   | { t: 'bossStart'; boss: string }
   | { t: 'bossPhase'; banner: string }
   | { t: 'bossDown'; boss: string }
-  | { t: 'banner'; text: string; sub?: string }
+  /** A word over the screen (`place`: a place found, which comes up as a title over the land). */
+  | { t: 'banner'; text: string; sub?: string; place?: boolean }
   | { t: 'death' }
   | { t: 'cleared' }
   | { t: 'hero' }

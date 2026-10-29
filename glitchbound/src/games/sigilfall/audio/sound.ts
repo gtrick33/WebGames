@@ -17,6 +17,9 @@ interface Voice {
   gain: number;
   type?: OscillatorType;
   at?: number;
+  /** Seconds to swell in (else a strike), and to hold full before it dies away (a horn's call). */
+  attack?: number;
+  hold?: number;
 }
 
 const hz = (m: number): number => 440 * 2 ** ((m - 69) / 12);
@@ -97,6 +100,17 @@ const SFX: Record<string, (s: Sound) => void> = {
   holy: (s) => s.tones([{ f: hz(84), to: hz(91), dur: 0.14, gain: 0.025, type: 'sine' }, { f: hz(88), dur: 0.16, gain: 0.018, type: 'triangle', at: 0.04 }]),
   shadow: (s) => s.tones([{ f: 320, to: 140, dur: 0.18, gain: 0.04, type: 'sawtooth' }, { f: 160, to: 90, dur: 0.2, gain: 0.02, type: 'sine', at: 0.03 }]),
   nature: (s) => (s.noise(0.1, 0.03, 2400, 'bandpass'), s.tones([{ f: 620, to: 880, dur: 0.1, gain: 0.025, type: 'triangle' }])),
+  // a war horn across a field: a long low call, a breath, and the call again a fifth higher
+  warhorn: (s) => (
+    s.noise(0.4, 0.02, 500, 'lowpass'),
+    s.tones([
+      { f: hz(41), to: hz(43), dur: 1.4, gain: 0.045, type: 'sawtooth', attack: 0.18, hold: 0.8 },
+      { f: hz(53), to: hz(55), dur: 1.4, gain: 0.016, type: 'triangle', attack: 0.18, hold: 0.8 },
+      { f: hz(43), dur: 2, gain: 0.05, type: 'sawtooth', at: 1.6, attack: 0.15, hold: 1.2 },
+      { f: hz(50), dur: 2, gain: 0.03, type: 'sawtooth', at: 1.6, attack: 0.15, hold: 1.2 },
+      { f: hz(62), dur: 2, gain: 0.014, type: 'triangle', at: 1.6, attack: 0.15, hold: 1.2 },
+    ])
+  ),
   roar: (s) => (s.noise(0.7, 0.12, 400, 'lowpass'), s.tones([{ f: 110, to: 70, dur: 0.7, gain: 0.08, type: 'sawtooth' }])),
   slam: (s) => (s.noise(0.3, 0.12, 300, 'lowpass'), s.tones([{ f: 70, to: 40, dur: 0.3, gain: 0.09, type: 'sine' }])),
   snort: (s) => s.noise(0.15, 0.05, 600, 'bandpass'),
@@ -227,8 +241,11 @@ export class Sound {
       o.type = v.type ?? 'sine';
       o.frequency.setValueAtTime(v.f, t);
       if (v.to) o.frequency.exponentialRampToValueAtTime(Math.max(20, v.to), t + v.dur);
+      const peak = Math.max(0.0002, v.gain * this.volScale);
+      const up = v.attack ?? 0.008;
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(Math.max(0.0002, v.gain * this.volScale), t + 0.008);
+      g.gain.exponentialRampToValueAtTime(peak, t + up);
+      if (v.hold) g.gain.setValueAtTime(peak, t + up + v.hold);
       g.gain.exponentialRampToValueAtTime(0.0001, t + v.dur);
       o.connect(g).connect(this.sfxBus);
       o.start(t);

@@ -46,8 +46,12 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
     e.t -= dt;
     if (e.t <= 0) {
       e.state = 'chase';
-      e.aggro = true;
+      e.aggro = !e.held;
     }
+    return;
+  }
+  if (e.held) {
+    applyMove(w, e, 0, 0, dt);
     return;
   }
   if (e.dummy) {
@@ -110,7 +114,8 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
           my = Math.sin(a) * 0.4;
         }
       }
-      if (!p.dead && d < e.def.aggro && lineOfSight(w.map, e.x, e.y, p.x, p.y)) w.alertPack(e);
+      // (nobody notices a hero standing still in a scene)
+      if (!p.dead && !w.scene && d < e.def.aggro && lineOfSight(w.map, e.x, e.y, p.x, p.y)) w.alertPack(e);
       if (e.aggro) {
         e.state = 'chase';
         e.atkCd = Math.max(e.atkCd, 0.4 + w.rand() * 0.6);
@@ -127,7 +132,7 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
         e.aggro = false;
         e.statuses = [];
       }
-      if (!p.dead && d < e.def.aggro * 0.7 && lineOfSight(w.map, e.x, e.y, p.x, p.y)) {
+      if (!p.dead && !w.scene && d < e.def.aggro * 0.7 && lineOfSight(w.map, e.x, e.y, p.x, p.y)) {
         e.aggro = true;
         e.state = 'chase';
       }

@@ -40,6 +40,9 @@ export interface StaticObject {
   anim?: AnimInfo;
   /** Atlas pixels per world pixel (default DETAIL: art painted at the old grid). */
   k?: number;
+  /** When the story put it there in sight (renderer time): it fades in. When it took it away: it fades out. */
+  born?: number;
+  gone?: number;
 }
 
 /** The ground under everything: painted procedurally, or laid from the pack's tiles. */
