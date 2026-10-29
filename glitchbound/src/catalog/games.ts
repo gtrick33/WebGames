@@ -1075,7 +1075,7 @@ export const GAMES: GameEntry[] = [
     live: { players: '2–6' },
     controls: {
       keyboard: ['← →: walk, Enter: jump', '↑ ↓ or drag the mouse: aim', 'Hold Space for power, release to fire', '1–7 or Q / E: weapons', 'Z: whole map, Esc: pause'],
-      touch: ['◀ ▶ to walk, ⤒ to jump, drag on the map to aim', 'Hold the fire button for power, let go to shoot', 'Two fingers to look around and zoom'],
+      touch: ['◀ ▶ to walk, JUMP to hop, drag on the map to aim', 'Hold the fire button for power, let go to shoot', 'Two fingers to look around and zoom'],
     },
     stats: [
       { key: 'score', label: 'Best score' },

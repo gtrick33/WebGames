@@ -28,6 +28,28 @@
   gap: 8px;
   margin-left: auto;
 }
+/* A narrower screen keeps the game's name readable: "Live multiplayer" shrinks to its dot (the words
+   stay for screen readers) on a phone, and while a game runs (its buttons join the toolbar) below
+   1100px, where the category steps aside too. */
+@media (max-width: 1100px) {
+  .game-toolbar:has(.game-actions.is-playing) .game-heading .chip {
+    display: none;
+  }
+  .game-toolbar:has(.game-actions.is-playing) .game-heading .live-badge {
+    gap: 0;
+    padding: 5px;
+    font-size: 0;
+    letter-spacing: 0;
+  }
+}
+@media (max-width: 560px) {
+  .game-heading .live-badge {
+    gap: 0;
+    padding: 5px;
+    font-size: 0;
+    letter-spacing: 0;
+  }
+}
 
 /* A wider page than the rest of the site, so the game gets the room (like a video page). */
 .game-page > .wrap {

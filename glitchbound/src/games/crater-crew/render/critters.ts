@@ -5,6 +5,8 @@
  */
 import type { CharId } from '../characters';
 import type { WeaponId } from '../weapons';
+import { drawWeapon } from './arms';
+import { ell, paint, shade } from './paint';
 
 export interface Pose {
   /** Seconds, for breathing and blinking. */
@@ -23,29 +25,6 @@ export interface Pose {
 }
 
 type Ctx = CanvasRenderingContext2D;
-
-function ell(c: Ctx, x: number, y: number, rx: number, ry: number, rot = 0): void {
-  c.beginPath();
-  c.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
-}
-
-function paint(c: Ctx, fill: string | CanvasGradient, line?: string, width = 1.1): void {
-  c.fillStyle = fill;
-  c.fill();
-  if (line) {
-    c.strokeStyle = line;
-    c.lineWidth = width;
-    c.stroke();
-  }
-}
-
-/** A soft top-left lit gradient over a body centered at (x, y). */
-function shade(c: Ctx, x: number, y: number, r: number, hi: string, lo: string): CanvasGradient {
-  const g = c.createRadialGradient(x - r * 0.45, y - r * 0.5, r * 0.1, x, y, r * 1.25);
-  g.addColorStop(0, hi);
-  g.addColorStop(1, lo);
-  return g;
-}
 
 /** Two eyes with pupils that look along the aim (or a blink). */
 function eyes(c: Ctx, pts: [number, number][], r: number, p: Pose, iris?: string, line = '#1a1a1a'): void {
@@ -373,82 +352,6 @@ const DRAW: Record<CharId, (c: Ctx, p: Pose, crew: string) => void> = {
   },
 };
 
-/** The weapon in hand, pointing right along the aim. */
-export function drawWeapon(c: Ctx, w: WeaponId, t: number): void {
-  switch (w) {
-    case 'rocket':
-      c.beginPath();
-      c.roundRect(-3, -2.4, 17, 4.8, 1.2);
-      paint(c, '#4d6b1f', '#1f2d0a', 0.9);
-      c.fillStyle = '#e8d04a';
-      c.fillRect(2, -2.4, 1.4, 4.8);
-      c.fillRect(9, -2.4, 1.4, 4.8);
-      c.beginPath();
-      c.moveTo(14, -2);
-      c.lineTo(17.5, 0);
-      c.lineTo(14, 2);
-      paint(c, '#e43d30', '#5c0f09', 0.6);
-      break;
-    case 'grenade':
-      ell(c, 7, 0, 3.6, 3.8);
-      paint(c, shade(c, 7, 0, 3.6, '#7fbf4a', '#2f5d17'), '#16300a', 0.8);
-      c.fillStyle = '#9aa3ad';
-      c.fillRect(6, -5, 2, 1.6);
-      break;
-    case 'splitter':
-      c.beginPath();
-      c.roundRect(2, -3.2, 10, 6.4, 2);
-      paint(c, '#ff8a1f', '#7a3500', 0.8);
-      c.fillStyle = '#2a1600';
-      c.fillRect(5, -3.2, 1.2, 6.4);
-      c.fillRect(8.4, -3.2, 1.2, 6.4);
-      break;
-    case 'zapper':
-      c.beginPath();
-      c.roundRect(-1, -2.4, 14, 4, 1.5);
-      paint(c, '#c7d2fe', '#312e81', 0.8);
-      c.beginPath();
-      c.roundRect(0, 1, 3, 4, 1);
-      paint(c, '#6366f1', '#312e81', 0.7);
-      c.fillStyle = `rgba(103,232,249,${0.6 + 0.4 * Math.sin(t * 10)})`;
-      c.fillRect(4, -1.4, 7, 1.6);
-      break;
-    case 'mallet':
-      c.fillStyle = '#8b5a2b';
-      c.fillRect(-1, -0.9, 13, 1.8);
-      c.beginPath();
-      c.roundRect(11, -4.8, 6.5, 9.6, 1.8);
-      paint(c, shade(c, 14, 0, 5, '#fbbf24', '#b45309'), '#5a2d02', 0.8);
-      break;
-    case 'dynamite':
-      c.beginPath();
-      c.roundRect(2, -2, 9, 4, 1);
-      paint(c, '#dc2626', '#5c0b0b', 0.8);
-      c.beginPath();
-      c.moveTo(11, 0);
-      c.quadraticCurveTo(13, -2, 14, -3);
-      c.strokeStyle = '#3b2a18';
-      c.lineWidth = 0.7;
-      c.stroke();
-      ell(c, 14.2, -3.3, 1 + Math.sin(t * 20) * 0.4, 1 + Math.sin(t * 20) * 0.4);
-      paint(c, '#ffe066');
-      break;
-    case 'meteor':
-      c.beginPath();
-      c.roundRect(2, -3.5, 6, 7, 1.2);
-      paint(c, '#334155', '#0f172a', 0.8);
-      c.beginPath();
-      c.moveTo(6.5, -3.5);
-      c.lineTo(8, -8);
-      c.strokeStyle = '#0f172a';
-      c.lineWidth = 0.8;
-      c.stroke();
-      ell(c, 5, -1.2, 1, 1);
-      paint(c, Math.sin(t * 8) > 0 ? '#ef4444' : '#7f1d1d');
-      break;
-  }
-}
-
 /** A critter, its weapon and its hurt flash. */
 export function drawCritter(c: Ctx, char: CharId, crew: string, p: Pose): void {
   const breathe = p.walk >= 0 || p.air ? 0 : Math.sin(p.t * 2.6 + p.seed) * 0.025;
@@ -461,7 +364,7 @@ export function drawCritter(c: Ctx, char: CharId, crew: string, p: Pose): void {
   c.filter = 'none';
   if (p.weapon) {
     c.save();
-    c.translate(3, -9.5);
+    c.translate(3.5, -7.5);
     c.rotate(-p.look);
     drawWeapon(c, p.weapon, p.t);
     c.restore();
