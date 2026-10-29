@@ -15,6 +15,10 @@
 /games/sigilfall/art/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Its skill and talent icons, the same way (render/art/iconVersion.ts).
+/games/sigilfall/icons/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # Game photo library: files are named by their source id and never change.
 /photos/*
   Cache-Control: public, max-age=31536000, immutable

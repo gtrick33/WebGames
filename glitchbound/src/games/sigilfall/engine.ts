@@ -16,6 +16,7 @@ import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, typ
 import { buyItem, buyPotions, restock } from './progress/shop';
 import type { ShopId } from './data/vendors';
 import { fxArt } from './render/art/atlas';
+import { iconsReady } from './render/art/gameIcons';
 import { worldLook } from './render/art/world';
 import { Renderer } from './render/renderer';
 import { Sound, type MusicId } from './audio/sound';
@@ -178,6 +179,8 @@ export class SigilEngine {
     worldLook('village');
     worldLook('forest');
     fxArt();
+    // and the skill and talent icons: drawn again with their pictures once the atlas is in
+    void iconsReady.then((ok) => ok && this.bump());
     const loaded = loadSave();
     this.save = loaded.save;
     this.loadStatus = loaded.status;
