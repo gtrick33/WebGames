@@ -68,6 +68,10 @@ table is RENAMES.md; highlights:
 
 - CREDITS_AND_LICENSES.md now lists every art pack Sigilfall ships.
 - The game's Settings panel has "Art credits".
+- **game-icons.net (2026-10-29):** the skill and talent icons are CC BY 3.0. Unlike the paid packs, credit is a
+  condition here. The Settings panel names every artist whose icons are used and the license; ICON_CREDITS.md
+  lists each icon with its author. The set itself stays in `assets/sigilfall/game-icons/` (untracked); only the
+  built atlas ships. CC BY also allows sharing the files, so a public repository would be fine for this one.
 
 ## Open, by risk
 

@@ -1,6 +1,6 @@
 import { CLASSES } from '../data/classes';
 import type { Body } from '../progress/character';
-import type { ClassId, Item, ItemIcon, Material, Rarity, SlotId } from '../data/types';
+import type { ClassId, Item, ItemIcon, Material, Rarity, SlotId, TalentNode } from '../data/types';
 import { itemIcon, itemMat, itemTint } from '../progress/items';
 import type { MountDef } from '../data/mounts';
 import { MOUNT_FRAMES, paintMount, paintRiderLegs, RIDER_HIP } from './art/mount';
@@ -11,6 +11,7 @@ import { COMPANION_ART } from './art/companions';
 import { FOE_ART } from './art/foes';
 import { TOWNSFOLK_LOOKS } from './art/townsfolk';
 import { ZONE_ART } from './art/zones';
+import { hasIcon, iconTile, skillIcon, talentIcon } from './art/gameIcons';
 import { glyphIcon } from './art/icons';
 import { DMG_COLOR, SKILL_GLYPH } from './art/skillGlyphs';
 import { SKILLS } from '../data/skills';
@@ -387,10 +388,33 @@ export function itemIconUrl(item: Item | { icon: ItemIcon; tint: string }, scale
   return url;
 }
 
-/** A skill's icon (its glyph in its color), as a data URL for the UI (cached). */
-export function skillIconUrl(id: string, scale = 4): string {
+/**
+ * A skill's icon on a tile of its color, as a data URL for the UI (cached): its own picture (art/gameIcons.ts)
+ * once the icon atlas is in, its painted glyph until then. `round`: on a disc, for the round touch buttons.
+ */
+export function skillIconUrl(id: string, scale = 4, round = false): string {
   const [glyph, color] = SKILL_GLYPH[id] ?? ['star'];
-  return glyphIconUrl(glyph, color ?? DMG_COLOR[SKILLS[id]?.base.dmgType ?? 'arcane'], scale);
+  const c = color ?? DMG_COLOR[SKILLS[id]?.base.dmgType ?? 'arcane'];
+  const name = skillIcon(id);
+  return hasIcon(name) ? tileIconUrl(name, c, round) : glyphIconUrl(glyph, c, scale);
+}
+
+/** Does a skill show its own picture yet (the atlas is in), rather than its painted glyph? */
+export const skillHasPicture = (id: string): boolean => hasIcon(skillIcon(id));
+
+/** A talent's icon on a tile of its tree's color (its painted glyph until the icon atlas is in). */
+export function talentIconUrl(cls: ClassId, node: TalentNode, color: string, scale = 4): string {
+  const name = talentIcon(cls, node);
+  return hasIcon(name) ? tileIconUrl(name, color) : glyphIconUrl(node.icon, color, scale);
+}
+
+function tileIconUrl(name: string, color: string, round = false): string {
+  const key = `tile:${name}:${color}:${round ? 'o' : 's'}`;
+  const hit = iconCache.get(key);
+  if (hit) return hit;
+  const url = iconTile(name, color, round)?.toDataURL() ?? '';
+  iconCache.set(key, url);
+  return url;
 }
 
 /** A glyph on a tile of a color (talents use their tree's color), as a data URL (cached). */

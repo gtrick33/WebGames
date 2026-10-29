@@ -13,7 +13,7 @@ import { newWorld, readyHero } from './sigilfall-bot';
  */
 
 // the buttons' pictures need a canvas, which jsdom has not got
-vi.mock('../src/games/sigilfall/render/sprites', () => ({ skillIconUrl: () => '' }));
+vi.mock('../src/games/sigilfall/render/sprites', () => ({ skillIconUrl: () => '', skillHasPicture: () => false }));
 vi.mock('../src/games/sigilfall/ui/uiIcons', () => ({ uiIcon: () => '' }));
 
 beforeAll(() => {

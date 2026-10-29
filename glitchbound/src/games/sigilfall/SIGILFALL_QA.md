@@ -225,3 +225,24 @@ buttons that still take taps, anything of the site's over the stage) at 1440 × 
 - Not verified: a real iPhone. The emptied page under the pinned game is the fix for the footer showing; Safari's
   own rendering of a fixed stage while its bar moves was not reproduced here.
 
+## Skill and talent icons from game-icons.net (2026-10-29)
+
+- The owner asked for a free icon pack from itch.io. itch.io is blocked by the build environment's network
+  policy, so the owner chose game-icons.net's set instead (CC BY 3.0; fetched from npm and GitHub).
+- **Skills:** each of the 127 skills has its own picture (`render/art/iconPicks.ts`). None is shared, within a
+  class or across classes.
+- **Talents:** the 461 talents draw from a pool for what they do (time, critical hits, power, frost…). Talents
+  in one tree that do the same thing take the pool's icons in turn. When a tree has used a pool up, a talent
+  shows the icon of the skill it changes. No tree shows the same icon twice (`sigilfall-icons` test).
+- **Look:** each silhouette is laid on a tile of the skill's color (a talent's: its tree's). It has a shadow, a
+  dark outline, light from the top left and a thin frame, drawn at 128 px. Until the atlas has loaded, or if it
+  fails to load, the old painted glyphs show.
+- **Build:** `scripts/sigilfall-icons.mjs` turns the set (kept in `assets/sigilfall/game-icons/`, untracked) into
+  `public/games/sigilfall/icons/` (305 icons, 463 KB, loaded with the game, not with the arcade). It also writes
+  ICON_CREDITS.md (each icon and its artist) and the artists' names for the Settings panel's art credits.
+- **Checked:**
+  - `sigilfall-icons` tests: every skill has its own icon; every talent has one, unrepeated in its tree; the
+    atlas holds exactly the picked icons, each credited.
+  - In the browser: every class's skills in one sheet, the mage's three trees, the talents panel, the
+    desktop bar, the phone's buttons, and the credits line in Settings.
+
