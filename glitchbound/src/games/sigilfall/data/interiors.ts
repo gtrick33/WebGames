@@ -188,34 +188,54 @@ function emberHearth(): CityPlan {
 /* ------------------------------------------------------ the Crown City: the Great Hall */
 
 /**
- * The Great Hall of the Ember Keep (the owner: "inside also seems empty, make it feel glorious"): a long hall
- * of columns under tall windows of colored glass, their light across the floor; a crimson runner from the
- * door up the steps of the dais to the high throne between its braziers, the crown's banner over it; the kings
- * and queens of old in stone along the walls, armor between them; the court's long tables in the aisles.
+ * The Great Hall of the Ember Keep (the owner: "inside also seems empty, make it feel glorious"; then: the statues
+ * lined up either side as a path to the throne, the carpets joined, all round it glorious): a long hall of
+ * columns under tall windows of colored glass, their light across the floor; a floor of dark polished stone with
+ * gilt seams, and between the colonnades one of ivory marble edged in gold, and down it the crimson runner from the door up the steps of the dais to the
+ * high throne between its braziers, the crown's banner over it, gilt lions at the foot of the steps; either side
+ * of the runner the realm's great in stone, kings, queens, knights and sages, a path of them to the throne; in the
+ * aisles the old kings along the walls, armor between them, the court's long tables on their rugs.
  */
 function greatHall(): CityPlan {
   const c = room(31, 26, 822, false, 15, { to: 'emberwick', label: 'Out into the Crown City' });
-  // the north wall: its windows, the crown's banner over the throne, banners either side of it
+  // the north wall: its windows, the crown's banner over the throne, banners either side of it and between them
   for (const x of [4, 9, 21, 26]) {
     c.prop('window', x, 1);
     c.prop('sunbeam', x, 7, false);
   }
   c.prop('great-banner', 15, 1);
   for (const x of [12, 18]) c.prop('banner:#8a1a2a', x, 1);
-  // the dais and the high throne on it, between its braziers; the Steward at its foot
+  for (const x of [6, 24]) c.prop('banner:#2a3a7a', x, 1);
+  // the floor, wall to wall (laid before the dais, which stands on it); the dais and the high throne on it, between
+  // its braziers; the Steward beside it
+  c.prop('hall-floor', 15, 24, false);
   c.prop('dais', 15, 5, false);
   wide(c, 'high-throne', 15, 3, 3);
   c.set(10, 4, 'brazier');
   c.set(20, 4, 'brazier');
-  c.npc('steward-aldous', 18, 6);
-  // the runner, from the door to the dais
+  c.npc('steward-aldous', 19, 5);
+  // the runner from the door to the dais (its carpet runs on up the steps)
   for (let y = 6; y <= 24; y++) c.prop('runner:#8a1a2a', 15, y, false);
+  // gilt lions at the foot of the steps; then the path of the realm's great in stone either side of the runner, up
+  // to them from the door: knights nearest the door, then sages, queens and kings nearest the throne
+  c.prop('lion', 12, 6);
+  c.prop('lion', 18, 6);
+  for (const [y, who] of [
+    [8, 'king'],
+    [11, 'queen'],
+    [14, 'sage'],
+    [17, 'knight'],
+    [20, 'knight'],
+  ] as const) {
+    c.prop(`statue:${who}`, 12, y);
+    c.prop(`statue:${who}`, 18, y);
+  }
   // the colonnades, the crown's banner on every column
   for (const y of [8, 11, 14, 17, 20]) {
     c.prop('column:#8a1a2a', 9, y);
     c.prop('column:#8a1a2a', 21, y);
   }
-  // the aisles: the kings and queens of old in stone along the walls, armor between them
+  // the aisles: the old kings in stone along the walls, armor between them, fires in the corners
   for (const y of [9, 15, 21]) {
     c.prop('statue', 3, y);
     c.prop('statue', 27, y);
@@ -224,7 +244,11 @@ function greatHall(): CityPlan {
     c.prop('armor-stand', 3, y);
     c.prop('armor-stand', 27, y);
   }
-  // the long tables of the court, and from the Night of Knives the war council's map and its racks of arms
+  c.set(3, 4, 'brazier');
+  c.set(27, 4, 'brazier');
+  // the long tables of the court on their rugs, and from the Night of Knives the war council's map and its racks
+  c.prop('rug:#8a1a2a', 6, 13, false);
+  c.prop('rug:#8a1a2a', 24, 13, false);
   wide(c, 'longtable', 6, 12, 3, not(after('festival-the-knives')));
   wide(c, 'war-table', 6, 12, 3, after('festival-the-knives'));
   wide(c, 'longtable', 24, 12, 3);

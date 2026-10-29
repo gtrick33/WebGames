@@ -383,8 +383,10 @@ export class Renderer {
     const inView = (x: number, y: number, m = 40): boolean => x > ox - m && x < ox + this.vw + m && y > oy - m && y < oy + this.vh + 60;
     for (const o of sc.objects) {
       const ow = (o.src ? (o.anim ? o.anim.w : o.src[2]) : o.c.width) / (o.k ?? DETAIL);
-      // (a big picture is in view while any of it is: the Crown City's keep is wider than the margin)
-      if (o.x + ow / 2 < ox - 70 || o.x - ow / 2 > ox + this.vw + 70 || o.y < oy - 70 || o.y + o.dy > oy + this.vh + 60) continue;
+      const oh = (o.src ? o.src[3] : o.c.height) / (o.k ?? DETAIL);
+      // (a big picture is in view while any of it is: the Crown City's keep is wider than the margin, and a hall's
+      // floor, drawn in order of its top edge, runs on far below it)
+      if (o.x + ow / 2 < ox - 70 || o.x - ow / 2 > ox + this.vw + 70 || o.y + o.dy + oh < oy - 70 || o.y + o.dy > oy + this.vh + 60) continue;
       const come = o.born === undefined ? 1 : clamp((time - o.born) / PROP_FADE, 0, 1);
       const left = o.gone === undefined ? 1 : 1 - (time - o.gone) / PROP_FADE;
       if (left <= 0) continue;

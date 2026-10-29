@@ -455,6 +455,19 @@ feel glorious".
     replace one table, as before.
   - The new pieces are drawn in the game's own furniture style: the runner, the dais, the throne, the columns,
     the windows, the light, the great banner, the statues and the armor.
+- **Inside, second pass.** The owner: line up the different statues sideways, as a path to the throne from both
+  sides; connect the carpets vertically; make the surroundings glorious as well.
+  - A path of statues lines the runner on both sides, one pair on every row of columns. Nearest the throne are
+    kings (crowned and cloaked, hands on their swords), then queens with scepters, then sages with staves, then
+    knights behind their shields nearest the door.
+  - Gilt lions sit on plinths at the foot of the dais steps.
+  - The carpet is one piece from the door to the throne: the dais draws its own edge, with no line across the
+    foot of its carpet where the runner meets it.
+  - The floor runs wall to wall. Between the colonnades it is ivory and lilac marble with gilt studs, edged in gold
+    and crimson. The aisles are dark polished slabs with gilt seams.
+  - The court's tables stand on rugs, blue banners hang between the windows, and fires burn in the far corners.
+  - A floor, drawn in order of its top edge, is kept in view while any of it shows (it had vanished from the
+    view at the door).
 - **Fixes along the way:**
   - A picture drawn bigger than its own pixels is drawn smoothly, and the view keeps any big picture while any
     of it is on screen.
@@ -463,7 +476,8 @@ feel glorious".
 - Checked:
   - a new test (`tests/sigilfall-ember-keep.test.ts`): the keep's size, its towers, its dark stone and its door;
     the reveal playing before the Regent's scene; the runner unbroken from the door to the dais, and the
-    throne between its braziers;
+    throne between its braziers; the path of statues either side of the runner (a pair on each row, at least
+    four kinds), and the lions at the steps;
   - the buildings and scenes tests updated: a door painted on a bigger picture; a scene looking at a building;
   - in the browser: the reveal, the forecourt by day and on the Night of Knives, the keep's side by the
     barracks, and the hall from its throne, from its door and as the war room.
