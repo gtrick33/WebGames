@@ -20,14 +20,15 @@ import { heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl } fr
 import type { HeroLook } from '../render/art/hero';
 import { MOUNT_DEFS, MOUNTS } from '../data/mounts';
 import { authoredLooks, BARE_LOOK, LOOK_SLOTS, lookFits, lookOf, lookSource, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
-import { K, TILE } from '../sim/map';
+import { K, markerPos, parseRegion, TILE, type TileMap } from '../sim/map';
 import { objectiveTarget } from '../sim/objective';
 import { npcRegion, regionLinks } from '../sim/routes';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
 import { drawMapIcon, mapIconUrl, type MapIcon } from './mapIcons';
+import { usePanZoom, type PanZoom } from './panZoom';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
-import { FOG_CELL, fogSeen, type Fog } from '../progress/fog';
+import { FOG_CELL, fogSeen, loadFog, type Fog } from '../progress/fog';
 import { ShopPanel } from './Shop';
 import { PartyPanel } from './Party';
 import { PRESETS } from '../progress/presets';
@@ -793,10 +794,15 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
           </div>
         )}
         <span className="rb-kicker">
-          {w.region.name}
-          {!w.fog.all && ` · ${Math.floor(w.explored() * 100)}% explored`}
+          {here ? w.region.name : open || r.kind === 'town' ? r.name : 'Unknown land'}
+          {here ? !w.fog.all && ` · ${Math.floor(w.explored() * 100)}% explored` : <Explored hero={h} region={sel} />}
+          {!here && (
+            <button className="rb-map-back" onClick={() => setSel(w.region.id)}>
+              back to {w.region.name}
+            </button>
+          )}
         </span>
-        <MiniMap engine={engine} />
+        <LandMap key={sel} engine={engine} region={sel} />
       </section>
       <section className="rb-map-right">
         <span className="rb-kicker">{canTravel ? 'The world · travel by waystone' : 'The world · travel from a waystone or a town'}</span>
@@ -924,6 +930,8 @@ const KIND_COLOR: Record<RegionDef['kind'], string> = { town: '#ffcf5a', wild: '
 const NAME_SIZE = 3.1;
 const LVL_SIZE = 2.6;
 const WORLD_PX = 3.4;
+/** How far in the world map zooms, from the whole world. */
+const WORLD_ZOOM = 5;
 /** The world is drawn this much wider than its coordinates, so the names fit between the lands. */
 const SPREAD = 1.8;
 const worldAt = (id: RegionId): [number, number] => [REGIONS[id].at[0] * SPREAD, REGIONS[id].at[1] * SPREAD];
@@ -979,21 +987,28 @@ function WorldMap({ hero, here, sel, goal, onSel }: { hero: Character; here: Reg
   const names = new Map(REGION_IDS.map((id) => [id, known(id) ? REGIONS[id].name.replace(/^The /, '') : '']));
   const nameKey = [...names.values()].join('|');
   const spots = useMemo(() => placeNames(new Map(nameKey.split('|').map((n, i) => [REGION_IDS[i]!, n]))), [nameKey]);
-  // the map opens on the hero's own corner of the world
-  const scroller = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = scroller.current;
-    const svg = el?.firstElementChild;
-    if (!el || !svg) return;
-    // its own layout width (the game may be turned to landscape: ui/turn.ts)
-    const k = ((svg as SVGSVGElement).clientWidth || svg.getBoundingClientRect().width) / box.w;
+  // the map opens on the hero's own corner of the world, near enough to read; the wheel, a pinch or the
+  // buttons zoom, a drag moves it
+  const view = useRef<HTMLDivElement>(null);
+  const pz = usePanZoom(view, box.w, box.h, WORLD_ZOOM, (fit) => {
     const [x, y] = worldAt(here);
-    el.scrollLeft = (x - box.x0) * k - el.clientWidth / 2;
-    el.scrollTop = (y - box.y0) * k - el.clientHeight / 2;
-  }, [here, box]);
+    return { k: Math.max(1, WORLD_PX / fit), cx: x - box.x0, cy: y - box.y0 };
+  });
+  const v = pz.view;
+  const vb = v ? [box.x0 + v.cx - pz.vw / 2 / pz.scale, box.y0 + v.cy - pz.vh / 2 / pz.scale, pz.vw / pz.scale, pz.vh / pz.scale] : [box.x0, box.y0, box.w, box.h];
   return (
-    <div className="rb-world-scroll" ref={scroller}>
-      <svg className="rb-world" viewBox={`${box.x0} ${box.y0} ${box.w} ${box.h}`} style={{ minWidth: `${Math.round(box.w * WORLD_PX)}px` }} role="group" aria-label="World map">
+    <div
+      className="rb-world-view"
+      ref={view}
+      // (a drag is not a click on the land it ends on)
+      onClickCapture={(e) => {
+        if (!pz.dragged()) return;
+        e.stopPropagation();
+        e.preventDefault();
+      }}
+    >
+      <ZoomButtons pz={pz} max={WORLD_ZOOM} />
+      <svg className="rb-world" viewBox={vb.join(' ')} role="group" aria-label="World map">
         <rect x={box.x0} y={box.y0} width={box.w} height={box.h} rx="3" className="rb-world-sea" />
         {links.map(([a, b]) => {
           const A = worldAt(a);
@@ -1036,10 +1051,48 @@ function WorldMap({ hero, here, sel, goal, onSel }: { hero: Character; here: Reg
   );
 }
 
-/** A small overview of the current region with the hero on it. */
-/** The fog of war over a map drawn `k` canvas pixels a tile: dark where unexplored, soft at its edge. */
-function drawFog(g: CanvasRenderingContext2D, fog: Fog, k: number): void {
-  if (fog.all) return;
+/** The lands' maps, made from their layouts once (another land's, picked on the world map). */
+const landMaps = new Map<RegionId, TileMap>();
+function landMap(id: RegionId): TileMap {
+  let m = landMaps.get(id);
+  if (!m) {
+    m = parseRegion(REGIONS[id]);
+    landMaps.set(id, m);
+  }
+  return m;
+}
+
+/** A land's ground, a pixel a tile, colored by what each tile is. */
+const grounds = new WeakMap<TileMap, HTMLCanvasElement>();
+function groundOf(m: TileMap, theme: RegionDef['theme']): HTMLCanvasElement {
+  const hit = grounds.get(m);
+  if (hit) return hit;
+  const ground = document.createElement('canvas');
+  ground.width = m.w;
+  ground.height = m.h;
+  const gg = ground.getContext('2d')!;
+  const pal = mapColors(theme);
+  const color = (t: number): string => {
+    if (t === K.Wall || t === K.Illusion) return pal.wall;
+    if (t === K.Water) return pal.water;
+    if (t === K.Path || t === K.Bridge) return pal.path;
+    if (t === K.Cobble) return pal.cobble;
+    if (t === K.Sand) return pal.sand;
+    if (t === K.Tree || t === K.Bush) return pal.wall;
+    if (t === K.House || t === K.HouseAnchor) return pal.house;
+    if (t === K.Door) return '#8a6a3a';
+    return pal.floor;
+  };
+  for (let i = 0; i < m.w * m.h; i++) {
+    gg.fillStyle = color(m.kind[i]!);
+    gg.fillRect(i % m.w, Math.floor(i / m.w), 1, 1);
+  }
+  grounds.set(m, ground);
+  return ground;
+}
+
+/** The fog of war, a pixel a fog cell: black where the hero hasn't been (drawn smooth, so its edge is soft). */
+function fogOf(fog: Fog): HTMLCanvasElement {
   const f = document.createElement('canvas');
   f.width = fog.w;
   f.height = fog.h;
@@ -1047,60 +1100,94 @@ function drawFog(g: CanvasRenderingContext2D, fog: Fog, k: number): void {
   const img = fg.createImageData(fog.w, fog.h);
   for (let i = 0; i < fog.cells.length; i++) {
     if (fog.cells[i]) continue;
-    img.data[i * 4] = 13;
-    img.data[i * 4 + 1] = 10;
-    img.data[i * 4 + 2] = 24;
-    img.data[i * 4 + 3] = 235;
+    img.data[i * 4] = 7;
+    img.data[i * 4 + 1] = 5;
+    img.data[i * 4 + 2] = 12;
+    img.data[i * 4 + 3] = 255;
   }
   fg.putImageData(img, 0, 0);
-  g.save();
-  g.imageSmoothingEnabled = true;
-  g.imageSmoothingQuality = 'high';
-  g.drawImage(f, 0, 0, fog.w * FOG_CELL * k, fog.h * FOG_CELL * k);
-  g.restore();
+  return f;
 }
 
-function MiniMap({ engine }: { engine: SigilEngine }) {
-  const ref = useRef<HTMLCanvasElement>(null);
+/** Zoom in, out, and back to the whole map. */
+function ZoomButtons({ pz, max }: { pz: PanZoom; max: number }) {
+  const k = pz.view?.k ?? 1;
+  return (
+    <div className="rb-zoom">
+      <button className="rb-btn is-small" aria-label="Zoom in" disabled={k >= max - 1e-3} onClick={() => pz.zoomBy(1.6)}>
+        +
+      </button>
+      <button className="rb-btn is-small" aria-label="Zoom out" disabled={k <= 1 + 1e-3} onClick={() => pz.zoomBy(1 / 1.6)}>
+        −
+      </button>
+      <button className="rb-btn is-small" aria-label="The whole map" disabled={k <= 1 + 1e-3} onClick={pz.fitAll}>
+        ⤢
+      </button>
+    </div>
+  );
+}
+
+const LAND_ZOOM = 6;
+
+/** How much of another land the hero has explored. */
+function Explored({ hero, region }: { hero: Character; region: RegionId }) {
+  const m = landMap(region);
+  const f = loadFog(hero, region, m.w, m.h);
+  return <>{f.all ? '' : f.count ? ` · ${Math.floor((f.count / (f.w * f.h)) * 100)}% explored` : ' · not explored'}</>;
+}
+
+/**
+ * A land's map: the one the hero is in, with them on it, or another picked on the world map, as far as the
+ * hero has explored it (black where they haven't been: all black for a land they have never set foot in).
+ * The wheel, a pinch or the buttons zoom; a drag moves it.
+ */
+function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) {
   const w = engine.world!;
+  const h = engine.hero!;
+  const live = region === w.region.id;
+  const r = REGIONS[region];
+  const m = live ? w.map : landMap(region);
+  const fog = useMemo(() => (live ? w.fog : loadFog(h, region, m.w, m.h)), [live, w, h, region, m]);
+  const dark = !fog.all && fog.count === 0;
+  const box = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLCanvasElement>(null);
+  // the land the hero is in opens round them; another, whole
+  const pz = usePanZoom(box, m.w, m.h, LAND_ZOOM, () => (live ? { k: 1.6, cx: w.player.x / TILE, cy: w.player.y / TILE } : { k: 1, cx: m.w / 2, cy: m.h / 2 }));
+  const v = pz.view;
   useEffect(() => {
     const c = ref.current;
-    if (!c) return;
-    const m = w.map;
-    // drawn at the size it shows (the ground scaled up, the icons at a steady size on top)
+    if (!c || !v) return;
     const dpr = Math.min(3, window.devicePixelRatio || 1);
-    const cssW = c.clientWidth || m.w * 4;
-    c.width = Math.round(cssW * dpr);
-    c.height = Math.round((cssW * dpr * m.h) / m.w);
-    const k = c.width / m.w;
-    const ground = document.createElement('canvas');
-    ground.width = m.w;
-    ground.height = m.h;
-    const gg = ground.getContext('2d')!;
-    const pal = mapColors(w.region.theme);
-    const color = (t: number): string => {
-      if (t === K.Wall || t === K.Illusion) return pal.wall;
-      if (t === K.Water) return pal.water;
-      if (t === K.Path || t === K.Bridge) return pal.path;
-      if (t === K.Cobble) return pal.cobble;
-      if (t === K.Sand) return pal.sand;
-      if (t === K.Tree || t === K.Bush) return pal.wall;
-      if (t === K.House || t === K.HouseAnchor) return pal.house;
-      if (t === K.Door) return '#8a6a3a';
-      return pal.floor;
-    };
-    for (let i = 0; i < m.w * m.h; i++) {
-      gg.fillStyle = color(m.kind[i]!);
-      gg.fillRect(i % m.w, Math.floor(i / m.w), 1, 1);
-    }
+    c.width = Math.round(pz.vw * dpr);
+    c.height = Math.round(pz.vh * dpr);
     const g = c.getContext('2d')!;
+    g.fillStyle = '#07050c';
+    g.fillRect(0, 0, c.width, c.height);
+    if (dark) return;
+    const k = pz.scale * dpr;
+    const ox = c.width / 2 - v.cx * k;
+    const oy = c.height / 2 - v.cy * k;
     g.imageSmoothingEnabled = false;
-    g.drawImage(ground, 0, 0, c.width, c.height);
-    drawFog(g, w.fog, k);
+    g.drawImage(groundOf(m, r.theme), ox, oy, m.w * k, m.h * k);
+    if (!fog.all) {
+      g.imageSmoothingEnabled = true;
+      g.imageSmoothingQuality = 'high';
+      g.drawImage(fogOf(fog), ox, oy, fog.w * FOG_CELL * k, fog.h * FOG_CELL * k);
+    }
     const s = Math.max(1, Math.round(dpr * 1.5));
-    const icon = (x: number, y: number, name: MapIcon): void => drawMapIcon(g, name, (x / TILE) * k, (y / TILE) * k, s);
+    const icon = (x: number, y: number, name: MapIcon): void => drawMapIcon(g, name, ox + (x / TILE) * k, oy + (y / TILE) * k, s);
     // what stands in the fog is not on the map yet
-    const seen = (x: number, y: number): boolean => fogSeen(w.fog, x / TILE, y / TILE);
+    const seen = (x: number, y: number): boolean => fogSeen(fog, x / TILE, y / TILE);
+    if (!live) {
+      // another land: where its waystones and its ways out are (who stands there is the story's business)
+      for (const pm of m.markers) {
+        const at = markerPos(pm);
+        if (!seen(at.x, at.y)) continue;
+        if (pm.marker.kind === 'waystone') icon(at.x, at.y, 'waystone');
+        if (pm.marker.kind === 'exit') icon(at.x, at.y, pm.marker.door ? 'door' : 'road');
+      }
+      return;
+    }
     for (const ws of w.waystones) if (seen(ws.x, ws.y)) icon(ws.x, ws.y, 'waystone');
     for (const c2 of w.chests) if (!c2.open && seen(c2.x, c2.y)) icon(c2.x, c2.y, 'chest');
     for (const n of w.npcs) if (seen(n.x, n.y)) icon(n.x, n.y, npcMark(w, n.id) ?? (NPCS[n.id]?.shop ? 'merchant' : 'person'));
@@ -1111,30 +1198,43 @@ function MiniMap({ engine }: { engine: SigilEngine }) {
       g.strokeStyle = '#ffcf5a';
       g.lineWidth = Math.max(1.5, dpr * 1.5);
       g.beginPath();
-      g.arc((goal.x / TILE) * k, (goal.y / TILE) * k, s * 9, 0, Math.PI * 2);
+      g.arc(ox + (goal.x / TILE) * k, oy + (goal.y / TILE) * k, s * 9, 0, Math.PI * 2);
       g.stroke();
       icon(goal.x, goal.y, 'quest');
     }
     icon(w.player.x, w.player.y, 'you');
-  }, [w, engine.version]);
+  }, [w, m, r.theme, fog, dark, live, v, pz.vw, pz.vh, pz.scale, engine.version]);
   const key = (name: MapIcon, label: string) => (
     <span className="rb-map-key">
       <img src={mapIconUrl(name, 2)} alt="" /> {label}
     </span>
   );
+  const ways = m.markers.filter((pm) => pm.marker.kind === 'exit');
   return (
     <div className="rb-minimap">
-      <canvas ref={ref} aria-label={`Map of ${w.region.name}`} />
-      <span className="rb-small rb-dim rb-map-keys">
-        {key('you', 'you')}
-        {key('quest', 'quest')}
-        {w.waystones.length > 0 && key('waystone', 'waystone')}
-        {key('road', 'road')}
-        {w.exits.some((x) => x.door) && key('door', 'door')}
-        {w.chests.length > 0 && key('chest', 'chest')}
-        {w.npcs.length > 0 && key('person', 'people')}
-        {w.npcs.some((n) => NPCS[n.id]?.shop) && key('merchant', 'merchant')}
-      </span>
+      <div className="rb-landmap" ref={box} style={{ aspectRatio: `${m.w} / ${m.h}` }}>
+        <canvas ref={ref} aria-label={dark ? `${r.name}: not explored yet` : `Map of ${r.name}`} />
+        {dark ? <span className="rb-landmap-dark">Not explored yet</span> : <ZoomButtons pz={pz} max={LAND_ZOOM} />}
+      </div>
+      {!dark &&
+        (live ? (
+          <span className="rb-small rb-dim rb-map-keys">
+            {key('you', 'you')}
+            {key('quest', 'quest')}
+            {w.waystones.length > 0 && key('waystone', 'waystone')}
+            {key('road', 'road')}
+            {w.exits.some((x) => x.door) && key('door', 'door')}
+            {w.chests.length > 0 && key('chest', 'chest')}
+            {w.npcs.length > 0 && key('person', 'people')}
+            {w.npcs.some((n) => NPCS[n.id]?.shop) && key('merchant', 'merchant')}
+          </span>
+        ) : (
+          <span className="rb-small rb-dim rb-map-keys">
+            {m.markers.some((pm) => pm.marker.kind === 'waystone') && key('waystone', 'waystone')}
+            {ways.some((pm) => pm.marker.kind === 'exit' && !pm.marker.door) && key('road', 'road')}
+            {ways.some((pm) => pm.marker.kind === 'exit' && pm.marker.door) && key('door', 'door')}
+          </span>
+        ))}
     </div>
   );
 }
