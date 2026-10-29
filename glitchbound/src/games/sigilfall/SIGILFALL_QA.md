@@ -346,3 +346,30 @@ in a few layers that every act shares:
 - Not verified: every one of the 36 shots by eye. The test plays each one and checks its people and places are
   there; nine were looked at in the browser.
 
+## The owner's remarks after the cinematics (2026-10-29)
+
+- **Oskar the same size walking as fallen.** Every follower walking in (Oskar, the carters, the healers, the
+  refugees, Elyra freed) was drawn at 72% size, then snapped to full size as they became the person standing
+  where they stopped. Only children are drawn small now.
+- **The warrior's and paladin's shield on the front.** It was drawn behind the body facing us and over it
+  walking away. Now:
+  - facing us, it is in front of the body;
+  - side on, it is carried forward on the leading side, with the weapon at rest in the trailing hand;
+  - walking away, it is on his back, behind the body.
+- **Fewer drops.** Gear still comes only from chests, bosses and quests, and a land's chests fill again on each
+  visit. Now:
+  - a chest holds one piece (rare and epic chests used to hold two);
+  - an ordinary chest gives a piece about every other time, and coin otherwise;
+  - a boss gives one piece fewer.
+  - Gear from a land's chests is about halved: the Amberfield, for example, goes from 6 pieces a visit to about 3.
+- **Light at the chapel.** Briarhollow's chapel had no lamp near it, and at night the people by it (Maren, Mara,
+  Elyra, Old Haldor) were hard to see. It now has torches either side of its door, lamps at the corners of its
+  yard, and the survivors' fire before it on the night after the raid.
+- **The chapel door.** The door held in the Prologue is no longer drawn: the chapel's own door, in its art, is the
+  door. Its health bar sits over the top of it, and the raiders strike at its foot.
+- Checked:
+  - the loot tests (one piece from a rare chest, an ordinary chest paying out about half the time, a boss's
+    drop);
+  - in the browser: Oskar walking and fallen at the same size; the warrior in all four facings; the chapel at
+    night and during the door fight, close up.
+
