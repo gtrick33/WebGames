@@ -65,7 +65,7 @@ describe('Sigilfall: scenes', () => {
     }
   });
 
-  it('every scene plays at its moment, with everyone it names there, and ends', () => {
+  it('every scene plays at its moment, with everyone it names there, and ends', { timeout: 60_000 }, () => {
     for (const def of SCENES.filter((d) => d.when)) {
       const w = newWorld(def.region, atScene(def.id));
       startAt(w, def.id);

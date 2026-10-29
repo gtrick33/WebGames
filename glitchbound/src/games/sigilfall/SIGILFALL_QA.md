@@ -373,3 +373,56 @@ in a few layers that every act shares:
   - in the browser: Oskar walking and fallen at the same size; the warrior in all four facings; the chapel at
     night and during the door fight, close up.
 
+
+## Every quest checked for the same faults (2026-10-29)
+
+The owner: "check every other existing quest for such abnormalities and fix them". A new test
+(`tests/sigilfall-quest-audit.test.ts`) goes through every quest, step by step and at its hand-in (about 880
+moments). In each one:
+- whoever the step needs is there;
+- nobody stands in a wall, out of the hero's reach, or behind something tall that hides them.
+
+It also starts each of the 40 story events. Everyone and everything each event puts down can be reached, every
+place it uses exists, and those who walk in, or beside a wagon, get all the way. What it found, and what else
+was found by looking:
+
+- **People stuck in walls.**
+  - Duskfen's caravan set its four refugees down inside the house by the causeway. They stood there while the
+    wagon went on.
+  - One of Fernstead's refugees coming into Briarhollow was stuck the same way.
+  - The people an event places round a spot now go on open ground. If the step is blocked, they take the same
+    step the other way.
+- **People hidden behind things.** These 17 people could not be seen:
+  - eight traders behind their own stalls, in Gloamhollow, Grimward (two), Highwall, the Pale Reach, the Sunken
+    Reaches, Vinecoil and the Weeping Woods;
+  - Brother Orren, half behind a stall in the Ashen Barrows;
+  - the merchants behind their pavilions in Sunscorch and Sablewind;
+  - Dorran and Mabry behind statues;
+  - Hale behind a tent in the Amberfield;
+  - Fernstead's three refugees behind their tents in Briarhollow.
+
+  A trader now stands in front of the stall. Nobody is set down with a stall, tent, pavilion, statue or well
+  just in front of them, and Fernstead's people stand round their fire.
+- **People in the dark.** 20 people the story needs stood in no light at night:
+  - Oskar during the raid;
+  - 15 of Emberwick's people on the Night of Knives;
+  - Brin and Gale in Gloamhollow.
+
+  Everyone in a place now carries a small light at night. So do allies, the people being led, and the thing
+  being held.
+- **The boats.** The Patience and Isolde's fireship looked like a bench on blocks. The fireship also stood on
+  the grass, a dozen tiles from the water. Now:
+  - each boat has a hull, a mast and a furled sail;
+  - a fireship carries kegs and flies a red pennant;
+  - each boat is moored in the water by the bank, and the harbor quay is on the river.
+  - Raiders find their way to the bank beside the boat. Without this they couldn't reach it, and the boat was
+    safe.
+- Checked:
+  - the new test (3 tests); it fails on the caravan, the hidden traders and the Fernstead tents with those
+    fixes taken out;
+  - all of Sigilfall's tests;
+  - in the browser: the caravan's refugees at the wagon and on the road, the traders, merchants and Fernstead's
+    camp, people at night in Emberwick and Gloamhollow, and both boats.
+- Not verified:
+  - frame time with the added lights in a crowded town at night on a phone;
+  - the fireship's stern still touches its bank, which runs north and south there.

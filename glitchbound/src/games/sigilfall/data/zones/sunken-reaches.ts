@@ -121,10 +121,11 @@ export const SUNKEN_REACHES = wildRegion(
       // Ysane's echo on the sea wall, every evening, until the harbor burns
       { near: 'old-sea-wall', dx: 3, dy: 2, marker: { kind: 'npc', npc: 'echo-of-ysane-quay' }, when: until('the-fireships') },
       { near: 'old-sea-wall', dx: 3, dy: 1, marker: { kind: 'wisp', color: '#c8c4dc', size: 1 }, when: until('the-fireships') },
-      // the quay at the Drowned Harbor, where Isolde brings the fireships in
-      { near: 'drowned-harbor', dx: -4, dy: 10, marker: { kind: 'place', id: 'harbor-quay' } },
+      // the quay at the Drowned Harbor, where Isolde brings the fireships in: on the river's bank, so the
+      // fireship is moored in the water beside it (it stood on the grass a dozen tiles inland)
+      { near: 'drowned-harbor', dx: 7, dy: 10, marker: { kind: 'place', id: 'harbor-quay' } },
       { near: 'drowned-harbor', dx: 0, dy: 0, marker: { kind: 'place', id: 'quay-n' } },
-      { near: 'drowned-harbor', dx: -16, dy: 8, marker: { kind: 'place', id: 'quay-w' } },
+      { near: 'drowned-harbor', dx: -4, dy: 8, marker: { kind: 'place', id: 'quay-w' } },
       { near: 'drowned-harbor', dx: 8, dy: 14, marker: { kind: 'place', id: 'quay-e' } },
       // after: Driftwood flies the Crown's colors
       { near: 'hub', dx: 0, dy: -5, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('the-fireships') },

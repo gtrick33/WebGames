@@ -304,9 +304,10 @@ function plan(): SpreadPlan {
   c.prop('tent', 15, 32, true, FERN_CAMP);
   c.prop('tent', 19, 32, true, FERN_CAMP);
   c.prop('campfire', 17, 33, true, FERN_CAMP);
-  c.npc('warden-hollis', 16, 31, FERN_CAMP);
-  c.npc('mother-alsa', 18, 31, FERN_CAMP);
-  c.npc('pip-tanner', 14, 31, FERN_CAMP);
+  // (round the fire, before the tents: behind them, the canvas hid them)
+  c.npc('warden-hollis', 16, 33, FERN_CAMP);
+  c.npc('mother-alsa', 18, 33, FERN_CAMP);
+  c.npc('pip-tanner', 14, 33, FERN_CAMP);
   // rebuilt (the Epilogue): market carts back in the square, lanterns on the lanes, new thatch by the inn
   c.prop('market-cart', 27, 27, true, HOME);
   c.prop('market-cart', 37, 27, true, HOME);

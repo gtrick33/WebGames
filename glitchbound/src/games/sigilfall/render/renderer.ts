@@ -85,6 +85,8 @@ const NPC_DIES = 3.2;
 /** Seconds the story's things (tents, a campfire) take to fade in or out, and its people placed in sight to fade in. */
 const PROP_FADE = 0.9;
 const PET_FADE_IN = 0.7;
+/** The little light the people of a place keep by them at night (world px). */
+const NPC_LIGHT = 36;
 /** How far above a held door's foot its bar is: over the top of the door in the building's art. */
 const DOOR_BAR = 28;
 /** Wards drawn as the thing itself (others, like a person at a lock, are drawn as people). */
@@ -1257,7 +1259,7 @@ export class Renderer {
     const shake = pet.flash > 0 ? Math.round(Math.sin(time * 60) * 1) : 0;
     if (pet.def.look === 'gate') return this.drawGate(x + shake, y, k);
     if (pet.def.look === 'stone') return this.drawStone(x + shake, y, k, time);
-    if (pet.def.look === 'boat') return this.drawBoat(x + shake, y, k);
+    if (pet.def.look === 'boat') return this.drawBoat(x + shake, y, k, pet.def.id === 'fireship', time);
     if (pet.def.look === 'wagon') return this.drawWagon(x + shake, y, k, pet.walkT, pet.vx < -1);
     if (pet.def.look === 'lantern') return this.drawLamp(x + shake, y, k, time);
     // a building's own door (the chapel's, in its art) is the door being held: nothing is drawn over it, only
@@ -1393,28 +1395,74 @@ export class Renderer {
     g.globalAlpha = 1;
   }
 
-  /** A boat on its slip, propped on blocks: the shipwright's pride. */
-  private drawBoat(x: number, y: number, k: number): void {
+  /**
+   * A boat moored at the water's edge (sim/story.ts moors it there): a hull with a raised bow and stern, its
+   * planks, a mast with the sail furled on its yard, and the water lapping round it; a fireship carries its
+   * kegs on deck. It sits lower and darker as it is battered.
+   */
+  private drawBoat(x: number, y: number, k: number, laden: boolean, time: number): void {
     const g = this.g;
-    g.fillStyle = 'rgba(0,0,0,0.3)';
-    g.fillRect(x - 20, y + 2, 40, 4);
-    g.fillStyle = '#5a4030';
-    g.fillRect(x - 14, y, 4, 4);
-    g.fillRect(x + 10, y, 4, 4);
-    g.fillStyle = k > 0.5 ? '#9a6a3a' : '#7a5030';
+    const sink = k > 0.5 ? 0 : k > 0.25 ? 1 : 2;
+    // ripples round the waterline
+    g.strokeStyle = 'rgba(220,240,255,0.35)';
+    g.lineWidth = 1;
+    const r = Math.sin(time * 2 + x) * 1.5;
     g.beginPath();
-    g.moveTo(x - 20, y - 10);
-    g.lineTo(x + 20, y - 10);
-    g.lineTo(x + 14, y);
-    g.lineTo(x - 14, y);
+    g.ellipse(x, y + 1, 23 + r, 4, 0, 0, TAU);
+    g.stroke();
+    g.fillStyle = 'rgba(0,0,0,0.25)';
+    g.beginPath();
+    g.ellipse(x, y + 1, 21, 3, 0, 0, TAU);
+    g.fill();
+    // the hull: a long curve, the bow up on the right and the stern on the left
+    const hy = y + sink;
+    g.fillStyle = '#3a2618';
+    g.beginPath();
+    g.moveTo(x - 22, hy - 9);
+    g.quadraticCurveTo(x - 18, hy + 2, x - 6, hy + 2);
+    g.lineTo(x + 8, hy + 2);
+    g.quadraticCurveTo(x + 20, hy + 2, x + 24, hy - 11);
+    g.lineTo(x + 18, hy - 7);
+    g.lineTo(x - 17, hy - 7);
     g.closePath();
     g.fill();
-    g.fillStyle = '#c9a060';
-    g.fillRect(x - 19, y - 10, 38, 2);
-    g.fillStyle = '#e8e0d0';
-    if (k > 0.25) g.fillRect(x - 1, y - 26, 2, 16);
-    g.fillStyle = '#5a4030';
-    for (const px of [-10, -2, 6]) g.fillRect(x + px, y - 7, 1, 6);
+    g.fillStyle = k > 0.5 ? '#8a5a32' : k > 0.25 ? '#74482a' : '#5a3620';
+    g.beginPath();
+    g.moveTo(x - 20, hy - 8);
+    g.quadraticCurveTo(x - 16, hy + 1, x - 6, hy + 1);
+    g.lineTo(x + 8, hy + 1);
+    g.quadraticCurveTo(x + 18, hy + 1, x + 22, hy - 10);
+    g.lineTo(x + 17, hy - 6);
+    g.lineTo(x - 16, hy - 6);
+    g.closePath();
+    g.fill();
+    // planks and the gunwale's light
+    g.fillStyle = 'rgba(40,24,14,0.6)';
+    g.fillRect(x - 15, hy - 3, 31, 1);
+    g.fillStyle = '#c99a5e';
+    g.fillRect(x - 16, hy - 7, 33, 1);
+    // the cargo of a fireship: kegs of powder
+    if (laden) {
+      for (const [dx, c] of [[-9, '#6a4426'], [-3, '#5c3a20'], [3, '#6a4426']] as const) {
+        g.fillStyle = c;
+        g.fillRect(x + dx, hy - 12, 5, 5);
+        g.fillStyle = '#2a1a10';
+        g.fillRect(x + dx, hy - 10, 5, 1);
+      }
+    }
+    // the mast, the yard and the furled sail (gone when she is nearly lost)
+    if (k > 0.25) {
+      g.fillStyle = '#4a3020';
+      g.fillRect(x + 4, hy - 30, 2, 24);
+      g.fillRect(x - 4, hy - 26, 18, 1);
+      g.fillStyle = '#e8dcc0';
+      g.fillRect(x - 3, hy - 25, 16, 3);
+      g.fillStyle = '#b8a888';
+      g.fillRect(x - 3, hy - 23, 16, 1);
+      // a pennant in the wind
+      g.fillStyle = laden ? '#c0402a' : '#3a6aa0';
+      g.fillRect(x + 6, hy - 30, 4 + Math.round(Math.sin(time * 6 + x)), 2);
+    }
   }
 
   /** A fire on a roof or a beam: tongues of flame and a few sparks, flickering. */
@@ -2405,6 +2453,11 @@ export class Renderer {
     for (const l of sc.lights) hole(l.x, l.y, l.r + Math.sin(time * 7 + l.x) * 2, 0.9);
     // a village at night: burning roofs, lamps and cookfires
     for (const f of w.fires) if (w.fireLit(f)) hole(f.x, f.y, (40 + f.size * 22) * w.fireLit(f) + Math.sin(time * 7 + f.x) * 4, 0.95);
+    // the people of the place keep a little light by them, so that no one the story needs stands unseen in the
+    // dark (the owner: by the chapel "most of the npcs can barely be seen")
+    for (const n of w.npcs) hole(n.x, n.y - 6, NPC_LIGHT + Math.sin(time * 6 + n.x) * 1.5, 0.8);
+    // and so do those beside the hero (allies, the led, and the thing being held: a gate or a boat is wider)
+    for (const pet of w.pets) if (!pet.dead && pet.def.look) hole(pet.x, pet.y - 6, pet.def.role === 'ward' && WARD_LOOKS.has(pet.def.look) ? 56 : NPC_LIGHT, 0.8);
     // (with the pack's art a lamp's own piece lights it, in sc.lights: counted once, not twice)
     if (!sc.art) for (const pr of w.props) if (LIGHTS[pr.prop]) hole(pr.x, pr.y - 6, LIGHTS[pr.prop]!, 0.85);
     // a lamp being relit pushes the dark back as it takes
@@ -2441,6 +2494,11 @@ export class Renderer {
       if (!w.fireLit(f)) continue;
       const r = Math.max(4, Math.round((24 + f.size * 14) * w.fireLit(f)));
       g.drawImage(glowDisc('#ff7a2a', r), Math.round(f.x - ox - r), Math.round(f.y - oy - r));
+    }
+    g.globalAlpha = 0.1;
+    for (const n of w.npcs) {
+      if (n.x < ox - 30 || n.y < oy - 30 || n.x > ox + this.vw + 30 || n.y > oy + this.vh + 30) continue;
+      g.drawImage(glowDisc('#ffc070', 16), Math.round(n.x - ox - 16), Math.round(n.y - oy - 22));
     }
     g.restore();
   }

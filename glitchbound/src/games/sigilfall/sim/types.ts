@@ -128,7 +128,7 @@ export interface Enemy {
   /** A raider's own way to whoever it hunts, past the reach of the shared field (and when it was made). */
   huntFlow?: Int16Array;
   huntAt?: number;
-  /** A siege engine's way to the gate it wants (a flow field from the gate, made once). */
+  /** A siege engine's way to the gate it wants, or a raider's to a moored boat (a flow field from it, made once). */
   siegeFlow?: Int16Array;
   id: number;
   def: EnemyDef;

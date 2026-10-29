@@ -417,8 +417,9 @@ function steer(w: World, e: Enemy, los: boolean): { x: number; y: number } {
     const a = Math.atan2(p.y - e.y, p.x - e.x);
     return { x: Math.cos(a), y: Math.sin(a) };
   }
-  // the shared field leads to the hero; a siege engine finds its own way to the gate
-  if (e.def.siege && p.pet) {
+  // the shared field leads to the hero; a siege engine finds its own way to the gate, and a raider after a
+  // boat moored in the water (sim/story.ts) its own way to the bank beside it
+  if (p.pet && (e.def.siege || p.pet.def.look === 'boat')) {
     e.siegeFlow ??= flowField(w.map, Math.floor(p.x / TILE), Math.floor(p.y / TILE), 300);
     return flowStep(w.map, e.siegeFlow, e.x, e.y) ?? { x: 0, y: 0 };
   }

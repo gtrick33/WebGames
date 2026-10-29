@@ -138,6 +138,13 @@ const PILLAR = 106; // 'j'
 const SAND = 115; // 's'
 
 const WALKABLE = new Set([FLOOR, DECO, PATH, COBBLE, BRIDGE, SAND]);
+/**
+ * Props tall enough to hide a person who stands on the tile behind them (north of them), and of those, the ones
+ * wide enough to hide a person diagonally behind them too: nobody is put there (the owner, of the chapel's
+ * people: "most of the npcs can barely be seen"; Gloamhollow's tinker stood wholly behind her own stall).
+ */
+export const TALL = new Set(['market-cart', 'pavilion', 'tent', 'camp-tent', 'statue', 'well', 'fountain', 'watchtower', 'menhir', 'standing-stone']);
+export const WIDE = new Set(['market-cart', 'pavilion', 'tent', 'camp-tent']);
 /** A village's reach from its square, in tiles (the half-axes of its clearing). */
 /** How far a village reaches from its square, east and west, north and south (tiles). */
 const VX = 20;
@@ -402,6 +409,8 @@ class ZoneBuilder {
   private readonly r: () => number;
   /** Tiles markers stand on (they count as walkable). */
   private readonly marked = new Set<number>();
+  /** The prop standing on each tile that has one. */
+  private readonly props = new Map<number, string>();
   private readonly packSpots: [number, number][] = [];
   /** A walled town's north gate (the road's gap in its palisade). */
   private gate: [number, number] | null = null;
@@ -479,6 +488,13 @@ class ZoneBuilder {
   private put(x: number, y: number, marker: Marker, when?: StoryCond): void {
     this.placed.push({ tx: x, ty: y, marker, ...(when ? { when } : {}) });
     this.marked.add(this.idx(x, y));
+    if (marker.kind === 'prop') this.props.set(this.idx(x, y), marker.prop);
+  }
+
+  /** Whether someone standing on a tile would be hidden by a tall prop in front of them. */
+  private hidden(x: number, y: number): boolean {
+    const at = (dx: number): string | undefined => (this.inside(x + dx, y + 1) ? this.props.get(this.idx(x + dx, y + 1)) : undefined);
+    return TALL.has(at(0) ?? '') || WIDE.has(at(-1) ?? '') || WIDE.has(at(1) ?? '');
   }
 
   /** Level of a pack at a tile: rising from `from` to the farthest corner. */
@@ -999,8 +1015,9 @@ class ZoneBuilder {
       prop(dx + side, dy, heart.goods[(i + Math.floor(hash2(cx, cy, seed + 87) * 4)) % heart.goods.length]!);
     });
     for (const [dx, dy, name] of sq.furniture) prop(dx, dy, name);
-    // the people stand where they work: the smith at the smithy, the brewer at the inn, the trader behind a stall,
-    // the priest at the chapel, the lord at the keep; everyone else about the waystone
+    // the people stand where they work: the smith at the smithy, the brewer at the inn, the trader before their
+    // stall (behind it, its awning hid them), the priest at the chapel, the lord at the keep; everyone else about
+    // the waystone
     const doorOf = (style: BuildingStyle | 'lord'): [number, number] | null => {
       const b = made.find((m) => (style === 'lord' ? m.style === 'keep' || m.style === 'hall' : m.style === style));
       return b ? [b.x0 + Math.floor(b.w / 2) + 1, b.y0 + b.h] : null;
@@ -1018,10 +1035,10 @@ class ZoneBuilder {
     hub.npcs.forEach((npc) => {
       const role = ROLES.find(([re]) => re.test(npc))?.[1];
       const stall = role === 'market' ? stalls[s++ % Math.max(1, stalls.length)] : undefined;
-      const at = role === 'market' ? (stall ? [X(stall[0]), Y(stall[1] - 1)] : null) : role ? doorOf(role) : null;
+      const at = role === 'market' ? (stall ? [X(stall[0]), Y(stall[1] + 1)] : null) : role ? doorOf(role) : null;
       const [dx, dy] = crowd[k % crowd.length]!;
       if (!at) k++;
-      const [tx, ty] = this.free(at ? at[0]! : X(dx), at ? at[1]! : Y(dy));
+      const [tx, ty] = this.free(at ? at[0]! : X(dx), at ? at[1]! : Y(dy), true);
       this.put(tx, ty, { kind: 'npc', npc }, hub.when?.[npc]);
     });
     this.villageFronts(made, seed);
@@ -1481,7 +1498,7 @@ class ZoneBuilder {
         this.put(x, y, m, sm.when);
         continue;
       }
-      const [tx, ty] = this.free(x, y);
+      const [tx, ty] = this.free(x, y, m.kind === 'npc');
       // nothing the story stands up may close a road
       const marker = m.kind === 'prop' && m.solid && !OPEN.has(this.at(tx, ty)) ? { ...m, solid: false } : m;
       this.put(tx, ty, marker, sm.when);
@@ -1536,15 +1553,18 @@ class ZoneBuilder {
     return from;
   }
 
-  /** The nearest walkable tile nobody stands on, without carving anything. */
-  private free(x: number, y: number): [number, number] {
+  /**
+   * The nearest walkable tile nobody stands on, without carving anything; for a `person`, one with nothing tall
+   * in front of them.
+   */
+  private free(x: number, y: number, person = false): [number, number] {
     for (let rad = 0; rad < 10; rad++) {
       for (let dy = -rad; dy <= rad; dy++) {
         for (let dx = -rad; dx <= rad; dx++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad) continue;
           const tx = x + dx;
           const ty = y + dy;
-          if (this.inside(tx, ty, 2) && WALKABLE.has(this.at(tx, ty)) && !this.marked.has(this.idx(tx, ty))) return [tx, ty];
+          if (this.inside(tx, ty, 2) && WALKABLE.has(this.at(tx, ty)) && !this.marked.has(this.idx(tx, ty)) && !(person && this.hidden(tx, ty))) return [tx, ty];
         }
       }
     }
