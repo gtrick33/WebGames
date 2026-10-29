@@ -46,6 +46,7 @@ const BANDS: Record<string, { top: number; low: number }> = {
   belot: { top: 166, low: 20 },
   backgammon: { top: 326, low: 36 },
   sigilfall: { top: 56_000, low: 800 },
+  'crater-crew': { top: 1_050, low: 60 },
 };
 const FALLBACK = { top: 5_000, low: 300 };
 
