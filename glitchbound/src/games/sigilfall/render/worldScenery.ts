@@ -4,7 +4,7 @@ import { REGIONS } from '../data/regions';
 import { K, TILE, type TileMap } from '../sim/map';
 import type { AnimInfo, PropAtlas, Rect, WorldArt } from './art/atlas';
 import type { Recipe } from './art/recipes';
-import type { Cnv } from './pixel';
+import { canvas, ctx2d, type Cnv } from './pixel';
 import { faces, farmFields } from './worldGround';
 
 /** What a small plant is for: where it may grow (the flora rule below). */
@@ -141,6 +141,60 @@ const FADE = new Set(['pavilion', 'brazier', 'well', 'tent', 'camp-tent', 'torch
 
 /** Every piece the fixed tables name (for the art-integrity test). */
 export const sceneryRefs = (): string[] => [...Object.values(PROPS).flat(), 'signpost', 'pillar', 'pillar_broken', 'anim:smoke', 'lilypad', 'lilypad_flower', 'reeds', 'reeds_2', 'bush_small_leaf', 'bush_small_mint', 'hedge_block', 'planter_red', 'anim:wall_torch', 'wall_banner_blue', 'wall_banner_red', 'wall_moss_a', 'wall_crack_a', ...Array.from({ length: 16 }, (_, n) => `fence_${n}`), ...Array.from({ length: 16 }, (_, n) => `fence_iron_${n}`)];
+
+const grimmed = new WeakMap<Cnv, Map<string, Cnv>>();
+
+/**
+ * A building's picture in dark stone (the Crown City's keep: "majestic, big and terrifying", the owner): its
+ * walls, roofs and doors darkened and cooled toward granite, its lit windows kept warm and its red banners
+ * red. Made once per picture, from the atlas.
+ */
+function grim(c: Cnv, r: Rect): [Cnv, Rect] {
+  let made = grimmed.get(c);
+  if (!made) grimmed.set(c, (made = new Map()));
+  const key = r.join(',');
+  let out = made.get(key);
+  if (!out) {
+    out = canvas(r[2], r[3]);
+    const g = ctx2d(out);
+    g.drawImage(c, r[0], r[1], r[2], r[3], 0, 0, r[2], r[3]);
+    const img = g.getImageData(0, 0, r[2], r[3]);
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (!d[i + 3]) continue;
+      const R = d[i]!;
+      const G = d[i + 1]!;
+      const B = d[i + 2]!;
+      const max = Math.max(R, G, B);
+      const min = Math.min(R, G, B);
+      const sat = max ? (max - min) / max : 0;
+      let hue = 0;
+      if (max !== min) {
+        hue = max === R ? ((G - B) / (max - min)) % 6 : max === G ? (B - R) / (max - min) + 2 : (R - G) / (max - min) + 4;
+        hue = (hue * 60 + 360) % 360;
+      }
+      if (sat > 0.4 && max > 160 && hue >= 26 && hue <= 64) {
+        // a lit window: warmer, a hearth burning behind it
+        d[i] = Math.min(255, R + 12);
+        d[i + 1] = G * 0.86;
+        d[i + 2] = B * 0.45;
+      } else if (sat > 0.45 && max > 80 && (hue < 16 || hue > 336)) {
+        // a red banner, a pennant: deep crimson
+        d[i] = R * 0.82;
+        d[i + 1] = G * 0.55;
+        d[i + 2] = B * 0.6;
+      } else {
+        const l = 0.3 * R + 0.59 * G + 0.11 * B;
+        d[i] = l * 0.4 + R * 0.07;
+        d[i + 1] = l * 0.41 + G * 0.07;
+        d[i + 2] = l * 0.47 + B * 0.1;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    made.set(key, out);
+  }
+  return [out, [0, 0, r[2], r[3]]];
+}
 
 export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town = false): { objects: SceneObject[]; handled: Set<number>; lights: { x: number; y: number; r: number }[] } {
   const objects: SceneObject[] = [];
@@ -342,10 +396,14 @@ export function buildWorldObjects(map: TileMap, art: SceneArt, r: Recipe, town =
       const p = find(pic.id);
       const m = buildingPic(pic.id);
       if (!p || !m) continue;
-      const x = pic.x + m.ox + m.fpw / 2;
-      const top = pic.y - p.o[1] / p.k;
-      objects.push({ x, y: pic.y - 2, c: p.c, dx: pic.x - x, dy: top - (pic.y - 2), fade: true, kind: 'building', src: p.r, k: p.k });
-      for (const [sx, sy] of p.smoke ?? []) stand('anim:smoke', pic.x + sx / p.k, top + sy / p.k, 'smoke', false, pic.y - 1);
+      // (drawn bigger, its picture's pixels are spread wider; in dark stone, from a copy of its own)
+      const s = pic.scale ?? 1;
+      const k = p.k / s;
+      const x = pic.x + (m.ox + m.fpw / 2) * s;
+      const top = pic.y - p.o[1] / k;
+      const [c, src] = pic.grim ? grim(p.c, p.r) : [p.c, p.r];
+      objects.push({ x, y: pic.y - 2, c, dx: pic.x - x, dy: top - (pic.y - 2), fade: true, kind: 'building', src, k });
+      for (const [sx, sy] of p.smoke ?? []) stand('anim:smoke', pic.x + sx / k, top + sy / k, 'smoke', false, pic.y - 1);
     }
     for (const y of b.yard) stand(y.prop, (y.tx + 0.5) * TILE, (y.ty + 1) * TILE - 3, 'yard');
   }

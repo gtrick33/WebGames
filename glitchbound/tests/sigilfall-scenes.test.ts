@@ -39,9 +39,13 @@ function holdsFor(p: (typeof PRESETS)[number], id: string): boolean {
   const when = SCENES.find((s) => s.id === id)!.when;
   return !!when && holds(c, when);
 }
-/** Puts the hero where the scene is set and lets it begin. */
+/**
+ * Puts the hero where the scene is set and lets it begin (the land's other scenes seen: the Ember Keep's comes
+ * just before the Regent's, the first time up the avenue).
+ */
 function startAt(w: World, id: string): void {
   const def = SCENES.find((s) => s.id === id)!;
+  for (const s of SCENES) if (s.id !== id && s.region === def.region && !w.hero.opened.includes(`scene:${s.id}`)) w.hero.opened.push(`scene:${s.id}`);
   w.enemies = [];
   const at = def.near ? (w.places[def.near] ?? w.npcs.find((n) => n.id === def.near)) : null;
   if (at) {
@@ -73,7 +77,7 @@ describe('Sigilfall: scenes', () => {
       const named = new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : 'move' in s ? [s.move] : 'emote' in s ? [s.emote] : [])));
       // a villager of the place, the hero, or a companion of the story at their side
       for (const who of named) expect(w.npcs.some((n) => n.id === who) || w.pets.some((p) => !p.dead && p.def.id === who) || who === 'hero', `${def.id}: ${who}`).toBe(true);
-      for (const s of def.steps) if ('look' in s && s.look !== 'hero') expect(!!w.places[s.look] || w.npcs.some((n) => n.id === s.look), `${def.id}: ${s.look}`).toBe(true);
+      for (const s of def.steps) if ('look' in s && s.look !== 'hero') expect(!!w.places[s.look] || w.npcs.some((n) => n.id === s.look) || w.map.buildings.some((b) => b.name === s.look), `${def.id}: ${s.look}`).toBe(true);
       run(w, 60);
       expect(w.scene, def.id).toBeNull();
       expect(w.hero.opened).toContain(`scene:${def.id}`);

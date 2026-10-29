@@ -426,3 +426,62 @@ was found by looking:
 - Not verified:
   - frame time with the added lights in a crowded town at night on a phone;
   - the fireship's stern still touches its bank, which runs north and south there.
+
+## The Ember Keep, majestic and terrifying; its Great Hall glorious (2026-10-29)
+
+The owner: "scale up the castle, make it more majestic, big and terrifying, inside also seems empty, make it
+feel glorious".
+
+- **Outside.** The Regent's keep in Emberwick is now a fortress:
+  - it is drawn at twice the size of any keep in the land, about 12 tiles wide and 14 tall, and is as solid as
+    it is drawn;
+  - it stands between two tall round towers, with two square towers further out and set back;
+  - its towers rise over the city's north wall;
+  - all of it is in dark stone: the walls and roofs are darkened and cooled toward granite, the lit windows burn
+    warmer and the banners stay crimson. The pack's art is recolored when it is drawn; no new art ships.
+  - Its forecourt is wider. Braziers burn either side of the door, the kingdom's banners stand on poles, statues of
+    the old kings stand at its corners, and torches line the avenue.
+  - Its door, and the way into the Great Hall, are where they were.
+- **The keep revealed.** The keep is taller than the screen. So the first time the hero comes up the avenue, the
+  camera climbs it, under the title "The Ember Keep, Seat of the Regents of Aster", with a war horn. Then the
+  Regent's own scene plays. A scene can now look at a building by its name.
+- **Inside.** The Great Hall is bigger (31 × 26 tiles, from 22 × 18) and is now:
+  - a long hall of columns, each hung with the crown's banner;
+  - tall windows of colored glass on the north wall, their light lying across the floor;
+  - a crimson runner from the door up three steps onto a gilt-edged dais;
+  - a high gilt throne under the crown's banner, between two burning braziers;
+  - statues of the old kings and queens along the walls, with knights' armor between them;
+  - the court's long tables in the aisles. After the Night of Knives, the war council's map and racks of arms
+    replace one table, as before.
+  - The new pieces are drawn in the game's own furniture style: the runner, the dais, the throne, the columns,
+    the windows, the light, the great banner, the statues and the armor.
+- **Inside, second pass.** The owner: line up the different statues sideways, as a path to the throne from both
+  sides; connect the carpets vertically; make the surroundings glorious as well.
+  - A path of statues lines the runner on both sides, one pair on every row of columns. Nearest the throne are
+    kings (crowned and cloaked, hands on their swords), then queens with scepters, then sages with staves, then
+    knights behind their shields nearest the door.
+  - Gilt lions sit on plinths at the foot of the dais steps.
+  - The carpet is one piece from the door to the throne: the dais draws its own edge, with no line across the
+    foot of its carpet where the runner meets it.
+  - The floor runs wall to wall. Between the colonnades it is ivory and lilac marble with gilt studs, edged in gold
+    and crimson. The aisles are dark polished slabs with gilt seams.
+  - The court's tables stand on rugs, blue banners hang between the windows, and fires burn in the far corners.
+  - A floor, drawn in order of its top edge, is kept in view while any of it shows (it had vanished from the
+    view at the door).
+- **Fixes along the way:**
+  - A picture drawn bigger than its own pixels is drawn smoothly, and the view keeps any big picture while any
+    of it is on screen.
+  - A brazier's flame is drawn with its bowl, in depth, so the dais can't hide it.
+  - A rug, runner or dais is drawn in order of its top edge: all of it lies under whoever stands on it.
+- Checked:
+  - a new test (`tests/sigilfall-ember-keep.test.ts`): the keep's size, its towers, its dark stone and its door;
+    the reveal playing before the Regent's scene; the runner unbroken from the door to the dais, and the
+    throne between its braziers; the path of statues either side of the runner (a pair on each row, at least
+    four kinds), and the lions at the steps;
+  - the buildings and scenes tests updated: a door painted on a bigger picture; a scene looking at a building;
+  - in the browser: the reveal, the forecourt by day and on the Night of Knives, the keep's side by the
+    barracks, and the hall from its throne, from its door and as the war room.
+- Not verified:
+  - on a phone, the keep, drawn at twice its pixels on a sharper screen, is a little softer than the art around
+    it;
+  - the recolor is made from the art when it is drawn, in the browser; Safari was not tried.

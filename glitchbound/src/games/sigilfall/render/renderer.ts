@@ -382,27 +382,35 @@ export class Renderer {
     const items: { y: number; draw: () => void }[] = [];
     const inView = (x: number, y: number, m = 40): boolean => x > ox - m && x < ox + this.vw + m && y > oy - m && y < oy + this.vh + 60;
     for (const o of sc.objects) {
-      if (!inView(o.x, o.y, 70)) continue;
+      const ow = (o.src ? (o.anim ? o.anim.w : o.src[2]) : o.c.width) / (o.k ?? DETAIL);
+      const oh = (o.src ? o.src[3] : o.c.height) / (o.k ?? DETAIL);
+      // (a big picture is in view while any of it is: the Crown City's keep is wider than the margin, and a hall's
+      // floor, drawn in order of its top edge, runs on far below it)
+      if (o.x + ow / 2 < ox - 70 || o.x - ow / 2 > ox + this.vw + 70 || o.y + o.dy + oh < oy - 70 || o.y + o.dy > oy + this.vh + 60) continue;
       const come = o.born === undefined ? 1 : clamp((time - o.born) / PROP_FADE, 0, 1);
       const left = o.gone === undefined ? 1 : 1 - (time - o.gone) / PROP_FADE;
       if (left <= 0) continue;
       items.push({
         y: o.y,
         draw: () => {
-          const ow = (o.src ? (o.anim ? o.anim.w : o.src[2]) : o.c.width) / (o.k ?? DETAIL);
           const behind = o.fade && !p.dead && p.y < o.y && p.y > o.y + o.dy + 4 && Math.abs(p.x - o.x) < ow / 2 - 2;
           g.globalAlpha = (behind ? 0.55 : 1) * Math.min(come, left);
           if (o.src) {
-            // from an atlas, placed on its art pixel; animated props step through their frames
+            // from an atlas, placed on its art pixel; animated props step through their frames (a picture drawn
+            // bigger than its own pixels, smoothly)
             const [sx, sy, sw, sh] = o.src;
             const fw = o.anim ? o.anim.w : sw;
             const f = o.anim ? Math.floor((time * 1000) / o.anim.ms + o.x * 0.37) % o.anim.n : 0;
+            const soft = (o.k ?? DETAIL) < this.res;
+            if (soft) g.imageSmoothingEnabled = true;
             g.drawImage(o.c, sx + f * fw, sy, fw, sh, Math.round((o.x + o.dx) * this.res) / this.res, Math.round((o.y + o.dy) * this.res) / this.res, fw / (o.k ?? DETAIL), sh / (o.k ?? DETAIL));
+            if (soft) g.imageSmoothingEnabled = false;
           } else g.drawImage(o.c, Math.round(o.x + o.dx), Math.round(o.y + o.dy), ow, o.c.height / DETAIL);
           g.globalAlpha = 1;
         },
       });
     }
+    for (const b of sc.braziers) if (inView(b.x, b.z)) items.push({ y: b.z - 0.01, draw: () => this.drawFlame(b.x, b.y, time, 1) });
     for (const c of w.chests) if (inView(c.x, c.y)) items.push({ y: c.y + 4, draw: () => this.drawChest(c.x, c.y, c.open, c.tier, time) });
     for (const s of w.spores) if (inView(s.x, s.y)) items.push({ y: s.y + 3, draw: () => this.drawSpore(s.x, s.y, s.ripe, s.fuse, time) });
     for (const n of w.npcs) if (inView(n.x, n.y)) items.push({ y: n.y + 6, draw: () => this.drawNpc(w, n, clamp((w.time - (n.since ?? -Infinity)) / NPC_FADE_IN, 0, 1)) });
@@ -570,8 +578,7 @@ export class Renderer {
         }
       }
     }
-    // braziers and torches burn
-    for (const b of sc.braziers) this.drawFlame(b.x, b.y, time, 1);
+    // torches burn (a brazier's fire burns in its bowl, drawn with it in depth: a dais under it can't hide it)
     for (const t of sc.torches) {
       g.fillStyle = '#3a3040';
       g.fillRect(t.x - 1, t.y, 3, 4);

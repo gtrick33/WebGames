@@ -24,6 +24,7 @@ const C = {
   fence: 102, // 'f'
   house: 104, // 'h'
   rampart: 124, // '|'
+  brazier: 81, // 'Q' (a fire in an iron bowl, burning)
 } as const;
 
 export class CityPlan {
@@ -108,9 +109,9 @@ export class CityPlan {
    * A building on a footprint whose top-left tile is (x, y). Its keeper stands at the door (in front of
    * the middle of the front wall), with the street paved up to it.
    */
-  building(style: Style, x: number, y: number, w: number, h: number, o: { npc?: string; name?: string; pave?: boolean; art?: string } = {}): this {
+  building(style: Style, x: number, y: number, w: number, h: number, o: { npc?: string; name?: string; pave?: boolean; art?: string; scale?: number; grim?: boolean } = {}): this {
     this.fill(x, y, x + w - 1, y + h - 1, 'house');
-    this.mark(x, y + h - 1, { kind: 'building', style, w, h, ...(o.name ? { name: o.name } : {}), ...(o.art ? { art: o.art } : {}) });
+    this.mark(x, y + h - 1, { kind: 'building', style, w, h, ...(o.name ? { name: o.name } : {}), ...(o.art ? { art: o.art } : {}), ...(o.scale ? { scale: o.scale } : {}), ...(o.grim ? { grim: true } : {}) });
     const door = x + Math.floor(w / 2);
     if (o.pave !== false) this.step(door, y + h);
     // the keeper stands beside the door, out of the doorway

@@ -164,6 +164,10 @@ export interface PlacedPic {
   /** The picture's left edge and the ground line under its walls, in world pixels. */
   x: number;
   y: number;
+  /** Drawn this many times its size (the capital's keep and its towers). */
+  scale?: number;
+  /** In dark stone, its lit windows and red banners kept (data/types.ts). */
+  grim?: boolean;
 }
 
 export interface Lot {
@@ -176,26 +180,43 @@ export interface Lot {
 
 /**
  * The picture(s) for a building on a lot. `door`: the tile column of its way in, if it has one (its painted
- * door goes over it). A keep on a lot wide enough stands between two round towers.
+ * door goes over it). A keep on a lot wide enough stands between two round towers; a keep drawn bigger
+ * (`o.scale`, the Crown City's) is a fortress: between two tall round towers, and further out and set back,
+ * two square ones, all of them bigger than the land's own.
  */
-export function placeBuilding(style: Style | 'house', lot: Lot, theme: Theme, town: boolean, art: string | undefined, door: number | null): PlacedPic[] {
+export function placeBuilding(style: Style | 'house', lot: Lot, theme: Theme, town: boolean, art: string | undefined, door: number | null, o: { scale?: number; grim?: boolean } = {}): PlacedPic[] {
   const h = hash2(lot.tx, lot.ty + lot.h - 1, 51);
   const own = art?.startsWith('rk:') && PICS[art.slice(3)] ? art.slice(3) : null;
   const list = style === 'house' ? HOUSES[theme] : town ? STYLE[style].town : STYLE[style].wild;
   const id = own ?? list[Math.floor(h * list.length) % list.length]!;
   const pic = buildingPic(id)!;
+  const s = o.scale ?? 1;
+  const look = { ...(s !== 1 ? { scale: s } : {}), ...(o.grim ? { grim: true } : {}) };
   const ground = (lot.ty + lot.h) * 16;
   const middle = (lot.tx + lot.w / 2) * 16;
   // the painted door over the lot's door tile (the middle of its front, where a plan paves the step and an
   // interior's way in is); a building with no way in may shift back over its lot, a little past it at most
-  let x = Math.round(middle - pic.ox - pic.fpw / 2);
+  let x = Math.round(middle - (pic.ox + pic.fpw / 2) * s);
   if (pic.door !== undefined) {
-    x = Math.round(((door ?? lot.tx + Math.floor(lot.w / 2)) + 0.5) * 16 - pic.door);
+    x = Math.round(((door ?? lot.tx + Math.floor(lot.w / 2)) + 0.5) * 16 - pic.door * s);
     // (never so far its walls stand on a neighbour's lot: a tile is solid where a wall covers 4 px of it)
-    if (door === null) x = Math.max(lot.tx * 16 - 3 - pic.ox, Math.min((lot.tx + lot.w) * 16 + 3 - pic.ox - pic.fpw, x));
+    if (door === null) x = Math.max(lot.tx * 16 - 3 - pic.ox * s, Math.min((lot.tx + lot.w) * 16 + 3 - (pic.ox + pic.fpw) * s, x));
   }
-  const out: PlacedPic[] = [{ id, x, y: ground }];
-  if (id === 'keep' && lot.w >= 8) {
+  const out: PlacedPic[] = [{ id, x, y: ground, ...look }];
+  if (id === 'keep' && s > 1) {
+    const kc = x + (pic.ox + pic.fpw / 2) * s;
+    const inner = buildingPic('tower_round_slate')!;
+    const outer = buildingPic('tower_square_roof')!;
+    const si = s * 0.95;
+    const so = s * 0.8;
+    // (the round towers stand a little into the keep's flanks, the square ones clear of them, further back)
+    const di = (pic.fpw * s) / 2 + inner.fpw * si * 0.3;
+    const dout = (pic.fpw * s) / 2 + inner.fpw * si + (outer.fpw * so) / 2 + 2;
+    for (const side of [-1, 1]) {
+      out.push({ id: 'tower_round_slate', x: Math.round(kc + side * di - (inner.ox + inner.fpw / 2) * si), y: ground - 10, scale: si, ...(o.grim ? { grim: true } : {}) });
+      out.push({ id: 'tower_square_roof', x: Math.round(kc + side * dout - (outer.ox + outer.fpw / 2) * so), y: ground - 26, scale: so, ...(o.grim ? { grim: true } : {}) });
+    }
+  } else if (id === 'keep' && lot.w >= 8) {
     const tower = buildingPic('tower_round_tile')!;
     const kc = x + pic.ox + pic.fpw / 2;
     const span = pic.fpw + tower.fpw * 1.4;
@@ -215,5 +236,6 @@ export function yardProps(style: Style | 'house', lot: Lot, n: number): string[]
 /** The ground rectangle a placed picture covers ([x0, y0, x1, y1], world px): its walls and roof, not its shadow. */
 export function picBody(p: PlacedPic): [number, number, number, number] {
   const pic = buildingPic(p.id)!;
-  return [p.x + pic.ox, p.y - pic.oy, p.x + pic.ox + pic.fpw, p.y];
+  const s = p.scale ?? 1;
+  return [p.x + pic.ox * s, p.y - pic.oy * s, p.x + (pic.ox + pic.fpw) * s, p.y];
 }

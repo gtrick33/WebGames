@@ -221,10 +221,10 @@ const OVER = new Set<number>([K.Floor, K.Deco, K.Sand, K.Path, K.Cobble]);
  */
 function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, markers: PlacedMarker[], over: [number, number][]): MapBuilding[] {
   const out: MapBuilding[] = [];
-  const lots: { style: MapBuilding['style']; tx: number; ty: number; w: number; h: number; name?: string; art?: string }[] = [];
+  const lots: { style: MapBuilding['style']; tx: number; ty: number; w: number; h: number; name?: string; art?: string; scale?: number; grim?: boolean }[] = [];
   for (const pm of markers) {
     const m = pm.marker;
-    if (m.kind === 'building') lots.push({ style: m.style, tx: pm.tx, ty: pm.ty - m.h + 1, w: m.w, h: m.h, ...(m.name ? { name: m.name } : {}), ...(m.art ? { art: m.art } : {}) });
+    if (m.kind === 'building') lots.push({ style: m.style, tx: pm.tx, ty: pm.ty - m.h + 1, w: m.w, h: m.h, ...(m.name ? { name: m.name } : {}), ...(m.art ? { art: m.art } : {}), ...(m.scale ? { scale: m.scale } : {}), ...(m.grim ? { grim: true } : {}) });
   }
   for (let i = 0; i < w * h; i++) if (kind[i] === K.HouseAnchor) lots.push({ style: 'house', tx: i % w, ty: Math.floor(i / w) - 2, w: 4, h: 3 });
   if (!lots.length) return out;
@@ -235,7 +235,7 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
     const inLot = (x: number, y: number): boolean => x >= lot.tx && x < lot.tx + lot.w && y >= lot.ty && y < lot.ty + lot.h;
     const col = lot.tx + Math.floor(lot.w / 2);
     const way = ways.find((d) => d.ty === lot.ty + lot.h && Math.abs(d.tx - col) <= 1) ?? null;
-    const pics = placeBuilding(lot.style, lot, def.theme, def.kind === 'town', lot.art, way ? way.tx : null);
+    const pics = placeBuilding(lot.style, lot, def.theme, def.kind === 'town', lot.art, way ? way.tx : null, { ...(lot.scale ? { scale: lot.scale } : {}), ...(lot.grim ? { grim: true } : {}) });
     for (let y = lot.ty; y < lot.ty + lot.h; y++) {
       for (let x = lot.tx; x < lot.tx + lot.w; x++) {
         if (x < 0 || y < 0 || x >= w || y >= h) continue;

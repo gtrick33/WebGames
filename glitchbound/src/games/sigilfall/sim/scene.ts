@@ -1,4 +1,5 @@
 import { dist, TAU } from '../core/math';
+import { picBody } from '../data/buildingArt';
 import { PETS } from '../data/pets';
 import { SCENES } from '../data/scenes';
 import type { RegionId, StoryCond } from '../data/types';
@@ -21,7 +22,7 @@ export type Emote = 'alert' | 'question' | 'dots' | 'heart' | 'note';
 export type SceneStep =
   /** A line over someone's head (an NPC, a companion, 'hero'); the scene waits until it has been read. */
   | { say: string; line: string }
-  /** The camera goes to a named place, a person or 'hero'. */
+  /** The camera goes to a named place, a person, a building by its name (to the middle of its picture) or 'hero'. */
   | { look: string }
   /**
    * The camera keeps on someone walking (a companion, someone arriving) until they are where they were going
@@ -95,7 +96,13 @@ function where(w: World, name: string): { x: number; y: number } | null {
   const place = w.places[name];
   if (place) return place;
   const n = w.npcs.find((x) => x.id === name) ?? w.pets.find((p) => !p.dead && p.def.id === name) ?? w.enemies.find((e) => !e.dead && e.def.id === name);
-  return n ? { x: n.x, y: n.y } : null;
+  if (n) return { x: n.x, y: n.y };
+  const b = w.map.buildings.find((x) => x.name === name);
+  if (!b) return null;
+  const bodies = b.pics.map(picBody);
+  const top = Math.min(...bodies.map((r) => r[1]));
+  const ground = Math.max(...bodies.map((r) => r[3]));
+  return { x: (Math.min(...bodies.map((r) => r[0])) + Math.max(...bodies.map((r) => r[2]))) / 2, y: (top + ground) / 2 };
 }
 
 const seenKey = (id: string): string => `scene:${id}`;

@@ -9,7 +9,7 @@ import { buildDecals, Ground } from './ground';
 import { WorldGround } from './worldGround';
 import { buildWorldObjects } from './worldScenery';
 import { building } from './art/buildings';
-import { FLAT_FURNITURE, furniture } from './art/furniture';
+import { BARE_FURNITURE, FLAT_FURNITURE, furniture } from './art/furniture';
 import { dungeonEntrance } from './art/entrances';
 import { bushArt, cactus, crystalSpire, deadTree, edgeTrunk, jungleTree, mushroomTree, oakTree, palmTree, pineTree, rockArt, willowTree } from './art/flora';
 import type { Painter } from './art/kit';
@@ -60,7 +60,8 @@ export interface Scenery {
   /** The packed art this scenery was built from (null: all procedural). */
   art: WorldLook | null;
   torches: { x: number; y: number }[];
-  braziers: { x: number; y: number }[];
+  /** Fires in iron bowls: the flame's foot, and where the bowl stands in depth (`z`). */
+  braziers: { x: number; y: number; z: number }[];
   /** What the packed art stands that gives light (lamps, torches, campfires), and how far it reaches. */
   lights: { x: number; y: number; r: number }[];
   /** Mist banks lying over a frightening land's water and hollows (THEMES dread): where, how big, and a phase. */
@@ -214,7 +215,7 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
       case K.Brazier: {
         const c = brazierBase();
         sc.objects.push({ x, y: bottom - 4, c, dx: -(c.width / D) / 2, dy: -(c.height / D) + 2, fade: false, kind: 'brazier' });
-        sc.braziers.push({ x, y: bottom - 4 - (c.height / D) + 3 });
+        sc.braziers.push({ x, y: bottom - 4 - (c.height / D) + 3, z: bottom - 4 });
         break;
       }
       case K.Wall: {
@@ -250,10 +251,12 @@ function buildObjects(sc: Scenery, map: TileMap, region: RegionDef, artMode = fa
     if (m.kind === 'prop') {
       const own = prop(m.prop);
       const raw = own ? null : furniture(m.prop);
-      const c = own ?? (raw ? outline(raw) : null);
-      // a rug lies under whoever stands on it
-      const flat = FLAT_FURNITURE.has(m.prop.split(':')[0]!);
-      if (c) sc.objects.push({ x, y: flat ? bottom - TILE - 6 : bottom - 3, c, dx: -(c.width / D) / 2, dy: (flat ? TILE + 6 : 3) - c.height / D - 1, fade: m.prop === 'well', kind: m.prop });
+      const name = m.prop.split(':')[0]!;
+      const c = own ?? (raw ? (BARE_FURNITURE.has(name) ? smooth2x(raw) : outline(raw)) : null);
+      // a rug lies under whoever stands on it (drawn in order of its top edge: all of it under them, and under
+      // what stands on it, a dais under its throne)
+      const flat = FLAT_FURNITURE.has(name);
+      if (c) sc.objects.push({ x, y: flat ? bottom - c.height / D - 2 : bottom - 3, c, dx: -(c.width / D) / 2, dy: flat ? 1 : 2 - c.height / D, fade: m.prop === 'well', kind: m.prop });
     }
     if (m.kind === 'waystone') {
       const c = waystone();

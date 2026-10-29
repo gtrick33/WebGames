@@ -81,7 +81,21 @@ const SIZE: Record<string, [number, number]> = {
   grindstone: [16, 17],
   stair: [20, 30],
   cupboard: [20, 28],
+  // the Great Hall of the Ember Keep
+  runner: [48, 16],
+  dais: [176, 64],
+  'high-throne': [36, 54],
+  column: [18, 62],
+  window: [24, 28],
+  sunbeam: [36, 88],
+  'great-banner': [24, 28],
+  statue: [20, 42],
+  'armor-stand': [18, 32],
+  lion: [26, 28],
+  'hall-floor': [464, 368],
 };
+
+const GOLD = { lit: '#ffe08a', mid: '#d8b060', dark: '#a87a30' };
 
 /** Whether a prop name is a piece of furniture (`banner:#hex` and the like included). */
 export const isFurniture = (kind: string): boolean => !!SIZE[kind.split(':')[0]!];
@@ -342,6 +356,303 @@ export function furniture(kind: string): Cnv | null {
       rect(g, 6, 13, 2, 5, '#ffe08a');
       break;
     }
+    case 'runner': {
+      // a length of the crimson runner, one tile long: laid end to end it runs unbroken (no outline round it)
+      const red = tint ?? '#8a1a2a';
+      rect(g, 0, 0, 48, 16, GOLD.mid);
+      rect(g, 3, 0, 42, 16, red);
+      rect(g, 5, 0, 1, 16, GOLD.lit);
+      rect(g, 42, 0, 1, 16, GOLD.lit);
+      rect(g, 22, 4, 4, 8, GOLD.mid);
+      rect(g, 20, 6, 8, 4, GOLD.mid);
+      rect(g, 23, 7, 2, 2, red);
+      g.globalAlpha = 0.14;
+      rect(g, 0, 0, 20, 16, '#ffffff');
+      g.globalAlpha = 1;
+      break;
+    }
+    case 'dais': {
+      // the raised floor of the throne: polished flags edged in gold, its front face, three steps up the middle
+      // with the runner climbing them
+      const red = tint ?? '#8a1a2a';
+      rect(g, 0, 0, 176, 48, '#a8a2b4');
+      for (let x = 16; x < 176; x += 16) rect(g, x, 0, 1, 46, '#8e889c');
+      for (let y = 15; y < 46; y += 16) rect(g, 0, y, 176, 1, '#8e889c');
+      g.globalAlpha = 0.16;
+      rect(g, 0, 0, 70, 46, '#ffffff');
+      g.globalAlpha = 1;
+      rect(g, 0, 44, 176, 3, GOLD.mid);
+      rect(g, 0, 44, 176, 1, GOLD.lit);
+      rect(g, 0, 47, 176, 17, STONE.dark);
+      for (let x = 12; x < 176; x += 22) rect(g, x, 47, 1, 17, STONE.deep);
+      rect(g, 0, 62, 176, 2, STONE.deep);
+      for (const [y, h] of [
+        [47, 5],
+        [52, 5],
+        [57, 7],
+      ] as const) {
+        rect(g, 58 - (y - 47), y, 60 + (y - 47) * 2, h, STONE.mid);
+        rect(g, 58 - (y - 47), y, 60 + (y - 47) * 2, 1, STONE.lit);
+      }
+      rect(g, 64, 12, 48, 52, GOLD.mid);
+      rect(g, 67, 12, 42, 52, red);
+      rect(g, 69, 12, 1, 52, GOLD.lit);
+      rect(g, 106, 12, 1, 52, GOLD.lit);
+      for (const y of [48, 53, 58]) rect(g, 67, y, 42, 1, '#5a1020');
+      g.globalAlpha = 0.14;
+      rect(g, 64, 12, 20, 52, '#ffffff');
+      g.globalAlpha = 1;
+      // its own dark edge, drawn here rather than by the outliner: none across the foot of the carpet, which runs on
+      // into the runner below it unbroken
+      rect(g, 0, 0, 1, 64, '#2a2636');
+      rect(g, 175, 0, 1, 64, '#2a2636');
+      rect(g, 0, 63, 64, 1, '#2a2636');
+      rect(g, 112, 63, 64, 1, '#2a2636');
+      break;
+    }
+    case 'high-throne':
+      // gilt and crimson, taller than a man, the crown over its back
+      rect(g, 4, 4, 4, 4, GOLD.mid);
+      rect(g, 28, 4, 4, 4, GOLD.mid);
+      rect(g, 4, 6, 28, 30, GOLD.mid);
+      rect(g, 4, 6, 28, 1, GOLD.lit);
+      rect(g, 7, 9, 22, 26, '#8a1a2a');
+      rect(g, 7, 9, 7, 26, '#a83a4a');
+      for (const x of [12, 17, 22]) rect(g, x, 0, 2, 4, GOLD.lit);
+      rect(g, 12, 3, 12, 4, GOLD.lit);
+      rect(g, 17, 4, 2, 2, '#c9473b');
+      rect(g, 16, 16, 4, 10, GOLD.mid);
+      rect(g, 14, 18, 8, 3, GOLD.mid);
+      rect(g, 0, 28, 6, 14, GOLD.dark);
+      rect(g, 30, 28, 6, 14, GOLD.dark);
+      rect(g, 0, 28, 6, 2, GOLD.lit);
+      rect(g, 30, 28, 6, 2, GOLD.lit);
+      rect(g, 2, 34, 32, 8, GOLD.mid);
+      rect(g, 5, 33, 26, 6, '#a83a4a');
+      rect(g, 5, 33, 26, 1, '#c85a6a');
+      rect(g, 3, 42, 30, 12, STONE.dark);
+      rect(g, 3, 42, 10, 12, STONE.mid);
+      rect(g, 3, 42, 30, 2, GOLD.mid);
+      break;
+    case 'column': {
+      // a pillar of pale stone, gilt at its head, the crown's banner hung on it
+      rect(g, 0, 0, 18, 6, GOLD.mid);
+      rect(g, 0, 0, 18, 2, GOLD.lit);
+      rect(g, 2, 6, 14, 3, STONE.lit);
+      rect(g, 3, 9, 12, 45, STONE.mid);
+      rect(g, 4, 9, 3, 45, STONE.lit);
+      rect(g, 8, 9, 1, 45, STONE.dark);
+      rect(g, 11, 9, 1, 45, STONE.dark);
+      rect(g, 13, 9, 2, 45, STONE.dark);
+      if (tint) {
+        rect(g, 4, 13, 10, 2, GOLD.mid);
+        rect(g, 5, 15, 8, 18, tint);
+        rect(g, 5, 15, 2, 18, '#ffffff22');
+        rect(g, 7, 20, 4, 4, GOLD.lit);
+        g.fillStyle = tint;
+        g.beginPath();
+        g.moveTo(5, 33);
+        g.lineTo(9, 36);
+        g.lineTo(13, 33);
+        g.fill();
+      }
+      rect(g, 1, 54, 16, 4, STONE.lit);
+      rect(g, 0, 58, 18, 3, STONE.mid);
+      rect(g, 0, 61, 18, 1, STONE.deep);
+      break;
+    }
+    case 'window':
+      // a tall window of colored glass, set in the north wall
+      rect(g, 4, 0, 16, 2, STONE.dark);
+      rect(g, 2, 2, 20, 2, STONE.dark);
+      rect(g, 0, 4, 24, 24, STONE.dark);
+      rect(g, 5, 2, 14, 3, '#2a3a6a');
+      rect(g, 3, 5, 18, 21, '#2a3a6a');
+      for (const [x, y, col] of [
+        [4, 6, '#c9473b'],
+        [13, 6, GOLD.mid],
+        [4, 13, GOLD.mid],
+        [13, 13, '#3a6ab0'],
+        [4, 20, '#3a6ab0'],
+        [13, 20, '#c9473b'],
+      ] as const)
+        rect(g, x, y, 7, 6, col);
+      rect(g, 11, 3, 2, 23, '#1a1a2a');
+      rect(g, 3, 12, 18, 1, '#1a1a2a');
+      rect(g, 3, 19, 18, 1, '#1a1a2a');
+      g.globalAlpha = 0.3;
+      rect(g, 4, 3, 7, 23, '#ffffff');
+      g.globalAlpha = 1;
+      rect(g, 0, 26, 24, 2, STONE.lit);
+      break;
+    case 'sunbeam':
+      // the light of a window lying across the floor below it (no outline: it is only light)
+      g.fillStyle = '#fff2c0';
+      for (const inset of [0, 5]) {
+        g.globalAlpha = 0.11;
+        g.beginPath();
+        g.moveTo(8 + inset, 0);
+        g.lineTo(28 - inset, 0);
+        g.lineTo(36 - inset, 88);
+        g.lineTo(inset, 88);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+      break;
+    case 'great-banner': {
+      // the crown's banner over the throne: crimson, gilt edged, the crown and the sword
+      const col = tint ?? '#8a1a2a';
+      rect(g, 0, 0, 24, 2, GOLD.mid);
+      rect(g, 0, 0, 2, 3, GOLD.lit);
+      rect(g, 22, 0, 2, 3, GOLD.lit);
+      rect(g, 2, 2, 20, 22, col);
+      rect(g, 2, 2, 1, 22, GOLD.mid);
+      rect(g, 21, 2, 1, 22, GOLD.mid);
+      g.fillStyle = col;
+      g.beginPath();
+      g.moveTo(2, 24);
+      g.lineTo(7, 28);
+      g.lineTo(12, 25);
+      g.lineTo(17, 28);
+      g.lineTo(22, 24);
+      g.fill();
+      for (const x of [8, 11, 14]) rect(g, x, 6, 2, 2, GOLD.lit);
+      rect(g, 8, 8, 8, 4, GOLD.lit);
+      rect(g, 11, 13, 2, 8, '#e8e0c8');
+      rect(g, 9, 14, 6, 1, GOLD.mid);
+      break;
+    }
+    case 'statue': {
+      // one of the realm's great in pale stone on a plinth with a gilt plaque (`statue:queen`, `:knight`, `:sage`;
+      // a king by default): a king crowned with his sword point down, a queen in her gown with her scepter, a knight
+      // behind his shield, a sage in his hood with his staff
+      const M = { lit: '#e4e0ec', mid: '#c4c0d0', dark: '#9894ac' };
+      const who = arg ?? 'king';
+      rect(g, 1, 34, 18, 8, STONE.mid);
+      rect(g, 1, 34, 18, 2, STONE.lit);
+      rect(g, 1, 40, 18, 2, STONE.deep);
+      rect(g, 7, 37, 6, 2, GOLD.mid);
+      if (who === 'queen') {
+        // her gown flaring to the plinth, her hair down to her shoulders, the crown's tall points, the scepter
+        rect(g, 6, 14, 8, 8, M.mid);
+        rect(g, 5, 22, 10, 6, M.mid);
+        rect(g, 3, 28, 14, 6, M.mid);
+        rect(g, 3, 28, 4, 6, M.lit);
+        rect(g, 5, 22, 3, 6, M.lit);
+        rect(g, 6, 14, 2, 8, M.lit);
+        rect(g, 14, 28, 3, 6, M.dark);
+        rect(g, 12, 22, 3, 6, M.dark);
+        rect(g, 6, 7, 8, 9, M.dark);
+        rect(g, 7, 7, 6, 7, M.mid);
+        rect(g, 7, 7, 2, 7, M.lit);
+        for (const x of [7, 9.5, 12]) rect(g, Math.round(x), 1, 1, 3, M.lit);
+        rect(g, 7, 3, 6, 3, M.lit);
+        rect(g, 12, 13, 1, 13, '#f4f2f8');
+        rect(g, 11, 12, 3, 2, M.lit);
+      } else if (who === 'knight') {
+        // helmed and crested, his kite shield on his arm and his sword before him
+        rect(g, 6, 14, 8, 20, M.mid);
+        rect(g, 5, 24, 10, 10, M.mid);
+        rect(g, 6, 14, 3, 20, M.lit);
+        rect(g, 4, 14, 12, 4, M.mid);
+        rect(g, 4, 14, 3, 4, M.lit);
+        rect(g, 7, 6, 6, 8, M.mid);
+        rect(g, 7, 6, 2, 8, M.lit);
+        rect(g, 8, 9, 4, 1, M.dark);
+        rect(g, 9, 2, 2, 4, M.dark);
+        rect(g, 2, 16, 7, 10, M.lit);
+        rect(g, 3, 26, 5, 3, M.lit);
+        rect(g, 4, 29, 3, 2, M.lit);
+        rect(g, 5, 18, 1, 8, M.dark);
+        rect(g, 3, 20, 5, 1, M.dark);
+        rect(g, 13, 16, 2, 16, '#f4f2f8');
+        rect(g, 11, 18, 6, 1, M.dark);
+      } else if (who === 'sage') {
+        // hooded and bearded, his staff and its orb
+        rect(g, 6, 12, 8, 22, M.mid);
+        rect(g, 5, 22, 10, 12, M.mid);
+        rect(g, 5, 22, 3, 12, M.lit);
+        rect(g, 6, 12, 3, 10, M.lit);
+        rect(g, 6, 5, 8, 9, M.dark);
+        rect(g, 7, 6, 6, 6, M.mid);
+        rect(g, 8, 11, 4, 7, M.lit);
+        rect(g, 15, 4, 1, 30, M.dark);
+        rect(g, 14, 2, 3, 3, '#f4f2f8');
+      } else {
+        // his cloak behind him to the plinth, his beard, his hands crossed on the hilt of his sword
+        rect(g, 3, 15, 14, 19, M.dark);
+        rect(g, 6, 14, 8, 20, M.mid);
+        rect(g, 5, 22, 10, 12, M.mid);
+        rect(g, 5, 22, 3, 12, M.lit);
+        rect(g, 6, 14, 3, 8, M.lit);
+        rect(g, 4, 13, 12, 3, M.mid);
+        rect(g, 4, 13, 3, 3, M.lit);
+        rect(g, 7, 6, 6, 7, M.mid);
+        rect(g, 7, 6, 2, 7, M.lit);
+        rect(g, 8, 8, 4, 1, M.dark);
+        rect(g, 8, 11, 4, 4, M.lit);
+        rect(g, 7, 4, 6, 2, M.lit);
+        for (const x of [7, 9, 12]) rect(g, x, 2, 1, 2, M.lit);
+        rect(g, 9, 19, 2, 13, '#f4f2f8');
+        rect(g, 7, 18, 6, 1, M.dark);
+        rect(g, 8, 16, 4, 2, M.lit);
+      }
+      break;
+    }
+    case 'lion':
+      // a gilt lion sitting up on its plinth, its mane about its face, its forepaws together
+      rect(g, 2, 20, 22, 8, STONE.mid);
+      rect(g, 2, 20, 22, 2, STONE.lit);
+      rect(g, 2, 26, 22, 2, STONE.deep);
+      rect(g, 5, 11, 16, 9, GOLD.dark);
+      rect(g, 5, 11, 5, 9, GOLD.mid);
+      for (let y = -7; y <= 7; y++) {
+        const w = Math.floor(Math.sqrt(49 - y * y));
+        rect(g, 13 - w, 8 + y, w * 2 + 1, 1, y < 0 ? GOLD.mid : GOLD.dark);
+      }
+      rect(g, 10, 5, 7, 8, GOLD.lit);
+      rect(g, 11, 7, 1, 1, '#3a2a10');
+      rect(g, 15, 7, 1, 1, '#3a2a10');
+      rect(g, 12, 10, 3, 2, GOLD.dark);
+      rect(g, 8, 14, 3, 6, GOLD.mid);
+      rect(g, 15, 14, 3, 6, GOLD.mid);
+      rect(g, 8, 18, 3, 2, GOLD.lit);
+      rect(g, 15, 18, 3, 2, GOLD.lit);
+      break;
+    case 'hall-floor': {
+      // the Great Hall's floor, wall to wall from the dais to the door (laid flat, its own edges): dark polished slabs
+      // with gilt seams in the aisles; between the colonnades (from 128 to 336, below the dais) ivory and lilac
+      // marble with a gilt stud where four stones meet, a band of gold and crimson down each side and across its foot
+      for (let y = 0; y < 368; y += 32) for (let x = 0; x < 464; x += 32) rect(g, x, y, 32, 32, (x / 32 + y / 32) % 2 ? '#5c5470' : '#655d7a');
+      for (let y = 0; y < 368; y += 32) rect(g, 0, y, 464, 1, '#a88a50');
+      for (let x = 0; x < 464; x += 32) rect(g, x, 0, 1, 368, '#a88a50');
+      g.globalAlpha = 0.1;
+      rect(g, 0, 0, 464, 368, '#ffffff');
+      g.globalAlpha = 1;
+      for (let y = 64; y < 368; y += 16) for (let x = 128; x < 336; x += 16) rect(g, x, y, 16, 16, ((x - 128) / 16 + (y - 64) / 16) % 2 ? '#aca2b6' : '#d8d0c2');
+      for (let y = 64; y < 368; y += 16) rect(g, 128, y, 208, 1, '#ffffff22');
+      for (let y = 96; y < 368; y += 32) for (let x = 144; x < 336; x += 32) rect(g, x - 1, y - 1, 2, 2, GOLD.mid);
+      g.fillStyle = '#ffffff';
+      g.globalAlpha = 0.08;
+      for (let k = 0; k < 4; k++) {
+        g.beginPath();
+        g.moveTo(128, 124 + k * 80);
+        g.lineTo(336, 44 + k * 80);
+        g.lineTo(336, 74 + k * 80);
+        g.lineTo(128, 154 + k * 80);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+      for (const x of [128, 329]) {
+        rect(g, x, 64, 7, 304, GOLD.mid);
+        rect(g, x + 1, 64, 1, 304, GOLD.lit);
+      }
+      rect(g, 135, 64, 2, 304, '#5a1020');
+      rect(g, 327, 64, 2, 304, '#5a1020');
+      rect(g, 128, 362, 208, 6, GOLD.mid);
+      rect(g, 128, 362, 208, 1, GOLD.lit);
+      break;
+    }
     case 'forge':
       rect(g, 1, 8, 30, 20, STONE.dark);
       rect(g, 1, 8, 9, 20, STONE.mid);
@@ -391,4 +702,10 @@ export function furniture(kind: string): Cnv | null {
 }
 
 /** Furniture laid flat on the floor (drawn under the people standing on it). */
-export const FLAT_FURNITURE = new Set(['rug']);
+export const FLAT_FURNITURE = new Set(['rug', 'runner', 'dais', 'sunbeam', 'hall-floor']);
+
+/**
+ * Furniture drawn without an outline: a runner laid end to end, a window's light on the floor, and the floors
+ * that draw their own edge (the dais's carpet runs on into the runner, without a line across it).
+ */
+export const BARE_FURNITURE = new Set(['runner', 'sunbeam', 'dais', 'hall-floor']);

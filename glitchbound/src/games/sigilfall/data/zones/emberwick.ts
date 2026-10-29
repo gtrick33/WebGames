@@ -123,9 +123,22 @@ function plan(): CityPlan {
   ] as const)
     c.prop(p, x, y, true, MARKET);
 
-  // the Regent's keep at the head of the avenue, its courtyard, the barracks beside it
-  c.building('keep', 45, 10, 14, 8, { pave: false });
-  c.fill(43, 18, 60, 22, 'cobble');
+  // the Regent's keep at the head of the avenue (the owner: "majestic, big and terrifying"): twice the size of any
+  // keep in the land, in dark stone with its windows lit, between two tall round towers and two square ones, its
+  // towers over the city's north wall; its forecourt, the barracks beside it
+  c.building('keep', 43, 9, 20, 9, { pave: false, scale: 2, grim: true, name: 'The Ember Keep' });
+  c.fill(43, 18, 62, 23, 'cobble');
+  // braziers burning either side of its door, the kingdom's banners, the old kings in stone, torches down the avenue
+  c.prop('brazier', 50, 18);
+  c.prop('brazier', 54, 18);
+  c.prop('red-banner', 47, 19);
+  c.prop('red-banner', 57, 19);
+  c.prop('statue', 44, 21);
+  c.prop('statue', 60, 21);
+  for (const y of [25, 29]) {
+    c.prop('iron-torch', 49, y);
+    c.prop('iron-torch', 54, y);
+  }
   // the Regent in her courtyard, the Lord Chancellor at her side until the night he runs
   c.npc('regent-elowen', 51, 20, not(KNIVES));
   c.npc('chancellor-crane', 54, 20, until('festival-the-knives'));
