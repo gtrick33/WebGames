@@ -390,14 +390,17 @@ export function itemIconUrl(item: Item | { icon: ItemIcon; tint: string }, scale
 
 /**
  * A skill's icon on a tile of its color, as a data URL for the UI (cached): its own picture (art/gameIcons.ts)
- * once the icon atlas is in, its painted glyph until then.
+ * once the icon atlas is in, its painted glyph until then. `round`: on a disc, for the round touch buttons.
  */
-export function skillIconUrl(id: string, scale = 4): string {
+export function skillIconUrl(id: string, scale = 4, round = false): string {
   const [glyph, color] = SKILL_GLYPH[id] ?? ['star'];
   const c = color ?? DMG_COLOR[SKILLS[id]?.base.dmgType ?? 'arcane'];
   const name = skillIcon(id);
-  return hasIcon(name) ? tileIconUrl(name, c) : glyphIconUrl(glyph, c, scale);
+  return hasIcon(name) ? tileIconUrl(name, c, round) : glyphIconUrl(glyph, c, scale);
 }
+
+/** Does a skill show its own picture yet (the atlas is in), rather than its painted glyph? */
+export const skillHasPicture = (id: string): boolean => hasIcon(skillIcon(id));
 
 /** A talent's icon on a tile of its tree's color (its painted glyph until the icon atlas is in). */
 export function talentIconUrl(cls: ClassId, node: TalentNode, color: string, scale = 4): string {
@@ -405,11 +408,11 @@ export function talentIconUrl(cls: ClassId, node: TalentNode, color: string, sca
   return hasIcon(name) ? tileIconUrl(name, color) : glyphIconUrl(node.icon, color, scale);
 }
 
-function tileIconUrl(name: string, color: string): string {
-  const key = `tile:${name}:${color}`;
+function tileIconUrl(name: string, color: string, round = false): string {
+  const key = `tile:${name}:${color}:${round ? 'o' : 's'}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
-  const url = iconTile(name, color)?.toDataURL() ?? '';
+  const url = iconTile(name, color, round)?.toDataURL() ?? '';
   iconCache.set(key, url);
   return url;
 }

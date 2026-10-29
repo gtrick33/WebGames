@@ -129,8 +129,11 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
   g.closePath();
 }
 
-/** A named icon on a tile of a color, as a canvas (null while the atlas isn't in). */
-export function iconTile(name: string, color: string): Cnv | null {
+/**
+ * A named icon on a tile of a color, as a canvas (null while the atlas isn't in): a rounded square for the
+ * bar and the talent trees, a disc for the round touch buttons.
+ */
+export function iconTile(name: string, color: string, round = false): Cnv | null {
   const at = atlas;
   const i = at?.at.get(name);
   if (!at || i === undefined) return null;
@@ -139,16 +142,23 @@ export function iconTile(name: string, color: string): Cnv | null {
   const c = canvas(S, S);
   const g = ctx2d(c);
   g.imageSmoothingEnabled = true;
+  const shape = (inset: number): void => {
+    if (round) {
+      g.beginPath();
+      g.arc(S / 2, S / 2, S / 2 - inset, 0, Math.PI * 2);
+    } else roundRect(g, inset, inset, S - inset * 2, S - inset * 2, S * 0.1 - inset);
+  };
   // the tile: deep at the edges, a soft light in the upper left (as the painted glyphs' tiles)
   const deep: RGB = mixRGB(R[4], [14, 10, 24], 0.55);
   const bg = g.createRadialGradient(S * 0.33, S * 0.29, 0, S * 0.33, S * 0.29, S * 0.95);
   bg.addColorStop(0, hex(mixRGB(deep, R[3], 0.6)));
   bg.addColorStop(1, hex(deep));
-  roundRect(g, 0, 0, S, S, S * 0.1);
+  shape(0);
   g.fillStyle = bg;
   g.fill();
   // the figure: a shadow under it, a dark outline, then lit top to bottom with a rim of light and of shade
-  const G = Math.round(S * 0.74);
+  // (a disc has less room in its corners: the figure is a little smaller there)
+  const G = Math.round(S * (round ? 0.64 : 0.74));
   const o = (S - G) / 2;
   g.globalAlpha = 0.6;
   g.drawImage(silhouette(at, i, G, '#000'), o, o + S * 0.035);
@@ -176,7 +186,7 @@ export function iconTile(name: string, color: string): Cnv | null {
   edge.addColorStop(0, hex(R[1]));
   edge.addColorStop(1, hex(R[4]));
   g.strokeStyle = edge;
-  roundRect(g, g.lineWidth / 2, g.lineWidth / 2, S - g.lineWidth, S - g.lineWidth, S * 0.09);
+  shape(g.lineWidth / 2);
   g.stroke();
   return c;
 }

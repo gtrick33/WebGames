@@ -7,7 +7,7 @@ import { SKILLS } from '../data/skills';
 import type { SlotKey } from '../data/types';
 import type { SigilEngine } from '../engine';
 import type { AimPreview } from '../render/renderer';
-import { skillIconUrl } from '../render/sprites';
+import { skillHasPicture, skillIconUrl } from '../render/sprites';
 import { SUMMON_TIME, type World } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { uiIcon } from './uiIcons';
@@ -298,7 +298,8 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
       onLostPointerCapture={up}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {def && !locked && <img src={skillIconUrl(def.id, 4)} alt="" draggable={false} />}
+      {/* (its picture on a disc fills the round button; a painted glyph sits inside it) */}
+      {def && !locked && <img className={skillHasPicture(def.id) ? 'is-disc' : undefined} src={skillIconUrl(def.id, 4, true)} alt="" draggable={false} />}
       {locked && <span className="rb-sb-lock">{unlockAt < 99 ? `Lv ${unlockAt}` : '—'}</span>}
       <span className="rb-sb-cd" ref={cdRef} />
       <span className="rb-sb-num" ref={numRef} />
