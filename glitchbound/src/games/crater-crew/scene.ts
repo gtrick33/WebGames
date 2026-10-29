@@ -169,8 +169,10 @@ export class Scene {
     if (this.pending.some((p) => p.turn === m.turn)) return;
     this.pending.push(m);
     this.pending.sort((a, b) => a.turn - b.turn);
-    // far behind (a phone that slept): jump straight to the newest
-    if (this.pending.length > 3) this.reset(this.pending[this.pending.length - 1]!);
+    // far behind (a phone that slept), or a turn it never got (a dropped connection): nothing to
+    // replay, so jump straight to the newest
+    const next = this.pending[0]!;
+    if (this.pending.length > 3 || next.last?.turn !== this.shown.turn) this.reset(this.pending[this.pending.length - 1]!);
   }
 
   /** Shows a battle from scratch (a new battle, or one this phone fell behind on). */
@@ -239,6 +241,14 @@ export class Scene {
     }
   }
 
+  /** The press was interrupted (the window lost focus, the system took the touch): no shot, the power starts over. */
+  cancelFire(): void {
+    if (!this.keys.charge) return;
+    this.keys.charge = false;
+    this.power = 0;
+    this.opts.sfx().chargeStop();
+  }
+
   pickWeapon(w: WeaponId): void {
     if (!this.myTurn || !hasAmmo(this.shown, this.shown.crewTurn, w)) return;
     this.weapon = w;
@@ -305,9 +315,10 @@ export class Scene {
 
   defaultZoom(): number {
     const { vw, vh } = this.cam;
-    // a tall phone sees a slice of the map: keep the slice wide enough to find the others
-    const want = vh > vw ? vw / 600 : Math.max(vw / 920, vh / 540);
-    return clamp(want, Math.min(vw / (W + 300), vh / (H + 200)), 1.8);
+    // close enough to read every critter; a tall phone sees a slice of the map, kept wide enough to
+    // find the others
+    const want = vh > vw ? vw / 380 : Math.max(vw / 760, vh / 450);
+    return clamp(want, Math.min(vw / (W + 300), vh / (H + 200)), 1.9);
   }
 
   private clampCam(): void {
@@ -502,7 +513,7 @@ export class Scene {
         case 'hurt': {
           const u = this.world.units.find((x) => x.id === e.unit);
           if (u) {
-            this.fx.text(`-${e.dmg}`, u.x, u.y - 34, this.crewColor(u.crew));
+            this.fx.text(`-${e.dmg}`, u.x, u.y - 34, this.crewColor(u.crew), e.dmg >= 30 ? 27 : 22);
             const a = this.animOf(u);
             a.hurtAt = this.t;
             sfx.hurt();
@@ -515,7 +526,7 @@ export class Scene {
           break;
         case 'drown': {
           const u = this.world.units.find((x) => x.id === e.unit);
-          if (u) this.fx.text('Splash!', u.x, this.world.liquidY - 20, '#ffffff', 16);
+          if (u) this.fx.comic('SPLASH!', u.x, this.world.liquidY - 24, 20, '#a5f3fc');
           break;
         }
         case 'bounce':
@@ -529,7 +540,8 @@ export class Scene {
           sfx.zap();
           break;
         case 'bonk':
-          this.fx.text(e.hit ? 'BONK!' : 'whiff', e.x, e.y - 14, e.hit ? '#ffd23f' : '#ffffff', e.hit ? 20 : 13, 1);
+          if (e.hit) this.fx.comic('BONK!', e.x, e.y - 16, 30);
+          else this.fx.text('whiff', e.x, e.y - 14, '#ffffff', 13, 1);
           sfx.bonk(e.hit);
           break;
         case 'land': {
@@ -539,7 +551,7 @@ export class Scene {
           break;
         }
         case 'split':
-          this.fx.text('Split!', e.x, e.y - 20, '#ffb020', 14, 0.8);
+          this.fx.comic('SPLIT!', e.x, e.y - 20, 17, '#e4c8ff');
           break;
         case 'jump':
           break;

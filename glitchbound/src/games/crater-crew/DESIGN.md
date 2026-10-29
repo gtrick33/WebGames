@@ -17,6 +17,21 @@ Weapons: Rocket (rides the wind), Grenade (bounces, three-second fuse), Splitter
 Zapper (a straight beam), Bonk Mallet (big knockback, 2), Dynamite (huge, dropped at your feet, 1) and Meteor
 Shower (five meteors on a spot you tap, 1). Ammo is per crew.
 
+## Look and feel
+
+Cartoon props with ink outlines and candy colors (`render/arms.ts`): the rocket peeks out of its launcher
+with eyes, grenades scowl, meteors are furious rocks with flaming tails, dynamite fizzes. Blasts are
+ink-outlined fireballs that cool to soot, puffy smoke, a star-burst flash, tumbling chunks of the ground's
+own colors and a comic-book word ("KA-BOOM!", "BONK!", "ZAP!"); a critter that is hit sees stars. Fuses
+count down in a bubble that turns red on the last second.
+
+The HUD says everything once and plainly: every crew's critter, health bar and number; whose turn it is with
+their critter and the clock; a wind gauge that runs the way the wind blows, as far as it is strong (and the
+turn banner says it in words). Your controls: walk, jump, the weapon chip (it opens a picker with every
+weapon's ammo and what it does), aim, and a fire button whose ring fills with the power. The first two shots
+come with three lines of tips for touch or keyboard. The HUD sizes itself by the battle's own box, so it
+fits beside the leaderboard on a laptop as well as on a phone held either way.
+
 ## Ten terrains
 
 Each terrain has its own landform generator, physics and look: Clover Hills (rolling hills and floating

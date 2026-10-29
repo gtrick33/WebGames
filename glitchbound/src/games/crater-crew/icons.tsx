@@ -4,7 +4,8 @@
  */
 import { useEffect, useRef } from 'react';
 import { CHARS, type CharId } from './characters';
-import { drawCritter, drawWeapon } from './render/critters';
+import { drawWeapon } from './render/arms';
+import { drawCritter } from './render/critters';
 import { baseMask, H, W } from './terrain';
 import { TERRAINS, type TerrainId } from './terrains';
 import type { WeaponId } from './weapons';
@@ -42,13 +43,13 @@ export function Portrait({ char, size = 56, flip = false, look = 0 }: { char: Ch
 }
 
 const FIT: Record<WeaponId, [number, number, number]> = {
-  rocket: [7.2, 0, 1.05],
-  grenade: [7, -1, 2.2],
-  splitter: [7, 0, 1.75],
-  zapper: [6, 1, 1.35],
-  mallet: [8, 0, 1.1],
-  dynamite: [8, -1, 1.4],
-  meteor: [5, -2, 1.9],
+  rocket: [6, 0.5, 0.74],
+  grenade: [8.6, -1.6, 1.42],
+  splitter: [7.2, -1.8, 1.08],
+  zapper: [8, 0.8, 0.86],
+  mallet: [9.8, 0, 0.92],
+  dynamite: [10.6, -3.4, 1.3],
+  meteor: [6.2, -3.6, 1.14],
 };
 
 export function WeaponIcon({ w, size = 34 }: { w: WeaponId; size?: number }) {

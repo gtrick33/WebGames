@@ -8,7 +8,9 @@ import { dcos, dsin } from './math';
 import type { Scene } from './scene';
 import type { Proj, Unit } from './sim';
 import { WEAPONS, isWeaponId, type WeaponId } from './weapons';
+import { drawShell } from './render/arms';
 import { drawCritter, drawGrave } from './render/critters';
+import { FONT, INK, star } from './render/paint';
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -36,10 +38,11 @@ export function drawScene(c: Ctx, s: Scene, dpr: number, alpha: number): void {
   s.fx.drawFront(c);
   s.back.liquidFront(c, cam, s.world.liquidY, s.t);
   c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  s.back.weather(c, cam, s.t, m.wind);
   drawTags(c, s, alpha);
+  drawFuses(c, s, alpha);
   drawAim(c, s, true);
   s.fx.drawTexts(c, (x, y) => s.toScreen(x, y));
-  s.back.weather(c, cam, s.t, m.wind);
 }
 
 function lerpPos(s: Scene, o: { x: number; y: number }, alpha: number): [number, number] {
@@ -91,6 +94,20 @@ function drawUnit(c: Ctx, s: Scene, u: Unit, alpha: number, isActive: boolean): 
   // a wobble while flying
   if (u.air) c.rotate(Math.sin(s.t * 14 + u.id) * 0.18);
   drawCritter(c, crew.char, def.color, { t: s.t, walk, air: u.air, look: WEAPONS[weapon ?? 'rocket'].aim === 'drop' || WEAPONS[weapon ?? 'rocket'].aim === 'target' ? 0 : look, weapon, hurt, seed: u.id * 1.7 });
+  // seeing stars for a moment after a hit
+  const dizzy = 1 - (s.t - a.hurtAt) / 1.6;
+  if (dizzy > 0) {
+    for (let i = 0; i < 3; i++) {
+      const k = s.t * 5 + (i * Math.PI * 2) / 3;
+      const z = Math.sin(k);
+      star(c, Math.cos(k) * 9, -28 + z * 2.4, 2.6 * Math.min(1, dizzy * 3) * (0.8 + z * 0.2), 1.1, 5, s.t * 3);
+      c.fillStyle = '#ffd23f';
+      c.fill();
+      c.strokeStyle = INK;
+      c.lineWidth = 0.7;
+      c.stroke();
+    }
+  }
   c.restore();
 }
 
@@ -98,115 +115,32 @@ function drawProj(c: Ctx, s: Scene, p: Proj, alpha: number): void {
   const [x, y] = lerpPos(s, p, alpha);
   c.save();
   c.translate(x, y);
-  switch (p.kind) {
-    case 'rocket':
-    case 'splitter': {
-      c.rotate(Math.atan2(p.vy, p.vx));
-      const body = p.kind === 'rocket' ? '#e43d30' : '#ff8a1f';
-      c.fillStyle = '#2f3b4a';
-      c.beginPath();
-      c.moveTo(-7, -4);
-      c.lineTo(-3, 0);
-      c.lineTo(-7, 4);
-      c.fill();
-      c.beginPath();
-      c.roundRect(-6, -2.4, 11, 4.8, 2);
-      c.fillStyle = body;
-      c.fill();
-      c.strokeStyle = 'rgba(0,0,0,0.5)';
-      c.lineWidth = 0.8;
-      c.stroke();
-      c.fillStyle = '#f5f5f5';
-      c.beginPath();
-      c.moveTo(5, -2.4);
-      c.quadraticCurveTo(9, 0, 5, 2.4);
-      c.fill();
-      if (p.kind === 'rocket') {
-        const g = c.createRadialGradient(-8, 0, 0, -8, 0, 6);
-        g.addColorStop(0, 'rgba(255,240,150,0.95)');
-        g.addColorStop(1, 'rgba(255,100,20,0)');
-        c.fillStyle = g;
-        c.beginPath();
-        c.arc(-9, 0, 6, 0, Math.PI * 2);
-        c.fill();
-      }
-      break;
-    }
-    case 'grenade':
-    case 'bomblet': {
-      const r = p.kind === 'grenade' ? 4 : 2.6;
-      c.rotate(p.age * 0.2 * Math.sign(p.vx || 1));
-      c.fillStyle = p.kind === 'grenade' ? '#3f7a24' : '#2a2a2a';
-      c.beginPath();
-      c.arc(0, 0, r, 0, Math.PI * 2);
-      c.fill();
-      c.strokeStyle = 'rgba(0,0,0,0.6)';
-      c.lineWidth = 0.8;
-      c.stroke();
-      c.fillStyle = 'rgba(255,255,255,0.4)';
-      c.beginPath();
-      c.arc(-r * 0.35, -r * 0.35, r * 0.35, 0, Math.PI * 2);
-      c.fill();
-      if (p.kind === 'grenade') {
-        c.fillStyle = '#9aa3ad';
-        c.fillRect(-1, -r - 2, 2, 2);
-      }
-      break;
-    }
-    case 'dynamite': {
-      c.rotate(p.rest ? 0 : p.age * 0.15);
-      c.fillStyle = '#dc2626';
-      c.beginPath();
-      c.roundRect(-5, -2.2, 10, 4.4, 1);
-      c.fill();
-      c.strokeStyle = '#5c0b0b';
-      c.lineWidth = 0.8;
-      c.stroke();
-      c.fillStyle = '#fef08a';
-      c.fillRect(-1.5, -2.2, 3, 4.4);
-      const sp = 1.4 + Math.sin(s.t * 30) * 0.6;
-      c.fillStyle = '#ffd23f';
-      c.beginPath();
-      c.arc(6, -3, sp, 0, Math.PI * 2);
-      c.fill();
-      break;
-    }
-    case 'meteor': {
-      const a = Math.atan2(p.vy, p.vx);
-      c.rotate(a);
-      const g = c.createLinearGradient(-26, 0, 4, 0);
-      g.addColorStop(0, 'rgba(255,120,30,0)');
-      g.addColorStop(1, 'rgba(255,200,80,0.9)');
-      c.fillStyle = g;
-      c.beginPath();
-      c.moveTo(-28, 0);
-      c.lineTo(2, -6);
-      c.lineTo(2, 6);
-      c.fill();
-      c.fillStyle = '#5b4636';
-      c.beginPath();
-      c.arc(2, 0, 6, 0, Math.PI * 2);
-      c.fill();
-      c.fillStyle = '#ffb347';
-      c.beginPath();
-      c.arc(4, -1, 2.4, 0, Math.PI * 2);
-      c.fill();
-      break;
-    }
-  }
+  drawShell(c, p.kind, p.vx, p.vy, p.age, p.rest, s.t);
   c.restore();
-  // fuse seconds over anything about to go off
-  if (p.fuse > 0) {
-    c.save();
-    c.font = 'bold 9px system-ui, sans-serif';
+}
+
+/** Seconds left on anything about to go off, in a bubble (screen space) that throbs red at the end. */
+function drawFuses(c: Ctx, s: Scene, alpha: number): void {
+  for (const p of s.world.projs) {
+    if (p.fuse <= 0) continue;
+    const [x, y] = lerpPos(s, p, alpha);
+    const n = Math.ceil(p.fuse / 60);
+    const [bx, by] = s.toScreen(x, y - 10);
+    const last = n <= 1;
+    const r = 9 + (last ? Math.abs(Math.sin(s.t * 12)) * 2 : 0);
+    c.beginPath();
+    c.arc(bx, by - 10, r, 0, Math.PI * 2);
+    c.fillStyle = last ? '#ff4d4d' : '#ffffff';
+    c.fill();
+    c.lineWidth = 2;
+    c.strokeStyle = INK;
+    c.stroke();
+    c.font = `800 12px ${FONT}`;
     c.textAlign = 'center';
-    c.lineWidth = 2.5;
-    c.strokeStyle = 'rgba(0,0,0,0.8)';
-    const n = String(Math.ceil(p.fuse / 60));
-    c.strokeText(n, x, y - 9);
-    c.fillStyle = '#ffffff';
-    c.fillText(n, x, y - 9);
-    c.restore();
+    c.textBaseline = 'middle';
+    c.fillStyle = last ? '#ffffff' : INK;
+    c.fillText(String(n), bx, by - 9.5);
+    c.textBaseline = 'alphabetic';
   }
 }
 
@@ -229,29 +163,35 @@ function drawAim(c: Ctx, s: Scene, cross: boolean): void {
   const oy = p.y - 11;
   const color = s.crewColor(u.crew);
   const power = s.myTurn ? s.power : watching ? s.remote!.p : 0;
-  if (cross) return crosshair(c, s, ox, oy, ux, uy, def.aim === 'swing' ? 22 : 50, color);
+  if (cross) return crosshair(c, s, ox, oy, ux, uy, def.aim === 'swing' ? 28 : 62, color);
   if (def.aim === 'power' && power > 0) {
-    // the wedge grows with the power
-    const len = 14 + power * 0.62;
+    // the wedge grows with the power, yellow to red
+    const len = 16 + power * 0.7;
     const g = c.createLinearGradient(ox, oy, ox + ux * len, oy + uy * len);
-    g.addColorStop(0, 'rgba(255,230,90,0.9)');
-    g.addColorStop(1, 'rgba(255,60,40,0.95)');
+    g.addColorStop(0, '#ffe14d');
+    g.addColorStop(0.6, '#ff8a1f');
+    g.addColorStop(1, '#ff2d4d');
     c.fillStyle = g;
     const nx = -uy;
     const ny = ux;
-    const wEnd = 2 + power * 0.07;
+    const wEnd = 2.5 + power * 0.085;
     c.beginPath();
-    c.moveTo(ox + ux * 12, oy + uy * 12);
+    c.moveTo(ox + ux * 13, oy + uy * 13);
     c.lineTo(ox + ux * len + nx * wEnd, oy + uy * len + ny * wEnd);
-    c.lineTo(ox + ux * len - nx * wEnd, oy + uy * len - ny * wEnd);
+    c.quadraticCurveTo(ox + ux * (len + wEnd * 0.9), oy + uy * (len + wEnd * 0.9), ox + ux * len - nx * wEnd, oy + uy * len - ny * wEnd);
     c.closePath();
     c.fill();
+    c.strokeStyle = INK;
+    c.lineWidth = 1.2;
+    c.lineJoin = 'round';
+    c.stroke();
+    c.lineJoin = 'miter';
   }
 }
 
 function crosshair(c: Ctx, s: Scene, wx: number, wy: number, ux: number, uy: number, r: number, color: string): void {
   const [ox, oy] = s.toScreen(wx, wy);
-  r = Math.max(r * s.cam.z, r * 0.8 + 6);
+  r = Math.max(r * s.cam.z, r * 0.9);
   const cx = ox + ux * r;
   const cy = oy + uy * r;
   c.strokeStyle = 'rgba(0,0,0,0.55)';
@@ -315,35 +255,39 @@ function drawTags(c: Ctx, s: Scene, alpha: number): void {
     if (x < -60 || x > s.cam.vw + 60 || y0 < -40 || y0 > s.cam.vh + 40) continue;
     const color = CHARS[crew.char].color;
     const hp = Math.max(0, Math.round(u.hp));
-    // your own tag steps back while you aim, so the crosshair stays clear
-    c.globalAlpha = isActive && s.myTurn ? 0.55 : 1;
-    c.font = '700 11px system-ui, -apple-system, Segoe UI, sans-serif';
-    const name = crew.name.length > 14 ? `${crew.name.slice(0, 13)}…` : crew.name;
-    const nw = c.measureText(name).width + 12;
-    const y = y0 - 22;
-    pill(c, x - nw / 2, y - 8, nw, 16, 'rgba(12,14,28,0.78)', color);
-    c.fillStyle = color;
-    c.fillText(name, x, y + 0.5);
-    c.font = '800 10px system-ui, -apple-system, Segoe UI, sans-serif';
+    // while you aim, your own critter shows only its health: the HUD says whose turn it is, and the
+    // crosshair gets the space above your head
+    const aiming = isActive && s.myTurn;
+    const y = y0 - 20;
+    if (!aiming) {
+      c.font = `800 12.5px ${FONT}`;
+      const name = crew.name.length > 14 ? `${crew.name.slice(0, 13)}…` : crew.name;
+      const nw = c.measureText(name).width + 14;
+      pill(c, x - nw / 2, y - 9, nw, 18, 'rgba(18,14,36,0.86)', color);
+      c.fillStyle = color;
+      c.fillText(name, x, y + 0.5);
+    }
+    c.font = `800 11px ${FONT}`;
     const hs = String(hp);
-    const hw = c.measureText(hs).width + 10;
-    pill(c, x - hw / 2, y + 9, hw, 13, color, 'rgba(12,14,28,0.85)');
-    c.fillStyle = '#10121e';
-    c.fillText(hs, x, y + 16);
-    if (isActive && (s.stage.k === 'aim' || s.stage.k === 'think' || s.stage.k === 'swing' || s.stage.k === 'intro')) {
+    const hw = c.measureText(hs).width + 12;
+    pill(c, x - hw / 2, y + 10, hw, 14, hp <= 25 ? '#ff6b6b' : color, INK);
+    c.fillStyle = '#14101f';
+    c.fillText(hs, x, y + 17.5);
+    if (isActive && !aiming && (s.stage.k === 'aim' || s.stage.k === 'think' || s.stage.k === 'swing' || s.stage.k === 'intro')) {
       const b = Math.sin(s.t * 6) * 3;
       c.fillStyle = color;
-      c.strokeStyle = 'rgba(12,14,28,0.9)';
+      c.strokeStyle = INK;
       c.lineWidth = 2;
+      c.lineJoin = 'round';
       c.beginPath();
-      c.moveTo(x - 7, y - 22 + b);
-      c.lineTo(x + 7, y - 22 + b);
-      c.lineTo(x, y - 13 + b);
+      c.moveTo(x - 8, y - 25 + b);
+      c.lineTo(x + 8, y - 25 + b);
+      c.lineTo(x, y - 14 + b);
       c.closePath();
       c.stroke();
       c.fill();
+      c.lineJoin = 'miter';
     }
-    c.globalAlpha = 1;
   }
   c.textBaseline = 'alphabetic';
 }

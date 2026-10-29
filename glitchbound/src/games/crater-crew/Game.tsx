@@ -441,7 +441,7 @@ function Menu({
             <h3>How to play</h3>
             <ul>
               <li>
-                <b>Walk</b> with ← → or the ◀ ▶ buttons, <b>jump</b> with Enter or ⤒.
+                <b>Walk</b> with ← → or the ◀ ▶ buttons, <b>jump</b> with Enter or the JUMP button.
               </li>
               <li>
                 <b>Aim</b> by dragging on the map (or ↑ ↓). <b>Hold</b> Space or the fire button for power and let go to shoot.

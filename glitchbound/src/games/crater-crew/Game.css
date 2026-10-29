@@ -409,6 +409,17 @@
   opacity: 0.8;
 }
 
+/* the arcade's shared online-play buttons, in this game's night colors (the site theme can be light) */
+.cc .op,
+.cc .op-bar,
+.cc .op-veil {
+  --op-text: var(--cc-cream);
+  --op-edge: rgba(255, 255, 255, 0.4);
+  --op-shadow: #0b0820;
+  --op-card: #2b2258;
+  --op-paper: #1c1640;
+}
+
 /* ---------------------------------------------------------------- lobby */
 .cc-crewlist {
   list-style: none;
@@ -489,11 +500,16 @@
 }
 
 /* ---------------------------------------------------------------- battle */
+/* The HUD sizes itself by the battle's own box (a container), not the window: the stage beside a
+   leaderboard on a laptop is as narrow as a phone. */
 .cc-battle {
   position: absolute;
   inset: 0;
   overflow: hidden;
   background: #0b0d1c;
+  container: cc-battle / size;
+  --hud-bg: rgba(18, 13, 38, 0.74);
+  --hud-line: rgba(255, 255, 255, 0.2);
 }
 .cc-canvas {
   position: absolute;
@@ -508,11 +524,11 @@
   top: 0;
   left: 0;
   right: 0;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: start;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 8px;
-  padding: 8px;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left));
   pointer-events: none;
 }
 .cc-hud-top > * {
@@ -523,48 +539,70 @@
   align-items: flex-start;
   gap: 6px;
   min-width: 0;
+  flex: 1 1 0;
 }
 .cc-row.is-right {
   justify-content: flex-end;
   align-items: center;
+  flex-wrap: wrap;
+}
+.cc-battle .cc-icon {
+  flex: none;
+  background: var(--hud-bg);
+  border-color: var(--hud-line);
 }
 .cc-crews {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 5px 8px;
+  gap: 2px;
+  padding: 4px 6px;
   border-radius: 12px;
-  background: rgba(10, 12, 28, 0.55);
+  background: var(--hud-bg);
+  border: 1.5px solid var(--hud-line);
   backdrop-filter: blur(6px);
   min-width: 0;
+  max-width: 240px;
   pointer-events: none;
 }
 .cc-crewbar {
   display: grid;
-  grid-template-columns: minmax(0, 84px) 64px;
+  grid-template-columns: 18px minmax(0, 92px) 54px 24px;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  padding: 1px 3px;
+  border-radius: 7px;
   font-size: 11.5px;
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.15;
+}
+.cc-crewbar.is-turn {
+  background: color-mix(in srgb, var(--c) 24%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--c);
 }
 .cc-crewname {
   color: var(--c);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
-.cc-crewbar.is-turn .cc-crewname::before {
-  content: '▸ ';
+.cc-crewbar em {
+  font-style: normal;
+  font-family: var(--mono, monospace);
+  font-size: 10.5px;
+  text-align: right;
+  color: var(--cc-cream);
 }
 .cc-crewbar.is-out {
   opacity: 0.4;
+}
+.cc-crewbar.is-out .cc-crewname {
   text-decoration: line-through;
 }
 .cc-bar {
-  height: 7px;
+  height: 8px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.16);
   overflow: hidden;
 }
 .cc-bar i {
@@ -575,22 +613,35 @@
   transition: width 0.6s ease;
 }
 .cc-turn {
+  flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  gap: 6px;
+  max-width: 46%;
+  min-height: 40px;
+  padding: 3px 5px 3px 6px;
   border-radius: 999px;
-  background: rgba(10, 12, 28, 0.62);
+  background: var(--hud-bg);
+  border: 2px solid var(--c, var(--hud-line));
   backdrop-filter: blur(6px);
   font-weight: 900;
   font-size: 15px;
   white-space: nowrap;
-  min-height: 38px;
+}
+.cc-turn b {
+  color: var(--c);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.cc-turn .cc-portrait {
+  flex: none;
 }
 .cc-turn:empty {
   visibility: hidden;
 }
 .cc-clock {
+  flex: none;
   display: inline-grid;
   place-items: center;
   min-width: 30px;
@@ -613,39 +664,59 @@
   }
 }
 .cc-wind {
+  flex: none;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: center;
   gap: 4px;
+  width: 92px;
   height: 40px;
-  padding: 0 8px;
+  padding: 0 9px;
   border-radius: 12px;
-  background: rgba(10, 12, 28, 0.55);
+  background: var(--hud-bg);
+  border: 1.5px solid var(--hud-line);
   backdrop-filter: blur(6px);
 }
-.cc-wind b {
+.cc-wind small {
   font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--cc-dim);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #bfe9ff;
 }
-.cc-wind span {
-  display: flex;
-  gap: 2px;
-  width: 34px;
+.cc-wind-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
 }
-.cc-wind-l {
-  justify-content: flex-end;
+.cc-wind-bar::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.7);
 }
-.cc-wind i {
-  width: 0;
-  height: 0;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
+.cc-wind-bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
 }
-.cc-wind-l i {
-  border-right: 7px solid #7dd3fc;
+.cc-wind-bar i.is-r {
+  left: 50%;
+  background: linear-gradient(90deg, #7dd3fc, #0ea5e9);
 }
-.cc-wind-r i {
-  border-left: 7px solid #7dd3fc;
+.cc-wind-bar i.is-l {
+  right: 50%;
+  background: linear-gradient(270deg, #7dd3fc, #0ea5e9);
 }
 .cc-code {
   font-family: var(--mono, monospace);
@@ -653,17 +724,21 @@
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 8px;
-  background: rgba(10, 12, 28, 0.55);
+  background: var(--hud-bg);
   letter-spacing: 0.1em;
 }
 .cc-sudden {
   position: absolute;
-  top: 58px;
+  top: 60px;
   left: 50%;
   transform: translateX(-50%);
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 4px 12px;
   border-radius: 999px;
-  background: rgba(220, 38, 38, 0.85);
+  background: rgba(220, 38, 38, 0.88);
+  border: 2px solid var(--cc-ink);
   font-weight: 900;
   font-size: 12.5px;
   white-space: nowrap;
@@ -678,7 +753,7 @@
   max-width: calc(100% - 24px);
   padding: 6px 12px;
   border-radius: 12px;
-  background: rgba(10, 12, 28, 0.75);
+  background: var(--hud-bg);
   font-size: 13px;
   font-weight: 700;
   text-align: center;
@@ -686,19 +761,52 @@
 }
 .cc-toast {
   position: absolute;
-  top: 34%;
+  top: 24%;
   left: 50%;
   transform: translate(-50%, -50%);
-  padding: 10px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: calc(100% - 24px);
+  padding: 7px 18px 8px;
   border-radius: 18px;
-  background: rgba(10, 12, 28, 0.78);
+  background: rgba(18, 13, 38, 0.84);
   border: 3px solid var(--c);
-  color: var(--c);
-  font-size: clamp(22px, 5vw, 34px);
-  font-weight: 900;
-  white-space: nowrap;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.28);
   pointer-events: none;
-  animation: cc-toast 1.7s ease forwards;
+  animation: cc-toast 1.9s ease forwards;
+}
+.cc-toast b {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--c);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+/* your own turn gets the big banner */
+.cc-toast.is-mine {
+  top: 32%;
+  padding: 10px 26px 11px;
+  border-radius: 20px;
+}
+.cc-toast.is-mine b {
+  font-size: 30px;
+  font-size: clamp(24px, 6cqw, 38px);
+}
+.cc-toast small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--cc-cream);
+  opacity: 0.88;
 }
 @keyframes cc-toast {
   0% {
@@ -706,7 +814,7 @@
     transform: translate(-50%, -30%) scale(0.85);
   }
   12%,
-  75% {
+  78% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
@@ -715,8 +823,17 @@
     transform: translate(-50%, -62%) scale(1);
   }
 }
+@keyframes cc-rise {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+/* the controls along the bottom: walk and jump, the weapon, aim and fire */
 .cc-controls {
   position: absolute;
+  z-index: 2;
   left: 0;
   right: 0;
   bottom: 0;
@@ -724,7 +841,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  padding: 8px max(10px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   pointer-events: none;
 }
 .cc-controls > * {
@@ -733,50 +850,88 @@
 .cc-pad {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: 7px;
+}
+.cc-shoot {
+  gap: 16px;
 }
 .cc-btn {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  align-content: center;
+  width: 54px;
+  height: 54px;
   border-radius: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  background: rgba(10, 12, 28, 0.6);
-  backdrop-filter: blur(6px);
+  border: 2.5px solid var(--cc-ink);
+  background: linear-gradient(180deg, #5446a3, #2d2466);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--cc-ink);
   font-size: 20px;
   font-weight: 900;
+  line-height: 1;
   touch-action: none;
 }
 .cc-btn:active {
-  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--cc-ink);
+  background: linear-gradient(180deg, #6f5fd6, #3c2f8a);
+}
+.cc-btn.is-jump span {
+  font-size: 19px;
+}
+.cc-btn.is-jump small {
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
 }
 .cc-btn.is-small {
-  width: 46px;
-  height: 36px;
+  width: 48px;
+  height: 38px;
   font-size: 14px;
   border-radius: 12px;
 }
 .cc-aimpad {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 9px;
 }
 .cc-fire {
-  width: 82px;
-  height: 82px;
+  position: relative;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   border: 3px solid var(--cc-ink);
   background: radial-gradient(circle at 35% 30%, #ffb26b, #ff5a1a 60%, #c2360a);
   color: #fff;
   font-weight: 900;
-  font-size: 17px;
+  font-size: 19px;
   letter-spacing: 0.06em;
+  line-height: 1;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
   box-shadow:
     0 5px 0 var(--cc-ink),
     0 8px 20px rgba(255, 90, 26, 0.45);
   touch-action: none;
+}
+.cc-fire small {
+  margin-top: 3px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.92;
+}
+/* the power ring: fills yellow to red as you hold */
+.cc-fire.is-power::before {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: conic-gradient(#ffe14d 0, #ff2d4d calc(var(--p, 0) * 1%), rgba(18, 13, 38, 0.55) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  pointer-events: none;
 }
 .cc-fire:active:not(:disabled) {
   transform: translateY(3px);
@@ -786,125 +941,253 @@
   filter: grayscale(0.8) brightness(0.7);
 }
 .cc-weapon {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
-  min-height: 52px;
-  max-width: 220px;
-  padding: 4px 12px 4px 6px;
-  border-radius: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  background: rgba(10, 12, 28, 0.66);
-  backdrop-filter: blur(6px);
-  text-align: left;
+  gap: 8px;
+  width: 200px;
+  width: clamp(160px, 30cqw, 232px);
   min-width: 0;
+  min-height: 56px;
+  padding: 4px 26px 4px 6px;
+  border-radius: 18px;
+  border: 2.5px solid var(--cc-ink);
+  background: linear-gradient(180deg, #fffaf0, #ffe2b3);
+  box-shadow: 0 4px 0 var(--cc-ink);
+  text-align: left;
+}
+.cc-battle .cc-weapon {
+  color: var(--cc-ink);
+}
+.cc-weapon:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--cc-ink);
+}
+.cc-weapon .cc-wicon {
+  flex: none;
+  border-radius: 12px;
+  background: radial-gradient(circle, #ffffff 0 55%, #ffe9c4 100%);
 }
 .cc-weapon span {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-width: 0;
 }
 .cc-weapon b {
-  font-size: 14px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-.cc-weapon small {
-  font-size: 11.5px;
-  color: var(--cc-yellow);
-  font-weight: 700;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+.cc-weapon small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #b4470c;
+}
+.cc-caret {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-style: normal;
+  font-size: 13px;
+  transition: transform 0.15s;
+}
+.cc-weapon.is-open .cc-caret {
+  transform: translateY(-50%) rotate(180deg);
 }
 .cc-watching {
   position: absolute;
   bottom: max(12px, env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
-  padding: 7px 16px;
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 8px 18px;
   border-radius: 999px;
-  background: rgba(10, 12, 28, 0.6);
+  background: var(--hud-bg);
+  border: 2px solid var(--c, var(--hud-line));
   backdrop-filter: blur(6px);
   font-weight: 800;
   font-size: 14px;
   white-space: nowrap;
   pointer-events: none;
 }
-.cc-watching:empty {
-  display: none;
+
+/* first battles: how to aim, fire and move */
+.cc-coach {
+  position: absolute;
+  left: 50%;
+  bottom: 110px;
+  transform: translateX(-50%);
+  width: min(430px, calc(100% - 20px));
+  padding: 9px 36px 9px 12px;
+  border-radius: 16px;
+  background: rgba(255, 250, 240, 0.97);
+  color: var(--cc-ink);
+  border: 2.5px solid var(--cc-ink);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.25);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  animation: cc-rise 0.3s ease;
+}
+.cc-coach p {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  margin: 0;
+}
+.cc-coach p + p {
+  margin-top: 4px;
+}
+.cc-coach b {
+  display: inline-block;
+  min-width: 46px;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--cc-orange);
+  color: #fff;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.cc-coach-x {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: none;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+.cc-battle .cc-coach-x {
+  color: var(--cc-ink);
+}
+
+/* the weapon picker */
+.cc-tray-shade {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: rgba(8, 6, 20, 0.35);
 }
 .cc-tray {
   position: absolute;
+  z-index: 3;
   left: 50%;
-  bottom: 74px;
+  bottom: 84px;
   transform: translateX(-50%);
-  width: min(560px, calc(100% - 16px));
-  max-height: calc(100% - 140px);
+  width: min(620px, calc(100% - 16px));
+  max-height: calc(100% - 150px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 20px;
+  background: rgba(22, 17, 46, 0.97);
+  border: 2.5px solid var(--cc-ink);
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.3),
+    0 18px 40px rgba(0, 0, 0, 0.45);
+  animation: cc-rise 0.18s ease;
+}
+.cc-tray-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
   gap: 6px;
-  padding: 8px;
-  border-radius: 18px;
-  background: rgba(14, 17, 38, 0.94);
-  border: 1.5px solid var(--cc-line);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
 }
 .cc-wcard {
   position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
-  column-gap: 6px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 6px 8px;
-  border-radius: 12px;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 4px 7px;
+  border-radius: 14px;
   border: 2px solid transparent;
-  background: rgba(255, 255, 255, 0.06);
-  text-align: left;
+  background: rgba(255, 255, 255, 0.07);
+  text-align: center;
 }
 .cc-wcard .cc-wicon {
-  grid-row: span 2;
+  flex: none;
 }
 .cc-wcard b {
-  font-size: 14px;
+  max-width: 100%;
+  font-size: 12.5px;
   font-weight: 900;
-}
-.cc-wcard small {
-  grid-column: 2;
-  font-size: 11px;
-  line-height: 1.25;
-  color: var(--cc-dim);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 .cc-wcard em {
-  position: absolute;
-  top: 5px;
-  right: 8px;
+  margin-top: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
   font-style: normal;
   font-weight: 900;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--cc-dim);
+}
+.cc-wcard em.is-few {
   color: var(--cc-yellow);
 }
 .cc-wcard kbd {
   position: absolute;
-  bottom: 4px;
-  right: 6px;
+  top: 4px;
+  left: 6px;
   font-family: var(--mono, monospace);
   font-size: 10px;
-  opacity: 0.45;
+  opacity: 0.5;
+}
+.cc-wcard:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.13);
 }
 .cc-wcard.is-on {
   border-color: var(--cc-yellow);
-  background: rgba(255, 210, 63, 0.14);
+  background: rgba(255, 210, 63, 0.16);
 }
 .cc-wcard:disabled {
   opacity: 0.35;
 }
+.cc-tray-hint {
+  margin: 0;
+  padding: 0 4px;
+  min-height: 2.7em;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--cc-dim);
+}
+.cc-tray-hint b {
+  margin-right: 4px;
+  color: var(--cc-cream);
+}
+@media (hover: none), (pointer: coarse) {
+  .cc-wcard kbd {
+    display: none;
+  }
+}
 .cc-notice {
   position: absolute;
-  top: 58px;
+  top: 60px;
   right: 8px;
+  max-width: calc(100% - 16px);
   margin: 0;
   padding: 6px 12px;
   border-radius: 10px;
@@ -919,13 +1202,188 @@
   right: auto;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(10, 12, 28, 0.7);
+  background: var(--hud-bg);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* a small battle (a phone, or the stage beside a leaderboard) */
+@container cc-battle (max-width: 700px) or (max-height: 460px) {
+  .cc-crewbar {
+    grid-template-columns: 16px minmax(0, 66px) 40px 20px;
+    gap: 4px;
+    font-size: 10.5px;
+  }
+  .cc-crewbar .cc-portrait {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  .cc-crewbar em {
+    font-size: 9.5px;
+  }
+  .cc-turn {
+    min-height: 36px;
+    font-size: 13px;
+  }
+  .cc-turn .cc-portrait {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .cc-clock {
+    height: 24px;
+    min-width: 26px;
+    font-size: 13px;
+  }
+  .cc-battle .cc-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .cc-wind {
+    width: 78px;
+    height: 36px;
+  }
+  .cc-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .cc-btn.is-small {
+    width: 44px;
+    height: 34px;
+  }
+  .cc-aimpad {
+    gap: 7px;
+  }
+  .cc-fire {
+    width: 72px;
+    height: 72px;
+    font-size: 16px;
+  }
+  .cc-weapon {
+    min-height: 50px;
+  }
+  .cc-weapon b {
+    font-size: 14px;
+  }
+  .cc-coach {
+    bottom: 96px;
+    font-size: 12.5px;
+  }
+  .cc-tray {
+    bottom: 74px;
+  }
+  .cc-toast {
+    top: 22%;
+  }
+  .cc-toast.is-mine {
+    top: 30%;
+  }
+}
+/* a phone held upright: the top row wraps, the weapon sits over the walk and fire buttons */
+@container cc-battle (max-width: 540px) {
+  .cc-hud-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
+  }
+  .cc-turn {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    max-width: 100%;
+  }
+  .cc-crewbar {
+    grid-template-columns: 16px 44px 20px;
+  }
+  .cc-crewname {
+    display: none;
+  }
+  .cc-controls {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      'weapon weapon weapon'
+      'move . shoot';
+    row-gap: 12px;
+  }
+  .cc-move {
+    grid-area: move;
+  }
+  .cc-shoot {
+    grid-area: shoot;
+  }
+  .cc-weapon {
+    grid-area: weapon;
+    justify-self: center;
+    width: min(250px, 100%);
+  }
+  .cc-coach {
+    bottom: 162px;
+  }
+  .cc-tray {
+    bottom: 150px;
+    max-height: calc(100% - 230px);
+  }
+  .cc-sudden {
+    top: 104px;
+  }
+  .cc-tip {
+    top: 116px;
+  }
+  .cc-toast,
+  .cc-toast.is-mine {
+    top: 42%;
+  }
+}
+@container cc-battle (max-width: 360px) {
+  .cc-crewbar {
+    grid-template-columns: 14px minmax(0, 40px);
+  }
+  .cc-crewbar .cc-portrait {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  .cc-crewbar em {
+    display: none;
+  }
+  .cc-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .cc-fire {
+    width: 66px;
+    height: 66px;
+  }
+  .cc-wind {
+    width: 64px;
+  }
+  .cc-wind small {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+  }
+}
+/* a phone on its side: room for two lines of tips */
+@container cc-battle (max-height: 380px) {
+  .cc-coach {
+    bottom: 88px;
+    padding: 6px 34px 6px 10px;
+    font-size: 12px;
+  }
+  .cc-coach p:last-child {
+    display: none;
+  }
+  .cc-tray {
+    max-height: calc(100% - 110px);
+  }
+  .cc-tray-hint {
+    min-height: 0;
+  }
 }
 
 /* ---------------------------------------------------------------- sheets */
 .cc-sheet-wrap {
   position: absolute;
+  z-index: 5;
   inset: 0;
   display: grid;
   place-items: center;
@@ -1043,63 +1501,11 @@
     aspect-ratio: 2 / 1;
   }
 }
-@media (max-width: 700px), (max-height: 460px) {
-  .cc-crewbar {
-    grid-template-columns: minmax(0, 60px) 44px;
-    font-size: 10.5px;
-  }
-  .cc-turn {
-    font-size: 13px;
-    padding: 4px 10px;
-    min-height: 34px;
-  }
-  .cc-icon {
-    width: 36px;
-    height: 36px;
-  }
-  .cc-wind {
-    height: 36px;
-  }
-  .cc-wind b {
-    display: none;
-  }
-  .cc-btn {
-    width: 46px;
-    height: 46px;
-  }
-  .cc-fire {
-    width: 70px;
-    height: 70px;
-    font-size: 15px;
-  }
-  .cc-weapon {
-    max-width: 150px;
-    min-height: 46px;
-  }
-  .cc-weapon small {
-    display: none;
-  }
-  .cc-toast {
-    top: 30%;
-  }
-}
-@media (max-width: 480px) {
-  .cc-hud-top {
-    grid-template-columns: 1fr auto;
-  }
-  .cc-turn {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    justify-self: center;
-  }
-  .cc-weapon b {
-    font-size: 12px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .cc-toast,
   .cc-sheet,
+  .cc-coach,
+  .cc-tray,
   .cc-clock.is-low {
     animation: none;
   }
