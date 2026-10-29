@@ -56,6 +56,9 @@ export function summonPet(w: World, id: string, count: number, dur: number, skil
   w.sfx('summon', 0.6);
 }
 
+/** Seconds one of the story's people takes to fade out as they go (a summon goes in a puff instead). */
+export const STORY_FADE = 1.2;
+
 /**
  * Puts a story pet (a companion, a door to hold, a villager to lead out) at a place; it stays until the
  * story takes it away. Its health is a share of the hero's like any companion's.
@@ -65,7 +68,7 @@ export function placePet(w: World, id: string, x: number, y: number): Pet | null
   if (!def) return null;
   const k = petStat(w);
   const maxHp = Math.max(10, Math.round(w.player.maxHp * def.hp * k));
-  const pet: Pet = { id: w.nextId++, def, x, y, vx: 0, vy: 0, r: def.radius, hp: maxHp, maxHp, dmg: CLASSES[w.hero.cls].refDamage * def.dmg * k, atkCd: 0.6, life: Infinity, target: null, face: 0, walkT: 0, flash: 0, actT: 0, dead: false, deathT: 0, story: true };
+  const pet: Pet = { id: w.nextId++, def, x, y, vx: 0, vy: 0, r: def.radius, hp: maxHp, maxHp, dmg: CLASSES[w.hero.cls].refDamage * def.dmg * k, atkCd: 0.6, life: Infinity, target: null, face: 0, walkT: 0, flash: 0, actT: 0, dead: false, deathT: 0, story: true, born: w.time };
   w.pets.push(pet);
   return pet;
 }
@@ -114,7 +117,7 @@ function pickTarget(w: World, pet: Pet): Enemy | null {
   let best: Enemy | null = null;
   let bd = Infinity;
   for (const e of w.enemies) {
-    if (e.dead || e.dummy || e.state === 'spawn') continue;
+    if (e.dead || e.dummy || e.held || e.state === 'spawn') continue;
     // only what is already fighting, or close to the hero
     const dh = dist(e.x, e.y, p.x, p.y);
     if (dh > 150 || (!e.aggro && dh > 90)) continue;
@@ -156,7 +159,9 @@ export function updatePets(w: World, dt: number): void {
       pet.life -= dt;
       if (pet.life <= 0) {
         pet.dead = true;
-        w.addFx({ kind: 'smoke', x: pet.x, y: pet.y, life: 0.5, size: 6, color: '#c9c3e6' });
+        // a summon goes in a puff; one of the story's people has already faded out (render: STORY_FADE)
+        if (pet.story) pet.deathT = STORY_FADE;
+        else w.addFx({ kind: 'smoke', x: pet.x, y: pet.y, life: 0.5, size: 6, color: '#c9c3e6' });
         continue;
       }
     }
@@ -190,21 +195,19 @@ export function updatePets(w: World, dt: number): void {
     // someone walking on their own (into the camp, or a wagon on the road): whatever the hero does
     if (pet.goal) {
       walkTo(w, pet, pet.goal, dt);
-      // (going in at a door: gone once there)
-      if (pet.inside && dist(pet.x, pet.y, pet.goal.x, pet.goal.y) < 6) {
-        pet.dead = true;
-        pet.deathT = 0.5;
-      }
+      // (going in at a door: gone through it once there)
+      if (pet.inside && dist(pet.x, pet.y, pet.goal.x, pet.goal.y) < 6) pet.life = Math.min(pet.life, 0.5);
       continue;
     }
     // a ward (a door, a gate) stands where it was put and only takes the blows
     if (pet.def.role === 'ward') continue;
-    // too far behind: it catches up in a puff
+    // too far behind: it catches up (coming in beside the hero, a fade rather than a pop)
     if (dist(pet.x, pet.y, p.x, p.y) > 260) {
       const to = castRay(w.map, p.x, p.y, pet.r, w.rand() * TAU, 16);
       pet.x = to.x;
       pet.y = to.y;
       pet.target = null;
+      if (pet.story) pet.born = w.time;
     }
     // people being led to safety follow and never fight
     const e = pet.def.role === 'follower' ? null : pickTarget(w, pet);
@@ -259,5 +262,5 @@ export function updatePets(w: World, dt: number): void {
     pet.y = res.y;
     if (Math.hypot(pet.vx, pet.vy) > 8) pet.walkT += dt;
   }
-  w.pets = w.pets.filter((pet) => !pet.dead || pet.deathT < 0.5);
+  w.pets = w.pets.filter((pet) => !pet.dead || pet.deathT < (pet.story ? STORY_FADE : 0.5));
 }

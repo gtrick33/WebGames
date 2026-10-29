@@ -199,8 +199,10 @@ function plan(): SpreadPlan {
     // the chapel's doorstep, where the door is held and the saved go in
     ['briar-chapel-door', 46, 17],
     ['briar-north', 32, 8],
-    // up the north road, out of the lamps' reach: where the courier comes from
+    // up the north road, out of the lamps' reach: where the courier comes from; and where he falls, just inside
+    // the gate (his own spot: the people of the story stand where the markers below say)
     ['briar-road', 32, 3],
+    ['briar-courier-falls', 32, 15],
     // the east wall's roofs, where the raiders came over
     ['briar-east-roofs', 50, 31],
     ['briar-east', 56, 26],
@@ -229,8 +231,9 @@ function plan(): SpreadPlan {
     [9, 37, 2, 14],
   ] as const)
     c.marker(x, y, { kind: 'fire', size: s, delay });
-  c.marker(15, 20, { kind: 'fire', size: 3 }, is('briar-the-inn', 'started'));
-  c.marker(17, 21, { kind: 'fire', size: 2, delay: 0.8 }, is('briar-the-inn', 'started'));
+  // (as the camera comes to it from the courier: data/scenes.ts briar-the-inn-catches)
+  c.marker(15, 20, { kind: 'fire', size: 3, delay: 2.6 }, is('briar-the-inn', 'started'));
+  c.marker(17, 21, { kind: 'fire', size: 2, delay: 3.4 }, is('briar-the-inn', 'started'));
 
   // the people: who stands where depends on the night
   c.npc('mara-venn', 31, 14, CALM);
@@ -481,6 +484,7 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     name: 'Oskar Fell',
     title: 'King’s courier, dying',
     sprite: 'villager',
+    down: true,
     talk: [{ lines: ['Take it. The seal. Broken, I know, they broke it. But the letter is still… inside.', 'They’re hunting the crown. The old one. The pieces of it. The Crown City must know. Someone there has been… losing our letters.', 'Tell them Oskar Fell rode the whole way. Tell them I didn’t stop.'] }],
   },
   maren: {
@@ -714,7 +718,7 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     kind: 'arrival',
     at: 'briar-gate',
     radius: 6,
-    arrive: { pets: ['courier'], from: 'briar-road', to: 'briar-gate' },
+    arrive: { pets: ['courier'], from: 'briar-road', to: 'briar-courier-falls' },
     banner: 'A rider',
     start: [
       { who: 'courier', text: 'In the king’s name… the gate…' },

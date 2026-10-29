@@ -411,11 +411,12 @@ export class SigilEngine {
       this.toastsHeld = false;
       this.setUi({ toasts: this.ui.toasts.map((x) => ({ ...x, until: t + toastTime(x.tone) })) });
     } else if (this.ui.toasts.some((x) => x.until < t)) this.setUi({ toasts: this.ui.toasts.filter((x) => x.until >= t) });
-    // (and a banner, which a scene hides, shows in full once it is over)
+    // (and a banner, which a scene hides, shows in full once it is over: unless the scene played the moment
+    // it announced out, a long while ago)
     if (w.scene) this.bannerHeld = true;
     else if (this.bannerHeld) {
       this.bannerHeld = false;
-      if (this.ui.banner) this.setUi({ banner: { ...this.ui.banner, id: t } });
+      if (this.ui.banner) this.setUi({ banner: t - this.ui.banner.id < 4000 ? { ...this.ui.banner, id: t } : null });
     }
     if (this.ui.banner && !this.bannerHeld && t - this.ui.banner.id > 2600) this.setUi({ banner: null });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
@@ -474,7 +475,8 @@ export class SigilEngine {
           break;
         case 'bossStart': {
           const b = w.boss();
-          if (b?.boss) this.ui = { ...this.ui, boss: { name: b.boss.def.name, title: b.boss.def.title }, banner: { text: b.boss.def.name, sub: b.boss.def.title, id: performance.now() } };
+          // (met for the first time, its name is in the shot of it: no banner after)
+          if (b?.boss) this.ui = { ...this.ui, boss: { name: b.boss.def.name, title: b.boss.def.title }, banner: w.scene ? this.ui.banner : { text: b.boss.def.name, sub: b.boss.def.title, id: performance.now() } };
           changed = true;
           break;
         }

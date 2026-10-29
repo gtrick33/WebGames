@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { BOSSES } from '../src/games/sigilfall/data/bosses';
+import { EVENTS } from '../src/games/sigilfall/data/events';
 import { SCENES } from '../src/games/sigilfall/data/scenes';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { applyPreset, PRESETS } from '../src/games/sigilfall/progress/presets';
@@ -6,7 +8,9 @@ import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
 import { endScene } from '../src/games/sigilfall/sim/scene';
 import { holds } from '../src/games/sigilfall/sim/story';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
-import { newWorld, readyHero } from './sigilfall-bot';
+import { hitEnemy } from '../src/games/sigilfall/sim/combat';
+import { TILE } from '../src/games/sigilfall/sim/map';
+import { heroAtEvent, newWorld, readyHero } from './sigilfall-bot';
 
 /**
  * Scenes and review presets (blueprint Prompt 9): every scene names people and places that are there at its
@@ -32,7 +36,8 @@ function atScene(id: string) {
 function holdsFor(p: (typeof PRESETS)[number], id: string): boolean {
   const c = readyHero('mage', 2);
   applyPreset(c, p);
-  return holds(c, SCENES.find((s) => s.id === id)!.when);
+  const when = SCENES.find((s) => s.id === id)!.when;
+  return !!when && holds(c, when);
 }
 /** Puts the hero where the scene is set and lets it begin. */
 function startAt(w: World, id: string): void {
@@ -61,7 +66,7 @@ describe('Sigilfall: scenes', () => {
   });
 
   it('every scene plays at its moment, with everyone it names there, and ends', () => {
-    for (const def of SCENES) {
+    for (const def of SCENES.filter((d) => d.when)) {
       const w = newWorld(def.region, atScene(def.id));
       startAt(w, def.id);
       expect(w.scene?.def.id, def.id).toBe(def.id);
@@ -144,3 +149,120 @@ describe('Sigilfall: scenes', () => {
     expect(w.scene!.step).toBe(first + 1);
   });
 });
+
+describe('Sigilfall: the shots that open the great moments', () => {
+  const shots = SCENES.filter((d) => d.opens);
+
+  it('there are a few, each opening a story event of its land at a wave it has', () => {
+    // (only the great moments: a shot means something is about to happen)
+    expect(shots.length).toBeGreaterThanOrEqual(8);
+    expect(shots.length).toBeLessThan(Object.keys(EVENTS).length / 2);
+    for (const def of shots) {
+      const ev = EVENTS[def.opens!.event];
+      expect(ev, def.id).toBeDefined();
+      expect(ev!.region, def.id).toBe(def.region);
+      const wave = def.opens!.wave ?? 0;
+      if (wave > 0 || ev!.waves.length) expect(ev!.waves[wave], `${def.id}: wave ${wave}`).toBeDefined();
+      expect(shots.filter((d) => d.opens!.event === def.opens!.event && (d.opens!.wave ?? 0) === wave), def.id).toHaveLength(1);
+    }
+  });
+
+  for (const def of shots) {
+    it(`${def.id}: what comes waits in sight while it plays, then comes, with the call to arms; it plays once`, () => {
+      const ev = EVENTS[def.opens!.event]!;
+      const wave = def.opens!.wave ?? 0;
+      const c = heroAtEvent(ev.id);
+      const w = newWorld(ev.region, c);
+      // (the land's own packs are not the point)
+      w.enemies = [];
+      const at = w.places[ev.at] ?? w.spots.find((sp) => sp.id === ev.at)!;
+      w.player.x = at.x;
+      w.player.y = at.y + 8;
+      // to its moment: the event begins, and its waves before this one fall
+      for (let f = 0; f < 240 / DT && w.scene?.def.id !== def.id; f++) {
+        w.input = emptyInput();
+        w.player.hp = w.player.maxHp;
+        if (f % 60 === 30) for (const e of w.enemies) if (!e.dead && !e.held && e.state !== 'spawn') hitEnemy(w, e, 1e7, 'physical', { depth: 0 });
+        w.step(DT);
+      }
+      expect(w.scene?.def.id, `${def.id} plays`).toBe(def.id);
+      const fight = ev.waves.length > 0;
+      if (fight) expect(w.enemies.filter((e) => e.held && !e.dead).length, `${def.id}: the wave, mustered`).toBe(ev.waves[wave]!.enemies.length);
+      // (the call to arms waits for the shot)
+      const banner = ev.banner ?? { raid: 'Raid!', defend: 'Hold!', rescue: 'Rescue!', escort: 'Escort!', arrival: 'Arrivals' }[ev.kind];
+      const called = (): boolean => w.events.some((e) => e.t === 'banner' && e.text === banner);
+      if (wave === 0) expect(called(), `${def.id}: no call to arms yet`).toBe(false);
+      w.events = [];
+      const x0 = w.player.x;
+      const y0 = w.player.y;
+      let looked = 0;
+      for (let f = 0; f < 40 / DT && w.scene; f++) {
+        w.input = { ...emptyInput(), mx: 1 };
+        w.step(DT);
+        // everyone it names is there while it plays: who speaks, who it follows, where it looks
+        const s = w.scene;
+        const step = s?.def.steps[s.step];
+        if (step && 'say' in step) expect(w.enemies.some((e) => !e.dead && e.def.id === step.say) || w.pets.some((p) => !p.dead && p.def.id === step.say) || w.npcs.some((n) => n.id === step.say), `${def.id}: ${step.say}`).toBe(true);
+        if (step && 'look' in step && step.look !== 'hero') {
+          expect(s!.focus, `${def.id}: ${step.look}`).not.toBeNull();
+          looked++;
+        }
+        if (fight && w.scene) expect(w.enemies.filter((e) => !e.dead && e.aggro).map((e) => e.def.id), `${def.id}: nothing comes on while it plays`).toEqual([]);
+      }
+      expect(w.scene, `${def.id} ends`).toBeNull();
+      if (def.steps.some((st) => 'look' in st && st.look !== 'hero')) expect(looked).toBeGreaterThan(0);
+      // (the hero stands: only the people walking past may nudge them)
+      expect(Math.hypot(w.player.x - x0, w.player.y - y0)).toBeLessThan(3);
+      expect(c.opened).toContain(`scene:${def.id}`);
+      w.step(DT);
+      if (fight) {
+        expect(w.enemies.filter((e) => e.held), `${def.id}: let go`).toEqual([]);
+        expect(w.enemies.filter((e) => !e.dead && e.hunts).every((e) => e.aggro)).toBe(true);
+      }
+      if (wave === 0) expect(called(), `${def.id}: the call to arms`).toBe(true);
+      // a line the shot said is not said again after it
+      const lines = def.steps.flatMap((st) => ('say' in st ? [st.line] : []));
+      w.step(DT);
+      expect(w.story.speech.filter((sp) => lines.includes(sp.text))).toEqual([]);
+      // and once seen, the fight starts straight away another time
+      const again = newWorld(ev.region, c);
+      again.enemies = [];
+      again.player.x = at.x;
+      again.player.y = at.y + 8;
+      for (let f = 0; f < 240 / DT && again.story.run?.def.id !== ev.id; f++) again.step(DT);
+      for (let f = 0; f < 3 / DT; f++) again.step(DT);
+      expect(again.scene?.def.id ?? null).not.toBe(def.id);
+    });
+  }
+
+  it('a boss met for the first time is shown before it comes on, its name in the lower bar; once', () => {
+    const c = readyHero('warrior', 12);
+    c.opened = c.opened.filter((k) => !k.startsWith('scene:boss-'));
+    const w = newWorld('crypt', c);
+    w.enemies = w.enemies.filter((e) => e.room < 0);
+    const enc = w.encounters.find((e) => e.def.boss)!;
+    expect(enc).toBeDefined();
+    const room = w.map.roomTiles[enc.index]!;
+    const i = room[Math.floor(room.length / 2)]!;
+    w.player.x = ((i % w.map.w) + 0.5) * TILE;
+    w.player.y = (Math.floor(i / w.map.w) + 0.5) * TILE;
+    run(w, 0.1);
+    const boss = w.boss()!;
+    expect(boss).toBeDefined();
+    expect(w.scene?.def.id).toBe(`boss-${enc.def.boss}`);
+    expect(boss.held).toBe(true);
+    let titled = false;
+    const hp = w.player.hp;
+    for (let f = 0; f < 20 / DT && w.scene; f++) {
+      run(w, DT);
+      if (w.scene?.title?.text === BOSSES[enc.def.boss!]!.name) titled = true;
+    }
+    expect(titled).toBe(true);
+    expect(w.scene).toBeNull();
+    expect(w.player.hp).toBe(hp);
+    expect(boss.held).toBe(false);
+    expect(boss.aggro).toBe(true);
+    expect(c.opened).toContain(`scene:boss-${enc.def.boss}`);
+  });
+});
+

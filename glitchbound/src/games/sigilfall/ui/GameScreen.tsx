@@ -29,15 +29,30 @@ import { mapIconUrl } from './mapIcons';
 /** A scene playing (sim/scene.ts): bars top and bottom over a clean picture (the HUD steps aside), and a way to skip it. */
 function SceneBars({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLDivElement>(null);
+  const title = useRef<HTMLDivElement>(null);
+  const shown = useRef('');
   useFrame(engine, (w) => {
     if (!ref.current) return;
     ref.current.classList.toggle('is-on', !!w.scene);
     ref.current.parentElement?.classList.toggle('is-scene', !!w.scene);
+    // a battle's or a boss's name, over the lower bar (it fades out with the bars)
+    const t = w.scene?.title;
+    const key = t ? `${t.text}|${t.sub ?? ''}` : '';
+    if (title.current && key && key !== shown.current) {
+      shown.current = key;
+      title.current.firstElementChild!.textContent = t!.text;
+      title.current.lastElementChild!.textContent = t!.sub ?? '';
+    }
+    title.current?.classList.toggle('is-on', !!t);
   });
   return (
     <div className="rb-scene" ref={ref} aria-hidden={!engine.world?.scene}>
       <div className="rb-scene-bar" />
       <div className="rb-scene-bar is-low" />
+      <div className="rb-scene-title" ref={title}>
+        <strong />
+        <span />
+      </div>
       <button className="rb-scene-skip" onClick={() => engine.skipScene()}>
         Skip {engine.touchMode ? '›' : '(Space)'}
       </button>

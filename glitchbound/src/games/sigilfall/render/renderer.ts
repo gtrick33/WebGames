@@ -11,7 +11,8 @@ import type { ClassId, Item } from '../data/types';
 import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
 import { K, TILE } from '../sim/map';
-import type { Enemy, Fx, Ghost, Pet, Projectile, Telegraph } from '../sim/types';
+import { STORY_FADE } from '../sim/pets';
+import type { Enemy, Fx, Ghost, NpcActor, Pet, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
 import type { Folk } from '../sim/folk';
 import { passerbyLook } from './art/townsfolk';
@@ -23,7 +24,7 @@ import { MOUNT_FRAMES, MOUNT_WALK_FRAMES, RIDER_HIP } from './art/mount';
 import { MOUNT_DEFS, type MountDef } from '../data/mounts';
 import { wornLooks } from '../progress/wardrobe';
 import { SUMMON_TIME } from '../sim/world';
-import { buildScenery, type Scenery } from './tiles';
+import { buildScenery, type Scenery, type StaticObject } from './tiles';
 import { objectiveTarget } from '../sim/objective';
 
 /**
@@ -77,6 +78,13 @@ const PROJECTILE_COLORS: Record<string, [string, string]> = {
   starsurge: ['#ff8ad8', '#ffffff'],
 };
 
+/** Seconds a person the story brings takes to fade in, one it takes away to fade out, and one who dies. */
+const NPC_FADE_IN = 0.8;
+const NPC_FADE_OUT = 1.2;
+const NPC_DIES = 3.2;
+/** Seconds the story's things (tents, a campfire) take to fade in or out, and its people placed in sight to fade in. */
+const PROP_FADE = 0.9;
+const PET_FADE_IN = 0.7;
 /** Wards drawn as the thing itself (others, like a person at a lock, are drawn as people). */
 const WARD_LOOKS = new Set(['door', 'gate', 'stone', 'boat', 'wagon', 'lantern']);
 
@@ -124,6 +132,8 @@ export class Renderer {
   private sceneryFor: World | null = null;
   /** The story state the scenery was built for (World.stateVersion). */
   private sceneryVersion = -1;
+  /** How much the townsfolk are out (they go indoors while the story fights in the streets). */
+  private folkK = 1;
   /** A land with the pack's look whose art is still loading: when the wait began (seconds), or -1. */
   private artWait = -1;
   /** When the last hold for art ended (the land fades up from dark after it). */
@@ -290,9 +300,20 @@ export class Renderer {
     this.waiting = false;
     if (this.sceneryFor !== w || (art && this.scenery?.art !== art) || this.sceneryVersion !== w.stateVersion) {
       const fresh = this.sceneryFor !== w;
+      // the story moved on in this land: what it puts up (tents, a campfire, a stone) fades in, and what it
+      // takes away fades out, rather than popping
+      const turned = !fresh && this.sceneryVersion !== w.stateVersion && this.scenery?.art === art;
+      const before = turned ? this.scenery!.objects.filter((o) => o.gone === undefined) : [];
       this.sceneryVersion = w.stateVersion;
       this.scenery?.ground.dispose();
       this.scenery = buildScenery(w.map, w.region, art, (pm) => w.isShown(pm));
+      if (turned) {
+        const objs = this.scenery.objects;
+        const now = new Set(objs.map(objKey));
+        const had = new Set(before.map(objKey));
+        for (const o of objs) if (!had.has(objKey(o))) o.born = time;
+        for (const o of before) if (!now.has(objKey(o))) objs.push({ ...o, gone: time });
+      }
       this.sceneryFor = w;
       if (fresh) {
         this.setHeroWeapon(w.hero.cls, w);
@@ -347,12 +368,15 @@ export class Renderer {
     const inView = (x: number, y: number, m = 40): boolean => x > ox - m && x < ox + this.vw + m && y > oy - m && y < oy + this.vh + 60;
     for (const o of sc.objects) {
       if (!inView(o.x, o.y, 70)) continue;
+      const come = o.born === undefined ? 1 : clamp((time - o.born) / PROP_FADE, 0, 1);
+      const left = o.gone === undefined ? 1 : 1 - (time - o.gone) / PROP_FADE;
+      if (left <= 0) continue;
       items.push({
         y: o.y,
         draw: () => {
           const ow = (o.src ? (o.anim ? o.anim.w : o.src[2]) : o.c.width) / (o.k ?? DETAIL);
           const behind = o.fade && !p.dead && p.y < o.y && p.y > o.y + o.dy + 4 && Math.abs(p.x - o.x) < ow / 2 - 2;
-          if (behind) g.globalAlpha = 0.55;
+          g.globalAlpha = (behind ? 0.55 : 1) * Math.min(come, left);
           if (o.src) {
             // from an atlas, placed on its art pixel; animated props step through their frames
             const [sx, sy, sw, sh] = o.src;
@@ -366,13 +390,20 @@ export class Renderer {
     }
     for (const c of w.chests) if (inView(c.x, c.y)) items.push({ y: c.y + 4, draw: () => this.drawChest(c.x, c.y, c.open, c.tier, time) });
     for (const s of w.spores) if (inView(s.x, s.y)) items.push({ y: s.y + 3, draw: () => this.drawSpore(s.x, s.y, s.ripe, s.fuse, time) });
-    for (const n of w.npcs) if (inView(n.x, n.y)) items.push({ y: n.y + 6, draw: () => this.drawNpc(w, n.id, n.x, n.y, n.face, n.bob) });
+    for (const n of w.npcs) if (inView(n.x, n.y)) items.push({ y: n.y + 6, draw: () => this.drawNpc(w, n, clamp((w.time - (n.since ?? -Infinity)) / NPC_FADE_IN, 0, 1)) });
+    // the people the story has just taken away fade out where they stood (one who dies, slowly)
+    for (const n of w.leftNpcs) {
+      const a = 1 - (w.time - n.left) / (NPCS[n.id]?.down ? NPC_DIES : NPC_FADE_OUT);
+      if (a > 0 && inView(n.x, n.y)) items.push({ y: n.y + 6, draw: () => this.drawNpc(w, n, a, false) });
+    }
     for (const c of w.chickens) if (inView(c.x, c.y)) items.push({ y: c.y, draw: () => this.drawChicken(c.x, c.y, c.face, time) });
     // the people of the place (they keep indoors while the story fights in the streets)
-    if (!w.story.fighting) for (const f of w.folk) if (inView(f.x, f.y)) items.push({ y: f.y + 5, draw: () => this.drawFolk(f, time) });
+    // (they slip indoors and back out again: a fade, not a vanishing)
+    this.folkK = damp(this.folkK, w.story.fighting ? 0 : 1, 3, dt);
+    if (this.folkK > 0.02) for (const f of w.folk) if (inView(f.x, f.y)) items.push({ y: f.y + 5, draw: () => this.drawFolk(f, time, this.folkK) });
     for (const d of w.drops) if (inView(d.x, d.y)) items.push({ y: d.y, draw: () => this.drawDrop(d.kind, d.x, d.y, d.z, d.item, time, d.t) });
     for (const e of w.enemies) if (inView(e.x, e.y)) items.push({ y: e.y + e.r * 0.6, draw: () => this.drawEnemy(e, time) });
-    for (const pet of w.pets) if (inView(pet.x, pet.y)) items.push({ y: pet.y + pet.r * 0.6, draw: () => this.drawPet(pet, time) });
+    for (const pet of w.pets) if (inView(pet.x, pet.y)) items.push({ y: pet.y + pet.r * 0.6, draw: () => this.drawPet(pet, time, w.time) });
     // the party's other heroes (net/coop.ts)
     for (const gh of w.coop?.ghosts ?? []) if (gh.seen > 0 && inView(gh.x, gh.y)) items.push({ y: gh.y + 5, draw: () => this.drawGhost(gh, time) });
     items.push({
@@ -1154,7 +1185,7 @@ export class Renderer {
     });
   }
 
-  private drawPet(pet: Pet, time: number): void {
+  private drawPet(pet: Pet, time: number, wt: number): void {
     const g = this.g;
     // things to hold (a door, a gate, a wagon) are drawn as themselves; a person holding a lock is a person
     if (pet.def.role === 'ward' && WARD_LOOKS.has(pet.def.look ?? 'door')) {
@@ -1173,11 +1204,12 @@ export class Renderer {
       g.beginPath();
       g.ellipse(pet.x, pet.y + 5, 5 * small, 2 * small, 0, 0, TAU);
       g.fill();
-      if (pet.dead) g.globalAlpha = clamp(1 - pet.deathT / 0.5, 0, 1);
+      // going (their time up, or the story moving on): a slow fade, not a puff
+      g.globalAlpha = petFade(pet, wt);
       const flip = Math.cos(pet.face) < 0;
       // knocked down: on one knee, greyed, getting back up
       const down = pet.downT ? 0.55 : 1;
-      if (pet.downT) g.globalAlpha = 0.6;
+      if (pet.downT) g.globalAlpha *= 0.6;
       g.drawImage(pet.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, Math.round(pet.x - sw / 2), Math.round(pet.y + 6 - sh * down + b), sw, sh * down);
       g.globalAlpha = 1;
       return;
@@ -1192,7 +1224,7 @@ export class Renderer {
     const lunge = pet.actT > 0 && !pet.def.ranged ? (flip ? -2 : 2) : 0;
     const x = Math.round((pet.x - dw / 2 + lunge) * sprite.k) / sprite.k;
     const y = Math.round((pet.y + pet.r * 0.8 - dh + float) * sprite.k) / sprite.k;
-    if (pet.dead) g.globalAlpha = clamp(1 - pet.deathT / 0.5, 0, 1);
+    if (pet.dead || pet.story) g.globalAlpha = petFade(pet, wt);
     // a summon about to fade flickers
     else if (pet.life < 2) g.globalAlpha = Math.floor(time * 10) % 2 ? 1 : 0.5;
     g.drawImage(pet.flash > 0 ? (flip ? sprite.wf : sprite.w) : flip ? sprite.f : sprite.c, x, y, dw, dh);
@@ -1697,18 +1729,41 @@ export class Renderer {
     g.fillRect(x - 3, y - 24, 6, 5);
   }
 
-  private drawNpc(w: World, id: string, x: number, y: number, face: number, bob: number): void {
+  /** A person of the place, `alpha` faded (coming or going); `marked`: their sign and quest mark over them. */
+  private drawNpc(w: World, n: NpcActor, alpha: number, marked = true): void {
     const g = this.g;
+    const { id, x, y, face, bob } = n;
     const def = NPCS[id];
+    g.globalAlpha = alpha;
+    const sprite = npcSprite(id);
+    const sw = sprite.width / sprite.k;
+    const sh = sprite.height / sprite.k;
+    if (def?.down) {
+      // fallen: on the ground, head to the side (falling over as it happens, if it happened in sight)
+      const k = n.fell === undefined ? 1 : clamp((w.time - n.fell) / 0.5, 0, 1);
+      g.fillStyle = 'rgba(0,0,0,0.25)';
+      g.beginPath();
+      g.ellipse(x - 4 * k, y + 6, 6 + 5 * k, 2.5, 0, 0, TAU);
+      g.fill();
+      g.save();
+      g.translate(Math.round(x), Math.round(y + 6));
+      g.rotate(-(Math.PI / 2) * k * k);
+      g.drawImage(face < 0 ? sprite.f : sprite.c, -sw / 2, 1 - sh, sw, sh);
+      g.restore();
+      if (marked) this.drawNpcMark(w, id, x, Math.round(y - 6), bob);
+      g.globalAlpha = 1;
+      return;
+    }
     g.fillStyle = 'rgba(0,0,0,0.25)';
     g.beginPath();
     g.ellipse(x, y + 6, 6, 2.5, 0, 0, TAU);
     g.fill();
-    const sprite = npcSprite(id);
     const b = Math.sin(bob * 2) > 0.7 ? -1 : 0;
-    const sw = sprite.width / sprite.k;
-    const sh = sprite.height / sprite.k;
     g.drawImage(face < 0 ? sprite.f : sprite.c, Math.round(x) - sw / 2, Math.round(y + 7 - sh + b), sw, sh);
+    if (!marked) {
+      g.globalAlpha = 1;
+      return;
+    }
     let top = Math.round(y + 4 - sh);
     // vendors carry a sign of what they sell; quests use "!" (yours) and "?" (talk to them) above it
     const sign = def ? vendorSign(def.shop ?? (def.service === 'respec' ? 'respec' : '')) : null;
@@ -1723,13 +1778,20 @@ export class Renderer {
       g.drawImage(sign.c, bx, by, bw, bh);
       top = by - 2;
     }
+    this.drawNpcMark(w, id, x, top, bob);
+    g.globalAlpha = 1;
+  }
+
+  /** "!" (a quest to take) or "?" (one to hand in) bobbing over someone. */
+  private drawNpcMark(w: World, id: string, x: number, top: number, bob: number): void {
     const mark = npcMark(w, id);
-    if (mark) drawMapIcon(g, mark, x, Math.round(top + Math.sin(bob * 3) * 1.5) - 8, 1);
+    if (mark) drawMapIcon(this.g, mark, x, Math.round(top + Math.sin(bob * 3) * 1.5) - 8, 1);
   }
 
   /** A villager walking about (sim/folk.ts), drawn like the people of the story. */
-  private drawFolk(f: Folk, time: number): void {
+  private drawFolk(f: Folk, time: number, alpha = 1): void {
     const g = this.g;
+    g.globalAlpha = alpha;
     g.fillStyle = 'rgba(0,0,0,0.22)';
     g.beginPath();
     g.ellipse(f.x, f.y + 6, 5.5, 2.2, 0, 0, TAU);
@@ -1741,6 +1803,7 @@ export class Renderer {
     const sh = s.height / s.k;
     const bob = f.moving ? (Math.floor(f.walkT * 6) % 2 === 0 ? 0 : -0.5) : Math.sin(time * 2 + f.look) > 0.8 ? -0.5 : 0;
     g.drawImage(f.dir === 1 ? s.f : s.c, Math.round(f.x) - sw / 2, Math.round(f.y) + 6.5 - sh + bob, sw, sh);
+    g.globalAlpha = 1;
   }
 
   private drawChicken(x: number, y: number, face: number, time: number): void {
@@ -2540,6 +2603,18 @@ export const rarityColor = (r: string | undefined): string => (r === 'legendary'
  * The mark over someone: "?" when they take a quest back (handed in, or a talk the quest is for), "!" when they
  * have one to give; gold for the main story, blue for a side quest (the handing-in comes first).
  */
+/** How far a pet has faded: one of the story's people fades out over their last moments; a summon goes at once. */
+function petFade(pet: Pet, time: number): number {
+  if (!pet.story) return pet.dead ? clamp(1 - pet.deathT / 0.5, 0, 1) : 1;
+  if (pet.dead) return clamp(1 - pet.deathT / STORY_FADE, 0, 1);
+  // (and one the story has just put somewhere in sight comes in the same way)
+  const come = pet.born === undefined ? 1 : clamp((time - pet.born) / PET_FADE_IN, 0, 1);
+  return Math.min(come, clamp(pet.life / STORY_FADE, 0, 1));
+}
+
+/** A static object's identity across a rebuild of the scenery (where it stands and how it is drawn). */
+const objKey = (o: StaticObject): string => `${Math.round(o.x)},${Math.round(o.y)},${o.dx},${o.dy},${o.src?.join(':') ?? o.kind}`;
+
 export function npcMark(w: World, id: string): MapIcon | null {
   const h = w.hero;
   let side: MapIcon | null = null;

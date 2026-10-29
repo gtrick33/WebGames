@@ -248,15 +248,28 @@ describe('Sigilfall: the story in the world', () => {
     run(w, 1);
     // he is walking in, toward the gate
     expect(courier.y).toBeGreaterThan(from);
-    for (let i = 0; i < 30 && questState(w.hero, 'briar-the-rider') === 'active'; i++) run(w, 1);
+    let last = { x: courier.x, y: courier.y };
+    for (let i = 0; i < 30 * 60 && questState(w.hero, 'briar-the-rider') === 'active'; i++) {
+      // (never a jump: he walks every step of the way)
+      expect(Math.hypot(courier.x - last.x, courier.y - last.y)).toBeLessThan(2);
+      last = { x: courier.x, y: courier.y };
+      run(w, DT);
+    }
     expect(questState(w.hero, 'briar-the-rider')).toBe('done');
     expect(questState(w.hero, 'briar-the-seal')).toBe('active');
-    // where he fell, he can be knelt by; the seal taken, the inn's fight is next
-    run(w, 0.6);
-    expect(w.npcs.some((n) => n.id === 'oskar-fell')).toBe(true);
+    // he falls where he stopped: the one lying there is him, there at once (no fade, no jump), falling now
+    const oskar = w.npcs.find((n) => n.id === 'oskar-fell')!;
+    expect(Math.hypot(oskar.x - last.x, oskar.y - last.y)).toBeLessThan(8);
+    expect(oskar.since).toBeUndefined();
+    expect(oskar.fell).toBeCloseTo(w.time, 1);
+    expect(w.pets.some((p) => p.def.id === 'courier')).toBe(false);
+    // the seal taken, he dies: he is let go slowly (a fade, render: NPC_DIES), and the inn's fight is next
     w.questProgress((o) => o.kind === 'talk' && o.npc === 'oskar-fell');
     expect(questState(w.hero, 'briar-the-seal')).toBe('done');
     expect(questState(w.hero, 'briar-the-inn')).toBe('active');
+    run(w, 0.6);
+    expect(w.npcs.some((n) => n.id === 'oskar-fell')).toBe(false);
+    expect(w.leftNpcs.some((n) => n.id === 'oskar-fell')).toBe(true);
   });
 
   it('dawn opens the north road: the Whisperwood comes after the night', () => {

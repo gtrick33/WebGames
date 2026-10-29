@@ -5,6 +5,7 @@ import type { RegionId, StoryCond } from '../data/types';
 import { castRay } from './map';
 import { placePet } from './pets';
 import { holds } from './story';
+import type { Enemy } from './types';
 import type { World } from './world';
 
 /**
@@ -22,6 +23,11 @@ export type SceneStep =
   | { say: string; line: string }
   /** The camera goes to a named place, a person or 'hero'. */
   | { look: string }
+  /**
+   * The camera keeps on someone walking (a companion, someone arriving) until they are where they were going
+   * (become the place's own person there) or `secs` have passed.
+   */
+  | { follow: string; secs: number }
   /** Someone walks to a named place (or next to a person). */
   | { move: string; to: string }
   /** A sign over someone's head. */
@@ -30,13 +36,21 @@ export type SceneStep =
   | { sfx: string }
   /** The screen shakes (a bell's blow, a roof falling in); the scene goes straight on. */
   | { shake: number }
+  /** A title in the lower bar (a battle's, a boss's name): it stays till the scene ends; the scene goes straight on. */
+  | { title: string; sub?: string }
   | { wait: number };
 
 export interface SceneDef {
   id: string;
   region: RegionId;
   /** Plays once, the first time this holds while the hero is here (and within `r` of `near`, if given). */
-  when: StoryCond;
+  when?: StoryCond;
+  /**
+   * Or: a shot that opens a great moment of a story fight, as it begins (or as its wave `wave` comes): the
+   * wave musters in sight and waits, and the call to arms and the wave's lines come once it is over
+   * (sim/story.ts). Looks at 'foes' for the wave. Plays once, and never in a co-op party.
+   */
+  opens?: { event: string; wave?: number };
   near?: string;
   r?: number;
   steps: SceneStep[];
@@ -50,6 +64,10 @@ export interface ScenePlay {
   begun: boolean;
   /** Where the camera looks (world px), or null for the hero. */
   focus: { x: number; y: number } | null;
+  /** The one a `follow` step keeps on has been found (their going then ends the step). */
+  seen?: boolean;
+  /** The title in the lower bar, if a step has given one. */
+  title?: { text: string; sub?: string };
   emotes: { who: string; icon: Emote; t: number }[];
 }
 
@@ -57,12 +75,26 @@ const SPEAK = 2.6;
 const lineTime = (line: string): number => SPEAK + line.length * 0.025;
 const WALK = 42;
 
-/** A named place, a person, or the hero, in world px (null when nothing by that name is here). */
+/**
+ * A named place, a person (or a foe, by kind), or the hero, in world px (null when nothing by that name is
+ * here); 'foes' is the foes a shot holds (the thickest knot of them, when they come from more than one side),
+ * 'boss' the boss.
+ */
 function where(w: World, name: string): { x: number; y: number } | null {
   if (name === 'hero') return { x: w.player.x, y: w.player.y };
+  if (name === 'foes') {
+    const held = w.enemies.filter((e) => e.held && !e.dead);
+    if (!held.length) return null;
+    const knot = held.map((a) => held.filter((b) => dist(a.x, a.y, b.x, b.y) < 110)).reduce((a, b) => (b.length > a.length ? b : a));
+    return { x: knot.reduce((a, e) => a + e.x, 0) / knot.length, y: knot.reduce((a, e) => a + e.y, 0) / knot.length };
+  }
+  if (name === 'boss') {
+    const b = w.boss();
+    return b && !b.dead ? { x: b.x, y: b.y } : null;
+  }
   const place = w.places[name];
   if (place) return place;
-  const n = w.npcs.find((x) => x.id === name) ?? w.pets.find((p) => !p.dead && p.def.id === name);
+  const n = w.npcs.find((x) => x.id === name) ?? w.pets.find((p) => !p.dead && p.def.id === name) ?? w.enemies.find((e) => !e.dead && e.def.id === name);
   return n ? { x: n.x, y: n.y } : null;
 }
 
@@ -73,23 +105,67 @@ export function maybeStartScene(w: World): void {
   if (w.scene || w.player.dead || w.story.fighting) return;
   const h = w.hero;
   for (const def of SCENES) {
-    if (def.region !== w.region.id || h.opened.includes(seenKey(def.id)) || !holds(h, def.when)) continue;
+    if (!def.when || def.region !== w.region.id || h.opened.includes(seenKey(def.id)) || !holds(h, def.when)) continue;
     if (def.near) {
       const at = where(w, def.near);
       if (!at || dist(at.x, at.y, w.player.x, w.player.y) > (def.r ?? 90)) continue;
     }
     // never in a fight, nor with an enemy at the hero's elbow (idle packs further off may watch)
     if (w.player.calm < 3 || w.enemies.some((e) => !e.dead && !e.dummy && (e.aggro || dist(e.x, e.y, w.player.x, w.player.y) < 100))) return;
-    w.scene = { def, step: 0, t: 0, begun: false, focus: null, emotes: [] };
     // a companion of the story who speaks in it (Mara, after a fight) is at the hero's side, even after a reload
     for (const who of new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : [])))) {
       if (!PETS[who] || w.npcs.some((n) => n.id === who) || w.pets.some((p) => !p.dead && p.def.id === who)) continue;
       const at = castRay(w.map, w.player.x, w.player.y, 6, w.rand() * TAU, 18);
       placePet(w, who, at.x, at.y);
     }
-    w.dismount();
-    w.emit({ t: 'scene', id: def.id, playing: true });
+    play(w, def);
     return;
+  }
+}
+
+function play(w: World, def: SceneDef): void {
+  w.scene = { def, step: 0, t: 0, begun: false, focus: null, emotes: [] };
+  w.dismount();
+  w.emit({ t: 'scene', id: def.id, playing: true });
+}
+
+/**
+ * The shot that opens this story event (or its wave `wave`), started if it has one the hero hasn't seen (and
+ * no co-op party shares the world): true when it plays.
+ */
+export function openShot(w: World, event: string, wave: number): boolean {
+  // (not with something already at the hero: the fight is on)
+  if (w.scene || w.coop || w.puppet || w.enemies.some((e) => !e.dead && !e.dummy && e.aggro)) return false;
+  const def = SCENES.find((d) => d.opens?.event === event && (d.opens.wave ?? 0) === wave);
+  if (!def || w.hero.opened.includes(seenKey(def.id))) return false;
+  play(w, def);
+  return true;
+}
+
+/**
+ * The first time a hero meets a boss: a shot of it (its name in the lower bar) before it comes on. Not in a
+ * Riftstone run, whose clock is running, nor in a co-op party.
+ */
+export function revealBoss(w: World, boss: Enemy): void {
+  const b = boss.boss?.def;
+  if (!b || w.scene || w.coop || w.puppet || w.keyRun || w.enemies.some((e) => e !== boss && !e.dead && !e.dummy && e.aggro)) return;
+  const def: SceneDef = {
+    id: `boss-${b.id}`,
+    region: w.region.id,
+    steps: [{ look: 'boss' }, { title: b.name, sub: b.title }, { sfx: 'roar' }, { shake: 4 }, { wait: 1.8 }, { look: 'hero' }],
+  };
+  if (w.hero.opened.includes(seenKey(def.id))) return;
+  boss.held = true;
+  boss.aggro = false;
+  play(w, def);
+}
+
+/** The foes a shot held come on (it is over, or something broke it). */
+function letGo(w: World): void {
+  for (const e of w.enemies) {
+    if (!e.held) continue;
+    e.held = false;
+    e.aggro = true;
   }
 }
 
@@ -101,6 +177,7 @@ export function updateScene(w: World, dt: number): void {
   if (w.enemies.some((e) => !e.dead && !e.dummy && e.aggro)) {
     w.story.hush(s.def.steps.flatMap((st) => ('say' in st ? [st.say] : [])));
     w.scene = null;
+    letGo(w);
     w.emit({ t: 'scene', id: s.def.id, playing: false });
     return;
   }
@@ -122,6 +199,13 @@ export function updateScene(w: World, dt: number): void {
     const at = where(w, step.look);
     s.focus = step.look === 'hero' ? null : at;
     done = s.t >= 0.9;
+  } else if ('follow' in step) {
+    const at = where(w, step.follow);
+    if (at) {
+      s.focus = at;
+      s.seen = true;
+    }
+    done = (!!s.seen && !at) || s.t >= step.secs;
   } else if ('move' in step) {
     const n = w.npcs.find((x) => x.id === step.move);
     const to = where(w, step.to);
@@ -146,11 +230,15 @@ export function updateScene(w: World, dt: number): void {
   } else if ('shake' in step) {
     if (first) w.shake(step.shake);
     done = true;
+  } else if ('title' in step) {
+    s.title = { text: step.title, sub: step.sub };
+    done = true;
   } else done = s.t >= step.wait;
   if (done) {
     s.step += 1;
     s.t = 0;
     s.begun = false;
+    s.seen = false;
   }
 }
 
@@ -173,6 +261,7 @@ export function endScene(w: World, skipped: boolean): void {
   }
   if (!w.hero.opened.includes(seenKey(s.def.id))) w.hero.opened.push(seenKey(s.def.id));
   w.scene = null;
+  letGo(w);
   w.emit({ t: 'scene', id: s.def.id, playing: false });
   w.emit({ t: 'save' });
 }

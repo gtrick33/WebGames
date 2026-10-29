@@ -926,4 +926,6 @@ export interface NpcDef {
   shopName?: string;
   /** Colors swapped on the base sprite, so one sprite can dress several people. */
   pal?: Record<string, string>;
+  /** Lies where they fell (the dying courier): drawn on the ground, and a long, slow fade when they go. */
+  down?: boolean;
 }

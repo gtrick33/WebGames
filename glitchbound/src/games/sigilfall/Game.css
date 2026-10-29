@@ -2435,6 +2435,11 @@
   opacity: 0;
   pointer-events: none;
 }
+/* (a banner that comes up during a scene waits for it: its own entrance would show it through the fade) */
+.rb-ui.is-scene > .rb-banner,
+.rb-ui.is-scene > .rb-levelup {
+  visibility: hidden;
+}
 .rb-scene {
   position: absolute;
   inset: 0;
@@ -2457,6 +2462,42 @@
 }
 .rb-scene.is-on .rb-scene-bar {
   transform: none;
+}
+.rb-scene-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(9% + 18px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #f8f2e4;
+  text-align: center;
+  text-shadow: 0 2px 0 rgb(0 0 0 / 0.6), 0 0 18px rgb(0 0 0 / 0.7);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.6s ease, transform 0.9s ease;
+}
+.rb-scene-title.is-on {
+  opacity: 1;
+  transform: none;
+}
+.rb-scene-title strong {
+  font-size: clamp(22px, 4.2vw, 40px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rb-scene-title span {
+  font-size: clamp(12px, 1.8vw, 17px);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #d8c8a0;
+}
+.rb-scene-title span:empty {
+  display: none;
 }
 /* (.rb-ui: it outranks `.rb-ui button`, so the hidden button takes no taps meant for the basic attack under it) */
 .rb-ui .rb-scene-skip {

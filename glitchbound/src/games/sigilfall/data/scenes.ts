@@ -4,7 +4,8 @@ import type { SceneDef } from '../sim/scene';
 /**
  * The story's staged beats (sim/scene.ts): a few seconds each, in the world, at the moments the story
  * turns. Each one only stages what the markers already say — who stands where comes from the region —
- * and plays once.
+ * and plays once. The last of them are shots that open the story's great fights and arrivals (`opens`):
+ * only the great ones, so that a shot means something is about to happen.
  */
 export const SCENES: SceneDef[] = [
   {
@@ -52,14 +53,24 @@ export const SCENES: SceneDef[] = [
     ],
   },
   {
-    // the courier coming up the road out of the dark, the last of it on foot, carrying his light
+    // the courier coming up the road out of the dark, the last of it on foot, carrying his light: the camera
+    // stays on him through the gate to where he falls, and on him there
     id: 'briar-the-rider-comes',
     region: 'briarhollow',
     when: during('briar-the-rider'),
     // (inside his arrival's six tiles, so he is on the road when the camera looks)
     near: 'briar-gate',
     r: 88,
-    steps: [{ look: 'briar-road' }, { wait: 2.6 }, { look: 'briar-north' }, { wait: 3.2 }, { look: 'hero' }],
+    steps: [{ look: 'briar-road' }, { wait: 1.6 }, { follow: 'courier', secs: 16 }, { look: 'briar-courier-falls' }, { wait: 2.6 }, { look: 'hero' }],
+  },
+  {
+    // the courier dead in the gateway, his seal in the hero's hand: and behind them the inn's roof catches
+    id: 'briar-the-inn-catches',
+    region: 'briarhollow',
+    when: during('briar-the-inn'),
+    near: 'briar-gate',
+    r: 160,
+    steps: [{ wait: 1.8 }, { look: 'briar-inn' }, { sfx: 'roar' }, { wait: 3 }, { look: 'hero' }],
   },
   {
     // the Crown City: the Regent meets the hero with the countermanded order, the Chancellor at her side
@@ -302,5 +313,98 @@ export const SCENES: SceneDef[] = [
       { say: 'elyra', line: 'They’ll hear it in Fernstead. They’ll hear it all the way to the Crown City.' },
       { look: 'hero' },
     ],
+  },
+
+  /* ------------------------------------------- the shots that open the great moments */
+  {
+    // Act I: the Defense of Hearthstead begins, the Host's riders already in the lanes
+    id: 'hearth-the-riders-come',
+    region: 'amberfield',
+    opens: { event: 'hearth-riders' },
+    steps: [{ look: 'foes' }, { title: 'The Defense of Hearthstead' }, { sfx: 'warhorn' }, { wait: 1.4 }, { shake: 3 }, { wait: 1.4 }, { look: 'hero' }],
+  },
+  {
+    // the ram comes up the road to Hearthstead's gate
+    id: 'hearth-the-ram-comes',
+    region: 'amberfield',
+    opens: { event: 'hearth-ram', wave: 1 },
+    steps: [{ look: 'foes' }, { sfx: 'slam' }, { shake: 5 }, { wait: 0.9 }, { sfx: 'slam' }, { shake: 6 }, { wait: 1.3 }, { look: 'hero' }],
+  },
+  {
+    // Act III: Fernstead taken back, its lanes full of the Legion
+    id: 'fern-the-retaking',
+    region: 'brackenridge',
+    opens: { event: 'fern-retake' },
+    steps: [{ look: 'foes' }, { title: 'Fernstead Again' }, { sfx: 'warhorn' }, { wait: 2.6 }, { look: 'hero' }],
+  },
+  {
+    // the Pale Herald steps out of the grey at the Tear, for Elyra
+    id: 'tear-the-herald',
+    region: 'shattered-vale',
+    opens: { event: 'herald-ambush', wave: 2 },
+    steps: [
+      { look: 'the-pale-herald' },
+      { title: 'The Pale Herald' },
+      { sfx: 'rift' },
+      { shake: 3 },
+      { say: 'the-pale-herald', line: 'Little light. You have been carrying something of my king’s. Come and give it back.' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // the Night of Knives: the masks in the festival crowd, all moving toward the Regent
+    id: 'ember-the-knives',
+    region: 'emberwick',
+    opens: { event: 'festival-knives' },
+    steps: [{ look: 'foes' }, { title: 'The Night of Knives' }, { sfx: 'shadow' }, { wait: 2.2 }, { look: 'hero' }],
+  },
+  {
+    // the night Fernstead fell: what is left of it, coming up the west road to Briarhollow
+    id: 'briar-fernstead-comes',
+    region: 'briarhollow',
+    opens: { event: 'fern-refugees' },
+    steps: [{ title: 'The Night Fernstead Fell' }, { follow: 'fern-ranger', secs: 8 }, { look: 'hero' }],
+  },
+  {
+    // Act IV: Highwall's gate opens and the Ninefold ride out at the Legion's line
+    id: 'highwall-the-sortie',
+    region: 'highwall',
+    opens: { event: 'highwall-sortie' },
+    steps: [{ look: 'foes' }, { title: 'The Sortie' }, { sfx: 'warhorn' }, { wait: 1.6 }, { shake: 3 }, { wait: 1 }, { look: 'hero' }],
+  },
+  {
+    // Act V: the Legion drawn up on the field before the Muster Hall, and every ally beside the hero
+    id: 'bone-the-field',
+    region: 'bonefields',
+    opens: { event: 'muster-field' },
+    steps: [{ look: 'foes' }, { title: 'The Field Before the Hall' }, { sfx: 'warhorn' }, { wait: 1.4 }, { shake: 4 }, { wait: 1.4 }, { look: 'hero' }],
+  },
+  {
+    // the drowned crews of the fireships, coming up out of the harbor
+    id: 'sunken-the-fireships',
+    region: 'sunken-reaches',
+    opens: { event: 'the-fireships' },
+    steps: [{ look: 'foes' }, { title: 'Fireships' }, { sfx: 'roar' }, { wait: 2.2 }, { look: 'hero' }],
+  },
+  {
+    // the mere answers Orren's lantern: the drowned rise, and one of them is small
+    id: 'mere-the-water-answers',
+    region: 'hollowmere',
+    opens: { event: 'orren-on-the-shore' },
+    steps: [{ look: 'foes' }, { sfx: 'soul' }, { wait: 2.6 }, { look: 'hero' }],
+  },
+  {
+    // Act VI: every banner the hero earned, marching into Dawn's Rest
+    id: 'reach-the-columns',
+    region: 'pale-reach',
+    opens: { event: 'reach-the-banners' },
+    steps: [{ title: 'Every Banner' }, { follow: 'highwall-soldier', secs: 7 }, { look: 'hero' }],
+  },
+  {
+    // Act VI: the last march, the Pale Host before the wall and the siege mages behind the hero
+    id: 'reach-the-last-march',
+    region: 'pale-reach',
+    opens: { event: 'reach-the-mages' },
+    steps: [{ look: 'foes' }, { title: 'The Last March' }, { sfx: 'warhorn' }, { wait: 1.4 }, { shake: 4 }, { wait: 1.6 }, { look: 'hero' }],
   },
 ];
