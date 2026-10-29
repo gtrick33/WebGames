@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { botTurn } from '../src/games/crater-crew/ai';
 import { CHAR_IDS } from '../src/games/crater-crew/characters';
-import { canFire, cleanInput, crewScore, endTurn, newMatch, playTurn, worldFor, MAX_TURNS, type Match, type TurnInput } from '../src/games/crater-crew/match';
+import { canFire, cleanInput, crewScore, endTurn, newMatch, playTurn, runInputs, runSteps, worldFor, MAX_TURNS, type Match, type TurnInput } from '../src/games/crater-crew/match';
 import { dcos, dsin, PI } from '../src/games/crater-crew/math';
 import { fire, IN_JUMP, IN_LEFT, IN_RIGHT, MAX_SHOT_STEPS, runToRest, settled, settleUnit, stepWorld, walkStep } from '../src/games/crater-crew/sim';
 import { soloMatch, botMove } from '../src/games/crater-crew/solo';
@@ -152,6 +152,52 @@ describe('crater crew: a turn', () => {
     expect(cleanInput({ walk: [], fire: { w: 'nuke', aim: 0, dir: 1, power: 50, tx: 0 } })).toBeNull();
     expect(cleanInput({ walk: [], fire: { w: 'rocket', aim: 2000, dir: 1, power: 50, tx: 0 } })).toBeNull();
     expect(cleanInput({ walk: [[1, 5]], fire: { w: 'rocket', aim: 10, dir: -1, power: 50, tx: 3 } })).toEqual({ walk: [[1, 5]], fire: { w: 'rocket', aim: 10, dir: -1, power: 50, tx: 3 } });
+  });
+
+  it('after dropping dynamite the critter can still run: kept only for dynamite, three seconds at most', () => {
+    const dyn = { w: 'dynamite' as const, aim: 0, dir: 1 as const, power: 0, tx: 0 };
+    expect(runSteps('dynamite')).toBe(180);
+    expect(runSteps('rocket')).toBe(0);
+    expect(cleanInput({ walk: [], fire: dyn, run: [[IN_RIGHT, 500]] })).toEqual({ walk: [], fire: dyn, run: [[IN_RIGHT, 180]] });
+    expect(cleanInput({ walk: [], fire: { ...dyn, w: 'rocket' }, run: [[IN_RIGHT, 50]] })).toEqual({ walk: [], fire: { ...dyn, w: 'rocket' } });
+    expect(cleanInput({ walk: [], fire: null, run: [[IN_RIGHT, 50]] })).toEqual({ walk: [], fire: null });
+    expect(cleanInput({ walk: [], fire: dyn, run: [[9, 5]] })).toBeNull();
+    expect(cleanInput({ walk: [], fire: dyn, run: 'away' })).toBeNull();
+    expect(runInputs({ walk: [], fire: dyn, run: [[IN_LEFT, 100], [IN_JUMP, 1], [IN_RIGHT, 300]] })).toHaveLength(180);
+    expect(runInputs({ walk: [], fire: { ...dyn, w: 'grenade' }, run: [[IN_LEFT, 100]] })).toHaveLength(0);
+    // running clear of the blast: never more hurt than standing by it, and less on every one of these maps
+    let clear = 0;
+    for (const t of ['meadow', 'dunes', 'scrap', 'sugar'] as const) {
+      const m = battle(t, 31, 2, 1);
+      const me = m.units.find((u) => u.id === m.active)!;
+      const away = me.x < W / 2 ? IN_LEFT : IN_RIGHT;
+      const stay = playTurn(m, { walk: [], fire: { ...dyn, dir: me.facing } });
+      const run = playTurn(m, { walk: [], fire: { ...dyn, dir: me.facing }, run: [[away, 170], [away | IN_JUMP, 1], [away, 9]] });
+      const hp = (r: typeof stay) => r.match.units.find((u) => u.id === m.active)!.hp;
+      expect(hp(run), t).toBeGreaterThanOrEqual(hp(stay));
+      if (hp(run) > hp(stay)) clear++;
+    }
+    expect(clear).toBe(4);
+  });
+
+  it('a dynamite run played live step by step (as the phone does) ends exactly where the room’s replay does', () => {
+    for (const t of ['meadow', 'peaks', 'hollow', 'magma'] as const) {
+      const m = battle(t, 77, 3, 2);
+      const f = { w: 'dynamite' as const, aim: 0, dir: 1 as const, power: 0, tx: 0 };
+      const live = worldFor(m);
+      for (let i = 0; i < 30; i++) walkStep(live, m.active, IN_RIGHT);
+      settleUnit(live, m.active);
+      fire(live, m.active, f);
+      // the run: the world (and the fuse) goes on while the critter walks and jumps
+      const bits = [...Array(60).fill(IN_LEFT), IN_LEFT | IN_JUMP, ...Array(119).fill(IN_LEFT)] as number[];
+      for (const b of bits) walkStep(live, m.active, b);
+      for (let i = 0; i < MAX_SHOT_STEPS && !settled(live); i++) stepWorld(live);
+      live.projs = [];
+      const input: TurnInput = { walk: [[IN_RIGHT, 30]], fire: f, run: [[IN_LEFT, 60], [IN_LEFT | IN_JUMP, 1], [IN_LEFT, 119]] };
+      const phone = endTurn(m, live, input, true);
+      const room = playTurn(m, cleanInput(JSON.parse(JSON.stringify(input)))!).match;
+      expect(JSON.stringify(phone), t).toBe(JSON.stringify(room));
+    }
   });
 });
 

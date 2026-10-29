@@ -186,7 +186,7 @@ export type Action =
   | { t: 'play' }
   | { t: 'watch' }
   | { t: 'start' }
-  | { t: 'turn'; turn: number; walk: unknown; fire: unknown }
+  | { t: 'turn'; turn: number; walk: unknown; fire: unknown; run?: unknown }
   | { t: 'again' }
   | { t: 'lobby' }
   | { t: 'kick'; seat: number }

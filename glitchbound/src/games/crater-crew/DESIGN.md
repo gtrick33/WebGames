@@ -14,8 +14,12 @@ hurt too, and anyone knocked into the liquid (water, lava, sludge or deep space)
 liquid rises a little every turn, so every battle ends. The last crew standing wins.
 
 Weapons: Rocket (rides the wind), Grenade (bounces, three-second fuse), Splitter (five bomblets, 2 a battle),
-Zapper (a straight beam), Bonk Mallet (big knockback, 2), Dynamite (huge, dropped at your feet, 1) and Meteor
-Shower (five meteors on a spot you tap, 1). Ammo is per crew.
+Zapper (a straight beam), Bonk Mallet (big knockback, 2), Dynamite (huge, dropped at your feet with a
+four-second fuse, 1) and Meteor Shower (five meteors on a spot you tap, 1). Ammo is per crew.
+
+After dropping dynamite you get three seconds to run: walk and jump while the fuse burns (the world goes
+on around you). The run is part of the turn the phone sends, one input a step like the walk, and the
+room and every phone replay it through the same physics; it ends early if the turn's clock runs out.
 
 ## Look and feel
 

@@ -25,16 +25,18 @@ export interface WeaponDef {
   speed: number;
   /** Seconds before it goes off (bouncing weapons). */
   fuse: number;
+  /** Seconds you can still walk and jump after using it (dropped dynamite: run!). */
+  retreat: number;
 }
 
 export const WEAPONS: Record<WeaponId, WeaponDef> = {
-  rocket: { id: 'rocket', name: 'Rocket', hint: 'Explodes on impact. Rides the wind.', key: '1', ammo: -1, aim: 'power', wind: true, radius: 40, damage: 45, speed: 950, fuse: 0 },
-  grenade: { id: 'grenade', name: 'Grenade', hint: 'Bounces, then blows after 3 seconds.', key: '2', ammo: -1, aim: 'power', wind: false, radius: 42, damage: 46, speed: 720, fuse: 3 },
-  splitter: { id: 'splitter', name: 'Splitter', hint: 'Bursts into five bomblets on impact.', key: '3', ammo: 2, aim: 'power', wind: true, radius: 26, damage: 22, speed: 860, fuse: 0 },
-  zapper: { id: 'zapper', name: 'Zapper', hint: 'A straight beam. No arc, no wind.', key: '4', ammo: -1, aim: 'line', wind: false, radius: 16, damage: 28, speed: 0, fuse: 0 },
-  mallet: { id: 'mallet', name: 'Bonk Mallet', hint: 'Swing at a neighbor: big knockback.', key: '5', ammo: 2, aim: 'swing', wind: false, radius: 0, damage: 22, speed: 0, fuse: 0 },
-  dynamite: { id: 'dynamite', name: 'Dynamite', hint: 'Drop it and run. Huge blast in 4 seconds.', key: '6', ammo: 1, aim: 'drop', wind: false, radius: 72, damage: 72, speed: 0, fuse: 4 },
-  meteor: { id: 'meteor', name: 'Meteor Shower', hint: 'Tap the map: five meteors fall there.', key: '7', ammo: 1, aim: 'target', wind: true, radius: 30, damage: 26, speed: 0, fuse: 0 },
+  rocket: { id: 'rocket', name: 'Rocket', hint: 'Explodes on impact. Rides the wind.', key: '1', ammo: -1, aim: 'power', wind: true, radius: 40, damage: 45, speed: 950, fuse: 0, retreat: 0 },
+  grenade: { id: 'grenade', name: 'Grenade', hint: 'Bounces, then blows after 3 seconds.', key: '2', ammo: -1, aim: 'power', wind: false, radius: 42, damage: 46, speed: 720, fuse: 3, retreat: 0 },
+  splitter: { id: 'splitter', name: 'Splitter', hint: 'Bursts into five bomblets on impact.', key: '3', ammo: 2, aim: 'power', wind: true, radius: 26, damage: 22, speed: 860, fuse: 0, retreat: 0 },
+  zapper: { id: 'zapper', name: 'Zapper', hint: 'A straight beam. No arc, no wind.', key: '4', ammo: -1, aim: 'line', wind: false, radius: 16, damage: 28, speed: 0, fuse: 0, retreat: 0 },
+  mallet: { id: 'mallet', name: 'Bonk Mallet', hint: 'Swing at a neighbor: big knockback.', key: '5', ammo: 2, aim: 'swing', wind: false, radius: 0, damage: 22, speed: 0, fuse: 0, retreat: 0 },
+  dynamite: { id: 'dynamite', name: 'Dynamite', hint: 'Drop it and run. Huge blast in 4 seconds.', key: '6', ammo: 1, aim: 'drop', wind: false, radius: 72, damage: 72, speed: 0, fuse: 4, retreat: 3 },
+  meteor: { id: 'meteor', name: 'Meteor Shower', hint: 'Tap the map: five meteors fall there.', key: '7', ammo: 1, aim: 'target', wind: true, radius: 30, damage: 26, speed: 0, fuse: 0, retreat: 0 },
 };
 
 export const weaponList = (): WeaponDef[] => WEAPON_IDS.map((id) => WEAPONS[id]);
