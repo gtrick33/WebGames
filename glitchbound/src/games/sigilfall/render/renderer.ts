@@ -85,6 +85,8 @@ const NPC_DIES = 3.2;
 /** Seconds the story's things (tents, a campfire) take to fade in or out, and its people placed in sight to fade in. */
 const PROP_FADE = 0.9;
 const PET_FADE_IN = 0.7;
+/** How far above a held door's foot its bar is: over the top of the door in the building's art. */
+const DOOR_BAR = 28;
 /** Wards drawn as the thing itself (others, like a person at a lock, are drawn as people). */
 const WARD_LOOKS = new Set(['door', 'gate', 'stone', 'boat', 'wagon', 'lantern']);
 
@@ -984,15 +986,17 @@ export class Renderer {
       const wpn = weaponSprite(this.weapon.kind, this.weapon.tint);
       const weaponBehind = p.dir === 3 || (p.actKind !== null && ((p.dir === 1 && Math.cos(p.actAngle) > 0) || (p.dir === 2 && Math.cos(p.actAngle) < 0)));
       if (weaponBehind) this.drawWeapon(w, wpn, time);
-      // the shield is placed from where the old, smaller hero's corner was
+      // the shield is placed from where the old, smaller hero's corner was; it is carried on the front: in front
+      // of the body facing us or to the side, on the back (behind it) walking away
       const sx0 = Math.round(p.x) - 9;
       const sy0 = Math.round(p.y) - 17 + Math.round(bob);
-      if ((cls === 'warrior' || cls === 'paladin') && p.dir !== 3) this.drawShield(w, p.dir, sx0, sy0);
+      const shielded = cls === 'warrior' || cls === 'paladin';
+      if (shielded && p.dir === 3) this.drawShield(w, p.dir, sx0, sy0);
       g.globalAlpha = blink ? 0.45 : 1;
       g.drawImage(p.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, x, y, sw, sh);
       g.globalAlpha = 1;
+      if (shielded && p.dir !== 3) this.drawShield(w, p.dir, sx0, sy0);
       if (!weaponBehind) this.drawWeapon(w, wpn, time);
-      if ((cls === 'warrior' || cls === 'paladin') && p.dir === 3) this.drawShield(w, p.dir, sx0, sy0);
     }
     if (p.shield > 0) {
       g.strokeStyle = `rgba(127,216,255,${0.5 + Math.sin(time * 8) * 0.2})`;
@@ -1206,7 +1210,9 @@ export class Renderer {
     if (pet.def.look) {
       // a companion or someone being led to safety: drawn as the person they are
       const s = npcSprite(pet.def.look);
-      const small = pet.def.role === 'follower' ? 0.72 : 1;
+      // (a child is small; anyone else is the size of the person they are, and become where they stop: the
+      // courier walking in is the same man who lies in the gateway)
+      const small = /child/.test(pet.def.look) ? 0.72 : 1;
       const sw = (s.width / s.k) * small;
       const sh = (s.height / s.k) * small;
       const moving = Math.hypot(pet.vx, pet.vy) > 8;
@@ -1254,6 +1260,9 @@ export class Renderer {
     if (pet.def.look === 'boat') return this.drawBoat(x + shake, y, k);
     if (pet.def.look === 'wagon') return this.drawWagon(x + shake, y, k, pet.walkT, pet.vx < -1);
     if (pet.def.look === 'lantern') return this.drawLamp(x + shake, y, k, time);
+    // a building's own door (the chapel's, in its art) is the door being held: nothing is drawn over it, only
+    // its bar shows how it holds (the owner: "make it invisible")
+    if (pet.def.look === 'door') return;
     g.fillStyle = 'rgba(0,0,0,0.3)';
     g.fillRect(x - 11, y + 3, 22, 4);
     g.fillStyle = '#3a2a1c';
@@ -1518,7 +1527,8 @@ export class Renderer {
     if (pet.def.look) {
       const wdt = pet.def.role === 'ward' ? 22 : 12;
       const x = Math.round(pet.x - wdt / 2);
-      const y = Math.round(pet.y - (pet.def.role === 'ward' ? 24 : 32));
+      // (a building's door: over the top of the door in its art)
+      const y = Math.round(pet.y - (pet.def.look === 'door' ? DOOR_BAR : pet.def.role === 'ward' ? 24 : 32));
       g.fillStyle = '#1b1428';
       g.fillRect(x - 1, y - 1, wdt + 2, 4);
       g.fillStyle = '#1e3a1a';
@@ -1542,7 +1552,8 @@ export class Renderer {
   private drawShield(w: World, dir: number, x: number, y: number): void {
     const off = w.hero.equip.offhand;
     const s = weaponSprite('shield', off ? itemTint(off) : undefined);
-    const sx = dir === 1 ? x + 10 : dir === 2 ? x - 1 : dir === 0 ? x + 1 : x + 9;
+    // (side on, it is on the leading side: x is the old hero's corner, the body's middle 9 px right of it)
+    const sx = dir === 1 ? x + 2 : dir === 2 ? x + 8 : dir === 0 ? x + 1 : x + 9;
     this.g.drawImage(s.c, sx, y + 11, s.width / s.k, s.height / s.k);
   }
 
@@ -1571,10 +1582,12 @@ export class Renderer {
       ox = Math.cos(angle) * 5;
       oy = Math.sin(angle) * 4;
     } else {
-      // at rest (walking included): held upright at the side, leaning toward the way the hero faces
+      // at rest (walking included): held upright at the side, leaning toward the way the hero faces (a hero
+      // with a shield carries it forward, side on, and the weapon in the trailing hand)
       const pose = REST_POSE[p.dir] ?? REST_POSE[0]!;
-      angle = -Math.PI / 2 + pose.lean;
-      ox = pose.x;
+      const back = (p.dir === 1 || p.dir === 2) && (w.hero.cls === 'warrior' || w.hero.cls === 'paladin') ? -1 : 1;
+      angle = -Math.PI / 2 + pose.lean * back;
+      ox = pose.x * back;
       oy = pose.y;
     }
     g.save();

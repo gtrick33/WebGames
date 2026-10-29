@@ -672,7 +672,7 @@ describe('sigilfall combat', () => {
     expect(w.hero.bosses.morgrave).toBe(1);
     expect(w.cleared).toBe(true);
     expect(w.portal).not.toBeNull();
-    expect(w.drops.filter((d) => d.kind === 'item').length + w.run.items.length).toBeGreaterThanOrEqual(2 + (def.first.mage?.length ?? 0) + (def.first.any?.length ?? 0));
+    expect(w.drops.filter((d) => d.kind === 'item').length + w.run.items.length).toBeGreaterThanOrEqual(1 + (def.first.mage?.length ?? 0) + (def.first.any?.length ?? 0));
     expect(w.encounters[enc]!.state).toBe('cleared');
   });
 

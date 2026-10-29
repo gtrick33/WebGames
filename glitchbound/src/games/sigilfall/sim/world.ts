@@ -1550,7 +1550,9 @@ export class World {
       this.sfx('chest');
       this.fxBurst(c.x, c.y - 4, '#ffd36b', 16, 14);
       const source: LootSource = c.tier === 'epic' ? 'chest-epic' : c.tier === 'rare' ? 'chest-rare' : 'chest-common';
-      const n = c.tier === 'common' ? 1 : 2;
+      // one piece (a better one from a rare or an epic chest); an ordinary chest, every other time, only coin
+      // (the owner, 2026-10-29: "items drop rate is still massive")
+      const n = c.tier === 'common' ? (this.rand() < 0.5 ? 1 : 0) : 1;
       for (let i = 0; i < n; i++) this.dropItem(c.x, c.y, this.rollItem(source, this.level));
       this.dropGold(c.x, c.y, goldDrop([8, 14], this.level, this.rand));
       if (this.rand() < 0.5) this.dropAt('orb', c.x, c.y, 1);
@@ -1692,7 +1694,7 @@ export class World {
       const it = makeItem(pool[Math.floor(this.rand() * pool.length)]!, il, this.rand);
       if (it) this.dropItem(e.x, e.y, it);
     }
-    for (let i = 0; i < 2 + this.tier; i++) this.dropItem(e.x, e.y, this.rollItem('boss', il));
+    for (let i = 0; i < 1 + this.tier; i++) this.dropItem(e.x, e.y, this.rollItem('boss', il));
     for (let i = 0; i < 3; i++) this.dropAt('orb', e.x, e.y, 1);
     this.emit({ t: 'bossDown', boss: def.id });
     this.questProgress((o) => o.kind === 'boss' && o.boss === def.id);

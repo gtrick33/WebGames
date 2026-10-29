@@ -114,6 +114,13 @@ function plan(): SpreadPlan {
   c.fill(40, 19, 44, 21, 'cobble');
   c.marker(49, 18, { kind: 'exit', to: 'crypt', label: 'The crypt stair, under the chapel' }, is('briar-below', 'started'));
   c.marker(48, 20, { kind: 'spot', id: 'briar-crypt-stair', name: 'The Crypt Stair', r: 2 }, is('briar-below', 'started'));
+  // the chapel's own light (the owner: the people by it "can barely be seen" at night): torches either side of
+  // its door, lamps at the corners of its yard, and the survivors' fire before it the night after the raid
+  c.prop('iron-torch', 44, 17);
+  c.prop('iron-torch', 48, 17);
+  c.prop('lamp', 41, 19);
+  c.prop('lamp', 51, 18);
+  c.prop('campfire', 44, 19, true, NIGHT);
 
   // the Bramble & Barrel, west of the square
   c.building('inn', 13, 20, 6, 4, { name: 'The Bramble & Barrel', art: 'rk:inn' });

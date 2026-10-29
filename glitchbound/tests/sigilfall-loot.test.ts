@@ -48,12 +48,23 @@ describe('Sigilfall: gear from chests and bosses, coin and potions from the rest
     expect(got.potion).toBeGreaterThan(15);
   });
 
-  it('chests still hold gear', () => {
+  it('chests still hold gear: one piece from a rare chest, one now and then from an ordinary one', () => {
     const w = world();
     w.chests = [{ id: 'c', key: 'test:c', x: w.player.x, y: w.player.y, tier: 'rare', once: false, open: false, openT: 0 }];
     w.input = emptyInput();
     w.step(1 / 60);
-    expect(w.drops.filter((d) => d.kind === 'item').length + w.run.items.length).toBe(2);
+    const items = (): number => w.drops.filter((d) => d.kind === 'item').length + w.run.items.length;
+    expect(items()).toBe(1);
+    // (the owner: "items drop rate is still massive": an ordinary chest gives a piece about every other time)
+    let got = 0;
+    for (let i = 0; i < 40; i++) {
+      const before = items();
+      w.chests = [{ id: `c${i}`, key: `test:c${i}`, x: w.player.x, y: w.player.y, tier: 'common', once: false, open: false, openT: 0 }];
+      w.step(1 / 60);
+      got += items() - before;
+    }
+    expect(got).toBeGreaterThan(8);
+    expect(got).toBeLessThan(32);
   });
 
   it('a potion goes on the belt, or comes as its price in coin when the belt is full', () => {
