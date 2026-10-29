@@ -42,7 +42,6 @@ import { openFeedback } from '../platform/feedback';
 import type { EndEvent, GameEvent } from '../platform/contract';
 import { challengeForDay, fmt } from '../platform/daily';
 import { dayKey } from '../platform/dates';
-import { boardRank } from '../platform/rivals';
 import { SITE_URL } from '../platform/env';
 import { usePageMeta } from '../platform/meta';
 import type { GameRecord, RoundResult } from '../platform/save';
@@ -727,7 +726,7 @@ export function GamePage({ game }: { game: GameEntry }) {
               <ul className="last-tags">
                 {last.server?.rank && (
                   <li className="sticker" data-tone="cyan">
-                    {t('Rank #{n}', { n: boardRank(game.slug, dayKey(), last.event.score, last.server.rank) })}
+                    {t('Rank #{n}', { n: last.server.rank })}
                   </li>
                 )}
                 {last.result.newBests.includes('score') && <li className="sticker" data-tone="lime">{t('New best')}</li>}

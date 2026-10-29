@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { getGame } from '../catalog/catalog';
-import { BoardEmpty, BoardError, HallTable, LeaderTable, RivalsNote, useBoard, useHall } from '../components/Leaderboard';
+import { BoardEmpty, BoardError, HallTable, LeaderTable, useBoard, useHall } from '../components/Leaderboard';
 import { Icon } from '../components/Icon';
 import { usePageMeta } from '../platform/meta';
 import { navigate, useLocation } from '../router/router';
@@ -32,15 +32,13 @@ function GameBoard({ slug }: { slug: string }) {
           </button>
         </div>
       </div>
-      {board.status === 'loading' && !board.rows.length && <p className="info-small">{t('Loading…')}</p>}
-      {/* the rivals show while the members' scores load (useBoard), so the board never jumps */}
+      {board.status === 'loading' && <p className="info-small">{t('Loading…')}</p>}
       {board.rows.length ? (
         <LeaderTable rows={board.rows} mine={board.mine} unit={unit ? ` ${t(unit)}` : ''} />
       ) : (
         board.status === 'ok' && <BoardEmpty text={t('No ranked scores in this period yet.')} />
       )}
       {board.status === 'error' && <BoardError text={t('The leaderboard is offline right now.')} onRetry={board.retry} />}
-      {board.rows.some((r) => r.rival) && <RivalsNote />}
       <p className="info-small">{t('Best score per member. Scores are checked against real play time; rounds played as a guest are not ranked.')}</p>
     </div>
   );
@@ -48,9 +46,9 @@ function GameBoard({ slug }: { slug: string }) {
 
 function Hall() {
   const t = useT();
-  const live = useLiveCatalog();
-  const hall = useHall(live.games.filter((g) => !g.partyOnly).map((g) => g.slug));
-  const house = hall.rows.some((r) => r.house);
+  const hall = useHall();
+  // a young arcade: few members have a crown yet
+  const early = hall.status === 'ok' && hall.rows.length < 10;
   return (
     <div className="panel info-block">
       <div className="board-head">
@@ -61,12 +59,10 @@ function Hall() {
       <p className="info-small">
         {t('Across every game: crowns are #1 spots, podiums top-3 spots, records the personal bests beaten.')}
       </p>
-      {/* the house team shows while the members load (useHall), so the table never jumps */}
+      {hall.status === 'loading' && <p className="info-small">{t('Loading…')}</p>}
       {hall.rows.length ? <HallTable rows={hall.rows} /> : hall.status === 'ok' && <BoardEmpty text={t('Nobody is in the Hall of Fame yet. Sign in and set the first record.')} />}
       {hall.status === 'error' && <BoardError text={t('The Hall of Fame is offline right now.')} onRetry={hall.retry} />}
-      {/* A young arcade: the house team holds the seats members have not taken yet. */}
-      {house && <p className="board-rivals-note">{t('House players hold the Hall’s empty seats. Each one gives up its seat when a member takes it.')}</p>}
-      {house && (
+      {early && (
         <p className="info-small board-early">
           <b>{t('Early days.')}</b> {t('The boards are still fresh, so a crown is well within reach. Sign in, set a best and claim one.')}
         </p>
