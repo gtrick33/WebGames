@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { endScene } from '../src/games/sigilfall/sim/scene';
 import { INTERIOR_DOORS, INTERIORS } from '../src/games/sigilfall/data/interiors';
 import { NPCS, QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGION_IDS, REGIONS } from '../src/games/sigilfall/data/regions';
@@ -35,6 +36,8 @@ function walkInto(w: World, to: RegionId, dir: 1 | -1): string | undefined {
   w.player.x = d.x;
   w.player.y = d.y - dir * 30;
   for (let i = 0; i < 60 && !w.pendingExit; i++) {
+    // (a scene the walk happens upon, the first dawn's in the square, is skipped: the walk is the point)
+    if (w.scene) endScene(w, true);
     w.input = { ...emptyInput(), my: dir };
     w.step(DT);
   }

@@ -337,7 +337,18 @@ export class Renderer {
       lx = focus.x - p.x;
       ly = focus.y - p.y + LIFT;
     }
-    const rate = w.scene ? 2.6 : 4;
+    // someone telling the hero their part: the two of them framed above the words
+    const talk = !focus && w.talkTo;
+    if (talk) {
+      lx = (talk.x - p.x) / 2;
+      ly = (talk.y - p.y) / 2 + this.vh * 0.14;
+    }
+    // slow motion: drawn toward what is falling
+    if (!focus && !talk && w.slowT > 0 && w.slowAt) {
+      lx = lx * 0.4 + (w.slowAt.x - p.x) * 0.6;
+      ly = ly * 0.4 + (w.slowAt.y - p.y) * 0.6;
+    }
+    const rate = w.scene || talk ? 2.6 : 4;
     this.leanX = damp(this.leanX, lx, rate, dt);
     this.leanY = damp(this.leanY, ly, rate, dt);
     this.placeCamera(w);

@@ -81,7 +81,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
   if (!w || !h) return null;
   const overlay = ui.panel || ui.dialogue || ui.travel || ui.pause || ui.death || ui.reward;
   return (
-    <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}`}>
+    <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}${engine.storyTalk() ? ' is-talk' : ''}${ui.card?.act ? ' is-act' : ''}`}>
       <Hud engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
@@ -93,6 +93,16 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
         </div>
       )}
       {ui.levelUp && <LevelUpBanner engine={engine} />}
+      {ui.card && (
+        <div className={`rb-tcard${ui.card.act ? ' is-act' : ''}`} key={ui.card.id} aria-live="polite">
+          <div className="rb-tcard-text">
+            <span className="rb-tcard-over">{ui.card.over}</span>
+            <strong>{ui.card.text}</strong>
+            <i className="rb-tcard-rule" />
+            {ui.card.sub && <span className="rb-tcard-sub">{ui.card.sub}</span>}
+          </div>
+        </div>
+      )}
       {!overlay && (engine.touchMode ? <TouchControls engine={engine} /> : <DesktopBar engine={engine} />)}
       <SceneBars engine={engine} />
       {ui.dialogue && <Dialogue engine={engine} />}

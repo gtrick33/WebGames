@@ -98,7 +98,7 @@ describe('Sigilfall: scenes', () => {
     expect(w.story.speech.filter((s) => speakers.includes(s.who))).toEqual([]);
     const again = newWorld(def.region, c);
     startAt(again, def.id);
-    expect(again.scene).toBeNull();
+    expect(again.scene?.def.id).not.toBe(def.id);
   });
 
   it('a reload in the middle plays the scene again from the start (nothing was kept of it)', () => {
@@ -153,10 +153,10 @@ describe('Sigilfall: scenes', () => {
 describe('Sigilfall: the shots that open the great moments', () => {
   const shots = SCENES.filter((d) => d.opens);
 
-  it('there are a few, each opening a story event of its land at a wave it has', () => {
-    // (only the great moments: a shot means something is about to happen)
-    expect(shots.length).toBeGreaterThanOrEqual(8);
-    expect(shots.length).toBeLessThan(Object.keys(EVENTS).length / 2);
+  it('the story’s moments open with one, each a story event of its land at a wave it has', () => {
+    // (all but the Prologue's first fights, whose own staging is the opening: the gate, the bell, the courier, the inn)
+    const opened = new Set(shots.map((d) => d.opens!.event));
+    expect(Object.keys(EVENTS).filter((id) => !opened.has(id)).sort()).toEqual(['briar-courier', 'briar-gate', 'briar-inn', 'briar-raid']);
     for (const def of shots) {
       const ev = EVENTS[def.opens!.event];
       expect(ev, def.id).toBeDefined();

@@ -8,7 +8,7 @@ import { activeQuests, declined, questState, type Character, currentObjective } 
 import { skillCost } from './cast';
 import { castRay, TILE } from './map';
 import { placePet } from './pets';
-import { openShot } from './scene';
+import { openShot, shotDue } from './scene';
 import type { Pet } from './types';
 import type { World } from './world';
 
@@ -68,6 +68,8 @@ interface Running {
   held: (() => void) | null;
   /** Lines its shots have said (not said again after them). */
   said: Set<string>;
+  /** Its last foe has fallen (the moment was slowed). */
+  won?: boolean;
 }
 
 const BARK_TIME = 2.8;
@@ -173,6 +175,8 @@ export class StoryDirector {
       if (!def || def.region !== w.region.id) continue;
       const at = this.spot(def.at);
       if (!at || dist(w.player.x, w.player.y, at.x, at.y) > def.radius * TILE) continue;
+      // (one with a shot of its own waits for a scene playing to end, and begins with it)
+      if (w.scene && shotDue(w, def.id, 0)) continue;
       this.start(def);
       return;
     }
@@ -452,6 +456,12 @@ export class StoryDirector {
       // on the road the next ambush waits further along
       run.pause = def.escort ? 7 : 2.2;
       return;
+    }
+    // the last of them falls: a moment of slow motion on it
+    if (!run.won) {
+      run.won = true;
+      const last = w.enemies.filter((e) => e.dead && run.ids.includes(e.id)).sort((a, b) => a.deathT - b.deathT)[0];
+      if (last) w.slowmo(0.9, { x: last.x, y: last.y });
     }
     if (def.rescue && run.safe.size < run.followers.length) return;
     if (!wagonIn) return;

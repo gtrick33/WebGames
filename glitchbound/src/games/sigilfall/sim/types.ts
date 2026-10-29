@@ -506,7 +506,8 @@ export type WorldEvent =
   | { t: 'bossStart'; boss: string }
   | { t: 'bossPhase'; banner: string }
   | { t: 'bossDown'; boss: string }
-  | { t: 'banner'; text: string; sub?: string }
+  /** A word over the screen (`place`: a place found, which comes up as a title over the land). */
+  | { t: 'banner'; text: string; sub?: string; place?: boolean }
   | { t: 'death' }
   | { t: 'cleared' }
   | { t: 'hero' }

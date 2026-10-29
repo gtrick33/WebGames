@@ -144,6 +144,8 @@ describe('Sigilfall: the Vale (Act I)', () => {
 
   it('the camp: people walk in from the road, settle, and stay', () => {
     const w = newWorld('briarhollow', heroAt('camp-scouts'));
+    // (after the first dawn's scene in the square: the rangers' arrival waits for it to be over)
+    w.hero.opened.push('scene:briar-dawn');
     goTo(w, 'briar-square');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('camp-scouts');

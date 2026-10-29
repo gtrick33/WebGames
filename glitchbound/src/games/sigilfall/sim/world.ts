@@ -104,6 +104,8 @@ interface Spore {
 
 /** Seconds the people the story takes away are remembered: long enough for the slowest fade (a death). */
 const LEFT_FOR = 4;
+/** How slow slow motion is. */
+const SLOW = 0.3;
 const POTION_HEAL = 40;
 /** Seconds without fighting before the fast out-of-combat regeneration starts. */
 const CALM_AFTER = 3;
@@ -207,6 +209,11 @@ export class World {
   rand: () => number;
   shakeAmt = 0;
   hitstopT = 0;
+  /** Slow motion (a boss's last blow, a story fight's last foe): seconds left (real time), and what it's on. */
+  slowT = 0;
+  slowAt: { x: number; y: number } | null = null;
+  /** Someone telling the hero their part of the story, face to face (the camera frames the two of them). */
+  talkTo: { x: number; y: number } | null = null;
   checkpoint: { x: number; y: number };
   /** The final boss is down: the exit portal is open. */
   cleared = false;
@@ -855,6 +862,12 @@ export class World {
   hitstop(t: number): void {
     this.hitstopT = Math.max(this.hitstopT, t);
   }
+  /** Time slows for `t` seconds, the camera drawn to `at` (never in a co-op party: the worlds keep one pace). */
+  slowmo(t: number, at: { x: number; y: number } | null): void {
+    if (this.coop) return;
+    this.slowT = Math.max(this.slowT, t);
+    this.slowAt = at;
+  }
   after(t: number, fn: () => void): void {
     this.delayed.push({ t, fn });
   }
@@ -1054,6 +1067,11 @@ export class World {
       dt = rawDt * 0.08;
     }
     if (this.player.dead) dt *= 0.35;
+    if (this.slowT > 0) {
+      this.slowT -= rawDt;
+      dt *= SLOW;
+      if (this.slowT <= 0) this.slowAt = null;
+    }
     this.time += dt;
     if (this.keyRun) this.updateKeyRun(rawDt, dt);
     this.shakeAmt = Math.max(0, this.shakeAmt - rawDt * 18);
@@ -1560,6 +1578,8 @@ export class World {
       this.clearHostile();
       this.shake(6);
       this.hitstop(0.25);
+      // the last blow, slowed, the camera on it
+      this.slowmo(1.6, { x: e.x, y: e.y });
       // the other enemies in the room crumble with their master
       for (const o of this.enemies) if (!o.boss && !o.dead && o.room === e.room) o.hp = 0;
       for (const o of this.enemies) if (!o.boss && o.hp <= 0) o.dead = true;
@@ -2111,7 +2131,7 @@ export class World {
       this.hero.opened.push(key);
       this.fxBurst(s.x, s.y, '#9cffd0', 30, 30);
       this.sfx('discover');
-      this.emit({ t: 'banner', text: 'The Hidden Grove', sub: 'You found a secret place' });
+      this.emit({ t: 'banner', text: 'The Hidden Grove', sub: 'A secret place', place: true });
       this.emit({ t: 'discover', spot: s.id });
       this.questProgress((o) => o.kind === 'explore' && o.spot === s.id);
       this.emit({ t: 'save' });
@@ -2126,7 +2146,7 @@ export class World {
       }
       this.hero.opened.push(key);
       this.sfx('discover');
-      this.emit({ t: 'banner', text: sp.name, sub: 'Discovered' });
+      this.emit({ t: 'banner', text: sp.name, sub: 'Discovered', place: true });
       this.emit({ t: 'discover', spot: sp.id });
       this.giveXp(Math.round(xpToNext(this.hero.level) * EXPLORE_XP));
       this.questProgress((o) => o.kind === 'explore' && o.spot === sp.id);

@@ -135,11 +135,17 @@ function play(w: World, def: SceneDef): void {
  */
 export function openShot(w: World, event: string, wave: number): boolean {
   // (not with something already at the hero: the fight is on)
-  if (w.scene || w.coop || w.puppet || w.enemies.some((e) => !e.dead && !e.dummy && e.aggro)) return false;
-  const def = SCENES.find((d) => d.opens?.event === event && (d.opens.wave ?? 0) === wave);
-  if (!def || w.hero.opened.includes(seenKey(def.id))) return false;
-  play(w, def);
+  if (w.scene || !shotDue(w, event, wave) || w.enemies.some((e) => !e.dead && !e.dummy && e.aggro)) return false;
+  play(w, shotOf(event, wave)!);
   return true;
+}
+
+const shotOf = (event: string, wave: number): SceneDef | undefined => SCENES.find((d) => d.opens?.event === event && (d.opens.wave ?? 0) === wave);
+
+/** Has this moment of a story event a shot the hero hasn't seen (and is this world one that plays them)? */
+export function shotDue(w: World, event: string, wave: number): boolean {
+  const def = shotOf(event, wave);
+  return !!def && !w.coop && !w.puppet && !w.hero.opened.includes(seenKey(def.id));
 }
 
 /**

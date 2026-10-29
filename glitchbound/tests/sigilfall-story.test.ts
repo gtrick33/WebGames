@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { endScene } from '../src/games/sigilfall/sim/scene';
 import { EVENTS } from '../src/games/sigilfall/data/events';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
@@ -327,6 +328,8 @@ describe('Sigilfall: the story in the world', () => {
     w.hero.level = 30;
     goTo(w, 'briar-chapel');
     run(w, 0.3);
+    // (past the shot of the door: what is tested is the holding of it)
+    if (w.scene) endScene(w, true);
     const door = w.pets.find((p) => p.def.id === 'chapel-door')!;
     expect(door).toBeTruthy();
     // on the chapel's own doorstep (where the way in is), not out on the cobbles
