@@ -196,6 +196,8 @@ function plan(): SpreadPlan {
     ['briar-square', 32, 25],
     ['briar-inn', 16, 25],
     ['briar-chapel', 46, 19],
+    // the chapel's doorstep, where the door is held and the saved go in
+    ['briar-chapel-door', 46, 17],
     ['briar-north', 32, 8],
     // up the north road, out of the lamps' reach: where the courier comes from
     ['briar-road', 32, 3],
@@ -729,7 +731,9 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     radius: 7,
     level: 2,
     allies: ['elyra'],
-    rescue: { pets: ['briar-child', 'briar-child', 'briar-child'], at: 'briar-inn', to: 'briar-chapel' },
+    // Elyra is at the inn, holding its roof up over them
+    enter: 'briar-inn',
+    rescue: { pets: ['briar-child', 'briar-child', 'briar-child'], at: 'briar-inn', to: 'briar-chapel', into: 'briar-chapel-door' },
     start: [
       { who: 'elyra', text: 'I can’t hold the roof much longer! Take them!' },
       { who: 'elyra', text: 'The chapel — it’s stone, it won’t burn. Go, go!' },
@@ -752,7 +756,9 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     radius: 9,
     level: 3,
     allies: ['mara', 'elyra'],
-    ward: { pet: 'chapel-door', at: 'briar-chapel', name: 'the chapel door' },
+    // Mara comes up from the square she kept; Elyra is still here from the inn
+    enter: 'briar-square',
+    ward: { pet: 'chapel-door', at: 'briar-chapel-door', name: 'the chapel door' },
     start: [
       { who: 'mara', text: 'They want the door. They’re not getting it.' },
       { who: 'elyra', text: 'I’ll ward it as long as I can. Keep them off me!' },

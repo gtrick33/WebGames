@@ -677,10 +677,16 @@ export interface StoryEventDef {
   allies?: string[];
   /** Allies who come only if the story says so (a faction the hero helped, the answer they chose). */
   alliesIf?: { pet: string; when: StoryCond }[];
+  /**
+   * Where allies who aren't already at hand come from (a spot id): they run in from that side, from just
+   * beyond the hero's view (else from the event's own spot, else from anywhere). Whoever stayed on from the
+   * last event, or was standing there a moment ago, is already here.
+   */
+  enter?: string;
   /** Defend: what must not fall (a PETS id standing at a spot). */
   ward?: { pet: string; at: string; name: string };
-  /** Rescue: people (PETS ids) found at a spot, who follow the hero to another. */
-  rescue?: { pets: string[]; at: string; to: string };
+  /** Rescue: people (PETS ids) found at a spot, who follow the hero to another (and go in at `into`, after). */
+  rescue?: { pets: string[]; at: string; to: string; into?: string };
   /** Arrival: people (PETS ids) who walk in from one spot to another on their own (a camp filling up). */
   arrive?: { pets: string[]; from: string; to: string };
   /**

@@ -187,6 +187,9 @@ export class World {
   drops: Drop[] = [];
   chests: Chest[] = [];
   npcs: NpcActor[] = [];
+  /** The people the story's last turn took from where they stood, and when (World.time). */
+  leftNpcs: NpcActor[] = [];
+  leftAt = -Infinity;
   spores: Spore[] = [];
   texts: FloatText[] = [];
   fx: Fx[] = [];
@@ -460,6 +463,7 @@ export class World {
     this.storyState = s;
     this.shownKey = key;
     this.stateVersion += 1;
+    const was = this.npcs;
     this.npcs = [];
     this.fires = [];
     this.wisps = [];
@@ -487,6 +491,9 @@ export class World {
       // a foe the story brings in now (Vosk at the head of the Host, once the Standard falls)
       if (m.kind === 'pack' && !this.packed.has(pm)) this.addPack(pm, pos, true);
     }
+    // who stood somewhere a moment ago and no longer does (stepping out to fight: sim/story.ts)
+    this.leftNpcs = was.filter((n) => !this.npcs.some((m) => m.id === n.id && m.x === n.x && m.y === n.y));
+    this.leftAt = this.time;
     this.resetFolk();
     // those the story has sent away (the blockade broken, the dead laid to rest) go now
     for (const st of this.packs) {

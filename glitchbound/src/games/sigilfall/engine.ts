@@ -104,6 +104,8 @@ const STEP = 1 / 60;
 
 /** How long a party waits for a leader who dropped out (their game holds the enemies) before going home. */
 const LEAD_WAIT_MS = 20_000;
+/** Seconds a new hero sees the gate at dusk before the guard speaks. */
+const GREET_AFTER = 1.4;
 
 /** What the party's room answers, in words (net/room.ts act). */
 const PARTY_ERRORS: Record<string, string> = {
@@ -148,6 +150,10 @@ export class SigilEngine {
   private nextToast = 1;
   /** Toasts wait while a dialogue is open (their time starts when it closes). */
   private toastsHeld = false;
+  /** A banner waits out a scene (its time starts when the scene ends). */
+  private bannerHeld = false;
+  /** Seconds of the world in view before a new hero is greeted at the gate (0: no greeting due). */
+  private greetIn = 0;
   /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
   private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number } | null = null;
   private hidden = false;
@@ -348,6 +354,10 @@ export class SigilEngine {
         steps += 1;
       }
       if (this.hero) this.hero.stats.time += dt;
+      if (this.greetIn > 0) {
+        this.greetIn -= dt;
+        if (this.greetIn <= 0 && this.hero && questState(this.hero, 'briar-dusk') === 'active' && w.region.id === HOME) this.talk('mara-venn');
+      }
       this.coop?.frame(dt * 1000);
       if (this.leadAwayAt && performance.now() - this.leadAwayAt > LEAD_WAIT_MS) {
         this.leadAwayAt = 0;
@@ -391,13 +401,20 @@ export class SigilEngine {
       this.autosaveAt = t + 20_000;
       if (!paused) this.persist();
     }
-    // what happens while someone is talking waits until they have finished (a toast behind a dialogue is missed)
-    if (this.ui.dialogue) this.toastsHeld = true;
+    // what happens while someone is talking, or a scene plays (the HUD stepped aside), waits until they have
+    // finished: a toast behind them is missed
+    if (this.ui.dialogue || w.scene) this.toastsHeld = true;
     else if (this.toastsHeld) {
       this.toastsHeld = false;
       this.setUi({ toasts: this.ui.toasts.map((x) => ({ ...x, until: t + toastTime(x.tone) })) });
     } else if (this.ui.toasts.some((x) => x.until < t)) this.setUi({ toasts: this.ui.toasts.filter((x) => x.until >= t) });
-    if (this.ui.banner && t - this.ui.banner.id > 2600) this.setUi({ banner: null });
+    // (and a banner, which a scene hides, shows in full once it is over)
+    if (w.scene) this.bannerHeld = true;
+    else if (this.bannerHeld) {
+      this.bannerHeld = false;
+      if (this.ui.banner) this.setUi({ banner: { ...this.ui.banner, id: t } });
+    }
+    if (this.ui.banner && !this.bannerHeld && t - this.ui.banner.id > 2600) this.setUi({ banner: null });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
     const boss = w.boss();
     this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
@@ -668,12 +685,14 @@ export class SigilEngine {
         /* no history (tests) */
       }
     }
-    // a brand-new hero arrives at Briarhollow's gate at dusk, and the guard stops them there
-    if (questState(h, 'briar-dusk') === 'active' && h.level === 1 && h.stats.time < 1) this.talk('mara-venn');
+    // a brand-new hero arrives at Briarhollow's gate at dusk, and the guard stops them there: once the gate
+    // can be seen (its art in, a moment to look), not over a dark screen
+    this.greetIn = questState(h, 'briar-dusk') === 'active' && h.level === 1 && h.stats.time < 1 ? GREET_AFTER : 0;
     this.bump();
   }
 
   toTitle(): void {
+    this.greetIn = 0;
     this.leaveParty();
     this.endRun(false);
     this.persist();
@@ -902,6 +921,12 @@ export class SigilEngine {
     trackQuest(this.hero, id);
     this.persist();
     this.bump();
+  }
+
+  /** A quest on the map: followed by the arrow and the tracker, and the map opened where it is done. */
+  showOnMap(id: string): void {
+    this.trackQuest(id);
+    this.openPanel('map');
   }
 
   /* -------------------------------------------------------------- panels */

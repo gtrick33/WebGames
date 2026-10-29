@@ -290,6 +290,13 @@ html.game-focus.game-scroll body {
 /* room to scroll, so the swipe that tucks Safari's bar away always has somewhere to go */
 html.game-focus.game-scroll body {
   min-height: calc(100lvh + 240px);
+  background: #000;
+}
+/* and that room is all the page under the stage is: the rest of the page goes while the game is pinned, so a
+   hard swipe can't carry it down to the footer, and however Safari shifts the pinned stage as its bar moves,
+   nothing but dark shows past it */
+html.game-focus.game-scroll #root :not(:has(.stage-immersive), .stage-immersive, .stage-immersive *) {
+  display: none;
 }
 /* the handle for that swipe (iPhone Safari, while its bar is out): it lets the swipe through to the page */
 .stage-handle {

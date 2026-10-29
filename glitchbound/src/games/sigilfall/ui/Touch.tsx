@@ -82,7 +82,11 @@ function Joystick({ engine }: { engine: SigilEngine }) {
     const by = z.clientHeight - R - 28;
     place(bx, by, bx, by, false);
   };
-  useEffect(rest);
+  // back to rest after a render only when no thumb is on it: the game redraws its controls often (a toast, a
+  // cooldown), and putting the stick back under a moving thumb made it jump about and jitter
+  useEffect(() => {
+    if (!st.current) rest();
+  });
 
   const release = (): void => {
     st.current = null;

@@ -26,11 +26,13 @@ import { uiIcon } from './uiIcons';
 import { mapIconUrl } from './mapIcons';
 
 /** Registers a per-frame DOM update (no React render per frame). */
-/** A scene playing (sim/scene.ts): bars top and bottom, and a way to skip it. */
+/** A scene playing (sim/scene.ts): bars top and bottom over a clean picture (the HUD steps aside), and a way to skip it. */
 function SceneBars({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLDivElement>(null);
   useFrame(engine, (w) => {
-    if (ref.current) ref.current.classList.toggle('is-on', !!w.scene);
+    if (!ref.current) return;
+    ref.current.classList.toggle('is-on', !!w.scene);
+    ref.current.parentElement?.classList.toggle('is-scene', !!w.scene);
   });
   return (
     <div className="rb-scene" ref={ref} aria-hidden={!engine.world?.scene}>
@@ -311,7 +313,7 @@ function Tracker({ engine }: { engine: SigilEngine }) {
   const who = ready ? turnInNpc(q) : null;
   const main = isMainQuest(q.id);
   return (
-    <button className={`rb-tracker${main ? ' is-main' : ' is-side'}`} onClick={() => engine.openPanel('quests')}>
+    <button className={`rb-tracker${main ? ' is-main' : ' is-side'}`} onClick={() => engine.showOnMap(q.id)} title="Show on the map">
       <strong>
         <img src={mapIconUrl(ready ? (main ? 'handin' : 'handinSide') : main ? 'offer' : 'offerSide', 2)} alt="" />
         {q.name}

@@ -323,6 +323,18 @@ export function GamePage({ game }: { game: GameEntry }) {
     },
     game?.aspect === 'landscape',
   );
+  // On a phone a game plays full screen. One playing in the page (it started without a tap that could take it
+  // there, or the browser left full screen by itself) goes back at the next touch on it; only the player's own
+  // "Exit full screen" leaves it in the page.
+  const keptInPage = useRef(false);
+  const goFull = (): void => {
+    keptInPage.current = false;
+    play.enter();
+  };
+  const stayInPage = (): void => {
+    keptInPage.current = true;
+    play.exit();
+  };
   const openMenu = useCallback(() => {
     setPauseSignal((n) => n + 1);
     setMenuOpen(true);
@@ -445,6 +457,17 @@ export function GamePage({ game }: { game: GameEntry }) {
     const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
     if (!activation || activation.isActive) enterPlay.current();
   }, [arrival, game.section, game.slug]);
+
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!playing || play.active || !el || typeof matchMedia !== 'function' || !matchMedia('(pointer: coarse)').matches) return;
+    // (a touch's pointerup is a gesture full screen may be asked from; its pointerdown is not)
+    const onUp = (e: PointerEvent): void => {
+      if (e.pointerType !== 'mouse' && !keptInPage.current) play.enter();
+    };
+    el.addEventListener('pointerup', onUp, true);
+    return () => el.removeEventListener('pointerup', onUp, true);
+  });
 
   // The lobby music steps aside while a game is loaded on this page.
   useEffect(() => {
@@ -602,7 +625,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             </button>
           )}
           {playing && (
-            <button className="btn btn-sm btn-icon" onClick={play.enter} aria-label={t('Fullscreen')} title={t('Fullscreen')}>
+            <button className="btn btn-sm btn-icon" onClick={goFull} aria-label={t('Fullscreen')} title={t('Fullscreen')}>
               <Icon name="expand" size={18} />
             </button>
           )}
@@ -652,7 +675,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             stageRef={stageRef}
             frameRef={frameRef}
             playerName={player.name}
-            onPlayClick={play.enter}
+            onPlayClick={goFull}
             openMenu={play.active && (game.menu ?? 'own') === 'own' ? openMenu : undefined}
             playRef={startPlay}
             overlay={
@@ -664,7 +687,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                   </Suspense>
                 )}
                 {play.immersive && <SafariBarsHandle />}
-                {play.active && <StageMenu slug={game.slug} title={game.title} placement={game.menu} open={menuOpen} setOpen={setMenuOpen} onOpen={() => setPauseSignal((n) => n + 1)} onExitFullscreen={play.exit} onExitGame={close} onHowTo={hasHowTo ? openHowTo : undefined} />}
+                {play.active && <StageMenu slug={game.slug} title={game.title} placement={game.menu} open={menuOpen} setOpen={setMenuOpen} onOpen={() => setPauseSignal((n) => n + 1)} onExitFullscreen={stayInPage} onExitGame={close} onHowTo={hasHowTo ? openHowTo : undefined} />}
               </>
             }
             onPhase={(p) => {

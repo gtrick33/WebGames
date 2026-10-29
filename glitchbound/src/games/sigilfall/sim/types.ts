@@ -222,6 +222,10 @@ export interface Pet {
   flow?: Int16Array;
   /** Waits where it is for now (a wagon under attack). */
   paused?: boolean;
+  /** Walking to join the hero (an ally coming into a fight): beside them, or this many seconds on, it follows. */
+  joinT?: number;
+  /** Goes in where it is walking to (children into the chapel): gone once it is there. */
+  inside?: boolean;
   /** Seconds a companion stays down before getting back up (PetDef.rally). */
   downT?: number;
   /** The skill whose cast called it: it leaves when that skill leaves the bar (World.dropLeftovers). */

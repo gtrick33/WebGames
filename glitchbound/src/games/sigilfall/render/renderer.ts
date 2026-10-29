@@ -126,6 +126,8 @@ export class Renderer {
   private sceneryVersion = -1;
   /** A land with the pack's look whose art is still loading: when the wait began (seconds), or -1. */
   private artWait = -1;
+  /** When the last hold for art ended (the land fades up from dark after it). */
+  private heldTill = -Infinity;
   /** Held dark while the land's art loads: the engine holds the world still meanwhile. */
   waiting = false;
   private light: Cnv;
@@ -282,6 +284,8 @@ export class Renderer {
         return;
       }
     }
+    // (held dark a moment: the land comes up out of it)
+    if (this.waiting) this.heldTill = time;
     this.artWait = -1;
     this.waiting = false;
     if (this.sceneryFor !== w || (art && this.scenery?.art !== art) || this.sceneryVersion !== w.stateVersion) {
@@ -333,7 +337,7 @@ export class Renderer {
     for (const wv of w.waves) this.drawWave(wv);
     this.drawEnemyWarnings(w);
     for (const tr of w.traps) this.drawTrap(tr.x, tr.y, tr.arm > 0, time);
-    this.drawAim(w);
+    if (!w.scene) this.drawAim(w);
     this.drawFacing(w, time);
     this.drawRings(w);
     this.drawEntrances(w, time);
@@ -447,8 +451,10 @@ export class Renderer {
     const bz = w.boss();
     if (bz?.boss && bz.boss.collapse > 0) this.drawCollapse(bz.boss.cx, bz.boss.cy, bz.boss.collapse, time);
 
-    for (const e of w.enemies) if (inView(e.x, e.y)) this.drawEnemyBar(e, w);
-    for (const pet of w.pets) if (inView(pet.x, pet.y)) this.drawPetBar(pet);
+    // (a scene is a clean picture: no bars, markers or arrows over it)
+    const ui = !w.scene;
+    if (ui) for (const e of w.enemies) if (inView(e.x, e.y)) this.drawEnemyBar(e, w);
+    if (ui) for (const pet of w.pets) if (inView(pet.x, pet.y)) this.drawPetBar(pet);
     for (const t of w.texts) {
       const img = pixelText(t.text, t.color);
       const a = clamp(1.6 - t.t / (t.big ? 0.75 : 0.55), 0, 1);
@@ -458,8 +464,8 @@ export class Renderer {
       g.globalAlpha = 1;
     }
     this.drawSpeech(w);
-    this.drawInteractMarker(w, time);
-    this.drawObjectiveArrow(w, ox, oy, time);
+    if (ui) this.drawInteractMarker(w, time);
+    if (ui) this.drawObjectiveArrow(w, ox, oy, time);
     g.setTransform(this.res, 0, 0, this.res, 0, 0);
     // hurt vignette
     if (!p.dead && p.hp < p.maxHp * 0.3) {
@@ -473,6 +479,13 @@ export class Renderer {
     if (p.dead) {
       g.fillStyle = `rgba(20,0,10,${clamp(p.deadT * 0.5, 0, 0.55)})`;
       g.fillRect(0, 0, this.vw, this.vh);
+    }
+    const up = (time - this.heldTill) / 0.6;
+    if (up < 1) {
+      g.globalAlpha = 1 - clamp(up, 0, 1);
+      g.fillStyle = '#07050d';
+      g.fillRect(0, 0, this.vw, this.vh);
+      g.globalAlpha = 1;
     }
     // paint the ground just outside the view ahead of time
     sc.ground.prefetch(ox, oy, this.vw, this.vh);

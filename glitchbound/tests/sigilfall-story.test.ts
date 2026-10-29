@@ -139,6 +139,29 @@ describe('Sigilfall: the story in the world', () => {
     expect(rage).toBeGreaterThan(0);
   });
 
+  it('the night runs on: Mara steps out from where she stood and is the same companion in the lanes', () => {
+    const c = newCharacter('ranger', 'Flow', 'flow', 0);
+    const w = newWorld('briarhollow', c);
+    const stood = w.npcs.find((n) => n.id === 'mara-venn')!;
+    w.questProgress((o) => o.kind === 'talk' && o.npc === 'mara-venn');
+    run(w, DT);
+    // the guard at the gate becomes the companion at the gate, not a second Mara beside the hero
+    const mara = w.pets.find((p) => p.def.id === 'mara' && !p.dead)!;
+    expect(Math.hypot(mara.x - stood.x, mara.y - stood.y)).toBeLessThan(4);
+    expect(w.npcs.some((n) => n.id === 'mara-venn')).toBe(false);
+    for (let i = 0; i < 40 && questState(c, 'first-steps') === 'active'; i++) {
+      run(w, 2.5);
+      smite(w);
+    }
+    expect(questState(c, 'briar-nightfall')).toBe('active');
+    // she stays on through the bell, and goes into the lanes with the hero
+    goTo(w, 'briar-square');
+    run(w, 0.5);
+    expect(w.story.run?.def.id).toBe('briar-raid');
+    expect(w.pets.filter((p) => p.def.id === 'mara' && !p.dead)).toEqual([mara]);
+    expect(mara.life).toBe(Infinity);
+  });
+
   it('the skill lesson works for a warrior: rage enough for the skill as the wave that asks for it comes', () => {
     const c = newCharacter('warrior', 'Rage', 'rage', 0);
     const w = newWorld('briarhollow', c);
@@ -254,6 +277,7 @@ describe('Sigilfall: the story in the world', () => {
     run(w, 0.3);
     const kids = w.pets.filter((p) => p.def.id === 'briar-child');
     expect(kids).toHaveLength(3);
+    const elyra = w.pets.find((p) => p.def.id === 'elyra' && !p.dead)!;
     // the waves beaten, but the children still at the inn: not done
     for (let i = 0; i < 12; i++) {
       run(w, 2.5);
@@ -277,6 +301,12 @@ describe('Sigilfall: the story in the world', () => {
     run(w, 1);
     expect(questState(w.hero, 'briar-the-inn')).toBe('done');
     expect(questState(w.hero, 'briar-hold-the-door')).toBe('active');
+    // the children go in at the chapel door; Elyra stays on from the inn to ward it
+    run(w, 4);
+    expect(w.pets.some((p) => p.def.id === 'briar-child' && !p.dead)).toBe(false);
+    expect(w.story.run?.def.id).toBe('briar-door');
+    expect(w.story.run?.pets).toContain(elyra);
+    expect(w.pets.filter((p) => p.def.id === 'elyra' && !p.dead)).toHaveLength(1);
   });
 
   it('the door: if it breaks the defense starts over (and pays nothing); held, it opens the crypt stair', () => {
@@ -286,6 +316,12 @@ describe('Sigilfall: the story in the world', () => {
     run(w, 0.3);
     const door = w.pets.find((p) => p.def.id === 'chapel-door')!;
     expect(door).toBeTruthy();
+    // on the chapel's own doorstep (where the way in is), not out on the cobbles
+    const into = w.map.markers.find((m) => m.marker.kind === 'exit' && m.marker.to === 'chapel-of-the-bell')!;
+    expect(Math.hypot(door.x - (into.tx + 0.5) * 16, door.y - (into.ty + 0.5) * 16)).toBeLessThan(2);
+    // Mara isn't put at the hero's elbow: she comes running in from beyond the view
+    const mara = w.pets.find((p) => p.def.id === 'mara')!;
+    expect(Math.hypot(mara.x - w.player.x, mara.y - w.player.y)).toBeGreaterThan(6 * 16);
     const gold = w.hero.gold;
     door.hp = 0;
     door.dead = true;
