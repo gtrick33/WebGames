@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n';
+import { tTab } from '../i18n/short';
 import { LangPicker } from './LangPicker';
 import { account, useAccount } from '../platform/account';
 import { nextTheme, setTheme, useTheme } from '../platform/theme';
@@ -223,7 +224,7 @@ export function Header() {
         {tabs.map((tab) => (
           <Link key={tab.href} href={tab.href} className="bottom-tab" aria-current={active(tab.href) ? 'page' : undefined} aria-label={t(tab.label)}>
             <Icon name={tab.icon} size={22} />
-            <span>{t(tab.short ?? tab.label)}</span>
+            <span>{tTab(tab.short ?? tab.label)}</span>
           </Link>
         ))}
       </nav>
