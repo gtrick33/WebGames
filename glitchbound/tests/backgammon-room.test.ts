@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ENGINES } from '../rooms/engines';
 import { newGame, nextSteps, turnDone, type Pos } from '../src/games/backgammon/logic';
-import { act, AWAY_MS, BOT_MS, DONE_MS, join, leave, newRoom, SHEET_MS, STUCK_MS, tick, viewFor, type State } from '../src/games/backgammon/room';
+import { act, AWAY_MS, BOT_MS, CLOCK_MS, DONE_MS, join, leave, newRoom, SHEET_MS, STAND_IN_TURNS, STUCK_MS, summary, tick, viewFor, type State } from '../src/games/backgammon/room';
 
 const A = 'player-key-aaaaaaaaaaaaaaaa';
 const B = 'player-key-bbbbbbbbbbbbbbbb';
@@ -111,11 +111,12 @@ describe('backgammon live room', () => {
     tick(s, 10); // sets the room's clock again
     expect(s.deadline).toBe(10 + STUCK_MS);
     tick(s, 10 + STUCK_MS);
-    expect(s.match!.game).toMatchObject({ turn: 1, phase: 'roll', rolls: 8, lastTurn: { side: 0, roll: null, steps: [] } });
+    // the pass uses up Ana's roll, so every roll number keeps belonging to the same side
+    expect(s.match!.game).toMatchObject({ turn: 1, phase: 'roll', rolls: 9, lastTurn: { side: 0, roll: null, steps: [] } });
     expect(viewFor(s, A)!.match!.game.turn).toBe(1);
     // Bo plays on as usual
     act(s, B, { t: 'roll' }, 11 + STUCK_MS);
-    expect(s.match!.game).toMatchObject({ turn: 1, phase: 'move', rolls: 9 });
+    expect(s.match!.game).toMatchObject({ turn: 1, phase: 'move', rolls: 10 });
   });
 
   it('a computer that is shut out passes too, after the same pause', () => {
@@ -132,10 +133,10 @@ describe('backgammon live room', () => {
     tick(s, 5); // sets the clock again
     expect(s.deadline).toBe(5 + STUCK_MS);
     tick(s, 5 + STUCK_MS);
-    expect(s.match!.game).toMatchObject({ turn: 0, phase: 'roll', rolls: 8 });
+    expect(s.match!.game).toMatchObject({ turn: 0, phase: 'roll', rolls: 9 });
   });
 
-  it('the computer plays the second place on its clock; someone who leaves is played for', () => {
+  it('the computer plays the second place on its clock; with its only player gone, the match waits', () => {
     const s = newRoom('ABCDE', 0, 13);
     join(s, A, 'Ana', 1);
     expect(act(s, A, { t: 'start' }, 2)).toMatch(/Two players/);
@@ -153,13 +154,114 @@ describe('backgammon live room', () => {
       }
     }
     expect(['gameEnd', 'over']).toContain(s.phase);
-    // from here Ana leaves: the stand-in finishes the match
+    // from here Ana leaves: nobody is at the table, so nothing moves (the computer does not play on alone)
     leave(s, A, t + 1);
-    for (let i = 0; i < 6000 && s.phase !== 'over'; i++) {
-      t = Math.max(t + 50, s.deadline ?? t + 50);
-      tick(s, t + SHEET_MS);
-    }
-    expect(s.phase).toBe('over');
-    expect(AWAY_MS).toBeGreaterThan(0);
+    const frozen = JSON.stringify(s.match);
+    for (let i = 0; i < 50; i++) tick(s, t + 2 + i * (SHEET_MS + AWAY_MS));
+    expect(JSON.stringify(s.match)).toBe(frozen);
+    expect(s.deadline).toBeNull();
   }, 120_000);
+});
+
+/** A room with Ana and Bo seated and a match to 3 started at t=4. */
+function twoPlayers(seed = 9): State {
+  const s = newRoom('ABCDE', 0, seed);
+  join(s, A, 'Ana', 1);
+  join(s, B, 'Bo', 2);
+  act(s, A, { t: 'target', n: 3 }, 3);
+  act(s, A, { t: 'start' }, 4);
+  return s;
+}
+
+describe('backgammon live room: players who drop (BG-01)', () => {
+  it('with both players offline the match waits: nothing is rolled or played, the result sheet waits too', () => {
+    const s = twoPlayers();
+    act(s, A, { t: 'roll' }, 5);
+    leave(s, A, 6);
+    leave(s, B, 7);
+    const before = JSON.stringify(s.match);
+    expect(s.deadline).toBeNull();
+    for (let t = 8; t < 10 * 60_000; t += 5000) tick(s, t);
+    expect(JSON.stringify(s.match)).toBe(before);
+    // Bo is back: the match goes on (Ana is away, so after her grace the computer plays her move)
+    join(s, B, 'Bo', 600_000);
+    expect(s.deadline).toBe(600_000 + AWAY_MS);
+  });
+
+  it('one player away: a grace, then the computer plays at most a couple of their turns, then waits for them', () => {
+    const s = twoPlayers();
+    let t = 5;
+    // Bo drops before the opening roll
+    leave(s, B, t);
+    // Ana rolls the opening; whoever starts, Bo's turns come
+    for (let i = 0; i < 400; i++) {
+      const g = s.match!.game;
+      if (s.phase !== 'play') break;
+      if (g.phase === 'opening' || g.turn === 0) {
+        t = humanTurn(s, A, t);
+        tick(s, ++t);
+        continue;
+      }
+      if (s.deadline === null) break;
+      // each of Bo's turns starts with a fresh grace
+      if (g.phase === 'roll') expect(s.deadline - t).toBeGreaterThanOrEqual(AWAY_MS - 2);
+      t = s.deadline;
+      tick(s, t);
+    }
+    expect(s.match!.game.turn).toBe(1);
+    expect(s.match!.game.phase).toBe('roll');
+    expect(s.covered).toEqual([0, STAND_IN_TURNS]);
+    // the match waits for Bo: no deadline, and ticks change nothing
+    expect(s.deadline).toBeNull();
+    const view = viewFor(s, A)!;
+    expect(view.away).toEqual({ place: 1, at: null });
+    // Bo comes back and is told what the computer did; once he plays, the count starts again
+    join(s, B, 'Bo', t + 1);
+    expect(viewFor(s, B)!.covered).toBe(STAND_IN_TURNS);
+    act(s, B, { t: 'roll' }, t + 2);
+    expect(viewFor(s, B)!.covered).toBe(0);
+  });
+});
+
+describe('backgammon live room: the turn clock', () => {
+  it('off by default; when the host turns it on, an idle player gets CLOCK_MS, then the computer plays for them', () => {
+    const s = newRoom('ABCDE', 0, 9);
+    join(s, A, 'Ana', 1);
+    join(s, B, 'Bo', 2);
+    act(s, B, { t: 'clock', on: true }, 3);
+    expect(s.clock).toBe(false); // only the host
+    act(s, A, { t: 'start' }, 4);
+    expect(s.deadline).toBeNull(); // no clock: a present player is never hurried
+    const c = newRoom('ABCDE', 0, 9);
+    join(c, A, 'Ana', 1);
+    join(c, B, 'Bo', 2);
+    act(c, A, { t: 'clock', on: true }, 3);
+    act(c, A, { t: 'start' }, 4);
+    expect(c.deadline).toBe(4 + CLOCK_MS);
+    expect(viewFor(c, B)!.clockAt).toBe(4 + CLOCK_MS);
+    tick(c, 4 + CLOCK_MS);
+    expect(c.match!.game.phase).toBe('move'); // the opening was rolled for them
+    const g = c.match!.game;
+    expect(c.deadline).toBe(4 + 2 * CLOCK_MS);
+    tick(c, 4 + 2 * CLOCK_MS);
+    // and the roll played: the turn is over, the other side rolls
+    expect(c.match!.game).toMatchObject({ turn: 1 - g.turn, phase: 'roll', lastTurn: { side: g.turn } });
+  });
+});
+
+describe('backgammon live room: the room list (BG-05)', () => {
+  it('counts the two places, not watchers, and is full once both are taken', () => {
+    const s = newRoom('ABCDE', 0, 9);
+    join(s, A, 'Ana', 1);
+    expect(summary(s)).toMatchObject({ players: 1, full: false });
+    join(s, B, 'Bo', 2);
+    expect(summary(s)).toMatchObject({ players: 2, full: true });
+    join(s, 'player-key-cccccccccccccccc', 'Cy', 3);
+    expect(summary(s)).toMatchObject({ players: 2, full: true });
+    expect(viewFor(s, 'player-key-cccccccccccccccc')!.you).toBe(-1);
+    const b = newRoom('BCDEF', 0, 9);
+    join(b, A, 'Ana', 1);
+    act(b, A, { t: 'bot', level: 'easy' }, 2);
+    expect(summary(b)).toMatchObject({ players: 2, full: true });
+  });
 });

@@ -2,8 +2,10 @@
  * Backgammon live: a room on the rooms worker (rooms/worker.ts) for a match on two phones. Two
  * places; the host picks the match length and can seat a computer player instead of a friend. The
  * room rolls the dice (its seeds never leave the server), checks every step with the same rules as
- * the single-player board (logic.ts), plays for the computer (and for anyone who drops out, until
- * they are back), and settles each game. Pure: the worker's alarm calls tick() at `deadline`.
+ * the single-player board (logic.ts), plays for the computer (and for anyone who drops out: after a
+ * grace, at most STAND_IN_TURNS turns, then the match waits for them), and settles each game. With
+ * nobody at the table at all the match waits. The host can turn on a turn clock (CLOCK_MS a decision,
+ * then the computer plays it). Pure: the worker's alarm calls tick() at `deadline`.
  *
  * Phases: lobby → play → gameEnd (the result) → play … → over → (rematch) play.
  */
@@ -16,7 +18,12 @@ export { validKey } from '../../party/rooms/seats';
 /** Two at the board, a few more can watch. */
 export const MAX_PLAYERS = 6;
 export const BOT_MS = 1100;
-export const AWAY_MS = 5000;
+/** A dropped player's grace before the computer plays for them. */
+export const AWAY_MS = 30000;
+/** The computer plays at most this many turns in a row for someone away; then the match waits for them. */
+export const STAND_IN_TURNS = 2;
+/** The turn clock (when the host turns it on): this long to roll, and again to play the roll. */
+export const CLOCK_MS = 60000;
 /** A roll with no legal move, or a turn with no roll at all (a checker on the bar, the board closed), shows
  *  for this long before the turn passes. */
 export const STUCK_MS = 1800;
@@ -40,6 +47,15 @@ export interface State extends RoomBase {
   sheetUntil: number | null;
   moveAt: number | null;
   awaySince: number | null;
+  /** The place `awaySince` belongs to (a new one to act gets its own grace). */
+  awaySide?: Side | null;
+  /** Turns the computer played in a row for each place while it was away (reset when they act). */
+  covered?: [number, number];
+  /** The host's turn clock. */
+  clock?: boolean;
+  /** When the current decision's clock started, and for which decision (`side:rolls`). */
+  turnSince?: number | null;
+  turnKey?: string | null;
   matches: number;
 }
 
@@ -63,6 +79,11 @@ export function newRoom(code: string, now: number, seed: number): State {
     sheetUntil: null,
     moveAt: null,
     awaySince: null,
+    awaySide: null,
+    covered: [0, 0],
+    clock: false,
+    turnSince: null,
+    turnKey: null,
     matches: 0,
   };
 }
@@ -102,20 +123,58 @@ function actor(s: State): { side: Side; bot: Level | null; away: boolean } | nul
   return { side, bot, away: !bot && (!seat || !seat.online) };
 }
 
+/** Someone seated at the board is online (the computer player does not count). */
+function anyoneHere(s: State): boolean {
+  return s.places.some((n) => n !== null && n !== undefined && !!seatByN(s, n)?.online);
+}
+
+/** The decision the turn clock times: rolling, then playing the roll. */
+const clockKey = (side: Side, rolls: number): string => `${side}:${rolls}`;
+/** The clock can run out: a human (present) still has to roll or to play their roll. */
+const clockRuns = (g: Match['game']): boolean => (g.phase === 'opening' || g.phase === 'roll' || (g.phase === 'move' && !turnDone(g))) && !mustPass(g);
+
+/** The computer may (still) play for the away place: a turn it began, or fewer than STAND_IN_TURNS in a row. */
+const mayStandIn = (s: State, side: Side, g: Match['game']): boolean => g.phase === 'move' || (s.covered?.[side] ?? 0) < STAND_IN_TURNS;
+
 function schedule(s: State, now: number): void {
   s.moveAt = null;
+  s.covered ??= [0, 0];
   const a = actor(s);
   const g = s.match?.game;
-  if (a && g) {
+  // nobody at the table (every seated player offline): the match waits for them, whatever its phase
+  const here = anyoneHere(s);
+  if (a && g && here) {
     if (a.bot) s.moveAt = now + (mustPass(g) ? STUCK_MS : BOT_MS);
     else if (a.away) {
-      s.awaySince ??= now;
-      s.moveAt = s.awaySince + AWAY_MS;
+      // each place to act gets its own grace (a fresh one, not one left over from someone else)
+      if (s.awaySide !== a.side || s.awaySince === null) {
+        s.awaySide = a.side;
+        s.awaySince = now;
+      }
+      if (mayStandIn(s, a.side, g)) s.moveAt = s.awaySince + AWAY_MS;
     } else if (g.phase === 'move' && turnDone(g)) s.moveAt = now + (g.steps.length ? DONE_MS : STUCK_MS);
     else if (mustPass(g)) s.moveAt = now + STUCK_MS;
-    if (!a.away) s.awaySince = null;
-  } else s.awaySince = null;
-  s.deadline = s.phase === 'gameEnd' ? s.sheetUntil : s.moveAt;
+    else if (s.clock && clockRuns(g)) {
+      const k = clockKey(a.side, g.rolls);
+      if (s.turnKey !== k || s.turnSince === null || s.turnSince === undefined) {
+        s.turnKey = k;
+        s.turnSince = now;
+      }
+      s.moveAt = s.turnSince + CLOCK_MS;
+    }
+    if (!a.away) {
+      s.awaySince = null;
+      s.awaySide = null;
+    }
+  } else {
+    s.awaySince = null;
+    s.awaySide = null;
+  }
+  if (!a || a.bot || a.away || !s.clock) {
+    s.turnSince = null;
+    s.turnKey = null;
+  }
+  s.deadline = s.phase === 'gameEnd' ? (here ? s.sheetUntil : null) : s.moveAt;
 }
 
 function startMatch(s: State, now: number): void {
@@ -166,11 +225,17 @@ function nextFromSheet(s: State, now: number): void {
 }
 
 export function tick(s: State, now: number): void {
-  if (s.phase === 'gameEnd' && s.sheetUntil !== null && now >= s.sheetUntil) nextFromSheet(s, now);
+  if (s.phase === 'gameEnd' && s.sheetUntil !== null && now >= s.sheetUntil && anyoneHere(s)) nextFromSheet(s, now);
   if (s.moveAt !== null && now >= s.moveAt && s.match) {
     const a = actor(s);
     const g = s.match.game;
     if (a && (a.bot || a.away)) {
+      // a stand-in turn begins with its roll (or its pass): count it for the away place
+      if (a.away && (g.phase === 'opening' || g.phase === 'roll')) {
+        const c: [number, number] = [...(s.covered ?? [0, 0])];
+        c[a.side]++;
+        s.covered = c;
+      }
       computerMove(s, a.bot ?? 'hard');
       afterMove(s, now);
     } else if (a && g.phase === 'move' && turnDone(g)) {
@@ -179,6 +244,10 @@ export function tick(s: State, now: number): void {
     } else if (a && mustPass(g)) {
       // shut out (a checker on the bar, the board closed): no roll, the turn passes
       s.match = { ...s.match, game: passTurn(g) };
+    } else if (a && s.clock && s.turnKey === clockKey(a.side, g.rolls) && clockRuns(g)) {
+      // the turn clock ran out: the computer rolls, or plays the roll, for them
+      computerMove(s, 'hard');
+      afterMove(s, now);
     }
   }
   schedule(s, now);
@@ -189,6 +258,7 @@ export type Action =
   | { t: 'stand' }
   | { t: 'bot'; level: Level | null }
   | { t: 'target'; n: number }
+  | { t: 'clock'; on: boolean }
   | { t: 'start' }
   | { t: 'roll' }
   | { t: 'step'; from: number; to: number; die: number }
@@ -211,6 +281,12 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
   };
   const g = s.match?.game;
   const myTurn = s.phase === 'play' && !!g && place >= 0 && (g.phase === 'opening' || g.turn === place);
+  // back at the board and playing: the computer's stand-in count starts again
+  if (myTurn && (a?.t === 'roll' || a?.t === 'step' || a?.t === 'done') && s.covered?.[place]) {
+    const c: [number, number] = [...s.covered];
+    c[place] = 0;
+    s.covered = c;
+  }
   switch (a?.t) {
     case 'sit':
       if (s.phase !== 'lobby' || !int(a.place, 0, 1)) return null;
@@ -229,6 +305,10 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
     case 'target':
       if (!host || s.phase !== 'lobby' || !(TARGETS as readonly number[]).includes(a.n)) return null;
       s.target = a.n;
+      return done();
+    case 'clock':
+      if (!host || s.phase !== 'lobby') return null;
+      s.clock = a.on === true;
       return done();
     case 'start':
       if (!host || (s.phase !== 'lobby' && s.phase !== 'over')) return null;
@@ -289,6 +369,13 @@ export interface RoomView {
   match: Match | null;
   ready: number[];
   deadline: number | null;
+  /** A place that is away while it is its turn: when the computer plays for it (null: the match waits for them). */
+  away: { place: number; at: number | null } | null;
+  /** Turns the computer played for you in a row while you were away. */
+  covered: number;
+  /** The host's turn clock is on; when the current decision runs out (null: not running). */
+  clock: boolean;
+  clockAt: number | null;
 }
 
 export function viewFor(s: State, key: string): RoomView | null {
@@ -311,11 +398,17 @@ export function viewFor(s: State, key: string): RoomView | null {
     match,
     ready: s.ready,
     deadline: s.deadline,
+    away: s.awaySide !== null && s.awaySide !== undefined ? { place: s.awaySide, at: s.moveAt } : null,
+    covered: placeOf(s, me.n) >= 0 ? (s.covered?.[placeOf(s, me.n)] ?? 0) : 0,
+    clock: s.clock === true,
+    clockAt: s.turnSince !== null && s.turnSince !== undefined ? s.turnSince + CLOCK_MS : null,
   };
 }
 
+/** The room list and invites: players are the two places (the computer counts), full once both are taken. */
 export function summary(s: State) {
-  return summaryOf(s, 'backgammon', MAX_PLAYERS);
+  const taken = s.places.filter((n) => n !== null && n !== undefined && !!seatByN(s, n)).length + (s.bot ? 1 : 0);
+  return { ...summaryOf(s, 'backgammon', MAX_PLAYERS), players: taken, full: taken >= 2 };
 }
 
 /** Steps the side to move may make (the phone shows them; the room checks them again). */
