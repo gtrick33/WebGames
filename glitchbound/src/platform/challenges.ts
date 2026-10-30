@@ -63,6 +63,36 @@ function visitKey(): string {
   return fallback;
 }
 
+/**
+ * The server keeps the guest key (an httpOnly cookie, server/guest.ts); this browser's storage is only a
+ * cache of it. Run once at boot: the first time it backs up the key kept here; after that the server's
+ * copy wins, so a guest whose storage was cleared, is full or is blocked keeps their seats across visits.
+ */
+export async function syncGuestKey(): Promise<void> {
+  if (given) return;
+  let stored: string | null = null;
+  try {
+    stored = localStorage.getItem(KEY);
+  } catch {
+    /* blocked */
+  }
+  if (stored && !/^[A-Za-z0-9_-]{16,64}$/.test(stored)) stored = null;
+  const { key } = await api<{ key: string }>('/api/guest', { body: { key: stored ?? undefined, hint: fallback ?? undefined } });
+  if (given || key === (stored ?? fallback) || !/^[A-Za-z0-9_-]{16,64}$/.test(key)) return;
+  try {
+    localStorage.setItem(KEY, key);
+    return; // the cache holds the server's key again
+  } catch {
+    /* still can't keep it: this visit uses the server's key */
+  }
+  fallback = key;
+  try {
+    sessionStorage.setItem(KEY, key);
+  } catch {
+    /* kept in memory */
+  }
+}
+
 const q = (): string => `key=${encodeURIComponent(playerKey())}`;
 
 export const createChallenge = (game: string, mode: ChallengeMode, name: string, day: string): Promise<ChallengeView> =>

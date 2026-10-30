@@ -11,6 +11,7 @@ import { account } from './platform/account';
 import { isDiscordLaunch, setEmbedHost } from './platform/embed';
 import { DISCORD } from './platform/env';
 import { startLiveCatalog } from './platform/liveCatalog';
+import { syncGuestKey } from './platform/challenges';
 import { startI18n } from './i18n';
 import { loadGamePage } from './pages/loadGamePage';
 import { matchRoute } from './router/router';
@@ -37,6 +38,8 @@ const pageCode = !leaving && (firstRoute === 'game' || firstRoute === 'section')
 // The sign-in check starts before anything renders: a game page can open its game at once, and the game
 // must wait for a signed-in player's saves (platform/syncGate.ts), which this check leads to.
 if (!leaving) account.start();
+// The guest key's server copy (platform/challenges.ts): restores a key the browser lost or can't keep.
+if (!leaving) void syncGuestKey().catch(() => undefined);
 void Promise.all([startI18n(), pageCode]).then(() => {
   if (!root || leaving) return;
   // The prerendered HTML inside #root is for crawlers and no-JS visitors; React replaces it.

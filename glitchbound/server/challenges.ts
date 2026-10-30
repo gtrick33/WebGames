@@ -1,5 +1,6 @@
 import { getGame } from '../src/catalog/catalog';
 import { CHALLENGE_IDLE_MS, CHALLENGE_KEEP_MS, CHALLENGE_LOBBY_MS, closesAt, dailySeed, MAX_PLAYERS, roundWinners, type ChallengeHistoryItem, type ChallengeListItem, type ChallengeMode, type ChallengeView } from '../src/platform/challenge';
+import { guestCookieKey, validGuestKey } from './guest';
 import type { Ctx, D1PreparedStatement, Env } from './http';
 import { currentUser } from './session';
 import { newCode } from './shares';
@@ -10,8 +11,8 @@ import { newCode } from './shares';
  */
 export async function playerOf(env: Env, request: Request, body: Record<string, unknown> | null): Promise<string | null> {
   const raw = typeof body?.key === 'string' ? body.key : new URL(request.url).searchParams.get('key');
-  // The old clients' shared fallback for storage-blocked guests is everyone's key, so it is no one's.
-  const key = raw && raw !== 'nostorage-device-key-0000' && /^[A-Za-z0-9_-]{16,64}$/.test(raw) ? raw : null;
+  // Without a usable key (old clients' shared fallback is refused), the guest cookie's key (server/guest.ts).
+  const key = validGuestKey(raw) ? raw : guestCookieKey(request);
   const user = await currentUser(env, request);
   if (user) {
     if (key) await claimGuest(env, user.id, key);
