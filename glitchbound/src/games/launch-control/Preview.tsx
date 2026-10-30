@@ -66,6 +66,12 @@ export default function Preview({ playing = true }: GamePreviewProps) {
         stage.renderRace(race.racers.map(state), lightsOf(race), t, dt, undefined, { excite: race.out && !race.done ? 0.6 : 0.2 });
         ctx.drawImage(stage.canvas, 0, 0, w, h);
       },
+      dispose() {
+        // Each hover mounts a fresh preview: give its WebGL context back instead of piling them up.
+        stage?.dispose();
+        stage = null;
+        failed = true;
+      },
     };
   });
   return <canvas ref={ref} className="game-preview-canvas" aria-hidden="true" />;

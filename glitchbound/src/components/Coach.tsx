@@ -1,4 +1,5 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { trapTab, useFocusReturn } from './focusTrap';
 import './Coach.css';
 
 /** One step of a game's first-time walkthrough: a small picture and a line or two. */
@@ -41,8 +42,19 @@ export function Coach({ steps, onClose, done = 'Let’s play', skip = 'Skip', ne
   const [i, setI] = useState(0);
   const step = steps[i]!;
   const last = i === steps.length - 1;
+  const box = useRef<HTMLDivElement>(null);
+  useFocusReturn();
+  // Escape closes it and Tab stays inside; the game behind hears neither.
+  const onKey = (e: KeyboardEvent): void => {
+    if (e.key !== 'Escape' && e.key !== 'Tab') return;
+    e.stopPropagation();
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    } else trapTab(e, box.current);
+  };
   return (
-    <div className="coach" role="dialog" aria-modal="true" aria-labelledby="coach-title">
+    <div ref={box} className="coach" role="dialog" aria-modal="true" aria-labelledby="coach-title" onKeyDown={onKey}>
       <div className="coach-card" key={i}>
         <div className="coach-art" aria-hidden="true">
           {step.art}
