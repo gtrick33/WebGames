@@ -3533,11 +3533,28 @@
   image-rendering: pixelated;
 }
 @container (max-width: 760px) or (max-height: 430px) {
+  /* the shop fills the frame, so its item sheet (anchored to the body) is as tall as the panel, not the ware grid */
+  .rb-shop {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
   .rb-shop-body {
     grid-template-columns: 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+  .rb-shop-list {
+    min-height: 0;
+    overflow: auto;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
   }
   .rb-shop-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  .rb-shop .rb-detail.is-open {
+    min-height: min(260px, 100%);
   }
 }
 
