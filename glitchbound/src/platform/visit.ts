@@ -13,8 +13,11 @@ export interface VisitInfo {
  * Whether this browser has been here before, for retention numbers without any identifier: only
  * "new/returning" and the gap in days leave the device. Returns info once per tab session, null after.
  */
-export function visitInfo(now: Date = new Date(), local: Storage = localStorage, session: Storage = sessionStorage): VisitInfo | null {
+export function visitInfo(now: Date = new Date(), local?: Storage, session?: Storage): VisitInfo | null {
   try {
+    // Read here, not as default parameters: a browser that blocks site data throws on the getter itself.
+    local ??= localStorage;
+    session ??= sessionStorage;
     if (session.getItem(SESSION_KEY)) return null;
     session.setItem(SESSION_KEY, '1');
     const today = dayKey(now);

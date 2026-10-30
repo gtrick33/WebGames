@@ -8,6 +8,13 @@ import type { ChallengeHistoryItem, ChallengeListItem, ChallengeMode, ChallengeV
 const KEY = 'glitchbound.playerKey';
 
 let given: string | null = null;
+/** This visit's key when the device can't keep one: random, so storage-blocked guests never share one. */
+let fallback: string | null = null;
+
+const randomKey = (): string =>
+  Array.from(crypto.getRandomValues(new Uint8Array(18)), (b) => b.toString(36).padStart(2, '0'))
+    .join('')
+    .slice(0, 24);
 
 /**
  * Uses a key handed out by the server for this visit (the Discord Activity: one per Discord account,
@@ -29,15 +36,31 @@ export function playerKey(): string {
   try {
     let k = localStorage.getItem(KEY);
     if (!k || !/^[A-Za-z0-9_-]{16,64}$/.test(k)) {
-      k = Array.from(crypto.getRandomValues(new Uint8Array(18)), (b) => b.toString(36).padStart(2, '0'))
-        .join('')
-        .slice(0, 24);
+      k = randomKey();
       localStorage.setItem(KEY, k);
     }
     return k;
   } catch {
-    return 'nostorage-device-key-0000';
+    return visitKey();
   }
+}
+
+/** The device can't keep a key: one for this tab, kept in sessionStorage when that works (survives a reload). */
+function visitKey(): string {
+  if (fallback) return fallback;
+  try {
+    const k = sessionStorage.getItem(KEY);
+    if (k && /^[A-Za-z0-9_-]{16,64}$/.test(k)) return (fallback = k);
+  } catch {
+    /* blocked too */
+  }
+  fallback = randomKey();
+  try {
+    sessionStorage.setItem(KEY, fallback);
+  } catch {
+    /* kept in memory for this visit */
+  }
+  return fallback;
 }
 
 const q = (): string => `key=${encodeURIComponent(playerKey())}`;

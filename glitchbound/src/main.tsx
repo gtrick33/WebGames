@@ -3,7 +3,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './App';
+import { Root } from './App';
 import { installErrorReporting } from './platform/analytics';
 import { onPreloadError } from './platform/freshBuild';
 import { goToMainAddress } from './platform/canonical';
@@ -42,7 +42,7 @@ void Promise.all([startI18n(), pageCode]).then(() => {
   // The prerendered HTML inside #root is for crawlers and no-JS visitors; React replaces it.
   createRoot(root).render(
     <StrictMode>
-      <App />
+      <Root />
     </StrictMode>,
   );
 });

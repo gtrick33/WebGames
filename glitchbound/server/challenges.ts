@@ -10,7 +10,8 @@ import { newCode } from './shares';
  */
 export async function playerOf(env: Env, request: Request, body: Record<string, unknown> | null): Promise<string | null> {
   const raw = typeof body?.key === 'string' ? body.key : new URL(request.url).searchParams.get('key');
-  const key = raw && /^[A-Za-z0-9_-]{16,64}$/.test(raw) ? raw : null;
+  // The old clients' shared fallback for storage-blocked guests is everyone's key, so it is no one's.
+  const key = raw && raw !== 'nostorage-device-key-0000' && /^[A-Za-z0-9_-]{16,64}$/.test(raw) ? raw : null;
   const user = await currentUser(env, request);
   if (user) {
     if (key) await claimGuest(env, user.id, key);
