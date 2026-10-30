@@ -351,3 +351,11 @@ describe('Quizbelief in Bulgarian', () => {
     expect(typedMatches('Плевен', ['Габрово'])).toBe(false);
   });
 });
+
+describe('Quizbelief: English keeps the questions it already served', () => {
+  it('serves the same daily and challenge for days before SLOTS_SINCE (pinned)', () => {
+    const ids = (qs: { id: string; correct: number }[]): string[] => qs.map((q) => `${q.id}@${q.correct}`);
+    expect(ids(dailyQuiz('2026-10-30'))).toEqual(['space:23@2', 'tune:11@2', 'food:1@3', 'words:4@2', 'money:7@0', 'num:17@-1', 'order:0:2:3:4@-1', 'odd:40@0', 'history:12@2', 'tech:5@3']);
+    expect(ids(challengeQuiz(2509197299, '2026-10-30'))).toEqual(['money:50@0', 'sports:81@3', 'pop:44@0', 'time:42:148@0', 'space:22@0', 'odd:79@1', 'tune:13@2', 'tech:79@2', 'year:163@-1', 'history:90@2']);
+  });
+});

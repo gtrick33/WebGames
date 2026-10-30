@@ -21,6 +21,15 @@ export { LAUNCH, type HandCat, type Pack } from './pack';
  * ordering, emoji puzzles and sound). Earlier days keep their original ten questions.
  */
 export const FORMATS_SINCE = '2026-10-19';
+
+/**
+ * From this day on, every slot of the daily and of a challenge, every answer shuffle and the final
+ * order draw from their own seed, so a language's longer or shorter word lists can never move another
+ * slot; challenges also use only styles that are the same in every language (no made-up-sounding
+ * words, emoji or typing). Earlier days keep their questions: their shared draw is paced by the
+ * English lists (see `oddPaced`), which leaves English as it was and puts every language in step.
+ */
+export const SLOTS_SINCE = '2026-11-05';
 export const QUIZ_LENGTH = 10;
 
 export type CatId = HandCat | 'odd' | 'world' | 'time' | 'guess' | 'type' | 'emoji' | 'tune' | 'morse';
@@ -107,6 +116,9 @@ export function shuffle<T>(list: readonly T[], r: Rng): T[] {
 
 const pick = <T>(list: readonly T[], r: Rng): T => list[Math.floor(r() * list.length)]!;
 
+/** A random stream of its own, for one slot or one shuffle. */
+const seeded = (name: string): Rng => rng(hashString(name));
+
 /** Hand-written questions of one category available on `day`, in id order. */
 function handPool(cat: HandCat, day: string, p: Pack = EN): { id: string; raw: Raw }[] {
   const out: { id: string; raw: Raw }[] = [];
@@ -158,6 +170,16 @@ export function oddWordQuestion(i: number, r: Rng, p: Pack = EN): Question {
   }
   const shown = shuffle([word, ...decoys.map((d) => d[0])], r);
   return { id: `odd:${i}`, cat: 'odd', text: p.text.whichMeans(lower(meaning)), answers: shown, correct: shown.indexOf(word), fact };
+}
+
+/**
+ * A language's own real-word question, drawn as if it were English's word `en`: the shared stream
+ * moves exactly as it does in English (whose list is longer than most), and the language's own word
+ * is dressed from a stream of its own. So the rest of an older daily or challenge stays in step.
+ */
+function oddPaced(i: number, en: number, r: Rng, p: Pack, tag: string): Question {
+  const english = oddWordQuestion(en, r, EN);
+  return p.odd === EN.odd ? english : oddWordQuestion(i, seeded(`ww-odd:${tag}`), p);
 }
 
 /** "In German, what does X mean?" for a word with no English equivalent. */
@@ -600,6 +622,7 @@ const spookyDay = (day: string): boolean => day.slice(5) >= '10-25' && day.slice
  */
 export function dailyQuiz(day: string, p: Pack = EN): Question[] {
   if (day < FORMATS_SINCE) return firstDailies(day, p);
+  if (day >= SLOTS_SINCE) return slottedDaily(day, p);
   const k = daysBetween(LAUNCH, day);
   const k0 = daysBetween(LAUNCH, FORMATS_SINCE);
   const r = rng(hashString(`ww-day:${day}`));
@@ -610,7 +633,8 @@ export function dailyQuiz(day: string, p: Pack = EN): Question[] {
     const { id, cat, raw } = seq[(base + i) % seq.length]!;
     qs.push(fromRaw(id, cat, raw, r, p));
   }
-  qs.push(k % 3 === 2 ? worldWordQuestion(orderOf(p.world.length, 'world')[Math.floor(k / 3) % p.world.length]!, r, p) : oddWordQuestion(orderOf(p.odd.length, 'odd')[(k - Math.floor(k / 3)) % p.odd.length]!, r, p));
+  const nth = k - Math.floor(k / 3);
+  qs.push(k % 3 === 2 ? worldWordQuestion(orderOf(p.world.length, 'world')[Math.floor(k / 3) % p.world.length]!, r, p) : oddPaced(orderOf(p.odd.length, 'odd')[nth % p.odd.length]!, orderOf(EN.odd.length, 'odd')[nth % EN.odd.length]!, r, p, `day:${day}`));
   const half = Math.floor(k / 2);
   qs.push(k % 2 === 0 ? numberQuestion(orderOf(p.numbers.length, 'num')[half % p.numbers.length]!, p) : yearQuestion(YEAR_EVENTS[orderOf(YEAR_EVENTS.length, 'year')[half % YEAR_EVENTS.length]!]!, p));
   const year = qs[qs.length - 1]!.id.startsWith('year:') ? new Set([Number(qs[qs.length - 1]!.id.slice(5))]) : new Set<number>();
@@ -657,7 +681,12 @@ function firstDailies(day: string, p: Pack): Question[] {
     p.world.map((_, i) => i),
     rng(hashString('ww-order:world')),
   );
-  qs.push(k % 3 === 2 ? worldWordQuestion(world[Math.floor(k / 3) % world.length]!, r, p) : oddWordQuestion(words[(k - Math.floor(k / 3)) % words.length]!, r, p));
+  const english = shuffle(
+    EN.odd.map((_, i) => i),
+    rng(hashString('ww-order:odd')),
+  );
+  const nth = k - Math.floor(k / 3);
+  qs.push(k % 3 === 2 ? worldWordQuestion(world[Math.floor(k / 3) % world.length]!, r, p) : oddPaced(words[nth % words.length]!, english[nth % english.length]!, r, p, `day:${day}`));
   qs.push(anyTimeQuestion(r, new Set(), p));
   return shuffle(qs, r);
 }
@@ -665,6 +694,7 @@ function firstDailies(day: string, p: Pack): Question[] {
 /** A challenge round: the same ten questions for everyone with this seed (the daily's mix of styles). */
 export function challengeQuiz(seed: number, day: string, p: Pack = EN): Question[] {
   if (!day || day < FORMATS_SINCE) return firstChallenges(seed, day, p);
+  if (day >= SLOTS_SINCE) return slottedChallenge(seed, day, p);
   const r = rng(seed ^ 0x5eed);
   const qs: Question[] = shuffle(HAND_CATS, r)
     .slice(0, 6)
@@ -672,13 +702,20 @@ export function challengeQuiz(seed: number, day: string, p: Pack = EN): Question
       const { id, raw } = pick(handPool(cat, day, p), r);
       return fromRaw(id, cat, raw, r, p);
     });
-  qs.push(r() < 0.7 ? oddWordQuestion(Math.floor(r() * p.odd.length), r, p) : worldWordQuestion(Math.floor(r() * p.world.length), r, p));
+  qs.push(wordSlot(seed, r, p));
   const lever = r() < 0.5 ? numberQuestion(Math.floor(r() * p.numbers.length), p) : yearQuestion(pick(YEAR_EVENTS, r), p);
   qs.push(lever);
   const used = lever.id.startsWith('year:') ? new Set([Number(lever.id.slice(5))]) : new Set<number>();
   qs.push(r() < 0.5 ? orderQuestion(r, used, p) : anyTimeQuestion(r, used, p));
   qs.push(special(Math.floor(r() * 4), r, p));
   return shuffle(qs, r);
+}
+
+/** An older challenge's word question (a real word 70% of the time), paced by English's list. */
+function wordSlot(seed: number, r: Rng, p: Pack): Question {
+  if (r() >= 0.7) return worldWordQuestion(Math.floor(r() * p.world.length), r, p);
+  const v = r();
+  return oddPaced(Math.floor(v * p.odd.length), Math.floor(v * EN.odd.length), r, p, `ch:${seed}`);
 }
 
 /** One of the special styles: 0 tune, 1 emoji, 2 typed, 3 Morse (random item). */
@@ -699,9 +736,80 @@ function firstChallenges(seed: number, day: string, p: Pack): Question[] {
       const { id, raw } = pick(pool, r);
       return fromRaw(id, cat, raw, r, p);
     });
-  qs.push(r() < 0.7 ? oddWordQuestion(Math.floor(r() * p.odd.length), r, p) : worldWordQuestion(Math.floor(r() * p.world.length), r, p));
+  qs.push(wordSlot(seed, r, p));
   qs.push(anyTimeQuestion(r, new Set(), p));
   return shuffle(qs, r);
+}
+
+/**
+ * The daily from SLOTS_SINCE: the same mix, but each slot, each answer shuffle and the final order
+ * have their own seed. The word and special slots stay each language's own word play.
+ */
+function slottedDaily(day: string, p: Pack): Question[] {
+  const k = daysBetween(LAUNCH, day);
+  const s = (slot: string): Rng => seeded(`ww-day:${day}:${slot}`);
+  const seq = dailySequence(day, p);
+  const base = dailyBase(day);
+  const qs: Question[] = [];
+  for (let i = 0; i < 6; i++) {
+    const { id, cat, raw } = seq[(base + i) % seq.length]!;
+    qs.push(fromRaw(id, cat, raw, s(`hand:${i}`), p));
+  }
+  qs.push(k % 3 === 2 ? worldWordQuestion(orderOf(p.world.length, 'world')[Math.floor(k / 3) % p.world.length]!, s('word'), p) : oddWordQuestion(orderOf(p.odd.length, 'odd')[(k - Math.floor(k / 3)) % p.odd.length]!, s('word'), p));
+  const half = Math.floor(k / 2);
+  const lever = k % 2 === 0 ? numberQuestion(orderOf(p.numbers.length, 'num')[half % p.numbers.length]!, p) : yearQuestion(YEAR_EVENTS[orderOf(YEAR_EVENTS.length, 'year')[half % YEAR_EVENTS.length]!]!, p);
+  qs.push(lever);
+  const year = lever.id.startsWith('year:') ? new Set([Number(lever.id.slice(5))]) : new Set<number>();
+  qs.push(k % 2 === 0 ? orderQuestion(s('time'), year, p) : anyTimeQuestion(s('time'), year, p));
+  const quarter = Math.floor(k / 4);
+  const r = s('special');
+  switch (k % 4) {
+    case 0: {
+      const pool = p.tunes.map((t, i) => ({ t, i })).filter(({ t }) => !!t.spooky === spookyDay(day));
+      const order = orderOf(pool.length, spookyDay(day) ? 'tune-spooky' : 'tune');
+      qs.push(tuneQuestion(pool[order[quarter % pool.length]!]!.i, r, p));
+      break;
+    }
+    case 1: {
+      const films = orderOf(p.emojiTitles.length, 'emoji-film');
+      const sayings = orderOf(p.emojiSayings.length, 'emoji-say');
+      qs.push(quarter % 3 === 2 ? emojiQuestion('say', sayings[Math.floor(quarter / 3) % sayings.length]!, r, p) : emojiQuestion('film', films[(quarter - Math.floor(quarter / 3)) % films.length]!, r, p));
+      break;
+    }
+    case 2:
+      qs.push(typedQuestion(orderOf(p.typed.length, 'typed')[quarter % p.typed.length]!, p));
+      break;
+    default:
+      qs.push(morseQuestion(orderOf(MORSE_WORDS.length, 'morse')[quarter % MORSE_WORDS.length]!, r, p));
+  }
+  return shuffle(qs, s('order'));
+}
+
+/**
+ * A challenge from SLOTS_SINCE: every slot has its own seed, and the word and special slots use
+ * styles that are the same in every language (a word of the world; a tune or Morse code), so friends
+ * playing in different languages answer the same ten questions in the same order.
+ */
+function slottedChallenge(seed: number, day: string, p: Pack): Question[] {
+  const s = (slot: string): Rng => seeded(`ww-ch:${seed >>> 0}:${slot}`);
+  const qs: Question[] = shuffle(HAND_CATS, s('cats'))
+    .slice(0, 6)
+    .map((cat) => {
+      const r = s(`hand:${cat}`);
+      const { id, raw } = pick(handPool(cat, day, p), r);
+      return fromRaw(id, cat, raw, r, p);
+    });
+  const w = s('word');
+  qs.push(worldWordQuestion(Math.floor(w() * p.world.length), w, p));
+  const l = s('lever');
+  const lever = l() < 0.5 ? numberQuestion(Math.floor(l() * p.numbers.length), p) : yearQuestion(pick(YEAR_EVENTS, l), p);
+  qs.push(lever);
+  const used = lever.id.startsWith('year:') ? new Set([Number(lever.id.slice(5))]) : new Set<number>();
+  const t = s('time');
+  qs.push(t() < 0.5 ? orderQuestion(t, used, p) : anyTimeQuestion(t, used, p));
+  const x = s('special');
+  qs.push(x() < 0.5 ? tuneQuestion(Math.floor(x() * p.tunes.length), x, p) : morseQuestion(Math.floor(x() * MORSE_WORDS.length), x, p));
+  return shuffle(qs, s('order'));
 }
 
 /** Total number of different questions (timeline pairs and orders not counted). */
