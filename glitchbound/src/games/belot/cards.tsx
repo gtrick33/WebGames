@@ -149,8 +149,7 @@ export const CardBack = memo(function CardBack() {
   );
 });
 
-/** A card for screen readers: "Queen of hearts". */
-export function cardLabel(card: Card, suits: readonly string[]): string {
-  const names = ['7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
-  return `${names[rankOf(card)]} ${suits[suitOf(card)]}`;
+/** A card for screen readers, in the table's language: "Queen of hearts", "Дама купа". */
+export function cardLabel(card: Card, w: { ranks: readonly string[]; cardName: (rank: string, suit: number) => string }): string {
+  return w.cardName(w.ranks[rankOf(card)] ?? '', suitOf(card));
 }
