@@ -30,7 +30,7 @@ export const ANSWER_LIST: readonly string[] = ANSWERS.split(' ');
 
 let allowed: Set<string> | null = null;
 
-/** Whether a word is an accepted guess. The 13k-word set is built on first use. */
+/** Whether a word is an accepted guess. The 6k-word set is built on first use. */
 export function isAllowed(word: string): boolean {
   if (!allowed) {
     allowed = new Set();
