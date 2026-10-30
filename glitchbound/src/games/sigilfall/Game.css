@@ -2820,15 +2820,67 @@
   font-weight: 700;
   font-size: 13.5px;
 }
-.rb-item-compare p {
-  margin: 0 0 3px;
-  font-size: 12.5px;
-}
 .rb-lore {
   margin: 0;
   font-style: italic;
   font-size: 12.5px;
   color: #c9b8a0;
+}
+/* the inspected item and what is worn in its slot: side by side where there is room, stacked in a phone's sheet */
+.rb-compare {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rb-icard {
+  flex: 1 1 230px;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.rb-compare.is-two > .rb-icard {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgb(168 130 58 / 0.35);
+  background: rgb(0 0 0 / 0.18);
+}
+.rb-compare.is-two > .rb-icard.is-worn {
+  background: rgb(0 0 0 / 0.32);
+}
+.rb-icard-tag {
+  justify-self: start;
+  font: 700 10.5px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rb-dim);
+}
+.rb-icard.is-worn .rb-icard-tag {
+  color: var(--rb-gold);
+}
+.rb-icard.is-compact .rb-item-name {
+  font-size: 15px;
+}
+.rb-icard.is-compact .rb-lore {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-icard-none {
+  flex-basis: 100%;
+  margin: 0;
+}
+.rb-item-if {
+  margin: 0;
+}
+@container (min-width: 761px) and (min-height: 431px) {
+  /* comparing on a wide stage: the detail column gets room for both cards */
+  .rb-hero:has(.rb-compare.is-two) {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(440px, 540px);
+  }
+  .rb-shop-body:has(.rb-compare.is-two) {
+    grid-template-columns: minmax(0, 1fr) minmax(440px, 520px);
+  }
 }
 .rb-skills {
   display: grid;

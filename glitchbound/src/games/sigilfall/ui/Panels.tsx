@@ -13,7 +13,7 @@ import type { PanelId, SigilEngine } from '../engine';
 import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
-import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
+import { itemClass, itemMods, itemName, itemScore, itemSlot, salvageValue } from '../progress/items';
 import { ICON_AUTHORS } from '../render/art/iconVersion';
 import { npcMark, rarityColor } from '../render/renderer';
 import { heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl } from '../render/sprites';
@@ -30,6 +30,7 @@ import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, loadFog, type Fog } from '../progress/fog';
 import { ShopPanel } from './Shop';
+import { compareWith, linesOnlyIn, statRows } from './compare';
 import { PartyPanel } from './Party';
 import { PRESETS } from '../progress/presets';
 import { clockText } from '../sim/world';
@@ -240,17 +241,69 @@ function isUpgrade(cur: Item | undefined, it: Item): boolean {
   return itemScore(it) > itemScore(cur) + 5;
 }
 
-/** An item's card: stats, comparison with what is worn, what it changes; `actions` replaces the equip row. */
-export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, actions }: { engine: SigilEngine; item: Item; worn: boolean; confirm: boolean; onSalvage: () => void; onDone: () => void; actions?: ReactNode }) {
+/** One item's card: header, stats (with their change against `compareTo`), what it changes, lore. */
+export function ItemCard({ item, compareTo, label, compact, against, onClose }: { item: Item; compareTo?: Item; label?: 'Equipped' | 'In your bag' | 'For sale'; compact?: boolean; against?: Item; onClose?: () => void }) {
+  const slot = itemSlot(item);
+  const def = ITEM_DEFS[item.base];
+  const cls = itemClass(item);
+  const { rows, lost } = statRows(item, compareTo);
+  const lines = modLines(itemMods(item));
+  // on the worn card: the lines a swap for `against` would give up
+  const gone = against ? new Set(linesOnlyIn(item, against)) : null;
+  return (
+    <div className={`rb-icard${compact ? ' is-compact' : ''}${label === 'Equipped' ? ' is-worn' : ''}`} style={{ ['--rc' as string]: rarityColor(item.r) }}>
+      <div className="rb-item-head">
+        <ItemIcon item={item} size={compact ? 40 : 52} />
+        <div>
+          {label && <span className="rb-icard-tag">{label}</span>}
+          <strong className="rb-item-name">{itemName(item)}</strong>
+          <span className="rb-dim rb-small">
+            {RARITY_NAME[item.r]} {SLOT_LABEL[slot].toLowerCase()} · item level {item.il}
+            {cls ? ` · ${CLASSES[cls].name} only` : ''}
+          </span>
+        </div>
+        {onClose && (
+          <button className="rb-x is-small" onClick={onClose} aria-label="Close details">
+            ✕
+          </button>
+        )}
+      </div>
+      <ul className="rb-item-stats">
+        {rows.map(({ k, v, delta }) => (
+          <li key={k}>
+            {fmtStat(k, v)}
+            {compareTo && Math.round(delta * 10) !== 0 && <span className={delta > 0 ? 'rb-up-t' : 'rb-down-t'}> ({delta > 0 ? '+' : ''}{k === 'regen' ? delta.toFixed(1) : Math.round(delta)})</span>}
+          </li>
+        ))}
+        {lost.map(([k, v]) => (
+          <li key={`lost-${k}`} className="rb-down-t">
+            Loses {fmtStat(k, v)}
+          </li>
+        ))}
+      </ul>
+      {lines.length > 0 && (
+        <div className="rb-item-mods">
+          <span className="rb-kicker">Changes how you fight</span>
+          {lines.map((l) => (
+            <p key={l} className={gone?.has(l) ? 'rb-down-t' : 'rb-gold'}>
+              {gone?.has(l) ? 'You would lose: ' : ''}
+              {l}
+            </p>
+          ))}
+        </div>
+      )}
+      {def && <p className="rb-lore">“{def.lore}”</p>}
+    </div>
+  );
+}
+
+/** An item's card next to what is worn in its slot (WoW-style), the "if worn" summary, then `actions` (or Equip/Salvage). */
+export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, actions, label }: { engine: SigilEngine; item: Item; worn: boolean; confirm: boolean; onSalvage: () => void; onDone: () => void; actions?: ReactNode; label?: 'In your bag' | 'For sale' }) {
   const h = engine.hero!;
   const slot = itemSlot(item);
-  const current = h.equip[slot];
-  const compare = !worn && current && current.uid !== item.uid ? current : undefined;
+  const compare = compareWith(h, item, worn);
   const lines = modLines(itemMods(item));
-  const def = ITEM_DEFS[item.base];
   const reason = cantEquip(h, item);
-  const stats = itemStats(item);
-  const curStats = compare ? new Map(itemStats(compare)) : null;
   // the hero's health and power before and after wearing it
   const preview = useMemo(() => {
     if (worn || reason) return null;
@@ -259,70 +312,19 @@ export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, act
     const after = buildHero(clone);
     return { hp: after.maxHp - before.maxHp, power: after.stats.power - before.stats.power };
   }, [h, item, slot, worn, reason]);
-  const cls = itemClass(item);
   return (
     <div className="rb-item" style={{ ['--rc' as string]: rarityColor(item.r) }}>
-      <div className="rb-item-head">
-        <ItemIcon item={item} size={52} />
-        <div>
-          <strong className="rb-item-name">{itemName(item)}</strong>
-          <span className="rb-dim rb-small">
-            {RARITY_NAME[item.r]} {SLOT_LABEL[slot].toLowerCase()} · item level {item.il}
-            {cls ? ` · ${CLASSES[cls].name} only` : ''}
-          </span>
-        </div>
-        <button className="rb-x is-small" onClick={onDone} aria-label="Close details">
-          ✕
-        </button>
+      <div className={`rb-compare${compare ? ' is-two' : ''}`}>
+        <ItemCard item={item} compareTo={compare} label={worn ? 'Equipped' : compare ? (label ?? 'In your bag') : label} onClose={onDone} />
+        {compare && <ItemCard item={compare} label="Equipped" compact against={item} />}
+        {!worn && !compare && !reason && <p className="rb-small rb-dim rb-icard-none">Nothing equipped in this slot.</p>}
       </div>
-      <ul className="rb-item-stats">
-        {stats.map(([k, v]) => {
-          const old = curStats?.get(k);
-          const delta = curStats ? v - (old ?? 0) : 0;
-          return (
-            <li key={k}>
-              {fmtStat(k, v)}
-              {curStats && Math.round(delta * 10) !== 0 && <span className={delta > 0 ? 'rb-up-t' : 'rb-down-t'}> ({delta > 0 ? '+' : ''}{k === 'regen' ? delta.toFixed(1) : Math.round(delta)})</span>}
-            </li>
-          );
-        })}
-        {curStats &&
-          [...curStats.entries()]
-            .filter(([k]) => !stats.some(([s]) => s === k))
-            .map(([k, v]) => (
-              <li key={`lost-${k}`} className="rb-down-t">
-                Loses {fmtStat(k, v)}
-              </li>
-            ))}
-      </ul>
-      {lines.length > 0 && (
-        <div className="rb-item-mods">
-          <span className="rb-kicker">Changes how you fight</span>
-          {lines.map((l) => (
-            <p key={l} className="rb-gold">
-              {l}
-            </p>
-          ))}
-        </div>
-      )}
-      {compare && (
-        <div className="rb-item-compare">
-          <span className="rb-kicker">You wear: {itemName(compare)}</span>
-          {modLines(itemMods(compare)).map((l) => (
-            <p key={l} className="rb-dim">
-              {lines.includes(l) ? '' : 'You would lose: '}
-              {l}
-            </p>
-          ))}
-        </div>
-      )}
       {preview && (preview.hp !== 0 || preview.power !== 0) && (
-        <p className="rb-small">
+        <p className="rb-small rb-item-if">
           If worn: <span className={preview.hp >= 0 ? 'rb-up-t' : 'rb-down-t'}>{preview.hp >= 0 ? '+' : ''}{preview.hp} health</span>,{' '}
           <span className={preview.power >= 0 ? 'rb-up-t' : 'rb-down-t'}>{preview.power >= 0 ? '+' : ''}{Math.round(preview.power)}% damage</span>
         </p>
       )}
-      {def && <p className="rb-lore">“{def.lore}”</p>}
       {actions ?? (
       <div className="rb-row">
         {worn ? (
