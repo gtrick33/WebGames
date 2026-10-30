@@ -3,14 +3,15 @@
  * Pure functions over plain data, unit tested.
  */
 import { daysBetween, hashString } from '../../platform/dates';
-import { makePuzzle, wordCells, type Dir, type Puzzle, type Size } from './grid';
+import { editionFor, makePuzzle, wordCells, type Dir, type Puzzle, type Size } from './grid';
 
 export const EPOCH = '2026-10-19';
 export type Entries = Record<string, string>;
 export const key = (r: number, c: number): string => `${r},${c}`;
 
+/** The day's grid. Days before the word list's second edition keep their original grids. */
 export function dailyPuzzle(day: string): Puzzle {
-  return makePuzzle(hashString(`crosswire:${day}`), 'medium');
+  return makePuzzle(hashString(`crosswire:${day}`), 'medium', editionFor(day));
 }
 export const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
 export const practicePuzzle = (size: Size): Puzzle => makePuzzle((Math.random() * 2 ** 32) >>> 0, size);

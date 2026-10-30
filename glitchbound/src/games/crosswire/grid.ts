@@ -4,7 +4,7 @@
  * Generated from a seed by placing words that cross what is already there, so the supply of puzzles
  * never runs out and the daily is identical for everyone. Pure, unit tested.
  */
-import { WORDS, type Entry } from './words';
+import { LEGACY_WORDS, WORDS, type Entry } from './words';
 
 export type Dir = 'across' | 'down';
 /**
@@ -61,15 +61,43 @@ function clueCell(row: number, col: number, spot: ClueSpot): [number, number] {
 
 const dirOf = (spot: ClueSpot): Dir => (spot === 'left' || spot === 'aboveAcross' ? 'across' : 'down');
 
-/** Index: letter -> list of [entry, position]. */
+/** Index: letter -> list of [entry, position]. Built once per word list. */
+const indexes = new WeakMap<Entry[], Map<string, [Entry, number][]>>();
 function byLetter(entries: Entry[]): Map<string, [Entry, number][]> {
+  const cached = indexes.get(entries);
+  if (cached) return cached;
   const m = new Map<string, [Entry, number][]>();
   for (const e of entries) for (let i = 0; i < e.word.length; i++) {
     const list = m.get(e.word[i]!) ?? [];
     list.push([e, i]);
     m.set(e.word[i]!, list);
   }
+  indexes.set(entries, m);
   return m;
+}
+
+/** Opening words for a grid `C` wide (cached per list and width). */
+const starterCache = new WeakMap<Entry[], Map<number, Entry[]>>();
+function startersFor(entries: Entry[], C: number): Entry[] {
+  const byWidth = starterCache.get(entries) ?? new Map<number, Entry[]>();
+  starterCache.set(entries, byWidth);
+  let list = byWidth.get(C);
+  if (!list) byWidth.set(C, (list = entries.filter((e) => e.word.length >= Math.min(C - 2, 6) && e.word.length <= C - 1)));
+  return list;
+}
+
+/**
+ * True when a word at (row, col) would share a square with a placed word running the same way: it
+ * would run straight on from (or into) that answer, like FUND swallowing FUN.
+ */
+function runsOn(words: Omit<Placed, 'n'>[], row: number, col: number, len: number, dir: Dir): boolean {
+  const along = dir === 'across' ? col : row;
+  const line = dir === 'across' ? row : col;
+  return words.some((w) => {
+    if (w.dir !== dir || (dir === 'across' ? w.row : w.col) !== line) return false;
+    const start = dir === 'across' ? w.col : w.row;
+    return start < along + len && along < start + w.word.length;
+  });
 }
 
 /** Checks a placement and returns how many letters it crosses, or -1 when it does not fit. */
@@ -128,13 +156,13 @@ interface Attempt {
   words: Omit<Placed, 'n'>[];
 }
 
-function attempt(R: number, C: number, r: () => number, targetWords: number): Attempt {
+function attempt(R: number, C: number, r: () => number, targetWords: number, list: Entry[]): Attempt {
   const g: Work = Array.from({ length: R }, () => Array<null>(C).fill(null));
   const words: Omit<Placed, 'n'>[] = [];
   const used = new Set<string>();
-  const index = byLetter(WORDS);
+  const index = byLetter(list);
   // Start with a longish word along the top, its clue in the corner.
-  const starters = WORDS.filter((e) => e.word.length >= Math.min(C - 2, 6) && e.word.length <= C - 1);
+  const starters = startersFor(list, C);
   const first = starters[Math.floor(r() * starters.length)]!;
   place(g, first.word, 0, 1, 'left');
   words.push({ word: first.word, clue: first.clue, row: 0, col: 1, dir: 'across', spot: 'left', cr: 0, cc: 0 });
@@ -160,6 +188,8 @@ function attempt(R: number, C: number, r: () => number, targetWords: number): At
           if (crosses < 1) continue;
           // Prefer more crossings and longer words; plain arrows (→ ↓) over bent ones.
           const score = crosses * 10 + e.word.length * 2 + (spot === 'left' || spot === 'above' ? 3 : 0) + r() * 4;
+          // Checked after the draw above, so grids without a run-on come out exactly as before.
+          if (runsOn(words, row, col, e.word.length, dir)) continue;
           if (!best || score > best.score) best = { e, row, col, spot, score };
         }
       }
@@ -182,13 +212,23 @@ export const SIZES = {
 } as const;
 export type Size = keyof typeof SIZES;
 
+/**
+ * Generator editions. 1 is the original word list (dailies before WORDS_V2_FROM and challenges started
+ * before it keep their grids); 2 is the current list.
+ */
+export type Edition = 1 | 2;
+export const WORDS_V2_FROM = '2026-11-08';
+/** The edition for content dated `day` (YYYY-MM-DD; empty for undated challenges, which predate edition 2). */
+export const editionFor = (day: string): Edition => (day && day >= WORDS_V2_FROM ? 2 : 1);
+
 /** Builds a puzzle: several attempts from the seed, keeping the densest grid. */
-export function makePuzzle(seed: number, size: Size): Puzzle {
+export function makePuzzle(seed: number, size: Size, edition: Edition = 2): Puzzle {
   const { rows: R, cols: C, words: target } = SIZES[size];
+  const list = edition === 1 ? LEGACY_WORDS : WORDS;
   const r = rng(seed);
   let best: Attempt | null = null;
   for (let t = 0; t < 14; t++) {
-    const a = attempt(R, C, r, target);
+    const a = attempt(R, C, r, target, list);
     if (!best || fill(a) + a.words.length * 3 > fill(best) + best.words.length * 3) best = a;
   }
   const a = best!;
@@ -203,7 +243,7 @@ export function makePuzzle(seed: number, size: Size): Puzzle {
   const pool: [number, number, string][] = [];
   cells.forEach((row, i) => row.forEach((c, j) => c.kind === 'letter' && pool.push([i, j, c.ch])));
   const inGrid = new Set(words.map((w) => w.word));
-  const candidates = WORDS.filter((e) => e.word.length >= 5 && e.word.length <= 6 && !inGrid.has(e.word));
+  const candidates = list.filter((e) => e.word.length >= 5 && e.word.length <= 6 && !inGrid.has(e.word));
   for (let k = 0; k < 200 && !mystery; k++) {
     const e = candidates[Math.floor(r() * candidates.length)]!;
     const left = [...pool].sort(() => r() - 0.5);

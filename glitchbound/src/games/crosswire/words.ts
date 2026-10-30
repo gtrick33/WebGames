@@ -11,11 +11,11 @@ ash:Fireplace leftover
 ask:Pose a question
 axe:Woodcutter's tool
 bag:Shopping carrier
-bat:Cricket club or night flyer
+bat:Baseball club or night flyer
 bed:Place to sleep
 bee:Honey maker
 box:Cardboard container
-boy:Young lad
+boy:Young male
 bus:School transport
 cab:Taxi
 cap:Peaked hat
@@ -31,7 +31,7 @@ dig:Use a spade
 dog:Barking pet
 dot:Tiny spot
 dry:Not wet
-ear:Organ of hearing
+ear:Organ you listen with
 eat:Have a meal
 egg:Omelette ingredient
 elf:Santa's helper
@@ -67,7 +67,7 @@ lid:Pot cover
 lip:Mouth edge
 log:Piece of firewood
 map:Guide to places
-mat:Doormat
+mat:Floor covering
 mix:Stir together
 mop:Floor cleaner
 mud:Wet soil
@@ -89,7 +89,7 @@ pot:Cooking vessel
 ram:Male sheep
 rat:Long-tailed rodent
 ray:Beam of light
-red:Colour of a tomato
+red:Color of a tomato
 rib:Chest bone
 rug:Small carpet
 run:Move fast on foot
@@ -97,7 +97,7 @@ sad:Unhappy
 sea:Salty water
 sky:Where clouds float
 sun:Star of our system
-tap:Water faucet
+tap:Light knock
 tea:Brewed drink
 ten:Number after nine
 tie:Neckwear
@@ -136,7 +136,7 @@ cake:Birthday treat
 calm:Peaceful
 camp:Tent site
 card:Birthday greeting
-cart:Shopping trolley
+cart:Wheeled shopping basket
 cave:Bat's home
 chef:Kitchen boss
 chin:Below the mouth
@@ -147,7 +147,7 @@ coat:Winter jacket
 coin:Small money
 cook:Make dinner
 cool:Slightly cold
-corn:Popcorn grain
+corn:Cob vegetable
 crab:Sideways walker
 crow:Black bird
 cube:Dice shape
@@ -205,7 +205,7 @@ list:Shopping reminder
 lock:Opened by a key
 loud:Noisy
 love:Deep affection
-mail:Post
+mail:Letters and packages
 mask:Face cover
 meal:Breakfast or dinner
 milk:White drink
@@ -348,7 +348,7 @@ toast:Browned bread
 tooth:Biting part
 tower:Tall building
 train:Rail vehicle
-truck:Big lorry
+truck:Big rig
 uncle:Parent's brother
 voice:Speaking sound
 water:Drinking liquid
@@ -359,7 +359,7 @@ zebra:Striped horse
 anchor:Ship's stopper
 animal:Living creature
 artist:Painter
-autumn:Fall season
+autumn:Season after summer
 banana:Yellow fruit
 basket:Woven carrier
 bridge:River crossing
@@ -368,10 +368,10 @@ button:Shirt fastener
 candle:Wax light
 carrot:Orange vegetable
 castle:Royal fortress
-cheese:Mouse's favourite
+cheese:Mouse's favorite
 cherry:Small red fruit
 circle:Round shape
-cookie:Sweet biscuit
+cookie:Chocolate chip treat
 dragon:Fire breather
 flower:Blossom
 forest:Many trees
@@ -388,7 +388,7 @@ lizard:Small reptile
 market:Place to buy food
 mirror:Reflecting glass
 monkey:Banana-loving primate
-orange:Citrus fruit or colour
+orange:Citrus fruit or color
 parrot:Talking bird
 pencil:Graphite writer
 pepper:Spicy seasoning
@@ -399,7 +399,7 @@ rabbit:Long-eared hopper
 rocket:Space launcher
 saddle:Horse seat
 school:Place of learning
-silver:Shiny grey metal
+silver:Shiny gray metal
 spider:Eight-legged spinner
 spring:Season of blossoms
 square:Four equal sides
@@ -427,7 +427,7 @@ bar:Pub counter
 bay:Curved coastline
 bet:Wager
 big:Large
-bin:Rubbish container
+bin:Storage box
 bit:Small piece
 bow:Ribbon knot
 bug:Insect or glitch
@@ -435,7 +435,7 @@ bun:Sweet roll
 buy:Purchase
 can:Tin container
 cod:White fish
-cot:Baby's bed
+cot:Camp bed
 cry:Shed tears
 cub:Young bear
 dad:Father
@@ -466,7 +466,6 @@ god:Deity
 gym:Workout place
 ham:Cured pork
 hay:Dried grass
-hen:Egg layer
 hid:Kept out of sight
 hug:Cuddle
 ill:Sick
@@ -486,9 +485,8 @@ lie:Fib
 low:Not high
 mad:Angry
 man:Adult male
-mat:Floor covering
 may:Spring month
-men:Gentlemen
+men:Adult males
 mob:Crowd
 mug:Big cup
 nag:Pester
@@ -503,12 +501,11 @@ our:Belonging to us
 out:Not in
 owe:Be in debt
 own:Possess
-pad:Notepad
+pad:Writing tablet
 pal:Friend
 pat:Gentle tap
 pea:Green pod seed
 peg:Clothes clip
-pie:Pastry dish
 pit:Fruit stone
 pop:Fizzy drink
 pub:Local bar
@@ -539,7 +536,7 @@ spy:Secret agent
 sum:Total
 tab:Browser page
 tag:Label
-tan:Sun colour
+tan:Sun color
 tar:Road goo
 tax:Government charge
 tin:Metal can
@@ -573,12 +570,11 @@ bean:Baked or green legume
 beef:Cow meat
 belt:Waist strap
 bill:Invoice or beak
-blue:Sky colour
+blue:Sky color
 body:Torso and limbs
 bold:Brave
 born:Came into the world
 boss:Manager
-bowl:Cereal dish
 bulb:Lamp part
 burn:Scorch
 busy:Occupied
@@ -612,7 +608,6 @@ dock:Ship's berth
 doll:Toy figure
 draw:Sketch
 drop:Fall
-drop:Fall
 duet:Song for two
 dune:Sand hill
 dusk:Twilight
@@ -626,34 +621,30 @@ fact:Truth
 fair:Just
 fall:Tumble
 fame:Celebrity
-farm:Ranch
 fear:Fright
 feet:Plural of foot
 fern:Leafy plant
 film:Movie
 find:Discover
 fist:Closed hand
-flat:Apartment
+flat:Like a pancake
 flea:Jumping pest
 flip:Turn over
 flow:Stream
 foam:Bubbles
 fold:Crease
 food:Nourishment
-fork:Cutlery prong
 form:Shape
 free:No cost
-frog:Pond hopper
-fuel:Petrol
+fuel:Gas or diesel
 full:Not empty
 fund:Money pool
 gale:Strong wind
 gear:Equipment
-gold:Precious metal
 good:Not bad
 gown:Long dress
 grab:Snatch
-grey:Colour of ash
+gray:Color of ash
 grin:Big smile
 grow:Get bigger
 gulf:Large bay
@@ -699,8 +690,8 @@ lazy:Idle
 lead:Guide
 lens:Camera glass
 life:Existence
-lift:Elevator
-line:Queue
+lift:Elevate
+line:Row of waiting people
 link:Connection
 loaf:Bread unit
 loan:Borrowed money
@@ -708,7 +699,7 @@ long:Not short
 loop:Circle
 luck:Fortune
 lung:Breathing organ
-mall:Shopping centre
+mall:Shopping center
 many:Lots
 mark:Grade
 meat:Butcher's goods
@@ -742,11 +733,11 @@ poem:Verse
 poet:Verse writer
 pole:Long stick
 pork:Pig meat
-port:Harbour
-post:Mail
+port:Harbor
+post:Fence pole
 pull:Tug
 pump:Inflate
-pure:Clean
+pure:Unmixed
 push:Shove
 quiz:Test
 race:Contest of speed
@@ -771,15 +762,15 @@ sale:Discount event
 same:Identical
 scar:Healed wound
 seat:Chair
-self:Oneself
+self:One's own being
 shop:Store
 show:Display
 side:Edge
-sign:Signal
+sign:Road notice
 size:Dimension
 skin:Body covering
 slow:Not fast
-soft:Not hard
+soft:Like a pillow
 soil:Earth
 song:Tune
 soul:Spirit
@@ -814,8 +805,8 @@ view:Scene
 wait:Stay
 wake:Stop sleeping
 walk:Stroll
-warm:Cosy
-wash:Clean
+warm:Not quite hot
+wash:Scrub with soap
 wide:Broad
 wild:Untamed
 wire:Metal cable
@@ -869,7 +860,7 @@ flood:Overflow
 floor:Ground surface
 fresh:New
 grain:Wheat seed
-green:Grass colour
+green:Grass color
 guest:Visitor
 happy:Glad
 hotel:Place to stay
@@ -892,12 +883,11 @@ mouth:Eating opening
 noble:Aristocratic
 novel:Long story
 orbit:Path around a planet
-paint:Colour coating
+paint:Color coating
 panel:Flat board
 pasta:Spaghetti
 pedal:Bike foot lever
 penny:Small coin
-piano:Grand instrument
 pilot:Plane flyer
 place:Location
 point:Sharp tip
@@ -924,36 +914,36 @@ snail:Slow mover
 solar:Of the sun
 space:Outer cosmos
 spice:Seasoning
-stage:Theatre platform
-steam:Hot vapour
+stage:Theater platform
+steam:Hot vapor
 stone:Pebble
 story:Tale
 sweet:Sugary
 swing:Playground seat
-taste:Flavour
+taste:Flavor
 teeth:Biters
 thumb:Short finger
 timer:Countdown clock
-torch:Flashlight
+torch:Flaming stick
 towel:Drying cloth
 trail:Path
 tulip:Spring flower
 vault:Safe room
 video:Recording
 wagon:Cart
-watch:Wristwatch
+watch:Wrist timepiece
 wheat:Bread grain
 young:Not old
 bud:Flower before it opens
-cue:Snooker stick
-dye:Hair colouring
+cue:Pool stick
+dye:Hair coloring
 elk:Large deer
 ewe:Female sheep
 fad:Short-lived craze
 fib:Small lie
 gnu:Wildebeest
 hem:Bottom edge of a skirt
-hue:Shade of colour
+hue:Shade of color
 jab:Quick punch
 kin:Relatives
 lob:High tennis shot
@@ -1027,7 +1017,7 @@ clam:Shellfish
 claw:Crab's pincer
 comb:Hair tidier
 cone:Ice-cream holder
-cosy:Snug
+cozy:Snug
 crib:Baby's bed
 cult:Devoted group
 curl:Ringlet
@@ -1043,12 +1033,12 @@ drag:Pull along
 dual:Twofold
 dull:Boring
 dumb:Silly
-dunk:Dip a biscuit
+dunk:Dip a donut
 fake:Not real
 fang:Snake's tooth
 fawn:Baby deer
 feud:Long quarrel
-fizz:Bubbles
+fizz:Soda sparkle
 flaw:Defect
 flex:Bend a muscle
 foal:Baby horse
@@ -1085,7 +1075,7 @@ isle:Small island
 jade:Green gemstone
 jest:Joke
 jive:Lively dance
-junk:Rubbish
+junk:Worthless stuff
 kale:Leafy green
 keel:Ship's backbone
 kiln:Pottery oven
@@ -1123,7 +1113,7 @@ noon:Midday
 oval:Egg shape
 pace:Speed of walking
 pact:Agreement
-pale:Light in colour
+pale:Light in color
 pane:Window glass
 pant:Breathe hard
 pave:Lay a road
@@ -1175,7 +1165,7 @@ slim:Thin
 slug:Shell-less snail
 smog:Polluted air
 snap:Break suddenly
-snug:Cosy
+snug:Cozy
 soar:Fly high
 sofa:Couch
 sole:Bottom of a shoe
@@ -1202,7 +1192,7 @@ toad:Warty amphibian
 toil:Hard work
 toll:Road charge
 tomb:Grave
-tool:Hammer or spanner
+tool:Hammer or wrench
 tram:Street railcar
 trap:Snare
 tray:Serving board
@@ -1273,8 +1263,8 @@ blond:Fair-haired
 bluff:Fake a poker hand
 blush:Go red
 bonus:Extra reward
-booth:Phone box
-boots:Wellies
+booth:Voting stall
+boots:Cowboy footwear
 bored:Not interested
 bound:Leap
 boxer:Fighter in gloves
@@ -1285,9 +1275,9 @@ bride:Woman at a wedding
 brief:Short
 brook:Small stream
 broom:Witch's ride
-brown:Chocolate colour
+brown:Chocolate color
 budge:Move slightly
-buggy:Pushchair
+buggy:Baby stroller
 build:Construct
 bunch:Bouquet
 burst:Pop
@@ -1314,7 +1304,7 @@ chunk:Thick piece
 cider:Apple drink
 cigar:Cuban smoke
 cinch:Easy task
-civic:Of a city
+civic:Of citizens
 claim:Assert
 clamp:Gripping tool
 clash:Conflict
@@ -1327,7 +1317,7 @@ cloak:Wizard's cape
 close:Near
 cobra:Hooded snake
 cocoa:Hot chocolate
-comet:Icy space traveller
+comet:Icy space traveler
 comic:Funny book
 craft:Handiwork
 crane:Building-site lifter
@@ -1362,8 +1352,8 @@ donut:Ring cake
 dough:Bread mix
 dozen:Twelve
 draft:First version
-drain:Plughole
-drama:Theatre
+drain:Sink outlet
+drama:Stage play genre
 drawn:Sketched
 dress:Frock
 drift:Float along
@@ -1402,12 +1392,12 @@ flesh:Body tissue
 flint:Spark stone
 flirt:Make eyes at
 flora:Plant life
-flour:Baking powder
+flour:Bread powder
 flown:Gone by air
 fluid:Liquid
 flush:Toilet action
 foggy:Misty
-force:Strength
+force:Push or pull, in physics
 forge:Blacksmith's fire
 forty:Four tens
 forum:Discussion board
@@ -1424,7 +1414,7 @@ gauge:Meter
 gecko:Little lizard
 genie:Lamp granter of wishes
 genre:Category of art
-gland:Body organ
+gland:Hormone maker
 glare:Angry stare
 gleam:Shine
 glide:Move smoothly
@@ -1434,7 +1424,7 @@ glove:Hand warmer
 goose:Honking bird
 gorge:Canyon
 grace:Elegance
-grade:Mark
+grade:Report card letter
 grand:Magnificent
 graph:Chart
 grasp:Grip
@@ -1446,7 +1436,7 @@ group:Gathering
 growl:Dog's warning
 guard:Protector
 guess:Estimate
-guide:Leader
+guide:Tour leader
 habit:Routine
 hatch:Break out of an egg
 haunt:Ghost's pastime
@@ -1473,12 +1463,12 @@ index:List at the back
 inner:Inside
 irony:Opposite meaning
 ivory:Tusk material
-jeans:Denim trousers
+jeans:Denim pants
 joint:Knee or elbow
 jolly:Cheerful
 judge:Court official
 juicy:Full of juice
-kayak:Paddle boat
+kayak:Closed-deck paddle boat
 kebab:Skewered meat
 kneel:Go down on knees
 knock:Rap on a door
@@ -1487,13 +1477,13 @@ lance:Knight's spear
 large:Big
 latte:Milky coffee
 layer:Tier
-leash:Dog lead
+leash:Dog's walking strap
 ledge:Shelf
 lemur:Madagascar primate
 lever:Bar for lifting
 limit:Maximum
 linen:Bed sheets
-liver:Body organ
+liver:Organ that filters blood
 llama:Andean animal
 lobby:Hotel entrance
 local:Nearby
@@ -1512,7 +1502,7 @@ mayor:Town leader
 meant:Intended
 medic:Doctor
 mercy:Compassion
-merit:Worth
+merit:Earned worth
 messy:Untidy
 miner:Coal worker
 minor:Small
@@ -1523,11 +1513,11 @@ moose:Large deer
 moral:Ethical
 motel:Roadside hotel
 motor:Engine
-mould:Fungus
+mold:Fungus
 muddy:Dirty with soil
 mummy:Wrapped pharaoh
 nacho:Cheesy chip
-nanny:Child minder
+nanny:Live-in babysitter
 nasty:Horrible
 nerve:Courage
 never:Not ever
@@ -1557,7 +1547,7 @@ pecan:Pie nut
 perch:Bird's rest
 petal:Flower leaf
 phone:Mobile
-photo:Picture
+photo:Snapshot
 pinch:Squeeze
 pinky:Little finger
 pitch:Football field
@@ -1585,16 +1575,16 @@ psalm:Sacred song
 puppy:Young dog
 purse:Wallet
 quack:Duck sound
-quake:Tremble
+quake:Earth tremor
 quest:Search
-queue:Line of people
+queue:Waiting line
 quota:Allowance
 quote:Repeat words
 radar:Detection system
 radish:Red root
 rainy:Wet weather
 ranch:Cattle farm
-rapid:Fast
+rapid:Speedy
 ratio:Proportion
 razor:Shaver
 react:Respond
@@ -1691,7 +1681,7 @@ squad:Team
 squid:Inky sea creature
 stack:Pile
 staff:Employees
-stain:Mark
+stain:Spill mark
 stair:Step
 stake:Wooden post
 stalk:Plant stem
@@ -1716,16 +1706,16 @@ study:Learn
 stuff:Things
 style:Fashion
 suite:Hotel rooms
-sunny:Bright
+sunny:Cloudless
 super:Excellent
-surge:Rush
+surge:Sudden rush
 sushi:Raw-fish dish
 swamp:Bog
 swarm:Bee crowd
 swear:Curse
 sweat:Perspire
 sweep:Use a broom
-swift:Fast
+swift:Fleet-footed
 sword:Knight's blade
 syrup:Pancake topping
 taboo:Forbidden
@@ -1754,8 +1744,8 @@ toxic:Poisonous
 trace:Sketch over
 track:Running circuit
 trade:Exchange
-treat:Reward
-trend:Fashion
+treat:Special snack
+trend:Passing fashion
 trial:Court case
 tribe:Clan
 trick:Magic act
@@ -1777,10 +1767,10 @@ upset:Unhappy
 urban:Of a city
 usher:Cinema guide
 usual:Normal
-valid:Sound
+valid:Logically sound
 value:Worth
-valve:Tap part
-venue:Location
+valve:Faucet part
+venue:Event site
 verse:Poem part
 viper:Venomous snake
 visit:Call on
@@ -1791,7 +1781,7 @@ vodka:Russian spirit
 vowel:A, E, I, O or U
 waist:Belt line
 waltz:Ballroom dance
-waste:Rubbish
+waste:Trash
 weary:Tired
 weave:Make cloth
 wedge:Doorstop shape
@@ -1861,7 +1851,7 @@ chapel:Small church
 cheeky:Impudent
 cheetah:Fastest cat
 chorus:Song refrain
-cinema:Movie theatre
+cinema:Movie theater
 clever:Smart
 closet:Wardrobe
 cobweb:Spider's work
@@ -1941,7 +1931,7 @@ kennel:Dog house
 kettle:Tea boiler
 kidney:Body organ
 kitten:Baby cat
-knight:Armoured soldier
+knight:Armored soldier
 lagoon:Shallow lake
 laptop:Portable computer
 lawyer:Attorney
@@ -1968,7 +1958,7 @@ mitten:Glove without fingers
 modern:Up to date
 moment:Instant
 mosaic:Tile picture
-mother:Mum
+mother:Mom
 muffin:Small cake
 museum:Exhibit hall
 muscle:Biceps, say
@@ -1992,7 +1982,7 @@ pickle:Gherkin
 pigeon:City bird
 pirate:Sea robber
 plenty:Lots
-pocket:Trouser pouch
+pocket:Pants pouch
 poetry:Verse
 poodle:Curly dog
 powder:Fine dust
@@ -2009,12 +1999,12 @@ reindeer:Santa's puller
 remote:TV clicker
 rescue:Save
 ribbon:Bow material
-riddle:Brain teaser
+riddle:Sphinx's question
 safari:Wildlife trip
 salmon:Pink fish
 sandal:Summer shoe
 scream:Shriek
-season:Spring or autumn
+season:Spring or fall
 secret:Hidden thing
 shadow:Dark shape
 shower:Quick wash
@@ -2036,8 +2026,8 @@ string:Kite cord
 studio:Art room
 sudden:Unexpected
 sugary:Sweet
-supper:Evening meal
-symbol:Sign
+supper:Light evening meal
+symbol:Emblem
 tablet:Pill or screen
 talent:Gift
 target:Bullseye
@@ -2052,7 +2042,7 @@ tongue:Taste organ
 travel:Journey
 trophy:Prize cup
 tunnel:Underground passage
-turkey:Christmas bird
+turkey:Thanksgiving bird
 umpire:Referee
 unicorn:Horned horse
 useful:Handy
@@ -2066,26 +2056,26 @@ wealth:Riches
 weekend:Saturday and Sunday
 whisper:Speak softly
 wonder:Marvel
-yellow:Banana colour
+yellow:Banana color
 yogurt:Dairy dessert
 zipper:Jacket fastener
 academy:School
 balloon:Party float
 battery:Power cell
 bedroom:Sleeping room
-biscuit:Cookie
+biscuit:Flaky breakfast roll
 blossom:Flowers on a tree
-bracelet:Wrist jewellery
+bracelet:Wrist jewelry
 brother:Male sibling
 cabbage:Leafy vegetable
 captain:Ship's leader
-caravan:Holiday trailer
+caravan:Desert camel train
 cartoon:Animated show
 chicken:Farm bird
 chimney:Smoke outlet
 compass:Direction finder
 concert:Live music show
-costume:Fancy dress
+costume:Halloween outfit
 cottage:Small country house
 counter:Shop desk
 courage:Bravery
@@ -2105,11 +2095,11 @@ fantasy:Make-believe
 feather:Bird's plume
 fiction:Made-up story
 firefly:Glowing bug
-flannel:Face cloth
+flannel:Soft cotton fabric
 florist:Flower seller
 freedom:Liberty
 gallery:Art space
-garbage:Rubbish
+garbage:Kitchen trash
 giraffe:Long-necked animal
 glasses:Spectacles
 gorilla:Biggest ape
@@ -2118,7 +2108,7 @@ harvest:Crop gathering
 healthy:Well
 hedgehog:Spiny animal
 history:The past
-holiday:Vacation
+holiday:Festive day off
 horizon:Sky line
 hostage:Captive
 hunting:Chasing prey
@@ -2157,7 +2147,7 @@ peacock:Showy bird
 pelican:Pouched bird
 penguin:Tuxedo bird
 picture:Image
-pilgrim:Religious traveller
+pilgrim:Religious traveler
 plastic:Synthetic material
 popcorn:Cinema snack
 problem:Trouble
@@ -2165,13 +2155,13 @@ pudding:Dessert
 pumpkin:Halloween gourd
 pyramid:Egyptian tomb
 quarter:One fourth
-rainbow:Arc of colours
+rainbow:Arc of colors
 raccoon:Masked animal
 recipe:Cooking guide
 reptile:Cold-blooded animal
 roadway:Street
 rooster:Male chicken
-sausage:Banger
+sausage:Hot dog meat
 seaweed:Ocean plant
 serpent:Snake
 shelter:Refuge
@@ -2186,18 +2176,18 @@ sunrise:Dawn
 surgeon:Operating doctor
 teacher:Educator
 texture:Feel of a surface
-theatre:Play house
+theater:Play house
 tornado:Twister
-tourist:Holidaymaker
+tourist:Sightseer
 traffic:Road jam
 trouble:Problem
 trumpet:Brass instrument
 uniform:School outfit
 vampire:Bloodsucker
-vanilla:Ice-cream flavour
+vanilla:Ice-cream flavor
 village:Small town
 volcano:Lava mountain
-waiting:Queueing
+waiting:Standing in line
 warrior:Fighter
 weather:Rain or shine
 whistle:Referee's toy
@@ -2232,7 +2222,7 @@ envelope:Letter cover
 exercise:Workout
 festival:Celebration
 flamingo:Pink bird
-football:Soccer
+football:Gridiron sport
 fountain:Water feature
 friendly:Kind
 gardener:Plant tender
@@ -2242,10 +2232,10 @@ graduate:Degree holder
 hamster:Wheel-running pet
 handbag:Purse
 headache:Sore head
-hospital:Medical centre
+hospital:Medical center
 kangaroo:Hopping marsupial
 keyboard:Typing board
-ladybird:Spotted beetle
+ladybug:Spotted beetle
 landmark:Famous site
 language:Tongue
 lemonade:Citrus drink
@@ -2257,8 +2247,8 @@ midnight:Twelve at night
 mosquito:Biting insect
 mountain:Big hill
 mushroom:Fungus
-necklace:Neck jewellery
-notebook:Jotter
+necklace:Neck jewelry
+notebook:Spiral-bound pad
 ointment:Healing cream
 painting:Artwork
 password:Secret word
@@ -2266,27 +2256,27 @@ peaceful:Calm
 platypus:Duck-billed mammal
 princess:King's daughter
 question:Query
-raincoat:Mac
+raincoat:Slicker
 sandwich:Lunch snack
 scorpion:Stinging arachnid
 seashell:Beach find
 shoulder:Upper arm joint
-sidewalk:Pavement
+sidewalk:Pedestrian path
 snowball:Winter missile
 snowman:Frosty figure
 squirrel:Nut hoarder
 stingray:Flat sea fish
 strength:Power
 surprise:Unexpected thing
-sweater:Jumper
+sweater:Knit top
 swimming:Pool activity
 teaspoon:Small spoon
 treasure:Pirate's chest
 triangle:Three-sided shape
 umbrella:Rain shield
-vacation:Holiday
+vacation:Trip away from work
 vineyard:Grape farm
-wardrobe:Clothes cupboard
+wardrobe:Clothes closet
 whiskers:Cat hairs
 woodland:Forest
 `;
@@ -2296,12 +2286,22 @@ export interface Entry {
   clue: string;
 }
 
-const seen = new Set<string>();
+function parse(rename: Record<string, string> = {}): Entry[] {
+  const seen = new Set<string>();
+  return RAW.trim()
+    .split('\n')
+    .map((line) => {
+      const i = line.indexOf(':');
+      const word = line.slice(0, i).trim().toUpperCase();
+      return { word: rename[word] ?? word, clue: line.slice(i + 1).trim() };
+    })
+    .filter((e) => /^[A-Z]{3,8}$/.test(e.word) && !!e.clue && !seen.has(e.word) && !!seen.add(e.word));
+}
 
-export const WORDS: Entry[] = RAW.trim()
-  .split('\n')
-  .map((line) => {
-    const i = line.indexOf(':');
-    return { word: line.slice(0, i).trim().toUpperCase(), clue: line.slice(i + 1).trim() };
-  })
-  .filter((e) => /^[A-Z]{3,8}$/.test(e.word) && !!e.clue && !seen.has(e.word) && !!seen.add(e.word));
+export const WORDS: Entry[] = parse();
+
+/**
+ * The answers as they were before the list was moved to American English, in the same order, so grids
+ * from earlier dailies and challenges (generator edition 1, see grid.ts) come out exactly as before.
+ */
+export const LEGACY_WORDS: Entry[] = parse({ GRAY: 'GREY', COZY: 'COSY', MOLD: 'MOULD', THEATER: 'THEATRE', LADYBUG: 'LADYBIRD' });
