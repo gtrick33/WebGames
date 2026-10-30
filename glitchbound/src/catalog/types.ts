@@ -46,6 +46,33 @@ export interface StatDef {
   lowerIsBetter?: boolean;
 }
 
+/** A cap on one reported stat. `min`/`max` apply to a reported value; `perSecond` caps it by the time played. */
+export interface StatLimit {
+  min?: number;
+  max?: number;
+  perSecond?: number;
+}
+
+/** What a legitimate round can score (see GameEntry.limits). */
+export interface ScoreLimits {
+  /** Highest score a legitimate player can gain per second of play. */
+  scorePerSecond: number;
+  /** Shortest real round, in seconds (default 1). */
+  minSeconds?: number;
+  /** Highest score any round can have, however long it lasts. */
+  maxScore?: number;
+  /** Highest score of one challenge round (fixed content, e.g. five shots), when lower than maxScore. */
+  roundMax?: number;
+  /** Points allowed on top of scorePerSecond × seconds (default min(50, 10 × scorePerSecond)). */
+  slack?: number;
+  /** Caps on the reported stats, by key; a reported value outside them refuses the round. */
+  stats?: Record<string, StatLimit>;
+  /** The score must equal the sum of these stats times their weights (Wing It: gaps + 3 × feathers). */
+  scoreIs?: Record<string, number>;
+  /** The score can be at most the sum of these stats times their weights (Quizbelief: 150 per right answer). */
+  scoreAtMost?: Record<string, number>;
+}
+
 /** A daily challenge the platform may pick for this game on a given day. */
 export interface DailyTemplate {
   /** Stat key from `stats` (or "score") that the run must reach. */
@@ -139,13 +166,11 @@ export interface GameEntry {
   };
   /** Optional link to play the game on its own site. */
   homepage?: string;
-  /** Server-side plausibility limits for leaderboard submissions. */
-  limits?: {
-    /** Highest score a legitimate player can gain per second of play. */
-    scorePerSecond: number;
-    /** Shortest real round, in seconds. */
-    minSeconds?: number;
-  };
+  /**
+   * Server-side plausibility limits for leaderboard runs and challenge scores (server/plausible.ts).
+   * Required for every game (validateCatalog). Lenient by design: a real round is never refused.
+   */
+  limits?: ScoreLimits;
   /**
    * A Party Mode game (e.g. Crass Act): featured in Party Mode instead of the arcade, so it is left out of
    * the arcade's lists, search, home page and rotations. Its own page and room links still work.

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { tDaily, useT } from '../i18n';
 import { track } from '../platform/analytics';
-import { dailyShareText, fmt } from '../platform/daily';
+import { dailyShareText, fmt, progressOf } from '../platform/daily';
 import { formatCountdown, msUntilMidnight } from '../platform/dates';
 import { SITE_URL } from '../platform/env';
 import { useDaily, useNow } from '../platform/hooks';
@@ -28,7 +28,7 @@ export function DailyCard({ variant = 'band', headingLevel = 2 }: { variant?: 'b
   if (!daily) return null;
   const { challenge: c, best, tried, done, streak, week } = daily;
   const unit = c.unit ? ` ${c.unit}` : '';
-  const progress = Math.min(1, best / c.target);
+  const progress = progressOf(c, best);
   const H = `h${headingLevel}` as const;
   const weekLabels = week.map((_, i) => {
     const d = new Date(now);

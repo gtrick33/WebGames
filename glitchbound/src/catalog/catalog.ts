@@ -132,6 +132,21 @@ export function latestGame(games: GameEntry[] = GAMES): GameEntry | undefined {
 /** Paths of the site's own pages, which a section can never take. */
 const RESERVED_PATHS = new Set(['/daily', '/privacy', '/terms', '/about', '/contact', '/leaderboards', '/me', '/party', '/admin', '/signin', '/discord', '/games', '/play', '/api', '/index']);
 
+/** Problems with a game's score limits: every game reports scores, so every game needs them. */
+function limitErrors(g: GameEntry): string[] {
+  const l = g.limits;
+  if (!l) return ['limits are required (scorePerSecond, minSeconds, and maxScore when rounds are bounded)'];
+  const errors: string[] = [];
+  const pos = (n: number | undefined): boolean => n === undefined || (Number.isFinite(n) && n >= 0);
+  if (!(l.scorePerSecond > 0)) errors.push('limits.scorePerSecond must be positive');
+  if (![l.minSeconds, l.maxScore, l.roundMax, l.slack].every(pos)) errors.push('limits must be non-negative numbers');
+  for (const [key, cap] of Object.entries({ ...l.stats, ...l.scoreIs, ...l.scoreAtMost })) {
+    if (!g.stats.some((s) => s.key === key)) errors.push(`limits name stat "${key}" that is not in stats`);
+    if (typeof cap === 'object' && ![cap.min, cap.max, cap.perSecond].every(pos)) errors.push(`limits for "${key}" must be non-negative numbers`);
+  }
+  return errors;
+}
+
 /** Returns a list of problems with the registry; empty when everything is valid. Runs in tests and at build time. */
 export function validateCatalog(games: GameEntry[] = GAMES): string[] {
   const errors: string[] = [];
@@ -146,8 +161,14 @@ export function validateCatalog(games: GameEntry[] = GAMES): string[] {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(g.released) || Number.isNaN(Date.parse(g.released))) errors.push(`${at}: released must be YYYY-MM-DD`);
     for (const c of g.categories) if (!isCategory(c)) errors.push(`${at}: unknown category "${c}"`);
     if (!g.stats.some((s) => s.key === 'score')) errors.push(`${at}: stats must include "score"`);
+    // Leaderboards and challenges compare scores higher-first; times and counts that shrink are other stats.
+    if (g.stats.some((s) => s.key === 'score' && s.lowerIsBetter)) errors.push(`${at}: "score" is always higher-is-better`);
+    errors.push(...limitErrors(g).map((e) => `${at}: ${e}`));
     for (const d of g.daily ?? []) {
-      if (!g.stats.some((s) => s.key === d.metric)) errors.push(`${at}: daily metric "${d.metric}" is not in stats`);
+      const stat = g.stats.find((s) => s.key === d.metric);
+      if (!stat) errors.push(`${at}: daily metric "${d.metric}" is not in stats`);
+      // A lower-is-better daily is cleared at or under its target (daily.ts isDone): its text must say so.
+      if (stat?.lowerIsBetter && !/\b(under|within|or fewer|or less|at most)\b/.test(d.label)) errors.push(`${at}: lower-is-better daily "${d.label}" must read as a ceiling ("under {n}")`);
       if (d.targets.length === 0 || d.targets.some((t) => !(t > 0))) errors.push(`${at}: daily targets must be positive`);
       if (!d.label.includes('{n}')) errors.push(`${at}: daily label must contain {n}`);
       if (d.one !== undefined && !d.one.includes('{n}')) errors.push(`${at}: daily "one" text must contain {n}`);

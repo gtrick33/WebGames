@@ -1,11 +1,12 @@
 import { GAMES } from '../../../src/catalog/games';
 import { getGame } from '../../../src/catalog/catalog';
 import type { RunEndResult } from '../../../src/platform/apiTypes';
-import { challengeForDay, metricValue } from '../../../src/platform/daily';
+import { challengeForDay, isDone, lowerIsBetter, metricValue } from '../../../src/platform/daily';
 import { liveRules } from '../../../server/catalogSettings';
 import { bad, int, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { clientDay, questViews } from '../../../server/members';
 import { requireUser } from '../../../server/session';
+import { refusal } from '../../../server/plausible';
 import { listed } from '../../../server/staff';
 
 const MAX = 1e9;
@@ -13,8 +14,9 @@ const MAX = 1e9;
 /**
  * POST /api/runs/end { runId, score, stats, day }: records a finished round for leaderboards,
  * bests, the daily challenge and quests. The score must be plausible for the real time elapsed
- * since /api/runs/start (registry `limits`). Client games can still be cheated by a determined
- * player; this keeps out casual tampering.
+ * since /api/runs/start, below the game's maximum, with stats in range (registry `limits`, see
+ * server/plausible.ts); an impossible round is refused with the reason, never clamped. Client games
+ * can still be cheated by a determined player; this keeps out casual tampering.
  */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('bad_origin', 403);
@@ -39,10 +41,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
     if (v >= 0 && v <= MAX) stats[s.key] = v;
   }
 
-  let reason = '';
-  if (!(score >= 0 && score <= MAX)) reason = 'bad_score';
-  else if (game.limits && seconds < (game.limits.minSeconds ?? 1)) reason = 'too_fast';
-  else if (game.limits && score > game.limits.scorePerSecond * seconds + 50) reason = 'implausible_score';
+  const reason = refusal(game, score, stats, seconds);
   if (reason) {
     await env.DB.prepare(`UPDATE runs SET status = 'rejected', ended_at = ?, score = ? WHERE id = ?`).bind(now, Number.isFinite(score) ? score : null, body.runId).run();
     const result: RunEndResult = { ok: false, newBest: false, rank: null, dailyCompleted: false, quests: [], error: reason };
@@ -81,12 +80,16 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (challenge && challenge.game.slug === game.slug) {
     const value = metricValue(challenge.metric, { type: 'end', score, stats });
     const before = await env.DB.prepare('SELECT done FROM dailies WHERE user_id = ? AND day = ?').bind(user.id, day).first<{ done: number }>();
-    const done = value >= challenge.target;
+    const done = isDone(challenge, value);
     dailyCompleted = done && !before?.done;
+    // A time (lower is better) keeps the fastest; 0 is "not reported" and never beats a real time.
+    const best = lowerIsBetter(challenge)
+      ? 'CASE WHEN dailies.best <= 0 THEN excluded.best WHEN excluded.best <= 0 THEN dailies.best ELSE MIN(dailies.best, excluded.best) END'
+      : 'MAX(dailies.best, excluded.best)';
     statements.push(
       env.DB.prepare(
         `INSERT INTO dailies (user_id, day, game, best, done) VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT (user_id, day) DO UPDATE SET best = MAX(dailies.best, excluded.best), done = MAX(dailies.done, excluded.done)`,
+         ON CONFLICT (user_id, day) DO UPDATE SET best = ${best}, done = MAX(dailies.done, excluded.done)`,
       ).bind(user.id, day, game.slug, value, done ? 1 : 0),
     );
   }

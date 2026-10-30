@@ -1,7 +1,7 @@
 import type { GameEntry } from '../catalog/types';
 import type { EndEvent } from './contract';
 import { addDays, dayKey } from './dates';
-import { challengeForDay, metricValue } from './daily';
+import { better, challengeForDay, isDone, metricValue } from './daily';
 import { currentSlug } from '../catalog/catalog';
 
 /**
@@ -101,8 +101,8 @@ export function applyRound(save: Save, game: GameEntry, event: EndEvent, games: 
   if (challenge && challenge.game.slug === game.slug) {
     const value = metricValue(challenge.metric, event);
     const d = (save.daily[today] ??= { best: 0, done: false });
-    d.best = Math.max(d.best, value);
-    if (!d.done && value >= challenge.target) {
+    d.best = better(challenge, d.best, value);
+    if (!d.done && isDone(challenge, value)) {
       d.done = true;
       dailyCompleted = true;
     }
@@ -150,7 +150,8 @@ export function mergeSaves(a: Save, b: Save, games: GameEntry[], today: string):
   }
   for (const [day, d] of Object.entries(b.daily)) {
     const x = out.daily[day];
-    out.daily[day] = x ? { best: Math.max(x.best, d.best), done: x.done || d.done } : { ...d };
+    const c = x ? challengeForDay(day, games) : null;
+    out.daily[day] = x ? { best: c ? better(c, x.best, d.best) : Math.max(x.best, d.best), done: x.done || d.done } : { ...d };
   }
   for (const [day, list] of Object.entries(b.gameDailies)) out.gameDailies[day] = [...new Set([...(out.gameDailies[day] ?? []), ...list])];
   pruneDaily(out, today);
