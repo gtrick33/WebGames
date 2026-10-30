@@ -1578,6 +1578,8 @@ export class World {
       e.boss.dying = 1.8;
       e.boss.pattern = null;
       this.clearHostile();
+      // what the fight left ticking on the hero ends with it: a burn must not kill them during the throes
+      this.player.statuses = this.player.statuses.filter((st) => st.id !== 'burn' && st.id !== 'poison' && st.id !== 'bleed');
       this.shake(6);
       this.hitstop(0.25);
       // the last blow, slowed, the camera on it
@@ -1943,6 +1945,8 @@ export class World {
       this.emit({ t: 'hero' });
       return;
     }
+    // a boss already in its death throes is felled: the blow that killed it counts
+    for (const e of this.enemies) if (e.boss && e.boss.dying > 0 && !e.dead) this.bossFinished(e);
     for (const enc of this.encounters) {
       if (enc.state !== 'active') continue;
       enc.state = 'idle';
