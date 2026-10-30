@@ -21,6 +21,7 @@ import { ChallengeFriends, inviteToChallenge, startChallenge } from '../componen
 const ChallengeDock = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeDock }))));
 const ChallengeScores = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeScores }))));
 const ChallengeScoresChip = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeScoresChip }))));
+const ChallengeIntro = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeIntro }))));
 import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { LiveBadge } from '../components/LiveBadge';
@@ -701,6 +702,11 @@ export function GamePage({ game }: { game: GameEntry }) {
             overlay={
               <>
                 {howTo && <HowTo game={game} onClose={closeHowTo} onPlay={() => startPlay.current?.()} />}
+                {challengeId && !playing && !howTo && (
+                  <Suspense fallback={null}>
+                    <ChallengeIntro run={chal} game={game} onPlay={() => startPlay.current?.()} onHowTo={hasHowTo ? openHowTo : undefined} />
+                  </Suspense>
+                )}
                 {challengeId && scoresOpen && (
                   <Suspense fallback={null}>
                     <ChallengeScores run={chal} game={game} onClose={() => setScoresOpen(false)} stageRound={playing ? (stageSpec?.round ?? null) : null} onPlayRound={playRound} />

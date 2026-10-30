@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useT } from '../i18n';
+import { tGame, useT } from '../i18n';
 import type { GameEntry } from '../catalog/types';
 import { MAX_PLAYERS, type ChallengeView } from '../platform/challenge';
 import type { ChallengeRun, ChallengeRunState } from '../platform/useChallengeRun';
@@ -372,5 +372,44 @@ export function ChallengeScoresChip({ score, onOpen, onDismiss }: { score: numbe
         <Icon name="close" size={16} />
       </button>
     </div>
+  );
+}
+
+/**
+ * Before a challenge round starts: this run counts (one attempt, the first finished score is the one
+ * on the board), with Play and, for players new to the game, How to play first.
+ */
+export function ChallengeIntro({ run, game, onPlay, onHowTo }: { run: ChallengeRun; game: GameEntry; onPlay: () => void; onHowTo?: () => void }) {
+  const t = useT();
+  const { state } = run;
+  if (state.status !== 'ready') return null;
+  const view = state.view;
+  const host = view.players[0]?.name;
+  // A first round in this challenge: How to play leads; later rounds go straight to Play.
+  const first = !view.rounds.some((r) => r.scores.some((s) => s.you));
+  const howTo = onHowTo && first;
+  return (
+    <section className="chs chs-intro" aria-label={t('Challenge')}>
+      <div className="chs-card">
+        <p className="chs-kicker mono">
+          ⚔️ {view.host || !host ? t('Your challenge') : t('{name}’s challenge', { name: host })} · {t('round {n}', { n: view.round })}
+        </p>
+        <h2 className="chs-title">{t('This run counts')}</h2>
+        <p className="chs-note">
+          {t('One attempt: your first finished score goes on the board.')}
+          {game.challenge?.label ? ` ${tGame(game.challenge.label)}` : ''}
+        </p>
+        <div className="chs-actions">
+          {howTo && (
+            <button className="btn btn-primary" onClick={onHowTo}>
+              <Icon name="info" /> {t('How to play')}
+            </button>
+          )}
+          <button className={`btn${howTo ? '' : ' btn-primary'}`} onClick={onPlay}>
+            <Icon name="play" /> {t('Play round {n}', { n: view.round })}
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
