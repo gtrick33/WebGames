@@ -14,12 +14,13 @@ import { reportError, track } from '../platform/analytics';
 import { account, api, ApiError, useAccount } from '../platform/account';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { SCORES_EVENT } from '../platform/challenge';
-import { challengeSpecOf, useChallengeRun } from '../platform/useChallengeRun';
+import { challengeSpecOf, useChallengeRun, type ChallengeRunState } from '../platform/useChallengeRun';
 import { ChallengeFriends, inviteToChallenge, startChallenge } from '../components/ChallengeFriends';
 
 // The challenge dock and scoreboard load only on challenge links (/games/<slug>?challenge=<id>).
 const ChallengeDock = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeDock }))));
 const ChallengeScores = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeScores }))));
+const ChallengeScoresChip = lazy(fresh(() => import('../components/Challenge').then((m) => ({ default: m.ChallengeScoresChip }))));
 import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { LiveBadge } from '../components/LiveBadge';
@@ -302,6 +303,19 @@ function StageMenu({ slug, title, placement, open, setOpen, onOpen, onExitFullsc
   );
 }
 
+/**
+ * What the stage's challenge scoreboard does when the challenge's status changes: your score is in
+ * (a chip while the game still shows its own result, else the scoreboard), the challenge ended
+ * (the scoreboard), a new round is yours (closed, unless the stage still plays the last round:
+ * then it stays open with "Play round N").
+ */
+export function scoreboardOnStatus(status: ChallengeRunState['status'], { open, playing, stageOld }: { open: boolean; playing: boolean; stageOld: boolean }): { open: boolean; chip: boolean } {
+  if (status === 'sent') return playing ? { open, chip: true } : { open: true, chip: false };
+  if (status === 'closed' || status === 'gone') return { open: true, chip: false };
+  if (status === 'ready') return { open: open && stageOld, chip: false };
+  return { open, chip: false };
+}
+
 export function GamePage({ game }: { game: GameEntry }) {
   const t = useT();
   const { search } = useLocation();
@@ -353,13 +367,6 @@ export function GamePage({ game }: { game: GameEntry }) {
     window.addEventListener(SCORES_EVENT, open);
     return () => window.removeEventListener(SCORES_EVENT, open);
   }, []);
-  const chalStatus = chal.state.status;
-  const [lastStatus, setLastStatus] = useState(chalStatus);
-  if (lastStatus !== chalStatus) {
-    setLastStatus(chalStatus);
-    if (chalStatus === 'sent' || chalStatus === 'closed' || chalStatus === 'gone') setScoresOpen(true);
-    if (chalStatus === 'ready') setScoresOpen(false);
-  }
   const [renaming, setRenaming] = useState(false);
   const [renameMsg, setRenameMsg] = useState('');
   // Remounting the stage resets the game: autoStart restarts it, otherwise it closes back to the poster.
@@ -404,6 +411,19 @@ export function GamePage({ game }: { game: GameEntry }) {
     // Play was pressed before the challenge loaded: restart the game straight in the challenge round.
     if (playing) setStageRun((r) => ({ key: r.key + 1, autoStart: true }));
   }
+  // When your score is in and the game still shows its own last result or reveal, the scoreboard
+  // waits as a chip on the stage (the game's "See the scoreboard" or the chip opens it). A new round
+  // keeps an open scoreboard while the stage shows the last one: its "Play round N" is the way on.
+  const chalStatus = chal.state.status;
+  const [lastStatus, setLastStatus] = useState(chalStatus);
+  const [scoresChip, setScoresChip] = useState(false);
+  if (lastStatus !== chalStatus) {
+    setLastStatus(chalStatus);
+    const next = scoreboardOnStatus(chalStatus, { open: scoresOpen, playing, stageOld: playing && !!stageSpec && !!liveSpec && stageSpec.round !== liveSpec.round });
+    setScoresOpen(next.open);
+    setScoresChip(next.chip);
+  }
+  if (scoresChip && scoresOpen) setScoresChip(false);
   const stageSpecRef = useRef(stageSpec);
   useEffect(() => {
     stageSpecRef.current = stageSpec;
@@ -411,6 +431,7 @@ export function GamePage({ game }: { game: GameEntry }) {
   const playRound = (): void => {
     setStageSpec(liveSpec);
     setScoresOpen(false);
+    setScoresChip(false);
     setStageRun((r) => ({ key: r.key + 1, autoStart: true }));
   };
 
@@ -682,7 +703,12 @@ export function GamePage({ game }: { game: GameEntry }) {
                 {howTo && <HowTo game={game} onClose={closeHowTo} onPlay={() => startPlay.current?.()} />}
                 {challengeId && scoresOpen && (
                   <Suspense fallback={null}>
-                    <ChallengeScores run={chal} game={game} onClose={() => setScoresOpen(false)} />
+                    <ChallengeScores run={chal} game={game} onClose={() => setScoresOpen(false)} stageRound={playing ? (stageSpec?.round ?? null) : null} onPlayRound={playRound} />
+                  </Suspense>
+                )}
+                {challengeId && scoresChip && !scoresOpen && chal.state.status === 'sent' && (
+                  <Suspense fallback={null}>
+                    <ChallengeScoresChip score={chal.state.score} onOpen={() => setScoresOpen(true)} onDismiss={() => setScoresChip(false)} />
                   </Suspense>
                 )}
                 {play.immersive && <SafariBarsHandle />}
