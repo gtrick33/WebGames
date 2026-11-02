@@ -61,7 +61,8 @@ function CrassAct({ host, playerName }: { host: GameHost; playerName?: string })
   const [adult, setAdult] = useState(() => read(ADULT) === '1');
   // Inside the Discord Activity: the player's Discord name, and straight into the call's room.
   const [name, setName] = useState(() => (embedHost() && playerName) || read(NAME) || playerName || '');
-  const [code, setCode] = useState<string | null>(() => (embedHost() && linkedRoom()) || null);
+  // Inside the Discord call, or back from a reload with a name saved: straight into the room (the seat is kept by key).
+  const [code, setCode] = useState<string | null>(() => ((embedHost() || read(NAME)) && linkedRoom()) || null);
   const [invite] = useState(linkedRoom);
   const u = useUi();
 
@@ -151,7 +152,7 @@ function Home({ name, invite, onName, onEnter }: { name: string; invite: string;
     if (!info) return setMsg(u.noRoom(c));
     // A Party Mode room (Impostor, Never Have I Ever…): it opens on the party page.
     if (info.game && info.game !== 'crass-act') return location.assign(`/party?room=${c}`);
-    if (info.full) return setMsg(u.roomFull(c, MAX_PLAYERS));
+    // A full room is the room server's call: a player who already has a seat there gets it back.
     onEnter(c);
   };
 
@@ -239,6 +240,8 @@ function Room({ code, name, host, onLeave }: { code: string; name: string; host:
     }
     if (view.phase === 'over' && reported.current.over !== view.round) {
       reported.current.over = view.round;
+      // "Play again" is a new game: it reports its own start.
+      reported.current.started = false;
       const me = view.players.find((p) => p.you);
       host.report({ type: 'end', score: me?.score ?? 0, stats: { wins: view.champion === view.you ? 1 : 0 } });
     }
@@ -255,7 +258,7 @@ function Room({ code, name, host, onLeave }: { code: string; name: string; host:
       <div className="uh uh-center">
         <Logo />
         <div className="uh-panel">
-          <p className="uh-big">{gone}</p>
+          <p className="uh-big">{gone === 'This room is full.' ? u.roomFull(code, MAX_PLAYERS) : gone}</p>
           <button className="uh-btn uh-btn-go" onClick={onLeave}>
             {u.back}
           </button>
@@ -287,6 +290,11 @@ function Room({ code, name, host, onLeave }: { code: string; name: string; host:
       </div>
     );
   const left = view.deadline ? Math.max(0, Math.ceil((view.deadline - now) / 1000)) : null;
+  // Leaving on purpose: tell the room, so nobody waits out the grace period for us.
+  const leave = (): void => {
+    send({ t: 'leave' });
+    onLeave();
+  };
   return (
     <div className="uh uh-room" ref={root}>
       {conn !== 'open' && <div className="uh-conn">{u.connectionLost}</div>}
@@ -298,12 +306,12 @@ function Room({ code, name, host, onLeave }: { code: string; name: string; host:
       {view.phase === 'lobby' ? (
         <>
           <RoomListingBar listing={listing} host={view.you === view.host} players={view.players.filter((p) => p.online).length} min={MIN_PLAYERS} skew={skew} onListed={setListed} />
-          <Lobby view={view} send={send} onLeave={onLeave} />
+          <Lobby view={view} send={send} onLeave={leave} />
         </>
       ) : view.phase === 'over' ? (
-        <Over view={view} send={send} onLeave={onLeave} />
+        <Over view={view} send={send} onLeave={leave} />
       ) : (
-        <Table view={view} send={send} left={left} onLeave={onLeave} />
+        <Table view={view} send={send} left={left} onLeave={leave} />
       )}
     </div>
   );
@@ -314,7 +322,45 @@ type Send = ReturnType<typeof useRoom>['send'];
 function invite(code: string, u: Ui): void {
   const app = embedHost()?.invite;
   if (app) return app();
-  void shareOrCopy({ title: 'Crass Act', text: u.inviteText(code).replace(/ ?\u{1F608}/u, ''), url: `${location.origin}/r/${code}` });
+  void shareOrCopy({ title: 'Crass Act', text: u.inviteText(code).replace(/ ?\u{1F608}/u, ''), url: `${location.origin}/r/${code}`, card: { cta: u.joinTheRoom } });
+}
+
+/** A button that asks first (inline: a dialog can't open inside some embeds). */
+function Confirm({ className, label, ask, yes, onYes, aria }: { className: string; label: string; ask: string; yes: string; onYes: () => void; aria?: string }) {
+  const [asking, setAsking] = useState(false);
+  const u = useUi();
+  if (!asking)
+    return (
+      <button className={className} onClick={() => setAsking(true)} aria-label={aria}>
+        {label}
+      </button>
+    );
+  return (
+    <span className="uh-confirm" role="group" aria-label={ask}>
+      <span>{ask}</span>
+      <button className="uh-btn uh-btn-small uh-btn-go" onClick={onYes}>
+        {yes}
+      </button>
+      <button className="uh-btn uh-btn-small" onClick={() => setAsking(false)} autoFocus>
+        {u.no}
+      </button>
+    </span>
+  );
+}
+
+/** The room code and an Invite button, during the game too (late joiners sit in from the next round). */
+function CodeChip({ code }: { code: string }) {
+  const u = useUi();
+  return (
+    <span className="uh-codechip">
+      <span className="uh-chip" aria-label={`${u.roomCode} ${code}`}>
+        {code}
+      </span>
+      <button className="uh-btn uh-btn-small" onClick={() => invite(code, u)}>
+        {u.invite}
+      </button>
+    </span>
+  );
 }
 
 function Players({ view, send, compact = false }: { view: RoomView; send: Send; compact?: boolean }) {
@@ -323,20 +369,17 @@ function Players({ view, send, compact = false }: { view: RoomView; send: Send; 
   return (
     <ul className={`uh-players${compact ? ' is-compact' : ''}`}>
       {view.players.map((p) => (
-        <li key={p.n} className={`${p.online ? '' : 'is-off'}${p.you ? ' is-you' : ''}${p.judge ? ' is-judge' : ''}`}>
-          <span className="uh-avatar">{p.name.slice(0, 1).toUpperCase()}</span>
+        <li key={p.n} className={`${p.online ? '' : 'is-off'}${p.you ? ' is-you' : ''}${p.judge ? ' is-judge' : ''}`} title={p.away ? u.reconnecting : undefined}>
+          <span className="uh-avatar">{([...p.name][0] ?? '?').toUpperCase()}</span>
           <span className="uh-pname">
             {p.name}
             {p.host && <i title={u.host}> 👑</i>}
             {p.judge && <i title={u.judge}> ⚖️</i>}
           </span>
           {view.phase !== 'lobby' && <b className="uh-pts">{p.score}</b>}
-          {(view.phase === 'picking' || (view.phase === 'judging' && view.settings.vote)) && !p.judge && <span className="uh-done">{p.waiting ? '⏳' : p.done ? '✅' : '…'}</span>}
-          {amHost && !p.you && !compact && (
-            <button className="uh-x" onClick={() => send({ t: 'kick', seat: p.n })} aria-label={u.remove(p.name)}>
-              ✕
-            </button>
-          )}
+          {(view.phase === 'picking' || (view.phase === 'judging' && view.voting)) && !p.judge && <span className="uh-done">{p.waiting ? '⏳' : p.away ? '📶' : p.done ? '✅' : '…'}</span>}
+          {/* In the game the host can clear out people who went away (their seat goes to someone new). */}
+          {amHost && !p.you && (!compact || !p.online) && <Confirm className="uh-x" label="✕" aria={u.remove(p.name)} ask={u.removeAsk(p.name)} yes={u.yes} onYes={() => send({ t: 'kick', seat: p.n })} />}
         </li>
       ))}
     </ul>
@@ -423,9 +466,9 @@ function Lobby({ view, send, onLeave }: { view: RoomView; send: Send; onLeave: (
   );
 }
 
-function PromptCard({ text, cards, small = false }: { text: string; cards?: string[]; small?: boolean }) {
+function PromptCard({ text, cards, small = false, lang }: { text: string; cards?: string[]; small?: boolean; lang?: string }) {
   return (
-    <div className={`uh-prompt${small ? ' is-small' : ''}`}>
+    <div className={`uh-prompt${small ? ' is-small' : ''}`} lang={lang}>
       <p>
         {fill(text, cards ?? []).map((part, i) =>
           part.card ? (
@@ -456,9 +499,10 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
   const judge = view.players.find((p) => p.judge);
   const isJudge = view.judge === view.you;
   const need = view.prompt?.pick ?? 1;
-  const waitingOn = view.players.filter((p) => p.online && !p.judge && !p.waiting && !p.done);
+  const waitingOn = view.players.filter((p) => (p.online || p.away) && !p.judge && !p.waiting && !p.done);
   const u = useUi();
   const judgeName = judge?.name ?? u.theJudge;
+  const deck = view.settings.deck ?? 'en';
 
   return (
     <div className="uh-table">
@@ -466,125 +510,127 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
         <span className="uh-chip">{u.round(view.round)}</span>
         <span className="uh-chip">{view.tiebreak ? u.tieBreaker : u.firstTo(view.settings.target)}</span>
         {left !== null && view.phase !== 'reveal' && <span className={`uh-chip uh-timer${left <= 10 ? ' is-low' : ''}`}>{left}s</span>}
-        <button className="uh-link" onClick={onLeave}>
-          {u.leave}
-        </button>
+        <CodeChip code={view.code} />
+        <Confirm className="uh-link" label={u.leave} ask={u.leaveAsk} yes={u.leave} onYes={onLeave} />
       </header>
       <Players view={view} send={send} compact />
-      {view.tiebreak && view.phase !== 'reveal' && <p className="uh-status">{u.tieBreakerNote}</p>}
 
-      {view.prompt && <PromptCard text={view.prompt.text} cards={view.phase === 'reveal' ? view.entries.find((e) => e.won)?.cards : undefined} />}
+      {view.prompt && <PromptCard text={view.prompt.text} cards={view.phase === 'reveal' ? view.entries.find((e) => e.won)?.cards : undefined} lang={deck} />}
+      <div className="uh-play">
+        {view.tiebreak && view.phase !== 'reveal' && <p className="uh-status">{u.tieBreakerNote}</p>}
 
-      {view.phase === 'picking' &&
-        (view.waiting ? (
-          <p className="uh-status">{u.joinedMid}</p>
-        ) : isJudge ? (
-          <p className="uh-status">{u.youJudge(waitingOn.length ? waitingOn.map((p) => p.name).join(', ') : u.nobody)}</p>
-        ) : view.played ? (
-          <p className="uh-status">{u.cardPlayed(waitingOn.map((p) => p.name).join(', ') || u.everyoneElse)}</p>
-        ) : (
+        {view.phase === 'picking' &&
+          (view.waiting ? (
+            <p className="uh-status">{u.joinedMid}</p>
+          ) : isJudge ? (
+            <p className="uh-status">{u.youJudge(waitingOn.length ? waitingOn.map((p) => p.name).join(', ') : u.nobody)}</p>
+          ) : view.played ? (
+            <p className="uh-status">{u.cardPlayed(waitingOn.map((p) => p.name).join(', ') || u.everyoneElse)}</p>
+          ) : (
+            <>
+              <p className="uh-status">{u.playPrompt(view.settings.vote || !judge || (!judge.online && !judge.away), judgeName, need === 2)}</p>
+              <div className="uh-hand" lang={deck}>
+                {view.hand.map((c) => {
+                  const at = chosen.indexOf(c.id);
+                  return (
+                    <button
+                      key={c.id}
+                      className={`uh-answer${at >= 0 ? ' is-chosen' : ''}`}
+                      onClick={() => setChosen((list) => (at >= 0 ? list.filter((x) => x !== c.id) : need === 1 ? [c.id] : [...list, c.id].slice(-need)))}
+                    >
+                      {at >= 0 && need > 1 && <i className="uh-order">{at + 1}</i>}
+                      {c.text}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="uh-actions">
+                <button className="uh-btn uh-btn-go" disabled={chosen.length !== need} onClick={() => send({ t: 'play', cards: chosen })}>
+                  {need === 2 ? u.playThese : u.playThis}
+                </button>
+                {!view.swapped && (
+                  <button className="uh-btn uh-btn-small" onClick={() => send({ t: 'swap' })} title={u.oncePerGame}>
+                    {u.swapHand}
+                  </button>
+                )}
+              </div>
+            </>
+          ))}
+
+        {view.phase === 'judging' && (
           <>
-            <p className="uh-status">{u.playPrompt(view.settings.vote, judgeName, need === 2)}</p>
-            <div className="uh-hand">
-              {view.hand.map((c) => {
-                const at = chosen.indexOf(c.id);
+            {view.judgeLeft && <p className="uh-status">{u.judgeLeft(judgeName)}</p>}
+            <p className="uh-status">
+              {view.waiting ? u.joinedMid : view.voting ? (view.myVote !== null ? u.voteCast : u.voteFunniest) : isJudge ? u.pickWinner : u.choosing(judgeName)}
+            </p>
+            <div className="uh-entries" lang={deck}>
+              {view.entries.map((e, i) => {
+                const canTap = view.voting ? !e.mine && view.myVote === null && !view.waiting : isJudge;
                 return (
                   <button
-                    key={c.id}
-                    className={`uh-answer${at >= 0 ? ' is-chosen' : ''}`}
-                    onClick={() => setChosen((list) => (at >= 0 ? list.filter((x) => x !== c.id) : need === 1 ? [c.id] : [...list, c.id].slice(-need)))}
+                    key={i}
+                    className={`uh-entry${pick === i || view.myVote === i ? ' is-chosen' : ''}${e.mine ? ' is-mine' : ''}`}
+                    disabled={!canTap}
+                    onClick={() => setPick(i)}
                   >
-                    {at >= 0 && need > 1 && <i className="uh-order">{at + 1}</i>}
-                    {c.text}
+                    {e.cards.map((c, j) => (
+                      <span key={j} className="uh-answer is-flat">
+                        {c}
+                      </span>
+                    ))}
+                    {e.mine && <i className="uh-mine">{u.yours}</i>}
                   </button>
                 );
               })}
             </div>
-            <div className="uh-actions">
-              <button className="uh-btn uh-btn-go" disabled={chosen.length !== need} onClick={() => send({ t: 'play', cards: chosen })}>
-                {need === 2 ? u.playThese : u.playThis}
-              </button>
-              {!view.swapped && (
-                <button className="uh-btn uh-btn-small" onClick={() => send({ t: 'swap' })} title={u.oncePerGame}>
-                  {u.swapHand}
+            {pick !== null && ((isJudge && !view.voting) || (view.voting && view.myVote === null && !view.waiting)) && (
+              <div className="uh-actions">
+                <button className="uh-btn uh-btn-go" onClick={() => send(view.voting ? { t: 'vote', entry: pick } : { t: 'pick', entry: pick })}>
+                  {view.voting ? u.voteThis : u.thisWins}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </>
-        ))}
+        )}
 
-      {view.phase === 'judging' && (
-        <>
-          <p className="uh-status">
-            {view.waiting ? u.joinedMid : view.settings.vote ? (view.myVote !== null ? u.voteCast : u.voteFunniest) : isJudge ? u.pickWinner : u.choosing(judgeName)}
-          </p>
-          <div className="uh-entries">
-            {view.entries.map((e, i) => {
-              const canTap = view.settings.vote ? !e.mine && view.myVote === null && !view.waiting : isJudge;
-              return (
-                <button
-                  key={i}
-                  className={`uh-entry${pick === i || view.myVote === i ? ' is-chosen' : ''}${e.mine ? ' is-mine' : ''}`}
-                  disabled={!canTap}
-                  onClick={() => setPick(i)}
-                >
+        {view.phase === 'reveal' && (
+          <>
+            <p className="uh-winner">
+              {u.roundWinner(
+                view.entries
+                  .filter((e) => e.won)
+                  .map((e) => e.name)
+                  .join(' & '),
+                view.winners.length > 1,
+              )}
+            </p>
+            {view.tiebreak && <p className="uh-status">{u.tiedLead}</p>}
+            <div className="uh-entries" lang={deck}>
+              {view.entries.map((e, i) => (
+                <div key={i} className={`uh-entry${e.won ? ' is-won' : ''}`}>
                   {e.cards.map((c, j) => (
                     <span key={j} className="uh-answer is-flat">
                       {c}
                     </span>
                   ))}
-                  {e.mine && <i className="uh-mine">{u.yours}</i>}
+                  <i className="uh-by">
+                    {e.name}
+                    {typeof e.votes === 'number' ? u.votes(e.votes) : ''}
+                  </i>
+                </div>
+              ))}
+            </div>
+            {(view.host === view.you || (isJudge && !view.voting)) && (
+              <div className="uh-actions">
+                <button className="uh-btn uh-btn-go" onClick={() => send({ t: 'next' })}>
+                  {u.nextRound}
                 </button>
-              );
-            })}
-          </div>
-          {pick !== null && (isJudge || (view.settings.vote && view.myVote === null && !view.waiting)) && (
-            <div className="uh-actions">
-              <button className="uh-btn uh-btn-go" onClick={() => send(view.settings.vote ? { t: 'vote', entry: pick } : { t: 'pick', entry: pick })}>
-                {view.settings.vote ? u.voteThis : u.thisWins}
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {view.phase === 'reveal' && (
-        <>
-          <p className="uh-winner">
-            {u.roundWinner(
-              view.entries
-                .filter((e) => e.won)
-                .map((e) => e.name)
-                .join(' & '),
-              view.winners.length > 1,
-            )}
-          </p>
-          {view.tiebreak && <p className="uh-status">{u.tiedLead}</p>}
-          <div className="uh-entries">
-            {view.entries.map((e, i) => (
-              <div key={i} className={`uh-entry${e.won ? ' is-won' : ''}`}>
-                {e.cards.map((c, j) => (
-                  <span key={j} className="uh-answer is-flat">
-                    {c}
-                  </span>
-                ))}
-                <i className="uh-by">
-                  {e.name}
-                  {typeof e.votes === 'number' ? u.votes(e.votes) : ''}
-                </i>
               </div>
-            ))}
-          </div>
-          {(view.host === view.you || isJudge || view.settings.vote) && (
-            <div className="uh-actions">
-              <button className="uh-btn uh-btn-go" onClick={() => send({ t: 'next' })}>
-                {u.nextRound}
-              </button>
-            </div>
-          )}
-        </>
-      )}
-      <p className="uh-me">{u.yourPoints(me.score)}</p>
+            )}
+          </>
+        )}
+        <p className="uh-me">{u.yourPoints(me.score)}</p>
+      </div>
     </div>
   );
 }
@@ -601,9 +647,10 @@ function Over({ view, send, onLeave }: { view: RoomView; send: Send; onLeave: ()
       <div className="uh-panel">
         <ol className="uh-ranking">
           {ranked.map((p) => (
-            <li key={p.n} className={p.you ? 'is-you' : ''}>
+            <li key={p.n} className={`${p.you ? 'is-you' : ''}${p.online ? '' : ' is-off'}`}>
               <span>{p.name}</span>
               <b>{p.score}</b>
+              {view.host === view.you && !p.you && !p.online && <Confirm className="uh-x" label="✕" aria={u.remove(p.name)} ask={u.removeAsk(p.name)} yes={u.yes} onYes={() => send({ t: 'kick', seat: p.n })} />}
             </li>
           ))}
         </ol>
