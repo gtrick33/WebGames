@@ -255,8 +255,8 @@ describe('Launch Control: daily, garage and wager', () => {
     // the garage inspects a part for its repair
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     fireEvent.click(screen.getByRole('button', { name: 'My garage' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Inspect the tyres' }));
-    expect(screen.getByRole('region', { name: 'Inspecting the tyres' }).textContent).toMatch(/condition/);
+    fireEvent.click(screen.getByRole('button', { name: 'Inspect the tires' }));
+    expect(screen.getByRole('region', { name: 'Inspecting the tires' }).textContent).toMatch(/condition/);
   });
 
   it('a swipe on a pop-up goes to what it can scroll, never to the page under the stage', () => {
@@ -339,7 +339,8 @@ describe('Launch Control: daily, garage and wager', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Race Dizzy Dee/ }));
     fireEvent.click(screen.getByRole('radio', { name: /25%/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm race' }));
-    expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBe(600);
+    // the stake is capped at twice the purse: a quarter of $200
+    expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBe(750);
     driveRace({ tapWhenHot: false });
     expect(document.querySelector('.lc-ledger')?.textContent).toMatch(/Backed yourself/);
     expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBeLessThan(800);

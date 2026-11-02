@@ -1442,7 +1442,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 <b>King’s Gauntlet.</b> After the Street final: back-to-back races, each opponent quicker than the last. One loss ends the run; the streak goes on the leaderboard.
               </li>
               <li>
-                <b>Garage.</b> Six separate parts, eight levels each. Every level moves several numbers (a bigger engine is also heavier and a touch less reliable). Tyres wear with use and need replacing; under {RISKY}% they can blow out mid-run. Nothing else wears.
+                <b>Garage.</b> Six separate parts, eight levels each. Every level moves several numbers (a bigger engine is also heavier and a touch less reliable). Tires wear with use and need replacing; under {RISKY}% they can blow out mid-run. Nothing else wears.
               </li>
               <li>
                 <b>Money.</b> Purses, wagers, the daily crate and your sponsor (paid by the hour while you’re away) are the only money there is. Nothing here is ever bought with real money.
@@ -1520,7 +1520,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                     setStyleTry(null);
                   }}
                 >
-                  {t === 'repairs' ? 'Tyres' : 'Style'}
+                  {t === 'repairs' ? 'Tires' : 'Style'}
                 </button>
               ))}
               <button className="lc-tab" onClick={() => go('parts')}>
@@ -1532,7 +1532,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           {Object.keys(save.cars).length > 1 && <CarSwitch save={save} onOpen={() => setPickCar(true)} />}
           {garageTab === 'repairs' && (
             <div className="lc-repairs">
-              <p className="lc-sub">Tyres wear with every race, more when they spin. Under {RISKY}% they can blow out mid-run; new tyres never do. Nothing else wears.</p>
+              <p className="lc-sub">Tires wear with every race, more when they spin. Under {RISKY}% they can blow out mid-run; new tires never do. Nothing else wears.</p>
               <ul className="lc-parts lc-parts-compact">
                 {PARTS.filter(wears).map((p) => {
                   const cond = owned.cond[p];
@@ -1559,7 +1559,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                           Inspect
                         </button>
                         <button className={`btn btn-sm${cond < 100 && save.cash >= fix ? ' lc-cta' : ''}`} onClick={() => repair(p)} disabled={cond >= 100 || save.cash < fix}>
-                          {cond >= 100 ? 'Like new' : fix <= 0 ? 'New tyres · free' : <>New tyres <Cash n={fix} /></>}
+                          {cond >= 100 ? 'Like new' : fix <= 0 ? 'New tires · free' : <>New tires <Cash n={fix} /></>}
                         </button>
                       </div>
                     </li>
@@ -2033,7 +2033,7 @@ function InspectCard({ part, mode, car, levels, cond, save, preview, setPreview,
                 <span className="mono">{Math.round(cond[part])}% condition</span>
               </div>
               <button className={`btn lc-upgrade${cond[part] < 100 && save.cash >= fix ? ' lc-cta' : ''}`} onClick={onRepair} disabled={cond[part] >= 100 || save.cash < fix}>
-                {cond[part] >= 100 ? 'Like new' : fix <= 0 ? 'New tyres · free' : <>New tyres <Cash n={fix} /></>}
+                {cond[part] >= 100 ? 'Like new' : fix <= 0 ? 'New tires · free' : <>New tires <Cash n={fix} /></>}
               </button>
             </>
           ) : (
