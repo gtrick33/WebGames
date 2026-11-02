@@ -28,6 +28,7 @@ import {
   type Seat,
 } from './logic';
 import type { Sfx } from './sound';
+import { buttonKeepsKey, keyForGame } from './keys';
 import { contractName, type Words } from './text';
 
 /** How long a full trick stays on the table, then how long it takes to slide to its winner. */
@@ -198,7 +199,8 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
   useEffect(() => {
     if (!myTurn) return;
     const onKey = (e: KeyboardEvent): void => {
-      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      // only keys meant for the table: not typed in a field, not in another dialog, not outside the game
+      if (e.repeat || !keyForGame(e, rootRef.current?.closest('.bl') ?? rootRef.current) || buttonKeepsKey(e)) return;
       if (playing && legal.length) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
           e.preventDefault();
@@ -433,6 +435,7 @@ export function DealSheet({ w, score, taken, scores, me, names, children }: { w:
   const k = score.contract;
   // the last trick's 10 (doubled with everything else in no trumps)
   const lastTen = k === NT ? 20 : 10;
+  const [help, setHelp] = useState(false);
   return (
     <div className="bl-sheet-wrap" role="dialog" aria-label={w.gamePoints}>
       <div className={`bl-sheet outcome-${score.outcome}`}>
@@ -441,9 +444,12 @@ export function DealSheet({ w, score, taken, scores, me, names, children }: { w:
             {k < 4 ? <SuitIcon suit={k} size={22} /> : null} {contractName(w, k)}
             {score.mult > 1 ? ` ×${score.mult}` : ''}
           </span>
-          <span className={`bl-stamp tone-${score.outcome}`}>{score.valat !== null ? w.valat : w.outcome[score.outcome]}</span>
+          <button className={`bl-stamp tone-${score.outcome}`} onClick={() => setHelp((x) => !x)} aria-expanded={help}>
+            {score.valat !== null ? w.valat : w.outcome[score.outcome]} <span aria-hidden="true">ⓘ</span>
+          </button>
         </div>
-        <p className="bl-sheet-line">{w.outcomeLine(score.outcome, `${bidders} (${names[score.bidder]})`, score.hang)}</p>
+        <p className="bl-sheet-line">{w.outcomeLine(score.outcome, `${bidders} (${names[score.bidder]})`, score.hang, score.winner === null)}</p>
+        {help && <p className="bl-sheet-help">{w.outcomeHelp[score.outcome]}</p>}
         <table className="bl-sheet-table">
           <thead>
             <tr>

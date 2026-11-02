@@ -20,12 +20,13 @@ const SUIT_PATH = [
 ];
 export const RED = '#e8344e';
 export const BLACK = '#1d1238';
-export const suitColor = (s: number): string => (s === 1 || s === 2 ? RED : BLACK);
+/** A suit's color: red and black, or (the four-color deck, `.bl.is-four`) clubs green and diamonds blue. */
+export const suitColor = (s: number): string => `var(--bl-suit-${s}, ${s === 1 || s === 2 ? RED : BLACK})`;
 
 export function SuitIcon({ suit, size = 18, className, color }: { suit: number; size?: number; className?: string; color?: string }) {
   return (
     <svg className={className} viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
-      <path d={SUIT_PATH[suit]} fill={color ?? suitColor(suit)} />
+      <path d={SUIT_PATH[suit]} style={{ fill: color ?? suitColor(suit) }} />
     </svg>
   );
 }
@@ -98,21 +99,21 @@ export const CardFace = memo(function CardFace({ card }: { card: Card }) {
   const label = RANKS[r]!;
   const corner = (rot: boolean) => (
     <g transform={rot ? 'rotate(180 50 70)' : undefined}>
-      <text x="13" y="21" fontSize={label === '10' ? 17 : 19} fontWeight="800" fill={color} textAnchor="middle" fontFamily="var(--bl-font)" letterSpacing={label === '10' ? -1.5 : 0}>
+      <text x="13" y="21" fontSize={label === '10' ? 17 : 19} fontWeight="800" style={{ fill: color }} textAnchor="middle" fontFamily="var(--bl-font)" letterSpacing={label === '10' ? -1.5 : 0}>
         {label}
       </text>
-      <path d={SUIT_PATH[s]} fill={color} transform="translate(5 25) scale(0.16)" />
+      <path d={SUIT_PATH[s]} style={{ fill: color }} transform="translate(5 25) scale(0.16)" />
     </g>
   );
   return (
     <svg className="bl-face" viewBox="0 0 100 140" aria-hidden="true">
       <rect x="1.5" y="1.5" width="97" height="137" rx="9" fill="#fffaf2" stroke={BLACK} strokeWidth="3" />
       {r <= 3 &&
-        PIPS[r]!.map(([x, y, flip], i) => <path key={i} d={SUIT_PATH[s]} fill={color} transform={`translate(${x - 9} ${y - 9}) scale(0.18)${flip ? ' rotate(180 50 50)' : ''}`} />)}
+        PIPS[r]!.map(([x, y, flip], i) => <path key={i} d={SUIT_PATH[s]} style={{ fill: color }} transform={`translate(${x - 9} ${y - 9}) scale(0.18)${flip ? ' rotate(180 50 50)' : ''}`} />)}
       {r === 7 && (
         <>
-          <circle cx="50" cy="70" r="30" fill={color} opacity="0.1" />
-          <path d={SUIT_PATH[s]} fill={color} stroke={BLACK} strokeWidth="5" transform="translate(23 43) scale(0.54)" />
+          <circle cx="50" cy="70" r="30" style={{ fill: color }} opacity="0.1" />
+          <path d={SUIT_PATH[s]} style={{ fill: color }} stroke={BLACK} strokeWidth="5" transform="translate(23 43) scale(0.54)" />
           <path d="M78 32l3 7l7 3l-7 3l-3 7l-3-7l-7-3l7-3z" fill="#ffd12e" stroke={BLACK} strokeWidth="1.5" />
         </>
       )}

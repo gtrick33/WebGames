@@ -96,11 +96,17 @@ const placeOf = (s: State, n: number): number => s.places.indexOf(n);
 const seating = (s: State): boolean => s.phase === 'lobby' || s.phase === 'over';
 const isSeatedOnline = (s: State, n: number): boolean => placeOf(s, n) >= 0 && !!seatByN(s, n)?.online;
 
-/** The host is someone at the table while anyone is: a watcher never runs the table for the players. */
+/**
+ * The host is someone at the table: a player who is here when there is one, otherwise a player who
+ * left (back, they run the table again). A watcher never runs the table for the players; between
+ * matches they can take a place, and the host role with it.
+ */
 function seatHost(s: State): void {
   if (isSeatedOnline(s, s.host)) return;
-  const seated = s.places.find((n): n is number => n !== null && isSeatedOnline(s, n));
-  if (seated !== undefined) s.host = seated;
+  const seated = s.places.filter((n): n is number => n !== null && !!seatByN(s, n));
+  const here = seated.find((n) => isSeatedOnline(s, n));
+  if (here !== undefined) s.host = here;
+  else if (placeOf(s, s.host) < 0 && seated.length) s.host = seated[0]!;
 }
 
 export function join(s: State, key: string, name: string, now: number): string | null {
