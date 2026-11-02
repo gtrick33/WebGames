@@ -12,7 +12,7 @@ import { Board } from './Board';
 import { TARGETS, type Side } from './logic';
 import type { Action, RoomView } from './room';
 import type { Sfx } from './sound';
-import type { Words } from './text';
+import { serverText, type Words } from './text';
 
 export const inviteLink = (code: string): string => `${location.origin}/r/${code}`;
 
@@ -24,12 +24,21 @@ export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; co
     return () => window.clearTimeout(id);
   }, [error, clearError]);
 
+  // a ticking clock for the countdowns (someone away, the turn clock), in the room's time
+  const [now, setNow] = useState(() => Date.now());
+  const counting = !!view && ((view.away && view.away.at !== null) || view.clockAt !== null);
+  useEffect(() => {
+    if (!counting) return;
+    const id = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(id);
+  }, [counting]);
+
   if (gone || conn === 'gone')
     return (
       <div className="tb-scroll">
         <div className="tb-menu">
-          <h2 className="tb-h">{w.roomClosed}</h2>
-          <p className="tb-tagline">{gone}</p>
+          <h2 className="tb-h">{gone === 'This room is full.' ? w.roomFull : w.roomClosed}</h2>
+          <p className="tb-tagline">{serverText(w, gone)}</p>
           <button className="tb-btn is-go" onClick={onLeave}>
             {w.back}
           </button>
@@ -49,11 +58,14 @@ export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; co
     );
 
   const names = view.places.map((p) => p.player?.name ?? (p.bot ? `${w.computer} · ${w.level[p.bot]}` : w.empty)) as [string, string];
-  const notice = error || (conn !== 'open' ? w.connecting : '');
+  const notice = error ? serverText(w, error) : conn !== 'open' ? w.connecting : '';
   if (view.phase === 'lobby' || !view.match) return <Lobby w={w} view={view} code={code} send={send} tools={tools} onLeave={onLeave} notice={notice} bar={<RoomListingBar listing={listing} host={view.host} players={view.players.filter((p) => p.online).length} min={2} skew={skew} onListed={setListed} />} names={names} />;
 
   const me = (view.you >= 0 ? view.you : 0) as Side;
+  const watcher = view.you < 0;
   const g = view.match.game;
+  const secsTo = (at: number): number => (at - (now + skew)) / 1000;
+  const away = view.away && view.away.place !== view.you ? view.away : null;
   const canAct = view.phase === 'play' && view.you >= 0 && g.phase !== 'over' && (g.phase === 'opening' || g.turn === view.you);
   const humans = view.places.filter((p) => p.player?.online).length;
   const last = view.match.results[view.match.results.length - 1];
@@ -80,12 +92,19 @@ export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; co
       overlay={
         <>
           {notice && <p className="tb-toast">{notice}</p>}
-          {view.you < 0 && <p className="tb-toast is-soft">{w.watching}</p>}
+          {watcher && <p className="tb-toast is-soft">{w.watching}</p>}
+          {view.phase === 'play' && (
+            <div className="tb-notes" aria-live="polite">
+              {away && <p className="tb-note">{w.awayFor(names[away.place as Side], away.at === null ? null : secsTo(away.at))}</p>}
+              {view.covered > 0 && <p className="tb-note is-warn">{w.coveredYou(view.covered)}</p>}
+              {!away && canAct && view.clockAt !== null && <p className="tb-note mono">{w.clockLeft(secsTo(view.clockAt))}</p>}
+            </div>
+          )}
           {g.phase === 'opening' && canAct && <p className="tb-toast">{w.rollFirst}</p>}
           {view.phase === 'gameEnd' && last && (
             <div className="tb-sheet-wrap" role="dialog">
               <div className={`tb-sheet${last.winner === me ? ' is-win' : ''}`}>
-                <h2>{last.winner === me ? w.youWonGame(w.win[last.points as 1 | 2 | 3], last.points) : w.theyWonGame(names[last.winner], w.win[last.points as 1 | 2 | 3], last.points)}</h2>
+                <h2>{last.winner === me && !watcher ? w.youWonGame(w.win[last.points as 1 | 2 | 3], last.points) : w.theyWonGame(names[last.winner], w.win[last.points as 1 | 2 | 3], last.points)}</h2>
                 <p className="tb-sheet-score mono">
                   <b>{view.match.score[me]}</b> – <b>{view.match.score[(1 - me) as Side]}</b> · {w.to(view.match.target)}
                 </p>
@@ -101,7 +120,7 @@ export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; co
           {view.phase === 'over' && view.match.winner !== null && (
             <div className="tb-sheet-wrap" role="dialog">
               <div className={`tb-sheet${view.match.winner === me ? ' is-win' : ''}`}>
-                <h2>{view.match.winner === me && view.you >= 0 ? w.matchWon : w.matchLost}</h2>
+                <h2>{watcher ? w.wonMatch(names[view.match.winner]) : view.match.winner === me ? w.matchWon : w.matchLost}</h2>
                 <p className="tb-sheet-score mono">
                   <b>{view.match.score[me]}</b> – {view.match.score[(1 - me) as Side]}
                 </p>
@@ -195,6 +214,7 @@ function Lobby({ w, view, code, send, tools, onLeave, notice, bar, names }: { w:
             );
           })}
         </div>
+        {view.you < 0 && ready && <p className="tb-err">{w.watchingLobby}</p>}
         <div className="tb-lengths" role="radiogroup" aria-label={w.length}>
           <span className="tb-label">{w.length}</span>
           {TARGETS.map((n) => (
@@ -203,6 +223,9 @@ function Lobby({ w, view, code, send, tools, onLeave, notice, bar, names }: { w:
             </button>
           ))}
         </div>
+        <button className="tb-switch tb-clock" role="switch" aria-checked={view.clock} disabled={!view.host} onClick={() => send({ t: 'clock', on: !view.clock })}>
+          {w.clock} <span className="tb-knob" aria-hidden="true" />
+        </button>
         <div className="tb-invite">
           <small>{w.invite}</small>
           <b className="mono">{code}</b>

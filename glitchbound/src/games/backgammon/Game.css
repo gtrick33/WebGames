@@ -147,7 +147,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 8px;
   border: 0;
   border-radius: 10px;
@@ -222,7 +222,8 @@
   box-shadow: 0 3px 0 var(--tb-ink);
 }
 .tb-player b {
-  max-width: 130px;
+  min-width: 0;
+  max-width: 220px;
   overflow: hidden;
   font-size: 14px;
   text-overflow: ellipsis;
@@ -297,7 +298,7 @@
     display: none;
   }
   .tb-player b {
-    max-width: 90px;
+    max-width: none;
   }
   .tb-actions {
     width: 100%;
@@ -321,15 +322,27 @@
   padding: 4px 12px;
   border-radius: 999px;
   background: rgb(0 0 0 / 0.3);
+  max-width: calc(100% - 32px);
+  border: 0;
+  color: inherit;
   font-size: 12px;
-  white-space: nowrap;
+  line-height: 1.3;
+  text-align: center;
   opacity: 0.8;
   transform: translateX(-50%);
-  pointer-events: none;
+  z-index: 2;
+  cursor: pointer;
 }
 @container (max-aspect-ratio: 4/5) {
   .tb-rotate {
     display: block;
+  }
+  /* an upright phone: point numbers you can read, and a picked checker that stands out */
+  .tb-num {
+    font-size: 26px;
+  }
+  .tb-checker.is-sel .tb-disc {
+    stroke-width: 10;
   }
 }
 /* landscape (a phone on its side, a wide window): the board takes the whole height, and the players,
@@ -428,6 +441,33 @@
 }
 .tb-hit {
   fill: transparent;
+}
+.tb-offbtn:focus {
+  outline: none;
+}
+.tb-offbtn.is-target {
+  cursor: pointer;
+}
+.tb-offbtn:focus-visible .tb-tray {
+  stroke: var(--tb-cyan);
+  stroke-width: 6;
+}
+.tb-off-n {
+  fill: rgb(255 250 242 / 0.85);
+  font: 800 26px var(--mono, monospace);
+  text-anchor: middle;
+  pointer-events: none;
+}
+.tb-count {
+  font: 800 26px var(--mono, monospace);
+  text-anchor: middle;
+  pointer-events: none;
+}
+.tb-checker.side-me .tb-count {
+  fill: var(--tb-ink);
+}
+.tb-checker.side-them .tb-count {
+  fill: var(--tb-cream);
 }
 .tb-point {
   cursor: default;
@@ -613,6 +653,40 @@
   transform: translate(-50%, -50%);
   pointer-events: none;
   animation: tb-pop 0.3s both;
+}
+/* lasting notes on the live board (someone away, the turn clock), out of the way of the dice */
+.tb-notes {
+  position: absolute;
+  z-index: 9;
+  right: 12px;
+  bottom: 8px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.tb-note {
+  max-width: 100%;
+  margin: 0;
+  padding: 6px 14px;
+  border: 2px solid var(--tb-ink);
+  border-radius: 16px;
+  background: var(--tb-cream);
+  color: var(--tb-ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 3px 0 var(--tb-ink);
+}
+.tb-note.is-warn {
+  background: var(--tb-yellow);
+}
+.tb-clock {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
 }
 .tb-toast.is-soft {
   background: var(--tb-cream);
@@ -978,4 +1052,16 @@
     animation: none !important;
     transition: none !important;
   }
+}
+/* asking before a new match replaces the one under way */
+.tb-confirm {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 2px dashed var(--tb-ink);
+  border-radius: 12px;
+}
+.tb-confirm p {
+  margin: 0;
+  font-weight: 700;
 }

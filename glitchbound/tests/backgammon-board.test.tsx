@@ -180,3 +180,22 @@ describe('backgammon: choosing a move on the board', () => {
     expect(document.querySelectorAll('.tb-point.is-source').length).toBeGreaterThan(0);
   });
 });
+
+describe('backgammon: bearing off from the keyboard (BG-02)', () => {
+  it('the lit Off tray is a focusable button: Enter bears the picked checker off', () => {
+    // two checkers left, on your 5 and 2 points, a 6-5 to play
+    const pts = Array<number>(25).fill(0);
+    pts[5] = 1;
+    pts[2] = 1;
+    pts[19] = -15;
+    const pos: Pos = { pts, bar: [0, 0], off: [CHECKERS - 2, 0] };
+    const onStep = vi.fn();
+    const view = render(<Board w={WORDS.en} game={moving([6, 5], pos)} me={0} names={['You', 'Them']} canAct onStep={onStep} sfx={() => quiet} score={[0, 0]} target={5} />);
+    const tray = view.getByRole('button', { name: 'Bear off' });
+    const five = view.getAllByRole('button').find((b) => b.getAttribute('aria-label')?.startsWith('5:'))!;
+    fireEvent.keyDown(five, { key: 'Enter' });
+    expect(tray.getAttribute('tabindex')).toBe('0');
+    fireEvent.keyDown(tray, { key: 'Enter' });
+    expect(onStep).toHaveBeenCalledWith(expect.objectContaining({ from: 5, to: 0 }));
+  });
+});

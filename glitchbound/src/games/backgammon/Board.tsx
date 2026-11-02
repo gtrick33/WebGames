@@ -76,7 +76,11 @@ function spotOf(loc: string, k: number, n: number, me: Side): { x: number; y: nu
   const [sideS, where] = loc.split(':') as [string, string];
   const side = Number(sideS) as Side;
   const bottom = side === me;
-  if (where === 'bar') return { x: BAR_X + BAR_W / 2, y: bottom ? 450 + k * (R * 1.6) : 310 - k * (R * 1.6) };
+  // the bar's checkers close up past five, so even a crowded bar stays on the board (a count shows on top)
+  if (where === 'bar') {
+    const sp = n <= 1 ? 0 : Math.min(R * 1.6, (Y_BOT - R - 450) / (n - 1));
+    return { x: BAR_X + BAR_W / 2, y: bottom ? 450 + k * sp : 310 - k * sp };
+  }
   if (where === 'off') return { x: TRAY_X + TRAY_W / 2, y: bottom ? Y_BOT - 10 - k * 15 : Y_TOP + 10 + k * 15, slice: true };
   const d = display(Number(where.slice(1)), me);
   const c = column(d);
@@ -156,6 +160,21 @@ function Die({ n, x, y, used }: { n: number; x: number; y: number; used: boolean
       </g>
     </g>
   );
+}
+
+/** Stacks taller than this show their count on the top checker. */
+const COUNT_FROM = 6;
+
+/**
+ * A key on the page is meant for the board: not typed into a field, not in a dialog over it, and on
+ * the game itself (or nowhere in particular).
+ */
+export function keyForBoard(e: KeyboardEvent, root: Element | null): boolean {
+  if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return false;
+  const t = e.target instanceof Element ? e.target : null;
+  if (!t || t === document.body || t === document.documentElement) return true;
+  if (t.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"], [role=dialog], [aria-modal=true]')) return false;
+  return !!root && root.contains(t);
 }
 
 /** How far a route goes, as the numbers it uses add up (what the player reads off the dice). */
@@ -349,6 +368,7 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
   const legal = canAct && game.phase === 'move' && !busy ? nextSteps(game) : [];
   const sources = [...new Set(legal.map((s) => s.from))];
   const [sel, setSel] = useState<number | null>(null);
+  const [hintGone, setHintGone] = useState(false);
   // only one checker can move (one on the bar, say): it is picked up for the player; where it goes is theirs
   const selected = sel !== null && sources.includes(sel) ? sel : sources.length === 1 ? sources[0]! : null;
   const routes = useMemo(() => (selected !== null ? routesFrom(game, selected) : []), [game, selected]);
@@ -404,7 +424,15 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
   const tapPoint = (i: number): void => {
     if (selected !== null && routeTo(i)) tapTarget(i);
     else if (sources.includes(i)) tapSource(i);
-    else if (selected !== null) setSel(null);
+    else {
+      // a tap that just missed (the points are narrow on an upright phone): the lit point next to it,
+      // on the same side of the board, when only one of the two is lit
+      const d = display(i, me);
+      const near = [d - 1, d + 1].filter((n) => n >= 1 && n <= 24 && Math.ceil(n / 6) === Math.ceil(d / 6)).map((n) => display(n, me));
+      const lit = near.filter((n) => (selected !== null && routeTo(n)) || sources.includes(n));
+      if (lit.length === 1) tapPoint(lit[0]!);
+      else if (selected !== null) setSel(null);
+    }
   };
 
   // ---- drawing
@@ -439,7 +467,8 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
           }
         }}
       >
-        <rect x={c.x - PW / 2} y={c.top ? Y_TOP : Y_BOT - TRI - 20} width={PW} height={TRI + 20} className="tb-hit" />
+        {/* the whole half-column takes the tap, the empty felt beyond the stack too */}
+        <rect x={c.x - PW / 2} y={c.top ? Y_TOP : (Y_TOP + Y_BOT) / 2} width={PW} height={(Y_BOT - Y_TOP) / 2} className="tb-hit" />
         <path d={`M${c.x - PW / 2 + 3} ${base} L${c.x} ${tip} L${c.x + PW / 2 - 3} ${base} Z`} className="tb-tri" />
         <text x={c.x} y={c.top ? Y_TOP - 8 : Y_BOT + 22} className="tb-num">
           {d}
@@ -467,7 +496,7 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
           }}
           className={`tb-checker side-${side === me ? 'me' : 'them'}${at.slice ? ' is-off' : ''}${isSel ? ' is-sel' : ''}${isSrc ? ' is-src' : ''}`}
           style={{ transform: place(at.x, at.y) }}
-          onClick={() => (where === 'off' ? undefined : tapPoint(i))}
+          onClick={() => (where === 'off' ? offTarget && tapTarget(OFF[game.turn]) : tapPoint(i))}
         >
           {at.slice ? (
             <rect x={-TRAY_W / 2 + 8} y="-6" width={TRAY_W - 16} height="12" rx="5" className="tb-slice" />
@@ -476,6 +505,11 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
               <circle r={R} className="tb-disc" />
               <circle r={R * 0.62} className="tb-ring" />
               <circle r={R * 0.26} className="tb-dot" />
+              {isTop && (ids.length >= COUNT_FROM || (where === 'bar' && ids.length > 1)) && (
+                <text y="9" className="tb-count">
+                  {ids.length}
+                </text>
+              )}
             </>
           )}
         </g>,
@@ -494,15 +528,20 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
     if (roll[0] === roll[1]) return left.length === 0;
     return !left.includes(roll[idx]!);
   };
-  // keyboard: R or Space rolls
+  // keyboard: R or Space rolls, B (or O) bears off the picked checker; a focused button keeps its Space
+  const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!canAct) return;
     const onKey = (e: KeyboardEvent): void => {
-      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!keyForBoard(e, root.current)) return;
       const k = e.key.toLowerCase();
+      if (k === ' ' && e.target instanceof Element && e.target.closest('button, a, [role=button]')) return;
       if ((k === 'r' || k === ' ') && myRoll && onRoll) {
         e.preventDefault();
         onRoll();
+      } else if ((k === 'b' || k === 'o') && offTarget) {
+        e.preventDefault();
+        tapTarget(OFF[game.turn]);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -512,7 +551,7 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
   const themPips = pips(p, them);
 
   return (
-    <div className="tb-wrap">
+    <div className="tb-wrap" ref={root}>
       <header className="tb-bar">
         <span className={`tb-player is-them${game.turn === them && game.phase !== 'over' ? ' is-turn' : ''}`}>
           <i className="tb-chip side-them" aria-hidden="true" />
@@ -529,9 +568,11 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
       </header>
 
       <div className="tb-stage">
-        <p className="tb-rotate mono" aria-hidden="true">
-          ↻ {w.turnSideways}
-        </p>
+        {!hintGone && (
+          <button className="tb-rotate mono" onClick={() => setHintGone(true)} aria-label={`${w.turnSideways} (${w.dismiss})`}>
+            ↻ {w.turnSideways} <span aria-hidden="true">✕</span>
+          </button>
+        )}
         <svg className="tb-board" viewBox="0 0 1000 760" role="img" aria-label={w.title}>
           <defs>
             <linearGradient id="tb-wood" x1="0" y1="0" x2="1" y2="1">
@@ -547,14 +588,41 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
           <rect x={X0} y={Y_TOP} width={BAR_X - X0} height={Y_BOT - Y_TOP} rx="8" className="tb-felt" />
           <rect x={BAR_X + BAR_W} y={Y_TOP} width={X1 - BAR_X - BAR_W} height={Y_BOT - Y_TOP} rx="8" className="tb-felt" />
           <rect x={BAR_X} y={Y_TOP - 12} width={BAR_W} height={Y_BOT - Y_TOP + 24} rx="10" className={`tb-barstrip${selected === BAR[game.turn] ? ' is-sel' : ''}`} onClick={() => sources.includes(BAR[game.turn]) && tapSource(BAR[game.turn])} />
-          <rect x={TRAY_X} y={Y_TOP} width={TRAY_W} height={Y_BOT - Y_TOP} rx="12" className={`tb-tray${offTarget ? ' is-target' : ''}`} onClick={() => offTarget && tapTarget(OFF[game.turn])} />
+          <g
+            className={`tb-offbtn${offTarget ? ' is-target' : ''}`}
+            role="button"
+            tabIndex={canAct && offTarget ? 0 : -1}
+            aria-label={w.bearOff}
+            aria-disabled={!offTarget}
+            onClick={(e) => {
+              if (e.detail) (e.currentTarget as SVGGElement).blur();
+              if (offTarget) tapTarget(OFF[game.turn]);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (offTarget) tapTarget(OFF[game.turn]);
+              }
+            }}
+          >
+            <rect x={TRAY_X} y={Y_TOP} width={TRAY_W} height={Y_BOT - Y_TOP} rx="12" className={`tb-tray${offTarget ? ' is-target' : ''}`} />
+          </g>
           <text x={TRAY_X + TRAY_W / 2} y={Y_BOT / 2 + 20} className="tb-tray-label">
             {w.off}
           </text>
-          {offRoute && <Landing x={TRAY_X + TRAY_W / 2} y={game.turn === me ? Y_BOT - 60 : Y_TOP + 60} n={count(offRoute)} />}
+          {([them, me] as Side[]).map((s) =>
+            p.off[s] ? (
+              <text key={s} x={TRAY_X + TRAY_W / 2} y={s === me ? Y_BOT / 2 + 110 : Y_BOT / 2 - 90} className={`tb-off-n side-${s === me ? 'me' : 'them'}`}>
+                {p.off[s]}
+              </text>
+            ) : null,
+          )}
           {tris}
           {checkers}
           {landings}
+          {/* the bear-off ring goes over the checkers already off, like the other landings */}
+          {offRoute && <Landing x={TRAY_X + TRAY_W / 2} y={game.turn === me ? Y_BOT - 60 : Y_TOP + 60} n={count(offRoute)} />}
           {roll && (
             <g key={game.rolls} className={rolling ? 'tb-dice is-rolling' : 'tb-dice is-landed'}>
               <Die n={rolling ? faces[0] : roll[0]} x={diceX - 36} y={380} used={!rolling && dieUsed(0)} />
