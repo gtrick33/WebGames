@@ -10,6 +10,7 @@ import { useNow } from '../platform/hooks';
 import { useStreakDays } from '../platform/streak';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { gameUrl, SECTION_GAMES } from '../catalog/catalog';
+import { GAMES } from '../catalog/games';
 import { Link, useLocation } from '../router/router';
 import { Icon, type IconName } from './Icon';
 import { LogoMark, Wordmark } from './Logo';
@@ -32,6 +33,8 @@ const TABS: Tab[] = [
   { href: '/daily', label: 'Daily', icon: 'calendar' },
   { href: '/leaderboards', label: 'Leaderboards', short: 'Ranks', icon: 'crown' },
 ];
+
+const PARTY_ONLY_URLS = GAMES.filter((g) => g.partyOnly).map((g) => gameUrl(g.slug));
 
 /** The tabs players see: a section whose game an admin hid is switched off (staff still see it, to test it). */
 function useTabs(): Tab[] {
@@ -184,7 +187,10 @@ export function Header() {
   const tabs = useTabs();
   // A section game's own /games/<slug> address belongs to its tab, not the arcade's.
   const sectionAt = SECTION_GAMES.find((g) => pathname === g.section!.path || pathname === gameUrl(g.slug));
-  const active = (href: string): boolean => (sectionAt ? href === sectionAt.section!.path : href === '/' ? pathname === '/' || pathname.startsWith('/games/') || pathname === '/live' : pathname.startsWith(href));
+  // A party-only game's page (Crass Act) belongs to the Party tab.
+  const partyAt = PARTY_ONLY_URLS.includes(pathname);
+  const active = (href: string): boolean =>
+    sectionAt ? href === sectionAt.section!.path : partyAt ? href === '/party' : href === '/' ? pathname === '/' || pathname.startsWith('/games/') || pathname === '/live' : pathname.startsWith(href);
 
   return (
     <>

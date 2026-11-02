@@ -37,10 +37,11 @@ describe('site search', () => {
     expect(partyHref({ id: 'rps' })).toBe('/party?play=rps');
   });
 
-  it('still finds arcade games first by their names, and Crass Act only once', () => {
+  it('still finds arcade games first by their names, and Crass Act once, as a party game (CA-25)', () => {
     expect(top('wing')).toEqual({ kind: 'games', first: 'wing-it' });
     expect(top('racing')).toMatchObject({ kind: 'games' });
-    expect(found('crass act').filter((x) => x.endsWith(':crass-act'))).toEqual(['games:crass-act']);
+    expect(found('crass act').filter((x) => x.endsWith(':crass-act'))).toEqual(['party:crass-act']);
+    expect(found('card game')).not.toContain('games:crass-act');
   });
 
   it('only offers what fits the player', () => {

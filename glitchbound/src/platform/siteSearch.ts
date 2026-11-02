@@ -140,11 +140,13 @@ export function siteSearch(q: string, ctx: SearchContext): SearchGroup[] {
   const typed = words(q).length > 0;
   // Game search reads Latin letters only: a query in another script finds pages, not every game.
   const latin = /[a-z0-9]/i.test(q.normalize('NFKD'));
-  const games = typed && !latin ? [] : queryGames({ q }, ctx.games);
+  // Party-only games (Crass Act) are found as party games, opening Party Mode, never under Games.
+  const arcade = ctx.games.filter((g) => !g.partyOnly);
+  const games = typed && !latin ? [] : queryGames({ q }, arcade);
   const gameBest = Math.max(0, ...games.map((g) => matchScore(g, q)));
 
-  // Crass Act is an arcade game too; it shows once, with its art.
-  const partyList = (ctx.party ?? PARTY_GAMES).filter((g) => !ctx.games.some((x) => x.slug === g.id));
+  // A party game that is also an arcade game shows once, under Games.
+  const partyList = (ctx.party ?? PARTY_GAMES).filter((g) => !arcade.some((x) => x.slug === g.id));
   const party = partyList
     .map((g) => ({ g, s: score(q, g.title, [...(PARTY_WORDS[g.id] ?? []), 'party game'], `${g.blurb} ${g.roomBlurb ?? ''}`) }))
     .filter((x) => x.s > 0)
