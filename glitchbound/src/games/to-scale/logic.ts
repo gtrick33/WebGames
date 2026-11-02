@@ -89,9 +89,15 @@ export function pointsFor(guess: number, truth: number): number {
   return Math.round(MAX_POINTS * Math.max(0, 1 - off / 1.5));
 }
 
-/** One emoji per shot for the spoiler-free result line. */
-export function mark(points: number): string {
-  if (points >= 900) return '🎯';
+/** A bullseye is a guess within 10% either way: at least 90% right. */
+export const BULL = 0.9;
+export const isBull = (guess: number, truth: number): boolean => accuracy(guess, truth) >= BULL - 1e-9;
+/** "90% right": rounded down, so it never shows a bullseye's 90% for a guess that isn't one. */
+export const percentRight = (guess: number, truth: number): number => Math.floor(accuracy(guess, truth) * 100 + 1e-9);
+
+/** One emoji per shot for the spoiler-free result line (`bull` from isBull when the guess is known). */
+export function mark(points: number, bull = points >= 900): string {
+  if (bull) return '🎯';
   if (points >= 700) return '🟩';
   if (points >= 450) return '🟨';
   if (points >= MISS_POINTS) return '🟧';

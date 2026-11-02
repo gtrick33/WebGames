@@ -1,7 +1,7 @@
 import type { GamePreviewProps } from '../../platform/contract';
 import { ease, fit, label, usePreviewCanvas } from '../../platform/previewLoop';
 import { glyph } from './glyphs';
-import { sizeText, THINGS, type Thing } from './objects';
+import { artBox, sizeText, THINGS, type Thing } from './objects';
 
 /** Pairs worth comparing: a known thing beside one a few times bigger or smaller. */
 const PAIRS: [string, string][] = [
@@ -27,8 +27,8 @@ export default function Preview({ playing = true }: GamePreviewProps) {
     let pics: [HTMLImageElement | null, HTMLImageElement | null, number, number] = [null, null, 1, 1];
     const load = (): void => {
       const [a, b] = PAIRS[n % PAIRS.length]!;
-      const ga = glyph(byName(a).emoji, '#f4f7ff');
-      const gb = glyph(byName(b).emoji, '#ffd23f');
+      const ga = glyph(byName(a), '#f4f7ff');
+      const gb = glyph(byName(b), '#ffd23f');
       pics = [image(ga?.silhouette), image(gb?.silhouette), ga?.aspect ?? 1, gb?.aspect ?? 1];
     };
     load();
@@ -61,13 +61,13 @@ export default function Preview({ playing = true }: GamePreviewProps) {
         // Meters to design units: the bigger of the two is about 100 units long (130 at the top of a wobble).
         const m = 100 / Math.max(a.size, b.size);
         const wobble = t < 2.6 ? 1 + Math.sin(t * 3.2) * 0.3 * (1 - ease(t / 2.6)) : 1;
-        const box = (aspect: number, size: number): [number, number] => {
-          // A thing's size is its longest side.
-          const long = size * m;
-          return aspect >= 1 ? [long, long / aspect] : [long * aspect, long];
+        const box = (t: Thing, aspect: number, size: number): [number, number] => {
+          // A thing's size is its measured side (its length or its height).
+          const r = artBox(t, size * m, aspect);
+          return [r.w, r.h];
         };
-        const [aw, ah] = box(pics[2], a.size);
-        const [bw, bh] = box(pics[3], b.size * wobble);
+        const [aw, ah] = box(a, pics[2], a.size);
+        const [bw, bh] = box(b, pics[3], b.size * wobble);
         const ax = 12;
         const bx = Math.max(ax + aw + 10, 100 - bw / 2 + 20);
         if (pics[0]?.complete) ctx.drawImage(pics[0], ax, ground - ah, aw, ah);
