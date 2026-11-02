@@ -24,6 +24,8 @@ export const CLOCKS = [45, 90, 150] as const;
 export const CLUE_SECONDS = 90;
 export const STEAL_SECONDS = 30;
 export const REVEAL_SECONDS = 12;
+/** Nobody left to turn the needle: how long the round waits for one of them to come back (a reload). */
+export const GUESS_GRACE_MS = 10_000;
 export const CLUE_MAX = 40;
 const SCALES = SPECTRUMS.map(([a, b], i) => ({ id: `s${i}`, a, b }));
 
@@ -48,6 +50,8 @@ export interface Round {
   caller: number | null;
   points: number;
   steal: boolean;
+  /** The guessing clock before everyone who could guess dropped out (given back if one returns in time). */
+  back?: number;
 }
 
 export interface State extends RoomBase {
@@ -116,11 +120,17 @@ function captainOf(s: State, list: number[]): number | null {
 }
 
 export function join(s: State, key: string, name: string, now: number): string | null {
-  return joinSeat(s, key, name, now, MAX_PLAYERS, inGame(s));
+  const err = joinSeat(s, key, name, now, MAX_PLAYERS, inGame(s));
+  const r = s.round;
+  if (!err && r?.back !== undefined && s.phase === 'guess' && !noGuessers(s)) {
+    s.deadline = Math.max(s.deadline ?? 0, r.back);
+    delete r.back;
+  }
+  return err;
 }
 
 export function leave(s: State, key: string, now: number): void {
-  if (leaveSeat(s, key, now)) advance(s);
+  if (leaveSeat(s, key, now)) advance(s, now);
 }
 
 function deal(s: State, now: number): void {
@@ -154,9 +164,10 @@ function lockIn(s: State, now: number): void {
   } else reveal(s, now);
 }
 
-function reveal(s: State, now: number): void {
+/** `guessed` false: nobody was left to turn the needle, so the round scores nothing. */
+function reveal(s: State, now: number, guessed = true): void {
   const round = s.round!;
-  const pts = round.clue ? dialPoints(round.target, round.needle) : 0;
+  const pts = round.clue && guessed ? dialPoints(round.target, round.needle) : 0;
   round.points = pts;
   round.steal = !!round.call && stealRight(round.target, round.needle, round.call);
   s.points[round.reader] = (s.points[round.reader] ?? 0) + pts;
@@ -180,18 +191,32 @@ function finish(s: State): void {
   s.deadline = null;
 }
 
-/** Back to the lobby when too few are left to play. */
-function advance(s: State): void {
-  if (!inGame(s) || s.playing.filter((n) => isHere(s, n)).length >= 2) return;
-  s.phase = 'lobby';
-  s.deadline = null;
+/** Nobody left to turn the needle (with teams: the reader's whole side has gone). */
+const noGuessers = (s: State): boolean => !guessers(s).some((n) => isHere(s, n));
+
+/**
+ * Back to the lobby when too few are left to play. With nobody left to turn the needle, the clock is
+ * cut to GUESS_GRACE_MS (the round then scores nothing) instead of running its full length.
+ */
+function advance(s: State, now: number): void {
+  if (!inGame(s)) return;
+  if (s.playing.filter((n) => isHere(s, n)).length < 2) {
+    s.phase = 'lobby';
+    s.deadline = null;
+  } else if (s.phase === 'guess' && noGuessers(s) && s.round && s.deadline !== null && s.deadline > now + GUESS_GRACE_MS) {
+    s.round.back = s.deadline;
+    s.deadline = now + GUESS_GRACE_MS;
+  }
 }
 
 export function tick(s: State, now: number): void {
   if (s.deadline === null || now < s.deadline) return;
   // A reader who runs out of time scores nothing this round.
   if (s.phase === 'clue') reveal(s, now);
-  else if (s.phase === 'guess') lockIn(s, now);
+  else if (s.phase === 'guess') {
+    if (noGuessers(s)) reveal(s, now, false);
+    else lockIn(s, now);
+  }
   else if (s.phase === 'steal') reveal(s, now);
   else if (s.phase === 'reveal') deal(s, now);
   s.updated = now;
@@ -260,6 +285,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       round.clue = clue;
       s.phase = 'guess';
       s.deadline = now + s.settings.clock * 1000;
+      advance(s, now);
       return null;
     }
     case 'needle': {
@@ -298,7 +324,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
         s.playing = s.playing.filter((n) => n !== a.seat);
         s.sides = [s.sides[0].filter((n) => n !== a.seat), s.sides[1].filter((n) => n !== a.seat)];
         if (round?.reader === a.seat && s.phase === 'clue') reveal(s, now);
-        advance(s);
+        advance(s, now);
       }
       return null;
     default:

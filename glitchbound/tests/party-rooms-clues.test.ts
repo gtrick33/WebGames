@@ -231,6 +231,20 @@ describe('Dial It In room', () => {
     dial.leave(s, KEYS[2]!, T0);
     expect(s.phase).toBe('lobby');
   });
+  it('does not wait out the clock when nobody on the reader’s team is left to guess', () => {
+    const s = room(4, true);
+    const reader = s.round!.reader;
+    const side = s.sides.find((t) => t.includes(reader))!;
+    const keyOf = (n: number): string => s.seats.find((x) => x.n === n)!.key;
+    dial.act(s, keyOf(reader), { t: 'clue', text: 'lukewarm' }, T0 + 100);
+    expect(s.phase).toBe('guess');
+    for (const n of side.filter((n) => n !== reader)) dial.leave(s, keyOf(n), T0 + 200);
+    expect(s.deadline).toBe(T0 + 200 + dial.GUESS_GRACE_MS);
+    dial.tick(s, T0 + 200 + dial.GUESS_GRACE_MS);
+    expect(s.phase).toBe('reveal');
+    expect(s.round!.points).toBe(0);
+    expect(s.team).toEqual([0, 0]);
+  });
 });
 
 describe('Hue Knew? room', () => {

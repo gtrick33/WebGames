@@ -42,3 +42,14 @@ describe('party decks', () => {
     expect(twice).toEqual([]);
   });
 });
+
+describe('party cards', () => {
+  it('show both player counts when one phone and online rooms differ', async () => {
+    const { PARTY_GAMES, playerRange } = await import('../src/party/catalog');
+    const byId = (id: string) => PARTY_GAMES.find((g) => g.id === id)!;
+    expect(playerRange(byId('impostor'))).toBe('📱 3–16 · 🌐 3–12');
+    expect(playerRange(byId('hues'))).toBe('📱 3–10 · 🌐 2–12');
+    expect(playerRange(byId('board'))).toBe('👥 2–8');
+    expect(playerRange(byId('scribble'))).toBe('👥 2–10');
+  });
+});
