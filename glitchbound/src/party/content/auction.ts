@@ -82,7 +82,7 @@ const THEMES: Record<AuctionTheme, Row[]> = {
     ['Surprise prank link', 2, '🔗', 'meme'], ['Meme dog', 2, '🐕', 'meme'], ['Cat with a frown', 2, '😾', 'meme'], ['Rainbow pixel cat', 1, '🌈', 'meme'], ['Calm dog in chaos', 2, '🔥', 'meme'],
     ['Wandering-eye meme', 1, '👀', 'meme'], ['Piano-playing cat', 1, '🎹', 'meme'], ['Line-goes-up guy', 1, '📈', 'meme'], ['Dancing baby', 1, '👶', 'retro'], ['Smug troll face', 1, '😏', 'retro'],
     ['Shouting-match meme', 2, '🐱', 'meme'], ['Shiba Inu', 1, '🐕', 'cute'], ['Viral dancing grandpa', 1, '🕺', 'retro'], ['Chonky bunny', 1, '🐰', 'meme'], ['Sad frog', 1, '🐸', 'meme'],
-    ['Cat pushing a glass off a table', 2, '🐈', 'meme'], ['Raccoon washing candy floss', 2, '🦝', 'meme'], ['Screaming goat', 1, '🐐', 'meme'], ['Dramatic chipmunk', 1, '🐿️', 'retro'],
+    ['Cat pushing a glass off a table', 2, '🐈', 'meme'], ['Raccoon washing cotton candy', 2, '🦝', 'meme'], ['Screaming goat', 1, '🐐', 'meme'], ['Dramatic chipmunk', 1, '🐿️', 'retro'],
     ['Galaxy-brain meme', 1, '🧠', 'meme'], ['Loading bar that never moves', 1, '⏳', 'retro'], ['Pigeon mistaking a butterfly', 1, '🦋', 'meme'], ['Guilty dog', 1, '🐶', 'cute'],
     ['Cat in a shark costume on a robot vacuum', 3, '🦈', 'meme'], ['Sweating over two buttons', 1, '😰', 'meme'],
   ],
@@ -92,7 +92,7 @@ const THEMES: Record<AuctionTheme, Row[]> = {
     ['Fries', 1, '🍟', 'savory'], ['Donut', 1, '🍩', 'sweet'], ['A lifetime supply of coffee', 3, '☕', 'drink'], ['Unlimited pasta', 2, '🍝', 'savory'], ['A golden toaster', 1, '🍞', 'object'],
     ['Comfy socks', 1, '🧦', 'object'], ['Self-cleaning room', 3, '🧹', 'object'], ['Never-dying phone battery', 3, '🔋', 'object'],
     ['Kebab at 3 a.m.', 1, '🥙', 'savory'], ['Banitsa', 2, '🥧', 'savory'], ['Baklava', 2, '🍯', 'sweet'], ['Cheesecake', 1, '🍰', 'sweet'],
-    ['Chips with cheese', 1, '🍟', 'savory'], ['Bottomless brunch', 2, '🥂', 'drink'], ['Fondue night', 1, '🫕', 'savory'], ['Grandma’s Sunday roast', 2, '🍗', 'savory'],
+    ['Cheese fries', 1, '🍟', 'savory'], ['Bottomless brunch', 2, '🥂', 'drink'], ['Fondue night', 1, '🫕', 'savory'], ['Grandma’s Sunday roast', 2, '🍗', 'savory'],
     ['A fridge that refills itself', 3, '🧊', 'object'], ['A personal chef for a year', 3, '👨‍🍳', 'object'],
   ],
   cars: [
@@ -142,7 +142,7 @@ const THEMES: Record<AuctionTheme, Row[]> = {
   trips: [
     ['A month in Japan', 3, '🗾', 'city'], ['Safari in Kenya', 2, '🦁', 'nature'], ['Northern Lights in Iceland', 3, '🌌', 'nature'], ['Road trip on Route 66', 2, '🛣️', 'road'], ['Maldives overwater villa', 3, '🏝️', 'beach'],
     ['New York for a weekend', 2, '🗽', 'city'], ['Paris with a view of the tower', 2, '🗼', 'city'], ['Space hotel night', 3, '🛰️', 'space'], ['Backpacking South America', 2, '🎒', 'adventure'], ['Ski chalet in the Alps', 2, '⛷️', 'snow'],
-    ['Greek island hopping', 2, '⛵', 'beach'], ['Machu Picchu trek', 2, '⛰️', 'adventure'], ['Las Vegas weekend', 1, '🎰', 'city'], ['Bali yoga retreat', 1, '🧘', 'beach'], ['Theme park with no queues', 2, '🏰', 'fun'],
+    ['Greek island hopping', 2, '⛵', 'beach'], ['Machu Picchu trek', 2, '⛰️', 'adventure'], ['Las Vegas weekend', 1, '🎰', 'city'], ['Bali yoga retreat', 1, '🧘', 'beach'], ['Theme park with no lines', 2, '🏰', 'fun'],
     ['Interrail across Europe', 1, '🚆', 'road'], ['Hot-air balloon over Cappadocia', 2, '🎈', 'adventure'], ['Camping under the stars', 1, '⛺', 'nature'], ['Football final ticket', 3, '🏆', 'fun'], ['Antarctica expedition', 2, '🐧', 'snow'],
     ['Summer on the Bulgarian Black Sea coast', 2, '🏖️', 'beach'], ['Rila Monastery hike', 2, '⛰️', 'adventure'], ['Street food tour in Bangkok', 2, '🍜', 'city'], ['Caribbean cruise', 2, '🛳️', 'beach'],
     ['Trans-Siberian railway', 3, '🚂', 'road'], ['Desert camp in Morocco', 2, '🐪', 'adventure'], ['Gondola ride in Venice', 1, '🛶', 'city'], ['Swimming with whale sharks', 3, '🦈', 'nature'],

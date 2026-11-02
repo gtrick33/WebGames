@@ -15,43 +15,43 @@ export const MYSTERY_WORDS: string[] = (
   'umbrella candle mirror clock lamp pillow blanket sofa chair table bed ladder hammer scissors needle magnet key lock ' +
   'wallet backpack suitcase bottle cup spoon fork knife plate kettle toaster fridge oven microwave vacuum broom bucket ' +
   'phone computer camera television radio robot rocket satellite telescope microscope battery lightbulb headphones keyboard ' +
-  'car bus train bicycle motorbike truck tractor helicopter airplane boat submarine sailboat skateboard scooter ambulance ' +
+  'car bus train bicycle motorcycle truck tractor helicopter airplane boat submarine sailboat skateboard scooter ambulance ' +
   'guitar piano drum violin trumpet microphone ticket map compass flag crown sword shield helmet armor arrow ' +
   'pirate ninja wizard witch ghost vampire zombie mermaid fairy giant knight princess cowboy astronaut detective ' +
   'doctor teacher chef farmer firefighter police pilot dentist clown magician painter singer dancer baker plumber ' +
   'snow rain thunder rainbow sun moon star cloud wind tornado fog ice fire smoke earthquake ' +
-  'birthday wedding holiday vacation picnic camping fireworks party parade concert museum festival exam homework ' +
-  'football tennis golf swimming skiing boxing chess yoga karate marathon basketball baseball bowling surfing hockey ' +
+  'birthday wedding sleepover vacation picnic camping fireworks party parade concert museum festival exam homework ' +
+  'soccer tennis golf swimming skiing boxing chess yoga karate marathon basketball baseball bowling surfing hockey ' +
   'shoe sock hat scarf glove jacket dress tie belt pajamas sunglasses watch necklace ring wig ' +
   'tree flower rose cactus grass leaf seed shell pearl diamond gold coin treasure balloon kite puzzle dice ' +
   'snowman sandcastle bubble shadow dream ghost secret mystery memory ' +
   'avocado blueberry coconut grape kiwi lime melon olive peach pear plum raspberry lettuce cabbage spinach ' +
-  'beetroot radish celery pea bean lentil chilli ginger cinnamon vanilla mustard ketchup mayonnaise omelette ' +
-  'porridge yogurt muffin croissant bagel pretzel crumpet scone biscuit brownie pudding custard jelly lollipop ' +
+  'beet radish celery pea bean lentil chili ginger cinnamon vanilla mustard ketchup mayonnaise omelet ' +
+  'porridge yogurt muffin croissant bagel pretzel crumpet scone cracker brownie pudding custard jelly lollipop ' +
   'marshmallow popsicle smoothie milkshake lemonade juice soda wine beer champagne cocktail whisky gin vodka ' +
-  'espresso cappuccino kebab burrito lasagne spaghetti risotto curry dumpling falafel hummus nachos fries hotdog ' +
+  'espresso cappuccino kebab burrito lasagna spaghetti risotto curry dumpling falafel hummus nachos fries hotdog ' +
   'meatball steak llama alpaca donkey bull reindeer moose deer badger otter beaver raccoon skunk hamster ferret ' +
   'gerbil cheetah leopard panther hyena rhino hippo walrus seahorse starfish shrimp squid oyster clam stingray ' +
   'swordfish pelican stork crow raven pigeon seagull vulture peacock ostrich turkey goose hummingbird woodpecker ' +
-  'robin sparrow beetle ladybird mosquito wasp moth caterpillar cricket grasshopper scorpion centipede tadpole ' +
-  'slug skyscraper cottage mansion igloo tent caravan treehouse cabin barn shed windmill palace temple mosque ' +
-  'cathedral stadium arena gym cinema theater bakery butcher pharmacy supermarket market mall harbor pier tunnel ' +
-  'motorway roundabout crossroads pavement lamppost bench fountain statue monument cemetery toothbrush toothpaste ' +
-  'soap shampoo towel sponge razor comb hairbrush perfume lipstick mascara pillowcase duvet mattress hammock ' +
-  'cushion rug curtain wardrobe drawer shelf bookcase desk stool cradle dustpan mop iron hanger peg basket bin ' +
+  'robin sparrow beetle ladybug mosquito wasp moth caterpillar cricket grasshopper scorpion centipede tadpole ' +
+  'slug skyscraper cottage mansion igloo tent camper treehouse cabin barn shed windmill palace temple mosque ' +
+  'cathedral stadium arena gym arcade theater bakery butcher pharmacy supermarket market mall harbor pier tunnel ' +
+  'highway tollbooth crossroads sidewalk lamppost bench fountain statue monument cemetery toothbrush toothpaste ' +
+  'soap shampoo towel sponge razor comb hairbrush perfume lipstick mascara pillowcase comforter mattress hammock ' +
+  'cushion rug curtain closet drawer shelf bookcase desk stool cradle dustpan mop iron hanger clothespin basket trash ' +
   'hose rake shovel wheelbarrow lawnmower teapot mug saucer bowl jug pan wok whisk sieve grater ladle spatula ' +
   'corkscrew tray laptop tablet printer router charger cable remote joystick drone speaker earphones webcam ' +
   'calculator stapler envelope stamp notebook pencil crayon eraser ruler glue paintbrush easel bulldozer crane ' +
-  'forklift taxi tram limousine yacht canoe kayak raft ferry glider jetpack sledge saxophone cello harp flute ' +
+  'forklift taxi tram limousine yacht canoe kayak raft ferry glider jetpack sled saxophone cello harp flute ' +
   'accordion banjo ukulele harmonica tambourine xylophone bagpipes tuba referee goalkeeper trophy medal whistle ' +
   'stopwatch racket saddle surfboard snowboard dartboard iceberg canyon cliff swamp meadow oasis geyser valley ' +
   'reef lagoon dune hurricane blizzard drought flood hailstorm lightning sunshine breeze frost dew puddle mud ' +
   'skeleton mummy werewolf goblin troll ogre elf dwarf genie centaur phoenix griffin yeti sheriff butler nanny ' +
   'surgeon lifeguard janitor librarian cashier waiter barber florist tailor spy burglar judge lawyer mayor king ' +
   'queen prince emperor pharaoh viking samurai gladiator gift confetti invitation costume mask tiara passport ' +
-  'souvenir postcard binoculars lantern torch rope anchor silver ruby emerald piggybank hiccup sneeze yawn snore ' +
+  'souvenir postcard binoculars lantern flashlight rope anchor silver ruby emerald piggybank hiccup sneeze yawn snore ' +
   'tickle wink hug kiss handshake selfie emoji password hashtag podcast playlist livestream meme spam virus yoyo ' +
-  'dominoes cards marbles trampoline swing seesaw slide sandpit'
+  'dominoes cards marbles trampoline swing seesaw slide sandbox'
 )
   .split(' ')
   .filter((w, i, all) => w && all.indexOf(w) === i);
