@@ -39,12 +39,13 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
   return (
     <>
       <Joystick engine={engine} />
-      {engine.ui.teach && (
-        <div className="rb-teach is-touch" role="status">
-          {engine.ui.teach.text}
-        </div>
-      )}
       <div className="rb-cluster">
+        {/* the lesson sits over the button it teaches (inside the cluster: its size and side follow the cluster's) */}
+        {engine.ui.teach && (
+          <div className={`rb-teach is-touch is-at-${engine.ui.teach.slot}`} role="status">
+            {engine.ui.teach.text}
+          </div>
+        )}
         <SkillButton engine={engine} slot="basic" />
         <SkillButton engine={engine} slot="s1" />
         <SkillButton engine={engine} slot="s2" />

@@ -49,6 +49,12 @@
   height: var(--turn-w);
   transform-origin: top left;
   transform: translateX(var(--turn-w)) rotate(90deg);
+  /* a quarter turn clockwise: the game's top is the screen's right, its right the bottom (the home bar), its
+     bottom the left and its left the top (the status bar, the island), so each inset pads the edge it is on */
+  --sa-t: env(safe-area-inset-right, 0px);
+  --sa-r: env(safe-area-inset-bottom, 0px);
+  --sa-b: env(safe-area-inset-left, 0px);
+  --sa-l: env(safe-area-inset-top, 0px);
 }
 .rb-canvas {
   position: absolute;
@@ -283,6 +289,9 @@
 }
 .rb-frame-head .rb-x {
   flex: none;
+}
+.rb-frame:focus {
+  outline: none;
 }
 .rb-frame-body {
   flex: 1;
@@ -1094,6 +1103,16 @@
   flex-wrap: wrap;
   gap: 10px;
   align-items: end;
+}
+/* where the screen is tall enough, Begin stays in view while the classes scroll under it */
+@container (min-height: 431px) {
+  .rb-create-go {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    padding: 10px 0 4px;
+    background: linear-gradient(rgb(13 8 32 / 0), #0d0820 28%);
+  }
 }
 .rb-create-go label {
   display: grid;
@@ -1909,9 +1928,10 @@
 }
 .rb-sb-potion {
   right: 196px;
-  bottom: 162px;
-  width: 46px;
-  height: 46px;
+  bottom: 160px;
+  /* 44 px or more even in the phone's smaller cluster (scale 0.86): it is the button pressed in a panic */
+  width: 52px;
+  height: 52px;
   background: radial-gradient(circle at 40% 35%, #a04a5a, #6a2434 70%);
   pointer-events: auto;
 }
@@ -2076,14 +2096,35 @@
 .rb-teach.is-touch {
   position: absolute;
   left: auto;
-  right: 18px;
-  bottom: 236px;
+  right: 14px;
+  bottom: 112px;
   transform: none;
-  max-width: 260px;
+  width: max-content;
+  max-width: 220px;
+  font-size: 13px;
 }
 .rb-teach.is-touch::after {
   left: auto;
-  right: 40px;
+  right: 36px;
+}
+/* over the button it teaches: the attack, the first skill, the dodge (data from .rb-sb-* below) */
+.rb-teach.is-touch.is-at-s1 {
+  right: 120px;
+  bottom: 84px;
+}
+.rb-teach.is-touch.is-at-s1::after {
+  right: 24px;
+}
+.rb-teach.is-touch.is-at-dodge {
+  right: 206px;
+  bottom: 76px;
+}
+.rb-teach.is-touch.is-at-dodge::after {
+  right: 22px;
+}
+/* the left-handed cluster is mirrored: the words are not */
+.is-lefty .rb-cluster .rb-teach {
+  transform: scaleX(-1);
 }
 .rb-slot6.is-teach,
 .rb-sb.is-teach {
@@ -2339,26 +2380,26 @@
 .rb-qpage-rewards .rb-kicker {
   margin: 0 4px 0 0;
 }
-.rb-reward {
+.rb-qreward {
   padding: 2px 8px;
   border-radius: 6px;
   background: rgb(255 255 255 / 0.06);
   font-size: 12.5px;
   font-weight: 700;
 }
-.rb-reward.is-xp {
+.rb-qreward.is-xp {
   color: #c9a8ff;
 }
-.rb-reward.is-gold {
+.rb-qreward.is-gold {
   color: var(--rb-gold);
 }
-.rb-reward.is-item {
+.rb-qreward.is-item {
   color: var(--rc, #e8e0d0);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #e8e0d0) 50%, transparent);
 }
-.rb-reward.is-perk,
-.rb-reward.is-unlock,
-.rb-reward.is-tier {
+.rb-qreward.is-perk,
+.rb-qreward.is-unlock,
+.rb-qreward.is-tier {
   color: #9cff9c;
 }
 
@@ -3630,8 +3671,12 @@
   font-size: 12.5px;
   font-weight: 700;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* two lines: the end of a name ("of the Grove") is what tells two pieces apart */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  line-height: 1.2;
 }
 .rb-ware-price {
   font: 700 12px var(--mono);
@@ -3675,6 +3720,9 @@
   }
   .rb-shop-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  .rb-ware-name {
+    font-size: 12px;
   }
   .rb-shop .rb-detail.is-open {
     min-height: min(260px, 100%);
@@ -3858,8 +3906,29 @@
     transform: translateX(80%) scale(-0.8, 0.8);
     transform-origin: bottom left;
   }
-  .rb-tracker {
-    display: none;
+  /* the quest shrinks to one line at the top middle (its icon and objective; a tap opens the map) */
+  .rb-tracker:not(.rb-keyclock) {
+    top: calc(34px + var(--sa-t));
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    max-width: 40cqw;
+    padding: 2px 8px;
+    white-space: nowrap;
+  }
+  .rb-tracker:not(.rb-keyclock) strong {
+    flex: none;
+    font-size: 0;
+  }
+  .rb-tracker:not(.rb-keyclock) > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11.5px;
   }
   /* the clock moves to a line at the top middle, clear of the thumbs */
   .rb-tracker.rb-keyclock {

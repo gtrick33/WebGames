@@ -87,14 +87,14 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
       {!ui.dialogue && <Toasts engine={engine} />}
       {ui.banner && (
-        <div className="rb-banner" key={ui.banner.id} aria-live="polite">
+        <div className="rb-banner" key={`banner:${ui.banner.id}`} aria-live="polite">
           <strong>{ui.banner.text}</strong>
           {ui.banner.sub && <span>{ui.banner.sub}</span>}
         </div>
       )}
       {ui.levelUp && <LevelUpBanner engine={engine} />}
       {ui.card && (
-        <div className={`rb-tcard${ui.card.act ? ' is-act' : ''}`} key={ui.card.id} aria-live="polite">
+        <div className={`rb-tcard${ui.card.act ? ' is-act' : ''}`} key={`card:${ui.card.id}`} aria-live="polite">
           <div className="rb-tcard-text">
             <span className="rb-tcard-over">{ui.card.over}</span>
             <strong>{ui.card.text}</strong>
@@ -427,7 +427,7 @@ export function LevelUpBanner({ engine }: { engine: SigilEngine }) {
     (SLOT_LEVELS as readonly number[]).includes(l.level) ? 'New skill slot' : '',
   ].filter(Boolean);
   return (
-    <div className="rb-levelup" key={l.id} aria-live="polite">
+    <div className="rb-levelup" key={`lvl:${l.id}`} aria-live="polite">
       <strong>Level {l.level}</strong>
       <span>{gains.length ? gains.join(' · ') : 'More health'}</span>
     </div>
@@ -517,7 +517,7 @@ function QuestPage({ engine, kind, id, last }: { engine: SigilEngine; kind: 'off
         <div className="rb-qpage-rewards">
           <span className="rb-kicker">{kind === 'offer' ? 'Reward' : 'You receive'}</span>
           {rewards.map((r, i) => (
-            <span key={i} className={`rb-reward is-${r.kind}`} style={r.rarity ? { ['--rc' as string]: rarityColor(r.rarity) } : undefined}>
+            <span key={i} className={`rb-qreward is-${r.kind}`} style={r.rarity ? { ['--rc' as string]: rarityColor(r.rarity) } : undefined}>
               {r.text}
             </span>
           ))}

@@ -34,6 +34,8 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
   const chosen: ShopItem | undefined = tab === 'buy' ? stock.find((s) => s.item.uid === sel) : undefined;
   const sellItem = tab === 'sell' ? h.bag.find((i) => i.uid === sel) : undefined;
   const inspected = !chosen && !sellItem && inspect ? h.bag.find((i) => i.uid === inspect) : undefined;
+  // each receipt its own id (the next one slides in afresh, and its timer starts again)
+  const show = (r: Omit<Receipt, 'id'>): void => setReceipt((old) => ({ ...r, id: (old?.id ?? 0) + 1 }));
   const pick = (uid: string): void => {
     setSel(uid);
     setInspect(null);
@@ -41,7 +43,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
   const equipNow = (it: Item): void => {
     if (!engine.equipItem(it.uid)) return;
     setInspect(null);
-    setReceipt({ id: Date.now(), text: `Equipped ${itemName(it)}`, item: it });
+    show({ text: `Equipped ${itemName(it)}`, item: it });
   };
   // Equip on the receipt: the piece is still in the bag, the hero can wear it, and it beats what is worn (or the slot is empty)
   const canEquip = (it: Item): boolean => h.bag.some((i) => i.uid === it.uid) && !cantEquip(h, it) && isUpgrade(h.equip[itemSlot(it)], it);
@@ -52,7 +54,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
     </span>
   );
   return (
-    <Frame title={title} onClose={() => engine.closePanel()} wide className="rb-panel-shop">
+    <Frame title={title} label={npc?.shopName ?? def.name} onClose={() => engine.closePanel()} wide className="rb-panel-shop">
       <div className="rb-shop">
         {receipt && (
           <div className="rb-receipt" key={receipt.id} role="status" aria-live="polite" style={receipt.item ? { ['--rc' as string]: rarityColor(receipt.item.r) } : undefined}>
@@ -114,7 +116,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
         <div className="rb-shop-body">
           <section className="rb-shop-list" aria-label={tab === 'buy' ? 'For sale' : 'Your bag'}>
             {shop === 'inn' ? (
-              <PotionCounter engine={engine} onBought={(n) => setReceipt({ id: Date.now(), text: `Bought ${n} potion${n === 1 ? '' : 's'}`, sub: `${h.potions} of ${potionCap(h)}` })} />
+              <PotionCounter engine={engine} onBought={(n) => show({ text: `Bought ${n} potion${n === 1 ? '' : 's'}`, sub: `${h.potions} of ${potionCap(h)}` })} />
             ) : tab === 'buy' ? (
               stock.length ? (
                 <div className="rb-shop-grid">
@@ -166,7 +168,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
                         onClick={() => {
                           const got = engine.buy(shop, chosen.item.uid);
                           if (got) {
-                            setReceipt({ id: Date.now(), text: `Bought ${itemName(got)}`, sub: priceText(chosen), item: got });
+                            show({ text: `Bought ${itemName(got)}`, sub: priceText(chosen), item: got });
                             setSel(null);
                           }
                         }}
@@ -196,7 +198,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
                             return;
                           }
                           const g = engine.salvageItem(sellItem.uid);
-                          if (g) setReceipt({ id: Date.now(), text: `Sold ${itemName(sellItem)}`, sub: `for ${fmt(g)} gold`, item: sellItem });
+                          if (g) show({ text: `Sold ${itemName(sellItem)}`, sub: `for ${fmt(g)} gold`, item: sellItem });
                           setSel(null);
                           setConfirm(null);
                         }}

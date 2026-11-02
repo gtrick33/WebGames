@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import type { ClassId, Item, Rarity } from '../data/types';
 import type { Character } from '../progress/character';
 import { heroLook, heroPortraitUrl, itemIconUrl, portraitUrl, skillIconUrl, type WornLooks, hasPersonLook } from '../render/sprites';
@@ -29,10 +29,37 @@ export function Portrait({ kind, id, size = 48, equip, worn, body }: { kind: 'he
   return <img className={`rb-portrait${smooth ? ' is-smooth' : ''}`} src={src} alt="" style={{ height: size }} draggable={false} />;
 }
 
-/** A framed panel in the game's style. */
-export function Frame({ title, onClose, children, wide, className = '' }: { title: ReactNode; onClose?: () => void; children: ReactNode; wide?: boolean; className?: string }) {
+const FOCUSABLE = 'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
+
+/** A framed panel in the game's style: focus moves into it (its open tab, else Close), stays there, and goes back when it closes. */
+export function Frame({ title, onClose, children, wide, className = '', label }: { title: ReactNode; onClose?: () => void; children: ReactNode; wide?: boolean; className?: string; label?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!el.contains(document.activeElement)) (el.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]') ?? el.querySelector<HTMLElement>('.rb-frame-head .rb-x') ?? el).focus({ preventScroll: true });
+    return () => {
+      if (before && before !== document.body && before.isConnected) before.focus({ preventScroll: true });
+    };
+  }, []);
+  // Tab and Shift+Tab go round the panel's own controls
+  const trap = (e: KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key !== 'Tab' || !ref.current) return;
+    const items = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.getClientRects().length > 0);
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (!first || !last) return;
+    if (e.shiftKey && (document.activeElement === first || !ref.current.contains(document.activeElement))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
   return (
-    <div className={`rb-frame${wide ? ' is-wide' : ''} ${className}`} role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined}>
+    <div ref={ref} tabIndex={-1} onKeyDown={trap} className={`rb-frame${wide ? ' is-wide' : ''} ${className}`} role="dialog" aria-modal="true" aria-label={label ?? (typeof title === 'string' ? title : undefined)}>
       <header className="rb-frame-head">
         <h2>{title}</h2>
         {onClose && (

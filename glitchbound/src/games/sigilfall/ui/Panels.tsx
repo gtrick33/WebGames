@@ -63,7 +63,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
     </span>
   );
   return (
-    <Frame title={title} onClose={() => engine.closePanel()} wide className={`rb-panel-${p}`}>
+    <Frame title={title} label={TABS.find((t) => t.id === p)?.label} onClose={() => engine.closePanel()} wide className={`rb-panel-${p}`}>
       {p === 'hero' && <HeroPanel engine={engine} />}
       {p === 'wardrobe' && <WardrobePanel engine={engine} />}
       {p === 'skills' && <SkillsPanel engine={engine} />}
@@ -1375,7 +1375,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
               </button>
             ))}
           </div>
-          <span className="rb-small rb-dim">WASD move · mouse aim · left click attack · Q E R {s.skill4Key.toUpperCase()} skills · Space dodge · 1 potion · {s.ultKey === 'f' ? 'G' : 'F'} talk/travel · I bag · K talents · U skills · J quests · M map · O play together · Esc pause</span>
+          <span className="rb-small rb-dim">WASD move · mouse aim · left click attack · Q E R {s.skill4Key.toUpperCase()} skills · Space dodge · {s.ultKey === 'rmb' ? 'Right mouse' : s.ultKey === 'shift' ? 'Shift' : s.ultKey.toUpperCase()} ultimate · 1 potion · Y ride · {s.ultKey === 'f' ? 'G' : 'F'} or Enter talk/travel · I bag · K talents · U skills · J quests · M map · O play together · Esc pause</span>
         </section>
         <section>
           <span className="rb-kicker">Display</span>
