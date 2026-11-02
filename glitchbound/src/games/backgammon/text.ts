@@ -102,6 +102,8 @@ export interface Words {
   replaceMatch: string;
   replaceYes: string;
   replaceNo: string;
+  /** A point for screen readers, numbered from your side: `d` is your point number. */
+  pointLabel: (d: number, yours: number, theirs: number, them: string) => string;
   /** The room's messages (sent in English) in this language. */
   serverMsg: Record<string, string>;
 }
@@ -211,6 +213,7 @@ const en: Words = {
   replaceMatch: 'Start a new match? The match you have going will be lost.',
   replaceYes: 'Start a new one',
   replaceNo: 'Keep my match',
+  pointLabel: (d, yours, theirs, them) => `Your ${d} point: ${yours ? `${yours} of yours` : theirs ? `${theirs} of ${them}’s` : 'empty'}`,
   serverMsg: {},
 };
 
@@ -319,6 +322,7 @@ const bg: Words = {
   replaceMatch: 'Нов мач? Мачът, който играеш, ще се загуби.',
   replaceYes: 'Започни нов',
   replaceNo: 'Остави мача',
+  pointLabel: (d, yours, theirs, them) => `Твое поле ${d}: ${yours ? `${yours} твои` : theirs ? `${theirs} на ${them}` : 'празно'}`,
   serverMsg: {
     'That move isn’t allowed.': 'Този ход не е позволен.',
     'Two players are needed: invite a friend or seat the computer.': 'Трябват двама играчи: покани приятел или сложи компютъра.',

@@ -7,7 +7,7 @@
  * there. The bar and the bear-off tray, pip counts and the match score. It shows a game and reports
  * your roll and steps; it never changes the game itself.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as KeyEvent, type ReactNode } from 'react';
 import type { Level } from './ai';
 import { applyStep, BAR, mine, mustPass, nextSteps, OFF, pips, posKey, routesFrom, startPos, stepsBetween, turnDone, type Game, type Pos, type Route, type Side, type Step } from './logic';
 import type { Sfx } from './sound';
@@ -435,6 +435,18 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
     }
   };
 
+  /** Arrow keys go round the places you can use now (the lit points and the tray), never off the board. */
+  const arrowTo = (e: KeyEvent<SVGGElement>): void => {
+    const by = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!by) return;
+    const stops = [...(root.current?.querySelectorAll<SVGGElement>('.tb-board [role=button][tabindex="0"]') ?? [])];
+    if (!stops.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const at = stops.indexOf(e.currentTarget);
+    stops[(at + by + stops.length) % stops.length]!.focus();
+  };
+
   // ---- drawing
   const tris: ReactNode[] = [];
   // the landing rings go over the checkers (a stack would hide them)
@@ -458,13 +470,13 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
         }}
         tabIndex={canAct && (lit || src) ? 0 : -1}
         role="button"
-        aria-label={`${d}: ${mine(p, me, i) ? `${mine(p, me, i)} ${names[me]}` : mine(p, them, i) ? `${mine(p, them, i)} ${names[them]}` : '0'}`}
+        aria-label={w.pointLabel(d, mine(p, me, i), mine(p, them, i), names[them])}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             e.stopPropagation();
             tapPoint(i);
-          }
+          } else arrowTo(e);
         }}
       >
         {/* the whole half-column takes the tap, the empty felt beyond the stack too */}
@@ -620,7 +632,7 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
                 e.preventDefault();
                 e.stopPropagation();
                 if (offTarget) tapTarget(OFF[game.turn]);
-              }
+              } else arrowTo(e);
             }}
           >
             <rect x={TRAY_X} y={Y_TOP} width={TRAY_W} height={Y_BOT - Y_TOP} rx="12" />

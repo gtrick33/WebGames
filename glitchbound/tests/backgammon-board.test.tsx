@@ -92,8 +92,8 @@ describe('backgammon: choosing a move on the board', () => {
     const view = render(board());
     return view;
   };
-  const point = (d: number): Element => document.querySelector(`.tb-point[aria-label^="${d}:"]`)!;
-  const lit = (): Record<string, string> => Object.fromEntries([...document.querySelectorAll('.tb-point.is-target')].map((el) => [el.getAttribute('aria-label')!.split(':')[0]!, ''])) as Record<string, string>;
+  const point = (d: number): Element => document.querySelector(`.tb-point[aria-label^="Your ${d} point:"]`)!;
+  const lit = (): Record<string, string> => Object.fromEntries([...document.querySelectorAll('.tb-point.is-target')].map((el) => [el.getAttribute('aria-label')!.split(' ')[1]!, ''])) as Record<string, string>;
 
   it('a tap picks a checker up and lights every place it can go with its count; nothing moves until you choose', () => {
     show(moving([5, 3]));
@@ -120,11 +120,11 @@ describe('backgammon: choosing a move on the board', () => {
       [8, 5],
     ]);
     // the 5 first: onto the 8 (with the three there), then on to the 5
-    expect([on(13), on(8), on(5)]).toEqual(['4 You', '4 You', '0']);
+    expect([on(13), on(8), on(5)]).toEqual(['4 of yours', '4 of yours', 'empty']);
     // nothing else can be picked up while it moves
     expect(document.querySelectorAll('.tb-point.is-source')).toHaveLength(0);
     act(() => void vi.advanceTimersByTime(moveMs(0, steps[0]!) + 200));
-    expect([on(13), on(8), on(5)]).toEqual(['4 You', '3 You', '1 You']);
+    expect([on(13), on(8), on(5)]).toEqual(['4 of yours', '3 of yours', '1 of yours']);
     expect(ended).toBe(0);
     act(() => void vi.advanceTimersByTime(moveMs(0, steps[1]!) + 200));
     expect(ended).toBe(0);
@@ -143,13 +143,13 @@ describe('backgammon: choosing a move on the board', () => {
   it("someone else's whole turn arrives at once and is shown a step at a time", () => {
     const g = moving([5, 3]);
     const view = render(<Board w={WORDS.en} game={g} me={1} names={['Them', 'You']} canAct={false} sfx={() => quiet} score={[0, 0]} target={5} />);
-    const label = (d: number): string => document.querySelector(`.tb-point[aria-label^="${d}:"]`)!.getAttribute('aria-label')!.split(': ')[1]!;
+    const label = (d: number): string => document.querySelector(`.tb-point[aria-label^="Your ${d} point:"]`)!.getAttribute('aria-label')!.split(': ')[1]!;
     // player 0's 13 and 8 are your 12 and 17 (you are player 1)
     const after = endTurn(step(step(g, { from: 13, to: 8, die: 5 }), { from: 8, to: 5, die: 3 }));
     view.rerender(<Board w={WORDS.en} game={after} me={1} names={['Them', 'You']} canAct={false} sfx={() => quiet} score={[0, 0]} target={5} />);
-    expect([label(12), label(17), label(20)]).toEqual(['4 Them', '4 Them', '0']);
+    expect([label(12), label(17), label(20)]).toEqual(['4 of Them’s', '4 of Them’s', 'empty']);
     act(() => void vi.advanceTimersByTime(moveMs(0, { from: 13, to: 8, die: 5 }) + 200));
-    expect([label(12), label(17), label(20)]).toEqual(['4 Them', '3 Them', '1 Them']);
+    expect([label(12), label(17), label(20)]).toEqual(['4 of Them’s', '3 of Them’s', '1 of Them’s']);
   });
 
   it('shut out (on the bar, the board closed): no Roll button, the board says the turn passes (#25)', () => {
@@ -192,9 +192,14 @@ describe('backgammon: bearing off from the keyboard (BG-02)', () => {
     const onStep = vi.fn();
     const view = render(<Board w={WORDS.en} game={moving([6, 5], pos)} me={0} names={['You', 'Them']} canAct onStep={onStep} sfx={() => quiet} score={[0, 0]} target={5} />);
     const tray = view.getByRole('button', { name: 'Bear off' });
-    const five = view.getAllByRole('button').find((b) => b.getAttribute('aria-label')?.startsWith('5:'))!;
+    const five = view.getAllByRole('button').find((b) => b.getAttribute('aria-label')?.startsWith('Your 5 point:'))!;
     fireEvent.keyDown(five, { key: 'Enter' });
     expect(tray.getAttribute('tabindex')).toBe('0');
+    // the arrow keys go round the lit places without leaving the board: from the 5 to the tray and back
+    five.focus();
+    const stops = [...document.querySelectorAll('.tb-board [role=button][tabindex="0"]')];
+    fireEvent.keyDown(five, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(stops[(stops.indexOf(five) + 1) % stops.length]);
     fireEvent.keyDown(tray, { key: 'Enter' });
     expect(onStep).toHaveBeenCalledWith(expect.objectContaining({ from: 5, to: 0 }));
   });
