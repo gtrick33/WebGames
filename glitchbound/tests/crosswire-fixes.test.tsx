@@ -39,6 +39,7 @@ describe('Crosswire fixes', () => {
     const { unmount } = render(<Game host={{ report }} restartKey={0} challenge={challenge()} />);
     expect(screen.queryByRole('button', { name: 'Back to menu' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Reveal the word/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Sure\? Reveal the word/ }));
     await act(() => vi.advanceTimersByTimeAsync(600));
     expect(saved().rounds['abc:1']!.tally.wordHints).toBe(1);
     unmount();
@@ -84,7 +85,7 @@ describe('Crosswire fixes', () => {
     const firstCell = () => cells().find((c) => c.getAttribute('aria-label')!.startsWith(`Row ${w.row + 1}, column ${w.col + 1}.`))!;
     fireEvent.keyDown(document.body, { key: w.word[0] === 'Q' ? 'Z' : 'Q' });
     for (const ch of w.word.slice(1)) fireEvent.keyDown(document.body, { key: ch });
-    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    fireEvent.click(screen.getByRole('button', { name: /Check the grid/ }));
     expect(firstCell().className).toContain('is-wrong');
     fireEvent.click(clueSquare());
     fireEvent.keyDown(document.body, { key: w.word[0]! });
@@ -110,7 +111,7 @@ describe('Crosswire fixes', () => {
   it('CW-10: Tab from outside the grid is not captured; arrow keys move the cursor', () => {
     render(<Game host={{ report: vi.fn() }} restartKey={0} />);
     fireEvent.click(screen.getByRole('button', { name: 'Play today’s grid' }));
-    const check = screen.getByRole('button', { name: 'Check' });
+    const check = screen.getByRole('button', { name: /Check the grid/ });
     check.focus();
     expect(fireEvent.keyDown(check, { key: 'Tab' })).toBe(true); // not prevented
     expect(fireEvent.keyDown(check, { key: ' ' })).toBe(true); // a focused button keeps Space

@@ -8,16 +8,20 @@ import { COACH } from './coach';
 import { ARROW, editionFor, makePuzzle, wordCells, type Puzzle, type Size } from './grid';
 import {
   backspace,
+  CHECK_COST,
   dailyNumber,
+  deleteForward,
   dailyPuzzle,
   isRight,
   key,
   LETTER_HINT,
   mysteryTiles,
   MYSTERY_BONUS,
+  nextOpenWord,
   practicePuzzle,
   resultLine,
   score,
+  scoreParts,
   solved,
   toggleDir,
   typeLetter,
@@ -25,6 +29,7 @@ import {
   withHint,
   wordFor,
   wordsAt,
+  isFilled,
   wrongCells,
   type Cursor,
   type Entries,
@@ -109,6 +114,17 @@ const writeSave = (s: Save): void => {
 const ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 const clock = (s: number): string => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`;
+/** "1000 − 40 time − 10 checks − 30 hints + 250 mystery", only the parts that apply. */
+function breakdown(t: Tally): string {
+  const s = scoreParts(t);
+  const parts = ['1000'];
+  if (s.time) parts.push(`− ${s.time} time`);
+  if (s.checks) parts.push(`− ${s.checks} checks`);
+  if (s.hints) parts.push(`− ${s.hints} hints`);
+  if (s.floor) parts.push(`+ ${s.floor} (never below 100)`);
+  if (s.mystery) parts.push(`+ ${s.mystery} mystery`);
+  return parts.length > 1 ? parts.join(' ') : '1000: a clean solve inside a minute';
+}
 
 export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
   return <Crosswire key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} />;
@@ -159,6 +175,7 @@ function Crosswire({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
 
   if (screen.kind === 'play')
     return (
+      <>
       <Play
         key={`${screen.puzzle.seed}:${screen.day}`}
         puzzle={screen.puzzle}
@@ -168,10 +185,14 @@ function Crosswire({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
         save={save}
         host={host}
         pauseKey={pauseKey}
+        hold={!!screen.challenge && coach.open}
         update={update}
         onMenu={toMenu}
         onAgain={(size) => setScreen({ kind: 'play', daily: false, day: dayKey(), puzzle: practicePuzzle(size) })}
       />
+      {/* A first-time player who arrives by a challenge link learns the rules first; the clock waits. */}
+      {screen.challenge && coach.open && <Coach steps={COACH} onClose={coach.close} done="Start the round" />}
+      </>
     );
 
   const todays = save.daily[today];
@@ -249,6 +270,8 @@ function Play(props: {
   save: Save;
   host: GameHost;
   pauseKey?: number;
+  /** The walkthrough is open over the round: no clock, no keys. */
+  hold?: boolean;
   update: (fn: (latest: Save) => Save) => void;
   onMenu: () => void;
   onAgain: (s: Size) => void;
@@ -285,10 +308,18 @@ function Play(props: {
   const gridRef = useRef<HTMLDivElement>(null);
   const curRef = useRef<HTMLButtonElement>(null);
   const [cell, setCell] = useState(32);
+  /** The word whose −100 reveal waits for a second press. */
+  const [confirmWord, setConfirmWord] = useState(-1);
+  /** A tapped clue square's text, in a bubble beside it (phones show only number and arrow). */
+  const [bubble, setBubble] = useState<{ word: number; x: number; y: number; up: boolean } | null>(null);
+  const bubbleTimer = useRef(0);
+  const [sheet, setSheet] = useState(false);
+  const boardRef = useRef<HTMLDivElement>(null);
 
   // The clock runs while the grid is being solved, the tab is visible and the arcade hasn't paused the game.
+  const hold = !!props.hold;
   useEffect(() => {
-    if (phase !== 'grid' || paused) return;
+    if (phase !== 'grid' || paused || hold) return;
     const t = window.setInterval(() => {
       if (!document.hidden) setTally((x) => ({ ...x, seconds: x.seconds + 1 }));
     }, 1000);
@@ -300,7 +331,7 @@ function Play(props: {
       window.clearInterval(t);
       document.removeEventListener('visibilitychange', onHide);
     };
-  }, [phase, paused]);
+  }, [phase, paused, hold]);
 
   // A daily or challenge round already finished elsewhere (another tab): this screen is stale.
   useEffect(() => {
@@ -379,7 +410,7 @@ function Play(props: {
 
   const type = useCallback(
     (ch: string) => {
-      if (phase !== 'grid' || paused) return;
+      if (phase !== 'grid' || paused || hold) return;
       if (!started.current) {
         started.current = true;
         host.report({ type: 'start' });
@@ -389,15 +420,19 @@ function Play(props: {
       after(r.entries);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [phase, paused, entries, cursor, p, host],
+    [phase, paused, hold, entries, cursor, p, host],
   );
-  const back = useCallback(() => {
-    if (phase !== 'grid' || paused) return;
-    const r = backspace(p, entries, cursor);
-    setCursor(r.cursor);
-    setEntries(r.entries);
-    keepMarks(r.entries);
-  }, [phase, paused, entries, cursor, p]);
+  const erase = useCallback(
+    (how: typeof backspace) => {
+      if (phase !== 'grid' || paused || hold) return;
+      const r = how(p, entries, cursor);
+      setCursor(r.cursor);
+      setEntries(r.entries);
+      keepMarks(r.entries);
+    },
+    [phase, paused, hold, entries, cursor, p],
+  );
+  const back = useCallback(() => erase(backspace), [erase]);
 
   const w = p.words[cursor.word]!;
   const [cr, cc] = wordCells(w)[cursor.pos] ?? [w.row, w.col];
@@ -429,6 +464,7 @@ function Play(props: {
         if (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable) return;
         if (t.closest('[role=dialog],[aria-modal=true]') || !rootRef.current?.contains(t)) return;
       }
+      if (hold) return;
       if (paused) {
         if (!e.repeat && (e.key === 'Enter' || e.key === ' ' || /^[a-zA-Z]$/.test(e.key))) {
           e.preventDefault();
@@ -445,6 +481,9 @@ function Play(props: {
       } else if (e.key === 'Backspace') {
         e.preventDefault();
         back();
+      } else if (e.key === 'Delete') {
+        e.preventDefault();
+        erase(deleteForward);
       } else if (ARROWS[e.key]) {
         e.preventDefault();
         move(...ARROWS[e.key]!);
@@ -452,16 +491,17 @@ function Play(props: {
         e.preventDefault();
         if (!e.repeat) setCursor((c) => toggleDir(p, c));
       } else if (e.key === 'Tab' && inGrid) {
-        // Tab walks the clues inside the grid, and leaves it after the last one (Shift+Tab before the first).
-        const nextWord = cursor.word + (e.shiftKey ? -1 : 1);
-        if (nextWord < 0 || nextWord >= p.words.length) return;
+        // Tab walks the unfinished clues inside the grid, and leaves it after the last one (Shift+Tab before the first).
+        const nextWord = nextOpenWord(p, entries, cursor.word, e.shiftKey ? -1 : 1);
+        if (nextWord < 0) return;
         e.preventDefault();
-        setCursor({ word: nextWord, pos: 0 });
+        const cells = wordCells(p.words[nextWord]!);
+        setCursor({ word: nextWord, pos: Math.max(0, cells.findIndex(([a, b]) => !entries[key(a, b)])) });
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [phase, paused, type, back, move, p, cursor.word]);
+  }, [phase, paused, hold, type, back, erase, move, p, entries, cursor.word]);
 
   // Focus follows the cursor while the keyboard is in the grid.
   useEffect(() => {
@@ -480,13 +520,24 @@ function Play(props: {
     return () => ro.disconnect();
   }, [p.cols, paused]);
 
-  const tapCell = (r: number, c: number): void => {
+  const tapCell = (r: number, c: number, el?: HTMLElement): void => {
     const cl = p.cells[r]![c]!;
     if (cl.kind === 'clue') {
       const i = cl.clues.length > 1 && cl.clues[0] === cursor.word ? cl.clues[1]! : cl.clues[0]!;
       setCursor({ word: i, pos: 0 });
+      // The square's own text shows only when it fits: otherwise the clue pops up beside it for a moment.
+      const board = boardRef.current;
+      if (el && board && (!roomy || cl.clues.length > 1)) {
+        const a = el.getBoundingClientRect();
+        const b = board.getBoundingClientRect();
+        const up = a.bottom - b.top > b.height * 0.7;
+        setBubble({ word: i, x: Math.min(Math.max(a.left - b.left + a.width / 2, 100), b.width - 100), y: up ? a.top - b.top - 4 : a.bottom - b.top + 4, up });
+        window.clearTimeout(bubbleTimer.current);
+        bubbleTimer.current = window.setTimeout(() => setBubble(null), 2600);
+      }
       return;
     }
+    setBubble(null);
     if (cl.kind !== 'letter') return;
     if (r === cr && c === cc) {
       setCursor((cur) => toggleDir(p, cur));
@@ -506,6 +557,9 @@ function Play(props: {
   };
   const hintWord = (): void => {
     if (wordDone) return;
+    // The big reveal asks once: the first press arms it for this word.
+    if (confirmWord !== cursor.word) return setConfirmWord(cursor.word);
+    setConfirmWord(-1);
     const e = { ...entries };
     wordCells(w).forEach(([a, b], k) => (e[key(a, b)] = w.word[k]!));
     setTally((t) => withHint(t, cursor.word, 'word'));
@@ -551,8 +605,51 @@ function Play(props: {
           )}
           <span className="xw-kicker">{daily ? `Daily #${dailyNumber(day)}` : props.challenge ? '⚔️ Challenge grid' : 'Practice'}</span>
           <span className="xw-time">{clock(tally.seconds)}</span>
+          {phase === 'grid' && !paused && (
+            <button className="xw-icon" onClick={() => setSheet(true)} aria-label="All clues">
+              ≡
+            </button>
+          )}
           <GameMenuButton className="xw-icon" />
         </div>
+        {sheet && phase === 'grid' && !paused && (
+          <div className="xw-sheet" role="dialog" aria-modal="true" aria-label="All clues" onKeyDown={(e) => e.key === 'Escape' && setSheet(false)}>
+            <div className="xw-sheet-head">
+              <h2>All clues</h2>
+              <button className="xw-icon" onClick={() => setSheet(false)} aria-label="Close" autoFocus>
+                ×
+              </button>
+            </div>
+            {(['across', 'down'] as const).map((dir) => (
+              <section key={dir}>
+                <h3>{dir === 'across' ? 'Across' : 'Down'}</h3>
+                <ul>
+                  {p.words.map((x, i) =>
+                    x.dir !== dir ? null : (
+                      <li key={i}>
+                        <button
+                          className={`xw-sheet-clue${isFilled(p, entries, i) ? ' is-filled' : ''}${i === cursor.word ? ' is-on' : ''}`}
+                          onClick={() => {
+                            setCursor({ word: i, pos: Math.max(0, wordCells(x).findIndex(([a, b]) => !entries[key(a, b)])) });
+                            setSheet(false);
+                          }}
+                        >
+                          <b>
+                            {x.n} {ARROW[x.spot]}
+                          </b>
+                          <span>
+                            {x.clue} <span className="xw-muted">({x.word.length})</span>
+                          </span>
+                          <i aria-label={isFilled(p, entries, i) ? 'filled in' : undefined}>{isFilled(p, entries, i) ? '✓' : ''}</i>
+                        </button>
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
 
         {paused ? (
           <div className="xw-paused">
@@ -564,7 +661,7 @@ function Play(props: {
           </div>
         ) : (
           <>
-            <div className="xw-board">
+            <div className="xw-board" ref={boardRef}>
               <div
                 ref={gridRef}
                 className={`xw-grid${roomy ? ' is-roomy' : ''}`}
@@ -584,7 +681,7 @@ function Play(props: {
                             role="gridcell"
                             tabIndex={-1}
                             className={`xw-clue${cl.clues.includes(cursor.word) ? ' is-on' : ''}${cl.clues.length > 1 ? ' is-two' : ''}`}
-                            onClick={() => tapCell(r, c)}
+                            onClick={(e) => tapCell(r, c, e.currentTarget)}
                             aria-label={`Row ${r + 1}, column ${c + 1}. ${cl.clues.map((i) => `Clue ${p.words[i]!.n} ${p.words[i]!.dir}: ${p.words[i]!.clue}`).join('. ')}`}
                           >
                             {cl.clues.map((i) => (
@@ -620,6 +717,14 @@ function Play(props: {
                   </div>
                 ))}
               </div>
+              {bubble && (
+                <p className={`xw-bubble${bubble.up ? ' is-up' : ''}`} style={{ left: bubble.x, top: bubble.y }} role="status">
+                  <b>
+                    {p.words[bubble.word]!.n} {ARROW[p.words[bubble.word]!.spot]}
+                  </b>{' '}
+                  {p.words[bubble.word]!.clue} <span className="xw-muted">({p.words[bubble.word]!.word.length})</span>
+                </p>
+              )}
             </div>
 
             <div className="xw-side">
@@ -648,14 +753,19 @@ function Play(props: {
                     <span className="xw-muted">
                       {filled}/{total}
                     </span>
-                    <button className="xw-btn xw-btn-sm" onClick={check}>
+                    <button className="xw-btn xw-btn-sm" onClick={check} aria-label={`Check the grid, minus ${CHECK_COST} points`}>
                       Check
                     </button>
                     <button className="xw-btn xw-btn-sm" onClick={hintLetter} disabled={wordDone} aria-label={`Reveal a letter, minus ${LETTER_HINT} points`}>
                       Letter −{LETTER_HINT}
                     </button>
-                    <button className="xw-btn xw-btn-sm" onClick={hintWord} disabled={wordDone} aria-label={`Reveal the word, minus ${WORD_HINT} points`}>
-                      Word −{WORD_HINT}
+                    <button
+                      className={`xw-btn xw-btn-sm${confirmWord === cursor.word ? ' is-armed' : ''}`}
+                      onClick={hintWord}
+                      disabled={wordDone}
+                      aria-label={confirmWord === cursor.word ? `Sure? Reveal the word for ${WORD_HINT} points` : `Reveal the word, minus ${WORD_HINT} points`}
+                    >
+                      {confirmWord === cursor.word ? `Sure? −${WORD_HINT}` : `Word −${WORD_HINT}`}
                     </button>
                   </div>
                   <div className="xw-keys" aria-label="Keyboard">
@@ -714,6 +824,9 @@ function Play(props: {
                   <p className="xw-muted">
                     {Math.floor(tally.seconds / 60)}m {tally.seconds % 60}s · {plural(hints, 'hint')} · {plural(tally.checks, 'check')}
                     {p.mystery ? ` · mystery: ${tally.mystery ? p.mystery.word : 'skipped'}` : ''}
+                  </p>
+                  <p className="xw-breakdown" aria-label="Score breakdown">
+                    {breakdown(tally)}
                   </p>
                   <ResultLine line={resultLine(p, tally)} label={`${p.words.length - (tally.revealed?.length ?? 0)} of ${p.words.length} words solved without a reveal`} />
                   <div className="xw-row">
