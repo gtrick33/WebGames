@@ -326,3 +326,14 @@ describe('Mini Racer: two tabs and midnight (MR-11, MR-12)', () => {
     expect(screen.getByRole('radio', { name: /Daily · 11\/03/ })).toBeTruthy();
   }, 30_000);
 });
+
+describe('Mini Racer: the menu keeps Race! in reach on short screens', () => {
+  it('the track’s details fold into a Track info row that opens and closes', () => {
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    const toggle = screen.getByRole('button', { name: /Track info/ });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(document.getElementById('mr-info-body')?.textContent).toMatch(/Asphalt/);
+  });
+});

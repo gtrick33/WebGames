@@ -141,6 +141,8 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
   const startedHere = useRef<string | null>(null);
   /** A challenge round that was already over when the game opened. */
   const [doneRun, setDoneRun] = useState<ChallengeRun | null>(null);
+  /** The menu's track details are unfolded (they fold away on short screens only). */
+  const [info, setInfo] = useState(false);
   const selected = defFor(save.track);
   const car = getCar(save.car);
 
@@ -705,22 +707,32 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
             })}
           </div>
 
-          <p className="mr-blurb">{selected.blurb}</p>
+          {/* On short screens the track's details fold into one row (Track info), so Race! needs less scrolling. */}
+          <div className={`mr-info${info ? ' is-open' : ''}`}>
+            <button className="mr-info-toggle" aria-expanded={info} aria-controls="mr-info-body" onClick={() => setInfo((v) => !v)}>
+              <span className={`mr-type mr-type-${selected.type}`}>{TRACK_TYPES[selected.type].name}</span>
+              <span className="mr-info-label">Track info</span>
+              <span className="mr-info-chev" aria-hidden="true" />
+            </button>
+            <div className="mr-info-body" id="mr-info-body">
+              <p className="mr-blurb">{selected.blurb}</p>
+              <p className="mr-typehint">
+                <span className={`mr-type mr-type-${selected.type}`}>{TRACK_TYPES[selected.type].name}</span> {TRACK_TYPES[selected.type].hint}
+              </p>
+              <div className="mr-surfaces">
+                {surfacesOf(selected).map((s) => (
+                  <span key={s} className={`mr-surface mr-surface-${s}`}>
+                    {SURFACE_LABEL[s]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
           {selected.id === RANDOM_ID && (
             <button className="mr-chip mr-roll" onClick={rollRandom}>
               🎲 Roll a new random track
             </button>
           )}
-          <p className="mr-typehint">
-            <span className={`mr-type mr-type-${selected.type}`}>{TRACK_TYPES[selected.type].name}</span> {TRACK_TYPES[selected.type].hint}
-          </p>
-          <div className="mr-surfaces">
-            {surfacesOf(selected).map((s) => (
-              <span key={s} className={`mr-surface mr-surface-${s}`}>
-                {SURFACE_LABEL[s]}
-              </span>
-            ))}
-          </div>
 
           <div className="mr-modes" role="radiogroup" aria-label="Mode">
             {(['trial', 'race'] as RaceMode[]).map((m) => (

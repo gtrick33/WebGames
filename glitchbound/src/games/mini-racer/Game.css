@@ -449,10 +449,55 @@
   }
 }
 @media (max-height: 560px) {
-  .mr-blurb,
   .mr-keys {
     display: none;
   }
+}
+
+/* Track details: shown in full on tall screens; on short ones they fold into a Track info row. */
+.mr-info-toggle {
+  display: none;
+}
+@media (max-height: 700px) {
+  .mr-menu .mr-info-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 8px;
+    padding: 4px 12px 4px 8px;
+    border: 2px solid var(--mr-ink);
+    border-radius: 12px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    text-align: left;
+  }
+  .mr-info-label {
+    flex: 1;
+  }
+  .mr-info-chev {
+    width: 9px;
+    height: 9px;
+    border-right: 2.5px solid var(--mr-ink);
+    border-bottom: 2.5px solid var(--mr-ink);
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 0.15s;
+  }
+  .mr-info.is-open .mr-info-chev {
+    transform: translateY(2px) rotate(-135deg);
+  }
+  .mr-info:not(.is-open) .mr-info-body {
+    display: none;
+  }
+  .mr-info-body .mr-typehint .mr-type {
+    display: none;
+  }
+}
+.mr-info-toggle:focus-visible {
+  outline: 3px solid var(--mr-pink);
+  outline-offset: 2px;
 }
 
 /* --------------------------------------------------------- coins, surfaces, records */
