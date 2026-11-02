@@ -79,6 +79,13 @@
   font-size: 14px;
   font-weight: 800;
   color: var(--fg);
+  /* The footer is a dark band in both themes, so its pill is a light tint of it, not the light theme's
+     cream well (cream text on cream was unreadable). */
+  border-color: rgb(255 255 255 / 0.22);
+  background: rgb(255 255 255 / 0.08);
+}
+.lang-footer .lang-btn:hover {
+  border-color: var(--violet);
 }
 .lang-footer .lang-btn svg:last-child {
   opacity: 0.7;

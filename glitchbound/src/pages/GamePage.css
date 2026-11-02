@@ -289,6 +289,18 @@
     height: 38px;
   }
 }
+/* The smallest phones: a long name ("Where’s the Ball?", "Launch Control") takes two lines instead of
+   ending in "…" next to the buttons. */
+@media (max-width: 380px) {
+  .game-heading h1,
+  .game-toolbar:has(.game-actions.is-playing) .game-heading h1 {
+    font-size: 21px;
+    line-height: 1.08;
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-wrap: balance;
+  }
+}
 
 .last-signin {
   display: inline-flex;
