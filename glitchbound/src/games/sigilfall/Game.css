@@ -3110,6 +3110,18 @@
   display: grid;
   gap: 8px;
 }
+/* a quest waiting for the hero's level: shown, dimmed, with the level it opens at */
+.rb-quest.is-gated {
+  opacity: 0.62;
+}
+.rb-tracker-gate {
+  font-style: normal;
+  color: var(--rb-dim);
+  font-size: 11.5px;
+}
+.rb-tracker.is-gated span {
+  color: var(--rb-dim);
+}
 .rb-done ul {
   margin: 6px 0 0;
   padding-left: 18px;

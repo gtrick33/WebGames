@@ -10,7 +10,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/
 import type { Item, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
+import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
@@ -635,9 +635,11 @@ function QuestsPanel({ engine }: { engine: SigilEngine }) {
     groups.set(r, [...(groups.get(r) ?? []), q]);
   }
   const order = [...groups.keys()].sort((a, b) => Number(b === here) - Number(a === here));
+  // quests waiting only for the hero's level, the story's first
+  const gated = levelGated(h).sort((a, b) => Number(isMainQuest(b.id)) - Number(isMainQuest(a.id)));
   return (
     <div className="rb-quests">
-      {active.length === 0 && <p className="rb-dim">No quests right now. The Rift will stir again.</p>}
+      {active.length === 0 && <p className="rb-dim">{gated.length ? `No quests right now. The next one opens at level ${Math.min(...gated.map((q) => q.level!))}.` : 'No quests right now. The Rift will stir again.'}</p>}
       {order.map((r) => (
         <section key={r} className="rb-quest-group">
           <span className="rb-kicker">
@@ -682,6 +684,24 @@ function QuestsPanel({ engine }: { engine: SigilEngine }) {
           })}
         </section>
       ))}
+      {gated.length > 0 && (
+        <section className="rb-quest-group">
+          <span className="rb-kicker">Opens at a higher level</span>
+          {gated.map((q) => {
+            const main = isMainQuest(q.id);
+            return (
+              <article key={q.id} className={`rb-quest is-gated${main ? ' is-main' : ' is-side'}`}>
+                <div className="rb-quest-head">
+                  <img src={mapIconUrl(main ? 'offer' : 'offerSide', 2)} alt="" />
+                  <strong>{q.name}</strong>
+                  <span className="rb-quest-kind">{main ? 'Story' : 'Side'}</span>
+                </div>
+                <span className="rb-small">Opens at level {q.level}</span>
+              </article>
+            );
+          })}
+        </section>
+      )}
       {done.length > 0 && (
         <details className="rb-done">
           <summary>Completed · {done.length}</summary>

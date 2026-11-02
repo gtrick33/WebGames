@@ -446,6 +446,14 @@ export function startQuests(c: Character): QuestDef[] {
   return started;
 }
 
+/**
+ * Quests that wait only for the hero's level: their land is open and everything before them is done
+ * (startQuests starts them at q.level). The log lists them as "Opens at level N"; lowest level first.
+ */
+export function levelGated(c: Character): QuestDef[] {
+  return QUESTS.filter((q) => !c.quests[q.id] && !!q.level && c.level < q.level && (!q.zone || c.unlocked.includes(q.zone)) && (q.after ?? []).every((id) => questState(c, id) === 'done')).sort((a, b) => a.level! - b.level!);
+}
+
 /** The quests an NPC is offering. */
 export const offeredBy = (c: Character, npc: string): QuestDef[] => QUESTS.filter((q) => q.giver === npc && questState(c, q.id) === 'offered');
 

@@ -7,7 +7,7 @@ import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { ResourceDef } from '../data/types';
 import type { SigilEngine } from '../engine';
-import { currentObjective, freePoints, HOME, questProgress, questState, SLOT_LEVELS, trackedQuest } from '../progress/character';
+import { currentObjective, freePoints, HOME, levelGated, questProgress, questState, SLOT_LEVELS, trackedQuest } from '../progress/character';
 import { SPEC_LEVEL } from '../data/talents';
 import { modLines } from '../progress/describe';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
@@ -332,7 +332,21 @@ function KeyClock({ engine }: { engine: SigilEngine }) {
 function Tracker({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const q = trackedQuest(h, engine.world?.region.id);
-  if (!q || engine.ui.boss) return null;
+  if (engine.ui.boss) return null;
+  // the main story waiting for a level: said, so it never just stops (PROGRESSION_BALANCE.md G)
+  const storyOn = !!q && isMainQuest(q.id);
+  const gate = storyOn ? undefined : levelGated(h).find((x) => isMainQuest(x.id));
+  if (!q) {
+    return gate ? (
+      <div className="rb-tracker is-main is-gated">
+        <strong>
+          <img src={mapIconUrl('offer', 2)} alt="" />
+          {gate.name}
+        </strong>
+        <span>Opens at level {gate.level}</span>
+      </div>
+    ) : null;
+  }
   const pr = questProgress(h, q);
   const ready = questState(h, q.id) === 'ready';
   const who = ready ? turnInNpc(q) : null;
@@ -347,6 +361,7 @@ function Tracker({ engine }: { engine: SigilEngine }) {
         {ready ? `Return to ${who ? NPCS[who]?.name : 'them'}` : currentObjective(h, q).label}
         {!ready && pr.of > 1 ? ` ${pr.n}/${pr.of}` : ''}
       </span>
+      {gate && <em className="rb-tracker-gate">Next story quest opens at level {gate.level}</em>}
     </button>
   );
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
-import { BAG_OVERFLOW, bagSize, HELD_MAX, newCharacter, type Character } from '../src/games/sigilfall/progress/character';
+import { BAG_OVERFLOW, bagSize, HELD_MAX, levelGated, newCharacter, startQuests, type Character } from '../src/games/sigilfall/progress/character';
+import { REGION_IDS } from '../src/games/sigilfall/data/regions';
 import { rollGear, salvageValue } from '../src/games/sigilfall/progress/items';
 import { buyItem, sellPrice, stockFor } from '../src/games/sigilfall/progress/shop';
 import { validateItem } from '../src/games/sigilfall/progress/save';
@@ -178,5 +179,23 @@ describe('Sigilfall systems fixes', () => {
       const armor = buildHero(readyHero('warrior', lvl, 'uncommon')).stats.armor;
       expect(armorReduction(armor, lvl)).toBe(Math.min(0.6, armor / (armor + 60)));
     }
+  });
+
+  it('Design: a quest waiting only for a level is listed with the level it opens at', () => {
+    const h = storyHero(['break-the-giants']);
+    h.unlocked = [...REGION_IDS];
+    h.level = 49;
+    startQuests(h);
+    expect(h.quests['muster-the-field']).toBeUndefined();
+    const gate = levelGated(h).find((q) => q.id === 'muster-the-field');
+    expect(gate?.level).toBe(50);
+    // lowest level first, and none that the hero could already start
+    const levels = levelGated(h).map((q) => q.level!);
+    expect([...levels].sort((a, b) => a - b)).toEqual(levels);
+    expect(levels.every((l) => l > h.level)).toBe(true);
+    h.level = 50;
+    startQuests(h);
+    expect(h.quests['muster-the-field']?.state).toBe('active');
+    expect(levelGated(h).some((q) => q.id === 'muster-the-field')).toBe(false);
   });
 });
