@@ -251,7 +251,8 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
     const ask = canAskFull(el);
     if (ask) request(el);
     // on a phone the stage is pinned at once, whatever the browser does with the request
-    if ((!ask || touchScreen()) && modeRef.current !== 'fullscreen') apply('immersive');
+    // (a browser that enters at once has already set 'fullscreen' inside the request)
+    if ((!ask || touchScreen()) && (modeRef.current as PlayModeState) !== 'fullscreen') apply('immersive');
   };
   const retryFullscreen = (): void => {
     const el = ref.current;
