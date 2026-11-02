@@ -274,16 +274,59 @@ export interface Forecast {
   mult: number;
 }
 
-/** Odds of finishing first: the race is run a dozen times with you as a good driver and the field as it is. */
-export function forecast(me: CarSpec, bots: Bot[]): Forecast {
-  const myEt = forecastEt(me, PLAYER_SKILL, 7);
+/** One of your recent races, as the forecast reads your driving: the launch reaction (s) and the share of shifts in the green. */
+export interface FormRun {
+  reaction: number;
+  perfect: number;
+}
+/** The forecast learns from your last ten races. */
+export const FORM_RUNS = 10;
+/** Until you have raced this many, the forecast assumes a decent driver (PLAYER_SKILL). */
+export const FORM_MIN = 3;
+
+/**
+ * The skill your recent races drive like (0.5..0.95): your typical reaction read back through
+ * typicalReaction, and your perfect-shift rate against a policy driver's, half each.
+ */
+export function formSkill(form: readonly FormRun[]): number {
+  const runs = form.slice(-FORM_RUNS);
+  if (runs.length < FORM_MIN) return PLAYER_SKILL;
+  const reaction = runs.reduce((a, r) => a + clamp(r.reaction, 0, 2), 0) / runs.length;
+  const perfect = runs.reduce((a, r) => a + clamp(r.perfect, 0, 1), 0) / runs.length;
+  const byReaction = 1 - (reaction - typicalReaction(1)) / (typicalReaction(0) - typicalReaction(1));
+  const byShifts = skillForPerfect(perfect);
+  return clamp(Math.round((byReaction + byShifts) * 50) / 100, 0.5, 0.95);
+}
+
+/** A policy driver's share of perfect shifts by skill (measured over the roster): read back to a skill. */
+const PERFECT_AT: readonly [number, number][] = [
+  [0.3, 0.38],
+  [0.5, 0.54],
+  [0.6, 0.56],
+  [0.75, 0.62],
+  [0.85, 0.9],
+  [0.95, 1],
+];
+function skillForPerfect(rate: number): number {
+  if (rate <= PERFECT_AT[0]![1]) return PERFECT_AT[0]![0];
+  for (let i = 1; i < PERFECT_AT.length; i++) {
+    const [s1, p1] = PERFECT_AT[i]!;
+    const [s0, p0] = PERFECT_AT[i - 1]!;
+    if (rate <= p1) return s0 + ((rate - p0) / Math.max(1e-6, p1 - p0)) * (s1 - s0);
+  }
+  return PERFECT_AT[PERFECT_AT.length - 1]![0];
+}
+
+/** Odds of finishing first: the race is run a dozen times with you driving as your recent races did and the field as it is. */
+export function forecast(me: CarSpec, bots: Bot[], skill = PLAYER_SKILL): Forecast {
+  const myEt = forecastEt(me, skill, 7);
   const specs = [{ ...me, risky: [] }, ...bots.map(botSpec)];
   const etSum = bots.map(() => 0);
   const RUNS = 12;
   let wins = 0;
   for (let k = 0; k < RUNS; k++) {
     const seed = 1000 + k * 7919;
-    const drivers: Driver[] = [{ kind: 'policy', skill: PLAYER_SKILL, seed }, ...bots.map((b, i) => ({ kind: 'policy' as const, skill: b.skill, seed: seed ^ (i + 1) * 104729 }))];
+    const drivers: Driver[] = [{ kind: 'policy', skill, seed }, ...bots.map((b, i) => ({ kind: 'policy' as const, skill: b.skill, seed: seed ^ (i + 1) * 104729 }))];
     const r = simulate(specs, drivers, seed);
     if (r.winner === 0) wins++;
     r.racers.slice(1).forEach((x, i) => (etSum[i]! += x.et ?? MAX_TIME));
@@ -293,8 +336,13 @@ export function forecast(me: CarSpec, bots: Bot[]): Forecast {
   return { myEt, etList: etSum.map((x) => x / RUNS), pWin, mult };
 }
 
-/** Stake buttons: nothing, a tenth, a quarter, half, everything. */
+/** Stake buttons: nothing, a tenth, a quarter, half, or all of the most you can stake. */
 export const STAKE_SHARES = [0, 0.1, 0.25, 0.5, 1] as const;
+/** The most you can back yourself with: twice the purse (and never more than you have). */
+export const STAKE_PURSE_MULT = 2;
+export const stakeCap = (cash: number, purse: number): number => Math.max(0, Math.min(Math.floor(cash), Math.round(purse * STAKE_PURSE_MULT)));
+/** Wagers are for rivals you haven't beaten yet: a rematch is for the purse alone. */
+export const canWager = (rival: Opponent, rank: number): boolean => rival.rank > rank;
 
 /** Share of the purse by finishing position: the winner takes it, the runner-up a consolation. */
 export const PURSE_SHARE = [1, 0.3] as const;

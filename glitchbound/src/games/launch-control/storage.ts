@@ -1,6 +1,6 @@
 import { CARS, DEFAULT_CAR } from './cars';
 import { COSMETICS, DEFAULTS, getCosmetic, type CosmeticKind } from './cosmetics';
-import { emptyMats, LADDER_SIZE } from './economy';
+import { emptyMats, FORM_RUNS, LADDER_SIZE, type FormRun } from './economy';
 import { freshCondition, MATERIALS, MAX_LEVEL, PARTS, stockLevels, wears, type Condition, type Levels, type Material } from './parts';
 import { clamp } from './util';
 
@@ -58,6 +58,8 @@ export interface Save {
   /** Music off (sound effects can stay on). */
   musicOff: boolean;
   seenHelp: boolean;
+  /** Your last races as the wager forecast reads them (oldest first). */
+  form: FormRun[];
 }
 
 export const newCar = (): OwnedCar => ({ levels: stockLevels(), cond: freshCondition(), paint: DEFAULTS.paint, livery: DEFAULTS.livery, wheels: DEFAULTS.wheels });
@@ -86,6 +88,7 @@ export const emptySave = (): Save => ({
   muted: false,
   musicOff: false,
   seenHelp: false,
+  form: [],
 });
 
 /**
@@ -191,6 +194,11 @@ export function sanitize(raw: unknown): Save {
   s.muted = o.muted === true;
   s.musicOff = o.musicOff === true;
   s.seenHelp = o.seenHelp === true;
+  if (Array.isArray(o.form))
+    s.form = o.form
+      .filter((x): x is FormRun => !!x && typeof x === 'object' && Number.isFinite((x as FormRun).reaction) && Number.isFinite((x as FormRun).perfect))
+      .slice(-FORM_RUNS)
+      .map((x) => ({ reaction: clamp(x.reaction, 0, 2), perfect: clamp(x.perfect, 0, 1) }));
   return s;
 }
 

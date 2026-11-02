@@ -3,7 +3,7 @@ import { getGame } from '../src/catalog/catalog';
 import { CARS, getCar, TRAIT_INFO } from '../src/games/launch-control/cars';
 import { MODEL_FILE } from '../src/games/launch-control/models';
 import { COSMETICS, DEFAULTS, getCosmetic } from '../src/games/launch-control/cosmetics';
-import { addMats, botsFor, botSpec, crateFor, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, idleIncome, idleRate, LADDER, LADDER_SIZE, loanerFor, materialsFor, opponentSpec, purseAt, RACE_SIZE, settle, typicalEt } from '../src/games/launch-control/economy';
+import { addMats, botsFor, botSpec, canWager, crateFor, forecast, formSkill, PLAYER_SKILL, stakeCap, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, idleIncome, idleRate, LADDER, LADDER_SIZE, loanerFor, materialsFor, opponentSpec, purseAt, RACE_SIZE, settle, typicalEt } from '../src/games/launch-control/economy';
 import { ENV_DEFS } from '../src/games/launch-control/envs';
 import { applyWear, effectsOf, failChance, freshCondition, levelGains, MAX_LEVEL, PARTS, raceWear, repairCost, RISKY, stockLevels, upgradeCost, type Levels } from '../src/games/launch-control/parts';
 import { AUTO_LAUNCH, FIRST_LIGHT, LIGHT_GAP, LIGHTS, OUT_HOLD_MAX, decodeScript, DT, encodeScript, runOut, SHUTDOWN, engineForce, forecastEt, forecastRun, GREEN_SECONDS, idealLaunchRpm, JUMP_PENALTY, Race, scoreOf, shiftRpm, shiftWindows, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
@@ -479,6 +479,30 @@ describe('parts and economy', () => {
     expect(win).toEqual({ purse: 1200, wager: 750, bonus: 2000 });
     const second = settle({ position: 2, purse: 1000, fansMul: 1.2, stake: 500, mult: 2.5, firstWin: false });
     expect(second).toEqual({ purse: 300, wager: -500, bonus: 0 });
+  });
+
+  it('wagers: capped at twice the purse, none on rematches, odds from your own recent races', () => {
+    expect(stakeCap(1_000_000, 5000)).toBe(10000);
+    expect(stakeCap(3000, 5000)).toBe(3000);
+    expect(stakeCap(0, 5000)).toBe(0);
+    const o = LADDER[9]!;
+    expect(canWager(o, o.rank - 1)).toBe(true);
+    expect(canWager(o, o.rank)).toBe(false);
+    expect(canWager(o, o.rank + 5)).toBe(false);
+    // too few races: a decent driver; a sharp driver and a slow one read as such, within 0.5..0.95
+    expect(formSkill([])).toBe(PLAYER_SKILL);
+    const sharp = formSkill(Array.from({ length: 10 }, () => ({ reaction: 0.2, perfect: 1 })));
+    const slow = formSkill(Array.from({ length: 10 }, () => ({ reaction: 0.6, perfect: 0.3 })));
+    expect(sharp).toBeGreaterThanOrEqual(0.9);
+    expect(sharp).toBeLessThanOrEqual(0.95);
+    expect(slow).toBe(0.5);
+    // the better you drive, the shorter your odds pay
+    const me = stock('falkon');
+    const bots = botsFor(me, RACE_SIZE - 1, 5, o);
+    const good = forecast(me, bots, sharp);
+    const bad = forecast(me, bots, slow);
+    expect(good.pWin).toBeGreaterThanOrEqual(bad.pWin);
+    expect(good.mult).toBeLessThanOrEqual(bad.mult);
   });
 
   it('the gauntlet: opponents get quicker every round, prizes grow, materials every third win', () => {

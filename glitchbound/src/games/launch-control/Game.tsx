@@ -12,7 +12,7 @@ import { shareOrCopy } from '../../platform/share';
 import { takeSavesLive } from '../../platform/syncGate';
 import { CARS, getCar, TIER_NAME, TRAIT_INFO, type CarDef } from './cars';
 import { COSMETICS, DEFAULTS, getCosmetic, KIND_NAME, type Cosmetic, type CosmeticKind } from './cosmetics';
-import { addMats, avgLevel, botsFor, botSpec, crateFor, difficultyOf, DIVISIONS, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, hasMats, idleIncome, idleRate, LADDER, loanerFor, materialsFor, PER_DIVISION, PINK_SLIP, pinkSlipCash, PLAYER_SKILL, RACE_SIZE, rivalBot, rivalCarId, settle, STAKE_SHARES, typicalEt, type Bot, type Forecast, type Opponent } from './economy';
+import { addMats, avgLevel, botsFor, botSpec, canWager, crateFor, FORM_RUNS, formSkill, stakeCap, difficultyOf, DIVISIONS, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, hasMats, idleIncome, idleRate, LADDER, loanerFor, materialsFor, PER_DIVISION, PINK_SLIP, pinkSlipCash, PLAYER_SKILL, RACE_SIZE, rivalBot, rivalCarId, settle, STAKE_SHARES, typicalEt, type Bot, type Forecast, type Opponent } from './economy';
 import { ENV_DEFS } from './envs';
 import { applyWear, effectsOf, FAILURE_TEXT, freshCondition, levelGains, MATERIALS, MAX_LEVEL, PART_INFO, PART_VISUALS, PARTS, raceWear, repairCost, RISKY, stockLevels, upgradeCost, wears, type Condition, type Levels, type Mats, type PartId } from './parts';
 import { RaceScreen, type RacePlan } from './RaceScreen';
@@ -379,7 +379,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
             names.push(b.name);
             looks.push(botLook(b));
           }
-          setPlan({ mode, me: meSpec, bots: fill, race: { specs, drivers, looks, names, env, seed, tagline }, rival: null, stake: 0, forecast: forecast(meSpec, fill), carId });
+          setPlan({ mode, me: meSpec, bots: fill, race: { specs, drivers, looks, names, env, seed, tagline }, rival: null, stake: 0, forecast: forecast(meSpec, fill, formSkill(s.form)), carId });
           setScreen('setup');
           return;
         }
@@ -417,7 +417,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
         names.push(b.name);
         looks.push(botLook(b));
       }
-      setPlan({ mode, me: meSpec, bots, race: { specs, drivers, looks, names, env, seed, tagline }, rival: mode === 'daily' || mode === 'gauntlet' || mode === 'test' ? null : rival, stake: 0, forecast: forecast(meSpec, bots), carId, round: mode === 'gauntlet' ? round : undefined });
+      setPlan({ mode, me: meSpec, bots, race: { specs, drivers, looks, names, env, seed, tagline }, rival: mode === 'daily' || mode === 'gauntlet' || mode === 'test' ? null : rival, stake: 0, forecast: forecast(meSpec, bots, formSkill(s.form)), carId, round: mode === 'gauntlet' ? round : undefined });
       setScreen('setup');
     },
     [challenge, today, me],
@@ -529,6 +529,11 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           };
         });
         host.report({ type: 'end', score, stats });
+      }
+      // the wager forecast learns from how you drive
+      if (mine.launch !== null) {
+        const run = { reaction: Math.round(Math.min(2, Math.max(0, mine.reaction)) * 1000) / 1000, perfect: mine.shifts ? Math.round((mine.perfect / mine.shifts) * 100) / 100 : 0 };
+        commit((s) => ({ ...s, form: [...s.form, run].slice(-FORM_RUNS) }));
       }
       const newBest = p.mode !== 'test' && score > s0.bestScore && score > 0;
       if (p.mode !== 'test' && (newBest || (mine.et !== null && (s0.bestEt === 0 || Math.round(mine.et * 1000) < s0.bestEt))))
@@ -1261,10 +1266,11 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
               </p>
             )}
             {plan.carId && <WornWarning cond={owned.cond} />}
-            {plan.rival && (
+            {plan.rival && !canWager(plan.rival, save.rank) && <p className="lc-sub">A rematch is for the purse alone: no wagers on rivals you have beaten.</p>}
+            {plan.rival && canWager(plan.rival, save.rank) && (
               <div className="lc-wager">
                 <div className="lc-wager-odds">
-                  <span className="lc-eyebrow mono">Your odds of winning</span>
+                  <span className="lc-eyebrow mono">{save.form.length >= 3 ? `Your odds · last ${Math.min(save.form.length, FORM_RUNS)} races` : 'Your odds of winning'}</span>
                   <b className="mono">{Math.round(plan.forecast.pWin * 100)}%</b>
                   <span>
                     Back yourself with garage coins: win and they come back <b>{plan.forecast.mult}×</b>, plus the <Cash n={plan.rival.purse} /> purse. Lose and they go to your rival (second still gets a small consolation). Or just race.
@@ -1272,10 +1278,10 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 </div>
                 <div className="lc-stakes" role="radiogroup" aria-label="Coins to back yourself with">
                   {STAKE_SHARES.map((sh) => {
-                    const amt = Math.floor(save.cash * sh);
+                    const amt = Math.floor(stakeCap(save.cash, plan.rival!.purse) * sh);
                     return (
                       <button key={sh} role="radio" aria-checked={plan.stake === amt} className={`lc-stake${plan.stake === amt ? ' is-on' : ''}`} onClick={() => setPlan({ ...plan, stake: amt })} disabled={save.cash === 0 && sh > 0}>
-                        <b>{sh === 0 ? 'Just race' : `${sh * 100}%`}</b>
+                        <b>{sh === 0 ? 'Just race' : sh === 1 ? 'Max' : `${sh * 100}%`}</b>
                         {sh > 0 && <small className="mono">${fmtShort(amt)}</small>}
                       </button>
                     );
