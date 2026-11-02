@@ -17,7 +17,7 @@ function mount(props: { challenge?: ChallengeSpec; pauseKey?: number } = {}) {
   return { events, view, host };
 }
 
-const press = (key: string, target: EventTarget = window): void => {
+const press = (key: string, target: Element | Window = window): void => {
   fireEvent.keyDown(target, { key });
 };
 const typeWord = (word: string): void => {
