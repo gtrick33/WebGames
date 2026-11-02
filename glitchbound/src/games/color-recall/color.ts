@@ -165,6 +165,9 @@ export const VERDICT_TEXT: Record<Verdict, string> = {
   off: 'Way off',
 };
 
+/** ΔE in plain words, for the reveal. */
+export const dEWords = (dE: number): string => (dE < 1 ? 'invisible' : dE < 2.5 ? 'barely visible' : dE < 5 ? 'slightly different' : dE < 10 ? 'noticeably different' : dE < 25 ? 'clearly different' : 'another color');
+
 /** The verdict's words for a score: "Perfect!" only for a full 1,000, "Near perfect" just below. */
 export const verdictText = (points: number): string => (points >= MAX_POINTS ? VERDICT_TEXT.perfect : verdictFor(points) === 'perfect' ? 'Near perfect' : VERDICT_TEXT[verdictFor(points)]);
 

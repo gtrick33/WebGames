@@ -3,7 +3,7 @@ import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, formatCountdown, msUntilMidnight, parseDayKey } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
-import { feedback, hexToRgb, hsbToRgb, inkOn, MAX_POINTS, rgbToHex, rgbToHsb, verdictFor, verdictText, type Hsb, type Rgb } from './color';
+import { dEWords, feedback, hexToRgb, hsbToRgb, inkOn, MAX_POINTS, rgbToHex, rgbToHsb, verdictFor, verdictText, type Hsb, type Rgb } from './color';
 import { Glyph } from './Glyph';
 import {
   DAILY_DIFFICULTY,
@@ -819,7 +819,9 @@ function Feedback({ target, result }: { target: Rgb; result: RoundResult }) {
   const tips = feedback(target, hexToRgb(result.guess));
   return (
     <div className="cr-feedback" aria-live="polite">
-      <span className="cr-chip">ΔE {result.dE.toFixed(1)}</span>
+      <span className="cr-chip" title="Color difference (ΔE): under 1 is invisible, 10 is clearly different">
+        ΔE {result.dE.toFixed(1)} · {dEWords(result.dE)}
+      </span>
       {tips.map((t) => (
         <span key={t} className="cr-chip cr-chip-tip">
           {t}

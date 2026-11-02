@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { colorName, deltaE, feedback, hexToRgb, hsbToRgb, MAX_POINTS, pointsFor, rgbToHex, rgbToHsb, verdictFor, verdictText } from '../src/games/color-recall/color';
+import { colorName, deltaE, dEWords, feedback, hexToRgb, hsbToRgb, MAX_POINTS, pointsFor, rgbToHex, rgbToHsb, verdictFor, verdictText } from '../src/games/color-recall/color';
 import { BALANCED_FROM, dailyNumber, dailyRounds, endStats, newGame, pickRounds, practiceRounds, reduce, rng, ROUNDS, scoreGuess, shareText, toneOf, totalScore } from '../src/games/color-recall/logic';
 import { crStats, emptyCrSave, mergeCr, recordColor, sanitizeCr, STORE_KEY } from '../src/games/color-recall/store';
 import { ACTIVE_TARGETS, RETIRED, TARGETS, wildTarget } from '../src/games/color-recall/targets';
@@ -278,6 +278,8 @@ describe('tips and names', () => {
   it('keeps "Perfect!" for a full 1,000', () => {
     expect(verdictText(1000)).toBe('Perfect!');
     expect(verdictText(983)).toBe('Near perfect');
+    expect(dEWords(0.5)).toBe('invisible');
+    expect(dEWords(8.9)).toBe('noticeably different');
   });
 });
 
