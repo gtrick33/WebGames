@@ -89,7 +89,7 @@ const EN: Ui = {
   takeMeBack: 'Take me back',
   tag: 'Bad taste, played well.',
   yourName: 'Your name',
-  namePlaceholder: 'Something your mum wouldn’t call you',
+  namePlaceholder: 'Something your mom wouldn’t call you',
   invited: 'You’re invited to room',
   roomCode: 'Room code',
   code: 'CODE',
