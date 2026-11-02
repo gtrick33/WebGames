@@ -6,7 +6,7 @@ import { shareOrCopy } from '../../platform/share';
 import { navigate } from '../../router/router';
 import { ModeBar } from './shared';
 import { SecretCard } from './Impostor';
-import { JoinForm, RoomNotice, useJoinName, useTopOnPhase } from './room/RoomFrame';
+import { JoinForm, RoomNotice, useJoinName, useTopOnPhase, WelcomeBack } from './room/RoomFrame';
 import { RoomListingBar } from '../../components/OnlinePlay';
 import { t } from '../../i18n';
 
@@ -34,7 +34,7 @@ function useLeft(deadline: number | null, skew: number): number | null {
 
 /** /party?room=CODE: asks for a name once, then connects. */
 export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () => void }) {
-  const { name, join, note, prefill, forget } = useJoinName(code);
+  const { name, back, join, note, prefill, forget } = useJoinName(code);
   const leave = (): void => {
     forget();
     onLeave();
@@ -61,10 +61,10 @@ export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () 
       </div>
     );
   if (name === null) return <JoinForm title={`${t('Impostor')} · ${t('room {code}', { code })}`} emoji="🕵️" prefill={prefill} onJoin={join} onLeave={onLeave} />;
-  return <Room code={code} name={name} note={note} onLeave={leave} />;
+  return <Room code={code} name={name} back={back} note={note} onLeave={leave} />;
 }
 
-function Room({ code, name, note, onLeave }: { code: string; name: string; note: string; onLeave: () => void }) {
+function Room({ code, name, back, note, onLeave }: { code: string; name: string; back: boolean; note: string; onLeave: () => void }) {
   const { view, conn, error, clearError, gone, skew, send, listing, setListed } = useRoom<RoomView, Action>(code, name);
   const left = useLeft(view?.deadline ?? null, skew);
   const screen = useTopOnPhase(view?.phase);
@@ -107,6 +107,7 @@ function Room({ code, name, note, onLeave }: { code: string; name: string; note:
     <div className="pt-screen" ref={screen}>
       {bar}
       <RoomNotice error={error} conn={conn} />
+      {back && !error && conn === 'open' && <WelcomeBack name={me.name} extra={view.card && (view.phase === 'talk' || view.phase === 'vote') ? t('Your card is one tap away below.') : ''} />}
       {note && (
         <p className="pt-muted pt-center" role="status">
           {note}
@@ -207,6 +208,12 @@ function Room({ code, name, note, onLeave }: { code: string; name: string; note:
         <section className="pt-panel">
           <h2>{t('Who’s the impostor?')}</h2>
           {left !== null && <p className="pt-imp-clock">⏱ {left}s</p>}
+          {view.card && (
+            <details className="pt-imp-peek">
+              <summary>{t('Peek at my card')}</summary>
+              <SecretCard impostor={view.card.impostor} theme={view.card.theme} word={view.card.word} hint={view.card.hint} />
+            </details>
+          )}
           {view.card ? (
             <div className="pt-imp-vote">
               {inRound

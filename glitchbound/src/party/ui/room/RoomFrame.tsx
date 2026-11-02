@@ -128,6 +128,8 @@ export interface RoomContext<V, A> {
 export function useJoinName(code: string) {
   const player = usePlayerName();
   const [name, setName] = useState<string | null>(() => matchedName(player.name) ?? roomNameFor(code));
+  // Straight back in after a reload (not a quick-match arrival): say hello again.
+  const [back] = useState(() => !matchedName(player.name) && roomNameFor(code) !== null);
   const [note, setNote] = useState('');
   const join = (raw: string): void => {
     const n = cleanRoomName(raw);
@@ -138,7 +140,22 @@ export function useJoinName(code: string) {
     setNote(error ? t(error) : '');
     setName(n);
   };
-  return { name, join, note, prefill: lastRoomName() ?? player.name, forget: () => forgetRoom(code) };
+  return { name, back, join, note, prefill: lastRoomName() ?? player.name, forget: () => forgetRoom(code) };
+}
+
+/** "Welcome back" for a few seconds after a reload put you straight back in your seat. */
+export function WelcomeBack({ name, extra = '' }: { name: string; extra?: string }) {
+  const [shown, setShown] = useState(true);
+  useEffect(() => {
+    const id = window.setTimeout(() => setShown(false), 4000);
+    return () => window.clearTimeout(id);
+  }, []);
+  return shown ? (
+    <p className="pt-room-toast" role="status">
+      {t('Welcome back, {name}!', { name })}
+      {extra && ` ${extra}`}
+    </p>
+  ) : null;
 }
 
 /** The one-time "Join the room" form. */
@@ -193,7 +210,7 @@ export function RoomFrame<V extends FrameView, A>({
   onRelay?: (data: unknown) => void;
   children: (ctx: RoomContext<V, A>) => ReactNode;
 }) {
-  const { name, join, note, prefill, forget } = useJoinName(code);
+  const { name, back, join, note, prefill, forget } = useJoinName(code);
   const leave = (): void => {
     forget();
     onLeave();
@@ -221,7 +238,7 @@ export function RoomFrame<V extends FrameView, A>({
     );
   if (name === null) return <JoinForm title={`${t(meta.title)} · ${t('room {code}', { code })}`} emoji={meta.emoji} prefill={prefill} onJoin={join} onLeave={onLeave} />;
   return (
-    <Connected code={code} name={name} note={note} meta={meta} onLeave={leave} kick={kick} progress={progress} settings={settings} onRelay={onRelay}>
+    <Connected code={code} name={name} back={back} note={note} meta={meta} onLeave={leave} kick={kick} progress={progress} settings={settings} onRelay={onRelay}>
       {children}
     </Connected>
   );
@@ -230,6 +247,7 @@ export function RoomFrame<V extends FrameView, A>({
 function Connected<V extends FrameView, A>({
   code,
   name,
+  back,
   note,
   meta,
   onLeave,
@@ -241,6 +259,7 @@ function Connected<V extends FrameView, A>({
 }: {
   code: string;
   name: string;
+  back: boolean;
   note: string;
   meta: RoomGameMeta;
   onLeave: () => void;
@@ -290,6 +309,7 @@ function Connected<V extends FrameView, A>({
     <div className="pt-screen" ref={screen}>
       {bar}
       <RoomNotice error={error} conn={conn} />
+      {back && !error && conn === 'open' && <WelcomeBack name={me.name} />}
       {note && (
         <p className="pt-muted pt-center" role="status">
           {note}

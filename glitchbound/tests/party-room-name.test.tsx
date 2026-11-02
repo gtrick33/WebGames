@@ -2,11 +2,13 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const joined: string[] = [];
+let live = false;
 vi.mock('../src/platform/rooms', () => ({
   roomInfo: () => Promise.resolve({ players: 2, host: 'Ana', full: false, phase: 'talk' }),
-  useRoom: (_code: string, name: string) => {
+  useRoom: (code: string, name: string) => {
     joined.push(name);
-    return { view: null, conn: 'connecting', error: '', clearError: () => {}, gone: '', skew: 0, send: () => {}, listing: null, setListed: () => {} };
+    const view = live ? { phase: 'lobby', code, host: false, deadline: null, players: [{ n: 1, name, score: 0, online: true, waiting: false, you: true, host: false, done: false }] } : null;
+    return { view, conn: live ? 'open' : 'connecting', error: '', clearError: () => {}, gone: '', skew: 0, send: () => {}, listing: null, setListed: () => {} };
   },
 }));
 
@@ -26,6 +28,7 @@ describe('room names survive a reload', () => {
     localStorage.clear();
     resetGuestName();
     joined.length = 0;
+    live = false;
   });
 
   it('keeps names of up to 20 characters in any script, per room', () => {
@@ -67,9 +70,11 @@ describe('room names survive a reload', () => {
     expect(guestName()).not.toBe('Ярослава Ковальчук');
 
     joined.length = 0;
+    live = true;
     render(frame('QWERT'));
     expect(screen.queryByText('Join the room')).toBeNull();
     expect(joined[0]).toBe('Ярослава Ковальчук');
+    expect(screen.getByText('Welcome back, Ярослава Ковальчук!')).toBeTruthy();
   });
 
   it('prefills another room with the last room name', () => {
