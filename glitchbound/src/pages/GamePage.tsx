@@ -199,7 +199,9 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
     document.addEventListener('fullscreenchange', onChange);
     return () => {
       document.removeEventListener('fullscreenchange', onChange);
+      // the watchdog goes, so nothing would ever answer a request still out
       window.clearTimeout(watchdog.current);
+      waiting.current = false;
       document.documentElement.classList.remove('game-focus', 'game-scroll');
       lockZoom(false);
     };
