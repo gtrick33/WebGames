@@ -600,6 +600,11 @@
     height: 44px;
   }
 }
+.mg-keys {
+  font: 700 11.5px var(--mono, monospace);
+  color: var(--mg-ink-2);
+  text-align: center;
+}
 .mg-result-note {
   max-width: 34ch;
   font-weight: 700;

@@ -240,4 +240,22 @@ describe('Memory Grid UI', () => {
     expect(report).toHaveBeenCalledTimes(1);
     expect(report).toHaveBeenLastCalledWith({ type: 'end', score: 180, stats: { longest: 6, patterns: 4, accuracy: 100 }, challenge: { id: 'ch2', round: 1 } });
   });
+
+  it('plays a 4x4 grid with the keyboard rows 1234 / QWER / ASDF / ZXCV and shows the keys', () => {
+    const report = vi.fn();
+    const day = dayKey();
+    // A daily resumed at round 5, the first 4x4 pattern.
+    localStorage.setItem('glitchbound.memory-grid.v1', JSON.stringify({ dailyStarted: day, dailyRun: { day, round: 5, cleared: 4, longest: 6, score: 180, taps: 18, correctTaps: 18, inputMs: 9000 } }));
+    render(<Game host={{ report }} restartKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: /Daily Challenge/ }));
+    act(() => {
+      vi.advanceTimersByTime(8000);
+    });
+    expect(screen.getByText('Your turn')).toBeTruthy();
+    const seq = patternFor(dailySeed(day), 5, levelFor('daily', 5));
+    const rows = ['1234', 'qwer', 'asdf', 'zxcv'];
+    for (const t of seq) fireEvent.keyDown(document.body, { key: rows[Math.floor(t / 4)]![t % 4]! });
+    expect(screen.getByText('Nice!')).toBeTruthy();
+    expect(screen.getByText(/1234 \/ QWER \/ ASDF \/ ZXCV/)).toBeTruthy();
+  });
 });

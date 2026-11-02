@@ -46,6 +46,9 @@ const CLEARED_MS = 620;
 const MISSED_MS = 760;
 const OVER_MS = 1100;
 
+/** Letter keys for a 4x4 grid, one row of the keyboard per row of tiles. */
+const KEY_ROWS_4 = ['1234', 'qwer', 'asdf', 'zxcv'];
+
 /**
  * The one place a round's end is reported. `isDaily` is true only for the official (first) Daily Challenge
  * attempt of the day, never for practice replays or other modes; the arcade counts it as this game's own daily.
@@ -535,7 +538,8 @@ function MemoryGrid({ host, challenge, pauseKey }: Pick<GameModuleProps, 'host' 
     else leave();
   };
 
-  // Keyboard: arrows move the cursor, Enter / Space taps, 1-9 tap a 3x3 grid like a number pad, M mutes.
+  // Keyboard: arrows move the cursor, Enter / Space taps, 1-9 tap a 3x3 grid like a number pad, 1234 / QWER /
+  // ASDF / ZXCV a 4x4 grid, M mutes.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       const root = rootRef.current;
@@ -582,6 +586,7 @@ function MemoryGrid({ host, challenge, pauseKey }: Pick<GameModuleProps, 'host' 
           return y * n + x;
         });
       };
+      const k = e.key.toLowerCase();
       if (e.key === 'ArrowLeft') move(-1, 0);
       else if (e.key === 'ArrowRight') move(1, 0);
       else if (e.key === 'ArrowUp') move(0, -1);
@@ -595,6 +600,12 @@ function MemoryGrid({ host, challenge, pauseKey }: Pick<GameModuleProps, 'host' 
         const d = Number(e.key) - 1;
         setKeyboardNav(true);
         onTap((2 - Math.floor(d / 3)) * 3 + (d % 3));
+      } else if (n === 4 && k.length === 1 && !e.repeat) {
+        const row = KEY_ROWS_4.findIndex((r) => r.includes(k));
+        if (row < 0) return;
+        e.preventDefault();
+        setKeyboardNav(true);
+        onTap(row * 4 + KEY_ROWS_4[row]!.indexOf(k));
       }
     };
     window.addEventListener('keydown', onKey);
@@ -855,6 +866,7 @@ function Play({
   useEffect(() => {
     if (keyboardNav) tileRefs.current[cursor]?.focus({ preventScroll: true });
   }, [keyboardNav, cursor, size]);
+  const keys = size === 3 ? 'Keys: number pad 1–9, or arrows + Enter' : size === 4 ? 'Keys: 1234 / QWER / ASDF / ZXCV, or arrows + Enter' : 'Keys: arrows + Enter';
 
   return (
     <div className={`mg-play mg-phase-${run.phase}`}>
@@ -918,6 +930,7 @@ function Play({
             <i key={i} className={i < run.step ? 'on' : run.phase === 'input' && i === run.step ? 'now' : ''} />
           ))}
         </div>
+        {keyboardNav && <p className="mg-keys">{keys}</p>}
       </div>
     </div>
   );
@@ -975,7 +988,7 @@ function Result({
         {outcome.place && outcome.place > 1 && <span className="mg-badge mg-badge-soft">#{outcome.place} in your top 5</span>}
         {s.mode === 'daily' && (outcome.officialDaily ? <span className="mg-badge mg-badge-soft">🔥 {streak}-day streak</span> : <span className="mg-badge mg-badge-soft">Practice run</span>)}
       </div>
-      <ResultLine line={resultLine(s, PERFECT_LADDER.length)} label={`${s.cleared} ${s.cleared === 1 ? 'pattern' : 'patterns'} in a row`} />
+      <ResultLine line={resultLine(s, PERFECT_LADDER.length)} label={`${s.cleared} ${s.cleared === 1 ? 'pattern' : 'patterns'} ${s.mode === 'speed' ? 'cleared' : 'in a row'}`} />
       <dl className="mg-result-stats">
         <div>
           <dt>{s.mode === 'perfect' ? 'Cleared' : 'Patterns'}</dt>
