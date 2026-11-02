@@ -22,7 +22,8 @@ export function PartyPanel({ engine }: { engine: SigilEngine }) {
 }
 
 function NoParty({ engine }: { engine: SigilEngine }) {
-  const [code, setCode] = useState('');
+  const left = engine.partyLeft;
+  const [code, setCode] = useState(left?.code ?? '');
   const why = engine.partyReady();
   const riftstone = (
     <section className="rb-party-mode" key="rift">
@@ -50,6 +51,11 @@ function NoParty({ engine }: { engine: SigilEngine }) {
   );
   return (
     <div className="rb-party">
+      {left && (
+        <p className="rb-warn rb-party-note" role="status">
+          {left.why}
+        </p>
+      )}
       {/* the one this hero can start comes first */}
       {why ? [questing, riftstone] : [riftstone, questing]}
       <form
@@ -64,7 +70,7 @@ function NoParty({ engine }: { engine: SigilEngine }) {
         </label>
         <input id="rb-party-code" className="rb-input" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6))} placeholder="ABCDE" autoComplete="off" spellCheck={false} />
         <button className="rb-btn" type="submit" disabled={code.length < 4}>
-          Join
+          {left && code === left.code ? 'Try again' : 'Join'}
         </button>
       </form>
     </div>
@@ -74,7 +80,8 @@ function NoParty({ engine }: { engine: SigilEngine }) {
 function Lobby({ engine }: { engine: SigilEngine }) {
   const party = engine.party!;
   const v = party.view;
-  const [copied, setCopied] = useState(false);
+  const [sent, setSent] = useState<'' | 'Link copied' | 'Shared'>('');
+  const [leaving, setLeaving] = useState(false);
   if (!v) return <p className="rb-dim">{party.state === 'reconnecting' ? 'Reconnecting…' : 'Joining the party…'}</p>;
   const host = v.you === v.host;
   const me = v.seats.find((s) => s.you);
@@ -85,21 +92,38 @@ function Lobby({ engine }: { engine: SigilEngine }) {
   const notReady = here.find((s) => !s.card || (rift && s.card.level < COOP_LEVEL));
   const lead = v.seats.find((s) => s.n === v.lead);
   const share = async (): Promise<void> => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Sigilfall party', text: `Join my Sigilfall party: code ${v.code}`, url: link });
+        setSent('Shared');
+        return;
+      } catch (e) {
+        // closed by the player: nothing to do; any other failure falls back to copying the link
+        if ((e as Error)?.name === 'AbortError') return;
+      }
+    }
     try {
-      if (navigator.share) await navigator.share({ title: 'Sigilfall party', text: `Join my Sigilfall party: code ${v.code}`, url: link });
-      else await navigator.clipboard.writeText(link);
-      setCopied(true);
+      await navigator.clipboard.writeText(link);
+      setSent('Link copied');
     } catch {
-      /* the share sheet was closed */
+      /* no clipboard either: the code is on screen */
     }
   };
+  // leaving as the leader: a Riftstone run ends for everyone; questing, the next hero behind leads
+  const leading = v.phase === 'run' && v.lead === v.you && here.length > 1;
+  const leaveWarn = leading ? (rift ? 'This ends the run for the whole party.' : 'The party goes on: the hero furthest behind in the story leads.') : '';
   return (
     <div className="rb-party">
+      {party.note && (
+        <p className="rb-small rb-party-note" role="status">
+          {party.note}
+        </p>
+      )}
       <div className="rb-party-code">
         <span className="rb-kicker">Party code</span>
         <strong>{v.code}</strong>
         <button className="rb-btn is-small" onClick={() => void share()}>
-          {copied ? 'Link copied' : 'Invite'}
+          {sent || 'Invite'}
         </button>
       </div>
       <ul className="rb-party-seats" aria-label="The party">
@@ -107,12 +131,13 @@ function Lobby({ engine }: { engine: SigilEngine }) {
           <li key={s.n} className={`${s.online ? '' : 'is-away'}${s.you ? ' is-you' : ''}`}>
             <span className="rb-party-name">
               {s.card?.name ?? s.name}
-              {s.host && <b className="rb-party-lead"> · leader</b>}
+              {/* the host runs the lobby; in a run, the hero who leads is the one everyone follows */}
+              {v.phase === 'run' ? s.n === v.lead && <b className="rb-party-lead"> · leads</b> : s.host && <b className="rb-party-lead"> · host</b>}
               {s.you && <span className="rb-dim"> (you)</span>}
             </span>
             <span className="rb-small rb-dim">
               {s.card ? `Level ${s.card.level}${s.card.para ? ` · P${s.card.para}` : ''} ${CLASSES[s.card.cls as ClassId]?.name ?? ''}${rift ? ` · Riftstone +${s.card.keystone}` : ` · ${s.card.story} story quests`}` : 'choosing a hero…'}
-              {v.phase === 'run' && s.n === v.lead && ' · leads'}
+              {v.phase === 'run' && s.host && s.n !== v.lead && ' · host'}
               {!s.online && ' · away'}
             </span>
             {host && !s.you && (
@@ -137,7 +162,7 @@ function Lobby({ engine }: { engine: SigilEngine }) {
         <p className="rb-gold">
           {rift
             ? `In a run: ${v.plan ? `${REGIONS[v.plan.region as RegionId]?.name ?? v.plan.region} · Riftstone +${v.plan.key}` : ''}. Close this to fight.`
-            : `Questing together, led by ${lead?.card?.name ?? lead?.name ?? 'the party'}${lead && !lead.online ? ' (reconnecting…)' : ''}. Everyone travels with them, in their story.`}
+            : `Questing together, led by ${lead?.card?.name ?? lead?.name ?? 'the party'}${lead && !lead.online ? ' (connection lost: waiting for them)' : ''}. Everyone travels with them, in their story.`}
         </p>
       ) : !rift ? (
         <p className="rb-small">Questing together: when the run starts, the hero furthest behind in the story leads, the others follow them in their world. Quests a hero already finished give them nothing again.</p>
@@ -155,14 +180,20 @@ function Lobby({ engine }: { engine: SigilEngine }) {
           </button>
         )}
         {host && notReady && <span className="rb-small rb-dim">{notReady.card ? `${notReady.card.name} needs level ${COOP_LEVEL}.` : `${notReady.name} is choosing a hero.`}</span>}
-        {v.phase === 'run' && !rift && (
-          <button className="rb-btn is-ghost" onClick={() => engine.leaveParty()}>
-            Go my own way
+        {leaving && leaveWarn ? (
+          <button className="rb-btn is-danger" onClick={() => engine.leaveParty()}>
+            Leave? {leaveWarn}
+          </button>
+        ) : (
+          <button className="rb-btn is-ghost" onClick={() => (leaveWarn ? setLeaving(true) : engine.leaveParty())}>
+            Leave the party
           </button>
         )}
-        <button className="rb-btn is-ghost" onClick={() => engine.leaveParty()}>
-          Leave the party
-        </button>
+        {(host || v.lead === v.you) && v.phase === 'run' && !rift && (
+          <button className="rb-btn" onClick={() => engine.gatherParty()}>
+            Gather back in town
+          </button>
+        )}
       </div>
       {party.state === 'reconnecting' && <p className="rb-small rb-dim">Connection lost: reconnecting…</p>}
       <p className="rb-small rb-dim">Playing as {h.name}.</p>
