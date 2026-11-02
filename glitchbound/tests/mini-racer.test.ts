@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PolyCull } from '../src/games/mini-racer/cull';
 import { dailyTrack, hashDay, todayKey } from '../src/games/mini-racer/daily';
 import { leftOf, nearest, pointAt } from '../src/games/mini-racer/geometry';
-import { decodeGhost, encodeGhost, GhostRecorder, ghostPose } from '../src/games/mini-racer/ghost';
+import { decodeGhost, decodeReplay, encodeGhost, encodeReplay, GhostRecorder, ghostPose, GHOST_HZ } from '../src/games/mini-racer/ghost';
 import { advanceLaps, bestLap, crossGate, newLapState } from '../src/games/mini-racer/laps';
 import { BODY_OFFSET, BODY_RADIUS, CAR, CAR_RADIUS, collideCarPair, collideCircle, collideSegment, localVelocity, newCar, onLoose, speedOf, stepCar, type Handling } from '../src/games/mini-racer/physics';
 import { aiStyle, autopilot, DT, RaceSim, scoreFor } from '../src/games/mini-racer/sim';
@@ -11,6 +11,9 @@ import { buildTrack, bypassed, cellAt, decorRadius, groundAt, KERB, SURFACES, TR
 import { TRACKS } from '../src/games/mini-racer/tracks';
 import { CARS, raceCoins, specFor, statBars } from '../src/games/mini-racer/cars';
 import { lapLine, raceMedal, shareText } from '../src/games/mini-racer/medals';
+import { hudLane } from '../src/games/mini-racer/render';
+import { parseSave, pruneDailyBests, putResult } from '../src/games/mini-racer/storage';
+import { REPLAY_MAX } from '../src/platform/challenge';
 import { getGame } from '../src/catalog/catalog';
 
 /** A gate across the x axis at x = gx, driven in +x. */
@@ -826,5 +829,115 @@ describe('mini racer share line', () => {
       url: 'https://x.test/games/mini-racer',
     });
     expect(text.split('\n')).toEqual(['Mini Racer #3 🏎️ Lagoon Loop', '🥇🥇🥇', '60s · 🏆 1st of 4', '2,950 race points', 'https://x.test/games/mini-racer']);
+  });
+});
+
+describe('laps are driven, not U-turned (MR-01)', () => {
+  it('crossing the line again before half the checkpoints is no lap: turning back over it and round again', () => {
+    const state = newLapState();
+    const step = (x0: number, x1: number, t: number) => advanceLaps(state, STRAIGHT, { x: x0, y: 0 }, { x: x1, y: 0 }, t, t + 0.1);
+    step(-5, 5, 0); // the start
+    step(95, 105, 1); // checkpoint 1 of 3
+    step(5, -5, 2); // back over the line the wrong way: nothing
+    expect(step(-5, 5, 3)).toEqual([]); // and forward over it again: still no lap
+    step(95, 105, 4); // already passed
+    step(195, 205, 5);
+    step(295, 305, 6);
+    const [lap] = step(-5, 5, 7);
+    expect(lap?.type === 'lap' && lap.lap).toMatchObject({ valid: true, time: expect.closeTo(7.05, 5) });
+    expect(state.laps).toHaveLength(1);
+  });
+
+  it('a race that does not count reports no place, and the share line has none', () => {
+    const sim = new RaceSim(buildTrack(TRACKS[0]!), null, undefined, { mode: 'race', aiLevel: 100 });
+    sim.lap.laps.push({ time: 10, valid: false, clean: false }, { time: 10, valid: true, clean: true }, { time: 10, valid: true, clean: true });
+    const r = sim.result();
+    expect(r.raceTime).toBeNull();
+    expect(r.position).toBeNull();
+    expect(r.levelBonus).toBe(0);
+    expect(shareText({ result: r, par: 20_000, trackName: 'X', time: String, url: 'u' })).not.toMatch(/of 4|1st/);
+    sim.lap.laps[0]!.valid = true;
+    expect(sim.result().position).toBe(sim.position);
+  });
+});
+
+describe('long ghosts still reach friends (MR-16)', () => {
+  const lapOf = (seconds: number) => {
+    const frames: number[] = [];
+    for (let i = 0; i <= seconds * GHOST_HZ; i++) {
+      const t = i / GHOST_HZ;
+      frames.push(Math.round((1000 + Math.cos(t / 3) * 800) * 10) / 10, Math.round((900 + Math.sin(t / 3) * 600) * 10) / 10, Math.round((t / 3 + Math.PI / 2) * 1000) / 1000);
+    }
+    return { time: seconds, t0: 0, frames };
+  };
+
+  it('a short lap keeps the full form; a lap over a minute is sent in the short form, within the limit', () => {
+    const short = lapOf(30);
+    expect(decodeReplay(encodeReplay(short))).toEqual(short);
+    for (const seconds of [70, 150]) {
+      const g = lapOf(seconds);
+      const text = encodeReplay(g);
+      expect(text.length).toBeLessThanOrEqual(REPLAY_MAX);
+      const back = decodeReplay(text)!;
+      expect(back.time).toBeCloseTo(seconds, 3);
+      // Replayed poses stay within a few world units of the original (the car is about 34 long).
+      for (const t of [0.5, seconds / 3, seconds - 1]) {
+        const a = ghostPose(g, t)!;
+        const b = ghostPose(back, t)!;
+        expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeLessThan(3);
+      }
+    }
+    expect(decodeReplay('AAAA')).toBeNull();
+  });
+});
+
+describe('generated tracks are cached (MR-10)', () => {
+  it('the second open of a day drives no physics and gives the same track; a broken cache is generated again', () => {
+    const steps = vi.spyOn(RaceSim.prototype, 'step');
+    const first = dailyTrack('2026-11-05');
+    expect(steps.mock.calls.length).toBeGreaterThan(1000);
+    steps.mockClear();
+    expect(dailyTrack('2026-11-05')).toEqual(first);
+    expect(steps).not.toHaveBeenCalled();
+    localStorage.setItem('gb.mini-racer.tracks', '{"v":1,"picks":[{"k":"2026-11-05","i":"x","par":-4}]}');
+    expect(dailyTrack('2026-11-05')).toEqual(first);
+    localStorage.setItem('gb.mini-racer.tracks', '{oops');
+    expect(dailyTrack('2026-11-05')).toEqual(first);
+    steps.mockRestore();
+  });
+});
+
+describe('HUD pop-ups keep clear of the pause and menu buttons (MR-06)', () => {
+  it('on a narrow screen the lane is below the buttons; on a wide one its pop-ups stop short of them', () => {
+    for (const [w, h] of [[360, 640], [390, 844], [520, 700]] as const) {
+      const lane = hudLane(w, h);
+      expect(lane.top, `${w}`).toBeGreaterThanOrEqual(74 + 44 + 8);
+      expect(lane.carMaxY - lane.carMinY, `${w}`).toBeGreaterThan(200);
+    }
+    for (const [w, h] of [[844, 390], [1366, 768]] as const) {
+      const lane = hudLane(w, h);
+      expect((w - lane.maxWidth) / 2, `${w}`).toBeGreaterThanOrEqual(64 + 44 + 8);
+      expect(lane.carMaxY, `${w}`).toBeGreaterThan(lane.carMinY);
+    }
+  });
+});
+
+describe('save (MR-12, MR-18, checklist a and i)', () => {
+  it('keeps challenge rounds and daily results only when well formed, and the latest few', () => {
+    const runs = Array.from({ length: 40 }, (_, i) => ({ key: `c${i}:1`, ended: 'finished', score: 100 + i, race: 40, lap: 13 }));
+    const s = parseSave(JSON.stringify({ challengeRuns: [...runs, { key: 5 }, null, { key: 'x:1', ended: 'won', score: -3, race: 'a', lap: 1e9 }], dailyResults: [{ day: 'nope', score: 1 }, { day: '2026-11-02', score: 3000, race: 41, lap: 13, finished: true }] }));
+    expect(s.challengeRuns).toHaveLength(24);
+    expect(s.challengeRuns.at(-1)).toEqual({ key: 'x:1', score: 0, race: null, lap: null });
+    expect(s.dailyResults).toEqual([{ day: '2026-11-02', score: 3000, race: 41, lap: 13, finished: true }]);
+    expect(parseSave('{"challengeRuns":"x","dailyResults":7}')).toMatchObject({ challengeRuns: [], dailyResults: [] });
+  });
+
+  it('a day keeps its best result, and old daily bests are pruned', () => {
+    const s = parseSave(null);
+    const a = putResult(s, { day: '2026-11-02', score: 2500, race: 44, lap: 14, finished: true });
+    const b = putResult(a, { day: '2026-11-02', score: 900, race: null, lap: 15, finished: false });
+    expect(b.dailyResults).toEqual([{ day: '2026-11-02', score: 2500, race: 44, lap: 14, finished: true }]);
+    const bests = { 'daily-2026-10-01': { lap: 9 }, 'daily-2026-11-01': { lap: 9 }, 'daily-2026-11-02': { lap: 9 }, 'sunny-bay': { lap: 9 } };
+    expect(Object.keys(pruneDailyBests(bests, ['2026-11-01', '2026-11-02']))).toEqual(['daily-2026-11-01', 'daily-2026-11-02', 'sunny-bay']);
   });
 });

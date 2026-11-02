@@ -122,6 +122,12 @@
 }
 /* Narrow phones: the logo, coins, Sound and the game menu share one row (Sound as an icon). */
 @media (max-width: 400px) {
+  .mr-menu .mr-logo {
+    font-size: 18px;
+  }
+  .mr-head-right {
+    gap: 6px;
+  }
   .mr-sound {
     padding: 0;
     width: 44px;
