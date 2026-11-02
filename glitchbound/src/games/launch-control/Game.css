@@ -41,6 +41,8 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  /* clip, not just hide: a focused button can never scroll the game box (the hub's top bar went off the stage) */
+  overflow: clip;
   container-type: size;
   font-family: var(--font, system-ui, sans-serif);
   color: var(--lc-fg);
@@ -234,8 +236,8 @@
 .lc-view-btn {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 1px solid var(--lc-edge);
   border-radius: 12px;
@@ -396,6 +398,8 @@
   min-width: 0;
   display: flex;
   justify-content: flex-end;
+  /* when it doesn't fit, cut on the right, not the coin under the logo */
+  justify-content: safe flex-end;
   align-items: center;
   gap: 6px;
   overflow: hidden;
@@ -504,9 +508,16 @@
   .lc-logo-word {
     font-size: 13px;
   }
+  /* smaller to look at, the same 44 px to tap */
   .lc-icon {
+    position: relative;
     width: 36px;
     height: 36px;
+  }
+  .lc-icon::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
   }
 }
 
@@ -695,7 +706,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 16px;
   border: 1px solid var(--lc-edge);
   border-radius: 999px;
@@ -737,7 +748,7 @@
   background: rgb(0 0 0 / 0.25);
 }
 .lc-seg-btn {
-  min-height: 40px;
+  min-height: 44px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -829,6 +840,29 @@
   font-weight: 800;
   font-size: 15px;
   color: var(--lc-fg);
+}
+.lc-hero-driver > span {
+  min-width: 0;
+  max-width: 40cqw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lc-cash-short {
+  display: none;
+}
+@container (max-width: 400px) {
+  .lc-pill-cash .lc-cash-long {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .lc-pill-cash .lc-cash-short {
+    display: inline;
+  }
 }
 .lc-vs-face {
   justify-self: center;
@@ -1446,8 +1480,8 @@
     font-size: 46px;
   }
 }
-/* small phones on their side: the event cards drop their icons to keep their names */
-@container (min-aspect-ratio: 1/1) and (max-height: 520px) and (max-width: 760px) {
+/* small phones on their side (and a short desktop column): the event cards drop their icons to keep their names */
+@container (min-aspect-ratio: 1/1) and (max-height: 520px) and (max-width: 820px) {
   .lc-mode > .lc-ic:first-child {
     display: none;
   }
@@ -1544,20 +1578,17 @@
     min-height: 46px;
     font-size: 14px;
   }
-  /* the race button stays in reach if the panel still has to scroll */
-  .lc-setup .lc-cta {
-    position: sticky;
-    bottom: 0;
-    z-index: 1;
-  }
   .lc-result .lc-ledger,
   .lc-result .lc-rankup,
   .lc-result .result-line,
   .lc-result .lc-sticker {
     grid-column: 2;
   }
-  .lc-setup .lc-cta,
   .lc-result .lc-actions {
+    grid-column: 1 / -1;
+  }
+  /* the race button has its own row: sticky over the panel it covered the stake buttons */
+  .lc-setup .lc-cta {
     grid-column: 1 / -1;
   }
 }
@@ -3645,8 +3676,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--hud-line);
   border-radius: 12px;
   background: var(--hud-glass);
@@ -3665,7 +3696,7 @@
   background: #fff;
 }
 .lc-race-menu {
-  right: calc(max(10px, env(safe-area-inset-right)) + 48px);
+  right: calc(max(10px, env(safe-area-inset-right)) + 52px);
 }
 .lc-nudge {
   position: absolute;
@@ -3703,38 +3734,70 @@
     transform: rotate(-90deg);
   }
 }
+/* narrow (a phone upright): the clock up top beside the pause and menu buttons, the two plates on
+   their own row below at full width, so each keeps its driver's name (the gap chip under the name) */
 @container (max-width: 560px) {
   .lc-hud-top {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    padding-right: 50px;
+    gap: 8px;
+    padding-right: 0;
   }
   .lc-race:has(.lc-race-menu) .lc-hud-top {
-    padding-right: 96px;
+    padding-right: 0;
   }
   .lc-clock {
     grid-column: 1 / -1;
-    grid-row: 2;
-    justify-self: center;
-  }
-  .lc-plate-text small {
-    display: none;
+    grid-row: 1;
+    justify-self: start;
+    padding: 3px 12px 6px;
   }
   .lc-plate {
+    grid-row: 2;
     gap: 6px;
+    width: 100%;
     padding: 4px 8px 4px 4px;
   }
   .lc-plate.is-rival {
-    padding: 4px 4px 4px 8px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 6px;
+    row-gap: 2px;
+    padding: 4px 8px 4px 4px;
   }
-  .lc-plate-pos {
-    min-width: 28px;
-    height: 26px;
+  .lc-plate.is-rival > .lc-face {
+    grid-row: 1 / span 2;
+  }
+  .lc-plate.is-rival .lc-plate-text {
+    text-align: left;
+  }
+  .lc-plate.is-rival .lc-plate-text small {
+    display: none;
+  }
+  .lc-plate-text {
+    min-width: 0;
+  }
+  .lc-plate-text b {
     font-size: 14px;
   }
+  .lc-plate-text small {
+    font-size: 11.5px;
+  }
+  /* the face's size is set inline (its canvas): smaller here */
+  .lc-plate > .lc-face {
+    width: 30px !important;
+    height: 30px !important;
+  }
+  .lc-plate-pos {
+    min-width: 24px;
+    height: 24px;
+    font-size: 13px;
+  }
   .lc-plate-gap {
+    justify-self: start;
     min-width: 0;
-    height: 26px;
+    height: 18px;
     padding: 0 6px;
+    border-radius: 5px;
     font-size: 11px;
   }
   .lc-vs {
@@ -4530,8 +4593,37 @@
   }
   .lc-hub {
     gap: 8px;
+    grid-template-areas:
+      'hero . .'
+      '. . .'
+      'modes modes go'
+      'rail rail go';
+  }
+  /* the three event cards side by side (as on a phone on its side): the column held them stacked and overflowed */
+  .lc-modes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 760px;
+  }
+  .lc-mode b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .lc-hero {
     gap: 6px;
+  }
+}
+@container (min-aspect-ratio: 1/1) and (min-height: 521px) and (max-height: 600px) {
+  .lc-division-bar {
+    display: none;
+  }
+}
+/* a narrower desktop column: the cards drop their icons to keep their names, RACE gives up some width */
+@container (min-aspect-ratio: 1/1) and (min-height: 521px) and (max-height: 680px) and (max-width: 900px) {
+  .lc-mode > .lc-ic:first-child {
+    display: none;
+  }
+  .lc-go {
+    min-width: 230px;
   }
 }

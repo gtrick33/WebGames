@@ -1526,10 +1526,21 @@ export class Stage3D {
     this.sun.shadow.normalBias = 0.03;
     this.scene.add(this.sun);
     this.scene.add(this.sun.target);
+    // a lost context (a backgrounded phone, a GPU reset) comes back: three re-uploads plain resources,
+    // but the reflection map is a render target that returns empty, so the strip is built again
+    this.canvas.addEventListener('webglcontextlost', this.onLost);
+    this.canvas.addEventListener('webglcontextrestored', this.onRestored);
   }
 
-  setEnv(id: string): void {
-    if (id === this.envId && this.world) return;
+  private onLost = (e: Event): void => {
+    e.preventDefault();
+  };
+  private onRestored = (): void => {
+    if (!this.disposed && this.envId) this.setEnv(this.envId, true);
+  };
+
+  setEnv(id: string, force = false): void {
+    if (id === this.envId && this.world && !force) return;
     const env = ENV_DEFS[id] ?? ENV_DEFS['e-bay']!;
     if (this.world) {
       this.scene.remove(this.world.group);
@@ -1925,6 +1936,8 @@ export class Stage3D {
     }
     this.envMap?.dispose();
     this.pmrem.dispose();
+    this.canvas.removeEventListener('webglcontextlost', this.onLost);
+    this.canvas.removeEventListener('webglcontextrestored', this.onRestored);
     this.renderer.dispose();
     this.renderer.forceContextLoss();
   }
@@ -1981,6 +1994,15 @@ function pumpThumbs(): void {
     }
     pumpThumbs();
   }, 12);
+}
+
+/** Frees the thumbnail stage and its pictures (the game calls it when it closes). */
+export function disposeThumbs(): void {
+  thumbStage?.dispose();
+  thumbStage = null;
+  thumbCache.clear();
+  thumbQueue.length = 0;
+  thumbWaiters.clear();
 }
 
 export const thumbKey = (look: CarLook, env = 'e-bay'): string => `${env}|${lookKeyOf(look)}`;
