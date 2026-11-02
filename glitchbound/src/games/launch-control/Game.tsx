@@ -686,7 +686,10 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     const cost = repairCost(getCar(s.car), part, oc.cond[part]);
     if (s.cash < cost) return;
     sfx().click();
-    commit((x) => ({ ...x, cash: x.cash - cost, cars: { ...x.cars, [x.car]: { ...oc, cond: { ...oc.cond, [part]: 100 } } } }));
+    commit((x) => {
+      const c = x.cars[x.car] ?? oc;
+      return { ...x, cash: x.cash - cost, cars: { ...x.cars, [x.car]: { ...c, cond: { ...c.cond, [part]: 100 } } } };
+    });
   };
   const buyCar = (def: CarDef): void => {
     const s = saveRef.current;
@@ -1418,6 +1421,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
               else setup(outcome.rankUp ? 'ladder' : outcome.plan.mode, outcome.rankUp ? null : outcome.plan.rival);
             }}
             onClaim={claimSlip}
+            onPit={() => repair('tyres')}
             onGarage={() => {
               endGauntlet();
               go('garage');
@@ -2315,10 +2319,14 @@ function Swatch({ c, save }: { c: Cosmetic; save: Save }) {
   );
 }
 
-function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onClaim, onGarage, onMenu }: { o: Outcome; me: string; today: string; challenge?: ChallengeSpec; save: Save; triesLeft: number; onAgain: () => void; onClaim: (car: string) => void; onGarage: () => void; onMenu: () => void }) {
+function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onClaim, onGarage, onMenu, onPit }: { o: Outcome; me: string; today: string; challenge?: ChallengeSpec; save: Save; triesLeft: number; onAgain: () => void; onClaim: (car: string) => void; onGarage: () => void; onMenu: () => void; onPit: () => void }) {
   const mine = o.result.racers[0]!;
   const p = o.plan;
   const g = o.gauntlet;
+  // the gauntlet's pit stop: new tires between rounds, the run goes on
+  const pitCar = save.cars[save.car];
+  const pitCost = pitCar ? repairCost(getCar(save.car), 'tyres', pitCar.cond.tyres) : 0;
+  const pit = g && !g.over && pitCar && pitCar.cond.tyres < 100;
   const title = g ? (g.over ? `Streak over: ${g.wins} ${g.wins === 1 ? 'win' : 'wins'}` : `Round ${g.round} won!`) : mine.et === null ? 'Did not finish' : o.won ? (p.rival?.boss && o.rankUp ? 'Division champion!' : 'You won!') : 'Beaten';
   const d = save.daily[today];
   const line = resultLine(o);
@@ -2470,6 +2478,11 @@ function ResultScreen({ o, me, today, challenge, save, triesLeft, onAgain, onCla
           </button>
         )}
         {p.mode === 'daily' && <ShareButton text={share} />}
+        {pit && (
+          <button className="btn" onClick={onPit} disabled={save.cash < pitCost}>
+            {pitCost <= 0 ? 'Pit stop: new tires · free' : <>Pit stop: new tires <Cash n={pitCost} /></>}
+          </button>
+        )}
         {p.mode !== 'challenge' && (
           <button className="btn" onClick={onGarage}>
             Garage

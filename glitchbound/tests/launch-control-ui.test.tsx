@@ -363,6 +363,12 @@ describe('Launch Control: the King’s Gauntlet', () => {
     expect(document.querySelector('.lc-streak')?.textContent).toMatch(/1/);
     // no end yet: the run goes on
     expect(host.report.mock.calls.map((c) => c[0]).some((e) => e.type === 'end')).toBe(false);
+    // a pit stop between rounds: new tires, the run goes on
+    expect(JSON.parse(localStorage.getItem(KEY)!).cars.bumble.cond.tyres).toBeLessThan(100);
+    fireEvent.click(screen.getByRole('button', { name: /^Pit stop: new tires/ }));
+    expect(JSON.parse(localStorage.getItem(KEY)!).cars.bumble.cond.tyres).toBe(100);
+    expect(screen.queryByRole('button', { name: /^Pit stop/ })).toBeNull();
+    expect(host.report.mock.calls.map((c) => c[0]).some((e) => e.type === 'end')).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Next round (2)' }));
     expect(screen.getByRole('button', { name: 'Race round 2' })).toBeTruthy();
     // leaving ends the run: the streak so far is the run on the leaderboard
