@@ -202,7 +202,7 @@ describe('shared links preview as a picture of the invite', () => {
     env.ROOMS = { idFromName: (n: string) => n, get: () => ({ fetch: async () => Response.json({ host: '', players: 0, game: 'nhie' }) }) };
     expect(meta(await (await get(roomPage, '/r/ABCDE', { code: 'ABCDE' })).text(), 'og:title')).toBe('Join my Never Have I Ever room');
     env.ROOMS = { idFromName: (n: string) => n, get: () => ({ fetch: async () => new Response('gone', { status: 404 }) }) };
-    expect(meta(await (await get(roomPage, '/r/ABCDE', { code: 'ABCDE' })).text(), 'og:title')).toBe('Join my party room');
+    expect(meta(await (await get(roomPage, '/r/ABCDE', { code: 'ABCDE' })).text(), 'og:title')).toBe('We can’t find room ABCDE');
   });
 
   it('a shared result: the sharer’s own lines on the picture', async () => {

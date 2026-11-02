@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { t as tr, useT } from '../i18n';
 import { getGame } from '../catalog/catalog';
+import { slugOfUrl } from '../catalog/urls';
 import { getLiveCatalog } from '../platform/liveCatalog';
 import { copyText, shareRequests, type ShareData, type ShareOutcome } from '../platform/share';
 import { cardLines, renderShareCard } from '../platform/shareCard';
@@ -89,14 +90,17 @@ const TARGETS: Target[] = [
   },
 ];
 
+/** A live room's invite (/r/<code>, or a game page with ?room=): it makes its own chat preview, and it asks friends to join, not to beat a score. */
+const isRoomLink = (url: URL): boolean => url.pathname.startsWith('/r/') || /^[A-Za-z]{5}$/.test(url.searchParams.get('room') ?? '');
+
 const coarse = (): boolean => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
 
 /** Short link for the share (made on the server so chat previews get the result as their picture and title). */
 async function shortLink(data: ShareData, lines: string[]): Promise<string | null> {
   try {
     const target = new URL(data.url ?? location.href, location.origin);
-    // Challenge links (/c/<id>) are short already and make their own chat preview.
-    if (target.origin !== location.origin || target.pathname.startsWith('/c/')) return null;
+    // Challenge (/c/<id>) and room links are short already and make their own chat preview, as do shared ones (/s/).
+    if (target.origin !== location.origin || target.pathname.startsWith('/c/') || target.pathname.startsWith('/s/') || isRoomLink(target)) return null;
     const res = await fetch('/api/shares', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -114,10 +118,11 @@ export default function ShareSheet({ data }: { data: ShareData }) {
   useT();
   const lines = useMemo(() => cardLines(data.text), [data.text]);
   const card = data.card;
+  const room = useMemo(() => isRoomLink(new URL(data.url ?? location.href, location.origin)), [data.url]);
   const game = useMemo(() => {
     const path = new URL(data.url ?? location.href, location.origin).pathname;
-    const slug = /^\/games\/([a-z0-9-]+)/.exec(path)?.[1] ?? /^\/games\/([a-z0-9-]+)/.exec(location.pathname)?.[1];
-    return slug ? getGame(slug, getLiveCatalog().all) : undefined;
+    const name = /^\/games\/([a-z0-9-]+)/.exec(path)?.[1] ?? /^\/games\/([a-z0-9-]+)/.exec(location.pathname)?.[1];
+    return name ? getGame(slugOfUrl(name), getLiveCatalog().all) : undefined;
   }, [data.url]);
   const [link, setLink] = useState<string | null>(null);
   const [picture, setPicture] = useState<{ blob: Blob; url: string } | null>(null);
@@ -135,7 +140,7 @@ export default function ShareSheet({ data }: { data: ShareData }) {
     const t = window.setTimeout(() => live && setLink((l) => l ?? fallback), 2500);
     void shortLink(data, card?.lines ?? lines).then((s) => live && setLink(s ?? fallback));
     let objectUrl = '';
-    void renderShareCard({ game, lines: card?.lines ?? lines, cta: card?.cta, tiles: card?.tiles, site: location.host }).then((blob) => {
+    void renderShareCard({ game, lines: card?.lines ?? lines, cta: card?.cta ?? (room ? tr('Join the room') : undefined), tiles: card?.tiles, site: location.host }).then((blob) => {
       if (!live || !blob) return;
       objectUrl = URL.createObjectURL(blob);
       setPicture({ blob, url: objectUrl });
@@ -146,12 +151,19 @@ export default function ShareSheet({ data }: { data: ShareData }) {
       window.clearTimeout(t);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [data, lines, game, card]);
+  }, [data, lines, game, card, room]);
 
-  // Keyboard: Escape closes, Tab stays inside the sheet, and the focus goes back where it was.
+  // Keyboard: Escape closes, Tab stays inside the sheet, and the focus goes back where it was. Keys
+  // are the sheet's while it is open: caught first (capture) and kept from the game behind it, whose
+  // own window listeners would take Escape or Enter as its own (a focused button still gets its click).
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') shareRequests.finish('cancelled');
+      e.stopPropagation();
+      if (e.type !== 'keydown') return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        shareRequests.finish('cancelled');
+      }
       if (e.key !== 'Tab') return;
       const items = [...(sheetRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') ?? [])];
       const first = items[0];
@@ -161,9 +173,11 @@ export default function ShareSheet({ data }: { data: ShareData }) {
         (e.shiftKey ? last : first).focus();
       }
     };
-    window.addEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
+    window.addEventListener('keyup', onKey, true);
     return () => {
-      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('keyup', onKey, true);
       back?.focus({ preventScroll: true });
     };
   }, [back]);
