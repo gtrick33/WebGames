@@ -5,8 +5,8 @@ import { GameRenderer } from './render/renderer';
 import { Input } from './input/input';
 import { UI, fmt } from './ui/ui';
 import { GarageView, renderDaily, renderGameOver, renderMissions, renderProfileChrome, renderStore } from './ui/views';
-import { SaveManager, browserStore } from './progression/storage';
-import type { Profile, Settings } from './progression/profile';
+import { SAVE_KEY, SaveManager, browserStore } from './progression/storage';
+import { challengeKey, mergeChallengeRounds, putChallengeRound, type ChallengeRound, type Profile, type Settings } from './progression/profile';
 import { finishRun, grantRewardOnce, type RunSummary } from './progression/run';
 import { claimDaily, canClaimDaily } from './progression/daily';
 import { evaluateAchievements } from './progression/achievements';
@@ -20,7 +20,7 @@ import { LocalAnalytics } from './analytics/analytics';
 import { listenToHost, notifyHost, runEndMessage, type HostCommand } from './analytics/embed';
 import { createBackend, type BackendService } from './backend/backend';
 import { LeaderboardClient, type BoardResult } from './backend/leaderboard';
-import { NAME_MAX, normalizeName, validateName } from './backend/leaderboard-rules';
+import { normalizeName, racerNameFrom, validateName } from './backend/leaderboard-rules';
 import { esc } from './ui/ui';
 import { dayKey } from './core/dates';
 import type { AudioEngine, Sfx } from './audio/audio';
@@ -37,6 +37,16 @@ export class App {
   private dailyOpen = false;
   /** A friends' challenge round from the arcade: every run uses this seed while it is set. */
   private challengeSeed: number | null = null;
+  /** The run on screen is the challenge round's one counted attempt. */
+  private challengeRun = false;
+  /** The run on screen is reported to the arcade (not a practice run beside a challenge). */
+  private reporting = true;
+  /** The challenge round was found already started when the game loaded, and was ended for it. */
+  private staleRound = false;
+  private checkpointAt = 0;
+  /** Why the arcade's name isn't the racer name, shown in Ranks. */
+  private hostNameNote = '';
+  private readonly embedded = typeof window !== 'undefined' && window.parent !== window;
   /** Car details popup over the garage. */
   private carOpen = false;
   private world!: World;
@@ -132,7 +142,7 @@ export class App {
       const privacy = document.querySelector('#screen-settings .settings-section:last-of-type p');
       if (privacy) {
         privacy.textContent =
-          'No account needed. Progress is saved on this device. If you set a racer name, that name, a random player id and your best scores are stored on the leaderboard server. Ads are provided by Google, which may use cookies to serve and measure ads; see policies.google.com/technologies/ads.';
+          'No account needed. Progress is saved on this device. If you have a racer name (one you set, or inside GlitchBound your GlitchBound name), that name, a random player id and your best scores are stored on the leaderboard server. Ads are provided by Google, which may use cookies to serve and measure ads; see policies.google.com/technologies/ads.';
         const link = document.createElement('a');
         link.className = 'link';
         link.href = './privacy.html';
@@ -151,7 +161,15 @@ export class App {
     document.addEventListener('visibilitychange', this.onVisibility);
     listenToHost((c) => this.onHostCommand(c));
     window.addEventListener('blur', this.onBlur);
-    window.addEventListener('pagehide', () => this.saves.save(this.profile));
+    window.addEventListener('pagehide', () => {
+      this.checkpoint();
+      this.saves.save(this.profile);
+    });
+    // Another tab (or the standalone game) saved: carry on from its save, not a stale copy.
+    window.addEventListener('storage', (e) => {
+      if (e.key === SAVE_KEY || e.key === null) this.adoptStoredSave();
+    });
+    if (this.embedded) this.ui.text('boardTitle', 'NEON RUSH BOARD');
 
     this.renderer.app.ticker.add((t) => {
       this.renderer.trackFrame(t.deltaMS, this.state === 'playing' || this.state === 'menu');
@@ -164,7 +182,7 @@ export class App {
     // Dev-only hook for automated QA in the browser. Stripped from production builds.
     if (import.meta.env.DEV) (window as unknown as { __neon: unknown }).__neon = this;
 
-    if (canClaimDaily(this.profile, this.today())) window.setTimeout(() => this.state === 'menu' && !this.page && this.openDaily(), 700);
+    if (canClaimDaily(this.profile, this.today())) window.setTimeout(() => this.state === 'menu' && !this.page && this.challengeSeed === null && this.openDaily(), 700);
   }
 
   // ------------------------------------------------------------------ helpers
@@ -246,6 +264,48 @@ export class App {
 
   private refreshChrome(): void {
     renderProfileChrome(this.ui, this.profile, this.today());
+    this.renderChallenge();
+  }
+
+  private challengeRound(): ChallengeRound | undefined {
+    return this.challengeSeed === null ? undefined : this.profile.challengeRounds[challengeKey(this.challengeSeed)];
+  }
+
+  /** The title screen during a friends' challenge: the round card instead of the best score. */
+  private renderChallenge(): void {
+    const on = this.challengeSeed !== null;
+    const round = this.challengeRound();
+    this.ui.show('chalCard', on);
+    this.ui.show('bestLine', !on);
+    this.ui.text('playBtn', on && round?.done ? 'PRACTICE' : 'PLAY');
+    if (!on) return;
+    if (!round?.done) {
+      this.ui.text('chalTitle', 'CHALLENGE ROUND');
+      this.ui.text('chalText', 'This run counts: one attempt, the same traffic for everyone.');
+    } else if (this.staleRound) {
+      this.ui.text('chalTitle', 'ROUND ALREADY STARTED');
+      this.ui.text('chalText', `This round was already started, so it ended with ${fmt(round.score)} points. Practice runs don't count.`);
+    } else {
+      this.ui.text('chalTitle', 'YOUR RUN IS IN');
+      this.ui.text('chalText', `You scored ${fmt(round.score)}. Practice runs use other traffic and don't count.`);
+    }
+  }
+
+  /** Keep the challenge round's progress in the save, so a reload can't replay it. */
+  private checkpoint(): void {
+    if (!this.challengeRun || this.challengeSeed === null || this.attract) return;
+    const s = this.world.stats;
+    putChallengeRound(this.profile, challengeKey(this.challengeSeed), { score: s.score, meters: Math.floor(s.meters), coins: s.coins, nearMisses: s.nearMisses, done: false });
+  }
+
+  private adoptStoredSave(): void {
+    const fresh = this.saves.load().profile;
+    mergeChallengeRounds(fresh, this.profile);
+    this.profile = fresh;
+    if (this.state !== 'playing' && this.state !== 'paused' && this.state !== 'crashing') this.renderer.setSkin(this.profile.equippedSkin);
+    this.applySettings();
+    if (this.page === 'garage') this.garage.render(this.profile);
+    this.refreshChrome();
   }
 
   // ------------------------------------------------------------------ flow
@@ -266,7 +326,11 @@ export class App {
     if (this.ui.isActive('mock')) return;
     this.page = null;
     this.dailyOpen = false;
-    this.world = new World({ seed: this.challengeSeed ?? (Math.random() * 2 ** 31) | 0, viewHeight: this.renderer.viewHeight });
+    // A challenge round is played once on its seed; runs after it are practice on other traffic.
+    this.challengeRun = this.challengeSeed !== null && !this.challengeRound()?.done;
+    this.reporting = this.challengeSeed === null || this.challengeRun;
+    const seed = this.challengeRun && this.challengeSeed !== null ? this.challengeSeed : (Math.random() * 2 ** 31) | 0;
+    this.world = new World({ seed, viewHeight: this.renderer.viewHeight });
     this.attract = false;
     this.runId = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
     this.acc = 0;
@@ -286,7 +350,12 @@ export class App {
     this.audio?.setIntensity(1);
     void this.unlockAudio();
     this.analytics.track('run_start', { games: this.profile.gamesPlayed });
-    notifyHost({ type: 'start' });
+    this.checkpointAt = 0;
+    if (this.challengeRun) {
+      this.checkpoint();
+      this.save();
+    }
+    if (this.reporting) notifyHost({ type: 'start' });
     // Ask the server for a run token in the background; gameplay never waits for it.
     this.serverRun = null;
     const localRun = this.runId;
@@ -300,6 +369,12 @@ export class App {
     this.state = 'paused';
     this.input.enabled = false;
     this.syncPauseToggles();
+    // A challenge round has one attempt: no Restart or Main menu that would throw it away.
+    this.ui.show('pauseNote', this.challengeRun);
+    this.ui.show('pauseRestart', !this.challengeRun);
+    this.ui.show('pauseHome', !this.challengeRun);
+    this.checkpoint();
+    this.save();
     this.updateScreens();
     this.audio?.setIntensity(0);
   }
@@ -317,24 +392,37 @@ export class App {
   private onCrash(): void {
     this.state = 'crashing';
     this.crashTimer = 0;
+    this.checkpoint();
     this.input.enabled = false;
     this.sfx('crash');
     this.vibrate([60, 40, 120]);
   }
 
   /** Apply the finished run once and show the summary. */
-  private endRun(show = true): RunSummary | null {
-    const summary = finishRun(this.profile, this.runId, { ...this.world.stats }, this.today());
+  private endRun(show = true, abandoned = false): RunSummary | null {
+    const summary = finishRun(this.profile, this.runId, { ...this.world.stats }, this.today(), Date.now(), abandoned);
     if (!summary) return null;
+    const wasChallenge = this.challengeRun;
+    this.challengeRun = false;
+    if (wasChallenge && !abandoned && this.challengeSeed !== null) {
+      const s = summary.stats;
+      putChallengeRound(this.profile, challengeKey(this.challengeSeed), { score: s.score, meters: Math.floor(s.meters), coins: s.coins, nearMisses: s.nearMisses, done: true });
+      this.staleRound = false;
+    }
     this.save();
     this.lastSummary = summary;
     this.ads.onRunCompleted();
     this.analytics.track('run_end', { score: summary.stats.score, meters: Math.floor(summary.stats.meters), coins: summary.stats.coins });
-    notifyHost(runEndMessage(summary.stats));
+    // Practice beside a challenge is never reported, nor is a challenge run left unfinished.
+    if (this.reporting && !(wasChallenge && abandoned)) notifyHost(runEndMessage(summary.stats));
     void this.submitScore(summary, show);
     if (show) {
       this.state = 'gameover';
       renderGameOver(this.ui, summary, this.profile);
+      const practice = this.challengeSeed !== null && !wasChallenge;
+      this.ui.show('goChallenge', wasChallenge || practice);
+      this.ui.text('goChallenge', wasChallenge ? `Your challenge score is in: ${fmt(summary.stats.score)}. The scoreboard shows how everyone did.` : 'Practice run: not counted in the challenge.');
+      this.ui.text('goAgain', this.challengeSeed !== null ? 'Practice (not counted)' : 'Play again');
       const canAd = this.ads.canOfferRewarded() && summary.rewards.coinsCollected > 0;
       this.ui.show('adOffer', canAd);
       this.ui.text('adAmount', fmt(summary.rewards.coinsCollected));
@@ -384,7 +472,7 @@ export class App {
     else {
       const d = res.daily;
       const a = res.allTime;
-      showRank(`<span>Today <b>#${d?.rank ?? '-'}</b> · All time <b>#${a?.rank ?? '-'}</b></span><button class="btn btn-ghost" data-action="leaderboard">View leaderboard</button>`);
+      showRank(`<span>${this.embedded ? 'NEON RUSH board: ' : ''}Today <b>#${d?.rank ?? '-'}</b> · All time <b>#${a?.rank ?? '-'}</b></span><button class="btn btn-ghost" data-action="leaderboard">View leaderboard</button>`);
     }
   }
 
@@ -414,7 +502,7 @@ export class App {
   /** Leaving a run from the pause menu still pays out what was earned. */
   private abandonRun(): void {
     if (this.state !== 'paused') return;
-    const s = this.endRun(false);
+    const s = this.endRun(false, true);
     if (s && s.rewards.coinsEarned > 0) this.ui.toast(`+${fmt(s.rewards.coinsEarned)} coins banked`, 'good');
   }
 
@@ -442,6 +530,11 @@ export class App {
     if (page === 'settings') this.syncSettingsInputs();
     if (page === 'leaderboard') {
       (this.ui.el('nameInput') as HTMLInputElement).value = this.profile.playerName;
+      if (this.hostNameNote && !this.profile.nameChosen) {
+        const msg = this.ui.el('nameMsg');
+        msg.classList.remove('err', 'ok');
+        msg.textContent = this.hostNameNote;
+      }
       this.ui.selectTab(this.ui.screen('leaderboard'), this.boardPeriod);
       void this.loadBoard();
     }
@@ -520,6 +613,8 @@ export class App {
         return;
       }
       this.profile.playerName = normalizeName(input.value);
+      // The player's own choice: the arcade's name no longer replaces it.
+      this.profile.nameChosen = true;
       input.value = this.profile.playerName;
       this.save();
       this.sfx('click');
@@ -706,6 +801,7 @@ export class App {
   private onVisibility = (): void => {
     if (document.hidden) {
       if (this.state === 'playing') this.pause();
+      this.checkpoint();
       this.save();
       void this.audio?.suspend();
     } else if (this.state !== 'paused') {
@@ -728,7 +824,7 @@ export class App {
       return;
     }
     if (c.type === 'challenge') {
-      this.challengeSeed = c.seed;
+      this.onChallenge(c.seed);
       return;
     }
     if (c.type === 'menu') {
@@ -743,13 +839,36 @@ export class App {
       void this.audio?.suspend();
       return;
     }
-    // The arcade's player name (account nickname or guest name) becomes the racer name.
-    const name = normalizeName(c.name).slice(0, NAME_MAX).trim();
-    if (validateName(name) || name === this.profile.playerName) return;
+    // The arcade's player name (account nickname or guest name) is the racer name until the player
+    // chooses their own; names the board can't show are made fit (Zoë -> Zoe) or explained in Ranks.
+    const name = racerNameFrom(c.name);
+    this.hostNameNote = !name
+      ? "Your GlitchBound name can't be shown on this board (use A-Z, numbers, spaces, - _ or .). Choose a racer name here."
+      : name !== normalizeName(c.name)
+        ? `Your GlitchBound name is shown here as ${name}.`
+        : '';
+    if (!name || this.profile.nameChosen || name === this.profile.playerName) return;
     this.profile.playerName = name;
     const input = this.ui.el('nameInput') as HTMLInputElement | null;
     if (input) input.value = name;
     this.save();
+  }
+
+  /** A friends' challenge round from the arcade (seed), or its end (null). */
+  private onChallenge(seed: number | null): void {
+    this.challengeSeed = seed;
+    const round = this.challengeRound();
+    if (seed !== null && round && !round.done && !this.challengeRun) {
+      // Started in an earlier visit (reload, or the arcade's Restart) and a real-time run can't be
+      // resumed: it ends now with the score it reached, reported once.
+      putChallengeRound(this.profile, challengeKey(seed), { ...round, done: true });
+      this.staleRound = true;
+      this.save();
+      notifyHost({ type: 'end', score: round.score, stats: { meters: round.meters, coins: round.coins, nearMisses: round.nearMisses } });
+    }
+    if (seed !== null && this.dailyOpen) this.dailyOpen = false;
+    this.refreshChrome();
+    if (this.state === 'menu') this.updateScreens();
   }
 
   // ------------------------------------------------------------------ frame
@@ -793,6 +912,11 @@ export class App {
         r.handleEvents(this.events, this.world);
         r.render(this.world, dt, this.world.speed, this.acc);
         if (this.world.crashed) this.onCrash();
+        else if (this.challengeRun && this.world.stats.time - this.checkpointAt >= 5) {
+          this.checkpointAt = this.world.stats.time;
+          this.checkpoint();
+          this.save();
+        }
         this.updateHud();
         break;
       }

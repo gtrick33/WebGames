@@ -25,6 +25,19 @@ export function validateName(raw: unknown): string | null {
   return null;
 }
 
+/**
+ * A leaderboard name made from another name (the arcade's): accents dropped (Zoë -> Zoe), other
+ * characters removed, cut to NAME_MAX and padded to NAME_MIN with "_" (Jo -> Jo_). Null when
+ * nothing usable is left (e.g. a name in another alphabet) or the result isn't allowed.
+ */
+export function racerNameFrom(raw: string): string | null {
+  const ascii = raw.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 _.-]/g, '');
+  let name = normalizeName(ascii).slice(0, NAME_MAX).trim();
+  if (!/[A-Za-z0-9]/.test(name)) return null;
+  name = name.padEnd(NAME_MIN, '_');
+  return validateName(name) ? null : name;
+}
+
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface ScoreClaim {

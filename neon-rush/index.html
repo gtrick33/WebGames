@@ -55,8 +55,12 @@
         </header>
         <div class="title-center">
           <h1 class="logo"><span>NEON</span><span>RUSH</span></h1>
-          <p class="best">BEST <b data-bind="bestScore">0</b> · <b data-bind="bestDistance">0</b> m</p>
-          <button class="btn btn-primary btn-xl" data-action="play">PLAY</button>
+          <p class="best" data-bind="bestLine">BEST <b data-bind="bestScore">0</b> · <b data-bind="bestDistance">0</b> m</p>
+          <div class="challenge-card" data-bind="chalCard" hidden>
+            <h2 data-bind="chalTitle">CHALLENGE ROUND</h2>
+            <p data-bind="chalText">This run counts: one attempt, the same traffic for everyone.</p>
+          </div>
+          <button class="btn btn-primary btn-xl" data-action="play" data-bind="playBtn">PLAY</button>
           <nav class="menu-row">
             <button class="btn btn-ghost" data-action="garage">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l2-5h10l2 5M4 13h16v5H4zM7 18v2M17 18v2" /><circle cx="8" cy="15.5" r="1" /><circle cx="16" cy="15.5" r="1" /></svg>
@@ -108,9 +112,10 @@
       <section class="screen modal-screen" id="screen-pause" aria-label="Paused">
         <div class="panel panel-sm">
           <h2>PAUSED</h2>
+          <p class="pause-note" data-bind="pauseNote" hidden>Challenge round: this run is your one attempt. It counts when you crash.</p>
           <button class="btn btn-primary" data-action="resume">Resume</button>
-          <button class="btn btn-ghost" data-action="restart">Restart</button>
-          <button class="btn btn-ghost" data-action="home">Main menu</button>
+          <button class="btn btn-ghost" data-action="restart" data-bind="pauseRestart">Restart</button>
+          <button class="btn btn-ghost" data-action="home" data-bind="pauseHome">Main menu</button>
           <div class="quick-toggles">
             <label class="toggle"><input type="checkbox" data-setting="sfx" /><span>Sound</span></label>
             <label class="toggle"><input type="checkbox" data-setting="music" /><span>Music</span></label>
@@ -150,7 +155,8 @@
               Double coins
             </button>
           </div>
-          <button class="btn btn-primary btn-lg" data-action="restart">Play again</button>
+          <p class="go-challenge" data-bind="goChallenge" hidden></p>
+          <button class="btn btn-primary btn-lg" data-action="restart" data-bind="goAgain">Play again</button>
           <div class="row">
             <button class="btn btn-ghost" data-action="garage">Garage</button>
             <button class="btn btn-ghost" data-action="home">Menu</button>
@@ -215,7 +221,7 @@
       <section class="screen page-screen" id="screen-leaderboard" aria-label="Leaderboard">
         <header class="page-head">
           <button class="icon-btn" data-action="back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
-          <h2>LEADERBOARD</h2>
+          <h2 data-bind="boardTitle">LEADERBOARD</h2>
           <span></span>
         </header>
         <form class="name-card" data-bind="nameForm" autocomplete="off">
@@ -254,7 +260,7 @@
           </div>
           <div class="settings-section">
             <h3>Privacy</h3>
-            <p class="muted">No account needed. Progress is saved on this device. If you set a racer name, that name, a random player id and your best scores are stored on the leaderboard server. No trackers are used. <a class="link" href="./privacy.html" target="_blank" rel="noopener">Privacy policy</a></p>
+            <p class="muted">No account needed. Progress is saved on this device. If you have a racer name (one you set, or inside GlitchBound your GlitchBound name), that name, a random player id and your best scores are stored on the leaderboard server. No trackers are used. <a class="link" href="./privacy.html" target="_blank" rel="noopener">Privacy policy</a></p>
           </div>
           <button class="btn btn-danger" data-action="resetProgress">Reset progress</button>
           <p class="fineprint">NEON RUSH v<span data-bind="version"></span> · original game, art and music</p>

@@ -42,7 +42,25 @@ export interface Profile {
   playerId: string;
   /** Public racer name; empty until the player chooses one. */
   playerName: string;
+  /** True once the player typed their own racer name: the arcade's name no longer replaces it. */
+  nameChosen: boolean;
+  /** Friends' challenge rounds from the arcade, by seed: one attempt each (newest last, pruned). */
+  challengeRounds: Record<string, ChallengeRound>;
 }
+
+export interface ChallengeRound {
+  /** Score, meters, coins and near misses reached so far (the final ones once done). */
+  score: number;
+  meters: number;
+  coins: number;
+  nearMisses: number;
+  done: boolean;
+}
+
+/** How many challenge rounds the save remembers. */
+export const MAX_CHALLENGE_ROUNDS = 20;
+
+export const challengeKey = (seed: number): string => `s${seed}`;
 
 /** RFC 4122 v4 UUID, with a fallback for non-secure contexts. */
 export function newPlayerId(): string {
@@ -94,6 +112,8 @@ export function createProfile(now = Date.now()): Profile {
     settings: { ...DEFAULT_SETTINGS },
     playerId: newPlayerId(),
     playerName: '',
+    nameChosen: false,
+    challengeRounds: {},
   };
 }
 
@@ -189,7 +209,35 @@ export function sanitizeProfile(input: unknown, now = Date.now()): Profile {
     },
     playerId: typeof raw.playerId === 'string' && UUID.test(raw.playerId) ? raw.playerId : base.playerId,
     playerName: typeof raw.playerName === 'string' ? raw.playerName.slice(0, 14) : '',
+    nameChosen: bool(raw.nameChosen, false),
+    challengeRounds: sanitizeRounds(raw.challengeRounds),
   };
+}
+
+function sanitizeRounds(v: unknown): Record<string, ChallengeRound> {
+  const out: Record<string, ChallengeRound> = {};
+  if (!isObj(v)) return out;
+  for (const [k, r] of Object.entries(v).slice(-MAX_CHALLENGE_ROUNDS)) {
+    if (!/^s-?\d{1,10}$/.test(k) || !isObj(r)) continue;
+    out[k] = { score: int(r.score, 0, 0, 1e9), meters: int(r.meters, 0, 0, 1e9), coins: int(r.coins, 0, 0, 1e9), nearMisses: int(r.nearMisses, 0, 0, 1e9), done: bool(r.done, false) };
+  }
+  return out;
+}
+
+/** Record a challenge round's progress, keeping only the newest rounds. */
+export function putChallengeRound(profile: Profile, key: string, round: ChallengeRound): void {
+  delete profile.challengeRounds[key];
+  profile.challengeRounds[key] = round;
+  const keys = Object.keys(profile.challengeRounds);
+  for (const old of keys.slice(0, Math.max(0, keys.length - MAX_CHALLENGE_ROUNDS))) delete profile.challengeRounds[old];
+}
+
+/** Another tab's save is adopted whole; the rounds this tab knows about are kept (the furthest one wins). */
+export function mergeChallengeRounds(into: Profile, from: Profile): void {
+  for (const [k, r] of Object.entries(from.challengeRounds)) {
+    const theirs = into.challengeRounds[k];
+    if (!theirs || (!theirs.done && (r.done || r.score > theirs.score))) putChallengeRound(into, k, r);
+  }
 }
 
 /** Record an idempotency key in a bounded list. Returns false if it was already present. */
