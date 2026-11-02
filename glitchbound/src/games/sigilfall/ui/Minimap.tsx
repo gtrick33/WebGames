@@ -4,7 +4,7 @@ import { mapColors } from '../data/themes';
 import type { Theme } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { K, TILE, type TileMap } from '../sim/map';
-import { objectiveTarget } from '../sim/objective';
+import { objectiveTarget, objectiveTargets } from '../sim/objective';
 import type { World } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { drawMapIcon, type MapIcon } from './mapIcons';
@@ -179,6 +179,16 @@ function draw(c: HTMLCanvasElement, w: World): void {
   g.restore();
   // the quest marker: on the map when it fits, on the rim pointing at it otherwise
   const t = objectiveTarget(w);
+  // every other quest, smaller and quieter, only where it is on the map (the rim points at the followed one alone)
+  g.save();
+  g.globalAlpha = 0.7;
+  for (const o of objectiveTargets(w)) {
+    if (o.quest === t?.quest) continue;
+    const [sx, sy] = at(o.x, o.y);
+    if (Math.hypot(sx - S / 2, sy - S / 2) > S / 2 - 12) continue;
+    drawMapIcon(g, o.main ? 'quest' : 'questSide', sx, sy, 1);
+  }
+  g.restore();
   if (t) {
     let [sx, sy] = at(t.x, t.y);
     const cx = S / 2;

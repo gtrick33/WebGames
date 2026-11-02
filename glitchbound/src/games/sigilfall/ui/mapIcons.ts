@@ -38,6 +38,7 @@ const ART = {
   road: ['.mmmmmm..', '.mwwwwwm.', '.mmmmmm..', '...BB....', '...BB....', '...BB....', '..BBBB...'],
   door: ['..mmm..', '.mMMMm.', 'mMbbbMm', 'mMbbbMm', 'mMbbyMm', 'mMbbbMm', 'mmmmmmm'],
   quest: ['.yyy.', '.yyy.', '.yyy.', '.yyy.', '..y..', '.....', '.yyy.', '.yyy.'],
+  questSide: ['.qqq.', '.qqq.', '.qqq.', '.qqq.', '..q..', '.....', '.qqq.', '.qqq.'],
   /** Quest marks over people (and on the maps): "!" a quest to take, "?" one to hand in; gold the story, blue a side quest. */
   offer: ['.yyy.', '.yyy.', '.yYy.', '.yyy.', '..y..', '.....', '.yyy.', '.yYy.'],
   offerSide: ['.qqq.', '.qqq.', '.qQq.', '.qqq.', '..q..', '.....', '.qqq.', '.qQq.'],

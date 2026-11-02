@@ -21,7 +21,7 @@ import type { HeroLook } from '../render/art/hero';
 import { MOUNT_DEFS, MOUNTS } from '../data/mounts';
 import { authoredLooks, BARE_LOOK, LOOK_SLOTS, lookFits, lookOf, lookSource, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
 import { K, markerPos, parseRegion, TILE, type TileMap } from '../sim/map';
-import { objectiveTarget } from '../sim/objective';
+import { objectiveTarget, objectiveTargets, questCounts } from '../sim/objective';
 import { npcRegion, regionLinks } from '../sim/routes';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
 import { drawMapIcon, mapIconUrl, type MapIcon } from './mapIcons';
@@ -808,7 +808,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
       </section>
       <section className="rb-map-right">
         <span className="rb-kicker">{canTravel ? 'The world · travel by waystone' : 'The world · travel from a waystone or a town'}</span>
-        <WorldMap hero={h} here={w.region.id} sel={sel} goal={goal ? questRegion(goal) : undefined} onSel={setSel} />
+        <WorldMap hero={h} here={w.region.id} sel={sel} goal={goal ? questRegion(goal) : undefined} counts={questCounts(h)} onSel={setSel} />
         <div className={`rb-dest${open ? '' : ' is-locked'}${here ? ' is-here' : ''}`}>
           <div>
             <strong>
@@ -975,7 +975,7 @@ function placeNames(names: Map<RegionId, string>): Map<RegionId, { x: number; y:
 }
 
 /** The world at a glance: every region where it lies, the ways between them, what is still unknown. */
-function WorldMap({ hero, here, sel, goal, onSel }: { hero: Character; here: RegionId; sel: RegionId; goal?: RegionId; onSel: (r: RegionId) => void }) {
+function WorldMap({ hero, here, sel, goal, counts, onSel }: { hero: Character; here: RegionId; sel: RegionId; goal?: RegionId; counts: Map<RegionId, { work: number; offers: number }>; onSel: (r: RegionId) => void }) {
   const links = useMemo(() => regionLinks(), []);
   // the box fits the world, with room for the names round the edge regions
   const box = useMemo(() => {
@@ -1031,6 +1031,17 @@ function WorldMap({ hero, here, sel, goal, onSel }: { hero: Character; here: Reg
               <image href={mapIconUrl(k ? (r.kind === 'town' ? 'town' : r.kind === 'dungeon' ? 'dungeon' : 'wild') : 'unknown', 3)} x={x - 3} y={y - 3} width="6" height="6" className="rb-world-icon" />
               {id === goal && (
                 <text x={x + 3.2} y={y - 2.6} className="rb-world-goal">
+                  !
+                </text>
+              )}
+              {/* how many quests have work here (a number), and quests to take here (a blue "!") */}
+              {(counts.get(id)?.work ?? 0) > (id === goal ? 1 : 0) && (
+                <text x={x - 3.6} y={y - 2.6} className="rb-world-count">
+                  {counts.get(id)!.work}
+                </text>
+              )}
+              {(counts.get(id)?.offers ?? 0) > 0 && (
+                <text x={x + 3.4} y={y + 4.4} className="rb-world-offer">
                   !
                 </text>
               )}
@@ -1153,6 +1164,8 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
   const dark = !fog.all && fog.count === 0;
   const box = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
+  // where the quest marks were drawn (css px in the canvas), for a tap to follow one
+  const hits = useRef<{ x: number; y: number; quest: string }[]>([]);
   // the land the hero is in opens round them; another, whole
   const pz = usePanZoom(box, m.w, m.h, LAND_ZOOM, () => (live ? { k: 1.6, cx: w.player.x / TILE, cy: w.player.y / TILE } : { k: 1, cx: m.w / 2, cy: m.h / 2 }));
   const v = pz.view;
@@ -1195,6 +1208,34 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
     for (const n of w.npcs) if (seen(n.x, n.y)) icon(n.x, n.y, npcMark(w, n.id) ?? (NPCS[n.id]?.shop ? 'merchant' : 'person'));
     for (const x of w.exits) if (seen(x.x, x.y)) icon(x.x, x.y, x.door ? 'door' : 'road');
     const goal = objectiveTarget(w);
+    // every other quest: a smaller mark (gold the story, blue a side quest), no ring; marks within 10 px of each
+    // other (several quests at one person, or behind one way out) stack into one with a count
+    const px = (x: number, y: number): [number, number] => [(ox + (x / TILE) * k) / dpr, (oy + (y / TILE) * k) / dpr];
+    const stacks: { x: number; y: number; main: boolean; n: number }[] = [];
+    hits.current = [];
+    for (const o of objectiveTargets(w)) {
+      const [cx, cy] = px(o.x, o.y);
+      hits.current.push({ x: cx, y: cy, quest: o.quest });
+      if (o.quest === goal?.quest) continue;
+      const near = stacks.find((st) => Math.hypot(st.x - o.x, st.y - o.y) * (k / dpr / TILE) < 10);
+      if (near) {
+        near.n++;
+        near.main ||= o.main;
+      } else stacks.push({ x: o.x, y: o.y, main: o.main, n: 1 });
+    }
+    const small = Math.max(1, s - 1);
+    for (const st of stacks) {
+      drawMapIcon(g, st.main ? 'quest' : 'questSide', ox + (st.x / TILE) * k, oy + (st.y / TILE) * k, small);
+      if (st.n > 1) {
+        const [cx, cy] = [ox + (st.x / TILE) * k, oy + (st.y / TILE) * k];
+        g.font = `700 ${Math.round(10 * dpr)}px sans-serif`;
+        g.lineWidth = 3 * dpr;
+        g.strokeStyle = '#120c08';
+        g.fillStyle = '#ffffff';
+        g.strokeText(String(st.n), cx + 5 * s, cy - 3 * s);
+        g.fillText(String(st.n), cx + 5 * s, cy - 3 * s);
+      }
+    }
     if (goal) {
       // ringed, so it is the first thing seen
       g.strokeStyle = '#ffcf5a';
@@ -1215,14 +1256,29 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
   return (
     <div className="rb-minimap">
       <div className="rb-landmap" ref={box} style={{ aspectRatio: `${m.w} / ${m.h}` }}>
-        <canvas ref={ref} aria-label={dark ? `${r.name}: not explored yet` : `Map of ${r.name}`} />
+        <canvas
+          ref={ref}
+          aria-label={dark ? `${r.name}: not explored yet` : `Map of ${r.name}`}
+          // a tap on a quest's mark follows it (the box above the map, the arrow and the tracker switch to it)
+          onClick={(e) => {
+            if (!live || pz.dragged()) return;
+            const { offsetX: x, offsetY: y } = e.nativeEvent;
+            let best: { quest: string; d: number } | null = null;
+            for (const t of hits.current) {
+              const d = Math.hypot(t.x - x, t.y - y);
+              if (d < 18 && (!best || d < best.d)) best = { quest: t.quest, d };
+            }
+            if (best && best.quest !== h.tracked) engine.trackQuest(best.quest);
+          }}
+        />
         {dark ? <span className="rb-landmap-dark">Not explored yet</span> : <ZoomButtons pz={pz} max={LAND_ZOOM} />}
       </div>
       {!dark &&
         (live ? (
           <span className="rb-small rb-dim rb-map-keys">
             {key('you', 'you')}
-            {key('quest', 'quest')}
+            {key('quest', 'story quest')}
+            {key('questSide', 'side quest (tap to follow)')}
             {w.waystones.length > 0 && key('waystone', 'waystone')}
             {key('road', 'road')}
             {w.exits.some((x) => x.door) && key('door', 'door')}

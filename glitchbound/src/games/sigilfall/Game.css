@@ -3391,6 +3391,23 @@
   font-size: 4.6px;
   fill: #ffe066;
 }
+.rb-world-count,
+.rb-world-offer {
+  text-anchor: middle;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #120c08;
+  stroke-width: 0.7;
+  pointer-events: none;
+}
+.rb-world-count {
+  font-size: 3.2px;
+  fill: #ffffff;
+}
+.rb-world-offer {
+  font-size: 3.6px;
+  fill: #6cc4ff;
+}
 @keyframes rb-pulse {
   50% {
     opacity: 0.35;
