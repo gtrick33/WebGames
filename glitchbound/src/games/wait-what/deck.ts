@@ -29,7 +29,7 @@ export const FORMATS_SINCE = '2026-10-19';
  * words, emoji or typing). Earlier days keep their questions: their shared draw is paced by the
  * English lists (see `oddPaced`), which leaves English as it was and puts every language in step.
  */
-export const SLOTS_SINCE = '2026-11-05';
+export const SLOTS_SINCE = '2026-11-12';
 export const QUIZ_LENGTH = 10;
 
 export type CatId = HandCat | 'odd' | 'world' | 'time' | 'guess' | 'type' | 'emoji' | 'tune' | 'morse';
