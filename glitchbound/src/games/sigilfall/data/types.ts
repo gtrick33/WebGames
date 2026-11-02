@@ -147,6 +147,11 @@ export interface SkillSpec {
   cast: CastKind;
   /** direction: aim a heading · ground: aim a point · self: no aim. */
   aim: 'direction' | 'ground' | 'self';
+  /**
+   * A tapped skill with "Skills aim at the nearest enemy" on: 'target' turns it at that enemy, 'facing' keeps
+   * the hero's facing. Unset: blinks and dashes keep the facing (never blink into a pack), the rest aim.
+   */
+  autoAim?: 'target' | 'facing';
   /** Travel distance (projectiles, dashes, blink) or the farthest point a ground skill can be aimed. */
   range: number;
   cooldown: number;

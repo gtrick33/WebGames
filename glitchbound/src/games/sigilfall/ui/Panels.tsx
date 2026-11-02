@@ -1292,6 +1292,10 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             <input type="checkbox" checked={s.autoTarget} onChange={(e) => set({ autoTarget: e.target.checked })} />
             <span>Attack aims at the nearest enemy</span>
           </label>
+          <label className="rb-check">
+            <input type="checkbox" checked={s.autoAimSkills} onChange={(e) => set({ autoAimSkills: e.target.checked })} />
+            <span>Skills aim at the nearest enemy when tapped</span>
+          </label>
           <div className="rb-seg" role="group" aria-label="Aim assist">
             {['Off', 'Light', 'Strong'].map((l, i) => (
               <button key={l} className={s.aimAssist === i ? 'is-on' : ''} onClick={() => set({ aimAssist: i })}>
