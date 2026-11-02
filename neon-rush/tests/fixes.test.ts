@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import swTemplate from '../scripts/sw-template.js?raw';
 import { describe, expect, it } from 'vitest';
 import { World } from '../src/game/world';
 import { Autopilot } from '../src/game/autopilot';
@@ -164,7 +164,7 @@ describe('offline copy (NR-08)', () => {
       caches: { open: async () => cache, match: async (key: string | Request) => stored.get(typeof key === 'string' ? key : '?'), keys: async () => [] },
       fetch: async (req: Request) => network(req.url),
     };
-    const src = readFileSync(new URL('../scripts/sw-template.js', import.meta.url), 'utf8').replace('__VERSION__', 't').replace('__PRECACHE__', '[]');
+    const src = swTemplate.replace('__VERSION__', 't').replace('__PRECACHE__', '[]');
     new Function('self', 'caches', 'fetch', 'Response', src)(scope, scope.caches, scope.fetch, Response);
     const navigate = async (url: string) => {
       let out: Promise<Response> | undefined;
