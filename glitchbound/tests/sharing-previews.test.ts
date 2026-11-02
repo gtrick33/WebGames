@@ -115,7 +115,9 @@ describe('room invites say what the room is doing (SFC-06, PB-09, CA-17)', () =>
   it('a lobby waits for you', async () => {
     room({ host: 'Bo', players: 2, phase: 'lobby', full: false, game: 'belot' });
     const inv = await roomInvite(env, 'ABCDE');
-    expect(inv.card.lines).toEqual(['Room ABCDE · 2 players waiting']);
+    expect(inv.card.lines).toEqual(['2 players waiting']);
+    expect(inv.card.code).toBe('ABCDE');
+    expect(inv.description).toContain('Room ABCDE · 2 players waiting');
     expect(inv.card.cta).toBe('Join the room');
   });
 
@@ -130,7 +132,7 @@ describe('room invites say what the room is doing (SFC-06, PB-09, CA-17)', () =>
   it('a Sigilfall party in a run takes nobody', async () => {
     room({ host: 'Ana', players: 2, phase: 'run', full: false, game: 'sigilfall' });
     const inv = await roomInvite(env, 'ABCDE');
-    expect(inv.card.lines).toEqual(['Room ABCDE · In a Riftstone run right now']);
+    expect(inv.card.lines).toEqual(['In a Riftstone run right now']);
     expect(inv.card.cta).toBe('Open Sigilfall');
   });
 
@@ -138,11 +140,11 @@ describe('room invites say what the room is doing (SFC-06, PB-09, CA-17)', () =>
     room({ host: 'Cy', players: 3, phase: 'picking', full: false });
     const inv = await roomInvite(env, 'ABCDE');
     expect(inv.title).toBe('Cy wants you in a Crass Act room');
-    expect(inv.card.lines).toEqual(['Room ABCDE · 3 playing · game in progress']);
+    expect(inv.card.lines).toEqual(['3 playing · game in progress']);
     expect(inv.card.adult).toBe(true);
     expect(inv.description).toContain('18+');
     room({ host: 'Cy', players: 3, phase: 'over', full: false });
-    expect((await roomInvite(env, 'ABCDE')).card.lines).toEqual(['Room ABCDE · 3 players · between games']);
+    expect((await roomInvite(env, 'ABCDE')).card.lines).toEqual(['3 players · between games']);
   });
 
   it('a party room gets its game’s name and colors on the picture', async () => {
@@ -191,5 +193,14 @@ describe('the picture leaves out what it can’t draw, cleanly (OH-15, WH-06)', 
     expect(measure(f.text, '✅❌', 36)).toBe(2 * 36);
     const png = await renderOgCard({ headline: 'Whatsit #12 · 🌵 · 4 questions · ✅', lines: ['💨🟡💨💨💨'], game: { title: 'Crass Act', accent: 'coral' }, adult: true, byline: SHARED_BY, cta: 'Play Crass Act' });
     expect(png.length).toBeGreaterThan(1000);
+  });
+
+  it('sets a room’s code as tiles in the game’s colors', async () => {
+    const plain = await renderOgCard({ headline: 'Bo wants you in a Hue Knew? room', lines: ['3 players waiting'], game: { title: 'Hue Knew?', accent: 'coral' }, cta: 'Join the room' });
+    const tiled = await renderOgCard({ headline: 'Bo wants you in a Hue Knew? room', lines: ['3 players waiting'], game: { title: 'Hue Knew?', accent: 'coral' }, cta: 'Join the room', code: 'ABCDE' });
+    expect(tiled.length).toBeGreaterThan(plain.length);
+    // Anything that isn't a code is not drawn as one.
+    const odd = await renderOgCard({ headline: 'Bo wants you in a Hue Knew? room', lines: ['3 players waiting'], game: { title: 'Hue Knew?', accent: 'coral' }, cta: 'Join the room', code: '<x>' });
+    expect([...odd]).toEqual([...plain]);
   });
 });

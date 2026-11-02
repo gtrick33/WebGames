@@ -24,6 +24,8 @@ export interface OgCard {
   adult?: boolean;
   /** A small line at the panel's foot ("Shared by a player"). */
   byline?: string;
+  /** A room's code, set as letter tiles in the game's colors under the headline (room invites). */
+  code?: string;
 }
 
 /* ------------------------------------------------------------------ the letters */
@@ -571,13 +573,17 @@ export async function renderOgCard(card: OgCard): Promise<Uint8Array<ArrayBuffer
   // The message: the headline as large as fits in three lines, then the details; centred.
   const maxW = pw - 120;
   const room = ph - 64 - (card.byline ? 40 : 0);
-  type Row = { text: string; font: Font; size: number; color: number; h: number };
+  type Row = { text: string; font: Font; size: number; color: number; h: number; tiles?: string };
   let rows: Row[] = [];
+  // (A room's code tiles take their room first, so the status line under them still fits.)
+  const code = card.code && /^[A-Z0-9]{3,8}$/.test(card.code) ? card.code : '';
+  const tilesH = code ? 90 : 0;
   for (const size of [64, 56, 50, 44, 40]) {
     const head = wrap(f.bold, card.headline, size, maxW, 3);
     rows = head.map((text) => ({ text, font: f.bold, size, color: INK, h: Math.round(size * 1.18) }));
-    if (rows.length * rows[0]!.h <= room * 0.62 || size === 40) break;
+    if (rows.length * rows[0]!.h <= (room - tilesH) * 0.62 || size === 40) break;
   }
+  if (code) rows.push({ text: '', font: f.bold, size: 0, color: INK, h: 10 }, { text: '', font: f.bold, size: 52, color: WHITE, h: tilesH - 10, tiles: code });
   const details = (card.lines ?? []).filter((l) => tokens(f.text, l).some((t) => !('space' in t)));
   if (details.length) rows.push({ text: '', font: f.text, size: 0, color: MUTED, h: 14 });
   for (const line of details) for (const text of wrap(f.text, line, 34, maxW, 2)) rows.push({ text, font: f.text, size: 34, color: MUTED, h: 46 });
@@ -585,6 +591,19 @@ export async function renderOgCard(card: OgCard): Promise<Uint8Array<ArrayBuffer
   while (used > room && rows.length > 1) used -= rows.pop()!.h;
   let y = py + 32 + Math.max(0, (room - used) / 2);
   for (const r of rows) {
+    if (r.tiles) {
+      // The code as tiles: ink outline, the game's color, a white letter.
+      const tw = 68;
+      const gap = 12;
+      let tx = Math.round(OG_W / 2 - (r.tiles.length * tw + (r.tiles.length - 1) * gap) / 2);
+      for (const ch of r.tiles) {
+        pic.roundRect(tx + 4, y + 6, tw, 76, 16, INK);
+        pic.roundRect(tx, y, tw, 76, 16, INK);
+        pic.roundRect(tx + 5, y + 5, tw - 10, 66, 12, a1);
+        pic.text(r.font, ch, tx + tw / 2 - measure(r.font, ch, r.size) / 2, y + 58, r.size, r.color);
+        tx += tw + gap;
+      }
+    }
     if (r.text) pic.text(r.font, r.text, OG_W / 2 - measure(r.font, r.text, r.size) / 2, y + r.size * 0.92, r.size, r.color);
     y += r.h;
   }

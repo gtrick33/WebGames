@@ -142,7 +142,7 @@ export async function roomInvite(env: Env, rawCode: string): Promise<Invite> {
       replaceUrl: `/party?room=${code}`,
       title,
       description: [...lines, 'Rooms close after three quiet hours. Party games on everyone’s own phone, free.'].join(' · '),
-      card: { headline: title, lines, cta: 'Start a room' },
+      card: { headline: title, lines, cta: 'Start a room', code },
     };
   }
   // The room could not be asked (or the code is not one): the party page. Never the 18+ game by default.
@@ -160,8 +160,9 @@ export async function roomInvite(env: Env, rawCode: string): Promise<Invite> {
   const { host, game } = info;
   const details = (name: string, pitch: string, busy?: string): { lines: string[]; description: string; cta: string } => {
     const status = roomStatus(info, name, busy);
-    const lines = [[`Room ${code}`, status.line].filter(Boolean).join(' · ')];
-    return { lines, description: `${lines[0]} · ${pitch}`, cta: status.cta };
+    // The picture sets the code as tiles; the text names it.
+    const lines = status.line ? [status.line] : [];
+    return { lines, description: [`Room ${code}`, status.line, pitch].filter(Boolean).join(' · '), cta: status.cta };
   };
   const own = Object.hasOwn(GAMES, game) ? GAMES[game] : undefined;
   if (own) {
@@ -173,13 +174,13 @@ export async function roomInvite(env: Env, rawCode: string): Promise<Invite> {
       replaceUrl: `/games/${own.slug}?room=${code}`,
       title,
       description: entry?.adult && !description.includes('18+') ? `18+ · ${description}` : description,
-      card: { headline: title, lines, game: gameOf(own.slug), cta, adult: entry?.adult || undefined },
+      card: { headline: title, lines, game: gameOf(own.slug), cta, adult: entry?.adult || undefined, code },
     };
   }
   const party = Object.hasOwn(PARTY, game) ? PARTY[game]! : { name: 'party', pitch: 'Party games on everyone’s own phone.', accent: 'cyan' as Accent };
   const title = host ? `${host} wants you in a ${party.name} room` : `Join my ${party.name} room`;
   const { lines, description, cta } = details(party.name === 'party' ? 'Party Mode' : party.name, `${party.pitch} Free, on your own phone.`);
-  return { page: '/party', replaceUrl: `/party?room=${code}`, title, description, card: { headline: title, lines, game: party.name === 'party' ? undefined : { title: party.name, accent: party.accent }, cta } };
+  return { page: '/party', replaceUrl: `/party?room=${code}`, title, description, card: { headline: title, lines, game: party.name === 'party' ? undefined : { title: party.name, accent: party.accent }, cta, code } };
 }
 
 /** Every shared result's card says who made it: a player, not the arcade. */
