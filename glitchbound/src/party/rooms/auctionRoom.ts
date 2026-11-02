@@ -72,6 +72,10 @@ export function newRoom(code: string, now: number, seed: number): State {
 const inGame = (s: State): boolean => s.phase === 'auction' || s.phase === 'vote';
 const here = (s: State, id: string | null): boolean => !!id && s.seats.some((x) => String(x.n) === id && x.online);
 const playing = (s: State): number[] => (s.auction?.players ?? []).map((p) => Number(p.id));
+/** Votes go to collections with something in them (an empty one can't win on votes). */
+const hasItems = (s: State, n: number): boolean => !!s.auction?.players.find((p) => p.id === String(n))?.items.length;
+/** Has someone else's collection to vote for. */
+const canVote = (s: State, n: number): boolean => playing(s).some((m) => m !== n && hasItems(s, m));
 
 export function join(s: State, key: string, name: string, now: number): string | null {
   return joinSeat(s, key, name, now, MAX_PLAYERS, inGame(s));
@@ -101,7 +105,7 @@ function settle(s: State, now: number): void {
       s.deadline = now + VOTE_SECONDS * 1000;
     }
   }
-  if (s.phase === 'vote' && playing(s).filter((n) => s.seats.some((x) => x.n === n && x.online)).every((n) => String(n) in s.votes)) tally(s);
+  if (s.phase === 'vote' && playing(s).filter((n) => s.seats.some((x) => x.n === n && x.online) && canVote(s, n)).every((n) => String(n) in s.votes)) tally(s);
 }
 
 function tally(s: State): void {
@@ -202,6 +206,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
     case 'vote':
       if (s.phase !== 'vote' || !playing(s).includes(me.n)) return null;
       if (a.seat === me.n || !playing(s).includes(a.seat)) return 'Vote for someone else’s collection.';
+      if (!hasItems(s, a.seat)) return 'Vote for a collection with something in it.';
       s.votes[id] = a.seat;
       settle(s, now);
       return null;
@@ -266,7 +271,7 @@ export function viewFor(s: State, key: string): RoomView | null {
     code: s.code,
     phase: s.phase,
     settings: s.settings,
-    players: seatViews(s, me, (n) => s.phase === 'vote' && String(n) in s.votes),
+    players: seatViews(s, me, (n) => s.phase === 'vote' && (String(n) in s.votes || !canVote(s, n))),
     you: me.n,
     host: me.n === s.host,
     deadline: s.deadline,

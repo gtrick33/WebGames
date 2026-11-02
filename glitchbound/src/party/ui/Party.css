@@ -1889,6 +1889,9 @@ img.pt-feature-art {
   border-radius: 16px;
   background: var(--pt-card);
 }
+.pt-collection.is-empty {
+  opacity: 0.55;
+}
 .pt-collection-head {
   display: flex;
   align-items: center;
