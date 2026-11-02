@@ -14,11 +14,12 @@ match-up, burnouts and staging, then the start lights.
    and with all five lit they go out after a seeded random wait of 0 to 3 s. No rhythm to anticipate. Launch control holds every car
    at its strongest grip-safe rpm; the player taps at lights out. A reaction under 0.3 s is a perfect launch (a
    short kick), under 0.5 s good, slower is a slow start, and no tap goes 1 s after lights out. A tap while the
-   lights are on is a jump start: the car goes 0.6 s after lights out, bogged. AI drivers have their own reaction time and launch error.
+   lights are on is a jump start: the car goes 0.6 s after lights out, bogged, and its drive is cut to 70 % for half a second (every car, electric too). AI drivers have their own reaction time and launch error.
 2. **The run**: each gear has its own shift window, drawn on the tach's ring (the shift button never changes colour): green with yellow either
    side and red above. Everything about a window is drawn from the race seed per gear, so everyone in a race
    shares it and every gear differs: where the green sits (70 to 92 % of the redline), how long the needle takes
-   to cross it (0.2 to 0.32 s) and each yellow band (0.12 to 0.26 s, drawn separately below and above). Times
+   to cross it (0.2 to 0.32 s; the green's half-width is clamped to 2-8 % of the redline, so in fast low gears it can be
+   as short as about 0.12 s) and each yellow band (0.12 to 0.26 s, drawn separately below and above). Times
    become revs per car (`shiftWindows`), so a window is equally hard in any car. Green = perfect (a 40 % quicker change and a 32 % kick that
    swells in and fades over a second); yellow = ok; red, or more than 0.14 s on the limiter = late (a slower change); below yellow = early (bogs).
    After every change the clutch bites over 0.14 s, so the push comes back smoothly (the camera's punch eases the same way): no jump forward.
@@ -30,8 +31,10 @@ match-up, burnouts and staging, then the start lights.
 **Score** (the leaderboard number): `20000 − (reaction + ET) ms + 150 × perfect shifts + 150 for a perfect launch`, 0 for a breakdown.
 
 Everything is deterministic: a race is `(cars, drivers, seed)`. A driver is live (your taps), a policy (an AI with
-a skill: reaction, launch error, shift timing) or a script (`{ launchRpm, reaction, shifts[], nitro? }`, a ghost; encoded `lc3`,
-older `lc1`/`lc2` replays still load).
+a skill: reaction, launch error, shift timing) or a script (`{ launchRpm, reaction, shifts[], nitro?, jumped?, steps? }`, a ghost). Ghosts are encoded `lc4`: the run in
+sim steps (the launch step, then each shift and the nitrous as steps after it) and a jump flag, replayed before the
+step exactly as the live tap was, so a ghost is the same run to the step. Older `lc1`-`lc3` replays (milliseconds)
+still load.
 
 **Traits** (`TRAIT_INFO` in cars.ts, read by `specOf` and the race): every car has one.
 
@@ -44,7 +47,7 @@ older `lc1`/`lc2` replays still load).
 | Electric overdrive | one gear: a charge meter fills over 1.25 s, five times a run; tap in its green for a surge with no clutch gap. A full charge left alone vents (a late tap). The inverter (its transmission upgrade) adds torque |
 | Pursuit special | the most forgiving launch: perfect up to 0.36 s, good to 0.56 s; a siren whoop and flashing beacons |
 | All-wheel grip | never spins at the launch or after a shift; a launch 0.03 s more forgiving |
-| Nitrous | one shot a run: from second gear on, hold the button 0.45 s and it pushes up to 40 % harder for 2.2 s (swelling in and fading). Policy drivers fire it early in third. Not in live rooms (holds aren't synced) or the daily loaner |
+| Nitrous | one shot a run: from second gear on, tap the NOS gauge or press N (or hold the shift button 0.45 s) and it pushes up to 40 % harder for 2.2 s (swelling in and fading). Policy drivers fire it early in third. Not in live rooms (holds aren't synced) or the daily loaner |
 
 The race screen also has speed lines, nitrous flames and a slow-motion photo finish when the two cars cross within
 0.15 s (not live). Past the line there is a 320 m shutdown area ending in a sand trap and catch fence: each car lifts,
@@ -62,14 +65,20 @@ after your car stops, through a dip to dark; "Tap to continue" skips there once 
   rolls up on it, then its trait and numbers.
 - **Test drive**: one a day, in any car you don't own, stock, against a car like it; no prize, wear or score.
 - **King's Gauntlet** (after the Street final): back-to-back races against ever quicker opponents; one loss ends
-  the run, and the streak (with the sum of the won races' scores) is one run on the leaderboard.
+  the run, and the streak (with the sum of the won races' scores) is one run on the leaderboard. Between rounds a
+  pit stop fits new tires without ending the run.
 - **Race a friend** (live): a room on the rooms worker (`room.ts`) seats two phones; each picks a car from its own
   garage and says ready, the room sets a start a few seconds ahead and a seed, and both phones run the same race.
   A tap travels as the sim step it was applied at; the other phone replays the race with it (a late tap replays
   from the start, which takes a millisecond). With both tap lists in, the room replays the race itself and
-  settles the winner, so the phones always agree. Friendly: no wear, no failures, no money; a dead heat inside a
+  settles the winner, so the phones always agree. The room refuses taps ahead of its clock and a finish before
+  the car has crossed by its clock, settles a launch inside 0.1 s of lights out as a jump start, and settles at
+  once when the other racer drops out after you finish. Friendly: no wear, no failures, no money; a dead heat inside a
   thousandth has no winner.
-- **Wager**: odds come from running the race a dozen times in the simulator; an underdog pays more.
+- **Wager**: a bet on yourself. The odds come from running the race a dozen times in the simulator with you
+  driving as your last ten races did (reaction and perfect-shift rate, skill 0.5-0.95; a decent driver until
+  three races are in); an underdog pays more. The stake is at most twice the purse, and a rematch of a rival
+  you have beaten is for the purse alone.
   Coins are earned only in the game, never bought.
 - **Today's Showdown** (daily): the same loaner car and the same opponent for everyone from the day's seed;
   three runs, best counts. A free **daily crate** (cash and materials by rank).
