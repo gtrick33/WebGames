@@ -318,6 +318,25 @@ describe('the race', () => {
     expect(decodeScript('lc1,3000,100,2000,1000')).toBeNull();
   });
 
+  it('a jump start is always slower than a clean launch at the same moment, for every car (electric too)', () => {
+    for (const c of CARS) {
+      const spec = stock(c.id);
+      const run = (jump: boolean): number => {
+        const race = new Race([spec], [{ kind: 'live' }], 9);
+        while (!race.done) {
+          race.step();
+          const me = race.racers[0]!;
+          if (jump && race.lightsOn >= 4 && !race.out) race.tap(0);
+          if (!jump && me.phase === 'staging' && race.out && race.t >= race.outAt + JUMP_PENALTY) race.tap(0);
+          const w = race.windowOf(0);
+          if (w && me.phase === 'running' && shiftRpm(me) >= (spec.redline * (w.lo + w.hi)) / 2) race.tap(0);
+        }
+        return race.result().racers[0]!.crossed!;
+      };
+      expect(run(true), c.id).toBeGreaterThan(run(false) + 0.05);
+    }
+  });
+
   it('a live run replays exactly as a ghost: live, encode, decode, replay give the same crossing, ET and perfect shifts', () => {
     let jumps = 0;
     let nitros = 0;

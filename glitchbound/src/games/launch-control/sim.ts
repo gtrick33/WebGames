@@ -90,6 +90,9 @@ export const OUT_HOLD_MAX = 3;
 export const AUTO_LAUNCH = 1.0;
 /** Tapping while the red lights are on is a jump start: the car goes this long after lights out, bogged. */
 export const JUMP_PENALTY = 0.6;
+/** After a jump start the drive is cut to this share for this long (on top of the first-gear bog). */
+export const JUMP_CUT = 0.7;
+export const JUMP_CUT_S = 0.5;
 /** Reaction times (s) for a perfect and a good launch (no rhythm to anticipate, so a little kinder than a drag tree). */
 export const LAUNCH_PERFECT = 0.3;
 export const LAUNCH_GOOD = 0.5;
@@ -754,6 +757,8 @@ export class Race {
           force *= r.gear < spec.gears ? 0.3 : 0.9;
         }
       }
+      // a jump start bogs every car, electric and spin-limited ones too: the drive is cut for a moment
+      if (r.launchQ === 'jump' && since < JUMP_CUT_S) force *= JUMP_CUT;
     }
     // policy drivers fire their nitrous a moment into third gear (second in a three-speed); ghosts when they did
     if (canNitro(r)) {
