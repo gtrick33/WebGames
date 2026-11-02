@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { SigilEngine } from './engine';
 import { GameScreen } from './ui/GameScreen';
-import { setTurned } from './ui/turn';
+import { isTurned, setTurned } from './ui/turn';
 import { CreateScreen, TitleScreen } from './ui/Title';
 import './Game.css';
 
@@ -45,19 +45,26 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
           g.drawImage(r.canvas, (r.canvas.width - crop[0]) / 2, (r.canvas.height - crop[1]) / 2 - crop[1] * 0.08, crop[0], crop[1], 0, 0, crop[0], crop[1]);
         }
         const blob = await new Promise<Blob | null>((ok) => src.toBlob(ok, name.endsWith('.jpg') ? 'image/jpeg' : 'image/png', 0.88));
-        if (size) fit();
+        if (size) fit(true);
         const res = await fetch(`/__sigilfall/shot?name=${encodeURIComponent(name)}`, { method: 'POST', body: blob });
         return res.text();
       };
     }
     host.report({ type: 'ready' });
+    // a field being typed in (a hero's name, a party code): the phone's keyboard shortens the screen meanwhile
+    const typing = (): boolean => {
+      const a = document.activeElement;
+      return (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) && stage.contains(a);
+    };
     // the canvas follows the stage's size; the view picks a crisp whole-number pixel scale
-    const fit = (): void => {
-      // a phone held upright with the game filling it: the game turns itself to landscape (ui/turn.ts)
+    let last = '';
+    const fit = (force = false): void => {
+      // a phone held upright with the game filling it: the game turns itself to landscape (ui/turn.ts); not
+      // while the keyboard is up (it shortens the screen and would flip the layout under the field)
       const box = stage.parentElement ?? stage;
       const pw = box.clientWidth;
       const ph = box.clientHeight;
-      const turn = e.touchMode && ph > pw * 1.15 && pw > 0;
+      const turn = typing() ? stage.classList.contains('is-turned') : e.touchMode && ph > pw * 1.15 && pw > 0;
       stage.classList.toggle('is-turned', turn);
       stage.style.setProperty('--turn-w', `${pw}px`);
       stage.style.setProperty('--turn-h', `${ph}px`);
@@ -66,16 +73,49 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
       // its own layout size (a turned box's on-screen rectangle is the other way round)
       const r = { width: stage.offsetWidth, height: stage.offsetHeight };
       const dpr = Math.min(3, window.devicePixelRatio || 1);
+      // (Safari's bars coming and going resize the stage often: nothing to do when the size is the same)
+      const key = `${r.width}x${r.height}@${dpr}:${e.touchMode}:${turn}`;
+      if (key === last && !force) return;
+      last = key;
       e.dpr = dpr;
       e.renderer.resize(r.width, r.height, dpr, e.touchMode);
       e.setToWorld((x, y) => e.renderer.toWorld(x, y, dpr));
       e.bump();
     };
     fit();
-    const ro = new ResizeObserver(fit);
+    // one fit a frame however many resizes come in it
+    let frame = 0;
+    const refit = (): void => {
+      if (!frame) frame = requestAnimationFrame(() => {
+        frame = 0;
+        fit();
+      });
+    };
+    const ro = new ResizeObserver(refit);
     ro.observe(stage);
     if (stage.parentElement) ro.observe(stage.parentElement);
-    window.addEventListener('orientationchange', fit);
+    window.addEventListener('orientationchange', refit);
+    // a field gets the keyboard: scroll it into view inside its own panel (never the page), once the keyboard is up
+    let lift = 0;
+    const onFocusIn = (ev: FocusEvent): void => {
+      const t = ev.target;
+      if (!(t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement)) return;
+      const pane = t.closest<HTMLElement>('.rb-create, .rb-frame-body');
+      if (!pane) return;
+      clearTimeout(lift);
+      lift = window.setTimeout(() => {
+        const a = t.getBoundingClientRect();
+        const b = pane.getBoundingClientRect();
+        // in the pane's own axis (turned: the game's top is the screen's right)
+        const top = isTurned() ? b.right - a.right : a.top - b.top;
+        const h = isTurned() ? a.width : a.height;
+        if (top < 0 || top + h > pane.clientHeight) pane.scrollTop += top - (pane.clientHeight - h) / 2;
+      }, 350);
+    };
+    // the keyboard gone: the turn is worked out again
+    const onFocusOut = (): void => refit();
+    stage.addEventListener('focusin', onFocusIn);
+    stage.addEventListener('focusout', onFocusOut);
     // switch between touch and mouse controls by what the player actually uses
     const onPointer = (ev: PointerEvent): void => {
       e.sound.unlock();
@@ -90,7 +130,11 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
     window.addEventListener('keydown', onKey);
     return () => {
       ro.disconnect();
-      window.removeEventListener('orientationchange', fit);
+      cancelAnimationFrame(frame);
+      clearTimeout(lift);
+      window.removeEventListener('orientationchange', refit);
+      stage.removeEventListener('focusin', onFocusIn);
+      stage.removeEventListener('focusout', onFocusOut);
       stage.removeEventListener('pointerdown', onPointer, true);
       window.removeEventListener('keydown', onKey);
       e.detach();
