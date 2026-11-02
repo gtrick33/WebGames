@@ -1649,8 +1649,10 @@ export class World {
       for (const l of addParagonXp(this.hero.para, n)) this.emit({ t: 'paragon', level: l });
       return;
     }
-    const levels = addXp(this.hero, n);
+    const paragon: number[] = [];
+    const levels = addXp(this.hero, n, (rest) => paragon.push(...addParagonXp(this.hero.para, rest)));
     this.run.xp += Math.round(n);
+    for (const l of paragon) this.emit({ t: 'paragon', level: l });
     if (!levels.length) return;
     this.rebuild();
     this.player.hp = this.player.maxHp;

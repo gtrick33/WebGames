@@ -172,7 +172,7 @@ export const cleanName = (s: string): string =>
 /* ------------------------------------------------------------- experience */
 
 /** Adds experience; returns the levels reached (empty if none). */
-export function addXp(c: Character, n: number): number[] {
+export function addXp(c: Character, n: number, past?: (rest: number) => void): number[] {
   const reached: number[] = [];
   if (c.level >= MAX_LEVEL) return reached;
   c.xp += Math.max(0, Math.round(n));
@@ -182,7 +182,11 @@ export function addXp(c: Character, n: number): number[] {
     reached.push(c.level);
     autoSlotSkills(c);
   }
-  if (c.level >= MAX_LEVEL) c.xp = 0;
+  if (c.level >= MAX_LEVEL) {
+    // what carries past the cap goes on (to Paragon: sim/world.ts giveXp) rather than away
+    if (c.xp > 0) past?.(c.xp);
+    c.xp = 0;
+  }
   return reached;
 }
 

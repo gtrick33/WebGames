@@ -109,7 +109,12 @@ export function itemScore(item: Item): number {
   return item.il * 10 + rank * 25 + itemStats(item).length * 3 + itemMods(item).length * 15;
 }
 
-export const salvageValue = (item: Pick<Item, 'il' | 'r'>): number => Math.round((4 + item.il * 2) * [1, 1.6, 3, 6, 12][RARITIES.indexOf(item.r)]!);
+/** A bought piece sells back for at most this share of what was paid for it. */
+export const RESALE = 0.25;
+export const salvageValue = (item: Pick<Item, 'il' | 'r' | 'paid'>): number => {
+  const value = Math.round((4 + item.il * 2) * [1, 1.6, 3, 6, 12][RARITIES.indexOf(item.r)]!);
+  return item.paid === undefined ? value : Math.min(value, Math.round(item.paid * RESALE));
+};
 
 /* -------------------------------------------------------------- generation */
 

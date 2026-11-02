@@ -12,6 +12,7 @@ import { itemClass, itemSlot, newUid } from './items';
 import { grantMounts, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
 import { MOUNT_DEFS } from '../data/mounts';
 import { KEY_MIN, MAX_IL } from '../data/keystones';
+import { QM_PRICE } from '../data/vendors';
 import { validateParagon } from './paragon';
 import { OPENED_TABLE, QUEST_TABLE } from './saveTables';
 
@@ -154,6 +155,9 @@ export function validateItem(v: unknown): Item | null {
   if (!authored && typeof o.sm === 'number' && Number.isInteger(o.sm) && MINOR_MODS[o.sm] && r === 'rare') item.sm = o.sm;
   if (!authored && typeof o.n === 'string') item.n = o.n.slice(0, 48);
   if (o.fresh === true) item.fresh = true;
+  if (typeof o.paid === 'number') item.paid = int(o.paid, 0, 1e7, 0);
+  // a quartermaster piece bought before prices were kept on items (vendor stock ids start with v: progress/shop.ts)
+  else if (authored && item.uid.startsWith('v') && (r === 'epic' || r === 'legendary')) item.paid = QM_PRICE[r].gold;
   return item;
 }
 

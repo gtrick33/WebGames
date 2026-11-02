@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { BAG_OVERFLOW, bagSize, HELD_MAX, newCharacter, type Character } from '../src/games/sigilfall/progress/character';
-import { rollGear } from '../src/games/sigilfall/progress/items';
+import { rollGear, salvageValue } from '../src/games/sigilfall/progress/items';
+import { buyItem, sellPrice, stockFor } from '../src/games/sigilfall/progress/shop';
+import { validateItem } from '../src/games/sigilfall/progress/save';
+import { xpToNext } from '../src/games/sigilfall/data/classes';
+import { paragonXp } from '../src/games/sigilfall/progress/paragon';
 import { migrate, saveText, emptySave } from '../src/games/sigilfall/progress/save';
 import { rng } from '../src/games/sigilfall/core/math';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
@@ -125,5 +129,37 @@ describe('Sigilfall systems fixes', () => {
     const gold = c.gold;
     w.completeQuests([heroic]);
     expect(c.gold).toBeGreaterThan(gold + heroic.reward.gold);
+  });
+
+  it('SFS-08: a quartermaster piece sells back for less than it cost', () => {
+    const c = readyHero('warrior', 15, 'uncommon');
+    c.gold = 1e6;
+    c.marks = 1e4;
+    c.bag = [];
+    const stock = stockFor(c, 'quartermaster');
+    expect(stock.length).toBeGreaterThan(0);
+    for (const s of stock) {
+      const item = buyItem(c, 'quartermaster', s.item.uid)!;
+      expect(item).toBeTruthy();
+      expect(sellPrice(item)).toBeLessThan(s.price.gold);
+      // and still after a reload, also for a piece bought before prices were kept
+      expect(salvageValue(validateItem(JSON.parse(JSON.stringify(item)))!)).toBe(sellPrice(item));
+      const old: Record<string, unknown> = { ...item };
+      delete old.paid;
+      expect(salvageValue(validateItem(JSON.parse(JSON.stringify(old)))!)).toBeLessThan(s.price.gold);
+    }
+  });
+
+  it('SFS-12: experience past level 60 in one gain goes to Paragon', { timeout: 30_000 }, () => {
+    const c = readyHero('warrior', 59, 'uncommon');
+    const w = newWorld('briarhollow', c, 3);
+    c.xp = xpToNext(59) - 100;
+    w.events = [];
+    w.giveXp(100 + paragonXp(0) + 50);
+    const events = w.events.map((e) => e.t);
+    expect(c.level).toBe(60);
+    expect(c.para.l).toBe(1);
+    expect(c.para.x).toBe(50);
+    expect(events).toContain('paragon');
   });
 });

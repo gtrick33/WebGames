@@ -334,6 +334,8 @@ export interface Item {
   n?: string;
   /** Not looked at yet. */
   fresh?: boolean;
+  /** Gold paid for it at a vendor: it sells back for a share of that, never for more (progress/items.ts salvageValue). */
+  paid?: number;
 }
 
 /* ----------------------------------------------------------------- talents */

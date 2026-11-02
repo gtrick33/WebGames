@@ -77,7 +77,7 @@ export function cantBuy(c: Character, shop: ShopId, s: ShopItem): string | null 
 export function buyItem(c: Character, shop: ShopId, uid: string): Item | null {
   const s = stockFor(c, shop).find((x) => x.item.uid === uid);
   if (!s || cantBuy(c, shop, s)) return null;
-  const item: Item = { ...s.item, fresh: true };
+  const item: Item = { ...s.item, fresh: true, paid: s.price.gold };
   if (!addItem(c, item)) return null;
   c.gold -= s.price.gold;
   c.marks -= s.price.marks;
