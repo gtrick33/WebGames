@@ -588,6 +588,23 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
           <rect x={X0} y={Y_TOP} width={BAR_X - X0} height={Y_BOT - Y_TOP} rx="8" className="tb-felt" />
           <rect x={BAR_X + BAR_W} y={Y_TOP} width={X1 - BAR_X - BAR_W} height={Y_BOT - Y_TOP} rx="8" className="tb-felt" />
           <rect x={BAR_X} y={Y_TOP - 12} width={BAR_W} height={Y_BOT - Y_TOP + 24} rx="10" className={`tb-barstrip${selected === BAR[game.turn] ? ' is-sel' : ''}`} onClick={() => sources.includes(BAR[game.turn]) && tapSource(BAR[game.turn])} />
+          <rect x={TRAY_X} y={Y_TOP} width={TRAY_W} height={Y_BOT - Y_TOP} rx="12" className={`tb-tray${offTarget ? ' is-target' : ''}`} />
+          <text x={TRAY_X + TRAY_W / 2} y={Y_BOT / 2 + 20} className="tb-tray-label">
+            {w.off}
+          </text>
+          {([them, me] as Side[]).map((s) =>
+            p.off[s] ? (
+              <text key={s} x={TRAY_X + TRAY_W / 2} y={s === me ? Y_BOT / 2 + 110 : Y_BOT / 2 - 90} className={`tb-off-n side-${s === me ? 'me' : 'them'}`}>
+                {p.off[s]}
+              </text>
+            ) : null,
+          )}
+          {tris}
+          {checkers}
+          {landings}
+          {/* the bear-off ring goes over the checkers already off, like the other landings */}
+          {offRoute && <Landing x={TRAY_X + TRAY_W / 2} y={game.turn === me ? Y_BOT - 60 : Y_TOP + 60} n={count(offRoute)} />}
+          {/* the tray as a button: over the checkers already off, and after the points in the Tab order */}
           <g
             className={`tb-offbtn${offTarget ? ' is-target' : ''}`}
             role="button"
@@ -606,23 +623,8 @@ export function Board({ w, game, me, names, bots, canAct, onRoll, onStep, onDone
               }
             }}
           >
-            <rect x={TRAY_X} y={Y_TOP} width={TRAY_W} height={Y_BOT - Y_TOP} rx="12" className={`tb-tray${offTarget ? ' is-target' : ''}`} />
+            <rect x={TRAY_X} y={Y_TOP} width={TRAY_W} height={Y_BOT - Y_TOP} rx="12" />
           </g>
-          <text x={TRAY_X + TRAY_W / 2} y={Y_BOT / 2 + 20} className="tb-tray-label">
-            {w.off}
-          </text>
-          {([them, me] as Side[]).map((s) =>
-            p.off[s] ? (
-              <text key={s} x={TRAY_X + TRAY_W / 2} y={s === me ? Y_BOT / 2 + 110 : Y_BOT / 2 - 90} className={`tb-off-n side-${s === me ? 'me' : 'them'}`}>
-                {p.off[s]}
-              </text>
-            ) : null,
-          )}
-          {tris}
-          {checkers}
-          {landings}
-          {/* the bear-off ring goes over the checkers already off, like the other landings */}
-          {offRoute && <Landing x={TRAY_X + TRAY_W / 2} y={game.turn === me ? Y_BOT - 60 : Y_TOP + 60} n={count(offRoute)} />}
           {roll && (
             <g key={game.rolls} className={rolling ? 'tb-dice is-rolling' : 'tb-dice is-landed'}>
               <Die n={rolling ? faces[0] : roll[0]} x={diceX - 36} y={380} used={!rolling && dieUsed(0)} />
