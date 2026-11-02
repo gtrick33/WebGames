@@ -3560,6 +3560,13 @@
 /* nitrous: a glass pill next to the tach, waiting, ready (hold the button), filling, burning, spent */
 .lc-nos {
   order: 2;
+  /* a button of its own (the HUD around it lets taps through to the strip) */
+  pointer-events: auto;
+  min-width: 44px;
+  min-height: 44px;
+  font: inherit;
+  cursor: pointer;
+  touch-action: none;
   display: grid;
   gap: 4px;
   justify-items: center;

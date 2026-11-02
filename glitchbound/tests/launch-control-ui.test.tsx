@@ -401,3 +401,30 @@ describe('Launch Control: friends’ challenges keep one attempt', () => {
     expect(host.report.mock.calls.filter((c) => c[0].type === 'end').map((c) => c[0].score)).toEqual([7123]);
   });
 });
+
+describe('Launch Control: the nitrous has its own control', () => {
+  it('N fires the nitrous in a car that carries it, without a shift tap', () => {
+    localStorage.setItem(KEY, JSON.stringify({ ...emptySave(), car: 'rail', cars: { bumble: newCar(), rail: newCar() } }));
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    startLadderRace();
+    expect(document.querySelector('button.lc-nos')).toBeTruthy();
+    let fired = false;
+    let lastTap = -999;
+    for (let f = 0; f < 4000 && !fired; f++) {
+      act(() => tick());
+      if (!document.querySelector('.lc-race')) break;
+      if (document.querySelector('.lc-race[data-hot="1"], .lc-race[data-state="go"]') && f - lastTap > 6) {
+        act(() => {
+          fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+          fireEvent.keyUp(window, { code: 'Space', key: ' ' });
+        });
+        lastTap = f;
+      }
+      act(() => {
+        fireEvent.keyDown(window, { code: 'KeyN', key: 'n' });
+      });
+      if (document.querySelector('.lc-pop')?.textContent === 'NITROUS!' || document.querySelector('.lc-nos')?.getAttribute('data-state') === 'burn') fired = true;
+    }
+    expect(fired).toBe(true);
+  });
+});

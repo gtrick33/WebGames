@@ -92,6 +92,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
   const [pop, setPop] = useState<{ text: string; tone: string; key: number } | null>(null);
   const [banner, setBanner] = useState<{ text: string; sub?: string; tone: string; key: number } | null>(null);
   const [nudge, setNudge] = useState(nudgeAtStart);
+  const [touchHint] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
   const face = useRef<HTMLDivElement>(null);
   const needle = useRef<HTMLDivElement>(null);
   const speedEl = useRef<HTMLSpanElement>(null);
@@ -102,7 +103,7 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
   const dots = useRef<(HTMLSpanElement | null)[]>([]);
   const shiftBtn = useRef<HTMLButtonElement>(null);
   const lightsEl = useRef<HTMLDivElement>(null);
-  const nosEl = useRef<HTMLDivElement>(null);
+  const nosEl = useRef<HTMLButtonElement>(null);
   const nosFill = useRef<HTMLElement>(null);
   const linesEl = useRef<HTMLDivElement>(null);
   const skipRef = useRef<() => void>(() => undefined);
@@ -590,6 +591,11 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
         setPausedRef.current(!pausedRef.current);
         return;
       }
+      if (e.code === 'KeyN' && !e.repeat && hasNos) {
+        e.preventDefault();
+        if (!pausedRef.current) race.nitro(0);
+        return;
+      }
       if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'Enter' || e.code === 'KeyW') && !e.repeat) {
         e.preventDefault();
         tap();
@@ -605,6 +611,11 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
     const pdown = (e: PointerEvent): void => {
       // buttons on the race screen are not taps on the strip (the menu one pauses the race itself)
       if ((e.target as HTMLElement).closest('.lc-pause, .lc-overlay, .game-menu-btn')) return;
+      if ((e.target as HTMLElement).closest('.lc-nos')) {
+        e.preventDefault();
+        if (hasNos && !pausedRef.current) race.nitro(0);
+        return;
+      }
       e.preventDefault();
       tap();
       holdAt = rt;
@@ -729,13 +740,14 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
         )}
         <div className="lc-hud-bottom">
           {plan.specs[0]!.trait === 'nitro' && !plan.live && (
-            <div ref={nosEl} className="lc-nos" data-state="wait">
+            // its own control: a tap here (or N) fires the nitrous without a shift; holding the shift still works
+            <button ref={nosEl} type="button" className="lc-nos" data-state="wait" tabIndex={-1}>
               <b className="mono">NOS</b>
               <span className="lc-nos-bar">
                 <i ref={nosFill} />
               </span>
-              <small className="lc-nos-hint">hold</small>
-            </div>
+              <small className="lc-nos-hint">{touchHint ? 'tap' : 'N key'}</small>
+            </button>
           )}
           <div className="lc-tach">
             <div ref={face} className="lc-tach-ring" style={{ background: tachRing(null) }} />

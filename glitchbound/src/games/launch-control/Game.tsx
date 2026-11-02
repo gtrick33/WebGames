@@ -1529,7 +1529,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 <b>Shift.</b> Every gear has its own green zone on the tach ring, and it moves after each shift. Tap (or press Space) while the needle is in the green for a <i>perfect</i> shift and a kick of speed. Yellow is fine, red is slow, and early bogs the car.
               </li>
               <li>
-                <b>Every car is different.</b> Each has one trait. Turbos hit late, big torque pulls hard and spins easily, rev monsters kick harder on a perfect shift, featherweights snap through one, police cars forgive a slow start and all-wheel drive never spins. An electric has no gears: tap <i>Boost</i> each time its charge meter peaks. Cars with nitrous get one shot a run: from second gear on, hold the button down to fire it.
+                <b>Every car is different.</b> Each has one trait. Turbos hit late, big torque pulls hard and spins easily, rev monsters kick harder on a perfect shift, featherweights snap through one, police cars forgive a slow start and all-wheel drive never spins. An electric has no gears: tap <i>Boost</i> each time its charge meter peaks. Cars with nitrous get one shot a run: from second gear on, tap NOS (or press N) to fire it; holding the shift button down fires it too.
               </li>
               <li>
                 <b>Pink slips.</b> Every division final is raced for the boss’s car. Beat a boss the first time and the car is yours, tuning and all. The dealer gives you one free test drive a day in any car you don’t own yet.
