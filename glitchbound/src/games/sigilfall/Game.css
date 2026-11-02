@@ -3703,11 +3703,14 @@
 @container (max-width: 760px) or (max-height: 430px) {
   /* the shop fills the frame, so its item sheet (anchored to the body) is as tall as the panel, not the ware grid */
   .rb-shop {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
   }
+  /* (the item sheet covers the whole shop, the receipt and the tabs too: as tall as the panel allows) */
   .rb-shop-body {
+    position: static;
     grid-template-columns: 1fr;
     flex: 1;
     min-height: 0;

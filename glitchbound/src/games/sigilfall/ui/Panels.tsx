@@ -1215,26 +1215,13 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
     hits.current = [];
     for (const o of objectiveTargets(w)) {
       const [cx, cy] = px(o.x, o.y);
-      hits.current.push({ x: cx, y: cy, quest: o.quest });
+      hits.current.push({ x: cx, y: o.quest === goal?.quest ? cy : cy - (6 * s) / dpr, quest: o.quest });
       if (o.quest === goal?.quest) continue;
       const near = stacks.find((st) => Math.hypot(st.x - o.x, st.y - o.y) * (k / dpr / TILE) < 10);
       if (near) {
         near.n++;
         near.main ||= o.main;
       } else stacks.push({ x: o.x, y: o.y, main: o.main, n: 1 });
-    }
-    const small = Math.max(1, s - 1);
-    for (const st of stacks) {
-      drawMapIcon(g, st.main ? 'quest' : 'questSide', ox + (st.x / TILE) * k, oy + (st.y / TILE) * k, small);
-      if (st.n > 1) {
-        const [cx, cy] = [ox + (st.x / TILE) * k, oy + (st.y / TILE) * k];
-        g.font = `700 ${Math.round(10 * dpr)}px sans-serif`;
-        g.lineWidth = 3 * dpr;
-        g.strokeStyle = '#120c08';
-        g.fillStyle = '#ffffff';
-        g.strokeText(String(st.n), cx + 5 * s, cy - 3 * s);
-        g.fillText(String(st.n), cx + 5 * s, cy - 3 * s);
-      }
     }
     if (goal) {
       // ringed, so it is the first thing seen
@@ -1246,6 +1233,20 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
       icon(goal.x, goal.y, 'quest');
     }
     icon(w.player.x, w.player.y, 'you');
+    const small = Math.max(1, s - 1);
+    for (const st of stacks) {
+      // raised over its place (a waystone, a person, a way out stays readable under it)
+      drawMapIcon(g, st.main ? 'quest' : 'questSide', ox + (st.x / TILE) * k, oy + (st.y / TILE) * k - 6 * s, small);
+      if (st.n > 1) {
+        const [cx, cy] = [ox + (st.x / TILE) * k, oy + (st.y / TILE) * k - 6 * s];
+        g.font = `700 ${Math.round(10 * dpr)}px sans-serif`;
+        g.lineWidth = 3 * dpr;
+        g.strokeStyle = '#120c08';
+        g.fillStyle = '#ffffff';
+        g.strokeText(String(st.n), cx + 5 * s, cy - 3 * s);
+        g.fillText(String(st.n), cx + 5 * s, cy - 3 * s);
+      }
+    }
   }, [w, m, r.theme, fog, dark, live, v, pz.vw, pz.vh, pz.scale, engine.version]);
   const key = (name: MapIcon, label: string) => (
     <span className="rb-map-key">
