@@ -134,7 +134,7 @@ export const CRUISE_SHIP: Art = {
     { d: rect(20, 22, 250, 12) + rect(30, 12, 220, 10) + rect(45, 4, 170, 8), fill: '#f2f4f7' },
     { d: rect(22, 26, 246, 2) + rect(32, 16, 216, 2) + rect(47, 7, 166, 2), fill: '#3f6ea8' },
     { d: 'M200 0L222 0L218 12L204 12Z', fill: '#d8a33a' },
-    { d: 'M4 34L300 30L284 60L18 60Z', fill: '#1e3a5f' },
+    { d: 'M4 34L300 30L284 60L18 60Z', fill: '#4a505c' },
   ],
 };
 
@@ -147,5 +147,30 @@ export const SHARK: Art = {
     { d: 'M14 10.6C22 12.8 31 12.6 38 11C40 10.6 43 9.7 44.5 9.1C38 10 30 10.4 22 10.2Z', fill: '#dfe5ea' },
     { d: 'M24 11L20 16L28 11.6Z', fill: '#6b7887' },
     { d: circle(40, 7.6, 0.6), fill: '#111' },
+  ],
+};
+
+/** A Saturn V on the pad: 110 units tall, 10 wide (18 across the fins). */
+export const SATURN_V: Art = {
+  w: 18,
+  h: 110,
+  parts: [
+    { d: 'M9 0V7', stroke: '#c9ced6', width: 0.8 },
+    { d: 'M5.5 15L9 6L12.5 15Z' + rect(5.5, 15, 7, 14) + 'M4 35L5.5 29L12.5 29L14 35Z' + rect(4, 35, 10, 69), fill: '#f2f2f2' },
+    { d: rect(5.5, 22, 7, 2) + rect(4, 48, 10, 2.5) + rect(4, 70, 10, 4) + rect(4, 84, 3.4, 8) + rect(10.6, 84, 3.4, 8), fill: '#24262c' },
+    { d: 'M4 92L0 110L4 105ZM14 92L18 110L14 105Z' + rect(5, 104, 8, 6), fill: '#3a3d45' },
+  ],
+};
+
+/** The Statue of Liberty on its pedestal: 93 units from the ground to the torch. */
+export const STATUE_OF_LIBERTY: Art = {
+  w: 30,
+  h: 93,
+  parts: [
+    { d: rect(0, 82, 30, 11) + 'M4 82L6 51L24 51L26 82Z' + rect(4.5, 48, 21, 3, 0.5), fill: '#c9b99a' },
+    { d: rect(7, 60, 16, 1.4) + rect(11, 66, 8, 10), fill: '#a8987a' },
+    { d: 'M10 48L12 21C12 17 13 15 15 15C17 15 18 17 18 21L20 48Z' + circle(15, 12, 2.6) + rect(8.6, 23, 3, 7, 0.5) + 'M19.6 3L22.6 3L21.9 5.5L20.3 5.5Z', fill: '#6fb3a0' },
+    { d: 'M17.2 17L21 5.5M12.6 10L10.6 7.4M15 9.4L15 6.4M17.4 10L19.4 7.4', stroke: '#6fb3a0', width: 1.8 },
+    { d: 'M20.1 3C20.1 1.4 21.1 0 21.1 0C21.1 0 22.1 1.4 22.1 3Z', fill: '#ffb020' },
   ],
 };

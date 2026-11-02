@@ -124,7 +124,7 @@ describe('to-scale real sizes (TS-01)', () => {
     'a moai statue': '4 m tall, art h',
     'a car': '4.5 m long, art w',
     'a saltwater crocodile': '4.5 m long, art w (original art)',
-    'a great white shark': '4.6 m long, art w',
+    'a great white shark': '4.6 m long, art w (original art)',
     'a canoe': '4.8 m long, art w',
     'a Formula 1 car': '5.6 m long, art w',
     'an African elephant': '6.5 m long, art w',
@@ -137,8 +137,8 @@ describe('to-scale real sizes (TS-01)', () => {
     'an oak tree': '20 m tall, art h',
     'a steam locomotive': '20 m long, art w (original art)',
     'a jumbo jet': '70 m long, art w (original art)',
-    'the Statue of Liberty': '93 m tall, art h',
-    'a Saturn V rocket': '110 m tall, art h (leveled)',
+    'the Statue of Liberty': '93 m tall, art h (original art)',
+    'a Saturn V rocket': '110 m tall, art h (original art)',
     'the London Eye': '135 m tall, art h',
     'a cruise ship': '300 m long, art w (original art)',
     'Tokyo Tower': '333 m tall, art h',
@@ -165,6 +165,7 @@ describe('to-scale real sizes (TS-01)', () => {
     const want: Record<string, [number, number]> = {
       'a die': [1, 1], 'a tennis ball': [1, 1], 'a party balloon': [1.15, 1.35], 'a house cat': [2.2, 2.8], 'a Labrador': [1.4, 1.9],
       'a saltwater crocodile': [7, 10], 'a sofa': [2, 2.6], 'a steam locomotive': [4, 5], 'a jumbo jet': [3.3, 4], 'a cruise ship': [4.5, 5.5],
+      'a great white shark': [2.6, 3.2], 'a Saturn V rocket': [5.5, 7], 'the Statue of Liberty': [2.8, 3.4],
     };
     const drawn = THINGS.filter((t) => t.art);
     expect(drawn.map((t) => t.name).sort()).toEqual(Object.keys(want).sort());

@@ -6,7 +6,7 @@
  * current phone and computer can draw. Append only: a thing's id is its position, and the sizes pick
  * the daily pairs, so changing one changes dailies.
  */
-import { BALLOON, CAT, CROCODILE, CRUISE_SHIP, DIE, DOG, JET, LOCOMOTIVE, SOFA, TENNIS_BALL, type Art } from './art';
+import { BALLOON, CAT, CROCODILE, CRUISE_SHIP, DIE, DOG, JET, LOCOMOTIVE, SATURN_V, SHARK, SOFA, STATUE_OF_LIBERTY, TENNIS_BALL, type Art } from './art';
 
 export type Dim = 'long' | 'tall' | 'wide' | 'across';
 /** "How long is…", "How tall is…", "How big across is…". */
@@ -65,7 +65,7 @@ export const THINGS: Thing[] = [
   { emoji: '🗿', name: 'a moai statue', size: 4.0, dim: 'tall', axis: 'h', fact: 'The average moai on Easter Island is about 4 m tall.' },
   { emoji: '🚗', name: 'a car', size: 4.5, dim: 'long', axis: 'w', fact: 'A family car is about 4.5 m long.' },
   { emoji: '🐊', name: 'a saltwater crocodile', size: 4.5, dim: 'long', axis: 'w', art: CROCODILE, fact: 'A grown male saltwater crocodile is about 4.5 m long, and some reach 6 m.' },
-  { emoji: '🦈', name: 'a great white shark', size: 4.6, dim: 'long', axis: 'w', fact: 'A great white shark is about 4.6 m long.' },
+  { emoji: '🦈', name: 'a great white shark', size: 4.6, dim: 'long', axis: 'w', art: SHARK, fact: 'A great white shark is about 4.6 m long.' },
   { emoji: '🛶', name: 'a canoe', size: 4.8, dim: 'long', axis: 'w', fact: 'A two-person canoe is about 4.8 m long.' },
   { emoji: '🏎️', name: 'a Formula 1 car', size: 5.6, dim: 'long', axis: 'w', fact: 'A Formula 1 car is about 5.6 m long.' },
   { emoji: '🐘', name: 'an African elephant', size: 6.5, dim: 'long', axis: 'w', fact: 'An African elephant is about 6.5 m from trunk tip to tail.' },
@@ -78,8 +78,8 @@ export const THINGS: Thing[] = [
   { emoji: '🌳', name: 'an oak tree', size: 20, dim: 'tall', axis: 'h', fact: 'A grown oak tree is about 20 m tall.' },
   { emoji: '🚂', name: 'a steam locomotive', size: 20, dim: 'long', axis: 'w', art: LOCOMOTIVE, fact: 'A big steam locomotive with its tender is about 20 m long.' },
   { emoji: '✈️', name: 'a jumbo jet', size: 70, dim: 'long', axis: 'w', art: JET, fact: 'A Boeing 747 is about 70 m long.' },
-  { emoji: '🗽', name: 'the Statue of Liberty', size: 93, dim: 'tall', axis: 'h', fact: 'From the ground to the torch, the Statue of Liberty is 93 m tall, pedestal included.' },
-  { emoji: '🚀', name: 'a Saturn V rocket', size: 110, dim: 'tall', axis: 'h', level: true, fact: 'The Saturn V that flew to the Moon was 110 m tall.' },
+  { emoji: '🗽', name: 'the Statue of Liberty', size: 93, dim: 'tall', axis: 'h', art: STATUE_OF_LIBERTY, fact: 'From the ground to the torch, the Statue of Liberty is 93 m tall, pedestal included.' },
+  { emoji: '🚀', name: 'a Saturn V rocket', size: 110, dim: 'tall', axis: 'h', art: SATURN_V, fact: 'The Saturn V that flew to the Moon was 110 m tall.' },
   { emoji: '🎡', name: 'the London Eye', size: 135, dim: 'tall', axis: 'h', fact: 'The London Eye is 135 m tall.' },
   { emoji: '🚢', name: 'a cruise ship', size: 300, dim: 'long', axis: 'w', art: CRUISE_SHIP, fact: 'A big cruise ship is about 300 m long.' },
   { emoji: '🗼', name: 'Tokyo Tower', size: 333, dim: 'tall', axis: 'h', fact: 'Tokyo Tower is 333 m tall, 3 m more than the Eiffel Tower.' },

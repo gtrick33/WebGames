@@ -77,18 +77,20 @@ function draw(t: Thing, ctx: CanvasRenderingContext2D, size: number): void {
   ctx.scale(k, k);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  for (const p of art.parts) {
-    const path = new Path2D(p.d);
-    if (p.fill) {
-      ctx.fillStyle = p.fill;
-      ctx.fill(path);
+  for (const p of art.parts)
+    // Each shape on its own, so overlapping shapes drawn in opposite directions never cut holes.
+    for (const d of p.d.split(/(?=M)/)) {
+      const path = new Path2D(d);
+      if (p.fill) {
+        ctx.fillStyle = p.fill;
+        ctx.fill(path);
+      }
+      if (p.stroke) {
+        ctx.strokeStyle = p.stroke;
+        ctx.lineWidth = p.width ?? 1;
+        ctx.stroke(path);
+      }
     }
-    if (p.stroke) {
-      ctx.strokeStyle = p.stroke;
-      ctx.lineWidth = p.width ?? 1;
-      ctx.stroke(path);
-    }
-  }
   ctx.restore();
 }
 
