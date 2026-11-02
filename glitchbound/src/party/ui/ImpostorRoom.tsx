@@ -115,6 +115,12 @@ function Room({ code, name, note, onLeave }: { code: string; name: string; note:
 
       {view.phase === 'lobby' && (
         <>
+          {view.calledOff && (
+            <section className="pt-panel pt-center" role="status">
+              <h2>{t('Round called off')}</h2>
+              <p className="pt-muted">{view.calledOff === 'impostor' ? t('The impostor left, so nobody could catch them. No points this round.') : t('Not enough players were left to vote. No points this round.')}</p>
+            </section>
+          )}
           <RoomListingBar listing={listing} host={view.host} players={view.players.filter((p) => p.online).length} min={MIN_PLAYERS} skew={skew} onListed={setListed} />
           <section className="pt-panel">
             <div className="pt-panel-head">
