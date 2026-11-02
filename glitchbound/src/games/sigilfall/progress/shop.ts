@@ -2,7 +2,7 @@ import { rng } from '../core/math';
 import { MAX_LEVEL } from '../data/classes';
 import { ITEMS } from '../data/items';
 import type { Item, Rarity } from '../data/types';
-import { QM_LEVEL, QM_PRICE, SHOPS, type ShopId } from '../data/vendors';
+import { QM_ABOVE, QM_LEVEL, QM_PRICE, SHOPS, type ShopId } from '../data/vendors';
 import { addItem, bagFull, potionCap, type Character } from './character';
 import { makeItem, rollGear, salvageValue, usableBy } from './items';
 
@@ -39,6 +39,9 @@ function seedOf(c: Character, shop: ShopId): number {
 
 const GEAR_RARITIES: Rarity[] = ['common', 'common', 'uncommon', 'uncommon', 'rare', 'rare'];
 
+/** The item level of the quartermaster's gear for a hero: their level + QM_ABOVE, at most the top. */
+export const qmLevel = (c: Character): number => Math.min(MAX_LEVEL, c.level + QM_ABOVE);
+
 /** Everything a vendor has for this hero right now (sold pieces left out). */
 export function stockFor(c: Character, shop: ShopId): ShopItem[] {
   const def = SHOPS[shop];
@@ -47,7 +50,8 @@ export function stockFor(c: Character, shop: ShopId): ShopItem[] {
   if (shop === 'quartermaster') {
     for (const d of ITEMS) {
       if (d.special || (d.rarity !== 'epic' && d.rarity !== 'legendary')) continue;
-      const item = makeItem(d.id, MAX_LEVEL, r)!;
+      // made for a little above the hero's level, not the top: a strong piece, not a jump over three acts
+      const item = makeItem(d.id, qmLevel(c), r)!;
       if (!usableBy(item, c.cls)) continue;
       out.push({ item, price: { gold: QM_PRICE[d.rarity].gold, marks: QM_PRICE[d.rarity].marks } });
     }

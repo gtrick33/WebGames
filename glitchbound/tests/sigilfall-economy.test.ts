@@ -128,7 +128,7 @@ describe('sigilfall potions and shops', () => {
     expect(stockFor(h, 'weapons').map((s) => s.item.uid)).not.toEqual(a.map((s) => s.item.uid));
   });
 
-  it('the quartermaster sells top-level epics and legendaries for marks, from its level', () => {
+  it('the quartermaster sells epics and legendaries for marks, from its level', () => {
     const h = readyHero('warrior', 10);
     const stock = stockFor(h, 'quartermaster');
     expect(stock.length).toBeGreaterThan(0);

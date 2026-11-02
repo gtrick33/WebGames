@@ -4,6 +4,7 @@ import { BAG_OVERFLOW, bagSize, HELD_MAX, levelGated, newCharacter, startQuests,
 import { REGION_IDS } from '../src/games/sigilfall/data/regions';
 import { rollGear, salvageValue } from '../src/games/sigilfall/progress/items';
 import { buyItem, sellPrice, stockFor } from '../src/games/sigilfall/progress/shop';
+import { QM_ABOVE } from '../src/games/sigilfall/data/vendors';
 import { validateItem } from '../src/games/sigilfall/progress/save';
 import { xpToNext } from '../src/games/sigilfall/data/classes';
 import { paragonXp } from '../src/games/sigilfall/progress/paragon';
@@ -197,5 +198,18 @@ describe('Sigilfall systems fixes', () => {
     startQuests(h);
     expect(h.quests['muster-the-field']?.state).toBe('active');
     expect(levelGated(h).some((q) => q.id === 'muster-the-field')).toBe(false);
+  });
+
+  it('Design: quartermaster gear is made for a little above the hero, not the top level', () => {
+    for (const [level, il] of [
+      [15, 15 + QM_ABOVE],
+      [17, 17 + QM_ABOVE],
+      [58, 60],
+      [60, 60],
+    ] as const) {
+      const stock = stockFor(readyHero('warrior', level, 'uncommon'), 'quartermaster');
+      expect(stock.length).toBeGreaterThan(0);
+      for (const s of stock) expect(s.item.il, `level ${level}`).toBe(il);
+    }
   });
 });

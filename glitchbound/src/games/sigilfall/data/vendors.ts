@@ -56,5 +56,7 @@ export const BOSS_MARKS: Record<string, number> = {
 /** The quartermaster's prices, by rarity. */
 export const QM_PRICE = { epic: { marks: 6, gold: 400 }, legendary: { marks: 16, gold: 1200 } } as const;
 
-/** The level a hero needs to buy from the quartermaster (the gear is made for the top level). */
+/** The level a hero needs to buy from the quartermaster. */
 export const QM_LEVEL = 15;
+/** How far above the hero's level the quartermaster's gear is made (progress/shop.ts qmLevel). */
+export const QM_ABOVE = 5;
