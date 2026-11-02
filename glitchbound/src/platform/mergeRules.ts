@@ -139,7 +139,10 @@ const mergeNeonRush: MergeRule = (local, remote, ctx) => {
     out.achievements = a;
   }
   if (typeof n.equippedSkin === 'string') out.equippedSkin = n.equippedSkin;
+  // the racer name chosen last (an unnamed copy never clears one)
+  const o = n === local ? remote : local;
   if (typeof n.playerName === 'string' && n.playerName) out.playerName = n.playerName;
+  else if (typeof o.playerName === 'string' && o.playerName) out.playerName = o.playerName;
   // one leaderboard id per account: the one the account already has
   if (typeof remote.playerId === 'string' && remote.playerId) out.playerId = remote.playerId;
   if (num(local.createdAt) > 0 && num(remote.createdAt) > 0) out.createdAt = Math.min(num(local.createdAt), num(remote.createdAt));

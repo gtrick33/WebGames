@@ -48,7 +48,6 @@ interface SyncState {
   t?: Record<string, number>;
 }
 interface Stash {
-  user: string;
   state: SyncState;
   saves: Record<string, string>;
 }
@@ -438,38 +437,52 @@ function removeRaw(key: string): void {
  * Call with `user` set to `id`, before anything reads the state.
  */
 function setAside(id: string): void {
+  const stashes = readStashes();
   const prev = parseState(read(STATE_KEY));
   if (prev && prev.user !== id) {
-    const saves: Record<string, string> = {};
-    for (const k of syncedKeys()) {
-      saves[k] = read(k)!;
-      removeRaw(k);
-    }
-    try {
-      store?.setItem(STASH_KEY, JSON.stringify({ user: prev.user, state: prev, saves } satisfies Stash));
-    } catch {
-      /* full: the saves stay here and are merged as this browser's (the old behavior) */
-      for (const [k, v] of Object.entries(saves)) writeRaw(k, v);
-      return;
+    const saves: Record<string, string> = { ...stashes[prev.user]?.saves };
+    for (const k of syncedKeys()) saves[k] = read(k)!;
+    if (Object.keys(saves).length) {
+      // full: the saves stay here and are merged as this browser's (the old behavior)
+      if (!writeStashes({ ...stashes, [prev.user]: { state: prev, saves } })) return;
+      for (const k of syncedKeys()) removeRaw(k);
+      stashes[prev.user] = { state: prev, saves };
+      saveStore.reload();
     }
     removeRaw(STATE_KEY);
-    saveStore.reload();
   }
-  let stash: Stash | null = null;
-  try {
-    stash = JSON.parse(read(STASH_KEY) ?? 'null') as Stash | null;
-  } catch {
-    /* damaged */
-  }
-  if (!stash || stash.user !== id || !isObj(stash.saves)) return;
+  const mine = stashes[id];
+  if (!mine) return;
   // this member's again: what was left here goes back, with what it grew from, so it merges as a change
-  for (const [k, v] of Object.entries(stash.saves)) {
+  for (const [k, v] of Object.entries(mine.saves)) {
     if (!isSyncedKey(k) || typeof v !== 'string') continue;
     const here = read(k);
     writeRaw(k, here === null ? v : mergeSaveText(k, v, here));
   }
-  if (validState(stash.state)?.user === id && !parseState(read(STATE_KEY))) writeState(stash.state);
-  removeRaw(STASH_KEY);
+  if (validState(mine.state)?.user === id && !parseState(read(STATE_KEY))) writeState(mine.state);
+  delete stashes[id];
+  writeStashes(stashes);
+}
+
+/** Saves members left behind on this browser, by member. */
+function readStashes(): Record<string, Stash> {
+  try {
+    const v: unknown = JSON.parse(read(STASH_KEY) ?? 'null');
+    if (!isObj(v)) return {};
+    return Object.fromEntries(Object.entries(v).filter((e): e is [string, Stash] => isObj(e[1]) && isObj(e[1].saves)));
+  } catch {
+    return {}; // damaged
+  }
+}
+
+function writeStashes(stashes: Record<string, Stash>): boolean {
+  try {
+    if (Object.keys(stashes).length) store?.setItem(STASH_KEY, JSON.stringify(stashes));
+    else removeRaw(STASH_KEY);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -500,14 +513,10 @@ export async function signOutCloudSave(ms = 4000): Promise<void> {
     removeRaw(k);
   }
   removeRaw(STATE_KEY);
-  if (Object.keys(left).length) {
-    try {
-      store.setItem(STASH_KEY, JSON.stringify({ user: id, state, saves: left } satisfies Stash));
-    } catch {
-      // full: better kept here (and merged into the next account) than lost
-      for (const [k, v] of Object.entries(left)) writeRaw(k, v);
-      writeState(state);
-    }
+  if (Object.keys(left).length && !writeStashes({ ...readStashes(), [id]: { state, saves: left } })) {
+    // full: better kept here (and merged into the next account) than lost
+    for (const [k, v] of Object.entries(left)) writeRaw(k, v);
+    writeState(state);
   }
   saveStore.reload();
 }
