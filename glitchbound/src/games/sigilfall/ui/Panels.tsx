@@ -236,7 +236,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
 }
 
 /** A rough "is this better" for the upgrade arrow: more stats or new behaviour. */
-function isUpgrade(cur: Item | undefined, it: Item): boolean {
+export function isUpgrade(cur: Item | undefined, it: Item): boolean {
   if (!cur) return true;
   return itemScore(it) > itemScore(cur) + 5;
 }

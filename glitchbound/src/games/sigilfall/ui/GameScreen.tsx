@@ -164,8 +164,12 @@ function Hud({ engine }: { engine: SigilEngine }) {
     <>
       <div className="rb-hud-hero">
         <div className="rb-hud-face">
-          <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={34} />
-          <span className="rb-lvl">{h.level}</span>
+          <span className="rb-hud-pic">
+            <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={34} />
+          </span>
+          <span className="rb-lvl" aria-label={`Level ${h.level}`}>
+            {h.level}
+          </span>
           {h.para.l > 0 && (
             <span className={`rb-para${paragonFree(h.para) > 0 ? ' is-free' : ''}`} title={`Paragon ${h.para.l}`}>
               P{h.para.l}
@@ -196,6 +200,11 @@ function Hud({ engine }: { engine: SigilEngine }) {
             <i ref={xp} />
           </span>
           <span className="rb-region">
+            <b className="rb-region-lv">
+              Lv {h.level}
+              {h.para.l > 0 ? ` P${h.para.l}` : ''}
+            </b>
+            {' · '}
             {region.name}
             {w.keyRun ? <b className="rb-mplus"> · Riftstone +{w.keyRun.key}</b> : w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
           </span>
@@ -365,8 +374,18 @@ function Toasts({ engine }: { engine: SigilEngine }) {
             <div key={t.id} className={`rb-toast is-loot is-${item.r}`} style={{ ['--rc' as string]: rarityColor(item.r) }}>
               <ItemIcon item={item} size={38} />
               <div className="rb-toast-text">
-                <strong>{itemName(item)}</strong>
-                {lines[0] ? <span className="rb-gold">{lines[0]}</span> : <span className="rb-dim">{item.r[0]!.toUpperCase() + item.r.slice(1)} · level {item.il}</span>}
+                {t.text !== itemName(item) ? (
+                  // news about an item (not a drop): its own words first, the item under them
+                  <>
+                    <strong>{t.text}</strong>
+                    <span style={{ color: 'var(--rc)' }}>{itemName(item)}</span>
+                  </>
+                ) : (
+                  <>
+                    <strong>{itemName(item)}</strong>
+                    {lines[0] ? <span className="rb-gold">{lines[0]}</span> : <span className="rb-dim">{item.r[0]!.toUpperCase() + item.r.slice(1)} · level {item.il}</span>}
+                  </>
+                )}
               </div>
               {owned && canWear && (
                 <button
