@@ -74,7 +74,10 @@ export function DialMode({ session, update, onExit }: { session: PartySession; u
   };
   const start = (): void => set({ n: 0, scores: {}, team: [0, 0], ...deal(game.used) });
   const lock = (): void => {
-    if (round) set({ round, stage: teams ? 'steal' : 'reveal' });
+    if (!round) return;
+    // Without teams nobody can steal: score the round right away.
+    if (teams) set({ round, stage: 'steal' });
+    else reveal(null);
   };
   const reveal = (call: 'left' | 'right' | null): void => {
     if (!round) return;
