@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { listRooms, quickMatch, type ListedRoom, type RoomGame, type RoomListing } from '../platform/rooms';
+import { listRooms, quickMatch, roomInfo, type ListedRoom, type RoomGame, type RoomListing } from '../platform/rooms';
 import { t } from '../i18n';
 import './OnlinePlay.css';
 
@@ -86,7 +86,15 @@ export function OnlinePlay({
     setSearch({ stage: 'looking' });
     const started = Date.now();
     try {
-      const found = await quickMatch(game);
+      // the room it picked may have filled up meanwhile: ask again, skipping it (a few times at most)
+      const skip: string[] = [];
+      let found = await quickMatch(game);
+      while (!found.created && skip.length < 3) {
+        const info = await roomInfo(found.code);
+        if (info && !info.full) break;
+        skip.push(found.code);
+        found = await quickMatch(game, skip);
+      }
       await new Promise((r) => setTimeout(r, Math.max(0, SEARCH_MIN_MS - (Date.now() - started))));
       if (cancelled.current) return;
       setSearch({ stage: found.created ? 'new' : 'found', code: found.code });

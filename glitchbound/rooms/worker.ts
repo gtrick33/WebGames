@@ -16,6 +16,8 @@
  */
 import { engineFor, ENGINES, isGameId, QUICK, type GameId, type RoomState as State } from './engines';
 import * as lobbyList from './lobby';
+import { alarmTime, IDLE_MS, REPLACED, refusal, relayKeepAlive } from './live';
+import { dropAway, type RoomBase } from '../src/party/rooms/seats';
 
 interface Socket {
   send(message: string): void;
@@ -46,9 +48,6 @@ interface RoomsEnv {
 declare const WebSocketPair: new () => { 0: Socket; 1: Socket };
 declare const WebSocketRequestResponsePair: new (request: string, response: string) => unknown;
 
-const IDLE_MS = 3 * 60 * 60 * 1000;
-/** The idle-close alarm is rounded up to this, so it only needs rewriting every few minutes (each write is billed). */
-const IDLE_STEP = 10 * 60 * 1000;
 const MAX_MESSAGE = 2048;
 /** A quick-match room starts this long after it has enough players, or FULL_START_MS once it is full. */
 const QUICK_START_MS = 20_000;
@@ -106,7 +105,7 @@ export class Room {
     this.schedule(s, Date.now());
     await this.ctx.storage.put('state', s);
     this.savedAt = Date.now();
-    const at = Math.min(s.deadline ?? Infinity, this.listing.startAt ?? Infinity, Math.ceil((s.updated + IDLE_MS) / IDLE_STEP) * IDLE_STEP);
+    const at = alarmTime(s, this.listing.startAt);
     if (at !== this.alarmAt) {
       await this.ctx.storage.setAlarm(at);
       this.alarmAt = at;
@@ -141,9 +140,10 @@ export class Room {
    */
   private async report(s: State, closed = false): Promise<void> {
     if (!this.env.ROOM) return;
-    const sum = engineFor(s).summary(s) as { code: string; phase: string; players: number; host: string; full: boolean; game?: string };
+    const sum = engineFor(s).summary(s) as { code: string; phase: string; players: number; host: string; full: boolean; game?: string; max?: number };
     const game = (sum.game ?? 'crass-act') as GameId;
-    const entry = !closed && this.listing.listed ? { code: sum.code, game, phase: sum.phase, players: sum.players, max: QUICK[game].seats, host: sum.host, full: sum.full, matched: this.listing.matched } : null;
+    // the room's real size (quick match fills QUICK.seats of it; engines without `max` seat exactly that)
+    const entry = !closed && this.listing.listed ? { code: sum.code, game, phase: sum.phase, players: sum.players, max: sum.max ?? QUICK[game].seats, host: sum.host, full: sum.full, matched: this.listing.matched } : null;
     const sig = entry ? JSON.stringify(entry) : 'off';
     if (sig === this.reported) return;
     // A private room the lobby never heard of has nothing to take back.
@@ -165,7 +165,7 @@ export class Room {
       try {
         if (view) ws.send(JSON.stringify({ t: 'state', state: view, now: Date.now(), room }));
         else {
-          ws.send(JSON.stringify({ t: 'gone', reason: 'You were removed from the room.' }));
+          ws.send(JSON.stringify({ t: 'gone', reason: 'You were removed from this room.', code: 'kicked' }));
           ws.close(4003, 'removed');
         }
       } catch {
@@ -219,14 +219,24 @@ export class Room {
       const pair = new WebSocketPair();
       const client = pair[0];
       const server = pair[1];
+      // One seat, one tab: an older socket of the same player (another tab, or a connection that never
+      // said goodbye) is told and closed; the seat stays, as this socket is still on it.
+      const older = this.ctx.getWebSockets(key);
       this.ctx.acceptWebSocket(server, [key]);
       server.serializeAttachment({ key });
       const s = await this.load();
       const err = s ? engineFor(s).join(s, key, url.searchParams.get('name') ?? '', now) : 'not_found';
       if (!s || err) {
-        server.send(JSON.stringify({ t: 'gone', reason: err === 'full' ? 'This room is full.' : 'This room has closed.' }));
+        server.send(JSON.stringify(refusal(err)));
         server.close(4004, err ?? 'gone');
       } else {
+        for (const ws of older)
+          try {
+            ws.send(JSON.stringify(REPLACED));
+            ws.close(4005, 'replaced');
+          } catch {
+            /* already closing */
+          }
         await this.save(s);
         this.broadcast(s);
       }
@@ -296,6 +306,12 @@ export class Room {
     } catch {
       return;
     }
+    // An action the page will send again after a reconnect until it hears it arrived (useRoom's `resend`).
+    const id = (action as { $id?: unknown } | null)?.$id;
+    if (typeof id === 'number') {
+      delete (action as { $id?: unknown }).$id;
+      ws.send(JSON.stringify({ t: 'ack', id }));
+    }
     const now = Date.now();
     const engine = engineFor(s);
     // The host makes the room public or private (the room's own setting, not the game's).
@@ -323,7 +339,8 @@ export class Room {
               /* closing */
             }
       }
-      if (relay.save || (relay.save !== false && now - this.savedAt >= RELAY_SAVE_MS)) await this.ctx.storage.put('state', s).then(() => (this.savedAt = now));
+      if (relayKeepAlive(s, now)) await this.save(s);
+      else if (relay.save || (relay.save !== false && now - this.savedAt >= RELAY_SAVE_MS)) await this.ctx.storage.put('state', s).then(() => (this.savedAt = now));
       return;
     }
     engine.tick(s, now);
@@ -367,6 +384,8 @@ export class Room {
       return;
     }
     const engine = engineFor(s);
+    // dropped players' grace ran out: their empty lobby seats go, and a dropped host's claim
+    if (s.seats) dropAway(s as unknown as RoomBase, now);
     engine.tick(s, now);
     // A quick-match room's countdown ran out: the host's Start, on everyone's behalf.
     if (this.listing.startAt !== null && now >= this.listing.startAt) {

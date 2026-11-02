@@ -65,10 +65,69 @@ export async function roomInfo(code: string): Promise<{ players: number; host: s
   return res?.ok ? ((await res.json()) as { players: number; host: string; full: boolean; phase: string; game?: RoomGame }) : null;
 }
 
+/** Why a room sent you away: 'full', 'kicked', 'replaced' (open in another tab) or 'closed'. */
+export type GoneCode = 'full' | 'kicked' | 'replaced' | 'closed';
+
+/**
+ * The action to send again once the socket is back: the last one sent while it was down (it never left the
+ * page), or one sent with `resend` that the room has not confirmed yet. Rooms ignore an action that comes
+ * too late (a turn already passed), so sending it again is safe; a plain action is sent at most once.
+ */
+export class Outbox<Action> {
+  private nextId = 1;
+  private waiting: { action: Action; id?: number } | null = null;
+
+  /** What to put on the wire for `a` now (null: hold it for the reconnect). */
+  send(a: Action, open: boolean, resend = false): string | null {
+    const id = resend ? this.nextId++ : undefined;
+    const wire = JSON.stringify(id === undefined ? a : { ...a, $id: id });
+    if (!open || resend) this.waiting = { action: a, id };
+    else this.waiting = null;
+    return open ? wire : null;
+  }
+
+  /** The room confirmed action `id`. */
+  ack(id: number): void {
+    if (this.waiting?.id === id) this.waiting = null;
+  }
+
+  /** What to send on a fresh connection (once; a `resend` action stays until confirmed). */
+  flush(): string | null {
+    const w = this.waiting;
+    if (!w) return null;
+    if (w.id === undefined) this.waiting = null;
+    return JSON.stringify(w.id === undefined ? w.action : { ...w.action, $id: w.id });
+  }
+
+  clear(): void {
+    this.waiting = null;
+  }
+}
+
+/**
+ * Quick match sent you to a room that filled up first: the address of another one (skipping the full ones),
+ * or null when this page wasn't opened by quick match (or no other room could be found).
+ */
+export async function rematchUrl(code: string, href: string): Promise<string | null> {
+  const url = new URL(href);
+  if (url.searchParams.get('match') !== '1' || url.searchParams.get('room') !== code) return null;
+  const skip = [...new Set([...(url.searchParams.get('skip') ?? '').split(',').filter(Boolean), code])];
+  if (skip.length > 5) return null;
+  const info = await roomInfo(code);
+  try {
+    const found = await quickMatch(info?.game ?? 'crass-act', skip);
+    url.searchParams.set('room', found.code);
+    url.searchParams.set('skip', skip.join(','));
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * A live connection to a room: the latest view of the game, and `send` for actions. Reconnects by
- * itself (with the same player key, so you keep your seat and cards). `View` and `Action` are the
- * room game's own types (see rooms/engines.ts).
+ * itself (with the same player key, so you keep your seat and cards); an action sent meanwhile goes out once the connection is back (`send(a, { resend: true })` also re-sends
+ * one the room may not have received). `View` and `Action` are the room game's own types (see rooms/engines.ts).
  */
 export function useRoom<View, Action>(code: string, name: string, onRelay?: (data: unknown) => void) {
   const [view, setView] = useState<View | null>(null);
@@ -77,6 +136,8 @@ export function useRoom<View, Action>(code: string, name: string, onRelay?: (dat
   const [conn, setConn] = useState<Connection>('connecting');
   const [error, setError] = useState('');
   const [gone, setGone] = useState('');
+  const [goneCode, setGoneCode] = useState<GoneCode | ''>('');
+  const outbox = useRef(new Outbox<Action>());
   const [skew, setSkew] = useState(0);
   const ws = useRef<WebSocket | null>(null);
   const nameRef = useRef(name);
@@ -91,6 +152,7 @@ export function useRoom<View, Action>(code: string, name: string, onRelay?: (dat
     let tries = 0;
     let retry = 0;
     let ping = 0;
+    const box = outbox.current;
     const connect = (): void => {
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
       const socket = new WebSocket(`${proto}://${location.host}/api/rooms/${code}/ws?key=${encodeURIComponent(playerKey())}&name=${encodeURIComponent(nameRef.current)}`);
@@ -99,12 +161,15 @@ export function useRoom<View, Action>(code: string, name: string, onRelay?: (dat
         tries = 0;
         setConn('open');
         ping = window.setInterval(() => socket.readyState === WebSocket.OPEN && socket.send('ping'), 25_000);
+        const again = box.flush();
+        if (again) socket.send(again);
       };
       socket.onmessage = (ev) => {
         if (typeof ev.data !== 'string' || ev.data === 'pong') return;
         try {
-          const m = JSON.parse(ev.data) as { t: string; state?: View; now?: number; message?: string; reason?: string; room?: RoomListing; data?: unknown };
+          const m = JSON.parse(ev.data) as { t: string; state?: View; now?: number; message?: string; reason?: string; code?: string; id?: number; room?: RoomListing; data?: unknown };
           if (m.t === 'relay') relayRef.current?.(m.data);
+          else if (m.t === 'ack' && typeof m.id === 'number') box.ack(m.id);
           else if (m.t === 'state' && m.state) {
             // Counted once per visit to a room (the admin's room stats), not on every reconnect.
             if (!joined) {
@@ -117,7 +182,19 @@ export function useRoom<View, Action>(code: string, name: string, onRelay?: (dat
           } else if (m.t === 'error' && m.message) setError(m.message);
           else if (m.t === 'gone') {
             stopped = true;
-            setGone(m.reason ?? 'The room has closed.');
+            box.clear();
+            const why = (['full', 'kicked', 'replaced'] as const).find((c) => c === m.code) ?? 'closed';
+            const show = (): void => {
+              setGoneCode(why);
+              setGone(m.reason ?? 'The room has closed.');
+            };
+            // quick match lost a race for the last seat: on to another room
+            if (why === 'full')
+              void rematchUrl(code, location.href).then(
+                (next) => (next ? location.replace(next) : show()),
+                show,
+              );
+            else show();
           }
         } catch {
           /* ignore */
@@ -138,13 +215,16 @@ export function useRoom<View, Action>(code: string, name: string, onRelay?: (dat
       stopped = true;
       window.clearTimeout(retry);
       window.clearInterval(ping);
+      box.clear();
       ws.current?.close();
     };
   }, [code]);
 
-  const send = useCallback((a: Action) => {
+  const send = useCallback((a: Action, opts?: { resend?: boolean }) => {
     const s = ws.current;
-    if (s?.readyState === WebSocket.OPEN) s.send(JSON.stringify(a));
+    const open = s?.readyState === WebSocket.OPEN;
+    const wire = outbox.current.send(a, open, opts?.resend === true);
+    if (wire && open) s!.send(wire);
   }, []);
 
   /** The host makes the room public or private. */
@@ -153,5 +233,5 @@ export function useRoom<View, Action>(code: string, name: string, onRelay?: (dat
     if (s?.readyState === WebSocket.OPEN) s.send(JSON.stringify({ t: '$listing', listed }));
   }, []);
 
-  return { view, conn, error, clearError: () => setError(''), gone, skew, send, listing, setListed };
+  return { view, conn, error, clearError: () => setError(''), gone, goneCode, skew, send, listing, setListed };
 }
