@@ -197,7 +197,7 @@ describe('the servers refuse impossible rounds', () => {
   });
 
   it('times a challenge score from the player’s first start (PS-05, LP-17, PS-08)', async () => {
-    const env = { DB: memoryD1() } as Env;
+    const env = { DB: memoryD1(), NR_DB: {} as Env['NR_DB'] } as Env;
     let now = Date.UTC(2026, 9, 18, 12);
     vi.spyOn(Date, 'now').mockImplementation(() => now);
     const KEY = 'ana-device-key-0000000000';
