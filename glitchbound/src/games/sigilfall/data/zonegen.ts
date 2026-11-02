@@ -1586,6 +1586,8 @@ export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'p
       // what the story adds (a road that opens, a person who comes, a place to look at) counts for routes too
       exits: [...spec.exits.map((e) => e.to), ...spec.pois.flatMap((p) => (p.entrance ? [p.entrance.to] : [])), ...(spec.story ?? []).flatMap((m) => (m.marker.kind === 'exit' ? [m.marker.to] : []))],
       npcs: [...spec.hubs.flatMap((h) => h.npcs), ...(spec.story ?? []).flatMap((m) => (m.marker.kind === 'npc' ? [m.marker.npc] : []))],
+      // the people who stand here only while the story says so (a hub's `when`, a story marker's)
+      npcWhen: Object.fromEntries([...spec.hubs.flatMap((h) => Object.entries(h.when ?? {})), ...(spec.story ?? []).flatMap((m) => (m.marker.kind === 'npc' && m.when ? [[m.marker.npc, m.when] as const] : []))]),
       spots: [...spec.pois.flatMap((p) => (p.spot ? [p.spot.id] : [])), ...(spec.story ?? []).flatMap((m) => (m.marker.kind === 'spot' ? [m.marker.id] : []))],
       // roads the story keeps shut until a quest is done
       needs: Object.fromEntries([...spec.exits, ...(spec.story ?? []).flatMap((m) => (m.marker.kind === 'exit' ? [m.marker] : []))].flatMap((e) => (e.needs ? [[e.to, e.needs]] : []))),

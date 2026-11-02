@@ -93,7 +93,7 @@ describe('Sigilfall save size (SFS-01)', () => {
     save.heroes[1]!.quests[QUESTS[3]!.id] = { state: 'active', n: 2 };
     save.heroes[2]!.quests[QUESTS[4]!.id] = { state: 'done', n: -1 };
     const text = saveText(save);
-    console.log(`three completionist heroes: ${text.length} chars`);
+    console.info(`three completionist heroes: ${text.length} chars`);
     expect(text.length).toBeLessThan(60_000);
     const back = migrate(JSON.parse(text))!;
     expect(back.v).toBe(SAVE_VERSION);

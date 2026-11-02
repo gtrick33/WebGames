@@ -1,4 +1,4 @@
-import { after, all, is, until } from '../cond';
+import { after, all, any, is, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -72,8 +72,9 @@ export const HIGHWALL = wildRegion(
       { near: 'the-breach', dx: 2, dy: 2, marker: { kind: 'place', id: 'sortie-n' } },
       { near: 'the-breach', dx: -6, dy: 12, marker: { kind: 'place', id: 'sortie-w' } },
       { near: 'the-breach', dx: 16, dy: 8, marker: { kind: 'place', id: 'sortie-e' } },
-      // Mara at the relief camp from the day she takes command until the second Gate is taken
-      { near: 'hub', dx: 3, dy: -4, marker: { kind: 'npc', npc: 'captain-mara' }, when: all(is('the-wall-burns', 'done'), until('the-gloam-gate')) },
+      // Mara at the relief camp from the day she takes command until the second Gate is taken (and after, for a
+      // hero who has still to report to her)
+      { near: 'hub', dx: 3, dy: -4, marker: { kind: 'npc', npc: 'captain-mara' }, when: all(is('the-wall-burns', 'done'), any(until('the-gloam-gate'), is('mara-commands', 'active'))) },
       // besieged and breached: the Host's banners on its lines, smoke and fire on the walls by the Breach
       { near: 'legion-lines', dx: 0, dy: -3, marker: { kind: 'prop', prop: 'skull-banner' }, when: until('general-morvain') },
       { near: 'bone-batteries', dx: 2, dy: -2, marker: { kind: 'prop', prop: 'skull-banner' }, when: until('general-morvain') },
