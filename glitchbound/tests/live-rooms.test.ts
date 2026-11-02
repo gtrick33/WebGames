@@ -2,8 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QUICK } from '../rooms/engines';
 import { alarmTime, IDLE_MS, IDLE_STEP, refusal, relayKeepAlive, SHARED_KEY } from '../rooms/live';
 import { Room } from '../rooms/worker';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { createElement } from 'react';
+import { matchedName, RoomNextStep } from '../src/components/OnlinePlay';
 import * as sigilfall from '../src/games/sigilfall/net/room';
-import { Outbox, rematchUrl } from '../src/platform/rooms';
+import { Outbox, rematchUrl, rememberSeat, seatedName, SEATED_MS } from '../src/platform/rooms';
 import * as dial from '../src/party/rooms/dialRoom';
 import * as nhie from '../src/party/rooms/nhieRoom';
 import { AWAY_MS, cleanName, dropAway, KICKED_MAX, NAME_MAX } from '../src/party/rooms/seats';
@@ -193,5 +196,54 @@ describe('the old shared no-storage key', () => {
     const room = new Room({ storage: {}, setWebSocketAutoResponse: () => undefined } as never, {});
     const res = await room.fetch(new Request(`https://room/ws?key=${SHARED_KEY}`, { headers: { Upgrade: 'websocket' } }));
     expect(res.status).toBe(400);
+  });
+});
+
+describe('a reload takes you back to your seat', () => {
+  afterEach(() => {
+    localStorage.clear();
+    history.replaceState(null, '', '/');
+  });
+  it('remembers the name for a while', () => {
+    rememberSeat('ABCDE', 'Sam', T0);
+    expect(seatedName('ABCDE', T0 + 1000)).toBe('Sam');
+    expect(seatedName('ABCDE', T0 + SEATED_MS + 1)).toBeNull();
+    expect(seatedName('FGHJK', T0)).toBeNull();
+  });
+  it('joins straight away on a reload of the room address', () => {
+    rememberSeat('ABCDE', 'Sam');
+    history.replaceState(null, '', '/party?room=ABCDE');
+    expect(matchedName('Other')).toBe('Sam');
+    history.replaceState(null, '', '/party?room=FGHJK');
+    expect(matchedName('Other')).toBeNull();
+  });
+});
+
+describe('a next step when a room sends you away', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+  it('offers quick match (skipping the room) and a new room', async () => {
+    const bodies: unknown[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        bodies.push(JSON.parse(String(init?.body)));
+        return new Response(JSON.stringify({ code: 'FGHJK', created: false }));
+      }),
+    );
+    const onRoom = vi.fn();
+    render(createElement(RoomNextStep, { game: 'dial', room: 'ABCDE', code: 'full', onRoom }));
+    fireEvent.click(screen.getByRole('button', { name: /Quick match/ }));
+    await waitFor(() => expect(onRoom).toHaveBeenCalledWith('FGHJK', true));
+    expect(bodies[0]).toEqual({ game: 'dial', skip: ['ABCDE'] });
+    expect(screen.getByRole('button', { name: 'Open a new room' })).toBeTruthy();
+  });
+  it('offers only a new room to a removed player, and nothing to the other tab', () => {
+    const { rerender } = render(createElement(RoomNextStep, { game: 'dial', code: 'kicked', onRoom: () => undefined }));
+    expect(screen.queryByRole('button', { name: /Quick match/ })).toBeNull();
+    rerender(createElement(RoomNextStep, { game: 'dial', code: 'replaced', onRoom: () => undefined }));
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });
