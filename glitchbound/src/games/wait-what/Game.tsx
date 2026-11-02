@@ -549,7 +549,11 @@ function Play(props: {
             </p>
           )}
           {q.sound && <SoundButton key={`s:${q.id}`} q={q} autoPlay={phase === 'ask' && !paused} />}
-          {phase === 'ask' && <span className="ww-left mono">{u.secondsLeft(Math.ceil(left))}</span>}
+          {phase === 'ask' && (
+            <span key={`left:${q.id}`} className="ww-left mono is-new">
+              {u.secondsLeft(Math.ceil(left))}
+            </span>
+          )}
         </div>
         {kind === 'choice' && (
           <div className={`ww-answers${q.answers.length <= 2 ? ' is-two' : ''}`} key={`a:${q.id}`}>

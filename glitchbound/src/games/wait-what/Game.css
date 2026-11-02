@@ -366,6 +366,25 @@
   font-weight: 700;
   opacity: 0.7;
 }
+/* each question opens with its time limit (15 to 30 s) popping in the corner */
+.ww-left.is-new {
+  animation: ww-limit 1.4s ease-out;
+}
+@keyframes ww-limit {
+  0%,
+  45% {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--cat, #3d8bff);
+    color: #fff;
+    opacity: 1;
+    transform: scale(1.35);
+  }
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
 .ww-answers {
   display: grid;
   gap: 10px;
