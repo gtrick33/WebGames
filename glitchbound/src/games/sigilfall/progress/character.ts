@@ -77,6 +77,8 @@ export interface Character {
   skills: [string | null, string | null, string | null, string | null];
   equip: Partial<Record<SlotId, Item>>;
   bag: Item[];
+  /** Quest rewards waiting for room in the bag (one earned with the bag and its overflow full): they come in by themselves. */
+  held?: Item[];
   potions: number;
   quests: Record<string, { state: 'offered' | 'active' | 'ready' | 'done'; n: number; step?: number }>;
   /** The quest the hero follows (the arrow and the tracker show it first). */
@@ -322,6 +324,38 @@ export function addItem(c: Character, item: Item): boolean {
 }
 
 export const allItems = (c: Character): Item[] => [...Object.values(c.equip).filter((i): i is Item => !!i), ...c.bag];
+
+/** Rewards that can wait for room in the bag (more are sold for their gold). */
+export const HELD_MAX = 10;
+
+/**
+ * A quest reward: into the bag, over-full if need be (its overflow, like loot picked up on leaving), else held
+ * until there is room (Character.held), never left on the ground. 'held' when it waits; 'sold' (for its salvage
+ * gold, added by the caller) only past HELD_MAX waiting.
+ */
+export function giveReward(c: Character, item: Item): 'bag' | 'held' | 'sold' {
+  if (c.bag.length < bagSize(c) + BAG_OVERFLOW) {
+    c.bag.push(item);
+    learnLooks(c, [item]);
+    return 'bag';
+  }
+  if ((c.held?.length ?? 0) >= HELD_MAX) return 'sold';
+  (c.held ??= []).push(item);
+  learnLooks(c, [item]);
+  return 'held';
+}
+
+/** Held rewards that now fit go into the bag; the ones that came in. */
+export function deliverHeld(c: Character): Item[] {
+  const came: Item[] = [];
+  while (c.held?.length && c.bag.length < bagSize(c)) {
+    const item = c.held.shift()!;
+    c.bag.push(item);
+    came.push(item);
+  }
+  if (c.held && !c.held.length) delete c.held;
+  return came;
+}
 
 /** Why an item from the bag can't be worn, or null. */
 export function cantEquip(c: Character, item: Item): string | null {

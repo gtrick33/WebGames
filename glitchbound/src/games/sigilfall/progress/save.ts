@@ -7,7 +7,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems } from './character';
+import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 import { grantMounts, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
 import { MOUNT_DEFS } from '../data/mounts';
@@ -245,6 +245,14 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
       if (item) c.bag.push(unique(item));
     }
   }
+  // quest rewards waiting for room in the bag (progress/character.ts giveReward)
+  if (Array.isArray(o.held)) {
+    const held = o.held.slice(0, HELD_MAX).flatMap((raw) => {
+      const item = validateItem(raw);
+      return item ? [unique(item)] : [];
+    });
+    if (held.length) c.held = held;
+  }
   // quests
   const q: Raw = { ...obj(o.quests) };
   // version 12: done quests listed in QUEST_TABLE come as one bitset (saveText)
@@ -282,7 +290,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   // worn looks stay only where they are owned and fit the class (the item under them is never touched)
   const worn = obj(o.worn) ?? {};
   for (const slot of LOOK_SLOTS) if (typeof worn[slot] === 'string') c.worn[slot] = worn[slot] as string;
-  learnLooks(c, allItems(c));
+  learnLooks(c, [...allItems(c), ...(c.held ?? [])]);
   tidyWardrobe(c);
   // mounts: earned ones are owned (the Gullport Strider for anyone who has its perk); the chosen one must be owned
   grantMounts(c);

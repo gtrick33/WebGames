@@ -18,7 +18,7 @@ import { maybeStartScene, revealBoss, updateScene, type ScenePlay } from './scen
 import { buildHero, type HeroBuild } from '../progress/build';
 import { fogOpen, fogShare, loadFog, revealFog, storeFog, type Fog } from '../progress/fog';
 import { turnInNpc } from '../progress/handin';
-import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, PERKS, potionCap, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME, currentObjective } from '../progress/character';
+import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, deliverHeld, giveReward, PERKS, potionCap, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME, currentObjective } from '../progress/character';
 import { potionPrice } from '../progress/shop';
 import { goldDrop, itemName, makeItem, rollLoot, rollRarity, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
@@ -1084,6 +1084,8 @@ export class World {
     }
     if (this.scene) updateScene(this, rawDt);
     this.updatePlayer(dt);
+    // rewards held for a full bag come in as soon as there is room
+    if (this.hero.held?.length && !bagFull(this.hero)) for (const item of deliverHeld(this.hero)) this.emit({ t: 'loot', item });
     this.updateFlow(dt);
     // in the wilds, enemies far away and minding their own business sleep (a zone holds hundreds)
     const awake: Enemy[] = [];
@@ -2338,12 +2340,21 @@ export class World {
         else if (typeof r.item === 'string') item = makeItem(r.item, Math.max(ITEM_DEFS[r.item]?.minLevel ?? 1, h.level), this.rand);
         else item = rollLoot(h.cls as ClassId, Math.max(1, h.level), r.item.rarity === 'rare' ? 'chest-rare' : 'quest', 0, this.rand);
         if (item) {
-          // quest rewards go straight to the bag (or fall at your feet if it's full)
-          if (addItem(h, item)) {
-            this.run.items.push(item);
+          // quest rewards go straight to the bag (over-full if need be, else they wait for room: never on the ground)
+          const full = bagFull(h);
+          const got = giveReward(h, item);
+          this.run.items.push(item);
+          if (got === 'bag') {
             this.emit({ t: 'loot', item });
+            if (full) this.emit({ t: 'toast', text: 'Your bag is over-full: salvage or wear something to pick up more.', tone: 'warn' });
             if (h.bag.length === 1 && Object.keys(h.equip).length === 0) this.emit({ t: 'hint', id: 'equip' });
-          } else this.dropItem(this.player.x, this.player.y, item);
+          } else if (got === 'held') this.emit({ t: 'toast', text: `Your bag is full: ${itemName(item)} waits for you and comes into your bag when there is room.`, tone: 'warn' });
+          else {
+            const g = salvageValue(item);
+            h.gold += g;
+            this.run.gold += g;
+            this.emit({ t: 'toast', text: `Your bag is full: ${itemName(item)} became ${g} gold`, tone: 'warn' });
+          }
         }
       }
       if (r.perk && !h.perks.includes(r.perk)) {

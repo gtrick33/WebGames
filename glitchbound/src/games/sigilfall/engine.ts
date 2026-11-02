@@ -283,6 +283,8 @@ export class SigilEngine {
     document.removeEventListener('visibilitychange', this.onVisibility);
     window.removeEventListener('pagehide', this.onPageHide);
     this.leaveParty();
+    // loot still on the ground goes with the hero, as on the road (never lost by closing the game)
+    if (this.world) this.collectLeftovers(this.world, true);
     this.endRun(false);
     this.persist();
     this.kbm?.dispose();
@@ -301,7 +303,10 @@ export class SigilEngine {
     this.sound.suspend(document.hidden || this.ui.pause);
   };
 
-  private onPageHide = (): void => this.persist();
+  private onPageHide = (): void => {
+    if (this.world) this.collectLeftovers(this.world, true);
+    this.persist();
+  };
 
   /** The arcade asked for a pause (full screen left, scrolled away). */
   hostPause(): void {
@@ -737,6 +742,7 @@ export class SigilEngine {
   toTitle(): void {
     this.greetIn = 0;
     this.leaveParty();
+    if (this.world) this.collectLeftovers(this.world, true);
     this.endRun(false);
     this.persist();
     this.world = null;

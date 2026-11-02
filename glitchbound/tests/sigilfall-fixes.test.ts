@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
-import { newCharacter, type Character } from '../src/games/sigilfall/progress/character';
+import { BAG_OVERFLOW, bagSize, HELD_MAX, newCharacter, type Character } from '../src/games/sigilfall/progress/character';
+import { rollGear } from '../src/games/sigilfall/progress/items';
+import { migrate, saveText, emptySave } from '../src/games/sigilfall/progress/save';
+import { rng } from '../src/games/sigilfall/core/math';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { npcRegion } from '../src/games/sigilfall/sim/routes';
 import { TILE } from '../src/games/sigilfall/sim/map';
@@ -88,5 +91,39 @@ describe('Sigilfall systems fixes', () => {
     w.respawn();
     expect(c.bosses.ossric).toBe(1);
     expect(w.encounters[enc]!.state).not.toBe('active');
+  });
+
+  it('SFS-06: a quest reward with a full bag goes to the overflow, then waits for room, never to the ground', { timeout: 30_000 }, () => {
+    const c = readyHero('warrior', 20, 'uncommon');
+    const w = newWorld('briarhollow', c, 3);
+    const r = rng(9);
+    const fill = (n: number): void => {
+      c.bag = [];
+      for (let i = 0; i < n; i++) c.bag.push(rollGear('warrior', 20, 'common', r));
+    };
+    const heroic = QUEST_DEFS['heroic']!;
+    // a full bag (30/30): into the overflow
+    fill(bagSize(c));
+    w.completeQuests([heroic]);
+    expect(c.bag.some((i) => i.base === 'amulet-of-echoes')).toBe(true);
+    expect(w.drops.filter((d) => d.kind === 'item')).toHaveLength(0);
+    // the overflow full too: held, saved with the hero, and in the bag once there is room
+    fill(bagSize(c) + BAG_OVERFLOW);
+    w.completeQuests([heroic]);
+    expect(w.drops.filter((d) => d.kind === 'item')).toHaveLength(0);
+    expect(c.held?.map((i) => i.base)).toEqual(['amulet-of-echoes']);
+    const back = migrate(JSON.parse(saveText({ ...emptySave(), heroes: [c, null, null] })))!.heroes[0]!;
+    expect(back.held?.map((i) => i.base)).toEqual(['amulet-of-echoes']);
+    c.bag = c.bag.slice(0, bagSize(c) - 1);
+    steps(w, 1);
+    expect(c.held).toBeUndefined();
+    expect(c.bag.at(-1)?.base).toBe('amulet-of-echoes');
+    // past HELD_MAX waiting, a reward is sold for its gold rather than lost
+    fill(bagSize(c) + BAG_OVERFLOW);
+    c.held = [];
+    for (let i = 0; i < HELD_MAX; i++) c.held.push(rollGear('warrior', 20, 'common', r));
+    const gold = c.gold;
+    w.completeQuests([heroic]);
+    expect(c.gold).toBeGreaterThan(gold + heroic.reward.gold);
   });
 });
