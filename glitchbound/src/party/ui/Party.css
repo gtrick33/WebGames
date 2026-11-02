@@ -2260,6 +2260,46 @@ img.pt-feature-art {
   font-weight: 900;
   filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.45));
 }
+/* Place-then-lock: the picked color up close, and arrows to move it one cell (cells are small on a phone). */
+.pt-hk-fine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+.pt-hk-zoom {
+  width: 84px;
+  height: 84px;
+  flex: none;
+  border: 3px solid var(--pt-edge);
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--pt-shadow);
+}
+.pt-hk-pad {
+  display: grid;
+  grid-template-areas: '. up .' 'left . right' '. down .';
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(3, 44px);
+  gap: 4px;
+}
+.pt-hk-pad .pt-btn {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  font-size: 18px;
+}
+.pt-hk-up {
+  grid-area: up;
+}
+.pt-hk-left {
+  grid-area: left;
+}
+.pt-hk-right {
+  grid-area: right;
+}
+.pt-hk-down {
+  grid-area: down;
+}
 .pt-hk-gains li {
   display: grid;
   gap: 2px;

@@ -330,4 +330,39 @@ describe('Hue Knew? room', () => {
     hues.leave(s, KEYS[1]!, T0);
     expect(s.phase).toBe('lobby');
   });
+  it('moves on by itself when the cue giver leaves while picking (after a short grace)', () => {
+    const s = room(3);
+    hues.leave(s, KEYS[0]!, T0 + 1000);
+    expect(s.phase).toBe('pick');
+    expect(s.deadline).toBe(T0 + 1000 + hues.CUE_GRACE_MS);
+    hues.tick(s, T0 + 1000 + hues.CUE_GRACE_MS);
+    expect(s.phase).toBe('reveal');
+    // A reload in time gets the full clock back.
+    const s2 = room(3);
+    const was = s2.deadline!;
+    hues.leave(s2, KEYS[0]!, T0 + 1000);
+    hues.join(s2, KEYS[0]!, 'P1', T0 + 3000);
+    expect(s2.deadline).toBe(was);
+  });
+
+  it('skips the cue giver turn of someone who left, so nobody gives the cue twice', () => {
+    const s = room(3);
+    const cues = [s.round!.cue];
+    hues.leave(s, KEYS[1]!, T0 + 10);
+    runClock(s, hues.tick, (x) => {
+      if (x.round && x.round.cue !== cues.at(-1)) cues.push(x.round.cue);
+      return x.phase === 'result';
+    });
+    expect(s.phase).toBe('result');
+    expect(cues).toEqual([1, 3]);
+  });
+
+  it('moves a guess one cell at a time, staying on the board', async () => {
+    const { nudge } = await import('../src/party/ui/room/HuesRoom');
+    expect(nudge(0, -1, -1)).toBe(0);
+    expect(nudge(0, 1, 0)).toBe(1);
+    expect(nudge(0, 0, 1)).toBe(18);
+    expect(nudge(17, 1, 0)).toBe(17);
+    expect(nudge(179, 0, 1)).toBe(179);
+  });
 });
