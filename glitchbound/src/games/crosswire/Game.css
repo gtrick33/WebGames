@@ -54,9 +54,14 @@
   background: linear-gradient(135deg, #ffe08a, #ff9f1c);
 }
 .xw-btn-sm {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 10px;
   font-size: 13px;
+  white-space: nowrap;
+}
+.xw-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .xw-btn-ghost {
   border-color: transparent;
@@ -68,8 +73,8 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border: 2px solid #e6dcc8;
   border-radius: 10px;
   background: #fff;
@@ -144,12 +149,15 @@
 
 /* Play */
 .xw-play {
+  /* Size (not just inline-size): the layout follows the frame's shape (see the landscape query below). */
+  container-type: size;
+}
+.xw-play-in {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 100%;
   padding: 10px 10px 14px;
-  /* Size (not just inline-size): the grid shrinks to the frame's height too (see .xw-grid). */
-  container-type: size;
 }
 .xw-top {
   display: flex;
@@ -165,16 +173,70 @@
 .xw-time {
   font: 700 15px/1 var(--mono);
 }
+/* The board takes the height the clue bar, tools and keys leave, and the grid the largest square that fits it. */
+.xw-board {
+  flex: 1 1 0;
+  min-height: 200px;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+.xw-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .xw-grid {
+  --cell: 32px;
   display: grid;
   gap: 2px;
-  /* Never wider than the frame is tall minus the clue bar, tools and keyboard (about 340 px, so the
-     tallest 10×11 grids fit too): a laptop-height frame shows the whole board and keyboard. */
-  width: min(100%, 560px, max(260px, calc(100cqh - 340px)));
-  margin: 0 auto;
+  width: min(100cqw, 640px, calc((100cqh - 6px) * var(--cols) / var(--rows)));
   padding: 2px;
   border: 2.5px solid var(--xw-ink);
   background: var(--xw-ink);
+}
+.xw-gridrow {
+  display: contents;
+}
+/* A frame wider than tall (a laptop, a phone on its side): the grid on the left, clue bar, tools and keys beside it. */
+@container (min-aspect-ratio: 5/4) {
+  .xw-play-in {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: 'board top' 'board side';
+    column-gap: 14px;
+    height: 100%;
+    min-height: 0;
+  }
+  .xw-top {
+    grid-area: top;
+  }
+  .xw-board {
+    grid-area: board;
+    width: min(55cqw, calc((100cqh - 24px) * var(--cols) / var(--rows)));
+    min-height: 0;
+  }
+  .xw-side {
+    grid-area: side;
+    justify-content: center;
+    overflow-y: auto;
+  }
+  .xw-paused {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+.xw-paused {
+  display: grid;
+  flex: 1;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.xw-paused h2 {
+  font-size: 26px;
 }
 .xw-block {
   aspect-ratio: 1;
@@ -193,7 +255,7 @@
   display: grid;
   place-items: center;
   background: #fff;
-  font-size: clamp(14px, 4.6cqw, 26px);
+  font-size: clamp(12px, calc(var(--cell) * 0.55), 30px);
   font-weight: 850;
   text-transform: uppercase;
 }
@@ -218,13 +280,13 @@
 .xw-cell.is-mystery-done {
   background: #ffe1ef;
 }
+/* Clue squares are sized from the square itself (--cell, measured): the number and arrow always fit on one line. */
 .xw-clue {
   display: grid;
-  align-content: stretch;
+  grid-auto-rows: minmax(0, 1fr);
   overflow: hidden;
   background: var(--xw-clue);
-  font-size: 9px;
-  line-height: 1.05;
+  line-height: 1;
   text-align: left;
 }
 .xw-clue.is-on {
@@ -235,43 +297,59 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1px;
   min-height: 0;
   padding: 1px;
+}
+.xw-clue-head {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  white-space: nowrap;
 }
 .xw-clue.is-two .xw-clue-part + .xw-clue-part {
   border-top: 1px solid rgb(29 18 56 / 0.35);
 }
 .xw-clue-part b {
-  font: 800 clamp(8px, 2.4cqw, 12px) / 1 var(--mono);
+  font: 800 max(8px, calc(var(--cell) * 0.3)) / 1 var(--mono);
 }
 .xw-clue-part i {
   font-style: normal;
   font-weight: 900;
-  font-size: clamp(11px, 3.4cqw, 18px);
+  font-size: max(9px, calc(var(--cell) * 0.42));
+  line-height: 1;
+}
+.xw-clue.is-two .xw-clue-part b {
+  font-size: max(7px, calc(var(--cell) * 0.24));
+}
+.xw-clue.is-two .xw-clue-part i {
+  font-size: max(8px, calc(var(--cell) * 0.3));
 }
 .xw-clue-part small {
   display: none;
 }
-/* Wide grids: show the clue text inside its square, like a printed arrowword. */
-@container (min-width: 620px) {
-  .xw-clue-part {
-    display: grid;
-    align-content: start;
-    justify-items: start;
-    padding: 2px 3px;
-  }
-  .xw-clue-part small {
-    display: block;
-    overflow: hidden;
-    font-size: 8.5px;
-    line-height: 1.1;
-    max-height: 3.4em;
-  }
-  .xw-clue-part b,
-  .xw-clue-part i {
-    display: inline;
-  }
+/* Roomy squares show a single clue's text under its number, like a printed arrowword (two-clue squares
+   keep number and arrow only; the full clue is always in the clue bar). */
+.xw-grid.is-roomy .xw-clue:not(.is-two) .xw-clue-part {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 2px;
+  padding: 3px 4px;
+}
+.xw-grid.is-roomy .xw-clue:not(.is-two) b {
+  font-size: calc(var(--cell) * 0.2);
+}
+.xw-grid.is-roomy .xw-clue:not(.is-two) i {
+  font-size: calc(var(--cell) * 0.26);
+}
+.xw-grid.is-roomy .xw-clue:not(.is-two) small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--lines);
+  overflow: hidden;
+  font-size: max(9px, calc(var(--cell) * 0.16));
+  line-height: 1.1;
 }
 .xw-cluebar {
   display: flex;
@@ -290,9 +368,14 @@
   font-weight: 650;
   text-align: center;
 }
+.xw-almost {
+  color: #b5164f;
+  font-weight: 750;
+  text-align: center;
+}
 .xw-tools {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 6px;

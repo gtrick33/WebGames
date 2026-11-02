@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { makePuzzle, wordCells, type Puzzle } from '../src/games/crosswire/grid';
+import { editionFor, makePuzzle, wordCells, type Puzzle } from '../src/games/crosswire/grid';
 import { backspace, dailyPuzzle, key, mysteryTiles, resultLine, score, solved, toggleDir, typeLetter, withHint, wrongCells, type Entries } from '../src/games/crosswire/logic';
-import { WORDS } from '../src/games/crosswire/words';
+import { LEGACY_WORDS, WORDS } from '../src/games/crosswire/words';
 
 /** Every horizontal and vertical run of 2+ letters must be one of the placed words. */
 function runs(p: Puzzle): string[] {
@@ -35,8 +35,48 @@ describe('Crosswire grids', () => {
   it('has a clean word list', () => {
     expect(WORDS.length).toBeGreaterThan(800);
     expect(new Set(WORDS.map((w) => w.word)).size).toBe(WORDS.length);
-    for (const w of WORDS) expect(new RegExp(`\\b${w.word}\\b`).test(w.clue.toUpperCase()), w.word).toBe(false);
+    // the answer never hides inside its clue (Doormat for MAT), and no two answers of a length share a clue
+    for (const w of WORDS) expect(w.clue.toUpperCase().includes(w.word), w.word).toBe(false);
+    const clues = new Map<string, string>();
+    for (const w of WORDS) {
+      const k = `${w.word.length}:${w.clue.toLowerCase()}`;
+      expect(clues.get(k), `${w.word} shares "${w.clue}"`).toBeUndefined();
+      clues.set(k, w.word);
+    }
   });
+
+  it('is in American English', () => {
+    const british = /colour|favourite|harbour|theatre|jewell|travell|armour|vapour|flavour|centre|\bcosy|rubbish|lorry|trolley|petrol|\bmum\b|jumper|pavement|banger|jotter|wellies|pushchair|plughole|holidaymaker|queueing|snooker|spanner|fancy dress|trouser|\bgrey\b|mould|ladybird|biscuit|cupboard|christmas bird|round the corner|downwards/i;
+    for (const w of WORDS) expect(british.test(`${w.word} ${w.clue}`), `${w.word}:${w.clue}`).toBe(false);
+  });
+
+  it('keeps the original answers for older grids, in the same order', () => {
+    expect(LEGACY_WORDS.length).toBe(WORDS.length);
+    expect(LEGACY_WORDS.filter((e, i) => e.word !== WORDS[i]!.word).map((e) => e.word)).toEqual(['GREY', 'COSY', 'MOULD', 'THEATRE', 'LADYBIRD']);
+    expect(editionFor('')).toBe(1);
+    expect(editionFor('2026-11-07')).toBe(1);
+    expect(editionFor('2026-11-08')).toBe(2);
+  });
+
+  it('keeps past dailies exactly as they were', () => {
+    // Fingerprints taken before the run-on and word-list changes.
+    expect(dailyPuzzle('2026-10-19').words.map((w) => w.word).join(' ')).toBe('PRINCESS PEPPER THRONE PRIDE PLATYPUS EAT EXERCISE COG RED CONCERT EGG WIDE');
+    expect(dailyPuzzle('2026-10-20').words.map((w) => w.word).join(' ')).toBe('BALLOON BATHROOM ALPHABET DOLPHIN TEA CRAB TROOP AWAY ALPHA MAGAZINE');
+  });
+
+  it('never lets an answer run straight into another one', () => {
+    const delimited = (p: Puzzle): string[] => {
+      const isL = (r: number, c: number) => p.cells[r]?.[c]?.kind === 'letter';
+      return p.words.filter((w) => {
+        const [dr, dc] = w.dir === 'across' ? [0, 1] : [1, 0];
+        return isL(w.row - dr, w.col - dc) || isL(w.row + dr * w.word.length, w.col + dc * w.word.length);
+      }).map((w) => w.word);
+    };
+    // STICK/STICKY (seed 99), FUN/FUND (daily 2026-11-12), FRIEND/FRIENDLY (daily 2026-12-02)
+    expect(delimited(makePuzzle(99, 'medium', 1))).toEqual([]);
+    expect(delimited(dailyPuzzle('2026-11-12'))).toEqual([]);
+    expect(delimited(dailyPuzzle('2026-12-02'))).toEqual([]);
+  }, 30_000);
 
   it('only ever spells real, clued words, with each clue square right before its answer', () => {
     for (let seed = 1; seed <= 20; seed++) {
@@ -44,6 +84,8 @@ describe('Crosswire grids', () => {
         const p = makePuzzle(seed * 31, size);
         const placed = new Set(p.words.map((w) => w.word));
         for (const run of runs(p)) expect(placed.has(run), `${seed} ${size}: stray run ${run}`).toBe(true);
+        // every answer is a whole run: nothing runs on from its last letter
+        expect(runs(p).length, `${seed} ${size}`).toBe(p.words.length);
         for (const w of p.words) {
           wordCells(w).forEach(([r, c], i) => expect((p.cells[r]![c] as { ch: string }).ch).toBe(w.word[i]));
           expect(p.cells[w.cr]![w.cc]!.kind).toBe('clue');
