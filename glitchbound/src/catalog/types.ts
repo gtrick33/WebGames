@@ -44,6 +44,14 @@ export interface StatDef {
   unit?: string;
   /** Whether a lower value is better (e.g. time in seconds). Defaults to higher is better. */
   lowerIsBetter?: boolean;
+  /**
+   * A best of one kind of round only, so a short daily and an endless run don't share one best:
+   * `daily` keeps it from the game's own daily rounds (`daily: true`), `other` from rounds that are
+   * neither a daily nor a friends' challenge. Kept on this device (the leaderboards rank `score`).
+   */
+  mode?: 'daily' | 'other';
+  /** The reported stat a `mode` best reads (e.g. "score"); defaults to its own key. */
+  of?: string;
 }
 
 /** A cap on one reported stat. `min`/`max` apply to a reported value; `perSecond` caps it by the time played. */

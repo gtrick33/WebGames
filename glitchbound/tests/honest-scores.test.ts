@@ -139,6 +139,26 @@ describe('lower-is-better Daily Challenge stats (PS-02)', () => {
   });
 });
 
+describe('per-mode bests', () => {
+  it('keeps Star Grid’s and Spot the Glitch’s daily and endless bests apart', () => {
+    const save = emptySave();
+    const sg = game('star-grid');
+    applyRound(save, sg, { type: 'end', score: 2400, stats: { time: 120 }, daily: true }, GAMES);
+    const grid = applyRound(save, sg, { type: 'end', score: 1100, stats: {} }, GAMES);
+    expect(save.games['star-grid']!.best).toEqual({ score: 2400, time: 120, dailyScore: 2400, gridScore: 1100 });
+    // A single grid can't beat the overall best, but it is a best of its own kind.
+    expect(grid.newBests).toEqual([]);
+    expect(applyRound(save, sg, { type: 'end', score: 1150, stats: {} }, GAMES).newBests).toEqual(['gridScore']);
+    // Challenge rounds count toward neither.
+    applyRound(save, sg, { type: 'end', score: 3000, stats: {}, challenge: { id: 'abc12', round: 1 } }, GAMES);
+    expect(save.games['star-grid']!.best).toMatchObject({ score: 3000, dailyScore: 2400, gridScore: 1150 });
+    const sp = game('spot-the-glitch');
+    applyRound(save, sp, { type: 'end', score: 9000, stats: { found: 60, pictures: 12 } }, GAMES);
+    applyRound(save, sp, { type: 'end', score: 2500, stats: { found: 15, clean: 2 }, daily: true }, GAMES);
+    expect(save.games['spot-the-glitch']!.best).toMatchObject({ score: 9000, rushScore: 9000, dailyScore: 2500 });
+  });
+});
+
 describe('the servers refuse impossible rounds', () => {
   afterEach(() => vi.restoreAllMocks());
 

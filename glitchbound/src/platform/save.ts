@@ -82,8 +82,11 @@ export function applyRound(save: Save, game: GameEntry, event: EndEvent, games: 
   const firstPlay = rec.plays === 0;
   const values: Record<string, number> = { ...event.stats, score: event.score };
   const newBests: string[] = [];
+  // A per-mode best counts only its kind of round (see StatDef.mode).
+  const kind = event.daily ? 'daily' : event.challenge ? 'challenge' : 'other';
   for (const stat of game.stats) {
-    const v = values[stat.key];
+    if (stat.mode && stat.mode !== kind) continue;
+    const v = values[stat.of ?? stat.key];
     if (v === undefined) continue;
     const prev = rec.best[stat.key];
     const better = prev === undefined || (stat.lowerIsBetter ? v < prev : v > prev);

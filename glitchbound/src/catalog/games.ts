@@ -396,6 +396,8 @@ export const GAMES: GameEntry[] = [
       { key: 'found', label: 'Most glitches found' },
       { key: 'clean', label: 'Most flawless pictures' },
       { key: 'pictures', label: 'Most Rush pictures cleared' },
+      { key: 'dailyScore', label: 'Best daily score', of: 'score', mode: 'daily' },
+      { key: 'rushScore', label: 'Best Rush score', of: 'score', mode: 'other' },
     ],
     highlights: [
       'Hand-drawn pictures generated from a seed across 13 themes (beach, farm, kitchen, city night, jungle, campsite, harbor, party and more): a practically endless library',
@@ -864,6 +866,8 @@ export const GAMES: GameEntry[] = [
     stats: [
       { key: 'score', label: 'Best score' },
       { key: 'time', label: 'Fastest daily (all three grids)', unit: 's', lowerIsBetter: true },
+      { key: 'dailyScore', label: 'Best daily score', of: 'score', mode: 'daily' },
+      { key: 'gridScore', label: 'Best single grid', of: 'score', mode: 'other' },
     ],
     highlights: ['Every grid has exactly one solution', 'Three daily grids, 6 by 6 to 8 by 8, the same for everyone', 'Endless grids in four sizes, up to 9 by 9'],
     ownDaily: { label: 'Today’s 3 grids' },

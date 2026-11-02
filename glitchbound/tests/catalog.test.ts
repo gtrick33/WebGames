@@ -31,6 +31,17 @@ describe('validateCatalog', () => {
     expect(errors).toMatch(/"odd": limits name stat "nope"/);
   });
 
+  it('checks per-mode bests read a reported stat', () => {
+    const stats = [
+      { key: 'score', label: 'Score' },
+      { key: 'dailyScore', label: 'Best daily', of: 'nope', mode: 'daily' as const },
+      { key: 'loose', label: 'Loose', of: 'score' },
+    ];
+    const errors = validateCatalog([fakeGame({ slug: 'modes', stats, limits: { scorePerSecond: 5 } })]).join('\n');
+    expect(errors).toMatch(/"dailyScore" reads "nope"/);
+    expect(errors).toMatch(/"loose" reads another stat, so it needs a mode/);
+  });
+
   it('makes a lower-is-better daily read as a ceiling (PS-02)', () => {
     const stats = [
       { key: 'score', label: 'Score' },

@@ -782,7 +782,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                   </li>
                 )}
                 {/* a round the server refused gets no record badges */}
-                {!(last.server && !last.server.ok) && last.result.newBests.includes('score') && <li className="sticker" data-tone="lime">{t('New best')}</li>}
+                {!(last.server && !last.server.ok) && last.result.newBests.some((k) => k === 'score' || game.stats.find((s) => s.key === k)?.of === 'score') && <li className="sticker" data-tone="lime">{t('New best')}</li>}
                 {!(last.server && !last.server.ok) && last.result.firstPlay && <li className="sticker">{t('First record')}</li>}
                 {last.result.dailyCompleted && <li className="sticker" data-tone="orange">{t('Daily cleared')}</li>}
                 {last.result.gameDailyCompleted && <li className="sticker" data-tone="orange">{t('{label} done', { label: t(game.ownDaily?.label ?? 'Daily') })}</li>}

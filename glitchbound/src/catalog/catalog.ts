@@ -164,6 +164,11 @@ export function validateCatalog(games: GameEntry[] = GAMES): string[] {
     // Leaderboards and challenges compare scores higher-first; times and counts that shrink are other stats.
     if (g.stats.some((s) => s.key === 'score' && s.lowerIsBetter)) errors.push(`${at}: "score" is always higher-is-better`);
     errors.push(...limitErrors(g).map((e) => `${at}: ${e}`));
+    for (const s of g.stats) {
+      if (s.of !== undefined && !g.stats.some((x) => x.key === s.of && !x.of)) errors.push(`${at}: stat "${s.key}" reads "${s.of}", which is not a reported stat`);
+      if (s.of !== undefined && !s.mode) errors.push(`${at}: stat "${s.key}" reads another stat, so it needs a mode`);
+      if (s.mode && (g.daily ?? []).some((d) => d.metric === s.key)) errors.push(`${at}: a per-mode best can't be a daily metric`);
+    }
     for (const d of g.daily ?? []) {
       const stat = g.stats.find((s) => s.key === d.metric);
       if (!stat) errors.push(`${at}: daily metric "${d.metric}" is not in stats`);
