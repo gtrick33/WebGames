@@ -548,6 +548,11 @@ export function healPlayer(w: World, pct: number, fromHit: boolean, quiet = fals
   return healed;
 }
 
+/** Armor's share of a hit taken, at most 60%. The constant grows with the attacker's level (5 a level, from 60 at
+ * level 12): the same gear for the level cuts about as much at 20 as at 60, so armor rolls, plate and Toughness
+ * keep mattering (levels up to 12 as before). */
+export const armorReduction = (armor: number, level: number): number => Math.min(0.6, armor / (armor + Math.max(60, 5 * level)));
+
 /**
  * The hero takes a hit. Dodging (and other invulnerable moments) avoids it entirely; armor cuts it,
  * a shield soaks it first. Returns whether it landed.
@@ -560,7 +565,7 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
     return false;
   }
   const stats = effStats(w);
-  const reduction = Math.min(0.6, stats.armor / (stats.armor + 60));
+  const reduction = armorReduction(stats.armor, o.source?.level ?? w.hero.level);
   let d = dmg * (1 - reduction);
   if (o.source && hasStatus(o.source, 'weaken')) d *= 1 - statusPower(o.source, 'weaken') / 100;
   // walls and wards: buffs that cut damage taken (at most 75% together)

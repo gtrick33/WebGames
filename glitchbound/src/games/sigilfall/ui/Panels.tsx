@@ -20,6 +20,7 @@ import { heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl } fr
 import type { HeroLook } from '../render/art/hero';
 import { MOUNT_DEFS, MOUNTS } from '../data/mounts';
 import { authoredLooks, BARE_LOOK, LOOK_SLOTS, lookFits, lookOf, lookSource, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
+import { armorReduction } from '../sim/combat';
 import { K, markerPos, parseRegion, TILE, type TileMap } from '../sim/map';
 import { objectiveTarget } from '../sim/objective';
 import { npcRegion, regionLinks } from '../sim/routes';
@@ -165,7 +166,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
             <div key={k}>
               <dt>{STAT_LABEL[k]}</dt>
               <dd>
-                {k === 'armor' ? `${Math.round(b.stats.armor)} (−${Math.round(Math.min(0.6, b.stats.armor / (b.stats.armor + 60)) * 100)}% damage)` : k === 'regen' ? `${b.stats.regen.toFixed(1)}/s` : `${Math.round(b.stats[k])}%`}
+                {k === 'armor' ? `${Math.round(b.stats.armor)} (−${Math.round(armorReduction(b.stats.armor, h.level) * 100)}% damage)` : k === 'regen' ? `${b.stats.regen.toFixed(1)}/s` : `${Math.round(b.stats[k])}%`}
               </dd>
             </div>
           ))}

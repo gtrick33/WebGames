@@ -8,7 +8,8 @@ import { xpToNext } from '../src/games/sigilfall/data/classes';
 import { paragonXp } from '../src/games/sigilfall/progress/paragon';
 import { migrate, saveText, emptySave } from '../src/games/sigilfall/progress/save';
 import { rng } from '../src/games/sigilfall/core/math';
-import { hitEnemy } from '../src/games/sigilfall/sim/combat';
+import { armorReduction, hitEnemy } from '../src/games/sigilfall/sim/combat';
+import { buildHero } from '../src/games/sigilfall/progress/build';
 import { npcRegion } from '../src/games/sigilfall/sim/routes';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
@@ -161,5 +162,21 @@ describe('Sigilfall systems fixes', () => {
     expect(c.para.l).toBe(1);
     expect(c.para.x).toBe(50);
     expect(events).toContain('paragon');
+  });
+
+  it('SFS-09: armor keeps mattering past level 20, and early levels feel as before', () => {
+    for (const [lvl, rar] of [[20, 'uncommon'], [30, 'rare'], [45, 'rare'], [60, 'rare'], [60, 'epic']] as const) {
+      const warrior = buildHero(readyHero('warrior', lvl, rar)).stats.armor;
+      const mage = buildHero(readyHero('mage', lvl, rar)).stats.armor;
+      // below the cap: more armor (plate, a roll, a Toughness point) still means less damage
+      expect(armorReduction(warrior, lvl)).toBeLessThan(0.6);
+      expect(armorReduction(warrior + 2, lvl)).toBeGreaterThan(armorReduction(warrior, lvl));
+      expect(armorReduction(warrior, lvl)).toBeGreaterThan(armorReduction(mage, lvl));
+      expect(armorReduction(mage, lvl)).toBeGreaterThan(0.35);
+    }
+    for (const lvl of [1, 5, 10, 12]) {
+      const armor = buildHero(readyHero('warrior', lvl, 'uncommon')).stats.armor;
+      expect(armorReduction(armor, lvl)).toBe(Math.min(0.6, armor / (armor + 60)));
+    }
   });
 });
