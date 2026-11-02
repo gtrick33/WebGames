@@ -5,7 +5,7 @@ import { leftOf, nearest, pointAt } from '../src/games/mini-racer/geometry';
 import { decodeGhost, decodeReplay, encodeGhost, encodeReplay, GhostRecorder, ghostPose, GHOST_HZ } from '../src/games/mini-racer/ghost';
 import { advanceLaps, bestLap, crossGate, newLapState } from '../src/games/mini-racer/laps';
 import { BODY_OFFSET, BODY_RADIUS, CAR, CAR_RADIUS, collideCarPair, collideCircle, collideSegment, localVelocity, newCar, onLoose, speedOf, stepCar, type Handling } from '../src/games/mini-racer/physics';
-import { aiStyle, autopilot, DT, RaceSim, scoreFor } from '../src/games/mini-racer/sim';
+import { aiStyle, autopilot, bendTable, DT, RaceSim, scoreFor } from '../src/games/mini-racer/sim';
 import { bestSectors, chooseReference, SECTORS, SectorTimer, sectorGates, sectorTimes } from '../src/games/mini-racer/sectors';
 import { buildTrack, bypassed, cellAt, decorRadius, groundAt, KERB, SURFACES, TRACK_TYPES, validateTrack, WALL_HALF, wallOffset, type Checkpoint, type Gate } from '../src/games/mini-racer/track';
 import { TRACKS } from '../src/games/mini-racer/tracks';
@@ -939,5 +939,25 @@ describe('save (MR-12, MR-18, checklist a and i)', () => {
     expect(b.dailyResults).toEqual([{ day: '2026-11-02', score: 2500, race: 44, lap: 14, finished: true }]);
     const bests = { 'daily-2026-10-01': { lap: 9 }, 'daily-2026-11-01': { lap: 9 }, 'daily-2026-11-02': { lap: 9 }, 'sunny-bay': { lap: 9 } };
     expect(Object.keys(pruneDailyBests(bests, ['2026-11-01', '2026-11-02']))).toEqual(['daily-2026-11-01', 'daily-2026-11-02', 'sunny-bay']);
+  });
+});
+
+describe('drift points are earned in bends', () => {
+  const driftOf = (def: (typeof TRACKS)[number], steer: (sim: RaceSim) => number): number => {
+    const sim = new RaceSim(buildTrack(def));
+    for (let i = 0; i < 120 * 200 && !sim.finished; i++) sim.step(steer(sim));
+    return sim.result().drift;
+  };
+  const weave = (sim: RaceSim): number => Math.max(-1, Math.min(1, autopilot(sim) + (Math.sin(sim.time * 5) > 0 ? 0.9 : -0.9)));
+
+  it('weaving round the oval no longer farms drift points, while a rally line still drifts plenty', () => {
+    expect(driftOf(TRACKS.find((d) => d.type === 'oval')!, weave)).toBeLessThan(2500);
+    expect(driftOf(TRACKS.find((d) => d.id === 'canyon-run')!, autopilot)).toBeGreaterThan(5000);
+  });
+
+  it('a straight pays nothing for a slide, a real bend pays in full', () => {
+    const table = bendTable(buildTrack(TRACKS[0]!));
+    expect(Math.min(...table)).toBeLessThan(0.05);
+    expect(Math.max(...table)).toBe(1);
   });
 });

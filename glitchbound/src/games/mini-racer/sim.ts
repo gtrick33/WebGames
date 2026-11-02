@@ -115,6 +115,32 @@ export function aiStyle(level: number): DriverStyle {
 /** Mild catch-up distance: weak AI more than this far behind the player gets `band` more pace. */
 const BAND_DIST = 700;
 
+/**
+ * Drift points need a bend: a slide pays in full where the road turns at least BEND_FULL radians
+ * over BEND_SPAN either side, less on gentle curves and nothing on a straight (weaving down a
+ * straight is not drifting). On top, the track type sets the rate (an oval's slides pay little).
+ */
+const BEND_SPAN = 80;
+const BEND_FULL = 0.12;
+const BEND_STEP = 10;
+const bendTables = new WeakMap<Track, Float32Array>();
+
+/** How much each stretch of the road bends (0 straight .. 1 a full bend), every BEND_STEP of arc length. */
+export function bendTable(track: Track): Float32Array {
+  let table = bendTables.get(track);
+  if (!table) {
+    const path = track.path;
+    table = new Float32Array(Math.max(1, Math.ceil(path.length / BEND_STEP)));
+    for (let k = 0; k < table.length; k++) {
+      const a = pointAt(path, k * BEND_STEP - BEND_SPAN).t;
+      const b = pointAt(path, k * BEND_STEP + BEND_SPAN).t;
+      table[k] = Math.min(1, Math.abs(Math.atan2(a.x * b.y - a.y * b.x, a.x * b.x + a.y * b.y)) / BEND_FULL);
+    }
+    bendTables.set(track, table);
+  }
+  return table;
+}
+
 export const RIVAL_NAMES = ['Rosa Rally', 'Turbo Tam', 'Mo Mudflap', 'Kiki Kerb', 'Dash Delgado', 'Pip Junior'];
 
 export type SimEvent =
@@ -544,9 +570,11 @@ export class RaceSim {
     if (sliding) {
       d.idle = 0;
       d.chainTime += DT;
-      // Faster and more sideways = more points; long chains multiply.
+      // Faster and more sideways = more points, in bends only; long chains multiply.
       const mult = 1 + Math.min(3, Math.floor(d.chainTime / 1.5));
-      d.chain += ((Math.abs(side) * fwd) / 2400) * mult * DT * 10;
+      const bends = bendTable(this.track);
+      const bend = bends[Math.round(this.ground.s / BEND_STEP) % bends.length]!;
+      d.chain += ((Math.abs(side) * fwd) / 2400) * mult * DT * 10 * bend * this.rules.driftPoints;
     } else if (d.chain > 0) {
       d.idle += DT;
       if (d.idle > 0.45) this.bankDrift(events);
