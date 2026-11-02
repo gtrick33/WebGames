@@ -26,7 +26,9 @@ export function refusal(game: GameEntry, score: number, stats: Record<string, nu
     if (cap.perSecond !== undefined && v > cap.perSecond * seconds + Math.max(1, Math.min(50, 10 * cap.perSecond))) return 'bad_stats';
   }
   const sum = (weights: Record<string, number>): number => Object.entries(weights).reduce((n, [k, w]) => n + w * (stats[k] ?? 0), 0);
-  if (l.scoreIs && score !== sum(l.scoreIs)) return 'bad_stats';
-  if (l.scoreAtMost && score > sum(l.scoreAtMost)) return 'implausible_score';
+  // Checked when the round reports those stats (a round without them has nothing to contradict its score).
+  const reported = (weights: Record<string, number>): boolean => Object.keys(weights).every((k) => stats[k] !== undefined);
+  if (l.scoreIs && reported(l.scoreIs) && score !== sum(l.scoreIs)) return 'bad_stats';
+  if (l.scoreAtMost && reported(l.scoreAtMost) && score > sum(l.scoreAtMost)) return 'implausible_score';
   return '';
 }

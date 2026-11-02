@@ -799,8 +799,8 @@ export const GAMES: GameEntry[] = [
       { metric: 'score', targets: [300, 500, 800, 1200], label: 'Score {n} points in one Gloop jar' },
       { metric: 'biggest', targets: [6, 7, 8], label: 'Grow a size-{n} blob in Gloop' },
     ],
-    // The fastest legit drop-spam scores ~26 points/s (GL-06); human play 9-14.
-    limits: { scorePerSecond: 50, minSeconds: 3, stats: { biggest: { max: 11 } } },
+    // The fastest legit drop-spam scores ~26 points/s (GL-06); human play 9-14. 60 keeps 2× headroom.
+    limits: { scorePerSecond: 60, minSeconds: 3, stats: { biggest: { max: 11 } } },
   },
   {
     slug: 'gut-check',
