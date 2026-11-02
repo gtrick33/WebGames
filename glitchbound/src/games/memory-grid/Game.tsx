@@ -4,13 +4,29 @@
  */
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { GameModuleProps } from '../../platform/contract';
-import { dayKey } from '../../platform/dates';
+import { dayKey, msUntilMidnight } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { createSfx, type Sfx } from './audio';
 import { accuracy, createRun, next, playbackDone, resumeRun, tap, tick, type RunState } from './engine';
 import { dailySeed, levelFor, MODES, PERFECT_LADDER, perfectSeed, randomSeed, SPEED_PENALTY_SECONDS, type Mode } from './pattern';
-import { dailyToResume, dailyUsedToday, liveStreak, loadRecords, playedDailyToday, recordRun, saveRecords, type RecordOutcome, type Records } from './records';
+import {
+  dailyToResume,
+  dailyUsedToday,
+  freshRecords,
+  liveStreak,
+  loadRecords,
+  playedDailyToday,
+  progressSummary,
+  pruneChallenges,
+  recordRun,
+  RECORDS_KEY,
+  saveRecords,
+  settleDaily,
+  type DailyProgress,
+  type RecordOutcome,
+  type Records,
+} from './records';
 import { NextDaily } from '../../components/NextDaily';
 import { MODE_NAMES, reportStats, resultLine, shareText, type RunSummary } from './scoring';
 import './Game.css';
@@ -19,7 +35,7 @@ import { GameMenuButton } from '../../components/GameMenuButton';
 
 const MODE_BLURB: Record<Mode, string> = {
   classic: 'One more step every round. One slip ends it.',
-  speed: '60 seconds on your turns. Misses cost 5 s.',
+  speed: '60 seconds on your turns. Misses cost 5 s.',
   daily: 'Same patterns for everyone today.',
   perfect: '10 set patterns, new every week. Zero mistakes.',
 };
@@ -40,40 +56,92 @@ function reportEnd(host: GameModuleProps['host'], score: number, stats: Record<s
 
 type Screen = 'menu' | 'play' | 'result' | 'records';
 type Flash = { tile: number; kind: 'hit' | 'miss'; id: number } | null;
+type Outcome = RecordOutcome & { summary: RunSummary };
+/**
+ * The card over the board: paused by the arcade or a hidden tab, or asking before a run is left ('slip':
+ * leaving ends the daily, its pattern was shown).
+ */
+type Pause = 'pause' | 'leave' | 'slip' | null;
+type Challenge = NonNullable<GameModuleProps['challenge']>;
 
-export default function Game({ host, restartKey, challenge }: GameModuleProps) {
-  return <MemoryGrid key={restartKey} host={host} challenge={challenge} />;
+/** What the current run counts as: the day it started, whether it is that day's Daily Challenge, and its challenge round. */
+interface RunCtx {
+  day: string;
+  daily: boolean;
+  challengeKey?: string;
 }
 
-/** A friends' challenge is a Classic run on patterns from the challenge's seed. */
-const challengeRun = (c: NonNullable<GameModuleProps['challenge']>): RunState => createRun('classic', `challenge:${c.seed}`);
+export default function Game({ host, restartKey, challenge, pauseKey }: GameModuleProps) {
+  return <MemoryGrid key={restartKey} host={host} challenge={challenge} pauseKey={pauseKey} />;
+}
 
-function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challenge'>) {
+const isDayKey = (d: string | undefined): d is string => !!d && /^\d{4}-\d{2}-\d{2}$/.test(d);
+
+/**
+ * A friends' challenge round. A "Today's daily" challenge plays the game's own daily for its day; a fresh one
+ * is a Classic run on patterns from the challenge's seed.
+ */
+function challengeSetup(c: Challenge): { mode: Mode; seed: string; day?: string } {
+  if (c.mode === 'daily' && isDayKey(c.day)) return { mode: 'daily', seed: dailySeed(c.day), day: c.day };
+  return { mode: 'classic', seed: `challenge:${c.seed}` };
+}
+
+/** A run picked up from its saved progress, ended there (a slip, or a finished round shown again). */
+function endedRun(mode: Mode, seed: string, p: DailyProgress, complete = false): RunState {
+  return { ...resumeRun(mode, seed, p), phase: 'over', end: complete ? 'complete' : 'mistake' };
+}
+
+function focusVisible(el: Element): boolean {
+  try {
+    return el.matches(':focus-visible');
+  } catch {
+    return false;
+  }
+}
+
+function MemoryGrid({ host, challenge, pauseKey }: Pick<GameModuleProps, 'host' | 'challenge' | 'pauseKey'>) {
   const [records, setRecords] = useState<Records>(loadRecords);
   const [screen, setScreen] = useState<Screen>(challenge ? 'play' : 'menu');
-  const [firstRun] = useState(() => (challenge ? challengeRun(challenge) : null));
-  const [run, setRun] = useState<RunState | null>(firstRun);
+  const [run, setRun] = useState<RunState | null>(null);
   const [lit, setLit] = useState<number | null>(null);
   const [flash, setFlash] = useState<Flash>(null);
   const [cursor, setCursor] = useState(0);
   const [keyboardNav, setKeyboardNav] = useState(false);
-  const [outcome, setOutcome] = useState<(RecordOutcome & { summary: RunSummary }) | null>(null);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [note, setNote] = useState('');
   const [shareNote, setShareNote] = useState('');
   const [boardMode, setBoardMode] = useState<Mode>('classic');
-  const [replay, setReplay] = useState(0);
-  const [today] = useState(() => dayKey());
+  const [paused, setPaused] = useState<Pause>(null);
+  const [today, setToday] = useState(() => dayKey());
 
-  const runRef = useRef<RunState | null>(firstRun);
+  const runRef = useRef<RunState | null>(null);
+  const ctxRef = useRef<RunCtx>({ day: today, daily: false });
+  /** The round whose playback has begun: its one look is used up. */
+  const shownRef = useRef(0);
+  const screenRef = useRef(screen);
+  const pausedRef = useRef(paused);
   const inChallenge = useRef(!!challenge);
   const [challengeShown, setChallengeShown] = useState(!!challenge);
   const sfxRef = useRef<Sfx | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const recordsRef = useRef(records);
   const flashId = useRef(0);
+  const booted = useRef(false);
 
   useEffect(() => {
     recordsRef.current = records;
   }, [records]);
+  useEffect(() => {
+    screenRef.current = screen;
+  }, [screen]);
+  /** Back to the menu, which always shows the real day (a tab left open over midnight). */
+  const toMenu = useCallback(() => {
+    setToday(dayKey());
+    setScreen('menu');
+  }, []);
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
 
   // Sound: one lazily created AudioContext, closed on unmount.
   useEffect(() => {
@@ -90,91 +158,204 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
     setRun(n);
   }, []);
 
-  const finish = useCallback(
-    (s: RunState) => {
-      const summary: RunSummary = {
-        mode: s.mode,
-        score: s.score,
-        cleared: s.cleared,
-        longest: s.longest,
-        accuracy: accuracy(s),
-        taps: s.taps,
-        inputMs: s.inputMs,
-        complete: s.end === 'complete',
-      };
-      const out = recordRun(recordsRef.current, summary, today);
-      recordsRef.current = out.records;
-      setRecords(out.records);
-      saveRecords(out.records);
-      setOutcome({ ...out, summary });
-      setShareNote('');
-      if (inChallenge.current && challenge) host.report({ type: 'end', score: s.score, stats: reportStats(summary), challenge: { id: challenge.id, round: challenge.round } });
-      else reportEnd(host, s.score, reportStats(summary), out.officialDaily);
-      if (s.end === 'complete') sfxRef.current?.complete();
-    },
-    [host, today, challenge],
-  );
-
   const keepRecords = useCallback((r: Records) => {
     recordsRef.current = r;
     setRecords(r);
     saveRecords(r);
   }, []);
 
-  // A challenge round starts straight away.
-  useEffect(() => {
-    if (challenge) host.report({ type: 'start' });
-    // A Daily Challenge started (and left) before unfinished runs were saved can't be resumed: it ends
-    // here, once, with nothing scored, so the arcade streak still counts the day.
-    const r = recordsRef.current;
-    if (r.dailyStarted === today && !playedDailyToday(r, today) && !r.dailyRun) {
-      const summary: RunSummary = { mode: 'daily', score: 0, cleared: 0, longest: 0, accuracy: 0, taps: 0, inputMs: 0, complete: false };
-      keepRecords(recordRun(r, summary, today).records);
-      reportEnd(host, 0, reportStats(summary), true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /** Read-modify-write: another tab may have saved since this one loaded. */
+  const update = useCallback((fn: (r: Records) => Records) => keepRecords(fn(freshRecords(recordsRef.current))), [keepRecords]);
 
-  /** Saves where today's Daily Challenge stands (after each cleared pattern), so it can be resumed. */
-  const keepDaily = useCallback(
-    (s: RunState, round: number) => {
-      const { cleared, longest, score, taps, correctTaps, inputMs } = s;
-      keepRecords({ ...recordsRef.current, dailyStarted: today, dailyRun: { day: today, round, cleared, longest, score, taps, correctTaps, inputMs } });
+  /** Saves where a Daily Challenge or a challenge round stands, so leaving or reloading picks it up (or ends it). */
+  const keepProgress = useCallback(
+    (s: RunState, round: number, shown?: number) => {
+      const ctx = ctxRef.current;
+      if (!ctx.daily && !ctx.challengeKey) return;
+      const p: DailyProgress = { day: ctx.day, round, cleared: s.cleared, longest: s.longest, score: s.score, taps: s.taps, correctTaps: s.correctTaps, inputMs: Math.round(s.inputMs), ...(shown ? { shown } : {}) };
+      update((r) => {
+        const n = { ...r };
+        if (ctx.daily && !playedDailyToday(r, ctx.day)) {
+          n.dailyStarted = ctx.day;
+          n.dailyRun = p;
+        }
+        if (ctx.challengeKey) n.challenges = pruneChallenges({ ...r.challenges, [ctx.challengeKey]: p }, ctx.day);
+        return n;
+      });
     },
-    [keepRecords, today],
+    [update],
   );
 
-  const start = useCallback(
-    (mode: Mode) => {
-      // The Daily Challenge is one try a day: starting it uses the try up, but a run left halfway
-      // (back to the menu, a reload) picks up again at the pattern it had reached.
-      let first: RunState | null = null;
-      if (mode === 'daily') {
-        if (playedDailyToday(recordsRef.current, today)) return;
-        const resume = dailyToResume(recordsRef.current, today);
-        first = resume ? resumeRun('daily', dailySeed(today), resume) : createRun('daily', dailySeed(today));
-        keepDaily(first, first.round);
+  const finish = useCallback(
+    (s: RunState, opts: { note?: string; record?: boolean } = {}) => {
+      const ctx = ctxRef.current;
+      const summary: RunSummary = {
+        mode: s.mode,
+        score: s.score,
+        cleared: s.cleared,
+        longest: s.longest,
+        accuracy: s.taps > 0 ? accuracy(s) : 0,
+        taps: s.taps,
+        inputMs: s.inputMs,
+        complete: s.end === 'complete',
+      };
+      const fresh = freshRecords(recordsRef.current);
+      // A challenge on another day's daily patterns is not that day's daily: it stays out of the local records.
+      const skip = opts.record === false || (s.mode === 'daily' && !ctx.daily);
+      const out: RecordOutcome = skip ? { records: fresh, newBest: [], place: null, officialDaily: false } : recordRun(fresh, summary, ctx.day);
+      let r = out.records;
+      if (ctx.challengeKey) {
+        const done = { day: ctx.day, round: s.round, cleared: s.cleared, longest: s.longest, score: s.score, taps: s.taps, correctTaps: s.correctTaps, inputMs: Math.round(s.inputMs), done: true, ...(summary.complete ? { complete: true } : {}) };
+        r = { ...r, challenges: pruneChallenges({ ...r.challenges, [ctx.challengeKey]: done }, ctx.day) };
       }
-      inChallenge.current = false;
-      setChallengeShown(false);
+      keepRecords(r);
+      setOutcome({ ...out, records: r, summary });
+      setNote(opts.note ?? '');
+      setShareNote('');
+      // A daily finished after midnight is recorded under its own day, but it is no longer the arcade's daily.
+      const isDaily = out.officialDaily && ctx.day === dayKey();
+      const stats = reportStats(summary);
+      if (ctx.challengeKey && challenge) host.report({ type: 'end', score: s.score, stats, ...(isDaily ? { daily: true } : {}), challenge: { id: challenge.id, round: challenge.round } });
+      else reportEnd(host, s.score, stats, isDaily);
+      if (s.end === 'complete') sfxRef.current?.complete();
+    },
+    [host, challenge, keepRecords],
+  );
+
+  /** Ends a Daily Challenge that can't go on (see settleDaily), unless this tab is playing it right now. */
+  const settle = useCallback(() => {
+    const live = runRef.current;
+    if (live && ctxRef.current.daily && live.phase !== 'over' && screenRef.current === 'play') return;
+    const now = dayKey();
+    const st = settleDaily(freshRecords(recordsRef.current), now);
+    if (!st) return;
+    keepRecords(st.records);
+    if (st.summary && st.day === now) reportEnd(host, st.summary.score, reportStats(st.summary), true);
+  }, [host, keepRecords]);
+
+  /** Shows a run that already ended as the result screen. */
+  const showEnded = useCallback(
+    (s: RunState, o: Outcome, n: string) => {
+      commit(s);
+      setOutcome(o);
+      setNote(n);
+      setScreen('result');
+    },
+    [commit],
+  );
+
+  const begin = useCallback(
+    (first: RunState) => {
+      shownRef.current = 0;
       sfxRef.current?.unlock();
-      const seed = mode === 'daily' ? dailySeed(today) : mode === 'perfect' ? perfectSeed(today) : randomSeed();
-      commit(first ?? createRun(mode, seed));
+      commit(first);
+      keepProgress(first, first.round);
       setCursor(0);
       setFlash(null);
       setLit(null);
       setOutcome(null);
-      setBoardMode(mode);
+      setNote('');
+      setPaused(null);
+      setBoardMode(first.mode);
       setScreen('play');
       host.report({ type: 'start' });
     },
-    [commit, host, today, keepDaily],
+    [commit, host, keepProgress],
+  );
+
+  /**
+   * A challenge round is one attempt: a finished round shows its result again, a round left after a pattern
+   * was shown ends at once with its score so far, and one left between patterns picks up again.
+   */
+  const beginChallenge = useCallback(
+    (c: Challenge) => {
+      const now = dayKey();
+      const key = `${c.id}:${c.round}`;
+      const { mode, seed, day } = challengeSetup(c);
+      const realDaily = mode === 'daily' && day === now;
+      ctxRef.current = { day: day ?? now, daily: realDaily, challengeKey: key };
+      const r = freshRecords(recordsRef.current);
+      const entry = r.challenges?.[key];
+      if (entry?.done) {
+        const s = endedRun(mode, seed, entry, entry.complete);
+        showEnded(s, { records: r, newBest: [], place: null, officialDaily: false, summary: progressSummary(entry, mode, entry.complete) }, 'You already played this round.');
+        return;
+      }
+      if (realDaily && r.daily?.day === now) {
+        // One attempt for both: today's daily result is this round's score.
+        const d = r.daily;
+        const p: DailyProgress = { day: now, round: d.cleared + 1, cleared: d.cleared, longest: d.longest ?? 0, score: d.score, taps: d.accuracy > 0 ? 100 : 0, correctTaps: d.accuracy, inputMs: 0 };
+        commit(endedRun(mode, seed, p));
+        finish(endedRun(mode, seed, p), { note: 'Your daily result counts here.', record: false });
+        setScreen('result');
+        return;
+      }
+      if (realDaily) {
+        const resume = dailyToResume(r, now);
+        begin(resume ? resumeRun(mode, seed, resume) : createRun(mode, seed));
+        return;
+      }
+      if (entry && entry.shown === entry.round) {
+        const s = endedRun(mode, seed, entry);
+        commit(s);
+        finish(s, { note: 'This round was already started.' });
+        setScreen('result');
+        return;
+      }
+      begin(entry ? resumeRun(mode, seed, entry) : createRun(mode, seed));
+    },
+    [begin, commit, finish, showEnded],
+  );
+
+  // On mount: settle a daily that can't go on, then a challenge round starts straight away.
+  useEffect(() => {
+    if (booted.current) return;
+    booted.current = true;
+    settle();
+    if (challenge) beginChallenge(challenge);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Midnight: the day moves on by itself, and a daily left unfinished yesterday is settled under its own day.
+  const dayRef = useRef(today);
+  useEffect(() => {
+    if (dayRef.current !== today) {
+      dayRef.current = today;
+      settle();
+    }
+    const t = window.setTimeout(() => setToday(dayKey()), msUntilMidnight() + 50);
+    return () => clearTimeout(t);
+  }, [today, settle]);
+
+  const start = useCallback(
+    (mode: Mode) => {
+      // The Daily Challenge is one try a day: starting it uses the try up, but a run left between patterns
+      // (back to the menu, a reload) picks up again at the pattern it had reached.
+      const now = dayKey();
+      setToday(now);
+      let first: RunState;
+      if (mode === 'daily') {
+        settle();
+        const r = freshRecords(recordsRef.current);
+        if (playedDailyToday(r, now)) {
+          keepRecords(r);
+          return;
+        }
+        const resume = dailyToResume(r, now);
+        first = resume ? resumeRun('daily', dailySeed(now), resume) : createRun('daily', dailySeed(now));
+      } else first = createRun(mode, mode === 'perfect' ? perfectSeed(now) : randomSeed());
+      ctxRef.current = { day: now, daily: mode === 'daily' };
+      inChallenge.current = false;
+      setChallengeShown(false);
+      begin(first);
+    },
+    [begin, keepRecords, settle],
   );
 
   const onTap = useCallback(
     (tile: number) => {
       const s = runRef.current;
-      if (!s) return;
+      if (!s || pausedRef.current) return;
       const n = tap(s, tile, performance.now());
       if (n === s) return;
       commit(n);
@@ -184,34 +365,89 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
         sfxRef.current?.tile(tile);
         if (n.phase === 'cleared') sfxRef.current?.cleared();
       } else sfxRef.current?.wrong();
-      if (n.phase === 'cleared' && n.mode === 'daily') keepDaily(n, n.round + 1);
+      if (n.phase === 'cleared') keepProgress(n, n.round + 1);
       if (n.phase === 'over') finish(n);
     },
-    [commit, finish, keepDaily],
+    [commit, finish, keepProgress],
   );
 
   const toggleMute = useCallback(() => {
-    const r = { ...recordsRef.current, muted: !recordsRef.current.muted };
-    recordsRef.current = r;
-    setRecords(r);
-    saveRecords(r);
-    sfxRef.current?.setMuted(r.muted);
-    if (!r.muted) sfxRef.current?.unlock();
-  }, []);
+    let muted = false;
+    update((r) => {
+      muted = !recordsRef.current.muted;
+      return { ...r, muted };
+    });
+    sfxRef.current?.setMuted(muted);
+    if (!muted) sfxRef.current?.unlock();
+  }, [update]);
 
   const phase = run?.phase;
   const round = run?.round;
 
+  /** Pauses a run in progress: the arcade's pauseKey, a hidden tab. */
+  const pauseNow = useCallback(() => {
+    const s = runRef.current;
+    if (screenRef.current === 'play' && s && s.phase !== 'over') setPaused((p) => p ?? 'pause');
+  }, []);
+
+  const pauseSeen = useRef(pauseKey);
+  useEffect(() => {
+    if (pauseKey === pauseSeen.current) return;
+    pauseSeen.current = pauseKey;
+    pauseNow();
+  }, [pauseKey, pauseNow]);
+
+  // A hidden tab would miss the playback (or run the clock): pause, and play the pattern again on Continue.
+  useEffect(() => {
+    const onVis = (): void => {
+      if (document.visibilityState === 'hidden') pauseNow();
+      else setToday(dayKey());
+    };
+    const onFocus = (): void => setToday(dayKey());
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [pauseNow]);
+
+  // Another tab saved: show its records; a daily it finished can't go on here.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent): void => {
+      if (e.key !== RECORDS_KEY && e.key !== null) return;
+      const r = loadRecords();
+      recordsRef.current = r;
+      setRecords(r);
+      sfxRef.current?.setMuted(r.muted);
+      const s = runRef.current;
+      const ctx = ctxRef.current;
+      if (screenRef.current === 'play' && s && ctx.daily && s.phase !== 'over' && playedDailyToday(r, ctx.day)) {
+        commit(null);
+        setPaused(null);
+        toMenu();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [commit, toMenu]);
+
   // Playback: light each step in turn, then hand over to the player. Input is ignored meanwhile (engine).
+  // Pausing cancels it; it plays again from the start on Continue.
   useEffect(() => {
     const s = runRef.current;
-    if (!s || phase !== 'showing') return;
+    if (!s || phase !== 'showing' || paused) return;
     const timers: number[] = [];
     const { litMs, gapMs } = s.level;
     let t = LEAD_IN_MS;
-    s.sequence.forEach((tile) => {
+    s.sequence.forEach((tile, k) => {
       timers.push(
         window.setTimeout(() => {
+          // The pattern is now seen: a daily or challenge round left from here ends as a slip.
+          if (k === 0 && shownRef.current !== s.round) {
+            shownRef.current = s.round;
+            keepProgress(s, s.round, s.round);
+          }
           setLit(tile);
           sfxRef.current?.tile(tile);
         }, t),
@@ -230,20 +466,11 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
       timers.forEach(clearTimeout);
       setLit(null);
     };
-  }, [phase, round, replay, commit]);
-
-  // A hidden tab would miss the playback: replay it when the player comes back.
-  useEffect(() => {
-    const onVis = (): void => {
-      if (document.visibilityState === 'visible' && runRef.current?.phase === 'showing') setReplay((r) => r + 1);
-    };
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, []);
+  }, [phase, round, paused, commit, keepProgress]);
 
   // Feedback beats between patterns, and the pause before the result screen.
   useEffect(() => {
-    if (phase !== 'cleared' && phase !== 'missed' && phase !== 'over') return;
+    if (paused || (phase !== 'cleared' && phase !== 'missed' && phase !== 'over')) return;
     const delay = phase === 'cleared' ? CLEARED_MS : phase === 'missed' ? MISSED_MS : OVER_MS;
     const t = window.setTimeout(() => {
       const cur = runRef.current;
@@ -252,11 +479,12 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
       else commit(next(cur));
     }, delay);
     return () => clearTimeout(t);
-  }, [phase, round, commit]);
+  }, [phase, round, paused, commit]);
 
-  // The player's-turn clock (Speed Run countdown, Perfect Recall time). rAF stops in hidden tabs, so it pauses.
+  // The player's-turn clock (Speed Run countdown, Perfect Recall time). It stops while paused. The running
+  // time lives in runRef; React re-renders only when the shown seconds (or the phase) change.
   useEffect(() => {
-    if (phase !== 'input') return;
+    if (phase !== 'input' || paused) return;
     let raf = 0;
     let last = performance.now();
     const loop = (now: number): void => {
@@ -266,7 +494,8 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
       if (cur) {
         const n = tick(cur, dt);
         if (n !== cur) {
-          commit(n);
+          if (n.phase !== cur.phase || (n.mode === 'speed' && Math.ceil(n.timeLeftMs / 1000) !== Math.ceil(cur.timeLeftMs / 1000))) commit(n);
+          else runRef.current = n;
           if (n.phase === 'over') {
             sfxRef.current?.wrong();
             finish(n);
@@ -278,7 +507,7 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [phase, round, commit, finish]);
+  }, [phase, round, paused, commit, finish]);
 
   useEffect(() => {
     if (!flash) return;
@@ -286,21 +515,56 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
     return () => clearTimeout(t);
   }, [flash]);
 
+  /** Whether leaving now uses up the daily: its current pattern has been shown. */
+  const dailyShown = (s: RunState): boolean => ctxRef.current.daily && shownRef.current === s.round && (s.phase === 'showing' || s.phase === 'input');
+
+  const leave = useCallback(() => {
+    const s = runRef.current;
+    setPaused(null);
+    if (s && s.phase !== 'over' && ctxRef.current.daily && shownRef.current === s.round && (s.phase === 'showing' || s.phase === 'input')) {
+      // One slip ends the daily, and so does leaving after a pattern was shown: its points so far count.
+      finish({ ...s, phase: 'over', end: 'mistake' });
+    }
+    commit(null);
+    toMenu();
+  }, [commit, finish, toMenu]);
+
+  const onBack = (): void => {
+    const s = runRef.current;
+    if (screen === 'play' && s && s.phase !== 'over' && (ctxRef.current.daily ? dailyShown(s) : s.score > 0)) setPaused(ctxRef.current.daily ? 'slip' : 'leave');
+    else leave();
+  };
+
   // Keyboard: arrows move the cursor, Enter / Space taps, 1-9 tap a 3x3 grid like a number pad, M mutes.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      // Keys for a field or button around the game are not for the grid. Clicking the game's background
-      // focuses the page's <main>, which must not switch the keyboard off.
+      const root = rootRef.current;
       const target = e.target instanceof HTMLElement ? e.target : null;
-      if (target && !rootRef.current?.contains(target) && target.closest('input, textarea, select, button, a, [contenteditable="true"]')) return;
+      if (target) {
+        // Keys for a field or a dialog are not for the grid (the pause card handles its own buttons).
+        if (target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="dialog"], [aria-modal="true"]')) return;
+        // Nor are keys for the page around the game. Clicking the game's background focuses the page's
+        // <main>, which holds the game: that must not switch the keyboard off.
+        if (root && target !== document.body && !root.contains(target) && !target.contains(root)) return;
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const act = e.key === 'Enter' || e.key === ' ';
+      // A keyboard-focused button keeps Enter / Space (the tiles are played below).
+      if (act && target?.closest('button, a') && !target.closest('.mg-tile') && focusVisible(target)) return;
       if (e.key === 'm' || e.key === 'M') {
-        toggleMute();
+        if (!e.repeat) toggleMute();
+        return;
+      }
+      if (pausedRef.current) {
+        if (e.key === 'Escape' || (act && pausedRef.current === 'pause')) {
+          e.preventDefault();
+          setPaused(null);
+        }
         return;
       }
       const s = runRef.current;
       if (screen === 'result') {
-        if (s && !inChallenge.current && (e.key === 'r' || e.key === 'R' || (e.key === 'Enter' && !(target instanceof HTMLButtonElement)))) {
+        if (s && !inChallenge.current && !e.repeat && (e.key === 'r' || e.key === 'R' || (e.key === 'Enter' && !(target instanceof HTMLButtonElement)))) {
           e.preventDefault();
           // Like the button: the daily is one try a day, so its result offers Classic.
           start(s.mode === 'daily' ? 'classic' : s.mode);
@@ -322,14 +586,15 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
       else if (e.key === 'ArrowRight') move(1, 0);
       else if (e.key === 'ArrowUp') move(0, -1);
       else if (e.key === 'ArrowDown') move(0, 1);
-      else if (e.key === 'Enter' || e.key === ' ') {
+      else if (act) {
         e.preventDefault();
         setKeyboardNav(true);
         if (!e.repeat) onTap(Math.min(cursor, n * n - 1));
       } else if (n === 3 && /^[1-9]$/.test(e.key) && !e.repeat) {
         // Number-pad layout: 7 8 9 on top, 1 2 3 at the bottom.
-        const k = Number(e.key) - 1;
-        onTap((2 - Math.floor(k / 3)) * 3 + (k % 3));
+        const d = Number(e.key) - 1;
+        setKeyboardNav(true);
+        onTap((2 - Math.floor(d / 3)) * 3 + (d % 3));
       }
     };
     window.addEventListener('keydown', onKey);
@@ -338,22 +603,21 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
 
   const share = async (): Promise<void> => {
     if (!outcome) return;
-    const text = shareText({ ...outcome.summary, day: today, streak: liveStreak(records, today), ladder: PERFECT_LADDER.length });
+    const text = shareText({ ...outcome.summary, day: ctxRef.current.day, streak: liveStreak(records, today), ladder: PERFECT_LADDER.length });
     const res = await shareOrCopy({ title: 'Memory Grid', text, url: `${window.location.origin}/games/memory-grid` });
     setShareNote(res === 'copied' ? 'Copied to clipboard' : res === 'shared' ? 'Shared!' : res === 'failed' ? 'Could not copy' : '');
   };
 
   const muted = records.muted;
   const streak = liveStreak(records, today);
+  // A challenge round is one attempt: no Back while it runs (the arcade's own menu stays).
+  const showBack = screen === 'records' || (screen === 'play' && !challengeShown);
 
   return (
     <div className="mg" ref={rootRef} data-screen={screen} data-kbd={keyboardNav || undefined} onPointerDown={() => setKeyboardNav(false)}>
       <div className="mg-top">
-        {screen === 'play' || screen === 'records' ? (
-          <button className="mg-icon" onClick={() => {
-              commit(null);
-              setScreen('menu');
-            }} aria-label="Back to menu">
+        {showBack ? (
+          <button className="mg-icon" onClick={onBack} aria-label="Back to menu">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -366,7 +630,7 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
             <i />
           </span>
         )}
-        <span className="mg-top-title">{screen === 'play' && run ? MODE_NAMES[run.mode] : screen === 'records' ? 'Local records' : 'Memory Grid'}</span>
+        <span className="mg-top-title">{screen === 'play' && run ? (challengeShown ? '⚔️ Challenge round' : MODE_NAMES[run.mode]) : screen === 'records' ? 'Local records' : 'Memory Grid'}</span>
         <GameMenuButton className="mg-icon" />
         <button className="mg-icon" onClick={toggleMute} aria-label={muted ? 'Unmute sound' : 'Mute sound'} aria-pressed={muted}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -392,20 +656,67 @@ function MemoryGrid({ host, challenge }: Pick<GameModuleProps, 'host' | 'challen
 
       {screen === 'records' && <RecordsView records={records} mode={boardMode} onMode={setBoardMode} />}
 
-      {screen === 'play' && run && <Play run={run} lit={lit} flash={flash} cursor={cursor} best={records.best[run.mode]?.score ?? 0} onTap={onTap} onCursor={setCursor} />}
+      {screen === 'play' && run && (
+        <Play run={run} lit={lit} flash={flash} cursor={cursor} keyboardNav={keyboardNav} best={records.best[run.mode]?.score ?? 0} onTap={onTap} onCursor={setCursor} />
+      )}
+
+      {screen === 'play' && run && paused && (
+        <PauseCard
+          kind={paused === 'pause' ? 'pause' : 'leave'}
+          text={
+            paused !== 'pause'
+              ? paused === 'slip'
+                ? `The daily ends here with ${run.score} pts: leaving after a pattern was shown counts as a slip.`
+                : `${run.score} pts won’t count.`
+              : run.phase === 'showing'
+                ? 'The pattern plays again from the start.'
+                : run.phase === 'input'
+                  ? 'Your turn waits for you. The clock is stopped.'
+                  : 'Ready when you are.'
+          }
+          onResume={() => setPaused(null)}
+          onLeave={leave}
+        />
+      )}
 
       {screen === 'result' && run && outcome && (
         <Result
           run={run}
           challengeId={challengeShown ? challenge?.id : undefined}
           outcome={outcome}
+          note={note}
           streak={streak}
           shareNote={shareNote}
           onRetry={() => start(run.mode === 'daily' ? 'classic' : run.mode)}
-          onMenu={() => setScreen('menu')}
+          onMenu={toMenu}
           onShare={() => void share()}
         />
       )}
+    </div>
+  );
+}
+
+function PauseCard({ kind, text, onResume, onLeave }: { kind: 'pause' | 'leave'; text: string; onResume: () => void; onLeave: () => void }) {
+  return (
+    <div className="mg-pause" role="dialog" aria-modal="true" aria-labelledby="mg-pause-title" aria-describedby="mg-pause-text">
+      <div className="mg-pause-card">
+        <h2 id="mg-pause-title" className="mg-pause-title">
+          {kind === 'leave' ? 'Leave this run?' : 'Paused'}
+        </h2>
+        <p id="mg-pause-text" className="mg-pause-text">
+          {text}
+        </p>
+        <div className="mg-pause-actions">
+          <button className="mg-btn mg-btn-go" onClick={onResume} autoFocus>
+            {kind === 'leave' ? 'Keep playing' : 'Continue'}
+          </button>
+          {kind === 'leave' && (
+            <button className="mg-btn mg-btn-ghost" onClick={onLeave}>
+              Leave
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -489,7 +800,9 @@ function RecordsView({ records, mode, onMode }: { records: Records; mode: Mode; 
       </ol>
       {best && (
         <p className="mg-records-foot">
-          {best.plays} {best.plays === 1 ? 'run' : 'runs'} · best accuracy {best.accuracy}%{best.fastest ? ` · fastest ${best.fastest}s` : ''}
+          {best.plays} {best.plays === 1 ? 'run' : 'runs'}
+          {best.accuracy > 0 ? ` · best accuracy ${best.accuracy}%` : ''}
+          {best.fastest ? ` · fastest ${best.fastest}s` : ''}
         </p>
       )}
     </div>
@@ -505,6 +818,7 @@ function Play({
   lit,
   flash,
   cursor,
+  keyboardNav,
   best,
   onTap,
   onCursor,
@@ -513,6 +827,7 @@ function Play({
   lit: number | null;
   flash: Flash;
   cursor: number;
+  keyboardNav: boolean;
   best: number;
   onTap: (t: number) => void;
   onCursor: (t: number) => void;
@@ -535,6 +850,11 @@ function Play({
                 ? 'Time!'
                 : 'Not quite…';
   const upcoming = run.phase === 'cleared' ? levelFor(run.mode, run.round + 1, run.cleared) : null;
+  // Keyboard play moves real focus, so screen readers announce the tile.
+  const tileRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  useEffect(() => {
+    if (keyboardNav) tileRefs.current[cursor]?.focus({ preventScroll: true });
+  }, [keyboardNav, cursor, size]);
 
   return (
     <div className={`mg-play mg-phase-${run.phase}`}>
@@ -551,7 +871,7 @@ function Play({
       </div>
 
       <div className="mg-boardwrap">
-        <div className="mg-board" style={{ '--n': size } as CSSProperties} role="grid" aria-label={`${size} by ${size} memory grid`}>
+        <div className="mg-board" style={{ '--n': size } as CSSProperties} role="group" aria-label={`${size} by ${size} memory grid`}>
           {Array.from({ length: total }, (_, i) => {
             const row = Math.floor(i / size);
             const cls = [
@@ -567,6 +887,9 @@ function Play({
             return (
               <button
                 key={`${size}-${i}`}
+                ref={(el) => {
+                  tileRefs.current[i] = el;
+                }}
                 className={cls}
                 style={{ '--c': TILE_COLORS[(row * size + (i % size)) % TILE_COLORS.length], '--d': `${(row + (i % size)) * 22}ms` } as CSSProperties}
                 tabIndex={cursor === i ? 0 : -1}
@@ -615,6 +938,7 @@ function Result({
   run,
   challengeId,
   outcome,
+  note,
   streak,
   shareNote,
   onRetry,
@@ -624,7 +948,9 @@ function Result({
   run: RunState;
   /** Set for a friends' challenge round: one attempt, then the scoreboard. */
   challengeId?: string;
-  outcome: RecordOutcome & { summary: RunSummary };
+  outcome: Outcome;
+  /** Why the result shows without a round being played (a challenge round already started or played). */
+  note: string;
   streak: number;
   shareNote: string;
   onRetry: () => void;
@@ -638,6 +964,7 @@ function Result({
     <div className="mg-result">
       <p className="mg-result-mode">{challengeId ? '⚔️ Challenge round' : MODE_NAMES[s.mode]}</p>
       <h2 className="mg-result-head">{headline}</h2>
+      {note && <p className="mg-result-note">{note}</p>}
       <p className="mg-result-score">
         <span>{s.score}</span> pts
       </p>
@@ -660,7 +987,7 @@ function Result({
         </div>
         <div>
           <dt>Accuracy</dt>
-          <dd>{s.accuracy}%</dd>
+          <dd>{s.taps > 0 ? `${s.accuracy}%` : '–'}</dd>
         </div>
         <div>
           <dt>{s.mode === 'perfect' && s.complete ? 'Time' : 'Best'}</dt>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { accuracy, createRun, DUPLICATE_TAP_MS, next, playbackDone, tap, tick, type RunState } from '../src/games/memory-grid/engine';
 import { dailySeed, generateSequence, levelFor, mulberry32, patternFor, PERFECT_LADDER, PERFECT_SEED, randomSeed, SPEED_SECONDS } from '../src/games/memory-grid/pattern';
-import { dailyToResume, emptyRecords, liveStreak, parseRecords, playedDailyToday, recordRun } from '../src/games/memory-grid/records';
+import { dailyToResume, emptyRecords, liveStreak, parseRecords, playedDailyToday, recordRun, settleDaily } from '../src/games/memory-grid/records';
 import { patternPoints, perfectBonus, reportStats, shareText, type RunSummary } from '../src/games/memory-grid/scoring';
 import { getGame } from '../src/catalog/catalog';
 import { GAME_MODULES } from '../src/catalog/modules';
@@ -304,5 +304,38 @@ describe('memory grid: registry', () => {
     expect(g?.runtime.kind).toBe('module');
     expect(g?.daily?.length).toBeGreaterThan(0);
     expect(typeof GAME_MODULES['memory-grid']).toBe('function');
+  });
+
+  it('drops implausible saved values instead of freezing on them', () => {
+    const dailyRun = { day: '2026-10-18', round: 3, cleared: 2, longest: 4, score: 70, taps: 7, correctTaps: 7, inputMs: 4200, shown: 3 };
+    expect(parseRecords(JSON.stringify({ dailyRun })).dailyRun).toEqual(dailyRun);
+    expect(parseRecords(JSON.stringify({ dailyRun: { ...dailyRun, round: 200_000 } })).dailyRun).toBeUndefined();
+    expect(parseRecords(JSON.stringify({ dailyRun: { ...dailyRun, cleared: 3 } })).dailyRun).toBeUndefined();
+    expect(parseRecords(JSON.stringify({ dailyRun: { ...dailyRun, score: 1e12 } })).dailyRun).toBeUndefined();
+    expect(parseRecords(JSON.stringify({ streak: { last: null, count: 1e9, best: 1e9 } })).streak.count).toBe(0);
+    expect(parseRecords(JSON.stringify({ challenges: { 'a:1': { ...dailyRun, done: true }, 'b:1': { round: 'x' } } })).challenges).toEqual({ 'a:1': { ...dailyRun, done: true } });
+  });
+
+  it('settles a daily that cannot go on: an earlier day under its own day, today only once its pattern was shown', () => {
+    const p = { day: '2026-10-18', round: 3, cleared: 2, longest: 4, score: 70, taps: 8, correctTaps: 7, inputMs: 4200 };
+    const base = { ...emptyRecords(), dailyStarted: '2026-10-18', streak: { last: '2026-10-17', count: 4, best: 4 } };
+    expect(settleDaily({ ...base, dailyRun: p }, '2026-10-18')).toBeNull();
+    const today = settleDaily({ ...base, dailyRun: { ...p, shown: 3 } }, '2026-10-18')!;
+    expect(today.summary).toMatchObject({ mode: 'daily', score: 70, cleared: 2, accuracy: 88 });
+    expect(today.records.daily).toMatchObject({ day: '2026-10-18', score: 70, longest: 4 });
+    const later = settleDaily({ ...base, dailyRun: p }, '2026-10-20')!;
+    expect(later.day).toBe('2026-10-18');
+    expect(later.records.streak).toEqual({ last: '2026-10-18', count: 5, best: 5 });
+    expect(later.records.dailyRun).toBeUndefined();
+    // Already recorded (or a later daily played): the leftover is just dropped.
+    const stale = settleDaily({ ...base, dailyRun: p, daily: { day: '2026-10-19', cleared: 1, score: 30, accuracy: 100 } }, '2026-10-20')!;
+    expect(stale.summary).toBeUndefined();
+    expect(stale.records.daily?.day).toBe('2026-10-19');
+  });
+
+  it('a round with no taps reports no accuracy', () => {
+    const r: RunSummary = { mode: 'speed', score: 0, cleared: 0, longest: 0, accuracy: 0, taps: 0, inputMs: 60_000, complete: false };
+    expect(reportStats(r)).toEqual({ longest: 0, patterns: 0 });
+    expect(shareText({ ...r, day: '2026-10-18', streak: 0 })).not.toContain('accuracy');
   });
 });

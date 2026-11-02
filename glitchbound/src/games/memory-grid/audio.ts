@@ -54,7 +54,8 @@ export function createSfx(initiallyMuted: boolean): Sfx {
 
   return {
     unlock: () => void audio(),
-    tile: (i) => blip(NOTES[i % NOTES.length]! * (i >= NOTES.length ? 0.5 : 1), 0, 0.22),
+    // One pitch per tile: each further ten tiles play an octave lower.
+    tile: (i) => blip(NOTES[i % NOTES.length]! * 2 ** -Math.floor(i / NOTES.length), 0, 0.22),
     cleared: () => [0, 0.07, 0.14].forEach((d, k) => blip([1046.5, 1318.51, 1567.98][k]!, d, 0.18, 'sine', 0.14)),
     wrong: () => {
       blip(220, 0, 0.28, 'square', 0.08);

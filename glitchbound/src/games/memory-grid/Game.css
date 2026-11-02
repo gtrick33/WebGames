@@ -95,8 +95,9 @@
   padding: 8px 16px 18px;
   animation: mg-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
+/* "safe": content taller than the screen starts at the top, where it can be scrolled to. */
 .mg-menu {
-  justify-content: center;
+  justify-content: safe center;
   max-width: 620px;
   width: 100%;
   margin: 0 auto;
@@ -305,7 +306,7 @@
   background: #fff;
 }
 .mg-stat-label {
-  font: 700 10.5px var(--mono, monospace);
+  font: 700 11.5px var(--mono, monospace);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--mg-ink-2);
@@ -471,7 +472,7 @@
 /* ---------------------------------------------------------------- result */
 .mg-result {
   align-items: center;
-  justify-content: center;
+  justify-content: safe center;
   text-align: center;
   gap: 12px;
 }
@@ -539,7 +540,7 @@
   background: #fff;
 }
 .mg-result-stats dt {
-  font: 700 10px var(--mono, monospace);
+  font: 700 11.5px var(--mono, monospace);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--mg-ink-2);
@@ -587,13 +588,64 @@
   padding: 1px 6px;
   border: 2px solid var(--mg-ink);
   border-radius: 6px;
-  font: 700 10px var(--mono, monospace);
+  font: 700 11px var(--mono, monospace);
   background: rgb(255 255 255 / 0.6);
 }
 @media (pointer: coarse) {
   .mg-btn kbd {
     display: none;
   }
+  .mg-icon {
+    width: 44px;
+    height: 44px;
+  }
+}
+.mg-result-note {
+  max-width: 34ch;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--mg-ink-2);
+}
+
+/* ---------------------------------------------------------------- pause card */
+.mg-pause {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(255 244 226 / 0.86);
+  backdrop-filter: blur(3px);
+  animation: mg-in 0.2s ease-out both;
+}
+.mg-pause-card {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  max-width: 340px;
+  padding: 20px 22px;
+  border: 3px solid var(--mg-ink);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 6px 0 var(--mg-ink);
+  text-align: center;
+}
+.mg-pause-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.mg-pause-text {
+  font-size: 15px;
+  color: var(--mg-ink-2);
+}
+.mg-pause-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
 }
 .mg-share-note {
   min-height: 1.4em;
@@ -615,6 +667,50 @@
   }
   .mg-result-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Phone on its side: the HUD and status go in a side column so the board gets the full height. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .mg-top {
+    padding: 6px 14px 0;
+  }
+  .mg-play {
+    display: grid;
+    grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    padding: 6px 14px 10px;
+    column-gap: 16px;
+  }
+  .mg-hud {
+    grid-column: 1;
+    grid-row: 1;
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .mg-stat-value {
+    font-size: 19px;
+  }
+  .mg-boardwrap {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .mg-status {
+    grid-column: 1;
+    grid-row: 2;
+    align-content: start;
+    min-height: 0;
+  }
+  .mg-status-text {
+    font-size: 16px;
+  }
+  .mg-menu,
+  .mg-result {
+    gap: 10px;
+    padding-top: 4px;
+  }
+  .mg-title {
+    font-size: 40px;
   }
 }
 
