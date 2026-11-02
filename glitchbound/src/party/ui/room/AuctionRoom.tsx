@@ -11,7 +11,7 @@ export function AuctionRoomPage({ code, onLeave }: { code: string; onLeave: () =
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Name Your Price', emoji: '🔨', invite: 'Join my Name Your Price auction: bid play money, build the best collection.', min: MIN_PLAYERS }}
+      meta={{ game: 'auction', title: 'Name Your Price', emoji: '🔨', invite: 'Join my Name Your Price auction: bid play money, build the best collection.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.phase === 'auction' && v.sale ? `Item ${Math.min(v.sale.index + 1, v.sale.total)}/${v.sale.total}` : undefined)}

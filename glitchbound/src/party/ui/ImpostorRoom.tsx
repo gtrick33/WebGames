@@ -6,7 +6,7 @@ import { shareOrCopy } from '../../platform/share';
 import { navigate } from '../../router/router';
 import { ModeBar } from './shared';
 import { SecretCard } from './Impostor';
-import { JoinForm, RoomNotice, useJoinName, useTopOnPhase, WelcomeBack } from './room/RoomFrame';
+import { DeadEnd, JoinForm, RoomNotice, useJoinName, useTopOnPhase, WelcomeBack } from './room/RoomFrame';
 import { RoomListingBar } from '../../components/OnlinePlay';
 import { t } from '../../i18n';
 
@@ -47,19 +47,7 @@ export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () 
       live = false;
     };
   }, [code]);
-  if (missing)
-    return (
-      <div className="pt-screen">
-        <ModeBar title={t('Impostor room')} onExit={onLeave} />
-        <section className="pt-panel pt-center">
-          <h2>{t('This room has closed')}</h2>
-          <p className="pt-muted">{t('Rooms close after three quiet hours. Open a new one and send the link.')}</p>
-          <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            {t('Back to Party Mode')}
-          </button>
-        </section>
-      </div>
-    );
+  if (missing) return <DeadEnd game="impostor" gameTitle="Impostor" title={t('Impostor room')} heading={t('This room has closed')} text={t('Rooms close after three quiet hours. Open a new one and send the link.')} onLeave={onLeave} />;
   if (name === null) return <JoinForm title={`${t('Impostor')} · ${t('room {code}', { code })}`} emoji="🕵️" prefill={prefill} onJoin={join} onLeave={onLeave} />;
   return <Room code={code} name={name} back={back} note={note} onLeave={leave} />;
 }
@@ -78,18 +66,7 @@ function Room({ code, name, back, note, onLeave }: { code: string; name: string;
   }, [error, clearError]);
 
   const bar = <ModeBar title={`${t('Impostor')} · ${code}`} progress={view?.round && !gone ? t('Round {n}', { n: view.round }) : undefined} onExit={onLeave} />;
-  if (gone)
-    return (
-      <div className="pt-screen">
-        {bar}
-        <section className="pt-panel pt-center">
-          <h2>{gone}</h2>
-          <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            {t('Back to Party Mode')}
-          </button>
-        </section>
-      </div>
-    );
+  if (gone) return <DeadEnd game="impostor" gameTitle="Impostor" title={`${t('Impostor')} · ${code}`} heading={gone} onLeave={onLeave} />;
   if (!view)
     return (
       <div className="pt-screen">

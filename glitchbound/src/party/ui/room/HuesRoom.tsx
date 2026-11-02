@@ -13,7 +13,7 @@ export function HuesRoomPage({ code, onLeave }: { code: string; onLeave: () => v
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Hue Knew?', emoji: '🎨', invite: 'Join my Hue Knew? room: one-word color clues, and everyone taps their guess on their own phone.', min: MIN_PLAYERS }}
+      meta={{ game: 'hues', title: 'Hue Knew?', emoji: '🎨', invite: 'Join my Hue Knew? room: one-word color clues, and everyone taps their guess on their own phone.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.phase === 'lobby' || v.phase === 'result' ? undefined : `${v.count}/${v.total}`)}

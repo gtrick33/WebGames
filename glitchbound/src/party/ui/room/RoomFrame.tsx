@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { setGuestName, usePlayerName } from '../../../platform/playerName';
-import { roomInfo, useRoom } from '../../../platform/rooms';
+import { createRoom, roomInfo, useRoom, type RoomGame } from '../../../platform/rooms';
+import { navigate } from '../../../router/router';
 import { shareOrCopy } from '../../../platform/share';
 import type { SeatView } from '../../rooms/seats';
 import { ModeBar } from '../shared';
@@ -102,6 +103,7 @@ export interface FrameView {
 }
 
 export interface RoomGameMeta {
+  game: RoomGame;
   title: string;
   emoji: string;
   /** The invite message (the link is added). */
@@ -119,6 +121,41 @@ export interface RoomContext<V, A> {
   skew: number;
   me: SeatView;
   byN: (n: number | null | undefined) => SeatView | undefined;
+}
+
+/**
+ * A room you can't play in (closed, full, removed): open a new room of the same game right here, or
+ * go back to Party Mode.
+ */
+export function DeadEnd({ game, gameTitle, title, heading, text, onLeave }: { game: RoomGame; gameTitle: string; title: string; heading: string; text?: string; onLeave: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState('');
+  const open = async (): Promise<void> => {
+    setBusy(true);
+    setProblem('');
+    try {
+      navigate(`/party?room=${await createRoom(game)}`);
+    } catch (e) {
+      setProblem(t(e instanceof Error ? e.message : 'Could not open a room. Try again.'));
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="pt-screen">
+      <ModeBar title={title} onExit={onLeave} />
+      <section className="pt-panel pt-center">
+        <h2>{heading}</h2>
+        {text && <p className="pt-muted">{text}</p>}
+        <button className="pt-btn pt-btn-go" onClick={() => void open()} disabled={busy}>
+          {t('Open a new {game} room', { game: t(gameTitle) })}
+        </button>
+        <button className="pt-btn" onClick={onLeave}>
+          {t('Back to Party Mode')}
+        </button>
+        {problem && <p role="alert">{problem}</p>}
+      </section>
+    </div>
+  );
 }
 
 /**
@@ -225,16 +262,7 @@ export function RoomFrame<V extends FrameView, A>({
   }, [code]);
   if (missing)
     return (
-      <div className="pt-screen">
-        <ModeBar title={t('{game} room', { game: t(meta.title) })} onExit={onLeave} />
-        <section className="pt-panel pt-center">
-          <h2>{t('This room has closed')}</h2>
-          <p className="pt-muted">{t('Rooms close after three quiet hours. Open a new one and send the link.')}</p>
-          <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            {t('Back to Party Mode')}
-          </button>
-        </section>
-      </div>
+      <DeadEnd game={meta.game} gameTitle={meta.title} title={t('{game} room', { game: t(meta.title) })} heading={t('This room has closed')} text={t('Rooms close after three quiet hours. Open a new one and send the link.')} onLeave={onLeave} />
     );
   if (name === null) return <JoinForm title={`${t(meta.title)} · ${t('room {code}', { code })}`} emoji={meta.emoji} prefill={prefill} onJoin={join} onLeave={onLeave} />;
   return (
@@ -282,18 +310,7 @@ function Connected<V extends FrameView, A>({
   };
 
   const bar = <ModeBar title={`${t(meta.title)} · ${code}`} progress={view && !gone ? progress?.(view) : undefined} onExit={onLeave} />;
-  if (gone)
-    return (
-      <div className="pt-screen">
-        {bar}
-        <section className="pt-panel pt-center">
-          <h2>{gone}</h2>
-          <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            {t('Back to Party Mode')}
-          </button>
-        </section>
-      </div>
-    );
+  if (gone) return <DeadEnd game={meta.game} gameTitle={meta.title} title={`${t(meta.title)} · ${code}`} heading={gone} onLeave={onLeave} />;
   if (!view)
     return (
       <div className="pt-screen">

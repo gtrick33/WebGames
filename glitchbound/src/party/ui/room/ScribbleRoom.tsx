@@ -20,7 +20,7 @@ export function ScribbleRoomPage({ code, onLeave }: { code: string; onLeave: () 
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Scribble Scramble', emoji: '🖍️', invite: 'Join my Scribble Scramble room: one of us draws, everyone races to guess the word.', min: MIN_PLAYERS }}
+      meta={{ game: 'scribble', title: 'Scribble Scramble', emoji: '🖍️', invite: 'Join my Scribble Scramble room: one of us draws, everyone races to guess the word.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.phase === 'lobby' || v.phase === 'result' ? undefined : `${v.count}/${v.total}`)}

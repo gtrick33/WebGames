@@ -1,10 +1,16 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const joined: string[] = [];
 let live = false;
+let closed = false;
+const opened: string[] = [];
 vi.mock('../src/platform/rooms', () => ({
-  roomInfo: () => Promise.resolve({ players: 2, host: 'Ana', full: false, phase: 'talk' }),
+  roomInfo: () => Promise.resolve(closed ? null : { players: 2, host: 'Ana', full: false, phase: 'talk' }),
+  createRoom: (game: string) => {
+    opened.push(game);
+    return Promise.resolve('NEWRM');
+  },
   useRoom: (code: string, name: string) => {
     joined.push(name);
     const view = live ? { phase: 'lobby', code, host: false, deadline: null, players: [{ n: 1, name, score: 0, online: true, waiting: false, you: true, host: false, done: false }] } : null;
@@ -16,7 +22,7 @@ import { RoomFrame } from '../src/party/ui/room/RoomFrame';
 import { cleanRoomName, forgetRoom, lastRoomName, rememberRoomName, roomNameFor } from '../src/party/ui/room/roomName';
 import { guestName, resetGuestName } from '../src/platform/playerName';
 
-const meta = { title: 'Dial It In', emoji: '📻', invite: 'Join', min: 2 };
+const meta = { game: 'dial' as const, title: 'Dial It In', emoji: '📻', invite: 'Join', min: 2 };
 const frame = (code: string) => (
   <RoomFrame code={code} meta={meta} onLeave={() => {}} kick={(n: number) => ({ t: 'kick', n })} settings={() => null}>
     {() => null}
@@ -29,6 +35,7 @@ describe('room names survive a reload', () => {
     resetGuestName();
     joined.length = 0;
     live = false;
+    closed = false;
   });
 
   it('keeps names of up to 20 characters in any script, per room', () => {
@@ -81,5 +88,13 @@ describe('room names survive a reload', () => {
     rememberRoomName('AAAAA', 'Ярослава');
     render(frame('BBBBB'));
     expect((screen.getByLabelText(/Your name/) as HTMLInputElement).value).toBe('Ярослава');
+  });
+
+  it('offers a new room of the same game when the room has closed', async () => {
+    closed = true;
+    render(frame('ZZZZZ'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open a new Dial It In room' }));
+    await waitFor(() => expect(opened).toEqual(['dial']));
+    expect(location.search).toBe('?room=NEWRM');
   });
 });
