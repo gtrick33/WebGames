@@ -717,20 +717,31 @@ a.lp-cta {
     padding: 0;
   }
 }
+/* A narrow phone fits the tabs, the clock and four 44 px-tall icons in one row: the daily's number moves
+   to the result card, and the streak pill makes way for the clock during a round. */
 @container (max-width: 380px) {
   .lp-tab-num,
-  .lp-tabs[data-n='3'] .lp-tab {
-    font-size: 12px;
-  }
-  .lp-tabs[data-n='3'] .lp-tab {
-    padding: 6px 7px;
-  }
-  .lp-tabs[data-n='3'] .lp-tab-num {
+  .lp-tools:has(.lp-clock) .lp-streak {
     display: none;
+  }
+  .lp-tab {
+    padding: 6px 8px;
+  }
+  .lp-tabs[data-n='3'] .lp-tab {
+    padding: 6px 6px;
+    font-size: 12px;
   }
   .lp-clock {
     font-size: 12px;
-    margin-right: 0;
+    margin-right: 2px;
+  }
+}
+@media (pointer: coarse) {
+  @container (max-width: 380px) {
+    .lp-icon {
+      width: 40px;
+      min-width: 40px;
+    }
   }
 }
 
