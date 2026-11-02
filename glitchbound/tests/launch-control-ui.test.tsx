@@ -374,3 +374,30 @@ describe('Launch Control: the King’s Gauntlet', () => {
   });
 });
 
+
+describe('Launch Control: friends’ challenges keep one attempt', () => {
+  const spec = { id: 'chal-1', round: 1, seed: 1234, mode: 'fresh' as const, day: '' };
+
+  it('a round left mid-race ends at 0 once, and is not raced again after a reload', () => {
+    const { unmount } = render(<Game host={host} restartKey={0} pauseKey={0} challenge={spec} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm race' }));
+    expect(JSON.parse(localStorage.getItem(KEY)!).rounds['chal-1:1']).toEqual({ score: 0, done: false });
+    // the page goes away mid-race: the round ends with 0, reported once
+    unmount();
+    const ends = () => host.report.mock.calls.filter((c) => c[0].type === 'end');
+    expect(ends()).toHaveLength(1);
+    expect(ends()[0]![0]).toMatchObject({ score: 0, challenge: { id: 'chal-1', round: 1 } });
+    render(<Game host={host} restartKey={0} pauseKey={0} challenge={spec} />);
+    expect(screen.queryByRole('button', { name: 'Confirm race' })).toBeNull();
+    expect(screen.getByText(/You have raced this round/)).toBeTruthy();
+    expect(ends()).toHaveLength(1);
+  });
+
+  it('a daily challenge counts the day’s Showdown already raced', () => {
+    const save = { ...emptySave(), daily: { '2026-10-20': { best: 7123, tries: 2, et: 14000 } } };
+    localStorage.setItem(KEY, JSON.stringify(save));
+    render(<Game host={host} restartKey={0} pauseKey={0} challenge={{ ...spec, id: 'chal-2', mode: 'daily', day: '2026-10-20' }} />);
+    expect(screen.getByText('Your daily result counts here.')).toBeTruthy();
+    expect(host.report.mock.calls.filter((c) => c[0].type === 'end').map((c) => c[0].score)).toEqual([7123]);
+  });
+});

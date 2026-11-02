@@ -568,8 +568,22 @@ export function RaceScreen({ plan, remoteTaps, stageRef, paused, setPaused, onFi
       }
       race.tap(0);
     };
+    /** Keys meant for something else: a field, another dialog, a page outside the game, a shortcut. */
+    const notOurs = (e: KeyboardEvent): boolean => {
+      if (e.ctrlKey || e.altKey || e.metaKey) return true;
+      const t = e.target instanceof Element ? e.target : null;
+      if (!t || t === document.body || t === document.documentElement) return false;
+      if (t.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) return true;
+      const dlg = t.closest('[role=dialog], [aria-modal=true]');
+      if (dlg && !dlg.classList.contains('lc-overlay')) return true;
+      if (!t.closest('.lc')) return true;
+      // a keyboard-focused button keeps Enter and Space
+      return (e.code === 'Space' || e.code === 'Enter') && t.closest('button, a[href]') !== null && t.matches(':focus-visible');
+    };
     const keyDown = (e: KeyboardEvent): void => {
+      if (notOurs(e)) return;
       if (e.code === 'Escape' || e.code === 'KeyP') {
+        if (e.repeat) return;
         // a live race can't be paused: the friend's phone keeps racing
         if (live) return;
         e.preventDefault();

@@ -60,7 +60,16 @@ export interface Save {
   seenHelp: boolean;
   /** Your last races as the wager forecast reads them (oldest first). */
   form: FormRun[];
+  /** Friends' challenge rounds raced here, by `${id}:${round}`: one attempt each (a started round that never finished ended at 0). */
+  rounds: Record<string, ChallengeRound>;
 }
+
+export interface ChallengeRound {
+  score: number;
+  done: boolean;
+}
+/** How many challenge rounds the save remembers (oldest dropped first). */
+export const ROUNDS_KEPT = 40;
 
 export const newCar = (): OwnedCar => ({ levels: stockLevels(), cond: freshCondition(), paint: DEFAULTS.paint, livery: DEFAULTS.livery, wheels: DEFAULTS.wheels });
 
@@ -89,6 +98,7 @@ export const emptySave = (): Save => ({
   musicOff: false,
   seenHelp: false,
   form: [],
+  rounds: {},
 });
 
 /**
@@ -199,6 +209,12 @@ export function sanitize(raw: unknown): Save {
       .filter((x): x is FormRun => !!x && typeof x === 'object' && Number.isFinite((x as FormRun).reaction) && Number.isFinite((x as FormRun).perfect))
       .slice(-FORM_RUNS)
       .map((x) => ({ reaction: clamp(x.reaction, 0, 2), perfect: clamp(x.perfect, 0, 1) }));
+  if (o.rounds && typeof o.rounds === 'object')
+    for (const [k, v] of Object.entries(o.rounds).slice(-ROUNDS_KEPT)) {
+      if (k.length > 120 || !v || typeof v !== 'object') continue;
+      const r = v as Partial<ChallengeRound>;
+      s.rounds[k] = { score: num(r.score, 1e6), done: r.done === true };
+    }
   return s;
 }
 
@@ -208,6 +224,26 @@ export function loadSave(): Save {
   } catch {
     return emptySave();
   }
+}
+
+/** The stored save, or null when there is none or storage can't be read (the caller keeps what it has). */
+export function readStored(): Save | null {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? sanitize(JSON.parse(raw)) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A challenge round recorded, the oldest rounds pruned. */
+export function withRound(s: Save, key: string, r: ChallengeRound): Save {
+  const rounds = { ...s.rounds };
+  delete rounds[key];
+  rounds[key] = r;
+  const keys = Object.keys(rounds);
+  for (const k of keys.slice(0, Math.max(0, keys.length - ROUNDS_KEPT))) delete rounds[k];
+  return { ...s, rounds };
 }
 
 export function writeSave(s: Save): void {

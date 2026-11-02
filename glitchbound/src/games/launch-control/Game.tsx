@@ -16,12 +16,12 @@ import { addMats, avgLevel, botsFor, botSpec, canWager, crateFor, FORM_RUNS, for
 import { ENV_DEFS } from './envs';
 import { applyWear, effectsOf, FAILURE_TEXT, freshCondition, levelGains, MATERIALS, MAX_LEVEL, PART_INFO, PART_VISUALS, PARTS, raceWear, repairCost, RISKY, stockLevels, upgradeCost, wears, type Condition, type Levels, type Mats, type PartId } from './parts';
 import { RaceScreen, type RacePlan } from './RaceScreen';
-import { lookKey, NO_ORBIT, Stage3D, type CarLook, type Orbit, type ShowFocus } from './scene3d';
+import { disposeThumbs, lookKey, NO_ORBIT, Stage3D, type CarLook, type Orbit, type ShowFocus } from './scene3d';
 import { decodeScript, encodeScript, forecastRun, scoreOf, simulate, specOf, type CarSpec, type Driver, type RaceResult } from './sim';
 import { createSfx, type Sfx } from './sound';
 import { Intro, introNeeded } from './intro';
 import { warmCars } from './models';
-import { DAILY_TRIES, emptySave, loadSave, newCar, owns, writeSave, type OwnedCar, type Save } from './storage';
+import { DAILY_TRIES, emptySave, KEY, loadSave, newCar, owns, readStored, withRound, writeSave, type OwnedCar, type Save } from './storage';
 import { GameMenuButton } from '../../components/GameMenuButton';
 import { Icon, PART_ICON } from './icons';
 import { LiveRoom } from './live';
@@ -157,11 +157,12 @@ function sheetOf(def: CarDef, levels: Levels, cond: Condition): Sheet {
 }
 
 function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { host: GameHost; pauseKey?: number; challenge?: ChallengeSpec; playerName?: string; openMenu?: () => void }) {
-  const [today] = useState(() => dayKey());
+  const [today, setToday] = useState(() => dayKey());
   const [save, setSave] = useState<Save>(loadSave);
   const saveRef = useRef(save);
+  // every write starts from the stored save (another tab, or a garage left open there, may have changed it)
   const commit = useCallback((fn: (s: Save) => Save) => {
-    const next = fn(saveRef.current);
+    const next = fn(readStored() ?? saveRef.current);
     saveRef.current = next;
     setSave(next);
     writeSave(next);
@@ -177,6 +178,23 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       }),
     [],
   );
+  // the other tab wrote the save: take it in
+  useEffect(() => {
+    const onStorage = (e: StorageEvent): void => {
+      if (e.key !== KEY) return;
+      const next = readStored();
+      if (!next) return;
+      saveRef.current = next;
+      setSave(next);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+  /** A friends' challenge round already raced here (or started and left): it is not raced again. */
+  const [roundNote, setRoundNote] = useState<'done' | 'started' | 'daily' | null>(null);
+  const roundKey = challenge ? `${challenge.id}:${challenge.round}` : '';
+  /** A daily challenge plays that day's Showdown. */
+  const challengeDay = challenge?.mode === 'daily' && challenge.day ? challenge.day : '';
   /** A live room with a friend: its code (from an invite link, or one you opened). */
   const [liveCode, setLiveCode] = useState<string | null>(() => (challenge ? null : linkedRoom()));
   const [liveRacing, setLiveRacing] = useState(false);
@@ -222,7 +240,14 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   const [touch] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted, () => saveRef.current.musicOff)), []);
-  useEffect(() => () => sfxRef.current?.dispose(), []);
+  useEffect(
+    () => () => {
+      sfxRef.current?.dispose();
+      // the offscreen thumbnail stage and its pictures go with the game
+      disposeThumbs();
+    },
+    [],
+  );
   /** The cars the first screen shows: yours, the rest of your garage, and your next rival's. */
   const [introDefs] = useState<CarDef[]>(() => {
     const ids = [save.car, ...Object.keys(save.cars).slice(0, 8), LADDER[Math.min(save.rank, LADDER.length - 1)]!.car];
@@ -337,7 +362,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     (mode: Mode, rival: Opponent | null, round = 1, testId?: string): void => {
       const s = saveRef.current;
       let tagline: string | undefined;
-      const seed = mode === 'challenge' && challenge ? challenge.seed : mode === 'daily' ? dailySeed(today) : (Math.random() * 2 ** 32) >>> 0;
+      const seed = mode === 'challenge' && challenge ? (challengeDay ? dailySeed(challengeDay) : challenge.seed) : mode === 'daily' ? dailySeed(today) : (Math.random() * 2 ** 32) >>> 0;
       let meSpec: CarSpec;
       let bots: Bot[];
       let env = s.env;
@@ -420,21 +445,40 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       setPlan({ mode, me: meSpec, bots, race: { specs, drivers, looks, names, env, seed, tagline }, rival: mode === 'daily' || mode === 'gauntlet' || mode === 'test' ? null : rival, stake: 0, forecast: forecast(meSpec, bots, formSkill(s.form)), carId, round: mode === 'gauntlet' ? round : undefined });
       setScreen('setup');
     },
-    [challenge, today, me],
+    [challenge, challengeDay, today, me],
   );
   const firstSetup = useRef(false);
   useEffect(() => {
     if (challenge && !firstSetup.current) {
       firstSetup.current = true;
+      const ref = { id: challenge.id, round: challenge.round };
+      const r = saveRef.current.rounds[roundKey];
+      const d = challengeDay ? saveRef.current.daily[challengeDay] : undefined;
+      if (r && !r.done) {
+        // a real-time round can't resume: it ends with what it had (0)
+        host.report({ type: 'end', score: r.score, stats: {}, challenge: ref });
+        commit((s) => withRound(s, roundKey, { score: r.score, done: true }));
+        setRoundNote('started');
+      } else if (r?.done) setRoundNote('done');
+      else if (d && d.tries > 0 && !d.open) {
+        // that day's Showdown is already raced: its best counts here (one attempt for both)
+        host.report({ type: 'end', score: d.best, stats: {}, challenge: ref });
+        commit((s) => withRound(s, roundKey, { score: d.best, done: true }));
+        setRoundNote('daily');
+      }
       setup('challenge', null);
     }
-  }, [challenge, setup]);
+  }, [challenge, challengeDay, roundKey, setup, host, commit]);
 
   const startRace = (p: Plan): void => {
     if (p.mode === 'daily') {
       const d = saveRef.current.daily[today] ?? { best: 0, tries: 0, et: 0 };
       if (d.tries >= DAILY_TRIES) return;
       commit((s) => ({ ...s, daily: { ...s.daily, [today]: { ...d, tries: d.tries + 1, open: true, left: false } } }));
+    }
+    if (p.mode === 'challenge') {
+      if (roundNote || saveRef.current.rounds[roundKey]) return;
+      commit((s) => withRound(s, roundKey, { score: 0, done: false }));
     }
     if (p.stake > 0) commit((s) => ({ ...s, cash: s.cash - p.stake }));
     if (p.mode === 'test') commit((s) => ({ ...s, testDay: today }));
@@ -495,7 +539,15 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
         if (!won) host.report({ type: 'end', score: run.total, stats: { ...stats, streak: run.wins } });
         gauntletInfo = { round, wins: run.wins, total: run.total, over: !won, prize };
       } else if (p.mode === 'challenge' && challenge) {
-        commit((s) => ({ ...s, runs: s.runs + 1, wins: s.wins + (won ? 1 : 0) }));
+        const key = `${challenge.id}:${challenge.round}`;
+        const day = challenge.mode === 'daily' ? challenge.day : '';
+        commit((s) => {
+          const next = withRound({ ...s, runs: s.runs + 1, wins: s.wins + (won ? 1 : 0) }, key, { score, done: true });
+          // a daily challenge raced first here is also that day's Showdown run
+          if (!day || next.daily[day]) return next;
+          return { ...next, daily: { ...next.daily, [day]: { best: score, tries: 1, et: mine.et !== null ? Math.round(mine.et * 1000) : 0, open: false } } };
+        });
+        setRoundNote('done');
         host.report({ type: 'end', score, stats, challenge: { id: challenge.id, round: challenge.round, replay: mine.et !== null ? encodeScript(mine.script) : undefined } });
         wear = raceWear({ spinTime: 0 });
       } else {
@@ -558,12 +610,22 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
     gauntletRef.current = null;
     host.report({ type: 'end', score: run.total, stats: { streak: run.wins } });
   };
+  /** A challenge round left mid-race: it ends at 0 (one attempt). */
+  const settleOpenRound = useCallback((): void => {
+    if (!challenge) return;
+    const r = saveRef.current.rounds[roundKey];
+    if (!r || r.done) return;
+    host.report({ type: 'end', score: 0, stats: {}, challenge: { id: challenge.id, round: challenge.round } });
+    commit((s) => withRound(s, roundKey, { score: 0, done: true }));
+    setRoundNote('done');
+  }, [challenge, roundKey, host, commit]);
   const leaveRace = (): void => {
-    if (plan?.mode === 'daily' && !confirmLeave) {
+    if ((plan?.mode === 'daily' || plan?.mode === 'challenge') && !confirmLeave) {
       setConfirmLeave(true);
       return;
     }
     settleOpenDaily();
+    if (plan?.mode === 'challenge') settleOpenRound();
     if (plan?.mode === 'gauntlet') endGauntlet();
     sfx().quiet();
     setScreen(plan?.mode === 'challenge' ? 'setup' : 'hub');
@@ -575,8 +637,36 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
   }
   const settleRef = useRef(settleOpenDaily);
   useEffect(() => {
-    settleRef.current = settleOpenDaily;
+    settleRef.current = () => {
+      settleOpenDaily();
+      settleOpenRound();
+    };
   });
+  // a hidden tab pauses the race (and shows the Paused card when it comes back)
+  const screenRef = useRef(screen);
+  useEffect(() => {
+    screenRef.current = screen;
+  });
+  useEffect(() => {
+    const onVis = (): void => {
+      if (document.hidden && screenRef.current === 'race') setPaused(true);
+      // past midnight the menus move on to the new day; a race under way finishes as its own day's
+      if (!document.hidden && screenRef.current !== 'race') setToday(dayKey());
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onVis);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onVis);
+    };
+  }, []);
+  // a menu shown re-reads the day (the game may have stayed open past midnight)
+  const [dayScreen, setDayScreen] = useState(screen);
+  if (dayScreen !== screen) {
+    setDayScreen(screen);
+    const now = dayKey();
+    if (screen !== 'race' && screen !== 'result' && now !== today) setToday(now);
+  }
   useEffect(() => () => settleRef.current(), []);
 
   // ---- garage, dealer, style actions
@@ -947,7 +1037,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
       </button>
       <div className="lc-wallet" aria-live="polite">
         <span className="lc-pill lc-pill-cash">
-          <Cash n={save.cash} />
+          <Cash n={save.cash} short />
         </span>
         <MatsPill mats={save.mats} />
         <span className="lc-pill lc-pill-rank mono" title="Ladder rank">
@@ -1050,7 +1140,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 <h2 className="lc-h">Paused</h2>
                 {confirmLeave ? (
                   <>
-                    <p>Leaving counts as one of today’s {DAILY_TRIES} runs, scored 0.</p>
+                    <p>{plan.mode === 'challenge' ? 'Leaving ends your one run in this challenge round, scored 0.' : `Leaving counts as one of today’s ${DAILY_TRIES} runs, scored 0.`}</p>
                     <button className="btn btn-lime" onClick={() => setConfirmLeave(false)}>
                       Keep racing
                     </button>
@@ -1292,9 +1382,18 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
                 </p>
               </div>
             )}
-            <button className="btn btn-lg lc-cta" autoFocus onClick={() => startRace(plan)}>
-              {plan.mode === 'daily' ? `Run (${triesLeft} left)` : plan.mode === 'gauntlet' ? `Race round ${plan.round ?? 1}` : plan.mode === 'test' ? 'Start the test drive' : 'Confirm race'}
-            </button>
+            {plan.mode === 'challenge' && challenge && roundNote ? (
+              <>
+                <p className="lc-sub">{roundNote === 'started' ? 'This round was already started: it ended with the score it had.' : roundNote === 'daily' ? 'Your daily result counts here.' : 'You have raced this round: one run each.'}</p>
+                <a className="btn btn-lg lc-cta" href={`/c/${challenge.id}`} onClick={openChallengeScores} autoFocus>
+                  See the scoreboard
+                </a>
+              </>
+            ) : (
+              <button className="btn btn-lg lc-cta" autoFocus onClick={() => startRace(plan)}>
+                {plan.mode === 'daily' ? `Run (${triesLeft} left)` : plan.mode === 'gauntlet' ? `Race round ${plan.round ?? 1}` : plan.mode === 'test' ? 'Start the test drive' : 'Confirm race'}
+              </button>
+            )}
           </Panel>
         )}
 
