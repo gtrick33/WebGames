@@ -442,6 +442,69 @@
   transform-origin: left;
   animation: cr-drain linear forwards;
 }
+.cr-peek-count {
+  display: none;
+  position: absolute;
+  left: 12px;
+  top: 8px;
+  font-size: 22px;
+  font-weight: 800;
+}
+.cr-peek-gate {
+  display: grid;
+  gap: 6px;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 44px;
+  padding: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--cr-ink);
+  text-align: center;
+  cursor: pointer;
+}
+.cr-peek-gate b {
+  font-size: 20px;
+  font-weight: 800;
+}
+.cr-peek-gate span {
+  display: inline-block;
+  padding: 8px 16px;
+  border: 2px solid var(--cr-ink);
+  border-radius: 999px;
+  background: var(--cr-card);
+  font-size: 14px;
+  font-weight: 700;
+}
+.cr-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 2px solid var(--cr-ink);
+  border-radius: 14px;
+  background: var(--cr-card);
+  font-weight: 700;
+}
+.cr-confirm .cr-btn {
+  min-height: 44px;
+}
+/* The play screen: hero and name, then mixer and button (side by side on short, wide stages). */
+.cr-body,
+.cr-side {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.6cqh, 14px);
+}
+.cr-body {
+  flex: 1 1 auto;
+}
+.cr-body > .cr-side:first-child {
+  flex: 1 1 auto;
+}
 .cr-peek-skip {
   position: absolute;
   right: 10px;
@@ -552,7 +615,7 @@
 }
 .cr-toggle button {
   min-width: 52px;
-  min-height: 30px;
+  min-height: 40px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -577,9 +640,9 @@
 }
 .cr-slider {
   display: grid;
-  grid-template-columns: 16px 34px 1fr 34px 46px;
+  grid-template-columns: 14px 44px 1fr 44px 40px;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 .cr-mixer.is-readonly {
   margin-top: 10px;
@@ -597,8 +660,8 @@
   text-align: right;
 }
 .cr-nudge {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border: 2px solid var(--cr-line);
   border-radius: 10px;
   background: var(--cr-card);
@@ -802,6 +865,45 @@
   }
   .cr-peek-bar {
     animation: none;
+  }
+  /* No draining bar: count the seconds down instead. */
+  .cr-peek-count {
+    display: block;
+  }
+}
+
+/* Landscape phones (a portrait game on a phone held sideways): two columns, everything above the fold. */
+@container (max-height: 440px) and (min-width: 600px) {
+  .cr-play {
+    width: min(100%, 860px);
+    padding: 8px 14px 10px;
+    gap: 8px;
+  }
+  .cr-body {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .cr-body > .cr-side {
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 8px;
+  }
+  .cr-hero {
+    min-height: 0;
+    max-height: none;
+  }
+  .cr-name h2 {
+    font-size: 20px;
+  }
+  .cr-mixer.is-readonly {
+    margin-top: 0;
+  }
+  .cr-mixer.is-readonly .cr-slider {
+    min-height: 0;
+  }
+  .cr-btn-big {
+    min-height: 44px;
   }
 }
 a.cr-btn {

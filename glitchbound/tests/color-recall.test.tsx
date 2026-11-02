@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { deltaE, feedback, hexToRgb, hsbToRgb, MAX_POINTS, pointsFor, rgbToHex, rgbToHsb, verdictFor } from '../src/games/color-recall/color';
-import { dailyNumber, dailyRounds, endStats, newGame, pickRounds, reduce, rng, ROUNDS, scoreGuess, shareText, totalScore } from '../src/games/color-recall/logic';
-import { crStats, emptyCrSave, recordColor, sanitizeCr, STORE_KEY } from '../src/games/color-recall/store';
-import { TARGETS } from '../src/games/color-recall/targets';
-import { dayKey } from '../src/platform/dates';
+import { colorName, deltaE, feedback, hexToRgb, hsbToRgb, MAX_POINTS, pointsFor, rgbToHex, rgbToHsb, verdictFor, verdictText } from '../src/games/color-recall/color';
+import { BALANCED_FROM, dailyNumber, dailyRounds, endStats, newGame, pickRounds, practiceRounds, reduce, rng, ROUNDS, scoreGuess, shareText, toneOf, totalScore } from '../src/games/color-recall/logic';
+import { crStats, emptyCrSave, mergeCr, recordColor, sanitizeCr, STORE_KEY } from '../src/games/color-recall/store';
+import { ACTIVE_TARGETS, RETIRED, TARGETS, wildTarget } from '../src/games/color-recall/targets';
+import { addDays, dayKey, hashString } from '../src/platform/dates';
 import Game from '../src/games/color-recall/Game';
 import type { GameEvent } from '../src/platform/contract';
 
@@ -62,7 +62,7 @@ describe('color distance scoring', () => {
     const red = hexToRgb('#C8102E');
     expect(feedback(red, red)).toEqual([]);
     expect(feedback(red, hsbToRgb({ ...rgbToHsb(red), b: 40 }))[0]).toMatch(/too dark/);
-    expect(feedback(red, hsbToRgb({ ...rgbToHsb(red), s: 40 }))[0]).toMatch(/muted|washed/);
+    expect(feedback(red, hsbToRgb({ ...rgbToHsb(red), s: 40 })).join(' ')).toMatch(/muted|washed/);
     expect(feedback(red, hsbToRgb({ ...rgbToHsb(red), h: 25 })).join(' ')).toMatch(/orange/);
   });
 });
@@ -193,6 +193,7 @@ describe('<Game />', () => {
       expect(events).toEqual([{ type: 'start' }]);
       for (let i = 0; i < ROUNDS; i++) {
         expect((screen.getByRole('button', { name: /look closely/i }) as HTMLButtonElement).disabled).toBe(true);
+        fireEvent.click(screen.getByRole('button', { name: /ready\?/i }));
         act(() => {
           vi.advanceTimersByTime(3100);
         });
@@ -218,6 +219,7 @@ describe('<Game />', () => {
       const first = render(<Game host={{ report: (e) => events.push(e) }} restartKey={0} />);
       fireEvent.click(screen.getByRole('button', { name: /play today/i }));
       expect(screen.getByRole('button', { name: /look closely/i })).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: /ready\?/i }));
       // Leave during the peek and come back: straight to mixing, no second look.
       fireEvent.click(screen.getByRole('button', { name: 'Back to menu' }));
       fireEvent.click(screen.getByRole('button', { name: /resume|play today/i }));
@@ -235,5 +237,226 @@ describe('<Game />', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('tips and names', () => {
+  it('always names what to fix when the score is below Brilliant-close (ΔE ≥ 2.5)', () => {
+    const random = rng(99);
+    const ch = (v: number): number => Math.max(0, Math.min(255, Math.round(v)));
+    for (let i = 0; i < 4000; i++) {
+      const t = { r: ch(random() * 255), g: ch(random() * 255), b: ch(random() * 255) };
+      const g = { r: ch(t.r + random() * 50 - 25), g: ch(t.g + random() * 50 - 25), b: ch(t.b + random() * 50 - 25) };
+      if (deltaE(t, g) >= 2.5) expect(feedback(t, g).length).toBeGreaterThan(0);
+    }
+    // The QA cases that used to say "Spot on".
+    expect(feedback(hexToRgb('#808000'), hexToRgb('#736903')).length).toBeGreaterThan(0);
+    expect(feedback(hexToRgb('#E5E4E2'), hexToRgb('#D9C7D9')).join(' ')).toMatch(/tint/);
+    expect(feedback(hexToRgb('#4169E1'), hexToRgb('#5588ED')).length).toBeGreaterThan(0);
+  });
+
+  it('calls pinks pink and points hue tips the right way', () => {
+    for (const id of ['flamingo', 'watermelon', 'strawberry', 'bubblegum', 'cherry-blossom', 'baby-pink', 'hot-pink', 'cotton-candy']) {
+      expect(colorName(hexToRgb(TARGETS.find((t) => t.id === id)!.hex))).toBe('pink');
+    }
+    const hot = hexToRgb('#FF69B4');
+    expect(feedback(hot, hsbToRgb({ ...rgbToHsb(hot), h: 310 })).join(' ')).toMatch(/magenta|purple/);
+    expect(feedback(hot, hsbToRgb({ ...rgbToHsb(hot), h: 345 })).join(' ')).toMatch(/red/);
+    expect(feedback(hot, hsbToRgb({ ...rgbToHsb(hot), h: 345 })).join(' ')).not.toMatch(/yellow/);
+    expect(feedback(hexToRgb('#FC8EAC'), hexToRgb('#E88DFC')).join(' ')).not.toMatch(/not red/);
+    expect(wildTarget('#F279AC').name).toMatch(/Pink/);
+    expect(wildTarget('#FAA2B8').name).toMatch(/Pink/);
+    expect(wildTarget('#9B24B3').name).toMatch(/Purple/);
+    expect(wildTarget('#705373').name).toMatch(/Purple/);
+  });
+
+  it('never reads hue 360 on the 0-359 slider', () => {
+    expect(rgbToHsb({ r: 120, g: 0, b: 1 }).h).toBe(0);
+    for (let b = 0; b < 256; b += 3) expect(rgbToHsb({ r: 255, g: 0, b }).h).toBeLessThan(360);
+  });
+
+  it('keeps "Perfect!" for a full 1,000', () => {
+    expect(verdictText(1000)).toBe('Perfect!');
+    expect(verdictText(983)).toBe('Near perfect');
+  });
+});
+
+describe('the color list', () => {
+  it('has no near-twins among the colors still picked', () => {
+    for (let i = 0; i < ACTIVE_TARGETS.length; i++) {
+      for (let j = i + 1; j < ACTIVE_TARGETS.length; j++) {
+        expect(deltaE(hexToRgb(ACTIVE_TARGETS[i]!.hex), hexToRgb(ACTIVE_TARGETS[j]!.hex)), `${ACTIVE_TARGETS[i]!.name} ~ ${ACTIVE_TARGETS[j]!.name}`).toBeGreaterThanOrEqual(2);
+      }
+    }
+    for (const id of RETIRED) expect(TARGETS.some((t) => t.id === id)).toBe(true); // old results still resolve
+  });
+
+  it('keeps every published daily and every challenge round exactly as it was', () => {
+    // Hashes of the rounds built by the code before the color list changed.
+    const parts: string[] = [];
+    for (let d = '2026-10-18'; d <= '2026-11-15'; d = addDays(d, 1)) parts.push(`${d}:${dailyRounds(d).map((r) => `${r.target.id}/${r.target.hex}/${r.start.h},${r.start.s},${r.start.b}`).join(';')}`);
+    expect(hashString(parts.join('|'))).toBe(1756574134);
+    const seeds: string[] = [];
+    for (let s = 1; s <= 300; s++) seeds.push(practiceRounds(rng(s)).map((r) => `${r.target.id}/${r.start.h},${r.start.s},${r.start.b}`).join(';'));
+    expect(hashString(seeds.join('|'))).toBe(3589488442);
+  });
+
+  it('builds even dailies from BALANCED_FROM: no retired colors, at most one pale and one dark', () => {
+    for (let i = 0; i < 120; i++) {
+      const rounds = dailyRounds(addDays(BALANCED_FROM, i));
+      expect(rounds.some((r) => RETIRED.has(r.target.id))).toBe(false);
+      const tones = rounds.map((r) => toneOf(r.target.hex));
+      expect(tones.filter((t) => t === 'pale').length).toBeLessThanOrEqual(1);
+      expect(tones.filter((t) => t === 'dark').length).toBeLessThanOrEqual(1);
+      expect(new Set(rounds.map((r) => r.target.glyph)).size).toBe(ROUNDS);
+    }
+  });
+});
+
+describe('two tabs', () => {
+  it('merges saves without losing either tab’s progress', () => {
+    const r = { targetId: 'lemon', guess: '#FFFF00', dE: 3, points: 900 };
+    const a = { ...emptyCrSave(), daily: { '2026-10-29': [r, r] }, dailySeen: { day: '2026-10-29', round: 1 }, bestColor: 900 };
+    const b = { ...emptyCrSave(), daily: { '2026-10-29': [r] }, dailySeen: { day: '2026-10-29', round: 0 }, runs: { 'x:1': { results: [r], seen: 1 } }, muted: true };
+    const m = mergeCr(b, a);
+    expect(m.daily['2026-10-29']).toHaveLength(2);
+    expect(m.dailySeen).toEqual({ day: '2026-10-29', round: 1 });
+    expect(m.runs['x:1']!.seen).toBe(1);
+    expect(m.muted).toBe(true);
+    expect(m.bestColor).toBe(900);
+  });
+
+  it('a stale tab neither shows a color again nor erases newer results', () => {
+    vi.useFakeTimers();
+    localStorage.removeItem(STORE_KEY);
+    try {
+      render(<Game host={{ report: () => {} }} restartKey={0} />);
+      // Another tab plays colors 1 and 2 of today's daily.
+      const rounds = dailyRounds(dayKey());
+      const done = rounds.slice(0, 2).map((r) => scoreGuess(r.target, hexToRgb(r.target.hex)));
+      localStorage.setItem(STORE_KEY, JSON.stringify({ ...emptyCrSave(), daily: { [dayKey()]: done }, dailySeen: { day: dayKey(), round: 1 } }));
+      act(() => {
+        window.dispatchEvent(new StorageEvent('storage', { key: STORE_KEY }));
+      });
+      fireEvent.click(screen.getByRole('button', { name: /resume \(2\/5\)/i }));
+      fireEvent.click(screen.getByRole('button', { name: /ready\?/i }));
+      act(() => {
+        vi.advanceTimersByTime(3100);
+      });
+      fireEvent.click(screen.getByRole('button', { name: /lock it in/i }));
+      expect(JSON.parse(localStorage.getItem(STORE_KEY)!).daily[dayKey()]).toHaveLength(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('the one look', () => {
+  const show = (): void => {
+    fireEvent.click(screen.getByRole('button', { name: /ready\?/i }));
+  };
+
+  it('pauses the peek under the arcade menu and How to play, without losing the look', () => {
+    vi.useFakeTimers();
+    localStorage.removeItem(STORE_KEY);
+    try {
+      const host = { report: () => {} };
+      const view = render(<Game host={host} restartKey={0} pauseKey={0} />);
+      fireEvent.click(screen.getByRole('button', { name: /play today/i }));
+      show();
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      view.rerender(<Game host={host} restartKey={0} pauseKey={1} />);
+      act(() => {
+        vi.advanceTimersByTime(10000);
+      });
+      // Still in the peek, color hidden, the time left kept.
+      expect(screen.getByRole('button', { name: /look closely/i })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: /paused/i }));
+      expect(screen.getByRole('button', { name: 'Got it' })).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(2100);
+      });
+      expect(screen.getByRole('button', { name: /lock it in/i })).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a quick double Enter on a reveal does not skip the next look', () => {
+    vi.useFakeTimers();
+    localStorage.removeItem(STORE_KEY);
+    try {
+      render(<Game host={{ report: () => {} }} restartKey={0} />);
+      fireEvent.click(screen.getByRole('button', { name: /play today/i }));
+      show();
+      act(() => {
+        vi.advanceTimersByTime(3100);
+      });
+      fireEvent.click(screen.getByRole('button', { name: /lock it in/i }));
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      fireEvent.keyDown(document.body, { key: 'Enter' });
+      fireEvent.keyDown(document.body, { key: 'Enter' });
+      fireEvent.keyDown(document.body, { key: 'Enter' });
+      expect(screen.getByRole('button', { name: /ready\? color 2/i })).toBeTruthy();
+      expect(JSON.parse(localStorage.getItem(STORE_KEY)!).dailySeen.round).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('friends’ challenge rounds', () => {
+  const challenge = { id: 'abc', round: 1, seed: 1234, mode: 'fresh' as const, day: '2026-10-29' };
+
+  it('resumes after a reload without a second look and reports the end once', () => {
+    vi.useFakeTimers();
+    localStorage.removeItem(STORE_KEY);
+    try {
+      const events: GameEvent[] = [];
+      const host = { report: (e: GameEvent) => events.push(e) };
+      const first = render(<Game host={host} restartKey={0} challenge={challenge} />);
+      expect(screen.queryByRole('button', { name: 'Back to menu' })).toBeNull(); // one attempt: no way out
+      fireEvent.click(screen.getByRole('button', { name: /ready\?/i }));
+      first.unmount();
+      const second = render(<Game host={host} restartKey={0} challenge={challenge} />);
+      expect(screen.queryByRole('button', { name: /look closely/i })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: /lock it in/i }));
+      second.unmount();
+      const third = render(<Game host={host} restartKey={0} challenge={challenge} />);
+      expect(screen.getByRole('button', { name: /ready\? color 2/i })).toBeTruthy();
+      for (let i = 1; i < ROUNDS; i++) {
+        if (i > 1) fireEvent.click(screen.getByRole('button', { name: /next color/i }));
+        fireEvent.click(screen.getByRole('button', { name: /ready\?/i }));
+        act(() => {
+          vi.advanceTimersByTime(3100);
+        });
+        fireEvent.click(screen.getByRole('button', { name: /lock it in/i }));
+      }
+      third.unmount();
+      render(<Game host={host} restartKey={0} challenge={challenge} />);
+      expect(screen.getByText(/challenge round complete/i)).toBeTruthy();
+      expect(events.filter((e) => e.type === 'end')).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('“Today’s daily” plays the real daily, and a finished daily counts at once', () => {
+    localStorage.removeItem(STORE_KEY);
+    const day = '2026-10-29';
+    const rounds = dailyRounds(day);
+    const done = rounds.map((r) => scoreGuess(r.target, hexToRgb(r.target.hex)));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ ...emptyCrSave(), daily: { [day]: done } }));
+    const events: GameEvent[] = [];
+    render(<Game host={{ report: (e) => events.push(e) }} restartKey={0} challenge={{ ...challenge, id: 'dly', mode: 'daily', day }} />);
+    expect(screen.getByText(/your daily result counts here/i)).toBeTruthy();
+    const end = events.find((e) => e.type === 'end');
+    expect(end && end.type === 'end' && end.score).toBe(totalScore(done));
+    expect(end && end.type === 'end' && end.challenge).toEqual({ id: 'dly', round: 1 });
   });
 });
