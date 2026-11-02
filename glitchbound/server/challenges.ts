@@ -68,13 +68,11 @@ export interface Row {
   created_at: number;
   updated_at: number;
   closed_at: number | null;
-  /** When the current round opened (a rematch); null for round 1 and rounds from before it was kept. */
-  round_at?: number | null;
 }
 
 export async function challengeRow(env: Env, id: string): Promise<Row | null> {
   if (!/^[A-Za-z0-9]{5,12}$/.test(id)) return null;
-  return env.DB.prepare('SELECT id, game, mode, day, seed, round, host, created_at, updated_at, closed_at, round_at FROM challenges WHERE id = ?').bind(id).first<Row>();
+  return env.DB.prepare('SELECT id, game, mode, day, seed, round, host, created_at, updated_at, closed_at FROM challenges WHERE id = ?').bind(id).first<Row>();
 }
 
 /** A challenge about to start: its host is its first player. */

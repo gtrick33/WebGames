@@ -554,7 +554,7 @@ export function GamePage({ game }: { game: GameEntry }) {
       let n = 0;
       setLast((prev) => {
         n = (prev?.n ?? 0) + 1;
-        return { event: e, result, n, server: signedIn ? (pending ? undefined : noRun) : null };
+        return { event: e, result, n, server: signedIn ? (pending ? undefined : ended.challenge ? null : noRun) : null };
       });
       if (pending) {
         void pending.then(async (runId) => {

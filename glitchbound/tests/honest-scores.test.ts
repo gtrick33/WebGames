@@ -221,5 +221,11 @@ describe('the servers refuse impossible rounds', () => {
     // One score per player and round: the first one counts.
     const again = await call<ChallengeView>(score, `/api/challenges/${id}/score`, { round: 1, score: 800 }, id);
     expect(again.data.rounds[0]!.scores.map((s) => s.score)).toEqual([700]);
+    // A "Today's daily" round already played: the game reports the saved result at once, with no start.
+    // Only the caps apply then.
+    const daily = (await call<ChallengeView>(create, '/api/challenges', { game: 'wait-what', mode: 'daily', name: 'Ana' })).data.id;
+    now += 500;
+    expect(await call(score, `/api/challenges/${daily}/score`, { round: 1, score: 1600, stats: { correct: 10 } }, daily)).toMatchObject({ status: 422, data: { error: 'above_max' } });
+    expect((await call(score, `/api/challenges/${daily}/score`, { round: 1, score: 1320, stats: { correct: 9, streak: 6 } }, daily)).status).toBe(200);
   });
 });

@@ -7,5 +7,3 @@ CREATE TABLE IF NOT EXISTS challenge_starts (
   started_at INTEGER NOT NULL,
   PRIMARY KEY (challenge_id, round, player)
 );
--- When the current round opened (a rematch), for scores sent without a start.
-ALTER TABLE challenges ADD COLUMN round_at INTEGER;

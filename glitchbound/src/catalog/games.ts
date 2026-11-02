@@ -590,10 +590,10 @@ export const GAMES: GameEntry[] = [
       'Generated questions too: real words that sound fake, words from other languages, "which came first?"',
       'Daily quiz of 10, the same for everyone, with a shareable result grid',
       'Endless mode: three strikes, and no question repeats until you have seen them all',
-      'Challenge up to 5 friends: same 10 questions, 20 seconds each, faster answers score more',
+      'Challenge up to 5 friends: same 10 questions, 15 to 30 seconds each, faster answers score more',
     ],
     ownDaily: { label: 'Today’s quiz' },
-    challenge: { label: '10 questions, 20 seconds each, the same for everyone. Right answers score 100, plus up to 50 for speed.' },
+    challenge: { label: '10 questions, 15 to 30 seconds each, the same for everyone. Right answers score 100, plus up to 50 for speed.' },
     daily: [
       { metric: 'correct', targets: [6, 7, 8], label: 'Get {n} questions right in one Quizbelief quiz' },
       { metric: 'streak', targets: [4, 5, 6], label: 'Answer {n} Quizbelief questions in a row correctly' },
