@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameEntry } from '../catalog/types';
 import { t } from '../i18n';
-import { ApiError } from './account';
+import { api, ApiError } from './account';
 import { REPLAY_MAX, type ChallengeSpec, type ChallengeView } from './challenge';
-import { challengeReplays, closeChallenge, getChallenge, joinChallenge, pollChallenge, rematch as askRematch, submitChallengeScore } from './challenges';
+import { challengeReplays, closeChallenge, getChallenge, joinChallenge, playerKey, pollChallenge, rematch as askRematch, submitChallengeScore } from './challenges';
 import type { EndEvent } from './contract';
 
 /** Games whose challenge rounds replay the other players' runs. */
@@ -32,6 +32,8 @@ export interface ChallengeRun {
   /** The latest live update worth a toast. */
   news: ChallengeNews | null;
   busy: boolean;
+  /** Tells the server the round started (the game's start event): its score is timed from the first start. */
+  begin: () => void;
   /** Sends the round's score (called with the game's end event). */
   finish: (e: EndEvent) => void;
   /** Starts the next round for everyone. */
@@ -196,6 +198,17 @@ export function useChallengeRun(id: string | null, game: GameEntry, name: string
     [take],
   );
 
+  // Once per round and page: the server keeps the first start anyway (a reload can't restart its clock).
+  const begun = useRef('');
+  const begin = useCallback((): void => {
+    const s = stateRef.current;
+    if (s.status !== 'ready') return;
+    const k = `${s.spec.id}:${s.spec.round}`;
+    if (begun.current === k) return;
+    begun.current = k;
+    api(`/api/challenges/${s.spec.id}/start`, { body: { round: s.spec.round, key: playerKey() } }).catch(() => undefined);
+  }, []);
+
   const rematch = useCallback(async (): Promise<void> => {
     const v = viewRef.current;
     if (!id || !v) return;
@@ -229,7 +242,7 @@ export function useChallengeRun(id: string | null, game: GameEntry, name: string
     }
   }, [id, take]);
 
-  return { state, news, busy, finish, rematch, close };
+  return { state, news, busy, begin, finish, rematch, close };
 }
 
 /** The round handed to the game: kept after the score is sent so the game stays in challenge mode. */

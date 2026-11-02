@@ -19,7 +19,7 @@ export async function onRequestPost({ request, env, params, waitUntil }: Ctx): P
   const now = Date.now();
   const next = row.round + 1;
   // Rematches are always fresh content, even for a daily challenge.
-  await env.DB.prepare('UPDATE challenges SET round = ?, seed = ?, mode = ?, updated_at = ? WHERE id = ? AND round = ?').bind(next, roundSeed(row.seed, next), 'fresh', now, row.id, row.round).run();
+  await env.DB.prepare('UPDATE challenges SET round = ?, seed = ?, mode = ?, updated_at = ?, round_at = ? WHERE id = ? AND round = ?').bind(next, roundSeed(row.seed, next), 'fresh', now, now, row.id, row.round).run();
   const fresh = await challengeRow(env, row.id);
   if (fresh && fresh.round !== row.round) notifyChallenge(env, waitUntil, row.id, fresh.updated_at);
   return json(await viewOf(env, fresh!, player));

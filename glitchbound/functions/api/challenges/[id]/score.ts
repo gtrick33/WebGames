@@ -1,8 +1,14 @@
 import { challengeRow, isClosed, notifyChallenge, playerOf, viewOf } from '../../../../server/challenges';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../../server/http';
+import { refusal } from '../../../../server/plausible';
+import { getGame } from '../../../../src/catalog/catalog';
 import { REPLAY_MAX } from '../../../../src/platform/challenge';
 
-/** POST /api/challenges/<id>/score { round, score, stats?, replay?, key? }: the first finished score of a round counts. */
+/**
+ * POST /api/challenges/<id>/score { round, score, stats?, replay?, key? }: the first finished score of a
+ * round counts. It must be plausible for the time since the player started the round (see start.ts; the
+ * round's opening when no start was recorded), by the same limits as the leaderboards.
+ */
 export async function onRequestPost({ request, env, params, waitUntil }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('forbidden', 403);
   const row = await challengeRow(env, String(params?.id ?? ''));
@@ -19,6 +25,11 @@ export async function onRequestPost({ request, env, params, waitUntil }: Ctx): P
   const stats: Record<string, number> = {};
   if (body?.stats && typeof body.stats === 'object')
     for (const [k, v] of Object.entries(body.stats as Record<string, unknown>).slice(0, 12)) if (/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(k) && typeof v === 'number' && Number.isFinite(v)) stats[k] = Math.round(v * 100) / 100;
+  const opened = await env.DB.prepare('SELECT started_at FROM challenge_starts WHERE challenge_id = ? AND round = ? AND player = ?').bind(row.id, row.round, player).first<{ started_at: number }>();
+  const from = opened?.started_at ?? row.round_at ?? row.created_at;
+  const game = getGame(row.game);
+  const reason = game ? refusal(game, score, stats, (Date.now() - from) / 1000, true) : '';
+  if (reason) return bad(reason, 422, { message: reason === 'too_fast' ? 'That round was too short to count, so the score was not added.' : 'That score isn’t possible for this round, so it was not added.' });
   const replay = typeof body?.replay === 'string' && body.replay.length <= REPLAY_MAX && /^[A-Za-z0-9+/=_-]*$/.test(body.replay) ? body.replay : '';
   const now = Date.now();
   await env.DB.batch([
