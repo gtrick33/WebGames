@@ -70,8 +70,22 @@ describe('score limits', () => {
       ['backgammon', 950, { points: 9 }, 600],
       ['to-scale', 5000, { bullseyes: 5 }, 8],
       ['wait-what', 1500, { correct: 10, streak: 10 }, 15],
+      // The rest of the arcade: a strong real round each, so every game's limits are run here.
+      ['memory-grid', 35 * 120, { longest: 14, patterns: 12, accuracy: 100 }, 120],
+      ['mini-racer', 2900, { drift: 3500, cleanLaps: 3 }, 30],
+      ['launch-control', 17000, { perfect: 4 }, 12],
+      ['color-lab', 50, { stars: 15, underPar: 5 }, 20],
+      ['spot-the-glitch', 125 * 2 * 60, { found: 60, pictures: 12, clean: 12 }, 60],
+      ['square-deal', 1600, { lines: 25, streak: 10 }, 60],
+      ['outta-here', 2544, { levels: 5, perfect: 5 }, 142],
+      ['fussbox', 1000, { correct: 8, tests: 3 }, 20],
+      ['belot', 220, { margin: 120 }, 300],
+      ['crass-act', 10, { wins: 1 }, 600],
+      ['wing-it', 70, { pillars: 40, feathers: 10 }, 50],
     ];
     for (const [slug, s, stats, seconds] of real) expect(refusal(game(slug), s, stats, seconds), `${slug} ${s} in ${seconds} s`).toBe('');
+    // A new game adds its best real round here, so its limits are tested before it ships.
+    expect(GAMES.map((g) => g.slug).filter((slug) => !real.some(([r]) => r === slug))).toEqual([]);
   });
 
   it('lets Outta Here’s Endless reach level 100 at 5 taps a second (OH-02)', () => {
