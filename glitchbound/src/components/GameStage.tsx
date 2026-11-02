@@ -18,6 +18,10 @@ type Phase = 'poster' | 'loading' | 'ready' | 'error';
 
 const LOAD_TIMEOUT_MS = 20_000;
 
+/** Games that keep their own controls out of the screen's safe-area insets: in play mode they get the
+ * whole screen (the rest are kept inside the safe area by the stage, GameStage.css). */
+export const OWN_INSETS: ReadonlySet<string> = new Set(['launch-control', 'backgammon', 'sigilfall', 'belot', 'crater-crew']);
+
 /** One lazy component per module game, created once (a failed import is replaced on retry). */
 const LAZY_GAMES: Record<string, ComponentType<GameModuleProps>> = Object.fromEntries(Object.entries(GAME_MODULES).map(([slug, load]) => [slug, lazy(fresh(load))]));
 
@@ -219,7 +223,7 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
   const playing = phase === 'loading' || phase === 'ready';
 
   return (
-    <div ref={stageRef} className={`stage stage-${game.aspect}`} style={{ background: game.art.bg }} data-phase={phase}>
+    <div ref={stageRef} className={`stage stage-${game.aspect}${OWN_INSETS.has(game.slug) ? ' stage-own-insets' : ''}`} style={{ background: game.art.bg }} data-phase={phase}>
       {game.runtime.kind === 'embed' && playing && (
         <iframe
           key={attempt}

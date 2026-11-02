@@ -240,9 +240,10 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
     const el = ref.current;
     if (!el || modeRef.current === 'fullscreen') return;
     // Must run inside the click handler: browsers only allow fullscreen from a user gesture.
-    if (canAskFull(el)) request(el);
+    const ask = canAskFull(el);
+    if (ask) request(el);
     // on a phone the stage is pinned at once, whatever the browser does with the request
-    if (!canAskFull(el) || touchScreen()) apply('immersive');
+    if ((!ask || touchScreen()) && modeRef.current !== 'fullscreen') apply('immersive');
   };
   const retryFullscreen = (): void => {
     const el = ref.current;
