@@ -146,6 +146,9 @@ const toastTime = (tone: Toast['tone']): number => (tone === 'loot' ? 5000 : ton
 /** Shorter than this, with nothing earned, a trip out is not reported as a round (the arcade's shortest is 20 s). */
 const MIN_ROUND = 20;
 
+/** A hero's state without its save stamp, to tell whether anything changed since the last save. */
+const heroSignature = (h: Character): string => JSON.stringify({ ...h, updated: 0 });
+
 /** The Riftstone a world's run finished, for the report (none while it is still under way). */
 function keyResult(w: World): RunSummary['key'] | undefined {
   const k = w.keyRun;
@@ -186,6 +189,8 @@ export class SigilEngine {
   private cards: Omit<TitleCard, 'id'>[] = [];
   /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
   /** The expedition under way; `keyEnd`: the Riftstone it finished, kept when the hero walks out of its dungeon. */
+  /** The hero as last stamped (heroSignature): persist() bumps `updated` only when it differs. */
+  private heroSig = '';
   private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number; keyEnd?: RunSummary['key'] } | null = null;
   private hidden = false;
   /** The co-op party this hero is in, and the run it is fighting (null playing alone). */
@@ -667,7 +672,12 @@ export class SigilEngine {
     if (this.hero) {
       // whatever the hero carries now, its look is theirs for good
       learnLooks(this.hero, allItems(this.hero));
-      this.hero.updated = Date.now();
+      // stamped only when something changed: opening a hero without playing doesn't make that copy the newest
+      const sig = heroSignature(this.hero);
+      if (sig !== this.heroSig) {
+        this.hero.updated = Date.now();
+        this.heroSig = sig;
+      }
       this.save.heroes[this.slot] = this.hero;
       this.save.last = this.slot;
     }
@@ -723,6 +733,7 @@ export class SigilEngine {
     if (!h) return;
     this.slot = slot;
     this.hero = h;
+    this.heroSig = heroSignature(h);
     this.save.last = slot;
     this.ui = { ...this.ui, screen: 'game', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null };
     this.travel(HOME, 0, []);
