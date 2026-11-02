@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QUICK } from '../rooms/engines';
-import { alarmTime, IDLE_MS, IDLE_STEP, refusal, relayKeepAlive } from '../rooms/live';
+import { alarmTime, IDLE_MS, IDLE_STEP, refusal, relayKeepAlive, SHARED_KEY } from '../rooms/live';
+import { Room } from '../rooms/worker';
 import * as sigilfall from '../src/games/sigilfall/net/room';
 import { Outbox, rematchUrl } from '../src/platform/rooms';
 import * as dial from '../src/party/rooms/dialRoom';
@@ -184,3 +185,13 @@ describe('quick match after a lost race (PB-10)', () => {
   });
 });
 
+
+describe('the old shared no-storage key', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it('is refused at the door', async () => {
+    vi.stubGlobal('WebSocketRequestResponsePair', class {});
+    const room = new Room({ storage: {}, setWebSocketAutoResponse: () => undefined } as never, {});
+    const res = await room.fetch(new Request(`https://room/ws?key=${SHARED_KEY}`, { headers: { Upgrade: 'websocket' } }));
+    expect(res.status).toBe(400);
+  });
+});

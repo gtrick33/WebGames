@@ -16,7 +16,7 @@
  */
 import { engineFor, ENGINES, isGameId, QUICK, type GameId, type RoomState as State } from './engines';
 import * as lobbyList from './lobby';
-import { alarmTime, IDLE_MS, REPLACED, refusal, relayKeepAlive } from './live';
+import { alarmTime, IDLE_MS, REPLACED, refusal, relayKeepAlive, SHARED_KEY } from './live';
 import { dropAway, type RoomBase } from '../src/party/rooms/seats';
 
 interface Socket {
@@ -215,7 +215,7 @@ export class Room {
     if (url.pathname === '/ws') {
       if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'websocket_required' }, 426);
       const key = url.searchParams.get('key');
-      if (!ENGINES['crass-act'].validKey(key)) return json({ error: 'bad_key' }, 400);
+      if (!ENGINES['crass-act'].validKey(key) || key === SHARED_KEY) return json({ error: 'bad_key' }, 400);
       const pair = new WebSocketPair();
       const client = pair[0];
       const server = pair[1];

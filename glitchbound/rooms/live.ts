@@ -16,6 +16,12 @@ export function refusal(err: string | null): { t: 'gone'; reason: string; code: 
   return { t: 'gone', reason: 'This room has closed.', code: 'closed' };
 }
 
+/**
+ * The one player key every browser without storage used to share: whoever held it would sit in each
+ * other's seat, so rooms refuse it (the page makes a key of its own now).
+ */
+export const SHARED_KEY = 'nostorage-device-key-0000';
+
 /** A second tab (or device) of the same player took the seat over. */
 export const REPLACED = { t: 'gone', reason: 'This room is open in another tab.', code: 'replaced' } as const;
 
