@@ -9,7 +9,7 @@ export const COACH: CoachStep[] = [
   },
   {
     title: 'Blocked? It bounces back',
-    body: 'If another arrow is in the way, yours bounces and you lose a heart ❤️. Run out of hearts and the level is over.',
+    body: 'If another arrow is in the way, yours bounces and you lose a heart ❤️. Run out of hearts and the game is over.',
     art: <CoachGrid size={4} cells={[{}, {}, {}, {}, { cls: 'is-bad', text: '→' }, {}, { cls: 'is-bad', text: '↑' }, {}, {}, {}, {}, {}, {}, {}, {}, {}]} />,
   },
   {

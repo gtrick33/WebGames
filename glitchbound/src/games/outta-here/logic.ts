@@ -102,9 +102,12 @@ export function arrowAt(level: Level, gone: ReadonlySet<number>, cell: number): 
   return level.arrows.find((a) => !gone.has(a.id) && a.cells.includes(cell)) ?? null;
 }
 
+/** The clear bonus grows by 50 a level up to level 10, then stays: a long run's points keep pace with its time. */
+export const CLEAR_BONUS_MAX = 500;
+
 /** Points for one level: arrows, a clear bonus growing with the level, a no-mistake bonus and speed. */
 export function levelPoints(level: Level, n: number, mistakes: number, seconds: number): number {
-  return level.arrows.length * 10 + 50 * n + (mistakes === 0 ? 100 : 0) + Math.max(0, Math.round(60 - seconds));
+  return level.arrows.length * 10 + Math.min(50 * n, CLEAR_BONUS_MAX) + (mistakes === 0 ? 100 : 0) + Math.max(0, Math.round(60 - seconds));
 }
 
 /** One emoji per level played: 💨 clean, 🟡 with mistakes, 💥 where the run ended. */

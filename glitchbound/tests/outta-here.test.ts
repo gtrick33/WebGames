@@ -68,4 +68,19 @@ describe('Outta Here', () => {
     expect(resultLine(levels)).toBe('💨💨💨💨💨');
     expect(resultLine([{ mistakes: 1, cleared: true }, { mistakes: 3, cleared: false }])).toBe('🟡💥');
   });
+
+  it('keeps a long, fast, flawless endless run within the limits (the clear bonus stops growing)', () => {
+    const limits = getGame('outta-here')!.limits!;
+    expect(levelPoints(makeLevel(1, 10), 10, 0, 99)).toBe(levelPoints(makeLevel(1, 10), 40, 0, 99));
+    let total = 0;
+    let seconds = 0;
+    for (let n = 1; n <= 150; n++) {
+      const level = makeLevel(4242, n);
+      // Five taps a second without a pause, all run long.
+      const secs = level.arrows.length / 5;
+      seconds += secs;
+      total += levelPoints(level, n, 0, secs);
+      expect(total, `level ${n}`).toBeLessThanOrEqual(limits.scorePerSecond * seconds + 50);
+    }
+  });
 });
