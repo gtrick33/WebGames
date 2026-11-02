@@ -142,6 +142,15 @@ const FRAME_SHIFT = 0.1;
 /** How long a toast stays (ms): loot and hints longer, to be read. */
 const toastTime = (tone: Toast['tone']): number => (tone === 'loot' ? 5000 : tone === 'hint' ? 6000 : 3600);
 
+
+/** Shorter than this, with nothing earned, a trip out is not reported as a round (the arcade's shortest is 20 s). */
+const MIN_ROUND = 20;
+
+/** The Riftstone a world's run finished, for the report (none while it is still under way). */
+function keyResult(w: World): RunSummary['key'] | undefined {
+  const k = w.keyRun;
+  return k?.end ? { key: k.key, time: k.end.time, par: k.par, up: k.end.up, stone: k.end.stone, best: k.end.best, marks: k.end.marks, deaths: k.deaths } : undefined;
+}
 export class SigilEngine {
   save: SaveFile;
   loadStatus: LoadStatus;
@@ -176,7 +185,8 @@ export class SigilEngine {
   /** Title cards waiting for their moment (no one talking, no scene, no panel open). */
   private cards: Omit<TitleCard, 'id'>[] = [];
   /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
-  private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number } | null = null;
+  /** The expedition under way; `keyEnd`: the Riftstone it finished, kept when the hero walks out of its dungeon. */
+  private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number; keyEnd?: RunSummary['key'] } | null = null;
   private hidden = false;
   /** The co-op party this hero is in, and the run it is fighting (null playing alone). */
   party: PartyState | null = null;
@@ -778,8 +788,11 @@ export class SigilEngine {
       this.startRun(to, 2, [], key);
     } else if (!this.run) this.startRun(to, tier, mods, 0);
     else {
-      // the stone is for the dungeon it was set in: walking out ends that run
-      if (this.run.key && to !== this.run.region) this.run.key = 0;
+      // the stone is for the dungeon it was set in: walking out ends that run (what it earned stays in the report)
+      if (this.run.key && to !== this.run.region) {
+        this.run.keyEnd = (prev && keyResult(prev)) ?? this.run.keyEnd;
+        this.run.key = 0;
+      }
       this.run.region = to;
     }
     const stone = this.run?.key ?? 0;
@@ -840,8 +853,7 @@ export class SigilEngine {
   private summary(cleared: boolean): RunSummary {
     const w = this.world;
     const r = w?.run ?? { xp: 0, gold: 0, kills: 0, bosses: 0, items: [] };
-    const k = w?.keyRun;
-    const key = k?.end ? { key: k.key, time: k.end.time, par: k.par, up: k.end.up, stone: k.end.stone, best: k.end.best, marks: k.end.marks, deaths: k.deaths } : undefined;
+    const key = (w && keyResult(w)) ?? this.run?.keyEnd;
     return { region: this.run?.region ?? w?.region.id ?? 'emberwick', tier: this.run?.tier ?? 0, xp: r.xp, gold: r.gold, kills: r.kills, bosses: r.bosses, items: r.items, seconds: this.run ? (performance.now() - this.run.start) / 1000 : 0, cleared, ...(key ? { key } : {}) };
   }
 
@@ -852,6 +864,11 @@ export class SigilEngine {
       return;
     }
     const s = this.summary(false);
+    // a step out of the gate and back is not a round: nothing to report (the arcade would only call it too short)
+    if (s.seconds < MIN_ROUND && !s.xp && !s.gold && !s.kills && !s.bosses && !s.items.length && !s.key) {
+      this.run = null;
+      return;
+    }
     // a Riftstone level beaten in time is worth the most: higher stones climb the board
     const score = Math.round(s.xp + s.gold * 2 + s.bosses * 250 + (s.key && s.key.up > 0 ? s.key.key * 1000 : 0));
     this.hero.stats.bestRun = Math.max(this.hero.stats.bestRun, score);
