@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getGame } from '../src/catalog/catalog';
-import { arrowAt, canLeave, DAILY_LEVELS, levelPoints, makeLevel, pathAhead, resultLine, sizeFor, type Level } from '../src/games/outta-here/logic';
+import { arrowAt, canLeave, DAILY_LEVELS, levelPoints, makeLevel, pathAhead, resultLine, sizeFor, waves, type Level } from '../src/games/outta-here/logic';
 
 /** Clears a level by always sending off the first arrow that can leave. Returns the order, or null if stuck. */
 function solve(level: Level): number[] | null {
@@ -40,6 +40,21 @@ describe('Outta Here', () => {
         if (n >= 2) expect(level.arrows.some((a) => !canLeave(level, new Set(), a))).toBe(true);
       }
     }
+  });
+
+  it('keeps levels 1 to 6 as they were (dailies stay the same) and makes later 8x8 levels deeper', () => {
+    // A fingerprint of one daily-sized level, taken from the generator before later levels got deeper.
+    const fp = makeLevel(20261102, 5).arrows.map((a) => `${a.cells.join('.')}${'urdl'[a.dir]}${a.color}`).join(' ');
+    let h = 0;
+    for (const c of fp) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0;
+    expect(h).toBe(4248115978);
+    const depth = (n: number): number => {
+      let w = 0;
+      for (let s = 1; s <= 40; s++) w += waves(makeLevel(s * 7919, n));
+      return w / 40;
+    };
+    expect(depth(16)).toBeGreaterThan(depth(7) + 0.5);
+    expect(makeLevel(77, 16)).toEqual(makeLevel(77, 16));
   });
 
   it('finds arrows by cell and checks the way out', () => {

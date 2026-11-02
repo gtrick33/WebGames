@@ -55,10 +55,41 @@ export function pathAhead(size: number, head: number, dir: Dir): number[] {
   return out;
 }
 
-/** Builds level `n` of the round with this seed. */
+/** How many removal waves a level takes (each wave: every arrow free at that point leaves). */
+export function waves(level: Level): number {
+  const gone = new Set<number>();
+  let count = 0;
+  while (gone.size < level.arrows.length) {
+    const free = level.arrows.filter((a) => !gone.has(a.id) && canLeave(level, gone, a));
+    if (!free.length) return count;
+    for (const a of free) gone.add(a.id);
+    count++;
+  }
+  return count;
+}
+
+/**
+ * Builds level `n` of the round with this seed. Boards stop growing at 8x8 and can't be packed any
+ * fuller, so from level 7 on a level is the deepest of a few seeded drafts (more drafts later on):
+ * more waves of arrows that wait for others, fewer free from the start. Levels 1 to 6 are one draft.
+ */
 export function makeLevel(seed: number, n: number): Level {
+  const drafts = 1 + Math.min(11, Math.max(0, n - 6));
+  let best: Level | null = null;
+  let bestRank = -Infinity;
+  for (let k = 0; k < drafts; k++) {
+    const level = draft(seed, n, k);
+    if (drafts === 1) return level;
+    const free = level.arrows.filter((a) => canLeave(level, new Set(), a)).length;
+    const rank = waves(level) * 100 - free;
+    if (rank > bestRank) [best, bestRank] = [level, rank];
+  }
+  return best!;
+}
+
+function draft(seed: number, n: number, k: number): Level {
   const size = sizeFor(n);
-  const r = rng((seed ^ Math.imul(n, 0x85ebca6b)) >>> 0);
+  const r = rng((seed ^ Math.imul(n, 0x85ebca6b) ^ Math.imul(k, 0x9e3779b1)) >>> 0);
   const occ = new Array<number>(size * size).fill(-1);
   const arrows: Arrow[] = [];
   const target = Math.floor(size * size * (0.78 + Math.min(0.12, n * 0.015)));
