@@ -328,10 +328,11 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
       }));
   };
 
-  const next = (): void => {
+  /** `tap`: from the button, where "Lock it in" just was (keys are deliberate, and repeats are ignored). */
+  const next = (tap = false): void => {
     if (phase !== 'reveal') return;
     // A second tap on the spot where "Lock it in" was must not skip the reveal.
-    if (performance.now() - revealAt.current < REVEAL_HOLD_MS) return;
+    if (tap && performance.now() - revealAt.current < REVEAL_HOLD_MS) return;
     const over = mode === 'endless' ? lives <= 0 : idx + 1 >= shots.length;
     if (over) {
       // Already kept when the last shot was locked in.
@@ -567,7 +568,7 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
               Real size: <b>{sizeText(target.size)} {target.dim}</b> ({usText(target.size)}), {times(shot.ratio, ref.name)} ({sizeText(ref.size)}, {usText(ref.size)}). You said {ratioText(last.guess)}.
             </p>
             <p className="ts-fact">{target.fact}</p>
-            <button className="ts-btn ts-btn-go ts-lock" onClick={next} autoFocus>
+            <button className="ts-btn ts-btn-go ts-lock" onClick={() => next(true)} autoFocus>
               {mode === 'endless' ? (lives <= 0 ? 'See your score' : 'Next shot') : idx + 1 >= shots.length ? 'See your score' : 'Next shot'}
             </button>
           </div>
