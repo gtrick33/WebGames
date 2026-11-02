@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { accuracy, isBull, makeShot, makeShots, mark, MAX_POINTS, partners, percentRight, pointsFor, ratioText, rng, SHOTS } from '../src/games/to-scale/logic';
-import { artBox, measured, sizeText, THINGS } from '../src/games/to-scale/objects';
+import { artBox, DIM_QUESTION, measured, sizeText, THINGS, usText } from '../src/games/to-scale/objects';
 import { levelTurn, principalAxis } from '../src/games/to-scale/glyphs';
 import { labelWidth, layoutLabels } from '../src/games/to-scale/layout';
 
@@ -223,5 +223,18 @@ describe('to-scale labels (TS-04)', () => {
       expect(ref.mid - ref.width / 2).toBeGreaterThanOrEqual(4 - 1e-9);
       expect(target.mid + target.width / 2).toBeLessThanOrEqual(W - 4 + 1e-9);
     }
+  });
+});
+
+describe('to-scale dimensions and US units (design)', () => {
+  it('every dimension has a question', () => {
+    for (const t of THINGS) expect(DIM_QUESTION[t.dim], t.name).toMatch(/^How /);
+  });
+  it('US units read well', () => {
+    expect(usText(0.006)).toBe('0.24 in');
+    expect(usText(0.067)).toBe('2.6 in');
+    expect(usText(2)).toBe('6.6 ft');
+    expect(usText(333)).toBe('1,093 ft');
+    expect(usText(12_742_000)).toBe('7,918 mi');
   });
 });

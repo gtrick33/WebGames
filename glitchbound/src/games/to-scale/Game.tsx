@@ -8,7 +8,7 @@ import { ResultLine } from '../../components/ResultLine';
 import { NextDaily } from '../../components/NextDaily';
 import { glyph } from './glyphs';
 import { isBull, LIVES, makeShot, makeShots, mark, MAX_POINTS, MISS_POINTS, percentRight, pointsFor, ratioText, rng, SHOTS, type Shot } from './logic';
-import { artBox, measured, sizeText, THINGS, type Thing } from './objects';
+import { artBox, DIM_QUESTION, measured, sizeText, THINGS, usText, type Thing } from './objects';
 import { labelWidth, layoutLabels } from './layout';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
@@ -520,7 +520,7 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
         </span>
       </header>
       <p className="ts-question">
-        How big is <b>{target.name}</b> next to <b>{ref.name}</b>?
+        {DIM_QUESTION[target.dim]} is <b>{target.name}</b> next to <b>{ref.name}</b> ({sizeText(ref.size)} {ref.dim})?
       </p>
       <Stage key={`${idx}:${shot.target}`} shot={shot} guess={guess} reveal={phase === 'reveal'} tint={tint} onGuess={setGuess} onTick={() => sfx().tick()} />
       {phase === 'aim' ? (
@@ -564,7 +564,7 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
               <span className="ts-acc">{percentRight(last.guess, shot.ratio)}% right</span>
             </p>
             <p className="ts-truth">
-              Real size: <b>{sizeText(target.size)} {target.dim}</b>, {times(shot.ratio, ref.name)} ({sizeText(ref.size)} {ref.dim}). You said {ratioText(last.guess)}.
+              Real size: <b>{sizeText(target.size)} {target.dim}</b> ({usText(target.size)}), {times(shot.ratio, ref.name)} ({sizeText(ref.size)}, {usText(ref.size)}). You said {ratioText(last.guess)}.
             </p>
             <p className="ts-fact">{target.fact}</p>
             <button className="ts-btn ts-btn-go ts-lock" onClick={next} autoFocus>
@@ -650,12 +650,18 @@ function Stage({ shot, guess, reveal, tint, onGuess, onTick }: { shot: Shot; gue
   const refLeft = left;
   const tLeft = left + rb.w * scale + gap;
   const place = (b: { w: number; h: number }, x: number): CSSProperties => ({ left: x, top: floor - b.h * scale, width: b.w * scale, height: b.h * scale });
+  /** The dimension line: along the measured side, above a length or right of a height. */
+  const dimLine = (t: Thing, b: { w: number; h: number }, x: number): CSSProperties =>
+    t.axis === 'w' ? { left: x, top: Math.max(2, floor - b.h * scale - 10), width: b.w * scale } : { left: Math.min(W - 4, x + b.w * scale + 6), top: floor - b.h * scale, height: b.h * scale };
   // The labels sit under each thing, laid out together so they never overlap.
   const refMid = refLeft + (rb.w * scale) / 2;
   const tMid = tLeft + (tw * scale) / 2;
   const short = (t: Thing): string => t.name.replace(/^(a|an|the) /, '');
-  const refSize = sizeText(ref.size);
-  const tSize = reveal ? sizeText(target.size) : '?';
+  // "6.7 cm across", with US units too when the stage is wide enough: "6.7 cm (2.6 in) across".
+  const us = W >= 560;
+  const sizeLine = (t: Thing): string => `${sizeText(t.size)}${us ? ` (${usText(t.size)})` : ''} ${t.dim}`;
+  const refSize = sizeLine(ref);
+  const tSize = reveal ? sizeLine(target) : `? ${target.dim}`;
   const cap = W * 0.46;
   const labels = layoutLabels(W, refMid, tMid, Math.min(cap, labelWidth(short(ref), refSize)), Math.min(cap, labelWidth(short(target), tSize)));
   const label = (b: { mid: number; width: number }): CSSProperties => ({ left: b.mid, top: floor + 6, maxWidth: b.width });
@@ -696,6 +702,8 @@ function Stage({ shot, guess, reveal, tint, onGuess, onTick }: { shot: Shot; gue
           {reveal && glyphs.target && <img className="ts-thing ts-real" src={glyphs.target.color} alt={`${target.name}, real size`} style={place(tb, tLeft)} draggable={false} />}
           {glyphs.target && <img className={`ts-thing ts-target${reveal ? ' is-ghost' : ''}`} src={glyphs.target.silhouette} alt={`${target.name}, your guess`} style={place(gb, tLeft)} draggable={false} />}
           {reveal && <span className="ts-outline" style={place(tb, tLeft)} aria-hidden="true" />}
+          <span className={`ts-dim is-${ref.axis}`} style={dimLine(ref, rb, refLeft)} aria-hidden="true" />
+          {reveal && <span className={`ts-dim is-${target.axis} is-target`} style={dimLine(target, tb, tLeft)} aria-hidden="true" />}
           {!reveal && (
             <button
               className="ts-handle"

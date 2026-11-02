@@ -9,6 +9,8 @@
 import { BALLOON, CAT, CROCODILE, CRUISE_SHIP, DIE, DOG, JET, LOCOMOTIVE, SOFA, TENNIS_BALL, type Art } from './art';
 
 export type Dim = 'long' | 'tall' | 'wide' | 'across';
+/** "How long is…", "How tall is…", "How big across is…". */
+export const DIM_QUESTION: Record<Dim, string> = { long: 'How long', tall: 'How tall', wide: 'How wide', across: 'How big across' };
 
 export interface Thing {
   emoji: string;

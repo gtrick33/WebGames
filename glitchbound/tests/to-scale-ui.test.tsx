@@ -48,7 +48,8 @@ describe('To Scale UI', () => {
     render(<ToScale host={{ report: vi.fn() }} restartKey={0} challenge={fresh} />);
     expect(screen.getByRole('slider').getAttribute('aria-valuetext')).toMatch(/^(1\/)?[\d.]+×?( of)? the /);
     fireEvent.click(screen.getByRole('button', { name: /Lock it in/ }));
-    expect(screen.getByText(/Real size:/).textContent).toMatch(/ (long|tall|wide|across)[,.]/);
+    expect(screen.getByText(/Real size:/).textContent).toMatch(/ (long|tall|wide|across) \([\d.,]+ (in|ft|mi)\),/);
+    expect(document.querySelector('.ts-question')!.textContent).toMatch(/^How (long|tall|wide|big across) is /);
   });
 
   it('a challenge round picks up where it was and is never replayed', () => {
