@@ -3,6 +3,7 @@ import {
   ANSWER_LIST,
   checkGuess,
   dailySecret,
+  describeGuess,
   EPOCH,
   feedback,
   fits,
@@ -187,6 +188,13 @@ describe('scoring and sharing', () => {
     expect(text).toBe('Letter Pinch #7 2/6\n🔽🔼🔽🔽🟩\n🟩🟩🟩🟩🟩\nhttps://example.com/games/letter-pinch');
     expect(text).not.toMatch(/grape|mouse/i);
     expect(shareText({ rows, solved: false, url: 'u' })).toMatch(/^Letter Pinch practice X\/6/);
+    expect(shareText({ rows, solved: true, challenge: true, url: 'u' })).toMatch(/^Letter Pinch ⚔️ challenge 2\/6/);
+    expect(shareText({ rows, solved: true, challenge: true, daily: 9, url: 'u' })).toMatch(/^Letter Pinch ⚔️ challenge #9 2\/6/);
+  });
+
+  it('describes a guess for screen readers', () => {
+    const r = row('mouse', 'grape');
+    expect(describeGuess(r, windowsFor([r]))).toBe('MOUSE: M earlier, O later, U earlier, S earlier, E exact. Windows: A to L, P to Z, A to T, A to R, E.');
   });
 });
 

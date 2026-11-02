@@ -5,10 +5,23 @@ import { MAX_GUESSES } from './logic';
 
 export interface DayProgress {
   guesses: string[];
-  /** Epoch ms of the first guess. */
+  /** Epoch ms of the first typed letter (the first guess in older saves). */
   startedAt: number;
   /** Epoch ms when the puzzle was solved or missed. */
   endedAt?: number;
+  /** Time the board was open and visible, in ms (the solve clock). Missing in older saves. */
+  activeMs?: number;
+}
+
+/** A friends' challenge round on this device: one attempt, so it survives reloads and restarts. */
+export interface ChallengeProgress extends DayProgress {
+  /** The end was sent to the challenge (exactly once per round). */
+  reported?: boolean;
+}
+
+/** The practice board left open, so a reload or Restart resumes it. */
+export interface OpenPractice extends DayProgress {
+  secret: string;
 }
 
 export interface Tally {
@@ -32,10 +45,18 @@ export interface PinchSave {
   practice: Tally;
   seenHelp: boolean;
   muted: boolean;
+  /** Keyed `${challenge.id}:${round}`; the most recent few are kept. */
+  challenges: Record<string, ChallengeProgress>;
+  openPractice: OpenPractice | null;
+  /** The tab last played, so a reload stays in Practice. */
+  lastMode: 'daily' | 'practice';
 }
 
 const KEY = 'glitchbound.letter-pinch';
 const KEEP_DAYS = 14;
+const KEEP_CHALLENGES = 30;
+/** Counters never grow past this (a tampered save cannot break the stats row). */
+const MAX_COUNT = 999_999;
 
 const tally = (): Tally => ({ played: 0, wins: 0, dist: Array<number>(MAX_GUESSES).fill(0) });
 
@@ -46,6 +67,9 @@ export const emptyPinchSave = (): PinchSave => ({
   practice: tally(),
   seenHelp: false,
   muted: false,
+  challenges: {},
+  openPractice: null,
+  lastMode: 'daily',
 });
 
 function record(t: Tally, won: boolean, guesses: number): void {
@@ -57,10 +81,13 @@ function record(t: Tally, won: boolean, guesses: number): void {
   }
 }
 
-/** Records a finished daily. A solve on the day after the last solve extends the streak. */
+/**
+ * Records a finished daily. A solve on the day after the last solve extends the streak. A day counts
+ * once, and an older day finished late (an old challenge link) never rewinds the streak.
+ */
 export function finishDaily(save: PinchSave, day: string, won: boolean, guesses: number): void {
   const s = save.stats;
-  if (s.lastPlayed === day) return;
+  if (s.lastPlayed && day <= s.lastPlayed) return;
   record(s, won, guesses);
   s.lastPlayed = day;
   if (won) {
@@ -83,14 +110,27 @@ export function shownStreak(s: DailyStats, today: string): number {
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const nat = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+const count = (v: unknown): number => Math.min(MAX_COUNT, nat(v));
+const word = (v: unknown): v is string => typeof v === 'string' && /^[a-z]{5}$/.test(v);
+
+/** A board's progress, or null when it is not one. */
+function cleanProgress(p: unknown): DayProgress | null {
+  if (!isObj(p) || !Array.isArray(p.guesses)) return null;
+  return {
+    guesses: p.guesses.filter(word).slice(0, MAX_GUESSES),
+    startedAt: nat(p.startedAt),
+    ...(p.endedAt !== undefined ? { endedAt: nat(p.endedAt) } : {}),
+    ...(p.activeMs !== undefined ? { activeMs: Math.min(nat(p.activeMs), 365 * 86400_000) } : {}),
+  };
+}
 const dayOrNull = (v: unknown): string | null => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
 
 function cleanTally(raw: unknown): Tally {
   const t = tally();
   if (!isObj(raw)) return t;
-  t.played = nat(raw.played);
-  t.wins = nat(raw.wins);
-  if (Array.isArray(raw.dist)) t.dist = t.dist.map((_, i) => nat((raw.dist as unknown[])[i]));
+  t.played = count(raw.played);
+  t.wins = count(raw.wins);
+  if (Array.isArray(raw.dist)) t.dist = t.dist.map((_, i) => count((raw.dist as unknown[])[i]));
   return t;
 }
 
@@ -100,16 +140,26 @@ export function sanitize(raw: unknown): PinchSave {
   if (!isObj(raw) || raw.v !== 1) return save;
   if (isObj(raw.days)) {
     for (const [day, p] of Object.entries(raw.days)) {
-      if (!dayOrNull(day) || !isObj(p) || !Array.isArray(p.guesses)) continue;
-      const guesses = p.guesses.filter((g): g is string => typeof g === 'string' && /^[a-z]{5}$/.test(g)).slice(0, MAX_GUESSES);
-      save.days[day] = { guesses, startedAt: nat(p.startedAt), ...(p.endedAt !== undefined ? { endedAt: nat(p.endedAt) } : {}) };
+      const clean = dayOrNull(day) ? cleanProgress(p) : null;
+      if (clean) save.days[day] = clean;
     }
   }
+  if (isObj(raw.challenges)) {
+    for (const [key, p] of Object.entries(raw.challenges)) {
+      const clean = /^[\w-]{1,40}:\d{1,3}$/.test(key) ? cleanProgress(p) : null;
+      if (clean) save.challenges[key] = { ...clean, ...(isObj(p) && p.reported === true ? { reported: true } : {}) };
+    }
+  }
+  if (isObj(raw.openPractice) && word(raw.openPractice.secret)) {
+    const clean = cleanProgress(raw.openPractice);
+    if (clean) save.openPractice = { ...clean, secret: raw.openPractice.secret };
+  }
+  save.lastMode = raw.lastMode === 'practice' ? 'practice' : 'daily';
   if (isObj(raw.stats)) {
     save.stats = {
       ...cleanTally(raw.stats),
-      streak: nat(raw.stats.streak),
-      maxStreak: nat(raw.stats.maxStreak),
+      streak: count(raw.stats.streak),
+      maxStreak: count(raw.stats.maxStreak),
       lastWin: dayOrNull(raw.stats.lastWin),
       lastPlayed: dayOrNull(raw.stats.lastPlayed),
     };
@@ -120,18 +170,33 @@ export function sanitize(raw: unknown): PinchSave {
   return save;
 }
 
-export function loadSave(): PinchSave {
+/** The stored save, or null when storage cannot be read (blocked): then the caller keeps its own copy. */
+export function readSave(): PinchSave | null {
+  let text: string | null;
   try {
-    const text = window.localStorage.getItem(KEY);
+    text = window.localStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
+  try {
     return text ? sanitize(JSON.parse(text)) : emptyPinchSave();
   } catch {
     return emptyPinchSave();
   }
 }
 
+export function loadSave(): PinchSave {
+  return readSave() ?? emptyPinchSave();
+}
+
+/** The save's storage key, for a `storage` listener (another tab wrote it). */
+export const SAVE_KEY = KEY;
+
 export function storeSave(save: PinchSave, today: string): void {
   const oldest = addDays(today, -KEEP_DAYS);
   for (const day of Object.keys(save.days)) if (day < oldest) delete save.days[day];
+  const rounds = Object.entries(save.challenges).sort((a, b) => b[1].startedAt - a[1].startedAt);
+  for (const [key] of rounds.slice(KEEP_CHALLENGES)) delete save.challenges[key];
   try {
     window.localStorage.setItem(KEY, JSON.stringify(save));
   } catch {

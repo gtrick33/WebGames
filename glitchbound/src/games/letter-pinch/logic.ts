@@ -200,7 +200,18 @@ const EMOJI: Record<Mark, string> = { up: '🔼', down: '🔽', hit: '🟩' };
 export const resultGrid = (rows: readonly Row[]): string => rows.map((r) => r.marks.map((m) => EMOJI[m]).join('')).join('\n');
 
 /** Spoiler-free result: arrows only, never letters. */
-export function shareText(opts: { rows: readonly Row[]; solved: boolean; daily?: number; url: string }): string {
-  const head = `Letter Pinch ${opts.daily ? `#${opts.daily}` : 'practice'} ${opts.solved ? opts.rows.length : 'X'}/${MAX_GUESSES}`;
+export function shareText(opts: { rows: readonly Row[]; solved: boolean; daily?: number; challenge?: boolean; url: string }): string {
+  const kind = opts.challenge ? `⚔️ challenge${opts.daily ? ` #${opts.daily}` : ''}` : opts.daily ? `#${opts.daily}` : 'practice';
+  const head = `Letter Pinch ${kind} ${opts.solved ? opts.rows.length : 'X'}/${MAX_GUESSES}`;
   return [head, resultGrid(opts.rows), opts.url].join('\n');
+}
+
+const SAY: Record<Mark, string> = { up: 'later', down: 'earlier', hit: 'exact' };
+
+/** What a screen reader hears after a guess: each letter's clue, then where each letter can still be. */
+export function describeGuess(row: Row, w: readonly Window[]): string {
+  const clues = row.marks.map((m, i) => `${row.guess[i]!.toUpperCase()} ${SAY[m]}`).join(', ');
+  const up = (i: number): string => letterAt(i).toUpperCase();
+  const wins = w.map((x) => (x.lo === x.hi ? up(x.lo) : `${up(x.lo)} to ${up(x.hi)}`)).join(', ');
+  return `${row.guess.toUpperCase()}: ${clues}. Windows: ${wins}.`;
 }
