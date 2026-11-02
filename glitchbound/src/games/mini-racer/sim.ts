@@ -219,7 +219,7 @@ export interface Result {
   drift: number;
   cleanLaps: number;
   score: number;
-  /** Finishing position (1-based) in a race against AI; null in Time Trial. */
+  /** Finishing position (1-based) in a race against AI; null in Time Trial and in a race that doesn't count (a lap missed a checkpoint). */
   position: number | null;
   /** AI level raced (0-100); null in Time Trial. */
   aiLevel: number | null;
@@ -609,7 +609,7 @@ export class RaceSim {
       drift: this.drift.total,
       cleanLaps,
       score: scoreFor(this.track.def.par, laps) + this.levelBonus(raceTime !== null),
-      position: this.mode === 'race' ? this.position : null,
+      position: this.mode === 'race' && raceTime !== null ? this.position : null,
       aiLevel: this.mode === 'race' ? this.aiLevel : null,
       levelBonus: this.levelBonus(raceTime !== null),
       standings: this.standings.length ? this.standings : this.order.map((r) => ({ name: r.name, player: r === this.player, time: r.finishTime, look: r.look })),

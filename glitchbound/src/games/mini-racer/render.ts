@@ -200,18 +200,27 @@ const SKID_MAX = 700;
 const TOAST_H = 28;
 const TOAST_GAP = 6;
 
+/** The pause and game-menu buttons (DOM, Game.css .mr-pause): top-left, from y 74 to 118 and x 12 to 108. */
+const BUTTONS_BOTTOM = 74 + 44;
+const BUTTONS_RIGHT = 64 + 44;
+/** Narrower than this, a wide pop-up beside the buttons would run under them: the lane moves below them. */
+const LANE_BESIDE_MIN_W = 600;
+
 /**
- * The fixed HUD lane for pop-ups (just below the lap timer and sector chips), and the band the car
- * must stay inside so neither the lane nor the speedometer ever covers it.
+ * The fixed HUD lane for pop-ups (just below the lap timer and sector chips, and never under the
+ * pause and menu buttons), its widest pop-up, and the band the car must stay inside so neither the
+ * lane nor the speedometer ever covers it.
  */
-export function hudLane(w: number, h: number): { top: number; height: number; carMinY: number; carMaxY: number } {
+export function hudLane(w: number, h: number): { top: number; height: number; maxWidth: number; carMinY: number; carMaxY: number } {
   const small = w < 520;
   const pad = small ? 10 : 16;
-  const top = pad + (small ? 52 : 62) + 22;
+  const beside = w >= LANE_BESIDE_MIN_W;
+  const top = beside ? pad + (small ? 52 : 62) + 22 : BUTTONS_BOTTOM + 8;
+  const maxWidth = beside ? w - 2 * (BUTTONS_RIGHT + 8) : w - pad * 2;
   const height = TOAST_H * 2 + TOAST_GAP;
   const carHalf = 30; // half the car's on-screen size plus a margin
   const speedo = (small ? 44 : 54) + 8 + pad;
-  return { top, height, carMinY: top + height + carHalf, carMaxY: h - speedo - carHalf };
+  return { top, height, maxWidth, carMinY: top + height + carHalf, carMaxY: h - speedo - carHalf };
 }
 const PART_MAX = 140;
 /** Time per frame for painting tiles ahead of the camera (one tile is always allowed). */
@@ -985,10 +994,10 @@ export class Renderer {
     const value = race ? `P${sim.position}/${sim.racers.length}` : lapText;
     pill(ctx, pad, pad, small ? 78 : 96, small ? 46 : 54, '#ffffff');
     ctx.fillStyle = '#6b5b95';
-    ctx.font = mono(small ? 9 : 10);
+    ctx.font = mono(11);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(label, pad + 10, pad + 7);
+    ctx.fillText(label, pad + 10, pad + 6);
     ctx.fillStyle = '#1b1035';
     ctx.font = font(small ? 22 : 26);
     ctx.fillText(value, pad + 10, pad + (small ? 18 : 20));
@@ -999,8 +1008,8 @@ export class Renderer {
     pill(ctx, cx - bw / 2, pad, bw, small ? 46 : 54, '#1b1035');
     ctx.textAlign = 'center';
     ctx.fillStyle = '#c4f034';
-    ctx.font = mono(small ? 9 : 10);
-    ctx.fillText('LAP TIME', cx, pad + 7);
+    ctx.font = mono(11);
+    ctx.fillText('LAP TIME', cx, pad + 6);
     ctx.fillStyle = '#ffffff';
     ctx.font = mono(small ? 19 : 24);
     const lastLap = lap.laps[lap.laps.length - 1];
@@ -1013,8 +1022,8 @@ export class Renderer {
       pill(ctx, W - pad - rw, pad, rw, small ? 46 : 54, '#ffffff');
       ctx.textAlign = 'right';
       ctx.fillStyle = '#6b5b95';
-      ctx.font = mono(small ? 9 : 10);
-      ctx.fillText('BEST', W - pad - 10, pad + 7);
+      ctx.font = mono(11);
+      ctx.fillText('BEST', W - pad - 10, pad + 6);
       ctx.fillStyle = '#1b1035';
       ctx.font = mono(small ? 13 : 16);
       ctx.fillText(fmtTime(hud.best), W - pad - 10, pad + (small ? 22 : 25));
@@ -1055,7 +1064,7 @@ export class Renderer {
       ctx.strokeStyle = '#1b1035';
       ctx.stroke();
       ctx.fillStyle = '#1b1035';
-      ctx.font = mono(9);
+      ctx.font = mono(11);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(`S${i + 1}`, x + cw / 2, sy + 8.5);
@@ -1075,7 +1084,7 @@ export class Renderer {
       const main = ctx.measureText(text).width;
       ctx.font = font(small ? 10 : 11, 600);
       const extra = sub ? ctx.measureText(sub).width + 10 : 0;
-      const w = Math.min(this.w - pad * 2, Math.max(small ? 110 : 130, main + extra + 28));
+      const w = Math.min(lane.maxWidth, Math.max(small ? 110 : 130, main + extra + 28));
       pill(ctx, cx - w / 2, y, w, TOAST_H, fill);
       ctx.fillStyle = '#1b1035';
       ctx.textBaseline = 'middle';
@@ -1175,7 +1184,7 @@ export class Renderer {
     ctx.textBaseline = 'alphabetic';
     ctx.font = `700 ${this.w < 520 ? 20 : 24}px "Space Mono", ui-monospace, monospace`;
     ctx.fillText(String(kmh), cx, cy - 13);
-    ctx.font = '700 9px "Space Mono", ui-monospace, monospace';
+    ctx.font = '700 11px "Space Mono", ui-monospace, monospace';
     ctx.fillStyle = '#6b5b95';
     ctx.fillText('KM/H', cx, cy - 2);
     ctx.textBaseline = 'top';

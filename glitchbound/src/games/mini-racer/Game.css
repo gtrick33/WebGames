@@ -72,9 +72,10 @@
 
 .mr-menu-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px 8px;
 }
 .mr-logo {
   margin: 0;
@@ -103,6 +104,35 @@
   padding: 5px 11px;
   font-size: 12px;
   font-weight: 700;
+}
+.mr-sound {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.mr-sound-icon {
+  display: none;
+}
+@media (pointer: coarse) {
+  .mr-chip {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+/* Narrow phones: the logo, coins, Sound and the game menu share one row (Sound as an icon). */
+@media (max-width: 400px) {
+  .mr-sound {
+    padding: 0;
+    width: 44px;
+    min-height: 44px;
+  }
+  .mr-sound-icon {
+    display: block;
+  }
+  .mr-sound-text {
+    display: none;
+  }
 }
 
 .mr-tracks {
@@ -149,7 +179,7 @@
   padding: 1px 5px;
 }
 .mr-track-best {
-  font-size: 10.5px;
+  font-size: 11px;
   background: var(--mr-ink);
   color: #fff;
   border-radius: 6px;
@@ -162,7 +192,7 @@
   background: var(--mr-yellow);
   border: 2px solid var(--mr-ink);
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   padding: 1px 7px;
   white-space: nowrap;
@@ -228,6 +258,19 @@
   justify-content: space-between;
   gap: 10px;
   margin-top: 12px;
+}
+/* The car and Race! stay at the bottom of the sheet while the rest scrolls (short and narrow screens). */
+.mr-menu .mr-menu-foot {
+  position: sticky;
+  bottom: -12px;
+  z-index: 1;
+  margin: 12px -16px -12px;
+  padding: 8px 16px 12px;
+  background: var(--mr-cream);
+  border-top: 2px dashed #d9cbb2;
+}
+.mr-menu .mr-menu-foot ~ .mr-keys {
+  margin-top: 0;
 }
 .mr-go,
 .mr-btn {
@@ -358,12 +401,13 @@
 }
 
 /* --------------------------------------------------------- in-race controls */
+/* Under the lap counter; the HUD's pop-up lane keeps clear of them (render.ts hudLane). */
 .mr-pause {
   position: absolute;
   top: 74px;
   left: 12px;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   border: 2px solid var(--mr-ink);
   background: #fff;
@@ -392,6 +436,11 @@
   .mr-sheet {
     padding: 12px 12px 10px;
   }
+  .mr-menu .mr-menu-foot {
+    bottom: -10px;
+    margin: 10px -12px -10px;
+    padding: 8px 12px 10px;
+  }
 }
 @media (max-height: 560px) {
   .mr-blurb,
@@ -418,6 +467,8 @@
   padding: 3px 10px 3px 5px;
 }
 .mr-gift {
+  order: 3;
+  margin-left: auto;
   padding: 3px 9px;
   border: 2px solid var(--mr-ink);
   border-radius: 999px;
@@ -574,7 +625,7 @@
 }
 .mr-bars em {
   font-style: normal;
-  font-size: 10px;
+  font-size: 11px;
   color: #6b5b95;
 }
 .mr-bars b {
@@ -641,7 +692,7 @@
   font-size: 14px;
 }
 .mr-mode span {
-  font-size: 10.5px;
+  font-size: 11px;
   opacity: 0.75;
 }
 .mr-mode.is-on {
@@ -716,7 +767,7 @@
 }
 .mr-sectors td small {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
 }
 .mr-sectors td.is-green small {
   color: #138a4a;
@@ -734,7 +785,7 @@
 /* --------------------------------------------------------- track types, AI level */
 .mr-type {
   display: inline-block;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -788,11 +839,13 @@ a.mr-go {
   justify-content: center;
   text-decoration: none;
 }
+/* Above the speedometer (drawn at the bottom centre), through the countdown and the first seconds. */
 .mr-chal {
   position: absolute;
-  bottom: 14px;
+  bottom: 104px;
   left: 50%;
   z-index: 3;
+  max-width: calc(100% - 24px);
   margin: 0;
   padding: 4px 12px;
   border: 2px solid #1d1238;
@@ -802,8 +855,15 @@ a.mr-go {
   font-size: 13px;
   font-weight: 800;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transform: translateX(-50%);
   pointer-events: none;
+}
+@media (max-width: 519px) {
+  .mr-chal {
+    bottom: 84px;
+  }
 }
 
 /* Today's daily track is one race a day: the Race button gives way to the countdown. */
@@ -819,8 +879,8 @@ a.mr-go {
 
 /* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
 .mr-pause-menu {
-  left: 60px;
+  left: 64px;
 }
 .mr-menu-chip {
-  min-width: 36px;
+  min-width: 44px;
 }

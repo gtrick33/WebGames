@@ -4,13 +4,17 @@ import { DEFAULT_AI_LEVEL, type RaceMode } from './sim';
 
 /** Local-only saves (bests, ghosts, settings). Every access is guarded: storage can be missing or full. */
 
-const KEY = 'gb.mini-racer.v1';
+export const SAVE_KEY = 'gb.mini-racer.v1';
 const GHOST_PREFIX = 'gb.mini-racer.ghost.';
 
 /** Today's daily track gives this many races; the best one counts. */
 export const DAILY_RACES = 3;
 /** Entries kept in the per-race daily lists: a few days' worth. */
 export const KEEP_DAILY = 9;
+/** Friends' challenge rounds remembered (each has one attempt). */
+export const KEEP_RUNS = 24;
+/** Days whose best daily result is remembered (for a "Today's daily" challenge). */
+export const KEEP_RESULTS = 7;
 /** How many entries a per-race daily list has for one day. */
 export const countDay = (days: readonly string[], day: string): number => days.reduce((n, d) => n + (d === day ? 1 : 0), 0);
 
@@ -25,6 +29,31 @@ export interface Bests {
   position?: number;
   /** Highest AI level you have won a race against. */
   wonLevel?: number;
+}
+
+/** A friends' challenge round on this device: started, then ended exactly once. */
+export interface ChallengeRun {
+  /** `${challenge id}:${round}` */
+  key: string;
+  /** How it ended (unset while it is being raced): crossed the line, left mid-race, found started after a reload, or the day's daily result counted. */
+  ended?: 'finished' | 'left' | 'reload' | 'daily';
+  /** Race points reported for it. */
+  score: number;
+  /** Race time and best lap (seconds), when there were any. */
+  race: number | null;
+  lap: number | null;
+  /** The day whose daily race it also was ("Today's daily" challenge played on its day). */
+  daily?: string;
+}
+
+/** The best result reported for a day's daily (finished races, and races left unfinished). */
+export interface DailyResult {
+  day: string;
+  score: number;
+  race: number | null;
+  lap: number | null;
+  /** At least one of the day's races crossed the line. */
+  finished: boolean;
 }
 
 export interface SaveData {
@@ -49,10 +78,14 @@ export interface SaveData {
   aiLevel: number;
   /** Seed of the current random track (see randomTrack). */
   randomSeed: number;
+  /** Friends' challenge rounds, latest last (only the latest few are kept). */
+  challengeRuns: ChallengeRun[];
+  /** Best daily result per day, latest last (only the latest few are kept). */
+  dailyResults: DailyResult[];
 }
 
 function defaults(): SaveData {
-  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [], dailyRaced: [], dailyEnded: [], dailyLeft: [], mode: 'trial', aiLevel: DEFAULT_AI_LEVEL, randomSeed: 1 };
+  return { bests: {}, coins: 0, earned: 0, cars: [DEFAULT_CAR], car: DEFAULT_CAR, muted: false, track: 'sunny-bay', dailyPaid: [], dailyRaced: [], dailyEnded: [], dailyLeft: [], mode: 'trial', aiLevel: DEFAULT_AI_LEVEL, randomSeed: 1, challengeRuns: [], dailyResults: [] };
 }
 
 function store(): Storage | null {
@@ -64,11 +97,44 @@ function store(): Storage | null {
 }
 
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+const secs = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v > 0 && v < 3600 ? v : null);
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const ENDS = new Set(['finished', 'left', 'reload', 'daily']);
+
+function readRun(v: unknown): ChallengeRun | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  if (typeof o.key !== 'string' || o.key.length > 80) return null;
+  const run: ChallengeRun = { key: o.key, score: Math.min(num(o.score), 1e8), race: secs(o.race), lap: secs(o.lap) };
+  if (typeof o.ended === 'string' && ENDS.has(o.ended)) run.ended = o.ended as ChallengeRun['ended'];
+  if (typeof o.daily === 'string' && DAY.test(o.daily)) run.daily = o.daily;
+  return run;
+}
+
+function readResult(v: unknown): DailyResult | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  if (typeof o.day !== 'string' || !DAY.test(o.day)) return null;
+  return { day: o.day, score: Math.min(num(o.score), 1e8), race: secs(o.race), lap: secs(o.lap), finished: o.finished === true };
+}
+
+/** The stored save as text (null if there is none or storage is blocked): tells whether another tab wrote since. */
+export function savedText(): string | null {
+  try {
+    return store()?.getItem(SAVE_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export function loadSave(): SaveData {
+  return parseSave(savedText());
+}
+
+/** Reads a stored save; anything missing, malformed or out of range falls back to the defaults. */
+export function parseSave(raw: string | null): SaveData {
   const d = defaults();
   try {
-    const raw = store()?.getItem(KEY);
     if (!raw) return d;
     const o = JSON.parse(raw) as Record<string, unknown>;
     if (o.bests && typeof o.bests === 'object') {
@@ -100,18 +166,45 @@ export function loadSave(): SaveData {
     if (Array.isArray(o.dailyRaced)) d.dailyRaced = o.dailyRaced.filter((x): x is string => typeof x === 'string').slice(-KEEP_DAILY);
     if (Array.isArray(o.dailyEnded)) d.dailyEnded = o.dailyEnded.filter((x): x is string => typeof x === 'string').slice(-KEEP_DAILY);
     if (Array.isArray(o.dailyLeft)) d.dailyLeft = o.dailyLeft.filter((x): x is string => typeof x === 'string').slice(-KEEP_DAILY);
+    if (Array.isArray(o.challengeRuns)) d.challengeRuns = o.challengeRuns.map(readRun).filter((x): x is ChallengeRun => x !== null).slice(-KEEP_RUNS);
+    if (Array.isArray(o.dailyResults)) d.dailyResults = o.dailyResults.map(readResult).filter((x): x is DailyResult => x !== null).slice(-KEEP_RESULTS);
     return d;
   } catch {
     return d;
   }
 }
 
-export function writeSave(s: SaveData): void {
+/** Writes the save; returns the text stored, or null if it couldn't be (storage full or blocked). */
+export function writeSave(s: SaveData): string | null {
   try {
-    store()?.setItem(KEY, JSON.stringify(s));
+    const st = store();
+    if (!st) return null;
+    const text = JSON.stringify(s);
+    st.setItem(SAVE_KEY, text);
+    return text;
   } catch {
     /* full or blocked */
+    return null;
   }
+}
+
+/** The save with a challenge round added or replaced (latest last, the oldest dropped). */
+export function putRun(s: SaveData, run: ChallengeRun): SaveData {
+  return { ...s, challengeRuns: [...s.challengeRuns.filter((r) => r.key !== run.key), run].slice(-KEEP_RUNS) };
+}
+
+/** The save with a day's daily result kept if it beats the one stored (a finished race always marks the day finished). */
+export function putResult(s: SaveData, r: DailyResult): SaveData {
+  const old = s.dailyResults.find((x) => x.day === r.day);
+  const best = !old || r.score > old.score ? r : old;
+  const kept = { ...best, finished: r.finished || (old?.finished ?? false) };
+  return { ...s, dailyResults: [...s.dailyResults.filter((x) => x.day !== r.day), kept].slice(-KEEP_RESULTS) };
+}
+
+/** Bests of past daily tracks are never shown again: keeps only those of the given days, so the synced save stays small. */
+export function pruneDailyBests(bests: Record<string, Bests>, keep: string[]): Record<string, Bests> {
+  const ids = new Set(keep.map((d) => `daily-${d}`));
+  return Object.fromEntries(Object.entries(bests).filter(([id]) => !id.startsWith('daily-') || ids.has(id)));
 }
 
 export function loadGhost(trackId: string): Ghost | null {
