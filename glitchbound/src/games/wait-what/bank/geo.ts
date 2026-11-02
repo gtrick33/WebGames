@@ -31,7 +31,7 @@ export const GEO: Raw[] = [
   ['A hill in New Zealand has a Māori name about how many letters long?', '85|25|45|150', 'Taumatawhakatangihangakoauauotamatea... and it goes on. Locals just say Taumata.'],
   ['Which country is home to a village with a 58-letter name?', 'Wales|Scotland|Iceland|Finland', 'Llanfairpwllgwyngyll... The full name was partly invented in the 1860s to attract tourists.'],
   ['Which country has a village called Hell, which freezes over every winter?', 'Norway|Sweden|Denmark|Finland', 'There is also a Hell in Michigan. Both enjoy the jokes.'],
-  ['At La Tomatina in Buñol, Spain, what do the crowds do?', 'Throw tomatoes at each other|Run with bulls|Build human towers|Race in barrels', 'Over 100 tonnes of overripe tomatoes are thrown in about an hour.'],
+  ['At La Tomatina in Buñol, Spain, what do the crowds do?', 'Throw tomatoes at each other|Run with bulls|Build human towers|Race in barrels', 'Over 100 metric tons of overripe tomatoes are thrown in about an hour.'],
   ['Mount Everest grows by about how much each year?', 'About 4 mm|About 4 cm|About 40 cm|It is shrinking', 'India keeps pushing into Asia, lifting the Himalayas.'],
   ['How many ATMs are there in Antarctica?', 'Two|None|Fifty|One at every base', 'Both are at the US McMurdo Station.'],
   ['The "Door to Hell", a gas crater that has burned for decades, is in which country?', 'Turkmenistan|Iran|Russia|Kazakhstan', 'Geologists set it on fire around 1971, expecting it to burn out in weeks.'],

@@ -8,7 +8,7 @@ export const ANIMALS: Raw[] = [
   ['What is a group of flamingos called?', 'A flamboyance|A blush|A parade|A pinkment', 'And a group of owls is a parliament. Bird people have fun with names.'],
   ['What shape is wombat poop?', 'Cubes|Spirals|Stars|Flat discs', 'Their intestines shape it into cubes, which stay put on rocks and logs to mark territory.'],
   ['Why do sea otters hold hands while they sleep?', 'So they don\'t drift apart|To keep warm|To show who\'s boss|To protect their eggs', 'Rafts of otters also wrap themselves in kelp to stay anchored.'],
-  ['Which animal has the biggest eyes in the animal kingdom?', 'Colossal squid|Blue whale|Ostrich|Owl', 'Its eyes can be about 27 cm across, roughly the size of a football.'],
+  ['Which animal has the biggest eyes in the animal kingdom?', 'Colossal squid|Blue whale|Ostrich|Owl', 'Its eyes can be about 27 cm across, roughly the size of a soccer ball.'],
   ['What is a baby puffin called?', 'A puffling|A puffkin|A pufflet|A puffchick', 'Pufflings leave the nest at night and flutter out to sea alone.'],
   ['What is a male ferret called?', 'A hob|A jack|A buck|A tom', 'A female is a jill, and a baby is a kit.'],
   ['Which animal can freeze solid in winter and thaw back to life in spring?', 'Wood frog|Arctic fox|Snowy owl|Penguin', 'Its heart stops and up to two thirds of its body water freezes. Sugar in its cells stops them bursting.'],
