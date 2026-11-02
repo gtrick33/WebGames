@@ -104,6 +104,21 @@ describe('play mode on a touch screen', () => {
     expect(play().immersive).toBe(true);
   });
 
+  it('asks only once while a request is out, so every miss counts (taps during the wait)', () => {
+    honors = false;
+    const { play, request } = setup(true);
+    act(() => play().enter());
+    act(() => play().retryFullscreen());
+    act(() => play().retryFullscreen());
+    expect(request).toHaveBeenCalledTimes(1);
+    act(() => void vi.advanceTimersByTime(FULLSCREEN_WATCHDOG_MS + 10));
+    act(() => play().retryFullscreen());
+    act(() => play().retryFullscreen());
+    act(() => void vi.advanceTimersByTime(FULLSCREEN_WATCHDOG_MS + 10));
+    act(() => play().retryFullscreen());
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+
   it('stops asking after full screen drops again right after entering twice', () => {
     const { play, request } = setup(true);
     act(() => play().enter());

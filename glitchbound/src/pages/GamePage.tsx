@@ -129,6 +129,8 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
   // the request came from a tap after the browser left: the game stays paused when full screen comes back
   const pauseOnEnter = useRef(false);
   const watchdog = useRef(0);
+  // a request is out and hasn't been answered yet: taps meanwhile don't ask again (each miss must count)
+  const waiting = useRef(false);
 
   const apply = useCallback(
     (next: PlayModeState) => {
@@ -171,6 +173,7 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
       const el = ref.current;
       if (el && document.fullscreenElement === el) {
         window.clearTimeout(watchdog.current);
+        waiting.current = false;
         // a request the player's own exit overtook: leave again
         if (asked.current !== attempt.current) {
           void document.exitFullscreen().catch(() => undefined);
@@ -203,6 +206,8 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
   }, [ref, apply, failed]);
 
   const request = (el: HTMLElement): void => {
+    if (waiting.current) return;
+    waiting.current = true;
     const n = ++attempt.current;
     asked.current = n;
     wantFull.current = true;
@@ -210,6 +215,7 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
     const missed = (): void => {
       if (missedOnce || n !== attempt.current || document.fullscreenElement === el) return;
       missedOnce = true;
+      waiting.current = false;
       window.clearTimeout(watchdog.current);
       pauseOnEnter.current = false;
       failed();
@@ -254,6 +260,7 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
   const exit = (): void => {
     attempt.current += 1;
     window.clearTimeout(watchdog.current);
+    waiting.current = false;
     wantFull.current = false;
     pauseOnEnter.current = false;
     // 'none' first, so the fullscreenchange that follows reads as the player's own exit
