@@ -106,21 +106,70 @@ function lockZoom(on: boolean): void {
   meta.setAttribute('content', on ? `${base}, maximum-scale=1, user-scalable=no` : base);
 }
 
+type PlayModeState = 'none' | 'fullscreen' | 'immersive';
+
+/** How long a full-screen request may take before the stage is pinned instead (it resolved without entering, or never settled). */
+export const FULLSCREEN_WATCHDOG_MS = 800;
+/** A full screen the browser leaves this soon after entering counts as one that doesn't hold. */
+const QUICK_DROP_MS = 1000;
+/** After this many requests that didn't hold, the stage stays pinned for the rest of the session. */
+const MAX_FULLSCREEN_FAILS = 2;
+const NO_FULLSCREEN_KEY = 'glitchbound.noFullscreen';
+
+const touchScreen = (): boolean => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
+function fullscreenGivenUp(): boolean {
+  try {
+    return sessionStorage.getItem(NO_FULLSCREEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export interface PlayMode {
+  active: boolean;
+  immersive: boolean;
+  /** Into play mode: real full screen where the browser gives it, else the stage pinned over the screen. */
+  enter: () => void;
+  /** From a tap while pinned: asks for real full screen again after the browser left it by itself. */
+  retryFullscreen: () => void;
+  /** The player's own way out (Exit full screen, Exit game): the only thing that ends play mode on a phone. */
+  exit: () => void;
+}
+
 /**
- * Real fullscreen where the browser allows it on an element; otherwise (iPhone Safari) an
- * "immersive" mode that pins the stage over the whole screen. Either way the page stops scrolling
+ * Real fullscreen where the browser allows it on an element; otherwise (iPhone Safari, the Home Screen
+ * app) an "immersive" mode that pins the stage over the whole screen. Either way the page stops scrolling
  * and zooming while playing.
+ *
+ * On a touch screen play mode is one state that only the player ends: when the browser leaves full screen
+ * by itself (a system gesture, a rotation, a sheet, a request it never honored) the stage stays pinned,
+ * the game pauses (`onPause`), and the next tap asks for full screen again. On a desktop Escape leaves.
  */
-function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void, landscape = false): { active: boolean; immersive: boolean; enter: () => void; exit: () => void } {
-  const [mode, setMode] = useState<'none' | 'fullscreen' | 'immersive'>('none');
+export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void, landscape = false, onPause?: () => void): PlayMode {
+  const [mode, setMode] = useState<PlayModeState>('none');
   const modeRef = useRef(mode);
   const onLeaveRef = useRef(onLeave);
+  const onPauseRef = useRef(onPause);
   useEffect(() => {
     onLeaveRef.current = onLeave;
+    onPauseRef.current = onPause;
   });
+  // real full screen is wanted (asked for, or left by the browser itself), and since when it last held
+  const wantFull = useRef(false);
+  const enteredAt = useRef(0);
+  const fails = useRef(0);
+  // each request (and the player's exit) gets a number: a late answer to an older one changes nothing
+  const attempt = useRef(0);
+  const asked = useRef(-1);
+  // the request came from a tap after the browser left: the game stays paused when full screen comes back
+  const pauseOnEnter = useRef(false);
+  const watchdog = useRef(0);
+  // a request is out and hasn't been answered yet: taps meanwhile don't ask again (each miss must count)
+  const waiting = useRef(false);
 
   const apply = useCallback(
-    (next: 'none' | 'fullscreen' | 'immersive') => {
+    (next: PlayModeState) => {
       const was = modeRef.current;
       if (next === 'none' && was !== 'none') onLeaveRef.current?.();
       modeRef.current = next;
@@ -139,6 +188,17 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void, l
     [ref],
   );
 
+  const failed = useCallback((): void => {
+    fails.current += 1;
+    if (fails.current < MAX_FULLSCREEN_FAILS) return;
+    wantFull.current = false;
+    try {
+      sessionStorage.setItem(NO_FULLSCREEN_KEY, '1');
+    } catch {
+      /* storage blocked: given up for this page only */
+    }
+  }, []);
+
   // A restart remounts the stage: the new one is pinned over the screen too while immersive.
   useLayoutEffect(() => {
     ref.current?.classList.toggle('stage-immersive', mode === 'immersive');
@@ -146,49 +206,121 @@ function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => void, l
 
   useEffect(() => {
     const onChange = (): void => {
-      if (document.fullscreenElement === ref.current && ref.current) apply('fullscreen');
-      else if (!document.fullscreenElement) apply('none');
+      const el = ref.current;
+      if (el && document.fullscreenElement === el) {
+        window.clearTimeout(watchdog.current);
+        waiting.current = false;
+        // a request the player's own exit overtook: leave again
+        if (asked.current !== attempt.current) {
+          void document.exitFullscreen().catch(() => undefined);
+          return;
+        }
+        enteredAt.current = Date.now();
+        apply('fullscreen');
+        if (pauseOnEnter.current) onPauseRef.current?.();
+        pauseOnEnter.current = false;
+        return;
+      }
+      if (document.fullscreenElement || modeRef.current !== 'fullscreen') return;
+      // the browser left full screen by itself (the player's own exit has already set 'none')
+      if (!touchScreen()) {
+        apply('none');
+        return;
+      }
+      if (Date.now() - enteredAt.current < QUICK_DROP_MS) failed();
+      else wantFull.current = !fullscreenGivenUp();
+      apply('immersive');
+      onPauseRef.current?.();
     };
     document.addEventListener('fullscreenchange', onChange);
     return () => {
       document.removeEventListener('fullscreenchange', onChange);
+      // the watchdog goes, so nothing would ever answer a request still out
+      window.clearTimeout(watchdog.current);
+      waiting.current = false;
       document.documentElement.classList.remove('game-focus', 'game-scroll');
       lockZoom(false);
     };
-  }, [ref, apply]);
+  }, [ref, apply, failed]);
+
+  const request = (el: HTMLElement): void => {
+    if (waiting.current) return;
+    waiting.current = true;
+    const n = ++attempt.current;
+    asked.current = n;
+    wantFull.current = true;
+    let missedOnce = false;
+    const missed = (): void => {
+      if (missedOnce || n !== attempt.current || document.fullscreenElement === el) return;
+      missedOnce = true;
+      waiting.current = false;
+      window.clearTimeout(watchdog.current);
+      pauseOnEnter.current = false;
+      failed();
+      if (modeRef.current === 'none') apply('immersive');
+    };
+    window.clearTimeout(watchdog.current);
+    watchdog.current = window.setTimeout(missed, FULLSCREEN_WATCHDOG_MS);
+    let pending: Promise<void> | undefined;
+    try {
+      pending = el.requestFullscreen({ navigationUI: 'hide' });
+    } catch {
+      missed();
+      return;
+    }
+    Promise.resolve(pending)
+      .then(() => {
+        // a landscape game on a phone held upright: turn the screen (Android; an iPhone can't be turned,
+        // and a game may turn itself instead)
+        const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+        if (landscape && touchScreen()) o?.lock?.('landscape').catch(() => undefined);
+      })
+      .catch(missed);
+  };
+
+  const canAskFull = (el: HTMLElement): boolean => !!document.fullscreenEnabled && typeof el.requestFullscreen === 'function' && !fullscreenGivenUp();
 
   const enter = (): void => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || modeRef.current === 'fullscreen') return;
     // Must run inside the click handler: browsers only allow fullscreen from a user gesture.
-    if (document.fullscreenEnabled && el.requestFullscreen) {
-      el.requestFullscreen({ navigationUI: 'hide' })
-        .then(() => {
-          // a landscape game on a phone held upright: turn the screen (Android; an iPhone can't be turned,
-          // and a game may turn itself instead)
-          const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
-          if (landscape && matchMedia('(pointer: coarse)').matches) o?.lock?.('landscape').catch(() => undefined);
-        })
-        .catch(() => apply('immersive'));
-    } else {
-      apply('immersive');
-    }
+    const ask = canAskFull(el);
+    if (ask) request(el);
+    // on a phone the stage is pinned at once, whatever the browser does with the request
+    // (a browser that enters at once has already set 'fullscreen' inside the request)
+    if ((!ask || touchScreen()) && (modeRef.current as PlayModeState) !== 'fullscreen') apply('immersive');
+  };
+  const retryFullscreen = (): void => {
+    const el = ref.current;
+    if (!el || modeRef.current !== 'immersive' || !wantFull.current || !canAskFull(el)) return;
+    pauseOnEnter.current = true;
+    request(el);
   };
   const exit = (): void => {
-    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    attempt.current += 1;
+    window.clearTimeout(watchdog.current);
+    waiting.current = false;
+    wantFull.current = false;
+    pauseOnEnter.current = false;
+    // 'none' first, so the fullscreenchange that follows reads as the player's own exit
     apply('none');
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
   };
 
+  const exitRef = useRef(exit);
+  useEffect(() => {
+    exitRef.current = exit;
+  });
   useEffect(() => {
     if (mode !== 'immersive') return;
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') apply('none');
+      if (e.key === 'Escape') exitRef.current();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mode, apply]);
+  }, [mode]);
 
-  return { active: mode !== 'none', immersive: mode === 'immersive', enter, exit };
+  return { active: mode !== 'none', immersive: mode === 'immersive', enter, retryFullscreen, exit };
 }
 
 /**
@@ -247,6 +379,20 @@ function SafariBarsHandle() {
   );
 }
 
+/** Tab and Shift+Tab go round a dialog's buttons instead of leaving it for the page behind (PU-10). */
+export function keepTabInside(e: React.KeyboardEvent<HTMLElement>): void {
+  if (e.key !== 'Tab') return;
+  const items = [...e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')];
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (!first || !last) return;
+  const at = document.activeElement;
+  if (e.shiftKey ? at === first || !e.currentTarget.contains(at) : at === last || !e.currentTarget.contains(at)) {
+    e.preventDefault();
+    (e.shiftKey ? last : first).focus();
+  }
+}
+
 /**
  * In full screen: a menu button on the left edge (where game HUDs rarely sit) that pauses the game and
  * opens a pop-up with the ways out: continue, how to play, leave full screen, close the game, report a bug. It used
@@ -287,7 +433,7 @@ function StageMenu({ slug, title, placement, open, setOpen, onOpen, onExitFullsc
       )}
       {open && (
         <div className="stage-menu-backdrop" onClick={() => setOpen(false)}>
-          <div className="stage-menu-sheet" role="dialog" aria-modal="true" aria-label={t('Game menu')} onClick={(e) => e.stopPropagation()}>
+          <div className="stage-menu-sheet" role="dialog" aria-modal="true" aria-label={t('Game menu')} onClick={(e) => e.stopPropagation()} onKeyDown={keepTabInside}>
             <p className="stage-menu-title">{title}</p>
             <button className="btn btn-primary" onClick={() => setOpen(false)} autoFocus>
               <Icon name="play" size={18} /> {t('Continue')}
@@ -359,8 +505,9 @@ export function GamePage({ game }: { game: GameEntry }) {
   const save = useSave();
   const record = save.games[game.slug];
   const stageRef = useRef<HTMLDivElement>(null);
-  // Leaving full screen (Escape, the browser's own exit, or the menu) pauses the game and its music, and
-  // closes the game menu (left open, it would come back over the game the next time it went full screen).
+  // Leaving play mode (Escape, or the menu) pauses the game and its music, and closes the game menu (left
+  // open, it would come back over the game the next time it went full screen). On a phone the browser leaving
+  // full screen by itself only pauses: the stage stays pinned over the screen.
   const [pauseSignal, setPauseSignal] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const play = usePlayMode(
@@ -370,10 +517,11 @@ export function GamePage({ game }: { game: GameEntry }) {
       setMenuOpen(false);
     },
     game?.aspect === 'landscape',
+    () => setPauseSignal((n) => n + 1),
   );
   // On a phone a game plays full screen. One playing in the page (it started without a tap that could take it
-  // there, or the browser left full screen by itself) goes back at the next touch on it; only the player's own
-  // "Exit full screen" leaves it in the page.
+  // there) goes there at the next touch on it, and a pinned one the browser took out of full screen asks for it
+  // again; only the player's own "Exit full screen" leaves it in the page.
   const keptInPage = useRef(false);
   const goFull = (): void => {
     keptInPage.current = false;
@@ -517,10 +665,13 @@ export function GamePage({ game }: { game: GameEntry }) {
 
   useEffect(() => {
     const el = stageRef.current;
-    if (!playing || play.active || !el || typeof matchMedia !== 'function' || !matchMedia('(pointer: coarse)').matches) return;
+    if (!playing || !el || typeof matchMedia !== 'function' || !matchMedia('(pointer: coarse)').matches) return;
     // (a touch's pointerup is a gesture full screen may be asked from; its pointerdown is not)
     const onUp = (e: PointerEvent): void => {
-      if (e.pointerType !== 'mouse' && !keptInPage.current) play.enter();
+      // (taps in the game menu or a dialog over the game are the player's own choices, never a way back in)
+      if (e.pointerType === 'mouse' || keptInPage.current || (e.target instanceof Element && e.target.closest('.stage-menu-backdrop, [role="dialog"]'))) return;
+      if (play.active) play.retryFullscreen();
+      else play.enter();
     };
     el.addEventListener('pointerup', onUp, true);
     return () => el.removeEventListener('pointerup', onUp, true);

@@ -275,6 +275,30 @@
   border-radius: 0;
   box-shadow: none;
 }
+/* Safe areas in play mode: with viewport-fit=cover the pinned (or full-screen) stage reaches under the Dynamic
+   Island, the rounded corners and the home indicator, so the platform keeps every module game inside the safe
+   area (the stage's background fills the bands). The contract: the stage carries the insets as --stage-safe-*
+   (the insets in play mode, 0 in the page), for what it draws over the game (the menu button) and for games
+   that handle the insets on their own (GameStage's OWN_INSETS): those get the whole screen and read them. */
+.stage {
+  --stage-safe-t: 0px;
+  --stage-safe-r: 0px;
+  --stage-safe-b: 0px;
+  --stage-safe-l: 0px;
+}
+.stage.stage-immersive,
+.stage:fullscreen {
+  --stage-safe-t: env(safe-area-inset-top, 0px);
+  --stage-safe-r: env(safe-area-inset-right, 0px);
+  --stage-safe-b: env(safe-area-inset-bottom, 0px);
+  --stage-safe-l: env(safe-area-inset-left, 0px);
+}
+.stage.stage-immersive:not(.stage-own-insets) > .stage-module,
+.stage:fullscreen:not(.stage-own-insets) > .stage-module {
+  inset: var(--stage-safe-t) var(--stage-safe-r) var(--stage-safe-b) var(--stage-safe-l);
+  width: auto;
+  height: auto;
+}
 html.game-focus,
 html.game-focus body {
   overflow: hidden;
@@ -303,7 +327,8 @@ html.game-focus.game-scroll #root :not(:has(.stage-immersive), .stage-immersive,
   position: absolute;
   z-index: 31;
   left: 50%;
-  bottom: calc(10px + env(safe-area-inset-bottom));
+  /* well above the home indicator: an upward swipe that starts next to it is the system's home gesture */
+  bottom: calc(28px + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   gap: 8px;
@@ -339,6 +364,15 @@ html.game-focus.game-scroll #root :not(:has(.stage-immersive), .stage-immersive,
   color: #fff;
   cursor: pointer;
 }
+/* a phone on its side: Safari's bar is at the top, so the handle goes there too, under the top inset and
+   between the corners where games keep their menu and sound buttons */
+@media (orientation: landscape) and (max-height: 560px) {
+  .stage-handle {
+    top: calc(8px + env(safe-area-inset-top));
+    bottom: auto;
+    max-width: calc(100% - 2 * max(env(safe-area-inset-left), env(safe-area-inset-right)) - 160px);
+  }
+}
 @keyframes stage-handle-in {
   from {
     opacity: 0;
@@ -356,8 +390,8 @@ html.game-focus.game-scroll #root :not(:has(.stage-immersive), .stage-immersive,
    with the ways out (issues #21, #22). Games with menu: 'own' draw the button themselves. */
 .stage-menu-btn {
   position: absolute;
-  top: calc(10px + var(--menu-y, 0px) + env(safe-area-inset-top));
-  left: calc(10px + var(--menu-x, 0px) + env(safe-area-inset-left));
+  top: calc(10px + var(--menu-y, 0px) + var(--stage-safe-t));
+  left: calc(10px + var(--menu-x, 0px) + var(--stage-safe-l));
   z-index: 5;
   display: grid;
   place-items: center;
@@ -375,7 +409,7 @@ html.game-focus.game-scroll #root :not(:has(.stage-immersive), .stage-immersive,
 }
 .stage-menu-btn[data-corner='top-right'] {
   left: auto;
-  right: calc(10px + var(--menu-x, 0px) + env(safe-area-inset-right));
+  right: calc(10px + var(--menu-x, 0px) + var(--stage-safe-r));
 }
 .stage-menu-btn[data-corner='top-center'] {
   left: calc(50% + var(--menu-x, 0px));
