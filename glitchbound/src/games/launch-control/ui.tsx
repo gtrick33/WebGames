@@ -6,7 +6,7 @@ import { drawDriver } from './hud';
 import { Icon, MAT_ICON } from './icons';
 import { MATERIAL_INFO, MATERIALS, type Mats } from './parts';
 import { cachedThumb, requestThumb, thumbKey, type CarLook } from './scene3d';
-import { fmtCash } from './util';
+import { fmtCash, fmtShort } from './util';
 
 export function Panel({ title, eyebrow, onBack, right, children, className = '' }: { title?: string; eyebrow?: string; onBack?: () => void; right?: ReactNode; children: ReactNode; className?: string }) {
   return (
@@ -76,13 +76,23 @@ export function Sticker({ tone = 'yellow', children, flat }: { tone?: string; ch
   );
 }
 
-export function Cash({ n, sign }: { n: number; sign?: boolean }) {
+/** A sum with its coin; `short` also renders "$1.2M" for tight spots (CSS picks which one shows). */
+export function Cash({ n, sign, short }: { n: number; sign?: boolean; short?: boolean }) {
   return (
     <span className={`lc-cash-n mono${sign && n < 0 ? ' is-neg' : ''}`}>
       <i className="lc-coin" aria-hidden="true" />
       {sign && n > 0 ? '+' : ''}
       {n < 0 ? '−' : ''}
-      {fmtCash(Math.abs(n))}
+      {short ? (
+        <>
+          <span className="lc-cash-long">{fmtCash(Math.abs(n))}</span>
+          <span className="lc-cash-short" aria-hidden="true">
+            {fmtShort(Math.abs(n))}
+          </span>
+        </>
+      ) : (
+        fmtCash(Math.abs(n))
+      )}
     </span>
   );
 }

@@ -90,6 +90,9 @@ export const OUT_HOLD_MAX = 3;
 export const AUTO_LAUNCH = 1.0;
 /** Tapping while the red lights are on is a jump start: the car goes this long after lights out, bogged. */
 export const JUMP_PENALTY = 0.6;
+/** After a jump start the drive is cut to this share for this long (on top of the first-gear bog). */
+export const JUMP_CUT = 0.7;
+export const JUMP_CUT_S = 0.5;
 /** Reaction times (s) for a perfect and a good launch (no rhythm to anticipate, so a little kinder than a drag tree). */
 export const LAUNCH_PERFECT = 0.3;
 export const LAUNCH_GOOD = 0.5;
@@ -312,6 +315,10 @@ export interface Racer {
   trap: number;
   /** Shift taps, seconds after the launch (the replay). */
   taps: number[];
+  /** The same as sim steps: the step count at the launch, and the steps after it of each shift and the nitrous (lc4 replays). */
+  launchN: number;
+  tapN: number[];
+  nitroN: number;
   dead: boolean;
   stuck: boolean;
   /** Seconds after the launch when 100 km/h was reached, or -1. */
@@ -363,6 +370,13 @@ export interface Script {
   shifts: number[];
   /** When the nitrous fired, seconds after the launch (none: never). */
   nitro?: number;
+  /** Jump-started (lc4). */
+  jumped?: boolean;
+  /**
+   * lc4: the exact run in sim steps (the launch as the race's step count, each shift and the nitrous as
+   * steps after it). A ghost with steps acts before the step, exactly when a live tap did.
+   */
+  steps?: { launch: number; shifts: number[]; nitro?: number };
 }
 
 interface PolicyPlan {
@@ -403,7 +417,7 @@ export interface RaceResult {
 }
 
 function newRacer(spec: CarSpec): Racer {
-  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], dead: false, stuck: false, t100: -1, inZone: false, boostMul: 1, boostLeft: 0, boostTotal: 0, engage: 99, jumped: false, launchQ: null, stage: 1, charge: 0, nitroUsed: false, nitroLeft: 0, gearAt: 0, nitroAt: 0 };
+  return { spec, phase: 'staging', x: 0, v: 0, rpm: IDLE_RPM, gear: 1, launchAt: 0, launchRpm: 0, reaction: 0, slip: 0, bog: 1, spinLeft: 0, shiftLeft: 0, limiterSince: -1, limiterTime: 0, spinTime: 0, perfect: 0, shifts: 0, early: 0, late: 0, dnf: false, failure: null, failAt: -1, et: 0, trap: 0, taps: [], launchN: 0, tapN: [], nitroN: -1, dead: false, stuck: false, t100: -1, inZone: false, boostMul: 1, boostLeft: 0, boostTotal: 0, engage: 99, jumped: false, launchQ: null, stage: 1, charge: 0, nitroUsed: false, nitroLeft: 0, gearAt: 0, nitroAt: 0 };
 }
 
 export class Race {
@@ -416,6 +430,8 @@ export class Race {
   /** Each racer's shift windows (see shiftWindows). */
   readonly windows: ShiftWindow[][];
   t = 0;
+  /** Steps run so far. */
+  n = 0;
   lightsOn = 0;
   out = false;
   done = false;
@@ -486,6 +502,7 @@ export class Race {
     r.nitroUsed = true;
     r.nitroLeft = NITRO_S;
     r.nitroAt = Math.round((this.t - r.launchAt) * 1000) / 1000;
+    r.nitroN = this.n - r.launchN;
     this.events.push({ type: 'nitro', i });
   }
 
@@ -516,6 +533,7 @@ export class Race {
   private launch(i: number): void {
     const r = this.racers[i]!;
     r.launchAt = this.t;
+    r.launchN = this.n;
     r.launchRpm = r.rpm;
     r.reaction = this.t - this.outAt;
     r.phase = 'running';
@@ -562,6 +580,7 @@ export class Race {
     }
     r.shifts++;
     r.taps.push(Math.round((this.t - r.launchAt) * 1000) / 1000);
+    r.tapN.push(this.n - r.launchN);
     if (r.spec.gears === 1) {
       // overdrive: no clutch, no gap; the charge empties into a surge and the next stage starts filling
       r.boostMul = quality === 'perfect' ? 1.34 : quality === 'ok' ? 1.12 : 1;
@@ -590,7 +609,9 @@ export class Race {
       this.events = [];
       return out;
     }
+    for (let i = 0; i < this.racers.length; i++) this.replayTaps(i);
     this.t += DT;
+    this.n++;
     while (this.lightsOn < this.lightAt.length && this.t >= this.lightAt[this.lightsOn]!) {
       this.lightsOn++;
       this.events.push({ type: 'light', n: this.lightsOn });
@@ -613,6 +634,25 @@ export class Race {
     return out;
   }
 
+  /** An lc4 ghost's taps, applied before the step like a live tap between steps. */
+  private replayTaps(i: number): void {
+    const d = this.drivers[i]!;
+    const steps = d.kind === 'script' ? d.script.steps : undefined;
+    if (!steps || d.kind !== 'script') return;
+    const r = this.racers[i]!;
+    if (r.phase === 'staging') {
+      if (this.out && this.n >= steps.launch) {
+        r.jumped = !!d.script.jumped;
+        this.launch(i);
+      }
+      return;
+    }
+    if (r.phase === 'done') return;
+    const since = this.n - r.launchN;
+    while (canShift(r) && steps.shifts[r.shifts] !== undefined && since >= steps.shifts[r.shifts]!) this.shift(i);
+    if (steps.nitro !== undefined && since >= steps.nitro) this.fireNitro(i);
+  }
+
   private stepRacer(i: number): void {
     const r = this.racers[i]!;
     const d = this.drivers[i]!;
@@ -621,6 +661,7 @@ export class Race {
     if (r.phase === 'done') return;
 
     if (r.phase === 'staging') {
+      if (d.kind === 'script' && d.script.steps) return;
       // live drivers launch with their tap (tap()); a jump start or no tap launches late
       const react = d.kind === 'policy' && plan ? plan.reaction : d.kind === 'script' ? d.script.reaction : r.jumped ? JUMP_PENALTY : AUTO_LAUNCH;
       if (this.out && this.t >= this.outAt + react - 1e-9) this.launch(i);
@@ -650,7 +691,7 @@ export class Race {
     }
     if (canShift(r)) {
       const k = spec.gears === 1 ? r.stage - 1 : r.gear - 1;
-      if (d.kind === 'script') {
+      if (d.kind === 'script' && !d.script.steps) {
         const next = d.script.shifts[r.shifts];
         if (next !== undefined && since >= next) this.shift(i);
       } else if (d.kind === 'policy' && plan && shiftRpm(r) >= spec.redline * (plan.shiftAt[k] ?? 0.95)) {
@@ -716,11 +757,13 @@ export class Race {
           force *= r.gear < spec.gears ? 0.3 : 0.9;
         }
       }
+      // a jump start bogs every car, electric and spin-limited ones too: the drive is cut for a moment
+      if (r.launchQ === 'jump' && since < JUMP_CUT_S) force *= JUMP_CUT;
     }
     // policy drivers fire their nitrous a moment into third gear (second in a three-speed); ghosts when they did
     if (canNitro(r)) {
       if (d.kind === 'policy' && plan && r.gear >= Math.min(3, spec.gears) && this.t - r.gearAt >= 0.2 + plan.lateness) this.fireNitro(i);
-      else if (d.kind === 'script' && d.script.nitro !== undefined && since >= d.script.nitro) this.fireNitro(i);
+      else if (d.kind === 'script' && !d.script.steps && d.script.nitro !== undefined && since >= d.script.nitro) this.fireNitro(i);
     }
     // the clutch bites over ENGAGE_S: the push comes back smoothly instead of in one step (that
     // step read on screen as the car jumping forward)
@@ -767,7 +810,14 @@ export class Race {
         dnf: !finished,
         failure: r.failure,
         crossed: finished ? r.reaction + r.et : null,
-        script: { launchRpm: Math.round(r.launchRpm), reaction: Math.round(r.reaction * 1000) / 1000, shifts: r.taps, ...(r.nitroUsed ? { nitro: r.nitroAt } : {}) },
+        script: {
+          launchRpm: Math.round(r.launchRpm),
+          reaction: Math.round(r.reaction * 1000) / 1000,
+          shifts: r.taps,
+          ...(r.nitroUsed ? { nitro: r.nitroAt } : {}),
+          ...(r.jumped ? { jumped: true } : {}),
+          ...(r.phase !== 'staging' ? { steps: { launch: r.launchN, shifts: [...r.tapN], ...(r.nitroUsed ? { nitro: r.nitroN } : {}) } } : {}),
+        },
       };
     });
     const order = rs
@@ -823,21 +873,47 @@ export function forecastRun(spec: CarSpec, skill: number, seed = 1): { et: numbe
 export const forecastEt = (spec: CarSpec, skill: number, seed = 1): number => forecastRun(spec, skill, seed).et;
 
 // ---- replay encoding (friends' challenges)
-/** lc3 adds the nitrous (milliseconds after the launch, -1 for none) before the shifts; lc1 and lc2 have none. */
-const VERSION = 'lc3';
+/**
+ * lc4 records the run in sim steps (exact): jumped (0/1), the launch step, the nitrous step after the launch (-1 for
+ * none), then the shift steps after the launch. lc3 adds the nitrous (milliseconds after the launch, -1 for none)
+ * before the shifts; lc1 and lc2 have none (both still decode, as timed scripts).
+ */
+const VERSION = 'lc4';
+const stepSeconds = (n: number): number => Math.round(n * DT * 1000) / 1000;
+/** A run with steps encodes as lc4; a timed script (an old ghost) stays lc3. */
 export function encodeScript(s: Script): string {
-  return [VERSION, s.launchRpm, Math.round(s.reaction * 1000), s.nitro === undefined ? -1 : Math.round(s.nitro * 1000), ...s.shifts.map((t) => Math.round(t * 1000))].join(',');
+  if (s.steps) {
+    const st = s.steps;
+    return [VERSION, s.launchRpm, Math.round(s.reaction * 1000), s.jumped ? 1 : 0, st.launch, st.nitro === undefined ? -1 : st.nitro, ...st.shifts].join(',');
+  }
+  return ['lc3', s.launchRpm, Math.round(s.reaction * 1000), s.nitro === undefined ? -1 : Math.round(s.nitro * 1000), ...s.shifts.map((t) => Math.round(t * 1000))].join(',');
 }
 export function decodeScript(raw: string | null | undefined): Script | null {
   if (!raw) return null;
   const p = raw.split(',');
-  const v3 = p[0] === VERSION;
-  if ((!v3 && p[0] !== 'lc2' && p[0] !== 'lc1') || p.length < 3 || p.length > 40) return null;
+  const v = p[0];
+  if ((v !== VERSION && v !== 'lc3' && v !== 'lc2' && v !== 'lc1') || p.length < 3 || p.length > 40) return null;
   const nums = p.slice(1).map(Number);
   if (nums.some((n) => !Number.isFinite(n))) return null;
   const [launchRpm, reaction, ...rest] = nums as [number, number, ...number[]];
-  const nitroMs = v3 ? rest.shift() : -1;
-  if (launchRpm < 0 || launchRpm > 30000 || reaction < -5000 || reaction > 10000 || nitroMs === undefined || nitroMs > 60000) return null;
+  if (launchRpm < 0 || launchRpm > 30000 || reaction < -5000 || reaction > 10000) return null;
+  if (v === VERSION) {
+    const [jumped, launch, nitro, ...shifts] = rest;
+    const maxStep = Math.ceil(MAX_TIME / DT);
+    const okStep = (n: number | undefined): n is number => n !== undefined && Number.isInteger(n) && n >= 0 && n <= maxStep;
+    if ((jumped !== 0 && jumped !== 1) || !okStep(launch) || nitro === undefined || (nitro !== -1 && !okStep(nitro)) || !shifts.every(okStep)) return null;
+    for (let i = 1; i < shifts.length; i++) if (shifts[i]! < shifts[i - 1]!) return null;
+    return {
+      launchRpm,
+      reaction: reaction / 1000,
+      shifts: shifts.map(stepSeconds),
+      ...(nitro >= 0 ? { nitro: stepSeconds(nitro) } : {}),
+      ...(jumped ? { jumped: true } : {}),
+      steps: { launch, shifts, ...(nitro >= 0 ? { nitro } : {}) },
+    };
+  }
+  const nitroMs = v === 'lc3' ? rest.shift() : -1;
+  if (nitroMs === undefined || nitroMs > 60000) return null;
   const sh = rest.map((n) => n / 1000);
   for (let i = 1; i < sh.length; i++) if (sh[i]! < sh[i - 1]!) return null;
   return { launchRpm, reaction: reaction / 1000, shifts: sh, ...(nitroMs >= 0 ? { nitro: nitroMs / 1000 } : {}) };

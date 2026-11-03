@@ -255,8 +255,8 @@ describe('Launch Control: daily, garage and wager', () => {
     // the garage inspects a part for its repair
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     fireEvent.click(screen.getByRole('button', { name: 'My garage' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Inspect the tyres' }));
-    expect(screen.getByRole('region', { name: 'Inspecting the tyres' }).textContent).toMatch(/condition/);
+    fireEvent.click(screen.getByRole('button', { name: 'Inspect the tires' }));
+    expect(screen.getByRole('region', { name: 'Inspecting the tires' }).textContent).toMatch(/condition/);
   });
 
   it('a swipe on a pop-up goes to what it can scroll, never to the page under the stage', () => {
@@ -339,7 +339,8 @@ describe('Launch Control: daily, garage and wager', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Race Dizzy Dee/ }));
     fireEvent.click(screen.getByRole('radio', { name: /25%/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm race' }));
-    expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBe(600);
+    // the stake is capped at twice the purse: a quarter of $200
+    expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBe(750);
     driveRace({ tapWhenHot: false });
     expect(document.querySelector('.lc-ledger')?.textContent).toMatch(/Backed yourself/);
     expect(JSON.parse(localStorage.getItem(KEY)!).cash).toBeLessThan(800);
@@ -362,6 +363,12 @@ describe('Launch Control: the King’s Gauntlet', () => {
     expect(document.querySelector('.lc-streak')?.textContent).toMatch(/1/);
     // no end yet: the run goes on
     expect(host.report.mock.calls.map((c) => c[0]).some((e) => e.type === 'end')).toBe(false);
+    // a pit stop between rounds: new tires, the run goes on
+    expect(JSON.parse(localStorage.getItem(KEY)!).cars.bumble.cond.tyres).toBeLessThan(100);
+    fireEvent.click(screen.getByRole('button', { name: /^Pit stop: new tires/ }));
+    expect(JSON.parse(localStorage.getItem(KEY)!).cars.bumble.cond.tyres).toBe(100);
+    expect(screen.queryByRole('button', { name: /^Pit stop/ })).toBeNull();
+    expect(host.report.mock.calls.map((c) => c[0]).some((e) => e.type === 'end')).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Next round (2)' }));
     expect(screen.getByRole('button', { name: 'Race round 2' })).toBeTruthy();
     // leaving ends the run: the streak so far is the run on the leaderboard
@@ -373,3 +380,57 @@ describe('Launch Control: the King’s Gauntlet', () => {
   });
 });
 
+
+describe('Launch Control: friends’ challenges keep one attempt', () => {
+  const spec = { id: 'chal-1', round: 1, seed: 1234, mode: 'fresh' as const, day: '' };
+
+  it('a round left mid-race ends at 0 once, and is not raced again after a reload', () => {
+    const { unmount } = render(<Game host={host} restartKey={0} pauseKey={0} challenge={spec} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm race' }));
+    expect(JSON.parse(localStorage.getItem(KEY)!).rounds['chal-1:1']).toEqual({ score: 0, done: false });
+    // the page goes away mid-race: the round ends with 0, reported once
+    unmount();
+    const ends = () => host.report.mock.calls.filter((c) => c[0].type === 'end');
+    expect(ends()).toHaveLength(1);
+    expect(ends()[0]![0]).toMatchObject({ score: 0, challenge: { id: 'chal-1', round: 1 } });
+    render(<Game host={host} restartKey={0} pauseKey={0} challenge={spec} />);
+    expect(screen.queryByRole('button', { name: 'Confirm race' })).toBeNull();
+    expect(screen.getByText(/You have raced this round/)).toBeTruthy();
+    expect(ends()).toHaveLength(1);
+  });
+
+  it('a daily challenge counts the day’s Showdown already raced', () => {
+    const save = { ...emptySave(), daily: { '2026-10-20': { best: 7123, tries: 2, et: 14000 } } };
+    localStorage.setItem(KEY, JSON.stringify(save));
+    render(<Game host={host} restartKey={0} pauseKey={0} challenge={{ ...spec, id: 'chal-2', mode: 'daily', day: '2026-10-20' }} />);
+    expect(screen.getByText('Your daily result counts here.')).toBeTruthy();
+    expect(host.report.mock.calls.filter((c) => c[0].type === 'end').map((c) => c[0].score)).toEqual([7123]);
+  });
+});
+
+describe('Launch Control: the nitrous has its own control', () => {
+  it('N fires the nitrous in a car that carries it, without a shift tap', () => {
+    localStorage.setItem(KEY, JSON.stringify({ ...emptySave(), car: 'rail', cars: { bumble: newCar(), rail: newCar() } }));
+    render(<Game host={host} restartKey={0} pauseKey={0} />);
+    startLadderRace();
+    expect(document.querySelector('button.lc-nos')).toBeTruthy();
+    let fired = false;
+    let lastTap = -999;
+    for (let f = 0; f < 4000 && !fired; f++) {
+      act(() => tick());
+      if (!document.querySelector('.lc-race')) break;
+      if (document.querySelector('.lc-race[data-hot="1"], .lc-race[data-state="go"]') && f - lastTap > 6) {
+        act(() => {
+          fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+          fireEvent.keyUp(window, { code: 'Space', key: ' ' });
+        });
+        lastTap = f;
+      }
+      act(() => {
+        fireEvent.keyDown(window, { code: 'KeyN', key: 'n' });
+      });
+      if (document.querySelector('.lc-pop')?.textContent === 'NITROUS!' || document.querySelector('.lc-nos')?.getAttribute('data-state') === 'burn') fired = true;
+    }
+    expect(fired).toBe(true);
+  });
+});

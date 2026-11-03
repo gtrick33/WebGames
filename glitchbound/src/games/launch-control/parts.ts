@@ -13,7 +13,7 @@ export type Mats = Partial<Record<Material, number>>;
 
 export const MATERIAL_INFO: Record<Material, { name: string; emoji: string; blurb: string }> = {
   parts: { name: 'Parts', emoji: '🔩', blurb: 'Bolts, alloy, carbon and chips: every win drops a box, bigger in higher divisions.' },
-  rubber: { name: 'Rubber', emoji: '⚫', blurb: 'Race compound for tyres.' },
+  rubber: { name: 'Rubber', emoji: '⚫', blurb: 'Race compound for tires.' },
 };
 
 /** Only tyres wear (and need replacing); every other part stays like new. */
@@ -31,8 +31,8 @@ export interface PartInfo {
 export const PART_INFO: Record<PartId, PartInfo> = {
   engine: { id: 'engine', name: 'Engine', emoji: '⚙️', blurb: 'Bigger turbo, hotter cams, higher redline. Heavier and a little less forgiving.', look: 'Under the hood: nothing changes outside' },
   transmission: { id: 'transmission', name: 'Transmission', emoji: '🕹️', blurb: 'Faster shifts and a stronger driveline.', look: 'Inside the car: nothing changes outside' },
-  suspension: { id: 'suspension', name: 'Suspension', emoji: '🛞', blurb: 'Lighter coilovers and better weight transfer: more grip off the line, less wheel hop.', look: 'Lower every level, tyres tucked into the arches' },
-  tyres: { id: 'tyres', name: 'Tyres', emoji: '🏁', blurb: 'Stickier compound and a stronger carcass. They wear out and need replacing.', look: 'Coloured sidewall bands and lettering' },
+  suspension: { id: 'suspension', name: 'Suspension', emoji: '🛞', blurb: 'Lighter coilovers and better weight transfer: more grip off the line, less wheel hop.', look: 'Lower every level, tires tucked into the arches' },
+  tyres: { id: 'tyres', name: 'Tires', emoji: '🏁', blurb: 'Stickier compound and a stronger carcass. They wear out and need replacing.', look: 'Colored sidewall bands and lettering' },
   aero: { id: 'aero', name: 'Aerodynamics', emoji: '🪽', blurb: 'Less drag for top-end speed, a touch of downforce for grip at speed.', look: 'Spoilers and wings, splitter, diffuser' },
   looks: { id: 'looks', name: 'Looks', emoji: '✨', blurb: 'Fans pay: a bonus on every purse and a better sponsor deal.', look: 'Livery, underglow, chrome' },
 };
@@ -44,7 +44,7 @@ export type Condition = Record<PartId, number>;
 export const PART_VISUALS: Record<PartId, [number, string][]> = {
   engine: [],
   transmission: [],
-  suspension: [[1, 'Sits lower every level, down to the tyres tucked into the arches']],
+  suspension: [[1, 'Sits lower every level, down to the tires tucked into the arches']],
   tyres: [[1, 'White sidewall band'], [2, 'STREET lettering'], [3, 'Yellow SPORT band'], [4, 'Wide yellow SPORT+ band'], [5, 'Red TRACK band'], [6, 'TRACK R with a pinline'], [7, 'Purple SLICK band'], [8, 'Gold DRAG KING band']],
   aero: [[1, 'Roof spoiler'], [2, 'Ducktail and front splitter'], [3, 'Pedestal wing'], [4, 'Diffuser and side skirts'], [5, 'Carbon wing with end plates'], [6, 'Canards and a carbon roof spoiler'], [7, 'Swan-neck double-element GT wing'], [8, 'Time-attack wing with a gurney flap']],
   looks: [[4, 'Lime underglow'], [7, 'Pink underglow and a pinstripe']],
@@ -157,7 +157,7 @@ export const FAILURE_TEXT: Record<PartId, string> = {
   engine: 'Engine let go!',
   transmission: 'Gearbox jammed!',
   suspension: 'Wheel hop, lost the launch!',
-  tyres: 'Tyre blowout!',
+  tyres: 'Tire blowout!',
   aero: 'Spoiler flew off!',
   looks: 'Paint flaked off!',
 };

@@ -21,6 +21,10 @@ export const MAX_PLAYERS = 2;
 export const LEAD_MS = 6000;
 /** The race step the clock can't pass (MAX_TIME of race time). */
 export const MAX_STEP = Math.ceil(MAX_TIME / DT);
+/** How far ahead of the room's clock a phone's step may be (its clock estimate can be a little off). */
+export const AHEAD_STEPS = Math.round(1 / DT);
+/** A launch tap this soon after lights out is a guess, not a reaction: it counts as a jump start. */
+export const MIN_REACTION = 0.1;
 /** A tap list never needs more (a launch and a handful of shifts, plus a few stray taps). */
 export const MAX_TAPS = 40;
 
@@ -109,6 +113,8 @@ export function leave(s: State, key: string, now: number): void {
   // nobody waits on a friend who left: their ready is gone (the race itself runs out its clock)
   const p = s.players[seat.n];
   if (p) p.ready = false;
+  // mid-race: settle as soon as the one still here has crossed the line
+  if (s.phase === 'race' && s.lanes.includes(seat.n)) maybeFinish(s);
   if (!s.seats.some((x) => x.n === seat.n)) delete s.players[seat.n];
 }
 
@@ -170,9 +176,33 @@ export function replay(race: Race, taps: readonly (readonly number[])[], upTo = 
   return race;
 }
 
+/** The room's race step at a time (steps since the start time; negative before it). */
+export const stepAt = (s: State, now: number): number => (s.startAt === null ? -1 : Math.floor((now - s.startAt) / 1000 / DT));
+
+/** The steps run before lights out (a tap after that many steps sees the lights out). */
+function outSteps(race: Race): number {
+  return Math.ceil(race.outAt / DT - 1e-9);
+}
+
+/**
+ * The taps the room counts: a launch tap inside MIN_REACTION of lights out is anticipated, so it is
+ * moved to the step before lights out (a jump start). Later taps are unchanged.
+ */
+export function fairTaps(race: Race, taps: readonly number[]): number[] {
+  const out = outSteps(race);
+  const list = [...taps];
+  const first = list.findIndex((k) => k >= out);
+  if (first >= 0 && (list[first]! - out) * DT < MIN_REACTION) list[first] = out - 1;
+  return list;
+}
+
 /** The winner from both lists of taps. */
 export function settleRace(cars: LiveCar[], taps: number[][], seed: number, lanes: number[]): Outcome {
-  const res = replay(liveRace(cars, seed), taps).result();
+  const probe = liveRace(cars, seed);
+  const res = replay(
+    liveRace(cars, seed),
+    taps.map((t) => fairTaps(probe, t)),
+  ).result();
   const times: Outcome['times'] = {};
   lanes.forEach((n, i) => {
     const r = res.racers[i]!;
@@ -224,6 +254,13 @@ function finish(s: State): void {
   s.deadline = null;
 }
 
+/** Every lane is finished, or its racer lost the connection (their car runs on from the taps relayed so far). */
+function maybeFinish(s: State): void {
+  if (s.phase !== 'race') return;
+  const online = (n: number): boolean => !!s.seats.find((x) => x.n === n)?.online;
+  if (s.lanes.some((n) => s.players[n]?.finished) && s.lanes.every((n) => s.players[n]?.finished || !online(n))) finish(s);
+}
+
 /** Both seats here, each with a car and ready: go. */
 function maybeStart(s: State, now: number): void {
   const here = s.seats.filter((x) => x.online);
@@ -264,6 +301,8 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (s.phase !== 'race' || !s.lanes.includes(me.n) || p.finished) return null;
       const step = a.step;
       if (!Number.isInteger(step) || step < 0 || step > MAX_STEP || p.taps.length >= MAX_TAPS || step < (p.taps[p.taps.length - 1] ?? 0)) return null;
+      // a tap from the future (ahead of the room's clock) can't be real
+      if (step > stepAt(s, now) + AHEAD_STEPS) return null;
       p.taps.push(step);
       return null;
     }
@@ -271,9 +310,19 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (s.phase !== 'race' || !s.lanes.includes(me.n) || p.finished) return null;
       const taps = cleanTaps(a.taps);
       if (!taps) return null;
+      // the list can fill in taps the relay missed, but none from the future, and the car must have
+      // crossed the line by the room's clock
+      const upTo = stepAt(s, now) + AHEAD_STEPS;
+      if (taps.some((k) => k > upTo)) return null;
+      const lane = s.lanes.indexOf(me.n);
+      const cars = s.lanes.map((n) => s.players[n]?.car);
+      if (cars.every((c): c is LiveCar => !!c)) {
+        const lists = s.lanes.map((n) => (n === me.n ? taps : s.players[n]!.taps));
+        if (replay(liveRace(cars, s.raceSeed), lists, Math.min(MAX_STEP, upTo)).racers[lane]!.phase !== 'done') return null;
+      }
       p.taps = taps;
       p.finished = true;
-      if (s.lanes.every((n) => s.players[n]?.finished)) finish(s);
+      maybeFinish(s);
       return null;
     }
     case 'kick':

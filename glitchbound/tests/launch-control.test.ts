@@ -3,7 +3,7 @@ import { getGame } from '../src/catalog/catalog';
 import { CARS, getCar, TRAIT_INFO } from '../src/games/launch-control/cars';
 import { MODEL_FILE } from '../src/games/launch-control/models';
 import { COSMETICS, DEFAULTS, getCosmetic } from '../src/games/launch-control/cosmetics';
-import { addMats, botsFor, botSpec, crateFor, forecast, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, idleIncome, idleRate, LADDER, LADDER_SIZE, loanerFor, materialsFor, opponentSpec, purseAt, RACE_SIZE, settle, typicalEt } from '../src/games/launch-control/economy';
+import { addMats, botsFor, botSpec, canWager, crateFor, forecast, formSkill, PLAYER_SKILL, stakeCap, GAUNTLET_UNLOCK, gauntletPrize, gauntletRival, idleIncome, idleRate, LADDER, LADDER_SIZE, loanerFor, materialsFor, opponentSpec, purseAt, RACE_SIZE, settle, typicalEt } from '../src/games/launch-control/economy';
 import { ENV_DEFS } from '../src/games/launch-control/envs';
 import { applyWear, effectsOf, failChance, freshCondition, levelGains, MAX_LEVEL, PARTS, raceWear, repairCost, RISKY, stockLevels, upgradeCost, type Levels } from '../src/games/launch-control/parts';
 import { AUTO_LAUNCH, FIRST_LIGHT, LIGHT_GAP, LIGHTS, OUT_HOLD_MAX, decodeScript, DT, encodeScript, runOut, SHUTDOWN, engineForce, forecastEt, forecastRun, GREEN_SECONDS, idealLaunchRpm, JUMP_PENALTY, Race, scoreOf, shiftRpm, shiftWindows, simulate, specOf, tractionLimit, type CarSpec, type Driver } from '../src/games/launch-control/sim';
@@ -310,11 +310,76 @@ describe('the race', () => {
     const enc = encodeScript(r.racers[0]!.script);
     expect(enc.length).toBeLessThan(200);
     const dec = decodeScript(enc)!;
-    expect(dec.shifts).toEqual(r.racers[0]!.script.shifts);
+    expect(dec.steps).toEqual(r.racers[0]!.script.steps);
+    expect(enc.startsWith('lc4,')).toBe(true);
     const again = simulate([spec, spec], [{ kind: 'script', script: dec }, policy(0.4, 4)], 21);
     expect(Math.abs(again.racers[0]!.et! - r.racers[0]!.et!)).toBeLessThan(0.02);
     expect(decodeScript('nope')).toBeNull();
     expect(decodeScript('lc1,3000,100,2000,1000')).toBeNull();
+  });
+
+  it('a jump start is always slower than a clean launch at the same moment, for every car (electric too)', () => {
+    for (const c of CARS) {
+      const spec = stock(c.id);
+      const run = (jump: boolean): number => {
+        const race = new Race([spec], [{ kind: 'live' }], 9);
+        while (!race.done) {
+          race.step();
+          const me = race.racers[0]!;
+          if (jump && race.lightsOn >= 4 && !race.out) race.tap(0);
+          if (!jump && me.phase === 'staging' && race.out && race.t >= race.outAt + JUMP_PENALTY) race.tap(0);
+          const w = race.windowOf(0);
+          if (w && me.phase === 'running' && shiftRpm(me) >= (spec.redline * (w.lo + w.hi)) / 2) race.tap(0);
+        }
+        return race.result().racers[0]!.crossed!;
+      };
+      expect(run(true), c.id).toBeGreaterThan(run(false) + 0.05);
+    }
+  });
+
+  it('a live run replays exactly as a ghost: live, encode, decode, replay give the same crossing, ET and perfect shifts', () => {
+    let jumps = 0;
+    let nitros = 0;
+    for (const id of ['bumble', 'falkon', 'monarch', 'rail', 'elektra', 'interceptor']) {
+      const spec = stock(id);
+      for (let seed = 1; seed <= 12; seed++) {
+        const rand = rng(seed * 977 + id.length);
+        const jump = seed % 4 === 0;
+        const reactAt = 0.12 + rand() * 0.5;
+        const race = new Race([spec, spec], [{ kind: 'live' }, policy(0.7, seed)], seed);
+        let nitroAt = -1;
+        while (!race.done) {
+          race.step();
+          const me = race.racers[0]!;
+          if (jump && race.lightsOn >= 3 && !race.out) race.tap(0);
+          if (me.phase === 'staging' && race.out && race.t >= race.outAt + reactAt) race.tap(0);
+          const w = race.windowOf(0);
+          // aim anywhere around the window, so early, ok, perfect and late shifts all happen
+          if (w && me.phase === 'running' && shiftRpm(me) >= spec.redline * (w.lo - 0.08 + rand() * 0.2) && rand() < 0.3) race.tap(0);
+          if (me.gear >= 2 && nitroAt < 0 && rand() < 0.02) {
+            nitroAt = race.t;
+            race.nitro(0);
+          }
+        }
+        const live = race.result().racers[0]!;
+        if (live.et === null) continue;
+        if (live.launch === 'jump') jumps++;
+        if (live.script.nitro !== undefined) nitros++;
+        const ghost = decodeScript(encodeScript(live.script))!;
+        expect(ghost.jumped ?? false).toBe(live.launch === 'jump');
+        const again = simulate([spec, spec], [policy(0.7, seed), { kind: 'script', script: ghost }], seed).racers[1]!;
+        expect(again.crossed).toBe(live.crossed);
+        expect(again.et).toBe(live.et);
+        expect(again.perfect).toBe(live.perfect);
+        expect(again.launch).toBe(live.launch);
+      }
+    }
+    expect(jumps).toBeGreaterThan(0);
+    expect(nitros).toBeGreaterThan(0);
+    // older timed replays still decode
+    expect(decodeScript('lc3,3000,250,-1,1200,2400')).toEqual({ launchRpm: 3000, reaction: 0.25, shifts: [1.2, 2.4] });
+    expect(decodeScript('lc4,3000,250,2,10,-1,5')).toBeNull();
+    expect(decodeScript('lc4,3000,250,0,10,-1,50,20')).toBeNull();
   });
 
   it('scores stay within the registry limits and the forecast reports 0-100 and trap speed', () => {
@@ -433,6 +498,30 @@ describe('parts and economy', () => {
     expect(win).toEqual({ purse: 1200, wager: 750, bonus: 2000 });
     const second = settle({ position: 2, purse: 1000, fansMul: 1.2, stake: 500, mult: 2.5, firstWin: false });
     expect(second).toEqual({ purse: 300, wager: -500, bonus: 0 });
+  });
+
+  it('wagers: capped at twice the purse, none on rematches, odds from your own recent races', () => {
+    expect(stakeCap(1_000_000, 5000)).toBe(10000);
+    expect(stakeCap(3000, 5000)).toBe(3000);
+    expect(stakeCap(0, 5000)).toBe(0);
+    const o = LADDER[9]!;
+    expect(canWager(o, o.rank - 1)).toBe(true);
+    expect(canWager(o, o.rank)).toBe(false);
+    expect(canWager(o, o.rank + 5)).toBe(false);
+    // too few races: a decent driver; a sharp driver and a slow one read as such, within 0.5..0.95
+    expect(formSkill([])).toBe(PLAYER_SKILL);
+    const sharp = formSkill(Array.from({ length: 10 }, () => ({ reaction: 0.2, perfect: 1 })));
+    const slow = formSkill(Array.from({ length: 10 }, () => ({ reaction: 0.6, perfect: 0.3 })));
+    expect(sharp).toBeGreaterThanOrEqual(0.9);
+    expect(sharp).toBeLessThanOrEqual(0.95);
+    expect(slow).toBe(0.5);
+    // the better you drive, the shorter your odds pay
+    const me = stock('falkon');
+    const bots = botsFor(me, RACE_SIZE - 1, 5, o);
+    const good = forecast(me, bots, sharp);
+    const bad = forecast(me, bots, slow);
+    expect(good.pWin).toBeGreaterThanOrEqual(bad.pWin);
+    expect(good.mult).toBeLessThanOrEqual(bad.mult);
   });
 
   it('the gauntlet: opponents get quicker every round, prizes grow, materials every third win', () => {
