@@ -7,52 +7,39 @@ import { creatureSprite } from '../render/sprites';
 import { Renderer } from '../render/renderer';
 import { TILE } from '../sim/map';
 import { World } from '../sim/world';
+import type { ClassId } from '../data/types';
 import { iconPicture } from '../render/art/gameIcons';
-import { VIGIL_ICON } from '../render/art/iconPicks';
-import { MAX_SPELL, MAX_STRENGTH, SPELLS, STRENGTHS, type SpellId, type StrengthId } from '../vigil/kit';
+import { MAX_SPELL, MAX_STRENGTH, REST_ICON, SPELLS, STRENGTHS, UNLOCK_HOLD, VIGIL_MAPS, type StrengthId, type VigilMap } from '../vigil/kit';
 import { Vigil, type Card } from '../vigil/sim';
 import { toLocal } from './turn';
-
-const BEST_KEY = 'sigilfall.vigil.best';
-
-function readBest(): number {
-  try {
-    return Number(localStorage.getItem(BEST_KEY)) || 0;
-  } catch {
-    return 0;
-  }
-}
-function saveBest(t: number): void {
-  try {
-    localStorage.setItem(BEST_KEY, String(Math.floor(t)));
-  } catch {
-    /* a browser that keeps nothing: the run still counted */
-  }
-}
+import { readBests, saveBest, VigilLobby } from './VigilLobby';
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
-const cardName = (c: Card): string => (c.kind === 'heal' ? 'A Moment’s Rest' : c.kind === 'spell' ? (c.evolve ? SPELLS[c.id].evolve!.name : SPELLS[c.id].name) : STRENGTHS[c.id].name);
+const cardName = (c: Card): string => (c.kind === 'heal' ? 'A Moment’s Rest' : c.kind === 'spell' ? (c.evolve ? SPELLS[c.id]!.evolve!.name : SPELLS[c.id]!.name) : STRENGTHS[c.id].name);
 const cardText = (c: Card): string => {
   if (c.kind === 'heal') return 'You have everything. Catch your breath: regain 30% health.';
   if (c.kind === 'strength') return STRENGTHS[c.id].text;
-  if (c.evolve) return SPELLS[c.id].evolve!.text;
-  return c.level === 1 ? SPELLS[c.id].text : SPELLS[c.id].next;
+  if (c.evolve) return SPELLS[c.id]!.evolve!.text;
+  return c.level === 1 ? SPELLS[c.id]!.text : SPELLS[c.id]!.next;
 };
-const spellIcon = (id: SpellId, evolved = false): string => iconPicture(VIGIL_ICON[evolved ? (id === 'ember-bolt' ? 'phoenix' : 'zero') : id]!);
-const strengthIcon = (id: StrengthId): string => iconPicture(VIGIL_ICON[id]!);
-const cardIcon = (c: Card): string => (c.kind === 'heal' ? strengthIcon('mend') : c.kind === 'spell' ? spellIcon(c.id, c.evolve) : strengthIcon(c.id));
+const spellIcon = (id: string, evolved = false): string => {
+  const def = SPELLS[id]!;
+  return iconPicture(evolved && def.evolve ? def.evolve.icon : def.icon);
+};
+const strengthIcon = (id: StrengthId): string => iconPicture(STRENGTHS[id].icon);
+const cardIcon = (c: Card): string => (c.kind === 'heal' ? iconPicture(REST_ICON) : c.kind === 'spell' ? spellIcon(c.id, c.evolve) : strengthIcon(c.id));
 const cardTag = (c: Card): string => (c.kind === 'heal' ? '' : c.kind === 'spell' && c.evolve ? 'Evolves' : c.level === 1 ? 'New' : `Level ${c.level}`);
 
 /** What this run holds, along the foot of the screen. */
 function Loadout({ v }: { v: Vigil }) {
-  const spells = Object.entries(v.spells) as [SpellId, number][];
+  const spells = Object.entries(v.spells);
   const strengths = Object.entries(v.strengths) as [StrengthId, number][];
   return (
     <div className="rb-vigil-loadout" aria-label="What you hold">
       {spells.map(([id, l]) => (
-        <span key={id} className={`rb-vigil-slot${v.evolved.has(id) ? ' is-evolved' : ''}`} title={v.evolved.has(id) ? SPELLS[id].evolve?.name : SPELLS[id].name}>
-          <img src={spellIcon(id, v.evolved.has(id))} alt={SPELLS[id].name} draggable={false} />
+        <span key={id} className={`rb-vigil-slot${v.evolved.has(id) ? ' is-evolved' : ''}`} title={v.evolved.has(id) ? SPELLS[id]!.evolve?.name : SPELLS[id]!.name}>
+          <img src={spellIcon(id, v.evolved.has(id))} alt={SPELLS[id]!.name} draggable={false} />
           <small>{l >= MAX_SPELL ? 'MAX' : l}</small>
         </span>
       ))}
@@ -81,20 +68,43 @@ function makeStamp(size: number, inner: string, outer: string): HTMLCanvasElemen
   return c;
 }
 
+/** The Vigil: choosing a hero and a land, then the night itself. */
+export function VigilScreen({ engine, face, body, cls, onBack }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; cls?: ClassId; onBack: () => void }) {
+  const [setup, setSetup] = useState<{ cls: ClassId; map: VigilMap } | null>(null);
+  const [from, setFrom] = useState<{ cls: ClassId; map: VigilMap } | null>(null);
+  if (!setup) {
+    return (
+      <VigilLobby
+        face={face}
+        body={body}
+        cls={from?.cls ?? cls ?? 'mage'}
+        map={from?.map}
+        onBack={onBack}
+        onBegin={(c, m) => {
+          setFrom({ cls: c, map: m });
+          setSetup({ cls: c, map: m });
+        }}
+      />
+    );
+  }
+  return <VigilRun engine={engine} face={face} body={body} cls={setup.cls} land={setup.map} onBack={() => setSetup(null)} />;
+}
+
 /**
  * Sigilfall: The Vigil. Hold the line against the Ashen Host for as long as you can. The land is drawn by the game's
  * own renderer (the real map and the hero's paper doll); the Host and the spells are drawn over it on a second
  * canvas, because the renderer's careful depth sorting is too dear for hundreds of foes. Nobody here is stopped by
  * trees or walls: the Host walks through them, so a hero caught on one would only die for it.
  */
-export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; onBack: () => void }) {
+function VigilRun({ engine, face, body, cls, land, onBack }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; cls: ClassId; land: VigilMap; onBack: () => void }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const baseRef = useRef<HTMLCanvasElement>(null);
   const topRef = useRef<HTMLCanvasElement>(null);
   const [run, setRun] = useState(0);
   const [, tick] = useState(0);
   const [view, setView] = useState<Vigil | null>(null);
-  const [best, setBest] = useState(readBest);
+  const [best, setBest] = useState(() => readBests()[land.id] ?? 0);
+  const [opened, setOpened] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
   const pausedRef = useRef(false);
   useEffect(() => {
@@ -114,17 +124,17 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
     const box = boxRef.current!;
     const base = baseRef.current!;
     const top = topRef.current!;
-    const hero = newCharacter('mage', 'The Watch', 'vigil');
+    const hero = newCharacter(cls, 'The Watch', 'vigil');
     if (face) hero.face = face;
     if (body) hero.body = body;
     // the land: a real region of the game, emptied of everything but the land itself
-    const world = new World({ region: 'whisperwood', tier: 0, mods: [], hero, settings: { ...DEFAULT_SETTINGS }, seed: 7, handIns: false });
+    const world = new World({ region: land.region, tier: 0, mods: [], hero, settings: { ...DEFAULT_SETTINGS }, seed: 7, handIns: false });
     world.enemies.length = 0;
     const renderer = new Renderer(base);
     renderer.landOnly = true;
-    renderer.setHeroWeapon('mage', world);
+    renderer.setHeroWeapon(cls, world);
     const map = world.map;
-    const v = new Vigil((Math.random() * 2 ** 32) >>> 0, world.player.x, world.player.y, () => false, { x0: TILE, y0: TILE, x1: (map.w - 1) * TILE, y1: (map.h - 1) * TILE });
+    const v = new Vigil((Math.random() * 2 ** 32) >>> 0, world.player.x, world.player.y, { cls, map: land, bounds: { x0: TILE, y0: TILE, x1: (map.w - 1) * TILE, y1: (map.h - 1) * TILE } });
     let shown = false;
     let raf = 0;
     let last = performance.now();
@@ -205,9 +215,17 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
     };
 
     /* ------------------------------------------------------ drawing */
-    const ember = makeStamp(32, '#fff2c0', 'rgba(255,120,40,0.85)');
     const spark = makeStamp(24, '#e8fff8', 'rgba(120,220,255,0.8)');
-    const mote = makeStamp(32, '#ffffff', 'rgba(150,120,255,0.85)');
+    // each spell's glow, drawn once in its own color
+    const stamps = new Map<string, HTMLCanvasElement>();
+    const stamp = (color: string): HTMLCanvasElement => {
+      let c = stamps.get(color);
+      if (!c) {
+        c = makeStamp(32, '#fffdf0', color);
+        stamps.set(color, c);
+      }
+      return c;
+    };
     const toTop = (x: number, y: number): { x: number; y: number } => {
       const s = renderer.toScreen(x, y);
       return { x: s.x * dpr, y: s.y * dpr };
@@ -251,15 +269,33 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
       for (const f of v.fields) {
         const p = toTop(f.x, f.y);
         const alpha = Math.min(1, f.life / 0.5);
-        g.globalAlpha = 0.34 * alpha;
-        g.fillStyle = '#ff6a2a';
+        g.globalAlpha = 0.3 * alpha;
+        g.fillStyle = f.color;
         g.beginPath();
         g.ellipse(p.x, p.y, f.r * k, f.r * k * 0.72, 0, 0, Math.PI * 2);
         g.fill();
-        g.globalAlpha = 0.8 * alpha;
-        g.strokeStyle = '#ffb45c';
+        g.globalAlpha = 0.85 * alpha;
+        g.strokeStyle = f.color;
         g.lineWidth = 1.5 * dpr;
         g.stroke();
+        g.globalAlpha = 1;
+      }
+      // what burns around the hero all the time
+      for (const au of v.auras()) {
+        const p = toTop(v.x, v.y);
+        const pulse = 1 + Math.sin(v.t * 7) * 0.05;
+        g.globalAlpha = 0.14;
+        g.fillStyle = au.color;
+        g.beginPath();
+        g.ellipse(p.x, p.y, au.r * k * pulse, au.r * k * pulse * 0.74, 0, 0, Math.PI * 2);
+        g.fill();
+        g.globalAlpha = 0.7;
+        g.strokeStyle = au.color;
+        g.lineWidth = 1.5 * dpr;
+        g.setLineDash([9 * dpr, 7 * dpr]);
+        g.lineDashOffset = -v.t * 60 * dpr;
+        g.stroke();
+        g.setLineDash([]);
         g.globalAlpha = 1;
       }
       for (const s of v.sparks) {
@@ -274,7 +310,7 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
         const p = toTop(f.x, f.y);
         if (p.x < left || p.y < left || p.x > top.width + 60 || p.y > top.height + 60) continue;
         const frame = Math.floor(f.walk * 6 + f.id) % 2;
-        const sp = creatureSprite(f.def.sprite, frame);
+        const sp = creatureSprite(f.bossSprite ?? f.def.sprite, frame);
         const scale = f.boss ? 2 : 1;
         const w = (sp.width / sp.k) * k * scale;
         const h = (sp.height / sp.k) * k * scale;
@@ -283,28 +319,77 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
         g.beginPath();
         g.ellipse(p.x, p.y + 1, w * 0.34, w * 0.14, 0, 0, Math.PI * 2);
         g.fill();
-        const img = f.flash > 0 ? (flip ? sp.wf : sp.w) : flip ? sp.f : sp.c;
-        if (f.frozen > 0) g.filter = 'hue-rotate(170deg) brightness(1.5)';
-        else if (f.slow > 0) g.filter = 'hue-rotate(160deg)';
-        g.drawImage(img as CanvasImageSource, p.x - w / 2, p.y - h + 3 * k, w, h);
-        g.filter = 'none';
+        g.drawImage((f.flash > 0 ? (flip ? sp.wf : sp.w) : flip ? sp.f : sp.c) as CanvasImageSource, p.x - w / 2, p.y - h + 3 * k, w, h);
+        // cold shows as a pale wash and a ring of frost (a canvas filter on each of hundreds of foes would stutter)
+        if (f.frozen > 0 || f.slow > 0) {
+          g.globalAlpha = f.frozen > 0 ? 0.6 : 0.22;
+          g.drawImage((flip ? sp.wf : sp.w) as CanvasImageSource, p.x - w / 2, p.y - h + 3 * k, w, h);
+          g.globalAlpha = 1;
+          if (f.frozen > 0) {
+            g.strokeStyle = '#bfeaff';
+            g.lineWidth = 1.2 * dpr;
+            g.beginPath();
+            g.ellipse(p.x, p.y + 1, w * 0.4, w * 0.17, 0, 0, Math.PI * 2);
+            g.stroke();
+          }
+        }
+      }
+      for (const pet of v.pets) {
+        const p = toTop(pet.x, pet.y);
+        const sp = creatureSprite(pet.sprite, Math.floor(pet.walk * 8) % 2);
+        const w = (sp.width / sp.k) * k;
+        const h = (sp.height / sp.k) * k;
+        g.fillStyle = 'rgba(8,4,16,0.35)';
+        g.beginPath();
+        g.ellipse(p.x, p.y + 1, w * 0.34, w * 0.14, 0, 0, Math.PI * 2);
+        g.fill();
+        // a friend, not one of the Host: lit from under and looking this way
+        const glow = stamp(SPELLS[pet.spell]?.color ?? '#fff');
+        g.globalAlpha = 0.5;
+        g.drawImage(glow, p.x - w * 0.7, p.y - w * 0.7, w * 1.4, w * 1.4);
+        g.globalAlpha = 1;
+        g.drawImage((Math.cos(pet.face) < 0 ? sp.f : sp.c) as CanvasImageSource, p.x - w / 2, p.y - h + 3 * k, w, h);
       }
       for (const s of v.shots) {
         const p = toTop(s.x, s.y);
         const r = s.r * 2.2 * k;
-        g.drawImage(ember, p.x - r, p.y - r, r * 2, r * 2);
+        g.drawImage(stamp(s.color), p.x - r, p.y - r, r * 2, r * 2);
+        if (s.back) {
+          // a thrown axe or hammer: a blade turning in the glow
+          g.save();
+          g.translate(p.x, p.y);
+          g.rotate(s.spin);
+          g.fillStyle = '#fffdf0';
+          g.fillRect(-s.r * k, -1.1 * k, s.r * 2 * k, 2.2 * k);
+          g.fillStyle = s.color;
+          g.fillRect(-1.1 * k, -s.r * k * 0.8, 2.2 * k, s.r * 1.6 * k);
+          g.restore();
+        } else {
+          // its tail, so a shot reads as flying and not a dot
+          const t = toTop(s.x - s.vx * 0.05, s.y - s.vy * 0.05);
+          g.globalAlpha = 0.5;
+          g.strokeStyle = s.color;
+          g.lineWidth = s.r * 1.3 * k;
+          g.lineCap = 'round';
+          g.beginPath();
+          g.moveTo(p.x, p.y);
+          g.lineTo(t.x, t.y);
+          g.stroke();
+          g.lineCap = 'butt';
+          g.globalAlpha = 1;
+        }
       }
-      for (const [x, y] of v.motePoints()) {
-        const p = toTop(x, y);
+      for (const o of v.orbitPoints()) {
+        const p = toTop(o.x, o.y);
         const r = 8 * k;
-        g.drawImage(mote, p.x - r, p.y - r, r * 2, r * 2);
+        g.drawImage(stamp(o.color), p.x - r, p.y - r, r * 2, r * 2);
       }
       for (const fx of v.fx) {
         const u = fx.t / fx.dur;
         if (fx.kind === 'ring') {
           const p = toTop(fx.x, fx.y);
           g.globalAlpha = 1 - u;
-          g.strokeStyle = '#bfeaff';
+          g.strokeStyle = fx.color;
           g.lineWidth = (5 - u * 3) * k;
           g.beginPath();
           g.ellipse(p.x, p.y, fx.r * k * (0.3 + u * 0.7), fx.r * k * (0.3 + u * 0.7) * 0.74, 0, 0, Math.PI * 2);
@@ -312,7 +397,7 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
         } else if (fx.kind === 'bolt') {
           g.globalAlpha = 1 - u;
           g.lineWidth = 2.4 * k;
-          g.strokeStyle = '#dff2ff';
+          g.strokeStyle = fx.color;
           g.beginPath();
           fx.pts.forEach(([x, y], i) => {
             const p = toTop(x, y);
@@ -327,20 +412,62 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
           const q = toTop(fx.x + 60 * (1 - fall), fx.y - 170 * (1 - fall));
           if (fall < 1) {
             const r = 16 * k;
-            g.drawImage(ember, q.x - r, q.y - r, r * 2, r * 2);
+            g.drawImage(stamp(fx.color), q.x - r, q.y - r, r * 2, r * 2);
           } else {
             const w = (u - 0.42) / 0.58;
             g.globalAlpha = 1 - w;
-            g.fillStyle = '#ffb45c';
+            g.fillStyle = fx.color;
             g.beginPath();
             g.ellipse(p.x, p.y, fx.r * k * (0.5 + w * 0.5), fx.r * k * (0.5 + w * 0.5) * 0.72, 0, 0, Math.PI * 2);
             g.fill();
+          }
+        } else if (fx.kind === 'cone') {
+          // a blade's sweep: it opens across the arc and fades
+          const p = toTop(fx.x, fx.y);
+          const r = fx.r * k;
+          g.globalAlpha = (1 - u) * 0.65;
+          g.fillStyle = fx.color;
+          g.beginPath();
+          g.moveTo(p.x, p.y);
+          g.arc(p.x, p.y, r, fx.a - fx.arc / 2, fx.a - fx.arc / 2 + fx.arc * Math.min(1, u * 2.4));
+          g.closePath();
+          g.fill();
+          g.globalAlpha = 1 - u;
+          g.strokeStyle = '#fffdf0';
+          g.lineWidth = 2 * dpr;
+          g.beginPath();
+          g.arc(p.x, p.y, r, fx.a - fx.arc / 2, fx.a - fx.arc / 2 + fx.arc * Math.min(1, u * 2.4));
+          g.stroke();
+        } else if (fx.kind === 'beam') {
+          const p = toTop(fx.x, fx.y);
+          const q = toTop(fx.x + Math.cos(fx.a) * fx.len, fx.y + Math.sin(fx.a) * fx.len);
+          g.lineCap = 'round';
+          g.globalAlpha = (1 - u) * 0.55;
+          g.strokeStyle = fx.color;
+          g.lineWidth = fx.w * 2 * k * (1 - u * 0.5);
+          g.beginPath();
+          g.moveTo(p.x, p.y);
+          g.lineTo(q.x, q.y);
+          g.stroke();
+          g.globalAlpha = 1 - u;
+          g.strokeStyle = '#fffdf0';
+          g.lineWidth = fx.w * 0.6 * k * (1 - u);
+          g.stroke();
+          g.lineCap = 'butt';
+        } else if (fx.kind === 'heal') {
+          // motes of light rising through the hero
+          for (let i = 0; i < 7; i++) {
+            const a = (i / 7) * Math.PI * 2 + fx.x;
+            const p = toTop(fx.x + Math.cos(a) * fx.r * 0.7, fx.y + Math.sin(a) * 4 - u * 26 - (i % 3) * 4);
+            const r = 5 * k * (1 - u * 0.5);
+            g.globalAlpha = 1 - u;
+            g.drawImage(stamp(fx.color), p.x - r, p.y - r, r * 2, r * 2);
           }
         } else {
           const p = toTop(fx.x, fx.y);
           g.globalAlpha = 1 - u;
           const r = fx.r * k * (0.4 + u * 0.6);
-          g.drawImage(ember, p.x - r, p.y - r, r * 2, r * 2);
+          g.drawImage(stamp(fx.color), p.x - r, p.y - r, r * 2, r * 2);
         }
         g.globalAlpha = 1;
       }
@@ -440,10 +567,15 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
       }
       if (v.over && !over) {
         over = true;
+        // holding long enough opens the next land
+        const before = readBests();
+        const at = VIGIL_MAPS.indexOf(land);
+        const next = VIGIL_MAPS[at + 1];
+        if (next && (before[land.id] ?? 0) < UNLOCK_HOLD && v.t >= UNLOCK_HOLD) setOpened(next.name);
         setBest((b) => {
-          const next = Math.max(b, Math.floor(v.t));
-          saveBest(next);
-          return next;
+          const longest = Math.max(b, Math.floor(v.t));
+          saveBest(land.id, longest);
+          return longest;
         });
         tick((x) => x + 1);
       }
@@ -574,20 +706,22 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
           </p>
           <p className="rb-dim">
             {v.kills} felled · level {v.level}
-            {newBest ? ' · your longest night' : ` · your longest night is ${clock(best)}`}
+            {newBest ? ` · your longest night in ${land.name}` : ` · your longest in ${land.name} is ${clock(best)}`}
           </p>
+          {opened && <p className="rb-vigil-opened">A new land opens: {opened}</p>}
           <div className="rb-vigil-actions">
             <button
               className="rb-btn is-gold is-big"
               onClick={() => {
                 setPaused(false);
+                setOpened(null);
                 setRun((r) => r + 1);
               }}
             >
               Hold again
             </button>
             <button className="rb-btn is-ghost" onClick={onBack}>
-              Back
+              Choose again
             </button>
           </div>
         </div>

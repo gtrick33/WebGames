@@ -202,21 +202,6 @@ export const TALENT_ICONS: Record<string, string[]> = {
 
 /** The Vigil's spells and strengths, and the title screen's modes. */
 export const VIGIL_ICON: Record<string, string> = {
-  'ember-bolt': 'fire_comet_with_a_long_tail_on_navy',
-  phoenix: 'fire_bird_spreading_wings_on_red',
-  'frost-ring': 'blizzard_swirl_of_snow_on_white',
-  zero: 'frozen_block_with_a_shape_inside_on_blue',
-  'chain-spark': 'chain_lightning_between_three_dots_on_violet',
-  'orbit-motes': 'three_small_fireballs_orbiting_on_red',
-  meteor: 'meteor_falling_with_flames_on_orange',
-  'ash-field': 'flame_circle_on_the_ground_on_dark_red',
-  might: 'strength_up_status_flexed_arm_on_red',
-  haste: 'lightning_hourglass_on_violet',
-  reach: 'shock_wave_ring_on_navy',
-  swift: 'haste_status_winged_boot_on_teal',
-  vigor: 'toughness_heart_mastery_on_red',
-  mend: 'regeneration_status_green_leaf_on_green',
-  magnet: 'magnetized_status_magnet_on_red',
-  fortune: 'exp_up_status_book_with_arrow_on_gold',
+  vigil: 'flame_circle_on_the_ground_on_dark_red',
   rift: 'dark_portal_on_black',
 };

@@ -5373,3 +5373,423 @@
     gap: 5px;
   }
 }
+
+/* The Vigil's lobby: who keeps the watch, and where */
+.rb-vlobby {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-template: auto minmax(0, 1fr) auto / minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-areas: 'head head' 'hero lands' 'foot foot';
+  gap: 8px 12px;
+  padding: 10px 14px;
+  overflow: hidden;
+  color: #efe6d4;
+  background:
+    radial-gradient(90% 90% at 78% 8%, color-mix(in srgb, var(--land) 34%, transparent), transparent 62%),
+    radial-gradient(80% 90% at 22% 72%, color-mix(in srgb, var(--cls) 22%, transparent), transparent 66%),
+    linear-gradient(180deg, #0a0716, #05030d);
+  transition: background 0.3s;
+}
+.rb-vlobby-head {
+  grid-area: head;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rb-vlobby-head > div {
+  flex: 1;
+  min-width: 0;
+}
+.rb-vlobby-head h1 {
+  margin: 0;
+  color: #ffe39a;
+  font: 700 clamp(20px, 3.4cqw, 32px) / 1.05 Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 0 #1c0e2e;
+}
+.rb-vlobby-head p {
+  margin: 1px 0 0;
+  color: #b8afc8;
+  font-size: 13px;
+}
+.rb-vlobby-hero {
+  grid-area: hero;
+  min-height: 0;
+  display: grid;
+  grid-template: minmax(0, 1fr) auto / 118px minmax(0, 1fr);
+  grid-template-areas: 'classes stage' 'classes kit';
+  gap: 6px 10px;
+}
+.rb-vlobby-classes {
+  grid-area: classes;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  overflow-y: auto;
+}
+.rb-vlobby-class {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 3px 8px 3px 3px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 7px;
+  color: #cfc6dc;
+  font: 600 13px Georgia, 'Times New Roman', serif;
+  text-align: left;
+  background: rgb(14 9 28 / 0.6);
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s, background 0.12s;
+}
+.rb-vlobby-class img {
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
+  image-rendering: pixelated;
+}
+.rb-vlobby-class:hover,
+.rb-vlobby-class:focus-visible {
+  transform: translateX(2px);
+  border-color: var(--c);
+}
+.rb-vlobby-class.is-on {
+  border-color: var(--c);
+  color: #fff;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 42%, transparent), rgb(14 9 28 / 0.6));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 40%, transparent);
+}
+.rb-vlobby-stage {
+  grid-area: stage;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+.rb-vlobby-dais {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  width: min(260px, 70%);
+  aspect-ratio: 4 / 1;
+  border-radius: 50%;
+  translate: -50% 0;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--cls) 60%, transparent), transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cls) 55%, transparent);
+  animation: rb-vlobby-dais 3.6s ease-in-out infinite;
+}
+@keyframes rb-vlobby-dais {
+  50% {
+    opacity: 0.62;
+  }
+}
+.rb-vlobby-doll {
+  position: absolute;
+  left: 50%;
+  bottom: 50px;
+  height: min(calc(100% - 54px), 240px);
+  translate: -50% 0;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.5));
+  animation: rb-vlobby-in 0.22s ease-out;
+}
+@keyframes rb-vlobby-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+.rb-vlobby-name {
+  position: absolute;
+  inset: auto 0 0;
+  display: grid;
+  justify-items: center;
+}
+.rb-vlobby-name strong {
+  color: #fff4d8;
+  font: 700 19px Georgia, 'Times New Roman', serif;
+}
+.rb-vlobby-name small {
+  color: #b8afc8;
+  font-size: 12px;
+}
+.rb-vlobby-kit {
+  grid-area: kit;
+  display: grid;
+  gap: 5px;
+}
+.rb-vlobby-spells {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+.rb-vlobby-spell {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 2px solid rgb(255 255 255 / 0.16);
+  border-radius: 7px;
+  overflow: hidden;
+  background: #120a20;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+}
+.rb-vlobby-spell img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.rb-vlobby-spell.is-on,
+.rb-vlobby-spell:hover {
+  transform: translateY(-2px);
+  border-color: #ffe39a;
+}
+.rb-vlobby-spell em {
+  position: absolute;
+  inset: auto 0 0;
+  font: 700 8px/11px system-ui, sans-serif;
+  font-style: normal;
+  text-transform: uppercase;
+  color: #1c0e08;
+  background: #ffd257;
+}
+.rb-vlobby-about {
+  display: grid;
+  gap: 2px;
+  min-height: 64px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 8px;
+  color: #cfc6dc;
+  font-size: 13px;
+  line-height: 1.3;
+  background: rgb(10 6 22 / 0.72);
+}
+.rb-vlobby-about strong {
+  color: #ffe39a;
+  font: 700 14px Georgia, 'Times New Roman', serif;
+}
+.rb-vlobby-evolve {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #e0d0ff;
+  font-size: 12px;
+}
+.rb-vlobby-evolve img {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  image-rendering: pixelated;
+}
+.rb-vlobby-lands {
+  grid-area: lands;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 3px;
+  scrollbar-width: thin;
+}
+.rb-vlobby-land {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 3px 9px 3px 3px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 8px;
+  color: #efe6d4;
+  text-align: left;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 26%, #0e091c), #0e091c 72%);
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+}
+.rb-vlobby-land > img {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.6));
+}
+.rb-vlobby-land-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.rb-vlobby-land strong {
+  font: 700 14px Georgia, 'Times New Roman', serif;
+}
+.rb-vlobby-land small {
+  overflow: hidden;
+  color: #b8afc8;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-vlobby-land:hover:not(:disabled),
+.rb-vlobby-land:focus-visible {
+  transform: translateX(-2px);
+  border-color: var(--c);
+}
+.rb-vlobby-land.is-on {
+  border-color: #ffe39a;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 55%, transparent), inset 0 0 0 1px #ffe39a;
+}
+.rb-vlobby-land.is-locked {
+  cursor: default;
+  background: #0b0816;
+}
+.rb-vlobby-land.is-locked > img {
+  filter: brightness(0) drop-shadow(0 0 1px rgb(255 255 255 / 0.4));
+}
+.rb-vlobby-land.is-locked strong {
+  color: #8d8499;
+}
+.rb-vlobby-best {
+  color: #ffd257;
+  font: 700 14px Georgia, 'Times New Roman', serif;
+}
+.rb-vlobby-lock {
+  color: #6d6580;
+  font-size: 14px;
+}
+.rb-vlobby-foot {
+  grid-area: foot;
+  display: flex;
+  justify-content: center;
+}
+.rb-vigil-opened {
+  margin: 0;
+  color: #ffd257;
+  font: 700 16px Georgia, 'Times New Roman', serif;
+}
+@container (max-height: 430px) {
+  .rb-vlobby {
+    gap: 4px 8px;
+    padding: 6px 10px;
+  }
+  .rb-vlobby-head p {
+    display: none;
+  }
+  .rb-vlobby-hero {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+  .rb-vlobby-class {
+    min-height: 30px;
+    gap: 4px;
+    font-size: 11.5px;
+  }
+  .rb-vlobby-class img {
+    width: 24px;
+    height: 24px;
+  }
+  .rb-vlobby-spell {
+    width: 32px;
+    height: 32px;
+  }
+  .rb-vlobby-about {
+    min-height: 0;
+    padding: 3px 8px;
+    font-size: 11.5px;
+  }
+  .rb-vlobby-evolve img {
+    display: none;
+  }
+  .rb-vlobby-land {
+    min-height: 36px;
+  }
+  .rb-vlobby-land > img {
+    width: 30px;
+    height: 30px;
+  }
+  .rb-vlobby-foot .rb-btn {
+    min-height: 34px;
+    padding-block: 3px;
+  }
+}
+/* the game in a small box on a phone held upright: no room for the figure, and the classes become a strip */
+@container (max-height: 300px) {
+  .rb-vlobby-hero {
+    grid-template: auto minmax(0, 1fr) / minmax(0, 1fr);
+    grid-template-areas: 'classes' 'kit';
+  }
+  .rb-vlobby-stage,
+  .rb-vlobby-evolve {
+    display: none;
+  }
+  .rb-vlobby-head h1 {
+    font-size: 16px;
+  }
+  .rb-vlobby-head .rb-iconbtn {
+    width: 26px;
+    height: 26px;
+    min-height: 0;
+  }
+  .rb-vlobby-classes {
+    display: flex;
+    gap: 2px;
+    overflow: visible;
+  }
+  .rb-vlobby-class {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    padding: 1px;
+    justify-content: center;
+  }
+  .rb-vlobby-class img {
+    width: 100%;
+    max-width: 24px;
+    height: auto;
+  }
+  .rb-vlobby-class span {
+    display: none;
+  }
+  .rb-vlobby-spells {
+    gap: 2px;
+  }
+  .rb-vlobby-spell {
+    flex: 1;
+    width: auto;
+    max-width: 26px;
+    height: auto;
+    aspect-ratio: 1;
+  }
+  .rb-vlobby-spell em {
+    display: none;
+  }
+  .rb-vlobby-kit {
+    min-height: 0;
+    align-content: start;
+  }
+  .rb-vlobby-about {
+    overflow: hidden;
+    font-size: 10.5px;
+  }
+  .rb-vlobby-land small {
+    display: none;
+  }
+  .rb-vlobby-land {
+    min-height: 24px;
+    padding: 1px 5px 1px 1px;
+  }
+  .rb-vlobby-land > img {
+    width: 20px;
+    height: 20px;
+  }
+  .rb-vlobby-land strong {
+    font-size: 11.5px;
+  }
+  .rb-vlobby-foot .rb-btn {
+    min-height: 26px;
+    font-size: 13px;
+  }
+}
