@@ -266,6 +266,25 @@
     font-size: 30px;
   }
 }
+/* A phone on its side: the top row moves into a column beside the jar, so the jar gets the full height. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .gl:not(.gl-menu) {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+  }
+  .gl:not(.gl-menu) .gl-hud {
+    flex: none;
+    width: auto;
+    grid-template-columns: auto;
+    align-content: start;
+    justify-items: center;
+    gap: 12px;
+  }
+  .gl:not(.gl-menu) .gl-hud .game-menu-pair {
+    flex-direction: column;
+  }
+}
 /* Narrow stages: the menu starts below the sound and menu buttons, so the blob art never covers them. */
 @media (max-width: 480px) {
   .gl-menu {
