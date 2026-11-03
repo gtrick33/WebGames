@@ -262,7 +262,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
           <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.rift!)} alt="" draggable={false} />
           <span>
             <strong>Rift Trials</strong>
-            <small>{!hero ? 'Make a hero to begin' : hero.keystone >= 1 ? `Riftstone +${hero.keystone}` : `Opens at level ${RIFT_LEVEL} or your first dungeon`}</small>
+            <small>{!hero ? 'Make a hero to begin' : hero.keystone >= 1 ? `Riftstone +${hero.keystone}` : `Level ${RIFT_LEVEL} or first dungeon`}</small>
           </span>
         </button>
         {hero ? (

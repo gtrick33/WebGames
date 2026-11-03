@@ -845,7 +845,7 @@ export class Land3D {
             const below = kindAt(tx, ty + 1);
             if (below !== K.Wall && below !== K.Cracked && h < 0.34 && tx % 3 === 0) {
               this.add({ m: 'torch_mounted', x, z: ty + 1.02, rot: 0, sx: this.sized('torch_mounted', 0.7), y: 0.72 });
-              this.flames.push({ x, z: ty + 1.06, y: 1.42, size: 0.72 });
+              this.flames.push({ x, z: ty + 1.06, y: 1.22, size: 0.72 });
             }
             break;
           }

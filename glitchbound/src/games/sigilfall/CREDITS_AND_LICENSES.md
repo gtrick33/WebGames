@@ -14,8 +14,8 @@ packs below into the game's own files in `public/games/sigilfall/3d/` (the packs
 | Models | Author | Terms | What we use |
 | --- | --- | --- | --- |
 | KayKit: Adventurers 2.0, Skeletons, Mystery Monthly Series 4–6, Character Animations, Forest Nature, Medieval Hexagon, Dungeon, Halloween, Furniture, Fantasy Weapons, RPG Tools | Kay Lousberg, https://www.kaylousberg.com | CC0 | Heroes and every piece of the Wardrobe, people, undead, animations, trees, houses, furniture, weapons |
-| Nature Kit, Graveyard Kit | Kenney, https://kenney.nl | CC0 | Palms, pines, cacti, mushrooms, flowers, fences, gravestones |
-| Ultimate Monsters, Ultimate Animated Animals | Quaternius, https://quaternius.com | The pack pages say CC0; the license page shows QAL v1.0, which allows use inside a game and forbids redistributing the files alone. We ship them only as part of the game. | Monsters, dragons, wolves, horses, deer |
+| Nature Kit, Graveyard Kit, Castle Kit | Kenney, https://kenney.nl | CC0 | Palms, pines, cacti, mushrooms, flowers, fences, gravestones, the siege ram, castle walls and gates |
+| Ultimate Animated Animals, Farm Animals, Animated Dinosaurs | Quaternius, https://quaternius.com | The pack pages say CC0; the license page shows QAL v1.0, which allows use inside a game and forbids redistributing the files alone. We ship them only as part of the game. | The real beasts of the world: wolves, boars, bears, deer, horses, sheep, pigs, raptors. Monsters come from one family instead (KayKit, and shapes built in the asset script). |
 
 ## 2D art
 

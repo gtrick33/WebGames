@@ -233,7 +233,7 @@ export function updateScene(w: World, dt: number): void {
     if (!n || !to) done = true;
     else {
       // next to a person, on a place
-      const tx = step.to === 'hero' || !w.places[step.to] ? to.x + (n.x < to.x ? -14 : 14) : to.x;
+      const tx = step.to === 'hero' || !w.places[step.to] ? to.x + (n.x < to.x ? -26 : 26) : to.x;
       const ty = to.y;
       const d = dist(n.x, n.y, tx, ty);
       const k = Math.min(1, (WALK * dt) / Math.max(1e-6, d));

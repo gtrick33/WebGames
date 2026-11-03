@@ -531,8 +531,14 @@ export class Renderer {
     if (!p.dead) this.drawHeroMarks(w, time);
     for (const pr of w.projectiles) {
       if (!seen(pr.x, pr.y, 11)) continue;
-      this.upright(pr.x, pr.y, 11);
+      this.upright(pr.x, pr.y, 13);
+      // (drawn for the old scale of things: half as big again reads against a hero of today's size)
+      g.save();
+      g.translate(pr.x, pr.y);
+      g.scale(SHOT_SCALE, SHOT_SCALE);
+      g.translate(-pr.x, -pr.y);
       this.drawProjectile(pr, time);
+      g.restore();
     }
     for (const f of w.fx) {
       if (f.kind === 'ring' || !seen(f.x, f.y, 10)) continue;
@@ -815,16 +821,30 @@ export class Renderer {
 
   private drawFlame(x: number, y: number, time: number, k: number): void {
     const g = this.g;
-    const f = Math.floor(time * 10 + x) % 3;
-    g.fillStyle = '#ff7a3d';
-    g.fillRect(x - 2, y - 3 - f, 4, 3 + f);
-    g.fillStyle = '#ffd86b';
-    g.fillRect(x - 1, y - 2 - (f % 2), 2, 2 + (f % 2));
-    if (k >= 1) {
-      g.fillStyle = '#ff4a2a';
-      g.fillRect(x - 3, y - 1, 1, 1);
-      g.fillRect(x + 2, y - 2, 1, 1);
-    }
+    // a tongue of fire that leans and licks, three shades from its edge to its white-hot heart, in its own glow
+    const s = 0.8 + Math.min(2, k) * 0.75;
+    const t = time * 8 + x * 0.73;
+    const lean = (Math.sin(t) * 1.1 + Math.sin(t * 2.3) * 0.6) * s;
+    const tall = (9 + Math.sin(t * 1.7) * 1.6) * s;
+    const wide = 3.6 * s;
+    const glow = Math.ceil(tall * 1.15);
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    g.globalAlpha = 0.34 + Math.sin(t * 1.3) * 0.05;
+    g.drawImage(glowDisc('#ff8a3d', glow), x - glow, y - tall * 0.45 - glow);
+    g.restore();
+    const tongue = (w: number, h: number, color: string): void => {
+      g.fillStyle = color;
+      g.beginPath();
+      g.moveTo(x - w, y);
+      g.quadraticCurveTo(x - w * 0.95, y - h * 0.5, x + lean * (h / tall), y - h);
+      g.quadraticCurveTo(x + w * 0.95, y - h * 0.5, x + w, y);
+      g.quadraticCurveTo(x, y + w * 0.9, x - w, y);
+      g.fill();
+    };
+    tongue(wide, tall, '#f4561f');
+    tongue(wide * 0.66, tall * 0.7, '#ff9f2e');
+    tongue(wide * 0.34, tall * 0.42, '#fff0a0');
   }
 
   private drawField(f: World['fields'][number], time: number): void {
@@ -1500,26 +1520,65 @@ export class Renderer {
     const x = Math.round(f.x);
     const y = Math.round(f.y);
     switch (f.kind) {
-      case 'spark':
+      case 'spark': {
+        // a hot speck, bright at its heart
+        const r = Math.max(1.4, f.size * 0.9) * (1 - k * 0.5);
+        g.save();
+        g.globalCompositeOperation = 'lighter';
+        g.globalAlpha = clamp(1.4 - k * 1.4, 0, 1);
+        g.fillStyle = f.color;
+        g.beginPath();
+        g.arc(f.x, f.y, r, 0, TAU);
+        g.fill();
+        g.fillStyle = '#ffffff';
+        g.beginPath();
+        g.arc(f.x, f.y, r * 0.45, 0, TAU);
+        g.fill();
+        g.restore();
+        break;
+      }
       case 'rubble':
       case 'coin':
-      case 'shard':
+      case 'shard': {
+        // a chip of something, turning as it flies
+        const r = Math.max(1.8, f.size * 1.1);
+        g.save();
+        g.globalAlpha = clamp(1.6 - k * 1.4, 0, 1);
+        g.translate(f.x, f.y);
+        g.rotate(f.a + f.t * 9);
         g.fillStyle = f.color;
-        g.globalAlpha = clamp(1.4 - k, 0, 1);
-        g.fillRect(x, y, f.size, f.size);
-        g.globalAlpha = 1;
-        break;
-      case 'smoke': {
-        // a soft puff that swells and thins as it rises (two discs: a body and a lighter heart)
-        const rr = (f.size * (1 + k)) / 2;
-        g.fillStyle = f.color;
-        g.globalAlpha = clamp(0.42 - k * 0.42, 0, 1);
         g.beginPath();
-        g.arc(x + rr, y + rr, rr, 0, TAU);
+        g.moveTo(0, -r);
+        g.lineTo(r * 0.8, 0);
+        g.lineTo(0, r * 0.7);
+        g.lineTo(-r * 0.8, 0);
+        g.closePath();
         g.fill();
-        g.globalAlpha = clamp(0.2 - k * 0.2, 0, 1);
+        g.fillStyle = 'rgba(255,255,255,0.35)';
         g.beginPath();
-        g.arc(x + rr * 0.8, y + rr * 0.7, rr * 0.6, 0, TAU);
+        g.moveTo(0, -r);
+        g.lineTo(r * 0.8, 0);
+        g.lineTo(0, 0);
+        g.closePath();
+        g.fill();
+        g.restore();
+        break;
+      }
+      case 'smoke': {
+        // a soft puff that swells and thins as it rises (three lumps: it stands up from the ground)
+        this.upright(f.x, f.y, 4 + k * 14);
+        const rr = (f.size * (1.3 + k * 1.3)) / 2;
+        g.fillStyle = f.color;
+        g.globalAlpha = clamp(0.5 - k * 0.5, 0, 1);
+        g.beginPath();
+        g.arc(f.x, f.y, rr, 0, TAU);
+        g.arc(f.x + rr * 0.7, f.y + rr * 0.25, rr * 0.7, 0, TAU);
+        g.arc(f.x - rr * 0.7, f.y + rr * 0.3, rr * 0.65, 0, TAU);
+        g.fill();
+        g.globalAlpha = clamp(0.28 - k * 0.28, 0, 1);
+        g.fillStyle = '#ffffff';
+        g.beginPath();
+        g.arc(f.x - rr * 0.2, f.y - rr * 0.3, rr * 0.55, 0, TAU);
         g.fill();
         g.globalAlpha = 1;
         break;
@@ -1527,99 +1586,164 @@ export class Renderer {
       case 'leaf':
         g.fillStyle = f.color;
         g.globalAlpha = clamp(1 - k * 1.2, 0, 0.9);
-        g.fillRect(x, y, 2, 1);
+        g.save();
+        g.translate(f.x, f.y);
+        g.rotate(f.a + f.t * 4);
+        g.fillRect(-2.5, -1, 5, 2);
+        g.restore();
         g.globalAlpha = 1;
         f.vx += Math.sin(f.t * 3 + f.a) * 0.6;
         break;
       case 'ember':
         if (f.sprite === 'meteor') {
-          // the falling meteor
-          g.fillStyle = 'rgba(255,122,61,0.4)';
-          g.fillRect(x - 6, y - 12, 4, 10);
-          g.fillStyle = '#1b1428';
-          g.fillRect(x - 4, y - 4, 9, 9);
-          g.fillStyle = '#6a4a3a';
-          g.fillRect(x - 3, y - 3, 7, 7);
-          g.fillStyle = '#ffb04d';
-          g.fillRect(x - 3, y - 3, 3, 3);
+          // the falling meteor: burning rock and its long tail
+          this.upright(f.x, f.y, 10);
+          g.save();
+          g.globalCompositeOperation = 'lighter';
+          g.drawImage(glowDisc('#ff7a3d', 20), f.x - 20, f.y - 20);
+          const tail = g.createLinearGradient(f.x - 14, f.y - 42, f.x, f.y);
+          tail.addColorStop(0, 'rgba(255,122,61,0)');
+          tail.addColorStop(1, 'rgba(255,190,90,0.8)');
+          g.fillStyle = tail;
+          g.beginPath();
+          g.moveTo(f.x - 14, f.y - 42);
+          g.lineTo(f.x + 9, f.y - 3);
+          g.lineTo(f.x - 8, f.y + 5);
+          g.closePath();
+          g.fill();
+          g.restore();
+          pixelDisc(g, f.x, f.y, 9, '#4a342c');
+          pixelDisc(g, f.x + 1.5, f.y + 1.5, 6, '#ff9a3d');
+          pixelDisc(g, f.x + 2.5, f.y + 2.5, 3, '#fff2a0');
         } else {
-          g.fillStyle = f.color;
-          g.fillRect(x, y, 1, 1);
+          g.save();
+          g.globalCompositeOperation = 'lighter';
+          g.globalAlpha = clamp(1.2 - k, 0, 1);
+          pixelDisc(g, f.x, f.y, 1.6, f.color);
+          g.restore();
         }
         break;
       case 'ring': {
-        g.strokeStyle = rgba(f.color, clamp(1 - k, 0, 1));
-        g.lineWidth = k < 0.5 ? 2 : 1;
+        const rr = Math.max(1, f.size * (0.3 + k * 0.7));
+        const wide = Math.max(2, Math.min(7, f.size * 0.14)) * (1 - k * 0.6);
         g.beginPath();
-        g.ellipse(f.x, f.y, Math.max(1, f.size * (0.3 + k * 0.7)), Math.max(1, f.size * (0.3 + k * 0.7)), 0, 0, TAU);
+        g.arc(f.x, f.y, rr, 0, TAU);
+        g.strokeStyle = rgba(f.color, clamp(1 - k, 0, 1) * 0.35);
+        g.lineWidth = wide * 2.2;
+        g.stroke();
+        g.strokeStyle = rgba(f.color, clamp(1.1 - k, 0, 1));
+        g.lineWidth = wide;
+        g.stroke();
+        g.strokeStyle = rgba('#ffffff', clamp(0.8 - k, 0, 1));
+        g.lineWidth = wide * 0.35;
         g.stroke();
         break;
       }
       case 'burst': {
+        const s0 = Math.ceil(f.size * (1.1 + k * 0.4));
+        g.save();
+        g.globalCompositeOperation = 'lighter';
         g.globalAlpha = clamp(1 - k, 0, 1);
-        g.drawImage(glowDisc(f.color, Math.ceil(f.size)), x - Math.ceil(f.size), y - Math.ceil(f.size));
-        g.globalAlpha = 1;
+        g.drawImage(glowDisc(f.color, s0), x - s0, y - s0);
+        g.restore();
         break;
       }
       case 'glow': {
-        g.globalAlpha = clamp(Math.sin(k * Math.PI), 0, 1) * 0.8;
-        g.drawImage(glowDisc(f.color, Math.ceil(f.size)), x - Math.ceil(f.size), y - Math.ceil(f.size));
-        g.globalAlpha = 1;
+        const s0 = Math.ceil(f.size * 1.2);
+        g.save();
+        g.globalCompositeOperation = 'lighter';
+        g.globalAlpha = clamp(Math.sin(k * Math.PI), 0, 1) * 0.85;
+        g.drawImage(glowDisc(f.color, s0), x - s0, y - s0);
+        g.restore();
         break;
       }
       case 'slash': {
-        // a crescent that sweeps and fades
+        // the blow's path, laid on the ground round who struck: a thick crescent, pinched at its tips, that
+        // sweeps out and thins, with a white-hot leading edge
+        const sweep = f.a2 * Math.min(1, k * 2.6 + 0.3);
+        const a0 = f.a - f.a2 / 2;
+        const R = f.size + 3;
+        const thick = Math.max(6, R * (f.r2 ? 0.46 : 0.36)) * (1 - k * 0.6);
         g.save();
-        g.globalAlpha = clamp(1 - k, 0, 1);
-        g.strokeStyle = f.color;
-        g.lineWidth = f.r2 ? 3 : 2;
+        const fade = clamp(1.15 - k * 1.15, 0, 1);
+        // (bright where the blade is, nothing where it has been)
+        const tail = sweep < TAU - 0.05 && g.createConicGradient ? g.createConicGradient(a0, f.x, f.y) : null;
+        if (tail) {
+          const head = Math.min(0.999, sweep / TAU);
+          tail.addColorStop(0, rgba(f.color, 0));
+          tail.addColorStop(head * 0.55, rgba(f.color, 0.22));
+          tail.addColorStop(head, rgba(f.color, 0.8));
+          tail.addColorStop(Math.min(1, head + 0.001), rgba(f.color, 0));
+          g.fillStyle = tail;
+        } else g.fillStyle = rgba(f.color, 0.45);
+        g.globalAlpha = fade;
+        crescent(g, f.x, f.y, R, thick, a0, sweep);
+        // the hot rim, along the blade's own edge
+        g.globalCompositeOperation = 'lighter';
+        g.globalAlpha = fade;
+        g.strokeStyle = '#ffffff';
+        g.lineCap = 'round';
+        g.lineWidth = f.r2 ? 2.4 : 1.7;
         g.beginPath();
-        const sweep = f.a2 * Math.min(1, k * 2 + 0.3);
-        g.arc(f.x, f.y - 2, f.size, f.a - f.a2 / 2, f.a - f.a2 / 2 + sweep);
-        g.stroke();
-        g.strokeStyle = 'rgba(255,255,255,0.5)';
-        g.lineWidth = 1;
-        g.beginPath();
-        g.arc(f.x, f.y - 2, f.size - 3, f.a - f.a2 / 2, f.a - f.a2 / 2 + sweep);
+        g.arc(f.x, f.y, R - 0.5, a0 + sweep * 0.45, a0 + sweep);
         g.stroke();
         g.restore();
         break;
       }
       case 'zap': {
-        g.strokeStyle = rgba(f.color, clamp(1.2 - k, 0, 1));
-        g.lineWidth = 1;
         g.beginPath();
         g.moveTo(f.x, f.y);
-        const n = 5;
+        const n = Math.max(5, Math.min(10, Math.round(Math.hypot(f.x2 - f.x, f.y2 - f.y) / 14)));
         for (let i = 1; i < n; i++) {
           const t = i / n;
-          g.lineTo(f.x + (f.x2 - f.x) * t + (Math.random() - 0.5) * 6, f.y + (f.y2 - f.y) * t + (Math.random() - 0.5) * 6);
+          g.lineTo(f.x + (f.x2 - f.x) * t + (Math.random() - 0.5) * 12, f.y + (f.y2 - f.y) * t + (Math.random() - 0.5) * 12);
         }
         g.lineTo(f.x2, f.y2);
+        g.lineJoin = 'round';
+        g.strokeStyle = rgba(f.color, clamp(1.2 - k, 0, 1) * 0.4);
+        g.lineWidth = 6;
+        g.stroke();
+        g.strokeStyle = rgba(f.color, clamp(1.2 - k, 0, 1));
+        g.lineWidth = 3;
         g.stroke();
         g.strokeStyle = rgba('#ffffff', clamp(1 - k, 0, 1));
+        g.lineWidth = 1.2;
         g.stroke();
         break;
       }
       case 'beam': {
         if (f.sprite === 'arrow') {
           // a falling arrow of the volley
-          const h = 30 * (1 - k);
-          g.fillStyle = '#8a5a34';
-          g.fillRect(x, Math.round(y - h - 6), 1, 6);
+          this.upright(f.x, f.y, 0);
+          const h = 60 * (1 - k);
+          g.fillStyle = '#7a4a2a';
+          g.fillRect(f.x - 1, f.y - h - 16, 2, 14);
           g.fillStyle = '#e8e8f0';
-          g.fillRect(x, Math.round(y - h), 1, 2);
-          if (k > 0.85) {
-            g.fillStyle = '#c9b89a';
-            g.fillRect(x - 1, y, 3, 1);
-          }
+          g.beginPath();
+          g.moveTo(f.x - 2.5, f.y - h - 4);
+          g.lineTo(f.x + 2.5, f.y - h - 4);
+          g.lineTo(f.x, f.y - h + 1);
+          g.closePath();
+          g.fill();
+          g.fillStyle = '#d8dce8';
+          g.fillRect(f.x - 2.5, f.y - h - 18, 5, 3);
         } else {
-          g.globalAlpha = clamp(1 - k, 0, 1);
-          g.fillStyle = f.color;
-          g.fillRect(x - Math.ceil(f.size / 2), y - 200, Math.ceil(f.size), 200);
-          g.fillStyle = '#ffffff';
-          g.fillRect(x - 0.5, y - 200, 1, 200);
-          g.globalAlpha = 1;
+          // a shaft of light from the sky, fading toward its top
+          this.upright(f.x, f.y, 0);
+          const wide = Math.max(4, f.size);
+          const shaft = g.createLinearGradient(0, f.y - 170, 0, f.y);
+          shaft.addColorStop(0, rgba(f.color, 0));
+          shaft.addColorStop(1, rgba(f.color, clamp(1 - k, 0, 1)));
+          g.save();
+          g.globalCompositeOperation = 'lighter';
+          g.fillStyle = shaft;
+          g.fillRect(f.x - wide / 2, f.y - 170, wide, 170);
+          const core = g.createLinearGradient(0, f.y - 170, 0, f.y);
+          core.addColorStop(0, 'rgba(255,255,255,0)');
+          core.addColorStop(1, rgba('#ffffff', clamp(1 - k, 0, 1)));
+          g.fillStyle = core;
+          g.fillRect(f.x - wide / 6, f.y - 170, wide / 3, 170);
+          g.restore();
         }
         break;
       }
@@ -1630,15 +1754,23 @@ export class Renderer {
         g.ellipse(f.x, f.y, s, s, 0, 0, TAU);
         g.fill();
         g.strokeStyle = Math.floor(f.t * 20) % 2 ? '#ff3fd2' : '#22e4ff';
-        g.lineWidth = 1;
+        g.lineWidth = 2.5;
         g.stroke();
         break;
       }
       case 'ghost': {
-        g.globalAlpha = clamp(0.4 - k * 0.4, 0, 1);
+        // what is left of someone, rising
+        this.upright(f.x, f.y, 10 + k * 26);
+        g.globalAlpha = clamp(0.55 - k * 0.55, 0, 1);
         g.fillStyle = '#dfe8ff';
         g.beginPath();
-        g.ellipse(f.x, f.y, 6, 6, 0, 0, TAU);
+        g.arc(f.x, f.y - 3, 8, Math.PI, 0);
+        g.lineTo(f.x + 8, f.y + 10);
+        g.lineTo(f.x + 3, f.y + 7);
+        g.lineTo(f.x, f.y + 11);
+        g.lineTo(f.x - 3, f.y + 7);
+        g.lineTo(f.x - 8, f.y + 10);
+        g.closePath();
         g.fill();
         g.globalAlpha = 1;
         break;
@@ -1729,6 +1861,27 @@ export class Renderer {
 }
 
 /** A filled circle. */
+/** A shot's size next to the rules' circle. */
+const SHOT_SCALE = 1.5;
+
+/** A crescent round (x, y): the outer edge an arc, the inner edge bowing in to `thick` at the middle and pinching at the tips. */
+function crescent(g: CanvasRenderingContext2D, x: number, y: number, r: number, thick: number, a0: number, sweep: number): void {
+  g.beginPath();
+  if (sweep >= TAU - 0.05) {
+    // (all the way round: a band)
+    g.arc(x, y, r, 0, TAU);
+    g.arc(x, y, Math.max(0.5, r - thick), TAU, 0, true);
+    g.fill('evenodd');
+    return;
+  }
+  g.arc(x, y, r, a0, a0 + sweep);
+  const mid = a0 + sweep / 2;
+  const reach = r - thick * 2;
+  g.quadraticCurveTo(x + Math.cos(mid) * reach, y + Math.sin(mid) * reach, x + Math.cos(a0) * r, y + Math.sin(a0) * r);
+  g.closePath();
+  g.fill();
+}
+
 function pixelDisc(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string): void {
   g.fillStyle = color;
   g.beginPath();

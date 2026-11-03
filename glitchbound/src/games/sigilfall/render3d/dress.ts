@@ -134,18 +134,22 @@ const CHESTS = {
 } as const;
 
 /** A head's covering, and whether hair stays out from under it. */
-const HEADS: Record<string, { parts: string[]; bald?: boolean; own?: boolean }[]> = {
+const HEADS: Record<string, { parts: string[]; bald?: boolean; own?: boolean; hide?: boolean }[]> = {
   helm: [
     { parts: ['Knight_Helmet', 'Knight_HelmetVisor'], bald: true },
     { parts: ['Paladin_Helmet'], own: true },
     { parts: ['Skeleton_Warrior_Helmet'], bald: true },
-    { parts: ['Barbarian_BearHat'], bald: true },
+    // (a bear's head is a trophy, for gear of renown: not a captain's or a villager's everyday wear)
+    { parts: ['Barbarian_BearHat'], bald: true, hide: true },
   ],
-  hood: [{ parts: ['Rogue_Hooded_Head'], own: true }, { parts: ['Skeleton_Rogue_Hood'], bald: true }, { parts: ['Ninja_Headband', 'Ninja_Mask'], bald: true }],
-  cap: [{ parts: ['Farmer_A_Hat'], bald: true }, { parts: ['Hiker_Hat'], bald: true }, { parts: ['Helper_A_Hat'], bald: true }],
+  hood: [{ parts: ['RogueHooded_Head'], own: true }],
+  cap: [{ parts: ['Farmer_A_Hat'], bald: true }, { parts: ['Hiker_Hat'] }, { parts: ['Ninja_Headband'] }],
   crown: [{ parts: ['Necromancer_Crown'] }],
   wizard: [{ parts: ['Mage_Hat'], bald: true }, { parts: ['Witch_Hat'], bald: true }, { parts: ['Skeleton_Mage_Hat'], bald: true }],
 };
+
+/** Faces with a beard (hair and beard share the look's color): people of this world, not goggles. */
+const BEARDS = ['Hiker_Head', 'Farmer_A_Head', 'Engineer_Head', 'Barbarian_Head'];
 
 const HAND_JOINTS = ['hand.l', 'hand.r', 'wrist.l', 'wrist.r', 'handslot.l', 'handslot.r'];
 const FOOT_JOINTS = ['foot.l', 'foot.r', 'toes.l', 'toes.r'];
@@ -225,19 +229,20 @@ export function dressedMesh(w: Wardrobe, look: HeroLook, held: Held | null, shie
 
   // the head: a covering, and what is under it
   const headP = look.head;
-  const covers = headP ? (HEADS[headP.style] ?? HEADS.cap!) : null;
+  const covers = headP ? (HEADS[headP.style] ?? HEADS.cap!).filter((c) => !c.hide || headP.r === 'epic' || headP.r === 'legendary') : null;
   const cover = covers && headP ? pickOf(covers, headP) : null;
   const headTint = headP ? hexRgb(headP.tint) : [1, 1, 1] as [number, number, number];
   const metalHead = headP?.style === 'helm' || headP?.style === 'crown';
-  if (!cover?.own) {
-    const face = cover?.bald ? 'Knight_Head' : look.beard ? 'Survivalist_Head' : look.hairStyle === 'long' ? 'Mage_Head' : look.hairStyle === 'pony' ? 'Rogue_Head' : 'Ranger_Head';
+  if (!cover?.own || !cover.parts.some((id) => part(id))) {
+    const bearded = !cover?.bald && !!look.beard;
+    const face = cover?.bald ? 'Knight_Head' : bearded ? pickOf(BEARDS, { style: look.skin, tint: look.hair, mat: look.beard ?? '', r: '' }) : look.hairStyle === 'long' ? 'Mage_Head' : look.hairStyle === 'pony' ? 'Rogue_Head' : 'Ranger_Head';
     const m = part(face);
-    if (m) add(painted(m, { skin, cloth: hair, metal: look.hairStyle === 'long' ? hair : undefined }));
+    if (m) add(painted(m, { skin, cloth: hair, metal: bearded || look.hairStyle === 'long' ? hair : undefined }));
   }
   for (const id of cover?.parts ?? []) {
     const m = part(id);
     if (!m) continue;
-    if (cover?.own && m === part('Rogue_Hooded_Head')) add(painted(m, { skin, cloth: headTint }));
+    if (cover?.own && id === 'RogueHooded_Head') add(painted(m, { skin, cloth: headTint }));
     else if (metalHead) add(painted(m, { metal: headP ? metalOf(headP) : undefined, cloth: headTint }));
     else add(painted(m, { cloth: headTint, metal: headTint }));
   }
@@ -309,3 +314,19 @@ export function dressedOf(w: Wardrobe, look: HeroLook, held: Held | null, shield
   }
   return { key, mesh };
 }
+
+/** Every part named in this file (a test holds them to the built models: a wrong name once drew a body with no head). */
+export const wardrobeParts = (): string[] => [
+  ...Object.values(CHESTS).flat(),
+  ...Object.values(HEADS).flatMap((list) => list.flatMap((c) => c.parts)),
+  ...BEARDS,
+  'Knight_Head',
+  'Mage_Head',
+  'Rogue_Head',
+  'Ranger_Head',
+  'Knight_Cape',
+  ...['Mage', 'Knight', 'Rogue'].flatMap((k) => [`${k}_ArmLeft`, `${k}_ArmRight`, `${k}_LegLeft`, `${k}_LegRight`]),
+  ...Object.values(WEAPONS).flat(),
+  ...SHIELDS,
+  'w_quiver',
+];

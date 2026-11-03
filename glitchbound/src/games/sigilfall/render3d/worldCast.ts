@@ -27,6 +27,8 @@ const WARDS: Record<string, { m: string; h: number }> = {
   wagon: { m: 'wagon', h: 24 },
   lantern: { m: 'lantern_standing', h: 26 },
 };
+const ECHOES = new Set(['echo-of-ysane', 'echo-of-ysane-mere', 'echo-of-ysane-quay', 'echo-of-the-children']);
+const ECHO_TINT = [0.74, 0.88, 1.3] as const;
 const WARD_LOOKS = new Set(['door', 'gate', 'stone', 'boat', 'wagon', 'lantern']);
 
 const shortest = (from: number, to: number): number => {
@@ -109,8 +111,9 @@ export class WorldCast {
     else if (!p.form) want = this.heroTurn;
     this.heroTurn = damp(this.heroTurn, shortest(this.heroTurn, want), 16, dt);
     const blink = p.iframe > 0 && !p.dash && dt > 0 && Math.floor(time * 20) % 2 === 0;
-    const alpha = blink ? 0.5 : 1;
-    const flash = p.flash > 0 ? 0.75 : 0;
+    // (safe for a moment: they shine rather than dissolve)
+    const alpha = 1;
+    const flash = p.flash > 0 ? 0.75 : blink ? 0.4 : 0;
     const clipOf = (kind: string): string => (kind === 'cast' ? 'cast' : kind === 'shoot' ? 'bow' : kind === 'heavy' ? 'chop2' : kind === 'spin' ? 'spin' : 'chop');
     if (p.dead) m.set('die', false);
     else if (mount) m.set('sit');
@@ -234,7 +237,9 @@ export class WorldCast {
     const turn = n.face < 0 ? -0.55 : 0.55;
     const clip = fallen ? 'lie' : 'idle';
     cast.shadow(n.x, n.y, 7);
-    if (look) cast.person(look, null, false, n.x, n.y, turn, { clip, t: time + n.x * 0.1, loop: true }, { alpha });
+    // (an echo of the dead is not quite here: it hangs a little off the ground, pale and cold)
+    const echo = ECHOES.has(n.id);
+    if (look) cast.person(look, null, false, n.x, n.y, turn, { clip, t: time + n.x * 0.1, loop: true }, echo ? { alpha, lift: 0.14 + Math.sin(time * 1.6 + n.x) * 0.04, tint: ECHO_TINT } : { alpha });
     else cast.creature(def?.sprite ?? 'villager', n.x, n.y, turn, PERSON_H, fallen ? 'die' : 'idle', fallen ? 9 : time + n.x * 0.1, !fallen, { alpha });
     void w;
   }

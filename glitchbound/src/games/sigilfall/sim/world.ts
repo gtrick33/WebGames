@@ -32,7 +32,7 @@ import { refreshPets, summonPet, updatePets } from './pets';
 import { spawnFolk, updateFolk, type Folk } from './folk';
 import { updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
-import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
+import { breakWall, castRay, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
 import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent } from './types';
 import { inCone, inLine } from '../core/math';
 
@@ -54,6 +54,9 @@ export interface InputFrame {
   /** The mount key or button was pressed. */
   mount?: boolean;
 }
+
+/** How far apart two townspeople stand at least, in world pixels. */
+const NPC_ROOM = 30;
 
 export const emptyInput = (): InputFrame => ({ mx: 0, my: 0, aim: null, aimX: null, aimY: null, casts: [], holdBasic: null, potion: false, interact: false });
 
@@ -466,6 +469,21 @@ export class World {
   }
 
   /**
+   * Where a townsperson stands: their marker, or a step aside if someone already stands there, so that two
+   * people whose markers are a tile apart don't stand in each other (the models are wider than a tile's half).
+   */
+  private roomBeside(pos: { x: number; y: number }): { x: number; y: number } {
+    const crowded = (x: number, y: number): boolean => this.npcs.some((n) => Math.hypot(n.x - x, n.y - y) < NPC_ROOM);
+    if (!crowded(pos.x, pos.y)) return { x: pos.x, y: pos.y };
+    for (let i = 0; i < 8; i++) {
+      const a = (i * TAU) / 8;
+      const to = castRay(this.map, pos.x, pos.y, 6, a, NPC_ROOM);
+      if (Math.hypot(to.x - pos.x, to.y - pos.y) > NPC_ROOM - 1 && !crowded(to.x, to.y)) return to;
+    }
+    return { x: pos.x, y: pos.y };
+  }
+
+  /**
    * The story moved on: the region's state and which conditional markers show. People come and go at
    * once; what is built (props, fires, ruins) is redrawn by the renderer when `stateVersion` changes.
    */
@@ -494,7 +512,7 @@ export class World {
       }
       if (!on) continue;
       const pos = markerPos(pm);
-      if (m.kind === 'npc') this.npcs.push({ id: m.npc, x: pos.x, y: pos.y, face: 0, bob: this.rand() * TAU });
+      if (m.kind === 'npc') this.npcs.push({ id: m.npc, ...this.roomBeside(pos), face: 0, bob: this.rand() * TAU });
       if (m.kind === 'prop') this.addProp(pm, pos);
       // a stair that opens, a road that comes with the story, a place to find
       if (m.kind === 'spot') this.spots.push({ ...pos, id: m.id, name: m.name, r: m.r });
@@ -590,7 +608,7 @@ export class World {
       }
       switch (m.kind) {
         case 'npc':
-          this.npcs.push({ id: m.npc, x: pos.x, y: pos.y, face: 0, bob: this.rand() * TAU });
+          this.npcs.push({ id: m.npc, ...this.roomBeside(pos), face: 0, bob: this.rand() * TAU });
           break;
         case 'chest': {
           const key = `${this.region.id}:${m.id}:${pm.tx}:${pm.ty}`;
