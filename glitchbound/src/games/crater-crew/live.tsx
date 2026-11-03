@@ -92,7 +92,7 @@ export function LiveRoom({ code, name, sfx, muted, onMute, onLeave, tools }: { c
       tools={<span className="cc-code">{code}</span>}
     >
       {notice && <p className="cc-notice">{notice}</p>}
-      {!playing && !over && <p className="cc-notice is-soft">You’re watching. You’ll join the next battle.</p>}
+      {!playing && !over && <p className="cc-notice is-soft">{view.watching ? 'You’re watching.' : 'You’re watching. You’ll join the next battle.'}</p>}
       {paused && !over && (
         <div className="cc-sheet-wrap" role="dialog" aria-label="Menu">
           <div className="cc-sheet">
@@ -107,12 +107,12 @@ export function LiveRoom({ code, name, sfx, muted, onMute, onLeave, tools }: { c
           </div>
         </div>
       )}
-      {over && <Results m={m} me={view.me} host={view.host} onAgain={() => send({ t: 'again' })} onLobby={() => send({ t: 'lobby' })} onLeave={onLeave} />}
+      {over && <Results m={m} me={view.me} host={view.host} watching={!!view.watching} onSeat={(play) => send({ t: play ? 'play' : 'watch' })} onAgain={() => send({ t: 'again' })} onLobby={() => send({ t: 'lobby' })} onLeave={onLeave} />}
     </Battle>
   );
 }
 
-function Results({ m, me, host, onAgain, onLobby, onLeave }: { m: Match; me: number; host: boolean; onAgain: () => void; onLobby: () => void; onLeave: () => void }) {
+function Results({ m, me, host, watching, onSeat, onAgain, onLobby, onLeave }: { m: Match; me: number; host: boolean; watching: boolean; onSeat: (play: boolean) => void; onAgain: () => void; onLobby: () => void; onLeave: () => void }) {
   const mine = m.crews.findIndex((c) => c.seat === me);
   const order = m.crews.map((_, i) => i).sort((a, b) => Number(b === m.winner) - Number(a === m.winner) || crewScore(m, b) - crewScore(m, a));
   const w = m.winner !== null && m.winner >= 0 ? m.crews[m.winner] : null;
@@ -146,6 +146,12 @@ function Results({ m, me, host, onAgain, onLobby, onLeave }: { m: Match; me: num
         ) : (
           <p className="cc-sub">Waiting for the host to start the next battle…</p>
         )}
+        <p className="cc-sub cc-next">
+          {watching ? 'You’ll watch the next battle.' : 'You’re in the next battle.'}{' '}
+          <button className="cc-link" onClick={() => onSeat(watching)}>
+            {watching ? 'Join it' : 'Just watch'}
+          </button>
+        </p>
         <button className="cc-link" onClick={onLeave}>
           Leave the room
         </button>

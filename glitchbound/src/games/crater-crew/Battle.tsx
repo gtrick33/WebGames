@@ -68,8 +68,8 @@ export function Battle(props: BattleProps) {
   const [coach, setCoach] = useState(() => typeof window !== 'undefined' && coachShots() < COACH_SHOTS);
   const [touch] = useState(() => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches);
   const [toast, setToast] = useState<{ text: string; sub: string; color: string; id: number; mine: boolean } | null>(null);
-  // a tall phone only sees a slice of the battlefield
-  const [tip, setTip] = useState(() => typeof window !== 'undefined' && window.innerHeight > window.innerWidth * 1.2);
+  // a tall phone only sees a slice of the battlefield (a tablet held upright sees plenty)
+  const [tip, setTip] = useState(() => typeof window !== 'undefined' && window.innerWidth < 600 && window.innerHeight > window.innerWidth * 1.2);
   useEffect(() => {
     const id = window.setTimeout(() => setTip(false), 5000);
     return () => window.clearTimeout(id);
@@ -106,6 +106,8 @@ export function Battle(props: BattleProps) {
       },
       sfx: () => propsRef.current.sfx(),
       botDelay: p.botDelay,
+      // a live room runs on the room's clock; single player's stops with the pause
+      wallClock: p.clock !== undefined,
     };
     const s = new Scene(opts);
     sceneBox.current = s;
@@ -197,7 +199,7 @@ export function Battle(props: BattleProps) {
   useEffect(() => {
     const set = (e: KeyboardEvent, down: boolean): void => {
       const s = sceneBox.current;
-      if (!s || (e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) return;
+      if (!s || !ownKey(e, wrap.current)) return;
       const k = e.key;
       const map: Record<string, keyof Scene['keys']> = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down' };
       if (map[k]) {
@@ -222,19 +224,28 @@ export function Battle(props: BattleProps) {
       } else if (/^[1-7]$/.test(k)) {
         s.pickWeapon(weaponList()[Number(k) - 1]!.id);
         setTray(false);
-      } else if (k === 'q' || k === 'Q' || k === 'e' || k === 'E' || k === 'Tab') {
-        e.preventDefault();
+      } else if (k === 'q' || k === 'Q' || k === 'e' || k === 'E') {
         const list = weaponList().filter((w) => (s.shown.crews[s.shown.crewTurn]?.ammo[w.id] ?? 0) !== 0);
         const i = list.findIndex((w) => w.id === s.weapon);
         const next = list[(i + (k === 'q' || k === 'Q' ? list.length - 1 : 1)) % list.length];
         if (next) s.pickWeapon(next.id);
       } else if (k === 'z' || k === 'Z') overview(s);
-      else if (k === 'Escape') {
-        if (trayOpen.current) setTray(false);
-        else propsRef.current.onPause();
-      } else if (k === 'p' || k === 'P') propsRef.current.onPause();
+      else if (k === 'p' || k === 'P') propsRef.current.onPause();
     };
-    const down = (e: KeyboardEvent): void => set(e, true);
+    // Esc closes the weapon tray or toggles the pause from anywhere in the battle, sheets included
+    const esc = (e: KeyboardEvent): boolean => {
+      if (e.key !== 'Escape' || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return false;
+      const t = e.target;
+      if (t instanceof Node && t !== document.body && !wrap.current?.contains(t)) return false;
+      if (t instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return false;
+      e.preventDefault();
+      if (trayOpen.current) setTray(false);
+      else propsRef.current.onPause();
+      return true;
+    };
+    const down = (e: KeyboardEvent): void => {
+      if (!esc(e)) set(e, true);
+    };
     const up = (e: KeyboardEvent): void => set(e, false);
     const blur = (): void => {
       const s = sceneBox.current;
@@ -406,7 +417,7 @@ export function Battle(props: BattleProps) {
           </button>
         </div>
       </div>
-      {tip && <div className="cc-tip">Tip: turn your phone sideways to see more of the battlefield</div>}
+      {tip && !(aiming && coach && !tray) && <div className="cc-tip">Tip: turn your screen sideways to see more of the battlefield</div>}
       {hud?.sudden && !hud.over && <div className="cc-sudden">Sudden death: {TERRAINS[match.terrain].liquid.name} is rising!</div>}
       {toast && (
         <div key={toast.id} className={`cc-toast${toast.mine ? ' is-mine' : ''}`} style={{ ['--c' as string]: toast.color }}>
@@ -539,6 +550,30 @@ export function Battle(props: BattleProps) {
       {props.children}
     </div>
   );
+}
+
+/**
+ * Whether a key is a battle control: not typed into a field, not meant for a sheet or the weapon tray
+ * (their buttons keep Enter, Space and Tab), not a shortcut with Ctrl / Alt / Meta, and not from
+ * outside the battle. A focused HUD button keeps Enter and Space too.
+ */
+function ownKey(e: KeyboardEvent, root: HTMLElement | null): boolean {
+  if (e.ctrlKey || e.altKey || e.metaKey) return false;
+  const t = e.target;
+  if (!(t instanceof Element) || t === document.body) return true;
+  if (!root?.contains(t)) return false;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || (t as HTMLElement).isContentEditable) return false;
+  if (t.closest('[role=dialog],[aria-modal=true]')) return false;
+  if ((e.key === ' ' || e.key === 'Enter') && t.closest('button,a') && focusVisible(t)) return false;
+  return true;
+}
+
+function focusVisible(t: Element): boolean {
+  try {
+    return t.matches(':focus-visible');
+  } catch {
+    return false;
+  }
 }
 
 /** Zooms out to show the whole map (and back). */
