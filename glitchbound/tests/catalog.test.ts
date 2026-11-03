@@ -24,6 +24,34 @@ describe('the real registry', () => {
 });
 
 describe('validateCatalog', () => {
+  it('requires score limits for every game, so no leaderboard takes any score (PS-01)', () => {
+    for (const g of GAMES) expect(g.limits, g.slug).toBeDefined();
+    const errors = validateCatalog([fakeGame({ slug: 'none', limits: undefined }), fakeGame({ slug: 'odd', limits: { scorePerSecond: 5, stats: { nope: { max: 1 } } } })]).join('\n');
+    expect(errors).toMatch(/"none": limits are required/);
+    expect(errors).toMatch(/"odd": limits name stat "nope"/);
+  });
+
+  it('checks per-mode bests read a reported stat', () => {
+    const stats = [
+      { key: 'score', label: 'Score' },
+      { key: 'dailyScore', label: 'Best daily', of: 'nope', mode: 'daily' as const },
+      { key: 'loose', label: 'Loose', of: 'score' },
+    ];
+    const errors = validateCatalog([fakeGame({ slug: 'modes', stats, limits: { scorePerSecond: 5 } })]).join('\n');
+    expect(errors).toMatch(/"dailyScore" reads "nope"/);
+    expect(errors).toMatch(/"loose" reads another stat, so it needs a mode/);
+  });
+
+  it('makes a lower-is-better daily read as a ceiling (PS-02)', () => {
+    const stats = [
+      { key: 'score', label: 'Score' },
+      { key: 'time', label: 'Time', lowerIsBetter: true },
+    ];
+    const daily = (label: string) => validateCatalog([fakeGame({ slug: 'timed', stats, limits: { scorePerSecond: 5 }, daily: [{ metric: 'time', targets: [60], label }] })]);
+    expect(daily('Solve it in {n} seconds').join('\n')).toMatch(/must read as a ceiling/);
+    expect(daily('Solve it in under {n} seconds')).toEqual([]);
+  });
+
   it('reports duplicate and malformed slugs, bad dates and unknown daily metrics', () => {
     const errors = validateCatalog([
       fakeGame({ slug: 'dup' }),
