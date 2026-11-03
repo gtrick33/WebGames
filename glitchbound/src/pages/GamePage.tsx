@@ -540,7 +540,8 @@ export function GamePage({ game }: { game: GameEntry }) {
   const chal = useChallengeRun(challengeId, game, player.name);
   const finishChallenge = useRef(chal.finish);
   const beginChallenge = useRef(chal.begin);
-  useEffect(() => {
+  // Layout effects: current before a game mounting in the same render reports its start (see useChallengeRun).
+  useLayoutEffect(() => {
     finishChallenge.current = chal.finish;
     beginChallenge.current = chal.begin;
   });
@@ -610,7 +611,7 @@ export function GamePage({ game }: { game: GameEntry }) {
   }
   if (scoresChip && scoresOpen) setScoresChip(false);
   const stageSpecRef = useRef(stageSpec);
-  useEffect(() => {
+  useLayoutEffect(() => {
     stageSpecRef.current = stageSpec;
   }, [stageSpec]);
   const playRound = (): void => {
