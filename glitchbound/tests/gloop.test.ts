@@ -120,8 +120,8 @@ describe('Gloop', () => {
   });
 
   it('loads a jar saved before the merge hold was added', () => {
-    const s = newSim(9);
-    const { sinceMerge: _, ...old } = s;
+    const old: Partial<Sim> = newSim(9);
+    delete old.sinceMerge;
     expect(simFrom(JSON.parse(JSON.stringify(old)))?.sinceMerge).toBeGreaterThan(0);
     expect(simFrom({ ...old, sinceMerge: 'x' })).toBeNull();
   });

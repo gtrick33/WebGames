@@ -69,7 +69,7 @@
   box-shadow: 0 3px 0 var(--gl-ink);
 }
 .gl-next span {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -175,9 +175,11 @@
   position: absolute;
   top: 12px;
   right: 12px;
+  z-index: 2;
 }
 .gl-family {
   display: flex;
+  pointer-events: none;
   align-items: flex-end;
   gap: 2px;
 }
@@ -250,6 +252,26 @@
 }
 .gl-menu > :last-child {
   margin-bottom: auto;
+}
+
+/* Narrow stages: the menu starts below the sound and menu buttons, so the blob art never covers them. */
+@media (max-width: 480px) {
+  .gl-menu {
+    padding-top: 62px;
+  }
+}
+/* Short stages (a laptop's in-page stage): the whole menu fits without scrolling. */
+@media (max-height: 820px) {
+  .gl-menu {
+    gap: 8px;
+  }
+  .gl-title {
+    font-size: 44px;
+  }
+  .gl-card {
+    gap: 6px;
+    padding: 10px 14px;
+  }
 }
 
 /* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
