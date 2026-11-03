@@ -1,12 +1,12 @@
-import { challengeRow, isClosed, notifyChallenge, playerOf, viewOf } from '../../../../server/challenges';
+import { ALREADY_STARTED, attemptOf, challengeRow, isClosed, notifyChallenge, playerOf, sameAttempt, viewOf } from '../../../../server/challenges';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../../server/http';
 import { refusal } from '../../../../server/plausible';
 import { getGame } from '../../../../src/catalog/catalog';
 import { REPLAY_MAX } from '../../../../src/platform/challenge';
 
 /**
- * POST /api/challenges/<id>/score { round, score, stats?, replay?, key? }: the first finished score of a
- * round counts. It must fit the game's caps (maximum score, stats) and, when the player's start of the
+ * POST /api/challenges/<id>/score { round, score, stats?, replay?, attempt?, key? }: the first finished score of a
+ * round counts, and only from the round's attempt (the token of its first start, see start.ts). It must fit the game's caps (maximum score, stats) and, when the player's start of the
  * round was recorded (start.ts), be plausible for the time since, by the same limits as the leaderboards.
  * Without a start (a "Today's daily" round the player already finished: the game reports that result at
  * once) only the caps apply.
@@ -27,7 +27,8 @@ export async function onRequestPost({ request, env, params, waitUntil }: Ctx): P
   const stats: Record<string, number> = {};
   if (body?.stats && typeof body.stats === 'object')
     for (const [k, v] of Object.entries(body.stats as Record<string, unknown>).slice(0, 12)) if (/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(k) && typeof v === 'number' && Number.isFinite(v)) stats[k] = Math.round(v * 100) / 100;
-  const opened = await env.DB.prepare('SELECT started_at FROM challenge_starts WHERE challenge_id = ? AND round = ? AND player = ?').bind(row.id, row.round, player).first<{ started_at: number }>();
+  const opened = await env.DB.prepare('SELECT started_at, attempt FROM challenge_starts WHERE challenge_id = ? AND round = ? AND player = ?').bind(row.id, row.round, player).first<{ started_at: number; attempt: string | null }>();
+  if (opened && !sameAttempt(opened.attempt, attemptOf(body))) return bad('already_started', 409, { message: ALREADY_STARTED });
   const game = getGame(row.game);
   const reason = game ? refusal(game, score, stats, opened ? (Date.now() - opened.started_at) / 1000 : Infinity, true) : '';
   if (reason) return bad(reason, 422, { message: reason === 'too_fast' ? 'That round was too short to count, so the score was not added.' : 'That score isn’t possible for this round, so it was not added.' });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { GameEntry } from '../catalog/types';
 import { t } from '../i18n';
 import { api, ApiError } from './account';
@@ -43,6 +43,33 @@ export interface ChallengeRun {
 }
 
 const fmt = (n: number): string => n.toLocaleString('en-US');
+
+const ATTEMPTS = 'glitchbound.challengeAttempts';
+/** Attempt tokens kept per round (`id:round`), so a reload resumes the same attempt: this many, newest last. */
+const ATTEMPTS_KEPT = 40;
+
+/**
+ * This browser's token for a challenge round's one attempt: made on its first start and kept, so a reload
+ * resumes the same attempt. The server refuses a start or score under any other token (start.ts).
+ */
+export function attemptToken(round: string): string {
+  let kept: [string, string][] = [];
+  try {
+    const raw = JSON.parse(localStorage.getItem(ATTEMPTS) ?? '[]') as unknown;
+    if (Array.isArray(raw)) kept = raw.filter((e): e is [string, string] => Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'string');
+  } catch {
+    /* storage unavailable: a token for this page only */
+  }
+  const found = kept.find((e) => e[0] === round);
+  if (found) return found[1];
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, '0')).join('');
+  try {
+    localStorage.setItem(ATTEMPTS, JSON.stringify([...kept, [round, token]].slice(-ATTEMPTS_KEPT)));
+  } catch {
+    /* as above */
+  }
+  return token;
+}
 
 /** What changed between two views of a challenge, as toast text (newest first wins). */
 export function newsBetween(prev: ChallengeView, next: ChallengeView): string | null {
@@ -177,8 +204,10 @@ export function useChallengeRun(id: string | null, game: GameEntry, name: string
     return { status: 'played', view };
   }, [id, game.challenge, problem, view, spec, sent, sendError, needsReplays]);
 
+  // Kept current before the game's own effects run: a game that reports its start as it mounts (Memory Grid
+  // starts a challenge round straight away) must find the round ready, or the server never hears of the start.
   const stateRef = useRef(state);
-  useEffect(() => {
+  useLayoutEffect(() => {
     stateRef.current = state;
   });
 
@@ -190,7 +219,7 @@ export function useChallengeRun(id: string | null, game: GameEntry, name: string
       const replay = e.challenge.replay && e.challenge.replay.length <= REPLAY_MAX ? e.challenge.replay : undefined;
       setSent({ round: s.spec.round, score: e.score });
       setSendError('');
-      submitChallengeScore(s.spec.id, s.spec.round, e.score, e.stats, replay).then(
+      submitChallengeScore(s.spec.id, s.spec.round, e.score, e.stats, replay, attemptToken(`${s.spec.id}:${s.spec.round}`)).then(
         (v) => take(v, false),
         (err: unknown) => setSendError(err instanceof ApiError ? (err.message !== err.code ? err.message : t('Your score was not saved.')) : t('Your score was not saved (network).')),
       );
@@ -206,7 +235,7 @@ export function useChallengeRun(id: string | null, game: GameEntry, name: string
     const k = `${s.spec.id}:${s.spec.round}`;
     if (begun.current === k) return;
     begun.current = k;
-    api(`/api/challenges/${s.spec.id}/start`, { body: { round: s.spec.round, key: playerKey() } }).catch(() => undefined);
+    api(`/api/challenges/${s.spec.id}/start`, { body: { round: s.spec.round, attempt: attemptToken(k), key: playerKey() } }).catch(() => undefined);
   }, []);
 
   const rematch = useCallback(async (): Promise<void> => {

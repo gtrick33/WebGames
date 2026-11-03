@@ -6,6 +6,14 @@ import { clientDay } from './members';
 import { currentUser } from './session';
 import { newCode } from './shares';
 
+/** A round's attempt token (from the page's first start of it), or null when the page sent none. */
+export const attemptOf = (body: Record<string, unknown> | null): string | null => (typeof body?.attempt === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(body.attempt) ? body.attempt : null);
+
+/** Whether a start or score belongs to the round's attempt (a start recorded without a token takes any). */
+export const sameAttempt = (recorded: string | null, sent: string | null): boolean => recorded === null || recorded === sent;
+
+export const ALREADY_STARTED = 'You already started this round. A challenge round is one attempt, so it can’t be played again.';
+
 /**
  * The requesting player: a member's account, else the device key the browser sends. A member who
  * still sends this device's key first takes over what they did here as a guest (see claimGuest).

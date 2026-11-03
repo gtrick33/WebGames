@@ -108,8 +108,8 @@ export const closeChallenge = (id: string): Promise<ChallengeView | { gone: true
 
 export const joinChallenge = (id: string, name: string): Promise<ChallengeView> => api<ChallengeView>(`/api/challenges/${id}/join`, { body: { name, key: playerKey() } });
 
-export const submitChallengeScore = (id: string, round: number, score: number, stats?: Record<string, number>, replay?: string): Promise<ChallengeView> =>
-  api<ChallengeView>(`/api/challenges/${id}/score`, { body: { round, score, stats, replay, key: playerKey() } });
+export const submitChallengeScore = (id: string, round: number, score: number, stats?: Record<string, number>, replay?: string, attempt?: string): Promise<ChallengeView> =>
+  api<ChallengeView>(`/api/challenges/${id}/score`, { body: { round, score, stats, replay, attempt, key: playerKey() } });
 
 export const rematch = (id: string, round: number): Promise<ChallengeView> => api<ChallengeView>(`/api/challenges/${id}/rematch`, { body: { round, key: playerKey() } });
 
