@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { act, cleanCar, join, leave, liveRace, LEAD_MS, newRoom, replay, settleRace, tick, viewFor, type LiveCar } from '../src/games/launch-control/room';
 import { ENGINES, isGameId } from '../rooms/engines';
 import { isRoomGame } from '../server/rooms';
+import { AWAY_MS } from '../src/party/rooms/seats';
 
 const KEY_A = 'aaaaaaaaaaaaaaaaaaaa';
 const KEY_B = 'bbbbbbbbbbbbbbbbbbbb';
@@ -88,8 +89,10 @@ describe('Launch Control live: the room', () => {
     join(lobby, KEY_A, 'Ana', 0);
     join(lobby, KEY_B, 'Bo', 0);
     leave(lobby, KEY_B, 10);
-    expect(lobby.seats).toHaveLength(1);
-    expect(join(lobby, 'cccccccccccccccccccc', 'Cy', 20)).toBeNull();
+    // held for a moment in case it was only a dropped connection, then free
+    expect(join(lobby, 'cccccccccccccccccccc', 'Cy', 20)).toBe('full');
+    expect(join(lobby, 'cccccccccccccccccccc', 'Cy', 10 + AWAY_MS)).toBeNull();
+    expect(lobby.seats).toHaveLength(2);
   });
 
   it('refuses cars that are not in the game or not possible', () => {

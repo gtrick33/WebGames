@@ -85,7 +85,7 @@ export const ENGINES: Record<GameId, Engine> = {
 export const QUICK: Record<GameId, { min: number; full: number; seats: number; start?: false }> = {
   'crass-act': { min: 3, full: 6, seats: 10 },
   impostor: { min: 3, full: 6, seats: 12 },
-  nhie: { min: 3, full: 6, seats: 12 },
+  nhie: { min: 3, full: 6, seats: 16 },
   auction: { min: 2, full: 5, seats: 8 },
   board: { min: 2, full: 4, seats: 8 },
   rps: { min: 2, full: 6, seats: 12 },

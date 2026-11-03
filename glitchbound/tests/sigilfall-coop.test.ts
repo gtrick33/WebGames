@@ -15,6 +15,7 @@ import { rollGear } from '../src/games/sigilfall/progress/items';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { CoopSession } from '../src/games/sigilfall/net/coop';
 import * as room from '../src/games/sigilfall/net/room';
+import { AWAY_MS, dropAway } from '../src/party/rooms/seats';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import { World } from '../src/games/sigilfall/sim/world';
@@ -84,6 +85,8 @@ describe('sigilfall: the co-op room', () => {
     for (let i = 0; i < 2; i++) room.join(s, `extra-key-${i}-cccccccccccc`, `P${i}`, 0);
     expect(room.join(s, 'extra-key-9-cccccccccccc', 'Late', 0)).toBe('full');
     for (let i = 0; i < 2; i++) room.leave(s, `extra-key-${i}-cccccccccccc`, 0);
+    // their seats are held for a moment (a dropped connection), then the room's alarm lets them go
+    dropAway(s, AWAY_MS);
     expect(room.act(s, KEY_A, { t: 'card', card: card('Ash', 'warrior') }, 1)).toBeNull();
     expect(room.act(s, KEY_B, { t: 'card', card: { ...card('Bea', 'mage'), look: 'x'.repeat(5000) as unknown } }, 1)).toBe('bad_card');
     expect(room.act(s, KEY_B, { t: 'card', card: { ...card('Bea', 'mage'), level: 52 } }, 1)).toBeNull();

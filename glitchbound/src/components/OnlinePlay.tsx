@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { listRooms, quickMatch, type ListedRoom, type RoomGame, type RoomListing } from '../platform/rooms';
+import { createRoom, listRooms, quickMatch, roomInfo, seatedName, type GoneCode, type ListedRoom, type RoomGame, type RoomListing } from '../platform/rooms';
 import { t } from '../i18n';
 import './OnlinePlay.css';
 
@@ -10,10 +10,18 @@ import './OnlinePlay.css';
  * seat, in a window of their own). The game says how it opens and joins its rooms.
  */
 
-/** Quick match sends players straight in under the name they play by: the name to join with, or null to ask. */
+/**
+ * Quick match sends players straight in under the name they play by, and a reload (or a dropped phone
+ * coming back) of a room you were just in takes you back to your seat under the name you had there:
+ * the name to join with, or null to ask.
+ */
 export function matchedName(name: string): string | null {
-  const ok = typeof location !== 'undefined' && new URLSearchParams(location.search).get('match') === '1';
-  return ok && name.trim() ? name.trim().slice(0, 20) : null;
+  if (typeof location === 'undefined') return null;
+  const q = new URLSearchParams(location.search);
+  const room = q.get('room');
+  const back = room ? seatedName(room) : null;
+  if (back) return back.slice(0, 20);
+  return q.get('match') === '1' && name.trim() ? name.trim().slice(0, 20) : null;
 }
 
 /** The games' names and faces in the room list. */
@@ -86,7 +94,15 @@ export function OnlinePlay({
     setSearch({ stage: 'looking' });
     const started = Date.now();
     try {
-      const found = await quickMatch(game);
+      // the room it picked may have filled up meanwhile: ask again, skipping it (a few times at most)
+      const skip: string[] = [];
+      let found = await quickMatch(game);
+      while (!found.created && skip.length < 3) {
+        const info = await roomInfo(found.code);
+        if (info && !info.full) break;
+        skip.push(found.code);
+        found = await quickMatch(game, skip);
+      }
       await new Promise((r) => setTimeout(r, Math.max(0, SEARCH_MIN_MS - (Date.now() - started))));
       if (cancelled.current) return;
       setSearch({ stage: found.created ? 'new' : 'found', code: found.code });
@@ -354,6 +370,49 @@ export function RoomListingBar({ listing, host, players, min, skew = 0, onListed
         <button className="op-btn op-mini" onClick={() => onListed(!listing.listed)}>
           {listing.listed ? t('Make private') : t('Make public')}
         </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * A next step on a room's closed, not-found or full screen, so a player is never left with only Back:
+ * Quick match (into another room, skipping this one) and Open a new room (public). `onRoom` goes into the
+ * room it found or opened, as the game does it. `code`: why the room sent them away ('kicked' offers only a
+ * new room of their own; 'replaced' nothing, as they are playing in another tab).
+ */
+export function RoomNextStep({ game, room, code = 'closed', onRoom, className = '' }: { game: RoomGame; room?: string; code?: GoneCode | ''; onRoom: (code: string, matched: boolean) => void; className?: string }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  if (code === 'replaced') return null;
+  const go = async (how: 'match' | 'new'): Promise<void> => {
+    setBusy(true);
+    setErr('');
+    try {
+      if (how === 'match') {
+        const found = await quickMatch(game, room ? [room] : []);
+        onRoom(found.code, true);
+      } else onRoom(await createRoom(game, true), false);
+    } catch (e) {
+      setErr(e instanceof Error ? t(e.message) : t('Could not open a room. Try again.'));
+    }
+    setBusy(false);
+  };
+  return (
+    <div className={`op-next ${className}`} style={{ display: 'grid', gap: 10 }}>
+      {code !== 'kicked' && game !== 'sigilfall' && (
+        <button className="op-btn op-quick" onClick={() => void go('match')} disabled={busy}>
+          <span aria-hidden="true">⚡️</span> {t('Quick match')}
+          <small>{t('Join players looking for a game')}</small>
+        </button>
+      )}
+      <button className="op-btn op-make" onClick={() => void go('new')} disabled={busy}>
+        {busy ? t('Opening…') : t('Open a new room')}
+      </button>
+      {err && (
+        <p className="op-err" role="alert">
+          {err}
+        </p>
       )}
     </div>
   );
