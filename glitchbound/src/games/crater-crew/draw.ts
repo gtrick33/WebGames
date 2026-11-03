@@ -259,6 +259,14 @@ function drawTags(c: Ctx, s: Scene, alpha: number): void {
     // crosshair gets the space above your head
     const aiming = isActive && s.myTurn;
     const y = y0 - 20;
+    if (aiming && s.youLabel) {
+      // a first battle: say which one is yours
+      c.font = `900 12.5px ${FONT}`;
+      const nw = c.measureText('This is you').width + 16;
+      pill(c, x - nw / 2, y - 48, nw, 18, color, INK);
+      c.fillStyle = '#14101f';
+      c.fillText('This is you', x, y - 38.5);
+    }
     if (!aiming) {
       c.font = `800 12.5px ${FONT}`;
       const name = crew.name.length > 14 ? `${crew.name.slice(0, 13)}…` : crew.name;
@@ -273,7 +281,8 @@ function drawTags(c: Ctx, s: Scene, alpha: number): void {
     pill(c, x - hw / 2, y + 10, hw, 14, hp <= 25 ? '#ff6b6b' : color, INK);
     c.fillStyle = '#14101f';
     c.fillText(hs, x, y + 17.5);
-    if (isActive && !aiming && (s.stage.k === 'aim' || s.stage.k === 'think' || s.stage.k === 'swing' || s.stage.k === 'intro')) {
+    // the bouncing arrow over whoever plays, yours included (running from your dynamite too)
+    if (isActive && (s.stage.k === 'aim' || s.stage.k === 'think' || s.stage.k === 'swing' || s.stage.k === 'intro' || s.stage.k === 'run')) {
       const b = Math.sin(s.t * 6) * 3;
       c.fillStyle = color;
       c.strokeStyle = INK;

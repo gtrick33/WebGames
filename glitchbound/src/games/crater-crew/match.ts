@@ -169,13 +169,14 @@ function cleanRuns(raw: unknown, max: number): [number, number][] | null {
 }
 
 /**
- * A turn from the network, checked (null: not a turn). Walks are clipped to the longest allowed; a run
+ * A turn from the network, checked (null: not a turn). Walks are clipped to the longest allowed (the
+ * turn's own clock, in a room); a run
  * after the shot is kept only for a weapon that allows one.
  */
-export function cleanInput(raw: unknown): TurnInput | null {
+export function cleanInput(raw: unknown, maxWalk = MAX_WALK): TurnInput | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as { walk?: unknown; fire?: unknown; run?: unknown };
-  const walk = cleanRuns(r.walk, MAX_WALK);
+  const walk = cleanRuns(r.walk, Math.min(MAX_WALK, maxWalk));
   if (!walk) return null;
   let f: Fire | null = null;
   if (r.fire !== null && r.fire !== undefined) {

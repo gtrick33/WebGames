@@ -53,6 +53,8 @@ export interface State extends RoomBase {
   /** When the crew to play started waiting on a player who has left. */
   awaySince: number | null;
   battles: number;
+  /** Seats that chose to watch: a rematch or the lobby leaves them out until they join (older rooms: none). */
+  watching?: number[];
 }
 
 export function newRoom(code: string, now: number, seed: number): State {
@@ -77,7 +79,15 @@ export function newRoom(code: string, now: number, seed: number): State {
     moveAt: null,
     awaySince: null,
     battles: 0,
+    watching: [],
   };
+}
+
+const watches = (s: State, n: number): boolean => !!s.watching?.includes(n);
+/** Every seat here that hasn't chosen to watch takes a place again (a rematch, or back to the lobby). */
+function reseat(s: State): void {
+  for (const seat of s.seats) if (seat.online && !watches(s, seat.n)) seatIn(s, seat.n);
+  s.picks = s.picks.filter((p) => seatByN(s, p.n)?.online);
 }
 
 const taken = (s: State): CharId[] => [...s.picks.map((p) => p.char), ...s.bots.map((b) => b.char)];
@@ -92,7 +102,8 @@ function seatIn(s: State, n: number): void {
 export function join(s: State, key: string, name: string, now: number): string | null {
   const err = joinSeat(s, key, name, now, MAX_PLAYERS, s.phase === 'play');
   if (err) return err;
-  if (s.phase !== 'play') seatIn(s, seatOf(s, key)!.n);
+  const n = seatOf(s, key)!.n;
+  if (s.phase !== 'play' && !watches(s, n)) seatIn(s, n);
   schedule(s, now);
   return null;
 }
@@ -235,19 +246,22 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       s.turnSecs = a.n;
       return done();
     case 'play':
-      if (s.phase === 'play') return null;
+      s.watching = (s.watching ?? []).filter((n) => n !== me.n);
+      // during a battle it only says "count me in for the next one"
+      if (s.phase === 'play') return done();
       if (crewCount(s) >= MAX_CREWS && !s.picks.some((p) => p.n === me.n)) return 'All six crews are taken.';
       seatIn(s, me.n);
       return done();
     case 'watch':
-      if (s.phase === 'play') return null;
+      if (!watches(s, me.n)) (s.watching ??= []).push(me.n);
+      if (s.phase === 'play') return done();
       s.picks = s.picks.filter((p) => p.n !== me.n);
       return done();
     case 'start':
     case 'again':
       if (!host || (a.t === 'start' ? !lobby : s.phase !== 'over')) return null;
-      if (a.t === 'again') for (const seat of s.seats) if (seat.online) seatIn(s, seat.n);
-      s.picks = s.picks.filter((p) => seatByN(s, p.n)?.online);
+      if (a.t === 'again') reseat(s);
+      else s.picks = s.picks.filter((p) => seatByN(s, p.n)?.online);
       if (crewCount(s) < 2) return 'Two crews are needed: invite a friend or add a computer crew.';
       startBattle(s, now);
       return done();
@@ -255,14 +269,14 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (!host || s.phase !== 'over') return null;
       s.phase = 'lobby';
       s.match = null;
-      for (const seat of s.seats) if (seat.online) seatIn(s, seat.n);
-      s.picks = s.picks.filter((p) => seatByN(s, p.n)?.online);
+      reseat(s);
       return done();
     case 'turn': {
       const m = s.match;
       if (s.phase !== 'play' || !m || m.over || a.turn !== m.turn) return null;
       if (m.crews[m.crewTurn]?.seat !== me.n) return 'It isn’t your turn.';
-      const input = cleanInput(a);
+      // no longer a walk than the turn's clock (and the room's grace) allows
+      const input = cleanInput(a, Math.round((m.turnSecs * 1000 + GRACE_MS) / 1000 / STEP));
       if (!input) return 'That turn didn’t make sense.';
       apply(s, input, now);
       return done();
@@ -310,6 +324,8 @@ export interface RoomView {
   match: Match | null;
   turnAt: number;
   deadline: number | null;
+  /** You chose to watch: the next battle leaves you out until you join. */
+  watching: boolean;
 }
 
 export function viewFor(s: State, key: string): RoomView | null {
@@ -330,6 +346,7 @@ export function viewFor(s: State, key: string): RoomView | null {
     match: s.match,
     turnAt: s.turnAt,
     deadline: s.deadline,
+    watching: watches(s, me.n),
   };
 }
 

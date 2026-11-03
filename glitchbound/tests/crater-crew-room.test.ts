@@ -170,6 +170,49 @@ describe('crater crew live room', () => {
     expect(s.phase).toBe('play');
     expect(s.battles).toBe(2);
   }, 60_000);
+
+  it('leaves out players who chose to watch from a rematch and the lobby, until they join again', () => {
+    const s = newRoom('ABCDE', 0, 8);
+    join(s, A, 'Ana', 1);
+    join(s, B, 'Bo', 2);
+    join(s, C, 'Cy', 3);
+    act(s, C, { t: 'watch' }, 4);
+    act(s, A, { t: 'start' }, 5);
+    expect(s.match!.crews.map((c) => c.name)).toEqual(['Ana', 'Bo']);
+    // the battle ends (a quick way: Bo leaves and their turns pass until Ana wins or the turns run out)
+    s.phase = 'over';
+    s.match = { ...s.match!, over: true, winner: 0 };
+    expect(viewFor(s, C)!.watching).toBe(true);
+    act(s, A, { t: 'again' }, 6);
+    expect(s.match!.crews.map((c) => c.name)).toEqual(['Ana', 'Bo']);
+    s.phase = 'over';
+    act(s, A, { t: 'lobby' }, 7);
+    expect(s.picks.map((p) => p.n)).toEqual([1, 2]);
+    // joining again counts for the next battles
+    act(s, C, { t: 'play' }, 10);
+    expect(s.picks.map((p) => p.n)).toEqual([1, 2, 3]);
+    expect(viewFor(s, C)!.watching).toBe(false);
+    // a player can also choose on the results sheet
+    act(s, A, { t: 'start' }, 11);
+    s.phase = 'over';
+    act(s, B, { t: 'watch' }, 12);
+    act(s, A, { t: 'again' }, 13);
+    expect(s.match!.crews.map((c) => c.name)).toEqual(['Ana', 'Cy']);
+  });
+
+  it('never replays a walk longer than the turn allows', () => {
+    const s = newRoom('ABCDE', 0, 5);
+    join(s, A, 'Ana', 1);
+    join(s, B, 'Bo', 2);
+    act(s, A, { t: 'time', n: 20 }, 3);
+    act(s, A, { t: 'start' }, 4);
+    const m = s.match!;
+    const key = keyOf(s, m.crews[m.crewTurn]!.seat);
+    expect(act(s, key, { t: 'turn', turn: m.turn, walk: [[IN_RIGHT, 1500], [IN_LEFT, 1500]], fire: null }, s.turnAt + 1000)).toBeNull();
+    const walk = s.match!.last!.input.walk;
+    // 20 s and the room's grace, at 60 steps a second
+    expect(walk.reduce((n, [, k]) => n + k, 0)).toBe(Math.round((20 + GRACE_MS / 1000) * 60));
+  });
 });
 
 const taken = (s: State): number => s.picks.length + s.bots.length;
