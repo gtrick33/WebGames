@@ -1,7 +1,7 @@
 import type { GameEntry } from '../catalog/types';
 import type { EndEvent } from './contract';
 import { addDays, dayKey } from './dates';
-import { challengeForDay, metricValue } from './daily';
+import { better, challengeForDay, isDone, metricValue, modeStats, roundKind } from './daily';
 import { currentSlug } from '../catalog/catalog';
 
 /**
@@ -80,7 +80,9 @@ export interface RoundResult {
 export function applyRound(save: Save, game: GameEntry, event: EndEvent, games: GameEntry[], now: Date = new Date()): RoundResult {
   const rec = (save.games[game.slug] ??= { plays: 0, best: {}, last: 0 });
   const firstPlay = rec.plays === 0;
-  const values: Record<string, number> = { ...event.stats, score: event.score };
+  // A per-mode best counts only its kind of round (see StatDef.mode).
+  const stats = modeStats(game, event.score, event.stats ?? {}, roundKind(event));
+  const values: Record<string, number> = { ...stats, score: event.score };
   const newBests: string[] = [];
   for (const stat of game.stats) {
     const v = values[stat.key];
@@ -99,10 +101,10 @@ export function applyRound(save: Save, game: GameEntry, event: EndEvent, games: 
   const today = dayKey(now);
   const challenge = challengeForDay(today, games);
   if (challenge && challenge.game.slug === game.slug) {
-    const value = metricValue(challenge.metric, event);
+    const value = metricValue(challenge.metric, { ...event, stats });
     const d = (save.daily[today] ??= { best: 0, done: false });
-    d.best = Math.max(d.best, value);
-    if (!d.done && value >= challenge.target) {
+    d.best = better(challenge, d.best, value);
+    if (!d.done && isDone(challenge, value)) {
       d.done = true;
       dailyCompleted = true;
     }
@@ -150,7 +152,8 @@ export function mergeSaves(a: Save, b: Save, games: GameEntry[], today: string):
   }
   for (const [day, d] of Object.entries(b.daily)) {
     const x = out.daily[day];
-    out.daily[day] = x ? { best: Math.max(x.best, d.best), done: x.done || d.done } : { ...d };
+    const c = x ? challengeForDay(day, games) : null;
+    out.daily[day] = x ? { best: c ? better(c, x.best, d.best) : Math.max(x.best, d.best), done: x.done || d.done } : { ...d };
   }
   for (const [day, list] of Object.entries(b.gameDailies)) out.gameDailies[day] = [...new Set([...(out.gameDailies[day] ?? []), ...list])];
   pruneDaily(out, today);
