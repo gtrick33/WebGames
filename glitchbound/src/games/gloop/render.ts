@@ -1,5 +1,5 @@
 /** Canvas drawing for Gloop. Rendering only; positions come from sim.ts. */
-import { canDrop, DROP_Y, H, LINE, nextTier, RADII, W, type Sim } from './sim';
+import { canDrop, culprit, DROP_Y, H, LINE, nextTier, OVER_AFTER, RADII, settling, W, type Sim } from './sim';
 
 type C = CanvasRenderingContext2D;
 const INK = '#2a1446';
@@ -141,6 +141,27 @@ export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: numb
     ctx.save();
     ctx.translate(b.x, b.y);
     drawBlob(ctx, b.tier, b.r, t, b.pop, b.id);
+    ctx.restore();
+  }
+
+  // The blob about to end the jar: a ring that runs down with its overflow clock (white while the
+  // clock waits for merges to finish).
+  const worst = culprit(s);
+  if (worst && !s.over && worst.high > 0.15) {
+    const left = Math.max(0, 1 - worst.high / OVER_AFTER);
+    const ring = worst.r + 7;
+    const held = settling(s);
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(42,20,70,0.25)';
+    ctx.beginPath();
+    ctx.arc(worst.x, worst.y, ring, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = held ? '#ffffff' : '#ff2850';
+    ctx.beginPath();
+    ctx.arc(worst.x, worst.y, ring, -Math.PI / 2, -Math.PI / 2 + left * Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 

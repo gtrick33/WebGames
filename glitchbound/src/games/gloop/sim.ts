@@ -12,14 +12,14 @@ export const LINE = 120;
 export const DROP_Y = 62;
 export const STEP = 1 / 120;
 const GRAVITY = 1500;
-const OVER_AFTER = 1.6;
+export const OVER_AFTER = 1.6;
 /** A blob counts as over the line only past the dashed line's stroke (3 px) and a little margin. */
 const OVER_MARGIN = 3;
 /** While blobs are still merging (a chain reaction clearing the jar), the overflow clocks wait. */
 const MERGE_HOLD = 0.4;
 /** Correction passes per step: enough that a small blob pinned in a corner gets out from under a big one. */
 const PASSES = 6;
-const DROP_COOLDOWN = 0.45;
+export const DROP_COOLDOWN = 0.45;
 
 /** Radius and merge points per size; the biggest two merging pop for a bonus. */
 export const RADII = [15, 20, 26, 33, 40, 48, 57, 67, 78, 90, 104];
@@ -117,6 +117,14 @@ export function simFrom(v: unknown): Sim | null {
   return { seed: o.seed, blobs, dealt: o.dealt, aim: o.aim as number, cooldown: o.cooldown as number, score: o.score, merges: o.merges, biggest: o.biggest, t: o.t as number, over: false, danger: o.danger as number, nextId: o.nextId, started: o.started, sinceMerge: num(o.sinceMerge) ? Math.max(0, o.sinceMerge) : MERGE_HOLD };
 }
 export const canDrop = (s: Sim): boolean => !s.over && s.cooldown <= 0;
+/** True while the overflow clocks wait for merges to finish. */
+export const settling = (s: Sim): boolean => s.sinceMerge < MERGE_HOLD;
+/** The blob closest to ending the round (the longest over the line), if any is over it. */
+export function culprit(s: Sim): Blob | null {
+  let worst: Blob | null = null;
+  for (const b of s.blobs) if (b.high > 0 && (!worst || b.high > worst.high)) worst = b;
+  return worst;
+}
 
 /** Moves the dropper, keeping the blob inside the jar. */
 export function setAim(s: Sim, x: number): void {

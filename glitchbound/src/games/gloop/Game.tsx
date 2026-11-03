@@ -349,6 +349,8 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
     let last = performance.now();
     let acc = 0;
     let kept = sim.current?.t ?? 0;
+    // Which quarter of the overflow clock last ticked, so each quarter ticks once.
+    let ticked = 0;
     const frame = (now: number): void => {
       const s = sim.current;
       const c = canvas.current;
@@ -376,6 +378,9 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
             }
           }
         }
+        const quarter = Math.floor(s.danger * 4);
+        if (quarter > ticked && !s.over) sfx().tick();
+        ticked = quarter;
         for (const f of flashes.current) f.age += dt;
         flashes.current = flashes.current.filter((f) => f.age < 0.5);
         if (s.t - kept >= 2) {

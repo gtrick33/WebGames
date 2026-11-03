@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getGame } from '../src/catalog/catalog';
-import { canDrop, drop, H, LINE, newSim, nextTier, POINTS, RADII, resultLine, setAim, simFrom, step, STEP, tierAt, TIERS, W, type Blob, type Sim } from '../src/games/gloop/sim';
+import { canDrop, culprit, drop, H, LINE, newSim, nextTier, POINTS, RADII, resultLine, setAim, simFrom, step, STEP, tierAt, TIERS, W, type Blob, type Sim } from '../src/games/gloop/sim';
 
 /** Autopilot: drop on top of a blob of the same size when there is one, else spread along the jar. */
 function autoplay(seed: number, seconds: number): Sim {
@@ -85,6 +85,13 @@ describe('Gloop', () => {
     s.blobs[0]!.vy = 0;
     for (let i = 0; i < 0.2 / STEP && !s.over; i++) step(s);
     expect(s.over).toBe(true);
+  });
+
+  it('points at the blob closest to ending the jar, for the warning ring', () => {
+    const s = newSim(1);
+    expect(culprit(s)).toBeNull();
+    s.blobs.push(blob(1, 0, 100, 60, { high: 0.4 }), blob(2, 1, 200, 60, { high: 0.9 }), blob(3, 2, 300, 500));
+    expect(culprit(s)?.id).toBe(2);
   });
 
   it('counts a blob as over the line only past the line’s stroke', () => {
