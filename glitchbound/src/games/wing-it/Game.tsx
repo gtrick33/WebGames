@@ -5,7 +5,7 @@ import { dayKey, daysBetween, hashString } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { NextDaily } from '../../components/NextDaily';
-import { drawBird, drawFrame, newView } from './render';
+import { drawBird, drawFrame, newView, POP_LIFE, type Pop } from './render';
 import { biomeFor, BIRD_R, flap, flightLine, GROUND, MEDAL_ICON, medalFor, newSim, runPoints, step, STEP, type Medal, type Sim } from './sim';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
@@ -208,6 +208,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
   const deadAt = useRef(0);
+  const pops = useRef<Pop[]>([]);
   useEffect(
     () => () => {
       sfxRef.current?.dispose();
@@ -230,6 +231,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
     setFlightDay(m === 'daily' ? day : null);
     setMode(m);
     sim.current = newSim(m === 'daily' ? courseSeed(day) : (Math.random() * 2 ** 32) >>> 0);
+    pops.current = [];
     setResult(null);
     setPaused(false);
     const fresh = { score: 0, feathers: 0, dead: false, started: false, biome: 'meadow' };
@@ -379,7 +381,10 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
           const wasDead = s.dead;
           for (const e of step(s)) {
             if (e === 'score') sfx().point();
-            else if (e === 'feather') sfx().feather();
+            else if (e === 'feather') {
+              sfx().feather();
+              pops.current.push({ dist: s.dist, y: s.y, at: now / 1000 });
+            }
             else if (e === 'crash') sfx().crash();
           }
           if (!wasDead && s.dead) {
@@ -390,7 +395,8 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
         }
       }
       if (acc > STEP) acc %= STEP;
-      drawFrame(c, view, s, now / 1000, paused ? 1 : acc / STEP);
+      if (pops.current.length) pops.current = pops.current.filter((p) => now / 1000 - p.at < POP_LIFE);
+      drawFrame(c, view, s, now / 1000, paused ? 1 : acc / STEP, pops.current);
       // React only hears about the HUD when it changes (a score), never once per frame.
       const h = hudRef.current;
       if (h.score !== s.score || h.feathers !== s.feathers || h.dead !== s.dead || h.started !== s.started) {
@@ -499,9 +505,17 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
   return (
     <div className="wi" ref={root}>
       <canvas ref={canvas} className="wi-canvas" onPointerDown={(e) => (e.button === 0 || e.pointerType !== 'mouse') && tap()} aria-label="Wing It. Tap or press Space to flap." />
+      {/* The big number is the points the result and the scoreboard rank; medals and worlds go by gaps. */}
       <div className="wi-hud" aria-live="polite">
-        <span className="wi-score">{hud.score}</span>
-        {hud.feathers > 0 && <span className="wi-feathers">🪶 {hud.feathers}</span>}
+        <span className="wi-score" aria-label={`${hud.score + hud.feathers * 3} points`}>
+          {hud.score + hud.feathers * 3}
+        </span>
+        {hud.started && (
+          <span className="wi-feathers">
+            {gapsText(hud.score)}
+            {hud.feathers > 0 && ` · 🪶 ${hud.feathers}`}
+          </span>
+        )}
       </div>
       {/* In a challenge the round is one flight: no way back to the game's own menu before it is flown. */}
       {(flying || mode !== 'challenge') && (

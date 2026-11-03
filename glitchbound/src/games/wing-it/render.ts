@@ -195,11 +195,19 @@ export interface View {
 
 export const newView = (): View => ({ cw: 0, ch: 0, ctx: null, sky: null, skyKey: '' });
 
+/** A "+3" that floats up where a golden feather was picked up: the course distance, height and wall time. */
+export interface Pop {
+  dist: number;
+  y: number;
+  at: number;
+}
+export const POP_LIFE = 0.9;
+
 /**
  * Draws a frame. `t` is wall time in seconds (for idle animation); `alpha` (0-1) places the frame
  * between the last two physics steps, so motion stays smooth whatever the display's refresh rate.
  */
-export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: number, alpha = 1): void {
+export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: number, alpha = 1, pops: readonly Pop[] = []): void {
   // A cartoon look needs no more than 2x pixels; 3x screens would triple the fill work for nothing.
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const cw = view.cw || canvas.clientWidth;
@@ -302,5 +310,23 @@ export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: numb
   }
 
   drawBird(ctx, BIRD_X, y, s.started ? s.vy : 0, s.flapT, t, s.dead);
+  if (pops.length) {
+    ctx.font = '900 26px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 5;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = INK;
+    ctx.fillStyle = '#ffd23f';
+    for (const p of pops) {
+      const age = t - p.at;
+      if (age < 0 || age > POP_LIFE) continue;
+      ctx.globalAlpha = 1 - age / POP_LIFE;
+      const px = BIRD_X + 24 + (p.dist - dist);
+      const py = p.y - 30 - age * 60;
+      ctx.strokeText('+3', px, py);
+      ctx.fillText('+3', px, py);
+    }
+    ctx.globalAlpha = 1;
+  }
   ctx.restore();
 }

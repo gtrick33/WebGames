@@ -210,3 +210,15 @@ describe('Wing It: friends’ challenge rounds are one flight', () => {
     expect(screen.getByText(/your best that day counts here/)).toBeTruthy();
   });
 });
+
+describe('Wing It: the HUD', () => {
+  it('shows points, the number the result and the scoreboard rank, with the gaps below', () => {
+    const c = clock();
+    render(<Game host={{ report: vi.fn() }} restartKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Fly endless' }));
+    expect(screen.getByLabelText('0 points')).toBeTruthy();
+    takeOff();
+    c.run(100);
+    expect(screen.getByText('0 gaps')).toBeTruthy();
+  });
+});
