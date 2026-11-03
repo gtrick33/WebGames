@@ -29,9 +29,14 @@ export interface DailyResult {
   cleared: number;
   score: number;
   accuracy: number;
+  /** Longest sequence (saves from before it was kept have none). */
+  longest?: number;
 }
 
-/** Where an unfinished Daily Challenge stands: the next pattern to play and the totals so far. */
+/**
+ * Where an unfinished run stands: the next pattern to play and the totals so far. `shown` is set to `round`
+ * once that pattern's playback has begun: a run left after that has used its look and ends there as a slip.
+ */
 export interface DailyProgress {
   day: string;
   round: number;
@@ -41,6 +46,13 @@ export interface DailyProgress {
   taps: number;
   correctTaps: number;
   inputMs: number;
+  shown?: number;
+}
+
+/** A friends' challenge round (keyed `id:round`): where it stands, and whether its end was reported. */
+export interface ChallengeProgress extends DailyProgress {
+  done?: boolean;
+  complete?: boolean;
 }
 
 export interface Records {
@@ -52,6 +64,8 @@ export interface Records {
   dailyStarted?: string;
   /** Today's unfinished Daily Challenge, saved after every cleared pattern so leaving or reloading resumes it. */
   dailyRun?: DailyProgress;
+  /** Friends' challenge rounds played on this device: one attempt each, kept for a month. */
+  challenges?: Record<string, ChallengeProgress>;
   streak: { last: string | null; count: number; best: number };
   muted: boolean;
 }
@@ -61,7 +75,7 @@ export function emptyRecords(): Records {
 }
 
 /** Whole days from a to b for YYYY-MM-DD keys. */
-function dayDiff(a: string, b: string): number {
+export function dayDiff(a: string, b: string): number {
   const t = (k: string) => Date.UTC(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, Number(k.slice(8, 10)));
   return Math.round((t(b) - t(a)) / 86_400_000);
 }
@@ -126,16 +140,79 @@ export function recordRun(prev: Records, run: RunSummary, today: string): Record
   const officialDaily = run.mode === 'daily' && !playedDailyToday(prev, today);
   if (officialDaily) {
     delete records.dailyRun;
-    records.daily = { day: today, cleared: run.cleared, score: run.score, accuracy: run.accuracy };
+    records.daily = { day: today, cleared: run.cleared, score: run.score, accuracy: run.accuracy, longest: run.longest };
     const count = liveStreak(prev, today) + 1;
     records.streak = { last: today, count, best: Math.max(prev.streak.best, count) };
   }
   return { records, newBest, place, officialDaily };
 }
 
+/** A run's totals so far as a finished run (ended by a slip, or by leaving after a pattern was shown). */
+export function progressSummary(p: DailyProgress, mode: RunSummary['mode'], complete = false): RunSummary {
+  const accuracy = p.taps > 0 ? Math.round((p.correctTaps / p.taps) * 100) : 0;
+  return { mode, score: p.score, cleared: p.cleared, longest: p.longest, accuracy, taps: p.taps, inputMs: p.inputMs, complete };
+}
+
+export interface Settled {
+  records: Records;
+  /** The daily that was ended, and its day; undefined when only a stale leftover was dropped. */
+  summary?: RunSummary;
+  day?: string;
+}
+
+/**
+ * Ends a Daily Challenge that can't go on, so its points and the streak day still count: one from an
+ * earlier day (recorded under its own day), today's when its pattern was shown before the player left
+ * (one slip ends it), or one started before unfinished runs were saved. Null when there is nothing to settle.
+ */
+export function settleDaily(r: Records, today: string): Settled | null {
+  const dr = r.dailyRun;
+  if (dr) {
+    if (r.daily && dayDiff(dr.day, r.daily.day) >= 0) {
+      const records = { ...r };
+      delete records.dailyRun;
+      return { records };
+    }
+    const past = dayDiff(dr.day, today) > 0;
+    if (!past && !(dr.day === today && dr.shown === dr.round)) return null;
+    const summary = progressSummary(dr, 'daily');
+    return { records: recordRun(r, summary, dr.day).records, summary, day: dr.day };
+  }
+  if (r.dailyStarted === today && !playedDailyToday(r, today)) {
+    const summary: RunSummary = { mode: 'daily', score: 0, cleared: 0, longest: 0, accuracy: 0, taps: 0, inputMs: 0, complete: false };
+    return { records: recordRun(r, summary, today).records, summary, day: today };
+  }
+  return null;
+}
+
+/** Drops challenge rounds older than a month (they can't be played any more). */
+export function pruneChallenges(c: Records['challenges'], today: string): Records['challenges'] {
+  if (!c) return c;
+  const keep = Object.entries(c).filter(([, p]) => Math.abs(dayDiff(p.day, today)) <= 31);
+  return Object.fromEntries(keep.slice(-50));
+}
+
 /* ------------------------------------------------------------------ persistence */
 
-const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+/** Caps for stored values: anything beyond is not a real run (a tampered or corrupt save) and is dropped. */
+const MAX_ROUND = 500;
+const MAX_SCORE = 10_000_000;
+const MAX_TAPS = 1_000_000;
+const MAX_MS = 100_000_000;
+const MAX_DAYS = 100_000;
+
+const isNum = (v: unknown, max = MAX_SCORE): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max;
+
+function parseProgress(v: unknown): DailyProgress | null {
+  const dr = v as Record<string, unknown> | null | undefined;
+  if (!dr || typeof dr !== 'object' || !isDay(dr.day)) return null;
+  if (!isNum(dr.round, MAX_ROUND) || dr.round < 1 || !isNum(dr.cleared, MAX_ROUND) || dr.cleared >= dr.round || !isNum(dr.longest, MAX_ROUND + 5)) return null;
+  if (!isNum(dr.score) || !isNum(dr.taps, MAX_TAPS) || !isNum(dr.correctTaps, MAX_TAPS) || !isNum(dr.inputMs, MAX_MS)) return null;
+  const n = (k: string): number => Math.floor(dr[k] as number);
+  const p: DailyProgress = { day: dr.day, round: n('round'), cleared: n('cleared'), longest: n('longest'), score: n('score'), taps: n('taps'), correctTaps: Math.min(n('correctTaps'), n('taps')), inputMs: n('inputMs') };
+  if (dr.shown === p.round) p.shown = p.round;
+  return p;
+}
 const isDay = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 /** Parses stored JSON, keeping only well-formed parts. */
@@ -153,26 +230,36 @@ export function parseRecords(raw: string | null): Records {
   const board = (data.board ?? {}) as Record<string, unknown>;
   for (const m of MODES) {
     const b = best[m];
-    if (b && isNum(b.score) && isNum(b.longest) && isNum(b.accuracy) && isNum(b.plays)) {
+    if (b && isNum(b.score) && isNum(b.longest, MAX_ROUND + 5) && isNum(b.accuracy, 100) && isNum(b.plays, MAX_TAPS)) {
       r.best[m] = { score: b.score, longest: b.longest, accuracy: b.accuracy, plays: b.plays, ...(isNum(b.fastest) ? { fastest: b.fastest } : {}) };
     }
     const rows = board[m];
     if (Array.isArray(rows)) {
       r.board[m] = rows
-        .filter((x): x is BoardRow => !!x && isNum((x as BoardRow).score) && isNum((x as BoardRow).longest) && isDay((x as BoardRow).day))
+        .filter((x): x is BoardRow => !!x && isNum((x as BoardRow).score) && isNum((x as BoardRow).longest, MAX_ROUND + 5) && isDay((x as BoardRow).day))
         .slice(0, BOARD_SIZE)
         .map(({ score, longest, day }) => ({ score, longest, day }));
     }
   }
   const d = data.daily as Record<string, unknown> | null | undefined;
-  if (d && isDay(d.day) && isNum(d.cleared) && isNum(d.score) && isNum(d.accuracy)) r.daily = { day: d.day, cleared: d.cleared, score: d.score, accuracy: d.accuracy };
+  if (d && isDay(d.day) && isNum(d.cleared, MAX_ROUND) && isNum(d.score) && isNum(d.accuracy, 100)) {
+    r.daily = { day: d.day, cleared: d.cleared, score: d.score, accuracy: d.accuracy, ...(isNum(d.longest, MAX_ROUND + 5) ? { longest: d.longest } : {}) };
+  }
   const s = data.streak as Record<string, unknown> | undefined;
-  if (s && isNum(s.count) && isNum(s.best) && (s.last === null || isDay(s.last))) r.streak = { last: s.last as string | null, count: s.count, best: s.best };
+  if (s && isNum(s.count, MAX_DAYS) && isNum(s.best, MAX_DAYS) && (s.last === null || isDay(s.last))) r.streak = { last: s.last as string | null, count: s.count, best: s.best };
   if (isDay(data.dailyStarted)) r.dailyStarted = data.dailyStarted;
-  const dr = data.dailyRun as Record<string, unknown> | undefined;
-  if (dr && isDay(dr.day) && [dr.round, dr.cleared, dr.longest, dr.score, dr.taps, dr.correctTaps, dr.inputMs].every(isNum) && (dr.round as number) >= 1) {
-    const n = (k: string): number => Math.floor(dr[k] as number);
-    r.dailyRun = { day: dr.day, round: n('round'), cleared: n('cleared'), longest: n('longest'), score: n('score'), taps: n('taps'), correctTaps: Math.min(n('correctTaps'), n('taps')), inputMs: n('inputMs') };
+  const dr = parseProgress(data.dailyRun);
+  if (dr) r.dailyRun = dr;
+  const ch = data.challenges as Record<string, unknown> | undefined;
+  if (ch && typeof ch === 'object' && !Array.isArray(ch)) {
+    const out: Record<string, ChallengeProgress> = {};
+    for (const [k, v] of Object.entries(ch).slice(-50)) {
+      const p = parseProgress(v);
+      if (!p || k.length > 120) continue;
+      const raw = v as Record<string, unknown>;
+      out[k] = { ...p, ...(raw.done === true ? { done: true } : {}), ...(raw.complete === true ? { complete: true } : {}) };
+    }
+    r.challenges = out;
   }
   r.muted = data.muted === true;
   return r;
@@ -183,6 +270,15 @@ export function loadRecords(): Records {
     return parseRecords(window.localStorage.getItem(RECORDS_KEY));
   } catch {
     return emptyRecords();
+  }
+}
+
+/** The stored records, for a read-modify-write (another tab may have saved since); `fallback` when storage is blocked. */
+export function freshRecords(fallback: Records): Records {
+  try {
+    return parseRecords(window.localStorage.getItem(RECORDS_KEY));
+  } catch {
+    return fallback;
   }
 }
 
