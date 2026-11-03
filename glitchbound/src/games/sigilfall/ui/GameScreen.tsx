@@ -584,10 +584,14 @@ function TravelConfirm({ engine }: { engine: SigilEngine }) {
 function PauseMenu({ engine }: { engine: SigilEngine }) {
   const [leaving, setLeaving] = useState(false);
   const w = engine.world!;
+  // in a party the world goes on behind this menu; the leader's leaving ends the run for everyone
+  const party = !!engine.coop;
+  const leads = engine.coop?.role === 'host' && engine.party?.view?.mode === 'rift';
   return (
     <div className="rb-modal">
-      <div className="rb-card rb-pause" role="dialog" aria-modal="true" aria-label="Paused">
-        <h2>Paused</h2>
+      <div className="rb-card rb-pause" role="dialog" aria-modal="true" aria-label={party ? 'Menu' : 'Paused'}>
+        <h2>{party ? 'Menu' : 'Paused'}</h2>
+        {party && <p className="rb-dim rb-small">Not paused: your party fights on.</p>}
         <button className="rb-btn is-gold is-big" onClick={() => engine.togglePause()} autoFocus>
           Resume
         </button>
@@ -595,9 +599,10 @@ function PauseMenu({ engine }: { engine: SigilEngine }) {
           Settings
         </button>
         {!w.safe &&
+          engine.canGoHome &&
           (leaving ? (
             <button className="rb-btn is-danger" onClick={() => engine.returnHome()}>
-              Leave the expedition? You keep everything you found.
+              {leads ? 'End the run for the whole party? You keep everything you found.' : 'Leave the expedition? You keep everything you found.'}
             </button>
           ) : (
             <button className="rb-btn" onClick={() => setLeaving(true)}>
@@ -619,11 +624,11 @@ function DeathScreen({ engine }: { engine: SigilEngine }) {
     <div className="rb-modal is-dark">
       <div className="rb-card rb-death" role="dialog" aria-modal="true" aria-label="You have fallen">
         <h2>You have fallen</h2>
-        <p className="rb-dim">Everything you found is safe. The room you fell in resets.</p>
+        <p className="rb-dim">{engine.coop ? 'Everything you found is safe. Your party fights on: rise beside them.' : 'Everything you found is safe. The room you fell in resets.'}</p>
         <button className="rb-btn is-gold is-big" onClick={() => engine.respawn()} autoFocus>
           Rise again
         </button>
-        {!w.safe && (
+        {!w.safe && engine.canGoHome && (
           <button className="rb-btn" onClick={() => engine.returnHome()}>
             Return to {REGIONS[HOME].name}
           </button>
@@ -695,9 +700,11 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
               Riftstone +{h.keystone} here
             </button>
           )}
-          <button className="rb-btn is-gold" onClick={() => engine.returnHome()} autoFocus>
-            Return to {REGIONS[HOME].name}
-          </button>
+          {engine.canGoHome && (
+            <button className="rb-btn is-gold" onClick={() => engine.returnHome()} autoFocus>
+              Return to {REGIONS[HOME].name}
+            </button>
+          )}
         </div>
       </div>
     </div>
