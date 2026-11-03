@@ -202,6 +202,33 @@ function paintSword(g: CanvasRenderingContext2D, h: number): void {
   shape('#ffcf5a', true);
 }
 
+/** Light falling from the sky onto (x, y), fading out toward the top so it never ends in a hard edge. */
+function skyBeam(g: CanvasRenderingContext2D, x: number, y: number, w: number, color: string, alpha: number): void {
+  const top = y - 170;
+  const fade = (c: string): CanvasGradient => {
+    const grad = g.createLinearGradient(0, top, 0, y);
+    grad.addColorStop(0, `${c}00`);
+    grad.addColorStop(0.6, `${c}cc`);
+    grad.addColorStop(1, c);
+    return grad;
+  };
+  g.globalAlpha = Math.max(0, alpha);
+  g.fillStyle = fade(color);
+  g.fillRect(x - w / 2, top, w, y - top);
+  g.fillStyle = fade('#ffffff');
+  g.fillRect(x - w * 0.22, top, w * 0.44, y - top);
+  // where it meets the ground
+  g.fillStyle = color;
+  g.beginPath();
+  g.ellipse(x, y, w * 0.7, w * 0.28, 0, 0, TAU);
+  g.fill();
+  g.fillStyle = '#ffffff';
+  g.beginPath();
+  g.ellipse(x, y, w * 0.4, w * 0.15, 0, 0, TAU);
+  g.fill();
+  g.globalAlpha = 1;
+}
+
 /** Where something is about to land: a thin mark, not a ring of its own. */
 function mark(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, alpha: number): void {
   g.globalAlpha = Math.max(0, alpha);
@@ -785,7 +812,7 @@ export class VigilPainter implements LandLayer {
         const size = Math.max(40, r * 1.5);
         loop(g, art, 'bolt', f.el, f.t, sx, sy, size, { rot: Math.atan2(190, -70), ahead: size * 0.25 });
       } else if (look === 'column') {
-        play(g, art, 'teleport', f.el, fall * 0.5, f.x, f.y, Math.min(70, r * 1.6), { feet: true, h: Math.min(130, r * 3.4) });
+        skyBeam(g, f.x, f.y, Math.max(3, Math.min(40, r * 0.8) * fall * 0.35), f.color, 0.5 + fall * 0.5);
       } else if (look === 'portal') {
         play(g, art, 'portal', f.el, fall, f.x, f.y, Math.min(90, r * 2.2), { h: Math.min(62, r * 1.5) });
       } else if (look === 'blade') {
@@ -796,7 +823,7 @@ export class VigilPainter implements LandLayer {
     const u = (f.t - at) / (f.dur - at);
     ring(g, f.x, f.y, r * (0.3 + easeOut(u) * 0.8), f.color, 3 - u * 2.4, 1 - u);
     stampGlow(g, f.color, f.x, f.y - r * 0.2, r * 1.3, (1 - u) * 0.55);
-    if (look === 'column') play(g, art, 'teleport', f.el, 0.5 + u * 0.5, f.x, f.y, Math.min(70, r * 1.6), { feet: true, h: Math.min(130, r * 3.4) });
+    if (look === 'column') skyBeam(g, f.x, f.y, Math.min(40, r * 0.8) * (1 - u * 0.75), f.color, 1 - u * u);
     else if (look === 'portal') play(g, art, 'arcane_blast', f.el, u, f.x, f.y, Math.min(90, r * 2.2), { h: Math.min(72, r * 1.8) });
     else if (look === 'blade') this.drawBlade(g, f, r, f.y, 1 - u);
     this.drawBlast(g, art, f.el, u, f.x, f.y - r * 0.2, r);
@@ -824,8 +851,10 @@ export class VigilPainter implements LandLayer {
     }
     const u = (f.t - at) / (f.dur - at);
     ring(g, f.x, f.y, r * (0.4 + easeOut(u) * 0.7), f.color, 1.6 - u * 1.2, 1 - u);
-    if (moon) play(g, art, 'teleport', f.el, u, f.x, f.y, r * 1.8, { feet: true, h: r * 4 });
-    else if (f.el === 'poison') play(g, art, 'poison', f.el, u, f.x, f.y - r * 0.2, r * 2.2);
+    if (moon) {
+      skyBeam(g, f.x, f.y, r * 0.9 * (1 - u * 0.7), f.color, 1 - u * u);
+      play(g, art, 'impact', f.el, u, f.x, f.y, r * 1.8);
+    } else if (f.el === 'poison') play(g, art, 'poison', f.el, u, f.x, f.y - r * 0.2, r * 2.2);
     else play(g, art, 'impact', f.el, u, f.x, f.y, r * 2.4);
   }
 
