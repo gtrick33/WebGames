@@ -75,3 +75,13 @@ describe('embedded games', () => {
     expect(screen.getByTitle('Emb game')).toBeTruthy();
   });
 });
+
+describe('safe areas in play mode', () => {
+  it('marks the games that handle the screen insets themselves, so the stage leaves them the whole screen', () => {
+    const own = render(<GameStage game={fakeGame({ slug: 'backgammon', title: 'Backgammon' })} onEvent={vi.fn()} stageRef={createRef()} />);
+    expect(own.container.querySelector('.stage')?.classList.contains('stage-own-insets')).toBe(true);
+    own.unmount();
+    const kept = render(<GameStage game={fakeGame({ slug: 'works', title: 'Works' })} onEvent={vi.fn()} stageRef={createRef()} />);
+    expect(kept.container.querySelector('.stage')?.classList.contains('stage-own-insets')).toBe(false);
+  });
+});
