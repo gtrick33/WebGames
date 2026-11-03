@@ -231,6 +231,20 @@ describe('Dial It In room', () => {
     dial.leave(s, KEYS[2]!, T0);
     expect(s.phase).toBe('lobby');
   });
+  it('does not wait out the clock when nobody on the reader’s team is left to guess', () => {
+    const s = room(4, true);
+    const reader = s.round!.reader;
+    const side = s.sides.find((t) => t.includes(reader))!;
+    const keyOf = (n: number): string => s.seats.find((x) => x.n === n)!.key;
+    dial.act(s, keyOf(reader), { t: 'clue', text: 'lukewarm' }, T0 + 100);
+    expect(s.phase).toBe('guess');
+    for (const n of side.filter((n) => n !== reader)) dial.leave(s, keyOf(n), T0 + 200);
+    expect(s.deadline).toBe(T0 + 200 + dial.GUESS_GRACE_MS);
+    dial.tick(s, T0 + 200 + dial.GUESS_GRACE_MS);
+    expect(s.phase).toBe('reveal');
+    expect(s.round!.points).toBe(0);
+    expect(s.team).toEqual([0, 0]);
+  });
 });
 
 describe('Hue Knew? room', () => {
@@ -329,5 +343,40 @@ describe('Hue Knew? room', () => {
     const s = room(2);
     hues.leave(s, KEYS[1]!, T0);
     expect(s.phase).toBe('lobby');
+  });
+  it('moves on by itself when the cue giver leaves while picking (after a short grace)', () => {
+    const s = room(3);
+    hues.leave(s, KEYS[0]!, T0 + 1000);
+    expect(s.phase).toBe('pick');
+    expect(s.deadline).toBe(T0 + 1000 + hues.CUE_GRACE_MS);
+    hues.tick(s, T0 + 1000 + hues.CUE_GRACE_MS);
+    expect(s.phase).toBe('reveal');
+    // A reload in time gets the full clock back.
+    const s2 = room(3);
+    const was = s2.deadline!;
+    hues.leave(s2, KEYS[0]!, T0 + 1000);
+    hues.join(s2, KEYS[0]!, 'P1', T0 + 3000);
+    expect(s2.deadline).toBe(was);
+  });
+
+  it('skips the cue giver turn of someone who left, so nobody gives the cue twice', () => {
+    const s = room(3);
+    const cues = [s.round!.cue];
+    hues.leave(s, KEYS[1]!, T0 + 10);
+    runClock(s, hues.tick, (x) => {
+      if (x.round && x.round.cue !== cues.at(-1)) cues.push(x.round.cue);
+      return x.phase === 'result';
+    });
+    expect(s.phase).toBe('result');
+    expect(cues).toEqual([1, 3]);
+  });
+
+  it('moves a guess one cell at a time, staying on the board', async () => {
+    const { nudge } = await import('../src/party/ui/room/HuesRoom');
+    expect(nudge(0, -1, -1)).toBe(0);
+    expect(nudge(0, 1, 0)).toBe(1);
+    expect(nudge(0, 0, 1)).toBe(18);
+    expect(nudge(17, 1, 0)).toBe(17);
+    expect(nudge(179, 0, 1)).toBe(179);
   });
 });

@@ -95,19 +95,21 @@ export function AuctionMode({ session, update, onExit }: { session: PartySession
         onAgain={() => update((s) => ({ ...s, active: null }))}
         onMenu={onExit}
       >
-        <p className="pt-muted">{t('Score = 3 per group vote + 1 per item. House rules welcome: argue it out!')}</p>
+        <p className="pt-muted">{t('Score = 3 per group vote + 1 per item. House rules welcome: argue it out!')} {t('Empty collections can’t get votes.')}</p>
         <div className="pt-collections">
           {state.players.map((p) => {
             const sum = sums.find((x) => x.id === p.id)!;
             return (
-              <div key={p.id} className="pt-collection">
+              <div key={p.id} className={`pt-collection${p.items.length ? '' : ' is-empty'}`}>
                 <div className="pt-collection-head">
                   <Avatar player={player(p.id)} size={32} />
                   <b>{player(p.id).name}</b>
                   <span className="pt-muted">{t('${n} left', { n: sum.left })}</span>
-                  <button className="pt-btn pt-btn-sm" onClick={() => setVotes((v) => ({ ...v, [p.id]: (v[p.id] ?? 0) + 1 }))}>
-                    👍 {votes[p.id] ?? 0}
-                  </button>
+                  {p.items.length > 0 && (
+                    <button className="pt-btn pt-btn-sm" onClick={() => setVotes((v) => ({ ...v, [p.id]: (v[p.id] ?? 0) + 1 }))}>
+                      👍 {votes[p.id] ?? 0}
+                    </button>
+                  )}
                 </div>
                 <ul>
                   {p.items.length ? (

@@ -41,10 +41,10 @@ export function PartyRoomPage({ code, onLeave }: { code: string; onLeave: () => 
       <div className="pt-screen">
         <ModeBar title={`Room ${code}`} onExit={onLeave} />
         <section className="pt-panel pt-center">
-          <h2>{t('This room has closed')}</h2>
-          <p className="pt-muted">{t('Rooms close after three quiet hours. Open a new one and send the link.')}</p>
+          <h2>{t('We can’t find room {code}', { code })}</h2>
+          <p className="pt-muted">{t('Check the code, or it closed after three quiet hours. Pick a game in Party Mode to open a new room or quick match.')}</p>
           <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            {t('Back to Party Mode')}
+            {t('Open a new room or quick match')}
           </button>
         </section>
       </div>

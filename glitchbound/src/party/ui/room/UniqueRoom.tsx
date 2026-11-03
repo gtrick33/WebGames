@@ -12,7 +12,7 @@ export function UniqueRoomPage({ code, onLeave }: { code: string; onLeave: () =>
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'One of a Kind', emoji: '🦄', invite: 'Join my One of a Kind room: one-word clues on our own phones, and matching clues cancel out.', min: MIN_PLAYERS }}
+      meta={{ game: 'unique', title: 'One of a Kind', emoji: '🦄', invite: 'Join my One of a Kind room: one-word clues on our own phones, and matching clues cancel out.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.phase === 'lobby' ? undefined : t('🃏 {n} left · ✅ {score}', { n: v.cardsLeft, score: v.score }))}

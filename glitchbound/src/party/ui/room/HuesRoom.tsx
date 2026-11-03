@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { tNodes } from '../shared';
-import { cellHex, cueBonus, explainHues } from '../../hues';
+import { cellHex, COLS, cueBonus, explainHues, ROWS } from '../../hues';
 import { CLOCKS, LAPS, MIN_PLAYERS, type Action, type RoomView } from '../../rooms/huesRoom';
 import { Board, HueLegend, type BoardMark } from '../Hues';
 import { Clock, Dot, RoomFrame, Scores, seatColor, Waiting, type RoomContext } from './RoomFrame';
@@ -13,7 +13,7 @@ export function HuesRoomPage({ code, onLeave }: { code: string; onLeave: () => v
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Hue Knew?', emoji: '🎨', invite: 'Join my Hue Knew? room: one-word color clues, and everyone taps their guess on their own phone.', min: MIN_PLAYERS }}
+      meta={{ game: 'hues', title: 'Hue Knew?', emoji: '🎨', invite: 'Join my Hue Knew? room: one-word color clues, and everyone taps their guess on their own phone.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.phase === 'lobby' || v.phase === 'result' ? undefined : `${v.count}/${v.total}`)}
@@ -258,23 +258,58 @@ function PickColour({ send, round }: Ctx & { round: Round }) {
   );
 }
 
-function PlaceGuess({ send, me, round, earlier }: Ctx & { round: Round; earlier: BoardMark[] }) {
-  const [tap, setTap] = useState<number | null>(null);
-  const mine = tap ?? round.myMark;
+/** Moves a board cell one step (the board is COLS hues across, ROWS shades down), staying on the board. */
+export function nudge(cell: number, dx: number, dy: number): number {
+  const col = Math.min(COLS - 1, Math.max(0, (cell % COLS) + dx));
+  const row = Math.min(ROWS - 1, Math.max(0, Math.floor(cell / COLS) + dy));
+  return row * COLS + col;
+}
+
+/**
+ * Tap to place your marker, fine-tune it with the arrows (the cells are small on a phone), then lock
+ * it in: only a locked guess counts, so a slip of the finger can be fixed. A placed guess is locked in
+ * by itself when the clock runs out.
+ */
+function PlaceGuess({ view, send, me, round, earlier, left }: Ctx & { round: Round; earlier: BoardMark[] }) {
+  const [spot, setSpot] = useState<number | null>(round.myMark);
+  const locked = spot !== null && spot === round.myMark;
+  const lock = (): void => {
+    if (spot !== null) send({ t: 'mark', cell: spot });
+  };
+  useEffect(() => {
+    if (left !== null && left <= 1 && spot !== null && spot !== round.myMark) send({ t: 'mark', cell: spot });
+  }, [left, spot, round.myMark, send]);
+  const inCount = view.players.filter((p) => round.guessers.includes(p.n) && p.done).length;
+  const move = (dx: number, dy: number) => () => spot !== null && setSpot(nudge(spot, dx, dy));
   return (
     <section className="pt-panel">
-      <p className="pt-kicker">{round.pass === 2 ? t('Second clue: guess again!') : mine === null ? t('Tap your guess on the board') : t('Locked in. Tap again to change it until everyone is in.')}</p>
-      <Board
-        target={null}
-        marks={earlier}
-        pending={mine}
-        pendingGlyph={me.name.slice(0, 1).toUpperCase()}
-        pendingColor={seatColor(me.n)}
-        onPick={(cell) => {
-          setTap(cell);
-          send({ t: 'mark', cell });
-        }}
-      />
+      <p className="pt-kicker">
+        {spot === null ? (round.pass === 2 ? t('Second clue: guess again! Tap the board') : t('Tap your guess on the board')) : locked ? t('Locked in. You can still move it and lock again until everyone is in.') : t('Fine-tune it, then lock it in')}
+      </p>
+      <Board target={null} marks={earlier} pending={spot} pendingGlyph={me.name.slice(0, 1).toUpperCase()} pendingColor={seatColor(me.n)} onPick={setSpot} />
+      {spot !== null && (
+        <div className="pt-hk-fine">
+          <span className="pt-hk-zoom" style={{ background: cellHex(spot) }} role="img" aria-label={t('Your guess, color {n}', { n: spot + 1 })} />
+          <div className="pt-hk-pad" role="group" aria-label={t('Move your guess')}>
+            <button className="pt-btn pt-hk-up" onClick={move(0, -1)} aria-label={t('Paler')}>
+              ▲
+            </button>
+            <button className="pt-btn pt-hk-left" onClick={move(-1, 0)} aria-label={t('Move left')}>
+              ◀
+            </button>
+            <button className="pt-btn pt-hk-right" onClick={move(1, 0)} aria-label={t('Move right')}>
+              ▶
+            </button>
+            <button className="pt-btn pt-hk-down" onClick={move(0, 1)} aria-label={t('Deeper')}>
+              ▼
+            </button>
+          </div>
+        </div>
+      )}
+      <button className="pt-btn pt-btn-go pt-btn-big" disabled={spot === null || locked} onClick={lock}>
+        {locked ? t('Locked in ✓') : t('Lock in my guess')}
+      </button>
+      <p className="pt-muted pt-center">{t('{n} of {m} locked in', { n: inCount, m: round.guessers.length })}</p>
     </section>
   );
 }

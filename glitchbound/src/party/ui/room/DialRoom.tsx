@@ -17,7 +17,7 @@ export function DialRoomPage({ code, onLeave }: { code: string; onLeave: () => v
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Dial It In', emoji: '📻', invite: 'Join my Dial It In room: one clue, and we all turn the needle on our own phones.', min: MIN_PLAYERS }}
+      meta={{ game: 'dial', title: 'Dial It In', emoji: '📻', invite: 'Join my Dial It In room: one clue, and we all turn the needle on our own phones.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.phase === 'lobby' || v.phase === 'result' ? undefined : `${v.count}/${v.total}`)}

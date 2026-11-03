@@ -12,7 +12,7 @@ export function BoardRoomPage({ code, onLeave }: { code: string; onLeave: () => 
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Dice Adventure', emoji: '🎲', invite: 'Join my Dice Adventure: roll, race and dodge the slides.', min: MIN_PLAYERS }}
+      meta={{ game: 'board', title: 'Dice Adventure', emoji: '🎲', invite: 'Join my Dice Adventure: roll, race and dodge the slides.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.board && v.phase === 'play' ? `Turn ${v.board.turn + 1}` : undefined)}

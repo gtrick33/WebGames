@@ -162,6 +162,31 @@ describe('Scribble Scramble room', () => {
     expect(s2.phase).toBe('lobby');
   });
 
+  it('skips the turn of someone who left: nobody draws twice in "everyone draws once"', () => {
+    const s = started(3);
+    const drawers = [s.turn!.drawer];
+    room.leave(s, KEYS[1]!, T0 + 10);
+    let now = T0 + 10;
+    for (let guard = 0; guard < 200 && s.phase !== 'result'; guard++) {
+      now = Math.max(now, s.deadline ?? now) + 1;
+      room.tick(s, now);
+      if (s.phase === 'choose' && s.turn!.drawer !== drawers.at(-1)) drawers.push(s.turn!.drawer);
+    }
+    expect(s.phase).toBe('result');
+    expect(drawers).toEqual([1, 3]);
+  });
+
+  it('says so when a guess comes too fast, instead of dropping it silently', () => {
+    const s = started(3);
+    const drawer = keyOf(s, s.turn!.drawer);
+    expect(room.act(s, drawer, { t: 'pick', tier: 0 }, T0 + 10)).toBeNull();
+    expect(s.phase).toBe('draw');
+    const guesser = KEYS.slice(0, 3).find((k) => k !== drawer)!;
+    expect(room.act(s, guesser, { t: 'say', text: 'first try' }, T0 + 100)).toBeNull();
+    expect(room.act(s, guesser, { t: 'say', text: 'second try' }, T0 + 100 + room.CHAT_GAP_MS - 50)).toMatch(/Too fast/);
+    expect(room.act(s, guesser, { t: 'say', text: 'second try' }, T0 + 100 + room.CHAT_GAP_MS + 1)).toBeNull();
+  });
+
   it('only lets the host change settings, between games', () => {
     const s = room.newRoom('ABCDE', T0, 1);
     room.join(s, KEYS[0]!, 'Host', T0);

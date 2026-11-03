@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { setGuestName, usePlayerName } from '../../../platform/playerName';
-import { roomInfo, useRoom } from '../../../platform/rooms';
+import { createRoom, roomInfo, useRoom, type RoomGame } from '../../../platform/rooms';
+import { navigate } from '../../../router/router';
 import { shareOrCopy } from '../../../platform/share';
 import type { SeatView } from '../../rooms/seats';
 import { ModeBar } from '../shared';
 import { matchedName, RoomListingBar } from '../../../components/OnlinePlay';
 import { t } from '../../../i18n';
+import { cleanRoomName, forgetRoom, lastRoomName, rememberRoomName, ROOM_NAME_MAX, roomNameFor } from './roomName';
 
 const COLORS = ['#ff5a6c', '#ffb020', '#2fd1a0', '#3d7bff', '#a45cff', '#ff7eb6', '#12c6b3', '#ff8a1f', '#8ad13b', '#5b6cff', '#e64c9a', '#00a6d6'];
 export const seatColor = (n: number): string => COLORS[(n - 1) % COLORS.length]!;
@@ -101,6 +103,7 @@ export interface FrameView {
 }
 
 export interface RoomGameMeta {
+  game: RoomGame;
   title: string;
   emoji: string;
   /** The invite message (the link is added). */
@@ -118,6 +121,105 @@ export interface RoomContext<V, A> {
   skew: number;
   me: SeatView;
   byN: (n: number | null | undefined) => SeatView | undefined;
+}
+
+/**
+ * A room you can't play in (closed, full, removed): open a new room of the same game right here, or
+ * go back to Party Mode.
+ */
+export function DeadEnd({ game, gameTitle, title, heading, text, onLeave }: { game: RoomGame; gameTitle: string; title: string; heading: string; text?: string; onLeave: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState('');
+  const open = async (): Promise<void> => {
+    setBusy(true);
+    setProblem('');
+    try {
+      navigate(`/party?room=${await createRoom(game)}`);
+    } catch (e) {
+      setProblem(t(e instanceof Error ? e.message : 'Could not open a room. Try again.'));
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="pt-screen">
+      <ModeBar title={title} onExit={onLeave} />
+      <section className="pt-panel pt-center">
+        <h2>{heading}</h2>
+        {text && <p className="pt-muted">{text}</p>}
+        <button className="pt-btn pt-btn-go" onClick={() => void open()} disabled={busy}>
+          {t('Open a new {game} room', { game: t(gameTitle) })}
+        </button>
+        <button className="pt-btn" onClick={onLeave}>
+          {t('Back to Party Mode')}
+        </button>
+        {problem && <p role="alert">{problem}</p>}
+      </section>
+    </div>
+  );
+}
+
+/**
+ * The name to join room `code` under: quick match's, or the one this browser joined the room under
+ * before, so a reload goes straight back to the seat. `note` is a save problem to show in the room.
+ */
+export function useJoinName(code: string) {
+  const player = usePlayerName();
+  const [name, setName] = useState<string | null>(() => matchedName(player.name) ?? roomNameFor(code));
+  // Straight back in after a reload (not a quick-match arrival): say hello again.
+  const [back] = useState(() => !matchedName(player.name) && roomNameFor(code) !== null);
+  const [note, setNote] = useState('');
+  const join = (raw: string): void => {
+    const n = cleanRoomName(raw);
+    if (!n) return;
+    // The arcade nickname follows when it fits the arcade's rule (3-14 plain characters); the room keeps the name either way.
+    if (!player.member) setGuestName(n);
+    const error = rememberRoomName(code, n);
+    setNote(error ? t(error) : '');
+    setName(n);
+  };
+  return { name, back, join, note, prefill: lastRoomName() ?? player.name, forget: () => forgetRoom(code) };
+}
+
+/** "Welcome back" for a few seconds after a reload put you straight back in your seat. */
+export function WelcomeBack({ name, extra = '' }: { name: string; extra?: string }) {
+  const [shown, setShown] = useState(true);
+  useEffect(() => {
+    const id = window.setTimeout(() => setShown(false), 4000);
+    return () => window.clearTimeout(id);
+  }, []);
+  return shown ? (
+    <p className="pt-room-toast" role="status">
+      {t('Welcome back, {name}!', { name })}
+      {extra && ` ${extra}`}
+    </p>
+  ) : null;
+}
+
+/** The one-time "Join the room" form. */
+export function JoinForm({ title, emoji, prefill, onJoin, onLeave }: { title: string; emoji: string; prefill: string; onJoin: (name: string) => void; onLeave: () => void }) {
+  const [draft, setDraft] = useState(prefill);
+  return (
+    <div className="pt-screen">
+      <ModeBar title={title} onExit={onLeave} />
+      <form
+        className="pt-panel pt-imp-join"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onJoin(draft);
+        }}
+      >
+        <p className="pt-imp-badge">{emoji}</p>
+        <h2>{t('Join the room')}</h2>
+        <label className="pt-label" htmlFor="pt-room-name">
+          {t('Your name (so friends know who’s who)')}
+        </label>
+        <input id="pt-room-name" className="pt-input" value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={ROOM_NAME_MAX} autoFocus enterKeyHint="go" />
+        <button className="pt-btn pt-btn-go pt-btn-big" disabled={!cleanRoomName(draft)}>
+          {t('Join')}
+        </button>
+      </form>
+    </div>
+  );
 }
 
 /**
@@ -145,9 +247,11 @@ export function RoomFrame<V extends FrameView, A>({
   onRelay?: (data: unknown) => void;
   children: (ctx: RoomContext<V, A>) => ReactNode;
 }) {
-  const player = usePlayerName();
-  const [name, setName] = useState<string | null>(() => matchedName(player.name));
-  const [draft, setDraft] = useState(player.name);
+  const { name, back, join, note, prefill, forget } = useJoinName(code);
+  const leave = (): void => {
+    forget();
+    onLeave();
+  };
   const [missing, setMissing] = useState(false);
   useEffect(() => {
     let live = true;
@@ -158,45 +262,11 @@ export function RoomFrame<V extends FrameView, A>({
   }, [code]);
   if (missing)
     return (
-      <div className="pt-screen">
-        <ModeBar title={t('{game} room', { game: t(meta.title) })} onExit={onLeave} />
-        <section className="pt-panel pt-center">
-          <h2>{t('This room has closed')}</h2>
-          <p className="pt-muted">{t('Rooms close after three quiet hours. Open a new one and send the link.')}</p>
-          <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            {t('Back to Party Mode')}
-          </button>
-        </section>
-      </div>
+      <DeadEnd game={meta.game} gameTitle={meta.title} title={t('{game} room', { game: t(meta.title) })} heading={t('This room has closed')} text={t('Rooms close after three quiet hours. Open a new one and send the link.')} onLeave={onLeave} />
     );
-  if (name === null)
-    return (
-      <div className="pt-screen">
-        <ModeBar title={`${t(meta.title)} · ${t('room {code}', { code })}`} onExit={onLeave} />
-        <form
-          className="pt-panel pt-imp-join"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const n = draft.trim().slice(0, 20);
-            if (!n) return;
-            if (!player.member) setGuestName(n);
-            setName(n);
-          }}
-        >
-          <p className="pt-imp-badge">{meta.emoji}</p>
-          <h2>{t('Join the room')}</h2>
-          <label className="pt-label" htmlFor="pt-room-name">
-            {t('Your name (so friends know who’s who)')}
-          </label>
-          <input id="pt-room-name" className="pt-input" value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={20} autoFocus enterKeyHint="go" />
-          <button className="pt-btn pt-btn-go pt-btn-big" disabled={!draft.trim()}>
-            {t('Join')}
-          </button>
-        </form>
-      </div>
-    );
+  if (name === null) return <JoinForm title={`${t(meta.title)} · ${t('room {code}', { code })}`} emoji={meta.emoji} prefill={prefill} onJoin={join} onLeave={onLeave} />;
   return (
-    <Connected code={code} name={name} meta={meta} onLeave={onLeave} kick={kick} progress={progress} settings={settings} onRelay={onRelay}>
+    <Connected code={code} name={name} back={back} note={note} meta={meta} onLeave={leave} kick={kick} progress={progress} settings={settings} onRelay={onRelay}>
       {children}
     </Connected>
   );
@@ -205,6 +275,8 @@ export function RoomFrame<V extends FrameView, A>({
 function Connected<V extends FrameView, A>({
   code,
   name,
+  back,
+  note,
   meta,
   onLeave,
   kick,
@@ -215,6 +287,8 @@ function Connected<V extends FrameView, A>({
 }: {
   code: string;
   name: string;
+  back: boolean;
+  note: string;
   meta: RoomGameMeta;
   onLeave: () => void;
   kick: (n: number) => A;
@@ -236,18 +310,7 @@ function Connected<V extends FrameView, A>({
   };
 
   const bar = <ModeBar title={`${t(meta.title)} · ${code}`} progress={view && !gone ? progress?.(view) : undefined} onExit={onLeave} />;
-  if (gone)
-    return (
-      <div className="pt-screen">
-        {bar}
-        <section className="pt-panel pt-center">
-          <h2>{gone}</h2>
-          <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            {t('Back to Party Mode')}
-          </button>
-        </section>
-      </div>
-    );
+  if (gone) return <DeadEnd game={meta.game} gameTitle={meta.title} title={`${t(meta.title)} · ${code}`} heading={gone} onLeave={onLeave} />;
   if (!view)
     return (
       <div className="pt-screen">
@@ -263,6 +326,12 @@ function Connected<V extends FrameView, A>({
     <div className="pt-screen" ref={screen}>
       {bar}
       <RoomNotice error={error} conn={conn} />
+      {back && !error && conn === 'open' && <WelcomeBack name={me.name} />}
+      {note && (
+        <p className="pt-muted pt-center" role="status">
+          {note}
+        </p>
+      )}
       {view.phase === 'lobby' ? (
         <>
           <RoomListingBar listing={listing} host={view.host} players={here} min={meta.min} skew={skew} onListed={setListed} />

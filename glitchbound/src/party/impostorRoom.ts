@@ -15,8 +15,12 @@ export const NAME_MAX = 20;
 export const TALK_TIMES = [0, 120, 180, 300] as const;
 const VOTE_SECONDS = 75;
 const GUESS_SECONDS = 30;
+/** Someone who dropped out this long ago (a reload, a dropped phone connection) still has a vote coming. */
+export const AWAY_GRACE_MS = 20_000;
 
 export type Phase = 'lobby' | 'reveal' | 'talk' | 'vote' | 'guess' | 'result';
+/** Why the last round was called off: too few players left to vote fairly, or no impostor left in it. */
+export type CalledOff = 'players' | 'impostor';
 
 export interface Settings {
   /** Theme ids to deal from (empty = all). */
@@ -64,6 +68,10 @@ export interface State {
   deadline: number | null;
   used: string[];
   seed: number;
+  /** In-round seats that dropped out, and when (they still count for AWAY_GRACE_MS). */
+  away?: Record<string, number>;
+  /** The last round ended early, with no points. */
+  calledOff?: CalledOff | null;
 }
 
 export const validKey = (k: unknown): k is string => typeof k === 'string' && /^[A-Za-z0-9_-]{16,64}$/.test(k);
@@ -106,6 +114,9 @@ export function newRoom(code: string, now: number, seed: number): State {
 
 const seatOf = (s: State, key: string): Seat | undefined => s.seats.find((x) => x.key === key);
 const active = (s: State): Seat[] => s.seats.filter((x) => s.playing.includes(x.n) && x.online);
+/** In the round and connected, or dropped out less than AWAY_GRACE_MS ago (they may be reloading). */
+const present = (s: State, now: number): Seat[] => s.seats.filter((x) => s.playing.includes(x.n) && (x.online || now - (s.away?.[String(x.n)] ?? -Infinity) < AWAY_GRACE_MS));
+const inRound = (s: State): boolean => s.phase !== 'lobby' && s.phase !== 'result';
 
 function nextRandom(s: State): number {
   s.seed = (s.seed + 0x9e3779b9) >>> 0;
@@ -117,6 +128,7 @@ export function join(s: State, key: string, rawName: string, now: number): strin
   const name = cleanName(rawName) || 'Player';
   if (seat) {
     seat.online = true;
+    if (s.away) delete s.away[String(seat.n)];
     if (name !== 'Player') seat.name = uniqueName(s, name, seat.n);
   } else {
     if (s.seats.length >= MAX_PLAYERS) return 'full';
@@ -139,6 +151,7 @@ export function leave(s: State, key: string, now: number): void {
   const seat = seatOf(s, key);
   if (!seat) return;
   seat.online = false;
+  if (inRound(s)) (s.away ??= {})[String(seat.n)] = now;
   if (s.host === seat.n) s.host = s.seats.find((x) => x.online)?.n ?? s.host;
   // Nothing to keep for someone who leaves the lobby before scoring: no ghost seat, and their name is free again.
   if (s.phase === 'lobby' && seat.score === 0) s.seats = s.seats.filter((x) => x !== seat);
@@ -146,15 +159,20 @@ export function leave(s: State, key: string, now: number): void {
   advance(s, now);
 }
 
-/** Moves on when everyone still here has done their part. */
+/** Moves on when everyone still here has done their part (a vote waits for someone who is only reloading). */
 function advance(s: State, now: number): void {
   const here = active(s);
-  if (s.phase === 'reveal' && here.length && here.every((x) => s.seen.includes(x.n))) toTalk(s, now);
-  else if (s.phase === 'vote' && here.length && here.every((x) => String(x.n) in s.votes)) tally(s, now);
-  else if (s.phase !== 'lobby' && s.phase !== 'result' && here.length < 2) {
-    s.phase = 'lobby';
-    s.deadline = null;
-  }
+  if (inRound(s) && here.length < 2) callOff(s, 'players');
+  else if (s.phase === 'reveal' && here.length && here.every((x) => s.seen.includes(x.n))) toTalk(s, now);
+  else if (s.phase === 'vote' && here.length && present(s, now).every((x) => String(x.n) in s.votes)) tally(s, now);
+}
+
+/** Ends the round early with no points (back to the lobby, where the host can deal again). */
+function callOff(s: State, why: CalledOff): void {
+  s.phase = 'lobby';
+  s.deadline = null;
+  s.calledOff = why;
+  s.away = {};
 }
 
 function toTalk(s: State, now: number): void {
@@ -169,6 +187,10 @@ function toVote(s: State, now: number): void {
 }
 
 function tally(s: State, now: number): void {
+  // Below three players the vote can only tie; with every impostor gone nobody can be caught.
+  const here = present(s, now);
+  if (here.length < MIN_PLAYERS) return callOff(s, 'players');
+  if (!here.some((x) => s.deal?.impostors.includes(String(x.n)))) return callOff(s, 'impostor');
   const out = votedOut(Object.fromEntries(Object.entries(s.votes).map(([k, v]) => [k, String(v)])));
   s.voted = out === null ? null : Number(out);
   if (s.voted !== null && s.deal?.impostors.includes(String(s.voted))) {
@@ -209,6 +231,8 @@ function deal(s: State, now: number): void {
   s.guess = null;
   s.outcome = null;
   s.gained = {};
+  s.away = {};
+  s.calledOff = null;
   s.phase = 'reveal';
   s.deadline = null;
   s.updated = now;
@@ -280,6 +304,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (!isHost) return null;
       s.phase = 'lobby';
       s.deadline = null;
+      s.calledOff = null;
       return null;
     case 'kick': {
       if (!isHost || a.seat === me.n) return null;
@@ -288,7 +313,11 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       s.playing = s.playing.filter((n) => n !== a.seat);
       // Mid-vote, their vote goes, and so do votes for them (those players vote again).
       if (s.phase === 'vote') for (const [voter, to] of Object.entries(s.votes)) if (Number(voter) === a.seat || to === a.seat) delete s.votes[voter];
-      advance(s, now);
+      // A caught impostor removed while guessing: no guess, the crew wins.
+      if (s.phase === 'guess' && s.voted === a.seat) finish(s);
+      else if (inRound(s) && s.phase !== 'guess' && !s.playing.some((n) => s.deal?.impostors.includes(String(n)))) callOff(s, 'impostor');
+      else if (inRound(s) && s.phase !== 'guess' && s.playing.length < MIN_PLAYERS) callOff(s, 'players');
+      else advance(s, now);
       return null;
     }
     default:
@@ -326,6 +355,8 @@ export interface RoomView {
   /** Guess: the six options (for the caught impostor; everyone sees them to follow along). */
   options: string[] | null;
   voted: number | null;
+  /** Lobby: the last round was called off, and why. */
+  calledOff: CalledOff | null;
   /** Result only. */
   result: { word: string; impostors: number[]; votes: Record<string, number>; guess: string | null; outcome: ImpostorOutcome; gained: Record<string, number> } | null;
 }
@@ -361,6 +392,7 @@ export function viewFor(s: State, key: string): RoomView | null {
     myVote: s.votes[String(me.n)] ?? null,
     options: s.phase === 'guess' && d ? d.options : null,
     voted: s.phase === 'guess' || s.phase === 'result' ? s.voted : null,
+    calledOff: s.phase === 'lobby' ? (s.calledOff ?? null) : null,
     result:
       s.phase === 'result' && d && s.outcome
         ? { word: d.word, impostors: d.impostors.map(Number), votes: s.votes, guess: s.guess, outcome: s.outcome, gained: s.gained }

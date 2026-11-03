@@ -15,7 +15,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'food',
     name: 'Food',
     emoji: '🍕',
-    words: ['Pizza|Italy', 'Sushi|Rice', 'Burger|Grill', 'Tacos|Mexico', 'Pancakes|Breakfast', 'Spaghetti|Fork', 'Soup|Spoon', 'Popcorn|Cinema', 'Hot dog|Mustard', 'Fries|Salt', 'Sandwich|Lunchbox', 'Curry|Spicy', 'Omelette|Eggs', 'Steak|Knife', 'Salad|Bowl', 'Kebab|Late night', 'Dumplings|Steam', 'Lasagne|Layers', 'Nachos|Cheese', 'Croissant|Bakery', 'Paella|Spain', 'Risotto|Creamy rice', 'Fish and chips|Vinegar', 'Ramen|Broth', 'Burrito|Wrap', 'Moussaka|Aubergine', 'Meatballs|Tomato sauce', 'Pierogi|Poland', 'Falafel|Chickpeas', 'Fondue|Melted', 'Hummus|Dip', 'Porridge|Oats'],
+    words: ['Pizza|Italy', 'Sushi|Rice', 'Burger|Grill', 'Tacos|Mexico', 'Pancakes|Breakfast', 'Spaghetti|Fork', 'Soup|Spoon', 'Popcorn|Movie theater', 'Hot dog|Mustard', 'Fries|Salt', 'Sandwich|Lunchbox', 'Curry|Spicy', 'Omelet|Eggs', 'Steak|Knife', 'Salad|Bowl', 'Kebab|Late night', 'Dumplings|Steam', 'Lasagna|Layers', 'Nachos|Cheese', 'Croissant|Bakery', 'Paella|Spain', 'Risotto|Creamy rice', 'Fish and chips|Vinegar', 'Ramen|Broth', 'Burrito|Wrap', 'Moussaka|Eggplant', 'Meatballs|Tomato sauce', 'Pierogi|Poland', 'Falafel|Chickpeas', 'Fondue|Melted', 'Hummus|Dip', 'Porridge|Oats'],
   },
   {
     id: 'animals',
@@ -27,13 +27,13 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'jobs',
     name: 'Jobs',
     emoji: '👩‍⚕️',
-    words: ['Doctor|Hospital', 'Teacher|Homework', 'Firefighter|Ladder', 'Pilot|Cockpit', 'Chef|Kitchen', 'Police officer|Badge', 'Dentist|Smile', 'Farmer|Tractor', 'Hairdresser|Scissors', 'Lawyer|Court', 'Astronaut|Helmet', 'Plumber|Pipes', 'Photographer|Flash', 'Waiter|Tray', 'Mechanic|Garage', 'Lifeguard|Whistle', 'Postman|Letters', 'DJ|Party', 'Builder|Bricks', 'Vet|Pets', 'Judge|Gavel', 'Magician|Rabbit', 'Clown|Red nose', 'Baker|Flour', 'Surgeon|Scalpel', 'Taxi driver|Meter', 'Barista|Latte', 'Scientist|Lab coat', 'Electrician|Wires', 'Tattoo artist|Ink', 'Detective|Clues', 'Zookeeper|Feeding time'],
+    words: ['Doctor|Hospital', 'Teacher|Homework', 'Firefighter|Ladder', 'Pilot|Cockpit', 'Chef|Kitchen', 'Police officer|Badge', 'Dentist|Smile', 'Farmer|Tractor', 'Hairdresser|Scissors', 'Lawyer|Court', 'Astronaut|Helmet', 'Plumber|Pipes', 'Photographer|Flash', 'Waiter|Tray', 'Mechanic|Garage', 'Lifeguard|Whistle', 'Mail carrier|Letters', 'DJ|Party', 'Builder|Bricks', 'Vet|Pets', 'Judge|Gavel', 'Magician|Rabbit', 'Clown|Red nose', 'Baker|Flour', 'Surgeon|Scalpel', 'Taxi driver|Meter', 'Barista|Latte', 'Scientist|Lab coat', 'Electrician|Wires', 'Tattoo artist|Ink', 'Detective|Clues', 'Zookeeper|Feeding time'],
   },
   {
     id: 'places',
     name: 'Places',
     emoji: '🏖️',
-    words: ['Beach|Sand', 'Library|Quiet', 'Airport|Gate', 'Hospital|Beds', 'Cinema|Screen', 'Gym|Sweat', 'Supermarket|Trolley', 'Zoo|Cages', 'School|Bell', 'Museum|Exhibits', 'Stadium|Crowd', 'Church|Bells', 'Bank|Money', 'Hotel|Keycard', 'Restaurant|Menu', 'Park|Bench', 'Prison|Bars', 'Farm|Barn', 'Night club|Dance floor', 'Train station|Platform', 'Casino|Chips', 'Spa|Relax', 'Car park|Levels', 'Petrol station|Pump', 'Bakery|Bread', 'Launderette|Spin', 'Ice rink|Skates', 'Aquarium|Tanks', 'Bowling alley|Lanes', 'Theme park|Queues', 'Lighthouse|Ships', 'Campsite|Tents'],
+    words: ['Beach|Sand', 'Library|Quiet', 'Airport|Gate', 'Hospital|Beds', 'Movie theater|Screen', 'Gym|Sweat', 'Supermarket|Cart', 'Zoo|Cages', 'School|Bell', 'Museum|Exhibits', 'Stadium|Crowd', 'Church|Bells', 'Bank|Money', 'Hotel|Keycard', 'Restaurant|Menu', 'Park|Bench', 'Prison|Bars', 'Farm|Barn', 'Night club|Dance floor', 'Train station|Platform', 'Casino|Chips', 'Spa|Relax', 'Parking garage|Levels', 'Gas station|Pump', 'Bakery|Bread', 'Laundromat|Spin', 'Ice rink|Skates', 'Aquarium|Tanks', 'Bowling alley|Lanes', 'Theme park|Lines', 'Lighthouse|Ships', 'Campground|Tents'],
   },
   {
     id: 'countries',
@@ -51,13 +51,13 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'sports',
     name: 'Sports',
     emoji: '⚽',
-    words: ['Football|Goal', 'Basketball|Hoop', 'Tennis|Racket', 'Swimming|Pool', 'Boxing|Gloves', 'Golf|Hole', 'Skiing|Snow', 'Volleyball|Net', 'Cycling|Pedals', 'Surfing|Waves', 'Chess|Board', 'Bowling|Pins', 'Darts|Bullseye', 'Baseball|Bat', 'Ice hockey|Puck', 'Karate|Black belt', 'Motor racing|Pit stop', 'Marathon|Running', 'Table tennis|Paddle', 'Skateboarding|Tricks', 'Rugby|Scrum', 'Cricket|Wickets', 'Fencing|Sword', 'Archery|Target', 'Wrestling|Mat', 'Rowing|Oars', 'Snowboarding|Halfpipe', 'Badminton|Shuttlecock', 'Gymnastics|Beam', 'Horse riding|Saddle', 'Climbing|Rope', 'Diving|Springboard'],
+    words: ['Soccer|Goal', 'Basketball|Hoop', 'Tennis|Racket', 'Swimming|Pool', 'Boxing|Gloves', 'Golf|Hole', 'Skiing|Snow', 'Volleyball|Net', 'Cycling|Pedals', 'Surfing|Waves', 'Chess|Board', 'Bowling|Pins', 'Darts|Bullseye', 'Baseball|Bat', 'Ice hockey|Puck', 'Karate|Black belt', 'Car racing|Pit stop', 'Marathon|Running', 'Table tennis|Paddle', 'Skateboarding|Tricks', 'Rugby|Scrum', 'Cricket|Wickets', 'Fencing|Sword', 'Archery|Target', 'Wrestling|Mat', 'Rowing|Oars', 'Snowboarding|Halfpipe', 'Badminton|Shuttlecock', 'Gymnastics|Beam', 'Horseback riding|Saddle', 'Climbing|Rope', 'Diving|Springboard'],
   },
   {
     id: 'movies',
     name: 'Movies',
     emoji: '🎬',
-    words: ['Horror film|Scream', 'Romantic comedy|Kiss', 'Western|Cowboys', 'Musical|Songs', 'Cartoon|Drawings', 'Documentary|Facts', 'Science fiction|Future', 'Heist|Vault', 'Zombie film|Undead', 'Disaster movie|Flood', 'Car chase|Speed', 'Superhero film|Cape', 'Trailer|Preview', 'Popcorn|Butter', 'Red carpet|Stars', 'Sequel|Part two', 'Stunt double|Danger', 'Subtitles|Reading', 'Movie director|Action!', 'Cinema ticket|Seat', 'Cameo|Brief appearance', 'Plot twist|Surprise', 'Blooper|Mistake', 'Villain|Evil', 'Soundtrack|Music', 'Award ceremony|Speech', 'End credits|Names', 'Remake|Again', 'Animation|Frames', 'Special effects|Explosions', 'Box office|Takings', 'Premiere|Opening night'],
+    words: ['Horror movie|Scream', 'Romantic comedy|Kiss', 'Western|Cowboys', 'Musical|Songs', 'Cartoon|Drawings', 'Documentary|Facts', 'Science fiction|Future', 'Heist|Vault', 'Zombie movie|Undead', 'Disaster movie|Flood', 'Car chase|Speed', 'Superhero movie|Cape', 'Trailer|Preview', 'Popcorn|Butter', 'Red carpet|Stars', 'Sequel|Part two', 'Stunt double|Danger', 'Subtitles|Reading', 'Movie director|Action!', 'Movie ticket|Seat', 'Cameo|Brief appearance', 'Plot twist|Surprise', 'Blooper|Mistake', 'Villain|Evil', 'Soundtrack|Music', 'Award ceremony|Speech', 'End credits|Names', 'Remake|Again', 'Animation|Frames', 'Special effects|Explosions', 'Box office|Ticket sales', 'Premiere|Opening night'],
   },
   {
     id: 'characters',
@@ -69,13 +69,13 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'home',
     name: 'Around the house',
     emoji: '🛋️',
-    words: ['Sofa|Living room', 'Bed|Pillow', 'Fridge|Cold', 'Toothbrush|Bathroom', 'Mirror|Reflection', 'Lamp|Light', 'Television|Remote', 'Washing machine|Laundry', 'Shower|Water', 'Clock|Time', 'Carpet|Floor', 'Curtains|Window', 'Vacuum cleaner|Dust', 'Toilet|Flush', 'Doorbell|Visitor', 'Bookshelf|Novels', 'Candle|Flame', 'Plant|Water it', 'Wardrobe|Clothes', 'Microwave|Heat', 'Radiator|Warm', 'Stairs|Up and down', 'Doormat|Welcome', 'Bath|Bubbles', 'Light switch|Click', 'Fridge magnet|Sticky', 'Ironing board|Creases', 'Smoke alarm|Beep', 'Coat hook|Hang', 'Bin|Rubbish', 'Attic|Loft', 'Letterbox|Post'],
+    words: ['Sofa|Living room', 'Bed|Pillow', 'Fridge|Cold', 'Toothbrush|Bathroom', 'Mirror|Reflection', 'Lamp|Light', 'Television|Remote', 'Washing machine|Laundry', 'Shower|Water', 'Clock|Time', 'Carpet|Floor', 'Curtains|Window', 'Vacuum cleaner|Dust', 'Toilet|Flush', 'Doorbell|Visitor', 'Bookshelf|Novels', 'Candle|Flame', 'Plant|Water it', 'Closet|Clothes', 'Microwave|Heat', 'Radiator|Warm', 'Stairs|Up and down', 'Doormat|Welcome', 'Bath|Bubbles', 'Light switch|Click', 'Fridge magnet|Sticky', 'Ironing board|Creases', 'Smoke alarm|Beep', 'Coat hook|Hang', 'Trash can|Garbage', 'Attic|Boxes', 'Mailbox|Letters'],
   },
   {
     id: 'kitchen',
     name: 'In the kitchen',
     emoji: '🍳',
-    words: ['Frying pan|Eggs', 'Kettle|Boil', 'Toaster|Bread', 'Oven|Bake', 'Blender|Smoothie', 'Fork|Prongs', 'Chopsticks|Two', 'Grater|Cheese', 'Rolling pin|Dough', 'Colander|Holes', 'Spatula|Flip', 'Corkscrew|Wine', 'Ladle|Soup', 'Whisk|Cream', 'Teapot|Cups', 'Cutting board|Knife', 'Dishwasher|Plates', 'Apron|Cooking', 'Ice cube|Freezer', 'Salt shaker|Seasoning', 'Sieve|Flour', 'Measuring jug|Milliliters', 'Tin opener|Can', 'Oven glove|Hot', 'Pepper mill|Grind', 'Saucepan|Lid', 'Egg timer|Sand', 'Pizza cutter|Wheel', 'Tongs|Grab', 'Baking tray|Biscuits', 'Garlic press|Crush', 'Food processor|Chop'],
+    words: ['Frying pan|Eggs', 'Kettle|Boil', 'Toaster|Bread', 'Oven|Bake', 'Blender|Smoothie', 'Fork|Prongs', 'Chopsticks|Two', 'Grater|Cheese', 'Rolling pin|Dough', 'Colander|Holes', 'Spatula|Flip', 'Corkscrew|Wine', 'Ladle|Soup', 'Whisk|Cream', 'Teapot|Cups', 'Cutting board|Knife', 'Dishwasher|Plates', 'Apron|Cooking', 'Ice cube|Freezer', 'Salt shaker|Seasoning', 'Sieve|Flour', 'Measuring cup|Milliliters', 'Can opener|Beans', 'Oven mitt|Hot', 'Pepper mill|Grind', 'Saucepan|Lid', 'Egg timer|Sand', 'Pizza cutter|Wheel', 'Tongs|Grab', 'Cookie sheet|Cookies', 'Garlic press|Crush', 'Food processor|Chop'],
   },
   {
     id: 'clothes',
@@ -87,7 +87,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'transport',
     name: 'Transport',
     emoji: '🚗',
-    words: ['Bicycle|Pedal', 'Helicopter|Rotor', 'Submarine|Underwater', 'Taxi|Yellow', 'Train|Tracks', 'Motorbike|Helmet', 'Hot air balloon|Basket', 'Rocket|Launch', 'Tractor|Field', 'Ambulance|Siren', 'Cruise ship|Holiday', 'Skateboard|Wheels', 'Tram|City', 'Canoe|Paddle', 'Scooter|Kick', 'Airplane|Wings', 'Bus|Stops', 'Horse carriage|Royal', 'Limousine|Long', 'Cable car|Mountain', 'Ferry|Crossing', 'Jet ski|Spray', 'Rickshaw|Pulled', 'Segway|Balance', 'Fire engine|Hose', 'Bin lorry|Rubbish', 'Gondola|Venice', 'Monorail|One track', 'Hovercraft|Cushion of air', 'Snowmobile|Ice', 'Unicycle|Juggler', 'Glider|Silent'],
+    words: ['Bicycle|Pedal', 'Helicopter|Rotor', 'Submarine|Underwater', 'Taxi|Yellow', 'Train|Tracks', 'Motorcycle|Helmet', 'Hot air balloon|Basket', 'Rocket|Launch', 'Tractor|Field', 'Ambulance|Siren', 'Cruise ship|Vacation', 'Skateboard|Wheels', 'Tram|City', 'Canoe|Paddle', 'Scooter|Kick', 'Airplane|Wings', 'Bus|Stops', 'Horse carriage|Royal', 'Limousine|Long', 'Cable car|Mountain', 'Ferry|Crossing', 'Jet ski|Spray', 'Rickshaw|Pulled', 'Segway|Balance', 'Fire truck|Hose', 'Garbage truck|Trash', 'Gondola|Venice', 'Monorail|One track', 'Hovercraft|Cushion of air', 'Snowmobile|Ice', 'Unicycle|Juggler', 'Glider|Silent'],
   },
   {
     id: 'music',
@@ -105,31 +105,31 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'school',
     name: 'School',
     emoji: '🏫',
-    words: ['Homework|Evening', 'Exam|Grades', 'Backpack|Shoulders', 'Pencil|Sharpen', 'Calculator|Math', 'Lunch break|Food', 'Principal|Office', 'Blackboard|Chalk', 'Field trip|Bus', 'Detention|After class', 'Graduation|Hats', 'Science lab|Experiments', 'Gym class|Sport', 'Library card|Books', 'Report card|Parents', 'Ruler|Straight', 'Map|Geography', 'School bus|Yellow', 'Spelling bee|Letters', 'Summer holidays|Freedom', 'Teacher’s pet|Favorite', 'Lunchbox|Sandwich', 'Playground|Swings', 'Sports day|Egg and spoon', 'Assembly|Hall', 'Timetable|Lessons', 'Pencil case|Zip', 'Exercise book|Lines', 'Hall pass|Corridor', 'Class photo|Smile', 'Fire drill|Alarm', 'Prom|Dance'],
+    words: ['Homework|Evening', 'Exam|Grades', 'Backpack|Shoulders', 'Pencil|Sharpen', 'Calculator|Math', 'Lunch break|Food', 'Principal|Office', 'Blackboard|Chalk', 'Field trip|Bus', 'Detention|After class', 'Graduation|Hats', 'Science lab|Experiments', 'Gym class|Sport', 'Library card|Books', 'Report card|Parents', 'Ruler|Straight', 'Map|Geography', 'School bus|Yellow', 'Spelling bee|Letters', 'Summer vacation|Freedom', 'Teacher’s pet|Favorite', 'Lunchbox|Sandwich', 'Playground|Swings', 'Field day|Egg and spoon', 'Assembly|Hall', 'Class schedule|Lessons', 'Pencil case|Zipper', 'Notebook|Lines', 'Hall pass|Corridor', 'Class photo|Smile', 'Fire drill|Alarm', 'Prom|Dance'],
   },
   {
     id: 'halloween',
     name: 'Halloween',
     emoji: '🎃',
-    words: ['Pumpkin|Orange', 'Ghost|Sheet', 'Witch|Broom', 'Vampire|Fangs', 'Zombie|Brains', 'Skeleton|Bones', 'Werewolf|Moon', 'Haunted house|Creaks', 'Candy|Sweet', 'Spider web|Corner', 'Black cat|Bad luck', 'Mummy|Bandages', 'Costume|Dress up', 'Cauldron|Potion', 'Graveyard|Night', 'Trick or treat|Doorbell', 'Scarecrow|Field', 'Bat|Cave', 'Frankenstein|Bolts', 'Jack-o’-lantern|Candle', 'Ghost story|Torch', 'Spell book|Pages', 'Coffin|Lid', 'Tombstone|Rest in peace', 'Crow|Black bird', 'Full moon|Howling', 'Poison apple|Bite', 'Eyeball|Stare', 'Fog machine|Smoke', 'Toffee apple|Stick', 'Masquerade mask|Party', 'Creaky door|Hinges'],
+    words: ['Pumpkin|Orange', 'Ghost|Sheet', 'Witch|Broom', 'Vampire|Fangs', 'Zombie|Brains', 'Skeleton|Bones', 'Werewolf|Moon', 'Haunted house|Creaks', 'Candy|Sweet', 'Spider web|Corner', 'Black cat|Bad luck', 'Mummy|Bandages', 'Costume|Dress up', 'Cauldron|Potion', 'Graveyard|Night', 'Trick or treat|Doorbell', 'Scarecrow|Field', 'Bat|Cave', 'Frankenstein|Bolts', 'Jack-o’-lantern|Candle', 'Ghost story|Flashlight', 'Spell book|Pages', 'Coffin|Lid', 'Tombstone|Rest in peace', 'Crow|Black bird', 'Full moon|Howling', 'Poison apple|Bite', 'Eyeball|Stare', 'Fog machine|Smoke', 'Caramel apple|Stick', 'Masquerade mask|Party', 'Creaky door|Hinges'],
   },
   {
     id: 'winter',
     name: 'Winter & Christmas',
     emoji: '🎄',
-    words: ['Snowman|Carrot', 'Christmas tree|Lights', 'Reindeer|Antlers', 'Present|Wrapping', 'Gingerbread|Cookies', 'Sledge|Hill', 'Mittens|Warm', 'Fireplace|Logs', 'Snowball|Throw', 'Ice skating|Rink', 'Stocking|Chimney', 'Elf|Workshop', 'Mistletoe|Kiss', 'Hot chocolate|Mug', 'Advent calendar|Doors', 'Fireworks|Midnight', 'Snowflake|Unique', 'Ski lift|Mountain', 'Carol singers|Doorstep', 'Candy cane|Stripes', 'Igloo|Ice house', 'Snow angel|Lie down', 'Icicle|Drip', 'Polar bear|Arctic', 'Mulled wine|Cinnamon', 'Chestnuts|Roasting', 'Christmas jumper|Knitted', 'Sleigh bells|Jingle', 'Frost|Windscreen', 'Snowplow|Road', 'Ski goggles|Glare', 'Wreath|Front door'],
+    words: ['Snowman|Carrot', 'Christmas tree|Lights', 'Reindeer|Antlers', 'Present|Wrapping', 'Gingerbread|Cookies', 'Sled|Hill', 'Mittens|Warm', 'Fireplace|Logs', 'Snowball|Throw', 'Ice skating|Rink', 'Stocking|Chimney', 'Elf|Workshop', 'Mistletoe|Kiss', 'Hot chocolate|Mug', 'Advent calendar|Doors', 'Fireworks|Midnight', 'Snowflake|Unique', 'Ski lift|Mountain', 'Carolers|Doorstep', 'Candy cane|Stripes', 'Igloo|Ice house', 'Snow angel|Lie down', 'Icicle|Drip', 'Polar bear|Arctic', 'Mulled wine|Cinnamon', 'Chestnuts|Roasting', 'Ugly Christmas sweater|Knitted', 'Sleigh bells|Jingle', 'Frost|Windshield', 'Snowplow|Road', 'Ski goggles|Glare', 'Wreath|Front door'],
   },
   {
     id: 'summer',
     name: 'Summer',
     emoji: '☀️',
-    words: ['Sunscreen|Skin', 'Ice cream|Melt', 'Sandcastle|Bucket', 'Flip-flops|Feet', 'Watermelon|Seeds', 'Barbecue|Smoke', 'Beach umbrella|Shade', 'Surfboard|Waves', 'Road trip|Car', 'Pool party|Splash', 'Lemonade|Sour', 'Sunburn|Red', 'Festival|Wristband', 'Camping|Stars', 'Hammock|Swing', 'Postcard|Stamp', 'Snorkel|Fish', 'Sunset|Orange sky', 'Mosquito|Itchy', 'Water gun|Squirt', 'Paddling pool|Garden', 'Deckchair|Fold', 'Ice lolly|Stick', 'Beach ball|Inflatable', 'Seashell|Ear', 'Sunhat|Brim', 'Picnic|Blanket', 'Heatwave|Sweat', 'Electric fan|Breeze', 'Pier|Arcade', 'Rock pool|Crab', 'Strawberries|Cream'],
+    words: ['Sunscreen|Skin', 'Ice cream|Melt', 'Sandcastle|Bucket', 'Flip-flops|Feet', 'Watermelon|Seeds', 'Barbecue|Smoke', 'Beach umbrella|Shade', 'Surfboard|Waves', 'Road trip|Car', 'Pool party|Splash', 'Lemonade|Sour', 'Sunburn|Red', 'Festival|Wristband', 'Camping|Stars', 'Hammock|Swing', 'Postcard|Stamp', 'Snorkel|Fish', 'Sunset|Orange sky', 'Mosquito|Itchy', 'Water gun|Squirt', 'Kiddie pool|Backyard', 'Beach chair|Fold', 'Popsicle|Stick', 'Beach ball|Inflatable', 'Seashell|Ear', 'Sunhat|Brim', 'Picnic|Blanket', 'Heatwave|Sweat', 'Electric fan|Breeze', 'Pier|Arcade', 'Tide pool|Crab', 'Strawberries|Cream'],
   },
   {
     id: 'party',
     name: 'Party time',
     emoji: '🎉',
-    words: ['Birthday cake|Candles', 'Balloons|Air', 'Confetti|Mess', 'Dance floor|Lights', 'Piñata|Stick', 'Karaoke|Song', 'Fancy dress|Costume', 'Party hat|Cone', 'Champagne|Bubbles', 'Surprise party|Shh', 'Hangover|Morning', 'Bouncer|Door', 'Disco ball|Sparkle', 'Party games|Fun', 'Invitation|RSVP', 'Fireworks|Bang', 'Pizza delivery|Doorbell', 'Playlist|Songs', 'Selfie|Phone', 'Wedding|Rings', 'Goodie bag|Sweets', 'Limbo|Bend', 'Musical chairs|Music stops', 'Party popper|Bang', 'Streamers|Ceiling', 'Toast|Speech', 'Conga|Line', 'Kazoo|Buzz', 'Glow sticks|Neon', 'Photo booth|Props', 'After-party|Late', 'Gatecrasher|Uninvited'],
+    words: ['Birthday cake|Candles', 'Balloons|Air', 'Confetti|Mess', 'Dance floor|Lights', 'Piñata|Stick', 'Karaoke|Song', 'Costume party|Dress up', 'Party hat|Cone', 'Champagne|Bubbles', 'Surprise party|Shh', 'Hangover|Morning', 'Bouncer|Door', 'Disco ball|Sparkle', 'Party games|Fun', 'Invitation|RSVP', 'Fireworks|Bang', 'Pizza delivery|Doorbell', 'Playlist|Songs', 'Selfie|Phone', 'Wedding|Rings', 'Goodie bag|Candy', 'Limbo|Bend', 'Musical chairs|Music stops', 'Party popper|Bang', 'Streamers|Ceiling', 'Toast|Speech', 'Conga|Line', 'Kazoo|Buzz', 'Glow sticks|Neon', 'Photo booth|Props', 'After-party|Late', 'Gatecrasher|Uninvited'],
   },
   {
     id: 'body',
@@ -165,7 +165,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'desserts',
     name: 'Desserts',
     emoji: '🍰',
-    words: ['Ice cream|Cone', 'Chocolate|Cocoa', 'Cheesecake|Creamy', 'Donut|Hole', 'Cupcake|Frosting', 'Waffle|Grid', 'Brownie|Square', 'Tiramisu|Coffee', 'Jelly|Wobbly', 'Apple pie|Crust', 'Macaron|Pastel', 'Churros|Dip', 'Candy floss|Fair', 'Pudding|Spoon', 'Milkshake|Straw', 'Lollipop|Stick', 'Baklava|Honey', 'Banana split|Three scoops', 'Fudge|Sugar', 'Sorbet|Fruit', 'Crème brûlée|Burnt sugar', 'Trifle|Layers', 'Custard|Yellow', 'Profiteroles|Cream puffs', 'Meringue|Egg whites', 'Gelato|Italy', 'Sticky toffee pudding|Dates', 'Rice pudding|Cinnamon', 'Fruit salad|Bowl', 'Éclair|Choux', 'Strudel|Austria', 'Panna cotta|Wobble'],
+    words: ['Ice cream|Cone', 'Chocolate|Cocoa', 'Cheesecake|Creamy', 'Donut|Hole', 'Cupcake|Frosting', 'Waffle|Grid', 'Brownie|Square', 'Tiramisu|Coffee', 'Jell-O|Wobbly', 'Apple pie|Crust', 'Macaron|Pastel', 'Churros|Dip', 'Cotton candy|Fair', 'Pudding|Spoon', 'Milkshake|Straw', 'Lollipop|Stick', 'Baklava|Honey', 'Banana split|Three scoops', 'Fudge|Sugar', 'Sorbet|Fruit', 'Crème brûlée|Burnt sugar', 'Trifle|Layers', 'Custard|Yellow', 'Profiteroles|Cream puffs', 'Meringue|Egg whites', 'Gelato|Italy', 'Sticky toffee pudding|Dates', 'Rice pudding|Cinnamon', 'Fruit salad|Bowl', 'Éclair|Choux', 'Strudel|Austria', 'Panna cotta|Wobble'],
   },
   {
     id: 'drinks',
@@ -177,13 +177,13 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'fruitveg',
     name: 'Fruit & veg',
     emoji: '🍎',
-    words: ['Banana|Yellow', 'Strawberry|Seeds', 'Pineapple|Spiky', 'Carrot|Rabbit', 'Onion|Tears', 'Broccoli|Tree', 'Lemon|Sour', 'Avocado|Toast', 'Tomato|Ketchup', 'Potato|Chips', 'Grapes|Bunch', 'Cherry|Pair', 'Coconut|Palm', 'Garlic|Vampires', 'Corn|Cob', 'Mushroom|Forest', 'Pumpkin|Halloween', 'Kiwi|Fuzzy', 'Chilli pepper|Hot', 'Peas|Pod', 'Aubergine|Purple', 'Peach|Stone', 'Cabbage|Leaves', 'Beetroot|Red juice', 'Mango|Tropical', 'Pear|Shape', 'Raspberry|Jam', 'Cucumber|Salad', 'Lettuce|Burger', 'Plum|Prune', 'Blueberry|Muffin', 'Courgette|Green'],
+    words: ['Banana|Yellow', 'Strawberry|Seeds', 'Pineapple|Spiky', 'Carrot|Rabbit', 'Onion|Tears', 'Broccoli|Tree', 'Lemon|Sour', 'Avocado|Toast', 'Tomato|Ketchup', 'Potato|Fries', 'Grapes|Bunch', 'Cherry|Pair', 'Coconut|Palm', 'Garlic|Vampires', 'Corn|Cob', 'Mushroom|Forest', 'Pumpkin|Halloween', 'Kiwi|Fuzzy', 'Chili pepper|Hot', 'Peas|Pod', 'Eggplant|Purple', 'Peach|Stone', 'Cabbage|Leaves', 'Beet|Red juice', 'Mango|Tropical', 'Pear|Shape', 'Raspberry|Jam', 'Cucumber|Salad', 'Lettuce|Burger', 'Plum|Prune', 'Blueberry|Muffin', 'Zucchini|Green'],
   },
   {
     id: 'toys',
     name: 'Games & toys',
     emoji: '🧸',
-    words: ['Teddy bear|Cuddle', 'Building blocks|Stack', 'Yo-yo|String', 'Kite|Wind', 'Puzzle cube|Twist', 'Doll|Hair', 'Hide and seek|Counting', 'Dominoes|Tiles', 'Jigsaw puzzle|Pieces', 'Trampoline|Bounce', 'Flying disc|Throw', 'Water balloon|Splash', 'Board game|Dice', 'Skipping rope|Jump', 'Marbles|Glass', 'Video game|Screen', 'Rocking horse|Wooden', 'Slide|Playground', 'Card game|Deck', 'Tag|Chase', 'Spinning top|Twirl', 'Toy soldier|March', 'Jack-in-the-box|Surprise', 'Hula hoop|Hips', 'Pogo stick|Spring', 'Kaleidoscope|Patterns', 'Marionette|Strings', 'Toy train|Tracks', 'Remote-control car|Batteries', 'Bubble wand|Soap', 'Sandpit|Bucket', 'Rag doll|Floppy'],
+    words: ['Teddy bear|Cuddle', 'Building blocks|Stack', 'Yo-yo|String', 'Kite|Wind', 'Puzzle cube|Twist', 'Doll|Hair', 'Hide and seek|Counting', 'Dominoes|Tiles', 'Jigsaw puzzle|Pieces', 'Trampoline|Bounce', 'Flying disc|Throw', 'Water balloon|Splash', 'Board game|Dice', 'Jump rope|Skip', 'Marbles|Glass', 'Video game|Screen', 'Rocking horse|Wooden', 'Slide|Playground', 'Card game|Deck', 'Tag|Chase', 'Spinning top|Twirl', 'Toy soldier|March', 'Jack-in-the-box|Surprise', 'Hula hoop|Hips', 'Pogo stick|Spring', 'Kaleidoscope|Patterns', 'Marionette|Strings', 'Toy train|Tracks', 'Remote-control car|Batteries', 'Bubble wand|Soap', 'Sandbox|Bucket', 'Rag doll|Floppy'],
   },
   {
     id: 'feelings',
@@ -219,7 +219,7 @@ export const IMPOSTOR_THEMES: ImpostorTheme[] = [
     id: 'everyday',
     name: 'Everyday things',
     emoji: '🧺',
-    words: ['Umbrella|Rain', 'Keys|Lock', 'Wallet|Cards', 'Glasses|Eyes', 'Backpack|Straps', 'Alarm clock|Wake up', 'Lighter|Flame', 'Plaster|Cut', 'Battery|Power', 'Envelope|Letter', 'Scissors|Cut', 'Tape|Sticky', 'Coin|Money', 'Rubber duck|Bath', 'Calendar|Dates', 'Remote control|Channels', 'Hairdryer|Hot air', 'Paperclip|Office', 'Torch|Dark', 'Shopping bag|Groceries', 'Toothpaste|Minty', 'Comb|Hair', 'Coat hanger|Wardrobe', 'Plug|Socket', 'Teaspoon|Stir', 'Safety pin|Sharp', 'Sticky note|Reminder', 'Receipt|Shop', 'Doorstop|Wedge', 'Clothes peg|Washing line', 'Rubber band|Stretch', 'Matches|Strike'],
+    words: ['Umbrella|Rain', 'Keys|Lock', 'Wallet|Cards', 'Glasses|Eyes', 'Backpack|Straps', 'Alarm clock|Wake up', 'Lighter|Flame', 'Bandage|Cut', 'Battery|Power', 'Envelope|Letter', 'Scissors|Cut', 'Tape|Sticky', 'Coin|Money', 'Rubber duck|Bath', 'Calendar|Dates', 'Remote control|Channels', 'Hairdryer|Hot air', 'Paperclip|Office', 'Flashlight|Dark', 'Shopping bag|Groceries', 'Toothpaste|Minty', 'Comb|Hair', 'Coat hanger|Closet', 'Plug|Socket', 'Teaspoon|Stir', 'Safety pin|Sharp', 'Sticky note|Reminder', 'Receipt|Store', 'Doorstop|Wedge', 'Clothespin|Clothesline', 'Rubber band|Stretch', 'Matches|Strike'],
   },
 ];
 
