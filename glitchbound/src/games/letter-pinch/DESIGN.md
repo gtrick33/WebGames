@@ -58,14 +58,21 @@ it produces the best share grid. Swap Lock is a reasonable future variant; Overl
 
 ## Rules and tuning
 
-- 6 guesses. Guesses must be in the accepted list (about 13k words). Secrets come from a hand-picked
-  list of 662 common, family-friendly words.
+- 6 guesses. Guesses must be in the accepted list (about 6,400 words: SCOWL's American 5-letter words up to
+  size 70 plus every answer, minus slurs and crude words; see `words.ts`). Secrets come from a hand-picked
+  list of 1,491 common, family-friendly American words.
 - Daily: the secret for a date is a fixed, seeded shuffle of the answer list indexed by days since
   the game's epoch (2026-10-18), so every player gets the same word on the same local date and words
-  do not repeat for 662 days.
+  do not repeat for 1,491 days (the first repeat is daily #1492). A daily already served never changes:
+  new answers are appended (the words already published stay first, `PUBLISHED`), and a word is only
+  ever replaced in place, at its own index, before its day comes.
+- Friends' challenge: a fresh round is a seeded word for everyone, raced on real time; a "Today's daily"
+  challenge plays that day's daily (a daily already finished counts at once). One attempt: the round is
+  saved on every move, so a reload resumes it and a finished round shows its result.
 - Practice: unlimited random secrets (never today's daily word).
 - Score: 200 for solving + 100 per unused guess + up to 100 speed bonus (−1 per 3 seconds). A miss
-  scores 0.
+  scores 0. The clock starts at the first typed letter, shows in the top bar, and stops while the page is
+  hidden or the arcade pauses the game (a fresh challenge round runs on real time).
 - Daily streak: consecutive days with the daily solved. A miss or a skipped day resets it.
 - Fairness check (tests): a simple solver that only ever guesses words consistent with the windows
   solves every daily in the next two years within six guesses.
