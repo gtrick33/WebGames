@@ -53,5 +53,5 @@ export const FOOD: Raw[] = [
   ['Which US state eats the most Spam per person?', 'Hawaii|Texas|Alaska|Iowa', 'It arrived with soldiers in World War II. Spam musubi is sold in convenience stores all over the islands.'],
   ['Graham crackers were invented by a preacher who believed bland food would do what?', 'Curb sinful urges|Cure colds|Make children taller|Help people sleep', 'Sylvester Graham’s followers ate plain whole-wheat food. Today’s sweet crackers would horrify him.'],
   ['Wasabi served in most restaurants outside Japan is mostly what?', 'Horseradish and green coloring|Real wasabi root|Mustard and avocado|Green chilli', 'Real wasabi is rare and expensive, and loses its kick within minutes of grating.'],
-  ['Which crisps (chips) were invented, according to legend, to annoy a fussy customer?', 'Potato chips|Tortilla chips|Prawn crackers|Pringles', 'The story says a chef sliced potatoes paper-thin out of spite in 1853. Historians doubt it, but it is a good tale.'],
+  ['Which chips were invented, according to legend, to annoy a fussy customer?', 'Potato chips|Tortilla chips|Prawn crackers|Pringles', 'The story says a chef sliced potatoes paper-thin out of spite in 1853. Historians doubt it, but it is a good tale.'],
 ];

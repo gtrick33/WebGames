@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { challengeQuiz, dailyQuiz, EndlessDealer, FORMATS_SINCE, GENERATED, HAND_CATS, QUIZ_LENGTH, type Question } from '../src/games/wait-what/deck';
+import { challengeQuiz, dailyQuiz, EndlessDealer, FORMATS_SINCE, GENERATED, HAND_CATS, QUIZ_LENGTH, SLOTS_SINCE, type Question } from '../src/games/wait-what/deck';
+import { addDays } from '../src/platform/dates';
 import { EN, type Pack } from '../src/games/wait-what/pack';
 import { UI } from '../src/games/wait-what/ui';
 
@@ -9,6 +10,15 @@ const PACKS = Object.entries(FOLDERS).map(([path, mod]) => ({ folder: path.split
 
 /** Longest answer allowed on a button (longer ones wrap badly on phones). */
 const MAX_ANSWER = 72;
+
+/** Word play each language writes for itself (real words, emoji, typing). */
+const OWN = /^(odd|emoji|type):/;
+
+/**
+ * A question as it compares across languages: which one it is, where the right answer sits and the
+ * right order. A language's own word play only has to sit in the same slot, with the same style.
+ */
+const sig = (q: Question): string => (OWN.test(q.id) ? `${q.cat}/${q.kind ?? 'choice'}` : `${q.id}|${q.correct}|${(q.order ?? []).join(',')}|${q.answers.length}`);
 
 describe('Quizbelief language packs', () => {
   it('finds the language folders', () => {
@@ -72,6 +82,20 @@ describe('Quizbelief language packs', () => {
           expect(new Set(answers.split('|')).size).toBe(4);
         }
         for (const [q, accepted, fact] of p.typed) expect(q && accepted && fact).toBeTruthy();
+      });
+
+      it('serves every daily the same as English: the same questions, order and answer positions', () => {
+        for (let day = '2026-10-18'; day < '2027-01-15'; day = addDays(day, 1)) expect(dailyQuiz(day, p).map(sig), day).toEqual(dailyQuiz(day).map(sig));
+      });
+
+      it('deals every challenge the same as English, and from SLOTS_SINCE only styles every language shares', () => {
+        for (const day of ['', '2026-10-18', FORMATS_SINCE, '2026-10-30', SLOTS_SINCE, '2027-02-01'])
+          for (let n = 0; n < 120; n++) {
+            const seed = (n * 2654435761) >>> 0;
+            const qs = challengeQuiz(seed, day, p);
+            expect(qs.map(sig), `${day} ${seed}`).toEqual(challengeQuiz(seed, day).map(sig));
+            if (day >= SLOTS_SINCE) expect(qs.filter((q) => OWN.test(q.id)), `${day} ${seed}`).toEqual([]);
+          }
       });
 
       it('picks the same hand-written questions as English for the daily and for challenges, and plays endless', () => {

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { ChallengeSpec } from '../../platform/challenge';
 import type { ContentLang } from '../../platform/contentLang';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
@@ -21,8 +21,11 @@ interface Run {
   picks: Pick[];
   secs: number[];
   pts: number[];
-  /** Seconds already spent on the question being shown (so reloading does not reset the clock). */
-  cur?: { i: number; secs: number };
+  /**
+   * The question being shown: seconds already spent on it (endless pauses for real), and in the daily
+   * and challenges `at`, when it was asked (Date.now()), so hiding the tab or reloading never stops its clock.
+   */
+  cur?: { i: number; secs: number; at?: number };
   done: boolean;
 }
 interface Save {
@@ -39,17 +42,63 @@ interface Save {
 const emptySave = (): Save => ({ daily: {}, runs: {}, seen: [], best: 0, bestStreak: 0, bestEndless: 0, answered: 0, right: 0 });
 const emptyRun = (): Run => ({ picks: [], secs: [], pts: [], done: false });
 
+const count = (v: unknown, max = 1e9): number => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(0, v)) : 0);
+const isPick = (v: unknown): v is Pick => (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && v.length <= 60) || (Array.isArray(v) && v.length <= 4 && v.every((x) => Number.isInteger(x)));
+
+/** A stored run, checked: anything malformed is dropped (a corrupted save never crashes the game). */
+function cleanRun(v: unknown): Run | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Partial<Run>;
+  if (!Array.isArray(o.picks) || !Array.isArray(o.secs) || !Array.isArray(o.pts) || !o.picks.every(isPick)) return null;
+  const n = Math.min(o.picks.length, o.secs.length, o.pts.length, 500);
+  const c = o.cur;
+  const cur = c && typeof c === 'object' && Number.isInteger(c.i) ? { i: c.i, secs: count(c.secs, 60), ...(typeof c.at === 'number' && Number.isFinite(c.at) ? { at: c.at } : {}) } : undefined;
+  return { picks: o.picks.slice(0, n), secs: o.secs.slice(0, n).map((x) => count(x, 60)), pts: o.pts.slice(0, n).map((x) => count(x, 150)), ...(cur ? { cur } : {}), done: o.done === true };
+}
+const cleanRuns = (v: unknown): Record<string, Run> =>
+  v && typeof v === 'object' ? Object.fromEntries(Object.entries(v as Record<string, unknown>).flatMap(([k, r]) => (cleanRun(r) ? [[k, cleanRun(r)!]] : []))) : {};
+
 function loadSave(): Save {
   try {
-    const o = JSON.parse(localStorage.getItem(STORE) ?? '{}') as Partial<Save>;
-    const s = { ...emptySave(), ...o };
-    if (!s.daily || typeof s.daily !== 'object') s.daily = {};
-    if (!s.runs || typeof s.runs !== 'object') s.runs = {};
-    if (!Array.isArray(s.seen)) s.seen = [];
-    return s;
+    const o = JSON.parse(localStorage.getItem(STORE) ?? '{}') as Record<string, unknown> | null;
+    if (!o || typeof o !== 'object') return emptySave();
+    return {
+      daily: cleanRuns(o.daily),
+      runs: cleanRuns(o.runs),
+      seen: Array.isArray(o.seen) ? o.seen.filter((x): x is string => typeof x === 'string') : [],
+      best: count(o.best, MAX_POINTS),
+      bestStreak: count(o.bestStreak, 1e6),
+      bestEndless: count(o.bestEndless, 1e6),
+      answered: count(o.answered),
+      right: count(o.right),
+    };
   } catch {
     return emptySave();
   }
+}
+
+/** The run to keep for a key: another tab's when it got further (finished, or more answers in). */
+const further = (stored: Run | undefined, mine: Run): Run => (stored && ((stored.done && !mine.done) || stored.picks.length > mine.picks.length) ? stored : mine);
+
+/**
+ * Whether a key press is meant for the game: not typed into a field, a dialog or something outside
+ * the game, not a held-down repeat (unless `repeats`), and not Enter or Space on a keyboard-focused button.
+ */
+function forGame(e: KeyboardEvent, repeats = false): boolean {
+  if (e.metaKey || e.ctrlKey || e.altKey || (e.repeat && !repeats)) return false;
+  const t = e.target;
+  if (!(t instanceof Element) || t === document.body || t === document.documentElement) return true;
+  if (t.closest('textarea, select, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [aria-modal="true"]')) return false;
+  if (t instanceof HTMLInputElement && t.type !== 'range') return false;
+  if (!t.closest('.ww')) return false;
+  if ((e.key === 'Enter' || e.key === ' ') && t.closest('button')) {
+    try {
+      if (t.closest('button')!.matches(':focus-visible')) return false;
+    } catch {
+      /* no :focus-visible */
+    }
+  }
+  return true;
 }
 function writeSave(s: Save): void {
   try {
@@ -74,7 +123,8 @@ const FLOATERS: [string, number, number][] = [
   ['⏳', 10, 92],
   ['🎬', 84, 90],
 ];
-type Screen = { kind: 'menu' } | { kind: 'play'; mode: Mode; key: string };
+/** `day`: the day the round started on (a daily started before midnight finishes as that day's). */
+type Screen = { kind: 'menu' } | { kind: 'play'; mode: Mode; key: string; day: string };
 
 /** The language the game plays in: its questions (pack) and its own text (ui). */
 const Lang = createContext<{ p: Pack; u: Ui }>({ p: EN, u: UI.en });
@@ -103,15 +153,33 @@ function LangGate({ lang, children }: { lang: ContentLang; children: ReactNode }
 }
 
 function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: number; challenge?: ChallengeSpec }) {
-  const [today] = useState(() => dayKey());
+  // Today moves on at midnight: read again whenever the menu shows or the page comes back.
+  const [today, setToday] = useState(() => dayKey());
   const [save, setSave] = useState<Save>(loadSave);
-  const saveRef = useRef(save);
-  const commit = useCallback((s: Save) => {
-    saveRef.current = s;
+  // Every write starts from what is stored now, so another tab's progress is never written over.
+  const commit = useCallback((update: (s: Save) => Save) => {
+    const s = update(loadSave());
     setSave(s);
     writeSave(s);
   }, []);
-  const [screen, setScreen] = useState<Screen>(() => (challenge ? { kind: 'play', mode: 'challenge', key: `${challenge.id}:${challenge.round}` } : { kind: 'menu' }));
+  useEffect(() => {
+    const onStorage = (e: StorageEvent): void => {
+      if (e.key !== STORE && e.key !== null) return;
+      setSave(loadSave());
+    };
+    const onBack = (): void => {
+      if (!document.hidden) setToday(dayKey());
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', onBack);
+    document.addEventListener('visibilitychange', onBack);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', onBack);
+      document.removeEventListener('visibilitychange', onBack);
+    };
+  }, []);
+  const [screen, setScreen] = useState<Screen>(() => (challenge ? { kind: 'play', mode: 'challenge', key: `${challenge.id}:${challenge.round}`, day: today } : { kind: 'menu' }));
   const [runs, setRuns] = useState(0);
   const { p, u } = useContext(Lang);
 
@@ -120,17 +188,19 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       <Play
         key={`${screen.key}:${runs}`}
         mode={screen.mode}
-        today={today}
+        today={screen.day}
         challenge={challenge}
         host={host}
         pauseKey={pauseKey}
         save={save}
-        saveRef={saveRef}
         commit={commit}
-        onMenu={() => setScreen({ kind: 'menu' })}
+        onMenu={() => {
+          setToday(dayKey());
+          setScreen({ kind: 'menu' });
+        }}
         onAgain={() => {
           setRuns((n) => n + 1);
-          setScreen({ kind: 'play', mode: 'endless', key: 'endless' });
+          setScreen({ kind: 'play', mode: 'endless', key: 'endless', day: dayKey() });
         }}
       />
     );
@@ -140,7 +210,7 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const seen = save.seen.filter((id) => !/^(time|near):/.test(id)).length;
   return (
     <div className="ww ww-menu">
-      <div className="ww-menu-top"><GameMenuButton /></div>
+      <div className="ww-menu-top"><GameMenuButton className="ww-menu-btn" /></div>
       <div className="ww-float" aria-hidden="true">
         {FLOATERS.map(([e, x, y], i) => (
           <span key={i} style={{ left: `${x}%`, top: `${y}%`, ['--i' as string]: i }}>
@@ -174,7 +244,14 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
                 : u.sameForEveryone}
           </span>
         </div>
-        <button className="ww-btn ww-btn-go" onClick={() => setScreen({ kind: 'play', mode: 'daily', key: `daily:${today}` })}>
+        <button
+          className="ww-btn ww-btn-go"
+          onClick={() => {
+            const day = dayKey();
+            setToday(day);
+            setScreen({ kind: 'play', mode: 'daily', key: `daily:${day}`, day });
+          }}
+        >
           {todays?.done ? u.seeResults : todays ? u.continue : u.playToday}
         </button>
       </section>
@@ -184,7 +261,7 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
           <b>{u.endless}</b>
           <span>{u.endlessBlurb}</span>
         </div>
-        <button className="ww-btn" onClick={() => setScreen({ kind: 'play', mode: 'endless', key: 'endless' })}>
+        <button className="ww-btn" onClick={() => setScreen({ kind: 'play', mode: 'endless', key: 'endless', day: dayKey() })}>
           {u.startEndless}
         </button>
       </section>
@@ -193,7 +270,9 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         {save.answered ? u.answeredRight(save.right.toLocaleString(p.locale), save.answered.toLocaleString(p.locale), save.bestEndless) : ''}
         {u.seenOf(seen.toLocaleString(p.locale), total.toLocaleString(p.locale))}
       </p>
-      <p className="ww-muted ww-small">{u.help}</p>
+      <p className="ww-muted ww-small">
+        {u.help} {u.timeEach}
+      </p>
     </div>
   );
 }
@@ -208,26 +287,36 @@ function Play(props: {
   pauseKey?: number;
   /** The save when this quiz opened (read once, for resuming). */
   save: Save;
-  saveRef: RefObject<Save>;
-  commit: (s: Save) => void;
+  commit: (update: (s: Save) => Save) => void;
   onMenu: () => void;
   onAgain: () => void;
 }) {
-  const { mode, today, challenge, host, saveRef, commit } = props;
+  const { mode, challenge, host, commit } = props;
   const { p, u } = useContext(Lang);
+  // "Today's daily" as a challenge plays that day's real daily, and counts as it (one attempt for both).
+  const dailyChallenge = mode === 'challenge' && challenge?.mode === 'daily' && !!challenge.day ? challenge.day : null;
+  const today = dailyChallenge ?? props.today;
+  const dayKeyOf = mode === 'daily' || dailyChallenge ? today : null;
   const runKey = mode === 'daily' ? today : mode === 'challenge' && challenge ? `${challenge.id}:${challenge.round}` : null;
-  const kept = runKey ? (mode === 'daily' ? props.save.daily[runKey] : props.save.runs[runKey]) : undefined;
-  // A finished challenge round is not resumed: when its score never reached the scoreboard (lost on the
-  // way, or another player on this device), the round is played again instead of sitting on its results.
-  const stored = mode === 'challenge' && kept?.done ? undefined : kept;
+  const kept = mode === 'daily' ? props.save.daily[today] : runKey ? props.save.runs[runKey] : undefined;
+  // That day's daily already finished: its result is this challenge round's score.
+  const [fromDaily] = useState(() => !!dailyChallenge && !kept?.done && !!props.save.daily[dailyChallenge]?.done);
+  const stored = fromDaily ? props.save.daily[dailyChallenge!] : dailyChallenge ? further(props.save.daily[dailyChallenge], kept ?? emptyRun()) : kept;
+  // The daily and challenges are compared with other players: their clock is real time.
+  const live = mode !== 'endless';
 
   const [dealer] = useState(() => (mode === 'endless' ? new EndlessDealer(props.save.seen, undefined, p) : null));
-  const [qs, setQs] = useState<Question[]>(() => (mode === 'daily' ? dailyQuiz(today, p) : mode === 'challenge' && challenge ? challengeQuiz(challenge.seed, challenge.day, p) : [dealer!.next()]));
+  const [qs, setQs] = useState<Question[]>(() => (mode === 'daily' || dailyChallenge ? dailyQuiz(today, p) : mode === 'challenge' && challenge ? challengeQuiz(challenge.seed, challenge.day, p) : [dealer!.next()]));
   const [run, setRun] = useState<Run>(() => stored ?? emptyRun());
   const idx = run.done ? qs.length : run.picks.length;
-  // Reloaded while the last answer was on show: show it again (then the results), never ask it twice.
+  // A finished round shows its results (one attempt: never played again). Reloaded while the last
+  // answer was on show: show it again (then the results), never ask it twice.
   const [phase, setPhase] = useState<'ask' | 'reveal' | 'done'>(() => (stored?.done ? 'done' : mode !== 'endless' && stored && stored.picks.length >= qs.length ? 'reveal' : 'ask'));
-  const [elapsed, setElapsed] = useState(() => (stored?.cur && stored.cur.i === stored.picks.length ? stored.cur.secs : 0));
+  // When the question on show was asked (live clock), or seconds already spent on it (endless).
+  const resumed = stored?.cur && stored.cur.i === stored.picks.length ? stored.cur : undefined;
+  const [firstAsked] = useState(() => (resumed ? (resumed.at ?? Date.now() - resumed.secs * 1000) : Date.now()));
+  const askedAt = useRef(firstAsked);
+  const [elapsed, setElapsed] = useState(() => (live ? (resumed ? (Date.now() - firstAsked) / 1000 : 0) : (resumed?.secs ?? 0)));
   const [paused, setPaused] = useState(false);
   const started = useRef(false);
   // While revealing, keep showing the question just answered.
@@ -237,17 +326,20 @@ function Play(props: {
   const strikes = verdicts.filter((v) => v === 'wrong' || v === 'timeout').length;
   const score = run.pts.reduce((a, b) => a + b, 0);
 
-  // Keep the run saved (daily and challenge), including time already spent on the current question.
+  // Keep the run saved (daily and challenge; a daily challenge also as that day's daily).
   const persist = useCallback(
     (r: Run) => {
       if (!runKey) return;
-      const s = saveRef.current;
-      commit(mode === 'daily' ? { ...s, daily: { ...s.daily, [runKey]: r } } : { ...s, runs: { ...s.runs, [runKey]: r } });
+      commit((s) => {
+        const daily = dayKeyOf ? { ...s.daily, [dayKeyOf]: further(s.daily[dayKeyOf], r) } : s.daily;
+        return mode === 'daily' ? { ...s, daily } : { ...s, daily, runs: { ...s.runs, [runKey]: further(s.runs[runKey], r) } };
+      });
     },
-    [commit, mode, runKey, saveRef],
+    [commit, mode, runKey, dayKeyOf],
   );
 
-  // Pause when the arcade asks (left full screen, scrolled away) or the tab is hidden.
+  // Pause when the arcade asks (left full screen, scrolled away) or the tab is hidden. In the daily and
+  // challenges the question is hidden but its clock keeps running.
   const firstPause = useRef(props.pauseKey);
   useEffect(() => {
     if (props.pauseKey !== firstPause.current && phase === 'ask') setPaused(true);
@@ -270,7 +362,7 @@ function Play(props: {
 
   // The finished quiz, kept and reported once: as soon as the last answer is in (so leaving on its
   // reveal loses nothing), or when the player ends an endless run.
-  const recorded = useRef(false);
+  const recorded = useRef(!!stored?.done && !fromDaily);
   const record = useCallback(
     (r: Run) => {
       if (recorded.current) return;
@@ -286,62 +378,79 @@ function Play(props: {
         streak = v === 'right' ? streak + 1 : 0;
         best = Math.max(best, streak);
       }
-      const s = saveRef.current;
-      commit({ ...s, best: Math.max(s.best, total), bestStreak: Math.max(s.bestStreak, best), bestEndless: mode === 'endless' ? Math.max(s.bestEndless, correct) : s.bestEndless });
+      if (!fromDaily) commit((s) => ({ ...s, best: Math.max(s.best, total), bestStreak: Math.max(s.bestStreak, best), bestEndless: mode === 'endless' ? Math.max(s.bestEndless, correct) : s.bestEndless }));
       const end = { type: 'end' as const, score: total, stats: { correct, streak: best } };
       host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
     },
-    [persist, saveRef, commit, mode, host, challenge, qs],
+    [persist, commit, mode, host, challenge, qs, fromDaily],
   );
+  // The day's daily was already played: report that result for this round, once.
+  useEffect(() => {
+    if (fromDaily && stored) record(stored);
+  }, [fromDaily, stored, record]);
+
+  // Another tab finished this daily: this screen is out of date, so leave it.
+  const { onMenu } = props;
+  useEffect(() => {
+    if (!dayKeyOf || mode !== 'daily') return;
+    const onStorage = (e: StorageEvent): void => {
+      if ((e.key === STORE || e.key === null) && !recorded.current && loadSave().daily[dayKeyOf]?.done) onMenu();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [dayKeyOf, mode, onMenu]);
 
   const answer = useCallback(
     (choice: Pick) => {
-      if (phase !== 'ask' || paused) return;
-      const secs = choice === -1 ? limit : Math.min(limit, elapsed);
+      // Running out of time still counts while paused (the daily's clock keeps going).
+      if (phase !== 'ask' || (paused && choice !== -1)) return;
+      const spent = live ? (Date.now() - askedAt.current) / 1000 : elapsed;
+      const secs = choice === -1 ? limit : Math.min(limit, spent);
       const verdict = judge(q, choice);
       const next: Run = { picks: [...run.picks, choice], secs: [...run.secs, Math.round(secs * 10) / 10], pts: [...run.pts, scorePick(q, choice, secs, limit)], done: false };
       setRun(next);
       setPhase('reveal');
       persist(next);
-      const s = saveRef.current;
-      commit({ ...s, answered: s.answered + 1, right: s.right + (verdict === 'right' ? 1 : 0), seen: dealer ? dealer.seenIds() : s.seen.includes(q.id) ? s.seen : [...s.seen, q.id] });
+      commit((s) => ({ ...s, answered: s.answered + 1, right: s.right + (verdict === 'right' ? 1 : 0), seen: dealer ? [...new Set([...s.seen, ...dealer.seenIds()])] : s.seen.includes(q.id) ? s.seen : [...s.seen, q.id] }));
       const misses = strikes + (verdict === 'wrong' || verdict === 'timeout' ? 1 : 0);
       if (mode === 'endless' ? misses >= STRIKES : next.picks.length >= qs.length) record(next);
     },
-    [phase, paused, limit, elapsed, q, run, persist, saveRef, commit, dealer, strikes, mode, qs.length, record],
+    [phase, paused, live, limit, elapsed, q, run, persist, commit, dealer, strikes, mode, qs.length, record],
   );
 
-  // The clock runs while a question is being asked; daily and challenge runs save it every second,
-  // so reloading the page does not give you a fresh clock.
-  const clock = useRef({ run, elapsed, answer });
+  // The clock. Daily and challenge: real time since the question was asked (saved with the run, so
+  // hiding the tab, pausing or reloading never stops it). Endless: a counter that stops while paused.
+  const clock = useRef({ elapsed, answer });
   useEffect(() => {
-    clock.current = { run, elapsed, answer };
+    clock.current = { elapsed, answer };
   });
   useEffect(() => {
-    if (phase !== 'ask' || paused) return;
+    if (phase !== 'ask' || (paused && !live)) return;
     let last = performance.now();
     let e = clock.current.elapsed;
-    let sinceSave = 0;
-    const id = window.setInterval(() => {
+    const tick = (): boolean => {
       const now = performance.now();
-      const dt = (now - last) / 1000;
+      e = live ? (Date.now() - askedAt.current) / 1000 : e + (now - last) / 1000;
       last = now;
-      e += dt;
       setElapsed(e);
-      if (e >= limit) {
-        window.clearInterval(id);
-        clock.current.answer(-1);
-        return;
-      }
-      sinceSave += dt;
-      if (runKey && sinceSave >= 1) {
-        sinceSave = 0;
-        const r = clock.current.run;
-        persist({ ...r, cur: { i: r.picks.length, secs: Math.round(e * 10) / 10 } });
-      }
+      if (e < limit) return false;
+      clock.current.answer(-1);
+      return true;
+    };
+    if (live && tick()) return;
+    const id = window.setInterval(() => {
+      if (tick()) window.clearInterval(id);
     }, 100);
     return () => window.clearInterval(id);
-  }, [phase, paused, idx, limit, runKey, persist]);
+  }, [phase, paused, live, idx, limit]);
+  // Note when the question was asked, so a reload carries on with the same clock.
+  useEffect(() => {
+    if (phase !== 'ask' || !runKey || run.done) return;
+    if (run.cur?.i === run.picks.length && run.cur.at === askedAt.current) return;
+    const r = { ...run, cur: { i: run.picks.length, secs: 0, at: askedAt.current } };
+    setRun(r);
+    persist(r);
+  }, [phase, runKey, run, persist]);
 
   const finish = useCallback(
     (r: Run) => {
@@ -360,36 +469,36 @@ function Play(props: {
       const dealt = dealer.next();
       setQs((list) => [...list, dealt]);
     }
+    askedAt.current = Date.now();
     setElapsed(0);
     setPhase('ask');
-    const r = { ...run, cur: { i: run.picks.length, secs: 0 } };
-    setRun(r);
-    persist(r);
-  }, [phase, mode, strikes, run, qs.length, dealer, finish, persist]);
+  }, [phase, mode, strikes, run, qs.length, dealer, finish]);
 
   // Keyboard: 1-4 / A-D to answer, Enter or Space for the next question (the lever, typing and
   // ordering handle their own keys).
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!forGame(e)) return;
       const k = e.key.toLowerCase();
       const n = '1234'.indexOf(k) >= 0 ? '1234'.indexOf(k) : 'abcd'.indexOf(k);
-      if (phase === 'ask' && (q.kind ?? 'choice') === 'choice' && n >= 0 && n < q.answers.length) {
+      if (paused && (k === 'enter' || k === ' ')) {
+        e.preventDefault();
+        setPaused(false);
+      } else if (paused) {
+        return;
+      } else if (phase === 'ask' && (q.kind ?? 'choice') === 'choice' && n >= 0 && n < q.answers.length) {
         e.preventDefault();
         answer(n);
       } else if (phase === 'reveal' && (k === 'enter' || k === ' ')) {
         e.preventDefault();
         next();
-      } else if (paused && (k === 'enter' || k === ' ')) {
-        e.preventDefault();
-        setPaused(false);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [phase, q, answer, next, paused]);
 
-  if (phase === 'done') return <Results mode={mode} qs={qs} run={run} today={today} challenge={challenge} onMenu={props.onMenu} onAgain={props.onAgain} />;
+  if (phase === 'done') return <Results mode={mode} qs={qs} run={run} today={today} challenge={challenge} fromDaily={fromDaily} onMenu={props.onMenu} onAgain={props.onAgain} />;
 
   const cat = CATS[q.cat];
   const picked = phase === 'reveal' ? run.picks[run.picks.length - 1]! : null;
@@ -402,7 +511,7 @@ function Play(props: {
   return (
     <div className="ww ww-play" style={{ ['--cat' as string]: cat.color }}>
       <header className="ww-top">
-        <span className="ww-top-mode">{mode === 'daily' ? u.dailyShort(dailyNumber(today)) : mode === 'challenge' ? u.round(challenge?.round ?? 1) : u.endless}</span>
+        <span className="ww-top-mode" title={mode === 'daily' ? u.dailyShort(dailyNumber(today)) : undefined}>{mode === 'daily' ? u.dailyShort(dailyNumber(today)) : mode === 'challenge' ? u.round(challenge?.round ?? 1) : u.endless}</span>
         {mode === 'endless' ? (
           <span className="ww-lives" aria-label={u.livesLeft(STRIKES - strikes)}>
             {Array.from({ length: STRIKES }, (_, i) => (i < STRIKES - strikes ? '❤️' : '🖤')).join('')}
@@ -414,9 +523,14 @@ function Play(props: {
             ))}
           </span>
         )}
+        {mode !== 'endless' && (
+          <span className="ww-count" aria-hidden="true">
+            {Math.min(idx + 1, qs.length)}/{qs.length}
+          </span>
+        )}
         <span className="ww-top-end">
           <span className="ww-score">{score.toLocaleString(p.locale)}</span>
-          <GameMenuButton />
+          <GameMenuButton className="ww-menu-btn" />
         </span>
       </header>
       <div className="ww-timer" aria-hidden="true">
@@ -435,7 +549,11 @@ function Play(props: {
             </p>
           )}
           {q.sound && <SoundButton key={`s:${q.id}`} q={q} autoPlay={phase === 'ask' && !paused} />}
-          {phase === 'ask' && <span className="ww-left mono">{u.secondsLeft(Math.ceil(left))}</span>}
+          {phase === 'ask' && (
+            <span key={`left:${q.id}`} className="ww-left mono is-new">
+              {u.secondsLeft(Math.ceil(left))}
+            </span>
+          )}
         </div>
         {kind === 'choice' && (
           <div className={`ww-answers${q.answers.length <= 2 ? ' is-two' : ''}`} key={`a:${q.id}`}>
@@ -482,7 +600,7 @@ function Play(props: {
       {paused && (
         <button className="ww-paused" onClick={() => setPaused(false)}>
           <b>{u.paused}</b>
-          <span>{u.pausedHint}</span>
+          <span>{live ? u.pausedLive : u.pausedHint}</span>
         </button>
       )}
     </div>
@@ -495,7 +613,7 @@ function grid(qs: Question[], run: Run): string {
   return run.picks.map((p, i) => SQUARES[qs[i] ? judge(qs[i], p) : 'wrong']).join('');
 }
 
-function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; challenge?: ChallengeSpec; onMenu: () => void; onAgain: () => void }) {
+function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; challenge?: ChallengeSpec; fromDaily?: boolean; onMenu: () => void; onAgain: () => void }) {
   const { mode, qs, run, today, challenge } = props;
   const { p, u } = useContext(Lang);
   const total = run.pts.reduce((a, b) => a + b, 0);
@@ -524,6 +642,7 @@ function Results(props: { mode: Mode; qs: Question[]; run: Run; today: string; c
         {mode === 'endless' ? (strikes >= STRIKES ? u.rightBefore(correct, STRIKES) : u.rightOutOf(correct, run.picks.length)) : u.rightOutOf(correct, qs.length)}
       </p>
       {mode !== 'endless' && <p className="ww-grid">{grid(qs, run)}</p>}
+      {props.fromDaily && <p className="ww-muted">{u.dailyCounts}</p>}
       <div className="ww-row">
         {mode === 'challenge' && challenge ? (
           <a className="ww-btn ww-btn-go" href={`/c/${challenge.id}`} onClick={openChallengeScores}>
@@ -652,7 +771,7 @@ function Lever({ q, asking, picked, onLock }: { q: Question; asking: boolean; pi
   useEffect(() => {
     if (!asking) return;
     const onKey = (e: KeyboardEvent): void => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!forGame(e, e.key !== 'Enter')) return;
       const big = e.shiftKey ? 10 : 1;
       if (e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === '+' || e.key === '=') nudge(big);
       else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown' || e.key === '-') nudge(-big);
@@ -747,6 +866,7 @@ function OrderIt({ q, asking, picked, onLock }: { q: Question; asking: boolean; 
   useEffect(() => {
     if (!asking) return;
     const onKey = (e: KeyboardEvent): void => {
+      if (!forGame(e)) return;
       const n = '1234'.indexOf(e.key);
       if (n >= 0 && n < q.answers.length) tap(n);
       else if (e.key === 'Enter' && seq.length === q.answers.length) onLock(seq);
