@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { t as translate, tGame, useT } from '../i18n';
 import type { GameEntry } from '../catalog/types';
+import { trapTab, useFocusReturn } from './focusTrap';
 import './HowTo.css';
 
 const KEY = 'glitchbound.howto';
@@ -96,12 +97,15 @@ export function HowTo({ game, onClose, onPlay }: { game: GameEntry; onClose: () 
     onPlay?.();
   };
 
-  // Arrow keys step, Escape skips; no key reaches the game while the wizard is up (Tab and the
-  // buttons' Enter/Space still work: their default actions are left alone).
+  // Arrow keys step, Escape skips; no key reaches the game while the wizard is up (the buttons'
+  // Enter/Space still work: their default actions are left alone). Tab stays inside the wizard.
+  const box = useRef<HTMLDivElement>(null);
+  useFocusReturn();
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       e.stopImmediatePropagation();
-      if (e.type !== 'keydown' || e.repeat) return;
+      if (e.type !== 'keydown') return;
+      if (trapTab(e, box.current) || e.repeat) return;
       if (e.key === 'Escape') closeRef.current();
       else if (e.key === 'ArrowRight') setAt((k) => Math.min(count.current - 1, k + 1));
       else if (e.key === 'ArrowLeft') setAt((k) => Math.max(0, k - 1));
@@ -134,7 +138,7 @@ export function HowTo({ game, onClose, onPlay }: { game: GameEntry; onClose: () 
   };
 
   return (
-    <div className="howto" role="dialog" aria-modal="true" aria-labelledby="howto-title" data-accent={game.accent} onPointerDown={onDown} onPointerUp={onUp} onClick={(e) => e.stopPropagation()}>
+    <div ref={box} className="howto" role="dialog" aria-modal="true" aria-labelledby="howto-title" data-accent={game.accent} onPointerDown={onDown} onPointerUp={onUp} onClick={(e) => e.stopPropagation()}>
       <div className="howto-card">
         <div className="howto-top">
           <span className="howto-kicker mono">{t('How to play')}</span>

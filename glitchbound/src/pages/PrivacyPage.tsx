@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { GAMES } from '../catalog/games';
 import { Icon } from '../components/Icon';
-import { useAccount } from '../platform/account';
+import { api, useAccount } from '../platform/account';
 import { ADS, ANALYTICS } from '../platform/env';
 import { usePageMeta } from '../platform/meta';
 import { storageKeys } from '../platform/qa';
@@ -61,6 +61,8 @@ export function PrivacyPage() {
                       }
                     }
                     saveStore.reset();
+                    // ...and the guest key's cookie, or the server would hand the old key straight back.
+                    void api('/api/guest', { method: 'DELETE' }).catch(() => undefined);
                     setConfirming(false);
                     setCleared(true);
                   }}
@@ -103,7 +105,9 @@ export function PrivacyPage() {
           <h2 id="p-challenges">Friend challenges</h2>
           <p>
             When you start or join a challenge, the name you play under and your scores in it are stored on our server so everyone in the challenge can
-            see them, with a random key from this browser that keeps your seat. Challenges are deleted about a month after they end.
+            see them, with a random key from this browser that keeps your seat. That key is kept in this browser&rsquo;s storage and in one essential
+            cookie (<code>gb_guest</code>, which only our server can read, for up to 400 days), so you keep your seats even if the browser clears its
+            storage; deleting your GlitchBound data above removes both. Challenges are deleted about a month after they end.
           </p>
         </section>
 

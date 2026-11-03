@@ -653,8 +653,9 @@ export function GamePage({ game }: { game: GameEntry }) {
   return (
     <div className="game-page" data-accent={game.accent} data-world={game.section ? game.slug : undefined}>
       <div className="wrap game-toolbar">
-        <Link href="/#arcade" className="btn btn-sm btn-ghost back-link" aria-label={t('Back to the arcade')}>
-          <Icon name="arrowLeft" size={18} /> <span className="hide-sm">{t('Arcade')}</span>
+        {/* A party-only game (Crass Act) is reached from Party Mode, so that is the way back. */}
+        <Link href={game.partyOnly ? '/party' : '/#arcade'} className="btn btn-sm btn-ghost back-link" aria-label={t(game.partyOnly ? 'Back to Party Mode' : 'Back to the arcade')}>
+          <Icon name="arrowLeft" size={18} /> <span className="hide-sm">{t(game.partyOnly ? 'Party' : 'Arcade')}</span>
         </Link>
         <div className="game-heading">
           <h1>{game.title}</h1>
@@ -670,7 +671,8 @@ export function GamePage({ game }: { game: GameEntry }) {
               <Icon name="info" size={18} />
             </button>
           )}
-          {playing && (
+          {/* a restart remounts the game, which would drop a party-only game's player out of their live room */}
+          {playing && !game.partyOnly && (
             <button className="btn btn-sm" onClick={restart} title={t('Reload the game')}>
               <Icon name="restart" size={18} /> <span className="hide-sm">{t('Restart')}</span>
             </button>
@@ -799,15 +801,18 @@ export function GamePage({ game }: { game: GameEntry }) {
               )}
               {me && last.server === undefined && <p className="mono last-saving">{t('Saving to the leaderboard…')}</p>}
               {me && last.server && !last.server.ok && <p className="mono last-saving">{t('This round was not ranked ({reason}).', { reason: t(NOT_RANKED[last.server.error ?? ''] ?? 'score too high for the time played') })}</p>}
-              <div className="last-actions">
-                <button className="btn btn-primary btn-sm" onClick={() => void challengeFriend()} disabled={challenging}>
-                  <Icon name={game.challenge ? 'bolt' : 'link'} size={18} /> {t('Challenge a friend')}
-                </button>
-                <button className="btn btn-sm" onClick={() => void share('score')}>
-                  <Icon name="share" size={18} /> {t('Share score')}
-                </button>
-              </div>
-              {next && (
+              {/* a judged party game has no score to beat or brag about, and its rounds are played in a room */}
+              {!game.partyOnly && (
+                <div className="last-actions">
+                  <button className="btn btn-primary btn-sm" onClick={() => void challengeFriend()} disabled={challenging}>
+                    <Icon name={game.challenge ? 'bolt' : 'link'} size={18} /> {t('Challenge a friend')}
+                  </button>
+                  <button className="btn btn-sm" onClick={() => void share('score')}>
+                    <Icon name="share" size={18} /> {t('Share score')}
+                  </button>
+                </div>
+              )}
+              {next && !(game.partyOnly && next.kind === 'again') && (
                 <div className="next-up">
                   <p className="eyebrow">{t('Next up')}</p>
                   {next.kind === 'again' ? (
