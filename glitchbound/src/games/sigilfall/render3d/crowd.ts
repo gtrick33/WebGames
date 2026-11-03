@@ -1,11 +1,20 @@
 import * as THREE from 'three';
 import type { MeshData } from './pack';
 import { toGeometry } from './pack';
-import { animMaterial, inkMaterial, staticMaterial, type RigAnim } from './toon';
+import { animMaterial, inkMaterial, staticMaterial, xrayMaterial, type RigAnim } from './toon';
 
 /** The reused materials of each skeleton (a program is costly; the driver shares them by source). */
 const fills = new WeakMap<RigAnim, THREE.ShaderMaterial>();
 const inks = new WeakMap<RigAnim, Map<number, THREE.ShaderMaterial>>();
+const xrays = new WeakMap<RigAnim, THREE.ShaderMaterial>();
+function xrayOf(a: RigAnim): THREE.ShaderMaterial {
+  let m = xrays.get(a);
+  if (!m) {
+    m = xrayMaterial(a);
+    xrays.set(a, m);
+  }
+  return m;
+}
 function fillOf(a: RigAnim): THREE.ShaderMaterial {
   let m = fills.get(a);
   if (!m) {
@@ -41,6 +50,8 @@ const size = new THREE.Vector3();
 export class Crowd {
   readonly fill: THREE.InstancedMesh;
   readonly ink: THREE.InstancedMesh | null;
+  /** Their shape behind what stands in front of them (heroes only). */
+  xray: THREE.InstancedMesh | null = null;
   private readonly geo: THREE.BufferGeometry;
   private tint: THREE.InstancedBufferAttribute;
   private anim: THREE.InstancedBufferAttribute;
@@ -64,14 +75,28 @@ export class Crowd {
     this.fill.frustumCulled = false;
     this.fill.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.fill.count = 0;
+    // (after everything still, so that a hero's shape can be drawn behind what's there before the hero is)
+    this.fill.renderOrder = 2;
     parent.add(this.fill);
     if (inkWidth > 0) {
       this.ink = new THREE.InstancedMesh(this.geo, inkOf(rig, inkWidth), cap);
       this.ink.frustumCulled = false;
       this.ink.instanceMatrix = this.fill.instanceMatrix;
       this.ink.count = 0;
+      this.ink.renderOrder = 2;
       parent.add(this.ink);
     } else this.ink = null;
+  }
+
+  /** Shows their shape when something stands in front of them. */
+  seeThrough(): void {
+    if (this.xray) return;
+    this.xray = new THREE.InstancedMesh(this.geo, xrayOf(this.rig), this.cap);
+    this.xray.frustumCulled = false;
+    this.xray.instanceMatrix = this.fill.instanceMatrix;
+    this.xray.renderOrder = 1;
+    this.xray.count = 0;
+    this.parent.add(this.xray);
   }
 
   begin(): void {
@@ -102,6 +127,7 @@ export class Crowd {
   end(): void {
     this.fill.count = this.n;
     if (this.ink) this.ink.count = this.n;
+    if (this.xray) this.xray.count = this.n;
     if (this.n) {
       this.fill.instanceMatrix.needsUpdate = true;
       this.tint.needsUpdate = true;
@@ -115,6 +141,7 @@ export class Crowd {
     matrix.array.set(this.fill.instanceMatrix.array);
     this.fill.instanceMatrix = matrix;
     if (this.ink) this.ink.instanceMatrix = matrix;
+    if (this.xray) this.xray.instanceMatrix = matrix;
     const t = new THREE.InstancedBufferAttribute(new Float32Array(this.cap * 4), 4).setUsage(THREE.DynamicDrawUsage);
     t.array.set(this.tint.array);
     const a = new THREE.InstancedBufferAttribute(new Float32Array(this.cap * 4), 4).setUsage(THREE.DynamicDrawUsage);
@@ -128,6 +155,8 @@ export class Crowd {
   dispose(): void {
     this.parent.remove(this.fill);
     if (this.ink) this.parent.remove(this.ink);
+    if (this.xray) this.parent.remove(this.xray);
+    this.xray?.dispose();
     this.geo.dispose();
     this.fill.dispose();
     this.ink?.dispose();

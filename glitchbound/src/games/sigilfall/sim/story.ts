@@ -565,7 +565,7 @@ function beside(w: World, at: { x: number; y: number }, dx: number, dy: number):
   if (!d) return { x: at.x, y: at.y };
   for (const [x, y] of [[dx, dy], [-dx, -dy], [dx, -dy], [-dx, dy]] as const) {
     const to = castRay(w.map, at.x, at.y, 5, Math.atan2(y, x), d);
-    if (Math.hypot(to.x - at.x, to.y - at.y) > d - 2.5) return { x: at.x + x, y: at.y + y };
+    if (Math.hypot(to.x - at.x, to.y - at.y) > d - 0.25) return { x: at.x + x, y: at.y + y };
   }
   return castRay(w.map, at.x, at.y, 5, Math.atan2(dy, dx), d);
 }
@@ -597,8 +597,8 @@ function moor(w: World, at: { x: number; y: number }): { x: number; y: number } 
       if (d < bd) {
         bd = d;
         // off the bank, into the open water (within its tile: the raiders' way to it is made to its tile)
-        const ox = bank(x - 1, y) || !water(x - 2, y) ? 7 : bank(x + 1, y) || !water(x + 2, y) ? -7 : 0;
-        best = { x: (x + 0.5) * TILE + ox, y: (y + 0.5) * TILE + (north ? 4 : south ? -4 : 0) };
+        const ox = bank(x - 1, y) || !water(x - 2, y) ? 2 : bank(x + 1, y) || !water(x + 2, y) ? -2 : 0;
+        best = { x: (x + 0.5) * TILE + ox, y: (y + 0.5) * TILE + (north ? -2 : south ? 2 : 0) };
       }
     }
   }

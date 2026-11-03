@@ -37,9 +37,9 @@ describe('Sigilfall: spells fly over lone rocks', () => {
     // a pair of rocks in the open at tiles 59-60, row 37 (tests/sigilfall-rocks: the Whisperwood's meadow)
     expect([w.map.kind[37 * w.map.w + 59], w.map.kind[37 * w.map.w + 60]]).toEqual([K.Rock, K.Rock]);
     const y = 37.5 * TILE;
-    w.player.x = 56.5 * TILE;
+    w.player.x = 57.5 * TILE;
     w.player.y = y;
-    const e = w.addEnemy('moss-slime', 63.5 * TILE, y, 12, { room: -1, pack: 0 });
+    const e = w.addEnemy('moss-slime', 62 * TILE, y, 12, { room: -1, pack: 0 });
     e.hp = e.maxHp = 1e6;
     e.state = 'chase';
     e.aggro = true;
@@ -47,7 +47,7 @@ describe('Sigilfall: spells fly over lone rocks', () => {
     expect(tryCast(w, { slot: 's1', angle: 0, dist: null, assist: 0 })).toBeTruthy();
     for (let t = 0; t < 1.5 && e.hp === e.maxHp; t += 1 / 60) {
       w.input = emptyInput();
-      e.x = 63.5 * TILE;
+      e.x = 62 * TILE;
       e.y = y;
       w.step(1 / 60);
     }

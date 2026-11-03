@@ -107,18 +107,14 @@ function ring(g: Ctx, x: number, y: number, r: number, color: string, width = 1.
   g.strokeStyle = color;
   g.lineWidth = width;
   g.beginPath();
-  g.ellipse(x, y, r, r * 0.55, 0, 0, Math.PI * 2);
+  g.ellipse(x, y, r, r, 0, 0, Math.PI * 2);
   g.stroke();
 }
 
 /** What is on a fighter: the rings at their feet, what's afoot on them, their bar and their cast. */
-function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: number, targeted: boolean, friendSel: boolean, seeable: boolean, view: RingView): void {
+function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: number, seeable: boolean, view: RingView): void {
   const gale = f.auras.some((a) => a.ab === 'l-gale' && a.cc === 'incap');
   const lift = gale ? 10 + Math.sin(time * 6) * 2 : 0;
-  view.flat(f.x, f.y);
-  if (f.id === myId) ring(g, f.x, f.y, 11, '#ffe39a', 1.4);
-  if (targeted) ring(g, f.x, f.y, 13 + Math.sin(time * 5) * 0.8, '#ff5a6a', 1.8);
-  else if (friendSel) ring(g, f.x, f.y, 13, '#7fe06a', 1.6);
   if (f.dead) return;
   // what's on them: `head` is their head's height on the screen, drawn as if on their own spot
   view.up(f.x, f.y, HEAD + lift);
@@ -245,8 +241,15 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
 const HEAD = 30;
 
 /** The top layer of one frame. */
-export function drawRing(g: Ctx, m: Match, fx: RingFx, myId: number | null, time: number, view: RingStage): void {
+export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number, view: RingStage): void {
   const me = myId === null ? null : (m.fighters[myId] ?? null);
+  let g = view.groundLayer();
+  for (const f of m.fighters) {
+    view.flat(f.x, f.y);
+    if (f.id === myId) ring(g, f.x, f.y, 11, '#ffe39a', 1.4);
+    if (f.id === me?.target) ring(g, f.x, f.y, 13 + Math.sin(time * 5) * 0.8, '#ff5a6a', 1.8);
+    else if (f.id === me?.friend && f.id !== myId) ring(g, f.x, f.y, 13, '#7fe06a', 1.6);
+  }
   for (const tr of m.traps) {
     const enemy = me && tr.team !== me.team;
     // an enemy's trap is hard to see, but not impossible
@@ -260,9 +263,8 @@ export function drawRing(g: Ctx, m: Match, fx: RingFx, myId: number | null, time
     }
     g.globalAlpha = 1;
   }
-  const target = me?.target;
-  const friend = me?.friend;
-  for (const f of m.fighters) markFighter(g, m, f, myId, time, f.id === target, f.id === friend && f.id !== myId, !me || f === me || m.sees(me, f), view);
+  g = view.upperLayer();
+  for (const f of m.fighters) markFighter(g, m, f, myId, time, !me || f === me || m.sees(me, f), view);
   // the fires round the ring
   for (const f of view.flames) {
     view.up(f.x, f.y, f.h);

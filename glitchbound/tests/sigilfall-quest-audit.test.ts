@@ -165,7 +165,7 @@ describe('Sigilfall: every quest, step by step', () => {
       // those who walk in, or beside a wagon, walk all the way
       if (ev.arrive || ev.escort) {
         const from = run.pets.map((p) => ({ x: p.x, y: p.y }));
-        for (let t = 0; t < 90 && w.story.run; t += DT) {
+        for (let t = 0; t < 150 && w.story.run; t += DT) {
           w.input = emptyInput();
           w.player.hp = w.player.maxHp;
           for (const e of w.enemies) if (!e.dead && !e.held && e.state !== 'spawn') hitEnemy(w, e, 1e7, 'physical', { depth: 0 });
@@ -175,7 +175,7 @@ describe('Sigilfall: every quest, step by step', () => {
           }
           w.step(DT);
         }
-        if (w.story.run) found.push(`${ev.id}: not over after a minute and a half`);
+        if (w.story.run) found.push(`${ev.id}: not over after two and a half minutes`);
         for (const [i, p] of run.pets.entries()) if (Math.hypot(p.x - from[i]!.x, p.y - from[i]!.y) < TILE) found.push(`${ev.id}: ${p.def.id} never moved from ${tile(from[i]!.x, from[i]!.y)}`);
       }
     }
@@ -199,7 +199,7 @@ describe('Sigilfall: every quest, step by step', () => {
       // the hero stands off; the raiders go for the boat
       w.player.x = at.x + 5 * TILE;
       w.player.y = at.y + 5 * TILE;
-      for (let t = 0; t < 20 && boat!.hp === boat!.maxHp; t += DT) {
+      for (let t = 0; t < 34 && boat!.hp === boat!.maxHp; t += DT) {
         w.input = emptyInput();
         w.player.hp = w.player.maxHp;
         w.step(DT);

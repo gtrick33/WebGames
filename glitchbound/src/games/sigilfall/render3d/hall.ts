@@ -1,4 +1,5 @@
 import type { HeroLook } from '../render/art/hero';
+import { TILE } from '../sim/map';
 import { Motion } from './cast';
 import { Stand } from './crowd';
 import type { Held } from './dress';
@@ -154,7 +155,6 @@ export class Hall3D {
     if (!st.ready) return;
     if (!this.built) this.build(st.landPacks!);
     LIGHT.uTime.value = time;
-    LIGHT.uSee.value.set(0, 0, 0, 0);
     LIGHT.uDark.value.set(0, 8, 0, 0);
     LIGHT.uGrade.value.set(0, 0, 0, 0);
     for (const f of LIGHT.uFlames.value) f.set(0, 0, 0);
@@ -182,11 +182,11 @@ export class Hall3D {
       m.advance(dt);
       const onDais = off === 0 ? 0.28 : Math.max(0, 0.28 * (1 - Math.hypot(pl.x, pl.z) / 2));
       if (h) {
-        st.cast.shadow(pl.x * 16, pl.z * 16, off === 0 ? 11 : 9);
-        st.cast.person(h.look, h.held, h.shield, pl.x * 16, pl.z * 16, off === 0 ? this.turn : p.turn, m, { h: off === 0 ? 40 : 34, lift: onDais });
+        st.cast.shadow(pl.x * TILE, pl.z * TILE, off === 0 ? 11 : 9);
+        st.cast.person(h.look, h.held, h.shield, pl.x * TILE, pl.z * TILE, off === 0 ? this.turn : p.turn, m, { h: (off === 0 ? 2.5 : 2.12) * TILE, lift: onDais });
       } else {
         // an empty place: the shape of someone who could stand there
-        st.cast.shadow(pl.x * 16, pl.z * 16, 9);
+        st.cast.shadow(pl.x * TILE, pl.z * TILE, 9);
       }
     });
     st.cast.end();
@@ -197,7 +197,7 @@ export class Hall3D {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
     g.setTransform(this.k, 0, 0, this.k, 0, 0);
-    const s = (x: number, y: number, z: number): { x: number; y: number } => st.project(x * 16, z * 16, y * 16);
+    const s = (x: number, y: number, z: number): { x: number; y: number } => st.project(x * TILE, z * TILE, y * TILE);
     const top = s(0, 5.15, -8.9);
     const foot = s(0, 0, 0);
     const spread = Math.abs(s(2, 0, 0).x - foot.x);

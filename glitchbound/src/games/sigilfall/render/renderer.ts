@@ -364,10 +364,14 @@ export class Renderer {
     if (st && st.ready && (this.landFor !== w || this.landVersion !== w.stateVersion)) {
       const fresh = this.landFor !== w;
       this.landVersion = w.stateVersion;
-      st.land?.dispose();
-      if (st.land) st.scene.remove(st.land.group);
+      if (st.land) {
+        st.scene.remove(st.land.group);
+        st.groundScene.remove(st.land.under);
+        st.land.dispose();
+      }
       st.land = new Land3D(w.map, w.region, st.landPacks!, (pm) => w.isShown(pm), this.keepObject);
       st.scene.add(st.land.group);
+      st.groundScene.add(st.land.under);
       this.landFor = w;
       if (fresh) {
         this.setHeroWeapon(w.hero.cls, w);
@@ -416,7 +420,7 @@ export class Renderer {
       st.look(cx / TILE, cy / TILE);
       LIGHT.uTime.value = time;
       this.setMood(w, st);
-      st.seeThrough(p.x, p.y, 2.1);
+      st.heroAt(p.x, p.y);
       st.land?.update(cx / TILE, cy / TILE, st.spanX, st.spanZ);
       st.land?.lightFlames(cx / TILE, cy / TILE);
       st.land?.updateDoors(dt);
@@ -441,9 +445,13 @@ export class Renderer {
       bar: (x, y, wide, k, color) => this.bar(x, y, wide, k, color),
     };
 
-    // ---- what lies on the ground
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // ---- what lies on the ground: on its own layer, under whatever stands
+    const near0 = (x: number, y: number): boolean => Math.abs(x - cx) < this.vw * 0.7 && Math.abs(y - cy) < this.vh * 0.9;
+    if (st) this.g = st.beginDecals();
+    const dg = this.g;
     for (const f of w.fields) {
       this.flat(f.x, f.y);
       this.drawField(f, time);
@@ -465,13 +473,42 @@ export class Renderer {
     this.flat(p.x, p.y);
     if (!w.scene) this.drawAim(w);
     this.drawFacing(w, time);
-    this.drawRings(w);
     if (!this.landOnly) this.drawEntrances(w, time);
+    for (const e of w.enemies) {
+      if (e.dead || !hasStatus(e, 'root') || !near0(e.x, e.y)) continue;
+      this.flat(e.x, e.y);
+      dg.strokeStyle = '#6fb04f';
+      dg.lineWidth = 1.2;
+      dg.beginPath();
+      dg.arc(e.x, e.y, e.r + 2, 0, TAU);
+      dg.stroke();
+    }
+    if (p.channel) {
+      this.flat(p.x, p.y);
+      for (let i = 0; i < 3; i++) {
+        const a = time * 18 + (i * TAU) / 3;
+        dg.fillStyle = 'rgba(255,255,255,0.6)';
+        dg.fillRect(p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16, 3, 1.5);
+      }
+    }
+    const bz = w.boss();
+    if (bz?.boss && bz.boss.collapse > 0) {
+      this.flat(bz.boss.cx, bz.boss.cy);
+      this.drawCollapse(bz.boss.cx, bz.boss.cy, bz.boss.collapse, time);
+    }
+    for (const f of w.fx) {
+      if (f.kind !== 'ring' || !near0(f.x, f.y)) continue;
+      this.flat(f.x, f.y);
+      this.drawFx(f, w);
+    }
     this.flat(cx, cy);
-    this.layer?.under(g, time, view);
+    this.layer?.under(dg, time, view);
+    this.g = g;
 
     // ---- fires, what floats and what flies
-    const near = (x: number, y: number): boolean => Math.abs(x - cx) < this.vw * 0.7 && Math.abs(y - cy) < this.vh * 0.9;
+    const near = near0;
+    // (what a wall stands in front of isn't shown over the wall)
+    const seen = (x: number, y: number, h: number): boolean => near0(x, y) && !st?.land?.hidden(x, y, h);
     if (st?.land) {
       for (const f of st.land.flames) {
         const x = f.x * TILE;
@@ -490,15 +527,15 @@ export class Renderer {
       g.globalAlpha = 1;
     }
     for (const d of w.drops) if (d.kind === 'item' && near(d.x, d.y)) this.drawItemDrop(d, time);
-    for (const e of w.enemies) if (!e.dead && near(e.x, e.y)) this.drawEnemyMarks(e, time);
+    for (const e of w.enemies) if (!e.dead && seen(e.x, e.y, 24)) this.drawEnemyMarks(e, time);
     if (!p.dead) this.drawHeroMarks(w, time);
     for (const pr of w.projectiles) {
-      if (!near(pr.x, pr.y)) continue;
+      if (!seen(pr.x, pr.y, 11)) continue;
       this.upright(pr.x, pr.y, 11);
       this.drawProjectile(pr, time);
     }
     for (const f of w.fx) {
-      if (!near(f.x, f.y)) continue;
+      if (f.kind === 'ring' || !seen(f.x, f.y, 10)) continue;
       this.flat(f.x, f.y);
       this.drawFx(f, w);
     }
@@ -517,17 +554,12 @@ export class Renderer {
       this.upright(w.portal.x, w.portal.y, 14);
       this.drawPortal(w.portal.x, w.portal.y, time);
     }
-    const bz = w.boss();
-    if (bz?.boss && bz.boss.collapse > 0) {
-      this.flat(bz.boss.cx, bz.boss.cy);
-      this.drawCollapse(bz.boss.cx, bz.boss.cy, bz.boss.collapse, time);
-    }
 
     // ---- names, bars and numbers, sized for the screen
     // (a scene is a clean picture: no bars, markers or arrows over it)
     const ui = !w.scene && !this.landOnly;
     if (ui && st) {
-      for (const e of w.enemies) if (near(e.x, e.y)) this.drawEnemyBar(e, st);
+      for (const e of w.enemies) if (seen(e.x, e.y, 24)) this.drawEnemyBar(e, st);
       for (const pet of w.pets) if (near(pet.x, pet.y)) this.drawPetBar(pet, st);
       for (const gh of w.coop?.ghosts ?? []) {
         if (gh.seen <= 0 || !near(gh.x, gh.y)) continue;
@@ -609,8 +641,8 @@ export class Renderer {
   /* ---------------------------------------------------------------- names and marks */
 
   private headOf(e: Enemy): number {
-    const kit = kitOf(e.def.sprite);
-    return heightFromRadius(e.r, kit.size ?? 1) * 0.92 + (kit.float ?? 0) * TILE + 4;
+    const kit = kitOf(e.def.sprite, e.def.id);
+    return heightFromRadius(e.r, kit.size ?? 1) * 0.92 + (kit.float ?? 0) * 16 + 4;
   }
 
   private drawEnemyBar(e: Enemy, st: Stage): void {
@@ -684,14 +716,6 @@ export class Renderer {
       g.ellipse(e.x, e.y, e.r + 4, e.r + 6, 0, 0, TAU);
       g.stroke();
     }
-    if (hasStatus(e, 'root')) {
-      this.flat(e.x, e.y);
-      g.strokeStyle = '#6fb04f';
-      g.lineWidth = 1.2;
-      g.beginPath();
-      g.ellipse(e.x, e.y, e.r + 2, e.r + 1, 0, 0, TAU);
-      g.stroke();
-    }
     this.upright(e.x, e.y, h);
     if (hasStatus(e, 'stun') || hasStatus(e, 'freeze') || e.boss?.dazed) this.drawStars(e.x, e.y, time);
     if (hasStatus(e, 'mark')) {
@@ -701,14 +725,6 @@ export class Renderer {
       g.strokeRect(e.x - 3.5, yy - 3.5, 7, 7);
       g.fillStyle = '#ff4a4a';
       g.fillRect(e.x - 1, yy - 1, 2, 2);
-    }
-    if (e.elite.length) {
-      this.flat(e.x, e.y);
-      g.strokeStyle = `rgba(255,207,90,${0.55 + Math.sin(time * 5) * 0.2})`;
-      g.lineWidth = 1.4;
-      g.beginPath();
-      g.ellipse(e.x, e.y, e.r + 3, e.r + 3, 0, 0, TAU);
-      g.stroke();
     }
   }
 
@@ -722,14 +738,6 @@ export class Renderer {
       g.beginPath();
       g.ellipse(p.x, p.y, 13, 15, 0, 0, TAU);
       g.stroke();
-    }
-    if (p.channel) {
-      this.flat(p.x, p.y);
-      for (let i = 0; i < 3; i++) {
-        const a = time * 18 + (i * TAU) / 3;
-        g.fillStyle = 'rgba(255,255,255,0.6)';
-        g.fillRect(p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16, 3, 1.5);
-      }
     }
     this.upright(p.x, p.y, 2);
     if (p.buffs.length) this.drawBuffs(w, time);
@@ -828,17 +836,17 @@ export class Renderer {
       g.strokeStyle = rgba('#f5e6c8', 0.5 * fade);
       g.lineWidth = 1;
       g.beginPath();
-      g.ellipse(Math.round(f.x) + 0.5, Math.round(f.y) + 0.5, f.r, f.r * 0.75, 0, 0, TAU);
+      g.ellipse(Math.round(f.x) + 0.5, Math.round(f.y) + 0.5, f.r, f.r, 0, 0, TAU);
       g.stroke();
       g.fillStyle = rgba('#000000', 0.12 * fade);
       g.beginPath();
-      g.ellipse(f.x, f.y, f.r, f.r * 0.75, 0, 0, TAU);
+      g.ellipse(f.x, f.y, f.r, f.r, 0, 0, TAU);
       g.fill();
       return;
     }
     g.fillStyle = rgba(color, (f.hostile ? 0.32 : 0.22) * fade);
     g.beginPath();
-    g.ellipse(f.x, f.y, f.r, f.r * 0.75, 0, 0, TAU);
+    g.ellipse(f.x, f.y, f.r, f.r, 0, 0, TAU);
     g.fill();
     if (f.hostile) {
       g.strokeStyle = rgba('#ff4a4a', 0.55 * fade);
@@ -878,7 +886,7 @@ export class Renderer {
       case 'circle':
       case 'ring':
       case 'donut': {
-        const ry = 0.75;
+        const ry = 1;
         if (t.shape === 'circle') {
           g.fillStyle = rgba(color, lingering ? 0.6 : 0.18);
           g.beginPath();
@@ -950,7 +958,7 @@ export class Renderer {
     g.strokeStyle = rgba('#ffb07a', 0.85);
     g.lineWidth = wv.width * 0.5;
     g.beginPath();
-    g.ellipse(wv.x, wv.y, wv.r, wv.r * 0.75, 0, 0, TAU);
+    g.ellipse(wv.x, wv.y, wv.r, wv.r, 0, 0, TAU);
     g.stroke();
     g.strokeStyle = rgba('#ffffff', 0.6);
     g.lineWidth = 1;
@@ -996,16 +1004,16 @@ export class Renderer {
           const r = e.def.slam?.radius ?? 30;
           g.fillStyle = rgba(red, 0.14);
           g.beginPath();
-          g.ellipse(e.x, e.y, r, r * 0.75, 0, 0, TAU);
+          g.ellipse(e.x, e.y, r, r, 0, 0, TAU);
           g.fill();
           g.fillStyle = rgba(red, 0.3);
           g.beginPath();
-          g.ellipse(e.x, e.y, r * k, r * k * 0.75, 0, 0, TAU);
+          g.ellipse(e.x, e.y, r * k, r * k, 0, 0, TAU);
           g.fill();
           g.strokeStyle = rgba(red, 0.8);
           g.lineWidth = 1;
           g.beginPath();
-          g.ellipse(e.x, e.y, r, r * 0.75, 0, 0, TAU);
+          g.ellipse(e.x, e.y, r, r, 0, 0, TAU);
           g.stroke();
           break;
         }
@@ -1070,7 +1078,7 @@ export class Renderer {
       const x = p.x + Math.cos(a.angle) * a.dist;
       const y = p.y + Math.sin(a.angle) * a.dist;
       g.beginPath();
-      g.ellipse(x, y, a.size, a.size * 0.75, 0, 0, TAU);
+      g.ellipse(x, y, a.size, a.size, 0, 0, TAU);
       g.fill();
       g.globalAlpha = 0.8;
       g.stroke();
@@ -1087,7 +1095,7 @@ export class Renderer {
       g.fill();
     } else {
       g.beginPath();
-      g.ellipse(p.x, p.y, a.size, a.size * 0.75, 0, 0, TAU);
+      g.ellipse(p.x, p.y, a.size, a.size, 0, 0, TAU);
       g.fill();
       g.globalAlpha = 0.8;
       g.stroke();
@@ -1125,7 +1133,7 @@ export class Renderer {
       g.setLineDash([3, 2]);
       g.strokeStyle = 'rgba(27,20,40,0.6)';
       g.beginPath();
-      g.ellipse(t.x, t.y + 4, t.r + 5 + pulse, (t.r + 5 + pulse) * 0.45, 0, 0, TAU);
+      g.ellipse(t.x, t.y, t.r + 5 + pulse, t.r + 5 + pulse, 0, 0, TAU);
       g.stroke();
       g.lineWidth = 1;
       g.strokeStyle = 'rgba(255,224,102,0.9)';
@@ -1159,18 +1167,6 @@ export class Renderer {
   }
 
   /** Shadows and auras under characters. */
-  private drawRings(w: World): void {
-    const g = this.g;
-    const p = w.player;
-    if (p.dead) return;
-    // a soft ring so you never lose your hero in a crowd
-    g.strokeStyle = 'rgba(34,228,255,0.5)';
-    g.lineWidth = 1;
-    g.beginPath();
-    g.ellipse(p.x, p.y, 9.5, 9.5, 0, 0, TAU);
-    g.stroke();
-  }
-
   /* -------------------------------------------------------------- figures */
 
   /** Buffs show as motes of their color rising around the hero; damage walls as a ring. */
@@ -1189,7 +1185,7 @@ export class Renderer {
         g.strokeStyle = rgba(b.def.color, 0.3 + Math.sin(time * 5) * 0.1);
         g.lineWidth = 1;
         g.beginPath();
-        g.ellipse(p.x, p.y + 4, 10, 4, 0, 0, TAU);
+        g.ellipse(p.x, p.y, 10, 4, 0, 0, TAU);
         g.stroke();
       }
     });
@@ -1214,7 +1210,8 @@ export class Renderer {
       const k = clamp(e.t / 0.15, 0, 1);
       const fade = clamp((1.4 - e.t) / 0.3, 0, 1);
       const x = Math.round(who.x);
-      const y = who.y - 24 - k * 3 + Math.sin(e.t * 9) * 0.6;
+      this.upright(who.x, who.y, PERSON_H + 6);
+      const y = who.y - k * 3 + Math.sin(e.t * 9) * 0.6;
       g.globalAlpha = fade;
       g.fillStyle = 'rgba(27,20,40,0.9)';
       g.beginPath();
@@ -1235,6 +1232,7 @@ export class Renderer {
     g.save();
     g.font = '600 5.5px "Bricolage Grotesque Variable", system-ui, sans-serif';
     g.textBaseline = 'top';
+    g.textAlign = 'left';
     g.imageSmoothingEnabled = true;
     for (const s of speech) {
       const who = s.who === 'hero' ? w.player : (w.pets.find((p) => !p.dead && p.def.id === s.who) ?? w.npcs.find((n) => n.id === s.who) ?? w.enemies.find((e) => !e.dead && e.def.id === s.who));
@@ -1254,8 +1252,10 @@ export class Renderer {
       const wdt = Math.max(...shown.map((l) => g.measureText(l).width)) + 6;
       const hgt = shown.length * 6.5 + 4;
       const fade = clamp(Math.min(s.t / 0.15, (s.dur - s.t) / 0.3), 0, 1);
+      // (over the head of whoever is speaking, wherever they stand)
+      this.upright(who.x, who.y, PERSON_H + 3);
       const x = who.x - wdt / 2;
-      const y = who.y - 22 - hgt;
+      const y = who.y - 3 - hgt;
       g.globalAlpha = fade * 0.92;
       g.fillStyle = 'rgba(27,20,40,0.88)';
       g.beginPath();
@@ -1551,7 +1551,7 @@ export class Renderer {
         g.strokeStyle = rgba(f.color, clamp(1 - k, 0, 1));
         g.lineWidth = k < 0.5 ? 2 : 1;
         g.beginPath();
-        g.ellipse(f.x, f.y, Math.max(1, f.size * (0.3 + k * 0.7)), Math.max(1, f.size * 0.75 * (0.3 + k * 0.7)), 0, 0, TAU);
+        g.ellipse(f.x, f.y, Math.max(1, f.size * (0.3 + k * 0.7)), Math.max(1, f.size * (0.3 + k * 0.7)), 0, 0, TAU);
         g.stroke();
         break;
       }
@@ -1627,7 +1627,7 @@ export class Renderer {
         const s = f.size * Math.sin(Math.min(1, k * 1.5) * Math.PI * 0.5);
         g.fillStyle = rgba('#120018', 0.85);
         g.beginPath();
-        g.ellipse(f.x, f.y, s, s * 0.45, 0, 0, TAU);
+        g.ellipse(f.x, f.y, s, s, 0, 0, TAU);
         g.fill();
         g.strokeStyle = Math.floor(f.t * 20) % 2 ? '#ff3fd2' : '#22e4ff';
         g.lineWidth = 1;
@@ -1667,12 +1667,12 @@ export class Renderer {
     g.fillStyle = 'rgba(30,0,40,0.5)';
     g.beginPath();
     g.rect(cx - 600, cy - 600, 1200, 1200);
-    g.ellipse(cx, cy, r, r * 0.8, 0, 0, TAU, true);
+    g.ellipse(cx, cy, r, r, 0, 0, TAU, true);
     g.fill('evenodd');
     g.strokeStyle = Math.floor(time * 8) % 2 ? '#ff3fd2' : '#22e4ff';
     g.lineWidth = 1;
     g.beginPath();
-    g.ellipse(cx, cy, r, r * 0.8, 0, 0, TAU);
+    g.ellipse(cx, cy, r, r, 0, 0, TAU);
     g.stroke();
     g.restore();
   }

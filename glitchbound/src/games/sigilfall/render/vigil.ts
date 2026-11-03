@@ -3,6 +3,7 @@ import type { ClassId } from '../data/types';
 import { newCharacter, type Face } from '../progress/character';
 import { FIELD_ICONS, SPELLS, type Element } from '../vigil/kit';
 import type { Foe, Fx, Hero, Obstacle, Vigil } from '../vigil/sim';
+import { K, type TileMap } from '../sim/map';
 import { fxArt, stripOf, type FxArt } from './art/atlas';
 import { iconPicture } from './art/gameIcons';
 import { drawCircle } from './art/vfx';
@@ -30,11 +31,33 @@ const INK = '#1c0e08';
 
 /** What people built: a night's battlefield has none of it. */
 const BUILT = new Set(['building', 'fence', 'gate', 'sign', 'shrine', 'waystone', 'brazier', 'pillar', 'well']);
-const TALL = 26;
+const TALL = 40;
 const spot = (x: number, y: number): number => {
   const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
   return n - Math.floor(n);
 };
+
+/**
+ * The Host comes from everywhere and walks straight at the hero, so a night's battlefield is open ground: its walls,
+ * water and buildings are cleared away, leaving a ring of the land's own wall round the edge. Only what `keepOnLand`
+ * keeps stands on it, and nobody walks through those.
+ */
+export function openBattlefield(map: TileMap): void {
+  const edge = 2;
+  for (let y = 0; y < map.h; y++) {
+    for (let x = 0; x < map.w; x++) {
+      const i = y * map.w + x;
+      if (x < edge || y < edge || x >= map.w - edge || y >= map.h - edge) {
+        map.kind[i] = K.Wall;
+        continue;
+      }
+      const k = map.kind[i]!;
+      if (k === K.Wall || k === K.Water || k === K.Bridge || k === K.House || k === K.HouseAnchor || k === K.Door || k === K.Cracked || k === K.Rampart || k === K.Illusion || k === K.Prop || k === K.Fence || k === K.Pillar || k === K.Brazier) map.kind[i] = K.Floor;
+    }
+  }
+  map.buildings.length = 0;
+  map.markers.length = 0;
+}
 
 /** The land thinned out for a fight: low things stay, and about one tree in five, with room to run between them. */
 export function keepOnLand(o: LandObject): boolean {
@@ -48,8 +71,9 @@ export function trunksOf(objects: LandObject[]): Obstacle[] {
   const out: Obstacle[] = [];
   for (const o of objects) {
     if (!keepOnLand(o)) continue;
-    if (-o.dy > TALL) out.push({ x: o.x, y: o.y, r: 7.5 });
-    else if (o.kind === 'rock') out.push({ x: o.x, y: o.y, r: 5 });
+    // (as wide as what stands there: a foe walks round the leaves, not through them)
+    if (-o.dy > TALL) out.push({ x: o.x, y: o.y, r: 15 });
+    else if (o.kind === 'rock' || o.kind === 'bush') out.push({ x: o.x, y: o.y, r: 11 });
   }
   return out;
 }
@@ -148,7 +172,7 @@ function iconImage(name: string): HTMLImageElement | null {
 function ring(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, width: number, alpha: number): void {
   g.globalAlpha = Math.max(0, alpha);
   g.beginPath();
-  g.ellipse(x, y, r, r * 0.76, 0, 0, TAU);
+  g.ellipse(x, y, r, r, 0, 0, TAU);
   g.lineWidth = width + 1;
   g.strokeStyle = INK;
   g.stroke();
@@ -234,7 +258,7 @@ function skyBeam(g: CanvasRenderingContext2D, x: number, y: number, w: number, c
 function mark(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, alpha: number): void {
   g.globalAlpha = Math.max(0, alpha);
   g.beginPath();
-  g.ellipse(x, y, r, r * 0.76, 0, 0, TAU);
+  g.ellipse(x, y, r, r, 0, 0, TAU);
   g.lineWidth = 0.8;
   g.strokeStyle = color;
   g.stroke();
@@ -340,7 +364,7 @@ export class VigilPainter implements LandLayer {
       g.globalAlpha = 0.22 + u * 0.3;
       g.fillStyle = '#ff3a2a';
       g.beginPath();
-      g.ellipse(s.x, s.y, s.r, s.r * 0.76, 0, 0, TAU);
+      g.ellipse(s.x, s.y, s.r, s.r, 0, 0, TAU);
       g.fill();
       g.globalAlpha = 1;
       ring(g, s.x, s.y, s.r, '#ff5a4a', 1.4, 1);
@@ -379,7 +403,7 @@ export class VigilPainter implements LandLayer {
     g.globalAlpha = 0.26 * alpha;
     g.fillStyle = f.color;
     g.beginPath();
-    g.ellipse(f.x, f.y, f.r, f.r * 0.72, 0, 0, TAU);
+    g.ellipse(f.x, f.y, f.r, f.r, 0, 0, TAU);
     g.fill();
     g.globalAlpha = 1;
     ring(g, f.x, f.y, f.r, f.color, 0.9, alpha * 0.85);
@@ -410,7 +434,7 @@ export class VigilPainter implements LandLayer {
       g.globalAlpha = 0.16;
       g.fillStyle = au.color;
       g.beginPath();
-      g.ellipse(h.x, h.y, au.r * pulse, au.r * pulse * 0.76, 0, 0, TAU);
+      g.ellipse(h.x, h.y, au.r * pulse, au.r * pulse, 0, 0, TAU);
       g.fill();
       g.globalAlpha = 1;
       ring(g, h.x, h.y, au.r * pulse, au.color, 0.9, 0.8);
@@ -456,7 +480,7 @@ export class VigilPainter implements LandLayer {
     const r = kind === 'chest' ? 9 : 6.5;
     g.fillStyle = 'rgba(8,4,16,0.35)';
     g.beginPath();
-    g.ellipse(x, y + 1, r * 0.9, r * 0.36, 0, 0, TAU);
+    g.ellipse(x, y, r * 0.9, r * 0.9, 0, 0, TAU);
     g.fill();
     stampGlow(g, kind === 'chest' ? '#ffd257' : '#ffffff', x, y - r + bob, r * 2, 0.6);
     loop(g, art, 'spell_ready', kind === 'chest' ? 'fire' : 'lightning', time, x, y - r + bob, r * 3.2, { alpha: 0.8 });
@@ -727,7 +751,7 @@ export class VigilPainter implements LandLayer {
     g.globalAlpha = (1 - u) * 0.2;
     g.fillStyle = f.color;
     g.beginPath();
-    g.ellipse(f.x, f.y, R, R * 0.76, 0, 0, TAU);
+    g.ellipse(f.x, f.y, R, R, 0, 0, TAU);
     g.fill();
     g.globalAlpha = 1;
     ring(g, f.x, f.y, R, f.color, 3.2 - u * 2.4, 1 - u * u);

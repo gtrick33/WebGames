@@ -3,7 +3,7 @@ import { picBody } from '../data/buildingArt';
 import { PETS } from '../data/pets';
 import { SCENES } from '../data/scenes';
 import type { RegionId, StoryCond } from '../data/types';
-import { castRay } from './map';
+import { castRay, WORLD_K } from './map';
 import { placePet } from './pets';
 import { holds } from './story';
 import type { Enemy } from './types';
@@ -123,7 +123,7 @@ export function maybeStartScene(w: World): void {
     if (!def.when || def.region !== w.region.id || h.opened.includes(seenKey(def.id)) || !holds(h, def.when)) continue;
     if (def.near) {
       const at = where(w, def.near);
-      if (!at || dist(at.x, at.y, w.player.x, w.player.y) > (def.r ?? 90)) continue;
+      if (!at || dist(at.x, at.y, w.player.x, w.player.y) > (def.r ?? 90) * WORLD_K) continue;
     }
     // never in a fight, nor with an enemy at the hero's elbow (idle packs further off may watch)
     if (w.player.calm < 3 || w.enemies.some((e) => !e.dead && !e.dummy && (e.aggro || dist(e.x, e.y, w.player.x, w.player.y) < 100))) return;

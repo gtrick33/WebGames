@@ -6,6 +6,7 @@ import type { HeroLook } from '../render/art/hero';
 import { npcLookOf } from '../render/sprites';
 import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
+import { TILE } from '../sim/map';
 import { STORY_FADE } from '../sim/pets';
 import { SUMMON_TIME, type World } from '../sim/world';
 import type { Enemy, Ghost, NpcActor, Pet } from '../sim/types';
@@ -60,7 +61,7 @@ export class WorldCast {
   }
 
   sync(cast: Cast, w: World, dt: number, time: number, o: { look: HeroLook; weapon: Held; folk: number; landOnly: boolean }): void {
-    this.syncHero(cast, w, dt, time, o.look, o.weapon);
+    this.syncHero(cast, w, dt, time, o.look, o.weapon, o);
     for (const e of w.enemies) this.syncFoe(cast, e, time);
     for (const n of w.npcs) this.syncNpc(cast, n, w, time, Math.min(1, (w.time - (n.since ?? -Infinity)) / 0.8));
     for (const n of w.leftNpcs) {
@@ -84,7 +85,7 @@ export class WorldCast {
     }
     for (const s of w.spores) cast.prop('mushroom_redGroup', s.x, s.y, s.ripe ? 13 : 7, 0, 0, s.fuse > 0 && Math.floor(time * 10) % 2 === 0 ? [1.6, 1.3, 1.3] : undefined);
     for (const d of w.drops) {
-      const hop = (d.z ?? 0) / 16 + Math.sin(time * 4 + d.x) * 0.04 + 0.08;
+      const hop = ((d.z ?? 0) + Math.sin(time * 4 + d.x) * 0.6 + 1.3) / TILE;
       if (d.kind === 'gold') cast.prop('coin', d.x, d.y, 4.5, time * 4 + d.x, hop);
       else if (d.kind === 'potion') cast.prop('w_potion_medium_red', d.x, d.y, 10, time, hop);
       else if (d.kind === 'orb') cast.prop('w_potion_small_red', d.x, d.y, 8, time, hop);
@@ -94,7 +95,7 @@ export class WorldCast {
     for (const gh of w.coop?.ghosts ?? []) if (gh.seen > 0) this.syncGhost(cast, gh, dt, time);
   }
 
-  private syncHero(cast: Cast, w: World, dt: number, time: number, look: HeroLook, held: Held): void {
+  private syncHero(cast: Cast, w: World, dt: number, time: number, look: HeroLook, held: Held, o0: { landOnly: boolean }): void {
     const p = w.player;
     const m = this.hero;
     const speed = Math.hypot(p.vx, p.vy);
@@ -126,6 +127,7 @@ export class WorldCast {
     m.advance(dt);
 
     cast.shadow(p.x, p.y, mount ? 13 : 8);
+    if (!p.dead && !o0.landOnly) cast.ring(p.x, p.y, 11, '#22e4ff', 0.75);
     if (p.form) {
       cast.creature(p.form, p.x, p.y, this.heroTurn, 30, acting ? 'chop' : moving ? 'run' : 'idle', time, !acting, { alpha, flash });
       return;
@@ -134,8 +136,8 @@ export class WorldCast {
       const body = mount.body;
       const coat = coatTint(mount.coat);
       cast.creature(mountSprite(mount), p.x, p.y, this.heroTurn, MOUNT_H[body] ?? 34, moving ? 'run' : 'idle', moving ? p.walkT : time, true, { alpha, flash, tint: coat });
-      const bob = moving ? Math.abs(Math.sin(p.walkT * 7)) * 0.08 : 0;
-      cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash, h: PERSON_H * 0.86, lift: (SEAT[body] ?? 1.7) - 0.56 + bob });
+      const bob = moving ? (Math.abs(Math.sin(p.walkT * 7)) * 1.3) / TILE : 0;
+      cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash, h: PERSON_H * 0.86, xray: true, lift: ((SEAT[body] ?? 27) - 9) / TILE + bob });
       return;
     }
     // calling the mount: it fades in beside the hero
@@ -143,7 +145,7 @@ export class WorldCast {
       const md = MOUNT_DEFS[w.hero.mount]!;
       cast.creature(mountSprite(md), p.x, p.y + 2, this.heroTurn, MOUNT_H[md.body] ?? 34, 'idle', time, true, { alpha: Math.min(1, p.summon / SUMMON_TIME), tint: coatTint(md.coat) });
     }
-    cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash });
+    cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash, xray: true });
   }
 
   private lastActT = 0;
@@ -155,8 +157,8 @@ export class WorldCast {
       cast.prop('scarecrow', e.x, e.y, 26);
       return;
     }
-    const sprite = e.def.sprite;
-    const kit = kitOf(sprite);
+    const sprite = e.boss?.def.sprite ?? e.def.sprite;
+    const kit = kitOf(sprite, e.def.id);
     const h = heightFromRadius(e.r);
     let anim = this.foes.get(e.id);
     if (!anim) {
@@ -198,7 +200,7 @@ export class WorldCast {
           break;
         case 'chase':
         case 'return':
-          clip = Math.hypot(e.vx, e.vy) > 62 ? 'run' : 'walk';
+          clip = kit.walk ?? (Math.hypot(e.vx, e.vy) > 62 ? 'run' : 'walk');
           t = e.walkT;
           break;
         default:
@@ -221,7 +223,8 @@ export class WorldCast {
     const windFlash = e.state === 'windup' && Math.floor(time * 14) % 2 === 0 ? 0.32 : 0;
     const flash = e.flash > 0 ? 0.8 : dying ? (Math.floor(time * 16) % 2 ? 0.5 : 0) : windFlash;
     cast.shadow(e.x, e.y, e.r + 2);
-    cast.creature(sprite, e.x, e.y, turnOf(e.face), h, clip, t, loop, { alpha, flash, rise, sx, sy, tint: frozen ? FROZEN : chilled ? CHILLED : undefined });
+    if (e.elite.length && !e.dead) cast.ring(e.x, e.y, e.r + 4, '#ffcf5a', 0.6 + Math.sin(time * 5) * 0.2);
+    cast.creature(sprite, e.x, e.y, turnOf(e.face), h, clip, t, loop, { alpha, flash, rise, sx, sy, enemy: e.def.id, tint: frozen ? FROZEN : chilled ? CHILLED : undefined });
   }
 
   private syncNpc(cast: Cast, n: NpcActor, w: World, time: number, alpha: number): void {
@@ -286,7 +289,7 @@ export class WorldCast {
     s.m.advance(dt);
     cast.shadow(gh.x, gh.y, 8);
     const alpha = gh.dead ? 0.55 : gh.untouchable && Math.floor(time * 20) % 2 === 0 ? 0.6 : 1;
-    cast.person(gh.look as HeroLook, gh.weapon as Held, gh.cls === 'warrior' || gh.cls === 'paladin', gh.x, gh.y, s.turn, s.m, { alpha });
+    cast.person(gh.look as HeroLook, gh.weapon as Held, gh.cls === 'warrior' || gh.cls === 'paladin', gh.x, gh.y, s.turn, s.m, { alpha, xray: true });
   }
 }
 

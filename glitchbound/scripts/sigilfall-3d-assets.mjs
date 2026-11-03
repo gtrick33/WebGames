@@ -14,6 +14,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
+import * as THREE from 'three';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 
 const SRC = process.env.SIGILFALL_PACKS ?? join(homedir(), 'Downloads');
 const OUT = new URL('../public/games/sigilfall/3d/', import.meta.url).pathname;
@@ -40,6 +42,7 @@ function dirOf(m, x, y, z) {
   return [v[0] / l, v[1] / l, v[2] / l];
 }
 const toSrgb = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055);
+const invert = (m) => new THREE.Matrix4().fromArray(m).invert().toArray();
 
 /* ------------------------------------------------------------------ reading glTF */
 
@@ -554,6 +557,543 @@ function findChar(name) {
   throw new Error(`no character ${name}`);
 }
 
+let bitIndex = null;
+/** A weapon or bit by name, wherever in the KayKit packs it lives. */
+function findBit(name) {
+  if (!bitIndex) {
+    bitIndex = new Map();
+    const stack = [join(SRC, K)];
+    while (stack.length) {
+      const d = stack.pop();
+      for (const f of readdirSync(d)) {
+        const p = join(d, f);
+        if (statSync(p).isDirectory()) {
+          if (!/source|samples|fbx|^obj$|unity|characters|animations/i.test(f)) stack.push(p);
+        } else if (/\.(gltf|glb)$/.test(f)) {
+          const n = f.replace(/\.gltf\.glb$|\.gltf$|\.glb$/, '');
+          if (!bitIndex.has(n)) bitIndex.set(n, p);
+        }
+      }
+    }
+  }
+  const p = bitIndex.get(name);
+  if (!p) throw new Error(`no bit ${name}`);
+  return p;
+}
+
+/** A rigid thing tied to a joint: placed where the joint is at rest. */
+function tiePart(m, rig, jointName, shift = null, scale = 1) {
+  const j = rig.joints.indexOf(jointName);
+  if (j < 0) throw new Error(`no joint ${jointName}`);
+  let world = invert(rig.ibm.slice(j * 16, j * 16 + 16));
+  if (shift || scale !== 1) world = mul(world, trs(shift ?? [0, 0, 0], [0, 0, 0, 1], [scale, scale, scale]));
+  const pos = new Float32Array(m.n * 3);
+  const nor = new Float32Array(m.n * 3);
+  const skin = new Uint8Array(m.n * 3);
+  for (let v = 0; v < m.n; v++) {
+    pos.set(point(world, m.pos[v * 3], m.pos[v * 3 + 1], m.pos[v * 3 + 2]), v * 3);
+    nor.set(dirOf(world, m.nor[v * 3], m.nor[v * 3 + 1], m.nor[v * 3 + 2]), v * 3);
+    skin[v * 3] = j;
+    skin[v * 3 + 1] = j;
+    skin[v * 3 + 2] = 255;
+  }
+  return { n: m.n, pos, nor, col: m.col, skin, idx: m.idx };
+}
+
+/** A part made for one skeleton, moved onto the same joint of another. */
+function moveToRig(m, fromRig, rig) {
+  const out = { ...m, pos: new Float32Array(m.n * 3), nor: new Float32Array(m.nor), skin: new Uint8Array(m.skin) };
+  for (let v = 0; v < m.n; v++) {
+    const name = fromRig.joints[m.skin[v * 3]];
+    const j = rig.joints.indexOf(name);
+    const fromI = fromRig.ibm.slice(m.skin[v * 3] * 16, m.skin[v * 3] * 16 + 16);
+    const local = point(fromI, m.pos[v * 3], m.pos[v * 3 + 1], m.pos[v * 3 + 2]);
+    const toW = invert(rig.ibm.slice(j * 16, j * 16 + 16));
+    out.pos.set(point(toW, local[0], local[1], local[2]), v * 3);
+    out.skin[v * 3] = j;
+    out.skin[v * 3 + 1] = j;
+    out.skin[v * 3 + 2] = 255;
+  }
+  return out;
+}
+
+function grayed(m, floor = 70) {
+  const col = new Uint8Array(m.n * 3);
+  for (let v = 0; v < m.n; v++) {
+    const l = 0.3 * m.col[v * 3] + 0.59 * m.col[v * 3 + 1] + 0.11 * m.col[v * 3 + 2];
+    const c = Math.min(255, floor + l * 0.85);
+    col[v * 3] = c;
+    col[v * 3 + 1] = c;
+    col[v * 3 + 2] = c;
+  }
+  return { ...m, col };
+}
+
+/* ------------------------------------------------------------------ built creatures */
+
+/** Low-poly shapes, skinned whole to one joint each. */
+class Builder {
+  constructor() {
+    this.parts = [];
+  }
+  blob(joint, c, r, color, seg = 7, rings = 5) {
+    const pos = [];
+    const nor = [];
+    const col = [];
+    const skin = [];
+    const idx = [];
+    for (let i = 0; i <= rings; i++) {
+      const a = (i / rings) * Math.PI;
+      for (let j = 0; j <= seg; j++) {
+        const b = (j / seg) * Math.PI * 2;
+        const n = [Math.sin(a) * Math.cos(b), Math.cos(a), Math.sin(a) * Math.sin(b)];
+        pos.push(c[0] + n[0] * r[0], c[1] + n[1] * r[1], c[2] + n[2] * r[2]);
+        nor.push(n[0], n[1], n[2]);
+        const shade = 0.85 + 0.15 * n[1];
+        col.push(color[0] * shade, color[1] * shade, color[2] * shade);
+        skin.push(joint, joint, 255);
+      }
+    }
+    for (let i = 0; i < rings; i++) {
+      for (let j = 0; j < seg; j++) {
+        const p = i * (seg + 1) + j;
+        idx.push(p, p + 1, p + seg + 1, p + 1, p + seg + 2, p + seg + 1);
+      }
+    }
+    this.add(pos, nor, col, skin, idx);
+    return this;
+  }
+  /** A tapered limb from one point to another. */
+  limb(joint, a, b, r0, r1, color, seg = 5) {
+    const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    const l = Math.hypot(...d) || 1;
+    const z = d.map((x) => x / l);
+    const up = Math.abs(z[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+    const x = [up[1] * z[2] - up[2] * z[1], up[2] * z[0] - up[0] * z[2], up[0] * z[1] - up[1] * z[0]];
+    const xl = Math.hypot(...x);
+    x[0] /= xl;
+    x[1] /= xl;
+    x[2] /= xl;
+    const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+    const pos = [];
+    const nor = [];
+    const col = [];
+    const skin = [];
+    const idx = [];
+    for (let e = 0; e < 2; e++) {
+      const o = e ? b : a;
+      const r = e ? r1 : r0;
+      for (let j = 0; j <= seg; j++) {
+        const t = (j / seg) * Math.PI * 2;
+        const n = [x[0] * Math.cos(t) + y[0] * Math.sin(t), x[1] * Math.cos(t) + y[1] * Math.sin(t), x[2] * Math.cos(t) + y[2] * Math.sin(t)];
+        pos.push(o[0] + n[0] * r, o[1] + n[1] * r, o[2] + n[2] * r);
+        nor.push(n[0], n[1], n[2]);
+        col.push(color[0], color[1], color[2]);
+        skin.push(joint, joint, 255);
+      }
+    }
+    for (let j = 0; j < seg; j++) idx.push(j, j + 1, j + seg + 1, j + 1, j + seg + 2, j + seg + 1);
+    this.add(pos, nor, col, skin, idx);
+    return this;
+  }
+  add(pos, nor, col, skin, idx) {
+    this.parts.push({ n: pos.length / 3, pos: Float32Array.from(pos), nor: Float32Array.from(nor), col: Uint8Array.from(col, (c) => Math.min(255, c * 255)), skin: Uint8Array.from(skin), idx });
+  }
+  done() {
+    return joinParts(this.parts);
+  }
+}
+
+const rgb = (hex) => [parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255];
+
+/** A skeleton from a list of joints (name, parent, place relative to it), with clips from functions of time. */
+function builtRig(pack, id, joints, clips) {
+  const J = joints.length;
+  const names = joints.map((j) => j[0]);
+  const parents = joints.map((j) => (j[1] ? names.indexOf(j[1]) : -1));
+  const rest = [];
+  const world = [];
+  const ibm = [];
+  joints.forEach((j, i) => {
+    rest.push(...j[2], 0, 0, 0, 1, 1, 1, 1);
+    const m = trs(j[2]);
+    world[i] = parents[i] < 0 ? m : mul(world[parents[i]], m);
+    ibm.push(...invert(world[i]));
+  });
+  const rig = { joints: names, parents, rest, ibm, base: IDENT, clips: {} };
+  for (const [clip, def] of Object.entries(clips)) {
+    const fps = 15;
+    const n = Math.max(2, Math.round(def.dur * fps));
+    const quats = new Int16Array(n * J * 4);
+    const moves = new Float32Array(n * J * 3);
+    const q = new THREE.Quaternion();
+    const e = new THREE.Euler();
+    for (let f = 0; f < n; f++) {
+      const t = (f / n) * def.dur;
+      for (let j = 0; j < J; j++) {
+        const pose = def.pose(names[j], j, t, f / n) ?? {};
+        e.set(pose.rx ?? 0, pose.ry ?? 0, pose.rz ?? 0);
+        q.setFromEuler(e);
+        quats[(f * J + j) * 4] = q.x * 32767;
+        quats[(f * J + j) * 4 + 1] = q.y * 32767;
+        quats[(f * J + j) * 4 + 2] = q.z * 32767;
+        quats[(f * J + j) * 4 + 3] = q.w * 32767;
+        moves[(f * J + j) * 3] = joints[j][2][0] + (pose.dx ?? 0);
+        moves[(f * J + j) * 3 + 1] = joints[j][2][1] + (pose.dy ?? 0);
+        moves[(f * J + j) * 3 + 2] = joints[j][2][2] + (pose.dz ?? 0);
+      }
+    }
+    const tj = Array.from({ length: J }, (_, i) => i);
+    rig.clips[clip] = { n, fps: n / def.dur, q: pack.put(quats), tj, t: pack.put(moves), sj: [], s: 0 };
+  }
+  pack.rigs[id] = rig;
+  return rig;
+}
+
+/** Crawling things: a body, a ring of legs, and claws, a tail or horn as they have them. */
+function bugKit(id, o) {
+  const pack = new Pack();
+  const body = o.body;
+  const legs = o.legs;
+  const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, o.h, 0]]];
+  const dark = rgb(o.dark);
+  const main = rgb(o.main);
+  const light = rgb(o.light);
+  const b = new Builder();
+  const J = (n) => joints.findIndex((j) => j[0] === n);
+  b.blob(1, [0, 0, 0], body, main);
+  if (o.abdomen) b.blob(1, [0, 0.02, -body[2] - o.abdomen[2] * 0.7], o.abdomen, dark);
+  if (o.shell) b.blob(1, [0, body[1] * 0.35, -0.04], [body[0] * 1.02, body[1] * 0.85, body[2] * 1.02], light);
+  // eyes
+  b.blob(1, [body[0] * 0.42, body[1] * 0.35, body[2] * 0.88], [0.07, 0.07, 0.07], [0.95, 0.95, 0.9], 5, 3);
+  b.blob(1, [-body[0] * 0.42, body[1] * 0.35, body[2] * 0.88], [0.07, 0.07, 0.07], [0.95, 0.95, 0.9], 5, 3);
+  b.blob(1, [body[0] * 0.42, body[1] * 0.36, body[2] * 0.95], [0.035, 0.035, 0.035], [0.05, 0.04, 0.06], 4, 2);
+  b.blob(1, [-body[0] * 0.42, body[1] * 0.36, body[2] * 0.95], [0.035, 0.035, 0.035], [0.05, 0.04, 0.06], 4, 2);
+  for (let i = 0; i < legs; i++) {
+    const side = i % 2 ? 1 : -1;
+    const row = Math.floor(i / 2) / Math.max(1, Math.floor(legs / 2) - 1) - 0.5;
+    const name = `leg${i}`;
+    const at = [side * body[0] * 0.8, 0, row * body[2] * 1.4];
+    joints.push([name, 'body', at]);
+    const j = J(name);
+    const knee = [side * o.reach * 0.55, o.knee, row * 0.25];
+    const foot = [side * o.reach, -o.h + 0.03, row * 0.45];
+    b.limb(j, [0, 0, 0], knee, o.leg, o.leg * 0.8, dark);
+    b.limb(j, knee, foot, o.leg * 0.8, o.leg * 0.35, dark);
+  }
+  if (o.claws) {
+    for (const side of [-1, 1]) {
+      const name = side < 0 ? 'clawL' : 'clawR';
+      joints.push([name, 'body', [side * body[0] * 0.8, 0.02, body[2] * 0.75]]);
+      const j = J(name);
+      b.limb(j, [0, 0, 0], [side * 0.28, 0.06, 0.26], 0.07, 0.09, main);
+      b.blob(j, [side * 0.36, 0.08, 0.42], [o.claws, o.claws * 0.62, o.claws * 1.15], light, 6, 4);
+    }
+  }
+  if (o.tail) {
+    let last = 'body';
+    let at = [0, 0.06, -body[2] * 0.95];
+    for (let i = 0; i < 4; i++) {
+      const name = `tail${i}`;
+      joints.push([name, last, at]);
+      const j = J(name);
+      const step = [0, 0.14 + i * 0.02, -0.14 + i * 0.07];
+      b.blob(j, [0, 0, 0], [0.11 - i * 0.01, 0.11 - i * 0.01, 0.13], i % 2 ? main : dark, 6, 4);
+      if (i === 3) b.limb(j, [0, 0, 0], [0, 0.04, 0.24], 0.06, 0.005, light);
+      at = step;
+      last = name;
+    }
+  }
+  if (o.horn) b.limb(1, [0, body[1] * 0.3, body[2] * 0.8], [0, body[1] * 1.15, body[2] * 1.2], 0.08, 0.01, light);
+  const legSwing = (name, t, speed, amp) => {
+    const n = Number(name.slice(3));
+    const ph = (n % 2 === Math.floor(n / 2) % 2 ? 0 : Math.PI) + t * speed;
+    return { rx: Math.sin(ph) * amp, dy: Math.max(0, Math.cos(ph)) * 0.03 };
+  };
+  builtRig(pack, id, joints, {
+    idle: { dur: 1.4, pose: (n, j, t, u) => (n === 'body' ? { dy: Math.sin(u * 6.283) * 0.012 } : n.startsWith('tail') ? { rx: Math.sin(u * 6.283 + Number(n[4])) * 0.05 } : null) },
+    walk: { dur: 0.6, pose: (n, j, t, u) => (n.startsWith('leg') ? legSwing(n, u * 6.283, 1, 0.42) : n === 'body' ? { dy: Math.abs(Math.sin(u * 12.57)) * 0.015 } : null) },
+    run: { dur: 0.36, pose: (n, j, t, u) => (n.startsWith('leg') ? legSwing(n, u * 6.283, 1, 0.55) : null) },
+    chop: {
+      dur: 0.6,
+      pose: (n, j, t, u) => {
+        const k = Math.sin(Math.min(1, u * 1.5) * Math.PI);
+        if (n === 'body') return { rx: -k * 0.28, dz: k * 0.1 };
+        if (n === 'clawL' || n === 'clawR') return { rx: -k * 0.9 };
+        if (n.startsWith('tail')) return { rx: k * 0.55 };
+        return null;
+      },
+    },
+    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { rx: Math.sin(u * 3.14) * 0.2, dz: -Math.sin(u * 3.14) * 0.06 } : null) },
+    die: { dur: 0.7, pose: (n, j, t, u) => (n === 'root' ? { rz: Math.min(1, u * 1.6) * 3.14, dy: Math.sin(Math.min(1, u * 1.6) * 3.14) * 0.3 + Math.min(1, u * 1.6) * o.h * 1.6 } : n.startsWith('leg') ? { rx: Math.min(1, u * 2) * 0.6 } : null) },
+  });
+  const m = b.done();
+  pack.addMesh('body', m);
+  pack.meshes.body.rig = id;
+  return pack;
+}
+
+/** A serpent: a chain of joints that waves along itself, its head held up. */
+function serpentKit(id, o) {
+  const pack = new Pack();
+  const wings = !!o.wings;
+  const main = rgb(o.main);
+  const dark = rgb(o.dark);
+  const light = rgb(o.light);
+  const N = o.n;
+  const joints = [['root', null, [0, 0, 0]]];
+  const b = new Builder();
+  const seg = o.len / N;
+  let prev = 'root';
+  for (let i = 0; i < N; i++) {
+    const name = `s${i}`;
+    const y = i === 0 ? o.r * 1 + (o.rise ?? 0) : i < 3 ? -(o.rise ?? 0) / 2 : 0;
+    joints.push([name, prev, [0, y, i === 0 ? 0.2 : -seg]]);
+    const r = o.r * (i < 2 ? 0.8 : 1 - ((i - 2) / (N - 2)) * 0.78);
+    b.blob(i + 1, [0, 0, 0], [r, r * 0.9, seg * 0.85], i % 2 ? main : dark, 7, 4);
+    prev = name;
+  }
+  // the head
+  b.blob(1, [0, o.r * 0.15, o.r * 0.9], [o.r * 1.05, o.r * 0.72, o.r * 1.25], light, 7, 5);
+  b.blob(1, [o.r * 0.5, o.r * 0.55, o.r * 1.4], [0.05 + o.r * 0.14, 0.05 + o.r * 0.14, 0.05 + o.r * 0.14], [0.95, 0.9, 0.5], 5, 3);
+  b.blob(1, [-o.r * 0.5, o.r * 0.55, o.r * 1.4], [0.05 + o.r * 0.14, 0.05 + o.r * 0.14, 0.05 + o.r * 0.14], [0.95, 0.9, 0.5], 5, 3);
+  if (wings) {
+    joints.push(['wingL', 's1', [-o.r * 0.7, o.r * 0.5, 0]], ['wingR', 's1', [o.r * 0.7, o.r * 0.5, 0]]);
+    const lj = joints.findIndex((j) => j[0] === 'wingL');
+    const rj = joints.findIndex((j) => j[0] === 'wingR');
+    b.blob(lj, [-o.wings * 0.5, 0, -0.1], [o.wings * 0.55, 0.05, o.wings * 0.36], dark, 8, 5);
+    b.blob(rj, [o.wings * 0.5, 0, -0.1], [o.wings * 0.55, 0.05, o.wings * 0.36], dark, 8, 5);
+  }
+  const wave = (n, u, amp, cycles) => {
+    if (n === 'wingL') return { rz: Math.sin(u * 6.283 * 2) * 0.5 };
+    if (n === 'wingR') return { rz: -Math.sin(u * 6.283 * 2) * 0.5 };
+    if (!n.startsWith('s')) return null;
+    const i = Number(n.slice(1));
+    return { ry: Math.sin(u * 6.283 * cycles - i * 0.9) * amp * (i === 0 ? 0.4 : 1) };
+  };
+  builtRig(pack, id, joints, {
+    idle: { dur: 1.6, pose: (n, j, t, u) => wave(n, u, 0.08, 1) },
+    walk: { dur: 0.9, pose: (n, j, t, u) => wave(n, u, 0.3, 1) },
+    run: { dur: 0.5, pose: (n, j, t, u) => wave(n, u, 0.38, 1) },
+    chop: { dur: 0.6, pose: (n, j, t, u) => (n === 's0' ? { rx: -Math.sin(Math.min(1, u * 1.5) * 3.14) * 0.7, dz: Math.sin(Math.min(1, u * 1.5) * 3.14) * 0.3 } : wave(n, u, 0.08, 1)) },
+    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 's0' ? { rx: Math.sin(u * 3.14) * 0.4 } : null) },
+    die: { dur: 0.8, pose: (n, j, t, u) => (n === 's0' ? { dy: -Math.min(1, u * 1.5) * o.r * 0.9, rx: Math.min(1, u * 1.5) * 0.5 } : wave(n, u, 0.3 * (1 - u), 1)) },
+  });
+  pack.addMesh('body', b.done());
+  pack.meshes.body.rig = id;
+  return pack;
+}
+
+/* ------------------------------------------------------------------ FBX animals */
+
+async function fbxKit(id, path, picks) {
+  const buf = readFileSync(path);
+  const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  const object = new FBXLoader().parse(ab, '');
+  object.updateMatrixWorld(true);
+  const meshes = [];
+  object.traverse((o) => {
+    if (o.isSkinnedMesh) meshes.push(o);
+  });
+  if (!meshes.length) throw new Error(`${id}: no skinned mesh`);
+  const skeleton = meshes[0].skeleton;
+  const bones = skeleton.bones;
+  const parents = bones.map((b) => bones.indexOf(b.parent));
+  // parents before children
+  const order = [];
+  const seen = new Set();
+  const visit = (i) => {
+    if (seen.has(i)) return;
+    seen.add(i);
+    if (parents[i] >= 0) visit(parents[i]);
+    order.push(i);
+  };
+  bones.forEach((_, i) => visit(i));
+  const newIndex = new Map(order.map((o, n) => [o, n]));
+  const pack = new Pack();
+  const parts = [];
+  for (const mesh of meshes) {
+    const g = mesh.geometry;
+    const pos = g.getAttribute('position');
+    const nor = g.getAttribute('normal');
+    const si = g.getAttribute('skinIndex');
+    const sw = g.getAttribute('skinWeight');
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const colorOf = new Array(pos.count).fill(0);
+    for (const gr of g.groups.length ? g.groups : [{ start: 0, count: pos.count, materialIndex: 0 }]) {
+      for (let k = gr.start; k < gr.start + gr.count; k++) colorOf[g.index ? g.index.getX(k) : k] = gr.materialIndex ?? 0;
+    }
+    const bind = mesh.bindMatrix.toArray();
+    const n = pos.count;
+    const part = { n, pos: new Float32Array(n * 3), nor: new Float32Array(n * 3), col: new Uint8Array(n * 3), skin: new Uint8Array(n * 3), idx: g.index ? Array.from(g.index.array) : Array.from({ length: n }, (_, i) => i) };
+    for (let v = 0; v < n; v++) {
+      part.pos.set(point(bind, pos.getX(v), pos.getY(v), pos.getZ(v)), v * 3);
+      part.nor.set(dirOf(bind, nor.getX(v), nor.getY(v), nor.getZ(v)), v * 3);
+      const c = mats[colorOf[v]]?.color ?? new THREE.Color(1, 1, 1);
+      part.col[v * 3] = toSrgb(c.r) * 255;
+      part.col[v * 3 + 1] = toSrgb(c.g) * 255;
+      part.col[v * 3 + 2] = toSrgb(c.b) * 255;
+      const inf = [0, 1, 2, 3].map((k) => ({ j: si.getComponent(v, k), w: sw.getComponent(v, k) })).sort((a, b) => b.w - a.w);
+      const sum = inf[0].w + inf[1].w || 1;
+      part.skin[v * 3] = newIndex.get(inf[0].j);
+      part.skin[v * 3 + 1] = newIndex.get(inf[1].j);
+      part.skin[v * 3 + 2] = (inf[0].w / sum) * 255;
+    }
+    parts.push(part);
+  }
+  const joined = joinParts(parts);
+  pack.addMesh('body', id === 'fbx_raptor' ? joined : grayed(joined, 120));
+  pack.meshes.body.rig = id;
+  const J = bones.length;
+  const rest = [];
+  const ibm = [];
+  const names = [];
+  const orderedParents = [];
+  for (const o of order) {
+    const b = bones[o];
+    names.push(b.name);
+    orderedParents.push(parents[o] >= 0 ? newIndex.get(parents[o]) : -1);
+    rest.push(b.position.x, b.position.y, b.position.z, b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w, b.scale.x, b.scale.y, b.scale.z);
+    ibm.push(...skeleton.boneInverses[o].toArray());
+  }
+  const root = bones[order[0]];
+  const rig = { joints: names, parents: orderedParents, rest, ibm, base: root.parent ? root.parent.matrixWorld.toArray() : IDENT, clips: {} };
+  const mixer = new THREE.AnimationMixer(object);
+  const all = object.animations;
+  for (const [want, re] of picks) {
+    const clean = (a) => a.name.split('|').pop().replace(/^[A-Z][a-z]+_(?=[A-Z])/, '');
+    const clip = all.find((a) => re.test(clean(a)));
+    if (!clip) {
+      console.log(`  ${id}: no ${want} in ${all.map((a) => a.name.split('|').pop()).join(',')}`);
+      continue;
+    }
+    const fps = 15;
+    const n = Math.max(1, Math.round(clip.duration * fps));
+    mixer.stopAllAction();
+    const action = mixer.clipAction(clip);
+    action.reset().play();
+    const quats = new Int16Array(n * J * 4);
+    const moves = new Float32Array(n * J * 3);
+    for (let f = 0; f < n; f++) {
+      mixer.setTime((f / n) * clip.duration);
+      order.forEach((o, j) => {
+        const b = bones[o];
+        quats[(f * J + j) * 4] = b.quaternion.x * 32767;
+        quats[(f * J + j) * 4 + 1] = b.quaternion.y * 32767;
+        quats[(f * J + j) * 4 + 2] = b.quaternion.z * 32767;
+        quats[(f * J + j) * 4 + 3] = b.quaternion.w * 32767;
+        moves[(f * J + j) * 3] = b.position.x;
+        moves[(f * J + j) * 3 + 1] = b.position.y;
+        moves[(f * J + j) * 3 + 2] = b.position.z;
+      });
+    }
+    action.stop();
+    rig.clips[want] = { n, fps: n / clip.duration, q: pack.put(quats), tj: Array.from({ length: J }, (_, i) => i), t: pack.put(moves), sj: [], s: 0 };
+  }
+  pack.rigs[id] = rig;
+  return pack;
+}
+
+/** A blob of slime: it hops and quivers. Gray, for the game to color. */
+function slimeKit(id) {
+  const pack = new Pack();
+  const c = [0.92, 0.92, 0.92];
+  const b = new Builder();
+  const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, 0.42, 0]]];
+  b.blob(1, [0, 0, 0], [0.62, 0.44, 0.62], c, 10, 7);
+  b.blob(1, [0, 0.22, 0], [0.34, 0.3, 0.34], [c[0] * 1.05, c[1] * 1.05, c[2] * 1.05], 8, 5);
+  for (const side of [-1, 1]) {
+    b.blob(1, [side * 0.2, 0.14, 0.52], [0.12, 0.14, 0.09], [1, 1, 1], 6, 4);
+    b.blob(1, [side * 0.2, 0.14, 0.59], [0.06, 0.08, 0.05], [0.04, 0.03, 0.06], 5, 3);
+  }
+  builtRig(pack, id, joints, {
+    idle: { dur: 1.2, pose: (n, j, t, u) => (n === 'body' ? { dy: Math.sin(u * 6.283) * 0.03 } : null) },
+    walk: { dur: 0.7, pose: (n, j, t, u) => (n === 'root' ? { dy: Math.abs(Math.sin(u * 3.14)) * 0.34 } : null) },
+    run: { dur: 0.45, pose: (n, j, t, u) => (n === 'root' ? { dy: Math.abs(Math.sin(u * 3.14)) * 0.38 } : null) },
+    chop: { dur: 0.6, pose: (n, j, t, u) => (n === 'root' ? { dz: Math.sin(u * 3.14) * 0.5, dy: Math.sin(u * 3.14) * 0.3 } : null) },
+    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { dz: -Math.sin(u * 3.14) * 0.1 } : null) },
+    die: { dur: 0.6, pose: (n, j, t, u) => (n === 'body' ? { dy: -Math.min(1, u * 1.4) * 0.38 } : null) },
+  });
+  pack.addMesh('body', b.done());
+  pack.meshes.body.rig = id;
+  return pack;
+}
+
+/** A floating light with a pale heart and a flicker over it. */
+function wispKit(id) {
+  const pack = new Pack();
+  const b = new Builder();
+  const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, 0.55, 0]]];
+  b.blob(1, [0, 0, 0], [0.34, 0.36, 0.34], [0.95, 0.95, 0.95], 8, 6);
+  b.limb(1, [0, 0.26, 0], [0, 0.72, 0], 0.2, 0.02, [0.9, 0.9, 0.9], 6);
+  for (const side of [-1, 1]) b.blob(1, [side * 0.12, 0.05, 0.29], [0.06, 0.08, 0.05], [0.05, 0.04, 0.08], 5, 3);
+  const bob = (n, u) => (n === 'body' ? { dy: Math.sin(u * 6.283) * 0.08, ry: u * 6.283 * 0.15 } : null);
+  builtRig(pack, id, joints, {
+    idle: { dur: 1.2, pose: (n, j, t, u) => bob(n, u) },
+    walk: { dur: 0.9, pose: (n, j, t, u) => bob(n, u) },
+    chop: { dur: 0.5, pose: (n, j, t, u) => (n === 'body' ? { dz: Math.sin(u * 3.14) * 0.4 } : null) },
+    die: { dur: 0.6, pose: (n, j, t, u) => (n === 'body' ? { dy: u * 0.7 } : null) },
+  });
+  pack.addMesh('body', b.done());
+  pack.meshes.body.rig = id;
+  return pack;
+}
+
+/** Anything that flaps: a body, a head and two wings. `beak` makes it a bird. */
+function flyerKit(id, o) {
+  const pack = new Pack();
+  const main = rgb(o.main);
+  const dark = rgb(o.dark);
+  const b = new Builder();
+  const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, 0.5, 0]], ['wingL', 'body', [-o.body[0] * 0.8, 0.06, 0]], ['wingR', 'body', [o.body[0] * 0.8, 0.06, 0]]];
+  b.blob(1, [0, 0, 0], o.body, main, 8, 6);
+  b.blob(1, [0, o.body[1] * 0.55, o.body[2] * 0.85], [o.body[0] * 0.72, o.body[0] * 0.72, o.body[0] * 0.72], main, 7, 5);
+  if (o.beak) b.limb(1, [0, o.body[1] * 0.5, o.body[2] * 1.3], [0, o.body[1] * 0.38, o.body[2] * 1.9], 0.07, 0.01, rgb(o.beak), 5);
+  if (o.tail) b.blob(1, [0, 0, -o.body[2] * 1.1], [o.body[0] * 0.5, o.body[1] * 0.25, o.body[2] * 0.6], dark, 6, 4);
+  for (const side of [-1, 1]) {
+    b.blob(1, [side * o.body[0] * 0.38, o.body[1] * 0.72, o.body[2] * 1.2], [0.055, 0.06, 0.04], [0.95, 0.95, 0.85], 5, 3);
+    b.blob(side < 0 ? 2 : 3, [side * o.wing[0] * 0.5, 0, 0], [o.wing[0] * 0.55, o.wing[1], o.wing[2]], dark, 8, 5);
+  }
+  const flap = (n, u, amp) => (n === 'wingL' ? { rz: Math.sin(u * 6.283) * amp } : n === 'wingR' ? { rz: -Math.sin(u * 6.283) * amp } : n === 'body' ? { dy: Math.sin(u * 6.283 + 1.4) * 0.03 } : null);
+  builtRig(pack, id, joints, {
+    idle: { dur: 0.5, pose: (n, j, t, u) => flap(n, u, 0.55) },
+    walk: { dur: 0.32, pose: (n, j, t, u) => flap(n, u, 0.75) },
+    run: { dur: 0.24, pose: (n, j, t, u) => flap(n, u, 0.85) },
+    chop: { dur: 0.5, pose: (n, j, t, u) => (n === 'body' ? { rx: Math.sin(u * 3.14) * 0.5, dz: Math.sin(u * 3.14) * 0.3 } : flap(n, u, 0.5)) },
+    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { dz: -Math.sin(u * 3.14) * 0.12 } : null) },
+    die: { dur: 0.7, pose: (n, j, t, u) => (n === 'root' ? { dy: -u * 0.4, rz: u * 1.5 } : null) },
+  });
+  pack.addMesh('body', b.done());
+  pack.meshes.body.rig = id;
+  return pack;
+}
+
+const BUGS = {
+  spider: { body: [0.3, 0.2, 0.3], abdomen: [0.42, 0.34, 0.46], h: 0.42, legs: 8, reach: 0.95, knee: 0.34, leg: 0.05, main: '#5b4a68', dark: '#34283f', light: '#8a78a0' },
+  crab: { body: [0.55, 0.26, 0.42], h: 0.34, legs: 6, reach: 0.9, knee: 0.2, leg: 0.06, claws: 0.2, main: '#e0633f', dark: '#a53c22', light: '#f48d63' },
+  scorpion: { body: [0.3, 0.16, 0.46], h: 0.26, legs: 6, reach: 0.7, knee: 0.16, leg: 0.045, claws: 0.17, tail: true, main: '#c79a58', dark: '#8a6431', light: '#e4c27f' },
+  beetle: { body: [0.42, 0.26, 0.52], h: 0.28, legs: 6, reach: 0.68, knee: 0.14, leg: 0.05, shell: true, horn: true, main: '#3f6b49', dark: '#22402b', light: '#6ea86f' },
+  scarab: { body: [0.42, 0.24, 0.5], h: 0.26, legs: 6, reach: 0.62, knee: 0.12, leg: 0.05, shell: true, main: '#a8862f', dark: '#5f4a17', light: '#e6c14f' },
+  strider: { body: [0.2, 0.14, 0.34], h: 0.8, legs: 6, reach: 1.15, knee: 0.5, leg: 0.03, main: '#5d7a54', dark: '#374c33', light: '#8aa77c' },
+};
+const SERPENTS = {
+  viper: { n: 8, r: 0.2, len: 2, main: '#4f8f4a', dark: '#2f5f33', light: '#79b862' },
+  serpent: { n: 10, r: 0.32, len: 3.4, main: '#3f8f94', dark: '#27616a', light: '#79c4bd' },
+  wurm: { n: 9, r: 0.52, len: 3.4, main: '#c7a266', dark: '#8e6f3e', light: '#e6c98e' },
+  naga_coil: { n: 9, r: 0.3, len: 2.6, rise: 0.5, main: '#3f8f6a', dark: '#27604a', light: '#6fbf94' },
+  wyrm: { n: 9, r: 0.42, len: 3.6, rise: 0.25, wings: 1.7, main: '#d8d4cc', dark: '#a8a49c', light: '#f0ece4' },
+};
+const FARM = 'Farm Animals by @Quaternius/FBX/';
+const DINO = 'Dinosaur Animated Pack - Dec 2018/FBX/';
+const FBX_CLIPS = [
+  ['idle', /^(Idle|Eating)$/i],
+  ['walk', /^(Walk|Jump)/i],
+  ['run', /^(Gallop|Run|Jump)/i],
+  ['chop', /^(Attack|Bite|Headbutt|Jump)/i],
+  ['hit', /^(HitReact|Hit)/i],
+  ['die', /^Death/i],
+];
+
 /** Clip name in the packs, for each name the game uses. */
 const MEDIUM_CLIPS = {
   idle: 'Idle_A', idle2: 'Idle_B', walk: 'Walking_A', run: 'Running_A', hit: 'Hit_A', die: 'Death_A', dead: 'Death_A_Pose',
@@ -574,25 +1114,72 @@ const OWN_CLIPS = [
   ['die', /^(Death|Dead)$/],
 ];
 
-/** A character's whole body is one model for a crowd; these are its pieces to leave off. */
+/**
+ * The figures of the game: a character, what it leaves off, what it carries, and what else is tied to it. `gray` takes
+ * its colors out, so the game can tint it anything (one golem makes fire, frost, coral and old wood).
+ */
+const SK = 'Skeleton_';
 const KITS = {
-  // the undead
-  skeleton_warrior: 'Skeleton_Warrior', skeleton_minion: 'Skeleton_Minion', skeleton_rogue: 'Skeleton_Rogue', skeleton_mage: 'Skeleton_Mage', necromancer: 'Necromancer', skeleton_golem: 'Skeleton_Golem',
-  // people and other two-legged folk
-  knight: 'Knight', barbarian: 'Barbarian', mage: 'Mage', rogue: 'Rogue', rogue_hooded: 'Rogue_Hooded', ranger: 'Ranger', druid: 'Druid', engineer: 'Engineer',
-  paladin: 'Paladin', cleric: 'Cleric', witch: 'Witch', vampire: 'Vampire', tiefling: 'Tiefling', caveman: 'Caveman', ninja: 'Ninja', survivalist: 'Survivalist',
-  farmer_a: 'Farmer_A', farmer_b: 'Farmer_B', hiker: 'Hiker', lorekeeper: 'Lorekeeper', helper_a: 'Helper_A', helper_b: 'Helper_B', protagonist_a: 'Protagonist_A', protagonist_b: 'Protagonist_B', marksman: 'Marksman', magical_girl: 'MagicalGirl', toy_soldier: 'ToySoldier',
+  // the Ashen Host and the rest of the dead
+  sk_warrior: { char: `${SK}Warrior`, right: `${SK}Blade`, left: `${SK}Shield_Small_A` },
+  sk_guard: { char: `${SK}Warrior`, right: `${SK}Axe`, left: `${SK}Shield_Large_A` },
+  sk_spear: { char: `${SK}Warrior`, right: `${SK}Scythe` },
+  sk_banner: { char: `${SK}Warrior`, right: 'Orc_Banner' },
+  sk_king: { char: `${SK}Warrior`, drop: /Helmet/, right: `${SK}Blade`, parts: [['Necromancer', 'Necromancer_Crown']] },
+  sk_minion: { char: `${SK}Minion`, right: `${SK}Dagger` },
+  sk_worker: { char: `${SK}Minion`, right: `${SK}Mace` },
+  sk_archer: { char: `${SK}Rogue`, right: `${SK}Crossbow`, back: `${SK}Quiver` },
+  sk_mage: { char: `${SK}Mage`, right: `${SK}Staff` },
+  sk_necro: { char: 'Necromancer', right: `${SK}Staff` },
+  sk_golem: { char: `${SK}Golem`, right: `${SK}Golem_Axe` },
+  // people
+  knight: { char: 'Knight', right: 'sword_1handed', left: 'shield_square' },
+  barbarian: { char: 'Barbarian', right: 'axe_2handed' },
+  mage: { char: 'Mage', right: 'staff' },
+  rogue: { char: 'Rogue', right: 'dagger', left: 'dagger' },
+  rogue_hooded: { char: 'Rogue_Hooded', right: 'dagger', left: 'dagger' },
+  ranger: { char: 'Ranger', left: 'bow_withString', back: 'quiver' },
+  druid: { char: 'Druid', right: 'druid_staff' },
+  engineer: { char: 'Engineer', right: 'engineer_Wrench' },
+  paladin: { char: 'Paladin', right: 'paladin_hammer', left: 'paladin_shield' },
+  cleric: { char: 'Cleric', right: 'Cleric_Mace', left: 'Cleric_Shield' },
+  witch: { char: 'Witch', right: 'Broom' },
+  vampire: { char: 'Vampire', right: 'Vampire_Sword' },
+  tiefling: { char: 'Tiefling', right: 'Tiefling_Sword' },
+  caveman: { char: 'Caveman', right: 'Caveman_Club' },
+  ninja: { char: 'Ninja', right: 'Ninja_Katana' },
+  survivalist: { char: 'Survivalist', right: 'sword_1handed' },
+  farmer_a: { char: 'Farmer_A', right: 'pitchfork' },
+  farmer_b: { char: 'Farmer_B' },
+  lorekeeper: { char: 'Lorekeeper', drop: /Backpack/, right: 'Lorekeeper_Staff' },
   // brutes
-  orc_raider: 'OrcRaider', orc_brute: 'OrcBrute', black_knight: 'BlackKnight', frost_golem: 'FrostGolem', monstrosity: 'Monstrosity', barbarian_large: 'Barbarian_Large', werewolf: 'Werewolf_Wolf', wolfman: 'Werewolf_Man', monster: 'Monster', avian: 'AvianSwordsman', plant_warrior: 'PlantWarrior',
+  orc_brute: { char: 'OrcBrute', right: 'Orc_Axe_Large' },
+  black_knight: { char: 'BlackKnight', right: 'BlackKnight_Sword_Large', left: 'BlackKnight_Shield_Large' },
+  vaelor: { char: 'BlackKnight', right: 'BlackKnight_Sword_Large', parts: [['Necromancer', 'Necromancer_Crown']] },
+  golem: { char: 'FrostGolem', gray: true },
+  treant: { char: 'FrostGolem', gray: true, ties: [['Tree_Bare_1_A', 'chest', [0, 0.1, -0.2], 1.15], ['Bush_2_C', 'upperarm.l', [0, 0.2, 0], 0.8], ['Bush_2_C', 'upperarm.r', [0, 0.2, 0], 0.8]] },
+  monstrosity: { char: 'Monstrosity', right: 'Monstrosity_Pitchfork_Large' },
+  barbarian_large: { char: 'Barbarian_Large', drop: /BearHat|BearPelt/, right: 'axe_2handed_Large' },
+  werewolf: { char: 'Werewolf_Wolf' },
+  monster: { char: 'Monster', right: `${SK}Dagger` },
+  ghost: { char: `${SK}Minion`, gray: 150, right: null },
+  sk_scythe: { char: `${SK}Mage`, right: `${SK}Scythe` },
+  avian: { char: 'AvianSwordsman', right: 'AvianSwordsman_Sword' },
+  plant_warrior: { char: 'PlantWarrior', right: 'PlantWarrior_Spear', left: 'PlantWarrior_Shield' },
+  plant_archer: { char: 'PlantWarrior', left: 'PlantWarrior_Bow_withString' },
+  // half a body, for what stands on a horse's back or a serpent's coils
+  top_centaur: { char: 'Barbarian', drop: /Leg|BearHat|BearPelt/, right: 'axe_2handed' },
+  top_naga: { char: 'Tiefling', drop: /Leg|Tail/, right: 'Tiefling_Sword' },
 };
 
-const MONSTERS = 'Ultimate Monsters/';
-const CREATURES = {
-  // big, flying and blob monsters, each with their own skeleton and clips
-  m_alien: 'Big/glTF/Alien', m_birb: 'Big/glTF/Birb', m_bluedemon: 'Big/glTF/BlueDemon', m_bunny: 'Big/glTF/Bunny', m_cactoro: 'Big/glTF/Cactoro', m_demon: 'Big/glTF/Demon', m_dino: 'Big/glTF/Dino', m_fish: 'Big/glTF/Fish', m_frog: 'Big/glTF/Frog', m_monkroose: 'Big/glTF/Monkroose', m_mushking: 'Big/glTF/MushroomKing', m_ninja: 'Big/glTF/Ninja', m_orc: 'Big/glTF/Orc', m_orcskull: 'Big/glTF/Orc_Skull', m_tribal: 'Big/glTF/Tribal', m_yeti: 'Big/glTF/Yeti',
-  f_alpaking: 'Flying/glTF/Alpaking', f_alpaking2: 'Flying/glTF/Alpaking_Evolved', f_armabee: 'Flying/glTF/Armabee', f_armabee2: 'Flying/glTF/Armabee_Evolved', f_demon: 'Flying/glTF/Demon', f_dragon: 'Flying/glTF/Dragon', f_dragon2: 'Flying/glTF/Dragon_Evolved', f_ghost: 'Flying/glTF/Ghost', f_ghostskull: 'Flying/glTF/Ghost_Skull', f_glub: 'Flying/glTF/Glub', f_glub2: 'Flying/glTF/Glub_Evolved', f_goleling: 'Flying/glTF/Goleling', f_goleling2: 'Flying/glTF/Goleling_Evolved', f_hywirl: 'Flying/glTF/Hywirl', f_pigeon: 'Flying/glTF/Pigeon', f_squidle: 'Flying/glTF/Squidle', f_tribal: 'Flying/glTF/Tribal',
-  b_alien: 'Blob/glTF/Alien', b_birb: 'Blob/glTF/Birb', b_cactoro: 'Blob/glTF/Cactoro', b_cat: 'Blob/glTF/Cat', b_chicken: 'Blob/glTF/Chicken', b_dog: 'Blob/glTF/Dog', b_fish: 'Blob/glTF/Fish', b_green: 'Blob/glTF/GreenBlob', b_spiky: 'Blob/glTF/GreenSpikyBlob', b_mushnub: 'Blob/glTF/Mushnub', b_mushnub2: 'Blob/glTF/Mushnub_Evolved', b_ninja: 'Blob/glTF/Ninja', b_orc: 'Blob/glTF/Orc', b_pigeon: 'Blob/glTF/Pigeon', b_pink: 'Blob/glTF/PinkBlob', b_wizard: 'Blob/glTF/Wizard', b_yeti: 'Blob/glTF/Yeti',
+/** Things that fight without a skeleton: bound to the root joint of the people's rig, they just stand. */
+const STILL_KITS = {
+  catapult: `${HEX}units/neutral/catapult.gltf`,
+  siege_ram: 'kenney_castle-kit/Models/GLB format/siege-ram.glb',
+  chain_post: `${GRAVE}border-pillar.glb`,
+  mimic: `${DUN}chest_mimic.gltf`,
 };
+
 const ANIMALS = { a_horse: 'Horse', a_horse_white: 'Horse_White', a_stag: 'Stag', a_deer: 'Deer', a_cow: 'Cow', a_alpaca: 'Alpaca', a_shiba: 'ShibaInu', a_fox: 'Fox', a_bull: 'Bull', a_wolf: 'Wolf', a_donkey: 'Donkey', a_husky: 'Husky' };
 
 const WEAPONS = ['sword_A', 'sword_B', 'sword_C', 'sword_D', 'sword_E', 'sword_F', 'sword_G', 'axe_A', 'axe_B', 'axe_C', 'axe_D', 'hammer_A', 'hammer_B', 'hammer_C', 'hammer_D', 'staff_A', 'staff_B', 'staff_C', 'staff_D', 'bow_A_withString', 'bow_B_withString', 'bow_C_withString', 'dagger_A', 'dagger_B', 'dagger_C', 'wand_A', 'wand_B', 'shield_A', 'shield_B', 'shield_C', 'shield_D', 'spear_A', 'halberd', 'scythe', 'arrow_A'];
@@ -608,15 +1195,24 @@ const NATURE = {
   ...list(HAL, ['tree_dead_large', 'tree_dead_medium', 'tree_pine_orange_large', 'tree_pine_yellow_large', 'gravestone', 'grave_A', 'gravemarker_A', 'coffin', 'skull', 'ribcage', 'bone_A', 'scarecrow', 'lantern_standing', 'post_lantern', 'post_skull', 'shrine', 'shrine_candles', 'crypt', 'arch', 'arch_gate', 'fence', 'fence_broken', 'fence_gate', 'wagon', 'wagon_hay', 'pumpkin_orange', 'sign_both', 'wooden_gate']),
 };
 const buildingFile = (n) => `${HEX}buildings/blue/building_${n}_blue.gltf`;
+const KCASTLE = 'kenney_castle-kit/Models/GLB format/';
 const TOWN = {
+  ...list(KCASTLE, ['gate', 'door', 'metal-gate', 'tower-square-base'], '.glb'),
+  ...list(GRAVE, ['crypt-door', 'crypt-large-door', 'crypt-small', 'crypt-a', 'grave', 'gravestone-round', 'gravestone-cross'], '.glb'),
+  cave_rock: `${NAT}cliff_cave_rock.glb`,
+  cave_stone: `${NAT}cliff_cave_stone.glb`,
+  campfire_bricks: `${NAT}campfire_bricks.glb`,
   ...Object.fromEntries(['home_A', 'home_B', 'church', 'tavern', 'blacksmith', 'market', 'castle', 'tower_A', 'tower_B', 'tower_base', 'townhall', 'windmill', 'watermill', 'lumbermill', 'stables', 'barracks', 'watchtower', 'shrine', 'well', 'tent', 'mine', 'docks', 'workshop'].map((n) => [`b_${n}`, buildingFile(n)])),
   ...Object.fromEntries(['barrel', 'crate_A_big', 'crate_B_small', 'crate_long_A', 'crate_open', 'haybale', 'sack', 'tent', 'trough', 'weaponrack', 'wheelbarrow', 'target', 'flag_blue', 'flag_red', 'ladder', 'pallet', 'boat', 'anchor', 'bucket_water'].map((n) => [`p_${n}`, `${HEX}decoration/props/${n}.gltf`])),
   ...list(GRAVE, ['altar-stone', 'border-pillar', 'cross', 'debris', 'debris-wood', 'fire-basket', 'hay-bale', 'iron-fence', 'lantern-candle'], '.glb'),
   anvil: `${TOOL}anvil.gltf`, grindstone: `${TOOL}grindstone.gltf`,
+  ...Object.fromEntries(['resource_lumber', 'resource_stone'].map((n) => [`p_${n}`, `${HEX}decoration/props/${n}.gltf`])),
+  p_cart_merchant: `${HEX}units/neutral/cart_merchant.gltf`,
 };
 const INDOOR = {
   ...list(DUN, ['column', 'pillar', 'pillar_decorated', 'barrel_large', 'barrel_small', 'box_large', 'crate_large', 'crates_stacked', 'banner_blue', 'banner_red', 'banner_shield_red', 'banner_patternA_blue', 'banner_triple_red', 'banner_thin_yellow', 'bed_A_single', 'bed_decorated', 'bed_floor', 'bench', 'bookcase_double_decoratedA', 'bookcase_single_decoratedA', 'candle_lit', 'candle_triple', 'chair', 'chest', 'chest_gold', 'chest_large', 'chest_large_gold', 'chest_mimic', 'coin', 'coin_stack_medium', 'keg', 'rocks', 'rubble_half', 'rubble_large', 'shelf_small_books', 'shelves_decorated', 'stairs', 'stool', 'sword_shield', 'table_long', 'table_long_tablecloth_decorated_A', 'table_medium', 'table_round_medium', 'torch_lit', 'torch_mounted', 'trunk_large_A', 'bucket']),
   ...list(FUR, ['rug_rectangle_A', 'rug_oval_A', 'cabinet_medium_decorated', 'armchair']),
+  ...list(DUN, ['bartop_A_large', 'banner_white', 'table_long_decorated_B', 'table_round_large', 'candle', 'torch']),
 };
 
 /* ------------------------------------------------------------------ build */
@@ -669,23 +1265,58 @@ async function main() {
   for (const b of ADV_BITS) heroPack.addMesh(`w_${b}`, await propOf(join(SRC, ADV, `${b}.gltf`)));
   says('hero', heroPack.write('hero.pack'));
 
-  // each crowd's model, joined whole
-  for (const [id, char] of Object.entries(KITS)) {
-    const doc = loadGltf(findChar(char));
-    const { rig, err } = whichRig(doc, medium, large);
-    if (err > 0.3) console.log(`  ${char}: ${rig}, off by ${err.toFixed(3)}`);
-    const parts = await partsOf(doc, rig === 'medium' ? medium : large);
+  // each crowd's model, joined whole, armed
+  for (const [id, spec] of Object.entries(KITS)) {
+    const doc = loadGltf(findChar(spec.char));
+    const { rig: rigName, err } = whichRig(doc, medium, large);
+    if (err > 0.3) console.log(`  ${spec.char}: ${rigName}, off by ${err.toFixed(3)}`);
+    const rig = rigName === 'medium' ? medium : large;
+    const parts = await partsOf(doc, rig);
+    const list = Object.entries(parts).filter(([n]) => !spec.drop?.test(n)).map(([, m]) => m);
+    for (const [bit, joint] of [[spec.right, 'handslot.r'], [spec.left, 'handslot.l']]) if (bit) list.push(tiePart(await propOf(findBit(bit)), rig, joint));
+    if (spec.back) list.push(tiePart(await propOf(findBit(spec.back)), rig, 'chest', [0, 0.25, -0.42]));
+    for (const [char, part] of spec.parts ?? []) {
+      const d2 = loadGltf(findChar(char));
+      const r2 = whichRig(d2, medium, large).rig === 'medium' ? medium : large;
+      const p2 = (await partsOf(d2, r2))[part];
+      if (!p2) throw new Error(`no part ${part}`);
+      list.push(r2 === rig ? p2 : moveToRig(p2, r2, rig));
+    }
+    for (const [bit, joint, shift, scale] of spec.ties ?? []) {
+      const raw = await propOf(findBit(`${bit}_Color1`).replace(/\\/g, '/'));
+      list.push(tiePart(raw, rig, joint, shift, scale));
+    }
     const pack = new Pack();
-    pack.addMesh('body', joinParts(Object.values(parts)));
-    pack.meshes.body.rig = rig;
+    const whole = joinParts(list);
+    pack.addMesh('body', spec.gray ? grayed(whole, spec.gray === true ? 70 : spec.gray) : whole);
+    pack.meshes.body.rig = rigName;
     says(id, pack.write(`k/${id}.pack`));
+  }
+  for (const [id, rel] of Object.entries(STILL_KITS)) {
+    const m = await propOf(join(SRC, rel));
+    const pack = new Pack();
+    m.skin = new Uint8Array(m.n * 3);
+    for (let v = 0; v < m.n; v++) m.skin[v * 3 + 2] = 255;
+    pack.addMesh('body', m);
+    pack.meshes.body.rig = 'medium';
+    says(id, pack.write(`k/${id}.pack`));
+  }
+  for (const [id, o] of Object.entries(BUGS)) says(id, bugKit(id, o).write(`k/${id}.pack`));
+  says('slime', slimeKit('slime').write('k/slime.pack'));
+  says('wisp', wispKit('wisp').write('k/wisp.pack'));
+  says('moth', flyerKit('moth', { body: [0.18, 0.16, 0.3], wing: [0.62, 0.05, 0.36], main: '#c8b890', dark: '#e4d8b8' }).write('k/moth.pack'));
+  says('bird', flyerKit('bird', { body: [0.26, 0.26, 0.42], wing: [0.72, 0.05, 0.3], beak: '#e0a840', tail: true, main: '#e8e4e0', dark: '#c8c4c0' }).write('k/bird.pack'));
+  for (const [id, o] of Object.entries(SERPENTS)) says(id, serpentKit(id, o).write(`k/${id}.pack`));
+  for (const [id, rel] of [['fbx_pig', `${FARM}Pig.fbx`], ['fbx_sheep', `${FARM}Sheep.fbx`], ['fbx_raptor', `${DINO}Velociraptor.fbx`]]) {
+    says(id, (await fbxKit(id, join(SRC, rel), FBX_CLIPS)).write(`k/${id}.pack`));
   }
   const addOwn = async (id, path) => {
     const doc = loadGltf(path);
     const rig = rigFrom(doc);
     const parts = await partsOf(doc, rig);
     const pack = new Pack();
-    pack.addMesh('body', joinParts(Object.values(parts)));
+    const whole = joinParts(Object.values(parts));
+    pack.addMesh('body', whole);
     pack.meshes.body.rig = id;
     const names = (doc.g.animations ?? []).map((a) => a.name);
     for (const [want, re] of OWN_CLIPS) {
@@ -696,7 +1327,6 @@ async function main() {
     pack.rigs[id] = cleanRig(rig);
     says(id, pack.write(`k/${id}.pack`));
   };
-  for (const [id, rel] of Object.entries(CREATURES)) await addOwn(id, join(SRC, MONSTERS, `${rel}.gltf`));
   for (const [id, n] of Object.entries(ANIMALS)) await addOwn(id, join(SRC, 'Ultimate Animated Animals - July 2021/glTF', `${n}.gltf`));
 
   // the land

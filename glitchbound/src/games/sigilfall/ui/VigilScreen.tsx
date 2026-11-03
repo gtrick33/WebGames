@@ -9,6 +9,7 @@ import { HAIRS, newCharacter, SKINS, type Face } from '../progress/character';
 import { DEFAULT_SETTINGS } from '../progress/save';
 import { iconPicture } from '../render/art/gameIcons';
 import { Renderer } from '../render/renderer';
+import { openBattlefield } from '../render/vigil';
 import { keepOnLand, trunksOf, VigilPainter, type PartyLook } from '../render/vigil';
 import { TILE } from '../sim/map';
 import { World } from '../sim/world';
@@ -274,6 +275,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
     world.folk.length = 0;
     world.chickens.length = 0;
     world.spores.length = 0;
+    openBattlefield(world.map);
     const renderer = new Renderer(base);
     renderer.landOnly = true;
     renderer.keepObject = keepOnLand;

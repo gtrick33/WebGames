@@ -1,12 +1,13 @@
 import * as THREE from 'three';
-import { TILE } from '../sim/map';
+import { ART_TILE, TILE } from '../sim/map';
 import { Crowd, Stand } from './crowd';
 import { dressedOf, type Held, type Wardrobe } from './dress';
 import { hexRgb, kitOf, type Kit } from './kits';
 import { UNIT } from './land';
 import { loadPack, type MeshData, type Pack } from './pack';
-import { rigAnimOf, shadowMaterial, type RigAnim } from './toon';
+import { ringMaterial, rigAnimOf, shadowMaterial, type RigAnim } from './toon';
 import type { HeroLook } from '../render/art/hero';
+import { npcLookOf } from '../render/sprites';
 
 /**
  * Everyone on the land right now. Each frame the game says who stands where and what they are doing; those who
@@ -81,24 +82,37 @@ export class Cast {
   private readonly used = new Set<Crowd | Stand>();
   private readonly shadowMesh: THREE.InstancedMesh;
   private shadowN = 0;
+  private readonly rings: THREE.InstancedMesh;
+  private readonly ringTint: THREE.InstancedBufferAttribute;
+  private ringN = 0;
   private readonly m4 = new THREE.Matrix4();
   /** Where to look for still things (a chest, a potion). */
   packs: Pack[] = [];
 
-  constructor() {
+  constructor(ground: THREE.Object3D) {
     const quad = new THREE.PlaneGeometry(1, 1);
     quad.rotateX(-Math.PI / 2);
     this.shadowMesh = new THREE.InstancedMesh(quad, shadowMaterial, 512);
     this.shadowMesh.frustumCulled = false;
-    this.shadowMesh.position.y = 0.02;
+    this.shadowMesh.position.y = 0.05;
     this.shadowMesh.count = 0;
-    this.root.add(this.shadowMesh);
+    ground.add(this.shadowMesh);
+    const ringQuad = new THREE.PlaneGeometry(1, 1);
+    ringQuad.rotateX(-Math.PI / 2);
+    this.ringTint = new THREE.InstancedBufferAttribute(new Float32Array(64 * 4), 4).setUsage(THREE.DynamicDrawUsage);
+    ringQuad.setAttribute('iRing', this.ringTint);
+    this.rings = new THREE.InstancedMesh(ringQuad, ringMaterial, 64);
+    this.rings.frustumCulled = false;
+    this.rings.position.y = 0.06;
+    this.rings.count = 0;
+    ground.add(this.rings);
   }
 
   begin(): void {
     for (const c of this.used) c.begin();
     this.used.clear();
     this.shadowN = 0;
+    this.ringN = 0;
   }
 
   end(): void {
@@ -113,6 +127,21 @@ export class Cast {
     for (const c of this.used) c.end();
     this.shadowMesh.count = this.shadowN;
     this.shadowMesh.instanceMatrix.needsUpdate = true;
+    this.rings.count = this.ringN;
+    this.rings.instanceMatrix.needsUpdate = true;
+    this.ringTint.needsUpdate = true;
+  }
+
+  /** A ring on the ground round someone, `r` world pixels out. */
+  ring(x: number, y: number, r: number, color: string, alpha = 0.7): void {
+    if (this.ringN >= 64) return;
+    const i = this.ringN++;
+    const s = r * UNIT * 2;
+    this.m4.makeScale(s, 1, s);
+    this.m4.setPosition(x * UNIT, 0, y * UNIT);
+    this.rings.setMatrixAt(i, this.m4);
+    const [cr, cg, cb] = hexRgb(color);
+    this.ringTint.setXYZW(i, cr, cg, cb, alpha);
   }
 
   /** A soft round shadow, `r` world pixels across. */
@@ -157,17 +186,33 @@ export class Cast {
     return !!this.entry(kitOf(sprite).k, kitOf(sprite)).crowd;
   }
 
+  /** A creature's clip, by the name its kit walks with. */
+  walkOf(sprite: string, enemy?: string): string {
+    return kitOf(sprite, enemy).walk ?? 'walk';
+  }
+
   /** Starts fetching models ahead of need. */
   preload(sprites: Iterable<string>): void {
-    for (const s of sprites) this.entry(kitOf(s).k, kitOf(s));
+    for (const s of sprites) {
+      const k = kitOf(s);
+      this.entry(k.k, k);
+      if (k.top) this.entry(k.top.k, { k: k.top.k });
+    }
   }
 
   /**
    * One creature, by the game's name for it. `h` is its height in world pixels, `rot` its facing about the
    * vertical. Returns the kit, so the caller can read how high its head is.
    */
-  creature(sprite: string, x: number, y: number, rot: number, h: number, clip: string, t: number, loop: boolean, opts?: { alpha?: number; flash?: number; rise?: number; tint?: readonly [number, number, number]; sx?: number; sy?: number; motion?: Motion; lift?: number }): Kit {
-    const kit = kitOf(sprite);
+  creature(sprite: string, x: number, y: number, rot: number, h: number, clip: string, t: number, loop: boolean, opts?: { alpha?: number; flash?: number; rise?: number; tint?: readonly [number, number, number]; sx?: number; sy?: number; motion?: Motion; lift?: number; enemy?: string }): Kit {
+    const kit = kitOf(sprite, opts?.enemy);
+    if (kit.look) {
+      const look = npcLookOf(kit.look);
+      if (look) {
+        this.person(look, null, false, x, y, rot, { clip: clip === 'chop' ? 'cast' : clip, t, loop }, { alpha: opts?.alpha, flash: opts?.flash, h });
+        return kit;
+      }
+    }
     const e = this.entry(kit.k, kit);
     const crowd = e.crowd;
     const rig = e.rig;
@@ -202,14 +247,25 @@ export class Cast {
       g *= opts.tint[1];
       b *= opts.tint[2];
     }
-    const lift = (kit.float ?? 0) + (opts?.lift ?? 0);
+    const lift = (kit.float ?? 0) * (ART_TILE / TILE) + (opts?.lift ?? 0);
     // (a beast's own middle stands on its spot: some are modeled with their hips at the origin)
     const mx = ((mesh.min[0] + mesh.max[0]) / 2) * s;
     const mz = ((mesh.min[2] + mesh.max[2]) / 2) * s;
     const cos = Math.cos(rot);
     const sin = Math.sin(rot);
-    crowd.put(x * UNIT - (mx * cos + mz * sin), lift - (opts?.rise ?? 0) * (h / TILE), y * UNIT - (mz * cos - mx * sin), rot, s * (opts?.sx ?? 1), s * (opts?.sy ?? 1), frames.a, frames.b, frames.k, opts?.alpha ?? 1, r, g, b, opts?.flash ?? 0);
+    crowd.put(x * UNIT - (mx * cos + mz * sin), lift - (opts?.rise ?? 0) * (h / TILE), y * UNIT - (mz * cos - mx * sin), rot, s * (opts?.sx ?? 1), s * (opts?.sy ?? 1), frames.a, frames.b, frames.k, Math.min(opts?.alpha ?? 1, kit.ghost ?? 1), r, g, b, opts?.flash ?? 0);
     this.used.add(crowd);
+    if (kit.top) {
+      const e2 = this.entry(kit.top.k, { k: kit.top.k });
+      if (e2.crowd && e2.rig && e2.mesh) {
+        const c = kit.top.tint ? hexRgb(kit.top.tint) : ([1, 1, 1] as const);
+        const topTall = Math.max(0.05, e2.mesh.max[1] - e2.mesh.min[1]);
+        const ks = ((h * kit.top.size) / TILE) / topTall;
+        const riding = e2.rig.has(kit.top.clip) ? kit.top.clip : 'idle';
+        e2.crowd.put(x * UNIT, lift + (kit.top.y * h) / TILE, y * UNIT, rot, ks, ks, e2.rig.frame(riding, t, true), 0, 0, Math.min(opts?.alpha ?? 1, kit.ghost ?? 1), c[0], c[1], c[2], opts?.flash ?? 0);
+        this.used.add(e2.crowd);
+      }
+    }
     return kit;
   }
 
@@ -220,7 +276,7 @@ export class Cast {
   }
 
   /** One person in a look: a hero, a villager, anyone who wears the wardrobe. */
-  person(look: HeroLook, held: Held | null, shield: boolean, x: number, y: number, rot: number, motion: Motion | { clip: string; t: number; loop: boolean }, opts?: { alpha?: number; flash?: number; h?: number; lift?: number; tint?: readonly [number, number, number] }): void {
+  person(look: HeroLook, held: Held | null, shield: boolean, x: number, y: number, rot: number, motion: Motion | { clip: string; t: number; loop: boolean }, opts?: { alpha?: number; flash?: number; h?: number; lift?: number; tint?: readonly [number, number, number]; xray?: boolean }): void {
     const w = this.wardrobe;
     if (!w) return;
     const { key, mesh } = dressedOf(w, look, held, shield);
@@ -228,6 +284,7 @@ export class Cast {
     if (!c) {
       c = new Crowd(mesh, w.medium, this.root, 2, 0.024);
       this.people.set(key, c);
+      if (opts?.xray) c.seeThrough();
       if (this.people.size > 48) this.trimPeople();
     }
     const tall = mesh.max[1] - mesh.min[1] || 2.3;
@@ -289,8 +346,12 @@ export class Cast {
     this.kits.clear();
     this.people.clear();
     this.props.clear();
+    this.shadowMesh.parent?.remove(this.shadowMesh);
     this.shadowMesh.geometry.dispose();
     this.shadowMesh.dispose();
+    this.rings.parent?.remove(this.rings);
+    this.rings.geometry.dispose();
+    this.rings.dispose();
     this.root.clear();
   }
 }

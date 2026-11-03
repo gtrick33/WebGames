@@ -8,7 +8,12 @@ import type { Marker, RegionDef, StoryCond } from '../data/types';
  * lets enemies walk around obstacles. Pixels in, pixels out; tiles are 16 px.
  */
 
-export const TILE = 16;
+/** A tile, in world pixels. People, speeds and reaches are in world pixels too, so this is how big every land feels. */
+export const TILE = 26;
+/** The grid the building plans were measured on, whatever a tile is now. */
+export const ART_TILE = 16;
+/** How much wider the world is than those plans. */
+export const WORLD_K = TILE / ART_TILE;
 
 export const K = {
   Floor: 0,
@@ -246,11 +251,11 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
     // a tile is wall where the picture's walls and roof cover a good part of it
     for (const p of pics) {
       const [x0, y0, x1, y1] = picBody(p);
-      for (let ty = Math.floor(y0 / TILE); ty <= Math.floor((y1 - 1) / TILE); ty++) {
-        for (let tx = Math.floor(x0 / TILE); tx <= Math.floor((x1 - 1) / TILE); tx++) {
+      for (let ty = Math.floor(y0 / ART_TILE); ty <= Math.floor((y1 - 1) / ART_TILE); ty++) {
+        for (let tx = Math.floor(x0 / ART_TILE); tx <= Math.floor((x1 - 1) / ART_TILE); tx++) {
           if (tx < 0 || ty < 0 || tx >= w || ty >= h) continue;
-          const ox = Math.min(x1, (tx + 1) * TILE) - Math.max(x0, tx * TILE);
-          const oy = Math.min(y1, (ty + 1) * TILE) - Math.max(y0, ty * TILE);
+          const ox = Math.min(x1, (tx + 1) * ART_TILE) - Math.max(x0, tx * ART_TILE);
+          const oy = Math.min(y1, (ty + 1) * ART_TILE) - Math.max(y0, ty * ART_TILE);
           if (ox < 4 || oy < 6) continue;
           const i = ty * w + tx;
           // a story marker on the lot (a fire on the roof) keeps its tile
@@ -286,10 +291,10 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
   const bodies = out.flatMap((b) => b.pics.map(picBody));
   for (const pm of markers) {
     if (pm.marker.kind !== 'fire') continue;
-    const fx = (pm.tx + 0.5) * TILE;
-    const fy = (pm.ty + 0.5) * TILE;
+    const fx = (pm.tx + 0.5) * ART_TILE;
+    const fy = (pm.ty + 0.5) * ART_TILE;
     let best: [number, number, number, number] | null = null;
-    let bd = TILE * 2.5;
+    let bd = ART_TILE * 2.5;
     for (const r of bodies) {
       const d = Math.hypot(Math.max(r[0] - fx, 0, fx - r[2]), Math.max(r[1] - fy, 0, fy - r[3]));
       if (d < bd) [best, bd] = [r, d];
@@ -298,8 +303,8 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
     const [x0, y0, x1, y1] = best;
     // somewhere along the roof, keeping which side of it the fire was on
     const rx = Math.min(x1 - 6, Math.max(x0 + 6, fx));
-    pm.tx = Math.floor(rx / TILE);
-    pm.ty = Math.floor((y0 + (y1 - y0) * 0.3) / TILE);
+    pm.tx = Math.floor(rx / ART_TILE);
+    pm.ty = Math.floor((y0 + (y1 - y0) * 0.3) / ART_TILE);
   }
   return out;
 }

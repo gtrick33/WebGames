@@ -78,7 +78,7 @@ export class RingStage implements RingView {
     const allH = ARENA_H / TILE + 2;
     const whole = Math.min((this.cssW * dpr) / allW, ((this.cssH * dpr) / allH) * 1.05);
     // (never fewer than about 24 tiles across, however small the window)
-    const readable = Math.min(34 * dpr, (this.cssW * dpr) / 24);
+    const readable = Math.min((34 / 16) * TILE * dpr, ((this.cssW * dpr) / 24 / 16) * TILE);
     const tile = Math.max(whole, readable);
     this.follow = tile > whole * 1.02;
     this.stage.setSize(this.cssW, this.cssH, dpr, tile);
@@ -92,7 +92,7 @@ export class RingStage implements RingView {
     const H = Math.ceil(ARENA_H / TILE);
     const tiles: Pick<TileMap, 'w' | 'h' | 'kind'> = { w: W, h: H, kind: new Uint8Array(W * H).fill(skin.kind) };
     const ground = buildGround(tiles as TileMap, look);
-    this.stage.scene.add(ground);
+    this.stage.groundScene.add(ground);
 
     const m = new Mesher();
     const box = (x0: number, z0: number, x1: number, z1: number, h: number, side: readonly number[], dark: readonly number[], top: readonly number[]): void => {
@@ -155,7 +155,6 @@ export class RingStage implements RingView {
     if (!st.ready) return;
     if (!this.built) this.build(st.landPacks!);
     LIGHT.uTime.value = time;
-    LIGHT.uSee.value.set(0, 0, 0, 0);
     LIGHT.uDark.value.set(0, 8, 0, 0);
     LIGHT.uGrade.value.set(0, 0, 0, 0);
     const me = myId === null ? null : (m.fighters[myId] ?? null);
@@ -195,6 +194,17 @@ export class RingStage implements RingView {
     st.render(dt);
     this.g.setTransform(1, 0, 0, 1, 0, 0);
     this.g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  /** The layer for what lies on the ground (cleared for this frame): draw there, then call `upperLayer`. */
+  groundLayer(): CanvasRenderingContext2D {
+    this.g = this.stage.beginDecals();
+    return this.g;
+  }
+
+  upperLayer(): CanvasRenderingContext2D {
+    this.g = this.canvas.getContext('2d')!;
+    return this.g;
   }
 
   private fighter(f: Fighter, l: RingFighterLook, dt: number, time: number): void {

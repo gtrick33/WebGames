@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { picBody } from '../src/games/sigilfall/data/buildingArt';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
-import { K, parseRegion, TILE } from '../src/games/sigilfall/sim/map';
+import { ART_TILE, K, parseRegion, TILE } from '../src/games/sigilfall/sim/map';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
 
@@ -45,8 +45,8 @@ describe('Sigilfall: the Ember Keep', () => {
     for (const p of keep.pics) expect(p.grim, p.id).toBe(true);
     // twice as tall as the land's other keeps, rising over the wall (its rows 7 and 8)
     const [, top, , ground] = picBody(keep.pics[0]!);
-    expect(ground - top).toBeGreaterThan(12 * TILE);
-    expect(top).toBeLessThan(7 * TILE);
+    expect(ground - top).toBeGreaterThan(12 * ART_TILE);
+    expect(top).toBeLessThan(7 * ART_TILE);
     for (const other of Object.values(REGIONS).filter((r) => r.id !== 'emberwick' && r.kind !== 'dungeon')) {
       for (const b of parseRegion(other).buildings.filter((x) => x.style === 'keep')) {
         const [, t, , g] = picBody(b.pics[0]!);

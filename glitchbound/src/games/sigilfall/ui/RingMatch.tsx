@@ -307,7 +307,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       lastPaint = time;
       for (const e of m.events) if (e.k === 'ab') view.swing(e.id, e.ab);
       view.frame(m, looks, myId, dt, time);
-      drawRing(canvas.getContext('2d')!, m, fx, myId, time, view);
+      drawRing(m, fx, myId, time, view);
     };
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);

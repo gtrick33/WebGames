@@ -2293,6 +2293,8 @@
   box-shadow:
     inset 0 0 0 2px var(--rb-trim),
     0 6px 0 rgb(0 0 0 / 0.35);
+  max-height: calc(100% - 20px - var(--sa-b));
+  overflow: hidden;
   animation: rb-fade 0.15s;
 }
 .rb-dialogue-face {
@@ -2310,6 +2312,9 @@
   gap: 4px;
   flex: 1;
   min-width: 0;
+  max-height: 100%;
+  overflow: auto;
+  overflow-wrap: anywhere;
 }
 .rb-dialogue-body p {
   margin: 0;

@@ -9,8 +9,8 @@ export function mountSprite(m: MountDef): string {
 /** How tall each body stands, in world pixels. */
 export const MOUNT_H: Record<string, number> = { horse: 46, deer: 46, boar: 34, drake: 56 };
 
-/** How high the saddle is, in tiles. */
-export const SEAT: Record<string, number> = { horse: 1.72, deer: 1.66, boar: 1.3, drake: 1.9 };
+/** How high the saddle is, in world pixels. */
+export const SEAT: Record<string, number> = { horse: 27.5, deer: 26.5, boar: 21, drake: 30 };
 
 /** A coat as a tint: light enough that a dark one still shows its shape. */
 export const coatTint = (hex: string): [number, number, number] => {

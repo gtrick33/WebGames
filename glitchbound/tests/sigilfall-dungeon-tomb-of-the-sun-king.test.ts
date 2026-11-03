@@ -82,8 +82,8 @@ describe('the Tomb of the Sun King', () => {
     for (const p of ps) {
       const a = Math.atan2(p.y - sy, p.x - sx);
       // a step behind the pillar, seen from the sun, and a step in front of it
-      expect(inSunlight(w, sx, sy, p.x + Math.cos(a) * 22, p.y + Math.sin(a) * 22, 5), `behind ${p.x / TILE},${p.y / TILE}`).toBe(false);
-      expect(inSunlight(w, sx, sy, p.x - Math.cos(a) * 22, p.y - Math.sin(a) * 22, 5), `before ${p.x / TILE},${p.y / TILE}`).toBe(true);
+      expect(inSunlight(w, sx, sy, p.x + Math.cos(a) * TILE * 1.4, p.y + Math.sin(a) * TILE * 1.4, 5), `behind ${p.x / TILE},${p.y / TILE}`).toBe(false);
+      expect(inSunlight(w, sx, sy, p.x - Math.cos(a) * TILE * 1.4, p.y - Math.sin(a) * TILE * 1.4, 5), `before ${p.x / TILE},${p.y / TILE}`).toBe(true);
     }
     // and most of the chamber is in the light
     expect(inSunlight(w, sx, sy, sx + 40, sy + 30, 5)).toBe(true);

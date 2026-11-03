@@ -2,26 +2,51 @@ import * as THREE from 'three';
 import { TILE } from '../sim/map';
 import { Cast } from './cast';
 import { loadWardrobe } from './dress';
-import { loadLand, type Land3D, type LandPacks } from './land';
+import { loadLand, PITCH, type Land3D, type LandPacks } from './land';
 import { LIGHT } from './toon';
 
 /**
- * The 3D view: a WebGL canvas under the game's own canvas, which stays on top for spells, numbers, names and
- * markers (it is also what the player's touches land on). The camera looks down from the south at a steep angle.
+ * The 3D view, four layers deep under the player's touches:
+ *
+ *   ground (WebGL)      the land's floor and the soft shadows on it
+ *   decals (2D)         what lies on the ground: warnings, fields, rings of spells
+ *   what stands (WebGL) walls, trees, houses, people: it covers the layers below where it stands, so a warning on the
+ *                       far side of a wall is behind the wall
+ *   the game's canvas   spells in the air, numbers and names
+ *
+ * The camera looks down from the south at a steep angle.
  */
 
-/** How far the camera looks down from level. */
-const PITCH = (50 * Math.PI) / 180;
 const FOV = 28;
 /** Never renders more pixels than this per CSS pixel. */
 const MAX_DPR = 2;
 
+function layer(className: string): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.className = className;
+  const st = c.style;
+  st.position = 'absolute';
+  st.left = '0';
+  st.top = '0';
+  st.width = '100%';
+  st.height = '100%';
+  st.pointerEvents = 'none';
+  return c;
+}
+
 export class Stage {
   readonly gl: THREE.WebGLRenderer;
+  readonly groundGl: THREE.WebGLRenderer;
+  /** What stands. */
   readonly scene = new THREE.Scene();
+  /** The floor and its shadows. */
+  readonly groundScene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(FOV, 16 / 9, 1, 200);
   readonly glCanvas: HTMLCanvasElement;
-  readonly cast = new Cast();
+  readonly groundCanvas: HTMLCanvasElement;
+  readonly decalCanvas: HTMLCanvasElement;
+  readonly decals: CanvasRenderingContext2D;
+  readonly cast: Cast;
   land: Land3D | null = null;
   landPacks: LandPacks | null = null;
   /** The models everyone needs have arrived. */
@@ -33,7 +58,6 @@ export class Stage {
   private readonly vp = new THREE.Matrix4();
   private readonly inv = new THREE.Matrix4();
   private readonly v = new THREE.Vector3();
-  private readonly camPos = new THREE.Vector3();
   /** Half the land in view, in tiles: what the land keeps standing. */
   spanX = 12;
   spanZ = 9;
@@ -45,23 +69,28 @@ export class Stage {
   private lastFrame = 0;
 
   constructor(overlay: HTMLCanvasElement) {
-    this.glCanvas = document.createElement('canvas');
-    this.glCanvas.className = 'rb-gl-canvas';
-    const st = this.glCanvas.style;
-    st.position = 'absolute';
-    st.left = '0';
-    st.top = '0';
-    st.width = '100%';
-    st.height = '100%';
-    st.pointerEvents = 'none';
-    overlay.parentElement?.insertBefore(this.glCanvas, overlay);
+    this.groundCanvas = layer('rb-gl-ground');
+    this.decalCanvas = layer('rb-gl-decals');
+    this.glCanvas = layer('rb-gl-canvas');
+    const host = overlay.parentElement;
+    if (host) {
+      host.insertBefore(this.groundCanvas, overlay);
+      host.insertBefore(this.decalCanvas, overlay);
+      host.insertBefore(this.glCanvas, overlay);
+    }
     overlay.style.position = overlay.style.position || 'absolute';
     overlay.style.left = '0';
     overlay.style.top = '0';
-    this.gl = new THREE.WebGLRenderer({ canvas: this.glCanvas, antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false });
-    this.gl.outputColorSpace = THREE.LinearSRGBColorSpace;
-    this.gl.toneMapping = THREE.NoToneMapping;
-    this.gl.autoClear = true;
+    this.decals = this.decalCanvas.getContext('2d')!;
+    this.groundGl = new THREE.WebGLRenderer({ canvas: this.groundCanvas, antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false });
+    this.gl = new THREE.WebGLRenderer({ canvas: this.glCanvas, antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance', stencil: false });
+    for (const r of [this.gl, this.groundGl]) {
+      r.outputColorSpace = THREE.LinearSRGBColorSpace;
+      r.toneMapping = THREE.NoToneMapping;
+    }
+    this.gl.setClearColor(0x000000, 0);
+    this.groundGl.setClearColor(0x07050d, 1);
+    this.cast = new Cast(this.groundScene);
     this.scene.add(this.cast.root);
     void Promise.all([loadWardrobe(), loadLand()])
       .then(([w, l]) => {
@@ -79,10 +108,14 @@ export class Stage {
   setSize(cssW: number, cssH: number, dpr: number, tilePx: number): void {
     this.cssW = cssW;
     this.cssH = cssH;
-    const d = Math.min(dpr, MAX_DPR) * this.quality;
     this.lastDpr = dpr;
-    this.gl.setPixelRatio(d);
-    this.gl.setSize(cssW, cssH, false);
+    const d = Math.min(dpr, MAX_DPR);
+    for (const r of [this.gl, this.groundGl]) {
+      r.setPixelRatio(d * this.quality);
+      r.setSize(cssW, cssH, false);
+    }
+    this.decalCanvas.width = Math.round(cssW * d);
+    this.decalCanvas.height = Math.round(cssH * d);
     this.camera.aspect = cssW / Math.max(1, cssH);
     // distance at which a tile at the view's middle spans tilePx device pixels
     const devH = cssH * dpr;
@@ -90,26 +123,20 @@ export class Stage {
     this.camera.near = Math.max(1, this.dist * 0.2);
     this.camera.far = this.dist * 4 + 60;
     this.camera.updateProjectionMatrix();
-    const hz = (devH / tilePx) / Math.sin(PITCH) / 2;
-    this.spanZ = hz;
+    this.spanZ = (devH / tilePx) / Math.sin(PITCH) / 2;
     this.spanX = (cssW * dpr) / tilePx / 2;
   }
 
   /** Points the camera at a spot on the ground (tiles). */
   look(cx: number, cz: number): void {
-    const cos = Math.cos(PITCH);
-    const sin = Math.sin(PITCH);
-    this.camPos.set(cx, this.dist * sin, cz + this.dist * cos);
-    this.camera.position.copy(this.camPos);
+    this.camera.position.set(cx, this.dist * Math.sin(PITCH), cz + this.dist * Math.cos(PITCH));
     this.camera.lookAt(cx, 0, cz);
     this.camera.updateMatrixWorld(true);
-    this.vp.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
-    this.inv.copy(this.vp).invert();
+    this.syncCamera();
   }
 
   /** Picks up a camera someone placed by hand (the hall). */
   syncCamera(): void {
-    this.camPos.copy(this.camera.position);
     this.vp.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
     this.inv.copy(this.vp).invert();
   }
@@ -139,15 +166,21 @@ export class Stage {
     return { x: (ax + (far.x - ax) * k) * TILE, y: (az + (far.z - az) * k) * TILE };
   }
 
-  /** How far the player sees from the hero's spot toward the camera (for thinning what stands in between). */
-  seeThrough(x: number, y: number, radius: number): void {
-    const px = x / TILE;
-    const pz = y / TILE;
-    LIGHT.uSee.value.set(px, 0.6, pz, radius);
-    LIGHT.uSeeDir.value.copy(this.camPos).sub(new THREE.Vector3(px, 0.6, pz)).normalize();
+  /** Where the hero stands, for the pool of light round them in a dark place. */
+  heroAt(x: number, y: number): void {
+    LIGHT.uSee.value.set(x / TILE, 0.6, y / TILE, 0);
+  }
+
+  /** Clears the ground's drawing layer for this frame and hands it over. */
+  beginDecals(): CanvasRenderingContext2D {
+    const g = this.decals;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, this.decalCanvas.width, this.decalCanvas.height);
+    return g;
   }
 
   render(_dt: number): void {
+    this.groundGl.render(this.groundScene, this.camera);
     this.gl.render(this.scene, this.camera);
     // a phone that can't keep up draws fewer pixels rather than stutter (real time between frames; a tab left in the
     // background isn't a slow phone)
@@ -163,20 +196,30 @@ export class Stage {
         this.quality = Math.max(0.6, this.quality - 0.15);
         this.slow = 0;
         this.fast = 0;
-        this.gl.setPixelRatio(Math.min(this.lastDpr, MAX_DPR) * this.quality);
+        this.applyQuality();
       } else if (this.fast > 1200 && this.quality < 1) {
         this.quality = Math.min(1, this.quality + 0.1);
         this.fast = 0;
-        this.gl.setPixelRatio(Math.min(this.lastDpr, MAX_DPR) * this.quality);
+        this.applyQuality();
       }
     }
+  }
+
+  private applyQuality(): void {
+    const d = Math.min(this.lastDpr, MAX_DPR) * this.quality;
+    this.gl.setPixelRatio(d);
+    this.groundGl.setPixelRatio(d);
   }
 
   dispose(): void {
     this.land?.dispose();
     this.cast.dispose();
-    this.gl.dispose();
-    this.gl.forceContextLoss();
+    for (const r of [this.gl, this.groundGl]) {
+      r.dispose();
+      r.forceContextLoss();
+    }
     this.glCanvas.remove();
+    this.groundCanvas.remove();
+    this.decalCanvas.remove();
   }
 }

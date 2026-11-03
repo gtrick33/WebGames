@@ -178,10 +178,8 @@ export const LIGHT = {
   uMid: { value: new THREE.Color(0.86, 0.84, 0.88) },
   uShade: { value: new THREE.Color(0.58, 0.56, 0.72) },
   uTime: { value: 0 },
-  /** Where the hero stands (xyz) and how wide the hole in what stands in front of them is (w; 0: none). */
+  /** Where the hero stands (xyz), for the pool of light round them in a dark place. */
   uSee: { value: new THREE.Vector4(0, 0, 0, 0) },
-  /** From the hero toward the camera. */
-  uSeeDir: { value: new THREE.Vector3(0, 1, 0) },
   /** A color laid over everything (a's its strength): dusk, gloom, a land's own veil. */
   uGrade: { value: new THREE.Vector4(0, 0, 0, 0) },
   /** The pool of light in a dark place: darkness (0-1), radius in tiles; xyz in uSee. */
@@ -335,7 +333,52 @@ export function inkMaterial(anim: RigAnim, width: number): THREE.ShaderMaterial 
   });
 }
 
-/** What stands still: trees, houses, furniture. Leaves stir; what stands between the camera and the hero thins out. */
+/** A hero behind a wall or a tree: their shape, in a broken-up color, wherever something else already stands in front. */
+export function xrayMaterial(anim: RigAnim): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    depthFunc: THREE.GreaterDepth,
+    depthWrite: false,
+    uniforms: { uAnim: { value: anim.tex } },
+    vertexShader: /* glsl */ `
+      ${SKIN_VERT}
+      void main() {
+        mat4 m = posed();
+        gl_Position = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * (m * vec4(position, 1.0));
+      }`,
+    fragmentShader: /* glsl */ `
+      void main() {
+        if (mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 2.0) < 0.5) discard;
+        gl_FragColor = vec4(0.5, 0.92, 1.0, 1.0);
+      }`,
+  });
+}
+
+/** Rings on the ground that belong to someone (the hero's, an elite's): under feet, behind what stands in front. */
+export const ringMaterial = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  uniforms: {},
+  vertexShader: /* glsl */ `
+    attribute vec4 iRing;
+    varying vec2 vUv;
+    varying vec4 vRing;
+    void main() {
+      vUv = uv * 2.0 - 1.0;
+      vRing = iRing;
+      gl_Position = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * vec4(position, 1.0);
+    }`,
+  fragmentShader: /* glsl */ `
+    varying vec2 vUv;
+    varying vec4 vRing;
+    void main() {
+      float d = length(vUv);
+      float a = smoothstep(0.78, 0.86, d) * smoothstep(1.0, 0.94, d);
+      a += smoothstep(0.86, 0.0, d) * 0.1;
+      gl_FragColor = vec4(vRing.rgb, a * vRing.a);
+    }`,
+});
+
+/** What stands still: trees, houses, furniture. Leaves stir. */
 export const staticMaterial = new THREE.ShaderMaterial({
   uniforms: { ...LIGHT },
   vertexShader: /* glsl */ `
@@ -359,23 +402,7 @@ export const staticMaterial = new THREE.ShaderMaterial({
     }`,
   fragmentShader: /* glsl */ `
     ${FRAG_COMMON}
-    uniform vec3 uSeeDir;
     void main() {
-      if (uSee.w > 0.0 && vW.y > 0.35) {
-        vec3 r = vW - uSee.xyz;
-        float t = dot(r, uSeeDir);
-        if (t > 0.25) {
-          float d = length(r - uSeeDir * t);
-          float k = smoothstep(uSee.w, uSee.w * 0.6, d);
-          if (k > 0.0) {
-            float dx = mod(gl_FragCoord.x, 2.0);
-            float dy = mod(gl_FragCoord.y, 2.0);
-            if ((dx < 1.0) == (dy < 1.0) || k > 0.85) {
-              if (k > 0.35) discard;
-            }
-          }
-        }
-      }
       vec3 c = toon(vCol, normalize(vN));
       gl_FragColor = vec4(finish(c), 1.0);
     }`,

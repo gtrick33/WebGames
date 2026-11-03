@@ -1,3 +1,4 @@
+import { TILE } from '../src/games/sigilfall/sim/map';
 import { describe, expect, it } from 'vitest';
 import { endScene } from '../src/games/sigilfall/sim/scene';
 import { EVENTS } from '../src/games/sigilfall/data/events';
@@ -334,7 +335,7 @@ describe('Sigilfall: the story in the world', () => {
     expect(door).toBeTruthy();
     // on the chapel's own doorstep (where the way in is), not out on the cobbles
     const into = w.map.markers.find((m) => m.marker.kind === 'exit' && m.marker.to === 'chapel-of-the-bell')!;
-    expect(Math.hypot(door.x - (into.tx + 0.5) * 16, door.y - (into.ty + 0.5) * 16)).toBeLessThan(2);
+    expect(Math.hypot(door.x - (into.tx + 0.5) * TILE, door.y - (into.ty + 0.5) * TILE)).toBeLessThan(2);
     // Mara isn't put at the hero's elbow: she comes running in from beyond the view
     const mara = w.pets.find((p) => p.def.id === 'mara')!;
     expect(Math.hypot(mara.x - w.player.x, mara.y - w.player.y)).toBeGreaterThan(6 * 16);
