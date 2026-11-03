@@ -2170,6 +2170,10 @@ const fr: string[] = [
   'Re-bonjour, {name} !',
   // 1990
   'Rejoins mon salon Scribble Scramble : l’un de nous dessine, tout le monde se presse de deviner le mot.',
+  'La cloche s’est tue il y a trois semaines. Cette nuit, ils viennent pour ce qui dort sous la chapelle.',
+  'Ou joue à un jeu rapide',
+  'Un héros avec épée et bouclier dans la cour d’un château, la nuit, entre braseros et bannières rouges',
+  'Vraie partie, sur téléphone ou ordinateur',
 ];
 
 export default fr;

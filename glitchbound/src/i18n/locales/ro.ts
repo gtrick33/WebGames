@@ -2170,6 +2170,10 @@ const ro: string[] = [
   'Bine ai revenit, {name}!',
   // 1990
   'Intră în camera mea de Scribble Scramble: unul dintre noi desenează, toți se întrec să ghicească cuvântul.',
+  'Clopotul a încetat să bată acum trei săptămâni. În noaptea asta vin după ce doarme sub capelă.',
+  'Sau joacă ceva rapid',
+  'Un erou cu sabie și scut în curtea unui castel noaptea, între mangaluri și steaguri roșii',
+  'Joc real, pe telefon sau calculator',
 ];
 
 export default ro;

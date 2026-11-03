@@ -1,12 +1,12 @@
-/* The first screen: the line and the promise on the left, the game wall on the right. */
+/* The arcade's own welcome, under Sigilfall: the line and the promise on the left, the game wall on the right. */
 .hero {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   align-items: center;
   gap: 24px clamp(24px, 4vw, 64px);
-  min-height: min(640px, calc(100svh - var(--header-h) - 24px));
-  padding-top: clamp(18px, 3vw, 40px);
+  scroll-margin-top: calc(var(--header-h) + 12px);
+  padding-top: clamp(14px, 2vw, 28px);
   padding-bottom: clamp(18px, 3vw, 36px);
 }
 .hero-copy {
@@ -25,7 +25,7 @@
   animation: blink 1.6s steps(2, end) infinite;
 }
 .hero-title {
-  font-size: clamp(46px, 5.7vw, 92px);
+  font-size: clamp(40px, 4.5vw, 72px);
   line-height: 0.9;
   letter-spacing: -0.05em;
   text-shadow: none;
@@ -132,7 +132,7 @@
   position: relative;
   z-index: 1;
   align-self: stretch;
-  min-height: 520px;
+  min-height: 430px;
   overflow: hidden;
   /* the columns fade out at the top and bottom instead of being cut */
   -webkit-mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
@@ -229,22 +229,6 @@
   transform: none;
 }
 
-.hero-deco {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-}
-.deco {
-  position: absolute;
-  filter: drop-shadow(3px 3px 0 var(--ink));
-  animation: bob 7s ease-in-out infinite alternate;
-  opacity: 0.95;
-}
-.d1 { width: 46px; left: 48%; top: 10px; --r: 14deg; }
-.d2 { width: 28px; left: 44%; bottom: 40px; animation-delay: -3s; }
-.d3 { width: 40px; right: calc(var(--gutter) - 6px); bottom: 18px; animation-delay: -5s; }
-
 @media (prefers-reduced-motion: reduce) {
   .wall-track,
   .hero-hl {
@@ -320,9 +304,6 @@
   }
   .wall-tile:nth-child(3n + 2) {
     box-shadow: 3px 3px 0 var(--cyan);
-  }
-  .deco {
-    display: none;
   }
 }
 @keyframes wall-left {

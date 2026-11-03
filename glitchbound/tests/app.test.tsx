@@ -22,9 +22,17 @@ function renderAt(path: string, { howToSeen = true } = {}) {
 }
 
 describe('homepage', () => {
-  it('renders the hero, the best games, Sigilfall, Today, the arcade and Play together, each game once up top', async () => {
+  it('renders Sigilfall first, then the arcade welcome, the best games, Today, the arcade and Play together, each game once up top', async () => {
     renderAt('/');
-    expect(screen.getByRole('heading', { level: 1, name: /Small games\.\s*Big obsessions\./ })).toBeTruthy();
+    // The flagship leads the page, and its button starts it on arrival.
+    const sigilfall = screen.getByRole('region', { name: 'Sigilfall' });
+    expect(within(sigilfall).getByRole('heading', { level: 1, name: 'Sigilfall' })).toBeTruthy();
+    expect(within(sigilfall).getByRole('link', { name: /Enter the Rift/ }).getAttribute('href')).toBe('/sigilfall?play=1');
+    expect(within(sigilfall).getByRole('link', { name: /quick game/ }).getAttribute('href')).toBe('#quick-games');
+    expect(await screen.findByRole('heading', { level: 2, name: /Small games\.\s*Big obsessions\./ })).toBeTruthy();
+    // Today's pick is fun alone at once: never a live game's lobby.
+    const pickHref = screen.getByRole('link', { name: /Today’s pick/ }).getAttribute('href')!;
+    expect(['/games/crater-crew', '/games/launch-control', '/games/backgammon', '/games/belot'].some((p) => pickHref.startsWith(p))).toBe(false);
     expect(screen.getByRole('link', { name: /Today’s pick/ }).getAttribute('href')).toMatch(/^\/games\//);
     expect(screen.getAllByRole('button', { name: /Surprise me/ }).length).toBeGreaterThan(0);
     // The promise, without a sign-in button up top
@@ -37,10 +45,8 @@ describe('homepage', () => {
     expect(flagships).toHaveLength(4);
     // Their Play starts the game on arrival (#24); Quizbelief lives at its own name.
     expect(flagships.sort()).toEqual(['/games/color-recall?play=1', '/games/launch-control?play=1', '/games/letter-pinch?play=1', '/games/quizbelief?play=1']);
-    // Sigilfall's doorway and Today arrive right after the first paint.
-    const sigilfall = await screen.findByRole('region', { name: 'Sigilfall' });
-    expect(within(sigilfall).getByRole('link').getAttribute('href')).toBe('/sigilfall');
-    const today = screen.getByRole('region', { name: 'Today' });
+    // Today arrives right after the first paint.
+    const today = await screen.findByRole('region', { name: 'Today' });
     expect(within(today).getByText('Today is')).toBeTruthy();
     expect(within(today).getByText(/^Today’s challenge/)).toBeTruthy();
     expect(within(today).getByRole('link', { name: /Play today’s challenge|Play again/ }).getAttribute('href')).toMatch(/^\/games\//);
@@ -131,7 +137,7 @@ describe('routing', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Small games. Big obsessions.' })).toBeTruthy();
     fireEvent.click(within(screen.getByRole('navigation', { name: 'Footer' })).getByRole('link', { name: 'Contact' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Get in touch' })).toBeTruthy();
-    // The studio is reached through tickets only: no personal name or mailbox anywhere.
+    // The Contact page sends everyone to tickets; the owner's name and mailbox are on Privacy and Terms.
     const tickets = screen.getAllByRole('link', { name: 'Open a ticket' });
     expect(tickets.map((a) => a.getAttribute('href'))).toEqual(tickets.map(() => '/me/bugs?category=question'));
     expect(document.body.textContent).not.toMatch(/sava|hristov|@glitchboundstudio/i);

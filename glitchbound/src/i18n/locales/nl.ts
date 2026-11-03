@@ -2170,6 +2170,10 @@ const nl: string[] = [
   'Welkom terug, {name}!',
   // 1990
   'Kom in mijn Scribble Scramble-kamer: één van ons tekent, iedereen racet om het woord te raden.',
+  'Drie weken geleden hield de klok op met luiden. Vannacht komen ze voor wat onder de kapel slaapt.',
+  'Of speel een snel spel',
+  'Een held met zwaard en schild op een kasteelplein bij nacht, tussen vuurschalen en rode banieren',
+  'Echte gameplay, op telefoon of computer',
 ];
 
 export default nl;

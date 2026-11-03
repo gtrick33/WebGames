@@ -2,17 +2,16 @@
  * The home page's bands below the best games, in one chunk that loads after the first paint (the
  * startup budget is nearly full, and none of this is on the first screen):
  *
- * - HomeTop: SigilfallBand and TodayBand, which sit between the best games and the arcade.
- * - SigilfallBand: the RPG's cinematic doorway, the night sky and the gold title of its own world.
+ * - HomeTop: TodayBand, which sits between the best games and the arcade.
  * - TodayBand: the day's theme as the header of today's challenge, with a few quick dailies the rows
  *   above did not show yet (the rest are one link away on /daily).
  * - PlayTogether: live games on everyone's own device and Party Mode's pass-the-phone games, side by side.
  */
-import { lazy, Suspense, useEffect, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { tGame, useT } from '../i18n';
 import { multiplayerGames } from '../catalog/multiplayer';
 import { orderByLayout } from '../catalog/settings';
-import { gameUrl, playPath, SECTION_GAMES } from '../catalog/catalog';
+import { gameUrl, playPath } from '../catalog/catalog';
 import type { GameEntry } from '../catalog/types';
 import { dayKey } from '../platform/dates';
 import { useDaily, useNow } from '../platform/hooks';
@@ -41,10 +40,7 @@ export function HomeTop() {
     if (window.location.hash === '#arcade' && window.scrollY > 0) document.getElementById('arcade')?.scrollIntoView();
   }, []);
   return (
-    <>
-      <SigilfallBand />
-      <TodayBand />
-    </>
+    <TodayBand />
   );
 }
 
@@ -101,51 +97,6 @@ export function TodayBand() {
           </div>
         )}
       </div>
-    </section>
-  );
-}
-
-/** The facts on the Sigilfall band: what the game has, counted from its data. */
-const SIGILFALL_FACTS = ['7 heroes', '5 acts', '12 dungeons', 'Co-op for 4'];
-
-export function SigilfallBand() {
-  const t = useT();
-  const live = useLiveCatalog();
-  const game = SECTION_GAMES.find((g) => g.slug === 'sigilfall');
-  if (!game || live.settings(game.slug).hidden) return null;
-  return (
-    <section className="wrap sf-band" aria-labelledby="sf-band-title">
-      <Link href={game.section!.path} className="sf-card">
-        <span className="sf-sky" aria-hidden="true">
-          <span className="sf-stars" />
-          <span className="sf-moon" />
-          <span className="sf-peaks" />
-          {Array.from({ length: 14 }, (_, i) => (
-            <i key={i} className="sf-ember" style={{ '--x': `${(i * 37) % 100}%`, '--d': `${(i % 5) * 1.3}s`, '--s': `${7 + (i % 4) * 2.2}s` } as CSSProperties} />
-          ))}
-        </span>
-        <span className="sf-copy">
-          <span className="sf-kicker">{t('A GlitchBound adventure')}</span>
-          <span className="sf-title-row">
-            <span className="sf-sigil" aria-hidden="true" />
-            <h2 id="sf-band-title" className="sf-title">
-              Sigilfall
-            </h2>
-          </span>
-          <span className="sf-sub">{t('A whole fantasy RPG that plays right in your browser. Choose your hero, gather your gear and close the Rift, alone or with friends.')}</span>
-          <span className="sf-facts">
-            {SIGILFALL_FACTS.map((f) => (
-              <span key={f}>{t(f)}</span>
-            ))}
-          </span>
-          <span className="sf-cta">
-            {t('Enter the Rift')} <Icon name="arrowRight" size={20} />
-          </span>
-        </span>
-        <span className="sf-art" aria-hidden="true">
-          <img src={game.art.wide} alt="" width={1200} height={480} loading="lazy" decoding="async" />
-        </span>
-      </Link>
     </section>
   );
 }
