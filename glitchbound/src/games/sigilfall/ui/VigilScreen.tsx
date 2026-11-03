@@ -134,6 +134,9 @@ function VigilRun({ engine, face, body, cls, land, onBack }: { engine: SigilEngi
     renderer.landOnly = true;
     renderer.setHeroWeapon(cls, world);
     const map = world.map;
+    // the middle of the land, with room to run every way (a region's own start can be right on its edge)
+    world.player.x = (map.w / 2) * TILE;
+    world.player.y = (map.h / 2) * TILE;
     const v = new Vigil((Math.random() * 2 ** 32) >>> 0, world.player.x, world.player.y, { cls, map: land, bounds: { x0: TILE, y0: TILE, x1: (map.w - 1) * TILE, y1: (map.h - 1) * TILE } });
     let shown = false;
     let raf = 0;
