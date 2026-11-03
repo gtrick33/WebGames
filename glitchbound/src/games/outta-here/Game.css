@@ -25,6 +25,17 @@
   color: inherit;
   cursor: pointer;
 }
+.oh-play {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  /* the board sits in the middle of the free height, nearer the thumb than the top edge */
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 0;
+}
 .oh-hud {
   display: grid;
   grid-template-columns: 44px 1fr auto;
@@ -74,7 +85,8 @@
 }
 .oh-board-wrap {
   position: relative;
-  width: min(100cqw - 28px, 100cqh - 190px, 460px);
+  /* cq units already measure inside .oh's padding; the height keeps room for the HUD and the help line. */
+  width: min(100cqw, 100cqh - 140px, 460px);
   aspect-ratio: 1;
 }
 .oh-board {
@@ -101,11 +113,48 @@
 .oh-dot {
   fill: #dff5ee;
 }
-.oh-dot.is-cursor {
+.oh-cursor {
   fill: none;
-  stroke: #ff3d7f;
-  stroke-width: 1.2;
-  stroke-dasharray: 2 1.2;
+  stroke: var(--oh-ink);
+  stroke-width: 2.4;
+  pointer-events: none;
+}
+.oh-cursor .oh-cursor-in {
+  stroke: #fff;
+  stroke-width: 0.9;
+}
+.oh-arrow.is-blocker .oh-ink,
+.oh-arrow.is-blocker .oh-ink-tip {
+  stroke: #e8173f;
+  animation: oh-blocker 0.6s;
+}
+.oh-arrow.is-blocker .oh-ink-tip {
+  fill: #e8173f;
+}
+@keyframes oh-blocker {
+  50% {
+    stroke-width: 9;
+  }
+}
+.oh-block-path {
+  stroke: #e8173f;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 2.2 1.6;
+  pointer-events: none;
+  animation: oh-fade 0.6s forwards;
+}
+@keyframes oh-fade {
+  70% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.oh-arrow.is-target .oh-body,
+.oh-arrow.is-target .oh-tip {
+  filter: brightness(1.18);
 }
 .oh-dot.is-wall {
   fill: #ffb3c4;
@@ -269,6 +318,8 @@
 }
 .oh-menu {
   justify-content: flex-start;
+  /* room for the ?, sound and game-menu buttons at the top right */
+  padding-top: 68px;
   overflow-y: auto;
   text-align: center;
 }
@@ -369,7 +420,7 @@
   gap: 6px;
 }
 
-.oh-menu > :first-child {
+.oh-menu > .oh-logo {
   margin-top: auto;
 }
 .oh-menu > :last-child {
@@ -379,4 +430,27 @@
 /* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
 .oh-hud {
   grid-template-columns: auto 1fr auto;
+}
+
+/* A phone held sideways (or any short, wide stage): the HUD and the help go beside the board. */
+@container (min-aspect-ratio: 4/3) and (max-height: 560px) {
+  .oh-play {
+    flex-direction: row;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+  }
+  .oh-hud {
+    grid-template-columns: auto;
+    justify-items: center;
+    width: auto;
+    gap: 12px;
+  }
+  .oh-board-wrap {
+    width: min(100cqh - 8px, 100cqw - 300px, 460px);
+  }
+  .oh-help {
+    max-width: 130px;
+    text-align: left;
+  }
 }
