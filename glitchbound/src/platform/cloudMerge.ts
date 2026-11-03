@@ -1,7 +1,8 @@
 import { GAMES } from '../catalog/games';
 import { dayKey } from './dates';
+import { MERGE_RULES, type Side } from './mergeRules';
 import { mergeSaves, sanitizeSave } from './save';
-import { ARCADE_SAVE_KEY } from './syncKeys';
+import { ARCADE_SAVE_KEY, slugOfKey } from './syncKeys';
 
 /**
  * Joins two copies of one save, when two devices of a signed-in player both changed it before they
@@ -17,8 +18,11 @@ import { ARCADE_SAVE_KEY } from './syncKeys';
  *   this device's copy wins whole (a mix of two boards could leave a game that cannot go on, issue #26).
  * - Numbers keep the larger (counts and bests); names like "fastest" keep the smaller one set.
  * - Lists of words (e.g. questions already seen) are joined; any other value is this device's.
- * - Lists of records stamped `updated` (Sigilfall's hero slots) keep, slot by slot, the copy played last:
- *   a hero levelled on the phone isn't lost to the desktop's older copy.
+ * - Lists of records stamped `updated` keep, slot by slot, the copy played last.
+ * - `settings` (volumes, control sizes) come whole from the copy changed last: they aren't scores.
+ *
+ * Games whose save needs more (a balance that is spent, a hero's progress) have their own rule
+ * (mergeRules.ts).
  */
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -55,7 +59,8 @@ function pickDay(local: Json, remote: Json): Json {
   return filled(remote) > filled(local) ? remote : local;
 }
 
-export function mergeJson(local: Json, remote: Json, key = ''): Json {
+/** `newer` is the copy changed last (this device's when unknown). */
+export function mergeJson(local: Json, remote: Json, key = '', newer: Side = 'local'): Json {
   if (isDayMap(local) && isDayMap(remote)) {
     const out: Record<string, Json> = { ...remote, ...local };
     for (const day of Object.keys(local)) if (day in remote) out[day] = pickDay(local[day], remote[day]);
@@ -70,8 +75,9 @@ export function mergeJson(local: Json, remote: Json, key = ''): Json {
       return filled(remote) > filled(local) ? remote : local;
     }
     if (key === 'current') return local;
+    if (key === 'settings') return newer === 'local' ? { ...remote, ...local } : { ...local, ...remote };
     const out: Record<string, Json> = { ...remote, ...local };
-    for (const k of Object.keys(local)) if (k in remote) out[k] = mergeJson(local[k], remote[k], k);
+    for (const k of Object.keys(local)) if (k in remote) out[k] = mergeJson(local[k], remote[k], k, newer);
     return out;
   }
   if (typeof local === 'number' && typeof remote === 'number') {
@@ -84,8 +90,8 @@ export function mergeJson(local: Json, remote: Json, key = ''): Json {
   return local === undefined ? remote : local;
 }
 
-/** Merges two copies of the save stored under `key` (JSON text in, JSON text out). */
-export function mergeSaveText(key: string, local: string, remote: string, today = dayKey()): string {
+/** Merges two copies of the save stored under `key` (JSON text in, JSON text out); `newer` is the copy changed last. */
+export function mergeSaveText(key: string, local: string, remote: string, today = dayKey(), newer: Side = 'local'): string {
   let a: Json;
   let b: Json;
   try {
@@ -99,5 +105,7 @@ export function mergeSaveText(key: string, local: string, remote: string, today 
     return remote;
   }
   if (key === ARCADE_SAVE_KEY) return JSON.stringify(mergeSaves(sanitizeSave(a), sanitizeSave(b), GAMES, today));
-  return JSON.stringify(mergeJson(a, b));
+  const rule = MERGE_RULES[slugOfKey(key) ?? ''];
+  if (rule) return JSON.stringify(rule(a, b, { newer, merge: (l, r, k) => mergeJson(l, r, k, newer) }));
+  return JSON.stringify(mergeJson(a, b, '', newer));
 }

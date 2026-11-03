@@ -13,11 +13,13 @@ export const ARCADE_SAVE_KEY = 'glitchbound.save';
 export const MAX_SYNCED_SAVE = 96_000;
 
 const SLUGS = new Set(GAMES.map((g) => g.slug));
+/** Saves of games that don't use the arcade's naming (embeds built on their own). */
+const OWN_KEYS: Record<string, string> = { 'neonrush.save': 'neon-rush' };
 const GAME_KEY = /^(?:glitchbound|gb)\.([a-z0-9-]{1,40})(?:\.v\d{1,2})?$/;
 
-/** The game a save belongs to ("glitchbound.fussbox", "gb.mini-racer.v1"), or null (the arcade save, other keys). */
+/** The game a save belongs to ("glitchbound.fussbox", "gb.mini-racer.v1", "neonrush.save"), or null (the arcade save, other keys). */
 export function slugOfKey(key: string): string | null {
-  const slug = GAME_KEY.exec(key)?.[1];
+  const slug = Object.hasOwn(OWN_KEYS, key) ? OWN_KEYS[key] : GAME_KEY.exec(key)?.[1];
   return slug && SLUGS.has(slug) ? slug : null;
 }
 
