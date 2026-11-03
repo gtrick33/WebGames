@@ -26,6 +26,7 @@ import { wornLooks } from '../progress/wardrobe';
 import { SUMMON_TIME } from '../sim/world';
 import { buildScenery, type Scenery, type StaticObject } from './tiles';
 import { objectiveTarget } from '../sim/objective';
+import { aimReach, autoTarget, tapAutoAims } from '../sim/cast';
 
 /**
  * Draws the world at low resolution (a few hundred pixels across) onto a canvas that CSS scales up
@@ -149,6 +150,8 @@ export class Renderer {
   aim: AimPreview | null = null;
   /** Touch controls: show the facing marker (where a tapped spell goes). */
   touchMode = false;
+  /** The enemy a tapped skill would turn at, picked again every 0.1 s (not every frame). */
+  private tapPick: { at: number; e: Enemy | null } = { at: -1, e: null };
   /** The hero's held weapon art changes with gear. */
   private weapon: { kind: string; tint?: string } = { kind: 'staff' };
   reducedMotion = false;
@@ -888,11 +891,44 @@ export class Renderer {
     g.restore();
   }
 
-  /** Touch: a small arrow ahead of the hero, where a tapped spell will fly. */
+  /** Touch: the enemy a tap would aim at (the same picker as the cast), while an auto-aimed skill is ready. */
+  private tapTarget(w: World): Enemy | null {
+    const pick = this.tapPick;
+    if (w.time >= pick.at && w.time - pick.at < 0.1) return pick.e && !pick.e.dead ? pick.e : null;
+    const p = w.player;
+    let reach = 0;
+    if (w.settings.autoAimSkills !== false)
+      for (const slot of ['s1', 's2', 's3', 's4', 'ult'] as const) {
+        const id = w.build.bar[slot];
+        const spec = id ? w.build.skills[id]?.spec : undefined;
+        const ready = slot === 'ult' ? p.ult >= 100 : p.cds[slot].charges > 0;
+        if (spec && ready && tapAutoAims(spec)) reach = Math.max(reach, aimReach(spec));
+      }
+    this.tapPick = { at: w.time, e: reach ? autoTarget(w, reach, p.aim) : null };
+    return this.tapPick.e;
+  }
+
+  /** Touch: a small arrow ahead of the hero, where a tapped spell will fly (or a ring under the enemy a tap aims at). */
   private drawFacing(w: World, time: number): void {
     const p = w.player;
     if (!this.touchMode || this.aim || p.dead || w.safe) return;
     const g = this.g;
+    const t = this.tapTarget(w);
+    if (t) {
+      const pulse = this.reducedMotion ? 0 : Math.sin(time * 6) * 0.8;
+      g.save();
+      g.lineWidth = 1.5;
+      g.setLineDash([3, 2]);
+      g.strokeStyle = 'rgba(27,20,40,0.6)';
+      g.beginPath();
+      g.ellipse(t.x, t.y + 4, t.r + 5 + pulse, (t.r + 5 + pulse) * 0.45, 0, 0, TAU);
+      g.stroke();
+      g.lineWidth = 1;
+      g.strokeStyle = 'rgba(255,224,102,0.9)';
+      g.stroke();
+      g.restore();
+      return;
+    }
     const d = 17 + Math.sin(time * 5) * 1.2;
     g.save();
     g.translate(Math.round(p.x + Math.cos(p.aim) * d), Math.round(p.y - 2 + Math.sin(p.aim) * d * 0.8));

@@ -13,7 +13,7 @@ import type { PanelId, SigilEngine } from '../engine';
 import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
-import { itemClass, itemMods, itemName, itemScore, itemSlot, itemStats, salvageValue } from '../progress/items';
+import { itemClass, itemMods, itemName, itemScore, itemSlot, salvageValue } from '../progress/items';
 import { ICON_AUTHORS } from '../render/art/iconVersion';
 import { npcMark, rarityColor } from '../render/renderer';
 import { heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl } from '../render/sprites';
@@ -21,7 +21,7 @@ import type { HeroLook } from '../render/art/hero';
 import { MOUNT_DEFS, MOUNTS } from '../data/mounts';
 import { authoredLooks, BARE_LOOK, LOOK_SLOTS, lookFits, lookOf, lookSource, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
 import { K, markerPos, parseRegion, TILE, type TileMap } from '../sim/map';
-import { objectiveTarget } from '../sim/objective';
+import { objectiveTarget, objectiveTargets, questCounts } from '../sim/objective';
 import { npcRegion, regionLinks } from '../sim/routes';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
 import { drawMapIcon, mapIconUrl, type MapIcon } from './mapIcons';
@@ -30,6 +30,7 @@ import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, loadFog, type Fog } from '../progress/fog';
 import { ShopPanel } from './Shop';
+import { compareWith, linesOnlyIn, statRows } from './compare';
 import { PartyPanel } from './Party';
 import { PRESETS } from '../progress/presets';
 import { clockText } from '../sim/world';
@@ -62,7 +63,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
     </span>
   );
   return (
-    <Frame title={title} onClose={() => engine.closePanel()} wide className={`rb-panel-${p}`}>
+    <Frame title={title} label={TABS.find((t) => t.id === p)?.label} onClose={() => engine.closePanel()} wide className={`rb-panel-${p}`}>
       {p === 'hero' && <HeroPanel engine={engine} />}
       {p === 'wardrobe' && <WardrobePanel engine={engine} />}
       {p === 'skills' && <SkillsPanel engine={engine} />}
@@ -235,22 +236,74 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
 }
 
 /** A rough "is this better" for the upgrade arrow: more stats or new behaviour. */
-function isUpgrade(cur: Item | undefined, it: Item): boolean {
+export function isUpgrade(cur: Item | undefined, it: Item): boolean {
   if (!cur) return true;
   return itemScore(it) > itemScore(cur) + 5;
 }
 
-/** An item's card: stats, comparison with what is worn, what it changes; `actions` replaces the equip row. */
-export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, actions }: { engine: SigilEngine; item: Item; worn: boolean; confirm: boolean; onSalvage: () => void; onDone: () => void; actions?: ReactNode }) {
+/** One item's card: header, stats (with their change against `compareTo`), what it changes, lore. */
+export function ItemCard({ item, compareTo, label, compact, against, onClose }: { item: Item; compareTo?: Item; label?: 'Equipped' | 'In your bag' | 'For sale'; compact?: boolean; against?: Item; onClose?: () => void }) {
+  const slot = itemSlot(item);
+  const def = ITEM_DEFS[item.base];
+  const cls = itemClass(item);
+  const { rows, lost } = statRows(item, compareTo);
+  const lines = modLines(itemMods(item));
+  // on the worn card: the lines a swap for `against` would give up
+  const gone = against ? new Set(linesOnlyIn(item, against)) : null;
+  return (
+    <div className={`rb-icard${compact ? ' is-compact' : ''}${label === 'Equipped' ? ' is-worn' : ''}`} style={{ ['--rc' as string]: rarityColor(item.r) }}>
+      <div className="rb-item-head">
+        <ItemIcon item={item} size={compact ? 40 : 52} />
+        <div>
+          {label && <span className="rb-icard-tag">{label}</span>}
+          <strong className="rb-item-name">{itemName(item)}</strong>
+          <span className="rb-dim rb-small">
+            {RARITY_NAME[item.r]} {SLOT_LABEL[slot].toLowerCase()} · item level {item.il}
+            {cls ? ` · ${CLASSES[cls].name} only` : ''}
+          </span>
+        </div>
+        {onClose && (
+          <button className="rb-x is-small" onClick={onClose} aria-label="Close details">
+            ✕
+          </button>
+        )}
+      </div>
+      <ul className="rb-item-stats">
+        {rows.map(({ k, v, delta }) => (
+          <li key={k}>
+            {fmtStat(k, v)}
+            {compareTo && Math.round(delta * 10) !== 0 && <span className={delta > 0 ? 'rb-up-t' : 'rb-down-t'}> ({delta > 0 ? '+' : ''}{k === 'regen' ? delta.toFixed(1) : Math.round(delta)})</span>}
+          </li>
+        ))}
+        {lost.map(([k, v]) => (
+          <li key={`lost-${k}`} className="rb-down-t">
+            Loses {fmtStat(k, v)}
+          </li>
+        ))}
+      </ul>
+      {lines.length > 0 && (
+        <div className="rb-item-mods">
+          <span className="rb-kicker">Changes how you fight</span>
+          {lines.map((l) => (
+            <p key={l} className={gone?.has(l) ? 'rb-down-t' : 'rb-gold'}>
+              {gone?.has(l) ? 'You would lose: ' : ''}
+              {l}
+            </p>
+          ))}
+        </div>
+      )}
+      {def && <p className="rb-lore">“{def.lore}”</p>}
+    </div>
+  );
+}
+
+/** An item's card next to what is worn in its slot (WoW-style), the "if worn" summary, then `actions` (or Equip/Salvage). */
+export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, actions, label }: { engine: SigilEngine; item: Item; worn: boolean; confirm: boolean; onSalvage: () => void; onDone: () => void; actions?: ReactNode; label?: 'In your bag' | 'For sale' }) {
   const h = engine.hero!;
   const slot = itemSlot(item);
-  const current = h.equip[slot];
-  const compare = !worn && current && current.uid !== item.uid ? current : undefined;
+  const compare = compareWith(h, item, worn);
   const lines = modLines(itemMods(item));
-  const def = ITEM_DEFS[item.base];
   const reason = cantEquip(h, item);
-  const stats = itemStats(item);
-  const curStats = compare ? new Map(itemStats(compare)) : null;
   // the hero's health and power before and after wearing it
   const preview = useMemo(() => {
     if (worn || reason) return null;
@@ -259,70 +312,19 @@ export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, act
     const after = buildHero(clone);
     return { hp: after.maxHp - before.maxHp, power: after.stats.power - before.stats.power };
   }, [h, item, slot, worn, reason]);
-  const cls = itemClass(item);
   return (
     <div className="rb-item" style={{ ['--rc' as string]: rarityColor(item.r) }}>
-      <div className="rb-item-head">
-        <ItemIcon item={item} size={52} />
-        <div>
-          <strong className="rb-item-name">{itemName(item)}</strong>
-          <span className="rb-dim rb-small">
-            {RARITY_NAME[item.r]} {SLOT_LABEL[slot].toLowerCase()} · item level {item.il}
-            {cls ? ` · ${CLASSES[cls].name} only` : ''}
-          </span>
-        </div>
-        <button className="rb-x is-small" onClick={onDone} aria-label="Close details">
-          ✕
-        </button>
+      <div className={`rb-compare${compare ? ' is-two' : ''}`}>
+        <ItemCard item={item} compareTo={compare} label={worn ? 'Equipped' : compare ? (label ?? 'In your bag') : label} onClose={onDone} />
+        {compare && <ItemCard item={compare} label="Equipped" compact against={item} />}
+        {!worn && !compare && !reason && <p className="rb-small rb-dim rb-icard-none">Nothing equipped in this slot.</p>}
       </div>
-      <ul className="rb-item-stats">
-        {stats.map(([k, v]) => {
-          const old = curStats?.get(k);
-          const delta = curStats ? v - (old ?? 0) : 0;
-          return (
-            <li key={k}>
-              {fmtStat(k, v)}
-              {curStats && Math.round(delta * 10) !== 0 && <span className={delta > 0 ? 'rb-up-t' : 'rb-down-t'}> ({delta > 0 ? '+' : ''}{k === 'regen' ? delta.toFixed(1) : Math.round(delta)})</span>}
-            </li>
-          );
-        })}
-        {curStats &&
-          [...curStats.entries()]
-            .filter(([k]) => !stats.some(([s]) => s === k))
-            .map(([k, v]) => (
-              <li key={`lost-${k}`} className="rb-down-t">
-                Loses {fmtStat(k, v)}
-              </li>
-            ))}
-      </ul>
-      {lines.length > 0 && (
-        <div className="rb-item-mods">
-          <span className="rb-kicker">Changes how you fight</span>
-          {lines.map((l) => (
-            <p key={l} className="rb-gold">
-              {l}
-            </p>
-          ))}
-        </div>
-      )}
-      {compare && (
-        <div className="rb-item-compare">
-          <span className="rb-kicker">You wear: {itemName(compare)}</span>
-          {modLines(itemMods(compare)).map((l) => (
-            <p key={l} className="rb-dim">
-              {lines.includes(l) ? '' : 'You would lose: '}
-              {l}
-            </p>
-          ))}
-        </div>
-      )}
       {preview && (preview.hp !== 0 || preview.power !== 0) && (
-        <p className="rb-small">
+        <p className="rb-small rb-item-if">
           If worn: <span className={preview.hp >= 0 ? 'rb-up-t' : 'rb-down-t'}>{preview.hp >= 0 ? '+' : ''}{preview.hp} health</span>,{' '}
           <span className={preview.power >= 0 ? 'rb-up-t' : 'rb-down-t'}>{preview.power >= 0 ? '+' : ''}{Math.round(preview.power)}% damage</span>
         </p>
       )}
-      {def && <p className="rb-lore">“{def.lore}”</p>}
       {actions ?? (
       <div className="rb-row">
         {worn ? (
@@ -806,7 +808,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
       </section>
       <section className="rb-map-right">
         <span className="rb-kicker">{canTravel ? 'The world · travel by waystone' : 'The world · travel from a waystone or a town'}</span>
-        <WorldMap hero={h} here={w.region.id} sel={sel} goal={goal ? questRegion(goal) : undefined} onSel={setSel} />
+        <WorldMap hero={h} here={w.region.id} sel={sel} goal={goal ? questRegion(goal) : undefined} counts={questCounts(h)} onSel={setSel} />
         <div className={`rb-dest${open ? '' : ' is-locked'}${here ? ' is-here' : ''}`}>
           <div>
             <strong>
@@ -973,7 +975,7 @@ function placeNames(names: Map<RegionId, string>): Map<RegionId, { x: number; y:
 }
 
 /** The world at a glance: every region where it lies, the ways between them, what is still unknown. */
-function WorldMap({ hero, here, sel, goal, onSel }: { hero: Character; here: RegionId; sel: RegionId; goal?: RegionId; onSel: (r: RegionId) => void }) {
+function WorldMap({ hero, here, sel, goal, counts, onSel }: { hero: Character; here: RegionId; sel: RegionId; goal?: RegionId; counts: Map<RegionId, { work: number; offers: number }>; onSel: (r: RegionId) => void }) {
   const links = useMemo(() => regionLinks(), []);
   // the box fits the world, with room for the names round the edge regions
   const box = useMemo(() => {
@@ -1029,6 +1031,17 @@ function WorldMap({ hero, here, sel, goal, onSel }: { hero: Character; here: Reg
               <image href={mapIconUrl(k ? (r.kind === 'town' ? 'town' : r.kind === 'dungeon' ? 'dungeon' : 'wild') : 'unknown', 3)} x={x - 3} y={y - 3} width="6" height="6" className="rb-world-icon" />
               {id === goal && (
                 <text x={x + 3.2} y={y - 2.6} className="rb-world-goal">
+                  !
+                </text>
+              )}
+              {/* how many quests have work here (a number), and quests to take here (a blue "!") */}
+              {(counts.get(id)?.work ?? 0) > (id === goal ? 1 : 0) && (
+                <text x={x - 3.6} y={y - 2.6} className="rb-world-count">
+                  {counts.get(id)!.work}
+                </text>
+              )}
+              {(counts.get(id)?.offers ?? 0) > 0 && (
+                <text x={x + 3.4} y={y + 4.4} className="rb-world-offer">
                   !
                 </text>
               )}
@@ -1151,6 +1164,8 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
   const dark = !fog.all && fog.count === 0;
   const box = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
+  // where the quest marks were drawn (css px in the canvas), for a tap to follow one
+  const hits = useRef<{ x: number; y: number; quest: string }[]>([]);
   // the land the hero is in opens round them; another, whole
   const pz = usePanZoom(box, m.w, m.h, LAND_ZOOM, () => (live ? { k: 1.6, cx: w.player.x / TILE, cy: w.player.y / TILE } : { k: 1, cx: m.w / 2, cy: m.h / 2 }));
   const v = pz.view;
@@ -1193,6 +1208,21 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
     for (const n of w.npcs) if (seen(n.x, n.y)) icon(n.x, n.y, npcMark(w, n.id) ?? (NPCS[n.id]?.shop ? 'merchant' : 'person'));
     for (const x of w.exits) if (seen(x.x, x.y)) icon(x.x, x.y, x.door ? 'door' : 'road');
     const goal = objectiveTarget(w);
+    // every other quest: a smaller mark (gold the story, blue a side quest), no ring; marks within 10 px of each
+    // other (several quests at one person, or behind one way out) stack into one with a count
+    const px = (x: number, y: number): [number, number] => [(ox + (x / TILE) * k) / dpr, (oy + (y / TILE) * k) / dpr];
+    const stacks: { x: number; y: number; main: boolean; n: number }[] = [];
+    hits.current = [];
+    for (const o of objectiveTargets(w)) {
+      const [cx, cy] = px(o.x, o.y);
+      hits.current.push({ x: cx, y: o.quest === goal?.quest ? cy : cy - (6 * s) / dpr, quest: o.quest });
+      if (o.quest === goal?.quest) continue;
+      const near = stacks.find((st) => Math.hypot(st.x - o.x, st.y - o.y) * (k / dpr / TILE) < 10);
+      if (near) {
+        near.n++;
+        near.main ||= o.main;
+      } else stacks.push({ x: o.x, y: o.y, main: o.main, n: 1 });
+    }
     if (goal) {
       // ringed, so it is the first thing seen
       g.strokeStyle = '#ffcf5a';
@@ -1203,6 +1233,20 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
       icon(goal.x, goal.y, 'quest');
     }
     icon(w.player.x, w.player.y, 'you');
+    const small = Math.max(1, s - 1);
+    for (const st of stacks) {
+      // raised over its place (a waystone, a person, a way out stays readable under it)
+      drawMapIcon(g, st.main ? 'quest' : 'questSide', ox + (st.x / TILE) * k, oy + (st.y / TILE) * k - 6 * s, small);
+      if (st.n > 1) {
+        const [cx, cy] = [ox + (st.x / TILE) * k, oy + (st.y / TILE) * k - 6 * s];
+        g.font = `700 ${Math.round(10 * dpr)}px sans-serif`;
+        g.lineWidth = 3 * dpr;
+        g.strokeStyle = '#120c08';
+        g.fillStyle = '#ffffff';
+        g.strokeText(String(st.n), cx + 5 * s, cy - 3 * s);
+        g.fillText(String(st.n), cx + 5 * s, cy - 3 * s);
+      }
+    }
   }, [w, m, r.theme, fog, dark, live, v, pz.vw, pz.vh, pz.scale, engine.version]);
   const key = (name: MapIcon, label: string) => (
     <span className="rb-map-key">
@@ -1213,14 +1257,29 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
   return (
     <div className="rb-minimap">
       <div className="rb-landmap" ref={box} style={{ aspectRatio: `${m.w} / ${m.h}` }}>
-        <canvas ref={ref} aria-label={dark ? `${r.name}: not explored yet` : `Map of ${r.name}`} />
+        <canvas
+          ref={ref}
+          aria-label={dark ? `${r.name}: not explored yet` : `Map of ${r.name}`}
+          // a tap on a quest's mark follows it (the box above the map, the arrow and the tracker switch to it)
+          onClick={(e) => {
+            if (!live || pz.dragged()) return;
+            const { offsetX: x, offsetY: y } = e.nativeEvent;
+            let best: { quest: string; d: number } | null = null;
+            for (const t of hits.current) {
+              const d = Math.hypot(t.x - x, t.y - y);
+              if (d < 18 && (!best || d < best.d)) best = { quest: t.quest, d };
+            }
+            if (best && best.quest !== h.tracked) engine.trackQuest(best.quest);
+          }}
+        />
         {dark ? <span className="rb-landmap-dark">Not explored yet</span> : <ZoomButtons pz={pz} max={LAND_ZOOM} />}
       </div>
       {!dark &&
         (live ? (
           <span className="rb-small rb-dim rb-map-keys">
             {key('you', 'you')}
-            {key('quest', 'quest')}
+            {key('quest', 'story quest')}
+            {key('questSide', 'side quest (tap to follow)')}
             {w.waystones.length > 0 && key('waystone', 'waystone')}
             {key('road', 'road')}
             {w.exits.some((x) => x.door) && key('door', 'door')}
@@ -1290,6 +1349,10 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             <input type="checkbox" checked={s.autoTarget} onChange={(e) => set({ autoTarget: e.target.checked })} />
             <span>Attack aims at the nearest enemy</span>
           </label>
+          <label className="rb-check">
+            <input type="checkbox" checked={s.autoAimSkills} onChange={(e) => set({ autoAimSkills: e.target.checked })} />
+            <span>Skills aim at the nearest enemy when tapped</span>
+          </label>
           <div className="rb-seg" role="group" aria-label="Aim assist">
             {['Off', 'Light', 'Strong'].map((l, i) => (
               <button key={l} className={s.aimAssist === i ? 'is-on' : ''} onClick={() => set({ aimAssist: i })}>
@@ -1313,7 +1376,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
               </button>
             ))}
           </div>
-          <span className="rb-small rb-dim">WASD move · mouse aim · left click attack · Q E R {s.skill4Key.toUpperCase()} skills · Space dodge · 1 potion · {s.ultKey === 'f' ? 'G' : 'F'} talk/travel · I bag · K talents · U skills · J quests · M map · O play together · Esc pause</span>
+          <span className="rb-small rb-dim">WASD move · mouse aim · left click attack · Q E R {s.skill4Key.toUpperCase()} skills · Space dodge · {s.ultKey === 'rmb' ? 'Right mouse' : s.ultKey === 'shift' ? 'Shift' : s.ultKey.toUpperCase()} ultimate · 1 potion · Y ride · {s.ultKey === 'f' ? 'G' : 'F'} or Enter talk/travel · I bag · K talents · U skills · J quests · M map · O play together · Esc pause</span>
         </section>
         <section>
           <span className="rb-kicker">Display</span>

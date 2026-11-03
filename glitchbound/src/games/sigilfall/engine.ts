@@ -583,6 +583,9 @@ export class SigilEngine {
     if (this.ui.boss) this.ui = { ...this.ui, boss: null };
   }
 
+  /** The open panel was opened from the pause menu (it returns there). */
+  private panelFromPause = false;
+
   toast(text: string, tone: Toast['tone'], item?: Item, sub?: string): void {
     const t: Toast = { id: this.nextToast++, text, tone, item, sub, until: performance.now() + toastTime(tone) };
     this.ui = { ...this.ui, toasts: [...this.ui.toasts.slice(-2), t] };
@@ -997,6 +1000,8 @@ export class SigilEngine {
     this.kbm?.release();
     this.touch.release();
     this.sound.play('open');
+    // Settings opened from the pause menu goes back to it when closed (the player paused on purpose)
+    this.panelFromPause = p === 'settings' && this.ui.pause;
     this.setUi({ panel: p, pause: false, dialogue: null });
   }
 
@@ -1032,7 +1037,9 @@ export class SigilEngine {
 
   closePanel(): void {
     this.sound.play('close');
-    this.setUi({ panel: null });
+    const back = this.panelFromPause;
+    this.panelFromPause = false;
+    this.setUi(back ? { panel: null, pause: true } : { panel: null });
   }
 
   togglePause(): void {
