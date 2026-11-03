@@ -145,6 +145,19 @@ export function recordLevel(s: WbSave, r: LevelResult, daily: string | null, ind
   return next;
 }
 
+/** Records shot `index` of a challenge round played on its own (not as the day's daily). */
+export function recordRound(s: WbSave, key: string, day: string, r: LevelResult, index: number): WbSave {
+  const old = s.challenges[key] ?? { day, results: [], progress: null, done: false };
+  if (old.done || old.results.length !== index) return s;
+  return { ...s, challenges: { ...s.challenges, [key]: { ...old, results: [...old.results, r], progress: null } } };
+}
+
+/** Marks a challenge round over with its shots: reopening it shows the result and never replays it. */
+export const closeRound = (s: WbSave, key: string, day: string, results: readonly LevelResult[]): WbSave => ({
+  ...s,
+  challenges: { ...s.challenges, [key]: { day, results: results.slice(0, DAILY_LEVELS), progress: null, done: true } },
+});
+
 export function recordEndless(s: WbSave, rs: readonly LevelResult[]): WbSave {
   const levels = rs.filter((r) => r.found).length;
   return { ...s, endless: { runs: s.endless.runs + 1, bestLevels: Math.max(s.endless.bestLevels, levels), bestScore: Math.max(s.endless.bestScore, totalScore(rs)) } };
