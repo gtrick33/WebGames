@@ -14,7 +14,6 @@ import { gamePageModule, loadGamePage, preloadGamePage } from './pages/loadGameP
 import { Home } from './pages/Home';
 import { NotFound } from './pages/NotFound';
 import { ArcadeEntrance } from './components/Entrance';
-import { MusicControl } from './components/MusicControl';
 import { NoticeBanner } from './components/NoticeBanner';
 import { SeasonLayer } from './components/SeasonLayer';
 import { ShareHost } from './components/ShareHost';
@@ -34,6 +33,8 @@ import { lazyPage } from './platform/lazyPage';
 // Not needed for the first paint: loads right after it (it registers the "Rate this game" opener).
 // The footer sits below every page: it loads right after the page itself.
 const Footer = lazy(fresh(() => import('./components/Footer').then((m) => ({ default: m.Footer }))));
+// The settings button (sound, language, theme): its own chunk, so it doesn't weigh on the first page.
+const MusicControl = lazy(fresh(() => import('./components/MusicControl').then((m) => ({ default: m.MusicControl }))));
 const FeedbackPrompt = lazy(fresh(() => import('./components/FeedbackPrompt').then((m) => ({ default: m.FeedbackPrompt }))));
 // Preloaded wherever it is likely next, so a game page doesn't wait for it (pages/loadGamePage.ts).
 const GamePage = lazy(gamePageModule);
@@ -187,7 +188,9 @@ export function App() {
           <Footer />
         </Suspense>
       )}
-      <MusicControl />
+      <Suspense fallback={null}>
+        <MusicControl />
+      </Suspense>
       <Suspense fallback={null}>
         <FeedbackPrompt />
       </Suspense>
