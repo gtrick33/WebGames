@@ -1,7 +1,7 @@
 # NEON RUSH
 
 An original, lightweight 2D endless arcade racer for the browser. Weave through neon traffic,
-grab coins and power-ups, chain near misses, climb the online leaderboard, and collect 65 cosmetic cars
+grab coins and power-ups, chain near misses, and collect 65 cosmetic cars
 across 10 body classes (formula, stock car, hypercar, grand tourer, muscle, cyber, hover, rally, prototype, street)
 with animated GPU paint shaders and 9 trail styles.
 
@@ -25,7 +25,6 @@ All commands run from this folder (`neon-rush/`). Requires Node 20+ (developed o
 | Serve the production build | `npm run preview` |
 | Everything above | `npm run check` |
 | Deploy to Cloudflare Pages | `npm run deploy` (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)) |
-| Local site + API + local D1 | `npm run build && npx wrangler d1 migrations apply neon-rush-leaderboard --local && npx wrangler pages dev` |
 
 ## How to play
 
@@ -46,9 +45,8 @@ src/
   progression/   Versioned save schema, storage, levels, achievements, daily rewards, challenges, run results
   cosmetics/     Skin catalogue and shop logic (cosmetic only)
   monetization/  AdProvider / PurchaseProvider interfaces, frequency caps, dev mocks
-  backend/       Leaderboard client + shared validation rules
-functions/       Cloudflare Pages Functions: /api/run, /api/score, /api/leaderboard (D1)
-migrations/      D1 schema
+  backend/       Placeholder for a future online backend (see docs/BACKEND.md)
+migrations/      D1 schema of the retired leaderboard (its database keeps the old entries)
   analytics/     In-memory analytics seam (sends nothing) + embed.ts, which tells a host page (the GlitchBound
                  arcade) when a run starts and ends, only when the game runs inside an iframe
   audio/         Web Audio synthesized SFX + music (lazy-loaded)

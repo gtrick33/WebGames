@@ -2,8 +2,8 @@
 
 What is live today, and the exact steps for the parts that need your accounts, money or approval.
 
-**Live now:** https://neon-rush-8aj.pages.dev (Cloudflare Pages, free plan), with the online leaderboard
-(Pages Functions + D1 database `neon-rush-leaderboard`). Ads and real-money purchases are built in but off.
+**Live now:** https://neon-rush-8aj.pages.dev (Cloudflare Pages, free plan). The game's own online leaderboard is
+retired: scores show on the GlitchBound arcade's leaderboard only (section 5). Ads and real-money purchases are built in but off.
 
 ---
 
@@ -22,7 +22,7 @@ GitHub needs two things from Cloudflare: a **token** (a password that can only d
    `Account` | `Cloudflare Pages` | `Edit`
 6. Click **+ Add more** to get a second row, and set it to:
    `Account` | `D1` | `Edit`
-   (This lets the deploy keep the leaderboard database connected.)
+   (This lets the deploy keep the retired leaderboard database connected.)
 7. **Account Resources**: two dropdowns. Set them to `Include` | `Savawow99@gmail.com's Account`.
 8. **Zone Resources**: if this section appears, leave it alone. Your permissions are account-level, so it doesn't matter.
 9. **Client IP Address Filtering**: leave it **empty**. GitHub's computers change IP addresses every run;
@@ -283,23 +283,19 @@ The product IDs **must match exactly** what the game uses:
 ### Option for the website: Stripe
 
 For selling on the website as well, Stripe (or Paddle / Lemon Squeezy, which also handle sales tax for you) works.
-It needs a small server part that confirms each payment before granting items, built like the leaderboard. Sign up
+It needs a small server part that confirms each payment before granting items, built like the arcade's score checks. Sign up
 at https://stripe.com, and I can build that part when you're ready.
 
 ---
 
-## 5. Online leaderboard: how it works and its limits
+## 5. Scores and leaderboards
 
-- Endpoints: `POST /api/run` (server-timestamped run token), `POST /api/score`, `GET /api/leaderboard?period=daily|all`.
-- Anti-cheat: a run must start with a server token; the claimed run time cannot exceed real elapsed time; distance must fit the
-  game's speed limits; coins, near misses and score must be consistent; each token works once; names are validated and filtered.
-  Determined cheaters can still forge plausible scores (no client game is fully cheat-proof). Delete bad rows with:
+- NEON RUSH has no leaderboard of its own any more. Inside GlitchBound it reports each run to the arcade (`src/analytics/embed.ts`),
+  and the arcade's leaderboard, with its own score checks, is the only one shown.
+- The old endpoints (`/api/run`, `/api/score`, `/api/leaderboard`) and the in-game Ranks screen are gone. The D1 database
+  `neon-rush-leaderboard` still holds the old entries (nothing reads or writes it). To remove a player's entries on request:
   ```bash
-  npx wrangler d1 execute neon-rush-leaderboard --remote --command "DELETE FROM scores WHERE name = 'BadName'"
+  npx wrangler d1 execute neon-rush-leaderboard --remote --command "DELETE FROM scores WHERE name = 'TheirName'"
   ```
-- Players are anonymous: a random id plus the racer name they choose. No accounts, emails or IPs are stored.
-- Free-plan limits (from Cloudflare docs, Oct 2026): D1 has 5M row reads/day, 100k row writes/day and 5 GB. Pages Functions
-  share the Workers free quota of 100k requests/day. Static files are free and unlimited. A ranked run uses about 4 writes,
-  so the free plan handles roughly 20k ranked runs per day. If a limit is hit, the leaderboard shows as offline
-  until 00:00 UTC, and the game itself keeps working.
-- Schema changes: add `migrations/0002_*.sql` and run `npx wrangler d1 migrations apply neon-rush-leaderboard --remote`.
+  Deleting the database itself (and its binding in `wrangler.toml` here and in `glitchbound/wrangler.toml`) is a separate,
+  one-way step for the owner.
