@@ -110,6 +110,9 @@ const courseSeed = (day: string): number => hashString(`wing-it:${day}`);
 
 /** The share line of today's best flight (older saves only kept its points). */
 const dailyLine = (d: Save['daily'][string]): string => flightLine(d.pillars ?? d.best, d.feathers ?? 0);
+/** Today's best is worth sharing after any flight: it says "best so far" while flights are left. */
+const dailyShare = (day: string, d: Save['daily'][string]): string =>
+  `Wing It #${dailyNumber(day)} 🐤\n${dailyLine(d)}\nScore: ${d.best}${flightsLeft(d) > 0 ? ' (best so far)' : ''}\n${window.location.origin}/games/wing-it`;
 /** The bar on its own row and the medal and feathers below it, so the bar never wraps on the card. */
 const cardLine = (line: string): string => line.replace(' ', '\n');
 const gapsText = (n: number): string => `${n} gap${n === 1 ? '' : 's'}`;
@@ -588,7 +591,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
                 {mode === 'daily' && again === 'endless' ? 'Fly endless' : 'Fly again'}
               </button>
             )}
-            {mode === 'daily' && daily && left === 0 && <ShareButton text={`Wing It #${dailyNumber(day)} 🐤\n${dailyLine(daily)}\nScore: ${daily.best}\n${window.location.origin}/games/wing-it`} />}
+            {mode === 'daily' && daily && daily.best > 0 && <ShareButton text={dailyShare(day, daily)} label={left > 0 ? 'Share best so far' : 'Share'} />}
             <button className="wi-btn" onClick={() => settled() && toMenu()}>
               Menu
             </button>
@@ -599,11 +602,11 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
   );
 }
 
-function ShareButton({ text }: { text: string }) {
+function ShareButton({ text, label = 'Share' }: { text: string; label?: string }) {
   const [msg, setMsg] = useState('');
   return (
     <button className="wi-btn" onClick={() => void shareOrCopy({ title: 'Wing It', text }).then((o) => setMsg(o === 'copied' ? 'Copied!' : ''))}>
-      {msg || 'Share'}
+      {msg || label}
     </button>
   );
 }
@@ -636,9 +639,7 @@ function Mascot() {
 function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPlay: (m: Exclude<Mode, 'challenge'>) => void; onMute: () => void }) {
   const daily = save.daily[today];
   const left = flightsLeft(daily);
-  const share = daily && daily.best > 0 && (
-    <ShareButton text={`Wing It #${dailyNumber(today)} 🐤\n${dailyLine(daily)}\nScore: ${daily.best}\n${window.location.origin}/games/wing-it`} />
-  );
+  const share = daily && daily.best > 0 && <ShareButton text={dailyShare(today, daily)} label={left > 0 ? 'Share best so far' : 'Share'} />;
   return (
     <div className="wi wi-menu">
       <div className="wi-menu-top">
@@ -667,9 +668,12 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
             <NextDaily className="wi-muted" />
           </div>
         ) : (
-          <button className="wi-btn wi-btn-go wi-btn-big" onClick={() => onPlay('daily')}>
-            {daily ? `Fly again (${flightsText(left)})` : 'Fly today’s course'}
-          </button>
+          <>
+            <button className="wi-btn wi-btn-go wi-btn-big" onClick={() => onPlay('daily')}>
+              {daily ? `Fly again (${flightsText(left)})` : 'Fly today’s course'}
+            </button>
+            {share}
+          </>
         )}
       </section>
       <section className="wi-card">

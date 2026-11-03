@@ -82,6 +82,8 @@ describe('Wing It: the daily course is three flights a day, best counts', () => 
     // The abandoned second flight reports its own 0; the day keeps the 12.
     expect(report).toHaveBeenCalledWith({ type: 'end', score: 0, stats: { pillars: 0, feathers: 0 }, daily: true });
     expect(screen.getByText(/Today: 12 · 1 flight left/)).toBeTruthy();
+    // Today's best can be shared after any flight.
+    expect(screen.getByRole('button', { name: 'Share best so far' })).toBeTruthy();
     unmount();
 
     localStorage.setItem('glitchbound.wing-it', JSON.stringify({ daily: { [day]: { best: 12, tries: 3, pillars: 3, feathers: 1 } } }));
