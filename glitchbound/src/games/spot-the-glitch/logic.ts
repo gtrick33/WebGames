@@ -3,7 +3,7 @@
  * anti-spam lock, scoring and the daily set. Time comes in as `now` (ms) on each action.
  */
 import { daysBetween, hashString } from '../../platform/dates';
-import { diffAt, DIFFS, makePuzzle, type Puzzle } from './diffs';
+import { diffAt, DIFFS, makePuzzle, type Gen, type Puzzle } from './diffs';
 
 export const EPOCH = '2026-10-18';
 export const DAILY_PICTURES = 3;
@@ -16,6 +16,8 @@ export const LOCK_MS = 2000;
 /** Glitch Rush clock. */
 export const RUSH_START_S = 60;
 export const RUSH_BONUS_S = 8;
+/** Glitch Rush: a hint costs this much of the clock (Rush is the timed, ranked mode). */
+export const RUSH_HINT_S = 5;
 
 export interface Miss {
   x: number;
@@ -135,8 +137,20 @@ export function resultOf(s: PictureState): PictureResult {
 /** Dailies up to this day were published with the first five themes; they are rebuilt exactly. */
 export const CLASSIC_UNTIL = '2026-10-18';
 
+/**
+ * Dailies from this day on (and challenges started from it) use the fair generator (diffs.ts); earlier
+ * ones were published with the first generator and are rebuilt exactly, picture for picture.
+ */
+export const FAIR_FROM = '2026-12-08';
+
+/** The generator a daily (or a challenge started that day) is built with. */
+export const genFor = (day: string): Gen => (day <= CLASSIC_UNTIL ? 'classic' : day < FAIR_FROM ? 'v1' : 'fair');
+
+/** The generator for a friends' challenge started on `day` (older ones, with no day, keep the first one). */
+export const challengeGen = (day: string): Gen => (/^\d{4}-\d{2}-\d{2}$/.test(day) && day >= FAIR_FROM ? 'fair' : 'v1');
+
 export function dailyPuzzle(day: string, index: number): Puzzle {
-  return makePuzzle(hashString(`spot-the-glitch:${day}:${index}`), Math.min(2, index), undefined, day <= CLASSIC_UNTIL);
+  return makePuzzle(hashString(`spot-the-glitch:${day}:${index}`), Math.min(2, index), undefined, genFor(day));
 }
 
 export function dailyNumber(day: string): number {
@@ -153,6 +167,16 @@ export function endStats(rs: readonly PictureResult[], extra: Record<string, num
   const found = rs.reduce((n, r) => n + r.found, 0);
   const clean = rs.filter((r) => r.found === DIFFS && r.misses === 0 && r.hints === 0).length;
   return { score: totalScore(rs), stats: { found, clean, ...extra } };
+}
+
+/**
+ * The end of a Glitch Rush run: 100 per glitch plus 250 per cleared picture. Its score is also
+ * reported as the `rush` stat, and a finished daily's total as `daily`, so the arcade can tell the
+ * two apart (a Rush run is not "one daily").
+ */
+export function rushEnd(results: readonly PictureResult[], cleared: number, found: number): { score: number; stats: Record<string, number> } {
+  const score = results.reduce((n, x) => n + x.found * 100, 0) + cleared * 250;
+  return { score, stats: { found, pictures: cleared, rush: score } };
 }
 
 /** One row per picture: a 🟩 per glitch found, ⬛ per glitch missed. Never where they are. */

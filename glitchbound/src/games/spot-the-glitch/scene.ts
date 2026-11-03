@@ -277,6 +277,8 @@ interface Slot {
   count: [number, number];
   s?: [number, number];
   colors?: readonly string[];
+  /** Colors for pictures from the fair generator (diffs.ts), where the first ones blend into the backdrop. */
+  fairColors?: readonly string[];
 }
 
 const SKY = ['#f6f3ec'];
@@ -380,7 +382,7 @@ const THEMES: Record<ThemeId, Slot[]> = {
     { kind: 'monkey', y: [70, 140], count: [1, 1], colors: ['#8b5a3c', '#6b4a35'] },
     { kind: 'palm', y: [150, 196], count: [2, 3], colors: ['#3e7a4f', '#4f8a3c', '#2f5e46'] },
     { kind: 'butterfly', y: [60, 210], count: [2, 3], colors: ['#e0913d', '#4a72b0', '#d99aae', '#e3c04d'] },
-    { kind: 'weed', y: [232, 262], count: [2, 3], colors: ['#3e7a4f', '#4f8a3c'] },
+    { kind: 'weed', y: [232, 262], count: [2, 3], colors: ['#3e7a4f', '#4f8a3c'], fairColors: ['#d4e87a', '#e3c04d'] },
     { kind: 'flower', y: [240, 292], count: [3, 5], colors: ['#d1544f', '#d99aae', '#e0913d', '#8a6db5'] },
     { kind: 'frog', y: [258, 290], count: [1, 2], colors: ['#8cae4f', '#3f9c94', '#e0913d'] },
     { kind: 'mushroom', y: [258, 290], count: [1, 2], colors: ['#d1544f', '#e0913d'] },
@@ -484,8 +486,11 @@ export const VARIANTS: Partial<Record<Kind, number>> = {
   partyhat: 2,
 };
 
-/** Builds a picture. `crowd` (0-1) adds objects for harder pictures. */
-export function makeScene(seed: number, theme: ThemeId, crowd = 0): Scene {
+/**
+ * Builds a picture. `crowd` (0-1) adds objects for harder pictures. `fair` uses the retuned colors
+ * (older pictures keep the first ones, so published dailies never change).
+ */
+export function makeScene(seed: number, theme: ThemeId, crowd = 0, fair = false): Scene {
   const r = rng(seed);
   const objects: Obj[] = [];
   let id = 0;
@@ -504,7 +509,7 @@ export function makeScene(seed: number, theme: ThemeId, crowd = 0): Scene {
         const d = Math.min(1e9, ...objects.filter((o) => o.kind === slot.kind || Math.abs(o.y - y) < 40).map((o) => Math.hypot(o.x - x, o.y - y) - RADIUS[o.kind] * o.s - rad));
         if (!best || d > best.d) best = { x, y, d };
       }
-      const colors = slot.colors ?? ALL;
+      const colors = (fair ? slot.fairColors : undefined) ?? slot.colors ?? ALL;
       objects.push({
         id: id++,
         kind: slot.kind,
@@ -539,6 +544,7 @@ export function bandFor(theme: ThemeId, kind: Kind): [number, number] | null {
   return THEMES[theme].find((s) => s.kind === kind)?.y ?? null;
 }
 
-export function colorsFor(theme: ThemeId, kind: Kind): readonly string[] {
-  return THEMES[theme].find((s) => s.kind === kind)?.colors ?? ALL;
+export function colorsFor(theme: ThemeId, kind: Kind, fair = false): readonly string[] {
+  const slot = THEMES[theme].find((s) => s.kind === kind);
+  return (fair ? slot?.fairColors : undefined) ?? slot?.colors ?? ALL;
 }
