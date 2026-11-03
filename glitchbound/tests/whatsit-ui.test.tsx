@@ -37,6 +37,7 @@ describe('Whatsit challenge rounds', () => {
     const view = render(<Game host={{ report }} restartKey={0} challenge={fresh} />);
     expect(report).toHaveBeenCalledWith({ type: 'start' });
     fireEvent.click(questions()[0]!);
+    expect(screen.getByRole('status').textContent).toMatch(/\d+ of 12 cards still fit\./);
     fireEvent.click(questions()[1]!);
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
     expect(screen.getByRole('button', { name: 'Resume' })).toBeTruthy();
@@ -56,7 +57,8 @@ describe('Whatsit challenge rounds', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Yes, pick it' }));
     const ends = report.mock.calls.filter(([e]) => e.type === 'end');
     expect(ends).toHaveLength(1);
-    expect(ends[0]![0]).toMatchObject({ score: 1000, challenge: { id: 'abc123', round: 1 } });
+    // A fresh challenge counts every question: 2 questions cost 100.
+    expect(ends[0]![0]).toMatchObject({ score: 900, challenge: { id: 'abc123', round: 1 } });
     expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
 
     cleanup();

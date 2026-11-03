@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { hashString } from '../src/platform/dates';
 import { THEMES, thingById } from '../src/games/whatsit/bank';
-import { answerLine, dailyRound, dayOf, fits, LINEUP, makeRound, scoreOf, stillFitting, validRound } from '../src/games/whatsit/logic';
+import { answerLine, challengeScoreOf, dailyRound, dayOf, fits, LINEUP, makeRound, scoreOf, stillFitting, validRound } from '../src/games/whatsit/logic';
 
 /** Things one answer apart, reviewed (WH-04): "a/b:question". */
 const REVIEWED_PAIRS = [
@@ -158,6 +158,14 @@ describe('Whatsit rounds', () => {
     expect(scoreOf(5, true)).toBe(850);
     expect(scoreOf(14, true)).toBe(200);
     expect(scoreOf(2, false)).toBe(0);
+  });
+
+  it('a fresh challenge counts every question, so fewer questions always rank higher', () => {
+    expect(challengeScoreOf(0, true)).toBe(1000);
+    expect(challengeScoreOf(1, true)).toBeGreaterThan(challengeScoreOf(3, true));
+    expect(challengeScoreOf(3, true)).toBe(850);
+    expect(challengeScoreOf(16, true)).toBe(200);
+    expect(challengeScoreOf(2, false)).toBe(0);
   });
 
   it('writes the answers as a spoiler-free line', () => {

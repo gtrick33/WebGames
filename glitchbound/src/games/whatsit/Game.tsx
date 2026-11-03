@@ -10,7 +10,7 @@ import { ResultLine } from '../../components/ResultLine';
 import { THEMES, themeById, thingById, type Theme } from './bank';
 import { Parcel, type Mood } from './art';
 import { COACH_BUTTONS, coachSteps } from './coach';
-import { answer, answerLine, dailyRound, EPOCH, makeRound, scoreOf, stillFitting, validRound, type Round } from './logic';
+import { answer, answerLine, challengeScoreOf, dailyRound, EPOCH, LINEUP, makeRound, scoreOf, stillFitting, validRound, type Round } from './logic';
 import { createSfx, type Sfx } from './sound';
 import { UI, type Ui } from './words';
 import './Game.css';
@@ -128,6 +128,10 @@ interface Play {
   run: number;
   counted?: DailyRecord;
 }
+
+/** A fresh challenge round counts every question (it ranks the fewest); the rest use the daily's scoring. */
+const ranksQuestions = (p: Play): boolean => p.mode === 'challenge' && !p.day;
+const scoreFor = (p: Play, solved: boolean): number => (ranksQuestions(p) ? challengeScoreOf : scoreOf)(p.asked.length, solved);
 
 const recordOf = (p: Play): ChallengeRecord => ({ round: p.round, asked: p.asked, phase: p.phase, crossed: p.crossed, pick: p.pick, ...(p.counted ? { counted: p.counted } : {}) });
 
@@ -332,7 +336,7 @@ function Whatsit({ host, challenge, lang, pauseKey }: { host: GameHost; challeng
     if (!play || play.phase !== 'lineup') return;
     const solved = id === play.round.secret;
     const questions = play.asked.length;
-    const score = scoreOf(questions, solved);
+    const score = scoreFor(play, solved);
     const line = answerLine(play.round, play.asked);
     const day = play.day;
     const done: Play = { ...play, phase: 'done', pick: id };
@@ -584,7 +588,9 @@ function Ask({ play, theme, u, lang, label, sfx, onAsk, onReady, onMenu }: { pla
     sfx().ask();
     if (yes) sfx().yep();
     else sfx().nope();
-    setSay({ mood: yes ? 'yes' : 'no', text: yes ? u.yep : u.nope });
+    // A fresh challenge ranks the fewest questions: say how many cards still fit, so stopping early is a visible risk.
+    const fit = ranksQuestions(play) ? ` ${u.stillFit(stillFitting(play.round, [...play.asked, q]).length, LINEUP)}` : '';
+    setSay({ mood: yes ? 'yes' : 'no', text: (yes ? u.yep : u.nope) + fit });
     setFlash((n) => n + 1);
     // An asked question turns off, which would drop focus to the page: move it to the next question to ask.
     const ids = theme.questions.map((x) => x.id);
@@ -628,7 +634,7 @@ function Ask({ play, theme, u, lang, label, sfx, onAsk, onReady, onMenu }: { pla
             </span>
           )}
         </div>
-        <p className="whz-muted whz-hint">{u.askHint}</p>
+        <p className="whz-muted whz-hint">{ranksQuestions(play) ? u.askHintChallenge : u.askHint}</p>
         <button className="whz-btn whz-btn-ready" ref={readyRef} onClick={() => setConfirm(true)}>
           {u.ready} →
         </button>
@@ -749,7 +755,7 @@ function Result({ play, theme, u, lang, label, newBest, share, challenge, onAgai
   const secret = thingById(play.round.secret)!;
   const counted = play.counted;
   const solved = counted ? counted.solved : play.pick === play.round.secret;
-  const score = counted ? counted.score : scoreOf(play.asked.length, solved);
+  const score = counted ? counted.score : scoreFor(play, solved);
   const questions = counted ? counted.questions : play.asked.length;
   const fitting = new Set(stillFitting(play.round, play.asked));
   const picked = play.pick ? thingById(play.pick) : undefined;
