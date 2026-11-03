@@ -469,7 +469,7 @@ export const GAMES: GameEntry[] = [
     title: 'Wing It',
     tagline: 'One tap to flap. Thread the gaps, grab golden feathers, and see how far you get.',
     description:
-      'Tap to keep a chubby little bird in the air and squeeze through the gaps. The world changes every 15 points, gaps start to drift, and golden feathers pay extra. ' +
+      'Tap to keep a chubby little bird in the air and squeeze through the gaps. The world changes every 15 gaps, gaps start to drift, and golden feathers pay extra. ' +
       'A daily course that is the same for everyone, plus endless random skies.',
     categories: ['arcade'],
     moods: ['action', 'quick'],
@@ -496,7 +496,7 @@ export const GAMES: GameEntry[] = [
     ],
     highlights: [
       'Tap to flap: easy to learn, hard to put down',
-      'Four worlds (meadow, sunset, night, space) that change every 15 points',
+      'Four worlds (meadow, sunset, night, space) that change every 15 gaps',
       'Drifting gaps and golden feathers (+3) as you go further',
       'A daily course that is the same for everyone, plus endless random skies',
       'Bronze, silver, gold and platinum medals',
