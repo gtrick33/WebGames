@@ -2170,6 +2170,10 @@ const es: string[] = [
   '¡Hola de nuevo, {name}!',
   // 1990
   'Únete a mi sala de Scribble Scramble: uno dibuja y todos compiten por adivinar la palabra.',
+  'La campana dejó de sonar hace tres semanas. Esta noche vienen a por lo que duerme bajo la capilla.',
+  'O juega a algo rápido',
+  'Un héroe con espada y escudo en el patio de un castillo de noche, entre braseros y estandartes rojos',
+  'Juego real, en el móvil o en el ordenador',
 ];
 
 export default es;

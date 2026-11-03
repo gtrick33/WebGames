@@ -2170,6 +2170,10 @@ const tr: string[] = [
   'Tekrar hoş geldin, {name}!',
   // 1990
   'Scribble Scramble odama katıl: birimiz çizer, herkes kelimeyi ilk bilmek için yarışır.',
+  'Çan üç hafta önce susmuştu. Bu gece şapelin altında uyuyan şey için geliyorlar.',
+  'Ya da hızlı bir oyun oyna',
+  'Gece bir kale avlusunda, mangallar ve kırmızı sancaklar arasında kılıç ve kalkanlı bir kahraman',
+  'Gerçek oynanış, telefonda ya da bilgisayarda',
 ];
 
 export default tr;

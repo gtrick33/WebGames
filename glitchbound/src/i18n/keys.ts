@@ -2179,6 +2179,10 @@ export const KEYS: string[] = [
   "Welcome back, {name}!",
   // 1990
   "Join my Scribble Scramble room: one of us draws, everyone races to guess the word.",
+  "The bell stopped ringing three weeks ago. Tonight, they come for what sleeps under the chapel.",
+  "Or play a quick game",
+  "A hero with sword and shield on a castle forecourt at night, between braziers and red banners",
+  "Real gameplay, on a phone or a computer",
 ];
 
 export const UI_COUNT = 311;

@@ -5,5 +5,6 @@
 
 /** Where players reach the studio: a ticket (bug report, question or data request). No account needed. */
 export const CONTACT_PATH = '/me/bugs?category=question';
+export const OWNER_EMAIL = 'sava.hristov@glitchboundstudio.com';
 export const CONTACT_DESCRIPTION = 'How to reach GlitchBound: tickets for bugs, questions and data requests, and feedback.';
 export const ABOUT_DESCRIPTION = 'Who makes GlitchBound, what kind of games it has, and the few rules the arcade sticks to.';
