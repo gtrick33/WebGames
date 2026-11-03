@@ -4,9 +4,8 @@
  * worked out at once (the screen shows each in turn, with a moment to "think").
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { hashString } from '../../platform/dates';
-import { botTurn } from './ai';
 import { Battle } from './Battle';
+import { BotThinker } from './bots';
 import { freeChar, type CharId } from './characters';
 import { MAX_TURNS, newMatch, playTurn, UNIT_HP, type Level, type Match, type TurnInput } from './match';
 import { botName } from './room';
@@ -65,8 +64,7 @@ export function resumeMatch(raw: unknown, first: Match): Match | null {
   }
 }
 
-/** A computer crew's turn (the same for everyone on the same battle: the daily and challenges). */
-export const botMove = (m: Match): Match => playTurn(m, botTurn(m, m.crews[m.crewTurn]!.bot!, hashString(`${m.seed}:${m.turn}`))).match;
+export { botMove } from './bots';
 
 export function SoloBattle({
   setup,
@@ -124,20 +122,47 @@ export function SoloBattle({
     [advance, onStart],
   );
 
-  // a computer crew's turn is worked out as the screen starts showing it (while it "thinks")
+  // a computer crew's turn is worked out (off the main thread) as the screen starts showing it, while it "thinks"
   const timer = useRef(0);
-  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const bots = useRef<BotThinker | null>(null);
+  const think = useCallback((job: 'move' | 'out', m: Match) => (bots.current ??= new BotThinker()).think(job, m), []);
+  useEffect(
+    () => () => {
+      window.clearTimeout(timer.current);
+      bots.current?.dispose();
+      bots.current = null;
+    },
+    [],
+  );
+  // your crew is out while computer crews fight on: skip to the end
+  const [out, setOut] = useState<'no' | 'out' | 'busy'>('no');
   const onShown = useCallback(
     (m: Match) => {
       if (m.over) return overRef.current(m);
+      if (!m.units.some((u) => u.crew === 0 && !u.dead)) setOut((o) => (o === 'no' ? 'out' : o));
       if (!m.crews[m.crewTurn]?.bot) return;
       window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => {
-        if (head.current.turn === m.turn && !head.current.over) advance(botMove(head.current));
+        const at = head.current;
+        if (at.turn !== m.turn || at.over) return;
+        void think('move', at).then((next) => {
+          if (head.current === at) advance(next);
+        });
       }, 60);
     },
-    [advance],
+    [advance, think],
   );
+  const skip = (): void => {
+    setOut('busy');
+    window.clearTimeout(timer.current);
+    const at = head.current;
+    void think('out', at).then((end) => {
+      if (head.current.over) return;
+      head.current = end;
+      advanceRef.current?.(end);
+      scene.current?.reset(end);
+    });
+  };
 
   return (
     <Battle
@@ -153,6 +178,14 @@ export function SoloBattle({
       onMute={onMute}
       sceneRef={scene}
     >
+      {out !== 'no' && !paused && (
+        <div className="cc-out" role="status">
+          <b>Your crew is out</b>
+          <button className="cc-cta" onClick={skip} disabled={out === 'busy'}>
+            {out === 'busy' ? 'Playing it out…' : 'See the result'}
+          </button>
+        </div>
+      )}
       {children}
     </Battle>
   );

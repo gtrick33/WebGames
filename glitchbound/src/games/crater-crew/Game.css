@@ -1088,6 +1088,29 @@
   }
 }
 
+/* your crew is out: skip the computer crews' battle */
+.cc-out {
+  position: absolute;
+  left: 50%;
+  bottom: max(64px, calc(env(safe-area-inset-bottom) + 56px));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100% - 24px);
+  padding: 8px 8px 8px 16px;
+  border-radius: 18px;
+  background: var(--hud-bg);
+  border: 2px solid var(--hud-line);
+  backdrop-filter: blur(6px);
+  font-weight: 900;
+  white-space: nowrap;
+  animation: cc-rise 0.3s ease;
+}
+.cc-out .cc-cta {
+  min-height: 44px;
+}
+
 /* first battles: how to aim, fire and move (up top, clear of your critter: the camera keeps it below the middle) */
 .cc-coach {
   position: absolute;
@@ -1578,6 +1601,7 @@
   .cc-toast,
   .cc-sheet,
   .cc-coach,
+  .cc-out,
   .cc-tray,
   .cc-run,
   .cc-clock.is-low {

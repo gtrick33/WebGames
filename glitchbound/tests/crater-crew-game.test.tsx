@@ -2,7 +2,9 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import Game from '../src/games/crater-crew/Game';
 import { playTurn } from '../src/games/crater-crew/match';
-import { botMove, resumeMatch, soloMatch } from '../src/games/crater-crew/solo';
+import { BotThinker, playOut } from '../src/games/crater-crew/bots';
+import { botMove, resumeMatch, SoloBattle, soloMatch } from '../src/games/crater-crew/solo';
+import type { Sfx } from '../src/games/crater-crew/sound';
 import { TERRAIN_IDS } from '../src/games/crater-crew/terrains';
 import { dayKey } from '../src/platform/dates';
 import type { ChallengeSpec } from '../src/platform/challenge';
@@ -156,5 +158,38 @@ describe('Crater Crew: saves and keys', () => {
     const sheet = screen.getByRole('dialog', { name: 'Paused' });
     expect(sheet.textContent).not.toContain('Quit to the menu');
     expect(sheet.textContent).not.toContain('Restart');
+  });
+});
+
+describe('Crater Crew: the computer crews', () => {
+  const setup = { seed: 77, terrain: 'meadow', foes: 2, level: 'easy', crewSize: 1, turnSecs: 30, name: 'You', char: 'frog' } as const;
+  // a battle where your crew is out and two computer crews fight on
+  const knockedOut = () => {
+    const m = soloMatch(setup);
+    const units = m.units.map((u) => (u.crew === 0 ? { ...u, dead: true, gone: true, hp: 0 } : u));
+    const crewTurn = m.crewTurn === 0 ? 1 : m.crewTurn;
+    return { ...m, turn: 3, units, crewTurn, active: units.find((u) => u.crew === crewTurn)!.id };
+  };
+
+  it('thinks the same off the main thread or on it, and plays a battle out to the end', async () => {
+    const m = knockedOut();
+    const thinker = new BotThinker();
+    expect(await thinker.think('move', m)).toEqual(botMove(m));
+    const end = await thinker.think('out', m);
+    thinker.dispose();
+    expect(end.over).toBe(true);
+    expect(end).toEqual(playOut(m));
+  });
+
+  it('lets a knocked-out player skip to the result', async () => {
+    const onOver = vi.fn();
+    const sfx = new Proxy({}, { get: () => noop }) as unknown as Sfx;
+    render(<SoloBattle setup={setup} resume={knockedOut()} sfx={() => sfx} paused={false} onPause={noop} muted onMute={noop} onStart={noop} onOver={onOver} />);
+    expect(screen.getByText('Your crew is out')).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'See the result' }));
+    });
+    expect(onOver).toHaveBeenCalledTimes(1);
+    expect(onOver.mock.calls[0]![0].over).toBe(true);
   });
 });
