@@ -5,7 +5,7 @@ import { openChallengeScores, type ChallengeSpec } from '../../platform/challeng
 import { basicLang, type BasicLang } from '../../platform/contentLang';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
-import { createRoom, roomInfo } from '../../platform/rooms';
+import { createRoom, roomInfo, seatedName } from '../../platform/rooms';
 import { OnlinePlay } from '../../components/OnlinePlay';
 import { shareOrCopy } from '../../platform/share';
 import { choosePlay, LEVELS, type Level } from './ai';
@@ -518,14 +518,19 @@ function Backgammon({ host, pauseKey, challenge, playerName }: { host: GameHost;
     return (
       <div className="tb" onPointerDown={() => sfx().unlock()}>
         <LiveBoard
+          key={room}
           w={w}
           code={room}
-          name={playerName || ''}
+          name={seatedName(room) ?? (playerName || '')}
           sfx={sfx}
           tools={tools}
           onLeave={() => {
             setRoomInUrl(null);
             setRoom(null);
+          }}
+          onRoom={(code) => {
+            setRoomInUrl(code);
+            setRoom(code);
           }}
         />
       </div>

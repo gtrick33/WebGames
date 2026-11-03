@@ -4,7 +4,7 @@
  * room.ts) and the results, with a rematch or a way back to the lobby.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { RoomListingBar } from '../../components/OnlinePlay';
+import { RoomListingBar, RoomNextStep } from '../../components/OnlinePlay';
 import { useRoom } from '../../platform/rooms';
 import { shareOrCopy } from '../../platform/share';
 import { Battle } from './Battle';
@@ -20,9 +20,9 @@ export const inviteLink = (code: string): string => `${location.origin}/r/${code
 
 const LEVEL_NAME: Record<Level, string> = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
 
-export function LiveRoom({ code, name, sfx, muted, onMute, onLeave, tools }: { code: string; name: string; sfx: () => Sfx; muted: boolean; onMute: () => void; onLeave: () => void; tools: ReactNode }) {
+export function LiveRoom({ code, name, sfx, muted, onMute, onLeave, onRoom, tools }: { code: string; name: string; sfx: () => Sfx; muted: boolean; onMute: () => void; onLeave: () => void; onRoom: (code: string) => void; tools: ReactNode }) {
   const scene = useRef<Scene | null>(null);
-  const { view, conn, error, clearError, gone, send, skew, listing, setListed } = useRoom<RoomView, Action>(code, name || 'Player', (data) => {
+  const { view, conn, error, clearError, gone, goneCode, send, skew, listing, setListed } = useRoom<RoomView, Action>(code, name || 'Player', (data) => {
     const d = data as (PosMsg & { t?: string; turn: number; unit: number }) | null;
     if (d?.t === 'pos') scene.current?.onRemote(d);
   });
@@ -40,7 +40,8 @@ export function LiveRoom({ code, name, sfx, muted, onMute, onLeave, tools }: { c
         <div className="cc-panel">
           <h2 className="cc-h">This room has closed</h2>
           <p className="cc-sub">{gone}</p>
-          <button className="cc-cta" onClick={onLeave}>
+          <RoomNextStep game="crater-crew" room={code} code={goneCode || 'closed'} onRoom={onRoom} />
+          <button className="cc-ghost" onClick={onLeave}>
             Back to the menu
           </button>
         </div>
@@ -69,7 +70,8 @@ export function LiveRoom({ code, name, sfx, muted, onMute, onLeave, tools }: { c
     <Battle
       match={m}
       mine={(c) => view.match?.crews[c]?.seat === view.me}
-      onTurn={(turn, input) => send({ t: 'turn', turn, walk: input.walk, fire: input.fire, run: input.run })}
+      // resent after a reconnect until the room confirms it: a dropped turn message never stalls the battle
+      onTurn={(turn, input) => send({ t: 'turn', turn, walk: input.walk, fire: input.fire, run: input.run }, { resend: true })}
       onPos={(p) => send({ t: 'pos', ...p })}
       onShown={(s) => {
         if (s.over) {

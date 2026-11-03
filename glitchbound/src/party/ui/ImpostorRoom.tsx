@@ -47,13 +47,13 @@ export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () 
       live = false;
     };
   }, [code]);
-  if (missing) return <DeadEnd game="impostor" gameTitle="Impostor" title={t('Impostor room')} heading={t('This room has closed')} text={t('Rooms close after three quiet hours. Open a new one and send the link.')} onLeave={onLeave} />;
+  if (missing) return <DeadEnd game="impostor" room={code} title={t('Impostor room')} heading={t('This room has closed')} text={t('Rooms close after three quiet hours. Open a new one and send the link.')} onLeave={onLeave} />;
   if (name === null) return <JoinForm title={`${t('Impostor')} · ${t('room {code}', { code })}`} emoji="🕵️" prefill={prefill} onJoin={join} onLeave={onLeave} />;
   return <Room code={code} name={name} back={back} note={note} onLeave={leave} />;
 }
 
 function Room({ code, name, back, note, onLeave }: { code: string; name: string; back: boolean; note: string; onLeave: () => void }) {
-  const { view, conn, error, clearError, gone, skew, send, listing, setListed } = useRoom<RoomView, Action>(code, name);
+  const { view, conn, error, clearError, gone, goneCode, skew, send, listing, setListed } = useRoom<RoomView, Action>(code, name);
   const left = useLeft(view?.deadline ?? null, skew);
   const screen = useTopOnPhase(view?.phase);
   const invite = (): void => {
@@ -66,7 +66,7 @@ function Room({ code, name, back, note, onLeave }: { code: string; name: string;
   }, [error, clearError]);
 
   const bar = <ModeBar title={`${t('Impostor')} · ${code}`} progress={view?.round && !gone ? t('Round {n}', { n: view.round }) : undefined} onExit={onLeave} />;
-  if (gone) return <DeadEnd game="impostor" gameTitle="Impostor" title={`${t('Impostor')} · ${code}`} heading={gone} onLeave={onLeave} />;
+  if (gone) return <DeadEnd game="impostor" room={code} code={goneCode} title={`${t('Impostor')} · ${code}`} heading={gone} onLeave={onLeave} />;
   if (!view)
     return (
       <div className="pt-screen">
