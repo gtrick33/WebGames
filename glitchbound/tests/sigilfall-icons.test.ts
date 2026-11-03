@@ -5,11 +5,11 @@ import { SKILLS } from '../src/games/sigilfall/data/skills';
 import { TALENTS } from '../src/games/sigilfall/data/talents';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { talentIcon } from '../src/games/sigilfall/render/art/gameIcons';
-import { SKILL_ICON, TALENT_ICONS } from '../src/games/sigilfall/render/art/iconPicks';
+import { SKILL_ICON, TALENT_ICONS, VIGIL_ICON } from '../src/games/sigilfall/render/art/iconPicks';
 
 /**
- * The skill and talent icons (game-icons.net, CC BY 3.0): every skill has its own, no tree shows the same
- * icon twice, and the atlas the game loads holds exactly what the picks name, each one credited.
+ * The skill and talent icons (Nasha's Lumenfall): every skill has its own, no tree shows the same
+ * icon twice, and the atlas the game loads holds exactly what the picks name, and the pack is credited.
  */
 
 const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
@@ -38,10 +38,9 @@ describe('Sigilfall: skill and talent icons', () => {
     }
   });
 
-  it('the atlas holds what the picks name (rebuild it with scripts/sigilfall-icons.mjs), and every icon is credited', () => {
-    const picked = [...new Set([...Object.values(SKILL_ICON), ...Object.values(TALENT_ICONS).flat()])].sort();
+  it('the atlas holds what the picks name (rebuild it with scripts/sigilfall-icons.mjs), and the pack is credited', () => {
+    const picked = [...new Set([...Object.values(SKILL_ICON), ...Object.values(TALENT_ICONS).flat(), ...Object.values(VIGIL_ICON)])].sort();
     expect(index.names).toEqual(picked);
-    expect(picked.filter((n) => !credits.includes(`| ${n} |`))).toEqual([]);
-    expect(credits).not.toContain('unknown');
+    expect(credits).toContain('Nasha');
   });
 });

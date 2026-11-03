@@ -4554,6 +4554,115 @@
   top: 0;
   pointer-events: none;
 }
+.rb-vigil-world {
+  position: absolute;
+  inset: 0;
+  transform: translate(var(--kx, 0), var(--ky, 0));
+}
+.rb-vigil-hurt,
+.rb-vigil-flash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.rb-vigil-hurt {
+  background: radial-gradient(ellipse at center, rgb(120 0 20 / 0) 42%, rgb(170 0 30 / 0.95) 100%);
+}
+.rb-vigil-flash {
+  background: radial-gradient(ellipse at center, rgb(255 228 150 / 0.9), rgb(255 200 90 / 0) 72%);
+}
+.rb-vigil-boss {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: min(44%, 340px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.rb-vigil-boss b {
+  color: #ffb0a8;
+  font: 700 14px Georgia, 'Times New Roman', serif;
+  text-shadow: 0 1px 0 #000, 0 0 8px #000;
+}
+.rb-vigil-boss span {
+  display: block;
+  width: 100%;
+  height: 9px;
+  overflow: hidden;
+  border: 1px solid #6e2a2a;
+  border-radius: 2px;
+  background: #1c0606;
+  box-shadow: 0 0 0 1px #000;
+}
+.rb-vigil-boss i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(180deg, #ff6a5a, #b81c28);
+}
+.rb-vigil-loadout {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  width: 94%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.rb-vigil-slot {
+  position: relative;
+  display: block;
+  width: clamp(30px, 6cqw, 44px);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1.5px solid #8a6a2a;
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px #05030d, 0 3px 6px rgb(0 0 0 / 0.5);
+  animation: rb-slot-in 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.rb-vigil-slot.is-small {
+  width: clamp(22px, 4.2cqw, 32px);
+  border-color: #4a5a7a;
+}
+.rb-vigil-slot.is-evolved {
+  border-color: #ffe39a;
+  box-shadow: 0 0 0 1px #05030d, 0 0 12px rgb(255 214 120 / 0.8);
+}
+.rb-vigil-slot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.rb-vigil-slot small {
+  position: absolute;
+  right: 1px;
+  bottom: 0;
+  padding: 0 2px;
+  border-radius: 2px;
+  background: rgb(5 3 13 / 0.82);
+  color: #ffe39a;
+  font: 700 9px/1.25 var(--font-mono, monospace);
+}
+@keyframes rb-slot-in {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-14deg);
+  }
+}
+.rb-vigil-gap {
+  display: block;
+  width: 6px;
+}
 .rb-vigil-xp {
   position: absolute;
   inset: 0 0 auto;
@@ -4652,6 +4761,55 @@
   width: 100%;
   margin: 6px 0;
 }
+.rb-vigil-levelup {
+  animation: rb-level-in 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+@keyframes rb-level-in {
+  from {
+    opacity: 0;
+    transform: scale(2.2);
+    letter-spacing: 0.3em;
+  }
+}
+.rb-vigil-icon {
+  position: relative;
+  display: block;
+  width: clamp(54px, 11cqw, 84px);
+  aspect-ratio: 1;
+  margin: 2px 0 4px;
+  overflow: hidden;
+  border: 2px solid #8a6a2a;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #05030d, 0 6px 14px rgb(0 0 0 / 0.55);
+  transition: transform 0.18s ease;
+}
+.rb-vigil-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.rb-vigil-icon::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(115deg, transparent 42%, rgb(255 255 255 / 0.55) 50%, transparent 58%);
+  transform: translateX(-70%);
+  animation: rb-icon-shine 2.6s ease-in-out calc(0.5s + var(--i, 0) * 0.28s) infinite;
+}
+@keyframes rb-icon-shine {
+  to {
+    transform: translateX(70%);
+  }
+}
+.rb-vigil-card:hover .rb-vigil-icon,
+.rb-vigil-card:focus-visible .rb-vigil-icon {
+  transform: scale(1.1) rotate(-2deg);
+}
+.rb-vigil-card.is-evolve .rb-vigil-icon {
+  border-color: #ffe39a;
+  box-shadow: 0 0 0 1px #05030d, 0 0 20px rgb(255 214 120 / 0.85);
+}
 .rb-vigil-card {
   position: relative;
   display: grid;
@@ -4660,6 +4818,7 @@
   gap: 5px;
   min-height: 150px;
   padding: 14px 10px 12px;
+  animation: rb-card-in 0.46s cubic-bezier(0.2, 1.25, 0.4, 1) calc(var(--i, 0) * 0.08s) both;
   border: 1px solid #6e5526;
   border-radius: 6px;
   background: linear-gradient(180deg, #2b2233, #15101f);
@@ -4670,10 +4829,17 @@
   cursor: pointer;
   transition: transform 0.16s ease, border-color 0.16s ease;
 }
+@keyframes rb-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px) rotateX(55deg) scale(0.84);
+  }
+}
 .rb-vigil-card:hover,
 .rb-vigil-card:focus-visible {
-  transform: translateY(-4px);
+  transform: translateY(-6px) scale(1.03);
   border-color: #f6c453;
+  box-shadow: 0 0 0 1px #f6c453, 0 10px 0 #0a0612, 0 0 26px rgb(246 196 83 / 0.35);
 }
 .rb-vigil-card strong {
   color: #fff6e0;
@@ -4732,10 +4898,478 @@
 @container (max-width: 560px) {
   .rb-vigil-cards {
     grid-template-columns: minmax(0, 1fr);
-    max-width: 320px;
+    max-width: 340px;
   }
   .rb-vigil-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
     min-height: 0;
-    padding: 9px 10px;
+    padding: 8px 10px;
+    text-align: left;
+    column-gap: 10px;
+  }
+  .rb-vigil-card .rb-vigil-tag,
+  .rb-vigil-card strong,
+  .rb-vigil-card > span:not(.rb-vigil-icon):not(.rb-vigil-tag) {
+    grid-column: 2;
+  }
+  .rb-vigil-icon {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    width: 56px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-vigil-card,
+  .rb-vigil-levelup,
+  .rb-vigil-slot,
+  .rb-vigil-icon::after {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ the Wardens' Sanctum: choosing a hero */
+.rb-title.is-hall {
+  background: #05030b;
+}
+.rb-title.is-hall::before {
+  display: none;
+}
+.rb-title.is-hall > .rb-notice {
+  position: absolute;
+  top: 62px;
+  left: 50%;
+  z-index: 8;
+  transform: translateX(-50%);
+  max-width: 92%;
+}
+.cs {
+  --px: 0;
+  --py: 0;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  container-type: size;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  background: #05030b;
+}
+/* the hall is 640 by 360, scaled to cover whatever the stage is and always centered on the hero */
+.cs-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 640px;
+  height: 360px;
+  transform: translate(-50%, -50%) scale(var(--scale, 1)) translate(calc(var(--px) * -9px), calc(var(--py) * -5px));
+  transform-origin: center;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.cs-hall {
+  position: absolute;
+  inset: 0;
+  width: 640px;
+  height: 360px;
+  image-rendering: pixelated;
+}
+.cs-figure {
+  position: absolute;
+  left: 320px;
+  bottom: 74px;
+  display: block;
+  width: 0;
+  height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transform-origin: 0 0;
+  transition: transform 0.62s cubic-bezier(0.22, 0.9, 0.24, 1), filter 0.5s ease;
+}
+.cs-figure:focus-visible {
+  outline: none;
+}
+.cs-figure:focus-visible .cs-doll {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+}
+.cs-figure.is-away {
+  filter: brightness(0.5) saturate(0.7);
+}
+.cs-figure.is-away:hover {
+  filter: brightness(0.82) saturate(0.95);
+}
+.cs-doll {
+  position: absolute;
+  left: -44px;
+  bottom: -6px;
+  width: 88px;
+  max-width: none;
+  image-rendering: auto;
+  filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.8));
+  pointer-events: none;
+}
+.cs-doll.is-flip {
+  transform: scaleX(-1);
+}
+.cs-doll.is-breathing {
+  animation: cs-breathe 3.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.cs-doll.is-breathing.is-flip {
+  animation-name: cs-breathe-flip;
+}
+@keyframes cs-breathe {
+  50% {
+    transform: scaleY(1.016) translateY(-0.6px);
+  }
+}
+@keyframes cs-breathe-flip {
+  0%,
+  100% {
+    transform: scaleX(-1);
+  }
+  50% {
+    transform: scaleX(-1) scaleY(1.016) translateY(-0.6px);
+  }
+}
+.cs-figure.is-here .cs-doll:not(.is-shape) {
+  animation-delay: 0s;
+}
+.cs-shadow {
+  position: absolute;
+  left: -34px;
+  top: -3px;
+  width: 68px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgb(4 2 12 / 0.62);
+}
+/* an empty place: the shape of someone who could stand there, and a plus */
+.cs-doll.is-shape {
+  filter: brightness(0) drop-shadow(0 0 7px rgb(255 255 255 / 0.1));
+  opacity: 0.85;
+}
+.cs-plus {
+  position: absolute;
+  left: -19px;
+  bottom: 62px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 2px solid #f6c453;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4a3a1c, #17102a);
+  color: #ffe39a;
+  font: 700 28px/1 Georgia, serif;
+  box-shadow: 0 0 0 2px #05030b, 0 0 16px rgb(246 196 83 / 0.55);
+  animation: cs-plus 2.2s ease-in-out infinite;
+}
+@keyframes cs-plus {
+  50% {
+    box-shadow: 0 0 0 2px #05030b, 0 0 28px rgb(246 196 83 / 0.9);
+    transform: scale(1.07);
+  }
+}
+.cs-tag {
+  position: absolute;
+  left: -70px;
+  top: 16px;
+  width: 140px;
+  color: #cfc4e8;
+  font: 700 15px Georgia, 'Times New Roman', serif;
+  text-align: center;
+  text-shadow: 0 2px 0 #000, 0 0 8px #000;
+}
+
+/* the mark, top left, small: the hero is the picture here, not the logo */
+.cs-top {
+  position: absolute;
+  inset: calc(10px + var(--sa-t, 0px)) calc(12px + var(--sa-r, 0px)) auto calc(14px + var(--sa-l, 0px));
+  z-index: 6;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.cs-mark {
+  display: grid;
+  gap: 1px;
+  pointer-events: none;
+}
+.cs-kicker {
+  color: #d9b65e;
+  font: 700 clamp(8.5px, 1.3cqw, 11px) / 1 var(--font-mono, monospace);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px #000;
+}
+.cs-word {
+  padding-bottom: 0.14em;
+  background: linear-gradient(180deg, #fff6d8, #f6c453 58%, #b9772a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font: 700 clamp(26px, 5cqw, 44px) / 1 Georgia, 'Times New Roman', serif;
+  filter: drop-shadow(0 2px 0 #1c0e2e);
+}
+.cs-top-btns {
+  display: flex;
+  gap: 6px;
+}
+
+/* the great arrows either side of the hero */
+.cs-arrow {
+  position: absolute;
+  top: 44%;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  width: clamp(44px, 7cqw, 62px);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid #8a6a2a;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #3d2f55, #120b24);
+  box-shadow: 0 0 0 2px #05030b, 0 8px 18px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.cs-arrow.is-left {
+  left: clamp(8px, 3cqw, 36px);
+}
+.cs-arrow.is-right {
+  right: clamp(8px, 3cqw, 36px);
+}
+.cs-arrow:hover,
+.cs-arrow:focus-visible {
+  border-color: #f6c453;
+  box-shadow: 0 0 0 2px #05030b, 0 0 18px rgb(246 196 83 / 0.55);
+  transform: translateY(-50%) scale(1.08);
+}
+.cs-arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+.cs-arrow i {
+  display: block;
+  width: 34%;
+  aspect-ratio: 1;
+  border-top: 4px solid #ffe39a;
+  border-left: 4px solid #ffe39a;
+}
+.cs-arrow.is-left i {
+  margin-left: 16%;
+  transform: rotate(-45deg);
+}
+.cs-arrow.is-right i {
+  margin-right: 16%;
+  transform: rotate(135deg);
+}
+
+/* who stands here, at the top of the hall; the actions along the foot; the hero clear between them */
+.cs-id {
+  position: absolute;
+  left: 50%;
+  top: calc(clamp(6px, 2cqh, 16px) + var(--sa-t, 0px));
+  z-index: 6;
+  display: grid;
+  justify-items: center;
+  gap: clamp(1px, 0.6cqh, 5px);
+  width: min(56%, 460px);
+  transform: translateX(-50%);
+  text-align: center;
+  animation: cs-plate-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  pointer-events: none;
+}
+@keyframes cs-plate-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+.cs-actions {
+  position: absolute;
+  left: 50%;
+  bottom: calc(clamp(6px, 2.4cqh, 18px) + var(--sa-b, 0px));
+  z-index: 6;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(6px, 1.4cqw, 14px);
+  width: min(96%, 780px);
+  transform: translateX(-50%);
+}
+.cs-actions .cs-mode:first-child {
+  justify-self: end;
+}
+.cs-actions .cs-mode:last-child {
+  justify-self: start;
+}
+.cs-name {
+  margin: 0;
+  overflow: hidden;
+  max-width: 100%;
+  color: #fff6e0;
+  font: 700 clamp(22px, 4.4cqw, 38px) / 1.05 Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 2px 0 #000, 0 0 16px rgb(0 0 0 / 0.9);
+}
+.cs-line {
+  margin: 0;
+  color: #d8cdea;
+  font-size: clamp(12px, 1.9cqw, 15px);
+  text-shadow: 0 1px 2px #000, 0 0 8px #000;
+}
+.cs .cs-enter {
+  min-width: clamp(170px, 34cqw, 300px);
+  min-height: clamp(38px, 9cqh, 58px);
+  padding: 0 clamp(14px, 3cqw, 28px);
+  border: 2px solid #3a2208;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffe7a8, #f6c453 52%, #cf8a2d);
+  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px rgb(246 196 83 / 0.6), 0 5px 0 #15101f, 0 0 26px rgb(246 196 83 / 0.3);
+  color: #2a1406;
+  font: 700 clamp(15px, 2.7cqw, 22px) Georgia, 'Times New Roman', serif;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.cs-enter:hover,
+.cs-enter:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px #f6c453, 0 8px 0 #15101f, 0 0 40px rgb(246 196 83 / 0.55);
+}
+.cs-enter:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px #f6c453, 0 3px 0 #15101f;
+}
+.cs-mode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 7px;
+  border: 1px solid #6e5526;
+  border-radius: 7px;
+  background: rgb(12 8 26 / 0.86);
+  color: #f2e8d0;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease;
+}
+.cs-mode:hover,
+.cs-mode:focus-visible {
+  transform: translateY(-2px);
+  border-color: #f6c453;
+  background: rgb(40 26 60 / 0.92);
+}
+.cs-mode strong {
+  display: block;
+  font: 700 13.5px/1.1 Georgia, 'Times New Roman', serif;
+}
+.cs-mode small {
+  display: block;
+  color: #b9add0;
+  font-size: 10.5px;
+}
+.cs-mode-glyph {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid currentColor;
+  border-radius: 5px;
+  image-rendering: pixelated;
+}
+.cs-mode.is-vigil {
+  color: #ffd9a8;
+}
+.cs-mode.is-rift {
+  color: #e0d0ff;
+}
+.cs-dots {
+  display: flex;
+  gap: 7px;
+  margin: 3px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.cs-dots li {
+  width: 8px;
+  height: 8px;
+  border: 1px solid #d9b65e;
+  transform: rotate(45deg);
+  background: #1c1130;
+}
+.cs-dots li.is-free {
+  border-color: #6e6280;
+}
+.cs-dots li.is-on {
+  border-color: #fff;
+  background: var(--cc);
+  box-shadow: 0 0 8px var(--cc);
+}
+.cs-delete {
+  position: absolute;
+  right: calc(12px + var(--sa-r, 0px));
+  bottom: calc(clamp(44px, 12cqh, 86px) + var(--sa-b, 0px));
+  z-index: 7;
+  display: flex;
+  gap: 5px;
+}
+.cs-delete-btn {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: #8d80a8;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.cs-delete-btn:hover,
+.cs-delete-btn:focus-visible {
+  color: #ff9a9a;
+  text-decoration: underline;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-doll.is-breathing,
+  .cs-plus,
+  .cs-id {
+    animation: none;
+  }
+  .cs-figure,
+  .cs-stage {
+    transition: none;
+  }
+}
+
+/* a stage too short for words under the names */
+@container (max-height: 330px) {
+  .cs-mode small,
+  .cs-kicker {
+    display: none;
+  }
+  .cs-mode-glyph {
+    width: 18px;
+    height: 18px;
+  }
+}
+@container (max-width: 480px) {
+  .cs-mark {
+    display: none;
+  }
+  .cs-id {
+    width: 66%;
+  }
+  .cs-mode strong {
+    font-size: 11.5px;
+  }
+  .cs-mode {
+    padding: 4px 8px 4px 5px;
+    gap: 5px;
   }
 }

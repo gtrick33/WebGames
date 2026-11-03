@@ -19,30 +19,28 @@ export interface SpellDef {
   text: string;
   /** What each level adds. */
   next: string;
-  /** A campaign icon that fits it. */
-  icon: string;
   /** With this strength at level 3 and this spell at its top, the next pick evolves it. */
   evolve?: { with: StrengthId; name: string; text: string };
 }
 
 export const SPELLS: Record<SpellId, SpellDef> = {
-  'ember-bolt': { id: 'ember-bolt', name: 'Ember Bolt', text: 'Flings a seeking ember at the nearest foe.', next: 'More embers, more damage', icon: 'fireball', evolve: { with: 'haste', name: 'Phoenix Bolt', text: 'Embers pierce everything and burst where they land.' } },
-  'frost-ring': { id: 'frost-ring', name: 'Frost Ring', text: 'A ring of cold bursts out from you and slows what it touches.', next: 'Wider, colder, more often', icon: 'frost-nova', evolve: { with: 'reach', name: 'Absolute Zero', text: 'The ring freezes everything it touches solid.' } },
-  'chain-spark': { id: 'chain-spark', name: 'Chain Spark', text: 'Lightning leaps from foe to foe.', next: 'More leaps, more damage', icon: 'chain-lightning' },
-  'orbit-motes': { id: 'orbit-motes', name: 'Arcane Motes', text: 'Motes circle you and burn what they pass through.', next: 'More motes, faster', icon: 'arcane-bolt' },
-  meteor: { id: 'meteor', name: 'Falling Star', text: 'A star falls where the Host is thickest.', next: 'Bigger, and more often', icon: 'meteor' },
-  'ash-field': { id: 'ash-field', name: 'Burning Ground', text: 'Leaves a patch of burning ground where you stand.', next: 'Hotter, wider, longer', icon: 'blizzard' },
+  'ember-bolt': { id: 'ember-bolt', name: 'Ember Bolt', text: 'Flings a seeking ember at the nearest foe.', next: 'More embers, more damage', evolve: { with: 'haste', name: 'Phoenix Bolt', text: 'Embers pierce everything and burst where they land.' } },
+  'frost-ring': { id: 'frost-ring', name: 'Frost Ring', text: 'A ring of cold bursts out from you and slows what it touches.', next: 'Wider, colder, more often', evolve: { with: 'reach', name: 'Absolute Zero', text: 'The ring freezes everything it touches solid.' } },
+  'chain-spark': { id: 'chain-spark', name: 'Chain Spark', text: 'Lightning leaps from foe to foe.', next: 'More leaps, more damage' },
+  'orbit-motes': { id: 'orbit-motes', name: 'Arcane Motes', text: 'Motes circle you and burn what they pass through.', next: 'More motes, faster' },
+  meteor: { id: 'meteor', name: 'Falling Star', text: 'A star falls where the Host is thickest.', next: 'Bigger, and more often' },
+  'ash-field': { id: 'ash-field', name: 'Burning Ground', text: 'Leaves a patch of burning ground where you stand.', next: 'Hotter, wider, longer' },
 };
 
-export const STRENGTHS: Record<StrengthId, { id: StrengthId; name: string; text: string; icon: string }> = {
-  might: { id: 'might', name: 'Might', text: '+15% damage', icon: 'power' },
-  haste: { id: 'haste', name: 'Haste', text: 'Spells come 10% faster', icon: 'haste' },
-  reach: { id: 'reach', name: 'Reach', text: '+12% spell size', icon: 'area' },
-  swift: { id: 'swift', name: 'Swift Feet', text: '+8% move speed', icon: 'speed' },
-  vigor: { id: 'vigor', name: 'Vigor', text: '+20% health', icon: 'health' },
-  mend: { id: 'mend', name: 'Mending', text: 'Regain 1 health a second', icon: 'regen' },
-  magnet: { id: 'magnet', name: 'Lodestone', text: 'Pick up sparks from farther away', icon: 'magnet' },
-  fortune: { id: 'fortune', name: 'Fortune', text: '+10% experience', icon: 'xp' },
+export const STRENGTHS: Record<StrengthId, { id: StrengthId; name: string; text: string }> = {
+  might: { id: 'might', name: 'Might', text: '+15% damage' },
+  haste: { id: 'haste', name: 'Haste', text: 'Spells come 10% faster' },
+  reach: { id: 'reach', name: 'Reach', text: '+12% spell size' },
+  swift: { id: 'swift', name: 'Swift Feet', text: '+8% move speed' },
+  vigor: { id: 'vigor', name: 'Vigor', text: '+20% health' },
+  mend: { id: 'mend', name: 'Mending', text: 'Regain 1 health a second' },
+  magnet: { id: 'magnet', name: 'Lodestone', text: 'Pick up sparks from farther away' },
+  fortune: { id: 'fortune', name: 'Fortune', text: '+10% experience' },
 };
 
 /**

@@ -7,7 +7,9 @@ import { creatureSprite } from '../render/sprites';
 import { Renderer } from '../render/renderer';
 import { TILE } from '../sim/map';
 import { World } from '../sim/world';
-import { MAX_SPELL, SPELLS, STRENGTHS } from '../vigil/kit';
+import { iconPicture } from '../render/art/gameIcons';
+import { VIGIL_ICON } from '../render/art/iconPicks';
+import { MAX_SPELL, MAX_STRENGTH, SPELLS, STRENGTHS, type SpellId, type StrengthId } from '../vigil/kit';
 import { Vigil, type Card } from '../vigil/sim';
 import { toLocal } from './turn';
 
@@ -37,7 +39,33 @@ const cardText = (c: Card): string => {
   if (c.evolve) return SPELLS[c.id].evolve!.text;
   return c.level === 1 ? SPELLS[c.id].text : SPELLS[c.id].next;
 };
+const spellIcon = (id: SpellId, evolved = false): string => iconPicture(VIGIL_ICON[evolved ? (id === 'ember-bolt' ? 'phoenix' : 'zero') : id]!);
+const strengthIcon = (id: StrengthId): string => iconPicture(VIGIL_ICON[id]!);
+const cardIcon = (c: Card): string => (c.kind === 'heal' ? strengthIcon('mend') : c.kind === 'spell' ? spellIcon(c.id, c.evolve) : strengthIcon(c.id));
 const cardTag = (c: Card): string => (c.kind === 'heal' ? '' : c.kind === 'spell' && c.evolve ? 'Evolves' : c.level === 1 ? 'New' : `Level ${c.level}`);
+
+/** What this run holds, along the foot of the screen. */
+function Loadout({ v }: { v: Vigil }) {
+  const spells = Object.entries(v.spells) as [SpellId, number][];
+  const strengths = Object.entries(v.strengths) as [StrengthId, number][];
+  return (
+    <div className="rb-vigil-loadout" aria-label="What you hold">
+      {spells.map(([id, l]) => (
+        <span key={id} className={`rb-vigil-slot${v.evolved.has(id) ? ' is-evolved' : ''}`} title={v.evolved.has(id) ? SPELLS[id].evolve?.name : SPELLS[id].name}>
+          <img src={spellIcon(id, v.evolved.has(id))} alt={SPELLS[id].name} draggable={false} />
+          <small>{l >= MAX_SPELL ? 'MAX' : l}</small>
+        </span>
+      ))}
+      {strengths.length > 0 && <i className="rb-vigil-gap" />}
+      {strengths.map(([id, l]) => (
+        <span key={id} className="rb-vigil-slot is-small" title={STRENGTHS[id].name}>
+          <img src={strengthIcon(id)} alt={STRENGTHS[id].name} draggable={false} />
+          <small>{l >= MAX_STRENGTH ? 'MAX' : l}</small>
+        </span>
+      ))}
+    </div>
+  );
+}
 
 /** The lit disc of a spark, drawn once and stamped. */
 function makeStamp(size: number, inner: string, outer: string): HTMLCanvasElement {
@@ -78,6 +106,9 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
   const hudXp = useRef<HTMLElement>(null);
   const hudHp = useRef<HTMLElement>(null);
   const banner = useRef<HTMLDivElement>(null);
+  const hurtRef = useRef<HTMLDivElement>(null);
+  const flashRef = useRef<HTMLDivElement>(null);
+  const bossRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const box = boxRef.current!;
@@ -183,8 +214,37 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
     };
     let cards: Card[] | null = null;
     let over = false;
-    const draw = (): void => {
+    // what is flying about, drawn only here so the simulation stays pure
+    const pops: { x: number; y: number; n: number; big: boolean; t: number }[] = [];
+    const bits: { x: number; y: number; vx: number; vy: number; t: number; dur: number; c: string; s: number }[] = [];
+    const BIT = ['#ffe39a', '#ffb45c', '#ff7a3d', '#ffffff', '#c9b8ff'];
+    const rings: { x: number; y: number; t: number; dur: number; r: number; c: string }[] = [];
+    let flashWas = 0;
+    const draw = (dt: number): void => {
+      for (const p of v.pops) pops.push({ ...p, t: 0 });
+      v.pops.length = 0;
+      for (const f of v.falls) {
+        const n = f.boss ? 60 : 7;
+        for (let i = 0; i < n && bits.length < 400; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const sp = (f.boss ? 60 : 26) + Math.random() * (f.boss ? 160 : 60);
+          bits.push({ x: f.x, y: f.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 24, t: 0, dur: 0.3 + Math.random() * 0.4, c: BIT[i % BIT.length]!, s: f.boss ? 2.4 : 1.4 });
+        }
+        if (f.boss) rings.push({ x: f.x, y: f.y, t: 0, dur: 0.7, r: 120, c: '#ffe39a' });
+      }
+      v.falls.length = 0;
+      if (v.levelFlash > flashWas) {
+        rings.push({ x: v.x, y: v.y, t: 0, dur: 0.6, r: 90, c: '#ffe39a' });
+        rings.push({ x: v.x, y: v.y, t: -0.12, dur: 0.6, r: 60, c: '#8fd8ff' });
+      }
+      flashWas = v.levelFlash;
+      g.setTransform(1, 0, 0, 1, 0, 0);
       g.clearRect(0, 0, top.width, top.height);
+      // the kick, on both canvases so the land shakes with the Host
+      const sx = v.shake > 0 ? (Math.random() - 0.5) * v.shake * dpr : 0;
+      const sy = v.shake > 0 ? (Math.random() - 0.5) * v.shake * dpr : 0;
+      box.style.setProperty('--kx', `${sx / dpr}px`);
+      box.style.setProperty('--ky', `${sy / dpr}px`);
       const a = toTop(0, 0);
       const b = toTop(1, 0);
       const k = b.x - a.x;
@@ -228,13 +288,6 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
         else if (f.slow > 0) g.filter = 'hue-rotate(160deg)';
         g.drawImage(img as CanvasImageSource, p.x - w / 2, p.y - h + 3 * k, w, h);
         g.filter = 'none';
-        if (f.boss) {
-          const bw = 46 * k;
-          g.fillStyle = '#120a20';
-          g.fillRect(p.x - bw / 2, p.y - h - 2 * k, bw, 3 * k);
-          g.fillStyle = '#ff4f6a';
-          g.fillRect(p.x - bw / 2, p.y - h - 2 * k, bw * Math.max(0, f.hp / f.maxHp), 3 * k);
-        }
       }
       for (const s of v.shots) {
         const p = toTop(s.x, s.y);
@@ -291,6 +344,47 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
         }
         g.globalAlpha = 1;
       }
+      for (const b of bits) {
+        b.t += dt;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.vy += 140 * dt;
+        const p = toTop(b.x, b.y);
+        g.globalAlpha = Math.max(0, 1 - b.t / b.dur);
+        g.fillStyle = b.c;
+        g.fillRect(p.x, p.y, b.s * k, b.s * k);
+      }
+      for (let i = bits.length - 1; i >= 0; i--) if (bits[i]!.t >= bits[i]!.dur) bits.splice(i, 1);
+      for (const r of rings) {
+        r.t += dt;
+        if (r.t < 0) continue;
+        const u = r.t / r.dur;
+        const p = toTop(r.x, r.y);
+        g.globalAlpha = Math.max(0, 1 - u);
+        g.strokeStyle = r.c;
+        g.lineWidth = (6 - u * 5) * k;
+        g.beginPath();
+        g.ellipse(p.x, p.y, r.r * k * (0.15 + u * 0.85), r.r * k * (0.15 + u * 0.85) * 0.74, 0, 0, Math.PI * 2);
+        g.stroke();
+      }
+      for (let i = rings.length - 1; i >= 0; i--) if (rings[i]!.t >= rings[i]!.dur) rings.splice(i, 1);
+      g.globalAlpha = 1;
+      g.textAlign = 'center';
+      for (const n of pops) {
+        n.t += dt;
+        const u = n.t / 0.62;
+        const p = toTop(n.x + Math.sin(n.y) * 3, n.y - u * 14);
+        const size = (n.big ? 10 : 6.4) * k * (u < 0.18 ? 1 + (0.18 - u) * 2.6 : 1);
+        g.font = `700 ${size}px Georgia, serif`;
+        g.globalAlpha = Math.max(0, 1 - u * u);
+        g.lineWidth = 2.4 * dpr;
+        g.strokeStyle = '#1c0e08';
+        g.strokeText(String(n.n), p.x, p.y);
+        g.fillStyle = n.big ? '#ffd257' : '#fff6e0';
+        g.fillText(String(n.n), p.x, p.y);
+      }
+      for (let i = pops.length - 1; i >= 0; i--) if (pops[i]!.t >= 0.62) pops.splice(i, 1);
+      g.globalAlpha = 1;
       // the hero's own health under their feet
       const hp = toTop(v.x, v.y + 9);
       const bw = 26 * k;
@@ -322,7 +416,17 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
       }
       p.iframe = v.iframe;
       renderer.draw(world, v.cards || pausedRef.current ? 0 : dt, time);
-      draw();
+      draw(v.cards || pausedRef.current ? 0 : dt);
+      if (hurtRef.current) hurtRef.current.style.opacity = String(Math.max(v.struck * 0.75, v.hp / v.maxHp < 0.25 ? 0.28 + Math.sin(now / 240) * 0.14 : 0));
+      if (flashRef.current) flashRef.current.style.opacity = String(v.levelFlash * 0.55);
+      const boss = v.foes.find((f) => f.boss);
+      if (bossRef.current) {
+        bossRef.current.style.display = boss ? 'grid' : 'none';
+        if (boss) {
+          bossRef.current.querySelector('b')!.textContent = boss.boss;
+          bossRef.current.querySelector('i')!.style.width = `${Math.max(0, boss.hp / boss.maxHp) * 100}%`;
+        }
+      }
       if (hudT.current) hudT.current.textContent = clock(v.t);
       if (hudK.current) hudK.current.textContent = String(v.kills);
       if (hudL.current) hudL.current.textContent = String(v.level);
@@ -366,8 +470,12 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
   const newBest = v?.over && Math.floor(v.t) >= best;
   return (
     <div className="rb-vigil" ref={boxRef}>
-      <canvas ref={baseRef} className="rb-vigil-canvas" />
-      <canvas ref={topRef} className="rb-vigil-canvas" />
+      <div className="rb-vigil-world">
+        <canvas ref={baseRef} className="rb-vigil-canvas" />
+        <canvas ref={topRef} className="rb-vigil-canvas" />
+      </div>
+      <div className="rb-vigil-hurt" ref={hurtRef} aria-hidden="true" />
+      <div className="rb-vigil-flash" ref={flashRef} aria-hidden="true" />
       <div className="rb-vigil-xp">
         <i ref={hudXp} />
       </div>
@@ -391,22 +499,33 @@ export function VigilScreen({ engine, face, body, onBack }: { engine: SigilEngin
         </div>
       </div>
       <div className="rb-vigil-banner" ref={banner} role="status" />
+      <div className="rb-vigil-boss" ref={bossRef} style={{ display: 'none' }}>
+        <b />
+        <span>
+          <i />
+        </span>
+      </div>
+      {v && <Loadout v={v} />}
 
       {v?.cards && !v.over && (
         <div className="rb-vigil-modal" role="dialog" aria-label="Level up">
-          <h2>Level {v.level}</h2>
+          <h2 className="rb-vigil-levelup">Level {v.level}</h2>
           <p className="rb-dim">Choose one. The night waits.</p>
           <div className="rb-vigil-cards">
             {v.cards.map((c, i) => (
               <button
                 key={`${c.kind}-${i}`}
                 className={`rb-vigil-card${c.kind === 'spell' && c.evolve ? ' is-evolve' : ''}${c.kind === 'strength' ? ' is-strength' : ''}`}
+                style={{ ['--i' as string]: i }}
                 onClick={() => {
                   v.choose(i);
                   tick((x) => x + 1);
                 }}
               >
                 <span className="rb-vigil-tag">{cardTag(c)}</span>
+                <span className="rb-vigil-icon">
+                  <img src={cardIcon(c)} alt="" draggable={false} />
+                </span>
                 <strong>{cardName(c)}</strong>
                 <span>{cardText(c)}</span>
                 {c.kind === 'spell' && !c.evolve && (

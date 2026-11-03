@@ -118,6 +118,13 @@ export class Vigil {
   /** The name of the champion that just came, for a banner. */
   banner: { text: string; t: number } | null = null;
   orbit = 0;
+  /** For the drawing to take as they happen: numbers, deaths and how hard the screen should kick. */
+  pops: { x: number; y: number; n: number; big: boolean }[] = [];
+  falls: { x: number; y: number; boss: boolean }[] = [];
+  shake = 0;
+  /** Set for a moment when the hero is struck, or levels up. */
+  struck = 0;
+  levelFlash = 0;
 
   private rand: () => number;
   private nextId = 1;
@@ -190,6 +197,9 @@ export class Vigil {
     this.burnFields(dt);
     this.moveSparks(dt);
     this.fx = this.fx.filter((f) => (f.t += dt) < f.dur);
+    this.shake = Math.max(0, this.shake - dt * 32);
+    this.struck = Math.max(0, this.struck - dt * 2.6);
+    this.levelFlash = Math.max(0, this.levelFlash - dt * 1.2);
     if (this.banner && (this.banner.t -= dt) <= 0) this.banner = null;
     if (this.foes.some((f) => f.dead)) this.foes = this.foes.filter((f) => !f.dead);
     if (this.shots.some((s) => s.dead)) this.shots = this.shots.filter((s) => !s.dead);
@@ -342,6 +352,8 @@ export class Vigil {
       if (d < f.r + HERO_R && this.iframe <= 0) {
         this.hp -= f.dmg;
         this.iframe = 0.6;
+        this.struck = 1;
+        this.shake = Math.max(this.shake, 4);
       }
     }
   }
@@ -350,9 +362,13 @@ export class Vigil {
     if (f.dead) return;
     f.hp -= dmg;
     f.flash = 0.08;
+    // the numbers that matter: not the trickle from burning ground and motes
+    if (dmg >= 6 && this.pops.length < 60) this.pops.push({ x: f.x, y: f.y - f.r - 6, n: Math.round(dmg), big: dmg >= 40 });
     if (f.hp <= 0) {
       f.dead = true;
       this.kills++;
+      if (this.falls.length < 60) this.falls.push({ x: f.x, y: f.y - f.r * 0.6, boss: !!f.boss });
+      if (f.boss) this.shake = Math.max(this.shake, 14);
       this.sparks.push({ x: f.x, y: f.y, xp: f.xp, pulled: false, dead: false });
       // a champion's fall is a free choice
       if (f.boss) this.owed++;
@@ -488,6 +504,7 @@ export class Vigil {
     if (best.n < 0) return;
     const r = (34 + l * 6) * a;
     this.fx.push({ kind: 'star', x: best.x, y: best.y, r, t: 0, dur: 0.55 });
+    this.shake = Math.max(this.shake, 6);
     this.around(best.x, best.y, r + 12, (f) => {
       if (Math.hypot(f.x - best.x, f.y - best.y) < r + f.r) this.hurt(f, (42 + l * 18) * p);
     });
@@ -569,6 +586,7 @@ export class Vigil {
       this.xp -= this.xpNext;
       this.level++;
       this.owed++;
+      this.levelFlash = 1;
     }
   }
 
