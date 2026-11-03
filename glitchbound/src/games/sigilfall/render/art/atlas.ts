@@ -285,6 +285,21 @@ export function fxArt(): FxArt | null {
   });
 }
 
+const strips = new WeakMap<object, Cnv>();
+/**
+ * One effect's frames, side by side, cut out of the sheet the first time it plays. Drawing from the whole sheet costs
+ * about 10 ms a time (the browser copies all of its 2048 × 5914 pixels), which a screen full of spells can't afford.
+ */
+export function stripOf(art: FxArt, s: FxArt['fx'][string]): Cnv {
+  let c = strips.get(s);
+  if (!c) {
+    c = canvas(art.frame * s.n, art.frame);
+    ctx2d(c).drawImage(art.img, s.r[0], s.r[1], art.frame * s.n, art.frame, 0, 0, art.frame * s.n, art.frame);
+    strips.set(s, c);
+  }
+  return c;
+}
+
 export function circleArt(): FxArt | null {
   return once('circles', async () => {
     const [img, j] = await Promise.all([image('circles.png'), data<Omit<FxArt, 'img'>>('circles.json')]);

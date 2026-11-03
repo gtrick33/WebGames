@@ -1,5 +1,5 @@
 import type { DmgType } from '../../data/types';
-import { circleArt, fxArt, type FxArt } from './atlas';
+import { circleArt, fxArt, stripOf, type FxArt } from './atlas';
 import { DETAIL } from '../pixel';
 
 /**
@@ -85,13 +85,12 @@ export function drawVfx(g: CanvasRenderingContext2D, sprite: string, x: number, 
   const scale = kind === 'blast' && size > 0 ? Math.max(1, Math.round((size * 2 * DETAIL) / F)) : k.scale >= 1.25 ? 2 : 1;
   const half = k.scale < 1 && kind !== 'blast' ? 0.5 : 1;
   const wpx = (F * scale * half) / DETAIL;
-  const [sx, sy] = s.r;
   // casts and buffs stand on the ground: their frame's bottom is at the feet
   const grounded = kind === 'cast' || kind === 'buff' || kind === 'heal' || kind === 'shield' || kind === 'summon' || kind === 'charge' || kind === 'thunder';
   const dy = grounded ? y - wpx * 0.85 : y - wpx / 2;
   // what plays on the caster is see-through, so the hero stays readable inside their own spell
   if (grounded) g.globalAlpha = 0.6;
-  g.drawImage(art.img, sx + frame * F, sy, F, F, Math.round((x - wpx / 2) * DETAIL) / DETAIL, Math.round(dy * DETAIL) / DETAIL, wpx, wpx);
+  g.drawImage(stripOf(art, s), frame * F, 0, F, F, Math.round((x - wpx / 2) * DETAIL) / DETAIL, Math.round(dy * DETAIL) / DETAIL, wpx, wpx);
   g.globalAlpha = 1;
   return true;
 }
@@ -119,7 +118,7 @@ export function drawBolt(g: CanvasRenderingContext2D, look: string, type: string
   g.translate(Math.round(x * DETAIL) / DETAIL, Math.round(y * DETAIL) / DETAIL);
   g.rotate(angle);
   // the sheet's head sits right of center: put it on the projectile
-  g.drawImage(art.img, s.r[0] + frame * F, s.r[1], F, F, -wpx * 0.75, -wpx / 2, wpx, wpx);
+  g.drawImage(stripOf(art, s), frame * F, 0, F, F, -wpx * 0.75, -wpx / 2, wpx, wpx);
   g.restore();
   return true;
 }
@@ -135,7 +134,7 @@ export function drawCircle(g: CanvasRenderingContext2D, el: 'fire' | 'ice' | 'ar
   const w = radius * 2;
   const h = w * 0.6;
   g.globalAlpha = alpha;
-  g.drawImage(art.img, s.r[0] + frame * F, s.r[1], F, F, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
+  g.drawImage(stripOf(art, s), frame * F, 0, F, F, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
   g.globalAlpha = 1;
   return true;
 }

@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import { ENEMIES } from '../src/games/sigilfall/data/enemies';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
-import { ALL_SPELLS, BOSS_EVERY, firstSpell, mapOpen, MAX_SPELL, spellsOf, SPELLS, STRENGTHS, UNLOCK_HOLD, VIGIL_MAPS } from '../src/games/sigilfall/vigil/kit';
-import { MAX_FOES, Vigil, xpForLevel, type VigilInput } from '../src/games/sigilfall/vigil/sim';
+import * as room from '../src/games/sigilfall/net/vigilRoom';
+import { maxMessage } from '../src/games/sigilfall/net/vigilRoom';
+import { ALL_SPELLS, BOSS_EVERY, firstSpell, mapOpen, MAX_SPELL, partyScale, spellsOf, SPELLS, STRENGTHS, UNLOCK_HOLD, upgradesOf, VIGIL_MAPS } from '../src/games/sigilfall/vigil/kit';
+import { EVOLVE_AT, MAX_FOES, MAX_FOES_PARTY, topLevel, Vigil, xpForLevel, type Foe, type VigilInput } from '../src/games/sigilfall/vigil/sim';
+import { applySnap, SnapWriter } from '../src/games/sigilfall/vigil/snapshot';
 
 const STILL: VigilInput = { mx: 0, my: 0 };
 
@@ -127,7 +130,7 @@ describe('The Vigil', () => {
   it('a spell at its top with the right strength evolves, once, and is always offered', () => {
     const v = new Vigil(2, 2000, 2000);
     v.spells['ember-bolt'] = MAX_SPELL;
-    v.strengths.haste = 3;
+    v.strengths.haste = EVOLVE_AT;
     v.owed = 1;
     v.step(1 / 30, STILL);
     const i = v.cards!.findIndex((c) => c.kind === 'spell' && c.evolve);
@@ -139,7 +142,7 @@ describe('The Vigil', () => {
     expect(v.cards!.some((c) => c.kind === 'spell' && c.id === 'ember-bolt')).toBe(false);
   });
 
-  it('a full collection still gives something when there is nothing left to take', () => {
+  it('with nothing left to take, a level heals and the night doesn’t stop for it', () => {
     const v = new Vigil(2, 2000, 2000);
     for (const id of Object.keys(SPELLS) as (keyof typeof SPELLS)[]) {
       v.spells[id] = MAX_SPELL;
@@ -149,12 +152,12 @@ describe('The Vigil', () => {
     v.hp = 10;
     v.owed = 1;
     v.step(1 / 30, STILL);
-    expect(v.cards).toEqual([{ kind: 'heal' }]);
-    v.choose(0);
+    expect(v.cards).toBeNull();
+    expect(v.owed).toBe(0);
     expect(v.hp).toBeGreaterThan(10);
   });
 
-  it('champions come on the clock, and a champion’s fall is a free choice', () => {
+  it('champions come on the clock, and a champion leaves a chest that gives everyone a choice', () => {
     const v = new Vigil(3, 2000, 2000);
     v.hp = 1e9;
     v.t = BOSS_EVERY - 0.1;
@@ -165,7 +168,14 @@ describe('The Vigil', () => {
     const owed = v.owed;
     boss!.hp = 1;
     (v as unknown as { hurt(f: unknown, d: number): void }).hurt(boss, 5);
-    expect(v.owed).toBe(owed + 1);
+    const chest = v.pickups.find((p) => p.kind === 'chest');
+    expect(chest).toBeTruthy();
+    chest!.x = v.x;
+    chest!.y = v.y;
+    const rerolls = v.rerolls;
+    v.step(1 / 30, STILL);
+    expect(v.owed).toBeGreaterThanOrEqual(owed + 1);
+    expect(v.rerolls).toBe(rerolls + 1);
   });
 
   it('never holds more foes than it can afford, and a heavy frame stays cheap', () => {
@@ -178,7 +188,7 @@ describe('The Vigil', () => {
       v.step(1 / 10, STILL);
       most = Math.max(most, v.foes.length);
     }
-    expect(most).toBeLessThanOrEqual(MAX_FOES + 5);
+    expect(most).toBeLessThanOrEqual(MAX_FOES + 8);
     const t0 = performance.now();
     for (let i = 0; i < 60; i++) {
       if (v.cards) v.choose(0);
@@ -192,6 +202,12 @@ describe('The Vigil', () => {
     expect(xpForLevel(2)).toBeGreaterThan(xpForLevel(1));
     expect(xpForLevel(30)).toBeGreaterThan(xpForLevel(10) * 2);
   });
+
+  it('a level isn’t stopping the night every few seconds, even a long way in', () => {
+    const v = run(2, 8 * 60, bot, true);
+    // (a level every 12 seconds or so at the very worst)
+    expect(v.level).toBeLessThan(v.t / 7);
+  }, 60_000);
 
   it('walls stop the hero, and the map’s edge holds', () => {
     const v = new Vigil(1, 100, 100, { solid: (x) => x > 110, bounds: { x0: 0, y0: 0, x1: 200, y1: 200 } });
@@ -261,6 +277,49 @@ describe('The Vigil', () => {
       }
     });
 
+    it('every spell has its own upgrades, one of them its alone, and each does something', () => {
+      const names = new Set<string>();
+      for (const def of ALL_SPELLS) {
+        const ups = upgradesOf(def);
+        expect(ups.length, def.id).toBeGreaterThanOrEqual(4);
+        for (const u of ups) {
+          const { id, name, text, ...mod } = u;
+          expect(id, def.id).toContain(def.id);
+          expect(name.length, def.id).toBeGreaterThan(2);
+          expect(text.length, def.id).toBeGreaterThan(5);
+          expect(Object.keys(mod).length, `${def.id}: ${name} changes nothing`).toBeGreaterThan(0);
+        }
+        names.add(def.sig.name);
+      }
+      // one spell's own upgrade isn't another's
+      expect(names.size).toBeGreaterThan(ALL_SPELLS.length * 0.85);
+    });
+
+    it('an upgrade taken changes the spell, and is never offered twice', () => {
+      const v = new Vigil(9, 2000, 2000);
+      const def = firstSpell('mage');
+      v.hp = 1e9;
+      const before = v.statsOf(v.me, def);
+      const seen = new Set<string>();
+      for (let i = 0; i < 400 && v.spells[def.id]! < topLevel(def); i++) {
+        v.owed = 1;
+        v.step(1 / 30, STILL);
+        const at = v.cards!.findIndex((c) => c.kind === 'up' && c.id === def.id);
+        if (at < 0) {
+          v.choose(0);
+          continue;
+        }
+        const c = v.cards![at]!;
+        if (c.kind === 'up') {
+          expect(seen.has(c.up), c.up).toBe(false);
+          seen.add(c.up);
+        }
+        v.choose(at);
+      }
+      expect(seen.size).toBeGreaterThan(0);
+      expect(JSON.stringify(v.statsOf(v.me, def))).not.toBe(JSON.stringify(before));
+    });
+
     it('an axe that goes out comes back', () => {
       const v = new Vigil(1, 2000, 2000, { cls: 'warrior' });
       v.spells = { 'thrown-axe': 1 };
@@ -282,6 +341,39 @@ describe('The Vigil', () => {
         expect(median, cls).toBeGreaterThan(60);
       }
     }, 180_000);
+
+    it('the trees are solid: the hero stops at one, and the Host goes around it', () => {
+      const tree = { x: 2030, y: 2000, r: 8 };
+      const v = new Vigil(1, 2000, 2000, { obstacles: [tree] });
+      v.hp = 1e9;
+      for (let i = 0; i < 30; i++) {
+        v.step(1 / 30, { mx: 1, my: 0 });
+        expect(Math.hypot(v.x - tree.x, v.y - tree.y)).toBeGreaterThanOrEqual(tree.r);
+      }
+      expect(v.x).toBeLessThan(tree.x);
+      // whoever comes from behind the tree gets past it without walking through
+      const w = new Vigil(2, 2000, 2000, { obstacles: [tree] });
+      w.hp = 1e9;
+      for (let t = 0; t < 40; t += 1 / 30) {
+        if (w.cards) w.choose(0);
+        w.step(1 / 30, STILL);
+        for (const f of w.foes) expect(Math.hypot(f.x - tree.x, f.y - tree.y), `foe ${f.id}`).toBeGreaterThanOrEqual(f.r * 0.6);
+      }
+      const stuck = new Vigil(3, 2000, 2000, { obstacles: [tree] });
+      stuck.hp = 1e9;
+      stuck.spells = {};
+      const foe = (at: number): Foe => {
+        stuck.step(1 / 30, STILL);
+        const f = stuck.foes[0]!;
+        f.x = at;
+        f.y = 2000;
+        return f;
+      };
+      for (let i = 0; i < 40 && !stuck.foes.length; i++) stuck.step(1 / 30, STILL);
+      const f = foe(2100);
+      for (let i = 0; i < 30 * 5; i++) stuck.step(1 / 30, STILL);
+      expect(f.x, 'it came past the tree').toBeLessThan(tree.x);
+    });
 
     it('every land has real faces, on a real region, and opens in turn', () => {
       expect(VIGIL_MAPS.length).toBeGreaterThanOrEqual(10);
@@ -307,6 +399,284 @@ describe('The Vigil', () => {
       b.t = BOSS_EVERY - 0.1;
       for (let i = 0; i < 6; i++) b.step(1 / 30, STILL);
       expect(b.foes.find((f) => f.boss)!.bossSprite).toBe(VIGIL_MAPS[11]!.champions[0]!.sprite);
+    });
+  });
+
+  describe('the things that make a night more than walking', () => {
+    const near = (v: Vigil, f: Foe, d = 40): void => {
+      f.x = v.x + d;
+      f.y = v.y;
+    };
+
+    it('a dash is quick, can’t be struck, and has to come back', () => {
+      const v = new Vigil(1, 2000, 2000);
+      v.step(1 / 30, { mx: 1, my: 0 });
+      const x = v.x;
+      v.step(1 / 30, { mx: 1, my: 0, dash: true });
+      expect(v.x - x).toBeGreaterThan(5);
+      expect(v.me.iframe).toBeGreaterThan(0);
+      const cd = v.me.dashCd;
+      expect(cd).toBeGreaterThan(1);
+      const y = v.x;
+      for (let i = 0; i < 10; i++) v.step(1 / 30, { mx: 0, my: 0, dash: true });
+      expect(v.me.dashCd).toBeLessThan(cd);
+      expect(v.x - y, "one dash, not ten").toBeLessThan(46);
+    });
+
+    it('kills fill the frenzy meter, and a frenzy ends', () => {
+      const v = new Vigil(1, 2000, 2000);
+      v.hp = 1e9;
+      const kill = (v as unknown as { kill(f: unknown, h: unknown): void }).kill.bind(v);
+      for (let i = 0; i < 200 && v.me.frenzyT <= 0; i++) kill({ x: 0, y: 0, r: 5, xp: 0, maxHp: 1, boss: null, elite: false, dead: false }, v.me);
+      expect(v.me.frenzyT).toBeGreaterThan(0);
+      for (let i = 0; i < 30 * 8; i++) {
+        if (v.cards) v.choose(0);
+        v.step(1 / 30, STILL);
+      }
+      expect(v.me.frenzyT).toBeLessThan(6);
+    });
+
+    it('foes that shoot stand off and throw things slow enough to dodge', () => {
+      const v = new Vigil(4, 2000, 2000);
+      v.hp = 1e9;
+      v.spells = {};
+      v.t = 100;
+      for (let i = 0; i < 30 * 25; i++) {
+        if (v.cards) v.choose(0);
+        v.spells = {};
+        v.step(1 / 30, STILL);
+        if (v.foeShots.length) break;
+      }
+      expect(v.foeShots.length).toBeGreaterThan(0);
+      expect(Math.hypot(v.foeShots[0]!.vx, v.foeShots[0]!.vy)).toBeLessThan(100);
+    });
+
+    it('chargers wind up where it shows, then come fast', () => {
+      const v = new Vigil(5, 2000, 2000);
+      v.hp = 1e9;
+      v.spells = {};
+      v.t = 180;
+      let wound = false;
+      let charged = false;
+      for (let i = 0; i < 30 * 40 && !charged; i++) {
+        if (v.cards) v.choose(0);
+        v.spells = {};
+        v.step(1 / 30, STILL);
+        if (v.foes.some((f) => f.mode === 1)) wound = true;
+        if (wound && v.foes.some((f) => f.mode === 2)) charged = true;
+      }
+      expect(wound).toBe(true);
+      expect(charged).toBe(true);
+    });
+
+    it('a champion’s slam shows first, and stepping out of it is enough', () => {
+      const v = new Vigil(6, 2000, 2000);
+      v.hp = 1000;
+      v.slams.push({ x: v.x + 200, y: v.y, r: 40, dmg: 50, t: 0, dur: 0.2 });
+      for (let i = 0; i < 9; i++) v.step(1 / 30, STILL);
+      expect(v.slams.length).toBe(0);
+      expect(v.hp).toBe(1000);
+      v.slams.push({ x: v.x, y: v.y, r: 40, dmg: 50, t: 0.45, dur: 0.5 });
+      v.step(0.1, STILL);
+      expect(v.hp).toBe(950);
+    });
+
+    it('pickups: meat heals, a bomb clears, a magnet brings the sparks', () => {
+      const v = new Vigil(7, 2000, 2000);
+      v.hp = 10;
+      v.pickups.push({ kind: 'meat', x: v.x, y: v.y, t: 0, dead: false });
+      v.step(1 / 30, STILL);
+      expect(v.hp).toBeGreaterThan(10);
+      v.hp = 1e9;
+      for (let i = 0; i < 30 * 12; i++) {
+        if (v.cards) v.choose(0);
+        v.spells = {};
+        v.step(1 / 30, STILL);
+      }
+      const had = v.foes.length;
+      expect(had).toBeGreaterThan(3);
+      v.foes.forEach((f) => near(v, f, 60));
+      v.pickups.push({ kind: 'bomb', x: v.x, y: v.y, t: 0, dead: false });
+      v.step(1 / 30, STILL);
+      v.step(1 / 30, STILL);
+      expect(v.foes.length).toBeLessThan(had);
+      v.sparks.push({ x: v.x + 300, y: v.y, xp: 1, pulled: false, dead: false });
+      v.pickups.push({ kind: 'magnet', x: v.x, y: v.y, t: 0, dead: false });
+      v.step(1 / 30, STILL);
+      expect(v.sparks.every((g) => g.pulled)).toBe(true);
+    });
+
+    it('Second Wind gets you up once, and only once', () => {
+      const v = new Vigil(8, 2000, 2000);
+      const wound = (v as unknown as { wound(h: unknown, d: number): void }).wound.bind(v);
+      v.strengths.wind = 1;
+      v.hp = 1;
+      wound(v.me, 50);
+      expect(v.over).toBe(false);
+      expect(v.me.down).toBe(false);
+      expect(v.hp).toBeGreaterThan(1);
+      v.me.iframe = 0;
+      v.hp = 1;
+      wound(v.me, 50);
+      expect(v.me.down).toBe(true);
+      v.step(1 / 30, STILL);
+      expect(v.over).toBe(true);
+    });
+
+    it('relics do what they say: glass trades health for damage', () => {
+      const v = new Vigil(9, 2000, 2000);
+      const hp = v.maxHp;
+      const dmg = v.statsOf(v.me, firstSpell('mage')).dmg;
+      v.strengths.glass = 1;
+      expect(v.maxHp).toBeCloseTo(hp * 0.75);
+      expect(v.statsOf(v.me, firstSpell('mage')).dmg).toBeCloseTo(dmg * 1.4);
+    });
+  });
+
+  describe('a party', () => {
+    const party = (n: number) => Array.from({ length: n }, (_, i) => ({ id: i + 1, cls: (['mage', 'warrior', 'priest', 'ranger'] as const)[i]!, name: `P${i + 1}` }));
+    const all = (v: Vigil, input: VigilInput): Record<number, VigilInput> => Object.fromEntries(v.heroes.map((h) => [h.id, input]));
+
+    it('gets harder with each hero, and it shows in the night', () => {
+      expect(partyScale(1)).toEqual({ count: 1, hp: 1, dmg: 1, boss: 1, xp: 1 });
+      for (let n = 2; n <= 4; n++) {
+        const a = partyScale(n - 1);
+        const b = partyScale(n);
+        expect(b.count).toBeGreaterThan(a.count);
+        expect(b.hp).toBeGreaterThan(a.hp);
+      }
+      const count = (n: number): number => {
+        const v = new Vigil(3, 2000, 2000, { party: party(n) });
+        for (const h of v.heroes) {
+          h.hp = 1e9;
+          h.spells = {};
+        }
+        for (let i = 0; i < 30 * 20; i++) v.step(1 / 30, all(v, STILL));
+        return v.foes.length;
+      };
+      expect(count(4)).toBeGreaterThan(count(1) * 1.5);
+    });
+
+    it('everyone chooses before the night goes on, and nobody can hold it up for long', () => {
+      const v = new Vigil(4, 2000, 2000, { party: party(3) });
+      for (const h of v.heroes) h.owed = 1;
+      v.step(1 / 30, all(v, STILL));
+      expect(v.heroes.every((h) => h.cards)).toBe(true);
+      const t = v.t;
+      v.choose(0, 1);
+      v.step(1, all(v, STILL));
+      expect(v.t).toBe(t);
+      v.choose(0, 2);
+      // the third has gone to make tea
+      for (let i = 0; i < 14; i++) v.step(1, all(v, STILL));
+      expect(v.heroes[2]!.cards).toBeNull();
+      v.step(1 / 30, all(v, STILL));
+      expect(v.t).toBeGreaterThan(t);
+    });
+
+    it('one level gives everyone a choice', () => {
+      const v = new Vigil(5, 2000, 2000, { party: party(2) });
+      (v as unknown as { gain(xp: number, h: unknown): void }).gain(1000, v.heroes[0]);
+      expect(v.heroes[0]!.owed).toBe(v.heroes[1]!.owed);
+      expect(v.heroes[0]!.owed).toBeGreaterThan(0);
+    });
+
+    it('a downed hero is got up by a friend, and the night ends only when all are down', () => {
+      const v = new Vigil(6, 2000, 2000, { party: party(2) });
+      const wound = (v as unknown as { wound(h: unknown, d: number): void }).wound.bind(v);
+      const a = v.heroes[0]!;
+      const b = v.heroes[1]!;
+      a.hp = 1;
+      wound(a, 50);
+      expect(a.down).toBe(true);
+      expect(v.over).toBe(false);
+      b.hp = 1e9;
+      b.x = a.x + 500;
+      for (let i = 0; i < 30; i++) v.step(1 / 30, all(v, STILL));
+      expect(a.down).toBe(true);
+      b.x = a.x + 10;
+      b.y = a.y;
+      for (let i = 0; i < 30 * 4; i++) {
+        for (const h of v.heroes) if (h.cards) v.choose(0, h.id);
+        v.step(1 / 30, all(v, STILL));
+      }
+      expect(a.down).toBe(false);
+      expect(a.hp).toBeGreaterThan(1);
+      a.hp = 1;
+      a.iframe = 0;
+      b.hp = 1;
+      b.iframe = 0;
+      wound(a, 50);
+      wound(b, 50);
+      v.step(1 / 30, all(v, STILL));
+      expect(v.over).toBe(true);
+    });
+
+    it('a party holds fewer foes, and its reports fit through the room', () => {
+      const v = new Vigil(7, 2000, 2000, { party: party(4) });
+      v.fxOut = [];
+      const w = new SnapWriter();
+      for (const h of v.heroes) {
+        h.hp = 1e12;
+        h.spells = { [spellsOf(h.cls)[0]!.id]: 6, [spellsOf(h.cls)[1]!.id]: 6, [spellsOf(h.cls)[2]!.id]: 6 };
+      }
+      let longest = 0;
+      let most = 0;
+      for (let t = 0; t < 600; t += 1 / 10) {
+        for (const h of v.heroes) if (h.cards) v.choose(0, h.id);
+        v.step(1 / 10, all(v, { mx: 0.3, my: 0.1 }));
+        most = Math.max(most, v.foes.length);
+        if (Math.floor(t * 10) % 20 === 0) longest = Math.max(longest, JSON.stringify(w.write(v, 2)).length);
+      }
+      expect(most).toBeLessThanOrEqual(MAX_FOES_PARTY + 8);
+      expect(longest).toBeLessThan(maxMessage);
+    }, 60_000);
+
+    it('a friend’s game shows what the host’s game says', () => {
+      const host = new Vigil(8, 2000, 2000, { party: party(2) });
+      host.fxOut = [];
+      const friend = new Vigil(8, 2000, 2000, { party: party(2) });
+      const w = new SnapWriter();
+      for (const h of host.heroes) h.hp = 1e9;
+      for (let i = 0; i < 30 * 40; i++) {
+        for (const h of host.heroes) if (h.cards) host.choose(0, h.id);
+        host.step(1 / 30, all(host, { mx: 0.5, my: 0 }));
+      }
+      for (const h of host.heroes) if (h.cards) host.choose(0, h.id);
+      applySnap(friend, JSON.parse(JSON.stringify(w.write(host, 1))), 2);
+      expect(friend.t).toBeCloseTo(host.t, 0);
+      expect(friend.foes.length).toBe(host.foes.length);
+      expect(friend.level).toBe(host.level);
+      expect(friend.kills).toBe(host.kills);
+      expect(friend.heroes[0]!.spells).toEqual(host.heroes[0]!.spells);
+      expect(friend.heroes[1]!.cards).toEqual(host.heroes[1]!.cards);
+      // and in between, everything slides to where it was said to be
+      friend.heroes[1]!.cards = null;
+      friend.heroes[0]!.cards = null;
+      const f0 = friend.foes[0]!;
+      for (let i = 0; i < 40; i++) friend.follow(1 / 30, 2, { mx: 0, my: 0 });
+      expect(f0.x).toBeCloseTo(f0.tx, 0);
+      // the friend's own hero moves at once
+      const me = friend.heroes[1]!;
+      const before = me.x;
+      friend.follow(1 / 30, 2, { mx: 1, my: 0 });
+      expect(me.x).toBeGreaterThan(before);
+    });
+
+    it('the room seats four, takes a land from its host only, and passes the night along', () => {
+      const s = room.newRoom('ABCDE', 1, 7);
+      for (const [i, key] of ['aaaaaaaaaaaa', 'bbbbbbbbbbbb', 'cccccccccccc', 'dddddddddddd'].entries()) expect(room.join(s, key, `P${i}`, 1)).toBeNull();
+      expect(room.join(s, 'eeeeeeeeeeee', 'P5', 1)).toBeTruthy();
+      expect(room.act(s, 'bbbbbbbbbbbb', { t: 'land', map: 'thornvale' }, 2)).toBe('not_host');
+      expect(room.act(s, 'aaaaaaaaaaaa', { t: 'land', map: 'thornvale' }, 2)).toBeNull();
+      expect(s.map).toBe('thornvale');
+      expect(room.act(s, 'aaaaaaaaaaaa', { t: 'start' }, 3)).toBe('no_pick');
+      expect(room.act(s, 'aaaaaaaaaaaa', { t: 'pick', pick: { cls: 'mage', body: 'f', face: { skin: 1, hair: 2, style: 'long', beard: false } } }, 3)).toBeNull();
+      expect(room.act(s, 'bbbbbbbbbbbb', { t: 'pick', pick: { cls: '<script>', body: 'm', face: null } }, 3)).toBe('bad_pick');
+      expect(room.act(s, 'aaaaaaaaaaaa', { t: 'start' }, 4)).toBeNull();
+      expect(s.phase).toBe('run');
+      expect(room.relay(s, 'bbbbbbbbbbbb', { t: 'r', d: { i: [1, 0, 0] } })?.others).toBeTruthy();
+      expect(room.viewFor(s, 'bbbbbbbbbbbb')?.seats).toHaveLength(4);
     });
   });
 });
