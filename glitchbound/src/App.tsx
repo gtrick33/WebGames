@@ -47,12 +47,21 @@ const AdminPage = lazyPage(() => import('./pages/AdminPage').then((m) => m.Admin
 const LeaderboardsPage = lazyPage(() => import('./pages/LeaderboardsPage').then((m) => m.LeaderboardsPage));
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage').then((m) => m.ProfilePage));
 const BugReportPage = lazyPage(() => import('./pages/BugReportPage').then((m) => m.BugReportPage));
+const FriendInvites = lazy(fresh(() => import('./components/FriendInvites').then((m) => ({ default: m.FriendInvites }))));
+const FriendsPage = lazyPage(() => import('./pages/FriendsPage').then((m) => m.FriendsPage));
+const TrophiesPage = lazyPage(() => import('./pages/TrophiesPage').then((m) => m.TrophiesPage));
 const PartyPage = lazyPage(() => import('./party/ui/PartyPage').then((m) => m.PartyPage));
 const LivePage = lazyPage(() => import('./pages/LivePage').then((m) => m.LivePage));
 const SignInPage = lazyPage(() => import('./pages/SignInPage').then((m) => m.SignInPage));
 const ChallengePage = lazyPage(() => import('./pages/ChallengePage').then((m) => m.ChallengePage));
 const ChallengesPage = lazyPage(() => import('./pages/ChallengePage').then((m) => m.ChallengesPage));
 const DiscordPage = lazyPage(() => import('./pages/DiscordPage').then((m) => m.DiscordPage));
+
+/** A friend's "join me", for members only: guests never load its code. */
+function FriendInviteBar() {
+  const { me } = useAccount();
+  return me ? <FriendInvites /> : null;
+}
 
 // What each page needs before it can show: the router loads it before switching pages, so the switch never
 // shows an empty page with the footer pulled up under the header (the home page and the 404 are always here).
@@ -68,6 +77,8 @@ const PAGE_CODE: Partial<Record<Route['name'], () => Promise<unknown> | undefine
   leaderboards: LeaderboardsPage.preload,
   me: ProfilePage.preload,
   bugs: BugReportPage.preload,
+  friends: FriendsPage.preload,
+  trophies: TrophiesPage.preload,
   party: PartyPage.preload,
   live: LivePage.preload,
   signin: SignInPage.preload,
@@ -106,6 +117,10 @@ function Page() {
       return <LivePage />;
     case 'bugs':
       return <BugReportPage />;
+    case 'friends':
+      return <FriendsPage />;
+    case 'trophies':
+      return <TrophiesPage />;
     case 'admin':
       return <AdminPage />;
     case 'signin':
@@ -189,6 +204,7 @@ export function App() {
         </Suspense>
       )}
       <Suspense fallback={null}>
+        <FriendInviteBar />
         <MusicControl />
       </Suspense>
       <Suspense fallback={null}>

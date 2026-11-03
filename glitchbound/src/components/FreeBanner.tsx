@@ -12,7 +12,7 @@ import './FreeBanner.css';
 export function FreeBanner() {
   const t = useT();
   const { me, status } = useAccount();
-  const perks = [t('Your bests and streaks on every device'), t('Leaderboards and the Hall of Fame'), t('Daily quests, XP and levels'), t('Favorites that follow you')];
+  const perks = [t('Your bests and streaks on every device'), t('Leaderboards and the Hall of Fame'), t('Pins on your Trophy Shelf, friends and friend boards'), t('Daily quests, XP and levels'), t('Favorites that follow you')];
   return (
     <section className={`wrap free-band${me ? ' is-member' : ''}`} aria-labelledby="free-title">
       <div className="free-words">

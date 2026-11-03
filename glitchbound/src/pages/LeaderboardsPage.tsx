@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { getGame } from '../catalog/catalog';
-import { BoardEmpty, BoardError, HallTable, LeaderTable, useBoard, useHall } from '../components/Leaderboard';
+import { BoardEmpty, BoardError, FriendsEmpty, HallTable, LeaderTable, ScopeSwitch, useBoard, useHall, type Scope } from '../components/Leaderboard';
 import { Icon } from '../components/Icon';
 import { usePageMeta } from '../platform/meta';
 import { navigate, useLocation } from '../router/router';
@@ -13,7 +13,8 @@ type Tab = 'hall' | string;
 function GameBoard({ slug }: { slug: string }) {
   const [period, setPeriod] = useState<'all' | '24h'>('all');
   const t = useT();
-  const board = useBoard(slug, period);
+  const [scope, setScope] = useState<Scope>('all');
+  const board = useBoard(slug, period, 0, scope);
   const game = getGame(slug, useLiveCatalog().all)!;
   const unit = game.stats.find((s) => s.key === 'score')?.unit;
   return (
@@ -23,6 +24,7 @@ function GameBoard({ slug }: { slug: string }) {
           <img src={game.art.tile} alt="" width={44} height={44} style={{ background: game.art.bg }} />
           {game.title}
         </h2>
+        <ScopeSwitch scope={scope} onChange={setScope} />
         <div className="seg" role="group" aria-label={t('Period')}>
           <button className={period === 'all' ? 'is-on' : ''} aria-pressed={period === 'all'} onClick={() => setPeriod('all')}>
             {t('All time')}
@@ -36,7 +38,7 @@ function GameBoard({ slug }: { slug: string }) {
       {board.rows.length ? (
         <LeaderTable rows={board.rows} mine={board.mine} unit={unit ? ` ${t(unit)}` : ''} />
       ) : (
-        board.status === 'ok' && <BoardEmpty text={t('No ranked scores in this period yet.')} />
+        board.status === 'ok' && (scope === 'friends' ? <FriendsEmpty /> : <BoardEmpty text={t('No ranked scores in this period yet.')} />)
       )}
       {board.status === 'error' && <BoardError text={t('The leaderboard is offline right now.')} onRetry={board.retry} />}
       <p className="info-small">{t('Best score per member. Scores are checked against real play time; rounds played as a guest are not ranked.')}</p>

@@ -3,6 +3,8 @@
  * seats keyed by a player's private key, unique names, a host who hands over when they leave, kicks,
  * and a seeded random source kept in the room state. Pure: the room server runs it (rooms/worker.ts).
  */
+import { BLOCKED } from '../../platform/progression';
+
 export const NAME_MAX = 20;
 
 export interface Seat {
@@ -52,6 +54,12 @@ export function cutName(v: string, max: number): string {
   }
   return out;
 }
+
+/** A name carrying a word no nickname may carry (progression.ts), looking through spaces and symbols. */
+export const isBlockedName = (name: string): boolean => {
+  const low = name.normalize('NFKC').toLowerCase().replace(/[^a-z]/g, '');
+  return BLOCKED.some((w) => low.includes(w));
+};
 
 const EMOJI = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u;
 
@@ -113,7 +121,8 @@ export function joinSeat(s: RoomBase, key: string, rawName: string, now: number,
   if (s.kicked?.includes(key)) return 'kicked';
   dropAway(s, now);
   const seat = seatOf(s, key);
-  const name = cleanName(rawName) || 'Player';
+  const typed = cleanName(rawName);
+  const name = typed && !isBlockedName(typed) ? typed : 'Player';
   if (seat) {
     seat.online = true;
     delete seat.awaySince;

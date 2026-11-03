@@ -49,12 +49,18 @@ function fromPage(): string {
   }
 }
 
-export function ProfileTabs({ current }: { current: 'me' | 'bugs' }) {
+export function ProfileTabs({ current }: { current: 'me' | 'bugs' | 'friends' | 'trophies' }) {
   const t = useT();
   return (
     <nav className="profile-tabs" aria-label={t('Profile sections')}>
       <Link href="/me" className="profile-tab" aria-current={current === 'me' ? 'page' : undefined}>
         <Icon name="user" size={18} /> {t('Profile')}
+      </Link>
+      <Link href="/trophies" className="profile-tab" aria-current={current === 'trophies' ? 'page' : undefined}>
+        <Icon name="star" size={18} /> {t('Trophy Shelf')}
+      </Link>
+      <Link href="/me/friends" className="profile-tab" aria-current={current === 'friends' ? 'page' : undefined}>
+        <Icon name="user" size={18} /> {t('Friends')}
       </Link>
       <Link href="/me/bugs" className="profile-tab" aria-current={current === 'bugs' ? 'page' : undefined}>
         <Icon name="bug" size={18} /> {t('Tickets')}

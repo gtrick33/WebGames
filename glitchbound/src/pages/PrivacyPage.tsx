@@ -102,6 +102,15 @@ export function PrivacyPage() {
         </section>
 
         <section className="panel info-block" aria-labelledby="p-challenges">
+          <h2 id="p-friends">Friends and your shelf</h2>
+          <p>
+            You add a friend with a code or link they gave you; nobody can search for you. Your friends see your nickname, level, Trophy Shelf, your scores
+            on the friends boards and the game you last played. A friend can ask you to join their room, with no message of their own. Removing or blocking
+            someone takes effect at once, and deleting your account removes all of this.
+          </p>
+        </section>
+
+        <section className="panel info-block" aria-labelledby="p-challenges">
           <h2 id="p-challenges">Friend challenges</h2>
           <p>
             When you start or join a challenge, the name you play under and your scores in it are stored on our server so everyone in the challenge can

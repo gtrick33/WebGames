@@ -1,0 +1,471 @@
+/* The Trophy Shelf: enamel pins on felt boards. Each tier is struck in its own shape and metal; a pin not yet
+   earned is only its outline pressed into the felt. */
+.felt {
+  --felt: #231538;
+  --felt-2: #2c1b47;
+  border: 1px solid #000;
+  border-radius: 14px;
+  background:
+    radial-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1.2px) 0 0 / 5px 5px,
+    radial-gradient(rgb(0 0 0 / 0.18) 1px, transparent 1.2px) 2px 3px / 5px 5px,
+    linear-gradient(160deg, var(--felt-2), var(--felt));
+  box-shadow: inset 0 2px 10px rgb(0 0 0 / 0.5), inset 0 0 0 1px rgb(255 255 255 / 0.04);
+  color: #efe7fa;
+}
+
+.pin {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 10px;
+  padding: 14px 8px;
+  text-align: center;
+  list-style: none;
+}
+.pin-body {
+  --size: clamp(74px, 8vw, 92px);
+  position: relative;
+  display: block;
+  width: var(--size);
+  height: var(--size);
+  transition: transform 0.28s var(--spring, ease);
+}
+.pin.is-small .pin-body {
+  --size: clamp(50px, 6vw, 62px);
+}
+.pin-metal,
+.pin-face {
+  position: absolute;
+  display: block;
+  clip-path: var(--shape);
+}
+.pin-metal {
+  inset: 0;
+  background: #120a20;
+}
+.pin-face {
+  inset: 8%;
+  overflow: hidden;
+  background: #1a1030;
+}
+.pin-face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* the arcade's own board carries the site's mark: a gold G-ring on violet */
+.pin-mark {
+  position: absolute;
+  inset: 22%;
+  border: 0.42em solid #f6c453;
+  border-right-color: transparent;
+  border-radius: 50%;
+}
+.pin-mark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -0.42em;
+  width: 0.72em;
+  height: 0.42em;
+  margin-top: -0.21em;
+  background: #f6c453;
+}
+.pin-face:has(.pin-mark) {
+  background: linear-gradient(160deg, #6a3bd1, #3a1d7a);
+}
+
+.pin[data-tier='bronze'] {
+  --shape: circle(50%);
+  --metal: linear-gradient(145deg, #f3c08c, #a9622c 42%, #6f3a14 62%, #d99a61);
+}
+.pin[data-tier='silver'] {
+  --shape: polygon(50% 0, 96% 14%, 96% 58%, 50% 100%, 4% 58%, 4% 14%);
+  --metal: linear-gradient(145deg, #ffffff, #aeb6c7 42%, #6f7686 62%, #dfe4ee);
+}
+.pin[data-tier='gold'] {
+  --shape: polygon(50% 0, 66% 12%, 86% 14%, 88% 34%, 100% 50%, 88% 66%, 86% 86%, 66% 88%, 50% 100%, 34% 88%, 14% 86%, 12% 66%, 0 50%, 12% 34%, 14% 14%, 34% 12%);
+  --metal: linear-gradient(145deg, #fff3bd, #e6ad36 42%, #94601a 62%, #ffdf80);
+}
+.pin[data-tier='rift'] {
+  --shape: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  --metal: conic-gradient(from 30deg, #ff7ad9, #8d6bff, #54e3ff, #8dffb5, #ffe36b, #ff7ad9);
+}
+
+/* Not yet earned: an outline pressed into the felt, the picture only a shadow in it. */
+.pin:not(.is-earned) .pin-body {
+  filter: drop-shadow(0 1px 0 rgb(255 255 255 / 0.1));
+}
+.pin:not(.is-earned) .pin-metal {
+  background: #150c24;
+}
+.pin:not(.is-earned) .pin-face {
+  background: #1d1230;
+}
+.pin:not(.is-earned) .pin-face img,
+.pin:not(.is-earned) .pin-mark {
+  filter: grayscale(1) contrast(0.8);
+  opacity: 0.2;
+}
+.pin:not(.is-earned) .pin-name {
+  color: #bfb2d6;
+}
+
+.pin.is-earned .pin-body {
+  filter: drop-shadow(0 3px 0 rgb(0 0 0 / 0.55)) drop-shadow(0 6px 8px rgb(0 0 0 / 0.4));
+}
+.pin.is-earned .pin-metal {
+  background: var(--metal);
+}
+.pin.is-earned .pin-face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 38%, rgb(255 255 255 / 0.36) 48%, transparent 58%) no-repeat -160% 0 / 220% 100%;
+  transition: background-position 0.7s var(--out, ease);
+}
+.pin.is-earned:hover .pin-body {
+  transform: translateY(-3px) rotate(-3deg);
+}
+.pin.is-earned:hover .pin-face::after {
+  background-position: 120% 0;
+}
+
+.pin-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.pin-name {
+  font-size: 15px;
+  line-height: 1.15;
+  color: #fff;
+}
+.pin-hint {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: #b9add0;
+}
+.pin-meta {
+  margin-top: 3px;
+  font-size: 10.5px;
+  color: #d9b65e;
+}
+.pin.is-small {
+  gap: 7px;
+  padding: 10px 4px;
+}
+.pin.is-small .pin-name {
+  font-size: 12.5px;
+}
+.pin.is-small .pin-hint {
+  font-size: 11px;
+}
+
+.pin-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 4px;
+}
+
+/* On a game's page */
+.game-pins {
+  display: grid;
+  gap: 12px;
+  padding: clamp(14px, 2vw, 20px);
+}
+.game-pins-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.game-pins-count {
+  color: var(--fg-2);
+  font-weight: 700;
+}
+
+/* New pin! */
+.pin-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  z-index: 500;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 190px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px 4px;
+  border: 1.5px solid #d9b65e;
+  border-radius: 14px;
+  background: #1c1130;
+  box-shadow: 0 12px 34px rgb(0 0 0 / 0.5);
+  color: #fff;
+  text-decoration: none;
+  transform: translateX(-50%);
+  animation: pin-toast-in 0.5s var(--spring, ease) both;
+}
+@keyframes pin-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 24px) scale(0.92);
+  }
+}
+.pin-toast-kicker {
+  color: #f6c453;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.pin-toast-list {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+.pin-toast .pin {
+  max-width: 130px;
+}
+
+/* ---------------------------------------------------------------- the Shelf page */
+.shelf-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
+  align-items: end;
+  gap: 22px;
+}
+.shelf-rank {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+}
+.shelf-rank-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #f6c453;
+}
+.shelf-rank-bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #120a20;
+  box-shadow: inset 0 1px 3px #000;
+}
+.shelf-rank-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #a9622c, #e6ad36);
+}
+.shelf-rank-next {
+  font-size: 13px;
+  color: #cbbfe2;
+}
+.shelf-boards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: 18px;
+}
+.shelf-board {
+  display: grid;
+  gap: 2px;
+  padding: 14px 14px 8px;
+}
+.shelf-board.is-wide {
+  grid-column: 1 / -1;
+}
+.shelf-board-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px 6px;
+  color: inherit;
+  text-decoration: none;
+}
+.shelf-board-head img {
+  flex: none;
+  border-radius: 9px;
+}
+.shelf-board-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  color: #fff;
+  text-shadow: none;
+}
+.shelf-board-count {
+  flex: none;
+  font-size: 12.5px;
+  color: #cbbfe2;
+}
+.shelf-board.is-complete {
+  border-color: #d9b65e;
+  box-shadow: inset 0 2px 10px rgb(0 0 0 / 0.5), 0 0 0 1px #d9b65e;
+}
+.shelf-board.is-complete .shelf-board-count {
+  color: #f6c453;
+}
+.shelf-board-pins {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+}
+.shelf-board.is-wide .shelf-board-pins {
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+}
+.shelf-guest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 22px;
+  padding: 16px 20px;
+  border: 1.5px solid #d9b65e;
+}
+.shelf-guest p {
+  margin: 0;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .shelf-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .shelf-board-pins {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .shelf-board.is-wide .shelf-board-pins {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pin-toast {
+    animation: none;
+  }
+  .pin-body,
+  .pin.is-earned .pin-face::after {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------- friends */
+.friend-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.friend-code strong {
+  padding: 8px 16px;
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  background: var(--well);
+  font: 800 clamp(22px, 3vw, 28px) / 1.1 var(--mono);
+  letter-spacing: 0.12em;
+}
+.friend-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.friend-add input {
+  flex: 1 1 180px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--well);
+  color: var(--fg);
+  font: 700 16px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.friend-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.friend-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.friend-who {
+  display: grid;
+  flex: 1 1 200px;
+  gap: 2px;
+  min-width: 0;
+}
+.friend-who strong {
+  font-size: 17px;
+}
+.friend-who span {
+  font-size: 13.5px;
+  color: var(--fg-2);
+}
+.friend-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.friend-note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--fg-2);
+}
+.friend-note.is-error {
+  color: var(--magenta-text, #d3267f);
+}
+.friend-from-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1.5px solid var(--cyan);
+}
+
+/* A friend asks you to join them */
+.friend-invite-bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  z-index: 450;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 10px 14px;
+  border: 1.5px solid #d9b65e;
+  border-radius: 14px;
+  background: #1c1130;
+  box-shadow: 0 12px 34px rgb(0 0 0 / 0.5);
+  color: #fff;
+  transform: translateX(-50%);
+}
+html.game-focus .friend-invite-bar {
+  display: none;
+}
+.friend-invite-bar .link-btn {
+  color: #cbbfe2;
+}
