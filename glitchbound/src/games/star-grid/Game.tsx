@@ -698,7 +698,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
           <p className="sgd-muted">
             {grids > 1 ? `${grids} grids in ${fmtTime(sum(round.times))}` : round.times.length ? `Solved in ${fmtTime(round.times[0]!)}` : 'Not solved'} {bestNote}
           </p>
-          {round.times.length > 0 && <ResultLine line={resultLine(round.times)} label={`Solved in ${round.times.map(fmtTime).join(', ')}`} />}
+          {round.times.length > 0 && <ResultLine line={resultLine(round.times, round.puzzles.map((q) => q.size))} label={`Solved in ${round.times.map(fmtTime).join(', ')}`} />}
           {mode === 'daily' && daily && (
             <p className="sgd-muted">
               That was today’s one try. <NextDaily />

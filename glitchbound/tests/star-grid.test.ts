@@ -39,7 +39,8 @@ describe('Star Grid', () => {
     expect(solvePoints(8, 0)).toBe(1000);
     expect(solvePoints(8, 100)).toBe(700);
     expect(solvePoints(8, 10_000)).toBe(250);
-    expect(resultLine([42, 75, 130])).toBe('🟩 0:42  🟨 1:15  🟥 2:10');
+    expect(resultLine([42, 75, 130])).toBe('6×6 0:42 · 7×7 1:15 · 8×8 2:10');
+    expect(resultLine([52], [9])).toBe('9×9 0:52');
   });
 
   it('stays inside the score limits for a lightning-fast daily', () => {
