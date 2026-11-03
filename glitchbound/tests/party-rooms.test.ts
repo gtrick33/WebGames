@@ -384,7 +384,7 @@ describe('room invite links (/r/CODE)', () => {
   });
 
   it('never sends a closed or mistyped room to the 18+ game', async () => {
-    expect(await open('KQTRA')).toEqual({ title: 'Join my party room', to: '/party?room=KQTRA' });
+    expect(await open('KQTRA')).toEqual({ title: 'We can’t find room KQTRA', to: '/party?room=KQTRA' });
     expect(await open('nope!')).toEqual({ title: 'Join my party room', to: '/party' });
   });
 });
