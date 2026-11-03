@@ -1,4 +1,4 @@
-/* Where's the Ball? Sunny clubhouse colours; the scene itself is the star. */
+/* Where's the Ball? Sunny clubhouse colors; the scene itself is the star. */
 .wb {
   --wb-paper: #f6f8ec;
   --wb-card: #ffffff;
@@ -12,7 +12,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  container-type: size;
+  container: wb / size;
   background:
     radial-gradient(circle at 10% 6%, rgb(212 238 50 / 0.25), transparent 30%),
     radial-gradient(circle at 92% 18%, rgb(61 123 255 / 0.12), transparent 30%),
@@ -101,8 +101,8 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: 2px solid var(--wb-line);
   border-radius: 12px;
   background: var(--wb-card);
@@ -194,7 +194,7 @@
   letter-spacing: 2px;
 }
 .wb-daily-score b,
-.wb-done-score b {
+b.wb-done-score {
   font-size: 30px;
 }
 .wb-big {
@@ -208,11 +208,57 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: min(100%, 1000px);
+  width: min(100%, 1240px);
   height: 100%;
-  min-height: 420px;
   margin: 0 auto;
   padding: 10px 12px 14px;
+}
+/* The photo gets whatever the top bar and the controls leave, so nothing ever overflows the stage. */
+.wb-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 0;
+  min-height: 0;
+}
+.wb-stagebox {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  max-height: calc((100cqw - 24px) * 3 / 4);
+  display: grid;
+  place-items: center;
+  container: wbphoto / size;
+}
+.wb-side {
+  display: grid;
+  gap: 10px;
+}
+@container wb (min-aspect-ratio: 1 / 1) {
+  /* Wide stages: the controls (and the result) sit in a column beside the photo. */
+  .wb-body {
+    flex-direction: row;
+  }
+  .wb-stagebox {
+    max-height: none;
+  }
+  .wb-side {
+    flex: none;
+    width: clamp(200px, 26cqw, 300px);
+    align-content: center;
+    overflow-y: auto;
+  }
+  .wb-side .wb-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .wb-side .wb-zoom {
+    align-self: center;
+  }
+  .wb-side .wb-btn-lock {
+    flex: none;
+  }
 }
 .wb-top {
   display: flex;
@@ -258,9 +304,8 @@
 }
 .wb-view {
   position: relative;
-  flex: 1;
-  min-height: 0;
-  max-height: calc((100cqw - 24px) * 3 / 4);
+  width: min(100cqw, (100cqh - 6px) * 4 / 3 + 6px);
+  height: min(100cqh, (100cqw - 6px) * 3 / 4 + 6px);
   border: 3px solid var(--wb-ink);
   border-radius: 16px;
   overflow: auto;
@@ -276,16 +321,6 @@
   user-select: none;
   -webkit-user-select: none;
   cursor: crosshair;
-}
-@container (min-aspect-ratio: 1 / 1) {
-  /* Wide stages: fit the whole picture by height. */
-  .wb-view {
-    align-self: center;
-    width: min(100%, calc((100cqh - 150px) * 4 / 3));
-    flex: none;
-    height: auto;
-    max-height: calc(100cqh - 150px);
-  }
 }
 .wb-wrap canvas,
 .wb-overlay {
@@ -380,8 +415,10 @@
 .wb-paused {
   position: absolute;
   inset: 0;
+  z-index: 3;
   border: 0;
-  background: rgb(20 16 42 / 0.6);
+  border-radius: 16px;
+  background: var(--wb-ink);
   color: #fff;
   font-weight: 800;
   font-size: 18px;
@@ -406,7 +443,7 @@
 }
 .wb-zoom button {
   width: 44px;
-  height: 42px;
+  height: 44px;
   border: 0;
   background: none;
   font-size: 22px;
@@ -430,24 +467,65 @@
 .wb-done {
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 4px;
   width: min(100%, 420px);
   margin: 0 auto;
-  padding: 14px 16px;
+  padding: 10px 14px 12px;
   border: 3px solid var(--wb-ink);
   border-radius: 20px;
   background: var(--wb-card);
   box-shadow: 4px 4px 0 var(--wb-ink);
   text-align: center;
 }
+.wb-done-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
 .wb-done h2 {
-  font-size: 24px;
+  font-size: 22px;
+}
+.wb-done .wb-btn-big {
+  min-height: 48px;
+}
+.wb-newshot {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border: 2px solid var(--wb-ink);
+  border-radius: 999px;
+  background: var(--wb-ball);
+  font-weight: 800;
+  pointer-events: none;
+  animation: wb-newshot 1.4s ease-out forwards;
+}
+@keyframes wb-newshot {
+  70% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.wb-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 @media (prefers-reduced-motion: reduce) {
   .wb-wordmark-ball svg,
   .wb-found,
   .wb-reveal,
-  .wb-aim circle {
+  .wb-aim circle,
+  .wb-newshot {
     animation: none;
   }
 }
@@ -493,11 +571,14 @@
   }
 }
 .wb-credit {
-  margin: 4px 0 8px;
   font-size: 11px;
   opacity: 0.7;
 }
 .wb-credit a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
   color: inherit;
 }
 a.wb-btn {
