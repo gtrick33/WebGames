@@ -28,7 +28,7 @@ function placeOf(offset: number): { x: number; y: number; scale: number; dim: bo
  * swipe walk the ring of heroes round; an empty place is a shadow with a plus. Drag the hero to turn them. The
  * hall's banners and the sigil under their feet take the color of whoever stands there.
  */
-export function CharacterSelect({ engine, onRift, onVigil, onSettings, confirmDelete, setConfirmDelete }: { engine: SigilEngine; onRift: (slot: number) => void; onVigil: () => void; onSettings: () => void; confirmDelete: number | null; setConfirmDelete: (n: number | null) => void }) {
+export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, confirmDelete, setConfirmDelete }: { engine: SigilEngine; onRift: (slot: number) => void; onVigil: () => void; onRing: () => void; onSettings: () => void; confirmDelete: number | null; setConfirmDelete: (n: number | null) => void }) {
   const heroes = engine.heroes();
   const n = heroes.length;
   const [at, setAt] = useState(() => Math.max(0, engine.save.last));
@@ -238,13 +238,22 @@ export function CharacterSelect({ engine, onRift, onVigil, onSettings, confirmDe
       </div>
 
       <div className="cs-actions">
-        <button className="cs-mode is-vigil" onClick={onVigil}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.vigil!)} alt="" draggable={false} />
-          <span>
-            <strong>The Vigil</strong>
-            <small>Hold the line</small>
-          </span>
-        </button>
+        <div className="cs-mode-stack">
+          <button className="cs-mode is-vigil" onClick={onVigil}>
+            <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.vigil!)} alt="" draggable={false} />
+            <span>
+              <strong>The Vigil</strong>
+              <small>Hold the line</small>
+            </span>
+          </button>
+          <button className="cs-mode is-ring" onClick={onRing}>
+            <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.ring!)} alt="" draggable={false} />
+            <span>
+              <strong>The Ring</strong>
+              <small>Arena, 1v1 to 3v3</small>
+            </span>
+          </button>
+        </div>
         <button className="cs-enter" onClick={primary} autoFocus>
           {hero ? 'Enter the world' : 'Create your hero'}
         </button>

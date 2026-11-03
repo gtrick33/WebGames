@@ -5793,3 +5793,1091 @@
     font-size: 13px;
   }
 }
+
+/* The title's modes: The Vigil and The Ring stand together */
+.cs-mode-stack {
+  display: grid;
+  gap: 5px;
+  justify-self: end;
+}
+.cs-mode.is-ring {
+  color: #ffb4b4;
+}
+
+/* The Ring: the lobby */
+.rb-ringlobby {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-template: auto minmax(0, 1fr) auto / 132px minmax(0, 1.5fr) minmax(170px, 1fr);
+  grid-template-areas: 'head head head' 'left mid right' 'foot foot foot';
+  gap: 6px 10px;
+  padding: 8px 12px;
+  overflow: hidden;
+  color: #efe6d4;
+  background:
+    radial-gradient(80% 80% at 40% 20%, color-mix(in srgb, var(--cls) 20%, transparent), transparent 64%),
+    linear-gradient(180deg, #120a18, #05030d);
+}
+.rb-ringlobby h3 {
+  margin: 4px 0 2px;
+  color: #ffe39a;
+  font: 700 13px Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.04em;
+}
+.rb-ringlobby .rb-vlobby-head {
+  grid-area: head;
+}
+.rb-rl-left {
+  grid-area: left;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.rb-rl-formats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+}
+.rb-rl-format {
+  display: grid;
+  justify-items: center;
+  padding: 3px 0;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 6px;
+  color: #cfc6dc;
+  background: rgb(14 9 28 / 0.6);
+  cursor: pointer;
+}
+.rb-rl-format strong {
+  font: 700 13px Georgia, 'Times New Roman', serif;
+}
+.rb-rl-format small {
+  font-size: 10px;
+  opacity: 0.75;
+}
+.rb-rl-format.is-on {
+  border-color: #ffe39a;
+  color: #fff4d8;
+  box-shadow: inset 0 0 0 1px #ffe39a;
+}
+.rb-rl-rank {
+  display: grid;
+  gap: 2px;
+  padding: 5px 7px;
+  border: 1px solid color-mix(in srgb, var(--r) 50%, transparent);
+  border-radius: 7px;
+  background: rgb(10 6 22 / 0.72);
+  font-size: 11px;
+  color: #b8afc8;
+}
+.rb-rl-rank b {
+  color: var(--r);
+  font: 700 13.5px Georgia, 'Times New Roman', serif;
+}
+.rb-rl-next {
+  position: relative;
+  display: block;
+  height: 13px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #120a20;
+}
+.rb-rl-next i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in srgb, var(--r) 60%, transparent);
+}
+.rb-rl-next small {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 9.5px;
+  line-height: 13px;
+}
+.rb-rl-classes {
+  display: grid;
+  gap: 3px;
+}
+.rb-rl-classes .rb-vlobby-class {
+  min-height: 30px;
+  font-size: 12px;
+}
+.rb-rl-classes .rb-vlobby-class img {
+  width: 24px;
+  height: 24px;
+}
+.rb-rl-mid {
+  grid-area: mid;
+  position: relative;
+  min-height: 0;
+  display: grid;
+}
+.rb-rl-doll {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  height: 46px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.6));
+  pointer-events: none;
+}
+.rb-rs {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 4px;
+  min-height: 0;
+}
+.rb-rs-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-right: 38px;
+}
+.rb-rs-sets {
+  display: flex;
+  gap: 2px;
+}
+.rb-rs-set {
+  padding: 3px 9px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 6px;
+  color: #cfc6dc;
+  font: 700 12px Georgia, 'Times New Roman', serif;
+  background: rgb(14 9 28 / 0.6);
+  cursor: pointer;
+}
+.rb-rs-set.is-on {
+  border-color: #ffe39a;
+  color: #fff4d8;
+  box-shadow: inset 0 0 0 1px #ffe39a;
+}
+.rb-rs-presets {
+  display: flex;
+  gap: 3px;
+}
+.rb-rs-scroll {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.rb-rs-talents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  background: rgb(10 6 22 / 0.72);
+}
+.rb-rs-row {
+  display: grid;
+  gap: 1px;
+}
+.rb-rs-row h4 {
+  margin: 0;
+  color: #ffe39a;
+  font: 700 10.5px Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.03em;
+}
+.rb-rs-row > span {
+  display: flex;
+  gap: 2px;
+}
+.rb-rs-talent {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  overflow: hidden;
+  border: 1.5px solid rgb(255 255 255 / 0.18);
+  border-radius: 5px;
+  background: #120a20;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.rb-rs-talent img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  opacity: 0.6;
+}
+.rb-rs-talent:hover,
+.rb-rs-talent:focus-visible {
+  transform: translateY(-1px);
+  border-color: #ffe39a;
+}
+.rb-rs-talent:hover img {
+  opacity: 1;
+}
+.rb-rs-talent.is-on {
+  border-color: #ffd257;
+  box-shadow: 0 0 6px rgb(255 210 87 / 0.55);
+}
+.rb-rs-talent.is-on img {
+  opacity: 1;
+}
+.rb-rs-talent.is-on.is-idle {
+  border-color: #ff9a7a;
+  border-style: dashed;
+}
+.rb-rl-info small.is-warn {
+  color: #ff9a7a;
+}
+.rb-ring-prep {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  translate: -50% -50%;
+  padding: 8px 18px;
+  border: 1px solid rgb(255 227 154 / 0.5);
+  border-radius: 10px;
+  white-space: nowrap;
+  background: rgb(8 4 18 / 0.76);
+}
+.rb-ring-prep small {
+  color: #b8afc8;
+  font-size: 11.5px;
+}
+.rb-ring-prep strong {
+  color: #ffe39a;
+  font: 700 20px Georgia, 'Times New Roman', serif;
+}
+.rb-ring-prep > span {
+  color: #cfc6dc;
+  font-size: 12px;
+}
+.rb-ring-prep-actions {
+  display: flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+.rb-ring-editing {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 4px;
+  padding: 6px 10px;
+  background: rgb(8 4 18 / 0.94);
+}
+.rb-ring-editing header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rb-ring-editing header strong {
+  flex: 1;
+  color: #ffe39a;
+  font: 700 15px Georgia, 'Times New Roman', serif;
+}
+.rb-ring-editing header b {
+  color: #fff4d8;
+  font: 700 18px Georgia, 'Times New Roman', serif;
+}
+.rb-rl-slots {
+  display: flex;
+  gap: 3px;
+}
+.rb-rl-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid rgb(255 255 255 / 0.24);
+  border-radius: 6px;
+  color: #6d6580;
+  background: #120a20;
+  cursor: pointer;
+}
+.rb-rl-slot.is-empty {
+  border-style: dashed;
+}
+.rb-rl-slot.is-token {
+  margin-left: 5px;
+  border-color: #ffe39a;
+  cursor: default;
+}
+.rb-rl-slot img {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.rb-rl-presets {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.rb-rl-kit {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  align-content: start;
+  gap: 3px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.rb-rl-ab {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 7px;
+  color: #cfc6dc;
+  background: rgb(14 9 28 / 0.6);
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.rb-rl-ab img {
+  width: 36px;
+  height: 36px;
+  border-radius: 5px;
+  image-rendering: pixelated;
+}
+.rb-rl-ab small {
+  font-size: 10.5px;
+  line-height: 1.1;
+  text-align: center;
+}
+.rb-rl-ab:hover,
+.rb-rl-ab:focus-visible {
+  transform: translateY(-1px);
+  border-color: #ffe39a;
+}
+.rb-rl-ab.is-on {
+  border-color: #ffd257;
+  color: #fff4d8;
+  background: linear-gradient(180deg, rgb(255 210 87 / 0.24), rgb(14 9 28 / 0.6));
+  box-shadow: inset 0 0 0 1px #ffd257;
+}
+.rb-rl-ab.is-full {
+  opacity: 0.55;
+}
+.rb-rl-info {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 8px;
+  min-height: 52px;
+  padding: 4px 9px;
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.25;
+  background: rgb(10 6 22 / 0.78);
+}
+.rb-rl-info strong {
+  color: #ffe39a;
+  font: 700 14px Georgia, 'Times New Roman', serif;
+}
+.rb-rl-info em {
+  align-self: center;
+  justify-self: end;
+  color: #b8afc8;
+  font-size: 10.5px;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rb-rl-info span,
+.rb-rl-info small {
+  grid-column: 1 / -1;
+}
+.rb-rl-info small {
+  color: #9fdcff;
+  font-size: 11px;
+}
+.rb-rl-right {
+  grid-area: right;
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.rb-rl-mates,
+.rb-rl-comps {
+  display: grid;
+  gap: 3px;
+}
+.rb-rl-mate {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+}
+.rb-ringlobby select,
+.rb-rl-join input {
+  min-width: 0;
+  padding: 3px 4px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 5px;
+  color: #efe6d4;
+  font-size: 12px;
+  background: #1a1030;
+}
+.rb-rl-comp {
+  display: grid;
+  gap: 0;
+  padding: 3px 6px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 6px;
+  color: #cfc6dc;
+  text-align: left;
+  background: rgb(14 9 28 / 0.6);
+  cursor: pointer;
+}
+.rb-rl-comp b {
+  color: #ffe39a;
+  font: 700 12px Georgia, 'Times New Roman', serif;
+}
+.rb-rl-comp small {
+  font-size: 10.5px;
+  line-height: 1.15;
+}
+.rb-rl-comp:hover {
+  border-color: #ffe39a;
+}
+.rb-rl-maps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.rb-rl-map {
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--c, #888) 60%, transparent);
+  border-radius: 6px;
+  color: #efe6d4;
+  font-size: 11.5px;
+  background: color-mix(in srgb, var(--c, #888) 16%, #0e091c);
+  cursor: pointer;
+}
+.rb-rl-map.is-on {
+  border-color: #ffd257;
+  box-shadow: inset 0 0 0 1px #ffd257;
+}
+.rb-rl-foot {
+  grid-area: foot;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.rb-rl-room {
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+}
+.rb-rl-room p {
+  margin: 0;
+}
+.rb-rl-join {
+  display: flex;
+  gap: 4px;
+}
+.rb-rl-join input {
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.rb-rl-code {
+  color: #fff;
+  font-family: ui-monospace, Menlo, monospace;
+  letter-spacing: 0.16em;
+  user-select: all;
+  -webkit-user-select: all;
+}
+.rb-rl-roomsetup {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px;
+}
+.rb-rl-sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.rb-rl-side {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgb(70 140 255 / 0.12);
+}
+.rb-rl-side.is-t1 {
+  background: rgb(255 70 70 / 0.12);
+}
+.rb-rl-side h4 {
+  margin: 0;
+  font: 700 11px Georgia, 'Times New Roman', serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rb-rl-side > span {
+  display: grid;
+  line-height: 1.15;
+}
+.rb-rl-side small {
+  color: #b8afc8;
+  font-size: 10.5px;
+}
+.rb-rl-side .is-away {
+  opacity: 0.5;
+}
+.rb-rl-change {
+  margin: 0;
+  font: 700 19px Georgia, 'Times New Roman', serif;
+}
+.rb-rl-change.is-up {
+  color: #7fe06a;
+}
+.rb-rl-change.is-down {
+  color: #ff7a8a;
+}
+.rb-vigil-modal h2.is-defeat {
+  color: #ff8a9a;
+}
+.rb-rl-score {
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.rb-rl-score th {
+  padding: 1px 8px;
+  color: #b8afc8;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.rb-rl-score td {
+  padding: 2px 8px;
+  text-align: right;
+}
+.rb-rl-score td:first-child {
+  font-weight: 700;
+  text-align: left;
+}
+.rb-rl-score tr.is-mine {
+  background: rgb(70 140 255 / 0.13);
+}
+.rb-rl-score tr.is-foe {
+  background: rgb(255 70 70 / 0.1);
+}
+
+/* The Ring: the match */
+.rb-ring {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: #05030d;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.rb-ring-stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+.rb-ring-canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+.rb-ring-top {
+  position: absolute;
+  inset: 4px 4px auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+}
+.rb-ring-top > * {
+  pointer-events: auto;
+}
+.rb-ring-team {
+  display: grid;
+  gap: 2px;
+  flex: 0 1 196px;
+  min-width: 0;
+}
+.rb-ring-team.is-foes {
+  margin-left: auto;
+}
+.rb-ring-clock {
+  display: grid;
+  justify-items: center;
+  flex: none;
+  padding: 1px 9px;
+  border-radius: 7px;
+  background: rgb(5 3 13 / 0.72);
+}
+.rb-ring-clock b {
+  color: #fff4d8;
+  font: 700 17px Georgia, 'Times New Roman', serif;
+}
+.rb-ring-clock small {
+  color: #ff9ab0;
+  font-size: 9.5px;
+}
+.rb-ring-menu {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+.rb-ring-menu .rb-iconbtn {
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  font-size: 13px;
+}
+.rb-ring-frame {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  padding: 2px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 7px;
+  color: #efe6d4;
+  text-align: left;
+  background: rgb(8 4 18 / 0.82);
+  cursor: pointer;
+}
+.rb-ring-frame.is-flip {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+.rb-ring-frame.is-on {
+  border-color: #ffe39a;
+  box-shadow: 0 0 0 1px #ffe39a;
+}
+.rb-ring-frame.is-dead {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.rb-ring-frame.is-unseen .rb-ring-bars {
+  opacity: 0.68;
+}
+.rb-ring-face {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border: 1px solid var(--c);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--c) 28%, #120a20);
+}
+.rb-ring-face img {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  width: 48px;
+  translate: -50% 0;
+  image-rendering: pixelated;
+}
+.rb-ring-face em {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font: 700 8px/1 system-ui, sans-serif;
+  font-style: normal;
+  text-align: center;
+  background: rgb(140 20 50 / 0.72);
+}
+.rb-ring-bars {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 1px;
+  min-width: 0;
+}
+.rb-ring-name {
+  overflow: hidden;
+  font: 700 11px/1.1 Georgia, 'Times New Roman', serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-ring-name small {
+  margin-inline: 4px;
+  color: #ff9ab0;
+  font: 400 9.5px system-ui, sans-serif;
+}
+.rb-ring-bar,
+.rb-ring-cast {
+  position: relative;
+  display: block;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #1a1030;
+}
+.rb-ring-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(180deg, #7fe06a, #3f9a3a);
+  transition: width 0.1s linear;
+}
+.is-foes .rb-ring-bar i {
+  background: linear-gradient(180deg, #ff7a8a, #b8324a);
+}
+.is-flip .rb-ring-bar i,
+.is-flip .rb-ring-mana i,
+.is-flip .rb-ring-cast i {
+  inset: 0 0 0 auto;
+}
+.rb-ring-bar b,
+.rb-ring-cast b {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: #fff;
+  font: 700 8.5px/10px system-ui, sans-serif;
+  text-align: center;
+  text-shadow: 0 1px 1px #000;
+  white-space: nowrap;
+}
+.rb-ring-mana {
+  position: relative;
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #1a1030;
+}
+.rb-ring-mana i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #5ab0ff;
+}
+.rb-ring-cast i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--a);
+}
+.rb-ring-under {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 0;
+}
+.is-flip .rb-ring-under {
+  flex-direction: row-reverse;
+}
+.rb-ring-auras {
+  display: flex;
+  gap: 1px;
+}
+.is-flip .rb-ring-auras {
+  flex-direction: row-reverse;
+}
+.rb-ring-auras i {
+  position: relative;
+  display: block;
+  width: 13px;
+  height: 13px;
+  overflow: hidden;
+  border: 1px solid #57d36a;
+  border-radius: 2px;
+}
+.rb-ring-auras i.is-bad {
+  border-color: #ff5a6a;
+}
+.rb-ring-auras i.is-cc {
+  width: 16px;
+  height: 16px;
+  border-color: #fff;
+}
+.rb-ring-auras img {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.rb-ring-auras b {
+  position: absolute;
+  inset: 0;
+  color: #fff;
+  font: 700 10px/16px system-ui, sans-serif;
+  text-align: center;
+  text-shadow: 0 0 2px #000, 0 0 2px #000;
+}
+.rb-ring-dr {
+  padding: 0 2px;
+  border-radius: 2px;
+  color: #ffd257;
+  font: 700 8.5px/11px system-ui, sans-serif;
+  background: rgb(0 0 0 / 0.5);
+}
+.rb-ring-gates {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  pointer-events: none;
+}
+.rb-ring-gates b {
+  color: #ffe39a;
+  font: 700 clamp(44px, 10cqw, 92px) / 1 Georgia, 'Times New Roman', serif;
+  text-shadow: 0 3px 0 #1c0e2e, 0 0 24px rgb(255 180 92 / 0.6);
+  animation: rb-ring-count 0.9s ease-out both;
+}
+.rb-ring-gates small {
+  color: #efe6d4;
+  font: 600 15px Georgia, 'Times New Roman', serif;
+  text-shadow: 0 1px 3px #000;
+}
+@keyframes rb-ring-count {
+  from {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.rb-ring-err {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  translate: -50% 0;
+  padding: 1px 10px;
+  border-radius: 6px;
+  color: #ff9ab0;
+  font: 700 13px Georgia, 'Times New Roman', serif;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+  background: rgb(5 3 13 / 0.55);
+}
+.rb-ring-mycast {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: min(240px, 48%);
+  height: 15px;
+  translate: -50% 0;
+  overflow: hidden;
+  border: 1px solid #ffe39a;
+  border-radius: 4px;
+  background: #120a20;
+  pointer-events: none;
+}
+.rb-ring-mycast i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--a);
+}
+.rb-ring-mycast b {
+  position: absolute;
+  inset: 0;
+  color: #fff;
+  font: 700 10.5px/14px system-ui, sans-serif;
+  text-align: center;
+  text-shadow: 0 1px 1px #000;
+}
+.rb-ring-actions {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  padding: 3px;
+  background: linear-gradient(180deg, #120a20, #05030d);
+}
+.rb-ring-ab {
+  position: relative;
+  flex: 0 1 48px;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid rgb(255 255 255 / 0.28);
+  border-radius: 7px;
+  background: #120a20;
+  cursor: pointer;
+  touch-action: none;
+}
+.rb-ring-ab:active {
+  transform: translateY(1px) scale(0.97);
+}
+.rb-ring-ab.is-token {
+  margin-left: 8px;
+  border-color: #ffe39a;
+}
+.rb-ring-ab.is-ready {
+  border-color: #fff;
+  box-shadow: 0 0 10px #ffe39a;
+}
+.rb-ring-ab img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.rb-ring-ab.is-out img {
+  filter: grayscale(0.85) brightness(0.55);
+}
+.rb-ring-cool {
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(rgb(0 0 0 / 0.72) var(--p), transparent 0);
+}
+.rb-ring-ab b {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font: 700 13px system-ui, sans-serif;
+  text-shadow: 0 0 3px #000, 0 0 3px #000;
+}
+.rb-ring-ab kbd {
+  position: absolute;
+  top: 0;
+  left: 1px;
+  color: #fff;
+  font: 700 9.5px system-ui, sans-serif;
+  text-shadow: 0 1px 1px #000;
+}
+@media (pointer: coarse) {
+  .rb-ring-ab kbd {
+    display: none;
+  }
+}
+@container (max-height: 430px) {
+  .rb-ringlobby {
+    grid-template-columns: 104px minmax(0, 1.5fr) minmax(130px, 1fr);
+    padding: 4px 8px;
+    gap: 3px 6px;
+  }
+  .rb-ringlobby .rb-vlobby-head p {
+    display: none;
+  }
+  .rb-rl-doll {
+    display: none;
+  }
+  .rb-rs-head {
+    padding-right: 0;
+  }
+  .rb-rs-talent {
+    width: 24px;
+    height: 24px;
+  }
+  .rb-rl-slot {
+    width: 28px;
+    height: 28px;
+  }
+  .rb-rl-ab small {
+    display: none;
+  }
+  .rb-rl-kit {
+    grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  }
+  .rb-rl-ab img {
+    width: 30px;
+    height: 30px;
+  }
+  .rb-rl-info {
+    min-height: 0;
+    font-size: 11px;
+  }
+  .rb-rl-info small {
+    display: none;
+  }
+  .rb-rl-comps {
+    display: none;
+  }
+  .rb-ring-team {
+    flex-basis: 150px;
+  }
+  .rb-ring-face {
+    width: 24px;
+    height: 24px;
+  }
+  .rb-ring-face img {
+    width: 36px;
+  }
+  .rb-ring-ab {
+    flex-basis: 38px;
+  }
+}
+@container (max-height: 300px) {
+  .rb-ringlobby {
+    grid-template: repeat(5, auto) / minmax(0, 1fr);
+    grid-template-areas: 'head' 'left' 'mid' 'right' 'foot';
+    align-content: start;
+    overflow-y: auto;
+  }
+  .rb-rl-left,
+  .rb-rl-right {
+    overflow: visible;
+  }
+  .rb-ring-prep {
+    padding: 3px 10px;
+  }
+  .rb-ring-prep small,
+  .rb-ring-prep > span:not(.rb-ring-prep-actions) {
+    display: none;
+  }
+  .rb-ring-prep strong {
+    font-size: 14px;
+  }
+  .rb-rs {
+    grid-template-rows: auto auto auto auto;
+  }
+  .rb-rs-scroll {
+    overflow: visible;
+  }
+  .rb-rl-classes {
+    display: flex;
+  }
+  .rb-rl-classes .rb-vlobby-class {
+    flex: 1;
+    min-width: 0;
+    padding: 1px;
+    justify-content: center;
+  }
+  .rb-rl-classes .rb-vlobby-class span {
+    display: none;
+  }
+  .rb-ring-team {
+    flex-basis: 112px;
+  }
+  .rb-ring-name,
+  .rb-ring-under {
+    display: none;
+  }
+  .rb-ring-face {
+    width: 16px;
+    height: 16px;
+  }
+  .rb-ring-face em {
+    font-size: 0;
+  }
+  .rb-ring-ab {
+    flex-basis: 30px;
+  }
+  .rb-ring-clock b {
+    font-size: 12px;
+  }
+}

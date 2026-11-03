@@ -204,4 +204,5 @@ export const TALENT_ICONS: Record<string, string[]> = {
 export const VIGIL_ICON: Record<string, string> = {
   vigil: 'flame_circle_on_the_ground_on_dark_red',
   rift: 'dark_portal_on_black',
+  ring: 'crossed_sword_and_axe_on_red',
 };
