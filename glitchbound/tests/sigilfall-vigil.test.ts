@@ -1,6 +1,9 @@
 /** The Vigil's simulation (vigil/sim.ts): the Host, the spells and the choices, without drawing anything. */
 import { describe, expect, it } from 'vitest';
-import { BOSS_EVERY, MAX_SPELL, SPELLS, STRENGTHS } from '../src/games/sigilfall/vigil/kit';
+import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
+import { ENEMIES } from '../src/games/sigilfall/data/enemies';
+import { REGIONS } from '../src/games/sigilfall/data/regions';
+import { ALL_SPELLS, BOSS_EVERY, firstSpell, mapOpen, MAX_SPELL, spellsOf, SPELLS, STRENGTHS, UNLOCK_HOLD, VIGIL_MAPS } from '../src/games/sigilfall/vigil/kit';
 import { MAX_FOES, Vigil, xpForLevel, type VigilInput } from '../src/games/sigilfall/vigil/sim';
 
 const STILL: VigilInput = { mx: 0, my: 0 };
@@ -191,10 +194,119 @@ describe('The Vigil', () => {
   });
 
   it('walls stop the hero, and the map’s edge holds', () => {
-    const v = new Vigil(1, 100, 100, (x) => x > 110, { x0: 0, y0: 0, x1: 200, y1: 200 });
+    const v = new Vigil(1, 100, 100, { solid: (x) => x > 110, bounds: { x0: 0, y0: 0, x1: 200, y1: 200 } });
     for (let i = 0; i < 60; i++) v.step(1 / 30, { mx: 1, my: 0 });
     expect(v.x).toBeLessThanOrEqual(110.5);
     for (let i = 0; i < 300; i++) v.step(1 / 30, { mx: 0, my: -1 });
     expect(v.y).toBe(0);
+  });
+
+  describe('every class and land', () => {
+    /** A run with the class's whole kit at its top, so every spell has fired and every drawing kind has been fed. */
+    const full = (cls: (typeof CLASS_IDS)[number], seed = 3): Vigil => {
+      const v = new Vigil(seed, 2000, 2000, { cls });
+      v.hp = 1e9;
+      for (const s of spellsOf(cls).slice(0, 5)) v.spells[s.id] = MAX_SPELL;
+      for (let i = 0; i < 30 * 200; i++) {
+        if (v.cards) v.choose(0);
+        v.step(1 / 30, { mx: Math.cos(i / 40), my: Math.sin(i / 40) });
+      }
+      return v;
+    };
+
+    it('each class has six spells of its own, two that evolve, and a real first spell', () => {
+      for (const cls of CLASS_IDS) {
+        const kit = spellsOf(cls);
+        expect(kit, cls).toHaveLength(6);
+        expect(kit.filter((s) => s.evolve).length, cls).toBeGreaterThanOrEqual(1);
+        expect(firstSpell(cls).cls).toBe(cls);
+        expect(firstSpell(cls).dmg[0], `${cls} starts with something that kills`).toBeGreaterThan(0);
+      }
+      expect(new Set(ALL_SPELLS.map((s) => s.id)).size).toBe(ALL_SPELLS.length);
+    });
+
+    it('every spell kills or mends, at every class', () => {
+      for (const cls of CLASS_IDS) {
+        const v = full(cls);
+        expect(v.kills, `${cls} killed something`).toBeGreaterThan(30);
+        expect(Number.isFinite(v.x) && Number.isFinite(v.t), cls).toBe(true);
+        expect(v.foes.every((f) => Number.isFinite(f.x) && Number.isFinite(f.hp)), cls).toBe(true);
+      }
+    });
+
+    it('a healing spell does heal', () => {
+      for (const id of ['mending-light', 'aegis-pulse', 'verdant-pulse']) {
+        const def = SPELLS[id]!;
+        const v = new Vigil(1, 2000, 2000, { cls: def.cls });
+        v.spells = { [id]: 3 };
+        v.hp = 5;
+        for (let i = 0; i < 30 * 8 && !v.over; i++) v.step(1 / 30, STILL);
+        expect(v.hp, id).toBeGreaterThan(5);
+      }
+    });
+
+    it('a companion fights: wolves, imps and beasts draw blood with nothing else in hand', () => {
+      for (const id of ['wolf-pack', 'pit-imps', 'spirit-stag']) {
+        const def = SPELLS[id]!;
+        const v = new Vigil(1, 2000, 2000, { cls: def.cls });
+        v.spells = { [id]: 3 };
+        v.hp = 1e9;
+        for (let i = 0; i < 30 * 60; i++) {
+          if (v.cards) v.choose(0);
+          v.spells = { [id]: 3 };
+          v.step(1 / 30, STILL);
+        }
+        expect(v.pets.length, id).toBeGreaterThan(0);
+        expect(v.kills, id).toBeGreaterThan(5);
+      }
+    });
+
+    it('an axe that goes out comes back', () => {
+      const v = new Vigil(1, 2000, 2000, { cls: 'warrior' });
+      v.spells = { 'thrown-axe': 1 };
+      v.hp = 1e9;
+      for (let i = 0; i < 30 * 15; i++) v.step(1 / 30, STILL);
+      expect(v.shots.filter((s) => s.back).length).toBeLessThan(6);
+    });
+
+    it('the bot lasts a while at every class: no class is hopeless or unkillable', () => {
+      for (const cls of CLASS_IDS) {
+        const times: number[] = [];
+        for (const seed of [1, 2, 3]) {
+          const v = new Vigil(seed, 2000, 2000, { cls });
+          for (let t = 0; t < 40 * 60 && !v.over; t += 1 / 30) v.step(1 / 30, bot(v, t));
+          expect(v.over, `${cls} seed ${seed} survived 40 minutes`).toBe(true);
+          times.push(v.t);
+        }
+        const median = [...times].sort((a, b) => a - b)[1]!;
+        expect(median, cls).toBeGreaterThan(60);
+      }
+    }, 180_000);
+
+    it('every land has real faces, on a real region, and opens in turn', () => {
+      expect(VIGIL_MAPS.length).toBeGreaterThanOrEqual(10);
+      const sprites = new Set(Object.values(ENEMIES).map((e) => e.sprite));
+      for (const m of VIGIL_MAPS) {
+        expect(REGIONS[m.region], m.id).toBeTruthy();
+        for (const s of [...m.foes, ...m.champions.map((c) => c.sprite)]) expect(sprites.has(s), `${m.id}: ${s}`).toBe(true);
+        expect(m.champions.length, m.id).toBeGreaterThan(0);
+      }
+      expect(mapOpen(0, {})).toBe(true);
+      expect(mapOpen(1, {})).toBe(false);
+      expect(mapOpen(1, { [VIGIL_MAPS[0]!.id]: UNLOCK_HOLD - 1 })).toBe(false);
+      expect(mapOpen(1, { [VIGIL_MAPS[0]!.id]: UNLOCK_HOLD })).toBe(true);
+    });
+
+    it('a land further on is harder from the first wave, and brings its own champion', () => {
+      const a = new Vigil(1, 2000, 2000, { map: VIGIL_MAPS[0]! });
+      const b = new Vigil(1, 2000, 2000, { map: VIGIL_MAPS[11]! });
+      for (const v of [a, b]) for (let i = 0; i < 30 * 6; i++) v.step(1 / 30, { mx: 1, my: 0 });
+      expect(b.foes[0]!.maxHp).toBeGreaterThan(a.foes[0]!.maxHp * 1.5);
+      expect(b.foes[0]!.def.sprite).toBe(VIGIL_MAPS[11]!.foes[0]);
+      b.hp = 1e9;
+      b.t = BOSS_EVERY - 0.1;
+      for (let i = 0; i < 6; i++) b.step(1 / 30, STILL);
+      expect(b.foes.find((f) => f.boss)!.bossSprite).toBe(VIGIL_MAPS[11]!.champions[0]!.sprite);
+    });
   });
 });

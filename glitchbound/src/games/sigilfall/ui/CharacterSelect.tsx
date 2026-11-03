@@ -239,7 +239,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onSettings, confirmDe
 
       <div className="cs-actions">
         <button className="cs-mode is-vigil" onClick={onVigil}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON['ash-field']!)} alt="" draggable={false} />
+          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.vigil!)} alt="" draggable={false} />
           <span>
             <strong>The Vigil</strong>
             <small>Hold the line</small>

@@ -65,7 +65,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   if (vigil) {
     return (
       <Suspense fallback={<div className="rb-title is-epic"><EpicSky /></div>}>
-        <VigilScreen engine={engine} face={lastHero?.face} body={lastHero?.body} onBack={() => setVigil(false)} />
+        <VigilScreen engine={engine} face={lastHero?.face} body={lastHero?.body} cls={lastHero?.cls} onBack={() => setVigil(false)} />
       </Suspense>
     );
   }

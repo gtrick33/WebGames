@@ -17,6 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { SKILL_ICON, TALENT_ICONS, VIGIL_ICON } from '../src/games/sigilfall/render/art/iconPicks.ts';
+import { vigilIcons } from '../src/games/sigilfall/vigil/kit.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'assets/sigilfall/lumenfall');
@@ -33,7 +34,7 @@ if (!fs.existsSync(manifestFile)) {
 const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
 const category = new Map(manifest.map((m) => [m.name, m.category]));
 
-const names = [...new Set([...Object.values(SKILL_ICON), ...Object.values(TALENT_ICONS).flat(), ...Object.values(VIGIL_ICON)])].sort();
+const names = [...new Set([...Object.values(SKILL_ICON), ...Object.values(TALENT_ICONS).flat(), ...Object.values(VIGIL_ICON), ...vigilIcons()])].sort();
 const missing = names.filter((n) => !category.has(n));
 if (missing.length) {
   console.error(`Not in the pack: ${missing.join(', ')}`);
