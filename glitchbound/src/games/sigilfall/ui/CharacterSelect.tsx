@@ -10,13 +10,12 @@ import { heroTitle, RIFT_LEVEL, wornLooks } from '../progress/wardrobe';
 import { longestNight } from '../vigil/bests';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { VIGIL_ICON } from '../render/art/iconPicks';
-import { makeMotes, paintSanctumLight, paintSanctumStone, PLINTHS, SANCTUM_H, SANCTUM_W } from '../render/sanctum';
-import { heroDollUrl, heroLook } from '../render/sprites';
+import { heldWeapon, heroLook } from '../render/sprites';
+import { Hall3D, type HallHero } from '../render3d/hall';
+import { shieldOf } from '../render3d/worldCast';
 
-const VIEWS = ['down', 'side', 'up'] as const;
-/** Banners and sigil for the hall before there is a hero to take their color from. */
-const EMPTY_COLOR = '#8d6bff';
-
+/** How far apart the others stand, on the stage's own grid. */
+const PLINTHS = { dx: 184, y: 286 };
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 const farthest = (unlocked: RegionId[]) => unlocked.map((id) => REGIONS[id]).reduce((a, b) => (b.levels[1] > a.levels[1] ? b : a), REGIONS.emberwick);
@@ -24,7 +23,7 @@ const farthest = (unlocked: RegionId[]) => unlocked.map((id) => REGIONS[id]).red
 /** Where a slot stands, by how far it is from the chosen one on the ring. */
 function placeOf(offset: number): { x: number; y: number; scale: number; dim: boolean } {
   if (offset === 0) return { x: 0, y: 0, scale: 1, dim: false };
-  return { x: offset * PLINTHS.dx, y: PLINTHS.y - 286 - 2, scale: 0.6, dim: true };
+  return { x: offset * PLINTHS.dx, y: -22, scale: 0.6, dim: true };
 }
 
 /**
@@ -36,55 +35,61 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
   const heroes = engine.heroes();
   const n = heroes.length;
   const [at, setAt] = useState(() => Math.max(0, engine.save.last));
-  const [view, setView] = useState(0);
   // the modes' icons come with the atlas
   const [, setIcons] = useState(false);
   useEffect(() => {
     void iconsReady.then(setIcons);
   }, []);
   const hero: Character | null = heroes[at] ?? null;
+  const color = hero ? CLASSES[hero.cls].colors.main : '#8d6bff';
   const [night] = useState(longestNight);
   const [standing] = useState(topStanding);
-  const color = hero ? CLASSES[hero.cls].colors.main : EMPTY_COLOR;
 
-  /* ------------------------------------------------- the hall, on its canvas */
+  /* ------------------------------------------------- the hall, in 3D, with everyone in it */
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const colorRef = useRef(color);
-  const flareRef = useRef(1);
+  const cast = useMemo<(HallHero | null)[]>(() => heroes.map((h) => (h ? { look: heroLook(h.cls, h.equip, wornLooks(h), h.body, h.face), held: heldWeapon(h.cls, h.equip.weapon, wornLooks(h).weapon), shield: shieldOf(h.cls) } : null)), [heroes]);
+  const liveRef = useRef({ cast, at, spin: 0.2 });
   useEffect(() => {
-    colorRef.current = color;
-    flareRef.current = 1;
-  }, [color, at]);
+    liveRef.current.cast = cast;
+    liveRef.current.at = at;
+  }, [cast, at]);
   useEffect(() => {
     const c = canvasRef.current!;
-    const g = c.getContext('2d')!;
-    const stone = document.createElement('canvas');
-    stone.width = SANCTUM_W;
-    stone.height = SANCTUM_H;
-    paintSanctumStone(stone.getContext('2d')!);
-    const motes = makeMotes(60);
+    const box = c.parentElement!;
+    let hall: Hall3D;
+    try {
+      hall = new Hall3D(c);
+    } catch {
+      return undefined;
+    }
+    const fit = (): void => {
+      if (box.clientWidth && box.clientHeight) hall.fit(box.clientWidth, box.clientHeight, Math.min(2, window.devicePixelRatio || 1));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(box);
     let raf = 0;
     let last = performance.now();
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
-      const dt = Math.max(0, (now - last) / 1000);
+      const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
-      flareRef.current = Math.max(0, flareRef.current - dt * 1.3);
-      g.drawImage(stone, 0, 0);
-      paintSanctumLight(g, colorRef.current, now / 1000, flareRef.current, motes);
+      const live = liveRef.current;
+      hall.frame(live.cast, live.at, live.spin, dt, now / 1000);
     };
-    // one still frame right away, for a pane that isn't animating yet
-    g.drawImage(stone, 0, 0);
-    paintSanctumLight(g, colorRef.current, 0, 0, motes);
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      hall.dispose();
+    };
   }, []);
 
   /* ------------------------------------------------- walking the ring */
   const go = useCallback(
     (d: number) => {
       setAt((a) => (a + d + n) % n);
-      setView(0);
+      liveRef.current.spin = 0.2;
       setConfirmDelete(null);
       engine.sound.play('quest', 0.25);
     },
@@ -114,7 +119,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
     const box = boxRef.current!;
     const fit = (): void => {
       if (!box.clientWidth || !box.clientHeight) return;
-      box.style.setProperty('--scale', String(Math.max(box.clientWidth / SANCTUM_W, box.clientHeight / SANCTUM_H)));
+      box.style.setProperty('--scale', String(Math.max(box.clientWidth / 640, box.clientHeight / 360)));
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -145,29 +150,19 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
     move(e);
     const d = drag.current;
     if (!d?.onHero) return;
-    if (Math.abs(e.clientX - d.x) > 26) {
-      d.x = e.clientX;
-      d.turned = true;
-      setView((v) => (v + 1) % 4);
-    }
+    const dx = e.clientX - d.x;
+    if (Math.abs(dx) > 3) d.turned = true;
+    d.x = e.clientX;
+    liveRef.current.spin += dx * 0.016;
   };
-
-  const shownView = (i: number): { view: (typeof VIEWS)[number]; flip: boolean } => {
-    if (i !== at) return { view: 'down', flip: false };
-    return view === 3 ? { view: 'side', flip: true } : { view: VIEWS[view]!, flip: false };
-  };
-  const dolls = useMemo(() => heroes.map((h) => (h ? VIEWS.map((v) => heroDollUrl(heroLook(h.cls, h.equip, wornLooks(h), h.body, h.face), v, 4)) : null)), [heroes]);
-  // an empty place shows the shape of someone who could stand there
-  const shadow = useMemo(() => heroDollUrl(heroLook('warrior'), 'down', 4), []);
 
   return (
     <div className="cs" ref={boxRef} onPointerMove={dragMove} onPointerDown={(e) => down(e, false)} onPointerUp={up} style={{ ['--cc' as string]: color }}>
+      <canvas ref={canvasRef} className="cs-hall" aria-hidden="true" />
       <div className="cs-stage">
-        <canvas ref={canvasRef} className="cs-hall" width={SANCTUM_W} height={SANCTUM_H} aria-hidden="true" />
         {heroes.map((h, i) => {
           const off = ((i - at + n + Math.floor(n / 2)) % n) - Math.floor(n / 2);
           const p = placeOf(off);
-          const sv = shownView(i);
           return (
             <button
               key={i}
@@ -184,19 +179,14 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
               onClick={() => {
                 if (off !== 0) go(off);
                 else if (!h) engine.newHeroScreen(i);
-                else if (!drag.current?.turned) setView((v) => (v + 1) % 4);
+                else if (!drag.current?.turned) liveRef.current.spin += Math.PI / 2;
               }}
             >
-              <span className="cs-shadow" />
-              {h ? (
-                <img className={`cs-doll${off === 0 ? ' is-breathing' : ''}${sv.flip ? ' is-flip' : ''}`} src={dolls[i]![VIEWS.indexOf(sv.view)]} alt="" draggable={false} />
-              ) : (
-                <>
-                  <img className="cs-doll is-shape" src={shadow} alt="" draggable={false} />
-                  <span className="cs-plus" aria-hidden="true">
-                    +
-                  </span>
-                </>
+              <span className="cs-body" />
+              {!h && (
+                <span className="cs-plus" aria-hidden="true">
+                  +
+                </span>
               )}
               {off !== 0 && h && <span className="cs-tag">{h.name}</span>}
             </button>

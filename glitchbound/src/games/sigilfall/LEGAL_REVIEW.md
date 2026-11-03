@@ -123,3 +123,6 @@ table is RENAMES.md; highlights:
 - **Sigilfall's original art:** heroes, monsters, bosses, icons and interface are drawn in code.
 - **Verified sellers:** Royal Keep (bubbabba) and Magic Spells VFX (Willosuna) store pages exist and say
   "No generative AI was used". CraftPix's license allows sold games.
+- **Sigilfall's 3D models (2026-11-03):** KayKit and Kenney (CC0), Quaternius (see CREDITS_AND_LICENSES.md, used inside the
+  game only). The look is a lower camera and cartoon shading in the general style of top-down brawlers; no other game's
+  names, characters, art or maps are used.

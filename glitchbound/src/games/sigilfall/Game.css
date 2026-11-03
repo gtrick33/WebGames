@@ -4969,10 +4969,11 @@
 }
 .cs-hall {
   position: absolute;
-  inset: 0;
-  width: 640px;
-  height: 360px;
-  image-rendering: pixelated;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 .cs-figure {
   position: absolute;
@@ -4988,10 +4989,21 @@
   transform-origin: 0 0;
   transition: transform 0.62s cubic-bezier(0.22, 0.9, 0.24, 1), filter 0.5s ease;
 }
+/* the hero's own 3D body stands here: this is only where to grab them */
+.cs-body {
+  position: absolute;
+  left: -46px;
+  bottom: -6px;
+  width: 92px;
+  height: 142px;
+}
+.cs-figure.is-away .cs-body {
+  height: 150px;
+}
 .cs-figure:focus-visible {
   outline: none;
 }
-.cs-figure:focus-visible .cs-doll {
+.cs-figure:focus-visible .cs-body {
   outline: 2px solid #fff;
   outline-offset: 4px;
 }
@@ -8710,4 +8722,11 @@
   .rb-vigil-icon {
     width: 48px;
   }
+}
+
+/* while the models arrive, before the first menu */
+.rb-warm {
+  position: absolute;
+  inset: 0;
+  background: #07050d;
 }

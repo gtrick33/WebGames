@@ -1,0 +1,402 @@
+import * as THREE from 'three';
+import type { Pack, RigData } from './pack';
+
+/**
+ * The look of everything: flat colors from the vertices, a two-step sun, a soft rim and a dark ink line round
+ * what moves. It shades in display colors on purpose, so the colors stay as loud as the packs painted them.
+ *
+ * Bones live in a texture (one row per animation frame, three texels per joint): a whole crowd shares one
+ * skeleton's clips, and each figure only says which row it is on.
+ */
+
+export interface ClipRange {
+  start: number;
+  n: number;
+  fps: number;
+}
+
+export class RigAnim {
+  readonly tex: THREE.DataTexture;
+  readonly clips: Record<string, ClipRange> = {};
+  readonly joints: string[];
+  /** Each joint's place in the model at rest (from its inverse bind matrix). */
+  readonly ibm: Float32Array;
+  private readonly total: number;
+
+  constructor(rig: RigData, bin: ArrayBuffer) {
+    const J = rig.joints.length;
+    this.joints = rig.joints;
+    this.ibm = Float32Array.from(rig.ibm);
+    let total = 1;
+    for (const c of Object.values(rig.clips)) total += c.n;
+    this.total = total;
+    const data = new Float32Array(J * 3 * total * 4);
+    const world = new Float32Array(J * 16);
+    const local = new Float32Array(16);
+    const tmp = new Float32Array(16);
+    const row = (frame: number): void => {
+      for (let j = 0; j < J; j++) {
+        // world[j] * ibm[j], top three rows
+        mul(tmp, 0, world, j * 16, this.ibm, j * 16);
+        const at = frame * J * 3 * 4 + j * 12;
+        for (let r = 0; r < 3; r++) {
+          data[at + r * 4] = tmp[r]!;
+          data[at + r * 4 + 1] = tmp[r + 4]!;
+          data[at + r * 4 + 2] = tmp[r + 8]!;
+          data[at + r * 4 + 3] = tmp[r + 12]!;
+        }
+      }
+    };
+    const rest = rig.rest;
+    const pose = (get: (j: number) => void): void => {
+      for (let j = 0; j < J; j++) {
+        get(j);
+        const par = rig.parents[j]!;
+        if (par < 0) mul(world, j * 16, Float32Array.from(rig.base), 0, local, 0);
+        else mul(world, j * 16, world, par * 16, local, 0);
+      }
+    };
+    // row 0: at rest
+    pose((j) => compose(local, rest[j * 10]!, rest[j * 10 + 1]!, rest[j * 10 + 2]!, rest[j * 10 + 3]!, rest[j * 10 + 4]!, rest[j * 10 + 5]!, rest[j * 10 + 6]!, rest[j * 10 + 7]!, rest[j * 10 + 8]!, rest[j * 10 + 9]!));
+    row(0);
+    let next = 1;
+    for (const [id, c] of Object.entries(rig.clips)) {
+      const q = new Int16Array(bin, c.q, c.n * J * 4);
+      const t = c.tj.length ? new Float32Array(bin, c.t, c.n * c.tj.length * 3) : null;
+      const s = c.sj.length ? new Float32Array(bin, c.s, c.n * c.sj.length * 3) : null;
+      for (let f = 0; f < c.n; f++) {
+        pose((j) => {
+          const ti = c.tj.indexOf(j);
+          const si = c.sj.indexOf(j);
+          const qa = (f * J + j) * 4;
+          const k = 1 / 32767;
+          const tx = t && ti >= 0 ? t[(f * c.tj.length + ti) * 3]! : rest[j * 10]!;
+          const ty = t && ti >= 0 ? t[(f * c.tj.length + ti) * 3 + 1]! : rest[j * 10 + 1]!;
+          const tz = t && ti >= 0 ? t[(f * c.tj.length + ti) * 3 + 2]! : rest[j * 10 + 2]!;
+          const sx = s && si >= 0 ? s[(f * c.sj.length + si) * 3]! : rest[j * 10 + 7]!;
+          const sy = s && si >= 0 ? s[(f * c.sj.length + si) * 3 + 1]! : rest[j * 10 + 8]!;
+          const sz = s && si >= 0 ? s[(f * c.sj.length + si) * 3 + 2]! : rest[j * 10 + 9]!;
+          compose(local, tx, ty, tz, q[qa]! * k, q[qa + 1]! * k, q[qa + 2]! * k, q[qa + 3]! * k, sx, sy, sz);
+        });
+        row(next + f);
+      }
+      this.clips[id] = { start: next, n: c.n, fps: c.fps };
+      next += c.n;
+    }
+    this.tex = new THREE.DataTexture(data, J * 3, total, THREE.RGBAFormat, THREE.FloatType);
+    this.tex.minFilter = this.tex.magFilter = THREE.NearestFilter;
+    this.tex.generateMipmaps = false;
+    this.tex.needsUpdate = true;
+  }
+
+  has(clip: string): boolean {
+    return clip in this.clips;
+  }
+
+  /** The texture row of a clip at `t` seconds in: looping, or held on its last frame. */
+  frame(clip: string, t: number, loop = true): number {
+    const c = this.clips[clip];
+    if (!c) return 0;
+    const f = Math.floor(t * c.fps);
+    return c.start + (loop ? ((f % c.n) + c.n) % c.n : Math.min(Math.max(f, 0), c.n - 1));
+  }
+
+  /** How long a clip runs, in seconds. */
+  length(clip: string): number {
+    const c = this.clips[clip];
+    return c ? c.n / c.fps : 0;
+  }
+
+  dispose(): void {
+    this.tex.dispose();
+    void this.total;
+  }
+}
+
+function mul(out: Float32Array, o: number, a: Float32Array, ai: number, b: Float32Array, bi: number): void {
+  for (let c = 0; c < 4; c++) {
+    const b0 = b[bi + c * 4]!;
+    const b1 = b[bi + c * 4 + 1]!;
+    const b2 = b[bi + c * 4 + 2]!;
+    const b3 = b[bi + c * 4 + 3]!;
+    for (let r = 0; r < 4; r++) out[o + c * 4 + r] = a[ai + r]! * b0 + a[ai + r + 4]! * b1 + a[ai + r + 8]! * b2 + a[ai + r + 12]! * b3;
+  }
+}
+
+function compose(m: Float32Array, tx: number, ty: number, tz: number, x: number, y: number, z: number, w: number, sx: number, sy: number, sz: number): void {
+  const l = Math.hypot(x, y, z, w) || 1;
+  x /= l;
+  y /= l;
+  z /= l;
+  w /= l;
+  const xx = x * x;
+  const yy = y * y;
+  const zz = z * z;
+  const xy = x * y;
+  const xz = x * z;
+  const yz = y * z;
+  const wx = w * x;
+  const wy = w * y;
+  const wz = w * z;
+  m[0] = (1 - 2 * (yy + zz)) * sx;
+  m[1] = 2 * (xy + wz) * sx;
+  m[2] = 2 * (xz - wy) * sx;
+  m[3] = 0;
+  m[4] = 2 * (xy - wz) * sy;
+  m[5] = (1 - 2 * (xx + zz)) * sy;
+  m[6] = 2 * (yz + wx) * sy;
+  m[7] = 0;
+  m[8] = 2 * (xz + wy) * sz;
+  m[9] = 2 * (yz - wx) * sz;
+  m[10] = (1 - 2 * (xx + yy)) * sz;
+  m[11] = 0;
+  m[12] = tx;
+  m[13] = ty;
+  m[14] = tz;
+  m[15] = 1;
+}
+
+const rigAnims = new WeakMap<RigData, RigAnim>();
+/** A skeleton's clips as a texture, made once. */
+export function rigAnimOf(pack: Pack, rigName: string): RigAnim {
+  const rig = pack.rigs[rigName];
+  if (!rig) throw new Error(`no rig ${rigName}`);
+  let a = rigAnims.get(rig);
+  if (!a) {
+    a = new RigAnim(rig, pack.bin);
+    rigAnims.set(rig, a);
+  }
+  return a;
+}
+
+/* ------------------------------------------------------------------ what all materials share */
+
+/** The light of the land: set once a frame, every material reads it. */
+export const LIGHT = {
+  uSun: { value: new THREE.Vector3(-0.42, 0.78, 0.46).normalize() },
+  uLit: { value: new THREE.Color(1.08, 1.05, 1.0) },
+  uMid: { value: new THREE.Color(0.86, 0.84, 0.88) },
+  uShade: { value: new THREE.Color(0.58, 0.56, 0.72) },
+  uTime: { value: 0 },
+  /** Where the hero stands (xyz) and how wide the hole in what stands in front of them is (w; 0: none). */
+  uSee: { value: new THREE.Vector4(0, 0, 0, 0) },
+  /** From the hero toward the camera. */
+  uSeeDir: { value: new THREE.Vector3(0, 1, 0) },
+  /** A color laid over everything (a's its strength): dusk, gloom, a land's own veil. */
+  uGrade: { value: new THREE.Vector4(0, 0, 0, 0) },
+  /** The pool of light in a dark place: darkness (0-1), radius in tiles; xyz in uSee. */
+  uDark: { value: new THREE.Vector4(0, 8, 0, 0) },
+  /** Fires that light the dark: x, z (tiles) and reach (0: none). */
+  uFlames: { value: Array.from({ length: 6 }, () => new THREE.Vector3()) },
+};
+
+const COMMON_VERT = /* glsl */ `
+attribute vec3 aCol;
+attribute vec4 iTint;
+varying vec3 vCol;
+varying vec3 vN;
+varying vec3 vW;
+varying float vFlash;
+varying float vAlpha;
+`;
+
+const SKIN_VERT = /* glsl */ `
+attribute vec3 aSkin;
+attribute vec3 aSn;
+attribute vec4 iAnim;
+uniform highp sampler2D uAnim;
+mat4 bone(int j, int f) {
+  vec4 a = texelFetch(uAnim, ivec2(j * 3, f), 0);
+  vec4 b = texelFetch(uAnim, ivec2(j * 3 + 1, f), 0);
+  vec4 c = texelFetch(uAnim, ivec2(j * 3 + 2, f), 0);
+  return mat4(a.x, b.x, c.x, 0.0, a.y, b.y, c.y, 0.0, a.z, b.z, c.z, 0.0, a.w, b.w, c.w, 1.0);
+}
+mat4 skinAt(int f) {
+  float w = aSkin.z / 255.0;
+  mat4 m = bone(int(aSkin.x + 0.5), f) * w;
+  if (w < 0.995) m += bone(int(aSkin.y + 0.5), f) * (1.0 - w);
+  return m;
+}
+mat4 posed() {
+  mat4 m = skinAt(int(iAnim.x + 0.5));
+  if (iAnim.z > 0.002) m = m * (1.0 - iAnim.z) + skinAt(int(iAnim.y + 0.5)) * iAnim.z;
+  return m;
+}
+`;
+
+const FRAG_COMMON = /* glsl */ `
+uniform vec3 uSun;
+uniform vec3 uLit;
+uniform vec3 uMid;
+uniform vec3 uShade;
+uniform vec4 uGrade;
+uniform vec4 uDark;
+uniform vec4 uSee;
+uniform vec3 uFlames[6];
+varying vec3 vCol;
+varying vec3 vN;
+varying vec3 vW;
+varying float vFlash;
+varying float vAlpha;
+vec3 toon(vec3 base, vec3 n) {
+  float d = dot(n, uSun);
+  float a = smoothstep(-0.04, 0.04, d);
+  float b = smoothstep(0.42, 0.5, d);
+  vec3 c = base * mix(uShade, mix(uMid, uLit, b), a);
+  return c;
+}
+vec3 finish(vec3 c) {
+  c = mix(c, uGrade.rgb, uGrade.a);
+  if (uDark.x > 0.0) {
+    float d = length(vW.xz - uSee.xz);
+    float k = smoothstep(uDark.y * 0.45, uDark.y, d);
+    for (int i = 0; i < 6; i++) {
+      if (uFlames[i].z > 0.0) k = min(k, smoothstep(uFlames[i].z * 0.3, uFlames[i].z, length(vW.xz - uFlames[i].xy)));
+    }
+    c *= mix(1.0, 1.0 - uDark.x, k);
+  }
+  return c;
+}
+`;
+
+function dither(): string {
+  return /* glsl */ `
+  if (vAlpha < 0.995) {
+    float dx = mod(gl_FragCoord.x, 4.0);
+    float dy = mod(gl_FragCoord.y, 4.0);
+    float th = (mod(dx + dy * 2.0, 4.0) + mod(dx * 2.0 + dy, 2.0) * 0.5 + 0.25) / 4.5;
+    if (vAlpha < th) discard;
+  }`;
+}
+
+/** What moves: skinned from the bone texture, one instance per figure. */
+export function animMaterial(anim: RigAnim): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    uniforms: { ...LIGHT, uAnim: { value: anim.tex } },
+    vertexShader: /* glsl */ `
+      ${COMMON_VERT}
+      ${SKIN_VERT}
+      void main() {
+        mat4 m = posed();
+        vec4 p = m * vec4(position, 1.0);
+        vec3 n = mat3(m) * normal;
+        vec4 w = modelMatrix * instanceMatrix * p;
+        vW = w.xyz;
+        vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * n);
+        vCol = aCol * iTint.rgb;
+        vFlash = iTint.a;
+        vAlpha = iAnim.w;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }`,
+    fragmentShader: /* glsl */ `
+      ${FRAG_COMMON}
+      void main() {
+        ${dither()}
+        vec3 n = normalize(vN);
+        vec3 c = toon(vCol, n);
+        // a touch of sky on what faces up, so dark armor keeps its shape
+        c += vec3(0.05, 0.06, 0.09) * max(n.y, 0.0);
+        c = finish(c);
+        c = mix(c, vec3(1.0, 0.97, 0.9), vFlash);
+        gl_FragColor = vec4(c, 1.0);
+      }`,
+  });
+}
+
+/** The ink line round what moves: the same figure, a little bigger, inside out. */
+export function inkMaterial(anim: RigAnim, width: number): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    uniforms: { ...LIGHT, uAnim: { value: anim.tex }, uInk: { value: width } },
+    vertexShader: /* glsl */ `
+      ${COMMON_VERT}
+      ${SKIN_VERT}
+      uniform float uInk;
+      void main() {
+        mat4 m = posed();
+        vec4 p = m * vec4(position, 1.0);
+        vec3 sn = normalize(mat3(m) * aSn);
+        p.xyz += sn * uInk;
+        vec4 w = modelMatrix * instanceMatrix * p;
+        vW = w.xyz;
+        vN = vec3(0.0, 1.0, 0.0);
+        vCol = vec3(0.0);
+        vFlash = iTint.a;
+        vAlpha = iAnim.w;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }`,
+    fragmentShader: /* glsl */ `
+      ${FRAG_COMMON}
+      void main() {
+        ${dither()}
+        vec3 c = mix(vec3(0.075, 0.05, 0.1), vec3(1.0, 0.95, 0.75), vFlash);
+        gl_FragColor = vec4(finish(c), 1.0);
+      }`,
+  });
+}
+
+/** What stands still: trees, houses, furniture. Leaves stir; what stands between the camera and the hero thins out. */
+export const staticMaterial = new THREE.ShaderMaterial({
+  uniforms: { ...LIGHT },
+  vertexShader: /* glsl */ `
+    ${COMMON_VERT}
+    uniform float uTime;
+    void main() {
+      vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.0);
+      // iTint.a: how much it stirs in the wind
+      if (iTint.a > 0.0) {
+        float h = max(position.y, 0.0);
+        float ph = instanceMatrix[3][0] * 0.7 + instanceMatrix[3][2] * 0.9;
+        w.x += sin(uTime * 1.5 + ph + h) * 0.02 * h * iTint.a;
+        w.z += cos(uTime * 1.2 + ph) * 0.012 * h * iTint.a;
+      }
+      vW = w.xyz;
+      vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * normal);
+      vCol = aCol * iTint.rgb;
+      vFlash = 0.0;
+      vAlpha = 1.0;
+      gl_Position = projectionMatrix * viewMatrix * w;
+    }`,
+  fragmentShader: /* glsl */ `
+    ${FRAG_COMMON}
+    uniform vec3 uSeeDir;
+    void main() {
+      if (uSee.w > 0.0 && vW.y > 0.35) {
+        vec3 r = vW - uSee.xyz;
+        float t = dot(r, uSeeDir);
+        if (t > 0.25) {
+          float d = length(r - uSeeDir * t);
+          float k = smoothstep(uSee.w, uSee.w * 0.6, d);
+          if (k > 0.0) {
+            float dx = mod(gl_FragCoord.x, 2.0);
+            float dy = mod(gl_FragCoord.y, 2.0);
+            if ((dx < 1.0) == (dy < 1.0) || k > 0.85) {
+              if (k > 0.35) discard;
+            }
+          }
+        }
+      }
+      vec3 c = toon(vCol, normalize(vN));
+      gl_FragColor = vec4(finish(c), 1.0);
+    }`,
+});
+
+/** Soft round shadows on the ground, one quad each. */
+export const shadowMaterial = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  uniforms: {},
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv * 2.0 - 1.0;
+      gl_Position = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * vec4(position, 1.0);
+    }`,
+  fragmentShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      float d = length(vUv);
+      float a = smoothstep(1.0, 0.55, d) * 0.38;
+      gl_FragColor = vec4(0.07, 0.05, 0.16, a);
+    }`,
+});

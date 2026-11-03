@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { iconsReady } from '../render/art/gameIcons';
+import { warmPortraits } from '../render3d/portrait';
 
 /** Never kept behind the veil longer than this, whatever hasn't come. */
 const MAX_WAIT = 3000;
@@ -50,7 +51,7 @@ export function ScreenGate({ children, intro = false, hold = false, tasks, label
     let on = true;
     const began = performance.now();
     const fonts: Promise<unknown> = typeof document !== 'undefined' && document.fonts ? document.fonts.ready : Promise.resolve();
-    const list = [fonts, iconsReady, ...(tasks?.() ?? [])];
+    const list = [fonts, iconsReady, warmPortraits(), ...(tasks?.() ?? [])];
     let done = 0;
     const counted = list.map((p) =>
       settle(p).then(() => {

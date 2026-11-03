@@ -4,10 +4,11 @@ import { SigilEngine } from './engine';
 import { GameScreen } from './ui/GameScreen';
 import { isTurned, setTurned } from './ui/turn';
 import { CreateScreen, TitleScreen } from './ui/Title';
+import { warmPortraits } from './render3d/portrait';
 import './Game.css';
 
 /**
- * Sigilfall: a pixel-art action RPG. The arcade bumps restartKey on Restart (a fresh mount reloads
+ * Sigilfall: a low-poly action RPG. The arcade bumps restartKey on Restart (a fresh mount reloads
  * the save); pauseKey asks for a pause when the player leaves full screen or scrolls away.
  */
 export default function Game({ host, restartKey, pauseKey, playerName }: GameModuleProps) {
@@ -162,6 +163,19 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
 function Screens({ engine }: { engine: SigilEngine }) {
   useSyncExternalStore(engine.subscribe, engine.getVersion, engine.getVersion);
   const ui = engine.ui;
+  // the menus show the game's own models, so those come first (a moment, once a visit)
+  const [warm, setWarm] = useState(false);
+  useEffect(() => {
+    let on = true;
+    const done = (): void => {
+      if (on) setWarm(true);
+    };
+    warmPortraits().then(done, done);
+    return () => {
+      on = false;
+    };
+  }, []);
+  if (!warm) return <div className="rb-warm" aria-label="Loading" />;
   if (ui.screen === 'title') return <TitleScreen engine={engine} />;
   if (ui.screen === 'create') return <CreateScreen engine={engine} />;
   return <GameScreen engine={engine} />;

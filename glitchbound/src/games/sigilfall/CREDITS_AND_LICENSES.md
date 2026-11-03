@@ -6,6 +6,19 @@ Art that ships in the game: the atlases in `public/games/sigilfall/art/`, built 
 license below except game-icons.net's (CC BY 3.0, where it is a condition); it is given anyway, here and in the
 game's Settings panel ("Art credits").
 
+## 3D models (2026-11-03)
+
+The land, heroes, gear, mounts and creatures are low-poly models, built by `scripts/sigilfall-3d-assets.mjs` from the
+packs below into the game's own files in `public/games/sigilfall/3d/` (the packs stay out of the repository).
+
+| Models | Author | Terms | What we use |
+| --- | --- | --- | --- |
+| KayKit: Adventurers 2.0, Skeletons, Mystery Monthly Series 4–6, Character Animations, Forest Nature, Medieval Hexagon, Dungeon, Halloween, Furniture, Fantasy Weapons, RPG Tools | Kay Lousberg, https://www.kaylousberg.com | CC0 | Heroes and every piece of the Wardrobe, people, undead, animations, trees, houses, furniture, weapons |
+| Nature Kit, Graveyard Kit | Kenney, https://kenney.nl | CC0 | Palms, pines, cacti, mushrooms, flowers, fences, gravestones |
+| Ultimate Monsters, Ultimate Animated Animals | Quaternius, https://quaternius.com | The pack pages say CC0; the license page shows QAL v1.0, which allows use inside a game and forbids redistributing the files alone. We ship them only as part of the game. | Monsters, dragons, wolves, horses, deer |
+
+## 2D art
+
 | Art (atlases) | Author / source | Paid or free | Commercial use | Attribution | Terms that bind us |
 | --- | --- | --- | --- | --- | --- |
 | Royal Keep — 32×32 Top-Down RPG Castle/Town Tileset v1.1 (`rk-*`) | bubbabba — https://bubbabba.itch.io/royal-keep-tileset | Paid | Yes | Appreciated, not required | No resale or redistribution of the assets, edited or not, as assets; no AI/ML training; no NFTs. Store page: "No generative AI was used" |

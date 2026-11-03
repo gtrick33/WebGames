@@ -1,37 +1,31 @@
-import { clamp, damp, dist, hash2, TAU } from '../core/math';
+import { clamp, damp, hash2, TAU } from '../core/math';
 import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
-import { chestArt, CHEST_H, CHEST_W, coinArt, orbArt, potionArt, shardArt } from './art/loot';
-import { LEAD, leanTarget, LIFT, placeCamera } from './camera';
+import { LEAD, leanTarget, LIFT } from './camera';
 import { drawBolt, drawVfx } from './art/vfx';
-import { hasLook, worldLook } from './art/world';
 import { THEMES } from '../data/themes';
-import type { ClassId, Item } from '../data/types';
-import { bossHidden } from '../sim/boss';
+import type { ClassId } from '../data/types';
 import { hasStatus } from '../sim/combat';
-import { K, TILE } from '../sim/map';
-import { STORY_FADE } from '../sim/pets';
-import type { Enemy, Fx, Ghost, NpcActor, Pet, Projectile, Telegraph } from '../sim/types';
+import { TILE } from '../sim/map';
+import type { Enemy, Fx, NpcActor, Pet, Projectile, Telegraph } from '../sim/types';
 import type { World } from '../sim/world';
-import type { Folk } from '../sim/folk';
-import { passerbyLook } from './art/townsfolk';
-import { itemTint } from '../progress/items';
-import { canvas, ctx2d, DETAIL, pixelText, RES, rgba, type Cnv, type Sprite } from './pixel';
-import { creatureSprite, glowDisc, heldWeapon, itemIconCanvas, heroLook, heroSprite, mountSprites, npcSprite, recolored, riderLegsSprite, vendorSign, weaponSprite, type HeroDir } from './sprites';
-import { HERO_H, HERO_W, type HeroLook } from './art/hero';
-import { MOUNT_FRAMES, MOUNT_WALK_FRAMES, RIDER_HIP } from './art/mount';
-import { MOUNT_DEFS, type MountDef } from '../data/mounts';
+import { ctx2d, rgba } from './pixel';
+import { glowDisc, heldWeapon, itemIconCanvas, heroLook, vendorSign, weaponSprite } from './sprites';
+import type { HeroLook } from './art/hero';
 import { wornLooks } from '../progress/wardrobe';
-import { SUMMON_TIME } from '../sim/world';
-import { buildScenery, type Scenery, type StaticObject } from './tiles';
 import { objectiveTarget } from '../sim/objective';
 import { aimReach, autoTarget, tapAutoAims } from '../sim/cast';
+import { heightFromRadius, PERSON_H, type Cast } from '../render3d/cast';
+import { hexRgb, kitOf } from '../render3d/kits';
+import { Land3D, type LandObject } from '../render3d/land';
+import { Stage } from '../render3d/stage';
+import { LIGHT } from '../render3d/toon';
+import { WorldCast } from '../render3d/worldCast';
 
 /**
- * Draws the world at low resolution (a few hundred pixels across) onto a canvas that CSS scales up
- * with crisp pixels. One frame: ground, ground effects and warnings, everything standing (sorted by
- * depth), projectiles and particles, darkness and lights in the crypt, then numbers and names.
+ * Draws the world: the land and everyone on it in 3D (render3d/) on a canvas underneath, then this canvas on top
+ * for what the rules want read clearly: warnings on the ground, spells in flight, names, bars and numbers.
  */
 
 /** The part of the land in view, for whatever draws into it. */
@@ -42,12 +36,25 @@ export interface LandView {
   w: number;
   h: number;
   time: number;
+  /** Draws from here on in world pixels flat on the ground at (x, y). */
+  flat(x: number, y: number): void;
+  /** Draws from here on in world pixels facing the camera, `h` world pixels over (x, y). */
+  up(x: number, y: number, h?: number): void;
+  /** World pixels to the screen, in CSS pixels. */
+  project(x: number, y: number, h?: number): { x: number; y: number };
+  /** Plain words on the screen. */
+  label(text: string, x: number, y: number, size: number, color: string, alpha?: number): void;
+  /** A small bar on the screen. */
+  bar(x: number, y: number, wide: number, k: number, color: string): void;
 }
 
 /** Another game's crowd, drawn into the land at the right depths (render/vigil.ts). */
 export interface LandLayer {
+  /** On the ground, under everyone (drawn on the top canvas, in world pixels). */
   under(g: CanvasRenderingContext2D, time: number, view: LandView): void;
-  standing(add: (y: number, draw: () => void) => void, view: LandView): void;
+  /** Who stands on the land. */
+  cast?(cast: Cast, dt: number, time: number): void;
+  /** Over everyone (drawn on the top canvas, in world pixels). */
   over(g: CanvasRenderingContext2D, time: number, view: LandView): void;
 }
 
@@ -61,14 +68,6 @@ export interface AimPreview {
   size: number;
   cancel: boolean;
 }
-
-/** Where the hero holds the weapon at rest, by facing (0 down, 1 left, 2 right, 3 up): hand offset and lean. */
-const REST_POSE: Record<number, { x: number; y: number; lean: number }> = {
-  0: { x: 6, y: 1, lean: 0.22 },
-  1: { x: -4, y: 1, lean: -0.32 },
-  2: { x: 4, y: 1, lean: 0.32 },
-  3: { x: -6, y: 0, lean: -0.18 },
-};
 
 const PROJECTILE_COLORS: Record<string, [string, string]> = {
   'arcane-bolt': ['#d2a8ff', '#ffffff'],
@@ -96,22 +95,8 @@ const PROJECTILE_COLORS: Record<string, [string, string]> = {
   starsurge: ['#ff8ad8', '#ffffff'],
 };
 
-/** Seconds a person the story brings takes to fade in, one it takes away to fade out, and one who dies. */
-const NPC_FADE_IN = 0.8;
-const NPC_FADE_OUT = 1.2;
-const NPC_DIES = 3.2;
-/** Seconds the story's things (tents, a campfire) take to fade in or out, and its people placed in sight to fade in. */
-const PROP_FADE = 0.9;
-const PET_FADE_IN = 0.7;
-/** The little light the people of a place keep by them at night (world px). */
-const NPC_LIGHT = 36;
-/** How far above a held door's foot its bar is: over the top of the door in the building's art. */
-const DOOR_BAR = 28;
-/** Wards drawn as the thing itself (others, like a person at a lock, are drawn as people). */
-const WARD_LOOKS = new Set(['door', 'gate', 'stone', 'boat', 'wagon', 'lantern']);
-
-/** Props that light the dark around them (radius in world px). */
-const LIGHTS: Record<string, number> = { lamp: 54, campfire: 70, 'iron-torch': 46, lantern: 40 };
+/** The beam over an item on the ground. */
+const RARITY_BEAM: Record<string, string> = { common: '#e8e4d8', uncommon: '#7fe06a', rare: '#6fb4ff', epic: '#c58bff', legendary: '#ffae42' };
 
 /** Ground effects by look. */
 const FIELD_COLORS: Record<string, string> = {
@@ -141,113 +126,105 @@ const TYPE_COLORS: Record<string, [string, string]> = {
 export class Renderer {
   readonly canvas: HTMLCanvasElement;
   private g: CanvasRenderingContext2D;
-  /** View size in art pixels. */
+  /** The view in world pixels. */
   vw = 320;
   vh = 180;
-  /** Device pixels per art pixel. */
-  scale = 4;
-  /** The last frame drawn was of a paused world. */
-  private still = false;
   camX = 0;
   camY = 0;
-  private scenery: Scenery | null = null;
-  private sceneryFor: World | null = null;
-  /** The story state the scenery was built for (World.stateVersion). */
-  private sceneryVersion = -1;
+  /** The 3D view under this canvas, once it exists (never in a test without WebGL). */
+  private stage: Stage | null = null;
+  private stageFailed = false;
+  private readonly people = new WorldCast();
+  private landFor: World | null = null;
+  /** The story state the land was built for (World.stateVersion). */
+  private landVersion = -1;
   /** How much the townsfolk are out (they go indoors while the story fights in the streets). */
   private folkK = 1;
-  /** A land with the pack's look whose art is still loading: when the wait began (seconds), or -1. */
-  private artWait = -1;
-  /** When the last hold for art ended (the land fades up from dark after it). */
+  /** When the last hold for models ended (the land fades up from dark after it). */
   private heldTill = -Infinity;
-  /** Held dark while the land's art loads: the engine holds the world still meanwhile. */
+  /** Held dark while the models load: the engine holds the world still meanwhile. */
   waiting = false;
-  private light: Cnv;
-  private lg: CanvasRenderingContext2D;
   aim: AimPreview | null = null;
   /** Touch controls: show the facing marker (where a tapped spell goes). */
   touchMode = false;
   /** The enemy a tapped skill would turn at, picked again every 0.1 s (not every frame). */
   private tapPick: { at: number; e: Enemy | null } = { at: -1, e: null };
-  /** The hero's held weapon art changes with gear. */
+  /** The hero's held weapon changes with gear. */
   private weapon: { kind: string; tint?: string } = { kind: 'staff' };
   reducedMotion = false;
+  private cssW = 1;
+  private cssH = 1;
+  /** Canvas pixels per CSS pixel of this top canvas. */
+  private k = 1;
 
   constructor(target: HTMLCanvasElement) {
     this.canvas = target;
     this.g = ctx2d(target);
-    this.light = canvas(16, 16);
-    this.lg = ctx2d(this.light);
   }
 
   /**
-   * Fits the view to the element: about 196 world pixels tall on phones (bigger figures) and 236 on
-   * desktops. The canvas holds up to RES pixels per world pixel (64 per tile, the art's own grid) and
-   * is scaled smoothly to the screen; on a small screen it is drawn at the screen's own resolution.
+   * Fits the view to the element: about 168 world pixels tall on phones (bigger figures) and 214 on
+   * desktops, never less than 150 across the short side.
    */
   resize(cssW: number, cssH: number, dpr: number, touch: boolean): void {
     const devW = Math.max(1, Math.round(cssW * dpr));
     const devH = Math.max(1, Math.round(cssH * dpr));
     const landscape = devW >= devH;
-    // device pixels per world pixel for the target view, never showing less than 150 world pixels
-    let total = (landscape ? devH : devW * 1.25) / (touch ? 196 : 236);
+    let total = (landscape ? devH : devW * 1.25) / (touch ? 168 : 214);
     total = Math.min(total, Math.min(devW, devH) / 150);
     total = Math.max(0.5, total);
-    const res = Math.min(RES, total);
-    this.res = res;
-    this.scale = total / res;
-    this.dpr = dpr;
-    // one world pixel more than the element on each axis: the canvas slides by the camera's
-    // fraction of a canvas pixel (see placeCamera), and the extra column and row fill the gap
-    const worldW = Math.ceil(devW / total) + 1;
-    const worldH = Math.ceil(devH / total) + 1;
-    const aw = Math.ceil(worldW * res);
-    const ah = Math.ceil(worldH * res);
-    this.vw = aw / res;
-    this.vh = ah / res;
+    this.cssW = Math.max(1, cssW);
+    this.cssH = Math.max(1, cssH);
+    this.vw = devW / total;
+    this.vh = devH / total;
+    this.k = Math.min(dpr, 2);
+    const aw = Math.round(this.cssW * this.k);
+    const ah = Math.round(this.cssH * this.k);
     if (this.canvas.width !== aw || this.canvas.height !== ah) {
       this.canvas.width = aw;
       this.canvas.height = ah;
       this.g = ctx2d(this.canvas);
     }
-    this.canvas.style.width = `${(aw * this.scale) / dpr}px`;
-    this.canvas.style.height = `${(ah * this.scale) / dpr}px`;
-    this.slideX = this.slideY = NaN;
-    if (this.light.width !== aw || this.light.height !== ah) {
-      this.light.width = aw;
-      this.light.height = ah;
-      this.lg = ctx2d(this.light);
-    }
+    this.canvas.style.width = `${this.cssW}px`;
+    this.canvas.style.height = `${this.cssH}px`;
+    this.canvas.style.transform = '';
+    this.canvas.style.imageRendering = 'auto';
+    this.stageNow()?.setSize(this.cssW, this.cssH, dpr, total * TILE);
   }
 
-  /** Canvas pixels per world pixel (at most RES). */
-  res = RES;
+  private stageNow(): Stage | null {
+    if (this.stage || this.stageFailed) return this.stage;
+    try {
+      this.stage = new Stage(this.canvas);
+    } catch {
+      this.stageFailed = true;
+    }
+    return this.stage;
+  }
 
   /** The land and the hero only, no bars or markers: The Vigil draws its own over it. */
   landOnly = false;
   /** What else stands on the land. */
   layer: LandLayer | null = null;
   /** Which of the land's scenery stays. */
-  keepObject: ((o: StaticObject) => boolean) | null = null;
+  keepObject: ((o: LandObject) => boolean) | null = null;
   /** The land's scenery, once it's built. */
-  get objects(): StaticObject[] {
-    return this.scenery?.objects ?? [];
+  get objects(): LandObject[] {
+    return this.stage?.land?.objects ?? [];
   }
-  /** The land is really there: its art is in and its scenery built. */
+  /** The land is really there: its models are in and its scenery built. */
   get landReady(): boolean {
-    return !this.waiting && this.scenery !== null;
+    return !this.waiting && !!this.stage?.land;
   }
 
-  /** Screen (CSS px relative to the canvas) to world coordinates. */
-  toWorld(cx: number, cy: number, dpr: number): { x: number; y: number } {
-    const k = dpr / this.scale / this.res;
-    return { x: this.camX + cx * k, y: this.camY + cy * k };
+  /** Screen (CSS px relative to the canvas) to world coordinates, on the ground. */
+  toWorld(cx: number, cy: number, _dpr: number): { x: number; y: number } {
+    return this.stage ? this.stage.unproject(cx, cy) : { x: this.camX + cx, y: this.camY + cy };
   }
 
   /** World coordinates to the screen (CSS px relative to the canvas): where to pin a button to the hero. */
   toScreen(x: number, y: number): { x: number; y: number } {
-    const k = this.dpr / this.scale / this.res;
-    return { x: (x - this.camX) / k, y: (y - this.camY) / k };
+    return this.stage ? this.stage.project(x, y, 12) : { x: x - this.camX, y: y - this.camY };
   }
 
   /**
@@ -271,13 +248,8 @@ export class Renderer {
   private leanY = LIFT;
   /** The mouse on the view, -0.5 to 0.5 from its center on each axis (null: no mouse in use). */
   pointer: { x: number; y: number } | null = null;
-  private dpr = 1;
-  /** The CSS slide last given to the canvas, in device pixels. */
-  private slideX = NaN;
-  private slideY = NaN;
-  /** Where the world is drawn from this frame: the camera rounded down to an art pixel. */
-  private drawX = 0;
-  private drawY = 0;
+  private shakeX = 0;
+  private shakeY = 0;
 
   /** Puts the camera on the hero at once (after loading a region or respawning). */
   snap(w: World): void {
@@ -286,81 +258,124 @@ export class Renderer {
     this.placeCamera(w);
   }
 
-  /** The hero's position rounded to an art pixel: the camera is pinned to it, so the hero never wobbles. */
-  private heroPos(w: World): { x: number; y: number } {
-    return { x: Math.round(w.player.x * this.res) / this.res, y: Math.round(w.player.y * this.res) / this.res };
-  }
-
   private placeCamera(w: World): void {
-    // what is actually on screen: the drawn view less its spare world pixel
     // only on a wide view: upright, the thumbs are below the hero, not beside them
-    const shift = this.vw > this.vh * 1.2 ? this.frameShift * (this.vw - 1) : 0;
-    const c = placeCamera(w.player.x, w.player.y, { x: this.leanX + shift, y: this.leanY }, this.vw - 1, this.vh - 1, w.map.w * TILE, w.map.h * TILE, this.res, this.scale);
-    this.camX = c.camX;
-    this.camY = c.camY;
-    this.drawX = c.drawX;
-    this.drawY = c.drawY;
-    if (c.slideX !== this.slideX || c.slideY !== this.slideY) {
-      this.slideX = c.slideX;
-      this.slideY = c.slideY;
-      this.canvas.style.transform = c.slideX || c.slideY ? `translate(${-c.slideX / this.dpr}px, ${-c.slideY / this.dpr}px)` : '';
-    }
+    const shift = this.vw > this.vh * 1.2 ? this.frameShift * this.vw : 0;
+    const mapW = w.map.w * TILE;
+    const mapH = w.map.h * TILE;
+    const x = w.player.x + this.leanX + shift - this.vw / 2;
+    const y = w.player.y + this.leanY - this.vh / 2;
+    this.camX = mapW <= this.vw ? (mapW - this.vw) / 2 : clamp(x, 0, mapW - this.vw);
+    this.camY = mapH <= this.vh ? (mapH - this.vh) / 2 : clamp(y, 0, mapH - this.vh);
   }
 
-  /** Lets go of the region's ground painter (a worker). */
+  /** Lets go of the 3D view. */
   dispose(): void {
-    this.scenery?.ground.dispose();
+    this.stage?.dispose();
+    this.stage = null;
+  }
+
+  /** Draws from here on in world pixels laid flat on the ground at (x, y): rings, warnings, fields. */
+  private flat(x: number, y: number): void {
+    const st = this.stage;
+    if (!st) {
+      this.g.setTransform(this.k, 0, 0, this.k, -this.camX * this.k, -this.camY * this.k);
+      return;
+    }
+    const a = st.project(x, y);
+    const b = st.project(x + TILE, y);
+    const c = st.project(x, y + TILE);
+    const k = this.k / TILE;
+    const ax = (b.x - a.x) * k;
+    const ay = (b.y - a.y) * k;
+    const cx = (c.x - a.x) * k;
+    const cy = (c.y - a.y) * k;
+    this.g.setTransform(ax, ay, cx, cy, a.x * this.k - ax * x - cx * y, a.y * this.k - ay * x - cy * y);
+  }
+
+  /** Draws from here on in world pixels facing the camera, with (x, y) `h` world pixels up in the air. */
+  private upright(x: number, y: number, h = 0): void {
+    const st = this.stage;
+    if (!st) {
+      this.g.setTransform(this.k, 0, 0, this.k, -this.camX * this.k, -this.camY * this.k);
+      return;
+    }
+    const a = st.project(x, y, h);
+    const b = st.project(x + TILE, y, h);
+    const s = ((b.x - a.x) / TILE) * this.k;
+    this.g.setTransform(s, 0, 0, s, a.x * this.k - s * x, a.y * this.k - s * y);
+  }
+
+  /** A line of plain words on the screen, ringed in dark so it reads on anything. */
+  private label(text: string, x: number, y: number, size: number, color: string, alpha = 1): void {
+    const g = this.g;
+    g.setTransform(this.k, 0, 0, this.k, 0, 0);
+    g.globalAlpha = alpha;
+    g.font = `800 ${size}px "Bricolage Grotesque Variable", system-ui, sans-serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineJoin = 'round';
+    g.lineWidth = Math.max(2.5, size * 0.24);
+    g.strokeStyle = 'rgba(20,12,32,0.92)';
+    g.strokeText(text, x, y);
+    g.fillStyle = color;
+    g.fillText(text, x, y);
+    g.globalAlpha = 1;
+  }
+
+  /** A little health bar on the screen. */
+  private bar(x: number, y: number, wide: number, k: number, color: string, shield = 0): void {
+    const g = this.g;
+    g.setTransform(this.k, 0, 0, this.k, 0, 0);
+    const h = 5;
+    g.fillStyle = 'rgba(20,12,32,0.9)';
+    g.beginPath();
+    g.roundRect(x - wide / 2 - 1.5, y - h / 2 - 1.5, wide + 3, h + 3, 3);
+    g.fill();
+    g.fillStyle = 'rgba(92,30,48,0.95)';
+    g.beginPath();
+    g.roundRect(x - wide / 2, y - h / 2, wide, h, 2);
+    g.fill();
+    if (k > 0) {
+      g.fillStyle = color;
+      g.beginPath();
+      g.roundRect(x - wide / 2, y - h / 2, Math.max(1.5, wide * clamp(k, 0, 1)), h, 2);
+      g.fill();
+    }
+    if (shield > 0) {
+      g.fillStyle = '#7fd8ff';
+      g.fillRect(x - wide / 2, y - h / 2 - 1, wide * clamp(shield, 0, 1), 2);
+    }
   }
 
   draw(w: World, dt: number, time: number): void {
-    // a paused world (a dialogue, a panel) holds still: nothing blinks on in it
-    this.still = dt === 0;
-    // the packed art for this land (null while it loads, or indoors): the scenery is rebuilt once it is in
-    const art = worldLook(w.region.theme);
-    // a land drawn with the pack waits for its art (a moment on a first visit, or one long left behind), held
-    // dark rather than drawn in stand-in tiles that change under the hero a few frames in; art that does not
-    // come in time (a failed download) gives way to the stand-in
-    if (!art && hasLook(w.region.theme) && this.sceneryFor !== w) {
-      if (this.artWait < 0) this.artWait = time;
-      if (time - this.artWait < 2.5) {
-        this.waiting = true;
-        const g = this.g;
-        g.save();
-        g.setTransform(1, 0, 0, 1, 0, 0);
-        g.fillStyle = '#07050d';
-        g.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        g.restore();
-        return;
-      }
+    const g = this.g;
+    const st = this.stageNow();
+    // the models arrive before anything is shown (a moment on a first visit); the engine holds the world still
+    if (st && !st.ready && !st.failed) {
+      this.waiting = true;
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.fillStyle = '#07050d';
+      g.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      return;
     }
-    // (held dark a moment: the land comes up out of it)
     if (this.waiting) this.heldTill = time;
-    this.artWait = -1;
     this.waiting = false;
-    if (this.sceneryFor !== w || (art && this.scenery?.art !== art) || this.sceneryVersion !== w.stateVersion) {
-      const fresh = this.sceneryFor !== w;
-      // the story moved on in this land: what it puts up (tents, a campfire, a stone) fades in, and what it
-      // takes away fades out, rather than popping
-      const turned = !fresh && this.sceneryVersion !== w.stateVersion && this.scenery?.art === art;
-      const before = turned ? this.scenery!.objects.filter((o) => o.gone === undefined) : [];
-      this.sceneryVersion = w.stateVersion;
-      this.scenery?.ground.dispose();
-      this.scenery = buildScenery(w.map, w.region, art, (pm) => w.isShown(pm));
-      if (turned) {
-        const objs = this.scenery.objects;
-        const now = new Set(objs.map(objKey));
-        const had = new Set(before.map(objKey));
-        for (const o of objs) if (!had.has(objKey(o))) o.born = time;
-        for (const o of before) if (!now.has(objKey(o))) objs.push({ ...o, gone: time });
-      }
-      this.sceneryFor = w;
+    if (st && st.ready && (this.landFor !== w || this.landVersion !== w.stateVersion)) {
+      const fresh = this.landFor !== w;
+      this.landVersion = w.stateVersion;
+      st.land?.dispose();
+      if (st.land) st.scene.remove(st.land.group);
+      st.land = new Land3D(w.map, w.region, st.landPacks!, (pm) => w.isShown(pm), this.keepObject);
+      st.scene.add(st.land.group);
+      this.landFor = w;
       if (fresh) {
         this.setHeroWeapon(w.hero.cls, w);
         this.snap(w);
+        this.people.reset();
+        st.cast.preload(this.expected(w));
       }
     }
-    const sc = this.scenery!;
-    const g = this.g;
     const p = w.player;
     // camera: on the hero, leaning a little toward where they aim (and toward a boss)
     const lead = p.dead ? 0 : LEAD;
@@ -392,251 +407,403 @@ export class Renderer {
     this.leanY = damp(this.leanY, ly, rate, dt);
     this.placeCamera(w);
     const shake = this.reducedMotion ? 0 : w.shakeAmt;
-    const ox = this.drawX + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
-    const oy = this.drawY + (shake ? Math.round((Math.random() - 0.5) * shake) : 0);
+    this.shakeX = shake ? (Math.random() - 0.5) * shake : 0;
+    this.shakeY = shake ? (Math.random() - 0.5) * shake : 0;
+    const cx = this.camX + this.vw / 2 + this.shakeX;
+    const cy = this.camY + this.vh / 2 + this.shakeY;
 
-    // everything is drawn in world pixels; the transform turns them into art pixels
-    g.setTransform(this.res, 0, 0, this.res, 0, 0);
-    g.fillStyle = THEMES[sc.theme].bg;
-    g.fillRect(0, 0, this.vw, this.vh);
-    sc.ground.draw(g, ox, oy, this.vw, this.vh);
-    g.translate(-ox, -oy);
+    if (st?.ready) {
+      st.look(cx / TILE, cy / TILE);
+      LIGHT.uTime.value = time;
+      this.setMood(w, st);
+      st.seeThrough(p.x, p.y, 2.1);
+      st.land?.update(cx / TILE, cy / TILE, st.spanX, st.spanZ);
+      st.land?.lightFlames(cx / TILE, cy / TILE);
+      st.land?.updateDoors(dt);
+      this.folkK = damp(this.folkK, w.story.fighting ? 0 : 1, 3, dt);
+      st.cast.begin();
+      this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, landOnly: this.landOnly });
+      this.layer?.cast?.(st.cast, dt, time);
+      st.cast.end();
+      st.render(dt);
+    }
+    const view: LandView = {
+      g,
+      x: this.camX,
+      y: this.camY,
+      w: this.vw,
+      h: this.vh,
+      time,
+      flat: (x, y) => this.flat(x, y),
+      up: (x, y, h = 0) => this.upright(x, y, h),
+      project: (x, y, h = 0) => st?.project(x, y, h) ?? { x, y },
+      label: (text, x, y, size, color, alpha) => this.label(text, x, y, size, color, alpha),
+      bar: (x, y, wide, k, color) => this.bar(x, y, wide, k, color),
+    };
 
-    this.drawLiveGround(w, sc, time, ox, oy);
-    for (const f of w.fields) this.drawField(f, time);
-    for (const t of w.telegraphs) this.drawTelegraph(t);
-    for (const wv of w.waves) this.drawWave(wv);
+    // ---- what lies on the ground
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    for (const f of w.fields) {
+      this.flat(f.x, f.y);
+      this.drawField(f, time);
+    }
+    for (const t of w.telegraphs) {
+      this.flat(t.x, t.y);
+      this.drawTelegraph(t);
+    }
+    for (const wv of w.waves) {
+      this.flat(wv.x, wv.y);
+      this.drawWave(wv);
+    }
+    this.flat(p.x, p.y);
     this.drawEnemyWarnings(w);
-    for (const tr of w.traps) this.drawTrap(tr.x, tr.y, tr.arm > 0, time);
+    for (const tr of w.traps) {
+      this.flat(tr.x, tr.y);
+      this.drawTrap(tr.x, tr.y, tr.arm > 0, time);
+    }
+    this.flat(p.x, p.y);
     if (!w.scene) this.drawAim(w);
     this.drawFacing(w, time);
     this.drawRings(w);
     if (!this.landOnly) this.drawEntrances(w, time);
-    const landView: LandView = { g, x: ox, y: oy, w: this.vw, h: this.vh, time };
-    this.layer?.under(g, time, landView);
+    this.flat(cx, cy);
+    this.layer?.under(g, time, view);
 
-    // everything standing, sorted by depth
-    const items: { y: number; draw: () => void }[] = [];
-    const inView = (x: number, y: number, m = 40): boolean => x > ox - m && x < ox + this.vw + m && y > oy - m && y < oy + this.vh + 60;
-    for (const o of sc.objects) {
-      if (this.keepObject && !this.keepObject(o)) continue;
-      const ow = (o.src ? (o.anim ? o.anim.w : o.src[2]) : o.c.width) / (o.k ?? DETAIL);
-      const oh = (o.src ? o.src[3] : o.c.height) / (o.k ?? DETAIL);
-      // (a big picture is in view while any of it is: the Crown City's keep is wider than the margin, and a hall's
-      // floor, drawn in order of its top edge, runs on far below it)
-      if (o.x + ow / 2 < ox - 70 || o.x - ow / 2 > ox + this.vw + 70 || o.y + o.dy + oh < oy - 70 || o.y + o.dy > oy + this.vh + 60) continue;
-      const come = o.born === undefined ? 1 : clamp((time - o.born) / PROP_FADE, 0, 1);
-      const left = o.gone === undefined ? 1 : 1 - (time - o.gone) / PROP_FADE;
-      if (left <= 0) continue;
-      items.push({
-        y: o.y,
-        draw: () => {
-          const behind = o.fade && !p.dead && p.y < o.y && p.y > o.y + o.dy + 4 && Math.abs(p.x - o.x) < ow / 2 - 2;
-          g.globalAlpha = (behind ? 0.55 : 1) * Math.min(come, left);
-          if (o.src) {
-            // from an atlas, placed on its art pixel; animated props step through their frames (a picture drawn
-            // bigger than its own pixels, smoothly)
-            const [sx, sy, sw, sh] = o.src;
-            const fw = o.anim ? o.anim.w : sw;
-            const f = o.anim ? Math.floor((time * 1000) / o.anim.ms + o.x * 0.37) % o.anim.n : 0;
-            const soft = (o.k ?? DETAIL) < this.res;
-            if (soft) g.imageSmoothingEnabled = true;
-            g.drawImage(o.c, sx + f * fw, sy, fw, sh, Math.round((o.x + o.dx) * this.res) / this.res, Math.round((o.y + o.dy) * this.res) / this.res, fw / (o.k ?? DETAIL), sh / (o.k ?? DETAIL));
-            if (soft) g.imageSmoothingEnabled = false;
-          } else g.drawImage(o.c, Math.round(o.x + o.dx), Math.round(o.y + o.dy), ow, o.c.height / DETAIL);
-          g.globalAlpha = 1;
-        },
-      });
+    // ---- fires, what floats and what flies
+    const near = (x: number, y: number): boolean => Math.abs(x - cx) < this.vw * 0.7 && Math.abs(y - cy) < this.vh * 0.9;
+    if (st?.land) {
+      for (const f of st.land.flames) {
+        const x = f.x * TILE;
+        const y = f.z * TILE;
+        if (!near(x, y)) continue;
+        this.upright(x, y, f.y * TILE);
+        this.drawFlame(x, y, time, f.size);
+      }
     }
-    for (const b of sc.braziers) if (inView(b.x, b.z)) items.push({ y: b.z - 0.01, draw: () => this.drawFlame(b.x, b.y, time, 1) });
-    for (const c of w.chests) if (inView(c.x, c.y)) items.push({ y: c.y + 4, draw: () => this.drawChest(c.x, c.y, c.open, c.tier, time) });
-    for (const s of w.spores) if (inView(s.x, s.y)) items.push({ y: s.y + 3, draw: () => this.drawSpore(s.x, s.y, s.ripe, s.fuse, time) });
-    for (const n of w.npcs) if (inView(n.x, n.y)) items.push({ y: n.y + 6, draw: () => this.drawNpc(w, n, clamp((w.time - (n.since ?? -Infinity)) / NPC_FADE_IN, 0, 1)) });
-    // the people the story has just taken away fade out where they stood (one who dies, slowly)
-    for (const n of w.leftNpcs) {
-      const a = 1 - (w.time - n.left) / (NPCS[n.id]?.down ? NPC_DIES : NPC_FADE_OUT);
-      if (a > 0 && inView(n.x, n.y)) items.push({ y: n.y + 6, draw: () => this.drawNpc(w, n, a, false) });
-    }
-    for (const c of w.chickens) if (inView(c.x, c.y)) items.push({ y: c.y, draw: () => this.drawChicken(c.x, c.y, c.face, time) });
-    // the people of the place (they keep indoors while the story fights in the streets)
-    // (they slip indoors and back out again: a fade, not a vanishing)
-    this.folkK = damp(this.folkK, w.story.fighting ? 0 : 1, 3, dt);
-    if (this.folkK > 0.02) for (const f of w.folk) if (inView(f.x, f.y)) items.push({ y: f.y + 5, draw: () => this.drawFolk(f, time, this.folkK) });
-    for (const d of w.drops) if (inView(d.x, d.y)) items.push({ y: d.y, draw: () => this.drawDrop(d.kind, d.x, d.y, d.z, d.item, time, d.t) });
-    for (const e of w.enemies) if (inView(e.x, e.y)) items.push({ y: e.y + e.r * 0.6, draw: () => this.drawEnemy(e, time) });
-    for (const pet of w.pets) if (inView(pet.x, pet.y)) items.push({ y: pet.y + pet.r * 0.6, draw: () => this.drawPet(pet, time, w.time) });
-    // the party's other heroes (net/coop.ts)
-    for (const gh of w.coop?.ghosts ?? []) if (gh.seen > 0 && inView(gh.x, gh.y)) items.push({ y: gh.y + 5, draw: () => this.drawGhost(gh, time) });
-    items.push({
-      y: p.y + 5,
-      draw: () => {
-        // the hero's art is placed on whole world pixels: shift it to the art pixel the camera follows
-        const h = this.heroPos(w);
-        const hx = h.x - Math.round(p.x);
-        const hy = h.y - Math.round(p.y);
-        g.translate(hx, hy);
-        this.drawHero(w, time);
-        g.translate(-hx, -hy);
-      },
-    });
-    this.drawDoors(w, items);
-    this.layer?.standing((y, draw) => items.push({ y, draw }), landView);
-    items.sort((a, b) => a.y - b.y);
-    for (const it of items) it.draw();
-
-    for (const pr of w.projectiles) this.drawProjectile(pr, time);
-    for (const f of w.fx) this.drawFx(f, w);
-    this.layer?.over(g, time, landView);
-    if (w.portal) this.drawPortal(w.portal.x, w.portal.y, time);
-
-    // the crypt is dark: light comes from the hero, torches and spells
-    // late light: a low sun warms everything (the Prologue's first evening)
-    if (w.storyState?.dusk) {
-      g.globalAlpha = 0.16;
-      g.fillStyle = '#ff9a4a';
-      g.fillRect(ox, oy, this.vw, this.vh);
-      g.globalAlpha = 0.1;
-      g.fillStyle = '#5a2a6a';
-      g.fillRect(ox, oy, this.vw, this.vh);
-      g.globalAlpha = 1;
-    }
-    // the lamps are out: a cold, early dark over the land (not night; the way is still seen)
-    if (w.storyState?.gloom) {
-      g.globalAlpha = 0.3;
-      g.fillStyle = '#2a2440';
-      g.fillRect(ox, oy, this.vw, this.vh);
-      g.globalAlpha = 0.08;
-      g.fillStyle = '#8a7ac8';
-      g.fillRect(ox, oy, this.vw, this.vh);
-      g.globalAlpha = 1;
-    }
-    // flames on the roofs while the village burns (above the roofs, under the light)
     for (const f of w.fires) {
-      // a roof catching grows into its flames
       const lit = w.fireLit(f);
-      if (!lit) continue;
+      if (!lit || !near(f.x, f.y)) continue;
+      this.upright(f.x, f.y, TILE * 2.2);
       g.globalAlpha = Math.min(1, lit * 1.5);
-      this.drawFire(f.x, f.y, f.size * lit, time);
+      this.drawFlame(f.x, f.y, time, f.size * lit * 0.2);
       g.globalAlpha = 1;
     }
-    // a frightening land: an evening that never lifts there (lamps and fires light pools in it)
-    const dread = sc.art ? THEMES[sc.theme].dread : undefined;
-    const dusk = !w.dark && !!dread && dread.dark > 0;
-    // a night out of doors (the Prologue's raid) is deeper than the crypt's dark and the hero's own light
-    // closer in: the burning roofs and the lamps are what the village is seen by
-    if (w.dark && !w.region.dark) this.drawLighting(w, sc, ox, oy, time, 0.84, '#05071a', 0.7);
-    else if (w.dark) this.drawLighting(w, sc, ox, oy, time);
-    // the evening the hero arrives: the light going, the lamps lit
-    else if (w.storyState?.dusk) this.drawLighting(w, sc, ox, oy, time, 0.56, '#24123a', 0.85);
-    else if (dusk) this.drawLighting(w, sc, ox, oy, time, dread.dark, dread.shade);
-    else if (sc.theme === 'forest' || sc.theme === 'jungle') this.drawCanopyShade(ox, oy, time);
-    // gloomy lands lie under a cold veil (light: with the packed art the land's own grade carries its mood)
-    const veil = THEMES[sc.theme].tint;
-    if (veil && !w.dark && !dusk) {
-      g.globalAlpha = sc.art ? 0.12 : 0.26;
-      g.fillStyle = veil;
-      g.fillRect(ox, oy, this.vw, this.vh);
-      g.globalAlpha = 1;
+    for (const d of w.drops) if (d.kind === 'item' && near(d.x, d.y)) this.drawItemDrop(d, time);
+    for (const e of w.enemies) if (!e.dead && near(e.x, e.y)) this.drawEnemyMarks(e, time);
+    if (!p.dead) this.drawHeroMarks(w, time);
+    for (const pr of w.projectiles) {
+      if (!near(pr.x, pr.y)) continue;
+      this.upright(pr.x, pr.y, 11);
+      this.drawProjectile(pr, time);
     }
-    // mist over it all, pale in the dark as it is under a moon
-    if (sc.mist.length) this.drawMist(sc, ox, oy, time);
-
-    // collapse ring (Morgrave's last phase)
+    for (const f of w.fx) {
+      if (!near(f.x, f.y)) continue;
+      this.flat(f.x, f.y);
+      this.drawFx(f, w);
+    }
+    for (const gh of w.coop?.ghosts ?? []) {
+      for (const sh of gh.shots) {
+        this.upright(sh.x, sh.y, 11);
+        g.fillStyle = sh.color;
+        g.beginPath();
+        g.arc(sh.x, sh.y, Math.max(1.5, sh.r), 0, TAU);
+        g.fill();
+      }
+    }
+    this.flat(cx, cy);
+    this.layer?.over(g, time, view);
+    if (w.portal) {
+      this.upright(w.portal.x, w.portal.y, 14);
+      this.drawPortal(w.portal.x, w.portal.y, time);
+    }
     const bz = w.boss();
-    if (bz?.boss && bz.boss.collapse > 0) this.drawCollapse(bz.boss.cx, bz.boss.cy, bz.boss.collapse, time);
+    if (bz?.boss && bz.boss.collapse > 0) {
+      this.flat(bz.boss.cx, bz.boss.cy);
+      this.drawCollapse(bz.boss.cx, bz.boss.cy, bz.boss.collapse, time);
+    }
 
+    // ---- names, bars and numbers, sized for the screen
     // (a scene is a clean picture: no bars, markers or arrows over it)
     const ui = !w.scene && !this.landOnly;
-    if (ui) for (const e of w.enemies) if (inView(e.x, e.y)) this.drawEnemyBar(e, w);
-    if (ui) for (const pet of w.pets) if (inView(pet.x, pet.y)) this.drawPetBar(pet);
-    for (const t of w.texts) {
-      const img = pixelText(t.text, t.color);
-      const a = clamp(1.6 - t.t / (t.big ? 0.75 : 0.55), 0, 1);
-      g.globalAlpha = a;
-      const k = t.big && t.t < 0.12 ? 2 : 1;
-      g.drawImage(img, Math.round(t.x - (img.width * k) / 2), Math.round(t.y - (img.height * k) / 2), img.width * k, img.height * k);
-      g.globalAlpha = 1;
+    if (ui && st) {
+      for (const e of w.enemies) if (near(e.x, e.y)) this.drawEnemyBar(e, st);
+      for (const pet of w.pets) if (near(pet.x, pet.y)) this.drawPetBar(pet, st);
+      for (const gh of w.coop?.ghosts ?? []) {
+        if (gh.seen <= 0 || !near(gh.x, gh.y)) continue;
+        const s = st.project(gh.x, gh.y, PERSON_H + 2);
+        this.label(gh.name, s.x, s.y - 12, 11, '#bfe8ff');
+        this.bar(s.x, s.y, 34, gh.hp / gh.maxHp, '#6ad06a');
+      }
+      for (const n of w.npcs) if (near(n.x, n.y)) this.drawNpcSigns(w, n, st);
     }
+    if (st) {
+      for (const t of w.texts) {
+        const a = clamp(1.6 - t.t / (t.big ? 0.75 : 0.55), 0, 1);
+        const s = st.project(t.x, t.y, 18);
+        const pop = t.big && t.t < 0.12 ? 1.7 : 1;
+        this.label(t.text, s.x, s.y, (t.big ? 17 : 13) * pop, t.color, a);
+      }
+    }
+    this.upright(p.x, p.y);
     this.drawSpeech(w);
-    if (ui) this.drawInteractMarker(w, time);
-    if (ui) this.drawObjectiveArrow(w, ox, oy, time);
-    g.setTransform(this.res, 0, 0, this.res, 0, 0);
+    if (ui && st) {
+      this.drawInteractMarker(w, time, st);
+      this.drawObjectiveArrow(w, time, st);
+    }
+    g.setTransform(this.k, 0, 0, this.k, 0, 0);
+    const W = this.cssW;
+    const H = this.cssH;
     // hurt vignette
     if (!p.dead && p.hp < p.maxHp * 0.3) {
       const a = 0.25 + Math.sin(time * 6) * 0.08;
-      const grd = g.createRadialGradient(this.vw / 2, this.vh / 2, this.vh * 0.35, this.vw / 2, this.vh / 2, this.vh * 0.85);
+      const grd = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.85);
       grd.addColorStop(0, 'rgba(120,0,20,0)');
       grd.addColorStop(1, `rgba(150,0,30,${a})`);
       g.fillStyle = grd;
-      g.fillRect(0, 0, this.vw, this.vh);
+      g.fillRect(0, 0, W, H);
     }
     if (p.dead) {
       g.fillStyle = `rgba(20,0,10,${clamp(p.deadT * 0.5, 0, 0.55)})`;
-      g.fillRect(0, 0, this.vw, this.vh);
+      g.fillRect(0, 0, W, H);
     }
     const up = (time - this.heldTill) / 0.6;
     if (up < 1) {
       g.globalAlpha = 1 - clamp(up, 0, 1);
       g.fillStyle = '#07050d';
-      g.fillRect(0, 0, this.vw, this.vh);
+      g.fillRect(0, 0, W, H);
       g.globalAlpha = 1;
     }
-    // paint the ground just outside the view ahead of time
-    sc.ground.prefetch(ox, oy, this.vw, this.vh);
+  }
+
+  /** The creatures a land will want, so they are on their way before the first one shows. */
+  private expected(w: World): string[] {
+    const out: string[] = [];
+    for (const e of w.enemies) out.push(e.def.sprite);
+    return out;
+  }
+
+  /** The light of the land and the moment: a land's own veil, a dusk that never lifts, the dark of a crypt. */
+  private setMood(w: World, st: Stage): void {
+    const look = THEMES[w.region.theme];
+    const grade = LIGHT.uGrade.value;
+    const dark = LIGHT.uDark.value;
+    const dread = look.dread;
+    grade.set(0, 0, 0, 0);
+    dark.set(0, 8, 0, 0);
+    const paint = (hex: string, a: number): void => {
+      const [r, gg, b] = hexRgb(hex);
+      grade.set(r, gg, b, a);
+    };
+    if (look.tint) paint(look.tint, 0.14);
+    if (w.storyState?.dusk) paint('#ff8a4a', 0.2);
+    if (w.storyState?.gloom) paint('#3a3458', 0.36);
+    if (dread && dread.dark > 0) {
+      paint(dread.shade, 0.24);
+      dark.set(dread.dark * 0.45, 12, 0, 0);
+    }
+    if (w.dark) dark.set(w.region.dark ? 0.66 : 0.8, w.region.dark ? 8.5 : 6.5, 0, 0);
+    void st;
+  }
+
+  /* ---------------------------------------------------------------- names and marks */
+
+  private headOf(e: Enemy): number {
+    const kit = kitOf(e.def.sprite);
+    return heightFromRadius(e.r, kit.size ?? 1) * 0.92 + (kit.float ?? 0) * TILE + 4;
+  }
+
+  private drawEnemyBar(e: Enemy, st: Stage): void {
+    if (e.dead || e.boss || e.dummy || e.state === 'spawn') return;
+    const named = !!e.def.named;
+    if (e.hp >= e.maxHp && !e.elite.length && !named && e.shield <= 0) return;
+    const s = st.project(e.x, e.y, this.headOf(e));
+    const wide = e.elite.length || named ? 46 : 30;
+    this.bar(s.x, s.y, wide, e.hp / e.maxHp, named ? '#d8b0ff' : e.elite.length ? '#ffcf5a' : '#ff4a5a', e.shield > 0 ? e.shield / (e.maxHp * 0.4) : 0);
+    if (named) this.label(`${e.name} ${e.level}`, s.x, s.y - 11, 11, '#e8d0ff');
+    else if (e.elite.length) this.label(e.name.split(' ')[0]!, s.x, s.y - 11, 11, '#ffd36b');
+  }
+
+  private drawPetBar(pet: Pet, st: Stage): void {
+    if (pet.dead || pet.life !== Infinity || pet.hp >= pet.maxHp) return;
+    const s = st.project(pet.x, pet.y, PERSON_H);
+    this.bar(s.x, s.y, 28, pet.hp / pet.maxHp, '#6ad06a');
+  }
+
+  /** What a person sells, and "!" or "?" for a quest, over their head. */
+  private drawNpcSigns(w: World, n: NpcActor, st: Stage): void {
+    const def = NPCS[n.id];
+    if (!def || def.down) return;
+    const mark = npcMark(w, n.id);
+    const sign = vendorSign(def.shop ?? (def.service === 'respec' ? 'respec' : ''));
+    if (!mark && !sign) return;
+    const bob = Math.sin(n.bob * 3) * 1.5;
+    const s = st.project(n.x, n.y, PERSON_H + 3);
+    const g = this.g;
+    let top = s.y;
+    const size = (st.project(n.x + TILE, n.y).x - st.project(n.x, n.y).x) / TILE;
+    if (sign) {
+      g.setTransform(this.k, 0, 0, this.k, 0, 0);
+      const bw = (sign.width / sign.k) * size;
+      const bh = (sign.height / sign.k) * size;
+      g.fillStyle = 'rgba(27,20,40,0.78)';
+      g.beginPath();
+      g.roundRect(s.x - bw / 2 - 3, top - bh - 6, bw + 6, bh + 6, 4);
+      g.fill();
+      g.imageSmoothingEnabled = true;
+      g.drawImage(sign.c, s.x - bw / 2, top - bh - 3, bw, bh);
+      top -= bh + 8;
+    }
+    if (mark) {
+      g.setTransform(this.k * size, 0, 0, this.k * size, 0, 0);
+      drawMapIcon(g, mark, s.x / size, (top + bob) / size - 8, 1);
+    }
+  }
+
+  /** What is afoot on a foe: frost, flames, stars, a mark. */
+  private drawEnemyMarks(e: Enemy, time: number): void {
+    const g = this.g;
+    const h = this.headOf(e);
+    this.upright(e.x, e.y, h * 0.5);
+    if (hasStatus(e, 'burn') && Math.floor(time * 8 + e.id) % 2 === 0) this.drawFlame(e.x + Math.sin(time * 7 + e.id) * e.r * 0.5, e.y, time, 0.55);
+    if (e.statuses.some((s) => s.id === 'poison')) {
+      const ph = (time * 1.5 + e.id * 0.3) % 1;
+      g.fillStyle = `rgba(139,227,107,${1 - ph})`;
+      g.beginPath();
+      g.arc(e.x - 3 + (e.id % 5), e.y - e.r - ph * 8, 1.4, 0, TAU);
+      g.fill();
+    }
+    if (hasStatus(e, 'shock') && Math.floor(time * 12) % 3 === 0) {
+      g.fillStyle = '#bfe9ff';
+      g.fillRect(e.x + (Math.random() - 0.5) * e.r * 2, e.y - Math.random() * e.r * 2, 1, 2);
+    }
+    if (e.shield > 0) {
+      g.strokeStyle = `rgba(127,216,255,${0.6 + Math.sin(time * 6) * 0.2})`;
+      g.lineWidth = 1;
+      g.beginPath();
+      g.ellipse(e.x, e.y, e.r + 4, e.r + 6, 0, 0, TAU);
+      g.stroke();
+    }
+    if (hasStatus(e, 'root')) {
+      this.flat(e.x, e.y);
+      g.strokeStyle = '#6fb04f';
+      g.lineWidth = 1.2;
+      g.beginPath();
+      g.ellipse(e.x, e.y, e.r + 2, e.r + 1, 0, 0, TAU);
+      g.stroke();
+    }
+    this.upright(e.x, e.y, h);
+    if (hasStatus(e, 'stun') || hasStatus(e, 'freeze') || e.boss?.dazed) this.drawStars(e.x, e.y, time);
+    if (hasStatus(e, 'mark')) {
+      const yy = e.y - 6 + Math.sin(time * 4);
+      g.strokeStyle = '#ffe066';
+      g.lineWidth = 1;
+      g.strokeRect(e.x - 3.5, yy - 3.5, 7, 7);
+      g.fillStyle = '#ff4a4a';
+      g.fillRect(e.x - 1, yy - 1, 2, 2);
+    }
+    if (e.elite.length) {
+      this.flat(e.x, e.y);
+      g.strokeStyle = `rgba(255,207,90,${0.55 + Math.sin(time * 5) * 0.2})`;
+      g.lineWidth = 1.4;
+      g.beginPath();
+      g.ellipse(e.x, e.y, e.r + 3, e.r + 3, 0, 0, TAU);
+      g.stroke();
+    }
+  }
+
+  private drawHeroMarks(w: World, time: number): void {
+    const g = this.g;
+    const p = w.player;
+    if (p.shield > 0) {
+      this.upright(p.x, p.y, 13);
+      g.strokeStyle = `rgba(127,216,255,${0.55 + Math.sin(time * 8) * 0.2})`;
+      g.lineWidth = 1.2;
+      g.beginPath();
+      g.ellipse(p.x, p.y, 13, 15, 0, 0, TAU);
+      g.stroke();
+    }
+    if (p.channel) {
+      this.flat(p.x, p.y);
+      for (let i = 0; i < 3; i++) {
+        const a = time * 18 + (i * TAU) / 3;
+        g.fillStyle = 'rgba(255,255,255,0.6)';
+        g.fillRect(p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16, 3, 1.5);
+      }
+    }
+    this.upright(p.x, p.y, 2);
+    if (p.buffs.length) this.drawBuffs(w, time);
+    this.upright(p.x, p.y, PERSON_H);
+    if (hasStatus(p, 'stun')) this.drawStars(p.x, p.y, time);
+  }
+
+  /** An item on the ground: its icon over a beam in its rarity's color. */
+  private drawItemDrop(d: World['drops'][number], time: number): void {
+    const g = this.g;
+    const item = d.item;
+    if (!item) return;
+    this.upright(d.x, d.y, 10 + d.z + Math.sin(time * 3 + d.x) * 1.5);
+    const color = RARITY_BEAM[item.r] ?? '#ffffff';
+    g.fillStyle = color;
+    g.globalAlpha = 0.22;
+    g.fillRect(d.x - 1.5, d.y - 16, 3, 26);
+    g.globalAlpha = 1;
+    const icon = itemIconCanvas(item);
+    g.imageSmoothingEnabled = true;
+    g.drawImage(icon, d.x - 7, d.y - 7, 14, 14);
+  }
+
+  private drawInteractMarker(w: World, time: number, st: Stage): void {
+    const it = w.interactable;
+    // on touch the Talk button itself stands beside the hero (ui/Touch.tsx)
+    if (!it || this.touchMode) return;
+    const word = it.kind === 'npc' ? 'TALK' : it.kind === 'waystone' ? 'TRAVEL' : it.kind === 'exit' && it.door ? 'ENTER' : 'E';
+    const s = st.project(it.x, it.y, PERSON_H + 8);
+    this.label(word, s.x, s.y + Math.sin(time * 4) * 1.5, 13, '#ffe066');
+  }
+
+  /** An arrow at the edge of the view toward the current objective. */
+  private drawObjectiveArrow(w: World, time: number, st: Stage): void {
+    const target = objectiveTarget(w);
+    // enemies to hunt show on the minimap; the edge arrow is for places
+    if (!target || target.soft) return;
+    const g = this.g;
+    const s = st.project(target.x, target.y, PERSON_H);
+    const W = this.cssW;
+    const H = this.cssH;
+    const m = 28;
+    if (s.x > m && s.x < W - m && s.y > m && s.y < H - m) {
+      this.label('▼', s.x, s.y + Math.sin(time * 5) * 3, 15, '#ffe066');
+      return;
+    }
+    const a = Math.atan2(s.y - H / 2, s.x - W / 2);
+    const mx = W / 2 - m;
+    const my = H / 2 - m;
+    const t = Math.min(Math.abs(mx / (Math.cos(a) || 1e-6)), Math.abs(my / (Math.sin(a) || 1e-6)));
+    g.setTransform(this.k, 0, 0, this.k, 0, 0);
+    g.translate(W / 2 + Math.cos(a) * t, H / 2 + Math.sin(a) * t);
+    g.rotate(a);
+    g.globalAlpha = 0.85 + Math.sin(time * 5) * 0.15;
+    g.fillStyle = '#1b1428';
+    g.beginPath();
+    g.moveTo(15, 0);
+    g.lineTo(-11, -13);
+    g.lineTo(-5, 0);
+    g.lineTo(-11, 13);
+    g.closePath();
+    g.fill();
+    g.fillStyle = '#ffe066';
+    g.beginPath();
+    g.moveTo(11, 0);
+    g.lineTo(-8, -9);
+    g.lineTo(-2.5, 0);
+    g.lineTo(-8, 9);
+    g.closePath();
+    g.fill();
+    g.globalAlpha = 1;
   }
 
   /* ---------------------------------------------------------------- ground */
-
-  private drawLiveGround(w: World, sc: Scenery, time: number, ox: number, oy: number): void {
-    const g = this.g;
-    // water glints
-    const m = w.map;
-    const tx0 = Math.max(0, Math.floor(ox / TILE));
-    const ty0 = Math.max(0, Math.floor(oy / TILE));
-    const tx1 = Math.min(m.w - 1, Math.floor((ox + this.vw) / TILE));
-    const ty1 = Math.min(m.h - 1, Math.floor((oy + this.vh) / TILE));
-    // the pack's water moves by itself; the painted water gets glints
-    const tiled = !!sc.ground.drawWater;
-    sc.ground.drawWater?.(g, ox, oy, this.vw, this.vh, time);
-    g.fillStyle = 'rgba(220,240,255,0.75)';
-    for (let ty = ty0; ty <= ty1; ty++) {
-      for (let tx = tx0; tx <= tx1; tx++) {
-        const i = ty * m.w + tx;
-        const k = m.kind[i];
-        if (k === K.Water && !tiled) {
-          const h = hash2(tx, ty, 3);
-          const phase = (time * 0.8 + h * 5) % 3;
-          if (phase < 0.6) g.fillRect(tx * TILE + Math.floor(h * 12) + 2, ty * TILE + Math.floor(h * 97) % 12 + 2, phase < 0.3 ? 2 : 3, 1);
-        } else if (k === K.Illusion) {
-          // a hedge that isn't quite there: faint motes drift through it
-          const ph = (time * 0.7 + hash2(tx, ty, 8) * 4) % 2.4;
-          if (ph < 0.8) {
-            g.fillStyle = `rgba(200,255,220,${0.6 - ph * 0.6})`;
-            g.fillRect(tx * TILE + Math.floor(hash2(tx, ty, 2) * 14), ty * TILE + Math.floor(14 - ph * 12), 1, 1);
-            g.fillStyle = 'rgba(220,240,255,0.75)';
-          }
-        }
-      }
-    }
-    // torches burn (a brazier's fire burns in its bowl, drawn with it in depth: a dais under it can't hide it)
-    for (const t of sc.torches) {
-      g.fillStyle = '#3a3040';
-      g.fillRect(t.x - 1, t.y, 3, 4);
-      this.drawFlame(t.x, t.y, time, 0.7);
-    }
-    // waystone runes pulse
-    for (const ws of w.waystones) {
-      const a = 0.35 + Math.sin(time * 2.5) * 0.2;
-      g.globalAlpha = a;
-      g.drawImage(glowDisc('#22e4ff', 14), ws.x - 14, ws.y - 32);
-      g.globalAlpha = 1;
-    }
-    for (const s of w.shrines) {
-      g.globalAlpha = 0.3 + Math.sin(time * 2) * 0.15;
-      g.drawImage(glowDisc('#9cffd0', 16), s.x - 16, s.y - 30);
-      g.globalAlpha = 1;
-    }
-  }
 
   private drawFlame(x: number, y: number, time: number, k: number): void {
     const g = this.g;
@@ -995,270 +1162,16 @@ export class Renderer {
   private drawRings(w: World): void {
     const g = this.g;
     const p = w.player;
-    if (!p.dead) {
-      g.fillStyle = 'rgba(0,0,0,0.28)';
-      g.beginPath();
-      g.ellipse(p.x, p.y + 5, 6, 2.5, 0, 0, TAU);
-      g.fill();
-      // a soft ring so you never lose your hero in a crowd
-      g.strokeStyle = 'rgba(34,228,255,0.45)';
-      g.lineWidth = 1;
-      g.beginPath();
-      g.ellipse(p.x, p.y + 5, 8, 3.5, 0, 0, TAU);
-      g.stroke();
-    }
-    for (const pet of w.pets) {
-      if (pet.dead) continue;
-      g.fillStyle = 'rgba(0,0,0,0.25)';
-      g.beginPath();
-      g.ellipse(pet.x, pet.y + pet.r * 0.7, pet.r * 1.05, pet.r * 0.42, 0, 0, TAU);
-      g.fill();
-    }
-    for (const e of w.enemies) {
-      if (e.dead && e.deathT > 0.3) continue;
-      g.fillStyle = 'rgba(0,0,0,0.25)';
-      g.beginPath();
-      g.ellipse(e.x, e.y + e.r * 0.7, e.r * 1.05, e.r * 0.42, 0, 0, TAU);
-      g.fill();
-      if (e.elite.length && !e.dead) {
-        g.strokeStyle = 'rgba(255,211,107,0.7)';
-        g.beginPath();
-        g.ellipse(e.x, e.y + e.r * 0.7, e.r * 1.4, e.r * 0.6, 0, 0, TAU);
-        g.stroke();
-      }
-    }
-  }
-
-  /* -------------------------------------------------------------- figures */
-
-  private drawHero(w: World, time: number): void {
-    const g = this.g;
-    const p = w.player;
-    const cls = w.hero.cls;
-    const look = this.look ?? heroLook(cls);
-    if (p.dead) {
-      const s = heroSprite(look, 'down', 0);
-      g.save();
-      g.globalAlpha = clamp(1 - p.deadT * 0.5, 0.3, 1);
-      g.translate(Math.round(p.x), Math.round(p.y + 4));
-      g.rotate(Math.min(1.4, p.deadT * 3));
-      g.drawImage(s.c, -s.width / s.k / 2, -s.height / s.k + 3, s.width / s.k, s.height / s.k);
-      g.restore();
-      return;
-    }
-    const blink = p.iframe > 0 && !p.dash && !this.still && Math.floor(time * 20) % 2 === 0;
-    const mount = p.riding ? MOUNT_DEFS[p.riding] : undefined;
-    if (p.form) this.drawShape(w, p.form, time, blink);
-    else if (mount) this.drawRider(w, mount, look, time);
-    else {
-      // calling the mount: it fades in behind the hero, kicking up dust
-      if (p.summon > 0 && w.hero.mount && MOUNT_DEFS[w.hero.mount]) this.drawMountGhost(w, MOUNT_DEFS[w.hero.mount]!, clamp(p.summon / SUMMON_TIME, 0, 1));
-      const dir: HeroDir = p.dir === 0 ? 'down' : p.dir === 3 ? 'up' : 'side';
-      const flip = p.dir === 1;
-      const moving = Math.hypot(p.vx, p.vy) > 10;
-      const frame = moving ? (Math.floor(p.walkT * 7) % 2) + 1 : 0;
-      const s = heroSprite(look, dir, frame);
-      const bob = moving ? (Math.floor(p.walkT * 7) % 2 === 0 ? 0 : -0.5) : Math.sin(time * 2.5) > 0.6 ? -0.5 : 0;
-      // the picture is at art resolution: its feet (one row above the bottom) stand at p.y + 6
-      const sw = s.width / s.k;
-      const sh = s.height / s.k;
-      const x = Math.round(p.x) - sw / 2;
-      const y = Math.round(p.y) + 6.5 - sh + bob;
-      // the held weapon behind the body when facing up or away from the aim
-      const wpn = weaponSprite(this.weapon.kind, this.weapon.tint);
-      const weaponBehind = p.dir === 3 || (p.actKind !== null && ((p.dir === 1 && Math.cos(p.actAngle) > 0) || (p.dir === 2 && Math.cos(p.actAngle) < 0)));
-      if (weaponBehind) this.drawWeapon(w, wpn, time);
-      // the shield is placed from where the old, smaller hero's corner was; it is carried on the front: in front
-      // of the body facing us or to the side, on the back (behind it) walking away
-      const sx0 = Math.round(p.x) - 9;
-      const sy0 = Math.round(p.y) - 17 + Math.round(bob);
-      const shielded = cls === 'warrior' || cls === 'paladin';
-      if (shielded && p.dir === 3) this.drawShield(w, p.dir, sx0, sy0);
-      g.globalAlpha = blink ? 0.45 : 1;
-      g.drawImage(p.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, x, y, sw, sh);
-      g.globalAlpha = 1;
-      if (shielded && p.dir !== 3) this.drawShield(w, p.dir, sx0, sy0);
-      if (!weaponBehind) this.drawWeapon(w, wpn, time);
-    }
-    if (p.shield > 0) {
-      g.strokeStyle = `rgba(127,216,255,${0.5 + Math.sin(time * 8) * 0.2})`;
-      g.lineWidth = 1;
-      g.beginPath();
-      g.ellipse(p.x, p.y - 4, 11, 13, 0, 0, TAU);
-      g.stroke();
-    }
-    if (p.channel) {
-      for (let i = 0; i < 3; i++) {
-        const a = time * 18 + (i * TAU) / 3;
-        g.fillStyle = 'rgba(255,255,255,0.6)';
-        g.fillRect(Math.round(p.x + Math.cos(a) * 16), Math.round(p.y - 2 + Math.sin(a) * 9), 3, 1);
-      }
-    }
-    if (p.buffs.length) this.drawBuffs(w, time);
-    if (hasStatus(p, 'stun')) this.drawStars(p.x, p.y - 18, time);
-  }
-
-  /**
-   * Another player's hero in a co-op party: their look and weapon at rest, walking as they move, their
-   * name and health over them, and their shots in flight.
-   */
-  private drawGhost(gh: Ghost, time: number): void {
-    const g = this.g;
-    const look = gh.look as HeroLook;
-    const wpn = gh.weapon as { kind: string; tint?: string };
-    for (const sh of gh.shots) {
-      g.fillStyle = sh.color;
-      g.beginPath();
-      g.arc(sh.x, sh.y, Math.max(1.5, sh.r), 0, TAU);
-      g.fill();
-    }
-    const dir: HeroDir = gh.dir === 0 ? 'down' : gh.dir === 3 ? 'up' : 'side';
-    const s = heroSprite(look, gh.dead ? 'down' : dir, 0);
-    const sw = s.width / s.k;
-    const sh = s.height / s.k;
-    if (gh.dead) {
-      g.save();
-      g.globalAlpha = 0.5;
-      g.translate(Math.round(gh.x), Math.round(gh.y + 4));
-      g.rotate(1.4);
-      g.drawImage(s.c, -sw / 2, -sh + 3, sw, sh);
-      g.restore();
-    } else {
-      const moving = Math.hypot(gh.vx, gh.vy) > 10;
-      const frame = moving ? (Math.floor(gh.walkT * 7) % 2) + 1 : 0;
-      const body = heroSprite(look, dir, frame);
-      const flip = gh.dir === 1;
-      const x = Math.round(gh.x) - sw / 2;
-      const y = Math.round(gh.y) + 6.5 - sh + (moving && Math.floor(gh.walkT * 7) % 2 ? -0.5 : 0);
-      const ws = weaponSprite(wpn.kind, wpn.tint);
-      const pose = REST_POSE[gh.dir] ?? REST_POSE[0]!;
-      const drawW = (): void => {
-        g.save();
-        g.translate(Math.round(gh.x) + Math.round(pose.x), Math.round(gh.y) - 3 + Math.round(pose.y));
-        g.rotate(pose.lean);
-        const ww = ws.width / ws.k;
-        const wh = ws.height / ws.k;
-        g.drawImage(ws.c, -ww / 2, wpn.kind === 'bow' ? -wh / 2 : -wh + 3, ww, wh);
-        g.restore();
-      };
-      if (gh.dir === 3) drawW();
-      g.globalAlpha = gh.untouchable && Math.floor(time * 20) % 2 === 0 ? 0.6 : 1;
-      g.drawImage(flip ? body.f : body.c, x, y, sw, sh);
-      g.globalAlpha = 1;
-      if (gh.dir !== 3) drawW();
-    }
-    // name and health, small, over the head
-    const name = pixelText(gh.name, '#bfe8ff');
-    const top = Math.round(gh.y) - 30;
-    g.drawImage(name, Math.round(gh.x - name.width / 2), top - name.height - 2);
-    const bw = 18;
-    g.fillStyle = 'rgba(20,14,32,0.85)';
-    g.fillRect(Math.round(gh.x - bw / 2) - 1, top - 1, bw + 2, 4);
-    g.fillStyle = '#6ad06a';
-    g.fillRect(Math.round(gh.x - bw / 2), top, Math.round(bw * clamp(gh.hp / gh.maxHp, 0, 1)), 2);
-  }
-
-  /** Where a mount picture goes for the hero's facing: its view, mirroring and top-left corner (world px). */
-  private mountPlace(w: World, view: HeroDir): { x: number; y: number; flip: boolean } {
-    const p = w.player;
-    const F = MOUNT_FRAMES[view];
-    const flip = p.dir === 1;
-    return { x: Math.round(p.x) - (flip ? F.w - F.gx : F.gx) / DETAIL, y: Math.round(p.y) + 6 - F.gy / DETAIL, flip };
-  }
-
-  /**
-   * The hero in the saddle (blueprint §6.5): the mount's back layer, the rider (their own paper doll down to
-   * the hips, so every piece and Wardrobe look shows) and the weapon, the mount's front layer, the rider's
-   * legs over the flank. The hero's place, collider and camera stay where they are on foot.
-   */
-  private drawRider(w: World, m: MountDef, look: HeroLook, time: number): void {
-    const g = this.g;
-    const p = w.player;
-    const view: HeroDir = p.dir === 0 ? 'down' : p.dir === 3 ? 'up' : 'side';
-    const moving = Math.hypot(p.vx, p.vy) > 10;
-    const frame = moving ? 1 + (Math.floor(p.walkT * 6) % MOUNT_WALK_FRAMES) : 0;
-    const bob = frame === 0 ? (Math.sin(time * 2) > 0.7 ? -0.5 : 0) : frame % 2 === 0 ? -0.5 : 0;
-    const F = MOUNT_FRAMES[view];
-    const at = this.mountPlace(w, view);
-    const { back, front } = mountSprites(m, view, frame);
-    const blink = p.iframe > 0 && !this.still && Math.floor(time * 20) % 2 === 0;
-    // a soft shadow under the animal
-    g.fillStyle = 'rgba(10,8,20,0.22)';
-    g.beginPath();
-    g.ellipse(Math.round(p.x), Math.round(p.y) + 5, view === 'side' ? 17 : 10, view === 'side' ? 3.5 : 6, 0, 0, TAU);
-    g.fill();
-    g.globalAlpha = blink ? 0.45 : 1;
-    const put = (s: Sprite): void => g.drawImage(at.flip ? s.f : s.c, at.x, at.y, s.width / s.k, s.height / s.k);
-    put(back);
-    // the rider, cut at the hips, sitting on the seat
-    const hero = heroSprite(look, view, 0);
-    const [seatX, seatY] = F.seat[m.body];
-    const sx = at.x + (at.flip ? F.w - seatX : seatX) / DETAIL - HERO_W / DETAIL / 2;
-    const sy = at.y + (seatY - RIDER_HIP) / DETAIL + bob;
-    const cut = RIDER_HIP + 1;
-    const lift = { x: sx + HERO_W / DETAIL / 2 - Math.round(p.x), y: sy - (Math.round(p.y) + 6.5 - HERO_H / DETAIL) };
-    const wpn = weaponSprite(this.weapon.kind, this.weapon.tint);
-    g.translate(lift.x, lift.y);
-    if (p.dir === 3) this.drawWeapon(w, wpn, time);
-    g.translate(-lift.x, -lift.y);
-    // the picture is at the hero's own art scale (one pixel of outline round it)
-    const hk = hero.k;
-    g.drawImage(at.flip ? hero.f : hero.c, 0, 0, hero.width, (cut * hk) / DETAIL + 1, sx - 1 / hk, sy - 1 / hk, hero.width / hk, cut / DETAIL + 1 / hk);
-    g.translate(lift.x, lift.y);
-    if (p.dir !== 3) this.drawWeapon(w, wpn, time);
-    if (w.hero.cls === 'warrior' || w.hero.cls === 'paladin') this.drawShield(w, p.dir, Math.round(p.x) - 9, Math.round(p.y) - 17);
-    g.translate(-lift.x, -lift.y);
-    put(front);
-    put(riderLegsSprite(view, m.body, look));
-    g.globalAlpha = 1;
-    // a prestige mount's touch: a few embers off the mane or stars round the hooves
-    if (m.glow) {
-      g.fillStyle = m.glow.color;
-      for (let i = 0; i < 5; i++) {
-        const k = (time * 0.7 + i / 5) % 1;
-        const ox = Math.sin(i * 2.4 + time) * (view === 'side' ? 14 : 8);
-        const y = m.glow.kind === 'embers' ? Math.round(p.y) - 10 - k * 12 : Math.round(p.y) + 5 - k * 5;
-        g.globalAlpha = (1 - k) * 0.8;
-        g.fillRect(Math.round(p.x + ox), Math.round(y), 1, 1);
-      }
-      g.globalAlpha = 1;
-    }
-  }
-
-  /** The mount fading in while it is called. */
-  private drawMountGhost(w: World, m: MountDef, k: number): void {
-    const g = this.g;
-    const p = w.player;
-    const view: HeroDir = p.dir === 0 ? 'down' : p.dir === 3 ? 'up' : 'side';
-    const at = this.mountPlace(w, view);
-    const { back, front } = mountSprites(m, view, 0);
-    g.globalAlpha = k * 0.55;
-    for (const s of [back, front]) g.drawImage(at.flip ? s.f : s.c, at.x, at.y, s.width / s.k, s.height / s.k);
-    g.globalAlpha = 1;
-    g.strokeStyle = `rgba(255,236,190,${0.35 + k * 0.4})`;
+    if (p.dead) return;
+    // a soft ring so you never lose your hero in a crowd
+    g.strokeStyle = 'rgba(34,228,255,0.5)';
     g.lineWidth = 1;
     g.beginPath();
-    g.arc(Math.round(p.x), Math.round(p.y) - 6, 15, -Math.PI / 2, -Math.PI / 2 + k * TAU);
+    g.ellipse(p.x, p.y, 9.5, 9.5, 0, 0, TAU);
     g.stroke();
   }
 
-  /** A druid in cat or bear form: the beast instead of the hero, turned the way they face. */
-  private drawShape(w: World, form: string, time: number, blink: boolean): void {
-    const g = this.g;
-    const p = w.player;
-    const moving = Math.hypot(p.vx, p.vy) > 10;
-    const frame = moving ? Math.floor(p.walkT * 8) % 2 : 0;
-    const s = creatureSprite(form, frame);
-    const flip = p.dir === 1 || (p.dir !== 2 && Math.cos(p.actKind ? p.actAngle : p.aim) < 0);
-    const sw = s.width / s.k;
-    const sh = s.height / s.k;
-    // a pounce or a swipe leans the beast forward
-    const lunge = p.actKind && p.actT > 0 ? Math.round(Math.cos(p.actAngle) * 2) : 0;
-    const breathe = moving ? 0 : Math.sin(time * 2.5) > 0.6 ? -0.5 : 0;
-    g.globalAlpha = blink ? 0.45 : 1;
-    g.drawImage(p.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, Math.round(p.x) - sw / 2 + lunge, Math.round(p.y) + 6.5 - sh + breathe, sw, sh);
-    g.globalAlpha = 1;
-  }
+  /* -------------------------------------------------------------- figures */
 
   /** Buffs show as motes of their color rising around the hero; damage walls as a ring. */
   private drawBuffs(w: World, time: number): void {
@@ -1282,294 +1195,6 @@ export class Renderer {
     });
   }
 
-  private drawPet(pet: Pet, time: number, wt: number): void {
-    const g = this.g;
-    // things to hold (a door, a gate, a wagon) are drawn as themselves; a person holding a lock is a person
-    if (pet.def.role === 'ward' && WARD_LOOKS.has(pet.def.look ?? 'door')) {
-      this.drawWard(pet, time);
-      return;
-    }
-    if (pet.def.look) {
-      // a companion or someone being led to safety: drawn as the person they are
-      const s = npcSprite(pet.def.look);
-      // (a child is small; anyone else is the size of the person they are, and become where they stop: the
-      // courier walking in is the same man who lies in the gateway)
-      const small = /child/.test(pet.def.look) ? 0.72 : 1;
-      const sw = (s.width / s.k) * small;
-      const sh = (s.height / s.k) * small;
-      const moving = Math.hypot(pet.vx, pet.vy) > 8;
-      const b = moving && Math.floor(pet.walkT * 7) % 2 ? -1 : 0;
-      g.fillStyle = 'rgba(0,0,0,0.25)';
-      g.beginPath();
-      g.ellipse(pet.x, pet.y + 5, 5 * small, 2 * small, 0, 0, TAU);
-      g.fill();
-      // going (their time up, or the story moving on): a slow fade, not a puff
-      g.globalAlpha = petFade(pet, wt);
-      const flip = Math.cos(pet.face) < 0;
-      // knocked down: on one knee, greyed, getting back up
-      const down = pet.downT ? 0.55 : 1;
-      if (pet.downT) g.globalAlpha *= 0.6;
-      g.drawImage(pet.flash > 0 ? (flip ? s.wf : s.w) : flip ? s.f : s.c, Math.round(pet.x - sw / 2), Math.round(pet.y + 6 - sh * down + b), sw, sh * down);
-      g.globalAlpha = 1;
-      return;
-    }
-    const moving = Math.hypot(pet.vx, pet.vy) > 8;
-    const frame = moving ? Math.floor(pet.walkT * 7) % 2 : Math.floor(time * 2 + pet.id) % 2;
-    const sprite = pet.def.pal ? recolored(pet.def.sprite, frame, pet.def.pal, `pet:${pet.def.id}`) : creatureSprite(pet.def.sprite, frame);
-    const flip = Math.cos(pet.face) < 0;
-    const dw = sprite.width / sprite.k;
-    const dh = sprite.height / sprite.k;
-    const float = pet.def.id === 'voidwalker' ? Math.round(Math.sin(time * 3 + pet.id) * 1.5) - 2 : 0;
-    const lunge = pet.actT > 0 && !pet.def.ranged ? (flip ? -2 : 2) : 0;
-    const x = Math.round((pet.x - dw / 2 + lunge) * sprite.k) / sprite.k;
-    const y = Math.round((pet.y + pet.r * 0.8 - dh + float) * sprite.k) / sprite.k;
-    if (pet.dead || pet.story) g.globalAlpha = petFade(pet, wt);
-    // a summon about to fade flickers
-    else if (pet.life < 2) g.globalAlpha = Math.floor(time * 10) % 2 ? 1 : 0.5;
-    g.drawImage(pet.flash > 0 ? (flip ? sprite.wf : sprite.w) : flip ? sprite.f : sprite.c, x, y, dw, dh);
-    g.globalAlpha = 1;
-  }
-
-  /** The door the hero must hold (a defend event): a barred door in its frame, splintering as it is hit. */
-  private drawWard(pet: Pet, time: number): void {
-    const g = this.g;
-    const x = Math.round(pet.x);
-    const y = Math.round(pet.y);
-    const k = pet.hp / pet.maxHp;
-    const shake = pet.flash > 0 ? Math.round(Math.sin(time * 60) * 1) : 0;
-    if (pet.def.look === 'gate') return this.drawGate(x + shake, y, k);
-    if (pet.def.look === 'stone') return this.drawStone(x + shake, y, k, time);
-    if (pet.def.look === 'boat') return this.drawBoat(x + shake, y, k, pet.def.id === 'fireship', time);
-    if (pet.def.look === 'wagon') return this.drawWagon(x + shake, y, k, pet.walkT, pet.vx < -1);
-    if (pet.def.look === 'lantern') return this.drawLamp(x + shake, y, k, time);
-    // a building's own door (the chapel's, in its art) is the door being held: nothing is drawn over it, only
-    // its bar shows how it holds (the owner: "make it invisible")
-    if (pet.def.look === 'door') return;
-    g.fillStyle = 'rgba(0,0,0,0.3)';
-    g.fillRect(x - 11, y + 3, 22, 4);
-    g.fillStyle = '#3a2a1c';
-    g.fillRect(x - 10 + shake, y - 18, 20, 22);
-    g.fillStyle = k > 0.5 ? '#8a5a34' : k > 0.25 ? '#7a4a2a' : '#5a3420';
-    g.fillRect(x - 9 + shake, y - 17, 18, 20);
-    g.fillStyle = '#5a3a20';
-    for (const px of [-5, 0, 5]) g.fillRect(x + px + shake, y - 17, 1, 20);
-    // iron bars across
-    g.fillStyle = '#4a4a5a';
-    g.fillRect(x - 10 + shake, y - 12, 20, 2);
-    g.fillRect(x - 10 + shake, y - 3, 20, 2);
-    // a ward of light while Elyra holds it
-    if (k > 0.25) {
-      g.globalAlpha = 0.25 + Math.sin(time * 4) * 0.08;
-      g.strokeStyle = '#ffe9a0';
-      g.lineWidth = 1;
-      g.strokeRect(x - 12, y - 20, 24, 26);
-      g.globalAlpha = 1;
-    }
-  }
-
-  /** A palisade gate of lashed logs, splintering as it takes blows. */
-  private drawGate(x: number, y: number, k: number): void {
-    const g = this.g;
-    g.fillStyle = 'rgba(0,0,0,0.3)';
-    g.fillRect(x - 16, y + 3, 32, 4);
-    for (let i = 0; i < 7; i++) {
-      const lx = x - 15 + i * 4.5;
-      // broken logs stand lower
-      const h = 24 - (k < 0.5 && i % 3 === 1 ? 7 : 0) - (k < 0.25 && i % 2 === 0 ? 6 : 0);
-      g.fillStyle = i % 2 ? '#7a5434' : '#8a603a';
-      g.fillRect(Math.round(lx), y - h + 4, 4, h);
-      g.fillStyle = '#5a3a22';
-      g.fillRect(Math.round(lx), y - h + 4, 4, 2);
-    }
-    g.fillStyle = '#4a3220';
-    g.fillRect(x - 16, y - 12, 32, 2);
-    g.fillRect(x - 16, y - 3, 32, 2);
-  }
-
-  /**
-   * A harvest stone with grieflight in its cracks: the violet fades to warm gold as the dead fall (it is
-   * cleansed by the fighting around it), and it greys as it is struck.
-   */
-  private drawStone(x: number, y: number, k: number, time: number): void {
-    const g = this.g;
-    g.fillStyle = 'rgba(0,0,0,0.3)';
-    g.fillRect(x - 9, y + 2, 18, 4);
-    g.fillStyle = k > 0.4 ? '#8a8a96' : '#6a6a74';
-    g.beginPath();
-    g.moveTo(x - 8, y + 3);
-    g.lineTo(x - 7, y - 18);
-    g.quadraticCurveTo(x, y - 26, x + 7, y - 18);
-    g.lineTo(x + 8, y + 3);
-    g.closePath();
-    g.fill();
-    g.fillStyle = '#5a5a66';
-    g.fillRect(x - 8, y - 2, 16, 5);
-    g.globalAlpha = 0.6 + Math.sin(time * 3) * 0.25;
-    g.fillStyle = '#c9a0ff';
-    g.fillRect(x - 3, y - 17, 1, 9);
-    g.fillRect(x - 2, y - 9, 4, 1);
-    g.fillRect(x + 2, y - 14, 1, 6);
-    g.globalAlpha = 1;
-  }
-
-  /** A covered refugee wagon: canvas over hoops, a plank bed, wheels that turn as it rolls. */
-  private drawWagon(x: number, y: number, k: number, roll: number, left: boolean): void {
-    const g = this.g;
-    const f = left ? -1 : 1;
-    g.fillStyle = 'rgba(0,0,0,0.3)';
-    g.fillRect(x - 17, y + 3, 34, 4);
-    // the bed and the shaft
-    g.fillStyle = '#6a4a2c';
-    g.fillRect(x - 15, y - 8, 30, 6);
-    g.fillStyle = '#4a3220';
-    g.fillRect(x + f * 15 - (left ? 8 : 0), y - 5, 8, 2);
-    // the canvas, patched and greying as it takes blows
-    g.fillStyle = k > 0.5 ? '#e8e0cc' : k > 0.25 ? '#c8c0aa' : '#a8a08a';
-    g.beginPath();
-    g.moveTo(x - 14, y - 8);
-    g.quadraticCurveTo(x - 14, y - 24, x, y - 24);
-    g.quadraticCurveTo(x + 14, y - 24, x + 14, y - 8);
-    g.closePath();
-    g.fill();
-    g.fillStyle = '#b8a888';
-    for (const hx of [-8, 0, 8]) g.fillRect(x + hx, y - 22, 1, 14);
-    if (k < 0.6) {
-      g.fillStyle = '#8a7a5a';
-      g.fillRect(x - 6, y - 17, 5, 4);
-    }
-    // wheels: a spoke turns with the rolling
-    for (const wx of [-10, 10]) {
-      g.fillStyle = '#3a2614';
-      g.beginPath();
-      g.arc(x + wx, y - 1, 4.5, 0, TAU);
-      g.fill();
-      g.fillStyle = '#8a6a44';
-      g.beginPath();
-      g.arc(x + wx, y - 1, 3, 0, TAU);
-      g.fill();
-      const a = roll * 6;
-      g.strokeStyle = '#3a2614';
-      g.lineWidth = 1;
-      g.beginPath();
-      g.moveTo(x + wx - Math.cos(a) * 3, y - 1 - Math.sin(a) * 3);
-      g.lineTo(x + wx + Math.cos(a) * 3, y - 1 + Math.sin(a) * 3);
-      g.stroke();
-    }
-  }
-
-  /** Lantern Hill's great lamp on its iron post: it burns brighter as it is relit, and gutters when struck. */
-  private drawLamp(x: number, y: number, k: number, time: number): void {
-    const g = this.g;
-    g.fillStyle = 'rgba(0,0,0,0.3)';
-    g.fillRect(x - 6, y + 2, 12, 3);
-    g.fillStyle = '#2e2a34';
-    g.fillRect(x - 1, y - 26, 3, 28);
-    g.fillRect(x - 5, y, 11, 2);
-    g.fillRect(x - 6, y - 30, 13, 2);
-    g.fillStyle = '#4a4452';
-    g.fillRect(x - 5, y - 28, 11, 9);
-    const flick = 0.75 + Math.sin(time * 9) * 0.15 + Math.sin(time * 23) * 0.08;
-    g.globalAlpha = Math.max(0.2, k) * flick;
-    g.fillStyle = '#ffd27a';
-    g.fillRect(x - 4, y - 27, 9, 7);
-    g.globalAlpha = 1;
-  }
-
-  /**
-   * A boat moored at the water's edge (sim/story.ts moors it there): a hull with a raised bow and stern, its
-   * planks, a mast with the sail furled on its yard, and the water lapping round it; a fireship carries its
-   * kegs on deck. It sits lower and darker as it is battered.
-   */
-  private drawBoat(x: number, y: number, k: number, laden: boolean, time: number): void {
-    const g = this.g;
-    const sink = k > 0.5 ? 0 : k > 0.25 ? 1 : 2;
-    // ripples round the waterline
-    g.strokeStyle = 'rgba(220,240,255,0.35)';
-    g.lineWidth = 1;
-    const r = Math.sin(time * 2 + x) * 1.5;
-    g.beginPath();
-    g.ellipse(x, y + 1, 23 + r, 4, 0, 0, TAU);
-    g.stroke();
-    g.fillStyle = 'rgba(0,0,0,0.25)';
-    g.beginPath();
-    g.ellipse(x, y + 1, 21, 3, 0, 0, TAU);
-    g.fill();
-    // the hull: a long curve, the bow up on the right and the stern on the left
-    const hy = y + sink;
-    g.fillStyle = '#3a2618';
-    g.beginPath();
-    g.moveTo(x - 22, hy - 9);
-    g.quadraticCurveTo(x - 18, hy + 2, x - 6, hy + 2);
-    g.lineTo(x + 8, hy + 2);
-    g.quadraticCurveTo(x + 20, hy + 2, x + 24, hy - 11);
-    g.lineTo(x + 18, hy - 7);
-    g.lineTo(x - 17, hy - 7);
-    g.closePath();
-    g.fill();
-    g.fillStyle = k > 0.5 ? '#8a5a32' : k > 0.25 ? '#74482a' : '#5a3620';
-    g.beginPath();
-    g.moveTo(x - 20, hy - 8);
-    g.quadraticCurveTo(x - 16, hy + 1, x - 6, hy + 1);
-    g.lineTo(x + 8, hy + 1);
-    g.quadraticCurveTo(x + 18, hy + 1, x + 22, hy - 10);
-    g.lineTo(x + 17, hy - 6);
-    g.lineTo(x - 16, hy - 6);
-    g.closePath();
-    g.fill();
-    // planks and the gunwale's light
-    g.fillStyle = 'rgba(40,24,14,0.6)';
-    g.fillRect(x - 15, hy - 3, 31, 1);
-    g.fillStyle = '#c99a5e';
-    g.fillRect(x - 16, hy - 7, 33, 1);
-    // the cargo of a fireship: kegs of powder
-    if (laden) {
-      for (const [dx, c] of [[-9, '#6a4426'], [-3, '#5c3a20'], [3, '#6a4426']] as const) {
-        g.fillStyle = c;
-        g.fillRect(x + dx, hy - 12, 5, 5);
-        g.fillStyle = '#2a1a10';
-        g.fillRect(x + dx, hy - 10, 5, 1);
-      }
-    }
-    // the mast, the yard and the furled sail (gone when she is nearly lost)
-    if (k > 0.25) {
-      g.fillStyle = '#4a3020';
-      g.fillRect(x + 4, hy - 30, 2, 24);
-      g.fillRect(x - 4, hy - 26, 18, 1);
-      g.fillStyle = '#e8dcc0';
-      g.fillRect(x - 3, hy - 25, 16, 3);
-      g.fillStyle = '#b8a888';
-      g.fillRect(x - 3, hy - 23, 16, 1);
-      // a pennant in the wind
-      g.fillStyle = laden ? '#c0402a' : '#3a6aa0';
-      g.fillRect(x + 6, hy - 30, 4 + Math.round(Math.sin(time * 6 + x)), 2);
-    }
-  }
-
-  /** A fire on a roof or a beam: tongues of flame and a few sparks, flickering. */
-  private drawFire(x: number, y: number, size: number, time: number): void {
-    const g = this.g;
-    const n = 2 + size;
-    for (let i = 0; i < n; i++) {
-      const fx = x + (i - (n - 1) / 2) * 4 + Math.sin(time * 5 + i * 2.1 + x) * 1.5;
-      const h = 6 + size * 2 + Math.sin(time * 11 + i * 1.7 + y) * 2.5;
-      g.fillStyle = '#ff5a2a';
-      g.beginPath();
-      g.moveTo(fx - 3, y);
-      g.quadraticCurveTo(fx - 2, y - h * 0.6, fx, y - h);
-      g.quadraticCurveTo(fx + 2, y - h * 0.6, fx + 3, y);
-      g.fill();
-      g.fillStyle = '#ffc24a';
-      g.beginPath();
-      g.moveTo(fx - 1.5, y);
-      g.quadraticCurveTo(fx - 1, y - h * 0.4, fx, y - h * 0.65);
-      g.quadraticCurveTo(fx + 1, y - h * 0.4, fx + 1.5, y);
-      g.fill();
-    }
-    const sp = Math.floor(time * 6 + x) % 3;
-    g.fillStyle = '#ffd86b';
-    g.fillRect(Math.round(x + Math.sin(time * 3 + x) * 5), Math.round(y - 12 - size * 3 - sp * 3), 1, 1);
-  }
-
   /** A scene's signs over heads: surprise, a question, a pause, affection, a tune. */
   private drawEmotes(w: World): void {
     const s = w.scene;
@@ -1589,7 +1214,7 @@ export class Renderer {
       const k = clamp(e.t / 0.15, 0, 1);
       const fade = clamp((1.4 - e.t) / 0.3, 0, 1);
       const x = Math.round(who.x);
-      const y = Math.round(who.y - 36 - k * 3 + Math.sin(e.t * 9) * 0.6);
+      const y = who.y - 24 - k * 3 + Math.sin(e.t * 9) * 0.6;
       g.globalAlpha = fade;
       g.fillStyle = 'rgba(27,20,40,0.9)';
       g.beginPath();
@@ -1629,8 +1254,8 @@ export class Renderer {
       const wdt = Math.max(...shown.map((l) => g.measureText(l).width)) + 6;
       const hgt = shown.length * 6.5 + 4;
       const fade = clamp(Math.min(s.t / 0.15, (s.dur - s.t) / 0.3), 0, 1);
-      const x = Math.round(who.x - wdt / 2);
-      const y = Math.round(who.y - 34 - hgt);
+      const x = who.x - wdt / 2;
+      const y = who.y - 22 - hgt;
       g.globalAlpha = fade * 0.92;
       g.fillStyle = 'rgba(27,20,40,0.88)';
       g.beginPath();
@@ -1648,199 +1273,6 @@ export class Renderer {
     g.restore();
   }
 
-  /** A companion's health, in green, once it has been hit (a door's always). */
-  private drawPetBar(pet: Pet): void {
-    if (pet.dead || (pet.hp >= pet.maxHp && pet.def.role !== 'ward') || pet.def.unhurt) return;
-    const g = this.g;
-    if (pet.def.look) {
-      const wdt = pet.def.role === 'ward' ? 22 : 12;
-      const x = Math.round(pet.x - wdt / 2);
-      // (a building's door: over the top of the door in its art)
-      const y = Math.round(pet.y - (pet.def.look === 'door' ? DOOR_BAR : pet.def.role === 'ward' ? 24 : 32));
-      g.fillStyle = '#1b1428';
-      g.fillRect(x - 1, y - 1, wdt + 2, 4);
-      g.fillStyle = '#1e3a1a';
-      g.fillRect(x, y, wdt, 2);
-      g.fillStyle = pet.def.role === 'ward' ? '#ffcf5a' : '#7bd65a';
-      g.fillRect(x, y, Math.round(wdt * (pet.hp / pet.maxHp)), 2);
-      return;
-    }
-    const s = creatureSprite(pet.def.sprite, 0);
-    const wdt = 12;
-    const x = Math.round(pet.x - wdt / 2);
-    const y = Math.round(pet.y + pet.r * 0.8 - s.height / s.k - 4);
-    g.fillStyle = '#1b1428';
-    g.fillRect(x - 1, y - 1, wdt + 2, 4);
-    g.fillStyle = '#1e3a1a';
-    g.fillRect(x, y, wdt, 2);
-    g.fillStyle = '#7bd65a';
-    g.fillRect(x, y, Math.max(0, Math.round((wdt * pet.hp) / pet.maxHp)), 2);
-  }
-
-  private drawShield(w: World, dir: number, x: number, y: number): void {
-    const off = w.hero.equip.offhand;
-    const s = weaponSprite('shield', off ? itemTint(off) : undefined);
-    // (side on, it is on the leading side: x is the old hero's corner, the body's middle 9 px right of it)
-    const sx = dir === 1 ? x + 2 : dir === 2 ? x + 8 : dir === 0 ? x + 1 : x + 9;
-    this.g.drawImage(s.c, sx, y + 11, s.width / s.k, s.height / s.k);
-  }
-
-  private drawWeapon(w: World, wpn: { c: Cnv; f: Cnv; width: number; height: number; k: number }, time: number): void {
-    const g = this.g;
-    const p = w.player;
-    const kind = this.weapon.kind;
-    let angle: number;
-    let ox: number;
-    let oy: number;
-    if (p.actKind === 'swing' || p.actKind === 'heavy') {
-      // sweep the arc while the swing plays
-      const total = p.actKind === 'heavy' ? 0.28 : 0.2;
-      const k = clamp(1 - p.actT / total, 0, 1);
-      const arc = p.actKind === 'heavy' ? 1.6 : p.actBig ? 2.6 : 2;
-      angle = p.actAngle - arc / 2 + arc * k;
-      ox = Math.cos(angle) * 7;
-      oy = Math.sin(angle) * 5.6;
-    } else if (p.actKind === 'spin') {
-      angle = time * 18;
-      ox = Math.cos(angle) * 5;
-      oy = Math.sin(angle) * 4;
-    } else if (p.actKind) {
-      // casting and shooting: the weapon points where the skill goes
-      angle = p.actAngle;
-      ox = Math.cos(angle) * 5;
-      oy = Math.sin(angle) * 4;
-    } else {
-      // at rest (walking included): held upright at the side, leaning toward the way the hero faces (a hero
-      // with a shield carries it forward, side on, and the weapon in the trailing hand)
-      const pose = REST_POSE[p.dir] ?? REST_POSE[0]!;
-      const back = (p.dir === 1 || p.dir === 2) && (w.hero.cls === 'warrior' || w.hero.cls === 'paladin') ? -1 : 1;
-      angle = -Math.PI / 2 + pose.lean * back;
-      ox = pose.x * back;
-      oy = pose.y;
-    }
-    g.save();
-    g.translate(Math.round(p.x) + Math.round(ox), Math.round(p.y) - 3 + Math.round(oy));
-    // art points up: rotate so its top points along the angle
-    g.rotate(angle + Math.PI / 2);
-    const ww = wpn.width / wpn.k;
-    const wh = wpn.height / wpn.k;
-    if (kind === 'bow') g.drawImage(wpn.c, -ww / 2, -wh / 2, ww, wh);
-    else g.drawImage(wpn.c, -ww / 2, -wh + 3, ww, wh);
-    g.restore();
-  }
-
-  private drawEnemy(e: Enemy, time: number): void {
-    const g = this.g;
-    if (e.dummy) {
-      this.drawDummy(e, time);
-      return;
-    }
-    if (e.boss && bossHidden(e)) return;
-    const moving = e.state === 'chase' || e.state === 'act' || e.state === 'return';
-    const frame = moving ? Math.floor(e.walkT * 6) % 2 : Math.floor(time * 2 + e.id) % 2;
-    const sprite = e.def.pal ? recolored(e.def.sprite, frame, e.def.pal, `en:${e.def.id}`) : e.boss?.def.id === 'grimtusk' ? recolored('grimtusk', frame, {}, 'grimtusk') : creatureSprite(e.def.sprite, frame);
-    const flip = Math.cos(e.face) < 0;
-    let sx = 1;
-    let sy = 1;
-    if (e.def.ai === 'hopper') {
-      // slimes squash before a hop and stretch in the air
-      const h = clamp(Math.hypot(e.vx, e.vy) / 90, 0, 1);
-      sx = 1 + (e.state === 'windup' ? 0.15 : -0.1 * h);
-      sy = 1 + (e.state === 'windup' ? -0.15 : 0.12 * h);
-    }
-    if (e.state === 'windup' && e.def.ai !== 'hopper') {
-      const k = Math.sin(time * 30) * 0.03;
-      sx += k;
-    }
-    const scale = e.scale;
-    // whole art pixels, so the doubled art stays crisp
-    const dw = Math.round(sprite.width * scale * sx) / sprite.k;
-    const dh = Math.round(sprite.height * scale * sy) / sprite.k;
-    const floatY = e.def.ai === 'caster' || e.def.floats || e.boss?.def.floats ? Math.round(Math.sin(time * 3 + e.id) * 2) - (e.def.floats ? 6 : 3) : 0;
-    const x = Math.round((e.x - dw / 2) * sprite.k) / sprite.k;
-    const y = Math.round((e.y + e.r * 0.8 - dh + floatY) * sprite.k) / sprite.k;
-    g.save();
-    if (e.state === 'spawn') {
-      const k = clamp(1 - e.t / 0.7, 0, 1);
-      g.beginPath();
-      g.rect(x - 2, y + dh * (1 - k) - 1, dw + 4, dh * k + 2);
-      g.clip();
-    }
-    if (e.dead) g.globalAlpha = clamp(1 - e.deathT / 0.6, 0, 1);
-    if (e.boss && e.boss.dying > 0) g.globalAlpha = Math.floor(time * 16) % 2 ? 1 : 0.4;
-    if (e.elite.length && !e.dead) {
-      // a golden glow around elites
-      const glow = flip ? sprite.wf : sprite.w;
-      g.globalAlpha = 0.5 + Math.sin(time * 5) * 0.2;
-      for (const [dx, dy] of [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ] as const)
-        g.drawImage(glow, x + dx, y + dy, dw, dh);
-      g.globalCompositeOperation = 'source-atop';
-      g.globalAlpha = 1;
-      g.globalCompositeOperation = 'source-over';
-    }
-    const img = e.flash > 0 ? (flip ? sprite.wf : sprite.w) : flip ? sprite.f : sprite.c;
-    g.drawImage(img, x, y, dw, dh);
-    // status tints
-    const frozen = hasStatus(e, 'freeze');
-    const chilled = hasStatus(e, 'chill');
-    if ((frozen || chilled) && !e.flash) {
-      g.globalAlpha = frozen ? 0.55 : 0.3;
-      g.drawImage(flip ? sprite.wf : sprite.w, x, y, dw, dh);
-      g.globalCompositeOperation = 'source-over';
-      g.globalAlpha = 1;
-      g.fillStyle = frozen ? 'rgba(160,230,255,0.5)' : 'rgba(160,230,255,0.25)';
-    }
-    if (e.state === 'windup' && Math.floor(time * 14) % 2 === 0 && !e.flash) {
-      g.globalAlpha = 0.35;
-      g.drawImage(flip ? sprite.wf : sprite.w, x, y, dw, dh);
-      g.globalAlpha = 1;
-    }
-    g.restore();
-    if (e.dead) return;
-    // statuses
-    if (hasStatus(e, 'burn') && Math.floor(time * 8 + e.id) % 2 === 0) this.drawFlame(e.x + Math.sin(time * 7 + e.id) * e.r * 0.5, e.y - e.r * 0.5, time, 0.7);
-    if (e.statuses.some((s) => s.id === 'poison')) {
-      const ph = (time * 1.5 + e.id * 0.3) % 1;
-      g.fillStyle = `rgba(139,227,107,${1 - ph})`;
-      g.fillRect(Math.round(e.x - 3 + (e.id % 5)), Math.round(e.y - e.r - ph * 8), 2, 2);
-    }
-    if (hasStatus(e, 'stun') || frozen) this.drawStars(e.x, y - 3, time);
-    if (hasStatus(e, 'root')) {
-      g.fillStyle = '#4a8a3a';
-      for (let i = -2; i <= 2; i++) g.fillRect(Math.round(e.x + i * 3), Math.round(e.y + e.r * 0.5 - (i % 2 ? 4 : 2)), 1, i % 2 ? 4 : 2);
-    }
-    if (hasStatus(e, 'mark')) {
-      const yy = y - 6 + Math.round(Math.sin(time * 4));
-      g.strokeStyle = '#ffe066';
-      g.lineWidth = 1;
-      g.strokeRect(Math.round(e.x) - 3.5, yy - 3.5, 7, 7);
-      g.fillStyle = '#ff4a4a';
-      g.fillRect(Math.round(e.x) - 1, yy - 1, 2, 2);
-    }
-    if (hasStatus(e, 'shock') && Math.floor(time * 12) % 3 === 0) {
-      g.fillStyle = '#bfe9ff';
-      g.fillRect(Math.round(e.x + (Math.random() - 0.5) * e.r * 2), Math.round(e.y - Math.random() * e.r * 2), 1, 2);
-    }
-    if (hasStatus(e, 'armorBreak')) {
-      g.fillStyle = '#ffb04d';
-      g.fillRect(Math.round(e.x + e.r), y + 2, 2, 1);
-      g.fillRect(Math.round(e.x + e.r) + 1, y + 3, 1, 2);
-    }
-    if (e.shield > 0) {
-      g.strokeStyle = `rgba(127,216,255,${0.6 + Math.sin(time * 6) * 0.2})`;
-      g.lineWidth = 1;
-      g.beginPath();
-      g.ellipse(e.x, e.y - e.r * 0.4, e.r + 4, e.r + 6, 0, 0, TAU);
-      g.stroke();
-    }
-    if (e.boss?.dazed) this.drawStars(e.x, y - 2, time);
-  }
-
   private drawStars(x: number, y: number, time: number): void {
     const g = this.g;
     for (let i = 0; i < 3; i++) {
@@ -1849,259 +1281,6 @@ export class Renderer {
       g.fillRect(Math.round(x + Math.cos(a) * 6), Math.round(y + Math.sin(a) * 2), 2, 2);
     }
   }
-
-  private drawDummy(e: Enemy, time: number): void {
-    const g = this.g;
-    const wob = e.flash > 0 ? Math.round(Math.sin(time * 60) * 1) : 0;
-    const x = Math.round(e.x) + wob;
-    const y = Math.round(e.y + 6);
-    g.fillStyle = '#1b1428';
-    g.fillRect(x - 2, y - 22, 4, 23);
-    g.fillRect(x - 7, y - 19, 14, 11);
-    g.fillStyle = '#6a4424';
-    g.fillRect(x - 1, y - 21, 2, 21);
-    g.fillStyle = e.flash > 0 ? '#ffffff' : '#e0c070';
-    g.fillRect(x - 6, y - 18, 12, 9);
-    g.fillStyle = e.flash > 0 ? '#ffffff' : '#c9a050';
-    g.fillRect(x - 6, y - 10, 12, 1);
-    if (e.dummy === 2) {
-      g.fillStyle = '#ffcf5a';
-      g.fillRect(x - 2, y - 16, 4, 4);
-      g.fillStyle = '#ff7a3d';
-      g.fillRect(x - 1, y - 15, 2, 2);
-    } else {
-      g.fillStyle = '#d8364a';
-      g.fillRect(x - 3, y - 16, 6, 5);
-      g.fillStyle = '#ffffff';
-      g.fillRect(x - 2, y - 15, 4, 3);
-      g.fillStyle = '#d8364a';
-      g.fillRect(x - 1, y - 14, 2, 1);
-    }
-    g.fillStyle = '#e0c070';
-    g.fillRect(x - 3, y - 24, 6, 5);
-  }
-
-  /** A person of the place, `alpha` faded (coming or going); `marked`: their sign and quest mark over them. */
-  private drawNpc(w: World, n: NpcActor, alpha: number, marked = true): void {
-    const g = this.g;
-    const { id, x, y, face, bob } = n;
-    const def = NPCS[id];
-    g.globalAlpha = alpha;
-    const sprite = npcSprite(id);
-    const sw = sprite.width / sprite.k;
-    const sh = sprite.height / sprite.k;
-    if (def?.down) {
-      // fallen: on the ground, head to the side (falling over as it happens, if it happened in sight)
-      const k = n.fell === undefined ? 1 : clamp((w.time - n.fell) / 0.5, 0, 1);
-      g.fillStyle = 'rgba(0,0,0,0.25)';
-      g.beginPath();
-      g.ellipse(x - 4 * k, y + 6, 6 + 5 * k, 2.5, 0, 0, TAU);
-      g.fill();
-      g.save();
-      g.translate(Math.round(x), Math.round(y + 6));
-      g.rotate(-(Math.PI / 2) * k * k);
-      g.drawImage(face < 0 ? sprite.f : sprite.c, -sw / 2, 1 - sh, sw, sh);
-      g.restore();
-      if (marked) this.drawNpcMark(w, id, x, Math.round(y - 6), bob);
-      g.globalAlpha = 1;
-      return;
-    }
-    g.fillStyle = 'rgba(0,0,0,0.25)';
-    g.beginPath();
-    g.ellipse(x, y + 6, 6, 2.5, 0, 0, TAU);
-    g.fill();
-    const b = Math.sin(bob * 2) > 0.7 ? -1 : 0;
-    g.drawImage(face < 0 ? sprite.f : sprite.c, Math.round(x) - sw / 2, Math.round(y + 7 - sh + b), sw, sh);
-    if (!marked) {
-      g.globalAlpha = 1;
-      return;
-    }
-    let top = Math.round(y + 4 - sh);
-    // vendors carry a sign of what they sell; quests use "!" (yours) and "?" (talk to them) above it
-    const sign = def ? vendorSign(def.shop ?? (def.service === 'respec' ? 'respec' : '')) : null;
-    if (sign) {
-      const bw = sign.width / sign.k;
-      const bh = sign.height / sign.k;
-      const bx = Math.round(x - bw / 2);
-      const by = top - bh - 1;
-      g.fillStyle = 'rgba(27,20,40,0.72)';
-      g.fillRect(bx - 2, by - 2, bw + 4, bh + 4);
-      g.fillRect(Math.round(x) - 1, by + bh + 2, 2, 1);
-      g.drawImage(sign.c, bx, by, bw, bh);
-      top = by - 2;
-    }
-    this.drawNpcMark(w, id, x, top, bob);
-    g.globalAlpha = 1;
-  }
-
-  /** "!" (a quest to take) or "?" (one to hand in) bobbing over someone. */
-  private drawNpcMark(w: World, id: string, x: number, top: number, bob: number): void {
-    const mark = npcMark(w, id);
-    if (mark) drawMapIcon(this.g, mark, x, Math.round(top + Math.sin(bob * 3) * 1.5) - 8, 1);
-  }
-
-  /** A villager walking about (sim/folk.ts), drawn like the people of the story. */
-  private drawFolk(f: Folk, time: number, alpha = 1): void {
-    const g = this.g;
-    g.globalAlpha = alpha;
-    g.fillStyle = 'rgba(0,0,0,0.22)';
-    g.beginPath();
-    g.ellipse(f.x, f.y + 6, 5.5, 2.2, 0, 0, TAU);
-    g.fill();
-    const dir: HeroDir = f.dir === 0 ? 'down' : f.dir === 3 ? 'up' : 'side';
-    const frame = f.moving ? (Math.floor(f.walkT * 6) % 2) + 1 : 0;
-    const s = heroSprite(passerbyLook(f.look), dir, frame);
-    const sw = s.width / s.k;
-    const sh = s.height / s.k;
-    const bob = f.moving ? (Math.floor(f.walkT * 6) % 2 === 0 ? 0 : -0.5) : Math.sin(time * 2 + f.look) > 0.8 ? -0.5 : 0;
-    g.drawImage(f.dir === 1 ? s.f : s.c, Math.round(f.x) - sw / 2, Math.round(f.y) + 6.5 - sh + bob, sw, sh);
-    g.globalAlpha = 1;
-  }
-
-  private drawChicken(x: number, y: number, face: number, time: number): void {
-    const g = this.g;
-    const X = Math.round(x);
-    const Y = Math.round(y);
-    const peck = Math.floor(time * 2 + x) % 5 === 0 ? 1 : 0;
-    g.fillStyle = '#1b1428';
-    g.fillRect(X - 4, Y - 6, 8, 6);
-    g.fillStyle = '#ffffff';
-    g.fillRect(X - 3, Y - 5, 6, 4);
-    g.fillStyle = '#ff4a4a';
-    g.fillRect(X + (face < 0 ? -3 : 2), Y - 7 + peck, 1, 1);
-    g.fillStyle = '#ffb04d';
-    g.fillRect(X + (face < 0 ? -4 : 3), Y - 5 + peck, 1, 1);
-    g.fillRect(X - 1, Y, 1, 1);
-    g.fillRect(X + 1, Y, 1, 1);
-  }
-
-  private drawChest(x: number, y: number, open: boolean, tier: string, time: number): void {
-    const g = this.g;
-    const trim = tier === 'epic' ? '#c58cff' : tier === 'rare' ? '#5ab0ff' : '#ffcf5a';
-    if (!open && tier !== 'common') {
-      g.globalAlpha = 0.35 + Math.sin(time * 3) * 0.15;
-      g.drawImage(glowDisc(trim, 12), x - 12, y - 14);
-      g.globalAlpha = 1;
-    }
-    g.drawImage(chestArt(tier, open), Math.round(x - CHEST_W / 2), Math.round(y - CHEST_H + 5), CHEST_W, CHEST_H);
-  }
-
-  private drawSpore(x: number, y: number, ripe: boolean, fuse: number, time: number): void {
-    const g = this.g;
-    const X = Math.round(x);
-    const Y = Math.round(y);
-    if (!ripe) {
-      g.fillStyle = '#5a7a3a';
-      g.fillRect(X - 2, Y - 2, 4, 2);
-      return;
-    }
-    const swell = fuse > 0 ? Math.floor(time * 20) % 2 : 0;
-    g.fillStyle = '#1b1428';
-    g.fillRect(X - 5 - swell, Y - 9 - swell, 10 + swell * 2, 10 + swell);
-    g.fillStyle = '#b6e36b';
-    g.fillRect(X - 4 - swell, Y - 8 - swell, 8 + swell * 2, 8 + swell);
-    g.fillStyle = '#e8ff9a';
-    g.fillRect(X - 3, Y - 7, 2, 2);
-    g.fillStyle = '#7a9a3a';
-    g.fillRect(X - 1, Y - 4, 1, 1);
-    g.fillRect(X + 2, Y - 6, 1, 1);
-  }
-
-  private drawDrop(kind: string, x: number, y: number, z: number, item: Item | undefined, time: number, age: number): void {
-    const g = this.g;
-    const X = Math.round(x);
-    const Y = Math.round(y - z);
-    if (kind === 'gold') {
-      g.drawImage(coinArt(Math.floor(time * 3 + x) % 5 === 0), X - 3.5, Y - 4, 7, 5);
-      return;
-    }
-    if (kind === 'orb') {
-      g.drawImage(glowDisc('rgba(255,90,122,0.8)', 6), X - 6, Y - 9);
-      g.drawImage(orbArt(), X - 4, Y - 7 + Math.round(Math.sin(time * 5)), 8, 8);
-      return;
-    }
-    if (kind === 'potion') {
-      g.drawImage(glowDisc('rgba(255,74,106,0.7)', 7), X - 7, Y - 11);
-      g.drawImage(potionArt(), X - 3, Y - 9 + Math.round(Math.sin(time * 4 + x)), 6, 9);
-      return;
-    }
-    if (kind === 'shard') {
-      g.drawImage(glowDisc('rgba(255,63,210,0.8)', 8), X - 8, Y - 12);
-      g.drawImage(shardArt(), X - 3, Y - 10, 6, 10);
-      return;
-    }
-    // an item: what it is, over a pool of its rarity's light (and a beam for the good ones)
-    const rarity = item?.r;
-    const color = rarityColor(rarity);
-    if (rarity === 'rare' || rarity === 'epic' || rarity === 'legendary') {
-      const h = rarity === 'legendary' ? 60 : rarity === 'epic' ? 44 : 28;
-      const grd = g.createLinearGradient(0, Y - h, 0, Y);
-      grd.addColorStop(0, rgba(color, 0));
-      grd.addColorStop(1, rgba(color, 0.55 + Math.sin(time * 4) * 0.15));
-      g.fillStyle = grd;
-      g.fillRect(X - 2, Y - h, 4, h);
-    }
-    g.fillStyle = rgba(color, 0.32 + Math.sin(time * 4 + x) * 0.08);
-    g.beginPath();
-    g.ellipse(X, Y, 7, 2.4, 0, 0, Math.PI * 2);
-    g.fill();
-    const bounce = age < 0.6 ? 0 : Math.round(Math.sin(time * 4) * 1);
-    if (item) {
-      const icon = itemIconCanvas(item);
-      const s = 11 / Math.max(icon.width, icon.height);
-      const w = icon.width * s;
-      const h = icon.height * s;
-      g.drawImage(icon, Math.round(X - w / 2), Math.round(Y - h - 1 + bounce), w, h);
-      return;
-    }
-    g.fillStyle = '#1b1428';
-    g.fillRect(X - 4, Y - 8 + bounce, 9, 9);
-    g.fillStyle = color;
-    g.fillRect(X - 3, Y - 7 + bounce, 7, 7);
-  }
-
-  /** Closed room doors: bars (crypt) or a palisade (the den). */
-  private drawDoors(w: World, items: { y: number; draw: () => void }[]): void {
-    const m = w.map;
-    const g = this.g;
-    for (let r = 0; r < m.doors.length; r++) {
-      for (const i of m.doors[r]!) {
-        if (!m.solid[i]) continue;
-        const tx = i % m.w;
-        const ty = Math.floor(i / m.w);
-        const x = tx * TILE;
-        const y = ty * TILE;
-        const crypt = w.region.theme === 'crypt';
-        items.push({
-          y: y + 14,
-          draw: () => {
-            if (crypt) {
-              g.fillStyle = '#1b1428';
-              g.fillRect(x, y - 6, 16, 22);
-              g.fillStyle = '#5a5670';
-              for (let b = 1; b < 16; b += 4) g.fillRect(x + b, y - 5, 2, 20);
-              g.fillStyle = '#7a7690';
-              g.fillRect(x, y - 5, 16, 2);
-              g.fillRect(x, y + 7, 16, 2);
-            } else {
-              g.fillStyle = '#1b1428';
-              g.fillRect(x, y - 8, 16, 24);
-              for (let b = 0; b < 16; b += 4) {
-                g.fillStyle = '#8a5a34';
-                g.fillRect(x + b + 1, y - 7, 3, 22);
-                g.fillStyle = '#b07a48';
-                g.fillRect(x + b + 1, y - 7, 1, 22);
-                g.fillStyle = '#1b1428';
-                g.fillRect(x + b + 2, y - 8, 1, 1);
-              }
-            }
-          },
-        });
-      }
-    }
-  }
-
-  /* --------------------------------------------------- shots and effects */
 
   private drawProjectile(pr: Projectile, time: number): void {
     const g = this.g;
@@ -2310,7 +1489,7 @@ export class Renderer {
     }
   }
 
-  private drawFx(f: Fx, w: World): void {
+  private drawFx(f: Fx, _w: World): void {
     const g = this.g;
     // the packed spell effects (an impact, a cast, a blast): only a picture, nothing to fall back to
     if (f.sprite && f.sprite.includes(':')) {
@@ -2456,11 +1635,11 @@ export class Renderer {
         break;
       }
       case 'ghost': {
-        const pl = w.player;
-        const s = pl.form ? creatureSprite(pl.form, 0) : heroSprite(this.look ?? heroLook(w.hero.cls), pl.dir === 0 ? 'down' : pl.dir === 3 ? 'up' : 'side', 0);
-        const flip = pl.form ? pl.dir === 1 || (pl.dir !== 2 && Math.cos(pl.aim) < 0) : pl.dir === 1;
-        g.globalAlpha = clamp(0.5 - k * 0.5, 0, 1);
-        g.drawImage(flip ? s.wf : s.w, Math.round(f.x) - s.width / s.k / 2, Math.round(f.y) + 6.5 - s.height / s.k, s.width / s.k, s.height / s.k);
+        g.globalAlpha = clamp(0.4 - k * 0.4, 0, 1);
+        g.fillStyle = '#dfe8ff';
+        g.beginPath();
+        g.ellipse(f.x, f.y, 6, 6, 0, 0, TAU);
+        g.fill();
         g.globalAlpha = 1;
         break;
       }
@@ -2500,149 +1679,7 @@ export class Renderer {
 
   /* -------------------------------------------------------------- light */
 
-  /**
-   * The dark (the crypt's, a night's, or a frightening land's own evening: `dark` and `shade`) and the light in
-   * it; `reach` is how far the hero's own light goes.
-   */
-  private drawLighting(w: World, sc: Scenery, ox: number, oy: number, time: number, dark = 0.72, shade = '#0a061a', reach = 1): void {
-    const lg = this.lg;
-    lg.setTransform(this.res, 0, 0, this.res, 0, 0);
-    lg.globalCompositeOperation = 'source-over';
-    // a fresh layer every frame (a translucent fill drawn over last frame's would stack up to black)
-    lg.clearRect(0, 0, this.vw, this.vh);
-    // moody, not murky: the room stays readable outside the pools of light
-    lg.globalAlpha = dark;
-    lg.fillStyle = shade;
-    lg.fillRect(0, 0, this.vw, this.vh);
-    lg.globalAlpha = 1;
-    lg.globalCompositeOperation = 'destination-out';
-    const hole = (x: number, y: number, r0: number, a = 1): void => {
-      // in steps of 4 px and at most 240 (each size of light is a canvas kept for good)
-      const r = Math.min(240, Math.max(4, Math.round(r0 / 4) * 4));
-      const sx = x - ox;
-      const sy = y - oy;
-      if (sx < -r || sy < -r || sx > this.vw + r || sy > this.vh + r) return;
-      lg.globalAlpha = a;
-      lg.drawImage(glowDisc('#ffffff', r), Math.round(sx - r), Math.round(sy - r));
-    };
-    const p = w.player;
-    hole(p.x, p.y - 4, 120 * reach);
-    hole(p.x, p.y - 4, 70 * reach);
-    for (const t of sc.torches) hole(t.x, t.y + 6, 58 + Math.sin(time * 9 + t.x) * 2, 0.9);
-    for (const b of sc.braziers) hole(b.x, b.y + 4, 72 + Math.sin(time * 8 + b.x) * 2);
-    for (const l of sc.lights) hole(l.x, l.y, l.r + Math.sin(time * 7 + l.x) * 2, 0.9);
-    // a village at night: burning roofs, lamps and cookfires
-    for (const f of w.fires) if (w.fireLit(f)) hole(f.x, f.y, (40 + f.size * 22) * w.fireLit(f) + Math.sin(time * 7 + f.x) * 4, 0.95);
-    // the people of the place keep a little light by them, so that no one the story needs stands unseen in the
-    // dark (the owner: by the chapel "most of the npcs can barely be seen")
-    for (const n of w.npcs) hole(n.x, n.y - 6, NPC_LIGHT + Math.sin(time * 6 + n.x) * 1.5, 0.8);
-    // and so do those beside the hero (allies, the led, and the thing being held: a gate or a boat is wider)
-    for (const pet of w.pets) if (!pet.dead && pet.def.look) hole(pet.x, pet.y - 6, pet.def.role === 'ward' && WARD_LOOKS.has(pet.def.look) ? 56 : NPC_LIGHT, 0.8);
-    // (with the pack's art a lamp's own piece lights it, in sc.lights: counted once, not twice)
-    if (!sc.art) for (const pr of w.props) if (LIGHTS[pr.prop]) hole(pr.x, pr.y - 6, LIGHTS[pr.prop]!, 0.85);
-    // a lamp being relit pushes the dark back as it takes
-    for (const pet of w.pets) if (!pet.dead && pet.def.look === 'lantern') hole(pet.x, pet.y - 24, 40 + 70 * (pet.hp / pet.maxHp), 0.9);
-    // someone carrying a light (the courier coming up the road)
-    for (const pet of w.pets) if (!pet.dead && pet.def.light) hole(pet.x, pet.y - 8, pet.def.light + Math.sin(time * 8 + pet.x) * 2, 0.9);
-    for (const ws of w.waystones) hole(ws.x, ws.y - 10, 40, 0.6);
-    for (const pr of w.projectiles) if (!pr.hostile || pr.look === 'riftOrb' || pr.look === 'skull') hole(pr.x, pr.y, pr.hostile ? 16 : 22, 0.8);
-    for (const f of w.fields) hole(f.x, f.y, f.r + 10, 0.5);
-    for (const t of w.telegraphs) if (t.tone !== 'player') hole(t.x, t.y, Math.max(20, t.r + 8), 0.6);
-    for (const d of w.drops) if (d.kind === 'item' || d.kind === 'shard') hole(d.x, d.y, 20, 0.6);
-    for (const f of w.fx) if (f.kind === 'burst' || f.kind === 'ring' || f.kind === 'beam') hole(f.x, f.y, 30, 0.6 * (1 - f.t / f.life));
-    if (w.portal) hole(w.portal.x, w.portal.y, 60);
-    const boss = w.boss();
-    if (boss) hole(boss.x, boss.y, 64, 0.8);
-    for (const e of w.enemies) if (!e.dead && e.def.id === 'rift-acolyte') hole(e.x, e.y, 22, 0.5);
-    lg.globalAlpha = 1;
-    lg.globalCompositeOperation = 'source-over';
-    const g = this.g;
-    g.save();
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    g.drawImage(this.light, 0, 0);
-    g.setTransform(this.res, 0, 0, this.res, 0, 0);
-    // warm glow around flames
-    g.globalCompositeOperation = 'lighter';
-    g.globalAlpha = 0.18;
-    for (const t of sc.torches) g.drawImage(glowDisc('#ff9a3d', 22), Math.round(t.x - ox - 22), Math.round(t.y - oy - 18));
-    for (const b of sc.braziers) g.drawImage(glowDisc('#ff9a3d', 30), Math.round(b.x - ox - 30), Math.round(b.y - oy - 24));
-    for (const l of sc.lights) {
-      if (l.x < ox - 40 || l.y < oy - 40 || l.x > ox + this.vw + 40 || l.y > oy + this.vh + 40) continue;
-      g.drawImage(glowDisc('#ffb45a', 20), Math.round(l.x - ox - 20), Math.round(l.y - oy - 20));
-    }
-    for (const f of w.fires) {
-      if (!w.fireLit(f)) continue;
-      const r = Math.max(4, Math.round((24 + f.size * 14) * w.fireLit(f)));
-      g.drawImage(glowDisc('#ff7a2a', r), Math.round(f.x - ox - r), Math.round(f.y - oy - r));
-    }
-    g.globalAlpha = 0.1;
-    for (const n of w.npcs) {
-      if (n.x < ox - 30 || n.y < oy - 30 || n.x > ox + this.vw + 30 || n.y > oy + this.vh + 30) continue;
-      g.drawImage(glowDisc('#ffc070', 16), Math.round(n.x - ox - 16), Math.round(n.y - oy - 22));
-    }
-    g.restore();
-  }
-
-  /** Mist banks over a frightening land's water and hollows, drifting slowly (still, with reduced motion). */
-  private drawMist(sc: Scenery, ox: number, oy: number, time: number): void {
-    const g = this.g;
-    const puff = glowDisc('#e4ecf4', 32);
-    const t = this.reducedMotion ? 0 : time;
-    g.save();
-    for (const m of sc.mist) {
-      const x = m.x + Math.sin(t * 0.05 + m.ph) * 24;
-      const y = m.y + Math.sin(t * 0.03 + m.ph * 1.7) * 6;
-      if (x + m.w < ox || x - m.w > ox + this.vw || y + m.h < oy || y - m.h > oy + this.vh) continue;
-      g.globalAlpha = 0.13 + Math.sin(t * 0.2 + m.ph) * 0.04;
-      g.drawImage(puff, Math.round(x - m.w), Math.round(y - m.h), Math.round(m.w * 2), Math.round(m.h * 2));
-    }
-    g.restore();
-  }
-
-  /** The forest: soft moving light through the leaves. */
-  private drawCanopyShade(ox: number, oy: number, time: number): void {
-    if (this.reducedMotion) return;
-    const g = this.g;
-    g.save();
-    g.globalAlpha = 0.07;
-    for (let i = 0; i < 5; i++) {
-      const x = ((i * 137 + time * 6) % (this.vw + 160)) - 80 + ox;
-      const y = ((i * 89) % this.vh) + oy;
-      g.drawImage(glowDisc('#fff8d0', 40), Math.round(x - 40), Math.round(y - 40));
-    }
-    g.restore();
-  }
-
   /* ----------------------------------------------------------- overlays */
-
-  private drawEnemyBar(e: Enemy, w: World): void {
-    if (e.dead || e.boss || e.dummy || e.state === 'spawn') return;
-    const named = !!e.def.named;
-    if (e.hp >= e.maxHp && !e.elite.length && !named && e.shield <= 0) return;
-    const g = this.g;
-    const wdt = e.elite.length || named ? 22 : 14;
-    const x = Math.round(e.x - wdt / 2);
-    const sprite = creatureSprite(e.def.sprite, 0);
-    const y = Math.round(e.y + e.r * 0.8 - (sprite.height / sprite.k) * e.scale - 5 - (e.def.floats ? 6 : 0));
-    g.fillStyle = '#1b1428';
-    g.fillRect(x - 1, y - 1, wdt + 2, 4);
-    g.fillStyle = '#4a1a26';
-    g.fillRect(x, y, wdt, 2);
-    g.fillStyle = named ? '#d8b0ff' : e.elite.length ? '#ffcf5a' : '#ff4a5a';
-    g.fillRect(x, y, Math.max(0, Math.round((wdt * e.hp) / e.maxHp)), 2);
-    if (e.shield > 0) {
-      g.fillStyle = '#7fd8ff';
-      g.fillRect(x, y - 1, Math.max(1, Math.round((wdt * e.shield) / (e.maxHp * 0.4))), 1);
-    }
-    if (named) {
-      const img = pixelText(`${e.name} ${e.level}`, '#e8d0ff');
-      g.drawImage(img, Math.round(e.x - img.width / 2), y - 8);
-    } else if (e.elite.length) {
-      const img = pixelText(e.name.split(' ')[0]!, '#ffd36b');
-      g.drawImage(img, Math.round(e.x - img.width / 2), y - 8);
-    }
-    void w;
-  }
 
   /**
    * The ways into buildings, and back out: a warm pool of light on the step and a gold chevron pointing through
@@ -2689,94 +1726,22 @@ export class Renderer {
     }
   }
 
-  /** A bobbing hint over what you can interact with. */
-  private drawInteractMarker(w: World, time: number): void {
-    const it = w.interactable;
-    // on touch the Talk button itself stands beside the hero (ui/Touch.tsx)
-    if (!it || this.touchMode) return;
-    const g = this.g;
-    const img = pixelText(it.kind === 'npc' ? 'TALK' : it.kind === 'waystone' ? 'TRAVEL' : it.kind === 'exit' && it.door && !w.region.interior ? 'ENTER' : 'EXIT', '#ffffff');
-    const y = Math.round(it.y - 34 + Math.sin(time * 4) * 1.5);
-    g.drawImage(img, Math.round(it.x - img.width / 2), y);
-  }
-
-  /** An arrow at the edge of the view toward the current objective. */
-  private drawObjectiveArrow(w: World, ox: number, oy: number, time: number): void {
-    const target = objectiveTarget(w);
-    // enemies to hunt show on the minimap; the edge arrow is for places
-    if (!target || target.soft) return;
-    const g = this.g;
-    const cx = ox + this.vw / 2;
-    const cy = oy + this.vh / 2;
-    const inView = target.x > ox + 10 && target.x < ox + this.vw - 10 && target.y > oy + 10 && target.y < oy + this.vh - 10;
-    if (inView) {
-      const img = pixelText('V', '#ffe066');
-      g.drawImage(img, Math.round(target.x - img.width / 2), Math.round(target.y - 30 + Math.sin(time * 5) * 2));
-      return;
-    }
-    const a = Math.atan2(target.y - cy, target.x - cx);
-    const mx = this.vw / 2 - 14;
-    const my = this.vh / 2 - 14;
-    const t = Math.min(Math.abs(mx / (Math.cos(a) || 1e-6)), Math.abs(my / (Math.sin(a) || 1e-6)));
-    const x = cx + Math.cos(a) * t;
-    const y = cy + Math.sin(a) * t;
-    g.save();
-    g.translate(Math.round(x), Math.round(y));
-    g.rotate(a);
-    g.globalAlpha = 0.8 + Math.sin(time * 5) * 0.2;
-    g.fillStyle = '#1b1428';
-    g.beginPath();
-    g.moveTo(7, 0);
-    g.lineTo(-5, -6);
-    g.lineTo(-2, 0);
-    g.lineTo(-5, 6);
-    g.closePath();
-    g.fill();
-    g.fillStyle = '#ffe066';
-    g.beginPath();
-    g.moveTo(5, 0);
-    g.lineTo(-4, -4);
-    g.lineTo(-1, 0);
-    g.lineTo(-4, 4);
-    g.closePath();
-    g.fill();
-    g.restore();
-    void dist;
-  }
 }
 
-/** A filled pixel circle (no smoothing). */
+/** A filled circle. */
 function pixelDisc(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string): void {
   g.fillStyle = color;
-  if (r <= 1) {
-    g.fillRect(x - 1, y - 1, 2, 2);
-    return;
-  }
-  for (let dy = -r; dy < r; dy++) {
-    const w = Math.round(Math.sqrt(r * r - (dy + 0.5) * (dy + 0.5)));
-    g.fillRect(x - w, y + dy, w * 2, 1);
-  }
+  g.beginPath();
+  g.arc(x, y, r, 0, TAU);
+  g.fill();
 }
 
 export const rarityColor = (r: string | undefined): string => (r === 'legendary' ? '#ff9a2a' : r === 'epic' ? '#c58cff' : r === 'rare' ? '#5ab0ff' : r === 'uncommon' ? '#6dff8f' : '#e8e0d0');
-
 
 /**
  * The mark over someone: "?" when they take a quest back (handed in, or a talk the quest is for), "!" when they
  * have one to give; gold for the main story, blue for a side quest (the handing-in comes first).
  */
-/** How far a pet has faded: one of the story's people fades out over their last moments; a summon goes at once. */
-function petFade(pet: Pet, time: number): number {
-  if (!pet.story) return pet.dead ? clamp(1 - pet.deathT / 0.5, 0, 1) : 1;
-  if (pet.dead) return clamp(1 - pet.deathT / STORY_FADE, 0, 1);
-  // (and one the story has just put somewhere in sight comes in the same way)
-  const come = pet.born === undefined ? 1 : clamp((time - pet.born) / PET_FADE_IN, 0, 1);
-  return Math.min(come, clamp(pet.life / STORY_FADE, 0, 1));
-}
-
-/** A static object's identity across a rebuild of the scenery (where it stands and how it is drawn). */
-const objKey = (o: StaticObject): string => `${Math.round(o.x)},${Math.round(o.y)},${o.dx},${o.dy},${o.src?.join(':') ?? o.kind}`;
-
 export function npcMark(w: World, id: string): MapIcon | null {
   const h = w.hero;
   let side: MapIcon | null = null;
