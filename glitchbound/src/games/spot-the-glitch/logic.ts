@@ -3,7 +3,7 @@
  * anti-spam lock, scoring and the daily set. Time comes in as `now` (ms) on each action.
  */
 import { daysBetween, hashString } from '../../platform/dates';
-import { diffAt, DIFFS, makePuzzle, type Puzzle } from './diffs';
+import { diffAt, DIFFS, makePuzzle, type Gen, type Puzzle } from './diffs';
 
 export const EPOCH = '2026-10-18';
 export const DAILY_PICTURES = 3;
@@ -135,8 +135,17 @@ export function resultOf(s: PictureState): PictureResult {
 /** Dailies up to this day were published with the first five themes; they are rebuilt exactly. */
 export const CLASSIC_UNTIL = '2026-10-18';
 
+/**
+ * Dailies from this day on (and challenges started from it) use the fair generator (diffs.ts); earlier
+ * ones were published with the first generator and are rebuilt exactly, picture for picture.
+ */
+export const FAIR_FROM = '2026-12-08';
+
+/** The generator a daily (or a challenge started that day) is built with. */
+export const genFor = (day: string): Gen => (day <= CLASSIC_UNTIL ? 'classic' : day < FAIR_FROM ? 'v1' : 'fair');
+
 export function dailyPuzzle(day: string, index: number): Puzzle {
-  return makePuzzle(hashString(`spot-the-glitch:${day}:${index}`), Math.min(2, index), undefined, day <= CLASSIC_UNTIL);
+  return makePuzzle(hashString(`spot-the-glitch:${day}:${index}`), Math.min(2, index), undefined, genFor(day));
 }
 
 export function dailyNumber(day: string): number {
