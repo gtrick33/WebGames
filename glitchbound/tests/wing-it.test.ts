@@ -57,6 +57,26 @@ describe('Wing It', () => {
     expect(s.y).toBeLessThanOrEqual(GROUND);
   });
 
+  it('drifting gaps are in the same place for everyone, however long they hover before the first flap', () => {
+    // The gap centre of each drifting stone when the bird reaches it, after a 0 s and a 3 s hover.
+    const fly = (hoverSteps: number): number[] => {
+      const s = newSim(20261030);
+      for (let i = 0; i < hoverSteps; i++) step(s);
+      flap(s);
+      const seen: number[] = [];
+      for (let i = 0; i < 40000 && !s.dead && seen.length < 3; i++) {
+        autopilot(s);
+        step(s);
+        const p = s.pillars.find((x) => x.sway && !x.passed && x.x <= BIRD_X && !seen.includes(x.gapY));
+        if (p) seen.push(p.gapY, gapCentre(p, s.t));
+      }
+      return seen;
+    };
+    const a = fly(0);
+    expect(a.length).toBeGreaterThan(0);
+    expect(fly(360)).toEqual(a);
+  });
+
   it('every course is passable: an autopilot clears 150 gaps on many seeds', () => {
     for (let seed = 1; seed <= 25; seed++) {
       const s = newSim(seed * 7919);

@@ -51,6 +51,8 @@
 }
 .wi-pause {
   position: absolute;
+  /* Above the pause overlay: the game menu and Resume stay reachable while paused. */
+  z-index: 3;
   top: 12px;
   right: 12px;
   width: 44px;
@@ -84,6 +86,7 @@
 }
 .wi-overlay {
   position: absolute;
+  z-index: 2;
   inset: 0;
   border: 0;
   background: rgb(29 18 56 / 0.5);
@@ -121,6 +124,13 @@
 .wi-big {
   margin: 0;
   font: 900 64px/1 var(--mono);
+}
+/* The flight bar on one row (the medal and feathers go below it): ten cells fit the card's 288 px. */
+.wi-over .result-line {
+  font-size: 20px;
+  letter-spacing: 0;
+  white-space: pre;
+  overflow-wrap: normal;
 }
 .wi-muted {
   margin: 0;
@@ -180,8 +190,8 @@
   justify-content: flex-start;
 }
 .wi-icon {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: 2px solid var(--wi-ink);
   border-radius: 12px;
   background: #fff;
