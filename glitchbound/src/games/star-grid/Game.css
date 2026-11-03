@@ -26,15 +26,17 @@
   color: inherit;
   cursor: pointer;
 }
-.sgd .is-r0 { --c: #ffd6e0; }
-.sgd .is-r1 { --c: #ffe9a8; }
-.sgd .is-r2 { --c: #c9f2d0; }
-.sgd .is-r3 { --c: #c8e6ff; }
-.sgd .is-r4 { --c: #e3d5ff; }
-.sgd .is-r5 { --c: #ffd9b8; }
-.sgd .is-r6 { --c: #bff0ec; }
-.sgd .is-r7 { --c: #f6d0f2; }
-.sgd .is-r8 { --c: #dfe8b6; }
+/* Region fills: each a different lightness (L* 71 to 95, three apart) as well as a different hue, so
+   neighbors stay apart in grayscale and for color-blind players. The thick borders still carry the regions. */
+.sgd .is-r0 { --c: #ffd5df; }
+.sgd .is-r1 { --c: #fff0c4; }
+.sgd .is-r2 { --c: #8be299; }
+.sgd .is-r3 { --c: #8fcdff; }
+.sgd .is-r4 { --c: #e0d0ff; }
+.sgd .is-r5 { --c: #fbad69; }
+.sgd .is-r6 { --c: #c5f1ed; }
+.sgd .is-r7 { --c: #ea9ce3; }
+.sgd .is-r8 { --c: #a7b65b; }
 .sgd-hud {
   display: grid;
   grid-template-columns: 44px 1fr auto;
@@ -51,6 +53,10 @@
   box-shadow: 0 3px 0 #0e0b2c;
   color: var(--sgd-ink) !important;
   font-weight: 900;
+}
+.sgd-icon:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .sgd-mid {
   display: grid;
@@ -77,7 +83,8 @@
 .sgd-board {
   display: grid;
   grid-template-columns: repeat(var(--n), 1fr);
-  width: min(100cqw - 28px, 100cqh - 190px, 460px);
+  --w: min(100cqw - 28px, 100cqh - 190px, 460px);
+  width: var(--w);
   aspect-ratio: 1;
   border: 3px solid var(--sgd-ink);
   border-radius: 10px;
@@ -92,7 +99,7 @@
   background: var(--c);
   color: var(--sgd-ink);
   border: 0.5px solid rgb(27 22 64 / 0.18);
-  font-size: calc(min(100cqw - 28px, 100cqh - 190px, 460px) / var(--n) * 0.56);
+  font-size: calc(var(--w) / var(--n) * 0.56);
   cursor: pointer;
 }
 .sgd-cell.b-t { border-top: 3px solid var(--sgd-ink); }
@@ -100,7 +107,10 @@
 .sgd-cell.b-l { border-left: 3px solid var(--sgd-ink); }
 .sgd-cell.b-r { border-right: 3px solid var(--sgd-ink); }
 .sgd-cell.is-cursor {
-  box-shadow: inset 0 0 0 3px #ff3d7f;
+  /* Two tones, so the cursor stands out on every fill, the red of a clash included. */
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 6px var(--sgd-ink);
 }
 .sgd-cell.is-bad {
   background: #ff8095;
@@ -357,7 +367,14 @@
   gap: 6px;
 }
 .sgd-sizes .sgd-btn {
+  flex-direction: column;
   padding: 0 4px;
+  line-height: 1.1;
+}
+/* The fastest solve of that size. */
+.sgd-sizes small {
+  font: 700 11px/1 var(--mono);
+  opacity: 0.7;
 }
 @media (prefers-reduced-motion: reduce) {
   .sgd-star,
@@ -380,6 +397,44 @@
 }
 .sgd-menu > :last-child {
   margin-bottom: auto;
+}
+
+/* The play screen: one column (HUD, board, tools, help) by default. */
+.sgd-layout {
+  display: contents;
+}
+/* Held sideways (a phone in landscape, a wide stage): the board takes the full height on the left,
+   the clock, tools and help sit in a column on its right. */
+@container (min-aspect-ratio: 4/3) {
+  .sgd-play .sgd-layout {
+    display: grid;
+    grid-template-columns: auto minmax(0, 280px);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'board hud'
+      'board tools'
+      'board help';
+    align-items: start;
+    gap: 12px 20px;
+    margin: auto;
+  }
+  .sgd-play .sgd-board {
+    --w: min(100cqh - 30px, 100cqw - 330px, 640px);
+    grid-area: board;
+    align-self: center;
+  }
+  .sgd-play .sgd-hud {
+    grid-area: hud;
+    width: 100%;
+  }
+  .sgd-play .sgd-tools {
+    grid-area: tools;
+    width: 100%;
+  }
+  .sgd-play .sgd-help {
+    grid-area: help;
+    text-align: left;
+  }
 }
 
 /* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */

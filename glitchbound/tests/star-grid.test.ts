@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { getGame } from '../src/catalog/catalog';
 import { conflicts, countSolutions, DAILY_SIZES, makePuzzle, nextMark, resultLine, solved, solvePoints, type Mark } from '../src/games/star-grid/logic';
+import { dailyPuzzles, endlessPuzzle, hasSpare, prepare, seeded } from '../src/games/star-grid/prepare';
+import { hashString } from '../src/platform/dates';
 
 describe('Star Grid', () => {
   it('makes the same puzzle from the same seed', () => {
@@ -37,7 +39,8 @@ describe('Star Grid', () => {
     expect(solvePoints(8, 0)).toBe(1000);
     expect(solvePoints(8, 100)).toBe(700);
     expect(solvePoints(8, 10_000)).toBe(250);
-    expect(resultLine([42, 75, 130])).toBe('🟩 0:42  🟨 1:15  🟥 2:10');
+    expect(resultLine([42, 75, 130])).toBe('6×6 0:42 · 7×7 1:15 · 8×8 2:10');
+    expect(resultLine([52], [9])).toBe('9×9 0:52');
   });
 
   it('stays inside the score limits for a lightning-fast daily', () => {
@@ -59,5 +62,33 @@ describe('Star Grid taps', () => {
     expect(nextMark(0, 'cross')).toBe(1);
     expect(nextMark(1, 'cross')).toBe(0);
     expect(nextMark(2, 'cross')).toBe(1);
+  });
+});
+
+describe('Star Grid grids made ahead (SR-08)', () => {
+  it('keeps seeded grids once made, the daily’s the same as before', () => {
+    expect(seeded(99, 7)).toBe(seeded(99, 7));
+    expect(seeded(99, 7)).toEqual(makePuzzle(99, 7));
+    const day = '2026-11-03';
+    expect(dailyPuzzles(day)).toEqual(DAILY_SIZES.map((s) => makePuzzle(hashString(`star-grid:${day}:${s}`), s)));
+  });
+
+  it('makes a spare endless grid in idle time, and Play takes it', () => {
+    vi.useFakeTimers();
+    try {
+      const stop = prepare([9]);
+      expect(hasSpare(9)).toBe(false);
+      vi.advanceTimersByTime(3500);
+      expect(hasSpare(9)).toBe(true);
+      stop();
+      expect(endlessPuzzle(9).size).toBe(9);
+      expect(hasSpare(9)).toBe(false);
+      // Stopped before its turn: nothing more is made.
+      prepare([6])();
+      vi.advanceTimersByTime(3500);
+      expect(hasSpare(6)).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

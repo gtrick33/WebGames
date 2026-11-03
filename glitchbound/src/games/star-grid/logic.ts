@@ -236,9 +236,9 @@ export const solvePoints = (size: number, seconds: number): number => {
   return Math.max(Math.round(base / 4), Math.round(base - 3 * seconds));
 };
 
-/** Share line: a star per solved puzzle with its time. */
-export function resultLine(times: number[]): string {
-  return times.map((t, i) => `${['🟩', '🟨', '🟥'][i] ?? '⭐'} ${fmtTime(t)}`).join('  ');
+/** Share line: each solved grid's size with its time (sizes, not colored squares, which read as a rating). */
+export function resultLine(times: number[], sizes: number[] = DAILY_SIZES): string {
+  return times.map((t, i) => `${sizes[i] ? `${sizes[i]}×${sizes[i]}` : '⭐'} ${fmtTime(t)}`).join(' · ');
 }
 
 export const fmtTime = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
