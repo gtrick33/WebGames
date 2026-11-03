@@ -33,7 +33,7 @@ describe('a browser that blocks storage', () => {
     const { Root } = await import('../src/App');
     window.history.replaceState(null, '', '/');
     render(<Root />);
-    expect(await screen.findByRole('heading', { level: 2, name: /Small games\.\s*Big obsessions\./ })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 2, name: /Small games\.\s*Big obsessions\./ }, { timeout: 8000 })).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 

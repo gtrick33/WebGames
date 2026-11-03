@@ -1,7 +1,8 @@
 import { HAIRS, SKINS, type Face } from '../progress/character';
 import { heroTitle } from '../progress/wardrobe';
 import { RiftScreen } from './RiftScreen';
-import { useState } from 'react';
+
+import { Suspense, lazy, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import { REGIONS } from '../data/regions';
@@ -14,6 +15,8 @@ import { heroDollUrl, heroLook } from '../render/sprites';
 import { wornLooks } from '../progress/wardrobe';
 import { Portrait, SkillIcon } from './common';
 import { SettingsPanel } from './Panels';
+
+const VigilScreen = lazy(() => import('./VigilScreen').then((m) => ({ default: m.VigilScreen })));
 
 /** Embers rising from the Rift on the title screen: spread across, each on its own clock. */
 const EMBERS = Array.from({ length: 18 }, (_, i) => ({ x: (i * 53) % 100, delay: (i % 6) * 0.9, dur: 6 + (i % 5) * 1.7, size: 2 + (i % 3) }));
@@ -76,10 +79,18 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [roster, setRoster] = useState(() => !!engine.invite);
   const [rift, setRift] = useState<number | null>(null);
+  const [vigil, setVigil] = useState(false);
   const last = engine.save.last;
   const lastHero = heroes[last];
   const any = heroes.some(Boolean);
   const firstEmpty = Math.max(0, heroes.findIndex((h) => !h));
+  if (vigil) {
+    return (
+      <Suspense fallback={<div className="rb-title is-epic"><EpicSky /></div>}>
+        <VigilScreen engine={engine} face={lastHero?.face} body={lastHero?.body} onBack={() => setVigil(false)} />
+      </Suspense>
+    );
+  }
   if (rift !== null && heroes[rift]) {
     return (
       <div className="rb-title is-epic is-roster">
@@ -125,6 +136,10 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
                 <small>Seven heroes · five acts · one Rift</small>
               </button>
             )}
+            <button className="rb-btn rb-gate-rift is-vigil" onClick={() => setVigil(true)}>
+              <span>The Vigil</span>
+              <small>Hold the line, as long as you can</small>
+            </button>
             {lastHero && lastHero.keystone >= 1 && (
               <button className="rb-btn rb-gate-rift" onClick={() => setRift(last)}>
                 <span>The Rift Trials</span>

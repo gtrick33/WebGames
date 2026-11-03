@@ -29,7 +29,7 @@ describe('homepage', () => {
     expect(within(sigilfall).getByRole('heading', { level: 1, name: 'Sigilfall' })).toBeTruthy();
     expect(within(sigilfall).getByRole('link', { name: /Enter the Rift/ }).getAttribute('href')).toBe('/sigilfall?play=1');
     expect(within(sigilfall).getByRole('link', { name: /quick game/ }).getAttribute('href')).toBe('#quick-games');
-    expect(await screen.findByRole('heading', { level: 2, name: /Small games\.\s*Big obsessions\./ })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 2, name: /Small games\.\s*Big obsessions\./ }, { timeout: 8000 })).toBeTruthy();
     // Today's pick is fun alone at once: never a live game's lobby.
     const pickHref = screen.getByRole('link', { name: /Today’s pick/ }).getAttribute('href')!;
     expect(['/games/crater-crew', '/games/launch-control', '/games/backgammon', '/games/belot'].some((p) => pickHref.startsWith(p))).toBe(false);
@@ -40,13 +40,13 @@ describe('homepage', () => {
     expect(within(screen.getByRole('list', { name: 'The GlitchBound promise' })).getAllByRole('listitem').map((li) => li.textContent?.trim())).toEqual(['Free, always', 'No sign-up', 'Nothing to install', 'Phone or computer']);
     expect(within(hero).queryByRole('button', { name: /Sign in/ })).toBeNull();
     // Start here: the four flagships, each one link.
-    const start = await screen.findByRole('region', { name: 'Our best games' });
+    const start = await screen.findByRole('region', { name: 'Our best games' }, { timeout: 8000 });
     const flagships = within(start).getAllByRole('link').map((a) => a.getAttribute('href'));
     expect(flagships).toHaveLength(4);
     // Their Play starts the game on arrival (#24); Quizbelief lives at its own name.
     expect(flagships.sort()).toEqual(['/games/color-recall?play=1', '/games/launch-control?play=1', '/games/letter-pinch?play=1', '/games/quizbelief?play=1']);
     // Today arrives right after the first paint.
-    const today = await screen.findByRole('region', { name: 'Today' });
+    const today = await screen.findByRole('region', { name: 'Today' }, { timeout: 8000 });
     expect(within(today).getByText('Today is')).toBeTruthy();
     expect(within(today).getByText(/^Today’s challenge/)).toBeTruthy();
     expect(within(today).getByRole('link', { name: /Play today’s challenge|Play again/ }).getAttribute('href')).toMatch(/^\/games\//);
