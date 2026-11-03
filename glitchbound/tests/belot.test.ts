@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyBot, chooseCard, knowledge, LEVELS, sampleWorld, type Level } from '../src/games/belot/ai';
+import { applyBot, chooseCall, chooseCard, knowledge, LEVELS, sampleWorld, type Level } from '../src/games/belot/ai';
 import {
   applyCall,
   AT,
@@ -349,5 +349,25 @@ describe('belot: the computer players', () => {
     const card = chooseCard({ ...mid, turn: ((d.dealer + 1) % 4) as Seat }, ((d.dealer + 1) % 4) as Seat, 'expert', rng(1));
     expect(mid.hands[(d.dealer + 1) % 4]).toContain(card);
     expect(performance.now() - t0).toBeLessThan(1500);
+  });
+
+  it('the Easy table bids: a suit of three with its jack opens, and contracts come often enough to be played', () => {
+    const d = newDeal(5, 3);
+    const hand = [C(1, 4), C(1, 0), C(1, 1), C(3, 0), C(0, 1)];
+    const mine: Deal = { ...d, hands: d.hands.map((h, p) => (p === d.turn ? hand : h)) };
+    expect(chooseCall(mine, d.turn, 'easy', rng(1))).toEqual({ k: 'bid', c: 1 });
+    let calls = 0;
+    let bids = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      let x = newDeal(seed, 3);
+      while (x.phase === 'bidding') {
+        const c = chooseCall(x, x.turn, 'easy', rng(seed * 31 + x.calls.length));
+        calls++;
+        if (c.k === 'bid') bids++;
+        x = applyCall(x, c);
+      }
+    }
+    // before: 3.5% of Easy's calls were bids, so most deals were thrown in
+    expect(bids / calls).toBeGreaterThan(0.12);
   });
 });

@@ -9,7 +9,7 @@ import { RoomListingBar } from '../../components/OnlinePlay';
 import { shareOrCopy } from '../../platform/share';
 import { LEVELS, type Level } from './ai';
 import { teamOf, type Seat } from './logic';
-import type { Action, RoomView } from './room';
+import type { Action, ActError, RoomView } from './room';
 import type { Sfx } from './sound';
 import { DealSheet, Table } from './Table';
 import type { Words } from './text';
@@ -17,6 +17,35 @@ import type { Words } from './text';
 export const inviteLink = (code: string): string => `${location.origin}/r/${code}`;
 /** Computer players' names by table place (their level shows under the name). */
 const BOT_NAMES = ['Ivo', 'Niko', 'Mila', 'Tom'];
+
+/** What the room said, in the table's language (codes from room.ts, and the rooms server's own texts). */
+const SERVER_TEXT: Record<string, keyof Words['errors']> = {
+  'Join the room first.': 'join',
+  'That place is taken.': 'taken',
+  'Someone sits there.': 'taken',
+  'You can’t call that now.': 'call',
+  'You can’t play that card now.': 'card',
+  'Unknown action.': 'unknown',
+  'This room is full.': 'full',
+  'You were removed from the room.': 'removed',
+  'This room has closed.': 'closed',
+};
+export function roomText(w: Words, msg: string): string {
+  if (!msg) return '';
+  const code = msg in w.errors ? (msg as ActError) : SERVER_TEXT[msg];
+  return code ? w.errors[code] : msg;
+}
+
+/** The end of a match as one phone sees it: you won, they won, or (watching) which team won. */
+function overTitle(w: Words, view: RoomView, names: string[]): { title: string; won: boolean } {
+  const m = view.match!;
+  if (view.you >= 0) {
+    const won = m.winner === teamOf(view.you as Seat);
+    return { title: won ? w.matchWon : w.matchLost, won };
+  }
+  const team = m.winner ?? 0;
+  return { title: w.teamWon(`${names[team]} & ${names[team + 2]}`), won: false };
+}
 
 export function LiveTable({ w, code, name, sfx, tools, onLeave }: { w: Words; code: string; name: string; sfx: () => Sfx; tools: ReactNode; onLeave: () => void }) {
   const { view, conn, error, clearError, gone, send, skew, listing, setListed } = useRoom<RoomView, Action>(code, name || w.you);
@@ -48,7 +77,7 @@ export function LiveTable({ w, code, name, sfx, tools, onLeave }: { w: Words; co
       <div className="bl-scroll">
         <div className="bl-menu">
           <h2 className="bl-h">{w.roomClosed}</h2>
-          <p className="bl-tagline">{gone}</p>
+          <p className="bl-tagline">{roomText(w, gone)}</p>
           <button className="bl-btn is-go" onClick={onLeave}>
             {w.back}
           </button>
@@ -71,15 +100,35 @@ export function LiveTable({ w, code, name, sfx, tools, onLeave }: { w: Words; co
   const names = view.places.map((p, i) => p.player?.name ?? (p.bot ? BOT_NAMES[i]! : w.empty));
   const bots = view.places.map((p) => p.bot);
   const away = view.places.map((p) => !!p.player && !p.player.online);
-  const notice = error || (conn !== 'open' ? w.connecting : '');
+  const notice = roomText(w, error) || (conn !== 'open' ? w.connecting : '');
 
-  if (view.phase === 'lobby' || !view.match) return <Lobby w={w} view={view} code={code} send={send} tools={tools} onLeave={onLeave} notice={notice} bar={<RoomListingBar listing={listing} host={view.host} players={view.players.filter((p) => p.online).length} min={2} skew={skew} onListed={setListed} />} />;
+  // between matches the places change hands in the lobby, under the result of the match just played
+  if (view.phase === 'lobby' || view.phase === 'over' || !view.match)
+    return (
+      <Lobby
+        w={w}
+        view={view}
+        code={code}
+        send={send}
+        tools={tools}
+        onLeave={onLeave}
+        notice={notice}
+        result={view.phase === 'over' && view.match ? overTitle(w, view, names) : null}
+        bar={<RoomListingBar listing={listing} host={view.host} players={view.players.filter((p) => p.online).length} min={2} skew={skew} onListed={setListed} />}
+      />
+    );
 
   const humans = view.places.filter((p) => p.player?.online).length;
+  const d = view.match.deal;
+  const acting = view.places[d.turn];
+  // a player still at the table has a clock (the stand-in plays when it runs out); deadline is the server's time
+  const turnEnds = view.phase === 'deal' && (d.phase === 'bidding' || d.phase === 'playing') && acting?.player?.online && !acting.bot && view.deadline ? view.deadline - skew : null;
   return (
     <Table
       w={w}
       match={view.match}
+      matchId={view.matches}
+      turnEnds={turnEnds}
       me={view.you}
       names={names}
       bots={bots}
@@ -97,6 +146,7 @@ export function LiveTable({ w, code, name, sfx, tools, onLeave }: { w: Words; co
       overlay={
         <>
           {notice && <p className="bl-toast">{notice}</p>}
+          {d.phase === 'thrown' && <p className="bl-toast">{w.thrown}</p>}
           {view.you < 0 && <p className="bl-toast is-soft">{w.watching}</p>}
           {view.phase === 'dealEnd' && view.last && (
             <DealSheet w={w} score={view.last.score} taken={view.last.taken} scores={view.match.scores} me={view.you} names={names}>
@@ -108,35 +158,33 @@ export function LiveTable({ w, code, name, sfx, tools, onLeave }: { w: Words; co
               <span className="bl-ready mono">{w.readyFor(view.ready.length, humans)}</span>
             </DealSheet>
           )}
-          {view.phase === 'over' && (
-            <div className="bl-sheet-wrap" role="dialog">
-              <div className={`bl-sheet bl-result${view.you >= 0 && view.match.winner === teamOf(view.you as Seat) ? ' is-win' : ''}`}>
-                <h2 className="bl-result-title">{view.you >= 0 && view.match.winner === teamOf(view.you as Seat) ? w.matchWon : w.matchLost}</h2>
-                <p className="bl-result-score mono">
-                  <b>{view.match.scores[view.you >= 0 ? teamOf(view.you as Seat) : 0]}</b> – {view.match.scores[view.you >= 0 ? 1 - teamOf(view.you as Seat) : 1]}
-                </p>
-                <div className="bl-sheet-actions">
-                  {view.host ? (
-                    <button className="bl-btn is-go" onClick={() => send({ t: 'again' })} autoFocus>
-                      {w.rematch}
-                    </button>
-                  ) : (
-                    <span className="bl-ready mono">{w.waitingHost}</span>
-                  )}
-                  <button className="bl-btn is-ghost" onClick={onLeave}>
-                    {w.menu}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </>
       }
     />
   );
 }
 
-function Lobby({ w, view, code, send, tools, onLeave, notice, bar }: { w: Words; view: RoomView; code: string; send: (a: Action) => void; tools: ReactNode; onLeave: () => void; notice: string; bar: ReactNode }) {
+function Lobby({
+  w,
+  view,
+  code,
+  send,
+  tools,
+  onLeave,
+  notice,
+  bar,
+  result,
+}: {
+  w: Words;
+  view: RoomView;
+  code: string;
+  send: (a: Action) => void;
+  tools: ReactNode;
+  onLeave: () => void;
+  notice: string;
+  bar: ReactNode;
+  result: { title: string; won: boolean } | null;
+}) {
   const [copied, setCopied] = useState('');
   const link = inviteLink(code);
   const filled = view.places.filter((p) => p.player || p.bot).length;
@@ -154,6 +202,15 @@ function Lobby({ w, view, code, send, tools, onLeave, notice, bar }: { w: Words;
           <div className="bl-tools">{tools}</div>
         </div>
         <h2 className="bl-h">{w.room(code)}</h2>
+        {result && view.match && (
+          <div className={`bl-over${result.won ? ' is-win' : ''}`} role="status">
+            <b className="bl-result-title">{result.title}</b>
+            <p className="bl-result-score mono">
+              <b>{view.match.scores[view.you >= 0 ? teamOf(view.you as Seat) : 0]}</b> – {view.match.scores[view.you >= 0 ? 1 - teamOf(view.you as Seat) : 1]}
+            </p>
+            <small>{w.matchOver}</small>
+          </div>
+        )}
         {bar}
         {notice && <p className="bl-err">{notice}</p>}
         <div className="bl-lobby-table">
@@ -168,10 +225,15 @@ function Lobby({ w, view, code, send, tools, onLeave, notice, bar }: { w: Words;
                   <>
                     <span className={`bl-avatar team-${team}`}>{p.player.name.slice(0, 1).toUpperCase()}</span>
                     <b>{p.player.name}</b>
-                    <small className="mono">{mine ? w.you : !p.player.online ? w.away : p.player.host ? 'host' : ''}</small>
+                    <small className="mono">{mine ? w.you : !p.player.online ? w.away : p.player.host ? w.host : ''}</small>
                     {mine && (
-                      <button className="bl-link" onClick={() => send({ t: 'stand' })}>
+                      <button className="bl-link" onClick={() => send({ t: 'stand' })} aria-label={w.standUp} title={w.standUp}>
                         ✕
+                      </button>
+                    )}
+                    {!mine && !p.player.online && (
+                      <button className="bl-btn is-small" onClick={() => send({ t: 'sit', place })}>
+                        {w.takePlace}
                       </button>
                     )}
                   </>
@@ -194,6 +256,9 @@ function Lobby({ w, view, code, send, tools, onLeave, notice, bar }: { w: Words;
                         {w.removeBot}
                       </button>
                     )}
+                    <button className="bl-btn is-small" onClick={() => send({ t: 'sit', place })}>
+                      {w.takePlace}
+                    </button>
                   </>
                 ) : (
                   <>
@@ -224,7 +289,7 @@ function Lobby({ w, view, code, send, tools, onLeave, notice, bar }: { w: Words;
         {view.host ? (
           <>
             <button className="bl-btn is-go is-big" onClick={() => send({ t: 'start' })}>
-              {w.startMatch}
+              {result ? w.rematch : w.startMatch}
             </button>
             {filled < 4 && <p className="bl-hint">{w.needFour}</p>}
           </>

@@ -7,6 +7,11 @@
  * calls tick() at `deadline`.
  *
  * Phases: lobby → deal (bidding and play) → dealEnd (the score sheet) → deal … → over → (rematch) deal.
+ * Between matches (over) places change hands as in the lobby: a watcher takes a free place, a computer
+ * player's or that of someone who left.
+ *
+ * Every phone gets the match without its seed (the seed would rebuild every hand): `match.seed` in a
+ * view is 0, and `matches` tells one match from the next.
  */
 import { joinSeat, kickSeat, leaveSeat, nextRandom, seatByN, seatOf, seatViews, summaryOf, type RoomBase, type SeatView } from '../../party/rooms/seats';
 import { botMove, LEVELS, type Level } from './ai';
@@ -25,6 +30,11 @@ export const DEAL_MS = 2200;
 export const AWAY_MS = 4000;
 /** The score sheet stays this long unless everyone presses Next first. */
 export const SHEET_MS = 25000;
+/** A player still at the table gets this long for a card (and a call) before the stand-in plays it. */
+export const TURN_MS = 45000;
+export const BID_MS = 60000;
+/** Four passes: the thrown-in deal stays on the table this long, then it is dealt again. */
+export const THROWN_MS = 1800;
 
 export type Phase = 'lobby' | 'deal' | 'dealEnd' | 'over';
 
@@ -46,6 +56,11 @@ export interface State extends RoomBase {
   moveAt: number | null;
   /** When the place to act started waiting on a player who has left. */
   awaySince: number | null;
+  /** The turn being waited on (match, deal, move), and since when: a player still here gets TURN_MS. */
+  turnKey?: string | null;
+  turnSince?: number | null;
+  /** When a thrown-in deal (four passes) was left on the table. */
+  thrownAt?: number | null;
   matches: number;
 }
 
@@ -69,21 +84,41 @@ export function newRoom(code: string, now: number, seed: number): State {
     sheetUntil: null,
     moveAt: null,
     awaySince: null,
+    turnKey: null,
+    turnSince: null,
+    thrownAt: null,
     matches: 0,
   };
 }
 
 const placeOf = (s: State, n: number): number => s.places.indexOf(n);
+/** Places change hands in the lobby and between matches. */
+const seating = (s: State): boolean => s.phase === 'lobby' || s.phase === 'over';
+const isSeatedOnline = (s: State, n: number): boolean => placeOf(s, n) >= 0 && !!seatByN(s, n)?.online;
+
+/**
+ * The host is someone at the table: a player who is here when there is one, otherwise a player who
+ * left (back, they run the table again). A watcher never runs the table for the players; between
+ * matches they can take a place, and the host role with it.
+ */
+function seatHost(s: State): void {
+  if (isSeatedOnline(s, s.host)) return;
+  const seated = s.places.filter((n): n is number => n !== null && !!seatByN(s, n));
+  const here = seated.find((n) => isSeatedOnline(s, n));
+  if (here !== undefined) s.host = here;
+  else if (placeOf(s, s.host) < 0 && seated.length) s.host = seated[0]!;
+}
 
 export function join(s: State, key: string, name: string, now: number): string | null {
   const err = joinSeat(s, key, name, now, MAX_PLAYERS, false);
   if (err) return err;
   const me = seatOf(s, key)!;
   // the first ones in sit down by themselves (you at the bottom, a friend opposite as your partner)
-  if (s.phase === 'lobby' && placeOf(s, me.n) < 0) {
+  if (seating(s) && placeOf(s, me.n) < 0) {
     const free = [0, 2, 1, 3].find((p) => s.places[p] === null && s.bots[p] === null);
     if (free !== undefined) s.places[free] = me.n;
   }
+  seatHost(s);
   schedule(s, now);
   return null;
 }
@@ -96,6 +131,7 @@ export function leave(s: State, key: string, now: number): void {
     const p = placeOf(s, seat.n);
     if (p >= 0 && s.phase === 'lobby') s.places[p] = null;
   }
+  seatHost(s);
   schedule(s, now);
 }
 
@@ -111,10 +147,21 @@ function actor(s: State): { place: Seat; bot: Level | null; away: boolean } | nu
   return { place, bot, away: !bot && (!seat || !seat.online) };
 }
 
+/** Which turn the table waits on: a new key means a new turn (and a fresh clock for a player). */
+const turnKeyOf = (s: State): string | null => {
+  const d = s.match?.deal;
+  return s.phase === 'deal' && d ? `${s.matches}:${s.match!.dealNo}:${d.calls.length}:${d.tricks.length}:${d.trick.length}` : null;
+};
+
 /** Sets when the computer moves next (and the room's alarm with it). */
 function schedule(s: State, now: number): void {
   s.moveAt = null;
   const a = actor(s);
+  const key = a ? turnKeyOf(s) : null;
+  if (key !== (s.turnKey ?? null)) {
+    s.turnKey = key;
+    s.turnSince = key ? now : null;
+  }
   if (a && a.bot) {
     const d = s.match!.deal;
     s.moveAt = now + (d.phase === 'bidding' && d.calls.length === 0 ? DEAL_MS : d.phase === 'playing' && d.trick.length === 0 && d.tricks.length > 0 ? TRICK_MS : BOT_MS);
@@ -123,6 +170,9 @@ function schedule(s: State, now: number): void {
     s.awaySince ??= now;
     s.moveAt = s.awaySince + AWAY_MS;
   } else s.awaySince = null;
+  // a player who is here but does not move: the stand-in plays for them when their time is up
+  if (a && !a.bot && !a.away) s.moveAt = (s.turnSince ?? now) + (s.match!.deal.phase === 'bidding' ? BID_MS : TURN_MS);
+  if (s.phase === 'deal' && s.match?.deal.phase === 'thrown') s.moveAt = (s.thrownAt ?? now) + THROWN_MS;
   s.deadline = s.phase === 'dealEnd' ? s.sheetUntil : s.moveAt;
 }
 
@@ -131,14 +181,15 @@ function startMatch(s: State, now: number): void {
   s.phase = 'deal';
   s.last = null;
   s.ready = [];
+  s.thrownAt = null;
   s.matches++;
   s.updated = now;
 }
 
-/** After every move: book a finished deal, re-deal a thrown one. */
+/** After every move: book a finished deal; a thrown one stays on show a moment (tick re-deals it). */
 function afterMove(s: State, now: number): void {
   const m = s.match!;
-  if (m.deal.phase === 'thrown') s.match = nextDeal(m);
+  if (m.deal.phase === 'thrown') s.thrownAt = now;
   else if (m.deal.phase === 'done') {
     const { match, score, taken } = bookDeal(m);
     s.match = match;
@@ -177,10 +228,17 @@ function nextFromSheet(s: State, now: number): void {
 
 export function tick(s: State, now: number): void {
   if (s.phase === 'dealEnd' && s.sheetUntil !== null && now >= s.sheetUntil) nextFromSheet(s, now);
-  // one computer move per tick (the alarm comes back for the next), so phones can follow along
-  if (s.moveAt !== null && now >= s.moveAt) {
+  if (s.phase === 'deal' && s.match?.deal.phase === 'thrown') {
+    if (now >= (s.thrownAt ?? now) + THROWN_MS) {
+      s.match = nextDeal(s.match);
+      s.thrownAt = null;
+      s.updated = now;
+    }
+  } else if (s.moveAt !== null && now >= s.moveAt) {
+    // one computer move per tick (the alarm comes back for the next), so phones can follow along;
+    // a player whose time ran out is played for like someone who left
     const a = actor(s);
-    if (a && (a.bot || a.away)) {
+    if (a) {
       botPlay(s, a.bot ?? 'hard');
       afterMove(s, now);
     }
@@ -209,35 +267,46 @@ function cleanCall(v: unknown): Call | null {
   return null;
 }
 
-export function act(s: State, key: string, a: Action, now: number): string | null {
+/**
+ * What can go wrong, as codes (each phone shows them in its own language): join (not in the room),
+ * taken (someone at that place), call, card (not allowed now), unknown (no such action).
+ */
+export type ActError = 'join' | 'taken' | 'call' | 'card' | 'unknown';
+
+export function act(s: State, key: string, a: Action, now: number): ActError | null {
   const me = seatOf(s, key);
-  if (!me) return 'Join the room first.';
+  if (!me) return 'join';
   s.updated = now;
   const place = placeOf(s, me.n);
   const host = me.n === s.host;
   const done = (): null => {
+    seatHost(s);
     schedule(s, now);
     return null;
   };
   switch (a?.t) {
     case 'sit': {
-      if (s.phase !== 'lobby' || !isPlace(a.place)) return null;
-      if (s.places[a.place] !== null || s.bots[a.place] !== null) return 'That place is taken.';
+      // a free place, a computer player's, or the place of someone who has left
+      if (!seating(s) || !isPlace(a.place) || a.place === place) return null;
+      const there = s.places[a.place];
+      if (there !== null && there !== undefined && seatByN(s, there)?.online) return 'taken';
       if (place >= 0) s.places[place] = null;
       s.places[a.place] = me.n;
+      s.bots[a.place] = null;
       return done();
     }
     case 'stand':
-      if (s.phase === 'lobby' && place >= 0) s.places[place] = null;
+      if (seating(s) && place >= 0) s.places[place] = null;
       return done();
     case 'bot': {
-      if (!host || s.phase !== 'lobby' || !isPlace(a.place)) return null;
-      if (s.places[a.place] !== null) return 'Someone sits there.';
+      if (!host || !seating(s) || !isPlace(a.place)) return null;
+      if (s.places[a.place] !== null) return 'taken';
       s.bots[a.place] = a.level !== null && LEVELS.includes(a.level) ? a.level : null;
       return done();
     }
+    case 'again':
     case 'start': {
-      if (!host || (s.phase !== 'lobby' && s.phase !== 'over')) return null;
+      if (!host || !seating(s)) return null;
       // empty places take the level the host used last (or Hard)
       const fallback = s.bots.find((b): b is Level => b !== null) ?? 'hard';
       for (let p = 0; p < 4; p++) if (s.places[p] === null && s.bots[p] === null) s.bots[p] = fallback;
@@ -248,7 +317,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       const d = s.match?.deal;
       if (s.phase !== 'deal' || !d || d.phase !== 'bidding' || d.turn !== place) return null;
       const call = cleanCall(a.call);
-      if (!call || !isLegalCall(d, call)) return 'You can’t call that now.';
+      if (!call || !isLegalCall(d, call)) return 'call';
       s.match = { ...s.match!, deal: applyCall(d, call) };
       afterMove(s, now);
       return done();
@@ -256,23 +325,20 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
     case 'play': {
       const d = s.match?.deal;
       if (s.phase !== 'deal' || !d || d.phase !== 'playing' || d.turn !== place) return null;
-      if (!Number.isInteger(a.card) || !legalCards(d, place as Seat).includes(a.card)) return 'You can’t play that card now.';
+      if (!Number.isInteger(a.card) || !legalCards(d, place as Seat).includes(a.card)) return 'card';
       s.match = { ...s.match!, deal: playCard(d, a.card, a.declare === false ? [] : undefined) };
       afterMove(s, now);
       return done();
     }
     case 'next':
-      if (s.phase !== 'dealEnd') return null;
+      // only the players at the table move the score sheet on
+      if (s.phase !== 'dealEnd' || place < 0) return null;
       if (!s.ready.includes(me.n)) s.ready.push(me.n);
       // everyone at the table who is here pressed Next
       if (s.places.every((n) => n === null || !seatByN(s, n)?.online || s.ready.includes(n))) nextFromSheet(s, now);
       return done();
-    case 'again':
-      if (!host || s.phase !== 'over') return null;
-      startMatch(s, now);
-      return done();
     case 'kick': {
-      if (s.phase !== 'lobby') return null;
+      if (!seating(s)) return null;
       if (kickSeat(s, me, a.seat)) {
         const p = placeOf(s, a.seat);
         if (p >= 0) s.places[p] = null;
@@ -280,7 +346,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       return done();
     }
     default:
-      return 'Unknown action.';
+      return 'unknown';
   }
 }
 
@@ -302,7 +368,10 @@ export interface RoomView {
   host: boolean;
   players: SeatView[];
   places: PlaceView[];
-  /** The match with every other hand hidden (cards shown as -1) and declarations shown only after the first trick. */
+  /**
+   * The match with every other hand hidden (cards shown as -1), declarations shown only by kind until
+   * the first trick is over, and no seed (0): `matches` tells the matches apart.
+   */
   match: Match | null;
   last: { score: DealScore; taken: number } | null;
   ready: number[];
@@ -316,8 +385,8 @@ export function maskDeal(d: Deal, place: number): Deal {
     ...d,
     hands: d.hands.map((h, p) => (p === place ? h : h.map(() => -1 as Card))),
     stock: [],
-    // declarations are announced by kind during the first trick; the cards are shown after it
-    declared: d.declared.map((list, p) => (p === place || d.tricks.length >= 1 ? list : list.map((x) => ({ ...x, cards: [] })))),
+    // declarations are announced by kind during the first trick (a carré by its rank); the cards are shown after it
+    declared: d.declared.map((list, p) => (p === place || d.tricks.length >= 1 ? list : list.map((x) => ({ kind: x.kind, points: x.points, rank: x.kind === 'carre' ? x.rank : 0, suit: null, cards: [] })))),
   };
 }
 
@@ -325,7 +394,8 @@ export function viewFor(s: State, key: string): RoomView | null {
   const me = seatOf(s, key);
   if (!me) return null;
   const you = placeOf(s, me.n);
-  const match = s.match ? { ...s.match, deal: maskDeal(s.match.deal, you), history: s.match.history.slice(-12) } : null;
+  // never the seed: it would let any phone deal every hand (and the cards still to come) itself
+  const match = s.match ? { ...s.match, seed: 0, deal: maskDeal(s.match.deal, you), history: s.match.history.slice(-12) } : null;
   return {
     game: 'belot',
     code: s.code,
