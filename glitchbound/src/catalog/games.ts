@@ -311,7 +311,7 @@ export const GAMES: GameEntry[] = [
     challenge: { label: 'One quarter mile in the same loaner car; the others race your ghost. Highest run score wins.' },
     daily: [
       { metric: 'score', targets: [7000, 8500, 10000], label: 'Score {n} in one Launch Control run' },
-      { metric: 'perfect', targets: [2, 3, 4], label: 'Nail {n} perfect shifts in one Launch Control run' },
+      { metric: 'perfect', targets: [1, 2, 3], label: 'Nail {n} perfect shifts in one Launch Control run', one: 'Nail {n} perfect shift in one Launch Control run' },
     ],
     // A run scores at most ~17,000 (20,000 minus a 3.9 s ET, plus perfect shifts) and takes at least ~6 s of real time (staging plus the run).
     limits: { scorePerSecond: 3600, minSeconds: 5 },
