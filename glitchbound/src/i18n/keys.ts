@@ -2142,6 +2142,43 @@ export const KEYS: string[] = [
   "No room has that code. It may have closed.",
   "All live games and open rooms",
   "No public rooms right now. Open one in any game above and it shows up here for everyone.",
+  // Challenge rounds, Launch Control banner, Party Mode rooms (Hues, Impostor, Auction, Scribble) and room screens
+  "you’re tied for #{n} of {total} so far",
+  // 1960
+  "This run counts",
+  "One attempt: your first finished score goes on the board.",
+  "New · Launch Control",
+  "Build the fastest car on the strip.",
+  "Head-to-head 3D drag races on Formula 1 start lights: 43 cars to tune, 40 rivals to beat and live races against your friends.",
+  "Hit the strip →",
+  "Open a new room",
+  "Empty collections can’t get votes.",
+  "Your card is one tap away below.",
+  "Round called off",
+  // 1970
+  "The impostor left, so nobody could catch them. No points this round.",
+  "Not enough players were left to vote. No points this round.",
+  "Check the code: five letters, like KQTRA (codes never use I, L or O).",
+  "Second clue: guess again! Tap the board",
+  "Locked in. You can still move it and lock again until everyone is in.",
+  "Fine-tune it, then lock it in",
+  "Your guess, color {n}",
+  "Move your guess",
+  "Paler",
+  "Move left",
+  // 1980
+  "Move right",
+  "Deeper",
+  "Locked in ✓",
+  "Lock in my guess",
+  "{n} of {m} locked in",
+  "We can’t find room {code}",
+  "Check the code, or it closed after three quiet hours. Pick a game in Party Mode to open a new room or quick match.",
+  "Open a new room or quick match",
+  "Open a new {game} room",
+  "Welcome back, {name}!",
+  // 1990
+  "Join my Scribble Scramble room: one of us draws, everyone races to guess the word.",
 ];
 
 export const UI_COUNT = 311;

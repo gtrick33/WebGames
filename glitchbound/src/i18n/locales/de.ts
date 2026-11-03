@@ -2133,6 +2133,43 @@ const de: string[] = [
   'Kein Raum hat diesen Code. Vielleicht ist er schon geschlossen.',
   'Alle Live-Spiele und offenen Räume',
   'Gerade gibt es keine öffentlichen Räume. Öffne einen in einem der Spiele oben, dann sehen ihn hier alle.',
+  // Challenge rounds, Launch Control banner, Party Mode rooms and room screens
+  'du teilst dir bisher Platz #{n} von {total}',
+  // 1960
+  'Diese Runde zählt',
+  'Ein Versuch: Dein erstes fertiges Ergebnis kommt auf die Bestenliste.',
+  'Neu · Launch Control',
+  'Bau das schnellste Auto auf der Strecke.',
+  '3D-Dragrennen Kopf an Kopf an Formel-1-Startampeln: 43 Autos zum Tunen, 40 Rivalen zum Schlagen und Live-Rennen gegen deine Freunde.',
+  'Ab auf die Strecke →',
+  'Neuen Raum öffnen',
+  'Leere Sammlungen können keine Stimmen bekommen.',
+  'Deine Karte ist unten nur einen Tipp entfernt.',
+  'Runde abgebrochen',
+  // 1970
+  'Der Impostor ist gegangen, also konnte ihn niemand erwischen. Keine Punkte in dieser Runde.',
+  'Es waren nicht mehr genug Spieler zum Abstimmen da. Keine Punkte in dieser Runde.',
+  'Prüf den Code: fünf Buchstaben, z. B. KQTRA (Codes enthalten nie I, L oder O).',
+  'Zweiter Hinweis: Rate noch mal! Tippe aufs Brett',
+  'Festgelegt. Du kannst ihn noch verschieben und neu festlegen, bis alle so weit sind.',
+  'Feinjustieren, dann festlegen',
+  'Dein Tipp, Farbe {n}',
+  'Tipp verschieben',
+  'Heller',
+  'Nach links',
+  // 1980
+  'Nach rechts',
+  'Kräftiger',
+  'Festgelegt ✓',
+  'Meinen Tipp festlegen',
+  '{n} von {m} festgelegt',
+  'Wir finden Raum {code} nicht',
+  'Prüf den Code, oder der Raum wurde nach drei ruhigen Stunden geschlossen. Wähl im Partymodus ein Spiel, um einen neuen Raum oder ein Schnellspiel zu starten.',
+  'Neuen Raum oder Schnellspiel starten',
+  'Neuen {game}-Raum öffnen',
+  'Willkommen zurück, {name}!',
+  // 1990
+  'Komm in meinen Scribble-Scramble-Raum: Einer zeichnet, alle raten um die Wette das Wort.',
 ];
 
 export default de;

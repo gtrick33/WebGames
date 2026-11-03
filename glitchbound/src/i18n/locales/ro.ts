@@ -2133,6 +2133,43 @@ const ro: string[] = [
   'Nicio cameră nu are acest cod. Poate s-a închis deja.',
   'Toate jocurile live și camerele deschise',
   'Acum nu există camere publice. Deschide una într-unul dintre jocurile de mai sus și va apărea aici pentru toți.',
+  // Challenge rounds, Launch Control banner, Party Mode rooms and room screens
+  'deocamdată ești la egalitate pe #{n} din {total}',
+  // 1960
+  'Această tură contează',
+  'O singură încercare: primul tău scor încheiat intră în clasament.',
+  'Nou · Launch Control',
+  'Construiește cea mai rapidă mașină de pe pistă.',
+  'Curse de dragster 3D unu la unu, la semafoarele de start din Formula 1: 43 de mașini de reglat, 40 de rivali de învins și curse live cu prietenii tăi.',
+  'La pistă →',
+  'Deschide o cameră nouă',
+  'Colecțiile goale nu pot primi voturi.',
+  'Cartea ta e mai jos, la o atingere distanță.',
+  'Rundă anulată',
+  // 1970
+  'Impostorul a plecat, așa că nimeni nu l-a mai putut prinde. Fără puncte în runda asta.',
+  'Nu au mai rămas destui jucători pentru vot. Fără puncte în runda asta.',
+  'Verifică codul: cinci litere, ca KQTRA (codurile nu folosesc niciodată I, L sau O).',
+  'Al doilea indiciu: ghicește din nou! Atinge tabla',
+  'Fixat. Încă îl poți muta și fixa din nou până când toți sunt gata.',
+  'Ajustează-l, apoi fixează-l',
+  'Încercarea ta, culoarea {n}',
+  'Mută-ți încercarea',
+  'Mai pal',
+  'Mută la stânga',
+  // 1980
+  'Mută la dreapta',
+  'Mai intens',
+  'Fixat ✓',
+  'Fixează-mi încercarea',
+  '{n} din {m} au fixat',
+  'Nu găsim camera {code}',
+  'Verifică codul sau camera s-a închis după trei ore de liniște. Alege un joc din Modul petrecere ca să deschizi o cameră nouă sau un joc rapid.',
+  'Deschide o cameră nouă sau un joc rapid',
+  'Deschide o cameră nouă de {game}',
+  'Bine ai revenit, {name}!',
+  // 1990
+  'Intră în camera mea de Scribble Scramble: unul dintre noi desenează, toți se întrec să ghicească cuvântul.',
 ];
 
 export default ro;

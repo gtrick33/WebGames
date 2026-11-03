@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { detectLang, dictFrom, LANGS } from '../src/i18n';
@@ -15,6 +15,27 @@ describe('languages', () => {
 
   it('has no duplicate keys', () => {
     expect(new Set(KEYS).size).toBe(KEYS.length);
+  });
+
+  it('has a translation key for every literal t() text in the site', () => {
+    const have = new Set(KEYS);
+    const unescape = (s: string): string => s.replace(/\\(.)/g, (_, c: string) => (c === 'n' ? '\n' : c));
+    const missing: string[] = [];
+    const walk = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, e.name);
+        if (e.isDirectory()) {
+          if (e.name !== 'i18n') walk(p);
+        } else if (/\.tsx?$/.test(e.name)) {
+          for (const m of readFileSync(p, 'utf8').matchAll(/\bt\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")/g)) {
+            const k = unescape(m[1] ?? m[2]!);
+            if (!have.has(k)) missing.push(`${p}: ${k}`);
+          }
+        }
+      }
+    };
+    walk(join(process.cwd(), 'src'));
+    expect(missing).toEqual([]);
   });
 
   const files = readdirSync(join(process.cwd(), 'src/i18n/locales')).map((f) => f.replace(/\.ts$/, ''));

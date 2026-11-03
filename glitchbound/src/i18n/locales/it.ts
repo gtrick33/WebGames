@@ -2133,6 +2133,43 @@ const it: string[] = [
   'Nessuna stanza ha questo codice. Potrebbe essere già chiusa.',
   'Tutti i giochi dal vivo e le stanze aperte',
   'Al momento non ci sono stanze pubbliche. Aprine una in uno dei giochi qui sopra e comparirà qui per tutti.',
+  // Challenge rounds, Launch Control banner, Party Mode rooms and room screens
+  'per ora sei #{n} a pari merito su {total}',
+  // 1960
+  'Questa partita conta',
+  'Un solo tentativo: il tuo primo punteggio completato va in classifica.',
+  'Novità · Launch Control',
+  'Costruisci l’auto più veloce della pista.',
+  'Gare di accelerazione in 3D testa a testa con i semafori della Formula 1: 43 auto da mettere a punto, 40 rivali da battere e gare dal vivo contro i tuoi amici.',
+  'In pista →',
+  'Apri una nuova stanza',
+  'Le collezioni vuote non possono ricevere voti.',
+  'La tua carta è qui sotto, a un tocco.',
+  'Round annullato',
+  // 1970
+  'L’impostore se n’è andato, quindi nessuno poteva smascherarlo. Niente punti in questo round.',
+  'Non sono rimasti abbastanza giocatori per votare. Niente punti in questo round.',
+  'Controlla il codice: cinque lettere, come KQTRA (i codici non usano mai I, L o O).',
+  'Secondo indizio: indovina di nuovo! Tocca il tabellone',
+  'Bloccato. Puoi ancora spostarlo e bloccarlo di nuovo finché non hanno finito tutti.',
+  'Regolalo, poi bloccalo',
+  'Il tuo tentativo, colore {n}',
+  'Sposta il tuo tentativo',
+  'Più chiaro',
+  'Sposta a sinistra',
+  // 1980
+  'Sposta a destra',
+  'Più intenso',
+  'Bloccato ✓',
+  'Blocca il mio tentativo',
+  '{n} su {m} hanno bloccato',
+  'Non troviamo la stanza {code}',
+  'Controlla il codice, oppure si è chiusa dopo tre ore di silenzio. Scegli un gioco in Modalità party per aprire una nuova stanza o una partita rapida.',
+  'Apri una nuova stanza o una partita rapida',
+  'Apri una nuova stanza di {game}',
+  'Ciao di nuovo, {name}!',
+  // 1990
+  'Entra nella mia stanza di Scribble Scramble: uno di noi disegna, tutti fanno a gara per indovinare la parola.',
 ];
 
 export default it;

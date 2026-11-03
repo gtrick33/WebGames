@@ -2133,6 +2133,43 @@ const fr: string[] = [
   'Aucun salon n’a ce code. Il est peut-être déjà fermé.',
   'Tous les jeux en direct et les salons ouverts',
   'Aucun salon public pour le moment. Ouvre-en un dans l’un des jeux ci-dessus et il apparaîtra ici pour tout le monde.',
+  // Challenge rounds, Launch Control banner, Party Mode rooms and room screens
+  'tu es n°{n} ex æquo sur {total} pour l’instant',
+  // 1960
+  'Cette partie compte',
+  'Un seul essai : ton premier score terminé va au classement.',
+  'Nouveau · Launch Control',
+  'Construis la voiture la plus rapide de la piste.',
+  'Courses de dragsters en 3D en duel, sur des feux de départ de Formule 1 : 43 voitures à régler, 40 rivaux à battre et des courses en direct contre tes amis.',
+  'En piste →',
+  'Ouvrir un nouveau salon',
+  'Les collections vides ne peuvent pas recevoir de votes.',
+  'Ta carte est juste en dessous, à un toucher.',
+  'Manche annulée',
+  // 1970
+  'L’imposteur est parti, personne n’a donc pu le démasquer. Pas de points cette manche.',
+  'Il ne restait pas assez de joueurs pour voter. Pas de points cette manche.',
+  'Vérifie le code : cinq lettres, comme KQTRA (les codes n’utilisent jamais I, L ni O).',
+  'Deuxième indice : devine encore ! Touche le tableau',
+  'Validé. Tu peux encore le déplacer et valider à nouveau tant que tout le monde n’a pas fini.',
+  'Ajuste-le, puis valide',
+  'Ta réponse, couleur {n}',
+  'Déplacer ta réponse',
+  'Plus pâle',
+  'Vers la gauche',
+  // 1980
+  'Vers la droite',
+  'Plus intense',
+  'Validé ✓',
+  'Valider ma réponse',
+  '{n} sur {m} ont validé',
+  'Impossible de trouver le salon {code}',
+  'Vérifie le code, ou il a fermé après trois heures sans activité. Choisis un jeu dans le Mode soirée pour ouvrir un nouveau salon ou une partie rapide.',
+  'Ouvrir un nouveau salon ou une partie rapide',
+  'Ouvrir un nouveau salon {game}',
+  'Re-bonjour, {name} !',
+  // 1990
+  'Rejoins mon salon Scribble Scramble : l’un de nous dessine, tout le monde se presse de deviner le mot.',
 ];
 
 export default fr;

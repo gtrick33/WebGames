@@ -2133,6 +2133,43 @@ const tr: string[] = [
   'Bu koda sahip bir oda yok. Kapanmış olabilir.',
   'Tüm canlı oyunlar ve açık odalar',
   'Şu an herkese açık oda yok. Yukarıdaki oyunlardan birinde bir oda aç, burada herkese görünsün.',
+  // Challenge rounds, Launch Control banner, Party Mode rooms and room screens
+  'şimdilik {total} kişi içinde #{n} sırayı paylaşıyorsun',
+  // 1960
+  'Bu tur sayılır',
+  'Tek deneme: bitirdiğin ilk skor tabloya girer.',
+  'Yeni · Launch Control',
+  'Pistin en hızlı arabasını yap.',
+  'Formula 1 start ışıklarında bire bir 3D drag yarışları: ayarlanacak 43 araba, yenilecek 40 rakip ve arkadaşlarına karşı canlı yarışlar.',
+  'Piste çık →',
+  'Yeni oda aç',
+  'Boş koleksiyonlar oy alamaz.',
+  'Kartın aşağıda, bir dokunuş uzağında.',
+  'Tur iptal edildi',
+  // 1970
+  'Sahtekâr ayrıldı, bu yüzden kimse onu yakalayamadı. Bu tur puan yok.',
+  'Oylama için yeterli oyuncu kalmadı. Bu tur puan yok.',
+  'Kodu kontrol et: KQTRA gibi beş harf (kodlarda asla I, L veya O yoktur).',
+  'İkinci ipucu: yeniden tahmin et! Tahtaya dokun',
+  'Sabitlendi. Herkes bitirene kadar hâlâ kaydırıp yeniden sabitleyebilirsin.',
+  'İnce ayar yap, sonra sabitle',
+  'Tahminin, renk {n}',
+  'Tahminini kaydır',
+  'Daha soluk',
+  'Sola kaydır',
+  // 1980
+  'Sağa kaydır',
+  'Daha koyu',
+  'Sabitlendi ✓',
+  'Tahminimi sabitle',
+  '{m} kişiden {n} kişi sabitledi',
+  '{code} odasını bulamıyoruz',
+  'Kodu kontrol et ya da oda üç sessiz saatin ardından kapandı. Yeni bir oda ya da hızlı eşleşme açmak için Parti modunda bir oyun seç.',
+  'Yeni oda ya da hızlı eşleşme aç',
+  'Yeni bir {game} odası aç',
+  'Tekrar hoş geldin, {name}!',
+  // 1990
+  'Scribble Scramble odama katıl: birimiz çizer, herkes kelimeyi ilk bilmek için yarışır.',
 ];
 
 export default tr;
