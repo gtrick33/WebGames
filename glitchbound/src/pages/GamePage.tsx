@@ -307,12 +307,37 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
     // 'none' first, so the fullscreenchange that follows reads as the player's own exit
     apply('none');
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    // the screen was turned to landscape for the game: the phone is the player's to turn again
+    try {
+      screen.orientation?.unlock?.();
+    } catch {
+      /* nothing was locked */
+    }
   };
 
   const exitRef = useRef(exit);
   useEffect(() => {
     exitRef.current = exit;
   });
+  // Back in the page, a phone turned on its side can keep the zoom of the shape it was in and leave the stage off
+  // screen. A moment at the fixed scale after each turn brings the page back to it.
+  useEffect(() => {
+    if (mode !== 'none' || !touchScreen()) return;
+    let timer = 0;
+    const onTurn = (): void => {
+      lockZoom(true);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        // (unless a game has started filling the screen meanwhile)
+        if (modeRef.current === 'none') lockZoom(false);
+      }, 350);
+    };
+    window.addEventListener('orientationchange', onTurn);
+    return () => {
+      window.removeEventListener('orientationchange', onTurn);
+      window.clearTimeout(timer);
+    };
+  }, [mode]);
   useEffect(() => {
     if (mode !== 'immersive') return;
     const onKey = (e: KeyboardEvent): void => {

@@ -33,7 +33,9 @@
 .stage-landscape {
   width: 100%;
   aspect-ratio: 16 / 9;
-  max-height: calc(100svh - var(--header-h) - 120px);
+  /* (never down to nothing, whatever a phone's bars report for a moment while it turns) */
+  min-height: 170px;
+  max-height: max(170px, calc(100svh - var(--header-h) - 120px));
 }
 .stage-square {
   height: var(--stage-h);
