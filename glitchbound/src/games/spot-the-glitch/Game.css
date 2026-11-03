@@ -112,6 +112,22 @@
   background: var(--sg-card);
   font-size: 18px;
 }
+.sg-icon-btn:disabled {
+  opacity: 0.45;
+}
+.sg-icon-sm {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+}
+/* Finger-sized targets on touch screens. */
+@media (pointer: coarse) {
+  .sg-icon-btn,
+  .sg-icon-sm {
+    width: 44px;
+    height: 44px;
+  }
+}
 .sg-chip {
   padding: 4px 12px;
   border: 2px solid #ffb020;
@@ -236,6 +252,7 @@
 }
 .sg-seg button {
   flex: 1;
+  min-height: 44px;
   padding: 6px 0;
   border: 2px solid var(--sg-line);
   border-radius: 10px;
@@ -315,7 +332,8 @@
     transform: scale(1.08);
   }
 }
-.sg-found {
+.sg-found,
+.sg-found-dots {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -457,6 +475,30 @@
 .sg-lock {
   animation: sg-shake 0.4s;
 }
+/* Opaque cover: the clock is stopped while paused, so the pictures stay out of sight. */
+.sg-paused {
+  background:
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.04) 0 12px, transparent 12px 24px),
+    #14102a;
+}
+.sg-paused-card {
+  display: grid;
+  gap: 4px;
+  padding: 16px 28px;
+  border: 3px solid var(--sg-ink);
+  border-radius: 20px;
+  background: var(--sg-card);
+  box-shadow: 4px 4px 0 var(--sg-hot);
+  color: var(--sg-ink);
+}
+.sg-paused-card b {
+  font-size: 22px;
+}
+.sg-paused-card span {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sg-ink-2);
+}
 @keyframes sg-shake {
   25% { transform: translateX(-6px); }
   50% { transform: translateX(6px); }
@@ -515,7 +557,11 @@
   .sg-glitch::after,
   .sg-hint,
   .sg-ring,
-  .sg-clock.is-low {
+  .sg-clock.is-low,
+  .sg-miss.is-new path,
+  .sg-lock,
+  .sg-found i.is-on,
+  .sg-done {
     animation: none;
   }
 }

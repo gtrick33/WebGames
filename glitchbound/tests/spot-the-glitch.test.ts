@@ -4,9 +4,11 @@ import { COLORLESS, diffAt, DIFFS, makePuzzle, type Puzzle } from '../src/games/
 import { backdropAt } from '../src/games/spot-the-glitch/draw';
 import {
   applyHint,
+  challengeGen,
   dailyPuzzle,
   endStats,
   FAIR_FROM,
+  rushEnd,
   giveUp,
   LOCK_MS,
   pictureScore,
@@ -19,7 +21,7 @@ import {
   timePenalty,
 } from '../src/games/spot-the-glitch/logic';
 import { CLASSIC_THEMES, H, makeScene, THEME_IDS, W, type Obj } from '../src/games/spot-the-glitch/scene';
-import { emptySgSave, recordPicture, sanitizeSg, sgStats } from '../src/games/spot-the-glitch/store';
+import { emptySgSave, loadSg, recordChallenge, recordPicture, sanitizeSg, saveSg, sgStats, STORE_KEY, updateSg } from '../src/games/spot-the-glitch/store';
 import { bodyOf, changedOps, contrastWith, traceObj, type Box } from '../src/games/spot-the-glitch/trace';
 import { addDays, hashString } from '../src/platform/dates';
 
@@ -217,6 +219,17 @@ describe('fair differences (checked against what is drawn)', () => {
       }
    }, 60_000);
 
+  it('builds challenges started from the fair day with the fair generator, older ones as before', () => {
+    expect(challengeGen('')).toBe('v1');
+    expect(challengeGen('2026-11-20')).toBe('v1');
+    expect(challengeGen(FAIR_FROM)).toBe('fair');
+  });
+
+  it('reports a Rush run apart from the daily (its own rush stat)', () => {
+    const r = { score: 0, found: 5, misses: 0, hints: 0, seconds: 25 };
+    expect(rushEnd([r, r, { ...r, found: 2 }], 2, 12)).toEqual({ score: 1700, stats: { found: 12, pictures: 2, rush: 1700 } });
+  });
+
   it('keeps easy pictures to bold changes', () => {
     for (let seed = 1; seed <= 300; seed++) for (const d of makePuzzle(seed, 0).diffs) expect(['color', 'remove', 'add', 'scale']).toContain(d.type);
   });
@@ -318,5 +331,40 @@ describe('saves', () => {
     expect(recordPicture(s, r, '2026-10-18').progress).toBeNull();
     // Relax pictures leave it alone.
     expect(recordPicture(s, r, null, true).progress).toEqual(s.progress);
+  });
+
+  it('keeps challenge rounds (cleaned, pruned like dailies) and never records a daily picture twice', () => {
+    const r = { score: 900, found: 5, misses: 0, hints: 0, seconds: 25 };
+    const s = sanitizeSg({
+      v: 1,
+      challenges: {
+        'a:1': { day: '2026-12-01', results: [r, { score: 'x' }], progress: { found: [1, 7], misses: [], hints: 2, hinted: null, ms: 4000 }, reported: 'yes' },
+        'b:1': { day: 'later', results: [] },
+        'c:2': 'junk',
+      },
+    });
+    expect(s.challenges).toEqual({ 'a:1': { day: '2026-12-01', results: [r], progress: { found: [1], misses: [], hints: 2, hinted: null, ms: 4000 }, reported: false } });
+    expect(sanitizeSg({ v: 1, challenges: 7 }).challenges).toEqual({});
+    const next = recordChallenge(s, 'a:1', '2026-12-02', { reported: true });
+    expect(next.challenges['a:1']).toMatchObject({ day: '2026-12-01', reported: true });
+    saveSg(recordChallenge(next, 'old:1', '2025-01-01', {}), '2026-12-02');
+    expect(Object.keys(loadSg().challenges)).toEqual(['a:1']);
+
+    // Picture 1 of a day recorded in another tab: recording it again (as picture 1) changes nothing.
+    const once = recordPicture(emptySgSave(), r, '2026-12-01', false, 0);
+    expect(recordPicture(once, r, '2026-12-01', false, 0)).toBe(once);
+    expect(recordPicture(once, r, '2026-12-01', false, 1).daily['2026-12-01']).toHaveLength(2);
+  });
+
+  it('writes on top of what another tab stored, not over it', () => {
+    localStorage.removeItem(STORE_KEY);
+    const r = { score: 900, found: 5, misses: 0, hints: 0, seconds: 25 };
+    // This tab loaded an empty save; another tab then finished a daily picture.
+    const stale = loadSg();
+    saveSg(recordPicture(emptySgSave(), r, '2026-12-01'), '2026-12-01');
+    updateSg((s) => ({ ...s, muted: !stale.muted }), '2026-12-01');
+    expect(loadSg()).toMatchObject({ muted: true, daily: { '2026-12-01': [r] } });
+    localStorage.setItem(STORE_KEY, '{nope');
+    expect(loadSg()).toEqual(emptySgSave());
   });
 });
