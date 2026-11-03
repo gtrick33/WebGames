@@ -26,15 +26,17 @@
   color: inherit;
   cursor: pointer;
 }
-.sgd .is-r0 { --c: #ffd6e0; }
-.sgd .is-r1 { --c: #ffe9a8; }
-.sgd .is-r2 { --c: #c9f2d0; }
-.sgd .is-r3 { --c: #c8e6ff; }
-.sgd .is-r4 { --c: #e3d5ff; }
-.sgd .is-r5 { --c: #ffd9b8; }
-.sgd .is-r6 { --c: #bff0ec; }
-.sgd .is-r7 { --c: #f6d0f2; }
-.sgd .is-r8 { --c: #dfe8b6; }
+/* Region fills: each a different lightness (L* 71 to 95, three apart) as well as a different hue, so
+   neighbors stay apart in grayscale and for color-blind players. The thick borders still carry the regions. */
+.sgd .is-r0 { --c: #ffd5df; }
+.sgd .is-r1 { --c: #fff0c4; }
+.sgd .is-r2 { --c: #8be299; }
+.sgd .is-r3 { --c: #8fcdff; }
+.sgd .is-r4 { --c: #e0d0ff; }
+.sgd .is-r5 { --c: #fbad69; }
+.sgd .is-r6 { --c: #c5f1ed; }
+.sgd .is-r7 { --c: #ea9ce3; }
+.sgd .is-r8 { --c: #a7b65b; }
 .sgd-hud {
   display: grid;
   grid-template-columns: 44px 1fr auto;
